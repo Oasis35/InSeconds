@@ -1,150 +1,87 @@
-# InSeconds 🎵⏱️ — COMMENCE ICI
+# InSeconds 🎵 — COMMENCE ICI
 
-## Ton Projet: **InSeconds**
-*Blind test musical quotidien. Écoute 1-30 secondes, devine artiste + titre. Moins tu écoutes, plus tu marques. Même défi pour tout le monde, chaque jour.*
+> **Point d'entrée** de la documentation projet. Pour le quick start utilisateur, voir [README.fr.md](../README.fr.md) à la racine. Pour les conventions code et pièges connus, voir [CLAUDE.md](../CLAUDE.md).
 
----
+## Pitch
 
-## ✅ Tout est Prêt
+InSeconds est un **blind test musical quotidien**. Le joueur choisit combien de secondes il veut écouter (paliers : 1, 2, 3, 5, 10, 15, 30) avant de tenter artiste + titre. Moins il écoute, plus il marque. Même défi pour tout le monde, chaque jour, à minuit UTC. Mode guest disponible (joue sans s'inscrire, hors classement).
 
-Je t'ai préparé:
+## Stack actuelle
 
-### 📖 Documentation (Française)
-1. **[TACHES.md](computer://C:\Users\CLRA\AppData\Roaming\Claude\local-agent-mode-sessions\c38c0fd0-a7e3-435b-8992-6989092a1a35\515c549f-a4fc-409d-98e4-14aabdb08c3d\local_b71e5312-9b1b-41c5-b91c-a8ff4c97ca69\outputs\in3secs\TACHES.md)** ⭐ — Liste complète des tâches MVP
-2. **[BACKEND_STRUCTURE_FR.md](computer://C:\Users\CLRA\AppData\Roaming\Claude\local-agent-mode-sessions\c38c0fd0-a7e3-435b-8992-6989092a1a35\515c549f-a4fc-409d-98e4-14aabdb08c3d\local_b71e5312-9b1b-41c5-b91c-a8ff4c97ca69\outputs\in3secs\BACKEND_STRUCTURE_FR.md)** — Architecture .NET 10
-3. **[FRONTEND_STRUCTURE_FR.md](computer://C:\Users\CLRA\AppData\Roaming\Claude\local-agent-mode-sessions\c38c0fd0-a7e3-435b-8992-6989092a1a35\515c549f-a4fc-409d-98e4-14aabdb08c3d\local_b71e5312-9b1b-41c5-b91c-a8ff4c97ca69\outputs\in3secs\FRONTEND_STRUCTURE_FR.md)** — Architecture Angular 19+
-4. [docker-compose.yml](computer://C:\Users\CLRA\AppData\Roaming\Claude\local-agent-mode-sessions\c38c0fd0-a7e3-435b-8992-6989092a1a35\515c549f-a4fc-409d-98e4-14aabdb08c3d\local_b71e5312-9b1b-41c5-b91c-a8ff4c97ca69\outputs\in3secs\docker-compose.yml) — SQL Server local
-
-### 🔧 Stack Tech (À Jour)
 | Couche | Tech |
 |--------|------|
-| **Backend** | .NET 10 |
-| **Frontend** | Angular 19+ (standalone + signals) |
-| **Base de Données** | SQL Server (Docker) |
-| **Musique** | API Deezer (publique) |
-| **Déploiement** | Railway ou Azure App Service |
+| Backend | .NET 10, Wolverine (messaging), FluentValidation, EF Core 10 |
+| Base de données | SQL Server 2025 (Developer edition, en Docker) |
+| Frontend | Angular 20 (standalone + signals), TypeScript, Tailwind CSS v4, SCSS |
+| Musique | API Deezer (publique, à intégrer) |
+| Infra dev | Docker Compose, `dotnet watch` (back), `ng serve` (front) |
+| CI | GitHub Actions (build back + front + check migrations EF), Dependabot |
+| Déploiement | Pas encore configuré (Railway ou Azure App Service à terme) |
 
----
+## Architecture en deux mots
 
-## 🎯 Les 14 Tâches
+- **Backend** : Vertical Slice Architecture — chaque feature vit dans son propre dossier `Features/<Aggregate>/<UseCase>/` (Endpoint + Command/Query + Handler + Validator). Pas de couche service partagée fourre-tout. Wolverine route les messages aux handlers par convention.
+- **Frontend** : Angular 20 standalone (pas de NgModules) avec signals pour l'état. Tailwind utility-first par-dessus SCSS pour les overrides locaux.
+- **Modèle de données** : 7 tables (`Players`, `Tracks`, `DailyChallenges`, `DailyChallengeTracks`, `GameSessions`, `GameSessionAnswers`, `Settings`). Voir [`BACKEND_STRUCTURE_FR.md`](BACKEND_STRUCTURE_FR.md) pour le détail.
+- **Gameplay anti-triche** : scoring serveur seulement, contrainte unique `(PlayerId, DailyChallengeId)` qui garantit 1 partie/jour/joueur, durée d'écoute = choix discret (pas une mesure → pas de tentative de manipulation client).
 
-**Backend Core:**
-1. Backend: .NET 10 solution setup + DbContext + migrations
-2. Services: TextNormalizer + ScoreCalculator + stubs
-3. API: SessionsController endpoints
+## Les autres documents de ce dossier
 
-**Frontend Core:**
-4. Frontend: Angular setup + project structure
-5. Audio: Implement AudioPlayerService with signals
-6. UI: GameComponent + BlindRoundComponent
+| Document | Contenu |
+|----------|---------|
+| [`TACHES.md`](TACHES.md) | Liste de toutes les tâches MVP — coche ce qui est fait, voir reste à faire |
+| [`BACKEND_STRUCTURE_FR.md`](BACKEND_STRUCTURE_FR.md) | Référence d'architecture backend (vertical slice, modèle EF, Wolverine, services Common) |
+| [`FRONTEND_STRUCTURE_FR.md`](FRONTEND_STRUCTURE_FR.md) | Référence d'architecture frontend (Angular 20, AudioPlayer durée-choisie, structure dossiers) |
 
-**Features:**
-7. Leaderboard: API endpoint + Component
-8. Mobile: Constraints + testing
-9. Auth: Simple pseudo system
-10. Deezer: Implement API wrapper + caching
-11. Challenge: Daily challenge generator (BackgroundService)
-
-**Finish:**
-12. Testing: Unit + Integration + E2E tests
-13. Deployment: Railway ou Azure setup
-14. Polish: Styling + Accessibility + Docs
-
----
-
-## 🚀 Par Où Commencer ?
-
-1. **Ouvre [TACHES.md](computer://C:\Users\CLRA\AppData\Roaming\Claude\local-agent-mode-sessions\c38c0fd0-a7e3-435b-8992-6989092a1a35\515c549f-a4fc-409d-98e4-14aabdb08c3d\local_b71e5312-9b1b-41c5-b91c-a8ff4c97ca69\outputs\in3secs\TACHES.md)** (5 min) pour voir toutes les tâches
-
-2. **Commence par les tâches Backend Core** (1 → 2 → 3)
-   - Refer à [BACKEND_STRUCTURE_FR.md](computer://C:\Users\CLRA\AppData\Roaming\Claude\local-agent-mode-sessions\c38c0fd0-a7e3-435b-8992-6989092a1a35\515c549f-a4fc-409d-98e4-14aabdb08c3d\local_b71e5312-9b1b-41c5-b91c-a8ff4c97ca69\outputs\in3secs\BACKEND_STRUCTURE_FR.md) pour code stubs
-
-3. **Puis Frontend Core** (4 → 5 → 6)
-   - Refer à [FRONTEND_STRUCTURE_FR.md](computer://C:\Users\CLRA\AppData\Roaming\Claude\local-agent-mode-sessions\c38c0fd0-a7e3-435b-8992-6989092a1a35\515c549f-a4fc-409d-98e4-14aabdb08c3d\local_b71e5312-9b1b-41c5-b91c-a8ff4c97ca69\outputs\in3secs\FRONTEND_STRUCTURE_FR.md) pour code stubs
-
-4. **Autres tâches peuvent tourner en parallèle** (7-14)
-
----
-
-## ⚡ Quick Start Commands
-
-Quand t'es prêt à coder:
+## Quick start technique
 
 ```bash
-# Backend (.NET 10)
-dotnet new sln -n InSeconds
-dotnet new webapi -n InSeconds.Api
-cd InSeconds.Api
-dotnet add package Microsoft.EntityFrameworkCore.SqlServer
-dotnet ef database update
+# Cloner et démarrer le stack backend (DB + API hot-reload)
+docker compose up -d
 
-# Frontend (Angular 19+)
-ng new InSeconds.Client --skip-git --routing
-cd InSeconds.Client
-npm install
+# Lancer le frontend
+cd src/front/InSeconds.Client
+npm install   # première fois seulement
 npm start
-
-# Database
-docker-compose up -d  # SQL Server sur localhost:1433
 ```
 
-**Tous les détails sont dans les fichiers architecture.**
+Puis ouvrir `http://localhost:5172`. Voir le [README](../README.fr.md) pour les détails.
+
+## État du projet
+
+✅ **Fait** :
+
+- Scaffolding backend complet (.slnx, projet API, packages Wolverine/EF/FluentValidation)
+- Architecture vertical slice posée (dossiers `Features/`, `Domain/`, `Infrastructure/`, `Common/` vides)
+- 7 entités du domaine + configurations EF + migration `InitialCreate` appliquée
+- Setup Docker : conteneurs `inseconds.database` (SQL 2025) + `inseconds.api` (hot-reload), volumes, healthcheck
+- Scaffolding frontend complet (Angular 20 + Tailwind v4 + SCSS)
+- Page d'accueil front avec ping `/health` validant le bout-en-bout
+- CI GitHub Actions (build back/front + check migrations) + Dependabot
+- Documentation : README bilingue + CLAUDE.md + docs/
+
+🚧 **À faire** : tout le métier — les services `TextNormalizer` / `ScoreCalculator`, le client Deezer, le générateur de défi, les vertical slices Sessions/Leaderboard/Auth, les composants UI Game/BlindRound/Leaderboard, l'auth via cookie HTTP-only, NSwag pour générer le client TS, les tests. Voir [`TACHES.md`](TACHES.md) pour la liste complète et l'ordre suggéré.
+
+## Specs gameplay clés (rappel rapide)
+
+- **10 morceaux par jour**, même set pour tout le monde
+- **Paliers d'écoute** : 1, 2, 3, 5, 10, 15, 30 secondes (configurable via la table `Settings`)
+- **1 prolongation** autorisée par réponse (passe au palier supérieur, scoring sur le palier final)
+- **Timer de saisie** : 20s après la fin de la lecture pour saisir artiste + titre (configurable)
+- **Scoring partiel** : `ArtistCorrect` et `TitleCorrect` séparés
+- **Anti-triche** : scoring 100% serveur, contrainte BD `UNIQUE (PlayerId, DailyChallengeId)`, durée stockée = palier choisi (validée côté serveur contre la liste autorisée)
+- **Mobile-first** : `playsinline` audio, `100dvh`, inputs ≥ 16px, `touch-action: manipulation`
+
+## Mode guest
+
+Le joueur peut jouer le défi du jour **sans créer de compte** :
+
+- Un `Player { IsGuest=true, Pseudo=null }` est créé automatiquement au 1ᵉʳ appel
+- Un cookie HTTP-only signé porte le `Player.AuthToken` pour le reconnaître
+- Le guest n'apparaît **pas au leaderboard** (filtre `IsGuest=0` sur la query)
+- Promotion guest → inscrit = simple UPDATE sur le même `Player` (historique conservé)
+- Cleanup périodique des guests inactifs > 30 jours
 
 ---
 
-## 📊 Effort Total
-
-- **35-40 heures** de travail au total (MVP flexible)
-- Pas de deadline par weekends — juste des tâches atomiques
-- Fait à ton rythme!
-
----
-
-## ✨ Specs Clés
-
-**Gameplay:**
-- 10 morceaux par jour (même pour tout le monde)
-- Max 30s d'écoute par morceau
-- Score = 1000 × (1 - temps/30) × bonus difficulté × pénalité partielle
-- Moins tu écoutes = plus tu marques ✓
-
-**Anti-Triche:**
-- Scoring côté serveur seulement
-- Contrainte UNIQUE (PlayerId, DailyChallengeId) → 1 partie/jour max
-- Sanity checks sur les temps
-
-**Mobile:**
-- playsinline sur audio (iOS critique)
-- 100dvh viewport, inputs >= 16px
-- Touch-action manipulation
-- Tests sur vrais appareils
-
----
-
-## 📋 Prochaines Étapes
-
-1. **Maintenant:** Lis [TACHES.md](computer://C:\Users\CLRA\AppData\Roaming\Claude\local-agent-mode-sessions\c38c0fd0-a7e3-435b-8992-6989092a1a35\515c549f-a4fc-409d-98e4-14aabdb08c3d\local_b71e5312-9b1b-41c5-b91c-a8ff4c97ca69\outputs\in3secs\TACHES.md) (5 min)
-
-2. **Tâche 1:** Ouvre [BACKEND_STRUCTURE_FR.md](computer://C:\Users\CLRA\AppData\Roaming\Claude\local-agent-mode-sessions\c38c0fd0-a7e3-435b-8992-6989092a1a35\515c549f-a4fc-409d-98e4-14aabdb08c3d\local_b71e5312-9b1b-41c5-b91c-a8ff4c97ca69\outputs\in3secs\BACKEND_STRUCTURE_FR.md) et commence
-
-3. **Tâches suivantes:** Check [TACHES.md](computer://C:\Users\CLRA\AppData\Roaming\Claude\local-agent-mode-sessions\c38c0fd0-a7e3-435b-8992-6989092a1a35\515c549f-a4fc-409d-98e4-14aabdb08c3d\local_b71e5312-9b1b-41c5-b91c-a8ff4c97ca69\outputs\in3secs\TACHES.md) et référence docs appropriées
-
----
-
-## 🔥 Stack Exactement Pour Toi
-
-✅ .NET 10 (tu maîtrises)  
-✅ Angular 19+ standalone + signals (tu maîtrises)  
-✅ SQL Server sur Docker (tu maîtrises)  
-✅ Pas de complexité inutile (MVP pur)  
-✅ Déployable facilement (Railway/Azure)  
-
----
-
-**Bon courage Clément! InSeconds t'attend! 🎵🚀**
-
-Fichiers disponibles:
-- [TACHES.md](computer://C:\Users\CLRA\AppData\Roaming\Claude\local-agent-mode-sessions\c38c0fd0-a7e3-435b-8992-6989092a1a35\515c549f-a4fc-409d-98e4-14aabdb08c3d\local_b71e5312-9b1b-41c5-b91c-a8ff4c97ca69\outputs\in3secs\TACHES.md) — Tâches complètes
-- [BACKEND_STRUCTURE_FR.md](computer://C:\Users\CLRA\AppData\Roaming\Claude\local-agent-mode-sessions\c38c0fd0-a7e3-435b-8992-6989092a1a35\515c549f-a4fc-409d-98e4-14aabdb08c3d\local_b71e5312-9b1b-41c5-b91c-a8ff4c97ca69\outputs\in3secs\BACKEND_STRUCTURE_FR.md) — Backend
-- [FRONTEND_STRUCTURE_FR.md](computer://C:\Users\CLRA\AppData\Roaming\Claude\local-agent-mode-sessions\c38c0fd0-a7e3-435b-8992-6989092a1a35\515c549f-a4fc-409d-98e4-14aabdb08c3d\local_b71e5312-9b1b-41c5-b91c-a8ff4c97ca69\outputs\in3secs\FRONTEND_STRUCTURE_FR.md) — Frontend
-- [docker-compose.yml](computer://C:\Users\CLRA\AppData\Roaming\Claude\local-agent-mode-sessions\c38c0fd0-a7e3-435b-8992-6989092a1a35\515c549f-a4fc-409d-98e4-14aabdb08c3d\local_b71e5312-9b1b-41c5-b91c-a8ff4c97ca69\outputs\in3secs\docker-compose.yml) — SQL Server
+**Bon courage Clément ! Pour reprendre la conversation Claude là où elle s'est arrêtée, ouvre la session existante. Pour démarrer une nouvelle feature, lis [CLAUDE.md](../CLAUDE.md) puis [`TACHES.md`](TACHES.md) pour choisir la prochaine slice. 🎵🚀**
