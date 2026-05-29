@@ -1,0 +1,25 @@
+<main class="min-h-dvh bg-gradient-to-br from-slate-900 via-slate-950 to-black text-slate-100 flex items-center justify-center p-6">
+  <section class="max-w-xl w-full text-center space-y-6">
+    <h1 class="text-5xl font-bold tracking-tight">InSeconds <span aria-hidden="true">🎵</span></h1>
+    <p class="text-slate-300">Blind test musical quotidien. Écoute le moins longtemps possible, devine artiste + titre.</p>
+
+    <div
+      class="inline-flex items-center gap-3 rounded-full border border-slate-700 px-5 py-2.5 text-sm"
+      [class.text-emerald-300]="health() === 'ok'"
+      [class.text-amber-300]="health() === 'loading'"
+      [class.text-rose-300]="health() === 'ko'"
+    >
+      <span
+        class="h-2.5 w-2.5 rounded-full"
+        [class.bg-emerald-400]="health() === 'ok'"
+        [class.bg-amber-400]="health() === 'loading'"
+        [class.bg-rose-400]="health() === 'ko'"
+      ></span>
+      {{ healthLabel() }}
+    </div>
+
+    <p class="text-xs text-slate-500">Front <code>localhost:5172</code> · API <code>localhost:5171</code></p>
+  </section>
+</main>
+
+<router-outlet />
