@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.Docker.Sdk">
+  <PropertyGroup Label="Globals">
+    <ProjectVersion>2.1</ProjectVersion>
+    <DockerTargetOS>Linux</DockerTargetOS>
+    <DockerComposeProjectName>inseconds</DockerComposeProjectName>
+    <DockerServiceName>api</DockerServiceName>
+    <DockerLaunchBrowser>True</DockerLaunchBrowser>
+    <DockerServiceUrl>http://localhost:5171/health</DockerServiceUrl>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="docker-compose.yml" />
+    <None Include="src\back\.dockerignore" />
+    <None Include="src\back\InSeconds.Api\Dockerfile" />
+  </ItemGroup>
+</Project>

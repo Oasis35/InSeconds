@@ -1,0 +1,40 @@
+services:
+  database:
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    container_name: inseconds.database
+    environment:
+      ACCEPT_EULA: Y
+      MSSQL_SA_PASSWORD: P@ssw0rd!In3Secs
+      MSSQL_PID: Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q \"SELECT 1\" -b -o /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  api:
+    build:
+      context: ./src/back
+      dockerfile: InSeconds.Api/Dockerfile
+    container_name: inseconds.api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Server=database,1433;Database=InSeconds;User Id=sa;Password=P@ssw0rd!In3Secs;TrustServerCertificate=true;Encrypt=false;"
+    ports:
+      - "5171:8080"
+    volumes:
+      - ./src/back:/src
+      - /src/InSeconds.Api/bin
+      - /src/InSeconds.Api/obj
+    depends_on:
+      database:
+        condition: service_healthy
+
+volumes:
+  sqlserver_data:
