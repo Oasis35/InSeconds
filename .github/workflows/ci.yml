@@ -59,7 +59,7 @@ jobs:
 
       - name: Test
         working-directory: src/back
-        run: dotnet test InSeconds.Api.UnitTests --no-restore --logger "github;verbosity=normal"
+        run: dotnet test InSeconds.Api.UnitTests --no-restore --logger "console;verbosity=normal"
 
   front:
     name: Frontend (build)
