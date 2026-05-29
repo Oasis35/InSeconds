@@ -4,7 +4,7 @@
     <DockerTargetOS>Linux</DockerTargetOS>
     <DockerComposeProjectName>inseconds</DockerComposeProjectName>
     <DockerServiceName>api</DockerServiceName>
-    <DockerLaunchBrowser>True</DockerLaunchBrowser>
+    <DockerLaunchBrowser>False</DockerLaunchBrowser>
     <DockerServiceUrl>http://localhost:5171/health</DockerServiceUrl>
   </PropertyGroup>
   <ItemGroup>

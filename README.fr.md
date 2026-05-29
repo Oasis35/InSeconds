@@ -38,13 +38,13 @@ npm install   # uniquement la première fois
 npm start
 ```
 
-Ouvre `http://localhost:5172`. Tu dois voir la page d'accueil avec un badge vert "Backend OK" confirmant que l'API est joignable.
+Ouvre `http://localhost:5173`. Tu dois voir la page d'accueil avec un badge vert "Backend OK" confirmant que l'API est joignable.
 
 ### URLs utiles
 
 | URL | Usage |
 |-----|-------|
-| `http://localhost:5172` | Frontend (serveur de dev Angular) |
+| `http://localhost:5173` | Frontend (serveur de dev Angular) |
 | `http://localhost:5171/health` | Healthcheck de l'API |
 | `http://localhost:5171/openapi/v1.json` | Spec OpenAPI (utilisée plus tard par NSwag pour générer le client TS) |
 

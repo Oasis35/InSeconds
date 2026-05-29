@@ -10,7 +10,7 @@
 - **SCSS** comme préprocesseur — `@use "tailwindcss";` en haut de `src/styles.scss`
 - **HttpClient** via `provideHttpClient(withFetch())` dans `app.config.ts`
 - **Pas de Docker côté front** — `ng serve` tourne en local pour la rapidité du hot-reload
-- **Port front pinné à 5172** (évite le conflit avec Screlec et TimeTracker qui occupent tous les deux le 4200)
+- **Port front pinné à 5173** (évite le conflit avec Screlec et TimeTracker qui occupent tous les deux le 4200)
 - **API consommée sur `http://localhost:5171`** en dev (variable d'env)
 
 ## Création initiale (déjà fait)
@@ -28,7 +28,7 @@ Et le pin du port dans `angular.json` sous `projects.InSeconds.Client.architect.
 
 ```json
 {
-  "port": 5172,
+  "port": 5173,
   "host": "localhost"
 }
 ```
@@ -64,7 +64,7 @@ src/front/InSeconds.Client/
 │   └── main.ts
 ├── public/
 ├── .postcssrc.json                         # ✅ { "plugins": { "@tailwindcss/postcss": {} } }
-├── angular.json                            # ✅ port 5172 pinné, fileReplacements dev/prod
+├── angular.json                            # ✅ port 5173 pinné, fileReplacements dev/prod
 ├── package.json
 ├── tsconfig.json
 └── tsconfig.app.json
