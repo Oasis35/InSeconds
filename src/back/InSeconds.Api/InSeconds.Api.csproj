@@ -19,7 +19,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="WolverineFx" Version="6.0.2" />
+    <PackageReference Include="WolverineFx" Version="6.2.1" />
     <PackageReference Include="WolverineFx.EntityFrameworkCore" Version="6.0.2" />
     <PackageReference Include="WolverineFx.FluentValidation" Version="6.0.2" />
     <PackageReference Include="WolverineFx.RuntimeCompilation" Version="6.0.2" />
