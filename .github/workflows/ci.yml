@@ -41,6 +41,26 @@ jobs:
         working-directory: src/back/InSeconds.Api
         run: dotnet ef migrations has-pending-model-changes --no-build --configuration Release
 
+  unit-tests:
+    name: Backend (unit tests)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: src/back/global.json
+
+      - name: Restore
+        working-directory: src/back
+        run: dotnet restore InSeconds.slnx
+
+      - name: Test
+        working-directory: src/back
+        run: dotnet test InSeconds.Api.UnitTests --no-restore --logger "github;verbosity=normal"
+
   front:
     name: Frontend (build)
     runs-on: ubuntu-latest

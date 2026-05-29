@@ -12,7 +12,7 @@ Stack : .NET 10 / Wolverine / EF Core / SQL Server 2025 côté back, Angular 20 
 
 | Service | Port |
 |---------|------|
-| Frontend (`ng serve`) | **5172** (PAS 4200 — conflit avec Screlec/TimeTracker) |
+| Frontend (`ng serve`) | **5173** (PAS 4200 — conflit avec Screlec/TimeTracker) |
 | Backend API | **5171** (mappé depuis `:8080` interne au conteneur) |
 | SQL Server | **1433** |
 
@@ -76,7 +76,7 @@ Angular 20 standalone + signals. Bare-bones pour l'instant — features arrivent
 - `src/environments/environment{,.development}.ts` : `apiUrl`, swap auto via `fileReplacements` dans `angular.json`
 - `src/styles.scss` : `@use "tailwindcss";` (PAS `@import` — déprécié Sass 3)
 - `.postcssrc.json` : plugin `@tailwindcss/postcss`
-- **CORS** : le back autorise `http://localhost:5172` dans `appsettings.json` (`Cors:AllowedOrigins`)
+- **CORS** : le back autorise `http://localhost:5173` dans `appsettings.json` (`Cors:AllowedOrigins`)
 
 ## Modèle de données (7 tables)
 

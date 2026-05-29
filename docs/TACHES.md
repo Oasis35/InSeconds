@@ -21,7 +21,7 @@
 - [x] Packages : EF Core 10 (SqlServer/Tools/Design), Wolverine 6.0.2 (+ EF + FluentValidation + **RuntimeCompilation**), FluentValidation 12, Microsoft.AspNetCore.OpenApi
 - [x] Structure dossiers vertical slice : `Features/`, `Domain/`, `Infrastructure/Persistence/Configurations/`, `Infrastructure/Persistence/Migrations/`, `Infrastructure/Deezer/`, `Common/Scoring/`, `Common/Text/`
 - [x] `appsettings.json` avec connection string SQL Server + section CORS + section Deezer
-- [x] `Program.cs` configuré : DbContext, Wolverine (avec `UseRuntimeCompilation` + EFCore transactions + FluentValidation), FluentValidation auto-discovery, CORS pour `http://localhost:5172`, OpenAPI, endpoint `/health`, auto-migration au boot
+- [x] `Program.cs` configuré : DbContext, Wolverine (avec `UseRuntimeCompilation` + EFCore transactions + FluentValidation), FluentValidation auto-discovery, CORS pour `http://localhost:5173`, OpenAPI, endpoint `/health`, auto-migration au boot
 - [x] Dockerfile dev (SDK base + `dotnet watch` + polling watcher Windows)
 
 ## ✅ Modèles & Base de Données (DONE)
@@ -106,7 +106,7 @@
 ## 🚧 Frontend Setup — restant
 
 - [x] `ng new InSeconds.Client` (Angular 20 standalone + signals)
-- [x] Port pinné à 5172 (au lieu de 4200 — conflit Screlec/TimeTracker)
+- [x] Port pinné à 5173 (au lieu de 4200 — conflit Screlec/TimeTracker)
 - [x] Tailwind CSS v4 + SCSS configurés
 - [x] `HttpClient` provider avec `withFetch()`
 - [x] `environment.ts` + `environment.development.ts` (apiUrl)

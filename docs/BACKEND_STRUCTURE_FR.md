@@ -134,7 +134,7 @@ app.Run();
     "BaseUrl": "https://api.deezer.com"
   },
   "Cors": {
-    "AllowedOrigins": [ "http://localhost:5172" ]
+    "AllowedOrigins": [ "http://localhost:5173" ]
   },
   "Logging": {
     "LogLevel": { "Default": "Information", "Microsoft.AspNetCore": "Warning" }

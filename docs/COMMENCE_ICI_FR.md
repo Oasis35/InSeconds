@@ -45,7 +45,7 @@ npm install   # première fois seulement
 npm start
 ```
 
-Puis ouvrir `http://localhost:5172`. Voir le [README](../README.fr.md) pour les détails.
+Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les détails.
 
 ## État du projet
 
