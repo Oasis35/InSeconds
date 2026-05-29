@@ -1,0 +1,41 @@
+version: 2
+updates:
+  # Backend .NET — NuGet packages
+  - package-ecosystem: nuget
+    directory: /src/back/InSeconds.Api
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - backend
+
+  # Frontend Angular — npm packages
+  - package-ecosystem: npm
+    directory: /src/front/InSeconds.Client
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - frontend
+
+  # GitHub Actions used by workflows themselves
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    labels:
+      - dependencies
+      - ci
+
+  # Docker — Dockerfile base images (backend only)
+  - package-ecosystem: docker
+    directory: /src/back/InSeconds.Api
+    schedule:
+      interval: monthly
+    labels:
+      - dependencies
+      - docker

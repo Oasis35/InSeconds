@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  back:
+    name: Backend (build + EF migrations check)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: src/back/global.json
+
+      - name: Restore
+        working-directory: src/back
+        run: dotnet restore InSeconds.slnx
+
+      - name: Build (Release)
+        working-directory: src/back
+        run: dotnet build InSeconds.slnx --configuration Release --no-restore
+
+      - name: Install dotnet-ef
+        run: dotnet tool install --global dotnet-ef
+
+      - name: Verify EF model has no pending migrations
+        working-directory: src/back/InSeconds.Api
+        run: dotnet ef migrations has-pending-model-changes --no-build --configuration Release
+
+  front:
+    name: Frontend (build)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: src/front/InSeconds.Client/package-lock.json
+
+      - name: Install (clean)
+        working-directory: src/front/InSeconds.Client
+        run: npm ci
+
+      - name: Build (production)
+        working-directory: src/front/InSeconds.Client
+        run: npm run build
