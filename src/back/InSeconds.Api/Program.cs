@@ -1,13 +1,15 @@
 using FluentValidation;
 using InSeconds.Api.Common.Auth;
 using InSeconds.Api.Common.Scoring;
+using InSeconds.Api.Common.Settings;
 using InSeconds.Api.Common.Text;
 using InSeconds.Api.Domain;
-using InSeconds.Api.Infrastructure.Deezer;
-using Microsoft.AspNetCore.DataProtection;
 using InSeconds.Api.Features.Sessions.StartSession;
 using InSeconds.Api.Features.Sessions.SubmitAnswer;
+using InSeconds.Api.Features.Settings.GetSettings;
+using InSeconds.Api.Infrastructure.Deezer;
 using InSeconds.Api.Infrastructure.Persistence;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
 using Wolverine.FluentValidation;
@@ -36,6 +38,9 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod()
               .AllowCredentials());
 });
+
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<SettingsService>();
 
 builder.Services.AddSingleton<ScoreCalculator>();
 builder.Services.AddSingleton<TextNormalizer>();
@@ -73,6 +78,7 @@ app.UseCors(CorsPolicyName);
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok", utc = DateTime.UtcNow }));
 
+app.MapGetSettings();
 app.MapStartSession();
 app.MapSubmitAnswer();
 

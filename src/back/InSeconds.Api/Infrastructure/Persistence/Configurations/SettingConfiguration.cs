@@ -53,6 +53,14 @@ public sealed class SettingConfiguration : IEntityTypeConfiguration<Setting>
                 Value = "10",
                 Description = "Nombre de morceaux dans un défi quotidien.",
                 UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new Setting
+            {
+                Id = 5,
+                Key = "DurationScores",
+                Value = "1:1000,2:850,3:700,5:500,10:300,15:150,30:50",
+                Description = "Score de base par palier d'écoute (format palier:score, séparés par virgule).",
+                UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             }
         );
     }

@@ -139,14 +139,6 @@ Workflow `.github/workflows/ci.yml`, déclenché sur **push toutes branches + PR
 
 Runners Ubuntu, ~3-4 min par run. Setup .NET via `global-json-file: src/back/global.json` pour respecter le pin SDK du projet.
 
-**Dependabot** (`.github/dependabot.yml`) :
-
-- NuGet `src/back/InSeconds.Api` — hebdo, max 5 PR
-- npm `src/front/InSeconds.Client` — hebdo, max 5 PR
-- github-actions `/` — mensuel
-- Docker `src/back/InSeconds.Api` — mensuel
-- Toutes les PR labellisées (`dependencies` + `backend`/`frontend`/`ci`/`docker`)
-
 ### Règles importantes pour la CI
 
 - **Toujours regénérer la migration EF** après une modif d'entité ou de configuration, sinon le job `back` casse

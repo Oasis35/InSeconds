@@ -3,6 +3,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AudioPlayerService } from '../../../core/services/audio-player.service';
+import { SettingsService } from '../../../core/services/settings.service';
 import { TrackSlot, SubmitAnswerResponse } from '../../../core/models/game.models';
 
 export interface AnsweredEvent {
@@ -12,9 +13,6 @@ export interface AnsweredEvent {
   artistAnswer: string | null;
   titleAnswer: string | null;
 }
-
-const ALLOWED_DURATIONS = [1, 2, 3, 5, 10, 15, 30];
-const GUESS_TIMER_SECONDS = 20;
 
 @Component({
   selector: 'app-blind-round',
@@ -27,7 +25,7 @@ const GUESS_TIMER_SECONDS = 20;
         <div class="text-center space-y-4">
           <p class="text-slate-400 text-sm">Combien de secondes veux-tu écouter ?</p>
           <div class="flex flex-wrap gap-2 justify-center">
-            @for (d of durations; track d) {
+            @for (d of durations(); track d) {
               <button
                 (click)="startPlay(d)"
                 class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition touch-manipulation">
@@ -127,20 +125,22 @@ export class BlindRoundComponent implements OnDestroy {
   readonly nextTrack = output<void>();
 
   protected readonly audio = inject(AudioPlayerService);
+  private readonly settings = inject(SettingsService);
 
-  protected readonly durations = ALLOWED_DURATIONS;
+  protected readonly durations = computed(() => this.settings.allowedDurations());
   protected artistAnswer = '';
   protected titleAnswer = '';
   protected readonly result = signal<SubmitAnswerResponse | null>(null);
-  protected readonly timerSeconds = signal(GUESS_TIMER_SECONDS);
+  protected readonly timerSeconds = signal(this.settings.guessTimerSeconds());
 
   private chosenDuration = 0;
   private timerInterval: ReturnType<typeof setInterval> | null = null;
 
   protected readonly nextDuration = computed(() => {
-    const idx = ALLOWED_DURATIONS.indexOf(this.chosenDuration);
-    return idx >= 0 && idx < ALLOWED_DURATIONS.length - 1
-      ? ALLOWED_DURATIONS[idx + 1]
+    const durations = this.settings.allowedDurations();
+    const idx = durations.indexOf(this.chosenDuration);
+    return idx >= 0 && idx < durations.length - 1
+      ? durations[idx + 1]
       : null;
   });
 
@@ -184,7 +184,7 @@ export class BlindRoundComponent implements OnDestroy {
     this.artistAnswer = '';
     this.titleAnswer = '';
     this.chosenDuration = 0;
-    this.timerSeconds.set(GUESS_TIMER_SECONDS);
+    this.timerSeconds.set(this.settings.guessTimerSeconds());
     this.nextTrack.emit();
   }
 
@@ -203,7 +203,7 @@ export class BlindRoundComponent implements OnDestroy {
   }
 
   private startGuessTimer(): void {
-    this.timerSeconds.set(GUESS_TIMER_SECONDS);
+    this.timerSeconds.set(this.settings.guessTimerSeconds());
     this.timerInterval = setInterval(() => {
       const remaining = this.timerSeconds() - 1;
       this.timerSeconds.set(remaining);

@@ -6,6 +6,17 @@ namespace InSeconds.Api.UnitTests.Common.Scoring;
 
 public sealed class ScoreCalculatorTests
 {
+    private static readonly Dictionary<int, int> DefaultScores = new()
+    {
+        [1]  = 1000,
+        [2]  = 850,
+        [3]  = 700,
+        [5]  = 500,
+        [10] = 300,
+        [15] = 150,
+        [30] = 50,
+    };
+
     private readonly ScoreCalculator _sut = new();
 
     // ---------------------------------------------------------------------------
@@ -22,7 +33,7 @@ public sealed class ScoreCalculatorTests
     [InlineData(30, 50)]
     public void Calculate_WhenBothCorrectNoExtension_ReturnsBaseScore(int duration, int expected)
     {
-        _sut.Calculate(duration, wasExtended: false, artistCorrect: true, titleCorrect: true)
+        _sut.Calculate(duration, wasExtended: false, artistCorrect: true, titleCorrect: true, DefaultScores)
             .Should().Be(expected);
     }
 
@@ -40,7 +51,7 @@ public sealed class ScoreCalculatorTests
     [InlineData(30, 38)]   // 50  × 0.75 = 37.5  → arrondi à 38
     public void Calculate_WhenBothCorrectWithExtension_AppliesPenalty(int duration, int expected)
     {
-        _sut.Calculate(duration, wasExtended: true, artistCorrect: true, titleCorrect: true)
+        _sut.Calculate(duration, wasExtended: true, artistCorrect: true, titleCorrect: true, DefaultScores)
             .Should().Be(expected);
     }
 
@@ -51,21 +62,21 @@ public sealed class ScoreCalculatorTests
     [Fact]
     public void Calculate_WhenOnlyArtistCorrect_ReturnsHalfScore()
     {
-        _sut.Calculate(3, wasExtended: false, artistCorrect: true, titleCorrect: false)
+        _sut.Calculate(3, wasExtended: false, artistCorrect: true, titleCorrect: false, DefaultScores)
             .Should().Be(350); // 700 × 0.5
     }
 
     [Fact]
     public void Calculate_WhenOnlyTitleCorrect_ReturnsHalfScore()
     {
-        _sut.Calculate(3, wasExtended: false, artistCorrect: false, titleCorrect: true)
+        _sut.Calculate(3, wasExtended: false, artistCorrect: false, titleCorrect: true, DefaultScores)
             .Should().Be(350); // 700 × 0.5
     }
 
     [Fact]
     public void Calculate_WhenNoneCorrect_ReturnsZero()
     {
-        _sut.Calculate(1, wasExtended: false, artistCorrect: false, titleCorrect: false)
+        _sut.Calculate(1, wasExtended: false, artistCorrect: false, titleCorrect: false, DefaultScores)
             .Should().Be(0);
     }
 
@@ -77,18 +88,27 @@ public sealed class ScoreCalculatorTests
     public void Calculate_WhenExtendedAndOnlyArtistCorrect_AppliesBothReductions()
     {
         // 5s → 500, ×0.75 = 375, ×0.5 = 188 (arrondi)
-        _sut.Calculate(5, wasExtended: true, artistCorrect: true, titleCorrect: false)
+        _sut.Calculate(5, wasExtended: true, artistCorrect: true, titleCorrect: false, DefaultScores)
             .Should().Be(188);
     }
 
     // ---------------------------------------------------------------------------
-    // Palier invalide
+    // Palier invalide / scores personnalisés
     // ---------------------------------------------------------------------------
 
     [Fact]
-    public void Calculate_WhenDurationNotInAllowedList_ReturnsZero()
+    public void Calculate_WhenDurationNotInScores_ReturnsZero()
     {
-        _sut.Calculate(7, wasExtended: false, artistCorrect: true, titleCorrect: true)
+        _sut.Calculate(7, wasExtended: false, artistCorrect: true, titleCorrect: true, DefaultScores)
             .Should().Be(0);
+    }
+
+    [Fact]
+    public void Calculate_WithCustomScores_UsesProvidedValues()
+    {
+        var customScores = new Dictionary<int, int> { [5] = 2000 };
+
+        _sut.Calculate(5, wasExtended: false, artistCorrect: true, titleCorrect: true, customScores)
+            .Should().Be(2000);
     }
 }
