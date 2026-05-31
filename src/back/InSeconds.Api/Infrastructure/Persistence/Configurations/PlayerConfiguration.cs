@@ -10,7 +10,7 @@ public sealed class PlayerConfiguration : IEntityTypeConfiguration<Player>
     {
         builder.ToTable("Players", t => t.HasCheckConstraint(
             "CK_Players_GuestPseudo",
-            "([IsGuest] = 1 AND [Pseudo] IS NULL) OR ([IsGuest] = 0 AND [Pseudo] IS NOT NULL)"));
+            "(\"IsGuest\" = true AND \"Pseudo\" IS NULL) OR (\"IsGuest\" = false AND \"Pseudo\" IS NOT NULL)"));
 
         builder.HasKey(p => p.Id);
 
@@ -27,7 +27,7 @@ public sealed class PlayerConfiguration : IEntityTypeConfiguration<Player>
             .IsRequired();
 
         builder.Property(p => p.CreatedAt)
-            .HasDefaultValueSql("SYSUTCDATETIME()");
+            .HasDefaultValueSql("now() at time zone 'utc'");
 
         builder.Property(p => p.IsDeleted)
             .HasDefaultValue(false);
@@ -36,11 +36,11 @@ public sealed class PlayerConfiguration : IEntityTypeConfiguration<Player>
 
         builder.HasIndex(p => p.Pseudo)
             .IsUnique()
-            .HasFilter("[IsGuest] = 0 AND [Pseudo] IS NOT NULL");
+            .HasFilter("\"IsGuest\" = false AND \"Pseudo\" IS NOT NULL");
 
         builder.HasIndex(p => p.Email)
             .IsUnique()
-            .HasFilter("[Email] IS NOT NULL");
+            .HasFilter("\"Email\" IS NOT NULL");
 
         builder.HasQueryFilter(p => !p.IsDeleted);
     }

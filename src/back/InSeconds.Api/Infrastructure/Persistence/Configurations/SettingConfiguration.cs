@@ -17,7 +17,7 @@ public sealed class SettingConfiguration : IEntityTypeConfiguration<Setting>
         builder.Property(s => s.Description).HasMaxLength(500);
 
         builder.Property(s => s.UpdatedAt)
-            .HasDefaultValueSql("SYSUTCDATETIME()");
+            .HasDefaultValueSql("now() at time zone 'utc'");
 
         builder.HasIndex(s => s.Key).IsUnique();
 
