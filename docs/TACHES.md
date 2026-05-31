@@ -1,6 +1,7 @@
 # InSeconds — Liste des Tâches (MVP)
 
 > État au 2026-05-29. Les cases ✅ sont **réellement** faites dans le repo. Le reste est à venir.
+> Mis à jour le 2026-05-29 après analyse du code source.
 
 ## ✅ Bootstrap projet (DONE)
 
@@ -10,7 +11,7 @@
 - [x] Healthcheck SQL réparé (`mssql-tools18` + `-C`)
 - [x] `docker-compose.dcproj` pour intégration F5 Visual Studio
 - [x] Bilingual README (FR + EN) + `CLAUDE.md` (conventions repo)
-- [x] CI GitHub Actions : build back + front + check migrations EF + Dependabot
+- [x] CI GitHub Actions : build back + front + check migrations EF (Dependabot supprimé)
 - [x] `.gitignore` complet (.NET + Angular + IDE + OS + secrets)
 
 ## ✅ Backend Setup (DONE)
@@ -41,38 +42,31 @@
 - [x] Index unique filtrés : Pseudo (inscrits seulement), Email (non-null), AuthToken
 - [x] Migration `InitialCreate` créée et appliquée — base `InSeconds` opérationnelle avec 7 tables + seeds
 
-## 🚧 Services Métier (Common)
+## ✅ Services Métier (Common) (DONE)
 
-- [ ] Implémenter `TextNormalizer.cs` (Levenshtein + normalisation accents/stop-words)
-- [ ] Tests unitaires `TextNormalizer` (xUnit) — cas limites : "feat.", "&", accents, casse, stop words FR/EN
-- [ ] Implémenter `ScoreCalculator.cs` — formule adaptée au modèle **durée choisie** (paliers discrets, pas de mesure ms) × bonus difficulté (`DeezerRankSnapshot`) × scoring partiel (artiste OK seul, titre OK seul, les deux)
-- [ ] Tests unitaires `ScoreCalculator` — tous paliers × tous niveaux difficulté × tous cas de scoring partiel
-- [ ] Enregistrer services dans `Program.cs` (DI)
+- [x] Implémenter `TextNormalizer.cs` (Levenshtein + normalisation accents/stop-words)
+- [x] Tests unitaires `TextNormalizer` (xUnit) — cas limites accents/casse/stop words
+- [x] Implémenter `ScoreCalculator.cs` — paliers discrets × scoring partiel (artiste/titre séparés) × malus extension
+- [x] Tests unitaires `ScoreCalculator`
+- [x] Enregistrer services dans `Program.cs` (DI)
 - [ ] Créer `SettingsService` (lecture cachée des `Settings` BD avec refresh à chaud)
 
 ## 🚧 Auth (cookie HTTP-only) — v1 pseudo seul
 
-- [ ] Middleware d'auth qui lit le cookie `authToken`, résout le `Player` courant, le rend disponible via DI (`ICurrentPlayer`)
-- [ ] Si pas de cookie : créer automatiquement un `Player { IsGuest=true, AuthToken=Guid.NewGuid() }` et poser le cookie HttpOnly signé (Data Protection ASP.NET)
-- [ ] Slice `Features/Auth/Register/` — `POST /api/auth/register { pseudo }` qui promeut le `Player` courant (IsGuest=false, Pseudo=...) en gardant l'historique
-- [ ] Validation pseudo : 3-20 chars, alphanumérique + `_`, unique (déjà couvert par l'index)
-- [ ] Slice `Features/Auth/Me/` — `GET /api/auth/me` renvoie `{ id, isGuest, pseudo? }` pour que le front sache qui il est
+- [x] `CookieAuthService` + `ICookieAuthService` : résout ou crée un Player guest, pose le cookie HttpOnly signé (Data Protection ASP.NET)
+- [x] Tests unitaires `CookieAuthService`
+- [ ] Middleware/filtre d'auth injecté dans le pipeline ASP.NET (résolution automatique du Player courant sur chaque requête)
+- [ ] Slice `Features/Auth/Register/` — `POST /api/auth/register { pseudo }` qui promeut le `Player` courant
+- [ ] Validation pseudo : 3-20 chars, alphanumérique + `_`, unique
+- [ ] Slice `Features/Auth/Me/` — `GET /api/auth/me` renvoie `{ id, isGuest, pseudo? }`
 - [ ] Tests d'intégration : flux guest → promotion inscrit → reconnexion
 
-## 🚧 Vertical Slice — Sessions
+## ✅ Vertical Slice — Sessions (DONE)
 
-- [ ] Slice `Features/Sessions/StartSession/`
-  - Endpoint `POST /api/sessions` (Minimal API)
-  - Command + Handler Wolverine : vérifie contrainte UNIQUE (1 partie/jour/joueur), crée GameSession, renvoie session ID + métadonnées tracks (sans artist/title — éviter le leak)
-  - Validator FluentValidation
-  - Tests d'intégration (Testcontainers)
-- [ ] Slice `Features/Sessions/SubmitAnswer/`
-  - Endpoint `POST /api/sessions/{sessionId}/answers`
-  - Command : `trackId, listenedDurationSeconds, wasExtended, artistAnswer?, titleAnswer?`
-  - Handler : valide que `listenedDurationSeconds` ∈ `Settings.AllowedDurationsSeconds`, calcule scoring serveur (TextNormalizer + ScoreCalculator), persiste l'answer
-  - Renvoie `{ artistCorrect, titleCorrect, score, correctArtist, correctTitle }` (révèle la solution après réponse)
-  - Validator FluentValidation (palier dans liste autorisée, etc.)
-  - Tests d'intégration
+- [x] Slice `Features/Sessions/StartSession/` — Endpoint, Command, Handler, Validator, Response
+- [x] Slice `Features/Sessions/SubmitAnswer/` — Endpoint, Command, Handler (scoring serveur via TextNormalizer + ScoreCalculator), Validator, Response
+- [x] Tests unitaires `StartSessionHandler` + `SubmitAnswerHandler`
+- [ ] Tests d'intégration (Testcontainers)
 
 ## 🚧 Vertical Slice — Leaderboard
 
@@ -84,11 +78,9 @@
 
 ## 🚧 Intégration Deezer
 
-- [ ] Définir `IDeezerClient` dans `Infrastructure/Deezer/`
-- [ ] Implémentation `DeezerClient` (`HttpClient` typed) :
-  - `GetTrackAsync(trackId)` → GET `/track/{id}`
-  - `GetTopTracksByGenreAsync(genreId, limit)` → GET `/chart/{genreId}/tracks`
-  - `SearchAsync(query)` → GET `/search?q=...`
+- [x] `DeezerClient` (`HttpClient` typed) : `GetPreviewUrlAsync(trackId)` → GET `/track/{id}`
+- [ ] Définir `IDeezerClient` (interface pour mockabilité)
+- [ ] Méthodes manquantes : `GetTopTracksByGenreAsync(genreId, limit)`, `SearchAsync(query)`
 - [ ] Décorateur `DeezerCacheDecorator` (IMemoryCache) — TTL court sur les URLs preview
 - [ ] Gestion rate limit Deezer (50 req / 5 s) — retry avec backoff
 - [ ] Gestion erreurs (404 morceau retiré, 5xx Deezer down)
@@ -103,7 +95,7 @@
 - [ ] Sauvegarde + logging structuré
 - [ ] Test : appeler manuellement le service, vérifier qu'un défi est généré correctement
 
-## 🚧 Frontend Setup — restant
+## ✅ Frontend Setup (DONE)
 
 - [x] `ng new InSeconds.Client` (Angular 20 standalone + signals)
 - [x] Port pinné à 5173 (au lieu de 4200 — conflit Screlec/TimeTracker)
@@ -113,40 +105,26 @@
 - [x] `fileReplacements` dans `angular.json`
 - [x] Page d'accueil avec ping `/health` (badge OK/KO live)
 - [ ] Définir une palette de couleurs cohérente (variables Tailwind via `@theme` ou config)
-- [ ] Configurer `HttpInterceptor` (ou option globale) pour `withCredentials: true` quand l'auth cookie sera là
+- [ ] Configurer `HttpInterceptor` global pour `withCredentials: true` (pour l'instant géré manuellement dans `GameService`)
 
-## 🚧 Frontend — Service Audio (critique UX)
+## ✅ Frontend — Service Audio (DONE)
 
-- [ ] `AudioPlayerService` singleton signal-based — **modèle "durée choisie"** (pas de mesure)
-  - signal `state: 'idle' | 'loading' | 'playing' | 'finished'`
-  - signal `listenedSeconds`, `extended`
-  - `play(url, durationSeconds)` → lance audio, `setTimeout` pour arrêt automatique exact
-  - `extend(nextDurationSeconds)` → prolonge **une seule fois** (passe au palier supérieur)
-  - `stop()` → renvoie `{ listenedSeconds, wasExtended }`
-  - `reset()` → réinitialise pour la piste suivante
-  - `preloadNext(url)` → précharge la piste suivante (`<link rel="preload" as="audio">`)
-- [ ] `playsInline` activé sur l'élément audio (critique iOS)
-- [ ] Tests : palier 3s écouté → stop à 3 ± 0.1s, prolongation 3s→5s → stop à 5s total, etc.
+- [x] `AudioPlayerService` singleton signal-based — modèle "durée choisie"
+  - signals `state`, `listenedSeconds`, `extended`, computed `isIdle/isPlaying/isFinished`
+  - `play(url, durationSeconds)`, `extend(nextDurationSeconds)`, `stop()`, `reset()`, `preloadNext(url)`
+- [x] `playsInline` activé sur l'élément audio (critique iOS)
+- [x] Feedback haptique `navigator.vibrate?.(50)` au stop
+- [ ] Tests unitaires `AudioPlayerService`
 - [ ] Tests sur vrai appareil iOS (Safari) et Android (Chrome)
 
-## 🚧 Frontend — Composants UI
+## ✅ Frontend — Composants UI (DONE)
 
-- [ ] `SettingsService` qui charge les `Settings` BD au démarrage et expose des signals (`allowedDurations`, `guessTimerSeconds`, `maxExtensions`, `tracksPerChallenge`)
-- [ ] `GameService` qui appelle l'API (`POST /sessions`, `POST /sessions/:id/answers`) — typage manuel au début, à remplacer par client NSwag plus tard
-- [ ] `GameComponent` (conteneur)
-  - Au mount : `GameService.startToday()` → charge les tracks
-  - Tracker l'index courant 0..9
-  - Afficher progression (X / 10) et score total accumulé
-  - Quand une réponse arrive (`(answered)`), appel API, met à jour score, passe à la piste suivante
-  - À la fin : affichage récap + bouton "Voir le classement"
-- [ ] `BlindRoundComponent` (UI 1 piste)
-  - États : `idle` (choisir palier), `playing` (en écoute + bouton "Prolonger"), `finished` (saisir artiste/titre + timer 20s)
-  - Affichage statique "À 3s : jusqu'à 800 pts" (pas de compteur temps réel)
-  - Inputs artiste + titre (≥ 16px pour éviter zoom iOS)
-  - Bouton Submit + feedback haptique (`navigator.vibrate?.(50)`)
-  - Timer de saisie configurable (`SettingsService.guessTimerSeconds`)
-  - Désactiver les inputs pendant la lecture
-- [ ] Flux complet : choisir palier → écouter → (éventuellement prolonger) → saisir → submit → piste suivante
+- [x] `GameService` — `startToday()` + `submitAnswer()`, `withCredentials: true`
+- [x] `GameComponent` — chargement session, progression X/10, score accumulé, récap final, gestion `already_played` + erreur réseau
+- [x] `BlindRoundComponent` — choix palier, lecture, prolongation, saisie artiste/titre, timer 20s, feedback résultat, bouton piste suivante
+- [x] Inputs ≥ 16px (pas de zoom iOS), `touch-manipulation` sur les boutons
+- [ ] `SettingsService` front qui charge les `Settings` BD (allowedDurations, guessTimerSeconds hardcodés pour l'instant dans le composant)
+- [ ] Bouton "Voir le classement" dans le récap final (route manquante)
 
 ## 🚧 Frontend — Leaderboard
 
@@ -189,13 +167,15 @@
 
 ## 🚧 Tests
 
-- [ ] Setup projet de tests `InSeconds.Api.UnitTests` (xUnit + FluentAssertions)
-- [ ] Tests unitaires `TextNormalizer` (cas limites accents/stop-words/casse)
-- [ ] Tests unitaires `ScoreCalculator` (tous paliers × tous scoring)
-- [ ] Setup projet `InSeconds.Api.IntegrationTests` avec **Testcontainers** (lance SQL Server 2025 automatiquement)
+- [x] Setup projet `InSeconds.Api.UnitTests` (xUnit + FluentAssertions) + intégré dans CI
+- [x] Tests unitaires `TextNormalizer`
+- [x] Tests unitaires `ScoreCalculator`
+- [x] Tests unitaires `CookieAuthService`
+- [x] Tests unitaires `StartSessionHandler` + `SubmitAnswerHandler`
+- [ ] Setup projet `InSeconds.Api.IntegrationTests` avec **Testcontainers**
 - [ ] Tests d'intégration : flow `StartSession` → `SubmitAnswer` × 10 → vérification leaderboard
-- [ ] Tests d'intégration : contrainte UNIQUE (PlayerId, DailyChallengeId) — tenter de start 2× le même jour
-- [ ] Tests d'intégration : contrainte CHECK guest/pseudo — tenter de violer
+- [ ] Tests d'intégration : contrainte UNIQUE (PlayerId, DailyChallengeId)
+- [ ] Tests d'intégration : contrainte CHECK guest/pseudo
 - [ ] Tests front Karma/Jasmine (services + composants)
 - [ ] Tests E2E Cypress ou Playwright (flux complet 1 partie)
 - [ ] Audit performance Lighthouse (mobile)
@@ -264,26 +244,27 @@ Polish + Launch
 
 ---
 
-## Effort estimé restant (au 2026-05-29)
+## Effort estimé restant (mis à jour 2026-05-29)
 
 | Groupe | Effort | Notes |
-|--------|--------|-------|
-| Services Métier (Normalizer + Scoring + Settings) | 3 h | Logique pure, testable isolément |
-| Auth cookie + middleware | 2 h | Pseudo seul, géré par Data Protection |
-| Slice Sessions (Start + Submit) | 4 h | Cœur du gameplay, tests d'intégration |
+| ------ | ------ | ----- |
+| ~~Services Métier (Normalizer + Scoring)~~ | ~~3 h~~ | ✅ DONE |
+| ~~Slice Sessions (Start + Submit)~~ | ~~4 h~~ | ✅ DONE |
+| ~~AudioPlayerService~~ | ~~2 h~~ | ✅ DONE |
+| ~~GameComponent + BlindRoundComponent~~ | ~~4 h~~ | ✅ DONE |
+| ~~Tests unitaires Common + Sessions~~ | ~~2 h~~ | ✅ DONE |
+| SettingsService back + front | 1 h | Lecture BD + signals Angular |
+| Auth middleware + Register + Me | 1.5 h | Middleware pipeline + 2 slices |
 | Slice Leaderboard | 1.5 h | Query optimisée, déjà indexée |
-| Intégration Deezer (client + cache + rate limit) | 3 h | HTTP + retry |
+| Intégration Deezer (IDeezerClient + méthodes manquantes + cache + rate limit) | 2.5 h | HTTP + retry |
 | Générateur défi (BackgroundService) | 2 h | Tirage seedé + upsert |
 | NSwag setup | 0.5 h | Config + script npm |
-| AudioPlayerService (modèle durée choisie) | 2 h | Plus simple que la v0 (pas de RAF) |
-| GameComponent + BlindRoundComponent | 4 h | UI 10 pistes + timer saisie + prolongation |
-| LeaderboardComponent | 1.5 h | Fetch + responsive |
-| Auth UI (login + promotion guest→inscrit) | 1.5 h | Modal simple |
+| LeaderboardComponent + Auth UI | 3 h | Fetch + responsive + modal |
 | Contraintes mobile (tests vrais appareils) | 2 h | iOS + Android |
-| Tests (unitaires + intégration Testcontainers + E2E) | 5 h | Couverture critique |
+| Tests intégration Testcontainers + E2E | 4 h | Couverture critique |
 | Déploiement Railway / Azure | 2 h | Premier déploiement |
 | Polish (couleurs, a11y, erreurs, docs) | 2 h | Détails finis |
-| **TOTAL restant** | **~36 h** | + ce qui est déjà fait (~10 h de bootstrap) |
+| **TOTAL restant** | **~21 h** | ~15 h déjà livrés depuis le bootstrap |
 
 ---
 

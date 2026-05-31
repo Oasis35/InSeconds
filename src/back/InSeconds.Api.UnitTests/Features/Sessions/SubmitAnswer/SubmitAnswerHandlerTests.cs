@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Xunit;
 using InSeconds.Api.Common.Scoring;
+using InSeconds.Api.Common.Settings;
 using InSeconds.Api.Common.Text;
 using InSeconds.Api.Domain;
 using InSeconds.Api.Features.Sessions.SubmitAnswer;
@@ -8,6 +9,8 @@ using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 
 namespace InSeconds.Api.UnitTests.Features.Sessions.SubmitAnswer;
 
@@ -23,6 +26,23 @@ public sealed class SubmitAnswerHandlerTests
         new(new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options);
+
+    private static SettingsService CreateSettingsService(ApplicationDbContext db)
+    {
+        var cache = new MemoryCache(Options.Create(new MemoryCacheOptions()));
+        db.Settings.AddRange(
+            new Setting { Id = 1, Key = "GuessTimerSeconds",       Value = "20",                         UpdatedAt = DateTime.UtcNow },
+            new Setting { Id = 2, Key = "AllowedDurationsSeconds",  Value = "1,2,3,5,10,15,30",           UpdatedAt = DateTime.UtcNow },
+            new Setting { Id = 3, Key = "MaxExtensionsPerAnswer",   Value = "1",                          UpdatedAt = DateTime.UtcNow },
+            new Setting { Id = 4, Key = "TracksPerChallenge",       Value = "10",                         UpdatedAt = DateTime.UtcNow },
+            new Setting { Id = 5, Key = "DurationScores",           Value = "1:1000,2:850,3:700,5:500,10:300,15:150,30:50", UpdatedAt = DateTime.UtcNow }
+        );
+        db.SaveChanges();
+        return new SettingsService(db, cache);
+    }
+
+    private static SubmitAnswerHandler CreateHandler(ApplicationDbContext db) =>
+        new(db, new ScoreCalculator(), new TextNormalizer(), CreateSettingsService(db));
 
     // ---------------------------------------------------------------------------
     // Builders
@@ -136,11 +156,10 @@ public sealed class SubmitAnswerHandlerTests
         // Arrange
         await using var db = CreateDbContext();
         var (session, _) = await SeedAsync(db);
-
         var command = BuildCommand(duration: 3, wasExtended: false, artist: "Daft Punk", title: "Get Lucky");
 
         // Act
-        var result = await new SubmitAnswerHandler(db, new ScoreCalculator(), new TextNormalizer()).Handle(command, CancellationToken.None);
+        var result = await CreateHandler(db).Handle(command, CancellationToken.None);
 
         // Assert
         var response = AssertOk<SubmitAnswerResponse>(result).Value!;
@@ -159,11 +178,10 @@ public sealed class SubmitAnswerHandlerTests
         // Arrange
         await using var db = CreateDbContext();
         await SeedAsync(db);
-
         var command = BuildCommand(duration: 3, wasExtended: false, artist: "Daft Punk", title: "mauvais titre");
 
         // Act
-        var result = await new SubmitAnswerHandler(db, new ScoreCalculator(), new TextNormalizer()).Handle(command, CancellationToken.None);
+        var result = await CreateHandler(db).Handle(command, CancellationToken.None);
 
         // Assert
         var response = AssertOk<SubmitAnswerResponse>(result).Value!;
@@ -178,11 +196,10 @@ public sealed class SubmitAnswerHandlerTests
         // Arrange
         await using var db = CreateDbContext();
         await SeedAsync(db);
-
         var command = BuildCommand(duration: 3, wasExtended: false, artist: "mauvais artiste", title: "Get Lucky");
 
         // Act
-        var result = await new SubmitAnswerHandler(db, new ScoreCalculator(), new TextNormalizer()).Handle(command, CancellationToken.None);
+        var result = await CreateHandler(db).Handle(command, CancellationToken.None);
 
         // Assert
         var response = AssertOk<SubmitAnswerResponse>(result).Value!;
@@ -197,11 +214,10 @@ public sealed class SubmitAnswerHandlerTests
         // Arrange
         await using var db = CreateDbContext();
         await SeedAsync(db);
-
         var command = BuildCommand(duration: 3, wasExtended: false, artist: "mauvais", title: "mauvais");
 
         // Act
-        var result = await new SubmitAnswerHandler(db, new ScoreCalculator(), new TextNormalizer()).Handle(command, CancellationToken.None);
+        var result = await CreateHandler(db).Handle(command, CancellationToken.None);
 
         // Assert
         var response = AssertOk<SubmitAnswerResponse>(result).Value!;
@@ -216,11 +232,10 @@ public sealed class SubmitAnswerHandlerTests
         // Arrange — palier final 5s après prolongation depuis 3s
         await using var db = CreateDbContext();
         await SeedAsync(db);
-
         var command = BuildCommand(duration: 5, wasExtended: true, artist: "Daft Punk", title: "Get Lucky");
 
         // Act
-        var result = await new SubmitAnswerHandler(db, new ScoreCalculator(), new TextNormalizer()).Handle(command, CancellationToken.None);
+        var result = await CreateHandler(db).Handle(command, CancellationToken.None);
 
         // Assert
         var response = AssertOk<SubmitAnswerResponse>(result).Value!;
@@ -232,11 +247,10 @@ public sealed class SubmitAnswerHandlerTests
     {
         // Arrange
         await using var db = CreateDbContext();
-
         var command = BuildCommand(sessionId: 999);
 
         // Act
-        var result = await new SubmitAnswerHandler(db, new ScoreCalculator(), new TextNormalizer()).Handle(command, CancellationToken.None);
+        var result = await CreateHandler(db).Handle(command, CancellationToken.None);
 
         // Assert
         AssertNotFound(result);
@@ -249,22 +263,21 @@ public sealed class SubmitAnswerHandlerTests
         await using var db = CreateDbContext();
         var (session, challengeTrack) = await SeedAsync(db);
 
-        // Première réponse
         db.GameSessionAnswers.Add(new GameSessionAnswer
         {
-            GameSessionId          = session.Id,
-            DailyChallengeTrackId  = challengeTrack.Id,
+            GameSessionId           = session.Id,
+            DailyChallengeTrackId   = challengeTrack.Id,
             ListenedDurationSeconds = 3,
-            WasExtended            = false,
-            ArtistCorrect          = true,
-            TitleCorrect           = true,
-            Score                  = 700,
+            WasExtended             = false,
+            ArtistCorrect           = true,
+            TitleCorrect            = true,
+            Score                   = 700,
         });
         await db.SaveChangesAsync();
 
         // Act — deuxième tentative sur la même track
         var command = BuildCommand();
-        var result = await new SubmitAnswerHandler(db, new ScoreCalculator(), new TextNormalizer()).Handle(command, CancellationToken.None);
+        var result = await CreateHandler(db).Handle(command, CancellationToken.None);
 
         // Assert
         AssertConflict(result);
@@ -278,10 +291,10 @@ public sealed class SubmitAnswerHandlerTests
         await SeedAsync(db); // session créée pour FakePlayerId
 
         var otherPlayerId = Guid.NewGuid();
-        var command = BuildCommand(playerId: otherPlayerId); // autre joueur tente d'accéder
+        var command = BuildCommand(playerId: otherPlayerId);
 
         // Act
-        var result = await new SubmitAnswerHandler(db, new ScoreCalculator(), new TextNormalizer()).Handle(command, CancellationToken.None);
+        var result = await CreateHandler(db).Handle(command, CancellationToken.None);
 
         // Assert
         result.Should().BeOfType<ForbidHttpResult>();

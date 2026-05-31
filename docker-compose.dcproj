@@ -5,7 +5,6 @@
     <DockerComposeProjectName>inseconds</DockerComposeProjectName>
     <DockerServiceName>api</DockerServiceName>
     <DockerLaunchBrowser>False</DockerLaunchBrowser>
-    <DockerServiceUrl>http://localhost:5171/health</DockerServiceUrl>
   </PropertyGroup>
   <ItemGroup>
     <None Include="docker-compose.yml" />
