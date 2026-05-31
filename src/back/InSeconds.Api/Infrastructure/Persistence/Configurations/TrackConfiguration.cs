@@ -17,7 +17,7 @@ public sealed class TrackConfiguration : IEntityTypeConfiguration<Track>
         builder.Property(t => t.Title).HasMaxLength(300).IsRequired();
 
         builder.Property(t => t.CreatedAt)
-            .HasDefaultValueSql("SYSUTCDATETIME()");
+            .HasDefaultValueSql("now() at time zone 'utc'");
 
         builder.HasIndex(t => t.DeezerTrackId).IsUnique();
     }

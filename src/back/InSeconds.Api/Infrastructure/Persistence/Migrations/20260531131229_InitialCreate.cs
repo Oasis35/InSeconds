@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -17,10 +18,10 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                 name: "DailyChallenges",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Date = table.Column<DateOnly>(type: "date", nullable: false),
-                    Seed = table.Column<int>(type: "int", nullable: false)
+                    Seed = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -31,32 +32,32 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                 name: "Players",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    IsGuest = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
-                    Pseudo = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
-                    Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
-                    AuthToken = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    LastSeenAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
-                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    IsGuest = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    Pseudo = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
+                    Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    AuthToken = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now() at time zone 'utc'"),
+                    LastSeenAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Players", x => x.Id);
-                    table.CheckConstraint("CK_Players_GuestPseudo", "([IsGuest] = 1 AND [Pseudo] IS NULL) OR ([IsGuest] = 0 AND [Pseudo] IS NOT NULL)");
+                    table.CheckConstraint("CK_Players_GuestPseudo", "(\"IsGuest\" = true AND \"Pseudo\" IS NULL) OR (\"IsGuest\" = false AND \"Pseudo\" IS NOT NULL)");
                 });
 
             migrationBuilder.CreateTable(
                 name: "Settings",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Key = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Value = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Key = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Value = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
+                    Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now() at time zone 'utc'")
                 },
                 constraints: table =>
                 {
@@ -67,13 +68,13 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                 name: "Tracks",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     DeezerTrackId = table.Column<long>(type: "bigint", nullable: false),
-                    Artist = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Title = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    Artist = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Title = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now() at time zone 'utc'"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -84,13 +85,13 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                 name: "GameSessions",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    PlayerId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    DailyChallengeId = table.Column<int>(type: "int", nullable: false),
-                    TotalScore = table.Column<int>(type: "int", nullable: false),
-                    TotalDurationSeconds = table.Column<int>(type: "int", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    PlayerId = table.Column<Guid>(type: "uuid", nullable: false),
+                    DailyChallengeId = table.Column<int>(type: "integer", nullable: false),
+                    TotalScore = table.Column<int>(type: "integer", nullable: false),
+                    TotalDurationSeconds = table.Column<int>(type: "integer", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now() at time zone 'utc'")
                 },
                 constraints: table =>
                 {
@@ -113,12 +114,12 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                 name: "DailyChallengeTracks",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    DailyChallengeId = table.Column<int>(type: "int", nullable: false),
-                    TrackId = table.Column<int>(type: "int", nullable: false),
-                    DeezerRankSnapshot = table.Column<int>(type: "int", nullable: false),
-                    Position = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    DailyChallengeId = table.Column<int>(type: "integer", nullable: false),
+                    TrackId = table.Column<int>(type: "integer", nullable: false),
+                    DeezerRankSnapshot = table.Column<int>(type: "integer", nullable: false),
+                    Position = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -141,23 +142,23 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                 name: "GameSessionAnswers",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    GameSessionId = table.Column<int>(type: "int", nullable: false),
-                    DailyChallengeTrackId = table.Column<int>(type: "int", nullable: false),
-                    ListenedDurationSeconds = table.Column<int>(type: "int", nullable: false),
-                    WasExtended = table.Column<bool>(type: "bit", nullable: false),
-                    ArtistAnswer = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    TitleAnswer = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: true),
-                    ArtistCorrect = table.Column<bool>(type: "bit", nullable: false),
-                    TitleCorrect = table.Column<bool>(type: "bit", nullable: false),
-                    Score = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    GameSessionId = table.Column<int>(type: "integer", nullable: false),
+                    DailyChallengeTrackId = table.Column<int>(type: "integer", nullable: false),
+                    ListenedDurationSeconds = table.Column<int>(type: "integer", nullable: false),
+                    WasExtended = table.Column<bool>(type: "boolean", nullable: false),
+                    ArtistAnswer = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    TitleAnswer = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
+                    ArtistCorrect = table.Column<bool>(type: "boolean", nullable: false),
+                    TitleCorrect = table.Column<bool>(type: "boolean", nullable: false),
+                    Score = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_GameSessionAnswers", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_GameSessionAnswers_DailyChallengeTracks_DailyChallengeTrackId",
+                        name: "FK_GameSessionAnswers_DailyChallengeTracks_DailyChallengeTrack~",
                         column: x => x.DailyChallengeTrackId,
                         principalTable: "DailyChallengeTracks",
                         principalColumn: "Id",
@@ -178,7 +179,8 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                     { 1, "Temps de saisie autorisé après la fin de la lecture (en secondes).", "GuessTimerSeconds", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "20" },
                     { 2, "Durées d'écoute proposées au joueur (CSV, en secondes).", "AllowedDurationsSeconds", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "1,2,3,5,10,15,30" },
                     { 3, "Nombre maximal de prolongations autorisées par réponse.", "MaxExtensionsPerAnswer", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "1" },
-                    { 4, "Nombre de morceaux dans un défi quotidien.", "TracksPerChallenge", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "10" }
+                    { 4, "Nombre de morceaux dans un défi quotidien.", "TracksPerChallenge", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "10" },
+                    { 5, "Score de base par palier d'écoute (format palier:score, séparés par virgule).", "DurationScores", new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "1:1000,2:850,3:700,5:500,10:300,15:150,30:50" }
                 });
 
             migrationBuilder.CreateIndex(
@@ -220,7 +222,7 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                 table: "GameSessions",
                 columns: new[] { "DailyChallengeId", "TotalScore", "TotalDurationSeconds" },
                 descending: new[] { false, true, false })
-                .Annotation("SqlServer:Include", new[] { "PlayerId" });
+                .Annotation("Npgsql:IndexInclude", new[] { "PlayerId" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_GameSessions_PlayerId_DailyChallengeId",
@@ -239,14 +241,14 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                 table: "Players",
                 column: "Email",
                 unique: true,
-                filter: "[Email] IS NOT NULL");
+                filter: "\"Email\" IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Players_Pseudo",
                 table: "Players",
                 column: "Pseudo",
                 unique: true,
-                filter: "[IsGuest] = 0 AND [Pseudo] IS NOT NULL");
+                filter: "\"IsGuest\" = false AND \"Pseudo\" IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Settings_Key",

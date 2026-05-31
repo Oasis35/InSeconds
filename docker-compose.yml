@@ -1,21 +1,21 @@
 services:
   database:
-    image: mcr.microsoft.com/mssql/server:2025-latest
+    image: postgres:17-alpine
     container_name: inseconds.database
     environment:
-      ACCEPT_EULA: Y
-      MSSQL_SA_PASSWORD: REDACTED
-      MSSQL_PID: Developer
+      POSTGRES_DB: inseconds
+      POSTGRES_USER: inseconds
+      POSTGRES_PASSWORD: REDACTED
     ports:
-      - "1433:1433"
+      - "5432:5432"
     volumes:
-      - sqlserver_data:/var/opt/mssql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q \"SELECT 1\" -b -o /dev/null"]
+      test: ["CMD-SHELL", "pg_isready -U inseconds -d inseconds"]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 30s
+      start_period: 10s
 
   api:
     build:
@@ -25,7 +25,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__DefaultConnection: "Server=database,1433;Database=InSeconds;User Id=sa;Password=REDACTED;TrustServerCertificate=true;Encrypt=false;"
+      ConnectionStrings__DefaultConnection: "Host=database;Port=5432;Database=inseconds;Username=inseconds;Password=REDACTED"
     ports:
       - "5171:8080"
     volumes:
@@ -37,4 +37,4 @@ services:
         condition: service_healthy
 
 volumes:
-  sqlserver_data:
+  postgres_data:

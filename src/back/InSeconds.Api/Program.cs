@@ -1,13 +1,16 @@
 using FluentValidation;
 using InSeconds.Api.Common.Auth;
 using InSeconds.Api.Common.Scoring;
+using InSeconds.Api.Common.Settings;
 using InSeconds.Api.Common.Text;
 using InSeconds.Api.Domain;
-using InSeconds.Api.Infrastructure.Deezer;
-using Microsoft.AspNetCore.DataProtection;
+using InSeconds.Api.Features.Admin.ResetToday;
 using InSeconds.Api.Features.Sessions.StartSession;
 using InSeconds.Api.Features.Sessions.SubmitAnswer;
+using InSeconds.Api.Features.Settings.GetSettings;
+using InSeconds.Api.Infrastructure.Deezer;
 using InSeconds.Api.Infrastructure.Persistence;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
 using Wolverine.FluentValidation;
@@ -17,7 +20,7 @@ var builder = WebApplication.CreateBuilder(args);
 const string CorsPolicyName = "AllowAngular";
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
@@ -36,6 +39,9 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod()
               .AllowCredentials());
 });
+
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<SettingsService>();
 
 builder.Services.AddSingleton<ScoreCalculator>();
 builder.Services.AddSingleton<TextNormalizer>();
@@ -61,7 +67,15 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 
     if (app.Environment.IsDevelopment())
-        SeedDevelopmentData(db);
+    {
+        var seeded = SeedDevelopmentData(db);
+        if (seeded)
+        {
+            app.Logger.LogWarning("===================================================");
+            app.Logger.LogWarning("---------- SEED OK ----------");
+            app.Logger.LogWarning("===================================================");
+        }
+    }
 }
 
 if (app.Environment.IsDevelopment())
@@ -73,17 +87,19 @@ app.UseCors(CorsPolicyName);
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok", utc = DateTime.UtcNow }));
 
+app.MapGetSettings();
 app.MapStartSession();
 app.MapSubmitAnswer();
+app.MapResetToday();
 
 app.Run();
 
 // TODO: Supprimer quand le générateur de défis quotidiens (BackgroundService) sera en place.
-static void SeedDevelopmentData(ApplicationDbContext db)
+static bool SeedDevelopmentData(ApplicationDbContext db)
 {
     var today = DateOnly.FromDateTime(DateTime.UtcNow);
     if (db.DailyChallenges.Any(c => c.Date == today))
-        return;
+        return false;
 
     var trackData = new (long Id, string Artist, string Title)[]
     {
@@ -122,4 +138,5 @@ static void SeedDevelopmentData(ApplicationDbContext db)
         DeezerRankSnapshot = i + 1,
     }));
     db.SaveChanges();
+    return true;
 }

@@ -1,4 +1,5 @@
 using InSeconds.Api.Common.Scoring;
+using InSeconds.Api.Common.Settings;
 using InSeconds.Api.Common.Text;
 using InSeconds.Api.Domain;
 using InSeconds.Api.Infrastructure.Persistence;
@@ -9,7 +10,8 @@ namespace InSeconds.Api.Features.Sessions.SubmitAnswer;
 public sealed class SubmitAnswerHandler(
     ApplicationDbContext db,
     ScoreCalculator scoreCalculator,
-    TextNormalizer textNormalizer)
+    TextNormalizer textNormalizer,
+    SettingsService settingsService)
 {
     public async Task<IResult> Handle(SubmitAnswerCommand command, CancellationToken cancellationToken)
     {
@@ -39,11 +41,17 @@ public sealed class SubmitAnswerHandler(
         if (alreadyAnswered)
             return Results.Conflict(new { error = "already_answered", message = "Cette track a déjà été répondue." });
 
+        var appSettings = await settingsService.GetAsync(cancellationToken);
+
         var artistCorrect = textNormalizer.IsMatch(command.ArtistAnswer, challengeTrack.Track.Artist);
         var titleCorrect  = textNormalizer.IsMatch(command.TitleAnswer,  challengeTrack.Track.Title);
 
         var score = scoreCalculator.Calculate(
-            command.ListenedDurationSeconds, command.WasExtended, artistCorrect, titleCorrect);
+            command.ListenedDurationSeconds,
+            command.WasExtended,
+            artistCorrect,
+            titleCorrect,
+            appSettings.DurationScores);
 
         db.GameSessionAnswers.Add(new GameSessionAnswer
         {
