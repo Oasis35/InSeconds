@@ -19,8 +19,13 @@ var builder = WebApplication.CreateBuilder(args);
 
 const string CorsPolicyName = "AllowAngular";
 
+var pgUri = Environment.GetEnvironmentVariable("NF_INSECONDS_DB_POSTGRES_URI");
+var connectionString = pgUri is not null
+    ? BuildNpgsqlConnectionString(pgUri)
+    : builder.Configuration.GetConnectionString("DefaultConnection")!;
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(connectionString));
 
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
@@ -139,4 +144,13 @@ static bool SeedDevelopmentData(ApplicationDbContext db)
     }));
     db.SaveChanges();
     return true;
+}
+
+// Convertit postgresql://user:pass@host:port/db?sslmode=xxx en format Npgsql key=value
+static string BuildNpgsqlConnectionString(string uri)
+{
+    var u = new Uri(uri);
+    var userInfo = u.UserInfo.Split(':');
+    var db = u.AbsolutePath.TrimStart('/').Split('?')[0];
+    return $"Host={u.Host};Port={u.Port};Database={db};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
 }
