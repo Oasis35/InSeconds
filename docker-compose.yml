@@ -26,6 +26,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__DefaultConnection: "Host=database;Port=5432;Database=inseconds;Username=inseconds;Password=REDACTED"
+      AdminPassword: "admin"
     ports:
       - "5171:8080"
     volumes:

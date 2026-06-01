@@ -1,3 +1,4 @@
+using InSeconds.Api.Features.Admin.Login;
 using Wolverine;
 
 namespace InSeconds.Api.Features.Admin.ResetToday;
@@ -8,11 +9,11 @@ public static class ResetTodayEndpoint
     {
         routes.MapDelete("/api/admin/reset-today", async (
             IMessageBus bus,
-            IHostEnvironment env,
+            HttpContext ctx,
             CancellationToken ct) =>
         {
-            if (!env.IsDevelopment())
-                return Results.NotFound();
+            if (!LoginEndpoint.IsAdminAuthenticated(ctx))
+                return Results.Unauthorized();
 
             return await bus.InvokeAsync<IResult>(new ResetTodayCommand(), ct);
         })
