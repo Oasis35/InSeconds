@@ -4,6 +4,10 @@ using InSeconds.Api.Common.Scoring;
 using InSeconds.Api.Common.Settings;
 using InSeconds.Api.Common.Text;
 using InSeconds.Api.Domain;
+using InSeconds.Api.Features.Admin.Challenges.CreateChallenge;
+using InSeconds.Api.Features.Admin.Challenges.DeezerSearch;
+using InSeconds.Api.Features.Admin.Challenges.GetChallenges;
+using InSeconds.Api.Features.Admin.Login;
 using InSeconds.Api.Features.Admin.ResetToday;
 using InSeconds.Api.Features.Sessions.StartSession;
 using InSeconds.Api.Features.Sessions.SubmitAnswer;
@@ -95,7 +99,11 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok", utc = DateTime.UtcNo
 app.MapGetSettings();
 app.MapStartSession();
 app.MapSubmitAnswer();
+app.MapAdminLogin();
 app.MapResetToday();
+app.MapGetChallenges();
+app.MapDeezerSearch();
+app.MapCreateChallenge();
 
 app.Run();
 
@@ -103,47 +111,57 @@ app.Run();
 static bool SeedDevelopmentData(ApplicationDbContext db)
 {
     var today = DateOnly.FromDateTime(DateTime.UtcNow);
-    if (db.DailyChallenges.Any(c => c.Date == today))
-        return false;
 
+    // Un morceau par jour : aujourd'hui + les 9 jours précédents
     var trackData = new (long Id, string Artist, string Title)[]
     {
-        (66609426,  "Daft Punk",       "Get Lucky"),
-        (3135553,   "Daft Punk",       "One More Time"),
-        (4603408,   "Michael Jackson", "Billie Jean"),
-        (4763165,   "Michael Jackson", "Beat It"),
-        (414838122, "Orelsan",         "Basique"),
-        (1109731,   "Eminem",          "Lose Yourself"),
-        (72160314,  "Eminem",          "Rap God"),
-        (139470659, "Ed Sheeran",      "Shape of You"),
-        (13444256,  "Coldplay",        "Viva La Vida"),
-        (10284909,  "Justice",         "D.A.N.C.E."),
+        (66609426,  "Daft Punk",       "Get Lucky"),          // today
+        (3135553,   "Daft Punk",       "One More Time"),      // today - 1
+        (4603408,   "Michael Jackson", "Billie Jean"),        // today - 2
+        (4763165,   "Michael Jackson", "Beat It"),            // today - 3
+        (414838122, "Orelsan",         "Basique"),            // today - 4
+        (1109731,   "Eminem",          "Lose Yourself"),      // today - 5
+        (72160314,  "Eminem",          "Rap God"),            // today - 6
+        (139470659, "Ed Sheeran",      "Shape of You"),       // today - 7
+        (13444256,  "Coldplay",        "Viva La Vida"),       // today - 8
+        (10284909,  "Justice",         "D.A.N.C.E."),         // today - 9
     };
 
-    var tracks = trackData.Select(t => new Track
+    // Ne seed que les jours sans défi existant
+    var seeded = false;
+    for (var i = 0; i < trackData.Length; i++)
     {
-        DeezerTrackId = t.Id,
-        Artist        = t.Artist,
-        Title         = t.Title,
-        CreatedAt     = DateTime.UtcNow,
-    }).ToList();
+        var date = today.AddDays(-i);
+        if (db.DailyChallenges.Any(c => c.Date == date))
+            continue;
 
-    db.Tracks.AddRange(tracks);
-    db.SaveChanges();
+        var (id, artist, title) = trackData[i];
 
-    var challenge = new DailyChallenge { Date = today, Seed = today.DayNumber };
-    db.DailyChallenges.Add(challenge);
-    db.SaveChanges();
+        var track = db.Tracks.FirstOrDefault(t => t.DeezerTrackId == id)
+            ?? new Track { DeezerTrackId = id, Artist = artist, Title = title, CreatedAt = DateTime.UtcNow };
 
-    db.DailyChallengeTracks.AddRange(tracks.Select((t, i) => new DailyChallengeTrack
-    {
-        DailyChallengeId   = challenge.Id,
-        TrackId            = t.Id,
-        Position           = i + 1,
-        DeezerRankSnapshot = i + 1,
-    }));
-    db.SaveChanges();
-    return true;
+        if (track.Id == 0)
+        {
+            db.Tracks.Add(track);
+            db.SaveChanges();
+        }
+
+        var challenge = new DailyChallenge { Date = date, Seed = date.DayNumber };
+        db.DailyChallenges.Add(challenge);
+        db.SaveChanges();
+
+        db.DailyChallengeTracks.Add(new DailyChallengeTrack
+        {
+            DailyChallengeId   = challenge.Id,
+            TrackId            = track.Id,
+            Position           = 1,
+            DeezerRankSnapshot = 1,
+        });
+        db.SaveChanges();
+        seeded = true;
+    }
+
+    return seeded;
 }
 
 // Convertit postgresql://user:pass@host:port/db?sslmode=xxx en format Npgsql key=value
