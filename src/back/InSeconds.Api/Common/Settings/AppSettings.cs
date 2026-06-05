@@ -13,7 +13,7 @@ public sealed record AppSettings(
         AllowedDurationsSeconds: [1, 2, 3, 5, 10, 15, 30],
         GuessTimerSeconds: 20,
         MaxExtensionsPerAnswer: 1,
-        TracksPerChallenge: 10,
+        TracksPerChallenge: 3,
         DurationScores: new() { [1] = 1000, [2] = 850, [3] = 700, [5] = 500, [10] = 300, [15] = 150, [30] = 50 });
 
     public static AppSettings From(IEnumerable<Setting> rows)

@@ -1,4 +1,5 @@
 import { Component, inject, signal, viewChild, OnInit } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { GameService } from '../../core/services/game.service';
 import { TrackSlot, SubmitAnswerResponse } from '../../core/models/game.models';
 import { BlindRoundComponent, AnsweredEvent } from './blind-round/blind-round.component';
@@ -7,18 +8,29 @@ type GameState = 'loading' | 'playing' | 'done' | 'error' | 'already_played';
 
 @Component({
   selector: 'app-game',
-  imports: [BlindRoundComponent],
+  imports: [BlindRoundComponent, RouterLink],
   template: `
-    <main class="min-h-dvh bg-gradient-to-br from-slate-900 via-slate-950 to-black
-                 text-slate-100 flex flex-col p-4 max-w-lg mx-auto">
+    <div class="min-h-dvh bg-gradient-to-br from-slate-900 via-slate-950 to-black text-slate-100 flex flex-col">
+    <main class="flex-1 flex flex-col p-4 w-full max-w-lg mx-auto">
 
       <!-- En-tête -->
-      <header class="flex justify-between items-center py-4 mb-6">
-        <h1 class="text-2xl font-bold tracking-tight">InSeconds 🎵</h1>
+      <header class="py-4 mb-6">
+        <div class="flex items-center justify-center relative">
+          <h1 class="text-2xl font-bold tracking-tight">InSeconds 🎵</h1>
+          @if (gameState() === 'playing') {
+            <span class="absolute right-0 text-lg font-semibold">{{ totalScore() }} pts</span>
+          }
+        </div>
         @if (gameState() === 'playing') {
-          <div class="text-right">
-            <div class="text-sm text-slate-400">Piste {{ currentIndex() + 1 }} / {{ tracks().length }}</div>
-            <div class="text-lg font-semibold">{{ totalScore() }} pts</div>
+          <div class="mt-3 flex flex-col gap-1">
+            <div class="flex justify-between text-xs text-slate-500">
+              <span>Piste {{ currentIndex() + 1 }} / {{ tracks().length }}</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-1.5">
+              <div class="bg-indigo-500 h-1.5 rounded-full transition-all duration-300"
+                [style.width.%]="(currentIndex() + 1) / tracks().length * 100">
+              </div>
+            </div>
           </div>
         }
       </header>
@@ -66,29 +78,51 @@ type GameState = 'loading' | 'playing' | 'done' | 'error' | 'already_played';
 
       <!-- Récapitulatif final -->
       @if (gameState() === 'done') {
-        <div class="flex-1 flex flex-col items-center justify-center space-y-6 text-center">
-          <p class="text-4xl">🏆</p>
-          <h2 class="text-2xl font-bold">Défi terminé !</h2>
-          <p class="text-slate-400">Score total</p>
-          <p class="text-5xl font-bold text-white">{{ totalScore() }}</p>
+        <div class="flex-1 flex flex-col pt-6 space-y-4 text-center">
 
-          <div class="w-full space-y-2 mt-4">
+          <div class="space-y-1">
+            <p class="text-5xl">🏆</p>
+            <h2 class="text-2xl font-bold">Défi terminé !</h2>
+            <p class="text-6xl font-bold text-white pt-1">{{ totalScore() }}</p>
+            <p class="text-slate-500 text-sm">points</p>
+            <p class="text-slate-200 text-sm pt-2 animate-pulse">Reviens demain pour un nouveau défi 🎵</p>
+          </div>
+
+          <div class="w-full flex flex-col divide-y divide-slate-800">
             @for (r of results(); track r.position) {
-              <div class="flex justify-between items-center px-4 py-2 rounded-lg bg-slate-800 text-sm">
-                <span class="text-slate-400">Piste {{ r.position }}</span>
-                <span>
-                  <span [class]="r.artistCorrect ? 'text-emerald-400' : 'text-rose-400'">A</span>
-                  <span class="text-slate-600 mx-1">/</span>
-                  <span [class]="r.titleCorrect ? 'text-emerald-400' : 'text-rose-400'">T</span>
+              <div class="flex items-center gap-4 py-4">
+                @if (r.coverUrl) {
+                  <img [src]="r.coverUrl" alt="Pochette"
+                    class="w-14 h-14 rounded-xl object-cover shrink-0" />
+                } @else {
+                  <div class="w-14 h-14 rounded-xl bg-slate-700 shrink-0"></div>
+                }
+                <div class="flex-1 min-w-0 text-left">
+                  <div class="flex gap-3 text-base mb-1">
+                    <span [class]="r.artistCorrect ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold'">
+                      {{ r.artistCorrect ? '✓' : '✗' }} Artiste
+                    </span>
+                    <span [class]="r.titleCorrect ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold'">
+                      {{ r.titleCorrect ? '✓' : '✗' }} Titre
+                    </span>
+                  </div>
+                  <p class="text-slate-300 text-sm truncate">{{ r.correctArtist }} — {{ r.correctTitle }}</p>
+                </div>
+                <span [class]="r.score > 0 ? 'text-emerald-400 font-bold text-lg shrink-0' : 'text-slate-500 font-bold text-lg shrink-0'">
+                  +{{ r.score }}
                 </span>
-                <span class="font-semibold">+{{ r.score }} pts</span>
               </div>
             }
           </div>
         </div>
       }
 
+      <footer class="flex justify-center py-2 mt-auto">
+        <a routerLink="/admin" class="text-slate-700 hover:text-slate-500 text-xs transition">admin</a>
+      </footer>
+
     </main>
+    </div>
   `,
 })
 export class GameComponent implements OnInit {
@@ -98,7 +132,7 @@ export class GameComponent implements OnInit {
   protected readonly tracks = signal<TrackSlot[]>([]);
   protected readonly currentIndex = signal(0);
   protected readonly totalScore = signal(0);
-  protected readonly results = signal<Array<SubmitAnswerResponse & { position: number }>>([]);
+  protected readonly results = signal<Array<SubmitAnswerResponse & { position: number; coverUrl: string | null }>>([]);
 
   private sessionId = 0;
 
@@ -128,7 +162,7 @@ export class GameComponent implements OnInit {
         this.totalScore.update(s => s + response.score);
         this.results.update(rs => [
           ...rs,
-          { ...response, position: this.currentIndex() + 1 },
+          { ...response, position: this.currentIndex() + 1, coverUrl: this.tracks()[this.currentIndex()].coverUrl ?? null },
         ]);
         this.roundRef()?.setResult(response);
 

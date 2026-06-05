@@ -10,14 +10,10 @@ export class GameService {
   private readonly base = `${environment.apiUrl}/api/sessions`;
 
   startToday(): Observable<StartSessionResponse> {
-    return this.http.post<StartSessionResponse>(this.base, {}, { withCredentials: true });
+    return this.http.post<StartSessionResponse>(this.base, {});
   }
 
   submitAnswer(sessionId: number, body: SubmitAnswerRequest): Observable<SubmitAnswerResponse> {
-    return this.http.post<SubmitAnswerResponse>(
-      `${this.base}/${sessionId}/answers`,
-      body,
-      { withCredentials: true }
-    );
+    return this.http.post<SubmitAnswerResponse>(`${this.base}/${sessionId}/answers`, body);
   }
 }

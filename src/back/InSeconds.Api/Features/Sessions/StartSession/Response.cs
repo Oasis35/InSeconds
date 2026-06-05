@@ -7,4 +7,5 @@ public sealed record StartSessionResponse(
 public sealed record TrackSlot(
     int Id,
     int Position,
-    string PreviewUrl);
+    string PreviewUrl,
+    string? CoverUrl);
