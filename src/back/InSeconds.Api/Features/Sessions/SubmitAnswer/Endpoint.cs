@@ -11,11 +11,10 @@ public static class SubmitAnswerEndpoint
             int sessionId,
             SubmitAnswerBody body,
             HttpContext httpContext,
-            ICookieAuthService cookieAuth,
             IMessageBus bus,
             CancellationToken ct) =>
         {
-            var playerId = await cookieAuth.ResolveOrCreatePlayerAsync(httpContext, ct);
+            var playerId = httpContext.GetPlayerId();
 
             var command = new SubmitAnswerCommand(
                 PlayerId:                playerId,

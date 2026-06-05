@@ -2,6 +2,7 @@ export interface TrackSlot {
   id: number;
   position: number;
   previewUrl: string;
+  coverUrl: string | null;
 }
 
 export interface StartSessionResponse {

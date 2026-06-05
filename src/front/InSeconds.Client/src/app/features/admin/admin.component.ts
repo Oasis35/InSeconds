@@ -1,4 +1,5 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, Subject, switchMap } from 'rxjs';
@@ -6,139 +7,166 @@ import { environment } from '../../../environments/environment';
 
 interface ResetResult { deleted: number; date: string; }
 interface TrackDto { position: number; artist: string; title: string; deezerTrackId: number; }
+interface PoolTrackDto { id: number; artist: string; title: string; deezerTrackId: number; }
+interface PoolTracksResponse { available: PoolTrackDto[]; used: PoolTrackDto[]; }
 interface ChallengeDto { id: number; date: string; tracks: TrackDto[]; }
 interface DeezerTrackInfo { artist: string; title: string; previewUrl: string | null; deezerTrackId: number; }
 
+type Tab = 'pool' | 'defis';
+
 @Component({
   selector: 'app-admin',
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   template: `
-    <div class="min-h-screen bg-gray-900 text-white flex flex-col items-center gap-8 p-8">
-      <h1 class="text-3xl font-bold">Admin</h1>
+    <div class="min-h-screen bg-gray-900 text-white flex flex-col items-center p-8 gap-6">
+      <h1 class="text-2xl font-bold tracking-tight">Admin</h1>
 
       @if (!authenticated()) {
-        <div class="bg-gray-800 rounded-xl p-8 flex flex-col items-center gap-6 w-full max-w-md">
-          <h2 class="text-xl font-semibold">Connexion</h2>
+        <div class="bg-gray-800 rounded-xl p-8 flex flex-col items-center gap-6 w-full max-w-sm">
+          <h2 class="text-lg font-semibold">Connexion</h2>
           <input type="password" [(ngModel)]="password" placeholder="Mot de passe admin"
             (keydown.enter)="login()"
             class="w-full bg-gray-700 text-white rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-purple-500" />
           <button (click)="login()" [disabled]="loginStatus() === 'loading'"
-            class="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition-colors">
+            class="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition-colors">
             @if (loginStatus() === 'loading') { Connexion... } @else { Se connecter }
           </button>
           @if (loginStatus() === 'error') {
             <p class="text-red-400 text-sm">Mot de passe incorrect.</p>
           }
         </div>
+        <a routerLink="/" class="text-sm text-gray-500 hover:text-gray-300 transition-colors">Retour au jeu</a>
       } @else {
 
-        <!-- Reset -->
-        <div class="bg-gray-800 rounded-xl p-6 flex flex-col items-center gap-4 w-full max-w-2xl">
-          <h2 class="text-lg font-semibold">Reset des parties du jour</h2>
-          <button (click)="reset()" [disabled]="resetStatus() === 'loading'"
-            class="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold py-2 px-6 rounded-lg transition-colors">
-            @if (resetStatus() === 'loading') { Réinitialisation... } @else { Réinitialiser }
+        <!-- Onglets -->
+        <div class="flex gap-1 bg-gray-800 p-1 rounded-lg w-full max-w-2xl">
+          <button (click)="activeTab.set('pool')"
+            [class]="activeTab() === 'pool'
+              ? 'flex-1 py-2 rounded-md text-sm font-medium bg-gray-700 text-white transition-colors'
+              : 'flex-1 py-2 rounded-md text-sm font-medium text-gray-400 hover:text-white transition-colors'">
+            Pool ({{ poolTracks().available.length + poolTracks().used.length }})
           </button>
-          @if (resetStatus() === 'success' && resetResult()) {
-            <p class="text-green-400 text-sm">{{ resetResult()!.deleted }} session(s) supprimée(s) — {{ resetResult()!.date }}</p>
-          }
-          @if (resetStatus() === 'error') {
-            <p class="text-red-400 text-sm">Aucun défi trouvé pour aujourd'hui.</p>
-          }
+          <button (click)="activeTab.set('defis')"
+            [class]="activeTab() === 'defis'
+              ? 'flex-1 py-2 rounded-md text-sm font-medium bg-gray-700 text-white transition-colors'
+              : 'flex-1 py-2 rounded-md text-sm font-medium text-gray-400 hover:text-white transition-colors'">
+            Défis ({{ challenges().length }})
+          </button>
         </div>
 
-        <!-- Nouveau défi -->
-        <div class="bg-gray-800 rounded-xl p-6 flex flex-col gap-4 w-full max-w-2xl">
-          <h2 class="text-lg font-semibold">Nouveau défi</h2>
+        <!-- Onglet Pool -->
+        @if (activeTab() === 'pool') {
+          <div class="flex flex-col gap-4 w-full max-w-2xl">
 
-          <div class="flex gap-4 items-center">
-            <label class="text-sm text-gray-400 w-16">Date</label>
-            <input type="date" [(ngModel)]="newChallengeDate"
-              class="bg-gray-700 text-white rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-purple-500" />
-          </div>
-
-          <!-- Recherche tracks -->
-          <div class="flex flex-col gap-2">
-            <label class="text-sm text-gray-400">Ajouter des tracks (max 3)</label>
-            @if (selectedTracks().length < 3) {
-              <input type="text" [(ngModel)]="searchQuery" (ngModelChange)="onSearchChange($event)"
+            <!-- Ajouter -->
+            <div class="bg-gray-800 rounded-xl p-5 flex flex-col gap-3">
+              <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wide">Ajouter au pool</h2>
+              <input type="text" [(ngModel)]="poolSearchQuery" (ngModelChange)="onPoolSearchChange($event)"
                 placeholder="Rechercher artiste ou titre..."
-                class="bg-gray-700 text-white rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-purple-500" />
-              @if (searchResults().length > 0) {
+                class="bg-gray-700 text-white rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-purple-500 text-sm" />
+              @if (poolSearchLoading()) {
+                <p class="text-gray-500 text-xs">Recherche...</p>
+              }
+              @if (poolSearchResults().length > 0) {
                 <ul class="bg-gray-700 rounded-lg divide-y divide-gray-600 max-h-48 overflow-y-auto">
-                  @for (track of searchResults(); track track.title + track.artist) {
-                    <li (click)="addTrack(track)"
-                      class="px-4 py-2 hover:bg-gray-600 cursor-pointer flex justify-between items-center">
+                  @for (track of poolSearchResults(); track track.deezerTrackId) {
+                    <li (click)="addToPoolStatus() !== 'loading' && addToPool(track)"
+                      [class]="addToPoolStatus() === 'loading'
+                        ? 'px-4 py-2.5 flex justify-between items-center text-sm opacity-50 cursor-not-allowed'
+                        : 'px-4 py-2.5 hover:bg-gray-600 cursor-pointer flex justify-between items-center text-sm'">
                       <span>{{ track.artist }} — {{ track.title }}</span>
-                      <span class="text-purple-400 text-xs">+ ajouter</span>
+                      <span class="text-purple-400 text-xs shrink-0 ml-4">
+                        @if (addToPoolStatus() === 'loading') { ... } @else { Ajouter au pool }
+                      </span>
                     </li>
                   }
                 </ul>
               }
-              @if (searchLoading()) {
-                <p class="text-gray-400 text-sm">Recherche...</p>
+              @if (addToPoolStatus() === 'success') {
+                <p class="text-green-400 text-xs">Morceau ajouté.</p>
               }
-            }
+              @if (addToPoolStatus() === 'error') {
+                <p class="text-red-400 text-xs">Impossible d'ajouter ce morceau.</p>
+              }
+            </div>
 
-            <!-- Tracks sélectionnées -->
-            @if (selectedTracks().length > 0) {
-              <ul class="flex flex-col gap-2 mt-2">
-                @for (track of selectedTracks(); track track.title + track.artist; let i = $index) {
-                  <li class="bg-gray-700 rounded-lg px-4 py-2 flex justify-between items-center">
-                    <span class="text-sm text-gray-300">{{ i + 1 }}. {{ track.artist }} — {{ track.title }}</span>
-                    <button (click)="removeTrack(i)" class="text-red-400 hover:text-red-300 text-xs ml-4">✕</button>
+            <!-- Disponibles -->
+            <div class="bg-gray-800 rounded-xl p-5 flex flex-col gap-3">
+              <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wide">
+                Disponibles <span class="text-gray-500 font-normal">({{ poolTracks().available.length }})</span>
+              </h2>
+              @if (poolTracks().available.length === 0) {
+                <p class="text-gray-500 text-sm">Aucun morceau disponible.</p>
+              } @else {
+                <ul class="flex flex-col gap-1">
+                  @for (t of poolTracks().available; track t.id) {
+                    <li class="text-sm text-gray-300 px-3 py-1.5 bg-gray-700 rounded-lg">{{ t.artist }} — {{ t.title }}</li>
+                  }
+                </ul>
+              }
+            </div>
+
+            <!-- Utilisés -->
+            <div class="bg-gray-800 rounded-xl p-5 flex flex-col gap-3">
+              <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+                Déjà utilisés <span class="font-normal">({{ poolTracks().used.length }})</span>
+              </h2>
+              @if (poolTracks().used.length === 0) {
+                <p class="text-gray-600 text-sm">Aucun morceau utilisé.</p>
+              } @else {
+                <ul class="flex flex-col gap-1">
+                  @for (t of poolTracks().used; track t.id) {
+                    <li class="text-sm text-gray-600 px-3 py-1.5 bg-gray-800 rounded-lg border border-gray-700">{{ t.artist }} — {{ t.title }}</li>
+                  }
+                </ul>
+              }
+            </div>
+
+          </div>
+        }
+
+        <!-- Onglet Défis -->
+        @if (activeTab() === 'defis') {
+          <div class="bg-gray-800 rounded-xl p-5 flex flex-col gap-3 w-full max-w-2xl">
+            <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wide">Historique</h2>
+            @if (challenges().length === 0) {
+              <p class="text-gray-400 text-sm">Aucun défi enregistré.</p>
+            } @else {
+              <ul class="flex flex-col divide-y divide-gray-700">
+                @for (c of challenges(); track c.id) {
+                  <li class="py-3">
+                    <p class="font-mono text-sm text-white mb-1">{{ c.date }}</p>
+                    <ul class="flex flex-col gap-0.5">
+                      @for (t of c.tracks; track t.position) {
+                        <li class="text-xs text-gray-400">{{ t.position }}. {{ t.artist }} — {{ t.title }}</li>
+                      }
+                    </ul>
                   </li>
                 }
               </ul>
             }
           </div>
+        }
 
-          <button (click)="createChallenge()"
-            [disabled]="createStatus() === 'loading' || selectedTracks().length === 0 || !newChallengeDate"
-            class="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-bold py-2 px-6 rounded-lg transition-colors self-start">
-            @if (createStatus() === 'loading') { Création... } @else { Créer le défi }
+        <!-- Actions bas de page -->
+        <div class="flex flex-col items-center gap-3 pt-2 w-full max-w-2xl">
+          <div class="flex items-center gap-3">
+            <button (click)="reset()" [disabled]="resetStatus() === 'loading'"
+              class="text-red-500 hover:text-red-400 disabled:opacity-50 text-xs transition-colors">
+              @if (resetStatus() === 'loading') { Réinitialisation... } @else { Réinitialiser les parties du jour }
+            </button>
+            @if (resetStatus() === 'success' && resetResult()) {
+              <span class="text-green-400 text-xs">{{ resetResult()!.deleted }} supprimée(s)</span>
+            }
+            @if (resetStatus() === 'error') {
+              <span class="text-red-400 text-xs">Aucun défi trouvé.</span>
+            }
+          </div>
+          <button (click)="logout()" class="text-gray-600 hover:text-gray-400 text-xs transition-colors">
+            Se déconnecter
           </button>
-
-          @if (createStatus() === 'success') {
-            <p class="text-green-400 text-sm">Défi créé avec succès !</p>
-          }
-          @if (createStatus() === 'error') {
-            <p class="text-red-400 text-sm">{{ createError() }}</p>
-          }
         </div>
 
-        <!-- Liste des défis -->
-        <div class="bg-gray-800 rounded-xl p-6 flex flex-col gap-4 w-full max-w-2xl">
-          <h2 class="text-lg font-semibold">Défis programmés</h2>
-          @if (challenges().length === 0) {
-            <p class="text-gray-400 text-sm">Aucun défi enregistré.</p>
-          } @else {
-            <table class="w-full text-sm">
-              <thead>
-                <tr class="text-gray-400 text-left border-b border-gray-700">
-                  <th class="pb-2">Date</th>
-                  <th class="pb-2">Tracks</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (c of challenges(); track c.id) {
-                  <tr class="border-b border-gray-700 last:border-0">
-                    <td class="py-2 pr-4 font-mono">{{ c.date }}</td>
-                    <td class="py-2 text-gray-300">
-                      @for (t of c.tracks; track t.position) {
-                        <div>{{ t.position }}. {{ t.artist }} — {{ t.title }}</div>
-                      }
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          }
-        </div>
-
-        <button (click)="logout()" class="text-gray-500 hover:text-gray-300 text-sm transition-colors">
-          Se déconnecter
-        </button>
       }
     </div>
   `,
@@ -146,40 +174,40 @@ interface DeezerTrackInfo { artist: string; title: string; previewUrl: string | 
 export class AdminComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/api/admin`;
-  private readonly search$ = new Subject<string>();
+  private readonly poolSearch$ = new Subject<string>();
   private readonly storageKey = 'admin_token';
 
   authenticated = signal(false);
   loginStatus = signal<'idle' | 'loading' | 'error'>('idle');
   resetStatus = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
   resetResult = signal<ResetResult | null>(null);
-  createStatus = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
-  createError = signal('');
   challenges = signal<ChallengeDto[]>([]);
-  searchResults = signal<DeezerTrackInfo[]>([]);
-  searchLoading = signal(false);
-  selectedTracks = signal<DeezerTrackInfo[]>([]);
+  activeTab = signal<Tab>('pool');
+
+  poolTracks = signal<PoolTracksResponse>({ available: [], used: [] });
+  poolSearchResults = signal<DeezerTrackInfo[]>([]);
+  poolSearchLoading = signal(false);
+  addToPoolStatus = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
 
   password = '';
-  searchQuery = '';
-  newChallengeDate = '';
+  poolSearchQuery = '';
 
   ngOnInit(): void {
-    this.search$.pipe(
+    this.poolSearch$.pipe(
       debounceTime(300),
       distinctUntilChanged(),
       switchMap(q => {
-        if (q.length < 2) { this.searchResults.set([]); return []; }
-        this.searchLoading.set(true);
+        if (q.length < 2) { this.poolSearchResults.set([]); return []; }
+        this.poolSearchLoading.set(true);
         return this.http.get<DeezerTrackInfo[]>(`${this.base}/deezer-search?q=${encodeURIComponent(q)}`);
       }),
     ).subscribe({
-      next: results => { this.searchResults.set(results ?? []); this.searchLoading.set(false); },
-      error: () => { this.searchResults.set([]); this.searchLoading.set(false); },
+      next: results => { this.poolSearchResults.set(results ?? []); this.poolSearchLoading.set(false); },
+      error: () => { this.poolSearchResults.set([]); this.poolSearchLoading.set(false); },
     });
 
     this.http.get(`${this.base}/me`).subscribe({
-      next: () => { this.authenticated.set(true); this.loadChallenges(); },
+      next: () => { this.authenticated.set(true); this.loadChallenges(); this.loadPool(); },
       error: () => this.authenticated.set(false),
     });
   }
@@ -193,6 +221,7 @@ export class AdminComponent implements OnInit {
         this.loginStatus.set('idle');
         this.password = '';
         this.loadChallenges();
+        this.loadPool();
       },
       error: () => this.loginStatus.set('error'),
     });
@@ -212,45 +241,34 @@ export class AdminComponent implements OnInit {
     });
   }
 
-  onSearchChange(q: string): void {
-    this.search$.next(q);
+  onPoolSearchChange(q: string): void {
+    this.poolSearch$.next(q);
   }
 
-  addTrack(track: DeezerTrackInfo): void {
-    if (this.selectedTracks().length >= 3) return;
-    this.selectedTracks.update(tracks => [...tracks, track]);
-    this.searchResults.set([]);
-    this.searchQuery = '';
-  }
-
-  removeTrack(index: number): void {
-    this.selectedTracks.update(tracks => tracks.filter((_, i) => i !== index));
-  }
-
-  createChallenge(): void {
-    this.createStatus.set('loading');
-    this.createError.set('');
-    const body = {
-      date: this.newChallengeDate,
-      deezerTrackIds: this.selectedTracks().map(t => t.deezerTrackId),
-    };
-    this.http.post<ChallengeDto>(`${this.base}/challenges`, body).subscribe({
+  addToPool(track: DeezerTrackInfo): void {
+    this.addToPoolStatus.set('loading');
+    this.http.post(`${this.base}/tracks`, { deezerTrackId: track.deezerTrackId }).subscribe({
       next: () => {
-        this.createStatus.set('success');
-        this.selectedTracks.set([]);
-        this.newChallengeDate = '';
-        this.loadChallenges();
+        this.addToPoolStatus.set('success');
+        this.poolSearchResults.set([]);
+        this.poolSearchQuery = '';
+        this.loadPool();
+        setTimeout(() => this.addToPoolStatus.set('idle'), 3000);
       },
-      error: err => {
-        this.createStatus.set('error');
-        this.createError.set(err.error?.message ?? 'Erreur lors de la création.');
-      },
+      error: () => this.addToPoolStatus.set('error'),
     });
   }
 
   private loadChallenges(): void {
     this.http.get<ChallengeDto[]>(`${this.base}/challenges`).subscribe({
       next: data => this.challenges.set(data),
+      error: () => {},
+    });
+  }
+
+  private loadPool(): void {
+    this.http.get<PoolTracksResponse>(`${this.base}/tracks`).subscribe({
+      next: data => this.poolTracks.set(data),
       error: () => {},
     });
   }

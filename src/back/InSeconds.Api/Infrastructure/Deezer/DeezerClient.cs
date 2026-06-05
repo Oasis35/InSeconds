@@ -31,7 +31,7 @@ public sealed class DeezerClient(HttpClient http)
             var response = await http.GetFromJsonAsync<DeezerTrackResponse>(
                 $"/track/{deezerTrackId}", JsonOptions, ct);
             return response is { Title: not null, Artist.Name: not null }
-                ? new DeezerTrackInfo(response.Artist.Name, response.Title, response.Preview, response.Id)
+                ? new DeezerTrackInfo(response.Artist.Name, response.Title, response.Preview, response.Id, response.Album?.CoverMedium)
                 : null;
         }
         catch
@@ -48,7 +48,7 @@ public sealed class DeezerClient(HttpClient http)
                 $"/search?q={Uri.EscapeDataString(query)}&limit=10", JsonOptions, ct);
             return response?.Data?
                 .Where(t => t.Title is not null && t.Artist?.Name is not null)
-                .Select(t => new DeezerTrackInfo(t.Artist!.Name!, t.Title!, t.Preview, t.Id))
+                .Select(t => new DeezerTrackInfo(t.Artist!.Name!, t.Title!, t.Preview, t.Id, t.Album?.CoverMedium))
                 .ToList() ?? [];
         }
         catch
@@ -70,6 +70,9 @@ public sealed class DeezerClient(HttpClient http)
 
         [JsonPropertyName("artist")]
         public DeezerArtist? Artist { get; set; }
+
+        [JsonPropertyName("album")]
+        public DeezerAlbum? Album { get; set; }
     }
 
     private sealed class DeezerSearchResponse
@@ -83,6 +86,12 @@ public sealed class DeezerClient(HttpClient http)
         [JsonPropertyName("name")]
         public string? Name { get; set; }
     }
+
+    private sealed class DeezerAlbum
+    {
+        [JsonPropertyName("cover_medium")]
+        public string? CoverMedium { get; set; }
+    }
 }
 
-public sealed record DeezerTrackInfo(string Artist, string Title, string? PreviewUrl, long DeezerTrackId);
+public sealed record DeezerTrackInfo(string Artist, string Title, string? PreviewUrl, long DeezerTrackId, string? CoverUrl);

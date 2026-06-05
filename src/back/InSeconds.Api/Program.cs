@@ -9,6 +9,10 @@ using InSeconds.Api.Features.Admin.Challenges.DeezerSearch;
 using InSeconds.Api.Features.Admin.Challenges.GetChallenges;
 using InSeconds.Api.Features.Admin.Login;
 using InSeconds.Api.Features.Admin.ResetToday;
+using InSeconds.Api.Features.Admin.Tracks.AddTrack;
+using InSeconds.Api.Features.Admin.Tracks.GetTracks;
+using InSeconds.Api.Features.Auth.Me;
+using InSeconds.Api.Features.ChallengeGeneration;
 using InSeconds.Api.Features.Sessions.StartSession;
 using InSeconds.Api.Features.Sessions.SubmitAnswer;
 using InSeconds.Api.Features.Settings.GetSettings;
@@ -51,6 +55,9 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<SettingsService>();
+builder.Services.AddScoped<GetTracksHandler>();
+builder.Services.AddScoped<DailyChallengeGenerator>();
+builder.Services.AddHostedService<GenerateDailyChallengeService>();
 
 builder.Services.AddSingleton<ScoreCalculator>();
 builder.Services.AddSingleton<TextNormalizer>();
@@ -93,10 +100,14 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors(CorsPolicyName);
+app.UseMiddleware<PlayerAuthMiddleware>();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok", utc = DateTime.UtcNow }));
 
 app.MapGetSettings();
+app.MapMe();
+app.MapAddTrack();
+app.MapGetTracks();
 app.MapStartSession();
 app.MapSubmitAnswer();
 app.MapAdminLogin();
@@ -127,9 +138,9 @@ static bool SeedDevelopmentData(ApplicationDbContext db)
         (10284909,  "Justice",         "D.A.N.C.E."),         // today - 9
     };
 
-    // Ne seed que les jours sans défi existant
+    // Ne seed que les jours passés sans défi existant (aujourd'hui est géré par le générateur)
     var seeded = false;
-    for (var i = 0; i < trackData.Length; i++)
+    for (var i = 1; i < trackData.Length; i++)
     {
         var date = today.AddDays(-i);
         if (db.DailyChallenges.Any(c => c.Date == date))
