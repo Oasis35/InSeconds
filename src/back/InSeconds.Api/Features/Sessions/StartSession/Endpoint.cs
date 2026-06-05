@@ -9,11 +9,10 @@ public static class StartSessionEndpoint
     {
         routes.MapPost("/api/sessions", async (
             HttpContext httpContext,
-            ICookieAuthService cookieAuth,
             IMessageBus bus,
             CancellationToken ct) =>
         {
-            var playerId = await cookieAuth.ResolveOrCreatePlayerAsync(httpContext, ct);
+            var playerId = httpContext.GetPlayerId();
             return await bus.InvokeAsync<IResult>(new StartSessionCommand(playerId), ct);
         })
         .WithName("StartSession")

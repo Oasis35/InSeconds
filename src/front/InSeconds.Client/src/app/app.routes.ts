@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 
 export const routes: Routes = [
   {
-    path: 'game',
+    path: '',
     loadComponent: () =>
       import('./features/game/game.component').then(m => m.GameComponent),
   },
@@ -11,5 +11,4 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/admin/admin.component').then(m => m.AdminComponent),
   },
-  { path: '', redirectTo: 'game', pathMatch: 'full' },
 ];

@@ -22,13 +22,16 @@ export interface AnsweredEvent {
 
       <!-- Choix du palier -->
       @if (audio.isIdle()) {
-        <div class="text-center space-y-4">
-          <p class="text-slate-400 text-sm">Combien de secondes veux-tu écouter ?</p>
-          <div class="flex flex-wrap gap-2 justify-center">
+        <div class="text-center space-y-6 py-4">
+          <div>
+            <p class="text-6xl mb-3">🎧</p>
+            <p class="text-slate-400 text-sm">Combien de secondes veux-tu écouter ?</p>
+          </div>
+          <div class="flex flex-wrap gap-3 justify-center">
             @for (d of durations(); track d) {
               <button
                 (click)="startPlay(d)"
-                class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition touch-manipulation">
+                class="px-6 py-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-lg font-semibold transition touch-manipulation">
                 {{ d }}s
               </button>
             }
@@ -42,27 +45,30 @@ export interface AnsweredEvent {
       }
 
       <!-- En écoute -->
-      @if (audio.isPlaying()) {
-        <div class="text-center space-y-4">
-          <p class="text-emerald-400 font-semibold">🎵 Écoute en cours…</p>
-          @if (!audio.extended() && nextDuration()) {
-            <button
-              (click)="extendPlay()"
-              class="underline text-slate-400 hover:text-slate-200 text-sm touch-manipulation">
-              Prolonger jusqu'à {{ nextDuration() }}s
-            </button>
-          }
+      @if (audio.isPlaying() && !result()) {
+        <div class="text-center py-4">
+          <p class="text-emerald-400 text-xl font-semibold animate-pulse">♫ Écoute en cours…</p>
         </div>
       }
 
       <!-- Saisie artiste + titre -->
       @if (audio.isFinished() && !result()) {
         <form (ngSubmit)="submit()" class="space-y-4">
-          <div class="flex justify-between text-sm text-slate-400">
-            <span>Piste {{ track().position }} / 10</span>
-            <span [class.text-rose-400]="timerSeconds() <= 5">
-              ⏱ {{ timerSeconds() }}s
-            </span>
+          <div class="flex gap-3">
+            <button
+              type="button"
+              (click)="audio.play(track().previewUrl, chosenDuration)"
+              class="flex-1 py-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-semibold transition touch-manipulation">
+              ↺ {{ chosenDuration }}s
+            </button>
+            @if (nextDuration()) {
+              <button
+                type="button"
+                (click)="listenMore()"
+                class="flex-1 py-3 rounded-lg bg-indigo-700 hover:bg-indigo-600 text-white font-semibold transition touch-manipulation">
+                ▶ {{ nextDuration() }}s
+              </button>
+            }
           </div>
 
           <input
@@ -93,11 +99,17 @@ export interface AnsweredEvent {
       <!-- Résultat -->
       @if (result(); as r) {
         <div class="space-y-3 text-center">
-          <div class="flex justify-center gap-4">
-            <span [class]="r.artistCorrect ? 'text-emerald-400' : 'text-rose-400'">
+
+          @if (track().coverUrl) {
+            <img [src]="track().coverUrl" alt="Pochette"
+              class="w-40 h-40 rounded-xl mx-auto object-cover shadow-lg" />
+          }
+
+          <div class="flex justify-center gap-6">
+            <span [class]="r.artistCorrect ? 'text-emerald-400 text-lg' : 'text-rose-400 text-lg'">
               {{ r.artistCorrect ? '✓' : '✗' }} Artiste
             </span>
-            <span [class]="r.titleCorrect ? 'text-emerald-400' : 'text-rose-400'">
+            <span [class]="r.titleCorrect ? 'text-emerald-400 text-lg' : 'text-rose-400 text-lg'">
               {{ r.titleCorrect ? '✓' : '✗' }} Titre
             </span>
           </div>
@@ -105,7 +117,10 @@ export interface AnsweredEvent {
             <span class="text-slate-500">Bonne réponse :</span>
             {{ r.correctArtist }} — {{ r.correctTitle }}
           </p>
-          <p class="text-2xl font-bold text-white">+{{ r.score }} pts</p>
+          <p [class]="r.score > 0 ? 'text-4xl font-bold text-emerald-400' : 'text-4xl font-bold text-slate-400'">
+            +{{ r.score }} pts
+          </p>
+
           <button
             (click)="next()"
             class="mt-2 px-6 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white
@@ -131,10 +146,8 @@ export class BlindRoundComponent implements OnDestroy {
   protected artistAnswer = '';
   protected titleAnswer = '';
   protected readonly result = signal<SubmitAnswerResponse | null>(null);
-  protected readonly timerSeconds = signal(this.settings.guessTimerSeconds());
 
-  private chosenDuration = 0;
-  private timerInterval: ReturnType<typeof setInterval> | null = null;
+  protected chosenDuration = 0;
 
   protected readonly nextDuration = computed(() => {
     const durations = this.settings.allowedDurations();
@@ -147,9 +160,14 @@ export class BlindRoundComponent implements OnDestroy {
   startPlay(duration: number): void {
     this.chosenDuration = duration;
     this.audio.play(this.track().previewUrl, duration);
-    this.audio.state; // trigger change detection
-    // Quand l'audio se termine, démarrer le timer de saisie
-    this.waitForFinished();
+  }
+
+  listenMore(): void {
+    const next = this.nextDuration();
+    if (next) {
+      this.chosenDuration = next;
+      this.audio.play(this.track().previewUrl, next);
+    }
   }
 
   extendPlay(): void {
@@ -161,7 +179,6 @@ export class BlindRoundComponent implements OnDestroy {
   }
 
   submit(): void {
-    this.stopTimer();
     const { listenedSeconds, wasExtended } = this.audio.stop();
 
     this.answered.emit({
@@ -175,7 +192,7 @@ export class BlindRoundComponent implements OnDestroy {
 
   setResult(r: SubmitAnswerResponse): void {
     this.result.set(r);
-    this.stopTimer();
+    this.audio.play(this.track().previewUrl, 30);
   }
 
   next(): void {
@@ -184,37 +201,11 @@ export class BlindRoundComponent implements OnDestroy {
     this.artistAnswer = '';
     this.titleAnswer = '';
     this.chosenDuration = 0;
-    this.timerSeconds.set(this.settings.guessTimerSeconds());
     this.nextTrack.emit();
   }
 
   ngOnDestroy(): void {
-    this.stopTimer();
     this.audio.reset();
   }
 
-  private waitForFinished(): void {
-    const check = setInterval(() => {
-      if (this.audio.isFinished()) {
-        clearInterval(check);
-        this.startGuessTimer();
-      }
-    }, 100);
-  }
-
-  private startGuessTimer(): void {
-    this.timerSeconds.set(this.settings.guessTimerSeconds());
-    this.timerInterval = setInterval(() => {
-      const remaining = this.timerSeconds() - 1;
-      this.timerSeconds.set(remaining);
-      if (remaining <= 0) this.submit();
-    }, 1000);
-  }
-
-  private stopTimer(): void {
-    if (this.timerInterval !== null) {
-      clearInterval(this.timerInterval);
-      this.timerInterval = null;
-    }
-  }
 }
