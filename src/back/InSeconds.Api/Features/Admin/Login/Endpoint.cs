@@ -2,55 +2,40 @@ namespace InSeconds.Api.Features.Admin.Login;
 
 public static class LoginEndpoint
 {
-    private const string AdminCookieName = "admin_session";
+    private const string AdminToken = "admin-token";
 
     public static IEndpointRouteBuilder MapAdminLogin(this IEndpointRouteBuilder routes)
     {
-        routes.MapPost("/api/admin/login", (LoginBody body, IConfiguration config, HttpContext ctx) =>
+        routes.MapPost("/api/admin/login", (LoginBody body, IConfiguration config) =>
         {
             var adminPassword = config["AdminPassword"];
             if (string.IsNullOrEmpty(adminPassword) || body.Password != adminPassword)
                 return Results.Unauthorized();
 
-            ctx.Response.Cookies.Append(AdminCookieName, "1", new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.None,
-                Expires = DateTimeOffset.UtcNow.AddHours(8),
-            });
-
-            return Results.Ok();
+            return Results.Ok(new { token = AdminToken });
         })
         .WithName("AdminLogin")
         .WithTags("Admin")
         .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status401Unauthorized);
 
-        routes.MapPost("/api/admin/logout", (HttpContext ctx) =>
-        {
-            ctx.Response.Cookies.Delete(AdminCookieName, new CookieOptions
-            {
-                Secure = true,
-                SameSite = SameSiteMode.None,
-            });
-            return Results.Ok();
-        })
+        routes.MapPost("/api/admin/logout", () => Results.Ok())
         .WithName("AdminLogout")
         .WithTags("Admin");
 
         routes.MapGet("/api/admin/me", (HttpContext ctx) =>
-            ctx.Request.Cookies.ContainsKey(AdminCookieName)
-                ? Results.Ok()
-                : Results.Unauthorized())
+            IsAdminAuthenticated(ctx) ? Results.Ok() : Results.Unauthorized())
         .WithName("AdminMe")
         .WithTags("Admin");
 
         return routes;
     }
 
-    public static bool IsAdminAuthenticated(HttpContext ctx) =>
-        ctx.Request.Cookies.ContainsKey(AdminCookieName);
+    public static bool IsAdminAuthenticated(HttpContext ctx)
+    {
+        var auth = ctx.Request.Headers.Authorization.ToString();
+        return auth == $"Bearer {AdminToken}";
+    }
 }
 
 public sealed record LoginBody(string Password);

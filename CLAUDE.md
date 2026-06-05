@@ -6,7 +6,7 @@ Instructions pour Claude quand il travaille dans ce repo. Pour la documentation 
 
 InSeconds = blind test musical quotidien. 10 morceaux/jour, l'utilisateur choisit combien de secondes il écoute (paliers : 1, 2, 3, 5, 10, 15, 30) avant de tenter artiste + titre. Moins de temps écouté = plus de points. Même défi pour tout le monde, même jour. Mode guest dispo (joue sans s'inscrire, hors classement).
 
-Stack : .NET 10 / Wolverine / EF Core / SQL Server 2025 côté back, Angular 20 / Tailwind v4 / SCSS côté front, Docker Compose pour back + DB.
+Stack : .NET 10 / Wolverine / EF Core / PostgreSQL côté back, Angular 20 / Tailwind v4 / SCSS côté front, Docker Compose pour back + DB. Hébergé sur **Northflank** (front + back + PostgreSQL addon).
 
 ## Ports (ATTENTION — non standards)
 
@@ -14,7 +14,7 @@ Stack : .NET 10 / Wolverine / EF Core / SQL Server 2025 côté back, Angular 20 
 |---------|------|
 | Frontend (`ng serve`) | **5173** (PAS 4200 — conflit avec Screlec/TimeTracker) |
 | Backend API | **5171** (mappé depuis `:8080` interne au conteneur) |
-| SQL Server | **1433** |
+| PostgreSQL | **5432** |
 
 Tous les ports InSeconds en `51xx` par convention. Si tu modifies un port, propage partout : `angular.json` (front), `appsettings.json` (CORS), `docker-compose.yml`, READMEs.
 
@@ -72,11 +72,13 @@ Wolverine 6.x **ne ship plus le compilateur runtime**. Il faut soit `WolverineFx
 
 Angular 20 standalone + signals. Bare-bones pour l'instant — features arrivent une à une.
 
-- `src/app/app.config.ts` : `provideHttpClient(withFetch())`, router
+- `src/app/app.config.ts` : `provideHttpClient(withFetch(), withInterceptors([adminAuthInterceptor]))`, router, `provideAppInitializer` pour `SettingsService`
+- `src/app/core/interceptors/admin-auth.interceptor.ts` : injecte `Authorization: Bearer admin-token` sur toutes les requêtes `/api/admin` (token stocké en localStorage sous `admin_token`)
+- `src/app/core/services/settings.service.ts` : charge les `Settings` BD au démarrage
 - `src/environments/environment{,.development}.ts` : `apiUrl`, swap auto via `fileReplacements` dans `angular.json`
 - `src/styles.scss` : `@use "tailwindcss";` (PAS `@import` — déprécié Sass 3)
 - `.postcssrc.json` : plugin `@tailwindcss/postcss`
-- **CORS** : le back autorise `http://localhost:5173` dans `appsettings.json` (`Cors:AllowedOrigins`)
+- **CORS** : le back autorise `http://localhost:5173` et `https://p01--front--b5cnx77tvxgb.code.run` dans `appsettings.json` (`Cors:AllowedOrigins`)
 
 ## Modèle de données (7 tables)
 
@@ -128,7 +130,7 @@ docker compose down && docker compose up -d
 
 - **Pas de `Co-Authored-By: Claude` dans les commits**, jamais
 - Préférer commits atomiques, messages clairs (FR ou EN, peu importe)
-- Branche principale dev : `feat/Dev1`. Cible des PR : `main`
+- Branche principale dev : `feat/DevX` (incrémentée à chaque cycle). Cible des PR : `main`
 
 ## CI / GitHub Actions
 
@@ -156,18 +158,27 @@ Runners Ubuntu, ~3-4 min par run. Setup .NET via `global-json-file: src/back/glo
 ## Pièges connus
 
 1. **Helper Visual Studio dans le conteneur API** — si VS lance le compose via `.dcproj`, il injecte `dotnet /VSTools/DistrolessHelper/DistrolessHelper.dll --wait` comme PID 1, l'API ne démarre pas. Fix : `docker compose down && docker compose up -d` recrée avec notre ENTRYPOINT.
-2. **Healthcheck SQL Server 2022/2025** — utiliser `/opt/mssql-tools18/bin/sqlcmd` (pas `mssql-tools`) avec le flag `-C` obligatoire. Déjà corrigé dans `docker-compose.yml`.
+2. **Healthcheck PostgreSQL** — utiliser `pg_isready` dans le conteneur. SQL Server n'est plus utilisé (migration vers PostgreSQL effectuée).
 3. **Hot-reload dans le conteneur sur Windows** — nécessite `DOTNET_USE_POLLING_FILE_WATCHER=1` (déjà dans le Dockerfile) car les events fichiers ne traversent pas les bind mounts Linux/Windows.
 4. **CORS** — quand on change le port front, mettre à jour `appsettings.json` côté back PUIS `docker compose restart api` ou recréer.
+5. **Auth admin cross-domain** — le cookie `SameSite=None` est bloqué par Chrome en cross-site. L'auth admin utilise `Authorization: Bearer admin-token` + `localStorage` à la place. Le secret `AdminPassword` doit être configuré dans Northflank (variable d'env `AdminPassword` sur le service api).
+
+## Déjà implémenté (non exhaustif)
+
+- Vertical slices `Sessions/StartSession` + `Sessions/SubmitAnswer` (scoring serveur)
+- Services Common : `TextNormalizer` (Levenshtein), `ScoreCalculator`, `SettingsService`
+- `CookieAuthService` — résout ou crée un Player guest, cookie HttpOnly signé
+- `DeezerClient` — `GetPreviewUrlAsync` + `SearchTracksAsync`
+- Page admin (`/admin`) — login, création de défis, recherche Deezer, reset sessions du jour
+- Auth admin via Bearer token + `adminAuthInterceptor` Angular
+- Déploiement Northflank (front + back + PostgreSQL)
 
 ## À venir (pas encore implémenté)
 
-- Features métier (vertical slices Sessions, Leaderboard, DailyChallenge, Auth)
-- Services Common (`TextNormalizer` Levenshtein, `ScoreCalculator`)
-- `BackgroundService` génération défi quotidien (UTC)
-- Client `DeezerClient` + cache
+- Vertical slice Leaderboard
+- `BackgroundService` génération défi quotidien automatique (UTC)
 - NSwag pour générer le client TS Angular depuis l'OpenAPI backend
-- Cookie HttpOnly d'auth (token `Player.AuthToken`)
-- Mode guest côté UX (création auto au premier appel)
-- Tests unitaires (xUnit pour les services Common)
-- Déploiement (Railway ou Azure App Service)
+- Mode guest côté UX (création auto au premier appel — `CookieAuthService` prêt, UX manquante)
+- `HttpInterceptor` global `withCredentials: true` pour les requêtes joueur
+- Tests d'intégration (Testcontainers)
+- CI/CD déploiement automatique sur push `main`

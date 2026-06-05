@@ -441,22 +441,23 @@ export class BlindRoundComponent {
 - **Inputs ≥ 16px de taille de police** — sinon iOS auto-zoome sur le focus
 - **`touch-action: manipulation`** sur les boutons interactifs pour éviter le délai 300ms de tap
 
-## Auth (cookie HTTP-only)
+## Auth
 
-V1 = pseudo seul, géré côté backend par cookie HttpOnly. **Le front n'a rien à faire** sur l'auth :
+### Auth joueur (cookie HTTP-only)
 
-- Pas de stockage de token en localStorage
-- Pas de header `Authorization` à ajouter
-- Le navigateur envoie automatiquement le cookie sur chaque requête → besoin de `withCredentials: true` dans le `HttpClient` quand l'API sera consommée
+V1 = pseudo seul, géré côté backend par cookie HttpOnly signé (Data Protection ASP.NET).
+
+- Le navigateur envoie automatiquement le cookie sur chaque requête → `withCredentials: true` requis dans les appels `HttpClient`
+- Pour l'instant géré manuellement dans `GameService` — un `HttpInterceptor` global reste à créer
 - Une slice `Auth/Register` permettra à l'utilisateur de promouvoir son compte guest en inscrit (juste un pseudo)
 
-À configurer dans `app.config.ts` quand on aura besoin :
+### Auth admin (Bearer token)
 
-```typescript
-provideHttpClient(withFetch(), withXsrfConfiguration({ /* … */ }))
-```
+L'admin utilise un `Authorization: Bearer admin-token` header plutôt qu'un cookie, pour contourner les restrictions cross-domain de Chrome (cookie `SameSite=None` bloqué en cross-site).
 
-ou via un `HttpInterceptor` qui ajoute `withCredentials: true` à chaque requête.
+- À la connexion, l'API retourne `{ token }` → stocké en `localStorage` sous la clé `admin_token`
+- `adminAuthInterceptor` (enregistré dans `app.config.ts`) injecte automatiquement le header sur toutes les requêtes `/api/admin`
+- À la déconnexion, le token est supprimé du `localStorage`
 
 ## Tests
 

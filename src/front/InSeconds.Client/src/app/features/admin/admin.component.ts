@@ -147,6 +147,7 @@ export class AdminComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/api/admin`;
   private readonly search$ = new Subject<string>();
+  private readonly storageKey = 'admin_token';
 
   authenticated = signal(false);
   loginStatus = signal<'idle' | 'loading' | 'error'>('idle');
@@ -170,14 +171,14 @@ export class AdminComponent implements OnInit {
       switchMap(q => {
         if (q.length < 2) { this.searchResults.set([]); return []; }
         this.searchLoading.set(true);
-        return this.http.get<DeezerTrackInfo[]>(`${this.base}/deezer-search?q=${encodeURIComponent(q)}`, { withCredentials: true });
+        return this.http.get<DeezerTrackInfo[]>(`${this.base}/deezer-search?q=${encodeURIComponent(q)}`);
       }),
     ).subscribe({
       next: results => { this.searchResults.set(results ?? []); this.searchLoading.set(false); },
       error: () => { this.searchResults.set([]); this.searchLoading.set(false); },
     });
 
-    this.http.get(`${this.base}/me`, { withCredentials: true }).subscribe({
+    this.http.get(`${this.base}/me`).subscribe({
       next: () => { this.authenticated.set(true); this.loadChallenges(); },
       error: () => this.authenticated.set(false),
     });
@@ -185,23 +186,27 @@ export class AdminComponent implements OnInit {
 
   login(): void {
     this.loginStatus.set('loading');
-    this.http.post(`${this.base}/login`, { password: this.password }, { withCredentials: true }).subscribe({
-      next: () => { this.authenticated.set(true); this.loginStatus.set('idle'); this.password = ''; this.loadChallenges(); },
+    this.http.post<{ token: string }>(`${this.base}/login`, { password: this.password }).subscribe({
+      next: res => {
+        localStorage.setItem(this.storageKey, res.token);
+        this.authenticated.set(true);
+        this.loginStatus.set('idle');
+        this.password = '';
+        this.loadChallenges();
+      },
       error: () => this.loginStatus.set('error'),
     });
   }
 
   logout(): void {
-    this.http.post(`${this.base}/logout`, {}, { withCredentials: true }).subscribe({
-      next: () => this.authenticated.set(false),
-      error: () => this.authenticated.set(false),
-    });
+    localStorage.removeItem(this.storageKey);
+    this.authenticated.set(false);
   }
 
   reset(): void {
     this.resetStatus.set('loading');
     this.resetResult.set(null);
-    this.http.delete<ResetResult>(`${this.base}/reset-today`, { withCredentials: true }).subscribe({
+    this.http.delete<ResetResult>(`${this.base}/reset-today`).subscribe({
       next: res => { this.resetResult.set(res); this.resetStatus.set('success'); },
       error: () => this.resetStatus.set('error'),
     });
@@ -229,7 +234,7 @@ export class AdminComponent implements OnInit {
       date: this.newChallengeDate,
       deezerTrackIds: this.selectedTracks().map(t => t.deezerTrackId),
     };
-    this.http.post<ChallengeDto>(`${this.base}/challenges`, body, { withCredentials: true }).subscribe({
+    this.http.post<ChallengeDto>(`${this.base}/challenges`, body).subscribe({
       next: () => {
         this.createStatus.set('success');
         this.selectedTracks.set([]);
@@ -244,7 +249,7 @@ export class AdminComponent implements OnInit {
   }
 
   private loadChallenges(): void {
-    this.http.get<ChallengeDto[]>(`${this.base}/challenges`, { withCredentials: true }).subscribe({
+    this.http.get<ChallengeDto[]>(`${this.base}/challenges`).subscribe({
       next: data => this.challenges.set(data),
       error: () => {},
     });
