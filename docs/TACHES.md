@@ -1,7 +1,7 @@
 # InSeconds — Liste des Tâches (MVP)
 
-> État au 2026-05-29. Les cases ✅ sont **réellement** faites dans le repo. Le reste est à venir.
-> Mis à jour le 2026-05-29 après analyse du code source.
+> État au 2026-06-05. Les cases ✅ sont **réellement** faites dans le repo. Le reste est à venir.
+> Mis à jour le 2026-06-05 après analyse du code source.
 
 ## ✅ Bootstrap projet (DONE)
 
@@ -21,7 +21,7 @@
 - [x] `global.json` avec `rollForward: latestFeature`
 - [x] Packages : EF Core 10 (SqlServer/Tools/Design), Wolverine 6.0.2 (+ EF + FluentValidation + **RuntimeCompilation**), FluentValidation 12, Microsoft.AspNetCore.OpenApi
 - [x] Structure dossiers vertical slice : `Features/`, `Domain/`, `Infrastructure/Persistence/Configurations/`, `Infrastructure/Persistence/Migrations/`, `Infrastructure/Deezer/`, `Common/Scoring/`, `Common/Text/`
-- [x] `appsettings.json` avec connection string SQL Server + section CORS + section Deezer
+- [x] `appsettings.json` avec connection string PostgreSQL + section CORS + section Deezer
 - [x] `Program.cs` configuré : DbContext, Wolverine (avec `UseRuntimeCompilation` + EFCore transactions + FluentValidation), FluentValidation auto-discovery, CORS pour `http://localhost:5173`, OpenAPI, endpoint `/health`, auto-migration au boot
 - [x] Dockerfile dev (SDK base + `dotnet watch` + polling watcher Windows)
 
@@ -49,7 +49,7 @@
 - [x] Implémenter `ScoreCalculator.cs` — paliers discrets × scoring partiel (artiste/titre séparés) × malus extension
 - [x] Tests unitaires `ScoreCalculator`
 - [x] Enregistrer services dans `Program.cs` (DI)
-- [ ] Créer `SettingsService` (lecture cachée des `Settings` BD avec refresh à chaud)
+- [x] Créer `SettingsService` (lecture cachée des `Settings` BD avec refresh à chaud)
 
 ## 🚧 Auth (cookie HTTP-only) — v1 pseudo seul
 
@@ -78,9 +78,9 @@
 
 ## 🚧 Intégration Deezer
 
-- [x] `DeezerClient` (`HttpClient` typed) : `GetPreviewUrlAsync(trackId)` → GET `/track/{id}`
+- [x] `DeezerClient` (`HttpClient` typed) : `GetPreviewUrlAsync(trackId)` → GET `/track/{id}`, `SearchTracksAsync(query)` → GET `/search`
 - [ ] Définir `IDeezerClient` (interface pour mockabilité)
-- [ ] Méthodes manquantes : `GetTopTracksByGenreAsync(genreId, limit)`, `SearchAsync(query)`
+- [ ] Méthodes manquantes : `GetTopTracksByGenreAsync(genreId, limit)`
 - [ ] Décorateur `DeezerCacheDecorator` (IMemoryCache) — TTL court sur les URLs preview
 - [ ] Gestion rate limit Deezer (50 req / 5 s) — retry avec backoff
 - [ ] Gestion erreurs (404 morceau retiré, 5xx Deezer down)
@@ -105,7 +105,8 @@
 - [x] `fileReplacements` dans `angular.json`
 - [x] Page d'accueil avec ping `/health` (badge OK/KO live)
 - [ ] Définir une palette de couleurs cohérente (variables Tailwind via `@theme` ou config)
-- [ ] Configurer `HttpInterceptor` global pour `withCredentials: true` (pour l'instant géré manuellement dans `GameService`)
+- [x] Configurer `HttpInterceptor` global pour l'auth admin (`adminAuthInterceptor` — Bearer token en localStorage)
+- [ ] Configurer `HttpInterceptor` global pour `withCredentials: true` sur les requêtes joueur (pour l'instant géré manuellement dans `GameService`)
 
 ## ✅ Frontend — Service Audio (DONE)
 
@@ -123,7 +124,7 @@
 - [x] `GameComponent` — chargement session, progression X/10, score accumulé, récap final, gestion `already_played` + erreur réseau
 - [x] `BlindRoundComponent` — choix palier, lecture, prolongation, saisie artiste/titre, timer 20s, feedback résultat, bouton piste suivante
 - [x] Inputs ≥ 16px (pas de zoom iOS), `touch-manipulation` sur les boutons
-- [ ] `SettingsService` front qui charge les `Settings` BD (allowedDurations, guessTimerSeconds hardcodés pour l'instant dans le composant)
+- [x] `SettingsService` front qui charge les `Settings` BD au démarrage (via `provideAppInitializer`)
 - [ ] Bouton "Voir le classement" dans le récap final (route manquante)
 
 ## 🚧 Frontend — Leaderboard
@@ -182,11 +183,12 @@
 
 ## 🚧 Déploiement
 
-- [ ] Choisir cible : Railway (simple, SQL Server inclus) ou Azure App Service + Azure SQL
-- [ ] Adapter `environment.ts` (prod) avec l'URL backend de prod
-- [ ] Configurer reverse proxy ou stratégie CORS prod
-- [ ] Secrets prod (connection string, etc.) via Key Vault / secrets Railway
-- [ ] CI/CD : ajouter un workflow GitHub Actions de déploiement sur push `main`
+- [x] Choisir cible : **Northflank** (PostgreSQL addon + services conteneurisés front + back)
+- [x] Adapter `environment.ts` (prod) avec l'URL backend Northflank
+- [x] Configurer CORS prod (`appsettings.json` — origine front Northflank autorisée)
+- [x] Secrets prod (connection string PostgreSQL, `AdminPassword`) via secrets Northflank
+- [x] Auth admin : Bearer token via `Authorization` header (cookie cross-domain bloqué par Chrome)
+- [ ] CI/CD : ajouter un workflow GitHub Actions de déploiement automatique sur push `main`
 - [ ] Smoke tests automatisés sur l'environnement prod après deploy
 - [ ] Monitorer logs jour 1 (Application Insights ou équivalent)
 
