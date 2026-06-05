@@ -151,6 +151,21 @@ type Tab = 'pool' | 'defis';
         <!-- Actions bas de page -->
         <div class="flex flex-col items-center gap-3 pt-2 w-full max-w-2xl">
           <div class="flex items-center gap-3">
+            <button (click)="generateToday()" [disabled]="generateStatus() === 'loading'"
+              class="text-indigo-400 hover:text-indigo-300 disabled:opacity-50 text-xs transition-colors">
+              @if (generateStatus() === 'loading') { Génération... } @else { Générer le défi du jour }
+            </button>
+            @if (generateStatus() === 'success') {
+              <span class="text-green-400 text-xs">Défi généré.</span>
+            }
+            @if (generateStatus() === 'already') {
+              <span class="text-gray-400 text-xs">Défi du jour déjà généré.</span>
+            }
+            @if (generateStatus() === 'error') {
+              <span class="text-red-400 text-xs">Erreur lors de la génération.</span>
+            }
+          </div>
+          <div class="flex items-center gap-3">
             <button (click)="reset()" [disabled]="resetStatus() === 'loading'"
               class="text-red-500 hover:text-red-400 disabled:opacity-50 text-xs transition-colors">
               @if (resetStatus() === 'loading') { Réinitialisation... } @else { Réinitialiser les parties du jour }
@@ -181,6 +196,7 @@ export class AdminComponent implements OnInit {
   loginStatus = signal<'idle' | 'loading' | 'error'>('idle');
   resetStatus = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
   resetResult = signal<ResetResult | null>(null);
+  generateStatus = signal<'idle' | 'loading' | 'success' | 'already' | 'error'>('idle');
   challenges = signal<ChallengeDto[]>([]);
   activeTab = signal<Tab>('pool');
 
@@ -230,6 +246,22 @@ export class AdminComponent implements OnInit {
   logout(): void {
     localStorage.removeItem(this.storageKey);
     this.authenticated.set(false);
+  }
+
+  generateToday(): void {
+    this.generateStatus.set('loading');
+    this.http.post(`${this.base}/generate-today`, {}).subscribe({
+      next: () => {
+        this.generateStatus.set('success');
+        this.loadChallenges();
+        this.loadPool();
+        setTimeout(() => this.generateStatus.set('idle'), 3000);
+      },
+      error: (err) => {
+        this.generateStatus.set(err.status === 409 ? 'already' : 'error');
+        setTimeout(() => this.generateStatus.set('idle'), 3000);
+      },
+    });
   }
 
   reset(): void {

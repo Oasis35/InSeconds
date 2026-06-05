@@ -10,7 +10,7 @@ public sealed class DailyChallengeGenerator(
     SettingsService settingsService,
     ILogger<DailyChallengeGenerator> logger)
 {
-    public async Task GenerateAsync(CancellationToken ct = default)
+    public async Task<bool> GenerateAsync(CancellationToken ct = default)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
@@ -18,7 +18,7 @@ public sealed class DailyChallengeGenerator(
         if (alreadyExists)
         {
             logger.LogInformation("Défi du {Date} déjà présent, génération ignorée.", today);
-            return;
+            return false;
         }
 
         var usedTrackIds = await db.DailyChallengeTracks
@@ -39,7 +39,7 @@ public sealed class DailyChallengeGenerator(
             logger.LogError(
                 "Pool insuffisant : {Count} morceau(x) disponible(s), {Required} requis pour le défi du {Date}.",
                 available.Count, n, today);
-            return;
+            return false;
         }
 
         var rng = new Random(today.DayNumber);
@@ -63,5 +63,6 @@ public sealed class DailyChallengeGenerator(
         await db.SaveChangesAsync(ct);
 
         logger.LogInformation("Défi du {Date} généré : {N} morceaux.", today, n);
+        return true;
     }
 }
