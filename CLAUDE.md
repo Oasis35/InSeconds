@@ -106,7 +106,7 @@ Angular 20 standalone + signals.
 - `src/app/core/interceptors/admin-auth.interceptor.ts` : injecte `Authorization: Bearer admin-token` sur toutes les requêtes `/api/admin` (token stocké en localStorage sous `admin_token`)
 - `src/app/core/services/settings.service.ts` : charge les `Settings` BD au démarrage, expose des signals (`allowedDurations`, `guessTimerSeconds`, etc.)
 - `src/app/core/models/game.models.ts` : re-exports depuis `api.generated.ts` (`TrackSlot`, `StartSessionResponse`, `SubmitAnswerRequest`, `SubmitAnswerResponse`)
-- `src/app/api/api.generated.ts` : **fichier généré** (exclu du git), regénérer avec `npm run generate-api` après tout changement d'endpoint back
+- `src/app/api/api.generated.ts` : **fichier généré commité volontairement** (le backend ne tourne pas en CI), regénérer avec `npm run generate-api` après tout changement d'endpoint back puis commiter
 - `src/environments/environment{,.development}.ts` : `apiUrl`, swap auto via `fileReplacements` dans `angular.json`
 - `src/styles.scss` : `@use "tailwindcss";` (PAS `@import` — déprécié Sass 3)
 - `.postcssrc.json` : plugin `@tailwindcss/postcss`
@@ -236,7 +236,9 @@ Runners Ubuntu, ~3-4 min par run. Setup .NET via `global-json-file: src/back/glo
 - Auth admin via Bearer token + `adminAuthInterceptor` Angular
 - Settings chargés depuis la BD via `AppDbConfigurationSource` (ADO.NET brut) → `IOptions<AppSettings>`
 - `Track.CoverHash` (hash seul, pas URL complète) + `AppSettings.CoverUrlTemplate` pour la reconstruction
-- NSwag : `ApiClient` généré depuis `/openapi/v1.json`, enregistré dans `app.config.ts`, types re-exportés via `game.models.ts`
+- NSwag : `ApiClient` généré depuis `/openapi/v1.json`, enregistré dans `app.config.ts`, types re-exportés via `game.models.ts`, `api.generated.ts` commité
+- Pages d'erreur : 404 (`NotFoundComponent`), "déjà joué" (409 → compte à rebours jusqu'à minuit UTC), "pas de défi" (503)
+- Récap final : lien Deezer par morceau (`deezerTrackId` inclus dans `TrackSlot`)
 - Déploiement Northflank (front + back + PostgreSQL), CI/CD auto sur push `main`
 
 ## À venir (pas encore implémenté)
