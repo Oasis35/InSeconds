@@ -22,7 +22,7 @@ public sealed class SubmitAnswerHandler(
             return Results.NotFound(new { error = "session_not_found", message = "Session introuvable." });
 
         if (session.PlayerId != command.PlayerId)
-            return Results.Forbid();
+            return Results.StatusCode(403);
 
         var challengeTrack = await db.DailyChallengeTracks
             .Include(t => t.Track)

@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using FluentAssertions;
 using Xunit;
+using InSeconds.Api.Common.Settings;
 using InSeconds.Api.Domain;
 using InSeconds.Api.Features.Sessions.StartSession;
 using InSeconds.Api.Infrastructure.Deezer;
@@ -9,6 +10,7 @@ using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace InSeconds.Api.UnitTests.Features.Sessions.StartSession;
 
@@ -42,6 +44,9 @@ public sealed class StartSessionHandlerTests
         new(new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options);
+
+    private static SettingsService CreateSettingsService() =>
+        new(Options.Create(new AppSettings()));
 
     // ---------------------------------------------------------------------------
     // Builders
@@ -134,7 +139,7 @@ public sealed class StartSessionHandlerTests
         await db.SaveChangesAsync();
 
         // Act
-        var result = await new StartSessionHandler(db, CreateFakeDeezerClient()).Handle(new StartSessionCommand(PlayerId), CancellationToken.None);
+        var result = await new StartSessionHandler(db, CreateFakeDeezerClient(), CreateSettingsService()).Handle(new StartSessionCommand(PlayerId), CancellationToken.None);
 
         // Assert
         var response = AssertOk<StartSessionResponse>(result).Value!;
@@ -160,7 +165,7 @@ public sealed class StartSessionHandlerTests
         await db.SaveChangesAsync();
 
         // Act
-        var result = await new StartSessionHandler(db, CreateFakeDeezerClient()).Handle(new StartSessionCommand(PlayerId), CancellationToken.None);
+        var result = await new StartSessionHandler(db, CreateFakeDeezerClient(), CreateSettingsService()).Handle(new StartSessionCommand(PlayerId), CancellationToken.None);
 
         // Assert
         AssertConflict(result);
@@ -182,7 +187,7 @@ public sealed class StartSessionHandlerTests
         await db.SaveChangesAsync();
 
         // Act
-        var result = await new StartSessionHandler(db, CreateFakeDeezerClient()).Handle(new StartSessionCommand(PlayerId), CancellationToken.None);
+        var result = await new StartSessionHandler(db, CreateFakeDeezerClient(), CreateSettingsService()).Handle(new StartSessionCommand(PlayerId), CancellationToken.None);
 
         // Assert
         AssertProblem(result, StatusCodes.Status503ServiceUnavailable);

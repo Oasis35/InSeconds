@@ -9,7 +9,6 @@ using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
 namespace InSeconds.Api.UnitTests.Features.Sessions.SubmitAnswer;
@@ -27,22 +26,11 @@ public sealed class SubmitAnswerHandlerTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options);
 
-    private static SettingsService CreateSettingsService(ApplicationDbContext db)
-    {
-        var cache = new MemoryCache(Options.Create(new MemoryCacheOptions()));
-        db.Settings.AddRange(
-            new Setting { Id = 1, Key = "GuessTimerSeconds",       Value = "20",                         UpdatedAt = DateTime.UtcNow },
-            new Setting { Id = 2, Key = "AllowedDurationsSeconds",  Value = "1,2,3,5,10,15,30",           UpdatedAt = DateTime.UtcNow },
-            new Setting { Id = 3, Key = "MaxExtensionsPerAnswer",   Value = "1",                          UpdatedAt = DateTime.UtcNow },
-            new Setting { Id = 4, Key = "TracksPerChallenge",       Value = "10",                         UpdatedAt = DateTime.UtcNow },
-            new Setting { Id = 5, Key = "DurationScores",           Value = "1:1000,2:850,3:700,5:500,10:300,15:150,30:50", UpdatedAt = DateTime.UtcNow }
-        );
-        db.SaveChanges();
-        return new SettingsService(db, cache);
-    }
+    private static SettingsService CreateSettingsService() =>
+        new(Options.Create(new AppSettings()));
 
     private static SubmitAnswerHandler CreateHandler(ApplicationDbContext db) =>
-        new(db, new ScoreCalculator(), new TextNormalizer(), CreateSettingsService(db));
+        new(db, new ScoreCalculator(), new TextNormalizer(), CreateSettingsService());
 
     // ---------------------------------------------------------------------------
     // Builders
@@ -297,6 +285,7 @@ public sealed class SubmitAnswerHandlerTests
         var result = await CreateHandler(db).Handle(command, CancellationToken.None);
 
         // Assert
-        result.Should().BeOfType<ForbidHttpResult>();
+        result.Should().BeAssignableTo<IStatusCodeHttpResult>()
+            .Which.StatusCode.Should().Be(403);
     }
 }

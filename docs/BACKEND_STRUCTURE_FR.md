@@ -1,6 +1,6 @@
 # Architecture Backend (.NET 10)
 
-> Référence d'architecture backend InSeconds. Reflète l'état du code à la racine du repo. Pour les conventions de code et les pièges connus, voir [`CLAUDE.md`](../CLAUDE.md).
+> ⚠️ **Document partiellement obsolète.** Rédigé en début de projet, plusieurs sections ne reflètent plus le code actuel (PostgreSQL à la place de SQL Server, services Common implémentés, settings via `IOptions<AppSettings>`, `Track.CoverHash` à la place de `CoverUrl`, etc.). Se référer au code et à [`CLAUDE.md`](../CLAUDE.md) pour l'état réel.
 
 ## Stack
 

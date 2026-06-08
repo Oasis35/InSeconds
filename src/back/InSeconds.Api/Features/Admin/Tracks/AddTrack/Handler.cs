@@ -25,7 +25,7 @@ public sealed class AddTrackHandler(ApplicationDbContext db, DeezerClient deezer
             DeezerTrackId = command.DeezerTrackId,
             Artist        = info.Artist,
             Title         = info.Title,
-            CoverUrl      = info.CoverUrl,
+            CoverHash     = info.CoverHash,
             CreatedAt     = DateTime.UtcNow,
         };
         db.Tracks.Add(track);

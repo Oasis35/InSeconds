@@ -5,8 +5,8 @@ using InSeconds.Api.Domain;
 using InSeconds.Api.Features.ChallengeGeneration;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace InSeconds.Api.UnitTests.Features.ChallengeGeneration;
 
@@ -23,16 +23,8 @@ public sealed class GenerateDailyChallengeTests
 
     private static DailyChallengeGenerator CreateGenerator(ApplicationDbContext db, int tracksPerChallenge = 3)
     {
-        db.Settings.Add(new Setting
-        {
-            Id = 4, Key = "TracksPerChallenge",
-            Value = tracksPerChallenge.ToString(),
-            UpdatedAt = DateTime.UtcNow,
-        });
-        db.SaveChanges();
-
-        var cache = new MemoryCache(new MemoryCacheOptions());
-        var settingsService = new SettingsService(db, cache);
+        var settingsService = new SettingsService(
+            Options.Create(new AppSettings { TracksPerChallenge = tracksPerChallenge }));
         return new DailyChallengeGenerator(db, settingsService, NullLogger<DailyChallengeGenerator>.Instance);
     }
 

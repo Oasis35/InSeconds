@@ -21,6 +21,7 @@ using InSeconds.Api.Infrastructure.Deezer;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Wolverine;
 using Wolverine.FluentValidation;
 
@@ -32,6 +33,8 @@ var pgUri = Environment.GetEnvironmentVariable("NF_INSECONDS_DB_POSTGRES_URI");
 var connectionString = pgUri is not null
     ? BuildNpgsqlConnectionString(pgUri)
     : builder.Configuration.GetConnectionString("DefaultConnection")!;
+
+builder.Configuration.Sources.Add(new AppDbConfigurationSource(connectionString));
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
@@ -54,7 +57,9 @@ builder.Services.AddCors(options =>
               .AllowCredentials());
 });
 
-builder.Services.AddMemoryCache();
+builder.Services.AddOptions<AppSettings>()
+    .BindConfiguration(AppDbConfigurationProvider.SectionPrefix);
+builder.Services.AddSingleton<IPostConfigureOptions<AppSettings>, AppSettingsPostConfigure>();
 builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<GetTracksHandler>();
 builder.Services.AddScoped<DailyChallengeGenerator>();
