@@ -11,12 +11,12 @@ InSeconds est un **blind test musical quotidien**. Le joueur choisit combien de 
 | Couche | Tech |
 |--------|------|
 | Backend | .NET 10, Wolverine (messaging), FluentValidation, EF Core 10 |
-| Base de données | SQL Server 2025 (Developer edition, en Docker) |
+| Base de données | PostgreSQL (addon Northflank en prod, image Docker en dev) |
 | Frontend | Angular 20 (standalone + signals), TypeScript, Tailwind CSS v4, SCSS |
-| Musique | API Deezer (publique, à intégrer) |
+| Musique | API Deezer (intégrée — recherche + preview + extraction `CoverHash`) |
 | Infra dev | Docker Compose, `dotnet watch` (back), `ng serve` (front) |
 | CI | GitHub Actions (build back + front + check migrations EF), Dependabot |
-| Déploiement | Pas encore configuré (Railway ou Azure App Service à terme) |
+| Déploiement | Northflank (front + back + PostgreSQL addon) |
 
 ## Architecture en deux mots
 
@@ -51,16 +51,26 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 
 ✅ **Fait** :
 
-- Scaffolding backend complet (.slnx, projet API, packages Wolverine/EF/FluentValidation)
-- Architecture vertical slice posée (dossiers `Features/`, `Domain/`, `Infrastructure/`, `Common/` vides)
-- 7 entités du domaine + configurations EF + migration `InitialCreate` appliquée
-- Setup Docker : conteneurs `inseconds.database` (SQL 2025) + `inseconds.api` (hot-reload), volumes, healthcheck
-- Scaffolding frontend complet (Angular 20 + Tailwind v4 + SCSS)
-- Page d'accueil front avec ping `/health` validant le bout-en-bout
-- CI GitHub Actions (build back/front + check migrations) + Dependabot
-- Documentation : README bilingue + CLAUDE.md + docs/
+- Architecture vertical slice complète (Features/Domain/Infrastructure/Common)
+- 7 entités du domaine + configurations EF + migrations appliquées (PostgreSQL)
+- Setup Docker : conteneurs `inseconds.database` (PostgreSQL) + `inseconds.api` (hot-reload)
+- Vertical slices `Sessions/StartSession` + `Sessions/SubmitAnswer` (scoring serveur + stats par morceau)
+- Stats après chaque réponse : temps du joueur, moyenne des joueurs ayant trouvé, % d'échec
+- Services Common : `TextNormalizer` (Levenshtein), `ScoreCalculator`, `SettingsService`
+- `CookieAuthService` — résout/crée Player guest, cookie HttpOnly `SameSite=None` en prod
+- `playerAuthInterceptor` Angular — `withCredentials: true` sur toutes les requêtes joueur
+- `DeezerClient` — recherche + preview + extraction `CoverHash`
+- Settings via `IOptions<AppSettings>` chargé depuis la BD au boot (ADO.NET brut)
+- `Track.CoverHash` + `AppSettings.CoverUrlTemplate` (URL reconstruite à la volée)
+- Page admin (`/admin`) — login, gestion défis, recherche Deezer, reset sessions
+- Auth admin via Bearer token + `adminAuthInterceptor` Angular
+- `BackgroundService` génération défi quotidien automatique (à 3h UTC)
+- Frontend complet (Angular 20 + Tailwind v4 + SCSS) — UI jeu jouable
+- NSwag : `ApiClient` généré depuis l'OpenAPI back, types synchronisés automatiquement
+- CI GitHub Actions (build back/front + check migrations) + CI/CD auto sur push `main`
+- Déploiement Northflank (front + back + PostgreSQL)
 
-🚧 **À faire** : tout le métier — les services `TextNormalizer` / `ScoreCalculator`, le client Deezer, le générateur de défi, les vertical slices Sessions/Leaderboard/Auth, les composants UI Game/BlindRound/Leaderboard, l'auth via cookie HTTP-only, NSwag pour générer le client TS, les tests. Voir [`TACHES.md`](TACHES.md) pour la liste complète et l'ordre suggéré.
+🚧 **À faire** : vertical slice Leaderboard, Auth Register (promotion guest → inscrit), UI auth front, tests d'intégration (Testcontainers), smoke tests post-deploy, polish mobile. Voir [`TACHES.md`](TACHES.md).
 
 ## Specs gameplay clés (rappel rapide)
 

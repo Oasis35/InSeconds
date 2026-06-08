@@ -22,7 +22,7 @@ public sealed class SubmitAnswerHandler(
             return Results.NotFound(new { error = "session_not_found", message = "Session introuvable." });
 
         if (session.PlayerId != command.PlayerId)
-            return Results.Forbid();
+            return Results.StatusCode(403);
 
         var challengeTrack = await db.DailyChallengeTracks
             .Include(t => t.Track)
@@ -71,11 +71,30 @@ public sealed class SubmitAnswerHandler(
 
         await db.SaveChangesAsync(cancellationToken);
 
+        var stats = await db.GameSessionAnswers
+            .Where(a => a.DailyChallengeTrackId == command.DailyChallengeTrackId)
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                Total      = g.Count(),
+                CorrectAvg = g.Where(a => a.ArtistCorrect || a.TitleCorrect)
+                              .Average(a => (double?)a.ListenedDurationSeconds),
+                FailCount  = g.Count(a => !a.ArtistCorrect && !a.TitleCorrect),
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var failureRate = stats is null || stats.Total == 0
+            ? 0d
+            : Math.Round((double)stats.FailCount / stats.Total * 100, 1);
+
         return Results.Ok(new SubmitAnswerResponse(
-            ArtistCorrect: artistCorrect,
-            TitleCorrect:  titleCorrect,
-            Score:         score,
-            CorrectArtist: challengeTrack.Track.Artist,
-            CorrectTitle:  challengeTrack.Track.Title));
+            ArtistCorrect:             artistCorrect,
+            TitleCorrect:              titleCorrect,
+            Score:                     score,
+            CorrectArtist:             challengeTrack.Track.Artist,
+            CorrectTitle:              challengeTrack.Track.Title,
+            ListenedDurationSeconds:   command.ListenedDurationSeconds,
+            AverageSecondsWhenCorrect: stats?.CorrectAvg,
+            FailureRatePercent:        failureRate));
     }
 }

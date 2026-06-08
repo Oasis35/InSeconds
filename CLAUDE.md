@@ -51,7 +51,11 @@ InSeconds.Api/
 │   │   ├── Configurations/            # 1 IEntityTypeConfiguration<T> par entité
 │   │   └── Migrations/
 │   └── Deezer/                        # client API Deezer
-├── Common/                            # services transverses (TextNormalizer, ScoreCalculator)
+├── Common/
+│   ├── Auth/                          # CookieAuthService + PlayerAuthMiddleware
+│   ├── Scoring/                       # ScoreCalculator
+│   ├── Settings/                      # AppSettings, SettingsService, AppDbConfigurationSource
+│   └── Text/                          # TextNormalizer (Levenshtein)
 └── Program.cs
 ```
 
@@ -68,29 +72,71 @@ InSeconds.Api/
 
 Wolverine 6.x **ne ship plus le compilateur runtime**. Il faut soit `WolverineFx.RuntimeCompilation` + `opts.UseRuntimeCompilation()` (notre choix, dev-friendly), soit static codegen pré-généré pour la prod. Ne pas retirer le package `WolverineFx.RuntimeCompilation` sans alternative.
 
+### Settings — IConfigurationProvider + IOptions
+
+Les settings (table `Settings` en BD) sont chargés via `AppDbConfigurationSource` / `AppDbConfigurationProvider` : au démarrage, une connexion ADO.NET brute lit la table et injecte les valeurs dans `IConfiguration` sous le préfixe `AppDb:`. L'auto-binding `IOptions<AppSettings>` fait le reste.
+
+**Ajouter un nouveau setting = deux changements seulement :**
+
+1. Une propriété dans `AppSettings` avec sa valeur par défaut :
+   ```csharp
+   public int MaxDailyPlays { get; set; } = 5;
+   ```
+2. Une migration EF qui insère la ligne dans `Settings` (`InsertData`).
+
+Types scalaires (`int`, `string`, `bool`) sont bindés automatiquement par le framework. Pour `int[]` ou `Dictionary<int,int>`, ajouter une entrée dans `AppSettingsPostConfigure`.
+
+**Ne pas écrire** de méthode `From()`, `ParseXxx()`, ou de champ `Default` — l'ancienne approche a été supprimée.
+
+`SettingsService` est un simple wrapper `IOptions<AppSettings>` (singleton, calculé une fois au démarrage) :
+```csharp
+public sealed class SettingsService(IOptions<AppSettings> options)
+{
+    public Task<AppSettings> GetAsync(CancellationToken ct = default)
+        => Task.FromResult(options.Value);
+}
+```
+
 ## Architecture frontend
 
-Angular 20 standalone + signals. Bare-bones pour l'instant — features arrivent une à une.
+Angular 20 standalone + signals.
 
-- `src/app/app.config.ts` : `provideHttpClient(withFetch(), withInterceptors([adminAuthInterceptor]))`, router, `provideAppInitializer` pour `SettingsService`
+- `src/app/app.config.ts` : `provideHttpClient(withFetch(), withInterceptors([playerAuthInterceptor, adminAuthInterceptor]))`, router, `provideAppInitializer` pour `SettingsService`, `ApiClient` enregistré avec token `API_BASE_URL → environment.apiUrl`
+- `src/app/core/interceptors/player-auth.interceptor.ts` : ajoute `withCredentials: true` sur toutes les requêtes `/api` sauf `/api/admin`
 - `src/app/core/interceptors/admin-auth.interceptor.ts` : injecte `Authorization: Bearer admin-token` sur toutes les requêtes `/api/admin` (token stocké en localStorage sous `admin_token`)
-- `src/app/core/services/settings.service.ts` : charge les `Settings` BD au démarrage
+- `src/app/core/services/settings.service.ts` : charge les `Settings` BD au démarrage, expose des signals (`allowedDurations`, `guessTimerSeconds`, etc.)
+- `src/app/core/models/game.models.ts` : re-exports depuis `api.generated.ts` (`TrackSlot`, `StartSessionResponse`, `SubmitAnswerRequest`, `SubmitAnswerResponse`)
+- `src/app/api/api.generated.ts` : **fichier généré** (exclu du git), regénérer avec `npm run generate-api` après tout changement d'endpoint back
 - `src/environments/environment{,.development}.ts` : `apiUrl`, swap auto via `fileReplacements` dans `angular.json`
 - `src/styles.scss` : `@use "tailwindcss";` (PAS `@import` — déprécié Sass 3)
 - `.postcssrc.json` : plugin `@tailwindcss/postcss`
 - **CORS** : le back autorise `http://localhost:5173` et `https://p01--front--b5cnx77tvxgb.code.run` dans `appsettings.json` (`Cors:AllowedOrigins`)
+
+### NSwag — génération du client TypeScript
+
+`nswag.json` à la racine du projet front pointe sur `/openapi/v1.json` du backend et génère `src/app/api/api.generated.ts` (classe `ApiClient` + tous les types DTO).
+
+```bash
+# Regénérer après un changement d'endpoint ou de DTO back :
+docker compose up -d          # s'assurer que le back tourne avec le nouveau code
+cd src/front/InSeconds.Client
+npm run generate-api           # runtime Net100 obligatoire
+npm run build                  # vérifier que le build passe
+```
+
+`api.generated.ts` **est commité** (le backend ne tourne pas en CI, donc la génération ne peut pas s'y faire automatiquement). Après toute regénération locale, commiter le fichier mis à jour. `game.models.ts` re-exporte les types utilisés par `GameService` et les composants.
 
 ## Modèle de données (7 tables)
 
 | Table | Rôle |
 |-------|------|
 | `Players` | `Guid Id`, `IsGuest`, `Pseudo?`, `AuthToken` (cookie HttpOnly), soft-delete (`IsDeleted`), CHECK constraint guest⇔pseudo |
-| `Tracks` | référentiel canonique (DeezerTrackId unique) |
+| `Tracks` | référentiel canonique (DeezerTrackId unique), `CoverHash` = hash seul de l'image Deezer (pas l'URL complète) |
 | `DailyChallenges` | 1 par jour UTC (Date unique) + Seed pour audit |
 | `DailyChallengeTracks` | jonction Track ↔ Challenge + Position (1-10) + DeezerRankSnapshot |
 | `GameSessions` | 1 partie/joueur/jour (unique sur `PlayerId+DailyChallengeId`), index leaderboard `(ChallengeId, TotalScore DESC, TotalDurationSeconds)` |
 | `GameSessionAnswers` | 1 réponse par track, `ListenedDurationSeconds` (palier choisi), `WasExtended`, `ArtistCorrect`/`TitleCorrect` séparés |
-| `Settings` | config key/value modifiable à chaud (timer saisie, paliers, etc.) |
+| `Settings` | config key/value modifiable à chaud (timer saisie, paliers, template URL pochette, etc.) |
 
 ### Conventions modèle
 
@@ -100,6 +146,18 @@ Angular 20 standalone + signals. Bare-bones pour l'instant — features arrivent
 - **Scoring partiel** possible : `ArtistCorrect` et `TitleCorrect` séparés (pas un seul `IsCorrect`)
 - **Durée écoutée = choix discret**, pas une mesure. Paliers dans `Settings.AllowedDurationsSeconds`
 - **Migration auto** au boot via `db.Database.Migrate()` dans `Program.cs`
+- **`Track.CoverHash`** : stocke uniquement le hash de l'image Deezer (ex: `abc123...`). L'URL complète est reconstruite à la volée via `AppSettings.BuildCoverUrl(hash)` en utilisant le template `CoverUrlTemplate` depuis `Settings`. Format Deezer : `https://cdn-images.dzcdn.net/images/cover/{hash}/250x250-000000-80-0-0.jpg`
+
+### Settings en base (valeurs par défaut)
+
+| Key | Valeur par défaut | Type |
+|-----|-------------------|------|
+| `GuessTimerSeconds` | `20` | `int` |
+| `AllowedDurationsSeconds` | `1,2,3,5,10,15,30` | `int[]` (CSV) |
+| `MaxExtensionsPerAnswer` | `1` | `int` |
+| `TracksPerChallenge` | `3` | `int` |
+| `DurationScores` | `1:1000,2:850,3:700,5:500,10:300,15:150,30:50` | `Dictionary<int,int>` |
+| `CoverUrlTemplate` | `https://cdn-images.dzcdn.net/images/cover/{hash}/250x250-000000-80-0-0.jpg` | `string` |
 
 ## Commandes courantes
 
@@ -162,23 +220,32 @@ Runners Ubuntu, ~3-4 min par run. Setup .NET via `global-json-file: src/back/glo
 3. **Hot-reload dans le conteneur sur Windows** — nécessite `DOTNET_USE_POLLING_FILE_WATCHER=1` (déjà dans le Dockerfile) car les events fichiers ne traversent pas les bind mounts Linux/Windows.
 4. **CORS** — quand on change le port front, mettre à jour `appsettings.json` côté back PUIS `docker compose restart api` ou recréer.
 5. **Auth admin cross-domain** — le cookie `SameSite=None` est bloqué par Chrome en cross-site. L'auth admin utilise `Authorization: Bearer admin-token` + `localStorage` à la place. Le secret `AdminPassword` doit être configuré dans Northflank (variable d'env `AdminPassword` sur le service api).
+6. **`Results.Forbid()` nécessite `AddAuthentication()`** — si l'app n'enregistre pas l'auth middleware ASP.NET, `Results.Forbid()` lève une `InvalidOperationException` au runtime. Utiliser `Results.StatusCode(403)` à la place.
+7. **Cookie joueur cross-origin (Northflank)** — front et back sont sur des sous-domaines différents. Le cookie doit être `SameSite=None; Secure=true` en prod (déjà configuré dans `CookieAuthService`).
+8. **`AppDbConfigurationProvider` silencieux si DB absente** — le `catch` dans `Load()` est intentionnel : en test (in-memory EF) ou lors de la première migration, la BD peut ne pas exister. Les initialiseurs de propriété d'`AppSettings` servent alors de fallback.
 
 ## Déjà implémenté (non exhaustif)
 
-- Vertical slices `Sessions/StartSession` + `Sessions/SubmitAnswer` (scoring serveur)
+- Vertical slices `Sessions/StartSession` + `Sessions/SubmitAnswer` (scoring serveur + stats par morceau)
+- `SubmitAnswerResponse` inclut : `AverageSecondsWhenCorrect` (moy. temps des joueurs ayant trouvé) + `FailureRatePercent` + `ListenedDurationSeconds`
 - Services Common : `TextNormalizer` (Levenshtein), `ScoreCalculator`, `SettingsService`
-- `CookieAuthService` — résout ou crée un Player guest, cookie HttpOnly signé
-- `DeezerClient` — `GetPreviewUrlAsync` + `SearchTracksAsync`
+- `CookieAuthService` — résout ou crée un Player guest, cookie HttpOnly signé (`SameSite=None` en prod)
+- `playerAuthInterceptor` Angular — `withCredentials: true` sur toutes les requêtes `/api` hors admin
+- `DeezerClient` — `GetPreviewUrlAsync` + `SearchTracksAsync`, extrait le hash de pochette (`CoverHash`)
 - Page admin (`/admin`) — login, création de défis, recherche Deezer, reset sessions du jour
 - Auth admin via Bearer token + `adminAuthInterceptor` Angular
-- Déploiement Northflank (front + back + PostgreSQL)
+- Settings chargés depuis la BD via `AppDbConfigurationSource` (ADO.NET brut) → `IOptions<AppSettings>`
+- `Track.CoverHash` (hash seul, pas URL complète) + `AppSettings.CoverUrlTemplate` pour la reconstruction
+- NSwag : `ApiClient` généré depuis `/openapi/v1.json`, enregistré dans `app.config.ts`, types re-exportés via `game.models.ts`
+- Déploiement Northflank (front + back + PostgreSQL), CI/CD auto sur push `main`
 
 ## À venir (pas encore implémenté)
 
-- Vertical slice Leaderboard
-- `BackgroundService` génération défi quotidien automatique (UTC)
-- NSwag pour générer le client TS Angular depuis l'OpenAPI backend
-- Mode guest côté UX (création auto au premier appel — `CookieAuthService` prêt, UX manquante)
-- `HttpInterceptor` global `withCredentials: true` pour les requêtes joueur
+- Vertical slice Leaderboard (`GET /api/leaderboard`)
+- Frontend Leaderboard (composant + route)
+- Auth Register (`POST /api/auth/register { pseudo }`) — promotion guest → inscrit
+- UI auth front (modal pseudo, header état joueur)
 - Tests d'intégration (Testcontainers)
-- CI/CD déploiement automatique sur push `main`
+- Smoke tests post-deploy automatisés
+- Tests mobiles (iOS Safari, Android Chrome)
+- Polish : charte graphique, messages d'erreur, accessibilité, RGPD

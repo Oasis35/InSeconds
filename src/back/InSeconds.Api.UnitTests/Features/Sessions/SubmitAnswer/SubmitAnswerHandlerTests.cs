@@ -9,7 +9,6 @@ using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
 namespace InSeconds.Api.UnitTests.Features.Sessions.SubmitAnswer;
@@ -27,22 +26,11 @@ public sealed class SubmitAnswerHandlerTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options);
 
-    private static SettingsService CreateSettingsService(ApplicationDbContext db)
-    {
-        var cache = new MemoryCache(Options.Create(new MemoryCacheOptions()));
-        db.Settings.AddRange(
-            new Setting { Id = 1, Key = "GuessTimerSeconds",       Value = "20",                         UpdatedAt = DateTime.UtcNow },
-            new Setting { Id = 2, Key = "AllowedDurationsSeconds",  Value = "1,2,3,5,10,15,30",           UpdatedAt = DateTime.UtcNow },
-            new Setting { Id = 3, Key = "MaxExtensionsPerAnswer",   Value = "1",                          UpdatedAt = DateTime.UtcNow },
-            new Setting { Id = 4, Key = "TracksPerChallenge",       Value = "10",                         UpdatedAt = DateTime.UtcNow },
-            new Setting { Id = 5, Key = "DurationScores",           Value = "1:1000,2:850,3:700,5:500,10:300,15:150,30:50", UpdatedAt = DateTime.UtcNow }
-        );
-        db.SaveChanges();
-        return new SettingsService(db, cache);
-    }
+    private static SettingsService CreateSettingsService() =>
+        new(Options.Create(new AppSettings()));
 
     private static SubmitAnswerHandler CreateHandler(ApplicationDbContext db) =>
-        new(db, new ScoreCalculator(), new TextNormalizer(), CreateSettingsService(db));
+        new(db, new ScoreCalculator(), new TextNormalizer(), CreateSettingsService());
 
     // ---------------------------------------------------------------------------
     // Builders
@@ -166,6 +154,9 @@ public sealed class SubmitAnswerHandlerTests
         response.ArtistCorrect.Should().BeTrue();
         response.TitleCorrect.Should().BeTrue();
         response.Score.Should().Be(700); // 3s = 700, ×1.0
+        response.ListenedDurationSeconds.Should().Be(3);
+        response.AverageSecondsWhenCorrect.Should().Be(3);
+        response.FailureRatePercent.Should().Be(0); // seul joueur, a trouvé
 
         var updatedSession = await db.GameSessions.FindAsync(session.Id);
         updatedSession!.TotalScore.Should().Be(700);
@@ -188,6 +179,7 @@ public sealed class SubmitAnswerHandlerTests
         response.ArtistCorrect.Should().BeTrue();
         response.TitleCorrect.Should().BeFalse();
         response.Score.Should().Be(350); // 700 × 0.5
+        response.AverageSecondsWhenCorrect.Should().Be(3);
     }
 
     [Fact]
@@ -206,6 +198,7 @@ public sealed class SubmitAnswerHandlerTests
         response.ArtistCorrect.Should().BeFalse();
         response.TitleCorrect.Should().BeTrue();
         response.Score.Should().Be(350); // 700 × 0.5
+        response.AverageSecondsWhenCorrect.Should().Be(3);
     }
 
     [Fact]
@@ -224,6 +217,9 @@ public sealed class SubmitAnswerHandlerTests
         response.Score.Should().Be(0);
         response.CorrectArtist.Should().Be("Daft Punk");
         response.CorrectTitle.Should().Be("Get Lucky");
+        response.ListenedDurationSeconds.Should().Be(3);
+        response.AverageSecondsWhenCorrect.Should().BeNull();
+        response.FailureRatePercent.Should().Be(100); // seul joueur, n'a pas trouvé
     }
 
     [Fact]
@@ -240,6 +236,7 @@ public sealed class SubmitAnswerHandlerTests
         // Assert
         var response = AssertOk<SubmitAnswerResponse>(result).Value!;
         response.Score.Should().Be(375); // 500 × 0.75 = 375
+        response.AverageSecondsWhenCorrect.Should().Be(5);
     }
 
     [Fact]
@@ -297,6 +294,7 @@ public sealed class SubmitAnswerHandlerTests
         var result = await CreateHandler(db).Handle(command, CancellationToken.None);
 
         // Assert
-        result.Should().BeOfType<ForbidHttpResult>();
+        result.Should().BeAssignableTo<IStatusCodeHttpResult>()
+            .Which.StatusCode.Should().Be(403);
     }
 }
