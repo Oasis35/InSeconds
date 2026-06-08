@@ -107,6 +107,10 @@
 - [x] `GameComponent` — session, progression, score, récap final, gestion erreurs
 - [x] `BlindRoundComponent` — choix palier, lecture, prolongation, saisie, timer 20s, feedback résultat
 - [x] Inputs ≥ 16px, `touch-action: manipulation`
+- [x] Page 404 (`NotFoundComponent` + route wildcard `**`)
+- [x] État "déjà joué" (409 → compte à rebours jusqu'à minuit UTC via `signal` + `setInterval`)
+- [x] État "pas de défi" (503 → message explicite)
+- [x] Lien Deezer par morceau dans le récap final (`deezerTrackId` dans `TrackSlot`)
 - [ ] Bouton "Voir le classement" dans le récap final (route manquante)
 
 ## 🚧 Vertical Slice — Leaderboard
@@ -142,8 +146,8 @@
 - [x] Script `npm run generate-api` (runtime Net100)
 - [x] `ApiClient` enregistré dans `app.config.ts` (token `API_BASE_URL` → `environment.apiUrl`)
 - [x] `api.generated.ts` commité volontairement (pas de backend en CI → ne peut pas être regénéré automatiquement)
-- [ ] Quand l'OpenAPI backend est stabilisé : remplacer les interfaces locales admin + `GameService` par les types générés
-  - Note : `SubmitAnswerResponse` généré manque `listenedDurationSeconds` et `failureRatePercent` — nécessite rebuild back + `npm run generate-api`
+- [x] `game.models.ts` re-exporte `TrackSlot`, `StartSessionResponse`, `SubmitAnswerRequest`, `SubmitAnswerResponse` depuis le fichier généré
+- [ ] Quand l'OpenAPI backend est stabilisé : remplacer les interfaces locales admin par les types générés
 
 ## 🚧 Tests
 
