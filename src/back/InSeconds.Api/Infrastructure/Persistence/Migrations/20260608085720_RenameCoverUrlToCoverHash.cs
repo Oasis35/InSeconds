@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -15,6 +15,13 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                 table: "Tracks",
                 newName: "CoverHash");
 
+            // Extrait le hash AVANT de réduire la taille de la colonne
+            migrationBuilder.Sql(@"
+                UPDATE ""Tracks""
+                SET ""CoverHash"" = split_part(split_part(""CoverHash"", '/images/cover/', 2), '/', 1)
+                WHERE ""CoverHash"" LIKE '%/images/cover/%';
+            ");
+
             migrationBuilder.AlterColumn<string>(
                 name: "CoverHash",
                 table: "Tracks",
@@ -25,13 +32,6 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                 oldType: "character varying(500)",
                 oldMaxLength: 500,
                 oldNullable: true);
-
-            // Extrait le hash depuis l'URL existante "…/images/cover/{hash}/250x250-…"
-            migrationBuilder.Sql(@"
-                UPDATE ""Tracks""
-                SET ""CoverHash"" = split_part(split_part(""CoverHash"", '/images/cover/', 2), '/', 1)
-                WHERE ""CoverHash"" LIKE '%/images/cover/%';
-            ");
         }
 
         /// <inheritdoc />

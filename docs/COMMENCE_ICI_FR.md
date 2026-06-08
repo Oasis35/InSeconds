@@ -66,7 +66,9 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - Auth admin via Bearer token + `adminAuthInterceptor` Angular
 - `BackgroundService` génération défi quotidien automatique (à 3h UTC)
 - Frontend complet (Angular 20 + Tailwind v4 + SCSS) — UI jeu jouable
-- NSwag : `ApiClient` généré depuis l'OpenAPI back, types synchronisés automatiquement
+- NSwag : `ApiClient` généré depuis l'OpenAPI back, `api.generated.ts` commité, types synchronisés automatiquement
+- Pages d'erreur : 404, "déjà joué" + compte à rebours jusqu'à minuit UTC, "pas de défi"
+- Récap final : lien Deezer par morceau
 - CI GitHub Actions (build back/front + check migrations) + CI/CD auto sur push `main`
 - Déploiement Northflank (front + back + PostgreSQL)
 
