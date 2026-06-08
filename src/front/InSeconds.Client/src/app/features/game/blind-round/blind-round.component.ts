@@ -120,6 +120,19 @@ export interface AnsweredEvent {
           <p [class]="r.score > 0 ? 'text-4xl font-bold text-emerald-400' : 'text-4xl font-bold text-slate-400'">
             +{{ r.score }} pts
           </p>
+          <div class="flex justify-center gap-6 text-sm text-slate-500 pt-1">
+            <span>
+              Ton temps : <span class="text-slate-300">{{ r.listenedDurationSeconds }}s</span>
+            </span>
+            @if (r.averageSecondsWhenCorrect != null) {
+              <span>
+                Moy. trouvé : <span class="text-slate-300">{{ r.averageSecondsWhenCorrect!.toFixed(1) }}s</span>
+              </span>
+            }
+            <span>
+              N'ont pas trouvé : <span class="text-slate-300">{{ r.failureRatePercent.toFixed(0) }}%</span>
+            </span>
+          </div>
 
           <button
             (click)="next()"

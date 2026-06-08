@@ -54,20 +54,23 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - Architecture vertical slice complète (Features/Domain/Infrastructure/Common)
 - 7 entités du domaine + configurations EF + migrations appliquées (PostgreSQL)
 - Setup Docker : conteneurs `inseconds.database` (PostgreSQL) + `inseconds.api` (hot-reload)
-- Vertical slices `Sessions/StartSession` + `Sessions/SubmitAnswer` (scoring serveur)
+- Vertical slices `Sessions/StartSession` + `Sessions/SubmitAnswer` (scoring serveur + stats par morceau)
+- Stats après chaque réponse : temps du joueur, moyenne des joueurs ayant trouvé, % d'échec
 - Services Common : `TextNormalizer` (Levenshtein), `ScoreCalculator`, `SettingsService`
 - `CookieAuthService` — résout/crée Player guest, cookie HttpOnly `SameSite=None` en prod
+- `playerAuthInterceptor` Angular — `withCredentials: true` sur toutes les requêtes joueur
 - `DeezerClient` — recherche + preview + extraction `CoverHash`
 - Settings via `IOptions<AppSettings>` chargé depuis la BD au boot (ADO.NET brut)
 - `Track.CoverHash` + `AppSettings.CoverUrlTemplate` (URL reconstruite à la volée)
 - Page admin (`/admin`) — login, gestion défis, recherche Deezer, reset sessions
 - Auth admin via Bearer token + `adminAuthInterceptor` Angular
 - `BackgroundService` génération défi quotidien automatique (à 3h UTC)
-- Scaffolding frontend complet (Angular 20 + Tailwind v4 + SCSS)
-- CI GitHub Actions (build back/front + check migrations) + Dependabot
+- Frontend complet (Angular 20 + Tailwind v4 + SCSS) — UI jeu jouable
+- NSwag : `ApiClient` généré depuis l'OpenAPI back, types synchronisés automatiquement
+- CI GitHub Actions (build back/front + check migrations) + CI/CD auto sur push `main`
 - Déploiement Northflank (front + back + PostgreSQL)
 
-🚧 **À faire** : vertical slice Leaderboard, UX mode guest (côté front — `CookieAuthService` prêt), `withCredentials: true` interceptor Angular, NSwag client TS, tests d'intégration (Testcontainers), CI/CD auto sur push `main`. Voir [`TACHES.md`](TACHES.md).
+🚧 **À faire** : vertical slice Leaderboard, Auth Register (promotion guest → inscrit), UI auth front, tests d'intégration (Testcontainers), smoke tests post-deploy, polish mobile. Voir [`TACHES.md`](TACHES.md).
 
 ## Specs gameplay clés (rappel rapide)
 

@@ -99,15 +99,32 @@ public sealed class SettingsService(IOptions<AppSettings> options)
 
 ## Architecture frontend
 
-Angular 20 standalone + signals. Bare-bones pour l'instant — features arrivent une à une.
+Angular 20 standalone + signals.
 
-- `src/app/app.config.ts` : `provideHttpClient(withFetch(), withInterceptors([adminAuthInterceptor]))`, router, `provideAppInitializer` pour `SettingsService`
+- `src/app/app.config.ts` : `provideHttpClient(withFetch(), withInterceptors([playerAuthInterceptor, adminAuthInterceptor]))`, router, `provideAppInitializer` pour `SettingsService`, `ApiClient` enregistré avec token `API_BASE_URL → environment.apiUrl`
+- `src/app/core/interceptors/player-auth.interceptor.ts` : ajoute `withCredentials: true` sur toutes les requêtes `/api` sauf `/api/admin`
 - `src/app/core/interceptors/admin-auth.interceptor.ts` : injecte `Authorization: Bearer admin-token` sur toutes les requêtes `/api/admin` (token stocké en localStorage sous `admin_token`)
-- `src/app/core/services/settings.service.ts` : charge les `Settings` BD au démarrage
+- `src/app/core/services/settings.service.ts` : charge les `Settings` BD au démarrage, expose des signals (`allowedDurations`, `guessTimerSeconds`, etc.)
+- `src/app/core/models/game.models.ts` : re-exports depuis `api.generated.ts` (`TrackSlot`, `StartSessionResponse`, `SubmitAnswerRequest`, `SubmitAnswerResponse`)
+- `src/app/api/api.generated.ts` : **fichier généré** (exclu du git), regénérer avec `npm run generate-api` après tout changement d'endpoint back
 - `src/environments/environment{,.development}.ts` : `apiUrl`, swap auto via `fileReplacements` dans `angular.json`
 - `src/styles.scss` : `@use "tailwindcss";` (PAS `@import` — déprécié Sass 3)
 - `.postcssrc.json` : plugin `@tailwindcss/postcss`
 - **CORS** : le back autorise `http://localhost:5173` et `https://p01--front--b5cnx77tvxgb.code.run` dans `appsettings.json` (`Cors:AllowedOrigins`)
+
+### NSwag — génération du client TypeScript
+
+`nswag.json` à la racine du projet front pointe sur `/openapi/v1.json` du backend et génère `src/app/api/api.generated.ts` (classe `ApiClient` + tous les types DTO).
+
+```bash
+# Regénérer après un changement d'endpoint ou de DTO back :
+docker compose up -d          # s'assurer que le back tourne avec le nouveau code
+cd src/front/InSeconds.Client
+npm run generate-api           # runtime Net100 obligatoire
+npm run build                  # vérifier que le build passe
+```
+
+`api.generated.ts` est dans `.gitignore` — ne pas le committer. `game.models.ts` re-exporte les types utilisés par `GameService` et les composants.
 
 ## Modèle de données (7 tables)
 
@@ -209,21 +226,26 @@ Runners Ubuntu, ~3-4 min par run. Setup .NET via `global-json-file: src/back/glo
 
 ## Déjà implémenté (non exhaustif)
 
-- Vertical slices `Sessions/StartSession` + `Sessions/SubmitAnswer` (scoring serveur)
+- Vertical slices `Sessions/StartSession` + `Sessions/SubmitAnswer` (scoring serveur + stats par morceau)
+- `SubmitAnswerResponse` inclut : `AverageSecondsWhenCorrect` (moy. temps des joueurs ayant trouvé) + `FailureRatePercent` + `ListenedDurationSeconds`
 - Services Common : `TextNormalizer` (Levenshtein), `ScoreCalculator`, `SettingsService`
 - `CookieAuthService` — résout ou crée un Player guest, cookie HttpOnly signé (`SameSite=None` en prod)
+- `playerAuthInterceptor` Angular — `withCredentials: true` sur toutes les requêtes `/api` hors admin
 - `DeezerClient` — `GetPreviewUrlAsync` + `SearchTracksAsync`, extrait le hash de pochette (`CoverHash`)
 - Page admin (`/admin`) — login, création de défis, recherche Deezer, reset sessions du jour
 - Auth admin via Bearer token + `adminAuthInterceptor` Angular
 - Settings chargés depuis la BD via `AppDbConfigurationSource` (ADO.NET brut) → `IOptions<AppSettings>`
 - `Track.CoverHash` (hash seul, pas URL complète) + `AppSettings.CoverUrlTemplate` pour la reconstruction
-- Déploiement Northflank (front + back + PostgreSQL)
+- NSwag : `ApiClient` généré depuis `/openapi/v1.json`, enregistré dans `app.config.ts`, types re-exportés via `game.models.ts`
+- Déploiement Northflank (front + back + PostgreSQL), CI/CD auto sur push `main`
 
 ## À venir (pas encore implémenté)
 
-- Vertical slice Leaderboard
-- NSwag pour générer le client TS Angular depuis l'OpenAPI backend
-- Mode guest côté UX (création auto au premier appel — `CookieAuthService` prêt, UX manquante)
-- `HttpInterceptor` global `withCredentials: true` pour les requêtes joueur
+- Vertical slice Leaderboard (`GET /api/leaderboard`)
+- Frontend Leaderboard (composant + route)
+- Auth Register (`POST /api/auth/register { pseudo }`) — promotion guest → inscrit
+- UI auth front (modal pseudo, header état joueur)
 - Tests d'intégration (Testcontainers)
-- CI/CD déploiement automatique sur push `main`
+- Smoke tests post-deploy automatisés
+- Tests mobiles (iOS Safari, Android Chrome)
+- Polish : charte graphique, messages d'erreur, accessibilité, RGPD

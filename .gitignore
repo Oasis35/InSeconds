@@ -125,6 +125,9 @@ out-tsc/
 .angular/
 .nx/
 
+# NSwag generated client (regénéré via npm run generate-api)
+src/front/InSeconds.Client/src/app/api/api.generated.ts
+
 # IDE for Angular
 *.launch
 .settings/

@@ -5,4 +5,7 @@ public sealed record SubmitAnswerResponse(
     bool TitleCorrect,
     int Score,
     string CorrectArtist,
-    string CorrectTitle);
+    string CorrectTitle,
+    int ListenedDurationSeconds,
+    double? AverageSecondsWhenCorrect,
+    double FailureRatePercent);
