@@ -15,12 +15,12 @@ interface AppSettingsResponse {
 export class SettingsService {
   private readonly http = inject(HttpClient);
 
-  readonly allowedDurations = signal<number[]>([1, 2, 3, 5, 10, 15, 30]);
+  readonly allowedDurations = signal<number[]>([0.5, 1, 1.5, 2, 3, 5, 10]);
   readonly guessTimerSeconds = signal(20);
   readonly maxExtensions = signal(1);
   readonly tracksPerChallenge = signal(10);
   readonly durationScores = signal<Record<number, number>>({
-    1: 1000, 2: 850, 3: 700, 5: 500, 10: 300, 15: 150, 30: 50,
+    0.5: 1000, 1: 850, 1.5: 700, 2: 550, 3: 400, 5: 250, 10: 100,
   });
 
   load(): Observable<void> {

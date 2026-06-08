@@ -13,6 +13,7 @@ using InSeconds.Api.Features.Admin.ResetToday;
 using InSeconds.Api.Features.Admin.Tracks.AddTrack;
 using InSeconds.Api.Features.Admin.Tracks.GetTracks;
 using InSeconds.Api.Features.Auth.Me;
+using InSeconds.Api.Features.Stats.Today;
 using InSeconds.Api.Features.ChallengeGeneration;
 using InSeconds.Api.Features.Sessions.StartSession;
 using InSeconds.Api.Features.Sessions.SubmitAnswer;
@@ -62,6 +63,7 @@ builder.Services.AddOptions<AppSettings>()
 builder.Services.AddSingleton<IPostConfigureOptions<AppSettings>, AppSettingsPostConfigure>();
 builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<GetTracksHandler>();
+builder.Services.AddScoped<TodayStatsHandler>();
 builder.Services.AddScoped<DailyChallengeGenerator>();
 builder.Services.AddHostedService<GenerateDailyChallengeService>();
 
@@ -112,6 +114,7 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok", utc = DateTime.UtcNo
 
 app.MapGetSettings();
 app.MapMe();
+app.MapTodayStats();
 app.MapAddTrack();
 app.MapGetTracks();
 app.MapStartSession();

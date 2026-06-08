@@ -172,6 +172,56 @@ export class ApiClient {
     /**
      * @return OK
      */
+    apiStatsToday(): Observable<TodayStatsResponse> {
+        let url_ = this.baseUrl + "/api/stats/today";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processApiStatsToday(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processApiStatsToday(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TodayStatsResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TodayStatsResponse>;
+        }));
+    }
+
+    protected processApiStatsToday(response: HttpResponseBase): Observable<TodayStatsResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TodayStatsResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
     apiAdminTracksPost(body: AddTrackBody): Observable<AddTrackResponse> {
         let url_ = this.baseUrl + "/api/admin/tracks";
         url_ = url_.replace(/[?&]$/, "");
@@ -914,6 +964,15 @@ export interface SubmitAnswerResponse {
     [key: string]: any;
 }
 
+export interface TodayStatsResponse {
+    yourScore: number | undefined;
+    medianScore: number;
+    totalPlayers: number;
+    tracks: TrackStat[];
+
+    [key: string]: any;
+}
+
 export interface TrackDto {
     position: number;
     artist: string;
@@ -929,6 +988,18 @@ export interface TrackSlot {
     previewUrl: string;
     coverUrl: string | undefined;
     deezerTrackId: number;
+
+    [key: string]: any;
+}
+
+export interface TrackStat {
+    position: number;
+    artist: string;
+    title: string;
+    deezerTrackId: number;
+    coverUrl: string | undefined;
+    failureRatePercent: number;
+    averageSecondsWhenCorrect: number | undefined;
 
     [key: string]: any;
 }

@@ -3,11 +3,11 @@ namespace InSeconds.Api.Common.Scoring;
 public sealed class ScoreCalculator
 {
     public int Calculate(
-        int listenedDurationSeconds,
+        decimal listenedDurationSeconds,
         bool wasExtended,
         bool artistCorrect,
         bool titleCorrect,
-        Dictionary<int, int> durationScores)
+        Dictionary<decimal, int> durationScores)
     {
         if (!artistCorrect && !titleCorrect)
             return 0;

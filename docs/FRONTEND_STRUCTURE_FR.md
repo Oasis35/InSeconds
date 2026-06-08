@@ -83,11 +83,13 @@ npm run build                  # vérifier que le build TypeScript passe
 Charge les settings de la BD au boot, expose des signals :
 
 ```typescript
-readonly allowedDurations = signal<number[]>([1, 2, 3, 5, 10, 15, 30]);
+readonly allowedDurations = signal<number[]>([0.5, 1, 1.5, 2, 3, 5, 10]);
 readonly guessTimerSeconds = signal(20);
 readonly maxExtensions = signal(1);
 readonly tracksPerChallenge = signal(10);
-readonly durationScores = signal<Record<number, number>>({...});
+readonly durationScores = signal<Record<number, number>>({
+  0.5: 1000, 1: 850, 1.5: 700, 2: 550, 3: 400, 5: 250, 10: 100,
+});
 ```
 
 ### `AudioPlayerService`
@@ -153,7 +155,6 @@ Ajoute `Authorization: Bearer <token>` sur toutes les requêtes vers `/api/admin
 
 ## À venir
 
-- `LeaderboardComponent` + route `/leaderboard`
-- `LoginComponent` (modal pseudo) + header état joueur (guest / pseudo inscrit)
 - Tests Karma/Jasmine (`AudioPlayerService`, `GameService`)
 - Tests E2E Playwright (flux complet 1 partie)
+- Polish : charte graphique, accessibilité, RGPD

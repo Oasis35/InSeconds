@@ -39,7 +39,7 @@ public static class SubmitAnswerEndpoint
 
 public sealed record SubmitAnswerBody(
     int DailyChallengeTrackId,
-    int ListenedDurationSeconds,
+    decimal ListenedDurationSeconds,
     bool WasExtended,
     string? ArtistAnswer,
     string? TitleAnswer);
