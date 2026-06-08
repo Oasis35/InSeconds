@@ -1,3 +1,4 @@
+using InSeconds.Api.Common.Settings;
 using InSeconds.Api.Domain;
 using InSeconds.Api.Infrastructure.Deezer;
 using InSeconds.Api.Infrastructure.Persistence;
@@ -5,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace InSeconds.Api.Features.Sessions.StartSession;
 
-public sealed class StartSessionHandler(ApplicationDbContext db, DeezerClient deezer)
+public sealed class StartSessionHandler(ApplicationDbContext db, DeezerClient deezer, SettingsService settingsService)
 {
     public async Task<IResult> Handle(StartSessionCommand command, CancellationToken cancellationToken)
     {
@@ -51,12 +52,17 @@ public sealed class StartSessionHandler(ApplicationDbContext db, DeezerClient de
         var previewUrls = await Task.WhenAll(
             orderedTracks.Select(t => deezer.GetPreviewUrlAsync(t.Track.DeezerTrackId, cancellationToken)));
 
+        var appSettings = await settingsService.GetAsync(cancellationToken);
+
         var tracks = orderedTracks
             .Select((t, i) => new TrackSlot(
-                Id:         t.Id,
-                Position:   t.Position,
-                PreviewUrl: previewUrls[i] ?? string.Empty,
-                CoverUrl:   t.Track.CoverUrl))
+                Id:             t.Id,
+                Position:       t.Position,
+                PreviewUrl:     previewUrls[i] ?? string.Empty,
+                CoverUrl:       t.Track.CoverHash is not null
+                    ? appSettings.BuildCoverUrl(t.Track.CoverHash)
+                    : null,
+                DeezerTrackId:  t.Track.DeezerTrackId))
             .ToList();
 
         return Results.Ok(new StartSessionResponse(SessionId: session.Id, Tracks: tracks));

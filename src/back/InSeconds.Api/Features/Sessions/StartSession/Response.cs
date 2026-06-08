@@ -8,4 +8,5 @@ public sealed record TrackSlot(
     int Id,
     int Position,
     string PreviewUrl,
-    string? CoverUrl);
+    string? CoverUrl,
+    long DeezerTrackId);

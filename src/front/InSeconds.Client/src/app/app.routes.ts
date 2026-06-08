@@ -11,4 +11,9 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/admin/admin.component').then(m => m.AdminComponent),
   },
+  {
+    path: '**',
+    loadComponent: () =>
+      import('./features/not-found/not-found.component').then(m => m.NotFoundComponent),
+  },
 ];

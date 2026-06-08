@@ -1,10 +1,24 @@
-import { Component, inject, signal, viewChild, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, viewChild, OnInit, OnDestroy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { GameService } from '../../core/services/game.service';
 import { TrackSlot, SubmitAnswerResponse } from '../../core/models/game.models';
 import { BlindRoundComponent, AnsweredEvent } from './blind-round/blind-round.component';
 
-type GameState = 'loading' | 'playing' | 'done' | 'error' | 'already_played';
+type GameState = 'loading' | 'playing' | 'done' | 'error' | 'no_challenge' | 'already_played';
+
+interface RoundResult {
+  artistCorrect: boolean;
+  titleCorrect: boolean;
+  score: number;
+  correctArtist: string;
+  correctTitle: string;
+  listenedDurationSeconds: number;
+  averageSecondsWhenCorrect: number | undefined;
+  failureRatePercent: number;
+  position: number;
+  coverUrl: string | null;
+  deezerTrackId: number;
+}
 
 @Component({
   selector: 'app-game',
@@ -42,14 +56,33 @@ type GameState = 'loading' | 'playing' | 'done' | 'error' | 'already_played';
         </div>
       }
 
-      <!-- Erreur -->
-      @if (gameState() === 'error') {
-        <div class="flex-1 flex flex-col items-center justify-center space-y-4 text-center">
-          <p class="text-rose-400">Impossible de charger le défi du jour.</p>
-          <p class="text-slate-500 text-sm">Vérifie que le backend tourne sur localhost:5171.</p>
+      <!-- Pas de défi aujourd'hui -->
+      @if (gameState() === 'no_challenge') {
+        <div class="flex-1 flex flex-col items-center justify-center gap-5 text-center px-4">
+          <p class="text-6xl">🎵</p>
+          <div class="space-y-1">
+            <h2 class="text-xl font-semibold text-slate-200">Pas de défi aujourd'hui</h2>
+            <p class="text-slate-500 text-sm">Le défi du jour n'a pas encore été généré.<br>Réessaie dans quelques minutes.</p>
+          </div>
           <button
             (click)="retry()"
-            class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition">
+            class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-colors">
+            Réessayer
+          </button>
+        </div>
+      }
+
+      <!-- Erreur -->
+      @if (gameState() === 'error') {
+        <div class="flex-1 flex flex-col items-center justify-center gap-5 text-center px-4">
+          <p class="text-6xl">😵</p>
+          <div class="space-y-1">
+            <h2 class="text-xl font-semibold text-slate-200">Impossible de charger le défi</h2>
+            <p class="text-slate-500 text-sm">Le serveur est peut-être indisponible.<br>Réessaie dans quelques secondes.</p>
+          </div>
+          <button
+            (click)="retry()"
+            class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-colors">
             Réessayer
           </button>
         </div>
@@ -57,10 +90,16 @@ type GameState = 'loading' | 'playing' | 'done' | 'error' | 'already_played';
 
       <!-- Déjà joué aujourd'hui -->
       @if (gameState() === 'already_played') {
-        <div class="flex-1 flex flex-col items-center justify-center text-center space-y-3">
-          <p class="text-2xl">🎵</p>
-          <p class="text-slate-300 font-semibold">Tu as déjà joué aujourd'hui !</p>
-          <p class="text-slate-500 text-sm">Reviens demain pour un nouveau défi.</p>
+        <div class="flex-1 flex flex-col items-center justify-center gap-5 text-center px-4">
+          <p class="text-6xl">✅</p>
+          <div class="space-y-1">
+            <h2 class="text-xl font-semibold text-slate-200">Déjà joué aujourd'hui !</h2>
+            <p class="text-slate-500 text-sm">Tu as déjà relevé le défi du jour.<br>Reviens demain pour un nouveau blind test.</p>
+          </div>
+          <div class="bg-slate-800/60 rounded-2xl px-8 py-5 flex flex-col items-center gap-1">
+            <p class="text-slate-500 text-xs uppercase tracking-widest">Prochain défi dans</p>
+            <p class="text-4xl font-bold tabular-nums tracking-tight text-slate-100">{{ countdown() }}</p>
+          </div>
         </div>
       }
 
@@ -107,10 +146,24 @@ type GameState = 'loading' | 'playing' | 'done' | 'error' | 'already_played';
                     </span>
                   </div>
                   <p class="text-slate-300 text-sm truncate">{{ r.correctArtist }} — {{ r.correctTitle }}</p>
+                  <div class="flex gap-3 text-xs text-slate-600 mt-0.5">
+                    <span>{{ r.listenedDurationSeconds }}s</span>
+                    @if (r.averageSecondsWhenCorrect != null) {
+                      <span>moy. {{ r.averageSecondsWhenCorrect!.toFixed(1) }}s</span>
+                    }
+                    <span>{{ r.failureRatePercent.toFixed(0) }}% ratés</span>
+                  </div>
                 </div>
-                <span [class]="r.score > 0 ? 'text-emerald-400 font-bold text-lg shrink-0' : 'text-slate-500 font-bold text-lg shrink-0'">
-                  +{{ r.score }}
-                </span>
+                <div class="flex flex-col items-end gap-1 shrink-0">
+                  <span [class]="r.score > 0 ? 'text-emerald-400 font-bold text-lg' : 'text-slate-500 font-bold text-lg'">
+                    +{{ r.score }}
+                  </span>
+                  <a [href]="'https://www.deezer.com/track/' + r.deezerTrackId"
+                    target="_blank" rel="noopener noreferrer"
+                    class="text-xs text-slate-500 hover:text-indigo-400 transition-colors">
+                    Deezer ↗
+                  </a>
+                </div>
               </div>
             }
           </div>
@@ -125,16 +178,26 @@ type GameState = 'loading' | 'playing' | 'done' | 'error' | 'already_played';
     </div>
   `,
 })
-export class GameComponent implements OnInit {
+export class GameComponent implements OnInit, OnDestroy {
   private readonly gameService = inject(GameService);
 
   protected readonly gameState = signal<GameState>('loading');
   protected readonly tracks = signal<TrackSlot[]>([]);
   protected readonly currentIndex = signal(0);
   protected readonly totalScore = signal(0);
-  protected readonly results = signal<Array<SubmitAnswerResponse & { position: number; coverUrl: string | null }>>([]);
+  protected readonly results = signal<RoundResult[]>([]);
 
   private sessionId = 0;
+  private countdownInterval: ReturnType<typeof setInterval> | null = null;
+
+  protected readonly secondsUntilMidnightUtc = signal(0);
+  protected readonly countdown = computed(() => {
+    const s = this.secondsUntilMidnightUtc();
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+  });
 
   protected readonly roundRef = viewChild<BlindRoundComponent>('roundRef');
 
@@ -143,6 +206,20 @@ export class GameComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadSession();
+  }
+
+  ngOnDestroy(): void {
+    if (this.countdownInterval !== null) clearInterval(this.countdownInterval);
+  }
+
+  private startCountdown(): void {
+    const tick = () => {
+      const now = new Date();
+      const midnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+      this.secondsUntilMidnightUtc.set(Math.max(0, Math.floor((midnight.getTime() - now.getTime()) / 1000)));
+    };
+    tick();
+    this.countdownInterval = setInterval(tick, 1000);
   }
 
   protected retry(): void {
@@ -155,15 +232,25 @@ export class GameComponent implements OnInit {
       dailyChallengeTrackId:   event.trackId,
       listenedDurationSeconds: event.listenedDurationSeconds,
       wasExtended:             event.wasExtended,
-      artistAnswer:            event.artistAnswer,
-      titleAnswer:             event.titleAnswer,
+      artistAnswer:            event.artistAnswer ?? undefined,
+      titleAnswer:             event.titleAnswer ?? undefined,
     }).subscribe({
       next: (response) => {
         this.totalScore.update(s => s + response.score);
-        this.results.update(rs => [
-          ...rs,
-          { ...response, position: this.currentIndex() + 1, coverUrl: this.tracks()[this.currentIndex()].coverUrl ?? null },
-        ]);
+        const track = this.tracks()[this.currentIndex()];
+        this.results.update(rs => [...rs, {
+          artistCorrect:             response.artistCorrect,
+          titleCorrect:              response.titleCorrect,
+          score:                     response.score,
+          correctArtist:             response.correctArtist,
+          correctTitle:              response.correctTitle,
+          listenedDurationSeconds:   response.listenedDurationSeconds,
+          averageSecondsWhenCorrect: response.averageSecondsWhenCorrect,
+          failureRatePercent:        response.failureRatePercent,
+          position:                  this.currentIndex() + 1,
+          coverUrl:                  track.coverUrl ?? null,
+          deezerTrackId:             track['deezerTrackId'],
+        }]);
         this.roundRef()?.setResult(response);
 
         // Précharger la piste suivante
@@ -180,6 +267,9 @@ export class GameComponent implements OnInit {
           score: 0,
           correctArtist: '?',
           correctTitle: '?',
+          listenedDurationSeconds: 0,
+          averageSecondsWhenCorrect: undefined,
+          failureRatePercent: 0,
         });
       },
     });
@@ -207,6 +297,9 @@ export class GameComponent implements OnInit {
       error: (err) => {
         if (err.status === 409) {
           this.gameState.set('already_played');
+          this.startCountdown();
+        } else if (err.status === 503) {
+          this.gameState.set('no_challenge');
         } else {
           this.gameState.set('error');
         }
