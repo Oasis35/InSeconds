@@ -124,7 +124,7 @@ npm run generate-api           # runtime Net100 obligatoire
 npm run build                  # vérifier que le build passe
 ```
 
-`api.generated.ts` est dans `.gitignore` — ne pas le committer. `game.models.ts` re-exporte les types utilisés par `GameService` et les composants.
+`api.generated.ts` **est commité** (le backend ne tourne pas en CI, donc la génération ne peut pas s'y faire automatiquement). Après toute regénération locale, commiter le fichier mis à jour. `game.models.ts` re-exporte les types utilisés par `GameService` et les composants.
 
 ## Modèle de données (7 tables)
 

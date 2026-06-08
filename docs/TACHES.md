@@ -141,7 +141,7 @@
 - [x] `nswag.json` configuré → lit `/openapi/v1.json` → génère `src/app/api/api.generated.ts`
 - [x] Script `npm run generate-api` (runtime Net100)
 - [x] `ApiClient` enregistré dans `app.config.ts` (token `API_BASE_URL` → `environment.apiUrl`)
-- [x] `api.generated.ts` exclu du `.gitignore` (regénéré à la demande)
+- [x] `api.generated.ts` commité volontairement (pas de backend en CI → ne peut pas être regénéré automatiquement)
 - [ ] Quand l'OpenAPI backend est stabilisé : remplacer les interfaces locales admin + `GameService` par les types générés
   - Note : `SubmitAnswerResponse` généré manque `listenedDurationSeconds` et `failureRatePercent` — nécessite rebuild back + `npm run generate-api`
 

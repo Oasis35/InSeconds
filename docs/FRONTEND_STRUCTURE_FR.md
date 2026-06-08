@@ -74,7 +74,7 @@ npm run generate-api           # runtime Net100
 npm run build                  # vérifier que le build TypeScript passe
 ```
 
-`api.generated.ts` est dans `.gitignore` — ne pas le committer. Les composants et services importent les types via `game.models.ts` qui re-exporte depuis le fichier généré.
+`api.generated.ts` **est commité** — le backend ne tourne pas en CI donc la génération ne peut pas s'y faire automatiquement. Après toute regénération locale, commiter le fichier mis à jour. Les composants et services importent les types via `game.models.ts` qui re-exporte depuis le fichier généré.
 
 ## Services
 
