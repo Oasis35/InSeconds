@@ -153,13 +153,13 @@ public sealed class SubmitAnswerHandlerTests
         var response = AssertOk<SubmitAnswerResponse>(result).Value!;
         response.ArtistCorrect.Should().BeTrue();
         response.TitleCorrect.Should().BeTrue();
-        response.Score.Should().Be(700); // 3s = 700, ×1.0
+        response.Score.Should().Be(400); // 3s = 400, ×1.0
         response.ListenedDurationSeconds.Should().Be(3);
         response.AverageSecondsWhenCorrect.Should().Be(3);
         response.FailureRatePercent.Should().Be(0); // seul joueur, a trouvé
 
         var updatedSession = await db.GameSessions.FindAsync(session.Id);
-        updatedSession!.TotalScore.Should().Be(700);
+        updatedSession!.TotalScore.Should().Be(400);
         updatedSession.TotalDurationSeconds.Should().Be(3);
     }
 
@@ -178,7 +178,7 @@ public sealed class SubmitAnswerHandlerTests
         var response = AssertOk<SubmitAnswerResponse>(result).Value!;
         response.ArtistCorrect.Should().BeTrue();
         response.TitleCorrect.Should().BeFalse();
-        response.Score.Should().Be(350); // 700 × 0.5
+        response.Score.Should().Be(200); // 400 × 0.5
         response.AverageSecondsWhenCorrect.Should().Be(3);
     }
 
@@ -197,7 +197,7 @@ public sealed class SubmitAnswerHandlerTests
         var response = AssertOk<SubmitAnswerResponse>(result).Value!;
         response.ArtistCorrect.Should().BeFalse();
         response.TitleCorrect.Should().BeTrue();
-        response.Score.Should().Be(350); // 700 × 0.5
+        response.Score.Should().Be(200); // 400 × 0.5
         response.AverageSecondsWhenCorrect.Should().Be(3);
     }
 
@@ -235,7 +235,7 @@ public sealed class SubmitAnswerHandlerTests
 
         // Assert
         var response = AssertOk<SubmitAnswerResponse>(result).Value!;
-        response.Score.Should().Be(375); // 500 × 0.75 = 375
+        response.Score.Should().Be(188); // 250 × 0.75 = 187.5 → 188
         response.AverageSecondsWhenCorrect.Should().Be(5);
     }
 

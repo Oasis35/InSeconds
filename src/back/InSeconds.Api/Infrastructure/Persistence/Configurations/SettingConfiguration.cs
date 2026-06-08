@@ -34,7 +34,7 @@ public sealed class SettingConfiguration : IEntityTypeConfiguration<Setting>
             {
                 Id = 2,
                 Key = "AllowedDurationsSeconds",
-                Value = "1,2,3,5,10,15,30",
+                Value = "0.50,1,1.5,2,3,5,10",
                 Description = "Durées d'écoute proposées au joueur (CSV, en secondes).",
                 UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             },
@@ -58,7 +58,7 @@ public sealed class SettingConfiguration : IEntityTypeConfiguration<Setting>
             {
                 Id = 5,
                 Key = "DurationScores",
-                Value = "1:1000,2:850,3:700,5:500,10:300,15:150,30:50",
+                Value = "0.50:1000,1:850,1.5:700,2:550,3:400,5:250,10:100",
                 Description = "Score de base par palier d'écoute (format palier:score, séparés par virgule).",
                 UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             }

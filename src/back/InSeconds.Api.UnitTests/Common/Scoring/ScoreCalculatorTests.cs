@@ -6,15 +6,15 @@ namespace InSeconds.Api.UnitTests.Common.Scoring;
 
 public sealed class ScoreCalculatorTests
 {
-    private static readonly Dictionary<int, int> DefaultScores = new()
+    private static readonly Dictionary<decimal, int> DefaultScores = new()
     {
-        [1]  = 1000,
-        [2]  = 850,
-        [3]  = 700,
-        [5]  = 500,
-        [10] = 300,
-        [15] = 150,
-        [30] = 50,
+        [0.50m] = 1000,
+        [1m]    = 850,
+        [1.5m]  = 700,
+        [2m]    = 550,
+        [3m]    = 400,
+        [5m]    = 250,
+        [10m]   = 100,
     };
 
     private readonly ScoreCalculator _sut = new();
@@ -24,15 +24,16 @@ public sealed class ScoreCalculatorTests
     // ---------------------------------------------------------------------------
 
     [Theory]
-    [InlineData(1,  1000)]
-    [InlineData(2,  850)]
-    [InlineData(3,  700)]
-    [InlineData(5,  500)]
-    [InlineData(10, 300)]
-    [InlineData(15, 150)]
-    [InlineData(30, 50)]
-    public void Calculate_WhenBothCorrectNoExtension_ReturnsBaseScore(int duration, int expected)
+    [InlineData(0.50, 1000)]
+    [InlineData(1,    850)]
+    [InlineData(1.5,  700)]
+    [InlineData(2,    550)]
+    [InlineData(3,    400)]
+    [InlineData(5,    250)]
+    [InlineData(10,   100)]
+    public void Calculate_WhenBothCorrectNoExtension_ReturnsBaseScore(double durationDouble, int expected)
     {
+        var duration = (decimal)durationDouble;
         _sut.Calculate(duration, wasExtended: false, artistCorrect: true, titleCorrect: true, DefaultScores)
             .Should().Be(expected);
     }
@@ -42,15 +43,16 @@ public sealed class ScoreCalculatorTests
     // ---------------------------------------------------------------------------
 
     [Theory]
-    [InlineData(1,  750)]
-    [InlineData(2,  638)]  // 850 × 0.75 = 637.5 → arrondi à 638
-    [InlineData(3,  525)]  // 700 × 0.75 = 525
-    [InlineData(5,  375)]  // 500 × 0.75 = 375
-    [InlineData(10, 225)]  // 300 × 0.75 = 225
-    [InlineData(15, 112)]  // 150 × 0.75 = 112.5 → banker's rounding → 112
-    [InlineData(30, 38)]   // 50  × 0.75 = 37.5  → arrondi à 38
-    public void Calculate_WhenBothCorrectWithExtension_AppliesPenalty(int duration, int expected)
+    [InlineData(0.50, 750)]  // 1000 × 0.75 = 750
+    [InlineData(1,    638)]  // 850  × 0.75 = 637.5 → 638
+    [InlineData(1.5,  525)]  // 700  × 0.75 = 525
+    [InlineData(2,    412)]  // 550  × 0.75 = 412.5 → banker's rounding → 412
+    [InlineData(3,    300)]  // 400  × 0.75 = 300
+    [InlineData(5,    188)]  // 250  × 0.75 = 187.5 → 188
+    [InlineData(10,   75)]   // 100  × 0.75 = 75
+    public void Calculate_WhenBothCorrectWithExtension_AppliesPenalty(double durationDouble, int expected)
     {
+        var duration = (decimal)durationDouble;
         _sut.Calculate(duration, wasExtended: true, artistCorrect: true, titleCorrect: true, DefaultScores)
             .Should().Be(expected);
     }
@@ -62,21 +64,21 @@ public sealed class ScoreCalculatorTests
     [Fact]
     public void Calculate_WhenOnlyArtistCorrect_ReturnsHalfScore()
     {
-        _sut.Calculate(3, wasExtended: false, artistCorrect: true, titleCorrect: false, DefaultScores)
-            .Should().Be(350); // 700 × 0.5
+        _sut.Calculate(3m, wasExtended: false, artistCorrect: true, titleCorrect: false, DefaultScores)
+            .Should().Be(200); // 400 × 0.5
     }
 
     [Fact]
     public void Calculate_WhenOnlyTitleCorrect_ReturnsHalfScore()
     {
-        _sut.Calculate(3, wasExtended: false, artistCorrect: false, titleCorrect: true, DefaultScores)
-            .Should().Be(350); // 700 × 0.5
+        _sut.Calculate(3m, wasExtended: false, artistCorrect: false, titleCorrect: true, DefaultScores)
+            .Should().Be(200); // 400 × 0.5
     }
 
     [Fact]
     public void Calculate_WhenNoneCorrect_ReturnsZero()
     {
-        _sut.Calculate(1, wasExtended: false, artistCorrect: false, titleCorrect: false, DefaultScores)
+        _sut.Calculate(0.50m, wasExtended: false, artistCorrect: false, titleCorrect: false, DefaultScores)
             .Should().Be(0);
     }
 
@@ -87,9 +89,9 @@ public sealed class ScoreCalculatorTests
     [Fact]
     public void Calculate_WhenExtendedAndOnlyArtistCorrect_AppliesBothReductions()
     {
-        // 5s → 500, ×0.75 = 375, ×0.5 = 188 (arrondi)
-        _sut.Calculate(5, wasExtended: true, artistCorrect: true, titleCorrect: false, DefaultScores)
-            .Should().Be(188);
+        // 5s → 250, ×0.75 = 187.5 → 188, ×0.5 = 94
+        _sut.Calculate(5m, wasExtended: true, artistCorrect: true, titleCorrect: false, DefaultScores)
+            .Should().Be(94);
     }
 
     // ---------------------------------------------------------------------------
@@ -99,16 +101,16 @@ public sealed class ScoreCalculatorTests
     [Fact]
     public void Calculate_WhenDurationNotInScores_ReturnsZero()
     {
-        _sut.Calculate(7, wasExtended: false, artistCorrect: true, titleCorrect: true, DefaultScores)
+        _sut.Calculate(7m, wasExtended: false, artistCorrect: true, titleCorrect: true, DefaultScores)
             .Should().Be(0);
     }
 
     [Fact]
     public void Calculate_WithCustomScores_UsesProvidedValues()
     {
-        var customScores = new Dictionary<int, int> { [5] = 2000 };
+        var customScores = new Dictionary<decimal, int> { [5m] = 2000 };
 
-        _sut.Calculate(5, wasExtended: false, artistCorrect: true, titleCorrect: true, customScores)
+        _sut.Calculate(5m, wasExtended: false, artistCorrect: true, titleCorrect: true, customScores)
             .Should().Be(2000);
     }
 }
