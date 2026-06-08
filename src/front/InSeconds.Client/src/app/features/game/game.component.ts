@@ -4,7 +4,21 @@ import { GameService } from '../../core/services/game.service';
 import { TrackSlot, SubmitAnswerResponse } from '../../core/models/game.models';
 import { BlindRoundComponent, AnsweredEvent } from './blind-round/blind-round.component';
 
-type GameState = 'loading' | 'playing' | 'done' | 'error' | 'already_played';
+type GameState = 'loading' | 'playing' | 'done' | 'error' | 'no_challenge' | 'already_played';
+
+interface RoundResult {
+  artistCorrect: boolean;
+  titleCorrect: boolean;
+  score: number;
+  correctArtist: string;
+  correctTitle: string;
+  listenedDurationSeconds: number;
+  averageSecondsWhenCorrect: number | undefined;
+  failureRatePercent: number;
+  position: number;
+  coverUrl: string | null;
+  deezerTrackId: number;
+}
 
 @Component({
   selector: 'app-game',
@@ -39,6 +53,22 @@ type GameState = 'loading' | 'playing' | 'done' | 'error' | 'already_played';
       @if (gameState() === 'loading') {
         <div class="flex-1 flex items-center justify-center">
           <p class="text-slate-400 animate-pulse">Chargement du défi du jour…</p>
+        </div>
+      }
+
+      <!-- Pas de défi aujourd'hui -->
+      @if (gameState() === 'no_challenge') {
+        <div class="flex-1 flex flex-col items-center justify-center gap-5 text-center px-4">
+          <p class="text-6xl">🎵</p>
+          <div class="space-y-1">
+            <h2 class="text-xl font-semibold text-slate-200">Pas de défi aujourd'hui</h2>
+            <p class="text-slate-500 text-sm">Le défi du jour n'a pas encore été généré.<br>Réessaie dans quelques minutes.</p>
+          </div>
+          <button
+            (click)="retry()"
+            class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-colors">
+            Réessayer
+          </button>
         </div>
       }
 
@@ -124,9 +154,16 @@ type GameState = 'loading' | 'playing' | 'done' | 'error' | 'already_played';
                     <span>{{ r.failureRatePercent.toFixed(0) }}% ratés</span>
                   </div>
                 </div>
-                <span [class]="r.score > 0 ? 'text-emerald-400 font-bold text-lg shrink-0' : 'text-slate-500 font-bold text-lg shrink-0'">
-                  +{{ r.score }}
-                </span>
+                <div class="flex flex-col items-end gap-1 shrink-0">
+                  <span [class]="r.score > 0 ? 'text-emerald-400 font-bold text-lg' : 'text-slate-500 font-bold text-lg'">
+                    +{{ r.score }}
+                  </span>
+                  <a [href]="'https://www.deezer.com/track/' + r.deezerTrackId"
+                    target="_blank" rel="noopener noreferrer"
+                    class="text-xs text-slate-500 hover:text-indigo-400 transition-colors">
+                    Deezer ↗
+                  </a>
+                </div>
               </div>
             }
           </div>
@@ -148,7 +185,7 @@ export class GameComponent implements OnInit, OnDestroy {
   protected readonly tracks = signal<TrackSlot[]>([]);
   protected readonly currentIndex = signal(0);
   protected readonly totalScore = signal(0);
-  protected readonly results = signal<Array<SubmitAnswerResponse & { position: number; coverUrl: string | null }>>([]);
+  protected readonly results = signal<RoundResult[]>([]);
 
   private sessionId = 0;
   private countdownInterval: ReturnType<typeof setInterval> | null = null;
@@ -200,10 +237,20 @@ export class GameComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: (response) => {
         this.totalScore.update(s => s + response.score);
-        this.results.update(rs => [
-          ...rs,
-          { ...response, position: this.currentIndex() + 1, coverUrl: this.tracks()[this.currentIndex()].coverUrl ?? null },
-        ]);
+        const track = this.tracks()[this.currentIndex()];
+        this.results.update(rs => [...rs, {
+          artistCorrect:             response.artistCorrect,
+          titleCorrect:              response.titleCorrect,
+          score:                     response.score,
+          correctArtist:             response.correctArtist,
+          correctTitle:              response.correctTitle,
+          listenedDurationSeconds:   response.listenedDurationSeconds,
+          averageSecondsWhenCorrect: response.averageSecondsWhenCorrect,
+          failureRatePercent:        response.failureRatePercent,
+          position:                  this.currentIndex() + 1,
+          coverUrl:                  track.coverUrl ?? null,
+          deezerTrackId:             track['deezerTrackId'],
+        }]);
         this.roundRef()?.setResult(response);
 
         // Précharger la piste suivante
@@ -251,6 +298,8 @@ export class GameComponent implements OnInit, OnDestroy {
         if (err.status === 409) {
           this.gameState.set('already_played');
           this.startCountdown();
+        } else if (err.status === 503) {
+          this.gameState.set('no_challenge');
         } else {
           this.gameState.set('error');
         }

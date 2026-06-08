@@ -56,12 +56,13 @@ public sealed class StartSessionHandler(ApplicationDbContext db, DeezerClient de
 
         var tracks = orderedTracks
             .Select((t, i) => new TrackSlot(
-                Id:         t.Id,
-                Position:   t.Position,
-                PreviewUrl: previewUrls[i] ?? string.Empty,
-                CoverUrl:   t.Track.CoverHash is not null
+                Id:             t.Id,
+                Position:       t.Position,
+                PreviewUrl:     previewUrls[i] ?? string.Empty,
+                CoverUrl:       t.Track.CoverHash is not null
                     ? appSettings.BuildCoverUrl(t.Track.CoverHash)
-                    : null))
+                    : null,
+                DeezerTrackId:  t.Track.DeezerTrackId))
             .ToList();
 
         return Results.Ok(new StartSessionResponse(SessionId: session.Id, Tracks: tracks));

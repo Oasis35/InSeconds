@@ -147,6 +147,7 @@ public sealed class StartSessionHandlerTests
         response.Tracks.Should().HaveCount(10);
         response.Tracks.Should().BeInAscendingOrder(t => t.Position);
         response.Tracks.Select(t => t.Position).Should().Equal(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        response.Tracks.Should().AllSatisfy(t => t.DeezerTrackId.Should().BeGreaterThan(0));
 
         (await db.GameSessions.ToListAsync()).Should().ContainSingle()
             .Which.DailyChallengeId.Should().Be(1);
