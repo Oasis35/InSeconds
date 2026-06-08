@@ -4,7 +4,7 @@ Instructions pour Claude quand il travaille dans ce repo. Pour la documentation 
 
 ## Vue d'ensemble
 
-InSeconds = blind test musical quotidien. 10 morceaux/jour, l'utilisateur choisit combien de secondes il écoute (paliers : 1, 2, 3, 5, 10, 15, 30) avant de tenter artiste + titre. Moins de temps écouté = plus de points. Même défi pour tout le monde, même jour. Mode guest dispo (joue sans s'inscrire, hors classement).
+InSeconds = blind test musical quotidien. 10 morceaux/jour, l'utilisateur choisit combien de secondes il écoute (paliers : 0.5, 1, 1.5, 2, 3, 5, 10) avant de tenter artiste + titre. Moins de temps écouté = plus de points. Même défi pour tout le monde, même jour. Mode guest dispo (joue sans s'inscrire, hors classement).
 
 Stack : .NET 10 / Wolverine / EF Core / PostgreSQL côté back, Angular 20 / Tailwind v4 / SCSS côté front, Docker Compose pour back + DB. Hébergé sur **Northflank** (front + back + PostgreSQL addon).
 
@@ -84,7 +84,7 @@ Les settings (table `Settings` en BD) sont chargés via `AppDbConfigurationSourc
    ```
 2. Une migration EF qui insère la ligne dans `Settings` (`InsertData`).
 
-Types scalaires (`int`, `string`, `bool`) sont bindés automatiquement par le framework. Pour `int[]` ou `Dictionary<int,int>`, ajouter une entrée dans `AppSettingsPostConfigure`.
+Types scalaires (`int`, `string`, `bool`) sont bindés automatiquement par le framework. Pour `decimal[]` ou `Dictionary<decimal,int>`, ajouter une entrée dans `AppSettingsPostConfigure`.
 
 **Ne pas écrire** de méthode `From()`, `ParseXxx()`, ou de champ `Default` — l'ancienne approche a été supprimée.
 
@@ -153,10 +153,10 @@ npm run build                  # vérifier que le build passe
 | Key | Valeur par défaut | Type |
 |-----|-------------------|------|
 | `GuessTimerSeconds` | `20` | `int` |
-| `AllowedDurationsSeconds` | `1,2,3,5,10,15,30` | `int[]` (CSV) |
+| `AllowedDurationsSeconds` | `0.50,1,1.5,2,3,5,10` | `decimal[]` (CSV) |
 | `MaxExtensionsPerAnswer` | `1` | `int` |
 | `TracksPerChallenge` | `3` | `int` |
-| `DurationScores` | `1:1000,2:850,3:700,5:500,10:300,15:150,30:50` | `Dictionary<int,int>` |
+| `DurationScores` | `0.50:1000,1:850,1.5:700,2:550,3:400,5:250,10:100` | `Dictionary<decimal,int>` |
 | `CoverUrlTemplate` | `https://cdn-images.dzcdn.net/images/cover/{hash}/250x250-000000-80-0-0.jpg` | `string` |
 
 ## Commandes courantes
@@ -237,17 +237,21 @@ Runners Ubuntu, ~3-4 min par run. Setup .NET via `global-json-file: src/back/glo
 - Settings chargés depuis la BD via `AppDbConfigurationSource` (ADO.NET brut) → `IOptions<AppSettings>`
 - `Track.CoverHash` (hash seul, pas URL complète) + `AppSettings.CoverUrlTemplate` pour la reconstruction
 - NSwag : `ApiClient` généré depuis `/openapi/v1.json`, enregistré dans `app.config.ts`, types re-exportés via `game.models.ts`, `api.generated.ts` commité
-- Pages d'erreur : 404 (`NotFoundComponent`), "déjà joué" (409 → compte à rebours jusqu'à minuit UTC), "pas de défi" (503)
+- Pages d'erreur : 404 (`NotFoundComponent`), "déjà joué" (409 → compte à rebours jusqu'à minuit UTC + stats), "pas de défi" (503)
 - Récap final : lien Deezer par morceau (`deezerTrackId` inclus dans `TrackSlot`)
+- `GET /api/stats/today` — score du joueur, médiane joueurs, taux d'échec + moyenne d'écoute par morceau (PostgreSQL `PERCENTILE_CONT(0.5)`)
+- Écran "déjà joué" : ton score vs médiane joueurs, accordéon par morceau (pochette + lien Deezer), compte à rebours jusqu'à minuit UTC
+- `ListenedDurationSeconds` et `TotalDurationSeconds` en `decimal` (paliers décimaux, ex: 0.5s)
 - Déploiement Northflank (front + back + PostgreSQL), CI/CD auto sur push `main`
 
 ## À venir (pas encore implémenté)
 
-- Vertical slice Leaderboard (`GET /api/leaderboard`)
-- Frontend Leaderboard (composant + route)
-- Auth Register (`POST /api/auth/register { pseudo }`) — promotion guest → inscrit
-- UI auth front (modal pseudo, header état joueur)
 - Tests d'intégration (Testcontainers)
 - Smoke tests post-deploy automatisés
 - Tests mobiles (iOS Safari, Android Chrome)
 - Polish : charte graphique, messages d'erreur, accessibilité, RGPD
+
+## Décisions d'architecture notables
+
+- **Pas de Register / Leaderboard** — fonctionnalité délibérément écartée pour garder l'app simple (tout le monde joue en guest, stats globales suffisent)
+- **`UpdateData` EF insuffisant pour les Settings existants** — utiliser `migrationBuilder.Sql("UPDATE ...")` dans les migrations qui modifient des valeurs de Settings déjà en DB, sinon la mise à jour ne s'applique pas sur une DB prod existante

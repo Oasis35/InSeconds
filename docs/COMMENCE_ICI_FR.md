@@ -4,7 +4,7 @@
 
 ## Pitch
 
-InSeconds est un **blind test musical quotidien**. Le joueur choisit combien de secondes il veut écouter (paliers : 1, 2, 3, 5, 10, 15, 30) avant de tenter artiste + titre. Moins il écoute, plus il marque. Même défi pour tout le monde, chaque jour, à minuit UTC. Mode guest disponible (joue sans s'inscrire, hors classement).
+InSeconds est un **blind test musical quotidien**. Le joueur choisit combien de secondes il veut écouter (paliers : 0.5, 1, 1.5, 2, 3, 5, 10) avant de tenter artiste + titre. Moins il écoute, plus il marque. Même défi pour tout le monde, chaque jour, à minuit UTC. Mode guest disponible (joue sans s'inscrire).
 
 ## Stack actuelle
 
@@ -67,17 +67,20 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - `BackgroundService` génération défi quotidien automatique (à 3h UTC)
 - Frontend complet (Angular 20 + Tailwind v4 + SCSS) — UI jeu jouable
 - NSwag : `ApiClient` généré depuis l'OpenAPI back, `api.generated.ts` commité, types synchronisés automatiquement
-- Pages d'erreur : 404, "déjà joué" + compte à rebours jusqu'à minuit UTC, "pas de défi"
+- Pages d'erreur : 404, "déjà joué" (compte à rebours + stats comparatives), "pas de défi"
 - Récap final : lien Deezer par morceau
+- `GET /api/stats/today` : score joueur, médiane joueurs, détail par morceau (pochette + lien Deezer)
+- Écran "déjà joué" : ton score vs médiane, accordéon détail par morceau
+- `ListenedDurationSeconds` et `TotalDurationSeconds` en `decimal` (paliers décimaux jusqu'à 0.5s)
 - CI GitHub Actions (build back/front + check migrations) + CI/CD auto sur push `main`
 - Déploiement Northflank (front + back + PostgreSQL)
 
-🚧 **À faire** : vertical slice Leaderboard, Auth Register (promotion guest → inscrit), UI auth front, tests d'intégration (Testcontainers), smoke tests post-deploy, polish mobile. Voir [`TACHES.md`](TACHES.md).
+🚧 **À faire** : tests d'intégration (Testcontainers), smoke tests post-deploy, tests mobiles, polish. Voir [`TACHES.md`](TACHES.md).
 
 ## Specs gameplay clés (rappel rapide)
 
 - **10 morceaux par jour**, même set pour tout le monde
-- **Paliers d'écoute** : 1, 2, 3, 5, 10, 15, 30 secondes (configurable via la table `Settings`)
+- **Paliers d'écoute** : 0.5, 1, 1.5, 2, 3, 5, 10 secondes (configurable via la table `Settings`)
 - **1 prolongation** autorisée par réponse (passe au palier supérieur, scoring sur le palier final)
 - **Timer de saisie** : 20s après la fin de la lecture pour saisir artiste + titre (configurable)
 - **Scoring partiel** : `ArtistCorrect` et `TitleCorrect` séparés
@@ -90,10 +93,9 @@ Le joueur peut jouer le défi du jour **sans créer de compte** :
 
 - Un `Player { IsGuest=true, Pseudo=null }` est créé automatiquement au 1ᵉʳ appel
 - Un cookie HTTP-only signé porte le `Player.AuthToken` pour le reconnaître
-- Le guest n'apparaît **pas au leaderboard** (filtre `IsGuest=0` sur la query)
-- Promotion guest → inscrit = simple UPDATE sur le même `Player` (historique conservé)
-- Cleanup périodique des guests inactifs > 30 jours
+- Pas de leaderboard (décision délibérée — app volontairement simple, stats globales suffisent)
+- Cleanup périodique des guests inactifs > 30 jours (à implémenter)
 
 ---
 
-**Bon courage Clément ! Pour reprendre la conversation Claude là où elle s'est arrêtée, ouvre la session existante. Pour démarrer une nouvelle feature, lis [CLAUDE.md](../CLAUDE.md) puis [`TACHES.md`](TACHES.md) pour choisir la prochaine slice. 🎵🚀**
+**Pour démarrer une nouvelle feature, lire [CLAUDE.md](../CLAUDE.md) puis [`TACHES.md`](TACHES.md).**

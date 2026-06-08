@@ -6,6 +6,6 @@ public sealed record SubmitAnswerResponse(
     int Score,
     string CorrectArtist,
     string CorrectTitle,
-    int ListenedDurationSeconds,
+    decimal ListenedDurationSeconds,
     double? AverageSecondsWhenCorrect,
     double FailureRatePercent);

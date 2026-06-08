@@ -1,8 +1,9 @@
-import { Component, inject, signal, computed, viewChild, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, signal, computed, viewChild, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { GameService } from '../../core/services/game.service';
-import { TrackSlot, SubmitAnswerResponse } from '../../core/models/game.models';
+import { TrackSlot } from '../../core/models/game.models';
 import { BlindRoundComponent, AnsweredEvent } from './blind-round/blind-round.component';
+import { ApiClient, TodayStatsResponse } from '../../api/api.generated';
 
 type GameState = 'loading' | 'playing' | 'done' | 'error' | 'no_challenge' | 'already_played';
 
@@ -90,16 +91,70 @@ interface RoundResult {
 
       <!-- Déjà joué aujourd'hui -->
       @if (gameState() === 'already_played') {
-        <div class="flex-1 flex flex-col items-center justify-center gap-5 text-center px-4">
+        <div class="flex-1 flex flex-col items-center gap-5 text-center px-4 pt-6">
           <p class="text-6xl">✅</p>
           <div class="space-y-1">
             <h2 class="text-xl font-semibold text-slate-200">Déjà joué aujourd'hui !</h2>
-            <p class="text-slate-500 text-sm">Tu as déjà relevé le défi du jour.<br>Reviens demain pour un nouveau blind test.</p>
+            <p class="text-slate-400 text-sm tabular-nums">Prochain défi dans <span class="font-semibold text-slate-200">{{ countdown() }}</span></p>
           </div>
-          <div class="bg-slate-800/60 rounded-2xl px-8 py-5 flex flex-col items-center gap-1">
-            <p class="text-slate-500 text-xs uppercase tracking-widest">Prochain défi dans</p>
-            <p class="text-4xl font-bold tabular-nums tracking-tight text-slate-100">{{ countdown() }}</p>
-          </div>
+
+          <!-- Card scores côte à côte — masquée si écran trop petit -->
+          @if (todayStats() && viewportTall()) {
+            <div class="w-full bg-slate-800/60 rounded-2xl overflow-hidden">
+              <div class="grid grid-cols-2 divide-x divide-slate-700">
+                <div class="flex flex-col items-center py-5 px-4 gap-1">
+                  <p class="text-slate-500 text-xs uppercase tracking-widest">Ton score</p>
+                  <p class="text-4xl font-bold text-white tabular-nums">{{ todayStats()!.yourScore ?? '—' }}</p>
+                  <p class="text-slate-500 text-xs">pts</p>
+                </div>
+                <div class="flex flex-col items-center py-5 px-4 gap-1">
+                  <p class="text-slate-500 text-xs uppercase tracking-widest">Les joueurs font</p>
+                  @if (todayStats()!.medianScore > 0) {
+                    <p class="text-4xl font-bold text-slate-200 tabular-nums">{{ todayStats()!.medianScore }}</p>
+                    <p class="text-slate-500 text-xs">pts aujourd'hui</p>
+                  } @else {
+                    <p class="text-slate-600 text-sm pt-2">pas encore de données</p>
+                  }
+                </div>
+              </div>
+
+              <!-- Bouton détail -->
+              @if (todayStats()!.tracks.length) {
+                <button (click)="showTrackDetails.set(!showTrackDetails())"
+                        class="w-full flex items-center justify-center gap-2 py-3 border-t border-slate-700 text-sm text-slate-400 hover:text-slate-200 active:opacity-70 transition-colors">
+                  <span>{{ showTrackDetails() ? 'Masquer le détail' : 'Voir le détail' }}</span>
+                  <span class="text-xs">{{ showTrackDetails() ? '▲' : '▼' }}</span>
+                </button>
+                @if (showTrackDetails()) {
+                  <div class="flex flex-col divide-y divide-slate-700 border-t border-slate-700">
+                    @for (t of todayStats()!.tracks; track t.position) {
+                      <a [href]="'https://www.deezer.com/track/' + t.deezerTrackId"
+                         target="_blank" rel="noopener noreferrer"
+                         class="flex items-center gap-3 px-4 py-3 hover:bg-slate-700/40 active:opacity-70 transition-colors">
+                        @if (t.coverUrl) {
+                          <img [src]="t.coverUrl" alt="Pochette"
+                               class="w-10 h-10 rounded-lg object-cover shrink-0" />
+                        } @else {
+                          <div class="w-10 h-10 rounded-lg bg-slate-700 shrink-0"></div>
+                        }
+                        <div class="flex-1 min-w-0 text-left">
+                          <p class="text-slate-200 text-sm font-medium truncate">{{ t.artist }} — {{ t.title }}</p>
+                          <div class="flex gap-3 mt-0.5 text-xs text-slate-500">
+                            <span>{{ t.failureRatePercent.toFixed(0) }}% ratés</span>
+                            @if (t.averageSecondsWhenCorrect != null) {
+                              <span>moy. {{ t.averageSecondsWhenCorrect!.toFixed(1) }}s</span>
+                            }
+                          </div>
+                        </div>
+                        <span class="text-slate-600 text-xs shrink-0">↗</span>
+                      </a>
+                    }
+                  </div>
+                }
+              }
+            </div>
+          }
+
         </div>
       }
 
@@ -180,8 +235,17 @@ interface RoundResult {
 })
 export class GameComponent implements OnInit, OnDestroy {
   private readonly gameService = inject(GameService);
+  private readonly api = inject(ApiClient);
 
   protected readonly gameState = signal<GameState>('loading');
+  protected readonly todayStats = signal<TodayStatsResponse | null>(null);
+  protected readonly showTrackDetails = signal(false);
+  protected readonly viewportTall = signal(window.innerHeight >= 600);
+
+  @HostListener('window:resize')
+  onResize(): void {
+    this.viewportTall.set(window.innerHeight >= 600);
+  }
   protected readonly tracks = signal<TrackSlot[]>([]);
   protected readonly currentIndex = signal(0);
   protected readonly totalScore = signal(0);
@@ -252,15 +316,8 @@ export class GameComponent implements OnInit, OnDestroy {
           deezerTrackId:             track['deezerTrackId'],
         }]);
         this.roundRef()?.setResult(response);
-
-        // Précharger la piste suivante
-        const next = this.tracks()[this.currentIndex() + 1];
-        if (next) {
-          // AudioPlayerService.preloadNext appelé depuis le composant enfant
-        }
       },
       error: () => {
-        // Erreur silencieuse — laisser l'utilisateur passer à la suite
         this.roundRef()?.setResult({
           artistCorrect: false,
           titleCorrect: false,
@@ -298,6 +355,7 @@ export class GameComponent implements OnInit, OnDestroy {
         if (err.status === 409) {
           this.gameState.set('already_played');
           this.startCountdown();
+          this.api.apiStatsToday().subscribe(stats => this.todayStats.set(stats));
         } else if (err.status === 503) {
           this.gameState.set('no_challenge');
         } else {

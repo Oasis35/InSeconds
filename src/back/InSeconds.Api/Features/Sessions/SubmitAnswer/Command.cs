@@ -4,7 +4,7 @@ public sealed record SubmitAnswerCommand(
     Guid PlayerId,
     int SessionId,
     int DailyChallengeTrackId,
-    int ListenedDurationSeconds,
+    decimal ListenedDurationSeconds,
     bool WasExtended,
     string? ArtistAnswer,
     string? TitleAnswer);

@@ -10,13 +10,14 @@ public sealed class AppSettingsPostConfigure(IConfiguration configuration)
     {
         var section = configuration.GetSection(AppDbConfigurationProvider.SectionPrefix);
 
-        // int[] — CSV : "1,2,3,5"
+        // decimal[] — CSV : "0.50,1,2,3,5,10,15"
         var rawDurations = section[nameof(AppSettings.AllowedDurationsSeconds)];
         if (!string.IsNullOrWhiteSpace(rawDurations))
         {
             var parsed = rawDurations
                 .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                .Select(s => int.TryParse(s.Trim(), out var v) ? (int?)v : null)
+                .Select(s => decimal.TryParse(s.Trim(), System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture, out var v) ? (decimal?)v : null)
                 .Where(v => v.HasValue)
                 .Select(v => v!.Value)
                 .ToArray();
@@ -24,16 +25,17 @@ public sealed class AppSettingsPostConfigure(IConfiguration configuration)
                 options.AllowedDurationsSeconds = parsed;
         }
 
-        // Dictionary<int,int> — "1:1000,2:850,..."
+        // Dictionary<decimal,int> — "0.50:1000,1:850,..."
         var rawScores = section[nameof(AppSettings.DurationScores)];
         if (!string.IsNullOrWhiteSpace(rawScores))
         {
-            var result = new Dictionary<int, int>();
+            var result = new Dictionary<decimal, int>();
             foreach (var entry in rawScores.Split(',', StringSplitOptions.RemoveEmptyEntries))
             {
                 var parts = entry.Trim().Split(':');
                 if (parts.Length == 2
-                    && int.TryParse(parts[0].Trim(), out var d)
+                    && decimal.TryParse(parts[0].Trim(), System.Globalization.NumberStyles.Any,
+                        System.Globalization.CultureInfo.InvariantCulture, out var d)
                     && int.TryParse(parts[1].Trim(), out var s))
                     result[d] = s;
             }
