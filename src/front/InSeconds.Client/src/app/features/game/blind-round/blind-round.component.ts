@@ -23,7 +23,8 @@ export interface AnsweredEvent {
   template: `
     <div class="flex flex-col gap-5">
 
-      <!-- ── Zone player (haut) ── -->
+      <!-- ── Zone player (haut — masquée dès qu'on a le résultat) ── -->
+      @if (!result()) {
       <div class="bg-slate-800/60 rounded-2xl p-5 space-y-4">
 
         <!-- Paliers (idle uniquement) -->
@@ -69,12 +70,9 @@ export interface AnsweredEvent {
             <div class="flex gap-2 pt-1">
               <button
                 type="button"
-                (click)="mainAction()"
-                class="flex-1 py-3 rounded-xl font-semibold transition touch-manipulation"
-                [class]="audio.isPlaying()
-                  ? 'bg-rose-600 hover:bg-rose-500 text-white'
-                  : 'bg-slate-700 hover:bg-slate-600 text-white'">
-                {{ audio.isPlaying() ? '✋ Stop' : '↺ Réécouter ' + chosenDuration() + 's' }}
+                (click)="audio.play(track().previewUrl, chosenDuration())"
+                class="flex-1 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-semibold transition touch-manipulation">
+                ↺ Réécouter {{ chosenDuration() }}s
               </button>
 
               @if (nextDuration()) {
@@ -91,6 +89,7 @@ export interface AnsweredEvent {
         }
 
       </div>
+      } <!-- fin @if (!result()) -->
 
       <!-- ── Zone saisie (bas — toujours présente après choix du palier) ── -->
       @if (!audio.isIdle() && !result()) {
@@ -125,15 +124,31 @@ export interface AnsweredEvent {
             }
           </div>
 
-          <button
-            type="submit"
-            [disabled]="audio.isPlaying()"
-            class="w-full py-3 rounded-xl font-semibold transition touch-manipulation"
-            [class]="audio.isPlaying()
-              ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-              : 'bg-emerald-600 hover:bg-emerald-500 text-white'">
-            Valider
-          </button>
+          @if (showEmptyConfirm()) {
+            <div class="rounded-xl bg-amber-950/60 border border-amber-700/50 px-4 py-3 space-y-3">
+              <p class="text-amber-300 text-sm text-center">Tu n'as rien saisi. Valider quand même ?</p>
+              <div class="flex gap-2">
+                <button
+                  type="button"
+                  (click)="showEmptyConfirm.set(false)"
+                  class="flex-1 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-semibold transition touch-manipulation">
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  (click)="confirmSubmit()"
+                  class="flex-1 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold transition touch-manipulation">
+                  Valider quand même
+                </button>
+              </div>
+            </div>
+          } @else {
+            <button
+              type="submit"
+              class="w-full py-3 rounded-xl font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition touch-manipulation">
+              Valider
+            </button>
+          }
         </form>
       }
 
@@ -202,6 +217,7 @@ export class BlindRoundComponent implements OnDestroy {
   protected readonly chosenDuration = signal(0);
   protected readonly suggestions = signal<DeezerSuggestion[]>([]);
   protected readonly showSuggestions = signal(false);
+  protected readonly showEmptyConfirm = signal(false);
 
   private readonly query$ = new Subject<string>();
 
@@ -218,6 +234,7 @@ export class BlindRoundComponent implements OnDestroy {
   onQueryChange(q: string): void {
     this.query$.next(q);
     this.showSuggestions.set(true);
+    this.showEmptyConfirm.set(false);
   }
 
   onBlur(): void {
@@ -253,17 +270,32 @@ export class BlindRoundComponent implements OnDestroy {
   }
 
   submit(): void {
-    // Si pas de suggestion sélectionnée, on tente de splitter sur " — " ou " - "
+    // Si pas de suggestion sélectionnée, tenter de splitter sur " - "
     if (!this.artistAnswer && !this.titleAnswer && this.searchQuery.trim()) {
       const parts = this.searchQuery.split(' - ');
       this.artistAnswer = parts[0]?.trim() ?? '';
       this.titleAnswer  = parts.slice(1).join(' - ').trim();
     }
 
-    const { listenedSeconds, wasExtended } = this.audio.stop();
+    // Confirmation inline si champ vide
+    if (!this.artistAnswer.trim() && !this.titleAnswer.trim()) {
+      this.showEmptyConfirm.set(true);
+      return;
+    }
+
+    this.doSubmit();
+  }
+
+  protected confirmSubmit(): void {
+    this.showEmptyConfirm.set(false);
+    this.doSubmit();
+  }
+
+  private doSubmit(): void {
+    const { wasExtended } = this.audio.stop();
     this.answered.emit({
       trackId:                 this.track().id,
-      listenedDurationSeconds: listenedSeconds || this.chosenDuration(),
+      listenedDurationSeconds: this.chosenDuration(),
       wasExtended,
       artistAnswer: this.artistAnswer.trim() || null,
       titleAnswer:  this.titleAnswer.trim() || null,
