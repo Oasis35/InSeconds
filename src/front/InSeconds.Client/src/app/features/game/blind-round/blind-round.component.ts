@@ -112,7 +112,7 @@ export interface AnsweredEvent {
             <!-- Dropdown suggestions -->
             @if (showSuggestions() && suggestions().length > 0) {
               <ul class="absolute z-10 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-xl">
-                @for (s of suggestions(); track s.label) {
+                @for (s of suggestions(); track s.artist + s.title) {
                   <li
                     (mousedown)="selectSuggestion(s)"
                     class="px-4 py-3 cursor-pointer hover:bg-slate-700 transition text-sm">
