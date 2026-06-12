@@ -70,12 +70,9 @@ export interface AnsweredEvent {
             <div class="flex gap-2 pt-1">
               <button
                 type="button"
-                (click)="mainAction()"
-                class="flex-1 py-3 rounded-xl font-semibold transition touch-manipulation"
-                [class]="audio.isPlaying()
-                  ? 'bg-rose-600 hover:bg-rose-500 text-white'
-                  : 'bg-slate-700 hover:bg-slate-600 text-white'">
-                {{ audio.isPlaying() ? '✋ Stop' : '↺ Réécouter ' + chosenDuration() + 's' }}
+                (click)="audio.play(track().previewUrl, chosenDuration())"
+                class="flex-1 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-semibold transition touch-manipulation">
+                ↺ Réécouter {{ chosenDuration() }}s
               </button>
 
               @if (nextDuration()) {
@@ -129,11 +126,7 @@ export interface AnsweredEvent {
 
           <button
             type="submit"
-            [disabled]="audio.isPlaying()"
-            class="w-full py-3 rounded-xl font-semibold transition touch-manipulation"
-            [class]="audio.isPlaying()
-              ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-              : 'bg-emerald-600 hover:bg-emerald-500 text-white'">
+            class="w-full py-3 rounded-xl font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition touch-manipulation">
             Valider
           </button>
         </form>
@@ -255,17 +248,24 @@ export class BlindRoundComponent implements OnDestroy {
   }
 
   submit(): void {
-    // Si pas de suggestion sélectionnée, on tente de splitter sur " — " ou " - "
+    // Si pas de suggestion sélectionnée, tenter de splitter sur " - "
     if (!this.artistAnswer && !this.titleAnswer && this.searchQuery.trim()) {
       const parts = this.searchQuery.split(' - ');
       this.artistAnswer = parts[0]?.trim() ?? '';
       this.titleAnswer  = parts.slice(1).join(' - ').trim();
     }
 
-    const { listenedSeconds, wasExtended } = this.audio.stop();
+    // Confirmation si champ vide
+    if (!this.artistAnswer.trim() && !this.titleAnswer.trim()) {
+      if (!confirm('Tu n\'as rien saisi. Valider quand même ?')) return;
+    }
+
+    // Coupe la musique de deviner, l'émission déclenchera la musique de réponse via setResult()
+    const { wasExtended } = this.audio.stop();
+
     this.answered.emit({
       trackId:                 this.track().id,
-      listenedDurationSeconds: listenedSeconds || this.chosenDuration(),
+      listenedDurationSeconds: this.chosenDuration(),
       wasExtended,
       artistAnswer: this.artistAnswer.trim() || null,
       titleAnswer:  this.titleAnswer.trim() || null,
