@@ -23,7 +23,8 @@ export interface AnsweredEvent {
   template: `
     <div class="flex flex-col gap-5">
 
-      <!-- ── Zone player (haut) ── -->
+      <!-- ── Zone player (haut — masquée dès qu'on a le résultat) ── -->
+      @if (!result()) {
       <div class="bg-slate-800/60 rounded-2xl p-5 space-y-4">
 
         <!-- Paliers (idle uniquement) -->
@@ -91,6 +92,7 @@ export interface AnsweredEvent {
         }
 
       </div>
+      } <!-- fin @if (!result()) -->
 
       <!-- ── Zone saisie (bas — toujours présente après choix du palier) ── -->
       @if (!audio.isIdle() && !result()) {
@@ -272,7 +274,7 @@ export class BlindRoundComponent implements OnDestroy {
 
   setResult(r: SubmitAnswerResponse): void {
     this.result.set(r);
-    this.audio.reset();
+    this.audio.play(this.track().previewUrl, 30);
   }
 
   next(): void {
