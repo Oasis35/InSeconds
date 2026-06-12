@@ -69,6 +69,18 @@ public sealed class TextNormalizerTests
         _sut.IsMatch("   ", "Coldplay").Should().BeFalse();
 
     // ---------------------------------------------------------------------------
+    // Parenthèses / crochets ignorés
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public void IsMatch_WhenExpectedHasParentheses_ReturnsTrue() =>
+        _sut.IsMatch("Shape of You", "Shape of You (feat. Ed Sheeran)").Should().BeTrue();
+
+    [Fact]
+    public void IsMatch_WhenExpectedHasBrackets_ReturnsTrue() =>
+        _sut.IsMatch("Blinding Lights", "Blinding Lights [Radio Edit]").Should().BeTrue();
+
+    // ---------------------------------------------------------------------------
     // Pas de correspondance
     // ---------------------------------------------------------------------------
 

@@ -7,6 +7,7 @@ using InSeconds.Api.Domain;
 using InSeconds.Api.Features.Admin.Challenges.CreateChallenge;
 using InSeconds.Api.Features.Admin.GenerateToday;
 using InSeconds.Api.Features.Admin.Challenges.DeezerSearch;
+using InSeconds.Api.Features.Deezer;
 using InSeconds.Api.Features.Admin.Challenges.GetChallenges;
 using InSeconds.Api.Features.Admin.Login;
 using InSeconds.Api.Features.Admin.ResetToday;
@@ -124,6 +125,7 @@ app.MapResetToday();
 app.MapGenerateToday();
 app.MapGetChallenges();
 app.MapDeezerSearch();
+app.MapDeezerSearchPublic();
 app.MapCreateChallenge();
 
 app.Run();
