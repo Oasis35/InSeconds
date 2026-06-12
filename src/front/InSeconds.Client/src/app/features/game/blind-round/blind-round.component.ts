@@ -124,11 +124,31 @@ export interface AnsweredEvent {
             }
           </div>
 
-          <button
-            type="submit"
-            class="w-full py-3 rounded-xl font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition touch-manipulation">
-            Valider
-          </button>
+          @if (showEmptyConfirm()) {
+            <div class="rounded-xl bg-amber-950/60 border border-amber-700/50 px-4 py-3 space-y-3">
+              <p class="text-amber-300 text-sm text-center">Tu n'as rien saisi. Valider quand même ?</p>
+              <div class="flex gap-2">
+                <button
+                  type="button"
+                  (click)="showEmptyConfirm.set(false)"
+                  class="flex-1 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-semibold transition touch-manipulation">
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  (click)="confirmSubmit()"
+                  class="flex-1 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold transition touch-manipulation">
+                  Valider quand même
+                </button>
+              </div>
+            </div>
+          } @else {
+            <button
+              type="submit"
+              class="w-full py-3 rounded-xl font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition touch-manipulation">
+              Valider
+            </button>
+          }
         </form>
       }
 
@@ -197,6 +217,7 @@ export class BlindRoundComponent implements OnDestroy {
   protected readonly chosenDuration = signal(0);
   protected readonly suggestions = signal<DeezerSuggestion[]>([]);
   protected readonly showSuggestions = signal(false);
+  protected readonly showEmptyConfirm = signal(false);
 
   private readonly query$ = new Subject<string>();
 
@@ -213,6 +234,7 @@ export class BlindRoundComponent implements OnDestroy {
   onQueryChange(q: string): void {
     this.query$.next(q);
     this.showSuggestions.set(true);
+    this.showEmptyConfirm.set(false);
   }
 
   onBlur(): void {
@@ -255,14 +277,22 @@ export class BlindRoundComponent implements OnDestroy {
       this.titleAnswer  = parts.slice(1).join(' - ').trim();
     }
 
-    // Confirmation si champ vide
+    // Confirmation inline si champ vide
     if (!this.artistAnswer.trim() && !this.titleAnswer.trim()) {
-      if (!confirm('Tu n\'as rien saisi. Valider quand même ?')) return;
+      this.showEmptyConfirm.set(true);
+      return;
     }
 
-    // Coupe la musique de deviner, l'émission déclenchera la musique de réponse via setResult()
-    const { wasExtended } = this.audio.stop();
+    this.doSubmit();
+  }
 
+  protected confirmSubmit(): void {
+    this.showEmptyConfirm.set(false);
+    this.doSubmit();
+  }
+
+  private doSubmit(): void {
+    const { wasExtended } = this.audio.stop();
     this.answered.emit({
       trackId:                 this.track().id,
       listenedDurationSeconds: this.chosenDuration(),
