@@ -74,6 +74,13 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - `ListenedDurationSeconds` et `TotalDurationSeconds` en `decimal` (paliers décimaux jusqu'à 0.5s)
 - CI GitHub Actions (build back/front + check migrations) + CI/CD auto sur push `main`
 - Déploiement Northflank (front + back + PostgreSQL)
+- `TextNormalizer` : suppression parenthèses/crochets avant comparaison — `(feat. X)`, `[Radio Edit]`
+- Page d'accueil "welcome" — session chargée en background, bouton "Commencer à jouer" sans latence
+- Bouton Stop pendant l'écoute pour accéder directement à la saisie
+- Layout B — player haut (toujours visible) + zone saisie toujours présente (pas de clignotement)
+- Barre de progression live + chrono centré (`requestAnimationFrame`)
+- Champ unique artiste+titre avec autocomplete Deezer (proxy `/api/deezer/search`, debounce 300ms)
+- Badge officiel "À écouter sur Deezer" (`DeezerBadgeComponent`) + favicon SVG note Deezer
 
 🚧 **À faire** : tests d'intégration (Testcontainers), smoke tests post-deploy, tests mobiles, polish. Voir [`TACHES.md`](TACHES.md).
 
