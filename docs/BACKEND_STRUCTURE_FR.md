@@ -178,7 +178,7 @@ public int Calculate(
 
 ### TextNormalizer
 
-Distance Levenshtein + normalisation accents/stop-words. Utilisé dans `SubmitAnswerHandler` pour comparer la saisie joueur à l'artiste/titre canonique.
+Distance Levenshtein + normalisation accents/stop-words. **Préprocesse en supprimant le contenu entre parenthèses/crochets** (`(feat. X)`, `[Radio Edit]`) avant comparaison. Utilisé dans `SubmitAnswerHandler` pour comparer la saisie joueur à l'artiste/titre canonique.
 
 ### SettingsService
 
@@ -212,6 +212,7 @@ Résout ou crée un `Player` guest à partir du cookie HTTP-only signé. `SameSi
 | `Admin/Challenges/*` | `/api/admin/challenges` | Création défis + recherche Deezer |
 | `Admin/GenerateToday` | `POST /api/admin/generate-today` | Génère le défi du jour à la demande |
 | `Admin/ResetToday` | `DELETE /api/admin/reset-today` | Supprime le défi du jour |
+| `Deezer/Search` (public) | `GET /api/deezer/search?q=` | Proxy autocomplete Deezer (contourne CORS navigateur) |
 
 ## CI
 

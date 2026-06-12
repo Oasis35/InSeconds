@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace InSeconds.Api.Common.Text;
 
@@ -22,10 +23,15 @@ public sealed class TextNormalizer
         return LevenshteinDistance(normalizedGiven, normalizedExpected) <= threshold;
     }
 
+    private static readonly Regex ParenthesesPattern = new(@"[\(\[].*?[\)\]]", RegexOptions.Compiled);
+
     private static string Normalize(string input)
     {
+        // Suppression des parenthèses et crochets avec leur contenu : "(feat. X)", "[Radio Edit]", etc.
+        var withoutParens = ParenthesesPattern.Replace(input, " ");
+
         // Minuscules + suppression accents
-        var withoutAccents = RemoveAccents(input.ToLowerInvariant());
+        var withoutAccents = RemoveAccents(withoutParens.ToLowerInvariant());
 
         // Suppression ponctuation et caractères spéciaux (garde les espaces et lettres/chiffres)
         var cleaned = new string(withoutAccents
