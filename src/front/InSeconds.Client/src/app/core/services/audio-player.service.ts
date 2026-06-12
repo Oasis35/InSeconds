@@ -12,6 +12,10 @@ export class AudioPlayerService {
   readonly state = signal<AudioState>('idle');
   readonly listenedSeconds = signal(0);
   readonly extended = signal(false);
+  readonly progress = signal(0); // 0→1 pendant l'écoute
+
+  private rafId: number | null = null;
+  private startedAt = 0;
 
   readonly isIdle = computed(() => this.state() === 'idle');
   readonly isPlaying = computed(() => this.state() === 'playing');
@@ -34,8 +38,11 @@ export class AudioPlayerService {
     this.audio.src = trackUrl;
     this.audio.oncanplay = () => {
       this.state.set('playing');
+      this.progress.set(0);
+      this.startedAt = performance.now();
       this.audio!.play().catch(() => this.state.set('idle'));
       this.scheduleStop(durationSeconds);
+      this.startRaf(durationSeconds);
     };
 
     this.audio.onerror = () => this.state.set('idle');
@@ -61,8 +68,10 @@ export class AudioPlayerService {
       clearTimeout(this.stopTimer);
       this.stopTimer = null;
     }
+    this.stopRaf();
     if (this.audio) this.audio.pause();
 
+    this.progress.set(1);
     this.state.set('finished');
     this.listenedSeconds.set(this.currentDuration);
     navigator.vibrate?.(50);
@@ -75,6 +84,7 @@ export class AudioPlayerService {
       clearTimeout(this.stopTimer);
       this.stopTimer = null;
     }
+    this.stopRaf();
     if (this.audio) {
       this.audio.pause();
       this.audio.src = '';
@@ -82,6 +92,7 @@ export class AudioPlayerService {
     this.state.set('idle');
     this.listenedSeconds.set(0);
     this.extended.set(false);
+    this.progress.set(0);
     this.currentDuration = 0;
     this.wasExtended = false;
   }
@@ -97,5 +108,24 @@ export class AudioPlayerService {
 
   private scheduleStop(seconds: number): void {
     this.stopTimer = setTimeout(() => this.stop(), seconds * 1000);
+  }
+
+  private startRaf(durationSeconds: number): void {
+    this.stopRaf();
+    const tick = () => {
+      const elapsed = (performance.now() - this.startedAt) / 1000;
+      this.progress.set(Math.min(elapsed / durationSeconds, 1));
+      if (this.state() === 'playing') {
+        this.rafId = requestAnimationFrame(tick);
+      }
+    };
+    this.rafId = requestAnimationFrame(tick);
+  }
+
+  private stopRaf(): void {
+    if (this.rafId !== null) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
   }
 }

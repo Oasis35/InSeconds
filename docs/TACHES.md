@@ -1,6 +1,6 @@
 # InSeconds — Liste des Tâches
 
-> Mis à jour le 2026-06-08.
+> Mis à jour le 2026-06-12.
 
 ## ✅ Bootstrap projet
 
@@ -38,6 +38,16 @@
 - [x] NSwag : `ApiClient` généré, `api.generated.ts` commité
 - [x] Pages d'erreur : 404, "déjà joué" (compte à rebours + stats), "pas de défi"
 - [x] Écran "déjà joué" : ton score vs médiane, accordéon détail par morceau (pochette + lien Deezer)
+- [x] `TextNormalizer` : suppression parenthèses/crochets avant comparaison (`(feat. X)`, `[Radio Edit]`)
+- [x] Page d'accueil "welcome" avec bouton "Commencer à jouer" (session chargée en background — 0 latence au clic)
+- [x] Bouton Stop pendant l'écoute pour passer directement à la saisie
+- [x] Badge officiel "À écouter sur Deezer" (SVG Deezer branché) — `DeezerBadgeComponent`
+- [x] Favicon SVG note Deezer (icône violette `#A238FF`)
+- [x] Layout B — player haut + zone saisie toujours visible (sans clignotement)
+- [x] Barre de progression live + chrono (`requestAnimationFrame` dans `AudioPlayerService`)
+- [x] Champ unique artiste+titre avec autocomplete Deezer (proxy `GET /api/deezer/search`, debounce 300ms)
+- [x] `DeezerSearchService` + `Features/Deezer/SearchEndpoint` (proxy public, contourne CORS)
+- [x] `chosenDuration` en signal dans `BlindRoundComponent` (nécessaire pour `computed()` réactif)
 
 ## ✅ Déploiement
 

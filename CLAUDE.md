@@ -228,21 +228,26 @@ Runners Ubuntu, ~3-4 min par run. Setup .NET via `global-json-file: src/back/glo
 
 - Vertical slices `Sessions/StartSession` + `Sessions/SubmitAnswer` (scoring serveur + stats par morceau)
 - `SubmitAnswerResponse` inclut : `AverageSecondsWhenCorrect` (moy. temps des joueurs ayant trouvé) + `FailureRatePercent` + `ListenedDurationSeconds`
-- Services Common : `TextNormalizer` (Levenshtein), `ScoreCalculator`, `SettingsService`
+- Services Common : `TextNormalizer` (Levenshtein + suppression parenthèses/crochets), `ScoreCalculator`, `SettingsService`
 - `CookieAuthService` — résout ou crée un Player guest, cookie HttpOnly signé (`SameSite=None` en prod)
 - `playerAuthInterceptor` Angular — `withCredentials: true` sur toutes les requêtes `/api` hors admin
 - `DeezerClient` — `GetPreviewUrlAsync` + `SearchTracksAsync`, extrait le hash de pochette (`CoverHash`)
+- `GET /api/deezer/search?q=xxx` — endpoint proxy public qui relay vers l'API Deezer (évite les CORS)
 - Page admin (`/admin`) — login, création de défis, recherche Deezer, reset sessions du jour
 - Auth admin via Bearer token + `adminAuthInterceptor` Angular
 - Settings chargés depuis la BD via `AppDbConfigurationSource` (ADO.NET brut) → `IOptions<AppSettings>`
 - `Track.CoverHash` (hash seul, pas URL complète) + `AppSettings.CoverUrlTemplate` pour la reconstruction
 - NSwag : `ApiClient` généré depuis `/openapi/v1.json`, enregistré dans `app.config.ts`, types re-exportés via `game.models.ts`, `api.generated.ts` commité
 - Pages d'erreur : 404 (`NotFoundComponent`), "déjà joué" (409 → compte à rebours jusqu'à minuit UTC + stats), "pas de défi" (503)
-- Récap final : lien Deezer par morceau (`deezerTrackId` inclus dans `TrackSlot`)
+- Récap final : lien Deezer par morceau (`deezerTrackId` inclus dans `TrackSlot`), badge officiel "À écouter sur Deezer" (`DeezerBadgeComponent`)
 - `GET /api/stats/today` — score du joueur, médiane joueurs, taux d'échec + moyenne d'écoute par morceau (PostgreSQL `PERCENTILE_CONT(0.5)`)
-- Écran "déjà joué" : ton score vs médiane joueurs, accordéon par morceau (pochette + lien Deezer), compte à rebours jusqu'à minuit UTC
+- Écran "déjà joué" : ton score vs médiane joueurs, accordéon par morceau (pochette + badge Deezer), compte à rebours jusqu'à minuit UTC
 - `ListenedDurationSeconds` et `TotalDurationSeconds` en `decimal` (paliers décimaux, ex: 0.5s)
 - Déploiement Northflank (front + back + PostgreSQL), CI/CD auto sur push `main`
+- **UX blind round** : layout B (zone player / zone saisie toujours visibles, pas de clignotement), bouton unique Stop/Replay, barre de progression live (`requestAnimationFrame`), autocomplete Deezer sur champ unique `"Artiste - Titre"`
+- **Page d'accueil** : état `welcome` avant `playing` — session chargée en background, bouton "Commencer à jouer"
+- **Favicon** : note Deezer blanche sur fond violet (`favicon.svg`)
+- **`TextNormalizer`** : supprime les parenthèses/crochets avant comparaison (ex: `(feat. X)`, `[Radio Edit]`)
 
 ## À venir (pas encore implémenté)
 
@@ -250,8 +255,11 @@ Runners Ubuntu, ~3-4 min par run. Setup .NET via `global-json-file: src/back/glo
 - Smoke tests post-deploy automatisés
 - Tests mobiles (iOS Safari, Android Chrome)
 - Polish : charte graphique, messages d'erreur, accessibilité, RGPD
+- Sécurité avant passage public du repo : externaliser le mot de passe PostgreSQL de `appsettings.json` et `docker-compose.yml`
 
 ## Décisions d'architecture notables
 
 - **Pas de Register / Leaderboard** — fonctionnalité délibérément écartée pour garder l'app simple (tout le monde joue en guest, stats globales suffisent)
 - **`UpdateData` EF insuffisant pour les Settings existants** — utiliser `migrationBuilder.Sql("UPDATE ...")` dans les migrations qui modifient des valeurs de Settings déjà en DB, sinon la mise à jour ne s'applique pas sur une DB prod existante
+- **Autocomplete Deezer via proxy back** — l'API Deezer publique bloque les appels CORS directs depuis le navigateur. Le back expose `GET /api/deezer/search` qui relay (`DeezerClient.SearchTracksAsync`). Debounce 300ms côté front (`DeezerSearchService`).
+- **`chosenDuration` en signal** dans `BlindRoundComponent` — nécessaire pour que `nextDuration` (computed) se recalcule lors des `extend`/`listenMore`. Une propriété ordinaire ne déclenche pas la réactivité Angular.

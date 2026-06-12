@@ -4,8 +4,9 @@ import { GameService } from '../../core/services/game.service';
 import { TrackSlot } from '../../core/models/game.models';
 import { BlindRoundComponent, AnsweredEvent } from './blind-round/blind-round.component';
 import { ApiClient, TodayStatsResponse } from '../../api/api.generated';
+import { DeezerBadgeComponent } from '../../shared/deezer-badge.component';
 
-type GameState = 'loading' | 'playing' | 'done' | 'error' | 'no_challenge' | 'already_played';
+type GameState = 'loading' | 'welcome' | 'playing' | 'done' | 'error' | 'no_challenge' | 'already_played';
 
 interface RoundResult {
   artistCorrect: boolean;
@@ -23,7 +24,7 @@ interface RoundResult {
 
 @Component({
   selector: 'app-game',
-  imports: [BlindRoundComponent, RouterLink],
+  imports: [BlindRoundComponent, RouterLink, DeezerBadgeComponent],
   template: `
     <div class="min-h-dvh bg-gradient-to-br from-slate-900 via-slate-950 to-black text-slate-100 flex flex-col">
     <main class="flex-1 flex flex-col p-4 w-full max-w-lg mx-auto">
@@ -54,6 +55,26 @@ interface RoundResult {
       @if (gameState() === 'loading') {
         <div class="flex-1 flex items-center justify-center">
           <p class="text-slate-400 animate-pulse">Chargement du défi du jour…</p>
+        </div>
+      }
+
+      <!-- Accueil -->
+      @if (gameState() === 'welcome') {
+        <div class="flex-1 flex flex-col items-center justify-center gap-8 text-center px-4">
+          <div class="space-y-3">
+            <p class="text-7xl">🎵</p>
+            <h2 class="text-3xl font-bold">Blind Test du jour</h2>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              {{ tracks().length }} morceaux.<br>
+              Choisis combien de secondes tu écoutes avant de deviner artiste et titre.<br>
+              Moins tu écoutes, plus tu scores.
+            </p>
+          </div>
+          <button
+            (click)="startPlaying()"
+            class="px-10 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-lg font-bold transition-all touch-manipulation shadow-lg shadow-indigo-900/40">
+            Commencer à jouer
+          </button>
         </div>
       }
 
@@ -146,7 +167,7 @@ interface RoundResult {
                             }
                           </div>
                         </div>
-                        <span class="text-slate-600 text-xs shrink-0">↗</span>
+                        <app-deezer-badge class="shrink-0" />
                       </a>
                     }
                   </div>
@@ -184,41 +205,58 @@ interface RoundResult {
 
           <div class="w-full flex flex-col divide-y divide-slate-800">
             @for (r of results(); track r.position) {
-              <div class="flex items-center gap-4 py-4">
+              <div class="flex gap-3 py-4">
+
+                <!-- Pochette -->
                 @if (r.coverUrl) {
                   <img [src]="r.coverUrl" alt="Pochette"
                     class="w-14 h-14 rounded-xl object-cover shrink-0" />
                 } @else {
                   <div class="w-14 h-14 rounded-xl bg-slate-700 shrink-0"></div>
                 }
-                <div class="flex-1 min-w-0 text-left">
-                  <div class="flex gap-3 text-base mb-1">
-                    <span [class]="r.artistCorrect ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold'">
+
+                <!-- Infos + badge -->
+                <div class="flex-1 min-w-0 text-left space-y-1">
+
+                  <!-- Artiste / Titre trouvés -->
+                  <div class="flex gap-3 text-sm font-semibold">
+                    <span [class]="r.artistCorrect ? 'text-emerald-400' : 'text-rose-400'">
                       {{ r.artistCorrect ? '✓' : '✗' }} Artiste
                     </span>
-                    <span [class]="r.titleCorrect ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold'">
+                    <span [class]="r.titleCorrect ? 'text-emerald-400' : 'text-rose-400'">
                       {{ r.titleCorrect ? '✓' : '✗' }} Titre
                     </span>
                   </div>
-                  <p class="text-slate-300 text-sm truncate">{{ r.correctArtist }} — {{ r.correctTitle }}</p>
-                  <div class="flex gap-3 text-xs text-slate-600 mt-0.5">
-                    <span>{{ r.listenedDurationSeconds }}s</span>
+
+                  <!-- Bonne réponse -->
+                  <p class="text-slate-200 text-sm font-medium truncate">
+                    {{ r.correctArtist }} — {{ r.correctTitle }}
+                  </p>
+
+                  <!-- Stats -->
+                  <div class="flex gap-3 text-xs text-slate-500">
+                    <span>{{ r.listenedDurationSeconds }}s écoutés</span>
                     @if (r.averageSecondsWhenCorrect != null) {
-                      <span>moy. {{ r.averageSecondsWhenCorrect!.toFixed(1) }}s</span>
+                      <span>· moy. {{ r.averageSecondsWhenCorrect!.toFixed(1) }}s</span>
                     }
-                    <span>{{ r.failureRatePercent.toFixed(0) }}% ratés</span>
+                    <span>· {{ r.failureRatePercent.toFixed(0) }}% ratés</span>
                   </div>
+
+                  <!-- Badge Deezer -->
+                  <a [href]="'https://www.deezer.com/track/' + r.deezerTrackId"
+                    target="_blank" rel="noopener noreferrer"
+                    class="inline-block pt-1">
+                    <app-deezer-badge />
+                  </a>
                 </div>
-                <div class="flex flex-col items-end gap-1 shrink-0">
+
+                <!-- Score -->
+                <div class="shrink-0 text-right">
                   <span [class]="r.score > 0 ? 'text-emerald-400 font-bold text-lg' : 'text-slate-500 font-bold text-lg'">
                     +{{ r.score }}
                   </span>
-                  <a [href]="'https://www.deezer.com/track/' + r.deezerTrackId"
-                    target="_blank" rel="noopener noreferrer"
-                    class="text-xs text-slate-500 hover:text-indigo-400 transition-colors">
-                    Deezer ↗
-                  </a>
                 </div>
+
               </div>
             }
           </div>
@@ -286,6 +324,10 @@ export class GameComponent implements OnInit, OnDestroy {
     this.countdownInterval = setInterval(tick, 1000);
   }
 
+  protected startPlaying(): void {
+    this.gameState.set('playing');
+  }
+
   protected retry(): void {
     this.gameState.set('loading');
     this.loadSession();
@@ -349,7 +391,7 @@ export class GameComponent implements OnInit, OnDestroy {
         this.currentIndex.set(0);
         this.totalScore.set(0);
         this.results.set([]);
-        this.gameState.set('playing');
+        this.gameState.set('welcome');
       },
       error: (err) => {
         if (err.status === 409) {
