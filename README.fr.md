@@ -4,6 +4,14 @@
 
 > Blind test musical quotidien. Écoute le moins longtemps possible, devine artiste + titre. Moins de temps = plus de points. Même défi pour tout le monde, chaque jour.
 
+## Comment ça marche
+
+- Chaque jour à minuit UTC, un nouveau set de morceaux est sélectionné
+- Choisis combien de secondes écouter (0.5, 1, 1.5, 2, 3, 5, 10) avant de tenter artiste + titre
+- Une prolongation autorisée par morceau (palier supérieur, avec malus de score)
+- Le scoring est entièrement côté serveur — impossible de tricher côté client
+- Mode guest : joue sans créer de compte, hors classement
+
 ## Démarrage rapide
 
 ### Prérequis
@@ -15,22 +23,18 @@
 
 ### Lancer le backend
 
-Depuis la racine du repo :
-
 ```bash
 docker compose up -d
 ```
 
 Ça démarre :
 
-- `inseconds.database` — SQL Server 2025 sur `localhost:1433`
+- `inseconds.database` — PostgreSQL sur `localhost:5432`
 - `inseconds.api` — API .NET 10 sur `http://localhost:5171` avec hot-reload `dotnet watch`
 
-L'API applique automatiquement les migrations EF Core au démarrage, la base est donc prête dès que le conteneur est sain.
+Les migrations EF Core sont appliquées automatiquement au démarrage.
 
 ### Lancer le frontend
-
-Depuis la racine du repo :
 
 ```bash
 cd src/front/InSeconds.Client
@@ -38,7 +42,7 @@ npm install   # uniquement la première fois
 npm start
 ```
 
-Ouvre `http://localhost:5173`. Tu dois voir la page d'accueil avec un badge vert "Backend OK" confirmant que l'API est joignable.
+Ouvre `http://localhost:5173`.
 
 ### URLs utiles
 
@@ -46,16 +50,18 @@ Ouvre `http://localhost:5173`. Tu dois voir la page d'accueil avec un badge vert
 |-----|-------|
 | `http://localhost:5173` | Frontend (serveur de dev Angular) |
 | `http://localhost:5171/health` | Healthcheck de l'API |
-| `http://localhost:5171/openapi/v1.json` | Spec OpenAPI (utilisée plus tard par NSwag pour générer le client TS) |
+| `http://localhost:5171/openapi/v1.json` | Spec OpenAPI (utilisée par NSwag pour la génération du client TS) |
 
 ## Stack
 
 | Couche | Tech |
 |--------|------|
 | Backend | .NET 10, Wolverine (messaging), FluentValidation, EF Core 10 |
-| Base de données | SQL Server 2025 (édition Developer) |
+| Base de données | PostgreSQL (Docker en dev, addon Northflank en prod) |
 | Frontend | Angular 20 (standalone + signals), TypeScript, Tailwind CSS v4, SCSS |
-| Infra | Docker Compose, `dotnet watch` (backend), `ng serve` (frontend) |
+| Musique | API Deezer (recherche, previews 30s, pochettes) |
+| Infra dev | Docker Compose, `dotnet watch` (backend), `ng serve` (frontend) |
+| Déploiement | Northflank (front + back + PostgreSQL) |
 
 ## Structure du dépôt
 
@@ -64,39 +70,30 @@ InSeconds/
 ├── docs/                      # Notes d'architecture (FR)
 ├── src/
 │   ├── back/
-│   │   ├── InSeconds.slnx     # Solution .NET
+│   │   ├── InSeconds.slnx     # Solution .NET (format .slnx)
 │   │   └── InSeconds.Api/     # Web API (vertical slice)
 │   └── front/
 │       └── InSeconds.Client/  # Application Angular
-├── docker-compose.yml         # services database + api
-├── docker-compose.dcproj      # intégration Visual Studio
-└── README.md / README.fr.md   # ce fichier
+├── docker-compose.yml
+└── README.md / README.fr.md
 ```
 
 ## Intégration continue
 
-Un workflow GitHub Actions tourne à chaque push (toutes branches) et chaque pull request vers `main` :
+Workflow GitHub Actions à chaque push et chaque PR vers `main` :
 
-- **Job backend** — restore, build `.slnx` en Release, et vérifie qu'aucun changement de modèle EF Core n'attend une migration (`dotnet ef migrations has-pending-model-changes`)
-- **Job frontend** — `npm ci` + build de production de l'app Angular
+- **Backend** — build en Release + `dotnet ef migrations has-pending-model-changes`
+- **Frontend** — `npm ci` + build de production
 
-Les deux jobs tournent en parallèle sur des runners Ubuntu (~3-4 minutes par push). Les runs obsolètes sur une même branche sont annulés automatiquement quand un nouveau commit arrive.
-
-**Dependabot** (`.github/dependabot.yml`) ouvre des pull requests pour les dépendances obsolètes à intervalle régulier :
-
-- NuGet — hebdomadaire
-- npm — hebdomadaire
-- GitHub Actions — mensuel
-- Images Docker de base — mensuel
-
-La CI **ne démarre pas** Docker ou la base à ce stade — pas encore de tests d'intégration. Quand on en aura (probablement avec Testcontainers), un job supplémentaire lancera un service container SQL Server.
+Les runs obsolètes sont annulés automatiquement. Pas de Docker/BD en CI pour l'instant — les tests d'intégration utiliseront Testcontainers quand ils arriveront.
 
 ## Documentation
 
-- [`docs/TACHES.md`](docs/TACHES.md) — Liste des tâches MVP
-- [`docs/BACKEND_STRUCTURE_FR.md`](docs/BACKEND_STRUCTURE_FR.md) — Référence d'architecture backend
-- [`docs/FRONTEND_STRUCTURE_FR.md`](docs/FRONTEND_STRUCTURE_FR.md) — Référence d'architecture frontend (certains détails sont obsolètes — voir la mémoire projet pour les décisions actuelles)
-- [`CLAUDE.md`](CLAUDE.md) — conventions et pièges du repo (à lire si tu contribues)
+- [`docs/COMMENCE_ICI_FR.md`](docs/COMMENCE_ICI_FR.md) — point d'entrée et état du projet
+- [`docs/TACHES.md`](docs/TACHES.md) — liste des tâches
+- [`docs/BACKEND_STRUCTURE_FR.md`](docs/BACKEND_STRUCTURE_FR.md) — référence d'architecture backend
+- [`docs/FRONTEND_STRUCTURE_FR.md`](docs/FRONTEND_STRUCTURE_FR.md) — référence d'architecture frontend
+- [`CLAUDE.md`](CLAUDE.md) — conventions et pièges du repo (à lire avant de contribuer)
 
 ## Licence
 

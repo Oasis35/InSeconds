@@ -96,7 +96,11 @@ readonly durationScores = signal<Record<number, number>>({
 
 Modèle "durée choisie" : l'utilisateur choisit le palier AVANT d'écouter, l'audio joue exactement cette durée puis s'arrête automatiquement. Une seule prolongation autorisée (palier supérieur).
 
-Signals exposés : `state` (`idle | loading | playing | finished`), `listenedSeconds`, `extended`.
+Signals exposés : `state` (`idle | loading | playing | finished`), `listenedSeconds`, `extended`, `progress` (0→1, mis à jour via `requestAnimationFrame` pour la barre de progression live).
+
+### `DeezerSearchService`
+
+Autocomplete Deezer : prend un `Observable<string>`, applique debounce 300ms + distinctUntilChanged, appelle `GET /api/deezer/search?q=xxx` (proxy back pour éviter les CORS), retourne `DeezerSuggestion[]` (`artist`, `title`).
 
 ### `GameService`
 
@@ -111,16 +115,27 @@ Types importés depuis `game.models.ts` (qui re-exporte `api.generated.ts`).
 
 ### `GameComponent`
 
-Orchestre une session complète : démarre la session, gère la progression piste par piste, accumule le score, affiche le récap final avec les stats.
+Orchestre une session complète. États : `loading` → `welcome` → `playing` → `done` (+ `already_played`, `no_challenge`, `error`).
+
+- État `welcome` : page d'accueil avec bouton "Commencer à jouer" — la session est chargée en background pendant cet écran, donc pas de latence au clic
+- Récap final : badge officiel "À écouter sur Deezer" (`DeezerBadgeComponent`) cliquable par morceau
 
 ### `BlindRoundComponent`
 
-UI d'une piste : choix du palier → lecture → prolongation éventuelle → timer saisie (20s) → formulaire artiste/titre → feedback résultat.
+Layout B — deux zones toujours présentes (pas de clignotement) :
+- **Zone player** (haut) : paliers au départ, puis bouton unique Start/Stop/Replay + barre de progression live + chrono `Xs / Xs`
+- **Zone saisie** (bas) : champ unique `"Artiste - Titre"` avec dropdown autocomplete Deezer (debounce 300ms), bouton Valider grisé pendant l'écoute
+
+`chosenDuration` est un **signal** (pas une propriété ordinaire) pour que `nextDuration` (computed) se recalcule réactivement.
 
 Affiche après chaque réponse :
 - Ton temps d'écoute
 - Moyenne du temps des joueurs ayant trouvé (`averageSecondsWhenCorrect`)
 - % de joueurs n'ayant pas trouvé (`failureRatePercent`)
+
+### `DeezerBadgeComponent`
+
+SVG inline du badge officiel "À écouter sur Deezer" (blanc sur transparent). Inputs `width` et `height`. Utilisé dans le récap final et l'écran "déjà joué".
 
 ### `AdminComponent`
 
