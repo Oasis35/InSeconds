@@ -110,13 +110,32 @@ export class AudioPlayerService {
     this.wasExtended = false;
   }
 
-  preloadNext(trackUrl: string): void {
-    if (typeof document === 'undefined') return;
-    const link = document.createElement('link');
-    link.rel = 'preload';
-    link.as = 'audio';
-    link.href = trackUrl;
-    document.head.appendChild(link);
+  private readonly preloaded = new Set<string>();
+  private readonly preloadBuffers = new Map<string, HTMLAudioElement>();
+
+  async preloadAll(trackUrls: string[]): Promise<void> {
+    for (const url of trackUrls) {
+      await this.preloadOne(url);
+    }
+  }
+
+  private preloadOne(trackUrl: string): Promise<void> {
+    if (typeof Audio === 'undefined' || this.preloaded.has(trackUrl)) {
+      return Promise.resolve();
+    }
+    this.preloaded.add(trackUrl);
+    return new Promise<void>(resolve => {
+      const a = new Audio();
+      a.preload = 'auto';
+      a.oncanplaythrough = () => resolve();
+      a.onerror = () => resolve(); // ne pas bloquer si une URL échoue
+      a.src = trackUrl;
+      this.preloadBuffers.set(trackUrl, a);
+    });
+  }
+
+  preload(trackUrl: string): void {
+    this.preloadOne(trackUrl);
   }
 
   private scheduleStop(seconds: number, token: number): void {

@@ -31,22 +31,13 @@ public sealed class TodayStatsHandler(ApplicationDbContext db, SettingsService s
                 .FirstOrDefaultAsync(ct);
         }
 
-        var medianResult = await db.Database.SqlQueryRaw<int>(
-            """
-            SELECT COALESCE(
-                CAST(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY gs."TotalScore") AS integer),
-                0
-            ) AS "Value"
-            FROM "GameSessions" gs
-            INNER JOIN "Players" p ON p."Id" = gs."PlayerId"
-            WHERE gs."DailyChallengeId" = {0}
-              AND NOT p."IsDeleted"
-            """,
-            challenge.Id)
-            .FirstOrDefaultAsync(ct);
+        var scores = await db.GameSessions
+            .Where(s => s.DailyChallengeId == challenge.Id)
+            .Select(s => s.TotalScore)
+            .ToListAsync(ct);
 
-        var totalPlayers = await db.GameSessions
-            .CountAsync(s => s.DailyChallengeId == challenge.Id, ct);
+        var totalPlayers = scores.Count;
+        var medianResult = ComputeMedian(scores);
 
         var appSettings = await settingsService.GetAsync(ct);
 
@@ -79,5 +70,15 @@ public sealed class TodayStatsHandler(ApplicationDbContext db, SettingsService s
         )).ToList();
 
         return Results.Ok(new TodayStatsResponse(yourScore, medianResult, totalPlayers, currentStreak, tracks));
+    }
+
+    private static int ComputeMedian(List<int> values)
+    {
+        if (values.Count == 0) return 0;
+        var sorted = values.Order().ToList();
+        var mid = sorted.Count / 2;
+        return sorted.Count % 2 == 1
+            ? sorted[mid]
+            : (sorted[mid - 1] + sorted[mid]) / 2;
     }
 }

@@ -207,12 +207,15 @@ Résout ou crée un `Player` guest à partir du cookie HTTP-only signé. `SameSi
 | `Sessions/StartSession` | `POST /api/sessions` | Crée ou récupère la session du jour |
 | `Sessions/SubmitAnswer` | `POST /api/sessions/{id}/answers` | Scoring serveur + stats par morceau |
 | `Stats/Today` | `GET /api/stats/today` | Score joueur, médiane, stats par morceau |
+| `Auth/Me` | `GET /api/auth/me` | Retourne `{ id, isGuest, pseudo }` du joueur courant (cookie) |
+| `Settings/GetSettings` | `GET /api/settings` | Expose les settings publics (paliers, timer, scores) |
 | `Admin/Login` | `POST /api/admin/login` | Génère un Bearer token admin |
 | `Admin/Tracks/*` | `/api/admin/tracks` | Gestion pool morceaux |
 | `Admin/Challenges/*` | `/api/admin/challenges` | Création défis + recherche Deezer |
 | `Admin/GenerateToday` | `POST /api/admin/generate-today` | Génère le défi du jour à la demande |
 | `Admin/ResetToday` | `DELETE /api/admin/reset-today` | Supprime le défi du jour |
 | `Deezer/Search` (public) | `GET /api/deezer/search?q=` | Proxy autocomplete Deezer (contourne CORS navigateur) |
+| `ChallengeGeneration` | BackgroundService | Génère le défi quotidien automatiquement à 3h UTC |
 
 ## CI
 

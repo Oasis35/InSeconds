@@ -24,7 +24,7 @@
 - [x] Slice `Stats/Today` — score joueur, médiane (`PERCENTILE_CONT(0.5)`), stats par morceau
 - [x] Page admin : login Bearer, pool morceaux, création défis, reset sessions
 - [x] `ListenedDurationSeconds` / `TotalDurationSeconds` en `decimal` (paliers 0.5, 1, 1.5, 2, 3, 5, 10)
-- [x] Tests unitaires : `TextNormalizer`, `ScoreCalculator`, `CookieAuthService`, `StartSessionHandler`, `SubmitAnswerHandler`, `AppSettingsBindingTests`, `GenerateDailyChallengeTests`
+- [x] Tests unitaires back : `TextNormalizer`, `ScoreCalculator`, `CookieAuthService`, `PlayerAuthMiddleware`, `AppSettingsBinding`, `StartSessionHandler`, `SubmitAnswerHandler`, `GenerateDailyChallengeService`, `AddTrackHandler`, `MeEndpoint`
 
 ## ✅ Frontend
 
@@ -40,6 +40,7 @@
 - [x] Écran "déjà joué" : ton score vs médiane, accordéon détail par morceau (pochette + lien Deezer)
 - [x] `TextNormalizer` : suppression parenthèses/crochets avant comparaison (`(feat. X)`, `[Radio Edit]`)
 - [x] Page d'accueil "welcome" avec bouton "Commencer à jouer" (session chargée en background — 0 latence au clic)
+- [x] Préchargement audio séquentiel (`AudioPlayerService.preloadAll`) — tous les morceaux bufferisés avant `welcome`, première lecture instantanée
 - [x] Bouton Stop pendant l'écoute pour passer directement à la saisie
 - [x] Badge officiel "À écouter sur Deezer" (SVG Deezer branché) — `DeezerBadgeComponent`
 - [x] Favicon SVG note Deezer (icône violette `#A238FF`)
@@ -69,7 +70,7 @@
 ## 🚧 Tests
 
 - [ ] Tests d'intégration back (Testcontainers) : flow StartSession → SubmitAnswer × N
-- [ ] Tests front Karma/Jasmine (`AudioPlayerService`, `GameService`)
+- [ ] Tests front Karma/Jasmine (`AudioPlayerService` — dont `preloadAll`, `GameService`)
 - [ ] Tests E2E Playwright (flux complet 1 partie)
 
 ## 🚧 Mobile
@@ -80,6 +81,7 @@
 
 ## 🚧 Polish & Launch
 
+- [ ] Cache Redis pour les preview URLs Deezer (`StackExchange.Redis`, TTL 24h, intercalé dans `StartSession/Handler.cs`)
 - [ ] Smoke tests automatisés post-deploy
 - [ ] Charte graphique / palette de couleurs (`@theme` Tailwind)
 - [ ] Audit accessibilité WCAG 2.1 AA

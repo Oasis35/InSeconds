@@ -98,6 +98,14 @@ Modèle "durée choisie" : l'utilisateur choisit le palier AVANT d'écouter, l'a
 
 Signals exposés : `state` (`idle | loading | playing | finished`), `listenedSeconds`, `extended`, `progress` (0→1, mis à jour via `requestAnimationFrame` pour la barre de progression live).
 
+Méthodes publiques :
+- `play(trackUrl, durationSeconds)` — charge et joue l'audio pour la durée choisie
+- `extend(nextDurationSeconds)` — prolonge d'un palier (une seule fois)
+- `stop()` — arrête et retourne `{ listenedSeconds, wasExtended }`
+- `reset()` — nettoie tout (appelé dans `ngOnDestroy` de `BlindRoundComponent`)
+- `preloadAll(trackUrls)` — précharge séquentiellement tous les morceaux (`new Audio()` + `preload='auto'`), attend `canplaythrough` avant de passer au suivant, retourne une `Promise<void>`. Appelé par `GameComponent` après `startToday()` — le jeu reste en `loading` jusqu'à la résolution.
+- `preload(trackUrl)` — précharge un seul morceau (utilisé en interne par `preloadAll`)
+
 ### `DeezerSearchService`
 
 Autocomplete Deezer : prend un `Observable<string>`, applique debounce 300ms + distinctUntilChanged, appelle `GET /api/deezer/search?q=xxx` (proxy back pour éviter les CORS), retourne `DeezerSuggestion[]` (`artist`, `title`).
@@ -117,7 +125,8 @@ Types importés depuis `game.models.ts` (qui re-exporte `api.generated.ts`).
 
 Orchestre une session complète. États : `loading` → `welcome` → `playing` → `done` (+ `already_played`, `no_challenge`, `error`).
 
-- État `welcome` : page d'accueil avec bouton "Commencer à jouer" — la session est chargée en background pendant cet écran, donc pas de latence au clic
+- État `loading` : appel `POST /api/sessions` puis préchargement séquentiel de tous les audios via `audioPlayer.preloadAll()` — l'état `welcome` n'est atteint qu'une fois tous les buffers prêts
+- État `welcome` : page d'accueil avec bouton "Commencer à jouer" — tous les morceaux sont déjà en mémoire, première lecture instantanée
 - Récap final : badge officiel "À écouter sur Deezer" (`DeezerBadgeComponent`) cliquable par morceau
 
 ### `BlindRoundComponent`
