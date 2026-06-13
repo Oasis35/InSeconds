@@ -4,6 +4,7 @@ public sealed record TodayStatsResponse(
     int? YourScore,
     int MedianScore,
     int TotalPlayers,
+    int CurrentStreak,
     IReadOnlyList<TrackStat> Tracks);
 
 public sealed record TrackStat(

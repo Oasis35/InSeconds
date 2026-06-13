@@ -123,9 +123,17 @@ interface RoundResult {
       @if (gameState() === 'already_played') {
         <div class="flex-1 flex flex-col items-center gap-5 text-center px-4 pt-6">
           <p class="text-6xl">✅</p>
-          <div class="space-y-1">
+          <div class="space-y-2">
             <h2 class="text-xl font-semibold text-slate-200">Déjà joué aujourd'hui !</h2>
             <p class="text-slate-400 text-sm tabular-nums">Prochain défi dans <span class="font-semibold text-slate-200">{{ countdown() }}</span></p>
+            @if (todayStats() && todayStats()!['currentStreak'] > 0) {
+              <div class="flex items-center justify-center gap-2 pt-1">
+                <span class="text-lg">🔥</span>
+                <span class="text-amber-400 font-semibold text-sm">
+                  {{ todayStats()!['currentStreak'] }} jour{{ todayStats()!['currentStreak'] > 1 ? 's' : '' }} de suite
+                </span>
+              </div>
+            }
           </div>
 
           <!-- Card scores côte à côte — masquée si écran trop petit -->
@@ -209,6 +217,14 @@ interface RoundResult {
             <h2 class="text-2xl font-bold">Défi terminé !</h2>
             <p class="text-6xl font-bold text-white pt-1">{{ totalScore() }}</p>
             <p class="text-slate-500 text-sm">points</p>
+            @if (currentStreak() > 0) {
+              <div class="flex items-center justify-center gap-2 pt-2">
+                <span class="text-lg">🔥</span>
+                <span class="text-amber-400 font-semibold text-sm">
+                  {{ currentStreak() }} jour{{ currentStreak() > 1 ? 's' : '' }} de suite
+                </span>
+              </div>
+            }
             <p class="text-slate-200 text-sm pt-2 animate-pulse">Reviens demain pour un nouveau défi 🎵</p>
           </div>
 
