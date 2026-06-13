@@ -76,6 +76,7 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - Déploiement Northflank (front + back + PostgreSQL)
 - `TextNormalizer` : suppression parenthèses/crochets avant comparaison — `(feat. X)`, `[Radio Edit]`
 - Page d'accueil "welcome" — session chargée en background, bouton "Commencer à jouer" sans latence
+- Préchargement audio séquentiel — tous les morceaux bufferisés avant l'état `welcome`, première lecture instantanée
 - Bouton Stop pendant l'écoute pour accéder directement à la saisie
 - Layout B — player haut (toujours visible) + zone saisie toujours présente (pas de clignotement)
 - Barre de progression live + chrono centré (`requestAnimationFrame`)
@@ -86,7 +87,7 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 
 ## Specs gameplay clés (rappel rapide)
 
-- **10 morceaux par jour**, même set pour tout le monde
+- **N morceaux par jour** (configurable via `TracksPerChallenge` en BD, défaut 3), même set pour tout le monde
 - **Paliers d'écoute** : 0.5, 1, 1.5, 2, 3, 5, 10 secondes (configurable via la table `Settings`)
 - **1 prolongation** autorisée par réponse (passe au palier supérieur, scoring sur le palier final)
 - **Timer de saisie** : 20s après la fin de la lecture pour saisir artiste + titre (configurable)
