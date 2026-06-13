@@ -9,6 +9,8 @@ public sealed class Player
     public Guid AuthToken { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? LastSeenAt { get; set; }
+    public int CurrentStreak { get; set; }
+    public DateOnly? LastPlayedDate { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }
 

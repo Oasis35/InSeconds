@@ -29,6 +29,12 @@ public sealed class PlayerConfiguration : IEntityTypeConfiguration<Player>
         builder.Property(p => p.CreatedAt)
             .HasDefaultValueSql("now() at time zone 'utc'");
 
+        builder.Property(p => p.CurrentStreak)
+            .HasDefaultValue(0);
+
+        builder.Property(p => p.LastPlayedDate)
+            .HasColumnType("date");
+
         builder.Property(p => p.IsDeleted)
             .HasDefaultValue(false);
 

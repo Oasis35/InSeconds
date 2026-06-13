@@ -70,6 +70,15 @@ interface RoundResult {
               Moins tu écoutes, plus tu scores.
             </p>
           </div>
+          @if (currentStreak() > 0) {
+            <div class="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-amber-500/10 border border-amber-500/30">
+              <span class="text-xl">🔥</span>
+              <span class="text-amber-400 font-semibold text-sm">
+                {{ currentStreak() }} jour{{ currentStreak() > 1 ? 's' : '' }} de suite
+              </span>
+            </div>
+          }
+
           <button
             (click)="startPlaying()"
             class="px-10 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-lg font-bold transition-all touch-manipulation shadow-lg shadow-indigo-900/40">
@@ -288,6 +297,7 @@ export class GameComponent implements OnInit, OnDestroy {
   protected readonly currentIndex = signal(0);
   protected readonly totalScore = signal(0);
   protected readonly results = signal<RoundResult[]>([]);
+  protected readonly currentStreak = signal(0);
 
   private sessionId = 0;
   private countdownInterval: ReturnType<typeof setInterval> | null = null;
@@ -391,6 +401,7 @@ export class GameComponent implements OnInit, OnDestroy {
         this.currentIndex.set(0);
         this.totalScore.set(0);
         this.results.set([]);
+        this.currentStreak.set(response.currentStreak);
         this.gameState.set('welcome');
       },
       error: (err) => {
