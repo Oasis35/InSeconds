@@ -4,7 +4,6 @@ import { GameService } from '../../core/services/game.service';
 import { TrackSlot } from '../../core/models/game.models';
 import { BlindRoundComponent, AnsweredEvent } from './blind-round/blind-round.component';
 import { ApiClient, TodayStatsResponse } from '../../api/api.generated';
-import { DeezerBadgeComponent } from '../../shared/deezer-badge.component';
 
 type GameState = 'loading' | 'welcome' | 'playing' | 'done' | 'error' | 'no_challenge' | 'already_played';
 
@@ -24,26 +23,38 @@ interface RoundResult {
 
 @Component({
   selector: 'app-game',
-  imports: [BlindRoundComponent, RouterLink, DeezerBadgeComponent],
+  imports: [BlindRoundComponent, RouterLink],
   template: `
-    <div class="min-h-dvh bg-gradient-to-br from-slate-900 via-slate-950 to-black text-slate-100 flex flex-col">
-    <main class="flex-1 flex flex-col p-4 w-full max-w-lg mx-auto">
+    <div class="min-h-dvh flex flex-col" style="background:#080810;color:#e2e8f0">
+    <main class="flex-1 flex flex-col p-5 w-full max-w-lg mx-auto">
 
       <!-- En-tête -->
-      <header class="py-4 mb-6">
+      <header class="pt-3 pb-6">
         <div class="flex items-center justify-center relative">
-          <h1 class="text-2xl font-bold tracking-tight">InSeconds 🎵</h1>
+          <h1 class="text-lg font-semibold tracking-widest uppercase" style="color:#6366f1;letter-spacing:0.2em">InSeconds</h1>
+
+          <!-- Streak header (tous les écrans sauf loading) -->
+          @if (displayStreak() > 0 && gameState() !== 'loading' && gameState() !== 'playing') {
+            <span class="absolute right-0 flex items-center gap-1 text-xs font-semibold tabular-nums"
+                  style="color:#f59e0b">
+              🔥 {{ displayStreak() }}
+            </span>
+          }
+
+          <!-- Score en cours de partie (par-dessus streak si playing) -->
           @if (gameState() === 'playing') {
-            <span class="absolute right-0 text-lg font-semibold">{{ totalScore() }} pts</span>
+            <span class="absolute right-0 text-base font-bold tabular-nums" style="color:#f8fafc">
+              {{ totalScore() }} <span style="color:#334155;font-weight:400;font-size:0.75rem">pts</span>
+            </span>
           }
         </div>
         @if (gameState() === 'playing') {
-          <div class="mt-3 flex flex-col gap-1">
-            <div class="flex justify-between text-xs text-slate-500">
+          <div class="mt-4 space-y-1.5">
+            <div class="flex justify-between text-xs" style="color:#334155">
               <span>Piste {{ currentIndex() + 1 }} / {{ tracks().length }}</span>
             </div>
-            <div class="w-full bg-slate-800 rounded-full h-1.5">
-              <div class="bg-indigo-500 h-1.5 rounded-full transition-all duration-300"
+            <div class="w-full rounded-full h-px" style="background:#1e1e2e">
+              <div class="h-px rounded-full transition-all duration-500" style="background:#6366f1"
                 [style.width.%]="(currentIndex() + 1) / tracks().length * 100">
               </div>
             </div>
@@ -54,50 +65,42 @@ interface RoundResult {
       <!-- Chargement -->
       @if (gameState() === 'loading') {
         <div class="flex-1 flex items-center justify-center">
-          <p class="text-slate-400 animate-pulse">Chargement du défi du jour…</p>
+          <p class="text-sm animate-pulse" style="color:#334155">Chargement du défi…</p>
         </div>
       }
 
       <!-- Accueil -->
       @if (gameState() === 'welcome') {
-        <div class="flex-1 flex flex-col items-center justify-center gap-8 text-center px-4">
-          <div class="space-y-3">
-            <p class="text-7xl">🎵</p>
-            <h2 class="text-3xl font-bold">Blind Test du jour</h2>
-            <p class="text-slate-400 text-sm leading-relaxed">
-              {{ tracks().length }} morceaux.<br>
-              Choisis combien de secondes tu écoutes avant de deviner artiste et titre.<br>
-              Moins tu écoutes, plus tu scores.
+        <div class="flex-1 flex flex-col items-center justify-center gap-10 text-center px-2">
+
+          <div class="space-y-4">
+            <p class="text-6xl" style="line-height:1">♪</p>
+            <h2 class="text-3xl font-bold tracking-tight" style="color:#f8fafc">Blind Test du jour</h2>
+            <p class="text-sm leading-relaxed" style="color:#475569">
+              {{ tracks().length }} morceaux · écoute &amp; devine<br>
+              Moins tu écoutes, plus tu scores
             </p>
           </div>
-          @if (currentStreak() > 0) {
-            <div class="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-amber-500/10 border border-amber-500/30">
-              <span class="text-xl">🔥</span>
-              <span class="text-amber-400 font-semibold text-sm">
-                {{ currentStreak() }} jour{{ currentStreak() > 1 ? 's' : '' }} de suite
-              </span>
-            </div>
-          }
 
           <button
             (click)="startPlaying()"
-            class="px-10 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-lg font-bold transition-all touch-manipulation shadow-lg shadow-indigo-900/40">
-            Commencer à jouer
+            class="w-full py-4 rounded-2xl font-bold text-base tracking-wide transition-all active:scale-95 touch-manipulation"
+            style="background:#6366f1;color:#fff;letter-spacing:0.04em">
+            Commencer
           </button>
         </div>
       }
 
       <!-- Pas de défi aujourd'hui -->
       @if (gameState() === 'no_challenge') {
-        <div class="flex-1 flex flex-col items-center justify-center gap-5 text-center px-4">
-          <p class="text-6xl">🎵</p>
-          <div class="space-y-1">
-            <h2 class="text-xl font-semibold text-slate-200">Pas de défi aujourd'hui</h2>
-            <p class="text-slate-500 text-sm">Le défi du jour n'a pas encore été généré.<br>Réessaie dans quelques minutes.</p>
+        <div class="flex-1 flex flex-col items-center justify-center gap-6 text-center px-4">
+          <div class="space-y-2">
+            <h2 class="text-xl font-semibold" style="color:#e2e8f0">Pas de défi aujourd'hui</h2>
+            <p class="text-sm" style="color:#334155">Le défi n'a pas encore été généré.<br>Réessaie dans quelques minutes.</p>
           </div>
-          <button
-            (click)="retry()"
-            class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-colors">
+          <button (click)="retry()"
+            class="px-6 py-3 rounded-xl text-sm font-semibold transition-colors"
+            style="background:#1e1e2e;color:#94a3b8;border:1px solid rgba(255,255,255,0.06)">
             Réessayer
           </button>
         </div>
@@ -105,15 +108,14 @@ interface RoundResult {
 
       <!-- Erreur -->
       @if (gameState() === 'error') {
-        <div class="flex-1 flex flex-col items-center justify-center gap-5 text-center px-4">
-          <p class="text-6xl">😵</p>
-          <div class="space-y-1">
-            <h2 class="text-xl font-semibold text-slate-200">Impossible de charger le défi</h2>
-            <p class="text-slate-500 text-sm">Le serveur est peut-être indisponible.<br>Réessaie dans quelques secondes.</p>
+        <div class="flex-1 flex flex-col items-center justify-center gap-6 text-center px-4">
+          <div class="space-y-2">
+            <h2 class="text-xl font-semibold" style="color:#e2e8f0">Impossible de charger le défi</h2>
+            <p class="text-sm" style="color:#334155">Le serveur est peut-être indisponible.<br>Réessaie dans quelques secondes.</p>
           </div>
-          <button
-            (click)="retry()"
-            class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-colors">
+          <button (click)="retry()"
+            class="px-6 py-3 rounded-xl text-sm font-semibold transition-colors"
+            style="background:#1e1e2e;color:#94a3b8;border:1px solid rgba(255,255,255,0.06)">
             Réessayer
           </button>
         </div>
@@ -121,70 +123,74 @@ interface RoundResult {
 
       <!-- Déjà joué aujourd'hui -->
       @if (gameState() === 'already_played') {
-        <div class="flex-1 flex flex-col items-center gap-5 text-center px-4 pt-6">
-          <p class="text-6xl">✅</p>
-          <div class="space-y-2">
-            <h2 class="text-xl font-semibold text-slate-200">Déjà joué aujourd'hui !</h2>
-            <p class="text-slate-400 text-sm tabular-nums">Prochain défi dans <span class="font-semibold text-slate-200">{{ countdown() }}</span></p>
-            @if (todayStats() && todayStats()!['currentStreak'] > 0) {
-              <div class="flex items-center justify-center gap-2 pt-1">
-                <span class="text-lg">🔥</span>
-                <span class="text-amber-400 font-semibold text-sm">
-                  {{ todayStats()!['currentStreak'] }} jour{{ todayStats()!['currentStreak'] > 1 ? 's' : '' }} de suite
-                </span>
-              </div>
-            }
+        <div class="flex-1 flex flex-col items-center gap-7 text-center px-2 pt-4">
+
+          <!-- Titre -->
+          <div class="space-y-1.5">
+            <h2 class="text-2xl font-bold tracking-tight" style="color:#f8fafc">Déjà joué aujourd'hui</h2>
+            <p class="text-sm" style="color:#334155">
+              Prochain défi dans
+              <span class="font-bold tabular-nums" style="color:#94a3b8">{{ countdown() }}</span>
+            </p>
           </div>
 
-          <!-- Card scores côte à côte — masquée si écran trop petit -->
-          @if (todayStats() && viewportTall()) {
-            <div class="w-full bg-slate-800/60 rounded-2xl overflow-hidden">
-              <div class="grid grid-cols-2 divide-x divide-slate-700">
-                <div class="flex flex-col items-center py-5 px-4 gap-1">
-                  <p class="text-slate-500 text-xs uppercase tracking-widest">Ton score</p>
-                  <p class="text-4xl font-bold text-white tabular-nums">{{ todayStats()!.yourScore ?? '—' }}</p>
-                  <p class="text-slate-500 text-xs">pts</p>
+          <!-- Card scores -->
+          @if (todayStats()) {
+            <div class="w-full rounded-2xl overflow-hidden" style="background:#0f0f1a;border:1px solid rgba(255,255,255,0.07)">
+
+              <div class="grid grid-cols-2" style="border-bottom:1px solid rgba(255,255,255,0.07)">
+                <div class="flex flex-col items-center py-7 px-4" style="border-right:1px solid rgba(255,255,255,0.07)">
+                  <p class="text-xs font-semibold tracking-widest uppercase mb-2" style="color:#334155">Ton score</p>
+                  <p class="text-5xl font-bold tabular-nums" style="color:#f8fafc;letter-spacing:-0.02em">{{ todayStats()!.yourScore ?? '—' }}</p>
+                  <p class="text-xs mt-2" style="color:#334155">pts</p>
                 </div>
-                <div class="flex flex-col items-center py-5 px-4 gap-1">
-                  <p class="text-slate-500 text-xs uppercase tracking-widest">Les joueurs font</p>
+                <div class="flex flex-col items-center py-7 px-4">
+                  <p class="text-xs font-semibold tracking-widest uppercase mb-2" style="color:#334155">Médiane</p>
                   @if (todayStats()!.medianScore > 0) {
-                    <p class="text-4xl font-bold text-slate-200 tabular-nums">{{ todayStats()!.medianScore }}</p>
-                    <p class="text-slate-500 text-xs">pts aujourd'hui</p>
+                    <p class="text-5xl font-bold tabular-nums" style="color:#475569;letter-spacing:-0.02em">{{ todayStats()!.medianScore }}</p>
+                    <p class="text-xs mt-2" style="color:#334155">pts aujourd'hui</p>
                   } @else {
-                    <p class="text-slate-600 text-sm pt-2">pas encore de données</p>
+                    <p class="text-sm mt-4" style="color:#1e293b">—</p>
                   }
                 </div>
               </div>
 
-              <!-- Bouton détail -->
+              <!-- Accordion morceaux -->
               @if (todayStats()!.tracks.length) {
                 <button (click)="showTrackDetails.set(!showTrackDetails())"
-                        class="w-full flex items-center justify-center gap-2 py-3 border-t border-slate-700 text-sm text-slate-400 hover:text-slate-200 active:opacity-70 transition-colors">
-                  <span>{{ showTrackDetails() ? 'Masquer le détail' : 'Voir le détail' }}</span>
-                  <span class="text-xs">{{ showTrackDetails() ? '▲' : '▼' }}</span>
+                        class="w-full flex items-center justify-center gap-2 py-3.5 text-xs font-semibold tracking-wide uppercase transition-colors"
+                        style="color:#334155"
+                        onmouseenter="this.style.color='#64748b'" onmouseleave="this.style.color='#334155'">
+                  <span>{{ showTrackDetails() ? 'Masquer' : 'Voir les morceaux' }}</span>
+                  <span>{{ showTrackDetails() ? '▲' : '▼' }}</span>
                 </button>
                 @if (showTrackDetails()) {
-                  <div class="flex flex-col divide-y divide-slate-700 border-t border-slate-700">
+                  <div class="flex flex-col" style="border-top:1px solid rgba(255,255,255,0.07)">
                     @for (t of todayStats()!.tracks; track t.position) {
                       <a [href]="'https://www.deezer.com/track/' + t.deezerTrackId"
                          target="_blank" rel="noopener noreferrer"
-                         class="flex items-center gap-3 px-4 py-3 hover:bg-slate-700/40 active:opacity-70 transition-colors">
+                         class="flex items-center gap-3 px-4 py-3.5 transition-colors"
+                         style="border-bottom:1px solid rgba(255,255,255,0.04)"
+                         onmouseenter="this.style.background='rgba(255,255,255,0.02)'"
+                         onmouseleave="this.style.background='transparent'">
                         @if (t.coverUrl) {
                           <img [src]="t.coverUrl" alt="Pochette"
-                               class="w-10 h-10 rounded-lg object-cover shrink-0" />
+                               class="w-9 h-9 rounded-lg object-cover shrink-0" style="opacity:0.85" />
                         } @else {
-                          <div class="w-10 h-10 rounded-lg bg-slate-700 shrink-0"></div>
+                          <div class="w-9 h-9 rounded-lg shrink-0" style="background:#1a1a2e"></div>
                         }
                         <div class="flex-1 min-w-0 text-left">
-                          <p class="text-slate-200 text-sm font-medium truncate">{{ t.artist }} — {{ t.title }}</p>
-                          <div class="flex gap-3 mt-0.5 text-xs text-slate-500">
+                          <p class="text-sm font-medium truncate" style="color:#cbd5e1">{{ t.artist }} — {{ t.title }}</p>
+                          <div class="flex gap-3 mt-0.5 text-xs" style="color:#334155">
                             <span>{{ t.failureRatePercent.toFixed(0) }}% ratés</span>
                             @if (t.averageSecondsWhenCorrect != null) {
-                              <span>moy. {{ t.averageSecondsWhenCorrect!.toFixed(1) }}s</span>
+                              <span>· moy. {{ t.averageSecondsWhenCorrect!.toFixed(1) }}s</span>
                             }
                           </div>
                         </div>
-                        <app-deezer-badge class="shrink-0" />
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="opacity:0.2;shrink:0">
+                          <path d="M2 11h2v1H2zM6 9h2v3H6zM10 7h2v5h-2zM14 5h2v7h-2z" fill="white"/>
+                        </svg>
                       </a>
                     }
                   </div>
@@ -210,74 +216,65 @@ interface RoundResult {
 
       <!-- Récapitulatif final -->
       @if (gameState() === 'done') {
-        <div class="flex-1 flex flex-col pt-6 space-y-4 text-center">
+        <div class="flex-1 flex flex-col pt-4 gap-6">
 
-          <div class="space-y-1">
-            <p class="text-5xl">🏆</p>
-            <h2 class="text-2xl font-bold">Défi terminé !</h2>
-            <p class="text-6xl font-bold text-white pt-1">{{ totalScore() }}</p>
-            <p class="text-slate-500 text-sm">points</p>
-            @if (currentStreak() > 0) {
-              <div class="flex items-center justify-center gap-2 pt-2">
-                <span class="text-lg">🔥</span>
-                <span class="text-amber-400 font-semibold text-sm">
-                  {{ currentStreak() }} jour{{ currentStreak() > 1 ? 's' : '' }} de suite
-                </span>
-              </div>
-            }
-            <p class="text-slate-200 text-sm pt-2 animate-pulse">Reviens demain pour un nouveau défi 🎵</p>
+          <!-- Score total -->
+          <div class="text-center space-y-2 pb-2">
+            <p class="text-xs font-semibold tracking-widest uppercase" style="color:#334155">Score final</p>
+            <p class="font-bold tabular-nums" style="color:#f8fafc;font-size:4rem;line-height:1;letter-spacing:-0.03em">{{ totalScore() }}</p>
+            <p class="text-xs" style="color:#334155">points</p>
           </div>
 
-          <div class="w-full flex flex-col divide-y divide-slate-800">
+          <!-- Liste morceaux -->
+          <div class="flex flex-col gap-3">
             @for (r of results(); track r.position) {
-              <div class="flex gap-3 py-4">
+              <div class="flex gap-3 p-3 rounded-2xl" style="background:#0f0f1a;border:1px solid rgba(255,255,255,0.06)">
 
                 <!-- Pochette -->
                 @if (r.coverUrl) {
                   <img [src]="r.coverUrl" alt="Pochette"
-                    class="w-14 h-14 rounded-xl object-cover shrink-0" />
+                    class="w-14 h-14 rounded-xl object-cover shrink-0" style="opacity:0.9" />
                 } @else {
-                  <div class="w-14 h-14 rounded-xl bg-slate-700 shrink-0"></div>
+                  <div class="w-14 h-14 rounded-xl shrink-0" style="background:#1a1a2e"></div>
                 }
 
-                <!-- Infos + badge -->
-                <div class="flex-1 min-w-0 text-left space-y-1">
+                <!-- Infos -->
+                <div class="flex-1 min-w-0 text-left space-y-1.5 py-0.5">
 
-                  <!-- Artiste / Titre trouvés -->
-                  <div class="flex gap-3 text-sm font-semibold">
-                    <span [class]="r.artistCorrect ? 'text-emerald-400' : 'text-rose-400'">
+                  <div class="flex gap-2.5 text-xs font-bold">
+                    <span [style.color]="r.artistCorrect ? '#34d399' : '#f87171'">
                       {{ r.artistCorrect ? '✓' : '✗' }} Artiste
                     </span>
-                    <span [class]="r.titleCorrect ? 'text-emerald-400' : 'text-rose-400'">
+                    <span [style.color]="r.titleCorrect ? '#34d399' : '#f87171'">
                       {{ r.titleCorrect ? '✓' : '✗' }} Titre
                     </span>
                   </div>
 
-                  <!-- Bonne réponse -->
-                  <p class="text-slate-200 text-sm font-medium truncate">
+                  <p class="text-sm font-medium truncate" style="color:#cbd5e1">
                     {{ r.correctArtist }} — {{ r.correctTitle }}
                   </p>
 
-                  <!-- Stats -->
-                  <div class="flex gap-3 text-xs text-slate-500">
-                    <span>{{ r.listenedDurationSeconds }}s écoutés</span>
+                  <div class="flex gap-2.5 text-xs" style="color:#334155">
+                    <span>{{ r.listenedDurationSeconds }}s</span>
                     @if (r.averageSecondsWhenCorrect != null) {
                       <span>· moy. {{ r.averageSecondsWhenCorrect!.toFixed(1) }}s</span>
                     }
                     <span>· {{ r.failureRatePercent.toFixed(0) }}% ratés</span>
                   </div>
 
-                  <!-- Badge Deezer -->
                   <a [href]="'https://www.deezer.com/track/' + r.deezerTrackId"
                     target="_blank" rel="noopener noreferrer"
-                    class="inline-block pt-1">
-                    <app-deezer-badge />
+                    class="inline-flex items-center gap-1 text-xs transition-colors"
+                    style="color:#1e293b"
+                    onmouseenter="this.style.color='#334155'" onmouseleave="this.style.color='#1e293b'">
+                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M2 11h2v1H2zM6 9h2v3H6zM10 7h2v5h-2zM14 5h2v7h-2z" fill="currentColor"/></svg>
+                    Écouter sur Deezer
                   </a>
                 </div>
 
                 <!-- Score -->
-                <div class="shrink-0 text-right">
-                  <span [class]="r.score > 0 ? 'text-emerald-400 font-bold text-lg' : 'text-slate-500 font-bold text-lg'">
+                <div class="shrink-0 text-right self-center">
+                  <span class="text-lg font-bold" [style.color]="r.score > 0 ? '#34d399' : '#334155'">
                     +{{ r.score }}
                   </span>
                 </div>
@@ -285,11 +282,14 @@ interface RoundResult {
               </div>
             }
           </div>
+
+          <p class="text-center text-xs pb-4" style="color:#1e293b">Reviens demain pour un nouveau défi</p>
         </div>
       }
 
-      <footer class="flex justify-center py-2 mt-auto">
-        <a routerLink="/admin" class="text-slate-700 hover:text-slate-500 text-xs transition">admin</a>
+      <footer class="flex justify-center py-3 mt-auto">
+        <a routerLink="/admin" class="text-xs transition-colors" style="color:#1a1a2e"
+           onmouseenter="this.style.color='#334155'" onmouseleave="this.style.color='#1a1a2e'">admin</a>
       </footer>
 
     </main>
@@ -314,6 +314,13 @@ export class GameComponent implements OnInit, OnDestroy {
   protected readonly totalScore = signal(0);
   protected readonly results = signal<RoundResult[]>([]);
   protected readonly currentStreak = signal(0);
+
+  // Streak à afficher : depuis la session (welcome/playing/done) ou depuis les stats (already_played)
+  protected readonly displayStreak = computed(() => {
+    const stats = this.todayStats();
+    if (this.gameState() === 'already_played' && stats) return (stats as any)['currentStreak'] as number;
+    return this.currentStreak();
+  });
 
   private sessionId = 0;
   private countdownInterval: ReturnType<typeof setInterval> | null = null;

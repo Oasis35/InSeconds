@@ -21,103 +21,112 @@ export interface AnsweredEvent {
   selector: 'app-blind-round',
   imports: [FormsModule, DecimalPipe],
   template: `
-    <div class="flex flex-col gap-5">
+    <div class="flex flex-col gap-4">
 
-      <!-- ── Zone player (haut — masquée dès qu'on a le résultat) ── -->
+      <!-- ── Zone player ── -->
       @if (!result()) {
-      <div class="bg-slate-800/60 rounded-2xl p-5 space-y-4">
+        <div class="rounded-2xl p-5 space-y-5" style="background:#0f0f1a;border:1px solid rgba(255,255,255,0.07)">
 
-        <!-- Paliers (idle uniquement) -->
-        @if (audio.isIdle()) {
-          <p class="text-center text-slate-400 text-sm">Combien de secondes veux-tu écouter ?</p>
-          <div class="flex flex-wrap gap-2 justify-center">
-            @for (d of durations(); track d) {
-              <button
-                (click)="startPlay(d)"
-                class="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition touch-manipulation">
-                {{ d }}s
-              </button>
-            }
-          </div>
-        }
-
-        <!-- Statut écoute -->
-        @if (!audio.isIdle()) {
-          <div class="space-y-4">
-
-            <!-- Chrono centré -->
-            <p class="text-center text-2xl font-bold tabular-nums"
-               [class]="audio.isPlaying() ? 'text-emerald-400' : 'text-slate-300'">
-              {{ audio.state() === 'loading' ? '…'
-               : audio.isPlaying()           ? (audio.progress() * chosenDuration() | number:'1.1-1') + 's / ' + chosenDuration() + 's'
-               :                               chosenDuration() + 's / ' + chosenDuration() + 's' }}
-            </p>
-
-            <!-- Barre avec dot -->
-            <div class="relative w-full h-1 bg-slate-700 rounded-full mx-auto">
-              <div class="absolute top-0 left-0 h-1 rounded-full transition-none"
-                   [class]="audio.isPlaying() ? 'bg-emerald-400' : 'bg-slate-500'"
-                   [style.width.%]="audio.progress() * 100">
-              </div>
-              <div class="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full shadow transition-none"
-                   [class]="audio.isPlaying() ? 'bg-emerald-400' : 'bg-slate-500'"
-                   [style.left.%]="audio.progress() * 100"
-                   style="margin-left: -6px">
-              </div>
-            </div>
-
-            <!-- Boutons -->
-            <div class="flex gap-2 pt-1">
-              <button
-                type="button"
-                (click)="audio.play(track().previewUrl, chosenDuration())"
-                class="flex-1 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-semibold transition touch-manipulation">
-                ↺ Réécouter {{ chosenDuration() }}s
-              </button>
-
-              @if (nextDuration()) {
+          <!-- Paliers -->
+          @if (audio.isIdle()) {
+            <p class="text-center text-sm" style="color:#475569">Combien de secondes veux-tu écouter ?</p>
+            <div class="flex flex-wrap gap-2 justify-center">
+              @for (d of durations(); track d) {
                 <button
-                  type="button"
-                  (click)="listenMore()"
-                  class="flex-1 py-3 rounded-xl bg-indigo-700 hover:bg-indigo-600 text-white font-semibold transition touch-manipulation">
-                  ▶ Continuer jusqu'à {{ nextDuration() }}s
+                  (click)="startPlay(d)"
+                  class="px-5 py-3 rounded-xl font-semibold text-sm transition active:scale-95 touch-manipulation"
+                  style="background:#6366f1;color:#fff">
+                  {{ d }}s
                 </button>
               }
             </div>
+          }
 
-          </div>
-        }
+          <!-- Lecture en cours -->
+          @if (!audio.isIdle()) {
+            <div class="space-y-4">
 
-      </div>
-      } <!-- fin @if (!result()) -->
+              <!-- Chrono -->
+              <p class="text-center text-2xl font-bold tabular-nums"
+                 [style.color]="audio.isPlaying() ? '#34d399' : '#475569'"
+                 style="letter-spacing:-0.02em">
+                {{ audio.state() === 'loading' ? '…'
+                 : audio.isPlaying()           ? (audio.progress() * chosenDuration() | number:'1.1-1') + 's / ' + chosenDuration() + 's'
+                 :                               chosenDuration() + 's / ' + chosenDuration() + 's' }}
+              </p>
 
-      <!-- ── Zone saisie (bas — toujours présente après choix du palier) ── -->
+              <!-- Barre de progression -->
+              <div class="relative w-full h-px rounded-full" style="background:#1e1e2e">
+                <div class="absolute top-0 left-0 h-px rounded-full transition-none"
+                     [style.width.%]="audio.progress() * 100"
+                     [style.background]="audio.isPlaying() ? '#34d399' : '#475569'">
+                </div>
+                <div class="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full transition-none"
+                     [style.left.%]="audio.progress() * 100"
+                     [style.background]="audio.isPlaying() ? '#34d399' : '#475569'"
+                     style="margin-left:-5px;box-shadow:0 0 6px rgba(52,211,153,0.4)">
+                </div>
+              </div>
+
+              <!-- Boutons -->
+              <div class="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  (click)="audio.play(track().previewUrl, chosenDuration())"
+                  class="flex-1 py-3 rounded-xl text-sm font-semibold transition touch-manipulation"
+                  style="background:#1e1e2e;color:#94a3b8;border:1px solid rgba(255,255,255,0.06)">
+                  ↺ {{ chosenDuration() }}s
+                </button>
+
+                @if (nextDuration()) {
+                  <button
+                    type="button"
+                    (click)="listenMore()"
+                    class="flex-1 py-3 rounded-xl text-sm font-semibold transition touch-manipulation"
+                    style="background:#312e81;color:#c7d2fe;border:1px solid rgba(99,102,241,0.3)">
+                    ▶ jusqu'à {{ nextDuration() }}s
+                  </button>
+                }
+              </div>
+
+            </div>
+          }
+
+        </div>
+      }
+
+      <!-- ── Zone saisie ── -->
       @if (!audio.isIdle() && !result()) {
         <form (ngSubmit)="submit()" class="space-y-3">
 
-          <!-- Champ unique avec autocomplete -->
           <div class="relative">
             <input
               [(ngModel)]="searchQuery"
               name="search"
-              placeholder="Artiste - Titre"
+              placeholder="Artiste — Titre"
               autocomplete="off"
               (ngModelChange)="onQueryChange($event)"
               (blur)="onBlur()"
               (focus)="showSuggestions.set(true)"
-              class="w-full px-4 py-3 rounded-xl bg-slate-800 text-slate-100 placeholder-slate-500
-                     border border-slate-700 focus:outline-none focus:border-indigo-500 text-base transition" />
+              class="w-full px-4 py-3.5 rounded-xl text-sm transition"
+              style="background:#0f0f1a;color:#e2e8f0;border:1px solid rgba(255,255,255,0.08);outline:none"
+              onfocus="this.style.borderColor='rgba(99,102,241,0.5)'"
+              onblur="this.style.borderColor='rgba(255,255,255,0.08)'"
+            />
 
-            <!-- Dropdown suggestions -->
             @if (showSuggestions() && suggestions().length > 0) {
-              <ul class="absolute z-10 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-xl">
+              <ul class="absolute z-10 w-full mt-1 rounded-xl overflow-hidden shadow-2xl"
+                  style="background:#0f0f1a;border:1px solid rgba(255,255,255,0.08)">
                 @for (s of suggestions(); track s.artist + s.title) {
                   <li
                     (mousedown)="selectSuggestion(s)"
-                    class="px-4 py-3 cursor-pointer hover:bg-slate-700 transition text-sm">
-                    <span class="text-slate-200 font-medium">{{ s.artist }}</span>
-                    <span class="text-slate-500"> - </span>
-                    <span class="text-slate-400">{{ s.title }}</span>
+                    class="px-4 py-3 cursor-pointer text-sm transition"
+                    style="border-bottom:1px solid rgba(255,255,255,0.04)"
+                    onmouseenter="this.style.background='rgba(255,255,255,0.03)'"
+                    onmouseleave="this.style.background='transparent'">
+                    <span class="font-medium" style="color:#e2e8f0">{{ s.artist }}</span>
+                    <span style="color:#334155"> — </span>
+                    <span style="color:#64748b">{{ s.title }}</span>
                   </li>
                 }
               </ul>
@@ -125,19 +134,22 @@ export interface AnsweredEvent {
           </div>
 
           @if (showEmptyConfirm()) {
-            <div class="rounded-xl bg-amber-950/60 border border-amber-700/50 px-4 py-3 space-y-3">
-              <p class="text-amber-300 text-sm text-center">Tu n'as rien saisi. Valider quand même ?</p>
+            <div class="rounded-xl px-4 py-3 space-y-3"
+                 style="background:rgba(120,53,15,0.2);border:1px solid rgba(180,83,9,0.3)">
+              <p class="text-sm text-center" style="color:#fbbf24">Tu n'as rien saisi. Valider quand même ?</p>
               <div class="flex gap-2">
                 <button
                   type="button"
                   (click)="showEmptyConfirm.set(false)"
-                  class="flex-1 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-semibold transition touch-manipulation">
+                  class="flex-1 py-2.5 rounded-lg text-sm font-semibold transition touch-manipulation"
+                  style="background:#1e1e2e;color:#64748b;border:1px solid rgba(255,255,255,0.06)">
                   Annuler
                 </button>
                 <button
                   type="button"
                   (click)="confirmSubmit()"
-                  class="flex-1 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold transition touch-manipulation">
+                  class="flex-1 py-2.5 rounded-lg text-sm font-semibold transition touch-manipulation"
+                  style="background:#92400e;color:#fef3c7">
                   Valider quand même
                 </button>
               </div>
@@ -145,7 +157,8 @@ export interface AnsweredEvent {
           } @else {
             <button
               type="submit"
-              class="w-full py-3 rounded-xl font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition touch-manipulation">
+              class="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition touch-manipulation"
+              style="background:#059669;color:#fff;letter-spacing:0.03em">
               Valider
             </button>
           }
@@ -154,43 +167,47 @@ export interface AnsweredEvent {
 
       <!-- ── Résultat ── -->
       @if (result(); as r) {
-        <div class="space-y-3 text-center">
+        <div class="flex flex-col items-center gap-5 text-center pt-2">
 
           @if (track().coverUrl) {
             <img [src]="track().coverUrl" alt="Pochette"
-              class="w-36 h-36 rounded-xl mx-auto object-cover shadow-lg" />
+              class="w-32 h-32 rounded-2xl object-cover"
+              style="box-shadow:0 8px 32px rgba(0,0,0,0.6);opacity:0.95" />
           }
 
           <div class="flex justify-center gap-6">
-            <span [class]="r.artistCorrect ? 'text-emerald-400 text-lg' : 'text-rose-400 text-lg'">
+            <span class="text-base font-bold" [style.color]="r.artistCorrect ? '#34d399' : '#f87171'">
               {{ r.artistCorrect ? '✓' : '✗' }} Artiste
             </span>
-            <span [class]="r.titleCorrect ? 'text-emerald-400 text-lg' : 'text-rose-400 text-lg'">
+            <span class="text-base font-bold" [style.color]="r.titleCorrect ? '#34d399' : '#f87171'">
               {{ r.titleCorrect ? '✓' : '✗' }} Titre
             </span>
           </div>
 
-          <p class="text-slate-300 text-sm">
-            <span class="text-slate-500">Bonne réponse :</span>
-            {{ r.correctArtist }} — {{ r.correctTitle }}
+          <div class="space-y-0.5">
+            <p class="text-xs font-semibold tracking-widest uppercase" style="color:#334155">Bonne réponse</p>
+            <p class="text-base font-medium" style="color:#cbd5e1">{{ r.correctArtist }} — {{ r.correctTitle }}</p>
+          </div>
+
+          <p class="font-bold tabular-nums"
+             [style.color]="r.score > 0 ? '#34d399' : '#475569'"
+             style="font-size:3rem;line-height:1;letter-spacing:-0.03em">
+            +{{ r.score }}
+            <span class="text-lg font-normal" style="color:#334155"> pts</span>
           </p>
 
-          <p [class]="r.score > 0 ? 'text-4xl font-bold text-emerald-400' : 'text-4xl font-bold text-slate-400'">
-            +{{ r.score }} pts
-          </p>
-
-          <div class="flex justify-center flex-wrap gap-4 text-sm text-slate-500 pt-1">
-            <span>Ton temps : <span class="text-slate-300">{{ r.listenedDurationSeconds }}s</span></span>
+          <div class="flex justify-center flex-wrap gap-4 text-xs" style="color:#334155">
+            <span>Ton temps : <span style="color:#64748b">{{ r.listenedDurationSeconds }}s</span></span>
             @if (r.averageSecondsWhenCorrect != null) {
-              <span>Moy. trouvé : <span class="text-slate-300">{{ r.averageSecondsWhenCorrect!.toFixed(1) }}s</span></span>
+              <span>Moy. : <span style="color:#64748b">{{ r.averageSecondsWhenCorrect!.toFixed(1) }}s</span></span>
             }
-            <span>N'ont pas trouvé : <span class="text-slate-300">{{ r.failureRatePercent.toFixed(0) }}%</span></span>
+            <span>Pas trouvé : <span style="color:#64748b">{{ r.failureRatePercent.toFixed(0) }}%</span></span>
           </div>
 
           <button
             (click)="next()"
-            class="mt-2 px-6 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white
-                   font-semibold transition touch-manipulation">
+            class="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition touch-manipulation"
+            style="background:#6366f1;color:#fff;letter-spacing:0.03em">
             {{ isLast() ? 'Voir le résultat' : 'Piste suivante →' }}
           </button>
         </div>
