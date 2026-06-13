@@ -1,6 +1,7 @@
 import { Component, inject, signal, computed, viewChild, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { GameService } from '../../core/services/game.service';
+import { AudioPlayerService } from '../../core/services/audio-player.service';
 import { TrackSlot } from '../../core/models/game.models';
 import { BlindRoundComponent, AnsweredEvent } from './blind-round/blind-round.component';
 import { ApiClient, TodayStatsResponse } from '../../api/api.generated';
@@ -274,6 +275,7 @@ interface RoundResult {
 export class GameComponent implements OnInit, OnDestroy {
   private readonly gameService = inject(GameService);
   private readonly api = inject(ApiClient);
+  private readonly audioPlayer = inject(AudioPlayerService);
 
   protected readonly gameState = signal<GameState>('loading');
   protected readonly todayStats = signal<TodayStatsResponse | null>(null);
@@ -391,7 +393,8 @@ export class GameComponent implements OnInit, OnDestroy {
         this.currentIndex.set(0);
         this.totalScore.set(0);
         this.results.set([]);
-        this.gameState.set('welcome');
+        this.audioPlayer.preloadAll(response.tracks.map(t => t.previewUrl))
+          .then(() => this.gameState.set('welcome'));
       },
       error: (err) => {
         if (err.status === 409) {
