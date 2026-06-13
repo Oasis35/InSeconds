@@ -4,7 +4,7 @@ Instructions pour Claude quand il travaille dans ce repo. Pour la documentation 
 
 ## Vue d'ensemble
 
-InSeconds = blind test musical quotidien. 10 morceaux/jour, l'utilisateur choisit combien de secondes il écoute (paliers : 0.5, 1, 1.5, 2, 3, 5, 10) avant de tenter artiste + titre. Moins de temps écouté = plus de points. Même défi pour tout le monde, même jour. Mode guest dispo (joue sans s'inscrire, hors classement).
+InSeconds = blind test musical quotidien. N morceaux/jour (configurable via `TracksPerChallenge`, défaut 3), l'utilisateur choisit combien de secondes il écoute (paliers : 0.5, 1, 1.5, 2, 3, 5, 10) avant de tenter artiste + titre. Moins de temps écouté = plus de points. Même défi pour tout le monde, même jour. Mode guest dispo (joue sans s'inscrire, hors classement).
 
 Stack : .NET 10 / Wolverine / EF Core / PostgreSQL côté back, Angular 20 / Tailwind v4 / SCSS côté front, Docker Compose pour back + DB. Hébergé sur **Northflank** (front + back + PostgreSQL addon).
 
@@ -228,7 +228,7 @@ Runners Ubuntu, ~3-4 min par run. Setup .NET via `global-json-file: src/back/glo
 
 - Vertical slices `Sessions/StartSession` + `Sessions/SubmitAnswer` (scoring serveur + stats par morceau)
 - `SubmitAnswerResponse` inclut : `AverageSecondsWhenCorrect` (moy. temps des joueurs ayant trouvé) + `FailureRatePercent` + `ListenedDurationSeconds`
-- Services Common : `TextNormalizer` (Levenshtein + suppression parenthèses/crochets), `ScoreCalculator`, `SettingsService`
+- Services Common : `TextNormalizer` (Levenshtein + suppression parenthèses/crochets), `ScoreCalculator`, `SettingsService` — tous couverts par tests unitaires xUnit (`InSeconds.Api.UnitTests`)
 - `CookieAuthService` — résout ou crée un Player guest, cookie HttpOnly signé (`SameSite=None` en prod)
 - `playerAuthInterceptor` Angular — `withCredentials: true` sur toutes les requêtes `/api` hors admin
 - `DeezerClient` — `GetPreviewUrlAsync` + `SearchTracksAsync`, extrait le hash de pochette (`CoverHash`)
@@ -248,6 +248,10 @@ Runners Ubuntu, ~3-4 min par run. Setup .NET via `global-json-file: src/back/glo
 - **Page d'accueil** : état `welcome` avant `playing` — session chargée en background, bouton "Commencer à jouer"
 - **Favicon** : note Deezer blanche sur fond violet (`favicon.svg`)
 - **`TextNormalizer`** : supprime les parenthèses/crochets avant comparaison (ex: `(feat. X)`, `[Radio Edit]`)
+- **Préchargement audio séquentiel** : `AudioPlayerService.preloadAll()` charge tous les morceaux en séquence (via `new Audio()` + `preload='auto'`) dès que la session est reçue — `GameComponent` reste en état `loading` jusqu'à ce que tous les buffers soient prêts (`canplaythrough`), puis passe en `welcome`
+- **`GET /api/auth/me`** — retourne `{ id, isGuest, pseudo }` pour le joueur courant (cookie)
+- **`GET /api/settings`** — expose les settings publics (paliers, timer, scores) consommé par `SettingsService` Angular au boot
+- **`BackgroundService` génération défi quotidien** — `GenerateDailyChallengeService` s'exécute à 3h UTC
 
 ## À venir (pas encore implémenté)
 
@@ -256,6 +260,7 @@ Runners Ubuntu, ~3-4 min par run. Setup .NET via `global-json-file: src/back/glo
 - Tests mobiles (iOS Safari, Android Chrome)
 - Polish : charte graphique, messages d'erreur, accessibilité, RGPD
 - Sécurité avant passage public du repo : externaliser le mot de passe PostgreSQL de `appsettings.json` et `docker-compose.yml`
+- **Cache Redis pour les preview URLs Deezer** : les URLs sont identiques pour tous les joueurs du même défi. Intercaler dans `StartSession/Handler.cs` au niveau du `Task.WhenAll()` — chercher d'abord dans Redis (clé = DeezerTrackId, TTL 24h), sinon appeler Deezer. Nécessite `StackExchange.Redis` + entrée Redis dans `docker-compose.yml`.
 
 ## Décisions d'architecture notables
 
