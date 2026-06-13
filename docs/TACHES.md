@@ -1,6 +1,6 @@
 # InSeconds — Liste des Tâches
 
-> Mis à jour le 2026-06-12.
+> Mis à jour le 2026-06-13.
 
 ## ✅ Bootstrap projet
 
@@ -55,6 +55,17 @@
 - [x] CI/CD auto sur push `main`
 - [x] Secrets prod via Northflank (`AdminPassword`, connection string)
 
+## 🚧 Rétention & Engagement
+
+> Inspiré des mécaniques Wordle / Heardle / NYT Connections. Priorité décroissante.
+
+- [ ] **Partage emoji spoiler-free** — grid résultats copiable (🟢/🟡/🔴 + durée par morceau, sans révéler les titres). C'est le mécanisme viral principal de Wordle, faible effort, fort impact
+- [ ] **Streak affiché** — nombre de jours consécutifs joués, affiché sur l'écran d'accueil et le récap final
+- [ ] **Streak freeze** — 1 joker par semaine pour ne pas briser sa série (réduit le churn post-oubli)
+- [ ] **Badges de difficulté** — récompense visuelle selon la durée moyenne écoutée (ex : "Légende" si moyenne ≤ 1s, "Explorateur" si ≤ 3s)
+- [ ] **Meilleur score personnel** — stocker et afficher le record du joueur sur chaque morceau (écran "déjà joué")
+- [ ] **Classement du jour anonyme** — top scores + médiane, sans pseudo ni leaderboard permanent
+
 ## 🚧 Tests
 
 - [ ] Tests d'intégration back (Testcontainers) : flow StartSession → SubmitAnswer × N
@@ -78,5 +89,5 @@
 
 ## Décisions définitives (ne pas réimplémenter)
 
-- **Pas de Leaderboard** — app volontairement simple, stats globales suffisent
+- **Pas de Leaderboard permanent** — app volontairement simple, pas de pseudo, pas de classement inter-jours. Un classement anonyme du jour (top scores + médiane) reste envisageable
 - **Pas d'Auth Register** — tout le monde joue en guest, pas de pseudo
