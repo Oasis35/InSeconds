@@ -442,7 +442,7 @@ export class GameComponent implements OnInit, OnDestroy {
       const color  = colorEmoji(Number(r.listenedDurationSeconds));
       const artist = r.artistCorrect ? color : '⬜';
       const title  = r.titleCorrect  ? color : '⬜';
-      return `${artist} ${title} ${r.listenedDurationSeconds}s`;
+      return `${artist}/${title} ${r.listenedDurationSeconds}s`;
     });
 
     const text = [
