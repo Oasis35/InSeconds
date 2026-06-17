@@ -206,7 +206,7 @@ interface RoundResult {
 
       <!-- Jeu en cours -->
       @if (gameState() === 'playing' && currentTrack()) {
-        <div class="flex-1 flex flex-col justify-center">
+        <div class="flex-1 flex flex-col justify-start pt-4">
           <app-blind-round
             #roundRef
             [track]="currentTrack()!"
@@ -442,12 +442,12 @@ export class GameComponent implements OnInit, OnDestroy {
       const color  = colorEmoji(Number(r.listenedDurationSeconds));
       const artist = r.artistCorrect ? color : '⬜';
       const title  = r.titleCorrect  ? color : '⬜';
-      return `${artist}${title} ${r.listenedDurationSeconds}s`;
+      return `${artist}/${title} ${r.listenedDurationSeconds}s`;
     });
 
     const text = [
       `InSeconds 🎵 ${dateStr}`,
-      lines.join(' | '),
+      lines.join('\n'),
       `🏆 ${this.totalScore()} pts`,
       `${environment.appUrl}/blindtest`,
     ].join('\n');
