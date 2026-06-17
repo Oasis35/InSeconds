@@ -2,9 +2,12 @@ using FluentAssertions;
 using Xunit;
 using InSeconds.Api.Domain;
 using InSeconds.Api.Features.Admin.Tracks.GetTracks;
+using InSeconds.Api.Infrastructure.Deezer;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using System.Net;
+using System.Net.Http;
 
 namespace InSeconds.Api.UnitTests.Features.Admin.Tracks;
 
@@ -14,6 +17,19 @@ public sealed class GetTracksHandlerTests
         new(new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options);
+
+    // Stub DeezerClient qui retourne toujours une preview vide (évite les appels réseau dans les tests)
+    private static DeezerClient CreateStubDeezerClient() =>
+        new(new HttpClient(new StubHttpMessageHandler()) { BaseAddress = new Uri("https://api.deezer.com") });
+
+    private sealed class StubHttpMessageHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+            => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("{\"id\":0,\"title\":null,\"preview\":\"\",\"artist\":null,\"album\":null}"),
+            });
+    }
 
     private static Track BuildTrack(int id, long deezerTrackId, string artist = "Artist", string title = "Title") => new()
     {
@@ -28,7 +44,7 @@ public sealed class GetTracksHandlerTests
     public async Task Handle_WhenNoTracks_ReturnsEmptyLists()
     {
         await using var db = CreateDbContext();
-        var handler = new GetTracksHandler(db);
+        var handler = new GetTracksHandler(db, CreateStubDeezerClient());
 
         var result = await handler.Handle(CancellationToken.None);
 
@@ -47,7 +63,7 @@ public sealed class GetTracksHandlerTests
             BuildTrack(2, 1002, "Aya Nakamura", "Djadja"));
         await db.SaveChangesAsync();
 
-        var result = await new GetTracksHandler(db).Handle(CancellationToken.None);
+        var result = await new GetTracksHandler(db, CreateStubDeezerClient()).Handle(CancellationToken.None);
 
         var response = ((Ok<GetTracksResponse>)result).Value!;
         response.Available.Should().HaveCount(2);
@@ -70,7 +86,7 @@ public sealed class GetTracksHandlerTests
         });
         await db.SaveChangesAsync();
 
-        var result = await new GetTracksHandler(db).Handle(CancellationToken.None);
+        var result = await new GetTracksHandler(db, CreateStubDeezerClient()).Handle(CancellationToken.None);
 
         var response = ((Ok<GetTracksResponse>)result).Value!;
         response.Available.Should().HaveCount(2);
@@ -91,10 +107,42 @@ public sealed class GetTracksHandlerTests
             new DailyChallengeTrack { Id = 2, DailyChallengeId = 2, TrackId = 1, Position = 1, DeezerRankSnapshot = 1 });
         await db.SaveChangesAsync();
 
-        var result = await new GetTracksHandler(db).Handle(CancellationToken.None);
+        var result = await new GetTracksHandler(db, CreateStubDeezerClient()).Handle(CancellationToken.None);
 
         var response = ((Ok<GetTracksResponse>)result).Value!;
         response.Used.Should().ContainSingle("une seule track même si utilisée deux fois");
         response.Available.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Handle_AvailableTrackHasPreviewSet()
+    {
+        await using var db = CreateDbContext();
+        db.Tracks.Add(BuildTrack(1, 1001, "Daft Punk", "Get Lucky"));
+        await db.SaveChangesAsync();
+
+        var result = await new GetTracksHandler(db, CreateStubDeezerClient()).Handle(CancellationToken.None);
+
+        var response = ((Ok<GetTracksResponse>)result).Value!;
+        // Le stub retourne preview vide → HasPreview = false
+        response.Available.Single().HasPreview.Should().Be(false);
+    }
+
+    [Fact]
+    public async Task Handle_UsedTrackHasNoPreviewField()
+    {
+        await using var db = CreateDbContext();
+        db.Tracks.Add(BuildTrack(1, 1001, "Daft Punk", "Get Lucky"));
+        db.DailyChallenges.Add(new DailyChallenge { Id = 1, Date = DateOnly.FromDateTime(DateTime.UtcNow), Seed = 1 });
+        db.DailyChallengeTracks.Add(new DailyChallengeTrack
+        {
+            Id = 1, DailyChallengeId = 1, TrackId = 1, Position = 1, DeezerRankSnapshot = 1,
+        });
+        await db.SaveChangesAsync();
+
+        var result = await new GetTracksHandler(db, CreateStubDeezerClient()).Handle(CancellationToken.None);
+
+        var response = ((Ok<GetTracksResponse>)result).Value!;
+        response.Used.Single().HasPreview.Should().BeNull();
     }
 }

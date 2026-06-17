@@ -36,6 +36,13 @@ public sealed class StartSessionHandler(ApplicationDbContext db, DeezerClient de
             });
         }
 
+        var player = await db.Players
+            .FirstAsync(p => p.Id == command.PlayerId, cancellationToken);
+
+        var yesterday = today.AddDays(-1);
+        player.CurrentStreak = player.LastPlayedDate == yesterday ? player.CurrentStreak + 1 : 1;
+        player.LastPlayedDate = today;
+
         var session = new GameSession
         {
             PlayerId             = command.PlayerId,
@@ -65,6 +72,6 @@ public sealed class StartSessionHandler(ApplicationDbContext db, DeezerClient de
                 DeezerTrackId:  t.Track.DeezerTrackId))
             .ToList();
 
-        return Results.Ok(new StartSessionResponse(SessionId: session.Id, Tracks: tracks));
+        return Results.Ok(new StartSessionResponse(SessionId: session.Id, Tracks: tracks, CurrentStreak: player.CurrentStreak));
     }
 }

@@ -1,5 +1,6 @@
 using InSeconds.Api.Common.Settings;
 using InSeconds.Api.Domain;
+using InSeconds.Api.Infrastructure.Deezer;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,7 @@ namespace InSeconds.Api.Features.ChallengeGeneration;
 public sealed class DailyChallengeGenerator(
     ApplicationDbContext db,
     SettingsService settingsService,
+    DeezerClient deezer,
     ILogger<DailyChallengeGenerator> logger)
 {
     public async Task<bool> GenerateAsync(CancellationToken ct = default)
@@ -26,10 +28,17 @@ public sealed class DailyChallengeGenerator(
             .Distinct()
             .ToListAsync(ct);
 
-        var available = await db.Tracks
+        var candidates = await db.Tracks
             .Where(t => !usedTrackIds.Contains(t.Id))
             .OrderBy(t => t.Id)
             .ToListAsync(ct);
+
+        var previews = await Task.WhenAll(
+            candidates.Select(t => deezer.GetPreviewUrlAsync(t.DeezerTrackId, ct)));
+
+        var available = candidates
+            .Where((t, i) => !string.IsNullOrEmpty(previews[i]))
+            .ToList();
 
         var settings = await settingsService.GetAsync(ct);
         var n = settings.TracksPerChallenge;
@@ -37,8 +46,8 @@ public sealed class DailyChallengeGenerator(
         if (available.Count < n)
         {
             logger.LogError(
-                "Pool insuffisant : {Count} morceau(x) disponible(s), {Required} requis pour le défi du {Date}.",
-                available.Count, n, today);
+                "Pool insuffisant : {Count} morceau(x) avec preview disponible(s) (sur {Total} candidats), {Required} requis pour le défi du {Date}.",
+                available.Count, candidates.Count, n, today);
             return false;
         }
 

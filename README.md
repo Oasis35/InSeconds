@@ -6,11 +6,13 @@
 
 ## How it works
 
-- Each day at midnight UTC, a new set of tracks is selected
+- Each day at 3 AM UTC, a new set of tracks is automatically selected (only tracks with an active Deezer preview)
 - Choose how many seconds to listen (0.5, 1, 1.5, 2, 3, 5, 10) before attempting artist + title
 - One extension allowed per track (next duration tier, with a score penalty)
 - Scoring is entirely server-side — no client-side manipulation possible
 - Guest mode: play without signing up, no leaderboard
+- Daily streak tracked and displayed on the final recap screen
+- Share your score in Wordle-style emoji format via the clipboard
 
 ## Quick start
 

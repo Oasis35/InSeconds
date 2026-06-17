@@ -248,10 +248,18 @@ Runners Ubuntu, ~3-4 min par run. Setup .NET via `global-json-file: src/back/glo
 - **Page d'accueil** : état `welcome` avant `playing` — session chargée en background, bouton "Commencer à jouer"
 - **Favicon** : note Deezer blanche sur fond violet (`favicon.svg`)
 - **`TextNormalizer`** : supprime les parenthèses/crochets avant comparaison (ex: `(feat. X)`, `[Radio Edit]`)
-- **Préchargement audio séquentiel** : `AudioPlayerService.preloadAll()` charge tous les morceaux en séquence (via `new Audio()` + `preload='auto'`) dès que la session est reçue — `GameComponent` reste en état `loading` jusqu'à ce que tous les buffers soient prêts (`canplaythrough`), puis passe en `welcome`
+- **Préchargement audio** : `AudioPlayerService.preloadAll()` injecte des `<link rel="preload" as="audio">` pour tous les morceaux dès que la session est reçue — non bloquant, le jeu passe directement en état `welcome`
 - **`GET /api/auth/me`** — retourne `{ id, isGuest, pseudo }` pour le joueur courant (cookie)
 - **`GET /api/settings`** — expose les settings publics (paliers, timer, scores) consommé par `SettingsService` Angular au boot
 - **`BackgroundService` génération défi quotidien** — `GenerateDailyChallengeService` s'exécute à 3h UTC
+- **Streak joueur** : `Player.CurrentStreak` + `Player.LastPlayedDate` (migration `PlayerStreak`), mis à jour dans `StartSession/Handler.cs`, affiché sur l'écran récap final et l'écran "déjà joué"
+- **Morceaux sans preview** : `SubmitAnswerValidator` accepte `ListenedDurationSeconds = 0` (skip), `BlindRoundComponent` affiche un bouton "Passer" si `previewUrl` est vide. `DailyChallengeGenerator` filtre les tracks sans preview active (appel Deezer) avant sélection.
+- **`GET /api/admin/stats`** — dashboard admin : activité 30 jours, répartition joueurs guests/inscrits/actifs, stats par défi (médiane, moy., min/max score, taux artiste/titre par morceau)
+- **Page admin — Pool** : sous-onglets "Disponibles" / "Déjà utilisés" ; indicateur preview (vert/rouge) sur chaque track disponible via `TrackDto.HasPreview` (appel Deezer en parallèle dans `GetTracksHandler`) ; popup d'ajout avec recherche Deezer + lecteur preview 30s + boutons "Ajouter" / "Ajouter et fermer"
+- **Partage score** : bouton "🔗 Partager mon score" sur l'écran récap — copie dans le presse-papier un résumé emoji Wordle-style (`🟩🟩 0.5s | 🟨⬜ 2s`) + lien `/blindtest`
+- **Route `/blindtest`** — alias de `/`, utilisée dans les liens de partage et les balises Open Graph
+- **Open Graph + Twitter Card** dans `index.html` — balises méta pour le partage WhatsApp/Signal/Twitter (sans image)
+- **`environment.appUrl`** dans les fichiers d'environnement Angular (prod : URL Northflank, dev : `http://localhost:5173`) — utilisé pour le lien de partage
 
 ## À venir (pas encore implémenté)
 
@@ -261,6 +269,7 @@ Runners Ubuntu, ~3-4 min par run. Setup .NET via `global-json-file: src/back/glo
 - Polish : charte graphique, messages d'erreur, accessibilité, RGPD
 - Sécurité avant passage public du repo : externaliser le mot de passe PostgreSQL de `appsettings.json` et `docker-compose.yml`
 - **Cache Redis pour les preview URLs Deezer** : les URLs sont identiques pour tous les joueurs du même défi. Intercaler dans `StartSession/Handler.cs` au niveau du `Task.WhenAll()` — chercher d'abord dans Redis (clé = DeezerTrackId, TTL 24h), sinon appeler Deezer. Nécessite `StackExchange.Redis` + entrée Redis dans `docker-compose.yml`.
+- Supprimer un morceau du pool depuis la page admin
 
 ## Décisions d'architecture notables
 

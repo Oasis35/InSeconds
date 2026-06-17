@@ -3,10 +3,12 @@ using Xunit;
 using InSeconds.Api.Common.Settings;
 using InSeconds.Api.Domain;
 using InSeconds.Api.Features.ChallengeGeneration;
+using InSeconds.Api.Infrastructure.Deezer;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using System.Net;
 
 namespace InSeconds.Api.UnitTests.Features.ChallengeGeneration;
 
@@ -21,11 +23,33 @@ public sealed class GenerateDailyChallengeTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options);
 
-    private static DailyChallengeGenerator CreateGenerator(ApplicationDbContext db, int tracksPerChallenge = 3)
+    // Stub qui retourne une preview valide pour tous les tracks
+    private static DeezerClient CreateDeezerClientWithPreview(string previewUrl = "https://cdn.deezer.com/preview/fake.mp3") =>
+        new(new HttpClient(new StubHttpMessageHandler(previewUrl)) { BaseAddress = new Uri("https://api.deezer.com") });
+
+    // Stub qui retourne preview vide (pas de preview)
+    private static DeezerClient CreateDeezerClientNoPreview() =>
+        new(new HttpClient(new StubHttpMessageHandler("")) { BaseAddress = new Uri("https://api.deezer.com") });
+
+    private sealed class StubHttpMessageHandler(string previewUrl) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            var json = "{\"id\":1,\"title\":\"Track\",\"preview\":\"" + previewUrl + "\",\"artist\":{\"name\":\"Artist\"},\"album\":{\"cover_medium\":null}}";
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(json),
+            });
+        }
+    }
+
+    private static DailyChallengeGenerator CreateGenerator(ApplicationDbContext db, int tracksPerChallenge = 3, DeezerClient? deezerClient = null)
     {
         var settingsService = new SettingsService(
             Options.Create(new AppSettings { TracksPerChallenge = tracksPerChallenge }));
-        return new DailyChallengeGenerator(db, settingsService, NullLogger<DailyChallengeGenerator>.Instance);
+        return new DailyChallengeGenerator(db, settingsService,
+            deezerClient ?? CreateDeezerClientWithPreview(),
+            NullLogger<DailyChallengeGenerator>.Instance);
     }
 
     private static Track BuildTrack(int id, string artist = "Artist", string title = "Title") => new()
@@ -168,7 +192,6 @@ public sealed class GenerateDailyChallengeTests
     {
         await using var db = CreateDbContext();
 
-        // 5 tracks, dont 3 déjà dans un défi passé
         db.Tracks.AddRange(BuildTrack(1), BuildTrack(2), BuildTrack(3), BuildTrack(4), BuildTrack(5));
         var pastChallenge = new DailyChallenge
         {
@@ -190,5 +213,19 @@ public sealed class GenerateDailyChallengeTests
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         (await db.DailyChallenges.AnyAsync(c => c.Date == today)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Generate_ExcludesTracksWithoutPreview()
+    {
+        await using var db = CreateDbContext();
+        // 5 tracks mais Deezer retourne preview vide pour tous → pool = 0 avec preview
+        db.Tracks.AddRange(BuildTrack(1), BuildTrack(2), BuildTrack(3), BuildTrack(4), BuildTrack(5));
+        await db.SaveChangesAsync();
+
+        var generator = CreateGenerator(db, tracksPerChallenge: 3, deezerClient: CreateDeezerClientNoPreview());
+        await generator.GenerateAsync();
+
+        (await db.DailyChallenges.AnyAsync()).Should().BeFalse();
     }
 }

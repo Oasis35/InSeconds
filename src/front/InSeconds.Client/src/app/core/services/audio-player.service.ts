@@ -8,6 +8,7 @@ export class AudioPlayerService {
   private stopTimer: ReturnType<typeof setTimeout> | null = null;
   private currentDuration = 0;
   private wasExtended = false;
+  private playToken = 0; // incrémenté à chaque play/reset — invalide les callbacks périmés
 
   readonly state = signal<AudioState>('idle');
   readonly listenedSeconds = signal(0);
@@ -31,21 +32,30 @@ export class AudioPlayerService {
   play(trackUrl: string, durationSeconds: number): void {
     if (!this.audio) return;
 
+    // Invalider tout callback en vol et nettoyer
+    const token = ++this.playToken;
+    if (this.stopTimer !== null) { clearTimeout(this.stopTimer); this.stopTimer = null; }
+    this.stopRaf();
+    this.audio.pause();
+    this.audio.oncanplay = null;
+    this.audio.onerror = null;
+
     this.currentDuration = durationSeconds;
     this.wasExtended = false;
     this.state.set('loading');
 
     this.audio.src = trackUrl;
     this.audio.oncanplay = () => {
+      if (this.playToken !== token) return; // callback périmé, ignorer
       this.state.set('playing');
       this.progress.set(0);
       this.startedAt = performance.now();
-      this.audio!.play().catch(() => this.state.set('idle'));
-      this.scheduleStop(durationSeconds);
-      this.startRaf(durationSeconds);
+      this.audio!.play().catch(() => { if (this.playToken === token) this.state.set('idle'); });
+      this.scheduleStop(durationSeconds, token);
+      this.startRaf(durationSeconds, token);
     };
 
-    this.audio.onerror = () => this.state.set('idle');
+    this.audio.onerror = () => { if (this.playToken === token) this.state.set('idle'); };
     this.audio.load();
   }
 
@@ -60,7 +70,7 @@ export class AudioPlayerService {
     this.currentDuration = nextDurationSeconds;
 
     if (this.stopTimer !== null) clearTimeout(this.stopTimer);
-    this.scheduleStop(delta);
+    this.scheduleStop(delta, this.playToken);
   }
 
   stop(): { listenedSeconds: number; wasExtended: boolean } {
@@ -80,12 +90,15 @@ export class AudioPlayerService {
   }
 
   reset(): void {
+    ++this.playToken; // invalider tout callback en vol
     if (this.stopTimer !== null) {
       clearTimeout(this.stopTimer);
       this.stopTimer = null;
     }
     this.stopRaf();
     if (this.audio) {
+      this.audio.oncanplay = null;
+      this.audio.onerror = null;
       this.audio.pause();
       this.audio.src = '';
     }
@@ -97,41 +110,28 @@ export class AudioPlayerService {
     this.wasExtended = false;
   }
 
-  private readonly preloaded = new Set<string>();
-  private readonly preloadBuffers = new Map<string, HTMLAudioElement>();
-
-  async preloadAll(trackUrls: string[]): Promise<void> {
+  preloadAll(trackUrls: string[]): Promise<void> {
+    if (typeof document === 'undefined') return Promise.resolve();
     for (const url of trackUrls) {
-      await this.preloadOne(url);
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'audio';
+      link.href = url;
+      document.head.appendChild(link);
     }
+    return Promise.resolve();
   }
 
-  private preloadOne(trackUrl: string): Promise<void> {
-    if (typeof Audio === 'undefined' || this.preloaded.has(trackUrl)) {
-      return Promise.resolve();
-    }
-    this.preloaded.add(trackUrl);
-    return new Promise<void>(resolve => {
-      const a = new Audio();
-      a.preload = 'auto';
-      a.oncanplaythrough = () => resolve();
-      a.onerror = () => resolve(); // ne pas bloquer si une URL échoue
-      a.src = trackUrl;
-      this.preloadBuffers.set(trackUrl, a);
-    });
+  private scheduleStop(seconds: number, token: number): void {
+    this.stopTimer = setTimeout(() => {
+      if (this.playToken === token) this.stop();
+    }, seconds * 1000);
   }
 
-  preload(trackUrl: string): void {
-    this.preloadOne(trackUrl);
-  }
-
-  private scheduleStop(seconds: number): void {
-    this.stopTimer = setTimeout(() => this.stop(), seconds * 1000);
-  }
-
-  private startRaf(durationSeconds: number): void {
+  private startRaf(durationSeconds: number, token: number): void {
     this.stopRaf();
     const tick = () => {
+      if (this.playToken !== token) return;
       const elapsed = (performance.now() - this.startedAt) / 1000;
       this.progress.set(Math.min(elapsed / durationSeconds, 1));
       if (this.state() === 'playing') {
