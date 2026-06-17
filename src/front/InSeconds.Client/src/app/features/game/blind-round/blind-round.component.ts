@@ -261,6 +261,8 @@ export class BlindRoundComponent implements OnDestroy {
   }
 
   onQueryChange(q: string): void {
+    this.artistAnswer = '';
+    this.titleAnswer = '';
     this.query$.next(q);
     this.showSuggestions.set(true);
     this.showEmptyConfirm.set(false);

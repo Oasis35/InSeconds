@@ -14,7 +14,21 @@ public sealed class AddTrackHandler(ApplicationDbContext db, DeezerClient deezer
             .FirstOrDefaultAsync(t => t.DeezerTrackId == command.DeezerTrackId, cancellationToken);
 
         if (existing is not null)
+        {
+            if (!string.IsNullOrEmpty(existing.Artist) && !string.IsNullOrEmpty(existing.Title))
+                return Results.Ok(new AddTrackResponse(existing.Id, existing.Artist, existing.Title, existing.DeezerTrackId));
+
+            // Données incomplètes en base — re-fetch Deezer pour corriger
+            var fix = await deezer.GetTrackInfoAsync(command.DeezerTrackId, cancellationToken);
+            if (fix is not null)
+            {
+                existing.Artist    = fix.Artist;
+                existing.Title     = fix.Title;
+                existing.CoverHash = fix.CoverHash;
+                await db.SaveChangesAsync(cancellationToken);
+            }
             return Results.Ok(new AddTrackResponse(existing.Id, existing.Artist, existing.Title, existing.DeezerTrackId));
+        }
 
         var info = await deezer.GetTrackInfoAsync(command.DeezerTrackId, cancellationToken);
         if (info is null)
