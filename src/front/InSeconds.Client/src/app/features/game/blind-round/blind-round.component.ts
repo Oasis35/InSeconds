@@ -29,17 +29,29 @@ export interface AnsweredEvent {
 
           <!-- Paliers -->
           @if (audio.isIdle()) {
-            <p class="text-center text-sm" style="color:#475569">Combien de secondes veux-tu écouter ?</p>
-            <div class="flex flex-wrap gap-2 justify-center">
-              @for (d of durations(); track d) {
+            @if (track().previewUrl) {
+              <p class="text-center text-sm" style="color:#475569">Combien de secondes veux-tu écouter ?</p>
+              <div class="flex flex-wrap gap-2 justify-center">
+                @for (d of durations(); track d) {
+                  <button
+                    (click)="startPlay(d)"
+                    class="px-5 py-3 rounded-xl font-semibold text-sm transition active:scale-95 touch-manipulation"
+                    style="background:#6366f1;color:#fff">
+                    {{ d }}s
+                  </button>
+                }
+              </div>
+            } @else {
+              <p class="text-center text-sm" style="color:#475569">Aperçu non disponible pour ce morceau.</p>
+              <div class="flex justify-center">
                 <button
-                  (click)="startPlay(d)"
+                  (click)="skipNoPreview()"
                   class="px-5 py-3 rounded-xl font-semibold text-sm transition active:scale-95 touch-manipulation"
-                  style="background:#6366f1;color:#fff">
-                  {{ d }}s
+                  style="background:#334155;color:#94a3b8">
+                  Passer (0 pts)
                 </button>
-              }
-            </div>
+              </div>
+            }
           }
 
           <!-- Lecture en cours -->
@@ -265,6 +277,16 @@ export class BlindRoundComponent implements OnDestroy {
     this.showSuggestions.set(false);
   }
 
+  skipNoPreview(): void {
+    this.answered.emit({
+      trackId: this.track().id,
+      listenedDurationSeconds: 0,
+      wasExtended: false,
+      artistAnswer: null,
+      titleAnswer: null,
+    });
+  }
+
   startPlay(duration: number): void {
     this.chosenDuration.set(duration);
     this.audio.play(this.track().previewUrl, duration);
@@ -321,7 +343,6 @@ export class BlindRoundComponent implements OnDestroy {
 
   setResult(r: SubmitAnswerResponse): void {
     this.result.set(r);
-    this.audio.play(this.track().previewUrl, 30);
   }
 
   next(): void {

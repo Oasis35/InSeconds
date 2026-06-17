@@ -821,6 +821,60 @@ export class ApiClient {
     /**
      * @return OK
      */
+    apiAdminStats(): Observable<AdminStatsResponse> {
+        let url_ = this.baseUrl + "/api/admin/stats";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processApiAdminStats(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processApiAdminStats(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AdminStatsResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AdminStatsResponse>;
+        }));
+    }
+
+    protected processApiAdminStats(response: HttpResponseBase): Observable<AdminStatsResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AdminStatsResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Unauthorized", status, _responseText, _headers);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
     apiAdminDeezerSearch(q: string): Observable<DeezerTrackInfo[]> {
         let url_ = this.baseUrl + "/api/admin/deezer-search?";
         if (q === undefined || q === null)
@@ -939,6 +993,14 @@ export interface AddTrackResponse {
     [key: string]: any;
 }
 
+export interface AdminStatsResponse {
+    challenges: ChallengeStatsDto[];
+    dailyActivity: DailyActivityDto[];
+    playerBreakdown: PlayerBreakdownDto;
+
+    [key: string]: any;
+}
+
 export interface ChallengeDto {
     id: number;
     date: Date;
@@ -947,9 +1009,29 @@ export interface ChallengeDto {
     [key: string]: any;
 }
 
+export interface ChallengeStatsDto {
+    id: number;
+    date: Date;
+    playerCount: number;
+    scoreMin: number | undefined;
+    scoreMax: number | undefined;
+    scoreAvg: number | undefined;
+    scoreMedian: number | undefined;
+    tracks: TrackStatsDto[];
+
+    [key: string]: any;
+}
+
 export interface CreateChallengeBody {
     date: Date;
     deezerTrackIds: number[];
+
+    [key: string]: any;
+}
+
+export interface DailyActivityDto {
+    date: Date;
+    playerCount: number;
 
     [key: string]: any;
 }
@@ -981,6 +1063,15 @@ export interface MeResponse {
     id: string;
     isGuest: boolean;
     pseudo: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface PlayerBreakdownDto {
+    totalGuests: number;
+    totalRegistered: number;
+    activeLast7Days: number;
+    activeLast30Days: number;
 
     [key: string]: any;
 }
@@ -1020,6 +1111,7 @@ export interface TodayStatsResponse {
     yourScore: number | undefined;
     medianScore: number;
     totalPlayers: number;
+    currentStreak: number;
     tracks: TrackStat[];
 
     [key: string]: any;
@@ -1052,6 +1144,18 @@ export interface TrackStat {
     coverUrl: string | undefined;
     failureRatePercent: number;
     averageSecondsWhenCorrect: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface TrackStatsDto {
+    position: number;
+    artist: string;
+    title: string;
+    totalAnswers: number;
+    artistCorrectRate: number;
+    titleCorrectRate: number;
+    avgListenedSeconds: number | undefined;
 
     [key: string]: any;
 }

@@ -1,9 +1,11 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, Subject, switchMap } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { AdminStatsResponse, ChallengeStatsDto } from '../../api/api.generated';
 
 interface ResetResult { deleted: number; date: string; }
 interface TrackDto { position: number; artist: string; title: string; deezerTrackId: number; }
@@ -12,11 +14,11 @@ interface PoolTracksResponse { available: PoolTrackDto[]; used: PoolTrackDto[]; 
 interface ChallengeDto { id: number; date: string; tracks: TrackDto[]; }
 interface DeezerTrackInfo { artist: string; title: string; previewUrl: string | null; deezerTrackId: number; }
 
-type Tab = 'pool' | 'defis';
+type Tab = 'dashboard' | 'pool' | 'defis';
 
 @Component({
   selector: 'app-admin',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, DecimalPipe],
   template: `
     <div class="min-h-screen bg-gray-900 text-white flex flex-col items-center p-8 gap-6">
       <h1 class="text-2xl font-bold tracking-tight">Admin</h1>
@@ -40,6 +42,12 @@ type Tab = 'pool' | 'defis';
 
         <!-- Onglets -->
         <div class="flex gap-1 bg-gray-800 p-1 rounded-lg w-full max-w-2xl">
+          <button (click)="activeTab.set('dashboard')"
+            [class]="activeTab() === 'dashboard'
+              ? 'flex-1 py-2 rounded-md text-sm font-medium bg-gray-700 text-white transition-colors'
+              : 'flex-1 py-2 rounded-md text-sm font-medium text-gray-400 hover:text-white transition-colors'">
+            Dashboard
+          </button>
           <button (click)="activeTab.set('pool')"
             [class]="activeTab() === 'pool'
               ? 'flex-1 py-2 rounded-md text-sm font-medium bg-gray-700 text-white transition-colors'
@@ -53,6 +61,189 @@ type Tab = 'pool' | 'defis';
             Défis ({{ challenges().length }})
           </button>
         </div>
+
+        <!-- Onglet Dashboard -->
+        @if (activeTab() === 'dashboard') {
+          <div class="flex flex-col gap-4 w-full max-w-2xl">
+
+            <!-- Actions principales -->
+            <div class="bg-gray-800 rounded-xl p-5 flex flex-col gap-3">
+              <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wide">Actions</h2>
+              <div class="flex flex-col sm:flex-row gap-3">
+                <button (click)="generateToday()" [disabled]="generateStatus() === 'loading'"
+                  class="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
+                  @if (generateStatus() === 'loading') {
+                    <span class="animate-spin text-base">⏳</span> Génération...
+                  } @else {
+                    <span>▶</span> Générer le défi du jour
+                  }
+                </button>
+                <button (click)="reset()" [disabled]="resetStatus() === 'loading'"
+                  class="flex-1 bg-red-800 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
+                  @if (resetStatus() === 'loading') {
+                    Réinitialisation...
+                  } @else {
+                    <span>↺</span> Réinitialiser les parties du jour
+                  }
+                </button>
+              </div>
+              <div class="flex flex-wrap gap-2 min-h-5">
+                @if (generateStatus() === 'success') {
+                  <span class="text-green-400 text-xs">Défi généré avec succès.</span>
+                }
+                @if (generateStatus() === 'already') {
+                  <span class="text-yellow-400 text-xs">Le défi du jour est déjà généré.</span>
+                }
+                @if (generateStatus() === 'error') {
+                  <span class="text-red-400 text-xs">Erreur lors de la génération.</span>
+                }
+                @if (resetStatus() === 'success' && resetResult()) {
+                  <span class="text-green-400 text-xs">{{ resetResult()!.deleted }} partie(s) supprimée(s).</span>
+                }
+                @if (resetStatus() === 'error') {
+                  <span class="text-red-400 text-xs">Aucun défi trouvé pour aujourd'hui.</span>
+                }
+              </div>
+            </div>
+
+            <!-- Activité 30 jours -->
+            @if (statsLoading()) {
+              <div class="bg-gray-800 rounded-xl p-5 flex items-center justify-center h-24">
+                <p class="text-gray-500 text-sm">Chargement des stats...</p>
+              </div>
+            } @else if (adminStats()) {
+              <div class="bg-gray-800 rounded-xl p-5 flex flex-col gap-3">
+                <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wide">Activité — 30 derniers jours</h2>
+                @if (adminStats()!.dailyActivity.length === 0) {
+                  <p class="text-gray-500 text-sm">Aucune partie jouée sur cette période.</p>
+                } @else {
+                  <!-- Barres d'activité -->
+                  <div class="flex items-end gap-0.5 h-16">
+                    @for (day of adminStats()!.dailyActivity; track day.date) {
+                      <div class="flex-1 flex flex-col items-center gap-0.5 group relative">
+                        <div class="w-full bg-purple-600 rounded-sm transition-all"
+                          [style.height.%]="activityBarHeight(day.playerCount)"
+                          title="{{ day.date }} : {{ day.playerCount }} joueur(s)">
+                        </div>
+                      </div>
+                    }
+                  </div>
+                  <div class="flex justify-between text-xs text-gray-600">
+                    <span>{{ adminStats()!.dailyActivity[0].date }}</span>
+                    <span>{{ adminStats()!.dailyActivity[adminStats()!.dailyActivity.length - 1].date }}</span>
+                  </div>
+                  <p class="text-xs text-gray-400">
+                    Total : <span class="text-white font-medium">{{ totalPlayers() }}</span> parties —
+                    Pic : <span class="text-white font-medium">{{ maxDailyPlayers() }}</span> joueurs/jour
+                  </p>
+                }
+              </div>
+
+              <!-- Répartition joueurs -->
+              <div class="bg-gray-800 rounded-xl p-5 flex flex-col gap-3">
+                <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wide">Joueurs</h2>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div class="bg-gray-700 rounded-lg p-3 flex flex-col gap-1">
+                    <span class="text-xs text-gray-400">Guests</span>
+                    <span class="text-xl font-bold text-white">{{ adminStats()!.playerBreakdown.totalGuests }}</span>
+                  </div>
+                  <div class="bg-gray-700 rounded-lg p-3 flex flex-col gap-1">
+                    <span class="text-xs text-gray-400">Inscrits</span>
+                    <span class="text-xl font-bold text-white">{{ adminStats()!.playerBreakdown.totalRegistered }}</span>
+                  </div>
+                  <div class="bg-gray-700 rounded-lg p-3 flex flex-col gap-1">
+                    <span class="text-xs text-gray-400">Actifs 7j</span>
+                    <span class="text-xl font-bold text-purple-400">{{ adminStats()!.playerBreakdown.activeLast7Days }}</span>
+                  </div>
+                  <div class="bg-gray-700 rounded-lg p-3 flex flex-col gap-1">
+                    <span class="text-xs text-gray-400">Actifs 30j</span>
+                    <span class="text-xl font-bold text-purple-400">{{ adminStats()!.playerBreakdown.activeLast30Days }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Stats par défi -->
+              <div class="bg-gray-800 rounded-xl p-5 flex flex-col gap-3">
+                <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wide">Stats par défi</h2>
+                @if (adminStats()!.challenges.length === 0) {
+                  <p class="text-gray-500 text-sm">Aucun défi.</p>
+                } @else {
+                  <div class="flex flex-col divide-y divide-gray-700">
+                    @for (c of adminStats()!.challenges; track c.id) {
+                      <div class="py-3">
+                        <!-- En-tête défi -->
+                        <button (click)="toggleChallenge(c.id)"
+                          class="w-full flex items-center justify-between gap-2 text-left">
+                          <div class="flex items-center gap-3">
+                            <span class="font-mono text-sm text-white">{{ c.date }}</span>
+                            <span class="text-xs text-gray-400 bg-gray-700 px-2 py-0.5 rounded-full">
+                              {{ c.playerCount }} joueur{{ c.playerCount > 1 ? 's' : '' }}
+                            </span>
+                          </div>
+                          <div class="flex items-center gap-4 text-xs text-gray-400">
+                            @if (c.scoreMedian !== null && c.scoreMedian !== undefined) {
+                              <span>Médiane <span class="text-white font-medium">{{ c.scoreMedian }}</span></span>
+                            }
+                            @if (c.scoreAvg !== null && c.scoreAvg !== undefined) {
+                              <span>Moy. <span class="text-white font-medium">{{ c.scoreAvg }}</span></span>
+                            }
+                            <span class="text-gray-600">{{ expandedChallenges().has(c.id) ? '▲' : '▼' }}</span>
+                          </div>
+                        </button>
+
+                        <!-- Détail expandable -->
+                        @if (expandedChallenges().has(c.id)) {
+                          <div class="mt-3 flex flex-col gap-2">
+                            <!-- Score min/max -->
+                            @if (c.scoreMin !== null && c.scoreMax !== null) {
+                              <p class="text-xs text-gray-500">
+                                Scores : <span class="text-gray-300">{{ c.scoreMin }}</span> — <span class="text-gray-300">{{ c.scoreMax }}</span>
+                              </p>
+                            }
+                            <!-- Tracks -->
+                            @for (t of c.tracks; track t.position) {
+                              <div class="bg-gray-700 rounded-lg p-3 flex flex-col gap-2">
+                                <p class="text-xs font-medium text-white">{{ t.position }}. {{ t.artist }} — {{ t.title }}</p>
+                                <div class="grid grid-cols-3 gap-2 text-xs">
+                                  <div class="flex flex-col gap-0.5">
+                                    <span class="text-gray-500">Artiste</span>
+                                    <span class="font-medium" [class]="rateColor(t.artistCorrectRate)">{{ t.artistCorrectRate | number:'1.0-0' }}%</span>
+                                  </div>
+                                  <div class="flex flex-col gap-0.5">
+                                    <span class="text-gray-500">Titre</span>
+                                    <span class="font-medium" [class]="rateColor(t.titleCorrectRate)">{{ t.titleCorrectRate | number:'1.0-0' }}%</span>
+                                  </div>
+                                  <div class="flex flex-col gap-0.5">
+                                    <span class="text-gray-500">Écoute moy.</span>
+                                    <span class="text-gray-300 font-medium">
+                                      @if (t.avgListenedSeconds !== null && t.avgListenedSeconds !== undefined) {
+                                        {{ t.avgListenedSeconds }}s
+                                      } @else {
+                                        —
+                                      }
+                                    </span>
+                                  </div>
+                                </div>
+                                <!-- Barre de difficulté visuelle -->
+                                <div class="w-full bg-gray-600 rounded-full h-1">
+                                  <div class="h-1 rounded-full transition-all"
+                                    [class]="rateBarColor(t.titleCorrectRate)"
+                                    [style.width.%]="t.titleCorrectRate">
+                                  </div>
+                                </div>
+                              </div>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+
+          </div>
+        }
 
         <!-- Onglet Pool -->
         @if (activeTab() === 'pool') {
@@ -148,35 +339,8 @@ type Tab = 'pool' | 'defis';
           </div>
         }
 
-        <!-- Actions bas de page -->
-        <div class="flex flex-col items-center gap-3 pt-2 w-full max-w-2xl">
-          <div class="flex items-center gap-3">
-            <button (click)="generateToday()" [disabled]="generateStatus() === 'loading'"
-              class="text-indigo-400 hover:text-indigo-300 disabled:opacity-50 text-xs transition-colors">
-              @if (generateStatus() === 'loading') { Génération... } @else { Générer le défi du jour }
-            </button>
-            @if (generateStatus() === 'success') {
-              <span class="text-green-400 text-xs">Défi généré.</span>
-            }
-            @if (generateStatus() === 'already') {
-              <span class="text-gray-400 text-xs">Défi du jour déjà généré.</span>
-            }
-            @if (generateStatus() === 'error') {
-              <span class="text-red-400 text-xs">Erreur lors de la génération.</span>
-            }
-          </div>
-          <div class="flex items-center gap-3">
-            <button (click)="reset()" [disabled]="resetStatus() === 'loading'"
-              class="text-red-500 hover:text-red-400 disabled:opacity-50 text-xs transition-colors">
-              @if (resetStatus() === 'loading') { Réinitialisation... } @else { Réinitialiser les parties du jour }
-            </button>
-            @if (resetStatus() === 'success' && resetResult()) {
-              <span class="text-green-400 text-xs">{{ resetResult()!.deleted }} supprimée(s)</span>
-            }
-            @if (resetStatus() === 'error') {
-              <span class="text-red-400 text-xs">Aucun défi trouvé.</span>
-            }
-          </div>
+        <!-- Déconnexion -->
+        <div class="pt-2">
           <button (click)="logout()" class="text-gray-600 hover:text-gray-400 text-xs transition-colors">
             Se déconnecter
           </button>
@@ -198,12 +362,22 @@ export class AdminComponent implements OnInit {
   resetResult = signal<ResetResult | null>(null);
   generateStatus = signal<'idle' | 'loading' | 'success' | 'already' | 'error'>('idle');
   challenges = signal<ChallengeDto[]>([]);
-  activeTab = signal<Tab>('pool');
+  activeTab = signal<Tab>('dashboard');
 
   poolTracks = signal<PoolTracksResponse>({ available: [], used: [] });
   poolSearchResults = signal<DeezerTrackInfo[]>([]);
   poolSearchLoading = signal(false);
   addToPoolStatus = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
+
+  adminStats = signal<AdminStatsResponse | null>(null);
+  statsLoading = signal(false);
+  expandedChallenges = signal<Set<number>>(new Set());
+
+  totalPlayers = computed(() =>
+    (this.adminStats()?.dailyActivity ?? []).reduce((s, d) => s + d.playerCount, 0));
+
+  maxDailyPlayers = computed(() =>
+    Math.max(0, ...(this.adminStats()?.dailyActivity ?? []).map(d => d.playerCount)));
 
   password = '';
   poolSearchQuery = '';
@@ -223,7 +397,12 @@ export class AdminComponent implements OnInit {
     });
 
     this.http.get(`${this.base}/me`).subscribe({
-      next: () => { this.authenticated.set(true); this.loadChallenges(); this.loadPool(); },
+      next: () => {
+        this.authenticated.set(true);
+        this.loadChallenges();
+        this.loadPool();
+        this.loadStats();
+      },
       error: () => this.authenticated.set(false),
     });
   }
@@ -238,6 +417,7 @@ export class AdminComponent implements OnInit {
         this.password = '';
         this.loadChallenges();
         this.loadPool();
+        this.loadStats();
       },
       error: () => this.loginStatus.set('error'),
     });
@@ -255,6 +435,7 @@ export class AdminComponent implements OnInit {
         this.generateStatus.set('success');
         this.loadChallenges();
         this.loadPool();
+        this.loadStats();
         setTimeout(() => this.generateStatus.set('idle'), 3000);
       },
       error: (err) => {
@@ -268,9 +449,36 @@ export class AdminComponent implements OnInit {
     this.resetStatus.set('loading');
     this.resetResult.set(null);
     this.http.delete<ResetResult>(`${this.base}/reset-today`).subscribe({
-      next: res => { this.resetResult.set(res); this.resetStatus.set('success'); },
+      next: res => {
+        this.resetResult.set(res);
+        this.resetStatus.set('success');
+        this.loadStats();
+      },
       error: () => this.resetStatus.set('error'),
     });
+  }
+
+  toggleChallenge(id: number): void {
+    const set = new Set(this.expandedChallenges());
+    if (set.has(id)) set.delete(id); else set.add(id);
+    this.expandedChallenges.set(set);
+  }
+
+  activityBarHeight(count: number): number {
+    const max = this.maxDailyPlayers();
+    return max === 0 ? 0 : Math.round((count / max) * 100);
+  }
+
+  rateColor(rate: number): string {
+    if (rate >= 60) return 'text-green-400';
+    if (rate >= 30) return 'text-yellow-400';
+    return 'text-red-400';
+  }
+
+  rateBarColor(rate: number): string {
+    if (rate >= 60) return 'bg-green-500';
+    if (rate >= 30) return 'bg-yellow-500';
+    return 'bg-red-500';
   }
 
   onPoolSearchChange(q: string): void {
@@ -302,6 +510,14 @@ export class AdminComponent implements OnInit {
     this.http.get<PoolTracksResponse>(`${this.base}/tracks`).subscribe({
       next: data => this.poolTracks.set(data),
       error: () => {},
+    });
+  }
+
+  private loadStats(): void {
+    this.statsLoading.set(true);
+    this.http.get<AdminStatsResponse>(`${this.base}/stats`).subscribe({
+      next: data => { this.adminStats.set(data); this.statsLoading.set(false); },
+      error: () => this.statsLoading.set(false),
     });
   }
 }

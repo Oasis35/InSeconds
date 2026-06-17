@@ -56,6 +56,16 @@
 - [x] CI/CD auto sur push `main`
 - [x] Secrets prod via Northflank (`AdminPassword`, connection string)
 
+## 🚧 Mode entraînement (anciens défis)
+
+> Rejouer un défi passé sans impacter le classement ni le streak. Score calculé côté serveur mais non persisté.
+
+- [ ] **Backend** — nouveau paramètre `trainingMode: true` sur `StartSession` (ou endpoint dédié) : vérifie que le `DailyChallengeId` visé n'est pas le défi du jour, lève la contrainte d'unicité `(PlayerId, DailyChallengeId)`, n'écrit pas de `GameSession` en base (ou la marque `IsTraining=true`)
+- [ ] **Backend** — `SubmitAnswer` en mode entraînement : calcule et renvoie le score normalement mais ne le cumule pas dans `GameSessions.TotalScore` / pas de ligne `GameSessionAnswers` persistée
+- [ ] **Frontend** — page ou modale "Rejouer un ancien défi" accessible depuis l'écran "déjà joué" ou la home ; liste les derniers défis disponibles
+- [ ] **Frontend** — indicateur visuel "Mode entraînement" pendant la partie (bandeau ou badge), récap final sans partage emoji ni mise à jour du streak
+- [ ] **UX** — décider si les anciens défis sont accessibles sans limite (tout l'historique) ou fenêtre glissante (ex : 7 derniers jours)
+
 ## 🚧 Rétention & Engagement
 
 > Inspiré des mécaniques Wordle / Heardle / NYT Connections. Priorité décroissante.

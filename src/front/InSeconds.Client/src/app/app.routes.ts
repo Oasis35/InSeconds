@@ -7,6 +7,11 @@ export const routes: Routes = [
       import('./features/game/game.component').then(m => m.GameComponent),
   },
   {
+    path: 'blindtest',
+    redirectTo: '',
+    pathMatch: 'full',
+  },
+  {
     path: 'admin',
     loadComponent: () =>
       import('./features/admin/admin.component').then(m => m.AdminComponent),

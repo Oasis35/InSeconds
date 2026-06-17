@@ -5,6 +5,7 @@ import { AudioPlayerService } from '../../core/services/audio-player.service';
 import { TrackSlot } from '../../core/models/game.models';
 import { BlindRoundComponent, AnsweredEvent } from './blind-round/blind-round.component';
 import { ApiClient, TodayStatsResponse } from '../../api/api.generated';
+import { environment } from '../../../environments/environment';
 
 type GameState = 'loading' | 'welcome' | 'playing' | 'done' | 'error' | 'no_challenge' | 'already_played';
 
@@ -127,12 +128,12 @@ interface RoundResult {
         <div class="flex-1 flex flex-col items-center gap-7 text-center px-2 pt-4">
 
           <!-- Titre -->
-          <div class="space-y-1.5">
+          <div class="space-y-3">
             <h2 class="text-2xl font-bold tracking-tight" style="color:#f8fafc">Déjà joué aujourd'hui</h2>
-            <p class="text-sm" style="color:#334155">
-              Prochain défi dans
-              <span class="font-bold tabular-nums" style="color:#94a3b8">{{ countdown() }}</span>
-            </p>
+            <div>
+              <p class="text-xs font-semibold tracking-widest uppercase mb-1" style="color:#475569">Prochain défi dans</p>
+              <p class="text-3xl font-bold tabular-nums" style="color:#e2e8f0;letter-spacing:0.05em">{{ countdown() }}</p>
+            </div>
           </div>
 
           <!-- Card scores -->
@@ -205,7 +206,7 @@ interface RoundResult {
 
       <!-- Jeu en cours -->
       @if (gameState() === 'playing' && currentTrack()) {
-        <div class="flex-1">
+        <div class="flex-1 flex flex-col justify-center">
           <app-blind-round
             #roundRef
             [track]="currentTrack()!"
@@ -221,15 +222,15 @@ interface RoundResult {
 
           <!-- Score total -->
           <div class="text-center space-y-2 pb-2">
-            <p class="text-xs font-semibold tracking-widest uppercase" style="color:#334155">Score final</p>
+            <p class="text-xs font-semibold tracking-widest uppercase" style="color:#64748b">Score final</p>
             <p class="font-bold tabular-nums" style="color:#f8fafc;font-size:4rem;line-height:1;letter-spacing:-0.03em">{{ totalScore() }}</p>
-            <p class="text-xs" style="color:#334155">points</p>
+            <p class="text-xs" style="color:#64748b">points</p>
           </div>
 
           <!-- Liste morceaux -->
           <div class="flex flex-col gap-3">
             @for (r of results(); track r.position) {
-              <div class="flex gap-3 p-3 rounded-2xl" style="background:#0f0f1a;border:1px solid rgba(255,255,255,0.06)">
+              <div class="flex gap-3 p-3 rounded-2xl" style="background:#0f0f1a;border:1px solid rgba(255,255,255,0.08)">
 
                 <!-- Pochette -->
                 @if (r.coverUrl) {
@@ -251,11 +252,11 @@ interface RoundResult {
                     </span>
                   </div>
 
-                  <p class="text-sm font-medium truncate" style="color:#cbd5e1">
+                  <p class="text-sm font-medium truncate" style="color:#e2e8f0">
                     {{ r.correctArtist }} — {{ r.correctTitle }}
                   </p>
 
-                  <div class="flex gap-2.5 text-xs" style="color:#334155">
+                  <div class="flex gap-2.5 text-xs" style="color:#64748b">
                     <span>{{ r.listenedDurationSeconds }}s</span>
                     @if (r.averageSecondsWhenCorrect != null) {
                       <span>· moy. {{ r.averageSecondsWhenCorrect!.toFixed(1) }}s</span>
@@ -266,8 +267,8 @@ interface RoundResult {
                   <a [href]="'https://www.deezer.com/track/' + r.deezerTrackId"
                     target="_blank" rel="noopener noreferrer"
                     class="inline-flex items-center gap-1 text-xs transition-colors"
-                    style="color:#1e293b"
-                    onmouseenter="this.style.color='#334155'" onmouseleave="this.style.color='#1e293b'">
+                    style="color:#475569"
+                    onmouseenter="this.style.color='#94a3b8'" onmouseleave="this.style.color='#475569'">
                     <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M2 11h2v1H2zM6 9h2v3H6zM10 7h2v5h-2zM14 5h2v7h-2z" fill="currentColor"/></svg>
                     Écouter sur Deezer
                   </a>
@@ -275,7 +276,7 @@ interface RoundResult {
 
                 <!-- Score -->
                 <div class="shrink-0 text-right self-center">
-                  <span class="text-lg font-bold" [style.color]="r.score > 0 ? '#34d399' : '#334155'">
+                  <span class="text-lg font-bold" [style.color]="r.score > 0 ? '#34d399' : '#64748b'">
                     +{{ r.score }}
                   </span>
                 </div>
@@ -284,7 +285,14 @@ interface RoundResult {
             }
           </div>
 
-          <p class="text-center text-xs pb-4" style="color:#1e293b">Reviens demain pour un nouveau défi</p>
+          <button
+            (click)="share()"
+            class="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition touch-manipulation"
+            style="background:#1e1e2e;color:#e2e8f0;border:1px solid rgba(255,255,255,0.08);letter-spacing:0.03em">
+            {{ shareCopied() ? '✓ Copié !' : '🔗 Partager mon score' }}
+          </button>
+
+          <p class="text-center text-xs pb-4" style="color:#475569">Reviens demain pour un nouveau défi</p>
         </div>
       }
 
@@ -416,6 +424,34 @@ export class GameComponent implements OnInit, OnDestroy {
     } else {
       this.currentIndex.set(next);
     }
+  }
+
+  protected readonly shareCopied = signal(false);
+
+  protected share(): void {
+    const date = new Date();
+    const dateStr = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+    const colorEmoji = (secs: number) => secs <= 1 ? '🟩' : secs <= 3 ? '🟨' : '🟥';
+
+    const lines = this.results().map(r => {
+      const color  = colorEmoji(Number(r.listenedDurationSeconds));
+      const artist = r.artistCorrect ? color : '⬜';
+      const title  = r.titleCorrect  ? color : '⬜';
+      return `${artist}${title} ${r.listenedDurationSeconds}s`;
+    });
+
+    const text = [
+      `InSeconds 🎵 ${dateStr}`,
+      lines.join(' | '),
+      `🏆 ${this.totalScore()} pts`,
+      `${environment.appUrl}/blindtest`,
+    ].join('\n');
+
+    navigator.clipboard.writeText(text).then(() => {
+      this.shareCopied.set(true);
+      setTimeout(() => this.shareCopied.set(false), 2000);
+    });
   }
 
   private loadSession(): void {
