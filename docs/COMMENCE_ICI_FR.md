@@ -62,26 +62,29 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - `DeezerClient` — recherche + preview + extraction `CoverHash`
 - Settings via `IOptions<AppSettings>` chargé depuis la BD au boot (ADO.NET brut)
 - `Track.CoverHash` + `AppSettings.CoverUrlTemplate` (URL reconstruite à la volée)
-- Page admin (`/admin`) — login, gestion défis, recherche Deezer, reset sessions
+- Page admin (`/admin`) — login, pool (sous-onglets + indicateur preview + popup ajout avec lecteur), défis, stats dashboard, reset sessions
 - Auth admin via Bearer token + `adminAuthInterceptor` Angular
-- `BackgroundService` génération défi quotidien automatique (à 3h UTC)
+- `BackgroundService` génération défi quotidien automatique (à 3h UTC) — filtre les tracks sans preview active
 - Frontend complet (Angular 20 + Tailwind v4 + SCSS) — UI jeu jouable
 - NSwag : `ApiClient` généré depuis l'OpenAPI back, `api.generated.ts` commité, types synchronisés automatiquement
 - Pages d'erreur : 404, "déjà joué" (compte à rebours + stats comparatives), "pas de défi"
-- Récap final : lien Deezer par morceau
+- Récap final : lien Deezer par morceau + streak + bouton partage emoji Wordle-style
 - `GET /api/stats/today` : score joueur, médiane joueurs, détail par morceau (pochette + lien Deezer)
-- Écran "déjà joué" : ton score vs médiane, accordéon détail par morceau
+- Écran "déjà joué" : ton score vs médiane, streak, accordéon détail par morceau
 - `ListenedDurationSeconds` et `TotalDurationSeconds` en `decimal` (paliers décimaux jusqu'à 0.5s)
 - CI GitHub Actions (build back/front + check migrations) + CI/CD auto sur push `main`
 - Déploiement Northflank (front + back + PostgreSQL)
 - `TextNormalizer` : suppression parenthèses/crochets avant comparaison — `(feat. X)`, `[Radio Edit]`
 - Page d'accueil "welcome" — session chargée en background, bouton "Commencer à jouer" sans latence
-- Préchargement audio séquentiel — tous les morceaux bufferisés avant l'état `welcome`, première lecture instantanée
+- Préchargement audio non-bloquant (`<link rel="preload" as="audio">`)
 - Bouton Stop pendant l'écoute pour accéder directement à la saisie
 - Layout B — player haut (toujours visible) + zone saisie toujours présente (pas de clignotement)
 - Barre de progression live + chrono centré (`requestAnimationFrame`)
 - Champ unique artiste+titre avec autocomplete Deezer (proxy `/api/deezer/search`, debounce 300ms)
 - Badge officiel "À écouter sur Deezer" (`DeezerBadgeComponent`) + favicon SVG note Deezer
+- Route `/blindtest` + balises Open Graph/Twitter Card pour partage WhatsApp/Signal
+- Streak joueur (`Player.CurrentStreak` + `Player.LastPlayedDate`) mis à jour au `StartSession`
+- Gestion morceaux sans preview : skip 0s accepté par le validateur, bouton "Passer" dans le jeu
 
 🚧 **À faire** : tests d'intégration (Testcontainers), smoke tests post-deploy, tests mobiles, polish. Voir [`TACHES.md`](TACHES.md).
 

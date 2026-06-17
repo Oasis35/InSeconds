@@ -227,6 +227,17 @@ interface RoundResult {
             <p class="text-xs" style="color:#64748b">points</p>
           </div>
 
+          <!-- Bouton partage -->
+          <div class="flex flex-col items-center gap-1.5">
+            <button
+              (click)="share()"
+              class="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition touch-manipulation"
+              style="background:#1e1e2e;color:#e2e8f0;border:1px solid rgba(255,255,255,0.08);letter-spacing:0.03em">
+              {{ shareCopied() ? '✓ Copié !' : '🔗 Partager mon score' }}
+            </button>
+            <p class="text-xs" style="color:#475569">Copie un résumé en emojis dans le presse-papier</p>
+          </div>
+
           <!-- Liste morceaux -->
           <div class="flex flex-col gap-3">
             @for (r of results(); track r.position) {
@@ -284,13 +295,6 @@ interface RoundResult {
               </div>
             }
           </div>
-
-          <button
-            (click)="share()"
-            class="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition touch-manipulation"
-            style="background:#1e1e2e;color:#e2e8f0;border:1px solid rgba(255,255,255,0.08);letter-spacing:0.03em">
-            {{ shareCopied() ? '✓ Copié !' : '🔗 Partager mon score' }}
-          </button>
 
           <p class="text-center text-xs pb-4" style="color:#475569">Reviens demain pour un nouveau défi</p>
         </div>

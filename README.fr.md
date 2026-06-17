@@ -6,11 +6,13 @@
 
 ## Comment ça marche
 
-- Chaque jour à minuit UTC, un nouveau set de morceaux est sélectionné
+- Chaque jour à 3h UTC, un nouveau set de morceaux est sélectionné automatiquement (uniquement des morceaux avec une preview Deezer active)
 - Choisis combien de secondes écouter (0.5, 1, 1.5, 2, 3, 5, 10) avant de tenter artiste + titre
 - Une prolongation autorisée par morceau (palier supérieur, avec malus de score)
 - Le scoring est entièrement côté serveur — impossible de tricher côté client
 - Mode guest : joue sans créer de compte, hors classement
+- Streak quotidien affiché sur l'écran récap final
+- Partage de score en format emoji Wordle (copie dans le presse-papier)
 
 ## Démarrage rapide
 

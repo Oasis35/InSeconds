@@ -9,12 +9,13 @@ import { AdminStatsResponse, ChallengeStatsDto } from '../../api/api.generated';
 
 interface ResetResult { deleted: number; date: string; }
 interface TrackDto { position: number; artist: string; title: string; deezerTrackId: number; }
-interface PoolTrackDto { id: number; artist: string; title: string; deezerTrackId: number; }
+interface PoolTrackDto { id: number; artist: string; title: string; deezerTrackId: number; hasPreview?: boolean | null; }
 interface PoolTracksResponse { available: PoolTrackDto[]; used: PoolTrackDto[]; }
 interface ChallengeDto { id: number; date: string; tracks: TrackDto[]; }
-interface DeezerTrackInfo { artist: string; title: string; previewUrl: string | null; deezerTrackId: number; }
+interface DeezerTrackInfo { artist: string; title: string; previewUrl: string | null; deezerTrackId: number; coverHash?: string | null; }
 
 type Tab = 'dashboard' | 'pool' | 'defis';
+type PoolSubTab = 'available' | 'used';
 
 @Component({
   selector: 'app-admin',
@@ -249,69 +250,70 @@ type Tab = 'dashboard' | 'pool' | 'defis';
         @if (activeTab() === 'pool') {
           <div class="flex flex-col gap-4 w-full max-w-2xl">
 
-            <!-- Ajouter -->
-            <div class="bg-gray-800 rounded-xl p-5 flex flex-col gap-3">
-              <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wide">Ajouter au pool</h2>
-              <input type="text" [(ngModel)]="poolSearchQuery" (ngModelChange)="onPoolSearchChange($event)"
-                placeholder="Rechercher artiste ou titre..."
-                class="bg-gray-700 text-white rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-purple-500 text-sm" />
-              @if (poolSearchLoading()) {
-                <p class="text-gray-500 text-xs">Recherche...</p>
-              }
-              @if (poolSearchResults().length > 0) {
-                <ul class="bg-gray-700 rounded-lg divide-y divide-gray-600 max-h-48 overflow-y-auto">
-                  @for (track of poolSearchResults(); track track.deezerTrackId) {
-                    <li (click)="addToPoolStatus() !== 'loading' && addToPool(track)"
-                      [class]="addToPoolStatus() === 'loading'
-                        ? 'px-4 py-2.5 flex justify-between items-center text-sm opacity-50 cursor-not-allowed'
-                        : 'px-4 py-2.5 hover:bg-gray-600 cursor-pointer flex justify-between items-center text-sm'">
-                      <span>{{ track.artist }} — {{ track.title }}</span>
-                      <span class="text-purple-400 text-xs shrink-0 ml-4">
-                        @if (addToPoolStatus() === 'loading') { ... } @else { Ajouter au pool }
-                      </span>
-                    </li>
-                  }
-                </ul>
-              }
-              @if (addToPoolStatus() === 'success') {
-                <p class="text-green-400 text-xs">Morceau ajouté.</p>
-              }
-              @if (addToPoolStatus() === 'error') {
-                <p class="text-red-400 text-xs">Impossible d'ajouter ce morceau.</p>
-              }
+            <!-- Sous-onglets + bouton ajout -->
+            <div class="flex items-center gap-2">
+              <div class="flex flex-1 gap-1 bg-gray-800 p-1 rounded-lg">
+                <button (click)="poolSubTab.set('available')"
+                  [class]="poolSubTab() === 'available'
+                    ? 'flex-1 py-1.5 rounded-md text-sm font-medium bg-gray-700 text-white transition-colors'
+                    : 'flex-1 py-1.5 rounded-md text-sm font-medium text-gray-400 hover:text-white transition-colors'">
+                  Disponibles ({{ poolTracks().available.length }})
+                </button>
+                <button (click)="poolSubTab.set('used')"
+                  [class]="poolSubTab() === 'used'
+                    ? 'flex-1 py-1.5 rounded-md text-sm font-medium bg-gray-700 text-white transition-colors'
+                    : 'flex-1 py-1.5 rounded-md text-sm font-medium text-gray-400 hover:text-white transition-colors'">
+                  Déjà utilisés ({{ poolTracks().used.length }})
+                </button>
+              </div>
+              <button (click)="openAddModal(null)"
+                class="bg-gray-700 hover:bg-gray-600 border border-gray-600 text-gray-200 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 shrink-0">
+                <span class="text-base leading-none">+</span> Ajouter
+              </button>
             </div>
 
-            <!-- Disponibles -->
-            <div class="bg-gray-800 rounded-xl p-5 flex flex-col gap-3">
-              <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wide">
-                Disponibles <span class="text-gray-500 font-normal">({{ poolTracks().available.length }})</span>
-              </h2>
-              @if (poolTracks().available.length === 0) {
-                <p class="text-gray-500 text-sm">Aucun morceau disponible.</p>
-              } @else {
-                <ul class="flex flex-col gap-1">
-                  @for (t of poolTracks().available; track t.id) {
-                    <li class="text-sm text-gray-300 px-3 py-1.5 bg-gray-700 rounded-lg">{{ t.artist }} — {{ t.title }}</li>
-                  }
-                </ul>
-              }
-            </div>
+            <!-- Contenu sous-onglet Disponibles -->
+            @if (poolSubTab() === 'available') {
+              <div class="bg-gray-800 rounded-xl p-5 flex flex-col gap-3">
+                @if (poolTracksLoading()) {
+                  <p class="text-gray-500 text-sm">Vérification des previews...</p>
+                } @else if (poolTracks().available.length === 0) {
+                  <p class="text-gray-500 text-sm">Aucun morceau disponible.</p>
+                } @else {
+                  <ul class="flex flex-col gap-1">
+                    @for (t of poolTracks().available; track t.id) {
+                      <li class="text-sm px-3 py-2 bg-gray-700 rounded-lg flex items-center justify-between gap-3">
+                        <span class="text-gray-300">{{ t.artist }} — {{ t.title }}</span>
+                        @if (t.hasPreview === true) {
+                          <span class="shrink-0 text-xs font-medium text-green-400 flex items-center gap-1">
+                            <span>▶</span> Preview OK
+                          </span>
+                        } @else if (t.hasPreview === false) {
+                          <span class="shrink-0 text-xs font-medium text-red-400 flex items-center gap-1">
+                            <span>✕</span> Pas de preview
+                          </span>
+                        }
+                      </li>
+                    }
+                  </ul>
+                }
+              </div>
+            }
 
-            <!-- Utilisés -->
-            <div class="bg-gray-800 rounded-xl p-5 flex flex-col gap-3">
-              <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">
-                Déjà utilisés <span class="font-normal">({{ poolTracks().used.length }})</span>
-              </h2>
-              @if (poolTracks().used.length === 0) {
-                <p class="text-gray-600 text-sm">Aucun morceau utilisé.</p>
-              } @else {
-                <ul class="flex flex-col gap-1">
-                  @for (t of poolTracks().used; track t.id) {
-                    <li class="text-sm text-gray-600 px-3 py-1.5 bg-gray-800 rounded-lg border border-gray-700">{{ t.artist }} — {{ t.title }}</li>
-                  }
-                </ul>
-              }
-            </div>
+            <!-- Contenu sous-onglet Déjà utilisés -->
+            @if (poolSubTab() === 'used') {
+              <div class="bg-gray-800 rounded-xl p-5 flex flex-col gap-3">
+                @if (poolTracks().used.length === 0) {
+                  <p class="text-gray-600 text-sm">Aucun morceau utilisé.</p>
+                } @else {
+                  <ul class="flex flex-col gap-1">
+                    @for (t of poolTracks().used; track t.id) {
+                      <li class="text-sm text-gray-500 px-3 py-2 bg-gray-700/50 rounded-lg border border-gray-700">{{ t.artist }} — {{ t.title }}</li>
+                    }
+                  </ul>
+                }
+              </div>
+            }
 
           </div>
         }
@@ -348,6 +350,93 @@ type Tab = 'dashboard' | 'pool' | 'defis';
 
       }
     </div>
+
+    <!-- Modale ajout au pool -->
+    @if (addModalOpen()) {
+      <div class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+        (click)="closeAddModal()">
+        <div class="bg-gray-800 rounded-2xl p-6 flex flex-col gap-4 w-full max-w-md shadow-2xl"
+          (click)="$event.stopPropagation()">
+
+          <!-- En-tête -->
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wide">Ajouter au pool</h2>
+            <button (click)="closeAddModal()" class="text-gray-500 hover:text-white text-xl leading-none">✕</button>
+          </div>
+
+          <!-- Recherche -->
+          <input type="text" [(ngModel)]="poolSearchQuery" (ngModelChange)="onPoolSearchChange($event)"
+            placeholder="Rechercher artiste ou titre..."
+            class="bg-gray-700 text-white rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-purple-500 text-sm" />
+          @if (poolSearchLoading()) {
+            <p class="text-gray-500 text-xs -mt-2">Recherche...</p>
+          }
+          @if (poolSearchResults().length > 0) {
+            <ul class="bg-gray-700 rounded-lg divide-y divide-gray-600 max-h-44 overflow-y-auto">
+              @for (track of poolSearchResults(); track track.deezerTrackId) {
+                <li (click)="selectModalTrack(track)"
+                  [class]="addModalTrack()?.deezerTrackId === track.deezerTrackId
+                    ? 'px-4 py-2.5 flex justify-between items-center text-sm bg-gray-600 cursor-pointer'
+                    : 'px-4 py-2.5 flex justify-between items-center text-sm hover:bg-gray-600 cursor-pointer'">
+                  <span class="text-gray-200 flex-1 min-w-0 truncate">{{ track.artist }} — {{ track.title }}</span>
+                  <span class="text-purple-400 text-xs shrink-0 ml-4">Choisir</span>
+                </li>
+              }
+            </ul>
+          }
+
+          <!-- Player — visible dès qu'un morceau est sélectionné -->
+          @if (addModalTrack()) {
+            <div class="border-t border-gray-700 pt-4 flex flex-col gap-3">
+              <div class="flex flex-col gap-0.5">
+                <p class="font-semibold text-white text-sm">{{ addModalTrack()!.artist }}</p>
+                <p class="text-xs text-gray-400">{{ addModalTrack()!.title }}</p>
+              </div>
+
+              @if (addModalTrack()!.previewUrl) {
+                <div class="flex items-center gap-4 bg-gray-700 rounded-xl px-4 py-3">
+                  <button (click)="toggleModalPreview()"
+                    class="w-10 h-10 rounded-full bg-purple-600 hover:bg-purple-700 flex items-center justify-center shrink-0 transition-colors text-white text-base">
+                    {{ modalPlaying() ? '⏸' : '▶' }}
+                  </button>
+                  <div class="flex-1 flex flex-col gap-1">
+                    <div class="text-xs text-gray-400">{{ modalPlaying() ? 'Lecture en cours...' : 'Preview 30s' }}</div>
+                    <div class="w-full bg-gray-600 rounded-full h-1">
+                      <div class="bg-purple-500 h-1 rounded-full transition-all" [style.width.%]="modalProgress()"></div>
+                    </div>
+                  </div>
+                </div>
+              } @else {
+                <div class="bg-gray-700 rounded-xl px-4 py-3 text-xs text-red-400 text-center">
+                  Aucune preview disponible pour ce morceau
+                </div>
+              }
+
+              @if (addToPoolStatus() === 'success') {
+                <p class="text-green-400 text-xs text-center">Morceau ajouté au pool.</p>
+              }
+              @if (addToPoolStatus() === 'error') {
+                <p class="text-red-400 text-xs text-center">Impossible d'ajouter ce morceau.</p>
+              }
+
+              <div class="flex gap-2">
+                <button (click)="addToPoolFromModal(false)"
+                  [disabled]="addToPoolStatus() === 'loading'"
+                  class="flex-1 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-lg transition-colors">
+                  @if (addToPoolStatus() === 'loading') { ... } @else { Ajouter }
+                </button>
+                <button (click)="addToPoolFromModal(true)"
+                  [disabled]="addToPoolStatus() === 'loading'"
+                  class="flex-1 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-lg transition-colors">
+                  @if (addToPoolStatus() === 'loading') { ... } @else { Ajouter et fermer }
+                </button>
+              </div>
+            </div>
+          }
+
+        </div>
+      </div>
+    }
   `,
 })
 export class AdminComponent implements OnInit {
@@ -365,9 +454,19 @@ export class AdminComponent implements OnInit {
   activeTab = signal<Tab>('dashboard');
 
   poolTracks = signal<PoolTracksResponse>({ available: [], used: [] });
+  poolSubTab = signal<PoolSubTab>('available');
+  poolTracksLoading = signal(false);
   poolSearchResults = signal<DeezerTrackInfo[]>([]);
   poolSearchLoading = signal(false);
   addToPoolStatus = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
+
+  addModalOpen = signal(false);
+  addModalTrack = signal<DeezerTrackInfo | null>(null);
+  quickAddingId = signal<number | null>(null);
+  modalPlaying = signal(false);
+  modalProgress = signal(0);
+  private modalAudio: HTMLAudioElement | null = null;
+  private modalRafId: number | null = null;
 
   adminStats = signal<AdminStatsResponse | null>(null);
   statsLoading = signal(false);
@@ -485,17 +584,103 @@ export class AdminComponent implements OnInit {
     this.poolSearch$.next(q);
   }
 
-  addToPool(track: DeezerTrackInfo): void {
+  openAddModal(track: DeezerTrackInfo | null): void {
+    this.stopModalAudio();
+    this.addToPoolStatus.set('idle');
+    this.modalProgress.set(0);
+    this.addModalTrack.set(track);
+    this.addModalOpen.set(true);
+  }
+
+  selectModalTrack(track: DeezerTrackInfo): void {
+    if (this.addModalTrack()?.deezerTrackId === track.deezerTrackId) return;
+    this.stopModalAudio();
+    this.addToPoolStatus.set('idle');
+    this.modalProgress.set(0);
+    this.addModalTrack.set(track);
+  }
+
+  closeAddModal(): void {
+    this.stopModalAudio();
+    this.addModalOpen.set(false);
+    this.addModalTrack.set(null);
+    this.addToPoolStatus.set('idle');
+    this.modalProgress.set(0);
+  }
+
+  toggleModalPreview(): void {
+    const track = this.addModalTrack();
+    if (!track?.previewUrl) return;
+
+    if (this.modalPlaying()) {
+      this.modalAudio?.pause();
+      this.modalPlaying.set(false);
+      if (this.modalRafId !== null) { cancelAnimationFrame(this.modalRafId); this.modalRafId = null; }
+      return;
+    }
+
+    if (!this.modalAudio || this.modalAudio.src !== track.previewUrl) {
+      this.stopModalAudio();
+      this.modalAudio = new Audio(track.previewUrl);
+      this.modalAudio.onended = () => {
+        this.modalPlaying.set(false);
+        this.modalProgress.set(100);
+        if (this.modalRafId !== null) { cancelAnimationFrame(this.modalRafId); this.modalRafId = null; }
+      };
+    }
+
+    this.modalAudio.play().then(() => {
+      this.modalPlaying.set(true);
+      const tick = () => {
+        const audio = this.modalAudio;
+        if (!audio || audio.paused) return;
+        const pct = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
+        this.modalProgress.set(pct);
+        this.modalRafId = requestAnimationFrame(tick);
+      };
+      this.modalRafId = requestAnimationFrame(tick);
+    }).catch(() => {});
+  }
+
+  private stopModalAudio(): void {
+    if (this.modalRafId !== null) { cancelAnimationFrame(this.modalRafId); this.modalRafId = null; }
+    if (this.modalAudio) { this.modalAudio.pause(); this.modalAudio.onended = null; this.modalAudio = null; }
+    this.modalPlaying.set(false);
+  }
+
+  quickAddToPool(track: DeezerTrackInfo): void {
+    this.quickAddingId.set(track.deezerTrackId);
+    this.http.post(`${this.base}/tracks`, { deezerTrackId: track.deezerTrackId }).subscribe({
+      next: () => { this.quickAddingId.set(null); this.loadPool(true); },
+      error: () => this.quickAddingId.set(null),
+    });
+  }
+
+  addToPoolFromModal(andClose: boolean): void {
+    const track = this.addModalTrack();
+    if (!track) return;
     this.addToPoolStatus.set('loading');
     this.http.post(`${this.base}/tracks`, { deezerTrackId: track.deezerTrackId }).subscribe({
       next: () => {
         this.addToPoolStatus.set('success');
-        this.poolSearchResults.set([]);
-        this.poolSearchQuery = '';
-        this.loadPool();
-        setTimeout(() => this.addToPoolStatus.set('idle'), 3000);
+        this.loadPool(true);
+        if (andClose) {
+          this.poolSearchResults.set([]);
+          this.poolSearchQuery = '';
+          this.closeAddModal();
+        } else {
+          // On garde la recherche, les résultats et le player intacts
+          setTimeout(() => {
+            if (this.addToPoolStatus() === 'success') this.addToPoolStatus.set('idle');
+          }, 2000);
+        }
       },
-      error: () => this.addToPoolStatus.set('error'),
+      error: () => {
+        this.addToPoolStatus.set('error');
+        setTimeout(() => {
+          if (this.addToPoolStatus() === 'error') this.addToPoolStatus.set('idle');
+        }, 3000);
+      },
     });
   }
 
@@ -506,10 +691,11 @@ export class AdminComponent implements OnInit {
     });
   }
 
-  private loadPool(): void {
+  private loadPool(silent = false): void {
+    if (!silent) this.poolTracksLoading.set(true);
     this.http.get<PoolTracksResponse>(`${this.base}/tracks`).subscribe({
-      next: data => this.poolTracks.set(data),
-      error: () => {},
+      next: data => { this.poolTracks.set(data); this.poolTracksLoading.set(false); },
+      error: () => this.poolTracksLoading.set(false),
     });
   }
 
