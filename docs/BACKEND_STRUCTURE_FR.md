@@ -67,12 +67,15 @@ public sealed class Player
     public Guid AuthToken { get; set; }     // secret porté par le cookie HTTP-only
     public DateTime CreatedAt { get; set; }
     public bool IsDeleted { get; set; }     // soft-delete
+    public int CurrentStreak { get; set; }  // jours consécutifs joués
+    public DateOnly? LastPlayedDate { get; set; }
 }
 ```
 
 - `IX_Players_AuthToken` (unique)
 - `CK_Players_GuestPseudo` : invariant `IsGuest ⇔ Pseudo IS NULL` garanti en BD
 - **Global query filter EF** `!IsDeleted` propagé en cascade sur sessions/answers
+- `CurrentStreak` et `LastPlayedDate` mis à jour dans `StartSession/Handler.cs` à chaque début de partie
 
 ### Track
 
@@ -210,12 +213,13 @@ Résout ou crée un `Player` guest à partir du cookie HTTP-only signé. `SameSi
 | `Auth/Me` | `GET /api/auth/me` | Retourne `{ id, isGuest, pseudo }` du joueur courant (cookie) |
 | `Settings/GetSettings` | `GET /api/settings` | Expose les settings publics (paliers, timer, scores) |
 | `Admin/Login` | `POST /api/admin/login` | Génère un Bearer token admin |
-| `Admin/Tracks/*` | `/api/admin/tracks` | Gestion pool morceaux |
+| `Admin/Tracks/*` | `/api/admin/tracks` | Gestion pool morceaux (`TrackDto.HasPreview` via appel Deezer en parallèle) |
 | `Admin/Challenges/*` | `/api/admin/challenges` | Création défis + recherche Deezer |
 | `Admin/GenerateToday` | `POST /api/admin/generate-today` | Génère le défi du jour à la demande |
 | `Admin/ResetToday` | `DELETE /api/admin/reset-today` | Supprime le défi du jour |
+| `Admin/Stats` | `GET /api/admin/stats` | Dashboard : activité 30j, répartition joueurs, stats par défi |
 | `Deezer/Search` (public) | `GET /api/deezer/search?q=` | Proxy autocomplete Deezer (contourne CORS navigateur) |
-| `ChallengeGeneration` | BackgroundService | Génère le défi quotidien automatiquement à 3h UTC |
+| `ChallengeGeneration` | BackgroundService | Génère le défi quotidien à 3h UTC — filtre les tracks sans preview active |
 
 ## CI
 

@@ -281,6 +281,25 @@ public sealed class SubmitAnswerHandlerTests
     }
 
     [Fact]
+    public async Task Handle_WhenDurationIsZero_ReturnsZeroScore()
+    {
+        // Arrange — skip d'un morceau sans preview
+        await using var db = CreateDbContext();
+        await SeedAsync(db);
+        var command = BuildCommand(duration: 0, wasExtended: false, artist: null, title: null);
+
+        // Act
+        var result = await CreateHandler(db).Handle(command, CancellationToken.None);
+
+        // Assert
+        var response = AssertOk<SubmitAnswerResponse>(result).Value!;
+        response.Score.Should().Be(0);
+        response.ArtistCorrect.Should().BeFalse();
+        response.TitleCorrect.Should().BeFalse();
+        response.ListenedDurationSeconds.Should().Be(0);
+    }
+
+    [Fact]
     public async Task Handle_WhenSessionBelongsToOtherPlayer_ReturnsForbid()
     {
         // Arrange

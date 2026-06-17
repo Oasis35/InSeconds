@@ -41,8 +41,8 @@ src/front/InSeconds.Client/
 │   │   ├── app.routes.ts                  # routes
 │   │   └── app.ts                         # composant racine
 │   ├── environments/
-│   │   ├── environment.ts                 # prod (apiUrl Northflank)
-│   │   └── environment.development.ts     # dev (apiUrl http://localhost:5171)
+│   │   ├── environment.ts                 # prod (apiUrl + appUrl Northflank)
+│   │   └── environment.development.ts     # dev (apiUrl http://localhost:5171, appUrl http://localhost:5173)
 │   └── styles.scss
 ├── angular.json                           # port 5173, fileReplacements dev/prod
 └── package.json
@@ -103,8 +103,7 @@ Méthodes publiques :
 - `extend(nextDurationSeconds)` — prolonge d'un palier (une seule fois)
 - `stop()` — arrête et retourne `{ listenedSeconds, wasExtended }`
 - `reset()` — nettoie tout (appelé dans `ngOnDestroy` de `BlindRoundComponent`)
-- `preloadAll(trackUrls)` — précharge séquentiellement tous les morceaux (`new Audio()` + `preload='auto'`), attend `canplaythrough` avant de passer au suivant, retourne une `Promise<void>`. Appelé par `GameComponent` après `startToday()` — le jeu reste en `loading` jusqu'à la résolution.
-- `preload(trackUrl)` — précharge un seul morceau (utilisé en interne par `preloadAll`)
+- `preloadAll(trackUrls)` — injecte des `<link rel="preload" as="audio">` dans le `<head>` pour chaque URL, non bloquant. Retourne `Promise<void>` immédiatement. Appelé par `GameComponent` après `startToday()`.
 
 ### `DeezerSearchService`
 
@@ -125,9 +124,10 @@ Types importés depuis `game.models.ts` (qui re-exporte `api.generated.ts`).
 
 Orchestre une session complète. États : `loading` → `welcome` → `playing` → `done` (+ `already_played`, `no_challenge`, `error`).
 
-- État `loading` : appel `POST /api/sessions` puis préchargement séquentiel de tous les audios via `audioPlayer.preloadAll()` — l'état `welcome` n'est atteint qu'une fois tous les buffers prêts
-- État `welcome` : page d'accueil avec bouton "Commencer à jouer" — tous les morceaux sont déjà en mémoire, première lecture instantanée
-- Récap final : badge officiel "À écouter sur Deezer" (`DeezerBadgeComponent`) cliquable par morceau
+- État `loading` : appel `POST /api/sessions` puis `audioPlayer.preloadAll()` (non bloquant) — passe directement en `welcome`
+- État `welcome` : page d'accueil avec bouton "Commencer à jouer"
+- Récap final : badge officiel "À écouter sur Deezer" (`DeezerBadgeComponent`) + streak + bouton partage emoji Wordle-style
+- Partage : `🟩🟩 0.5s | 🟨⬜ 2s | 🟥🟥 10s` + score + lien `appUrl/blindtest` (copié dans le presse-papier)
 
 ### `BlindRoundComponent`
 
@@ -148,7 +148,10 @@ SVG inline du badge officiel "À écouter sur Deezer" (blanc sur transparent). I
 
 ### `AdminComponent`
 
-Route `/admin`. Login Bearer token → onglets Pool (ajouter des morceaux via recherche Deezer) et Défis (créer / voir les défis du jour).
+Route `/admin`. Login Bearer token → trois onglets :
+- **Dashboard** : activité 30 jours (barres), répartition joueurs, stats par défi (accordéon expandable)
+- **Pool** : sous-onglets "Disponibles" (avec indicateur preview vert/rouge) / "Déjà utilisés" ; bouton "+ Ajouter" ouvre une popup avec recherche Deezer, lecteur preview 30s, boutons "Ajouter" / "Ajouter et fermer"
+- **Défis** : historique des défis avec les morceaux de chaque défi
 
 ## Intercepteurs
 
