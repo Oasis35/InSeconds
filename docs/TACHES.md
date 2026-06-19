@@ -1,13 +1,13 @@
 # InSeconds — Liste des Tâches
 
-> Mis à jour le 2026-06-17.
+> Mis à jour le 2026-06-19.
 
 ## ✅ Bootstrap projet
 
 - [x] Repo Git, structure `src/back/` + `src/front/` + `docs/`
 - [x] Docker Compose : `inseconds.database` (PostgreSQL) + `inseconds.api` (.NET 10 hot-reload)
 - [x] README bilingue (FR + EN) + `CLAUDE.md`
-- [x] CI GitHub Actions : build back + front + check migrations EF
+- [x] CI GitHub Actions : build back + front + check migrations EF + tests unitaires + tests d'intégration + E2E Playwright
 
 ## ✅ Backend
 
@@ -89,7 +89,8 @@
 
 ## 🚧 Tests
 
-- [ ] Tests d'intégration backend (Testcontainers) — pour les handlers EF Core
+- [x] Tests d'intégration backend (Testcontainers) — `StartSession` + `SubmitAnswer` (7 scénarios : tracks retournées, ordre, anti-rejeu 409, score max, score 0, artiste seul 50%, palier court > long, 404, double soumission 409)
+- [ ] Tests d'intégration supplémentaires (admin endpoints, stats, génération de défi)
 - [ ] Tests front Karma/Jasmine (`AudioPlayerService` — dont `preloadAll`, `GameService`)
 - [x] Tests E2E Playwright (9 scénarios : happy path 3 morceaux, écran déjà joué, pas de défi, partage, scoring)
 

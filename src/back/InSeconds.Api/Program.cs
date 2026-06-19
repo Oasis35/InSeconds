@@ -251,3 +251,6 @@ static string BuildNpgsqlConnectionString(string uri)
     var db = u.AbsolutePath.TrimStart('/').Split('?')[0];
     return $"Host={u.Host};Port={u.Port};Database={db};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
 }
+
+// Rend Program accessible à WebApplicationFactory dans les tests d'intégration
+public partial class Program { }

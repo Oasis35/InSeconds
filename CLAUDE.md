@@ -28,9 +28,11 @@ InSeconds/
 │                              # ⚠️ certains détails sont obsolètes — vérifier le code
 ├── src/
 │   ├── back/
-│   │   ├── InSeconds.slnx     # solution .NET (FORMAT .slnx OBLIGATOIRE)
-│   │   ├── global.json        # rollForward: latestFeature sur .NET 10
-│   │   └── InSeconds.Api/     # web API
+│   │   ├── InSeconds.slnx              # solution .NET (FORMAT .slnx OBLIGATOIRE)
+│   │   ├── global.json                 # rollForward: latestFeature sur .NET 10
+│   │   ├── InSeconds.Api/              # web API
+│   │   ├── InSeconds.Api.UnitTests/    # tests unitaires xUnit (ScoreCalculator, TextNormalizer, SettingsService)
+│   │   └── InSeconds.Api.IntegrationTests/ # tests d'intégration (Testcontainers + WebApplicationFactory)
 │   └── front/
 │       └── InSeconds.Client/  # app Angular
 └── README.md / README.fr.md
@@ -180,6 +182,12 @@ dotnet ef database update
 # Build .NET
 dotnet build src/back/InSeconds.slnx
 
+# Lancer les tests unitaires
+dotnet test src/back/InSeconds.Api.UnitTests
+
+# Lancer les tests d'intégration (nécessite Docker)
+dotnet test src/back/InSeconds.Api.IntegrationTests
+
 # Recréer les conteneurs (si docker compose restart pose souci, ex helper VS injecté)
 docker compose down && docker compose up -d
 
@@ -205,16 +213,17 @@ Workflow `.github/workflows/ci.yml`, déclenché sur **push toutes branches + PR
 - **Job `back`** : restore + `dotnet build InSeconds.slnx --configuration Release` + `dotnet ef migrations has-pending-model-changes` (fail si une modif `Domain/` ou `Configurations/` n'a pas de migration associée)
 - **Job `unit-tests`** : `dotnet test` sur `InSeconds.Api.UnitTests`
 - **Job `front`** : `npm ci` + `npm run build` (prod) sur `src/front/InSeconds.Client/`
+- **Job `integration-tests`** : tests d'intégration backend (dépend de `back`). Testcontainers crée un conteneur PostgreSQL real ephémère, `WebApplicationFactory<Program>` monte l'app in-memory en mode `Testing`, Respawn truncate les tables entre les tests. Build en **Debug** (pas Release).
 - **Job `e2e`** : tests Playwright E2E (dépend de `back` + `unit-tests` + `front`). Tourne sur `ubuntu-latest` avec un service PostgreSQL (base `inseconds_e2e`). Lance le back en mode Testing sur le port 5171 avec `--no-launch-profile`, attend que `/api/settings` réponde, démarre Angular avec `ng serve --configuration e2e-ci`, puis exécute `npx playwright test`. Upload le rapport HTML en artifact en cas d'échec.
 
-Runners Ubuntu, ~5-7 min par run (jobs `back`/`front` en parallèle, `e2e` séquentiel après). Setup .NET via `global-json-file: src/back/global.json` pour respecter le pin SDK du projet.
+Runners Ubuntu, ~5-7 min par run (jobs `back`/`front`/`integration-tests` en parallèle, `e2e` séquentiel après). Setup .NET via `global-json-file: src/back/global.json` pour respecter le pin SDK du projet.
 
 ### Règles importantes pour la CI
 
 - **Toujours regénérer la migration EF** après une modif d'entité ou de configuration, sinon le job `back` casse
 - **Ne pas committer si le build front prod échoue** localement (`npm run build` doit passer)
 - **Tests E2E** : le job `e2e` lance Playwright contre un back en mode `Testing` (FakeDeezerHandler + seed auto + endpoint `/api/e2e/reset`). Temps ~4-6 min.
-- **Pas de Docker / docker compose en CI pour les tests unitaires** — pour des tests d'intégration plus poussés, préférer **Testcontainers** (tests autonomes, marchent local + CI sans YAML supplémentaire) plutôt qu'ajouter `services:` dans le workflow
+- **Tests d'intégration** : le job `integration-tests` utilise Testcontainers (Docker requis sur le runner — GitHub Actions ubuntu-latest l'a par défaut). Pas de `services:` YAML nécessaire. Les tables `Settings`, `Tracks`, `DailyChallenges`, `DailyChallengeTracks` sont exclues du reset Respawn (données de référence du seed).
 - Si un job casse sur du formatage / lint (futur `dotnet format` ou `ng lint`), corriger en local avant de re-pusher — ne pas désactiver le check
 - Repo sur `Oasis35/InSeconds` (GitHub). Tier gratuit : 2000 min/mois si privé, illimité si public
 
@@ -236,6 +245,8 @@ Runners Ubuntu, ~5-7 min par run (jobs `back`/`front` en parallèle, `e2e` séqu
 8. **`AppDbConfigurationProvider` silencieux si DB absente** — le `catch` dans `Load()` est intentionnel : en test (in-memory EF) ou lors de la première migration, la BD peut ne pas exister. Les initialiseurs de propriété d'`AppSettings` servent alors de fallback.
 9. **E2E — `launchSettings.json` overrides env vars** — `dotnet run` sans `--no-launch-profile` charge le profil `http` qui force `ASPNETCORE_ENVIRONMENT=Development`, ignorant la variable CI. Toujours utiliser `--no-launch-profile` pour les runs E2E/Testing.
 10. **E2E — proxy Angular port** — la config `e2e` (locale) pointe vers le back sur `:5172`, la config `e2e-ci` (CI) vers `:5171`. Ne pas confondre les deux.
+11. **Tests d'intégration — Docker requis** — Testcontainers crée un conteneur PostgreSQL réel. Docker doit tourner localement (`docker info` doit répondre). En CI, GitHub Actions `ubuntu-latest` fournit Docker nativement — pas de `services:` YAML à configurer. xUnit v3 : `IAsyncLifetime.DisposeAsync()` retourne `ValueTask`, pas `Task` (implémentation explicite de l'interface obligatoire).
+12. **Tests d'intégration — cookie cross-test** — `HttpClient` de `WebApplicationFactory` gère les cookies automatiquement (CookieContainer). Chaque `factory.ResetAsync()` vide les sessions/players, mais le cookie du test précédent peut être réutilisé si le player n'est pas supprimé. Le reset Respawn supprime les players, donc le prochain appel `POST /api/sessions` crée un nouveau guest.
 
 ## Déjà implémenté (non exhaustif)
 
@@ -268,7 +279,8 @@ Runners Ubuntu, ~5-7 min par run (jobs `back`/`front` en parallèle, `e2e` séqu
 - **Streak joueur** : `Player.CurrentStreak` + `Player.LastPlayedDate` (migration `PlayerStreak`), mis à jour dans `StartSession/Handler.cs`, affiché sur l'écran récap final et l'écran "déjà joué"
 - **Morceaux sans preview** : `SubmitAnswerValidator` accepte `ListenedDurationSeconds = 0` (skip), `BlindRoundComponent` affiche un bouton "Passer" si `previewUrl` est vide. `DailyChallengeGenerator` filtre les tracks sans preview active (appel Deezer) avant sélection.
 - **`GET /api/admin/stats`** — dashboard admin : activité 30 jours, répartition joueurs guests/inscrits/actifs, stats par défi (médiane, moy., min/max score, taux artiste/titre par morceau)
-- **Page admin — Pool** : sous-onglets "Disponibles" / "Déjà utilisés" ; indicateur preview (vert/rouge) sur chaque track disponible via `TrackDto.HasPreview` (appel Deezer en parallèle dans `GetTracksHandler`) ; popup d'ajout avec recherche Deezer + lecteur preview 30s + boutons "Ajouter" / "Ajouter et fermer"
+- **Page admin — Pool** : sous-onglets "Disponibles" / "Déjà utilisés" ; indicateur preview (vert/rouge) sur chaque track disponible via `TrackDto.HasPreview` (appel Deezer en parallèle dans `GetTracksHandler`) ; popup d'ajout avec recherche Deezer + lecteur preview 30s + boutons "Ajouter" / "Ajouter et fercer"
+- **Tests d'intégration backend** (`InSeconds.Api.IntegrationTests`) : Testcontainers.PostgreSql + `WebApplicationFactory<Program>` + Respawn. 7 tests couvrant `StartSession` (tracks retournées, ordre, anti-rejeu 409) et `SubmitAnswer` (score max, score 0, scoring partiel artiste seul, palier court > long, track introuvable 404, double soumission 409). Tournent en mode `Testing` (FakeDeezerHandler + seed auto). Job CI `integration-tests` séparé.
 - **Partage score** : bouton "🔗 Partager mon score" sur l'écran récap — copie dans le presse-papier un résumé emoji Wordle-style (`🟩🟩 0.5s | 🟨⬜ 2s`) + lien `/blindtest`
 - **Route `/blindtest`** — alias de `/`, utilisée dans les liens de partage et les balises Open Graph
 - **Open Graph + Twitter Card** dans `index.html` — balises méta pour le partage WhatsApp/Signal/Twitter (sans image)
@@ -279,6 +291,7 @@ Runners Ubuntu, ~5-7 min par run (jobs `back`/`front` en parallèle, `e2e` séqu
 
 ## À venir (pas encore implémenté)
 
+- Tests d'intégration supplémentaires (admin endpoints, stats, génération de défi quotidien)
 - Tests mobiles (iOS Safari, Android Chrome)
 - Polish : charte graphique, messages d'erreur, accessibilité, RGPD
 - Sécurité avant passage public du repo : externaliser le mot de passe PostgreSQL de `appsettings.json` et `docker-compose.yml`

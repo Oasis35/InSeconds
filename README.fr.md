@@ -72,8 +72,10 @@ InSeconds/
 ├── docs/                      # Notes d'architecture (FR)
 ├── src/
 │   ├── back/
-│   │   ├── InSeconds.slnx     # Solution .NET (format .slnx)
-│   │   └── InSeconds.Api/     # Web API (vertical slice)
+│   │   ├── InSeconds.slnx              # Solution .NET (format .slnx)
+│   │   ├── InSeconds.Api/              # Web API (vertical slice)
+│   │   ├── InSeconds.Api.UnitTests/    # Tests unitaires xUnit (pas de BD)
+│   │   └── InSeconds.Api.IntegrationTests/ # Tests d'intégration xUnit (Testcontainers)
 │   └── front/
 │       └── InSeconds.Client/  # Application Angular
 ├── docker-compose.yml
@@ -85,8 +87,9 @@ InSeconds/
 Workflow GitHub Actions sur chaque push et chaque PR vers `main` :
 
 - **Backend** — build Release + `dotnet ef migrations has-pending-model-changes`
-- **Tests unitaires** — `dotnet test` (xUnit, pas de BD requise)
+- **Tests unitaires** — `dotnet test` sur `InSeconds.Api.UnitTests` (xUnit, pas de BD requise)
 - **Frontend** — `npm ci` + build production
+- **Tests d'intégration** — `dotnet test` sur `InSeconds.Api.IntegrationTests` (Testcontainers crée un conteneur PostgreSQL réel, pas de YAML supplémentaire)
 - **E2E** — tests Playwright (Chromium) contre un vrai backend en mode `Testing` avec un service PostgreSQL — s'exécute après les trois jobs précédents
 
 Les runs obsolètes sont annulés automatiquement.
@@ -97,10 +100,19 @@ Les runs obsolètes sont annulés automatiquement.
 
 ```bash
 cd src/back
-dotnet test InSeconds.slnx
+dotnet test InSeconds.Api.UnitTests
 ```
 
 Couvre `ScoreCalculator`, `TextNormalizer`, `SettingsService` et autres services Common. Pas de base de données nécessaire (logique pure).
+
+### Tests d'intégration (backend)
+
+```bash
+cd src/back
+dotnet test InSeconds.Api.IntegrationTests
+```
+
+Nécessite Docker (Testcontainers démarre un vrai conteneur PostgreSQL). 7 tests couvrant `StartSession` et `SubmitAnswer` : tracks retournées, ordre, anti-rejeu (409), scoring (correct, faux, artiste seul, palier court vs long), track inexistante (404), double soumission (409).
 
 ### Tests E2E (Playwright)
 
