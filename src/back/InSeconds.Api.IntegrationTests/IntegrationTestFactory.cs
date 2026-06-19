@@ -1,10 +1,9 @@
+using System.Net.Http.Headers;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Npgsql;
-using Respawn;
 using Testcontainers.PostgreSql;
 
 namespace InSeconds.Api.IntegrationTests;
@@ -17,9 +16,6 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>, IAsyncLife
         .WithPassword("inseconds_test")
         .Build();
 
-    private Respawner _respawner = null!;
-    private NpgsqlConnection _connection = null!;
-
     public HttpClient Client { get; private set; } = null!;
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -28,7 +24,6 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>, IAsyncLife
 
         builder.ConfigureServices(services =>
         {
-            // Remplace la connection string par celle du container
             var descriptor = services.SingleOrDefault(
                 d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
             if (descriptor != null)
@@ -38,7 +33,6 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>, IAsyncLife
                 options.UseNpgsql(_postgres.GetConnectionString()));
         });
 
-        // Override aussi la connection string dans IConfiguration pour AppDbConfigurationProvider
         builder.UseSetting(
             "ConnectionStrings:DefaultConnection",
             _postgres.GetConnectionString());
@@ -53,23 +47,19 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>, IAsyncLife
         // Déclenche le startup (migration + seed) via le premier appel HTTP
         var resp = await Client.GetAsync("/api/settings");
         resp.EnsureSuccessStatusCode();
-
-        _connection = new NpgsqlConnection(_postgres.GetConnectionString());
-        await _connection.OpenAsync();
-
-        _respawner = await Respawner.CreateAsync(_connection, new RespawnerOptions
-        {
-            DbAdapter = DbAdapter.Postgres,
-            TablesToIgnore = ["__EFMigrationsHistory", "Settings", "Tracks", "DailyChallenges", "DailyChallengeTracks"],
-        });
     }
 
-    public async Task ResetAsync() => await _respawner.ResetAsync(_connection);
+    // Purge complète + re-seed : remet la base dans l'état initial du seed avant chaque test
+    public async Task ResetAsync()
+    {
+        var req = new HttpRequestMessage(HttpMethod.Post, "/api/e2e/reseed");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "admin-token");
+        var resp = await Client.SendAsync(req);
+        resp.EnsureSuccessStatusCode();
+    }
 
-    // xUnit v3 : IAsyncLifetime.DisposeAsync retourne ValueTask
     async Task IAsyncLifetime.DisposeAsync()
     {
-        await _connection.DisposeAsync();
         await _postgres.DisposeAsync();
         await base.DisposeAsync();
     }

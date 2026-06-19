@@ -94,10 +94,10 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
         var body = await resp.Content.ReadFromJsonAsync<GetTracksResponse>();
         Assert.NotNull(body);
-        // Le seed a 9 tracks dont 6 utilisées (défis J-2 et J-1) et 3 disponibles (J-0)
-        // Après reset Respawn : les sessions/answers sont vidées mais tracks/challenges restent
-        Assert.NotEmpty(body.Available);
-        Assert.NotEmpty(body.Used);
+        // Le seed a 9 tracks : 6 dans des défis passés (J-2, J-1) = Used, 3 dans le défi du jour = Used aussi
+        // Toutes les tracks sont utilisées dans un défi, aucune disponible
+        Assert.Empty(body.Available);
+        Assert.Equal(9, body.Used.Count);
     }
 
     // ── GetChallenges ─────────────────────────────────────────────────────────
@@ -118,7 +118,7 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
         var body = await resp.Content.ReadFromJsonAsync<List<ChallengeDto>>();
         Assert.NotNull(body);
-        Assert.Equal(3, body.Count); // seed crée J-2, J-1, aujourd'hui
+        Assert.Equal(3, body.Count); // seed crée exactement J-2, J-1, aujourd'hui
         Assert.All(body, c => Assert.Equal(3, c.Tracks.Count));
     }
 
