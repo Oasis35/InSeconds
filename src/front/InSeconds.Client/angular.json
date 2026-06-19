@@ -59,6 +59,17 @@
                   "with": "src/environments/environment.development.ts"
                 }
               ]
+            },
+            "e2e": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.e2e.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -76,6 +87,14 @@
             },
             "development": {
               "buildTarget": "InSeconds.Client:build:development"
+            },
+            "e2e": {
+              "buildTarget": "InSeconds.Client:build:e2e",
+              "proxyConfig": "proxy.e2e.conf.json"
+            },
+            "e2e-ci": {
+              "buildTarget": "InSeconds.Client:build:e2e",
+              "proxyConfig": "proxy.e2e.ci.conf.json"
             }
           },
           "defaultConfiguration": "development"

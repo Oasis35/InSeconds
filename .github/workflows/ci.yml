@@ -82,3 +82,130 @@ jobs:
       - name: Build (production)
         working-directory: src/front/InSeconds.Client
         run: npm run build
+
+  integration-tests:
+    name: Backend (integration tests)
+    runs-on: ubuntu-latest
+    needs: [back]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: src/back/global.json
+
+      - name: Restore
+        working-directory: src/back
+        run: dotnet restore InSeconds.slnx
+
+      - name: Build (Debug)
+        working-directory: src/back
+        run: dotnet build InSeconds.slnx --configuration Debug --no-restore
+
+      - name: Run integration tests
+        working-directory: src/back
+        run: dotnet test InSeconds.Api.IntegrationTests --no-build --configuration Debug --logger "console;verbosity=normal"
+
+  e2e:
+    name: E2E tests (Playwright)
+    runs-on: ubuntu-latest
+    needs: [back, unit-tests, front]
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: inseconds
+          POSTGRES_PASSWORD: inseconds_e2e
+          POSTGRES_DB: inseconds_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U inseconds"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: src/back/global.json
+
+      - name: Restore .NET
+        working-directory: src/back
+        run: dotnet restore InSeconds.slnx
+
+      - name: Build .NET (Debug)
+        working-directory: src/back
+        run: dotnet build InSeconds.slnx --configuration Debug --no-restore
+
+      - name: Start backend
+        working-directory: src/back/InSeconds.Api
+        run: dotnet run --no-build --no-launch-profile --configuration Debug --urls http://localhost:5171 > /tmp/backend.log 2>&1 &
+        env:
+          ASPNETCORE_ENVIRONMENT: Testing
+          ConnectionStrings__DefaultConnection: >-
+            Host=localhost;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=inseconds_e2e
+          AdminPassword: e2e-admin-password
+          E2E_FRONT_PORT: '5173'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: src/front/InSeconds.Client/package-lock.json
+
+      - name: Install npm dependencies
+        working-directory: src/front/InSeconds.Client
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: src/front/InSeconds.Client
+        run: npx playwright install --with-deps chromium
+
+      - name: Start Angular dev server
+        working-directory: src/front/InSeconds.Client
+        run: npx ng serve --configuration e2e-ci --port 5173 &
+
+      - name: Wait for backend
+        run: |
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:5171/api/settings && break
+            echo "Waiting for backend ($i/60)..."
+            sleep 3
+          done
+
+      - name: Wait for frontend
+        run: |
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:5173 && break
+            echo "Waiting for frontend ($i/60)..."
+            sleep 3
+          done
+
+      - name: Run E2E tests
+        working-directory: src/front/InSeconds.Client
+        run: npx playwright test
+        env:
+          CI: 'true'
+
+      - name: Diagnostics (on failure)
+        if: failure()
+        run: |
+          echo "=== Backend logs ==="
+          cat /tmp/backend.log || true
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: src/front/InSeconds.Client/playwright-report/
+          retention-days: 7

@@ -72,8 +72,10 @@ InSeconds/
 ├── docs/                      # Architecture notes (FR)
 ├── src/
 │   ├── back/
-│   │   ├── InSeconds.slnx     # .NET solution (.slnx format)
-│   │   └── InSeconds.Api/     # Web API (vertical slice architecture)
+│   │   ├── InSeconds.slnx              # .NET solution (.slnx format)
+│   │   ├── InSeconds.Api/              # Web API (vertical slice architecture)
+│   │   ├── InSeconds.Api.UnitTests/    # xUnit unit tests (no DB)
+│   │   └── InSeconds.Api.IntegrationTests/ # xUnit integration tests (Testcontainers)
 │   └── front/
 │       └── InSeconds.Client/  # Angular app
 ├── docker-compose.yml
@@ -85,9 +87,54 @@ InSeconds/
 GitHub Actions workflow on every push and every PR to `main`:
 
 - **Backend** — build in Release + `dotnet ef migrations has-pending-model-changes`
+- **Unit tests** — `dotnet test` on `InSeconds.Api.UnitTests` (xUnit, no DB required)
 - **Frontend** — `npm ci` + production build
+- **Integration tests** — `dotnet test` on `InSeconds.Api.IntegrationTests` (Testcontainers spins up a real PostgreSQL container, no extra YAML needed)
+- **E2E** — Playwright tests (Chromium) against a real backend in `Testing` mode with a PostgreSQL service — runs after the three jobs above pass
 
-Stale runs are cancelled automatically. No Docker/DB in CI yet — integration tests will use Testcontainers when added.
+Stale runs are cancelled automatically.
+
+## Testing
+
+### Unit tests (backend)
+
+```bash
+cd src/back
+dotnet test InSeconds.Api.UnitTests
+```
+
+Covers `ScoreCalculator`, `TextNormalizer`, `SettingsService` and other Common services. No database required (pure logic).
+
+### Integration tests (backend)
+
+```bash
+cd src/back
+dotnet test InSeconds.Api.IntegrationTests
+```
+
+Requires Docker (Testcontainers starts a real PostgreSQL container). 7 tests covering `StartSession` and `SubmitAnswer`: tracks returned, ordering, anti-replay (409), scoring (correct, wrong, artist-only, short vs long tier), track not found (404), duplicate submission (409).
+
+### E2E tests (Playwright)
+
+```bash
+# One command — resets Docker, starts backend in Testing mode, runs all tests
+powershell -File scripts/run-e2e.ps1
+```
+
+Or if the backend is already running in Testing mode:
+
+```bash
+cd src/front/InSeconds.Client
+npm run e2e        # headless
+npm run e2e:ui     # interactive Playwright UI
+```
+
+9 tests cover: full happy path (3 tracks), already-played screen (409), no-challenge screen (503), share button (clipboard), and scoring (short duration > long, wrong answer = 0, partial artist-only = 50%).
+
+The backend runs in `ASPNETCORE_ENVIRONMENT=Testing` which activates:
+- `FakeDeezerHandler` — returns a local `test-audio.mp3` instead of calling Deezer
+- `PurgeSeedData` + `SeedDevelopmentData` on every startup
+- `DELETE /api/e2e/reset` endpoint for test isolation
 
 ## Documentation
 
@@ -99,4 +146,4 @@ Stale runs are cancelled automatically. No Docker/DB in CI yet — integration t
 
 ## License
 
-Private project, no public license yet.
+[CC BY-NC 4.0](LICENSE) — free to use and adapt, non-commercial only.

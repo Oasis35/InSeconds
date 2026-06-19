@@ -300,9 +300,29 @@ interface RoundResult {
         </div>
       }
 
-      <footer class="flex justify-center py-3 mt-auto">
-        <a routerLink="/admin" class="text-xs transition-colors" style="color:#1a1a2e"
-           onmouseenter="this.style.color='#334155'" onmouseleave="this.style.color='#1a1a2e'">admin</a>
+      <footer class="flex justify-center items-center gap-4 py-3 mt-auto">
+        <a routerLink="/admin" class="transition-colors" style="color:#334155"
+           onmouseenter="this.style.color='#64748b'" onmouseleave="this.style.color='#334155'" title="Admin">
+          <svg fill="currentColor" width="14" height="14" viewBox="0 0 574.65 574.65" xmlns="http://www.w3.org/2000/svg">
+            <path d="M424.94,217.315v-79.656C424.94,61.755,363.185,0,287.291,0S149.658,61.739,149.658,137.623v79.742c-41.326,28.563-68.46,76.238-68.46,130.287v162.264c0,35.748,28.986,64.734,64.733,64.734h282.787c35.748,0,64.734-28.986,64.734-64.734V347.652C493.456,293.574,466.306,245.892,424.94,217.315z M322.136,421.457v49.314c0,19.221-15.577,34.811-34.808,34.811c-19.23,0-34.829-15.59-34.829-34.83v-49.283c-14.155-10.627-23.441-27.385-23.441-46.447c0-32.174,26.102-58.254,58.252-58.254c32.173,0,58.255,26.084,58.255,58.254C345.563,394.084,336.276,410.832,322.136,421.457z M348.241,189.969c-4.344-0.357-8.707-0.665-13.145-0.665h-95.538c-4.456,0-8.837,0.308-13.201,0.665v-52.346c0-33.595,27.338-60.922,60.933-60.922c33.612,0,60.95,27.348,60.95,60.959V189.969L348.241,189.969z"/>
+          </svg>
+        </a>
+        <span style="color:#1e293b">·</span>
+        <a href="https://github.com/Oasis35/InSeconds" target="_blank" rel="noopener noreferrer"
+           class="transition-colors" style="color:#334155"
+           onmouseenter="this.style.color='#64748b'" onmouseleave="this.style.color='#334155'" title="Voir le code source">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+        </a>
+        <span style="color:#1e293b">·</span>
+        <a href="https://www.linkedin.com/in/crageau/" target="_blank" rel="noopener noreferrer"
+           class="transition-colors" style="color:#334155"
+           onmouseenter="this.style.color='#64748b'" onmouseleave="this.style.color='#334155'" title="Mon profil">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+          </svg>
+        </a>
       </footer>
 
     </main>
