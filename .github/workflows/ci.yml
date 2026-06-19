@@ -122,7 +122,7 @@ jobs:
 
       - name: Start backend
         working-directory: src/back/InSeconds.Api
-        run: dotnet run --no-build --no-launch-profile --configuration Debug --urls http://localhost:5171 &
+        run: dotnet run --no-build --no-launch-profile --configuration Debug --urls http://localhost:5171 > /tmp/backend.log 2>&1 &
         env:
           ASPNETCORE_ENVIRONMENT: Testing
           ConnectionStrings__DefaultConnection: >-
@@ -168,19 +168,18 @@ jobs:
       - name: Diagnostics
         if: always()
         run: |
-          echo "=== /api/settings ==="
-          curl -sv http://localhost:5171/api/settings 2>&1 || true
-          echo "=== POST /api/sessions/start ==="
-          curl -sv -X POST http://localhost:5171/api/sessions/start -H "Content-Type: application/json" 2>&1 || true
+          echo "=== Backend logs ==="
+          cat /tmp/backend.log || true
+          echo "=== POST /api/sessions ==="
+          curl -sv -X POST http://localhost:5171/api/sessions -H "Content-Type: application/json" 2>&1 || true
           echo "=== /api/e2e/reset ==="
-          curl -sv -X DELETE http://localhost:5171/api/e2e/reset -H "Authorization: Bearer e2e-admin-password" 2>&1 || true
+          curl -sv -X DELETE http://localhost:5171/api/e2e/reset -H "Authorization: Bearer admin-token" 2>&1 || true
 
       - name: Run E2E tests
         working-directory: src/front/InSeconds.Client
         run: npx playwright test
         env:
           CI: 'true'
-          E2E_ADMIN_PASSWORD: e2e-admin-password
 
       - name: Upload Playwright report
         if: always()
