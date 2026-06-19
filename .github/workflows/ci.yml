@@ -151,18 +151,18 @@ jobs:
 
       - name: Wait for backend
         run: |
-          for i in $(seq 1 30); do
-            curl -sf http://localhost:5171/health && break
-            echo "Waiting for backend ($i/30)..."
-            sleep 2
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:5171/api/settings && break
+            echo "Waiting for backend ($i/60)..."
+            sleep 3
           done
 
       - name: Wait for frontend
         run: |
-          for i in $(seq 1 30); do
+          for i in $(seq 1 60); do
             curl -sf http://localhost:5173 && break
-            echo "Waiting for frontend ($i/30)..."
-            sleep 2
+            echo "Waiting for frontend ($i/60)..."
+            sleep 3
           done
 
       - name: Run E2E tests
