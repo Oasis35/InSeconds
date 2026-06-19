@@ -165,21 +165,17 @@ jobs:
             sleep 3
           done
 
-      - name: Diagnostics
-        if: always()
-        run: |
-          echo "=== Backend logs ==="
-          cat /tmp/backend.log || true
-          echo "=== POST /api/sessions ==="
-          curl -sv -X POST http://localhost:5171/api/sessions -H "Content-Type: application/json" 2>&1 || true
-          echo "=== /api/e2e/reset ==="
-          curl -sv -X DELETE http://localhost:5171/api/e2e/reset -H "Authorization: Bearer admin-token" 2>&1 || true
-
       - name: Run E2E tests
         working-directory: src/front/InSeconds.Client
         run: npx playwright test
         env:
           CI: 'true'
+
+      - name: Diagnostics (on failure)
+        if: failure()
+        run: |
+          echo "=== Backend logs ==="
+          cat /tmp/backend.log || true
 
       - name: Upload Playwright report
         if: always()
