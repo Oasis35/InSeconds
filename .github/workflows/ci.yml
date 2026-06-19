@@ -122,7 +122,7 @@ jobs:
 
       - name: Start backend
         working-directory: src/back/InSeconds.Api
-        run: dotnet run --no-build --urls http://localhost:5171 &
+        run: dotnet run --no-build --no-launch-profile --configuration Debug --urls http://localhost:5171 &
         env:
           ASPNETCORE_ENVIRONMENT: Testing
           ConnectionStrings__DefaultConnection: >-
