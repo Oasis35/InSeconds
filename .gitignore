@@ -140,6 +140,10 @@ libpeerconnection.log
 testem.log
 typings/
 
+# Playwright — artefacts de run (résultats, rapports, traces)
+test-results/
+playwright-report/
+
 # ---------------------------------------------------------------
 # Secrets / config locale
 # ---------------------------------------------------------------

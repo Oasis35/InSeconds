@@ -19,6 +19,7 @@ using InSeconds.Api.Features.Stats.Today;
 using InSeconds.Api.Features.ChallengeGeneration;
 using InSeconds.Api.Features.Sessions.StartSession;
 using InSeconds.Api.Features.Sessions.SubmitAnswer;
+using InSeconds.Api.Features.E2E;
 using InSeconds.Api.Features.Settings.GetSettings;
 using InSeconds.Api.Infrastructure.Deezer;
 using InSeconds.Api.Infrastructure.Persistence;
@@ -72,10 +73,15 @@ builder.Services.AddHostedService<GenerateDailyChallengeService>();
 builder.Services.AddSingleton<ScoreCalculator>();
 builder.Services.AddSingleton<TextNormalizer>();
 
-builder.Services.AddHttpClient<DeezerClient>(client =>
+var deezerHttpBuilder = builder.Services.AddHttpClient<DeezerClient>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["Deezer:BaseUrl"] ?? "https://api.deezer.com");
 });
+
+if (builder.Environment.IsEnvironment("Testing"))
+{
+    deezerHttpBuilder.ConfigurePrimaryHttpMessageHandler(() => new FakeDeezerHandler());
+}
 
 builder.Services.AddDataProtection().SetApplicationName("InSeconds");
 builder.Services.AddScoped<ICookieAuthService>(sp => new CookieAuthService(
@@ -92,8 +98,11 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.Migrate();
 
-    if (app.Environment.IsDevelopment())
+    if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
     {
+        if (app.Environment.IsEnvironment("Testing"))
+            PurgeSeedData(db);
+
         var seeded = SeedDevelopmentData(db);
         if (seeded)
         {
@@ -130,7 +139,22 @@ app.MapDeezerSearch();
 app.MapDeezerSearchPublic();
 app.MapCreateChallenge();
 
+if (app.Environment.IsEnvironment("Testing"))
+{
+    app.MapE2EReset();
+}
+
 app.Run();
+
+static void PurgeSeedData(ApplicationDbContext db)
+{
+    db.GameSessionAnswers.ExecuteDelete();
+    db.GameSessions.ExecuteDelete();
+    db.Players.ExecuteDelete();
+    db.DailyChallengeTracks.ExecuteDelete();
+    db.DailyChallenges.ExecuteDelete();
+    db.Tracks.ExecuteDelete();
+}
 
 static bool SeedDevelopmentData(ApplicationDbContext db)
 {
