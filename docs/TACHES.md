@@ -89,9 +89,9 @@
 
 ## 🚧 Tests
 
-- [ ] Tests d'intégration back (Testcontainers) : flow StartSession → SubmitAnswer × N
+- [ ] Tests d'intégration backend (Testcontainers) — pour les handlers EF Core
 - [ ] Tests front Karma/Jasmine (`AudioPlayerService` — dont `preloadAll`, `GameService`)
-- [ ] Tests E2E Playwright (flux complet 1 partie)
+- [x] Tests E2E Playwright (9 scénarios : happy path 3 morceaux, écran déjà joué, pas de défi, partage, scoring)
 
 ## 🚧 Mobile
 

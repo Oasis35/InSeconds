@@ -82,12 +82,47 @@ InSeconds/
 
 ## Intégration continue
 
-Workflow GitHub Actions à chaque push et chaque PR vers `main` :
+Workflow GitHub Actions sur chaque push et chaque PR vers `main` :
 
-- **Backend** — build en Release + `dotnet ef migrations has-pending-model-changes`
-- **Frontend** — `npm ci` + build de production
+- **Backend** — build Release + `dotnet ef migrations has-pending-model-changes`
+- **Tests unitaires** — `dotnet test` (xUnit, pas de BD requise)
+- **Frontend** — `npm ci` + build production
+- **E2E** — tests Playwright (Chromium) contre un vrai backend en mode `Testing` avec un service PostgreSQL — s'exécute après les trois jobs précédents
 
-Les runs obsolètes sont annulés automatiquement. Pas de Docker/BD en CI pour l'instant — les tests d'intégration utiliseront Testcontainers quand ils arriveront.
+Les runs obsolètes sont annulés automatiquement.
+
+## Tests
+
+### Tests unitaires (backend)
+
+```bash
+cd src/back
+dotnet test InSeconds.slnx
+```
+
+Couvre `ScoreCalculator`, `TextNormalizer`, `SettingsService` et autres services Common. Pas de base de données nécessaire (logique pure).
+
+### Tests E2E (Playwright)
+
+```bash
+# Une commande — reset Docker, démarre le backend en mode Testing, lance tous les tests
+powershell -File scripts/run-e2e.ps1
+```
+
+Ou si le backend tourne déjà en mode Testing :
+
+```bash
+cd src/front/InSeconds.Client
+npm run e2e        # headless
+npm run e2e:ui     # UI interactive Playwright
+```
+
+9 tests couvrent : happy path complet (3 morceaux), écran "déjà joué" (409), écran "pas de défi" (503), bouton partage (presse-papier), et scoring (palier court > long, mauvaise réponse = 0, scoring partiel artiste seul = 50 %).
+
+Le backend tourne en `ASPNETCORE_ENVIRONMENT=Testing` qui active :
+- `FakeDeezerHandler` — retourne un `test-audio.mp3` local au lieu d'appeler Deezer
+- `PurgeSeedData` + `SeedDevelopmentData` à chaque démarrage
+- Endpoint `DELETE /api/e2e/reset` pour l'isolation entre tests
 
 ## Documentation
 

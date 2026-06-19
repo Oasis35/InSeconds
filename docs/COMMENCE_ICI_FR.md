@@ -15,7 +15,7 @@ InSeconds est un **blind test musical quotidien**. Le joueur choisit combien de 
 | Frontend | Angular 20 (standalone + signals), TypeScript, Tailwind CSS v4, SCSS |
 | Musique | API Deezer (intégrée — recherche + preview + extraction `CoverHash`) |
 | Infra dev | Docker Compose, `dotnet watch` (back), `ng serve` (front) |
-| CI | GitHub Actions (build back + front + check migrations EF), Dependabot |
+| CI | GitHub Actions (build back + front + check migrations EF + tests unitaires + E2E Playwright), Dependabot |
 | Déploiement | Northflank (front + back + PostgreSQL addon) |
 
 ## Architecture en deux mots
@@ -85,8 +85,9 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - Route `/blindtest` + balises Open Graph/Twitter Card pour partage WhatsApp/Signal
 - Streak joueur (`Player.CurrentStreak` + `Player.LastPlayedDate`) mis à jour au `StartSession`
 - Gestion morceaux sans preview : skip 0s accepté par le validateur, bouton "Passer" dans le jeu
+- Tests E2E Playwright (9 scénarios, CI GitHub Actions)
 
-🚧 **À faire** : tests d'intégration (Testcontainers), smoke tests post-deploy, tests mobiles, polish. Voir [`TACHES.md`](TACHES.md).
+🚧 **À faire** : tests d'intégration backend (Testcontainers), smoke tests post-deploy, tests mobiles, polish. Voir [`TACHES.md`](TACHES.md).
 
 ## Specs gameplay clés (rappel rapide)
 

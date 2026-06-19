@@ -85,9 +85,44 @@ InSeconds/
 GitHub Actions workflow on every push and every PR to `main`:
 
 - **Backend** — build in Release + `dotnet ef migrations has-pending-model-changes`
+- **Unit tests** — `dotnet test` (xUnit, no DB required)
 - **Frontend** — `npm ci` + production build
+- **E2E** — Playwright tests (Chromium) against a real backend in `Testing` mode with a PostgreSQL service — runs after the three jobs above pass
 
-Stale runs are cancelled automatically. No Docker/DB in CI yet — integration tests will use Testcontainers when added.
+Stale runs are cancelled automatically.
+
+## Testing
+
+### Unit tests (backend)
+
+```bash
+cd src/back
+dotnet test InSeconds.slnx
+```
+
+Covers `ScoreCalculator`, `TextNormalizer`, `SettingsService` and other Common services. No database required (pure logic).
+
+### E2E tests (Playwright)
+
+```bash
+# One command — resets Docker, starts backend in Testing mode, runs all tests
+powershell -File scripts/run-e2e.ps1
+```
+
+Or if the backend is already running in Testing mode:
+
+```bash
+cd src/front/InSeconds.Client
+npm run e2e        # headless
+npm run e2e:ui     # interactive Playwright UI
+```
+
+9 tests cover: full happy path (3 tracks), already-played screen (409), no-challenge screen (503), share button (clipboard), and scoring (short duration > long, wrong answer = 0, partial artist-only = 50%).
+
+The backend runs in `ASPNETCORE_ENVIRONMENT=Testing` which activates:
+- `FakeDeezerHandler` — returns a local `test-audio.mp3` instead of calling Deezer
+- `PurgeSeedData` + `SeedDevelopmentData` on every startup
+- `DELETE /api/e2e/reset` endpoint for test isolation
 
 ## Documentation
 

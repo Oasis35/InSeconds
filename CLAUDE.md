@@ -182,6 +182,14 @@ dotnet build src/back/InSeconds.slnx
 
 # Recréer les conteneurs (si docker compose restart pose souci, ex helper VS injecté)
 docker compose down && docker compose up -d
+
+# Lancer les tests E2E (resets Docker, démarre back Testing + front e2e)
+# depuis la racine du repo (VSCode task ou ligne de commande)
+powershell -File scripts/run-e2e.ps1
+
+# Ou depuis src/front/InSeconds.Client (si back déjà lancé en Testing)
+npm run e2e
+npm run e2e:ui   # mode UI interactif Playwright
 ```
 
 ## Conventions Git
@@ -195,15 +203,18 @@ docker compose down && docker compose up -d
 Workflow `.github/workflows/ci.yml`, déclenché sur **push toutes branches + PR vers `main`**, avec `cancel-in-progress` pour annuler les runs obsolètes :
 
 - **Job `back`** : restore + `dotnet build InSeconds.slnx --configuration Release` + `dotnet ef migrations has-pending-model-changes` (fail si une modif `Domain/` ou `Configurations/` n'a pas de migration associée)
+- **Job `unit-tests`** : `dotnet test` sur `InSeconds.Api.UnitTests`
 - **Job `front`** : `npm ci` + `npm run build` (prod) sur `src/front/InSeconds.Client/`
+- **Job `e2e`** : tests Playwright E2E (dépend de `back` + `unit-tests` + `front`). Tourne sur `ubuntu-latest` avec un service PostgreSQL (base `inseconds_e2e`). Lance le back en mode Testing sur le port 5171 avec `--no-launch-profile`, attend que `/api/settings` réponde, démarre Angular avec `ng serve --configuration e2e-ci`, puis exécute `npx playwright test`. Upload le rapport HTML en artifact en cas d'échec.
 
-Runners Ubuntu, ~3-4 min par run. Setup .NET via `global-json-file: src/back/global.json` pour respecter le pin SDK du projet.
+Runners Ubuntu, ~5-7 min par run (jobs `back`/`front` en parallèle, `e2e` séquentiel après). Setup .NET via `global-json-file: src/back/global.json` pour respecter le pin SDK du projet.
 
 ### Règles importantes pour la CI
 
 - **Toujours regénérer la migration EF** après une modif d'entité ou de configuration, sinon le job `back` casse
 - **Ne pas committer si le build front prod échoue** localement (`npm run build` doit passer)
-- **Pas de Docker / docker compose en CI pour l'instant** — pas de tests d'intégration. Quand ils arrivent : préférer **Testcontainers** (tests autonomes, marchent local + CI sans YAML supplémentaire) plutôt qu'ajouter `services:` dans le workflow
+- **Tests E2E** : le job `e2e` lance Playwright contre un back en mode `Testing` (FakeDeezerHandler + seed auto + endpoint `/api/e2e/reset`). Temps ~4-6 min.
+- **Pas de Docker / docker compose en CI pour les tests unitaires** — pour des tests d'intégration plus poussés, préférer **Testcontainers** (tests autonomes, marchent local + CI sans YAML supplémentaire) plutôt qu'ajouter `services:` dans le workflow
 - Si un job casse sur du formatage / lint (futur `dotnet format` ou `ng lint`), corriger en local avant de re-pusher — ne pas désactiver le check
 - Repo sur `Oasis35/InSeconds` (GitHub). Tier gratuit : 2000 min/mois si privé, illimité si public
 
@@ -223,6 +234,8 @@ Runners Ubuntu, ~3-4 min par run. Setup .NET via `global-json-file: src/back/glo
 6. **`Results.Forbid()` nécessite `AddAuthentication()`** — si l'app n'enregistre pas l'auth middleware ASP.NET, `Results.Forbid()` lève une `InvalidOperationException` au runtime. Utiliser `Results.StatusCode(403)` à la place.
 7. **Cookie joueur cross-origin (Northflank)** — front et back sont sur des sous-domaines différents. Le cookie doit être `SameSite=None; Secure=true` en prod (déjà configuré dans `CookieAuthService`).
 8. **`AppDbConfigurationProvider` silencieux si DB absente** — le `catch` dans `Load()` est intentionnel : en test (in-memory EF) ou lors de la première migration, la BD peut ne pas exister. Les initialiseurs de propriété d'`AppSettings` servent alors de fallback.
+9. **E2E — `launchSettings.json` overrides env vars** — `dotnet run` sans `--no-launch-profile` charge le profil `http` qui force `ASPNETCORE_ENVIRONMENT=Development`, ignorant la variable CI. Toujours utiliser `--no-launch-profile` pour les runs E2E/Testing.
+10. **E2E — proxy Angular port** — la config `e2e` (locale) pointe vers le back sur `:5172`, la config `e2e-ci` (CI) vers `:5171`. Ne pas confondre les deux.
 
 ## Déjà implémenté (non exhaustif)
 
@@ -260,11 +273,12 @@ Runners Ubuntu, ~3-4 min par run. Setup .NET via `global-json-file: src/back/glo
 - **Route `/blindtest`** — alias de `/`, utilisée dans les liens de partage et les balises Open Graph
 - **Open Graph + Twitter Card** dans `index.html` — balises méta pour le partage WhatsApp/Signal/Twitter (sans image)
 - **`environment.appUrl`** dans les fichiers d'environnement Angular (prod : URL Northflank, dev : `http://localhost:5173`) — utilisé pour le lien de partage
+- **Tests E2E Playwright** : 9 tests couvrant happy path (3 morceaux), écran "déjà joué" (409), écran "pas de défi" (503), bouton partage (clipboard), et scoring (palier court > long, mauvaise réponse = 0, scoring partiel artiste seul = 50%)
+- **`ASPNETCORE_ENVIRONMENT=Testing`** : `FakeDeezerHandler` (retourne preview URL locale `test-audio.mp3`), `PurgeSeedData` au démarrage, endpoint `DELETE /api/e2e/reset` (auth admin requise)
+- **Cookie `SameSite=Strict; Secure=false`** en Testing (HTTP local), `SameSite=None; Secure=true` en prod
 
 ## À venir (pas encore implémenté)
 
-- Tests d'intégration (Testcontainers)
-- Smoke tests post-deploy automatisés
 - Tests mobiles (iOS Safari, Android Chrome)
 - Polish : charte graphique, messages d'erreur, accessibilité, RGPD
 - Sécurité avant passage public du repo : externaliser le mot de passe PostgreSQL de `appsettings.json` et `docker-compose.yml`
