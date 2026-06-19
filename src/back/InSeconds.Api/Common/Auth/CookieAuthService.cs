@@ -67,8 +67,8 @@ public sealed class CookieAuthService(
         httpContext.Response.Cookies.Append(CookieName, protectedValue, new CookieOptions
         {
             HttpOnly = true,
-            SameSite = env.IsDevelopment() ? SameSiteMode.Strict : SameSiteMode.None,
-            Secure   = !env.IsDevelopment(),
+            SameSite = (env.IsDevelopment() || env.IsEnvironment("Testing")) ? SameSiteMode.Strict : SameSiteMode.None,
+            Secure   = !(env.IsDevelopment() || env.IsEnvironment("Testing")),
             Expires  = DateTimeOffset.UtcNow.Add(CookieLifetime),
             MaxAge   = CookieLifetime,
         });

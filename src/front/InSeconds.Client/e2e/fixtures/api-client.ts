@@ -1,7 +1,8 @@
 // CI utilise 5171 (port standard), local utilise 5172 (évite le conflit avec le dev normal)
 const BASE = process.env['CI'] ? 'http://localhost:5171' : 'http://localhost:5172';
+const ADMIN_TOKEN = process.env['E2E_ADMIN_PASSWORD'] ?? 'admin-token';
 const ADMIN_HEADERS = {
-  Authorization: 'Bearer admin-token',
+  Authorization: `Bearer ${ADMIN_TOKEN}`,
   'Content-Type': 'application/json',
 };
 
