@@ -165,6 +165,16 @@ jobs:
             sleep 3
           done
 
+      - name: Diagnostics
+        if: always()
+        run: |
+          echo "=== /api/settings ==="
+          curl -sv http://localhost:5171/api/settings 2>&1 || true
+          echo "=== POST /api/sessions/start ==="
+          curl -sv -X POST http://localhost:5171/api/sessions/start -H "Content-Type: application/json" 2>&1 || true
+          echo "=== /api/e2e/reset ==="
+          curl -sv -X DELETE http://localhost:5171/api/e2e/reset -H "Authorization: Bearer e2e-admin-password" 2>&1 || true
+
       - name: Run E2E tests
         working-directory: src/front/InSeconds.Client
         run: npx playwright test
