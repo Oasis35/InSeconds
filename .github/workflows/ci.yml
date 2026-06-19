@@ -147,7 +147,7 @@ jobs:
 
       - name: Start Angular dev server
         working-directory: src/front/InSeconds.Client
-        run: npx ng serve --configuration e2e --port 5173 &
+        run: npx ng serve --configuration e2e-ci --port 5173 &
 
       - name: Wait for backend
         run: |

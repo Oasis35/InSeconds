@@ -91,6 +91,10 @@
             "e2e": {
               "buildTarget": "InSeconds.Client:build:e2e",
               "proxyConfig": "proxy.e2e.conf.json"
+            },
+            "e2e-ci": {
+              "buildTarget": "InSeconds.Client:build:e2e",
+              "proxyConfig": "proxy.e2e.ci.conf.json"
             }
           },
           "defaultConfiguration": "development"
