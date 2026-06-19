@@ -146,4 +146,4 @@ The backend runs in `ASPNETCORE_ENVIRONMENT=Testing` which activates:
 
 ## License
 
-Private project, no public license yet.
+[CC BY-NC 4.0](LICENSE) — free to use and adapt, non-commercial only.
