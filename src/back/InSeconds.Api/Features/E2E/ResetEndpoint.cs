@@ -139,6 +139,12 @@ public static class E2EResetEndpoint
             (797228462,   "Doja Cat",               "Say So",                       "1e0d4359a328f8b0ea3563e8623a09aa"),
             (18190280,    "Lana Del Rey",           "Summertime Sadness",           "4c2c6143c3e83a01ea73517c57d1d138"),
             (2743578151,  "Sabrina Carpenter",       "Espresso",                     "e3221287a77eb262944e6528766eeba4"),
+            // Morceaux sans preview (IDs >= 9_000_000_000 → FakeDeezerHandler retourne preview vide)
+            (9000000001,  "The Beatles",             "Come Together",                null),
+            (9000000002,  "Pink Floyd",              "Comfortably Numb",             null),
+            (9000000003,  "Bob Dylan",               "Like a Rolling Stone",         null),
+            (9000000004,  "Led Zeppelin",            "Stairway to Heaven",           null),
+            (9000000005,  "Fleetwood Mac",           "Go Your Own Way",              null),
         };
 
         var tracks = allTracks.Select(t => new Track

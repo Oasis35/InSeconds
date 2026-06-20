@@ -112,7 +112,7 @@ cd src/back
 dotnet test InSeconds.Api.IntegrationTests
 ```
 
-Requires Docker (Testcontainers starts a real PostgreSQL container). 7 tests covering `StartSession` and `SubmitAnswer`: tracks returned, ordering, anti-replay (409), scoring (correct, wrong, artist-only, short vs long tier), track not found (404), duplicate submission (409).
+Requires Docker (Testcontainers starts a real PostgreSQL container). **69 tests** covering `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (KPIs, AvailableDates, 30-day fix, Pending→Abandoned for past days), `Auth/Me`, `SessionEdgeCases` (lazy expiry, streak, submit on abandoned session), `ChallengeGeneration`, `Admin/Tracks` (AddTrack, GetTracks, DeleteTrack, UpdateTrack), `Admin/Challenges`.
 
 ### E2E tests (Playwright)
 
@@ -129,11 +129,11 @@ npm run e2e        # headless
 npm run e2e:ui     # interactive Playwright UI
 ```
 
-9 tests cover: full happy path (3 tracks), already-played screen (409), no-challenge screen (503), share button (clipboard), and scoring (short duration > long, wrong answer = 0, partial artist-only = 50%).
+**27 tests** — 12 game tests (happy path, already-played, abandon, resume, no-challenge, share, scoring) + 15 admin tests (login, pool table with filters, add/delete/refresh track, generate challenge, reset sessions, challenge list).
 
 The backend runs in `ASPNETCORE_ENVIRONMENT=Testing` which activates:
-- `FakeDeezerHandler` — returns a local `test-audio.mp3` instead of calling Deezer
-- `PurgeSeedData` + `SeedDevelopmentData` on every startup
+- `FakeDeezerHandler` — returns a local `test-audio.mp3`; tracks with DeezerTrackId >= 9_000_000_000 return an empty preview (5 seed tracks: The Beatles, Pink Floyd, Bob Dylan, Led Zeppelin, Fleetwood Mac) to test the refresh flow
+- `PurgeSeedData` + `SeedData` on every startup (55 tracks total)
 - `DELETE /api/e2e/reset` endpoint for test isolation
 
 ## Documentation

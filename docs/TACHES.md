@@ -33,7 +33,12 @@
 - [x] Morceaux sans preview : `SubmitAnswerValidator` accepte `ListenedDurationSeconds = 0` (skip), `BlindRoundComponent` affiche un bouton "Passer" si `previewUrl` est vide
 - [x] `DailyChallengeGenerator` filtre les tracks sans preview active (appel Deezer `Task.WhenAll`) avant sélection
 - [x] `GET /api/admin/stats` — dashboard admin : activité 30 jours, répartition joueurs, stats par défi
-- [x] Page admin — Pool : sous-onglets "Disponibles" / "Déjà utilisés", indicateur preview (vert/rouge) via `TrackDto.HasPreview`, popup d'ajout avec recherche Deezer + lecteur preview 30s
+- [x] Page admin — Pool : tableau paginé (15 lignes/page), filtres combinables (texte, statut, preview), indicateur preview (vert/rouge) via `TrackDto.HasPreview`, popup d'ajout avec recherche Deezer + lecteur preview 30s
+- [x] Suppression d'un morceau du pool depuis la page admin (`DELETE /api/admin/tracks/{id}`) — interdit si utilisé dans un défi, confirmation modale, sélection multiple
+- [x] Actualisation d'un morceau sans preview (`PUT /api/admin/tracks/{id}`) — bouton "↻ Actualiser" ouvre la modale en mode update, écrase DeezerTrackId/Artist/Title/CoverHash
+- [x] Pool admin redesigné en tableau paginé (15 lignes/page), filtres combinables (texte, statut, preview), sous-onglets supprimés, onglet "Actions" dédié (générer défi + reset sessions)
+- [x] Seed enrichi : 5 morceaux sans preview (The Beatles, Pink Floyd, Bob Dylan, Led Zeppelin, Fleetwood Mac — IDs >= `9_000_000_000`) pour tester le flux "↻ Actualiser"
+- [x] Dashboard admin redesigné : KPI tiles jour sélectionné (complétés, abandons, taux de complétion, score médian), sélecteur de jour (← → sur les dates ayant un défi), barres 30j cliquables (jours sans activité affichés à zéro), `GET /api/admin/stats?date=` (param date, `AvailableDates`, `SelectedDayKpis`, Pending→Abandoned pour les jours passés)
 
 ## ✅ Frontend
 
@@ -93,10 +98,9 @@
 
 ## 🚧 Tests
 
-- [x] Tests d'intégration backend (Testcontainers) — 53 scénarios : `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats`, `Auth/Me` (soft-delete), `SessionEdgeCases` (expiry paresseuse, streak, submit sur session abandonnée)
-- [ ] Tests d'intégration supplémentaires (génération de défi quotidien, admin tracks/challenges)
+- [x] Tests d'intégration backend (Testcontainers, 69 tests) — `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (KPIs jour, AvailableDates, fix 30j, Pending→Abandoned), `Auth/Me` (soft-delete), `SessionEdgeCases` (expiry paresseuse, streak, submit sur session abandonnée), `ChallengeGeneration`, `Admin/Tracks` (AddTrack, GetTracks, DeleteTrack, UpdateTrack), `Admin/Challenges` (GetChallenges, CreateChallenge, ResetToday)
 - [ ] Tests front Karma/Jasmine (`AudioPlayerService` — dont `preloadAll`, `GameService`)
-- [x] Tests E2E Playwright (12 scénarios : happy path, écran déjà joué, abandon mid-game, reprise, abandon depuis reprise, pas de défi, partage, scoring palier/mauvaise réponse/partiel)
+- [x] Tests E2E Playwright (27 scénarios : 12 jeu + 15 admin). Jeu : happy path, écran déjà joué, abandon mid-game, reprise, abandon depuis reprise, pas de défi, partage, scoring palier/mauvaise réponse/partiel. Admin : login erreur/succès/déconnexion, pool tableau+filtres texte/preview/statut, ajout morceau, suppression individuelle+annulation, actualisation morceau sans preview (modale pré-remplie), actions générer/déjà généré/reset, liste défis
 
 ## 🚧 Mobile
 

@@ -14,11 +14,13 @@ internal sealed class FakeDeezerHandler : HttpMessageHandler
         if (path.StartsWith("/track/", StringComparison.OrdinalIgnoreCase)
             && long.TryParse(path["/track/".Length..], out var id))
         {
+            // IDs >= 9_000_000_000 : morceaux sans preview (pour tester le flux "↻ Actualiser")
+            var preview = id >= 9_000_000_000L ? "" : PreviewUrl;
             var json = $$"""
                 {
                   "id": {{id}},
                   "title": "E2E Track {{id}}",
-                  "preview": "{{PreviewUrl}}",
+                  "preview": "{{preview}}",
                   "artist": { "id": 1, "name": "E2E Artist" },
                   "album": { "id": 1, "cover_medium": null }
                 }

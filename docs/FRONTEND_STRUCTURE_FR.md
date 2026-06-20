@@ -148,9 +148,10 @@ SVG inline du badge officiel "À écouter sur Deezer" (blanc sur transparent). I
 
 ### `AdminComponent`
 
-Route `/admin`. Login Bearer token → trois onglets :
-- **Dashboard** : activité 30 jours (barres), répartition joueurs, stats par défi (accordéon expandable)
-- **Pool** : sous-onglets "Disponibles" (avec indicateur preview vert/rouge) / "Déjà utilisés" ; bouton "+ Ajouter" ouvre une popup avec recherche Deezer, lecteur preview 30s, boutons "Ajouter" / "Ajouter et fermer"
+Route `/admin`. Login Bearer token → quatre onglets :
+- **Dashboard** : KPI tiles jour sélectionné (complétés, abandons, taux complétion — affiche "—" si 0 complété, score médian), sélecteur de jour ← → naviguant sur les dates ayant un défi, barres 30j cliquables (jours vides = 0, dates formatées "22 mai"), répartition joueurs, stats par défi (accordéon)
+- **Pool** : tableau paginé 15 lignes/page, filtres combinables (texte artiste/titre, statut Disponible/Utilisé, preview OK/Manquante), sélection multiple + suppression en lot, bouton "+ Ajouter" (popup recherche Deezer + lecteur preview 30s), bouton "↻ Actualiser" sur les morceaux sans preview (ouvre la modale pré-remplie avec artiste + titre)
+- **Actions** : bouton "Générer le défi du jour" + bouton "Réinitialiser les parties du jour" avec feedback inline
 - **Défis** : historique des défis avec les morceaux de chaque défi
 
 ## Intercepteurs

@@ -222,7 +222,10 @@ Résout ou crée un `Player` guest à partir du cookie HTTP-only signé. `SameSi
 | `Auth/Me` | `GET /api/auth/me` | Retourne `{ id, isGuest, pseudo }` du joueur courant (cookie) |
 | `Settings/GetSettings` | `GET /api/settings` | Expose les settings publics (paliers, timer, scores) |
 | `Admin/Login` | `POST /api/admin/login` | Génère un Bearer token admin |
-| `Admin/Tracks/*` | `/api/admin/tracks` | Gestion pool morceaux (`TrackDto.HasPreview` via appel Deezer en parallèle) |
+| `Admin/Tracks/GetTracks` | `GET /api/admin/tracks` | Liste Available / Used (`TrackDto.HasPreview` via appel Deezer en parallèle) |
+| `Admin/Tracks/AddTrack` | `POST /api/admin/tracks` | Ajoute un morceau au pool (upsert sur DeezerTrackId) |
+| `Admin/Tracks/DeleteTrack` | `DELETE /api/admin/tracks/{id}` | Supprime un morceau du pool s'il n'est pas utilisé dans un défi (404/409) |
+| `Admin/Tracks/UpdateTrack` | `PUT /api/admin/tracks/{id}` | Met à jour DeezerTrackId/Artist/Title/CoverHash — interdit si utilisé dans un défi (409) |
 | `Admin/Challenges/*` | `/api/admin/challenges` | Création défis + recherche Deezer |
 | `Admin/GenerateToday` | `POST /api/admin/generate-today` | Génère le défi du jour à la demande |
 | `Admin/ResetToday` | `DELETE /api/admin/reset-today` | Supprime le défi du jour |
