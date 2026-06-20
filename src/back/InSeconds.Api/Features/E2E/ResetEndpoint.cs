@@ -79,20 +79,21 @@ public static class E2EResetEndpoint
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
+        // IDs Deezer vérifiés + CoverHash réels (extraits de l'API Deezer)
         var allTracks = new (long DeezerTrackId, string Artist, string Title, string? CoverHash)[]
         {
             // J-2
-            (67238735,  "Daft Punk",         "Get Lucky",         "b63b04be8ef880c3c65f0e7d13b2e4da"),
-            (6337356,   "Stromae",           "Alors on danse",    "6de41a2ce00c20680b5bcd8e21e748e2"),
-            (879930,    "Coldplay",          "Yellow",            "9d8b1b0f5aec0e5cf15efbecc48a8c20"),
+            (66609426,  "Daft Punk",         "Get Lucky",         "bc49adb87758e0c8c4e508a9c5cce85d"),
+            (6297555,   "Stromae",           "Alors on danse",    "43bd78a4753df33da9efc2207c4286ee"),
+            (3128096,   "Coldplay",          "Yellow",            "970dce98eeea6729244c0ae71707a83d"),
             // J-1
-            (76580611,  "Pharrell Williams", "Happy",             "6bbb2ea1e2b72e4267ec89e1a4a2e6c3"),
-            (1109731,   "Amy Winehouse",     "Rehab",             "4a0db9e4bb66b285e836c8b2a7a5e5e6"),
-            (921709,    "Gorillaz",          "Feel Good Inc.",    "2a3d1e2ce90c20680b5bcd8e21e748e2"),
+            (701326562, "Pharrell Williams", "Happy",             "a1939a9a40dc97ed404cc4597c6a32bc"),
+            (2176852,   "Amy Winehouse",     "Rehab",             "5772b495f0dcdf660d0fc88c4c38a3fa"),
+            (3129407,   "Gorillaz",          "Feel Good Inc.",    "3dc29a565149240729afc08e1f251b46"),
             // Aujourd'hui
-            (912486,    "Eminem",            "Lose Yourself",     "7de41a2ce00c20680b5bcd8e21e748e2"),
-            (618340,    "Radiohead",         "Creep",             "1bb2ea1e2b72e4267ec89e1a4a2e6a44"),
-            (624174012, "Billie Eilish",     "Bad Guy",           "5ab2ea1e2b72e4267ec89e1a4a2e6c55"),
+            (1109731,   "Eminem",            "Lose Yourself",     "e2b36a9fda865cb2e9ed1476b6291a7d"),
+            (138547415, "Radiohead",         "Creep",             "1dd56fd8824492e1a5106c99a00a85ec"),
+            (655095912, "Billie Eilish",     "bad guy",           "6630083f454d48eadb6a9b53f035d734"),
         };
 
         var tracks = allTracks.Select(t => new Track
@@ -137,8 +138,12 @@ public static class E2EResetEndpoint
         db.Players.Add(devPlayer);
         db.SaveChanges();
 
+        // Sessions J-2 et J-1 — Status=Completed pour apparaître dans les stats
         foreach (var (challenge, dayOffset) in challenges[..2].Select((c, i) => (c, i)))
         {
+            var completedAt = DateTime.SpecifyKind(
+                days[dayOffset].ToDateTime(TimeOnly.FromTimeSpan(TimeSpan.FromHours(12, 5, 0))),
+                DateTimeKind.Utc);
             db.GameSessions.Add(new GameSession
             {
                 PlayerId             = devPlayer.Id,
@@ -148,6 +153,8 @@ public static class E2EResetEndpoint
                 CreatedAt            = DateTime.SpecifyKind(
                     days[dayOffset].ToDateTime(TimeOnly.FromTimeSpan(TimeSpan.FromHours(12))),
                     DateTimeKind.Utc),
+                Status      = Domain.SessionStatus.Completed,
+                CompletedAt = completedAt,
             });
         }
         db.SaveChanges();

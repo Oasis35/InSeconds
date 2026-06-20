@@ -136,7 +136,7 @@ npm run build                  # vérifier que le build passe
 | `Tracks` | référentiel canonique (DeezerTrackId unique), `CoverHash` = hash seul de l'image Deezer (pas l'URL complète) |
 | `DailyChallenges` | 1 par jour UTC (Date unique) + Seed pour audit |
 | `DailyChallengeTracks` | jonction Track ↔ Challenge + Position (1-10) + DeezerRankSnapshot |
-| `GameSessions` | 1 partie/joueur/jour (unique sur `PlayerId+DailyChallengeId`), index leaderboard `(ChallengeId, TotalScore DESC, TotalDurationSeconds)` |
+| `GameSessions` | 1 entrée/joueur/jour (unique sur `PlayerId+DailyChallengeId`), `Status` (Pending=0/Completed=1/Abandoned=2), `CompletedAt`/`AbandonedAt` nullable, index leaderboard + index `(ChallengeId, Status)` |
 | `GameSessionAnswers` | 1 réponse par track, `ListenedDurationSeconds` (palier choisi), `WasExtended`, `ArtistCorrect`/`TitleCorrect` séparés |
 | `Settings` | config key/value modifiable à chaud (timer saisie, paliers, template URL pochette, etc.) |
 
@@ -144,7 +144,8 @@ npm run build                  # vérifier que le build passe
 
 - **`Player.Id` = Guid** (pas int, URL-safe), reste des entités = `int`
 - **Soft delete sur Player uniquement** via query filter EF (`!IsDeleted`) propagé en cascade aux sessions/answers
-- **Anti-rejeu** : contrainte unique `(PlayerId, DailyChallengeId)` sur `GameSessions`
+- **Anti-rejeu** : contrainte unique `(PlayerId, DailyChallengeId)` sur `GameSessions`. `Completed` ou `Abandoned` → 409. `Pending` → reprise avec `IsResuming=true`
+- **`SessionStatus`** : `Pending` = en cours (reprendre possible), `Completed` = terminée (N morceaux répondus), `Abandoned` = abandonnée (bouton ou expiry paresseuse minuit)
 - **Scoring partiel** possible : `ArtistCorrect` et `TitleCorrect` séparés (pas un seul `IsCorrect`)
 - **Durée écoutée = choix discret**, pas une mesure. Paliers dans `Settings.AllowedDurationsSeconds`
 - **Migration auto** au boot via `db.Database.Migrate()` dans `Program.cs`
@@ -276,16 +277,19 @@ Runners Ubuntu, ~5-7 min par run (jobs `back`/`front`/`integration-tests` en par
 - **`GET /api/auth/me`** — retourne `{ id, isGuest, pseudo }` pour le joueur courant (cookie)
 - **`GET /api/settings`** — expose les settings publics (paliers, timer, scores) consommé par `SettingsService` Angular au boot
 - **`BackgroundService` génération défi quotidien** — `GenerateDailyChallengeService` s'exécute à 3h UTC
-- **Streak joueur** : `Player.CurrentStreak` + `Player.LastPlayedDate` (migration `PlayerStreak`), mis à jour dans `StartSession/Handler.cs`, affiché sur l'écran récap final et l'écran "déjà joué"
+- **Streak joueur** : `Player.CurrentStreak` + `Player.LastPlayedDate` (migration `PlayerStreak`), mis à jour dans `SubmitAnswer/Handler.cs` à la complétion (parties complètes uniquement), affiché sur l'écran récap final et l'écran "déjà joué"
 - **Morceaux sans preview** : `SubmitAnswerValidator` accepte `ListenedDurationSeconds = 0` (skip), `BlindRoundComponent` affiche un bouton "Passer" si `previewUrl` est vide. `DailyChallengeGenerator` filtre les tracks sans preview active (appel Deezer) avant sélection.
 - **`GET /api/admin/stats`** — dashboard admin : activité 30 jours, répartition joueurs guests/inscrits/actifs, stats par défi (médiane, moy., min/max score, taux artiste/titre par morceau)
 - **Page admin — Pool** : sous-onglets "Disponibles" / "Déjà utilisés" ; indicateur preview (vert/rouge) sur chaque track disponible via `TrackDto.HasPreview` (appel Deezer en parallèle dans `GetTracksHandler`) ; popup d'ajout avec recherche Deezer + lecteur preview 30s + boutons "Ajouter" / "Ajouter et fercer"
-- **Tests d'intégration backend** (`InSeconds.Api.IntegrationTests`) : Testcontainers.PostgreSql + `WebApplicationFactory<Program>` + Respawn. 7 tests couvrant `StartSession` (tracks retournées, ordre, anti-rejeu 409) et `SubmitAnswer` (score max, score 0, scoring partiel artiste seul, palier court > long, track introuvable 404, double soumission 409). Tournent en mode `Testing` (FakeDeezerHandler + seed auto). Job CI `integration-tests` séparé.
+- **Tests d'intégration backend** (`InSeconds.Api.IntegrationTests`) : Testcontainers.PostgreSql + `WebApplicationFactory<Program>` + Respawn. 36 tests couvrant `StartSession` (tracks, ordre, reprise Pending, 409 Completed/Abandoned), `SubmitAnswer` (scores, scoring partiel, complétion auto → 409 `already_played`), `AbandonSession` (abandon Pending OK, abandon Completed 400), `Stats/Today` (filtrage Completed seul). Tournent en mode `Testing` (FakeDeezerHandler + seed auto). Job CI `integration-tests` séparé.
 - **Partage score** : bouton "🔗 Partager mon score" sur l'écran récap — copie dans le presse-papier un résumé emoji Wordle-style (`🟩🟩 0.5s | 🟨⬜ 2s`) + lien `/blindtest`
 - **Route `/blindtest`** — alias de `/`, utilisée dans les liens de partage et les balises Open Graph
 - **Open Graph + Twitter Card** dans `index.html` — balises méta pour le partage WhatsApp/Signal/Twitter (sans image)
 - **`environment.appUrl`** dans les fichiers d'environnement Angular (prod : URL Northflank, dev : `http://localhost:5173`) — utilisé pour le lien de partage
-- **Tests E2E Playwright** : 9 tests couvrant happy path (3 morceaux), écran "déjà joué" (409), écran "pas de défi" (503), bouton partage (clipboard), et scoring (palier court > long, mauvaise réponse = 0, scoring partiel artiste seul = 50%)
+- **Tests E2E Playwright** : 11 tests couvrant happy path (3 morceaux), écran "déjà joué" (409 Completed → récap score), abandon mid-game (409 → message abandon), reprise (Pending → écran "Partie en cours" → Reprendre → morceau 2), abandon depuis reprise, pas de défi (503), partage (clipboard), scoring
+- **`SessionStatus`** (Pending/Completed/Abandoned) : session comptabilisée seulement si complète ou explicitement abandonnée. `StartSession` retourne `IsResuming=true` + `completedAnswers` si session Pending. Expiry paresseuse : Pending de la veille → Abandoned au prochain StartSession. Stats/leaderboard filtrés sur `Completed`. Dashboard admin affiche `pendingCount` + `abandonedCount`
+- **`PUT /api/sessions/{id}/abandon`** — `AbandonSession` endpoint (slice complète Endpoint+Command+Handler)
+- **Bouton Abandonner** dans le template `game.component.ts` — mid-game + écran resume_prompt ; confirmation inline ; appel `game.service.ts#abandonSession()`
 - **`ASPNETCORE_ENVIRONMENT=Testing`** : `FakeDeezerHandler` (retourne preview URL locale `test-audio.mp3`), `PurgeSeedData` au démarrage, endpoint `DELETE /api/e2e/reset` (auth admin requise)
 - **Cookie `SameSite=Strict; Secure=false`** en Testing (HTTP local), `SameSite=None; Secure=true` en prod
 

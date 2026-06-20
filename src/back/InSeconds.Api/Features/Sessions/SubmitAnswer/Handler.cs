@@ -24,6 +24,9 @@ public sealed class SubmitAnswerHandler(
         if (session.PlayerId != command.PlayerId)
             return Results.StatusCode(403);
 
+        if (session.Status != SessionStatus.Pending)
+            return Results.StatusCode(403);
+
         var challengeTrack = await db.DailyChallengeTracks
             .Include(t => t.Track)
             .FirstOrDefaultAsync(
@@ -68,6 +71,24 @@ public sealed class SubmitAnswerHandler(
 
         session.TotalScore           += score;
         session.TotalDurationSeconds += command.ListenedDurationSeconds;
+
+        // Vérifier si tous les morceaux du défi ont été répondus → complétion
+        var answeredCount = await db.GameSessionAnswers
+            .CountAsync(a => a.GameSessionId == command.SessionId, cancellationToken);
+        // +1 pour inclure la réponse qu'on vient d'ajouter (pas encore persistée)
+        var isLastAnswer = (answeredCount + 1) >= appSettings.TracksPerChallenge;
+
+        if (isLastAnswer && session.Status == SessionStatus.Pending)
+        {
+            session.Status      = SessionStatus.Completed;
+            session.CompletedAt = DateTime.UtcNow;
+
+            var today     = DateOnly.FromDateTime(DateTime.UtcNow);
+            var yesterday = today.AddDays(-1);
+            var player    = await db.Players.FirstAsync(p => p.Id == command.PlayerId, cancellationToken);
+            player.CurrentStreak  = player.LastPlayedDate == yesterday ? player.CurrentStreak + 1 : 1;
+            player.LastPlayedDate = today;
+        }
 
         await db.SaveChangesAsync(cancellationToken);
 

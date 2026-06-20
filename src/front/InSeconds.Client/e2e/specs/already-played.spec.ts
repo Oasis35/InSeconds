@@ -27,4 +27,34 @@ test.describe('Déjà joué — écran 409', () => {
     // Le score du joueur est affiché
     await expect(page.getByText('Ton score')).toBeVisible();
   });
+
+  test('affiche le message abandon quand la session est abandonnée', async ({ page, api }) => {
+    await api.reset();
+    await page.clock.install({ time: Date.now() });
+
+    const game = new GamePage(page);
+    const round = new BlindRoundPage(page);
+
+    // Démarrer une partie, jouer 1 morceau
+    await game.goto();
+    await game.waitForWelcome();
+    await game.clickStart();
+    await round.chooseDuration(1);
+    await round.advanceClock(1);
+    await round.waitForAnswerInput();
+    await round.submitEmpty();
+    // Ne pas aller à la piste suivante, abandonner en cours de partie
+
+    // Cliquer Abandonner (lien dans le header pendant la partie)
+    await game.abandonButton.click();
+    await game.abandonConfirmButton.click();
+
+    // Écran abandon
+    await expect(game.abandonedHeading).toBeVisible();
+    await expect(game.countdown).toBeVisible();
+
+    // Recharger → toujours l'écran abandon
+    await game.goto();
+    await expect(game.abandonedHeading).toBeVisible();
+  });
 });

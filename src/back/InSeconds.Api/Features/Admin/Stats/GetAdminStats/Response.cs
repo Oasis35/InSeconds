@@ -9,6 +9,8 @@ public sealed record ChallengeStatsDto(
     int Id,
     DateOnly Date,
     int PlayerCount,
+    int PendingCount,
+    int AbandonedCount,
     int? ScoreMin,
     int? ScoreMax,
     double? ScoreAvg,

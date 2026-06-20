@@ -21,7 +21,9 @@ public sealed class TodayStatsHandler(ApplicationDbContext db, SettingsService s
         if (playerId.HasValue)
         {
             yourScore = await db.GameSessions
-                .Where(s => s.DailyChallengeId == challenge.Id && s.PlayerId == playerId.Value)
+                .Where(s => s.DailyChallengeId == challenge.Id
+                         && s.PlayerId == playerId.Value
+                         && s.Status == Domain.SessionStatus.Completed)
                 .Select(s => (int?)s.TotalScore)
                 .FirstOrDefaultAsync(ct);
 
@@ -32,7 +34,7 @@ public sealed class TodayStatsHandler(ApplicationDbContext db, SettingsService s
         }
 
         var scores = await db.GameSessions
-            .Where(s => s.DailyChallengeId == challenge.Id)
+            .Where(s => s.DailyChallengeId == challenge.Id && s.Status == Domain.SessionStatus.Completed)
             .Select(s => s.TotalScore)
             .ToListAsync(ct);
 
@@ -51,10 +53,10 @@ public sealed class TodayStatsHandler(ApplicationDbContext db, SettingsService s
                 t.Track.Title,
                 t.Track.DeezerTrackId,
                 t.Track.CoverHash,
-                TotalAnswers      = t.Answers.Count,
-                CorrectAnswers    = t.Answers.Count(a => a.ArtistCorrect || a.TitleCorrect),
+                TotalAnswers      = t.Answers.Count(a => a.GameSession.Status == Domain.SessionStatus.Completed),
+                CorrectAnswers    = t.Answers.Count(a => a.GameSession.Status == Domain.SessionStatus.Completed && (a.ArtistCorrect || a.TitleCorrect)),
                 AvgSecondsCorrect = t.Answers
-                    .Where(a => a.ArtistCorrect || a.TitleCorrect)
+                    .Where(a => a.GameSession.Status == Domain.SessionStatus.Completed && (a.ArtistCorrect || a.TitleCorrect))
                     .Average(a => (double?)a.ListenedDurationSeconds),
             })
             .ToListAsync(ct);
