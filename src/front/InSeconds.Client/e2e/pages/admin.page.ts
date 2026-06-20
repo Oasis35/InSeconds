@@ -19,7 +19,7 @@ export class AdminPage {
     await this.page.goto('/admin');
   }
 
-  async login(password = 'admin-token'): Promise<void> {
+  async login(password = 'e2e-admin-password'): Promise<void> {
     await this.passwordInput.fill(password);
     await this.loginButton.click();
     await this.logoutButton.waitFor({ state: 'visible' });
