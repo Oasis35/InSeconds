@@ -97,9 +97,8 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
         var body = await resp.Content.ReadFromJsonAsync<GetTracksResponse>();
         Assert.NotNull(body);
-        // Le seed a 9 tracks : 6 dans des défis passés (J-2, J-1) = Used, 3 dans le défi du jour = Used aussi
-        // Toutes les tracks sont utilisées dans un défi, aucune disponible
-        Assert.Empty(body.Available);
+        // Le seed a 50 tracks : 9 assignées à des défis (J-2, J-1, aujourd'hui) = Used, 41 disponibles
+        Assert.Equal(41, body.Available.Count);
         Assert.Equal(9, body.Used.Count);
     }
 
