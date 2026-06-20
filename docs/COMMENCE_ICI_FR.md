@@ -85,10 +85,12 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - Route `/blindtest` + balises Open Graph/Twitter Card pour partage WhatsApp/Signal
 - Streak joueur (`Player.CurrentStreak` + `Player.LastPlayedDate`) mis à jour au `StartSession`
 - Gestion morceaux sans preview : skip 0s accepté par le validateur, bouton "Passer" dans le jeu
-- Tests E2E Playwright (9 scénarios, CI GitHub Actions)
-- Tests d'intégration backend (`InSeconds.Api.IntegrationTests`) — Testcontainers.PostgreSql + `WebApplicationFactory<Program>` + Respawn, 7 scénarios sur `StartSession` et `SubmitAnswer`, job CI dédié `integration-tests`
+- Pool admin redesigné en tableau paginé (15 lignes/page) avec filtres combinables (texte, statut, preview), onglet "Actions" dédié, modale "↻ Actualiser" pré-remplie pour morceaux sans preview
+- Dashboard admin : KPI tiles par jour, sélecteur de jour ← →, barres 30j cliquables avec jours vides à zéro
+- Tests E2E Playwright (27 scénarios : 12 jeu + 15 admin, CI GitHub Actions)
+- Tests d'intégration backend (`InSeconds.Api.IntegrationTests`) — Testcontainers.PostgreSql + `WebApplicationFactory<Program>` + Respawn, 69 tests couvrant StartSession, SubmitAnswer, AbandonSession, Stats, AdminStats, SessionEdgeCases, ChallengeGeneration, Admin/Tracks, Admin/Challenges, job CI dédié `integration-tests`
 
-🚧 **À faire** : tests d'intégration supplémentaires (admin, stats), smoke tests post-deploy, tests mobiles, polish. Voir [`TACHES.md`](TACHES.md).
+🚧 **À faire** : smoke tests post-deploy, tests mobiles, polish, cache Redis previews Deezer. Voir [`TACHES.md`](TACHES.md).
 
 ## Specs gameplay clés (rappel rapide)
 
