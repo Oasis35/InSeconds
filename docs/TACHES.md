@@ -93,10 +93,10 @@
 
 ## 🚧 Tests
 
-- [x] Tests d'intégration backend (Testcontainers) — `StartSession` + `SubmitAnswer` + `AbandonSession` (36 scénarios dont reprise, abandon, complétion, filtrage stats Completed/Pending/Abandoned)
-- [ ] Tests d'intégration supplémentaires (admin endpoints, génération de défi)
+- [x] Tests d'intégration backend (Testcontainers) — 53 scénarios : `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats`, `Auth/Me` (soft-delete), `SessionEdgeCases` (expiry paresseuse, streak, submit sur session abandonnée)
+- [ ] Tests d'intégration supplémentaires (génération de défi quotidien, admin tracks/challenges)
 - [ ] Tests front Karma/Jasmine (`AudioPlayerService` — dont `preloadAll`, `GameService`)
-- [x] Tests E2E Playwright (11 scénarios : happy path 3 morceaux, écran déjà joué, abandon, reprise, pas de défi, partage, scoring)
+- [x] Tests E2E Playwright (12 scénarios : happy path, écran déjà joué, abandon mid-game, reprise, abandon depuis reprise, pas de défi, partage, scoring palier/mauvaise réponse/partiel)
 
 ## 🚧 Mobile
 
