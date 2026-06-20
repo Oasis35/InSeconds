@@ -62,7 +62,7 @@ test.describe('Admin — pool', () => {
     await page.getByRole('button', { name: /Pool/ }).click();
     await admin.poolFilterPreview().selectOption('missing');
     // 5 morceaux sans preview dans le seed
-    await expect(page.getByText('Manquante')).toHaveCount(5);
+    await expect(page.getByRole('cell', { name: 'Manquante' })).toHaveCount(5);
     await expect(page.getByRole('button', { name: '↻ Actualiser' })).toHaveCount(5);
   });
 
@@ -72,8 +72,8 @@ test.describe('Admin — pool', () => {
     await admin.login();
     await page.getByRole('button', { name: /Pool/ }).click();
     await admin.poolFilterStatus().selectOption('available');
-    await expect(page.getByText('Utilisé')).not.toBeVisible();
-    await expect(page.getByText('Disponible').first()).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Utilisé' })).not.toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Disponible' }).first()).toBeVisible();
   });
 
   test('ajoute un morceau via la modale', async ({ page }) => {
@@ -86,9 +86,10 @@ test.describe('Admin — pool', () => {
     // Cherche dans la modale
     const modalSearch = page.getByPlaceholder('Rechercher artiste ou titre...').last();
     await modalSearch.fill('E2E Track');
-    // FakeDeezerHandler retourne "E2E Track" — attendre le résultat
-    await expect(page.getByText('E2E Artist')).toBeVisible({ timeout: 5000 });
-    await page.getByText('E2E Artist').click();
+    // FakeDeezerHandler retourne "E2E Track" — attendre le résultat (debounce 300ms + réseau)
+    const result = page.getByText('E2E Artist — E2E Track');
+    await expect(result).toBeVisible({ timeout: 10000 });
+    await result.click();
     await admin.modalAddAndCloseButton().click();
 
     // La modale se ferme et le pool est rechargé
@@ -108,7 +109,7 @@ test.describe('Admin — pool', () => {
     // Clique sur la corbeille
     await page.getByRole('button', { name: '🗑' }).first().click();
     await expect(admin.deleteModal()).toBeVisible();
-    await expect(page.getByText('Sabrina Carpenter')).toBeVisible();
+    await expect(page.getByText('Sabrina Carpenter — Espresso')).toBeVisible();
 
     await admin.confirmDeleteButton().click();
     await expect(admin.deleteModal()).not.toBeVisible();
@@ -200,7 +201,7 @@ test.describe('Admin — défis', () => {
     await admin.login();
     // 3 défis dans le seed (J-2, J-1, aujourd'hui)
     await page.getByRole('button', { name: /Défis/ }).click();
-    const rows = page.locator('ul > li');
+    const rows = page.locator('ul > li > p.font-mono');
     await expect(rows).toHaveCount(3);
   });
 });
