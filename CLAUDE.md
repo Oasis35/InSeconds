@@ -279,9 +279,11 @@ Runners Ubuntu, ~5-7 min par run (jobs `back`/`front`/`integration-tests` en par
 - **`BackgroundService` génération défi quotidien** — `GenerateDailyChallengeService` s'exécute à 3h UTC
 - **Streak joueur** : `Player.CurrentStreak` + `Player.LastPlayedDate` (migration `PlayerStreak`), mis à jour dans `SubmitAnswer/Handler.cs` à la complétion (parties complètes uniquement), affiché sur l'écran récap final et l'écran "déjà joué"
 - **Morceaux sans preview** : `SubmitAnswerValidator` accepte `ListenedDurationSeconds = 0` (skip), `BlindRoundComponent` affiche un bouton "Passer" si `previewUrl` est vide. `DailyChallengeGenerator` filtre les tracks sans preview active (appel Deezer) avant sélection.
-- **`GET /api/admin/stats`** — dashboard admin : activité 30 jours, répartition joueurs guests/inscrits/actifs, stats par défi (médiane, moy., min/max score, taux artiste/titre par morceau)
-- **Page admin — Pool** : sous-onglets "Disponibles" / "Déjà utilisés" ; indicateur preview (vert/rouge) sur chaque track disponible via `TrackDto.HasPreview` (appel Deezer en parallèle dans `GetTracksHandler`) ; popup d'ajout avec recherche Deezer + lecteur preview 30s + boutons "Ajouter" / "Ajouter et fercer"
-- **Tests d'intégration backend** (`InSeconds.Api.IntegrationTests`) : Testcontainers.PostgreSql + `WebApplicationFactory<Program>` + Respawn. 53 tests couvrant `StartSession` (tracks, ordre, reprise Pending, 409 Completed/Abandoned), `SubmitAnswer` (scores, scoring partiel, complétion auto → 409 `already_played`), `AbandonSession` (abandon Pending OK, abandon Completed 400), `Stats/Today` (filtrage Completed seul), `AdminStats` (auth, structure, compteurs Pending/Abandoned), `Auth/Me` (soft-delete, nouveau guest), `SessionEdgeCases` (expiry paresseuse, submit sur session abandonnée, streak). Tournent en mode `Testing` (FakeDeezerHandler + seed auto). Job CI `integration-tests` séparé.
+- **`GET /api/admin/stats?date=yyyy-MM-dd`** — dashboard admin : KPIs du jour sélectionné (`DailyKpisDto` : complétés, abandons, taux de complétion, score médian), activité 30 jours (tous les jours remplis, jours vides = 0), liste des dates disponibles (`AvailableDates`), répartition joueurs guests/inscrits/actifs, stats par défi (médiane, moy., min/max score, taux artiste/titre par morceau). Paramètre `date` optionnel, défaut = aujourd'hui. Jours passés : Pending comptés comme Abandoned dans les KPIs.
+- **Page admin — Pool** : sous-onglets "Disponibles" / "Déjà utilisés" ; indicateur preview (vert/rouge) sur chaque track disponible via `TrackDto.HasPreview` (appel Deezer en parallèle dans `GetTracksHandler`) ; popup d'ajout avec recherche Deezer + lecteur preview 30s + boutons "Ajouter" / "Ajouter et fermer"
+- **`DELETE /api/admin/tracks/{id}`** — suppression d'un morceau du pool depuis la page admin (checkbox + corbeille individuelle, sélection multiple, modale de confirmation) ; interdit si utilisé dans un défi (409) ; 404 si introuvable
+- **`PUT /api/admin/tracks/{id}`** — actualisation d'un morceau sans preview : bouton "↻ Actualiser" ouvre la modale en mode update, écrase `DeezerTrackId`/`Artist`/`Title`/`CoverHash` ; interdit si utilisé dans un défi (409) ; 409 si nouveau DeezerTrackId déjà pris ; 422 si introuvable sur Deezer
+- **Tests d'intégration backend** (`InSeconds.Api.IntegrationTests`) : Testcontainers.PostgreSql + `WebApplicationFactory<Program>` + Respawn. 69 tests couvrant `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (KPIs jour, AvailableDates, fix 30j, Pending→Abandoned jours passés), `Auth/Me`, `SessionEdgeCases`, `ChallengeGeneration`, `Admin/Tracks` (DeleteTrack, UpdateTrack). Tournent en mode `Testing` (FakeDeezerHandler + seed auto). Job CI `integration-tests` séparé.
 - **Partage score** : bouton "🔗 Partager mon score" sur l'écran récap — copie dans le presse-papier un résumé emoji Wordle-style (`🟩🟩 0.5s | 🟨⬜ 2s`) + lien `/blindtest`
 - **Route `/blindtest`** — alias de `/`, utilisée dans les liens de partage et les balises Open Graph
 - **Open Graph + Twitter Card** dans `index.html` — balises méta pour le partage WhatsApp/Signal/Twitter (sans image)
@@ -290,18 +292,15 @@ Runners Ubuntu, ~5-7 min par run (jobs `back`/`front`/`integration-tests` en par
 - **`SessionStatus`** (Pending/Completed/Abandoned) : session comptabilisée seulement si complète ou explicitement abandonnée. `StartSession` retourne `IsResuming=true` + `completedAnswers` si session Pending. Expiry paresseuse : Pending de la veille → Abandoned au prochain StartSession. Stats/leaderboard filtrés sur `Completed`. Dashboard admin affiche `pendingCount` + `abandonedCount`
 - **`PUT /api/sessions/{id}/abandon`** — `AbandonSession` endpoint (slice complète Endpoint+Command+Handler)
 - **Bouton Abandonner** dans le template `game.component.ts` — mid-game + écran resume_prompt ; confirmation inline ; appel `game.service.ts#abandonSession()`
-- **`ASPNETCORE_ENVIRONMENT=Testing`** : `FakeDeezerHandler` (retourne preview URL locale `test-audio.mp3`), `PurgeSeedData` au démarrage, endpoint `DELETE /api/e2e/reset` + `POST /api/e2e/reseed` (auth admin requise)
+- **`ASPNETCORE_ENVIRONMENT=Testing`** : `FakeDeezerHandler` (retourne preview URL locale `test-audio.mp3` pour tous les IDs sauf IDs >= `9_000_000_000` → `preview: ""` pour simuler l'absence de preview), `PurgeSeedData` au démarrage, endpoint `DELETE /api/e2e/reset` + `POST /api/e2e/reseed` (auth admin requise)
 - **Cookie `SameSite=Strict; Secure=false`** en Testing (HTTP local), `SameSite=None; Secure=true` en prod
-- **Seed données dev/test dans `E2EResetEndpoint.SeedData()`** — 50 morceaux + défis J-2/J-1/aujourd'hui + joueur dev. Appelé au démarrage si `IsDevelopment() || IsEnvironment("Testing")` et `!db.Tracks.Any()`. Ne jamais mettre de données de référence dans les migrations EF (elles s'appliquent en prod aussi).
+- **Seed données dev/test dans `E2EResetEndpoint.SeedData()`** — 55 morceaux (dont 5 sans preview : IDs >= `9_000_000_000`, forcés KO par `FakeDeezerHandler` en Testing / 404 Deezer réel en dev) + défis J-2/J-1/aujourd'hui + joueur dev. Appelé au démarrage si `IsDevelopment() || IsEnvironment("Testing")` et `!db.Tracks.Any()`. Ne jamais mettre de données de référence dans les migrations EF (elles s'appliquent en prod aussi).
 
 ## À venir (pas encore implémenté)
 
-- Tests d'intégration supplémentaires (génération de défi quotidien, admin tracks/challenges)
 - Tests mobiles (iOS Safari, Android Chrome)
 - Polish : charte graphique, messages d'erreur, accessibilité, RGPD
-- Sécurité avant passage public du repo : externaliser le mot de passe PostgreSQL de `appsettings.json` et `docker-compose.yml`
 - **Cache Redis pour les preview URLs Deezer** : les URLs sont identiques pour tous les joueurs du même défi. Intercaler dans `StartSession/Handler.cs` au niveau du `Task.WhenAll()` — chercher d'abord dans Redis (clé = DeezerTrackId, TTL 24h), sinon appeler Deezer. Nécessite `StackExchange.Redis` + entrée Redis dans `docker-compose.yml`.
-- Supprimer un morceau du pool depuis la page admin
 
 ## Décisions d'architecture notables
 

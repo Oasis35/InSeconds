@@ -1,5 +1,6 @@
 using InSeconds.Api.Features.Admin.Login;
 using InSeconds.Api.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace InSeconds.Api.Features.Admin.Stats.GetAdminStats;
@@ -11,16 +12,22 @@ public static class GetAdminStatsEndpoint
         routes.MapGet("/api/admin/stats", async (
             HttpContext ctx,
             ApplicationDbContext db,
+            [FromQuery] string? date,
             CancellationToken ct) =>
         {
             if (!LoginEndpoint.IsAdminAuthenticated(ctx))
                 return Results.Unauthorized();
 
-            var challengeStats = await BuildChallengeStats(db, ct);
-            var dailyActivity = await BuildDailyActivity(db, ct);
-            var playerBreakdown = await BuildPlayerBreakdown(db, ct);
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var selectedDate = date is not null && DateOnly.TryParse(date, out var parsed) ? parsed : today;
 
-            return Results.Ok(new AdminStatsResponse(challengeStats, dailyActivity, playerBreakdown));
+            var challengeStats   = await BuildChallengeStats(db, ct);
+            var dailyActivity    = await BuildDailyActivity(db, ct);
+            var playerBreakdown  = await BuildPlayerBreakdown(db, ct);
+            var availableDates   = await BuildAvailableDates(db, ct);
+            var selectedDayKpis  = await BuildDailyKpis(db, selectedDate, today, ct);
+
+            return Results.Ok(new AdminStatsResponse(challengeStats, dailyActivity, playerBreakdown, availableDates, selectedDayKpis));
         })
         .WithName("GetAdminStats")
         .WithTags("Admin")
@@ -50,10 +57,10 @@ public static class GetAdminStatsEndpoint
                         t.Position,
                         t.Track.Artist,
                         t.Track.Title,
-                        TotalAnswers = t.Answers.Count,
+                        TotalAnswers  = t.Answers.Count,
                         ArtistCorrect = t.Answers.Count(a => a.ArtistCorrect),
-                        TitleCorrect = t.Answers.Count(a => a.TitleCorrect),
-                        AvgListened = t.Answers.Average(a => (double?)a.ListenedDurationSeconds)
+                        TitleCorrect  = t.Answers.Count(a => a.TitleCorrect),
+                        AvgListened   = t.Answers.Average(a => (double?)a.ListenedDurationSeconds)
                     })
                     .ToList()
             })
@@ -74,7 +81,7 @@ public static class GetAdminStatsEndpoint
                 t.Title,
                 t.TotalAnswers,
                 t.TotalAnswers == 0 ? 0 : Math.Round((double)t.ArtistCorrect / t.TotalAnswers * 100, 1),
-                t.TotalAnswers == 0 ? 0 : Math.Round((double)t.TitleCorrect / t.TotalAnswers * 100, 1),
+                t.TotalAnswers == 0 ? 0 : Math.Round((double)t.TitleCorrect  / t.TotalAnswers * 100, 1),
                 t.AvgListened.HasValue ? Math.Round(t.AvgListened.Value, 2) : null
             )).ToList();
 
@@ -95,6 +102,7 @@ public static class GetAdminStatsEndpoint
     private static async Task<IReadOnlyList<DailyActivityDto>> BuildDailyActivity(ApplicationDbContext db, CancellationToken ct)
     {
         var since = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-29));
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
         var raw = await db.GameSessions
             .AsNoTracking()
@@ -103,21 +111,72 @@ public static class GetAdminStatsEndpoint
             .Select(g => new { Date = g.Key, Count = g.Count() })
             .ToListAsync(ct);
 
-        return raw
-            .OrderBy(x => x.Date)
-            .Select(x => new DailyActivityDto(x.Date, x.Count))
+        var byDate = raw.ToDictionary(x => x.Date, x => x.Count);
+
+        // Génère les 30 jours glissants, jours sans activité = 0
+        return Enumerable.Range(0, 30)
+            .Select(i => since.AddDays(i))
+            .Where(d => d <= today)
+            .Select(d => new DailyActivityDto(d, byDate.GetValueOrDefault(d, 0)))
             .ToList();
+    }
+
+    private static async Task<IReadOnlyList<DateOnly>> BuildAvailableDates(ApplicationDbContext db, CancellationToken ct)
+    {
+        return await db.DailyChallenges
+            .AsNoTracking()
+            .OrderByDescending(c => c.Date)
+            .Select(c => c.Date)
+            .ToListAsync(ct);
+    }
+
+    private static async Task<DailyKpisDto?> BuildDailyKpis(
+        ApplicationDbContext db, DateOnly date, DateOnly today, CancellationToken ct)
+    {
+        var exists = await db.DailyChallenges
+            .AsNoTracking()
+            .AnyAsync(c => c.Date == date, ct);
+
+        if (!exists) return null;
+
+        var sessions = await db.GameSessions
+            .AsNoTracking()
+            .Where(s => s.DailyChallenge.Date == date)
+            .Select(s => new { s.Status, s.TotalScore })
+            .ToListAsync(ct);
+
+        var completed  = sessions.Count(s => s.Status == Domain.SessionStatus.Completed);
+        var abandoned  = sessions.Count(s => s.Status == Domain.SessionStatus.Abandoned);
+        var pending    = sessions.Count(s => s.Status == Domain.SessionStatus.Pending);
+
+        // Jour passé : Pending comptés comme Abandoned
+        var effectiveAbandoned = date < today ? abandoned + pending : abandoned;
+        var total = completed + abandoned + pending;
+        var completionRate = total == 0 ? 0.0 : Math.Round((double)completed / total * 100, 1);
+
+        var scores = sessions
+            .Where(s => s.Status == Domain.SessionStatus.Completed)
+            .Select(s => s.TotalScore)
+            .OrderBy(s => s)
+            .ToList();
+
+        double? median = scores.Count == 0 ? null
+            : scores.Count % 2 == 1
+                ? scores[scores.Count / 2]
+                : (scores[scores.Count / 2 - 1] + scores[scores.Count / 2]) / 2.0;
+
+        return new DailyKpisDto(date, completed, effectiveAbandoned, total, completionRate, median);
     }
 
     private static async Task<PlayerBreakdownDto> BuildPlayerBreakdown(ApplicationDbContext db, CancellationToken ct)
     {
-        var cutoff7 = DateTime.UtcNow.AddDays(-7);
+        var cutoff7  = DateTime.UtcNow.AddDays(-7);
         var cutoff30 = DateTime.UtcNow.AddDays(-30);
 
-        var guests = await db.Players.CountAsync(p => !p.IsDeleted && p.IsGuest, ct);
+        var guests     = await db.Players.CountAsync(p => !p.IsDeleted && p.IsGuest,  ct);
         var registered = await db.Players.CountAsync(p => !p.IsDeleted && !p.IsGuest, ct);
-        var active7 = await db.Players.CountAsync(p => !p.IsDeleted && p.LastSeenAt >= cutoff7, ct);
-        var active30 = await db.Players.CountAsync(p => !p.IsDeleted && p.LastSeenAt >= cutoff30, ct);
+        var active7    = await db.Players.CountAsync(p => !p.IsDeleted && p.LastSeenAt >= cutoff7,  ct);
+        var active30   = await db.Players.CountAsync(p => !p.IsDeleted && p.LastSeenAt >= cutoff30, ct);
 
         return new PlayerBreakdownDto(guests, registered, active7, active30);
     }
