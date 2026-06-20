@@ -48,9 +48,10 @@ public static class E2EResetEndpoint
             if (!LoginEndpoint.IsAdminAuthenticated(ctx))
                 return Results.Unauthorized();
 
-            await db.GameSessionAnswers.ExecuteDeleteAsync(ct);
-            await db.GameSessions.ExecuteDeleteAsync(ct);
-            await db.Players.ExecuteDeleteAsync(ct);
+            // IgnoreQueryFilters : supprime aussi les lignes des joueurs soft-deleted
+            await db.GameSessionAnswers.IgnoreQueryFilters().ExecuteDeleteAsync(ct);
+            await db.GameSessions.IgnoreQueryFilters().ExecuteDeleteAsync(ct);
+            await db.Players.IgnoreQueryFilters().ExecuteDeleteAsync(ct);
             await db.DailyChallengeTracks.ExecuteDeleteAsync(ct);
             await db.DailyChallenges.ExecuteDeleteAsync(ct);
             await db.Tracks.ExecuteDeleteAsync(ct);

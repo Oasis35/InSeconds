@@ -4,6 +4,9 @@ using System.Net.Http.Json;
 using InSeconds.Api.Features.Admin.Tracks.AddTrack;
 using InSeconds.Api.Features.Admin.Tracks.GetTracks;
 using InSeconds.Api.Features.Admin.Challenges.GetChallenges;
+using InSeconds.Api.Features.Admin.Stats.GetAdminStats;
+using InSeconds.Api.Features.Sessions.StartSession;
+using InSeconds.Api.Features.Sessions.SubmitAnswer;
 
 namespace InSeconds.Api.IntegrationTests;
 
@@ -176,7 +179,101 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
     }
 
+    // ── Admin Stats ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task AdminStats_SansAuth_Retourne401()
+    {
+        var resp = await _client.GetAsync("/api/admin/stats");
+        Assert.Equal(HttpStatusCode.Unauthorized, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task AdminStats_RetourneStructureComplete()
+    {
+        var resp = await AdminGetAsync("/api/admin/stats");
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+
+        var body = await resp.Content.ReadFromJsonAsync<AdminStatsResponse>();
+        Assert.NotNull(body);
+        Assert.NotNull(body.Challenges);
+        Assert.NotNull(body.DailyActivity);
+        Assert.NotNull(body.PlayerBreakdown);
+    }
+
+    [Fact]
+    public async Task AdminStats_ApresPartieComplete_ComptePlayerCountEtPasDesPending()
+    {
+        var session = await StartSessionAsync();
+        foreach (var track in session.Tracks)
+            await SubmitAsync(session.SessionId, track.Id, 1m, "X", null);
+
+        var resp = await AdminGetAsync("/api/admin/stats");
+        var body = await resp.Content.ReadFromJsonAsync<AdminStatsResponse>();
+        Assert.NotNull(body);
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var todayStats = body.Challenges.FirstOrDefault(c => c.Date == today);
+        Assert.NotNull(todayStats);
+        Assert.Equal(1, todayStats.PlayerCount);
+        Assert.Equal(0, todayStats.PendingCount);
+        Assert.Equal(0, todayStats.AbandonedCount);
+        Assert.NotNull(todayStats.ScoreMin);
+        Assert.NotNull(todayStats.ScoreMax);
+    }
+
+    [Fact]
+    public async Task AdminStats_ApresAbandon_CompteAbandonedPasPlayerCount()
+    {
+        var session = await StartSessionAsync();
+        await _client.PutAsync($"/api/sessions/{session.SessionId}/abandon", null);
+
+        var resp = await AdminGetAsync("/api/admin/stats");
+        var body = await resp.Content.ReadFromJsonAsync<AdminStatsResponse>();
+        Assert.NotNull(body);
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var todayStats = body.Challenges.FirstOrDefault(c => c.Date == today);
+        Assert.NotNull(todayStats);
+        Assert.Equal(0, todayStats.PlayerCount);
+        Assert.Equal(1, todayStats.AbandonedCount);
+        Assert.Equal(0, todayStats.PendingCount);
+        Assert.Null(todayStats.ScoreMin);
+    }
+
+    [Fact]
+    public async Task AdminStats_ApresSessionPending_ComptePendingPasPlayerCount()
+    {
+        var session = await StartSessionAsync();
+        await SubmitAsync(session.SessionId, session.Tracks[0].Id, 1m, "X", null);
+
+        var resp = await AdminGetAsync("/api/admin/stats");
+        var body = await resp.Content.ReadFromJsonAsync<AdminStatsResponse>();
+        Assert.NotNull(body);
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var todayStats = body.Challenges.FirstOrDefault(c => c.Date == today);
+        Assert.NotNull(todayStats);
+        Assert.Equal(0, todayStats.PlayerCount);
+        Assert.Equal(1, todayStats.PendingCount);
+        Assert.Equal(0, todayStats.AbandonedCount);
+    }
+
     // ── helpers ──────────────────────────────────────────────────────────────
+
+    private async Task<StartSessionResponse> StartSessionAsync()
+    {
+        var resp = await _client.PostAsync("/api/sessions", null);
+        resp.EnsureSuccessStatusCode();
+        return (await resp.Content.ReadFromJsonAsync<StartSessionResponse>())!;
+    }
+
+    private Task<HttpResponseMessage> SubmitAsync(
+        int sessionId, int trackId, decimal duration, string? artist, string? title)
+    {
+        return _client.PostAsJsonAsync($"/api/sessions/{sessionId}/answers",
+            new SubmitAnswerBody(trackId, duration, false, artist, title));
+    }
 
     private Task<HttpResponseMessage> AdminGetAsync(string url)
     {

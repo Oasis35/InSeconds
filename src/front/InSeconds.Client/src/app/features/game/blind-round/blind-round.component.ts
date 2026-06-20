@@ -333,7 +333,7 @@ export class BlindRoundComponent implements OnDestroy {
   }
 
   private doSubmit(): void {
-    const { wasExtended } = this.audio.stop();
+    const wasExtended = this.audio.extended();
     this.answered.emit({
       trackId:                 this.track().id,
       listenedDurationSeconds: this.chosenDuration(),
