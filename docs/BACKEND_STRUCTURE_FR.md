@@ -75,7 +75,7 @@ public sealed class Player
 - `IX_Players_AuthToken` (unique)
 - `CK_Players_GuestPseudo` : invariant `IsGuest ⇔ Pseudo IS NULL` garanti en BD
 - **Global query filter EF** `!IsDeleted` propagé en cascade sur sessions/answers
-- `CurrentStreak` et `LastPlayedDate` mis à jour dans `StartSession/Handler.cs` à chaque début de partie
+- `CurrentStreak` et `LastPlayedDate` mis à jour dans `SubmitAnswer/Handler.cs` à la complétion (parties complètes uniquement)
 
 ### Track
 
@@ -126,11 +126,19 @@ public sealed class GameSession
     public int TotalScore { get; set; }
     public decimal TotalDurationSeconds { get; set; }  // somme des paliers joués
     public DateTime CreatedAt { get; set; }
+    public SessionStatus Status { get; set; }          // Pending=0, Completed=1, Abandoned=2
+    public DateTime? CompletedAt { get; set; }
+    public DateTime? AbandonedAt { get; set; }
 }
 ```
 
-- `UNIQUE (PlayerId, DailyChallengeId)` → **anti-rejeu : 1 partie/jour/joueur**
+- `UNIQUE (PlayerId, DailyChallengeId)` → **anti-rejeu : 1 entrée/jour/joueur**
 - `IX_GameSessions_Leaderboard (DailyChallengeId, TotalScore DESC, TotalDurationSeconds ASC)`
+- `IX_GameSessions_ChallengeStatus (DailyChallengeId, Status)` — requêtes admin
+- **Seules les sessions `Completed` comptent** dans les stats/leaderboard. `Pending` permet la reprise jusqu'à minuit. `Abandoned` (bouton explicite ou expiry paresseuse) bloque le rejeu.
+- **Anti-rejeu** : `Completed` ou `Abandoned` → 409. `Pending` → reprise avec `IsResuming=true`.
+- **Complétion auto** dans `SubmitAnswer/Handler.cs` : quand `réponses soumises + 1 >= TracksPerChallenge`.
+- **Expiry paresseuse** : les sessions `Pending` de la veille sont passées à `Abandoned` au prochain appel `StartSession`.
 
 ### GameSessionAnswer
 
@@ -207,8 +215,9 @@ Résout ou crée un `Player` guest à partir du cookie HTTP-only signé. `SameSi
 
 | Slice | Endpoint | Rôle |
 |-------|----------|------|
-| `Sessions/StartSession` | `POST /api/sessions` | Crée ou récupère la session du jour |
-| `Sessions/SubmitAnswer` | `POST /api/sessions/{id}/answers` | Scoring serveur + stats par morceau |
+| `Sessions/StartSession` | `POST /api/sessions` | Crée session Pending ou retourne reprise si Pending existante |
+| `Sessions/SubmitAnswer` | `POST /api/sessions/{id}/answers` | Scoring serveur + stats + complétion auto |
+| `Sessions/AbandonSession` | `PUT /api/sessions/{id}/abandon` | Marque une session Pending comme abandonnée |
 | `Stats/Today` | `GET /api/stats/today` | Score joueur, médiane, stats par morceau |
 | `Auth/Me` | `GET /api/auth/me` | Retourne `{ id, isGuest, pseudo }` du joueur courant (cookie) |
 | `Settings/GetSettings` | `GET /api/settings` | Expose les settings publics (paliers, timer, scores) |

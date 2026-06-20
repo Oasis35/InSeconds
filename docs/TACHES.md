@@ -1,6 +1,6 @@
 # InSeconds — Liste des Tâches
 
-> Mis à jour le 2026-06-19.
+> Mis à jour le 2026-06-20.
 
 ## ✅ Bootstrap projet
 
@@ -21,11 +21,15 @@
 - [x] `DeezerClient` — recherche + preview + extraction `CoverHash`
 - [x] `BackgroundService` génération défi quotidien (3h UTC)
 - [x] Slice `Sessions/StartSession` + `Sessions/SubmitAnswer` (scoring serveur + stats)
+- [x] Slice `Sessions/AbandonSession` — `PUT /api/sessions/{id}/abandon`, marque une session Pending comme abandonnée
+- [x] `SessionStatus` enum (Pending=0, Completed=1, Abandoned=2) — session comptabilisée seulement si complétée ou abandonnée
+- [x] Reprise de partie — `StartSession` retourne `IsResuming=true` + `CompletedAnswers` si session Pending existante
+- [x] Expiry paresseuse — sessions Pending du jour précédent passées à Abandoned au prochain `StartSession`
 - [x] Slice `Stats/Today` — score joueur, médiane (`PERCENTILE_CONT(0.5)`), stats par morceau
 - [x] Page admin : login Bearer, pool morceaux, création défis, reset sessions
 - [x] `ListenedDurationSeconds` / `TotalDurationSeconds` en `decimal` (paliers 0.5, 1, 1.5, 2, 3, 5, 10)
 - [x] Tests unitaires back : `TextNormalizer`, `ScoreCalculator`, `CookieAuthService`, `PlayerAuthMiddleware`, `AppSettingsBinding`, `StartSessionHandler`, `SubmitAnswerHandler`, `GenerateDailyChallengeService`, `AddTrackHandler`, `MeEndpoint`, `GetTracksHandler`, `SubmitAnswerValidator`
-- [x] Streak joueur : `Player.CurrentStreak` + `Player.LastPlayedDate`, mis à jour dans `StartSession/Handler.cs`
+- [x] Streak joueur : `Player.CurrentStreak` + `Player.LastPlayedDate`, mis à jour dans `SubmitAnswer/Handler.cs` à la complétion (parties complètes uniquement)
 - [x] Morceaux sans preview : `SubmitAnswerValidator` accepte `ListenedDurationSeconds = 0` (skip), `BlindRoundComponent` affiche un bouton "Passer" si `previewUrl` est vide
 - [x] `DailyChallengeGenerator` filtre les tracks sans preview active (appel Deezer `Task.WhenAll`) avant sélection
 - [x] `GET /api/admin/stats` — dashboard admin : activité 30 jours, répartition joueurs, stats par défi
@@ -89,10 +93,10 @@
 
 ## 🚧 Tests
 
-- [x] Tests d'intégration backend (Testcontainers) — `StartSession` + `SubmitAnswer` (7 scénarios : tracks retournées, ordre, anti-rejeu 409, score max, score 0, artiste seul 50%, palier court > long, 404, double soumission 409)
-- [ ] Tests d'intégration supplémentaires (admin endpoints, stats, génération de défi)
+- [x] Tests d'intégration backend (Testcontainers) — 53 scénarios : `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats`, `Auth/Me` (soft-delete), `SessionEdgeCases` (expiry paresseuse, streak, submit sur session abandonnée)
+- [ ] Tests d'intégration supplémentaires (génération de défi quotidien, admin tracks/challenges)
 - [ ] Tests front Karma/Jasmine (`AudioPlayerService` — dont `preloadAll`, `GameService`)
-- [x] Tests E2E Playwright (9 scénarios : happy path 3 morceaux, écran déjà joué, pas de défi, partage, scoring)
+- [x] Tests E2E Playwright (12 scénarios : happy path, écran déjà joué, abandon mid-game, reprise, abandon depuis reprise, pas de défi, partage, scoring palier/mauvaise réponse/partiel)
 
 ## 🚧 Mobile
 

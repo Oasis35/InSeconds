@@ -79,7 +79,7 @@ public sealed class SubmitAnswerHandlerTests
         return (challenge, challengeTrack);
     }
 
-    private static GameSession BuildSession(int id = 1, int challengeId = 1) => new()
+    private static GameSession BuildSession(int id = 1, int challengeId = 1, SessionStatus status = SessionStatus.Pending) => new()
     {
         Id                   = id,
         PlayerId             = FakePlayerId,
@@ -87,6 +87,7 @@ public sealed class SubmitAnswerHandlerTests
         TotalScore           = 0,
         TotalDurationSeconds = 0,
         CreatedAt            = DateTime.UtcNow,
+        Status               = status,
     };
 
     private static async Task<(GameSession session, DailyChallengeTrack challengeTrack)> SeedAsync(
@@ -315,5 +316,78 @@ public sealed class SubmitAnswerHandlerTests
         // Assert
         result.Should().BeAssignableTo<IStatusCodeHttpResult>()
             .Which.StatusCode.Should().Be(403);
+    }
+
+    [Fact]
+    public async Task Handle_WhenSessionAbandoned_ReturnsForbid()
+    {
+        // Arrange
+        await using var db = CreateDbContext();
+        db.Players.Add(BuildPlayer());
+        var (challenge, _) = BuildChallengeWithTrack();
+        db.DailyChallenges.Add(challenge);
+        await db.SaveChangesAsync();
+
+        var session = BuildSession(status: SessionStatus.Abandoned);
+        db.GameSessions.Add(session);
+        await db.SaveChangesAsync();
+
+        var command = BuildCommand();
+
+        // Act
+        var result = await CreateHandler(db).Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Should().BeAssignableTo<IStatusCodeHttpResult>()
+            .Which.StatusCode.Should().Be(403);
+    }
+
+    [Fact]
+    public async Task Handle_WhenLastAnswer_MarksSessionCompleted()
+    {
+        // Arrange — challenge à 1 track (TracksPerChallenge par défaut = 3 dans AppSettings mais on simule 1 track répondue)
+        // On utilise AppSettings avec TracksPerChallenge = 1 pour simplifier
+        await using var db = CreateDbContext();
+        db.Players.Add(BuildPlayer());
+        var (challenge, _) = BuildChallengeWithTrack();
+        db.DailyChallenges.Add(challenge);
+        await db.SaveChangesAsync();
+
+        var session = BuildSession();
+        db.GameSessions.Add(session);
+        await db.SaveChangesAsync();
+
+        var settings = new AppSettings { TracksPerChallenge = 1 };
+        var handler = new SubmitAnswerHandler(db, new ScoreCalculator(), new TextNormalizer(), new SettingsService(Options.Create(settings)));
+        var command = BuildCommand(duration: 1, artist: "Daft Punk", title: "Get Lucky");
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Should().BeOfType<Ok<SubmitAnswerResponse>>();
+
+        var updatedSession = await db.GameSessions.FindAsync(session.Id);
+        updatedSession!.Status.Should().Be(SessionStatus.Completed);
+        updatedSession.CompletedAt.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task Handle_WhenNotLastAnswer_StatusRemainsActive()
+    {
+        // Arrange — TracksPerChallenge = 3 (défaut), on soumet seulement 1 réponse
+        await using var db = CreateDbContext();
+        await SeedAsync(db);
+        var command = BuildCommand(duration: 1, artist: "Daft Punk", title: "Get Lucky");
+
+        // Act
+        var result = await CreateHandler(db).Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Should().BeOfType<Ok<SubmitAnswerResponse>>();
+
+        var session = await db.GameSessions.FindAsync(1);
+        session!.Status.Should().Be(SessionStatus.Pending);
+        session.CompletedAt.Should().BeNull();
     }
 }

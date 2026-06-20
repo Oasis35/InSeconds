@@ -40,8 +40,10 @@ public static class GetAdminStatsEndpoint
             {
                 c.Id,
                 c.Date,
-                Scores = c.GameSessions.Select(s => s.TotalScore).ToList(),
-                Tracks = c.Tracks
+                Scores         = c.GameSessions.Where(s => s.Status == Domain.SessionStatus.Completed).Select(s => s.TotalScore).ToList(),
+                PendingCount   = c.GameSessions.Count(s => s.Status == Domain.SessionStatus.Pending),
+                AbandonedCount = c.GameSessions.Count(s => s.Status == Domain.SessionStatus.Abandoned),
+                Tracks         = c.Tracks
                     .OrderBy(t => t.Position)
                     .Select(t => new
                     {
@@ -80,6 +82,8 @@ public static class GetAdminStatsEndpoint
                 c.Id,
                 c.Date,
                 scores.Count,
+                c.PendingCount,
+                c.AbandonedCount,
                 scores.Count == 0 ? null : scores.Min(),
                 scores.Count == 0 ? null : scores.Max(),
                 scores.Count == 0 ? null : Math.Round(scores.Average(), 1),
@@ -94,7 +98,7 @@ public static class GetAdminStatsEndpoint
 
         var raw = await db.GameSessions
             .AsNoTracking()
-            .Where(s => s.DailyChallenge.Date >= since)
+            .Where(s => s.DailyChallenge.Date >= since && s.Status == Domain.SessionStatus.Completed)
             .GroupBy(s => s.DailyChallenge.Date)
             .Select(g => new { Date = g.Key, Count = g.Count() })
             .ToListAsync(ct);

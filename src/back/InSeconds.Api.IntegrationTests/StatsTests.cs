@@ -30,7 +30,7 @@ public class StatsTests(IntegrationTestFactory factory) : IAsyncLifetime
     [Fact]
     public async Task TodayStats_ApresUnePartie_RetourneScoreEtUnJoueur()
     {
-        // Joue une partie complète
+        // Joue une partie complète (3 morceaux → session Completed)
         var sessionResp = await _client.PostAsync("/api/sessions", null);
         var session = await sessionResp.Content.ReadFromJsonAsync<StartSessionResponse>();
         Assert.NotNull(session);
@@ -64,5 +64,41 @@ public class StatsTests(IntegrationTestFactory factory) : IAsyncLifetime
             Assert.NotEmpty(t.Artist);
             Assert.NotEmpty(t.Title);
         });
+    }
+
+    [Fact]
+    public async Task TodayStats_PartieAbandonee_NApparaitPasDansLesStats()
+    {
+        // Démarrer une session puis abandonner
+        var sessionResp = await _client.PostAsync("/api/sessions", null);
+        var session = await sessionResp.Content.ReadFromJsonAsync<StartSessionResponse>();
+        Assert.NotNull(session);
+
+        var abandonResp = await _client.PutAsync($"/api/sessions/{session.SessionId}/abandon", null);
+        Assert.Equal(HttpStatusCode.NoContent, abandonResp.StatusCode);
+
+        var resp = await _client.GetAsync("/api/stats/today");
+        var body = await resp.Content.ReadFromJsonAsync<TodayStatsResponse>();
+        Assert.NotNull(body);
+        Assert.Equal(0, body.TotalPlayers);
+        Assert.Null(body.YourScore);
+    }
+
+    [Fact]
+    public async Task TodayStats_PartiePending_NApparaitPasDansLesStats()
+    {
+        // Démarrer une session et répondre à un seul morceau (reste Pending)
+        var sessionResp = await _client.PostAsync("/api/sessions", null);
+        var session = await sessionResp.Content.ReadFromJsonAsync<StartSessionResponse>();
+        Assert.NotNull(session);
+
+        await _client.PostAsJsonAsync($"/api/sessions/{session.SessionId}/answers",
+            new SubmitAnswerBody(session.Tracks[0].Id, 1m, false, "X", null));
+
+        var resp = await _client.GetAsync("/api/stats/today");
+        var body = await resp.Content.ReadFromJsonAsync<TodayStatsResponse>();
+        Assert.NotNull(body);
+        Assert.Equal(0, body.TotalPlayers);
+        Assert.Null(body.YourScore);
     }
 }

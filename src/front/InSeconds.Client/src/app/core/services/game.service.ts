@@ -16,4 +16,8 @@ export class GameService {
   submitAnswer(sessionId: number, body: SubmitAnswerRequest): Observable<SubmitAnswerResponse> {
     return this.http.post<SubmitAnswerResponse>(`${this.base}/${sessionId}/answers`, body);
   }
+
+  abandonSession(sessionId: number): Observable<void> {
+    return this.http.put<void>(`${this.base}/${sessionId}/abandon`, {});
+  }
 }

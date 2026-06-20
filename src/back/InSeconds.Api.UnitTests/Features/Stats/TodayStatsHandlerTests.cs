@@ -89,9 +89,9 @@ public sealed class TodayStatsHandlerTests
         db.DailyChallenges.Add(challenge);
         db.Players.AddRange(BuildPlayer(Player1), BuildPlayer(Player2), BuildPlayer(Player3));
         db.GameSessions.AddRange(
-            new GameSession { Id = 1, PlayerId = Player1, DailyChallengeId = 1, TotalScore = 100, TotalDurationSeconds = 3, CreatedAt = DateTime.UtcNow },
-            new GameSession { Id = 2, PlayerId = Player2, DailyChallengeId = 1, TotalScore = 500, TotalDurationSeconds = 2, CreatedAt = DateTime.UtcNow },
-            new GameSession { Id = 3, PlayerId = Player3, DailyChallengeId = 1, TotalScore = 300, TotalDurationSeconds = 5, CreatedAt = DateTime.UtcNow });
+            new GameSession { Id = 1, PlayerId = Player1, DailyChallengeId = 1, TotalScore = 100, TotalDurationSeconds = 3, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed },
+            new GameSession { Id = 2, PlayerId = Player2, DailyChallengeId = 1, TotalScore = 500, TotalDurationSeconds = 2, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed },
+            new GameSession { Id = 3, PlayerId = Player3, DailyChallengeId = 1, TotalScore = 300, TotalDurationSeconds = 5, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed });
         await db.SaveChangesAsync();
 
         var result = await CreateHandler(db).Handle(null, CancellationToken.None);
@@ -111,10 +111,10 @@ public sealed class TodayStatsHandlerTests
         var player4 = new Guid("44444444-4444-4444-4444-444444444444");
         db.Players.AddRange(BuildPlayer(Player1), BuildPlayer(Player2), BuildPlayer(Player3), BuildPlayer(player4));
         db.GameSessions.AddRange(
-            new GameSession { Id = 1, PlayerId = Player1, DailyChallengeId = 1, TotalScore = 400, TotalDurationSeconds = 1, CreatedAt = DateTime.UtcNow },
-            new GameSession { Id = 2, PlayerId = Player2, DailyChallengeId = 1, TotalScore = 100, TotalDurationSeconds = 5, CreatedAt = DateTime.UtcNow },
-            new GameSession { Id = 3, PlayerId = Player3, DailyChallengeId = 1, TotalScore = 300, TotalDurationSeconds = 2, CreatedAt = DateTime.UtcNow },
-            new GameSession { Id = 4, PlayerId = player4, DailyChallengeId = 1, TotalScore = 200, TotalDurationSeconds = 3, CreatedAt = DateTime.UtcNow });
+            new GameSession { Id = 1, PlayerId = Player1, DailyChallengeId = 1, TotalScore = 400, TotalDurationSeconds = 1, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed },
+            new GameSession { Id = 2, PlayerId = Player2, DailyChallengeId = 1, TotalScore = 100, TotalDurationSeconds = 5, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed },
+            new GameSession { Id = 3, PlayerId = Player3, DailyChallengeId = 1, TotalScore = 300, TotalDurationSeconds = 2, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed },
+            new GameSession { Id = 4, PlayerId = player4, DailyChallengeId = 1, TotalScore = 200, TotalDurationSeconds = 3, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed });
         await db.SaveChangesAsync();
 
         var result = await CreateHandler(db).Handle(null, CancellationToken.None);
@@ -136,7 +136,7 @@ public sealed class TodayStatsHandlerTests
         db.Players.Add(BuildPlayer(Player1));
         db.GameSessions.Add(new GameSession
         {
-            Id = 1, PlayerId = Player1, DailyChallengeId = 1, TotalScore = 850, TotalDurationSeconds = 1, CreatedAt = DateTime.UtcNow,
+            Id = 1, PlayerId = Player1, DailyChallengeId = 1, TotalScore = 850, TotalDurationSeconds = 1, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed,
         });
         await db.SaveChangesAsync();
 
@@ -155,7 +155,7 @@ public sealed class TodayStatsHandlerTests
         db.Players.Add(BuildPlayer(Player1));
         db.GameSessions.Add(new GameSession
         {
-            Id = 1, PlayerId = Player1, DailyChallengeId = 1, TotalScore = 500, TotalDurationSeconds = 2, CreatedAt = DateTime.UtcNow,
+            Id = 1, PlayerId = Player1, DailyChallengeId = 1, TotalScore = 500, TotalDurationSeconds = 2, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed,
         });
         await db.SaveChangesAsync();
 
@@ -196,8 +196,8 @@ public sealed class TodayStatsHandlerTests
         db.DailyChallenges.Add(challenge);
         db.Players.AddRange(BuildPlayer(Player1), BuildPlayer(Player2));
         db.GameSessions.AddRange(
-            new GameSession { Id = 1, PlayerId = Player1, DailyChallengeId = 1, TotalScore = 400, TotalDurationSeconds = 3, CreatedAt = DateTime.UtcNow },
-            new GameSession { Id = 2, PlayerId = Player2, DailyChallengeId = 1, TotalScore = 400, TotalDurationSeconds = 3, CreatedAt = DateTime.UtcNow });
+            new GameSession { Id = 1, PlayerId = Player1, DailyChallengeId = 1, TotalScore = 400, TotalDurationSeconds = 3, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed },
+            new GameSession { Id = 2, PlayerId = Player2, DailyChallengeId = 1, TotalScore = 400, TotalDurationSeconds = 3, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed });
         db.GameSessionAnswers.AddRange(
             new GameSessionAnswer { Id = 1, GameSessionId = 1, DailyChallengeTrackId = challengeTrack.Id, ListenedDurationSeconds = 3, ArtistCorrect = true, TitleCorrect = true, Score = 400 },
             new GameSessionAnswer { Id = 2, GameSessionId = 2, DailyChallengeTrackId = challengeTrack.Id, ListenedDurationSeconds = 5, ArtistCorrect = true, TitleCorrect = true, Score = 250 });
@@ -219,8 +219,8 @@ public sealed class TodayStatsHandlerTests
         db.DailyChallenges.Add(challenge);
         db.Players.AddRange(BuildPlayer(Player1), BuildPlayer(Player2));
         db.GameSessions.AddRange(
-            new GameSession { Id = 1, PlayerId = Player1, DailyChallengeId = 1, TotalScore = 400, TotalDurationSeconds = 3, CreatedAt = DateTime.UtcNow },
-            new GameSession { Id = 2, PlayerId = Player2, DailyChallengeId = 1, TotalScore = 0, TotalDurationSeconds = 3, CreatedAt = DateTime.UtcNow });
+            new GameSession { Id = 1, PlayerId = Player1, DailyChallengeId = 1, TotalScore = 400, TotalDurationSeconds = 3, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed },
+            new GameSession { Id = 2, PlayerId = Player2, DailyChallengeId = 1, TotalScore = 0, TotalDurationSeconds = 3, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed });
         db.GameSessionAnswers.AddRange(
             new GameSessionAnswer { Id = 1, GameSessionId = 1, DailyChallengeTrackId = challengeTrack.Id, ListenedDurationSeconds = 3, ArtistCorrect = true, TitleCorrect = true, Score = 400 },
             new GameSessionAnswer { Id = 2, GameSessionId = 2, DailyChallengeTrackId = challengeTrack.Id, ListenedDurationSeconds = 3, ArtistCorrect = false, TitleCorrect = false, Score = 0 });

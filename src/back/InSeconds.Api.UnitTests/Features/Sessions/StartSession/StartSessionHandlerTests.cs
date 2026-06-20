@@ -95,7 +95,7 @@ public sealed class StartSessionHandlerTests
         };
     }
 
-    private static GameSession BuildGameSession(Guid playerId, int challengeId, int id = 99) => new()
+    private static GameSession BuildGameSession(Guid playerId, int challengeId, int id = 99, SessionStatus status = SessionStatus.Completed) => new()
     {
         Id                   = id,
         PlayerId             = playerId,
@@ -103,6 +103,7 @@ public sealed class StartSessionHandlerTests
         TotalScore           = 0,
         TotalDurationSeconds = 0,
         CreatedAt            = DateTime.UtcNow,
+        Status               = status,
     };
 
     // ---------------------------------------------------------------------------
@@ -148,13 +149,17 @@ public sealed class StartSessionHandlerTests
         response.Tracks.Should().BeInAscendingOrder(t => t.Position);
         response.Tracks.Select(t => t.Position).Should().Equal(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
         response.Tracks.Should().AllSatisfy(t => t.DeezerTrackId.Should().BeGreaterThan(0));
+        response.IsResuming.Should().BeFalse();
+        response.ResumeFromPosition.Should().Be(0);
+        response.CompletedAnswers.Should().BeEmpty();
 
-        (await db.GameSessions.ToListAsync()).Should().ContainSingle()
-            .Which.DailyChallengeId.Should().Be(1);
+        var session = await db.GameSessions.SingleAsync();
+        session.DailyChallengeId.Should().Be(1);
+        session.Status.Should().Be(SessionStatus.Pending);
     }
 
     [Fact]
-    public async Task Handle_WhenAlreadyPlayed_Returns409Conflict()
+    public async Task Handle_WhenSessionCompleted_Returns409()
     {
         // Arrange
         await using var db = CreateDbContext();
@@ -162,7 +167,7 @@ public sealed class StartSessionHandlerTests
         db.DailyChallenges.Add(BuildTodayChallenge(id: 1));
         await db.SaveChangesAsync();
 
-        db.GameSessions.Add(BuildGameSession(PlayerId, challengeId: 1));
+        db.GameSessions.Add(BuildGameSession(PlayerId, challengeId: 1, status: SessionStatus.Completed));
         await db.SaveChangesAsync();
 
         // Act
@@ -171,6 +176,115 @@ public sealed class StartSessionHandlerTests
         // Assert
         AssertConflict(result);
         (await db.GameSessions.ToListAsync()).Should().ContainSingle("aucune nouvelle session créée");
+    }
+
+    [Fact]
+    public async Task Handle_WhenSessionAbandoned_Returns409()
+    {
+        // Arrange
+        await using var db = CreateDbContext();
+        db.Players.Add(BuildPlayer());
+        db.DailyChallenges.Add(BuildTodayChallenge(id: 1));
+        await db.SaveChangesAsync();
+
+        db.GameSessions.Add(BuildGameSession(PlayerId, challengeId: 1, status: SessionStatus.Abandoned));
+        await db.SaveChangesAsync();
+
+        // Act
+        var result = await new StartSessionHandler(db, CreateFakeDeezerClient(), CreateSettingsService()).Handle(new StartSessionCommand(PlayerId), CancellationToken.None);
+
+        // Assert
+        AssertConflict(result);
+        (await db.GameSessions.ToListAsync()).Should().ContainSingle("aucune nouvelle session créée");
+    }
+
+    [Fact]
+    public async Task Handle_WhenSessionPending_ReturnsResumeResponse()
+    {
+        // Arrange
+        await using var db = CreateDbContext();
+        var player = BuildPlayer();
+        db.Players.Add(player);
+        var challenge = BuildTodayChallenge(id: 1, trackCount: 3);
+        db.DailyChallenges.Add(challenge);
+        await db.SaveChangesAsync();
+
+        var session = BuildGameSession(PlayerId, challengeId: 1, id: 10, status: SessionStatus.Pending);
+        db.GameSessions.Add(session);
+        await db.SaveChangesAsync();
+
+        // Simuler une réponse déjà soumise (position 1)
+        db.GameSessionAnswers.Add(new GameSessionAnswer
+        {
+            GameSessionId           = session.Id,
+            DailyChallengeTrackId   = challenge.Tracks.First(t => t.Position == 1).Id,
+            ListenedDurationSeconds = 1,
+            WasExtended             = false,
+            ArtistCorrect           = true,
+            TitleCorrect            = false,
+            Score                   = 425,
+        });
+        await db.SaveChangesAsync();
+
+        // Act
+        var result = await new StartSessionHandler(db, CreateFakeDeezerClient(), CreateSettingsService()).Handle(new StartSessionCommand(PlayerId), CancellationToken.None);
+
+        // Assert
+        var response = AssertOk<StartSessionResponse>(result).Value!;
+        response.SessionId.Should().Be(session.Id);
+        response.IsResuming.Should().BeTrue();
+        response.ResumeFromPosition.Should().Be(1); // index 0-based de la 2ème track
+        response.CompletedAnswers.Should().ContainSingle();
+        response.CompletedAnswers[0].Position.Should().Be(1);
+        response.CompletedAnswers[0].ArtistCorrect.Should().BeTrue();
+
+        (await db.GameSessions.ToListAsync()).Should().ContainSingle("aucune nouvelle session créée");
+    }
+
+    [Fact]
+    public async Task Handle_WhenPendingSessionFromPreviousDay_MarksAbandonedAndCreatesNew()
+    {
+        // Arrange
+        await using var db = CreateDbContext();
+        db.Players.Add(BuildPlayer());
+
+        // Défi d'hier
+        var yesterday = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1);
+        var oldChallenge = new DailyChallenge { Id = 1, Date = yesterday, Seed = 1, Tracks = [] };
+        db.DailyChallenges.Add(oldChallenge);
+        await db.SaveChangesAsync();
+
+        var oldSession = new GameSession
+        {
+            PlayerId             = PlayerId,
+            DailyChallengeId     = oldChallenge.Id,
+            TotalScore           = 0,
+            TotalDurationSeconds = 0,
+            CreatedAt            = DateTime.UtcNow.AddDays(-1),
+            Status               = SessionStatus.Pending,
+        };
+        db.GameSessions.Add(oldSession);
+
+        // Défi d'aujourd'hui
+        var todayChallenge = BuildTodayChallenge(id: 2, trackCount: 3);
+        db.DailyChallenges.Add(todayChallenge);
+        await db.SaveChangesAsync();
+
+        // Act
+        var result = await new StartSessionHandler(db, CreateFakeDeezerClient(), CreateSettingsService()).Handle(new StartSessionCommand(PlayerId), CancellationToken.None);
+
+        // Assert
+        var sessions = await db.GameSessions.ToListAsync();
+        sessions.Should().HaveCount(2, "l'ancienne session + la nouvelle");
+
+        var expired = sessions.First(s => s.DailyChallengeId == oldChallenge.Id);
+        expired.Status.Should().Be(SessionStatus.Abandoned);
+        expired.AbandonedAt.Should().NotBeNull();
+
+        var newSession = sessions.First(s => s.DailyChallengeId == todayChallenge.Id);
+        newSession.Status.Should().Be(SessionStatus.Pending);
+
+        AssertOk<StartSessionResponse>(result).Value!.IsResuming.Should().BeFalse();
     }
 
     [Fact]

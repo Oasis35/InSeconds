@@ -26,6 +26,9 @@ public class SessionTests(IntegrationTestFactory factory) : IAsyncLifetime
         Assert.NotNull(session);
         Assert.Equal(3, session.Tracks.Count);
         Assert.All(session.Tracks, t => Assert.NotEmpty(t.PreviewUrl));
+        Assert.False(session.IsResuming);
+        Assert.Equal(0, session.ResumeFromPosition);
+        Assert.Empty(session.CompletedAnswers);
     }
 
     [Fact]
@@ -40,12 +43,71 @@ public class SessionTests(IntegrationTestFactory factory) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task StartSession_DeuxiemeAppel_Retourne409()
+    public async Task StartSession_SessionCompleted_Retourne409()
     {
-        await _client.PostAsync("/api/sessions", null);
-        var resp2 = await _client.PostAsync("/api/sessions", null);
+        // Jouer une partie complète
+        var session = await StartSessionAsync();
+        foreach (var track in session.Tracks)
+            await SubmitAsync(session.SessionId, track.Id, 1m, "X", null);
 
+        // Re-démarrer → 409
+        var resp2 = await _client.PostAsync("/api/sessions", null);
         Assert.Equal(HttpStatusCode.Conflict, resp2.StatusCode);
+    }
+
+    [Fact]
+    public async Task StartSession_SessionAbandoned_Retourne409()
+    {
+        var session = await StartSessionAsync();
+        await _client.PutAsync($"/api/sessions/{session.SessionId}/abandon", null);
+
+        var resp2 = await _client.PostAsync("/api/sessions", null);
+        Assert.Equal(HttpStatusCode.Conflict, resp2.StatusCode);
+    }
+
+    [Fact]
+    public async Task StartSession_SessionPending_RetourneReprise()
+    {
+        // Démarrer et répondre au 1er morceau
+        var session = await StartSessionAsync();
+        await SubmitAsync(session.SessionId, session.Tracks[0].Id, 1m, "X", null);
+
+        // Re-POST → reprise
+        var resp2 = await _client.PostAsync("/api/sessions", null);
+        Assert.Equal(HttpStatusCode.OK, resp2.StatusCode);
+
+        var resume = await resp2.Content.ReadFromJsonAsync<StartSessionResponse>();
+        Assert.NotNull(resume);
+        Assert.True(resume.IsResuming);
+        Assert.Equal(session.SessionId, resume.SessionId);
+        Assert.Equal(1, resume.ResumeFromPosition);
+        Assert.Single(resume.CompletedAnswers);
+    }
+
+    // ── AbandonSession ───────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task AbandonSession_SessionPending_MarqueAbandoned()
+    {
+        var session = await StartSessionAsync();
+
+        var resp = await _client.PutAsync($"/api/sessions/{session.SessionId}/abandon", null);
+        Assert.Equal(HttpStatusCode.NoContent, resp.StatusCode);
+
+        // Re-POST → 409
+        var resp2 = await _client.PostAsync("/api/sessions", null);
+        Assert.Equal(HttpStatusCode.Conflict, resp2.StatusCode);
+    }
+
+    [Fact]
+    public async Task AbandonSession_SessionCompletee_RetourneBadRequest()
+    {
+        var session = await StartSessionAsync();
+        foreach (var track in session.Tracks)
+            await SubmitAsync(session.SessionId, track.Id, 1m, "X", null);
+
+        var resp = await _client.PutAsync($"/api/sessions/{session.SessionId}/abandon", null);
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
     }
 
     // ── SubmitAnswer — scoring ───────────────────────────────────────────────
@@ -137,6 +199,21 @@ public class SessionTests(IntegrationTestFactory factory) : IAsyncLifetime
         var resp2 = await SubmitAsync(session.SessionId, track.Id, 1m, "X", null);
 
         Assert.Equal(HttpStatusCode.Conflict, resp2.StatusCode);
+    }
+
+    [Fact]
+    public async Task SubmitAnswer_DerniereReponse_MarqueSessionComplete()
+    {
+        var session = await StartSessionAsync();
+        foreach (var track in session.Tracks)
+            await SubmitAsync(session.SessionId, track.Id, 1m, "X", null);
+
+        // Re-POST → 409 avec error = "already_played" (Completed)
+        var resp2 = await _client.PostAsync("/api/sessions", null);
+        Assert.Equal(HttpStatusCode.Conflict, resp2.StatusCode);
+
+        var body = await resp2.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+        Assert.Equal("already_played", body.GetProperty("error").GetString());
     }
 
     // ── helpers ─────────────────────────────────────────────────────────────

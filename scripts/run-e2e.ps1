@@ -19,7 +19,17 @@ docker compose exec -T database psql -U inseconds -c "DROP DATABASE IF EXISTS in
 docker compose exec -T database psql -U inseconds -c "CREATE DATABASE inseconds_e2e;"
 Write-Host "    DB inseconds_e2e OK" -ForegroundColor Green
 
-$connStr = 'Host=localhost;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=REDACTED'
+# Charge le mot de passe depuis .env (jamais commité)
+$envFile = Join-Path $root ".env"
+if (Test-Path $envFile) {
+    Get-Content $envFile | Where-Object { $_ -match '^\s*([^#][^=]*)=(.*)$' } | ForEach-Object {
+        $name, $value = $Matches[1].Trim(), $Matches[2].Trim()
+        [System.Environment]::SetEnvironmentVariable($name, $value, 'Process')
+    }
+}
+$dbPassword = $env:DB_PASSWORD
+if (-not $dbPassword) { Write-Error "DB_PASSWORD manquant dans .env"; exit 1 }
+$connStr = "Host=localhost;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=$dbPassword"
 
 Write-Host "==> Démarrage du back Testing (port 5172)..." -ForegroundColor Cyan
 $backJob = Start-Job -ScriptBlock {
