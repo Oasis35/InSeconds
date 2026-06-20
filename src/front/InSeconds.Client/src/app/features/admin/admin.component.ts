@@ -14,8 +14,7 @@ interface PoolTracksResponse { available: PoolTrackDto[]; used: PoolTrackDto[]; 
 interface ChallengeDto { id: number; date: string; tracks: TrackDto[]; }
 interface DeezerTrackInfo { artist: string; title: string; previewUrl: string | null; deezerTrackId: number; coverHash?: string | null; }
 
-type Tab = 'dashboard' | 'pool' | 'defis';
-type PoolSubTab = 'available' | 'used';
+type Tab = 'dashboard' | 'pool' | 'defis' | 'actions';
 
 @Component({
   selector: 'app-admin',
@@ -61,41 +60,17 @@ type PoolSubTab = 'available' | 'used';
               : 'flex-1 py-2 rounded-md text-sm font-medium text-gray-400 hover:text-white transition-colors'">
             Défis ({{ challenges().length }})
           </button>
+          <button (click)="activeTab.set('actions')"
+            [class]="activeTab() === 'actions'
+              ? 'flex-1 py-2 rounded-md text-sm font-medium bg-gray-700 text-white transition-colors'
+              : 'flex-1 py-2 rounded-md text-sm font-medium text-gray-400 hover:text-white transition-colors'">
+            Actions
+          </button>
         </div>
 
         <!-- Onglet Dashboard -->
         @if (activeTab() === 'dashboard') {
           <div class="flex flex-col gap-4 w-full max-w-2xl">
-
-            <!-- Actions principales -->
-            <div class="bg-gray-800 rounded-xl p-5 flex flex-col gap-3">
-              <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wide">Actions</h2>
-              <div class="flex flex-col sm:flex-row gap-3">
-                <button (click)="generateToday()" [disabled]="generateStatus() === 'loading'"
-                  class="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
-                  @if (generateStatus() === 'loading') {
-                    <span class="animate-spin text-base">⏳</span> Génération...
-                  } @else {
-                    <span>▶</span> Générer le défi du jour
-                  }
-                </button>
-                <button (click)="reset()" [disabled]="resetStatus() === 'loading'"
-                  class="flex-1 bg-red-800 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
-                  @if (resetStatus() === 'loading') {
-                    Réinitialisation...
-                  } @else {
-                    <span>↺</span> Réinitialiser les parties du jour
-                  }
-                </button>
-              </div>
-              <div class="flex flex-wrap gap-2 min-h-5">
-                @if (generateStatus() === 'success') { <span class="text-green-400 text-xs">Défi généré avec succès.</span> }
-                @if (generateStatus() === 'already') { <span class="text-yellow-400 text-xs">Le défi du jour est déjà généré.</span> }
-                @if (generateStatus() === 'error') { <span class="text-red-400 text-xs">Erreur lors de la génération.</span> }
-                @if (resetStatus() === 'success' && resetResult()) { <span class="text-green-400 text-xs">{{ resetResult()!.deleted }} partie(s) supprimée(s).</span> }
-                @if (resetStatus() === 'error') { <span class="text-red-400 text-xs">Aucun défi trouvé pour aujourd'hui.</span> }
-              </div>
-            </div>
 
             @if (statsLoading()) {
               <div class="bg-gray-800 rounded-xl p-5 flex items-center justify-center h-24">
@@ -139,8 +114,13 @@ type PoolSubTab = 'available' | 'used';
                   </div>
                   <div class="bg-gray-800 rounded-xl p-4 flex flex-col gap-1">
                     <span class="text-xs text-gray-400 uppercase tracking-wide">Complétion</span>
-                    <span class="text-2xl font-bold" [class]="completionRateColor(kpis.completionRate)">{{ kpis.completionRate | number:'1.0-1' }}%</span>
-                    <span class="text-xs text-gray-500">{{ kpis.totalSessions }} session{{ kpis.totalSessions > 1 ? 's' : '' }}</span>
+                    @if (kpis.completedCount === 0) {
+                      <span class="text-2xl font-bold text-gray-600">—</span>
+                      <span class="text-xs text-gray-500">{{ kpis.totalSessions }} session{{ kpis.totalSessions > 1 ? 's' : '' }}, aucune complète</span>
+                    } @else {
+                      <span class="text-2xl font-bold" [class]="completionRateColor(kpis.completionRate)">{{ kpis.completionRate | number:'1.0-1' }}%</span>
+                      <span class="text-xs text-gray-500">{{ kpis.completedCount }}/{{ kpis.totalSessions }} session{{ kpis.totalSessions > 1 ? 's' : '' }}</span>
+                    }
                   </div>
                   <div class="bg-gray-800 rounded-xl p-4 flex flex-col gap-1">
                     <span class="text-xs text-gray-400 uppercase tracking-wide">Score médian</span>
@@ -183,8 +163,8 @@ type PoolSubTab = 'available' | 'used';
                     }
                   </div>
                   <div class="flex justify-between text-xs text-gray-600">
-                    <span>{{ adminStats()!.dailyActivity[0].date }}</span>
-                    <span>{{ adminStats()!.dailyActivity[adminStats()!.dailyActivity.length - 1].date }}</span>
+                    <span>{{ formatActivityDate(adminStats()!.dailyActivity[0].date) }}</span>
+                    <span>{{ formatActivityDate(adminStats()!.dailyActivity[adminStats()!.dailyActivity.length - 1].date) }}</span>
                   </div>
                 }
               </div>
@@ -294,140 +274,181 @@ type PoolSubTab = 'available' | 'used';
         @if (activeTab() === 'pool') {
           <div class="flex flex-col gap-4 w-full max-w-2xl">
 
-            <!-- Sous-onglets + bouton ajout -->
-            <div class="flex items-center gap-2">
-              <div class="flex flex-1 gap-1 bg-gray-800 p-1 rounded-lg">
-                <button (click)="poolSubTab.set('available'); availablePage.set(0)"
-                  [class]="poolSubTab() === 'available'
-                    ? 'flex-1 py-1.5 rounded-md text-sm font-medium bg-gray-700 text-white transition-colors'
-                    : 'flex-1 py-1.5 rounded-md text-sm font-medium text-gray-400 hover:text-white transition-colors'">
-                  Disponibles ({{ poolTracks().available.length }})
-                </button>
-                <button (click)="poolSubTab.set('used'); usedPage.set(0)"
-                  [class]="poolSubTab() === 'used'
-                    ? 'flex-1 py-1.5 rounded-md text-sm font-medium bg-gray-700 text-white transition-colors'
-                    : 'flex-1 py-1.5 rounded-md text-sm font-medium text-gray-400 hover:text-white transition-colors'">
-                  Déjà utilisés ({{ poolTracks().used.length }})
-                </button>
-              </div>
+            <!-- Barre d'outils -->
+            <div class="flex items-center justify-between gap-3">
+              @if (selectedTrackIds().size > 0) {
+                <div class="flex items-center gap-3">
+                  <span class="text-xs text-gray-300">{{ selectedTrackIds().size }} sélectionné(s)</span>
+                  <button (click)="clearSelection()" class="text-xs text-gray-400 hover:text-white transition-colors">Tout déselectionner</button>
+                  <button (click)="openDeleteModal(null)"
+                    class="bg-red-700 hover:bg-red-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors">
+                    Supprimer ({{ selectedTrackIds().size }})
+                  </button>
+                </div>
+              } @else {
+                <span class="text-xs text-gray-500">
+                  {{ poolTracks().available.length }} disponible(s) · {{ poolTracks().used.length }} utilisé(s)
+                </span>
+              }
               <button (click)="openAddModal(null)"
                 class="bg-gray-700 hover:bg-gray-600 border border-gray-600 text-gray-200 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 shrink-0">
-                <span class="text-base leading-none">+</span> Ajouter
+                + Ajouter
               </button>
             </div>
 
-            <!-- Contenu sous-onglet Disponibles -->
-            @if (poolSubTab() === 'available') {
-              <div class="bg-gray-800 rounded-xl p-5 flex flex-col gap-4">
-                @if (poolTracksLoading()) {
-                  <p class="text-gray-500 text-sm">Vérification des previews...</p>
-                } @else if (poolTracks().available.length === 0) {
-                  <p class="text-gray-500 text-sm">Aucun morceau disponible.</p>
-                } @else {
-                  <!-- Barre sélection multiple -->
-                  @if (selectedTrackIds().size > 0) {
-                    <div class="flex items-center justify-between gap-3 bg-gray-700 rounded-lg px-3 py-2">
-                      <span class="text-xs text-gray-300">{{ selectedTrackIds().size }} sélectionné(s)</span>
-                      <div class="flex items-center gap-2">
-                        <button (click)="clearSelection()" class="text-xs text-gray-400 hover:text-white transition-colors">Tout déselectionner</button>
-                        <button (click)="openDeleteModal(null)"
-                          class="bg-red-700 hover:bg-red-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
-                          🗑 Supprimer ({{ selectedTrackIds().size }})
-                        </button>
-                      </div>
+            <!-- Filtres -->
+            <div class="flex flex-wrap items-center gap-2">
+              <input type="text" [value]="poolFilterText()" (input)="setPoolFilter($any($event.target).value)"
+                placeholder="Rechercher artiste ou titre..."
+                class="flex-1 min-w-36 bg-gray-800 text-white text-sm rounded-lg px-3 py-1.5 outline-none focus:ring-1 focus:ring-purple-500 placeholder-gray-600" />
+              <select [value]="poolFilterPreview()" (change)="setPoolFilterPreview($any($event.target).value)"
+                class="bg-gray-800 text-sm text-gray-300 rounded-lg px-3 py-1.5 outline-none focus:ring-1 focus:ring-purple-500 cursor-pointer">
+                <option value="all">Toutes les previews</option>
+                <option value="ok">Preview OK</option>
+                <option value="missing">Manquante</option>
+              </select>
+              <select [value]="poolFilterStatus()" (change)="setPoolFilterStatus($any($event.target).value)"
+                class="bg-gray-800 text-sm text-gray-300 rounded-lg px-3 py-1.5 outline-none focus:ring-1 focus:ring-purple-500 cursor-pointer">
+                <option value="all">Tous les statuts</option>
+                <option value="available">Disponible</option>
+                <option value="used">Utilisé</option>
+              </select>
+              @if (poolFilterText() || poolFilterStatus() !== 'all' || poolFilterPreview() !== 'all') {
+                <button (click)="setPoolFilter(''); setPoolFilterStatus('all'); setPoolFilterPreview('all')"
+                  class="text-xs text-gray-500 hover:text-white transition-colors px-1">
+                  ✕ Réinitialiser
+                </button>
+              }
+            </div>
+
+            <!-- Tableau unique -->
+            <div class="bg-gray-800 rounded-xl flex flex-col overflow-hidden">
+              @if (poolTracksLoading()) {
+                <p class="text-gray-500 text-sm p-5">Vérification des previews...</p>
+              } @else if (poolTracks().available.length === 0 && poolTracks().used.length === 0) {
+                <p class="text-gray-500 text-sm p-5">Aucun morceau dans le pool.</p>
+              } @else {
+                <div class="overflow-x-auto">
+                  <table class="w-full text-sm">
+                    <thead>
+                      <tr class="border-b border-gray-700 text-left text-xs text-gray-500 uppercase tracking-wide">
+                        <th class="pl-4 pr-2 py-2.5 w-8"></th>
+                        <th class="px-3 py-2.5">Artiste</th>
+                        <th class="px-3 py-2.5">Titre</th>
+                        <th class="px-3 py-2.5 w-28">Preview</th>
+                        <th class="px-3 py-2.5 w-24">Statut</th>
+                        <th class="pl-3 pr-4 py-2.5 w-32 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-700/50">
+                      @for (t of pagedAllTracks(); track t.id) {
+                        @let isUsed = !t.isAvailable;
+                        <tr class="hover:bg-gray-700/30 transition-colors"
+                          [class.opacity-50]="isUsed"
+                          [class.bg-purple-900\/20]="selectedTrackIds().has(t.id)">
+                          <td class="pl-4 pr-2 py-2.5">
+                            @if (!isUsed) {
+                              <input type="checkbox" [checked]="selectedTrackIds().has(t.id)"
+                                (change)="toggleSelection(t.id)"
+                                class="accent-purple-500 w-4 h-4 cursor-pointer" />
+                            }
+                          </td>
+                          <td class="px-3 py-2.5 font-medium text-white max-w-[130px] truncate">{{ t.artist }}</td>
+                          <td class="px-3 py-2.5 text-gray-400 max-w-[150px] truncate">{{ t.title }}</td>
+                          <td class="px-3 py-2.5">
+                            @if (isUsed) {
+                              <span class="text-xs text-gray-600">—</span>
+                            } @else if (t.hasPreview === true) {
+                              <span class="inline-flex items-center gap-1 text-xs font-medium text-green-400">
+                                <span class="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0"></span> OK
+                              </span>
+                            } @else if (t.hasPreview === false) {
+                              <span class="inline-flex items-center gap-1 text-xs font-medium text-red-400">
+                                <span class="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0"></span> Manquante
+                              </span>
+                            }
+                          </td>
+                          <td class="px-3 py-2.5">
+                            @if (isUsed) {
+                              <span class="text-xs text-gray-500 bg-gray-700 px-2 py-0.5 rounded-full">Utilisé</span>
+                            } @else {
+                              <span class="text-xs text-purple-400 bg-purple-900/40 px-2 py-0.5 rounded-full">Disponible</span>
+                            }
+                          </td>
+                          <td class="pl-3 pr-4 py-2.5">
+                            @if (!isUsed) {
+                              <div class="flex items-center justify-end gap-2">
+                                @if (t.hasPreview === false) {
+                                  <button (click)="openAddModal(null, t.id, t.artist + ' ' + t.title)"
+                                    class="text-xs text-yellow-400 hover:text-yellow-300 border border-yellow-800 hover:border-yellow-600 px-2 py-1 rounded transition-colors"
+                                    title="Chercher une version avec preview">↻ Actualiser</button>
+                                }
+                                <button (click)="openDeleteModal(t)"
+                                  class="text-xs text-gray-500 hover:text-red-400 border border-gray-700 hover:border-red-700 px-2 py-1 rounded transition-colors"
+                                  title="Supprimer">🗑</button>
+                              </div>
+                            }
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="flex items-center justify-between gap-2 px-4 py-3 border-t border-gray-700">
+                  <span class="text-xs text-gray-500">
+                    {{ filteredTracks().length }}
+                    @if (filteredTracks().length !== allTracks().length) { / {{ allTracks().length }} }
+                    morceau{{ allTracks().length > 1 ? 'x' : '' }}
+                    @if (allTotalPages() > 1) { — page {{ allTracksPage() + 1 }}/{{ allTotalPages() }} }
+                  </span>
+                  @if (allTotalPages() > 1) {
+                    <div class="flex items-center gap-1">
+                      <button (click)="allTracksPage.set(allTracksPage() - 1)" [disabled]="allTracksPage() === 0"
+                        class="px-2.5 py-1 text-xs bg-gray-700 hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed rounded transition-colors">
+                        ←
+                      </button>
+                      <button (click)="allTracksPage.set(allTracksPage() + 1)" [disabled]="allTracksPage() >= allTotalPages() - 1"
+                        class="px-2.5 py-1 text-xs bg-gray-700 hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed rounded transition-colors">
+                        →
+                      </button>
                     </div>
                   }
+                </div>
+              }
+            </div>
 
-                  <!-- Grille -->
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    @for (t of pagedAvailable(); track t.id) {
-                      <div class="bg-gray-700 rounded-lg px-3 py-2.5 flex items-start gap-2.5"
-                        [class.ring-1]="selectedTrackIds().has(t.id)"
-                        [class.ring-purple-500]="selectedTrackIds().has(t.id)">
-                        <input type="checkbox" [checked]="selectedTrackIds().has(t.id)"
-                          (change)="toggleSelection(t.id)"
-                          class="accent-purple-500 w-4 h-4 shrink-0 cursor-pointer mt-0.5" />
-                        <div class="flex-1 min-w-0 flex flex-col gap-1">
-                          <span class="text-xs font-medium text-white truncate">{{ t.artist }}</span>
-                          <span class="text-xs text-gray-400 truncate">{{ t.title }}</span>
-                          <!-- Indicateur preview -->
-                          @if (t.hasPreview === true) {
-                            <span class="text-xs text-green-400 flex items-center gap-1">▶ Preview OK</span>
-                          } @else if (t.hasPreview === false) {
-                            <span class="text-xs text-red-400 flex items-center gap-1">✕ Pas de preview</span>
-                          }
-                        </div>
-                        <!-- Actions -->
-                        <div class="flex flex-col items-end gap-1 shrink-0">
-                          @if (t.hasPreview === false) {
-                            <button (click)="openAddModal(null, t.id)"
-                              class="text-xs text-yellow-400 hover:text-yellow-300 transition-colors font-medium"
-                              title="Chercher une version avec preview">↻</button>
-                          }
-                          <button (click)="openDeleteModal(t)"
-                            class="text-gray-500 hover:text-red-400 transition-colors text-sm leading-none"
-                            title="Supprimer ce morceau">🗑</button>
-                        </div>
-                      </div>
-                    }
-                  </div>
+          </div>
+        }
 
-                  <!-- Pagination disponibles -->
-                  @if (availableTotalPages() > 1) {
-                    <div class="flex items-center justify-between gap-2 pt-1">
-                      <button (click)="availablePage.set(availablePage() - 1)" [disabled]="availablePage() === 0"
-                        class="px-3 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-colors">
-                        ← Préc.
-                      </button>
-                      <span class="text-xs text-gray-400">
-                        Page {{ availablePage() + 1 }} / {{ availableTotalPages() }}
-                        <span class="text-gray-600 ml-1">({{ poolTracks().available.length }} morceaux)</span>
-                      </span>
-                      <button (click)="availablePage.set(availablePage() + 1)" [disabled]="availablePage() >= availableTotalPages() - 1"
-                        class="px-3 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-colors">
-                        Suiv. →
-                      </button>
-                    </div>
-                  }
-                }
+        <!-- Onglet Actions -->
+        @if (activeTab() === 'actions') {
+          <div class="bg-gray-800 rounded-xl p-6 flex flex-col gap-4 w-full max-w-2xl">
+            <div class="flex flex-col gap-2">
+              <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Défi du jour</h2>
+              <div class="flex items-center gap-3">
+                <button (click)="generateToday()" [disabled]="generateStatus() === 'loading'"
+                  class="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors flex items-center gap-2">
+                  @if (generateStatus() === 'loading') { <span>⏳</span> Génération... } @else { <span>▶</span> Générer le défi du jour }
+                </button>
+                @if (generateStatus() === 'success') { <span class="text-green-400 text-xs">Défi généré avec succès.</span> }
+                @if (generateStatus() === 'already') { <span class="text-yellow-400 text-xs">Le défi du jour est déjà généré.</span> }
+                @if (generateStatus() === 'error') { <span class="text-red-400 text-xs">Erreur lors de la génération.</span> }
               </div>
-            }
-
-            <!-- Contenu sous-onglet Déjà utilisés -->
-            @if (poolSubTab() === 'used') {
-              <div class="bg-gray-800 rounded-xl p-5 flex flex-col gap-4">
-                @if (poolTracks().used.length === 0) {
-                  <p class="text-gray-600 text-sm">Aucun morceau utilisé.</p>
-                } @else {
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    @for (t of pagedUsed(); track t.id) {
-                      <div class="bg-gray-700/50 rounded-lg px-3 py-2.5 border border-gray-700 flex flex-col gap-0.5">
-                        <span class="text-xs font-medium text-gray-400 truncate">{{ t.artist }}</span>
-                        <span class="text-xs text-gray-600 truncate">{{ t.title }}</span>
-                      </div>
-                    }
-                  </div>
-                  <!-- Pagination utilisés -->
-                  @if (usedTotalPages() > 1) {
-                    <div class="flex items-center justify-between gap-2 pt-1">
-                      <button (click)="usedPage.set(usedPage() - 1)" [disabled]="usedPage() === 0"
-                        class="px-3 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-colors">
-                        ← Préc.
-                      </button>
-                      <span class="text-xs text-gray-400">
-                        Page {{ usedPage() + 1 }} / {{ usedTotalPages() }}
-                        <span class="text-gray-600 ml-1">({{ poolTracks().used.length }} morceaux)</span>
-                      </span>
-                      <button (click)="usedPage.set(usedPage() + 1)" [disabled]="usedPage() >= usedTotalPages() - 1"
-                        class="px-3 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-colors">
-                        Suiv. →
-                      </button>
-                    </div>
-                  }
-                }
+            </div>
+            <div class="border-t border-gray-700"></div>
+            <div class="flex flex-col gap-2">
+              <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Parties du jour</h2>
+              <div class="flex items-center gap-3">
+                <button (click)="reset()" [disabled]="resetStatus() === 'loading'"
+                  class="bg-red-900 hover:bg-red-800 disabled:opacity-50 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors flex items-center gap-2">
+                  @if (resetStatus() === 'loading') { Réinitialisation... } @else { <span>↺</span> Réinitialiser les parties du jour }
+                </button>
+                @if (resetStatus() === 'success' && resetResult()) { <span class="text-green-400 text-xs">{{ resetResult()!.deleted }} partie(s) supprimée(s).</span> }
+                @if (resetStatus() === 'error') { <span class="text-red-400 text-xs">Aucun défi trouvé pour aujourd'hui.</span> }
               </div>
-            }
-
+            </div>
           </div>
         }
 
@@ -610,7 +631,6 @@ export class AdminComponent implements OnInit {
   activeTab = signal<Tab>('dashboard');
 
   poolTracks = signal<PoolTracksResponse>({ available: [], used: [] });
-  poolSubTab = signal<PoolSubTab>('available');
   poolTracksLoading = signal(false);
   poolSearchResults = signal<DeezerTrackInfo[]>([]);
   poolSearchLoading = signal(false);
@@ -635,23 +655,39 @@ export class AdminComponent implements OnInit {
   deleteModalTracks = signal<PoolTrackDto[]>([]);
   deleteStatus = signal<'idle' | 'loading' | 'error'>('idle');
 
-  readonly poolPageSize = 12;
-  availablePage = signal(0);
-  usedPage = signal(0);
+  readonly poolPageSize = 15;
+  allTracksPage = signal(0);
+  poolFilterText = signal('');
+  poolFilterStatus = signal<'all' | 'available' | 'used'>('all');
+  poolFilterPreview = signal<'all' | 'ok' | 'missing'>('all');
 
-  pagedAvailable = computed(() => {
-    const page = this.availablePage();
-    return this.poolTracks().available.slice(page * this.poolPageSize, (page + 1) * this.poolPageSize);
+  allTracks = computed(() => {
+    const available = this.poolTracks().available.map(t => ({ ...t, isAvailable: true }));
+    const used = this.poolTracks().used.map(t => ({ ...t, isAvailable: false, hasPreview: null as boolean | null }));
+    return [...available, ...used];
   });
-  availableTotalPages = computed(() =>
-    Math.max(1, Math.ceil(this.poolTracks().available.length / this.poolPageSize)));
 
-  pagedUsed = computed(() => {
-    const page = this.usedPage();
-    return this.poolTracks().used.slice(page * this.poolPageSize, (page + 1) * this.poolPageSize);
+  filteredTracks = computed(() => {
+    const text = this.poolFilterText().toLowerCase().trim();
+    const status = this.poolFilterStatus();
+    const preview = this.poolFilterPreview();
+    return this.allTracks().filter(t => {
+      if (text && !t.artist.toLowerCase().includes(text) && !t.title.toLowerCase().includes(text)) return false;
+      if (status === 'available' && !t.isAvailable) return false;
+      if (status === 'used' && t.isAvailable) return false;
+      if (preview === 'ok' && t.hasPreview !== true) return false;
+      if (preview === 'missing' && t.hasPreview !== false) return false;
+      return true;
+    });
   });
-  usedTotalPages = computed(() =>
-    Math.max(1, Math.ceil(this.poolTracks().used.length / this.poolPageSize)));
+
+  allTotalPages = computed(() =>
+    Math.max(1, Math.ceil(this.filteredTracks().length / this.poolPageSize)));
+
+  pagedAllTracks = computed(() => {
+    const page = this.allTracksPage();
+    return this.filteredTracks().slice(page * this.poolPageSize, (page + 1) * this.poolPageSize);
+  });
 
   totalPlayers = computed(() =>
     (this.adminStats()?.dailyActivity ?? []).reduce((s, d) => s + d.playerCount, 0));
@@ -808,6 +844,11 @@ export class AdminComponent implements OnInit {
     return date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
   }
 
+  formatActivityDate(d: Date | string): string {
+    const date = new Date(this.toIso(d) + 'T12:00:00Z');
+    return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  }
+
   completionRateColor(rate: number): string {
     if (rate >= 70) return 'text-green-400';
     if (rate >= 40) return 'text-yellow-400';
@@ -830,12 +871,16 @@ export class AdminComponent implements OnInit {
     this.poolSearch$.next(q);
   }
 
-  openAddModal(track: DeezerTrackInfo | null, trackIdToUpdate: number | null = null): void {
+  openAddModal(track: DeezerTrackInfo | null, trackIdToUpdate: number | null = null, prefillSearch: string = ''): void {
     this.stopModalAudio();
     this.addToPoolStatus.set('idle');
     this.modalProgress.set(0);
     this.addModalTrack.set(track);
     this.addModalTrackIdToUpdate.set(trackIdToUpdate);
+    if (prefillSearch) {
+      this.poolSearchQuery = prefillSearch;
+      this.poolSearch$.next(prefillSearch);
+    }
     this.addModalOpen.set(true);
   }
 
@@ -944,8 +989,23 @@ export class AdminComponent implements OnInit {
     });
   }
 
+  setPoolFilter(text: string): void {
+    this.poolFilterText.set(text);
+    this.allTracksPage.set(0);
+  }
+
+  setPoolFilterStatus(v: 'all' | 'available' | 'used'): void {
+    this.poolFilterStatus.set(v);
+    this.allTracksPage.set(0);
+  }
+
+  setPoolFilterPreview(v: 'all' | 'ok' | 'missing'): void {
+    this.poolFilterPreview.set(v);
+    this.allTracksPage.set(0);
+  }
+
   private loadPool(silent = false): void {
-    if (!silent) { this.poolTracksLoading.set(true); this.availablePage.set(0); this.usedPage.set(0); }
+    if (!silent) { this.poolTracksLoading.set(true); this.allTracksPage.set(0); }
     this.http.get<PoolTracksResponse>(`${this.base}/tracks`).subscribe({
       next: data => { this.poolTracks.set(data); this.poolTracksLoading.set(false); },
       error: () => this.poolTracksLoading.set(false),
