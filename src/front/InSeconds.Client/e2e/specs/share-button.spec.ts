@@ -30,6 +30,6 @@ test.describe('Bouton partager', () => {
     const clipText = await page.evaluate(() => navigator.clipboard.readText());
     expect(clipText).toContain('InSeconds 🎵');
     expect(clipText).toContain('pts');
-    expect(clipText).toContain('oasis35.github.io/InSeconds');
+    expect(clipText).toMatch(/https?:\/\//); // contient une URL (appUrl selon l'environnement)
   });
 });
