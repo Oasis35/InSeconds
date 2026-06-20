@@ -12,6 +12,15 @@ export class ApiTestClient {
     if (!res.ok) throw new Error(`E2E reset failed: ${res.status}`);
   }
 
+  // Purge complète + re-seed : recrée tracks, défis et joueur dev dans l'ordre connu
+  async reseed(): Promise<void> {
+    const res = await fetch(`${BASE}/api/e2e/reseed`, {
+      method: 'POST',
+      headers: ADMIN_HEADERS,
+    });
+    if (!res.ok) throw new Error(`E2E reseed failed: ${res.status}`);
+  }
+
   async generateToday(): Promise<void> {
     const res = await fetch(`${BASE}/api/admin/generate-today`, {
       method: 'POST',

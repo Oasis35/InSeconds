@@ -8,7 +8,7 @@ import { BlindRoundPage } from '../pages/blind-round.page';
 
 test.describe('Scoring par palier', () => {
   test.beforeEach(async ({ api }) => {
-    await api.reset();
+    await api.reseed();
   });
 
   test('palier court (0.5s) donne plus de points que palier long (10s)', async ({ page }) => {
@@ -31,9 +31,6 @@ test.describe('Scoring par palier', () => {
 
     // Attendre l'écran résultat avant de lire le score
     await round.nextButton.waitFor({ state: 'visible' });
-    // Afficher la bonne réponse pour diagnostic
-    const correctAnswer = await page.locator('p').filter({ hasText: ' — ' }).last().textContent();
-    console.log('DEBUG bonne réponse track 1:', correctAnswer);
     const score1Text = await round.roundScore.textContent();
     const score1 = parseInt(score1Text?.replace(/\D/g, '') ?? '0', 10);
 
