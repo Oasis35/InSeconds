@@ -603,7 +603,7 @@ export class GameComponent implements OnInit, OnDestroy {
       `InSeconds 🎵 ${dateStr}`,
       lines.join('\n'),
       `🏆 ${this.totalScore()} pts`,
-      `${environment.appUrl}/blindtest`,
+      environment.appUrl,
     ].join('\n');
 
     navigator.clipboard.writeText(text).then(() => {
