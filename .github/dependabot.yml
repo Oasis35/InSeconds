@@ -5,13 +5,12 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 3  # évite la noyade
+    open-pull-requests-limit: 3
     ignore:
       - dependency-name: "*"
-        update-types: ["version-update:semver-major"]  # tu gères les majors manuellement
-
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: "npm"
-    directory: "/frontend"   # adapte au path Angular
+    directory: "/src/front/InSeconds.Client"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
