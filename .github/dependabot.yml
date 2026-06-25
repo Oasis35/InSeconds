@@ -1,0 +1,17 @@
+# .github/dependabot.yml
+version: 2
+updates:
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3  # évite la noyade
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]  # tu gères les majors manuellement
+
+  - package-ecosystem: "npm"
+    directory: "/frontend"   # adapte au path Angular
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
