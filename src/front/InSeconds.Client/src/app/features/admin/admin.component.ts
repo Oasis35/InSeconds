@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { lastValueFrom, of } from 'rxjs';
+import { lastValueFrom, of, timer, switchMap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AdminStatsResponse, ChallengeStatsDto, DailyKpisDto } from '../../api/api.generated';
 
@@ -658,12 +658,14 @@ export class AdminComponent {
   // Signal pour la recherche Deezer dans la modale (remplace poolSearchQuery + Subject)
   poolSearchQuery = signal('');
 
-  // rxResource : recherche Deezer — se relance automatiquement quand poolSearchQuery change
+  // rxResource : recherche Deezer — debounce 300ms pour éviter les requêtes sur chaque frappe
   private readonly poolSearchResource = rxResource<DeezerTrackInfo[], string>({
     params: () => this.poolSearchQuery(),
     stream: ({ params: q }) => {
       if (q.length < 2) return of([] as DeezerTrackInfo[]);
-      return this.http.get<DeezerTrackInfo[]>(`${this.base}/deezer-search?q=${encodeURIComponent(q)}`);
+      return timer(300).pipe(
+        switchMap(() => this.http.get<DeezerTrackInfo[]>(`${this.base}/deezer-search?q=${encodeURIComponent(q)}`))
+      );
     },
   });
 

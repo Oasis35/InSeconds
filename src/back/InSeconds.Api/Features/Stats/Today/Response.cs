@@ -14,4 +14,7 @@ public sealed record TrackStat(
     long DeezerTrackId,
     string? CoverUrl,
     double FailureRatePercent,
-    double? AverageSecondsWhenCorrect);
+    double? AverageSecondsWhenCorrect,
+    bool? ArtistCorrect,
+    bool? TitleCorrect,
+    decimal? ListenedDurationSeconds);

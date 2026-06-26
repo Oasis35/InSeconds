@@ -301,6 +301,19 @@ interface RoundResult {
                 }
               </div>
             }
+
+            <!-- Bouton partage -->
+            @if (todayStats()?.yourScore != null) {
+              <div class="flex flex-col items-center gap-1.5 w-full">
+                <button
+                  (click)="shareFromStats()"
+                  class="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition touch-manipulation"
+                  style="background:#1e1e2e;color:#e2e8f0;border:1px solid rgba(255,255,255,0.08);letter-spacing:0.03em">
+                  {{ shareCopied() ? '✓ Copié !' : '🔗 Partager mon score' }}
+                </button>
+                <p class="text-xs" style="color:#475569">Copie un résumé en emojis dans le presse-papier</p>
+              </div>
+            }
           }
         </div>
       }
@@ -587,16 +600,39 @@ export class GameComponent implements OnInit, OnDestroy {
 
   protected readonly shareCopied = signal(false);
 
+  protected shareFromStats(): void {
+    const stats = this.todayStats();
+    if (!stats) return;
+
+    const date = new Date();
+    const dateStr = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
+    const lines = stats.tracks.map(t => {
+      if (t.listenedDurationSeconds == null) return null;
+      const artist = t.artistCorrect ? '✅' : '❌';
+      const title  = t.titleCorrect  ? '✅' : '❌';
+      return `${artist}/${title} ${t.listenedDurationSeconds}s`;
+    }).filter(Boolean);
+
+    const text = [
+      `InSeconds 🎵 ${dateStr}`,
+      lines.join('\n'),
+      `🏆 ${stats.yourScore} pts`,
+      environment.appUrl,
+    ].join('\n');
+
+    navigator.clipboard.writeText(text).then(() => {
+      this.shareCopied.set(true);
+      setTimeout(() => this.shareCopied.set(false), 2000);
+    });
+  }
+
   protected share(): void {
     const date = new Date();
     const dateStr = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
 
-    const colorEmoji = (secs: number) => secs <= 1 ? '🟩' : secs <= 3 ? '🟨' : '🟥';
-
     const lines = this.results().map(r => {
-      const color  = colorEmoji(Number(r.listenedDurationSeconds));
-      const artist = r.artistCorrect ? color : '⬜';
-      const title  = r.titleCorrect  ? color : '⬜';
+      const artist = r.artistCorrect ? '✅' : '❌';
+      const title  = r.titleCorrect  ? '✅' : '❌';
       return `${artist}/${title} ${r.listenedDurationSeconds}s`;
     });
 

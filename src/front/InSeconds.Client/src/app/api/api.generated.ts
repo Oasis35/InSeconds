@@ -1374,6 +1374,9 @@ export interface TrackStat {
     coverUrl: string | undefined;
     failureRatePercent: number;
     averageSecondsWhenCorrect: number | undefined;
+    artistCorrect: boolean | undefined;
+    titleCorrect: boolean | undefined;
+    listenedDurationSeconds: number | undefined;
 
     [key: string]: any;
 }
