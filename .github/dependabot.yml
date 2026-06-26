@@ -3,6 +3,7 @@ version: 2
 updates:
   - package-ecosystem: "nuget"
     directory: "/"
+    target-branch: "feat/dependabot"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 3
@@ -11,6 +12,7 @@ updates:
         update-types: ["version-update:semver-major"]
   - package-ecosystem: "npm"
     directory: "/src/front/InSeconds.Client"
+    target-branch: "feat/dependabot"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
