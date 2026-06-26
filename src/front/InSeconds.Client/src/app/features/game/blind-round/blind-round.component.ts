@@ -347,6 +347,9 @@ export class BlindRoundComponent implements OnDestroy {
 
   setResult(r: SubmitAnswerResponse): void {
     this.result.set(r);
+    if (this.track().previewUrl && this.chosenDuration() > 0) {
+      this.audio.replayFull();
+    }
   }
 
   next(): void {

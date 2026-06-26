@@ -68,6 +68,8 @@
 - [x] `DeezerSearchService` + `Features/Deezer/SearchEndpoint` (proxy public, contourne CORS)
 - [x] `chosenDuration` en signal dans `BlindRoundComponent` (nécessaire pour `computed()` réactif)
 - [x] Streak affiché sur le récap final et l'écran "déjà joué"
+- [x] Replay preview après réponse — `AudioPlayerService.replayFull()`, relance depuis le début jusqu'à la fin naturelle du morceau
+- [x] Synchronisation multi-onglets — `visibilitychange` dans `GameComponent`, relance `loadSession()` au retour au premier plan si partie non terminée
 - [x] Partage score emoji Wordle-style (🟩🟨🟥 + durée + lien `/blindtest`) — copie presse-papier
 - [x] Route `/blindtest` (alias de `/`) pour les liens de partage
 - [x] Open Graph + Twitter Card dans `index.html` (partage WhatsApp / Signal)

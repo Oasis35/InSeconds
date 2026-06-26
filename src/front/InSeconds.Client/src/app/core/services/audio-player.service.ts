@@ -59,6 +59,25 @@ export class AudioPlayerService {
     this.audio.load();
   }
 
+  /** Rejoue le morceau déjà chargé depuis le début, jusqu'à la fin naturelle. */
+  replayFull(): void {
+    if (!this.audio || !this.audio.src) return;
+
+    const token = ++this.playToken;
+    if (this.stopTimer !== null) { clearTimeout(this.stopTimer); this.stopTimer = null; }
+    this.stopRaf();
+
+    this.audio.onended = () => {
+      if (this.playToken !== token) return;
+      this.audio!.onended = null;
+      this.state.set('finished');
+    };
+
+    this.audio.currentTime = 0;
+    this.state.set('playing');
+    this.audio.play().catch(() => { if (this.playToken === token) this.state.set('idle'); });
+  }
+
   /** Une seule prolongation autorisée — passe au palier supérieur. */
   extend(nextDurationSeconds: number): void {
     if (this.wasExtended || this.state() !== 'playing') return;
@@ -99,6 +118,7 @@ export class AudioPlayerService {
     if (this.audio) {
       this.audio.oncanplay = null;
       this.audio.onerror = null;
+      this.audio.onended = null;
       this.audio.pause();
       this.audio.src = '';
     }

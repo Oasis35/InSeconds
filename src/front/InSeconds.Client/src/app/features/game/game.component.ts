@@ -497,11 +497,23 @@ export class GameComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadSession();
+    this.onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        const state = this.gameState();
+        if (state === 'welcome' || state === 'resume_prompt' || state === 'playing') {
+          this.loadSession();
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
   }
 
   ngOnDestroy(): void {
     if (this.countdownInterval !== null) clearInterval(this.countdownInterval);
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
   }
+
+  private onVisibilityChange!: () => void;
 
   private startCountdown(): void {
     const tick = () => {
