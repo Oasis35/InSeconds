@@ -88,10 +88,11 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - Gestion morceaux sans preview : skip 0s accepté par le validateur, bouton "Passer" dans le jeu
 - Replay preview après soumission de réponse (`AudioPlayerService.replayFull()`)
 - Synchronisation multi-onglets via `visibilitychange` — si la partie est terminée dans un autre onglet, le front bascule en `already_played` au retour au premier plan
+- **Anti-cheat durée min écoutée** : `GameSession.CurrentTrackId` + `GameSession.CurrentTrackMinListenedSeconds` (migration `AddSessionAntiCheat`). Slice `Sessions/UpdateListening` (`PATCH /api/sessions/{id}/listening`) — enregistre la durée max par track à chaque arrêt du timer. À la reprise, les paliers déjà écoutés sont masqués dans `BlindRoundComponent` (computed `durations()` filtre sur `minListenedSeconds`).
 - Pool admin redesigné en tableau paginé (15 lignes/page) avec filtres combinables (texte, statut, preview), onglet "Actions" dédié, modale "↻ Actualiser" pré-remplie pour morceaux sans preview — indicateur preview lu depuis `Track.HasPreview` en DB (stable, plus d'appel Deezer temps réel)
 - Dashboard admin : KPI tiles par jour, sélecteur de jour ← →, barres 30j cliquables avec jours vides à zéro
-- Tests E2E Playwright (27 scénarios : 12 jeu + 15 admin, CI GitHub Actions)
-- Tests d'intégration backend (`InSeconds.Api.IntegrationTests`) — Testcontainers.PostgreSql + `WebApplicationFactory<Program>` + Respawn, 69 tests couvrant StartSession, SubmitAnswer, AbandonSession, Stats, AdminStats, SessionEdgeCases, ChallengeGeneration, Admin/Tracks, Admin/Challenges, job CI dédié `integration-tests`
+- Tests E2E Playwright (28 scénarios : 13 jeu + 15 admin, CI GitHub Actions)
+- Tests d'intégration backend (`InSeconds.Api.IntegrationTests`) — Testcontainers.PostgreSql + `WebApplicationFactory<Program>` + Respawn, 73 tests couvrant StartSession, SubmitAnswer, AbandonSession, Stats, AdminStats, SessionEdgeCases (dont UpdateListening), ChallengeGeneration, Admin/Tracks, Admin/Challenges, job CI dédié `integration-tests`
 
 🚧 **À faire** : smoke tests post-deploy, tests mobiles, polish, cache Redis previews Deezer. Voir [`TACHES.md`](TACHES.md).
 

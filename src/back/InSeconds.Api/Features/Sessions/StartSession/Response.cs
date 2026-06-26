@@ -6,7 +6,10 @@ public sealed record StartSessionResponse(
     int CurrentStreak,
     bool IsResuming,
     int ResumeFromPosition,
-    IReadOnlyList<ResumedAnswer> CompletedAnswers);
+    IReadOnlyList<ResumedAnswer> CompletedAnswers,
+    // Anti-cheat : durée min déjà écoutée sur le morceau en cours (null si pas de reprise ou track non commencée)
+    int? CurrentTrackId = null,
+    decimal? MinListenedSeconds = null);
 
 public sealed record TrackSlot(
     int Id,
@@ -20,4 +23,6 @@ public sealed record ResumedAnswer(
     bool ArtistCorrect,
     bool TitleCorrect,
     int Score,
-    decimal ListenedDurationSeconds);
+    decimal ListenedDurationSeconds,
+    string CorrectArtist = "",
+    string CorrectTitle = "");

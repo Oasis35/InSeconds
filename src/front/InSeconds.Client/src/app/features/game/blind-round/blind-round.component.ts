@@ -1,11 +1,12 @@
 import {
-  Component, input, output, inject, signal, computed, OnDestroy,
+  Component, input, output, inject, signal, computed, effect, OnDestroy,
   ChangeDetectionStrategy
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { Subject } from 'rxjs';
 import { AudioPlayerService } from '../../../core/services/audio-player.service';
+import { GameService } from '../../../core/services/game.service';
 import { SettingsService } from '../../../core/services/settings.service';
 import { DeezerSearchService, DeezerSuggestion } from '../../../core/services/deezer-search.service';
 import { TrackSlot, SubmitAnswerResponse } from '../../../core/models/game.models';
@@ -233,14 +234,22 @@ export interface AnsweredEvent {
 export class BlindRoundComponent implements OnDestroy {
   readonly track = input.required<TrackSlot>();
   readonly isLast = input(false);
+  readonly sessionId = input(0);
+  readonly minListenedSeconds = input<number | null>(null);
   readonly answered = output<AnsweredEvent>();
   readonly nextTrack = output<void>();
 
   protected readonly audio = inject(AudioPlayerService);
   private readonly settings = inject(SettingsService);
+  private readonly gameService = inject(GameService);
   private readonly deezerSearch = inject(DeezerSearchService);
 
-  protected readonly durations = computed(() => this.settings.allowedDurations());
+  protected readonly durations = computed(() => {
+    const all = this.settings.allowedDurations();
+    const min = this.minListenedSeconds();
+    if (min == null) return all;
+    return all.filter(d => d >= min);
+  });
   protected artistAnswer = '';
   protected titleAnswer = '';
   protected searchQuery = '';
@@ -260,6 +269,18 @@ export class BlindRoundComponent implements OnDestroy {
 
   constructor() {
     this.deezerSearch.search(this.query$).subscribe(s => this.suggestions.set(s));
+
+    // Quand le timer s'arrête (état finished, pas encore de résultat), mémoriser la durée écoutée
+    effect(() => {
+      if (this.audio.state() === 'finished' && !this.result()) {
+        const sid = this.sessionId();
+        const tid = this.track().id;
+        const dur = this.chosenDuration();
+        if (sid > 0 && tid > 0 && dur > 0) {
+          this.gameService.updateListening(sid, tid, dur).subscribe();
+        }
+      }
+    });
   }
 
   onQueryChange(q: string): void {

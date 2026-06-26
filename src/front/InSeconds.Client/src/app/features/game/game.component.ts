@@ -325,6 +325,8 @@ interface RoundResult {
             #roundRef
             [track]="currentTrack()!"
             [isLast]="currentIndex() === tracks().length - 1"
+            [sessionId]="sessionId"
+            [minListenedSeconds]="currentTrackMinListenedSeconds()"
             (answered)="onAnswered($event)"
             (nextTrack)="onNextTrack()" />
         </div>
@@ -478,7 +480,8 @@ export class GameComponent implements OnInit, OnDestroy {
     return this.currentStreak();
   });
 
-  private sessionId = 0;
+  protected sessionId = 0;
+  protected readonly currentTrackMinListenedSeconds = signal<number | null>(null);
   private countdownInterval: ReturnType<typeof setInterval> | null = null;
 
   protected readonly secondsUntilMidnightUtc = signal(0);
@@ -530,9 +533,26 @@ export class GameComponent implements OnInit, OnDestroy {
   }
 
   protected resumePlaying(): void {
-    const startIndex = this.tracks().findIndex((_, i) => i >= this.resumeCompletedAnswers().length);
-    this.currentIndex.set(Math.max(0, this.resumeCompletedAnswers().length));
-    this.totalScore.set(this.resumeCompletedAnswers().reduce((s, a) => s + a.score, 0));
+    const completed = this.resumeCompletedAnswers();
+    this.currentIndex.set(Math.max(0, completed.length));
+    this.totalScore.set(completed.reduce((s, a) => s + a.score, 0));
+    // Reconstituer les RoundResult pour les morceaux déjà joués (récap final complet)
+    this.results.set(completed.map((a, i) => {
+      const track = this.tracks()[i];
+      return {
+        artistCorrect:             a.artistCorrect,
+        titleCorrect:              a.titleCorrect,
+        score:                     a.score,
+        correctArtist:             a.correctArtist ?? '',
+        correctTitle:              a.correctTitle ?? '',
+        listenedDurationSeconds:   a.listenedDurationSeconds,
+        averageSecondsWhenCorrect: undefined,
+        failureRatePercent:        0,
+        position:                  a.position,
+        coverUrl:                  track?.coverUrl ?? null,
+        deezerTrackId:             track?.deezerTrackId ?? 0,
+      };
+    }));
     this.gameState.set('playing');
   }
 
@@ -605,6 +625,7 @@ export class GameComponent implements OnInit, OnDestroy {
 
   protected onNextTrack(): void {
     const next = this.currentIndex() + 1;
+    this.currentTrackMinListenedSeconds.set(null);
     if (next >= this.tracks().length) {
       this.gameState.set('done');
     } else {
@@ -676,12 +697,20 @@ export class GameComponent implements OnInit, OnDestroy {
           this.totalScore.set(response.completedAnswers.reduce((s, a) => s + a.score, 0));
           this.results.set([]);
           this.showAbandonConfirm.set(false);
+          // Anti-cheat : si la session reprend sur une track déjà commencée, verrouiller le palier min
+          const resumeTrack = response.tracks[response.resumeFromPosition];
+          this.currentTrackMinListenedSeconds.set(
+            response.currentTrackId != null && resumeTrack?.id === response.currentTrackId && response.minListenedSeconds != null
+              ? response.minListenedSeconds
+              : null
+          );
           this.audioPlayer.preloadAll(response.tracks.map(t => t.previewUrl))
             .then(() => this.gameState.set('resume_prompt'));
         } else {
           this.currentIndex.set(0);
           this.totalScore.set(0);
           this.results.set([]);
+          this.currentTrackMinListenedSeconds.set(null);
           this.audioPlayer.preloadAll(response.tracks.map(t => t.previewUrl))
             .then(() => this.gameState.set('welcome'));
         }

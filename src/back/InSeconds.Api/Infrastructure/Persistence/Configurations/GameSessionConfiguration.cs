@@ -14,6 +14,8 @@ public sealed class GameSessionConfiguration : IEntityTypeConfiguration<GameSess
 
         builder.Property(s => s.TotalScore).IsRequired();
         builder.Property(s => s.TotalDurationSeconds).IsRequired();
+        builder.Property(s => s.CurrentTrackId).IsRequired(false);
+        builder.Property(s => s.CurrentTrackMinListenedSeconds).IsRequired(false);
         builder.Property(s => s.CreatedAt).HasDefaultValueSql("now() at time zone 'utc'");
 
         builder.HasOne(s => s.Player)

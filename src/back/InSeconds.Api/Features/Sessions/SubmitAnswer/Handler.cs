@@ -72,6 +72,10 @@ public sealed class SubmitAnswerHandler(
         session.TotalScore           += score;
         session.TotalDurationSeconds += command.ListenedDurationSeconds;
 
+        // Réinitialiser le verrou anti-cheat (la track est répondue, plus besoin)
+        session.CurrentTrackId                = null;
+        session.CurrentTrackMinListenedSeconds = null;
+
         // Vérifier si tous les morceaux du défi ont été répondus → complétion
         var answeredCount = await db.GameSessionAnswers
             .CountAsync(a => a.GameSessionId == command.SessionId, cancellationToken);
