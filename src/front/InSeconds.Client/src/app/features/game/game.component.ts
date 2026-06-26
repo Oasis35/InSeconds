@@ -1,11 +1,13 @@
-import { Component, inject, signal, computed, viewChild, OnInit, OnDestroy, HostListener, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, computed, effect, viewChild, OnInit, OnDestroy, HostListener, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { GameService } from '../../core/services/game.service';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
 import { TrackSlot, ResumedAnswer } from '../../core/models/game.models';
 import { BlindRoundComponent, AnsweredEvent } from './blind-round/blind-round.component';
+import { ConfirmSheetComponent } from '../../shared/confirm-sheet/confirm-sheet.component';
 import { ApiClient, TodayStatsResponse } from '../../api/api.generated';
 import { environment } from '../../../environments/environment';
+import { UnsavedGameComponent } from '../../core/guards/unsaved-game.guard';
 
 type GameState = 'loading' | 'welcome' | 'resume_prompt' | 'playing' | 'done' | 'error' | 'no_challenge' | 'already_played';
 
@@ -25,7 +27,7 @@ interface RoundResult {
 
 @Component({
   selector: 'app-game',
-  imports: [BlindRoundComponent, RouterLink],
+  imports: [BlindRoundComponent, ConfirmSheetComponent, RouterLink],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="min-h-dvh flex flex-col" style="background:#080810;color:#e2e8f0">
@@ -80,7 +82,7 @@ interface RoundResult {
 
       <!-- Accueil -->
       @if (gameState() === 'welcome') {
-        <div class="flex-1 flex flex-col items-center justify-center gap-10 text-center px-2">
+        <div class="screen-enter flex-1 flex flex-col items-center justify-center gap-10 text-center px-2">
 
           <div class="space-y-4">
             <p class="text-6xl" style="line-height:1">♪</p>
@@ -102,7 +104,7 @@ interface RoundResult {
 
       <!-- Reprise de partie en cours -->
       @if (gameState() === 'resume_prompt') {
-        <div class="flex-1 flex flex-col items-center justify-center gap-8 text-center px-4">
+        <div class="screen-enter flex-1 flex flex-col items-center justify-center gap-8 text-center px-4">
 
           @if (!showAbandonConfirm()) {
             <div class="space-y-3">
@@ -154,33 +156,36 @@ interface RoundResult {
 
       <!-- Confirmation abandon en cours de partie -->
       @if (gameState() === 'playing' && showAbandonConfirm()) {
-        <div class="fixed inset-0 flex items-end justify-center px-4 pb-8" style="background:rgba(0,0,0,0.7);z-index:50">
-          <div class="w-full max-w-lg rounded-2xl p-6 space-y-4" style="background:#1a0a0a;border:1px solid rgba(248,113,113,0.3)">
-            <p class="text-sm font-semibold" style="color:#fca5a5">Abandonner la partie ?</p>
-            <p class="text-sm leading-relaxed" style="color:#e2e8f0">
-              Le défi d'aujourd'hui sera considéré comme joué.<br>
-              Tu ne pourras plus y rejouer avant demain.
-            </p>
-            <div class="flex gap-3 pt-1">
-              <button (click)="confirmAbandon()"
-                [disabled]="abandonLoading()"
-                class="flex-1 py-3 rounded-xl text-sm font-bold transition-all active:scale-95"
-                style="background:#ef4444;color:#fff">
-                {{ abandonLoading() ? '…' : 'Oui, abandonner' }}
-              </button>
-              <button (click)="showAbandonConfirm.set(false)"
-                class="flex-1 py-3 rounded-xl text-sm font-semibold transition-all active:scale-95"
-                style="background:#0f0f1a;color:#94a3b8;border:1px solid rgba(255,255,255,0.06)">
-                Continuer
-              </button>
-            </div>
-          </div>
-        </div>
+        <app-confirm-sheet
+          tone="danger"
+          title="Abandonner la partie ?"
+          body="Le défi d'aujourd'hui sera considéré comme joué.
+Tu ne pourras plus y rejouer avant demain."
+          confirmLabel="Oui, abandonner"
+          cancelLabel="Continuer"
+          [loading]="abandonLoading()"
+          (confirm)="confirmAbandon()"
+          (cancel)="showAbandonConfirm.set(false)" />
+      }
+
+      <!-- Confirmation quitter la page en cours de partie -->
+      @if (showLeaveConfirm()) {
+        <app-confirm-sheet
+          tone="warning"
+          title="Partie en cours"
+          body="Ta partie n'est pas terminée.
+Tu pourras la reprendre demain, mais le défi sera perdu si tu ne la termines pas aujourd'hui."
+          confirmLabel="Quitter quand même"
+          confirmStyle="background:#374151;color:#e2e8f0;border:1px solid rgba(255,255,255,0.1)"
+          cancelLabel="Continuer à jouer"
+          cancelStyle="background:#6366f1;color:#fff"
+          (confirm)="confirmLeave()"
+          (cancel)="cancelLeave()" />
       }
 
       <!-- Pas de défi aujourd'hui -->
       @if (gameState() === 'no_challenge') {
-        <div class="flex-1 flex flex-col items-center justify-center gap-6 text-center px-4">
+        <div class="screen-enter flex-1 flex flex-col items-center justify-center gap-6 text-center px-4">
           <div class="space-y-2">
             <h2 class="text-xl font-semibold" style="color:#e2e8f0">Pas de défi aujourd'hui</h2>
             <p class="text-sm" style="color:#334155">Le défi n'a pas encore été généré.<br>Réessaie dans quelques minutes.</p>
@@ -195,7 +200,7 @@ interface RoundResult {
 
       <!-- Erreur -->
       @if (gameState() === 'error') {
-        <div class="flex-1 flex flex-col items-center justify-center gap-6 text-center px-4">
+        <div class="screen-enter flex-1 flex flex-col items-center justify-center gap-6 text-center px-4">
           <div class="space-y-2">
             <h2 class="text-xl font-semibold" style="color:#e2e8f0">Impossible de charger le défi</h2>
             <p class="text-sm" style="color:#334155">Le serveur est peut-être indisponible.<br>Réessaie dans quelques secondes.</p>
@@ -210,7 +215,7 @@ interface RoundResult {
 
       <!-- Déjà joué aujourd'hui (Completed ou Abandoned) -->
       @if (gameState() === 'already_played') {
-        <div class="flex-1 flex flex-col items-center gap-7 text-center px-2 pt-4">
+        <div class="screen-enter flex-1 flex flex-col items-center gap-7 text-center px-2 pt-4">
 
           @if (sessionAbandoned()) {
             <!-- Partie abandonnée — message simple -->
@@ -320,7 +325,7 @@ interface RoundResult {
 
       <!-- Jeu en cours -->
       @if (gameState() === 'playing' && currentTrack()) {
-        <div class="flex-1 flex flex-col justify-start pt-4">
+        <div class="screen-enter flex-1 flex flex-col justify-start pt-4">
           <app-blind-round
             #roundRef
             [track]="currentTrack()!"
@@ -334,7 +339,7 @@ interface RoundResult {
 
       <!-- Récapitulatif final -->
       @if (gameState() === 'done') {
-        <div class="flex-1 flex flex-col pt-4 gap-6">
+        <div class="screen-enter flex-1 flex flex-col pt-4 gap-6">
 
           <!-- Score total -->
           <div class="text-center space-y-2 pb-2">
@@ -446,7 +451,7 @@ interface RoundResult {
     </div>
   `,
 })
-export class GameComponent implements OnInit, OnDestroy {
+export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
   private readonly gameService = inject(GameService);
   private readonly api = inject(ApiClient);
   private readonly audioPlayer = inject(AudioPlayerService);
@@ -618,7 +623,7 @@ export class GameComponent implements OnInit, OnDestroy {
           listenedDurationSeconds: 0,
           averageSecondsWhenCorrect: undefined,
           failureRatePercent: 0,
-        });
+        }, true);
       },
     });
   }
@@ -631,6 +636,54 @@ export class GameComponent implements OnInit, OnDestroy {
     } else {
       this.currentIndex.set(next);
     }
+  }
+
+  protected readonly showLeaveConfirm = signal(false);
+  private leaveResolve: ((ok: boolean) => void) | null = null;
+
+  constructor() {
+    // Si la partie quitte l'état 'playing' (terminée/abandonnée en arrière-plan,
+    // ex. dernière réponse HTTP qui se résout) pendant qu'une confirmation de
+    // sortie est ouverte, on laisse la navigation se faire — il n'y a plus de
+    // partie à protéger.
+    effect(() => {
+      if (this.gameState() !== 'playing' && this.leaveResolve) {
+        this.resolveLeave(true);
+      }
+    });
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (this.gameState() === 'playing') {
+      event.preventDefault();
+    }
+  }
+
+  canDeactivate(): boolean | Promise<boolean> {
+    if (this.gameState() !== 'playing') return true;
+    // Une confirmation déjà en attente (navigation ré-entrante) : on la résout
+    // avant d'en ouvrir une nouvelle pour ne pas laisser de Promise orpheline.
+    this.resolveLeave(false);
+    this.showLeaveConfirm.set(true);
+    return new Promise<boolean>(resolve => {
+      this.leaveResolve = resolve;
+    });
+  }
+
+  private resolveLeave(ok: boolean): void {
+    this.showLeaveConfirm.set(false);
+    const resolve = this.leaveResolve;
+    this.leaveResolve = null;
+    resolve?.(ok);
+  }
+
+  protected confirmLeave(): void {
+    this.resolveLeave(true);
+  }
+
+  protected cancelLeave(): void {
+    this.resolveLeave(false);
   }
 
   protected readonly shareCopied = signal(false);
