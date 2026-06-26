@@ -18,14 +18,33 @@ public sealed class TodayStatsHandler(ApplicationDbContext db, SettingsService s
 
         int? yourScore = null;
         int currentStreak = 0;
+        Dictionary<int, (bool ArtistCorrect, bool TitleCorrect, decimal ListenedDuration)> playerAnswersByPosition = [];
         if (playerId.HasValue)
         {
-            yourScore = await db.GameSessions
+            var playerSession = await db.GameSessions
                 .Where(s => s.DailyChallengeId == challenge.Id
                          && s.PlayerId == playerId.Value
                          && s.Status == Domain.SessionStatus.Completed)
-                .Select(s => (int?)s.TotalScore)
+                .Select(s => new { s.TotalScore, s.Id })
                 .FirstOrDefaultAsync(ct);
+
+            if (playerSession is not null)
+            {
+                yourScore = playerSession.TotalScore;
+                var answers = await db.GameSessionAnswers
+                    .Where(a => a.GameSessionId == playerSession.Id)
+                    .Select(a => new
+                    {
+                        a.Track.Position,
+                        a.ArtistCorrect,
+                        a.TitleCorrect,
+                        a.ListenedDurationSeconds,
+                    })
+                    .ToListAsync(ct);
+                playerAnswersByPosition = answers.ToDictionary(
+                    a => a.Position,
+                    a => (a.ArtistCorrect, a.TitleCorrect, a.ListenedDurationSeconds));
+            }
 
             currentStreak = await db.Players
                 .Where(p => p.Id == playerId.Value)
@@ -61,15 +80,22 @@ public sealed class TodayStatsHandler(ApplicationDbContext db, SettingsService s
             })
             .ToListAsync(ct);
 
-        var tracks = trackStats.Select(t => new TrackStat(
-            Position:                  t.Position,
-            Artist:                    t.Artist,
-            Title:                     t.Title,
-            DeezerTrackId:             t.DeezerTrackId,
-            CoverUrl:                  t.CoverHash is not null ? appSettings.BuildCoverUrl(t.CoverHash) : null,
-            FailureRatePercent:        t.TotalAnswers == 0 ? 0 : Math.Round((1.0 - (double)t.CorrectAnswers / t.TotalAnswers) * 100, 1),
-            AverageSecondsWhenCorrect: t.AvgSecondsCorrect.HasValue ? Math.Round(t.AvgSecondsCorrect.Value, 1) : null
-        )).ToList();
+        var tracks = trackStats.Select(t =>
+        {
+            playerAnswersByPosition.TryGetValue(t.Position, out var pa);
+            return new TrackStat(
+                Position:                  t.Position,
+                Artist:                    t.Artist,
+                Title:                     t.Title,
+                DeezerTrackId:             t.DeezerTrackId,
+                CoverUrl:                  t.CoverHash is not null ? appSettings.BuildCoverUrl(t.CoverHash) : null,
+                FailureRatePercent:        t.TotalAnswers == 0 ? 0 : Math.Round((1.0 - (double)t.CorrectAnswers / t.TotalAnswers) * 100, 1),
+                AverageSecondsWhenCorrect: t.AvgSecondsCorrect.HasValue ? Math.Round(t.AvgSecondsCorrect.Value, 1) : null,
+                ArtistCorrect:             playerAnswersByPosition.ContainsKey(t.Position) ? pa.ArtistCorrect : null,
+                TitleCorrect:              playerAnswersByPosition.ContainsKey(t.Position) ? pa.TitleCorrect : null,
+                ListenedDurationSeconds:   playerAnswersByPosition.ContainsKey(t.Position) ? pa.ListenedDuration : null
+            );
+        }).ToList();
 
         return Results.Ok(new TodayStatsResponse(yourScore, medianResult, totalPlayers, currentStreak, tracks));
     }

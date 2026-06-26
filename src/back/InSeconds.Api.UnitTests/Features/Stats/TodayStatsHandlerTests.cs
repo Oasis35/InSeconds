@@ -231,4 +231,85 @@ public sealed class TodayStatsHandlerTests
         var response = ((Ok<TodayStatsResponse>)result).Value!;
         response.Tracks[0].FailureRatePercent.Should().Be(50.0);
     }
+
+    // ---------------------------------------------------------------------------
+    // Tests — réponses du joueur dans TrackStat
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task Handle_WhenPlayerHasCompletedSession_ReturnsTheirAnswerInTrackStat()
+    {
+        await using var db = CreateDbContext();
+        var (challenge, challengeTrack) = BuildTodayChallenge();
+        db.DailyChallenges.Add(challenge);
+        db.Players.Add(BuildPlayer(Player1));
+        db.GameSessions.Add(new GameSession
+        {
+            Id = 1, PlayerId = Player1, DailyChallengeId = 1, TotalScore = 700, TotalDurationSeconds = 1, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed,
+        });
+        db.GameSessionAnswers.Add(new GameSessionAnswer
+        {
+            Id = 1, GameSessionId = 1, DailyChallengeTrackId = challengeTrack.Id,
+            ListenedDurationSeconds = 1.5m, ArtistCorrect = true, TitleCorrect = false, Score = 350,
+        });
+        await db.SaveChangesAsync();
+
+        var result = await CreateHandler(db).Handle(Player1, CancellationToken.None);
+
+        var response = ((Ok<TodayStatsResponse>)result).Value!;
+        var track = response.Tracks[0];
+        track.ArtistCorrect.Should().Be(true);
+        track.TitleCorrect.Should().Be(false);
+        track.ListenedDurationSeconds.Should().Be(1.5m);
+    }
+
+    [Fact]
+    public async Task Handle_WhenNoPlayerId_ReturnsNullPlayerAnswerFields()
+    {
+        await using var db = CreateDbContext();
+        var (challenge, challengeTrack) = BuildTodayChallenge();
+        db.DailyChallenges.Add(challenge);
+        db.Players.Add(BuildPlayer(Player1));
+        db.GameSessions.Add(new GameSession
+        {
+            Id = 1, PlayerId = Player1, DailyChallengeId = 1, TotalScore = 400, TotalDurationSeconds = 3, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed,
+        });
+        db.GameSessionAnswers.Add(new GameSessionAnswer
+        {
+            Id = 1, GameSessionId = 1, DailyChallengeTrackId = challengeTrack.Id,
+            ListenedDurationSeconds = 3m, ArtistCorrect = true, TitleCorrect = true, Score = 400,
+        });
+        await db.SaveChangesAsync();
+
+        var result = await CreateHandler(db).Handle(null, CancellationToken.None);
+
+        var response = ((Ok<TodayStatsResponse>)result).Value!;
+        var track = response.Tracks[0];
+        track.ArtistCorrect.Should().BeNull();
+        track.TitleCorrect.Should().BeNull();
+        track.ListenedDurationSeconds.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Handle_WhenPlayerHasNoCompletedSession_ReturnsNullPlayerAnswerFields()
+    {
+        await using var db = CreateDbContext();
+        var (challenge, _) = BuildTodayChallenge();
+        db.DailyChallenges.Add(challenge);
+        db.Players.AddRange(BuildPlayer(Player1), BuildPlayer(Player2));
+        db.GameSessions.Add(new GameSession
+        {
+            Id = 1, PlayerId = Player1, DailyChallengeId = 1, TotalScore = 0, TotalDurationSeconds = 0, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Abandoned,
+        });
+        await db.SaveChangesAsync();
+
+        // Player2 demande les stats — n'a pas joué
+        var result = await CreateHandler(db).Handle(Player2, CancellationToken.None);
+
+        var response = ((Ok<TodayStatsResponse>)result).Value!;
+        var track = response.Tracks[0];
+        track.ArtistCorrect.Should().BeNull();
+        track.TitleCorrect.Should().BeNull();
+        track.ListenedDurationSeconds.Should().BeNull();
+    }
 }

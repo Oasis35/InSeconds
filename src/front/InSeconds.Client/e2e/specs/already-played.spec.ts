@@ -28,6 +28,37 @@ test.describe('Déjà joué — écran 409', () => {
     await expect(page.getByText('Ton score')).toBeVisible();
   });
 
+  test('affiche le bouton partager sur l\'écran déjà joué', async ({ page, api }) => {
+    await api.reset();
+    await page.clock.install({ time: Date.now() });
+
+    const game = new GamePage(page);
+    const round = new BlindRoundPage(page);
+
+    // Jouer une partie complète
+    await game.goto();
+    await game.waitForWelcome();
+    await game.clickStart();
+    for (let i = 0; i < 3; i++) {
+      await round.playRound(1);
+    }
+    await game.waitForDone();
+
+    // Recharger — écran already_played
+    await game.goto();
+    await expect(game.alreadyPlayedHeading).toBeVisible();
+
+    // Le bouton partage doit être présent et fonctionnel
+    await expect(game.shareButton).toBeVisible();
+    await game.shareButton.click();
+    await expect(game.shareCopiedButton).toBeVisible();
+
+    const clipText = await page.evaluate(() => navigator.clipboard.readText());
+    expect(clipText).toContain('InSeconds 🎵');
+    expect(clipText).toContain('pts');
+    expect(clipText).toMatch(/[✅❌]/); // contient des emojis résultat
+  });
+
   test('affiche le message abandon quand la session est abandonnée', async ({ page, api }) => {
     await api.reset();
     await page.clock.install({ time: Date.now() });

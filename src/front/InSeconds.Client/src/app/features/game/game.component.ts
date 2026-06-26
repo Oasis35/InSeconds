@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, viewChild, OnInit, OnDestroy, HostListener } from '@angular/core';
+import { Component, inject, signal, computed, viewChild, OnInit, OnDestroy, HostListener, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { GameService } from '../../core/services/game.service';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
@@ -26,6 +26,7 @@ interface RoundResult {
 @Component({
   selector: 'app-game',
   imports: [BlindRoundComponent, RouterLink],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="min-h-dvh flex flex-col" style="background:#080810;color:#e2e8f0">
     <main class="flex-1 flex flex-col p-5 w-full max-w-lg mx-auto">
@@ -300,6 +301,19 @@ interface RoundResult {
                 }
               </div>
             }
+
+            <!-- Bouton partage -->
+            @if (todayStats()?.yourScore != null) {
+              <div class="flex flex-col items-center gap-1.5 w-full">
+                <button
+                  (click)="shareFromStats()"
+                  class="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition touch-manipulation"
+                  style="background:#1e1e2e;color:#e2e8f0;border:1px solid rgba(255,255,255,0.08);letter-spacing:0.03em">
+                  {{ shareCopied() ? '✓ Copié !' : '🔗 Partager mon score' }}
+                </button>
+                <p class="text-xs" style="color:#475569">Copie un résumé en emojis dans le presse-papier</p>
+              </div>
+            }
           }
         </div>
       }
@@ -331,7 +345,8 @@ interface RoundResult {
           <div class="flex flex-col items-center gap-1.5">
             <button
               (click)="share()"
-              class="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition touch-manipulation"
+              [disabled]="results().length < tracks().length"
+              class="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition touch-manipulation disabled:opacity-40"
               style="background:#1e1e2e;color:#e2e8f0;border:1px solid rgba(255,255,255,0.08);letter-spacing:0.03em">
               {{ shareCopied() ? '✓ Copié !' : '🔗 Partager mon score' }}
             </button>
@@ -535,6 +550,8 @@ export class GameComponent implements OnInit, OnDestroy {
   }
 
   protected onAnswered(event: AnsweredEvent): void {
+    const index = this.currentIndex();
+    const track = this.tracks()[index];
     this.gameService.submitAnswer(this.sessionId, {
       dailyChallengeTrackId:   event.trackId,
       listenedDurationSeconds: event.listenedDurationSeconds,
@@ -544,7 +561,6 @@ export class GameComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: (response) => {
         this.totalScore.update(s => s + response.score);
-        const track = this.tracks()[this.currentIndex()];
         this.results.update(rs => [...rs, {
           artistCorrect:             response.artistCorrect,
           titleCorrect:              response.titleCorrect,
@@ -554,7 +570,7 @@ export class GameComponent implements OnInit, OnDestroy {
           listenedDurationSeconds:   response.listenedDurationSeconds,
           averageSecondsWhenCorrect: response.averageSecondsWhenCorrect,
           failureRatePercent:        response.failureRatePercent,
-          position:                  this.currentIndex() + 1,
+          position:                  index + 1,
           coverUrl:                  track.coverUrl ?? null,
           deezerTrackId:             track['deezerTrackId'],
         }]);
@@ -586,16 +602,39 @@ export class GameComponent implements OnInit, OnDestroy {
 
   protected readonly shareCopied = signal(false);
 
+  protected shareFromStats(): void {
+    const stats = this.todayStats();
+    if (!stats) return;
+
+    const date = new Date();
+    const dateStr = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
+    const lines = stats.tracks.map(t => {
+      if (t.listenedDurationSeconds == null) return null;
+      const artist = t.artistCorrect ? '✅' : '❌';
+      const title  = t.titleCorrect  ? '✅' : '❌';
+      return `${artist}/${title} ${t.listenedDurationSeconds}s`;
+    }).filter(Boolean);
+
+    const text = [
+      `InSeconds 🎵 ${dateStr}`,
+      lines.join('\n'),
+      `🏆 ${stats.yourScore} pts`,
+      environment.appUrl,
+    ].join('\n');
+
+    navigator.clipboard.writeText(text).then(() => {
+      this.shareCopied.set(true);
+      setTimeout(() => this.shareCopied.set(false), 2000);
+    });
+  }
+
   protected share(): void {
     const date = new Date();
     const dateStr = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
 
-    const colorEmoji = (secs: number) => secs <= 1 ? '🟩' : secs <= 3 ? '🟨' : '🟥';
-
     const lines = this.results().map(r => {
-      const color  = colorEmoji(Number(r.listenedDurationSeconds));
-      const artist = r.artistCorrect ? color : '⬜';
-      const title  = r.titleCorrect  ? color : '⬜';
+      const artist = r.artistCorrect ? '✅' : '❌';
+      const title  = r.titleCorrect  ? '✅' : '❌';
       return `${artist}/${title} ${r.listenedDurationSeconds}s`;
     });
 
