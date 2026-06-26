@@ -148,7 +148,7 @@ SVG inline du badge officiel "À écouter sur Deezer" (blanc sur transparent). I
 
 ### `AdminComponent`
 
-Route `/admin`. Heure de build affichée sous le titre (injectée via `prebuild` → `build-info.ts`). Login Bearer token → quatre onglets :
+Route `/admin`. Heure de build affichée sous le titre **uniquement quand connecté** (injectée via `prebuild` → `build-info.ts`, timezone navigateur). Login Bearer token → quatre onglets :
 - **Dashboard** : KPI tiles jour sélectionné (complétés, abandons, taux complétion — affiche "—" si 0 complété, score médian), sélecteur de jour ← → naviguant sur les dates ayant un défi, barres 30j cliquables (jours vides = 0, dates formatées "22 mai"), répartition joueurs, stats par défi (accordéon) paginées par mois (navigateur ‹ Mois Année ›)
 - **Pool** : tableau paginé 15 lignes/page, filtres combinables (texte artiste/titre, statut Disponible/Utilisé, preview OK/Manquante), sélection multiple + suppression en lot, bouton "+ Ajouter" (popup recherche Deezer + lecteur preview 30s), bouton "↻ Actualiser" sur les morceaux sans preview (ouvre la modale pré-remplie avec artiste + titre)
 - **Actions** : bouton "Générer le défi du jour" + bouton "Réinitialiser les parties du jour" avec feedback inline

@@ -258,7 +258,7 @@ Runners Ubuntu, ~5-7 min par run (jobs `back`/`front`/`integration-tests` en par
 - `playerAuthInterceptor` Angular — `withCredentials: true` sur toutes les requêtes `/api` hors admin
 - `DeezerClient` — `GetPreviewUrlAsync` + `SearchTracksAsync`, extrait le hash de pochette (`CoverHash`)
 - `GET /api/deezer/search?q=xxx` — endpoint proxy public qui relay vers l'API Deezer (évite les CORS)
-- Page admin (`/admin`) — login, création de défis, recherche Deezer, reset sessions du jour ; heure de déploiement affichée sous le titre (générée au `prebuild` via `scripts/generate-build-info.mjs` → `src/app/core/build-info.ts`, ignoré par git) ; stats par défi et historique défis paginés par mois (navigateur ‹ Mois Année › partagé entre onglet Dashboard et onglet Défis)
+- Page admin (`/admin`) — login, création de défis, recherche Deezer, reset sessions du jour ; heure de déploiement affichée sous le titre **uniquement quand connecté** (générée au `prebuild` via `scripts/generate-build-info.mjs` → `src/app/core/build-info.ts`, ignoré par git) — s'affiche dans le timezone du navigateur ; stats par défi et historique défis paginés par mois (navigateur ‹ Mois Année › partagé entre onglet Dashboard et onglet Défis)
 - Auth admin via Bearer token + `adminAuthInterceptor` Angular
 - Settings chargés depuis la BD via `AppDbConfigurationSource` (ADO.NET brut) → `IOptions<AppSettings>`
 - `Track.CoverHash` (hash seul, pas URL complète) + `AppSettings.CoverUrlTemplate` pour la reconstruction

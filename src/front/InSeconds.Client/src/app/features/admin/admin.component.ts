@@ -26,8 +26,8 @@ type Tab = 'dashboard' | 'pool' | 'defis' | 'actions';
     <div class="min-h-screen bg-gray-900 text-white flex flex-col items-center p-8 gap-6">
       <div class="flex flex-col items-center gap-1">
         <h1 class="text-2xl font-bold tracking-tight">Admin</h1>
-        @if (buildTime !== 'unknown') {
-          <p class="text-xs text-gray-500">Déployé le {{ buildTime | date:'dd/MM/yyyy à HH:mm' : 'UTC' }} UTC</p>
+        @if (authenticated() && buildTime !== 'unknown') {
+          <p class="text-xs text-gray-500">Déployé le {{ buildTime | date:'dd/MM/yyyy à HH:mm' }}</p>
         }
       </div>
 
