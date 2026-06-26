@@ -582,7 +582,7 @@ type Tab = 'dashboard' | 'pool' | 'defis' | 'actions';
 
           <!-- Recherche -->
           <input type="text" [ngModel]="poolSearchQuery()" (ngModelChange)="onPoolSearchChange($event)"
-            placeholder="Rechercher artiste ou titre..."
+            placeholder="Rechercher sur Deezer..."
             class="bg-gray-700 text-white rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-purple-500 text-sm" />
           @if (poolSearchLoading()) {
             <p class="text-gray-500 text-xs -mt-2">Recherche...</p>

@@ -50,9 +50,9 @@ export class AdminPage {
     return this.page.getByRole('button', { name: '+ Ajouter' });
   }
 
-  // Modale ajout
+  // Modale ajout (placeholder distinct du filtre pool)
   modalSearchInput(): Locator {
-    return this.page.getByPlaceholder('Rechercher artiste ou titre...').nth(1);
+    return this.page.getByPlaceholder('Rechercher sur Deezer...');
   }
 
   modalAddAndCloseButton(): Locator {
