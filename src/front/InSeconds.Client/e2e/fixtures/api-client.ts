@@ -28,4 +28,57 @@ export class ApiTestClient {
     });
     if (!res.ok && res.status !== 409) throw new Error(`generate-today failed: ${res.status}`);
   }
+
+  /** Complète la partie du joueur identifié par son cookie (extrait depuis la page Playwright). */
+  async completeSessionAs(cookieHeader: string): Promise<void> {
+    const headers = { 'Content-Type': 'application/json', Cookie: cookieHeader };
+
+    const startRes = await fetch(`${BASE}/api/sessions`, { method: 'POST', headers });
+    if (!startRes.ok) throw new Error(`startSession failed: ${startRes.status}`);
+    const session = await startRes.json();
+
+    for (const track of session.tracks) {
+      const submitRes = await fetch(`${BASE}/api/sessions/${session.sessionId}/answers`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          dailyChallengeTrackId: track.id,
+          listenedDurationSeconds: 1,
+          wasExtended: false,
+          artistAnswer: null,
+          titleAnswer: null,
+        }),
+      });
+      if (!submitRes.ok) throw new Error(`submitAnswer failed: ${submitRes.status}`);
+    }
+  }
+
+  /** Abandonne la partie du joueur identifié par son cookie. */
+  async abandonSessionAs(cookieHeader: string): Promise<void> {
+    const headers = { 'Content-Type': 'application/json', Cookie: cookieHeader };
+
+    const startRes = await fetch(`${BASE}/api/sessions`, { method: 'POST', headers });
+    if (!startRes.ok) throw new Error(`startSession failed: ${startRes.status}`);
+    const session = await startRes.json();
+
+    // Soumettre une réponse d'abord (abandon nécessite une session Pending active)
+    const track = session.tracks[0];
+    await fetch(`${BASE}/api/sessions/${session.sessionId}/answers`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        dailyChallengeTrackId: track.id,
+        listenedDurationSeconds: 1,
+        wasExtended: false,
+        artistAnswer: null,
+        titleAnswer: null,
+      }),
+    });
+
+    const abandonRes = await fetch(`${BASE}/api/sessions/${session.sessionId}/abandon`, {
+      method: 'PUT',
+      headers,
+    });
+    if (!abandonRes.ok) throw new Error(`abandon failed: ${abandonRes.status}`);
+  }
 }

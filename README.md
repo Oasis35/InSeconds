@@ -112,7 +112,7 @@ cd src/back
 dotnet test InSeconds.Api.IntegrationTests
 ```
 
-Requires Docker (Testcontainers starts a real PostgreSQL container). **69 tests** covering `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (KPIs, AvailableDates, 30-day fix, Pending→Abandoned for past days), `Auth/Me`, `SessionEdgeCases` (lazy expiry, streak, submit on abandoned session), `ChallengeGeneration`, `Admin/Tracks` (AddTrack, GetTracks, DeleteTrack, UpdateTrack), `Admin/Challenges`.
+Requires Docker (Testcontainers starts a real PostgreSQL container). **73 tests** covering `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats`, `Auth/Me`, `SessionEdgeCases` (lazy expiry, streak, submit on abandoned session, UpdateListening anti-cheat), `ChallengeGeneration`, `Admin/Tracks`, `Admin/Challenges`.
 
 ### E2E tests (Playwright)
 
@@ -129,7 +129,7 @@ npm run e2e        # headless
 npm run e2e:ui     # interactive Playwright UI
 ```
 
-**27 tests** — 12 game tests (happy path, already-played, abandon, resume, no-challenge, share, scoring) + 15 admin tests (login, pool table with filters, add/delete/refresh track, generate challenge, reset sessions, challenge list).
+**28 tests** — 13 game tests (happy path, already-played, abandon, resume, no-challenge, share, scoring, anti-cheat min duration lock) + 15 admin tests (login, pool table with filters, add/delete/refresh track, generate challenge, reset sessions, challenge list).
 
 The backend runs in `ASPNETCORE_ENVIRONMENT=Testing` which activates:
 - `FakeDeezerHandler` — returns a local `test-audio.mp3`; tracks with DeezerTrackId >= 9_000_000_000 return an empty preview (5 seed tracks: The Beatles, Pink Floyd, Bob Dylan, Led Zeppelin, Fleetwood Mac) to test the refresh flow

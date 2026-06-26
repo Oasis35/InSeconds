@@ -150,6 +150,99 @@ public class SessionEdgeCaseTests(IntegrationTestFactory factory) : IAsyncLifeti
         Assert.Equal(streakAvant, player.CurrentStreak);
     }
 
+    // ── UpdateListening ──────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task UpdateListening_FirstCall_StoresTrackAndDuration()
+    {
+        var session = await StartSessionAsync();
+        var trackId = session.Tracks[0].Id;
+
+        var resp = await _client.PatchAsJsonAsync(
+            $"/api/sessions/{session.SessionId}/listening",
+            new { trackId, listenedSeconds = 1.5m });
+
+        Assert.Equal(HttpStatusCode.NoContent, resp.StatusCode);
+
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var gs = await db.GameSessions.FindAsync(session.SessionId);
+        Assert.Equal(trackId, gs!.CurrentTrackId);
+        Assert.Equal(1.5m, gs.CurrentTrackMinListenedSeconds);
+    }
+
+    [Fact]
+    public async Task UpdateListening_SameTrackHigherDuration_UpdatesMin()
+    {
+        var session = await StartSessionAsync();
+        var trackId = session.Tracks[0].Id;
+
+        await _client.PatchAsJsonAsync($"/api/sessions/{session.SessionId}/listening",
+            new { trackId, listenedSeconds = 1m });
+        await _client.PatchAsJsonAsync($"/api/sessions/{session.SessionId}/listening",
+            new { trackId, listenedSeconds = 3m });
+
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var gs = await db.GameSessions.FindAsync(session.SessionId);
+        Assert.Equal(3m, gs!.CurrentTrackMinListenedSeconds);
+    }
+
+    [Fact]
+    public async Task UpdateListening_ResumedSession_MinListenedSecondsReturnedOnResume()
+    {
+        // Démarrer et écouter la première track
+        var session = await StartSessionAsync();
+        var trackId = session.Tracks[0].Id;
+
+        await _client.PatchAsJsonAsync($"/api/sessions/{session.SessionId}/listening",
+            new { trackId, listenedSeconds = 2m });
+
+        // Simuler un rechargement (nouveau StartSession → reprise)
+        var resp2 = await _client.PostAsync("/api/sessions", null);
+        var session2 = await resp2.Content.ReadFromJsonAsync<StartSessionResponse>();
+
+        Assert.NotNull(session2);
+        Assert.True(session2.IsResuming);
+        Assert.Equal(trackId, session2.CurrentTrackId);
+        Assert.Equal(2m, session2.MinListenedSeconds);
+    }
+
+    [Fact]
+    public async Task StartSession_Reprise_CompletedAnswers_ContiennentCorrectArtistTitle()
+    {
+        var session = await StartSessionAsync();
+        await SubmitAsync(session.SessionId, session.Tracks[0].Id, 1m, null, null);
+
+        var resp2 = await _client.PostAsync("/api/sessions", null);
+        var resume = await resp2.Content.ReadFromJsonAsync<StartSessionResponse>();
+
+        Assert.NotNull(resume);
+        Assert.True(resume.IsResuming);
+        Assert.Single(resume.CompletedAnswers);
+        Assert.False(string.IsNullOrEmpty(resume.CompletedAnswers[0].CorrectArtist));
+        Assert.False(string.IsNullOrEmpty(resume.CompletedAnswers[0].CorrectTitle));
+    }
+
+    [Fact]
+    public async Task UpdateListening_AfterSubmit_MinResetToNull()
+    {
+        var session = await StartSessionAsync();
+        var trackId = session.Tracks[0].Id;
+
+        await _client.PatchAsJsonAsync($"/api/sessions/{session.SessionId}/listening",
+            new { trackId, listenedSeconds = 2m });
+
+        // Répondre → réinitialise le verrou
+        await SubmitAsync(session.SessionId, trackId, 2m, "X", null);
+
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var gs = await db.GameSessions.FindAsync(session.SessionId);
+        Assert.Null(gs!.CurrentTrackId);
+        Assert.Null(gs.CurrentTrackMinListenedSeconds);
+    }
+
     // ── helpers ──────────────────────────────────────────────────────────────
 
     private async Task<StartSessionResponse> StartSessionAsync()

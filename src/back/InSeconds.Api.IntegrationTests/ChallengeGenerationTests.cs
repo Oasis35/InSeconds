@@ -49,9 +49,9 @@ public class ChallengeGenerationTests(IntegrationTestFactory factory) : IAsyncLi
         }
 
         var generator = scope.ServiceProvider.GetRequiredService<DailyChallengeGenerator>();
-        var generated = await generator.GenerateAsync();
+        var result = await generator.GenerateAsync();
 
-        Assert.True(generated);
+        Assert.Equal(GenerateResult.Success, result);
 
         // Vérifie que le défi a bien été créé avec 3 morceaux (TracksPerChallenge = 3 par défaut)
         var created = await db.DailyChallenges
@@ -68,9 +68,9 @@ public class ChallengeGenerationTests(IntegrationTestFactory factory) : IAsyncLi
         using var scope = factory.Services.CreateScope();
         var generator = scope.ServiceProvider.GetRequiredService<DailyChallengeGenerator>();
 
-        var generated = await generator.GenerateAsync();
+        var result = await generator.GenerateAsync();
 
-        Assert.False(generated);
+        Assert.Equal(GenerateResult.AlreadyExists, result);
     }
 
     // ── helper ───────────────────────────────────────────────────────────────

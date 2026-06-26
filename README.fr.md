@@ -112,7 +112,7 @@ cd src/back
 dotnet test InSeconds.Api.IntegrationTests
 ```
 
-Nécessite Docker (Testcontainers démarre un vrai conteneur PostgreSQL). **69 tests** couvrant `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (KPIs, AvailableDates, fix 30j, Pending→Abandoned jours passés), `Auth/Me`, `SessionEdgeCases` (expiry paresseuse, streak, submit sur session abandonnée), `ChallengeGeneration`, `Admin/Tracks` (AddTrack, GetTracks, DeleteTrack, UpdateTrack), `Admin/Challenges`.
+Nécessite Docker (Testcontainers démarre un vrai conteneur PostgreSQL). **73 tests** couvrant `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats`, `Auth/Me`, `SessionEdgeCases` (expiry paresseuse, streak, submit sur session abandonnée, UpdateListening anti-triche), `ChallengeGeneration`, `Admin/Tracks`, `Admin/Challenges`.
 
 ### Tests E2E (Playwright)
 
@@ -129,7 +129,7 @@ npm run e2e        # headless
 npm run e2e:ui     # UI interactive Playwright
 ```
 
-**27 tests** — 12 tests jeu (happy path, déjà joué, abandon, reprise, pas de défi, partage, scoring) + 15 tests admin (login, tableau pool avec filtres, ajout/suppression/actualisation morceau, générer défi, reset sessions, liste défis).
+**28 tests** — 13 tests jeu (happy path, déjà joué, abandon, reprise, pas de défi, partage, scoring, paliers bloqués à la reprise anti-triche) + 15 tests admin (login, tableau pool avec filtres, ajout/suppression/actualisation morceau, générer défi, reset sessions, liste défis).
 
 Le backend tourne en `ASPNETCORE_ENVIRONMENT=Testing` qui active :
 - `FakeDeezerHandler` — retourne un `test-audio.mp3` local ; les IDs >= 9_000_000_000 retournent une preview vide (5 morceaux seed : The Beatles, Pink Floyd, Bob Dylan, Led Zeppelin, Fleetwood Mac) pour tester le flux "↻ Actualiser"

@@ -31,7 +31,12 @@
 - [x] Tests unitaires back : `TextNormalizer`, `ScoreCalculator`, `CookieAuthService`, `PlayerAuthMiddleware`, `AppSettingsBinding`, `StartSessionHandler`, `SubmitAnswerHandler`, `GenerateDailyChallengeService`, `AddTrackHandler`, `MeEndpoint`, `GetTracksHandler`, `SubmitAnswerValidator`
 - [x] Streak joueur : `Player.CurrentStreak` + `Player.LastPlayedDate`, mis à jour dans `SubmitAnswer/Handler.cs` à la complétion (parties complètes uniquement)
 - [x] Morceaux sans preview : `SubmitAnswerValidator` accepte `ListenedDurationSeconds = 0` (skip), `BlindRoundComponent` affiche un bouton "Passer" si `previewUrl` est vide
-- [x] `DailyChallengeGenerator` filtre les tracks sans preview active (appel Deezer `Task.WhenAll`) avant sélection
+- [x] `Track.HasPreview` persisté en base (migration `AddTrackHasPreview`) — flag mis à jour à l'ajout/actualisation d'un track et nuitamment par `RefreshPreviewStatusService` (2h UTC)
+- [x] **Anti-cheat durée min écoutée** : `GameSession.CurrentTrackId` + `GameSession.CurrentTrackMinListenedSeconds` (migration `AddSessionAntiCheat`), slice `Sessions/UpdateListening` (`PATCH /api/sessions/{id}/listening`), appelé depuis `BlindRoundComponent` à chaque arrêt du timer ; à la reprise, `StartSession` renvoie `CurrentTrackId`/`MinListenedSeconds` et le front masque les paliers inférieurs
+- [x] `RefreshPreviewStatusService` — `BackgroundService` qui vérifie Deezer pour tous les tracks disponibles à 2h UTC et met à jour `HasPreview`
+- [x] `DailyChallengeGenerator` filtre sur `Track.HasPreview` en DB (plus d'appel Deezer à la génération), shuffle Fisher-Yates avec seed déterministe, transaction explicite autour des deux `SaveChangesAsync`
+- [x] `GenerateResult` enum (`Success`/`AlreadyExists`/`PoolInsufficient`) — `POST /api/admin/generate-today` retourne `422 pool_insufficient` distinct du `409 already_exists`
+- [x] `GetTracksHandler` lit `HasPreview` depuis la DB (plus d'appel Deezer au chargement du pool admin)
 - [x] `GET /api/admin/stats` — dashboard admin : activité 30 jours, répartition joueurs, stats par défi
 - [x] Page admin — Pool : tableau paginé (15 lignes/page), filtres combinables (texte, statut, preview), indicateur preview (vert/rouge) via `TrackDto.HasPreview`, popup d'ajout avec recherche Deezer + lecteur preview 30s
 - [x] Suppression d'un morceau du pool depuis la page admin (`DELETE /api/admin/tracks/{id}`) — interdit si utilisé dans un défi, confirmation modale, sélection multiple
@@ -64,6 +69,8 @@
 - [x] `DeezerSearchService` + `Features/Deezer/SearchEndpoint` (proxy public, contourne CORS)
 - [x] `chosenDuration` en signal dans `BlindRoundComponent` (nécessaire pour `computed()` réactif)
 - [x] Streak affiché sur le récap final et l'écran "déjà joué"
+- [x] Replay preview après réponse — `AudioPlayerService.replayFull()`, relance depuis le début jusqu'à la fin naturelle du morceau
+- [x] Synchronisation multi-onglets — `visibilitychange` dans `GameComponent`, relance `loadSession()` au retour au premier plan si partie non terminée
 - [x] Partage score emoji Wordle-style (🟩🟨🟥 + durée + lien `/blindtest`) — copie presse-papier
 - [x] Route `/blindtest` (alias de `/`) pour les liens de partage
 - [x] Open Graph + Twitter Card dans `index.html` (partage WhatsApp / Signal)
@@ -98,9 +105,9 @@
 
 ## 🚧 Tests
 
-- [x] Tests d'intégration backend (Testcontainers, 69 tests) — `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (KPIs jour, AvailableDates, fix 30j, Pending→Abandoned), `Auth/Me` (soft-delete), `SessionEdgeCases` (expiry paresseuse, streak, submit sur session abandonnée), `ChallengeGeneration`, `Admin/Tracks` (AddTrack, GetTracks, DeleteTrack, UpdateTrack), `Admin/Challenges` (GetChallenges, CreateChallenge, ResetToday)
+- [x] Tests d'intégration backend (Testcontainers, 73 tests) — `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (KPIs jour, AvailableDates, fix 30j, Pending→Abandoned), `Auth/Me` (soft-delete), `SessionEdgeCases` (expiry paresseuse, streak, submit sur session abandonnée, UpdateListening : store/max/reset-after-submit/returned-on-resume), `ChallengeGeneration`, `Admin/Tracks` (AddTrack, GetTracks, DeleteTrack, UpdateTrack), `Admin/Challenges` (GetChallenges, CreateChallenge, ResetToday)
 - [ ] Tests front Karma/Jasmine (`AudioPlayerService` — dont `preloadAll`, `GameService`)
-- [x] Tests E2E Playwright (27 scénarios : 12 jeu + 15 admin). Jeu : happy path, écran déjà joué, abandon mid-game, reprise, abandon depuis reprise, pas de défi, partage, scoring palier/mauvaise réponse/partiel. Admin : login erreur/succès/déconnexion, pool tableau+filtres texte/preview/statut, ajout morceau, suppression individuelle+annulation, actualisation morceau sans preview (modale pré-remplie), actions générer/déjà généré/reset, liste défis
+- [x] Tests E2E Playwright (28 scénarios : 13 jeu + 15 admin). Jeu : happy path, écran déjà joué, abandon mid-game, reprise, abandon depuis reprise, pas de défi, partage, scoring palier/mauvaise réponse/partiel, anti-cheat paliers bloqués à la reprise. Admin : login erreur/succès/déconnexion, pool tableau+filtres texte/preview/statut, ajout morceau, suppression individuelle+annulation, actualisation morceau sans preview (modale pré-remplie), actions générer/déjà généré/reset, liste défis
 
 ## 🚧 Mobile
 

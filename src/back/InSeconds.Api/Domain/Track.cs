@@ -7,6 +7,7 @@ public sealed class Track
     public required string Artist { get; set; }
     public required string Title { get; set; }
     public string? CoverHash { get; set; }
+    public bool HasPreview { get; set; } = true;
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 
