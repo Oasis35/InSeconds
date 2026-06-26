@@ -26,7 +26,11 @@ test.describe('Service indisponible — backend KO', () => {
     const game = new GamePage(page);
     await game.goto();
 
-    // Le premier poll échoue → overlay bloquant visible.
+    // Un seul échec ne doit PAS masquer l'app (tolérance au hoquet transitoire).
+    await expect(game.serviceDownHeading).not.toBeVisible();
+
+    // Après le seuil d'échecs consécutifs (3 polls), l'overlay bloquant s'affiche.
+    await page.clock.runFor(15000);
     await expect(game.serviceDownHeading).toBeVisible();
 
     // Le backend revient. Au prochain poll (5s), l'overlay disparaît tout seul.

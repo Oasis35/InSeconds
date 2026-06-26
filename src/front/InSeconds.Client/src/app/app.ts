@@ -18,6 +18,10 @@ interface HealthResponse {
 // redéploiement, sans marteler le backend.
 const HEALTH_POLL_MS = 5000;
 
+// Nombre d'échecs consécutifs avant de déclarer le backend KO. Évite qu'un simple
+// hoquet réseau transitoire ne masque toute l'app avec l'overlay bloquant.
+const HEALTH_KO_THRESHOLD = 3;
+
 @Component({
   selector: 'app-root',
   imports: [RouterOutlet, ServiceDownComponent],
@@ -30,6 +34,9 @@ export class App {
 
   protected readonly health = signal<HealthState>('loading');
   protected readonly healthUtc = signal<string | null>(null);
+
+  // Compteur d'échecs consécutifs de /health (réinitialisé à chaque succès).
+  private consecutiveFailures = 0;
 
   // L'overlay « Service indisponible » ne s'affiche qu'à l'état confirmé 'ko' —
   // jamais pendant le 'loading' initial, pour éviter un faux positif au démarrage.
@@ -55,10 +62,15 @@ export class App {
       )
       .subscribe((response) => {
         if (response) {
+          this.consecutiveFailures = 0;
           this.health.set('ok');
           this.healthUtc.set(response.utc);
         } else {
-          this.health.set('ko');
+          this.consecutiveFailures++;
+          // Ne bascule en 'ko' (overlay) qu'après plusieurs échecs d'affilée.
+          if (this.consecutiveFailures >= HEALTH_KO_THRESHOLD) {
+            this.health.set('ko');
+          }
         }
       });
   }
