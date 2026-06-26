@@ -37,6 +37,7 @@ public sealed class UpdateTrackHandler(ApplicationDbContext db, DeezerClient dee
         track.Artist        = info.Artist;
         track.Title         = info.Title;
         track.CoverHash     = info.CoverHash;
+        track.HasPreview    = !string.IsNullOrEmpty(info.PreviewUrl);
 
         await db.SaveChangesAsync(cancellationToken);
 

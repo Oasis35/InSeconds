@@ -70,7 +70,9 @@ builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<GetTracksHandler>();
 builder.Services.AddScoped<TodayStatsHandler>();
 builder.Services.AddScoped<DailyChallengeGenerator>();
+builder.Services.AddScoped<PreviewStatusRefresher>();
 builder.Services.AddHostedService<GenerateDailyChallengeService>();
+builder.Services.AddHostedService<RefreshPreviewStatusService>();
 
 builder.Services.AddSingleton<ScoreCalculator>();
 builder.Services.AddSingleton<TextNormalizer>();
