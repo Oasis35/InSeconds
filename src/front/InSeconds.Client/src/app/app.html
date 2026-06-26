@@ -1,1 +1,5 @@
 <router-outlet />
+
+@if (isServiceDown()) {
+  <app-service-down />
+}

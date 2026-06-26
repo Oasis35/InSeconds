@@ -18,6 +18,8 @@ export class GamePage {
   // Confirmation de sortie (guard CanDeactivate)
   readonly leaveConfirmButton: Locator;
   readonly leaveCancelButton: Locator;
+  // Overlay « Service indisponible » (backend KO)
+  readonly serviceDownHeading: Locator;
 
   constructor(readonly page: Page) {
     this.startButton           = page.getByRole('button', { name: 'Commencer' });
@@ -37,6 +39,7 @@ export class GamePage {
     this.abandonConfirmButton  = page.getByRole('button', { name: 'Oui, abandonner' });
     this.leaveConfirmButton    = page.getByRole('button', { name: 'Quitter quand même' });
     this.leaveCancelButton     = page.getByRole('button', { name: 'Continuer à jouer' });
+    this.serviceDownHeading    = page.getByRole('heading', { name: 'Service indisponible' });
   }
 
   async goto(): Promise<void> {
