@@ -199,8 +199,13 @@ test.describe('Admin — défis', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    // 3 défis dans le seed (J-2, J-1, aujourd'hui)
+    // 3 défis dans le seed (J-2, J-1, aujourd'hui) — tous dans le mois courant
     await page.getByRole('button', { name: /Défis/ }).click();
+    // S'assurer d'être sur le mois courant (au cas où le navigateur serait sur un autre mois)
+    const now = new Date();
+    const monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+    const currentMonth = `${monthNames[now.getUTCMonth()]} ${now.getUTCFullYear()}`;
+    await expect(page.getByText(currentMonth)).toBeVisible();
     const rows = page.locator('ul > li > p.font-mono');
     await expect(rows).toHaveCount(3);
   });
