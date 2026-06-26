@@ -20,4 +20,8 @@ export class GameService {
   abandonSession(sessionId: number): Observable<void> {
     return this.http.put<void>(`${this.base}/${sessionId}/abandon`, {});
   }
+
+  updateListening(sessionId: number, trackId: number, listenedSeconds: number): Observable<void> {
+    return this.http.patch<void>(`${this.base}/${sessionId}/listening`, { trackId, listenedSeconds });
+  }
 }

@@ -40,6 +40,7 @@ public sealed class AddTrackHandler(ApplicationDbContext db, DeezerClient deezer
             Artist        = info.Artist,
             Title         = info.Title,
             CoverHash     = info.CoverHash,
+            HasPreview    = !string.IsNullOrEmpty(info.PreviewUrl),
             CreatedAt     = DateTime.UtcNow,
         };
         db.Tracks.Add(track);

@@ -35,10 +35,11 @@ public sealed class CreateChallengeHandler(ApplicationDbContext db, DeezerClient
             var newTrack = new Track
             {
                 DeezerTrackId = deezerTrackId,
-                Artist = info.Artist,
-                Title = info.Title,
-                CoverHash = info.CoverHash,
-                CreatedAt = DateTime.UtcNow,
+                Artist        = info.Artist,
+                Title         = info.Title,
+                CoverHash     = info.CoverHash,
+                HasPreview    = !string.IsNullOrEmpty(info.PreviewUrl),
+                CreatedAt     = DateTime.UtcNow,
             };
             db.Tracks.Add(newTrack);
             await db.SaveChangesAsync(cancellationToken);

@@ -656,6 +656,72 @@ export class ApiClient {
     }
 
     /**
+     * @return No Content
+     */
+    apiSessionsListening(sessionId: number, body: UpdateListeningRequest): Observable<void> {
+        let url_ = this.baseUrl + "/api/sessions/{sessionId}/listening";
+        if (sessionId === undefined || sessionId === null)
+            throw new globalThis.Error("The parameter 'sessionId' must be defined.");
+        url_ = url_.replace("{sessionId}", encodeURIComponent("" + sessionId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+            })
+        };
+
+        return this.http.request("patch", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processApiSessionsListening(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processApiSessionsListening(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processApiSessionsListening(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Bad Request", status, _responseText, _headers);
+            }));
+        } else if (status === 403) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Forbidden", status, _responseText, _headers);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Not Found", status, _responseText, _headers);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
      * @return OK
      */
     apiAdminLogin(body: LoginBody): Observable<void> {
@@ -1299,6 +1365,8 @@ export interface ResumedAnswer {
     titleCorrect: boolean;
     score: number;
     listenedDurationSeconds: number;
+    correctArtist?: string;
+    correctTitle?: string;
 
     [key: string]: any;
 }
@@ -1310,6 +1378,8 @@ export interface StartSessionResponse {
     isResuming: boolean;
     resumeFromPosition: number;
     completedAnswers: ResumedAnswer[];
+    currentTrackId?: number | undefined;
+    minListenedSeconds?: number | undefined;
 
     [key: string]: any;
 }
@@ -1389,6 +1459,13 @@ export interface TrackStatsDto {
     artistCorrectRate: number;
     titleCorrectRate: number;
     avgListenedSeconds: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface UpdateListeningRequest {
+    trackId: number;
+    listenedSeconds: number;
 
     [key: string]: any;
 }

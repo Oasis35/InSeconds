@@ -26,9 +26,12 @@ public sealed class GenerateDailyChallengeService(
         try
         {
             await using var scope = scopeFactory.CreateAsyncScope();
-            await scope.ServiceProvider
+            var result = await scope.ServiceProvider
                 .GetRequiredService<DailyChallengeGenerator>()
                 .GenerateAsync(ct);
+
+            if (result == GenerateResult.PoolInsufficient)
+                logger.LogError("Génération automatique impossible : pool insuffisant. Ajouter des morceaux avec preview.");
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)

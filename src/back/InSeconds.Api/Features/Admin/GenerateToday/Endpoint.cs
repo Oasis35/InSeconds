@@ -15,10 +15,14 @@ public static class GenerateTodayEndpoint
             if (!LoginEndpoint.IsAdminAuthenticated(ctx))
                 return Results.Unauthorized();
 
-            var generated = await generator.GenerateAsync(ct);
-            return generated
-                ? Results.Ok()
-                : Results.Conflict(new { error = "already_exists", message = "Le défi du jour est déjà généré." });
+            var result = await generator.GenerateAsync(ct);
+            return result switch
+            {
+                GenerateResult.Success          => Results.Ok(),
+                GenerateResult.AlreadyExists    => Results.Conflict(new { error = "already_exists", message = "Le défi du jour est déjà généré." }),
+                GenerateResult.PoolInsufficient => Results.UnprocessableEntity(new { error = "pool_insufficient", message = "Pool insuffisant : pas assez de morceaux avec preview disponible." }),
+                _                               => Results.StatusCode(500),
+            };
         })
         .WithName("GenerateToday")
         .WithTags("Admin")

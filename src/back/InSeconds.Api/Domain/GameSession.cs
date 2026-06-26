@@ -12,6 +12,10 @@ public sealed class GameSession
     public DateTime? CompletedAt { get; set; }
     public DateTime? AbandonedAt { get; set; }
 
+    // Anti-cheat : durée min déjà écoutée sur le morceau en cours (reset à chaque nouvelle track)
+    public int? CurrentTrackId { get; set; }
+    public decimal? CurrentTrackMinListenedSeconds { get; set; }
+
     public Player Player { get; set; } = null!;
     public DailyChallenge DailyChallenge { get; set; } = null!;
     public ICollection<GameSessionAnswer> Answers { get; set; } = [];

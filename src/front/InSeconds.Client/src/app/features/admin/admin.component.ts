@@ -26,8 +26,8 @@ type Tab = 'dashboard' | 'pool' | 'defis' | 'actions';
     <div class="min-h-screen bg-gray-900 text-white flex flex-col items-center p-8 gap-6">
       <div class="flex flex-col items-center gap-1">
         <h1 class="text-2xl font-bold tracking-tight">Admin</h1>
-        @if (buildTime !== 'unknown') {
-          <p class="text-xs text-gray-500">Déployé le {{ buildTime | date:'dd/MM/yyyy à HH:mm' : 'UTC' }} UTC</p>
+        @if (authenticated() && buildTime !== 'unknown') {
+          <p class="text-xs text-gray-500">Déployé le {{ buildTime | date:'dd/MM/yyyy à HH:mm' }}</p>
         }
       </div>
 
@@ -459,6 +459,7 @@ type Tab = 'dashboard' | 'pool' | 'defis' | 'actions';
                 </button>
                 @if (generateStatus() === 'success') { <span class="text-green-400 text-xs">Défi généré avec succès.</span> }
                 @if (generateStatus() === 'already') { <span class="text-yellow-400 text-xs">Le défi du jour est déjà généré.</span> }
+                @if (generateStatus() === 'pool_insufficient') { <span class="text-orange-400 text-xs">Pool insuffisant : ajoutez des morceaux avec preview.</span> }
                 @if (generateStatus() === 'error') { <span class="text-red-400 text-xs">Erreur lors de la génération.</span> }
               </div>
             </div>
@@ -668,7 +669,7 @@ export class AdminComponent {
   loginStatus = signal<'idle' | 'loading' | 'error'>('idle');
   resetStatus = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
   resetResult = signal<ResetResult | null>(null);
-  generateStatus = signal<'idle' | 'loading' | 'success' | 'already' | 'error'>('idle');
+  generateStatus = signal<'idle' | 'loading' | 'success' | 'already' | 'pool_insufficient' | 'error'>('idle');
   activeTab = signal<Tab>('dashboard');
 
   addToPoolStatus = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -857,7 +858,9 @@ export class AdminComponent {
         setTimeout(() => this.generateStatus.set('idle'), 3000);
       },
       error: (err) => {
-        this.generateStatus.set(err.status === 409 ? 'already' : 'error');
+        if (err.status === 409) this.generateStatus.set('already');
+        else if (err.status === 422) this.generateStatus.set('pool_insufficient');
+        else this.generateStatus.set('error');
         setTimeout(() => this.generateStatus.set('idle'), 3000);
       },
     });

@@ -91,7 +91,9 @@ public sealed class StartSessionHandler(ApplicationDbContext db, DeezerClient de
                     ArtistCorrect:           a.ArtistCorrect,
                     TitleCorrect:            a.TitleCorrect,
                     Score:                   a.Score,
-                    ListenedDurationSeconds: a.ListenedDurationSeconds))
+                    ListenedDurationSeconds: a.ListenedDurationSeconds,
+                    CorrectArtist:           a.Track.Track.Artist,
+                    CorrectTitle:            a.Track.Track.Title))
                 .ToList();
 
             // Index 0-based de la première track sans réponse
@@ -110,7 +112,9 @@ public sealed class StartSessionHandler(ApplicationDbContext db, DeezerClient de
                 CurrentStreak:      playerResume.CurrentStreak,
                 IsResuming:         true,
                 ResumeFromPosition: resumeFromPosition,
-                CompletedAnswers:   completedAnswers));
+                CompletedAnswers:   completedAnswers,
+                CurrentTrackId:     existingSession.CurrentTrackId,
+                MinListenedSeconds: existingSession.CurrentTrackMinListenedSeconds));
         }
 
         // Nouvelle session

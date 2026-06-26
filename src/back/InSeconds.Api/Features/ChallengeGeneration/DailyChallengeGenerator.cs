@@ -1,18 +1,18 @@
 using InSeconds.Api.Common.Settings;
 using InSeconds.Api.Domain;
-using InSeconds.Api.Infrastructure.Deezer;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace InSeconds.Api.Features.ChallengeGeneration;
 
+public enum GenerateResult { Success, AlreadyExists, PoolInsufficient }
+
 public sealed class DailyChallengeGenerator(
     ApplicationDbContext db,
     SettingsService settingsService,
-    DeezerClient deezer,
     ILogger<DailyChallengeGenerator> logger)
 {
-    public async Task<bool> GenerateAsync(CancellationToken ct = default)
+    public async Task<GenerateResult> GenerateAsync(CancellationToken ct = default)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
@@ -20,7 +20,7 @@ public sealed class DailyChallengeGenerator(
         if (alreadyExists)
         {
             logger.LogInformation("Défi du {Date} déjà présent, génération ignorée.", today);
-            return false;
+            return GenerateResult.AlreadyExists;
         }
 
         var usedTrackIds = await db.DailyChallengeTracks
@@ -29,30 +29,29 @@ public sealed class DailyChallengeGenerator(
             .ToListAsync(ct);
 
         var candidates = await db.Tracks
-            .Where(t => !usedTrackIds.Contains(t.Id))
-            .OrderBy(t => t.Id)
+            .Where(t => !usedTrackIds.Contains(t.Id) && t.HasPreview)
             .ToListAsync(ct);
-
-        var previews = await Task.WhenAll(
-            candidates.Select(t => deezer.GetPreviewUrlAsync(t.DeezerTrackId, ct)));
-
-        var available = candidates
-            .Where((t, i) => !string.IsNullOrEmpty(previews[i]))
-            .ToList();
 
         var settings = await settingsService.GetAsync(ct);
         var n = settings.TracksPerChallenge;
 
-        if (available.Count < n)
+        if (candidates.Count < n)
         {
             logger.LogError(
-                "Pool insuffisant : {Count} morceau(x) avec preview disponible(s) (sur {Total} candidats), {Required} requis pour le défi du {Date}.",
-                available.Count, candidates.Count, n, today);
-            return false;
+                "Pool insuffisant : {Count} morceau(x) avec preview disponible(s), {Required} requis pour le défi du {Date}.",
+                candidates.Count, n, today);
+            return GenerateResult.PoolInsufficient;
         }
 
         var rng = new Random(today.DayNumber);
-        var selected = available.OrderBy(_ => rng.Next()).Take(n).ToList();
+        for (var i = candidates.Count - 1; i > 0; i--)
+        {
+            var j = rng.Next(i + 1);
+            (candidates[i], candidates[j]) = (candidates[j], candidates[i]);
+        }
+        var selected = candidates.Take(n).ToList();
+
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
 
         var challenge = new DailyChallenge
         {
@@ -71,7 +70,9 @@ public sealed class DailyChallengeGenerator(
         }));
         await db.SaveChangesAsync(ct);
 
+        await transaction.CommitAsync(ct);
+
         logger.LogInformation("Défi du {Date} généré : {N} morceaux.", today, n);
-        return true;
+        return GenerateResult.Success;
     }
 }

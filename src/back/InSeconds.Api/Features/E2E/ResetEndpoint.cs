@@ -153,6 +153,7 @@ public static class E2EResetEndpoint
             Artist        = t.Artist,
             Title         = t.Title,
             CoverHash     = t.CoverHash,
+            HasPreview    = t.DeezerTrackId < 9_000_000_000,
             CreatedAt     = DateTime.UtcNow,
         }).ToList();
 
