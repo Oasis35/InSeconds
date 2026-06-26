@@ -31,5 +31,7 @@ test.describe('Bouton partager', () => {
     expect(clipText).toContain('InSeconds 🎵');
     expect(clipText).toContain('pts');
     expect(clipText).toMatch(/https?:\/\//); // contient une URL (appUrl selon l'environnement)
+    expect(clipText).toMatch(/[✅❌]/); // emojis résultat (✅ correct, ❌ raté)
+    expect(clipText).not.toMatch(/[🟩🟨🟥⬜]/); // plus d'emojis couleur durée
   });
 });

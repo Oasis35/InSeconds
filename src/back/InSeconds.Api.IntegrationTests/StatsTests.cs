@@ -101,4 +101,48 @@ public class StatsTests(IntegrationTestFactory factory) : IAsyncLifetime
         Assert.Equal(0, body.TotalPlayers);
         Assert.Null(body.YourScore);
     }
+
+    [Fact]
+    public async Task TodayStats_ApresPartieComplete_RetourneReponsesJoueurDansTrackStat()
+    {
+        // Joue une partie complète
+        var sessionResp = await _client.PostAsync("/api/sessions", null);
+        var session = await sessionResp.Content.ReadFromJsonAsync<StartSessionResponse>();
+        Assert.NotNull(session);
+
+        foreach (var track in session.Tracks)
+        {
+            await _client.PostAsJsonAsync($"/api/sessions/{session.SessionId}/answers",
+                new SubmitAnswerBody(track.Id, 1m, false, "Eminem", "Lose Yourself"));
+        }
+
+        var resp = await _client.GetAsync("/api/stats/today");
+        var body = await resp.Content.ReadFromJsonAsync<TodayStatsResponse>();
+        Assert.NotNull(body);
+
+        // Chaque TrackStat doit exposer la réponse du joueur
+        Assert.All(body.Tracks, t =>
+        {
+            Assert.NotNull(t.ArtistCorrect);
+            Assert.NotNull(t.TitleCorrect);
+            Assert.NotNull(t.ListenedDurationSeconds);
+            Assert.Equal(1m, t.ListenedDurationSeconds);
+        });
+    }
+
+    [Fact]
+    public async Task TodayStats_SansSessionComplete_RetourneNullPourReponsesJoueur()
+    {
+        // Pas de session démarrée — les champs joueur doivent être null
+        var resp = await _client.GetAsync("/api/stats/today");
+        var body = await resp.Content.ReadFromJsonAsync<TodayStatsResponse>();
+        Assert.NotNull(body);
+
+        Assert.All(body.Tracks, t =>
+        {
+            Assert.Null(t.ArtistCorrect);
+            Assert.Null(t.TitleCorrect);
+            Assert.Null(t.ListenedDurationSeconds);
+        });
+    }
 }

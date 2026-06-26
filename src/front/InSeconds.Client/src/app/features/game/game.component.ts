@@ -345,7 +345,8 @@ interface RoundResult {
           <div class="flex flex-col items-center gap-1.5">
             <button
               (click)="share()"
-              class="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition touch-manipulation"
+              [disabled]="results().length < tracks().length"
+              class="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition touch-manipulation disabled:opacity-40"
               style="background:#1e1e2e;color:#e2e8f0;border:1px solid rgba(255,255,255,0.08);letter-spacing:0.03em">
               {{ shareCopied() ? '✓ Copié !' : '🔗 Partager mon score' }}
             </button>
@@ -549,6 +550,8 @@ export class GameComponent implements OnInit, OnDestroy {
   }
 
   protected onAnswered(event: AnsweredEvent): void {
+    const index = this.currentIndex();
+    const track = this.tracks()[index];
     this.gameService.submitAnswer(this.sessionId, {
       dailyChallengeTrackId:   event.trackId,
       listenedDurationSeconds: event.listenedDurationSeconds,
@@ -558,7 +561,6 @@ export class GameComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: (response) => {
         this.totalScore.update(s => s + response.score);
-        const track = this.tracks()[this.currentIndex()];
         this.results.update(rs => [...rs, {
           artistCorrect:             response.artistCorrect,
           titleCorrect:              response.titleCorrect,
@@ -568,7 +570,7 @@ export class GameComponent implements OnInit, OnDestroy {
           listenedDurationSeconds:   response.listenedDurationSeconds,
           averageSecondsWhenCorrect: response.averageSecondsWhenCorrect,
           failureRatePercent:        response.failureRatePercent,
-          position:                  this.currentIndex() + 1,
+          position:                  index + 1,
           coverUrl:                  track.coverUrl ?? null,
           deezerTrackId:             track['deezerTrackId'],
         }]);
