@@ -1,9 +1,10 @@
-import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { debounceTime, distinctUntilChanged, Subject, switchMap } from 'rxjs';
+import { lastValueFrom, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AdminStatsResponse, ChallengeStatsDto, DailyKpisDto } from '../../api/api.generated';
 
@@ -539,7 +540,7 @@ type Tab = 'dashboard' | 'pool' | 'defis' | 'actions';
           </div>
 
           <!-- Recherche -->
-          <input type="text" [(ngModel)]="poolSearchQuery" (ngModelChange)="onPoolSearchChange($event)"
+          <input type="text" [ngModel]="poolSearchQuery()" (ngModelChange)="onPoolSearchChange($event)"
             placeholder="Rechercher artiste ou titre..."
             class="bg-gray-700 text-white rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-purple-500 text-sm" />
           @if (poolSearchLoading()) {
@@ -617,10 +618,9 @@ type Tab = 'dashboard' | 'pool' | 'defis' | 'actions';
     }
   `,
 })
-export class AdminComponent implements OnInit {
+export class AdminComponent {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/api/admin`;
-  private readonly poolSearch$ = new Subject<string>();
   private readonly storageKey = 'admin_token';
 
   authenticated = signal(false);
@@ -628,13 +628,8 @@ export class AdminComponent implements OnInit {
   resetStatus = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
   resetResult = signal<ResetResult | null>(null);
   generateStatus = signal<'idle' | 'loading' | 'success' | 'already' | 'error'>('idle');
-  challenges = signal<ChallengeDto[]>([]);
   activeTab = signal<Tab>('dashboard');
 
-  poolTracks = signal<PoolTracksResponse>({ available: [], used: [] });
-  poolTracksLoading = signal(false);
-  poolSearchResults = signal<DeezerTrackInfo[]>([]);
-  poolSearchLoading = signal(false);
   addToPoolStatus = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
 
   addModalOpen = signal(false);
@@ -646,8 +641,6 @@ export class AdminComponent implements OnInit {
   private modalAudio: HTMLAudioElement | null = null;
   private modalRafId: number | null = null;
 
-  adminStats = signal<AdminStatsResponse | null>(null);
-  statsLoading = signal(false);
   expandedChallenges = signal<Set<number>>(new Set());
   selectedDay = signal<string>(new Date().toISOString().slice(0, 10));
 
@@ -661,6 +654,58 @@ export class AdminComponent implements OnInit {
   poolFilterText = signal('');
   poolFilterStatus = signal<'all' | 'available' | 'used'>('all');
   poolFilterPreview = signal<'all' | 'ok' | 'missing'>('all');
+
+  // Signal pour la recherche Deezer dans la modale (remplace poolSearchQuery + Subject)
+  poolSearchQuery = signal('');
+
+  // rxResource : recherche Deezer — se relance automatiquement quand poolSearchQuery change
+  private readonly poolSearchResource = rxResource<DeezerTrackInfo[], string>({
+    params: () => this.poolSearchQuery(),
+    stream: ({ params: q }) => {
+      if (q.length < 2) return of([] as DeezerTrackInfo[]);
+      return this.http.get<DeezerTrackInfo[]>(`${this.base}/deezer-search?q=${encodeURIComponent(q)}`);
+    },
+  });
+
+  readonly poolSearchResults = computed(() => this.poolSearchResource.value() ?? []);
+  readonly poolSearchLoading = computed(() => this.poolSearchResource.isLoading());
+
+  // rxResource : pool de morceaux
+  private readonly poolReload = signal(0);
+  private readonly poolTracksResource = rxResource<PoolTracksResponse, number>({
+    params: () => this.poolReload(),
+    stream: () => this.http.get<PoolTracksResponse>(`${this.base}/tracks`),
+  });
+
+  readonly poolTracks = computed(() => this.poolTracksResource.value() ?? { available: [], used: [] });
+  readonly poolTracksLoading = computed(() => this.poolTracksResource.isLoading());
+
+  // rxResource : stats admin — se relance quand selectedDay change
+  private readonly statsResource = rxResource<AdminStatsResponse, string>({
+    params: () => this.selectedDay(),
+    stream: ({ params: day }) => this.http.get<AdminStatsResponse>(`${this.base}/stats?date=${day}`),
+  });
+
+  readonly adminStats = computed(() => this.statsResource.value() ?? null);
+  readonly statsLoading = computed(() => this.statsResource.isLoading());
+
+  // rxResource : liste des défis
+  private readonly challengesReload = signal(0);
+  private readonly challengesResource = rxResource<ChallengeDto[], number>({
+    params: () => this.challengesReload(),
+    stream: () => this.http.get<ChallengeDto[]>(`${this.base}/challenges`),
+  });
+
+  readonly challenges = computed(() => this.challengesResource.value() ?? []);
+
+  // Check auth au démarrage
+  constructor() {
+    lastValueFrom(this.http.get(`${this.base}/me`)).then(() => {
+      this.authenticated.set(true);
+    }).catch(() => {
+      this.authenticated.set(false);
+    });
+  }
 
   allTracks = computed(() => {
     const available = this.poolTracks().available.map(t => ({ ...t, isAvailable: true }));
@@ -697,32 +742,6 @@ export class AdminComponent implements OnInit {
     Math.max(0, ...(this.adminStats()?.dailyActivity ?? []).map(d => d.playerCount)));
 
   password = '';
-  poolSearchQuery = '';
-
-  ngOnInit(): void {
-    this.poolSearch$.pipe(
-      debounceTime(300),
-      distinctUntilChanged(),
-      switchMap(q => {
-        if (q.length < 2) { this.poolSearchResults.set([]); return []; }
-        this.poolSearchLoading.set(true);
-        return this.http.get<DeezerTrackInfo[]>(`${this.base}/deezer-search?q=${encodeURIComponent(q)}`);
-      }),
-    ).subscribe({
-      next: results => { this.poolSearchResults.set(results ?? []); this.poolSearchLoading.set(false); },
-      error: () => { this.poolSearchResults.set([]); this.poolSearchLoading.set(false); },
-    });
-
-    this.http.get(`${this.base}/me`).subscribe({
-      next: () => {
-        this.authenticated.set(true);
-        this.loadChallenges();
-        this.loadPool();
-        this.loadStats();
-      },
-      error: () => this.authenticated.set(false),
-    });
-  }
 
   login(): void {
     this.loginStatus.set('loading');
@@ -732,12 +751,17 @@ export class AdminComponent implements OnInit {
         this.authenticated.set(true);
         this.loginStatus.set('idle');
         this.password = '';
-        this.loadChallenges();
-        this.loadPool();
-        this.loadStats();
+        this.reloadAll();
       },
       error: () => this.loginStatus.set('error'),
     });
+  }
+
+  private reloadAll(): void {
+    this.challengesReload.update(v => v + 1);
+    this.poolReload.update(v => v + 1);
+    // statsResource se relance automatiquement si selectedDay change, sinon on force un reload
+    this.statsResource.reload();
   }
 
   logout(): void {
@@ -750,9 +774,7 @@ export class AdminComponent implements OnInit {
     this.http.post(`${this.base}/generate-today`, {}).subscribe({
       next: () => {
         this.generateStatus.set('success');
-        this.loadChallenges();
-        this.loadPool();
-        this.loadStats();
+        this.reloadAll();
         setTimeout(() => this.generateStatus.set('idle'), 3000);
       },
       error: (err) => {
@@ -769,7 +791,7 @@ export class AdminComponent implements OnInit {
       next: res => {
         this.resetResult.set(res);
         this.resetStatus.set('success');
-        this.loadStats();
+        this.statsResource.reload();
       },
       error: () => this.resetStatus.set('error'),
     });
@@ -804,7 +826,7 @@ export class AdminComponent implements OnInit {
 
   selectDay(date: Date | string): void {
     this.selectedDay.set(this.toIso(date));
-    this.loadStats();
+    // statsResource se relance automatiquement car il dépend de selectedDay()
   }
 
   shiftSelectedDay(delta: number): void {
@@ -816,7 +838,7 @@ export class AdminComponent implements OnInit {
     const next = idx === -1 ? 0 : idx - delta;
     if (next >= 0 && next < dates.length) {
       this.selectedDay.set(dates[next]);
-      this.loadStats();
+      // statsResource se relance automatiquement car il dépend de selectedDay()
     }
   }
 
@@ -869,7 +891,8 @@ export class AdminComponent implements OnInit {
   }
 
   onPoolSearchChange(q: string): void {
-    this.poolSearch$.next(q);
+    this.poolSearchQuery.set(q);
+    this.allTracksPage.set(0);
   }
 
   openAddModal(track: DeezerTrackInfo | null, trackIdToUpdate: number | null = null, prefillSearch: string = ''): void {
@@ -879,8 +902,7 @@ export class AdminComponent implements OnInit {
     this.addModalTrack.set(track);
     this.addModalTrackIdToUpdate.set(trackIdToUpdate);
     if (prefillSearch) {
-      this.poolSearchQuery = prefillSearch;
-      this.poolSearch$.next(prefillSearch);
+      this.poolSearchQuery.set(prefillSearch);
     }
     this.addModalOpen.set(true);
   }
@@ -900,6 +922,7 @@ export class AdminComponent implements OnInit {
     this.addModalTrackIdToUpdate.set(null);
     this.addToPoolStatus.set('idle');
     this.modalProgress.set(0);
+    this.poolSearchQuery.set('');
   }
 
   toggleModalPreview(): void {
@@ -945,7 +968,7 @@ export class AdminComponent implements OnInit {
   quickAddToPool(track: DeezerTrackInfo): void {
     this.quickAddingId.set(track.deezerTrackId);
     this.http.post(`${this.base}/tracks`, { deezerTrackId: track.deezerTrackId }).subscribe({
-      next: () => { this.quickAddingId.set(null); this.loadPool(true); },
+      next: () => { this.quickAddingId.set(null); this.poolReload.update(v => v + 1); },
       error: () => this.quickAddingId.set(null),
     });
   }
@@ -963,10 +986,9 @@ export class AdminComponent implements OnInit {
     req$.subscribe({
       next: () => {
         this.addToPoolStatus.set('success');
-        this.loadPool(true);
+        this.poolReload.update(v => v + 1);
         if (andClose) {
-          this.poolSearchResults.set([]);
-          this.poolSearchQuery = '';
+          this.poolSearchQuery.set('');
           this.closeAddModal();
         } else {
           setTimeout(() => {
@@ -983,13 +1005,6 @@ export class AdminComponent implements OnInit {
     });
   }
 
-  private loadChallenges(): void {
-    this.http.get<ChallengeDto[]>(`${this.base}/challenges`).subscribe({
-      next: data => this.challenges.set(data),
-      error: () => {},
-    });
-  }
-
   setPoolFilter(text: string): void {
     this.poolFilterText.set(text);
     this.allTracksPage.set(0);
@@ -1003,14 +1018,6 @@ export class AdminComponent implements OnInit {
   setPoolFilterPreview(v: 'all' | 'ok' | 'missing'): void {
     this.poolFilterPreview.set(v);
     this.allTracksPage.set(0);
-  }
-
-  private loadPool(silent = false): void {
-    if (!silent) { this.poolTracksLoading.set(true); this.allTracksPage.set(0); }
-    this.http.get<PoolTracksResponse>(`${this.base}/tracks`).subscribe({
-      next: data => { this.poolTracks.set(data); this.poolTracksLoading.set(false); },
-      error: () => this.poolTracksLoading.set(false),
-    });
   }
 
   toggleSelection(id: number): void {
@@ -1046,25 +1053,17 @@ export class AdminComponent implements OnInit {
     this.deleteStatus.set('loading');
 
     const requests = tracks.map(t =>
-      this.http.delete(`${this.base}/tracks/${t.id}`).toPromise().then(() => t.id)
+      lastValueFrom(this.http.delete(`${this.base}/tracks/${t.id}`)).then(() => t.id)
     );
 
     Promise.all(requests).then(() => {
       const deleted = new Set(tracks.map(t => t.id));
       this.selectedTrackIds.set(new Set([...this.selectedTrackIds()].filter(id => !deleted.has(id))));
       this.closeDeleteModal();
-      this.loadPool(true);
+      this.poolReload.update(v => v + 1);
     }).catch(() => {
       this.deleteStatus.set('error');
     });
   }
 
-  private loadStats(): void {
-    this.statsLoading.set(true);
-    const day = this.selectedDay();
-    this.http.get<AdminStatsResponse>(`${this.base}/stats?date=${day}`).subscribe({
-      next: data => { this.adminStats.set(data); this.statsLoading.set(false); },
-      error: () => this.statsLoading.set(false),
-    });
-  }
 }
