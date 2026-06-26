@@ -1,5 +1,6 @@
 import {
-  Component, input, output, inject, signal, computed, OnDestroy
+  Component, input, output, inject, signal, computed, OnDestroy,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
@@ -20,6 +21,7 @@ export interface AnsweredEvent {
 @Component({
   selector: 'app-blind-round',
   imports: [FormsModule, DecimalPipe],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="flex flex-col gap-4">
 

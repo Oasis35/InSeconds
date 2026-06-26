@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, viewChild, OnInit, OnDestroy, HostListener } from '@angular/core';
+import { Component, inject, signal, computed, viewChild, OnInit, OnDestroy, HostListener, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { GameService } from '../../core/services/game.service';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
@@ -26,6 +26,7 @@ interface RoundResult {
 @Component({
   selector: 'app-game',
   imports: [BlindRoundComponent, RouterLink],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="min-h-dvh flex flex-col" style="background:#080810;color:#e2e8f0">
     <main class="flex-1 flex flex-col p-5 w-full max-w-lg mx-auto">

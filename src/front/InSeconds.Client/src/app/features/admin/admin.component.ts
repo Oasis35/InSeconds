@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { DecimalPipe } from '@angular/common';
@@ -19,6 +19,7 @@ type Tab = 'dashboard' | 'pool' | 'defis' | 'actions';
 @Component({
   selector: 'app-admin',
   imports: [FormsModule, RouterLink, DecimalPipe],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="min-h-screen bg-gray-900 text-white flex flex-col items-center p-8 gap-6">
       <h1 class="text-2xl font-bold tracking-tight">Admin</h1>
