@@ -1,12 +1,13 @@
-import { Component, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, computed, effect, ChangeDetectionStrategy } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { DecimalPipe } from '@angular/common';
+import { DecimalPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { lastValueFrom, of, timer, switchMap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AdminStatsResponse, ChallengeStatsDto, DailyKpisDto } from '../../api/api.generated';
+import { BUILD_TIME } from '../../core/build-info';
 
 interface ResetResult { deleted: number; date: string; }
 interface TrackDto { position: number; artist: string; title: string; deezerTrackId: number; }
@@ -19,11 +20,16 @@ type Tab = 'dashboard' | 'pool' | 'defis' | 'actions';
 
 @Component({
   selector: 'app-admin',
-  imports: [FormsModule, RouterLink, DecimalPipe],
+  imports: [FormsModule, RouterLink, DecimalPipe, DatePipe],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="min-h-screen bg-gray-900 text-white flex flex-col items-center p-8 gap-6">
-      <h1 class="text-2xl font-bold tracking-tight">Admin</h1>
+      <div class="flex flex-col items-center gap-1">
+        <h1 class="text-2xl font-bold tracking-tight">Admin</h1>
+        @if (buildTime !== 'unknown') {
+          <p class="text-xs text-gray-500">Déployé le {{ buildTime | date:'dd/MM/yyyy à HH:mm' : 'UTC' }} UTC</p>
+        }
+      </div>
 
       @if (!authenticated()) {
         <div class="bg-gray-800 rounded-xl p-8 flex flex-col items-center gap-6 w-full max-w-sm">
@@ -196,12 +202,29 @@ type Tab = 'dashboard' | 'pool' | 'defis' | 'actions';
 
               <!-- Stats par défi -->
               <div class="bg-gray-800 rounded-xl p-5 flex flex-col gap-3">
-                <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wide">Stats par défi</h2>
+                <div class="flex items-center justify-between gap-2">
+                  <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wide">Stats par défi</h2>
+                  @if (challengeMonths().length > 0) {
+                    <div class="flex items-center gap-2">
+                      <button (click)="shiftChallengeMonth(-1)" [disabled]="!canGoPrevChallengeMonth()"
+                        class="w-7 h-7 flex items-center justify-center rounded-lg bg-gray-700 hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-white text-sm">
+                        ‹
+                      </button>
+                      <span class="text-sm text-white font-medium w-36 text-center">{{ formatChallengeMonth(challengeMonth()) }}</span>
+                      <button (click)="shiftChallengeMonth(1)" [disabled]="!canGoNextChallengeMonth()"
+                        class="w-7 h-7 flex items-center justify-center rounded-lg bg-gray-700 hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-white text-sm">
+                        ›
+                      </button>
+                    </div>
+                  }
+                </div>
                 @if (adminStats()!.challenges.length === 0) {
                   <p class="text-gray-500 text-sm">Aucun défi.</p>
+                } @else if (challengesForMonth().length === 0) {
+                  <p class="text-gray-500 text-sm">Aucun défi ce mois.</p>
                 } @else {
                   <div class="flex flex-col divide-y divide-gray-700">
-                    @for (c of adminStats()!.challenges; track c.id) {
+                    @for (c of challengesForMonth(); track c.id) {
                       <div class="py-3">
                         <button (click)="toggleChallenge(c.id)"
                           class="w-full flex items-center justify-between gap-2 text-left">
@@ -457,12 +480,29 @@ type Tab = 'dashboard' | 'pool' | 'defis' | 'actions';
         <!-- Onglet Défis -->
         @if (activeTab() === 'defis') {
           <div class="bg-gray-800 rounded-xl p-5 flex flex-col gap-3 w-full max-w-2xl">
-            <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wide">Historique</h2>
+            <div class="flex items-center justify-between gap-2">
+              <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wide">Historique</h2>
+              @if (challengeListMonths().length > 0) {
+                <div class="flex items-center gap-2">
+                  <button (click)="shiftChallengeMonth(-1)" [disabled]="!canGoPrevChallengeMonth()"
+                    class="w-7 h-7 flex items-center justify-center rounded-lg bg-gray-700 hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-white text-sm">
+                    ‹
+                  </button>
+                  <span class="text-sm text-white font-medium w-36 text-center">{{ formatChallengeMonth(challengeMonth()) }}</span>
+                  <button (click)="shiftChallengeMonth(1)" [disabled]="!canGoNextChallengeMonth()"
+                    class="w-7 h-7 flex items-center justify-center rounded-lg bg-gray-700 hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-white text-sm">
+                    ›
+                  </button>
+                </div>
+              }
+            </div>
             @if (challenges().length === 0) {
               <p class="text-gray-400 text-sm">Aucun défi enregistré.</p>
+            } @else if (challengesListForMonth().length === 0) {
+              <p class="text-gray-400 text-sm">Aucun défi ce mois.</p>
             } @else {
               <ul class="flex flex-col divide-y divide-gray-700">
-                @for (c of challenges(); track c.id) {
+                @for (c of challengesListForMonth(); track c.id) {
                   <li class="py-3">
                     <p class="font-mono text-sm text-white mb-1">{{ c.date }}</p>
                     <ul class="flex flex-col gap-0.5">
@@ -622,6 +662,7 @@ export class AdminComponent {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/api/admin`;
   private readonly storageKey = 'admin_token';
+  readonly buildTime = BUILD_TIME;
 
   authenticated = signal(false);
   loginStatus = signal<'idle' | 'loading' | 'error'>('idle');
@@ -643,6 +684,7 @@ export class AdminComponent {
 
   expandedChallenges = signal<Set<number>>(new Set());
   selectedDay = signal<string>(new Date().toISOString().slice(0, 10));
+  challengeMonth = signal<string>(new Date().toISOString().slice(0, 7));
 
   selectedTrackIds = signal<Set<number>>(new Set());
   deleteModalOpen = signal(false);
@@ -700,12 +742,47 @@ export class AdminComponent {
 
   readonly challenges = computed(() => this.challengesResource.value() ?? []);
 
+  readonly challengeListMonths = computed(() => {
+    const months = [...new Set(this.challenges().map(c => c.date.slice(0, 7)))].sort().reverse();
+    return months;
+  });
+
+  readonly challengesListForMonth = computed(() =>
+    this.challenges().filter(c => c.date.slice(0, 7) === this.challengeMonth())
+  );
+
+  readonly challengeMonths = computed(() => {
+    const months = [...new Set(this.adminStats()?.challenges.map(c => new Date(c.date).toISOString().slice(0, 7)) ?? [])].sort().reverse();
+    return months;
+  });
+
+  readonly challengesForMonth = computed(() =>
+    (this.adminStats()?.challenges ?? []).filter(c => new Date(c.date).toISOString().slice(0, 7) === this.challengeMonth())
+  );
+
+  readonly canGoPrevChallengeMonth = computed(() => {
+    const months = this.challengeMonths();
+    return months.indexOf(this.challengeMonth()) < months.length - 1;
+  });
+
+  readonly canGoNextChallengeMonth = computed(() => {
+    const months = this.challengeMonths();
+    return months.indexOf(this.challengeMonth()) > 0;
+  });
+
   // Check auth au démarrage
   constructor() {
     lastValueFrom(this.http.get(`${this.base}/me`)).then(() => {
       this.authenticated.set(true);
     }).catch(() => {
       this.authenticated.set(false);
+    });
+
+    effect(() => {
+      const months = [...new Set([...this.challengeMonths(), ...this.challengeListMonths()])].sort().reverse();
+      if (months.length > 0 && !months.includes(this.challengeMonth())) {
+        this.challengeMonth.set(months[0]);
+      }
     });
   }
 
@@ -803,6 +880,19 @@ export class AdminComponent {
     const set = new Set(this.expandedChallenges());
     if (set.has(id)) set.delete(id); else set.add(id);
     this.expandedChallenges.set(set);
+  }
+
+  shiftChallengeMonth(delta: number): void {
+    const months = this.challengeMonths();
+    const idx = months.indexOf(this.challengeMonth());
+    const next = idx - delta;
+    if (next >= 0 && next < months.length) this.challengeMonth.set(months[next]);
+  }
+
+  formatChallengeMonth(ym: string): string {
+    const [y, m] = ym.split('-');
+    const names = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+    return `${names[+m - 1]} ${y}`;
   }
 
   activityBarHeight(count: number): number {
