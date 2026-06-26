@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace InSeconds.Api.Infrastructure.Deezer;
 
-public sealed class DeezerClient(HttpClient http)
+public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger)
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -16,10 +16,19 @@ public sealed class DeezerClient(HttpClient http)
         {
             var response = await http.GetFromJsonAsync<DeezerTrackResponse>(
                 $"/track/{deezerTrackId}", JsonOptions, ct);
+
+            if (string.IsNullOrEmpty(response?.Preview))
+                logger.LogWarning("Deezer n'a renvoyé aucune preview pour le track {DeezerTrackId}.", deezerTrackId);
+
             return response?.Preview;
         }
-        catch
+        catch (OperationCanceledException)
         {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Échec de récupération de la preview Deezer pour le track {DeezerTrackId}.", deezerTrackId);
             return null;
         }
     }
@@ -34,8 +43,13 @@ public sealed class DeezerClient(HttpClient http)
                 ? new DeezerTrackInfo(response.Artist.Name, response.Title, response.Preview, response.Id, ExtractCoverHash(response.Album?.CoverMedium))
                 : null;
         }
-        catch
+        catch (OperationCanceledException)
         {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Échec de récupération des infos Deezer pour le track {DeezerTrackId}.", deezerTrackId);
             return null;
         }
     }
@@ -51,8 +65,13 @@ public sealed class DeezerClient(HttpClient http)
                 .Select(t => new DeezerTrackInfo(t.Artist!.Name!, t.Title!, t.Preview, t.Id, ExtractCoverHash(t.Album?.CoverMedium)))
                 .ToList() ?? [];
         }
-        catch
+        catch (OperationCanceledException)
         {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Échec de la recherche Deezer pour la requête {Query}.", query);
             return [];
         }
     }

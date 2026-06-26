@@ -75,6 +75,10 @@
 - [x] Route `/blindtest` (alias de `/`) pour les liens de partage
 - [x] Open Graph + Twitter Card dans `index.html` (partage WhatsApp / Signal)
 - [x] `environment.appUrl` dans les fichiers d'environnement (prod/dev)
+- [x] Confirmation de sortie en cours de partie — guard `CanDeactivate` (`unsaved-game.guard.ts`) + modale (`ConfirmSheetComponent`) sur la navigation interne, `beforeunload` natif sur la fermeture d'onglet ; la partie reste `Pending` (reprenable)
+- [x] `ConfirmSheetComponent` (`shared/confirm-sheet/`) — bottom-sheet de confirmation réutilisable, mutualise les modales "abandonner" et "quitter"
+- [x] Polish UX blind round — loading sur "Valider" (`isSubmitting`), bouton `✕` d'effacement, tooltip points au survol des paliers, score en count-up animé, toast d'erreur réseau (4s)
+- [x] Animations d'écran — keyframes `fade-in`/`slide-up`, classe `.screen-enter` sur chaque état
 
 ## ✅ Déploiement
 
@@ -107,7 +111,7 @@
 
 - [x] Tests d'intégration backend (Testcontainers, 73 tests) — `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (KPIs jour, AvailableDates, fix 30j, Pending→Abandoned), `Auth/Me` (soft-delete), `SessionEdgeCases` (expiry paresseuse, streak, submit sur session abandonnée, UpdateListening : store/max/reset-after-submit/returned-on-resume), `ChallengeGeneration`, `Admin/Tracks` (AddTrack, GetTracks, DeleteTrack, UpdateTrack), `Admin/Challenges` (GetChallenges, CreateChallenge, ResetToday)
 - [ ] Tests front Karma/Jasmine (`AudioPlayerService` — dont `preloadAll`, `GameService`)
-- [x] Tests E2E Playwright (28 scénarios : 13 jeu + 15 admin). Jeu : happy path, écran déjà joué, abandon mid-game, reprise, abandon depuis reprise, pas de défi, partage, scoring palier/mauvaise réponse/partiel, anti-cheat paliers bloqués à la reprise. Admin : login erreur/succès/déconnexion, pool tableau+filtres texte/preview/statut, ajout morceau, suppression individuelle+annulation, actualisation morceau sans preview (modale pré-remplie), actions générer/déjà généré/reset, liste défis
+- [x] Tests E2E Playwright (36 scénarios : 21 jeu + 15 admin). Jeu : happy path, écran déjà joué, abandon mid-game, reprise, abandon depuis reprise, sync multi-onglets, pas de défi, partage, scoring palier/mauvaise réponse/partiel, anti-cheat paliers bloqués à la reprise, confirmation de sortie (`leave-guard` : annuler/confirmer/hors-playing), bouton `✕` d'effacement (`clear-search`). Admin : login erreur/succès/déconnexion, pool tableau+filtres texte/preview/statut, ajout morceau, suppression individuelle+annulation, actualisation morceau sans preview (modale pré-remplie), actions générer/déjà généré/reset, liste défis
 
 ## 🚧 Mobile
 

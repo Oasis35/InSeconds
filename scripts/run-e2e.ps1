@@ -1,4 +1,7 @@
-param()
+param(
+    # Filtre optionnel passé à Playwright (ex: "leave-guard clear-search").
+    [string]$Filter = ''
+)
 $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
 
@@ -64,7 +67,11 @@ Write-Host "    Back OK" -ForegroundColor Green
 
 Write-Host "==> Lancement des tests E2E..." -ForegroundColor Cyan
 Set-Location "$root\src\front\InSeconds.Client"
-npm run e2e
+if ($Filter) {
+    npx playwright test $Filter.Split(' ')
+} else {
+    npm run e2e
+}
 $e2eExit = $LASTEXITCODE
 
 Write-Host "==> Arrêt du back..." -ForegroundColor Cyan

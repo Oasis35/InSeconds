@@ -10,6 +10,7 @@ using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace InSeconds.Api.UnitTests.Features.Sessions.StartSession;
@@ -27,7 +28,7 @@ public sealed class StartSessionHandlerTests
                     """{"preview":"https://fake-preview.mp3"}""",
                     Encoding.UTF8, "application/json"),
             });
-        return new DeezerClient(new HttpClient(handler) { BaseAddress = new Uri("https://api.deezer.com") });
+        return new DeezerClient(new HttpClient(handler) { BaseAddress = new Uri("https://api.deezer.com") }, NullLogger<DeezerClient>.Instance);
     }
 
     private sealed class FakeHttpMessageHandler(HttpResponseMessage response) : HttpMessageHandler

@@ -4,6 +4,7 @@ export class BlindRoundPage {
   readonly answerInput: Locator;
   readonly submitButton: Locator;
   readonly confirmSubmitButton: Locator;
+  readonly clearSearchButton: Locator;
   readonly nextButton: Locator;
   readonly roundScore: Locator;
 
@@ -11,6 +12,7 @@ export class BlindRoundPage {
     this.answerInput         = page.getByPlaceholder('Artiste — Titre');
     this.submitButton        = page.getByRole('button', { name: 'Valider' });
     this.confirmSubmitButton = page.getByRole('button', { name: 'Valider quand même' });
+    this.clearSearchButton   = page.getByRole('button', { name: '✕' });
     this.nextButton          = page.getByRole('button', { name: /Piste suivante|Voir le résultat/ });
     // Score affiché dans le résultat du round : "+850 pts"
     this.roundScore          = page.locator('p').filter({ hasText: ' pts' }).last();

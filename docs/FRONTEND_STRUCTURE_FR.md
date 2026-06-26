@@ -21,6 +21,8 @@ src/front/InSeconds.Client/
 │   │   ├── api/
 │   │   │   └── api.generated.ts           # ⚠️ GÉNÉRÉ — ne pas éditer manuellement
 │   │   ├── core/
+│   │   │   ├── guards/
+│   │   │   │   └── unsaved-game.guard.ts   # CanDeactivate : confirme la sortie en cours de partie
 │   │   │   ├── interceptors/
 │   │   │   │   ├── player-auth.interceptor.ts  # withCredentials: true sur /api (hors /admin)
 │   │   │   │   └── admin-auth.interceptor.ts   # Bearer token sur /api/admin
@@ -30,13 +32,16 @@ src/front/InSeconds.Client/
 │   │   │       ├── audio-player.service.ts    # signal-based, durée choisie
 │   │   │       ├── game.service.ts             # POST /sessions + /answers
 │   │   │       └── settings.service.ts         # GET /settings → signals
+│   │   ├── shared/
+│   │   │   └── confirm-sheet/
+│   │   │       └── confirm-sheet.component.ts  # bottom-sheet de confirmation réutilisable
 │   │   ├── features/
 │   │   │   ├── admin/
 │   │   │   │   └── admin.component.ts     # login + gestion pool + défis
 │   │   │   └── game/
 │   │   │       ├── game.component.ts      # orchestration session complète
 │   │   │       └── blind-round/
-│   │   │           └── blind-round.component.ts  # choix palier + lecture + saisie
+│   │   │           └── blind-round.component.ts  # choix palier + lecture + saisie + polish UX
 │   │   ├── app.config.ts                  # providers globaux
 │   │   ├── app.routes.ts                  # routes
 │   │   └── app.ts                         # composant racine
@@ -128,6 +133,8 @@ Orchestre une session complète. États : `loading` → `welcome` → `playing` 
 - État `welcome` : page d'accueil avec bouton "Commencer à jouer"
 - Récap final : badge officiel "À écouter sur Deezer" (`DeezerBadgeComponent`) + streak + bouton partage emoji Wordle-style
 - Partage : `🟩🟩 0.5s | 🟨⬜ 2s | 🟥🟥 10s` + score + lien `appUrl/blindtest` (copié dans le presse-papier)
+- Animations d'écran : classe `.screen-enter` (keyframe `fade-in` global) sur la div racine de chaque état — rejoue à chaque transition car le bloc `@if` est recréé
+- **Confirmation de sortie** : implémente l'interface `UnsavedGameComponent` (`canDeactivate()`). Si `gameState() === 'playing'`, ouvre une modale (`ConfirmSheetComponent`) et renvoie une `Promise<boolean>` résolue par "Quitter quand même" / "Continuer à jouer". `@HostListener('window:beforeunload')` couvre la fermeture/rechargement d'onglet (dialog natif). Un `effect` résout la promesse si la partie quitte `playing` pendant que la modale est ouverte. La méthode `resolveLeave(ok)` capture-puis-nullifie le resolver pour éviter toute Promise orpheline en cas de navigation ré-entrante.
 
 ### `BlindRoundComponent`
 
@@ -137,10 +144,21 @@ Layout B — deux zones toujours présentes (pas de clignotement) :
 
 `chosenDuration` est un **signal** (pas une propriété ordinaire) pour que `nextDuration` (computed) se recalcule réactivement.
 
+Polish UX :
+- **Loading sur Valider** : signal `isSubmitting` → bouton désactivé + `…` pendant l'appel serveur (remis à `false` dans `setResult`)
+- **Bouton `✕`** : efface la saisie, lié à `(mousedown)` + `preventDefault()` pour s'exécuter avant le `blur` de l'input
+- **Tooltip paliers** : au survol (`hoveredDuration`), affiche les points gagnés pour la durée (`scoreForDuration` lit `SettingsService.durationScores()`)
+- **Score count-up** : `displayedScore` animé de 0 à `r.score` (~600ms) via le helper module `countUp` (rAF, easing quadratique)
+- **Toast erreur réseau** : `showNetworkError` affiché 4s si `setResult(r, true)` (échec HTTP) — timer stocké dans `networkErrorTimer`, annulé/nettoyé dans `setResult`, `next()` et `ngOnDestroy`
+
 Affiche après chaque réponse :
 - Ton temps d'écoute
 - Moyenne du temps des joueurs ayant trouvé (`averageSecondsWhenCorrect`)
 - % de joueurs n'ayant pas trouvé (`failureRatePercent`)
+
+### `ConfirmSheetComponent`
+
+Bottom-sheet de confirmation réutilisable (`shared/confirm-sheet/`). Overlay plein écran, carte arrondie, deux boutons (confirm à gauche, cancel mis en avant à droite). Inputs : `title`, `body` (multi-ligne via `white-space:pre-line`, **pas** d'`innerHTML`), `tone` (`danger`/`warning`), `confirmLabel`, `cancelLabel`, `loading`, `confirmStyle`, `cancelStyle`. Outputs : `confirm`, `cancel`. Mutualise les modales "abandonner la partie" et "quitter la page" de `GameComponent`.
 
 ### `DeezerBadgeComponent`
 
