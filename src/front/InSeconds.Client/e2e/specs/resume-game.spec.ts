@@ -16,7 +16,12 @@ test.describe('Reprise de partie', () => {
     await game.clickStart();
     await round.chooseDuration(3);
     // Laisser le timer tourner (3s) → updateListening s'envoie
+    const listeningPatch = page.waitForResponse(
+      r => /\/api\/sessions\/\d+\/listening$/.test(r.url()) && r.request().method() === 'PATCH'
+    );
     await round.advanceClock(3);
+    // Attendre que le PATCH /listening soit parti ET persisté avant de recharger
+    await listeningPatch;
     // Ne pas soumettre — recharger à la place
     await game.goto();
     await game.waitForResumePrompt();

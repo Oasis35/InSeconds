@@ -27,6 +27,7 @@ using InSeconds.Api.Features.Settings.GetSettings;
 using InSeconds.Api.Infrastructure.Deezer;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Wolverine;
@@ -87,6 +88,18 @@ if (builder.Environment.IsEnvironment("Testing"))
 {
     deezerHttpBuilder.ConfigurePrimaryHttpMessageHandler(() => new FakeDeezerHandler());
 }
+else
+{
+    // Résilience HTTP sur l'API Deezer : timeout court par tentative, retry
+    // exponentiel (incluant 429/5xx) et circuit breaker. Évite qu'un appel
+    // Deezer lent ne bloque StartSession (timeout HttpClient par défaut = 100s).
+    deezerHttpBuilder.AddStandardResilienceHandler(options =>
+    {
+        options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(4);
+        options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(15);
+        options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
+    });
+}
 
 builder.Services.AddDataProtection().SetApplicationName("InSeconds");
 builder.Services.AddScoped<ICookieAuthService>(sp => new CookieAuthService(
@@ -95,6 +108,12 @@ builder.Services.AddScoped<ICookieAuthService>(sp => new CookieAuthService(
     sp.GetRequiredService<IHostEnvironment>()));
 
 builder.Services.AddOpenApi();
+
+// Health checks : /health (liveness, app vivante) et /health/ready (readiness,
+// DB joignable). Northflank peut sonder /health/ready pour redémarrer proprement
+// si PostgreSQL est inaccessible.
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<ApplicationDbContext>("database", tags: ["ready"]);
 
 var app = builder.Build();
 
@@ -128,7 +147,15 @@ if (app.Environment.IsDevelopment())
 app.UseCors(CorsPolicyName);
 app.UseMiddleware<PlayerAuthMiddleware>();
 
+// Liveness : l'app répond. Renvoie un JSON { status, utc } consommé par le badge
+// d'état backend du front (app.ts) — ne pas changer le format sans adapter le front.
 app.MapGet("/health", () => Results.Ok(new { status = "ok", utc = DateTime.UtcNow }));
+
+// Readiness : la DB est joignable (tag "ready"). Sondé par Northflank.
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready"),
+});
 
 app.MapGetSettings();
 app.MapMe();

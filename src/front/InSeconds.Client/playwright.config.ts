@@ -17,6 +17,9 @@ export default defineConfig({
     baseURL: process.env['CI'] ? 'http://localhost:5173' : 'http://localhost:5174',
     trace: 'on-first-retry',
     video: 'on-first-retry',
+    // Désactive les animations (ex: count-up du score) — sinon le score final n'est pas
+    // lisible sous une horloge figée par page.clock (requestAnimationFrame ne tourne pas).
+    reducedMotion: 'reduce',
   },
 
   projects: [

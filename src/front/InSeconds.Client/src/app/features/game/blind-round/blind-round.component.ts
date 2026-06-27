@@ -11,6 +11,24 @@ import { SettingsService } from '../../../core/services/settings.service';
 import { DeezerSearchService, DeezerSuggestion } from '../../../core/services/deezer-search.service';
 import { TrackSlot, SubmitAnswerResponse } from '../../../core/models/game.models';
 
+function countUp(target: number, setter: (v: number) => void, duration = 600): void {
+  if (target === 0) { setter(0); return; }
+  // Pas d'animation si mouvement réduit demandé (accessibilité) ou en contexte de test
+  // (flag __disableAnimations posé par Playwright) : l'animation rAF ne tourne pas sous
+  // une horloge figée par page.clock, le score final doit donc être posé immédiatement.
+  const reduced =
+    (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches)
+    || (typeof window !== 'undefined' && (window as { __disableAnimations?: boolean }).__disableAnimations === true);
+  if (reduced) { setter(target); return; }
+  const start = performance.now();
+  const step = (now: number) => {
+    const t = Math.min((now - start) / duration, 1);
+    setter(Math.round(t * t * target));
+    if (t < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
 export interface AnsweredEvent {
   trackId: number;
   listenedDurationSeconds: number;
@@ -36,12 +54,20 @@ export interface AnsweredEvent {
               <p class="text-center text-sm" style="color:#475569">Combien de secondes veux-tu écouter ?</p>
               <div class="flex flex-wrap gap-2 justify-center">
                 @for (d of durations(); track d) {
-                  <button
-                    (click)="startPlay(d)"
-                    class="px-5 py-3 rounded-xl font-semibold text-sm transition active:scale-95 touch-manipulation"
-                    style="background:#6366f1;color:#fff">
-                    {{ d }}s
-                  </button>
+                  <div class="relative" (mouseenter)="hoveredDuration.set(d)" (mouseleave)="hoveredDuration.set(null)">
+                    @if (hoveredDuration() === d && scoreForDuration(d) != null) {
+                      <div class="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap pointer-events-none"
+                           style="background:#312e81;color:#c7d2fe;z-index:10">
+                        {{ scoreForDuration(d) }} pts
+                      </div>
+                    }
+                    <button
+                      (click)="startPlay(d)"
+                      class="px-5 py-3 rounded-xl font-semibold text-sm transition active:scale-95 touch-manipulation"
+                      style="background:#6366f1;color:#fff">
+                      {{ d }}s
+                    </button>
+                  </div>
                 }
               </div>
             } @else {
@@ -123,11 +149,22 @@ export interface AnsweredEvent {
               (ngModelChange)="onQueryChange($event)"
               (blur)="onBlur()"
               (focus)="showSuggestions.set(true)"
-              class="w-full px-4 py-3.5 rounded-xl text-sm transition"
+              class="w-full pl-4 py-3.5 rounded-xl text-sm transition"
+              [style.paddingRight]="searchQuery ? '2.5rem' : '1rem'"
               style="background:#0f0f1a;color:#e2e8f0;border:1px solid rgba(255,255,255,0.08);outline:none"
               onfocus="this.style.borderColor='rgba(99,102,241,0.5)'"
               onblur="this.style.borderColor='rgba(255,255,255,0.08)'"
             />
+            @if (searchQuery) {
+              <button
+                type="button"
+                (mousedown)="clearSearch($event)"
+                class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full transition touch-manipulation"
+                style="color:#475569;background:rgba(255,255,255,0.06)"
+                onmouseenter="this.style.color='#94a3b8'" onmouseleave="this.style.color='#475569'">
+                ✕
+              </button>
+            }
 
             @if (showSuggestions() && suggestions().length > 0) {
               <ul class="absolute z-10 w-full mt-1 rounded-xl overflow-hidden shadow-2xl"
@@ -172,9 +209,10 @@ export interface AnsweredEvent {
           } @else {
             <button
               type="submit"
-              class="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition touch-manipulation"
+              [disabled]="isSubmitting()"
+              class="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition touch-manipulation disabled:opacity-60"
               style="background:#059669;color:#fff;letter-spacing:0.03em">
-              Valider
+              {{ isSubmitting() ? '…' : 'Valider' }}
             </button>
           }
         </form>
@@ -207,7 +245,7 @@ export interface AnsweredEvent {
           <p class="font-bold tabular-nums"
              [style.color]="r.score > 0 ? '#34d399' : '#475569'"
              style="font-size:3rem;line-height:1;letter-spacing:-0.03em">
-            +{{ r.score }}
+            +{{ displayedScore() }}
             <span class="text-lg font-normal" style="color:#334155"> pts</span>
           </p>
 
@@ -218,6 +256,13 @@ export interface AnsweredEvent {
             }
             <span>Pas trouvé : <span style="color:#64748b">{{ r.failureRatePercent.toFixed(0) }}%</span></span>
           </div>
+
+          @if (showNetworkError()) {
+            <div class="toast-enter w-full rounded-xl px-4 py-3 text-sm text-center"
+                 style="background:rgba(127,29,29,0.5);border:1px solid rgba(248,113,113,0.3);color:#fca5a5">
+              Erreur réseau — la réponse n'a pas pu être enregistrée.
+            </div>
+          }
 
           <button
             (click)="next()"
@@ -258,6 +303,11 @@ export class BlindRoundComponent implements OnDestroy {
   protected readonly suggestions = signal<DeezerSuggestion[]>([]);
   protected readonly showSuggestions = signal(false);
   protected readonly showEmptyConfirm = signal(false);
+  protected readonly isSubmitting = signal(false);
+  protected readonly hoveredDuration = signal<number | null>(null);
+  protected readonly displayedScore = signal(0);
+  protected readonly showNetworkError = signal(false);
+  private networkErrorTimer: ReturnType<typeof setTimeout> | null = null;
 
   private readonly query$ = new Subject<string>();
 
@@ -281,6 +331,20 @@ export class BlindRoundComponent implements OnDestroy {
         }
       }
     });
+  }
+
+  protected scoreForDuration(d: number): number | null {
+    return this.settings.durationScores()[d] ?? null;
+  }
+
+  clearSearch(event: MouseEvent): void {
+    event.preventDefault();
+    this.searchQuery = '';
+    this.artistAnswer = '';
+    this.titleAnswer = '';
+    this.suggestions.set([]);
+    this.showSuggestions.set(false);
+    this.showEmptyConfirm.set(false);
   }
 
   onQueryChange(q: string): void {
@@ -356,6 +420,7 @@ export class BlindRoundComponent implements OnDestroy {
   }
 
   private doSubmit(): void {
+    this.isSubmitting.set(true);
     const wasExtended = this.audio.extended();
     this.answered.emit({
       trackId:                 this.track().id,
@@ -366,8 +431,19 @@ export class BlindRoundComponent implements OnDestroy {
     });
   }
 
-  setResult(r: SubmitAnswerResponse): void {
+  setResult(r: SubmitAnswerResponse, isNetworkError = false): void {
+    this.isSubmitting.set(false);
     this.result.set(r);
+    this.displayedScore.set(0);
+    countUp(r.score, v => this.displayedScore.set(v));
+    if (isNetworkError) {
+      this.showNetworkError.set(true);
+      if (this.networkErrorTimer) clearTimeout(this.networkErrorTimer);
+      this.networkErrorTimer = setTimeout(() => {
+        this.showNetworkError.set(false);
+        this.networkErrorTimer = null;
+      }, 4000);
+    }
     if (this.track().previewUrl && this.chosenDuration() > 0) {
       this.audio.replayFull();
     }
@@ -376,15 +452,20 @@ export class BlindRoundComponent implements OnDestroy {
   next(): void {
     this.audio.reset();
     this.result.set(null);
+    this.displayedScore.set(0);
     this.artistAnswer = '';
     this.titleAnswer = '';
     this.searchQuery = '';
     this.suggestions.set([]);
     this.chosenDuration.set(0);
+    this.isSubmitting.set(false);
+    this.showNetworkError.set(false);
+    if (this.networkErrorTimer) { clearTimeout(this.networkErrorTimer); this.networkErrorTimer = null; }
     this.nextTrack.emit();
   }
 
   ngOnDestroy(): void {
     this.audio.reset();
+    if (this.networkErrorTimer) { clearTimeout(this.networkErrorTimer); this.networkErrorTimer = null; }
   }
 }

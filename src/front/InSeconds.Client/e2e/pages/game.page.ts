@@ -15,6 +15,11 @@ export class GamePage {
   readonly resumeButton: Locator;
   readonly abandonButton: Locator;
   readonly abandonConfirmButton: Locator;
+  // Confirmation de sortie (guard CanDeactivate)
+  readonly leaveConfirmButton: Locator;
+  readonly leaveCancelButton: Locator;
+  // Overlay « Service indisponible » (backend KO)
+  readonly serviceDownHeading: Locator;
 
   constructor(readonly page: Page) {
     this.startButton           = page.getByRole('button', { name: 'Commencer' });
@@ -26,10 +31,15 @@ export class GamePage {
     this.shareButton           = page.getByRole('button', { name: /Partager mon score/i });
     this.shareCopiedButton     = page.getByRole('button', { name: /Copié/i });
     this.retryButton           = page.getByRole('button', { name: 'Réessayer' });
-    this.resumePromptHeading   = page.getByText('Partie en cours');
+    // Scopé sur le <h2> de l'écran reprise : le titre de la modale de sortie
+    // porte le même texte "Partie en cours" mais est rendu dans un <p>.
+    this.resumePromptHeading   = page.getByRole('heading', { name: 'Partie en cours' });
     this.resumeButton          = page.getByRole('button', { name: 'Reprendre' });
     this.abandonButton         = page.getByRole('button', { name: 'Abandonner' });
     this.abandonConfirmButton  = page.getByRole('button', { name: 'Oui, abandonner' });
+    this.leaveConfirmButton    = page.getByRole('button', { name: 'Quitter quand même' });
+    this.leaveCancelButton     = page.getByRole('button', { name: 'Continuer à jouer' });
+    this.serviceDownHeading    = page.getByRole('heading', { name: 'Service indisponible' });
   }
 
   async goto(): Promise<void> {

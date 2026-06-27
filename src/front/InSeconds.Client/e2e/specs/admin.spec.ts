@@ -83,8 +83,8 @@ test.describe('Admin — pool', () => {
     await page.getByRole('button', { name: /Pool/ }).click();
     await admin.addButton().click();
 
-    // Cherche dans la modale
-    const modalSearch = page.getByPlaceholder('Rechercher artiste ou titre...').last();
+    // Cherche dans la modale (placeholder distinct du filtre pool)
+    const modalSearch = page.getByPlaceholder('Rechercher sur Deezer...');
     await modalSearch.fill('E2E Track');
     // FakeDeezerHandler retourne "E2E Track" — attendre le résultat (debounce 300ms + réseau)
     const result = page.getByText('E2E Artist — E2E Track');
@@ -147,7 +147,7 @@ test.describe('Admin — pool', () => {
     await page.getByRole('button', { name: '↻ Actualiser' }).first().click();
 
     // La modale s'ouvre avec le champ de recherche pré-rempli
-    const modalSearch = page.getByPlaceholder('Rechercher artiste ou titre...').last();
+    const modalSearch = page.getByPlaceholder('Rechercher sur Deezer...');
     await expect(modalSearch).not.toHaveValue('');
   });
 });
