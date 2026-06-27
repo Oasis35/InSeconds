@@ -1,11 +1,12 @@
 @if (pool.deleteModalOpen()) {
-  <div class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
-    role="button" tabindex="0"
-    (click)="pool.closeDeleteModal()"
-    (keydown.escape)="pool.closeDeleteModal()">
-    <div class="bg-gray-800 rounded-2xl p-6 flex flex-col gap-4 w-full max-w-sm shadow-2xl"
-      (click)="$event.stopPropagation()"
-      (keydown)="$event.stopPropagation()">
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <button type="button" class="absolute inset-0 bg-black/70 w-full h-full"
+      [attr.aria-label]="'admin.deleteModal.close' | translate"
+      (click)="pool.closeDeleteModal()">
+    </button>
+    <div class="relative bg-gray-800 rounded-2xl p-6 flex flex-col gap-4 w-full max-w-sm shadow-2xl"
+      role="dialog" aria-modal="true"
+      (keydown.escape)="pool.closeDeleteModal()">
       <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wide">{{ 'admin.deleteModal.title' | translate }}</h2>
 
       @if (pool.deleteModalTracks().length === 1) {

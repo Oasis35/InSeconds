@@ -24,17 +24,19 @@
 
   <!-- Filtres -->
   <div class="flex flex-wrap items-center gap-2">
-    <input type="text" [value]="pool.poolFilterText()" (input)="pool.setPoolFilter($any($event.target).value)"
+    <label for="pool-filter-text" class="sr-only">{{ 'admin.pool.searchPlaceholder' | translate }}</label>
+    <input id="pool-filter-text" type="text" [value]="pool.poolFilterText()" (input)="pool.setPoolFilter($any($event.target).value)"
       [placeholder]="'admin.pool.searchPlaceholder' | translate"
-      [attr.aria-label]="'admin.pool.searchPlaceholder' | translate"
       class="flex-1 min-w-36 bg-gray-800 text-white text-sm rounded-lg px-3 py-1.5 outline-none focus:ring-1 focus:ring-purple-500 placeholder-gray-600" />
-    <select [value]="pool.poolFilterPreview()" (change)="pool.setPoolFilterPreview($any($event.target).value)"
+    <label for="pool-filter-preview" class="sr-only">{{ 'admin.pool.allPreviews' | translate }}</label>
+    <select id="pool-filter-preview" [value]="pool.poolFilterPreview()" (change)="pool.setPoolFilterPreview($any($event.target).value)"
       class="bg-gray-800 text-sm text-gray-300 rounded-lg px-3 py-1.5 outline-none focus:ring-1 focus:ring-purple-500 cursor-pointer">
       <option value="all">{{ 'admin.pool.allPreviews' | translate }}</option>
       <option value="ok">{{ 'admin.pool.previewOk' | translate }}</option>
       <option value="missing">{{ 'admin.pool.previewMissing' | translate }}</option>
     </select>
-    <select [value]="pool.poolFilterStatus()" (change)="pool.setPoolFilterStatus($any($event.target).value)"
+    <label for="pool-filter-status" class="sr-only">{{ 'admin.pool.allStatuses' | translate }}</label>
+    <select id="pool-filter-status" [value]="pool.poolFilterStatus()" (change)="pool.setPoolFilterStatus($any($event.target).value)"
       class="bg-gray-800 text-sm text-gray-300 rounded-lg px-3 py-1.5 outline-none focus:ring-1 focus:ring-purple-500 cursor-pointer">
       <option value="all">{{ 'admin.pool.allStatuses' | translate }}</option>
       <option value="available">{{ 'admin.pool.available' | translate }}</option>

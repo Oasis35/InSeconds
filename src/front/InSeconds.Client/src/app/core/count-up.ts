@@ -9,7 +9,7 @@ export function countUp(target: number, setter: (v: number) => void, duration = 
   if (target === 0) { setter(0); return; }
   const reduced =
     (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches)
-    || (typeof globalThis.window !== 'undefined' && (globalThis.window as { __disableAnimations?: boolean }).__disableAnimations === true);
+    || (globalThis.window !== undefined && (globalThis.window as { __disableAnimations?: boolean }).__disableAnimations === true);
   if (reduced) { setter(target); return; }
   const start = performance.now();
   const step = (now: number) => {

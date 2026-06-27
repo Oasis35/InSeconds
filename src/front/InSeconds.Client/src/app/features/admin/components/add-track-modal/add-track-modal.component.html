@@ -1,11 +1,12 @@
 @if (pool.addModalOpen()) {
-  <div class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
-    role="button" tabindex="0"
-    (click)="pool.closeAddModal()"
-    (keydown.escape)="pool.closeAddModal()">
-    <div class="bg-gray-800 rounded-2xl p-6 flex flex-col gap-4 w-full max-w-md shadow-2xl"
-      (click)="$event.stopPropagation()"
-      (keydown)="$event.stopPropagation()">
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <button type="button" class="absolute inset-0 bg-black/70 w-full h-full"
+      [attr.aria-label]="'admin.addModal.close' | translate"
+      (click)="pool.closeAddModal()">
+    </button>
+    <div class="relative bg-gray-800 rounded-2xl p-6 flex flex-col gap-4 w-full max-w-md shadow-2xl"
+      role="dialog" aria-modal="true"
+      (keydown.escape)="pool.closeAddModal()">
 
       <!-- En-tête -->
       <div class="flex items-center justify-between gap-3">
