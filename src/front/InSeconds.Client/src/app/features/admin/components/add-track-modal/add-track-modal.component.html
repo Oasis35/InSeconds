@@ -1,0 +1,89 @@
+@if (pool.addModalOpen()) {
+  <div class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+    (click)="pool.closeAddModal()">
+    <div class="bg-gray-800 rounded-2xl p-6 flex flex-col gap-4 w-full max-w-md shadow-2xl"
+      (click)="$event.stopPropagation()">
+
+      <!-- En-tête -->
+      <div class="flex items-center justify-between gap-3">
+        <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wide">{{ 'admin.addModal.title' | translate }}</h2>
+        <button (click)="pool.closeAddModal()" class="text-gray-500 hover:text-white text-xl leading-none">✕</button>
+      </div>
+
+      <!-- Recherche -->
+      <input type="text" [ngModel]="pool.poolSearchQuery()" (ngModelChange)="pool.onPoolSearchChange($event)"
+        [placeholder]="'admin.addModal.searchPlaceholder' | translate"
+        class="bg-gray-700 text-white rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-purple-500 text-sm" />
+      @if (pool.poolSearchLoading()) {
+        <p class="text-gray-500 text-xs -mt-2">{{ 'admin.addModal.searching' | translate }}</p>
+      }
+      @if (pool.poolSearchResults().length > 0) {
+        <ul class="bg-gray-700 rounded-lg divide-y divide-gray-600 max-h-44 overflow-y-auto">
+          @for (track of pool.poolSearchResults(); track track.deezerTrackId) {
+            <li (click)="pool.selectModalTrack(track)"
+              [class]="pool.addModalTrack()?.deezerTrackId === track.deezerTrackId
+                ? 'px-4 py-2.5 flex justify-between items-center text-sm bg-gray-600 cursor-pointer'
+                : 'px-4 py-2.5 flex justify-between items-center text-sm hover:bg-gray-600 cursor-pointer'">
+              <span class="text-gray-200 flex-1 min-w-0 truncate">{{ track.artist }} — {{ track.title }}</span>
+              <span class="text-purple-400 text-xs shrink-0 ml-4">{{ 'admin.addModal.choose' | translate }}</span>
+            </li>
+          }
+        </ul>
+      }
+
+      <!-- Player — visible dès qu'un morceau est sélectionné -->
+      @if (pool.addModalTrack()) {
+        <div class="border-t border-gray-700 pt-4 flex flex-col gap-3">
+          <div class="flex flex-col gap-0.5">
+            <p class="font-semibold text-white text-sm">{{ pool.addModalTrack()!.artist }}</p>
+            <p class="text-xs text-gray-400">{{ pool.addModalTrack()!.title }}</p>
+          </div>
+
+          @if (pool.addModalTrack()!.previewUrl) {
+            <div class="flex items-center gap-4 bg-gray-700 rounded-xl px-4 py-3">
+              <button (click)="pool.toggleModalPreview()"
+                class="w-10 h-10 rounded-full bg-purple-600 hover:bg-purple-700 flex items-center justify-center shrink-0 transition-colors text-white text-base">
+                {{ pool.modalPlaying() ? '⏸' : '▶' }}
+              </button>
+              <div class="flex-1 flex flex-col gap-1">
+                <div class="text-xs text-gray-400">{{ (pool.modalPlaying() ? 'admin.addModal.playing' : 'admin.addModal.preview30s') | translate }}</div>
+                <div class="w-full bg-gray-600 rounded-full h-1">
+                  <div class="bg-purple-500 h-1 rounded-full transition-all" [style.width.%]="pool.modalProgress()"></div>
+                </div>
+              </div>
+            </div>
+          } @else {
+            <div class="bg-gray-700 rounded-xl px-4 py-3 text-xs text-red-400 text-center">
+              {{ 'admin.addModal.noPreview' | translate }}
+            </div>
+          }
+
+          @if (pool.addToPoolStatus() === 'success') {
+            <p class="text-green-400 text-xs text-center">{{ 'admin.addModal.added' | translate }}</p>
+          }
+          @if (pool.addToPoolStatus() === 'error') {
+            <p class="text-red-400 text-xs text-center">{{ 'admin.addModal.addError' | translate }}</p>
+          }
+
+          <div class="flex gap-2">
+            @if (!pool.addModalTrackIdToUpdate()) {
+              <button (click)="pool.addToPoolFromModal(false)"
+                [disabled]="pool.addToPoolStatus() === 'loading'"
+                class="flex-1 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-lg transition-colors">
+                @if (pool.addToPoolStatus() === 'loading') { ... } @else { {{ 'admin.addModal.addTrack' | translate }} }
+              </button>
+            }
+            <button (click)="pool.addToPoolFromModal(true)"
+              [disabled]="pool.addToPoolStatus() === 'loading'"
+              class="flex-1 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-lg transition-colors">
+              @if (pool.addToPoolStatus() === 'loading') { ... }
+              @else if (pool.addModalTrackIdToUpdate()) { {{ 'admin.addModal.refreshAndClose' | translate }} }
+              @else { {{ 'admin.addModal.addAndClose' | translate }} }
+            </button>
+          </div>
+        </div>
+      }
+
+    </div>
+  </div>
+}

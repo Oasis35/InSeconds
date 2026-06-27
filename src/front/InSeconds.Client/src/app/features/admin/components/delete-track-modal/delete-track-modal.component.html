@@ -1,0 +1,37 @@
+@if (pool.deleteModalOpen()) {
+  <div class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+    (click)="pool.closeDeleteModal()">
+    <div class="bg-gray-800 rounded-2xl p-6 flex flex-col gap-4 w-full max-w-sm shadow-2xl"
+      (click)="$event.stopPropagation()">
+      <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wide">{{ 'admin.deleteModal.title' | translate }}</h2>
+
+      @if (pool.deleteModalTracks().length === 1) {
+        <p class="text-sm text-gray-300">
+          {{ 'admin.deleteModal.single' | translate: { track: pool.deleteModalTracks()[0].artist + ' — ' + pool.deleteModalTracks()[0].title } }}
+        </p>
+      } @else {
+        <p class="text-sm text-gray-300">{{ 'admin.deleteModal.multiple' | translate: { count: pool.deleteModalTracks().length } }}</p>
+        <ul class="text-xs text-gray-400 flex flex-col gap-0.5 max-h-36 overflow-y-auto bg-gray-700 rounded-lg p-3">
+          @for (t of pool.deleteModalTracks(); track t.id) {
+            <li>{{ t.artist }} — {{ t.title }}</li>
+          }
+        </ul>
+      }
+
+      @if (pool.deleteStatus() === 'error') {
+        <p class="text-red-400 text-xs">{{ 'admin.deleteModal.error' | translate }}</p>
+      }
+
+      <div class="flex gap-2 pt-1">
+        <button (click)="pool.closeDeleteModal()"
+          class="flex-1 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium py-2.5 rounded-lg transition-colors">
+          {{ 'admin.deleteModal.cancel' | translate }}
+        </button>
+        <button (click)="pool.confirmDelete()" [disabled]="pool.deleteStatus() === 'loading'"
+          class="flex-1 bg-red-700 hover:bg-red-600 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-lg transition-colors">
+          @if (pool.deleteStatus() === 'loading') { {{ 'admin.deleteModal.deleting' | translate }} } @else { {{ 'admin.deleteModal.delete' | translate }} }
+        </button>
+      </div>
+    </div>
+  </div>
+}

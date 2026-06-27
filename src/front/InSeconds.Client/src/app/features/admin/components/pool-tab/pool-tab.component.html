@@ -1,0 +1,151 @@
+<div class="flex flex-col gap-4 w-full max-w-2xl">
+
+  <!-- Barre d'outils -->
+  <div class="flex items-center justify-between gap-3">
+    @if (pool.selectedTrackIds().size > 0) {
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-gray-300">{{ 'admin.pool.selected' | translate: { count: pool.selectedTrackIds().size } }}</span>
+        <button (click)="pool.clearSelection()" class="text-xs text-gray-400 hover:text-white transition-colors">{{ 'admin.pool.deselectAll' | translate }}</button>
+        <button (click)="pool.openDeleteModal(null)"
+          class="bg-red-700 hover:bg-red-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors">
+          {{ 'admin.pool.delete' | translate: { count: pool.selectedTrackIds().size } }}
+        </button>
+      </div>
+    } @else {
+      <span class="text-xs text-gray-500">
+        {{ 'admin.pool.availableUsed' | translate: { available: pool.poolTracks().available.length, used: pool.poolTracks().used.length } }}
+      </span>
+    }
+    <button (click)="pool.openAddModal(null)"
+      class="bg-gray-700 hover:bg-gray-600 border border-gray-600 text-gray-200 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 shrink-0">
+      {{ 'admin.pool.add' | translate }}
+    </button>
+  </div>
+
+  <!-- Filtres -->
+  <div class="flex flex-wrap items-center gap-2">
+    <input type="text" [value]="pool.poolFilterText()" (input)="pool.setPoolFilter($any($event.target).value)"
+      [placeholder]="'admin.pool.searchPlaceholder' | translate"
+      class="flex-1 min-w-36 bg-gray-800 text-white text-sm rounded-lg px-3 py-1.5 outline-none focus:ring-1 focus:ring-purple-500 placeholder-gray-600" />
+    <select [value]="pool.poolFilterPreview()" (change)="pool.setPoolFilterPreview($any($event.target).value)"
+      class="bg-gray-800 text-sm text-gray-300 rounded-lg px-3 py-1.5 outline-none focus:ring-1 focus:ring-purple-500 cursor-pointer">
+      <option value="all">{{ 'admin.pool.allPreviews' | translate }}</option>
+      <option value="ok">{{ 'admin.pool.previewOk' | translate }}</option>
+      <option value="missing">{{ 'admin.pool.previewMissing' | translate }}</option>
+    </select>
+    <select [value]="pool.poolFilterStatus()" (change)="pool.setPoolFilterStatus($any($event.target).value)"
+      class="bg-gray-800 text-sm text-gray-300 rounded-lg px-3 py-1.5 outline-none focus:ring-1 focus:ring-purple-500 cursor-pointer">
+      <option value="all">{{ 'admin.pool.allStatuses' | translate }}</option>
+      <option value="available">{{ 'admin.pool.available' | translate }}</option>
+      <option value="used">{{ 'admin.pool.used' | translate }}</option>
+    </select>
+    @if (pool.poolFilterText() || pool.poolFilterStatus() !== 'all' || pool.poolFilterPreview() !== 'all') {
+      <button (click)="pool.setPoolFilter(''); pool.setPoolFilterStatus('all'); pool.setPoolFilterPreview('all')"
+        class="text-xs text-gray-500 hover:text-white transition-colors px-1">
+        {{ 'admin.pool.resetFilters' | translate }}
+      </button>
+    }
+  </div>
+
+  <!-- Tableau unique -->
+  <div class="bg-gray-800 rounded-xl flex flex-col overflow-hidden">
+    @if (pool.poolTracksLoading()) {
+      <p class="text-gray-500 text-sm p-5">{{ 'admin.pool.checkingPreviews' | translate }}</p>
+    } @else if (pool.poolTracks().available.length === 0 && pool.poolTracks().used.length === 0) {
+      <p class="text-gray-500 text-sm p-5">{{ 'admin.pool.empty' | translate }}</p>
+    } @else {
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-700 text-left text-xs text-gray-500 uppercase tracking-wide">
+              <th class="pl-4 pr-2 py-2.5 w-8"></th>
+              <th class="px-3 py-2.5">{{ 'admin.pool.colArtist' | translate }}</th>
+              <th class="px-3 py-2.5">{{ 'admin.pool.colTitle' | translate }}</th>
+              <th class="px-3 py-2.5 w-28">{{ 'admin.pool.colPreview' | translate }}</th>
+              <th class="px-3 py-2.5 w-24">{{ 'admin.pool.colStatus' | translate }}</th>
+              <th class="pl-3 pr-4 py-2.5 w-32 text-right">{{ 'admin.pool.colActions' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-700/50">
+            @for (t of pool.pagedAllTracks(); track t.id) {
+              @let isUsed = !t.isAvailable;
+              <tr class="hover:bg-gray-700/30 transition-colors"
+                [class.opacity-50]="isUsed"
+                [class.bg-purple-900\/20]="pool.selectedTrackIds().has(t.id)">
+                <td class="pl-4 pr-2 py-2.5">
+                  @if (!isUsed) {
+                    <input type="checkbox" [checked]="pool.selectedTrackIds().has(t.id)"
+                      (change)="pool.toggleSelection(t.id)"
+                      class="accent-purple-500 w-4 h-4 cursor-pointer" />
+                  }
+                </td>
+                <td class="px-3 py-2.5 font-medium text-white max-w-[130px] truncate">{{ t.artist }}</td>
+                <td class="px-3 py-2.5 text-gray-400 max-w-[150px] truncate">{{ t.title }}</td>
+                <td class="px-3 py-2.5">
+                  @if (isUsed) {
+                    <span class="text-xs text-gray-600">—</span>
+                  } @else if (t.hasPreview === true) {
+                    <span class="inline-flex items-center gap-1 text-xs font-medium text-green-400">
+                      <span class="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0"></span> {{ 'admin.pool.ok' | translate }}
+                    </span>
+                  } @else if (t.hasPreview === false) {
+                    <span class="inline-flex items-center gap-1 text-xs font-medium text-red-400">
+                      <span class="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0"></span> {{ 'admin.pool.previewMissing' | translate }}
+                    </span>
+                  }
+                </td>
+                <td class="px-3 py-2.5">
+                  @if (isUsed) {
+                    <span class="text-xs text-gray-500 bg-gray-700 px-2 py-0.5 rounded-full">{{ 'admin.pool.used' | translate }}</span>
+                  } @else {
+                    <span class="text-xs text-purple-400 bg-purple-900/40 px-2 py-0.5 rounded-full">{{ 'admin.pool.available' | translate }}</span>
+                  }
+                </td>
+                <td class="pl-3 pr-4 py-2.5">
+                  @if (!isUsed) {
+                    <div class="flex items-center justify-end gap-2">
+                      @if (t.hasPreview === false) {
+                        <button (click)="pool.openAddModal(null, t.id, t.artist + ' ' + t.title)"
+                          class="text-xs text-yellow-400 hover:text-yellow-300 border border-yellow-800 hover:border-yellow-600 px-2 py-1 rounded transition-colors"
+                          [title]="'admin.pool.refreshTitle' | translate">{{ 'admin.pool.refresh' | translate }}</button>
+                      }
+                      <button (click)="pool.openDeleteModal(t)"
+                        class="text-xs text-gray-500 hover:text-red-400 border border-gray-700 hover:border-red-700 px-2 py-1 rounded transition-colors"
+                        [title]="'admin.pool.deleteTitle' | translate">🗑</button>
+                    </div>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex items-center justify-between gap-2 px-4 py-3 border-t border-gray-700">
+        <span class="text-xs text-gray-500">
+          {{ pool.filteredTracks().length }}
+          @if (pool.filteredTracks().length !== pool.allTracks().length) { / {{ pool.allTracks().length }} }
+          {{ 'admin.pool.tracksCount' | translate }}
+          @if (pool.allTotalPages() > 1) { — {{ 'admin.pool.page' | translate: { current: pool.allTracksPage() + 1, total: pool.allTotalPages() } }} }
+        </span>
+        @if (pool.allTotalPages() > 1) {
+          <div class="flex items-center gap-1">
+            <button (click)="pool.allTracksPage.set(pool.allTracksPage() - 1)" [disabled]="pool.allTracksPage() === 0"
+              class="px-2.5 py-1 text-xs bg-gray-700 hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed rounded transition-colors">
+              ←
+            </button>
+            <button (click)="pool.allTracksPage.set(pool.allTracksPage() + 1)" [disabled]="pool.allTracksPage() >= pool.allTotalPages() - 1"
+              class="px-2.5 py-1 text-xs bg-gray-700 hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed rounded transition-colors">
+              →
+            </button>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+</div>
+
+<app-delete-track-modal />
+<app-add-track-modal />
