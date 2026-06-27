@@ -1,4 +1,4 @@
-<div class="bg-gray-800 rounded-xl p-8 flex flex-col items-center gap-6 w-full max-w-sm">
+<div class="bg-gray-800 rounded-xl p-8 flex flex-col items-center gap-6 w-full max-w-md">
   <h2 class="text-lg font-semibold">{{ 'admin.login' | translate }}</h2>
   <input type="password" [(ngModel)]="password" [placeholder]="'admin.passwordPlaceholder' | translate"
     (keydown.enter)="login()"
@@ -11,4 +11,4 @@
     <p class="text-red-400 text-sm">{{ 'admin.wrongPassword' | translate }}</p>
   }
 </div>
-<a routerLink="/" class="text-sm text-gray-500 hover:text-gray-300 transition-colors">{{ 'admin.backToGame' | translate }}</a>
+<a routerLink="/" class="text-sm text-gray-500 hover:text-gray-300 transition-colors text-center w-full block mt-4">{{ 'admin.backToGame' | translate }}</a>

@@ -84,7 +84,7 @@
               class="flex-1 flex flex-col items-center group relative"
               [title]="stats.toIso(day.date) + ' : ' + day.playerCount + ' joueur(s)'">
               <div class="w-full rounded-sm transition-all"
-                [class]="stats.isBarSelected(day.date) ? 'bg-purple-400' : 'bg-purple-700 group-hover:bg-purple-500'"
+                [class]="stats.isBarSelected(day.date) ? 'bg-purple-400' : (day.playerCount === 0 ? 'bg-gray-700 group-hover:bg-gray-600' : 'bg-purple-700 group-hover:bg-purple-500')"
                 [style.height]="stats.activityBarHeightPx(day.playerCount)">
               </div>
             </button>

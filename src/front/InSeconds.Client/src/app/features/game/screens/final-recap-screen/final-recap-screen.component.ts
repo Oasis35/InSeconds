@@ -1,4 +1,4 @@
-import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
+import { Component, input, output, signal, ChangeDetectionStrategy } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ShareButtonComponent } from '../../../../shared/share-button/share-button.component';
 
@@ -27,5 +27,8 @@ export class FinalRecapScreenComponent {
   readonly displayedScore = input.required<number>();
   readonly shareCopied = input(false);
   readonly canShare = input(true);
+  readonly countdown = input('');
   readonly share = output<void>();
+
+  readonly showTrackDetails = signal(false);
 }

@@ -214,6 +214,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
       this.gameState.set('done');
       this.displayedTotalScore.set(0);
       countUp(this.totalScore(), v => this.displayedTotalScore.set(v), 1000);
+      this.startCountdown();
     } else {
       this.currentIndex.set(next);
     }

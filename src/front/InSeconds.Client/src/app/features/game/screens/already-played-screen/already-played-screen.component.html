@@ -1,4 +1,4 @@
-<div class="screen-enter flex-1 flex flex-col items-center gap-7 text-center px-2 pt-4">
+<div class="screen-enter flex-1 flex flex-col gap-7 text-center px-2 pt-4">
 
   @if (abandoned()) {
     <!-- Partie abandonnée — message simple -->
@@ -45,11 +45,18 @@
           </div>
         </div>
 
+        <!-- Bouton partage -->
+        @if (s.yourScore != null) {
+          <div class="px-4 py-4" style="border-top:1px solid var(--border-medium)">
+            <app-share-button [copied]="shareCopied()" (share)="share.emit()" />
+          </div>
+        }
+
         <!-- Accordion morceaux -->
         @if (s.tracks.length) {
           <button (click)="showTrackDetails.set(!showTrackDetails())"
                   class="w-full flex items-center justify-center gap-2 py-3.5 text-xs font-semibold tracking-wide uppercase transition-colors hover:text-slate-400"
-                  style="color:var(--text-faint)">
+                  style="color:var(--text-faint);border-top:1px solid var(--border-medium)">
             <span>{{ (showTrackDetails() ? 'alreadyPlayed.hideTracks' : 'alreadyPlayed.showTracks') | translate }}</span>
             <span>{{ showTrackDetails() ? '▲' : '▼' }}</span>
           </button>
@@ -85,10 +92,6 @@
         }
       </div>
 
-      <!-- Bouton partage -->
-      @if (s.yourScore != null) {
-        <app-share-button [copied]="shareCopied()" (share)="share.emit()" />
-      }
     }
   }
 </div>

@@ -101,10 +101,10 @@
           [displayedScore]="displayedTotalScore()"
           [shareCopied]="shareCopied()"
           [canShare]="results().length >= tracks().length"
+          [countdown]="countdown()"
           (share)="share()" />
       }
 
-      <app-game-footer />
-
     </main>
+    <app-game-footer class="mt-auto" />
     </div>

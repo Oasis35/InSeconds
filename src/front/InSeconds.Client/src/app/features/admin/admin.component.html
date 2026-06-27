@@ -38,15 +38,17 @@
       </button>
     </div>
 
-    @if (activeTab() === 'dashboard') {
-      <app-dashboard-tab />
-    } @else if (activeTab() === 'pool') {
-      <app-pool-tab />
-    } @else if (activeTab() === 'defis') {
-      <app-challenges-tab />
-    } @else if (activeTab() === 'actions') {
-      <app-actions-tab />
-    }
+    <div class="w-full max-w-2xl">
+      @if (activeTab() === 'dashboard') {
+        <app-dashboard-tab />
+      } @else if (activeTab() === 'pool') {
+        <app-pool-tab />
+      } @else if (activeTab() === 'defis') {
+        <app-challenges-tab />
+      } @else if (activeTab() === 'actions') {
+        <app-actions-tab />
+      }
+    </div>
 
     <!-- Déconnexion -->
     <div class="pt-2">
