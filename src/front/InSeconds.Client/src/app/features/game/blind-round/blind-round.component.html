@@ -101,6 +101,7 @@
               [(ngModel)]="searchQuery"
               name="search"
               [placeholder]="'blindRound.placeholder' | translate"
+              [attr.aria-label]="'blindRound.placeholder' | translate"
               autocomplete="off"
               (ngModelChange)="onQueryChange($event)"
               (blur)="onBlur()"

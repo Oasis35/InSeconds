@@ -35,7 +35,7 @@ export class ConfirmSheetComponent {
   readonly cancelStyle = input('background:var(--bg-surface);color:var(--text-slate);border:1px solid var(--border-subtle)');
 
   readonly confirm = output<void>();
-  readonly cancel = output<void>();
+  readonly cancelled = output<void>();
 
   protected toneStyle(): ToneStyle {
     return TONES[this.tone()];

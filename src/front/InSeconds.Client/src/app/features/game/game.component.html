@@ -20,7 +20,7 @@
 
       <!-- Accueil -->
       @if (gameState() === 'welcome') {
-        <app-welcome-screen [trackCount]="tracks().length" (start)="startPlaying()" />
+        <app-welcome-screen [trackCount]="tracks().length" (startGame)="startPlaying()" />
       }
 
       <!-- Reprise de partie en cours -->
@@ -29,7 +29,7 @@
           [completedCount]="resumeCompletedAnswers().length"
           [trackCount]="tracks().length"
           [abandonLoading]="abandonLoading()"
-          (resume)="resumePlaying()"
+          (resumeGame)="resumePlaying()"
           (abandon)="confirmAbandon()" />
       }
 
@@ -43,7 +43,7 @@
           [cancelLabel]="'abandonSheet.cancel' | translate"
           [loading]="abandonLoading()"
           (confirm)="confirmAbandon()"
-          (cancel)="showAbandonConfirm.set(false)" />
+          (cancelled)="showAbandonConfirm.set(false)" />
       }
 
       <!-- Confirmation quitter la page en cours de partie -->
@@ -57,7 +57,7 @@
           [cancelLabel]="'leaveSheet.cancel' | translate"
           cancelStyle="background:var(--bg-primary);color:#fff"
           (confirm)="confirmLeave()"
-          (cancel)="cancelLeave()" />
+          (cancelled)="cancelLeave()" />
       }
 
       <!-- Pas de défi aujourd'hui -->

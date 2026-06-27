@@ -9,5 +9,5 @@ import { TranslatePipe } from '@ngx-translate/core';
 })
 export class WelcomeScreenComponent {
   readonly trackCount = input.required<number>();
-  readonly start = output<void>();
+  readonly startGame = output<void>();
 }

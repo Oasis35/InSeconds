@@ -17,7 +17,7 @@ export class AdminStatsService {
   constructor() {
     // Synchronise le mois affiché avec les mois réellement disponibles.
     effect(() => {
-      const months = [...new Set([...this.challengeMonths(), ...this.challengeListMonths()])].sort().reverse();
+      const months = [...new Set([...this.challengeMonths(), ...this.challengeListMonths()])].sort((a, b) => b.localeCompare(a));
       if (months.length > 0 && !months.includes(this.challengeMonth())) {
         this.challengeMonth.set(months[0]);
       }
@@ -31,13 +31,13 @@ export class AdminStatsService {
     Math.max(0, ...(this.adminStats()?.dailyActivity ?? []).map(d => d.playerCount)));
 
   readonly challengeListMonths = computed(() =>
-    [...new Set(this.challenges().map(c => c.date.slice(0, 7)))].sort().reverse());
+    [...new Set(this.challenges().map(c => c.date.slice(0, 7)))].sort((a, b) => b.localeCompare(a)));
 
   readonly challengesListForMonth = computed(() =>
     this.challenges().filter(c => c.date.slice(0, 7) === this.challengeMonth()));
 
   readonly challengeMonths = computed(() =>
-    [...new Set(this.adminStats()?.challenges.map(c => new Date(c.date).toISOString().slice(0, 7)) ?? [])].sort().reverse());
+    [...new Set(this.adminStats()?.challenges.map(c => new Date(c.date).toISOString().slice(0, 7)) ?? [])].sort((a, b) => b.localeCompare(a)));
 
   readonly challengesForMonth = computed(() =>
     (this.adminStats()?.challenges ?? []).filter(c => new Date(c.date).toISOString().slice(0, 7) === this.challengeMonth()));

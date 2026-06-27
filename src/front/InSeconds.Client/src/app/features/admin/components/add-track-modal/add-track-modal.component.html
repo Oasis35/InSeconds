@@ -1,8 +1,11 @@
 @if (pool.addModalOpen()) {
   <div class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
-    (click)="pool.closeAddModal()">
+    role="button" tabindex="0"
+    (click)="pool.closeAddModal()"
+    (keydown.escape)="pool.closeAddModal()">
     <div class="bg-gray-800 rounded-2xl p-6 flex flex-col gap-4 w-full max-w-md shadow-2xl"
-      (click)="$event.stopPropagation()">
+      (click)="$event.stopPropagation()"
+      (keydown)="$event.stopPropagation()">
 
       <!-- En-tête -->
       <div class="flex items-center justify-between gap-3">
@@ -13,6 +16,7 @@
       <!-- Recherche -->
       <input type="text" [ngModel]="pool.poolSearchQuery()" (ngModelChange)="pool.onPoolSearchChange($event)"
         [placeholder]="'admin.addModal.searchPlaceholder' | translate"
+        [attr.aria-label]="'admin.addModal.searchPlaceholder' | translate"
         class="bg-gray-700 text-white rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-purple-500 text-sm" />
       @if (pool.poolSearchLoading()) {
         <p class="text-gray-500 text-xs -mt-2">{{ 'admin.addModal.searching' | translate }}</p>
@@ -20,7 +24,7 @@
       @if (pool.poolSearchResults().length > 0) {
         <ul class="bg-gray-700 rounded-lg divide-y divide-gray-600 max-h-44 overflow-y-auto">
           @for (track of pool.poolSearchResults(); track track.deezerTrackId) {
-            <li (click)="pool.selectModalTrack(track)"
+            <li (click)="pool.selectModalTrack(track)" (keydown.enter)="pool.selectModalTrack(track)" tabindex="0"
               [class]="pool.addModalTrack()?.deezerTrackId === track.deezerTrackId
                 ? 'px-4 py-2.5 flex justify-between items-center text-sm bg-gray-600 cursor-pointer'
                 : 'px-4 py-2.5 flex justify-between items-center text-sm hover:bg-gray-600 cursor-pointer'">

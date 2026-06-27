@@ -11,7 +11,7 @@ export class ResumeScreenComponent {
   readonly completedCount = input.required<number>();
   readonly trackCount = input.required<number>();
   readonly abandonLoading = input(false);
-  readonly resume = output<void>();
+  readonly resumeGame = output<void>();
   readonly abandon = output<void>();
 
   protected readonly showAbandonConfirm = signal(false);

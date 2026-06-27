@@ -155,9 +155,9 @@ export class AdminPoolService {
     this.addToPoolStatus.set('loading');
 
     const trackIdToUpdate = this.addModalTrackIdToUpdate();
-    const req$ = trackIdToUpdate !== null
-      ? this.api.updateTrack(trackIdToUpdate, track.deezerTrackId)
-      : this.api.addTrack(track.deezerTrackId);
+    const req$ = trackIdToUpdate === null
+      ? this.api.addTrack(track.deezerTrackId)
+      : this.api.updateTrack(trackIdToUpdate, track.deezerTrackId);
 
     req$.subscribe({
       next: () => {
