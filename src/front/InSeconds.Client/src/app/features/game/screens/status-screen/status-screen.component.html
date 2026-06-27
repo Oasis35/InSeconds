@@ -1,0 +1,11 @@
+<div class="screen-enter flex-1 flex flex-col items-center justify-center gap-6 text-center px-4">
+  <div class="space-y-2">
+    <h2 class="text-xl font-semibold" style="color:var(--text-body)">{{ titleKey() | translate }}</h2>
+    <p class="text-sm" style="color:var(--text-faint);white-space:pre-line">{{ bodyKey() | translate }}</p>
+  </div>
+  <button (click)="retry.emit()"
+    class="px-6 py-3 rounded-xl text-sm font-semibold transition-colors"
+    style="background:var(--bg-inactive);color:var(--text-slate);border:1px solid var(--border-subtle)">
+    {{ 'common.retry' | translate }}
+  </button>
+</div>

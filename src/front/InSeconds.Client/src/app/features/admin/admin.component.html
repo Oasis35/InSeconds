@@ -1,0 +1,61 @@
+<div class="min-h-screen bg-gray-900 text-white flex flex-col items-center p-8 gap-6">
+  <div class="flex flex-col items-center gap-1">
+    <h1 class="text-2xl font-bold tracking-tight">{{ 'admin.title' | translate }}</h1>
+    @if (api.authenticated() && buildTime !== 'unknown') {
+      <p class="text-xs text-gray-500">{{ 'admin.deployedAt' | translate: { date: (buildTime | date:'dd/MM/yyyy à HH:mm') } }}</p>
+    }
+  </div>
+
+  @if (!api.authenticated()) {
+    <app-admin-login />
+  } @else {
+
+    <!-- Onglets -->
+    <div class="flex gap-1 bg-gray-800 p-1 rounded-lg w-full max-w-2xl">
+      <button (click)="activeTab.set('dashboard')"
+        [class]="activeTab() === 'dashboard'
+          ? 'flex-1 py-2 rounded-md text-sm font-medium bg-gray-700 text-white transition-colors'
+          : 'flex-1 py-2 rounded-md text-sm font-medium text-gray-400 hover:text-white transition-colors'">
+        {{ 'admin.tabs.dashboard' | translate }}
+      </button>
+      <button (click)="activeTab.set('pool')"
+        [class]="activeTab() === 'pool'
+          ? 'flex-1 py-2 rounded-md text-sm font-medium bg-gray-700 text-white transition-colors'
+          : 'flex-1 py-2 rounded-md text-sm font-medium text-gray-400 hover:text-white transition-colors'">
+        {{ 'admin.tabs.pool' | translate: { count: pool.poolTracks().available.length + pool.poolTracks().used.length } }}
+      </button>
+      <button (click)="activeTab.set('defis')"
+        [class]="activeTab() === 'defis'
+          ? 'flex-1 py-2 rounded-md text-sm font-medium bg-gray-700 text-white transition-colors'
+          : 'flex-1 py-2 rounded-md text-sm font-medium text-gray-400 hover:text-white transition-colors'">
+        {{ 'admin.tabs.challenges' | translate: { count: stats.challenges().length } }}
+      </button>
+      <button (click)="activeTab.set('actions')"
+        [class]="activeTab() === 'actions'
+          ? 'flex-1 py-2 rounded-md text-sm font-medium bg-gray-700 text-white transition-colors'
+          : 'flex-1 py-2 rounded-md text-sm font-medium text-gray-400 hover:text-white transition-colors'">
+        {{ 'admin.tabs.actions' | translate }}
+      </button>
+    </div>
+
+    <div class="w-full max-w-2xl">
+      @if (activeTab() === 'dashboard') {
+        <app-dashboard-tab />
+      } @else if (activeTab() === 'pool') {
+        <app-pool-tab />
+      } @else if (activeTab() === 'defis') {
+        <app-challenges-tab />
+      } @else if (activeTab() === 'actions') {
+        <app-actions-tab />
+      }
+    </div>
+
+    <!-- Déconnexion -->
+    <div class="pt-2">
+      <button (click)="logout()" class="text-gray-600 hover:text-gray-400 text-xs transition-colors">
+        {{ 'admin.logout' | translate }}
+      </button>
+    </div>
+
+  }
+</div>

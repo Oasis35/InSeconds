@@ -1,5 +1,43 @@
 @use "tailwindcss";
 
+/* ── Palette InSeconds ─────────────────────────────────────────────────── */
+:root {
+  /* Fonds */
+  --bg-page:       #080810;
+  --bg-surface:    #0f0f1a;
+  --bg-surface-2:  #1a1a2e;
+  --bg-inactive:   #1e1e2e;
+  --bg-primary:    #6366f1;
+  --bg-primary-dk: #312e81;
+  --bg-danger:     #ef4444;
+  --bg-warn:       #92400e;
+
+  /* Textes */
+  --text-hi:      #f8fafc;
+  --text-body:    #e2e8f0;
+  --text-muted:   #475569;
+  --text-faint:   #334155;
+  --text-sep:     #1e293b;
+  --text-accent:  #6366f1;
+  --text-streak:  #f59e0b;
+  --text-error:   #fca5a5;
+  --text-hover:   #64748b;
+  --text-slate:   #94a3b8;
+  --text-light:   #cbd5e1;
+  --text-indigo:  #c7d2fe;
+
+  /* Sémantiques dynamiques */
+  --color-success: #34d399;
+  --color-fail:    #f87171;
+  --color-warn:    #fbbf24;
+
+  /* Bordures / overlays */
+  --border-subtle:  rgba(255,255,255,0.06);
+  --border-medium:  rgba(255,255,255,0.07);
+  --border-strong:  rgba(255,255,255,0.08);
+  --overlay-dark:   rgba(0,0,0,0.7);
+}
+
 /* Styles globaux InSeconds — ajoute ici ce qui doit s'appliquer partout. */
 
 @keyframes fade-in {

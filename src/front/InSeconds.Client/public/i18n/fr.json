@@ -1,0 +1,241 @@
+{
+  "common": {
+    "points": "pts",
+    "retry": "Réessayer",
+    "abandon": "Abandonner",
+    "loading": "Chargement du défi…"
+  },
+  "header": {
+    "track": "Piste {{ current }} / {{ total }}"
+  },
+  "welcome": {
+    "title": "Blind Test du jour",
+    "subtitle": "{{ count }} morceaux · écoute & devine",
+    "tagline": "Moins tu écoutes, plus tu scores",
+    "start": "Commencer"
+  },
+  "resume": {
+    "title": "Partie en cours",
+    "progress": "Tu as joué {{ done }} / {{ total }} morceaux.",
+    "question": "Veux-tu reprendre où tu t'étais arrêté ?",
+    "resume": "Reprendre",
+    "warningTitle": "Attention",
+    "warningBody": "En abandonnant, le défi d'aujourd'hui sera considéré comme joué.\nTu ne pourras plus y rejouer avant demain.",
+    "confirmAbandon": "Oui, abandonner",
+    "cancelAbandon": "Non, reprendre"
+  },
+  "abandonSheet": {
+    "title": "Abandonner la partie ?",
+    "body": "Le défi d'aujourd'hui sera considéré comme joué.\nTu ne pourras plus y rejouer avant demain.",
+    "confirm": "Oui, abandonner",
+    "cancel": "Continuer"
+  },
+  "leaveSheet": {
+    "title": "Partie en cours",
+    "body": "Ta partie n'est pas terminée.\nTu pourras la reprendre demain, mais le défi sera perdu si tu ne la termines pas aujourd'hui.",
+    "confirm": "Quitter quand même",
+    "cancel": "Continuer à jouer"
+  },
+  "noChallenge": {
+    "title": "Pas de défi aujourd'hui",
+    "body": "Le défi n'a pas encore été généré.\nRéessaie dans quelques minutes."
+  },
+  "error": {
+    "title": "Impossible de charger le défi",
+    "body": "Le serveur est peut-être indisponible.\nRéessaie dans quelques secondes."
+  },
+  "alreadyPlayed": {
+    "abandonedTitle": "Tu as abandonné le défi aujourd'hui",
+    "abandonedBody": "Reviens demain pour un nouveau défi.",
+    "nextChallengeIn": "Prochain défi dans",
+    "title": "Déjà joué aujourd'hui",
+    "yourScore": "Ton score",
+    "median": "Médiane",
+    "medianToday": "pts aujourd'hui",
+    "showTracks": "Voir les morceaux",
+    "hideTracks": "Masquer",
+    "coverAlt": "Pochette",
+    "failedPercent": "{{ percent }}% ratés",
+    "averageSeconds": "· moy. {{ seconds }}s"
+  },
+  "share": {
+    "button": "🔗 Partager mon score",
+    "copied": "✓ Copié !",
+    "hint": "Copie un résumé en emojis dans le presse-papier",
+    "title": "InSeconds 🎵 {{ date }}",
+    "score": "🏆 {{ score }} pts"
+  },
+  "done": {
+    "finalScore": "Score final",
+    "points": "points",
+    "artist": "Artiste",
+    "title": "Titre",
+    "listenOnDeezer": "Écouter sur Deezer",
+    "comeBack": "Reviens demain pour un nouveau défi"
+  },
+  "footer": {
+    "admin": "Admin",
+    "source": "Voir le code source",
+    "profile": "Mon profil"
+  },
+  "blindRound": {
+    "howManySeconds": "Combien de secondes veux-tu écouter ?",
+    "scorePts": "{{ score }} pts",
+    "noPreview": "Aperçu non disponible pour ce morceau.",
+    "skip": "Passer (0 pts)",
+    "replay": "↺ {{ seconds }}s",
+    "listenUpTo": "▶ jusqu'à {{ seconds }}s",
+    "placeholder": "Artiste — Titre",
+    "emptyConfirm": "Tu n'as rien saisi. Valider quand même ?",
+    "cancel": "Annuler",
+    "submitAnyway": "Valider quand même",
+    "validate": "Valider",
+    "coverAlt": "Pochette",
+    "artist": "Artiste",
+    "title": "Titre",
+    "correctAnswer": "Bonne réponse",
+    "points": "pts",
+    "yourTime": "Ton temps :",
+    "average": "Moy. :",
+    "notFound": "Pas trouvé :",
+    "networkError": "Erreur réseau — la réponse n'a pas pu être enregistrée.",
+    "seeResult": "Voir le résultat",
+    "nextTrack": "Piste suivante →"
+  },
+  "notFound": {
+    "title": "Page introuvable",
+    "body": "Cette page n'existe pas ou a été déplacée.",
+    "back": "Retour au jeu"
+  },
+  "serviceDown": {
+    "title": "Service indisponible",
+    "body": "L'application revient dans un instant. Cette page se rafraîchira toute seule dès que le service sera de retour.",
+    "reconnecting": "Reconnexion en cours…"
+  },
+  "admin": {
+    "title": "Admin",
+    "deployedAt": "Déployé le {{ date }}",
+    "login": "Connexion",
+    "passwordPlaceholder": "Mot de passe admin",
+    "loginButton": "Se connecter",
+    "loggingIn": "Connexion...",
+    "wrongPassword": "Mot de passe incorrect.",
+    "backToGame": "Retour au jeu",
+    "logout": "Se déconnecter",
+    "tabs": {
+      "dashboard": "Dashboard",
+      "pool": "Pool ({{ count }})",
+      "challenges": "Défis ({{ count }})",
+      "actions": "Actions"
+    },
+    "dashboard": {
+      "loading": "Chargement des stats...",
+      "today": "Aujourd'hui",
+      "noChallengeForDay": "Aucun défi pour ce jour.",
+      "kpiCompleted": "Complétés",
+      "players": "joueurs",
+      "player": "joueur",
+      "kpiAbandoned": "Abandons",
+      "abandonedToday": "abandonnés",
+      "abandonedPending": "dont pending",
+      "kpiCompletion": "Complétion",
+      "sessions": "sessions",
+      "session": "session",
+      "noneComplete": "aucune complète",
+      "kpiMedian": "Score médian",
+      "points": "pts",
+      "activity30d": "Activité — 30 jours",
+      "total": "Total",
+      "peak": "Pic",
+      "perDay": "/j",
+      "noCompletedInPeriod": "Aucune partie complétée sur cette période.",
+      "playersTitle": "Joueurs",
+      "guests": "Guests",
+      "registered": "Inscrits",
+      "active7d": "Actifs 7j",
+      "active30d": "Actifs 30j",
+      "statsPerChallenge": "Stats par défi",
+      "noChallenge": "Aucun défi.",
+      "noChallengeThisMonth": "Aucun défi ce mois.",
+      "abandon": "abandon",
+      "abandons": "abandons",
+      "median": "Médiane",
+      "min": "Min",
+      "avg": "Moy.",
+      "max": "Max",
+      "artist": "Artiste",
+      "title": "Titre",
+      "avgListen": "Écoute moy."
+    },
+    "pool": {
+      "selected": "{{ count }} sélectionné(s)",
+      "deselectAll": "Tout déselectionner",
+      "delete": "Supprimer ({{ count }})",
+      "availableUsed": "{{ available }} disponible(s) · {{ used }} utilisé(s)",
+      "add": "+ Ajouter",
+      "searchPlaceholder": "Rechercher artiste ou titre...",
+      "allPreviews": "Toutes les previews",
+      "previewOk": "Preview OK",
+      "previewMissing": "Manquante",
+      "allStatuses": "Tous les statuts",
+      "available": "Disponible",
+      "used": "Utilisé",
+      "resetFilters": "✕ Réinitialiser",
+      "checkingPreviews": "Vérification des previews...",
+      "empty": "Aucun morceau dans le pool.",
+      "colArtist": "Artiste",
+      "colTitle": "Titre",
+      "colPreview": "Preview",
+      "colStatus": "Statut",
+      "colActions": "Actions",
+      "ok": "OK",
+      "refresh": "↻ Actualiser",
+      "refreshTitle": "Chercher une version avec preview",
+      "deleteTitle": "Supprimer",
+      "tracksCount": "morceau(x)",
+      "page": "page {{ current }}/{{ total }}"
+    },
+    "actions": {
+      "challengeOfDay": "Défi du jour",
+      "generating": "Génération...",
+      "generate": "Générer le défi du jour",
+      "generated": "Défi généré avec succès.",
+      "alreadyGenerated": "Le défi du jour est déjà généré.",
+      "poolInsufficient": "Pool insuffisant : ajoutez des morceaux avec preview.",
+      "generateError": "Erreur lors de la génération.",
+      "gamesOfDay": "Parties du jour",
+      "resetting": "Réinitialisation...",
+      "reset": "Réinitialiser les parties du jour",
+      "resetSuccess": "{{ count }} partie(s) supprimée(s).",
+      "resetError": "Aucun défi trouvé pour aujourd'hui."
+    },
+    "challenges": {
+      "history": "Historique",
+      "noChallenge": "Aucun défi enregistré.",
+      "noChallengeThisMonth": "Aucun défi ce mois."
+    },
+    "deleteModal": {
+      "title": "Confirmer la suppression",
+      "single": "Supprimer {{ track }} du pool ?",
+      "multiple": "Supprimer {{ count }} morceaux du pool ?",
+      "error": "Erreur lors de la suppression.",
+      "cancel": "Annuler",
+      "delete": "Supprimer",
+      "deleting": "Suppression..."
+    },
+    "addModal": {
+      "title": "Ajouter au pool",
+      "searchPlaceholder": "Rechercher sur Deezer...",
+      "searching": "Recherche...",
+      "choose": "Choisir",
+      "playing": "Lecture en cours...",
+      "preview30s": "Preview 30s",
+      "noPreview": "Aucune preview disponible pour ce morceau",
+      "added": "Morceau ajouté au pool.",
+      "addError": "Impossible d'ajouter ce morceau.",
+      "addTrack": "Ajouter",
+      "refreshAndClose": "Actualiser et fermer",
+      "addAndClose": "Ajouter et fermer"
+    }
+  }
+}

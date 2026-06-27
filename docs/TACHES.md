@@ -79,6 +79,11 @@
 - [x] `ConfirmSheetComponent` (`shared/confirm-sheet/`) — bottom-sheet de confirmation réutilisable, mutualise les modales "abandonner" et "quitter"
 - [x] Polish UX blind round — loading sur "Valider" (`isSubmitting`), bouton `✕` d'effacement, tooltip points au survol des paliers, score en count-up animé, toast d'erreur réseau (4s)
 - [x] Animations d'écran — keyframes `fade-in`/`slide-up`, classe `.screen-enter` sur chaque état
+- [x] **i18n FR/EN** — ngx-translate v18, `LanguageService`, fichiers `public/i18n/{fr,en}.json`, `TranslatePipe` dans tous les composants, E2E force `'fr'` via `addInitScript`
+- [x] **Refacto `game.component`** — découpé en `GameHeaderComponent` + `GameFooterComponent` + 5 screens standalone (`welcome-screen`, `resume-screen`, `status-screen`, `already-played-screen`, `final-recap-screen`), chaque composant dans son dossier avec `.html` externe
+- [x] **Refacto `admin.component`** — shell 42 lignes + 4 services dédiés (`AdminApiService`, `AdminStatsService`, `AdminPoolService`, `AdminActionsService`) + 7 sous-composants (`admin-login`, `dashboard-tab`, `pool-tab`, `challenges-tab`, `actions-tab`, `add-track-modal`, `delete-track-modal`)
+- [x] **Palette CSS centralisée** — 35 variables `:root` dans `styles.scss`, plus de hex inline dans les templates, hovers via `hover:` Tailwind
+- [x] **`ShareButtonComponent`** (`shared/share-button/`) — bouton partage réutilisable, mutualisé entre `AlreadyPlayedScreenComponent` et `FinalRecapScreenComponent`
 
 ## ✅ Déploiement
 
@@ -123,7 +128,7 @@
 
 - [ ] Cache Redis pour les preview URLs Deezer (`StackExchange.Redis`, TTL 24h, intercalé dans `StartSession/Handler.cs`)
 - [ ] Smoke tests automatisés post-deploy
-- [ ] Charte graphique / palette de couleurs (`@theme` Tailwind)
+- [ ] Charte graphique / `@theme` Tailwind (palette déjà centralisée en variables CSS `:root`)
 - [ ] Audit accessibilité WCAG 2.1 AA
 - [ ] Vérifier politique d'usage API Deezer (CGU, rate limits)
 - [ ] RGPD : anonymisation au soft-delete (pas juste `IsDeleted=true`)

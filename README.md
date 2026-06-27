@@ -13,6 +13,7 @@
 - Guest mode: play without signing up, no leaderboard
 - Daily streak tracked and displayed on the final recap screen
 - Share your score in Wordle-style emoji format via the clipboard
+- Available in French and English (auto-detected from browser)
 
 ## Quick start
 
@@ -130,7 +131,7 @@ npm run e2e        # headless
 npm run e2e:ui     # interactive Playwright UI
 ```
 
-**36 tests** — 21 game tests (happy path, already-played, abandon, resume, multi-tab sync, no-challenge, share, scoring, anti-cheat min duration lock, leave-confirmation guard, clear-search button) + 15 admin tests (login, pool table with filters, add/delete/refresh track, generate challenge, reset sessions, challenge list).
+**38 tests** — 23 game tests (happy path, already-played, abandon, resume, multi-tab sync, no-challenge, share, scoring, anti-cheat min duration lock, leave-confirmation guard, clear-search button, service-down overlay) + 15 admin tests (login, pool table with filters, add/delete/refresh track, generate challenge, reset sessions, challenge list).
 
 The backend runs in `ASPNETCORE_ENVIRONMENT=Testing` which activates:
 - `FakeDeezerHandler` — returns a local `test-audio.mp3`; tracks with DeezerTrackId >= 9_000_000_000 return an empty preview (5 seed tracks: The Beatles, Pink Floyd, Bob Dylan, Led Zeppelin, Fleetwood Mac) to test the refresh flow

@@ -1,0 +1,37 @@
+<header class="pt-3 pb-6">
+  <div class="flex items-center justify-center relative">
+    <h1 class="text-lg font-semibold tracking-widest uppercase" style="color:var(--text-accent);letter-spacing:0.2em">InSeconds</h1>
+
+    <!-- Streak header (tous les écrans sauf loading / playing) -->
+    @if (showStreak()) {
+      <span class="absolute right-0 flex items-center gap-1 text-xs font-semibold tabular-nums"
+            style="color:var(--text-streak)">
+        🔥 {{ streak() }}
+      </span>
+    }
+
+    <!-- Score en cours de partie (par-dessus streak si playing) -->
+    @if (playing()) {
+      <span class="absolute right-0 text-base font-bold tabular-nums" style="color:var(--text-hi)">
+        {{ totalScore() }} <span style="color:var(--text-faint);font-weight:400;font-size:0.75rem">{{ 'common.points' | translate }}</span>
+      </span>
+    }
+  </div>
+  @if (playing()) {
+    <div class="mt-4 space-y-1.5">
+      <div class="flex justify-between text-xs" style="color:var(--text-faint)">
+        <span>{{ 'header.track' | translate: { current: currentIndex() + 1, total: trackCount() } }}</span>
+        <button (click)="abandon.emit()"
+                class="text-xs transition-colors hover:text-red-400"
+                style="color:var(--text-muted)">
+          {{ 'common.abandon' | translate }}
+        </button>
+      </div>
+      <div class="w-full rounded-full h-px" style="background:var(--bg-inactive)">
+        <div class="h-px rounded-full transition-all duration-500" style="background:var(--bg-primary)"
+          [style.width.%]="(currentIndex() + 1) / trackCount() * 100">
+        </div>
+      </div>
+    </div>
+  }
+</header>

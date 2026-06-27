@@ -13,6 +13,7 @@
 - Mode guest : joue sans créer de compte, hors classement
 - Streak quotidien affiché sur l'écran récap final
 - Partage de score en format emoji Wordle (copie dans le presse-papier)
+- Disponible en français et en anglais (détecté automatiquement depuis le navigateur)
 
 ## Démarrage rapide
 
@@ -130,7 +131,7 @@ npm run e2e        # headless
 npm run e2e:ui     # UI interactive Playwright
 ```
 
-**36 tests** — 21 tests jeu (happy path, déjà joué, abandon, reprise, sync multi-onglets, pas de défi, partage, scoring, paliers bloqués à la reprise anti-triche, confirmation de sortie, bouton ✕ d'effacement) + 15 tests admin (login, tableau pool avec filtres, ajout/suppression/actualisation morceau, générer défi, reset sessions, liste défis).
+**38 tests** — 23 tests jeu (happy path, déjà joué, abandon, reprise, sync multi-onglets, pas de défi, partage, scoring, paliers bloqués à la reprise anti-triche, confirmation de sortie, bouton ✕ d'effacement, overlay "Service indisponible") + 15 tests admin (login, tableau pool avec filtres, ajout/suppression/actualisation morceau, générer défi, reset sessions, liste défis).
 
 Le backend tourne en `ASPNETCORE_ENVIRONMENT=Testing` qui active :
 - `FakeDeezerHandler` — retourne un `test-audio.mp3` local ; les IDs >= 9_000_000_000 retournent une preview vide (5 morceaux seed : The Beatles, Pink Floyd, Bob Dylan, Led Zeppelin, Fleetwood Mac) pour tester le flux "↻ Actualiser"

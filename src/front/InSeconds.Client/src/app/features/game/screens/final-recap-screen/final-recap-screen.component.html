@@ -1,0 +1,88 @@
+<div class="screen-enter flex-1 flex flex-col pt-4 gap-4">
+
+  <!-- Card unique -->
+  <div class="rounded-2xl overflow-hidden" style="background:var(--bg-surface);border:1px solid var(--border-medium)">
+
+    <!-- Score -->
+    <div class="px-6 pt-7 pb-6 text-center">
+      <p class="text-xs font-semibold tracking-widest uppercase mb-3" style="color:var(--text-faint)">{{ 'done.finalScore' | translate }}</p>
+      <p class="font-bold tabular-nums" style="color:var(--text-hi);font-size:4rem;line-height:1;letter-spacing:-0.03em">{{ displayedScore() }}</p>
+      <p class="text-xs mt-2" style="color:var(--text-faint)">{{ 'done.points' | translate }}</p>
+    </div>
+
+    <!-- Compte à rebours -->
+    @if (countdown()) {
+      <div class="px-6 py-5 text-center" style="border-top:1px solid var(--border-medium)">
+        <p class="text-xs font-semibold tracking-widest uppercase mb-1" style="color:var(--text-faint)">{{ 'alreadyPlayed.nextChallengeIn' | translate }}</p>
+        <p class="text-2xl font-bold tabular-nums" style="color:var(--text-body);letter-spacing:0.05em">{{ countdown() }}</p>
+      </div>
+    }
+
+    <!-- Bouton partage -->
+    <div class="px-4 py-4" style="border-top:1px solid var(--border-medium)">
+      <app-share-button [copied]="shareCopied()" [disabled]="!canShare()" (share)="share.emit()" />
+    </div>
+
+    <!-- Accordéon morceaux -->
+    <button (click)="showTrackDetails.set(!showTrackDetails())"
+      class="w-full flex items-center justify-center gap-2 py-3.5 text-xs font-semibold tracking-wide uppercase transition-colors hover:text-slate-400"
+      style="color:var(--text-faint);border-top:1px solid var(--border-medium)">
+      <span>{{ (showTrackDetails() ? 'alreadyPlayed.hideTracks' : 'alreadyPlayed.showTracks') | translate }}</span>
+      <span>{{ showTrackDetails() ? '▲' : '▼' }}</span>
+    </button>
+
+    @if (showTrackDetails()) {
+      <div class="flex flex-col" style="border-top:1px solid var(--border-medium)">
+        @for (r of results(); track r.position) {
+          <div class="flex gap-3 p-3 transition-colors hover:bg-white/[0.02]"
+            style="border-bottom:1px solid rgba(255,255,255,0.04)">
+
+            @if (r.coverUrl) {
+              <img [src]="r.coverUrl" [alt]="'alreadyPlayed.coverAlt' | translate"
+                class="w-12 h-12 rounded-xl object-cover shrink-0" style="opacity:0.9" />
+            } @else {
+              <div class="w-12 h-12 rounded-xl shrink-0" style="background:var(--bg-surface-2)"></div>
+            }
+
+            <div class="flex-1 min-w-0 text-left space-y-1 py-0.5">
+              <div class="flex gap-2.5 text-xs font-bold">
+                <span [style.color]="r.artistCorrect ? 'var(--color-success)' : 'var(--color-fail)'">
+                  {{ r.artistCorrect ? '✓' : '✗' }} {{ 'done.artist' | translate }}
+                </span>
+                <span [style.color]="r.titleCorrect ? 'var(--color-success)' : 'var(--color-fail)'">
+                  {{ r.titleCorrect ? '✓' : '✗' }} {{ 'done.title' | translate }}
+                </span>
+              </div>
+              <p class="text-sm font-medium truncate" style="color:var(--text-body)">
+                {{ r.correctArtist }} — {{ r.correctTitle }}
+              </p>
+              <div class="flex gap-2.5 text-xs" style="color:var(--text-hover)">
+                <span>{{ r.listenedDurationSeconds }}s</span>
+                @if (r.averageSecondsWhenCorrect != null) {
+                  <span>{{ 'alreadyPlayed.averageSeconds' | translate: { seconds: r.averageSecondsWhenCorrect!.toFixed(1) } }}</span>
+                }
+                <span>· {{ 'alreadyPlayed.failedPercent' | translate: { percent: r.failureRatePercent.toFixed(0) } }}</span>
+              </div>
+              <a [href]="'https://www.deezer.com/track/' + r.deezerTrackId"
+                target="_blank" rel="noopener noreferrer"
+                class="inline-flex items-center gap-1 text-xs transition-colors hover:text-slate-400"
+                style="color:var(--text-muted)">
+                <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M2 11h2v1H2zM6 9h2v3H6zM10 7h2v5h-2zM14 5h2v7h-2z" fill="currentColor"/></svg>
+                {{ 'done.listenOnDeezer' | translate }}
+              </a>
+            </div>
+
+            <div class="shrink-0 text-right self-center">
+              <span class="text-lg font-bold" [style.color]="r.score > 0 ? 'var(--color-success)' : 'var(--text-hover)'">
+                +{{ r.score }}
+              </span>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+  </div>
+
+  <p class="text-center text-xs pb-4" style="color:var(--text-muted)">{{ 'done.comeBack' | translate }}</p>
+</div>
