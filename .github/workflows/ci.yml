@@ -166,13 +166,13 @@ jobs:
         working-directory: src/front/InSeconds.Client
         run: npm ci
 
+      - name: Start Angular dev server
+        working-directory: src/front/InSeconds.Client
+        run: npx ng serve --configuration e2e-ci --port 5173 > /tmp/angular.log 2>&1 &
+
       - name: Install Playwright browsers
         working-directory: src/front/InSeconds.Client
         run: npx playwright install --with-deps chromium
-
-      - name: Start Angular dev server
-        working-directory: src/front/InSeconds.Client
-        run: npx ng serve --configuration e2e-ci --port 5173 &
 
       - name: Wait for backend
         run: |
@@ -184,9 +184,9 @@ jobs:
 
       - name: Wait for frontend
         run: |
-          for i in $(seq 1 60); do
+          for i in $(seq 1 120); do
             curl -sf http://localhost:5173 && break
-            echo "Waiting for frontend ($i/60)..."
+            echo "Waiting for frontend ($i/120)..."
             sleep 3
           done
 
@@ -201,6 +201,8 @@ jobs:
         run: |
           echo "=== Backend logs ==="
           cat /tmp/backend.log || true
+          echo "=== Angular logs ==="
+          cat /tmp/angular.log || true
 
       - name: Upload Playwright report
         if: always()
