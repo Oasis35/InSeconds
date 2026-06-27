@@ -211,6 +211,17 @@ Résout ou crée un `Player` guest à partir du cookie HTTP-only signé. `SameSi
 
 `GetPreviewUrlAsync(trackId)` + `SearchTracksAsync(query)`. Extrait le `CoverHash` depuis l'URL Deezer via `ExtractCoverHash()`.
 
+**Résilience** : le `HttpClient` typé est configuré avec `AddStandardResilienceHandler` (`Program.cs`, hors `Testing`) — timeout 4s/tentative, 15s total, retry exponentiel (429/5xx) + circuit breaker. Sans cela, un appel Deezer lent pourrait bloquer `StartSession` jusqu'au timeout `HttpClient` par défaut (100s).
+
+**Gestion d'erreurs** : chaque méthode logge en `Warning` sur échec HTTP ou preview vide, et **re-throw `OperationCanceledException`** (l'annulation n'est jamais transformée en `null`/`[]`). Pas de `catch {}` nu.
+
+## Observabilité
+
+- `GET /health` — liveness. `MapGet` simple renvoyant `{ status, utc }` (JSON). **Format consommé par le badge d'état backend du front** (`app.ts`) : ne pas le changer sans adapter le front.
+- `GET /health/ready` — readiness, `MapHealthChecks` qui sonde la base via `AddDbContextCheck<ApplicationDbContext>` (tag `ready`, renvoie le texte `Healthy`/`Unhealthy`). Northflank peut le sonder pour des redémarrages propres.
+
+Les deux endpoints sont publics (mappés avant `PlayerAuthMiddleware`). Logging structuré (`ILogger`) dans `DeezerClient` et les `BackgroundService` de génération/refresh.
+
 ## Vertical slices implémentées
 
 | Slice | Endpoint | Rôle |

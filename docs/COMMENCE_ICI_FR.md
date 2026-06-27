@@ -91,8 +91,10 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - **Anti-cheat durée min écoutée** : `GameSession.CurrentTrackId` + `GameSession.CurrentTrackMinListenedSeconds` (migration `AddSessionAntiCheat`). Slice `Sessions/UpdateListening` (`PATCH /api/sessions/{id}/listening`) — enregistre la durée max par track à chaque arrêt du timer. À la reprise, les paliers déjà écoutés sont masqués dans `BlindRoundComponent` (computed `durations()` filtre sur `minListenedSeconds`).
 - Pool admin redesigné en tableau paginé (15 lignes/page) avec filtres combinables (texte, statut, preview), onglet "Actions" dédié, modale "↻ Actualiser" pré-remplie pour morceaux sans preview — indicateur preview lu depuis `Track.HasPreview` en DB (stable, plus d'appel Deezer temps réel)
 - Dashboard admin : KPI tiles par jour, sélecteur de jour ← →, barres 30j cliquables avec jours vides à zéro
-- Tests E2E Playwright (28 scénarios : 13 jeu + 15 admin, CI GitHub Actions)
+- Tests E2E Playwright (38 scénarios : 23 jeu + 15 admin, CI GitHub Actions)
 - Tests d'intégration backend (`InSeconds.Api.IntegrationTests`) — Testcontainers.PostgreSql + `WebApplicationFactory<Program>` + Respawn, 73 tests couvrant StartSession, SubmitAnswer, AbandonSession, Stats, AdminStats, SessionEdgeCases (dont UpdateListening), ChallengeGeneration, Admin/Tracks, Admin/Challenges, job CI dédié `integration-tests`
+- **i18n FR/EN** — ngx-translate v18, `LanguageService`, fichiers `public/i18n/{fr,en}.json`
+- **Refacto frontend** — `game.component` découpé en header + footer + 5 screens ; `admin.component` en shell + 4 services + 7 sous-composants ; palette CSS centralisée en variables `:root` ; `ShareButtonComponent` réutilisable
 
 🚧 **À faire** : smoke tests post-deploy, tests mobiles, polish, cache Redis previews Deezer. Voir [`TACHES.md`](TACHES.md).
 

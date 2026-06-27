@@ -1,10 +1,12 @@
 import { Routes } from '@angular/router';
+import { unsavedGameGuard } from './core/guards/unsaved-game.guard';
 
 export const routes: Routes = [
   {
     path: '',
     loadComponent: () =>
       import('./features/game/game.component').then(m => m.GameComponent),
+    canDeactivate: [unsavedGameGuard],
   },
   {
     path: 'blindtest',

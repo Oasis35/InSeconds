@@ -1,0 +1,241 @@
+{
+  "common": {
+    "points": "pts",
+    "retry": "Try again",
+    "abandon": "Give up",
+    "loading": "Loading the challenge…"
+  },
+  "header": {
+    "track": "Track {{ current }} / {{ total }}"
+  },
+  "welcome": {
+    "title": "Today's Blind Test",
+    "subtitle": "{{ count }} tracks · listen & guess",
+    "tagline": "The less you listen, the more you score",
+    "start": "Start"
+  },
+  "resume": {
+    "title": "Game in progress",
+    "progress": "You've played {{ done }} / {{ total }} tracks.",
+    "question": "Do you want to resume where you left off?",
+    "resume": "Resume",
+    "warningTitle": "Warning",
+    "warningBody": "By giving up, today's challenge will be counted as played.\nYou won't be able to play it again until tomorrow.",
+    "confirmAbandon": "Yes, give up",
+    "cancelAbandon": "No, resume"
+  },
+  "abandonSheet": {
+    "title": "Give up the game?",
+    "body": "Today's challenge will be counted as played.\nYou won't be able to play it again until tomorrow.",
+    "confirm": "Yes, give up",
+    "cancel": "Keep playing"
+  },
+  "leaveSheet": {
+    "title": "Game in progress",
+    "body": "Your game isn't finished.\nYou can resume it tomorrow, but the challenge will be lost if you don't finish it today.",
+    "confirm": "Leave anyway",
+    "cancel": "Keep playing"
+  },
+  "noChallenge": {
+    "title": "No challenge today",
+    "body": "The challenge hasn't been generated yet.\nTry again in a few minutes."
+  },
+  "error": {
+    "title": "Couldn't load the challenge",
+    "body": "The server may be unavailable.\nTry again in a few seconds."
+  },
+  "alreadyPlayed": {
+    "abandonedTitle": "You gave up today's challenge",
+    "abandonedBody": "Come back tomorrow for a new challenge.",
+    "nextChallengeIn": "Next challenge in",
+    "title": "Already played today",
+    "yourScore": "Your score",
+    "median": "Median",
+    "medianToday": "pts today",
+    "showTracks": "Show tracks",
+    "hideTracks": "Hide",
+    "coverAlt": "Cover",
+    "failedPercent": "{{ percent }}% missed",
+    "averageSeconds": "· avg. {{ seconds }}s"
+  },
+  "share": {
+    "button": "🔗 Share my score",
+    "copied": "✓ Copied!",
+    "hint": "Copies an emoji summary to the clipboard",
+    "title": "InSeconds 🎵 {{ date }}",
+    "score": "🏆 {{ score }} pts"
+  },
+  "done": {
+    "finalScore": "Final score",
+    "points": "points",
+    "artist": "Artist",
+    "title": "Title",
+    "listenOnDeezer": "Listen on Deezer",
+    "comeBack": "Come back tomorrow for a new challenge"
+  },
+  "footer": {
+    "admin": "Admin",
+    "source": "View source code",
+    "profile": "My profile"
+  },
+  "blindRound": {
+    "howManySeconds": "How many seconds do you want to listen?",
+    "scorePts": "{{ score }} pts",
+    "noPreview": "Preview not available for this track.",
+    "skip": "Skip (0 pts)",
+    "replay": "↺ {{ seconds }}s",
+    "listenUpTo": "▶ up to {{ seconds }}s",
+    "placeholder": "Artist — Title",
+    "emptyConfirm": "You didn't enter anything. Submit anyway?",
+    "cancel": "Cancel",
+    "submitAnyway": "Submit anyway",
+    "validate": "Submit",
+    "coverAlt": "Cover",
+    "artist": "Artist",
+    "title": "Title",
+    "correctAnswer": "Correct answer",
+    "points": "pts",
+    "yourTime": "Your time:",
+    "average": "Avg.:",
+    "notFound": "Missed:",
+    "networkError": "Network error — your answer couldn't be saved.",
+    "seeResult": "See result",
+    "nextTrack": "Next track →"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "This page doesn't exist or has been moved.",
+    "back": "Back to the game"
+  },
+  "serviceDown": {
+    "title": "Service unavailable",
+    "body": "The app will be back in a moment. This page will refresh on its own as soon as the service returns.",
+    "reconnecting": "Reconnecting…"
+  },
+  "admin": {
+    "title": "Admin",
+    "deployedAt": "Deployed {{ date }}",
+    "login": "Login",
+    "passwordPlaceholder": "Admin password",
+    "loginButton": "Sign in",
+    "loggingIn": "Signing in...",
+    "wrongPassword": "Incorrect password.",
+    "backToGame": "Back to the game",
+    "logout": "Sign out",
+    "tabs": {
+      "dashboard": "Dashboard",
+      "pool": "Pool ({{ count }})",
+      "challenges": "Challenges ({{ count }})",
+      "actions": "Actions"
+    },
+    "dashboard": {
+      "loading": "Loading stats...",
+      "today": "Today",
+      "noChallengeForDay": "No challenge for this day.",
+      "kpiCompleted": "Completed",
+      "players": "players",
+      "player": "player",
+      "kpiAbandoned": "Given up",
+      "abandonedToday": "given up",
+      "abandonedPending": "incl. pending",
+      "kpiCompletion": "Completion",
+      "sessions": "sessions",
+      "session": "session",
+      "noneComplete": "none complete",
+      "kpiMedian": "Median score",
+      "points": "pts",
+      "activity30d": "Activity — 30 days",
+      "total": "Total",
+      "peak": "Peak",
+      "perDay": "/day",
+      "noCompletedInPeriod": "No completed game in this period.",
+      "playersTitle": "Players",
+      "guests": "Guests",
+      "registered": "Registered",
+      "active7d": "Active 7d",
+      "active30d": "Active 30d",
+      "statsPerChallenge": "Stats per challenge",
+      "noChallenge": "No challenge.",
+      "noChallengeThisMonth": "No challenge this month.",
+      "abandon": "give-up",
+      "abandons": "give-ups",
+      "median": "Median",
+      "min": "Min",
+      "avg": "Avg.",
+      "max": "Max",
+      "artist": "Artist",
+      "title": "Title",
+      "avgListen": "Avg. listen"
+    },
+    "pool": {
+      "selected": "{{ count }} selected",
+      "deselectAll": "Deselect all",
+      "delete": "Delete ({{ count }})",
+      "availableUsed": "{{ available }} available · {{ used }} used",
+      "add": "+ Add",
+      "searchPlaceholder": "Search artist or title...",
+      "allPreviews": "All previews",
+      "previewOk": "Preview OK",
+      "previewMissing": "Missing",
+      "allStatuses": "All statuses",
+      "available": "Available",
+      "used": "Used",
+      "resetFilters": "✕ Reset",
+      "checkingPreviews": "Checking previews...",
+      "empty": "No track in the pool.",
+      "colArtist": "Artist",
+      "colTitle": "Title",
+      "colPreview": "Preview",
+      "colStatus": "Status",
+      "colActions": "Actions",
+      "ok": "OK",
+      "refresh": "↻ Refresh",
+      "refreshTitle": "Find a version with a preview",
+      "deleteTitle": "Delete",
+      "tracksCount": "track(s)",
+      "page": "page {{ current }}/{{ total }}"
+    },
+    "actions": {
+      "challengeOfDay": "Today's challenge",
+      "generating": "Generating...",
+      "generate": "Generate today's challenge",
+      "generated": "Challenge generated successfully.",
+      "alreadyGenerated": "Today's challenge is already generated.",
+      "poolInsufficient": "Pool insufficient: add tracks with a preview.",
+      "generateError": "Error during generation.",
+      "gamesOfDay": "Today's games",
+      "resetting": "Resetting...",
+      "reset": "Reset today's games",
+      "resetSuccess": "{{ count }} game(s) deleted.",
+      "resetError": "No challenge found for today."
+    },
+    "challenges": {
+      "history": "History",
+      "noChallenge": "No challenge recorded.",
+      "noChallengeThisMonth": "No challenge this month."
+    },
+    "deleteModal": {
+      "title": "Confirm deletion",
+      "single": "Delete {{ track }} from the pool?",
+      "multiple": "Delete {{ count }} tracks from the pool?",
+      "error": "Error during deletion.",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "deleting": "Deleting..."
+    },
+    "addModal": {
+      "title": "Add to pool",
+      "searchPlaceholder": "Search on Deezer...",
+      "searching": "Searching...",
+      "choose": "Choose",
+      "playing": "Now playing...",
+      "preview30s": "30s preview",
+      "noPreview": "No preview available for this track",
+      "added": "Track added to the pool.",
+      "addError": "Couldn't add this track.",
+      "addTrack": "Add",
+      "refreshAndClose": "Refresh and close",
+      "addAndClose": "Add and close"
+    }
+  }
+}

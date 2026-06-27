@@ -13,6 +13,7 @@
 - Mode guest : joue sans créer de compte, hors classement
 - Streak quotidien affiché sur l'écran récap final
 - Partage de score en format emoji Wordle (copie dans le presse-papier)
+- Disponible en français et en anglais (détecté automatiquement depuis le navigateur)
 
 ## Démarrage rapide
 
@@ -51,7 +52,8 @@ Ouvre `http://localhost:5173`.
 | URL | Usage |
 |-----|-------|
 | `http://localhost:5173` | Frontend (serveur de dev Angular) |
-| `http://localhost:5171/health` | Healthcheck de l'API |
+| `http://localhost:5171/health` | Liveness de l'API (l'app répond aux requêtes) |
+| `http://localhost:5171/health/ready` | Readiness de l'API (base de données joignable) — sondé par Northflank |
 | `http://localhost:5171/openapi/v1.json` | Spec OpenAPI (utilisée par NSwag pour la génération du client TS) |
 
 ## Stack
@@ -129,7 +131,7 @@ npm run e2e        # headless
 npm run e2e:ui     # UI interactive Playwright
 ```
 
-**28 tests** — 13 tests jeu (happy path, déjà joué, abandon, reprise, pas de défi, partage, scoring, paliers bloqués à la reprise anti-triche) + 15 tests admin (login, tableau pool avec filtres, ajout/suppression/actualisation morceau, générer défi, reset sessions, liste défis).
+**38 tests** — 23 tests jeu (happy path, déjà joué, abandon, reprise, sync multi-onglets, pas de défi, partage, scoring, paliers bloqués à la reprise anti-triche, confirmation de sortie, bouton ✕ d'effacement, overlay "Service indisponible") + 15 tests admin (login, tableau pool avec filtres, ajout/suppression/actualisation morceau, générer défi, reset sessions, liste défis).
 
 Le backend tourne en `ASPNETCORE_ENVIRONMENT=Testing` qui active :
 - `FakeDeezerHandler` — retourne un `test-audio.mp3` local ; les IDs >= 9_000_000_000 retournent une preview vide (5 morceaux seed : The Beatles, Pink Floyd, Bob Dylan, Led Zeppelin, Fleetwood Mac) pour tester le flux "↻ Actualiser"

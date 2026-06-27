@@ -83,8 +83,8 @@ test.describe('Admin — pool', () => {
     await page.getByRole('button', { name: /Pool/ }).click();
     await admin.addButton().click();
 
-    // Cherche dans la modale
-    const modalSearch = page.getByPlaceholder('Rechercher artiste ou titre...').last();
+    // Cherche dans la modale (placeholder distinct du filtre pool)
+    const modalSearch = page.getByPlaceholder('Rechercher sur Deezer...');
     await modalSearch.fill('E2E Track');
     // FakeDeezerHandler retourne "E2E Track" — attendre le résultat (debounce 300ms + réseau)
     const result = page.getByText('E2E Artist — E2E Track');
@@ -104,7 +104,7 @@ test.describe('Admin — pool', () => {
 
     // Filtre sur un morceau disponible connu
     await admin.poolSearchInput().fill('Sabrina Carpenter');
-    await expect(page.getByRole('cell', { name: 'Sabrina Carpenter' })).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Sabrina Carpenter', exact: true })).toBeVisible();
 
     // Clique sur la corbeille
     await page.getByRole('button', { name: '🗑' }).first().click();
@@ -115,7 +115,7 @@ test.describe('Admin — pool', () => {
     await expect(admin.deleteModal()).not.toBeVisible();
 
     // Le morceau a disparu
-    await expect(page.getByRole('cell', { name: 'Sabrina Carpenter' })).not.toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Sabrina Carpenter', exact: true })).not.toBeVisible();
   });
 
   test('annule une suppression', async ({ page }) => {
@@ -131,7 +131,7 @@ test.describe('Admin — pool', () => {
     await admin.cancelDeleteButton().click();
     await expect(admin.deleteModal()).not.toBeVisible();
     // Le morceau est toujours là
-    await expect(page.getByRole('cell', { name: 'Sabrina Carpenter' })).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Sabrina Carpenter', exact: true })).toBeVisible();
   });
 
   test('actualise un morceau sans preview — modale pré-remplie', async ({ page }) => {
@@ -147,7 +147,7 @@ test.describe('Admin — pool', () => {
     await page.getByRole('button', { name: '↻ Actualiser' }).first().click();
 
     // La modale s'ouvre avec le champ de recherche pré-rempli
-    const modalSearch = page.getByPlaceholder('Rechercher artiste ou titre...').last();
+    const modalSearch = page.getByPlaceholder('Rechercher sur Deezer...');
     await expect(modalSearch).not.toHaveValue('');
   });
 });

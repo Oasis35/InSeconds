@@ -4,6 +4,7 @@ export class BlindRoundPage {
   readonly answerInput: Locator;
   readonly submitButton: Locator;
   readonly confirmSubmitButton: Locator;
+  readonly clearSearchButton: Locator;
   readonly nextButton: Locator;
   readonly roundScore: Locator;
 
@@ -11,6 +12,7 @@ export class BlindRoundPage {
     this.answerInput         = page.getByPlaceholder('Artiste — Titre');
     this.submitButton        = page.getByRole('button', { name: 'Valider' });
     this.confirmSubmitButton = page.getByRole('button', { name: 'Valider quand même' });
+    this.clearSearchButton   = page.getByRole('button', { name: '✕' });
     this.nextButton          = page.getByRole('button', { name: /Piste suivante|Voir le résultat/ });
     // Score affiché dans le résultat du round : "+850 pts"
     this.roundScore          = page.locator('p').filter({ hasText: ' pts' }).last();
@@ -46,8 +48,11 @@ export class BlindRoundPage {
   }
 
   async submit(): Promise<void> {
-    // force: true bypasse la dropdown autocomplete si elle intercepte les pointer events
-    await this.submitButton.click({ force: true });
+    // La suggestion Deezer (réponse asynchrone) peut rouvrir la dropdown autocomplete
+    // par-dessus le bouton Valider et intercepter le clic. On soumet donc le formulaire
+    // au clavier (Entrée dans le champ) : déclenche ngSubmit de façon déterministe, sans
+    // dépendre de la position du bouton ni de l'état de la dropdown.
+    await this.answerInput.press('Enter');
   }
 
   async submitEmpty(): Promise<void> {

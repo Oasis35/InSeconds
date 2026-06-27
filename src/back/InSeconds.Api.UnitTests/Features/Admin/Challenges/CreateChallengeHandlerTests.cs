@@ -10,6 +10,7 @@ using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace InSeconds.Api.UnitTests.Features.Admin.Challenges;
 
@@ -28,13 +29,13 @@ public sealed class CreateChallengeHandlerTests
             {
                 Content = new StringContent(json, Encoding.UTF8, "application/json"),
             });
-        return new DeezerClient(new HttpClient(handler) { BaseAddress = new Uri("https://api.deezer.com") });
+        return new DeezerClient(new HttpClient(handler) { BaseAddress = new Uri("https://api.deezer.com") }, NullLogger<DeezerClient>.Instance);
     }
 
     private static DeezerClient CreateFailingDeezerClient()
     {
         var handler = new FakeHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.NotFound));
-        return new DeezerClient(new HttpClient(handler) { BaseAddress = new Uri("https://api.deezer.com") });
+        return new DeezerClient(new HttpClient(handler) { BaseAddress = new Uri("https://api.deezer.com") }, NullLogger<DeezerClient>.Instance);
     }
 
     private sealed class FakeHttpMessageHandler(HttpResponseMessage response) : HttpMessageHandler

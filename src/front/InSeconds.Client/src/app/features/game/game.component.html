@@ -1,0 +1,110 @@
+    <div class="min-h-dvh flex flex-col" style="background:var(--bg-page);color:var(--text-body)">
+    <main class="flex-1 flex flex-col p-5 w-full max-w-lg mx-auto">
+
+      <!-- En-tête -->
+      <app-game-header
+        [playing]="gameState() === 'playing'"
+        [showStreak]="displayStreak() > 0 && gameState() !== 'loading' && gameState() !== 'playing'"
+        [streak]="displayStreak()"
+        [totalScore]="totalScore()"
+        [currentIndex]="currentIndex()"
+        [trackCount]="tracks().length"
+        (abandon)="requestAbandon()" />
+
+      <!-- Chargement -->
+      @if (gameState() === 'loading') {
+        <div class="flex-1 flex items-center justify-center">
+          <p class="text-sm animate-pulse" style="color:var(--text-faint)">{{ 'common.loading' | translate }}</p>
+        </div>
+      }
+
+      <!-- Accueil -->
+      @if (gameState() === 'welcome') {
+        <app-welcome-screen [trackCount]="tracks().length" (startGame)="startPlaying()" />
+      }
+
+      <!-- Reprise de partie en cours -->
+      @if (gameState() === 'resume_prompt') {
+        <app-resume-screen
+          [completedCount]="resumeCompletedAnswers().length"
+          [trackCount]="tracks().length"
+          [abandonLoading]="abandonLoading()"
+          (resumeGame)="resumePlaying()"
+          (abandon)="confirmAbandon()" />
+      }
+
+      <!-- Confirmation abandon en cours de partie -->
+      @if (gameState() === 'playing' && showAbandonConfirm()) {
+        <app-confirm-sheet
+          tone="danger"
+          [title]="'abandonSheet.title' | translate"
+          [body]="'abandonSheet.body' | translate"
+          [confirmLabel]="'abandonSheet.confirm' | translate"
+          [cancelLabel]="'abandonSheet.cancel' | translate"
+          [loading]="abandonLoading()"
+          (confirm)="confirmAbandon()"
+          (cancelled)="showAbandonConfirm.set(false)" />
+      }
+
+      <!-- Confirmation quitter la page en cours de partie -->
+      @if (showLeaveConfirm()) {
+        <app-confirm-sheet
+          tone="warning"
+          [title]="'leaveSheet.title' | translate"
+          [body]="'leaveSheet.body' | translate"
+          [confirmLabel]="'leaveSheet.confirm' | translate"
+          confirmStyle="background:#374151;color:var(--text-body);border:1px solid var(--border-strong)"
+          [cancelLabel]="'leaveSheet.cancel' | translate"
+          cancelStyle="background:var(--bg-primary);color:#fff"
+          (confirm)="confirmLeave()"
+          (cancelled)="cancelLeave()" />
+      }
+
+      <!-- Pas de défi aujourd'hui -->
+      @if (gameState() === 'no_challenge') {
+        <app-status-screen titleKey="noChallenge.title" bodyKey="noChallenge.body" (retry)="retry()" />
+      }
+
+      <!-- Erreur -->
+      @if (gameState() === 'error') {
+        <app-status-screen titleKey="error.title" bodyKey="error.body" (retry)="retry()" />
+      }
+
+      <!-- Déjà joué aujourd'hui (Completed ou Abandoned) -->
+      @if (gameState() === 'already_played') {
+        <app-already-played-screen
+          [stats]="todayStats()"
+          [abandoned]="sessionAbandoned()"
+          [countdown]="countdown()"
+          [shareCopied]="shareCopied()"
+          (share)="shareFromStats()" />
+      }
+
+      <!-- Jeu en cours -->
+      @if (gameState() === 'playing' && currentTrack()) {
+        <div class="screen-enter flex-1 flex flex-col justify-start pt-4">
+          <app-blind-round
+            #roundRef
+            [track]="currentTrack()!"
+            [isLast]="currentIndex() === tracks().length - 1"
+            [sessionId]="sessionId"
+            [minListenedSeconds]="currentTrackMinListenedSeconds()"
+            (answered)="onAnswered($event)"
+            (nextTrack)="onNextTrack()" />
+        </div>
+      }
+
+      <!-- Récapitulatif final -->
+      @if (gameState() === 'done') {
+        <app-final-recap-screen
+          [results]="results()"
+          [displayedScore]="displayedTotalScore()"
+          [shareCopied]="shareCopied()"
+          [canShare]="results().length >= tracks().length"
+          [countdown]="countdown()"
+          (share)="share()" />
+      }
+
+    </main>
+    <app-game-footer class="mt-auto" />
+    </div>
