@@ -51,6 +51,15 @@ export class App {
   });
 
   constructor() {
+    // Sous une horloge figée par page.clock (E2E), les sauts d'horloge cumulent les ticks
+    // du timer et switchMap annule les requêtes /health en vol — comptées comme échecs,
+    // ce qui déclencherait un faux overlay "Service indisponible". On neutralise donc le
+    // polling quand le flag de test est posé (les specs service-down interceptent /health
+    // elles-mêmes via page.route, sans dépendre de ce polling).
+    if (typeof window !== 'undefined' && (window as { __disableHealthPolling?: boolean }).__disableHealthPolling === true) {
+      return;
+    }
+
     timer(0, HEALTH_POLL_MS)
       .pipe(
         switchMap(() =>

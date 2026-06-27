@@ -48,25 +48,16 @@ export class BlindRoundPage {
   }
 
   async submit(): Promise<void> {
-    // force: true bypasse la dropdown autocomplete si elle intercepte les pointer events
-    await this.submitButton.click({ force: true });
-    await this.settleScoreAnimation();
+    // La suggestion Deezer (réponse asynchrone) peut rouvrir la dropdown autocomplete
+    // par-dessus le bouton Valider et intercepter le clic. On soumet donc le formulaire
+    // au clavier (Entrée dans le champ) : déclenche ngSubmit de façon déterministe, sans
+    // dépendre de la position du bouton ni de l'état de la dropdown.
+    await this.answerInput.press('Enter');
   }
 
   async submitEmpty(): Promise<void> {
     await this.submitButton.click();
     await this.confirmSubmitButton.click();
-    await this.settleScoreAnimation();
-  }
-
-  /**
-   * Le score de fin de manche est animé en count-up via requestAnimationFrame,
-   * gelé par page.clock.install(). On avance l'horloge au-delà de la durée
-   * d'animation (600ms) pour que `displayedScore` atteigne sa valeur finale
-   * avant que les tests ne lisent `roundScore`.
-   */
-  private async settleScoreAnimation(): Promise<void> {
-    await this.page.clock.fastForward(700);
   }
 
   async goNext(): Promise<void> {

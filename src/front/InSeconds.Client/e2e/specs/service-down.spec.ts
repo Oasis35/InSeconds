@@ -2,8 +2,13 @@ import { test, expect } from '../fixtures/test';
 import { GamePage } from '../pages/game.page';
 
 test.describe('Service indisponible — backend KO', () => {
-  test.beforeEach(async ({ api }) => {
+  test.beforeEach(async ({ api, page }) => {
     await api.reset();
+    // Ce spec teste précisément l'overlay : on réactive le polling /health que le
+    // fixture désactive par défaut pour les autres tests.
+    await page.addInitScript(() => {
+      (window as { __disableHealthPolling?: boolean }).__disableHealthPolling = false;
+    });
   });
 
   test("affiche l'overlay quand /health échoue, puis le retire au retour du backend", async ({ page }) => {
