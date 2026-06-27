@@ -11,26 +11,21 @@ import { UnsavedGameComponent } from '../../core/guards/unsaved-game.guard';
 import { countUp } from '../../core/count-up';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { LanguageService, Lang } from '../../core/services/language.service';
+import { WelcomeScreenComponent } from './screens/welcome-screen/welcome-screen.component';
+import { ResumeScreenComponent } from './screens/resume-screen/resume-screen.component';
+import { StatusScreenComponent } from './screens/status-screen/status-screen.component';
+import { AlreadyPlayedScreenComponent } from './screens/already-played-screen/already-played-screen.component';
+import { FinalRecapScreenComponent, RoundResult } from './screens/final-recap-screen/final-recap-screen.component';
 
 type GameState = 'loading' | 'welcome' | 'resume_prompt' | 'playing' | 'done' | 'error' | 'no_challenge' | 'already_played';
 
-interface RoundResult {
-  artistCorrect: boolean;
-  titleCorrect: boolean;
-  score: number;
-  correctArtist: string;
-  correctTitle: string;
-  listenedDurationSeconds: number;
-  averageSecondsWhenCorrect: number | undefined;
-  failureRatePercent: number;
-  position: number;
-  coverUrl: string | null;
-  deezerTrackId: number;
-}
-
 @Component({
   selector: 'app-game',
-  imports: [BlindRoundComponent, ConfirmSheetComponent, RouterLink, TranslatePipe],
+  imports: [
+    BlindRoundComponent, ConfirmSheetComponent, RouterLink, TranslatePipe,
+    WelcomeScreenComponent, ResumeScreenComponent, StatusScreenComponent,
+    AlreadyPlayedScreenComponent, FinalRecapScreenComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './game.component.html',
 })
@@ -47,7 +42,6 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
 
   protected readonly gameState = signal<GameState>('loading');
   protected readonly todayStats = signal<TodayStatsResponse | null>(null);
-  protected readonly showTrackDetails = signal(false);
   protected readonly viewportTall = signal(window.innerHeight >= 600);
 
   @HostListener('window:resize')
