@@ -2,8 +2,8 @@
   @if (!showAbandonConfirm()) {
     <div class="space-y-3">
       <p class="text-5xl" style="line-height:1">⏸</p>
-      <h2 class="text-2xl font-bold tracking-tight" style="color:#f8fafc">{{ 'resume.title' | translate }}</h2>
-      <p class="text-sm leading-relaxed" style="color:#475569">
+      <h2 class="text-2xl font-bold tracking-tight" style="color:var(--text-hi)">{{ 'resume.title' | translate }}</h2>
+      <p class="text-sm leading-relaxed" style="color:var(--text-muted)">
         {{ 'resume.progress' | translate: { done: completedCount(), total: trackCount() } }}<br>
         {{ 'resume.question' | translate }}
       </p>
@@ -12,29 +12,29 @@
     <div class="w-full flex flex-col gap-3">
       <button (click)="resume.emit()"
         class="w-full py-4 rounded-2xl font-bold text-base tracking-wide transition-all active:scale-95 touch-manipulation"
-        style="background:#6366f1;color:#fff;letter-spacing:0.04em">
+        style="background:var(--bg-primary);color:#fff;letter-spacing:0.04em">
         {{ 'resume.resume' | translate }}
       </button>
       <button (click)="showAbandonConfirm.set(true)"
         class="w-full py-3 rounded-2xl text-sm font-semibold transition-all active:scale-95"
-        style="background:#1e1e2e;color:#94a3b8;border:1px solid rgba(255,255,255,0.06)">
+        style="background:var(--bg-inactive);color:var(--text-slate);border:1px solid var(--border-subtle)">
         {{ 'common.abandon' | translate }}
       </button>
     </div>
   } @else {
     <div class="w-full rounded-2xl p-6 space-y-4" style="background:#1a0a0a;border:1px solid rgba(248,113,113,0.3)">
-      <p class="text-sm font-semibold" style="color:#fca5a5">{{ 'resume.warningTitle' | translate }}</p>
-      <p class="text-sm leading-relaxed" style="color:#e2e8f0;white-space:pre-line">{{ 'resume.warningBody' | translate }}</p>
+      <p class="text-sm font-semibold" style="color:var(--text-error)">{{ 'resume.warningTitle' | translate }}</p>
+      <p class="text-sm leading-relaxed" style="color:var(--text-body);white-space:pre-line">{{ 'resume.warningBody' | translate }}</p>
       <div class="flex gap-3 pt-1">
         <button (click)="abandon.emit()"
           [disabled]="abandonLoading()"
           class="flex-1 py-3 rounded-xl text-sm font-bold transition-all active:scale-95"
-          style="background:#ef4444;color:#fff">
+          style="background:var(--bg-danger);color:#fff">
           {{ abandonLoading() ? '…' : ('resume.confirmAbandon' | translate) }}
         </button>
         <button (click)="showAbandonConfirm.set(false)"
           class="flex-1 py-3 rounded-xl text-sm font-semibold transition-all active:scale-95"
-          style="background:#0f0f1a;color:#94a3b8;border:1px solid rgba(255,255,255,0.06)">
+          style="background:var(--bg-surface);color:var(--text-slate);border:1px solid var(--border-subtle)">
           {{ 'resume.cancelAbandon' | translate }}
         </button>
       </div>

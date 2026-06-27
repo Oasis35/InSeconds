@@ -9,8 +9,8 @@ interface ToneStyle {
 }
 
 const TONES: Record<ConfirmSheetTone, ToneStyle> = {
-  danger:  { card: 'background:#1a0a0a;border:1px solid rgba(248,113,113,0.3)', title: 'color:#fca5a5' },
-  warning: { card: 'background:#1a0f00;border:1px solid rgba(251,191,36,0.3)', title: 'color:#fbbf24' },
+  danger:  { card: 'background:#1a0a0a;border:1px solid rgba(248,113,113,0.3)', title: 'color:var(--text-error)' },
+  warning: { card: 'background:#1a0f00;border:1px solid rgba(251,191,36,0.3)', title: 'color:var(--color-warn)' },
 };
 
 /**
@@ -30,9 +30,9 @@ export class ConfirmSheetComponent {
   readonly cancelLabel = input.required<string>();
   readonly loading = input(false);
   /** Style inline du bouton de confirmation (couleur selon le contexte). */
-  readonly confirmStyle = input('background:#ef4444;color:#fff');
+  readonly confirmStyle = input('background:var(--bg-danger);color:#fff');
   /** Style inline du bouton d'annulation (mis en avant par défaut). */
-  readonly cancelStyle = input('background:#0f0f1a;color:#94a3b8;border:1px solid rgba(255,255,255,0.06)');
+  readonly cancelStyle = input('background:var(--bg-surface);color:var(--text-slate);border:1px solid var(--border-subtle)');
 
   readonly confirm = output<void>();
   readonly cancel = output<void>();

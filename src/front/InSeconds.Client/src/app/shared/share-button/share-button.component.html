@@ -1,0 +1,10 @@
+<div class="flex flex-col items-center gap-1.5 w-full">
+  <button
+    (click)="share.emit()"
+    [disabled]="disabled()"
+    class="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition touch-manipulation disabled:opacity-40"
+    style="background:var(--bg-inactive);color:var(--text-body);border:1px solid var(--border-strong);letter-spacing:0.03em">
+    {{ (copied() ? 'share.copied' : 'share.button') | translate }}
+  </button>
+  <p class="text-xs" style="color:var(--text-muted)">{{ 'share.hint' | translate }}</p>
+</div>

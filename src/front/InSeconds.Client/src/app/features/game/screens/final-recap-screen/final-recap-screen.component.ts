@@ -1,5 +1,6 @@
 import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
+import { ShareButtonComponent } from '../../../../shared/share-button/share-button.component';
 
 export interface RoundResult {
   artistCorrect: boolean;
@@ -17,7 +18,7 @@ export interface RoundResult {
 
 @Component({
   selector: 'app-final-recap-screen',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, ShareButtonComponent],
   changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './final-recap-screen.component.html',
 })

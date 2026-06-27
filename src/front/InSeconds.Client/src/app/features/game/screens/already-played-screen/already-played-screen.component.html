@@ -5,42 +5,42 @@
     <div class="flex-1 flex flex-col items-center justify-center gap-6 text-center px-4">
       <div class="space-y-4">
         <p class="text-5xl" style="line-height:1">🏳️</p>
-        <h2 class="text-2xl font-bold tracking-tight" style="color:#f8fafc">{{ 'alreadyPlayed.abandonedTitle' | translate }}</h2>
-        <p class="text-sm leading-relaxed" style="color:#475569">
+        <h2 class="text-2xl font-bold tracking-tight" style="color:var(--text-hi)">{{ 'alreadyPlayed.abandonedTitle' | translate }}</h2>
+        <p class="text-sm leading-relaxed" style="color:var(--text-muted)">
           {{ 'alreadyPlayed.abandonedBody' | translate }}
         </p>
       </div>
       <div>
-        <p class="text-xs font-semibold tracking-widest uppercase mb-1" style="color:#475569">{{ 'alreadyPlayed.nextChallengeIn' | translate }}</p>
-        <p class="text-2xl font-bold tabular-nums" style="color:#e2e8f0;letter-spacing:0.05em">{{ countdown() }}</p>
+        <p class="text-xs font-semibold tracking-widest uppercase mb-1" style="color:var(--text-muted)">{{ 'alreadyPlayed.nextChallengeIn' | translate }}</p>
+        <p class="text-2xl font-bold tabular-nums" style="color:var(--text-body);letter-spacing:0.05em">{{ countdown() }}</p>
       </div>
     </div>
   } @else {
     <!-- Partie complétée — récap complet -->
     <div class="space-y-3">
-      <h2 class="text-2xl font-bold tracking-tight" style="color:#f8fafc">{{ 'alreadyPlayed.title' | translate }}</h2>
+      <h2 class="text-2xl font-bold tracking-tight" style="color:var(--text-hi)">{{ 'alreadyPlayed.title' | translate }}</h2>
       <div>
-        <p class="text-xs font-semibold tracking-widest uppercase mb-1" style="color:#475569">{{ 'alreadyPlayed.nextChallengeIn' | translate }}</p>
-        <p class="text-3xl font-bold tabular-nums" style="color:#e2e8f0;letter-spacing:0.05em">{{ countdown() }}</p>
+        <p class="text-xs font-semibold tracking-widest uppercase mb-1" style="color:var(--text-muted)">{{ 'alreadyPlayed.nextChallengeIn' | translate }}</p>
+        <p class="text-3xl font-bold tabular-nums" style="color:var(--text-body);letter-spacing:0.05em">{{ countdown() }}</p>
       </div>
     </div>
 
     @if (stats(); as s) {
-      <div class="w-full rounded-2xl overflow-hidden" style="background:#0f0f1a;border:1px solid rgba(255,255,255,0.07)">
+      <div class="w-full rounded-2xl overflow-hidden" style="background:var(--bg-surface);border:1px solid var(--border-medium)">
 
-        <div class="grid grid-cols-2" style="border-bottom:1px solid rgba(255,255,255,0.07)">
-          <div class="flex flex-col items-center py-7 px-4" style="border-right:1px solid rgba(255,255,255,0.07)">
-            <p class="text-xs font-semibold tracking-widest uppercase mb-2" style="color:#334155">{{ 'alreadyPlayed.yourScore' | translate }}</p>
-            <p class="text-5xl font-bold tabular-nums" style="color:#f8fafc;letter-spacing:-0.02em">{{ s.yourScore ?? '—' }}</p>
-            <p class="text-xs mt-2" style="color:#334155">{{ 'common.points' | translate }}</p>
+        <div class="grid grid-cols-2" style="border-bottom:1px solid var(--border-medium)">
+          <div class="flex flex-col items-center py-7 px-4" style="border-right:1px solid var(--border-medium)">
+            <p class="text-xs font-semibold tracking-widest uppercase mb-2" style="color:var(--text-faint)">{{ 'alreadyPlayed.yourScore' | translate }}</p>
+            <p class="text-5xl font-bold tabular-nums" style="color:var(--text-hi);letter-spacing:-0.02em">{{ s.yourScore ?? '—' }}</p>
+            <p class="text-xs mt-2" style="color:var(--text-faint)">{{ 'common.points' | translate }}</p>
           </div>
           <div class="flex flex-col items-center py-7 px-4">
-            <p class="text-xs font-semibold tracking-widest uppercase mb-2" style="color:#334155">{{ 'alreadyPlayed.median' | translate }}</p>
+            <p class="text-xs font-semibold tracking-widest uppercase mb-2" style="color:var(--text-faint)">{{ 'alreadyPlayed.median' | translate }}</p>
             @if (s.medianScore > 0) {
-              <p class="text-5xl font-bold tabular-nums" style="color:#475569;letter-spacing:-0.02em">{{ s.medianScore }}</p>
-              <p class="text-xs mt-2" style="color:#334155">{{ 'alreadyPlayed.medianToday' | translate }}</p>
+              <p class="text-5xl font-bold tabular-nums" style="color:var(--text-muted);letter-spacing:-0.02em">{{ s.medianScore }}</p>
+              <p class="text-xs mt-2" style="color:var(--text-faint)">{{ 'alreadyPlayed.medianToday' | translate }}</p>
             } @else {
-              <p class="text-sm mt-4" style="color:#1e293b">—</p>
+              <p class="text-sm mt-4" style="color:var(--text-sep)">—</p>
             }
           </div>
         </div>
@@ -48,30 +48,27 @@
         <!-- Accordion morceaux -->
         @if (s.tracks.length) {
           <button (click)="showTrackDetails.set(!showTrackDetails())"
-                  class="w-full flex items-center justify-center gap-2 py-3.5 text-xs font-semibold tracking-wide uppercase transition-colors"
-                  style="color:#334155"
-                  onmouseenter="this.style.color='#64748b'" onmouseleave="this.style.color='#334155'">
+                  class="w-full flex items-center justify-center gap-2 py-3.5 text-xs font-semibold tracking-wide uppercase transition-colors hover:text-slate-400"
+                  style="color:var(--text-faint)">
             <span>{{ (showTrackDetails() ? 'alreadyPlayed.hideTracks' : 'alreadyPlayed.showTracks') | translate }}</span>
             <span>{{ showTrackDetails() ? '▲' : '▼' }}</span>
           </button>
           @if (showTrackDetails()) {
-            <div class="flex flex-col" style="border-top:1px solid rgba(255,255,255,0.07)">
+            <div class="flex flex-col" style="border-top:1px solid var(--border-medium)">
               @for (t of s.tracks; track t.position) {
                 <a [href]="'https://www.deezer.com/track/' + t.deezerTrackId"
                    target="_blank" rel="noopener noreferrer"
-                   class="flex items-center gap-3 px-4 py-3.5 transition-colors"
-                   style="border-bottom:1px solid rgba(255,255,255,0.04)"
-                   onmouseenter="this.style.background='rgba(255,255,255,0.02)'"
-                   onmouseleave="this.style.background='transparent'">
+                   class="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-white/[0.02]"
+                   style="border-bottom:1px solid rgba(255,255,255,0.04)">
                   @if (t.coverUrl) {
                     <img [src]="t.coverUrl" [alt]="'alreadyPlayed.coverAlt' | translate"
                          class="w-9 h-9 rounded-lg object-cover shrink-0" style="opacity:0.85" />
                   } @else {
-                    <div class="w-9 h-9 rounded-lg shrink-0" style="background:#1a1a2e"></div>
+                    <div class="w-9 h-9 rounded-lg shrink-0" style="background:var(--bg-surface-2)"></div>
                   }
                   <div class="flex-1 min-w-0 text-left">
-                    <p class="text-sm font-medium truncate" style="color:#cbd5e1">{{ t.artist }} — {{ t.title }}</p>
-                    <div class="flex gap-3 mt-0.5 text-xs" style="color:#334155">
+                    <p class="text-sm font-medium truncate" style="color:var(--text-light)">{{ t.artist }} — {{ t.title }}</p>
+                    <div class="flex gap-3 mt-0.5 text-xs" style="color:var(--text-faint)">
                       <span>{{ 'alreadyPlayed.failedPercent' | translate: { percent: t.failureRatePercent.toFixed(0) } }}</span>
                       @if (t.averageSecondsWhenCorrect != null) {
                         <span>{{ 'alreadyPlayed.averageSeconds' | translate: { seconds: t.averageSecondsWhenCorrect!.toFixed(1) } }}</span>
@@ -90,15 +87,7 @@
 
       <!-- Bouton partage -->
       @if (s.yourScore != null) {
-        <div class="flex flex-col items-center gap-1.5 w-full">
-          <button
-            (click)="share.emit()"
-            class="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition touch-manipulation"
-            style="background:#1e1e2e;color:#e2e8f0;border:1px solid rgba(255,255,255,0.08);letter-spacing:0.03em">
-            {{ (shareCopied() ? 'share.copied' : 'share.button') | translate }}
-          </button>
-          <p class="text-xs" style="color:#475569">{{ 'share.hint' | translate }}</p>
-        </div>
+        <app-share-button [copied]="shareCopied()" (share)="share.emit()" />
       }
     }
   }

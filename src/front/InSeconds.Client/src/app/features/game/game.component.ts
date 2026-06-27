@@ -1,5 +1,4 @@
 import { Component, inject, signal, computed, effect, viewChild, OnInit, OnDestroy, HostListener, ChangeDetectionStrategy } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { GameService } from '../../core/services/game.service';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
 import { TrackSlot, ResumedAnswer } from '../../core/models/game.models';
@@ -10,21 +9,23 @@ import { environment } from '../../../environments/environment';
 import { UnsavedGameComponent } from '../../core/guards/unsaved-game.guard';
 import { countUp } from '../../core/count-up';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { LanguageService, Lang } from '../../core/services/language.service';
 import { WelcomeScreenComponent } from './screens/welcome-screen/welcome-screen.component';
 import { ResumeScreenComponent } from './screens/resume-screen/resume-screen.component';
 import { StatusScreenComponent } from './screens/status-screen/status-screen.component';
 import { AlreadyPlayedScreenComponent } from './screens/already-played-screen/already-played-screen.component';
 import { FinalRecapScreenComponent, RoundResult } from './screens/final-recap-screen/final-recap-screen.component';
+import { GameHeaderComponent } from './components/game-header/game-header.component';
+import { GameFooterComponent } from './components/game-footer/game-footer.component';
 
 type GameState = 'loading' | 'welcome' | 'resume_prompt' | 'playing' | 'done' | 'error' | 'no_challenge' | 'already_played';
 
 @Component({
   selector: 'app-game',
   imports: [
-    BlindRoundComponent, ConfirmSheetComponent, RouterLink, TranslatePipe,
+    BlindRoundComponent, ConfirmSheetComponent, TranslatePipe,
     WelcomeScreenComponent, ResumeScreenComponent, StatusScreenComponent,
     AlreadyPlayedScreenComponent, FinalRecapScreenComponent,
+    GameHeaderComponent, GameFooterComponent,
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './game.component.html',
@@ -34,12 +35,6 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
   private readonly api = inject(ApiClient);
   private readonly audioPlayer = inject(AudioPlayerService);
   private readonly translate = inject(TranslateService);
-  protected readonly language = inject(LanguageService);
-
-  protected setLang(lang: Lang): void {
-    this.language.use(lang);
-  }
-
   protected readonly gameState = signal<GameState>('loading');
   protected readonly todayStats = signal<TodayStatsResponse | null>(null);
   protected readonly viewportTall = signal(window.innerHeight >= 600);
