@@ -4,8 +4,8 @@
       [attr.aria-label]="'admin.addModal.close' | translate"
       (click)="pool.closeAddModal()">
     </button>
-    <div class="relative bg-gray-800 rounded-2xl p-6 flex flex-col gap-4 w-full max-w-md shadow-2xl"
-      role="dialog" aria-modal="true"
+    <dialog open class="relative bg-gray-800 rounded-2xl p-6 flex flex-col gap-4 w-full max-w-md shadow-2xl m-0"
+      aria-modal="true"
       (keydown.escape)="pool.closeAddModal()">
 
       <!-- En-tête -->
@@ -25,12 +25,14 @@
       @if (pool.poolSearchResults().length > 0) {
         <ul class="bg-gray-700 rounded-lg divide-y divide-gray-600 max-h-44 overflow-y-auto">
           @for (track of pool.poolSearchResults(); track track.deezerTrackId) {
-            <li (click)="pool.selectModalTrack(track)" (keydown.enter)="pool.selectModalTrack(track)" tabindex="0"
-              [class]="pool.addModalTrack()?.deezerTrackId === track.deezerTrackId
-                ? 'px-4 py-2.5 flex justify-between items-center text-sm bg-gray-600 cursor-pointer'
-                : 'px-4 py-2.5 flex justify-between items-center text-sm hover:bg-gray-600 cursor-pointer'">
-              <span class="text-gray-200 flex-1 min-w-0 truncate">{{ track.artist }} — {{ track.title }}</span>
-              <span class="text-purple-400 text-xs shrink-0 ml-4">{{ 'admin.addModal.choose' | translate }}</span>
+            <li>
+              <button type="button" (click)="pool.selectModalTrack(track)"
+                [class]="pool.addModalTrack()?.deezerTrackId === track.deezerTrackId
+                  ? 'w-full px-4 py-2.5 flex justify-between items-center text-sm bg-gray-600 cursor-pointer'
+                  : 'w-full px-4 py-2.5 flex justify-between items-center text-sm hover:bg-gray-600 cursor-pointer'">
+                <span class="text-gray-200 flex-1 min-w-0 truncate">{{ track.artist }} — {{ track.title }}</span>
+                <span class="text-purple-400 text-xs shrink-0 ml-4">{{ 'admin.addModal.choose' | translate }}</span>
+              </button>
             </li>
           }
         </ul>
@@ -89,6 +91,6 @@
         </div>
       }
 
-    </div>
+    </dialog>
   </div>
 }

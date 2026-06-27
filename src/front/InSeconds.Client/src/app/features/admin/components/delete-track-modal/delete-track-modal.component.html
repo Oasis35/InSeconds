@@ -4,8 +4,8 @@
       [attr.aria-label]="'admin.deleteModal.close' | translate"
       (click)="pool.closeDeleteModal()">
     </button>
-    <div class="relative bg-gray-800 rounded-2xl p-6 flex flex-col gap-4 w-full max-w-sm shadow-2xl"
-      role="dialog" aria-modal="true"
+    <dialog open class="relative bg-gray-800 rounded-2xl p-6 flex flex-col gap-4 w-full max-w-sm shadow-2xl m-0"
+      aria-modal="true"
       (keydown.escape)="pool.closeDeleteModal()">
       <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wide">{{ 'admin.deleteModal.title' | translate }}</h2>
 
@@ -36,6 +36,6 @@
           @if (pool.deleteStatus() === 'loading') { {{ 'admin.deleteModal.deleting' | translate }} } @else { {{ 'admin.deleteModal.delete' | translate }} }
         </button>
       </div>
-    </div>
+    </dialog>
   </div>
 }
