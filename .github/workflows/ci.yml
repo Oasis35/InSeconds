@@ -166,6 +166,10 @@ jobs:
         working-directory: src/front/InSeconds.Client
         run: npm ci
 
+      - name: Generate build-info
+        working-directory: src/front/InSeconds.Client
+        run: node scripts/generate-build-info.mjs
+
       - name: Start Angular dev server
         working-directory: src/front/InSeconds.Client
         run: npx ng serve --configuration e2e-ci --port 5173 > /tmp/angular.log 2>&1 &
