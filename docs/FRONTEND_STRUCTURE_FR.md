@@ -7,7 +7,8 @@
 - **Angular 20** (CLI 20.1.x, standalone components + signals)
 - **TypeScript 5.8**
 - **Tailwind CSS v4** via `@tailwindcss/postcss` dans `.postcssrc.json`
-- **SCSS** : `@use "tailwindcss";` en haut de `src/styles.scss` (PAS `@import`)
+- **SCSS** : `@use "tailwindcss";` en haut de `src/styles.scss` (PAS `@import`). Variables CSS dans `:root` pour la palette couleurs (voir section Palette).
+- **ngx-translate v18** (`@ngx-translate/core` + `@ngx-translate/http-loader`) — i18n FR/EN, fichiers `public/i18n/{fr,en}.json`, `TranslatePipe` dans chaque composant
 - **NSwag 14.7.1** : génération du client TypeScript depuis l'OpenAPI back (`npm run generate-api`)
 - **Port front pinné à 5173** (évite le conflit avec d'autres projets sur 4200)
 
@@ -15,6 +16,10 @@
 
 ```
 src/front/InSeconds.Client/
+├── public/
+│   └── i18n/
+│       ├── fr.json                         # traductions FR (source de vérité)
+│       └── en.json                         # traductions EN
 ├── nswag.json                              # config génération client TS depuis OpenAPI
 ├── src/
 │   ├── app/
@@ -30,25 +35,55 @@ src/front/InSeconds.Client/
 │   │   │   │   └── game.models.ts         # re-exports depuis api.generated.ts
 │   │   │   └── services/
 │   │   │       ├── audio-player.service.ts    # signal-based, durée choisie
+│   │   │       ├── deezer-search.service.ts   # autocomplete Deezer avec debounce 300ms
 │   │   │       ├── game.service.ts             # POST /sessions + /answers
+│   │   │       ├── language.service.ts         # détection/changement FR/EN, persist localStorage
 │   │   │       └── settings.service.ts         # GET /settings → signals
 │   │   ├── shared/
-│   │   │   └── confirm-sheet/
-│   │   │       └── confirm-sheet.component.ts  # bottom-sheet de confirmation réutilisable
+│   │   │   ├── confirm-sheet/
+│   │   │   │   └── confirm-sheet.component.ts  # bottom-sheet de confirmation réutilisable
+│   │   │   └── share-button/
+│   │   │       └── share-button.component.ts   # bouton partage réutilisable (already-played + done)
 │   │   ├── features/
 │   │   │   ├── admin/
-│   │   │   │   └── admin.component.ts     # login + gestion pool + défis
-│   │   │   └── game/
-│   │   │       ├── game.component.ts      # orchestration session complète
-│   │   │       └── blind-round/
-│   │   │           └── blind-round.component.ts  # choix palier + lecture + saisie + polish UX
+│   │   │   │   ├── admin.component.ts          # shell (42 lignes) — injecte les 4 services
+│   │   │   │   ├── admin.models.ts             # interfaces partagées (TrackDto, ChallengeDto, …)
+│   │   │   │   ├── services/
+│   │   │   │   │   ├── admin-api.service.ts    # HTTP + rxResource (pool, stats, challenges)
+│   │   │   │   │   ├── admin-stats.service.ts  # état dashboard (selectedDay, challengeMonth, …)
+│   │   │   │   │   ├── admin-pool.service.ts   # filtres/pagination/sélection pool, modales ajout/suppression
+│   │   │   │   │   └── admin-actions.service.ts # generateToday(), reset()
+│   │   │   │   └── components/
+│   │   │   │       ├── admin-login/
+│   │   │   │       ├── dashboard-tab/
+│   │   │   │       ├── pool-tab/
+│   │   │   │       ├── challenges-tab/
+│   │   │   │       ├── actions-tab/
+│   │   │   │       ├── add-track-modal/
+│   │   │   │       └── delete-track-modal/
+│   │   │   ├── game/
+│   │   │   │   ├── game.component.ts           # orchestration session — ~370 lignes
+│   │   │   │   ├── game.component.html         # ~110 lignes (délègue aux sous-composants)
+│   │   │   │   ├── blind-round/
+│   │   │   │   │   └── blind-round.component.ts  # choix palier + lecture + saisie + polish UX
+│   │   │   │   ├── components/
+│   │   │   │   │   ├── game-header/            # en-tête (titre + streak + score + barre progression)
+│   │   │   │   │   └── game-footer/            # pied de page (liens admin/github/linkedin)
+│   │   │   │   └── screens/
+│   │   │   │       ├── welcome-screen/
+│   │   │   │       ├── resume-screen/
+│   │   │   │       ├── status-screen/          # handles no_challenge + error (titleKey/bodyKey)
+│   │   │   │       ├── already-played-screen/
+│   │   │   │       └── final-recap-screen/     # exporte aussi RoundResult
+│   │   │   ├── not-found/
+│   │   │   └── service-down/
 │   │   ├── app.config.ts                  # providers globaux
 │   │   ├── app.routes.ts                  # routes
-│   │   └── app.ts                         # composant racine
+│   │   └── app.ts                         # composant racine + polling /health
 │   ├── environments/
 │   │   ├── environment.ts                 # prod (apiUrl + appUrl Northflank)
 │   │   └── environment.development.ts     # dev (apiUrl http://localhost:5171, appUrl http://localhost:5173)
-│   └── styles.scss
+│   └── styles.scss                        # Tailwind + variables CSS :root + keyframes globaux
 ├── angular.json                           # port 5173, fileReplacements dev/prod
 └── package.json
 ```
@@ -61,12 +96,58 @@ providers: [
   { provide: API_BASE_URL, useValue: environment.apiUrl },
   ApiClient,
   provideAppInitializer(() => inject(SettingsService).load()),
+  provideAppInitializer(() => inject(LanguageService).init()),
+  provideTranslateService({ loader: provideTranslateHttpLoader({ prefix: 'i18n/', suffix: '.json' }) }),
 ]
 ```
 
 - `playerAuthInterceptor` passe avant `adminAuthInterceptor` — ordre important
-- `ApiClient` injectable partout, `API_BASE_URL` pointe sur `environment.apiUrl`
-- `SettingsService.load()` est appelé avant le premier rendu (via `provideAppInitializer`)
+- `LanguageService.init()` détecte la langue (`localStorage` → `navigator.language` → FR) et appelle `translate.use()`
+
+## Palette CSS — variables `:root`
+
+Toutes les couleurs sont centralisées dans `styles.scss` sous `:root` et utilisées via `var(--...)` dans les templates. Ne jamais remettre de valeurs hex en dur dans les templates.
+
+| Variable | Valeur | Usage |
+|---|---|---|
+| `--bg-page` | `#080810` | fond de page |
+| `--bg-surface` | `#0f0f1a` | cartes, zones player |
+| `--bg-surface-2` | `#1a1a2e` | placeholder pochettes |
+| `--bg-inactive` | `#1e1e2e` | boutons secondaires, barres vides |
+| `--bg-primary` | `#6366f1` | boutons primaires, accent indigo |
+| `--bg-primary-dk` | `#312e81` | fond indigo foncé (tooltip paliers) |
+| `--bg-danger` | `#ef4444` | bouton abandon |
+| `--bg-warn` | `#92400e` | fond avertissement |
+| `--text-hi` | `#f8fafc` | titres, valeurs importantes |
+| `--text-body` | `#e2e8f0` | texte corps |
+| `--text-muted` | `#475569` | texte discret |
+| `--text-faint` | `#334155` | texte très discret, labels |
+| `--text-sep` | `#1e293b` | séparateurs |
+| `--text-accent` | `#6366f1` | logo InSeconds |
+| `--text-streak` | `#f59e0b` | streak feu |
+| `--text-error` | `#fca5a5` | erreurs texte |
+| `--text-hover` | `#64748b` | hover liens, valeurs stats |
+| `--text-slate` | `#94a3b8` | boutons secondaires |
+| `--text-light` | `#cbd5e1` | réponse correcte |
+| `--text-indigo` | `#c7d2fe` | texte indigo clair |
+| `--color-success` | `#34d399` | ✓ artiste/titre correct |
+| `--color-fail` | `#f87171` | ✗ artiste/titre incorrect |
+| `--color-warn` | `#fbbf24` | avertissement (confirm vide) |
+| `--border-subtle` | `rgba(255,255,255,0.06)` | bordures légères |
+| `--border-medium` | `rgba(255,255,255,0.07)` | bordures medium |
+| `--border-strong` | `rgba(255,255,255,0.08)` | bordures fortes |
+| `--overlay-dark` | `rgba(0,0,0,0.7)` | overlay modale |
+
+## i18n — ngx-translate
+
+`LanguageService` (`core/services/language.service.ts`) gère la langue active :
+- Détection : `localStorage('lang')` → `navigator.language` → `'fr'` (fallback)
+- `use(lang)` : appelle `translate.use(lang)`, met à jour `localStorage` et `document.documentElement.lang`
+- Signal `current` exposé pour les composants qui veulent réagir au changement
+
+Fichiers de traduction dans `public/i18n/`. Structure des clés : `common`, `header`, `welcome`, `resume`, `blindRound`, `done`, `alreadyPlayed`, `share`, `footer`, `noChallenge`, `error`, `serviceDown`, `notFound`, `abandonSheet`, `leaveSheet`, `admin.*`.
+
+**E2E** : `e2e/fixtures/test.ts` force `localStorage.setItem('lang', 'fr')` via `addInitScript` pour que les specs matchent le texte FR.
 
 ## NSwag — client TypeScript généré
 
@@ -79,7 +160,7 @@ npm run generate-api           # runtime Net100
 npm run build                  # vérifier que le build TypeScript passe
 ```
 
-`api.generated.ts` **est commité** — le backend ne tourne pas en CI donc la génération ne peut pas s'y faire automatiquement. Après toute regénération locale, commiter le fichier mis à jour. Les composants et services importent les types via `game.models.ts` qui re-exporte depuis le fichier généré.
+`api.generated.ts` **est commité** — le backend ne tourne pas en CI donc la génération ne peut pas s'y faire automatiquement. Les composants et services importent les types via `game.models.ts` qui re-exporte depuis le fichier généré.
 
 ## Services
 
@@ -92,9 +173,7 @@ readonly allowedDurations = signal<number[]>([0.5, 1, 1.5, 2, 3, 5, 10]);
 readonly guessTimerSeconds = signal(20);
 readonly maxExtensions = signal(1);
 readonly tracksPerChallenge = signal(10);
-readonly durationScores = signal<Record<number, number>>({
-  0.5: 1000, 1: 850, 1.5: 700, 2: 550, 3: 400, 5: 250, 10: 100,
-});
+readonly durationScores = signal<Record<number, number>>({});
 ```
 
 ### `AudioPlayerService`
@@ -108,7 +187,8 @@ Méthodes publiques :
 - `extend(nextDurationSeconds)` — prolonge d'un palier (une seule fois)
 - `stop()` — arrête et retourne `{ listenedSeconds, wasExtended }`
 - `reset()` — nettoie tout (appelé dans `ngOnDestroy` de `BlindRoundComponent`)
-- `preloadAll(trackUrls)` — injecte des `<link rel="preload" as="audio">` dans le `<head>` pour chaque URL, non bloquant. Retourne `Promise<void>` immédiatement. Appelé par `GameComponent` après `startToday()`.
+- `replayFull()` — rejoue depuis le début jusqu'à la fin naturelle (30s), sans timer
+- `preloadAll(trackUrls)` — injecte des `<link rel="preload" as="audio">` dans le `<head>`, non bloquant
 
 ### `DeezerSearchService`
 
@@ -119,58 +199,72 @@ Autocomplete Deezer : prend un `Observable<string>`, applique debounce 300ms + d
 ```typescript
 startToday(): Observable<StartSessionResponse>
 submitAnswer(sessionId: number, body: SubmitAnswerRequest): Observable<SubmitAnswerResponse>
+abandonSession(sessionId: number): Observable<void>
+updateListening(sessionId: number, trackId: number, duration: number): Observable<void>
 ```
 
-Types importés depuis `game.models.ts` (qui re-exporte `api.generated.ts`).
+### `LanguageService`
+
+```typescript
+readonly current = signal<Lang>('fr');
+init(): void          // appelé au boot via provideAppInitializer
+use(lang: Lang): void // change la langue, persiste en localStorage
+```
 
 ## Composants
 
 ### `GameComponent`
 
-Orchestre une session complète. États : `loading` → `welcome` → `playing` → `done` (+ `already_played`, `no_challenge`, `error`).
+Orchestre une session complète. États : `loading` → `welcome` → `playing` → `done` (+ `resume_prompt`, `already_played`, `no_challenge`, `error`).
 
-- État `loading` : appel `POST /api/sessions` puis `audioPlayer.preloadAll()` (non bloquant) — passe directement en `welcome`
-- État `welcome` : page d'accueil avec bouton "Commencer à jouer"
-- Récap final : badge officiel "À écouter sur Deezer" (`DeezerBadgeComponent`) + streak + bouton partage emoji Wordle-style
-- Partage : `🟩🟩 0.5s | 🟨⬜ 2s | 🟥🟥 10s` + score + lien `appUrl/blindtest` (copié dans le presse-papier)
-- Animations d'écran : classe `.screen-enter` (keyframe `fade-in` global) sur la div racine de chaque état — rejoue à chaque transition car le bloc `@if` est recréé
-- **Confirmation de sortie** : implémente l'interface `UnsavedGameComponent` (`canDeactivate()`). Si `gameState() === 'playing'`, ouvre une modale (`ConfirmSheetComponent`) et renvoie une `Promise<boolean>` résolue par "Quitter quand même" / "Continuer à jouer". `@HostListener('window:beforeunload')` couvre la fermeture/rechargement d'onglet (dialog natif). Un `effect` résout la promesse si la partie quitte `playing` pendant que la modale est ouverte. La méthode `resolveLeave(ok)` capture-puis-nullifie le resolver pour éviter toute Promise orpheline en cas de navigation ré-entrante.
+Délègue l'affichage à des sous-composants :
+- **`GameHeaderComponent`** : titre InSeconds + streak + score en cours + barre de progression + bouton abandon
+- **`GameFooterComponent`** : liens admin / GitHub / LinkedIn
+- **`WelcomeScreenComponent`** : état `welcome`
+- **`ResumeScreenComponent`** : état `resume_prompt` (avec confirmation abandon inline)
+- **`StatusScreenComponent`** : états `no_challenge` + `error` (inputs `titleKey`/`bodyKey` i18n)
+- **`AlreadyPlayedScreenComponent`** : état `already_played` (score vs médiane, accordéon morceaux, `ShareButtonComponent`)
+- **`FinalRecapScreenComponent`** : état `done` (liste morceaux, score animé, `ShareButtonComponent`)
+- **`BlindRoundComponent`** : état `playing`
+- **`ConfirmSheetComponent`** : modales abandon + quitter
+
+**Confirmation de sortie** : implémente `UnsavedGameComponent` (`canDeactivate()`). Si `gameState() === 'playing'`, ouvre une modale et renvoie une `Promise<boolean>`. `@HostListener('window:beforeunload')` couvre la fermeture d'onglet.
 
 ### `BlindRoundComponent`
 
-Layout B — deux zones toujours présentes (pas de clignotement) :
-- **Zone player** (haut) : paliers au départ, puis bouton unique Start/Stop/Replay + barre de progression live + chrono `Xs / Xs`
-- **Zone saisie** (bas) : champ unique `"Artiste - Titre"` avec dropdown autocomplete Deezer (debounce 300ms), bouton Valider grisé pendant l'écoute
+Layout B — deux zones toujours présentes :
+- **Zone player** : paliers au départ, puis bouton Replay + "Écouter jusqu'à Xs" + barre de progression live + chrono
+- **Zone saisie** : champ unique `"Artiste - Titre"` avec dropdown autocomplete Deezer (debounce 300ms), bouton Valider
 
-`chosenDuration` est un **signal** (pas une propriété ordinaire) pour que `nextDuration` (computed) se recalcule réactivement.
+Polish UX : `isSubmitting` (loading sur Valider), bouton `✕` lié à `(mousedown)`, tooltip paliers (`scoreForDuration`), score count-up (`countUp` rAF), toast erreur réseau (4s).
 
-Polish UX :
-- **Loading sur Valider** : signal `isSubmitting` → bouton désactivé + `…` pendant l'appel serveur (remis à `false` dans `setResult`)
-- **Bouton `✕`** : efface la saisie, lié à `(mousedown)` + `preventDefault()` pour s'exécuter avant le `blur` de l'input
-- **Tooltip paliers** : au survol (`hoveredDuration`), affiche les points gagnés pour la durée (`scoreForDuration` lit `SettingsService.durationScores()`)
-- **Score count-up** : `displayedScore` animé de 0 à `r.score` (~600ms) via le helper module `countUp` (rAF, easing quadratique)
-- **Toast erreur réseau** : `showNetworkError` affiché 4s si `setResult(r, true)` (échec HTTP) — timer stocké dans `networkErrorTimer`, annulé/nettoyé dans `setResult`, `next()` et `ngOnDestroy`
-
-Affiche après chaque réponse :
-- Ton temps d'écoute
-- Moyenne du temps des joueurs ayant trouvé (`averageSecondsWhenCorrect`)
-- % de joueurs n'ayant pas trouvé (`failureRatePercent`)
+`setResult(r, isNetworkError?)` — méthode publique appelée depuis `GameComponent` via `viewChild`.
 
 ### `ConfirmSheetComponent`
 
-Bottom-sheet de confirmation réutilisable (`shared/confirm-sheet/`). Overlay plein écran, carte arrondie, deux boutons (confirm à gauche, cancel mis en avant à droite). Inputs : `title`, `body` (multi-ligne via `white-space:pre-line`, **pas** d'`innerHTML`), `tone` (`danger`/`warning`), `confirmLabel`, `cancelLabel`, `loading`, `confirmStyle`, `cancelStyle`. Outputs : `confirm`, `cancel`. Mutualise les modales "abandonner la partie" et "quitter la page" de `GameComponent`.
+Bottom-sheet de confirmation réutilisable (`shared/confirm-sheet/`). Inputs : `title`, `body`, `tone` (`danger`/`warning`), `confirmLabel`, `cancelLabel`, `loading`, `confirmStyle`, `cancelStyle`. Outputs : `confirm`, `cancel`.
 
-### `DeezerBadgeComponent`
+### `ShareButtonComponent`
 
-SVG inline du badge officiel "À écouter sur Deezer" (blanc sur transparent). Inputs `width` et `height`. Utilisé dans le récap final et l'écran "déjà joué".
+Bouton partage réutilisable (`shared/share-button/`). Inputs : `copied: boolean`, `disabled?: boolean`. Output : `share`. Utilisé dans `AlreadyPlayedScreenComponent` et `FinalRecapScreenComponent`.
 
 ### `AdminComponent`
 
-Route `/admin`. Heure de build affichée sous le titre **uniquement quand connecté** (injectée via `prebuild` → `build-info.ts`, timezone navigateur). Login Bearer token → quatre onglets :
-- **Dashboard** : KPI tiles jour sélectionné (complétés, abandons, taux complétion — affiche "—" si 0 complété, score médian), sélecteur de jour ← → naviguant sur les dates ayant un défi, barres 30j cliquables (jours vides = 0, dates formatées "22 mai"), répartition joueurs, stats par défi (accordéon) paginées par mois (navigateur ‹ Mois Année ›)
-- **Pool** : tableau paginé 15 lignes/page, filtres combinables (texte artiste/titre, statut Disponible/Utilisé, preview OK/Manquante), sélection multiple + suppression en lot, bouton "+ Ajouter" (popup recherche Deezer + lecteur preview 30s), bouton "↻ Actualiser" sur les morceaux sans preview (ouvre la modale pré-remplie avec artiste + titre)
-- **Actions** : bouton "Générer le défi du jour" + bouton "Réinitialiser les parties du jour" avec feedback inline
-- **Défis** : historique des défis paginé par mois (navigateur ‹ Mois Année › partagé avec l'onglet Dashboard)
+Shell 42 lignes. Fournit les 4 services via `providers: [AdminApiService, AdminStatsService, AdminPoolService, AdminActionsService]` au niveau du composant (pas `root`). Délègue à 7 sous-composants :
+
+- **`AdminLoginComponent`** : formulaire login, `loginStatus` signal local
+- **`DashboardTabComponent`** : injecte `AdminStatsService`
+- **`PoolTabComponent`** : injecte `AdminPoolService`, contient `AddTrackModalComponent` + `DeleteTrackModalComponent`
+- **`ChallengesTabComponent`** : injecte `AdminStatsService`
+- **`ActionsTabComponent`** : injecte `AdminActionsService`
+- **`AddTrackModalComponent`** : injecte `AdminPoolService`
+- **`DeleteTrackModalComponent`** : injecte `AdminPoolService`
+
+Services admin (`features/admin/services/`) :
+- `AdminApiService` — rxResource (pool/stats/challenges), HTTP CRUD, auth (`checkAuth`/`login`/`logout`)
+- `AdminStatsService` — état dashboard (jour sélectionné, mois défis, navigation, formatage)
+- `AdminPoolService` — filtres, pagination, sélection multiple, état modales add/delete, lecteur preview
+- `AdminActionsService` — `generateToday()`, `reset()`
 
 ## Intercepteurs
 
@@ -180,7 +274,7 @@ Ajoute `withCredentials: true` sur toutes les requêtes vers `/api` **sauf** `/a
 
 ### `adminAuthInterceptor`
 
-Ajoute `Authorization: Bearer <token>` sur toutes les requêtes vers `/api/admin`. Token lu depuis `localStorage` (`admin_token`). Contourne les restrictions cross-domain du cookie `SameSite=None`.
+Ajoute `Authorization: Bearer <token>` sur toutes les requêtes vers `/api/admin`. Token lu depuis `localStorage` (`admin_token`).
 
 ## Conventions
 
@@ -188,8 +282,11 @@ Ajoute `Authorization: Bearer <token>` sur toutes les requêtes vers `/api/admin
 - **Signals plutôt que `BehaviorSubject`** sauf si Observable vraiment nécessaire
 - **`inject(...)` plutôt que constructor injection**
 - **Nouveau control flow** : `@if`, `@for`, `@switch` (pas `*ngIf`, `*ngFor`)
-- **Tailwind utility-first** dans les templates ; SCSS local seulement pour ce que Tailwind ne couvre pas
+- **Tailwind utility-first** dans les templates ; `var(--...)` pour toutes les couleurs (pas de hex inline)
+- **`onmouseenter`/`onmouseleave` JS interdit** — utiliser `hover:` Tailwind à la place
 - **Pas de logique dans le template** — toute logique dans `computed()` ou méthode
+- **Un composant = un dossier** avec `.ts` + `.html` externes (pas de `template:` inline)
+- **`TranslatePipe`** importé dans chaque composant qui affiche du texte
 
 ## Contraintes mobile
 
@@ -202,5 +299,5 @@ Ajoute `Authorization: Bearer <token>` sur toutes les requêtes vers `/api/admin
 ## À venir
 
 - Tests Karma/Jasmine (`AudioPlayerService`, `GameService`)
-- Tests E2E Playwright (flux complet 1 partie)
-- Polish : charte graphique, accessibilité, RGPD
+- Tests mobiles (iOS Safari, Android Chrome)
+- Polish : accessibilité WCAG 2.1 AA, RGPD

@@ -101,18 +101,52 @@ public sealed class SettingsService(IOptions<AppSettings> options)
 
 ## Architecture frontend
 
-Angular 20 standalone + signals.
+Angular 20 standalone + signals + ngx-translate (i18n FR/EN).
 
-- `src/app/app.config.ts` : `provideHttpClient(withFetch(), withInterceptors([playerAuthInterceptor, adminAuthInterceptor]))`, router, `provideAppInitializer` pour `SettingsService`, `ApiClient` enregistré avec token `API_BASE_URL → environment.apiUrl`
-- `src/app/core/interceptors/player-auth.interceptor.ts` : ajoute `withCredentials: true` sur toutes les requêtes `/api` sauf `/api/admin`
-- `src/app/core/interceptors/admin-auth.interceptor.ts` : injecte `Authorization: Bearer admin-token` sur toutes les requêtes `/api/admin` (token stocké en localStorage sous `admin_token`)
+- `src/app/app.config.ts` : `provideHttpClient`, router, `provideAppInitializer` pour `SettingsService` + `LanguageService`, `ApiClient`, `provideTranslateService` (loader `i18n/{lang}.json`)
+- `src/app/core/interceptors/player-auth.interceptor.ts` : `withCredentials: true` sur toutes les requêtes `/api` sauf `/api/admin`
+- `src/app/core/interceptors/admin-auth.interceptor.ts` : `Authorization: Bearer admin-token` sur `/api/admin` (token localStorage `admin_token`)
 - `src/app/core/services/settings.service.ts` : charge les `Settings` BD au démarrage, expose des signals (`allowedDurations`, `guessTimerSeconds`, etc.)
-- `src/app/core/models/game.models.ts` : re-exports depuis `api.generated.ts` (`TrackSlot`, `StartSessionResponse`, `SubmitAnswerRequest`, `SubmitAnswerResponse`)
-- `src/app/api/api.generated.ts` : **fichier généré commité volontairement** (le backend ne tourne pas en CI), regénérer avec `npm run generate-api` après tout changement d'endpoint back puis commiter
-- `src/environments/environment{,.development}.ts` : `apiUrl`, swap auto via `fileReplacements` dans `angular.json`
-- `src/styles.scss` : `@use "tailwindcss";` (PAS `@import` — déprécié Sass 3)
+- `src/app/core/services/language.service.ts` : détection langue (`localStorage` → `navigator.language` → FR), `translate.use()`, signal `current`
+- `src/app/core/models/game.models.ts` : re-exports depuis `api.generated.ts`
+- `src/app/api/api.generated.ts` : **fichier généré commité volontairement**, regénérer avec `npm run generate-api` après tout changement d'endpoint back
+- `src/environments/environment{,.development}.ts` : `apiUrl` + `appUrl`, swap auto via `fileReplacements`
+- `src/styles.scss` : `@use "tailwindcss";` + **variables CSS `:root`** pour toute la palette couleurs (ne pas mettre de hex en dur dans les templates)
 - `.postcssrc.json` : plugin `@tailwindcss/postcss`
 - **CORS** : le back autorise `http://localhost:5173` et `https://p01--front--b5cnx77tvxgb.code.run` dans `appsettings.json` (`Cors:AllowedOrigins`)
+- **Conventions templates** : `var(--...)` pour les couleurs, `hover:` Tailwind pour les hovers (pas de `onmouseenter`/`onmouseleave` JS), `TranslatePipe` dans chaque composant affichant du texte, un composant = un dossier avec `.ts` + `.html` externes
+
+### Découpe de `game/`
+
+```
+features/game/
+├── game.component.ts/.html        # orchestration (~370 lignes .ts, ~110 lignes .html)
+├── blind-round/                   # choix palier + lecture + saisie + polish UX
+├── components/
+│   ├── game-header/               # titre + streak + score + barre progression + abandon
+│   └── game-footer/               # liens admin/github/linkedin
+└── screens/
+    ├── welcome-screen/
+    ├── resume-screen/
+    ├── status-screen/             # handles no_challenge + error (inputs titleKey/bodyKey)
+    ├── already-played-screen/
+    └── final-recap-screen/        # exporte RoundResult
+```
+
+### Découpe de `admin/`
+
+`AdminComponent` est un shell 42 lignes qui fournit 4 services via `providers: [...]` au niveau composant :
+- `AdminApiService` — rxResource HTTP, auth
+- `AdminStatsService` — état dashboard (jour sélectionné, navigation, formatage)
+- `AdminPoolService` — filtres/pagination/sélection, modales add/delete
+- `AdminActionsService` — `generateToday()`, `reset()`
+
+7 sous-composants dans `features/admin/components/` : `admin-login`, `dashboard-tab`, `pool-tab`, `challenges-tab`, `actions-tab`, `add-track-modal`, `delete-track-modal`.
+
+### Composants partagés (`shared/`)
+
+- `ConfirmSheetComponent` : bottom-sheet de confirmation (inputs `title`/`body`/`tone`/`confirmLabel`/`cancelLabel`/`loading`/`confirmStyle`/`cancelStyle`, outputs `confirm`/`cancel`)
+- `ShareButtonComponent` : bouton partage + hint (inputs `copied`, `disabled`, output `share`) — utilisé dans `AlreadyPlayedScreenComponent` et `FinalRecapScreenComponent`
 
 ### NSwag — génération du client TypeScript
 
@@ -311,11 +345,16 @@ Runners Ubuntu, ~5-7 min par run (jobs `back`/`front`/`integration-tests` en par
 - **Résilience HTTP Deezer** — `AddStandardResilienceHandler` sur le `HttpClient<DeezerClient>` (`Program.cs`, hors `Testing`) : timeout 4s/tentative, 15s total, retry exponentiel (429/5xx) + circuit breaker. Évite qu'un appel Deezer lent ne bloque `StartSession` (timeout `HttpClient` par défaut = 100s). En `Testing`, le handler de résilience n'est pas branché (le `FakeDeezerHandler` reste seul). Package `Microsoft.Extensions.Http.Resilience`.
 - **Logging Deezer** — les trois méthodes de `DeezerClient` loguent en `Warning` sur échec HTTP / preview vide (plus de `catch {}` silencieux) et **re-throw `OperationCanceledException`** (l'annulation n'est plus avalée). Couvert par `DeezerClientTests` (unit).
 - **Health checks** — `GET /health` (liveness) renvoie un JSON `{ status, utc }` **consommé par le badge d'état backend du front** (`app.ts`) — ne pas changer ce format sans adapter le front. `GET /health/ready` (readiness) sonde la DB via `AddDbContextCheck<ApplicationDbContext>` (tag `ready`, renvoie le texte `Healthy`/`Unhealthy`) ; Northflank peut le sonder pour des redémarrages propres. Endpoints publics (mappés avant le `PlayerAuthMiddleware`). Package `Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore`.
+- **i18n FR/EN** (`ngx-translate v18`) — `TranslatePipe` dans chaque composant, fichiers `public/i18n/{fr,en}.json`, `LanguageService` détecte depuis `localStorage`/`navigator.language`/FR, persist en localStorage + `document.documentElement.lang`. E2E force `'fr'` via `addInitScript`.
+- **Refacto `game.component`** — découpé en `GameHeaderComponent`, `GameFooterComponent` + 5 screens (`welcome-screen`, `resume-screen`, `status-screen`, `already-played-screen`, `final-recap-screen`). Chaque composant dans son propre dossier avec `.html` externe.
+- **Refacto `admin.component`** — shell 42 lignes + 4 services (`AdminApiService`, `AdminStatsService`, `AdminPoolService`, `AdminActionsService`) fournis au niveau composant + 7 sous-composants dans `features/admin/components/`.
+- **Palette CSS centralisée** — variables `:root` dans `styles.scss` (35 variables `--bg-*`, `--text-*`, `--border-*`, `--color-*`). Toutes les couleurs des templates passent par `var(--...)`, plus de hex inline. Hovers via classes Tailwind `hover:` (plus de `onmouseenter`/`onmouseleave` JS).
+- **`ShareButtonComponent`** (`shared/share-button/`) — bouton partage réutilisable (inputs `copied`, `disabled`, output `share`), mutualisé entre `AlreadyPlayedScreenComponent` et `FinalRecapScreenComponent`.
 
 ## À venir (pas encore implémenté)
 
 - Tests mobiles (iOS Safari, Android Chrome)
-- Polish : charte graphique, messages d'erreur, accessibilité, RGPD
+- Polish : messages d'erreur, accessibilité WCAG 2.1 AA, RGPD
 - **Cache Redis pour les preview URLs Deezer** : les URLs sont identiques pour tous les joueurs du même défi. Intercaler dans `StartSession/Handler.cs` au niveau du `Task.WhenAll()` — chercher d'abord dans Redis (clé = DeezerTrackId, TTL 24h), sinon appeler Deezer. Nécessite `StackExchange.Redis` + entrée Redis dans `docker-compose.yml`.
 
 ## Décisions d'architecture notables
