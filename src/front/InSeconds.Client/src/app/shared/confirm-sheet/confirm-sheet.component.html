@@ -1,0 +1,19 @@
+<div class="fixed inset-0 flex items-end justify-center px-4 pb-8" style="background:rgba(0,0,0,0.7);z-index:50">
+  <div class="w-full max-w-lg rounded-2xl p-6 space-y-4" [style]="toneStyle().card">
+    <p class="text-sm font-semibold" [style]="toneStyle().title">{{ title() }}</p>
+    <p class="text-sm leading-relaxed" style="color:#e2e8f0;white-space:pre-line">{{ body() }}</p>
+    <div class="flex gap-3 pt-1">
+      <button (click)="confirm.emit()"
+        [disabled]="loading()"
+        class="flex-1 py-3 rounded-xl text-sm font-bold transition-all active:scale-95"
+        [style]="confirmStyle()">
+        {{ loading() ? '…' : confirmLabel() }}
+      </button>
+      <button (click)="cancel.emit()"
+        class="flex-1 py-3 rounded-xl text-sm font-bold transition-all active:scale-95"
+        [style]="cancelStyle()">
+        {{ cancelLabel() }}
+      </button>
+    </div>
+  </div>
+</div>

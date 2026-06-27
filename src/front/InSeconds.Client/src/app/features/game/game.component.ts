@@ -8,6 +8,9 @@ import { ConfirmSheetComponent } from '../../shared/confirm-sheet/confirm-sheet.
 import { ApiClient, TodayStatsResponse } from '../../api/api.generated';
 import { environment } from '../../../environments/environment';
 import { UnsavedGameComponent } from '../../core/guards/unsaved-game.guard';
+import { countUp } from '../../core/count-up';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { LanguageService, Lang } from '../../core/services/language.service';
 
 type GameState = 'loading' | 'welcome' | 'resume_prompt' | 'playing' | 'done' | 'error' | 'no_challenge' | 'already_played';
 
@@ -27,434 +30,20 @@ interface RoundResult {
 
 @Component({
   selector: 'app-game',
-  imports: [BlindRoundComponent, ConfirmSheetComponent, RouterLink],
+  imports: [BlindRoundComponent, ConfirmSheetComponent, RouterLink, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.Eager,
-  template: `
-    <div class="min-h-dvh flex flex-col" style="background:#080810;color:#e2e8f0">
-    <main class="flex-1 flex flex-col p-5 w-full max-w-lg mx-auto">
-
-      <!-- En-tête -->
-      <header class="pt-3 pb-6">
-        <div class="flex items-center justify-center relative">
-          <h1 class="text-lg font-semibold tracking-widest uppercase" style="color:#6366f1;letter-spacing:0.2em">InSeconds</h1>
-
-          <!-- Streak header (tous les écrans sauf loading) -->
-          @if (displayStreak() > 0 && gameState() !== 'loading' && gameState() !== 'playing') {
-            <span class="absolute right-0 flex items-center gap-1 text-xs font-semibold tabular-nums"
-                  style="color:#f59e0b">
-              🔥 {{ displayStreak() }}
-            </span>
-          }
-
-          <!-- Score en cours de partie (par-dessus streak si playing) -->
-          @if (gameState() === 'playing') {
-            <span class="absolute right-0 text-base font-bold tabular-nums" style="color:#f8fafc">
-              {{ totalScore() }} <span style="color:#334155;font-weight:400;font-size:0.75rem">pts</span>
-            </span>
-          }
-        </div>
-        @if (gameState() === 'playing') {
-          <div class="mt-4 space-y-1.5">
-            <div class="flex justify-between text-xs" style="color:#334155">
-              <span>Piste {{ currentIndex() + 1 }} / {{ tracks().length }}</span>
-              <button (click)="requestAbandon()"
-                      class="text-xs transition-colors"
-                      style="color:#475569"
-                      onmouseenter="this.style.color='#f87171'" onmouseleave="this.style.color='#475569'">
-                Abandonner
-              </button>
-            </div>
-            <div class="w-full rounded-full h-px" style="background:#1e1e2e">
-              <div class="h-px rounded-full transition-all duration-500" style="background:#6366f1"
-                [style.width.%]="(currentIndex() + 1) / tracks().length * 100">
-              </div>
-            </div>
-          </div>
-        }
-      </header>
-
-      <!-- Chargement -->
-      @if (gameState() === 'loading') {
-        <div class="flex-1 flex items-center justify-center">
-          <p class="text-sm animate-pulse" style="color:#334155">Chargement du défi…</p>
-        </div>
-      }
-
-      <!-- Accueil -->
-      @if (gameState() === 'welcome') {
-        <div class="screen-enter flex-1 flex flex-col items-center justify-center gap-10 text-center px-2">
-
-          <div class="space-y-4">
-            <p class="text-6xl" style="line-height:1">♪</p>
-            <h2 class="text-3xl font-bold tracking-tight" style="color:#f8fafc">Blind Test du jour</h2>
-            <p class="text-sm leading-relaxed" style="color:#475569">
-              {{ tracks().length }} morceaux · écoute &amp; devine<br>
-              Moins tu écoutes, plus tu scores
-            </p>
-          </div>
-
-          <button
-            (click)="startPlaying()"
-            class="w-full py-4 rounded-2xl font-bold text-base tracking-wide transition-all active:scale-95 touch-manipulation"
-            style="background:#6366f1;color:#fff;letter-spacing:0.04em">
-            Commencer
-          </button>
-        </div>
-      }
-
-      <!-- Reprise de partie en cours -->
-      @if (gameState() === 'resume_prompt') {
-        <div class="screen-enter flex-1 flex flex-col items-center justify-center gap-8 text-center px-4">
-
-          @if (!showAbandonConfirm()) {
-            <div class="space-y-3">
-              <p class="text-5xl" style="line-height:1">⏸</p>
-              <h2 class="text-2xl font-bold tracking-tight" style="color:#f8fafc">Partie en cours</h2>
-              <p class="text-sm leading-relaxed" style="color:#475569">
-                Tu as joué {{ resumeCompletedAnswers().length }} / {{ tracks().length }} morceaux.<br>
-                Veux-tu reprendre où tu t'étais arrêté ?
-              </p>
-            </div>
-
-            <div class="w-full flex flex-col gap-3">
-              <button (click)="resumePlaying()"
-                class="w-full py-4 rounded-2xl font-bold text-base tracking-wide transition-all active:scale-95 touch-manipulation"
-                style="background:#6366f1;color:#fff;letter-spacing:0.04em">
-                Reprendre
-              </button>
-              <button (click)="showAbandonConfirm.set(true)"
-                class="w-full py-3 rounded-2xl text-sm font-semibold transition-all active:scale-95"
-                style="background:#1e1e2e;color:#94a3b8;border:1px solid rgba(255,255,255,0.06)">
-                Abandonner
-              </button>
-            </div>
-          } @else {
-            <!-- Confirmation abandon -->
-            <div class="w-full rounded-2xl p-6 space-y-4" style="background:#1a0a0a;border:1px solid rgba(248,113,113,0.3)">
-              <p class="text-sm font-semibold" style="color:#fca5a5">Attention</p>
-              <p class="text-sm leading-relaxed" style="color:#e2e8f0">
-                En abandonnant, le défi d'aujourd'hui sera considéré comme joué.<br>
-                Tu ne pourras plus y rejouer avant demain.
-              </p>
-              <div class="flex gap-3 pt-1">
-                <button (click)="confirmAbandon()"
-                  [disabled]="abandonLoading()"
-                  class="flex-1 py-3 rounded-xl text-sm font-bold transition-all active:scale-95"
-                  style="background:#ef4444;color:#fff">
-                  {{ abandonLoading() ? '…' : 'Oui, abandonner' }}
-                </button>
-                <button (click)="showAbandonConfirm.set(false)"
-                  class="flex-1 py-3 rounded-xl text-sm font-semibold transition-all active:scale-95"
-                  style="background:#0f0f1a;color:#94a3b8;border:1px solid rgba(255,255,255,0.06)">
-                  Non, reprendre
-                </button>
-              </div>
-            </div>
-          }
-        </div>
-      }
-
-      <!-- Confirmation abandon en cours de partie -->
-      @if (gameState() === 'playing' && showAbandonConfirm()) {
-        <app-confirm-sheet
-          tone="danger"
-          title="Abandonner la partie ?"
-          body="Le défi d'aujourd'hui sera considéré comme joué.
-Tu ne pourras plus y rejouer avant demain."
-          confirmLabel="Oui, abandonner"
-          cancelLabel="Continuer"
-          [loading]="abandonLoading()"
-          (confirm)="confirmAbandon()"
-          (cancel)="showAbandonConfirm.set(false)" />
-      }
-
-      <!-- Confirmation quitter la page en cours de partie -->
-      @if (showLeaveConfirm()) {
-        <app-confirm-sheet
-          tone="warning"
-          title="Partie en cours"
-          body="Ta partie n'est pas terminée.
-Tu pourras la reprendre demain, mais le défi sera perdu si tu ne la termines pas aujourd'hui."
-          confirmLabel="Quitter quand même"
-          confirmStyle="background:#374151;color:#e2e8f0;border:1px solid rgba(255,255,255,0.1)"
-          cancelLabel="Continuer à jouer"
-          cancelStyle="background:#6366f1;color:#fff"
-          (confirm)="confirmLeave()"
-          (cancel)="cancelLeave()" />
-      }
-
-      <!-- Pas de défi aujourd'hui -->
-      @if (gameState() === 'no_challenge') {
-        <div class="screen-enter flex-1 flex flex-col items-center justify-center gap-6 text-center px-4">
-          <div class="space-y-2">
-            <h2 class="text-xl font-semibold" style="color:#e2e8f0">Pas de défi aujourd'hui</h2>
-            <p class="text-sm" style="color:#334155">Le défi n'a pas encore été généré.<br>Réessaie dans quelques minutes.</p>
-          </div>
-          <button (click)="retry()"
-            class="px-6 py-3 rounded-xl text-sm font-semibold transition-colors"
-            style="background:#1e1e2e;color:#94a3b8;border:1px solid rgba(255,255,255,0.06)">
-            Réessayer
-          </button>
-        </div>
-      }
-
-      <!-- Erreur -->
-      @if (gameState() === 'error') {
-        <div class="screen-enter flex-1 flex flex-col items-center justify-center gap-6 text-center px-4">
-          <div class="space-y-2">
-            <h2 class="text-xl font-semibold" style="color:#e2e8f0">Impossible de charger le défi</h2>
-            <p class="text-sm" style="color:#334155">Le serveur est peut-être indisponible.<br>Réessaie dans quelques secondes.</p>
-          </div>
-          <button (click)="retry()"
-            class="px-6 py-3 rounded-xl text-sm font-semibold transition-colors"
-            style="background:#1e1e2e;color:#94a3b8;border:1px solid rgba(255,255,255,0.06)">
-            Réessayer
-          </button>
-        </div>
-      }
-
-      <!-- Déjà joué aujourd'hui (Completed ou Abandoned) -->
-      @if (gameState() === 'already_played') {
-        <div class="screen-enter flex-1 flex flex-col items-center gap-7 text-center px-2 pt-4">
-
-          @if (sessionAbandoned()) {
-            <!-- Partie abandonnée — message simple -->
-            <div class="flex-1 flex flex-col items-center justify-center gap-6 text-center px-4">
-              <div class="space-y-4">
-                <p class="text-5xl" style="line-height:1">🏳️</p>
-                <h2 class="text-2xl font-bold tracking-tight" style="color:#f8fafc">Tu as abandonné le défi aujourd'hui</h2>
-                <p class="text-sm leading-relaxed" style="color:#475569">
-                  Reviens demain pour un nouveau défi.
-                </p>
-              </div>
-              <div>
-                <p class="text-xs font-semibold tracking-widest uppercase mb-1" style="color:#475569">Prochain défi dans</p>
-                <p class="text-2xl font-bold tabular-nums" style="color:#e2e8f0;letter-spacing:0.05em">{{ countdown() }}</p>
-              </div>
-            </div>
-          } @else {
-            <!-- Partie complétée — récap complet -->
-            <div class="space-y-3">
-              <h2 class="text-2xl font-bold tracking-tight" style="color:#f8fafc">Déjà joué aujourd'hui</h2>
-              <div>
-                <p class="text-xs font-semibold tracking-widest uppercase mb-1" style="color:#475569">Prochain défi dans</p>
-                <p class="text-3xl font-bold tabular-nums" style="color:#e2e8f0;letter-spacing:0.05em">{{ countdown() }}</p>
-              </div>
-            </div>
-
-            <!-- Card scores -->
-            @if (todayStats()) {
-              <div class="w-full rounded-2xl overflow-hidden" style="background:#0f0f1a;border:1px solid rgba(255,255,255,0.07)">
-
-                <div class="grid grid-cols-2" style="border-bottom:1px solid rgba(255,255,255,0.07)">
-                  <div class="flex flex-col items-center py-7 px-4" style="border-right:1px solid rgba(255,255,255,0.07)">
-                    <p class="text-xs font-semibold tracking-widest uppercase mb-2" style="color:#334155">Ton score</p>
-                    <p class="text-5xl font-bold tabular-nums" style="color:#f8fafc;letter-spacing:-0.02em">{{ todayStats()!.yourScore ?? '—' }}</p>
-                    <p class="text-xs mt-2" style="color:#334155">pts</p>
-                  </div>
-                  <div class="flex flex-col items-center py-7 px-4">
-                    <p class="text-xs font-semibold tracking-widest uppercase mb-2" style="color:#334155">Médiane</p>
-                    @if (todayStats()!.medianScore > 0) {
-                      <p class="text-5xl font-bold tabular-nums" style="color:#475569;letter-spacing:-0.02em">{{ todayStats()!.medianScore }}</p>
-                      <p class="text-xs mt-2" style="color:#334155">pts aujourd'hui</p>
-                    } @else {
-                      <p class="text-sm mt-4" style="color:#1e293b">—</p>
-                    }
-                  </div>
-                </div>
-
-                <!-- Accordion morceaux -->
-                @if (todayStats()!.tracks.length) {
-                  <button (click)="showTrackDetails.set(!showTrackDetails())"
-                          class="w-full flex items-center justify-center gap-2 py-3.5 text-xs font-semibold tracking-wide uppercase transition-colors"
-                          style="color:#334155"
-                          onmouseenter="this.style.color='#64748b'" onmouseleave="this.style.color='#334155'">
-                    <span>{{ showTrackDetails() ? 'Masquer' : 'Voir les morceaux' }}</span>
-                    <span>{{ showTrackDetails() ? '▲' : '▼' }}</span>
-                  </button>
-                  @if (showTrackDetails()) {
-                    <div class="flex flex-col" style="border-top:1px solid rgba(255,255,255,0.07)">
-                      @for (t of todayStats()!.tracks; track t.position) {
-                        <a [href]="'https://www.deezer.com/track/' + t.deezerTrackId"
-                           target="_blank" rel="noopener noreferrer"
-                           class="flex items-center gap-3 px-4 py-3.5 transition-colors"
-                           style="border-bottom:1px solid rgba(255,255,255,0.04)"
-                           onmouseenter="this.style.background='rgba(255,255,255,0.02)'"
-                           onmouseleave="this.style.background='transparent'">
-                          @if (t.coverUrl) {
-                            <img [src]="t.coverUrl" alt="Pochette"
-                                 class="w-9 h-9 rounded-lg object-cover shrink-0" style="opacity:0.85" />
-                          } @else {
-                            <div class="w-9 h-9 rounded-lg shrink-0" style="background:#1a1a2e"></div>
-                          }
-                          <div class="flex-1 min-w-0 text-left">
-                            <p class="text-sm font-medium truncate" style="color:#cbd5e1">{{ t.artist }} — {{ t.title }}</p>
-                            <div class="flex gap-3 mt-0.5 text-xs" style="color:#334155">
-                              <span>{{ t.failureRatePercent.toFixed(0) }}% ratés</span>
-                              @if (t.averageSecondsWhenCorrect != null) {
-                                <span>· moy. {{ t.averageSecondsWhenCorrect!.toFixed(1) }}s</span>
-                              }
-                            </div>
-                          </div>
-                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="opacity:0.2;shrink:0">
-                            <path d="M2 11h2v1H2zM6 9h2v3H6zM10 7h2v5h-2zM14 5h2v7h-2z" fill="white"/>
-                          </svg>
-                        </a>
-                      }
-                    </div>
-                  }
-                }
-              </div>
-            }
-
-            <!-- Bouton partage -->
-            @if (todayStats()?.yourScore != null) {
-              <div class="flex flex-col items-center gap-1.5 w-full">
-                <button
-                  (click)="shareFromStats()"
-                  class="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition touch-manipulation"
-                  style="background:#1e1e2e;color:#e2e8f0;border:1px solid rgba(255,255,255,0.08);letter-spacing:0.03em">
-                  {{ shareCopied() ? '✓ Copié !' : '🔗 Partager mon score' }}
-                </button>
-                <p class="text-xs" style="color:#475569">Copie un résumé en emojis dans le presse-papier</p>
-              </div>
-            }
-          }
-        </div>
-      }
-
-      <!-- Jeu en cours -->
-      @if (gameState() === 'playing' && currentTrack()) {
-        <div class="screen-enter flex-1 flex flex-col justify-start pt-4">
-          <app-blind-round
-            #roundRef
-            [track]="currentTrack()!"
-            [isLast]="currentIndex() === tracks().length - 1"
-            [sessionId]="sessionId"
-            [minListenedSeconds]="currentTrackMinListenedSeconds()"
-            (answered)="onAnswered($event)"
-            (nextTrack)="onNextTrack()" />
-        </div>
-      }
-
-      <!-- Récapitulatif final -->
-      @if (gameState() === 'done') {
-        <div class="screen-enter flex-1 flex flex-col pt-4 gap-6">
-
-          <!-- Score total -->
-          <div class="text-center space-y-2 pb-2">
-            <p class="text-xs font-semibold tracking-widest uppercase" style="color:#64748b">Score final</p>
-            <p class="font-bold tabular-nums" style="color:#f8fafc;font-size:4rem;line-height:1;letter-spacing:-0.03em">{{ totalScore() }}</p>
-            <p class="text-xs" style="color:#64748b">points</p>
-          </div>
-
-          <!-- Bouton partage -->
-          <div class="flex flex-col items-center gap-1.5">
-            <button
-              (click)="share()"
-              [disabled]="results().length < tracks().length"
-              class="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition touch-manipulation disabled:opacity-40"
-              style="background:#1e1e2e;color:#e2e8f0;border:1px solid rgba(255,255,255,0.08);letter-spacing:0.03em">
-              {{ shareCopied() ? '✓ Copié !' : '🔗 Partager mon score' }}
-            </button>
-            <p class="text-xs" style="color:#475569">Copie un résumé en emojis dans le presse-papier</p>
-          </div>
-
-          <!-- Liste morceaux -->
-          <div class="flex flex-col gap-3">
-            @for (r of results(); track r.position) {
-              <div class="flex gap-3 p-3 rounded-2xl" style="background:#0f0f1a;border:1px solid rgba(255,255,255,0.08)">
-
-                <!-- Pochette -->
-                @if (r.coverUrl) {
-                  <img [src]="r.coverUrl" alt="Pochette"
-                    class="w-14 h-14 rounded-xl object-cover shrink-0" style="opacity:0.9" />
-                } @else {
-                  <div class="w-14 h-14 rounded-xl shrink-0" style="background:#1a1a2e"></div>
-                }
-
-                <!-- Infos -->
-                <div class="flex-1 min-w-0 text-left space-y-1.5 py-0.5">
-
-                  <div class="flex gap-2.5 text-xs font-bold">
-                    <span [style.color]="r.artistCorrect ? '#34d399' : '#f87171'">
-                      {{ r.artistCorrect ? '✓' : '✗' }} Artiste
-                    </span>
-                    <span [style.color]="r.titleCorrect ? '#34d399' : '#f87171'">
-                      {{ r.titleCorrect ? '✓' : '✗' }} Titre
-                    </span>
-                  </div>
-
-                  <p class="text-sm font-medium truncate" style="color:#e2e8f0">
-                    {{ r.correctArtist }} — {{ r.correctTitle }}
-                  </p>
-
-                  <div class="flex gap-2.5 text-xs" style="color:#64748b">
-                    <span>{{ r.listenedDurationSeconds }}s</span>
-                    @if (r.averageSecondsWhenCorrect != null) {
-                      <span>· moy. {{ r.averageSecondsWhenCorrect!.toFixed(1) }}s</span>
-                    }
-                    <span>· {{ r.failureRatePercent.toFixed(0) }}% ratés</span>
-                  </div>
-
-                  <a [href]="'https://www.deezer.com/track/' + r.deezerTrackId"
-                    target="_blank" rel="noopener noreferrer"
-                    class="inline-flex items-center gap-1 text-xs transition-colors"
-                    style="color:#475569"
-                    onmouseenter="this.style.color='#94a3b8'" onmouseleave="this.style.color='#475569'">
-                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M2 11h2v1H2zM6 9h2v3H6zM10 7h2v5h-2zM14 5h2v7h-2z" fill="currentColor"/></svg>
-                    Écouter sur Deezer
-                  </a>
-                </div>
-
-                <!-- Score -->
-                <div class="shrink-0 text-right self-center">
-                  <span class="text-lg font-bold" [style.color]="r.score > 0 ? '#34d399' : '#64748b'">
-                    +{{ r.score }}
-                  </span>
-                </div>
-
-              </div>
-            }
-          </div>
-
-          <p class="text-center text-xs pb-4" style="color:#475569">Reviens demain pour un nouveau défi</p>
-        </div>
-      }
-
-      <footer class="flex justify-center items-center gap-4 py-3 mt-auto">
-        <a routerLink="/admin" class="transition-colors" style="color:#334155"
-           onmouseenter="this.style.color='#64748b'" onmouseleave="this.style.color='#334155'" title="Admin">
-          <svg fill="currentColor" width="14" height="14" viewBox="0 0 574.65 574.65" xmlns="http://www.w3.org/2000/svg">
-            <path d="M424.94,217.315v-79.656C424.94,61.755,363.185,0,287.291,0S149.658,61.739,149.658,137.623v79.742c-41.326,28.563-68.46,76.238-68.46,130.287v162.264c0,35.748,28.986,64.734,64.733,64.734h282.787c35.748,0,64.734-28.986,64.734-64.734V347.652C493.456,293.574,466.306,245.892,424.94,217.315z M322.136,421.457v49.314c0,19.221-15.577,34.811-34.808,34.811c-19.23,0-34.829-15.59-34.829-34.83v-49.283c-14.155-10.627-23.441-27.385-23.441-46.447c0-32.174,26.102-58.254,58.252-58.254c32.173,0,58.255,26.084,58.255,58.254C345.563,394.084,336.276,410.832,322.136,421.457z M348.241,189.969c-4.344-0.357-8.707-0.665-13.145-0.665h-95.538c-4.456,0-8.837,0.308-13.201,0.665v-52.346c0-33.595,27.338-60.922,60.933-60.922c33.612,0,60.95,27.348,60.95,60.959V189.969L348.241,189.969z"/>
-          </svg>
-        </a>
-        <span style="color:#1e293b">·</span>
-        <a href="https://github.com/Oasis35/InSeconds" target="_blank" rel="noopener noreferrer"
-           class="transition-colors" style="color:#334155"
-           onmouseenter="this.style.color='#64748b'" onmouseleave="this.style.color='#334155'" title="Voir le code source">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
-          </svg>
-        </a>
-        <span style="color:#1e293b">·</span>
-        <a href="https://www.linkedin.com/in/crageau/" target="_blank" rel="noopener noreferrer"
-           class="transition-colors" style="color:#334155"
-           onmouseenter="this.style.color='#64748b'" onmouseleave="this.style.color='#334155'" title="Mon profil">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-          </svg>
-        </a>
-      </footer>
-
-    </main>
-    </div>
-  `,
+  templateUrl: './game.component.html',
 })
 export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
   private readonly gameService = inject(GameService);
   private readonly api = inject(ApiClient);
   private readonly audioPlayer = inject(AudioPlayerService);
+  private readonly translate = inject(TranslateService);
+  protected readonly language = inject(LanguageService);
+
+  protected setLang(lang: Lang): void {
+    this.language.use(lang);
+  }
 
   protected readonly gameState = signal<GameState>('loading');
   protected readonly todayStats = signal<TodayStatsResponse | null>(null);
@@ -469,6 +58,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
   protected readonly tracks = signal<TrackSlot[]>([]);
   protected readonly currentIndex = signal(0);
   protected readonly totalScore = signal(0);
+  protected readonly displayedTotalScore = signal(0);
   protected readonly results = signal<RoundResult[]>([]);
   protected readonly currentStreak = signal(0);
 
@@ -633,6 +223,8 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
     this.currentTrackMinListenedSeconds.set(null);
     if (next >= this.tracks().length) {
       this.gameState.set('done');
+      this.displayedTotalScore.set(0);
+      countUp(this.totalScore(), v => this.displayedTotalScore.set(v), 1000);
     } else {
       this.currentIndex.set(next);
     }
@@ -702,9 +294,9 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
     }).filter(Boolean);
 
     const text = [
-      `InSeconds 🎵 ${dateStr}`,
+      this.translate.instant('share.title', { date: dateStr }),
       lines.join('\n'),
-      `🏆 ${stats.yourScore} pts`,
+      this.translate.instant('share.score', { score: stats.yourScore }),
       environment.appUrl,
     ].join('\n');
 
@@ -725,9 +317,9 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
     });
 
     const text = [
-      `InSeconds 🎵 ${dateStr}`,
+      this.translate.instant('share.title', { date: dateStr }),
       lines.join('\n'),
-      `🏆 ${this.totalScore()} pts`,
+      this.translate.instant('share.score', { score: this.totalScore() }),
       environment.appUrl,
     ].join('\n');
 
