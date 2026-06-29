@@ -1,6 +1,6 @@
 import { Component, inject, signal, computed, effect, viewChild, OnInit, OnDestroy, HostListener, ChangeDetectionStrategy } from '@angular/core';
-import { GameService } from '../../core/services/game.service';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
+import { GameFacadeService } from './services/game-facade.service';
 import { TrackSlot, ResumedAnswer } from '../../core/models/game.models';
 import { BlindRoundComponent, AnsweredEvent } from './blind-round/blind-round.component';
 import { ConfirmSheetComponent } from '../../shared/confirm-sheet/confirm-sheet.component';
@@ -29,9 +29,10 @@ type GameState = 'loading' | 'welcome' | 'resume_prompt' | 'playing' | 'done' | 
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './game.component.html',
+  providers: [GameFacadeService],
 })
 export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
-  private readonly gameService = inject(GameService);
+  private readonly gameService = inject(GameFacadeService);
   private readonly api = inject(ApiClient);
   private readonly audioPlayer = inject(AudioPlayerService);
   private readonly translate = inject(TranslateService);

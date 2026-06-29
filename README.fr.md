@@ -91,8 +91,9 @@ Workflow GitHub Actions sur chaque push et chaque PR vers `main` :
 - **Backend** — build Release + `dotnet ef migrations has-pending-model-changes`
 - **Tests unitaires** — `dotnet test` sur `InSeconds.Api.UnitTests` (xUnit, pas de BD requise)
 - **Frontend** — `npm ci` + build production
+- **Tests unitaires frontend** — `ng test --watch=false --browsers=ChromeHeadless` (Karma + Jasmine, 80 tests)
 - **Tests d'intégration** — `dotnet test` sur `InSeconds.Api.IntegrationTests` (Testcontainers crée un conteneur PostgreSQL réel, pas de YAML supplémentaire)
-- **E2E** — tests Playwright (Chromium) contre un vrai backend en mode `Testing` avec un service PostgreSQL — s'exécute après les trois jobs précédents
+- **E2E** — tests Playwright (Chromium) contre un vrai backend en mode `Testing` avec un service PostgreSQL — s'exécute après tous les jobs précédents
 
 Les runs obsolètes sont annulés automatiquement.
 
@@ -106,6 +107,15 @@ dotnet test InSeconds.Api.UnitTests
 ```
 
 Couvre `ScoreCalculator`, `TextNormalizer`, `SettingsService` et autres services Common. Pas de base de données nécessaire (logique pure).
+
+### Tests unitaires (frontend)
+
+```bash
+cd src/front/InSeconds.Client
+npx ng test --watch=false --browsers=ChromeHeadless
+```
+
+**80 tests** (Karma + Jasmine) couvrant `GameService`, `SettingsService`, `LanguageService`, `AdminApiService`, `AdminStatsService`. Utilise `HttpTestingController` — pas de vraies requêtes HTTP.
 
 ### Tests d'intégration (backend)
 

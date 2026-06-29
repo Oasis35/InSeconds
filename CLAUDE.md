@@ -57,7 +57,7 @@ InSeconds.Api/
 │   ├── Auth/                          # CookieAuthService + PlayerAuthMiddleware
 │   ├── Scoring/                       # ScoreCalculator
 │   ├── Settings/                      # AppSettings, SettingsService, AppDbConfigurationSource
-│   └── Text/                          # TextNormalizer (Levenshtein)
+│   └── Text/                          # TextNormalizer + TextNormalizationHelpers (Levenshtein, accents, regex)
 └── Program.cs
 ```
 
@@ -121,6 +121,9 @@ Angular 22 standalone + signals + ngx-translate (i18n FR/EN).
 ```
 features/game/
 ├── game.component.ts/.html        # orchestration (~370 lignes .ts, ~110 lignes .html)
+├── services/
+│   ├── game-facade.service.ts     # façade métier (fournie par GameComponent, pas root)
+│   └── deezer-autocomplete.service.ts  # autocomplete Deezer (providedIn: root, stateless)
 ├── blind-round/                   # choix palier + lecture + saisie + polish UX
 ├── components/
 │   ├── game-header/               # titre + streak + score + barre progression + abandon
@@ -135,9 +138,11 @@ features/game/
 
 ### Découpe de `admin/`
 
-`AdminComponent` est un shell 42 lignes qui fournit 4 services via `providers: [...]` au niveau composant :
-- `AdminApiService` — rxResource HTTP, auth
-- `AdminStatsService` — état dashboard (jour sélectionné, navigation, formatage)
+`AdminComponent` est un shell ~45 lignes qui fournit 6 services via `providers: [...]` au niveau composant :
+- `AdminHttpService` — appels HTTP bruts + signal `authenticated` + login/logout/checkAuth
+- `AdminStateService` — signals partagés (`selectedDay`, `poolSearchQuery`, `poolReloadTrigger`, `challengesReloadTrigger`)
+- `AdminApiService` — orchestration `rxResource` (pool, stats, challenges, search) + computed accessors ; délègue HTTP à `AdminHttpService` et état à `AdminStateService`
+- `AdminStatsService` — état dashboard (navigation, formatage dates)
 - `AdminPoolService` — filtres/pagination/sélection, modales add/delete
 - `AdminActionsService` — `generateToday()`, `reset()`
 
@@ -248,10 +253,11 @@ Workflow `.github/workflows/ci.yml`, déclenché sur **push toutes branches + PR
 - **Job `back`** : restore + `dotnet build InSeconds.slnx --configuration Release` + `dotnet ef migrations has-pending-model-changes` (fail si une modif `Domain/` ou `Configurations/` n'a pas de migration associée)
 - **Job `unit-tests`** : `dotnet test` sur `InSeconds.Api.UnitTests`
 - **Job `front`** : `npm ci` + `npm run build` (prod) sur `src/front/InSeconds.Client/`
+- **Job `unit-tests-front`** : `npx ng test --watch=false --browsers=ChromeHeadless` sur `src/front/InSeconds.Client/` (Karma + Jasmine, Chrome headless natif sur ubuntu-latest)
 - **Job `integration-tests`** : tests d'intégration backend (dépend de `back`). Testcontainers crée un conteneur PostgreSQL real ephémère, `WebApplicationFactory<Program>` monte l'app in-memory en mode `Testing`, Respawn truncate les tables entre les tests. Build en **Debug** (pas Release).
-- **Job `e2e`** : tests Playwright E2E (dépend de `back` + `unit-tests` + `front`). Tourne sur `ubuntu-latest` avec un service PostgreSQL (base `inseconds_e2e`). Lance le back en mode Testing sur le port 5171 avec `--no-launch-profile`, attend que `/api/settings` réponde, démarre Angular avec `ng serve --configuration e2e-ci`, puis exécute `npx playwright test`. Upload le rapport HTML en artifact en cas d'échec.
+- **Job `e2e`** : tests Playwright E2E (dépend de `back` + `unit-tests` + `unit-tests-front` + `front`). Tourne sur `ubuntu-latest` avec un service PostgreSQL (base `inseconds_e2e`). Lance le back en mode Testing sur le port 5171 avec `--no-launch-profile`, attend que `/api/settings` réponde, démarre Angular avec `ng serve --configuration e2e-ci`, puis exécute `npx playwright test`. Upload le rapport HTML en artifact en cas d'échec.
 
-Runners Ubuntu, ~5-7 min par run (jobs `back`/`front`/`integration-tests` en parallèle, `e2e` séquentiel après). Setup .NET via `global-json-file: src/back/global.json` pour respecter le pin SDK du projet.
+Runners Ubuntu, ~5-7 min par run (jobs `back`/`front`/`unit-tests-front`/`integration-tests` en parallèle, `e2e` séquentiel après). Setup .NET via `global-json-file: src/back/global.json` pour respecter le pin SDK du projet.
 
 ### Règles importantes pour la CI
 
@@ -288,7 +294,7 @@ Runners Ubuntu, ~5-7 min par run (jobs `back`/`front`/`integration-tests` en par
 
 - Vertical slices `Sessions/StartSession` + `Sessions/SubmitAnswer` (scoring serveur + stats par morceau)
 - `SubmitAnswerResponse` inclut : `AverageSecondsWhenCorrect` (moy. temps des joueurs ayant trouvé) + `FailureRatePercent` + `ListenedDurationSeconds`
-- Services Common : `TextNormalizer` (Levenshtein + suppression parenthèses/crochets), `ScoreCalculator`, `SettingsService` — tous couverts par tests unitaires xUnit (`InSeconds.Api.UnitTests`)
+- Services Common : `TextNormalizer` (Levenshtein + suppression parenthèses/crochets), `ScoreCalculator`, `SettingsService` — tous couverts par tests unitaires xUnit (`InSeconds.Api.UnitTests`). `TextNormalizationHelpers` (internal static) : `ParenthesesPattern()` (`[GeneratedRegex]`), `RemoveAccents()`, `LevenshteinDistance()` — extrait de `TextNormalizer` pour SRP
 - `CookieAuthService` — résout ou crée un Player guest, cookie HttpOnly signé (`SameSite=None` en prod)
 - `playerAuthInterceptor` Angular — `withCredentials: true` sur toutes les requêtes `/api` hors admin
 - `DeezerClient` — `GetPreviewUrlAsync` + `SearchTracksAsync`, extrait le hash de pochette (`CoverHash`)
@@ -347,7 +353,9 @@ Runners Ubuntu, ~5-7 min par run (jobs `back`/`front`/`integration-tests` en par
 - **Health checks** — `GET /health` (liveness) renvoie un JSON `{ status, utc }` **consommé par le badge d'état backend du front** (`app.ts`) — ne pas changer ce format sans adapter le front. `GET /health/ready` (readiness) sonde la DB via `AddDbContextCheck<ApplicationDbContext>` (tag `ready`, renvoie le texte `Healthy`/`Unhealthy`) ; Northflank peut le sonder pour des redémarrages propres. Endpoints publics (mappés avant le `PlayerAuthMiddleware`). Package `Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore`.
 - **i18n FR/EN** (`ngx-translate v18`) — `TranslatePipe` dans chaque composant, fichiers `public/i18n/{fr,en}.json`, `LanguageService` détecte depuis `localStorage`/`navigator.language`/FR, persist en localStorage + `document.documentElement.lang`. E2E force `'fr'` via `addInitScript`.
 - **Refacto `game.component`** — découpé en `GameHeaderComponent`, `GameFooterComponent` + 5 screens (`welcome-screen`, `resume-screen`, `status-screen`, `already-played-screen`, `final-recap-screen`). Chaque composant dans son propre dossier avec `.html` externe.
-- **Refacto `admin.component`** — shell 42 lignes + 4 services (`AdminApiService`, `AdminStatsService`, `AdminPoolService`, `AdminActionsService`) fournis au niveau composant + 7 sous-composants dans `features/admin/components/`.
+- **`GameFacadeService`** (`features/game/services/game-facade.service.ts`) — façade métier fournie par `GameComponent` (pas `root`), délègue à `GameService`. `DeezerAutocompleteService` (`features/game/services/deezer-autocomplete.service.ts`) — autocomplete Deezer stateless (`providedIn: 'root'`), remplace l'ancienne `DeezerSearchService` supprimée de `core/services/`.
+- **Tests unitaires frontend** (Karma + Jasmine, job CI `unit-tests-front`) — 80 tests répartis en 5 fichiers : `game.service.spec.ts` (11), `settings.service.spec.ts` (12), `language.service.spec.ts` (12), `admin-api.service.spec.ts` (16), `admin-stats.service.spec.ts` (29). Utilisent `provideHttpClient()` + `provideHttpClientTesting()` + `HttpTestingController` (pas d'ancien `HttpClientTestingModule`).
+- **Refacto `admin.component`** — shell ~45 lignes + 6 services (`AdminHttpService`, `AdminStateService`, `AdminApiService`, `AdminStatsService`, `AdminPoolService`, `AdminActionsService`) fournis au niveau composant + 7 sous-composants dans `features/admin/components/`. `AdminApiService` délègue HTTP à `AdminHttpService` et state à `AdminStateService` (SRP).
 - **Palette CSS centralisée** — variables `:root` dans `styles.scss` (35 variables `--bg-*`, `--text-*`, `--border-*`, `--color-*`). Toutes les couleurs des templates passent par `var(--...)`, plus de hex inline. Hovers via classes Tailwind `hover:` (plus de `onmouseenter`/`onmouseleave` JS).
 - **`ShareButtonComponent`** (`shared/share-button/`) — bouton partage réutilisable (inputs `copied`, `disabled`, output `share`), mutualisé entre `AlreadyPlayedScreenComponent` et `FinalRecapScreenComponent`.
 
@@ -361,5 +369,5 @@ Runners Ubuntu, ~5-7 min par run (jobs `back`/`front`/`integration-tests` en par
 
 - **Pas de Register / Leaderboard** — fonctionnalité délibérément écartée pour garder l'app simple (tout le monde joue en guest, stats globales suffisent)
 - **`UpdateData` EF insuffisant pour les Settings existants** — utiliser `migrationBuilder.Sql("UPDATE ...")` dans les migrations qui modifient des valeurs de Settings déjà en DB, sinon la mise à jour ne s'applique pas sur une DB prod existante
-- **Autocomplete Deezer via proxy back** — l'API Deezer publique bloque les appels CORS directs depuis le navigateur. Le back expose `GET /api/deezer/search` qui relay (`DeezerClient.SearchTracksAsync`). Debounce 300ms côté front (`DeezerSearchService`).
+- **Autocomplete Deezer via proxy back** — l'API Deezer publique bloque les appels CORS directs depuis le navigateur. Le back expose `GET /api/deezer/search` qui relay (`DeezerClient.SearchTracksAsync`). Debounce 300ms côté front (`DeezerAutocompleteService` dans `features/game/services/`).
 - **`chosenDuration` en signal** dans `BlindRoundComponent` — nécessaire pour que `nextDuration` (computed) se recalcule lors des `extend`/`listenMore`. Une propriété ordinaire ne déclenche pas la réactivité Angular.
