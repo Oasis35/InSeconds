@@ -115,7 +115,7 @@ cd src/front/InSeconds.Client
 npx ng test --watch=false --browsers=ChromeHeadless
 ```
 
-**80 tests** (Karma + Jasmine) covering `GameService`, `SettingsService`, `LanguageService`, `AdminHttpService`, `AdminStatsService`. Uses `HttpTestingController` — no real HTTP calls.
+**95 tests** (Karma + Jasmine) covering `App`, `GameService`, `SettingsService`, `LanguageService`, `AdminHttpService`, `AdminStatsService`. Uses `HttpTestingController` — no real HTTP calls.
 
 ### Integration tests (backend)
 
