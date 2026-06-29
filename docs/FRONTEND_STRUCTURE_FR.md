@@ -1,4 +1,4 @@
-# Architecture Frontend (Angular 20)
+# Architecture Frontend (Angular 22)
 
 > Référence d'architecture frontend InSeconds. Reflète l'état du code à `src/front/InSeconds.Client/`. Pour les conventions et pièges connus, voir [`CLAUDE.md`](../CLAUDE.md).
 
@@ -35,7 +35,6 @@ src/front/InSeconds.Client/
 │   │   │   │   └── game.models.ts         # re-exports depuis api.generated.ts
 │   │   │   └── services/
 │   │   │       ├── audio-player.service.ts    # signal-based, durée choisie
-│   │   │       ├── deezer-search.service.ts   # autocomplete Deezer avec debounce 300ms
 │   │   │       ├── game.service.ts             # POST /sessions + /answers
 │   │   │       ├── language.service.ts         # détection/changement FR/EN, persist localStorage
 │   │   │       └── settings.service.ts         # GET /settings → signals
@@ -46,11 +45,13 @@ src/front/InSeconds.Client/
 │   │   │       └── share-button.component.ts   # bouton partage réutilisable (already-played + done)
 │   │   ├── features/
 │   │   │   ├── admin/
-│   │   │   │   ├── admin.component.ts          # shell (42 lignes) — injecte les 4 services
+│   │   │   │   ├── admin.component.ts          # shell (~45 lignes) — injecte les 6 services
 │   │   │   │   ├── admin.models.ts             # interfaces partagées (TrackDto, ChallengeDto, …)
 │   │   │   │   ├── services/
-│   │   │   │   │   ├── admin-api.service.ts    # HTTP + rxResource (pool, stats, challenges)
-│   │   │   │   │   ├── admin-stats.service.ts  # état dashboard (selectedDay, challengeMonth, …)
+│   │   │   │   │   ├── admin-http.service.ts   # HTTP brut + signal authenticated + login/logout/checkAuth
+│   │   │   │   │   ├── admin-state.service.ts  # signals partagés (selectedDay, poolReloadTrigger, …)
+│   │   │   │   │   ├── admin-api.service.ts    # rxResource (pool, stats, challenges) + computed accessors
+│   │   │   │   │   ├── admin-stats.service.ts  # état dashboard (navigation, formatage dates, …)
 │   │   │   │   │   ├── admin-pool.service.ts   # filtres/pagination/sélection pool, modales ajout/suppression
 │   │   │   │   │   └── admin-actions.service.ts # generateToday(), reset()
 │   │   │   │   └── components/
@@ -64,6 +65,9 @@ src/front/InSeconds.Client/
 │   │   │   ├── game/
 │   │   │   │   ├── game.component.ts           # orchestration session — ~370 lignes
 │   │   │   │   ├── game.component.html         # ~110 lignes (délègue aux sous-composants)
+│   │   │   │   ├── services/
+│   │   │   │   │   ├── game-facade.service.ts      # façade métier (fournie par GameComponent, pas root)
+│   │   │   │   │   └── deezer-autocomplete.service.ts  # autocomplete Deezer (providedIn: root, stateless)
 │   │   │   │   ├── blind-round/
 │   │   │   │   │   └── blind-round.component.ts  # choix palier + lecture + saisie + polish UX
 │   │   │   │   ├── components/
@@ -190,9 +194,9 @@ Méthodes publiques :
 - `replayFull()` — rejoue depuis le début jusqu'à la fin naturelle (30s), sans timer
 - `preloadAll(trackUrls)` — injecte des `<link rel="preload" as="audio">` dans le `<head>`, non bloquant
 
-### `DeezerSearchService`
+### `DeezerAutocompleteService`
 
-Autocomplete Deezer : prend un `Observable<string>`, applique debounce 300ms + distinctUntilChanged, appelle `GET /api/deezer/search?q=xxx` (proxy back pour éviter les CORS), retourne `DeezerSuggestion[]` (`artist`, `title`).
+Autocomplete Deezer (`features/game/services/`, `providedIn: root`, stateless) : prend un `Observable<string>`, applique debounce 300ms + distinctUntilChanged, appelle `GET /api/deezer/search?q=xxx` (proxy back pour éviter les CORS), retourne `DeezerSuggestion[]` (`artist`, `title`).
 
 ### `GameService`
 
@@ -250,7 +254,7 @@ Bouton partage réutilisable (`shared/share-button/`). Inputs : `copied: boolean
 
 ### `AdminComponent`
 
-Shell 42 lignes. Fournit les 4 services via `providers: [AdminApiService, AdminStatsService, AdminPoolService, AdminActionsService]` au niveau du composant (pas `root`). Délègue à 7 sous-composants :
+Shell ~45 lignes. Fournit les 6 services via `providers: [AdminHttpService, AdminStateService, AdminApiService, AdminStatsService, AdminPoolService, AdminActionsService]` au niveau du composant (pas `root`). Délègue à 7 sous-composants :
 
 - **`AdminLoginComponent`** : formulaire login, `loginStatus` signal local
 - **`DashboardTabComponent`** : injecte `AdminStatsService`
@@ -261,8 +265,10 @@ Shell 42 lignes. Fournit les 4 services via `providers: [AdminApiService, AdminS
 - **`DeleteTrackModalComponent`** : injecte `AdminPoolService`
 
 Services admin (`features/admin/services/`) :
-- `AdminApiService` — rxResource (pool/stats/challenges), HTTP CRUD, auth (`checkAuth`/`login`/`logout`)
-- `AdminStatsService` — état dashboard (jour sélectionné, mois défis, navigation, formatage)
+- `AdminHttpService` — HTTP brut + signal `authenticated` + `login`/`logout`/`checkAuth`
+- `AdminStateService` — signals partagés (`selectedDay`, `poolSearchQuery`, `poolReloadTrigger`, `challengesReloadTrigger`)
+- `AdminApiService` — rxResource (pool/stats/challenges/search) + computed accessors ; délègue HTTP à `AdminHttpService`, état à `AdminStateService`
+- `AdminStatsService` — état dashboard (navigation, formatage dates)
 - `AdminPoolService` — filtres, pagination, sélection multiple, état modales add/delete, lecteur preview
 - `AdminActionsService` — `generateToday()`, `reset()`
 
@@ -298,6 +304,5 @@ Ajoute `Authorization: Bearer <token>` sur toutes les requêtes vers `/api/admin
 
 ## À venir
 
-- Tests Karma/Jasmine (`AudioPlayerService`, `GameService`)
 - Tests mobiles (iOS Safari, Android Chrome)
 - Polish : accessibilité WCAG 2.1 AA, RGPD

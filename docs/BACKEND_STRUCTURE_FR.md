@@ -39,7 +39,7 @@ src/back/InSeconds.Api/
 │   ├── Auth/                              # CookieAuthService + PlayerAuthMiddleware
 │   ├── Scoring/                           # ScoreCalculator
 │   ├── Settings/                          # AppSettings, SettingsService, AppDbConfigurationSource
-│   └── Text/                              # TextNormalizer (Levenshtein)
+│   └── Text/                              # TextNormalizer + TextNormalizationHelpers (Levenshtein, accents, regex)
 └── Program.cs
 ```
 

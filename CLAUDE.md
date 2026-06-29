@@ -293,6 +293,7 @@ Runners Ubuntu, ~5-7 min par run (jobs `back`/`front`/`unit-tests-front`/`integr
 ## Déjà implémenté (non exhaustif)
 
 - Vertical slices `Sessions/StartSession` + `Sessions/SubmitAnswer` (scoring serveur + stats par morceau)
+- **Refacto `StartSessionHandler`** — `Handle()` réduit à ~25 lignes (coordinateur pur) ; logique extraite en 3 méthodes privées : `ExpireOldSessionsAsync`, `HandleExistingSessionAsync`, `HandleNewSessionAsync`
 - `SubmitAnswerResponse` inclut : `AverageSecondsWhenCorrect` (moy. temps des joueurs ayant trouvé) + `FailureRatePercent` + `ListenedDurationSeconds`
 - Services Common : `TextNormalizer` (Levenshtein + suppression parenthèses/crochets), `ScoreCalculator`, `SettingsService` — tous couverts par tests unitaires xUnit (`InSeconds.Api.UnitTests`). `TextNormalizationHelpers` (internal static) : `ParenthesesPattern()` (`[GeneratedRegex]`), `RemoveAccents()`, `LevenshteinDistance()` — extrait de `TextNormalizer` pour SRP
 - `CookieAuthService` — résout ou crée un Player guest, cookie HttpOnly signé (`SameSite=None` en prod)
