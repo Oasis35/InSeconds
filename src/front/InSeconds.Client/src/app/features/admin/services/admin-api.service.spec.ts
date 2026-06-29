@@ -1,11 +1,13 @@
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
+import { AdminHttpService } from './admin-http.service';
 import { AdminApiService } from './admin-api.service';
+import { AdminStateService } from './admin-state.service';
 import { environment } from '../../../../environments/environment';
 
-describe('AdminApiService', () => {
-  let service: AdminApiService;
+describe('AdminHttpService', () => {
+  let service: AdminHttpService;
   let httpMock: HttpTestingController;
   const base = `${environment.apiUrl}/api/admin`;
 
@@ -13,12 +15,12 @@ describe('AdminApiService', () => {
     localStorage.clear();
     TestBed.configureTestingModule({
       providers: [
-        AdminApiService,
+        AdminHttpService,
         provideHttpClient(),
         provideHttpClientTesting(),
       ],
     });
-    service = TestBed.inject(AdminApiService);
+    service = TestBed.inject(AdminHttpService);
     httpMock = TestBed.inject(HttpTestingController);
   });
 
@@ -32,7 +34,7 @@ describe('AdminApiService', () => {
       expect(service.authenticated()).toBeFalse();
     });
 
-    it('should have base pointing to admin API', () => {
+    it('should expose base URL pointing to admin API', () => {
       expect(service.base).toBe(`${environment.apiUrl}/api/admin`);
     });
   });
@@ -86,7 +88,6 @@ describe('AdminApiService', () => {
       expect(req.request.method).toBe('GET');
       req.flush({ id: 1 });
 
-      // Wait for the promise to resolve
       await Promise.resolve();
       tick();
 
@@ -224,5 +225,49 @@ describe('AdminApiService', () => {
 
       expect(error.status).toBe(409);
     });
+  });
+});
+
+describe('AdminApiService — delegation', () => {
+  let apiService: AdminApiService;
+  let httpService: AdminHttpService;
+  let stateService: AdminStateService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        AdminHttpService,
+        AdminStateService,
+        AdminApiService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
+    });
+    apiService = TestBed.inject(AdminApiService);
+    httpService = TestBed.inject(AdminHttpService);
+    stateService = TestBed.inject(AdminStateService);
+  });
+
+  it('should expose authenticated signal from AdminHttpService', () => {
+    expect(apiService.authenticated()).toBeFalse();
+    httpService.authenticated.set(true);
+    expect(apiService.authenticated()).toBeTrue();
+  });
+
+  it('should expose selectedDay signal from AdminStateService', () => {
+    const today = new Date().toISOString().slice(0, 10);
+    expect(apiService.selectedDay()).toBe(today);
+  });
+
+  it('logout() should delegate to AdminHttpService', () => {
+    httpService.authenticated.set(true);
+    apiService.logout();
+    expect(httpService.authenticated()).toBeFalse();
+  });
+
+  it('reloadPool() should increment poolReloadTrigger', () => {
+    const before = stateService.poolReloadTrigger();
+    apiService.reloadPool();
+    expect(stateService.poolReloadTrigger()).toBe(before + 1);
   });
 });
