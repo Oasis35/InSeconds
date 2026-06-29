@@ -7,9 +7,9 @@ import { DecimalPipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import { Subject } from 'rxjs';
 import { AudioPlayerService } from '../../../core/services/audio-player.service';
-import { GameService } from '../../../core/services/game.service';
+import { GameFacadeService } from '../services/game-facade.service';
 import { SettingsService } from '../../../core/services/settings.service';
-import { DeezerSearchService, DeezerSuggestion } from '../../../core/services/deezer-search.service';
+import { DeezerAutocompleteService, DeezerSuggestion } from '../services/deezer-autocomplete.service';
 import { TrackSlot, SubmitAnswerResponse } from '../../../core/models/game.models';
 import { countUp } from '../../../core/count-up';
 
@@ -37,8 +37,8 @@ export class BlindRoundComponent implements OnDestroy {
 
   protected readonly audio = inject(AudioPlayerService);
   private readonly settings = inject(SettingsService);
-  private readonly gameService = inject(GameService);
-  private readonly deezerSearch = inject(DeezerSearchService);
+  private readonly gameService = inject(GameFacadeService);
+  private readonly deezerSearch = inject(DeezerAutocompleteService);
 
   protected readonly durations = computed(() => {
     const all = this.settings.allowedDurations();

@@ -21,7 +21,7 @@
 
 - Docker Desktop (for the database + API containers)
 - Node.js 22+ and npm
-- Angular CLI 20+ (`npm install -g @angular/cli`)
+- Angular CLI 22+ (`npm install -g @angular/cli`)
 - .NET 10 SDK (only if you want to run the API outside Docker)
 
 ### Run the backend
@@ -62,7 +62,7 @@ Open `http://localhost:5173`.
 |-------|------|
 | Backend | .NET 10, Wolverine messaging, FluentValidation, EF Core 10 |
 | Database | PostgreSQL (Docker in dev, Northflank addon in prod) |
-| Frontend | Angular 20 (standalone + signals), TypeScript, Tailwind CSS v4, SCSS |
+| Frontend | Angular 22 (standalone + signals), TypeScript, Tailwind CSS v4, SCSS |
 | Music | Deezer API (search, 30s previews, cover art) |
 | Infra dev | Docker Compose, `dotnet watch` (backend), `ng serve` (frontend) |
 | Deployment | Northflank (front + back + PostgreSQL) |
@@ -91,8 +91,9 @@ GitHub Actions workflow on every push and every PR to `main`:
 - **Backend** — build in Release + `dotnet ef migrations has-pending-model-changes`
 - **Unit tests** — `dotnet test` on `InSeconds.Api.UnitTests` (xUnit, no DB required)
 - **Frontend** — `npm ci` + production build
+- **Frontend unit tests** — `ng test --watch=false --browsers=ChromeHeadless` (Karma + Jasmine, 80 tests)
 - **Integration tests** — `dotnet test` on `InSeconds.Api.IntegrationTests` (Testcontainers spins up a real PostgreSQL container, no extra YAML needed)
-- **E2E** — Playwright tests (Chromium) against a real backend in `Testing` mode with a PostgreSQL service — runs after the three jobs above pass
+- **E2E** — Playwright tests (Chromium) against a real backend in `Testing` mode with a PostgreSQL service — runs after all jobs above pass
 
 Stale runs are cancelled automatically.
 
@@ -107,6 +108,15 @@ dotnet test InSeconds.Api.UnitTests
 
 Covers `ScoreCalculator`, `TextNormalizer`, `SettingsService` and other Common services. No database required (pure logic).
 
+### Unit tests (frontend)
+
+```bash
+cd src/front/InSeconds.Client
+npx ng test --watch=false --browsers=ChromeHeadless
+```
+
+**95 tests** (Karma + Jasmine) covering `App`, `GameService`, `SettingsService`, `LanguageService`, `AdminHttpService`, `AdminStatsService`. Uses `HttpTestingController` — no real HTTP calls.
+
 ### Integration tests (backend)
 
 ```bash
@@ -114,7 +124,7 @@ cd src/back
 dotnet test InSeconds.Api.IntegrationTests
 ```
 
-Requires Docker (Testcontainers starts a real PostgreSQL container). **73 tests** covering `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats`, `Auth/Me`, `SessionEdgeCases` (lazy expiry, streak, submit on abandoned session, UpdateListening anti-cheat), `ChallengeGeneration`, `Admin/Tracks`, `Admin/Challenges`.
+Requires Docker (Testcontainers starts a real PostgreSQL container). **79 tests** covering `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats`, `Auth/Me`, `SessionEdgeCases` (lazy expiry, streak, submit on abandoned session, UpdateListening anti-cheat), `ChallengeGeneration`, `Admin/Tracks`, `Admin/Challenges`.
 
 ### E2E tests (Playwright)
 

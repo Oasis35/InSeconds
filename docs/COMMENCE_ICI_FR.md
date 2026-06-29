@@ -12,7 +12,7 @@ InSeconds est un **blind test musical quotidien**. Le joueur choisit combien de 
 |--------|------|
 | Backend | .NET 10, Wolverine (messaging), FluentValidation, EF Core 10 |
 | Base de données | PostgreSQL (addon Northflank en prod, image Docker en dev) |
-| Frontend | Angular 20 (standalone + signals), TypeScript, Tailwind CSS v4, SCSS |
+| Frontend | Angular 22 (standalone + signals), TypeScript, Tailwind CSS v4, SCSS |
 | Musique | API Deezer (intégrée — recherche + preview + extraction `CoverHash`) |
 | Infra dev | Docker Compose, `dotnet watch` (back), `ng serve` (front) |
 | CI | GitHub Actions (build back + front + check migrations EF + tests unitaires + tests d'intégration Testcontainers + E2E Playwright), Dependabot |
@@ -21,7 +21,7 @@ InSeconds est un **blind test musical quotidien**. Le joueur choisit combien de 
 ## Architecture en deux mots
 
 - **Backend** : Vertical Slice Architecture — chaque feature vit dans son propre dossier `Features/<Aggregate>/<UseCase>/` (Endpoint + Command/Query + Handler + Validator). Pas de couche service partagée fourre-tout. Wolverine route les messages aux handlers par convention.
-- **Frontend** : Angular 20 standalone (pas de NgModules) avec signals pour l'état. Tailwind utility-first par-dessus SCSS pour les overrides locaux.
+- **Frontend** : Angular 22 standalone (pas de NgModules) avec signals pour l'état. Tailwind utility-first par-dessus SCSS pour les overrides locaux.
 - **Modèle de données** : 7 tables (`Players`, `Tracks`, `DailyChallenges`, `DailyChallengeTracks`, `GameSessions`, `GameSessionAnswers`, `Settings`). Voir [`BACKEND_STRUCTURE_FR.md`](BACKEND_STRUCTURE_FR.md) pour le détail.
 - **Gameplay anti-triche** : scoring serveur seulement, contrainte unique `(PlayerId, DailyChallengeId)` qui garantit 1 partie/jour/joueur, durée d'écoute = choix discret (pas une mesure → pas de tentative de manipulation client).
 
@@ -31,7 +31,7 @@ InSeconds est un **blind test musical quotidien**. Le joueur choisit combien de 
 |----------|---------|
 | [`TACHES.md`](TACHES.md) | Liste de toutes les tâches MVP — coche ce qui est fait, voir reste à faire |
 | [`BACKEND_STRUCTURE_FR.md`](BACKEND_STRUCTURE_FR.md) | Référence d'architecture backend (vertical slice, modèle EF, Wolverine, services Common) |
-| [`FRONTEND_STRUCTURE_FR.md`](FRONTEND_STRUCTURE_FR.md) | Référence d'architecture frontend (Angular 20, AudioPlayer durée-choisie, structure dossiers) |
+| [`FRONTEND_STRUCTURE_FR.md`](FRONTEND_STRUCTURE_FR.md) | Référence d'architecture frontend (Angular 22, AudioPlayer durée-choisie, structure dossiers) |
 
 ## Quick start technique
 
@@ -66,7 +66,7 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - Auth admin via Bearer token + `adminAuthInterceptor` Angular
 - `BackgroundService` génération défi quotidien automatique (à 3h UTC) — filtre sur `Track.HasPreview` en DB, Fisher-Yates, transaction
 - `BackgroundService` refresh preview (à 2h UTC) — vérifie Deezer pour tous les tracks disponibles, met à jour `Track.HasPreview`
-- Frontend complet (Angular 20 + Tailwind v4 + SCSS) — UI jeu jouable
+- Frontend complet (Angular 22 + Tailwind v4 + SCSS) — UI jeu jouable
 - NSwag : `ApiClient` généré depuis l'OpenAPI back, `api.generated.ts` commité, types synchronisés automatiquement
 - Pages d'erreur : 404, "déjà joué" (compte à rebours + stats comparatives), "pas de défi"
 - Récap final : lien Deezer par morceau + streak + bouton partage emoji Wordle-style
@@ -92,9 +92,10 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - Pool admin redesigné en tableau paginé (15 lignes/page) avec filtres combinables (texte, statut, preview), onglet "Actions" dédié, modale "↻ Actualiser" pré-remplie pour morceaux sans preview — indicateur preview lu depuis `Track.HasPreview` en DB (stable, plus d'appel Deezer temps réel)
 - Dashboard admin : KPI tiles par jour, sélecteur de jour ← →, barres 30j cliquables avec jours vides à zéro
 - Tests E2E Playwright (38 scénarios : 23 jeu + 15 admin, CI GitHub Actions)
-- Tests d'intégration backend (`InSeconds.Api.IntegrationTests`) — Testcontainers.PostgreSql + `WebApplicationFactory<Program>` + Respawn, 73 tests couvrant StartSession, SubmitAnswer, AbandonSession, Stats, AdminStats, SessionEdgeCases (dont UpdateListening), ChallengeGeneration, Admin/Tracks, Admin/Challenges, job CI dédié `integration-tests`
+- Tests d'intégration backend (`InSeconds.Api.IntegrationTests`) — Testcontainers.PostgreSql + `WebApplicationFactory<Program>` + Respawn, 79 tests couvrant StartSession, SubmitAnswer, AbandonSession, Stats, AdminStats, SessionEdgeCases (dont UpdateListening), ChallengeGeneration, Admin/Tracks, Admin/Challenges, job CI dédié `integration-tests`
 - **i18n FR/EN** — ngx-translate v18, `LanguageService`, fichiers `public/i18n/{fr,en}.json`
-- **Refacto frontend** — `game.component` découpé en header + footer + 5 screens ; `admin.component` en shell + 4 services + 7 sous-composants ; palette CSS centralisée en variables `:root` ; `ShareButtonComponent` réutilisable
+- **Refacto frontend** — `game.component` découpé en header + footer + 5 screens + `GameFacadeService` + `DeezerAutocompleteService` (`features/game/services/`) ; `admin.component` en shell + 6 services (`AdminHttpService`, `AdminStateService`, `AdminApiService`, `AdminStatsService`, `AdminPoolService`, `AdminActionsService`) + 7 sous-composants ; palette CSS centralisée en variables `:root` ; `ShareButtonComponent` réutilisable
+- **Tests unitaires frontend** — 80 tests Karma/Jasmine (`GameService`, `SettingsService`, `LanguageService`, `AdminHttpService`, `AdminStatsService`) ; job CI `unit-tests-front` (`ChromeHeadless`)
 
 🚧 **À faire** : smoke tests post-deploy, tests mobiles, polish, cache Redis previews Deezer. Voir [`TACHES.md`](TACHES.md).
 
