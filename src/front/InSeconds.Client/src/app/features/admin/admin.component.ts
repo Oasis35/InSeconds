@@ -3,6 +3,8 @@ import { DatePipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import { BUILD_TIME } from '../../core/build-info';
 import { AdminTab } from './admin.models';
+import { AdminHttpService } from './services/admin-http.service';
+import { AdminStateService } from './services/admin-state.service';
 import { AdminApiService } from './services/admin-api.service';
 import { AdminStatsService } from './services/admin-stats.service';
 import { AdminPoolService } from './services/admin-pool.service';
@@ -21,7 +23,7 @@ import { ActionsTabComponent } from './components/actions-tab/actions-tab.compon
     ChallengesTabComponent, ActionsTabComponent,
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
-  providers: [AdminApiService, AdminStatsService, AdminPoolService, AdminActionsService],
+  providers: [AdminHttpService, AdminStateService, AdminApiService, AdminStatsService, AdminPoolService, AdminActionsService],
   templateUrl: './admin.component.html',
 })
 export class AdminComponent {

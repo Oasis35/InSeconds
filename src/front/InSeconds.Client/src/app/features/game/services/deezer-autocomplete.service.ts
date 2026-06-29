@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, debounceTime, distinctUntilChanged, switchMap, map, of, catchError } from 'rxjs';
-import { environment } from '../../../environments/environment';
+import { Observable, debounceTime, distinctUntilChanged, switchMap, of, catchError } from 'rxjs';
+import { environment } from '../../../../environments/environment';
 
 export interface DeezerSuggestion {
   artist: string;
@@ -9,7 +9,7 @@ export interface DeezerSuggestion {
 }
 
 @Injectable({ providedIn: 'root' })
-export class DeezerSearchService {
+export class DeezerAutocompleteService {
   private readonly http = inject(HttpClient);
 
   search(query$: Observable<string>): Observable<DeezerSuggestion[]> {

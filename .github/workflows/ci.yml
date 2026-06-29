@@ -83,6 +83,32 @@ jobs:
         working-directory: src/front/InSeconds.Client
         run: npm run build
 
+  unit-tests-front:
+    name: Frontend (unit tests)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: src/front/InSeconds.Client/package-lock.json
+
+      - name: Install (clean)
+        working-directory: src/front/InSeconds.Client
+        run: npm ci
+
+      - name: Generate build-info
+        working-directory: src/front/InSeconds.Client
+        run: node scripts/generate-build-info.mjs
+
+      - name: Run unit tests
+        working-directory: src/front/InSeconds.Client
+        run: npx ng test --watch=false --browsers=ChromeHeadless
+
   integration-tests:
     name: Backend (integration tests)
     runs-on: ubuntu-latest
@@ -111,7 +137,7 @@ jobs:
   e2e:
     name: E2E tests (Playwright)
     runs-on: ubuntu-latest
-    needs: [back, unit-tests, front]
+    needs: [back, unit-tests, unit-tests-front, front]
 
     services:
       postgres:

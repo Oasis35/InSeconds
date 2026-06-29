@@ -61,7 +61,7 @@ export class AudioPlayerService {
 
   /** Rejoue le morceau déjà chargé depuis le début, jusqu'à la fin naturelle. */
   replayFull(): void {
-    if (!this.audio || !this.audio.src) return;
+    if (!this.audio?.src) return;
 
     const token = ++this.playToken;
     if (this.stopTimer !== null) { clearTimeout(this.stopTimer); this.stopTimer = null; }

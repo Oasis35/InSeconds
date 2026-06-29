@@ -21,7 +21,7 @@
 
 - Docker Desktop (pour les conteneurs base de données + API)
 - Node.js 22+ et npm
-- Angular CLI 20+ (`npm install -g @angular/cli`)
+- Angular CLI 22+ (`npm install -g @angular/cli`)
 - .NET 10 SDK (uniquement si tu veux lancer l'API hors Docker)
 
 ### Lancer le backend
@@ -62,7 +62,7 @@ Ouvre `http://localhost:5173`.
 |--------|------|
 | Backend | .NET 10, Wolverine (messaging), FluentValidation, EF Core 10 |
 | Base de données | PostgreSQL (Docker en dev, addon Northflank en prod) |
-| Frontend | Angular 20 (standalone + signals), TypeScript, Tailwind CSS v4, SCSS |
+| Frontend | Angular 22 (standalone + signals), TypeScript, Tailwind CSS v4, SCSS |
 | Musique | API Deezer (recherche, previews 30s, pochettes) |
 | Infra dev | Docker Compose, `dotnet watch` (backend), `ng serve` (frontend) |
 | Déploiement | Northflank (front + back + PostgreSQL) |
@@ -91,8 +91,9 @@ Workflow GitHub Actions sur chaque push et chaque PR vers `main` :
 - **Backend** — build Release + `dotnet ef migrations has-pending-model-changes`
 - **Tests unitaires** — `dotnet test` sur `InSeconds.Api.UnitTests` (xUnit, pas de BD requise)
 - **Frontend** — `npm ci` + build production
+- **Tests unitaires frontend** — `ng test --watch=false --browsers=ChromeHeadless` (Karma + Jasmine, 80 tests)
 - **Tests d'intégration** — `dotnet test` sur `InSeconds.Api.IntegrationTests` (Testcontainers crée un conteneur PostgreSQL réel, pas de YAML supplémentaire)
-- **E2E** — tests Playwright (Chromium) contre un vrai backend en mode `Testing` avec un service PostgreSQL — s'exécute après les trois jobs précédents
+- **E2E** — tests Playwright (Chromium) contre un vrai backend en mode `Testing` avec un service PostgreSQL — s'exécute après tous les jobs précédents
 
 Les runs obsolètes sont annulés automatiquement.
 
@@ -107,6 +108,15 @@ dotnet test InSeconds.Api.UnitTests
 
 Couvre `ScoreCalculator`, `TextNormalizer`, `SettingsService` et autres services Common. Pas de base de données nécessaire (logique pure).
 
+### Tests unitaires (frontend)
+
+```bash
+cd src/front/InSeconds.Client
+npx ng test --watch=false --browsers=ChromeHeadless
+```
+
+**95 tests** (Karma + Jasmine) couvrant `App`, `GameService`, `SettingsService`, `LanguageService`, `AdminHttpService`, `AdminStatsService`. Utilise `HttpTestingController` — pas de vraies requêtes HTTP.
+
 ### Tests d'intégration (backend)
 
 ```bash
@@ -114,7 +124,7 @@ cd src/back
 dotnet test InSeconds.Api.IntegrationTests
 ```
 
-Nécessite Docker (Testcontainers démarre un vrai conteneur PostgreSQL). **73 tests** couvrant `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats`, `Auth/Me`, `SessionEdgeCases` (expiry paresseuse, streak, submit sur session abandonnée, UpdateListening anti-triche), `ChallengeGeneration`, `Admin/Tracks`, `Admin/Challenges`.
+Nécessite Docker (Testcontainers démarre un vrai conteneur PostgreSQL). **79 tests** couvrant `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats`, `Auth/Me`, `SessionEdgeCases` (expiry paresseuse, streak, submit sur session abandonnée, UpdateListening anti-triche), `ChallengeGeneration`, `Admin/Tracks`, `Admin/Challenges`.
 
 ### Tests E2E (Playwright)
 

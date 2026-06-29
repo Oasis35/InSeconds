@@ -1,6 +1,6 @@
 # InSeconds — Liste des Tâches
 
-> Mis à jour le 2026-06-20.
+> Mis à jour le 2026-06-29.
 
 ## ✅ Bootstrap projet
 
@@ -47,7 +47,7 @@
 
 ## ✅ Frontend
 
-- [x] Angular 20 standalone + signals, Tailwind v4, port 5173
+- [x] Angular 22 standalone + signals, Tailwind v4, port 5173
 - [x] `SettingsService` — charge les Settings BD au boot, expose des signals
 - [x] `AudioPlayerService` — modèle "durée choisie", signal-based
 - [x] `GameComponent` — session complète, récap final avec liens Deezer
@@ -66,7 +66,7 @@
 - [x] Layout B — player haut + zone saisie toujours visible (sans clignotement)
 - [x] Barre de progression live + chrono (`requestAnimationFrame` dans `AudioPlayerService`)
 - [x] Champ unique artiste+titre avec autocomplete Deezer (proxy `GET /api/deezer/search`, debounce 300ms)
-- [x] `DeezerSearchService` + `Features/Deezer/SearchEndpoint` (proxy public, contourne CORS)
+- [x] `DeezerAutocompleteService` (`features/game/services/`, `providedIn: root`, stateless) + `Features/Deezer/SearchEndpoint` (proxy public, contourne CORS)
 - [x] `chosenDuration` en signal dans `BlindRoundComponent` (nécessaire pour `computed()` réactif)
 - [x] Streak affiché sur le récap final et l'écran "déjà joué"
 - [x] Replay preview après réponse — `AudioPlayerService.replayFull()`, relance depuis le début jusqu'à la fin naturelle du morceau
@@ -81,7 +81,8 @@
 - [x] Animations d'écran — keyframes `fade-in`/`slide-up`, classe `.screen-enter` sur chaque état
 - [x] **i18n FR/EN** — ngx-translate v18, `LanguageService`, fichiers `public/i18n/{fr,en}.json`, `TranslatePipe` dans tous les composants, E2E force `'fr'` via `addInitScript`
 - [x] **Refacto `game.component`** — découpé en `GameHeaderComponent` + `GameFooterComponent` + 5 screens standalone (`welcome-screen`, `resume-screen`, `status-screen`, `already-played-screen`, `final-recap-screen`), chaque composant dans son dossier avec `.html` externe
-- [x] **Refacto `admin.component`** — shell 42 lignes + 4 services dédiés (`AdminApiService`, `AdminStatsService`, `AdminPoolService`, `AdminActionsService`) + 7 sous-composants (`admin-login`, `dashboard-tab`, `pool-tab`, `challenges-tab`, `actions-tab`, `add-track-modal`, `delete-track-modal`)
+- [x] **Refacto `admin.component`** — shell ~45 lignes + 6 services dédiés (`AdminHttpService`, `AdminStateService`, `AdminApiService`, `AdminStatsService`, `AdminPoolService`, `AdminActionsService`) + 7 sous-composants (`admin-login`, `dashboard-tab`, `pool-tab`, `challenges-tab`, `actions-tab`, `add-track-modal`, `delete-track-modal`)
+- [x] **`GameFacadeService`** (`features/game/services/`, fourni par `GameComponent`) — façade métier délégant à `GameService` (VSA frontend)
 - [x] **Palette CSS centralisée** — 35 variables `:root` dans `styles.scss`, plus de hex inline dans les templates, hovers via `hover:` Tailwind
 - [x] **`ShareButtonComponent`** (`shared/share-button/`) — bouton partage réutilisable, mutualisé entre `AlreadyPlayedScreenComponent` et `FinalRecapScreenComponent`
 
@@ -114,9 +115,9 @@
 
 ## 🚧 Tests
 
-- [x] Tests d'intégration backend (Testcontainers, 73 tests) — `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (KPIs jour, AvailableDates, fix 30j, Pending→Abandoned), `Auth/Me` (soft-delete), `SessionEdgeCases` (expiry paresseuse, streak, submit sur session abandonnée, UpdateListening : store/max/reset-after-submit/returned-on-resume), `ChallengeGeneration`, `Admin/Tracks` (AddTrack, GetTracks, DeleteTrack, UpdateTrack), `Admin/Challenges` (GetChallenges, CreateChallenge, ResetToday)
-- [ ] Tests front Karma/Jasmine (`AudioPlayerService` — dont `preloadAll`, `GameService`)
-- [x] Tests E2E Playwright (36 scénarios : 21 jeu + 15 admin). Jeu : happy path, écran déjà joué, abandon mid-game, reprise, abandon depuis reprise, sync multi-onglets, pas de défi, partage, scoring palier/mauvaise réponse/partiel, anti-cheat paliers bloqués à la reprise, confirmation de sortie (`leave-guard` : annuler/confirmer/hors-playing), bouton `✕` d'effacement (`clear-search`). Admin : login erreur/succès/déconnexion, pool tableau+filtres texte/preview/statut, ajout morceau, suppression individuelle+annulation, actualisation morceau sans preview (modale pré-remplie), actions générer/déjà généré/reset, liste défis
+- [x] Tests d'intégration backend (Testcontainers, 79 tests) — `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (KPIs jour, AvailableDates, fix 30j, Pending→Abandoned), `Auth/Me` (soft-delete), `SessionEdgeCases` (expiry paresseuse, streak, submit sur session abandonnée, UpdateListening : store/max/reset-after-submit/returned-on-resume), `ChallengeGeneration`, `Admin/Tracks` (AddTrack, GetTracks, DeleteTrack, UpdateTrack), `Admin/Challenges` (GetChallenges, CreateChallenge, ResetToday)
+- [x] Tests unitaires frontend Karma/Jasmine (95 tests) — `App` (1), `GameService` (11), `SettingsService` (12), `LanguageService` (12), `AdminHttpService` + délégation `AdminApiService` (20), `AdminStatsService` (29) ; job CI `unit-tests-front` (`ChromeHeadless`)
+- [x] Tests E2E Playwright (38 scénarios : 23 jeu + 15 admin). Jeu : happy path, écran déjà joué, abandon mid-game, reprise, abandon depuis reprise, sync multi-onglets, pas de défi, partage, scoring palier/mauvaise réponse/partiel, anti-cheat paliers bloqués à la reprise, confirmation de sortie (`leave-guard` : annuler/confirmer/hors-playing), bouton `✕` d'effacement (`clear-search`). Admin : login erreur/succès/déconnexion, pool tableau+filtres texte/preview/statut, ajout morceau, suppression individuelle+annulation, actualisation morceau sans preview (modale pré-remplie), actions générer/déjà généré/reset, liste défis
 
 ## 🚧 Mobile
 
