@@ -65,8 +65,11 @@ public sealed class Player
     public bool IsGuest { get; set; }
     public string? Pseudo { get; set; }     // null pour guests, ≤20 chars sinon
     public Guid AuthToken { get; set; }     // secret porté par le cookie HTTP-only
+    public string? Email { get; set; }
     public DateTime CreatedAt { get; set; }
+    public DateTime? LastSeenAt { get; set; }
     public bool IsDeleted { get; set; }     // soft-delete
+    public DateTime? DeletedAt { get; set; }
     public int CurrentStreak { get; set; }  // jours consécutifs joués
     public DateOnly? LastPlayedDate { get; set; }
 }
@@ -87,7 +90,9 @@ public sealed class Track
     public required string Artist { get; set; }
     public required string Title { get; set; }
     public string? CoverHash { get; set; }    // hash seul (pas l'URL complète)
+    public bool HasPreview { get; set; } = true;
     public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 }
 ```
 
@@ -129,6 +134,8 @@ public sealed class GameSession
     public SessionStatus Status { get; set; }          // Pending=0, Completed=1, Abandoned=2
     public DateTime? CompletedAt { get; set; }
     public DateTime? AbandonedAt { get; set; }
+    public int? CurrentTrackId { get; set; }            // anti-cheat : track en cours
+    public decimal? CurrentTrackMinListenedSeconds { get; set; } // anti-cheat : durée max déjà écoutée
 }
 ```
 
@@ -152,6 +159,8 @@ public sealed class GameSessionAnswer
     public bool WasExtended { get; set; }
     public bool ArtistCorrect { get; set; }
     public bool TitleCorrect { get; set; }
+    public string? ArtistAnswer { get; set; }  // réponse saisie persistée
+    public string? TitleAnswer { get; set; }
     public int Score { get; set; }
 }
 ```

@@ -4,8 +4,8 @@
 
 ## Stack
 
-- **Angular 20** (CLI 20.1.x, standalone components + signals)
-- **TypeScript 5.8**
+- **Angular 22** (CLI 22.0.x, standalone components + signals)
+- **TypeScript 6.0**
 - **Tailwind CSS v4** via `@tailwindcss/postcss` dans `.postcssrc.json`
 - **SCSS** : `@use "tailwindcss";` en haut de `src/styles.scss` (PAS `@import`). Variables CSS dans `:root` pour la palette couleurs (voir section Palette).
 - **ngx-translate v18** (`@ngx-translate/core` + `@ngx-translate/http-loader`) — i18n FR/EN, fichiers `public/i18n/{fr,en}.json`, `TranslatePipe` dans chaque composant
@@ -172,7 +172,7 @@ Charge les settings de la BD au boot, expose des signals :
 readonly allowedDurations = signal<number[]>([0.5, 1, 1.5, 2, 3, 5, 10]);
 readonly guessTimerSeconds = signal(20);
 readonly maxExtensions = signal(1);
-readonly tracksPerChallenge = signal(10);
+readonly tracksPerChallenge = signal(3);
 readonly durationScores = signal<Record<number, number>>({});
 ```
 

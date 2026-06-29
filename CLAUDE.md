@@ -101,7 +101,7 @@ public sealed class SettingsService(IOptions<AppSettings> options)
 
 ## Architecture frontend
 
-Angular 20 standalone + signals + ngx-translate (i18n FR/EN).
+Angular 22 standalone + signals + ngx-translate (i18n FR/EN).
 
 - `src/app/app.config.ts` : `provideHttpClient`, router, `provideAppInitializer` pour `SettingsService` + `LanguageService`, `ApiClient`, `provideTranslateService` (loader `i18n/{lang}.json`)
 - `src/app/core/interceptors/player-auth.interceptor.ts` : `withCredentials: true` sur toutes les requêtes `/api` sauf `/api/admin`
@@ -166,12 +166,12 @@ npm run build                  # vérifier que le build passe
 
 | Table | Rôle |
 |-------|------|
-| `Players` | `Guid Id`, `IsGuest`, `Pseudo?`, `AuthToken` (cookie HttpOnly), soft-delete (`IsDeleted`), CHECK constraint guest⇔pseudo |
-| `Tracks` | référentiel canonique (DeezerTrackId unique), `CoverHash` = hash seul de l'image Deezer (pas l'URL complète), `HasPreview` = flag mis à jour nuitamment par `RefreshPreviewStatusService` |
+| `Players` | `Guid Id`, `IsGuest`, `Pseudo?`, `AuthToken` (cookie HttpOnly), `Email?`, `LastSeenAt?`, `DeletedAt?`, soft-delete (`IsDeleted`), CHECK constraint guest⇔pseudo |
+| `Tracks` | référentiel canonique (DeezerTrackId unique), `CoverHash` = hash seul de l'image Deezer (pas l'URL complète), `HasPreview` = flag mis à jour nuitamment par `RefreshPreviewStatusService`, `UpdatedAt?` |
 | `DailyChallenges` | 1 par jour UTC (Date unique) + Seed pour audit |
 | `DailyChallengeTracks` | jonction Track ↔ Challenge + Position (1-10) + DeezerRankSnapshot |
 | `GameSessions` | 1 entrée/joueur/jour (unique sur `PlayerId+DailyChallengeId`), `Status` (Pending=0/Completed=1/Abandoned=2), `CompletedAt`/`AbandonedAt` nullable, index leaderboard + index `(ChallengeId, Status)` |
-| `GameSessionAnswers` | 1 réponse par track, `ListenedDurationSeconds` (palier choisi), `WasExtended`, `ArtistCorrect`/`TitleCorrect` séparés |
+| `GameSessionAnswers` | 1 réponse par track, `ListenedDurationSeconds` (palier choisi), `WasExtended`, `ArtistCorrect`/`TitleCorrect` séparés, `ArtistAnswer?`/`TitleAnswer?` (réponse saisie persistée) |
 | `Settings` | config key/value modifiable à chaud (timer saisie, paliers, template URL pochette, etc.) |
 
 ### Conventions modèle
@@ -239,7 +239,7 @@ npm run e2e:ui   # mode UI interactif Playwright
 
 - **Pas de `Co-Authored-By: Claude` dans les commits**, jamais
 - Préférer commits atomiques, messages clairs (FR ou EN, peu importe)
-- Branche principale dev : `feat/DevX` (incrémentée à chaque cycle). Cible des PR : `main`
+- Branche de travail : `feat/<sujet>` (ex: `feat/redis-cache`). Cible des PR : `main`
 
 ## CI / GitHub Actions
 
@@ -329,7 +329,7 @@ Runners Ubuntu, ~5-7 min par run (jobs `back`/`front`/`integration-tests` en par
 - **Page admin — Pool** : tableau paginé (15 lignes/page), filtres combinables (texte artiste/titre, statut Disponible/Utilisé, preview OK/Manquante), indicateur preview (vert/rouge) via `TrackDto.HasPreview` (lu depuis `Track.HasPreview` en DB — stable au rechargement, plus d'appel Deezer temps réel), sélection multiple + suppression en lot, popup d'ajout avec recherche Deezer + lecteur preview 30s + boutons "Ajouter" / "Ajouter et fermer", bouton "↻ Actualiser" ouvre la modale pré-remplie avec artiste + titre (met à jour `HasPreview` immédiatement en base)
 - **`DELETE /api/admin/tracks/{id}`** — suppression d'un morceau du pool depuis la page admin (checkbox + corbeille individuelle, sélection multiple, modale de confirmation) ; interdit si utilisé dans un défi (409) ; 404 si introuvable
 - **`PUT /api/admin/tracks/{id}`** — actualisation d'un morceau sans preview : bouton "↻ Actualiser" ouvre la modale en mode update, écrase `DeezerTrackId`/`Artist`/`Title`/`CoverHash` ; interdit si utilisé dans un défi (409) ; 409 si nouveau DeezerTrackId déjà pris ; 422 si introuvable sur Deezer
-- **Tests d'intégration backend** (`InSeconds.Api.IntegrationTests`) : Testcontainers.PostgreSql + `WebApplicationFactory<Program>` + Respawn. 73 tests couvrant `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats`, `Auth/Me`, `SessionEdgeCases` (expiry paresseuse, streak, AbandonSession, UpdateListening), `ChallengeGeneration`, `Admin/Tracks` (DeleteTrack, UpdateTrack), `HealthCheck` (`/health` + `/health/ready`). Tournent en mode `Testing` (FakeDeezerHandler + seed auto). Job CI `integration-tests` séparé.
+- **Tests d'intégration backend** (`InSeconds.Api.IntegrationTests`) : Testcontainers.PostgreSql + `WebApplicationFactory<Program>` + Respawn. 79 tests couvrant `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats`, `Auth/Me`, `SessionEdgeCases` (expiry paresseuse, streak, AbandonSession, UpdateListening), `ChallengeGeneration`, `Admin/Tracks` (DeleteTrack, UpdateTrack), `HealthCheck` (`/health` + `/health/ready`). Tournent en mode `Testing` (FakeDeezerHandler + seed auto). Job CI `integration-tests` séparé.
 - **Partage score** : bouton "🔗 Partager mon score" sur l'écran récap final ET sur l'écran "déjà joué" (si session `Completed`) — copie dans le presse-papier un résumé `✅/❌` par morceau (`✅` = trouvé, `❌` = raté, daltonien-friendly) + durée + score total + lien `/blindtest`. Bouton désactivé (`disabled`) tant que tous les résultats ne sont pas revenus du serveur (fix race condition HTTP dernier morceau).
 - **Route `/blindtest`** — alias de `/`, utilisée dans les liens de partage et les balises Open Graph
 - **Open Graph + Twitter Card** dans `index.html` — balises méta pour le partage WhatsApp/Signal/Twitter (sans image)

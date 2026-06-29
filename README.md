@@ -21,7 +21,7 @@
 
 - Docker Desktop (for the database + API containers)
 - Node.js 22+ and npm
-- Angular CLI 20+ (`npm install -g @angular/cli`)
+- Angular CLI 22+ (`npm install -g @angular/cli`)
 - .NET 10 SDK (only if you want to run the API outside Docker)
 
 ### Run the backend
@@ -62,7 +62,7 @@ Open `http://localhost:5173`.
 |-------|------|
 | Backend | .NET 10, Wolverine messaging, FluentValidation, EF Core 10 |
 | Database | PostgreSQL (Docker in dev, Northflank addon in prod) |
-| Frontend | Angular 20 (standalone + signals), TypeScript, Tailwind CSS v4, SCSS |
+| Frontend | Angular 22 (standalone + signals), TypeScript, Tailwind CSS v4, SCSS |
 | Music | Deezer API (search, 30s previews, cover art) |
 | Infra dev | Docker Compose, `dotnet watch` (backend), `ng serve` (frontend) |
 | Deployment | Northflank (front + back + PostgreSQL) |
@@ -114,7 +114,7 @@ cd src/back
 dotnet test InSeconds.Api.IntegrationTests
 ```
 
-Requires Docker (Testcontainers starts a real PostgreSQL container). **73 tests** covering `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats`, `Auth/Me`, `SessionEdgeCases` (lazy expiry, streak, submit on abandoned session, UpdateListening anti-cheat), `ChallengeGeneration`, `Admin/Tracks`, `Admin/Challenges`.
+Requires Docker (Testcontainers starts a real PostgreSQL container). **79 tests** covering `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats`, `Auth/Me`, `SessionEdgeCases` (lazy expiry, streak, submit on abandoned session, UpdateListening anti-cheat), `ChallengeGeneration`, `Admin/Tracks`, `Admin/Challenges`.
 
 ### E2E tests (Playwright)
 
