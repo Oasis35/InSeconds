@@ -10,6 +10,7 @@ using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
@@ -19,7 +20,7 @@ public sealed class StartSessionHandlerTests
 {
     private static readonly Guid PlayerId = new("11111111-1111-1111-1111-111111111111");
 
-    private static DeezerClient CreateFakeDeezerClient()
+    private static CachedDeezerClient CreateFakeDeezerClient()
     {
         var handler = new FakeHttpMessageHandler(
             new HttpResponseMessage(HttpStatusCode.OK)
@@ -28,7 +29,8 @@ public sealed class StartSessionHandlerTests
                     """{"preview":"https://fake-preview.mp3"}""",
                     Encoding.UTF8, "application/json"),
             });
-        return new DeezerClient(new HttpClient(handler) { BaseAddress = new Uri("https://api.deezer.com") }, NullLogger<DeezerClient>.Instance);
+        var client = new DeezerClient(new HttpClient(handler) { BaseAddress = new Uri("https://api.deezer.com") }, NullLogger<DeezerClient>.Instance);
+        return new CachedDeezerClient(client, new MemoryCache(new MemoryCacheOptions()));
     }
 
     private sealed class FakeHttpMessageHandler(HttpResponseMessage response) : HttpMessageHandler

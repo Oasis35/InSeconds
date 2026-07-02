@@ -4,7 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace InSeconds.Api.Features.Stats.Today;
 
-public sealed class TodayStatsHandler(ApplicationDbContext db, SettingsService settingsService)
+public sealed class TodayStatsHandler(
+    ApplicationDbContext db,
+    IDbContextFactory<ApplicationDbContext> dbFactory,
+    SettingsService settingsService)
 {
     public async Task<IResult> Handle(Guid? playerId, CancellationToken ct)
     {
@@ -56,13 +59,18 @@ public sealed class TodayStatsHandler(ApplicationDbContext db, SettingsService s
                 .FirstOrDefaultAsync(ct);
         }
 
-        var scoresTask = db.GameSessions
+        // Queries parallèles : un DbContext dédié par query (un contexte ne supporte
+        // pas les opérations concurrentes).
+        await using var scoresDb     = await dbFactory.CreateDbContextAsync(ct);
+        await using var trackStatsDb = await dbFactory.CreateDbContextAsync(ct);
+
+        var scoresTask = scoresDb.GameSessions
             .AsNoTracking()
             .Where(s => s.DailyChallengeId == challenge.Id && s.Status == Domain.SessionStatus.Completed)
             .Select(s => s.TotalScore)
             .ToListAsync(ct);
 
-        var trackStatsTask = db.DailyChallengeTracks
+        var trackStatsTask = trackStatsDb.DailyChallengeTracks
             .AsNoTracking()
             .Where(t => t.DailyChallengeId == challenge.Id)
             .OrderBy(t => t.Position)

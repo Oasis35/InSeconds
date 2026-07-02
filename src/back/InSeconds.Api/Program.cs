@@ -44,7 +44,10 @@ var connectionString = pgUri is not null
 
 builder.Configuration.Sources.Add(new AppDbConfigurationSource(connectionString));
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
+// AddDbContextFactory enregistre aussi ApplicationDbContext en scoped : les handlers
+// classiques gardent l'injection directe, la factory sert aux endpoints qui parallélisent
+// plusieurs queries EF (un contexte par query — un DbContext n'est pas thread-safe).
+builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
@@ -78,6 +81,9 @@ builder.Services.AddHostedService<RefreshPreviewStatusService>();
 
 builder.Services.AddSingleton<ScoreCalculator>();
 builder.Services.AddSingleton<TextNormalizer>();
+
+builder.Services.AddMemoryCache();
+builder.Services.AddTransient<CachedDeezerClient>();
 
 var deezerHttpBuilder = builder.Services.AddHttpClient<DeezerClient>(client =>
 {

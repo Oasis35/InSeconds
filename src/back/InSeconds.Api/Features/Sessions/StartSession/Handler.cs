@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace InSeconds.Api.Features.Sessions.StartSession;
 
-public sealed class StartSessionHandler(ApplicationDbContext db, DeezerClient deezer, SettingsService settingsService)
+public sealed class StartSessionHandler(ApplicationDbContext db, CachedDeezerClient deezer, SettingsService settingsService)
 {
     public async Task<IResult> Handle(StartSessionCommand command, CancellationToken cancellationToken)
     {
