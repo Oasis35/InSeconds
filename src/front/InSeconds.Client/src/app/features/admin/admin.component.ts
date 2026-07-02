@@ -22,7 +22,7 @@ import { ActionsTabComponent } from './components/actions-tab/actions-tab.compon
     AdminLoginComponent, DashboardTabComponent, PoolTabComponent,
     ChallengesTabComponent, ActionsTabComponent,
   ],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [AdminHttpService, AdminStateService, AdminApiService, AdminStatsService, AdminPoolService, AdminActionsService],
   templateUrl: './admin.component.html',
 })

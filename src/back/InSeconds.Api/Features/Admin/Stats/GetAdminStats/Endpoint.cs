@@ -21,13 +21,20 @@ public static class GetAdminStatsEndpoint
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
             var selectedDate = date is not null && DateOnly.TryParse(date, out var parsed) ? parsed : today;
 
-            var challengeStats   = await BuildChallengeStats(db, ct);
-            var dailyActivity    = await BuildDailyActivity(db, ct);
-            var playerBreakdown  = await BuildPlayerBreakdown(db, ct);
-            var availableDates   = await BuildAvailableDates(db, ct);
-            var selectedDayKpis  = await BuildDailyKpis(db, selectedDate, today, ct);
+            var challengeStatsTask  = BuildChallengeStats(db, ct);
+            var dailyActivityTask   = BuildDailyActivity(db, ct);
+            var playerBreakdownTask = BuildPlayerBreakdown(db, ct);
+            var availableDatesTask  = BuildAvailableDates(db, ct);
+            var selectedDayKpisTask = BuildDailyKpis(db, selectedDate, today, ct);
 
-            return Results.Ok(new AdminStatsResponse(challengeStats, dailyActivity, playerBreakdown, availableDates, selectedDayKpis));
+            await Task.WhenAll(challengeStatsTask, dailyActivityTask, playerBreakdownTask, availableDatesTask, selectedDayKpisTask);
+
+            return Results.Ok(new AdminStatsResponse(
+                challengeStatsTask.Result,
+                dailyActivityTask.Result,
+                playerBreakdownTask.Result,
+                availableDatesTask.Result,
+                selectedDayKpisTask.Result));
         })
         .WithName("GetAdminStats")
         .WithTags("Admin")
@@ -173,11 +180,13 @@ public static class GetAdminStatsEndpoint
         var cutoff7  = DateTime.UtcNow.AddDays(-7);
         var cutoff30 = DateTime.UtcNow.AddDays(-30);
 
-        var guests     = await db.Players.CountAsync(p => !p.IsDeleted && p.IsGuest,  ct);
-        var registered = await db.Players.CountAsync(p => !p.IsDeleted && !p.IsGuest, ct);
-        var active7    = await db.Players.CountAsync(p => !p.IsDeleted && p.LastSeenAt >= cutoff7,  ct);
-        var active30   = await db.Players.CountAsync(p => !p.IsDeleted && p.LastSeenAt >= cutoff30, ct);
+        var guestsTask     = db.Players.AsNoTracking().CountAsync(p => !p.IsDeleted && p.IsGuest,  ct);
+        var registeredTask = db.Players.AsNoTracking().CountAsync(p => !p.IsDeleted && !p.IsGuest, ct);
+        var active7Task    = db.Players.AsNoTracking().CountAsync(p => !p.IsDeleted && p.LastSeenAt >= cutoff7,  ct);
+        var active30Task   = db.Players.AsNoTracking().CountAsync(p => !p.IsDeleted && p.LastSeenAt >= cutoff30, ct);
 
-        return new PlayerBreakdownDto(guests, registered, active7, active30);
+        await Task.WhenAll(guestsTask, registeredTask, active7Task, active30Task);
+
+        return new PlayerBreakdownDto(guestsTask.Result, registeredTask.Result, active7Task.Result, active30Task.Result);
     }
 }

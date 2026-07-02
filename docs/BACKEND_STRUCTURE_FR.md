@@ -51,6 +51,9 @@ src/back/InSeconds.Api/
 - **Validation = FluentValidation par commande** (pas DataAnnotations)
 - **Endpoints = Minimal API**, un fichier par endpoint avec `MapXxx(this IEndpointRouteBuilder)`
 - **SOLID s'applique aux services Common** (interfaces seulement si vrai besoin de mock)
+- **`.AsNoTracking()` sur toutes les queries en lecture** — handlers Get/Query/Stats ne modifient rien, le tracking EF est du gaspillage mémoire
+- **`Select()` projeté plutôt que `Include().ThenInclude()`** pour les queries lecture-seule — ne charger que les colonnes réellement utilisées
+- **`Task.WhenAll()` pour les queries indépendantes** — `Stats/Today` et `GetAdminStats` parallélisent leurs requêtes DB ; ne pas réintroduire des `await` séquentiels sans dépendance réelle
 
 ## Modèle de données — 7 entités
 
@@ -76,6 +79,7 @@ public sealed class Player
 ```
 
 - `IX_Players_AuthToken` (unique)
+- `IX_Players_LastSeenAt` (filtré `NOT NULL`) — requêtes `BuildPlayerBreakdown` dans `GetAdminStats`
 - `CK_Players_GuestPseudo` : invariant `IsGuest ⇔ Pseudo IS NULL` garanti en BD
 - **Global query filter EF** `!IsDeleted` propagé en cascade sur sessions/answers
 - `CurrentStreak` et `LastPlayedDate` mis à jour dans `SubmitAnswer/Handler.cs` à la complétion (parties complètes uniquement)
@@ -142,6 +146,7 @@ public sealed class GameSession
 - `UNIQUE (PlayerId, DailyChallengeId)` → **anti-rejeu : 1 entrée/jour/joueur**
 - `IX_GameSessions_Leaderboard (DailyChallengeId, TotalScore DESC, TotalDurationSeconds ASC)`
 - `IX_GameSessions_ChallengeStatus (DailyChallengeId, Status)` — requêtes admin
+- `IX_GameSessions_PlayerStatusChallenge (PlayerId, Status, DailyChallengeId)` — expiry sessions Pending dans `StartSession`
 - **Seules les sessions `Completed` comptent** dans les stats/leaderboard. `Pending` permet la reprise jusqu'à minuit. `Abandoned` (bouton explicite ou expiry paresseuse) bloque le rejeu.
 - **Anti-rejeu** : `Completed` ou `Abandoned` → 409. `Pending` → reprise avec `IsResuming=true`.
 - **Complétion auto** dans `SubmitAnswer/Handler.cs` : quand `réponses soumises + 1 >= TracksPerChallenge`.
@@ -164,6 +169,9 @@ public sealed class GameSessionAnswer
     public int Score { get; set; }
 }
 ```
+
+- `UNIQUE (GameSessionId, DailyChallengeTrackId)`
+- `IX_GameSessionAnswers_DailyChallengeTrackId` — agrégats stats par morceau (`Stats/Today`, `GetAdminStats`)
 
 `ListenedDurationSeconds` = **choix discret**, pas une mesure. Le serveur valide que la valeur est dans `Settings.AllowedDurationsSeconds`.
 

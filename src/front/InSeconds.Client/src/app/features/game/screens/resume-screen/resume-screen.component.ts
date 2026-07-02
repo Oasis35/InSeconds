@@ -4,7 +4,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 @Component({
   selector: 'app-resume-screen',
   imports: [TranslatePipe],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './resume-screen.component.html',
 })
 export class ResumeScreenComponent {

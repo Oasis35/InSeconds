@@ -1,4 +1,5 @@
-import { Component, inject, signal, computed, effect, viewChild, OnInit, OnDestroy, HostListener, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, computed, effect, viewChild, OnInit, OnDestroy, HostListener, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
 import { GameFacadeService } from './services/game-facade.service';
 import { TrackSlot, ResumedAnswer } from '../../core/models/game.models';
@@ -27,7 +28,7 @@ type GameState = 'loading' | 'welcome' | 'resume_prompt' | 'playing' | 'done' | 
     AlreadyPlayedScreenComponent, FinalRecapScreenComponent,
     GameHeaderComponent, GameFooterComponent,
   ],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './game.component.html',
   providers: [GameFacadeService],
 })
@@ -36,6 +37,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
   private readonly api = inject(ApiClient);
   private readonly audioPlayer = inject(AudioPlayerService);
   private readonly translate = inject(TranslateService);
+  private readonly destroyRef = inject(DestroyRef);
   protected readonly gameState = signal<GameState>('loading');
   protected readonly todayStats = signal<TodayStatsResponse | null>(null);
   protected readonly viewportTall = signal(window.innerHeight >= 600);
@@ -147,7 +149,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
 
   protected confirmAbandon(): void {
     this.abandonLoading.set(true);
-    this.gameService.abandonSession(this.sessionId).subscribe({
+    this.gameService.abandonSession(this.sessionId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.abandonLoading.set(false);
         this.showAbandonConfirm.set(false);
@@ -175,7 +177,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
       wasExtended:             event.wasExtended,
       artistAnswer:            event.artistAnswer ?? undefined,
       titleAnswer:             event.titleAnswer ?? undefined,
-    }).subscribe({
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (response) => {
         this.totalScore.update(s => s + response.score);
         this.results.update(rs => [...rs, {
@@ -321,7 +323,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
   }
 
   private loadSession(): void {
-    this.gameService.startToday().subscribe({
+    this.gameService.startToday().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (response) => {
         this.sessionId = response.sessionId;
         this.tracks.set(response.tracks);
@@ -358,7 +360,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
           this.gameState.set('already_played');
           this.startCountdown();
           if (!this.sessionAbandoned()) {
-            this.api.apiStatsToday().subscribe(stats => this.todayStats.set(stats));
+            this.api.apiStatsToday().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(stats => this.todayStats.set(stats));
           }
         } else if (err.status === 503) {
           this.gameState.set('no_challenge');

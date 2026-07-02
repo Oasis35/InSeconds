@@ -6,7 +6,7 @@ import { AdminStatsService } from '../../services/admin-stats.service';
 @Component({
   selector: 'app-dashboard-tab',
   imports: [DecimalPipe, TranslatePipe],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard-tab.component.html',
 })
 export class DashboardTabComponent {

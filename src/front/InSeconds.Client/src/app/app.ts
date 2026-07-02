@@ -26,7 +26,7 @@ const HEALTH_KO_THRESHOLD = 3;
   selector: 'app-root',
   imports: [RouterOutlet, ServiceDownComponent],
   templateUrl: './app.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class App {
   private readonly http = inject(HttpClient);

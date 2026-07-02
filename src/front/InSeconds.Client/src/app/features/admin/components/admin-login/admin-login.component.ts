@@ -7,7 +7,7 @@ import { AdminApiService } from '../../services/admin-api.service';
 @Component({
   selector: 'app-admin-login',
   imports: [FormsModule, RouterLink, TranslatePipe],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './admin-login.component.html',
 })
 export class AdminLoginComponent {

@@ -40,6 +40,10 @@ public sealed class PlayerConfiguration : IEntityTypeConfiguration<Player>
 
         builder.HasIndex(p => p.AuthToken).IsUnique();
 
+        builder.HasIndex(p => p.LastSeenAt)
+            .HasFilter("\"LastSeenAt\" IS NOT NULL")
+            .HasDatabaseName("IX_Players_LastSeenAt");
+
         builder.HasIndex(p => p.Pseudo)
             .IsUnique()
             .HasFilter("\"IsGuest\" = false AND \"Pseudo\" IS NOT NULL");

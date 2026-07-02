@@ -4,7 +4,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 @Component({
   selector: 'app-share-button',
   imports: [TranslatePipe],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './share-button.component.html',
 })
 export class ShareButtonComponent {

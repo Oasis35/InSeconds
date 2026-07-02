@@ -293,6 +293,8 @@ Ajoute `Authorization: Bearer <token>` sur toutes les requêtes vers `/api/admin
 - **Pas de logique dans le template** — toute logique dans `computed()` ou méthode
 - **Un composant = un dossier** avec `.ts` + `.html` externes (pas de `template:` inline)
 - **`TranslatePipe`** importé dans chaque composant qui affiche du texte
+- **`ChangeDetectionStrategy.OnPush` obligatoire** sur tous les composants — avec Signals, Angular notifie automatiquement les composants concernés ; `Default`/`Eager` déclenche un CD complet à chaque événement DOM
+- **`takeUntilDestroyed(destroyRef)`** sur toutes les subscriptions Observables — dans les composants, injecter `DestroyRef` et passer en argument ; dans le `constructor()`, `takeUntilDestroyed()` sans argument suffit (contexte d'injection actif)
 
 ## Contraintes mobile
 

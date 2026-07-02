@@ -11,6 +11,7 @@ public sealed class TodayStatsHandler(ApplicationDbContext db, SettingsService s
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
         var challenge = await db.DailyChallenges
+            .AsNoTracking()
             .FirstOrDefaultAsync(c => c.Date == today, ct);
 
         if (challenge is null)
@@ -22,6 +23,7 @@ public sealed class TodayStatsHandler(ApplicationDbContext db, SettingsService s
         if (playerId.HasValue)
         {
             var playerSession = await db.GameSessions
+                .AsNoTracking()
                 .Where(s => s.DailyChallengeId == challenge.Id
                          && s.PlayerId == playerId.Value
                          && s.Status == Domain.SessionStatus.Completed)
@@ -32,6 +34,7 @@ public sealed class TodayStatsHandler(ApplicationDbContext db, SettingsService s
             {
                 yourScore = playerSession.TotalScore;
                 var answers = await db.GameSessionAnswers
+                    .AsNoTracking()
                     .Where(a => a.GameSessionId == playerSession.Id)
                     .Select(a => new
                     {
@@ -47,22 +50,20 @@ public sealed class TodayStatsHandler(ApplicationDbContext db, SettingsService s
             }
 
             currentStreak = await db.Players
+                .AsNoTracking()
                 .Where(p => p.Id == playerId.Value)
                 .Select(p => p.CurrentStreak)
                 .FirstOrDefaultAsync(ct);
         }
 
-        var scores = await db.GameSessions
+        var scoresTask = db.GameSessions
+            .AsNoTracking()
             .Where(s => s.DailyChallengeId == challenge.Id && s.Status == Domain.SessionStatus.Completed)
             .Select(s => s.TotalScore)
             .ToListAsync(ct);
 
-        var totalPlayers = scores.Count;
-        var medianResult = ComputeMedian(scores);
-
-        var appSettings = await settingsService.GetAsync(ct);
-
-        var trackStats = await db.DailyChallengeTracks
+        var trackStatsTask = db.DailyChallengeTracks
+            .AsNoTracking()
             .Where(t => t.DailyChallengeId == challenge.Id)
             .OrderBy(t => t.Position)
             .Select(t => new
@@ -79,6 +80,17 @@ public sealed class TodayStatsHandler(ApplicationDbContext db, SettingsService s
                     .Average(a => (double?)a.ListenedDurationSeconds),
             })
             .ToListAsync(ct);
+
+        var appSettingsTask = settingsService.GetAsync(ct);
+
+        await Task.WhenAll(scoresTask, trackStatsTask, appSettingsTask);
+
+        var scores      = scoresTask.Result;
+        var trackStats  = trackStatsTask.Result;
+        var appSettings = appSettingsTask.Result;
+
+        var totalPlayers = scores.Count;
+        var medianResult = ComputeMedian(scores);
 
         var tracks = trackStats.Select(t =>
         {
