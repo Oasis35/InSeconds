@@ -8,11 +8,13 @@ public sealed class GetTracksHandler(ApplicationDbContext db)
     public async Task<IResult> Handle(CancellationToken cancellationToken)
     {
         var usedTrackIds = await db.DailyChallengeTracks
+            .AsNoTracking()
             .Select(dct => dct.TrackId)
             .Distinct()
             .ToListAsync(cancellationToken);
 
         var allTracks = await db.Tracks
+            .AsNoTracking()
             .OrderBy(t => t.Artist)
             .ToListAsync(cancellationToken);
 

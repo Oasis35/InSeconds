@@ -6,7 +6,7 @@ public static class SearchEndpoint
 {
     public static IEndpointRouteBuilder MapDeezerSearchPublic(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/deezer/search", async (string q, DeezerClient deezer, CancellationToken ct) =>
+        app.MapGet("/api/deezer/search", async (string q, CachedDeezerClient deezer, CancellationToken ct) =>
         {
             if (string.IsNullOrWhiteSpace(q) || q.Length < 2)
                 return Results.Ok(Array.Empty<DeezerSearchResult>());

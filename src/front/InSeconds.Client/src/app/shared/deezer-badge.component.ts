@@ -2,7 +2,7 @@ import { Component, input, ChangeDetectionStrategy } from '@angular/core';
 
 @Component({
   selector: 'app-deezer-badge',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './deezer-badge.component.html',
 })
 export class DeezerBadgeComponent {

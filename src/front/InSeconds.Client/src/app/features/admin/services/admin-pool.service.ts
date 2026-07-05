@@ -1,4 +1,5 @@
-import { Injectable, inject, signal, computed } from '@angular/core';
+import { Injectable, inject, signal, computed, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AdminApiService } from './admin-api.service';
 import { DeezerTrackInfo, PoolTrackDto } from '../admin.models';
 
@@ -6,6 +7,7 @@ import { DeezerTrackInfo, PoolTrackDto } from '../admin.models';
 @Injectable()
 export class AdminPoolService {
   private readonly api = inject(AdminApiService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly poolTracks = this.api.poolTracks;
   readonly poolTracksLoading = this.api.poolTracksLoading;
@@ -23,6 +25,7 @@ export class AdminPoolService {
 
   // --- modale ajout ---
   readonly addToPoolStatus = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
+  private addToPoolStatusTimer: ReturnType<typeof setTimeout> | null = null;
   readonly addModalOpen = signal(false);
   readonly addModalTrack = signal<DeezerTrackInfo | null>(null);
   readonly addModalTrackIdToUpdate = signal<number | null>(null);
@@ -159,7 +162,7 @@ export class AdminPoolService {
       ? this.api.addTrack(track.deezerTrackId)
       : this.api.updateTrack(trackIdToUpdate, track.deezerTrackId);
 
-    req$.subscribe({
+    req$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.addToPoolStatus.set('success');
         this.api.reloadPool();
@@ -167,15 +170,19 @@ export class AdminPoolService {
           this.poolSearchQuery.set('');
           this.closeAddModal();
         } else {
-          setTimeout(() => {
+          if (this.addToPoolStatusTimer) clearTimeout(this.addToPoolStatusTimer);
+          this.addToPoolStatusTimer = setTimeout(() => {
             if (this.addToPoolStatus() === 'success') this.addToPoolStatus.set('idle');
+            this.addToPoolStatusTimer = null;
           }, 2000);
         }
       },
       error: () => {
         this.addToPoolStatus.set('error');
-        setTimeout(() => {
+        if (this.addToPoolStatusTimer) clearTimeout(this.addToPoolStatusTimer);
+        this.addToPoolStatusTimer = setTimeout(() => {
           if (this.addToPoolStatus() === 'error') this.addToPoolStatus.set('idle');
+          this.addToPoolStatusTimer = null;
         }, 3000);
       },
     });

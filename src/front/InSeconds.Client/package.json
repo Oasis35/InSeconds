@@ -26,12 +26,12 @@
   },
   "private": true,
   "dependencies": {
-    "@angular/common": "^22.0.3",
-    "@angular/compiler": "^22.0.3",
-    "@angular/core": "^22.0.3",
-    "@angular/forms": "^22.0.3",
-    "@angular/platform-browser": "^22.0.3",
-    "@angular/router": "^22.0.3",
+    "@angular/common": "^22.0.5",
+    "@angular/compiler": "^22.0.5",
+    "@angular/core": "^22.0.5",
+    "@angular/forms": "^22.0.5",
+    "@angular/platform-browser": "^22.0.5",
+    "@angular/router": "^22.0.5",
     "@ngx-translate/core": "^18.0.0",
     "@ngx-translate/http-loader": "^18.0.0",
     "rxjs": "~7.8.0",
@@ -39,9 +39,9 @@
     "zone.js": "~0.15.0"
   },
   "devDependencies": {
-    "@angular/build": "^22.0.4",
-    "@angular/cli": "^22.0.4",
-    "@angular/compiler-cli": "^22.0.3",
+    "@angular/build": "^22.0.5",
+    "@angular/cli": "^22.0.5",
+    "@angular/compiler-cli": "^22.0.5",
     "@playwright/test": "^1.61.0",
     "@tailwindcss/postcss": "^4.3.0",
     "@types/jasmine": "~6.0.0",
@@ -53,7 +53,7 @@
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.2.0",
     "nswag": "^14.7.1",
-    "postcss": "^8.5.15",
+    "postcss": "^8.5.16",
     "tailwindcss": "^4.3.1",
     "typescript": "~6.0.3"
   }

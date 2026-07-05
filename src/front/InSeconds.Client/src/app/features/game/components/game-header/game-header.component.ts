@@ -5,7 +5,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 @Component({
   selector: 'app-game-header',
   imports: [TranslatePipe],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './game-header.component.html',
 })
 export class GameHeaderComponent {

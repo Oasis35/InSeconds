@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace InSeconds.Api.Features.Sessions.StartSession;
 
-public sealed class StartSessionHandler(ApplicationDbContext db, DeezerClient deezer, SettingsService settingsService)
+public sealed class StartSessionHandler(ApplicationDbContext db, CachedDeezerClient deezer, SettingsService settingsService)
 {
     public async Task<IResult> Handle(StartSessionCommand command, CancellationToken cancellationToken)
     {
@@ -26,9 +26,23 @@ public sealed class StartSessionHandler(ApplicationDbContext db, DeezerClient de
         }
 
         var challenge = await db.DailyChallenges
-            .Include(c => c.Tracks)
-                .ThenInclude(t => t.Track)
-            .FirstOrDefaultAsync(c => c.Date == today, cancellationToken);
+            .AsNoTracking()
+            .Where(c => c.Date == today)
+            .Select(c => new
+            {
+                c.Id,
+                Tracks = c.Tracks.Select(t => new
+                {
+                    t.Id,
+                    t.Position,
+                    Track = new
+                    {
+                        t.Track.DeezerTrackId,
+                        t.Track.CoverHash,
+                    }
+                }).ToList()
+            })
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (challenge is null)
         {
@@ -42,9 +56,25 @@ public sealed class StartSessionHandler(ApplicationDbContext db, DeezerClient de
 
         // Chercher une session existante pour ce joueur + ce défi
         var existingSession = await db.GameSessions
-            .Include(s => s.Answers)
-                .ThenInclude(a => a.Track)
-            .FirstOrDefaultAsync(s => s.PlayerId == command.PlayerId && s.DailyChallengeId == challenge.Id, cancellationToken);
+            .Where(s => s.PlayerId == command.PlayerId && s.DailyChallengeId == challenge.Id)
+            .Select(s => new
+            {
+                s.Id,
+                s.Status,
+                s.CurrentTrackId,
+                s.CurrentTrackMinListenedSeconds,
+                Answers = s.Answers.Select(a => new
+                {
+                    a.ArtistCorrect,
+                    a.TitleCorrect,
+                    a.Score,
+                    a.ListenedDurationSeconds,
+                    TrackPosition = a.Track.Position,
+                    TrackArtist   = a.Track.Track.Artist,
+                    TrackTitle    = a.Track.Track.Title,
+                }).ToList()
+            })
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (existingSession is not null)
         {
@@ -81,19 +111,19 @@ public sealed class StartSessionHandler(ApplicationDbContext db, DeezerClient de
                 .ToList();
 
             var answeredPositions = existingSession.Answers
-                .Select(a => a.Track.Position)
+                .Select(a => a.TrackPosition)
                 .ToHashSet();
 
             var completedAnswers = existingSession.Answers
-                .OrderBy(a => a.Track.Position)
+                .OrderBy(a => a.TrackPosition)
                 .Select(a => new ResumedAnswer(
-                    Position:                a.Track.Position,
+                    Position:                a.TrackPosition,
                     ArtistCorrect:           a.ArtistCorrect,
                     TitleCorrect:            a.TitleCorrect,
                     Score:                   a.Score,
                     ListenedDurationSeconds: a.ListenedDurationSeconds,
-                    CorrectArtist:           a.Track.Track.Artist,
-                    CorrectTitle:            a.Track.Track.Title))
+                    CorrectArtist:           a.TrackArtist,
+                    CorrectTitle:            a.TrackTitle))
                 .ToList();
 
             // Index 0-based de la première track sans réponse
@@ -104,7 +134,7 @@ public sealed class StartSessionHandler(ApplicationDbContext db, DeezerClient de
                 .DefaultIfEmpty(orderedTracksResume.Count)
                 .First();
 
-            var playerResume = await db.Players.FirstAsync(p => p.Id == command.PlayerId, cancellationToken);
+            var playerResume = await db.Players.AsNoTracking().FirstAsync(p => p.Id == command.PlayerId, cancellationToken);
 
             return Results.Ok(new StartSessionResponse(
                 SessionId:          existingSession.Id,
@@ -118,7 +148,7 @@ public sealed class StartSessionHandler(ApplicationDbContext db, DeezerClient de
         }
 
         // Nouvelle session
-        var player = await db.Players.FirstAsync(p => p.Id == command.PlayerId, cancellationToken);
+        var player = await db.Players.AsNoTracking().FirstAsync(p => p.Id == command.PlayerId, cancellationToken);
 
         var session = new GameSession
         {
