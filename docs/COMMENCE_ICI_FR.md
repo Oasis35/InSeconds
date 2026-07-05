@@ -97,7 +97,9 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - **Refacto frontend** — `game.component` découpé en header + footer + 5 screens + `GameFacadeService` + `DeezerAutocompleteService` (`features/game/services/`) ; `admin.component` en shell + 6 services (`AdminHttpService`, `AdminStateService`, `AdminApiService`, `AdminStatsService`, `AdminPoolService`, `AdminActionsService`) + 7 sous-composants ; palette CSS centralisée en variables `:root` ; `ShareButtonComponent` réutilisable
 - **Tests unitaires frontend** — 80 tests Karma/Jasmine (`GameService`, `SettingsService`, `LanguageService`, `AdminHttpService`, `AdminStatsService`) ; job CI `unit-tests-front` (`ChromeHeadless`)
 
-🚧 **À faire** : smoke tests post-deploy, tests mobiles, polish, cache Redis previews Deezer. Voir [`TACHES.md`](TACHES.md).
+- **Cache Deezer** — `CachedDeezerClient` (`IMemoryCache`) : preview URLs (TTL borné par l'expiration de la signature CDN, sinon 403 à la lecture) + recherches autocomplete (1h)
+
+🚧 **À faire** : smoke tests post-deploy, tests mobiles, polish, éventuel passage du cache Deezer sur Redis (multi-instances). Voir [`TACHES.md`](TACHES.md).
 
 ## Specs gameplay clés (rappel rapide)
 

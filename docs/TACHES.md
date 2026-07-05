@@ -127,7 +127,8 @@
 
 ## 🚧 Polish & Launch
 
-- [ ] Cache Redis pour les preview URLs Deezer (`StackExchange.Redis`, TTL 24h, intercalé dans `StartSession/Handler.cs`)
+- [x] Cache mémoire pour les preview URLs Deezer (`CachedDeezerClient` : `IMemoryCache`, TTL borné par l'expiration de la signature CDN — fix 403 prod)
+- [ ] Cache Redis en remplacement de l'`IMemoryCache` (utile seulement en multi-instances / pour survivre aux redémarrages — `StackExchange.Redis`)
 - [ ] Smoke tests automatisés post-deploy
 - [ ] Charte graphique / `@theme` Tailwind (palette déjà centralisée en variables CSS `:root`)
 - [ ] Audit accessibilité WCAG 2.1 AA

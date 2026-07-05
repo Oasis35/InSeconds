@@ -34,7 +34,7 @@ src/back/InSeconds.Api/
 │   │   ├── ApplicationDbContext.cs
 │   │   ├── Configurations/                # 1 IEntityTypeConfiguration<T> par entité
 │   │   └── Migrations/
-│   └── Deezer/                            # DeezerClient (HttpClient typed)
+│   └── Deezer/                            # DeezerClient (HttpClient typed) + CachedDeezerClient (IMemoryCache)
 ├── Common/
 │   ├── Auth/                              # CookieAuthService + PlayerAuthMiddleware
 │   ├── Scoring/                           # ScoreCalculator
@@ -223,6 +223,14 @@ Résout ou crée un `Player` guest à partir du cookie HTTP-only signé. `SameSi
 **Résilience** : le `HttpClient` typé est configuré avec `AddStandardResilienceHandler` (`Program.cs`, hors `Testing`) — timeout 4s/tentative, 15s total, retry exponentiel (429/5xx) + circuit breaker. Sans cela, un appel Deezer lent pourrait bloquer `StartSession` jusqu'au timeout `HttpClient` par défaut (100s).
 
 **Gestion d'erreurs** : chaque méthode logge en `Warning` sur échec HTTP ou preview vide, et **re-throw `OperationCanceledException`** (l'annulation n'est jamais transformée en `null`/`[]`). Pas de `catch {}` nu.
+
+### CachedDeezerClient
+
+Cache `IMemoryCache` devant `DeezerClient` pour les données partagées entre joueurs (utilisé par `StartSession` et le proxy `/api/deezer/search` ; **pas** côté admin ni dans `PreviewStatusRefresher`, qui ont besoin de l'état Deezer réel).
+
+- **Preview URLs** : TTL 24h **borné par l'expiration de la signature CDN** de l'URL (`?hdnea=exp=<unix>~...`) moins 1h de marge. Une URL signée expirée provoque un 403 CDN à la lecture côté joueur — un TTL fixe qui dépasse la validité de la signature reproduit ce bug.
+- **Recherches autocomplete** : TTL 1h, clé normalisée (trim + lowercase).
+- Ne cache jamais une preview absente ni un résultat de recherche vide (un échec Deezer transitoire ne doit pas être mémorisé).
 
 ## Observabilité
 
