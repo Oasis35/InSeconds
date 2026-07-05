@@ -4,7 +4,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 @Component({
   selector: 'app-welcome-screen',
   imports: [TranslatePipe],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './welcome-screen.component.html',
 })
 export class WelcomeScreenComponent {

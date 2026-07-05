@@ -16,13 +16,24 @@ public sealed class TodayStatsHandlerTests
     private static readonly Guid Player2 = new("22222222-2222-2222-2222-222222222222");
     private static readonly Guid Player3 = new("33333333-3333-3333-3333-333333333333");
 
-    private static ApplicationDbContext CreateDbContext() =>
-        new(new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options);
+    // xUnit instancie la classe à chaque test : chaque test a sa propre base in-memory,
+    // partagée entre le contexte seedé et ceux créés par la factory du handler.
+    private readonly TestDbContextFactory _dbFactory = new();
 
-    private static TodayStatsHandler CreateHandler(ApplicationDbContext db) =>
-        new(db, new SettingsService(Options.Create(new AppSettings())));
+    private ApplicationDbContext CreateDbContext() => _dbFactory.CreateDbContext();
+
+    private TodayStatsHandler CreateHandler(ApplicationDbContext db) =>
+        new(db, _dbFactory, new SettingsService(Options.Create(new AppSettings())));
+
+    private sealed class TestDbContextFactory : IDbContextFactory<ApplicationDbContext>
+    {
+        private readonly DbContextOptions<ApplicationDbContext> _options =
+            new DbContextOptionsBuilder<ApplicationDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+
+        public ApplicationDbContext CreateDbContext() => new(_options);
+    }
 
     private static Player BuildPlayer(Guid id) => new()
     {

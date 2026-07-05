@@ -5,7 +5,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 @Component({
   selector: 'app-status-screen',
   imports: [TranslatePipe],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './status-screen.component.html',
 })
 export class StatusScreenComponent {

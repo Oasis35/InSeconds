@@ -7,7 +7,7 @@ import { AddTrackModalComponent } from '../add-track-modal/add-track-modal.compo
 @Component({
   selector: 'app-pool-tab',
   imports: [TranslatePipe, DeleteTrackModalComponent, AddTrackModalComponent],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pool-tab.component.html',
 })
 export class PoolTabComponent {

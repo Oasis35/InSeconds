@@ -1,7 +1,8 @@
 import {
   Component, input, output, inject, signal, computed, effect, OnDestroy,
-  ChangeDetectionStrategy
+  ChangeDetectionStrategy, DestroyRef
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -24,7 +25,7 @@ export interface AnsweredEvent {
 @Component({
   selector: 'app-blind-round',
   imports: [FormsModule, DecimalPipe, TranslatePipe],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './blind-round.component.html',
 })
 export class BlindRoundComponent implements OnDestroy {
@@ -39,6 +40,7 @@ export class BlindRoundComponent implements OnDestroy {
   private readonly settings = inject(SettingsService);
   private readonly gameService = inject(GameFacadeService);
   private readonly deezerSearch = inject(DeezerAutocompleteService);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly durations = computed(() => {
     const all = this.settings.allowedDurations();
@@ -69,7 +71,7 @@ export class BlindRoundComponent implements OnDestroy {
   });
 
   constructor() {
-    this.deezerSearch.search(this.query$).subscribe(s => this.suggestions.set(s));
+    this.deezerSearch.search(this.query$).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(s => this.suggestions.set(s));
 
     // Quand le timer s'arrête (état finished, pas encore de résultat), mémoriser la durée écoutée
     effect(() => {
@@ -78,7 +80,7 @@ export class BlindRoundComponent implements OnDestroy {
         const tid = this.track().id;
         const dur = this.chosenDuration();
         if (sid > 0 && tid > 0 && dur > 0) {
-          this.gameService.updateListening(sid, tid, dur).subscribe();
+          this.gameService.updateListening(sid, tid, dur).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
         }
       }
     });

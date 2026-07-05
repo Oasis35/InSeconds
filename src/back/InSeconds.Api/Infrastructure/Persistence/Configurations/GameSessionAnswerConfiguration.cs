@@ -28,5 +28,8 @@ public sealed class GameSessionAnswerConfiguration : IEntityTypeConfiguration<Ga
         builder.HasQueryFilter(a => !a.GameSession.Player.IsDeleted);
 
         builder.HasIndex(a => new { a.GameSessionId, a.DailyChallengeTrackId }).IsUnique();
+
+        builder.HasIndex(a => a.DailyChallengeTrackId)
+            .HasDatabaseName("IX_GameSessionAnswers_DailyChallengeTrackId");
     }
 }

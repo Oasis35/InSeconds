@@ -1,6 +1,6 @@
 # InSeconds — Liste des Tâches
 
-> Mis à jour le 2026-06-29.
+> Mis à jour le 2026-07-02.
 
 ## ✅ Bootstrap projet
 
@@ -85,6 +85,7 @@
 - [x] **`GameFacadeService`** (`features/game/services/`, fourni par `GameComponent`) — façade métier délégant à `GameService` (VSA frontend)
 - [x] **Palette CSS centralisée** — 35 variables `:root` dans `styles.scss`, plus de hex inline dans les templates, hovers via `hover:` Tailwind
 - [x] **`ShareButtonComponent`** (`shared/share-button/`) — bouton partage réutilisable, mutualisé entre `AlreadyPlayedScreenComponent` et `FinalRecapScreenComponent`
+- [x] **Optimisations performance front** (2026-07-02) — `ChangeDetectionStrategy.OnPush` sur les 23 composants Angular, `takeUntilDestroyed(destroyRef)` sur toutes les subscriptions Observables (`game.component.ts`, `blind-round.component.ts`, `admin-pool.service.ts`, `admin-actions.service.ts`), tracking des handles `setTimeout` + `clearTimeout()` avant recréation dans `admin-pool.service.ts` et `admin-actions.service.ts`
 
 ## ✅ Déploiement
 
@@ -115,6 +116,7 @@
 
 ## 🚧 Tests
 
+- [x] **Optimisations performance back** (2026-07-02) — `.AsNoTracking()` sur toutes les queries lecture-seule, `Select()` projections à la place de `Include().ThenInclude()` dans `StartSession/Handler.cs`, `Task.WhenAll()` dans `Stats/Today` et `GetAdminStats` (`BuildPlayerBreakdown`), migration EF `AddPerformanceIndexes` : `IX_GameSessions_PlayerStatusChallenge`, `IX_GameSessionAnswers_DailyChallengeTrackId`, `IX_Players_LastSeenAt`
 - [x] Tests d'intégration backend (Testcontainers, 79 tests) — `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (KPIs jour, AvailableDates, fix 30j, Pending→Abandoned), `Auth/Me` (soft-delete), `SessionEdgeCases` (expiry paresseuse, streak, submit sur session abandonnée, UpdateListening : store/max/reset-after-submit/returned-on-resume), `ChallengeGeneration`, `Admin/Tracks` (AddTrack, GetTracks, DeleteTrack, UpdateTrack), `Admin/Challenges` (GetChallenges, CreateChallenge, ResetToday)
 - [x] Tests unitaires frontend Karma/Jasmine (95 tests) — `App` (1), `GameService` (11), `SettingsService` (12), `LanguageService` (12), `AdminHttpService` + délégation `AdminApiService` (20), `AdminStatsService` (29) ; job CI `unit-tests-front` (`ChromeHeadless`)
 - [x] Tests E2E Playwright (38 scénarios : 23 jeu + 15 admin). Jeu : happy path, écran déjà joué, abandon mid-game, reprise, abandon depuis reprise, sync multi-onglets, pas de défi, partage, scoring palier/mauvaise réponse/partiel, anti-cheat paliers bloqués à la reprise, confirmation de sortie (`leave-guard` : annuler/confirmer/hors-playing), bouton `✕` d'effacement (`clear-search`). Admin : login erreur/succès/déconnexion, pool tableau+filtres texte/preview/statut, ajout morceau, suppression individuelle+annulation, actualisation morceau sans preview (modale pré-remplie), actions générer/déjà généré/reset, liste défis
