@@ -11,7 +11,7 @@ public static class GetAdminStatsEndpoint
     {
         routes.MapGet("/api/admin/stats", async (
             HttpContext ctx,
-            ApplicationDbContext db,
+            IDbContextFactory<ApplicationDbContext> dbFactory,
             [FromQuery] string? date,
             CancellationToken ct) =>
         {
@@ -21,13 +21,22 @@ public static class GetAdminStatsEndpoint
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
             var selectedDate = date is not null && DateOnly.TryParse(date, out var parsed) ? parsed : today;
 
-            var challengeStats   = await BuildChallengeStats(db, ct);
-            var dailyActivity    = await BuildDailyActivity(db, ct);
-            var playerBreakdown  = await BuildPlayerBreakdown(db, ct);
-            var availableDates   = await BuildAvailableDates(db, ct);
-            var selectedDayKpis  = await BuildDailyKpis(db, selectedDate, today, ct);
+            // Queries parallèles : chaque Build* crée son propre DbContext via la factory
+            // (un contexte ne supporte pas les opérations concurrentes).
+            var challengeStatsTask  = BuildChallengeStats(dbFactory, ct);
+            var dailyActivityTask   = BuildDailyActivity(dbFactory, ct);
+            var playerBreakdownTask = BuildPlayerBreakdown(dbFactory, ct);
+            var availableDatesTask  = BuildAvailableDates(dbFactory, ct);
+            var selectedDayKpisTask = BuildDailyKpis(dbFactory, selectedDate, today, ct);
 
-            return Results.Ok(new AdminStatsResponse(challengeStats, dailyActivity, playerBreakdown, availableDates, selectedDayKpis));
+            await Task.WhenAll(challengeStatsTask, dailyActivityTask, playerBreakdownTask, availableDatesTask, selectedDayKpisTask);
+
+            return Results.Ok(new AdminStatsResponse(
+                challengeStatsTask.Result,
+                dailyActivityTask.Result,
+                playerBreakdownTask.Result,
+                availableDatesTask.Result,
+                selectedDayKpisTask.Result));
         })
         .WithName("GetAdminStats")
         .WithTags("Admin")
@@ -37,8 +46,10 @@ public static class GetAdminStatsEndpoint
         return routes;
     }
 
-    private static async Task<IReadOnlyList<ChallengeStatsDto>> BuildChallengeStats(ApplicationDbContext db, CancellationToken ct)
+    private static async Task<IReadOnlyList<ChallengeStatsDto>> BuildChallengeStats(
+        IDbContextFactory<ApplicationDbContext> dbFactory, CancellationToken ct)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
         var challenges = await db.DailyChallenges
             .AsNoTracking()
             .OrderByDescending(c => c.Date)
@@ -99,10 +110,13 @@ public static class GetAdminStatsEndpoint
         }).ToList();
     }
 
-    private static async Task<IReadOnlyList<DailyActivityDto>> BuildDailyActivity(ApplicationDbContext db, CancellationToken ct)
+    private static async Task<IReadOnlyList<DailyActivityDto>> BuildDailyActivity(
+        IDbContextFactory<ApplicationDbContext> dbFactory, CancellationToken ct)
     {
         var since = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-29));
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
 
         var raw = await db.GameSessions
             .AsNoTracking()
@@ -121,8 +135,10 @@ public static class GetAdminStatsEndpoint
             .ToList();
     }
 
-    private static async Task<IReadOnlyList<DateOnly>> BuildAvailableDates(ApplicationDbContext db, CancellationToken ct)
+    private static async Task<IReadOnlyList<DateOnly>> BuildAvailableDates(
+        IDbContextFactory<ApplicationDbContext> dbFactory, CancellationToken ct)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
         return await db.DailyChallenges
             .AsNoTracking()
             .OrderByDescending(c => c.Date)
@@ -131,8 +147,9 @@ public static class GetAdminStatsEndpoint
     }
 
     private static async Task<DailyKpisDto?> BuildDailyKpis(
-        ApplicationDbContext db, DateOnly date, DateOnly today, CancellationToken ct)
+        IDbContextFactory<ApplicationDbContext> dbFactory, DateOnly date, DateOnly today, CancellationToken ct)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
         var exists = await db.DailyChallenges
             .AsNoTracking()
             .AnyAsync(c => c.Date == date, ct);
@@ -168,16 +185,28 @@ public static class GetAdminStatsEndpoint
         return new DailyKpisDto(date, completed, effectiveAbandoned, total, completionRate, median);
     }
 
-    private static async Task<PlayerBreakdownDto> BuildPlayerBreakdown(ApplicationDbContext db, CancellationToken ct)
+    private static async Task<PlayerBreakdownDto> BuildPlayerBreakdown(
+        IDbContextFactory<ApplicationDbContext> dbFactory, CancellationToken ct)
     {
         var cutoff7  = DateTime.UtcNow.AddDays(-7);
         var cutoff30 = DateTime.UtcNow.AddDays(-30);
 
-        var guests     = await db.Players.CountAsync(p => !p.IsDeleted && p.IsGuest,  ct);
-        var registered = await db.Players.CountAsync(p => !p.IsDeleted && !p.IsGuest, ct);
-        var active7    = await db.Players.CountAsync(p => !p.IsDeleted && p.LastSeenAt >= cutoff7,  ct);
-        var active30   = await db.Players.CountAsync(p => !p.IsDeleted && p.LastSeenAt >= cutoff30, ct);
+        var guestsTask     = CountPlayersAsync(dbFactory, p => !p.IsDeleted && p.IsGuest,  ct);
+        var registeredTask = CountPlayersAsync(dbFactory, p => !p.IsDeleted && !p.IsGuest, ct);
+        var active7Task    = CountPlayersAsync(dbFactory, p => !p.IsDeleted && p.LastSeenAt >= cutoff7,  ct);
+        var active30Task   = CountPlayersAsync(dbFactory, p => !p.IsDeleted && p.LastSeenAt >= cutoff30, ct);
 
-        return new PlayerBreakdownDto(guests, registered, active7, active30);
+        await Task.WhenAll(guestsTask, registeredTask, active7Task, active30Task);
+
+        return new PlayerBreakdownDto(guestsTask.Result, registeredTask.Result, active7Task.Result, active30Task.Result);
+    }
+
+    private static async Task<int> CountPlayersAsync(
+        IDbContextFactory<ApplicationDbContext> dbFactory,
+        System.Linq.Expressions.Expression<Func<Domain.Player, bool>> predicate,
+        CancellationToken ct)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.Players.AsNoTracking().CountAsync(predicate, ct);
     }
 }

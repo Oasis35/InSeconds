@@ -19,7 +19,7 @@ const TONES: Record<ConfirmSheetTone, ToneStyle> = {
  */
 @Component({
   selector: 'app-confirm-sheet',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './confirm-sheet.component.html',
 })
 export class ConfirmSheetComponent {

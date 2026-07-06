@@ -5,7 +5,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 @Component({
   selector: 'app-not-found',
   imports: [RouterLink, TranslatePipe],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './not-found.component.html',
 })
 export class NotFoundComponent {}

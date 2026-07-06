@@ -6,7 +6,7 @@ import { ShareButtonComponent } from '../../../../shared/share-button/share-butt
 @Component({
   selector: 'app-already-played-screen',
   imports: [TranslatePipe, ShareButtonComponent],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './already-played-screen.component.html',
 })
 export class AlreadyPlayedScreenComponent {

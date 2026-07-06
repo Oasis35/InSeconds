@@ -29,7 +29,9 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>, IAsyncLife
             if (descriptor != null)
                 services.Remove(descriptor);
 
-            services.AddDbContext<ApplicationDbContext>(options =>
+            // Miroir de Program.cs : AddDbContextFactory (options singleton + contexte scoped),
+            // sinon la factory singleton ne peut pas consommer des options scoped.
+            services.AddDbContextFactory<ApplicationDbContext>(options =>
                 options.UseNpgsql(_postgres.GetConnectionString()));
         });
 

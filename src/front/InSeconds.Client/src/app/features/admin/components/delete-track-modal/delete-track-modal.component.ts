@@ -5,7 +5,7 @@ import { AdminPoolService } from '../../services/admin-pool.service';
 @Component({
   selector: 'app-delete-track-modal',
   imports: [TranslatePipe],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './delete-track-modal.component.html',
 })
 export class DeleteTrackModalComponent {

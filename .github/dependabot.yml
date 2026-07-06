@@ -1,18 +1,23 @@
-# .github/dependabot.yml
 version: 2
 updates:
   - package-ecosystem: "nuget"
     directory: "/"
     target-branch: "feat/dependabot"
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 3
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
+      interval: "monthly"
+    open-pull-requests-limit: 2
+    groups:
+      nuget-all:
+        patterns:
+          - "*"
+
   - package-ecosystem: "npm"
     directory: "/src/front/InSeconds.Client"
     target-branch: "feat/dependabot"
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
+      interval: "monthly"
+    open-pull-requests-limit: 2
+    groups:
+      npm-all:
+        patterns:
+          - "*"

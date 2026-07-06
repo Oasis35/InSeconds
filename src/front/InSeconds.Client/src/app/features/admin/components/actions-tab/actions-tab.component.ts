@@ -5,7 +5,7 @@ import { AdminActionsService } from '../../services/admin-actions.service';
 @Component({
   selector: 'app-actions-tab',
   imports: [TranslatePipe],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './actions-tab.component.html',
 })
 export class ActionsTabComponent {

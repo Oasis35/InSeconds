@@ -16,6 +16,7 @@ public static class MeEndpoint
             var playerId = httpContext.GetPlayerId();
 
             var player = await db.Players
+                .AsNoTracking()
                 .FirstAsync(p => p.Id == playerId, ct);
 
             return Results.Ok(new MeResponse(player.Id, player.IsGuest, player.Pseudo));

@@ -37,6 +37,9 @@ public sealed class GameSessionConfiguration : IEntityTypeConfiguration<GameSess
 
         builder.HasIndex(s => new { s.PlayerId, s.DailyChallengeId }).IsUnique();
 
+        builder.HasIndex(s => new { s.PlayerId, s.Status, s.DailyChallengeId })
+            .HasDatabaseName("IX_GameSessions_PlayerStatusChallenge");
+
         builder.HasIndex(s => new { s.DailyChallengeId, s.Status })
             .HasDatabaseName("IX_GameSessions_ChallengeStatus");
 

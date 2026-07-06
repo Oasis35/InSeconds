@@ -5,7 +5,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 @Component({
   selector: 'app-game-footer',
   imports: [RouterLink, TranslatePipe],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './game-footer.component.html',
 })
 export class GameFooterComponent {}

@@ -19,7 +19,7 @@ export interface RoundResult {
 @Component({
   selector: 'app-final-recap-screen',
   imports: [TranslatePipe, ShareButtonComponent],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './final-recap-screen.component.html',
 })
 export class FinalRecapScreenComponent {
