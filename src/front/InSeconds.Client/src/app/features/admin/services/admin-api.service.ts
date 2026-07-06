@@ -67,6 +67,7 @@ export class AdminApiService {
 
   generateToday() { return this.http.generateToday(); }
   resetToday() { return this.http.resetToday(); }
+  refreshPreviews() { return this.http.refreshPreviews(); }
   addTrack(deezerTrackId: number) { return this.http.addTrack(deezerTrackId); }
   updateTrack(id: number, deezerTrackId: number) { return this.http.updateTrack(id, deezerTrackId); }
   deleteTrack(id: number) { return this.http.deleteTrack(id); }
