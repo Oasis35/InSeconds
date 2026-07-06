@@ -1,6 +1,6 @@
 # InSeconds — Liste des Tâches
 
-> Mis à jour le 2026-07-02.
+> Mis à jour le 2026-07-06.
 
 ## ✅ Bootstrap projet
 
@@ -34,6 +34,8 @@
 - [x] `Track.HasPreview` persisté en base (migration `AddTrackHasPreview`) — flag mis à jour à l'ajout/actualisation d'un track et nuitamment par `RefreshPreviewStatusService` (2h UTC)
 - [x] **Anti-cheat durée min écoutée** : `GameSession.CurrentTrackId` + `GameSession.CurrentTrackMinListenedSeconds` (migration `AddSessionAntiCheat`), slice `Sessions/UpdateListening` (`PATCH /api/sessions/{id}/listening`), appelé depuis `BlindRoundComponent` à chaque arrêt du timer ; à la reprise, `StartSession` renvoie `CurrentTrackId`/`MinListenedSeconds` et le front masque les paliers inférieurs
 - [x] `RefreshPreviewStatusService` — `BackgroundService` qui vérifie Deezer pour tous les tracks disponibles à 2h UTC et met à jour `HasPreview`
+- [x] Refresh previews fiabilisé : appels par lots de 10 espacés de 1,5 s (rate-limit Deezer ~50 req/5 s), détection des erreurs Deezer renvoyées en HTTP 200 (`{"error":{...}}` — quota, track supprimé), `HasPreview` jamais modifié sur un échec (`DeezerClient.ProbePreviewAsync`) — corrige les ~200 faux « sans preview » du 2026-07-06
+- [x] `POST /api/admin/refresh-previews` — relance le re-check à la demande, retourne `{ checked, updated, failed }` ; bouton « 🔄 Re-vérifier les previews » dans l'onglet Actions admin
 - [x] `DailyChallengeGenerator` filtre sur `Track.HasPreview` en DB (plus d'appel Deezer à la génération), shuffle Fisher-Yates avec seed déterministe, transaction explicite autour des deux `SaveChangesAsync`
 - [x] `GenerateResult` enum (`Success`/`AlreadyExists`/`PoolInsufficient`) — `POST /api/admin/generate-today` retourne `422 pool_insufficient` distinct du `409 already_exists`
 - [x] `GetTracksHandler` lit `HasPreview` depuis la DB (plus d'appel Deezer au chargement du pool admin)
@@ -117,7 +119,7 @@
 ## 🚧 Tests
 
 - [x] **Optimisations performance back** (2026-07-02) — `.AsNoTracking()` sur toutes les queries lecture-seule, `Select()` projections à la place de `Include().ThenInclude()` dans `StartSession/Handler.cs`, `Task.WhenAll()` dans `Stats/Today` et `GetAdminStats` (`BuildPlayerBreakdown`), migration EF `AddPerformanceIndexes` : `IX_GameSessions_PlayerStatusChallenge`, `IX_GameSessionAnswers_DailyChallengeTrackId`, `IX_Players_LastSeenAt`
-- [x] Tests d'intégration backend (Testcontainers, 79 tests) — `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (KPIs jour, AvailableDates, fix 30j, Pending→Abandoned), `Auth/Me` (soft-delete), `SessionEdgeCases` (expiry paresseuse, streak, submit sur session abandonnée, UpdateListening : store/max/reset-after-submit/returned-on-resume), `ChallengeGeneration`, `Admin/Tracks` (AddTrack, GetTracks, DeleteTrack, UpdateTrack), `Admin/Challenges` (GetChallenges, CreateChallenge, ResetToday)
+- [x] Tests d'intégration backend (Testcontainers, 82 tests) — `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (KPIs jour, AvailableDates, fix 30j, Pending→Abandoned), `Auth/Me` (soft-delete), `SessionEdgeCases` (expiry paresseuse, streak, submit sur session abandonnée, UpdateListening : store/max/reset-after-submit/returned-on-resume), `ChallengeGeneration`, `Admin/Tracks` (AddTrack, GetTracks, DeleteTrack, UpdateTrack), `Admin/Challenges` (GetChallenges, CreateChallenge, ResetToday), `Admin/RefreshPreviews` (401, compteurs seed, réparation d'un flag corrompu)
 - [x] Tests unitaires frontend Karma/Jasmine (95 tests) — `App` (1), `GameService` (11), `SettingsService` (12), `LanguageService` (12), `AdminHttpService` + délégation `AdminApiService` (20), `AdminStatsService` (29) ; job CI `unit-tests-front` (`ChromeHeadless`)
 - [x] Tests E2E Playwright (38 scénarios : 23 jeu + 15 admin). Jeu : happy path, écran déjà joué, abandon mid-game, reprise, abandon depuis reprise, sync multi-onglets, pas de défi, partage, scoring palier/mauvaise réponse/partiel, anti-cheat paliers bloqués à la reprise, confirmation de sortie (`leave-guard` : annuler/confirmer/hors-playing), bouton `✕` d'effacement (`clear-search`). Admin : login erreur/succès/déconnexion, pool tableau+filtres texte/preview/statut, ajout morceau, suppression individuelle+annulation, actualisation morceau sans preview (modale pré-remplie), actions générer/déjà généré/reset, liste défis
 

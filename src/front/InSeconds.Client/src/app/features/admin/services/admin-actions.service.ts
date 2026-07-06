@@ -1,7 +1,7 @@
 import { Injectable, inject, signal, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AdminApiService } from './admin-api.service';
-import { ResetResult } from '../admin.models';
+import { RefreshPreviewsResult, ResetResult } from '../admin.models';
 
 /** État de l'onglet actions : génération du défi du jour, reset des parties. */
 @Injectable()
@@ -12,6 +12,8 @@ export class AdminActionsService {
   readonly generateStatus = signal<'idle' | 'loading' | 'success' | 'already' | 'pool_insufficient' | 'error'>('idle');
   readonly resetStatus = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
   readonly resetResult = signal<ResetResult | null>(null);
+  readonly refreshPreviewsStatus = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
+  readonly refreshPreviewsResult = signal<RefreshPreviewsResult | null>(null);
   private generateStatusTimer: ReturnType<typeof setTimeout> | null = null;
 
   generateToday(): void {
@@ -43,6 +45,19 @@ export class AdminActionsService {
         this.api.reloadStats();
       },
       error: () => this.resetStatus.set('error'),
+    });
+  }
+
+  refreshPreviews(): void {
+    this.refreshPreviewsStatus.set('loading');
+    this.refreshPreviewsResult.set(null);
+    this.api.refreshPreviews().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: res => {
+        this.refreshPreviewsResult.set(res);
+        this.refreshPreviewsStatus.set('success');
+        this.api.reloadPool();
+      },
+      error: () => this.refreshPreviewsStatus.set('error'),
     });
   }
 }

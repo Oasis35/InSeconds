@@ -207,7 +207,12 @@
       "resetting": "Réinitialisation...",
       "reset": "Réinitialiser les parties du jour",
       "resetSuccess": "{{ count }} partie(s) supprimée(s).",
-      "resetError": "Aucun défi trouvé pour aujourd'hui."
+      "resetError": "Aucun défi trouvé pour aujourd'hui.",
+      "previews": "Previews Deezer",
+      "refreshPreviews": "Re-vérifier les previews",
+      "refreshingPreviews": "Vérification en cours (peut prendre ~1 min)...",
+      "refreshPreviewsSuccess": "{{ checked }} vérifié(s), {{ updated }} corrigé(s), {{ failed }} échec(s) Deezer.",
+      "refreshPreviewsError": "Erreur lors de la vérification des previews."
     },
     "challenges": {
       "history": "Historique",

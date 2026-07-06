@@ -7,6 +7,7 @@
 ## Comment ça marche
 
 - Chaque jour à 3h UTC, un nouveau set de morceaux est sélectionné automatiquement (uniquement des morceaux avec une preview Deezer active)
+- La disponibilité des previews est re-vérifiée chaque nuit auprès de Deezer (appels par lots, respectueux du rate-limit) ; les admins peuvent aussi relancer la vérification à la demande depuis la page admin
 - Choisis combien de secondes écouter (0.5, 1, 1.5, 2, 3, 5, 10) avant de tenter artiste + titre
 - Une prolongation autorisée par morceau (palier supérieur, avec malus de score)
 - Le scoring est entièrement côté serveur — impossible de tricher côté client
@@ -91,7 +92,7 @@ Workflow GitHub Actions sur chaque push et chaque PR vers `main` :
 - **Backend** — build Release + `dotnet ef migrations has-pending-model-changes`
 - **Tests unitaires** — `dotnet test` sur `InSeconds.Api.UnitTests` (xUnit, pas de BD requise)
 - **Frontend** — `npm ci` + build production
-- **Tests unitaires frontend** — `ng test --watch=false --browsers=ChromeHeadless` (Karma + Jasmine, 80 tests)
+- **Tests unitaires frontend** — `ng test --watch=false --browsers=ChromeHeadless` (Karma + Jasmine, 94 tests)
 - **Tests d'intégration** — `dotnet test` sur `InSeconds.Api.IntegrationTests` (Testcontainers crée un conteneur PostgreSQL réel, pas de YAML supplémentaire)
 - **E2E** — tests Playwright (Chromium) contre un vrai backend en mode `Testing` avec un service PostgreSQL — s'exécute après tous les jobs précédents
 
@@ -115,7 +116,7 @@ cd src/front/InSeconds.Client
 npx ng test --watch=false --browsers=ChromeHeadless
 ```
 
-**95 tests** (Karma + Jasmine) couvrant `App`, `GameService`, `SettingsService`, `LanguageService`, `AdminHttpService`, `AdminStatsService`. Utilise `HttpTestingController` — pas de vraies requêtes HTTP.
+**94 tests** (Karma + Jasmine) couvrant `App`, `GameService`, `SettingsService`, `LanguageService`, `AdminHttpService`, `AdminStatsService`. Utilise `HttpTestingController` — pas de vraies requêtes HTTP.
 
 ### Tests d'intégration (backend)
 
@@ -124,7 +125,7 @@ cd src/back
 dotnet test InSeconds.Api.IntegrationTests
 ```
 
-Nécessite Docker (Testcontainers démarre un vrai conteneur PostgreSQL). **79 tests** couvrant `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats`, `Auth/Me`, `SessionEdgeCases` (expiry paresseuse, streak, submit sur session abandonnée, UpdateListening anti-triche), `ChallengeGeneration`, `Admin/Tracks`, `Admin/Challenges`.
+Nécessite Docker (Testcontainers démarre un vrai conteneur PostgreSQL). **82 tests** couvrant `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats`, `Auth/Me`, `SessionEdgeCases` (expiry paresseuse, streak, submit sur session abandonnée, UpdateListening anti-triche), `ChallengeGeneration`, `Admin/Tracks`, `Admin/Challenges`, `Admin/RefreshPreviews`.
 
 ### Tests E2E (Playwright)
 

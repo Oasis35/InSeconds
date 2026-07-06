@@ -7,6 +7,7 @@
 ## How it works
 
 - Each day at 3 AM UTC, a new set of tracks is automatically selected (only tracks with an active Deezer preview)
+- Preview availability is re-checked nightly against Deezer (rate-limit aware, batched calls); admins can also re-run the check on demand from the admin panel
 - Choose how many seconds to listen (0.5, 1, 1.5, 2, 3, 5, 10) before attempting artist + title
 - One extension allowed per track (next duration tier, with a score penalty)
 - Scoring is entirely server-side — no client-side manipulation possible
@@ -91,7 +92,7 @@ GitHub Actions workflow on every push and every PR to `main`:
 - **Backend** — build in Release + `dotnet ef migrations has-pending-model-changes`
 - **Unit tests** — `dotnet test` on `InSeconds.Api.UnitTests` (xUnit, no DB required)
 - **Frontend** — `npm ci` + production build
-- **Frontend unit tests** — `ng test --watch=false --browsers=ChromeHeadless` (Karma + Jasmine, 80 tests)
+- **Frontend unit tests** — `ng test --watch=false --browsers=ChromeHeadless` (Karma + Jasmine, 94 tests)
 - **Integration tests** — `dotnet test` on `InSeconds.Api.IntegrationTests` (Testcontainers spins up a real PostgreSQL container, no extra YAML needed)
 - **E2E** — Playwright tests (Chromium) against a real backend in `Testing` mode with a PostgreSQL service — runs after all jobs above pass
 
@@ -115,7 +116,7 @@ cd src/front/InSeconds.Client
 npx ng test --watch=false --browsers=ChromeHeadless
 ```
 
-**95 tests** (Karma + Jasmine) covering `App`, `GameService`, `SettingsService`, `LanguageService`, `AdminHttpService`, `AdminStatsService`. Uses `HttpTestingController` — no real HTTP calls.
+**94 tests** (Karma + Jasmine) covering `App`, `GameService`, `SettingsService`, `LanguageService`, `AdminHttpService`, `AdminStatsService`. Uses `HttpTestingController` — no real HTTP calls.
 
 ### Integration tests (backend)
 
@@ -124,7 +125,7 @@ cd src/back
 dotnet test InSeconds.Api.IntegrationTests
 ```
 
-Requires Docker (Testcontainers starts a real PostgreSQL container). **79 tests** covering `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats`, `Auth/Me`, `SessionEdgeCases` (lazy expiry, streak, submit on abandoned session, UpdateListening anti-cheat), `ChallengeGeneration`, `Admin/Tracks`, `Admin/Challenges`.
+Requires Docker (Testcontainers starts a real PostgreSQL container). **82 tests** covering `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats`, `Auth/Me`, `SessionEdgeCases` (lazy expiry, streak, submit on abandoned session, UpdateListening anti-cheat), `ChallengeGeneration`, `Admin/Tracks`, `Admin/Challenges`, `Admin/RefreshPreviews`.
 
 ### E2E tests (Playwright)
 

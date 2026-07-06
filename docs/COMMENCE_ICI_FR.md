@@ -65,7 +65,7 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - Page admin (`/admin`) — login, pool (sous-onglets + indicateur preview + popup ajout avec lecteur), défis, stats dashboard, reset sessions
 - Auth admin via Bearer token + `adminAuthInterceptor` Angular
 - `BackgroundService` génération défi quotidien automatique (à 3h UTC) — filtre sur `Track.HasPreview` en DB, Fisher-Yates, transaction
-- `BackgroundService` refresh preview (à 2h UTC) — vérifie Deezer pour tous les tracks disponibles, met à jour `Track.HasPreview`
+- `BackgroundService` refresh preview (à 2h UTC) — vérifie Deezer pour tous les tracks disponibles par lots (rate-limit safe), met à jour `Track.HasPreview` uniquement sur réponse Deezer déterminée (jamais sur un échec quota/panne) ; relançable à la demande via `POST /api/admin/refresh-previews` (bouton « 🔄 Re-vérifier les previews » dans l'onglet Actions admin)
 - Frontend complet (Angular 22 + Tailwind v4 + SCSS) — UI jeu jouable
 - NSwag : `ApiClient` généré depuis l'OpenAPI back, `api.generated.ts` commité, types synchronisés automatiquement
 - Pages d'erreur : 404, "déjà joué" (compte à rebours + stats comparatives), "pas de défi"
@@ -92,10 +92,10 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - Pool admin redesigné en tableau paginé (15 lignes/page) avec filtres combinables (texte, statut, preview), onglet "Actions" dédié, modale "↻ Actualiser" pré-remplie pour morceaux sans preview — indicateur preview lu depuis `Track.HasPreview` en DB (stable, plus d'appel Deezer temps réel)
 - Dashboard admin : KPI tiles par jour, sélecteur de jour ← →, barres 30j cliquables avec jours vides à zéro
 - Tests E2E Playwright (38 scénarios : 23 jeu + 15 admin, CI GitHub Actions)
-- Tests d'intégration backend (`InSeconds.Api.IntegrationTests`) — Testcontainers.PostgreSql + `WebApplicationFactory<Program>` + Respawn, 79 tests couvrant StartSession, SubmitAnswer, AbandonSession, Stats, AdminStats, SessionEdgeCases (dont UpdateListening), ChallengeGeneration, Admin/Tracks, Admin/Challenges, job CI dédié `integration-tests`
+- Tests d'intégration backend (`InSeconds.Api.IntegrationTests`) — Testcontainers.PostgreSql + `WebApplicationFactory<Program>` + Respawn, 82 tests couvrant StartSession, SubmitAnswer, AbandonSession, Stats, AdminStats, SessionEdgeCases (dont UpdateListening), ChallengeGeneration, Admin/Tracks, Admin/Challenges, Admin/RefreshPreviews, job CI dédié `integration-tests`
 - **i18n FR/EN** — ngx-translate v18, `LanguageService`, fichiers `public/i18n/{fr,en}.json`
 - **Refacto frontend** — `game.component` découpé en header + footer + 5 screens + `GameFacadeService` + `DeezerAutocompleteService` (`features/game/services/`) ; `admin.component` en shell + 6 services (`AdminHttpService`, `AdminStateService`, `AdminApiService`, `AdminStatsService`, `AdminPoolService`, `AdminActionsService`) + 7 sous-composants ; palette CSS centralisée en variables `:root` ; `ShareButtonComponent` réutilisable
-- **Tests unitaires frontend** — 80 tests Karma/Jasmine (`GameService`, `SettingsService`, `LanguageService`, `AdminHttpService`, `AdminStatsService`) ; job CI `unit-tests-front` (`ChromeHeadless`)
+- **Tests unitaires frontend** — 94 tests Karma/Jasmine (`GameService`, `SettingsService`, `LanguageService`, `AdminHttpService`, `AdminStatsService`) ; job CI `unit-tests-front` (`ChromeHeadless`)
 
 - **Cache Deezer** — `CachedDeezerClient` (`IMemoryCache`) : preview URLs (TTL borné par l'expiration de la signature CDN, sinon 403 à la lecture) + recherches autocomplete (1h)
 
