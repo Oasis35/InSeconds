@@ -207,7 +207,12 @@
       "resetting": "Resetting...",
       "reset": "Reset today's games",
       "resetSuccess": "{{ count }} game(s) deleted.",
-      "resetError": "No challenge found for today."
+      "resetError": "No challenge found for today.",
+      "previews": "Deezer previews",
+      "refreshPreviews": "Re-check previews",
+      "refreshingPreviews": "Checking (may take ~1 min)...",
+      "refreshPreviewsSuccess": "{{ checked }} checked, {{ updated }} fixed, {{ failed }} Deezer failure(s).",
+      "refreshPreviewsError": "Error while checking previews."
     },
     "challenges": {
       "history": "History",

@@ -226,11 +226,13 @@ Résout ou crée un `Player` guest à partir du cookie HTTP-only signé. `SameSi
 
 ### DeezerClient
 
-`GetPreviewUrlAsync(trackId)` + `SearchTracksAsync(query)`. Extrait le `CoverHash` depuis l'URL Deezer via `ExtractCoverHash()`.
+`GetPreviewUrlAsync(trackId)` + `ProbePreviewAsync(trackId)` + `GetTrackInfoAsync(trackId)` + `SearchTracksAsync(query)`. Extrait le `CoverHash` depuis l'URL Deezer via `ExtractCoverHash()`.
 
 **Résilience** : le `HttpClient` typé est configuré avec `AddStandardResilienceHandler` (`Program.cs`, hors `Testing`) — timeout 4s/tentative, 15s total, retry exponentiel (429/5xx) + circuit breaker. Sans cela, un appel Deezer lent pourrait bloquer `StartSession` jusqu'au timeout `HttpClient` par défaut (100s).
 
 **Gestion d'erreurs** : chaque méthode logge en `Warning` sur échec HTTP ou preview vide, et **re-throw `OperationCanceledException`** (l'annulation n'est jamais transformée en `null`/`[]`). Pas de `catch {}` nu.
+
+**Erreurs Deezer en HTTP 200** : Deezer renvoie quota / rate-limit / track supprimé en **200 OK avec un payload `{"error":{"code":...}}`** — ça contourne le handler de résilience. Les trois méthodes détectent ce payload et le traitent comme un échec. `ProbePreviewAsync` retourne un `DeezerPreviewProbe(Succeeded, PreviewUrl)` qui distingue l'échec de requête (`Succeeded=false` : quota code 4, service busy 700… → état Deezer inconnu) de la réponse déterminée (`Succeeded=true` : preview présente, ou vide, ou code 800 "no data" = track supprimé). C'est ce qui permet au `PreviewStatusRefresher` de ne jamais écrire un faux `HasPreview=false` sur un simple échec réseau.
 
 ### CachedDeezerClient
 
@@ -258,16 +260,18 @@ Les deux endpoints sont publics (mappés avant `PlayerAuthMiddleware`). Logging 
 | `Auth/Me` | `GET /api/auth/me` | Retourne `{ id, isGuest, pseudo }` du joueur courant (cookie) |
 | `Settings/GetSettings` | `GET /api/settings` | Expose les settings publics (paliers, timer, scores) |
 | `Admin/Login` | `POST /api/admin/login` | Génère un Bearer token admin |
-| `Admin/Tracks/GetTracks` | `GET /api/admin/tracks` | Liste Available / Used (`TrackDto.HasPreview` via appel Deezer en parallèle) |
+| `Admin/Tracks/GetTracks` | `GET /api/admin/tracks` | Liste Available / Used (`TrackDto.HasPreview` lu depuis la DB) |
 | `Admin/Tracks/AddTrack` | `POST /api/admin/tracks` | Ajoute un morceau au pool (upsert sur DeezerTrackId) |
 | `Admin/Tracks/DeleteTrack` | `DELETE /api/admin/tracks/{id}` | Supprime un morceau du pool s'il n'est pas utilisé dans un défi (404/409) |
 | `Admin/Tracks/UpdateTrack` | `PUT /api/admin/tracks/{id}` | Met à jour DeezerTrackId/Artist/Title/CoverHash — interdit si utilisé dans un défi (409) |
 | `Admin/Challenges/*` | `/api/admin/challenges` | Création défis + recherche Deezer |
 | `Admin/GenerateToday` | `POST /api/admin/generate-today` | Génère le défi du jour à la demande |
+| `Admin/RefreshPreviews` | `POST /api/admin/refresh-previews` | Relance le re-check des previews (délègue à `PreviewStatusRefresher`), retourne `{ checked, updated, failed }` |
 | `Admin/ResetToday` | `DELETE /api/admin/reset-today` | Supprime le défi du jour |
 | `Admin/Stats` | `GET /api/admin/stats` | Dashboard : activité 30j, répartition joueurs, stats par défi |
 | `Deezer/Search` (public) | `GET /api/deezer/search?q=` | Proxy autocomplete Deezer (contourne CORS navigateur) |
 | `ChallengeGeneration` | BackgroundService | Génère le défi quotidien à 3h UTC — filtre les tracks sans preview active |
+| `ChallengeGeneration` (refresh) | BackgroundService | `RefreshPreviewStatusService` à 2h UTC — re-vérifie `Track.HasPreview` via `PreviewStatusRefresher` (lots de 10 espacés de 1,5 s, flag jamais modifié sur un échec Deezer) |
 
 ## CI
 

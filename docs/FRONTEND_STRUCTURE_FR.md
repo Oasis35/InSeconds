@@ -53,7 +53,7 @@ src/front/InSeconds.Client/
 │   │   │   │   │   ├── admin-api.service.ts    # rxResource (pool, stats, challenges) + computed accessors
 │   │   │   │   │   ├── admin-stats.service.ts  # état dashboard (navigation, formatage dates, …)
 │   │   │   │   │   ├── admin-pool.service.ts   # filtres/pagination/sélection pool, modales ajout/suppression
-│   │   │   │   │   └── admin-actions.service.ts # generateToday(), reset()
+│   │   │   │   │   └── admin-actions.service.ts # generateToday(), reset(), refreshPreviews()
 │   │   │   │   └── components/
 │   │   │   │       ├── admin-login/
 │   │   │   │       ├── dashboard-tab/
@@ -270,7 +270,7 @@ Services admin (`features/admin/services/`) :
 - `AdminApiService` — rxResource (pool/stats/challenges/search) + computed accessors ; délègue HTTP à `AdminHttpService`, état à `AdminStateService`
 - `AdminStatsService` — état dashboard (navigation, formatage dates)
 - `AdminPoolService` — filtres, pagination, sélection multiple, état modales add/delete, lecteur preview
-- `AdminActionsService` — `generateToday()`, `reset()`
+- `AdminActionsService` — `generateToday()`, `reset()`, `refreshPreviews()` (re-check des previews Deezer : affiche « X vérifiés, Y corrigés, Z échecs » puis recharge le pool)
 
 ## Intercepteurs
 

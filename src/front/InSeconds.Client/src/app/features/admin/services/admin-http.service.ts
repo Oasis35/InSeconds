@@ -4,7 +4,7 @@ import { lastValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { AdminStatsResponse } from '../../../api/api.generated';
 import {
-  ChallengeDto, DeezerTrackInfo, PoolTracksResponse, ResetResult,
+  ChallengeDto, DeezerTrackInfo, PoolTracksResponse, RefreshPreviewsResult, ResetResult,
 } from '../admin.models';
 
 @Injectable()
@@ -36,6 +36,7 @@ export class AdminHttpService {
 
   generateToday() { return this.http.post(`${this.base}/generate-today`, {}); }
   resetToday() { return this.http.delete<ResetResult>(`${this.base}/reset-today`); }
+  refreshPreviews() { return this.http.post<RefreshPreviewsResult>(`${this.base}/refresh-previews`, {}); }
   addTrack(deezerTrackId: number) { return this.http.post(`${this.base}/tracks`, { deezerTrackId }); }
   updateTrack(id: number, deezerTrackId: number) { return this.http.put(`${this.base}/tracks/${id}`, { deezerTrackId }); }
   deleteTrack(id: number) { return this.http.delete(`${this.base}/tracks/${id}`); }
