@@ -62,6 +62,7 @@
     "button": "🔗 Share my score",
     "copied": "✓ Copied!",
     "hint": "Copies an emoji summary to the clipboard",
+    "failed": "Couldn't copy to the clipboard.",
     "title": "InSeconds 🎵 {{ date }}",
     "score": "🏆 {{ score }} pts"
   },
@@ -76,7 +77,45 @@
   "footer": {
     "admin": "Admin",
     "source": "View source code",
-    "profile": "My profile"
+    "profile": "My profile",
+    "privacy": "Privacy",
+    "language": "Passer en français"
+  },
+  "privacy": {
+    "title": "Privacy policy",
+    "updated": "Last updated: July 8, 2026",
+    "intro": "InSeconds is a free music blind test game, accessible without any account or registration. This policy describes, in accordance with the General Data Protection Regulation (GDPR — Regulation EU 2016/679), the data processing carried out by the application.",
+    "controller": {
+      "title": "Data controller",
+      "body": "The data controller is the publisher of the InSeconds website, who can be reached at the contact address given at the bottom of this page."
+    },
+    "data": {
+      "title": "Data collected, purposes and legal basis",
+      "body": "No directly identifying data is requested: no name, no email address, no registration.\nThe application only stores:\n· a pseudonymous technical identifier, randomly generated, used to recognize your browser from one day to the next;\n· your games: submitted answers, chosen listening durations, scores and play dates;\n· your preferred language, stored locally in your browser (it never leaves your device).\nThis data is processed for the sole purposes of providing the game (resuming a game, one game per day, win streak) and computing anonymous global statistics (median score, success rate per track).\nLegal basis: performance of the requested service and the controller's legitimate interest (Articles 6.1.b and 6.1.f of the GDPR)."
+    },
+    "cookie": {
+      "title": "Cookie",
+      "body": "A single technical cookie is set. It contains your pseudonymous identifier and is used exclusively to run the game.\nThis cookie is strictly necessary to provide the service: in line with the ePrivacy rules and the guidelines of the French data protection authority (CNIL), it is exempt from prior consent and therefore does not require a consent banner.\nNo advertising cookies, trackers or audience measurement tools are used."
+    },
+    "retention": {
+      "title": "Data retention",
+      "body": "Game data is kept for the lifetime of the service, in order to feed the global statistics shown to players. It is never linked to a real identity and is permanently deleted upon request (see \"Your rights\")."
+    },
+    "thirdParties": {
+      "title": "Recipients and hosting",
+      "body": "Data is never sold, transferred or shared with third parties for commercial purposes.\nMusic excerpts and covers come from the public Deezer API; these requests go through our server and Deezer receives no information about you.\nThe application and its database are hosted by Northflank Ltd."
+    },
+    "deezer": {
+      "title": "Legal notice — music content (Deezer API)",
+      "body": "Music excerpts (30 seconds), album covers and metadata (artist, title) are provided by the Deezer API and used in keeping with its terms of use (Deezer API Terms of Use), on a strictly non-commercial basis: InSeconds is free, ad-free and generates no revenue.\nThis content remains the exclusive property of Deezer and its respective rights holders (artists, producers, labels). It is streamed for illustrative purposes within the game, with no download capability, and each track links to its official Deezer page for full listening.\nDeezer is a registered trademark of Deezer S.A. InSeconds is an independent project, not affiliated with or endorsed by Deezer."
+    },
+    "rights": {
+      "title": "Your rights",
+      "body": "In accordance with Articles 15 to 21 of the GDPR, you have the right to access, rectify, erase, restrict the processing of, object to the processing of, and port the data associated with your identifier. Deletion permanently erases your game history and current streak.\nYou also have the right to lodge a complaint with a supervisory authority (in France, the CNIL — www.cnil.fr).",
+      "contact": "To exercise these rights:",
+      "contactLabel": "✉️ contact us"
+    },
+    "back": "Back to the game"
   },
   "blindRound": {
     "howManySeconds": "How many seconds do you want to listen?",

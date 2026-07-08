@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap, map } from 'rxjs';
+import { Observable, tap, map, catchError, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 interface AppSettingsResponse {
@@ -38,7 +38,13 @@ export class SettingsService {
             )
           );
         }),
-        map(() => void 0)
+        map(() => void 0),
+        // L'app doit démarrer même si /api/settings est indisponible :
+        // les signals gardent leurs valeurs par défaut (mêmes défauts que le back).
+        catchError(err => {
+          console.warn('Settings indisponibles au démarrage, valeurs par défaut utilisées.', err);
+          return of(void 0);
+        })
       );
   }
 }

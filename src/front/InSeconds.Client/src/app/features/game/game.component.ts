@@ -272,6 +272,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
   }
 
   protected readonly shareCopied = signal(false);
+  protected readonly shareFailed = signal(false);
 
   protected shareFromStats(): void {
     const stats = this.todayStats();
@@ -293,10 +294,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
       environment.appUrl,
     ].join('\n');
 
-    navigator.clipboard.writeText(text).then(() => {
-      this.shareCopied.set(true);
-      setTimeout(() => this.shareCopied.set(false), 2000);
-    });
+    this.copyToClipboard(text);
   }
 
   protected share(): void {
@@ -316,9 +314,18 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
       environment.appUrl,
     ].join('\n');
 
+    this.copyToClipboard(text);
+  }
+
+  // clipboard.writeText peut rejeter (permission refusée, contexte non sécurisé) :
+  // sans catch, échec silencieux + unhandled rejection.
+  private copyToClipboard(text: string): void {
     navigator.clipboard.writeText(text).then(() => {
       this.shareCopied.set(true);
       setTimeout(() => this.shareCopied.set(false), 2000);
+    }).catch(() => {
+      this.shareFailed.set(true);
+      setTimeout(() => this.shareFailed.set(false), 3000);
     });
   }
 

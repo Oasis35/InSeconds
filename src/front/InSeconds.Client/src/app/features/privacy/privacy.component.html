@@ -1,0 +1,58 @@
+<div class="min-h-dvh bg-gradient-to-br from-slate-900 via-slate-950 to-black text-slate-100 flex flex-col items-center p-6">
+  <div class="w-full max-w-2xl py-8 screen-enter">
+    <h1 class="text-3xl font-bold mb-2">{{ 'privacy.title' | translate }}</h1>
+    <p class="text-sm text-slate-500 mb-4">{{ 'privacy.updated' | translate }}</p>
+    <p class="text-slate-400 mb-8">{{ 'privacy.intro' | translate }}</p>
+
+    <section class="mb-6">
+      <h2 class="text-xl font-semibold mb-2">{{ 'privacy.controller.title' | translate }}</h2>
+      <p class="text-slate-300 whitespace-pre-line">{{ 'privacy.controller.body' | translate }}</p>
+    </section>
+
+    <section class="mb-6">
+      <h2 class="text-xl font-semibold mb-2">{{ 'privacy.data.title' | translate }}</h2>
+      <p class="text-slate-300 whitespace-pre-line">{{ 'privacy.data.body' | translate }}</p>
+    </section>
+
+    <section class="mb-6">
+      <h2 class="text-xl font-semibold mb-2">{{ 'privacy.cookie.title' | translate }}</h2>
+      <p class="text-slate-300 whitespace-pre-line">{{ 'privacy.cookie.body' | translate }}</p>
+    </section>
+
+    <section class="mb-6">
+      <h2 class="text-xl font-semibold mb-2">{{ 'privacy.retention.title' | translate }}</h2>
+      <p class="text-slate-300 whitespace-pre-line">{{ 'privacy.retention.body' | translate }}</p>
+    </section>
+
+    <section class="mb-6">
+      <h2 class="text-xl font-semibold mb-2">{{ 'privacy.thirdParties.title' | translate }}</h2>
+      <p class="text-slate-300 whitespace-pre-line">{{ 'privacy.thirdParties.body' | translate }}</p>
+    </section>
+
+    <section class="mb-6">
+      <h2 class="text-xl font-semibold mb-2">{{ 'privacy.deezer.title' | translate }}</h2>
+      <p class="text-slate-300 whitespace-pre-line">{{ 'privacy.deezer.body' | translate }}</p>
+      <p class="text-slate-300 mt-2">
+        <a href="https://developers.deezer.com/termsofuse" target="_blank" rel="noopener noreferrer"
+           class="text-indigo-400 hover:text-indigo-300 underline transition-colors">Deezer API Terms of Use</a>
+        ·
+        <a href="https://www.deezer.com" target="_blank" rel="noopener noreferrer"
+           class="text-indigo-400 hover:text-indigo-300 underline transition-colors">deezer.com</a>
+      </p>
+    </section>
+
+    <section class="mb-8">
+      <h2 class="text-xl font-semibold mb-2">{{ 'privacy.rights.title' | translate }}</h2>
+      <p class="text-slate-300 whitespace-pre-line">{{ 'privacy.rights.body' | translate }}</p>
+      <p class="text-slate-300 mt-2">
+        {{ 'privacy.rights.contact' | translate }}
+        <a [href]="'mailto:' + contactEmail" class="text-indigo-400 hover:text-indigo-300 underline transition-colors">{{ 'privacy.rights.contactLabel' | translate }}</a>
+      </p>
+    </section>
+
+    <a routerLink="/"
+      class="inline-block px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-colors">
+      {{ 'privacy.back' | translate }}
+    </a>
+  </div>
+</div>

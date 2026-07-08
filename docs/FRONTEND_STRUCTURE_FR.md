@@ -72,7 +72,7 @@ src/front/InSeconds.Client/
 │   │   │   │   │   └── blind-round.component.ts  # choix palier + lecture + saisie + polish UX
 │   │   │   │   ├── components/
 │   │   │   │   │   ├── game-header/            # en-tête (titre + streak + score + barre progression)
-│   │   │   │   │   └── game-footer/            # pied de page (liens admin/github/linkedin)
+│   │   │   │   │   └── game-footer/            # pied de page (liens admin/github/linkedin/confidentialité + langue FR/EN)
 │   │   │   │   └── screens/
 │   │   │   │       ├── welcome-screen/
 │   │   │   │       ├── resume-screen/
@@ -80,6 +80,7 @@ src/front/InSeconds.Client/
 │   │   │   │       ├── already-played-screen/
 │   │   │   │       └── final-recap-screen/     # exporte aussi RoundResult
 │   │   │   ├── not-found/
+│   │   │   ├── privacy/                       # page confidentialité (routes /privacy + /confidentialite)
 │   │   │   └── service-down/
 │   │   ├── app.config.ts                  # providers globaux
 │   │   ├── app.routes.ts                  # routes
@@ -148,8 +149,9 @@ Toutes les couleurs sont centralisées dans `styles.scss` sous `:root` et utilis
 - Détection : `localStorage('lang')` → `navigator.language` → `'fr'` (fallback)
 - `use(lang)` : appelle `translate.use(lang)`, met à jour `localStorage` et `document.documentElement.lang`
 - Signal `current` exposé pour les composants qui veulent réagir au changement
+- **Changement manuel** : bouton dans `GameFooterComponent` (globe monochrome + code `FR`/`EN`), toggle FR ↔ EN via `use()`. Tooltip `footer.language` libellé dans la langue cible (« Switch to English » côté FR)
 
-Fichiers de traduction dans `public/i18n/`. Structure des clés : `common`, `header`, `welcome`, `resume`, `blindRound`, `done`, `alreadyPlayed`, `share`, `footer`, `noChallenge`, `error`, `serviceDown`, `notFound`, `abandonSheet`, `leaveSheet`, `admin.*`.
+Fichiers de traduction dans `public/i18n/`. Structure des clés : `common`, `header`, `welcome`, `resume`, `blindRound`, `done`, `alreadyPlayed`, `share`, `footer`, `noChallenge`, `error`, `serviceDown`, `notFound`, `abandonSheet`, `leaveSheet`, `privacy`, `admin.*`.
 
 **E2E** : `e2e/fixtures/test.ts` force `localStorage.setItem('lang', 'fr')` via `addInitScript` pour que les specs matchent le texte FR.
 
@@ -179,6 +181,8 @@ readonly maxExtensions = signal(1);
 readonly tracksPerChallenge = signal(3);
 readonly durationScores = signal<Record<number, number>>({});
 ```
+
+`load()` fait un `catchError` : si `/api/settings` est indisponible au boot, l'app démarre quand même avec les valeurs par défaut des signals (mêmes défauts que le back), `console.warn` seulement.
 
 ### `AudioPlayerService`
 
@@ -223,7 +227,7 @@ Orchestre une session complète. États : `loading` → `welcome` → `playing` 
 
 Délègue l'affichage à des sous-composants :
 - **`GameHeaderComponent`** : titre InSeconds + streak + score en cours + barre de progression + bouton abandon
-- **`GameFooterComponent`** : liens admin / GitHub / LinkedIn
+- **`GameFooterComponent`** : liens admin / GitHub / LinkedIn / confidentialité + bouton langue FR/EN
 - **`WelcomeScreenComponent`** : état `welcome`
 - **`ResumeScreenComponent`** : état `resume_prompt` (avec confirmation abandon inline)
 - **`StatusScreenComponent`** : états `no_challenge` + `error` (inputs `titleKey`/`bodyKey` i18n)
@@ -250,7 +254,11 @@ Bottom-sheet de confirmation réutilisable (`shared/confirm-sheet/`). Inputs : `
 
 ### `ShareButtonComponent`
 
-Bouton partage réutilisable (`shared/share-button/`). Inputs : `copied: boolean`, `disabled?: boolean`. Output : `share`. Utilisé dans `AlreadyPlayedScreenComponent` et `FinalRecapScreenComponent`.
+Bouton partage réutilisable (`shared/share-button/`). Inputs : `copied: boolean`, `failed?: boolean`, `disabled?: boolean`. Output : `share`. Utilisé dans `AlreadyPlayedScreenComponent` et `FinalRecapScreenComponent`. Si `failed` est vrai (rejet de `clipboard.writeText` : permission refusée, contexte non sécurisé), le hint est remplacé par un message d'erreur (`share.failed`, signal `shareFailed` posé 3 s par `GameComponent.copyToClipboard()`).
+
+### `PrivacyComponent`
+
+Page confidentialité (`features/privacy/`), route lazy `/privacy` + alias `/confidentialite` (redirect). Contenu entièrement via clés i18n `privacy.*`. Style éditorial : vouvoiement formel, l'utilisateur n'est jamais nommé (« l'éditeur du site »). Accessible depuis le lien bouclier du footer.
 
 ### `AdminComponent`
 

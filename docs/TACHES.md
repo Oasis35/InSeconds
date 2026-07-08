@@ -1,6 +1,6 @@
 # InSeconds — Liste des Tâches
 
-> Mis à jour le 2026-07-06.
+> Mis à jour le 2026-07-08.
 
 ## ✅ Bootstrap projet
 
@@ -87,6 +87,10 @@
 - [x] **`GameFacadeService`** (`features/game/services/`, fourni par `GameComponent`) — façade métier délégant à `GameService` (VSA frontend)
 - [x] **Palette CSS centralisée** — 35 variables `:root` dans `styles.scss`, plus de hex inline dans les templates, hovers via `hover:` Tailwind
 - [x] **`ShareButtonComponent`** (`shared/share-button/`) — bouton partage réutilisable, mutualisé entre `AlreadyPlayedScreenComponent` et `FinalRecapScreenComponent`
+- [x] **Sélecteur de langue dans le footer** (2026-07-08) — bouton monochrome (globe + code `FR`/`EN`) dans `GameFooterComponent`, toggle FR ↔ EN via `LanguageService.use()` (persist localStorage), tooltip `footer.language` dans la langue cible
+- [x] **Page confidentialité** — `PrivacyComponent` (`features/privacy/`), routes lazy `/privacy` + alias `/confidentialite`, lien bouclier dans le footer, clés i18n `privacy.*`
+- [x] **Boot tolérant si `/api/settings` KO** — `catchError` dans `SettingsService.load()`, l'app démarre avec les valeurs par défaut des signals
+- [x] **Feedback échec de copie partage** — `GameComponent.copyToClipboard()` catch le rejet de `clipboard.writeText`, input `failed` sur `ShareButtonComponent` + clé `share.failed`
 - [x] **Optimisations performance front** (2026-07-02) — `ChangeDetectionStrategy.OnPush` sur les 23 composants Angular, `takeUntilDestroyed(destroyRef)` sur toutes les subscriptions Observables (`game.component.ts`, `blind-round.component.ts`, `admin-pool.service.ts`, `admin-actions.service.ts`), tracking des handles `setTimeout` + `clearTimeout()` avant recréation dans `admin-pool.service.ts` et `admin-actions.service.ts`
 
 ## ✅ Déploiement
@@ -94,6 +98,14 @@
 - [x] Déploiement Northflank (front + back + PostgreSQL addon)
 - [x] CI/CD auto sur push `main`
 - [x] Secrets prod via Northflank (`AdminPassword`, connection string)
+
+## 🚧 Bugs connus — streak perdue à tort (diagnostiqués le 2026-07-08)
+
+> Cf. pièges 17 et 18 de [CLAUDE.md](../CLAUDE.md) pour le détail.
+
+- [ ] **Persister les clés Data Protection en base** — `AddDataProtection()` sans `PersistKeysTo...` : chaque redémarrage/redéploiement Northflank régénère les clés, invalide tous les cookies joueurs et recrée des guests (streak et historique perdus). Fix : package `Microsoft.AspNetCore.DataProtection.EntityFrameworkCore` + `PersistKeysToDbContext<ApplicationDbContext>()` + entité `DataProtectionKey` + migration
+- [ ] **Baser la streak sur la date du défi** — `SubmitAnswer/Handler.cs` compare `LastPlayedDate` à `DateTime.UtcNow` au moment de la complétion : terminer le défi de la veille après minuit UTC (1h/2h du matin en France) casse la streak alors que le joueur a joué deux jours de suite. Fix : comparer sur `DailyChallenge.Date`
+- [ ] (optionnel, produit) **Jour de grâce / streak freeze** — voir section Rétention
 
 ## 🚧 Mode entraînement (anciens défis)
 
@@ -120,8 +132,8 @@
 
 - [x] **Optimisations performance back** (2026-07-02) — `.AsNoTracking()` sur toutes les queries lecture-seule, `Select()` projections à la place de `Include().ThenInclude()` dans `StartSession/Handler.cs`, `Task.WhenAll()` dans `Stats/Today` et `GetAdminStats` (`BuildPlayerBreakdown`), migration EF `AddPerformanceIndexes` : `IX_GameSessions_PlayerStatusChallenge`, `IX_GameSessionAnswers_DailyChallengeTrackId`, `IX_Players_LastSeenAt`
 - [x] Tests d'intégration backend (Testcontainers, 82 tests) — `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (KPIs jour, AvailableDates, fix 30j, Pending→Abandoned), `Auth/Me` (soft-delete), `SessionEdgeCases` (expiry paresseuse, streak, submit sur session abandonnée, UpdateListening : store/max/reset-after-submit/returned-on-resume), `ChallengeGeneration`, `Admin/Tracks` (AddTrack, GetTracks, DeleteTrack, UpdateTrack), `Admin/Challenges` (GetChallenges, CreateChallenge, ResetToday), `Admin/RefreshPreviews` (401, compteurs seed, réparation d'un flag corrompu)
-- [x] Tests unitaires frontend Karma/Jasmine (95 tests) — `App` (1), `GameService` (11), `SettingsService` (12), `LanguageService` (12), `AdminHttpService` + délégation `AdminApiService` (20), `AdminStatsService` (29) ; job CI `unit-tests-front` (`ChromeHeadless`)
-- [x] Tests E2E Playwright (38 scénarios : 23 jeu + 15 admin). Jeu : happy path, écran déjà joué, abandon mid-game, reprise, abandon depuis reprise, sync multi-onglets, pas de défi, partage, scoring palier/mauvaise réponse/partiel, anti-cheat paliers bloqués à la reprise, confirmation de sortie (`leave-guard` : annuler/confirmer/hors-playing), bouton `✕` d'effacement (`clear-search`). Admin : login erreur/succès/déconnexion, pool tableau+filtres texte/preview/statut, ajout morceau, suppression individuelle+annulation, actualisation morceau sans preview (modale pré-remplie), actions générer/déjà généré/reset, liste défis
+- [x] Tests unitaires frontend Karma/Jasmine (98 tests) — `App`, `GameService`, `SettingsService` (dont fallback `catchError` au boot), `LanguageService`, `GameFooterComponent` (toggle langue), `AdminHttpService` + délégation `AdminApiService`, `AdminStatsService` ; job CI `unit-tests-front` (`ChromeHeadless`)
+- [x] Tests E2E Playwright (42 scénarios : 27 jeu + 15 admin). Jeu : happy path, écran déjà joué, abandon mid-game, reprise, abandon depuis reprise, sync multi-onglets, pas de défi, partage + échec de copie presse-papier, scoring palier/mauvaise réponse/partiel, anti-cheat paliers bloqués à la reprise, confirmation de sortie (`leave-guard` : annuler/confirmer/hors-playing), bouton `✕` d'effacement (`clear-search`), footer (`footer` : toggle langue FR ↔ EN, lien confidentialité, alias `/confidentialite`). Admin : login erreur/succès/déconnexion, pool tableau+filtres texte/preview/statut, ajout morceau, suppression individuelle+annulation, actualisation morceau sans preview (modale pré-remplie), actions générer/déjà généré/reset, liste défis
 
 ## 🚧 Mobile
 
@@ -138,6 +150,7 @@
 - [ ] Audit accessibilité WCAG 2.1 AA
 - [ ] Vérifier politique d'usage API Deezer (CGU, rate limits)
 - [ ] RGPD : anonymisation au soft-delete (pas juste `IsDeleted=true`)
+- [x] Page politique de confidentialité (`/privacy` + `/confidentialite`, lien footer)
 - [ ] Mentions légales + CGU minimales
 
 ## Décisions définitives (ne pas réimplémenter)

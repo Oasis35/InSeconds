@@ -14,6 +14,16 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
   {
+    path: 'privacy',
+    loadComponent: () =>
+      import('./features/privacy/privacy.component').then(m => m.PrivacyComponent),
+  },
+  {
+    path: 'confidentialite',
+    redirectTo: 'privacy',
+    pathMatch: 'full',
+  },
+  {
     path: 'admin',
     loadComponent: () =>
       import('./features/admin/admin.component').then(m => m.AdminComponent),

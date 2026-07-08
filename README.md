@@ -14,7 +14,8 @@
 - Guest mode: play without signing up, no leaderboard
 - Daily streak tracked and displayed on the final recap screen
 - Share your score in Wordle-style emoji format via the clipboard
-- Available in French and English (auto-detected from browser)
+- Available in French and English — auto-detected from the browser, switchable anytime from the footer (choice saved in localStorage)
+- Privacy policy page at `/privacy` (also `/confidentialite`)
 
 ## Quick start
 
@@ -92,7 +93,7 @@ GitHub Actions workflow on every push and every PR to `main`:
 - **Backend** — build in Release + `dotnet ef migrations has-pending-model-changes`
 - **Unit tests** — `dotnet test` on `InSeconds.Api.UnitTests` (xUnit, no DB required)
 - **Frontend** — `npm ci` + production build
-- **Frontend unit tests** — `ng test --watch=false --browsers=ChromeHeadless` (Karma + Jasmine, 94 tests)
+- **Frontend unit tests** — `ng test --watch=false --browsers=ChromeHeadless` (Karma + Jasmine, 98 tests)
 - **Integration tests** — `dotnet test` on `InSeconds.Api.IntegrationTests` (Testcontainers spins up a real PostgreSQL container, no extra YAML needed)
 - **E2E** — Playwright tests (Chromium) against a real backend in `Testing` mode with a PostgreSQL service — runs after all jobs above pass
 
@@ -116,7 +117,7 @@ cd src/front/InSeconds.Client
 npx ng test --watch=false --browsers=ChromeHeadless
 ```
 
-**94 tests** (Karma + Jasmine) covering `App`, `GameService`, `SettingsService`, `LanguageService`, `AdminHttpService`, `AdminStatsService`. Uses `HttpTestingController` — no real HTTP calls.
+**98 tests** (Karma + Jasmine) covering `App`, `GameService`, `SettingsService`, `LanguageService`, `GameFooterComponent` (language toggle), `AdminHttpService`, `AdminStatsService`. Uses `HttpTestingController` — no real HTTP calls.
 
 ### Integration tests (backend)
 
@@ -142,7 +143,7 @@ npm run e2e        # headless
 npm run e2e:ui     # interactive Playwright UI
 ```
 
-**38 tests** — 23 game tests (happy path, already-played, abandon, resume, multi-tab sync, no-challenge, share, scoring, anti-cheat min duration lock, leave-confirmation guard, clear-search button, service-down overlay) + 15 admin tests (login, pool table with filters, add/delete/refresh track, generate challenge, reset sessions, challenge list).
+**42 tests** — 27 game tests (happy path, already-played, abandon, resume, multi-tab sync, no-challenge, share + clipboard failure, scoring, anti-cheat min duration lock, leave-confirmation guard, clear-search button, service-down overlay, footer language toggle + privacy page) + 15 admin tests (login, pool table with filters, add/delete/refresh track, generate challenge, reset sessions, challenge list).
 
 The backend runs in `ASPNETCORE_ENVIRONMENT=Testing` which activates:
 - `FakeDeezerHandler` — returns a local `test-audio.mp3`; tracks with DeezerTrackId >= 9_000_000_000 return an empty preview (5 seed tracks: The Beatles, Pink Floyd, Bob Dylan, Led Zeppelin, Fleetwood Mac) to test the refresh flow
