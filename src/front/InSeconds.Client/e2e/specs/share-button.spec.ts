@@ -34,4 +34,33 @@ test.describe('Bouton partager', () => {
     expect(clipText).toMatch(/[✅❌]/); // emojis résultat (✅ correct, ❌ raté)
     expect(clipText).not.toMatch(/[🟩🟨🟥⬜]/); // plus d'emojis couleur durée
   });
+
+  test("affiche un message d'erreur si la copie presse-papier échoue", async ({ page }) => {
+    // Simuler un rejet de clipboard.writeText (permission refusée) avant le chargement de l'app
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'clipboard', {
+        value: { writeText: () => Promise.reject(new Error('NotAllowedError')) },
+        configurable: true,
+      });
+    });
+    await page.clock.install({ time: Date.now() });
+
+    const game = new GamePage(page);
+    const round = new BlindRoundPage(page);
+
+    await game.goto();
+    await game.waitForWelcome();
+    await game.clickStart();
+
+    for (let i = 0; i < 3; i++) {
+      await round.playRound(1);
+    }
+
+    await game.waitForDone();
+    await game.shareButton.click();
+
+    // Le hint est remplacé par le message d'erreur, pas d'état "Copié"
+    await expect(page.getByText('Impossible de copier dans le presse-papier.')).toBeVisible();
+    await expect(game.shareCopiedButton).not.toBeVisible();
+  });
 });

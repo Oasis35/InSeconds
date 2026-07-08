@@ -48,7 +48,7 @@
         <!-- Bouton partage -->
         @if (s.yourScore != null) {
           <div class="px-4 py-4" style="border-top:1px solid var(--border-medium)">
-            <app-share-button [copied]="shareCopied()" (share)="share.emit()" />
+            <app-share-button [copied]="shareCopied()" [failed]="shareFailed()" (share)="share.emit()" />
           </div>
         }
 

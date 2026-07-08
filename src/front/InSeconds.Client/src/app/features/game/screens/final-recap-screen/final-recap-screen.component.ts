@@ -26,6 +26,7 @@ export class FinalRecapScreenComponent {
   readonly results = input.required<RoundResult[]>();
   readonly displayedScore = input.required<number>();
   readonly shareCopied = input(false);
+  readonly shareFailed = input(false);
   readonly canShare = input(true);
   readonly countdown = input('');
   readonly share = output<void>();

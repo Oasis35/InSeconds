@@ -91,15 +91,16 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - **Anti-cheat durée min écoutée** : `GameSession.CurrentTrackId` + `GameSession.CurrentTrackMinListenedSeconds` (migration `AddSessionAntiCheat`). Slice `Sessions/UpdateListening` (`PATCH /api/sessions/{id}/listening`) — enregistre la durée max par track à chaque arrêt du timer. À la reprise, les paliers déjà écoutés sont masqués dans `BlindRoundComponent` (computed `durations()` filtre sur `minListenedSeconds`).
 - Pool admin redesigné en tableau paginé (15 lignes/page) avec filtres combinables (texte, statut, preview), onglet "Actions" dédié, modale "↻ Actualiser" pré-remplie pour morceaux sans preview — indicateur preview lu depuis `Track.HasPreview` en DB (stable, plus d'appel Deezer temps réel)
 - Dashboard admin : KPI tiles par jour, sélecteur de jour ← →, barres 30j cliquables avec jours vides à zéro
-- Tests E2E Playwright (38 scénarios : 23 jeu + 15 admin, CI GitHub Actions)
+- Tests E2E Playwright (42 scénarios : 27 jeu + 15 admin, CI GitHub Actions)
 - Tests d'intégration backend (`InSeconds.Api.IntegrationTests`) — Testcontainers.PostgreSql + `WebApplicationFactory<Program>` + Respawn, 82 tests couvrant StartSession, SubmitAnswer, AbandonSession, Stats, AdminStats, SessionEdgeCases (dont UpdateListening), ChallengeGeneration, Admin/Tracks, Admin/Challenges, Admin/RefreshPreviews, job CI dédié `integration-tests`
-- **i18n FR/EN** — ngx-translate v18, `LanguageService`, fichiers `public/i18n/{fr,en}.json`
+- **i18n FR/EN** — ngx-translate v18, `LanguageService`, fichiers `public/i18n/{fr,en}.json` ; sélecteur de langue dans le footer (globe monochrome + code FR/EN, persist localStorage)
+- **Page confidentialité** — `PrivacyComponent` (`features/privacy/`), routes `/privacy` + `/confidentialite`, lien dans le footer
 - **Refacto frontend** — `game.component` découpé en header + footer + 5 screens + `GameFacadeService` + `DeezerAutocompleteService` (`features/game/services/`) ; `admin.component` en shell + 6 services (`AdminHttpService`, `AdminStateService`, `AdminApiService`, `AdminStatsService`, `AdminPoolService`, `AdminActionsService`) + 7 sous-composants ; palette CSS centralisée en variables `:root` ; `ShareButtonComponent` réutilisable
-- **Tests unitaires frontend** — 94 tests Karma/Jasmine (`GameService`, `SettingsService`, `LanguageService`, `AdminHttpService`, `AdminStatsService`) ; job CI `unit-tests-front` (`ChromeHeadless`)
+- **Tests unitaires frontend** — 98 tests Karma/Jasmine (`GameService`, `SettingsService`, `LanguageService`, `GameFooterComponent`, `AdminHttpService`, `AdminStatsService`) ; job CI `unit-tests-front` (`ChromeHeadless`)
 
 - **Cache Deezer** — `CachedDeezerClient` (`IMemoryCache`) : preview URLs (TTL borné par l'expiration de la signature CDN, sinon 403 à la lecture) + recherches autocomplete (1h)
 
-🚧 **À faire** : smoke tests post-deploy, tests mobiles, polish, éventuel passage du cache Deezer sur Redis (multi-instances). Voir [`TACHES.md`](TACHES.md).
+🚧 **À faire** : **fix streak perdue à tort** (persister les clés Data Protection en base + baser la streak sur `DailyChallenge.Date` — cf. pièges 17/18 de [CLAUDE.md](../CLAUDE.md)), smoke tests post-deploy, tests mobiles, polish, éventuel passage du cache Deezer sur Redis (multi-instances). Voir [`TACHES.md`](TACHES.md).
 
 ## Specs gameplay clés (rappel rapide)
 

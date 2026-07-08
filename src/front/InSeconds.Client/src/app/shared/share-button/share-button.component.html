@@ -6,5 +6,9 @@
     style="background:var(--bg-inactive);color:var(--text-body);border:1px solid var(--border-strong);letter-spacing:0.03em">
     {{ (copied() ? 'share.copied' : 'share.button') | translate }}
   </button>
-  <p class="text-xs" style="color:var(--text-muted)">{{ 'share.hint' | translate }}</p>
+  @if (failed()) {
+    <p class="text-xs" style="color:var(--text-error)">{{ 'share.failed' | translate }}</p>
+  } @else {
+    <p class="text-xs" style="color:var(--text-muted)">{{ 'share.hint' | translate }}</p>
+  }
 </div>

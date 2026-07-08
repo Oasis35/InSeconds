@@ -77,6 +77,7 @@
           [abandoned]="sessionAbandoned()"
           [countdown]="countdown()"
           [shareCopied]="shareCopied()"
+          [shareFailed]="shareFailed()"
           (share)="shareFromStats()" />
       }
 
@@ -100,6 +101,7 @@
           [results]="results()"
           [displayedScore]="displayedTotalScore()"
           [shareCopied]="shareCopied()"
+          [shareFailed]="shareFailed()"
           [canShare]="results().length >= tracks().length"
           [countdown]="countdown()"
           (share)="share()" />

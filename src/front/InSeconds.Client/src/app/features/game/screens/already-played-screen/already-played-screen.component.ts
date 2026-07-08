@@ -14,6 +14,7 @@ export class AlreadyPlayedScreenComponent {
   readonly abandoned = input(false);
   readonly countdown = input.required<string>();
   readonly shareCopied = input(false);
+  readonly shareFailed = input(false);
   readonly share = output<void>();
 
   protected readonly showTrackDetails = signal(false);

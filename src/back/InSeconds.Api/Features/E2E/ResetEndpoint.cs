@@ -99,7 +99,7 @@ public static class E2EResetEndpoint
             (655095912,   "Billie Eilish",           "bad guy",                      "6630083f454d48eadb6a9b53f035d734"),
             // Pool disponible
             (4603408,     "Michael Jackson",         "Billie Jean",                  "a0ad67d1beb761f2cb9f8b60e5bcf07a"),
-            (9997018,     "Queen",                  "Bohemian Rhapsody",            "6706f1154083f461a348508c28030a30"),
+            (5055001,     "Queen",                  "Bohemian Rhapsody",            "6bfb24a6d8f37ba563284d311586f2be"),
             (13791930,    "Nirvana",                "Smells Like Teen Spirit",      "f0282817b697279e56df13909962a54a"),
             (908604612,   "The Weeknd",             "Blinding Lights",              "fd00ebd6d30d7253f813dba3bb1c66a9"),
             (8086126,     "Adele",                  "Rolling in the Deep",          "dc1ce848d830ecc93521be5a78350364"),
@@ -127,7 +127,7 @@ public static class E2EResetEndpoint
             (138539157,   "Radiohead",              "No Surprises",                 "7a378976d3ff1b1fd7b21ee0c7f95fa5"),
             (3102130,     "Blur",                   "Song 2",                       "1e6f6130ca0ccbdd0cde4dc2b05e6df9"),
             (958109,      "The Strokes",            "Last Nite",                    "700f0375d5ac8570f16a2c7eb128303f"),
-            (14914978,    "Nirvana",                "Come as You Are",              "f0282817b697279e56df13909962a54a"),
+            (13791932,    "Nirvana",                "Come As You Are",              "f0282817b697279e56df13909962a54a"),
             (676183,      "Linkin Park",            "In the End",                   "033a271b5ec10842c287827c39244fb5"),
             (103052662,   "Tame Impala",            "The Less I Know The Better",   "de5b9b704cd4ec36f8bf49beb3e17ba2"),
             (10284909,    "Justice",                "D.A.N.C.E.",                   "d779ba5bc3bb32475a78909d97cf8964"),
