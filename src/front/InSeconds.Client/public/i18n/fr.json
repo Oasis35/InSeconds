@@ -62,6 +62,7 @@
     "button": "🔗 Partager mon score",
     "copied": "✓ Copié !",
     "hint": "Copie un résumé en emojis dans le presse-papier",
+    "failed": "Impossible de copier dans le presse-papier.",
     "title": "InSeconds 🎵 {{ date }}",
     "score": "🏆 {{ score }} pts"
   },
@@ -76,7 +77,45 @@
   "footer": {
     "admin": "Admin",
     "source": "Voir le code source",
-    "profile": "Mon profil"
+    "profile": "Mon profil",
+    "privacy": "Confidentialité",
+    "language": "Switch to English"
+  },
+  "privacy": {
+    "title": "Politique de confidentialité",
+    "updated": "Dernière mise à jour : 8 juillet 2026",
+    "intro": "InSeconds est un jeu de blind test musical gratuit, accessible sans compte ni inscription. La présente politique décrit, conformément au Règlement général sur la protection des données (RGPD — Règlement UE 2016/679), les traitements de données réalisés par l'application.",
+    "controller": {
+      "title": "Responsable du traitement",
+      "body": "Le responsable du traitement est l'éditeur du site InSeconds, joignable à l'adresse de contact indiquée en bas de cette page."
+    },
+    "data": {
+      "title": "Données collectées, finalités et base légale",
+      "body": "Aucune donnée directement identifiante n'est demandée : ni nom, ni adresse email, ni inscription.\nL'application enregistre uniquement :\n· un identifiant technique pseudonyme, généré aléatoirement, permettant de reconnaître votre navigateur d'un jour à l'autre ;\n· vos parties : réponses saisies, durées d'écoute choisies, scores et dates de jeu ;\n· votre langue préférée, stockée localement dans votre navigateur (elle ne quitte pas votre appareil).\nCes données sont traitées aux seules fins de fournir le jeu (reprise de partie, limitation à une partie par jour, série de victoires) et de calculer des statistiques globales anonymes (score médian, taux de réussite par morceau).\nBase légale : l'exécution du service demandé et l'intérêt légitime du responsable du traitement (article 6.1.b et 6.1.f du RGPD)."
+    },
+    "cookie": {
+      "title": "Cookie",
+      "body": "Un unique cookie technique est déposé. Il contient votre identifiant pseudonyme et sert exclusivement au fonctionnement du jeu.\nCe cookie est strictement nécessaire à la fourniture du service : conformément à l'article 82 de la loi Informatique et Libertés et aux lignes directrices de la CNIL, il est exempté de consentement préalable et ne nécessite donc pas de bannière de recueil de consentement.\nAucun cookie publicitaire, aucun traceur ni outil de mesure d'audience n'est utilisé."
+    },
+    "retention": {
+      "title": "Durée de conservation",
+      "body": "Les données de jeu sont conservées pendant la durée de vie du service, afin d'alimenter les statistiques globales présentées aux joueurs. Elles ne sont jamais croisées avec une identité réelle et sont supprimées définitivement sur demande (voir « Vos droits »)."
+    },
+    "thirdParties": {
+      "title": "Destinataires et hébergement",
+      "body": "Les données ne sont ni vendues, ni cédées, ni transmises à des tiers à des fins commerciales.\nLes extraits musicaux et les pochettes proviennent de l'API publique Deezer ; ces requêtes transitent par notre serveur et Deezer ne reçoit aucune information vous concernant.\nL'application et sa base de données sont hébergées par Northflank Ltd."
+    },
+    "deezer": {
+      "title": "Mentions légales — contenus musicaux (API Deezer)",
+      "body": "Les extraits musicaux (30 secondes), les pochettes d'albums ainsi que les métadonnées (artiste, titre) sont fournis par l'API Deezer et utilisés dans le respect de ses conditions d'utilisation (Deezer API Terms of Use), dans un cadre strictement non commercial : InSeconds est gratuit, sans publicité et ne génère aucun revenu.\nCes contenus demeurent la propriété exclusive de Deezer et de leurs ayants droit respectifs (artistes, producteurs, labels). Ils sont diffusés à titre d'illustration dans le cadre du jeu, sans possibilité de téléchargement, et chaque morceau renvoie vers sa page officielle Deezer pour une écoute intégrale.\nDeezer est une marque déposée de Deezer S.A. InSeconds est un projet indépendant, non affilié à Deezer et non approuvé par Deezer."
+    },
+    "rights": {
+      "title": "Vos droits",
+      "body": "Conformément aux articles 15 à 21 du RGPD, vous disposez d'un droit d'accès, de rectification, d'effacement, de limitation du traitement, d'opposition et de portabilité sur les données associées à votre identifiant. La suppression efface définitivement votre historique de parties et votre série en cours.\nVous disposez également du droit d'introduire une réclamation auprès de la CNIL (www.cnil.fr).",
+      "contact": "Pour exercer ces droits :",
+      "contactLabel": "✉️ nous contacter"
+    },
+    "back": "Retour au jeu"
   },
   "blindRound": {
     "howManySeconds": "Combien de secondes veux-tu écouter ?",

@@ -159,14 +159,16 @@ describe('SettingsService', () => {
       expect(emittedValue).toBeUndefined();
     });
 
-    it('should propagate HTTP errors', () => {
-      let error: any;
-      service.load().subscribe({ error: e => (error = e) });
+    it('should swallow HTTP errors so app bootstrap is not blocked', () => {
+      let error: any = null;
+      let completed = false;
+      service.load().subscribe({ error: e => (error = e), complete: () => (completed = true) });
 
       const req = httpMock.expectOne(settingsUrl);
       req.flush('Server error', { status: 500, statusText: 'Internal Server Error' });
 
-      expect(error.status).toBe(500);
+      expect(error).toBeNull();
+      expect(completed).toBeTrue();
     });
 
     it('should not update signals when load fails', () => {

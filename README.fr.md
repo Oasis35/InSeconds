@@ -14,7 +14,8 @@
 - Mode guest : joue sans créer de compte, hors classement
 - Streak quotidien affiché sur l'écran récap final
 - Partage de score en format emoji Wordle (copie dans le presse-papier)
-- Disponible en français et en anglais (détecté automatiquement depuis le navigateur)
+- Disponible en français et en anglais — détecté automatiquement depuis le navigateur, changeable à tout moment depuis le pied de page (choix sauvegardé en localStorage)
+- Page politique de confidentialité sur `/confidentialite` (alias `/privacy`)
 
 ## Démarrage rapide
 
@@ -92,7 +93,7 @@ Workflow GitHub Actions sur chaque push et chaque PR vers `main` :
 - **Backend** — build Release + `dotnet ef migrations has-pending-model-changes`
 - **Tests unitaires** — `dotnet test` sur `InSeconds.Api.UnitTests` (xUnit, pas de BD requise)
 - **Frontend** — `npm ci` + build production
-- **Tests unitaires frontend** — `ng test --watch=false --browsers=ChromeHeadless` (Karma + Jasmine, 94 tests)
+- **Tests unitaires frontend** — `ng test --watch=false --browsers=ChromeHeadless` (Karma + Jasmine, 98 tests)
 - **Tests d'intégration** — `dotnet test` sur `InSeconds.Api.IntegrationTests` (Testcontainers crée un conteneur PostgreSQL réel, pas de YAML supplémentaire)
 - **E2E** — tests Playwright (Chromium) contre un vrai backend en mode `Testing` avec un service PostgreSQL — s'exécute après tous les jobs précédents
 
@@ -116,7 +117,7 @@ cd src/front/InSeconds.Client
 npx ng test --watch=false --browsers=ChromeHeadless
 ```
 
-**94 tests** (Karma + Jasmine) couvrant `App`, `GameService`, `SettingsService`, `LanguageService`, `AdminHttpService`, `AdminStatsService`. Utilise `HttpTestingController` — pas de vraies requêtes HTTP.
+**98 tests** (Karma + Jasmine) couvrant `App`, `GameService`, `SettingsService`, `LanguageService`, `GameFooterComponent` (toggle langue), `AdminHttpService`, `AdminStatsService`. Utilise `HttpTestingController` — pas de vraies requêtes HTTP.
 
 ### Tests d'intégration (backend)
 
@@ -142,7 +143,7 @@ npm run e2e        # headless
 npm run e2e:ui     # UI interactive Playwright
 ```
 
-**38 tests** — 23 tests jeu (happy path, déjà joué, abandon, reprise, sync multi-onglets, pas de défi, partage, scoring, paliers bloqués à la reprise anti-triche, confirmation de sortie, bouton ✕ d'effacement, overlay "Service indisponible") + 15 tests admin (login, tableau pool avec filtres, ajout/suppression/actualisation morceau, générer défi, reset sessions, liste défis).
+**42 tests** — 27 tests jeu (happy path, déjà joué, abandon, reprise, sync multi-onglets, pas de défi, partage + échec de copie presse-papier, scoring, paliers bloqués à la reprise anti-triche, confirmation de sortie, bouton ✕ d'effacement, overlay "Service indisponible", toggle langue + page confidentialité) + 15 tests admin (login, tableau pool avec filtres, ajout/suppression/actualisation morceau, générer défi, reset sessions, liste défis).
 
 Le backend tourne en `ASPNETCORE_ENVIRONMENT=Testing` qui active :
 - `FakeDeezerHandler` — retourne un `test-audio.mp3` local ; les IDs >= 9_000_000_000 retournent une preview vide (5 morceaux seed : The Beatles, Pink Floyd, Bob Dylan, Led Zeppelin, Fleetwood Mac) pour tester le flux "↻ Actualiser"

@@ -9,6 +9,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 })
 export class ShareButtonComponent {
   readonly copied = input.required<boolean>();
+  readonly failed = input(false);
   readonly disabled = input(false);
   readonly share = output<void>();
 }
