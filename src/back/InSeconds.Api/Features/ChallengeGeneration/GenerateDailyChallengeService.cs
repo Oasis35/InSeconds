@@ -5,23 +5,32 @@ public sealed class GenerateDailyChallengeService(
     ILogger<GenerateDailyChallengeService> logger)
     : BackgroundService
 {
+    internal static readonly TimeSpan RetryDelay = TimeSpan.FromMinutes(10);
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await TryGenerateAsync(stoppingToken);
-
         while (!stoppingToken.IsCancellationRequested)
         {
-            var delay = ComputeDelayUntilNextMidnightUtc();
-            logger.LogInformation("Prochain défi planifié dans {Delay:hh\\:mm\\:ss} (0h00 UTC).", delay);
+            var succeeded = await TryGenerateAsync(stoppingToken);
+
+            TimeSpan delay;
+            if (succeeded)
+            {
+                delay = DailySchedule.DelayUntilNextUtcHour(0);
+                logger.LogInformation("Prochain défi planifié dans {Delay:hh\\:mm\\:ss} (0h00 UTC).", delay);
+            }
+            else
+            {
+                delay = RetryDelay;
+                logger.LogWarning("Génération échouée, nouvelle tentative dans {Delay:mm} min.", delay);
+            }
 
             try { await Task.Delay(delay, stoppingToken); }
             catch (OperationCanceledException) { break; }
-
-            await TryGenerateAsync(stoppingToken);
         }
     }
 
-    private async Task TryGenerateAsync(CancellationToken ct)
+    private async Task<bool> TryGenerateAsync(CancellationToken ct)
     {
         try
         {
@@ -31,20 +40,21 @@ public sealed class GenerateDailyChallengeService(
                 .GenerateAsync(ct);
 
             if (result == GenerateResult.PoolInsufficient)
+            {
                 logger.LogError("Génération automatique impossible : pool insuffisant. Ajouter des morceaux avec preview.");
+                return false;
+            }
+
+            return true;
         }
-        catch (OperationCanceledException) { }
+        catch (OperationCanceledException)
+        {
+            return true; // arrêt de l'app, pas un échec à retenter
+        }
         catch (Exception ex)
         {
             logger.LogError(ex, "Erreur lors de la génération du défi quotidien.");
+            return false;
         }
-    }
-
-    internal static TimeSpan ComputeDelayUntilNextMidnightUtc(DateTime? utcNow = null)
-    {
-        var now = utcNow ?? DateTime.UtcNow;
-        var next = now.Date;
-        if (now >= next) next = next.AddDays(1);
-        return next - now;
     }
 }

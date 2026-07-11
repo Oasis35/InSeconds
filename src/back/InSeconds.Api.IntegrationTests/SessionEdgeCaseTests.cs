@@ -150,6 +150,87 @@ public class SessionEdgeCaseTests(IntegrationTestFactory factory) : IAsyncLifeti
         Assert.Equal(streakAvant, player.CurrentStreak);
     }
 
+    [Fact]
+    public async Task Streak_DefiDeLaVeilleCompleteApresMinuit_ContinueLaStreak()
+    {
+        // Piège 18 : le joueur a complété le défi J-2, puis termine le défi J-1
+        // après minuit UTC (donc "aujourd'hui"). La streak doit se baser sur la
+        // date du défi (J-1 = lendemain de J-2 → +1), pas sur la date de complétion.
+        var session = await StartSessionAsync();
+
+        var yesterday    = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1));
+        var dayBefore    = yesterday.AddDays(-1);
+        int[] trackIds;
+        Guid playerId;
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var yesterdayChallenge = await db.DailyChallenges.FirstAsync(c => c.Date == yesterday);
+
+            var gs = await db.GameSessions.FindAsync(session.SessionId);
+            gs!.DailyChallengeId = yesterdayChallenge.Id;
+            playerId = gs.PlayerId;
+
+            var player = await db.Players.FirstAsync(p => p.Id == playerId);
+            player.LastPlayedDate = dayBefore;
+            player.CurrentStreak  = 5;
+
+            trackIds = await db.DailyChallengeTracks
+                .Where(t => t.DailyChallengeId == yesterdayChallenge.Id)
+                .Select(t => t.Id)
+                .ToArrayAsync();
+
+            await db.SaveChangesAsync();
+        }
+
+        foreach (var trackId in trackIds)
+        {
+            var resp = await SubmitAsync(session.SessionId, trackId, 1m, "X", null);
+            resp.EnsureSuccessStatusCode();
+        }
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var player = await db.Players.FirstAsync(p => p.Id == playerId);
+            Assert.Equal(6, player.CurrentStreak);
+            Assert.Equal(yesterday, player.LastPlayedDate);
+        }
+    }
+
+    [Fact]
+    public async Task Streak_JourManque_RemetLaStreakA1()
+    {
+        var session = await StartSessionAsync();
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        Guid playerId;
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var gs = await db.GameSessions.FindAsync(session.SessionId);
+            playerId = gs!.PlayerId;
+
+            var player = await db.Players.FirstAsync(p => p.Id == playerId);
+            player.LastPlayedDate = today.AddDays(-3); // trou de 2 jours
+            player.CurrentStreak  = 5;
+            await db.SaveChangesAsync();
+        }
+
+        foreach (var track in session.Tracks)
+            await SubmitAsync(session.SessionId, track.Id, 1m, "X", null);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var player = await db.Players.FirstAsync(p => p.Id == playerId);
+            Assert.Equal(1, player.CurrentStreak);
+            Assert.Equal(today, player.LastPlayedDate);
+        }
+    }
+
     // ── UpdateListening ──────────────────────────────────────────────────────
 
     [Fact]

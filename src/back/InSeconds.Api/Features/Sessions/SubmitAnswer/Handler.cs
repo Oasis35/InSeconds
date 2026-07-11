@@ -87,11 +87,16 @@ public sealed class SubmitAnswerHandler(
             session.Status      = SessionStatus.Completed;
             session.CompletedAt = DateTime.UtcNow;
 
-            var today     = DateOnly.FromDateTime(DateTime.UtcNow);
-            var yesterday = today.AddDays(-1);
-            var player    = await db.Players.FirstAsync(p => p.Id == command.PlayerId, cancellationToken);
-            player.CurrentStreak  = player.LastPlayedDate == yesterday ? player.CurrentStreak + 1 : 1;
-            player.LastPlayedDate = today;
+            // Streak basée sur la date du défi, pas la date de complétion : terminer
+            // le défi de lundi mardi à 00:15 UTC ne doit pas casser la streak (piège 18).
+            var challengeDate = await db.DailyChallenges
+                .Where(c => c.Id == session.DailyChallengeId)
+                .Select(c => c.Date)
+                .FirstAsync(cancellationToken);
+
+            var player = await db.Players.FirstAsync(p => p.Id == command.PlayerId, cancellationToken);
+            player.CurrentStreak  = player.LastPlayedDate == challengeDate.AddDays(-1) ? player.CurrentStreak + 1 : 1;
+            player.LastPlayedDate = challengeDate;
         }
 
         await db.SaveChangesAsync(cancellationToken);

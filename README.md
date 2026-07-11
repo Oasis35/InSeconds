@@ -126,7 +126,7 @@ cd src/back
 dotnet test InSeconds.Api.IntegrationTests
 ```
 
-Requires Docker (Testcontainers starts a real PostgreSQL container). **82 tests** covering `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats`, `Auth/Me`, `SessionEdgeCases` (lazy expiry, streak, submit on abandoned session, UpdateListening anti-cheat), `ChallengeGeneration`, `Admin/Tracks`, `Admin/Challenges`, `Admin/RefreshPreviews`.
+Requires Docker (Testcontainers starts a real PostgreSQL container). **84 tests** covering `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats`, `Auth/Me`, `SessionEdgeCases` (lazy expiry, streak — including finishing yesterday's challenge after midnight UTC, submit on abandoned session, UpdateListening anti-cheat), `ChallengeGeneration`, `Admin/Tracks`, `Admin/Challenges`, `Admin/RefreshPreviews`.
 
 ### E2E tests (Playwright)
 

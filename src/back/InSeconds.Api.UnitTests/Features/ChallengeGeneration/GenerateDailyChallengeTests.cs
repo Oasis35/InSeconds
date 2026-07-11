@@ -41,72 +41,7 @@ public sealed class GenerateDailyChallengeTests
     };
 
     // ---------------------------------------------------------------------------
-    // Groupe A — ComputeDelayUntilNextMidnightUtc (génération à 0h00 UTC)
-    // ---------------------------------------------------------------------------
-
-    [Fact]
-    public void ComputeDelay_At0000Utc_Returns24Hours()
-    {
-        // Pile à minuit → on attend le minuit suivant (pas de déclenchement immédiat).
-        var delay = GenerateDailyChallengeService.ComputeDelayUntilNextMidnightUtc(
-            new DateTime(2026, 6, 5, 0, 0, 0, DateTimeKind.Utc));
-        delay.Should().Be(TimeSpan.FromHours(24));
-    }
-
-    [Fact]
-    public void ComputeDelay_At2359Utc_ReturnsLessThanOrEqual1Minute()
-    {
-        var delay = GenerateDailyChallengeService.ComputeDelayUntilNextMidnightUtc(
-            new DateTime(2026, 6, 5, 23, 59, 0, DateTimeKind.Utc));
-        delay.Should().BeLessThanOrEqualTo(TimeSpan.FromMinutes(1));
-    }
-
-    [Fact]
-    public void ComputeDelay_At0300Utc_Returns21Hours()
-    {
-        var delay = GenerateDailyChallengeService.ComputeDelayUntilNextMidnightUtc(
-            new DateTime(2026, 6, 5, 3, 0, 0, DateTimeKind.Utc));
-        delay.Should().Be(TimeSpan.FromHours(21));
-    }
-
-    [Fact]
-    public void ComputeDelay_At1200Utc_Returns12Hours()
-    {
-        var delay = GenerateDailyChallengeService.ComputeDelayUntilNextMidnightUtc(
-            new DateTime(2026, 6, 5, 12, 0, 0, DateTimeKind.Utc));
-        delay.Should().Be(TimeSpan.FromHours(12));
-    }
-
-    // ---------------------------------------------------------------------------
-    // Groupe A' — RefreshPreviewStatusService.ComputeDelayUntilNext11PmUtc (refresh à 23h00 UTC, avant la génération de minuit)
-    // ---------------------------------------------------------------------------
-
-    [Fact]
-    public void RefreshDelay_At2300Utc_Returns24Hours()
-    {
-        var delay = RefreshPreviewStatusService.ComputeDelayUntilNext11PmUtc(
-            new DateTime(2026, 6, 5, 23, 0, 0, DateTimeKind.Utc));
-        delay.Should().Be(TimeSpan.FromHours(24));
-    }
-
-    [Fact]
-    public void RefreshDelay_At2259Utc_ReturnsLessThanOrEqual1Minute()
-    {
-        var delay = RefreshPreviewStatusService.ComputeDelayUntilNext11PmUtc(
-            new DateTime(2026, 6, 5, 22, 59, 0, DateTimeKind.Utc));
-        delay.Should().BeLessThanOrEqualTo(TimeSpan.FromMinutes(1));
-    }
-
-    [Fact]
-    public void RefreshDelay_At1200Utc_Returns11Hours()
-    {
-        var delay = RefreshPreviewStatusService.ComputeDelayUntilNext11PmUtc(
-            new DateTime(2026, 6, 5, 12, 0, 0, DateTimeKind.Utc));
-        delay.Should().Be(TimeSpan.FromHours(11));
-    }
-
-    // ---------------------------------------------------------------------------
-    // Groupe B — DailyChallengeGenerator.GenerateAsync
+    // Groupe A — DailyChallengeGenerator.GenerateAsync
     // ---------------------------------------------------------------------------
 
     [Fact]
