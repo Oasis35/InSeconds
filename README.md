@@ -6,7 +6,7 @@
 
 ## How it works
 
-- Each day at 3 AM UTC, a new set of tracks is automatically selected (only tracks with an active Deezer preview)
+- Each day at midnight UTC, a new set of tracks is automatically selected (only tracks with an active Deezer preview)
 - Preview availability is re-checked nightly against Deezer (rate-limit aware, batched calls); admins can also re-run the check on demand from the admin panel
 - Choose how many seconds to listen (0.5, 1, 1.5, 2, 3, 5, 10) before attempting artist + title
 - One extension allowed per track (next duration tier, with a score penalty)

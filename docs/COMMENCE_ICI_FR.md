@@ -64,8 +64,8 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - `Track.CoverHash` + `AppSettings.CoverUrlTemplate` (URL reconstruite à la volée)
 - Page admin (`/admin`) — login, pool (sous-onglets + indicateur preview + popup ajout avec lecteur), défis, stats dashboard, reset sessions
 - Auth admin via Bearer token + `adminAuthInterceptor` Angular
-- `BackgroundService` génération défi quotidien automatique (à 3h UTC) — filtre sur `Track.HasPreview` en DB, Fisher-Yates, transaction
-- `BackgroundService` refresh preview (à 2h UTC) — vérifie Deezer pour tous les tracks disponibles par lots (rate-limit safe), met à jour `Track.HasPreview` uniquement sur réponse Deezer déterminée (jamais sur un échec quota/panne) ; relançable à la demande via `POST /api/admin/refresh-previews` (bouton « 🔄 Re-vérifier les previews » dans l'onglet Actions admin)
+- `BackgroundService` génération défi quotidien automatique (à minuit UTC) — filtre sur `Track.HasPreview` en DB, Fisher-Yates, transaction
+- `BackgroundService` refresh preview (à 23h UTC, avant la génération de minuit) — vérifie Deezer pour tous les tracks disponibles par lots (rate-limit safe), met à jour `Track.HasPreview` uniquement sur réponse Deezer déterminée (jamais sur un échec quota/panne) ; relançable à la demande via `POST /api/admin/refresh-previews` (bouton « 🔄 Re-vérifier les previews » dans l'onglet Actions admin)
 - Frontend complet (Angular 22 + Tailwind v4 + SCSS) — UI jeu jouable
 - NSwag : `ApiClient` généré depuis l'OpenAPI back, `api.generated.ts` commité, types synchronisés automatiquement
 - Pages d'erreur : 404, "déjà joué" (compte à rebours + stats comparatives), "pas de défi"

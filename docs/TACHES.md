@@ -19,7 +19,7 @@
 - [x] `ScoreCalculator` (paliers `decimal`, scoring partiel, malus prolongation) + tests unitaires
 - [x] `CookieAuthService` — guest auto, cookie HttpOnly `SameSite=None` en prod
 - [x] `DeezerClient` — recherche + preview + extraction `CoverHash`
-- [x] `BackgroundService` génération défi quotidien (3h UTC)
+- [x] `BackgroundService` génération défi quotidien (minuit UTC)
 - [x] Slice `Sessions/StartSession` + `Sessions/SubmitAnswer` (scoring serveur + stats)
 - [x] Slice `Sessions/AbandonSession` — `PUT /api/sessions/{id}/abandon`, marque une session Pending comme abandonnée
 - [x] `SessionStatus` enum (Pending=0, Completed=1, Abandoned=2) — session comptabilisée seulement si complétée ou abandonnée
@@ -31,9 +31,9 @@
 - [x] Tests unitaires back : `TextNormalizer`, `ScoreCalculator`, `CookieAuthService`, `PlayerAuthMiddleware`, `AppSettingsBinding`, `StartSessionHandler`, `SubmitAnswerHandler`, `GenerateDailyChallengeService`, `AddTrackHandler`, `MeEndpoint`, `GetTracksHandler`, `SubmitAnswerValidator`
 - [x] Streak joueur : `Player.CurrentStreak` + `Player.LastPlayedDate`, mis à jour dans `SubmitAnswer/Handler.cs` à la complétion (parties complètes uniquement)
 - [x] Morceaux sans preview : `SubmitAnswerValidator` accepte `ListenedDurationSeconds = 0` (skip), `BlindRoundComponent` affiche un bouton "Passer" si `previewUrl` est vide
-- [x] `Track.HasPreview` persisté en base (migration `AddTrackHasPreview`) — flag mis à jour à l'ajout/actualisation d'un track et nuitamment par `RefreshPreviewStatusService` (2h UTC)
+- [x] `Track.HasPreview` persisté en base (migration `AddTrackHasPreview`) — flag mis à jour à l'ajout/actualisation d'un track et nuitamment par `RefreshPreviewStatusService` (23h UTC)
 - [x] **Anti-cheat durée min écoutée** : `GameSession.CurrentTrackId` + `GameSession.CurrentTrackMinListenedSeconds` (migration `AddSessionAntiCheat`), slice `Sessions/UpdateListening` (`PATCH /api/sessions/{id}/listening`), appelé depuis `BlindRoundComponent` à chaque arrêt du timer ; à la reprise, `StartSession` renvoie `CurrentTrackId`/`MinListenedSeconds` et le front masque les paliers inférieurs
-- [x] `RefreshPreviewStatusService` — `BackgroundService` qui vérifie Deezer pour tous les tracks disponibles à 2h UTC et met à jour `HasPreview`
+- [x] `RefreshPreviewStatusService` — `BackgroundService` qui vérifie Deezer pour tous les tracks disponibles à 23h UTC et met à jour `HasPreview`
 - [x] Refresh previews fiabilisé : appels par lots de 10 espacés de 1,5 s (rate-limit Deezer ~50 req/5 s), détection des erreurs Deezer renvoyées en HTTP 200 (`{"error":{...}}` — quota, track supprimé), `HasPreview` jamais modifié sur un échec (`DeezerClient.ProbePreviewAsync`) — corrige les ~200 faux « sans preview » du 2026-07-06
 - [x] `POST /api/admin/refresh-previews` — relance le re-check à la demande, retourne `{ checked, updated, failed }` ; bouton « 🔄 Re-vérifier les previews » dans l'onglet Actions admin
 - [x] `DailyChallengeGenerator` filtre sur `Track.HasPreview` en DB (plus d'appel Deezer à la génération), shuffle Fisher-Yates avec seed déterministe, transaction explicite autour des deux `SaveChangesAsync`

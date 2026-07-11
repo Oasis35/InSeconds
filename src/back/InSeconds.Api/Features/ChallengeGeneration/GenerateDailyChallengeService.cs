@@ -11,8 +11,8 @@ public sealed class GenerateDailyChallengeService(
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            var delay = ComputeDelayUntilNext3AmUtc();
-            logger.LogInformation("Prochain défi planifié dans {Delay:hh\\:mm\\:ss} (3h00 UTC).", delay);
+            var delay = ComputeDelayUntilNextMidnightUtc();
+            logger.LogInformation("Prochain défi planifié dans {Delay:hh\\:mm\\:ss} (0h00 UTC).", delay);
 
             try { await Task.Delay(delay, stoppingToken); }
             catch (OperationCanceledException) { break; }
@@ -40,10 +40,10 @@ public sealed class GenerateDailyChallengeService(
         }
     }
 
-    internal static TimeSpan ComputeDelayUntilNext3AmUtc(DateTime? utcNow = null)
+    internal static TimeSpan ComputeDelayUntilNextMidnightUtc(DateTime? utcNow = null)
     {
         var now = utcNow ?? DateTime.UtcNow;
-        var next = now.Date.AddHours(3);
+        var next = now.Date;
         if (now >= next) next = next.AddDays(1);
         return next - now;
     }
