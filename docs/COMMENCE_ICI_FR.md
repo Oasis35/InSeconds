@@ -64,8 +64,8 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - `Track.CoverHash` + `AppSettings.CoverUrlTemplate` (URL reconstruite à la volée)
 - Page admin (`/admin`) — login, pool (sous-onglets + indicateur preview + popup ajout avec lecteur), défis, stats dashboard, reset sessions
 - Auth admin via Bearer token + `adminAuthInterceptor` Angular
-- `BackgroundService` génération défi quotidien automatique (à 3h UTC) — filtre sur `Track.HasPreview` en DB, Fisher-Yates, transaction
-- `BackgroundService` refresh preview (à 2h UTC) — vérifie Deezer pour tous les tracks disponibles par lots (rate-limit safe), met à jour `Track.HasPreview` uniquement sur réponse Deezer déterminée (jamais sur un échec quota/panne) ; relançable à la demande via `POST /api/admin/refresh-previews` (bouton « 🔄 Re-vérifier les previews » dans l'onglet Actions admin)
+- `BackgroundService` génération défi quotidien automatique (à minuit UTC, retry toutes les 10 min en cas d'échec) — filtre sur `Track.HasPreview` en DB, Fisher-Yates, transaction ; planification via le helper partagé `DailySchedule`
+- `BackgroundService` refresh preview (à 23h UTC, avant la génération de minuit) — vérifie Deezer pour tous les tracks disponibles par lots (rate-limit safe), met à jour `Track.HasPreview` uniquement sur réponse Deezer déterminée (jamais sur un échec quota/panne) ; relançable à la demande via `POST /api/admin/refresh-previews` (bouton « 🔄 Re-vérifier les previews » dans l'onglet Actions admin)
 - Frontend complet (Angular 22 + Tailwind v4 + SCSS) — UI jeu jouable
 - NSwag : `ApiClient` généré depuis l'OpenAPI back, `api.generated.ts` commité, types synchronisés automatiquement
 - Pages d'erreur : 404, "déjà joué" (compte à rebours + stats comparatives), "pas de défi"
@@ -84,7 +84,7 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - Champ unique artiste+titre avec autocomplete Deezer (proxy `/api/deezer/search`, debounce 300ms)
 - Badge officiel "À écouter sur Deezer" (`DeezerBadgeComponent`) + favicon SVG note Deezer
 - Route `/blindtest` + balises Open Graph/Twitter Card pour partage WhatsApp/Signal
-- Streak joueur (`Player.CurrentStreak` + `Player.LastPlayedDate`) mis à jour au `StartSession`
+- Streak joueur (`Player.CurrentStreak` + `Player.LastPlayedDate`) mis à jour à la complétion dans `SubmitAnswer/Handler.cs`, basée sur `DailyChallenge.Date` (terminer le défi de la veille après minuit UTC ne casse plus la streak)
 - Gestion morceaux sans preview : skip 0s accepté par le validateur, bouton "Passer" dans le jeu
 - Replay preview après soumission de réponse (`AudioPlayerService.replayFull()`)
 - Synchronisation multi-onglets via `visibilitychange` — si la partie est terminée dans un autre onglet, le front bascule en `already_played` au retour au premier plan
@@ -92,7 +92,7 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - Pool admin redesigné en tableau paginé (15 lignes/page) avec filtres combinables (texte, statut, preview), onglet "Actions" dédié, modale "↻ Actualiser" pré-remplie pour morceaux sans preview — indicateur preview lu depuis `Track.HasPreview` en DB (stable, plus d'appel Deezer temps réel)
 - Dashboard admin : KPI tiles par jour, sélecteur de jour ← →, barres 30j cliquables avec jours vides à zéro
 - Tests E2E Playwright (42 scénarios : 27 jeu + 15 admin, CI GitHub Actions)
-- Tests d'intégration backend (`InSeconds.Api.IntegrationTests`) — Testcontainers.PostgreSql + `WebApplicationFactory<Program>` + Respawn, 82 tests couvrant StartSession, SubmitAnswer, AbandonSession, Stats, AdminStats, SessionEdgeCases (dont UpdateListening), ChallengeGeneration, Admin/Tracks, Admin/Challenges, Admin/RefreshPreviews, job CI dédié `integration-tests`
+- Tests d'intégration backend (`InSeconds.Api.IntegrationTests`) — Testcontainers.PostgreSql + `WebApplicationFactory<Program>` + Respawn, 84 tests couvrant StartSession, SubmitAnswer, AbandonSession, Stats, AdminStats, SessionEdgeCases (dont UpdateListening et streak sur la date du défi), ChallengeGeneration, Admin/Tracks, Admin/Challenges, Admin/RefreshPreviews, job CI dédié `integration-tests`
 - **i18n FR/EN** — ngx-translate v18, `LanguageService`, fichiers `public/i18n/{fr,en}.json` ; sélecteur de langue dans le footer (globe monochrome + code FR/EN, persist localStorage)
 - **Page confidentialité** — `PrivacyComponent` (`features/privacy/`), routes `/privacy` + `/confidentialite`, lien dans le footer
 - **Refacto frontend** — `game.component` découpé en header + footer + 5 screens + `GameFacadeService` + `DeezerAutocompleteService` (`features/game/services/`) ; `admin.component` en shell + 6 services (`AdminHttpService`, `AdminStateService`, `AdminApiService`, `AdminStatsService`, `AdminPoolService`, `AdminActionsService`) + 7 sous-composants ; palette CSS centralisée en variables `:root` ; `ShareButtonComponent` réutilisable
@@ -100,7 +100,7 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 
 - **Cache Deezer** — `CachedDeezerClient` (`IMemoryCache`) : preview URLs (TTL borné par l'expiration de la signature CDN, sinon 403 à la lecture) + recherches autocomplete (1h)
 
-🚧 **À faire** : **fix streak perdue à tort** (persister les clés Data Protection en base + baser la streak sur `DailyChallenge.Date` — cf. pièges 17/18 de [CLAUDE.md](../CLAUDE.md)), smoke tests post-deploy, tests mobiles, polish, éventuel passage du cache Deezer sur Redis (multi-instances). Voir [`TACHES.md`](TACHES.md).
+🚧 **À faire** : **fix streak perdue à tort, volet cookies** (persister les clés Data Protection en base — cf. piège 17 de [CLAUDE.md](../CLAUDE.md) ; le volet date de complétion est corrigé, cf. piège 18), smoke tests post-deploy, tests mobiles, polish, éventuel passage du cache Deezer sur Redis (multi-instances). Voir [`TACHES.md`](TACHES.md).
 
 ## Specs gameplay clés (rappel rapide)
 

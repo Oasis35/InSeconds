@@ -6,7 +6,7 @@
 
 ## Comment ça marche
 
-- Chaque jour à 3h UTC, un nouveau set de morceaux est sélectionné automatiquement (uniquement des morceaux avec une preview Deezer active)
+- Chaque jour à minuit UTC, un nouveau set de morceaux est sélectionné automatiquement (uniquement des morceaux avec une preview Deezer active)
 - La disponibilité des previews est re-vérifiée chaque nuit auprès de Deezer (appels par lots, respectueux du rate-limit) ; les admins peuvent aussi relancer la vérification à la demande depuis la page admin
 - Choisis combien de secondes écouter (0.5, 1, 1.5, 2, 3, 5, 10) avant de tenter artiste + titre
 - Une prolongation autorisée par morceau (palier supérieur, avec malus de score)
@@ -126,7 +126,7 @@ cd src/back
 dotnet test InSeconds.Api.IntegrationTests
 ```
 
-Nécessite Docker (Testcontainers démarre un vrai conteneur PostgreSQL). **82 tests** couvrant `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats`, `Auth/Me`, `SessionEdgeCases` (expiry paresseuse, streak, submit sur session abandonnée, UpdateListening anti-triche), `ChallengeGeneration`, `Admin/Tracks`, `Admin/Challenges`, `Admin/RefreshPreviews`.
+Nécessite Docker (Testcontainers démarre un vrai conteneur PostgreSQL). **84 tests** couvrant `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats`, `Auth/Me`, `SessionEdgeCases` (expiry paresseuse, streak — dont défi de la veille terminé après minuit UTC, submit sur session abandonnée, UpdateListening anti-triche), `ChallengeGeneration`, `Admin/Tracks`, `Admin/Challenges`, `Admin/RefreshPreviews`.
 
 ### Tests E2E (Playwright)
 

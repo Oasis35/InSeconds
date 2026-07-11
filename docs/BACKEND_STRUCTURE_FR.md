@@ -82,7 +82,7 @@ public sealed class Player
 - `IX_Players_LastSeenAt` (filtré `NOT NULL`) — requêtes `BuildPlayerBreakdown` dans `GetAdminStats`
 - `CK_Players_GuestPseudo` : invariant `IsGuest ⇔ Pseudo IS NULL` garanti en BD
 - **Global query filter EF** `!IsDeleted` propagé en cascade sur sessions/answers
-- `CurrentStreak` et `LastPlayedDate` mis à jour dans `SubmitAnswer/Handler.cs` à la complétion (parties complètes uniquement)
+- `CurrentStreak` et `LastPlayedDate` mis à jour dans `SubmitAnswer/Handler.cs` à la complétion (parties complètes uniquement) — basés sur `DailyChallenge.Date`, pas sur la date de complétion UTC : `LastPlayedDate` stocke la date du défi, streak +1 si le défi complété est celui du lendemain du dernier défi complété
 
 ### Track
 
@@ -270,8 +270,8 @@ Les deux endpoints sont publics (mappés avant `PlayerAuthMiddleware`). Logging 
 | `Admin/ResetToday` | `DELETE /api/admin/reset-today` | Supprime le défi du jour |
 | `Admin/Stats` | `GET /api/admin/stats` | Dashboard : activité 30j, répartition joueurs, stats par défi |
 | `Deezer/Search` (public) | `GET /api/deezer/search?q=` | Proxy autocomplete Deezer (contourne CORS navigateur) |
-| `ChallengeGeneration` | BackgroundService | Génère le défi quotidien à 3h UTC — filtre les tracks sans preview active |
-| `ChallengeGeneration` (refresh) | BackgroundService | `RefreshPreviewStatusService` à 2h UTC — re-vérifie `Track.HasPreview` via `PreviewStatusRefresher` (lots de 10 espacés de 1,5 s, flag jamais modifié sur un échec Deezer) |
+| `ChallengeGeneration` | BackgroundService | Génère le défi quotidien à minuit UTC (retry toutes les 10 min en cas d'échec ou de pool insuffisant) — filtre les tracks sans preview active ; planification via `DailySchedule.DelayUntilNextUtcHour` |
+| `ChallengeGeneration` (refresh) | BackgroundService | `RefreshPreviewStatusService` à 23h UTC (avant la génération de minuit) — re-vérifie `Track.HasPreview` via `PreviewStatusRefresher` (lots de 10 espacés de 1,5 s, flag jamais modifié sur un échec Deezer) |
 
 ## CI
 

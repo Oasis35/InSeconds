@@ -373,6 +373,70 @@ public sealed class SubmitAnswerHandlerTests
     }
 
     [Fact]
+    public async Task Handle_WhenCompletingYesterdaysChallengeAfterMidnight_ContinuesStreak()
+    {
+        // Arrange — piège 18 : la streak se base sur la date du défi, pas la date de complétion.
+        // Défi daté d'hier, dernier défi joué avant-hier → continuation même si on termine "aujourd'hui".
+        await using var db = CreateDbContext();
+        var yesterday = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1);
+
+        var player = BuildPlayer();
+        player.CurrentStreak  = 5;
+        player.LastPlayedDate = yesterday.AddDays(-1);
+        db.Players.Add(player);
+
+        var (challenge, _) = BuildChallengeWithTrack();
+        challenge.Date = yesterday;
+        db.DailyChallenges.Add(challenge);
+        await db.SaveChangesAsync();
+
+        db.GameSessions.Add(BuildSession());
+        await db.SaveChangesAsync();
+
+        var settings = new AppSettings { TracksPerChallenge = 1 };
+        var handler = new SubmitAnswerHandler(db, new ScoreCalculator(), new TextNormalizer(), new SettingsService(Options.Create(settings)));
+
+        // Act
+        await handler.Handle(BuildCommand(duration: 1), CancellationToken.None);
+
+        // Assert
+        var updatedPlayer = await db.Players.FindAsync(FakePlayerId);
+        updatedPlayer!.CurrentStreak.Should().Be(6);
+        updatedPlayer.LastPlayedDate.Should().Be(yesterday);
+    }
+
+    [Fact]
+    public async Task Handle_WhenGapSinceLastChallenge_ResetsStreakToOne()
+    {
+        // Arrange — dernier défi joué il y a 3 jours → la streak repart à 1
+        await using var db = CreateDbContext();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var player = BuildPlayer();
+        player.CurrentStreak  = 5;
+        player.LastPlayedDate = today.AddDays(-3);
+        db.Players.Add(player);
+
+        var (challenge, _) = BuildChallengeWithTrack();
+        db.DailyChallenges.Add(challenge);
+        await db.SaveChangesAsync();
+
+        db.GameSessions.Add(BuildSession());
+        await db.SaveChangesAsync();
+
+        var settings = new AppSettings { TracksPerChallenge = 1 };
+        var handler = new SubmitAnswerHandler(db, new ScoreCalculator(), new TextNormalizer(), new SettingsService(Options.Create(settings)));
+
+        // Act
+        await handler.Handle(BuildCommand(duration: 1), CancellationToken.None);
+
+        // Assert
+        var updatedPlayer = await db.Players.FindAsync(FakePlayerId);
+        updatedPlayer!.CurrentStreak.Should().Be(1);
+        updatedPlayer.LastPlayedDate.Should().Be(today);
+    }
+
+    [Fact]
     public async Task Handle_WhenNotLastAnswer_StatusRemainsActive()
     {
         // Arrange — TracksPerChallenge = 3 (défaut), on soumet seulement 1 réponse

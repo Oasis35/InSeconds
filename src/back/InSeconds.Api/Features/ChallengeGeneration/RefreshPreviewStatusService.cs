@@ -9,8 +9,8 @@ public sealed class RefreshPreviewStatusService(
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var delay = ComputeDelayUntilNext2AmUtc();
-            logger.LogInformation("Prochain refresh preview planifié dans {Delay:hh\\:mm\\:ss} (2h00 UTC).", delay);
+            var delay = DailySchedule.DelayUntilNextUtcHour(23);
+            logger.LogInformation("Prochain refresh preview planifié dans {Delay:hh\\:mm\\:ss} (23h00 UTC).", delay);
 
             try { await Task.Delay(delay, stoppingToken); }
             catch (OperationCanceledException) { break; }
@@ -33,13 +33,5 @@ public sealed class RefreshPreviewStatusService(
         {
             logger.LogError(ex, "Erreur lors du refresh des previews.");
         }
-    }
-
-    internal static TimeSpan ComputeDelayUntilNext2AmUtc(DateTime? utcNow = null)
-    {
-        var now = utcNow ?? DateTime.UtcNow;
-        var next = now.Date.AddHours(2);
-        if (now >= next) next = next.AddDays(1);
-        return next - now;
     }
 }

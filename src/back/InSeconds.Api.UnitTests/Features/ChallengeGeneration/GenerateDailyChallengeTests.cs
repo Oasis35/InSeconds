@@ -41,43 +41,7 @@ public sealed class GenerateDailyChallengeTests
     };
 
     // ---------------------------------------------------------------------------
-    // Groupe A — ComputeDelayUntilNext3AmUtc
-    // ---------------------------------------------------------------------------
-
-    [Fact]
-    public void ComputeDelay_At0000Utc_Returns3Hours()
-    {
-        var delay = GenerateDailyChallengeService.ComputeDelayUntilNext3AmUtc(
-            new DateTime(2026, 6, 5, 0, 0, 0, DateTimeKind.Utc));
-        delay.Should().Be(TimeSpan.FromHours(3));
-    }
-
-    [Fact]
-    public void ComputeDelay_At0259Utc_ReturnsLessThanOrEqual1Minute()
-    {
-        var delay = GenerateDailyChallengeService.ComputeDelayUntilNext3AmUtc(
-            new DateTime(2026, 6, 5, 2, 59, 0, DateTimeKind.Utc));
-        delay.Should().BeLessThanOrEqualTo(TimeSpan.FromMinutes(1));
-    }
-
-    [Fact]
-    public void ComputeDelay_At0300Utc_Returns24Hours()
-    {
-        var delay = GenerateDailyChallengeService.ComputeDelayUntilNext3AmUtc(
-            new DateTime(2026, 6, 5, 3, 0, 0, DateTimeKind.Utc));
-        delay.Should().Be(TimeSpan.FromHours(24));
-    }
-
-    [Fact]
-    public void ComputeDelay_At2359Utc_ReturnsAbout3Hours()
-    {
-        var delay = GenerateDailyChallengeService.ComputeDelayUntilNext3AmUtc(
-            new DateTime(2026, 6, 5, 23, 59, 0, DateTimeKind.Utc));
-        delay.Should().BeCloseTo(TimeSpan.FromHours(3).Add(TimeSpan.FromMinutes(1)), TimeSpan.FromSeconds(5));
-    }
-
-    // ---------------------------------------------------------------------------
-    // Groupe B — DailyChallengeGenerator.GenerateAsync
+    // Groupe A — DailyChallengeGenerator.GenerateAsync
     // ---------------------------------------------------------------------------
 
     [Fact]
