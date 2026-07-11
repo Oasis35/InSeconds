@@ -19,7 +19,7 @@
 - [x] `ScoreCalculator` (paliers `decimal`, scoring partiel, malus prolongation) + tests unitaires
 - [x] `CookieAuthService` — guest auto, cookie HttpOnly `SameSite=None` en prod
 - [x] `DeezerClient` — recherche + preview + extraction `CoverHash`
-- [x] `BackgroundService` génération défi quotidien (3h UTC)
+- [x] `BackgroundService` génération défi quotidien (minuit UTC, retry toutes les 10 min en cas d'échec — planification via `DailySchedule`)
 - [x] Slice `Sessions/StartSession` + `Sessions/SubmitAnswer` (scoring serveur + stats)
 - [x] Slice `Sessions/AbandonSession` — `PUT /api/sessions/{id}/abandon`, marque une session Pending comme abandonnée
 - [x] `SessionStatus` enum (Pending=0, Completed=1, Abandoned=2) — session comptabilisée seulement si complétée ou abandonnée
@@ -29,11 +29,11 @@
 - [x] Page admin : login Bearer, pool morceaux, création défis, reset sessions
 - [x] `ListenedDurationSeconds` / `TotalDurationSeconds` en `decimal` (paliers 0.5, 1, 1.5, 2, 3, 5, 10)
 - [x] Tests unitaires back : `TextNormalizer`, `ScoreCalculator`, `CookieAuthService`, `PlayerAuthMiddleware`, `AppSettingsBinding`, `StartSessionHandler`, `SubmitAnswerHandler`, `GenerateDailyChallengeService`, `AddTrackHandler`, `MeEndpoint`, `GetTracksHandler`, `SubmitAnswerValidator`
-- [x] Streak joueur : `Player.CurrentStreak` + `Player.LastPlayedDate`, mis à jour dans `SubmitAnswer/Handler.cs` à la complétion (parties complètes uniquement)
+- [x] Streak joueur : `Player.CurrentStreak` + `Player.LastPlayedDate`, mis à jour dans `SubmitAnswer/Handler.cs` à la complétion (parties complètes uniquement), basée sur `DailyChallenge.Date` (pas la date de complétion UTC)
 - [x] Morceaux sans preview : `SubmitAnswerValidator` accepte `ListenedDurationSeconds = 0` (skip), `BlindRoundComponent` affiche un bouton "Passer" si `previewUrl` est vide
-- [x] `Track.HasPreview` persisté en base (migration `AddTrackHasPreview`) — flag mis à jour à l'ajout/actualisation d'un track et nuitamment par `RefreshPreviewStatusService` (2h UTC)
+- [x] `Track.HasPreview` persisté en base (migration `AddTrackHasPreview`) — flag mis à jour à l'ajout/actualisation d'un track et nuitamment par `RefreshPreviewStatusService` (23h UTC)
 - [x] **Anti-cheat durée min écoutée** : `GameSession.CurrentTrackId` + `GameSession.CurrentTrackMinListenedSeconds` (migration `AddSessionAntiCheat`), slice `Sessions/UpdateListening` (`PATCH /api/sessions/{id}/listening`), appelé depuis `BlindRoundComponent` à chaque arrêt du timer ; à la reprise, `StartSession` renvoie `CurrentTrackId`/`MinListenedSeconds` et le front masque les paliers inférieurs
-- [x] `RefreshPreviewStatusService` — `BackgroundService` qui vérifie Deezer pour tous les tracks disponibles à 2h UTC et met à jour `HasPreview`
+- [x] `RefreshPreviewStatusService` — `BackgroundService` qui vérifie Deezer pour tous les tracks disponibles à 23h UTC et met à jour `HasPreview`
 - [x] Refresh previews fiabilisé : appels par lots de 10 espacés de 1,5 s (rate-limit Deezer ~50 req/5 s), détection des erreurs Deezer renvoyées en HTTP 200 (`{"error":{...}}` — quota, track supprimé), `HasPreview` jamais modifié sur un échec (`DeezerClient.ProbePreviewAsync`) — corrige les ~200 faux « sans preview » du 2026-07-06
 - [x] `POST /api/admin/refresh-previews` — relance le re-check à la demande, retourne `{ checked, updated, failed }` ; bouton « 🔄 Re-vérifier les previews » dans l'onglet Actions admin
 - [x] `DailyChallengeGenerator` filtre sur `Track.HasPreview` en DB (plus d'appel Deezer à la génération), shuffle Fisher-Yates avec seed déterministe, transaction explicite autour des deux `SaveChangesAsync`
@@ -104,7 +104,7 @@
 > Cf. pièges 17 et 18 de [CLAUDE.md](../CLAUDE.md) pour le détail.
 
 - [ ] **Persister les clés Data Protection en base** — `AddDataProtection()` sans `PersistKeysTo...` : chaque redémarrage/redéploiement Northflank régénère les clés, invalide tous les cookies joueurs et recrée des guests (streak et historique perdus). Fix : package `Microsoft.AspNetCore.DataProtection.EntityFrameworkCore` + `PersistKeysToDbContext<ApplicationDbContext>()` + entité `DataProtectionKey` + migration
-- [ ] **Baser la streak sur la date du défi** — `SubmitAnswer/Handler.cs` compare `LastPlayedDate` à `DateTime.UtcNow` au moment de la complétion : terminer le défi de la veille après minuit UTC (1h/2h du matin en France) casse la streak alors que le joueur a joué deux jours de suite. Fix : comparer sur `DailyChallenge.Date`
+- [x] **Baser la streak sur la date du défi** (corrigé le 2026-07-11) — `SubmitAnswer/Handler.cs` compare désormais `LastPlayedDate` à `DailyChallenge.Date − 1 jour` et stocke la date du défi : terminer le défi de la veille après minuit UTC ne casse plus la streak. Couvert par tests unitaires + intégration
 - [ ] (optionnel, produit) **Jour de grâce / streak freeze** — voir section Rétention
 
 ## 🚧 Mode entraînement (anciens défis)
@@ -131,7 +131,7 @@
 ## 🚧 Tests
 
 - [x] **Optimisations performance back** (2026-07-02) — `.AsNoTracking()` sur toutes les queries lecture-seule, `Select()` projections à la place de `Include().ThenInclude()` dans `StartSession/Handler.cs`, `Task.WhenAll()` dans `Stats/Today` et `GetAdminStats` (`BuildPlayerBreakdown`), migration EF `AddPerformanceIndexes` : `IX_GameSessions_PlayerStatusChallenge`, `IX_GameSessionAnswers_DailyChallengeTrackId`, `IX_Players_LastSeenAt`
-- [x] Tests d'intégration backend (Testcontainers, 82 tests) — `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (KPIs jour, AvailableDates, fix 30j, Pending→Abandoned), `Auth/Me` (soft-delete), `SessionEdgeCases` (expiry paresseuse, streak, submit sur session abandonnée, UpdateListening : store/max/reset-after-submit/returned-on-resume), `ChallengeGeneration`, `Admin/Tracks` (AddTrack, GetTracks, DeleteTrack, UpdateTrack), `Admin/Challenges` (GetChallenges, CreateChallenge, ResetToday), `Admin/RefreshPreviews` (401, compteurs seed, réparation d'un flag corrompu)
+- [x] Tests d'intégration backend (Testcontainers, 84 tests) — `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (KPIs jour, AvailableDates, fix 30j, Pending→Abandoned), `Auth/Me` (soft-delete), `SessionEdgeCases` (expiry paresseuse, streak — dont défi de la veille terminé après minuit UTC et reset après un trou, submit sur session abandonnée, UpdateListening : store/max/reset-after-submit/returned-on-resume), `ChallengeGeneration`, `Admin/Tracks` (AddTrack, GetTracks, DeleteTrack, UpdateTrack), `Admin/Challenges` (GetChallenges, CreateChallenge, ResetToday), `Admin/RefreshPreviews` (401, compteurs seed, réparation d'un flag corrompu)
 - [x] Tests unitaires frontend Karma/Jasmine (98 tests) — `App`, `GameService`, `SettingsService` (dont fallback `catchError` au boot), `LanguageService`, `GameFooterComponent` (toggle langue), `AdminHttpService` + délégation `AdminApiService`, `AdminStatsService` ; job CI `unit-tests-front` (`ChromeHeadless`)
 - [x] Tests E2E Playwright (42 scénarios : 27 jeu + 15 admin). Jeu : happy path, écran déjà joué, abandon mid-game, reprise, abandon depuis reprise, sync multi-onglets, pas de défi, partage + échec de copie presse-papier, scoring palier/mauvaise réponse/partiel, anti-cheat paliers bloqués à la reprise, confirmation de sortie (`leave-guard` : annuler/confirmer/hors-playing), bouton `✕` d'effacement (`clear-search`), footer (`footer` : toggle langue FR ↔ EN, lien confidentialité, alias `/confidentialite`). Admin : login erreur/succès/déconnexion, pool tableau+filtres texte/preview/statut, ajout morceau, suppression individuelle+annulation, actualisation morceau sans preview (modale pré-remplie), actions générer/déjà généré/reset, liste défis
 
