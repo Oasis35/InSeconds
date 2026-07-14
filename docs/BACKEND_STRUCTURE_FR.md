@@ -270,7 +270,7 @@ Les deux endpoints sont publics (mappés avant `PlayerAuthMiddleware`). Logging 
 | `Admin/ResetToday` | `DELETE /api/admin/reset-today` | Supprime le défi du jour |
 | `Admin/Stats` | `GET /api/admin/stats` | Dashboard : activité 30j, répartition joueurs, stats par défi |
 | `Deezer/Search` (public) | `GET /api/deezer/search?q=` | Proxy autocomplete Deezer (contourne CORS navigateur) |
-| `ChallengeGeneration` | BackgroundService | Génère le défi quotidien à minuit UTC (retry toutes les 10 min en cas d'échec ou de pool insuffisant) — filtre les tracks sans preview active ; planification via `DailySchedule.DelayUntilNextUtcHour` |
+| `ChallengeGeneration` | BackgroundService | Génère le défi quotidien à minuit UTC (retry toutes les 10 min en cas d'échec ou de pool insuffisant) — filtre les tracks sans preview active ; planification via `DailySchedule.NextUtcHour` + `DelayUntilAsync` (attente sur cible d'horloge murale — un réveil anticipé de `Task.Delay` ne saute plus de jour) |
 | `ChallengeGeneration` (refresh) | BackgroundService | `RefreshPreviewStatusService` à 23h UTC (avant la génération de minuit) — re-vérifie `Track.HasPreview` via `PreviewStatusRefresher` (lots de 10 espacés de 1,5 s, flag jamais modifié sur un échec Deezer) |
 
 ## CI
