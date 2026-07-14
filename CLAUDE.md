@@ -127,7 +127,7 @@ features/game/
 ├── blind-round/                   # choix palier + lecture + saisie + polish UX
 ├── components/
 │   ├── game-header/               # titre + streak + score + barre progression + abandon
-│   └── game-footer/               # liens admin/github/linkedin/confidentialité + sélecteur de langue FR/EN
+│   └── game-footer/               # liens admin/github/confidentialité + sélecteur de langue FR/EN
 └── screens/
     ├── welcome-screen/
     ├── resume-screen/
