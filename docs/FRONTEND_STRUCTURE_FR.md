@@ -262,12 +262,12 @@ Page confidentialité (`features/privacy/`), route lazy `/privacy` + alias `/con
 
 ### `AdminComponent`
 
-Shell ~45 lignes. Fournit les 6 services via `providers: [AdminHttpService, AdminStateService, AdminApiService, AdminStatsService, AdminPoolService, AdminActionsService]` au niveau du composant (pas `root`). Délègue à 7 sous-composants :
+Shell ~45 lignes. Fournit les 6 services via `providers: [AdminHttpService, AdminStateService, AdminApiService, AdminStatsService, AdminPoolService, AdminActionsService]` au niveau du composant (pas `root`). Ordre des onglets : **Dashboard, Défis, Pool, Actions**. Délègue à 7 sous-composants :
 
 - **`AdminLoginComponent`** : formulaire login, `loginStatus` signal local
-- **`DashboardTabComponent`** : injecte `AdminStatsService`
-- **`PoolTabComponent`** : injecte `AdminPoolService`, contient `AddTrackModalComponent` + `DeleteTrackModalComponent`
-- **`ChallengesTabComponent`** : injecte `AdminStatsService`
+- **`DashboardTabComponent`** : injecte `AdminStatsService` — sélecteur de jour + KPIs, activité 30 jours, répartition joueurs
+- **`PoolTabComponent`** : injecte `AdminPoolService`, contient `AddTrackModalComponent` + `DeleteTrackModalComponent` ; affiche l'**autonomie du pool** (« X jours de défis restants ») en ligne à côté du compteur disponible/utilisé
+- **`ChallengesTabComponent`** : injecte `AdminStatsService` — **stats par défi** (accordéon médiane/min/max, taux artiste/titre par morceau) + historique des défis, avec un navigateur ‹ Mois Année › unique en haut de l'onglet
 - **`ActionsTabComponent`** : injecte `AdminActionsService`
 - **`AddTrackModalComponent`** : injecte `AdminPoolService`
 - **`DeleteTrackModalComponent`** : injecte `AdminPoolService`
@@ -276,8 +276,8 @@ Services admin (`features/admin/services/`) :
 - `AdminHttpService` — HTTP brut + signal `authenticated` + `login`/`logout`/`checkAuth`
 - `AdminStateService` — signals partagés (`selectedDay`, `poolSearchQuery`, `poolReloadTrigger`, `challengesReloadTrigger`)
 - `AdminApiService` — rxResource (pool/stats/challenges/search) + computed accessors ; délègue HTTP à `AdminHttpService`, état à `AdminStateService`
-- `AdminStatsService` — état dashboard (navigation, formatage dates)
-- `AdminPoolService` — filtres, pagination, sélection multiple, état modales add/delete, lecteur preview
+- `AdminStatsService` — état dashboard + onglet Défis (navigation jour/mois, formatage dates, accordéon stats par défi)
+- `AdminPoolService` — filtres, pagination, sélection multiple, état modales add/delete, lecteur preview ; computed `poolDaysRemaining` = `floor(disponibles avec preview ÷ tracksPerChallenge)` (mêmes critères que `DailyChallengeGenerator`, calculé depuis `poolTracks` déjà chargé + signal `tracksPerChallenge` du `SettingsService` — aucun appel serveur), rouge < 3 jours, orange < 7, vert sinon
 - `AdminActionsService` — `generateToday()`, `reset()`, `refreshPreviews()` (re-check des previews Deezer : affiche « X vérifiés, Y corrigés, Z échecs » puis recharge le pool)
 
 ## Intercepteurs

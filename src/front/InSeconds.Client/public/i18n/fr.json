@@ -207,6 +207,8 @@
       "avgListen": "Écoute moy."
     },
     "pool": {
+      "runwayDay": "jour de défis restant",
+      "runwayDays": "jours de défis restants",
       "selected": "{{ count }} sélectionné(s)",
       "deselectAll": "Tout déselectionner",
       "delete": "Supprimer ({{ count }})",

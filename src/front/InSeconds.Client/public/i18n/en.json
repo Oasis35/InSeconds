@@ -207,6 +207,8 @@
       "avgListen": "Avg. listen"
     },
     "pool": {
+      "runwayDay": "day of challenges left",
+      "runwayDays": "days of challenges left",
       "selected": "{{ count }} selected",
       "deselectAll": "Deselect all",
       "delete": "Delete ({{ count }})",

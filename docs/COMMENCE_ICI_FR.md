@@ -64,7 +64,9 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - `Track.CoverHash` + `AppSettings.CoverUrlTemplate` (URL reconstruite à la volée)
 - Page admin (`/admin`) — login, pool (sous-onglets + indicateur preview + popup ajout avec lecteur), défis, stats dashboard, reset sessions
 - Auth admin via Bearer token + `adminAuthInterceptor` Angular
-- `BackgroundService` génération défi quotidien automatique (à minuit UTC, retry toutes les 10 min en cas d'échec) — filtre sur `Track.HasPreview` en DB, Fisher-Yates, transaction ; planification via le helper partagé `DailySchedule`
+- `BackgroundService` génération défi quotidien automatique (à minuit UTC, retry toutes les 10 min en cas d'échec) — filtre sur `Track.HasPreview` en DB, Fisher-Yates, transaction ; planification via `DailySchedule.NextUtcHour` + `DelayUntilAsync` (attente sur cible d'horloge murale : un réveil anticipé de `Task.Delay` ne saute plus de jour, cf. piège 19)
+- **Génération paresseuse dans `StartSession`** — si le défi du jour manque (job de minuit raté), le premier joueur le régénère à la volée (sélection déterministe seed = `DayNumber`, course gérée par la contrainte unique sur `Date`) ; le 503 « pas de défi » ne subsiste que si le pool est insuffisant
+- **Clés Data Protection persistées en base** (`PersistKeysToDbContext`, table `DataProtectionKeys`) — les cookies joueurs survivent aux redémarrages/redéploiements Northflank (piège 17 résolu)
 - `BackgroundService` refresh preview (à 23h UTC, avant la génération de minuit) — vérifie Deezer pour tous les tracks disponibles par lots (rate-limit safe), met à jour `Track.HasPreview` uniquement sur réponse Deezer déterminée (jamais sur un échec quota/panne) ; relançable à la demande via `POST /api/admin/refresh-previews` (bouton « 🔄 Re-vérifier les previews » dans l'onglet Actions admin)
 - Frontend complet (Angular 22 + Tailwind v4 + SCSS) — UI jeu jouable
 - NSwag : `ApiClient` généré depuis l'OpenAPI back, `api.generated.ts` commité, types synchronisés automatiquement
@@ -90,17 +92,17 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - Synchronisation multi-onglets via `visibilitychange` — si la partie est terminée dans un autre onglet, le front bascule en `already_played` au retour au premier plan
 - **Anti-cheat durée min écoutée** : `GameSession.CurrentTrackId` + `GameSession.CurrentTrackMinListenedSeconds` (migration `AddSessionAntiCheat`). Slice `Sessions/UpdateListening` (`PATCH /api/sessions/{id}/listening`) — enregistre la durée max par track à chaque arrêt du timer. À la reprise, les paliers déjà écoutés sont masqués dans `BlindRoundComponent` (computed `durations()` filtre sur `minListenedSeconds`).
 - Pool admin redesigné en tableau paginé (15 lignes/page) avec filtres combinables (texte, statut, preview), onglet "Actions" dédié, modale "↻ Actualiser" pré-remplie pour morceaux sans preview — indicateur preview lu depuis `Track.HasPreview` en DB (stable, plus d'appel Deezer temps réel)
-- Dashboard admin : KPI tiles par jour, sélecteur de jour ← →, barres 30j cliquables avec jours vides à zéro
-- Tests E2E Playwright (42 scénarios : 27 jeu + 15 admin, CI GitHub Actions)
-- Tests d'intégration backend (`InSeconds.Api.IntegrationTests`) — Testcontainers.PostgreSql + `WebApplicationFactory<Program>` + Respawn, 84 tests couvrant StartSession, SubmitAnswer, AbandonSession, Stats, AdminStats, SessionEdgeCases (dont UpdateListening et streak sur la date du défi), ChallengeGeneration, Admin/Tracks, Admin/Challenges, Admin/RefreshPreviews, job CI dédié `integration-tests`
+- Dashboard admin : KPI tiles par jour, sélecteur de jour ← →, barres 30j cliquables avec jours vides à zéro ; stats par défi + historique regroupés dans l'onglet Défis (navigateur de mois unique) ; autonomie du pool (« X jours de défis restants ») affichée dans l'onglet Pool ; ordre des onglets : Dashboard, Défis, Pool, Actions
+- Tests E2E Playwright (43 scénarios : 28 jeu + 15 admin, CI GitHub Actions)
+- Tests d'intégration backend (`InSeconds.Api.IntegrationTests`) — Testcontainers.PostgreSql + `WebApplicationFactory<Program>` + Respawn, 87 tests couvrant StartSession, SubmitAnswer, AbandonSession, Stats, AdminStats, SessionEdgeCases (dont UpdateListening et streak sur la date du défi), ChallengeGeneration, LazyChallengeGeneration (régénération à la volée + 503 si pool insuffisant), Admin/Tracks, Admin/Challenges, Admin/RefreshPreviews, HealthCheck (dont date de build), job CI dédié `integration-tests`
 - **i18n FR/EN** — ngx-translate v18, `LanguageService`, fichiers `public/i18n/{fr,en}.json` ; sélecteur de langue dans le footer (globe monochrome + code FR/EN, persist localStorage)
 - **Page confidentialité** — `PrivacyComponent` (`features/privacy/`), routes `/privacy` + `/confidentialite`, lien dans le footer
 - **Refacto frontend** — `game.component` découpé en header + footer + 5 screens + `GameFacadeService` + `DeezerAutocompleteService` (`features/game/services/`) ; `admin.component` en shell + 6 services (`AdminHttpService`, `AdminStateService`, `AdminApiService`, `AdminStatsService`, `AdminPoolService`, `AdminActionsService`) + 7 sous-composants ; palette CSS centralisée en variables `:root` ; `ShareButtonComponent` réutilisable
-- **Tests unitaires frontend** — 98 tests Karma/Jasmine (`GameService`, `SettingsService`, `LanguageService`, `GameFooterComponent`, `AdminHttpService`, `AdminStatsService`) ; job CI `unit-tests-front` (`ChromeHeadless`)
+- **Tests unitaires frontend** — 101 tests Karma/Jasmine (`GameService`, `SettingsService`, `LanguageService`, `GameFooterComponent`, `AdminHttpService`, `AdminStatsService`, `AdminPoolService` avec l'autonomie du pool) ; job CI `unit-tests-front` (`ChromeHeadless`)
 
 - **Cache Deezer** — `CachedDeezerClient` (`IMemoryCache`) : preview URLs (TTL borné par l'expiration de la signature CDN, sinon 403 à la lecture) + recherches autocomplete (1h)
 
-🚧 **À faire** : **fix streak perdue à tort, volet cookies** (persister les clés Data Protection en base — cf. piège 17 de [CLAUDE.md](../CLAUDE.md) ; le volet date de complétion est corrigé, cf. piège 18), smoke tests post-deploy, tests mobiles, polish, éventuel passage du cache Deezer sur Redis (multi-instances). Voir [`TACHES.md`](TACHES.md).
+🚧 **À faire** : smoke tests post-deploy, tests mobiles, polish, éventuel passage du cache Deezer sur Redis (multi-instances). Voir [`TACHES.md`](TACHES.md).
 
 ## Specs gameplay clés (rappel rapide)
 

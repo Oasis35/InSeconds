@@ -1,5 +1,6 @@
 import { Injectable, inject, signal, computed, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { SettingsService } from '../../../core/services/settings.service';
 import { AdminApiService } from './admin-api.service';
 import { DeezerTrackInfo, PoolTrackDto } from '../admin.models';
 
@@ -7,6 +8,7 @@ import { DeezerTrackInfo, PoolTrackDto } from '../admin.models';
 @Injectable()
 export class AdminPoolService {
   private readonly api = inject(AdminApiService);
+  private readonly settings = inject(SettingsService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly poolTracks = this.api.poolTracks;
@@ -58,6 +60,21 @@ export class AdminPoolService {
       return true;
     });
   });
+
+  // Autonomie du pool : mêmes critères que DailyChallengeGenerator côté back
+  // (jamais utilisé + preview active), calculée depuis les données déjà chargées
+  // — pas d'appel serveur supplémentaire.
+  readonly poolAvailableWithPreview = computed(() =>
+    this.poolTracks().available.filter(t => t.hasPreview !== false).length);
+
+  readonly poolDaysRemaining = computed(() =>
+    Math.floor(this.poolAvailableWithPreview() / Math.max(1, this.settings.tracksPerChallenge())));
+
+  poolDaysColor(days: number): string {
+    if (days < 3) return 'text-red-400';
+    if (days < 7) return 'text-orange-400';
+    return 'text-green-400';
+  }
 
   readonly allTotalPages = computed(() =>
     Math.max(1, Math.ceil(this.filteredTracks().length / this.poolPageSize)));

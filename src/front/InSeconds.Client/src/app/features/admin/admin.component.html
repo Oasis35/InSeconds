@@ -18,17 +18,17 @@
           : 'flex-1 py-2 rounded-md text-sm font-medium text-gray-400 hover:text-white transition-colors'">
         {{ 'admin.tabs.dashboard' | translate }}
       </button>
-      <button (click)="activeTab.set('pool')"
-        [class]="activeTab() === 'pool'
-          ? 'flex-1 py-2 rounded-md text-sm font-medium bg-gray-700 text-white transition-colors'
-          : 'flex-1 py-2 rounded-md text-sm font-medium text-gray-400 hover:text-white transition-colors'">
-        {{ 'admin.tabs.pool' | translate: { count: pool.poolTracks().available.length + pool.poolTracks().used.length } }}
-      </button>
       <button (click)="activeTab.set('defis')"
         [class]="activeTab() === 'defis'
           ? 'flex-1 py-2 rounded-md text-sm font-medium bg-gray-700 text-white transition-colors'
           : 'flex-1 py-2 rounded-md text-sm font-medium text-gray-400 hover:text-white transition-colors'">
         {{ 'admin.tabs.challenges' | translate: { count: stats.challenges().length } }}
+      </button>
+      <button (click)="activeTab.set('pool')"
+        [class]="activeTab() === 'pool'
+          ? 'flex-1 py-2 rounded-md text-sm font-medium bg-gray-700 text-white transition-colors'
+          : 'flex-1 py-2 rounded-md text-sm font-medium text-gray-400 hover:text-white transition-colors'">
+        {{ 'admin.tabs.pool' | translate: { count: pool.poolTracks().available.length + pool.poolTracks().used.length } }}
       </button>
       <button (click)="activeTab.set('actions')"
         [class]="activeTab() === 'actions'
