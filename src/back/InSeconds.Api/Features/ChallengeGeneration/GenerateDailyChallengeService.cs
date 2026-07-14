@@ -13,19 +13,19 @@ public sealed class GenerateDailyChallengeService(
         {
             var succeeded = await TryGenerateAsync(stoppingToken);
 
-            TimeSpan delay;
+            DateTime target;
             if (succeeded)
             {
-                delay = DailySchedule.DelayUntilNextUtcHour(0);
-                logger.LogInformation("Prochain défi planifié dans {Delay:hh\\:mm\\:ss} (0h00 UTC).", delay);
+                target = DailySchedule.NextUtcHour(0);
+                logger.LogInformation("Prochain défi planifié dans {Delay:hh\\:mm\\:ss} (0h00 UTC).", target - DateTime.UtcNow);
             }
             else
             {
-                delay = RetryDelay;
-                logger.LogWarning("Génération échouée, nouvelle tentative dans {Delay:mm} min.", delay);
+                target = DateTime.UtcNow + RetryDelay;
+                logger.LogWarning("Génération échouée, nouvelle tentative dans {Delay:mm} min.", RetryDelay);
             }
 
-            try { await Task.Delay(delay, stoppingToken); }
+            try { await DailySchedule.DelayUntilAsync(target, stoppingToken); }
             catch (OperationCanceledException) { break; }
         }
     }

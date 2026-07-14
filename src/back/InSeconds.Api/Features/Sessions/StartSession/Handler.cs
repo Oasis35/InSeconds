@@ -1,12 +1,18 @@
 using InSeconds.Api.Common.Settings;
 using InSeconds.Api.Domain;
+using InSeconds.Api.Features.ChallengeGeneration;
 using InSeconds.Api.Infrastructure.Deezer;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace InSeconds.Api.Features.Sessions.StartSession;
 
-public sealed class StartSessionHandler(ApplicationDbContext db, CachedDeezerClient deezer, SettingsService settingsService)
+public sealed class StartSessionHandler(
+    ApplicationDbContext db,
+    CachedDeezerClient deezer,
+    SettingsService settingsService,
+    DailyChallengeGenerator challengeGenerator,
+    ILogger<StartSessionHandler> logger)
 {
     public async Task<IResult> Handle(StartSessionCommand command, CancellationToken cancellationToken)
     {
@@ -25,24 +31,8 @@ public sealed class StartSessionHandler(ApplicationDbContext db, CachedDeezerCli
             expired.AbandonedAt = DateTime.UtcNow;
         }
 
-        var challenge = await db.DailyChallenges
-            .AsNoTracking()
-            .Where(c => c.Date == today)
-            .Select(c => new
-            {
-                c.Id,
-                Tracks = c.Tracks.Select(t => new
-                {
-                    t.Id,
-                    t.Position,
-                    Track = new
-                    {
-                        t.Track.DeezerTrackId,
-                        t.Track.CoverHash,
-                    }
-                }).ToList()
-            })
-            .FirstOrDefaultAsync(cancellationToken);
+        var challenge = await LoadTodayChallengeAsync(today, cancellationToken)
+                        ?? await TryLazyGenerateAsync(today, cancellationToken);
 
         if (challenge is null)
         {
@@ -99,15 +89,15 @@ public sealed class StartSessionHandler(ApplicationDbContext db, CachedDeezerCli
             var appSettingsResume = await settingsService.GetAsync(cancellationToken);
             var orderedTracksResume = challenge.Tracks.OrderBy(t => t.Position).ToList();
             var previewUrlsResume = await Task.WhenAll(
-                orderedTracksResume.Select(t => deezer.GetPreviewUrlAsync(t.Track.DeezerTrackId, cancellationToken)));
+                orderedTracksResume.Select(t => deezer.GetPreviewUrlAsync(t.DeezerTrackId, cancellationToken)));
 
             var tracksResume = orderedTracksResume
                 .Select((t, i) => new TrackSlot(
                     Id:            t.Id,
                     Position:      t.Position,
                     PreviewUrl:    previewUrlsResume[i] ?? string.Empty,
-                    CoverUrl:      t.Track.CoverHash is not null ? appSettingsResume.BuildCoverUrl(t.Track.CoverHash) : null,
-                    DeezerTrackId: t.Track.DeezerTrackId))
+                    CoverUrl:      t.CoverHash is not null ? appSettingsResume.BuildCoverUrl(t.CoverHash) : null,
+                    DeezerTrackId: t.DeezerTrackId))
                 .ToList();
 
             var answeredPositions = existingSession.Answers
@@ -164,7 +154,7 @@ public sealed class StartSessionHandler(ApplicationDbContext db, CachedDeezerCli
 
         var orderedTracks = challenge.Tracks.OrderBy(t => t.Position).ToList();
         var previewUrls = await Task.WhenAll(
-            orderedTracks.Select(t => deezer.GetPreviewUrlAsync(t.Track.DeezerTrackId, cancellationToken)));
+            orderedTracks.Select(t => deezer.GetPreviewUrlAsync(t.DeezerTrackId, cancellationToken)));
 
         var appSettings = await settingsService.GetAsync(cancellationToken);
 
@@ -173,8 +163,8 @@ public sealed class StartSessionHandler(ApplicationDbContext db, CachedDeezerCli
                 Id:            t.Id,
                 Position:      t.Position,
                 PreviewUrl:    previewUrls[i] ?? string.Empty,
-                CoverUrl:      t.Track.CoverHash is not null ? appSettings.BuildCoverUrl(t.Track.CoverHash) : null,
-                DeezerTrackId: t.Track.DeezerTrackId))
+                CoverUrl:      t.CoverHash is not null ? appSettings.BuildCoverUrl(t.CoverHash) : null,
+                DeezerTrackId: t.DeezerTrackId))
             .ToList();
 
         return Results.Ok(new StartSessionResponse(
@@ -185,4 +175,47 @@ public sealed class StartSessionHandler(ApplicationDbContext db, CachedDeezerCli
             ResumeFromPosition: 0,
             CompletedAnswers:   []));
     }
+
+    private Task<ChallengeProjection?> LoadTodayChallengeAsync(DateOnly today, CancellationToken ct)
+        => db.DailyChallenges
+            .AsNoTracking()
+            .Where(c => c.Date == today)
+            .Select(c => new ChallengeProjection(
+                c.Id,
+                c.Tracks.Select(t => new ChallengeTrackProjection(
+                    t.Id,
+                    t.Position,
+                    t.Track.DeezerTrackId,
+                    t.Track.CoverHash)).ToList()))
+            .FirstOrDefaultAsync(ct);
+
+    // Filet de sécurité : si le job de minuit a raté (cf. piège 19 — réveil anticipé,
+    // crash, redéploiement…), le premier joueur qui arrive régénère le défi du jour.
+    // La sélection est déterministe (seed = today.DayNumber), donc identique à celle
+    // que le scheduler aurait produite.
+    private async Task<ChallengeProjection?> TryLazyGenerateAsync(DateOnly today, CancellationToken ct)
+    {
+        try
+        {
+            logger.LogWarning("Aucun défi pour le {Date} au moment du StartSession — génération paresseuse.", today);
+            var result = await challengeGenerator.GenerateAsync(ct);
+            if (result == GenerateResult.PoolInsufficient)
+                return null;
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            // Course possible avec le scheduler ou un autre joueur (contrainte unique
+            // sur Date) : on repart d'un contexte propre et on relit — si le défi vient
+            // d'être créé par quelqu'un d'autre, la relecture le trouve. Les sessions
+            // expirées non sauvées seront re-expirées au prochain StartSession.
+            db.ChangeTracker.Clear();
+            logger.LogError(ex, "Échec de la génération paresseuse du défi du {Date}.", today);
+        }
+
+        return await LoadTodayChallengeAsync(today, ct);
+    }
+
+    private sealed record ChallengeTrackProjection(int Id, int Position, long DeezerTrackId, string? CoverHash);
+    private sealed record ChallengeProjection(int Id, List<ChallengeTrackProjection> Tracks);
 }

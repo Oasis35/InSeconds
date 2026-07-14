@@ -224,6 +224,8 @@ public sealed class SettingsService(IOptions<AppSettings> options)
 
 Résout ou crée un `Player` guest à partir du cookie HTTP-only signé. `SameSite=None; Secure=true` en prod (cross-origin Northflank).
 
+**Clés Data Protection persistées en base** : le cookie est chiffré avec les clés ASP.NET Data Protection ; elles sont stockées dans la table `DataProtectionKeys` via `PersistKeysToDbContext<ApplicationDbContext>()` (package `Microsoft.AspNetCore.DataProtection.EntityFrameworkCore`, migration `PersistDataProtectionKeys`). Sans cette persistance, chaque redémarrage/redéploiement Northflank régénérait les clés et invalidait tous les cookies joueurs (streaks et historiques perdus).
+
 ### DeezerClient
 
 `GetPreviewUrlAsync(trackId)` + `ProbePreviewAsync(trackId)` + `GetTrackInfoAsync(trackId)` + `SearchTracksAsync(query)`. Extrait le `CoverHash` depuis l'URL Deezer via `ExtractCoverHash()`.
@@ -244,7 +246,7 @@ Cache `IMemoryCache` devant `DeezerClient` pour les données partagées entre jo
 
 ## Observabilité
 
-- `GET /health` — liveness. `MapGet` simple renvoyant `{ status, utc }` (JSON). **Format consommé par le badge d'état backend du front** (`app.ts`) : ne pas le changer sans adapter le front.
+- `GET /health` — liveness. `MapGet` simple renvoyant `{ status, utc, build }` (JSON). **Format consommé par le badge d'état backend du front** (`app.ts`) : ne pas changer les champs existants sans adapter le front (en ajouter est OK). `build` = date UTC de compilation (attribut `AssemblyMetadata BuildUtc` stampé dans le csproj) — identifie la version déployée en un `curl`.
 - `GET /health/ready` — readiness, `MapHealthChecks` qui sonde la base via `AddDbContextCheck<ApplicationDbContext>` (tag `ready`, renvoie le texte `Healthy`/`Unhealthy`). Northflank peut le sonder pour des redémarrages propres.
 
 Les deux endpoints sont publics (mappés avant `PlayerAuthMiddleware`). Logging structuré (`ILogger`) dans `DeezerClient` et les `BackgroundService` de génération/refresh.
@@ -253,7 +255,7 @@ Les deux endpoints sont publics (mappés avant `PlayerAuthMiddleware`). Logging 
 
 | Slice | Endpoint | Rôle |
 |-------|----------|------|
-| `Sessions/StartSession` | `POST /api/sessions` | Crée session Pending ou retourne reprise si Pending existante |
+| `Sessions/StartSession` | `POST /api/sessions` | Crée session Pending ou retourne reprise si Pending existante ; régénère le défi du jour à la volée s'il manque (filet de sécurité, 503 seulement si pool insuffisant) |
 | `Sessions/SubmitAnswer` | `POST /api/sessions/{id}/answers` | Scoring serveur + stats + complétion auto |
 | `Sessions/AbandonSession` | `PUT /api/sessions/{id}/abandon` | Marque une session Pending comme abandonnée |
 | `Stats/Today` | `GET /api/stats/today` | Score joueur, médiane, stats par morceau. `TrackStat` inclut `ArtistCorrect`/`TitleCorrect`/`ListenedDurationSeconds` (nullable — remplis seulement si le joueur a une session `Completed`) |
@@ -270,7 +272,7 @@ Les deux endpoints sont publics (mappés avant `PlayerAuthMiddleware`). Logging 
 | `Admin/ResetToday` | `DELETE /api/admin/reset-today` | Supprime le défi du jour |
 | `Admin/Stats` | `GET /api/admin/stats` | Dashboard : activité 30j, répartition joueurs, stats par défi |
 | `Deezer/Search` (public) | `GET /api/deezer/search?q=` | Proxy autocomplete Deezer (contourne CORS navigateur) |
-| `ChallengeGeneration` | BackgroundService | Génère le défi quotidien à minuit UTC (retry toutes les 10 min en cas d'échec ou de pool insuffisant) — filtre les tracks sans preview active ; planification via `DailySchedule.DelayUntilNextUtcHour` |
+| `ChallengeGeneration` | BackgroundService | Génère le défi quotidien à minuit UTC (retry toutes les 10 min en cas d'échec ou de pool insuffisant) — filtre les tracks sans preview active ; planification via `DailySchedule.NextUtcHour` + `DelayUntilAsync` (attente sur cible d'horloge murale — un réveil anticipé de `Task.Delay` ne saute plus de jour) |
 | `ChallengeGeneration` (refresh) | BackgroundService | `RefreshPreviewStatusService` à 23h UTC (avant la génération de minuit) — re-vérifie `Track.HasPreview` via `PreviewStatusRefresher` (lots de 10 espacés de 1,5 s, flag jamais modifié sur un échec Deezer) |
 
 ## CI

@@ -81,4 +81,53 @@ public sealed class DailyScheduleTests
             new DateTime(2026, 6, 5, 23, 30, 0, DateTimeKind.Utc));
         delay.Should().Be(TimeSpan.FromHours(23.5));
     }
+
+    // -----------------------------------------------------------------------
+    // NextUtcHour (cible d'horloge murale)
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void NextUtcHour_JustBeforeMidnight_ReturnsUpcomingMidnight()
+    {
+        var next = DailySchedule.NextUtcHour(0,
+            new DateTime(2026, 7, 12, 23, 59, 59, 900, DateTimeKind.Utc));
+        next.Should().Be(new DateTime(2026, 7, 13, 0, 0, 0, DateTimeKind.Utc));
+    }
+
+    [Fact]
+    public void NextUtcHour_ExactlyAtTargetHour_ReturnsNextDay()
+    {
+        var next = DailySchedule.NextUtcHour(0,
+            new DateTime(2026, 7, 13, 0, 0, 0, DateTimeKind.Utc));
+        next.Should().Be(new DateTime(2026, 7, 14, 0, 0, 0, DateTimeKind.Utc));
+    }
+
+    // -----------------------------------------------------------------------
+    // DelayUntilAsync (garde anti-dérive : ne rend la main qu'une fois
+    // l'horloge murale arrivée sur la cible)
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public async Task DelayUntilAsync_TargetInPast_CompletesImmediately()
+    {
+        var target = DateTime.UtcNow.AddSeconds(-5);
+        await DailySchedule.DelayUntilAsync(target, CancellationToken.None);
+        // Pas de blocage : la cible est déjà passée.
+    }
+
+    [Fact]
+    public async Task DelayUntilAsync_ShortTarget_WaitsUntilWallClockReachesTarget()
+    {
+        var target = DateTime.UtcNow.AddMilliseconds(150);
+        await DailySchedule.DelayUntilAsync(target, CancellationToken.None);
+        DateTime.UtcNow.Should().BeOnOrAfter(target);
+    }
+
+    [Fact]
+    public async Task DelayUntilAsync_Cancelled_ThrowsOperationCanceled()
+    {
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
+        var act = () => DailySchedule.DelayUntilAsync(DateTime.UtcNow.AddHours(1), cts.Token);
+        await act.Should().ThrowAsync<OperationCanceledException>();
+    }
 }

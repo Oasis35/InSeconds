@@ -19,7 +19,11 @@
 - [x] `ScoreCalculator` (paliers `decimal`, scoring partiel, malus prolongation) + tests unitaires
 - [x] `CookieAuthService` — guest auto, cookie HttpOnly `SameSite=None` en prod
 - [x] `DeezerClient` — recherche + preview + extraction `CoverHash`
-- [x] `BackgroundService` génération défi quotidien (minuit UTC, retry toutes les 10 min en cas d'échec — planification via `DailySchedule`)
+- [x] `BackgroundService` génération défi quotidien (minuit UTC, retry toutes les 10 min en cas d'échec — planification via `DailySchedule.NextUtcHour` + `DelayUntilAsync`, attente sur cible d'horloge murale : un réveil anticipé de `Task.Delay` ne saute plus de jour, incident du 2026-07-13 / piège 19)
+- [x] **Génération paresseuse dans `StartSession`** (2026-07-14) — si le défi du jour manque, le premier joueur le régénère à la volée (sélection déterministe, course gérée par la contrainte unique sur `Date`) ; 503 « pas de défi » seulement si pool insuffisant. Reset E2E : paramètre `emptyPool=true`
+- [x] **Date de build dans `GET /health`** (2026-07-14) — champ `build` (AssemblyMetadata `BuildUtc`) pour identifier la version déployée
+- [x] **Autonomie du pool dans l'onglet Pool admin** (2026-07-14) — « X jours de défis restants » calculé côté front (`AdminPoolService`), rouge < 3 j, orange < 7 j
+- [x] **Onglet Défis regroupe stats par défi + historique** (2026-07-14) — carte « Stats par défi » déplacée du Dashboard, navigateur de mois unique ; ordre des onglets : Dashboard, Défis, Pool, Actions
 - [x] Slice `Sessions/StartSession` + `Sessions/SubmitAnswer` (scoring serveur + stats)
 - [x] Slice `Sessions/AbandonSession` — `PUT /api/sessions/{id}/abandon`, marque une session Pending comme abandonnée
 - [x] `SessionStatus` enum (Pending=0, Completed=1, Abandoned=2) — session comptabilisée seulement si complétée ou abandonnée
@@ -99,11 +103,11 @@
 - [x] CI/CD auto sur push `main`
 - [x] Secrets prod via Northflank (`AdminPassword`, connection string)
 
-## 🚧 Bugs connus — streak perdue à tort (diagnostiqués le 2026-07-08)
+## ✅ Bugs streak perdue à tort (diagnostiqués le 2026-07-08, corrigés les 2026-07-11 et 2026-07-14)
 
 > Cf. pièges 17 et 18 de [CLAUDE.md](../CLAUDE.md) pour le détail.
 
-- [ ] **Persister les clés Data Protection en base** — `AddDataProtection()` sans `PersistKeysTo...` : chaque redémarrage/redéploiement Northflank régénère les clés, invalide tous les cookies joueurs et recrée des guests (streak et historique perdus). Fix : package `Microsoft.AspNetCore.DataProtection.EntityFrameworkCore` + `PersistKeysToDbContext<ApplicationDbContext>()` + entité `DataProtectionKey` + migration
+- [x] **Persister les clés Data Protection en base** (corrigé le 2026-07-14) — package `Microsoft.AspNetCore.DataProtection.EntityFrameworkCore`, `PersistKeysToDbContext<ApplicationDbContext>()`, table `DataProtectionKeys` (migration `PersistDataProtectionKeys`) : les cookies joueurs survivent aux redémarrages/redéploiements Northflank. Note : une dernière invalidation des cookies a lieu au premier déploiement du fix (anciennes clés perdues avec le conteneur)
 - [x] **Baser la streak sur la date du défi** (corrigé le 2026-07-11) — `SubmitAnswer/Handler.cs` compare désormais `LastPlayedDate` à `DailyChallenge.Date − 1 jour` et stocke la date du défi : terminer le défi de la veille après minuit UTC ne casse plus la streak. Couvert par tests unitaires + intégration
 - [ ] (optionnel, produit) **Jour de grâce / streak freeze** — voir section Rétention
 
@@ -131,9 +135,9 @@
 ## 🚧 Tests
 
 - [x] **Optimisations performance back** (2026-07-02) — `.AsNoTracking()` sur toutes les queries lecture-seule, `Select()` projections à la place de `Include().ThenInclude()` dans `StartSession/Handler.cs`, `Task.WhenAll()` dans `Stats/Today` et `GetAdminStats` (`BuildPlayerBreakdown`), migration EF `AddPerformanceIndexes` : `IX_GameSessions_PlayerStatusChallenge`, `IX_GameSessionAnswers_DailyChallengeTrackId`, `IX_Players_LastSeenAt`
-- [x] Tests d'intégration backend (Testcontainers, 84 tests) — `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (KPIs jour, AvailableDates, fix 30j, Pending→Abandoned), `Auth/Me` (soft-delete), `SessionEdgeCases` (expiry paresseuse, streak — dont défi de la veille terminé après minuit UTC et reset après un trou, submit sur session abandonnée, UpdateListening : store/max/reset-after-submit/returned-on-resume), `ChallengeGeneration`, `Admin/Tracks` (AddTrack, GetTracks, DeleteTrack, UpdateTrack), `Admin/Challenges` (GetChallenges, CreateChallenge, ResetToday), `Admin/RefreshPreviews` (401, compteurs seed, réparation d'un flag corrompu)
-- [x] Tests unitaires frontend Karma/Jasmine (98 tests) — `App`, `GameService`, `SettingsService` (dont fallback `catchError` au boot), `LanguageService`, `GameFooterComponent` (toggle langue), `AdminHttpService` + délégation `AdminApiService`, `AdminStatsService` ; job CI `unit-tests-front` (`ChromeHeadless`)
-- [x] Tests E2E Playwright (42 scénarios : 27 jeu + 15 admin). Jeu : happy path, écran déjà joué, abandon mid-game, reprise, abandon depuis reprise, sync multi-onglets, pas de défi, partage + échec de copie presse-papier, scoring palier/mauvaise réponse/partiel, anti-cheat paliers bloqués à la reprise, confirmation de sortie (`leave-guard` : annuler/confirmer/hors-playing), bouton `✕` d'effacement (`clear-search`), footer (`footer` : toggle langue FR ↔ EN, lien confidentialité, alias `/confidentialite`). Admin : login erreur/succès/déconnexion, pool tableau+filtres texte/preview/statut, ajout morceau, suppression individuelle+annulation, actualisation morceau sans preview (modale pré-remplie), actions générer/déjà généré/reset, liste défis
+- [x] Tests d'intégration backend (Testcontainers, 87 tests) — `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (KPIs jour, AvailableDates, fix 30j, Pending→Abandoned), `Auth/Me` (soft-delete), `SessionEdgeCases` (expiry paresseuse, streak — dont défi de la veille terminé après minuit UTC et reset après un trou, submit sur session abandonnée, UpdateListening : store/max/reset-after-submit/returned-on-resume), `ChallengeGeneration`, `LazyChallengeGeneration` (régénération à la volée + 503 si pool insuffisant), `Admin/Tracks` (AddTrack, GetTracks, DeleteTrack, UpdateTrack), `Admin/Challenges` (GetChallenges, CreateChallenge, ResetToday), `Admin/RefreshPreviews` (401, compteurs seed, réparation d'un flag corrompu), `HealthCheck` (liveness + date de build + readiness)
+- [x] Tests unitaires frontend Karma/Jasmine (101 tests) — `App`, `GameService`, `SettingsService` (dont fallback `catchError` au boot), `LanguageService`, `GameFooterComponent` (toggle langue), `AdminHttpService` + délégation `AdminApiService`, `AdminStatsService`, `AdminPoolService` (autonomie du pool) ; job CI `unit-tests-front` (`ChromeHeadless`)
+- [x] Tests E2E Playwright (43 scénarios : 28 jeu + 15 admin). Jeu : happy path, écran déjà joué, abandon mid-game, reprise, abandon depuis reprise, sync multi-onglets, pas de défi (pool vide via `emptyPool`) + renaissance paresseuse du défi supprimé, partage + échec de copie presse-papier, scoring palier/mauvaise réponse/partiel, anti-cheat paliers bloqués à la reprise, confirmation de sortie (`leave-guard` : annuler/confirmer/hors-playing), bouton `✕` d'effacement (`clear-search`), footer (`footer` : toggle langue FR ↔ EN, lien confidentialité, alias `/confidentialite`). Admin : login erreur/succès/déconnexion, pool tableau+filtres texte/preview/statut, ajout morceau, suppression individuelle+annulation, actualisation morceau sans preview (modale pré-remplie), actions générer/déjà généré/reset, liste défis
 
 ## 🚧 Mobile
 

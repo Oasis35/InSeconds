@@ -6,9 +6,12 @@ const ADMIN_HEADERS = {
 };
 
 export class ApiTestClient {
-  async reset(options: { deleteChallenge?: boolean } = {}): Promise<void> {
-    const url = `${BASE}/api/e2e/reset${options.deleteChallenge ? '?deleteChallenge=true' : ''}`;
-    const res = await fetch(url, { method: 'DELETE', headers: ADMIN_HEADERS });
+  async reset(options: { deleteChallenge?: boolean; emptyPool?: boolean } = {}): Promise<void> {
+    const params = new URLSearchParams();
+    if (options.deleteChallenge) params.set('deleteChallenge', 'true');
+    if (options.emptyPool) params.set('emptyPool', 'true');
+    const query = params.size > 0 ? `?${params}` : '';
+    const res = await fetch(`${BASE}/api/e2e/reset${query}`, { method: 'DELETE', headers: ADMIN_HEADERS });
     if (!res.ok) throw new Error(`E2E reset failed: ${res.status}`);
   }
 
