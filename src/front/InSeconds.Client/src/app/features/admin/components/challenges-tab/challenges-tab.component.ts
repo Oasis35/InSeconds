@@ -1,10 +1,11 @@
 import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import { AdminStatsService } from '../../services/admin-stats.service';
 
 @Component({
   selector: 'app-challenges-tab',
-  imports: [TranslatePipe],
+  imports: [DecimalPipe, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './challenges-tab.component.html',
 })

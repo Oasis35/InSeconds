@@ -108,7 +108,12 @@ else
     });
 }
 
-builder.Services.AddDataProtection().SetApplicationName("InSeconds");
+// PersistKeysToDbContext : sans persistance, les clés vivent dans le filesystem du
+// conteneur et sautent à chaque redéploiement/redémarrage → cookies joueurs invalidés
+// (streaks perdues). Cf. piège 17 (résolu).
+builder.Services.AddDataProtection()
+    .SetApplicationName("InSeconds")
+    .PersistKeysToDbContext<ApplicationDbContext>();
 builder.Services.AddScoped<ICookieAuthService>(sp => new CookieAuthService(
     sp.GetRequiredService<ApplicationDbContext>(),
     sp.GetRequiredService<IDataProtectionProvider>().CreateProtector("InSeconds.Auth.Cookie"),
@@ -154,9 +159,15 @@ if (app.Environment.IsDevelopment())
 app.UseCors(CorsPolicyName);
 app.UseMiddleware<PlayerAuthMiddleware>();
 
-// Liveness : l'app répond. Renvoie un JSON { status, utc } consommé par le badge
-// d'état backend du front (app.ts) — ne pas changer le format sans adapter le front.
-app.MapGet("/health", () => Results.Ok(new { status = "ok", utc = DateTime.UtcNow }));
+// Liveness : l'app répond. Renvoie un JSON { status, utc, build } consommé par le badge
+// d'état backend du front (app.ts) — ne pas changer le format sans adapter le front
+// (ajouter un champ est OK). `build` = date UTC de compilation (AssemblyMetadata BuildUtc,
+// stampée dans le csproj) : permet de vérifier quelle version tourne en prod.
+var buildUtc = typeof(Program).Assembly
+    .GetCustomAttributes(typeof(System.Reflection.AssemblyMetadataAttribute), false)
+    .Cast<System.Reflection.AssemblyMetadataAttribute>()
+    .FirstOrDefault(a => a.Key == "BuildUtc")?.Value ?? "unknown";
+app.MapGet("/health", () => Results.Ok(new { status = "ok", utc = DateTime.UtcNow, build = buildUtc }));
 
 // Readiness : la DB est joignable (tag "ready"). Sondé par Northflank.
 app.MapHealthChecks("/health/ready", new HealthCheckOptions

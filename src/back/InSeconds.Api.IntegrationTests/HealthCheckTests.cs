@@ -39,6 +39,15 @@ public class HealthCheckTests(IntegrationTestFactory factory) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Health_ExposeLaDateDeBuild()
+    {
+        var resp = await _client.GetAsync("/health");
+
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.False(string.IsNullOrEmpty(body.GetProperty("build").GetString()));
+    }
+
+    [Fact]
     public async Task Health_NeNecessitePasDAuth()
     {
         // Client neuf sans cookie joueur : les endpoints health restent publics.

@@ -9,7 +9,9 @@ using InSeconds.Api.Infrastructure.Deezer;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
+using InSeconds.Api.Features.ChallengeGeneration;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -46,10 +48,20 @@ public sealed class StartSessionHandlerTests
     private static ApplicationDbContext CreateDbContext() =>
         new(new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            // Le provider InMemory ne supporte pas les transactions (utilisées par
+            // DailyChallengeGenerator dans le chemin de génération paresseuse).
+            .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
             .Options);
 
     private static SettingsService CreateSettingsService() =>
         new(Options.Create(new AppSettings()));
+
+    private static StartSessionHandler CreateHandler(ApplicationDbContext db)
+    {
+        var settings = CreateSettingsService();
+        var generator = new DailyChallengeGenerator(db, settings, NullLogger<DailyChallengeGenerator>.Instance);
+        return new StartSessionHandler(db, CreateFakeDeezerClient(), settings, generator, NullLogger<StartSessionHandler>.Instance);
+    }
 
     // ---------------------------------------------------------------------------
     // Builders
@@ -143,7 +155,7 @@ public sealed class StartSessionHandlerTests
         await db.SaveChangesAsync();
 
         // Act
-        var result = await new StartSessionHandler(db, CreateFakeDeezerClient(), CreateSettingsService()).Handle(new StartSessionCommand(PlayerId), CancellationToken.None);
+        var result = await CreateHandler(db).Handle(new StartSessionCommand(PlayerId), CancellationToken.None);
 
         // Assert
         var response = AssertOk<StartSessionResponse>(result).Value!;
@@ -174,7 +186,7 @@ public sealed class StartSessionHandlerTests
         await db.SaveChangesAsync();
 
         // Act
-        var result = await new StartSessionHandler(db, CreateFakeDeezerClient(), CreateSettingsService()).Handle(new StartSessionCommand(PlayerId), CancellationToken.None);
+        var result = await CreateHandler(db).Handle(new StartSessionCommand(PlayerId), CancellationToken.None);
 
         // Assert
         AssertConflict(result);
@@ -194,7 +206,7 @@ public sealed class StartSessionHandlerTests
         await db.SaveChangesAsync();
 
         // Act
-        var result = await new StartSessionHandler(db, CreateFakeDeezerClient(), CreateSettingsService()).Handle(new StartSessionCommand(PlayerId), CancellationToken.None);
+        var result = await CreateHandler(db).Handle(new StartSessionCommand(PlayerId), CancellationToken.None);
 
         // Assert
         AssertConflict(result);
@@ -230,7 +242,7 @@ public sealed class StartSessionHandlerTests
         await db.SaveChangesAsync();
 
         // Act
-        var result = await new StartSessionHandler(db, CreateFakeDeezerClient(), CreateSettingsService()).Handle(new StartSessionCommand(PlayerId), CancellationToken.None);
+        var result = await CreateHandler(db).Handle(new StartSessionCommand(PlayerId), CancellationToken.None);
 
         // Assert
         var response = AssertOk<StartSessionResponse>(result).Value!;
@@ -274,7 +286,7 @@ public sealed class StartSessionHandlerTests
         await db.SaveChangesAsync();
 
         // Act
-        var result = await new StartSessionHandler(db, CreateFakeDeezerClient(), CreateSettingsService()).Handle(new StartSessionCommand(PlayerId), CancellationToken.None);
+        var result = await CreateHandler(db).Handle(new StartSessionCommand(PlayerId), CancellationToken.None);
 
         // Assert
         var sessions = await db.GameSessions.ToListAsync();
@@ -291,9 +303,10 @@ public sealed class StartSessionHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenNoChallengeForToday_Returns503()
+    public async Task Handle_WhenNoChallengeAndPoolInsufficient_Returns503()
     {
-        // Arrange
+        // Arrange — pas de défi du jour et aucun morceau en pool : la génération
+        // paresseuse échoue (PoolInsufficient) → 503.
         await using var db = CreateDbContext();
         db.Players.Add(BuildPlayer());
         db.DailyChallenges.Add(new DailyChallenge
@@ -305,9 +318,40 @@ public sealed class StartSessionHandlerTests
         await db.SaveChangesAsync();
 
         // Act
-        var result = await new StartSessionHandler(db, CreateFakeDeezerClient(), CreateSettingsService()).Handle(new StartSessionCommand(PlayerId), CancellationToken.None);
+        var result = await CreateHandler(db).Handle(new StartSessionCommand(PlayerId), CancellationToken.None);
 
         // Assert
         AssertProblem(result, StatusCodes.Status503ServiceUnavailable);
+    }
+
+    [Fact]
+    public async Task Handle_WhenNoChallengeButPoolAvailable_GeneratesChallengeLazily()
+    {
+        // Arrange — pas de défi du jour mais un pool suffisant : StartSession
+        // régénère le défi à la volée (filet de sécurité si le job de minuit a raté).
+        await using var db = CreateDbContext();
+        db.Players.Add(BuildPlayer());
+        db.Tracks.AddRange(Enumerable.Range(1, 5).Select(i => new Track
+        {
+            Id            = i,
+            DeezerTrackId = 2000L + i,
+            Artist        = $"Artist {i}",
+            Title         = $"Title {i}",
+            HasPreview    = true,
+            CreatedAt     = DateTime.UtcNow,
+        }));
+        await db.SaveChangesAsync();
+
+        // Act
+        var result = await CreateHandler(db).Handle(new StartSessionCommand(PlayerId), CancellationToken.None);
+
+        // Assert — session créée sur le défi régénéré (TracksPerChallenge = 3 par défaut)
+        var response = AssertOk<StartSessionResponse>(result).Value!;
+        response.Tracks.Should().HaveCount(3);
+        response.IsResuming.Should().BeFalse();
+
+        var challenge = await db.DailyChallenges
+            .SingleAsync(c => c.Date == DateOnly.FromDateTime(DateTime.UtcNow));
+        challenge.Seed.Should().Be(DateOnly.FromDateTime(DateTime.UtcNow).DayNumber);
     }
 }

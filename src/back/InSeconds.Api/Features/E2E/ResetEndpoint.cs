@@ -13,6 +13,7 @@ public static class E2EResetEndpoint
             HttpContext ctx,
             ApplicationDbContext db,
             bool deleteChallenge = false,
+            bool emptyPool = false,
             CancellationToken ct = default) =>
         {
             if (!LoginEndpoint.IsAdminAuthenticated(ctx))
@@ -34,7 +35,16 @@ public static class E2EResetEndpoint
                     .ExecuteDeleteAsync(ct);
             }
 
-            return Results.Ok(new { reset = true, challengeDeleted = deleteChallenge });
+            // Rend le pool insuffisant : depuis la génération paresseuse dans
+            // StartSession, supprimer le défi ne suffit plus à obtenir l'écran
+            // « pas de défi » (il renaîtrait au premier joueur). Restaurer via /reseed.
+            if (emptyPool)
+            {
+                await db.Tracks.ExecuteUpdateAsync(
+                    s => s.SetProperty(t => t.HasPreview, false), ct);
+            }
+
+            return Results.Ok(new { reset = true, challengeDeleted = deleteChallenge, poolEmptied = emptyPool });
         })
         .WithName("E2EReset")
         .WithTags("E2E");

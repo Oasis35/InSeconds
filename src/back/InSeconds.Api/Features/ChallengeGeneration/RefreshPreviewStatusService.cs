@@ -9,10 +9,10 @@ public sealed class RefreshPreviewStatusService(
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var delay = DailySchedule.DelayUntilNextUtcHour(23);
-            logger.LogInformation("Prochain refresh preview planifié dans {Delay:hh\\:mm\\:ss} (23h00 UTC).", delay);
+            var target = DailySchedule.NextUtcHour(23);
+            logger.LogInformation("Prochain refresh preview planifié dans {Delay:hh\\:mm\\:ss} (23h00 UTC).", target - DateTime.UtcNow);
 
-            try { await Task.Delay(delay, stoppingToken); }
+            try { await DailySchedule.DelayUntilAsync(target, stoppingToken); }
             catch (OperationCanceledException) { break; }
 
             await TryRefreshAsync(stoppingToken);

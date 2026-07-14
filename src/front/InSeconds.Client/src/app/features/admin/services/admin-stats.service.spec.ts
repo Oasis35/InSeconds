@@ -3,6 +3,7 @@ import { signal, computed } from '@angular/core';
 import { AdminStatsService } from './admin-stats.service';
 import { AdminApiService } from './admin-api.service';
 import { AdminStatsResponse, DailyActivityDto } from '../../../api/api.generated';
+import { PoolTracksResponse } from '../admin.models';
 
 /** Construit un AdminStatsResponse valide avec des overrides partiels. */
 function makeStats(overrides: Partial<AdminStatsResponse> = {}): AdminStatsResponse {
@@ -26,15 +27,18 @@ function makeAdminApiStub() {
   const adminStats = signal<AdminStatsResponse | null>(null);
   const statsLoading = signal(false);
   const challenges = signal<any[]>([]);
+  const poolTracks = signal<PoolTracksResponse>({ available: [], used: [] });
 
   return {
     selectedDay,
     adminStats: computed(() => adminStats()),
     statsLoading: computed(() => statsLoading()),
     challenges: computed(() => challenges()),
+    poolTracks: computed(() => poolTracks()),
     // helpers to set values in tests
     _setAdminStats: (v: AdminStatsResponse | null) => adminStats.set(v),
     _setChallenges: (v: any[]) => challenges.set(v),
+    _setPoolTracks: (v: PoolTracksResponse) => poolTracks.set(v),
     reloadStats: () => {},
     reloadAll: () => {},
   };
