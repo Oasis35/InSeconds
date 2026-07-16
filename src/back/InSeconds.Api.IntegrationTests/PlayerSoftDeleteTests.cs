@@ -55,12 +55,16 @@ public class PlayerSoftDeleteTests(IntegrationTestFactory factory) : IAsyncLifet
     [Fact]
     public async Task SoftDelete_JoueurSupprime_NouveauAppelCreeeNouveauGuest()
     {
+        // Le joueur dev est réinséré par /api/e2e/reseed (SeedData) — à exclure des requêtes
+        // ci-dessous, sinon il fausse le SingleAsync/FirstAsync (cf. SessionEdgeCaseTests.cs).
+        var devPlayerId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001");
+
         // N'importe quel appel non-admin déclenche la création du guest via le middleware
         await _client.GetAsync("/api/settings");
 
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var player1 = await db.Players.SingleAsync();
+        var player1 = await db.Players.SingleAsync(p => p.Id != devPlayerId);
 
         // Soft-delete
         player1.IsDeleted = true;
@@ -70,7 +74,7 @@ public class PlayerSoftDeleteTests(IntegrationTestFactory factory) : IAsyncLifet
         var freshClient = factory.CreateClient();
         await freshClient.GetAsync("/api/settings");
 
-        var player2 = await db.Players.FirstAsync(p => p.Id != player1.Id);
+        var player2 = await db.Players.FirstAsync(p => p.Id != player1.Id && p.Id != devPlayerId);
 
         Assert.NotEqual(player1.Id, player2.Id);
         Assert.True(player2.IsGuest);
