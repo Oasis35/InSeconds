@@ -28,26 +28,25 @@ public sealed class SubmitAnswerHandler(
             return Results.StatusCode(403);
 
         var challengeTrack = await db.DailyChallengeTracks
-            .Include(t => t.Track)
-            .FirstOrDefaultAsync(
-                t => t.Id == command.DailyChallengeTrackId && t.DailyChallengeId == session.DailyChallengeId,
-                cancellationToken);
+            .Where(t => t.Id == command.DailyChallengeTrackId && t.DailyChallengeId == session.DailyChallengeId)
+            .Select(t => new
+            {
+                t.Track.Artist,
+                t.Track.Title,
+                AlreadyAnswered = t.Answers.Any(a => a.GameSessionId == command.SessionId),
+            })
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (challengeTrack is null)
             return Results.NotFound(new { error = "track_not_found", message = "Track introuvable dans ce défi." });
 
-        var alreadyAnswered = await db.GameSessionAnswers
-            .AnyAsync(
-                a => a.GameSessionId == command.SessionId && a.DailyChallengeTrackId == command.DailyChallengeTrackId,
-                cancellationToken);
-
-        if (alreadyAnswered)
+        if (challengeTrack.AlreadyAnswered)
             return Results.Conflict(new { error = "already_answered", message = "Cette track a déjà été répondue." });
 
         var appSettings = await settingsService.GetAsync(cancellationToken);
 
-        var artistCorrect = textNormalizer.IsMatch(command.ArtistAnswer, challengeTrack.Track.Artist);
-        var titleCorrect  = textNormalizer.IsMatch(command.TitleAnswer,  challengeTrack.Track.Title);
+        var artistCorrect = textNormalizer.IsMatch(command.ArtistAnswer, challengeTrack.Artist);
+        var titleCorrect  = textNormalizer.IsMatch(command.TitleAnswer,  challengeTrack.Title);
 
         var score = scoreCalculator.Calculate(
             command.ListenedDurationSeconds,
@@ -55,6 +54,21 @@ public sealed class SubmitAnswerHandler(
             artistCorrect,
             titleCorrect,
             appSettings.DurationScores);
+
+        // Stats calculées sur les réponses déjà en base, avant d'ajouter la nôtre —
+        // on la combine en mémoire pour éviter un aller-retour DB après le save.
+        var priorStats = await db.GameSessionAnswers
+            .Where(a => a.DailyChallengeTrackId == command.DailyChallengeTrackId)
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                Total        = g.Count(),
+                CorrectCount = g.Count(a => a.ArtistCorrect || a.TitleCorrect),
+                CorrectSum   = g.Where(a => a.ArtistCorrect || a.TitleCorrect)
+                                .Sum(a => (double?)a.ListenedDurationSeconds),
+                FailCount    = g.Count(a => !a.ArtistCorrect && !a.TitleCorrect),
+            })
+            .FirstOrDefaultAsync(cancellationToken);
 
         db.GameSessionAnswers.Add(new GameSessionAnswer
         {
@@ -101,30 +115,23 @@ public sealed class SubmitAnswerHandler(
 
         await db.SaveChangesAsync(cancellationToken);
 
-        var stats = await db.GameSessionAnswers
-            .Where(a => a.DailyChallengeTrackId == command.DailyChallengeTrackId)
-            .GroupBy(_ => 1)
-            .Select(g => new
-            {
-                Total      = g.Count(),
-                CorrectAvg = g.Where(a => a.ArtistCorrect || a.TitleCorrect)
-                              .Average(a => (double?)a.ListenedDurationSeconds),
-                FailCount  = g.Count(a => !a.ArtistCorrect && !a.TitleCorrect),
-            })
-            .FirstOrDefaultAsync(cancellationToken);
+        var isCorrectNow      = artistCorrect || titleCorrect;
+        var totalAfter        = (priorStats?.Total ?? 0) + 1;
+        var correctCountAfter = (priorStats?.CorrectCount ?? 0) + (isCorrectNow ? 1 : 0);
+        var correctSumAfter   = (priorStats?.CorrectSum ?? 0) + (isCorrectNow ? (double)command.ListenedDurationSeconds : 0);
+        var failCountAfter    = (priorStats?.FailCount ?? 0) + (isCorrectNow ? 0 : 1);
 
-        var failureRate = stats is null || stats.Total == 0
-            ? 0d
-            : Math.Round((double)stats.FailCount / stats.Total * 100, 1);
+        var correctAvg  = correctCountAfter == 0 ? (double?)null : correctSumAfter / correctCountAfter;
+        var failureRate = totalAfter == 0 ? 0d : Math.Round((double)failCountAfter / totalAfter * 100, 1);
 
         return Results.Ok(new SubmitAnswerResponse(
             ArtistCorrect:             artistCorrect,
             TitleCorrect:              titleCorrect,
             Score:                     score,
-            CorrectArtist:             challengeTrack.Track.Artist,
-            CorrectTitle:              challengeTrack.Track.Title,
+            CorrectArtist:             challengeTrack.Artist,
+            CorrectTitle:              challengeTrack.Title,
             ListenedDurationSeconds:   command.ListenedDurationSeconds,
-            AverageSecondsWhenCorrect: stats?.CorrectAvg,
+            AverageSecondsWhenCorrect: correctAvg,
             FailureRatePercent:        failureRate));
     }
 }

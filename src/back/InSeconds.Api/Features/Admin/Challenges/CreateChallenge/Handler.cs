@@ -16,13 +16,14 @@ public sealed class CreateChallengeHandler(ApplicationDbContext db, DeezerClient
         if (exists)
             return Results.Conflict(new { error = "date_taken", message = $"Un défi existe déjà pour le {command.Date:yyyy-MM-dd}." });
 
+        var existingTracks = await db.Tracks
+            .Where(t => command.DeezerTrackIds.Contains(t.DeezerTrackId))
+            .ToDictionaryAsync(t => t.DeezerTrackId, cancellationToken);
+
         var tracks = new List<Track>();
         foreach (var deezerTrackId in command.DeezerTrackIds)
         {
-            var existing = await db.Tracks
-                .FirstOrDefaultAsync(t => t.DeezerTrackId == deezerTrackId, cancellationToken);
-
-            if (existing is not null)
+            if (existingTracks.TryGetValue(deezerTrackId, out var existing))
             {
                 tracks.Add(existing);
                 continue;
@@ -42,7 +43,6 @@ public sealed class CreateChallengeHandler(ApplicationDbContext db, DeezerClient
                 CreatedAt     = DateTime.UtcNow,
             };
             db.Tracks.Add(newTrack);
-            await db.SaveChangesAsync(cancellationToken);
             tracks.Add(newTrack);
         }
 
@@ -52,12 +52,11 @@ public sealed class CreateChallengeHandler(ApplicationDbContext db, DeezerClient
             Seed = command.Date.DayNumber,
         };
         db.DailyChallenges.Add(challenge);
-        await db.SaveChangesAsync(cancellationToken);
 
         db.DailyChallengeTracks.AddRange(tracks.Select((t, i) => new DailyChallengeTrack
         {
-            DailyChallengeId = challenge.Id,
-            TrackId = t.Id,
+            DailyChallenge = challenge,
+            Track = t,
             Position = i + 1,
             DeezerRankSnapshot = i + 1,
         }));
