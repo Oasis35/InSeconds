@@ -1,6 +1,6 @@
 # InSeconds — Liste des Tâches
 
-> Mis à jour le 2026-07-08.
+> Mis à jour le 2026-07-16.
 
 ## ✅ Bootstrap projet
 
@@ -8,6 +8,7 @@
 - [x] Docker Compose : `inseconds.database` (PostgreSQL) + `inseconds.api` (.NET 10 hot-reload)
 - [x] README bilingue (FR + EN) + `CLAUDE.md`
 - [x] CI GitHub Actions : build back + front + check migrations EF + tests unitaires + tests d'intégration + E2E Playwright
+- [x] **`CLAUDE.md` éclaté en fichiers imbriqués** (2026-07-16) — `src/back/InSeconds.Api/CLAUDE.md` (détail exhaustif par feature slice), `src/front/InSeconds.Client/src/app/features/game/CLAUDE.md`, `.../features/admin/CLAUDE.md` ; le `CLAUDE.md` racine reste la vue d'ensemble + pointeurs. Nouveau doc [`GAMEPLAY_RULES_FR.md`](GAMEPLAY_RULES_FR.md) consolidant les règles de scoring/anti-triche/streak (avant éparpillées entre plusieurs fichiers)
 
 ## ✅ Backend
 
@@ -50,6 +51,7 @@
 - [x] Pool admin redesigné en tableau paginé (15 lignes/page), filtres combinables (texte, statut, preview), sous-onglets supprimés, onglet "Actions" dédié (générer défi + reset sessions)
 - [x] Seed enrichi : 5 morceaux sans preview (The Beatles, Pink Floyd, Bob Dylan, Led Zeppelin, Fleetwood Mac — IDs >= `9_000_000_000`) pour tester le flux "↻ Actualiser"
 - [x] Dashboard admin redesigné : KPI tiles jour sélectionné (complétés, abandons, taux de complétion, score médian), sélecteur de jour (← → sur les dates ayant un défi), barres 30j cliquables (jours sans activité affichés à zéro), `GET /api/admin/stats?date=` (param date, `AvailableDates`, `SelectedDayKpis`, Pending→Abandoned pour les jours passés)
+- [x] **Corrections d'incohérences trouvées lors d'un audit de code** (2026-07-16) — `/api/admin/login` invoque maintenant réellement `LoginHandler` via le bus Wolverine au lieu de dupliquer sa logique dans l'endpoint (le handler était du code mort, testé mais jamais exécuté) ; `DeezerRankSnapshot` posé de façon cohérente (`i+1`) par `DailyChallengeGenerator` et le seed E2E, comme `CreateChallengeHandler` (avant toujours `0` sur les deux premiers chemins)
 
 ## ✅ Frontend
 
@@ -96,6 +98,7 @@
 - [x] **Boot tolérant si `/api/settings` KO** — `catchError` dans `SettingsService.load()`, l'app démarre avec les valeurs par défaut des signals
 - [x] **Feedback échec de copie partage** — `GameComponent.copyToClipboard()` catch le rejet de `clipboard.writeText`, input `failed` sur `ShareButtonComponent` + clé `share.failed`
 - [x] **Optimisations performance front** (2026-07-02) — `ChangeDetectionStrategy.OnPush` sur les 23 composants Angular, `takeUntilDestroyed(destroyRef)` sur toutes les subscriptions Observables (`game.component.ts`, `blind-round.component.ts`, `admin-pool.service.ts`, `admin-actions.service.ts`), tracking des handles `setTimeout` + `clearTimeout()` avant recréation dans `admin-pool.service.ts` et `admin-actions.service.ts`
+- [x] **`AudioPlayerService.extend()` réellement branché** (2026-07-16) — `listenMore()` appelle désormais `extend()` au lieu de relire le morceau depuis le début ; fonctionne pendant la lecture comme après l'arrêt naturel du palier (reprend la lecture en pause) ; temps restant et progression basés sur `audio.currentTime` réel (plus un delta théorique qui cassait la barre de progression) ; le bouton « écouter plus » se masque après la première extension. Conséquence : le malus de score de 25 % (`WasExtended`) s'applique désormais réellement — voir [`GAMEPLAY_RULES_FR.md`](GAMEPLAY_RULES_FR.md)
 
 ## ✅ Déploiement
 

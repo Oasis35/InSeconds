@@ -16,7 +16,6 @@ export class AudioPlayerService {
   readonly progress = signal(0); // 0→1 pendant l'écoute
 
   private rafId: number | null = null;
-  private startedAt = 0;
 
   readonly isIdle = computed(() => this.state() === 'idle');
   readonly isPlaying = computed(() => this.state() === 'playing');
@@ -42,6 +41,7 @@ export class AudioPlayerService {
 
     this.currentDuration = durationSeconds;
     this.wasExtended = false;
+    this.extended.set(false);
     this.state.set('loading');
 
     this.audio.src = trackUrl;
@@ -49,10 +49,9 @@ export class AudioPlayerService {
       if (this.playToken !== token) return; // callback périmé, ignorer
       this.state.set('playing');
       this.progress.set(0);
-      this.startedAt = performance.now();
       this.audio!.play().catch(() => { if (this.playToken === token) this.state.set('idle'); });
       this.scheduleStop(durationSeconds, token);
-      this.startRaf(durationSeconds, token);
+      this.startRaf(token);
     };
 
     this.audio.onerror = () => { if (this.playToken === token) this.state.set('idle'); };
@@ -78,18 +77,33 @@ export class AudioPlayerService {
     this.audio.play().catch(() => { if (this.playToken === token) this.state.set('idle'); });
   }
 
-  /** Une seule prolongation autorisée — passe au palier supérieur. */
+  /** Une seule prolongation autorisée — passe au palier supérieur sans relire depuis le début. */
   extend(nextDurationSeconds: number): void {
-    if (this.wasExtended || this.state() !== 'playing') return;
+    if (!this.audio) return;
+    if (this.wasExtended || nextDurationSeconds <= this.currentDuration) return;
+    if (this.state() !== 'playing' && this.state() !== 'finished') return;
 
     this.wasExtended = true;
     this.extended.set(true);
 
-    const delta = nextDurationSeconds - this.currentDuration;
+    const wasFinished = this.state() === 'finished';
+    const token = this.playToken; // continuité de la même lecture, pas un nouveau token
     this.currentDuration = nextDurationSeconds;
 
-    if (this.stopTimer !== null) clearTimeout(this.stopTimer);
-    this.scheduleStop(delta, this.playToken);
+    if (this.stopTimer !== null) { clearTimeout(this.stopTimer); this.stopTimer = null; }
+
+    if (wasFinished) {
+      // Le palier initial est déjà entièrement écoulé (lecteur en pause) : reprendre depuis cette position.
+      this.audio.oncanplay = null; // évite qu'un `canplay` tardif ne rejoue le handler périmé de play()
+      this.state.set('playing');
+      this.audio.play().catch(() => { if (this.playToken === token) this.state.set('idle'); });
+      this.startRaf(token);
+    }
+
+    // Se base sur la position réelle de lecture (pas un delta théorique) : correct que l'extension
+    // soit déclenchée en cours de lecture ou après l'arrêt naturel du palier initial.
+    const remaining = Math.max(0, nextDurationSeconds - this.audio.currentTime);
+    this.scheduleStop(remaining, token);
   }
 
   stop(): { listenedSeconds: number; wasExtended: boolean } {
@@ -148,12 +162,13 @@ export class AudioPlayerService {
     }, seconds * 1000);
   }
 
-  private startRaf(durationSeconds: number, token: number): void {
+  private startRaf(token: number): void {
     this.stopRaf();
     const tick = () => {
       if (this.playToken !== token) return;
-      const elapsed = (performance.now() - this.startedAt) / 1000;
-      this.progress.set(Math.min(elapsed / durationSeconds, 1));
+      const elapsed = this.audio?.currentTime ?? 0;
+      // Lit currentDuration à chaque frame (pas figé en paramètre) : reflète une éventuelle extension.
+      this.progress.set(Math.min(elapsed / this.currentDuration, 1));
       if (this.state() === 'playing') {
         this.rafId = requestAnimationFrame(tick);
       }

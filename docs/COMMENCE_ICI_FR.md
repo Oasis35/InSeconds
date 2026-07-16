@@ -32,6 +32,7 @@ InSeconds est un **blind test musical quotidien**. Le joueur choisit combien de 
 | [`TACHES.md`](TACHES.md) | Liste de toutes les tâches MVP — coche ce qui est fait, voir reste à faire |
 | [`BACKEND_STRUCTURE_FR.md`](BACKEND_STRUCTURE_FR.md) | Référence d'architecture backend (vertical slice, modèle EF, Wolverine, services Common) |
 | [`FRONTEND_STRUCTURE_FR.md`](FRONTEND_STRUCTURE_FR.md) | Référence d'architecture frontend (Angular 22, AudioPlayer durée-choisie, structure dossiers) |
+| [`GAMEPLAY_RULES_FR.md`](GAMEPLAY_RULES_FR.md) | Règles de jeu consolidées : scoring, prolongation, anti-triche, streak — avec ce qui est réellement appliqué vs juste configuré |
 
 ## Quick start technique
 
@@ -105,6 +106,8 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 🚧 **À faire** : smoke tests post-deploy, tests mobiles, polish, éventuel passage du cache Deezer sur Redis (multi-instances). Voir [`TACHES.md`](TACHES.md).
 
 ## Specs gameplay clés (rappel rapide)
+
+> Détail complet (barème exact, ce qui est réellement appliqué vs juste configuré) : [`GAMEPLAY_RULES_FR.md`](GAMEPLAY_RULES_FR.md).
 
 - **N morceaux par jour** (configurable via `TracksPerChallenge` en BD, défaut 3), même set pour tout le monde
 - **Paliers d'écoute** : 0.5, 1, 1.5, 2, 3, 5, 10 secondes (configurable via la table `Settings`)

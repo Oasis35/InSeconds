@@ -40,6 +40,8 @@ InSeconds/
 
 ## Architecture backend — vertical slice
 
+> **Détail exhaustif** (chaque feature slice, entités Domain, configurations EF/migrations structurantes, `DeezerClient`/`CachedDeezerClient`, `CookieAuthService`, `ScoreCalculator`, mécanisme Settings, pipeline `Program.cs`) : voir [`src/back/InSeconds.Api/CLAUDE.md`](src/back/InSeconds.Api/CLAUDE.md). Ci-dessous : conventions et règles générales seulement.
+
 Une **feature = un dossier** dans `Features/<Aggregate>/<UseCase>/` contenant : `Endpoint.cs` (Minimal API), `Command.cs`/`Query.cs`, `Handler.cs` (Wolverine), `Validator.cs` (FluentValidation), `Response.cs`.
 
 Layout fixe :
@@ -118,35 +120,15 @@ Angular 22 standalone + signals + ngx-translate (i18n FR/EN).
 
 ### Découpe de `game/`
 
-```
-features/game/
-├── game.component.ts/.html        # orchestration (~370 lignes .ts, ~110 lignes .html)
-├── services/
-│   ├── game-facade.service.ts     # façade métier (fournie par GameComponent, pas root)
-│   └── deezer-autocomplete.service.ts  # autocomplete Deezer (providedIn: root, stateless)
-├── blind-round/                   # choix palier + lecture + saisie + polish UX
-├── components/
-│   ├── game-header/               # titre + streak + score + barre progression + abandon
-│   └── game-footer/               # liens admin/github/confidentialité + sélecteur de langue FR/EN
-└── screens/
-    ├── welcome-screen/
-    ├── resume-screen/
-    ├── status-screen/             # handles no_challenge + error (inputs titleKey/bodyKey)
-    ├── already-played-screen/
-    └── final-recap-screen/        # exporte RoundResult
-```
+Machine à états (`welcome`/`resume_prompt`/`playing`/`done`/`already_played`/`no_challenge`/`error`), orchestration `game.component.ts` + `blind-round/` (round de jeu) + `screens/*` + services (`game-facade`, `deezer-autocomplete`) + `game-header`/`game-footer`.
+
+> **Détail exhaustif** (signals, computed, anti-cheat, autocomplete debounce, `AudioPlayerService`, dette technique connue) : voir [`src/front/InSeconds.Client/src/app/features/game/CLAUDE.md`](src/front/InSeconds.Client/src/app/features/game/CLAUDE.md).
 
 ### Découpe de `admin/`
 
-`AdminComponent` est un shell ~45 lignes qui fournit 6 services via `providers: [...]` au niveau composant :
-- `AdminHttpService` — appels HTTP bruts + signal `authenticated` + login/logout/checkAuth
-- `AdminStateService` — signals partagés (`selectedDay`, `poolSearchQuery`, `poolReloadTrigger`, `challengesReloadTrigger`)
-- `AdminApiService` — orchestration `rxResource` (pool, stats, challenges, search) + computed accessors ; délègue HTTP à `AdminHttpService` et état à `AdminStateService`
-- `AdminStatsService` — état dashboard (navigation, formatage dates)
-- `AdminPoolService` — filtres/pagination/sélection, modales add/delete
-- `AdminActionsService` — `generateToday()`, `reset()`
+`AdminComponent` est un shell ~45 lignes qui fournit 6 services via `providers: [...]` au niveau composant (`AdminHttpService`, `AdminStateService`, `AdminApiService`, `AdminStatsService`, `AdminPoolService`, `AdminActionsService`) + 7 sous-composants dans `features/admin/components/` (`admin-login`, `dashboard-tab`, `pool-tab`, `challenges-tab`, `actions-tab`, `add-track-modal`, `delete-track-modal`). Pattern service-as-store : **aucun `@Input`/`@Output`** dans toute la feature.
 
-7 sous-composants dans `features/admin/components/` : `admin-login`, `dashboard-tab`, `pool-tab`, `challenges-tab`, `actions-tab`, `add-track-modal`, `delete-track-modal`.
+> **Détail exhaustif** (chaque service, `rxResource`, délégation, computed `poolDaysRemaining`, constantes, graphe d'injection) : voir [`src/front/InSeconds.Client/src/app/features/admin/CLAUDE.md`](src/front/InSeconds.Client/src/app/features/admin/CLAUDE.md).
 
 ### Composants partagés (`shared/`)
 

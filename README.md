@@ -156,8 +156,9 @@ The backend runs in `ASPNETCORE_ENVIRONMENT=Testing` which activates:
 - [`docs/TACHES.md`](docs/TACHES.md) — task list
 - [`docs/BACKEND_STRUCTURE_FR.md`](docs/BACKEND_STRUCTURE_FR.md) — backend architecture reference
 - [`docs/FRONTEND_STRUCTURE_FR.md`](docs/FRONTEND_STRUCTURE_FR.md) — frontend architecture reference
+- [`docs/GAMEPLAY_RULES_FR.md`](docs/GAMEPLAY_RULES_FR.md) — gameplay rules (scoring, extension, anti-cheat, streak) — what's actually enforced vs just configured
 - [`CLAUDE.md`](CLAUDE.md) — repo conventions and gotchas (read this before contributing)
 
 ## License
 
-[CC BY-NC 4.0](LICENSE) — free to use and adapt, non-commercial only.
+[PolyForm Noncommercial 1.0.0](LICENSE) — free to use, modify and distribute for any noncommercial purpose (personal, educational, hobby, research). Commercial use requires a separate agreement with the author.

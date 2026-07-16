@@ -192,7 +192,7 @@ Signals exposés : `state` (`idle | loading | playing | finished`), `listenedSec
 
 Méthodes publiques :
 - `play(trackUrl, durationSeconds)` — charge et joue l'audio pour la durée choisie
-- `extend(nextDurationSeconds)` — prolonge d'un palier (une seule fois)
+- `extend(nextDurationSeconds)` — prolonge d'un palier, **une seule fois** (flag interne, indépendant du setting `MaxExtensionsPerAnswer` qui n'est pas lu — voir [`GAMEPLAY_RULES_FR.md`](GAMEPLAY_RULES_FR.md)). Fonctionne aussi bien pendant la lecture (reschedule l'arrêt automatique) qu'après l'arrêt naturel du palier initial (reprend la lecture depuis la position en pause). Le temps restant et la progression se basent sur `audio.currentTime` (position réelle de lecture), pas sur un delta théorique — appelé depuis `BlindRoundComponent.listenMore()`
 - `stop()` — arrête et retourne `{ listenedSeconds, wasExtended }`
 - `reset()` — nettoie tout (appelé dans `ngOnDestroy` de `BlindRoundComponent`)
 - `replayFull()` — rejoue depuis le début jusqu'à la fin naturelle (30s), sans timer
