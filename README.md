@@ -161,4 +161,4 @@ The backend runs in `ASPNETCORE_ENVIRONMENT=Testing` which activates:
 
 ## License
 
-[CC BY-NC 4.0](LICENSE) — free to use and adapt, non-commercial only.
+[PolyForm Noncommercial 1.0.0](LICENSE) — free to use, modify and distribute for any noncommercial purpose (personal, educational, hobby, research). Commercial use requires a separate agreement with the author.
