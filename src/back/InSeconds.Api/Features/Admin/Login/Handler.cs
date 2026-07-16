@@ -9,6 +9,6 @@ public sealed class LoginHandler(IConfiguration configuration)
         if (string.IsNullOrEmpty(adminPassword) || command.Password != adminPassword)
             return Task.FromResult(Results.Unauthorized());
 
-        return Task.FromResult(Results.Ok());
+        return Task.FromResult(Results.Ok(new { token = LoginEndpoint.AdminToken }));
     }
 }

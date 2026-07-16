@@ -66,7 +66,7 @@ public sealed class DailyChallengeGenerator(
             DailyChallengeId   = challenge.Id,
             TrackId            = t.Id,
             Position           = i + 1,
-            DeezerRankSnapshot = 0,
+            DeezerRankSnapshot = i + 1,
         }));
         await db.SaveChangesAsync(ct);
 

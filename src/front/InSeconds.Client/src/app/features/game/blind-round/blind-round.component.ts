@@ -146,7 +146,7 @@ export class BlindRoundComponent implements OnDestroy {
     const next = this.nextDuration();
     if (next) {
       this.chosenDuration.set(next);
-      this.audio.play(this.track().previewUrl, next);
+      this.audio.extend(next);
     }
   }
 

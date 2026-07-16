@@ -1,19 +1,15 @@
+using Wolverine;
+
 namespace InSeconds.Api.Features.Admin.Login;
 
 public static class LoginEndpoint
 {
-    private const string AdminToken = "admin-token";
+    public const string AdminToken = "admin-token";
 
     public static IEndpointRouteBuilder MapAdminLogin(this IEndpointRouteBuilder routes)
     {
-        routes.MapPost("/api/admin/login", (LoginBody body, IConfiguration config) =>
-        {
-            var adminPassword = config["AdminPassword"];
-            if (string.IsNullOrEmpty(adminPassword) || body.Password != adminPassword)
-                return Results.Unauthorized();
-
-            return Results.Ok(new { token = AdminToken });
-        })
+        routes.MapPost("/api/admin/login", async (LoginBody body, IMessageBus bus, CancellationToken ct) =>
+            await bus.InvokeAsync<IResult>(new LoginCommand(body.Password), ct))
         .WithName("AdminLogin")
         .WithTags("Admin")
         .Produces(StatusCodes.Status200OK)
