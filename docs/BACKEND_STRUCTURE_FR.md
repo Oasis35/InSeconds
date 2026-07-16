@@ -259,7 +259,6 @@ Les deux endpoints sont publics (mappés avant `PlayerAuthMiddleware`). Logging 
 | `Sessions/SubmitAnswer` | `POST /api/sessions/{id}/answers` | Scoring serveur + stats + complétion auto |
 | `Sessions/AbandonSession` | `PUT /api/sessions/{id}/abandon` | Marque une session Pending comme abandonnée |
 | `Stats/Today` | `GET /api/stats/today` | Score joueur, médiane, stats par morceau. `TrackStat` inclut `ArtistCorrect`/`TitleCorrect`/`ListenedDurationSeconds` (nullable — remplis seulement si le joueur a une session `Completed`) |
-| `Auth/Me` | `GET /api/auth/me` | Retourne `{ id, isGuest, pseudo }` du joueur courant (cookie) |
 | `Settings/GetSettings` | `GET /api/settings` | Expose les settings publics (paliers, timer, scores) |
 | `Admin/Login` | `POST /api/admin/login` | Génère un Bearer token admin |
 | `Admin/Tracks/GetTracks` | `GET /api/admin/tracks` | Liste Available / Used (`TrackDto.HasPreview` lu depuis la DB) |

@@ -31,14 +31,14 @@ public sealed class StartSessionHandler(
             expired.AbandonedAt = DateTime.UtcNow;
         }
 
+        if (expiredSessions.Count > 0)
+            await db.SaveChangesAsync(cancellationToken);
+
         var challenge = await LoadTodayChallengeAsync(today, cancellationToken)
                         ?? await TryLazyGenerateAsync(today, cancellationToken);
 
         if (challenge is null)
         {
-            if (expiredSessions.Count > 0)
-                await db.SaveChangesAsync(cancellationToken);
-
             return Results.Problem(
                 detail: "Aucun défi disponible pour aujourd'hui.",
                 statusCode: StatusCodes.Status503ServiceUnavailable);
@@ -69,23 +69,12 @@ public sealed class StartSessionHandler(
         if (existingSession is not null)
         {
             if (existingSession.Status == SessionStatus.Completed)
-            {
-                if (expiredSessions.Count > 0)
-                    await db.SaveChangesAsync(cancellationToken);
                 return Results.Conflict(new { error = "already_played", message = "Vous avez déjà joué le défi du jour." });
-            }
 
             if (existingSession.Status == SessionStatus.Abandoned)
-            {
-                if (expiredSessions.Count > 0)
-                    await db.SaveChangesAsync(cancellationToken);
                 return Results.Conflict(new { error = "abandoned", message = "Vous avez abandonné le défi du jour." });
-            }
 
             // Session Pending → retourner les données de reprise
-            if (expiredSessions.Count > 0)
-                await db.SaveChangesAsync(cancellationToken);
-
             var appSettingsResume = await settingsService.GetAsync(cancellationToken);
             var orderedTracksResume = challenge.Tracks.OrderBy(t => t.Position).ToList();
             var previewUrlsResume = await Task.WhenAll(

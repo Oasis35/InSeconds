@@ -191,22 +191,21 @@ public static class GetAdminStatsEndpoint
         var cutoff7  = DateTime.UtcNow.AddDays(-7);
         var cutoff30 = DateTime.UtcNow.AddDays(-30);
 
-        var guestsTask     = CountPlayersAsync(dbFactory, p => !p.IsDeleted && p.IsGuest,  ct);
-        var registeredTask = CountPlayersAsync(dbFactory, p => !p.IsDeleted && !p.IsGuest, ct);
-        var active7Task    = CountPlayersAsync(dbFactory, p => !p.IsDeleted && p.LastSeenAt >= cutoff7,  ct);
-        var active30Task   = CountPlayersAsync(dbFactory, p => !p.IsDeleted && p.LastSeenAt >= cutoff30, ct);
-
-        await Task.WhenAll(guestsTask, registeredTask, active7Task, active30Task);
-
-        return new PlayerBreakdownDto(guestsTask.Result, registeredTask.Result, active7Task.Result, active30Task.Result);
-    }
-
-    private static async Task<int> CountPlayersAsync(
-        IDbContextFactory<ApplicationDbContext> dbFactory,
-        System.Linq.Expressions.Expression<Func<Domain.Player, bool>> predicate,
-        CancellationToken ct)
-    {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        return await db.Players.AsNoTracking().CountAsync(predicate, ct);
+
+        var counts = await db.Players
+            .AsNoTracking()
+            .Where(p => !p.IsDeleted)
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                Guests     = g.Count(p => p.IsGuest),
+                Registered = g.Count(p => !p.IsGuest),
+                Active7    = g.Count(p => p.LastSeenAt >= cutoff7),
+                Active30   = g.Count(p => p.LastSeenAt >= cutoff30),
+            })
+            .FirstOrDefaultAsync(ct);
+
+        return new PlayerBreakdownDto(counts?.Guests ?? 0, counts?.Registered ?? 0, counts?.Active7 ?? 0, counts?.Active30 ?? 0);
     }
 }

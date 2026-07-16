@@ -130,7 +130,6 @@ public class SessionEdgeCaseTests(IntegrationTestFactory factory) : IAsyncLifeti
 
         // Re-POST pour vérifier qu'on est Completed et que la réponse de la session précédente
         // avait bien la streak de l'état avant complétion (0)
-        // La streak est mise à jour côté DB ; on la lit via auth/me ou la prochaine session
         var resp409 = await _client.PostAsync("/api/sessions", null);
         Assert.Equal(HttpStatusCode.Conflict, resp409.StatusCode);
     }
