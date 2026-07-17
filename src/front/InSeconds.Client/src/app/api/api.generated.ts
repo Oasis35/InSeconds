@@ -1458,6 +1458,7 @@ export interface TrackStatsDto {
     totalAnswers: number;
     artistCorrectRate: number;
     titleCorrectRate: number;
+    extendedRate: number;
     avgListenedSeconds: number | undefined;
 
     [key: string]: any;

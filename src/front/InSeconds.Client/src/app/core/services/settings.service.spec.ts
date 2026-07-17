@@ -34,10 +34,6 @@ describe('SettingsService', () => {
       expect(service.guessTimerSeconds()).toBe(20);
     });
 
-    it('should have default maxExtensions of 1', () => {
-      expect(service.maxExtensions()).toBe(1);
-    });
-
     it('should have default tracksPerChallenge of 10', () => {
       expect(service.tracksPerChallenge()).toBe(10);
     });
@@ -59,7 +55,6 @@ describe('SettingsService', () => {
       req.flush({
         allowedDurationsSeconds: [0.5, 1, 2, 5],
         guessTimerSeconds: 30,
-        maxExtensionsPerAnswer: 2,
         tracksPerChallenge: 5,
         durationScores: { '0.5': 1000, '1': 800, '2': 500, '5': 200 },
       });
@@ -72,7 +67,6 @@ describe('SettingsService', () => {
       req.flush({
         allowedDurationsSeconds: [1, 2, 5],
         guessTimerSeconds: 20,
-        maxExtensionsPerAnswer: 1,
         tracksPerChallenge: 3,
         durationScores: { '1': 800 },
       });
@@ -87,27 +81,11 @@ describe('SettingsService', () => {
       req.flush({
         allowedDurationsSeconds: [0.5],
         guessTimerSeconds: 45,
-        maxExtensionsPerAnswer: 0,
         tracksPerChallenge: 3,
         durationScores: {},
       });
 
       expect(service.guessTimerSeconds()).toBe(45);
-    });
-
-    it('should update maxExtensions signal after load', () => {
-      service.load().subscribe();
-
-      const req = httpMock.expectOne(settingsUrl);
-      req.flush({
-        allowedDurationsSeconds: [],
-        guessTimerSeconds: 20,
-        maxExtensionsPerAnswer: 3,
-        tracksPerChallenge: 3,
-        durationScores: {},
-      });
-
-      expect(service.maxExtensions()).toBe(3);
     });
 
     it('should update tracksPerChallenge signal after load', () => {
@@ -117,7 +95,6 @@ describe('SettingsService', () => {
       req.flush({
         allowedDurationsSeconds: [],
         guessTimerSeconds: 20,
-        maxExtensionsPerAnswer: 1,
         tracksPerChallenge: 7,
         durationScores: {},
       });
@@ -132,7 +109,6 @@ describe('SettingsService', () => {
       req.flush({
         allowedDurationsSeconds: [],
         guessTimerSeconds: 20,
-        maxExtensionsPerAnswer: 1,
         tracksPerChallenge: 3,
         durationScores: { '0.5': 1000, '1.5': 700, '10': 100 },
       });
@@ -151,7 +127,6 @@ describe('SettingsService', () => {
       req.flush({
         allowedDurationsSeconds: [],
         guessTimerSeconds: 20,
-        maxExtensionsPerAnswer: 1,
         tracksPerChallenge: 3,
         durationScores: {},
       });

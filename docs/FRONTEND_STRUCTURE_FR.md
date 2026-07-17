@@ -177,7 +177,6 @@ Charge les settings de la BD au boot, expose des signals :
 ```typescript
 readonly allowedDurations = signal<number[]>([0.5, 1, 1.5, 2, 3, 5, 10]);
 readonly guessTimerSeconds = signal(20);
-readonly maxExtensions = signal(1);
 readonly tracksPerChallenge = signal(3);
 readonly durationScores = signal<Record<number, number>>({});
 ```
@@ -186,13 +185,13 @@ readonly durationScores = signal<Record<number, number>>({});
 
 ### `AudioPlayerService`
 
-Modèle "durée choisie" : l'utilisateur choisit le palier AVANT d'écouter, l'audio joue exactement cette durée puis s'arrête automatiquement. Une seule prolongation autorisée (palier supérieur).
+Modèle "durée choisie" : l'utilisateur choisit le palier AVANT d'écouter, l'audio joue exactement cette durée puis s'arrête automatiquement. Prolongations libres et chaînables, sans limite de nombre, jusqu'au dernier palier configuré.
 
 Signals exposés : `state` (`idle | loading | playing | finished`), `listenedSeconds`, `extended`, `progress` (0→1, mis à jour via `requestAnimationFrame` pour la barre de progression live).
 
 Méthodes publiques :
 - `play(trackUrl, durationSeconds)` — charge et joue l'audio pour la durée choisie
-- `extend(nextDurationSeconds)` — prolonge d'un palier, **une seule fois** (flag interne, indépendant du setting `MaxExtensionsPerAnswer` qui n'est pas lu — voir [`GAMEPLAY_RULES_FR.md`](GAMEPLAY_RULES_FR.md)). Fonctionne aussi bien pendant la lecture (reschedule l'arrêt automatique) qu'après l'arrêt naturel du palier initial (reprend la lecture depuis la position en pause). Le temps restant et la progression se basent sur `audio.currentTime` (position réelle de lecture), pas sur un delta théorique — appelé depuis `BlindRoundComponent.listenMore()`
+- `extend(nextDurationSeconds)` — prolonge jusqu'au palier suivant, **chaînable sans limite** (le setting `MaxExtensionsPerAnswer` a été supprimé, cf. [`GAMEPLAY_RULES_FR.md`](GAMEPLAY_RULES_FR.md)). Comportement dual : si l'audio est **en cours de lecture**, continue depuis `audio.currentTime` (pas de replay, juste un reschedule de l'arrêt automatique) ; sinon (palier précédent déjà terminé, ou `idle`), **relit depuis le début** jusqu'au nouveau palier. Pose `wasExtended=true` dans les deux cas (stocké pour les stats admin, sans effet sur le score). Appelé depuis `BlindRoundComponent.listenMore()`
 - `stop()` — arrête et retourne `{ listenedSeconds, wasExtended }`
 - `reset()` — nettoie tout (appelé dans `ngOnDestroy` de `BlindRoundComponent`)
 - `replayFull()` — rejoue depuis le début jusqu'à la fin naturelle (30s), sans timer

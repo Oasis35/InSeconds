@@ -50,7 +50,6 @@ public sealed class SubmitAnswerHandler(
 
         var score = scoreCalculator.Calculate(
             command.ListenedDurationSeconds,
-            command.WasExtended,
             artistCorrect,
             titleCorrect,
             appSettings.DurationScores);

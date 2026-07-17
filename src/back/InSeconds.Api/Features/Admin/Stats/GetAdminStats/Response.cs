@@ -26,6 +26,7 @@ public sealed record TrackStatsDto(
     int TotalAnswers,
     double ArtistCorrectRate,
     double TitleCorrectRate,
+    double ExtendedRate,
     double? AvgListenedSeconds);
 
 public sealed record DailyActivityDto(DateOnly Date, int PlayerCount);

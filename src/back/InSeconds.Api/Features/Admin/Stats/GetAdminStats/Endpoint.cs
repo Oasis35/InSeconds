@@ -71,6 +71,7 @@ public static class GetAdminStatsEndpoint
                         TotalAnswers  = t.Answers.Count,
                         ArtistCorrect = t.Answers.Count(a => a.ArtistCorrect),
                         TitleCorrect  = t.Answers.Count(a => a.TitleCorrect),
+                        Extended      = t.Answers.Count(a => a.WasExtended),
                         AvgListened   = t.Answers.Average(a => (double?)a.ListenedDurationSeconds)
                     })
                     .ToList()
@@ -93,6 +94,7 @@ public static class GetAdminStatsEndpoint
                 t.TotalAnswers,
                 t.TotalAnswers == 0 ? 0 : Math.Round((double)t.ArtistCorrect / t.TotalAnswers * 100, 1),
                 t.TotalAnswers == 0 ? 0 : Math.Round((double)t.TitleCorrect  / t.TotalAnswers * 100, 1),
+                t.TotalAnswers == 0 ? 0 : Math.Round((double)t.Extended      / t.TotalAnswers * 100, 1),
                 t.AvgListened.HasValue ? Math.Round(t.AvgListened.Value, 2) : null
             )).ToList();
 

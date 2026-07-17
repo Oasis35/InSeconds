@@ -194,15 +194,14 @@ Voir la table des valeurs par défaut dans [`CLAUDE.md`](../CLAUDE.md#settings-e
 ```csharp
 public int Calculate(
     decimal listenedDurationSeconds,
-    bool wasExtended,
     bool artistCorrect,
     bool titleCorrect,
     Dictionary<decimal, int> durationScores)
 ```
 
 - Score de base = `durationScores[listenedDurationSeconds]`
-- Prolongation : `× 0.75`
 - Scoring partiel : `ArtistCorrect XOR TitleCorrect` → `× 0.5`
+- **Pas de malus de prolongation** — le score ne dépend que du palier finalement écouté, qu'il soit atteint directement ou via une ou plusieurs prolongations « écouter plus » (`WasExtended` n'est plus un paramètre de `Calculate`, voir [`GAMEPLAY_RULES_FR.md`](GAMEPLAY_RULES_FR.md))
 
 ### TextNormalizer
 

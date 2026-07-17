@@ -25,14 +25,12 @@ public sealed class AppSettingsBindingTests
         {
             ["GuessTimerSeconds"]       = "30",
             ["AllowedDurationsSeconds"] = "1,3,5",
-            ["MaxExtensionsPerAnswer"]  = "2",
             ["TracksPerChallenge"]      = "5",
             ["DurationScores"]          = "1:900,3:600,5:400",
         });
 
         result.GuessTimerSeconds.Should().Be(30);
         result.AllowedDurationsSeconds.Should().Equal(1, 3, 5);
-        result.MaxExtensionsPerAnswer.Should().Be(2);
         result.TracksPerChallenge.Should().Be(5);
         result.DurationScores.Should().BeEquivalentTo(new Dictionary<decimal, int> { [1m] = 900, [3m] = 600, [5m] = 400 });
     }
@@ -45,7 +43,6 @@ public sealed class AppSettingsBindingTests
 
         result.GuessTimerSeconds.Should().Be(defaults.GuessTimerSeconds);
         result.AllowedDurationsSeconds.Should().Equal(defaults.AllowedDurationsSeconds);
-        result.MaxExtensionsPerAnswer.Should().Be(defaults.MaxExtensionsPerAnswer);
         result.TracksPerChallenge.Should().Be(defaults.TracksPerChallenge);
         result.DurationScores.Should().BeEquivalentTo(defaults.DurationScores);
     }

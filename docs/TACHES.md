@@ -17,7 +17,7 @@
 - [x] 7 entités + configurations EF + migrations PostgreSQL
 - [x] Settings chargés depuis la BD via `AppDbConfigurationSource` → `IOptions<AppSettings>`
 - [x] `TextNormalizer` (Levenshtein) + tests unitaires
-- [x] `ScoreCalculator` (paliers `decimal`, scoring partiel, malus prolongation) + tests unitaires
+- [x] `ScoreCalculator` (paliers `decimal`, scoring partiel — malus de prolongation retiré le 2026-07-17, voir plus bas) + tests unitaires
 - [x] `CookieAuthService` — guest auto, cookie HttpOnly `SameSite=None` en prod
 - [x] `DeezerClient` — recherche + preview + extraction `CoverHash`
 - [x] `BackgroundService` génération défi quotidien (minuit UTC, retry toutes les 10 min en cas d'échec — planification via `DailySchedule.NextUtcHour` + `DelayUntilAsync`, attente sur cible d'horloge murale : un réveil anticipé de `Task.Delay` ne saute plus de jour, incident du 2026-07-13 / piège 19)
@@ -52,6 +52,7 @@
 - [x] Seed enrichi : 5 morceaux sans preview (The Beatles, Pink Floyd, Bob Dylan, Led Zeppelin, Fleetwood Mac — IDs >= `9_000_000_000`) pour tester le flux "↻ Actualiser"
 - [x] Dashboard admin redesigné : KPI tiles jour sélectionné (complétés, abandons, taux de complétion, score médian), sélecteur de jour (← → sur les dates ayant un défi), barres 30j cliquables (jours sans activité affichés à zéro), `GET /api/admin/stats?date=` (param date, `AvailableDates`, `SelectedDayKpis`, Pending→Abandoned pour les jours passés)
 - [x] **Corrections d'incohérences trouvées lors d'un audit de code** (2026-07-16) — `/api/admin/login` invoque maintenant réellement `LoginHandler` via le bus Wolverine au lieu de dupliquer sa logique dans l'endpoint (le handler était du code mort, testé mais jamais exécuté) ; `DeezerRankSnapshot` posé de façon cohérente (`i+1`) par `DailyChallengeGenerator` et le seed E2E, comme `CreateChallengeHandler` (avant toujours `0` sur les deux premiers chemins)
+- [x] **Refonte de la prolongation « écouter plus »** (2026-07-17) — plus de malus de score (`ScoreCalculator.Calculate` n'a plus de paramètre `wasExtended` ; le score dépend uniquement du palier finalement écouté, direct ou prolongé) ; prolongations libres et chaînables côté front (`AudioPlayerService.extend()`, plus de limite à une seule), comportement dual selon que l'audio joue encore (continue depuis la position réelle) ou non (relit depuis le début) ; setting `MaxExtensionsPerAnswer` supprimé (jamais appliqué nulle part) via la migration `RemoveMaxExtensionsPerAnswerSetting` ; `GameSessionAnswer.WasExtended` conservé uniquement pour les stats admin — nouveau champ `TrackStatsDto.ExtendedRate` (% de réponses prolongées) affiché dans l'onglet Défis
 
 ## ✅ Frontend
 
@@ -98,7 +99,7 @@
 - [x] **Boot tolérant si `/api/settings` KO** — `catchError` dans `SettingsService.load()`, l'app démarre avec les valeurs par défaut des signals
 - [x] **Feedback échec de copie partage** — `GameComponent.copyToClipboard()` catch le rejet de `clipboard.writeText`, input `failed` sur `ShareButtonComponent` + clé `share.failed`
 - [x] **Optimisations performance front** (2026-07-02) — `ChangeDetectionStrategy.OnPush` sur les 23 composants Angular, `takeUntilDestroyed(destroyRef)` sur toutes les subscriptions Observables (`game.component.ts`, `blind-round.component.ts`, `admin-pool.service.ts`, `admin-actions.service.ts`), tracking des handles `setTimeout` + `clearTimeout()` avant recréation dans `admin-pool.service.ts` et `admin-actions.service.ts`
-- [x] **`AudioPlayerService.extend()` réellement branché** (2026-07-16) — `listenMore()` appelle désormais `extend()` au lieu de relire le morceau depuis le début ; fonctionne pendant la lecture comme après l'arrêt naturel du palier (reprend la lecture en pause) ; temps restant et progression basés sur `audio.currentTime` réel (plus un delta théorique qui cassait la barre de progression) ; le bouton « écouter plus » se masque après la première extension. Conséquence : le malus de score de 25 % (`WasExtended`) s'applique désormais réellement — voir [`GAMEPLAY_RULES_FR.md`](GAMEPLAY_RULES_FR.md)
+- [x] **`AudioPlayerService.extend()` branché depuis `listenMore()`** (2026-07-16) — temps restant et progression basés sur `audio.currentTime` réel. Redesign complet le 2026-07-17 : voir l'entrée « Refonte de la prolongation » ci-dessus (plus de limite à une seule prolongation, plus de malus de score) — voir [`GAMEPLAY_RULES_FR.md`](GAMEPLAY_RULES_FR.md)
 
 ## ✅ Déploiement
 
