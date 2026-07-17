@@ -75,7 +75,7 @@
                   {{ 'blindRound.replay' | translate: { seconds: chosenDuration() } }}
                 </button>
 
-                @if (nextDuration() && !audio.extended()) {
+                @if (nextDuration()) {
                   <button
                     type="button"
                     (click)="listenMore()"

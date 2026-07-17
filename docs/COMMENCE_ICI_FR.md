@@ -111,7 +111,7 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 
 - **N morceaux par jour** (configurable via `TracksPerChallenge` en BD, défaut 3), même set pour tout le monde
 - **Paliers d'écoute** : 0.5, 1, 1.5, 2, 3, 5, 10 secondes (configurable via la table `Settings`)
-- **1 prolongation** autorisée par réponse (passe au palier supérieur, scoring sur le palier final)
+- **Prolongations libres** (« écouter plus »), sans limite de nombre, jusqu'au dernier palier — scoring toujours basé sur le palier final, aucun malus
 - **Timer de saisie** : 20s après la fin de la lecture pour saisir artiste + titre (configurable)
 - **Scoring partiel** : `ArtistCorrect` et `TitleCorrect` séparés
 - **Anti-triche** : scoring 100% serveur, contrainte BD `UNIQUE (PlayerId, DailyChallengeId)`, durée stockée = palier choisi (validée côté serveur contre la liste autorisée)

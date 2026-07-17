@@ -203,7 +203,8 @@
       "max": "Max",
       "artist": "Artiste",
       "title": "Titre",
-      "avgListen": "Écoute moy."
+      "avgListen": "Écoute moy.",
+      "extended": "Prolongé"
     },
     "pool": {
       "runwayDay": "jour de défis restant",

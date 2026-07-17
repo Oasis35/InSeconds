@@ -60,7 +60,7 @@
                   @for (t of c.tracks; track t.position) {
                     <div class="bg-gray-700 rounded-lg p-3 flex flex-col gap-2">
                       <p class="text-xs font-medium text-white">{{ t.position }}. {{ t.artist }} — {{ t.title }}</p>
-                      <div class="grid grid-cols-3 gap-2 text-xs">
+                      <div class="grid grid-cols-4 gap-2 text-xs">
                         <div class="flex flex-col gap-0.5">
                           <span class="text-gray-500">{{ 'admin.dashboard.artist' | translate }}</span>
                           <span class="font-medium" [class]="stats.rateColor(t.artistCorrectRate)">{{ t.artistCorrectRate | number:'1.0-0' }}%</span>
@@ -68,6 +68,10 @@
                         <div class="flex flex-col gap-0.5">
                           <span class="text-gray-500">{{ 'admin.dashboard.title' | translate }}</span>
                           <span class="font-medium" [class]="stats.rateColor(t.titleCorrectRate)">{{ t.titleCorrectRate | number:'1.0-0' }}%</span>
+                        </div>
+                        <div class="flex flex-col gap-0.5">
+                          <span class="text-gray-500">{{ 'admin.dashboard.extended' | translate }}</span>
+                          <span class="text-gray-300 font-medium">{{ t.extendedRate | number:'1.0-0' }}%</span>
                         </div>
                         <div class="flex flex-col gap-0.5">
                           <span class="text-gray-500">{{ 'admin.dashboard.avgListen' | translate }}</span>

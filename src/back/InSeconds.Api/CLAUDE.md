@@ -22,7 +22,7 @@ Doc détaillée du backend. Vue d'ensemble générale, conventions .NET globales
 
 **Handler** (`db, ScoreCalculator, TextNormalizer, SettingsService`) :
 - Vérifs : session introuvable→404, `PlayerId` différent→403, `Status!=Pending`→403, track introuvable dans ce défi→404, déjà répondue→**409** `already_answered`.
-- Correction via `TextNormalizer.IsMatch` (artiste et titre séparément), score via `ScoreCalculator.Calculate`.
+- Correction via `TextNormalizer.IsMatch` (artiste et titre séparément), score via `ScoreCalculator.Calculate` — **basé uniquement sur le palier `ListenedDurationSeconds` finalement écouté**, `WasExtended` n'entre plus dans le calcul (cf. `ScoreCalculator` ci-dessous). `WasExtended` reste stocké sur `GameSessionAnswer` pour les stats admin (`ExtendedRate`).
 - **Stats avant/après calculées en mémoire** : lit les stats agrégées déjà en base avant d'insérer la réponse courante, combine en mémoire — évite un aller-retour DB après `SaveChanges`.
 - Réinitialise le verrou anti-cheat (`CurrentTrackId=null`, `CurrentTrackMinListenedSeconds=null`).
 - **Détection de complétion** : réponses en base +1 (courante pas encore persistée) ≥ `TracksPerChallenge` et `Status==Pending` → `Completed`, `CompletedAt=UtcNow`.
@@ -67,7 +67,7 @@ Délègue à `PreviewStatusRefresher.RefreshAsync` (voir ChallengeGeneration). `
 
 ### Admin/Stats/GetAdminStats — `GET /api/admin/stats?date=`
 
-Utilise `IDbContextFactory<ApplicationDbContext>` pour **5 requêtes en parallèle**, chacune avec son propre `DbContext` (non thread-safe sinon) : `BuildChallengeStats` (30 derniers défis, min/max/moyenne/médiane, stats par track), `BuildDailyActivity` (30 jours glissants, 0 par défaut), `BuildPlayerBreakdown` (guests/registered/actifs 7j/30j, exclut `IsDeleted`), `BuildAvailableDates`, `BuildDailyKpis` (date sélectionnée — **jour passé : Pending compté comme Abandoned**, `CompletionRate` + médiane). Médiane calculée manuellement (tri + moyenne des 2 valeurs centrales si pair).
+Utilise `IDbContextFactory<ApplicationDbContext>` pour **5 requêtes en parallèle**, chacune avec son propre `DbContext` (non thread-safe sinon) : `BuildChallengeStats` (30 derniers défis, min/max/moyenne/médiane, stats par track — dont `ExtendedRate` = % des réponses de ce track avec `WasExtended=true`), `BuildDailyActivity` (30 jours glissants, 0 par défaut), `BuildPlayerBreakdown` (guests/registered/actifs 7j/30j, exclut `IsDeleted`), `BuildAvailableDates`, `BuildDailyKpis` (date sélectionnée — **jour passé : Pending compté comme Abandoned**, `CompletionRate` + médiane). Médiane calculée manuellement (tri + moyenne des 2 valeurs centrales si pair).
 
 ### Admin/Tracks/AddTrack — `POST /api/admin/tracks`
 
@@ -148,11 +148,11 @@ Implémente `IDataProtectionKeyContext` (clés persistées en base, cf. piège 1
 - **`DailyChallengeTrackConfiguration`** : FK `Track` Restrict ; index unique composite `(DailyChallengeId, Position)` et `(DailyChallengeId, TrackId)`.
 - **`GameSessionConfiguration`** : FK `Player` cascade, `DailyChallenge` restrict. **Query filter** `!s.Player.IsDeleted`. Index unique `(PlayerId, DailyChallengeId)` (**anti-rejeu**). Index `(PlayerId, Status, DailyChallengeId)` = `IX_GameSessions_PlayerStatusChallenge`. Index `(DailyChallengeId, Status)` = `IX_GameSessions_ChallengeStatus`. Index leaderboard `(DailyChallengeId, TotalScore DESC, TotalDurationSeconds ASC)` avec `IncludeProperties(PlayerId)` (index couvrant).
 - **`GameSessionAnswerConfiguration`** : FK `Track` restrict. **Query filter** `!a.GameSession.Player.IsDeleted`. Index unique `(GameSessionId, DailyChallengeTrackId)` (empêche double réponse).
-- **`SettingConfiguration`** : index unique `Key`. **`HasData` seed** : les 5 settings par défaut (voir tableau dans le CLAUDE.md racine).
+- **`SettingConfiguration`** : index unique `Key`. **`HasData` seed** : les 4 settings par défaut (voir tableau dans le CLAUDE.md racine).
 
 ### Migrations structurantes (historique, pas exhaustif)
 
-`InitialCreate` → `UpdateTracksPerChallengeTo3` → `AddTrackCoverUrl`/`RenameCoverUrlToCoverHash` → `AddCoverUrlTemplateSetting` → `DecimalDurations` (int→numeric + migration des settings vers valeurs fractionnaires) → `PlayerStreak` → `SessionStatus` (+ migration données existantes du joueur dev en `Completed`) → `AddTrackHasPreview` → `AddSessionAntiCheat` → `AddPerformanceIndexes` → `PersistDataProtectionKeys`.
+`InitialCreate` → `UpdateTracksPerChallengeTo3` → `AddTrackCoverUrl`/`RenameCoverUrlToCoverHash` → `AddCoverUrlTemplateSetting` → `DecimalDurations` (int→numeric + migration des settings vers valeurs fractionnaires) → `PlayerStreak` → `SessionStatus` (+ migration données existantes du joueur dev en `Completed`) → `AddTrackHasPreview` → `AddSessionAntiCheat` → `AddPerformanceIndexes` → `PersistDataProtectionKeys` → `RemoveMaxExtensionsPerAnswerSetting` (`DeleteData` sur le Setting `Id=3`, jamais appliqué nulle part — cf. décision d'architecture racine).
 
 **Règle** : `UpdateData` EF est insuffisant pour modifier des `Settings` déjà en base prod — utiliser `migrationBuilder.Sql("UPDATE ...")` (cf. décision d'architecture racine).
 
@@ -185,15 +185,14 @@ Remplace le vrai `HttpClient`. `/track/{id}` : preview vide si `id >= 9_000_000_
 ## Common/Scoring — `ScoreCalculator`
 
 ```
-Calculate(listenedDuration, wasExtended, artistCorrect, titleCorrect, durationScores):
+Calculate(listenedDuration, artistCorrect, titleCorrect, durationScores):
   !artistCorrect && !titleCorrect → 0
   duration absente de durationScores → 0
   base = durationScores[duration]
-  wasExtended → base = round(base * 0.75)
   artistCorrect && titleCorrect → base
   sinon (un seul correct) → round(base * 0.5)
 ```
-Lookup exact du palier (pas d'interpolation), pas de bonus streak/vitesse hors palier.
+Lookup exact du palier (pas d'interpolation), pas de bonus streak/vitesse hors palier. **Pas de malus de prolongation** (décision du 2026-07-17, cf. `GAMEPLAY_RULES_FR.md`) : le score ne dépend que du palier finalement écouté, qu'il ait été atteint directement ou via « écouter plus » — `WasExtended` n'est plus un paramètre de `Calculate`, il reste seulement stocké sur `GameSessionAnswer` pour les stats admin.
 
 ## Common/Settings
 

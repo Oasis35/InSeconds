@@ -77,33 +77,42 @@ export class AudioPlayerService {
     this.audio.play().catch(() => { if (this.playToken === token) this.state.set('idle'); });
   }
 
-  /** Une seule prolongation autorisée — passe au palier supérieur sans relire depuis le début. */
+  /**
+   * Prolonge l'écoute jusqu'à `nextDurationSeconds` (chaînable, pas de limite au nombre d'appels).
+   * Si la lecture est en cours, continue depuis la position actuelle (pas de replay de l'intro).
+   * Sinon (palier fini / idle), relit depuis le début jusqu'au nouveau palier.
+   */
   extend(nextDurationSeconds: number): void {
     if (!this.audio) return;
-    if (this.wasExtended || nextDurationSeconds <= this.currentDuration) return;
-    if (this.state() !== 'playing' && this.state() !== 'finished') return;
+    if (nextDurationSeconds <= this.currentDuration) return;
 
     this.wasExtended = true;
     this.extended.set(true);
-
-    const wasFinished = this.state() === 'finished';
-    const token = this.playToken; // continuité de la même lecture, pas un nouveau token
     this.currentDuration = nextDurationSeconds;
 
     if (this.stopTimer !== null) { clearTimeout(this.stopTimer); this.stopTimer = null; }
 
-    if (wasFinished) {
-      // Le palier initial est déjà entièrement écoulé (lecteur en pause) : reprendre depuis cette position.
-      this.audio.oncanplay = null; // évite qu'un `canplay` tardif ne rejoue le handler périmé de play()
-      this.state.set('playing');
-      this.audio.play().catch(() => { if (this.playToken === token) this.state.set('idle'); });
-      this.startRaf(token);
+    if (this.state() === 'playing') {
+      // Continue depuis la position réelle de lecture (pas un delta théorique) : pas de replay.
+      const token = this.playToken; // continuité de la même lecture, pas un nouveau token
+      const remaining = Math.max(0, nextDurationSeconds - this.audio.currentTime);
+      this.scheduleStop(remaining, token);
+      return;
     }
 
-    // Se base sur la position réelle de lecture (pas un delta théorique) : correct que l'extension
-    // soit déclenchée en cours de lecture ou après l'arrêt naturel du palier initial.
-    const remaining = Math.max(0, nextDurationSeconds - this.audio.currentTime);
-    this.scheduleStop(remaining, token);
+    // Pas en cours de lecture (fini / idle) : relit depuis le début jusqu'au nouveau palier.
+    const token = ++this.playToken;
+    this.stopRaf();
+    this.audio.pause();
+    this.audio.oncanplay = null; // évite qu'un `canplay` tardif ne rejoue le handler périmé de play()
+    this.audio.onerror = null;
+
+    this.audio.currentTime = 0;
+    this.state.set('playing');
+    this.progress.set(0);
+    this.audio.play().catch(() => { if (this.playToken === token) this.state.set('idle'); });
+    this.scheduleStop(nextDurationSeconds, token);
+    this.startRaf(token);
   }
 
   stop(): { listenedSeconds: number; wasExtended: boolean } {

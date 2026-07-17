@@ -2,6 +2,8 @@
 
 > Référence unique des règles produit du blind test. Avant, ces règles étaient éparpillées entre `COMMENCE_ICI_FR.md` (rappel rapide), `BACKEND_STRUCTURE_FR.md` (formule `ScoreCalculator`) et les pièges du [`CLAUDE.md`](../CLAUDE.md) — ce qui a d'ailleurs causé une ambiguïté réelle lors d'un audit de code (le comportement exact de la prolongation "écouter plus" n'était tranché nulle part). Ce document est la source de vérité produit ; si le code diverge, c'est le code qui a raison, mais ce doc doit alors être corrigé.
 >
+> **2026-07-17** : la prolongation "écouter plus" a été repensée — plus de malus de score, plus de limite au nombre de prolongations. Voir la section dédiée ci-dessous pour le raisonnement.
+>
 > Pour chaque règle, la mention **[Back]** / **[Front]** indique où elle est réellement appliquée (utile pour savoir si modifier un `Setting` en base suffit, ou s'il faut aussi toucher au code).
 
 ## Déroulé d'une partie
@@ -28,16 +30,25 @@ Moins on écoute, plus on marque. Le score de base est un **lookup exact** du pa
 
 ## Prolongation « écouter plus »
 
-- Après avoir écouté un palier, le joueur peut prolonger l'écoute jusqu'au palier suivant **une seule fois** par morceau (`AudioPlayerService.extend()`), sans relire depuis le début — la lecture continue là où elle s'était arrêtée (ou reprend si le palier initial s'est déjà terminé naturellement). **[Front]**
-- Utiliser la prolongation applique un **malus de 25 %** sur le score de base (`baseScore * 0.75`), en plus du score déjà plus bas du palier final choisi. **[Back]**, dans `ScoreCalculator.Calculate` via le flag `WasExtended`.
-- ⚠️ **`Settings.MaxExtensionsPerAnswer` (défaut 1) est chargé mais n'est actuellement appliqué nulle part** — ni back ni front ne lisent cette valeur pour autoriser plus d'une prolongation. La limite réelle observée est **codée en dur à 1** côté front (`AudioPlayerService.extend()` refuse toute deuxième prolongation via un booléen interne, indépendamment de la valeur du setting). Changer ce setting en base n'aurait aujourd'hui aucun effet — il faudrait aussi réécrire `extend()` pour lire `Settings.MaxExtensionsPerAnswer`.
+- Après avoir écouté un palier, le joueur peut prolonger l'écoute jusqu'au palier suivant, **autant de fois qu'il veut**, jusqu'au dernier palier configuré (`AudioPlayerService.extend()`, appelé depuis `BlindRoundComponent.listenMore()`). **[Front]**
+- **Comportement dual selon que l'audio joue encore ou non** :
+  - Si l'audio est **en cours de lecture**, la prolongation continue depuis la position réelle (`audio.currentTime`) — pas de replay de l'intro, juste un reschedule de l'arrêt automatique au nouveau palier.
+  - Si l'audio **n'est pas en cours de lecture** (palier précédent déjà terminé, ou état `idle`), la prolongation **relit le morceau depuis le début** jusqu'au nouveau palier.
+- **Aucun malus de score** : le score ne dépend que du **palier finalement écouté** — qu'il ait été atteint directement au premier choix ou via une ou plusieurs prolongations, le calcul est strictement identique (`ScoreCalculator.Calculate` ne prend plus `wasExtended` en paramètre). **[Back]**
+  - Raisonnement produit : le barème par palier (ci-dessus) est déjà dégressif — écouter plus longtemps rapporte déjà moins de points. Ajouter un malus *en plus* du barème pénalisait deux fois un joueur parti prudent sur un petit palier (ex. 0,5s) qui doit ensuite prolonger : il finissait avec **moins de points qu'un joueur ayant choisi le palier final directement**, pour un temps d'écoute identique — ce qui décourageait exactement la stratégie qu'on veut encourager (tenter petit, sécuriser si besoin).
+- `GameSessionAnswer.WasExtended` reste enregistré (à des fins de stats admin uniquement, voir plus bas), mais n'a plus aucun effet sur le calcul du score.
+- Le setting `Settings.MaxExtensionsPerAnswer` (qui n'a jamais été réellement appliqué nulle part, ni back ni front) a été **supprimé** (migration `RemoveMaxExtensionsPerAnswerSetting`) — il n'y a plus de notion de nombre maximal de prolongations à configurer.
 
 ## Scoring partiel
 
 - `ArtistCorrect` et `TitleCorrect` sont évalués séparément (comparaison via `TextNormalizer.IsMatch`, tolérance Levenshtein ≤ 2 caractères après normalisation — accents supprimés, parenthèses/crochets ignorés, stop-words filtrés). **[Back]**
 - Aucun des deux correct → **score = 0**.
-- Un seul des deux correct (artiste OU titre) → **score de base × 0,5** (après malus prolongation éventuel).
-- Les deux corrects → score de base plein (après malus prolongation éventuel).
+- Un seul des deux correct (artiste OU titre) → **score de base × 0,5** (du palier finalement écouté).
+- Les deux corrects → score de base plein (du palier finalement écouté).
+
+## Stats admin sur la prolongation
+
+- **`ExtendedRate`** (`TrackStatsDto`, `GET /api/admin/stats`) — % des réponses sur un morceau où le joueur a prolongé l'écoute au moins une fois (`WasExtended=true`). Purement informatif (n'affecte rien côté jeu), affiché dans l'onglet Défis de l'admin, tuile « Prolongé » à côté des taux artiste/titre/écoute moyenne. **[Back + Front]**
 
 ## Morceaux sans preview
 
@@ -68,7 +79,6 @@ Si `Track.HasPreview = false`, le joueur ne peut pas écouter : bouton « Passer
 | `AllowedDurationsSeconds` | `0.50,1,1.5,2,3,5,10` | ✅ Back (validation) + Front (paliers affichés) |
 | `DurationScores` | voir table ci-dessus | ✅ Back (scoring) + Front (tooltip points) |
 | `CoverUrlTemplate` | URL Deezer | ✅ Back (reconstruction des pochettes) |
-| `MaxExtensionsPerAnswer` | `1` | ❌ Non lu — limite réelle codée en dur à 1 côté front |
 | `GuessTimerSeconds` | `20` | ❌ Non appliqué — aucun timer réel en jeu aujourd'hui |
 
 Détail du mécanisme de chargement (`AppDbConfigurationSource`, `IOptions<AppSettings>`) : voir [`BACKEND_STRUCTURE_FR.md`](BACKEND_STRUCTURE_FR.md#settings--chargement-au-boot) et [`CLAUDE.md`](../CLAUDE.md).
