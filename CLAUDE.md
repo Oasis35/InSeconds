@@ -229,7 +229,7 @@ npm run e2e:ui   # mode UI interactif Playwright
 
 ## CI / GitHub Actions
 
-Workflow `.github/workflows/ci.yml`, déclenché sur **push toutes branches + PR vers `main`**, avec `cancel-in-progress` pour annuler les runs obsolètes :
+Workflow `.github/workflows/ci.yml`, déclenché sur **push toutes branches + PR vers `main`**, avec `cancel-in-progress` pour annuler les runs obsolètes : groupe de concurrence `${{ github.head_ref || github.ref }}` (pas juste `github.ref`) — sinon un push sur une branche avec PR ouverte déclenche deux runs pour le même commit (`push` sur `refs/heads/<branch>` et `pull_request` sur `refs/pull/<n>/merge`, deux groupes différents) qui tournent en parallèle au lieu de s'annuler l'un l'autre (bug observé et corrigé le 2026-07-23).
 
 - **Job `back`** : restore + `dotnet build InSeconds.slnx --configuration Release` + `dotnet ef migrations has-pending-model-changes` (fail si une modif `Domain/` ou `Configurations/` n'a pas de migration associée)
 - **Job `unit-tests`** : `dotnet test` sur `InSeconds.Api.UnitTests`
