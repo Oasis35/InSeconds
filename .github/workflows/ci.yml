@@ -10,11 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  # github.head_ref n'est défini que sur les événements pull_request (= nom de la branche
-  # source) ; sur push il est vide, on retombe sur github.ref. Sans ça, push et pull_request
-  # sur le même commit atterrissaient dans deux groupes différents (refs/heads/<branch> vs
-  # refs/pull/<n>/merge) et tournaient en double au lieu de s'annuler l'un l'autre.
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

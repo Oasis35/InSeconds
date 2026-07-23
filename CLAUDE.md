@@ -229,7 +229,9 @@ npm run e2e:ui   # mode UI interactif Playwright
 
 ## CI / GitHub Actions
 
-Workflow `.github/workflows/ci.yml`, déclenché sur **push toutes branches + PR vers `main`**, avec `cancel-in-progress` pour annuler les runs obsolètes : groupe de concurrence `${{ github.head_ref || github.ref }}` (pas juste `github.ref`) — sinon un push sur une branche avec PR ouverte déclenche deux runs pour le même commit (`push` sur `refs/heads/<branch>` et `pull_request` sur `refs/pull/<n>/merge`, deux groupes différents) qui tournent en parallèle au lieu de s'annuler l'un l'autre (bug observé et corrigé le 2026-07-23).
+Workflow `.github/workflows/ci.yml`, déclenché sur **push toutes branches + PR vers `main`**, avec `cancel-in-progress` pour annuler les runs obsolètes.
+
+**Doublon connu (non corrigé, volontairement)** : sur une branche avec PR ouverte, chaque push déclenche deux runs pour le même commit (`push` sur `refs/heads/<branch>` et `pull_request` sur `refs/pull/<n>/merge` — deux groupes de concurrence différents car basés sur `github.ref`). Le fix naturel (`github.head_ref || github.ref` dans `concurrency.group`) fait échouer la Quality Gate SonarCloud (`C Security Rating on New Code`) : `github.head_ref` est le nom de branche fourni par l'auteur de la PR (contrôlable depuis un fork), que Sonar traite comme entrée non fiable dès qu'il apparaît dans un workflow — même utilisé sans risque réel ici (simple identifiant de groupe, jamais interprété en shell). Tenté et reverté le 2026-07-23. Solution propre restant à évaluer : restreindre le trigger `push` à `main` uniquement (`push.branches: [main]`) et laisser `pull_request` couvrir les branches de feature — supprime le doublon sans toucher à la concurrency, mais change le moment où la CI remonte un premier retour (plus de run tant qu'aucune PR n'est ouverte).
 
 - **Job `back`** : restore + `dotnet build InSeconds.slnx --configuration Release` + `dotnet ef migrations has-pending-model-changes` (fail si une modif `Domain/` ou `Configurations/` n'a pas de migration associée)
 - **Job `unit-tests`** : `dotnet test` sur `InSeconds.Api.UnitTests`
