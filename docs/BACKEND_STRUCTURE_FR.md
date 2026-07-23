@@ -240,7 +240,7 @@ Résout ou crée un `Player` guest à partir du cookie HTTP-only signé. `SameSi
 Cache `IMemoryCache` devant `DeezerClient` pour les données partagées entre joueurs (utilisé par `StartSession` et le proxy `/api/deezer/search` ; **pas** côté admin ni dans `PreviewStatusRefresher`, qui ont besoin de l'état Deezer réel).
 
 - **Preview URLs** : TTL 24h **borné par l'expiration de la signature CDN** de l'URL (`?hdnea=exp=<unix>~...`) moins 1h de marge. Une URL signée expirée provoque un 403 CDN à la lecture côté joueur — un TTL fixe qui dépasse la validité de la signature reproduit ce bug.
-- **Recherches autocomplete** : TTL 1h, clé normalisée (trim + lowercase).
+- **Recherches autocomplete** : TTL 1h, clé normalisée (trim + lowercase + `limit`, paramètre optionnel défaut 10 — l'endpoint public sur-demande 20 pour compenser la dédup).
 - Ne cache jamais une preview absente ni un résultat de recherche vide (un échec Deezer transitoire ne doit pas être mémorisé).
 
 ## Observabilité
@@ -269,7 +269,7 @@ Les deux endpoints sont publics (mappés avant `PlayerAuthMiddleware`). Logging 
 | `Admin/RefreshPreviews` | `POST /api/admin/refresh-previews` | Relance le re-check des previews (délègue à `PreviewStatusRefresher`), retourne `{ checked, updated, failed }` |
 | `Admin/ResetToday` | `DELETE /api/admin/reset-today` | Supprime le défi du jour |
 | `Admin/Stats` | `GET /api/admin/stats` | Dashboard : activité 30j, répartition joueurs, stats par défi |
-| `Deezer/Search` (public) | `GET /api/deezer/search?q=` | Proxy autocomplete Deezer (contourne CORS navigateur) |
+| `Deezer/Search` (public) | `GET /api/deezer/search?q=` | Proxy autocomplete Deezer (contourne CORS navigateur) ; nettoie parenthèses/crochets des titres et déduplique (`SearchEndpoint.CleanAndDeduplicate`), sur-demande 20 résultats bruts pour compenser |
 | `ChallengeGeneration` | BackgroundService | Génère le défi quotidien à minuit UTC (retry toutes les 10 min en cas d'échec ou de pool insuffisant) — filtre les tracks sans preview active ; planification via `DailySchedule.NextUtcHour` + `DelayUntilAsync` (attente sur cible d'horloge murale — un réveil anticipé de `Task.Delay` ne saute plus de jour) |
 | `ChallengeGeneration` (refresh) | BackgroundService | `RefreshPreviewStatusService` à 23h UTC (avant la génération de minuit) — re-vérifie `Track.HasPreview` via `PreviewStatusRefresher` (lots de 10 espacés de 1,5 s, flag jamais modifié sur un échec Deezer) |
 
