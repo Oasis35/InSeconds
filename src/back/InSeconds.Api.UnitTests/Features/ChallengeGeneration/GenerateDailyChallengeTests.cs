@@ -110,7 +110,7 @@ public sealed class GenerateDailyChallengeTests
 
         challengeTracks.Should().HaveCount(3);
         challengeTracks.Select(t => t.Position).Should().BeEquivalentTo([1, 2, 3]);
-        challengeTracks.Should().AllSatisfy(t => t.DeezerRankSnapshot.Should().Be(0));
+        challengeTracks.Should().AllSatisfy(t => t.DeezerRankSnapshot.Should().Be(t.Position));
     }
 
     [Fact]

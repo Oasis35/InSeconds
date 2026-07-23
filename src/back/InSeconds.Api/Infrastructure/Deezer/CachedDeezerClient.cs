@@ -58,13 +58,13 @@ public sealed partial class CachedDeezerClient(DeezerClient deezer, IMemoryCache
         return remaining < PreviewTtl ? remaining : PreviewTtl;
     }
 
-    public async Task<IReadOnlyList<DeezerTrackInfo>> SearchTracksAsync(string query, CancellationToken ct = default)
+    public async Task<IReadOnlyList<DeezerTrackInfo>> SearchTracksAsync(string query, CancellationToken ct = default, int limit = 10)
     {
-        var key = $"deezer:search:{query.Trim().ToLowerInvariant()}";
+        var key = $"deezer:search:{limit}:{query.Trim().ToLowerInvariant()}";
         if (cache.TryGetValue(key, out IReadOnlyList<DeezerTrackInfo>? cached))
             return cached!;
 
-        var results = await deezer.SearchTracksAsync(query, ct);
+        var results = await deezer.SearchTracksAsync(query, ct, limit);
 
         // Une liste vide peut être un échec réseau (DeezerClient renvoie [] dans les deux cas) :
         // on ne cache que les résultats non vides.

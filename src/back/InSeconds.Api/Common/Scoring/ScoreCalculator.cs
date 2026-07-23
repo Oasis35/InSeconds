@@ -4,7 +4,6 @@ public sealed class ScoreCalculator
 {
     public int Calculate(
         decimal listenedDurationSeconds,
-        bool wasExtended,
         bool artistCorrect,
         bool titleCorrect,
         Dictionary<decimal, int> durationScores)
@@ -14,9 +13,6 @@ public sealed class ScoreCalculator
 
         if (!durationScores.TryGetValue(listenedDurationSeconds, out var baseScore))
             return 0;
-
-        if (wasExtended)
-            baseScore = (int)Math.Round(baseScore * 0.75);
 
         if (artistCorrect && titleCorrect)
             return baseScore;

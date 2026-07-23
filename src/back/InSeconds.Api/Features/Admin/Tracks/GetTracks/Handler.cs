@@ -7,24 +7,27 @@ public sealed class GetTracksHandler(ApplicationDbContext db)
 {
     public async Task<IResult> Handle(CancellationToken cancellationToken)
     {
-        var usedTrackIds = await db.DailyChallengeTracks
-            .AsNoTracking()
-            .Select(dct => dct.TrackId)
-            .Distinct()
-            .ToListAsync(cancellationToken);
-
         var allTracks = await db.Tracks
             .AsNoTracking()
             .OrderBy(t => t.Artist)
+            .Select(t => new
+            {
+                t.Id,
+                t.Artist,
+                t.Title,
+                t.DeezerTrackId,
+                t.HasPreview,
+                IsUsed = t.DailyChallengeTracks.Any(),
+            })
             .ToListAsync(cancellationToken);
 
         var available = allTracks
-            .Where(t => !usedTrackIds.Contains(t.Id))
+            .Where(t => !t.IsUsed)
             .Select(t => new TrackDto(t.Id, t.Artist, t.Title, t.DeezerTrackId, HasPreview: t.HasPreview))
             .ToList();
 
         var used = allTracks
-            .Where(t => usedTrackIds.Contains(t.Id))
+            .Where(t => t.IsUsed)
             .Select(t => new TrackDto(t.Id, t.Artist, t.Title, t.DeezerTrackId))
             .ToList();
 

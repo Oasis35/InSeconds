@@ -183,7 +183,7 @@ public static class E2EResetEndpoint
                 DailyChallengeId   = challenges[i].Id,
                 TrackId            = t.Id,
                 Position           = pos + 1,
-                DeezerRankSnapshot = 0,
+                DeezerRankSnapshot = pos + 1,
             }));
         }
         db.SaveChanges();

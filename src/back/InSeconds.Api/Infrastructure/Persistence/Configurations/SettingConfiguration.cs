@@ -40,14 +40,6 @@ public sealed class SettingConfiguration : IEntityTypeConfiguration<Setting>
             },
             new Setting
             {
-                Id = 3,
-                Key = "MaxExtensionsPerAnswer",
-                Value = "1",
-                Description = "Nombre maximal de prolongations autorisées par réponse.",
-                UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-            },
-            new Setting
-            {
                 Id = 4,
                 Key = "TracksPerChallenge",
                 Value = "3",

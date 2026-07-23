@@ -30,6 +30,28 @@ internal sealed class FakeDeezerHandler : HttpMessageHandler
 
         if (path.StartsWith("/search", StringComparison.OrdinalIgnoreCase))
         {
+            var query = request.RequestUri?.Query ?? "";
+
+            // Déclencheur pour les tests d'intégration du nettoyage/dédup de l'autocomplete
+            // public (SearchEndpoint.CleanAndDeduplicate) : plusieurs variantes parenthésées
+            // du même morceau + un morceau distinct.
+            if (query.Contains("dedup-test", StringComparison.OrdinalIgnoreCase))
+            {
+                var dedupJson = $$"""
+                    { "data": [
+                      { "id": 1, "title": "E2E Track (Remastered 2011)", "preview": "{{PreviewUrl}}",
+                        "artist": { "id": 1, "name": "E2E Artist" }, "album": { "id": 1, "cover_medium": null } },
+                      { "id": 2, "title": "E2E Track (Live)", "preview": "{{PreviewUrl}}",
+                        "artist": { "id": 1, "name": "E2E Artist" }, "album": { "id": 1, "cover_medium": null } },
+                      { "id": 3, "title": "E2E Track", "preview": "{{PreviewUrl}}",
+                        "artist": { "id": 1, "name": "E2E Artist" }, "album": { "id": 1, "cover_medium": null } },
+                      { "id": 4, "title": "Another Track", "preview": "{{PreviewUrl}}",
+                        "artist": { "id": 2, "name": "Other Artist" }, "album": { "id": 1, "cover_medium": null } }
+                    ]}
+                    """;
+                return Task.FromResult(JsonResponse(dedupJson));
+            }
+
             var json = $$"""
                 { "data": [
                   { "id": 1, "title": "E2E Track", "preview": "{{PreviewUrl}}",

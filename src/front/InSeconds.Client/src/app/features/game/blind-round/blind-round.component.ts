@@ -55,6 +55,7 @@ export class BlindRoundComponent implements OnDestroy {
   protected readonly chosenDuration = signal(0);
   protected readonly suggestions = signal<DeezerSuggestion[]>([]);
   protected readonly showSuggestions = signal(false);
+  protected readonly highlightedIndex = signal(-1);
   protected readonly showEmptyConfirm = signal(false);
   protected readonly isSubmitting = signal(false);
   protected readonly hoveredDuration = signal<number | null>(null);
@@ -71,7 +72,10 @@ export class BlindRoundComponent implements OnDestroy {
   });
 
   constructor() {
-    this.deezerSearch.search(this.query$).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(s => this.suggestions.set(s));
+    this.deezerSearch.search(this.query$).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(s => {
+      this.suggestions.set(s);
+      this.highlightedIndex.set(-1);
+    });
 
     // Quand le timer s'arrête (état finished, pas encore de résultat), mémoriser la durée écoutée
     effect(() => {
@@ -98,6 +102,7 @@ export class BlindRoundComponent implements OnDestroy {
     this.suggestions.set([]);
     this.showSuggestions.set(false);
     this.showEmptyConfirm.set(false);
+    this.highlightedIndex.set(-1);
   }
 
   onQueryChange(q: string): void {
@@ -112,11 +117,49 @@ export class BlindRoundComponent implements OnDestroy {
     setTimeout(() => this.showSuggestions.set(false), 150);
   }
 
+  onSearchKeydown(event: KeyboardEvent): void {
+    if (!this.showSuggestions() || this.suggestions().length === 0) return;
+
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        this.moveHighlight(1);
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        this.moveHighlight(-1);
+        break;
+      case 'Enter':
+        if (this.highlightedIndex() >= 0) {
+          event.preventDefault();
+          this.selectSuggestion(this.suggestions()[this.highlightedIndex()]);
+        }
+        break;
+      case 'Escape':
+        this.showSuggestions.set(false);
+        this.highlightedIndex.set(-1);
+        break;
+    }
+  }
+
+  private moveHighlight(delta: number): void {
+    const count = this.suggestions().length;
+    const current = this.highlightedIndex();
+
+    if (current === -1) {
+      this.highlightedIndex.set(delta > 0 ? 0 : count - 1);
+      return;
+    }
+
+    this.highlightedIndex.set((current + delta + count) % count);
+  }
+
   selectSuggestion(s: DeezerSuggestion): void {
     this.artistAnswer = s.artist;
     this.titleAnswer = s.title;
     this.searchQuery = `${s.artist} - ${s.title}`;
     this.showSuggestions.set(false);
+    this.highlightedIndex.set(-1);
   }
 
   skipNoPreview(): void {
@@ -146,7 +189,7 @@ export class BlindRoundComponent implements OnDestroy {
     const next = this.nextDuration();
     if (next) {
       this.chosenDuration.set(next);
-      this.audio.play(this.track().previewUrl, next);
+      this.audio.extend(next);
     }
   }
 
@@ -210,6 +253,7 @@ export class BlindRoundComponent implements OnDestroy {
     this.titleAnswer = '';
     this.searchQuery = '';
     this.suggestions.set([]);
+    this.highlightedIndex.set(-1);
     this.chosenDuration.set(0);
     this.isSubmitting.set(false);
     this.showNetworkError.set(false);

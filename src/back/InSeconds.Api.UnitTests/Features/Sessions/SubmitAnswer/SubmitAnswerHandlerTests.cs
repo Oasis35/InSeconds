@@ -224,9 +224,10 @@ public sealed class SubmitAnswerHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenExtended_AppliesPenalty()
+    public async Task Handle_WhenExtended_ScoresOnFinalDurationWithoutPenalty()
     {
-        // Arrange — palier final 5s après prolongation depuis 3s
+        // Arrange — palier final 5s après prolongation depuis 3s : pas de malus,
+        // le score ne dépend que du palier finalement écouté.
         await using var db = CreateDbContext();
         await SeedAsync(db);
         var command = BuildCommand(duration: 5, wasExtended: true, artist: "Daft Punk", title: "Get Lucky");
@@ -236,8 +237,11 @@ public sealed class SubmitAnswerHandlerTests
 
         // Assert
         var response = AssertOk<SubmitAnswerResponse>(result).Value!;
-        response.Score.Should().Be(188); // 250 × 0.75 = 187.5 → 188
+        response.Score.Should().Be(250); // 5s = 250, aucun malus de prolongation
         response.AverageSecondsWhenCorrect.Should().Be(5);
+
+        var stored = await db.GameSessionAnswers.SingleAsync(a => a.GameSessionId == 1);
+        stored.WasExtended.Should().BeTrue(); // conservé pour les stats admin, sans effet sur le score
     }
 
     [Fact]
