@@ -106,6 +106,7 @@
               (ngModelChange)="onQueryChange($event)"
               (blur)="onBlur()"
               (focus)="showSuggestions.set(true)"
+              (keydown)="onSearchKeydown($event)"
               class="w-full pl-4 py-3.5 rounded-xl text-sm transition"
               [style.paddingRight]="searchQuery ? '2.5rem' : '1rem'"
               style="background:var(--bg-surface);color:var(--text-body);border:1px solid var(--border-strong);outline:none"
@@ -125,10 +126,12 @@
             @if (showSuggestions() && suggestions().length > 0) {
               <ul class="absolute z-10 w-full mt-1 rounded-xl overflow-hidden shadow-2xl"
                   style="background:var(--bg-surface);border:1px solid var(--border-strong)">
-                @for (s of suggestions(); track s.artist + s.title) {
+                @for (s of suggestions(); track s.artist + s.title; let i = $index) {
                   <li
                     (mousedown)="selectSuggestion(s)"
+                    (mouseenter)="highlightedIndex.set(i)"
                     class="px-4 py-3 cursor-pointer text-sm transition hover:bg-white/[0.03]"
+                    [style.background]="i === highlightedIndex() ? 'var(--bg-primary-dk)' : null"
                     style="border-bottom:1px solid rgba(255,255,255,0.04)">
                     <span class="font-medium" style="color:var(--text-body)">{{ s.artist }}</span>
                     <span style="color:var(--text-faint)"> — </span>

@@ -89,12 +89,12 @@ public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger)
         }
     }
 
-    public async Task<IReadOnlyList<DeezerTrackInfo>> SearchTracksAsync(string query, CancellationToken ct = default)
+    public async Task<IReadOnlyList<DeezerTrackInfo>> SearchTracksAsync(string query, CancellationToken ct = default, int limit = 10)
     {
         try
         {
             var response = await http.GetFromJsonAsync<DeezerSearchResponse>(
-                $"/search?q={Uri.EscapeDataString(query)}&limit=10", JsonOptions, ct);
+                $"/search?q={Uri.EscapeDataString(query)}&limit={limit}", JsonOptions, ct);
 
             if (response?.Error is not null)
             {

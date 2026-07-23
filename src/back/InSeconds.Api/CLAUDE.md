@@ -107,6 +107,8 @@ Body `UpdateTrackBody(DeezerTrackId)`. 404 introuvable, **409** `track_in_use` s
 
 Publique (pas admin). Utilise **`CachedDeezerClient`**. `q` vide/<2 → `200 []`. Projection minimaliste `DeezerSearchResult(Artist, Title)` — pas d'ID ni preview exposés côté joueur.
 
+**Nettoyage + déduplication des suggestions** (`SearchEndpoint.CleanAndDeduplicate`/`CleanTitle`, internes) : sur-demande `FetchLimit=20` résultats bruts à Deezer (au lieu de 10) pour compenser la perte due à la dédup, retire les parenthèses/crochets du titre (réutilise `TextNormalizationHelpers.ParenthesesPattern()`, la même regex que `TextNormalizer` pour la correction des réponses — pas de nouvelle regex dupliquée), collapse les espaces multiples laissés par le retrait, fallback sur le titre brut si le nettoyage donne une chaîne vide (titre entièrement parenthésé). Déduplique ensuite sur `(Artist, TitreNettoyé)` en `ToLowerInvariant()`, garde la **première occurrence** (l'ordre Deezer reflète déjà la pertinence), plafonne à `ResultLimit=10`. **Scope volontairement limité à cet endpoint public** : l'admin (`Admin/Challenges/DeezerSearch`, `DeezerClient.SearchTracksAsync` non caché) garde les titres bruts Deezer, nécessaires pour `Track.Title` en BDD.
+
 ### E2E (montée uniquement en environnement `Testing`)
 
 - `DELETE /api/e2e/reset?deleteChallenge=&emptyPool=` : supprime `GameSessionAnswers`/`GameSessions` (`ExecuteDeleteAsync`), supprime tous les `Players` sauf le joueur dev fixe (`aaaaaaaa-0000-0000-0000-000000000001`). `emptyPool` passe tous les `HasPreview` à `false` — nécessaire depuis la génération paresseuse (supprimer juste le défi ne suffit plus, il renaîtrait au premier joueur).
@@ -170,7 +172,7 @@ Implémente `IDataProtectionKeyContext` (clés persistées en base, cf. piège 1
 
 `PreviewTtl=24h`, `SearchTtl=1h`, `SignatureSafetyMargin=1h`.
 - `GetPreviewUrlAsync` : clé `deezer:preview:{id}`, **ne cache jamais une absence**. `ComputeTtl` extrait `exp=<unix>` de l'URL signée (regex `[?&~=]exp=(\d+)`) et borne le TTL : `ttl = min(PreviewTtl, expiration - now - SignatureSafetyMargin)` — cf. piège 14 racine (bug prod 2026-07-03, TTL fixe 24h > validité signature).
-- `SearchTracksAsync` : clé `deezer:search:{query normalisée}`, ne cache que si résultats non vides.
+- `SearchTracksAsync` : clé `deezer:search:{limit}:{query normalisée}` (le `limit` fait partie de la clé depuis l'ajout du paramètre `limit` optionnel — `DeezerClient.SearchTracksAsync(query, ct, limit=10)`), ne cache que si résultats non vides.
 
 ### `FakeDeezerHandler` (Testing)
 

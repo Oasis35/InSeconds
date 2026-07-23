@@ -199,7 +199,7 @@ Méthodes publiques :
 
 ### `DeezerAutocompleteService`
 
-Autocomplete Deezer (`features/game/services/`, `providedIn: root`, stateless) : prend un `Observable<string>`, applique debounce 300ms + distinctUntilChanged, appelle `GET /api/deezer/search?q=xxx` (proxy back pour éviter les CORS), retourne `DeezerSuggestion[]` (`artist`, `title`).
+Autocomplete Deezer (`features/game/services/`, `providedIn: root`, stateless) : prend un `Observable<string>`, applique debounce 300ms + distinctUntilChanged, appelle `GET /api/deezer/search?q=xxx` (proxy back pour éviter les CORS), retourne `DeezerSuggestion[]` (`artist`, `title`). Les suggestions sont déjà nettoyées et dédupliquées côté back (`SearchEndpoint.CleanAndDeduplicate`, cf. `BACKEND_STRUCTURE_FR.md`) — le service ne fait aucun traitement supplémentaire.
 
 ### `GameService`
 
@@ -241,7 +241,7 @@ Délègue l'affichage à des sous-composants :
 
 Layout B — deux zones toujours présentes :
 - **Zone player** : paliers au départ, puis bouton Replay + "Écouter jusqu'à Xs" + barre de progression live + chrono
-- **Zone saisie** : champ unique `"Artiste - Titre"` avec dropdown autocomplete Deezer (debounce 300ms), bouton Valider
+- **Zone saisie** : champ unique `"Artiste - Titre"` avec dropdown autocomplete Deezer (debounce 300ms), navigable au clavier (↓/↑/Entrée/Échap, `onSearchKeydown` + signal `highlightedIndex`), bouton Valider
 
 Polish UX : `isSubmitting` (loading sur Valider), bouton `✕` lié à `(mousedown)`, tooltip paliers (`scoreForDuration`), score count-up (`countUp` rAF), toast erreur réseau (4s).
 
