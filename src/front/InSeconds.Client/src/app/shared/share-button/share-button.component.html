@@ -2,8 +2,8 @@
   <button
     (click)="share.emit()"
     [disabled]="disabled()"
-    class="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition touch-manipulation disabled:opacity-40"
-    style="background:var(--bg-inactive);color:var(--text-body);border:1px solid var(--border-strong);letter-spacing:0.03em">
+    class="w-full py-3.5 rounded-full font-bold text-sm tracking-wide transition touch-manipulation disabled:opacity-40"
+    style="background:var(--bg-primary);color:var(--text-on-primary);letter-spacing:0.02em;box-shadow:0 10px 24px rgba(255,155,122,0.28)">
     {{ (copied() ? 'share.copied' : 'share.button') | translate }}
   </button>
   @if (failed()) {

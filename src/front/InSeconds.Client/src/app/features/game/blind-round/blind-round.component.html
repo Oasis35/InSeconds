@@ -2,7 +2,7 @@
 
       <!-- ── Zone player ── -->
       @if (!result()) {
-        <div class="rounded-2xl p-5 space-y-5" style="background:var(--bg-surface);border:1px solid var(--border-medium)">
+        <div class="p-5 space-y-5" style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:28px 8px 28px 8px">
 
           <!-- Paliers -->
           @if (audio.isIdle()) {
@@ -13,14 +13,14 @@
                   <div class="relative" (mouseenter)="hoveredDuration.set(d)" (mouseleave)="hoveredDuration.set(null)">
                     @if (hoveredDuration() === d && scoreForDuration(d) != null) {
                       <div class="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap pointer-events-none"
-                           style="background:var(--bg-primary-dk);color:var(--text-indigo);z-index:10">
+                           style="background:var(--bg-primary-dk);color:#fff;z-index:10">
                         {{ 'blindRound.scorePts' | translate: { score: scoreForDuration(d) } }}
                       </div>
                     }
                     <button
                       (click)="startPlay(d)"
-                      class="px-5 py-3 rounded-xl font-semibold text-sm transition active:scale-95 touch-manipulation"
-                      style="background:var(--bg-primary);color:#fff">
+                      class="px-5 py-3 rounded-full font-semibold text-sm transition active:scale-95 touch-manipulation"
+                      style="background:var(--bg-primary);color:var(--text-on-primary)">
                       {{ d }}s
                     </button>
                   </div>
@@ -61,7 +61,7 @@
                 <div class="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full transition-none"
                      [style.left.%]="audio.progress() * 100"
                      [style.background]="audio.isPlaying() ? 'var(--color-success)' : 'var(--text-muted)'"
-                     style="margin-left:-5px;box-shadow:0 0 6px rgba(52,211,153,0.4)">
+                     style="margin-left:-5px;box-shadow:0 0 6px rgba(125,223,195,0.4)">
                 </div>
               </div>
 
@@ -80,7 +80,7 @@
                     type="button"
                     (click)="listenMore()"
                     class="flex-1 py-3 rounded-xl text-sm font-semibold transition touch-manipulation"
-                    style="background:var(--bg-primary-dk);color:var(--text-indigo);border:1px solid rgba(99,102,241,0.3)">
+                    style="background:var(--bg-primary-dk);color:#fff;border:1px solid rgba(184,166,255,0.3)">
                     {{ 'blindRound.listenUpTo' | translate: { seconds: nextDuration() } }}
                   </button>
                 }
@@ -110,7 +110,7 @@
               class="w-full pl-4 py-3.5 rounded-xl text-sm transition"
               [style.paddingRight]="searchQuery ? '2.5rem' : '1rem'"
               style="background:var(--bg-surface);color:var(--text-body);border:1px solid var(--border-strong);outline:none"
-              onfocus="this.style.borderColor='rgba(99,102,241,0.5)'"
+              onfocus="this.style.borderColor='rgba(255,155,122,0.5)'"
               onblur="this.style.borderColor='var(--border-strong)'"
             />
             @if (searchQuery) {
@@ -158,7 +158,7 @@
                   type="button"
                   (click)="confirmSubmit()"
                   class="flex-1 py-2.5 rounded-lg text-sm font-semibold transition touch-manipulation"
-                  style="background:var(--bg-warn);color:#fef3c7">
+                  style="background:var(--bg-warn);color:var(--text-hi)">
                   {{ 'blindRound.submitAnyway' | translate }}
                 </button>
               </div>
@@ -167,8 +167,8 @@
             <button
               type="submit"
               [disabled]="isSubmitting()"
-              class="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition touch-manipulation disabled:opacity-60"
-              style="background:#047857;color:#fff;letter-spacing:0.03em">
+              class="w-full py-3.5 rounded-full text-sm font-bold tracking-wide transition touch-manipulation disabled:opacity-60"
+              style="background:var(--color-success);color:var(--text-on-primary);letter-spacing:0.02em">
               {{ isSubmitting() ? '…' : ('blindRound.validate' | translate) }}
             </button>
           }
@@ -181,8 +181,8 @@
 
           @if (track().coverUrl) {
             <img [src]="track().coverUrl" [alt]="'blindRound.coverAlt' | translate"
-              class="w-32 h-32 rounded-2xl object-cover"
-              style="box-shadow:0 8px 32px rgba(0,0,0,0.6);opacity:0.95" />
+              class="w-32 h-32 object-cover"
+              style="box-shadow:0 8px 32px rgba(0,0,0,0.6);opacity:0.95;border-radius:34% 66% 60% 40% / 40% 45% 55% 60%" />
           }
 
           <div class="flex justify-center gap-6">
@@ -216,15 +216,15 @@
 
           @if (showNetworkError()) {
             <div class="toast-enter w-full rounded-xl px-4 py-3 text-sm text-center"
-                 style="background:rgba(127,29,29,0.5);border:1px solid rgba(248,113,113,0.3);color:var(--text-error)">
+                 style="background:rgba(245,134,122,0.12);border:1px solid rgba(245,134,122,0.3);color:var(--text-error)">
               {{ 'blindRound.networkError' | translate }}
             </div>
           }
 
           <button
             (click)="next()"
-            class="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition touch-manipulation"
-            style="background:var(--bg-primary);color:#fff;letter-spacing:0.03em">
+            class="w-full py-3.5 rounded-full text-sm font-bold tracking-wide transition touch-manipulation"
+            style="background:var(--bg-primary);color:var(--text-on-primary);letter-spacing:0.02em">
             {{ (isLast() ? 'blindRound.seeResult' : 'blindRound.nextTrack') | translate }}
           </button>
         </div>

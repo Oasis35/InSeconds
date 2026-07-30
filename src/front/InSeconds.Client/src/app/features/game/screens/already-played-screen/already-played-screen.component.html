@@ -26,7 +26,7 @@
     </div>
 
     @if (stats(); as s) {
-      <div class="w-full rounded-2xl overflow-hidden" style="background:var(--bg-surface);border:1px solid var(--border-medium)">
+      <div class="w-full overflow-hidden" style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:28px 8px 28px 8px">
 
         <div class="grid grid-cols-2" style="border-bottom:1px solid var(--border-medium)">
           <div class="flex flex-col items-center py-7 px-4" style="border-right:1px solid var(--border-medium)">
@@ -82,8 +82,8 @@
                       }
                     </div>
                   </div>
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="opacity:0.2;shrink:0">
-                    <path d="M2 11h2v1H2zM6 9h2v3H6zM10 7h2v5h-2zM14 5h2v7h-2z" fill="white"/>
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="opacity:0.2;shrink:0;color:var(--text-body)">
+                    <path d="M2 11h2v1H2zM6 9h2v3H6zM10 7h2v5h-2zM14 5h2v7h-2z" fill="currentColor"/>
                   </svg>
                 </a>
               }

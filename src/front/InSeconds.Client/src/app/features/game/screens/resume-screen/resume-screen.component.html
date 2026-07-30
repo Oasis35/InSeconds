@@ -12,7 +12,7 @@
     <div class="w-full flex flex-col gap-3">
       <button (click)="resumeGame.emit()"
         class="w-full py-4 rounded-2xl font-bold text-base tracking-wide transition-all active:scale-95 touch-manipulation"
-        style="background:var(--bg-primary);color:#fff;letter-spacing:0.04em">
+        style="background:var(--bg-primary);color:var(--text-on-primary);letter-spacing:0.04em">
         {{ 'resume.resume' | translate }}
       </button>
       <button (click)="showAbandonConfirm.set(true)"
@@ -22,14 +22,14 @@
       </button>
     </div>
   } @else {
-    <div class="w-full rounded-2xl p-6 space-y-4" style="background:#1a0a0a;border:1px solid rgba(248,113,113,0.3)">
+    <div class="w-full rounded-2xl p-6 space-y-4" style="background:rgba(245,134,122,0.08);border:1px solid rgba(245,134,122,0.3)">
       <p class="text-sm font-semibold" style="color:var(--text-error)">{{ 'resume.warningTitle' | translate }}</p>
       <p class="text-sm leading-relaxed" style="color:var(--text-body);white-space:pre-line">{{ 'resume.warningBody' | translate }}</p>
       <div class="flex gap-3 pt-1">
         <button (click)="abandon.emit()"
           [disabled]="abandonLoading()"
           class="flex-1 py-3 rounded-xl text-sm font-bold transition-all active:scale-95"
-          style="background:var(--bg-danger);color:#fff">
+          style="background:var(--bg-danger);color:var(--text-on-primary)">
           {{ abandonLoading() ? '…' : ('resume.confirmAbandon' | translate) }}
         </button>
         <button (click)="showAbandonConfirm.set(false)"
