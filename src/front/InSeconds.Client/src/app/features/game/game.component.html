@@ -1,5 +1,20 @@
     <div class="min-h-dvh flex flex-col" style="background:var(--bg-page);color:var(--text-body)">
-    <main class="flex-1 flex flex-col p-5 w-full max-w-lg mx-auto">
+    <main class="relative flex-1 flex flex-col p-5 w-full max-w-lg mx-auto overflow-x-clip">
+      <div class="absolute pointer-events-none"
+           style="top:max(-40px, -12vw);right:max(-40px, -12vw);width:min(300px, 55vw);height:min(300px, 55vw);border-radius:50%;background:radial-gradient(circle, rgba(255,155,122,0.15), transparent 70%)">
+      </div>
+      <div class="absolute pointer-events-none"
+           style="bottom:8%;left:max(-70px, -18vw);width:min(260px, 50vw);height:min(260px, 50vw);border-radius:50%;background:radial-gradient(circle, rgba(255,155,122,0.12), transparent 70%)">
+      </div>
+      <div class="absolute pointer-events-none"
+           style="top:22%;left:max(-90px, -22vw);width:min(220px, 44vw);height:min(220px, 44vw);border-radius:50%;background:radial-gradient(circle, rgba(255,155,122,0.09), transparent 70%)">
+      </div>
+      <div class="absolute pointer-events-none"
+           style="bottom:-4%;right:max(-50px, -14vw);width:min(260px, 48vw);height:min(260px, 48vw);border-radius:50%;background:radial-gradient(circle, rgba(255,155,122,0.11), transparent 70%)">
+      </div>
+      <div class="absolute pointer-events-none"
+           style="top:52%;left:60%;transform:translate(-50%, -50%);width:min(340px, 78vw);height:min(340px, 78vw);border-radius:50%;background:radial-gradient(circle, rgba(255,155,122,0.06), transparent 70%)">
+      </div>
 
       <!-- En-tête -->
       <app-game-header
@@ -53,9 +68,9 @@
           [title]="'leaveSheet.title' | translate"
           [body]="'leaveSheet.body' | translate"
           [confirmLabel]="'leaveSheet.confirm' | translate"
-          confirmStyle="background:#374151;color:var(--text-body);border:1px solid var(--border-strong)"
+          confirmStyle="background:var(--bg-inactive);color:var(--text-body);border:1px solid var(--border-strong)"
           [cancelLabel]="'leaveSheet.cancel' | translate"
-          cancelStyle="background:var(--bg-primary);color:#fff"
+          cancelStyle="background:var(--bg-primary);color:var(--text-on-primary)"
           (confirm)="confirmLeave()"
           (cancelled)="cancelLeave()" />
       }

@@ -1,41 +1,46 @@
 @use "tailwindcss";
 
-/* ── Palette InSeconds ─────────────────────────────────────────────────── */
+/* ── Palette InSeconds — DA 21a ────────────────────────────────────────── */
 :root {
   /* Fonds */
-  --bg-page:       #080810;
-  --bg-surface:    #0f0f1a;
-  --bg-surface-2:  #1a1a2e;
-  --bg-inactive:   #1e1e2e;
-  --bg-primary:    #6366f1;
-  --bg-primary-dk: #312e81;
-  --bg-danger:     #ef4444;
+  --bg-page:       #0e0f14;
+  --bg-surface:    #181a22;
+  --bg-surface-2:  #20222c;
+  --bg-inactive:   #232530;
+  --bg-primary:    #ff9b7a;
+  --bg-primary-dk: #c96b4d;
+  --bg-danger:     #f5867a;
   --bg-warn:       #92400e;
 
   /* Textes */
-  --text-hi:      #f8fafc;
-  --text-body:    #e2e8f0;
-  --text-muted:   #475569;
-  --text-faint:   #334155;
-  --text-sep:     #1e293b;
-  --text-accent:  #6366f1;
-  --text-streak:  #f59e0b;
-  --text-error:   #fca5a5;
-  --text-hover:   #64748b;
-  --text-slate:   #94a3b8;
-  --text-light:   #cbd5e1;
-  --text-indigo:  #c7d2fe;
+  --text-hi:          #f5f3fa;
+  --text-body:        #e2e8f0;
+  --text-muted:       #8a8d9c;
+  --text-faint:       rgba(245,243,250,0.35);
+  --text-sep:         rgba(245,243,250,0.08);
+  --text-accent:      #ff9b7a;
+  --text-streak:      #b8a6ff;
+  --text-error:       #f5867a;
+  --text-hover:       rgba(245,243,250,0.6);
+  --text-slate:       rgba(245,243,250,0.5);
+  --text-light:       rgba(245,243,250,0.75);
+  --text-indigo:      #b8a6ff;
+  --text-on-primary:  #181a22;
 
   /* Sémantiques dynamiques */
-  --color-success: #34d399;
-  --color-fail:    #f87171;
+  --color-success: #7ddfc3;
+  --color-fail:    #f5867a;
   --color-warn:    #fbbf24;
 
   /* Bordures / overlays */
-  --border-subtle:  rgba(255,255,255,0.06);
-  --border-medium:  rgba(255,255,255,0.07);
-  --border-strong:  rgba(255,255,255,0.08);
+  --border-subtle:  rgba(245,243,250,0.06);
+  --border-medium:  rgba(245,243,250,0.07);
+  --border-strong:  rgba(245,243,250,0.08);
   --overlay-dark:   rgba(0,0,0,0.7);
+}
+
+body {
+  font-family: "Space Grotesk", system-ui, -apple-system, sans-serif;
 }
 
 /* Styles globaux InSeconds — ajoute ici ce qui doit s'appliquer partout. */

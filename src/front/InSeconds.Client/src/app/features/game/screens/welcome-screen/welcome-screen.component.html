@@ -1,5 +1,5 @@
-<div class="screen-enter flex-1 flex flex-col items-center justify-center gap-10 text-center px-2">
-  <div class="space-y-4">
+<div class="screen-enter relative flex-1 flex flex-col items-center justify-center gap-10 text-center px-2">
+  <div class="relative space-y-4">
     <p class="text-6xl" style="line-height:1">♪</p>
     <h2 class="text-3xl font-bold tracking-tight" style="color:var(--text-hi)">{{ 'welcome.title' | translate }}</h2>
     <p class="text-sm leading-relaxed" style="color:var(--text-muted)">
@@ -10,8 +10,8 @@
 
   <button
     (click)="startGame.emit()"
-    class="w-full py-4 rounded-2xl font-bold text-base tracking-wide transition-all active:scale-95 touch-manipulation"
-    style="background:var(--bg-primary);color:#fff;letter-spacing:0.04em">
+    class="relative w-full max-w-[280px] py-4.5 rounded-full font-bold text-base tracking-wide transition-all active:scale-95 touch-manipulation"
+    style="background:var(--bg-primary);color:var(--text-on-primary);letter-spacing:0.02em;box-shadow:0 12px 28px rgba(255,155,122,0.28)">
     {{ 'welcome.start' | translate }}
   </button>
 </div>
