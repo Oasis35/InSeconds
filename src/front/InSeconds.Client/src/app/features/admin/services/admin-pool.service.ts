@@ -71,9 +71,9 @@ export class AdminPoolService {
     Math.floor(this.poolAvailableWithPreview() / Math.max(1, this.settings.tracksPerChallenge())));
 
   poolDaysColor(days: number): string {
-    if (days < 3) return 'text-red-400';
-    if (days < 7) return 'text-orange-400';
-    return 'text-green-400';
+    if (days < 3) return 'var(--color-fail)';
+    if (days < 7) return 'var(--bg-warn)';
+    return 'var(--color-success)';
   }
 
   readonly allTotalPages = computed(() =>

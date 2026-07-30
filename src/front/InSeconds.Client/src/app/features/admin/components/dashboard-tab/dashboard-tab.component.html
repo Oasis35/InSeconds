@@ -1,27 +1,29 @@
 <div class="flex flex-col gap-4 w-full max-w-2xl">
 
   @if (stats.statsLoading()) {
-    <div class="bg-gray-800 rounded-xl p-5 flex items-center justify-center h-24">
-      <p class="text-gray-500 text-sm">{{ 'admin.dashboard.loading' | translate }}</p>
+    <div class="rounded-xl p-5 flex items-center justify-center h-24" style="background:var(--bg-surface)">
+      <p class="text-sm" style="color:var(--text-muted)">{{ 'admin.dashboard.loading' | translate }}</p>
     </div>
   } @else if (stats.adminStats(); as adminStats) {
 
     <!-- Sélecteur de jour -->
-    <div class="bg-gray-800 rounded-xl p-4 flex items-center justify-between gap-3">
+    <div class="rounded-xl p-4 flex items-center justify-between gap-3" style="background:var(--bg-surface)">
       <button (click)="stats.shiftSelectedDay(-1)" [disabled]="!stats.canGoToPrevDay()"
-        class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-700 hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-white text-sm">
+        class="w-8 h-8 flex items-center justify-center rounded-lg transition-colors text-sm disabled:opacity-30 disabled:cursor-not-allowed"
+        style="background:var(--bg-inactive);color:var(--text-hi)">
         ‹
       </button>
       <div class="flex flex-col items-center gap-1 flex-1">
-        <span class="text-white font-semibold text-sm">{{ stats.formatSelectedDay() }}</span>
+        <span class="font-semibold text-sm" style="color:var(--text-hi)">{{ stats.formatSelectedDay() }}</span>
         @if (stats.isSelectedDayToday()) {
-          <span class="text-xs text-purple-400 font-medium">{{ 'admin.dashboard.today' | translate }}</span>
+          <span class="text-xs font-medium" style="color:var(--text-indigo)">{{ 'admin.dashboard.today' | translate }}</span>
         } @else {
-          <span class="text-xs text-gray-500">{{ stats.selectedDay() }}</span>
+          <span class="text-xs" style="color:var(--text-muted)">{{ stats.selectedDay() }}</span>
         }
       </div>
       <button (click)="stats.shiftSelectedDay(1)" [disabled]="!stats.canGoToNextDay()"
-        class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-700 hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-white text-sm">
+        class="w-8 h-8 flex items-center justify-center rounded-lg transition-colors text-sm disabled:opacity-30 disabled:cursor-not-allowed"
+        style="background:var(--bg-inactive);color:var(--text-hi)">
         ›
       </button>
     </div>
@@ -30,53 +32,53 @@
     @if (adminStats['selectedDayKpis']) {
       @let kpis = adminStats['selectedDayKpis']!;
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div class="bg-gray-800 rounded-xl p-4 flex flex-col gap-1">
-          <span class="text-xs text-gray-400 uppercase tracking-wide">{{ 'admin.dashboard.kpiCompleted' | translate }}</span>
-          <span class="text-2xl font-bold text-white">{{ kpis.completedCount }}</span>
-          <span class="text-xs text-gray-500">{{ (kpis.completedCount > 1 ? 'admin.dashboard.players' : 'admin.dashboard.player') | translate }}</span>
+        <div class="rounded-xl p-4 flex flex-col gap-1" style="background:var(--bg-surface)">
+          <span class="text-xs uppercase tracking-wide" style="color:var(--text-muted)">{{ 'admin.dashboard.kpiCompleted' | translate }}</span>
+          <span class="text-2xl font-bold" style="color:var(--text-hi)">{{ kpis.completedCount }}</span>
+          <span class="text-xs" style="color:var(--text-faint)">{{ (kpis.completedCount > 1 ? 'admin.dashboard.players' : 'admin.dashboard.player') | translate }}</span>
         </div>
-        <div class="bg-gray-800 rounded-xl p-4 flex flex-col gap-1">
-          <span class="text-xs text-gray-400 uppercase tracking-wide">{{ 'admin.dashboard.kpiAbandoned' | translate }}</span>
-          <span class="text-2xl font-bold" [class]="kpis.abandonedCount > 0 ? 'text-orange-400' : 'text-white'">{{ kpis.abandonedCount }}</span>
-          <span class="text-xs text-gray-500">{{ (stats.isSelectedDayToday() ? 'admin.dashboard.abandonedToday' : 'admin.dashboard.abandonedPending') | translate }}</span>
+        <div class="rounded-xl p-4 flex flex-col gap-1" style="background:var(--bg-surface)">
+          <span class="text-xs uppercase tracking-wide" style="color:var(--text-muted)">{{ 'admin.dashboard.kpiAbandoned' | translate }}</span>
+          <span class="text-2xl font-bold" [style.color]="kpis.abandonedCount > 0 ? 'var(--bg-warn)' : 'var(--text-hi)'">{{ kpis.abandonedCount }}</span>
+          <span class="text-xs" style="color:var(--text-faint)">{{ (stats.isSelectedDayToday() ? 'admin.dashboard.abandonedToday' : 'admin.dashboard.abandonedPending') | translate }}</span>
         </div>
-        <div class="bg-gray-800 rounded-xl p-4 flex flex-col gap-1">
-          <span class="text-xs text-gray-400 uppercase tracking-wide">{{ 'admin.dashboard.kpiCompletion' | translate }}</span>
+        <div class="rounded-xl p-4 flex flex-col gap-1" style="background:var(--bg-surface)">
+          <span class="text-xs uppercase tracking-wide" style="color:var(--text-muted)">{{ 'admin.dashboard.kpiCompletion' | translate }}</span>
           @if (kpis.completedCount === 0) {
-            <span class="text-2xl font-bold text-gray-600">—</span>
-            <span class="text-xs text-gray-500">{{ kpis.totalSessions }} {{ (kpis.totalSessions > 1 ? 'admin.dashboard.sessions' : 'admin.dashboard.session') | translate }}, {{ 'admin.dashboard.noneComplete' | translate }}</span>
+            <span class="text-2xl font-bold" style="color:var(--text-sep)">—</span>
+            <span class="text-xs" style="color:var(--text-faint)">{{ kpis.totalSessions }} {{ (kpis.totalSessions > 1 ? 'admin.dashboard.sessions' : 'admin.dashboard.session') | translate }}, {{ 'admin.dashboard.noneComplete' | translate }}</span>
           } @else {
-            <span class="text-2xl font-bold" [class]="stats.completionRateColor(kpis.completionRate)">{{ kpis.completionRate | number:'1.0-1' }}%</span>
-            <span class="text-xs text-gray-500">{{ kpis.completedCount }}/{{ kpis.totalSessions }} {{ (kpis.totalSessions > 1 ? 'admin.dashboard.sessions' : 'admin.dashboard.session') | translate }}</span>
+            <span class="text-2xl font-bold" [style.color]="stats.completionRateColor(kpis.completionRate)">{{ kpis.completionRate | number:'1.0-1' }}%</span>
+            <span class="text-xs" style="color:var(--text-faint)">{{ kpis.completedCount }}/{{ kpis.totalSessions }} {{ (kpis.totalSessions > 1 ? 'admin.dashboard.sessions' : 'admin.dashboard.session') | translate }}</span>
           }
         </div>
-        <div class="bg-gray-800 rounded-xl p-4 flex flex-col gap-1">
-          <span class="text-xs text-gray-400 uppercase tracking-wide">{{ 'admin.dashboard.kpiMedian' | translate }}</span>
+        <div class="rounded-xl p-4 flex flex-col gap-1" style="background:var(--bg-surface)">
+          <span class="text-xs uppercase tracking-wide" style="color:var(--text-muted)">{{ 'admin.dashboard.kpiMedian' | translate }}</span>
           @if (kpis.medianScore !== null && kpis.medianScore !== undefined) {
-            <span class="text-2xl font-bold text-purple-400">{{ kpis.medianScore | number:'1.0-0' }}</span>
+            <span class="text-2xl font-bold" style="color:var(--text-indigo)">{{ kpis.medianScore | number:'1.0-0' }}</span>
           } @else {
-            <span class="text-2xl font-bold text-gray-600">—</span>
+            <span class="text-2xl font-bold" style="color:var(--text-sep)">—</span>
           }
-          <span class="text-xs text-gray-500">{{ 'admin.dashboard.points' | translate }}</span>
+          <span class="text-xs" style="color:var(--text-faint)">{{ 'admin.dashboard.points' | translate }}</span>
         </div>
       </div>
     } @else {
-      <div class="bg-gray-800 rounded-xl p-4 text-center text-gray-500 text-sm">
+      <div class="rounded-xl p-4 text-center text-sm" style="background:var(--bg-surface);color:var(--text-muted)">
         {{ 'admin.dashboard.noChallengeForDay' | translate }}
       </div>
     }
 
     <!-- Activité 30 jours -->
-    <div class="bg-gray-800 rounded-xl p-5 flex flex-col gap-3">
+    <div class="rounded-xl p-5 flex flex-col gap-3" style="background:var(--bg-surface)">
       <div class="flex items-center justify-between">
-        <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wide">{{ 'admin.dashboard.activity30d' | translate }}</h2>
-        <p class="text-xs text-gray-500">
-          {{ 'admin.dashboard.total' | translate }} <span class="text-white font-medium">{{ stats.totalPlayers() }}</span> —
-          {{ 'admin.dashboard.peak' | translate }} <span class="text-white font-medium">{{ stats.maxDailyPlayers() }}</span>{{ 'admin.dashboard.perDay' | translate }}
+        <h2 class="text-sm font-semibold uppercase tracking-wide" style="color:var(--text-muted)">{{ 'admin.dashboard.activity30d' | translate }}</h2>
+        <p class="text-xs" style="color:var(--text-faint)">
+          {{ 'admin.dashboard.total' | translate }} <span class="font-medium" style="color:var(--text-hi)">{{ stats.totalPlayers() }}</span> —
+          {{ 'admin.dashboard.peak' | translate }} <span class="font-medium" style="color:var(--text-hi)">{{ stats.maxDailyPlayers() }}</span>{{ 'admin.dashboard.perDay' | translate }}
         </p>
       </div>
       @if (stats.maxDailyPlayers() === 0) {
-        <p class="text-gray-500 text-sm">{{ 'admin.dashboard.noCompletedInPeriod' | translate }}</p>
+        <p class="text-sm" style="color:var(--text-muted)">{{ 'admin.dashboard.noCompletedInPeriod' | translate }}</p>
       } @else {
         <div class="flex items-end gap-px h-16">
           @for (day of adminStats.dailyActivity; track day.date) {
@@ -84,13 +86,13 @@
               class="flex-1 flex flex-col items-center group relative"
               [title]="stats.toIso(day.date) + ' : ' + day.playerCount + ' joueur(s)'">
               <div class="w-full rounded-sm transition-all"
-                [class]="stats.isBarSelected(day.date) ? 'bg-purple-400' : (day.playerCount === 0 ? 'bg-gray-700 group-hover:bg-gray-600' : 'bg-purple-700 group-hover:bg-purple-500')"
+                [style.background]="stats.isBarSelected(day.date) ? 'var(--text-indigo)' : (day.playerCount === 0 ? 'var(--bg-inactive)' : 'var(--bg-primary-dk)')"
                 [style.height]="stats.activityBarHeightPx(day.playerCount)">
               </div>
             </button>
           }
         </div>
-        <div class="flex justify-between text-xs text-gray-600">
+        <div class="flex justify-between text-xs" style="color:var(--text-sep)">
           <span>{{ stats.formatActivityDate(adminStats.dailyActivity[0].date) }}</span>
           <span>{{ stats.formatActivityDate(adminStats.dailyActivity[adminStats.dailyActivity.length - 1].date) }}</span>
         </div>
@@ -98,24 +100,24 @@
     </div>
 
     <!-- Répartition joueurs -->
-    <div class="bg-gray-800 rounded-xl p-5 flex flex-col gap-3">
-      <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wide">{{ 'admin.dashboard.playersTitle' | translate }}</h2>
+    <div class="rounded-xl p-5 flex flex-col gap-3" style="background:var(--bg-surface)">
+      <h2 class="text-sm font-semibold uppercase tracking-wide" style="color:var(--text-muted)">{{ 'admin.dashboard.playersTitle' | translate }}</h2>
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div class="bg-gray-700 rounded-lg p-3 flex flex-col gap-1">
-          <span class="text-xs text-gray-400">{{ 'admin.dashboard.guests' | translate }}</span>
-          <span class="text-xl font-bold text-white">{{ adminStats.playerBreakdown.totalGuests }}</span>
+        <div class="rounded-lg p-3 flex flex-col gap-1" style="background:var(--bg-inactive)">
+          <span class="text-xs" style="color:var(--text-muted)">{{ 'admin.dashboard.guests' | translate }}</span>
+          <span class="text-xl font-bold" style="color:var(--text-hi)">{{ adminStats.playerBreakdown.totalGuests }}</span>
         </div>
-        <div class="bg-gray-700 rounded-lg p-3 flex flex-col gap-1">
-          <span class="text-xs text-gray-400">{{ 'admin.dashboard.registered' | translate }}</span>
-          <span class="text-xl font-bold text-white">{{ adminStats.playerBreakdown.totalRegistered }}</span>
+        <div class="rounded-lg p-3 flex flex-col gap-1" style="background:var(--bg-inactive)">
+          <span class="text-xs" style="color:var(--text-muted)">{{ 'admin.dashboard.registered' | translate }}</span>
+          <span class="text-xl font-bold" style="color:var(--text-hi)">{{ adminStats.playerBreakdown.totalRegistered }}</span>
         </div>
-        <div class="bg-gray-700 rounded-lg p-3 flex flex-col gap-1">
-          <span class="text-xs text-gray-400">{{ 'admin.dashboard.active7d' | translate }}</span>
-          <span class="text-xl font-bold text-purple-400">{{ adminStats.playerBreakdown.activeLast7Days }}</span>
+        <div class="rounded-lg p-3 flex flex-col gap-1" style="background:var(--bg-inactive)">
+          <span class="text-xs" style="color:var(--text-muted)">{{ 'admin.dashboard.active7d' | translate }}</span>
+          <span class="text-xl font-bold" style="color:var(--text-indigo)">{{ adminStats.playerBreakdown.activeLast7Days }}</span>
         </div>
-        <div class="bg-gray-700 rounded-lg p-3 flex flex-col gap-1">
-          <span class="text-xs text-gray-400">{{ 'admin.dashboard.active30d' | translate }}</span>
-          <span class="text-xl font-bold text-purple-400">{{ adminStats.playerBreakdown.activeLast30Days }}</span>
+        <div class="rounded-lg p-3 flex flex-col gap-1" style="background:var(--bg-inactive)">
+          <span class="text-xs" style="color:var(--text-muted)">{{ 'admin.dashboard.active30d' | translate }}</span>
+          <span class="text-xl font-bold" style="color:var(--text-indigo)">{{ adminStats.playerBreakdown.activeLast30Days }}</span>
         </div>
       </div>
     </div>
