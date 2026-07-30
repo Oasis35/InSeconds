@@ -139,8 +139,6 @@ export class AdminStatsService {
   }
 
   rateBarColor(rate: number): string {
-    if (rate >= 60) return 'var(--color-success)';
-    if (rate >= 30) return 'var(--color-warn)';
-    return 'var(--color-fail)';
+    return this.rateColor(rate);
   }
 }
