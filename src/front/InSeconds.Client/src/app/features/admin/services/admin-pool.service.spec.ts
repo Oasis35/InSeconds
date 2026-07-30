@@ -63,9 +63,9 @@ describe('AdminPoolService', () => {
     });
 
     it('should color red under 3 days, orange under 7, green otherwise', () => {
-      expect(service.poolDaysColor(2)).toBe('text-red-400');
-      expect(service.poolDaysColor(5)).toBe('text-orange-400');
-      expect(service.poolDaysColor(7)).toBe('text-green-400');
+      expect(service.poolDaysColor(2)).toBe('var(--color-fail)');
+      expect(service.poolDaysColor(5)).toBe('var(--bg-warn)');
+      expect(service.poolDaysColor(7)).toBe('var(--color-success)');
     });
   });
 });

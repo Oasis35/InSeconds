@@ -1,8 +1,8 @@
-<div class="min-h-screen bg-gray-900 text-white flex flex-col items-center p-8 gap-6">
+<div class="min-h-screen flex flex-col items-center p-8 gap-6" style="background:var(--bg-page);color:var(--text-body)">
   <div class="flex flex-col items-center gap-1">
-    <h1 class="text-2xl font-bold tracking-tight">{{ 'admin.title' | translate }}</h1>
+    <h1 class="text-2xl font-bold tracking-tight" style="color:var(--text-hi)">{{ 'admin.title' | translate }}</h1>
     @if (api.authenticated() && buildTime !== 'unknown') {
-      <p class="text-xs text-gray-500">{{ 'admin.deployedAt' | translate: { date: (buildTime | date:'dd/MM/yyyy à HH:mm') } }}</p>
+      <p class="text-xs" style="color:var(--text-muted)">{{ 'admin.deployedAt' | translate: { date: (buildTime | date:'dd/MM/yyyy à HH:mm') } }}</p>
     }
   </div>
 
@@ -11,29 +11,29 @@
   } @else {
 
     <!-- Onglets -->
-    <div class="flex gap-1 bg-gray-800 p-1 rounded-lg w-full max-w-2xl">
+    <div class="flex gap-1 p-1 rounded-lg w-full max-w-2xl" style="background:var(--bg-surface)">
       <button (click)="activeTab.set('dashboard')"
-        [class]="activeTab() === 'dashboard'
-          ? 'flex-1 py-2 rounded-md text-sm font-medium bg-gray-700 text-white transition-colors'
-          : 'flex-1 py-2 rounded-md text-sm font-medium text-gray-400 hover:text-white transition-colors'">
+        class="flex-1 py-2 rounded-md text-sm font-medium transition-colors"
+        [style.background]="activeTab() === 'dashboard' ? 'var(--bg-inactive)' : null"
+        [style.color]="activeTab() === 'dashboard' ? 'var(--text-hi)' : 'var(--text-muted)'">
         {{ 'admin.tabs.dashboard' | translate }}
       </button>
       <button (click)="activeTab.set('defis')"
-        [class]="activeTab() === 'defis'
-          ? 'flex-1 py-2 rounded-md text-sm font-medium bg-gray-700 text-white transition-colors'
-          : 'flex-1 py-2 rounded-md text-sm font-medium text-gray-400 hover:text-white transition-colors'">
+        class="flex-1 py-2 rounded-md text-sm font-medium transition-colors"
+        [style.background]="activeTab() === 'defis' ? 'var(--bg-inactive)' : null"
+        [style.color]="activeTab() === 'defis' ? 'var(--text-hi)' : 'var(--text-muted)'">
         {{ 'admin.tabs.challenges' | translate: { count: stats.challenges().length } }}
       </button>
       <button (click)="activeTab.set('pool')"
-        [class]="activeTab() === 'pool'
-          ? 'flex-1 py-2 rounded-md text-sm font-medium bg-gray-700 text-white transition-colors'
-          : 'flex-1 py-2 rounded-md text-sm font-medium text-gray-400 hover:text-white transition-colors'">
+        class="flex-1 py-2 rounded-md text-sm font-medium transition-colors"
+        [style.background]="activeTab() === 'pool' ? 'var(--bg-inactive)' : null"
+        [style.color]="activeTab() === 'pool' ? 'var(--text-hi)' : 'var(--text-muted)'">
         {{ 'admin.tabs.pool' | translate: { count: pool.poolTracks().available.length + pool.poolTracks().used.length } }}
       </button>
       <button (click)="activeTab.set('actions')"
-        [class]="activeTab() === 'actions'
-          ? 'flex-1 py-2 rounded-md text-sm font-medium bg-gray-700 text-white transition-colors'
-          : 'flex-1 py-2 rounded-md text-sm font-medium text-gray-400 hover:text-white transition-colors'">
+        class="flex-1 py-2 rounded-md text-sm font-medium transition-colors"
+        [style.background]="activeTab() === 'actions' ? 'var(--bg-inactive)' : null"
+        [style.color]="activeTab() === 'actions' ? 'var(--text-hi)' : 'var(--text-muted)'">
         {{ 'admin.tabs.actions' | translate }}
       </button>
     </div>
@@ -52,7 +52,7 @@
 
     <!-- Déconnexion -->
     <div class="pt-2">
-      <button (click)="logout()" class="text-gray-600 hover:text-gray-400 text-xs transition-colors">
+      <button (click)="logout()" class="text-xs transition-colors" style="color:var(--text-faint)">
         {{ 'admin.logout' | translate }}
       </button>
     </div>

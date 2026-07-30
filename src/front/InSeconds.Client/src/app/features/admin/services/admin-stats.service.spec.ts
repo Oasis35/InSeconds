@@ -174,49 +174,49 @@ describe('AdminStatsService', () => {
 
   describe('completionRateColor()', () => {
     it('should return green for rates >= 70', () => {
-      expect(service.completionRateColor(70)).toBe('text-green-400');
-      expect(service.completionRateColor(100)).toBe('text-green-400');
+      expect(service.completionRateColor(70)).toBe('var(--color-success)');
+      expect(service.completionRateColor(100)).toBe('var(--color-success)');
     });
 
     it('should return yellow for rates between 40 and 69', () => {
-      expect(service.completionRateColor(40)).toBe('text-yellow-400');
-      expect(service.completionRateColor(69)).toBe('text-yellow-400');
+      expect(service.completionRateColor(40)).toBe('var(--color-warn)');
+      expect(service.completionRateColor(69)).toBe('var(--color-warn)');
     });
 
     it('should return red for rates below 40', () => {
-      expect(service.completionRateColor(39)).toBe('text-red-400');
-      expect(service.completionRateColor(0)).toBe('text-red-400');
+      expect(service.completionRateColor(39)).toBe('var(--color-fail)');
+      expect(service.completionRateColor(0)).toBe('var(--color-fail)');
     });
   });
 
   describe('rateColor()', () => {
     it('should return green for rates >= 60', () => {
-      expect(service.rateColor(60)).toBe('text-green-400');
-      expect(service.rateColor(100)).toBe('text-green-400');
+      expect(service.rateColor(60)).toBe('var(--color-success)');
+      expect(service.rateColor(100)).toBe('var(--color-success)');
     });
 
     it('should return yellow for rates between 30 and 59', () => {
-      expect(service.rateColor(30)).toBe('text-yellow-400');
-      expect(service.rateColor(59)).toBe('text-yellow-400');
+      expect(service.rateColor(30)).toBe('var(--color-warn)');
+      expect(service.rateColor(59)).toBe('var(--color-warn)');
     });
 
     it('should return red for rates below 30', () => {
-      expect(service.rateColor(29)).toBe('text-red-400');
-      expect(service.rateColor(0)).toBe('text-red-400');
+      expect(service.rateColor(29)).toBe('var(--color-fail)');
+      expect(service.rateColor(0)).toBe('var(--color-fail)');
     });
   });
 
   describe('rateBarColor()', () => {
-    it('should return bg-green-500 for rates >= 60', () => {
-      expect(service.rateBarColor(60)).toBe('bg-green-500');
+    it('should return the success color for rates >= 60', () => {
+      expect(service.rateBarColor(60)).toBe('var(--color-success)');
     });
 
-    it('should return bg-yellow-500 for rates between 30 and 59', () => {
-      expect(service.rateBarColor(30)).toBe('bg-yellow-500');
+    it('should return the warn color for rates between 30 and 59', () => {
+      expect(service.rateBarColor(30)).toBe('var(--color-warn)');
     });
 
-    it('should return bg-red-500 for rates below 30', () => {
-      expect(service.rateBarColor(29)).toBe('bg-red-500');
+    it('should return the fail color for rates below 30', () => {
+      expect(service.rateBarColor(29)).toBe('var(--color-fail)');
     });
   });
 

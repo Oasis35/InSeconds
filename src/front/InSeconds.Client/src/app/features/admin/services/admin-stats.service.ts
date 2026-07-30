@@ -127,20 +127,18 @@ export class AdminStatsService {
   }
 
   completionRateColor(rate: number): string {
-    if (rate >= 70) return 'text-green-400';
-    if (rate >= 40) return 'text-yellow-400';
-    return 'text-red-400';
+    if (rate >= 70) return 'var(--color-success)';
+    if (rate >= 40) return 'var(--color-warn)';
+    return 'var(--color-fail)';
   }
 
   rateColor(rate: number): string {
-    if (rate >= 60) return 'text-green-400';
-    if (rate >= 30) return 'text-yellow-400';
-    return 'text-red-400';
+    if (rate >= 60) return 'var(--color-success)';
+    if (rate >= 30) return 'var(--color-warn)';
+    return 'var(--color-fail)';
   }
 
   rateBarColor(rate: number): string {
-    if (rate >= 60) return 'bg-green-500';
-    if (rate >= 30) return 'bg-yellow-500';
-    return 'bg-red-500';
+    return this.rateColor(rate);
   }
 }

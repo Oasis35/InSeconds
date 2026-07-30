@@ -1,37 +1,38 @@
 @if (pool.addModalOpen()) {
   <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-    <button type="button" class="absolute inset-0 bg-black/70 w-full h-full"
+    <button type="button" class="absolute inset-0 w-full h-full" style="background:var(--overlay-dark)"
       [attr.aria-label]="'admin.addModal.close' | translate"
       (click)="pool.closeAddModal()">
     </button>
-    <dialog open class="relative bg-gray-800 rounded-2xl p-6 flex flex-col gap-4 w-full max-w-md shadow-2xl m-0"
+    <dialog open class="relative rounded-2xl p-6 flex flex-col gap-4 w-full max-w-md shadow-2xl m-0"
+      style="background:var(--bg-surface)"
       aria-modal="true"
       (keydown.escape)="pool.closeAddModal()">
 
       <!-- En-tête -->
       <div class="flex items-center justify-between gap-3">
-        <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wide">{{ 'admin.addModal.title' | translate }}</h2>
-        <button (click)="pool.closeAddModal()" class="text-gray-500 hover:text-white text-xl leading-none">✕</button>
+        <h2 class="text-sm font-semibold uppercase tracking-wide" style="color:var(--text-light)">{{ 'admin.addModal.title' | translate }}</h2>
+        <button (click)="pool.closeAddModal()" class="text-xl leading-none" style="color:var(--text-muted)">✕</button>
       </div>
 
       <!-- Recherche -->
       <input type="text" [ngModel]="pool.poolSearchQuery()" (ngModelChange)="pool.onPoolSearchChange($event)"
         [placeholder]="'admin.addModal.searchPlaceholder' | translate"
         [attr.aria-label]="'admin.addModal.searchPlaceholder' | translate"
-        class="bg-gray-700 text-white rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-purple-500 text-sm" />
+        class="rounded-lg px-3 py-2 outline-none text-sm"
+        style="background:var(--bg-inactive);color:var(--text-hi)" />
       @if (pool.poolSearchLoading()) {
-        <p class="text-gray-500 text-xs -mt-2">{{ 'admin.addModal.searching' | translate }}</p>
+        <p class="text-xs -mt-2" style="color:var(--text-muted)">{{ 'admin.addModal.searching' | translate }}</p>
       }
       @if (pool.poolSearchResults().length > 0) {
-        <ul class="bg-gray-700 rounded-lg divide-y divide-gray-600 max-h-44 overflow-y-auto">
+        <ul class="rounded-lg max-h-44 overflow-y-auto" style="background:var(--bg-inactive)">
           @for (track of pool.poolSearchResults(); track track.deezerTrackId) {
-            <li>
+            <li style="border-bottom:1px solid var(--border-medium)">
               <button type="button" (click)="pool.selectModalTrack(track)"
-                [class]="pool.addModalTrack()?.deezerTrackId === track.deezerTrackId
-                  ? 'w-full px-4 py-2.5 flex justify-between items-center text-sm bg-gray-600 cursor-pointer'
-                  : 'w-full px-4 py-2.5 flex justify-between items-center text-sm hover:bg-gray-600 cursor-pointer'">
-                <span class="text-gray-200 flex-1 min-w-0 truncate">{{ track.artist }} — {{ track.title }}</span>
-                <span class="text-purple-400 text-xs shrink-0 ml-4">{{ 'admin.addModal.choose' | translate }}</span>
+                class="w-full px-4 py-2.5 flex justify-between items-center text-sm cursor-pointer"
+                [style.background]="pool.addModalTrack()?.deezerTrackId === track.deezerTrackId ? 'var(--bg-surface-2)' : null">
+                <span class="flex-1 min-w-0 truncate" style="color:var(--text-light)">{{ track.artist }} — {{ track.title }}</span>
+                <span class="text-xs shrink-0 ml-4" style="color:var(--text-indigo)">{{ 'admin.addModal.choose' | translate }}</span>
               </button>
             </li>
           }
@@ -40,49 +41,52 @@
 
       <!-- Player — visible dès qu'un morceau est sélectionné -->
       @if (pool.addModalTrack()) {
-        <div class="border-t border-gray-700 pt-4 flex flex-col gap-3">
+        <div class="pt-4 flex flex-col gap-3" style="border-top:1px solid var(--border-medium)">
           <div class="flex flex-col gap-0.5">
-            <p class="font-semibold text-white text-sm">{{ pool.addModalTrack()!.artist }}</p>
-            <p class="text-xs text-gray-400">{{ pool.addModalTrack()!.title }}</p>
+            <p class="font-semibold text-sm" style="color:var(--text-hi)">{{ pool.addModalTrack()!.artist }}</p>
+            <p class="text-xs" style="color:var(--text-muted)">{{ pool.addModalTrack()!.title }}</p>
           </div>
 
           @if (pool.addModalTrack()!.previewUrl) {
-            <div class="flex items-center gap-4 bg-gray-700 rounded-xl px-4 py-3">
+            <div class="flex items-center gap-4 rounded-xl px-4 py-3" style="background:var(--bg-inactive)">
               <button (click)="pool.toggleModalPreview()"
-                class="w-10 h-10 rounded-full bg-purple-600 hover:bg-purple-700 flex items-center justify-center shrink-0 transition-colors text-white text-base">
+                class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors text-base"
+                style="background:var(--bg-primary-dk);color:var(--text-on-primary)">
                 {{ pool.modalPlaying() ? '⏸' : '▶' }}
               </button>
               <div class="flex-1 flex flex-col gap-1">
-                <div class="text-xs text-gray-400">{{ (pool.modalPlaying() ? 'admin.addModal.playing' : 'admin.addModal.preview30s') | translate }}</div>
-                <div class="w-full bg-gray-600 rounded-full h-1">
-                  <div class="bg-purple-500 h-1 rounded-full transition-all" [style.width.%]="pool.modalProgress()"></div>
+                <div class="text-xs" style="color:var(--text-muted)">{{ (pool.modalPlaying() ? 'admin.addModal.playing' : 'admin.addModal.preview30s') | translate }}</div>
+                <div class="w-full rounded-full h-1" style="background:var(--bg-surface-2)">
+                  <div class="h-1 rounded-full transition-all" style="background:var(--text-indigo)" [style.width.%]="pool.modalProgress()"></div>
                 </div>
               </div>
             </div>
           } @else {
-            <div class="bg-gray-700 rounded-xl px-4 py-3 text-xs text-red-400 text-center">
+            <div class="rounded-xl px-4 py-3 text-xs text-center" style="background:var(--bg-inactive);color:var(--text-error)">
               {{ 'admin.addModal.noPreview' | translate }}
             </div>
           }
 
           @if (pool.addToPoolStatus() === 'success') {
-            <p class="text-green-400 text-xs text-center">{{ 'admin.addModal.added' | translate }}</p>
+            <p class="text-xs text-center" style="color:var(--color-success)">{{ 'admin.addModal.added' | translate }}</p>
           }
           @if (pool.addToPoolStatus() === 'error') {
-            <p class="text-red-400 text-xs text-center">{{ 'admin.addModal.addError' | translate }}</p>
+            <p class="text-xs text-center" style="color:var(--text-error)">{{ 'admin.addModal.addError' | translate }}</p>
           }
 
           <div class="flex gap-2">
             @if (!pool.addModalTrackIdToUpdate()) {
               <button (click)="pool.addToPoolFromModal(false)"
                 [disabled]="pool.addToPoolStatus() === 'loading'"
-                class="flex-1 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-lg transition-colors">
+                class="flex-1 text-sm font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50"
+                style="background:var(--bg-inactive);color:var(--text-hi)">
                 @if (pool.addToPoolStatus() === 'loading') { ... } @else { {{ 'admin.addModal.addTrack' | translate }} }
               </button>
             }
             <button (click)="pool.addToPoolFromModal(true)"
               [disabled]="pool.addToPoolStatus() === 'loading'"
-              class="flex-1 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-lg transition-colors">
+              class="flex-1 text-sm font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50"
+              style="background:var(--bg-primary-dk);color:var(--text-on-primary)">
               @if (pool.addToPoolStatus() === 'loading') { ... }
               @else if (pool.addModalTrackIdToUpdate()) { {{ 'admin.addModal.refreshAndClose' | translate }} }
               @else { {{ 'admin.addModal.addAndClose' | translate }} }

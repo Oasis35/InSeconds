@@ -1,9 +1,10 @@
-<div class="min-h-dvh bg-gradient-to-br from-slate-900 via-slate-950 to-black text-slate-100 flex flex-col items-center justify-center p-6 text-center">
+<div class="min-h-dvh flex flex-col items-center justify-center p-6 text-center" style="background:var(--bg-page);color:var(--text-body)">
   <p class="text-7xl mb-6">🎵</p>
-  <h1 class="text-3xl font-bold mb-2">{{ 'notFound.title' | translate }}</h1>
-  <p class="text-slate-400 mb-8">{{ 'notFound.body' | translate }}</p>
+  <h1 class="text-3xl font-bold mb-2" style="color:var(--text-hi)">{{ 'notFound.title' | translate }}</h1>
+  <p class="mb-8" style="color:var(--text-slate)">{{ 'notFound.body' | translate }}</p>
   <a routerLink="/"
-    class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-colors">
+    class="px-6 py-3 rounded-full font-semibold transition-colors"
+    style="background:var(--bg-primary);color:var(--text-on-primary)">
     {{ 'notFound.back' | translate }}
   </a>
 </div>
