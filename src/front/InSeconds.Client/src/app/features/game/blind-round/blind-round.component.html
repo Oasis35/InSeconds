@@ -10,8 +10,8 @@
             <div class="flex justify-center">
               <button
                 (click)="skipNoPreview()"
-                class="px-5 py-3 rounded-xl font-semibold text-sm transition active:scale-95 touch-manipulation"
-                style="background:var(--text-faint);color:var(--text-slate)">
+                class="px-5 py-3 rounded-xl font-bold uppercase text-sm transition active:scale-95 touch-manipulation"
+                style="font-family:var(--font-display);letter-spacing:0.04em;border:1.5px solid rgb(var(--rgb-accent-2) / 0.7);background:transparent;color:var(--color-accent-2)">
                 {{ 'blindRound.skip' | translate }}
               </button>
             </div>
@@ -23,57 +23,64 @@
 
               <!-- Chrono -->
               <p class="text-center text-2xl font-bold tabular-nums"
-                 [style.color]="audio.isPlaying() ? 'var(--color-success)' : 'var(--text-muted)'"
-                 style="letter-spacing:-0.02em">
+                 style="font-family:var(--font-display);letter-spacing:-0.02em"
+                 [style.color]="audio.isPlaying() ? 'var(--color-accent-2)' : 'var(--text-muted)'">
                 {{ audio.state() === 'loading' ? '…'
                  : audio.isPlaying()           ? (audio.progress() * chosenDuration() | number:'1.1-1') + 's / ' + chosenDuration() + 's'
                  :                               chosenDuration() + 's / ' + chosenDuration() + 's' }}
               </p>
 
               <!-- Barre de progression -->
-              <div class="relative w-full h-px rounded-full" style="background:var(--bg-inactive)">
-                <div class="absolute top-0 left-0 h-px rounded-full transition-none"
-                     [style.width.%]="audio.progress() * scaleRatio() * 100"
-                     [style.background]="audio.isPlaying() ? 'var(--color-success)' : 'var(--text-muted)'">
+              <div class="relative w-full rounded-full" style="height:6px;background:var(--bg-inactive)">
+                <div class="absolute top-0 left-0 h-full rounded-full transition-none"
+                     style="background:var(--color-accent-2);box-shadow:var(--glow-accent-2)"
+                     [style.width.%]="audio.progress() * scaleRatio() * 100">
                 </div>
                 @if (maxDuration() > 0) {
                   @for (d of durations(); track d) {
-                    <div class="absolute top-1/2 -translate-y-1/2 w-1 h-1 rounded-full pointer-events-none"
+                    <div class="absolute top-1/2 -translate-y-1/2 rounded-full pointer-events-none"
+                         style="width:6px;height:6px;margin-left:-3px;border:1.5px solid var(--bg-page)"
                          [style.left.%]="(d / maxDuration()) * 100"
-                         style="margin-left:-2px;background:var(--text-faint)">
+                         [style.background]="d <= chosenDuration() ? 'var(--color-accent-2)' : 'var(--text-muted)'">
                     </div>
                   }
                 }
-                <div class="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full transition-none"
-                     [style.left.%]="audio.progress() * scaleRatio() * 100"
-                     [style.background]="audio.isPlaying() ? 'var(--color-success)' : 'var(--text-muted)'"
-                     style="margin-left:-5px;box-shadow:0 0 6px rgba(125,223,195,0.4)">
-                </div>
               </div>
 
               @if (maxDuration() > chosenDuration()) {
-                <p class="text-center text-xs" style="color:var(--text-faint)">
+                <p class="text-center text-xs font-semibold" style="color:var(--text-faint)">
                   {{ 'blindRound.stepsUpTo' | translate: { seconds: maxDuration() } }}
                 </p>
               }
 
               <!-- Boutons -->
-              <div class="flex gap-2 pt-1">
+              <div class="flex items-center justify-center gap-4 pt-1">
                 <button
                   type="button"
                   (click)="audio.play(track().previewUrl, chosenDuration())"
-                  class="flex-1 py-3 rounded-xl text-sm font-semibold transition touch-manipulation"
-                  style="background:var(--bg-inactive);color:var(--text-slate);border:1px solid var(--border-subtle)">
-                  {{ 'blindRound.replay' | translate: { seconds: chosenDuration() } }}
+                  title="{{ 'blindRound.replay' | translate: { seconds: chosenDuration() } }}"
+                  class="rounded-full transition active:scale-95 touch-manipulation flex items-center justify-center shrink-0"
+                  style="width:72px;height:72px;background:linear-gradient(145deg,var(--color-accent-3),var(--color-accent));box-shadow:var(--glow-primary);border:none;color:#fff">
+                  @if (audio.isPlaying()) {
+                    <span class="flex gap-1">
+                      <span style="width:6px;height:19px;background:#fff;border-radius:2px"></span>
+                      <span style="width:6px;height:19px;background:#fff;border-radius:2px"></span>
+                    </span>
+                  } @else {
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 12a9 9 0 1 1-2.6-6.36"></path><path d="M21 3v6h-6"></path>
+                    </svg>
+                  }
                 </button>
 
                 @if (nextDuration()) {
                   <button
                     type="button"
                     (click)="listenMore()"
-                    class="flex-1 py-3 rounded-xl text-sm font-semibold transition touch-manipulation"
-                    style="background:var(--bg-primary-dk);color:#fff;border:1px solid rgba(184,166,255,0.3)">
-                    {{ 'blindRound.listenUpTo' | translate: { seconds: nextDuration() } }}
+                    title="{{ 'blindRound.listenUpTo' | translate: { seconds: nextDuration() } }}"
+                    class="rounded-full transition active:scale-95 touch-manipulation flex items-center justify-center font-extrabold text-sm shrink-0"
+                    style="font-family:var(--font-display);width:52px;height:52px;border:1.5px solid rgb(var(--rgb-accent-2) / 0.7);background:rgb(var(--rgb-accent-2) / 0.1);color:var(--color-accent-2)">
+                    +{{ nextDuration() }}
                   </button>
                 }
               </div>
@@ -102,7 +109,7 @@
               class="w-full pl-4 py-3.5 rounded-xl text-sm transition"
               [style.paddingRight]="searchQuery ? '2.5rem' : '1rem'"
               style="background:var(--bg-surface);color:var(--text-body);border:1px solid var(--border-strong);outline:none"
-              onfocus="this.style.borderColor='rgba(255,155,122,0.5)'"
+              onfocus="this.style.borderColor='rgb(var(--rgb-accent-2) / 0.6)'"
               onblur="this.style.borderColor='var(--border-strong)'"
             />
             @if (searchQuery) {
@@ -123,7 +130,7 @@
                     (mousedown)="selectSuggestion(s)"
                     (mouseenter)="highlightedIndex.set(i)"
                     class="px-4 py-3 cursor-pointer text-sm transition hover:bg-white/[0.03]"
-                    [style.background]="i === highlightedIndex() ? 'var(--bg-primary-dk)' : null"
+                    [style.background]="i === highlightedIndex() ? 'rgb(var(--rgb-accent-2) / 0.15)' : null"
                     style="border-bottom:1px solid rgba(255,255,255,0.04)">
                     <span class="font-medium" style="color:var(--text-body)">{{ s.artist }}</span>
                     <span style="color:var(--text-faint)"> — </span>
@@ -136,8 +143,8 @@
 
           @if (showEmptyConfirm()) {
             <div class="rounded-xl px-4 py-3 space-y-3"
-                 style="background:rgba(120,53,15,0.2);border:1px solid rgba(180,83,9,0.3)">
-              <p class="text-sm text-center" style="color:var(--color-warn)">{{ 'blindRound.emptyConfirm' | translate }}</p>
+                 style="background:rgb(var(--rgb-warning) / 0.12);border:1px solid rgb(var(--rgb-warning) / 0.35)">
+              <p class="text-sm text-center font-semibold" style="color:var(--color-warn)">{{ 'blindRound.emptyConfirm' | translate }}</p>
               <div class="flex gap-2">
                 <button
                   type="button"
@@ -149,8 +156,8 @@
                 <button
                   type="button"
                   (click)="confirmSubmit()"
-                  class="flex-1 py-2.5 rounded-lg text-sm font-semibold transition touch-manipulation"
-                  style="background:var(--bg-warn);color:var(--text-hi)">
+                  class="flex-1 py-2.5 rounded-lg text-sm font-bold uppercase transition touch-manipulation"
+                  style="font-family:var(--font-display);letter-spacing:0.04em;background:var(--color-warn);color:var(--bg-page)">
                   {{ 'blindRound.submitAnyway' | translate }}
                 </button>
               </div>
@@ -159,8 +166,8 @@
             <button
               type="submit"
               [disabled]="isSubmitting()"
-              class="w-full py-3.5 rounded-full text-sm font-bold tracking-wide transition touch-manipulation disabled:opacity-60"
-              style="background:var(--color-success);color:var(--text-on-primary);letter-spacing:0.02em">
+              class="w-full py-3.5 rounded-full text-sm font-bold tracking-wide uppercase transition touch-manipulation disabled:opacity-60"
+              style="font-family:var(--font-display);background:var(--gradient-primary);color:var(--text-on-primary);letter-spacing:0.06em;box-shadow:var(--glow-primary)">
               {{ isSubmitting() ? '…' : ('blindRound.validate' | translate) }}
             </button>
           }
@@ -187,13 +194,13 @@
           </div>
 
           <div class="space-y-0.5">
-            <p class="text-xs font-semibold tracking-widest uppercase" style="color:var(--text-faint)">{{ 'blindRound.correctAnswer' | translate }}</p>
+            <p class="text-xs font-bold tracking-widest uppercase" style="font-family:var(--font-display);color:var(--text-faint)">{{ 'blindRound.correctAnswer' | translate }}</p>
             <p class="text-base font-medium" style="color:var(--text-light)">{{ r.correctArtist }} — {{ r.correctTitle }}</p>
           </div>
 
-          <p class="font-bold tabular-nums"
-             [style.color]="r.score > 0 ? 'var(--color-success)' : 'var(--text-muted)'"
-             style="font-size:3rem;line-height:1;letter-spacing:-0.03em">
+          <p class="font-extrabold tabular-nums"
+             style="font-family:var(--font-display);font-size:3rem;line-height:1;letter-spacing:-0.03em"
+             [style.color]="r.score > 0 ? 'var(--color-success)' : 'var(--text-muted)'">
             +{{ displayedScore() }}
             <span class="text-lg font-normal" style="color:var(--text-faint)"> {{ 'blindRound.points' | translate }}</span>
           </p>
@@ -208,15 +215,15 @@
 
           @if (showNetworkError()) {
             <div class="toast-enter w-full rounded-xl px-4 py-3 text-sm text-center"
-                 style="background:rgba(245,134,122,0.12);border:1px solid rgba(245,134,122,0.3);color:var(--text-error)">
+                 style="background:rgb(var(--rgb-danger) / 0.12);border:1px solid rgb(var(--rgb-danger) / 0.3);color:var(--text-error)">
               {{ 'blindRound.networkError' | translate }}
             </div>
           }
 
           <button
             (click)="next()"
-            class="w-full py-3.5 rounded-full text-sm font-bold tracking-wide transition touch-manipulation"
-            style="background:var(--bg-primary);color:var(--text-on-primary);letter-spacing:0.02em">
+            class="w-full py-3.5 rounded-full text-sm font-bold tracking-wide uppercase transition touch-manipulation"
+            style="font-family:var(--font-display);background:var(--gradient-primary);color:var(--text-on-primary);letter-spacing:0.06em;box-shadow:var(--glow-primary)">
             {{ (isLast() ? 'blindRound.seeResult' : 'blindRound.nextTrack') | translate }}
           </button>
         </div>

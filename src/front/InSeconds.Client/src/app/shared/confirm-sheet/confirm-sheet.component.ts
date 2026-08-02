@@ -9,8 +9,8 @@ interface ToneStyle {
 }
 
 const TONES: Record<ConfirmSheetTone, ToneStyle> = {
-  danger:  { card: 'background:rgba(245,134,122,0.08);border:1px solid rgba(245,134,122,0.3)', title: 'color:var(--text-error)' },
-  warning: { card: 'background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.3)', title: 'color:var(--color-warn)' },
+  danger:  { card: 'background:rgb(var(--rgb-danger) / 0.08);border:1px solid rgb(var(--rgb-danger) / 0.3)', title: 'font-family:var(--font-display);color:var(--text-error)' },
+  warning: { card: 'background:rgb(var(--rgb-warning) / 0.08);border:1px solid rgb(var(--rgb-warning) / 0.3)', title: 'font-family:var(--font-display);color:var(--color-warn)' },
 };
 
 /**

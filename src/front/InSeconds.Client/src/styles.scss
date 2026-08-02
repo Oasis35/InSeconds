@@ -1,46 +1,78 @@
 @use "tailwindcss";
 
-/* ── Palette InSeconds — DA 21a ────────────────────────────────────────── */
+/* ── Palette InSeconds — DA "IN//SECONDS" (terracotta/cyan/violet) ──────── */
 :root {
+  /* Canaux RGB bruts (pour rgba() dynamiques) */
+  --rgb-bg:       10 6 18;
+  --rgb-surface:  19 10 36;
+  --rgb-panel:    28 16 51;
+  --rgb-text:     232 236 244;
+  --rgb-border:   74 82 102;
+  --rgb-accent:    240 133 122; /* terracotta */
+  --rgb-accent-2:  0 229 255;   /* cyan */
+  --rgb-accent-3:  255 138 0;   /* orange */
+  --rgb-violet:    168 85 247;
+  --rgb-success:   16 185 129;
+  --rgb-danger:    255 61 90;
+  --rgb-warning:   240 180 0;
+
   /* Fonds */
-  --bg-page:       #0e0f14;
-  --bg-surface:    #181a22;
-  --bg-surface-2:  #20222c;
-  --bg-inactive:   #232530;
-  --bg-primary:    #ff9b7a;
-  --bg-primary-dk: #c96b4d;
-  --bg-danger:     #f5867a;
-  --bg-warn:       #92400e;
+  --bg-page:       rgb(var(--rgb-bg));
+  --bg-surface:    rgb(var(--rgb-surface) / 0.6);
+  --bg-surface-2:  rgb(var(--rgb-panel));
+  --bg-inactive:   rgb(var(--rgb-panel));
+  --bg-primary:    rgb(var(--rgb-accent));
+  --bg-primary-dk: rgb(var(--rgb-accent-3));
+  --bg-danger:     rgb(var(--rgb-danger));
+  --bg-warn:       rgb(var(--rgb-warning) / 0.15);
+  --gradient-primary: linear-gradient(90deg, rgb(var(--rgb-accent-3)), rgb(var(--rgb-accent)));
 
   /* Textes */
-  --text-hi:          #f5f3fa;
-  --text-body:        #e2e8f0;
-  --text-muted:       #8a8d9c;
-  --text-faint:       rgba(245,243,250,0.35);
-  --text-sep:         rgba(245,243,250,0.08);
-  --text-accent:      #ff9b7a;
-  --text-streak:      #b8a6ff;
-  --text-error:       #f5867a;
-  --text-hover:       rgba(245,243,250,0.6);
-  --text-slate:       rgba(245,243,250,0.5);
-  --text-light:       rgba(245,243,250,0.75);
-  --text-indigo:      #b8a6ff;
-  --text-on-primary:  #181a22;
+  --text-hi:          rgb(var(--rgb-text));
+  --text-body:        rgb(var(--rgb-text));
+  --text-muted:       rgb(var(--rgb-text) / 0.55);
+  --text-faint:       rgb(var(--rgb-text) / 0.35);
+  --text-sep:         rgb(var(--rgb-text) / 0.08);
+  --text-accent:      rgb(var(--rgb-accent));
+  --text-streak:      rgb(var(--rgb-accent-3));
+  --text-error:       rgb(var(--rgb-danger));
+  --text-hover:       rgb(var(--rgb-text) / 0.6);
+  --text-slate:       rgb(var(--rgb-text) / 0.5);
+  --text-light:       rgb(var(--rgb-text) / 0.75);
+  --text-indigo:      rgb(var(--rgb-violet));
+  --text-on-primary:  #ffffff;
 
   /* Sémantiques dynamiques */
-  --color-success: #7ddfc3;
-  --color-fail:    #f5867a;
-  --color-warn:    #fbbf24;
+  --color-success: rgb(var(--rgb-success));
+  --color-fail:    rgb(var(--rgb-danger));
+  --color-warn:    rgb(var(--rgb-warning));
+  --color-accent:   rgb(var(--rgb-accent));
+  --color-accent-2: rgb(var(--rgb-accent-2));
+  --color-accent-3: rgb(var(--rgb-accent-3));
+  --color-violet:   rgb(var(--rgb-violet));
 
   /* Bordures / overlays */
-  --border-subtle:  rgba(245,243,250,0.06);
-  --border-medium:  rgba(245,243,250,0.07);
-  --border-strong:  rgba(245,243,250,0.08);
+  --border-subtle:  rgb(var(--rgb-border) / 0.15);
+  --border-medium:  rgb(var(--rgb-border) / 0.18);
+  --border-strong:  rgb(var(--rgb-border) / 0.3);
   --overlay-dark:   rgba(0,0,0,0.7);
+
+  /* Lueurs (glow) */
+  --glow-primary: 0 0 16px rgb(var(--rgb-accent) / 0.55), 0 0 32px rgb(var(--rgb-accent) / 0.25);
+  --glow-accent-2: 0 0 12px rgb(var(--rgb-accent-2) / 0.5);
+  --glow-success: 0 0 12px rgb(var(--rgb-success) / 0.4);
+
+  /* Typo */
+  --font-display: 'Poppins', system-ui, -apple-system, sans-serif;
+  --font-body:    'Inter', system-ui, -apple-system, sans-serif;
 }
 
 body {
-  font-family: "Space Grotesk", system-ui, -apple-system, sans-serif;
+  font-family: var(--font-body);
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
 }
 
 /* Styles globaux InSeconds — ajoute ici ce qui doit s'appliquer partout. */
@@ -61,4 +93,48 @@ body {
 
 .toast-enter {
   animation: slide-up 0.2s ease-out both;
+}
+
+@keyframes inseconds-scan {
+  from { background-position: 0 0; }
+  to   { background-position: 0 3px; }
+}
+
+/* ── Décor DA "IN//SECONDS" — fond + grille perspective + scanlines ──────
+   Appliqués sur toutes les pages (jeu, admin, privacy, 404, service-down).
+   Voir shared/decor-background/ pour le composant qui rend la grille+scanlines. */
+
+.da-bg {
+  background: radial-gradient(circle at 50% -8%, rgb(var(--rgb-violet) / 0.12), transparent 55%), var(--bg-page);
+  overflow-x: clip;
+}
+
+.da-grid {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 280px;
+  overflow: hidden;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.da-grid::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgb(var(--rgb-accent-2) / 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--rgb-accent-2) / 0.16) 1px, transparent 1px);
+  background-size: 26px 18px;
+  transform: perspective(220px) rotateX(58deg) scale(2.1);
+  transform-origin: top;
+}
+
+.scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: repeating-linear-gradient(0deg, #fff 0 1px, transparent 1px 3px);
+  animation: inseconds-scan 1s linear infinite;
 }
