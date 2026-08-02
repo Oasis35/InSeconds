@@ -32,7 +32,8 @@ test.describe('Reprise de partie', () => {
     await round.waitForAnswerInput();
     await expect(page.getByText('3s / 3s')).toBeVisible();
     // Le bouton « écouter plus » ne doit proposer que des paliers >= 3s (le suivant est 5s)
-    await expect(round.listenMoreButton).toHaveText(/jusqu'à 5s/);
+    await expect(round.listenMoreButton).toHaveText(/\+5/);
+    await expect(round.listenMoreButton).toHaveAttribute('title', /jusqu'à 5s/);
   });
 
   test('affiche l\'écran reprise si la session est en cours', async ({ page, api }) => {
