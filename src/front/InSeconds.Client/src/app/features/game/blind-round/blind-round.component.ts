@@ -58,7 +58,6 @@ export class BlindRoundComponent implements OnDestroy {
   protected readonly highlightedIndex = signal(-1);
   protected readonly showEmptyConfirm = signal(false);
   protected readonly isSubmitting = signal(false);
-  protected readonly hoveredDuration = signal<number | null>(null);
   protected readonly displayedScore = signal(0);
   protected readonly showNetworkError = signal(false);
   private networkErrorTimer: ReturnType<typeof setTimeout> | null = null;
@@ -71,10 +70,30 @@ export class BlindRoundComponent implements OnDestroy {
     return idx >= 0 && idx < durations.length - 1 ? durations[idx + 1] : null;
   });
 
+  /** Dernier palier autorisé (après filtrage anti-cheat) — sert de plafond pour les repères sur la barre. */
+  protected readonly maxDuration = computed(() => {
+    const durations = this.durations();
+    return durations.length > 0 ? durations[durations.length - 1] : 0;
+  });
+
+  /** Repondère audio.progress() (0→1 relatif au palier choisi) sur l'échelle de la barre (0→maxDuration). */
+  protected readonly scaleRatio = computed(() => {
+    const max = this.maxDuration();
+    return max > 0 ? this.chosenDuration() / max : 0;
+  });
+
   constructor() {
     this.deezerSearch.search(this.query$).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(s => {
       this.suggestions.set(s);
       this.highlightedIndex.set(-1);
+    });
+
+    // Démarre automatiquement l'écoute au premier palier autorisé dès que le morceau est prêt — plus de choix initial.
+    effect(() => {
+      if (this.audio.isIdle() && this.track().previewUrl) {
+        const first = this.durations()[0];
+        if (first) this.startPlay(first);
+      }
     });
 
     // Quand le timer s'arrête (état finished, pas encore de résultat), mémoriser la durée écoutée
@@ -88,10 +107,6 @@ export class BlindRoundComponent implements OnDestroy {
         }
       }
     });
-  }
-
-  protected scoreForDuration(d: number): number | null {
-    return this.settings.durationScores()[d] ?? null;
   }
 
   clearSearch(event: MouseEvent): void {

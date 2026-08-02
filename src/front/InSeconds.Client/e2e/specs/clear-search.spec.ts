@@ -17,9 +17,8 @@ test.describe('Bouton ✕ — effacement de la saisie', () => {
     await game.waitForWelcome();
     await game.clickStart();
 
-    // Lancer un palier pour faire apparaître le champ de saisie
+    // Laisser le premier palier se jouer pour faire apparaître le champ de saisie
     await round.chooseDuration(1);
-    await round.advanceClock(1);
     await round.waitForAnswerInput();
 
     // Champ vide → pas de bouton ✕

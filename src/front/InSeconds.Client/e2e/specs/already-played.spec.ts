@@ -71,7 +71,6 @@ test.describe('Déjà joué — écran 409', () => {
     await game.waitForWelcome();
     await game.clickStart();
     await round.chooseDuration(1);
-    await round.advanceClock(1);
     await round.waitForAnswerInput();
     await round.submitEmpty();
     // Ne pas aller à la piste suivante, abandonner en cours de partie

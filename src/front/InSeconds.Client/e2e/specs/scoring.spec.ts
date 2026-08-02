@@ -24,7 +24,6 @@ test.describe('Scoring par palier', () => {
     // Morceau 1 : 0.5s avec bonne réponse → 1000 pts (artiste + titre)
     // Les tracks du seed aujourd'hui : Eminem, Radiohead, Billie Eilish
     await round.chooseDuration(0.5);
-    await round.advanceClock(0.5);
     await round.waitForAnswerInput();
     await round.typeAnswer('Eminem - Lose Yourself');
     await round.submit();
@@ -38,7 +37,6 @@ test.describe('Scoring par palier', () => {
 
     // Morceau 2 : 10s avec bonne réponse → 100 pts (artiste + titre)
     await round.chooseDuration(10);
-    await round.advanceClock(10);
     await round.waitForAnswerInput();
     await round.typeAnswer('Radiohead - Creep');
     await round.submit();
@@ -66,7 +64,6 @@ test.describe('Scoring par palier', () => {
 
     // Morceau 1 : réponse clairement fausse
     await round.chooseDuration(1);
-    await round.advanceClock(1);
     await round.waitForAnswerInput();
     await round.typeAnswer('zzz réponse invalide zzz');
     await round.submit();
@@ -95,7 +92,6 @@ test.describe('Scoring par palier', () => {
     // Morceau 1 à 1s (850 pts full) : on ne soumet que l'artiste
     // Format "Artiste - " sans titre → split donne artist='Eminem', title=''
     await round.chooseDuration(1);
-    await round.advanceClock(1);
     await round.waitForAnswerInput();
     await round.typeAnswer('Eminem - ');
     await round.submit();

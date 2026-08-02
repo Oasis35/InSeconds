@@ -14,12 +14,11 @@ test.describe('Reprise de partie', () => {
     await game.goto();
     await game.waitForWelcome();
     await game.clickStart();
-    await round.chooseDuration(3);
-    // Laisser le timer tourner (3s) → updateListening s'envoie
+    // Laisser le timer tourner jusqu'à 3s (auto-play 0.5s + prolongations) → updateListening s'envoie
     const listeningPatch = page.waitForResponse(
       r => /\/api\/sessions\/\d+\/listening$/.test(r.url()) && r.request().method() === 'PATCH'
     );
-    await round.advanceClock(3);
+    await round.chooseDuration(3);
     // Attendre que le PATCH /listening soit parti ET persisté avant de recharger
     await listeningPatch;
     // Ne pas soumettre — recharger à la place
@@ -27,15 +26,13 @@ test.describe('Reprise de partie', () => {
     await game.waitForResumePrompt();
     await game.resumeButton.click();
 
-    // À la reprise, les paliers 0.5, 1, 1.5, 2 (< 3s) ne doivent plus être visibles
-    await expect(round.durationButton(0.5)).not.toBeVisible();
-    await expect(round.durationButton(1)).not.toBeVisible();
-    await expect(round.durationButton(1.5)).not.toBeVisible();
-    await expect(round.durationButton(2)).not.toBeVisible();
-    // Les paliers >= 3s doivent être visibles
-    await expect(round.durationButton(3)).toBeVisible();
-    await expect(round.durationButton(5)).toBeVisible();
-    await expect(round.durationButton(10)).toBeVisible();
+    // À la reprise, la lecture démarre automatiquement au 1er palier autorisé restant :
+    // les paliers 0.5, 1, 1.5, 2 (< 3s déjà écoutées) doivent être exclus par l'anti-cheat,
+    // donc l'auto-play choisit directement 3s.
+    await round.waitForAnswerInput();
+    await expect(page.getByText('3s / 3s')).toBeVisible();
+    // Le bouton « écouter plus » ne doit proposer que des paliers >= 3s (le suivant est 5s)
+    await expect(round.listenMoreButton).toHaveText(/jusqu'à 5s/);
   });
 
   test('affiche l\'écran reprise si la session est en cours', async ({ page, api }) => {
