@@ -21,7 +21,8 @@ export class BlindRoundPage {
     this.nextButton          = page.getByRole('button', { name: /Piste suivante|Voir le résultat/ });
     // Score affiché dans le résultat du round : "+850 pts"
     this.roundScore          = page.locator('p').filter({ hasText: ' pts' }).last();
-    this.listenMoreButton    = page.getByRole('button', { name: /jusqu'à/ });
+    // Bouton "écouter plus" : texte visible "+X" (ex: "+1", "+1.5"), tooltip "jusqu'à Xs" en title uniquement.
+    this.listenMoreButton    = page.getByRole('button', { name: /^\+\d/ });
   }
 
   /** Bouton « ↺ Xs » (rejoue le palier courant en entier) — visible une fois le palier terminé. */
