@@ -41,8 +41,11 @@ src/front/InSeconds.Client/
 │   │   ├── shared/
 │   │   │   ├── confirm-sheet/
 │   │   │   │   └── confirm-sheet.component.ts  # bottom-sheet de confirmation réutilisable
-│   │   │   └── share-button/
-│   │   │       └── share-button.component.ts   # bouton partage réutilisable (already-played + done)
+│   │   │   ├── share-button/
+│   │   │   │   └── share-button.component.ts   # bouton partage réutilisable (already-played + done)
+│   │   │   ├── decor-background/
+│   │   │   │   └── decor-background.component.ts # décor DA (grille/scanlines) en arrière-plan
+│   │   │   └── deezer-badge.component.ts       # badge "À écouter sur Deezer" (fichier plat, sans sous-dossier)
 │   │   ├── features/
 │   │   │   ├── admin/
 │   │   │   │   ├── admin.component.ts          # shell (~45 lignes) — injecte les 6 services
@@ -254,6 +257,14 @@ Bottom-sheet de confirmation réutilisable (`shared/confirm-sheet/`). Inputs : `
 ### `ShareButtonComponent`
 
 Bouton partage réutilisable (`shared/share-button/`). Inputs : `copied: boolean`, `failed?: boolean`, `disabled?: boolean`. Output : `share`. Utilisé dans `AlreadyPlayedScreenComponent` et `FinalRecapScreenComponent`. Si `failed` est vrai (rejet de `clipboard.writeText` : permission refusée, contexte non sécurisé), le hint est remplacé par un message d'erreur (`share.failed`, signal `shareFailed` posé 3 s par `GameComponent.copyToClipboard()`).
+
+### `DecorBackgroundComponent`
+
+Décor DA en arrière-plan (`shared/decor-background/`) — grille/scanlines.
+
+### `DeezerBadgeComponent`
+
+Badge officiel "À écouter sur Deezer" (`shared/deezer-badge.component.ts`), utilisé dans le récap final par morceau.
 
 ### `PrivacyComponent`
 
