@@ -17,6 +17,7 @@ import { AlreadyPlayedScreenComponent } from './screens/already-played-screen/al
 import { FinalRecapScreenComponent, RoundResult } from './screens/final-recap-screen/final-recap-screen.component';
 import { GameHeaderComponent } from './components/game-header/game-header.component';
 import { GameFooterComponent } from './components/game-footer/game-footer.component';
+import { DecorBackgroundComponent } from '../../shared/decor-background/decor-background.component';
 
 type GameState = 'loading' | 'welcome' | 'resume_prompt' | 'playing' | 'done' | 'error' | 'no_challenge' | 'already_played';
 
@@ -26,7 +27,7 @@ type GameState = 'loading' | 'welcome' | 'resume_prompt' | 'playing' | 'done' | 
     BlindRoundComponent, ConfirmSheetComponent, TranslatePipe,
     WelcomeScreenComponent, ResumeScreenComponent, StatusScreenComponent,
     AlreadyPlayedScreenComponent, FinalRecapScreenComponent,
-    GameHeaderComponent, GameFooterComponent,
+    GameHeaderComponent, GameFooterComponent, DecorBackgroundComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './game.component.html',

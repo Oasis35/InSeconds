@@ -1,5 +1,6 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
+import { DecorBackgroundComponent } from '../../shared/decor-background/decor-background.component';
 
 /**
  * Overlay plein écran affiché quand le backend ne répond plus (KO ou redéploiement
@@ -9,7 +10,7 @@ import { TranslatePipe } from '@ngx-translate/core';
  */
 @Component({
   selector: 'app-service-down',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, DecorBackgroundComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './service-down.component.html',
 })

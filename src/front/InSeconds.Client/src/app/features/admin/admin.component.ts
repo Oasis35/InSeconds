@@ -14,13 +14,14 @@ import { DashboardTabComponent } from './components/dashboard-tab/dashboard-tab.
 import { PoolTabComponent } from './components/pool-tab/pool-tab.component';
 import { ChallengesTabComponent } from './components/challenges-tab/challenges-tab.component';
 import { ActionsTabComponent } from './components/actions-tab/actions-tab.component';
+import { DecorBackgroundComponent } from '../../shared/decor-background/decor-background.component';
 
 @Component({
   selector: 'app-admin',
   imports: [
     DatePipe, TranslatePipe,
     AdminLoginComponent, DashboardTabComponent, PoolTabComponent,
-    ChallengesTabComponent, ActionsTabComponent,
+    ChallengesTabComponent, ActionsTabComponent, DecorBackgroundComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [AdminHttpService, AdminStateService, AdminApiService, AdminStatsService, AdminPoolService, AdminActionsService],

@@ -1,11 +1,32 @@
 import { TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { Observable, map, of } from 'rxjs';
 import { BlindRoundComponent } from './blind-round.component';
 import { GameFacadeService } from '../services/game-facade.service';
+import { AudioPlayerService } from '../../../core/services/audio-player.service';
 import { DeezerAutocompleteService, DeezerSuggestion } from '../services/deezer-autocomplete.service';
 import { TrackSlot } from '../../../core/models/game.models';
+
+// Stub sans lecture audio réelle : le composant démarre désormais automatiquement la lecture
+// au premier palier dès sa création (effect() constructeur) — sans ce stub, les tests
+// déclencheraient un vrai <audio> réseau non déterministe.
+class AudioPlayerStub {
+  readonly state = signal<'idle' | 'loading' | 'playing' | 'finished'>('idle');
+  readonly listenedSeconds = signal(0);
+  readonly extended = signal(false);
+  readonly progress = signal(0);
+  readonly isIdle = () => this.state() === 'idle';
+  readonly isPlaying = () => this.state() === 'playing';
+  readonly isFinished = () => this.state() === 'finished';
+  play(): void { this.state.set('playing'); }
+  replayFull(): void {}
+  extend(): void {}
+  stop(): { listenedSeconds: number; wasExtended: boolean } { return { listenedSeconds: 0, wasExtended: false }; }
+  reset(): void { this.state.set('idle'); }
+  preloadAll(): Promise<void> { return Promise.resolve(); }
+}
 
 // Le stub renvoie toujours les 2 mêmes suggestions, de façon synchrone (pas de debounce),
 // pour piloter la dropdown de façon déterministe dans les tests.
@@ -47,6 +68,7 @@ describe('BlindRoundComponent — navigation clavier autocomplete', () => {
           },
         },
         { provide: DeezerAutocompleteService, useClass: DeezerAutocompleteStub },
+        { provide: AudioPlayerService, useClass: AudioPlayerStub },
       ],
     }).compileComponents();
 

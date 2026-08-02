@@ -18,7 +18,6 @@ test.describe('Autocomplete Deezer — navigation clavier', () => {
     await game.clickStart();
 
     await round.chooseDuration(1);
-    await round.advanceClock(1);
     await round.waitForAnswerInput();
 
     // FakeDeezerHandler (déclencheur "dedup-test") renvoie 2 suggestions nettoyées.
@@ -43,7 +42,6 @@ test.describe('Autocomplete Deezer — navigation clavier', () => {
     await game.clickStart();
 
     await round.chooseDuration(1);
-    await round.advanceClock(1);
     await round.waitForAnswerInput();
 
     await round.answerInput.fill('dedup-test');
@@ -68,7 +66,6 @@ test.describe('Autocomplete Deezer — navigation clavier', () => {
     await game.clickStart();
 
     await round.chooseDuration(1);
-    await round.advanceClock(1);
     await round.waitForAnswerInput();
 
     await round.answerInput.fill('dedup-test');
@@ -92,7 +89,6 @@ test.describe('Autocomplete Deezer — navigation clavier', () => {
     await game.clickStart();
 
     await round.chooseDuration(1);
-    await round.advanceClock(1);
     await round.waitForAnswerInput();
 
     await round.answerInput.fill('dedup-test');

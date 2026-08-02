@@ -1,59 +1,42 @@
-# InSecondsClient
+# InSeconds.Client
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.1.6.
+Front Angular 22 du blind test musical InSeconds. Voir le [README racine](../../../README.md) / [README.fr.md](../../../README.fr.md) pour la présentation générale du projet, et le [CLAUDE.md racine](../../../CLAUDE.md) pour les conventions détaillées.
 
-## Development server
-
-To start a local development server, run:
+## Développement
 
 ```bash
-ng serve
+npm start
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Ouvre `http://localhost:5173/` (port non standard volontaire — cf. CLAUDE.md racine, évite le conflit avec le 4200). L'app requiert le backend lancé (`docker compose up -d` depuis la racine du repo).
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Build
 
 ```bash
-ng generate component component-name
+npm run build
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Tests unitaires (Karma + Jasmine)
 
 ```bash
-ng generate --help
+npx ng test --watch=false --browsers=ChromeHeadless
 ```
 
-## Building
-
-To build the project run:
+## Tests E2E (Playwright)
 
 ```bash
-ng build
+npm run e2e       # headless
+npm run e2e:ui    # mode UI interactif
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+## Génération du client API (NSwag)
 
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+Après tout changement d'endpoint ou de DTO côté backend :
 
 ```bash
-ng test
+docker compose up -d   # depuis la racine, backend à jour
+npm run generate-api   # runtime .NET 10 obligatoire
+npm run build           # vérifier que le build passe
 ```
 
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+`src/app/api/api.generated.ts` est commité — pense à committer le fichier régénéré.

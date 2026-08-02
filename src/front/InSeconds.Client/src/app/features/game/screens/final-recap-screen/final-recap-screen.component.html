@@ -5,16 +5,16 @@
 
     <!-- Score -->
     <div class="px-6 pt-7 pb-6 text-center">
-      <p class="text-xs font-semibold tracking-widest uppercase mb-3" style="color:var(--text-faint)">{{ 'done.finalScore' | translate }}</p>
-      <p class="font-bold tabular-nums" style="color:var(--text-hi);font-size:4rem;line-height:1;letter-spacing:-0.03em">{{ displayedScore() }}</p>
+      <p class="text-xs font-bold tracking-widest uppercase mb-3" style="font-family:var(--font-display);color:var(--text-faint)">{{ 'done.finalScore' | translate }}</p>
+      <p class="font-extrabold tabular-nums" style="font-family:var(--font-display);color:var(--text-hi);font-size:4rem;line-height:1;letter-spacing:-0.03em">{{ displayedScore() }}</p>
       <p class="text-xs mt-2" style="color:var(--text-faint)">{{ 'done.points' | translate }}</p>
     </div>
 
     <!-- Compte à rebours -->
     @if (countdown()) {
       <div class="px-6 py-5 text-center" style="border-top:1px solid var(--border-medium)">
-        <p class="text-xs font-semibold tracking-widest uppercase mb-1" style="color:var(--text-faint)">{{ 'alreadyPlayed.nextChallengeIn' | translate }}</p>
-        <p class="text-2xl font-bold tabular-nums" style="color:var(--text-body);letter-spacing:0.05em">{{ countdown() }}</p>
+        <p class="text-xs font-bold tracking-widest uppercase mb-1" style="font-family:var(--font-display);color:var(--text-faint)">{{ 'alreadyPlayed.nextChallengeIn' | translate }}</p>
+        <p class="text-2xl font-bold tabular-nums" style="font-family:var(--font-display);color:var(--text-body);letter-spacing:0.05em">{{ countdown() }}</p>
       </div>
     }
 
@@ -25,8 +25,8 @@
 
     <!-- Accordéon morceaux -->
     <button (click)="showTrackDetails.set(!showTrackDetails())"
-      class="w-full flex items-center justify-center gap-2 py-3.5 text-xs font-semibold tracking-wide uppercase transition-colors hover:text-slate-400"
-      style="color:var(--text-faint);border-top:1px solid var(--border-medium)">
+      class="w-full flex items-center justify-center gap-2 py-3.5 text-xs font-bold tracking-wide uppercase transition-colors hover:text-slate-400"
+      style="font-family:var(--font-display);color:var(--text-faint);border-top:1px solid var(--border-medium)">
       <span>{{ (showTrackDetails() ? 'alreadyPlayed.hideTracks' : 'alreadyPlayed.showTracks') | translate }}</span>
       <span>{{ showTrackDetails() ? '▲' : '▼' }}</span>
     </button>
@@ -73,7 +73,7 @@
             </div>
 
             <div class="shrink-0 text-right self-center">
-              <span class="text-lg font-bold" [style.color]="r.score > 0 ? 'var(--color-success)' : 'var(--text-hover)'">
+              <span class="text-lg font-bold" style="font-family:var(--font-display)" [style.color]="r.score > 0 ? 'var(--color-success)' : 'var(--text-hover)'">
                 +{{ r.score }}
               </span>
             </div>

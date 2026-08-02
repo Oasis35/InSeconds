@@ -55,7 +55,7 @@ Appelle `DailyChallengeGenerator.GenerateAsync` : `Success`→200, `AlreadyExist
 
 ### Admin/Login — `POST /api/admin/login` / `POST /api/admin/logout` / `GET /api/admin/me`
 
-Authentification **volontairement minimale, non Wolverine** : compare le password à `IConfiguration["AdminPassword"]`. Succès → `{token: "admin-token"}` (constante statique, **pas de JWT ni génération aléatoire**). `IsAdminAuthenticated(HttpContext)` : vérifie `Authorization: Bearer admin-token` — méthode statique utilisée par tous les endpoints Admin pour l'auto-protection. Note : `LoginCommand`/`LoginHandler` (Wolverine) existent mais ne sont pas invoqués via bus (`MapAdminLogin` appelle une lambda directe) — code mort/legacy, ne pas s'y fier pour comprendre le flux réel.
+Authentification **volontairement minimale** : `LoginEndpoint` invoque `bus.InvokeAsync<IResult>(new LoginCommand(password))`, `LoginHandler.Handle` compare le password à `IConfiguration["AdminPassword"]`. Succès → `{token: "admin-token"}` (constante statique, **pas de JWT ni génération aléatoire**). `IsAdminAuthenticated(HttpContext)` : vérifie `Authorization: Bearer admin-token` — méthode statique utilisée par tous les endpoints Admin pour l'auto-protection.
 
 ### Admin/RefreshPreviews — `POST /api/admin/refresh-previews`
 
@@ -97,7 +97,7 @@ Body `UpdateTrackBody(DeezerTrackId)`. 404 introuvable, **409** `track_in_use` s
 
 ### ChallengeGeneration (pas un endpoint)
 
-- **`DailyChallengeGenerator.GenerateAsync`** → `enum GenerateResult { Success, AlreadyExists, PoolInsufficient }`. Pool candidats = `Tracks` non utilisés ET `HasPreview==true`. `n = TracksPerChallenge` ; `candidates.Count < n` → `PoolInsufficient` (log `LogError`). **Sélection déterministe** : `Random(seed: today.DayNumber)`, Fisher-Yates in-place, `Take(n)`. Insertion en **transaction explicite** (`BeginTransactionAsync`) : crée `DailyChallenge` puis sauvegarde (obtient l'Id) puis `DailyChallengeTrack` (Position 1..n — ici `DeezerRankSnapshot=0`, contrairement à `CreateChallengeHandler` qui utilise `i+1`), commit.
+- **`DailyChallengeGenerator.GenerateAsync`** → `enum GenerateResult { Success, AlreadyExists, PoolInsufficient }`. Pool candidats = `Tracks` non utilisés ET `HasPreview==true`. `n = TracksPerChallenge` ; `candidates.Count < n` → `PoolInsufficient` (log `LogError`). **Sélection déterministe** : `Random(seed: today.DayNumber)`, Fisher-Yates in-place, `Take(n)`. Insertion en **transaction explicite** (`BeginTransactionAsync`) : crée `DailyChallenge` puis sauvegarde (obtient l'Id) puis `DailyChallengeTrack` (Position 1..n, `DeezerRankSnapshot=i+1`, cohérent avec `CreateChallengeHandler`), commit.
 - **`DailySchedule`** : `NextUtcHour(hour)` (prochaine occurrence future de `HH:00` UTC), `DelayUntilAsync(targetUtc, ct)` — boucle `while (remaining > 0) await Task.Delay(remaining)` **corrige la dérive de `Task.Delay`** (horloge monotone, dérive NTP possible sur 24h) qui avait causé un réveil juste avant minuit → jour sans défi (cf. piège 19 racine). Ne jamais revenir à un `Task.Delay(delay)` brut pour ces plannings.
 - **`GenerateDailyChallengeService : BackgroundService`** : boucle infinie, `RetryDelay=10min` si échec/PoolInsufficient, sinon replanifie à `NextUtcHour(0)`. Scope frais (`IServiceScopeFactory.CreateAsyncScope()`) à chaque itération.
 - **`PreviewStatusRefresher.RefreshAsync`** : candidats = tracks non utilisés. **Rate limiting** : lots de `BatchSize=10`, `BatchDelay=1.5s` (Deezer ~50 req/5s → 10/1.5s ≈ 33 req/5s). Pour chaque track, `ProbePreviewAsync` ; `!Succeeded` (erreur réseau/quota) → `failed++`, **`HasPreview` non modifié** (état inconnu ≠ absence réelle — cf. piège 16 racine) ; succès → met à jour seulement si diffère.
@@ -113,7 +113,7 @@ Publique (pas admin). Utilise **`CachedDeezerClient`**. `q` vide/<2 → `200 []`
 
 - `DELETE /api/e2e/reset?deleteChallenge=&emptyPool=` : supprime `GameSessionAnswers`/`GameSessions` (`ExecuteDeleteAsync`), supprime tous les `Players` sauf le joueur dev fixe (`aaaaaaaa-0000-0000-0000-000000000001`). `emptyPool` passe tous les `HasPreview` à `false` — nécessaire depuis la génération paresseuse (supprimer juste le défi ne suffit plus, il renaîtrait au premier joueur).
 - `POST /api/e2e/reseed` : purge complète (`IgnoreQueryFilters()` pour inclure les soft-deleted) puis `SeedData(db)`.
-- **`SeedData`** (aussi appelée au démarrage Dev/Testing si `!db.Tracks.Any()`) : ~54 tracks (IDs/CoverHash Deezer réels), 9 répartis sur 3 défis (J-2/J-1/aujourd'hui), reste = pool admin, `DeezerTrackId >= 9_000_000_000` → `HasPreview=false`. Joueur dev fixe `CurrentStreak=2`, `LastPlayedDate=today-1`, 2 `GameSession Completed` (J-2, J-1, `TotalScore=2550`).
+- **`SeedData`** (aussi appelée au démarrage Dev/Testing si `!db.Tracks.Any()`) : 55 tracks (IDs/CoverHash Deezer réels), 9 répartis sur 3 défis (J-2/J-1/aujourd'hui), reste = pool admin, `DeezerTrackId >= 9_000_000_000` → `HasPreview=false`. Joueur dev fixe `CurrentStreak=2`, `LastPlayedDate=today-1`, 2 `GameSession Completed` (J-2, J-1, `TotalScore=2550`).
 
 ### Settings/GetSettings — `GET /api/settings` (publique)
 
@@ -225,7 +225,5 @@ Chargement en 3 couches, **une seule fois au démarrage** (pas de rafraîchissem
 
 ## Points d'attention pour un futur agent
 
-1. **`LoginCommand`/`LoginHandler` Wolverine sont du code mort** — le vrai flux de `/api/admin/login` est une lambda inline dans `LoginEndpoint`, pas invoquée via le bus. Ne pas modifier le handler en pensant affecter le comportement réel.
-2. **`DeezerRankSnapshot`** diffère entre `DailyChallengeGenerator` (toujours `0`) et `CreateChallengeHandler` (`i+1`) — incohérence existante, ne pas supposer une sémantique uniforme sans vérifier laquelle des deux voies a créé le défi.
-3. Toute nouvelle route Admin doit appeler `LoginEndpoint.IsAdminAuthenticated(HttpContext)` pour l'auto-protection (pas de middleware d'auth ASP.NET global sur `/api/admin`).
-4. `SettingsService` ne relit jamais la DB après le boot — un changement de `Settings` en base ne prend effet qu'après redémarrage du service (sauf les endpoints Admin qui écrivent directement en DB pour d'autres besoins, ex. tracks).
+1. Toute nouvelle route Admin doit appeler `LoginEndpoint.IsAdminAuthenticated(HttpContext)` pour l'auto-protection (pas de middleware d'auth ASP.NET global sur `/api/admin`).
+2. `SettingsService` ne relit jamais la DB après le boot — un changement de `Settings` en base ne prend effet qu'après redémarrage du service (sauf les endpoints Admin qui écrivent directement en DB pour d'autres besoins, ex. tracks).

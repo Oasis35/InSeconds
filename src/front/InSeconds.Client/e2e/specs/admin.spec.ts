@@ -199,14 +199,22 @@ test.describe('Admin — défis', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    // 3 défis dans le seed (J-2, J-1, aujourd'hui) — tous dans le mois courant
+    // Le seed crée 3 défis (J-2, J-1, aujourd'hui) — mais en début de mois, J-2 et/ou J-1
+    // peuvent tomber dans le mois précédent. On compte donc dynamiquement combien tombent
+    // dans le mois UTC courant plutôt que de coder en dur "3".
     await page.getByRole('button', { name: /Défis/ }).click();
-    // S'assurer d'être sur le mois courant (au cas où le navigateur serait sur un autre mois)
     const now = new Date();
     const monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
     const currentMonth = `${monthNames[now.getUTCMonth()]} ${now.getUTCFullYear()}`;
     await expect(page.getByText(currentMonth)).toBeVisible();
+    const seededDates = [0, 1, 2].map(daysAgo => {
+      const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - daysAgo));
+      return d;
+    });
+    const expectedCount = seededDates.filter(
+      d => d.getUTCMonth() === now.getUTCMonth() && d.getUTCFullYear() === now.getUTCFullYear()
+    ).length;
     const rows = page.locator('ul > li > p.font-mono');
-    await expect(rows).toHaveCount(3);
+    await expect(rows).toHaveCount(expectedCount);
   });
 });

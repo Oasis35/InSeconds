@@ -117,12 +117,11 @@
     "back": "Back to the game"
   },
   "blindRound": {
-    "howManySeconds": "How many seconds do you want to listen?",
-    "scorePts": "{{ score }} pts",
     "noPreview": "Preview not available for this track.",
     "skip": "Skip (0 pts)",
     "replay": "↺ {{ seconds }}s",
     "listenUpTo": "▶ up to {{ seconds }}s",
+    "stepsUpTo": "You can listen up to {{ seconds }}s if you need to",
     "placeholder": "Artist — Title",
     "emptyConfirm": "You didn't enter anything. Submit anyway?",
     "cancel": "Cancel",

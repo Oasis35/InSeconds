@@ -1,4 +1,6 @@
-<div class="min-h-screen flex flex-col items-center p-8 gap-6" style="background:var(--bg-page);color:var(--text-body)">
+<div class="da-bg min-h-screen flex flex-col items-center p-8 gap-6 relative" style="color:var(--text-body)">
+  <app-decor-background />
+
   <div class="flex flex-col items-center gap-1">
     <h1 class="text-2xl font-bold tracking-tight" style="color:var(--text-hi)">{{ 'admin.title' | translate }}</h1>
     @if (api.authenticated() && buildTime !== 'unknown') {
