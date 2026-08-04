@@ -13,6 +13,7 @@ import { SettingsService } from '../../../core/services/settings.service';
 import { DeezerAutocompleteService, DeezerSuggestion } from '../services/deezer-autocomplete.service';
 import { TrackSlot, SubmitAnswerResponse } from '../../../core/models/game.models';
 import { countUp } from '../../../core/count-up';
+import { DeezerBadgeComponent } from '../../../shared/deezer-badge.component';
 
 export interface AnsweredEvent {
   trackId: number;
@@ -24,7 +25,7 @@ export interface AnsweredEvent {
 
 @Component({
   selector: 'app-blind-round',
-  imports: [FormsModule, DecimalPipe, TranslatePipe],
+  imports: [FormsModule, DecimalPipe, TranslatePipe, DeezerBadgeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './blind-round.component.html',
 })

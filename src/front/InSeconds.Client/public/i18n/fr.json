@@ -71,8 +71,10 @@
     "points": "points",
     "artist": "Artiste",
     "title": "Titre",
-    "listenOnDeezer": "Écouter sur Deezer",
     "comeBack": "Reviens demain pour un nouveau défi"
+  },
+  "deezerBadge": {
+    "ariaLabel": "À écouter sur Deezer"
   },
   "footer": {
     "admin": "Admin",

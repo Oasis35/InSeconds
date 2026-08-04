@@ -2,10 +2,11 @@ import { Component, input, output, signal, ChangeDetectionStrategy } from '@angu
 import { TranslatePipe } from '@ngx-translate/core';
 import { TodayStatsResponse } from '../../../../api/api.generated';
 import { ShareButtonComponent } from '../../../../shared/share-button/share-button.component';
+import { DeezerBadgeComponent } from '../../../../shared/deezer-badge.component';
 
 @Component({
   selector: 'app-already-played-screen',
-  imports: [TranslatePipe, ShareButtonComponent],
+  imports: [TranslatePipe, ShareButtonComponent, DeezerBadgeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './already-played-screen.component.html',
 })

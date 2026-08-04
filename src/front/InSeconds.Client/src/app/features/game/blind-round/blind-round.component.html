@@ -178,6 +178,11 @@
       @if (result(); as r) {
         <div class="flex flex-col items-center gap-5 text-center pt-2">
 
+          <div class="absolute z-20 flex items-center justify-center rounded-2xl px-3"
+               style="top:calc(0.75rem + 0.5rem);left:0;height:42px;background:rgb(var(--rgb-surface) / 0.55);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--border-medium)">
+            <app-deezer-badge [deezerTrackId]="track().deezerTrackId" width="98" height="14" />
+          </div>
+
           @if (track().coverUrl) {
             <img [src]="track().coverUrl" [alt]="'blindRound.coverAlt' | translate"
               class="w-32 h-32 object-cover"
@@ -193,7 +198,7 @@
             </span>
           </div>
 
-          <div class="space-y-0.5">
+          <div class="space-y-1.5">
             <p class="text-xs font-bold tracking-widest uppercase" style="font-family:var(--font-display);color:var(--text-faint)">{{ 'blindRound.correctAnswer' | translate }}</p>
             <p class="text-base font-medium" style="color:var(--text-light)">{{ r.correctArtist }} — {{ r.correctTitle }}</p>
           </div>

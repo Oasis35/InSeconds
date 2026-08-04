@@ -66,12 +66,14 @@
     "title": "InSeconds 🎵 {{ date }}",
     "score": "🏆 {{ score }} pts"
   },
+  "deezerBadge": {
+    "ariaLabel": "Listen on Deezer"
+  },
   "done": {
     "finalScore": "Final score",
     "points": "points",
     "artist": "Artist",
     "title": "Title",
-    "listenOnDeezer": "Listen on Deezer",
     "comeBack": "Come back tomorrow for a new challenge"
   },
   "footer": {

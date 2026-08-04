@@ -111,8 +111,7 @@ h1, h2, h3, .font-display {
 
 .da-grid {
   position: absolute;
-  inset: 0 0 auto 0;
-  height: 280px;
+  inset: 0;
   overflow: hidden;
   opacity: 0.5;
   pointer-events: none;

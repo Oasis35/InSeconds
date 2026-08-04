@@ -1,0 +1,30 @@
+name: Sync feat/dependabot avec main
+
+# Merge automatiquement main dans feat/dependabot à chaque push sur main.
+# En cas de conflit, le job échoue : le merge doit alors être fait à la main.
+# Limitation : le push utilise GITHUB_TOKEN, donc la CI ne se redéclenche pas
+# sur feat/dependabot (protection anti-boucle GitHub). Remplacer par un PAT
+# en secret si ce comportement est souhaité.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/dependabot
+          fetch-depth: 0
+
+      - name: Merge main dans feat/dependabot
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git merge origin/main --no-edit
+          git push

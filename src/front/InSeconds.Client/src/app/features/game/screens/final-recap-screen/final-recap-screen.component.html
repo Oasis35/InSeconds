@@ -63,19 +63,13 @@
                 }
                 <span>· {{ 'alreadyPlayed.failedPercent' | translate: { percent: r.failureRatePercent.toFixed(0) } }}</span>
               </div>
-              <a [href]="'https://www.deezer.com/track/' + r.deezerTrackId"
-                target="_blank" rel="noopener noreferrer"
-                class="inline-flex items-center gap-1 text-xs transition-colors hover:text-slate-400"
-                style="color:var(--text-muted)">
-                <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M2 11h2v1H2zM6 9h2v3H6zM10 7h2v5h-2zM14 5h2v7h-2z" fill="currentColor"/></svg>
-                {{ 'done.listenOnDeezer' | translate }}
-              </a>
             </div>
 
-            <div class="shrink-0 text-right self-center">
+            <div class="shrink-0 text-right self-center flex flex-col items-end gap-1.5">
               <span class="text-lg font-bold" style="font-family:var(--font-display)" [style.color]="r.score > 0 ? 'var(--color-success)' : 'var(--text-hover)'">
                 +{{ r.score }}
               </span>
+              <app-deezer-badge [deezerTrackId]="r.deezerTrackId" width="84" height="12" />
             </div>
           </div>
         }

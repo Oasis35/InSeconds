@@ -1,6 +1,7 @@
 import { Component, input, output, signal, ChangeDetectionStrategy } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ShareButtonComponent } from '../../../../shared/share-button/share-button.component';
+import { DeezerBadgeComponent } from '../../../../shared/deezer-badge.component';
 
 export interface RoundResult {
   artistCorrect: boolean;
@@ -18,7 +19,7 @@ export interface RoundResult {
 
 @Component({
   selector: 'app-final-recap-screen',
-  imports: [TranslatePipe, ShareButtonComponent],
+  imports: [TranslatePipe, ShareButtonComponent, DeezerBadgeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './final-recap-screen.component.html',
 })
