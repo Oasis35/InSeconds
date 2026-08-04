@@ -1,8 +1,10 @@
 import { Component, computed, inject, input, ChangeDetectionStrategy } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { LanguageService } from '../core/services/language.service';
 
 @Component({
   selector: 'app-deezer-badge',
+  imports: [TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './deezer-badge.component.html',
 })

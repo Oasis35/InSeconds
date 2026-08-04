@@ -1,5 +1,5 @@
 @if (href(); as url) {
-  <a [href]="url" target="_blank" rel="noopener noreferrer" class="inline-flex" aria-label="Deezer">
+  <a [href]="url" target="_blank" rel="noopener noreferrer" class="inline-flex" [attr.aria-label]="'deezerBadge.ariaLabel' | translate">
     @if (variant() === 'vertical') {
       @if (isEn()) {
         <svg [attr.width]="width()" [attr.height]="height()" viewBox="0 0 781 1085" fill="none" xmlns="http://www.w3.org/2000/svg">

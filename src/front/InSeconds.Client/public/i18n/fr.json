@@ -73,6 +73,9 @@
     "title": "Titre",
     "comeBack": "Reviens demain pour un nouveau défi"
   },
+  "deezerBadge": {
+    "ariaLabel": "À écouter sur Deezer"
+  },
   "footer": {
     "admin": "Admin",
     "source": "Voir le code source",
