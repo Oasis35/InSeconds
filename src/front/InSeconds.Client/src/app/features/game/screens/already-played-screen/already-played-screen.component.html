@@ -63,10 +63,8 @@
           @if (showTrackDetails()) {
             <div class="flex flex-col" style="border-top:1px solid var(--border-medium)">
               @for (t of s.tracks; track t.position) {
-                <a [href]="'https://www.deezer.com/track/' + t.deezerTrackId"
-                   target="_blank" rel="noopener noreferrer"
-                   class="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-white/[0.02]"
-                   style="border-bottom:1px solid rgba(255,255,255,0.04)">
+                <div class="flex items-center gap-3 px-4 py-3.5"
+                     style="border-bottom:1px solid rgba(255,255,255,0.04)">
                   @if (t.coverUrl) {
                     <img [src]="t.coverUrl" [alt]="'alreadyPlayed.coverAlt' | translate"
                          class="w-9 h-9 rounded-lg object-cover shrink-0" style="opacity:0.85" />
@@ -82,10 +80,8 @@
                       }
                     </div>
                   </div>
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="opacity:0.2;shrink:0;color:var(--text-body)">
-                    <path d="M2 11h2v1H2zM6 9h2v3H6zM10 7h2v5h-2zM14 5h2v7h-2z" fill="currentColor"/>
-                  </svg>
-                </a>
+                  <app-deezer-badge [deezerTrackId]="t.deezerTrackId" variant="vertical" width="34" height="30" />
+                </div>
               }
             </div>
           }
