@@ -34,7 +34,8 @@ AdminComponent (providers: les 6 services)
 
 ## `admin.models.ts` — DTO front écrits à la main
 
-- `ResetResult { deleted, date }`, `RefreshPreviewsResult { checked, updated, failed }`, `TrackDto { position, artist, title, deezerTrackId }`, `PoolTrackDto { id, artist, title, deezerTrackId, hasPreview?: boolean|null }`, `PoolTracksResponse { available: PoolTrackDto[], used: PoolTrackDto[] }`, `DeezerTrackInfo { artist, title, previewUrl, deezerTrackId, coverHash? }`, `type AdminTab = 'dashboard'|'pool'|'defis'|'actions'`.
+- `ResetResult { deleted, date }`, `RefreshPreviewsResult { checked, updated, failed }`, `TrackDto { position, artist, title, deezerTrackId }`, `PoolTrackDto { id, artist, title, deezerTrackId, hasPreview?: boolean|null, lastUsedDate?: string|null, usageCount?: number, unlockDate?: string|null }`, `PoolTracksResponse { available: PoolTrackDto[], used: PoolTrackDto[] }`, `DeezerTrackInfo { artist, title, previewUrl, deezerTrackId, coverHash? }`, `type AdminTab = 'dashboard'|'pool'|'defis'|'actions'`.
+- `lastUsedDate`/`unlockDate` sont des dates ISO (`yyyy-MM-dd`, `DateOnly` back sérialisé en string) ; `unlockDate` est **calculée à la volée côté back** (jamais stockée), donc dépend de `TrackCooldownDays` au moment de l'appel `GET /api/admin/tracks`.
 - **Piège** : `ChallengeDto` local (`{ id, date: string, tracks: TrackDto[] }`) porte le **même nom** que le `ChallengeDto` généré dans `api.generated.ts` (`date: Date`) — ce sont deux types différents non liés. Toute la feature admin utilise le type **local** (`../admin.models`). Ne pas les confondre lors d'un futur changement d'API.
 
 ## `services/admin-http.service.ts` — couche HTTP pure
@@ -46,7 +47,7 @@ Signal `authenticated = signal(false)` — unique source de vérité, réexposé
 - `checkAuth()` : `GET /me` fire-and-forget, positionne `authenticated`.
 - `login(password)` : `POST /login`, succès → stocke `res.token` dans `localStorage['admin_token']`, `authenticated=true`. Échec → promesse rejetée, propagée à l'appelant.
 - `logout()` : retire le token localStorage, `authenticated=false`. **Pas d'appel serveur** (logout purement local).
-- `generateToday()`, `resetToday()`, `refreshPreviews()`, `addTrack(deezerTrackId)`, `updateTrack(id, deezerTrackId)`, `deleteTrack(id)`, `searchDeezer(q)`, `getPoolTracks()`, `getStats(day)`, `getChallenges()` — tous retournent des `Observable` bruts non souscrits, sans gestion d'erreur ici (déléguée à l'appelant/`AdminApiService`).
+- `generateToday()`, `resetToday()`, `refreshPreviews()`, `addTrack(deezerTrackId)`, `updateTrack(id, deezerTrackId)`, `deleteTrack(id)`, `searchDeezer(q)`, `getPoolTracks()`, `getStats(day)`, `getChallenges()`, `updateTrackCooldownDays(days)` — tous retournent des `Observable` bruts non souscrits, sans gestion d'erreur ici (déléguée à l'appelant/`AdminApiService`).
 
 ## `services/admin-state.service.ts` — état UI pur (triggers)
 
@@ -66,7 +67,7 @@ Signals délégués tels quels : `authenticated = http.authenticated`, `selected
 3. **`statsResource`** — `params: () => state.selectedDay()`. `stream: ({params: day}) => http.getStats(day)`. Exposé : `adminStats`, `statsLoading`.
 4. **`challengesResource`** — `params: () => state.challengesReloadTrigger()`. `stream: () => http.getChallenges()`. Exposé : `challenges` (pas de `challengesLoading` exposé).
 
-Méthodes : `checkAuth()`/`logout()` délèguent à `http`. `login(password)` délègue puis `.then(() => reloadAll())` — **après connexion réussie, recharge tout**. `reloadPool()` délègue à `state.reloadPool()`. `reloadStats()` appelle directement `statsResource.reload()` (API native, contrairement au pool/défis qui passent par un trigger de state). `reloadAll()` = `state.reloadChallenges()` + `state.reloadPool()` + `reloadStats()`. `generateToday/resetToday/refreshPreviews/addTrack/updateTrack/deleteTrack` → délégation pure à `AdminHttpService`, `Observable` brut (mise à jour d'état et reload laissés aux consommateurs : `AdminActionsService`/`AdminPoolService`).
+Méthodes : `checkAuth()`/`logout()` délèguent à `http`. `login(password)` délègue puis `.then(() => reloadAll())` — **après connexion réussie, recharge tout**. `reloadPool()` délègue à `state.reloadPool()`. `reloadStats()` appelle directement `statsResource.reload()` (API native, contrairement au pool/défis qui passent par un trigger de state). `reloadAll()` = `state.reloadChallenges()` + `state.reloadPool()` + `reloadStats()`. `generateToday/resetToday/refreshPreviews/addTrack/updateTrack/deleteTrack/updateTrackCooldownDays` → délégation pure à `AdminHttpService`, `Observable` brut (mise à jour d'état et reload laissés aux consommateurs : `AdminActionsService`/`AdminPoolService`).
 
 *(Spec `admin-api.service.spec.ts` : un bloc teste en réalité `AdminHttpService` directement via `HttpTestingController` — nom trompeur — et un bloc `— delegation` vérifie le trio réel `AdminHttpService/AdminStateService/AdminApiService`.)*
 
@@ -88,7 +89,7 @@ Méthodes notables : `shiftChallengeMonth(delta)` — liste triée desc donc `ne
 
 **`poolPageSize = 15`** — taille de page du tableau unique fusionné available+used.
 
-Signals filtres/pagination : `allTracksPage=0`, `poolFilterText=''`, `poolFilterStatus: 'all'|'available'|'used'`, `poolFilterPreview: 'all'|'ok'|'missing'`, `selectedTrackIds = Set<number>`.
+Signals filtres/pagination : `allTracksPage=0`, `poolFilterText=''`, `poolFilterStatus: 'all'|'available'|'used'`, `poolFilterPreview: 'all'|'ok'|'missing'`, `poolFilterLastUsedFrom/poolFilterLastUsedTo: string` (ISO `yyyy-MM-dd`, `''` = pas de borne), `poolSortColumn: PoolSortColumn|null`, `poolSortDirection: 'asc'|'desc'`, `selectedTrackIds = Set<number>`.
 Signals modale ajout : `addToPoolStatus: 'idle'|'loading'|'success'|'error'`, `addModalOpen`, `addModalTrack: DeezerTrackInfo|null`, `addModalTrackIdToUpdate: number|null` (non-null = mode "remplacement d'un morceau sans preview" plutôt qu'ajout), `modalPlaying`, `modalProgress` (0-100).
 Signals modale suppression : `deleteModalOpen`, `deleteModalTracks: PoolTrackDto[]`, `deleteStatus: 'idle'|'loading'|'error'`.
 
@@ -97,30 +98,34 @@ Signals modale suppression : `deleteModalOpen`, `deleteModalTracks: PoolTrackDto
 - `filteredTracks` — applique les 3 filtres.
 - `poolAvailableWithPreview` — nombre de morceaux disponibles **et** avec preview active (`hasPreview !== false`, donc inclut `true`/`null`/`undefined`), calculé depuis `poolTracks().available` **indépendamment des filtres UI**. *Mêmes critères que `DailyChallengeGenerator` côté back.*
 - **`poolDaysRemaining`** : `Math.floor(poolAvailableWithPreview() / Math.max(1, settings.tracksPerChallenge()))` — jours restants avant épuisement du pool. `settings.tracksPerChallenge` = signal partagé (défaut `10`, synchronisé serveur), `Math.max(1,...)` protège la division par zéro. Testé : 7 dispo/preview ÷ 3 = `floor(7/3)=2`.
-- `allTotalPages`/`pagedAllTracks` — pagination classique sur `filteredTracks()`.
+- `sortedTracks` — `filteredTracks()` trié selon `poolSortColumn`/`poolSortDirection` (`sortValue(track, column)` mappe chaque colonne triable : texte en `toLowerCase()`, `preview` en `2/1/0` selon `true/null/false`, `status` en `1/0`, dates/`usageCount` en valeur brute). **Nulls (`lastUsedDate`/`unlockDate` absents) toujours en dernier, quelle que soit la direction** — évite qu'un morceau "jamais utilisé" saute en tête sur un tri descendant.
+- `allTotalPages`/`pagedAllTracks` — pagination classique sur `sortedTracks()` (pas `filteredTracks()` — seule la source de la slice paginée change, le compteur affiché reste basé sur `filteredTracks().length`).
 
-Méthodes : `poolDaysColor(days)` — rouge<3, orange<7, vert≥7. `setPoolFilter*` — **remet systématiquement `allTracksPage` à 0**. `onPoolSearchChange(q)` — met à jour `poolSearchQuery` (déclenche le `rxResource` recherche Deezer) + reset page. `toggleSelection`/`clearSelection` — sélection multiple (nouvelle `Set` à chaque mutation). `openAddModal(track, trackIdToUpdate=null, prefillSearch='')` — arrête l'audio, reset statut/progression, pré-remplit la recherche si fournie (bouton "Actualiser" du pool-tab). `toggleModalPreview()` — lecture/pause preview 30s via `Audio()` natif + boucle `requestAnimationFrame` pour `modalProgress`. `addToPoolFromModal(andClose)` — `api.addTrack(...)` si `addModalTrackIdToUpdate()===null` sinon `api.updateTrack(id,...)`. Succès → `api.reloadPool()`, ferme direct si `andClose` sinon timer 2s retour `idle`. Erreur → timer 3s retour `idle`. `openDeleteModal(track|null)` — `null` = suppression groupée des `selectedTrackIds()` filtrés sur `available` uniquement (**jamais** les `used`). `confirmDelete()` — `Promise.all` d'un `deleteTrack` par morceau, succès → `api.reloadPool()`.
+Méthodes : `poolDaysColor(days)` — rouge<3, orange<7, vert≥7. `setPoolFilter*`/`setPoolFilterLastUsedFrom`/`setPoolFilterLastUsedTo` — **remettent systématiquement `allTracksPage` à 0**. `setPoolSort(column)` — même colonne → bascule `asc`/`desc` ; nouvelle colonne → `asc`. `onPoolSearchChange(q)` — met à jour `poolSearchQuery` (déclenche le `rxResource` recherche Deezer) + reset page. `toggleSelection`/`clearSelection` — sélection multiple (nouvelle `Set` à chaque mutation). `openAddModal(track, trackIdToUpdate=null, prefillSearch='')` — arrête l'audio, reset statut/progression, pré-remplit la recherche si fournie (bouton "Actualiser" du pool-tab). `toggleModalPreview()` — lecture/pause preview 30s via `Audio()` natif + boucle `requestAnimationFrame` pour `modalProgress`. `addToPoolFromModal(andClose)` — `api.addTrack(...)` si `addModalTrackIdToUpdate()===null` sinon `api.updateTrack(id,...)`. Succès → `api.reloadPool()`, ferme direct si `andClose` sinon timer 2s retour `idle`. Erreur → timer 3s retour `idle`. `openDeleteModal(track|null)` — `null` = suppression groupée des `selectedTrackIds()` filtrés sur `available` uniquement (**jamais** les `used`). `confirmDelete()` — `Promise.all` d'un `deleteTrack` par morceau, succès → `api.reloadPool()`.
 
 ## `services/admin-actions.service.ts` — génération/reset/refresh
 
 `@Injectable()`. Injecte `AdminApiService` (`api`), `DestroyRef`.
 
-Signals : `generateStatus: 'idle'|'loading'|'success'|'already'|'pool_insufficient'|'error'`, `resetStatus: 'idle'|'loading'|'success'|'error'`, `resetResult: ResetResult|null`, `refreshPreviewsStatus: 'idle'|'loading'|'success'|'error'`, `refreshPreviewsResult: RefreshPreviewsResult|null`.
+Injecte aussi `SettingsService` (`settings`, `core/services/`).
+
+Signals : `generateStatus: 'idle'|'loading'|'success'|'already'|'pool_insufficient'|'error'`, `resetStatus: 'idle'|'loading'|'success'|'error'`, `resetResult: ResetResult|null`, `refreshPreviewsStatus: 'idle'|'loading'|'success'|'error'`, `refreshPreviewsResult: RefreshPreviewsResult|null`, `trackCooldownDaysInput: number|null` (`null` = pas encore édité, l'input affiche alors `settings.trackCooldownDays()`), `updateCooldownStatus: 'idle'|'loading'|'success'|'error'`.
 
 - `generateToday()` : succès → `'success'` + **`api.reloadAll()`** (un nouveau défi consomme du pool + crée stats/challenge) ; erreur → `409`→`'already'`, `422`→`'pool_insufficient'`, sinon `'error'` ; retour `idle` après 3s dans tous les cas (timer annulé/relancé proprement).
 - `reset()` : succès → stocke `ResetResult`, **`api.reloadStats()`** (pas `reloadAll` — seules les stats sont affectées).
 - `refreshPreviews()` : succès → stocke le résultat, **`api.reloadPool()`** (modifie potentiellement `hasPreview`).
+- `updateTrackCooldownDays(days)` : succès → `'success'` + **`settings.load().subscribe()`** (recharge `/api/settings` pour resynchroniser `SettingsService.trackCooldownDays` — pas `api.reloadAll()`, ce setting n'affecte ni le pool ni les stats déjà affichés) ; erreur → `'error'` ; retour `idle` après 3s dans les deux cas.
 
-Pas de spec pour ce service.
+Spec (`actions-tab.component.spec.ts`) : couvre la lecture de `settings.trackCooldownDays()` et le succès/erreur d'`updateTrackCooldownDays`. Pas de spec pour `AdminActionsService` au-delà de ça.
 
 ## Composants (tous présentationnels, injectent leur(s) service(s) directement)
 
 - **`admin-login`** : `password` (propriété simple, `ngModel`), `loginStatus: 'idle'|'loading'|'error'`. `login()` → `api.login(password)`.
 - **`dashboard-tab`** : injecte `AdminStatsService` seul. Template : sélecteur de jour (`shiftSelectedDay`), KPIs du jour (`adminStats['selectedDayKpis']` — bracket notation, type généré `[key:string]:any`), graphique barres 30j (`activityBarHeightPx`, clic → `selectDay`), tuiles répartition joueurs (`playerBreakdown`).
 - **`challenges-tab`** — grille par track dans « Stats par défi » : 4 tuiles (`artistCorrectRate`, `titleCorrectRate`, `extendedRate`, `avgListenedSeconds`). `extendedRate` (`TrackStatsDto.extendedRate`, % de réponses avec `WasExtended=true`) affiché en texte simple, sans code couleur (les seuils `rateColor`/`rateBarColor` sont calibrés pour des taux de réussite, pas pour un taux de prolongation dont une valeur haute n'est ni bonne ni mauvaise en soi).
-- **`pool-tab`** : injecte `AdminPoolService`. Monte `<app-add-track-modal/>` et `<app-delete-track-modal/>` en bas du template (toujours dans le DOM dès l'onglet actif, masquées par leur `@if` interne). Tableau fusionné, checkbox de sélection uniquement sur non-`used`, bouton "Actualiser" par ligne sans preview → `openAddModal(null, t.id, "artist title")`.
+- **`pool-tab`** : injecte `AdminPoolService`. Monte `<app-add-track-modal/>` et `<app-delete-track-modal/>` en bas du template (toujours dans le DOM dès l'onglet actif, masquées par leur `@if` interne). Tableau fusionné, checkbox de sélection uniquement sur non-`used`, bouton "Actualiser" par ligne sans preview → `openAddModal(null, t.id, "artist title")`. **Toutes les colonnes sont triables** (clic sur l'en-tête → `pool.setPoolSort(column)`, flèche ▲/▼ affichée sur la colonne active), colonnes `LastUsedDate`/`UnlockDate`/`UsageCount` entre Statut et Actions (cellule vide, pas de placeholder, si la valeur est `null`), filtre par plage de dates (`type="date"`) sur `LastUsedDate` en plus des filtres texte/statut/preview existants.
 - **`challenges-tab`** : injecte `AdminStatsService` (**même instance** que dashboard-tab). Un seul navigateur de mois pilote deux sections aux sources différentes : "Stats par défi" (`adminStats().challenges`, type généré) et "Historique" (`challenges()`, type local) — synchronisées via l'`effect()` d'`AdminStatsService`.
-- **`actions-tab`** : injecte `AdminActionsService` seul. 3 blocs (génération/reset/refresh previews) avec messages conditionnels par statut.
+- **`actions-tab`** : injecte `AdminActionsService` **et** `SettingsService` (seul composant de la feature à injecter un service `core/` directement, pour lire la valeur courante de `trackCooldownDays` avant édition). 4 blocs (génération/reset/refresh previews/cooldown) avec messages conditionnels par statut. Le bloc cooldown utilise un `<input type="number">` avec événements DOM bruts (`(input)`/`$any($event.target).value`), pas `ngModel` — cohérent avec le pattern déjà utilisé par les filtres de `pool-tab` plutôt que d'introduire `FormsModule` dans ce composant.
 - **`add-track-modal`** / **`delete-track-modal`** : injectent `AdminPoolService`, zéro logique propre — pur reflet des signals du service (`@if (pool.addModalOpen())` / `@if (pool.deleteModalOpen())`, overlay + `Escape` pour fermer).
 
 ## Constantes à connaître
@@ -131,8 +136,9 @@ Pas de spec pour ce service.
 | `'admin_token'` | `AdminHttpService.storageKey` | clé localStorage du token admin |
 | `300ms` / `2` car. | `AdminApiService` (recherche Deezer) | debounce manuel `timer`+`switchMap` / seuil avant appel réseau |
 | `2000ms` / `3000ms` | `AdminPoolService.addToPoolFromModal` | retour `idle` après succès / erreur ajout pool |
-| `3000ms` | `AdminActionsService.generateToday` | retour `idle` (succès et erreur) |
+| `3000ms` | `AdminActionsService.generateToday`/`updateTrackCooldownDays` | retour `idle` (succès et erreur) |
 | défaut `10` | `SettingsService.tracksPerChallenge` | dénominateur de `poolDaysRemaining` |
+| défaut `30` | `SettingsService.trackCooldownDays` | valeur affichée dans l'input avant première édition |
 | rouge<3 / orange<7 / vert≥7 | `poolDaysColor` | autonomie du pool |
 | rouge<40 / jaune<70 / vert≥70 | `completionRateColor` | taux de complétion |
 | rouge<30 / jaune<60 / vert≥60 | `rateColor`/`rateBarColor` | taux artiste/titre par piste (seuils différents de `completionRateColor`) |
@@ -143,3 +149,4 @@ Pas de spec pour ce service.
 2. **`ChallengeDto` local vs généré** — vérifier systématiquement lequel des deux types est importé (`../admin.models` vs `api/api.generated`) avant de manipuler `date`.
 3. **`logout()` ne fait pas d'appel serveur** — purement local (localStorage). Si un jour une invalidation côté back est nécessaire, elle n'existe pas aujourd'hui.
 4. Après toute mutation du pool (ajout/suppression/update), le reload passe toujours par `api.reloadPool()` — jamais de mutation optimiste locale des signals `poolTracks`.
+5. **`PoolTrackDto.unlockDate` est calculée côté back, jamais stockée** — dépend de `TrackCooldownDays` au moment de l'appel `GET /api/admin/tracks`. Ne pas essayer de la dériver côté front depuis `lastUsedDate` + une constante locale : `settings.trackCooldownDays()` peut être désynchronisé jusqu'au prochain `settings.load()`.

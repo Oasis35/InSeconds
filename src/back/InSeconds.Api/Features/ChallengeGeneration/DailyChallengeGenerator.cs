@@ -23,13 +23,12 @@ public sealed class DailyChallengeGenerator(
             return GenerateResult.AlreadyExists;
         }
 
-        var usedTrackIds = await db.DailyChallengeTracks
-            .Select(dct => dct.TrackId)
-            .Distinct()
-            .ToListAsync(ct);
+        var cooldownDays = await SettingsRawReader.GetIntAsync(
+            db, "TrackCooldownDays", new AppSettings().TrackCooldownDays, ct);
+        var cutoff = today.AddDays(-cooldownDays);
 
         var candidates = await db.Tracks
-            .Where(t => !usedTrackIds.Contains(t.Id) && t.HasPreview)
+            .Where(t => t.HasPreview && (t.LastUsedDate == null || t.LastUsedDate < cutoff))
             .ToListAsync(ct);
 
         var settings = await settingsService.GetAsync(ct);
@@ -68,6 +67,13 @@ public sealed class DailyChallengeGenerator(
             Position           = i + 1,
             DeezerRankSnapshot = i + 1,
         }));
+        await db.SaveChangesAsync(ct);
+
+        foreach (var t in selected)
+        {
+            t.LastUsedDate = today;
+            t.UsageCount += 1;
+        }
         await db.SaveChangesAsync(ct);
 
         await transaction.CommitAsync(ct);

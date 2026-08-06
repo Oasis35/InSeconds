@@ -53,6 +53,14 @@ public sealed class SettingConfiguration : IEntityTypeConfiguration<Setting>
                 Value = "0.50:1000,1:850,1.5:700,2:550,3:400,5:250,10:100",
                 Description = "Score de base par palier d'écoute (format palier:score, séparés par virgule).",
                 UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new Setting
+            {
+                Id = 7,
+                Key = "TrackCooldownDays",
+                Value = "30",
+                Description = "Nombre de jours avant qu'un morceau déjà utilisé redevienne éligible à la génération.",
+                UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             }
         );
     }

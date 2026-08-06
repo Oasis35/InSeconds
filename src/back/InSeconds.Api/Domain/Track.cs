@@ -10,6 +10,8 @@ public sealed class Track
     public bool HasPreview { get; set; } = true;
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
+    public DateOnly? LastUsedDate { get; set; }
+    public int UsageCount { get; set; }
 
     public ICollection<DailyChallengeTrack> DailyChallengeTracks { get; set; } = [];
 }

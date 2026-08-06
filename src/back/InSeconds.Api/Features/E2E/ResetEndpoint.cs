@@ -185,7 +185,24 @@ public static class E2EResetEndpoint
                 Position           = pos + 1,
                 DeezerRankSnapshot = pos + 1,
             }));
+            // Le générateur ne filtre plus sur "appartient à un défi" mais sur LastUsedDate
+            // (cooldown) — sans ce tamponnage, les 9 morceaux des défis J-2/J-1/aujourd'hui
+            // redeviendraient immédiatement éligibles à la génération.
+            foreach (var t in tracksByDay[i])
+                t.LastUsedDate = days[i];
         }
+        db.SaveChanges();
+
+        // Diversifie l'état de cooldown de quelques morceaux du pool existant (aucun nouveau
+        // morceau nécessaire) pour couvrir : jamais utilisé, dans la fenêtre de cooldown
+        // (30j défaut, exclu), exactement à la limite (exclu), juste hors cooldown (éligible),
+        // usage élevé (éligible), valeur intermédiaire pour les tests de filtre par date.
+        tracks[9].LastUsedDate = null; tracks[9].UsageCount = 0;                                    // Michael Jackson — jamais utilisé
+        tracks[10].LastUsedDate = today.AddDays(-5);  tracks[10].UsageCount = 1;                    // Queen — en cooldown
+        tracks[11].LastUsedDate = today.AddDays(-30); tracks[11].UsageCount = 3;                    // Nirvana — exactement à la limite
+        tracks[12].LastUsedDate = today.AddDays(-31); tracks[12].UsageCount = 2;                    // The Weeknd — juste hors cooldown
+        tracks[13].LastUsedDate = today.AddDays(-90); tracks[13].UsageCount = 7;                    // Adele — usage élevé
+        tracks[14].LastUsedDate = today.AddDays(-15); tracks[14].UsageCount = 1;                    // Ed Sheeran — valeur intermédiaire
         db.SaveChanges();
 
         var devPlayer = new Player

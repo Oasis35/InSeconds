@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using InSeconds.Api.Domain;
 using InSeconds.Api.Features.Admin.Challenges.GetChallenges;
 using Microsoft.Extensions.DependencyInjection;
 using InSeconds.Api.Features.ChallengeGeneration;
@@ -71,6 +72,50 @@ public class ChallengeGenerationTests(IntegrationTestFactory factory) : IAsyncLi
         var result = await generator.GenerateAsync();
 
         Assert.Equal(GenerateResult.AlreadyExists, result);
+    }
+
+    [Fact]
+    public async Task DailyChallengeGenerator_RespecteLeCooldown_ExcludesTracksRecentesEtStampeLesSelectionnes()
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var existingChallenge = await db.DailyChallenges.FirstOrDefaultAsync(c => c.Date == today);
+        if (existingChallenge != null)
+        {
+            db.DailyChallenges.Remove(existingChallenge);
+            await db.SaveChangesAsync();
+        }
+
+        // Un morceau récemment utilisé (dans le cooldown par défaut de 30j) ne doit jamais être sélectionné,
+        // même si tout le reste du pool était insuffisant sans lui.
+        var recentlyUsed = await db.Tracks.FirstAsync(t => t.HasPreview && !db.DailyChallengeTracks.Any(dct => dct.TrackId == t.Id));
+        recentlyUsed.LastUsedDate = today.AddDays(-5);
+        var preGenerationUsageCount = recentlyUsed.UsageCount;
+        await db.SaveChangesAsync();
+
+        var generator = scope.ServiceProvider.GetRequiredService<DailyChallengeGenerator>();
+        var result = await generator.GenerateAsync();
+
+        Assert.Equal(GenerateResult.Success, result);
+
+        var created = await db.DailyChallenges
+            .Include(c => c.Tracks)
+            .FirstOrDefaultAsync(c => c.Date == today);
+        Assert.NotNull(created);
+        Assert.DoesNotContain(created.Tracks, dct => dct.TrackId == recentlyUsed.Id);
+
+        foreach (var dct in created.Tracks)
+        {
+            var track = await db.Tracks.SingleAsync(t => t.Id == dct.TrackId);
+            Assert.Equal(today, track.LastUsedDate);
+            Assert.True(track.UsageCount >= 1);
+        }
+
+        db.ChangeTracker.Clear();
+        var untouched = await db.Tracks.SingleAsync(t => t.Id == recentlyUsed.Id);
+        Assert.Equal(preGenerationUsageCount, untouched.UsageCount);
     }
 
     // ── helper ───────────────────────────────────────────────────────────────

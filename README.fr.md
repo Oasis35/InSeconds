@@ -6,7 +6,7 @@
 
 ## Comment ça marche
 
-- Chaque jour à minuit UTC, un nouveau set de morceaux est sélectionné automatiquement (uniquement des morceaux avec une preview Deezer active) ; si la génération de minuit a raté, le défi est régénéré automatiquement à l'arrivée du premier joueur (sélection déterministe : même défi pour tout le monde)
+- Chaque jour à minuit UTC, un nouveau set de morceaux est sélectionné automatiquement (uniquement des morceaux avec une preview Deezer active, hors cooldown de réutilisation configurable) ; si la génération de minuit a raté, le défi est régénéré automatiquement à l'arrivée du premier joueur (sélection déterministe : même défi pour tout le monde)
 - La disponibilité des previews est re-vérifiée chaque nuit auprès de Deezer (appels par lots, respectueux du rate-limit) ; les admins peuvent aussi relancer la vérification à la demande depuis la page admin
 - Choisis combien de secondes écouter (0.5, 1, 1.5, 2, 3, 5, 10) avant de tenter artiste + titre
 - Prolongations "écouter plus" libres et illimitées par morceau (jusqu'au dernier palier) — le score dépend toujours du palier final écouté, sans malus

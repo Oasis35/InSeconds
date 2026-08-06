@@ -50,6 +50,31 @@ export class AdminPage {
     return this.page.getByRole('button', { name: '+ Ajouter' });
   }
 
+  poolFilterLastUsedFrom(): Locator {
+    return this.page.getByLabel('Utilisé depuis le');
+  }
+
+  poolFilterLastUsedTo(): Locator {
+    return this.page.getByLabel('Utilisé jusqu\'au');
+  }
+
+  poolColumnHeader(name: string): Locator {
+    return this.page.getByRole('columnheader', { name: new RegExp(name) });
+  }
+
+  poolRow(artist: string): Locator {
+    return this.page.getByRole('row').filter({ has: this.page.getByRole('cell', { name: artist, exact: true }) });
+  }
+
+  // Actions — cooldown
+  trackCooldownInput(): Locator {
+    return this.page.getByLabel('Cooldown de réutilisation des morceaux');
+  }
+
+  saveCooldownButton(): Locator {
+    return this.page.getByRole('button', { name: 'Enregistrer' });
+  }
+
   // Modale ajout (placeholder distinct du filtre pool)
   modalSearchInput(): Locator {
     return this.page.getByPlaceholder('Rechercher sur Deezer...');
@@ -104,5 +129,18 @@ export class AdminPage {
       method: 'DELETE',
       headers: { Authorization: 'Bearer admin-token' },
     });
+  }
+
+  // GET /api/settings lit IOptions<AppSettings> figé au boot (pas de live-reload générique) —
+  // seuls DailyChallengeGenerator/GetTracksHandler relisent la table Settings à chaud.
+  // Pour vérifier la persistance, on repasse par le pool (dont les dates de déblocage sont
+  // calculées avec la valeur fraîche de TrackCooldownDays).
+  async apiGetPoolUnlockDate(deezerTrackId: number): Promise<string | null | undefined> {
+    const res = await fetch(`${BASE}/api/admin/tracks`, {
+      headers: { Authorization: 'Bearer admin-token' },
+    });
+    if (!res.ok) throw new Error(`get tracks failed: ${res.status}`);
+    const body = await res.json() as { available: { deezerTrackId: number; unlockDate: string | null }[] };
+    return body.available.find(t => t.deezerTrackId === deezerTrackId)?.unlockDate;
   }
 }

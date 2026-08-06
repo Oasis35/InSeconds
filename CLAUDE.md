@@ -156,7 +156,7 @@ npm run build                  # vérifier que le build passe
 | Table | Rôle |
 |-------|------|
 | `Players` | `Guid Id`, `IsGuest`, `Pseudo?`, `AuthToken` (cookie HttpOnly), `Email?`, `LastSeenAt?`, `DeletedAt?`, soft-delete (`IsDeleted`), CHECK constraint guest⇔pseudo |
-| `Tracks` | référentiel canonique (DeezerTrackId unique), `CoverHash` = hash seul de l'image Deezer (pas l'URL complète), `HasPreview` = flag mis à jour nuitamment par `RefreshPreviewStatusService`, `UpdatedAt?` |
+| `Tracks` | référentiel canonique (DeezerTrackId unique), `CoverHash` = hash seul de l'image Deezer (pas l'URL complète), `HasPreview` = flag mis à jour nuitamment par `RefreshPreviewStatusService`, `UpdatedAt?`, `LastUsedDate?`/`UsageCount` = suivi du cooldown de réutilisation |
 | `DailyChallenges` | 1 par jour UTC (Date unique) + Seed pour audit |
 | `DailyChallengeTracks` | jonction Track ↔ Challenge + Position (1-10) + DeezerRankSnapshot |
 | `GameSessions` | 1 entrée/joueur/jour (unique sur `PlayerId+DailyChallengeId`), `Status` (Pending=0/Completed=1/Abandoned=2), `CompletedAt`/`AbandonedAt` nullable, index leaderboard + index `(ChallengeId, Status)` |
@@ -173,6 +173,7 @@ npm run build                  # vérifier que le build passe
 - **Durée écoutée = choix discret**, pas une mesure. Paliers dans `Settings.AllowedDurationsSeconds`
 - **Migration auto** au boot via `db.Database.Migrate()` dans `Program.cs`
 - **`Track.CoverHash`** : stocke uniquement le hash de l'image Deezer (ex: `abc123...`). L'URL complète est reconstruite à la volée via `AppSettings.BuildCoverUrl(hash)` en utilisant le template `CoverUrlTemplate` depuis `Settings`. Format Deezer : `https://cdn-images.dzcdn.net/images/cover/{hash}/250x250-000000-80-0-0.jpg`
+- **`Track.LastUsedDate`/`UsageCount`** : suivi du cooldown de réutilisation (voir "Cooldown de réutilisation des morceaux" dans Déjà implémenté)
 
 ### Settings en base (valeurs par défaut)
 
@@ -183,6 +184,7 @@ npm run build                  # vérifier que le build passe
 | `TracksPerChallenge` | `3` | `int` |
 | `DurationScores` | `0.50:1000,1:850,1.5:700,2:550,3:400,5:250,10:100` | `Dictionary<decimal,int>` |
 | `CoverUrlTemplate` | `https://cdn-images.dzcdn.net/images/cover/{hash}/250x250-000000-80-0-0.jpg` | `string` |
+| `TrackCooldownDays` | `30` | `int` |
 
 ## Commandes courantes
 
@@ -315,6 +317,7 @@ Runners Ubuntu, ~5-7 min par run (jobs `back`/`front`/`unit-tests-front`/`integr
 - **Préchargement audio** : `AudioPlayerService.preloadAll()` injecte des `<link rel="preload" as="audio">` pour tous les morceaux dès que la session est reçue — non bloquant, le jeu passe directement en état `welcome`
 - **`GET /api/settings`** — expose les settings publics (paliers, timer, scores) consommé par `SettingsService` Angular au boot
 - **`BackgroundService` génération défi quotidien** — `GenerateDailyChallengeService` s'exécute à minuit UTC (0h00). Retourne `GenerateResult` (`Success` / `AlreadyExists` / `PoolInsufficient`). En cas d'échec (exception ou `PoolInsufficient`), retry toutes les 10 min (`RetryDelay`) jusqu'à succès — un raté à minuit ne laisse plus la journée sans défi. Planification des deux jobs nocturnes via `DailySchedule.NextUtcHour(hour)` + `DelayUntilAsync(target)` (attente sur cible d'horloge murale, anti-dérive — cf. piège 19). La sélection utilise **Fisher-Yates** (seed = `today.DayNumber`) — même défi pour tous, distribution uniforme sans biais positionnel. Les deux `SaveChangesAsync` sont dans une transaction explicite.
+- **Cooldown de réutilisation des morceaux** (2026-08) — le pool boucle désormais : `DailyChallengeGenerator` ne filtre plus les candidats sur "jamais utilisé dans un défi" (exclusion à vie) mais sur une fenêtre de cooldown (`Track.HasPreview == true` ET `LastUsedDate == null` OU `LastUsedDate < today - TrackCooldownDays`). Un morceau redevient donc éligible après le délai configuré, ce qui évite l'épuisement définitif du pool tout en gardant un espacement minimum entre deux apparitions. `Track.LastUsedDate`/`UsageCount` sont tamponnés dans la même transaction que l'insertion des `DailyChallengeTrack`, à chaque génération réussie. `TrackCooldownDays` (`Settings`, défaut 30j) est éditable à chaud depuis l'onglet Actions admin (`PUT /api/admin/settings/track-cooldown-days`, slice `Features/Admin/Settings/UpdateTrackCooldown/`) — **contrairement aux autres settings (figés au boot dans `IOptions<AppSettings>`), celui-ci est relu directement en base à chaque génération** via le helper `Common/Settings/SettingsRawReader.GetIntAsync` (même mécanisme utilisé par `GetTracksHandler` pour calculer `UnlockDate`, une date de déblocage par morceau calculée à la volée — pas stockée). Onglet Pool admin : colonnes `LastUsedDate`/`UnlockDate`/`UsageCount`, toutes les colonnes du tableau sont triables (côté client), filtre par plage de dates sur `LastUsedDate`.
 - **Génération paresseuse du défi dans `StartSession`** — filet de sécurité si le job de minuit a raté (réveil anticipé, crash, redéploiement…) : quand aucun défi n'existe pour aujourd'hui, `StartSessionHandler.TryLazyGenerateAsync` appelle `DailyChallengeGenerator` à la volée (sélection déterministe, seed = `DayNumber` → même défi que le scheduler aurait produit). Course avec le scheduler/un autre joueur gérée par la contrainte unique sur `Date` : catch → `ChangeTracker.Clear()` → relecture. Le 503 « pas de défi » ne subsiste que si le pool est insuffisant. Conséquence E2E : `/api/e2e/reset` a un paramètre `emptyPool=true` (met `HasPreview=false` partout) pour tester l'écran « pas de défi » ; restaurer via `/api/e2e/reseed`.
 - **Clés Data Protection persistées en base** — `PersistKeysToDbContext<ApplicationDbContext>()` (table `DataProtectionKeys`, migration `PersistDataProtectionKeys`, package `Microsoft.AspNetCore.DataProtection.EntityFrameworkCore`) : les cookies joueurs survivent aux redémarrages/redéploiements Northflank (cf. piège 17).
 - **`BackgroundService` refresh preview** — `RefreshPreviewStatusService` s'exécute à 23h UTC (la veille, avant la génération de minuit). Appelle Deezer pour tous les tracks disponibles (hors "used") par **lots de 10 espacés de 1,5 s** (limite Deezer ~50 req/5 s), met à jour `Track.HasPreview` uniquement si le flag a changé **et si la réponse Deezer est déterminée** (`ProbePreviewAsync.Succeeded` — cf. piège 16). Délègue à `PreviewStatusRefresher` (scoped) qui retourne `RefreshPreviewsResult(Checked, Updated, Failed)`.

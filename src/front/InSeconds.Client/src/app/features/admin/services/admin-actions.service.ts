@@ -1,12 +1,14 @@
 import { Injectable, inject, signal, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AdminApiService } from './admin-api.service';
+import { SettingsService } from '../../../core/services/settings.service';
 import { RefreshPreviewsResult, ResetResult } from '../admin.models';
 
-/** État de l'onglet actions : génération du défi du jour, reset des parties. */
+/** État de l'onglet actions : génération du défi du jour, reset des parties, réglage du cooldown. */
 @Injectable()
 export class AdminActionsService {
   private readonly api = inject(AdminApiService);
+  private readonly settings = inject(SettingsService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly generateStatus = signal<'idle' | 'loading' | 'success' | 'already' | 'pool_insufficient' | 'error'>('idle');
@@ -14,7 +16,10 @@ export class AdminActionsService {
   readonly resetResult = signal<ResetResult | null>(null);
   readonly refreshPreviewsStatus = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
   readonly refreshPreviewsResult = signal<RefreshPreviewsResult | null>(null);
+  readonly trackCooldownDaysInput = signal<number | null>(null);
+  readonly updateCooldownStatus = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
   private generateStatusTimer: ReturnType<typeof setTimeout> | null = null;
+  private updateCooldownStatusTimer: ReturnType<typeof setTimeout> | null = null;
 
   generateToday(): void {
     this.generateStatus.set('loading');
@@ -58,6 +63,29 @@ export class AdminActionsService {
         this.api.reloadPool();
       },
       error: () => this.refreshPreviewsStatus.set('error'),
+    });
+  }
+
+  updateTrackCooldownDays(days: number): void {
+    this.updateCooldownStatus.set('loading');
+    this.api.updateTrackCooldownDays(days).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.updateCooldownStatus.set('success');
+        this.settings.load().subscribe();
+        if (this.updateCooldownStatusTimer) clearTimeout(this.updateCooldownStatusTimer);
+        this.updateCooldownStatusTimer = setTimeout(() => {
+          if (this.updateCooldownStatus() === 'success') this.updateCooldownStatus.set('idle');
+          this.updateCooldownStatusTimer = null;
+        }, 3000);
+      },
+      error: () => {
+        this.updateCooldownStatus.set('error');
+        if (this.updateCooldownStatusTimer) clearTimeout(this.updateCooldownStatusTimer);
+        this.updateCooldownStatusTimer = setTimeout(() => {
+          if (this.updateCooldownStatus() === 'error') this.updateCooldownStatus.set('idle');
+          this.updateCooldownStatusTimer = null;
+        }, 3000);
+      },
     });
   }
 }
