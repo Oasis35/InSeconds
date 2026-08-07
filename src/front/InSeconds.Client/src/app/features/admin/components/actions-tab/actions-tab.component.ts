@@ -1,6 +1,7 @@
 import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { AdminActionsService } from '../../services/admin-actions.service';
+import { SettingsService } from '../../../../core/services/settings.service';
 
 @Component({
   selector: 'app-actions-tab',
@@ -10,4 +11,5 @@ import { AdminActionsService } from '../../services/admin-actions.service';
 })
 export class ActionsTabComponent {
   protected readonly actions = inject(AdminActionsService);
+  protected readonly settings = inject(SettingsService);
 }

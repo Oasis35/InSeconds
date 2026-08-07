@@ -150,6 +150,58 @@ test.describe('Admin — pool', () => {
     const modalSearch = page.getByPlaceholder('Rechercher sur Deezer...');
     await expect(modalSearch).not.toHaveValue('');
   });
+
+  test('affiche les colonnes cooldown avec les bonnes valeurs', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('button', { name: /Pool/ }).click();
+
+    await expect(admin.poolColumnHeader('Dernière utilisation')).toBeVisible();
+    await expect(admin.poolColumnHeader('Date de déblocage')).toBeVisible();
+    await expect(admin.poolColumnHeader('Nb. utilisations')).toBeVisible();
+
+    // Queen (index 10 du seed) a été mise en cooldown récent (-5j, defaut 30j) : dates non vides.
+    await admin.poolSearchInput().fill('Queen');
+    const queenRow = admin.poolRow('Queen');
+    await expect(queenRow.getByRole('cell').nth(5)).not.toHaveText('');
+    await expect(queenRow.getByRole('cell').nth(6)).not.toHaveText('');
+
+    // Michael Jackson (index 9) n'a jamais été utilisé : date de déblocage vide.
+    await admin.poolSearchInput().fill('Michael Jackson');
+    const mjRow = admin.poolRow('Michael Jackson');
+    await expect(mjRow.getByRole('cell').nth(6)).toHaveText('');
+  });
+
+  test('filtre par plage de dates sur la dernière utilisation', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('button', { name: /Pool/ }).click();
+
+    // Ed Sheeran (index 14, -15j) tombe dans la plage ; Queen (-5j) et Adele (-90j) en dehors.
+    const today = new Date();
+    const from = new Date(today); from.setUTCDate(from.getUTCDate() - 20);
+    const to = new Date(today); to.setUTCDate(to.getUTCDate() - 10);
+    await admin.poolFilterLastUsedFrom().fill(from.toISOString().slice(0, 10));
+    await admin.poolFilterLastUsedTo().fill(to.toISOString().slice(0, 10));
+
+    await expect(page.getByRole('cell', { name: 'Ed Sheeran', exact: true })).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Queen', exact: true })).not.toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Adele', exact: true })).not.toBeVisible();
+  });
+
+  test('trie par nombre d\'utilisations', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('button', { name: /Pool/ }).click();
+
+    // Adele (index 13) a le UsageCount le plus élevé du seed (7) — tri desc doit la faire remonter.
+    await admin.poolColumnHeader('Nb. utilisations').click();
+    await admin.poolColumnHeader('Nb. utilisations').click(); // 2e clic → desc
+    await expect(page.getByRole('row').nth(1).getByRole('cell').nth(1)).toHaveText('Adele');
+  });
 });
 
 test.describe('Admin — actions', () => {
@@ -187,6 +239,24 @@ test.describe('Admin — actions', () => {
 
     await admin.resetButton().click();
     await expect(page.getByText(/partie\(s\) supprimée\(s\)/)).toBeVisible({ timeout: 5000 });
+  });
+
+  test('édite le cooldown de réutilisation et persiste en base', async ({ page }) => {
+    const adminPage = new AdminPage(page);
+    await adminPage.goto();
+    await adminPage.login();
+    await adminPage.clickTab('Actions');
+
+    // Queen (LastUsedDate = today-5j) a une date de déblocage lue en base au chargement du pool
+    // (pas via /api/settings, figé au boot) — sert de preuve que le nouveau cooldown est bien pris
+    // en compte, cohérent avec "effectif au prochain calcul", pas de redémarrage requis.
+    const before = await adminPage.apiGetPoolUnlockDate(5055001); // Queen — Bohemian Rhapsody
+
+    await adminPage.trackCooldownInput().fill('45');
+    await adminPage.saveCooldownButton().click();
+    await expect(page.getByText('Cooldown mis à jour.')).toBeVisible({ timeout: 5000 });
+
+    await expect.poll(() => adminPage.apiGetPoolUnlockDate(5055001)).not.toBe(before);
   });
 });
 

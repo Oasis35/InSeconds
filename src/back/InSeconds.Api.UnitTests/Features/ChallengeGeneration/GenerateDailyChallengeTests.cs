@@ -140,10 +140,12 @@ public sealed class GenerateDailyChallengeTests
     {
         await using var db = CreateDbContext();
 
-        db.Tracks.AddRange(BuildTrack(1), BuildTrack(2), BuildTrack(3), BuildTrack(4), BuildTrack(5));
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        db.Tracks.AddRange(
+            BuildTrack(1), BuildTrack(2), BuildTrack(3), BuildTrack(4), BuildTrack(5));
         var pastChallenge = new DailyChallenge
         {
-            Date = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1),
+            Date = today.AddDays(-1),
             Seed = 1,
         };
         db.DailyChallenges.Add(pastChallenge);
@@ -153,15 +155,126 @@ public sealed class GenerateDailyChallengeTests
             new DailyChallengeTrack { DailyChallengeId = pastChallenge.Id, TrackId = 1, Position = 1, DeezerRankSnapshot = 0 },
             new DailyChallengeTrack { DailyChallengeId = pastChallenge.Id, TrackId = 2, Position = 2, DeezerRankSnapshot = 0 },
             new DailyChallengeTrack { DailyChallengeId = pastChallenge.Id, TrackId = 3, Position = 3, DeezerRankSnapshot = 0 });
+
+        // Simule que la génération de la veille a bien tamponné LastUsedDate/UsageCount
+        // (comportement du générateur depuis l'introduction du cooldown).
+        (await db.Tracks.FindAsync(1))!.LastUsedDate = today.AddDays(-1);
+        (await db.Tracks.FindAsync(2))!.LastUsedDate = today.AddDays(-1);
+        (await db.Tracks.FindAsync(3))!.LastUsedDate = today.AddDays(-1);
         await db.SaveChangesAsync();
 
-        // Pool disponible = 2 tracks (4 et 5), N=3 → insuffisant
+        // Pool éligible (hors cooldown 30j par défaut) = 2 tracks (4 et 5), N=3 → insuffisant
         var generator = CreateGenerator(db, tracksPerChallenge: 3);
         var result = await generator.GenerateAsync();
 
         result.Should().Be(GenerateResult.PoolInsufficient);
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         (await db.DailyChallenges.AnyAsync(c => c.Date == today)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Generate_TrackUsedOutsideCooldownWindow_IsEligible()
+    {
+        await using var db = CreateDbContext();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        db.Settings.Add(new Setting { Key = "TrackCooldownDays", Value = "30", UpdatedAt = DateTime.UtcNow });
+        db.Tracks.AddRange(
+            BuildTrack(1), BuildTrack(2), BuildTrack(3));
+        (await db.Tracks.AddAsync(BuildTrack(4))).Entity.LastUsedDate = today.AddDays(-31);
+        await db.SaveChangesAsync();
+
+        var generator = CreateGenerator(db, tracksPerChallenge: 3);
+        var result = await generator.GenerateAsync();
+
+        result.Should().Be(GenerateResult.Success);
+    }
+
+    [Fact]
+    public async Task Generate_TrackUsedInsideCooldownWindow_IsExcluded()
+    {
+        await using var db = CreateDbContext();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        db.Settings.Add(new Setting { Key = "TrackCooldownDays", Value = "30", UpdatedAt = DateTime.UtcNow });
+        db.Tracks.AddRange(BuildTrack(1), BuildTrack(2));
+        (await db.Tracks.AddAsync(BuildTrack(3))).Entity.LastUsedDate = today.AddDays(-5);
+        await db.SaveChangesAsync();
+
+        var generator = CreateGenerator(db, tracksPerChallenge: 3);
+        var result = await generator.GenerateAsync();
+
+        result.Should().Be(GenerateResult.PoolInsufficient, "track 3 est encore dans la fenêtre de cooldown");
+    }
+
+    [Fact]
+    public async Task Generate_TrackUsedExactlyAtCooldownBoundary_IsExcluded()
+    {
+        await using var db = CreateDbContext();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        db.Settings.Add(new Setting { Key = "TrackCooldownDays", Value = "30", UpdatedAt = DateTime.UtcNow });
+        db.Tracks.AddRange(BuildTrack(1), BuildTrack(2));
+        (await db.Tracks.AddAsync(BuildTrack(3))).Entity.LastUsedDate = today.AddDays(-30);
+        await db.SaveChangesAsync();
+
+        var generator = CreateGenerator(db, tracksPerChallenge: 3);
+        var result = await generator.GenerateAsync();
+
+        result.Should().Be(GenerateResult.PoolInsufficient, "LastUsedDate == cutoff n'est pas strictement < cutoff, donc encore en cooldown");
+    }
+
+    [Fact]
+    public async Task Generate_TrackNeverUsed_IsEligible()
+    {
+        await using var db = CreateDbContext();
+        db.Tracks.AddRange(BuildTrack(1), BuildTrack(2), BuildTrack(3));
+        await db.SaveChangesAsync();
+
+        var generator = CreateGenerator(db, tracksPerChallenge: 3);
+        var result = await generator.GenerateAsync();
+
+        result.Should().Be(GenerateResult.Success);
+    }
+
+    [Fact]
+    public async Task Generate_NoTrackCooldownDaysSetting_FallsBackToDefault()
+    {
+        await using var db = CreateDbContext();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        // Pas de ligne Setting TrackCooldownDays seedée → repli sur AppSettings.TrackCooldownDays (30)
+        db.Tracks.AddRange(BuildTrack(1), BuildTrack(2));
+        (await db.Tracks.AddAsync(BuildTrack(3))).Entity.LastUsedDate = today.AddDays(-5);
+        await db.SaveChangesAsync();
+
+        var generator = CreateGenerator(db, tracksPerChallenge: 3);
+        var result = await generator.GenerateAsync();
+
+        result.Should().Be(GenerateResult.PoolInsufficient, "le défaut de 30 jours doit s'appliquer sans ligne Setting");
+    }
+
+    [Fact]
+    public async Task Generate_OnSuccess_StampsLastUsedDateAndIncrementsUsageCount()
+    {
+        await using var db = CreateDbContext();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var t1 = BuildTrack(1); t1.UsageCount = 2;
+        var t2 = BuildTrack(2); t2.UsageCount = 0;
+        var t3 = BuildTrack(3); t3.UsageCount = 5;
+        db.Tracks.AddRange(t1, t2, t3);
+        await db.SaveChangesAsync();
+
+        var generator = CreateGenerator(db, tracksPerChallenge: 3);
+        var result = await generator.GenerateAsync();
+
+        result.Should().Be(GenerateResult.Success);
+
+        var tracks = await db.Tracks.ToListAsync();
+        tracks.Should().AllSatisfy(t => t.LastUsedDate.Should().Be(today));
+        tracks.Single(t => t.Id == 1).UsageCount.Should().Be(3);
+        tracks.Single(t => t.Id == 2).UsageCount.Should().Be(1);
+        tracks.Single(t => t.Id == 3).UsageCount.Should().Be(6);
     }
 
     [Fact]

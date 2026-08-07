@@ -8,6 +8,7 @@ interface AppSettingsResponse {
   guessTimerSeconds: number;
   tracksPerChallenge: number;
   durationScores: Record<string, number>;
+  trackCooldownDays: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -20,6 +21,7 @@ export class SettingsService {
   readonly durationScores = signal<Record<number, number>>({
     0.5: 1000, 1: 850, 1.5: 700, 2: 550, 3: 400, 5: 250, 10: 100,
   });
+  readonly trackCooldownDays = signal(30);
 
   load(): Observable<void> {
     return this.http
@@ -34,6 +36,7 @@ export class SettingsService {
               Object.entries(s.durationScores).map(([k, v]) => [Number(k), v])
             )
           );
+          this.trackCooldownDays.set(s.trackCooldownDays);
         }),
         map(() => void 0),
         // L'app doit démarrer même si /api/settings est indisponible :

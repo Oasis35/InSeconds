@@ -129,4 +129,74 @@ public sealed class GetTracksHandlerTests
         var response = ((Ok<GetTracksResponse>)result).Value!;
         response.Used.Single().HasPreview.Should().BeNull();
     }
+
+    [Fact]
+    public async Task Handle_ComputesUnlockDate_WhenLastUsedDateSet()
+    {
+        await using var db = CreateDbContext();
+        db.Settings.Add(new Setting { Key = "TrackCooldownDays", Value = "30", UpdatedAt = DateTime.UtcNow });
+        var lastUsed = new DateOnly(2026, 1, 1);
+        var track = BuildTrack(1, 1001, "Daft Punk", "Get Lucky");
+        track.LastUsedDate = lastUsed;
+        db.Tracks.Add(track);
+        await db.SaveChangesAsync();
+
+        var result = await new GetTracksHandler(db).Handle(CancellationToken.None);
+
+        var response = ((Ok<GetTracksResponse>)result).Value!;
+        response.Available.Single().UnlockDate.Should().Be(lastUsed.AddDays(30));
+    }
+
+    [Fact]
+    public async Task Handle_UnlockDateIsNull_WhenNeverUsed()
+    {
+        await using var db = CreateDbContext();
+        db.Settings.Add(new Setting { Key = "TrackCooldownDays", Value = "30", UpdatedAt = DateTime.UtcNow });
+        db.Tracks.Add(BuildTrack(1, 1001, "Daft Punk", "Get Lucky"));
+        await db.SaveChangesAsync();
+
+        var result = await new GetTracksHandler(db).Handle(CancellationToken.None);
+
+        var response = ((Ok<GetTracksResponse>)result).Value!;
+        response.Available.Single().UnlockDate.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Handle_NoTrackCooldownDaysSetting_FallsBackToDefault()
+    {
+        await using var db = CreateDbContext();
+        var lastUsed = new DateOnly(2026, 1, 1);
+        var track = BuildTrack(1, 1001, "Daft Punk", "Get Lucky");
+        track.LastUsedDate = lastUsed;
+        db.Tracks.Add(track);
+        await db.SaveChangesAsync();
+
+        var result = await new GetTracksHandler(db).Handle(CancellationToken.None);
+
+        var response = ((Ok<GetTracksResponse>)result).Value!;
+        response.Available.Single().UnlockDate.Should().Be(lastUsed.AddDays(30));
+    }
+
+    [Fact]
+    public async Task Handle_ExposesUsageCount()
+    {
+        await using var db = CreateDbContext();
+        var available = BuildTrack(1, 1001, "Daft Punk", "Get Lucky");
+        available.UsageCount = 4;
+        var used = BuildTrack(2, 1002, "Aya Nakamura", "Djadja");
+        used.UsageCount = 7;
+        db.Tracks.AddRange(available, used);
+        db.DailyChallenges.Add(new DailyChallenge { Id = 1, Date = DateOnly.FromDateTime(DateTime.UtcNow), Seed = 1 });
+        db.DailyChallengeTracks.Add(new DailyChallengeTrack
+        {
+            Id = 1, DailyChallengeId = 1, TrackId = 2, Position = 1, DeezerRankSnapshot = 1,
+        });
+        await db.SaveChangesAsync();
+
+        var result = await new GetTracksHandler(db).Handle(CancellationToken.None);
+
+        var response = ((Ok<GetTracksResponse>)result).Value!;
+        response.Available.Single().UsageCount.Should().Be(4);
+        response.Used.Single().UsageCount.Should().Be(7);
+    }
 }

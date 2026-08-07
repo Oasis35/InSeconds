@@ -4,6 +4,9 @@ import { SettingsService } from '../../../core/services/settings.service';
 import { AdminApiService } from './admin-api.service';
 import { DeezerTrackInfo, PoolTrackDto } from '../admin.models';
 
+type PoolTrackWithFlag = PoolTrackDto & { isAvailable: boolean };
+export type PoolSortColumn = 'artist' | 'title' | 'preview' | 'status' | 'lastUsedDate' | 'unlockDate' | 'usageCount';
+
 /** État de l'onglet pool : filtres, pagination, sélection, modales ajout/suppression, audio preview. */
 @Injectable()
 export class AdminPoolService {
@@ -22,6 +25,11 @@ export class AdminPoolService {
   readonly poolFilterText = signal('');
   readonly poolFilterStatus = signal<'all' | 'available' | 'used'>('all');
   readonly poolFilterPreview = signal<'all' | 'ok' | 'missing'>('all');
+  readonly poolFilterLastUsedFrom = signal<string>(''); // ISO yyyy-MM-dd, '' = pas de borne basse
+  readonly poolFilterLastUsedTo = signal<string>('');   // ISO yyyy-MM-dd, '' = pas de borne haute
+
+  readonly poolSortColumn = signal<PoolSortColumn | null>(null);
+  readonly poolSortDirection = signal<'asc' | 'desc'>('asc');
 
   readonly selectedTrackIds = signal<Set<number>>(new Set());
 
@@ -51,15 +59,52 @@ export class AdminPoolService {
     const text = this.poolFilterText().toLowerCase().trim();
     const status = this.poolFilterStatus();
     const preview = this.poolFilterPreview();
+    const from = this.poolFilterLastUsedFrom();
+    const to = this.poolFilterLastUsedTo();
     return this.allTracks().filter(t => {
       if (text && !t.artist.toLowerCase().includes(text) && !t.title.toLowerCase().includes(text)) return false;
       if (status === 'available' && !t.isAvailable) return false;
       if (status === 'used' && t.isAvailable) return false;
       if (preview === 'ok' && t.hasPreview !== true) return false;
       if (preview === 'missing' && t.hasPreview !== false) return false;
+      if (from && (!t.lastUsedDate || t.lastUsedDate.localeCompare(from) < 0)) return false;
+      if (to && (!t.lastUsedDate || t.lastUsedDate.localeCompare(to) > 0)) return false;
       return true;
     });
   });
+
+  readonly sortedTracks = computed(() => {
+    const column = this.poolSortColumn();
+    const dir = this.poolSortDirection() === 'asc' ? 1 : -1;
+    const list = [...this.filteredTracks()];
+    if (!column) return list;
+    list.sort((a, b) => {
+      const va = this.sortValue(a, column);
+      const vb = this.sortValue(b, column);
+      if (va == null && vb == null) return 0;
+      if (va == null) return 1;   // null/vide toujours en dernier, quelle que soit la direction
+      if (vb == null) return -1;
+      if (typeof va === 'string' || typeof vb === 'string') return String(va).localeCompare(String(vb)) * dir;
+      return (va - vb) * dir;
+    });
+    return list;
+  });
+
+  private sortValue(t: PoolTrackWithFlag, column: PoolSortColumn): string | number | null {
+    switch (column) {
+      case 'artist': return t.artist.toLowerCase();
+      case 'title': return t.title.toLowerCase();
+      case 'preview': {
+        if (t.hasPreview === true) return 2;
+        if (t.hasPreview === false) return 0;
+        return 1;
+      }
+      case 'status': return t.isAvailable ? 1 : 0;
+      case 'lastUsedDate': return t.lastUsedDate ?? null;
+      case 'unlockDate': return t.unlockDate ?? null;
+      case 'usageCount': return t.usageCount ?? 0;
+    }
+  }
 
   // Autonomie du pool : mêmes critères que DailyChallengeGenerator côté back
   // (jamais utilisé + preview active), calculée depuis les données déjà chargées
@@ -81,13 +126,25 @@ export class AdminPoolService {
 
   readonly pagedAllTracks = computed(() => {
     const page = this.allTracksPage();
-    return this.filteredTracks().slice(page * this.poolPageSize, (page + 1) * this.poolPageSize);
+    return this.sortedTracks().slice(page * this.poolPageSize, (page + 1) * this.poolPageSize);
   });
 
   // --- filtres ---
   setPoolFilter(text: string): void { this.poolFilterText.set(text); this.allTracksPage.set(0); }
   setPoolFilterStatus(v: 'all' | 'available' | 'used'): void { this.poolFilterStatus.set(v); this.allTracksPage.set(0); }
   setPoolFilterPreview(v: 'all' | 'ok' | 'missing'): void { this.poolFilterPreview.set(v); this.allTracksPage.set(0); }
+  setPoolFilterLastUsedFrom(v: string): void { this.poolFilterLastUsedFrom.set(v); this.allTracksPage.set(0); }
+  setPoolFilterLastUsedTo(v: string): void { this.poolFilterLastUsedTo.set(v); this.allTracksPage.set(0); }
+
+  // --- tri ---
+  setPoolSort(column: PoolSortColumn): void {
+    if (this.poolSortColumn() === column) {
+      this.poolSortDirection.set(this.poolSortDirection() === 'asc' ? 'desc' : 'asc');
+    } else {
+      this.poolSortColumn.set(column);
+      this.poolSortDirection.set('asc');
+    }
+  }
 
   onPoolSearchChange(q: string): void { this.poolSearchQuery.set(q); this.allTracksPage.set(0); }
 

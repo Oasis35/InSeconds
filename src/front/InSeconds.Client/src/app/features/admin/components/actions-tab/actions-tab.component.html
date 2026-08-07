@@ -41,4 +41,24 @@
       @if (actions.refreshPreviewsStatus() === 'error') { <span class="text-xs" style="color:var(--text-error)">{{ 'admin.actions.refreshPreviewsError' | translate }}</span> }
     </div>
   </div>
+  <div style="border-top:1px solid var(--border-medium)"></div>
+  <div class="flex flex-col gap-2">
+    <h2 class="text-xs font-semibold uppercase tracking-wide" style="color:var(--text-muted)">{{ 'admin.actions.trackCooldown' | translate }}</h2>
+    <div class="flex items-center gap-3">
+      <label for="track-cooldown-days-input" class="sr-only">{{ 'admin.actions.trackCooldown' | translate }}</label>
+      <input id="track-cooldown-days-input" type="number" min="1"
+        [value]="actions.trackCooldownDaysInput() ?? settings.trackCooldownDays()"
+        (input)="actions.trackCooldownDaysInput.set(+$any($event.target).value)"
+        class="w-20 text-sm rounded-lg px-3 py-1.5 outline-none"
+        style="background:var(--bg-inactive);color:var(--text-hi)" />
+      <button (click)="actions.updateTrackCooldownDays(actions.trackCooldownDaysInput() ?? settings.trackCooldownDays())"
+        [disabled]="actions.updateCooldownStatus() === 'loading'"
+        class="text-sm font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+        style="background:var(--bg-primary);color:var(--text-on-primary)">
+        {{ 'admin.actions.saveCooldown' | translate }}
+      </button>
+      @if (actions.updateCooldownStatus() === 'success') { <span class="text-xs" style="color:var(--color-success)">{{ 'admin.actions.cooldownSaved' | translate }}</span> }
+      @if (actions.updateCooldownStatus() === 'error') { <span class="text-xs" style="color:var(--text-error)">{{ 'admin.actions.cooldownError' | translate }}</span> }
+    </div>
+  </div>
 </div>

@@ -229,13 +229,18 @@
       "colTitle": "Titre",
       "colPreview": "Preview",
       "colStatus": "Statut",
+      "colLastUsed": "Dernière utilisation",
+      "colUnlockDate": "Date de déblocage",
+      "colUsageCount": "Nb. utilisations",
       "colActions": "Actions",
       "ok": "OK",
       "refresh": "↻ Actualiser",
       "refreshTitle": "Chercher une version avec preview",
       "deleteTitle": "Supprimer",
       "tracksCount": "morceau(x)",
-      "page": "page {{ current }}/{{ total }}"
+      "page": "page {{ current }}/{{ total }}",
+      "lastUsedFrom": "Utilisé depuis le",
+      "lastUsedTo": "Utilisé jusqu'au"
     },
     "actions": {
       "challengeOfDay": "Défi du jour",
@@ -254,7 +259,11 @@
       "refreshPreviews": "Re-vérifier les previews",
       "refreshingPreviews": "Vérification en cours (peut prendre ~1 min)...",
       "refreshPreviewsSuccess": "{{ checked }} vérifié(s), {{ updated }} corrigé(s), {{ failed }} échec(s) Deezer.",
-      "refreshPreviewsError": "Erreur lors de la vérification des previews."
+      "refreshPreviewsError": "Erreur lors de la vérification des previews.",
+      "trackCooldown": "Cooldown de réutilisation des morceaux",
+      "saveCooldown": "Enregistrer",
+      "cooldownSaved": "Cooldown mis à jour.",
+      "cooldownError": "Erreur lors de la mise à jour."
     },
     "challenges": {
       "history": "Historique",

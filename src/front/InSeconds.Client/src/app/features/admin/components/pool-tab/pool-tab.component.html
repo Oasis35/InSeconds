@@ -48,8 +48,20 @@
       <option value="available">{{ 'admin.pool.available' | translate }}</option>
       <option value="used">{{ 'admin.pool.used' | translate }}</option>
     </select>
-    @if (pool.poolFilterText() || pool.poolFilterStatus() !== 'all' || pool.poolFilterPreview() !== 'all') {
-      <button (click)="pool.setPoolFilter(''); pool.setPoolFilterStatus('all'); pool.setPoolFilterPreview('all')"
+    <label for="pool-filter-lastused-from" class="sr-only">{{ 'admin.pool.lastUsedFrom' | translate }}</label>
+    <input id="pool-filter-lastused-from" type="date" [value]="pool.poolFilterLastUsedFrom()"
+      (change)="pool.setPoolFilterLastUsedFrom($any($event.target).value)"
+      [title]="'admin.pool.lastUsedFrom' | translate"
+      class="text-sm rounded-lg px-3 py-1.5 outline-none"
+      style="background:var(--bg-surface);color:var(--text-light)" />
+    <label for="pool-filter-lastused-to" class="sr-only">{{ 'admin.pool.lastUsedTo' | translate }}</label>
+    <input id="pool-filter-lastused-to" type="date" [value]="pool.poolFilterLastUsedTo()"
+      (change)="pool.setPoolFilterLastUsedTo($any($event.target).value)"
+      [title]="'admin.pool.lastUsedTo' | translate"
+      class="text-sm rounded-lg px-3 py-1.5 outline-none"
+      style="background:var(--bg-surface);color:var(--text-light)" />
+    @if (pool.poolFilterText() || pool.poolFilterStatus() !== 'all' || pool.poolFilterPreview() !== 'all' || pool.poolFilterLastUsedFrom() || pool.poolFilterLastUsedTo()) {
+      <button (click)="pool.setPoolFilter(''); pool.setPoolFilterStatus('all'); pool.setPoolFilterPreview('all'); pool.setPoolFilterLastUsedFrom(''); pool.setPoolFilterLastUsedTo('')"
         class="text-xs transition-colors px-1" style="color:var(--text-muted)">
         {{ 'admin.pool.resetFilters' | translate }}
       </button>
@@ -68,10 +80,16 @@
           <thead>
             <tr class="text-left text-xs uppercase tracking-wide" style="border-bottom:1px solid var(--border-medium);color:var(--text-muted)">
               <th class="pl-4 pr-2 py-2.5 w-8"></th>
-              <th class="px-3 py-2.5">{{ 'admin.pool.colArtist' | translate }}</th>
-              <th class="px-3 py-2.5">{{ 'admin.pool.colTitle' | translate }}</th>
-              <th class="px-3 py-2.5 w-28">{{ 'admin.pool.colPreview' | translate }}</th>
-              <th class="px-3 py-2.5 w-24">{{ 'admin.pool.colStatus' | translate }}</th>
+              @for (col of sortableColumns; track col.column) {
+                <th class="p-0" [class]="col.widthClass">
+                  <button type="button" class="w-full px-3 py-2.5 cursor-pointer select-none bg-transparent border-0 text-inherit uppercase tracking-wide inline-flex items-center gap-1" (click)="pool.setPoolSort(col.column)">
+                    {{ col.labelKey | translate }}
+                    @if (pool.poolSortColumn() === col.column) {
+                      <span class="text-[10px]">{{ pool.poolSortDirection() === 'asc' ? '▲' : '▼' }}</span>
+                    }
+                  </button>
+                </th>
+              }
               <th class="pl-3 pr-4 py-2.5 w-32 text-right">{{ 'admin.pool.colActions' | translate }}</th>
             </tr>
           </thead>
@@ -112,6 +130,9 @@
                     <span class="text-xs px-2 py-0.5 rounded-full" style="color:var(--text-indigo);background:rgba(184,166,255,0.12)">{{ 'admin.pool.available' | translate }}</span>
                   }
                 </td>
+                <td class="px-3 py-2.5" style="color:var(--text-muted)">{{ t.lastUsedDate || '' }}</td>
+                <td class="px-3 py-2.5" style="color:var(--text-muted)">{{ t.unlockDate || '' }}</td>
+                <td class="px-3 py-2.5" style="color:var(--text-muted)">{{ t.usageCount }}</td>
                 <td class="pl-3 pr-4 py-2.5">
                   @if (!isUsed) {
                     <div class="flex items-center justify-end gap-2">

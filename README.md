@@ -6,7 +6,7 @@
 
 ## How it works
 
-- Each day at midnight UTC, a new set of tracks is automatically selected (only tracks with an active Deezer preview); if the midnight job fails, the challenge is regenerated automatically when the first player arrives (deterministic selection: same challenge for everyone)
+- Each day at midnight UTC, a new set of tracks is automatically selected (only tracks with an active Deezer preview, outside a configurable reuse cooldown); if the midnight job fails, the challenge is regenerated automatically when the first player arrives (deterministic selection: same challenge for everyone)
 - Preview availability is re-checked nightly against Deezer (rate-limit aware, batched calls); admins can also re-run the check on demand from the admin panel
 - Choose how many seconds to listen (0.5, 1, 1.5, 2, 3, 5, 10) before attempting artist + title
 - Free, unlimited "listen more" extensions per track (up to the last duration tier) — scoring is always based on the final tier listened, no penalty for extending

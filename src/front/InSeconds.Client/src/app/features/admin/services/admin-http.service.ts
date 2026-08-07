@@ -37,6 +37,9 @@ export class AdminHttpService {
   generateToday() { return this.http.post(`${this.base}/generate-today`, {}); }
   resetToday() { return this.http.delete<ResetResult>(`${this.base}/reset-today`); }
   refreshPreviews() { return this.http.post<RefreshPreviewsResult>(`${this.base}/refresh-previews`, {}); }
+  updateTrackCooldownDays(days: number) {
+    return this.http.put<{ trackCooldownDays: number }>(`${this.base}/settings/track-cooldown-days`, { trackCooldownDays: days });
+  }
   addTrack(deezerTrackId: number) { return this.http.post(`${this.base}/tracks`, { deezerTrackId }); }
   updateTrack(id: number, deezerTrackId: number) { return this.http.put(`${this.base}/tracks/${id}`, { deezerTrackId }); }
   deleteTrack(id: number) { return this.http.delete(`${this.base}/tracks/${id}`); }

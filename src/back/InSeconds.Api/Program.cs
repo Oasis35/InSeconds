@@ -16,6 +16,7 @@ using InSeconds.Api.Features.Admin.Tracks.AddTrack;
 using InSeconds.Api.Features.Admin.Tracks.DeleteTrack;
 using InSeconds.Api.Features.Admin.Tracks.GetTracks;
 using InSeconds.Api.Features.Admin.Tracks.UpdateTrack;
+using InSeconds.Api.Features.Admin.Settings.UpdateTrackCooldown;
 using InSeconds.Api.Features.Stats.Today;
 using InSeconds.Api.Features.ChallengeGeneration;
 using InSeconds.Api.Features.Sessions.AbandonSession;
@@ -155,6 +156,27 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+// Convertit les FluentValidation.ValidationException levées par le pipeline Wolverine
+// (opts.UseFluentValidation()) en 400 — nécessaire pour tout endpoint qui invoque un
+// handler via bus.InvokeAsync depuis un Minimal API (pas de conversion 400 automatique
+// dans ce cas, contrairement aux endpoints Wolverine.Http natifs, non utilisés ici).
+app.Use(async (ctx, next) =>
+{
+    try
+    {
+        await next(ctx);
+    }
+    catch (ValidationException ex)
+    {
+        ctx.Response.StatusCode = StatusCodes.Status400BadRequest;
+        await ctx.Response.WriteAsJsonAsync(new
+        {
+            error = "validation_failed",
+            errors = ex.Errors.Select(e => new { e.PropertyName, e.ErrorMessage }),
+        });
+    }
+});
+
 app.UseCors(CorsPolicyName);
 app.UseMiddleware<PlayerAuthMiddleware>();
 
@@ -180,6 +202,7 @@ app.MapAddTrack();
 app.MapGetTracks();
 app.MapDeleteTrack();
 app.MapUpdateTrack();
+app.MapUpdateTrackCooldown();
 app.MapStartSession();
 app.MapSubmitAnswer();
 app.MapAbandonSession();

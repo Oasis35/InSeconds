@@ -89,7 +89,11 @@ catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlS
 
 ### Admin/Tracks/GetTracks — `GET /api/admin/tracks`
 
-`GetTracksHandler` : tri par `Artist`, projette `IsUsed = DailyChallengeTracks.Any()`, sépare `Available` (avec `HasPreview`) / `Used` (`HasPreview` toujours `null`).
+`GetTracksHandler` : tri par `Artist`, projette `IsUsed = DailyChallengeTracks.Any()`, sépare `Available` (avec `HasPreview`) / `Used` (`HasPreview` toujours `null`). Ajoute par track `LastUsedDate`/`UsageCount` (colonnes réelles sur `Track`) et `UnlockDate` — **calculée à la volée** (`LastUsedDate?.AddDays(cooldownDays)`, jamais persistée), avec `cooldownDays` lu frais via `SettingsRawReader.GetIntAsync` (voir ChallengeGeneration ci-dessous).
+
+### Admin/Settings/UpdateTrackCooldown — `PUT /api/admin/settings/track-cooldown-days`
+
+Body `UpdateTrackCooldownBody(TrackCooldownDays)`. Validator : `TrackCooldownDays > 0`. `ExecuteUpdateAsync` direct sur la ligne `Settings` existante (pas d'upsert, la ligne est garantie par la migration seed) — **400** si validation échoue (converti par le middleware global `ValidationException` → 400 dans `Program.cs`, nécessaire car ce pattern d'endpoint invoque `bus.InvokeAsync` manuellement depuis un Minimal API, sans la conversion 400 automatique des endpoints Wolverine.Http natifs, non utilisés ici), **404** `setting_not_found` si la ligne est absente (défensif).
 
 ### Admin/Tracks/UpdateTrack — `PUT /api/admin/tracks/{id}`
 
@@ -97,7 +101,7 @@ Body `UpdateTrackBody(DeezerTrackId)`. 404 introuvable, **409** `track_in_use` s
 
 ### ChallengeGeneration (pas un endpoint)
 
-- **`DailyChallengeGenerator.GenerateAsync`** → `enum GenerateResult { Success, AlreadyExists, PoolInsufficient }`. Pool candidats = `Tracks` non utilisés ET `HasPreview==true`. `n = TracksPerChallenge` ; `candidates.Count < n` → `PoolInsufficient` (log `LogError`). **Sélection déterministe** : `Random(seed: today.DayNumber)`, Fisher-Yates in-place, `Take(n)`. Insertion en **transaction explicite** (`BeginTransactionAsync`) : crée `DailyChallenge` puis sauvegarde (obtient l'Id) puis `DailyChallengeTrack` (Position 1..n, `DeezerRankSnapshot=i+1`, cohérent avec `CreateChallengeHandler`), commit.
+- **`DailyChallengeGenerator.GenerateAsync`** → `enum GenerateResult { Success, AlreadyExists, PoolInsufficient }`. Pool candidats = `Tracks` avec `HasPreview==true` ET hors cooldown (`LastUsedDate == null` OU `LastUsedDate < today - TrackCooldownDays` — remplace l'ancienne exclusion à vie "jamais utilisé dans un défi", cf. Déjà implémenté racine "Cooldown de réutilisation des morceaux"). `TrackCooldownDays` lu frais en base via `Common/Settings/SettingsRawReader.GetIntAsync(db, "TrackCooldownDays", fallback, ct)` — **pas** `settingsService`/`IOptions<AppSettings>` (figé au boot), pour que l'édition admin s'applique dès la prochaine génération sans redémarrage. `n = TracksPerChallenge` (celui-ci reste lu via `settingsService`, figé au boot comme les autres settings — seul `TrackCooldownDays` a ce traitement spécial) ; `candidates.Count < n` → `PoolInsufficient` (log `LogError`, aucun assouplissement automatique du cooldown). **Sélection déterministe** : `Random(seed: today.DayNumber)`, Fisher-Yates in-place, `Take(n)`. Insertion en **transaction explicite** (`BeginTransactionAsync`) : crée `DailyChallenge` puis sauvegarde (obtient l'Id) puis `DailyChallengeTrack` (Position 1..n, `DeezerRankSnapshot=i+1`, cohérent avec `CreateChallengeHandler`), puis tamponne `LastUsedDate=today`/`UsageCount+=1` sur chaque track sélectionnée (même transaction), commit.
 - **`DailySchedule`** : `NextUtcHour(hour)` (prochaine occurrence future de `HH:00` UTC), `DelayUntilAsync(targetUtc, ct)` — boucle `while (remaining > 0) await Task.Delay(remaining)` **corrige la dérive de `Task.Delay`** (horloge monotone, dérive NTP possible sur 24h) qui avait causé un réveil juste avant minuit → jour sans défi (cf. piège 19 racine). Ne jamais revenir à un `Task.Delay(delay)` brut pour ces plannings.
 - **`GenerateDailyChallengeService : BackgroundService`** : boucle infinie, `RetryDelay=10min` si échec/PoolInsufficient, sinon replanifie à `NextUtcHour(0)`. Scope frais (`IServiceScopeFactory.CreateAsyncScope()`) à chaque itération.
 - **`PreviewStatusRefresher.RefreshAsync`** : candidats = tracks non utilisés. **Rate limiting** : lots de `BatchSize=10`, `BatchDelay=1.5s` (Deezer ~50 req/5s → 10/1.5s ≈ 33 req/5s). Pour chaque track, `ProbePreviewAsync` ; `!Succeeded` (erreur réseau/quota) → `failed++`, **`HasPreview` non modifié** (état inconnu ≠ absence réelle — cf. piège 16 racine) ; succès → met à jour seulement si diffère.
@@ -128,7 +132,7 @@ Renvoie directement `SettingsService.GetAsync()` → `AppSettings` sérialisé.
 | Entité | Champs clés | Relations |
 |---|---|---|
 | `Player` | `Id(Guid)`, `IsGuest`, `Pseudo?`, `Email?`, `AuthToken(Guid)`, `LastSeenAt?`, `CurrentStreak`, `LastPlayedDate(DateOnly?)`, `IsDeleted`, `DeletedAt?` | 1—N `GameSession` (cascade) |
-| `Track` | `Id`, `DeezerTrackId(long)`, `Artist`, `Title`, `CoverHash?`, `HasPreview(default true)`, `UpdatedAt?` | 1—N `DailyChallengeTrack` (restrict) |
+| `Track` | `Id`, `DeezerTrackId(long)`, `Artist`, `Title`, `CoverHash?`, `HasPreview(default true)`, `UpdatedAt?`, `LastUsedDate(DateOnly?)`, `UsageCount(default 0)` | 1—N `DailyChallengeTrack` (restrict) |
 | `DailyChallenge` | `Id`, `Date(DateOnly)`, `Seed(int)` | 1—N `DailyChallengeTrack` (cascade), 1—N `GameSession` (restrict) |
 | `DailyChallengeTrack` | `Id`, `DailyChallengeId`, `TrackId`, `DeezerRankSnapshot`, `Position` | 1—N `GameSessionAnswer` (restrict) |
 | `GameSession` | `Id`, `PlayerId`, `DailyChallengeId`, `TotalScore`, `TotalDurationSeconds(decimal)`, `Status(SessionStatus)`, `CompletedAt?`, `AbandonedAt?`, `CurrentTrackId?`, `CurrentTrackMinListenedSeconds(decimal?)` | 1—N `GameSessionAnswer` (cascade) |
@@ -150,11 +154,11 @@ Implémente `IDataProtectionKeyContext` (clés persistées en base, cf. piège 1
 - **`DailyChallengeTrackConfiguration`** : FK `Track` Restrict ; index unique composite `(DailyChallengeId, Position)` et `(DailyChallengeId, TrackId)`.
 - **`GameSessionConfiguration`** : FK `Player` cascade, `DailyChallenge` restrict. **Query filter** `!s.Player.IsDeleted`. Index unique `(PlayerId, DailyChallengeId)` (**anti-rejeu**). Index `(PlayerId, Status, DailyChallengeId)` = `IX_GameSessions_PlayerStatusChallenge`. Index `(DailyChallengeId, Status)` = `IX_GameSessions_ChallengeStatus`. Index leaderboard `(DailyChallengeId, TotalScore DESC, TotalDurationSeconds ASC)` avec `IncludeProperties(PlayerId)` (index couvrant).
 - **`GameSessionAnswerConfiguration`** : FK `Track` restrict. **Query filter** `!a.GameSession.Player.IsDeleted`. Index unique `(GameSessionId, DailyChallengeTrackId)` (empêche double réponse).
-- **`SettingConfiguration`** : index unique `Key`. **`HasData` seed** : les 4 settings par défaut (voir tableau dans le CLAUDE.md racine).
+- **`SettingConfiguration`** : index unique `Key`. **`HasData` seed** : les settings par défaut (voir tableau dans le CLAUDE.md racine) — `CoverUrlTemplate` (`Id=6`, inséré via migration `AddCoverUrlTemplateSetting` sans jamais avoir été ajouté au `HasData` — décalage historique, ne pas s'y fier pour deviner le prochain `Id` libre sans vérifier la base) et `TrackCooldownDays` (`Id=7`) en sont deux exemples.
 
 ### Migrations structurantes (historique, pas exhaustif)
 
-`InitialCreate` → `UpdateTracksPerChallengeTo3` → `AddTrackCoverUrl`/`RenameCoverUrlToCoverHash` → `AddCoverUrlTemplateSetting` → `DecimalDurations` (int→numeric + migration des settings vers valeurs fractionnaires) → `PlayerStreak` → `SessionStatus` (+ migration données existantes du joueur dev en `Completed`) → `AddTrackHasPreview` → `AddSessionAntiCheat` → `AddPerformanceIndexes` → `PersistDataProtectionKeys` → `RemoveMaxExtensionsPerAnswerSetting` (`DeleteData` sur le Setting `Id=3`, jamais appliqué nulle part — cf. décision d'architecture racine).
+`InitialCreate` → `UpdateTracksPerChallengeTo3` → `AddTrackCoverUrl`/`RenameCoverUrlToCoverHash` → `AddCoverUrlTemplateSetting` → `DecimalDurations` (int→numeric + migration des settings vers valeurs fractionnaires) → `PlayerStreak` → `SessionStatus` (+ migration données existantes du joueur dev en `Completed`) → `AddTrackHasPreview` → `AddSessionAntiCheat` → `AddPerformanceIndexes` → `PersistDataProtectionKeys` → `RemoveMaxExtensionsPerAnswerSetting` (`DeleteData` sur le Setting `Id=3`, jamais appliqué nulle part — cf. décision d'architecture racine) → `AddTrackCooldownAndUsageTracking` (`Track.LastUsedDate`/`UsageCount` + Setting `TrackCooldownDays` `Id=7` + backfill SQL brut des deux colonnes depuis l'historique `DailyChallengeTrack`/`DailyChallenge`).
 
 **Règle** : `UpdateData` EF est insuffisant pour modifier des `Settings` déjà en base prod — utiliser `migrationBuilder.Sql("UPDATE ...")` (cf. décision d'architecture racine).
 
@@ -204,6 +208,8 @@ Chargement en 3 couches, **une seule fois au démarrage** (pas de rafraîchissem
 3. **`AppSettingsPostConfigure : IPostConfigureOptions<AppSettings>`** : post-configure `AllowedDurationsSeconds` (parse CSV en `decimal[]`, `NumberStyles.Any`/Invariant, n'écrase le default que si au moins une valeur parsée) et `DurationScores` (parse `"palier:score,..."`).
 4. **`SettingsService`** : wrapper `IOptions<AppSettings>`, `GetAsync()` = `Task.FromResult(options.Value)` (aucune requête DB à l'exécution).
 
+**Exception volontaire — `SettingsRawReader`** (`Common/Settings/SettingsRawReader.cs`) : `GetIntAsync(db, key, fallback, ct)` lit directement `db.Settings` (requête EF fraîche, hors `IOptions`), réservé aux cas où une valeur doit refléter un changement admin sans redémarrage. Seul `TrackCooldownDays` l'utilise aujourd'hui, dans `DailyChallengeGenerator.GenerateAsync` et `GetTracksHandler.Handle` (pour calculer `UnlockDate`) — ne pas généraliser ce pattern à d'autres settings sans besoin explicite, ça contourne le principe "figé au boot" du reste du système.
+
 ## Common/Text
 
 - **`TextNormalizationHelpers`** (interne) : `ParenthesesPattern()` (regex générée `[\(\[].*?[\)\]]`), `RemoveAccents` (`Normalize(FormD)` + filtre `NonSpacingMark` + `Normalize(FormC)`), `LevenshteinDistance` (matrice classique).
@@ -211,7 +217,9 @@ Chargement en 3 couches, **une seule fois au démarrage** (pas de rafraîchissem
 
 ## Program.cs — pipeline et DI
 
-**Ordre** : migration auto (`db.Database.Migrate()`) → seed conditionnel (Testing: purge puis reseed si vide ; Dev: seed si vide) → `MapOpenApi()` (Dev) → `UseCors` → `UseMiddleware<PlayerAuthMiddleware>` → `/health` (liveness, `{status, utc, build}` — `build` = date UTC de compilation via `AssemblyMetadataAttribute("BuildUtc")`, **format consommé par le badge front, ne pas casser la compat**) → `/health/ready` (tag `"ready"`, `AddDbContextCheck<ApplicationDbContext>`) → tous les `Map*` endpoints → `MapE2EReset()` seulement si `IsEnvironment("Testing")`.
+**Ordre** : migration auto (`db.Database.Migrate()`) → seed conditionnel (Testing: purge puis reseed si vide ; Dev: seed si vide) → `MapOpenApi()` (Dev) → middleware global `catch (ValidationException)` → 400 (voir ci-dessous) → `UseCors` → `UseMiddleware<PlayerAuthMiddleware>` → `/health` (liveness, `{status, utc, build}` — `build` = date UTC de compilation via `AssemblyMetadataAttribute("BuildUtc")`, **format consommé par le badge front, ne pas casser la compat**) → `/health/ready` (tag `"ready"`, `AddDbContextCheck<ApplicationDbContext>`) → tous les `Map*` endpoints → `MapE2EReset()` seulement si `IsEnvironment("Testing")`.
+
+**Middleware global de conversion `ValidationException` → 400** — tout endpoint Minimal API qui invoque un handler via `bus.InvokeAsync<IResult>(...)` (le pattern de ce repo, pas les endpoints Wolverine.Http natifs) ne bénéficie d'aucune conversion 400 automatique en cas d'échec FluentValidation : l'exception remonte brute. Ajouté lors de l'introduction d'`UpdateTrackCooldown` (premier endpoint testé en intégration avec une valeur invalide) mais corrige tous les endpoints existants (`AddTrack`, `UpdateTrack`, etc.) qui avaient le même trou de comportement.
 
 **DI notable** :
 - `AddDbContextFactory<ApplicationDbContext>` — permet aux handlers qui parallélisent (GetAdminStats, TodayStats) de créer un contexte dédié par requête (DbContext non thread-safe).
@@ -226,4 +234,4 @@ Chargement en 3 couches, **une seule fois au démarrage** (pas de rafraîchissem
 ## Points d'attention pour un futur agent
 
 1. Toute nouvelle route Admin doit appeler `LoginEndpoint.IsAdminAuthenticated(HttpContext)` pour l'auto-protection (pas de middleware d'auth ASP.NET global sur `/api/admin`).
-2. `SettingsService` ne relit jamais la DB après le boot — un changement de `Settings` en base ne prend effet qu'après redémarrage du service (sauf les endpoints Admin qui écrivent directement en DB pour d'autres besoins, ex. tracks).
+2. `SettingsService` ne relit jamais la DB après le boot — un changement de `Settings` en base ne prend effet qu'après redémarrage du service, **sauf `TrackCooldownDays`** qui passe par `SettingsRawReader` (lecture fraîche, cf. Common/Settings) pour permettre l'édition à chaud depuis l'onglet Actions admin sans redémarrage. Ne pas étendre ce pattern à d'autres settings sans besoin explicite.

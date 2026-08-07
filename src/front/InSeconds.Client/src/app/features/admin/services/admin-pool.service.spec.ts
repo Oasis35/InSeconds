@@ -20,8 +20,8 @@ function makeAdminApiStub() {
   };
 }
 
-function makePoolTrack(id: number, hasPreview: boolean) {
-  return { id, artist: `A${id}`, title: `T${id}`, deezerTrackId: id, hasPreview };
+function makePoolTrack(id: number, hasPreview: boolean, extra: Partial<{ lastUsedDate: string | null; usageCount: number }> = {}) {
+  return { id, artist: `A${id}`, title: `T${id}`, deezerTrackId: id, hasPreview, usageCount: 0, ...extra };
 }
 
 describe('AdminPoolService', () => {
@@ -66,6 +66,90 @@ describe('AdminPoolService', () => {
       expect(service.poolDaysColor(2)).toBe('var(--color-fail)');
       expect(service.poolDaysColor(5)).toBe('var(--bg-warn)');
       expect(service.poolDaysColor(7)).toBe('var(--color-success)');
+    });
+  });
+
+  describe('filtre par plage de dates (lastUsedDate)', () => {
+    beforeEach(() => {
+      apiStub._setPoolTracks({
+        available: [
+          makePoolTrack(1, true, { lastUsedDate: null }),
+          makePoolTrack(2, true, { lastUsedDate: '2026-01-05' }),
+          makePoolTrack(3, true, { lastUsedDate: '2026-01-15' }),
+          makePoolTrack(4, true, { lastUsedDate: '2026-01-25' }),
+        ],
+        used: [],
+      });
+    });
+
+    it('excludes tracks with lastUsedDate before the "from" bound', () => {
+      service.setPoolFilterLastUsedFrom('2026-01-10');
+      expect(service.filteredTracks().map(t => t.id)).toEqual([3, 4]);
+    });
+
+    it('excludes tracks with lastUsedDate after the "to" bound', () => {
+      service.setPoolFilterLastUsedTo('2026-01-20');
+      expect(service.filteredTracks().map(t => t.id)).toEqual([2, 3]);
+    });
+
+    it('excludes null lastUsedDate as soon as a bound is set', () => {
+      service.setPoolFilterLastUsedFrom('2026-01-01');
+      expect(service.filteredTracks().map(t => t.id)).not.toContain(1);
+    });
+
+    it('is combinable with the existing text filter', () => {
+      service.setPoolFilterLastUsedFrom('2026-01-01');
+      service.setPoolFilter('A3');
+      expect(service.filteredTracks().map(t => t.id)).toEqual([3]);
+    });
+
+    it('resets allTracksPage on change', () => {
+      service.allTracksPage.set(2);
+      service.setPoolFilterLastUsedFrom('2026-01-01');
+      expect(service.allTracksPage()).toBe(0);
+    });
+  });
+
+  describe('tri des colonnes', () => {
+    beforeEach(() => {
+      apiStub._setPoolTracks({
+        available: [
+          makePoolTrack(1, true, { lastUsedDate: '2026-01-15', usageCount: 2 }),
+          makePoolTrack(2, true, { lastUsedDate: null, usageCount: 0 }),
+          makePoolTrack(3, true, { lastUsedDate: '2026-01-05', usageCount: 5 }),
+        ],
+        used: [],
+      });
+    });
+
+    it('toggles direction on same-column click', () => {
+      service.setPoolSort('artist');
+      expect(service.poolSortColumn()).toBe('artist');
+      expect(service.poolSortDirection()).toBe('asc');
+      service.setPoolSort('artist');
+      expect(service.poolSortDirection()).toBe('desc');
+    });
+
+    it('resets to asc on a new column', () => {
+      service.setPoolSort('artist');
+      service.setPoolSort('artist');
+      service.setPoolSort('usageCount');
+      expect(service.poolSortColumn()).toBe('usageCount');
+      expect(service.poolSortDirection()).toBe('asc');
+    });
+
+    it('sorts by a text column (artist) ascending and descending', () => {
+      service.setPoolSort('artist');
+      expect(service.sortedTracks().map(t => t.id)).toEqual([1, 2, 3]);
+      service.setPoolSort('artist');
+      expect(service.sortedTracks().map(t => t.id)).toEqual([3, 2, 1]);
+    });
+
+    it('sorts by a date column (lastUsedDate) with nulls always last', () => {
+      service.setPoolSort('lastUsedDate');
+      expect(service.sortedTracks().map(t => t.id)).toEqual([3, 1, 2]);
+      service.setPoolSort('lastUsedDate');
+      expect(service.sortedTracks().map(t => t.id)).toEqual([1, 3, 2]);
     });
   });
 });
