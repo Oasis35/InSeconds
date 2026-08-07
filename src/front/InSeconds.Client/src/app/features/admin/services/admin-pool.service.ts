@@ -67,8 +67,8 @@ export class AdminPoolService {
       if (status === 'used' && t.isAvailable) return false;
       if (preview === 'ok' && t.hasPreview !== true) return false;
       if (preview === 'missing' && t.hasPreview !== false) return false;
-      if (from && (!t.lastUsedDate || t.lastUsedDate < from)) return false;
-      if (to && (!t.lastUsedDate || t.lastUsedDate > to)) return false;
+      if (from && (!t.lastUsedDate || t.lastUsedDate.localeCompare(from) < 0)) return false;
+      if (to && (!t.lastUsedDate || t.lastUsedDate.localeCompare(to) > 0)) return false;
       return true;
     });
   });
@@ -84,9 +84,8 @@ export class AdminPoolService {
       if (va == null && vb == null) return 0;
       if (va == null) return 1;   // null/vide toujours en dernier, quelle que soit la direction
       if (vb == null) return -1;
-      if (va < vb) return -1 * dir;
-      if (va > vb) return 1 * dir;
-      return 0;
+      if (typeof va === 'string' || typeof vb === 'string') return String(va).localeCompare(String(vb)) * dir;
+      return (va - vb) * dir;
     });
     return list;
   });
