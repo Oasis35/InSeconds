@@ -80,68 +80,61 @@
           <thead>
             <tr class="text-left text-xs uppercase tracking-wide" style="border-bottom:1px solid var(--border-medium);color:var(--text-muted)">
               <th class="pl-4 pr-2 py-2.5 w-8"></th>
-              <th class="px-3 py-2.5 cursor-pointer select-none" tabindex="0" role="button"
-                (click)="pool.setPoolSort('artist')" (keydown.enter)="pool.setPoolSort('artist')" (keydown.space)="pool.setPoolSort('artist'); $event.preventDefault()">
-                <span class="inline-flex items-center gap-1">
+              <th class="p-0">
+                <button type="button" class="w-full px-3 py-2.5 cursor-pointer select-none bg-transparent border-0 text-inherit uppercase tracking-wide inline-flex items-center gap-1" (click)="pool.setPoolSort('artist')">
                   {{ 'admin.pool.colArtist' | translate }}
                   @if (pool.poolSortColumn() === 'artist') {
                     <span class="text-[10px]">{{ pool.poolSortDirection() === 'asc' ? '▲' : '▼' }}</span>
                   }
-                </span>
+                </button>
               </th>
-              <th class="px-3 py-2.5 cursor-pointer select-none" tabindex="0" role="button"
-                (click)="pool.setPoolSort('title')" (keydown.enter)="pool.setPoolSort('title')" (keydown.space)="pool.setPoolSort('title'); $event.preventDefault()">
-                <span class="inline-flex items-center gap-1">
+              <th class="p-0">
+                <button type="button" class="w-full px-3 py-2.5 cursor-pointer select-none bg-transparent border-0 text-inherit uppercase tracking-wide inline-flex items-center gap-1" (click)="pool.setPoolSort('title')">
                   {{ 'admin.pool.colTitle' | translate }}
                   @if (pool.poolSortColumn() === 'title') {
                     <span class="text-[10px]">{{ pool.poolSortDirection() === 'asc' ? '▲' : '▼' }}</span>
                   }
-                </span>
+                </button>
               </th>
-              <th class="px-3 py-2.5 w-28 cursor-pointer select-none" tabindex="0" role="button"
-                (click)="pool.setPoolSort('preview')" (keydown.enter)="pool.setPoolSort('preview')" (keydown.space)="pool.setPoolSort('preview'); $event.preventDefault()">
-                <span class="inline-flex items-center gap-1">
+              <th class="p-0 w-28">
+                <button type="button" class="w-full px-3 py-2.5 cursor-pointer select-none bg-transparent border-0 text-inherit uppercase tracking-wide inline-flex items-center gap-1" (click)="pool.setPoolSort('preview')">
                   {{ 'admin.pool.colPreview' | translate }}
                   @if (pool.poolSortColumn() === 'preview') {
                     <span class="text-[10px]">{{ pool.poolSortDirection() === 'asc' ? '▲' : '▼' }}</span>
                   }
-                </span>
+                </button>
               </th>
-              <th class="px-3 py-2.5 w-24 cursor-pointer select-none" tabindex="0" role="button"
-                (click)="pool.setPoolSort('status')" (keydown.enter)="pool.setPoolSort('status')" (keydown.space)="pool.setPoolSort('status'); $event.preventDefault()">
-                <span class="inline-flex items-center gap-1">
+              <th class="p-0 w-24">
+                <button type="button" class="w-full px-3 py-2.5 cursor-pointer select-none bg-transparent border-0 text-inherit uppercase tracking-wide inline-flex items-center gap-1" (click)="pool.setPoolSort('status')">
                   {{ 'admin.pool.colStatus' | translate }}
                   @if (pool.poolSortColumn() === 'status') {
                     <span class="text-[10px]">{{ pool.poolSortDirection() === 'asc' ? '▲' : '▼' }}</span>
                   }
-                </span>
+                </button>
               </th>
-              <th class="px-3 py-2.5 w-28 cursor-pointer select-none" tabindex="0" role="button"
-                (click)="pool.setPoolSort('lastUsedDate')" (keydown.enter)="pool.setPoolSort('lastUsedDate')" (keydown.space)="pool.setPoolSort('lastUsedDate'); $event.preventDefault()">
-                <span class="inline-flex items-center gap-1">
+              <th class="p-0 w-28">
+                <button type="button" class="w-full px-3 py-2.5 cursor-pointer select-none bg-transparent border-0 text-inherit uppercase tracking-wide inline-flex items-center gap-1" (click)="pool.setPoolSort('lastUsedDate')">
                   {{ 'admin.pool.colLastUsed' | translate }}
                   @if (pool.poolSortColumn() === 'lastUsedDate') {
                     <span class="text-[10px]">{{ pool.poolSortDirection() === 'asc' ? '▲' : '▼' }}</span>
                   }
-                </span>
+                </button>
               </th>
-              <th class="px-3 py-2.5 w-28 cursor-pointer select-none" tabindex="0" role="button"
-                (click)="pool.setPoolSort('unlockDate')" (keydown.enter)="pool.setPoolSort('unlockDate')" (keydown.space)="pool.setPoolSort('unlockDate'); $event.preventDefault()">
-                <span class="inline-flex items-center gap-1">
+              <th class="p-0 w-28">
+                <button type="button" class="w-full px-3 py-2.5 cursor-pointer select-none bg-transparent border-0 text-inherit uppercase tracking-wide inline-flex items-center gap-1" (click)="pool.setPoolSort('unlockDate')">
                   {{ 'admin.pool.colUnlockDate' | translate }}
                   @if (pool.poolSortColumn() === 'unlockDate') {
                     <span class="text-[10px]">{{ pool.poolSortDirection() === 'asc' ? '▲' : '▼' }}</span>
                   }
-                </span>
+                </button>
               </th>
-              <th class="px-3 py-2.5 w-20 cursor-pointer select-none" tabindex="0" role="button"
-                (click)="pool.setPoolSort('usageCount')" (keydown.enter)="pool.setPoolSort('usageCount')" (keydown.space)="pool.setPoolSort('usageCount'); $event.preventDefault()">
-                <span class="inline-flex items-center gap-1">
+              <th class="p-0 w-20">
+                <button type="button" class="w-full px-3 py-2.5 cursor-pointer select-none bg-transparent border-0 text-inherit uppercase tracking-wide inline-flex items-center gap-1" (click)="pool.setPoolSort('usageCount')">
                   {{ 'admin.pool.colUsageCount' | translate }}
                   @if (pool.poolSortColumn() === 'usageCount') {
                     <span class="text-[10px]">{{ pool.poolSortDirection() === 'asc' ? '▲' : '▼' }}</span>
                   }
-                </span>
+                </button>
               </th>
               <th class="pl-3 pr-4 py-2.5 w-32 text-right">{{ 'admin.pool.colActions' | translate }}</th>
             </tr>
