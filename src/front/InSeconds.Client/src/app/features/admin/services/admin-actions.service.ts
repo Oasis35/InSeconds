@@ -4,6 +4,8 @@ import { AdminApiService } from './admin-api.service';
 import { SettingsService } from '../../../core/services/settings.service';
 import { RefreshPreviewsResult, ResetResult } from '../admin.models';
 
+type SimpleAsyncStatus = 'idle' | 'loading' | 'success' | 'error';
+
 /** État de l'onglet actions : génération du défi du jour, reset des parties, réglage du cooldown. */
 @Injectable()
 export class AdminActionsService {
@@ -12,12 +14,12 @@ export class AdminActionsService {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly generateStatus = signal<'idle' | 'loading' | 'success' | 'already' | 'pool_insufficient' | 'error'>('idle');
-  readonly resetStatus = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
+  readonly resetStatus = signal<SimpleAsyncStatus>('idle');
   readonly resetResult = signal<ResetResult | null>(null);
-  readonly refreshPreviewsStatus = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
+  readonly refreshPreviewsStatus = signal<SimpleAsyncStatus>('idle');
   readonly refreshPreviewsResult = signal<RefreshPreviewsResult | null>(null);
   readonly trackCooldownDaysInput = signal<number | null>(null);
-  readonly updateCooldownStatus = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
+  readonly updateCooldownStatus = signal<SimpleAsyncStatus>('idle');
   private generateStatusTimer: ReturnType<typeof setTimeout> | null = null;
   private updateCooldownStatusTimer: ReturnType<typeof setTimeout> | null = null;
 

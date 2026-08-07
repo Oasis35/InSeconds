@@ -94,7 +94,11 @@ export class AdminPoolService {
     switch (column) {
       case 'artist': return t.artist.toLowerCase();
       case 'title': return t.title.toLowerCase();
-      case 'preview': return t.hasPreview === true ? 2 : t.hasPreview === false ? 0 : 1;
+      case 'preview': {
+        if (t.hasPreview === true) return 2;
+        if (t.hasPreview === false) return 0;
+        return 1;
+      }
       case 'status': return t.isAvailable ? 1 : 0;
       case 'lastUsedDate': return t.lastUsedDate ?? null;
       case 'unlockDate': return t.unlockDate ?? null;
