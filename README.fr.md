@@ -96,6 +96,7 @@ Workflow GitHub Actions sur chaque push et chaque PR vers `main` :
 - **Tests unitaires frontend** — `ng test --watch=false --browsers=ChromeHeadless` (Karma + Jasmine, 142 tests)
 - **Tests d'intégration** — `dotnet test` sur `InSeconds.Api.IntegrationTests` (Testcontainers crée un conteneur PostgreSQL réel, pas de YAML supplémentaire)
 - **E2E** — tests Playwright (Chromium) contre un vrai backend en mode `Testing` avec un service PostgreSQL — s'exécute après tous les jobs précédents
+- **Smoke test headers de cache nginx** — construit et lance la vraie image Docker de prod (`Dockerfile.prod`), vérifie les headers `Cache-Control` via `curl` (`scripts/check-nginx-cache-headers.sh`) — seul job qui teste réellement `nginx.conf`
 
 Les runs obsolètes sont annulés automatiquement.
 

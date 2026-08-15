@@ -109,6 +109,18 @@ jobs:
         working-directory: src/front/InSeconds.Client
         run: npx ng test --watch=false --browsers=ChromeHeadless
 
+  nginx-headers:
+    name: Frontend (nginx cache headers smoke test)
+    runs-on: ubuntu-latest
+    needs: [front]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build image and verify Cache-Control headers
+        working-directory: src/front/InSeconds.Client
+        run: bash scripts/check-nginx-cache-headers.sh
+
   integration-tests:
     name: Backend (integration tests)
     runs-on: ubuntu-latest
