@@ -30,7 +30,7 @@ for i in $(seq 1 30); do
   if curl -sf "http://localhost:$PORT/" >/dev/null; then
     break
   fi
-  if [ "$i" -eq 30 ]; then
+  if [[ "$i" -eq 30 ]]; then
     echo "Server never became ready" >&2
     docker logs "$CONTAINER_NAME" || true
     exit 1
@@ -43,7 +43,7 @@ fail=0
 check_header() {
   local path="$1" expected="$2" actual
   actual=$(curl -sS -D - -o /dev/null "http://localhost:$PORT$path" | tr -d '\r' | grep -i '^cache-control:' | cut -d' ' -f2-)
-  if [ "$actual" != "$expected" ]; then
+  if [[ "$actual" != "$expected" ]]; then
     echo "FAIL $path: expected \"$expected\", got \"$actual\""
     fail=1
   else
@@ -52,7 +52,7 @@ check_header() {
 }
 
 js_file=$(curl -sS "http://localhost:$PORT/" | grep -oE 'main-[A-Za-z0-9]+\.js' | head -1)
-if [ -z "$js_file" ]; then
+if [[ -z "$js_file" ]]; then
   echo "FAIL: couldn't find a hashed main-*.js reference in index.html"
   fail=1
 fi
@@ -63,7 +63,7 @@ check_header "/i18n/fr.json" "no-cache"
 check_header "/admin" "no-cache"
 
 # Hashé (nom de fichier change à chaque build) : cache long et immuable, sans risque.
-if [ -n "$js_file" ]; then
+if [[ -n "$js_file" ]]; then
   check_header "/$js_file" "public, max-age=31536000, immutable"
 fi
 
