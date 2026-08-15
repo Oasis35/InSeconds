@@ -282,7 +282,9 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         var myEntry = todayStats.Players.SingleOrDefault(p => p.PlayerId == myId);
         Assert.NotNull(myEntry);
         Assert.Equal("Completed", myEntry.Status);
-        Assert.True(myEntry.Score > 0);
+        // Réponses volontairement fausses (artist="X", title=null, cf. SubmitAsync) — aucune
+        // correspondance possible, donc Score=0 par construction (ScoreCalculator.Calculate).
+        Assert.Equal(0, myEntry.Score);
     }
 
     [Fact]
