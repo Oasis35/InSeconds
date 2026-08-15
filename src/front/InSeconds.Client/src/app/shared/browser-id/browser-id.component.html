@@ -1,0 +1,10 @@
+@if (identity.playerId(); as id) {
+  <div class="flex items-center gap-2 text-xs" style="color:var(--text-faint)">
+    <span>{{ 'admin.browserId.label' | translate }}</span>
+    <span class="font-mono" style="color:var(--text-muted)">{{ id.slice(0, 8) }}</span>
+    <button type="button" (click)="copy(id)" [attr.title]="id"
+      class="underline transition-colors hover:opacity-80" style="color:var(--text-muted)">
+      {{ (copied() ? 'admin.browserId.copied' : 'admin.browserId.copy') | translate }}
+    </button>
+  </div>
+}

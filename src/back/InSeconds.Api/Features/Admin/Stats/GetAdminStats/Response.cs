@@ -17,7 +17,12 @@ public sealed record ChallengeStatsDto(
     int? ScoreMax,
     double? ScoreAvg,
     double? ScoreMedian,
-    IReadOnlyList<TrackStatsDto> Tracks);
+    IReadOnlyList<TrackStatsDto> Tracks,
+    IReadOnlyList<ChallengePlayerDto> Players);
+
+// Status en string (pas l'enum SessionStatus directement) : évite toute ambiguïté de
+// sérialisation JSON (int vs string) côté client généré par NSwag.
+public sealed record ChallengePlayerDto(Guid PlayerId, string Status, int Score);
 
 public sealed record TrackStatsDto(
     int Position,

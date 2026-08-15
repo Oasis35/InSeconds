@@ -161,6 +161,11 @@
     "wrongPassword": "Mot de passe incorrect.",
     "backToGame": "Retour au jeu",
     "logout": "Se déconnecter",
+    "browserId": {
+      "label": "Ton identifiant navigateur :",
+      "copy": "Copier",
+      "copied": "Copié !"
+    },
     "tabs": {
       "dashboard": "Dashboard",
       "pool": "Pool ({{ count }})",
@@ -205,7 +210,9 @@
       "artist": "Artiste",
       "title": "Titre",
       "avgListen": "Écoute moy.",
-      "extended": "Prolongé"
+      "extended": "Prolongé",
+      "you": "toi",
+      "copied": "Copié !"
     },
     "pool": {
       "runwayDay": "jour de défis restant",

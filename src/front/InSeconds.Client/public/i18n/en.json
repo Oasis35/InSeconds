@@ -161,6 +161,11 @@
     "wrongPassword": "Incorrect password.",
     "backToGame": "Back to the game",
     "logout": "Sign out",
+    "browserId": {
+      "label": "Your browser ID:",
+      "copy": "Copy",
+      "copied": "Copied!"
+    },
     "tabs": {
       "dashboard": "Dashboard",
       "pool": "Pool ({{ count }})",
@@ -205,7 +210,9 @@
       "artist": "Artist",
       "title": "Title",
       "avgListen": "Avg. listen",
-      "extended": "Extended"
+      "extended": "Extended",
+      "you": "you",
+      "copied": "Copied!"
     },
     "pool": {
       "runwayDay": "day of challenges left",
