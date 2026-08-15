@@ -1,5 +1,7 @@
 import { test, expect } from '../fixtures/test';
 import { AdminPage } from '../pages/admin.page';
+import { GamePage } from '../pages/game.page';
+import { BlindRoundPage } from '../pages/blind-round.page';
 
 test.describe('Admin — login', () => {
   test('affiche une erreur avec un mauvais mot de passe', async ({ page }) => {
@@ -286,5 +288,61 @@ test.describe('Admin — défis', () => {
     ).length;
     const rows = page.locator('ul > li > p.font-mono');
     await expect(rows).toHaveCount(expectedCount);
+  });
+});
+
+test.describe('Admin — indicateur joueurs / ID navigateur', () => {
+  test('affiche l\'ID du navigateur sur l\'écran de connexion et permet de le copier', async ({ page, api }) => {
+    await api.reseed();
+    const admin = new AdminPage(page);
+    await admin.goto();
+
+    // Visible avant même la connexion — le cookie authToken est posé dès le chargement de l'app.
+    await expect(admin.browserIdShort()).toBeVisible();
+    const shortId = await admin.browserIdShort().textContent();
+    expect(shortId).toMatch(/^[0-9a-f]{8}$/);
+
+    await admin.browserIdCopyButton().click();
+    await expect(page.getByText('Copié !')).toBeVisible();
+
+    const clipText = await page.evaluate(() => navigator.clipboard.readText());
+    expect(clipText).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(clipText.slice(0, 8)).toBe(shortId);
+  });
+
+  test('le joueur qui vient de jouer apparaît en surbrillance "toi" dans Stats par défi', async ({ page, api }) => {
+    await api.reset();
+    await page.clock.install({ time: Date.now() });
+
+    const game = new GamePage(page);
+    const round = new BlindRoundPage(page);
+    await game.goto();
+    await game.waitForWelcome();
+    await game.clickStart();
+    for (let i = 0; i < 3; i++) {
+      await round.playRound(1);
+    }
+    await game.waitForDone();
+
+    const admin = new AdminPage(page);
+    await admin.goto();
+    const browserShortId = await admin.browserIdShort().textContent();
+    expect(browserShortId).toMatch(/^[0-9a-f]{8}$/);
+
+    await admin.login();
+    await page.getByRole('button', { name: /Défis/ }).click();
+
+    const today = new Date().toISOString().slice(0, 10);
+    const todayRow = admin.challengeRow(today);
+    const youChip = todayRow.getByRole('button', { name: /toi/ });
+    await expect(youChip).toBeVisible();
+    await expect(youChip).toContainText(browserShortId!);
+
+    await youChip.click();
+    await expect(todayRow.getByText('Copié !')).toBeVisible();
+
+    const clipText = await page.evaluate(() => navigator.clipboard.readText());
+    expect(clipText).toHaveLength(36);
+    expect(clipText.slice(0, 8)).toBe(browserShortId);
   });
 });

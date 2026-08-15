@@ -1,6 +1,7 @@
 import { Component, inject, signal, computed, effect, viewChild, OnInit, OnDestroy, HostListener, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
+import { ClipboardService } from '../../core/services/clipboard.service';
 import { GameFacadeService } from './services/game-facade.service';
 import { TrackSlot, ResumedAnswer } from '../../core/models/game.models';
 import { BlindRoundComponent, AnsweredEvent } from './blind-round/blind-round.component';
@@ -37,6 +38,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
   private readonly gameService = inject(GameFacadeService);
   private readonly api = inject(ApiClient);
   private readonly audioPlayer = inject(AudioPlayerService);
+  private readonly clipboard = inject(ClipboardService);
   private readonly translate = inject(TranslateService);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly gameState = signal<GameState>('loading');
@@ -318,15 +320,15 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
     this.copyToClipboard(text);
   }
 
-  // clipboard.writeText peut rejeter (permission refusée, contexte non sécurisé) :
-  // sans catch, échec silencieux + unhandled rejection.
   private copyToClipboard(text: string): void {
-    navigator.clipboard.writeText(text).then(() => {
-      this.shareCopied.set(true);
-      setTimeout(() => this.shareCopied.set(false), 2000);
-    }).catch(() => {
-      this.shareFailed.set(true);
-      setTimeout(() => this.shareFailed.set(false), 3000);
+    this.clipboard.copy(text).then(ok => {
+      if (ok) {
+        this.shareCopied.set(true);
+        setTimeout(() => this.shareCopied.set(false), 2000);
+      } else {
+        this.shareFailed.set(true);
+        setTimeout(() => this.shareFailed.set(false), 3000);
+      }
     });
   }
 

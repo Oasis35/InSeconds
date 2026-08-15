@@ -58,9 +58,10 @@ public static class GetAdminStatsEndpoint
             {
                 c.Id,
                 c.Date,
-                Scores         = c.GameSessions.Where(s => s.Status == Domain.SessionStatus.Completed).Select(s => s.TotalScore).ToList(),
-                PendingCount   = c.GameSessions.Count(s => s.Status == Domain.SessionStatus.Pending),
-                AbandonedCount = c.GameSessions.Count(s => s.Status == Domain.SessionStatus.Abandoned),
+                // Une seule projection des sessions, réutilisée pour les scores/compteurs
+                // (ci-dessous) ET la liste des joueurs par défi (ChallengePlayerDto) — évite
+                // de répéter trois fois le même parcours de c.GameSessions.
+                Sessions = c.GameSessions.Select(s => new { s.PlayerId, s.Status, s.TotalScore }).ToList(),
                 Tracks         = c.Tracks
                     .OrderBy(t => t.Position)
                     .Select(t => new
@@ -80,7 +81,16 @@ public static class GetAdminStatsEndpoint
 
         return challenges.Select(c =>
         {
-            var scores = c.Scores;
+            var scores = c.Sessions
+                .Where(s => s.Status == Domain.SessionStatus.Completed)
+                .Select(s => s.TotalScore)
+                .ToList();
+            var pendingCount   = c.Sessions.Count(s => s.Status == Domain.SessionStatus.Pending);
+            var abandonedCount = c.Sessions.Count(s => s.Status == Domain.SessionStatus.Abandoned);
+            var players = c.Sessions
+                .Select(s => new ChallengePlayerDto(s.PlayerId, s.Status.ToString(), s.TotalScore))
+                .ToList();
+
             var sorted = scores.OrderBy(s => s).ToList();
             double? median = sorted.Count == 0 ? null
                 : sorted.Count % 2 == 1
@@ -102,13 +112,14 @@ public static class GetAdminStatsEndpoint
                 c.Id,
                 c.Date,
                 scores.Count,
-                c.PendingCount,
-                c.AbandonedCount,
+                pendingCount,
+                abandonedCount,
                 scores.Count == 0 ? null : scores.Min(),
                 scores.Count == 0 ? null : scores.Max(),
                 scores.Count == 0 ? null : Math.Round(scores.Average(), 1),
                 median,
-                tracks);
+                tracks,
+                players);
         }).ToList();
     }
 

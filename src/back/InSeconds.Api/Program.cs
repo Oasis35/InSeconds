@@ -17,6 +17,7 @@ using InSeconds.Api.Features.Admin.Tracks.DeleteTrack;
 using InSeconds.Api.Features.Admin.Tracks.GetTracks;
 using InSeconds.Api.Features.Admin.Tracks.UpdateTrack;
 using InSeconds.Api.Features.Admin.Settings.UpdateTrackCooldown;
+using InSeconds.Api.Features.Players.GetCurrentPlayer;
 using InSeconds.Api.Features.Stats.Today;
 using InSeconds.Api.Features.ChallengeGeneration;
 using InSeconds.Api.Features.Sessions.AbandonSession;
@@ -197,6 +198,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
 });
 
 app.MapGetSettings();
+app.MapGetCurrentPlayer();
 app.MapTodayStats();
 app.MapAddTrack();
 app.MapGetTracks();

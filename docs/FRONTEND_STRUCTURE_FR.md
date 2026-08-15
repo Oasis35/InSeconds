@@ -35,14 +35,18 @@ src/front/InSeconds.Client/
 │   │   │   │   └── game.models.ts         # re-exports depuis api.generated.ts
 │   │   │   └── services/
 │   │   │       ├── audio-player.service.ts    # signal-based, durée choisie
+│   │   │       ├── clipboard.service.ts        # copy(text): Promise<boolean>, mutualisé game/admin
 │   │   │       ├── game.service.ts             # POST /sessions + /answers
 │   │   │       ├── language.service.ts         # détection/changement FR/EN, persist localStorage
+│   │   │       ├── player-identity.service.ts  # GET /players/me → signal playerId (root, 1 seul appel)
 │   │   │       └── settings.service.ts         # GET /settings → signals
 │   │   ├── shared/
 │   │   │   ├── confirm-sheet/
 │   │   │   │   └── confirm-sheet.component.ts  # bottom-sheet de confirmation réutilisable
 │   │   │   ├── share-button/
 │   │   │   │   └── share-button.component.ts   # bouton partage réutilisable (already-played + done)
+│   │   │   ├── browser-id/
+│   │   │   │   └── browser-id.component.ts     # ID court du navigateur + bouton copier (login + shell admin)
 │   │   │   ├── decor-background/
 │   │   │   │   └── decor-background.component.ts # décor DA (grille/scanlines) en arrière-plan
 │   │   │   └── deezer-badge.component.ts       # badge "À écouter sur Deezer" (fichier plat, sans sous-dossier)
@@ -221,6 +225,22 @@ init(): void          // appelé au boot via provideAppInitializer
 use(lang: Lang): void // change la langue, persiste en localStorage
 ```
 
+### `ClipboardService`
+
+```typescript
+copy(text: string): Promise<boolean>  // wrapper navigator.clipboard.writeText, ne rejette jamais
+```
+
+`providedIn: 'root'`. Mutualise la copie presse-papier entre `GameComponent` (partage de score) et `admin/` (`BrowserIdComponent`, `ChallengesTabComponent` — copie de l'ID joueur/navigateur).
+
+### `PlayerIdentityService`
+
+```typescript
+readonly playerId = signal<string | null>(null);  // rempli au premier inject via GET /api/players/me
+```
+
+`providedIn: 'root'` — le constructeur déclenche l'appel une seule fois pour toute la durée de vie de l'app (singleton), le résultat reste en cache dans le signal. Sert à afficher/copier l'ID du navigateur courant en admin et à le comparer aux joueurs listés dans « Stats par défi » (`ChallengesTabComponent.isYou()`). Le cookie `authToken` étant `HttpOnly` et chiffré (Data Protection back), le `PlayerId` est structurellement illisible côté client sans cet appel.
+
 ## Composants
 
 ### `GameComponent`
@@ -258,6 +278,10 @@ Bottom-sheet de confirmation réutilisable (`shared/confirm-sheet/`). Inputs : `
 
 Bouton partage réutilisable (`shared/share-button/`). Inputs : `copied: boolean`, `failed?: boolean`, `disabled?: boolean`. Output : `share`. Utilisé dans `AlreadyPlayedScreenComponent` et `FinalRecapScreenComponent`. Si `failed` est vrai (rejet de `clipboard.writeText` : permission refusée, contexte non sécurisé), le hint est remplacé par un message d'erreur (`share.failed`, signal `shareFailed` posé 3 s par `GameComponent.copyToClipboard()`).
 
+### `BrowserIdComponent`
+
+ID court (8 premiers caractères du `PlayerId`) + bouton copier (`shared/browser-id/`), aucun `@Input`/`@Output` — injecte lui-même `PlayerIdentityService` + `ClipboardService`. Monté une seule fois dans `admin.component.html`, au-dessus du `@if (authenticated)` : visible aussi bien sur l'écran de login que dans le shell admin authentifié.
+
 ### `DecorBackgroundComponent`
 
 Décor DA en arrière-plan (`shared/decor-background/`) — grille/scanlines.
@@ -277,7 +301,7 @@ Shell ~45 lignes. Fournit les 6 services via `providers: [AdminHttpService, Admi
 - **`AdminLoginComponent`** : formulaire login, `loginStatus` signal local
 - **`DashboardTabComponent`** : injecte `AdminStatsService` — sélecteur de jour + KPIs, activité 30 jours, répartition joueurs
 - **`PoolTabComponent`** : injecte `AdminPoolService`, contient `AddTrackModalComponent` + `DeleteTrackModalComponent` ; affiche l'**autonomie du pool** (« X jours de défis restants ») en ligne à côté du compteur disponible/utilisé
-- **`ChallengesTabComponent`** : injecte `AdminStatsService` — **stats par défi** (accordéon médiane/min/max, taux artiste/titre par morceau) + historique des défis, avec un navigateur ‹ Mois Année › unique en haut de l'onglet
+- **`ChallengesTabComponent`** : injecte `AdminStatsService` — **stats par défi** (accordéon médiane/min/max, taux artiste/titre par morceau) + historique des défis, avec un navigateur ‹ Mois Année › unique en haut de l'onglet. Injecte aussi `PlayerIdentityService`/`ClipboardService` directement (`core/`) pour afficher, sous chaque défi, un chip ID court par joueur (`c.players`, toutes sessions) cliquable pour copier l'ID complet, avec surbrillance + libellé « toi » automatiques si l'ID correspond au navigateur courant — repérer les joueurs qui reviennent
 - **`ActionsTabComponent`** : injecte `AdminActionsService`
 - **`AddTrackModalComponent`** : injecte `AdminPoolService`
 - **`DeleteTrackModalComponent`** : injecte `AdminPoolService`

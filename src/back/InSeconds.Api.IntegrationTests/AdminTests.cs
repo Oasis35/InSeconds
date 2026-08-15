@@ -6,6 +6,7 @@ using InSeconds.Api.Features.Admin.Tracks.GetTracks;
 using InSeconds.Api.Features.Admin.Tracks.UpdateTrack;
 using InSeconds.Api.Features.Admin.Challenges.GetChallenges;
 using InSeconds.Api.Features.Admin.Stats.GetAdminStats;
+using InSeconds.Api.Features.Players.GetCurrentPlayer;
 using InSeconds.Api.Features.Sessions.StartSession;
 using InSeconds.Api.Features.Sessions.SubmitAnswer;
 
@@ -260,6 +261,72 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         Assert.Equal(0, todayStats.AbandonedCount);
     }
 
+    // ── AdminStats — Players (ChallengeStatsDto.Players) ────────────────────
+
+    [Fact]
+    public async Task AdminStats_ApresPartieComplete_PlayersContientLeJoueurAvecStatutCompleted()
+    {
+        var myId = await MyPlayerIdAsync();
+        var session = await StartSessionAsync();
+        foreach (var track in session.Tracks)
+            await SubmitAsync(session.SessionId, track.Id, 1m, "X", null);
+
+        var resp = await AdminGetAsync("/api/admin/stats");
+        var body = await resp.Content.ReadFromJsonAsync<AdminStatsResponse>();
+        Assert.NotNull(body);
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var todayStats = body.Challenges.FirstOrDefault(c => c.Date == today);
+        Assert.NotNull(todayStats);
+
+        var myEntry = todayStats.Players.SingleOrDefault(p => p.PlayerId == myId);
+        Assert.NotNull(myEntry);
+        Assert.Equal("Completed", myEntry.Status);
+        // Réponses volontairement fausses (artist="X", title=null, cf. SubmitAsync) — aucune
+        // correspondance possible, donc Score=0 par construction (ScoreCalculator.Calculate).
+        Assert.Equal(0, myEntry.Score);
+    }
+
+    [Fact]
+    public async Task AdminStats_ApresAbandon_PlayersContientLeJoueurAvecStatutAbandoned()
+    {
+        var myId = await MyPlayerIdAsync();
+        var session = await StartSessionAsync();
+        await _client.PutAsync($"/api/sessions/{session.SessionId}/abandon", null);
+
+        var resp = await AdminGetAsync("/api/admin/stats");
+        var body = await resp.Content.ReadFromJsonAsync<AdminStatsResponse>();
+        Assert.NotNull(body);
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var todayStats = body.Challenges.FirstOrDefault(c => c.Date == today);
+        Assert.NotNull(todayStats);
+
+        var myEntry = todayStats.Players.SingleOrDefault(p => p.PlayerId == myId);
+        Assert.NotNull(myEntry);
+        Assert.Equal("Abandoned", myEntry.Status);
+    }
+
+    [Fact]
+    public async Task AdminStats_ApresSessionPending_PlayersContientLeJoueurAvecStatutPending()
+    {
+        var myId = await MyPlayerIdAsync();
+        var session = await StartSessionAsync();
+        await SubmitAsync(session.SessionId, session.Tracks[0].Id, 1m, "X", null);
+
+        var resp = await AdminGetAsync("/api/admin/stats");
+        var body = await resp.Content.ReadFromJsonAsync<AdminStatsResponse>();
+        Assert.NotNull(body);
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var todayStats = body.Challenges.FirstOrDefault(c => c.Date == today);
+        Assert.NotNull(todayStats);
+
+        var myEntry = todayStats.Players.SingleOrDefault(p => p.PlayerId == myId);
+        Assert.NotNull(myEntry);
+        Assert.Equal("Pending", myEntry.Status);
+    }
+
     // ── AdminStats — SelectedDayKpis + AvailableDates + fix 30j ─────────────
 
     [Fact]
@@ -369,6 +436,14 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
+
+    private async Task<Guid> MyPlayerIdAsync()
+    {
+        var resp = await _client.GetAsync("/api/players/me");
+        resp.EnsureSuccessStatusCode();
+        var body = await resp.Content.ReadFromJsonAsync<GetCurrentPlayerResponse>();
+        return body!.PlayerId;
+    }
 
     private async Task<StartSessionResponse> StartSessionAsync()
     {

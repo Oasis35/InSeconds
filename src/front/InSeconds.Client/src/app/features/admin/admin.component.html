@@ -6,6 +6,7 @@
     @if (api.authenticated() && buildTime !== 'unknown') {
       <p class="text-xs" style="color:var(--text-muted)">{{ 'admin.deployedAt' | translate: { date: (buildTime | date:'dd/MM/yyyy à HH:mm') } }}</p>
     }
+    <app-browser-id />
   </div>
 
   @if (!api.authenticated()) {

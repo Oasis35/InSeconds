@@ -115,6 +115,27 @@ export class AdminPage {
     return this.page.getByRole('button', { name: /Créer le défi|Générer/ }).first();
   }
 
+  // Identifiant du navigateur (BrowserIdComponent) — visible sur l'écran de login et dans le shell.
+  // Span (pas bouton) montrant les 8 premiers caractères du PlayerId (hex, sans tiret) — le
+  // filtre de tag distingue ce span des chips joueurs de l'onglet Défis, qui sont des <button>.
+  browserIdShort(): Locator {
+    return this.page.locator('span.font-mono').filter({ hasText: /^[0-9a-f]{8}$/ });
+  }
+
+  browserIdCopyButton(): Locator {
+    return this.page.getByRole('button', { name: /^Copier$|^Copié !$/ });
+  }
+
+  // Chip joueur dans "Stats par défi" (ChallengesTabComponent) — bouton contenant l'ID court.
+  playerChip(shortId: string): Locator {
+    return this.page.getByRole('button', { name: new RegExp(shortId) });
+  }
+
+  // Ligne d'un défi précis dans "Stats par défi" (div.py-3 contenant la date en texte exact).
+  challengeRow(dateIso: string): Locator {
+    return this.page.locator('div.py-3').filter({ has: this.page.getByText(dateIso, { exact: true }) });
+  }
+
   // Helpers API directs (évite de passer par l'UI pour le setup)
   async apiReseed(): Promise<void> {
     const res = await fetch(`${BASE}/api/e2e/reseed`, {

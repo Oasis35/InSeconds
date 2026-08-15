@@ -1345,6 +1345,14 @@ export interface ChallengeDto {
     [key: string]: any;
 }
 
+export interface ChallengePlayerDto {
+    playerId: string;
+    status: string;
+    score: number;
+
+    [key: string]: any;
+}
+
 export interface ChallengeStatsDto {
     id: number;
     date: Date;
@@ -1356,6 +1364,7 @@ export interface ChallengeStatsDto {
     scoreAvg: number | undefined;
     scoreMedian: number | undefined;
     tracks: TrackStatsDto[];
+    players: ChallengePlayerDto[];
 
     [key: string]: any;
 }
