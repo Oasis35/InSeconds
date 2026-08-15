@@ -346,6 +346,15 @@ Ajoute `Authorization: Bearer <token>` sur toutes les requêtes vers `/api/admin
 - **Inputs ≥ 16px** — sinon iOS auto-zoome au focus
 - **`touch-action: manipulation`** sur les boutons pour supprimer le délai 300ms
 
+## Déploiement — Docker + nginx
+
+`Dockerfile.prod` (multi-stage) : build Angular (`node:22-alpine`, `npm ci` + `npm run build`) puis copie `dist/InSeconds.Client/browser` dans une image `nginxinc/nginx-unprivileged:alpine` servant sur le port 8080. `nginx.conf` (copié dans `/etc/nginx/conf.d/default.conf`) définit les headers `Cache-Control` — **distinction cruciale entre fichiers hashés et non hashés** :
+
+- **Bundles JS/CSS** (`~* \.(?:js|css)$`) — hashés par `angular.json` (`outputHashing: "all"`, un nom de fichier différent à chaque build) → `public, max-age=31536000, immutable`. Aucun risque de servir une version périmée : un nouveau contenu a toujours une nouvelle URL.
+- **`i18n/*.json`, `index.html`/routes SPA** (tout le reste, via `try_files $uri $uri/ /index.html`) — noms de fichiers stables → `no-cache` (revalidation systématique auprès du serveur, via `ETag`/`Last-Modified`). Sans ça, un navigateur peut garder en cache une ancienne version après déploiement — incident du 2026-08-15 (piège 20 du [`CLAUDE.md`](../CLAUDE.md)) : un joueur a vu des clés i18n manquantes affichées en brut (`admin.browserId.label` au lieu du texte traduit) alors que le serveur servait déjà la version à jour.
+
+Vérifié par le job CI `nginx-headers` (`scripts/check-nginx-cache-headers.sh`) — construit et sert réellement l'image Docker de prod (le seul job à le faire ; les tests E2E tournent contre `ng serve`, pas contre nginx).
+
 ## À venir
 
 - Tests mobiles (iOS Safari, Android Chrome)

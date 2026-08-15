@@ -158,7 +158,8 @@
 
 - [x] Cache mémoire pour les preview URLs Deezer (`CachedDeezerClient` : `IMemoryCache`, TTL borné par l'expiration de la signature CDN — fix 403 prod)
 - [ ] Cache Redis en remplacement de l'`IMemoryCache` (utile seulement en multi-instances / pour survivre aux redémarrages — `StackExchange.Redis`)
-- [ ] Smoke tests automatisés post-deploy
+- [x] **Premier smoke test automatisé** (2026-08-15) — job CI `nginx-headers` (`scripts/check-nginx-cache-headers.sh`) construit et sert réellement l'image Docker de prod (`Dockerfile.prod`), vérifie via `curl` les headers `Cache-Control` (`immutable` sur JS/CSS hashés, `no-cache` sur `i18n/*.json`/routes SPA) — corrige un incident de cache navigateur (piège 20 du [`CLAUDE.md`](../CLAUDE.md)). Seul job qui teste réellement `nginx.conf` (E2E tourne contre `ng serve`, pas contre nginx)
+- [ ] Élargir les smoke tests post-deploy au-delà des headers de cache (ex : vérifier `/health` répond bien depuis l'URL publique juste après déploiement)
 - [ ] Charte graphique / `@theme` Tailwind (palette déjà centralisée en variables CSS `:root`)
 - [ ] Audit accessibilité WCAG 2.1 AA
 - [ ] Vérifier politique d'usage API Deezer (CGU, rate limits)
