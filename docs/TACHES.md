@@ -1,6 +1,6 @@
 # InSeconds — Liste des Tâches
 
-> Mis à jour le 2026-07-16.
+> Mis à jour le 2026-08-15.
 
 ## ✅ Bootstrap projet
 
@@ -53,6 +53,8 @@
 - [x] Dashboard admin redesigné : KPI tiles jour sélectionné (complétés, abandons, taux de complétion, score médian), sélecteur de jour (← → sur les dates ayant un défi), barres 30j cliquables (jours sans activité affichés à zéro), `GET /api/admin/stats?date=` (param date, `AvailableDates`, `SelectedDayKpis`, Pending→Abandoned pour les jours passés)
 - [x] **Corrections d'incohérences trouvées lors d'un audit de code** (2026-07-16) — `/api/admin/login` invoque maintenant réellement `LoginHandler` via le bus Wolverine au lieu de dupliquer sa logique dans l'endpoint (le handler était du code mort, testé mais jamais exécuté) ; `DeezerRankSnapshot` posé de façon cohérente (`i+1`) par `DailyChallengeGenerator` et le seed E2E, comme `CreateChallengeHandler` (avant toujours `0` sur les deux premiers chemins)
 - [x] **Refonte de la prolongation « écouter plus »** (2026-07-17) — plus de malus de score (`ScoreCalculator.Calculate` n'a plus de paramètre `wasExtended` ; le score dépend uniquement du palier finalement écouté, direct ou prolongé) ; prolongations libres et chaînables côté front (`AudioPlayerService.extend()`, plus de limite à une seule), comportement dual selon que l'audio joue encore (continue depuis la position réelle) ou non (relit depuis le début) ; setting `MaxExtensionsPerAnswer` supprimé (jamais appliqué nulle part) via la migration `RemoveMaxExtensionsPerAnswerSetting` ; `GameSessionAnswer.WasExtended` conservé uniquement pour les stats admin — nouveau champ `TrackStatsDto.ExtendedRate` (% de réponses prolongées) affiché dans l'onglet Défis
+- [x] **`GET /api/players/me`** (2026-08-15) — slice `Features/Players/GetCurrentPlayer/`, expose le `PlayerId` du cookie du navigateur courant (déjà résolu par `PlayerAuthMiddleware`, aucune requête DB supplémentaire) ; nécessaire côté front car le cookie `authToken` est `HttpOnly` et chiffré (Data Protection), donc illisible/indéchiffrable côté client
+- [x] **`GetAdminStats` renvoie la liste des joueurs par défi** (2026-08-15) — `ChallengeStatsDto.Players` (`{PlayerId, Status, Score}` par session, Completed/Pending/Abandoned) pour repérer les joueurs qui reviennent d'un jour à l'autre ; `BuildChallengeStats` mutualise en une seule projection `Sessions` ce qui remplaçait 3 requêtes séparées (scores/pending/abandoned)
 
 ## ✅ Frontend
 
@@ -102,6 +104,7 @@
 - [x] **Feedback échec de copie partage** — `GameComponent.copyToClipboard()` catch le rejet de `clipboard.writeText`, input `failed` sur `ShareButtonComponent` + clé `share.failed`
 - [x] **Optimisations performance front** (2026-07-02) — `ChangeDetectionStrategy.OnPush` sur les 23 composants Angular, `takeUntilDestroyed(destroyRef)` sur toutes les subscriptions Observables (`game.component.ts`, `blind-round.component.ts`, `admin-pool.service.ts`, `admin-actions.service.ts`), tracking des handles `setTimeout` + `clearTimeout()` avant recréation dans `admin-pool.service.ts` et `admin-actions.service.ts`
 - [x] **`AudioPlayerService.extend()` branché depuis `listenMore()`** (2026-07-16) — temps restant et progression basés sur `audio.currentTime` réel. Redesign complet le 2026-07-17 : voir l'entrée « Refonte de la prolongation » ci-dessus (plus de limite à une seule prolongation, plus de malus de score) — voir [`GAMEPLAY_RULES_FR.md`](GAMEPLAY_RULES_FR.md)
+- [x] **Indicateur joueurs par défi + ID navigateur en admin** (2026-08-15) — `ChallengesTabComponent` affiche un chip ID court par joueur sous chaque défi (clic = copie l'ID complet, surbrillance auto + libellé « toi » si l'ID correspond au navigateur courant) ; `BrowserIdComponent` (`shared/browser-id/`, sans `@Input`/`@Output`) affiche l'ID court du navigateur + bouton copier, monté une seule fois dans `admin.component.html` (visible sur l'écran de login et dans le shell admin) ; `PlayerIdentityService` (`core/`, root) charge `GET /api/players/me` une seule fois par session ; `ClipboardService` (`core/`, root) mutualise `navigator.clipboard.writeText`, réutilisé par `game.component.copyToClipboard` (comportement de partage de score inchangé)
 
 ## ✅ Déploiement
 

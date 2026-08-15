@@ -69,6 +69,8 @@ Délègue à `PreviewStatusRefresher.RefreshAsync` (voir ChallengeGeneration). `
 
 Utilise `IDbContextFactory<ApplicationDbContext>` pour **5 requêtes en parallèle**, chacune avec son propre `DbContext` (non thread-safe sinon) : `BuildChallengeStats` (30 derniers défis, min/max/moyenne/médiane, stats par track — dont `ExtendedRate` = % des réponses de ce track avec `WasExtended=true`), `BuildDailyActivity` (30 jours glissants, 0 par défaut), `BuildPlayerBreakdown` (guests/registered/actifs 7j/30j, exclut `IsDeleted`), `BuildAvailableDates`, `BuildDailyKpis` (date sélectionnée — **jour passé : Pending compté comme Abandoned**, `CompletionRate` + médiane). Médiane calculée manuellement (tri + moyenne des 2 valeurs centrales si pair).
 
+**`ChallengeStatsDto.Players`** (`IReadOnlyList<ChallengePlayerDto>`) — un `{PlayerId, Status, Score}` par `GameSession` du défi (toutes sessions, Completed/Pending/Abandoned confondues), pour que l'admin repère les joueurs qui reviennent d'un jour à l'autre (front : `ChallengesTabComponent`). `Status` est sérialisé en `string` (`s.Status.ToString()`), pas l'enum `SessionStatus` brut — évite toute ambiguïté int/string côté client généré par NSwag. `BuildChallengeStats` projette une seule fois `Sessions = c.GameSessions.Select(s => new {PlayerId, Status, TotalScore})` en DB, réutilisée en mémoire pour dériver `scores`/`pendingCount`/`abandonedCount` **et** `Players` — remplace les 3 requêtes séparées qui existaient avant (une par compteur).
+
 ### Admin/Tracks/AddTrack — `POST /api/admin/tracks`
 
 Validator : `DeezerTrackId > 0`. Existe déjà avec données complètes → renvoyé tel quel ; existe mais incomplet → re-fetch Deezer et corrige ; sinon fetch (422 si `null`), crée le `Track`.
@@ -118,6 +120,10 @@ Publique (pas admin). Utilise **`CachedDeezerClient`**. `q` vide/<2 → `200 []`
 - `DELETE /api/e2e/reset?deleteChallenge=&emptyPool=` : supprime `GameSessionAnswers`/`GameSessions` (`ExecuteDeleteAsync`), supprime tous les `Players` sauf le joueur dev fixe (`aaaaaaaa-0000-0000-0000-000000000001`). `emptyPool` passe tous les `HasPreview` à `false` — nécessaire depuis la génération paresseuse (supprimer juste le défi ne suffit plus, il renaîtrait au premier joueur).
 - `POST /api/e2e/reseed` : purge complète (`IgnoreQueryFilters()` pour inclure les soft-deleted) puis `SeedData(db)`.
 - **`SeedData`** (aussi appelée au démarrage Dev/Testing si `!db.Tracks.Any()`) : 55 tracks (IDs/CoverHash Deezer réels), 9 répartis sur 3 défis (J-2/J-1/aujourd'hui), reste = pool admin, `DeezerTrackId >= 9_000_000_000` → `HasPreview=false`. Joueur dev fixe `CurrentStreak=2`, `LastPlayedDate=today-1`, 2 `GameSession Completed` (J-2, J-1, `TotalScore=2550`).
+
+### Players/GetCurrentPlayer — `GET /api/players/me`
+
+Endpoint minimal, sur le même modèle que `Settings/GetSettings` (pas de Command/Handler, direct dans l'`Endpoint.cs`) : `Results.Ok(new GetCurrentPlayerResponse(ctx.GetPlayerId()))`. Publique (hors `/api/admin`, donc traversée par `PlayerAuthMiddleware` comme toute route non-admin) — aucune requête DB supplémentaire, se contente de relire le `PlayerId` déjà résolu par le middleware pour la requête courante. Sert au front admin à afficher/copier l'ID du navigateur courant (`BrowserIdComponent`) : le cookie `authToken` étant `HttpOnly` et chiffré (Data Protection), le `PlayerId` est structurellement illisible côté client sans repasser par le back.
 
 ### Settings/GetSettings — `GET /api/settings` (publique)
 

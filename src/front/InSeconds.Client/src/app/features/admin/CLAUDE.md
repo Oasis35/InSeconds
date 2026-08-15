@@ -27,10 +27,14 @@ AdminComponent (providers: les 6 services)
  │    ├─ <app-add-track-modal>    → injecte AdminPoolService
  │    └─ <app-delete-track-modal> → injecte AdminPoolService
  ├─ <app-challenges-tab>       → injecte AdminStatsService (même instance que dashboard-tab)
+ │                               + PlayerIdentityService/ClipboardService (core/, exception au tableau
+ │                               ci-dessus — cf. note plus bas)
  └─ <app-actions-tab>          → injecte AdminActionsService
 ```
 
 `activeTab = signal<AdminTab>('dashboard')` pilote un `@if/@else if` qui instancie **un seul** tab à la fois (composant non actif détruit/recréé, pas `[hidden]`). Badges de la barre d'onglets : `stats.challenges().length` (défis), `pool.poolTracks().available.length + .used.length` (pool).
+
+**`<app-browser-id>`** (`shared/browser-id/`, hors arbre ci-dessus) est monté directement dans `admin.component.html`, au-dessus du `@if (api.authenticated())` — donc rendu une seule fois, visible aussi bien sur l'écran de login que dans le shell authentifié. Composant autonome (aucun `@Input`), il injecte lui-même `PlayerIdentityService`/`ClipboardService`.
 
 ## `admin.models.ts` — DTO front écrits à la main
 
@@ -124,7 +128,7 @@ Spec (`actions-tab.component.spec.ts`) : couvre la lecture de `settings.trackCoo
 - **`dashboard-tab`** : injecte `AdminStatsService` seul. Template : sélecteur de jour (`shiftSelectedDay`), KPIs du jour (`adminStats['selectedDayKpis']` — bracket notation, type généré `[key:string]:any`), graphique barres 30j (`activityBarHeightPx`, clic → `selectDay`), tuiles répartition joueurs (`playerBreakdown`).
 - **`challenges-tab`** — grille par track dans « Stats par défi » : 4 tuiles (`artistCorrectRate`, `titleCorrectRate`, `extendedRate`, `avgListenedSeconds`). `extendedRate` (`TrackStatsDto.extendedRate`, % de réponses avec `WasExtended=true`) affiché en texte simple, sans code couleur (les seuils `rateColor`/`rateBarColor` sont calibrés pour des taux de réussite, pas pour un taux de prolongation dont une valeur haute n'est ni bonne ni mauvaise en soi).
 - **`pool-tab`** : injecte `AdminPoolService`. Monte `<app-add-track-modal/>` et `<app-delete-track-modal/>` en bas du template (toujours dans le DOM dès l'onglet actif, masquées par leur `@if` interne). Tableau fusionné, checkbox de sélection uniquement sur non-`used`, bouton "Actualiser" par ligne sans preview → `openAddModal(null, t.id, "artist title")`. **Toutes les colonnes sont triables** (clic sur l'en-tête → `pool.setPoolSort(column)`, flèche ▲/▼ affichée sur la colonne active), colonnes `LastUsedDate`/`UnlockDate`/`UsageCount` entre Statut et Actions (cellule vide, pas de placeholder, si la valeur est `null`), filtre par plage de dates (`type="date"`) sur `LastUsedDate` en plus des filtres texte/statut/preview existants.
-- **`challenges-tab`** : injecte `AdminStatsService` (**même instance** que dashboard-tab). Un seul navigateur de mois pilote deux sections aux sources différentes : "Stats par défi" (`adminStats().challenges`, type généré) et "Historique" (`challenges()`, type local) — synchronisées via l'`effect()` d'`AdminStatsService`.
+- **`challenges-tab`** : injecte `AdminStatsService` (**même instance** que dashboard-tab) **et**, directement, `PlayerIdentityService`/`ClipboardService` (`core/services/`) — deuxième composant de la feature (après `actions-tab`/`SettingsService`) à injecter un service `core/` en direct, ici pour comparer l'ID du navigateur courant aux joueurs listés. Un seul navigateur de mois pilote deux sections aux sources différentes : "Stats par défi" (`adminStats().challenges`, type généré) et "Historique" (`challenges()`, type local) — synchronisées via l'`effect()` d'`AdminStatsService`. Sous chaque ligne de « Stats par défi », un chip par joueur (`c.players`, toutes sessions Completed/Pending/Abandoned) affiche les 8 premiers caractères du `PlayerId` — couleur selon `statusBg`/`statusColor` (Abandoned = ambre, Pending = neutre, Completed = défaut) — clic = `copyPlayerId()` (copie l'ID complet via `ClipboardService`, feedback "copié" 1,5s sur le chip cliqué uniquement via le signal `copiedPlayerId`), surbrillance + libellé « toi » automatiques (`isYou()`) si l'ID correspond à `PlayerIdentityService.playerId()`.
 - **`actions-tab`** : injecte `AdminActionsService` **et** `SettingsService` (seul composant de la feature à injecter un service `core/` directement, pour lire la valeur courante de `trackCooldownDays` avant édition). 4 blocs (génération/reset/refresh previews/cooldown) avec messages conditionnels par statut. Le bloc cooldown utilise un `<input type="number">` avec événements DOM bruts (`(input)`/`$any($event.target).value`), pas `ngModel` — cohérent avec le pattern déjà utilisé par les filtres de `pool-tab` plutôt que d'introduire `FormsModule` dans ce composant.
 - **`add-track-modal`** / **`delete-track-modal`** : injectent `AdminPoolService`, zéro logique propre — pur reflet des signals du service (`@if (pool.addModalOpen())` / `@if (pool.deleteModalOpen())`, overlay + `Escape` pour fermer).
 
@@ -137,6 +141,8 @@ Spec (`actions-tab.component.spec.ts`) : couvre la lecture de `settings.trackCoo
 | `300ms` / `2` car. | `AdminApiService` (recherche Deezer) | debounce manuel `timer`+`switchMap` / seuil avant appel réseau |
 | `2000ms` / `3000ms` | `AdminPoolService.addToPoolFromModal` | retour `idle` après succès / erreur ajout pool |
 | `3000ms` | `AdminActionsService.generateToday`/`updateTrackCooldownDays` | retour `idle` (succès et erreur) |
+| `1500ms` | `ChallengesTabComponent.copyPlayerId` | feedback "copié" sur le chip joueur cliqué |
+| `2000ms` | `BrowserIdComponent.copy` | feedback "copié" sur le bouton copier l'ID navigateur |
 | défaut `10` | `SettingsService.tracksPerChallenge` | dénominateur de `poolDaysRemaining` |
 | défaut `30` | `SettingsService.trackCooldownDays` | valeur affichée dans l'input avant première édition |
 | rouge<3 / orange<7 / vert≥7 | `poolDaysColor` | autonomie du pool |
@@ -145,7 +151,7 @@ Spec (`actions-tab.component.spec.ts`) : couvre la lecture de `settings.trackCoo
 
 ## Points d'attention pour un futur agent
 
-1. **Ne pas ajouter d'`@Input`/`@Output`** dans cette feature sans bonne raison — le pattern établi est service-as-store scopé à `AdminComponent`. Un nouvel état partagé va dans un des 6 services existants (ou un nouveau service fourni au même niveau), pas en prop-drilling.
+1. **Ne pas ajouter d'`@Input`/`@Output`** dans cette feature sans bonne raison — le pattern établi est service-as-store scopé à `AdminComponent`. Un nouvel état partagé va dans un des 6 services existants (ou un nouveau service fourni au même niveau), pas en prop-drilling. **Exception tolérée** : injecter un service `core/` (root, hors des 6 services scopés) directement dans un composant quand l'état est global à l'app et non spécifique à l'admin — précédent `actions-tab`/`SettingsService`, repris par `challenges-tab`/`PlayerIdentityService`+`ClipboardService`.
 2. **`ChallengeDto` local vs généré** — vérifier systématiquement lequel des deux types est importé (`../admin.models` vs `api/api.generated`) avant de manipuler `date`.
 3. **`logout()` ne fait pas d'appel serveur** — purement local (localStorage). Si un jour une invalidation côté back est nécessaire, elle n'existe pas aujourd'hui.
 4. Après toute mutation du pool (ajout/suppression/update), le reload passe toujours par `api.reloadPool()` — jamais de mutation optimiste locale des signals `poolTracks`.

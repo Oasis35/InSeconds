@@ -55,7 +55,7 @@ Listener `visibilitychange` posé dans `ngOnInit` (retiré dans `ngOnDestroy`) :
 
 ### Partage / countdown
 
-`share()`/`shareFromStats()` construisent un texte (date, lignes ✅/❌ par morceau, score, `environment.appUrl`), `navigator.clipboard.writeText`. Succès → `shareCopied=true` 2s. Échec (permission refusée / contexte non sécurisé) → catch explicite → `shareFailed=true` 3s (sans ce catch : unhandled rejection). `startCountdown()` : `setInterval` 1s jusqu'à minuit UTC, formaté `HH:MM:SS`, nettoyé dans `ngOnDestroy`.
+`share()`/`shareFromStats()` construisent un texte (date, lignes ✅/❌ par morceau, score, `environment.appUrl`), délèguent la copie à `copyToClipboard()` → **`ClipboardService.copy()`** (`core/services/clipboard.service.ts`, `providedIn: root`) qui encapsule `navigator.clipboard.writeText` et résout `Promise<boolean>` (jamais de rejet à catcher côté appelant). Succès → `shareCopied=true` 2s. Échec (permission refusée / contexte non sécurisé) → `shareFailed=true` 3s. `ClipboardService` est mutualisé avec la feature `admin/` (`BrowserIdComponent`, `ChallengesTabComponent` — copie de l'ID joueur/navigateur) ; le comportement de `game.component` est inchangé par cette extraction, seule la ligne `navigator.clipboard.writeText` a été déplacée dans le service partagé. `startCountdown()` : `setInterval` 1s jusqu'à minuit UTC, formaté `HH:MM:SS`, nettoyé dans `ngOnDestroy`.
 
 ## `blind-round/blind-round.component.ts` — le round de jeu
 
@@ -114,6 +114,7 @@ Tous `OnPush`, présentationnels (sauf `already-played-screen` qui type `stats` 
 ## Services `core/` consommés (hors périmètre `game/` mais central ici)
 
 - **`core/services/game.service.ts`** (`providedIn: 'root'`) : appels HTTP purs sur `/api/sessions` — `startToday()` (`POST`), `submitAnswer()` (`POST /answers`), `abandonSession()` (`PUT /abandon`), `updateListening()` (`PATCH /listening`).
+- **`core/services/clipboard.service.ts`** (`providedIn: 'root'`) : `copy(text): Promise<boolean>`, wrapper `navigator.clipboard.writeText` qui ne rejette jamais côté appelant. Mutualisé avec `admin/` (`BrowserIdComponent`, `ChallengesTabComponent`).
 - **`core/services/settings.service.ts`** : signals avec défauts codés en dur (utilisés tant que `/api/settings` n'a pas répondu) — `allowedDurations=[0.5,1,1.5,2,3,5,10]`, `guessTimerSeconds=20`, `tracksPerChallenge=10`, `durationScores={0.5:1000,1:850,1.5:700,2:550,3:400,5:250,10:100}`. `load()` fait un `catchError` + `console.warn` : **l'app démarre même si `/api/settings` échoue**.
 - **`core/services/audio-player.service.ts`** : `AudioState = 'idle'|'loading'|'playing'|'finished'`. Mécanisme central `playToken` (compteur incrémenté à chaque `play()`/`reset()`) qui invalide tout callback async périmé (`oncanplay`, `onerror`, `setTimeout`, boucle rAF) — protège contre les races si l'utilisateur relance vite une nouvelle lecture pendant qu'une ancienne charge encore.
   - `play(url, duration)` → `loading` → `oncanplay` → `playing`, programme l'arrêt auto + la boucle de progression rAF.
