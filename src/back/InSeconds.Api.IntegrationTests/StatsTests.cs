@@ -3,6 +3,9 @@ using System.Net.Http.Json;
 using InSeconds.Api.Features.Stats.Today;
 using InSeconds.Api.Features.Sessions.StartSession;
 using InSeconds.Api.Features.Sessions.SubmitAnswer;
+using InSeconds.Api.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace InSeconds.Api.IntegrationTests;
 
@@ -64,6 +67,30 @@ public class StatsTests(IntegrationTestFactory factory) : IAsyncLifetime
             Assert.NotEmpty(t.Artist);
             Assert.NotEmpty(t.Title);
         });
+    }
+
+    [Fact]
+    public async Task TodayStats_TitreAvecParentheses_EstNettoyeDansTrackStat()
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var challengeTrack = await db.DailyChallengeTracks
+                .Include(t => t.Track)
+                .Include(t => t.DailyChallenge)
+                .FirstAsync(t => t.DailyChallenge.Date == today && t.Position == 1);
+            challengeTrack.Track.Title = "Lose Yourself (Remastered 2013)";
+            await db.SaveChangesAsync();
+        }
+
+        var resp = await _client.GetAsync("/api/stats/today");
+
+        var body = await resp.Content.ReadFromJsonAsync<TodayStatsResponse>();
+        Assert.NotNull(body);
+        var track = body.Tracks.Single(t => t.Position == 1);
+        Assert.Equal("Lose Yourself", track.Title);
     }
 
     [Fact]

@@ -2,6 +2,9 @@ using System.Net;
 using System.Net.Http.Json;
 using InSeconds.Api.Features.Sessions.StartSession;
 using InSeconds.Api.Features.Sessions.SubmitAnswer;
+using InSeconds.Api.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace InSeconds.Api.IntegrationTests;
 
@@ -177,6 +180,31 @@ public class SessionTests(IntegrationTestFactory factory) : IAsyncLifetime
         Assert.NotNull(result1);
         Assert.NotNull(result2);
         Assert.True(result1.Score > result2.Score);
+    }
+
+    // ── SubmitAnswer — nettoyage du titre affiché ──────────────────────────────
+
+    [Fact]
+    public async Task SubmitAnswer_TitreAvecParentheses_CorrectTitleEstNettoye()
+    {
+        var session = await StartSessionAsync();
+        var track = session.Tracks[0];
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var challengeTrack = await db.DailyChallengeTracks
+                .Include(t => t.Track)
+                .FirstAsync(t => t.Id == track.Id);
+            challengeTrack.Track.Title = "Lose Yourself (Remastered 2013)";
+            await db.SaveChangesAsync();
+        }
+
+        var resp = await SubmitAsync(session.SessionId, track.Id, 1m, "Eminem", "Lose Yourself");
+
+        var result = await resp.Content.ReadFromJsonAsync<SubmitAnswerResponse>();
+        Assert.NotNull(result);
+        Assert.Equal("Lose Yourself", result.CorrectTitle);
     }
 
     [Fact]
