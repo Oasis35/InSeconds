@@ -1,4 +1,5 @@
 using InSeconds.Api.Common.Settings;
+using InSeconds.Api.Common.Text;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -106,7 +107,7 @@ public sealed class TodayStatsHandler(
             return new TrackStat(
                 Position:                  t.Position,
                 Artist:                    t.Artist,
-                Title:                     t.Title,
+                Title:                     TextNormalizationHelpers.CleanDisplayTitle(t.Title),
                 DeezerTrackId:             t.DeezerTrackId,
                 CoverUrl:                  t.CoverHash is not null ? appSettings.BuildCoverUrl(t.CoverHash) : null,
                 FailureRatePercent:        t.TotalAnswers == 0 ? 0 : Math.Round((1.0 - (double)t.CorrectAnswers / t.TotalAnswers) * 100, 1),

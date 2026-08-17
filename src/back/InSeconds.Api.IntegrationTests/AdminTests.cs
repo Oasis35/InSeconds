@@ -9,6 +9,9 @@ using InSeconds.Api.Features.Admin.Stats.GetAdminStats;
 using InSeconds.Api.Features.Players.GetCurrentPlayer;
 using InSeconds.Api.Features.Sessions.StartSession;
 using InSeconds.Api.Features.Sessions.SubmitAnswer;
+using InSeconds.Api.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace InSeconds.Api.IntegrationTests;
 
@@ -127,6 +130,31 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         Assert.All(body, c => Assert.Equal(3, c.Tracks.Count));
     }
 
+    [Fact]
+    public async Task GetChallenges_TitreAvecParentheses_EstNettoye()
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var challengeTrack = await db.DailyChallengeTracks
+                .Include(t => t.Track)
+                .Include(t => t.DailyChallenge)
+                .FirstAsync(t => t.DailyChallenge.Date == today && t.Position == 1);
+            challengeTrack.Track.Title = "Lose Yourself (Remastered 2013)";
+            await db.SaveChangesAsync();
+        }
+
+        var resp = await AdminGetAsync("/api/admin/challenges");
+        var body = await resp.Content.ReadFromJsonAsync<List<ChallengeDto>>();
+        Assert.NotNull(body);
+
+        var todayChallenge = body.Single(c => c.Date == today);
+        var track = todayChallenge.Tracks.Single(t => t.Position == 1);
+        Assert.Equal("Lose Yourself", track.Title);
+    }
+
     // ── CreateChallenge ───────────────────────────────────────────────────────
 
     [Fact]
@@ -201,6 +229,31 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         Assert.NotNull(body.Challenges);
         Assert.NotNull(body.DailyActivity);
         Assert.NotNull(body.PlayerBreakdown);
+    }
+
+    [Fact]
+    public async Task AdminStats_TitreAvecParentheses_EstNettoyeDansTrackStatsDto()
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var challengeTrack = await db.DailyChallengeTracks
+                .Include(t => t.Track)
+                .Include(t => t.DailyChallenge)
+                .FirstAsync(t => t.DailyChallenge.Date == today && t.Position == 1);
+            challengeTrack.Track.Title = "Lose Yourself (Remastered 2013)";
+            await db.SaveChangesAsync();
+        }
+
+        var resp = await AdminGetAsync("/api/admin/stats");
+        var body = await resp.Content.ReadFromJsonAsync<AdminStatsResponse>();
+        Assert.NotNull(body);
+
+        var todayStats = body.Challenges.Single(c => c.Date == today);
+        var track = todayStats.Tracks.Single(t => t.Position == 1);
+        Assert.Equal("Lose Yourself", track.Title);
     }
 
     [Fact]

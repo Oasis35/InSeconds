@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using InSeconds.Api.Common.Text;
 using InSeconds.Api.Infrastructure.Deezer;
 
@@ -26,9 +25,9 @@ public static class SearchEndpoint
         return app;
     }
 
-    // Retire les parenthèses/crochets du titre (même règle que TextNormalizer côté correction
-    // des réponses) puis déduplique sur (Artiste, Titre nettoyé) en gardant la première occurrence
-    // (l'ordre Deezer reflète déjà la pertinence).
+    // Nettoie le titre (TextNormalizationHelpers.CleanDisplayTitle) puis déduplique sur
+    // (Artiste, Titre nettoyé) en gardant la première occurrence (l'ordre Deezer reflète
+    // déjà la pertinence).
     internal static IReadOnlyList<DeezerSearchResult> CleanAndDeduplicate(IReadOnlyList<DeezerTrackInfo> tracks)
     {
         var seen = new HashSet<(string Artist, string Title)>();
@@ -36,7 +35,7 @@ public static class SearchEndpoint
 
         foreach (var track in tracks)
         {
-            var cleanedTitle = CleanTitle(track.Title);
+            var cleanedTitle = TextNormalizationHelpers.CleanDisplayTitle(track.Title);
             var key = (track.Artist.ToLowerInvariant(), cleanedTitle.ToLowerInvariant());
 
             if (!seen.Add(key))
@@ -48,15 +47,6 @@ public static class SearchEndpoint
         }
 
         return results;
-    }
-
-    internal static string CleanTitle(string title)
-    {
-        var cleaned = TextNormalizationHelpers.ParenthesesPattern().Replace(title, "");
-        cleaned = Regex.Replace(cleaned, @"\s+", " ").Trim();
-
-        // Titre entièrement entre parenthèses (rare) : garder l'original plutôt qu'une chaîne vide.
-        return cleaned.Length == 0 ? title : cleaned;
     }
 }
 

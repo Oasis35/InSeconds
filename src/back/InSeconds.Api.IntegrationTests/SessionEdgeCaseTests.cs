@@ -305,6 +305,32 @@ public class SessionEdgeCaseTests(IntegrationTestFactory factory) : IAsyncLifeti
     }
 
     [Fact]
+    public async Task StartSession_Reprise_CorrectTitleEstNettoyeDesParentheses()
+    {
+        var session = await StartSessionAsync();
+        var track = session.Tracks[0];
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var challengeTrack = await db.DailyChallengeTracks
+                .Include(t => t.Track)
+                .FirstAsync(t => t.Id == track.Id);
+            challengeTrack.Track.Title = "Lose Yourself (Remastered 2013)";
+            await db.SaveChangesAsync();
+        }
+
+        await SubmitAsync(session.SessionId, track.Id, 1m, null, null);
+
+        var resp2 = await _client.PostAsync("/api/sessions", null);
+        var resume = await resp2.Content.ReadFromJsonAsync<StartSessionResponse>();
+
+        Assert.NotNull(resume);
+        Assert.Single(resume.CompletedAnswers);
+        Assert.Equal("Lose Yourself", resume.CompletedAnswers[0].CorrectTitle);
+    }
+
+    [Fact]
     public async Task UpdateListening_AfterSubmit_MinResetToNull()
     {
         var session = await StartSessionAsync();

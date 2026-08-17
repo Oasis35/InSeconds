@@ -12,7 +12,7 @@ Doc détaillée du backend. Vue d'ensemble générale, conventions .NET globales
 - **Génération paresseuse (filet de sécurité)** : si aucun `DailyChallenge` n'existe pour `today`, `TryLazyGenerateAsync` appelle `DailyChallengeGenerator.GenerateAsync` (déterministe, seed=`DayNumber` → même résultat que le scheduler minuit). Race avec le scheduler/un autre joueur → catch sur la contrainte unique `Date`, `db.ChangeTracker.Clear()`, relecture du défi créé par le concurrent. `PoolInsufficient` → **503**.
 - **Reprise** : session existante pour (playerId, challengeId) → `Completed`→**409** `{error: already_played}`, `Abandoned`→**409** `{error: abandoned}`, `Pending`→reconstruit l'état (preview URLs, cover via `BuildCoverUrl`, `resumeFromPosition`, `CompletedAnswers`, `CurrentTrackId`/`CurrentTrackMinListenedSeconds` anti-cheat).
 - Nouvelle session : crée `GameSession(Status=Pending, TotalScore=0)`, construit les `TrackSlot` (preview+cover) pour les N tracks du défi (ordre `Position`).
-- **Response** : `StartSessionResponse(SessionId, Tracks, CurrentStreak, IsResuming, ResumeFromPosition, CompletedAnswers, CurrentTrackId?, MinListenedSeconds?)`. Codes : 200/409/503.
+- **Response** : `StartSessionResponse(SessionId, Tracks, CurrentStreak, IsResuming, ResumeFromPosition, CompletedAnswers, CurrentTrackId?, MinListenedSeconds?)`. Codes : 200/409/503. Sur reprise, `ResumedAnswer.CorrectTitle` passe par `TextNormalizationHelpers.CleanDisplayTitle` (cf. Common/Text) — même titre que celui révélé au moment de la réponse initiale.
 
 ### Sessions/SubmitAnswer — `POST /api/sessions/{sessionId}/answers`
 
@@ -27,7 +27,7 @@ Doc détaillée du backend. Vue d'ensemble générale, conventions .NET globales
 - Réinitialise le verrou anti-cheat (`CurrentTrackId=null`, `CurrentTrackMinListenedSeconds=null`).
 - **Détection de complétion** : réponses en base +1 (courante pas encore persistée) ≥ `TracksPerChallenge` et `Status==Pending` → `Completed`, `CompletedAt=UtcNow`.
 - **Streak basée sur `DailyChallenge.Date`, jamais la date de complétion** (cf. piège 18 du CLAUDE.md racine) : `CurrentStreak = LastPlayedDate == challengeDate.AddDays(-1) ? +1 : 1`, `LastPlayedDate = challengeDate`.
-- **Response** : `SubmitAnswerResponse(ArtistCorrect, TitleCorrect, Score, CorrectArtist, CorrectTitle, ListenedDurationSeconds, AverageSecondsWhenCorrect?, FailureRatePercent)`.
+- **Response** : `SubmitAnswerResponse(ArtistCorrect, TitleCorrect, Score, CorrectArtist, CorrectTitle, ListenedDurationSeconds, AverageSecondsWhenCorrect?, FailureRatePercent)` — `CorrectTitle` passe par `TextNormalizationHelpers.CleanDisplayTitle` (parenthèses/crochets retirés, cf. Common/Text) avant d'être renvoyé ; `challengeTrack.Title` (utilisé pour la comparaison `TextNormalizer.IsMatch` juste au-dessus) reste brut, sans impact sur le matching qui normalise déjà les parenthèses de son côté.
 
 ### Sessions/AbandonSession — `PUT /api/sessions/{sessionId}/abandon`
 
@@ -39,7 +39,7 @@ Doc détaillée du backend. Vue d'ensemble générale, conventions .NET globales
 
 ### Admin/Challenges/CreateChallenge — `POST /api/admin/challenges`
 
-Validation manuelle dans l'endpoint (pas FluentValidation) : 1 à `N` `DeezerTrackIds`, pas de doublons → 400 sinon. Handler (`db, DeezerClient`) : 409 si défi déjà présent pour `Date` ; réutilise le `Track` existant sinon fetch Deezer (**422** `invalid_track` si `null`) ; crée `DailyChallenge(Seed=Date.DayNumber)` + `DailyChallengeTrack(Position=i+1, DeezerRankSnapshot=i+1)`. Pas de gestion explicite de race condition ici (contrairement à `AddTrack`).
+Validation manuelle dans l'endpoint (pas FluentValidation) : 1 à **3** `DeezerTrackIds` (littéral codé en dur dans l'endpoint — `body.DeezerTrackIds.Count > 3` —, pas dérivé de `TracksPerChallenge`/`SettingsService`, contrairement à `DailyChallengeGenerator` qui lit `settings.TracksPerChallenge` ; inoffensif tant que le défaut reste 3, mais à corriger si `TracksPerChallenge` devient un jour éditable), pas de doublons → 400 sinon. Handler (`db, DeezerClient`) : 409 si défi déjà présent pour `Date` ; réutilise le `Track` existant sinon fetch Deezer (**422** `invalid_track` si `null`) ; crée `DailyChallenge(Seed=Date.DayNumber)` + `DailyChallengeTrack(Position=i+1, DeezerRankSnapshot=i+1)`. Pas de gestion explicite de race condition ici (contrairement à `AddTrack`).
 
 ### Admin/Challenges/DeezerSearch — `GET /api/admin/deezer-search?q=`
 
@@ -47,7 +47,7 @@ Validation manuelle dans l'endpoint (pas FluentValidation) : 1 à `N` `DeezerTra
 
 ### Admin/Challenges/GetChallenges — `GET /api/admin/challenges`
 
-Liste tous les `DailyChallenge` (desc par date) + tracks ordonnées par `Position`. `ChallengeDto(Id, Date, Tracks)`.
+Liste tous les `DailyChallenge` (desc par date) + tracks ordonnées par `Position`. `ChallengeDto(Id, Date, Tracks)` — `TrackDto.Title` passe par `TextNormalizationHelpers.CleanDisplayTitle` (cf. Common/Text), appliqué **après** matérialisation (`ToListAsync` sur un type anonyme intermédiaire, puis remapping en mémoire vers `ChallengeDto`/`TrackDto`) car une regex C# n'est pas traduisible dans la requête EF/SQL. Alimente la section « Historique » de l'onglet Défis admin — même nettoyage que `GetAdminStats` juste en dessous (section « Stats par défi », même onglet) : avant le 2026-08-17, seul `GetAdminStats` était nettoyé, ce qui affichait le même titre différemment selon la section.
 
 ### Admin/GenerateToday — `POST /api/admin/generate-today`
 
@@ -70,6 +70,8 @@ Délègue à `PreviewStatusRefresher.RefreshAsync` (voir ChallengeGeneration). `
 Utilise `IDbContextFactory<ApplicationDbContext>` pour **5 requêtes en parallèle**, chacune avec son propre `DbContext` (non thread-safe sinon) : `BuildChallengeStats` (30 derniers défis, min/max/moyenne/médiane, stats par track — dont `ExtendedRate` = % des réponses de ce track avec `WasExtended=true`), `BuildDailyActivity` (30 jours glissants, 0 par défaut), `BuildPlayerBreakdown` (guests/registered/actifs 7j/30j, exclut `IsDeleted`), `BuildAvailableDates`, `BuildDailyKpis` (date sélectionnée — **jour passé : Pending compté comme Abandoned**, `CompletionRate` + médiane). Médiane calculée manuellement (tri + moyenne des 2 valeurs centrales si pair).
 
 **`ChallengeStatsDto.Players`** (`IReadOnlyList<ChallengePlayerDto>`) — un `{PlayerId, Status, Score}` par `GameSession` du défi (toutes sessions, Completed/Pending/Abandoned confondues), pour que l'admin repère les joueurs qui reviennent d'un jour à l'autre (front : `ChallengesTabComponent`). `Status` est sérialisé en `string` (`s.Status.ToString()`), pas l'enum `SessionStatus` brut — évite toute ambiguïté int/string côté client généré par NSwag. `BuildChallengeStats` projette une seule fois `Sessions = c.GameSessions.Select(s => new {PlayerId, Status, TotalScore})` en DB, réutilisée en mémoire pour dériver `scores`/`pendingCount`/`abandonedCount` **et** `Players` — remplace les 3 requêtes séparées qui existaient avant (une par compteur).
+
+`TrackStatsDto.Title` passe par `TextNormalizationHelpers.CleanDisplayTitle` (cf. Common/Text) lors du mapping en mémoire (après le `ToListAsync` de `BuildChallengeStats`) — alimente la section « Stats par défi » du même onglet Défis admin que `GetChallenges` ci-dessus (même nettoyage des deux côtés depuis le 2026-08-17).
 
 ### Admin/Tracks/AddTrack — `POST /api/admin/tracks`
 
@@ -113,7 +115,7 @@ Body `UpdateTrackBody(DeezerTrackId)`. 404 introuvable, **409** `track_in_use` s
 
 Publique (pas admin). Utilise **`CachedDeezerClient`**. `q` vide/<2 → `200 []`. Projection minimaliste `DeezerSearchResult(Artist, Title)` — pas d'ID ni preview exposés côté joueur.
 
-**Nettoyage + déduplication des suggestions** (`SearchEndpoint.CleanAndDeduplicate`/`CleanTitle`, internes) : sur-demande `FetchLimit=20` résultats bruts à Deezer (au lieu de 10) pour compenser la perte due à la dédup, retire les parenthèses/crochets du titre (réutilise `TextNormalizationHelpers.ParenthesesPattern()`, la même regex que `TextNormalizer` pour la correction des réponses — pas de nouvelle regex dupliquée), collapse les espaces multiples laissés par le retrait, fallback sur le titre brut si le nettoyage donne une chaîne vide (titre entièrement parenthésé). Déduplique ensuite sur `(Artist, TitreNettoyé)` en `ToLowerInvariant()`, garde la **première occurrence** (l'ordre Deezer reflète déjà la pertinence), plafonne à `ResultLimit=10`. **Scope volontairement limité à cet endpoint public** : l'admin (`Admin/Challenges/DeezerSearch`, `DeezerClient.SearchTracksAsync` non caché) garde les titres bruts Deezer, nécessaires pour `Track.Title` en BDD.
+**Nettoyage + déduplication des suggestions** (`SearchEndpoint.CleanAndDeduplicate`, interne) : sur-demande `FetchLimit=20` résultats bruts à Deezer (au lieu de 10) pour compenser la perte due à la dédup, retire les parenthèses/crochets du titre via `TextNormalizationHelpers.CleanDisplayTitle` (même regex que `TextNormalizer` pour la correction des réponses, `ParenthesesPattern()` — pas de regex dupliquée), collapse les espaces multiples laissés par le retrait, fallback sur le titre brut si le nettoyage donne une chaîne vide (titre entièrement parenthésé). Déduplique ensuite sur `(Artist, TitreNettoyé)` en `ToLowerInvariant()`, garde la **première occurrence** (l'ordre Deezer reflète déjà la pertinence), plafonne à `ResultLimit=10`. L'admin (`Admin/Challenges/DeezerSearch`, `DeezerClient.SearchTracksAsync` non caché) garde les titres bruts Deezer, nécessaires pour `Track.Title` en BDD. `CleanDisplayTitle` est aussi appliqué, hors de cet endpoint, à tout titre révélé au joueur/admin après coup (réponse, récap, "déjà joué", stats admin) — voir Déjà implémenté racine "Nettoyage des titres affichés au-delà de l'autocomplete".
 
 ### E2E (montée uniquement en environnement `Testing`)
 
@@ -131,7 +133,7 @@ Renvoie directement `SettingsService.GetAsync()` → `AppSettings` sérialisé.
 
 ### Stats/Today — `GET /api/stats/today`
 
-`PlayerId` lu depuis `httpContext.Items[PlayerHttpContextExtensions.PlayerIdKey]` (nullable en théorie, mais le middleware le pose toujours hors `/api/admin`/`/health`). Pas de défi du jour → réponse vide par défaut. `playerId` fourni → session `Completed` du jour → `YourScore` + réponses par position + `CurrentStreak`. **2 `DbContext` distincts via factory** pour paralléliser `scoresTask` (tous scores `Completed`) et `trackStatsTask` (`TotalAnswers`/`CorrectAnswers`/`AvgSecondsCorrect`, filtrés `Completed`), + `appSettingsTask`, `Task.WhenAll`. Médiane manuelle. `FailureRatePercent = round((1 - correct/total)*100, 1)`.
+`PlayerId` lu depuis `httpContext.Items[PlayerHttpContextExtensions.PlayerIdKey]` (nullable en théorie, mais le middleware le pose toujours hors `/api/admin`/`/health`). Pas de défi du jour → réponse vide par défaut. `playerId` fourni → session `Completed` du jour → `YourScore` + réponses par position + `CurrentStreak`. **2 `DbContext` distincts via factory** pour paralléliser `scoresTask` (tous scores `Completed`) et `trackStatsTask` (`TotalAnswers`/`CorrectAnswers`/`AvgSecondsCorrect`, filtrés `Completed`), + `appSettingsTask`, `Task.WhenAll`. Médiane manuelle. `FailureRatePercent = round((1 - correct/total)*100, 1)`. `TrackStat.Title` passe par `TextNormalizationHelpers.CleanDisplayTitle` (cf. Common/Text) lors de la construction finale des `TrackStat` (après `Task.WhenAll`/matérialisation de `trackStatsTask`) — alimente l'accordéon de l'écran "déjà joué" côté front.
 
 ## Domain (entités EF)
 
@@ -186,7 +188,7 @@ Implémente `IDataProtectionKeyContext` (clés persistées en base, cf. piège 1
 
 ### `FakeDeezerHandler` (Testing)
 
-Remplace le vrai `HttpClient`. `/track/{id}` : preview vide si `id >= 9_000_000_000`, sinon URL `http://localhost:{E2E_FRONT_PORT ?? 5174}/test-audio.mp3`.
+Remplace le vrai `HttpClient`. `/track/{id}` : preview vide si `id >= 9_000_000_000`, sinon URL `http://localhost:{E2E_FRONT_PORT ?? 5174}/test-audio.mp3`. Gère aussi `/search` (réponse par défaut à un seul morceau, ou déclencheur `dedup-test` → 3 variantes parenthésées + 1 morceau distinct) — détaillé dans la section `E2E` plus bas plutôt qu'ici, car c'est là que ce comportement est consommé par les tests.
 
 ## Common/Auth
 
@@ -218,7 +220,7 @@ Chargement en 3 couches, **une seule fois au démarrage** (pas de rafraîchissem
 
 ## Common/Text
 
-- **`TextNormalizationHelpers`** (interne) : `ParenthesesPattern()` (regex générée `[\(\[].*?[\)\]]`), `RemoveAccents` (`Normalize(FormD)` + filtre `NonSpacingMark` + `Normalize(FormC)`), `LevenshteinDistance` (matrice classique).
+- **`TextNormalizationHelpers`** (interne) : `ParenthesesPattern()` (regex générée `[\(\[].*?[\)\]]`), `RemoveAccents` (`Normalize(FormD)` + filtre `NonSpacingMark` + `Normalize(FormC)`), `LevenshteinDistance` (matrice classique), `CleanDisplayTitle` (retire parenthèses/crochets + collapse espaces, fallback sur l'original si résultat vide — utilisé par l'autocomplete Deezer ET par tout titre affiché après coup au joueur/admin, cf. Déjà implémenté racine).
 - **`TextNormalizer.IsMatch(given, expected, threshold=2)`** : normalise les deux chaînes (supprime parenthèses, minuscule, accents, ne garde que lettres/chiffres/espaces, tokenise, **filtre stop-words** `["the","le","la","les","un","une","de","du","des","and","et","feat","ft","vs"]`), match exact après normalisation → `true`, sinon `LevenshteinDistance <= threshold` (2 par défaut).
 
 ## Program.cs — pipeline et DI
