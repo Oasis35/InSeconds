@@ -1,4 +1,5 @@
 using InSeconds.Api.Common.Settings;
+using InSeconds.Api.Common.Text;
 using InSeconds.Api.Domain;
 using InSeconds.Api.Features.ChallengeGeneration;
 using InSeconds.Api.Infrastructure.Deezer;
@@ -102,7 +103,7 @@ public sealed class StartSessionHandler(
                     Score:                   a.Score,
                     ListenedDurationSeconds: a.ListenedDurationSeconds,
                     CorrectArtist:           a.TrackArtist,
-                    CorrectTitle:            a.TrackTitle))
+                    CorrectTitle:            TextNormalizationHelpers.CleanDisplayTitle(a.TrackTitle)))
                 .ToList();
 
             // Index 0-based de la première track sans réponse

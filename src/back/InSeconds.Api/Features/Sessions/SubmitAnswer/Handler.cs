@@ -128,7 +128,7 @@ public sealed class SubmitAnswerHandler(
             TitleCorrect:              titleCorrect,
             Score:                     score,
             CorrectArtist:             challengeTrack.Artist,
-            CorrectTitle:              challengeTrack.Title,
+            CorrectTitle:              TextNormalizationHelpers.CleanDisplayTitle(challengeTrack.Title),
             ListenedDurationSeconds:   command.ListenedDurationSeconds,
             AverageSecondsWhenCorrect: correctAvg,
             FailureRatePercent:        failureRate));

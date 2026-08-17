@@ -23,6 +23,19 @@ internal static partial class TextNormalizationHelpers
         return sb.ToString().Normalize(NormalizationForm.FormC);
     }
 
+    // Retire les parenthèses/crochets d'un titre pour l'affichage (ex: "Titre (Radio Edit)" →
+    // "Titre"). Réutilisé partout où un titre de morceau est montré au joueur ou à l'admin
+    // (autocomplete, réponse révélée, récap, écran "déjà joué", stats admin des défis) — ne
+    // touche jamais Track.Title en base, qui reste brut (nécessaire pour le re-sync Deezer).
+    internal static string CleanDisplayTitle(string title)
+    {
+        var cleaned = ParenthesesPattern().Replace(title, "");
+        cleaned = Regex.Replace(cleaned, @"\s+", " ").Trim();
+
+        // Titre entièrement entre parenthèses (rare) : garder l'original plutôt qu'une chaîne vide.
+        return cleaned.Length == 0 ? title : cleaned;
+    }
+
     internal static int LevenshteinDistance(string a, string b)
     {
         if (a.Length == 0) return b.Length;

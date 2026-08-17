@@ -1,3 +1,4 @@
+using InSeconds.Api.Common.Text;
 using InSeconds.Api.Features.Admin.Login;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
@@ -100,7 +101,7 @@ public static class GetAdminStatsEndpoint
             var tracks = c.Tracks.Select(t => new TrackStatsDto(
                 t.Position,
                 t.Artist,
-                t.Title,
+                TextNormalizationHelpers.CleanDisplayTitle(t.Title),
                 t.TotalAnswers,
                 t.TotalAnswers == 0 ? 0 : Math.Round((double)t.ArtistCorrect / t.TotalAnswers * 100, 1),
                 t.TotalAnswers == 0 ? 0 : Math.Round((double)t.TitleCorrect  / t.TotalAnswers * 100, 1),
