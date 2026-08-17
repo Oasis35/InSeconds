@@ -1,3 +1,4 @@
+using InSeconds.Api.Common.Text;
 using InSeconds.Api.Features.Admin.Login;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -16,19 +17,29 @@ public static class GetChallengesEndpoint
             if (!LoginEndpoint.IsAdminAuthenticated(ctx))
                 return Results.Unauthorized();
 
-            var challenges = await db.DailyChallenges
+            var raw = await db.DailyChallenges
                 .AsNoTracking()
-                .Include(c => c.Tracks)
-                    .ThenInclude(t => t.Track)
                 .OrderByDescending(c => c.Date)
-                .Select(c => new ChallengeDto(
+                .Select(c => new
+                {
                     c.Id,
                     c.Date,
-                    c.Tracks
+                    Tracks = c.Tracks
                         .OrderBy(t => t.Position)
-                        .Select(t => new TrackDto(t.Position, t.Track.Artist, t.Track.Title, t.Track.DeezerTrackId))
-                        .ToList()))
+                        .Select(t => new { t.Position, t.Track.Artist, t.Track.Title, t.Track.DeezerTrackId })
+                        .ToList()
+                })
                 .ToListAsync(ct);
+
+            // Nettoyage post-matérialisation (regex C# non traduisible en SQL) — même titre
+            // affiché ici (Historique) que dans GetAdminStats (Stats par défi, même onglet).
+            var challenges = raw.Select(c => new ChallengeDto(
+                c.Id,
+                c.Date,
+                c.Tracks
+                    .Select(t => new TrackDto(t.Position, t.Artist, TextNormalizationHelpers.CleanDisplayTitle(t.Title), t.DeezerTrackId))
+                    .ToList()))
+                .ToList();
 
             return Results.Ok(challenges);
         })

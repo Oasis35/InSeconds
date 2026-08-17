@@ -130,6 +130,31 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         Assert.All(body, c => Assert.Equal(3, c.Tracks.Count));
     }
 
+    [Fact]
+    public async Task GetChallenges_TitreAvecParentheses_EstNettoye()
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var challengeTrack = await db.DailyChallengeTracks
+                .Include(t => t.Track)
+                .Include(t => t.DailyChallenge)
+                .FirstAsync(t => t.DailyChallenge.Date == today && t.Position == 1);
+            challengeTrack.Track.Title = "Lose Yourself (Remastered 2013)";
+            await db.SaveChangesAsync();
+        }
+
+        var resp = await AdminGetAsync("/api/admin/challenges");
+        var body = await resp.Content.ReadFromJsonAsync<List<ChallengeDto>>();
+        Assert.NotNull(body);
+
+        var todayChallenge = body.Single(c => c.Date == today);
+        var track = todayChallenge.Tracks.Single(t => t.Position == 1);
+        Assert.Equal("Lose Yourself", track.Title);
+    }
+
     // ── CreateChallenge ───────────────────────────────────────────────────────
 
     [Fact]
