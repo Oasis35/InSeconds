@@ -127,7 +127,7 @@ cd src/back
 dotnet test InSeconds.Api.IntegrationTests
 ```
 
-Requires Docker (Testcontainers starts a real PostgreSQL container). **98 tests** covering `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (including the per-challenge player list), `Players` (`GET /api/players/me`), `PlayerSoftDelete`, `SessionEdgeCases` (lazy expiry, streak — including finishing yesterday's challenge after midnight UTC, submit on abandoned session, UpdateListening anti-cheat), `ChallengeGeneration`, `LazyChallengeGeneration` (on-the-fly challenge regeneration), `Admin/Tracks`, `Admin/Challenges`, `Admin/RefreshPreviews`, `DeezerSearch` (public autocomplete cleanup + deduplication), title-cleaning on every display path (submitted answer, resumed session, "already played" stats, admin challenges stats), `HealthCheck`.
+Requires Docker (Testcontainers starts a real PostgreSQL container). **104 tests** covering `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (including the per-challenge player list), `Players` (`GET /api/players/me`), `PlayerSoftDelete`, `SessionEdgeCases` (lazy expiry, streak — including finishing yesterday's challenge after midnight UTC, submit on abandoned session, UpdateListening anti-cheat), `ChallengeGeneration`, `LazyChallengeGeneration` (on-the-fly challenge regeneration), `Admin/Tracks`, `Admin/Challenges`, `Admin/RefreshPreviews`, `DeezerSearch` (public autocomplete cleanup + deduplication), title-cleaning on every display path (submitted answer, resumed session, "already played" stats, admin challenges stats), `HealthCheck`.
 
 ### E2E tests (Playwright)
 
@@ -144,7 +144,7 @@ npm run e2e        # headless
 npm run e2e:ui     # interactive Playwright UI
 ```
 
-**51 tests** — 34 game tests (happy path, already-played, abandon, resume, multi-tab sync, no-challenge + automatic rebirth of a deleted challenge, share + clipboard failure, scoring, anti-cheat min duration lock, leave-confirmation guard, clear-search button, autocomplete cleanup/deduplication + keyboard navigation, service-down overlay, footer language toggle + privacy page) + 17 admin tests (login, pool table with filters, add/delete/refresh track, generate challenge, reset sessions, challenge list, browser ID display/copy, player chip "it's you" highlighting).
+**55 tests** — 34 game tests (happy path, already-played, abandon, resume, multi-tab sync, no-challenge + automatic rebirth of a deleted challenge, share + clipboard failure, scoring, anti-cheat min duration lock, leave-confirmation guard, clear-search button, autocomplete cleanup/deduplication + keyboard navigation, service-down overlay, footer language toggle + privacy page) + 21 admin tests (login, pool table with filters, add/delete/refresh track, generate challenge, reset sessions, challenge list, browser ID display/copy, player chip "it's you" highlighting).
 
 The backend runs in `ASPNETCORE_ENVIRONMENT=Testing` which activates:
 - `FakeDeezerHandler` — returns a local `test-audio.mp3`; tracks with DeezerTrackId >= 9_000_000_000 return an empty preview (5 seed tracks: The Beatles, Pink Floyd, Bob Dylan, Led Zeppelin, Fleetwood Mac) to test the refresh flow
