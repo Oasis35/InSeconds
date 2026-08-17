@@ -274,6 +274,8 @@ Les deux endpoints sont publics (mappés avant `PlayerAuthMiddleware`). Logging 
 | `ChallengeGeneration` | BackgroundService | Génère le défi quotidien à minuit UTC (retry toutes les 10 min en cas d'échec ou de pool insuffisant) — filtre les tracks sans preview active ; planification via `DailySchedule.NextUtcHour` + `DelayUntilAsync` (attente sur cible d'horloge murale — un réveil anticipé de `Task.Delay` ne saute plus de jour) |
 | `ChallengeGeneration` (refresh) | BackgroundService | `RefreshPreviewStatusService` à 23h UTC (avant la génération de minuit) — re-vérifie `Track.HasPreview` via `PreviewStatusRefresher` (lots de 10 espacés de 1,5 s, flag jamais modifié sur un échec Deezer) |
 
+**Nettoyage des titres au-delà de l'autocomplete** — `TextNormalizationHelpers.CleanDisplayTitle` (`Common/Text/`, extrait de l'ancien `SearchEndpoint.CleanTitle`) retire les parenthèses/crochets d'un titre partout où il est révélé après coup, pas seulement dans l'autocomplete : `Sessions/SubmitAnswer` (`CorrectTitle`), `Sessions/StartSession` (`ResumedAnswer.CorrectTitle` du chemin de reprise), `Stats/Today` (`TrackStat.Title`), `Admin/Stats` (`TrackStatsDto.Title`). `Track.Title` en base reste brut (nécessaire pour le re-sync Deezer), tout comme la recherche admin.
+
 ## CI
 
 Job `back` : `dotnet build --configuration Release` + `dotnet ef migrations has-pending-model-changes`. Si tu modifies une entité ou une configuration EF, **regénère la migration** sinon la CI casse.

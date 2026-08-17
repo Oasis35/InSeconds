@@ -127,7 +127,7 @@ cd src/back
 dotnet test InSeconds.Api.IntegrationTests
 ```
 
-Requires Docker (Testcontainers starts a real PostgreSQL container). **94 tests** covering `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (including the per-challenge player list), `Players` (`GET /api/players/me`), `PlayerSoftDelete`, `SessionEdgeCases` (lazy expiry, streak — including finishing yesterday's challenge after midnight UTC, submit on abandoned session, UpdateListening anti-cheat), `ChallengeGeneration`, `LazyChallengeGeneration` (on-the-fly challenge regeneration), `Admin/Tracks`, `Admin/Challenges`, `Admin/RefreshPreviews`, `DeezerSearch` (public autocomplete cleanup + deduplication), `HealthCheck`.
+Requires Docker (Testcontainers starts a real PostgreSQL container). **98 tests** covering `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (including the per-challenge player list), `Players` (`GET /api/players/me`), `PlayerSoftDelete`, `SessionEdgeCases` (lazy expiry, streak — including finishing yesterday's challenge after midnight UTC, submit on abandoned session, UpdateListening anti-cheat), `ChallengeGeneration`, `LazyChallengeGeneration` (on-the-fly challenge regeneration), `Admin/Tracks`, `Admin/Challenges`, `Admin/RefreshPreviews`, `DeezerSearch` (public autocomplete cleanup + deduplication), title-cleaning on every display path (submitted answer, resumed session, "already played" stats, admin challenges stats), `HealthCheck`.
 
 ### E2E tests (Playwright)
 

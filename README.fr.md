@@ -127,7 +127,7 @@ cd src/back
 dotnet test InSeconds.Api.IntegrationTests
 ```
 
-Nécessite Docker (Testcontainers démarre un vrai conteneur PostgreSQL). **94 tests** couvrant `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (dont la liste des joueurs par défi), `Players` (`GET /api/players/me`), `PlayerSoftDelete`, `SessionEdgeCases` (expiry paresseuse, streak — dont défi de la veille terminé après minuit UTC, submit sur session abandonnée, UpdateListening anti-triche), `ChallengeGeneration`, `LazyChallengeGeneration` (régénération du défi à la volée), `Admin/Tracks`, `Admin/Challenges`, `Admin/RefreshPreviews`, `DeezerSearch` (nettoyage + déduplication de l'autocomplete public), `HealthCheck`.
+Nécessite Docker (Testcontainers démarre un vrai conteneur PostgreSQL). **98 tests** couvrant `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (dont la liste des joueurs par défi), `Players` (`GET /api/players/me`), `PlayerSoftDelete`, `SessionEdgeCases` (expiry paresseuse, streak — dont défi de la veille terminé après minuit UTC, submit sur session abandonnée, UpdateListening anti-triche), `ChallengeGeneration`, `LazyChallengeGeneration` (régénération du défi à la volée), `Admin/Tracks`, `Admin/Challenges`, `Admin/RefreshPreviews`, `DeezerSearch` (nettoyage + déduplication de l'autocomplete public), nettoyage des titres sur tous les écrans d'affichage (réponse soumise, reprise, stats "déjà joué", stats admin), `HealthCheck`.
 
 ### Tests E2E (Playwright)
 
