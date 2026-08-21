@@ -15,7 +15,7 @@ public sealed class CookieAuthService(
 
     public async Task<Guid> ResolveOrCreatePlayerAsync(HttpContext httpContext, CancellationToken ct = default)
     {
-        var player = await TryResolveExistingPlayerAsync(httpContext, ct);
+        var player = await TryResolveExistingPlayerEntityAsync(httpContext, ct);
 
         if (player is null)
         {
@@ -39,7 +39,19 @@ public sealed class CookieAuthService(
         return player.Id;
     }
 
-    private async Task<Player?> TryResolveExistingPlayerAsync(HttpContext httpContext, CancellationToken ct)
+    public async Task<Guid?> TryResolvePlayerAsync(HttpContext httpContext, CancellationToken ct = default)
+    {
+        var player = await TryResolveExistingPlayerEntityAsync(httpContext, ct);
+        if (player is null)
+            return null;
+
+        player.LastSeenAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+
+        return player.Id;
+    }
+
+    private async Task<Player?> TryResolveExistingPlayerEntityAsync(HttpContext httpContext, CancellationToken ct)
     {
         if (!httpContext.Request.Cookies.TryGetValue(CookieName, out var rawValue))
             return null;

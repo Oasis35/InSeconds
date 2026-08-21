@@ -17,12 +17,12 @@ public sealed class PlayerAuthMiddlewareTests
     }
 
     [Fact]
-    public async Task InvokeAsync_OnPlayerRoute_ResolvesPlayerAndStoresInItems()
+    public async Task InvokeAsync_OnPlayerRoute_WhenPlayerResolved_StoresInItems()
     {
         // Arrange
         var expectedId = Guid.NewGuid();
         var cookieAuth = Substitute.For<ICookieAuthService>();
-        cookieAuth.ResolveOrCreatePlayerAsync(Arg.Any<HttpContext>(), Arg.Any<CancellationToken>())
+        cookieAuth.TryResolvePlayerAsync(Arg.Any<HttpContext>(), Arg.Any<CancellationToken>())
             .Returns(expectedId);
 
         var middleware = new PlayerAuthMiddleware(_ => Task.CompletedTask);
@@ -33,7 +33,27 @@ public sealed class PlayerAuthMiddlewareTests
 
         // Assert
         httpContext.Items[PlayerHttpContextExtensions.PlayerIdKey].Should().Be(expectedId);
-        await cookieAuth.Received(1).ResolveOrCreatePlayerAsync(httpContext, Arg.Any<CancellationToken>());
+        await cookieAuth.Received(1).TryResolvePlayerAsync(httpContext, Arg.Any<CancellationToken>());
+        await cookieAuth.DidNotReceive().ResolveOrCreatePlayerAsync(Arg.Any<HttpContext>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task InvokeAsync_OnPlayerRoute_WhenNoCookie_DoesNotStorePlayerIdAndDoesNotCreate()
+    {
+        // Arrange : visiteur sans cookie (jamais joué) — aucun Player ne doit être créé
+        var cookieAuth = Substitute.For<ICookieAuthService>();
+        cookieAuth.TryResolvePlayerAsync(Arg.Any<HttpContext>(), Arg.Any<CancellationToken>())
+            .Returns((Guid?)null);
+
+        var middleware = new PlayerAuthMiddleware(_ => Task.CompletedTask);
+        var httpContext = CreateHttpContext("/api/settings");
+
+        // Act
+        await middleware.InvokeAsync(httpContext, cookieAuth);
+
+        // Assert
+        httpContext.Items.Should().NotContainKey(PlayerHttpContextExtensions.PlayerIdKey);
+        await cookieAuth.DidNotReceive().ResolveOrCreatePlayerAsync(Arg.Any<HttpContext>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -51,6 +71,7 @@ public sealed class PlayerAuthMiddlewareTests
         await middleware.InvokeAsync(httpContext, cookieAuth);
 
         // Assert
+        await cookieAuth.DidNotReceive().TryResolvePlayerAsync(Arg.Any<HttpContext>(), Arg.Any<CancellationToken>());
         await cookieAuth.DidNotReceive().ResolveOrCreatePlayerAsync(Arg.Any<HttpContext>(), Arg.Any<CancellationToken>());
         httpContext.Items.Should().NotContainKey(PlayerHttpContextExtensions.PlayerIdKey);
     }

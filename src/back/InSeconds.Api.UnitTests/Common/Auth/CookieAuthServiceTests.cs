@@ -141,6 +141,50 @@ public sealed class CookieAuthServiceTests
     }
 
     [Fact]
+    public async Task TryResolvePlayer_WhenNoCookie_ReturnsNullAndCreatesNoPlayer()
+    {
+        // Arrange
+        await using var db = CreateDbContext();
+        var service = CreateService(db);
+        var httpContext = CreateHttpContext();
+
+        // Act
+        var playerId = await service.TryResolvePlayerAsync(httpContext);
+
+        // Assert
+        playerId.Should().BeNull();
+        (await db.Players.CountAsync()).Should().Be(0);
+        httpContext.Response.Headers.ContainsKey("Set-Cookie").Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task TryResolvePlayer_WhenValidCookie_ReturnsExistingPlayerAndUpdatesLastSeenAt()
+    {
+        // Arrange
+        await using var db = CreateDbContext();
+        var service = CreateService(db);
+
+        var firstContext = CreateHttpContext();
+        var createdId = await service.ResolveOrCreatePlayerAsync(firstContext);
+
+        var setCookieHeader = firstContext.Response.Headers["Set-Cookie"].ToString();
+        var cookieValue = setCookieHeader
+            .Split(';')[0]
+            .Replace($"{CookieAuthService.CookieName}=", "");
+
+        var secondContext = CreateHttpContext();
+        secondContext.Request.Headers["Cookie"] = $"{CookieAuthService.CookieName}={cookieValue}";
+
+        // Act
+        var resolvedPlayerId = await service.TryResolvePlayerAsync(secondContext);
+
+        // Assert
+        resolvedPlayerId.Should().Be(createdId);
+        (await db.Players.CountAsync()).Should().Be(1);
+        (await db.Players.FindAsync(createdId))!.LastSeenAt.Should().NotBeNull();
+    }
+
+    [Fact]
     public async Task ResolveOrCreate_InProduction_SetsCookieSecure()
     {
         // Arrange

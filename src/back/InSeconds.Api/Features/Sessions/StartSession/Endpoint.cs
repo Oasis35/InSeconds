@@ -9,10 +9,14 @@ public static class StartSessionEndpoint
     {
         routes.MapPost("/api/sessions", async (
             HttpContext httpContext,
+            ICookieAuthService cookieAuth,
             IMessageBus bus,
             CancellationToken ct) =>
         {
-            var playerId = httpContext.GetPlayerId();
+            // Seul point d'entrée qui crée un Player : démarrer une partie est le seul
+            // événement qui justifie une ligne en base (cf. CLAUDE.md — pas de pollution
+            // Players pour un simple chargement de page).
+            var playerId = await cookieAuth.ResolveOrCreatePlayerAsync(httpContext, ct);
             return await bus.InvokeAsync<IResult>(new StartSessionCommand(playerId), ct);
         })
         .WithName("StartSession")
