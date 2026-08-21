@@ -13,8 +13,13 @@ public static class AbandonSessionEndpoint
             IMessageBus bus,
             CancellationToken ct) =>
         {
-            var playerId = httpContext.GetPlayerId();
-            var command  = new AbandonSessionCommand(playerId, sessionId);
+            // Pas de Player résolu = visiteur n'ayant jamais démarré de partie : aucune
+            // session ne peut lui appartenir.
+            var playerId = httpContext.GetPlayerIdOrNull();
+            if (playerId is null)
+                return Results.NotFound();
+
+            var command = new AbandonSessionCommand(playerId.Value, sessionId);
             return await bus.InvokeAsync<IResult>(command, ct);
         })
         .WithName("AbandonSession")

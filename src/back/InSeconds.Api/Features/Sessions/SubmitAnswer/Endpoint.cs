@@ -14,10 +14,14 @@ public static class SubmitAnswerEndpoint
             IMessageBus bus,
             CancellationToken ct) =>
         {
-            var playerId = httpContext.GetPlayerId();
+            // Pas de Player résolu = visiteur n'ayant jamais démarré de partie (donc jamais
+            // eu de cookie posé par StartSession) : aucune session ne peut lui appartenir.
+            var playerId = httpContext.GetPlayerIdOrNull();
+            if (playerId is null)
+                return Results.NotFound();
 
             var command = new SubmitAnswerCommand(
-                PlayerId:                playerId,
+                PlayerId:                playerId.Value,
                 SessionId:               sessionId,
                 DailyChallengeTrackId:   body.DailyChallengeTrackId,
                 ListenedDurationSeconds: body.ListenedDurationSeconds,
