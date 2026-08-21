@@ -1,6 +1,6 @@
 # InSeconds — Liste des Tâches
 
-> Mis à jour le 2026-08-17.
+> Mis à jour le 2026-08-21.
 
 ## ✅ Bootstrap projet
 
@@ -53,8 +53,9 @@
 - [x] Dashboard admin redesigné : KPI tiles jour sélectionné (complétés, abandons, taux de complétion, score médian), sélecteur de jour (← → sur les dates ayant un défi), barres 30j cliquables (jours sans activité affichés à zéro), `GET /api/admin/stats?date=` (param date, `AvailableDates`, `SelectedDayKpis`, Pending→Abandoned pour les jours passés)
 - [x] **Corrections d'incohérences trouvées lors d'un audit de code** (2026-07-16) — `/api/admin/login` invoque maintenant réellement `LoginHandler` via le bus Wolverine au lieu de dupliquer sa logique dans l'endpoint (le handler était du code mort, testé mais jamais exécuté) ; `DeezerRankSnapshot` posé de façon cohérente (`i+1`) par `DailyChallengeGenerator` et le seed E2E, comme `CreateChallengeHandler` (avant toujours `0` sur les deux premiers chemins)
 - [x] **Refonte de la prolongation « écouter plus »** (2026-07-17) — plus de malus de score (`ScoreCalculator.Calculate` n'a plus de paramètre `wasExtended` ; le score dépend uniquement du palier finalement écouté, direct ou prolongé) ; prolongations libres et chaînables côté front (`AudioPlayerService.extend()`, plus de limite à une seule), comportement dual selon que l'audio joue encore (continue depuis la position réelle) ou non (relit depuis le début) ; setting `MaxExtensionsPerAnswer` supprimé (jamais appliqué nulle part) via la migration `RemoveMaxExtensionsPerAnswerSetting` ; `GameSessionAnswer.WasExtended` conservé uniquement pour les stats admin — nouveau champ `TrackStatsDto.ExtendedRate` (% de réponses prolongées) affiché dans l'onglet Défis
-- [x] **`GET /api/players/me`** (2026-08-15) — slice `Features/Players/GetCurrentPlayer/`, expose le `PlayerId` du cookie du navigateur courant (déjà résolu par `PlayerAuthMiddleware`, aucune requête DB supplémentaire) ; nécessaire côté front car le cookie `authToken` est `HttpOnly` et chiffré (Data Protection), donc illisible/indéchiffrable côté client
+- [x] **`GET /api/players/me`** (2026-08-15) — slice `Features/Players/GetCurrentPlayer/`, expose le `PlayerId` du cookie du navigateur courant (déjà résolu par `PlayerAuthMiddleware`, aucune requête DB supplémentaire) ; nécessaire côté front car le cookie `authToken` est `HttpOnly` et chiffré (Data Protection), donc illisible/indéchiffrable côté client. **Mise à jour (2026-08-21)** : depuis la création paresseuse ci-dessous, cet endpoint appelle directement `ResolveOrCreatePlayerAsync` (donc une requête/écriture DB si besoin) au lieu de se contenter de relire ce que le middleware avait déjà résolu.
 - [x] **`GetAdminStats` renvoie la liste des joueurs par défi** (2026-08-15) — `ChallengeStatsDto.Players` (`{PlayerId, Status, Score}` par session, Completed/Pending/Abandoned) pour repérer les joueurs qui reviennent d'un jour à l'autre ; `BuildChallengeStats` mutualise en une seule projection `Sessions` ce qui remplaçait 3 requêtes séparées (scores/pending/abandoned)
+- [x] **Création paresseuse du Player** (2026-08-21) — `PlayerAuthMiddleware` ne crée plus de `Player` par défaut sur chaque requête `/api/*` (un simple chargement de page — settings, autocomplete Deezer, stats/today — ne crée plus de ligne en base). `ICookieAuthService` expose deux méthodes : `ResolveOrCreatePlayerAsync` (crée si besoin, réservée à `StartSession` et `GetCurrentPlayer`) et `TryResolvePlayerAsync` (résout sans jamais créer, utilisée par le middleware et par tous les autres endpoints joueur via `GetPlayerIdOrNull()`). Migration `PurgeUnplayedPlayers` (one-shot, data-only) pour nettoyer les `Players` existants sans aucune `GameSession`.
 
 ## ✅ Frontend
 

@@ -59,6 +59,7 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - Stats après chaque réponse : temps du joueur, moyenne des joueurs ayant trouvé, % d'échec
 - Services Common : `TextNormalizer` (Levenshtein), `ScoreCalculator`, `SettingsService`
 - `CookieAuthService` — résout/crée Player guest, cookie HttpOnly `SameSite=None` en prod
+- **Création paresseuse du Player** (2026-08-21) — un simple chargement de page ne crée plus de ligne `Players` : seuls `POST /api/sessions` (démarrer une partie) et `GET /api/players/me` (admin) créent un Player à la demande ; `PlayerAuthMiddleware` se contente de résoudre un Player existant sans jamais en créer. Migration `PurgeUnplayedPlayers` (one-shot) pour nettoyer les Players existants sans aucune session.
 - `playerAuthInterceptor` Angular — `withCredentials: true` sur toutes les requêtes joueur
 - `DeezerClient` — recherche + preview + extraction `CoverHash`
 - Settings via `IOptions<AppSettings>` chargé depuis la BD au boot (ADO.NET brut)
@@ -124,10 +125,10 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 
 Le joueur peut jouer le défi du jour **sans créer de compte** :
 
-- Un `Player { IsGuest=true, Pseudo=null }` est créé automatiquement au 1ᵉʳ appel
+- Un `Player { IsGuest=true, Pseudo=null }` est créé au moment où le joueur démarre réellement une partie (`POST /api/sessions`) — **pas** au simple chargement de la page (cf. "Création paresseuse du Player" ci-dessus)
 - Un cookie HTTP-only signé porte le `Player.AuthToken` pour le reconnaître
 - Pas de leaderboard (décision délibérée — app volontairement simple, stats globales suffisent)
-- Cleanup périodique des guests inactifs > 30 jours (à implémenter)
+- Cleanup périodique des guests inactifs > 30 jours (à implémenter — la migration `PurgeUnplayedPlayers` n'est qu'un nettoyage ponctuel des Players jamais joués, pas une purge récurrente)
 
 ---
 
