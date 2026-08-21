@@ -221,7 +221,10 @@ public sealed class SettingsService(IOptions<AppSettings> options)
 
 ### CookieAuthService
 
-Résout ou crée un `Player` guest à partir du cookie HTTP-only signé. `SameSite=None; Secure=true` en prod (cross-origin Northflank).
+Résout un `Player` guest à partir du cookie HTTP-only signé. `SameSite=None; Secure=true` en prod (cross-origin Northflank). Deux méthodes sur `ICookieAuthService` :
+
+- `ResolveOrCreatePlayerAsync` — crée un `Player` si aucun n'est résolu (et pose le cookie). Réservé aux deux seuls points d'entrée qui doivent en créer un : `StartSession` (démarrer une partie) et `GetCurrentPlayer` (admin).
+- `TryResolvePlayerAsync` — résout sans jamais créer, retourne `null` sinon. Utilisé par `PlayerAuthMiddleware` sur toutes les autres routes joueur (settings, autocomplete, stats/today...) — **création paresseuse du Player** (2026-08-21) : un simple chargement de page ne crée plus de ligne `Players` en base.
 
 **Clés Data Protection persistées en base** : le cookie est chiffré avec les clés ASP.NET Data Protection ; elles sont stockées dans la table `DataProtectionKeys` via `PersistKeysToDbContext<ApplicationDbContext>()` (package `Microsoft.AspNetCore.DataProtection.EntityFrameworkCore`, migration `PersistDataProtectionKeys`). Sans cette persistance, chaque redémarrage/redéploiement Northflank régénérait les clés et invalidait tous les cookies joueurs (streaks et historiques perdus).
 
@@ -259,7 +262,7 @@ Les deux endpoints sont publics (mappés avant `PlayerAuthMiddleware`). Logging 
 | `Sessions/AbandonSession` | `PUT /api/sessions/{id}/abandon` | Marque une session Pending comme abandonnée |
 | `Stats/Today` | `GET /api/stats/today` | Score joueur, médiane, stats par morceau. `TrackStat` inclut `ArtistCorrect`/`TitleCorrect`/`ListenedDurationSeconds` (nullable — remplis seulement si le joueur a une session `Completed`) |
 | `Settings/GetSettings` | `GET /api/settings` | Expose les settings publics (paliers, timer, scores) |
-| `Players/GetCurrentPlayer` | `GET /api/players/me` | Expose le `PlayerId` du cookie du navigateur courant (déjà résolu par `PlayerAuthMiddleware`) — utilisé par l'admin pour afficher/copier son propre ID et le reconnaître dans les listes de joueurs |
+| `Players/GetCurrentPlayer` | `GET /api/players/me` | Résout **et crée si besoin** le `Player` du cookie du navigateur courant (`ResolveOrCreatePlayerAsync`, pas juste une lecture du middleware) — utilisé par l'admin pour afficher/copier son propre ID et le reconnaître dans les listes de joueurs |
 | `Admin/Login` | `POST /api/admin/login` | Génère un Bearer token admin |
 | `Admin/Tracks/GetTracks` | `GET /api/admin/tracks` | Liste Available / Used (`TrackDto.HasPreview` lu depuis la DB) |
 | `Admin/Tracks/AddTrack` | `POST /api/admin/tracks` | Ajoute un morceau au pool (upsert sur DeezerTrackId) |

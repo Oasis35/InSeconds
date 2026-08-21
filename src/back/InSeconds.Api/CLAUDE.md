@@ -6,7 +6,7 @@ Doc détaillée du backend. Vue d'ensemble générale, conventions .NET globales
 
 ### Sessions/StartSession — `POST /api/sessions`
 
-`StartSessionCommand(Guid PlayerId)` (PlayerId via `httpContext.GetPlayerId()`). Validator vide. `StartSessionHandler(db, CachedDeezerClient, SettingsService, DailyChallengeGenerator, logger)`.
+`StartSessionCommand(Guid PlayerId)` (PlayerId via `ICookieAuthService.ResolveOrCreatePlayerAsync(httpContext, ct)` appelé directement dans l'endpoint — **pas** `httpContext.GetPlayerId()`/le middleware, cf. Common/Auth : `StartSession` est le seul point d'entrée joueur qui crée un Player). Validator vide. `StartSessionHandler(db, CachedDeezerClient, SettingsService, DailyChallengeGenerator, logger)`.
 
 - **Expiry paresseuse** : à chaque appel, toutes les sessions `Pending` du joueur dont `DailyChallenge.Date < today` basculent en `Abandoned` (`AbandonedAt=UtcNow`) avant tout traitement.
 - **Génération paresseuse (filet de sécurité)** : si aucun `DailyChallenge` n'existe pour `today`, `TryLazyGenerateAsync` appelle `DailyChallengeGenerator.GenerateAsync` (déterministe, seed=`DayNumber` → même résultat que le scheduler minuit). Race avec le scheduler/un autre joueur → catch sur la contrainte unique `Date`, `db.ChangeTracker.Clear()`, relecture du défi créé par le concurrent. `PoolInsufficient` → **503**.
@@ -192,9 +192,13 @@ Remplace le vrai `HttpClient`. `/track/{id}` : preview vide si `id >= 9_000_000_
 
 ## Common/Auth
 
-- **`CookieAuthService`** : `CookieName="authToken"`, durée 90 jours. `ResolveOrCreatePlayerAsync` : résout via `IDataProtector.Unprotect` (catch générique si falsifié/clé expirée → traité comme absent), sinon crée un invité (`IsGuid=true`). **Cookie conditionné à l'environnement** : `SameSite=Strict, Secure=false` en Dev/Testing ; `SameSite=None, Secure=true` sinon (cross-site prod — cf. piège 7 racine).
-- **`PlayerAuthMiddleware`** : exécuté sur toutes les requêtes sauf `/api/admin` et `/health`. Stocke `PlayerId` dans `httpContext.Items[PlayerHttpContextExtensions.PlayerIdKey]`.
-- **`PlayerHttpContextExtensions.GetPlayerId`** : throw si absent (suppose le middleware toujours actif).
+- **`CookieAuthService`** : `CookieName="authToken"`, durée 90 jours. Deux méthodes distinctes sur `ICookieAuthService` :
+  - `ResolveOrCreatePlayerAsync` : résout via `IDataProtector.Unprotect` (catch générique si falsifié/clé expirée → traité comme absent), sinon **crée** un invité (`IsGuest=true`) et pose le cookie. Réservé aux deux seuls points d'entrée qui doivent créer un Player : `StartSessionEndpoint` (démarrer une partie) et `GetCurrentPlayerEndpoint` (admin, cf. ci-dessous).
+  - `TryResolvePlayerAsync` : même résolution, **ne crée jamais** de Player ni de cookie — retourne `null` si absent/invalide/inconnu. Met juste à jour `LastSeenAt` si un Player existant est trouvé.
+  **Cookie conditionné à l'environnement** : `SameSite=Strict, Secure=false` en Dev/Testing ; `SameSite=None, Secure=true` sinon (cross-site prod — cf. piège 7 racine).
+- **`PlayerAuthMiddleware`** : exécuté sur toutes les requêtes sauf `/api/admin` et `/health`, appelle `TryResolvePlayerAsync` (jamais `ResolveOrCreatePlayerAsync`) — **création paresseuse du Player** (2026-08-21) : un simple chargement de page (`/api/settings`, autocomplete Deezer, `/api/stats/today`...) ne crée plus de ligne en base, seul un vrai démarrage de partie le fait. Stocke `PlayerId` dans `httpContext.Items[PlayerHttpContextExtensions.PlayerIdKey]` **seulement si résolu** (sinon la clé est absente).
+- **`PlayerHttpContextExtensions`** : `GetPlayerId` throw si absent — n'est plus appelé par aucun endpoint depuis le passage à la création paresseuse (gardé/testé comme utilitaire générique pour un futur endpoint qui voudrait vraiment garantir la présence). `GetPlayerIdOrNull` retourne `null` sans throw : utilisé par **tous** les endpoints joueur hors `StartSession`/`GetCurrentPlayer`, y compris `SubmitAnswer`/`AbandonSession`/`UpdateListening` (répondent **404** si `null` — un visiteur sans cookie n'a par construction aucune session) et `Stats/Today` (répond un état "pas encore joué").
+- **`GetCurrentPlayerEndpoint`** (`GET /api/players/me`) appelle `ResolveOrCreatePlayerAsync` directement (pas de dépendance au middleware) — seul usage actuel : `BrowserIdComponent` (admin), qui doit toujours avoir un ID navigateur affiché même si l'admin ne joue jamais. Ne pas généraliser cet appel à d'autres endpoints publics sans besoin explicite, ça recréerait la pollution corrigée ci-dessus.
 
 ## Common/Scoring — `ScoreCalculator`
 

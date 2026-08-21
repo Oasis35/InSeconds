@@ -11,10 +11,8 @@ public static class TodayStatsEndpoint
             TodayStatsHandler handler,
             CancellationToken ct) =>
         {
-            // PlayerId peut être absent si le middleware n'a pas résolu (ne devrait pas arriver)
-            Guid? playerId = httpContext.Items.TryGetValue(PlayerHttpContextExtensions.PlayerIdKey, out var val) && val is Guid id
-                ? id
-                : null;
+            // PlayerId absent = visiteur n'ayant jamais démarré de partie (pas de Player créé)
+            var playerId = httpContext.GetPlayerIdOrNull();
 
             return await handler.Handle(playerId, ct);
         })

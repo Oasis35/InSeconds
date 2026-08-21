@@ -59,8 +59,9 @@ public class PlayerSoftDeleteTests(IntegrationTestFactory factory) : IAsyncLifet
         // ci-dessous, sinon il fausse le SingleAsync/FirstAsync (cf. SessionEdgeCaseTests.cs).
         var devPlayerId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001");
 
-        // N'importe quel appel non-admin déclenche la création du guest via le middleware
-        await _client.GetAsync("/api/settings");
+        // Depuis la création paresseuse (2026-08-21), seul un vrai démarrage de partie crée
+        // le guest — /api/settings ne crée plus rien (cf. CLAUDE.md, "Création paresseuse du Player").
+        await _client.PostAsync("/api/sessions", null);
 
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -72,7 +73,7 @@ public class PlayerSoftDeleteTests(IntegrationTestFactory factory) : IAsyncLifet
 
         // Nouveau client (cookie différent) → nouveau guest
         var freshClient = factory.CreateClient();
-        await freshClient.GetAsync("/api/settings");
+        await freshClient.PostAsync("/api/sessions", null);
 
         var player2 = await db.Players.FirstAsync(p => p.Id != player1.Id && p.Id != devPlayerId);
 

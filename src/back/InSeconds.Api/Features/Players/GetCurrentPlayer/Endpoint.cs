@@ -6,8 +6,14 @@ public static class GetCurrentPlayerEndpoint
 {
     public static IEndpointRouteBuilder MapGetCurrentPlayer(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/players/me", (HttpContext ctx) =>
-            Results.Ok(new GetCurrentPlayerResponse(ctx.GetPlayerId())));
+        // Usage actuel : uniquement BrowserIdComponent (admin), pas le flow joueur —
+        // on garde ici la création à la demande (ResolveOrCreatePlayerAsync) pour que
+        // l'admin ait toujours un ID navigateur affiché, même s'il ne joue jamais.
+        app.MapGet("/api/players/me", async (HttpContext ctx, ICookieAuthService cookieAuth, CancellationToken ct) =>
+        {
+            var playerId = await cookieAuth.ResolveOrCreatePlayerAsync(ctx, ct);
+            return Results.Ok(new GetCurrentPlayerResponse(playerId));
+        });
 
         return app;
     }
