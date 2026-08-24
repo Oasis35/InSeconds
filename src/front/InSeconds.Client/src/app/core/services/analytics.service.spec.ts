@@ -28,6 +28,19 @@ describe('AnalyticsService', () => {
       expect(window.dataLayer!.some((entry) => Array.isArray(entry) && entry[0] === 'config')).toBeTrue();
     });
 
+    it('should grant Consent Mode v2 analytics_storage before configuring gtag (sinon gtag.js n\'envoie aucun hit)', () => {
+      service.enable();
+
+      const consentIndex = window.dataLayer!.findIndex(
+        (entry) => Array.isArray(entry) && entry[0] === 'consent' && entry[1] === 'update',
+      );
+      const configIndex = window.dataLayer!.findIndex((entry) => Array.isArray(entry) && entry[0] === 'config');
+
+      expect(consentIndex).toBeGreaterThan(-1);
+      expect((window.dataLayer![consentIndex] as unknown[])[2]).toEqual({ analytics_storage: 'granted' });
+      expect(consentIndex).toBeLessThan(configIndex);
+    });
+
     it('should inject the gtag.js script exactly once even if called twice', () => {
       service.enable();
       service.enable();
