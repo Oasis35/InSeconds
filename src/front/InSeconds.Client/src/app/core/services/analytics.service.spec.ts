@@ -33,7 +33,7 @@ describe('AnalyticsService', () => {
       service.enable();
 
       const scripts = document.querySelectorAll('script[src*="googletagmanager"]');
-      expect(scripts.length).toBe(1);
+      expect(scripts).toHaveSize(1);
     });
   });
 
