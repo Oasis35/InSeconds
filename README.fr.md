@@ -16,6 +16,7 @@
 - Partage de score en format emoji Wordle (copie dans le presse-papier)
 - Disponible en français et en anglais — détecté automatiquement depuis le navigateur, changeable à tout moment depuis le pied de page (choix sauvegardé en localStorage)
 - Page politique de confidentialité sur `/confidentialite` (alias `/privacy`)
+- Bandeau de consentement cookies (RGPD) thémé/traduit avec le reste du site ; Google Analytics n'est chargé qu'après acceptation explicite
 
 ## Démarrage rapide
 
@@ -93,7 +94,7 @@ Workflow GitHub Actions sur chaque push et chaque PR vers `main` :
 - **Backend** — build Release + `dotnet ef migrations has-pending-model-changes`
 - **Tests unitaires** — `dotnet test` sur `InSeconds.Api.UnitTests` (xUnit, pas de BD requise)
 - **Frontend** — `npm ci` + build production
-- **Tests unitaires frontend** — `ng test --watch=false --browsers=ChromeHeadless` (Karma + Jasmine, 142 tests)
+- **Tests unitaires frontend** — `ng test --watch=false --browsers=ChromeHeadless` (Karma + Jasmine, 153 tests)
 - **Tests d'intégration** — `dotnet test` sur `InSeconds.Api.IntegrationTests` (Testcontainers crée un conteneur PostgreSQL réel, pas de YAML supplémentaire)
 - **E2E** — tests Playwright (Chromium) contre un vrai backend en mode `Testing` avec un service PostgreSQL — s'exécute après tous les jobs précédents
 - **Smoke test headers de cache nginx** — construit et lance la vraie image Docker de prod (`Dockerfile.prod`), vérifie les headers `Cache-Control` via `curl` (`scripts/check-nginx-cache-headers.sh`) — seul job qui teste réellement `nginx.conf`
@@ -118,7 +119,7 @@ cd src/front/InSeconds.Client
 npx ng test --watch=false --browsers=ChromeHeadless
 ```
 
-**142 tests** (Karma + Jasmine) couvrant `App`, `GameService`, `SettingsService`, `LanguageService`, `GameFooterComponent` (toggle langue), `AdminHttpService`, `AdminStatsService`, `AdminPoolService` (autonomie du pool), `BlindRoundComponent` (navigation clavier de l'autocomplete), `ChallengesTabComponent` (chips d'identité joueur), `ClipboardService`, `PlayerIdentityService`, `BrowserIdComponent`. Utilise `HttpTestingController` — pas de vraies requêtes HTTP.
+**153 tests** (Karma + Jasmine) couvrant `App`, `GameService`, `SettingsService`, `LanguageService`, `GameFooterComponent` (toggle langue + gestion cookies), `AdminHttpService`, `AdminStatsService`, `AdminPoolService` (autonomie du pool), `BlindRoundComponent` (navigation clavier de l'autocomplete), `ChallengesTabComponent` (chips d'identité joueur), `ClipboardService`, `PlayerIdentityService`, `BrowserIdComponent`, `AnalyticsService` (chargement conditionnel gtag.js, Consent Mode v2), `CookieConsentService` (synchro analytics selon consentement, langue), `PrivacyComponent`. Utilise `HttpTestingController` — pas de vraies requêtes HTTP.
 
 ### Tests d'intégration (backend)
 
