@@ -100,6 +100,55 @@ h1, h2, h3, .font-display {
   to   { background-position: 0 3px; }
 }
 
+/* ── Thème vanilla-cookieconsent — reprend la palette InSeconds ──────────
+   Variables du plugin (préfixe --cc-*), voir node_modules/vanilla-cookieconsent/dist/cookieconsent.css.
+   Pas de custom CSS de layout : uniquement des overrides de couleurs/police. */
+#cc-main {
+  --cc-font-family: var(--font-body);
+  --cc-bg: var(--bg-surface-2);
+  --cc-primary-color: var(--text-hi);
+  --cc-secondary-color: var(--text-muted);
+  --cc-modal-border-radius: 1rem;
+  --cc-btn-border-radius: 999px;
+  --cc-separator-border-color: var(--border-subtle);
+  --cc-cookie-category-block-bg: rgb(var(--rgb-panel) / 0.5);
+  --cc-cookie-category-block-border: var(--border-subtle);
+  --cc-cookie-category-block-hover-bg: rgb(var(--rgb-panel) / 0.8);
+  --cc-cookie-category-block-hover-border: var(--border-medium);
+  --cc-cookie-category-expanded-block-bg: rgb(var(--rgb-panel) / 0.5);
+  --cc-cookie-category-expanded-block-hover-bg: rgb(var(--rgb-panel) / 0.8);
+  --cc-section-category-border: var(--border-subtle);
+  --cc-overlay-bg: var(--overlay-dark);
+  --cc-link-color: var(--color-accent-2);
+
+  --cc-btn-primary-bg: var(--bg-primary);
+  --cc-btn-primary-border-color: var(--bg-primary);
+  --cc-btn-primary-color: var(--text-on-primary);
+  --cc-btn-primary-hover-bg: var(--bg-primary-dk);
+  --cc-btn-primary-hover-border-color: var(--bg-primary-dk);
+  --cc-btn-primary-hover-color: var(--text-on-primary);
+
+  --cc-btn-secondary-bg: transparent;
+  --cc-btn-secondary-border-color: var(--border-strong);
+  --cc-btn-secondary-color: var(--text-hi);
+  --cc-btn-secondary-hover-bg: rgb(var(--rgb-panel) / 0.8);
+  --cc-btn-secondary-hover-border-color: var(--border-strong);
+  --cc-btn-secondary-hover-color: var(--text-hi);
+
+  --cc-toggle-on-bg: var(--color-accent-2);
+  --cc-toggle-off-bg: rgb(var(--rgb-border) / 0.4);
+  --cc-toggle-readonly-bg: rgb(var(--rgb-success) / 0.4);
+  --cc-toggle-on-knob-bg: #ffffff;
+  --cc-toggle-off-knob-bg: #ffffff;
+  --cc-toggle-readonly-knob-bg: #ffffff;
+  --cc-toggle-enabled-icon-color: var(--color-accent-2);
+  --cc-toggle-disabled-icon-color: var(--text-faint);
+
+  --cc-footer-bg: transparent;
+  --cc-footer-border-color: var(--border-subtle);
+  --cc-footer-color: var(--text-muted);
+}
+
 /* ── Décor DA "IN//SECONDS" — fond + grille perspective + scanlines ──────
    Appliqués sur toutes les pages (jeu, admin, privacy, 404, service-down).
    Voir shared/decor-background/ pour le composant qui rend la grille+scanlines. */

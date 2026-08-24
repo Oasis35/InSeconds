@@ -18,6 +18,12 @@
     </svg>
   </a>
   <span style="color:var(--text-sep)">·</span>
+  <button type="button" (click)="manageCookies()" class="transition-colors hover:text-slate-500 cursor-pointer" style="color:var(--text-faint)" [title]="'footer.cookies' | translate">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2a10 10 0 1 0 10 10c0-.28-.02-.56-.05-.83-.5.42-1.14.67-1.83.67a3 3 0 0 1-3-3c0-.6.18-1.16.48-1.63A2.5 2.5 0 0 1 15 5.5c0-.38-.07-.74-.2-1.08A9.96 9.96 0 0 0 12 2Zm-3.5 5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm7 2a1 1 0 1 1 0 2 1 1 0 0 1 0-2ZM7 12a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm3 4.5a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Z"/>
+    </svg>
+  </button>
+  <span style="color:var(--text-sep)">·</span>
   <button type="button" (click)="toggleLanguage()"
           class="flex items-center gap-1.5 transition-colors cursor-pointer rounded-full"
           style="color:var(--color-accent-2);background:rgb(var(--rgb-accent-2) / 0.1);border:1px solid rgb(var(--rgb-accent-2) / 0.35);padding:5px 10px 5px 8px"

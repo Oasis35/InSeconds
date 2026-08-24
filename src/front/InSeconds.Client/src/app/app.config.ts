@@ -11,6 +11,7 @@ import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 import { routes } from './app.routes';
 import { SettingsService } from './core/services/settings.service';
 import { LanguageService } from './core/services/language.service';
+import { CookieConsentService } from './core/services/cookie-consent.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -23,7 +24,11 @@ export const appConfig: ApplicationConfig = {
     provideTranslateService({
       loader: provideTranslateHttpLoader({ prefix: 'i18n/', suffix: '.json' }),
     }),
-    provideAppInitializer(() => inject(LanguageService).init()),
+    provideAppInitializer(async () => {
+      await inject(LanguageService).init();
+      // Après la langue : le bandeau cookies lit les traductions déjà chargées.
+      await inject(CookieConsentService).init();
+    }),
     provideAppInitializer(() => inject(SettingsService).load()),
   ],
 };
