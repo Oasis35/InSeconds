@@ -19,7 +19,43 @@ describe('AnalyticsService', () => {
     document.querySelectorAll('script[src*="googletagmanager"]').forEach((el) => el.remove());
   });
 
+  describe('declareDefaultConsent()', () => {
+    it('should push a consent default (all denied) without loading the gtag.js script', () => {
+      service.declareDefaultConsent();
+
+      expect(window.dataLayer).toBeDefined();
+      const entry = window.dataLayer!.find(
+        (e) => Array.isArray(e) && e[0] === 'consent' && e[1] === 'default',
+      ) as unknown[] | undefined;
+
+      expect(entry).toBeDefined();
+      expect(entry![2]).toEqual({
+        analytics_storage: 'denied',
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+      });
+      expect(document.querySelectorAll('script[src*="googletagmanager"]')).toHaveSize(0);
+    });
+  });
+
   describe('enable()', () => {
+    it('should come after a prior consent default when declareDefaultConsent() was called first', () => {
+      service.declareDefaultConsent();
+      service.enable();
+
+      const defaultIndex = window.dataLayer!.findIndex(
+        (entry) => Array.isArray(entry) && entry[0] === 'consent' && entry[1] === 'default',
+      );
+      const updateIndex = window.dataLayer!.findIndex(
+        (entry) => Array.isArray(entry) && entry[0] === 'consent' && entry[1] === 'update',
+      );
+
+      expect(defaultIndex).toBe(0);
+      expect(updateIndex).toBeGreaterThan(defaultIndex);
+    });
+
+
     it('should initialize dataLayer and gtag, and configure the measurement ID', () => {
       service.enable();
 
