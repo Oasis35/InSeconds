@@ -135,7 +135,7 @@
     },
     "cookie": {
       "title": "Cookies and audience measurement",
-      "body": "A technical cookie is set. It contains your pseudonymous identifier and is used exclusively to run the game. This cookie is strictly necessary to provide the service: in line with the ePrivacy rules and the guidelines of the French data protection authority (CNIL), it is exempt from prior consent.\nSubject to your consent, InSeconds also uses Google Analytics to measure the game's audience in an anonymized way (anonymized IP address). This tracker is only enabled after your agreement and you can change your choice at any time.",
+      "body": "A technical cookie is set. It contains your pseudonymous identifier and is used exclusively to run the game. This cookie is strictly necessary to provide the service: in line with the ePrivacy rules and the guidelines of the French data protection authority (CNIL), it is exempt from prior consent.\nA second technical cookie (\"cc_cookie\") remembers your cookie choice for 182 days, so the banner isn't shown again on every visit. It is also strictly necessary and exempt from consent.\nSubject to your consent, InSeconds also uses Google Analytics to measure the game's audience in an anonymized way (anonymized IP address). This tracker is only enabled after your agreement, your choice is remembered for the same duration, and you can change it at any time via the \"Manage my cookies\" button below.",
       "manage": "🍪 Manage my cookies"
     },
     "retention": {

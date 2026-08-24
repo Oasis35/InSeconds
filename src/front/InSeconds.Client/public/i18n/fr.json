@@ -135,7 +135,7 @@
     },
     "cookie": {
       "title": "Cookies et mesure d'audience",
-      "body": "Un cookie technique est déposé. Il contient votre identifiant pseudonyme et sert exclusivement au fonctionnement du jeu. Ce cookie est strictement nécessaire à la fourniture du service : conformément à l'article 82 de la loi Informatique et Libertés et aux lignes directrices de la CNIL, il est exempté de consentement préalable.\nSous réserve de votre consentement, InSeconds utilise également Google Analytics afin de mesurer l'audience du jeu de façon anonymisée (adresse IP anonymisée). Ce traceur n'est activé qu'après votre accord et vous pouvez à tout moment revenir sur votre choix.",
+      "body": "Un cookie technique est déposé. Il contient votre identifiant pseudonyme et sert exclusivement au fonctionnement du jeu. Ce cookie est strictement nécessaire à la fourniture du service : conformément à l'article 82 de la loi Informatique et Libertés et aux lignes directrices de la CNIL, il est exempté de consentement préalable.\nUn second cookie technique (« cc_cookie ») mémorise votre choix relatif aux cookies pendant 182 jours, afin de ne pas vous représenter le bandeau à chaque visite. Lui aussi est strictement nécessaire et exempté de consentement.\nSous réserve de votre consentement, InSeconds utilise également Google Analytics afin de mesurer l'audience du jeu de façon anonymisée (adresse IP anonymisée). Ce traceur n'est activé qu'après votre accord, votre choix est mémorisé pour la même durée, et vous pouvez à tout moment revenir dessus via le bouton « Gérer mes cookies » ci-dessous.",
       "manage": "🍪 Gérer mes cookies"
     },
     "retention": {
