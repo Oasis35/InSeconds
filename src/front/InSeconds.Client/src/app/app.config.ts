@@ -25,9 +25,13 @@ export const appConfig: ApplicationConfig = {
       loader: provideTranslateHttpLoader({ prefix: 'i18n/', suffix: '.json' }),
     }),
     provideAppInitializer(async () => {
-      await inject(LanguageService).init();
+      // inject() doit être appelé de façon synchrone, avant tout await — un await (même sur
+      // une valeur non-Promise) fait sortir du contexte d'injection Angular (NG0203).
+      const language = inject(LanguageService);
+      const cookieConsent = inject(CookieConsentService);
+      await language.init();
       // Après la langue : le bandeau cookies lit les traductions déjà chargées.
-      await inject(CookieConsentService).init();
+      await cookieConsent.init();
     }),
     provideAppInitializer(() => inject(SettingsService).load()),
   ],
