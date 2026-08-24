@@ -80,11 +80,50 @@
     "admin": "Admin",
     "source": "Voir le code source",
     "privacy": "Confidentialité",
+    "cookies": "Gérer les cookies",
     "language": "Switch to English"
+  },
+  "cookieConsent": {
+    "consentModal": {
+      "title": "🍪 On respecte ta vie privée",
+      "description": "InSeconds utilise un cookie technique indispensable au jeu (identifiant anonyme) et, si tu l'acceptes, Google Analytics pour mesurer l'audience de façon anonyme.",
+      "acceptAllBtn": "Tout accepter",
+      "acceptNecessaryBtn": "Tout refuser",
+      "showPreferencesBtn": "Personnaliser",
+      "footer": "<a href=\"/privacy\">Politique de confidentialité</a>"
+    },
+    "preferencesModal": {
+      "title": "Préférences des cookies",
+      "acceptAllBtn": "Tout accepter",
+      "acceptNecessaryBtn": "Tout refuser",
+      "savePreferencesBtn": "Enregistrer mes choix",
+      "closeIconLabel": "Fermer",
+      "serviceCounterLabel": "Service(s)",
+      "sections": [
+        {
+          "title": "Utilisation des cookies",
+          "description": "Nous utilisons des cookies pour assurer le bon fonctionnement du jeu et, si tu l'acceptes, pour mesurer notre audience de façon anonyme."
+        },
+        {
+          "title": "Cookies strictement nécessaires",
+          "description": "Indispensables au fonctionnement du jeu (identifiant anonyme de partie). Ils ne peuvent pas être désactivés.",
+          "linkedCategory": "necessary"
+        },
+        {
+          "title": "Mesure d'audience (Google Analytics)",
+          "description": "Nous aide à comprendre comment le jeu est utilisé, de façon anonymisée. Désactivé par défaut.",
+          "linkedCategory": "analytics"
+        },
+        {
+          "title": "Plus d'informations",
+          "description": "Pour toute question relative à notre politique en matière de cookies, consulte notre <a href=\"/privacy\" class=\"cc-link\">politique de confidentialité</a>."
+        }
+      ]
+    }
   },
   "privacy": {
     "title": "Politique de confidentialité",
-    "updated": "Dernière mise à jour : 8 juillet 2026",
+    "updated": "Dernière mise à jour : 24 août 2026",
     "intro": "InSeconds est un jeu de blind test musical gratuit, accessible sans compte ni inscription. La présente politique décrit, conformément au Règlement général sur la protection des données (RGPD — Règlement UE 2016/679), les traitements de données réalisés par l'application.",
     "controller": {
       "title": "Responsable du traitement",
@@ -95,8 +134,9 @@
       "body": "Aucune donnée directement identifiante n'est demandée : ni nom, ni adresse email, ni inscription.\nL'application enregistre uniquement :\n· un identifiant technique pseudonyme, généré aléatoirement, permettant de reconnaître votre navigateur d'un jour à l'autre ;\n· vos parties : réponses saisies, durées d'écoute choisies, scores et dates de jeu ;\n· votre langue préférée, stockée localement dans votre navigateur (elle ne quitte pas votre appareil).\nCes données sont traitées aux seules fins de fournir le jeu (reprise de partie, limitation à une partie par jour, série de victoires) et de calculer des statistiques globales anonymes (score médian, taux de réussite par morceau).\nBase légale : l'exécution du service demandé et l'intérêt légitime du responsable du traitement (article 6.1.b et 6.1.f du RGPD)."
     },
     "cookie": {
-      "title": "Cookie",
-      "body": "Un unique cookie technique est déposé. Il contient votre identifiant pseudonyme et sert exclusivement au fonctionnement du jeu.\nCe cookie est strictement nécessaire à la fourniture du service : conformément à l'article 82 de la loi Informatique et Libertés et aux lignes directrices de la CNIL, il est exempté de consentement préalable et ne nécessite donc pas de bannière de recueil de consentement.\nAucun cookie publicitaire, aucun traceur ni outil de mesure d'audience n'est utilisé."
+      "title": "Cookies et mesure d'audience",
+      "body": "Un cookie technique est déposé. Il contient votre identifiant pseudonyme et sert exclusivement au fonctionnement du jeu. Ce cookie est strictement nécessaire à la fourniture du service : conformément à l'article 82 de la loi Informatique et Libertés et aux lignes directrices de la CNIL, il est exempté de consentement préalable.\nUn second cookie technique (« cc_cookie ») mémorise votre choix relatif aux cookies pendant 182 jours, afin de ne pas vous représenter le bandeau à chaque visite. Lui aussi est strictement nécessaire et exempté de consentement.\nSous réserve de votre consentement, InSeconds utilise également Google Analytics afin de mesurer l'audience du jeu de façon anonymisée (adresse IP anonymisée). Ce traceur n'est activé qu'après votre accord, votre choix est mémorisé pour la même durée, et vous pouvez à tout moment revenir dessus via le bouton « Gérer mes cookies » ci-dessous.",
+      "manage": "🍪 Gérer mes cookies"
     },
     "retention": {
       "title": "Durée de conservation",
