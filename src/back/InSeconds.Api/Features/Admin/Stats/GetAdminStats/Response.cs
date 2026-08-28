@@ -11,8 +11,9 @@ public sealed record ChallengeStatsDto(
     int Id,
     DateOnly Date,
     int PlayerCount,
-    int PendingCount,
-    int AbandonedCount,
+    int PendingCount,     // en cours — pour un défi passé, replié sur ExpiredCount (0 ici)
+    int AbandonedCount,   // clic explicite sur « Abandonner »
+    int ExpiredCount,     // Pending jamais terminés (sortie sans abandon) + Pending d'un jour passé
     int? ScoreMin,
     int? ScoreMax,
     double? ScoreAvg,
@@ -42,7 +43,9 @@ public sealed record PlayerBreakdownDto(int TotalGuests, int TotalRegistered, in
 public sealed record DailyKpisDto(
     DateOnly Date,
     int CompletedCount,
-    int AbandonedCount,   // Abandoned + Pending si jour passé, Abandoned seul si aujourd'hui
-    int TotalSessions,    // Completed + Abandoned + Pending
+    int AbandonedCount,   // clic explicite sur « Abandonner » uniquement
+    int ExpiredCount,     // Pending non terminés (sortie sans abandon) + (jour passé) Pending pas encore expirés
+    int PendingCount,     // en cours — 0 pour un jour passé (replié sur ExpiredCount)
+    int TotalSessions,    // Completed + Abandoned + Expired + Pending
     double CompletionRate, // CompletedCount / TotalSessions * 100
     double? MedianScore);

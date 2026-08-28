@@ -257,7 +257,7 @@ public sealed class StartSessionHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenPendingSessionFromPreviousDay_MarksAbandonedAndCreatesNew()
+    public async Task Handle_WhenPendingSessionFromPreviousDay_MarksExpiredAndCreatesNew()
     {
         // Arrange
         await using var db = CreateDbContext();
@@ -293,7 +293,7 @@ public sealed class StartSessionHandlerTests
         sessions.Should().HaveCount(2, "l'ancienne session + la nouvelle");
 
         var expired = sessions.First(s => s.DailyChallengeId == oldChallenge.Id);
-        expired.Status.Should().Be(SessionStatus.Abandoned);
+        expired.Status.Should().Be(SessionStatus.Expired, "l'expiry paresseuse ≠ clic « Abandonner »");
         expired.AbandonedAt.Should().NotBeNull();
 
         var newSession = sessions.First(s => s.DailyChallengeId == todayChallenge.Id);

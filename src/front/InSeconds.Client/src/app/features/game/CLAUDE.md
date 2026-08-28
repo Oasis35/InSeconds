@@ -15,8 +15,8 @@ type GameState = 'loading' | 'welcome' | 'resume_prompt' | 'playing' | 'done' | 
 ```
 GameComponent
  ├─ app-game-header          toujours affiché : playing/streak/score/progression → (abandon)
- ├─ app-welcome-screen       [welcome]         → (startGame)
- ├─ app-resume-screen        [resume_prompt]   → (resumeGame) / (abandon)
+ ├─ app-welcome-screen       [welcome]         → (startGame → beginGame → POST)
+ ├─ app-resume-screen        [resume_prompt]   → (resumeGame → beginResume → POST) / (abandon → beginAbandonFromResume → POST)
  ├─ app-confirm-sheet        abandon en jeu OU confirmation de sortie → (confirm)/(cancelled)
  ├─ app-status-screen        [no_challenge | error] (titleKey/bodyKey différents) → (retry)
  ├─ app-already-played-screen [already_played] → (share)
@@ -26,21 +26,32 @@ GameComponent
  └─ app-game-footer          toujours affiché, hors état
 ```
 
-### `loadSession()` (appelée dans `ngOnInit` + `retry()`)
+### `peekSession(context)` (appelée dans `ngOnInit` + `retry()`) — lecture seule
 
-Appelle `gameService.startToday()` :
-- **Succès** : stocke `sessionId`, `tracks`, `currentStreak`.
-  - `isResuming=true` → restaure `resumeCompletedAnswers`, `currentIndex=resumeFromPosition`, `totalScore` recalculé. **Anti-cheat de reprise** : si `response.currentTrackId` correspond à la track en cours et que le back fournit `minListenedSeconds`, verrouille `currentTrackMinListenedSeconds` — empêche de re-choisir un palier plus court que ce qui a déjà été « consommé » côté serveur avant le rechargement (voir `blind-round` § anti-cheat). Précharge l'audio (`audioPlayer.preloadAll`) puis état `resume_prompt`.
-  - sinon : reset complet puis état `welcome`.
-- **Erreur `409`** : déjà joué aujourd'hui. `err.error?.error === 'abandoned'` → `sessionAbandoned=true`. État `already_played` + countdown minuit UTC. Si complété (pas abandonné), appelle en plus `api.apiStatsToday()` pour peupler `todayStats`.
-- **Erreur `503`** : pas de défi du jour → état `no_challenge`.
-- **Autre erreur** : état `error`.
+Appelle `gameService.peekToday()` (`GET /api/sessions/today`) qui **ne crée ni session ni cookie** (cf. `CLAUDE.md` racine « Création paresseuse de la session »). Stocke `currentStreak`, `peekTracksCount`, `peekCompletedCount`, puis mappe `res.state` :
+- `can_start` → état `welcome`
+- `resumable` → état `resume_prompt` (le back ne renvoie **pas** encore les tracks : `peekCompletedCount`/`peekTracksCount` suffisent à l'écran de reprise)
+- `already_played` → état `already_played` + countdown + `api.apiStatsToday()` pour `todayStats`
+- `abandoned` → état `already_played` avec `sessionAbandoned=true`
+- `no_challenge` → état `no_challenge`
 
-`resumePlaying()` reconstitue `results()` (tableau `RoundResult`, voir `final-recap-screen`) à partir de `resumeCompletedAnswers` pour permettre un récap final complet même après reprise ; `currentIndex` = nb de réponses complétées ; passe l'état à `playing`.
+`context` : `'initial'` (premier chargement / retry) · `'refocus'` (retour au premier plan depuis welcome/resume_prompt) · `'playing'` (retour au premier plan pendant une partie — on ne bascule **que** sur `already_played`/`abandoned`, jamais vers welcome/resume, pour ne pas éjecter le joueur de son round).
+
+### `loadSession()` — POST, déclenché uniquement sur action explicite
+
+Appelée par `beginGame()` (clic « Commencer à jouer »), `beginResume()` (clic « Reprendre ») — les deux passent d'abord l'état à `loading`. Appelle `gameService.startToday()` (`POST /api/sessions` → **c'est ici que le Player + le cookie + la session sont créés**) :
+- **Succès `isResuming=true`** → restaure `resumeCompletedAnswers`, `currentIndex`, `totalScore`, **anti-cheat de reprise** (`currentTrackId`/`minListenedSeconds` → `currentTrackMinListenedSeconds`), `preloadAll`, puis **directement `resumePlaying()`** (pas de retour à l'écran de reprise — le joueur a déjà cliqué).
+- **Succès `isResuming=false`** → reset complet, `preloadAll`, puis **directement `startPlaying()`** (état `playing`).
+- **Erreur `409`** (`abandoned` → `sessionAbandoned=true`) → `already_played` + countdown (+ `apiStatsToday()` si complété).
+- **Erreur `503`** → `no_challenge`. **Autre** → `error`.
+
+`beginAbandonFromResume()` (clic « Abandonner » sur l'écran de reprise) : `startToday()` d'abord (pour matérialiser `sessionId`), puis `confirmAbandon()`.
+
+`resumePlaying()` reconstitue `results()` (`RoundResult`, voir `final-recap-screen`) à partir de `resumeCompletedAnswers` ; `currentIndex` = nb de réponses ; état `playing`.
 
 ### Synchronisation multi-onglets
 
-Listener `visibilitychange` posé dans `ngOnInit` (retiré dans `ngOnDestroy`) : si le document redevient visible pendant `welcome`/`resume_prompt`/`playing`, relance `loadSession()` — détecte qu'une partie a été jouée/abandonnée ailleurs (le back répondra 409 le cas échéant).
+Listener `visibilitychange` posé dans `ngOnInit` (retiré dans `ngOnDestroy`) : au retour au premier plan, `peekSession('refocus')` si l'état est `welcome`/`resume_prompt`, `peekSession('playing')` si l'état est `playing` — détecte qu'une partie a été complétée/abandonnée ailleurs (bascule vers `already_played`) sans jamais relancer de `POST`.
 
 ### Garde de sortie (`UnsavedGameComponent`, branché sur `unsavedGameGuard`)
 
@@ -78,7 +89,7 @@ Inputs : `track` (`required`), `isLast=false`, `sessionId=0`, `minListenedSecond
 
 ## `services/game-facade.service.ts`
 
-`@Injectable()` (pas root, scopé au `GameComponent`). Pure délégation vers `core/services/game.service.ts` (`startToday`, `submitAnswer`, `abandonSession`, `updateListening`) sans logique propre — existe pour permettre le mock/l'injection scopée en test sans toucher au service global.
+`@Injectable()` (pas root, scopé au `GameComponent`). Pure délégation vers `core/services/game.service.ts` (`peekToday`, `startToday`, `submitAnswer`, `abandonSession`, `updateListening`) sans logique propre — existe pour permettre le mock/l'injection scopée en test sans toucher au service global.
 
 ## `services/deezer-autocomplete.service.ts`
 
@@ -87,7 +98,7 @@ Inputs : `track` (`required`), `isLast=false`, `sessionId=0`, `minListenedSecond
 ## `components/game-header/` et `components/game-footer/`
 
 - **`game-header`** : purement présentationnel. Inputs `required` : `playing`, `showStreak`, `streak`, `totalScore`, `currentIndex`, `trackCount`. Output `abandon`. Badge streak 🔥 si `showStreak()`, recouvert visuellement par le score si `playing()`.
-- **`game-footer`** : pas d'inputs/outputs. Injecte `LanguageService`, `currentLang = language.current` réexposé. `toggleLanguage()` bascule fr↔en. Liens `/admin`, GitHub, `/privacy`. Testé (`game-footer.component.spec.ts`) : bascule fr→en/en→fr + persistance `localStorage`.
+- **`game-footer`** : pas d'inputs/outputs. Injecte `LanguageService`, `currentLang = language.current` réexposé. `toggleLanguage()` bascule fr↔en. Liens `/admin`, `/privacy`. Testé (`game-footer.component.spec.ts`) : bascule fr→en/en→fr + persistance `localStorage`.
 
 ## `screens/*`
 
@@ -114,7 +125,7 @@ Tous `OnPush`, présentationnels (sauf `already-played-screen` qui type `stats` 
 
 ## Services `core/` consommés (hors périmètre `game/` mais central ici)
 
-- **`core/services/game.service.ts`** (`providedIn: 'root'`) : appels HTTP purs sur `/api/sessions` — `startToday()` (`POST`), `submitAnswer()` (`POST /answers`), `abandonSession()` (`PUT /abandon`), `updateListening()` (`PATCH /listening`).
+- **`core/services/game.service.ts`** (`providedIn: 'root'`) : appels HTTP purs sur `/api/sessions` — `peekToday()` (`GET /today`, lecture seule, ne crée rien), `startToday()` (`POST`, crée session+cookie), `submitAnswer()` (`POST /answers`), `abandonSession()` (`PUT /abandon`), `updateListening()` (`PATCH /listening`).
 - **`core/services/clipboard.service.ts`** (`providedIn: 'root'`) : `copy(text): Promise<boolean>`, wrapper `navigator.clipboard.writeText` qui ne rejette jamais côté appelant. Mutualisé avec `admin/` (`BrowserIdComponent`, `ChallengesTabComponent`).
 - **`core/services/settings.service.ts`** : signals avec défauts codés en dur (utilisés tant que `/api/settings` n'a pas répondu) — `allowedDurations=[0.5,1,1.5,2,3,5,10]`, `guessTimerSeconds=20`, `tracksPerChallenge=10`, `durationScores={0.5:1000,1:850,1.5:700,2:550,3:400,5:250,10:100}`. `load()` fait un `catchError` + `console.warn` : **l'app démarre même si `/api/settings` échoue**.
 - **`core/services/audio-player.service.ts`** : `AudioState = 'idle'|'loading'|'playing'|'finished'`. Mécanisme central `playToken` (compteur incrémenté à chaque `play()`/`reset()`) qui invalide tout callback async périmé (`oncanplay`, `onerror`, `setTimeout`, boucle rAF) — protège contre les races si l'utilisateur relance vite une nouvelle lecture pendant qu'une ancienne charge encore.
@@ -138,7 +149,7 @@ Tous `OnPush`, présentationnels (sauf `already-played-screen` qui type `stats` 
 | `600ms` défaut / `1000ms` | `count-up.ts` / `game.component.onNextTrack` | durée animation score |
 | `600px` | `game.component` `viewportTall` | seuil viewport "grand écran" |
 | `50ms` | `audio-player.service` | vibration à l'arrêt auto |
-| `409` / `503` | `game.component.loadSession` | 409 = session déjà existante (`already_played`) / 503 = pas de défi (`no_challenge`) |
+| `409` / `503` | `game.component.loadSession` (POST) | 409 = session déjà existante (`already_played`/`abandoned`) / 503 = pas de défi. Au chargement de page c'est `peekSession` (GET) qui décide via `res.state`, sans code d'erreur. |
 
 ## Points d'attention pour un futur agent
 

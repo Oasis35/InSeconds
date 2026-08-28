@@ -4,13 +4,26 @@ Doc détaillée du backend. Vue d'ensemble générale, conventions .NET globales
 
 ## Feature slices (`Features/`)
 
+### Sessions/GetTodaySession — `GET /api/sessions/today` (peek, lecture seule)
+
+**Ne crée jamais de Player, de cookie ni de session** (contrairement à `POST /api/sessions`). Piloté depuis `game.component` **au chargement de la page** : le front n'appelle `POST /api/sessions` qu'au clic explicite « Commencer à jouer » / « Reprendre » / « Abandonner » (depuis l'écran de reprise). Un visiteur qui n'ouvre jamais une partie ne laisse donc **aucune trace** (ni ligne `Players`, ni `authToken`).
+
+`GetTodaySessionHandler(db, DailyChallengeGenerator, logger)` — endpoint invoque directement le handler (pattern `TodayStatsHandler`), `playerId` lu via `httpContext.GetPlayerIdOrNull()`. **1 seul aller-retour BDD** : `db.DailyChallenges.Where(Date==today).Select(...)` projette `TracksCount` + (si un joueur est résolu) le `Status`/nombre de réponses de sa session **et** son `CurrentStreak` (sous-requête scalaire), le tout replié en un SQL. Peut déclencher la **génération paresseuse** du défi (mirroir de `StartSession.TryLazyGenerateAsync` — aucune donnée joueur touchée).
+
+**Response** : `GetTodaySessionResponse(string State, int TracksCount, int CompletedCount, int CurrentStreak)`. `State` (sérialisé en `string`, cohérent avec `ChallengePlayerDto.Status`) :
+- `no_challenge` — pas de défi et génération paresseuse impossible (pool insuffisant)
+- `can_start` — défi dispo, aucune session pour ce joueur (ou pas de joueur) → écran d'accueil
+- `resumable` — session `Pending` → écran de reprise (`CompletedCount` = nb de réponses)
+- `already_played` — session `Completed`
+- `abandoned` — session `Abandoned` (bouton) **ou** `Expired` (sortie sans terminer) — même écran côté front
+
 ### Sessions/StartSession — `POST /api/sessions`
 
 `StartSessionCommand(Guid PlayerId)` (PlayerId via `ICookieAuthService.ResolveOrCreatePlayerAsync(httpContext, ct)` appelé directement dans l'endpoint — **pas** `httpContext.GetPlayerId()`/le middleware, cf. Common/Auth : `StartSession` est le seul point d'entrée joueur qui crée un Player). Validator vide. `StartSessionHandler(db, CachedDeezerClient, SettingsService, DailyChallengeGenerator, logger)`.
 
-- **Expiry paresseuse** : à chaque appel, toutes les sessions `Pending` du joueur dont `DailyChallenge.Date < today` basculent en `Abandoned` (`AbandonedAt=UtcNow`) avant tout traitement.
+- **Expiry paresseuse** : à chaque appel, toutes les sessions `Pending` du joueur dont `DailyChallenge.Date < today` basculent en **`Expired`** (`AbandonedAt=UtcNow`) avant tout traitement — **pas `Abandoned`**, réservé au clic explicite sur « Abandonner » (les stats admin distinguent les deux, cf. `GetAdminStats`).
 - **Génération paresseuse (filet de sécurité)** : si aucun `DailyChallenge` n'existe pour `today`, `TryLazyGenerateAsync` appelle `DailyChallengeGenerator.GenerateAsync` (déterministe, seed=`DayNumber` → même résultat que le scheduler minuit). Race avec le scheduler/un autre joueur → catch sur la contrainte unique `Date`, `db.ChangeTracker.Clear()`, relecture du défi créé par le concurrent. `PoolInsufficient` → **503**.
-- **Reprise** : session existante pour (playerId, challengeId) → `Completed`→**409** `{error: already_played}`, `Abandoned`→**409** `{error: abandoned}`, `Pending`→reconstruit l'état (preview URLs, cover via `BuildCoverUrl`, `resumeFromPosition`, `CompletedAnswers`, `CurrentTrackId`/`CurrentTrackMinListenedSeconds` anti-cheat).
+- **Reprise** : session existante pour (playerId, challengeId) → `Completed`→**409** `{error: already_played}`, `Abandoned` ou `Expired`→**409** `{error: abandoned}`, `Pending`→reconstruit l'état (preview URLs, cover via `BuildCoverUrl`, `resumeFromPosition`, `CompletedAnswers`, `CurrentTrackId`/`CurrentTrackMinListenedSeconds` anti-cheat).
 - Nouvelle session : crée `GameSession(Status=Pending, TotalScore=0)`, construit les `TrackSlot` (preview+cover) pour les N tracks du défi (ordre `Position`).
 - **Response** : `StartSessionResponse(SessionId, Tracks, CurrentStreak, IsResuming, ResumeFromPosition, CompletedAnswers, CurrentTrackId?, MinListenedSeconds?)`. Codes : 200/409/503. Sur reprise, `ResumedAnswer.CorrectTitle` passe par `TextNormalizationHelpers.CleanDisplayTitle` (cf. Common/Text) — même titre que celui révélé au moment de la réponse initiale.
 
@@ -31,7 +44,7 @@ Doc détaillée du backend. Vue d'ensemble générale, conventions .NET globales
 
 ### Sessions/AbandonSession — `PUT /api/sessions/{sessionId}/abandon`
 
-`AbandonSessionCommand(PlayerId, SessionId)`. 404 si introuvable, 403 si joueur différent, **400** `already_completed`/`already_abandoned` si état final déjà atteint, sinon `Status=Abandoned`, `AbandonedAt=UtcNow` → **204**.
+`AbandonSessionCommand(PlayerId, SessionId)`. 404 si introuvable, 403 si joueur différent, **400** `already_completed` (Completed) / `already_abandoned` (Abandoned **ou** Expired) si état final déjà atteint, sinon `Status=Abandoned`, `AbandonedAt=UtcNow` → **204**.
 
 ### Sessions/UpdateListening — `PATCH /api/sessions/{sessionId}/listening`
 
@@ -67,9 +80,16 @@ Délègue à `PreviewStatusRefresher.RefreshAsync` (voir ChallengeGeneration). `
 
 ### Admin/Stats/GetAdminStats — `GET /api/admin/stats?date=`
 
-Utilise `IDbContextFactory<ApplicationDbContext>` pour **5 requêtes en parallèle**, chacune avec son propre `DbContext` (non thread-safe sinon) : `BuildChallengeStats` (30 derniers défis, min/max/moyenne/médiane, stats par track — dont `ExtendedRate` = % des réponses de ce track avec `WasExtended=true`), `BuildDailyActivity` (30 jours glissants, 0 par défaut), `BuildPlayerBreakdown` (guests/registered/actifs 7j/30j, exclut `IsDeleted`), `BuildAvailableDates`, `BuildDailyKpis` (date sélectionnée — **jour passé : Pending compté comme Abandoned**, `CompletionRate` + médiane). Médiane calculée manuellement (tri + moyenne des 2 valeurs centrales si pair).
+Utilise `IDbContextFactory<ApplicationDbContext>` pour **5 requêtes en parallèle**, chacune avec son propre `DbContext` (non thread-safe sinon) : `BuildChallengeStats` (30 derniers défis, min/max/moyenne/médiane, stats par track — dont `ExtendedRate` = % des réponses de ce track avec `WasExtended=true`), `BuildDailyActivity` (30 jours glissants, 0 par défaut), `BuildPlayerBreakdown` (guests/registered/actifs 7j/30j, exclut `IsDeleted`), `BuildAvailableDates`, `BuildDailyKpis` (date sélectionnée). Médiane calculée manuellement (tri + moyenne des 2 valeurs centrales si pair).
 
-**`ChallengeStatsDto.Players`** (`IReadOnlyList<ChallengePlayerDto>`) — un `{PlayerId, Status, Score}` par `GameSession` du défi (toutes sessions, Completed/Pending/Abandoned confondues), pour que l'admin repère les joueurs qui reviennent d'un jour à l'autre (front : `ChallengesTabComponent`). `Status` est sérialisé en `string` (`s.Status.ToString()`), pas l'enum `SessionStatus` brut — évite toute ambiguïté int/string côté client généré par NSwag. `BuildChallengeStats` projette une seule fois `Sessions = c.GameSessions.Select(s => new {PlayerId, Status, TotalScore})` en DB, réutilisée en mémoire pour dériver `scores`/`pendingCount`/`abandonedCount` **et** `Players` — remplace les 3 requêtes séparées qui existaient avant (une par compteur).
+**Trois buckets de non-complétion, convergents entre `BuildChallengeStats` et `BuildDailyKpis`** (`today` passé aux deux) :
+- `AbandonedCount` — sessions `Abandoned` (clic « Abandonner »)
+- `ExpiredCount` — sessions `Expired` **+ (défi passé)** les `Pending` que l'expiry paresseuse n'a pas encore basculés (joueur jamais revenu). Défi du jour : `ExpiredCount` = `Expired` seul.
+- `PendingCount` — en cours ; **0 pour un défi passé** (replié sur `ExpiredCount`).
+
+C'est cette convergence qui supprime l'ancien écart « KPI du jour ≠ Stats par défi » (avant : `BuildDailyKpis` repliait Pending→Abandoned pour un jour passé, `BuildChallengeStats` non). `CompletionRate = Completed / (Completed + Abandoned + Expired + Pending)`. DTO : `DailyKpisDto(Date, CompletedCount, AbandonedCount, ExpiredCount, PendingCount, TotalSessions, CompletionRate, MedianScore)` ; `ChallengeStatsDto` gagne `ExpiredCount` entre `AbandonedCount` et `ScoreMin`.
+
+**`ChallengeStatsDto.Players`** (`IReadOnlyList<ChallengePlayerDto>`) — un `{PlayerId, Status, Score}` par `GameSession` du défi (toutes sessions, `Completed`/`Pending`/`Abandoned`/`Expired` confondues), pour que l'admin repère les joueurs qui reviennent d'un jour à l'autre (front : `ChallengesTabComponent`). `Status` est sérialisé en `string` (`s.Status.ToString()`), pas l'enum `SessionStatus` brut — évite toute ambiguïté int/string côté client généré par NSwag. `BuildChallengeStats` projette une seule fois `Sessions = c.GameSessions.Select(s => new {PlayerId, Status, TotalScore})` en DB, réutilisée en mémoire pour dériver `scores`/`pendingCount`/`abandonedCount`/`expiredCount` **et** `Players` — remplace les 3 requêtes séparées qui existaient avant (une par compteur).
 
 `TrackStatsDto.Title` passe par `TextNormalizationHelpers.CleanDisplayTitle` (cf. Common/Text) lors du mapping en mémoire (après le `ToListAsync` de `BuildChallengeStats`) — alimente la section « Stats par défi » du même onglet Défis admin que `GetChallenges` ci-dessus (même nettoyage des deux côtés depuis le 2026-08-17).
 
@@ -145,7 +165,7 @@ Renvoie directement `SettingsService.GetAsync()` → `AppSettings` sérialisé.
 | `DailyChallengeTrack` | `Id`, `DailyChallengeId`, `TrackId`, `DeezerRankSnapshot`, `Position` | 1—N `GameSessionAnswer` (restrict) |
 | `GameSession` | `Id`, `PlayerId`, `DailyChallengeId`, `TotalScore`, `TotalDurationSeconds(decimal)`, `Status(SessionStatus)`, `CompletedAt?`, `AbandonedAt?`, `CurrentTrackId?`, `CurrentTrackMinListenedSeconds(decimal?)` | 1—N `GameSessionAnswer` (cascade) |
 | `GameSessionAnswer` | `Id`, `GameSessionId`, `DailyChallengeTrackId`, `ListenedDurationSeconds`, `WasExtended`, `ArtistAnswer?`, `TitleAnswer?`, `ArtistCorrect`, `TitleCorrect`, `Score` | — |
-| `SessionStatus` (enum) | `Pending=0`, `Completed=1`, `Abandoned=2` | — |
+| `SessionStatus` (enum) | `Pending=0`, `Completed=1`, `Abandoned=2` (clic « Abandonner »), `Expired=3` (expiry paresseuse d'un Pending — sortie sans terminer) | — |
 | `Setting` | `Id`, `Key`, `Value`, `Description?`, `UpdatedAt` | — |
 
 ## Infrastructure/Persistence
@@ -169,6 +189,8 @@ Implémente `IDataProtectionKeyContext` (clés persistées en base, cf. piège 1
 `InitialCreate` → `UpdateTracksPerChallengeTo3` → `AddTrackCoverUrl`/`RenameCoverUrlToCoverHash` → `AddCoverUrlTemplateSetting` → `DecimalDurations` (int→numeric + migration des settings vers valeurs fractionnaires) → `PlayerStreak` → `SessionStatus` (+ migration données existantes du joueur dev en `Completed`) → `AddTrackHasPreview` → `AddSessionAntiCheat` → `AddPerformanceIndexes` → `PersistDataProtectionKeys` → `RemoveMaxExtensionsPerAnswerSetting` (`DeleteData` sur le Setting `Id=3`, jamais appliqué nulle part — cf. décision d'architecture racine) → `AddTrackCooldownAndUsageTracking` (`Track.LastUsedDate`/`UsageCount` + Setting `TrackCooldownDays` `Id=7` + backfill SQL brut des deux colonnes depuis l'historique `DailyChallengeTrack`/`DailyChallenge`).
 
 **Règle** : `UpdateData` EF est insuffisant pour modifier des `Settings` déjà en base prod — utiliser `migrationBuilder.Sql("UPDATE ...")` (cf. décision d'architecture racine).
+
+**`SessionStatus.Expired=3` n'a pas de migration** : l'enum est stocké en `int` sans CHECK constraint ni `HasConversion`, ajouter un membre ne change pas le modèle EF (`dotnet ef migrations has-pending-model-changes` reste vert). Aucune rétro-classification des `Abandoned` existants (impossible de deviner bouton vs expiry a posteriori).
 
 ## Infrastructure/Deezer
 

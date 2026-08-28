@@ -61,6 +61,7 @@ describe('BlindRoundComponent — navigation clavier autocomplete', () => {
         {
           provide: GameFacadeService,
           useValue: {
+            peekToday: () => of(undefined),
             startToday: () => of(undefined),
             submitAnswer: () => of(undefined),
             abandonSession: () => of(undefined),

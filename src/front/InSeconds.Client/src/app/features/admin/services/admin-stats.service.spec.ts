@@ -250,9 +250,9 @@ describe('AdminStatsService', () => {
     beforeEach(() => {
       apiStub._setAdminStats(makeStats({
         challenges: [
-          { id: 1, date: new Date('2026-05-01T12:00:00Z'), playerCount: 0, pendingCount: 0, abandonedCount: 0, scoreMin: undefined, scoreMax: undefined, scoreAvg: undefined, scoreMedian: undefined, tracks: [], players: [] },
-          { id: 2, date: new Date('2026-06-01T12:00:00Z'), playerCount: 0, pendingCount: 0, abandonedCount: 0, scoreMin: undefined, scoreMax: undefined, scoreAvg: undefined, scoreMedian: undefined, tracks: [], players: [] },
-          { id: 3, date: new Date('2026-07-01T12:00:00Z'), playerCount: 0, pendingCount: 0, abandonedCount: 0, scoreMin: undefined, scoreMax: undefined, scoreAvg: undefined, scoreMedian: undefined, tracks: [], players: [] },
+          { id: 1, date: new Date('2026-05-01T12:00:00Z'), playerCount: 0, pendingCount: 0, abandonedCount: 0, expiredCount: 0, scoreMin: undefined, scoreMax: undefined, scoreAvg: undefined, scoreMedian: undefined, tracks: [], players: [] },
+          { id: 2, date: new Date('2026-06-01T12:00:00Z'), playerCount: 0, pendingCount: 0, abandonedCount: 0, expiredCount: 0, scoreMin: undefined, scoreMax: undefined, scoreAvg: undefined, scoreMedian: undefined, tracks: [], players: [] },
+          { id: 3, date: new Date('2026-07-01T12:00:00Z'), playerCount: 0, pendingCount: 0, abandonedCount: 0, expiredCount: 0, scoreMin: undefined, scoreMax: undefined, scoreAvg: undefined, scoreMedian: undefined, tracks: [], players: [] },
         ],
       }));
     });

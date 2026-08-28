@@ -1,10 +1,10 @@
 import { test, expect } from '../fixtures/test';
 import { GamePage } from '../pages/game.page';
 
-// Depuis la génération paresseuse dans StartSession, supprimer le défi ne suffit
-// plus : il renaît au premier joueur. L'écran « pas de défi » ne subsiste que si
-// le pool est insuffisant (emptyPool) — c'est le scénario testé ici.
-test.describe('Pas de défi — écran 503', () => {
+// Depuis la génération paresseuse (peek GET /api/sessions/today comme StartSession),
+// supprimer le défi ne suffit plus : il renaît au premier visiteur. L'écran « pas de
+// défi » ne subsiste que si le pool est insuffisant (emptyPool) — scénario testé ici.
+test.describe('Pas de défi — état no_challenge', () => {
   test.afterEach(async ({ api }) => {
     // Restaurer pool + défis pour les autres specs
     await api.reseed();

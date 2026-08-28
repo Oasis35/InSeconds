@@ -30,7 +30,6 @@
               }
             ],
             "styles": [
-              "node_modules/vanilla-cookieconsent/dist/cookieconsent.css",
               "src/styles.scss"
             ]
           },
@@ -119,7 +118,6 @@
               }
             ],
             "styles": [
-              "node_modules/vanilla-cookieconsent/dist/cookieconsent.css",
               "src/styles.scss"
             ]
           }

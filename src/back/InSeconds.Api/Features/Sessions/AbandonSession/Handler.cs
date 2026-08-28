@@ -20,7 +20,7 @@ public sealed class AbandonSessionHandler(ApplicationDbContext db)
         if (session.Status == SessionStatus.Completed)
             return Results.BadRequest(new { error = "already_completed", message = "Impossible d'abandonner une session terminée." });
 
-        if (session.Status == SessionStatus.Abandoned)
+        if (session.Status is SessionStatus.Abandoned or SessionStatus.Expired)
             return Results.BadRequest(new { error = "already_abandoned", message = "Session déjà abandonnée." });
 
         session.Status      = SessionStatus.Abandoned;

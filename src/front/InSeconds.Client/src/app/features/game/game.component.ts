@@ -43,6 +43,10 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
   private readonly destroyRef = inject(DestroyRef);
   protected readonly gameState = signal<GameState>('loading');
   protected readonly todayStats = signal<TodayStatsResponse | null>(null);
+  // Renseignés par le peek (GET /api/sessions/today) avant toute création de session :
+  // l'écran d'accueil / de reprise s'affiche sans qu'aucun POST /api/sessions n'ait eu lieu.
+  protected readonly peekTracksCount = signal(0);
+  protected readonly peekCompletedCount = signal(0);
   protected readonly viewportTall = signal(window.innerHeight >= 600);
 
   @HostListener('window:resize')
@@ -89,13 +93,15 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
     this.tracks()[this.currentIndex()] ?? null;
 
   ngOnInit(): void {
-    this.loadSession();
+    this.peekSession('initial');
     this.onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        const state = this.gameState();
-        if (state === 'welcome' || state === 'resume_prompt' || state === 'playing') {
-          this.loadSession();
-        }
+      if (document.visibilityState !== 'visible') return;
+      const state = this.gameState();
+      if (state === 'welcome' || state === 'resume_prompt') {
+        this.peekSession('refocus');
+      } else if (state === 'playing') {
+        // Détecte une complétion/abandon dans un autre onglet sans relancer de POST.
+        this.peekSession('playing');
       }
     };
     document.addEventListener('visibilitychange', this.onVisibilityChange);
@@ -109,6 +115,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
   private onVisibilityChange!: () => void;
 
   private startCountdown(): void {
+    if (this.countdownInterval !== null) return;
     const tick = () => {
       const now = new Date();
       const midnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
@@ -118,8 +125,35 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
     this.countdownInterval = setInterval(tick, 1000);
   }
 
-  protected startPlaying(): void {
+  private startPlaying(): void {
     this.gameState.set('playing');
+  }
+
+  /** Écran d'accueil → clic « Commencer à jouer » : c'est ICI qu'on crée la session (POST). */
+  protected beginGame(): void {
+    this.gameState.set('loading');
+    this.loadSession();
+  }
+
+  /** Écran de reprise → clic « Reprendre » : POST (le back renvoie l'état de reprise). */
+  protected beginResume(): void {
+    this.gameState.set('loading');
+    this.loadSession();
+  }
+
+  /**
+   * Écran de reprise → clic « Abandonner » : il faut d'abord matérialiser la session
+   * (POST, renvoie son id) avant de pouvoir l'abandonner.
+   */
+  protected beginAbandonFromResume(): void {
+    this.abandonLoading.set(true);
+    this.gameService.startToday().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.sessionId = res.sessionId;
+        this.confirmAbandon();
+      },
+      error: () => this.abandonLoading.set(false),
+    });
   }
 
   protected resumePlaying(): void {
@@ -168,7 +202,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
 
   protected retry(): void {
     this.gameState.set('loading');
-    this.loadSession();
+    this.peekSession('initial');
   }
 
   protected onAnswered(event: AnsweredEvent): void {
@@ -352,15 +386,18 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
               ? response.minListenedSeconds
               : null
           );
+          // Le joueur a explicitement cliqué « Reprendre » → on enchaîne directement
+          // sur la partie (reconstruction du récap incluse), pas de retour à l'écran de reprise.
           this.audioPlayer.preloadAll(response.tracks.map(t => t.previewUrl))
-            .then(() => this.gameState.set('resume_prompt'));
+            .then(() => this.resumePlaying());
         } else {
           this.currentIndex.set(0);
           this.totalScore.set(0);
           this.results.set([]);
           this.currentTrackMinListenedSeconds.set(null);
+          // Le joueur a explicitement cliqué « Commencer à jouer » → on entre dans la partie.
           this.audioPlayer.preloadAll(response.tracks.map(t => t.previewUrl))
-            .then(() => this.gameState.set('welcome'));
+            .then(() => this.startPlaying());
         }
       },
       error: (err) => {
@@ -377,6 +414,52 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
         } else {
           this.gameState.set('error');
         }
+      },
+    });
+  }
+
+  /**
+   * Lecture seule (GET /api/sessions/today) : détermine l'écran à afficher SANS créer
+   * de session ni de cookie joueur. `context` :
+   *  - 'initial'  : premier chargement / retry
+   *  - 'refocus'  : retour au premier plan depuis welcome/resume_prompt
+   *  - 'playing'  : retour au premier plan pendant une partie — on ne bascule QUE si la
+   *                 partie a été terminée/abandonnée ailleurs (jamais vers welcome/resume).
+   */
+  private peekSession(context: 'initial' | 'refocus' | 'playing'): void {
+    this.gameService.peekToday().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.currentStreak.set(res.currentStreak);
+        this.peekTracksCount.set(res.tracksCount);
+        this.peekCompletedCount.set(res.completedCount);
+
+        switch (res.state) {
+          case 'can_start':
+            if (context !== 'playing') this.gameState.set('welcome');
+            break;
+          case 'resumable':
+            if (context !== 'playing') this.gameState.set('resume_prompt');
+            break;
+          case 'already_played':
+            this.sessionAbandoned.set(false);
+            this.gameState.set('already_played');
+            this.startCountdown();
+            this.api.apiStatsToday().pipe(takeUntilDestroyed(this.destroyRef))
+              .subscribe(stats => this.todayStats.set(stats));
+            break;
+          case 'abandoned':
+            this.sessionAbandoned.set(true);
+            this.gameState.set('already_played');
+            this.startCountdown();
+            break;
+          case 'no_challenge':
+          default:
+            if (context !== 'playing') this.gameState.set('no_challenge');
+            break;
+        }
+      },
+      error: () => {
+        if (context !== 'playing') this.gameState.set('error');
       },
     });
   }

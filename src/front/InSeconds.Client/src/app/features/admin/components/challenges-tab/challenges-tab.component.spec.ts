@@ -18,7 +18,8 @@ describe('ChallengesTabComponent', () => {
 
     TestBed.configureTestingModule({
       providers: [
-        { provide: AdminStatsService, useValue: {} },
+        // `challengeMonth` : lu par l'effect du constructeur (reset de la surbrillance au changement de mois).
+        { provide: AdminStatsService, useValue: { challengeMonth: signal('2026-08') } },
         { provide: PlayerIdentityService, useValue: identityStub },
         { provide: ClipboardService, useValue: clipboardStub },
       ],
@@ -48,20 +49,84 @@ describe('ChallengesTabComponent', () => {
     });
   });
 
-  describe('statusBg() / statusColor()', () => {
-    it('returns the amber styling for Abandoned', () => {
-      expect(component['statusBg']('Abandoned')).toBe('rgba(251,191,36,0.1)');
+  describe('statusColor()', () => {
+    it('returns amber for Abandoned', () => {
       expect(component['statusColor']('Abandoned')).toBe('var(--bg-warn)');
     });
 
-    it('returns the neutral styling for Pending', () => {
-      expect(component['statusBg']('Pending')).toBe('var(--bg-inactive)');
-      expect(component['statusColor']('Pending')).toBe('var(--text-faint)');
+    it('returns muted grey for Expired', () => {
+      expect(component['statusColor']('Expired')).toBe('var(--text-muted)');
     });
 
-    it('returns the default styling for Completed', () => {
-      expect(component['statusBg']('Completed')).toBe('var(--bg-surface-2)');
-      expect(component['statusColor']('Completed')).toBe('var(--text-muted)');
+    it('returns faint for Pending', () => {
+      expect(component['statusColor']('Pending')).toBe('var(--text-faint)');
+    });
+  });
+
+  describe('idHue() / chipColors()', () => {
+    it('is deterministic for a given id', () => {
+      expect(component['idHue'](DEV_ID)).toBe(component['idHue'](DEV_ID));
+    });
+
+    it('produces a hue in [0, 360)', () => {
+      const hue = component['idHue'](DEV_ID);
+      expect(hue).toBeGreaterThanOrEqual(0);
+      expect(hue).toBeLessThan(360);
+    });
+
+    it('gives different hues to different ids', () => {
+      expect(component['idHue']('be61aa01-0000-0000-0000-000000000000'))
+        .not.toBe(component['idHue']('138b0dbe-0000-0000-0000-000000000000'));
+    });
+
+    it('chipColors() embeds the hue and is memoised (same object on repeat calls)', () => {
+      const hue = component['idHue'](DEV_ID);
+      const c = component['chipColors'](DEV_ID);
+      expect(c.bg).toContain(`hsl(${hue}`);
+      expect(component['chipColors'](DEV_ID)).toBe(c);
+    });
+  });
+
+  describe('selectPlayer() / highlight', () => {
+    const OTHER = 'bbbbbbbb-0000-0000-0000-000000000002';
+
+    it('highlights the clicked id, dims the others', () => {
+      component['selectPlayer'](DEV_ID);
+      expect(component['isHighlighted'](DEV_ID)).toBeTrue();
+      expect(component['isDimmed'](DEV_ID)).toBeFalse();
+      expect(component['isDimmed'](OTHER)).toBeTrue();
+      expect(component['isHighlighted'](OTHER)).toBeFalse();
+    });
+
+    it('toggles off when the same id is clicked again', () => {
+      component['selectPlayer'](DEV_ID);
+      component['selectPlayer'](DEV_ID);
+      expect(component['highlightedPlayerId']()).toBeNull();
+      expect(component['isDimmed'](OTHER)).toBeFalse();
+    });
+
+    it('switches highlight when a different id is clicked', () => {
+      component['selectPlayer'](DEV_ID);
+      component['selectPlayer'](OTHER);
+      expect(component['isHighlighted'](OTHER)).toBeTrue();
+      expect(component['isDimmed'](DEV_ID)).toBeTrue();
+    });
+
+    it('nothing is dimmed when no id is selected', () => {
+      expect(component['isDimmed'](DEV_ID)).toBeFalse();
+      expect(component['isDimmed'](OTHER)).toBeFalse();
+    });
+  });
+
+  describe('onChipContextMenu() → copy', () => {
+    it('prevents the default menu and copies the full id', async () => {
+      const evt = { preventDefault: jasmine.createSpy('preventDefault') } as unknown as MouseEvent;
+      component['onChipContextMenu'](evt, DEV_ID);
+      await Promise.resolve();
+
+      expect(evt.preventDefault).toHaveBeenCalled();
+      expect(clipboardStub.copy).toHaveBeenCalledWith(DEV_ID);
+      expect(component['copiedPlayerId']()).toBe(DEV_ID);
     });
   });
 

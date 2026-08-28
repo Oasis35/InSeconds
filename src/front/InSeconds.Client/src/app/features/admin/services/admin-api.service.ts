@@ -72,4 +72,5 @@ export class AdminApiService {
   addTrack(deezerTrackId: number) { return this.http.addTrack(deezerTrackId); }
   updateTrack(id: number, deezerTrackId: number) { return this.http.updateTrack(id, deezerTrackId); }
   deleteTrack(id: number) { return this.http.deleteTrack(id); }
+  searchDeezer(q: string) { return this.http.searchDeezer(q); }
 }

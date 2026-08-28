@@ -163,16 +163,18 @@ test.describe('Admin — pool', () => {
     await expect(admin.poolColumnHeader('Date de déblocage')).toBeVisible();
     await expect(admin.poolColumnHeader('Nb. utilisations')).toBeVisible();
 
+    // Colonnes (après réordonnancement) : 0=sélection, 1=Actions, 2=Artiste, 3=Titre,
+    // 4=Preview, 5=Statut, 6=Dernière utilisation, 7=Date de déblocage, 8=Nb. utilisations.
     // Queen (index 10 du seed) a été mise en cooldown récent (-5j, defaut 30j) : dates non vides.
     await admin.poolSearchInput().fill('Queen');
     const queenRow = admin.poolRow('Queen');
-    await expect(queenRow.getByRole('cell').nth(5)).not.toHaveText('');
     await expect(queenRow.getByRole('cell').nth(6)).not.toHaveText('');
+    await expect(queenRow.getByRole('cell').nth(7)).not.toHaveText('');
 
     // Michael Jackson (index 9) n'a jamais été utilisé : date de déblocage vide.
     await admin.poolSearchInput().fill('Michael Jackson');
     const mjRow = admin.poolRow('Michael Jackson');
-    await expect(mjRow.getByRole('cell').nth(6)).toHaveText('');
+    await expect(mjRow.getByRole('cell').nth(7)).toHaveText('');
   });
 
   test('filtre par plage de dates sur la dernière utilisation', async ({ page }) => {
@@ -202,7 +204,25 @@ test.describe('Admin — pool', () => {
     // Adele (index 13) a le UsageCount le plus élevé du seed (7) — tri desc doit la faire remonter.
     await admin.poolColumnHeader('Nb. utilisations').click();
     await admin.poolColumnHeader('Nb. utilisations').click(); // 2e clic → desc
-    await expect(page.getByRole('row').nth(1).getByRole('cell').nth(1)).toHaveText('Adele');
+    // Colonne Artiste = cell index 2 (0=sélection, 1=Actions, 2=Artiste).
+    await expect(page.getByRole('row').nth(1).getByRole('cell').nth(2)).toHaveText('Adele');
+  });
+
+  test('le bouton ▶ ouvre la modale d\'écoute de l\'extrait', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('button', { name: /Pool/ }).click();
+
+    await page.getByRole('button', { name: '▶', exact: true }).first().click();
+
+    const modal = page.getByRole('dialog').filter({ hasText: 'Écouter l\'extrait' });
+    await expect(modal).toBeVisible();
+    // FakeDeezerHandler renvoie un extrait → lecteur prêt (bouton lecture/pause).
+    await expect(modal.getByRole('button', { name: /▶|⏸/ })).toBeVisible();
+
+    await modal.getByRole('button', { name: 'Fermer' }).click();
+    await expect(modal).not.toBeVisible();
   });
 });
 
@@ -338,7 +358,12 @@ test.describe('Admin — indicateur joueurs / ID navigateur', () => {
     await expect(youChip).toBeVisible();
     await expect(youChip).toContainText(browserShortId!);
 
+    // Clic gauche = surbrillance croisée : le chip reçoit un anneau (box-shadow non nul).
     await youChip.click();
+    await expect(youChip).not.toHaveCSS('box-shadow', 'none');
+
+    // Clic droit = copie l'ID complet (le clic gauche sert à la surbrillance croisée).
+    await youChip.click({ button: 'right' });
     await expect(todayRow.getByText('Copié !')).toBeVisible();
 
     const clipText = await page.evaluate(() => navigator.clipboard.readText());

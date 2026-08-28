@@ -9,7 +9,7 @@
 ## Déroulé d'une partie
 
 - **N morceaux par jour** (`Settings.TracksPerChallenge`, défaut **3**), même défi pour tout le monde, généré à minuit UTC. **[Back]**
-- Une seule session par joueur par défi — contrainte unique `(PlayerId, DailyChallengeId)`. Une partie déjà `Completed` ou `Abandoned` ne peut pas être rejouée (409). Une partie `Pending` peut être reprise jusqu'à minuit. **[Back]**
+- Une seule session par joueur par défi — contrainte unique `(PlayerId, DailyChallengeId)`. Une partie déjà `Completed`, `Abandoned` (bouton) ou `Expired` (Pending non terminé, basculé par l'expiry paresseuse) ne peut pas être rejouée (409). Une partie `Pending` peut être reprise jusqu'à minuit. **[Back]**
 - Pour chaque morceau : le joueur choisit un palier d'écoute, écoute, saisit artiste + titre (ou passe si pas de preview), score calculé côté serveur.
 
 ## Paliers d'écoute et barème de points
@@ -57,7 +57,7 @@ Si `Track.HasPreview = false`, le joueur ne peut pas écouter : bouton « Passer
 ## Anti-triche
 
 - **Scoring 100 % serveur** — le client n'envoie que le palier choisi et le texte saisi ; `SubmitAnswerHandler` recalcule tout, le front ne fait qu'afficher le résultat renvoyé.
-- **Anti-rejeu** : contrainte unique BD `(PlayerId, DailyChallengeId)` — impossible de rejouer un défi déjà `Completed`/`Abandoned` en re-soumettant une requête. **[Back]**
+- **Anti-rejeu** : contrainte unique BD `(PlayerId, DailyChallengeId)` — impossible de rejouer un défi déjà `Completed`/`Abandoned`/`Expired` en re-soumettant une requête. **[Back]**
 - **Durée minimale déjà écoutée (anti-reprise)** : `PATCH /api/sessions/{id}/listening` enregistre, à chaque arrêt du timer sur un morceau, la durée maximale déjà écoutée (`GameSession.CurrentTrackMinListenedSeconds`). Si le joueur recharge la page en pleine écoute puis reprend, les paliers plus courts que ce qui a déjà été « consommé » sont masqués — impossible de re-choisir un palier plus court après coup pour gonfler artificiellement le score. **[Back + Front]**, verrou posé côté back, filtrage des paliers affichés côté front (`BlindRoundComponent.durations` computed).
 - **Durée validée serveur** : `ListenedDurationSeconds` doit appartenir à `Settings.AllowedDurationsSeconds` (sauf `0` pour le skip sans preview) — un palier inventé côté client est rejeté par `SubmitAnswerValidator`. **[Back]**
 

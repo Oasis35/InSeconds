@@ -79,7 +79,7 @@ src/front/InSeconds.Client/
 │   │   │   │   │   └── blind-round.component.ts  # choix palier + lecture + saisie + polish UX
 │   │   │   │   ├── components/
 │   │   │   │   │   ├── game-header/            # en-tête (titre + streak + score + barre progression)
-│   │   │   │   │   └── game-footer/            # pied de page (liens admin/github/confidentialité + langue FR/EN)
+│   │   │   │   │   └── game-footer/            # pied de page (liens admin/confidentialité + langue FR/EN)
 │   │   │   │   └── screens/
 │   │   │   │       ├── welcome-screen/
 │   │   │   │       ├── resume-screen/
@@ -211,11 +211,14 @@ Autocomplete Deezer (`features/game/services/`, `providedIn: root`, stateless) :
 ### `GameService`
 
 ```typescript
-startToday(): Observable<StartSessionResponse>
+peekToday(): Observable<GetTodaySessionResponse>   // GET /api/sessions/today — lecture seule, ne crée NI session NI cookie
+startToday(): Observable<StartSessionResponse>      // POST — crée Player + cookie + session (clic « Commencer »/« Reprendre » uniquement)
 submitAnswer(sessionId: number, body: SubmitAnswerRequest): Observable<SubmitAnswerResponse>
 abandonSession(sessionId: number): Observable<void>
 updateListening(sessionId: number, trackId: number, duration: number): Observable<void>
 ```
+
+`game.component.ngOnInit` appelle `peekToday()` (via `GameFacadeService`) et mappe `res.state` → `welcome` / `resume_prompt` / `already_played` / `no_challenge`. `POST /api/sessions` n'est déclenché que par `beginGame()` / `beginResume()` / `beginAbandonFromResume()`.
 
 ### `LanguageService`
 
@@ -249,7 +252,7 @@ Orchestre une session complète. États : `loading` → `welcome` → `playing` 
 
 Délègue l'affichage à des sous-composants :
 - **`GameHeaderComponent`** : titre InSeconds + streak + score en cours + barre de progression + bouton abandon
-- **`GameFooterComponent`** : liens admin / GitHub / confidentialité + bouton langue FR/EN
+- **`GameFooterComponent`** : liens admin / confidentialité + bouton langue FR/EN
 - **`WelcomeScreenComponent`** : état `welcome`
 - **`ResumeScreenComponent`** : état `resume_prompt` (avec confirmation abandon inline)
 - **`StatusScreenComponent`** : états `no_challenge` + `error` (inputs `titleKey`/`bodyKey` i18n)
