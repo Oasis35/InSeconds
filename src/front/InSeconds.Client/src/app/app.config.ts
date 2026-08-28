@@ -11,8 +11,6 @@ import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 import { routes } from './app.routes';
 import { SettingsService } from './core/services/settings.service';
 import { LanguageService } from './core/services/language.service';
-import { CookieConsentService } from './core/services/cookie-consent.service';
-import { AnalyticsService } from './core/services/analytics.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -25,18 +23,7 @@ export const appConfig: ApplicationConfig = {
     provideTranslateService({
       loader: provideTranslateHttpLoader({ prefix: 'i18n/', suffix: '.json' }),
     }),
-    provideAppInitializer(async () => {
-      // inject() doit être appelé de façon synchrone, avant tout await — un await (même sur
-      // une valeur non-Promise) fait sortir du contexte d'injection Angular (NG0203).
-      const language = inject(LanguageService);
-      const cookieConsent = inject(CookieConsentService);
-      // Doit être la toute première commande gtag envoyée, avant même la langue/le bandeau
-      // — cf. AnalyticsService.declareDefaultConsent().
-      inject(AnalyticsService).declareDefaultConsent();
-      await language.init();
-      // Après la langue : le bandeau cookies lit les traductions déjà chargées.
-      await cookieConsent.init();
-    }),
+    provideAppInitializer(() => inject(LanguageService).init()),
     provideAppInitializer(() => inject(SettingsService).load()),
   ],
 };

@@ -87,7 +87,7 @@ Inputs : `track` (`required`), `isLast=false`, `sessionId=0`, `minListenedSecond
 ## `components/game-header/` et `components/game-footer/`
 
 - **`game-header`** : purement présentationnel. Inputs `required` : `playing`, `showStreak`, `streak`, `totalScore`, `currentIndex`, `trackCount`. Output `abandon`. Badge streak 🔥 si `showStreak()`, recouvert visuellement par le score si `playing()`.
-- **`game-footer`** : pas d'inputs/outputs. Injecte `LanguageService`, `currentLang = language.current` réexposé. `toggleLanguage()` bascule fr↔en. Liens `/admin`, GitHub, `/privacy`. Testé (`game-footer.component.spec.ts`) : bascule fr→en/en→fr + persistance `localStorage`.
+- **`game-footer`** : pas d'inputs/outputs. Injecte `LanguageService`, `currentLang = language.current` réexposé. `toggleLanguage()` bascule fr↔en. Liens `/admin`, `/privacy`. Testé (`game-footer.component.spec.ts`) : bascule fr→en/en→fr + persistance `localStorage`.
 
 ## `screens/*`
 

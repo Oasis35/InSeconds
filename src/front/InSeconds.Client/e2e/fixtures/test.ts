@@ -16,15 +16,12 @@ export const test = base.extend<E2EFixtures>({
   //  - __disableHealthPolling : coupe le polling /health (les sauts d'horloge cumulent les
   //    ticks et switchMap annule les requêtes en vol, ce qui déclencherait un faux overlay
   //    "Service indisponible"). Le spec service-down.spec.ts le réactive explicitement.
-  //  - __disableCookieConsent : coupe le bandeau cookies (bloquerait les clics dans tous les
-  //    specs sinon, cf. CookieConsentService.init()).
   //  - localStorage.lang = 'fr' : force la langue FR (les specs matchent du texte FR en dur),
   //    quelle que soit la locale du navigateur du runner CI.
   page: async ({ page }, use) => {
     await page.addInitScript(() => {
       (window as { __disableAnimations?: boolean }).__disableAnimations = true;
       (window as { __disableHealthPolling?: boolean }).__disableHealthPolling = true;
-      (window as { __disableCookieConsent?: boolean }).__disableCookieConsent = true;
       try {
         localStorage.setItem('lang', 'fr');
       } catch {
