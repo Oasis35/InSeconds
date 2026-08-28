@@ -53,14 +53,25 @@
               @if (c.players.length > 0) {
                 <div class="flex flex-wrap gap-1 mt-2">
                   @for (p of c.players; track p.playerId) {
-                    <button type="button" (click)="copyPlayerId(p.playerId)" [attr.title]="p.playerId"
-                      class="text-[10px] font-mono px-1.5 py-0.5 rounded transition-colors hover:opacity-80"
-                      [style.background]="isYou(p.playerId) ? 'var(--bg-primary)' : statusBg(p.status)"
-                      [style.color]="isYou(p.playerId) ? 'var(--text-on-primary)' : statusColor(p.status)">
+                    @let mine = isYou(p.playerId);
+                    @let col = chipColors(p.playerId);
+                    <button type="button"
+                      (click)="selectPlayer(p.playerId)"
+                      (contextmenu)="onChipContextMenu($event, p.playerId)"
+                      [attr.title]="p.playerId + ' — ' + p.status"
+                      class="text-[10px] font-mono px-1.5 py-0.5 rounded border transition-all inline-flex items-center gap-1"
+                      [style.opacity]="isDimmed(p.playerId) ? '0.3' : null"
+                      [style.background]="mine ? 'var(--bg-primary)' : col.bg"
+                      [style.border-color]="mine ? 'var(--bg-primary)' : col.border"
+                      [style.color]="mine ? 'var(--text-on-primary)' : col.text"
+                      [style.box-shadow]="isHighlighted(p.playerId) ? '0 0 0 2px ' + col.text : null">
                       @if (copiedPlayerId() === p.playerId) {
                         {{ 'admin.dashboard.copied' | translate }}
                       } @else {
-                        {{ shortId(p.playerId) }}@if (isYou(p.playerId)) { · {{ 'admin.dashboard.you' | translate }} }
+                        @if (p.status !== 'Completed') {
+                          <span class="w-1 h-1 rounded-full shrink-0" [style.background]="statusColor(p.status)"></span>
+                        }
+                        {{ shortId(p.playerId) }}@if (mine) { · {{ 'admin.dashboard.you' | translate }} }
                       }
                     </button>
                   }

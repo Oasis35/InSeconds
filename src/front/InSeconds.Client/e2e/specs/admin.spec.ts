@@ -338,7 +338,8 @@ test.describe('Admin — indicateur joueurs / ID navigateur', () => {
     await expect(youChip).toBeVisible();
     await expect(youChip).toContainText(browserShortId!);
 
-    await youChip.click();
+    // Clic droit = copie l'ID complet (le clic gauche sert à la surbrillance croisée).
+    await youChip.click({ button: 'right' });
     await expect(todayRow.getByText('Copié !')).toBeVisible();
 
     const clipText = await page.evaluate(() => navigator.clipboard.readText());
