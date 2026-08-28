@@ -79,6 +79,7 @@
   "footer": {
     "admin": "Admin",
     "privacy": "Privacy",
+    "contact": "Contact us",
     "language": "Passer en français"
   },
   "privacy": {
@@ -112,8 +113,8 @@
     "rights": {
       "title": "Your rights",
       "body": "In accordance with Articles 15 to 21 of the GDPR, you have the right to access, rectify, erase, restrict the processing of, object to the processing of, and port the data associated with your identifier. Deletion permanently erases your game history and current streak.\nYou also have the right to lodge a complaint with a supervisory authority (in France, the CNIL — www.cnil.fr).",
-      "contact": "To exercise these rights:",
-      "contactLabel": "✉️ contact us"
+      "contact": "To exercise these rights, or for any question:",
+      "contactLabel": "✉️ contact@inseconds.cc"
     },
     "back": "Back to the game"
   },

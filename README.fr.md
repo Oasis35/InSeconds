@@ -163,3 +163,7 @@ Le backend tourne en `ASPNETCORE_ENVIRONMENT=Testing` qui active :
 ## Licence
 
 [PolyForm Noncommercial 1.0.0](LICENSE) — libre d'utilisation, de modification et de distribution pour tout usage non-commercial (personnel, éducatif, hobby, recherche). Un usage commercial nécessite un accord séparé avec l'auteur.
+
+## Contact
+
+<contact@inseconds.cc>
