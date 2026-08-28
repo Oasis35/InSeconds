@@ -207,7 +207,7 @@ export class AdminPoolService {
     if (!url) return;
     if (this.modalPlaying()) { this.pauseModalAudio(); return; }
 
-    if (!this.modalAudio || this.modalAudio.src !== url) {
+    if (this.modalAudio?.src !== url) {
       this.stopModalAudio();
       this.modalAudio = new Audio(url);
       this.modalAudio.onended = () => {
@@ -217,13 +217,15 @@ export class AdminPoolService {
       };
     }
 
-    this.modalAudio.play().then(() => {
+    const audio = this.modalAudio; // non-null : inchangé (src === url) ou recréé ci-dessus
+    if (!audio) return;
+    audio.play().then(() => {
       this.modalPlaying.set(true);
       const tick = () => {
-        const audio = this.modalAudio;
-        if (!audio) return;
-        if (audio.paused) return;
-        const pct = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
+        const current = this.modalAudio;
+        if (!current) return;
+        if (current.paused) return;
+        const pct = current.duration ? (current.currentTime / current.duration) * 100 : 0;
         this.modalProgress.set(pct);
         this.modalRafId = requestAnimationFrame(tick);
       };
