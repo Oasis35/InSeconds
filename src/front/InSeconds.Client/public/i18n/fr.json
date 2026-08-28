@@ -79,6 +79,7 @@
   "footer": {
     "admin": "Admin",
     "privacy": "Confidentialité",
+    "contact": "Nous contacter",
     "language": "Switch to English"
   },
   "privacy": {
@@ -112,8 +113,8 @@
     "rights": {
       "title": "Vos droits",
       "body": "Conformément aux articles 15 à 21 du RGPD, vous disposez d'un droit d'accès, de rectification, d'effacement, de limitation du traitement, d'opposition et de portabilité sur les données associées à votre identifiant. La suppression efface définitivement votre historique de parties et votre série en cours.\nVous disposez également du droit d'introduire une réclamation auprès de la CNIL (www.cnil.fr).",
-      "contact": "Pour exercer ces droits :",
-      "contactLabel": "✉️ nous contacter"
+      "contact": "Pour exercer ces droits, ou pour toute question :",
+      "contactLabel": "✉️ contact@inseconds.cc"
     },
     "back": "Retour au jeu"
   },

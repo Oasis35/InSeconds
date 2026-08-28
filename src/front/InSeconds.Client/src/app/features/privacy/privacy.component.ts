@@ -10,5 +10,5 @@ import { DecorBackgroundComponent } from '../../shared/decor-background/decor-ba
   templateUrl: './privacy.component.html',
 })
 export class PrivacyComponent {
-  protected readonly contactEmail = 'monsupermail.new@gmail.com';
+  protected readonly contactEmail = 'contact@inseconds.cc';
 }
