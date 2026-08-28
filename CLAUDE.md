@@ -112,7 +112,7 @@ Angular 22 standalone + signals + ngx-translate (i18n FR/EN).
 - `src/app/core/services/language.service.ts` : détection langue (`localStorage` → `navigator.language` → FR), `translate.use()`, signal `current`
 - `src/app/core/models/game.models.ts` : re-exports depuis `api.generated.ts`
 - `src/app/api/api.generated.ts` : **fichier généré commité volontairement**, regénérer avec `npm run generate-api` après tout changement d'endpoint back
-- `src/environments/environment{,.development}.ts` : `apiUrl` + `appUrl`, swap auto via `fileReplacements`
+- `src/environments/environment{,.development}.ts` : `apiUrl` + `appUrl`, swap auto via `fileReplacements`. En prod `apiUrl = https://api.inseconds.cc` (sous-domaine Northflank dédié au service `api`, CNAME Cloudflare en DNS-only vers `…dns.northflank.app`, cert Let's Encrypt géré par Northflank) — l'ancienne URL `https://p01--api--b5cnx77tvxgb.code.run` reste servie en parallèle par Northflank mais n'est plus ciblée par le front
 - `src/styles.scss` : `@use "tailwindcss";` + **variables CSS `:root`** pour toute la palette couleurs (ne pas mettre de hex en dur dans les templates)
 - `.postcssrc.json` : plugin `@tailwindcss/postcss`
 - **CORS** : le back autorise `http://localhost:5173`, `http://localhost:65075`, `https://p01--front--b5cnx77tvxgb.code.run` (URL Northflank interne du front) et `https://inseconds.cc` + `https://www.inseconds.cc` (nom de domaine public, front servi dessus depuis 2026-08-28) dans `appsettings.json` (`Cors:AllowedOrigins`) ; `oasis35.github.io` n'y figure pas volontairement car ce n'est qu'une page de rebond statique (pas d'appels API directs depuis ce domaine)

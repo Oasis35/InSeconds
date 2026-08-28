@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://p01--api--b5cnx77tvxgb.code.run',
+  apiUrl: 'https://api.inseconds.cc',
   appUrl: 'https://inseconds.cc',
 };
