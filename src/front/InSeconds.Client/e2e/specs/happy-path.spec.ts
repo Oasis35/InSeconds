@@ -27,6 +27,25 @@ test.describe('Happy path — partie complète', () => {
     await expect(page.getByText('Reviens demain pour un nouveau défi')).toBeVisible();
   });
 
+  test('un simple chargement de page ne pose aucun cookie joueur (création paresseuse)', async ({ page }) => {
+    await page.clock.install({ time: Date.now() });
+
+    const game = new GamePage(page);
+    await game.goto();
+    await game.waitForWelcome();
+
+    // Peek GET /api/sessions/today : lecture seule → aucun Player ni cookie authToken créé.
+    const before = await page.context().cookies();
+    expect(before.find(c => c.name === 'authToken')).toBeUndefined();
+
+    // Le cookie n'apparaît qu'au clic « Commencer à jouer » (POST /api/sessions).
+    await game.clickStart();
+    await expect(page.getByText('Piste 1 / 3')).toBeVisible();
+
+    const after = await page.context().cookies();
+    expect(after.find(c => c.name === 'authToken')).toBeDefined();
+  });
+
   test('affiche la progression piste X / 3 pendant la partie', async ({ page }) => {
     await page.clock.install({ time: Date.now() });
 
