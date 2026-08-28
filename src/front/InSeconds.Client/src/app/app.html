@@ -1,5 +1,9 @@
 <router-outlet />
 
+@if (showLegacyUrlNotice()) {
+  <app-legacy-url-notice (dismissed)="showLegacyUrlNotice.set(false)" />
+}
+
 @if (isServiceDown()) {
   <app-service-down />
 }

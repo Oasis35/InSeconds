@@ -1,0 +1,20 @@
+<div class="fixed inset-0 flex items-center justify-center px-4" style="background:var(--overlay-dark);z-index:60">
+  <div class="w-full max-w-md rounded-2xl p-6 space-y-4 text-center"
+    style="background:var(--bg-surface-2);border:1px solid var(--border-strong);color:var(--text-body)">
+    <p class="text-5xl">🔖</p>
+    <p class="text-base font-bold uppercase" style="font-family:var(--font-display);letter-spacing:0.04em;color:var(--text-hi)">
+      {{ 'legacyUrl.title' | translate }}
+    </p>
+    <p class="text-sm leading-relaxed" style="color:var(--text-light)">
+      {{ 'legacyUrl.body' | translate }}
+    </p>
+    <p class="text-lg font-bold tracking-wide" style="font-family:var(--font-display);color:var(--text-accent)">
+      inseconds.cc
+    </p>
+    <button (click)="dismissed.emit()"
+      class="w-full py-3 rounded-xl text-sm font-bold uppercase transition-all active:scale-95"
+      style="font-family:var(--font-display);letter-spacing:0.04em;background:var(--gradient-primary);color:var(--text-on-primary)">
+      {{ 'legacyUrl.cta' | translate }}
+    </button>
+  </div>
+</div>
