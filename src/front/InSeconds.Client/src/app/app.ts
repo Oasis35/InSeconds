@@ -6,6 +6,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { environment } from '../environments/environment';
 import { ServiceDownComponent } from './features/service-down/service-down.component';
+import { LegacyUrlNoticeComponent } from './features/legacy-url-notice/legacy-url-notice.component';
 
 type HealthState = 'loading' | 'ok' | 'ko';
 
@@ -24,7 +25,7 @@ const HEALTH_KO_THRESHOLD = 3;
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, ServiceDownComponent],
+  imports: [RouterOutlet, ServiceDownComponent, LegacyUrlNoticeComponent],
   templateUrl: './app.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -33,6 +34,10 @@ export class App {
 
   protected readonly health = signal<HealthState>('loading');
   protected readonly healthUtc = signal<string | null>(null);
+
+  // Affiché quand on arrive via l'ancienne URL front (…code.run), redirigée en 301
+  // vers inseconds.cc avec `?from=legacy` par nginx. Voir checkLegacyUrlNotice().
+  protected readonly showLegacyUrlNotice = signal(false);
 
   // Compteur d'échecs consécutifs de /health (réinitialisé à chaque succès).
   private consecutiveFailures = 0;
@@ -50,6 +55,8 @@ export class App {
   });
 
   constructor() {
+    this.checkLegacyUrlNotice();
+
     // Sous une horloge figée par page.clock (E2E), les sauts d'horloge cumulent les ticks
     // du timer et switchMap annule les requêtes /health en vol — comptées comme échecs,
     // ce qui déclencherait un faux overlay "Service indisponible". On neutralise donc le
@@ -81,5 +88,25 @@ export class App {
           }
         }
       });
+  }
+
+  /**
+   * `nginx.conf` redirige l'ancienne URL front (`p01--front--…code.run`) en 301 vers
+   * `https://inseconds.cc?from=legacy`. On affiche alors une pop-up invitant à mettre
+   * à jour le favori, puis on retire le paramètre de l'URL (pas de ré-affichage au
+   * rechargement, pas de `from=legacy` qui traîne dans un partage).
+   */
+  private checkLegacyUrlNotice(): void {
+    if (typeof window === 'undefined') return;
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('from') !== 'legacy') return;
+
+    this.showLegacyUrlNotice.set(true);
+
+    params.delete('from');
+    const qs = params.toString();
+    const cleanUrl = window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash;
+    window.history.replaceState(window.history.state, '', cleanUrl);
   }
 }

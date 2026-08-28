@@ -150,6 +150,11 @@
     "body": "The app will be back in a moment. This page will refresh on its own as soon as the service returns.",
     "reconnecting": "Reconnecting…"
   },
+  "legacyUrl": {
+    "title": "The address has changed",
+    "body": "InSeconds now has its own address. You were redirected automatically — remember to update your bookmark.",
+    "cta": "Got it"
+  },
   "admin": {
     "title": "Admin",
     "deployedAt": "Deployed {{ date }}",
