@@ -241,6 +241,7 @@
       "ok": "OK",
       "refresh": "↻ Refresh",
       "refreshTitle": "Find a version with a preview",
+      "listenTitle": "Play the preview",
       "deleteTitle": "Delete",
       "tracksCount": "track(s)",
       "page": "page {{ current }}/{{ total }}",
@@ -283,6 +284,12 @@
       "cancel": "Cancel",
       "delete": "Delete",
       "deleting": "Deleting..."
+    },
+    "previewModal": {
+      "title": "Play the preview",
+      "loading": "Fetching the preview...",
+      "error": "No preview available for this track.",
+      "close": "Close"
     },
     "addModal": {
       "title": "Add to pool",

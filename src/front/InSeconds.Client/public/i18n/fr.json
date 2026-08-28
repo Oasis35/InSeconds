@@ -241,6 +241,7 @@
       "ok": "OK",
       "refresh": "↻ Actualiser",
       "refreshTitle": "Chercher une version avec preview",
+      "listenTitle": "Écouter l'extrait",
       "deleteTitle": "Supprimer",
       "tracksCount": "morceau(x)",
       "page": "page {{ current }}/{{ total }}",
@@ -283,6 +284,12 @@
       "cancel": "Annuler",
       "delete": "Supprimer",
       "deleting": "Suppression..."
+    },
+    "previewModal": {
+      "title": "Écouter l'extrait",
+      "loading": "Récupération de l'extrait...",
+      "error": "Aucun extrait disponible pour ce morceau.",
+      "close": "Fermer"
     },
     "addModal": {
       "title": "Ajouter au pool",

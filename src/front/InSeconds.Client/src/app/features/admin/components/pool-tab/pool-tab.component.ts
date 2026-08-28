@@ -3,6 +3,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { AdminPoolService, PoolSortColumn } from '../../services/admin-pool.service';
 import { DeleteTrackModalComponent } from '../delete-track-modal/delete-track-modal.component';
 import { AddTrackModalComponent } from '../add-track-modal/add-track-modal.component';
+import { PreviewTrackModalComponent } from '../preview-track-modal/preview-track-modal.component';
 
 interface PoolSortableColumn {
   column: PoolSortColumn;
@@ -12,7 +13,7 @@ interface PoolSortableColumn {
 
 @Component({
   selector: 'app-pool-tab',
-  imports: [TranslatePipe, DeleteTrackModalComponent, AddTrackModalComponent],
+  imports: [TranslatePipe, DeleteTrackModalComponent, AddTrackModalComponent, PreviewTrackModalComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pool-tab.component.html',
 })

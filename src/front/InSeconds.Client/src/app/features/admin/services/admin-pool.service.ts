@@ -44,6 +44,13 @@ export class AdminPoolService {
   private modalAudio: HTMLAudioElement | null = null;
   private modalRafId: number | null = null;
 
+  // --- modale écoute (preview d'une ligne du pool) ---
+  // Réutilise le lecteur audio de la modale d'ajout (modalAudio/modalPlaying/modalProgress).
+  readonly previewModalOpen = signal(false);
+  readonly previewModalTrack = signal<PoolTrackDto | null>(null);
+  readonly previewModalStatus = signal<'loading' | 'ready' | 'error'>('loading');
+  private previewModalUrl = signal<string | null>(null);
+
   // --- modale suppression ---
   readonly deleteModalOpen = signal(false);
   readonly deleteModalTracks = signal<PoolTrackDto[]>([]);
@@ -186,20 +193,23 @@ export class AdminPoolService {
     this.poolSearchQuery.set('');
   }
 
+  /** Lecteur preview de la modale d'ajout. */
   toggleModalPreview(): void {
-    const track = this.addModalTrack();
-    if (!track?.previewUrl) return;
+    this.togglePreviewUrl(this.addModalTrack()?.previewUrl ?? null);
+  }
 
-    if (this.modalPlaying()) {
-      this.modalAudio?.pause();
-      this.modalPlaying.set(false);
-      if (this.modalRafId !== null) { cancelAnimationFrame(this.modalRafId); this.modalRafId = null; }
-      return;
-    }
+  /** Lecteur preview de la modale d'écoute (ligne du pool). */
+  togglePreviewModalAudio(): void {
+    this.togglePreviewUrl(this.previewModalUrl());
+  }
 
-    if (!this.modalAudio || this.modalAudio.src !== track.previewUrl) {
+  private togglePreviewUrl(url: string | null): void {
+    if (!url) return;
+    if (this.modalPlaying()) { this.pauseModalAudio(); return; }
+
+    if (!this.modalAudio || this.modalAudio.src !== url) {
       this.stopModalAudio();
-      this.modalAudio = new Audio(track.previewUrl);
+      this.modalAudio = new Audio(url);
       this.modalAudio.onended = () => {
         this.modalPlaying.set(false);
         this.modalProgress.set(100);
@@ -220,10 +230,52 @@ export class AdminPoolService {
     }).catch(() => {});
   }
 
+  private pauseModalAudio(): void {
+    this.modalAudio?.pause();
+    this.modalPlaying.set(false);
+    if (this.modalRafId !== null) { cancelAnimationFrame(this.modalRafId); this.modalRafId = null; }
+  }
+
   private stopModalAudio(): void {
     if (this.modalRafId !== null) { cancelAnimationFrame(this.modalRafId); this.modalRafId = null; }
     if (this.modalAudio) { this.modalAudio.pause(); this.modalAudio.onended = null; this.modalAudio = null; }
     this.modalPlaying.set(false);
+  }
+
+  // --- modale écoute ---
+  openPreviewModal(t: PoolTrackDto): void {
+    this.stopModalAudio();
+    this.previewModalTrack.set(t);
+    this.previewModalUrl.set(null);
+    this.previewModalStatus.set('loading');
+    this.modalProgress.set(0);
+    this.previewModalOpen.set(true);
+
+    // Réutilise la recherche Deezer admin pour retrouver l'URL de preview de ce morceau.
+    this.api.searchDeezer(`${t.artist} ${t.title}`)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (results) => {
+          const match = results.find(r => r.deezerTrackId === t.deezerTrackId) ?? results[0];
+          if (match?.previewUrl) {
+            this.previewModalUrl.set(match.previewUrl);
+            this.previewModalStatus.set('ready');
+            this.togglePreviewModalAudio(); // démarre la lecture directement
+          } else {
+            this.previewModalStatus.set('error');
+          }
+        },
+        error: () => this.previewModalStatus.set('error'),
+      });
+  }
+
+  closePreviewModal(): void {
+    this.stopModalAudio();
+    this.previewModalOpen.set(false);
+    this.previewModalTrack.set(null);
+    this.previewModalUrl.set(null);
+    this.previewModalStatus.set('loading');
+    this.modalProgress.set(0);
   }
 
   addToPoolFromModal(andClose: boolean): void {
