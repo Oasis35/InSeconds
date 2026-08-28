@@ -430,20 +430,57 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task AdminStats_JourPasse_PendingCompteDansAbandons()
+    public async Task AdminStats_JourPasse_PendingCompteCommeExpired_PasAbandoned()
     {
-        // J-1 a 1 session Completed dans le seed, on vérifie que si on avait un Pending
-        // il serait compté comme abandon — le seed n'en crée pas, on vérifie juste le comportement
-        // via la session Completed existante (AbandonedCount = 0 car pas de Pending/Abandoned)
+        // Une session Pending rattachée au défi de J-1 (joueur jamais revenu) doit compter
+        // dans ExpiredCount — jamais dans AbandonedCount, réservé au clic « Abandonner ».
+        var session = await StartSessionAsync();
         var yesterday = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1));
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var gs = await db.GameSessions.FindAsync(session.SessionId);
+            var yChallenge = await db.DailyChallenges.FirstAsync(c => c.Date == yesterday);
+            gs!.DailyChallengeId = yChallenge.Id;
+            await db.SaveChangesAsync();
+        }
+
         var resp = await AdminGetAsync($"/api/admin/stats?date={yesterday:yyyy-MM-dd}");
         var body = await resp.Content.ReadFromJsonAsync<AdminStatsResponse>();
         Assert.NotNull(body?.SelectedDayKpis);
 
-        Assert.Equal(1, body.SelectedDayKpis.CompletedCount);
+        // KPIs du jour
+        Assert.Equal(1, body.SelectedDayKpis.CompletedCount);  // session Completed du seed (dev)
         Assert.Equal(0, body.SelectedDayKpis.AbandonedCount);
-        Assert.Equal(100.0, body.SelectedDayKpis.CompletionRate);
-        Assert.NotNull(body.SelectedDayKpis.MedianScore);
+        Assert.Equal(1, body.SelectedDayKpis.ExpiredCount);    // le Pending d'un jour passé
+        Assert.Equal(0, body.SelectedDayKpis.PendingCount);    // jour passé → jamais "en cours"
+        Assert.Equal(2, body.SelectedDayKpis.TotalSessions);
+
+        // Convergence : la section « Stats par défi » reporte les mêmes chiffres
+        var yStats = body.Challenges.First(c => c.Date == yesterday);
+        Assert.Equal(0, yStats.AbandonedCount);
+        Assert.Equal(1, yStats.ExpiredCount);
+        Assert.Equal(0, yStats.PendingCount);
+    }
+
+    [Fact]
+    public async Task AdminStats_ApresAbandonExplicite_CompteAbandonedPasExpired()
+    {
+        var session = await StartSessionAsync();
+        await _client.PutAsync($"/api/sessions/{session.SessionId}/abandon", null);
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var resp = await AdminGetAsync($"/api/admin/stats?date={today:yyyy-MM-dd}");
+        var body = await resp.Content.ReadFromJsonAsync<AdminStatsResponse>();
+        Assert.NotNull(body?.SelectedDayKpis);
+
+        Assert.Equal(1, body.SelectedDayKpis.AbandonedCount);
+        Assert.Equal(0, body.SelectedDayKpis.ExpiredCount);
+
+        var todayStats = body.Challenges.First(c => c.Date == today);
+        Assert.Equal(1, todayStats.AbandonedCount);
+        Assert.Equal(0, todayStats.ExpiredCount);
     }
 
     [Fact]

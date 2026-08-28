@@ -22,17 +22,17 @@
 
       <!-- Accueil -->
       @if (gameState() === 'welcome') {
-        <app-welcome-screen [trackCount]="tracks().length" (startGame)="startPlaying()" />
+        <app-welcome-screen [trackCount]="peekTracksCount()" (startGame)="beginGame()" />
       }
 
       <!-- Reprise de partie en cours -->
       @if (gameState() === 'resume_prompt') {
         <app-resume-screen
-          [completedCount]="resumeCompletedAnswers().length"
-          [trackCount]="tracks().length"
+          [completedCount]="peekCompletedCount()"
+          [trackCount]="peekTracksCount()"
           [abandonLoading]="abandonLoading()"
-          (resumeGame)="resumePlaying()"
-          (abandon)="confirmAbandon()" />
+          (resumeGame)="beginResume()"
+          (abandon)="beginAbandonFromResume()" />
       }
 
       <!-- Confirmation abandon en cours de partie -->

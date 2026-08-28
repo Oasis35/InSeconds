@@ -28,13 +28,15 @@ export class ChallengesTabComponent {
   }
 
   protected statusBg(status: string): string {
-    if (status === 'Abandoned') return 'rgba(251,191,36,0.1)';
+    if (status === 'Abandoned') return 'rgba(251,191,36,0.1)';   // abandon explicite (bouton)
+    if (status === 'Expired') return 'rgba(148,163,184,0.12)';   // non terminé (sortie sans abandon)
     if (status === 'Pending') return 'var(--bg-inactive)';
     return 'var(--bg-surface-2)';
   }
 
   protected statusColor(status: string): string {
     if (status === 'Abandoned') return 'var(--bg-warn)';
+    if (status === 'Expired') return 'var(--text-muted)';
     if (status === 'Pending') return 'var(--text-faint)';
     return 'var(--text-muted)';
   }

@@ -2,12 +2,21 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { StartSessionResponse, SubmitAnswerRequest, SubmitAnswerResponse } from '../models/game.models';
+import { StartSessionResponse, SubmitAnswerRequest, SubmitAnswerResponse, GetTodaySessionResponse } from '../models/game.models';
 
 @Injectable({ providedIn: 'root' })
 export class GameService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/api/sessions`;
+
+  /**
+   * État du défi du jour SANS créer de session ni de cookie joueur.
+   * Appelé au chargement de la page ; `startToday()` (POST) n'est déclenché
+   * qu'au clic explicite « Commencer à jouer » / « Reprendre ».
+   */
+  peekToday(): Observable<GetTodaySessionResponse> {
+    return this.http.get<GetTodaySessionResponse>(`${this.base}/today`);
+  }
 
   startToday(): Observable<StartSessionResponse> {
     return this.http.post<StartSessionResponse>(this.base, {});

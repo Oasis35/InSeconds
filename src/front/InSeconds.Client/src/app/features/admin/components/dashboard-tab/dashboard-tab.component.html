@@ -38,9 +38,9 @@
           <span class="text-xs" style="color:var(--text-faint)">{{ (kpis.completedCount > 1 ? 'admin.dashboard.players' : 'admin.dashboard.player') | translate }}</span>
         </div>
         <div class="rounded-xl p-4 flex flex-col gap-1" style="background:var(--bg-surface)">
-          <span class="text-xs uppercase tracking-wide" style="color:var(--text-muted)">{{ 'admin.dashboard.kpiAbandoned' | translate }}</span>
-          <span class="text-2xl font-bold" [style.color]="kpis.abandonedCount > 0 ? 'var(--bg-warn)' : 'var(--text-hi)'">{{ kpis.abandonedCount }}</span>
-          <span class="text-xs" style="color:var(--text-faint)">{{ (stats.isSelectedDayToday() ? 'admin.dashboard.abandonedToday' : 'admin.dashboard.abandonedPending') | translate }}</span>
+          <span class="text-xs uppercase tracking-wide" style="color:var(--text-muted)">{{ 'admin.dashboard.kpiUnfinished' | translate }}</span>
+          <span class="text-2xl font-bold" [style.color]="(kpis.abandonedCount + kpis.expiredCount) > 0 ? 'var(--bg-warn)' : 'var(--text-hi)'">{{ kpis.abandonedCount + kpis.expiredCount }}</span>
+          <span class="text-xs" style="color:var(--text-faint)">{{ 'admin.dashboard.unfinishedBreakdown' | translate: { abandoned: kpis.abandonedCount, expired: kpis.expiredCount } }}</span>
         </div>
         <div class="rounded-xl p-4 flex flex-col gap-1" style="background:var(--bg-surface)">
           <span class="text-xs uppercase tracking-wide" style="color:var(--text-muted)">{{ 'admin.dashboard.kpiCompletion' | translate }}</span>

@@ -2,6 +2,10 @@ import { test, expect } from '../fixtures/test';
 import { GamePage } from '../pages/game.page';
 import { BlindRoundPage } from '../pages/blind-round.page';
 
+// Depuis le décalage de la création de session au clic « Commencer à jouer », un simple
+// chargement de page ne pose plus de cookie. Il faut donc démarrer une partie (clickStart)
+// pour qu'un cookie guest + une session Pending existent, avant de simuler l'autre onglet.
+
 // Simule le retour au premier plan d'un onglet (visibilitychange visible)
 async function simulateTabFocus(page: import('@playwright/test').Page): Promise<void> {
   await page.evaluate(() => {
@@ -21,16 +25,19 @@ test.describe('Multi-onglets — synchronisation état', () => {
     await api.reset();
     await page.clock.install({ time: Date.now() });
 
-    // Onglet 1 : charger la page → crée le cookie guest
+    // Onglet 1 : démarrer une partie → pose le cookie guest + session Pending
     const game1 = new GamePage(page);
+    const round1 = new BlindRoundPage(page);
     await game1.goto();
     await game1.waitForWelcome();
+    await game1.clickStart();
+    await round1.waitForAnswerInput();
 
     // Simuler un autre onglet : compléter la partie via API avec le même cookie
     const cookieHeader = await getCookieHeader(page);
     await api.completeSessionAs(cookieHeader);
 
-    // Retour sur l'onglet 1 : simuler le focus → loadSession() → 409 already_played
+    // Retour sur l'onglet 1 : simuler le focus → peek → already_played
     await simulateTabFocus(page);
 
     await expect(game1.alreadyPlayedHeading).toBeVisible({ timeout: 5000 });
@@ -40,16 +47,19 @@ test.describe('Multi-onglets — synchronisation état', () => {
     await api.reset();
     await page.clock.install({ time: Date.now() });
 
-    // Onglet 1 : charger la page → crée le cookie guest
+    // Onglet 1 : démarrer une partie → pose le cookie guest + session Pending
     const game1 = new GamePage(page);
+    const round1 = new BlindRoundPage(page);
     await game1.goto();
     await game1.waitForWelcome();
+    await game1.clickStart();
+    await round1.waitForAnswerInput();
 
-    // Simuler un autre onglet : démarrer et abandonner via API avec le même cookie
+    // Simuler un autre onglet : abandonner via API avec le même cookie
     const cookieHeader = await getCookieHeader(page);
     await api.abandonSessionAs(cookieHeader);
 
-    // Retour sur l'onglet 1 : simuler le focus → loadSession() → 409 already_played (abandoned)
+    // Retour sur l'onglet 1 : simuler le focus → peek → abandoned
     await simulateTabFocus(page);
 
     await expect(game1.abandonedHeading).toBeVisible({ timeout: 5000 });

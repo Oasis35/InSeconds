@@ -2,7 +2,7 @@ import { test, expect } from '../fixtures/test';
 import { GamePage } from '../pages/game.page';
 import { BlindRoundPage } from '../pages/blind-round.page';
 
-test.describe('Déjà joué — écran 409', () => {
+test.describe('Déjà joué — état already_played', () => {
   test('affiche le countdown et le score après avoir rejoué', async ({ page, api }) => {
     await api.reset();
     await page.clock.install({ time: Date.now() });

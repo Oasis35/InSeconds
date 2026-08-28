@@ -24,7 +24,7 @@ public static class GetAdminStatsEndpoint
 
             // Queries parallèles : chaque Build* crée son propre DbContext via la factory
             // (un contexte ne supporte pas les opérations concurrentes).
-            var challengeStatsTask  = BuildChallengeStats(dbFactory, ct);
+            var challengeStatsTask  = BuildChallengeStats(dbFactory, today, ct);
             var dailyActivityTask   = BuildDailyActivity(dbFactory, ct);
             var playerBreakdownTask = BuildPlayerBreakdown(dbFactory, ct);
             var availableDatesTask  = BuildAvailableDates(dbFactory, ct);
@@ -48,7 +48,7 @@ public static class GetAdminStatsEndpoint
     }
 
     private static async Task<IReadOnlyList<ChallengeStatsDto>> BuildChallengeStats(
-        IDbContextFactory<ApplicationDbContext> dbFactory, CancellationToken ct)
+        IDbContextFactory<ApplicationDbContext> dbFactory, DateOnly today, CancellationToken ct)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var challenges = await db.DailyChallenges
@@ -86,8 +86,15 @@ public static class GetAdminStatsEndpoint
                 .Where(s => s.Status == Domain.SessionStatus.Completed)
                 .Select(s => s.TotalScore)
                 .ToList();
-            var pendingCount   = c.Sessions.Count(s => s.Status == Domain.SessionStatus.Pending);
+            var pendingRaw     = c.Sessions.Count(s => s.Status == Domain.SessionStatus.Pending);
             var abandonedCount = c.Sessions.Count(s => s.Status == Domain.SessionStatus.Abandoned);
+            var expiredRaw     = c.Sessions.Count(s => s.Status == Domain.SessionStatus.Expired);
+            // Défi passé : les Pending que l'expiry paresseuse n'a pas encore basculés
+            // (joueur jamais revenu) comptent comme des « non terminés ». Défi du jour :
+            // ils sont encore réellement en cours.
+            var isPast         = c.Date < today;
+            var pendingCount   = isPast ? 0 : pendingRaw;
+            var expiredCount   = isPast ? expiredRaw + pendingRaw : expiredRaw;
             var players = c.Sessions
                 .Select(s => new ChallengePlayerDto(s.PlayerId, s.Status.ToString(), s.TotalScore))
                 .ToList();
@@ -115,6 +122,7 @@ public static class GetAdminStatsEndpoint
                 scores.Count,
                 pendingCount,
                 abandonedCount,
+                expiredCount,
                 scores.Count == 0 ? null : scores.Min(),
                 scores.Count == 0 ? null : scores.Max(),
                 scores.Count == 0 ? null : Math.Round(scores.Average(), 1),
@@ -178,11 +186,15 @@ public static class GetAdminStatsEndpoint
 
         var completed  = sessions.Count(s => s.Status == Domain.SessionStatus.Completed);
         var abandoned  = sessions.Count(s => s.Status == Domain.SessionStatus.Abandoned);
+        var expiredRaw = sessions.Count(s => s.Status == Domain.SessionStatus.Expired);
         var pending    = sessions.Count(s => s.Status == Domain.SessionStatus.Pending);
 
-        // Jour passé : Pending comptés comme Abandoned
-        var effectiveAbandoned = date < today ? abandoned + pending : abandoned;
-        var total = completed + abandoned + pending;
+        // Jour passé : les Pending que l'expiry paresseuse n'a pas encore basculés
+        // comptent comme « non terminés » (Expired), pas comme des abandons explicites.
+        var isPast           = date < today;
+        var effectiveExpired = isPast ? expiredRaw + pending : expiredRaw;
+        var effectivePending = isPast ? 0 : pending;
+        var total = completed + abandoned + expiredRaw + pending;
         var completionRate = total == 0 ? 0.0 : Math.Round((double)completed / total * 100, 1);
 
         var scores = sessions
@@ -196,7 +208,7 @@ public static class GetAdminStatsEndpoint
                 ? scores[scores.Count / 2]
                 : (scores[scores.Count / 2 - 1] + scores[scores.Count / 2]) / 2.0;
 
-        return new DailyKpisDto(date, completed, effectiveAbandoned, total, completionRate, median);
+        return new DailyKpisDto(date, completed, abandoned, effectiveExpired, effectivePending, total, completionRate, median);
     }
 
     private static async Task<PlayerBreakdownDto> BuildPlayerBreakdown(

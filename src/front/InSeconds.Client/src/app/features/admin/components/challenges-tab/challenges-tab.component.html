@@ -36,9 +36,9 @@
                   <span class="text-xs px-2 py-0.5 rounded-full" style="color:var(--text-muted);background:var(--bg-inactive)">
                     {{ c.playerCount }} {{ (c.playerCount > 1 ? 'admin.dashboard.players' : 'admin.dashboard.player') | translate }}
                   </span>
-                  @if (c.abandonedCount + c.pendingCount > 0) {
+                  @if (c.abandonedCount + c.pendingCount + c.expiredCount > 0) {
                     <span class="text-xs px-2 py-0.5 rounded-full" style="color:var(--bg-warn);background:rgba(251,191,36,0.1)">
-                      {{ c.abandonedCount + c.pendingCount }} {{ ((c.abandonedCount + c.pendingCount) > 1 ? 'admin.dashboard.abandons' : 'admin.dashboard.abandon') | translate }}
+                      {{ c.abandonedCount + c.pendingCount + c.expiredCount }} {{ ((c.abandonedCount + c.pendingCount + c.expiredCount) > 1 ? 'admin.dashboard.abandons' : 'admin.dashboard.abandon') | translate }}
                     </span>
                   }
                 </div>

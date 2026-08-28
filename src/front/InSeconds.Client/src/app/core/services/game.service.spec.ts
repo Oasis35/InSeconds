@@ -25,6 +25,31 @@ describe('GameService', () => {
     httpMock.verify();
   });
 
+  describe('peekToday()', () => {
+    it('should GET /api/sessions/today (no body, no session creation)', () => {
+      const mockResponse = { state: 'can_start', tracksCount: 3, completedCount: 0, currentStreak: 0 };
+
+      let result: any;
+      service.peekToday().subscribe(r => (result = r));
+
+      const req = httpMock.expectOne(`${base}/today`);
+      expect(req.request.method).toBe('GET');
+      req.flush(mockResponse);
+
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should propagate HTTP errors', () => {
+      let error: any;
+      service.peekToday().subscribe({ error: e => (error = e) });
+
+      const req = httpMock.expectOne(`${base}/today`);
+      req.flush('boom', { status: 500, statusText: 'Internal Server Error' });
+
+      expect(error.status).toBe(500);
+    });
+  });
+
   describe('startToday()', () => {
     it('should POST to /api/sessions with an empty body', () => {
       const mockResponse = {

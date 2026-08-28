@@ -28,7 +28,9 @@ public sealed class StartSessionHandler(
 
         foreach (var expired in expiredSessions)
         {
-            expired.Status      = SessionStatus.Abandoned;
+            // Expired (pas Abandoned) : le joueur n'a pas cliqué « Abandonner », il a
+            // simplement quitté sans terminer. Les stats admin distinguent les deux.
+            expired.Status      = SessionStatus.Expired;
             expired.AbandonedAt = DateTime.UtcNow;
         }
 
@@ -72,7 +74,7 @@ public sealed class StartSessionHandler(
             if (existingSession.Status == SessionStatus.Completed)
                 return Results.Conflict(new { error = "already_played", message = "Vous avez déjà joué le défi du jour." });
 
-            if (existingSession.Status == SessionStatus.Abandoned)
+            if (existingSession.Status is SessionStatus.Abandoned or SessionStatus.Expired)
                 return Results.Conflict(new { error = "abandoned", message = "Vous avez abandonné le défi du jour." });
 
             // Session Pending → retourner les données de reprise

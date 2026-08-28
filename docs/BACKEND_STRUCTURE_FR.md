@@ -135,7 +135,7 @@ public sealed class GameSession
     public int TotalScore { get; set; }
     public decimal TotalDurationSeconds { get; set; }  // somme des paliers joués
     public DateTime CreatedAt { get; set; }
-    public SessionStatus Status { get; set; }          // Pending=0, Completed=1, Abandoned=2
+    public SessionStatus Status { get; set; }          // Pending=0, Completed=1, Abandoned=2 (bouton), Expired=3 (expiry paresseuse)
     public DateTime? CompletedAt { get; set; }
     public DateTime? AbandonedAt { get; set; }
     public int? CurrentTrackId { get; set; }            // anti-cheat : track en cours
@@ -147,10 +147,10 @@ public sealed class GameSession
 - `IX_GameSessions_Leaderboard (DailyChallengeId, TotalScore DESC, TotalDurationSeconds ASC)`
 - `IX_GameSessions_ChallengeStatus (DailyChallengeId, Status)` — requêtes admin
 - `IX_GameSessions_PlayerStatusChallenge (PlayerId, Status, DailyChallengeId)` — expiry sessions Pending dans `StartSession`
-- **Seules les sessions `Completed` comptent** dans les stats/leaderboard. `Pending` permet la reprise jusqu'à minuit. `Abandoned` (bouton explicite ou expiry paresseuse) bloque le rejeu.
-- **Anti-rejeu** : `Completed` ou `Abandoned` → 409. `Pending` → reprise avec `IsResuming=true`.
+- **Seules les sessions `Completed` comptent** dans les stats/leaderboard. `Pending` permet la reprise jusqu'à minuit. `Abandoned` (clic « Abandonner ») et `Expired` (expiry paresseuse d'un Pending — sortie sans terminer) bloquent le rejeu. Les stats admin distinguent `abandonedCount` / `expiredCount` / `pendingCount`.
+- **Anti-rejeu** : `Completed`, `Abandoned` ou `Expired` → 409. `Pending` → reprise avec `IsResuming=true`.
 - **Complétion auto** dans `SubmitAnswer/Handler.cs` : quand `réponses soumises + 1 >= TracksPerChallenge`.
-- **Expiry paresseuse** : les sessions `Pending` de la veille sont passées à `Abandoned` au prochain appel `StartSession`.
+- **Expiry paresseuse** : les sessions `Pending` de la veille sont passées à **`Expired`** (pas `Abandoned`) au prochain appel `StartSession`.
 
 ### GameSessionAnswer
 
@@ -257,7 +257,8 @@ Les deux endpoints sont publics (mappés avant `PlayerAuthMiddleware`). Logging 
 
 | Slice | Endpoint | Rôle |
 |-------|----------|------|
-| `Sessions/StartSession` | `POST /api/sessions` | Crée session Pending ou retourne reprise si Pending existante ; régénère le défi du jour à la volée s'il manque (filet de sécurité, 503 seulement si pool insuffisant) |
+| `Sessions/GetTodaySession` | `GET /api/sessions/today` | **Peek lecture seule** : état du défi du jour (`no_challenge`/`can_start`/`resumable`/`already_played`/`abandoned`) **sans créer Player, cookie ni session**. Piloté au chargement de page ; 1 requête BDD projetée ; peut régénérer le défi à la volée |
+| `Sessions/StartSession` | `POST /api/sessions` | **Seul point qui crée le Player + le cookie + la session.** Déclenché uniquement au clic « Commencer à jouer » / « Reprendre » / « Abandonner ». Crée session Pending ou retourne reprise si Pending existante ; régénère le défi du jour à la volée s'il manque (503 seulement si pool insuffisant) |
 | `Sessions/SubmitAnswer` | `POST /api/sessions/{id}/answers` | Scoring serveur + stats + complétion auto |
 | `Sessions/AbandonSession` | `PUT /api/sessions/{id}/abandon` | Marque une session Pending comme abandonnée |
 | `Stats/Today` | `GET /api/stats/today` | Score joueur, médiane, stats par morceau. `TrackStat` inclut `ArtistCorrect`/`TitleCorrect`/`ListenedDurationSeconds` (nullable — remplis seulement si le joueur a une session `Completed`) |

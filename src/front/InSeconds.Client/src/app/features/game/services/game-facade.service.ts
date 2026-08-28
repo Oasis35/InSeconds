@@ -1,11 +1,15 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { GameService } from '../../../core/services/game.service';
-import { StartSessionResponse, SubmitAnswerRequest, SubmitAnswerResponse } from '../../../core/models/game.models';
+import { StartSessionResponse, SubmitAnswerRequest, SubmitAnswerResponse, GetTodaySessionResponse } from '../../../core/models/game.models';
 
 @Injectable()
 export class GameFacadeService {
   private readonly gameService = inject(GameService);
+
+  peekToday(): Observable<GetTodaySessionResponse> {
+    return this.gameService.peekToday();
+  }
 
   startToday(): Observable<StartSessionResponse> {
     return this.gameService.startToday();

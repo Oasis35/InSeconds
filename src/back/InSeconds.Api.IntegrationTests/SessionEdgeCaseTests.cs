@@ -20,7 +20,7 @@ public class SessionEdgeCaseTests(IntegrationTestFactory factory) : IAsyncLifeti
     // ── Expiry paresseuse ────────────────────────────────────────────────────
 
     [Fact]
-    public async Task StartSession_SessionPendingDHier_ExpireEnAbandoned_EtNouvelleSessionCree()
+    public async Task StartSession_SessionPendingDHier_ExpireEnExpired_EtNouvelleSessionCree()
     {
         // Créer une session Pending puis la dater à hier directement en base
         var session = await StartSessionAsync();
@@ -50,7 +50,8 @@ public class SessionEdgeCaseTests(IntegrationTestFactory factory) : IAsyncLifeti
         Assert.NotNull(session2);
         Assert.False(session2.IsResuming); // c'est une nouvelle session, pas une reprise
 
-        // La session d'hier doit être Abandoned
+        // La session d'hier doit être Expired (pas Abandoned : le joueur n'a pas cliqué
+        // « Abandonner », l'expiry paresseuse l'a simplement basculée).
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -58,7 +59,7 @@ public class SessionEdgeCaseTests(IntegrationTestFactory factory) : IAsyncLifeti
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(s => s.Id == session.SessionId);
             Assert.NotNull(expired);
-            Assert.Equal(SessionStatus.Abandoned, expired.Status);
+            Assert.Equal(SessionStatus.Expired, expired.Status);
             Assert.NotNull(expired.AbandonedAt);
         }
     }

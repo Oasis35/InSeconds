@@ -211,11 +211,14 @@ Autocomplete Deezer (`features/game/services/`, `providedIn: root`, stateless) :
 ### `GameService`
 
 ```typescript
-startToday(): Observable<StartSessionResponse>
+peekToday(): Observable<GetTodaySessionResponse>   // GET /api/sessions/today — lecture seule, ne crée NI session NI cookie
+startToday(): Observable<StartSessionResponse>      // POST — crée Player + cookie + session (clic « Commencer »/« Reprendre » uniquement)
 submitAnswer(sessionId: number, body: SubmitAnswerRequest): Observable<SubmitAnswerResponse>
 abandonSession(sessionId: number): Observable<void>
 updateListening(sessionId: number, trackId: number, duration: number): Observable<void>
 ```
+
+`game.component.ngOnInit` appelle `peekToday()` (via `GameFacadeService`) et mappe `res.state` → `welcome` / `resume_prompt` / `already_played` / `no_challenge`. `POST /api/sessions` n'est déclenché que par `beginGame()` / `beginResume()` / `beginAbandonFromResume()`.
 
 ### `LanguageService`
 
