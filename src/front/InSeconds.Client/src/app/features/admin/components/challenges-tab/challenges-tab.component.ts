@@ -63,7 +63,7 @@ export class ChallengesTabComponent {
 
   private idHue(playerId: string): number {
     let h = 0;
-    for (let i = 0; i < playerId.length; i++) h = (h * 31 + playerId.charCodeAt(i)) >>> 0;
+    for (let i = 0; i < playerId.length; i++) h = (h * 31 + (playerId.codePointAt(i) ?? 0)) >>> 0;
     return h % 360;
   }
 

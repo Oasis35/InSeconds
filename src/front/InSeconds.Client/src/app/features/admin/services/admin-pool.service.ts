@@ -49,7 +49,7 @@ export class AdminPoolService {
   readonly previewModalOpen = signal(false);
   readonly previewModalTrack = signal<PoolTrackDto | null>(null);
   readonly previewModalStatus = signal<'loading' | 'ready' | 'error'>('loading');
-  private previewModalUrl = signal<string | null>(null);
+  private readonly previewModalUrl = signal<string | null>(null);
 
   // --- modale suppression ---
   readonly deleteModalOpen = signal(false);
@@ -221,7 +221,8 @@ export class AdminPoolService {
       this.modalPlaying.set(true);
       const tick = () => {
         const audio = this.modalAudio;
-        if (!audio || audio.paused) return;
+        if (!audio) return;
+        if (audio.paused) return;
         const pct = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
         this.modalProgress.set(pct);
         this.modalRafId = requestAnimationFrame(tick);
