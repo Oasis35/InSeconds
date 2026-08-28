@@ -115,7 +115,7 @@ Angular 22 standalone + signals + ngx-translate (i18n FR/EN).
 - `src/environments/environment{,.development}.ts` : `apiUrl` + `appUrl`, swap auto via `fileReplacements`
 - `src/styles.scss` : `@use "tailwindcss";` + **variables CSS `:root`** pour toute la palette couleurs (ne pas mettre de hex en dur dans les templates)
 - `.postcssrc.json` : plugin `@tailwindcss/postcss`
-- **CORS** : le back autorise `http://localhost:5173`, `http://localhost:65075` et `https://p01--front--b5cnx77tvxgb.code.run` dans `appsettings.json` (`Cors:AllowedOrigins`) — c'est la véritable URL Northflank du front ; `oasis35.github.io` n'y figure pas volontairement car ce n'est qu'une page de rebond statique (pas d'appels API directs depuis ce domaine)
+- **CORS** : le back autorise `http://localhost:5173`, `http://localhost:65075`, `https://p01--front--b5cnx77tvxgb.code.run` (URL Northflank interne du front) et `https://inseconds.cc` + `https://www.inseconds.cc` (nom de domaine public, front servi dessus depuis 2026-08-28) dans `appsettings.json` (`Cors:AllowedOrigins`) ; `oasis35.github.io` n'y figure pas volontairement car ce n'est qu'une page de rebond statique (pas d'appels API directs depuis ce domaine)
 - **Conventions templates** : `var(--...)` pour les couleurs, `hover:` Tailwind pour les hovers (pas de `onmouseenter`/`onmouseleave` JS), `TranslatePipe` dans chaque composant affichant du texte, un composant = un dossier avec `.ts` + `.html` externes
 
 ### Découpe de `game/`
