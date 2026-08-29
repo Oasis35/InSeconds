@@ -118,7 +118,7 @@ Tous `OnPush`, présentationnels (sauf `already-played-screen` qui type `stats` 
   }
   ```
   Inputs (required) : `results`, `displayedScore`. `shareCopied`/`shareFailed=false`, `canShare=true`, `countdown=''` → `share`.
-  `RoundResult` et cet écran **ne changent pas** avec l'ajout de l'histogramme (limité à l'écran de révélation) : `averageSecondsWhenCorrect`/`failureRatePercent` restent affichés en texte ici, `guessTimeDistribution`/`notFoundCount` de la réponse ne sont pas mappés dans `RoundResult`.
+  `RoundResult` porte toujours `averageSecondsWhenCorrect`/`failureRatePercent` (affichés en texte par ligne). **Pop-up histogramme** : un input `stats: TodayStatsResponse | null` (fourni par `GameComponent`, qui appelle `apiStatsToday()` à l'entrée de l'état `done`). Chaque `+score` de morceau devient un bouton (soulignement pointillé) **si** le `TrackStat` correspondant (matché par `position`) a une `guessTimeDistribution` non vide → ouvre une pop-up plein écran (`openChart` signal, fermeture backdrop / ✕ / `Échap` via `@HostListener('document:keydown.escape')`) contenant `<app-guess-time-chart>` (`highlightDuration` = palier écouté si le joueur a trouvé ce morceau, sinon `highlightNotFound`). L'histogramme n'est donc pas dans `RoundResult` — il vient de `stats`.
 
 ## Composants partagés utilisés
 

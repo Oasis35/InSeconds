@@ -1,5 +1,6 @@
 using InSeconds.Api.Common.Scoring;
 using InSeconds.Api.Common.Settings;
+using InSeconds.Api.Common.Stats;
 using InSeconds.Api.Common.Text;
 using InSeconds.Api.Domain;
 using InSeconds.Api.Infrastructure.Persistence;
@@ -139,10 +140,7 @@ public sealed class SubmitAnswerHandler(
             durationCounts[command.ListenedDurationSeconds] =
                 durationCounts.GetValueOrDefault(command.ListenedDurationSeconds) + 1;
 
-        var distribution = appSettings.AllowedDurationsSeconds
-            .OrderBy(d => d)
-            .Select(d => new DurationBucketDto(d, durationCounts.GetValueOrDefault(d)))
-            .ToList();
+        var distribution = GuessTimeDistribution.Build(appSettings.AllowedDurationsSeconds, durationCounts);
 
         return Results.Ok(new SubmitAnswerResponse(
             ArtistCorrect:             artistCorrect,

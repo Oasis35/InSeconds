@@ -1640,6 +1640,8 @@ export interface TrackStat {
     artistCorrect: boolean | undefined;
     titleCorrect: boolean | undefined;
     listenedDurationSeconds: number | undefined;
+    guessTimeDistribution: DurationBucketDto[];
+    notFoundCount: number;
 
     [key: string]: any;
 }

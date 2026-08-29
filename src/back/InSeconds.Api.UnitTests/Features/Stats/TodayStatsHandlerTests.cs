@@ -220,6 +220,14 @@ public sealed class TodayStatsHandlerTests
         var track = response.Tracks[0];
         track.FailureRatePercent.Should().Be(0);
         track.AverageSecondsWhenCorrect.Should().Be(4.0); // (3+5)/2
+
+        // Histogramme : un bucket par palier autorisé, 1 bonne réponse à 3s et à 5s.
+        track.GuessTimeDistribution.Should().HaveCount(7);
+        track.GuessTimeDistribution.Single(b => b.DurationSeconds == 3m).Count.Should().Be(1);
+        track.GuessTimeDistribution.Single(b => b.DurationSeconds == 5m).Count.Should().Be(1);
+        track.GuessTimeDistribution.Where(b => b.DurationSeconds is not (3m or 5m))
+            .Should().OnlyContain(b => b.Count == 0);
+        track.NotFoundCount.Should().Be(0);
     }
 
     [Fact]
@@ -241,6 +249,8 @@ public sealed class TodayStatsHandlerTests
 
         var response = ((Ok<TodayStatsResponse>)result).Value!;
         response.Tracks[0].FailureRatePercent.Should().Be(50.0);
+        response.Tracks[0].GuessTimeDistribution.Single(b => b.DurationSeconds == 3m).Count.Should().Be(1); // la bonne réponse à 3s
+        response.Tracks[0].NotFoundCount.Should().Be(1); // la mauvaise réponse
     }
 
     // ---------------------------------------------------------------------------

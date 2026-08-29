@@ -259,7 +259,7 @@ Délègue l'affichage à des sous-composants :
 - **`ResumeScreenComponent`** : état `resume_prompt` (avec confirmation abandon inline)
 - **`StatusScreenComponent`** : états `no_challenge` + `error` (inputs `titleKey`/`bodyKey` i18n)
 - **`AlreadyPlayedScreenComponent`** : état `already_played` (score vs médiane, accordéon morceaux, `ShareButtonComponent`)
-- **`FinalRecapScreenComponent`** : état `done` (liste morceaux, score animé, `ShareButtonComponent`)
+- **`FinalRecapScreenComponent`** : état `done` (liste morceaux, score animé, `ShareButtonComponent`). Input `stats: TodayStatsResponse | null` (`GameComponent` appelle `apiStatsToday()` en entrant dans `done`) → chaque `+score` de morceau est cliquable (si `TrackStat.guessTimeDistribution` non vide, matché par `position`) et ouvre une **pop-up** `<app-guess-time-chart>` (fermeture backdrop / ✕ / `Échap`)
 - **`BlindRoundComponent`** : état `playing`
 - **`ConfirmSheetComponent`** : modales abandon + quitter
 
@@ -279,7 +279,7 @@ Polish UX : `isSubmitting` (loading sur Valider), bouton `✕` lié à `(mousedo
 
 ### `GuessTimeChartComponent`
 
-Histogramme réutilisable (`shared/guess-time-chart/`) : une barre par palier d'écoute (comptes de bonnes réponses) + une barre finale « ✗ » (`notFoundCount`). Inputs : `distribution: DurationBucketDto[]` (required), `notFoundCount?: number`, `highlightDuration?: number | null` (surbrillance de la colonne du joueur), `highlightNotFound?: boolean`, `titleKey?: string` (clé i18n du titre, masqué si vide). Aucun output — présentationnel pur (computed `buckets` : hauteurs relatives au max, couleurs). Rendu compact : barres fines de 14px arrondies (`rounded-full`), graphe borné à `max-width:210px` centré (évite des écarts énormes entre barres avec seulement 8 buckets), hauteur ~36px. Tokens couleur : `--color-violet` (barres paliers), `--color-accent-3` (surbrillance), `--color-fail` (barre « ✗ » sans surbrillance), `--text-faint` (labels). Utilisé sur l'écran de révélation du blind round ; conçu pour être réemployé ailleurs.
+Histogramme réutilisable (`shared/guess-time-chart/`) : une barre par palier d'écoute (comptes de bonnes réponses) + une barre finale « ✗ » (`notFoundCount`). Inputs : `distribution: DurationBucketDto[]` (required), `notFoundCount?: number`, `highlightDuration?: number | null` (surbrillance de la colonne du joueur), `highlightNotFound?: boolean`, `titleKey?: string` (clé i18n du titre, masqué si vide). Aucun output — présentationnel pur (computed `buckets` : hauteurs relatives au max, couleurs). Rendu compact : barres fines de 14px arrondies (`rounded-full`), graphe borné à `max-width:210px` centré (évite des écarts énormes entre barres avec seulement 8 buckets), hauteur ~36px. Tokens couleur : `--color-violet` (barres paliers), `--color-accent-3` (surbrillance), `--color-fail` (barre « ✗ » sans surbrillance), `--text-faint` (labels). Utilisé (toujours sans `titleKey` en pratique) sur l'écran de révélation du blind round **et** dans la pop-up du récap final (`FinalRecapScreenComponent`, qui affiche son propre titre `done.guessTimeTitle` au-dessus du composant).
 
 ### `ConfirmSheetComponent`
 

@@ -1,4 +1,5 @@
 using InSeconds.Api.Common.Settings;
+using InSeconds.Api.Common.Stats;
 using InSeconds.Api.Common.Text;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -64,6 +65,7 @@ public sealed class TodayStatsHandler(
         // pas les opérations concurrentes).
         await using var scoresDb     = await dbFactory.CreateDbContextAsync(ct);
         await using var trackStatsDb = await dbFactory.CreateDbContextAsync(ct);
+        await using var distDb       = await dbFactory.CreateDbContextAsync(ct);
 
         var scoresTask = scoresDb.GameSessions
             .AsNoTracking()
@@ -90,13 +92,31 @@ public sealed class TodayStatsHandler(
             })
             .ToListAsync(ct);
 
+        // Histogramme « en combien de temps les autres ont trouvé » par morceau :
+        // comptes des bonnes réponses (sessions complétées) groupés par palier d'écoute.
+        var distTask = distDb.GameSessionAnswers
+            .AsNoTracking()
+            .Where(a => a.Track.DailyChallengeId == challenge.Id
+                     && a.GameSession.Status == Domain.SessionStatus.Completed
+                     && (a.ArtistCorrect || a.TitleCorrect))
+            .GroupBy(a => new { a.Track.Position, a.ListenedDurationSeconds })
+            .Select(g => new { g.Key.Position, g.Key.ListenedDurationSeconds, Count = g.Count() })
+            .ToListAsync(ct);
+
         var appSettingsTask = settingsService.GetAsync(ct);
 
-        await Task.WhenAll(scoresTask, trackStatsTask, appSettingsTask);
+        await Task.WhenAll(scoresTask, trackStatsTask, distTask, appSettingsTask);
 
         var scores      = scoresTask.Result;
         var trackStats  = trackStatsTask.Result;
         var appSettings = appSettingsTask.Result;
+
+        var correctCountsByPosition = distTask.Result
+            .GroupBy(x => x.Position)
+            .ToDictionary(
+                g => g.Key,
+                g => (IReadOnlyDictionary<decimal, int>)g.ToDictionary(x => x.ListenedDurationSeconds, x => x.Count));
+        var emptyCounts = (IReadOnlyDictionary<decimal, int>)new Dictionary<decimal, int>();
 
         var totalPlayers = scores.Count;
         var medianResult = ComputeMedian(scores);
@@ -114,7 +134,11 @@ public sealed class TodayStatsHandler(
                 AverageSecondsWhenCorrect: t.AvgSecondsCorrect.HasValue ? Math.Round(t.AvgSecondsCorrect.Value, 1) : null,
                 ArtistCorrect:             playerAnswersByPosition.ContainsKey(t.Position) ? pa.ArtistCorrect : null,
                 TitleCorrect:              playerAnswersByPosition.ContainsKey(t.Position) ? pa.TitleCorrect : null,
-                ListenedDurationSeconds:   playerAnswersByPosition.ContainsKey(t.Position) ? pa.ListenedDuration : null
+                ListenedDurationSeconds:   playerAnswersByPosition.ContainsKey(t.Position) ? pa.ListenedDuration : null,
+                GuessTimeDistribution:     GuessTimeDistribution.Build(
+                                               appSettings.AllowedDurationsSeconds,
+                                               correctCountsByPosition.GetValueOrDefault(t.Position, emptyCounts)),
+                NotFoundCount:             t.TotalAnswers - t.CorrectAnswers
             );
         }).ToList();
 
