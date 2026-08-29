@@ -73,6 +73,11 @@
     "title": "Titre",
     "comeBack": "Reviens demain pour un nouveau défi"
   },
+  "trackList": {
+    "guessTimeTitle": "En combien de temps les autres ont trouvé",
+    "showChart": "Voir l'histogramme des temps de réponse",
+    "close": "Fermer"
+  },
   "deezerBadge": {
     "ariaLabel": "À écouter sur Deezer"
   },
@@ -134,9 +139,6 @@
     "title": "Titre",
     "correctAnswer": "Bonne réponse",
     "points": "pts",
-    "yourTime": "Ton temps :",
-    "average": "Moy. :",
-    "notFound": "Pas trouvé :",
     "networkError": "Erreur réseau — la réponse n'a pas pu être enregistrée.",
     "seeResult": "Voir le résultat",
     "nextTrack": "Piste suivante →"

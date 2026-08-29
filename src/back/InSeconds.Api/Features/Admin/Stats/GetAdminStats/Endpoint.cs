@@ -1,3 +1,5 @@
+using InSeconds.Api.Common.Settings;
+using InSeconds.Api.Common.Stats;
 using InSeconds.Api.Common.Text;
 using InSeconds.Api.Features.Admin.Login;
 using InSeconds.Api.Infrastructure.Persistence;
@@ -13,6 +15,7 @@ public static class GetAdminStatsEndpoint
         routes.MapGet("/api/admin/stats", async (
             HttpContext ctx,
             IDbContextFactory<ApplicationDbContext> dbFactory,
+            SettingsService settingsService,
             [FromQuery] string? date,
             CancellationToken ct) =>
         {
@@ -21,10 +24,11 @@ public static class GetAdminStatsEndpoint
 
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
             var selectedDate = date is not null && DateOnly.TryParse(date, out var parsed) ? parsed : today;
+            var allowedDurations = (await settingsService.GetAsync(ct)).AllowedDurationsSeconds;
 
             // Queries parallèles : chaque Build* crée son propre DbContext via la factory
             // (un contexte ne supporte pas les opérations concurrentes).
-            var challengeStatsTask  = BuildChallengeStats(dbFactory, today, ct);
+            var challengeStatsTask  = BuildChallengeStats(dbFactory, today, allowedDurations, ct);
             var dailyActivityTask   = BuildDailyActivity(dbFactory, ct);
             var playerBreakdownTask = BuildPlayerBreakdown(dbFactory, ct);
             var availableDatesTask  = BuildAvailableDates(dbFactory, ct);
@@ -48,7 +52,8 @@ public static class GetAdminStatsEndpoint
     }
 
     private static async Task<IReadOnlyList<ChallengeStatsDto>> BuildChallengeStats(
-        IDbContextFactory<ApplicationDbContext> dbFactory, DateOnly today, CancellationToken ct)
+        IDbContextFactory<ApplicationDbContext> dbFactory, DateOnly today,
+        IReadOnlyCollection<decimal> allowedDurations, CancellationToken ct)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var challenges = await db.DailyChallenges
@@ -74,11 +79,28 @@ public static class GetAdminStatsEndpoint
                         ArtistCorrect = t.Answers.Count(a => a.ArtistCorrect),
                         TitleCorrect  = t.Answers.Count(a => a.TitleCorrect),
                         Extended      = t.Answers.Count(a => a.WasExtended),
+                        NotFound      = t.Answers.Count(a => !a.ArtistCorrect && !a.TitleCorrect),
                         AvgListened   = t.Answers.Average(a => (double?)a.ListenedDurationSeconds)
                     })
                     .ToList()
             })
             .ToListAsync(ct);
+
+        // Histogramme « en combien de temps les autres ont trouvé » par (défi, morceau) :
+        // comptes des bonnes réponses groupés par palier d'écoute.
+        var challengeIds = challenges.Select(c => c.Id).ToList();
+        var distRows = await db.GameSessionAnswers
+            .AsNoTracking()
+            .Where(a => challengeIds.Contains(a.Track.DailyChallengeId) && (a.ArtistCorrect || a.TitleCorrect))
+            .GroupBy(a => new { a.Track.DailyChallengeId, a.Track.Position, a.ListenedDurationSeconds })
+            .Select(g => new { g.Key.DailyChallengeId, g.Key.Position, g.Key.ListenedDurationSeconds, Count = g.Count() })
+            .ToListAsync(ct);
+        var correctCountsByTrack = distRows
+            .GroupBy(x => (x.DailyChallengeId, x.Position))
+            .ToDictionary(
+                g => g.Key,
+                g => (IReadOnlyDictionary<decimal, int>)g.ToDictionary(x => x.ListenedDurationSeconds, x => x.Count));
+        var emptyCounts = (IReadOnlyDictionary<decimal, int>)new Dictionary<decimal, int>();
 
         return challenges.Select(c =>
         {
@@ -113,7 +135,11 @@ public static class GetAdminStatsEndpoint
                 t.TotalAnswers == 0 ? 0 : Math.Round((double)t.ArtistCorrect / t.TotalAnswers * 100, 1),
                 t.TotalAnswers == 0 ? 0 : Math.Round((double)t.TitleCorrect  / t.TotalAnswers * 100, 1),
                 t.TotalAnswers == 0 ? 0 : Math.Round((double)t.Extended      / t.TotalAnswers * 100, 1),
-                t.AvgListened.HasValue ? Math.Round(t.AvgListened.Value, 2) : null
+                t.AvgListened.HasValue ? Math.Round(t.AvgListened.Value, 2) : null,
+                GuessTimeDistribution.Build(
+                    allowedDurations,
+                    correctCountsByTrack.GetValueOrDefault((c.Id, t.Position), emptyCounts)),
+                t.NotFound
             )).ToList();
 
             return new ChallengeStatsDto(

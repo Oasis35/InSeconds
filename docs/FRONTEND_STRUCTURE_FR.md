@@ -49,6 +49,10 @@ src/front/InSeconds.Client/
 │   │   │   │   └── browser-id.component.ts     # ID court du navigateur + bouton copier (login + shell admin)
 │   │   │   ├── decor-background/
 │   │   │   │   └── decor-background.component.ts # décor DA (grille/scanlines) en arrière-plan
+│   │   │   ├── guess-time-chart/
+│   │   │   │   └── guess-time-chart.component.ts # histogramme temps de réponse réutilisable
+│   │   │   ├── track-results-list/
+│   │   │   │   └── track-results-list.component.ts # liste de morceaux + pop-up histogramme (récap + déjà joué)
 │   │   │   └── deezer-badge.component.ts       # badge "À écouter sur Deezer" (fichier plat, sans sous-dossier)
 │   │   ├── features/
 │   │   │   ├── admin/
@@ -256,8 +260,8 @@ Délègue l'affichage à des sous-composants :
 - **`WelcomeScreenComponent`** : état `welcome`
 - **`ResumeScreenComponent`** : état `resume_prompt` (avec confirmation abandon inline)
 - **`StatusScreenComponent`** : états `no_challenge` + `error` (inputs `titleKey`/`bodyKey` i18n)
-- **`AlreadyPlayedScreenComponent`** : état `already_played` (score vs médiane, accordéon morceaux, `ShareButtonComponent`)
-- **`FinalRecapScreenComponent`** : état `done` (liste morceaux, score animé, `ShareButtonComponent`)
+- **`AlreadyPlayedScreenComponent`** : état `already_played` (score vs médiane, `ShareButtonComponent`). L'accordéon morceaux délègue à `<app-track-results-list [rows]="playedRows()">` (mappe `stats().tracks`) → **mêmes lignes que le récap** (chips `✓/✗`, durée, `+score` cliquable → pop-up histogramme)
+- **`FinalRecapScreenComponent`** : état `done` (score animé, `ShareButtonComponent`). Input `stats: TodayStatsResponse | null` (`GameComponent` appelle `apiStatsToday()` en entrant dans `done`). L'accordéon délègue à `<app-track-results-list [rows]="recapRows()">` — `recapRows` mappe `results()` (`RoundResult`) + fusionne l'histogramme depuis `stats` par `position`. Liste + pop-up rendues par `TrackResultsListComponent`
 - **`BlindRoundComponent`** : état `playing`
 - **`ConfirmSheetComponent`** : modales abandon + quitter
 
@@ -272,6 +276,16 @@ Layout B — deux zones toujours présentes :
 Polish UX : `isSubmitting` (loading sur Valider), bouton `✕` lié à `(mousedown)`, tooltip paliers (`scoreForDuration`), score count-up (`countUp` rAF), toast erreur réseau (4s).
 
 `setResult(r, isNetworkError?)` — méthode publique appelée depuis `GameComponent` via `viewChild`.
+
+**Écran de révélation** : au lieu d'une ligne texte « Ton temps / Moy. / Pas trouvé », affiche `<app-guess-time-chart>` (`GuessTimeChartComponent`, sans `titleKey`, version compacte) alimenté par `r.guessTimeDistribution` + `r.notFoundCount` — colonne du palier écouté en surbrillance si le joueur a trouvé, sinon barre « ✗ » en surbrillance. Le bloc de révélation est resserré (`gap-3`, pochette `w-24`, score `2.25rem`) pour tenir dans un viewport mobile sans scroll.
+
+### `GuessTimeChartComponent`
+
+Histogramme réutilisable (`shared/guess-time-chart/`) : une barre par palier d'écoute (comptes de bonnes réponses) + une barre finale « ✗ » (`notFoundCount`). Inputs : `distribution: DurationBucketDto[]` (required), `notFoundCount?: number`, `highlightDuration?: number | null` (surbrillance de la colonne du joueur), `highlightNotFound?: boolean`, `titleKey?: string` (clé i18n du titre, masqué si vide), `showCounts?: boolean` (défaut `false` — affiche le nombre de joueurs au-dessus de chaque barre ; activé dans la vue admin). Aucun output — présentationnel pur (computed `buckets` : hauteurs relatives au max, couleurs). Rendu compact : barres fines de 14px arrondies (`rounded-full`), graphe borné à `max-width:210px` centré, hauteur ~36px (48px avec `showCounts`). Tokens couleur : `--color-violet` (barres paliers), `--color-accent-3` (surbrillance), `--color-fail` (barre « ✗ » sans surbrillance), `--text-faint` (labels). Utilisé sur l'écran de révélation du blind round, dans la pop-up de `TrackResultsListComponent` (récap final + « déjà joué », `showCounts=false`) et dans la pop-up de `ChallengesTabComponent` (onglet Défis admin, `showCounts=true`).
+
+### `TrackResultsListComponent`
+
+Liste accordéon des morceaux d'un défi + pop-up histogramme (`shared/track-results-list/`). Input unique `rows: TrackResultRow[]` (interface exportée : `position`, `artist`, `title`, `coverUrl`, `artistCorrect`/`titleCorrect`/`listenedDurationSeconds` **nullables** → chips `✓/✗` et durée masqués si `null`, `averageSecondsWhenCorrect`, `failureRatePercent`, `score` **nullable** → colonne score masquée si `null`, `deezerTrackId`, `guessTimeDistribution` **vide → score non cliquable**, `notFoundCount`). Chaque `+score` cliquable ouvre une pop-up plein écran (`openChart` signal, fermeture backdrop / ✕ / `Échap` via `@HostListener('document:keydown.escape')`) contenant `<app-guess-time-chart>` (`highlightDuration` = palier écouté si le joueur a trouvé, sinon `highlightNotFound`). Aucun output. Mutualisé entre `FinalRecapScreenComponent` (`recapRows`, à partir de `RoundResult` + `stats`) et `AlreadyPlayedScreenComponent` (`playedRows`, à partir de `TrackStat`). Le contour (carte, bouton « Voir les morceaux / Masquer ») reste géré par chaque écran.
 
 ### `ConfirmSheetComponent`
 

@@ -83,6 +83,7 @@ Inputs : `track` (`required`), `isLast=false`, `sessionId=0`, `minListenedSecond
 - `listenMore()` : passe à `nextDuration()` et appelle `audio.extend(next)` — **prolongations libres et chaînables**, pas de limite au nombre d'appels (jusqu'au dernier palier configuré). Le template masque le bouton uniquement quand `nextDuration()` est `null` (dernier palier atteint) — il n'y a plus de garde `!audio.extended()` empêchant une deuxième prolongation.
 - `submit()`/`doSubmit()` : si aucune suggestion sélectionnée mais `searchQuery` non vide, split naïf sur `" - "` (artiste / reste = titre) en fallback texte libre. Si vide après trim → confirmation inline (`showEmptyConfirm`) avant soumission plutôt qu'envoi direct.
 - `setResult(r, isNetworkError=false)` (appelée par le parent via `viewChild`) : anime `displayedScore` (`countUp`, défaut 600ms). Si `isNetworkError` → toast 4000ms (timer nettoyé/relancé proprement). **Replay preview** : si preview existe et `chosenDuration()>0`, `audio.replayFull()` — rejoue le morceau en entier après révélation, indépendamment du palier choisi.
+- **Histogramme de révélation** : le bloc résultat n'affiche plus la ligne texte « Ton temps / Moy. / Pas trouvé » mais `<app-guess-time-chart>` (`shared/guess-time-chart/`) alimenté par `r.guessTimeDistribution` + `r.notFoundCount`, avec `highlightDuration` = palier écouté si le joueur a trouvé, sinon `highlightNotFound`. Instancié **sans `titleKey`** (pas de titre au-dessus du graphe) et volontairement compact (graphe borné à `max-width:210px` centré, barres fines de 14px arrondies (`rounded-full`), hauteur ~36px) pour tenir dans un viewport mobile sans scroll — le bloc de révélation a aussi été resserré (`gap-3`, pochette `w-24`, score `2.25rem`). Aucun état ni helper local ajouté — tout le calcul est dans le composant partagé.
 - `next()` : reset complet de l'état local (audio, result, displayedScore, réponses, recherche, suggestions, chosenDuration, isSubmitting, toast + timer), émet `nextTrack`.
 - `ngOnDestroy` : `audio.reset()` + nettoyage timer réseau (évite qu'un audio continue ou qu'un timer déclenche un set-state après destruction).
 - Sélection de suggestion sur `(mousedown)` et non `(click)` — doit primer sur le `blur` du champ qui masque la liste après 150ms (`onBlur()`).
@@ -107,7 +108,7 @@ Tous `OnPush`, présentationnels (sauf `already-played-screen` qui type `stats` 
 - **`welcome-screen`** : `trackCount` (required) → `startGame`.
 - **`resume-screen`** : `completedCount`, `trackCount` (required), `abandonLoading=false` → `resumeGame`/`abandon`. Signal local `showAbandonConfirm` : double confirmation avant d'émettre réellement `abandon`.
 - **`status-screen`** : générique, réutilisé pour `no_challenge` ET `error` — `titleKey`/`bodyKey` (clés i18n passées par le parent) → `retry`.
-- **`already-played-screen`** : `stats: TodayStatsResponse|null`, `abandoned=false`, `countdown` (required), `shareCopied`/`shareFailed=false` → `share`. Signal `showTrackDetails` (accordéon). Si `abandoned()` : message simple + countdown. Sinon : carte score/médiane (fallback `—` si `medianScore<=0`), `app-share-button`, accordéon morceaux avec lien `deezer.com/track/{deezerTrackId}`.
+- **`already-played-screen`** : `stats: TodayStatsResponse|null`, `abandoned=false`, `countdown` (required), `shareCopied`/`shareFailed=false` → `share`. Signal `showTrackDetails` (accordéon). Si `abandoned()` : message simple + countdown. Sinon : carte score/médiane (fallback `—` si `medianScore<=0`), `app-share-button`, puis l'accordéon délègue à **`<app-track-results-list [rows]="playedRows()">`** — `playedRows` (computed) mappe `stats().tracks` (`TrackStat`) → `TrackResultRow[]`. Lignes **identiques au récap** (chips `✓/✗`, durée, `+score` cliquable → pop-up histogramme).
 - **`final-recap-screen`** : **exporte `RoundResult`** — le contrat que `GameComponent` construit dans `onAnswered`/`resumePlaying` :
   ```ts
   interface RoundResult {
@@ -117,11 +118,14 @@ Tous `OnPush`, présentationnels (sauf `already-played-screen` qui type `stats` 
   }
   ```
   Inputs (required) : `results`, `displayedScore`. `shareCopied`/`shareFailed=false`, `canShare=true`, `countdown=''` → `share`.
+  `RoundResult` porte toujours `averageSecondsWhenCorrect`/`failureRatePercent`. Input `stats: TodayStatsResponse | null` (fourni par `GameComponent`, qui appelle `apiStatsToday()` à l'entrée de l'état `done`). L'accordéon délègue à **`<app-track-results-list [rows]="recapRows()">`** — `recapRows` (computed) mappe `results()` (`RoundResult`) + fusionne l'histogramme (`guessTimeDistribution`/`notFoundCount`) depuis `stats` par `position`. Résilience : la liste vient de `results()` (toujours présent) ; si `stats` est `null` la liste s'affiche quand même, seule la pop-up est indisponible. La pop-up (`openChart` signal, fermeture backdrop / ✕ / `Échap`) et le rendu des lignes vivent **dans `TrackResultsListComponent`** (`shared/track-results-list/`), plus dans cet écran.
 
 ## Composants partagés utilisés
 
 - **`shared/confirm-sheet/`** : `tone: 'danger'|'warning'`, `title`/`body`/`confirmLabel`/`cancelLabel` (required), `loading=false`, `confirmStyle`/`cancelStyle` personnalisables (utilisé pour inverser les couleurs entre confirmation d'abandon et confirmation de sortie). Outputs `confirm`/`cancelled`.
 - **`shared/share-button/`** : `copied` (required), `failed=false`, `disabled=false` → `share`.
+- **`shared/guess-time-chart/`** : histogramme « en combien de temps les autres ont trouvé » (écran de révélation + pop-up de `track-results-list`). Inputs `distribution` (`DurationBucketDto[]`, required), `notFoundCount=0`, `highlightDuration: number|null=null`, `highlightNotFound=false`, `titleKey=''`. Présentationnel pur (computed `buckets`), pas d'output.
+- **`shared/track-results-list/`** : liste accordéon des morceaux d'un défi + pop-up histogramme au clic sur un `+score`. Input unique `rows: TrackResultRow[]` (interface exportée). Possède `openChart` signal + `@HostListener('document:keydown.escape')`. Mutualisé entre `final-recap-screen` (`recapRows`) et `already-played-screen` (`playedRows`).
 
 ## Services `core/` consommés (hors périmètre `game/` mais central ici)
 

@@ -341,6 +341,32 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task AdminStats_TrackStatsDto_ExposeHistogrammeEtNotFound()
+    {
+        var session = await StartSessionAsync();
+        // Bonne réponse sur le morceau 1 (Eminem/Lose Yourself), fausses sur les autres.
+        await SubmitAsync(session.SessionId, session.Tracks[0].Id, 1m, "Eminem", "Lose Yourself");
+        foreach (var track in session.Tracks.Skip(1))
+            await SubmitAsync(session.SessionId, track.Id, 1m, "X", null);
+
+        var resp = await AdminGetAsync("/api/admin/stats");
+        var body = await resp.Content.ReadFromJsonAsync<AdminStatsResponse>();
+        Assert.NotNull(body);
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var todayStats = body.Challenges.Single(c => c.Date == today);
+        var track1 = todayStats.Tracks.Single(t => t.Position == 1);
+
+        Assert.NotEmpty(track1.GuessTimeDistribution);                        // un bucket par palier autorisé
+        Assert.Equal(1, track1.GuessTimeDistribution.Single(b => b.DurationSeconds == 1m).Count);
+        Assert.Equal(0, track1.NotFoundCount);
+
+        var track2 = todayStats.Tracks.Single(t => t.Position == 2);
+        Assert.All(track2.GuessTimeDistribution, b => Assert.Equal(0, b.Count));
+        Assert.Equal(1, track2.NotFoundCount);
+    }
+
+    [Fact]
     public async Task AdminStats_ApresAbandon_PlayersContientLeJoueurAvecStatutAbandoned()
     {
         var myId = await MyPlayerIdAsync();

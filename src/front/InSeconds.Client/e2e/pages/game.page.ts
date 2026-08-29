@@ -1,4 +1,5 @@
 import { Page, Locator } from '@playwright/test';
+import { BlindRoundPage } from './blind-round.page';
 
 export class GamePage {
   readonly startButton: Locator;
@@ -20,6 +21,11 @@ export class GamePage {
   readonly leaveCancelButton: Locator;
   // Overlay « Service indisponible » (backend KO)
   readonly serviceDownHeading: Locator;
+  // Liste de morceaux mutualisée (récap + déjà joué) + pop-up histogramme
+  readonly showTracksButton: Locator;
+  readonly trackScoreButtons: Locator;
+  readonly trackChip: Locator;
+  readonly guessTimeChart: Locator;
 
   constructor(readonly page: Page) {
     this.startButton           = page.getByRole('button', { name: 'Commencer' });
@@ -40,6 +46,29 @@ export class GamePage {
     this.leaveConfirmButton    = page.getByRole('button', { name: 'Quitter quand même' });
     this.leaveCancelButton     = page.getByRole('button', { name: 'Continuer à jouer' });
     this.serviceDownHeading    = page.getByRole('heading', { name: 'Service indisponible' });
+    this.showTracksButton      = page.getByRole('button', { name: /Voir les morceaux/i });
+    // Le bouton du score porte un aria-label (« Voir l'histogramme… ») qui prime sur le texte « +N ».
+    this.trackScoreButtons     = page.locator('app-track-results-list')
+      .getByRole('button', { name: /histogramme des temps de réponse/i });
+    this.trackChip             = page.locator('app-track-results-list').getByText(/✓ Artiste|✗ Artiste/).first();
+    this.guessTimeChart        = page.getByTestId('guess-time-chart');
+  }
+
+  /** Démarre et joue les 3 morceaux (réponses vides) jusqu'à l'écran de récap. */
+  async playFullGame(round: BlindRoundPage): Promise<void> {
+    await this.goto();
+    await this.waitForWelcome();
+    await this.clickStart();
+    for (let i = 0; i < 3; i++) {
+      await round.playRound(1);
+    }
+    await this.waitForDone();
+  }
+
+  /** `playFullGame` puis recharge → écran already_played. */
+  async completeGameThenReload(round: BlindRoundPage): Promise<void> {
+    await this.playFullGame(round);
+    await this.goto();
   }
 
   async goto(): Promise<void> {

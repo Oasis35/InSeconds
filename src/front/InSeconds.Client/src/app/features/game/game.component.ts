@@ -242,6 +242,8 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
           listenedDurationSeconds: 0,
           averageSecondsWhenCorrect: undefined,
           failureRatePercent: 0,
+          guessTimeDistribution: [],
+          notFoundCount: 0,
         }, true);
       },
     });
@@ -255,6 +257,9 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
       this.displayedTotalScore.set(0);
       countUp(this.totalScore(), v => this.displayedTotalScore.set(v), 1000);
       this.startCountdown();
+      // Stats du jour → histogrammes par morceau dans le récap (popup au clic sur un score).
+      this.api.apiStatsToday().pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(stats => this.todayStats.set(stats));
     } else {
       this.currentIndex.set(next);
     }

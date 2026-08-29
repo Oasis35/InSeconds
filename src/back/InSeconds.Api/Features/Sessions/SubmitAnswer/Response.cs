@@ -1,3 +1,5 @@
+using InSeconds.Api.Common.Stats;
+
 namespace InSeconds.Api.Features.Sessions.SubmitAnswer;
 
 public sealed record SubmitAnswerResponse(
@@ -8,4 +10,6 @@ public sealed record SubmitAnswerResponse(
     string CorrectTitle,
     decimal ListenedDurationSeconds,
     double? AverageSecondsWhenCorrect,
-    double FailureRatePercent);
+    double FailureRatePercent,
+    IReadOnlyList<DurationBucketDto> GuessTimeDistribution,
+    int NotFoundCount);

@@ -1,13 +1,15 @@
-import { Component, inject, signal, effect, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, effect, HostListener, ChangeDetectionStrategy } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import { AdminStatsService } from '../../services/admin-stats.service';
 import { PlayerIdentityService } from '../../../../core/services/player-identity.service';
 import { ClipboardService } from '../../../../core/services/clipboard.service';
+import { GuessTimeChartComponent } from '../../../../shared/guess-time-chart/guess-time-chart.component';
+import { TrackStatsDto } from '../../../../api/api.generated';
 
 @Component({
   selector: 'app-challenges-tab',
-  imports: [DecimalPipe, TranslatePipe],
+  imports: [DecimalPipe, TranslatePipe, GuessTimeChartComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './challenges-tab.component.html',
 })
@@ -22,6 +24,22 @@ export class ChallengesTabComponent {
   // Clic gauche sur un chip → met en surbrillance tous les chips du même joueur
   // (tous les défis affichés) ; re-clic ou clic sur un autre chip bascule.
   protected readonly highlightedPlayerId = signal<string | null>(null);
+
+  // Morceau dont l'histogramme « temps de réponse » est ouvert en pop-up, ou null.
+  protected readonly chartTrack = signal<TrackStatsDto | null>(null);
+
+  protected openChart(track: TrackStatsDto): void {
+    this.chartTrack.set(track);
+  }
+
+  protected closeChart(): void {
+    this.chartTrack.set(null);
+  }
+
+  @HostListener('document:keydown.escape')
+  protected onEscape(): void {
+    this.closeChart();
+  }
 
   constructor() {
     // Changer de mois vide la sélection : sinon, si le joueur surligné n'a pas joué

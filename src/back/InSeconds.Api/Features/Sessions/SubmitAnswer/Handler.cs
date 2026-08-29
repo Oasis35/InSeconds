@@ -1,5 +1,6 @@
 using InSeconds.Api.Common.Scoring;
 using InSeconds.Api.Common.Settings;
+using InSeconds.Api.Common.Stats;
 using InSeconds.Api.Common.Text;
 using InSeconds.Api.Domain;
 using InSeconds.Api.Infrastructure.Persistence;
@@ -69,6 +70,15 @@ public sealed class SubmitAnswerHandler(
             })
             .FirstOrDefaultAsync(cancellationToken);
 
+        // Répartition par palier des réponses correctes déjà en base (pour l'histogramme
+        // "en combien de temps les autres ont trouvé" affiché à la révélation).
+        var priorByDuration = await db.GameSessionAnswers
+            .Where(a => a.DailyChallengeTrackId == command.DailyChallengeTrackId
+                        && (a.ArtistCorrect || a.TitleCorrect))
+            .GroupBy(a => a.ListenedDurationSeconds)
+            .Select(g => new { Duration = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken);
+
         db.GameSessionAnswers.Add(new GameSessionAnswer
         {
             GameSessionId           = command.SessionId,
@@ -123,6 +133,15 @@ public sealed class SubmitAnswerHandler(
         var correctAvg  = correctCountAfter == 0 ? (double?)null : correctSumAfter / correctCountAfter;
         var failureRate = totalAfter == 0 ? 0d : Math.Round((double)failCountAfter / totalAfter * 100, 1);
 
+        // Distribution projetée sur tous les paliers autorisés (comptes à 0 inclus, ordre croissant),
+        // réponse courante ajoutée en mémoire si elle est correcte.
+        var durationCounts = priorByDuration.ToDictionary(x => x.Duration, x => x.Count);
+        if (isCorrectNow)
+            durationCounts[command.ListenedDurationSeconds] =
+                durationCounts.GetValueOrDefault(command.ListenedDurationSeconds) + 1;
+
+        var distribution = GuessTimeDistribution.Build(appSettings.AllowedDurationsSeconds, durationCounts);
+
         return Results.Ok(new SubmitAnswerResponse(
             ArtistCorrect:             artistCorrect,
             TitleCorrect:              titleCorrect,
@@ -131,6 +150,8 @@ public sealed class SubmitAnswerHandler(
             CorrectTitle:              TextNormalizationHelpers.CleanDisplayTitle(challengeTrack.Title),
             ListenedDurationSeconds:   command.ListenedDurationSeconds,
             AverageSecondsWhenCorrect: correctAvg,
-            FailureRatePercent:        failureRate));
+            FailureRatePercent:        failureRate,
+            GuessTimeDistribution:     distribution,
+            NotFoundCount:             failCountAfter));
     }
 }

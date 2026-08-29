@@ -148,4 +148,22 @@ describe('ChallengesTabComponent', () => {
       expect(component['copiedPlayerId']()).toBeNull();
     });
   });
+
+  describe('pop-up histogramme', () => {
+    const track = { position: 1, artist: 'Eminem', title: 'Lose Yourself' } as never;
+
+    it('openChart() stores the track, closeChart() and onEscape() clear it', () => {
+      expect(component['chartTrack']()).toBeNull();
+
+      component['openChart'](track);
+      expect(component['chartTrack']()).toBe(track);
+
+      component['closeChart']();
+      expect(component['chartTrack']()).toBeNull();
+
+      component['openChart'](track);
+      component['onEscape']();
+      expect(component['chartTrack']()).toBeNull();
+    });
+  });
 });

@@ -1,3 +1,5 @@
+using InSeconds.Api.Common.Stats;
+
 namespace InSeconds.Api.Features.Stats.Today;
 
 public sealed record TodayStatsResponse(
@@ -17,4 +19,7 @@ public sealed record TrackStat(
     double? AverageSecondsWhenCorrect,
     bool? ArtistCorrect,
     bool? TitleCorrect,
-    decimal? ListenedDurationSeconds);
+    decimal? ListenedDurationSeconds,
+    int? Score,
+    IReadOnlyList<DurationBucketDto> GuessTimeDistribution,
+    int NotFoundCount);

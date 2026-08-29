@@ -76,6 +76,11 @@
     "title": "Title",
     "comeBack": "Come back tomorrow for a new challenge"
   },
+  "trackList": {
+    "guessTimeTitle": "How long it took others to guess",
+    "showChart": "View the guess-time histogram",
+    "close": "Close"
+  },
   "footer": {
     "admin": "Admin",
     "privacy": "Privacy",
@@ -134,9 +139,6 @@
     "title": "Title",
     "correctAnswer": "Correct answer",
     "points": "pts",
-    "yourTime": "Your time:",
-    "average": "Avg.:",
-    "notFound": "Missed:",
     "networkError": "Network error — your answer couldn't be saved.",
     "seeResult": "See result",
     "nextTrack": "Next track →"

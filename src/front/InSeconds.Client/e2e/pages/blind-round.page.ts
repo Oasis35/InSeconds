@@ -12,6 +12,9 @@ export class BlindRoundPage {
   readonly nextButton: Locator;
   readonly roundScore: Locator;
   readonly listenMoreButton: Locator;
+  readonly guessTimeChart: Locator;
+  readonly guessTimeBars: Locator;
+  readonly guessTimeHighlighted: Locator;
 
   constructor(readonly page: Page) {
     this.answerInput         = page.getByPlaceholder('Artiste — Titre');
@@ -23,6 +26,10 @@ export class BlindRoundPage {
     this.roundScore          = page.locator('p').filter({ hasText: ' pts' }).last();
     // Bouton "écouter plus" : texte visible "+X" (ex: "+1", "+1.5"), tooltip "jusqu'à Xs" en title uniquement.
     this.listenMoreButton    = page.getByRole('button', { name: /^\+\d/ });
+    // Histogramme "en combien de temps les autres ont trouvé" affiché à la révélation.
+    this.guessTimeChart       = page.getByTestId('guess-time-chart');
+    this.guessTimeBars        = this.guessTimeChart.locator('[data-bucket]');
+    this.guessTimeHighlighted = this.guessTimeChart.locator('[data-highlight="true"]');
   }
 
   /** Bouton « ↺ Xs » (rejoue le palier courant en entier) — visible une fois le palier terminé. */

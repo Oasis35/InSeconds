@@ -101,6 +101,7 @@
       @if (gameState() === 'done') {
         <app-final-recap-screen
           [results]="results()"
+          [stats]="todayStats()"
           [displayedScore]="displayedTotalScore()"
           [shareCopied]="shareCopied()"
           [shareFailed]="shareFailed()"

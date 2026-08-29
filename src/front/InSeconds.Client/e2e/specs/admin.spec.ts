@@ -335,14 +335,7 @@ test.describe('Admin — indicateur joueurs / ID navigateur', () => {
     await page.clock.install({ time: Date.now() });
 
     const game = new GamePage(page);
-    const round = new BlindRoundPage(page);
-    await game.goto();
-    await game.waitForWelcome();
-    await game.clickStart();
-    for (let i = 0; i < 3; i++) {
-      await round.playRound(1);
-    }
-    await game.waitForDone();
+    await game.playFullGame(new BlindRoundPage(page));
 
     const admin = new AdminPage(page);
     await admin.goto();
@@ -369,5 +362,33 @@ test.describe('Admin — indicateur joueurs / ID navigateur', () => {
     const clipText = await page.evaluate(() => navigator.clipboard.readText());
     expect(clipText).toHaveLength(36);
     expect(clipText.slice(0, 8)).toBe(browserShortId);
+  });
+
+  test('l\'icône d\'un morceau ouvre la pop-up histogramme (avec les chiffres)', async ({ page, api }) => {
+    await api.reset();
+    await page.clock.install({ time: Date.now() });
+
+    const game = new GamePage(page);
+    await game.playFullGame(new BlindRoundPage(page));
+
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('button', { name: /Défis/ }).click();
+
+    const today = new Date().toISOString().slice(0, 10);
+    const todayRow = admin.challengeRow(today);
+    await todayRow.locator('button').first().click(); // bouton d'accordéon → déplie « Stats par défi »
+
+    const chartIcon = todayRow.getByRole('button', { name: /histogramme des temps de réponse/i }).first();
+    await chartIcon.click();
+
+    const chart = page.getByTestId('guess-time-chart');
+    await expect(chart).toBeVisible();
+    // Vue admin → les chiffres au-dessus des barres sont affichés.
+    await expect(chart.locator('[data-bucket] span')).toHaveCount(8);
+
+    await page.keyboard.press('Escape');
+    await expect(chart).toBeHidden();
   });
 });
