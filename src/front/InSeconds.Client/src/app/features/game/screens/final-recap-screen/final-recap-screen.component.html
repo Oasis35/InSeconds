@@ -32,57 +32,8 @@
     </button>
 
     @if (showTrackDetails()) {
-      <div class="flex flex-col" style="border-top:1px solid var(--border-medium)">
-        @for (r of results(); track r.position) {
-          <div class="flex gap-3 p-3 transition-colors hover:bg-white/[0.02]"
-            style="border-bottom:1px solid rgba(255,255,255,0.04)">
-
-            @if (r.coverUrl) {
-              <img [src]="r.coverUrl" [alt]="'alreadyPlayed.coverAlt' | translate"
-                class="w-12 h-12 rounded-xl object-cover shrink-0" style="opacity:0.9" />
-            } @else {
-              <div class="w-12 h-12 rounded-xl shrink-0" style="background:var(--bg-surface-2)"></div>
-            }
-
-            <div class="flex-1 min-w-0 text-left space-y-1 py-0.5">
-              <div class="flex gap-2.5 text-xs font-bold">
-                <span [style.color]="r.artistCorrect ? 'var(--color-success)' : 'var(--color-fail)'">
-                  {{ r.artistCorrect ? '✓' : '✗' }} {{ 'done.artist' | translate }}
-                </span>
-                <span [style.color]="r.titleCorrect ? 'var(--color-success)' : 'var(--color-fail)'">
-                  {{ r.titleCorrect ? '✓' : '✗' }} {{ 'done.title' | translate }}
-                </span>
-              </div>
-              <p class="text-sm font-medium truncate" style="color:var(--text-body)">
-                {{ r.correctArtist }} — {{ r.correctTitle }}
-              </p>
-              <div class="flex gap-2.5 text-xs" style="color:var(--text-hover)">
-                <span>{{ r.listenedDurationSeconds }}s</span>
-                @if (r.averageSecondsWhenCorrect != null) {
-                  <span>{{ 'alreadyPlayed.averageSeconds' | translate: { seconds: r.averageSecondsWhenCorrect!.toFixed(1) } }}</span>
-                }
-                <span>· {{ 'alreadyPlayed.failedPercent' | translate: { percent: r.failureRatePercent.toFixed(0) } }}</span>
-              </div>
-            </div>
-
-            <div class="shrink-0 text-right self-center flex flex-col items-end gap-1.5">
-              @if (hasChart(r)) {
-                <button type="button" (click)="openChartFor(r)"
-                  class="text-lg font-bold transition-opacity hover:opacity-70 touch-manipulation"
-                  style="font-family:var(--font-display);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px"
-                  [style.color]="r.score > 0 ? 'var(--color-success)' : 'var(--text-hover)'"
-                  [attr.aria-label]="'done.showTrackChart' | translate">
-                  +{{ r.score }}
-                </button>
-              } @else {
-                <span class="text-lg font-bold" style="font-family:var(--font-display)" [style.color]="r.score > 0 ? 'var(--color-success)' : 'var(--text-hover)'">
-                  +{{ r.score }}
-                </span>
-              }
-              <app-deezer-badge [deezerTrackId]="r.deezerTrackId" width="84" height="12" />
-            </div>
-          </div>
-        }
+      <div style="border-top:1px solid var(--border-medium)">
+        <app-track-results-list [rows]="recapRows()" />
       </div>
     }
 
@@ -90,25 +41,3 @@
 
   <p class="text-center text-xs pb-4" style="color:var(--text-muted)">{{ 'done.comeBack' | translate }}</p>
 </div>
-
-<!-- Popup histogramme d'un morceau -->
-@if (openChart(); as r) {
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-6"
-       style="background:var(--overlay-dark);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)"
-       (click)="closeChart()">
-    <div class="w-full rounded-2xl p-5 relative"
-         style="max-width:340px;background:var(--bg-surface-2);border:1px solid var(--border-medium)"
-         (click)="$event.stopPropagation()">
-      <button type="button" (click)="closeChart()"
-        class="absolute top-2 right-3 text-lg leading-none touch-manipulation hover:text-slate-300"
-        style="color:var(--text-faint)" [attr.aria-label]="'done.close' | translate">✕</button>
-      <p class="text-sm font-medium truncate pr-6 mb-1" style="color:var(--text-body)">{{ r.correctArtist }} — {{ r.correctTitle }}</p>
-      <p class="text-[10px] font-bold tracking-widest uppercase mb-4" style="font-family:var(--font-display);color:var(--text-faint)">{{ 'done.guessTimeTitle' | translate }}</p>
-      <app-guess-time-chart
-        [distribution]="chartStat(r)!.guessTimeDistribution"
-        [notFoundCount]="chartStat(r)!.notFoundCount"
-        [highlightDuration]="(r.artistCorrect || r.titleCorrect) ? r.listenedDurationSeconds : null"
-        [highlightNotFound]="!(r.artistCorrect || r.titleCorrect)" />
-    </div>
-  </div>
-}

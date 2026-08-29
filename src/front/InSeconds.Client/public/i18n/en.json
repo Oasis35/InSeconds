@@ -74,9 +74,11 @@
     "points": "points",
     "artist": "Artist",
     "title": "Title",
-    "comeBack": "Come back tomorrow for a new challenge",
+    "comeBack": "Come back tomorrow for a new challenge"
+  },
+  "trackList": {
     "guessTimeTitle": "How long it took others to guess",
-    "showTrackChart": "View the guess-time histogram",
+    "showChart": "View the guess-time histogram",
     "close": "Close"
   },
   "footer": {

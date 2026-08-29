@@ -20,5 +20,6 @@ public sealed record TrackStat(
     bool? ArtistCorrect,
     bool? TitleCorrect,
     decimal? ListenedDurationSeconds,
+    int? Score,
     IReadOnlyList<DurationBucketDto> GuessTimeDistribution,
     int NotFoundCount);

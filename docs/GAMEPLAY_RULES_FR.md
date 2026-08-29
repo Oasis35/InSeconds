@@ -49,7 +49,7 @@ Moins on écoute, plus on marque. Le score de base est un **lookup exact** du pa
 ## Feedback après chaque réponse
 
 - L'écran de révélation d'un morceau affiche un **histogramme « en combien de temps les autres ont trouvé »** : une barre par palier d'écoute (`0.5s … 10s`) = nombre de joueurs ayant trouvé (artiste OU titre) à ce palier, plus une barre « ✗ » finale = nombre de joueurs n'ayant pas trouvé. La colonne du palier écouté par le joueur courant est mise en avant (ou la barre « ✗ » s'il n'a pas trouvé). Purement informatif, n'affecte pas le score. Données : `SubmitAnswerResponse.GuessTimeDistribution` + `NotFoundCount` (réponse courante incluse dans les comptes). **[Back + Front]**
-- Sur le **récap final**, le même histogramme est accessible en pop-up : cliquer le `+score` d'un morceau l'ouvre (données `TrackStat.GuessTimeDistribution`/`NotFoundCount` via `GET /api/stats/today`). L'écran « déjà joué » garde l'affichage texte (moyenne des joueurs ayant trouvé, % d'échec).
+- Sur le **récap final ET l'écran « déjà joué »**, le même histogramme est accessible en pop-up : cliquer le `+score` d'un morceau l'ouvre (données `TrackStat.GuessTimeDistribution`/`NotFoundCount`/`Score` via `GET /api/stats/today`). Les deux écrans partagent la même liste de morceaux (`TrackResultsListComponent`) : pochette, chips `✓/✗`, durée écoutée, `% ratés`/moyenne, `+score`.
 
 ## Stats admin sur la prolongation
 

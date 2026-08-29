@@ -1,9 +1,8 @@
-import { Component, input, output, signal, computed, HostListener, ChangeDetectionStrategy } from '@angular/core';
+import { Component, input, output, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { TodayStatsResponse, TrackStat } from '../../../../api/api.generated';
+import { TodayStatsResponse } from '../../../../api/api.generated';
 import { ShareButtonComponent } from '../../../../shared/share-button/share-button.component';
-import { DeezerBadgeComponent } from '../../../../shared/deezer-badge.component';
-import { GuessTimeChartComponent } from '../../../../shared/guess-time-chart/guess-time-chart.component';
+import { TrackResultsListComponent, TrackResultRow } from '../../../../shared/track-results-list/track-results-list.component';
 
 export interface RoundResult {
   artistCorrect: boolean;
@@ -21,7 +20,7 @@ export interface RoundResult {
 
 @Component({
   selector: 'app-final-recap-screen',
-  imports: [TranslatePipe, ShareButtonComponent, DeezerBadgeComponent, GuessTimeChartComponent],
+  imports: [TranslatePipe, ShareButtonComponent, TrackResultsListComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './final-recap-screen.component.html',
 })
@@ -38,33 +37,26 @@ export class FinalRecapScreenComponent {
 
   readonly showTrackDetails = signal(false);
 
-  /** Morceau dont l'histogramme est ouvert en popup, ou `null`. */
-  protected readonly openChart = signal<RoundResult | null>(null);
-
-  private readonly statsByPosition = computed(() => {
-    const map = new Map<number, TrackStat>();
-    for (const t of this.stats()?.tracks ?? []) map.set(t.position, t);
-    return map;
+  /** Lignes pour `<app-track-results-list>` : `RoundResult` + histogramme depuis `stats` (par position). */
+  protected readonly recapRows = computed<TrackResultRow[]>(() => {
+    const byPosition = new Map((this.stats()?.tracks ?? []).map(t => [t.position, t]));
+    return this.results().map(r => {
+      const s = byPosition.get(r.position);
+      return {
+        position: r.position,
+        artist: r.correctArtist,
+        title: r.correctTitle,
+        coverUrl: r.coverUrl,
+        artistCorrect: r.artistCorrect,
+        titleCorrect: r.titleCorrect,
+        listenedDurationSeconds: r.listenedDurationSeconds,
+        averageSecondsWhenCorrect: r.averageSecondsWhenCorrect ?? null,
+        failureRatePercent: r.failureRatePercent,
+        score: r.score,
+        deezerTrackId: r.deezerTrackId,
+        guessTimeDistribution: s?.guessTimeDistribution ?? [],
+        notFoundCount: s?.notFoundCount ?? 0,
+      };
+    });
   });
-
-  protected chartStat(r: RoundResult): TrackStat | undefined {
-    return this.statsByPosition().get(r.position);
-  }
-
-  protected hasChart(r: RoundResult): boolean {
-    return (this.chartStat(r)?.guessTimeDistribution?.length ?? 0) > 0;
-  }
-
-  protected openChartFor(r: RoundResult): void {
-    if (this.hasChart(r)) this.openChart.set(r);
-  }
-
-  protected closeChart(): void {
-    this.openChart.set(null);
-  }
-
-  @HostListener('document:keydown.escape')
-  protected onEscape(): void {
-    this.closeChart();
-  }
 }

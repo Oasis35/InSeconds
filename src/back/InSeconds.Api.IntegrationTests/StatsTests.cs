@@ -147,13 +147,18 @@ public class StatsTests(IntegrationTestFactory factory) : IAsyncLifetime
         var body = await resp.Content.ReadFromJsonAsync<TodayStatsResponse>();
         Assert.NotNull(body);
 
-        // Chaque TrackStat doit exposer la réponse du joueur
+        // Chaque TrackStat doit exposer la réponse du joueur + son score + l'histogramme
         Assert.All(body.Tracks, t =>
         {
             Assert.NotNull(t.ArtistCorrect);
             Assert.NotNull(t.TitleCorrect);
             Assert.NotNull(t.ListenedDurationSeconds);
             Assert.Equal(1m, t.ListenedDurationSeconds);
+            Assert.NotNull(t.Score);
+            Assert.True(t.Score >= 0);
+            Assert.NotEmpty(t.GuessTimeDistribution);            // un bucket par palier autorisé
+            Assert.Equal(1, t.GuessTimeDistribution.Single(b => b.DurationSeconds == 1m).Count);
+            Assert.Equal(0, t.NotFoundCount);                    // le joueur a tout trouvé (artiste + titre)
         });
     }
 
@@ -170,6 +175,7 @@ public class StatsTests(IntegrationTestFactory factory) : IAsyncLifetime
             Assert.Null(t.ArtistCorrect);
             Assert.Null(t.TitleCorrect);
             Assert.Null(t.ListenedDurationSeconds);
+            Assert.Null(t.Score);
         });
     }
 }

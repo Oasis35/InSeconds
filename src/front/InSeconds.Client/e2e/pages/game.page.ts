@@ -20,6 +20,11 @@ export class GamePage {
   readonly leaveCancelButton: Locator;
   // Overlay « Service indisponible » (backend KO)
   readonly serviceDownHeading: Locator;
+  // Liste de morceaux mutualisée (récap + déjà joué) + pop-up histogramme
+  readonly showTracksButton: Locator;
+  readonly trackScoreButtons: Locator;
+  readonly trackChip: Locator;
+  readonly guessTimeChart: Locator;
 
   constructor(readonly page: Page) {
     this.startButton           = page.getByRole('button', { name: 'Commencer' });
@@ -40,6 +45,10 @@ export class GamePage {
     this.leaveConfirmButton    = page.getByRole('button', { name: 'Quitter quand même' });
     this.leaveCancelButton     = page.getByRole('button', { name: 'Continuer à jouer' });
     this.serviceDownHeading    = page.getByRole('heading', { name: 'Service indisponible' });
+    this.showTracksButton      = page.getByRole('button', { name: /Voir les morceaux/i });
+    this.trackScoreButtons     = page.locator('app-track-results-list button').filter({ hasText: /^\+\d+$/ });
+    this.trackChip             = page.locator('app-track-results-list').getByText(/✓ Artiste|✗ Artiste/).first();
+    this.guessTimeChart        = page.getByTestId('guess-time-chart');
   }
 
   async goto(): Promise<void> {

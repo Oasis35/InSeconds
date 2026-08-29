@@ -59,6 +59,39 @@ test.describe('Déjà joué — état already_played', () => {
     expect(clipText).toMatch(/[✅❌]/); // contient des emojis résultat
   });
 
+  test('la liste des morceaux ouvre la pop-up histogramme au clic sur un score', async ({ page, api }) => {
+    await api.reset();
+    await page.clock.install({ time: Date.now() });
+
+    const game = new GamePage(page);
+    const round = new BlindRoundPage(page);
+
+    await game.goto();
+    await game.waitForWelcome();
+    await game.clickStart();
+    for (let i = 0; i < 3; i++) {
+      await round.playRound(1);
+    }
+    await game.waitForDone();
+
+    // Recharger → écran already_played
+    await game.goto();
+    await expect(game.alreadyPlayedHeading).toBeVisible();
+
+    // Déplier la liste — mêmes lignes que le récap (chips ✓/✗, score cliquable)
+    await game.showTracksButton.click();
+    await expect(game.trackChip).toBeVisible();
+    await expect(game.trackScoreButtons.first()).toBeVisible();
+
+    // Clic sur un score → pop-up histogramme
+    await game.trackScoreButtons.first().click();
+    await expect(game.guessTimeChart).toBeVisible();
+
+    // Échap ferme la pop-up
+    await page.keyboard.press('Escape');
+    await expect(game.guessTimeChart).toBeHidden();
+  });
+
   test('affiche le message abandon quand la session est abandonnée', async ({ page, api }) => {
     await api.reset();
     await page.clock.install({ time: Date.now() });

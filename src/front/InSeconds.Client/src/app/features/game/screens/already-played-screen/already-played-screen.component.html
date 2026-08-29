@@ -61,28 +61,8 @@
             <span>{{ showTrackDetails() ? '▲' : '▼' }}</span>
           </button>
           @if (showTrackDetails()) {
-            <div class="flex flex-col" style="border-top:1px solid var(--border-medium)">
-              @for (t of s.tracks; track t.position) {
-                <div class="flex items-center gap-3 px-4 py-3.5"
-                     style="border-bottom:1px solid rgba(255,255,255,0.04)">
-                  @if (t.coverUrl) {
-                    <img [src]="t.coverUrl" [alt]="'alreadyPlayed.coverAlt' | translate"
-                         class="w-9 h-9 rounded-lg object-cover shrink-0" style="opacity:0.85" />
-                  } @else {
-                    <div class="w-9 h-9 rounded-lg shrink-0" style="background:var(--bg-surface-2)"></div>
-                  }
-                  <div class="flex-1 min-w-0 text-left">
-                    <p class="text-sm font-medium truncate" style="color:var(--text-light)">{{ t.artist }} — {{ t.title }}</p>
-                    <div class="flex gap-3 mt-0.5 text-xs" style="color:var(--text-faint)">
-                      <span>{{ 'alreadyPlayed.failedPercent' | translate: { percent: t.failureRatePercent.toFixed(0) } }}</span>
-                      @if (t.averageSecondsWhenCorrect != null) {
-                        <span>{{ 'alreadyPlayed.averageSeconds' | translate: { seconds: t.averageSecondsWhenCorrect!.toFixed(1) } }}</span>
-                      }
-                    </div>
-                  </div>
-                  <app-deezer-badge [deezerTrackId]="t.deezerTrackId" variant="vertical" width="34" height="30" />
-                </div>
-              }
+            <div style="border-top:1px solid var(--border-medium)">
+              <app-track-results-list [rows]="playedRows()" />
             </div>
           }
         }

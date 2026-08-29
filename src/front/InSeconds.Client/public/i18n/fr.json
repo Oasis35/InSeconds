@@ -71,9 +71,11 @@
     "points": "points",
     "artist": "Artiste",
     "title": "Titre",
-    "comeBack": "Reviens demain pour un nouveau défi",
+    "comeBack": "Reviens demain pour un nouveau défi"
+  },
+  "trackList": {
     "guessTimeTitle": "En combien de temps les autres ont trouvé",
-    "showTrackChart": "Voir l'histogramme des temps de réponse",
+    "showChart": "Voir l'histogramme des temps de réponse",
     "close": "Fermer"
   },
   "deezerBadge": {

@@ -24,7 +24,7 @@ public sealed class TodayStatsHandler(
 
         int? yourScore = null;
         int currentStreak = 0;
-        Dictionary<int, (bool ArtistCorrect, bool TitleCorrect, decimal ListenedDuration)> playerAnswersByPosition = [];
+        Dictionary<int, (bool ArtistCorrect, bool TitleCorrect, decimal ListenedDuration, int Score)> playerAnswersByPosition = [];
         if (playerId.HasValue)
         {
             var playerSession = await db.GameSessions
@@ -47,11 +47,12 @@ public sealed class TodayStatsHandler(
                         a.ArtistCorrect,
                         a.TitleCorrect,
                         a.ListenedDurationSeconds,
+                        a.Score,
                     })
                     .ToListAsync(ct);
                 playerAnswersByPosition = answers.ToDictionary(
                     a => a.Position,
-                    a => (a.ArtistCorrect, a.TitleCorrect, a.ListenedDurationSeconds));
+                    a => (a.ArtistCorrect, a.TitleCorrect, a.ListenedDurationSeconds, a.Score));
             }
 
             currentStreak = await db.Players
@@ -135,6 +136,7 @@ public sealed class TodayStatsHandler(
                 ArtistCorrect:             playerAnswersByPosition.ContainsKey(t.Position) ? pa.ArtistCorrect : null,
                 TitleCorrect:              playerAnswersByPosition.ContainsKey(t.Position) ? pa.TitleCorrect : null,
                 ListenedDurationSeconds:   playerAnswersByPosition.ContainsKey(t.Position) ? pa.ListenedDuration : null,
+                Score:                     playerAnswersByPosition.ContainsKey(t.Position) ? pa.Score : null,
                 GuessTimeDistribution:     GuessTimeDistribution.Build(
                                                appSettings.AllowedDurationsSeconds,
                                                correctCountsByPosition.GetValueOrDefault(t.Position, emptyCounts)),

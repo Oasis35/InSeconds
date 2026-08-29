@@ -108,7 +108,7 @@ Tous `OnPush`, présentationnels (sauf `already-played-screen` qui type `stats` 
 - **`welcome-screen`** : `trackCount` (required) → `startGame`.
 - **`resume-screen`** : `completedCount`, `trackCount` (required), `abandonLoading=false` → `resumeGame`/`abandon`. Signal local `showAbandonConfirm` : double confirmation avant d'émettre réellement `abandon`.
 - **`status-screen`** : générique, réutilisé pour `no_challenge` ET `error` — `titleKey`/`bodyKey` (clés i18n passées par le parent) → `retry`.
-- **`already-played-screen`** : `stats: TodayStatsResponse|null`, `abandoned=false`, `countdown` (required), `shareCopied`/`shareFailed=false` → `share`. Signal `showTrackDetails` (accordéon). Si `abandoned()` : message simple + countdown. Sinon : carte score/médiane (fallback `—` si `medianScore<=0`), `app-share-button`, accordéon morceaux avec lien `deezer.com/track/{deezerTrackId}`.
+- **`already-played-screen`** : `stats: TodayStatsResponse|null`, `abandoned=false`, `countdown` (required), `shareCopied`/`shareFailed=false` → `share`. Signal `showTrackDetails` (accordéon). Si `abandoned()` : message simple + countdown. Sinon : carte score/médiane (fallback `—` si `medianScore<=0`), `app-share-button`, puis l'accordéon délègue à **`<app-track-results-list [rows]="playedRows()">`** — `playedRows` (computed) mappe `stats().tracks` (`TrackStat`) → `TrackResultRow[]`. Lignes **identiques au récap** (chips `✓/✗`, durée, `+score` cliquable → pop-up histogramme).
 - **`final-recap-screen`** : **exporte `RoundResult`** — le contrat que `GameComponent` construit dans `onAnswered`/`resumePlaying` :
   ```ts
   interface RoundResult {
@@ -118,13 +118,14 @@ Tous `OnPush`, présentationnels (sauf `already-played-screen` qui type `stats` 
   }
   ```
   Inputs (required) : `results`, `displayedScore`. `shareCopied`/`shareFailed=false`, `canShare=true`, `countdown=''` → `share`.
-  `RoundResult` porte toujours `averageSecondsWhenCorrect`/`failureRatePercent` (affichés en texte par ligne). **Pop-up histogramme** : un input `stats: TodayStatsResponse | null` (fourni par `GameComponent`, qui appelle `apiStatsToday()` à l'entrée de l'état `done`). Chaque `+score` de morceau devient un bouton (soulignement pointillé) **si** le `TrackStat` correspondant (matché par `position`) a une `guessTimeDistribution` non vide → ouvre une pop-up plein écran (`openChart` signal, fermeture backdrop / ✕ / `Échap` via `@HostListener('document:keydown.escape')`) contenant `<app-guess-time-chart>` (`highlightDuration` = palier écouté si le joueur a trouvé ce morceau, sinon `highlightNotFound`). L'histogramme n'est donc pas dans `RoundResult` — il vient de `stats`.
+  `RoundResult` porte toujours `averageSecondsWhenCorrect`/`failureRatePercent`. Input `stats: TodayStatsResponse | null` (fourni par `GameComponent`, qui appelle `apiStatsToday()` à l'entrée de l'état `done`). L'accordéon délègue à **`<app-track-results-list [rows]="recapRows()">`** — `recapRows` (computed) mappe `results()` (`RoundResult`) + fusionne l'histogramme (`guessTimeDistribution`/`notFoundCount`) depuis `stats` par `position`. Résilience : la liste vient de `results()` (toujours présent) ; si `stats` est `null` la liste s'affiche quand même, seule la pop-up est indisponible. La pop-up (`openChart` signal, fermeture backdrop / ✕ / `Échap`) et le rendu des lignes vivent **dans `TrackResultsListComponent`** (`shared/track-results-list/`), plus dans cet écran.
 
 ## Composants partagés utilisés
 
 - **`shared/confirm-sheet/`** : `tone: 'danger'|'warning'`, `title`/`body`/`confirmLabel`/`cancelLabel` (required), `loading=false`, `confirmStyle`/`cancelStyle` personnalisables (utilisé pour inverser les couleurs entre confirmation d'abandon et confirmation de sortie). Outputs `confirm`/`cancelled`.
 - **`shared/share-button/`** : `copied` (required), `failed=false`, `disabled=false` → `share`.
-- **`shared/guess-time-chart/`** : histogramme « en combien de temps les autres ont trouvé » sur l'écran de révélation. Inputs `distribution` (`DurationBucketDto[]`, required), `notFoundCount=0`, `highlightDuration: number|null=null`, `highlightNotFound=false`, `titleKey=''`. Présentationnel pur (computed `buckets`), pas d'output.
+- **`shared/guess-time-chart/`** : histogramme « en combien de temps les autres ont trouvé » (écran de révélation + pop-up de `track-results-list`). Inputs `distribution` (`DurationBucketDto[]`, required), `notFoundCount=0`, `highlightDuration: number|null=null`, `highlightNotFound=false`, `titleKey=''`. Présentationnel pur (computed `buckets`), pas d'output.
+- **`shared/track-results-list/`** : liste accordéon des morceaux d'un défi + pop-up histogramme au clic sur un `+score`. Input unique `rows: TrackResultRow[]` (interface exportée). Possède `openChart` signal + `@HostListener('document:keydown.escape')`. Mutualisé entre `final-recap-screen` (`recapRows`) et `already-played-screen` (`playedRows`).
 
 ## Services `core/` consommés (hors périmètre `game/` mais central ici)
 

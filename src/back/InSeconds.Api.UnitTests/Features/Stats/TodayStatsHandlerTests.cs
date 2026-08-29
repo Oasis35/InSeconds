@@ -282,6 +282,7 @@ public sealed class TodayStatsHandlerTests
         track.ArtistCorrect.Should().Be(true);
         track.TitleCorrect.Should().Be(false);
         track.ListenedDurationSeconds.Should().Be(1.5m);
+        track.Score.Should().Be(350);
     }
 
     [Fact]
@@ -309,6 +310,7 @@ public sealed class TodayStatsHandlerTests
         track.ArtistCorrect.Should().BeNull();
         track.TitleCorrect.Should().BeNull();
         track.ListenedDurationSeconds.Should().BeNull();
+        track.Score.Should().BeNull();
     }
 
     [Fact]
@@ -332,5 +334,6 @@ public sealed class TodayStatsHandlerTests
         track.ArtistCorrect.Should().BeNull();
         track.TitleCorrect.Should().BeNull();
         track.ListenedDurationSeconds.Should().BeNull();
+        track.Score.Should().BeNull();
     }
 }
