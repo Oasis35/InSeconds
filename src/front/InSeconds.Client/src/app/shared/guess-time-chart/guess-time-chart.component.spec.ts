@@ -62,8 +62,9 @@ describe('GuessTimeChartComponent', () => {
 
   it('gives a 2px height to empty buckets and scales the rest against the max', () => {
     const buckets = component['buckets']();
-    expect(buckets[0].heightPx).toBe('2px');          // count 0
-    expect(buckets[1].heightPx).toBe('52px');         // count 3 == max → full height
-    expect(buckets[2].heightPx).toBe(`${Math.round((1 / 3) * 52)}px`); // count 1
+    const barMax = 28;
+    expect(buckets[0].heightPx).toBe('2px');           // count 0
+    expect(buckets[1].heightPx).toBe(`${barMax}px`);   // count 3 == max → full height
+    expect(buckets[2].heightPx).toBe(`${Math.max(4, Math.round((1 / 3) * barMax))}px`); // count 1
   });
 });

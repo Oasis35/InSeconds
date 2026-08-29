@@ -275,7 +275,7 @@ Polish UX : `isSubmitting` (loading sur Valider), bouton `✕` lié à `(mousedo
 
 `setResult(r, isNetworkError?)` — méthode publique appelée depuis `GameComponent` via `viewChild`.
 
-**Écran de révélation** : au lieu d'une ligne texte « Ton temps / Moy. / Pas trouvé », affiche `<app-guess-time-chart>` (`GuessTimeChartComponent`) alimenté par `r.guessTimeDistribution` + `r.notFoundCount` — colonne du palier écouté en surbrillance si le joueur a trouvé, sinon barre « ✗ » en surbrillance.
+**Écran de révélation** : au lieu d'une ligne texte « Ton temps / Moy. / Pas trouvé », affiche `<app-guess-time-chart>` (`GuessTimeChartComponent`, sans `titleKey`, version compacte) alimenté par `r.guessTimeDistribution` + `r.notFoundCount` — colonne du palier écouté en surbrillance si le joueur a trouvé, sinon barre « ✗ » en surbrillance. Le bloc de révélation est resserré (`gap-3`, pochette `w-24`, score `2.25rem`) pour tenir dans un viewport mobile sans scroll.
 
 ### `GuessTimeChartComponent`
 

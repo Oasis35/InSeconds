@@ -1,23 +1,23 @@
 <div data-testid="guess-time-chart">
   @if (titleKey()) {
-    <p class="text-[10px] font-bold tracking-widest uppercase mb-2 text-center"
+    <p class="text-[9px] font-bold tracking-widest uppercase mb-1 text-center"
        style="font-family:var(--font-display);color:var(--text-faint)">
       {{ titleKey() | translate }}
     </p>
   }
-  <div class="flex items-end justify-between gap-1.5" style="height:64px">
+  <div class="flex items-end justify-between gap-1" style="height:34px">
     @for (b of buckets(); track b.key) {
-      <div class="flex-1 flex flex-col items-center justify-end gap-1 h-full"
+      <div class="flex-1 flex flex-col items-center justify-end gap-0.5 h-full"
            [attr.data-bucket]="b.key" [attr.data-highlight]="b.highlighted ? 'true' : null">
-        <span class="text-[10px] tabular-nums" [style.color]="b.labelColor">{{ b.count }}</span>
-        <div class="w-full rounded-sm transition-all"
+        <span class="text-[9px] leading-none tabular-nums" [style.color]="b.labelColor">{{ b.count }}</span>
+        <div class="rounded-full" style="width:3px"
              [style.height]="b.heightPx" [style.background]="b.barColor"></div>
       </div>
     }
   </div>
-  <div class="flex justify-between gap-1.5 mt-1">
+  <div class="flex justify-between gap-1 mt-0.5">
     @for (b of buckets(); track b.key) {
-      <span class="flex-1 text-center text-[10px]" [style.color]="b.labelColor">{{ b.label }}</span>
+      <span class="flex-1 text-center text-[9px] leading-none" [style.color]="b.labelColor">{{ b.label }}</span>
     }
   </div>
 </div>

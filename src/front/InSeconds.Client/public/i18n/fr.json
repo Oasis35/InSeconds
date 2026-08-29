@@ -134,7 +134,6 @@
     "title": "Titre",
     "correctAnswer": "Bonne réponse",
     "points": "pts",
-    "guessTimeChart": "En combien de temps les autres ont trouvé",
     "networkError": "Erreur réseau — la réponse n'a pas pu être enregistrée.",
     "seeResult": "Voir le résultat",
     "nextTrack": "Piste suivante →"
