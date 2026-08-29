@@ -59,12 +59,13 @@
 
 <!-- Pop-up histogramme d'un morceau -->
 @if (openChart(); as r) {
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-6"
-       style="background:var(--overlay-dark);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)"
-       (click)="closeChart()">
-    <div class="w-full rounded-2xl p-5 relative"
-         style="max-width:340px;background:var(--bg-surface-2);border:1px solid var(--border-medium)"
-         (click)="$event.stopPropagation()">
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-6">
+    <!-- Backdrop cliquable = <button> (accessible clavier) placé derrière la carte -->
+    <button type="button" (click)="closeChart()" [attr.aria-label]="'trackList.close' | translate"
+      class="absolute inset-0 w-full h-full cursor-default"
+      style="background:var(--overlay-dark);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)"></button>
+    <div class="relative w-full rounded-2xl p-5"
+         style="max-width:340px;background:var(--bg-surface-2);border:1px solid var(--border-medium)">
       <button type="button" (click)="closeChart()"
         class="absolute top-2 right-3 text-lg leading-none touch-manipulation hover:text-slate-300"
         style="color:var(--text-faint)" [attr.aria-label]="'trackList.close' | translate">✕</button>

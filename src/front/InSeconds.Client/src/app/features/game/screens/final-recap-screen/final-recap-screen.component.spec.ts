@@ -29,7 +29,7 @@ describe('FinalRecapScreenComponent', () => {
 
   it('recapRows() derives from results() even without stats (histogramme vide)', () => {
     const rows = component['recapRows']();
-    expect(rows.length).toBe(1);
+    expect(rows).toHaveSize(1);
     expect(rows[0]).toEqual(jasmine.objectContaining({
       position: 1, artist: 'Eminem', title: 'Lose Yourself', score: 1000, notFoundCount: 0,
     }));

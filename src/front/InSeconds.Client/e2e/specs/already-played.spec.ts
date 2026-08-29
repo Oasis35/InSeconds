@@ -8,23 +8,11 @@ test.describe('Déjà joué — état already_played', () => {
     await page.clock.install({ time: Date.now() });
 
     const game = new GamePage(page);
-    const round = new BlindRoundPage(page);
-
-    // Jouer une partie complète
-    await game.goto();
-    await game.waitForWelcome();
-    await game.clickStart();
-    for (let i = 0; i < 3; i++) {
-      await round.playRound(1);
-    }
-    await game.waitForDone();
-
-    // Recharger la page — le même cookie est renvoyé → 409
-    await game.goto();
+    // Partie complète puis rechargement (même cookie → 409 → écran already_played).
+    await game.completeGameThenReload(new BlindRoundPage(page));
 
     await expect(game.alreadyPlayedHeading).toBeVisible();
     await expect(game.countdown).toBeVisible();
-    // Le score du joueur est affiché
     await expect(page.getByText('Ton score')).toBeVisible();
   });
 
@@ -33,22 +21,9 @@ test.describe('Déjà joué — état already_played', () => {
     await page.clock.install({ time: Date.now() });
 
     const game = new GamePage(page);
-    const round = new BlindRoundPage(page);
-
-    // Jouer une partie complète
-    await game.goto();
-    await game.waitForWelcome();
-    await game.clickStart();
-    for (let i = 0; i < 3; i++) {
-      await round.playRound(1);
-    }
-    await game.waitForDone();
-
-    // Recharger — écran already_played
-    await game.goto();
+    await game.completeGameThenReload(new BlindRoundPage(page));
     await expect(game.alreadyPlayedHeading).toBeVisible();
 
-    // Le bouton partage doit être présent et fonctionnel
     await expect(game.shareButton).toBeVisible();
     await game.shareButton.click();
     await expect(game.shareCopiedButton).toBeVisible();
@@ -64,18 +39,7 @@ test.describe('Déjà joué — état already_played', () => {
     await page.clock.install({ time: Date.now() });
 
     const game = new GamePage(page);
-    const round = new BlindRoundPage(page);
-
-    await game.goto();
-    await game.waitForWelcome();
-    await game.clickStart();
-    for (let i = 0; i < 3; i++) {
-      await round.playRound(1);
-    }
-    await game.waitForDone();
-
-    // Recharger → écran already_played
-    await game.goto();
+    await game.completeGameThenReload(new BlindRoundPage(page));
     await expect(game.alreadyPlayedHeading).toBeVisible();
 
     // Déplier la liste — mêmes lignes que le récap (chips ✓/✗, score cliquable)

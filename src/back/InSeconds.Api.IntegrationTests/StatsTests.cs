@@ -147,7 +147,7 @@ public class StatsTests(IntegrationTestFactory factory) : IAsyncLifetime
         var body = await resp.Content.ReadFromJsonAsync<TodayStatsResponse>();
         Assert.NotNull(body);
 
-        // Chaque TrackStat doit exposer la réponse du joueur + son score + l'histogramme
+        // Chaque TrackStat expose la réponse du joueur + son score + un histogramme (un bucket par palier).
         Assert.All(body.Tracks, t =>
         {
             Assert.NotNull(t.ArtistCorrect);
@@ -156,9 +156,18 @@ public class StatsTests(IntegrationTestFactory factory) : IAsyncLifetime
             Assert.Equal(1m, t.ListenedDurationSeconds);
             Assert.NotNull(t.Score);
             Assert.True(t.Score >= 0);
-            Assert.NotEmpty(t.GuessTimeDistribution);            // un bucket par palier autorisé
-            Assert.Equal(1, t.GuessTimeDistribution.Single(b => b.DurationSeconds == 1m).Count);
-            Assert.Equal(0, t.NotFoundCount);                    // le joueur a tout trouvé (artiste + titre)
+            Assert.NotEmpty(t.GuessTimeDistribution);
+        });
+
+        // On a répondu "Eminem / Lose Yourself" pour les 3 morceaux → seul le morceau 1 est correct :
+        // son histogramme a 1 bonne réponse à 1s et aucun échec ; les autres l'inverse.
+        var track1 = body.Tracks.Single(t => t.Position == 1);
+        Assert.Equal(1, track1.GuessTimeDistribution.Single(b => b.DurationSeconds == 1m).Count);
+        Assert.Equal(0, track1.NotFoundCount);
+        Assert.All(body.Tracks.Where(t => t.Position != 1), t =>
+        {
+            Assert.All(t.GuessTimeDistribution, b => Assert.Equal(0, b.Count));
+            Assert.Equal(1, t.NotFoundCount);
         });
     }
 

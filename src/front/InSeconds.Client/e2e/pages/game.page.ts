@@ -1,4 +1,5 @@
 import { Page, Locator } from '@playwright/test';
+import { BlindRoundPage } from './blind-round.page';
 
 export class GamePage {
   readonly startButton: Locator;
@@ -46,9 +47,23 @@ export class GamePage {
     this.leaveCancelButton     = page.getByRole('button', { name: 'Continuer à jouer' });
     this.serviceDownHeading    = page.getByRole('heading', { name: 'Service indisponible' });
     this.showTracksButton      = page.getByRole('button', { name: /Voir les morceaux/i });
-    this.trackScoreButtons     = page.locator('app-track-results-list button').filter({ hasText: /^\+\d+$/ });
+    // Le bouton du score porte un aria-label (« Voir l'histogramme… ») qui prime sur le texte « +N ».
+    this.trackScoreButtons     = page.locator('app-track-results-list')
+      .getByRole('button', { name: /histogramme des temps de réponse/i });
     this.trackChip             = page.locator('app-track-results-list').getByText(/✓ Artiste|✗ Artiste/).first();
     this.guessTimeChart        = page.getByTestId('guess-time-chart');
+  }
+
+  /** Joue une partie complète (3 morceaux, réponses vides) puis recharge → écran already_played. */
+  async completeGameThenReload(round: BlindRoundPage): Promise<void> {
+    await this.goto();
+    await this.waitForWelcome();
+    await this.clickStart();
+    for (let i = 0; i < 3; i++) {
+      await round.playRound(1);
+    }
+    await this.waitForDone();
+    await this.goto();
   }
 
   async goto(): Promise<void> {

@@ -31,7 +31,7 @@ describe('AlreadyPlayedScreenComponent', () => {
     fixture.componentRef.setInput('stats', stats);
 
     const rows = component['playedRows']();
-    expect(rows.length).toBe(1);
+    expect(rows).toHaveSize(1);
     expect(rows[0]).toEqual(jasmine.objectContaining({
       position: 1, artist: 'Eminem', title: 'Lose Yourself', score: 1000,
       artistCorrect: true, titleCorrect: true, listenedDurationSeconds: 0.5, notFoundCount: 0,

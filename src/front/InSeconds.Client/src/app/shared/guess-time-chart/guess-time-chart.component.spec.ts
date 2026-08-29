@@ -24,7 +24,7 @@ describe('GuessTimeChartComponent', () => {
 
   it('appends a "not found" bucket after the duration buckets', () => {
     const buckets = component['buckets']();
-    expect(buckets.length).toBe(distribution.length + 1);
+    expect(buckets).toHaveSize(distribution.length + 1);
     expect(buckets.at(-1)!.key).toBe('nf');
     expect(buckets.at(-1)!.label).toBe('✗');
     expect(buckets.at(-1)!.count).toBe(2);
@@ -41,7 +41,7 @@ describe('GuessTimeChartComponent', () => {
     fixture.componentRef.setInput('highlightDuration', 1);
     const buckets = component['buckets']();
     const highlighted = buckets.filter(b => b.highlighted);
-    expect(highlighted.length).toBe(1);
+    expect(highlighted).toHaveSize(1);
     expect(highlighted[0].key).toBe('d1');
     expect(highlighted[0].barColor).toBe('var(--color-accent-3)');
     expect(highlighted[0].labelColor).toBe('var(--color-accent-3)');
