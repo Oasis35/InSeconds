@@ -1,0 +1,23 @@
+<div data-testid="guess-time-chart">
+  @if (titleKey()) {
+    <p class="text-[10px] font-bold tracking-widest uppercase mb-2 text-center"
+       style="font-family:var(--font-display);color:var(--text-faint)">
+      {{ titleKey() | translate }}
+    </p>
+  }
+  <div class="flex items-end justify-between gap-1.5" style="height:64px">
+    @for (b of buckets(); track b.key) {
+      <div class="flex-1 flex flex-col items-center justify-end gap-1 h-full"
+           [attr.data-bucket]="b.key" [attr.data-highlight]="b.highlighted ? 'true' : null">
+        <span class="text-[10px] tabular-nums" [style.color]="b.labelColor">{{ b.count }}</span>
+        <div class="w-full rounded-sm transition-all"
+             [style.height]="b.heightPx" [style.background]="b.barColor"></div>
+      </div>
+    }
+  </div>
+  <div class="flex justify-between gap-1.5 mt-1">
+    @for (b of buckets(); track b.key) {
+      <span class="flex-1 text-center text-[10px]" [style.color]="b.labelColor">{{ b.label }}</span>
+    }
+  </div>
+</div>

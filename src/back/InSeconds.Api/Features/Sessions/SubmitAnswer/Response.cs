@@ -8,4 +8,9 @@ public sealed record SubmitAnswerResponse(
     string CorrectTitle,
     decimal ListenedDurationSeconds,
     double? AverageSecondsWhenCorrect,
-    double FailureRatePercent);
+    double FailureRatePercent,
+    IReadOnlyList<DurationBucketDto> GuessTimeDistribution,
+    int NotFoundCount);
+
+/// <summary>Nombre de joueurs ayant trouvé (artiste ou titre) pour un palier d'écoute donné.</summary>
+public sealed record DurationBucketDto(decimal DurationSeconds, int Count);

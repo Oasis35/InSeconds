@@ -134,9 +134,7 @@
     "title": "Title",
     "correctAnswer": "Correct answer",
     "points": "pts",
-    "yourTime": "Your time:",
-    "average": "Avg.:",
-    "notFound": "Missed:",
+    "guessTimeChart": "How long it took others to guess",
     "networkError": "Network error — your answer couldn't be saved.",
     "seeResult": "See result",
     "nextTrack": "Next track →"

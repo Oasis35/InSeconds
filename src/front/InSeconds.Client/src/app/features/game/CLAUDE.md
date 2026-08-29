@@ -83,6 +83,7 @@ Inputs : `track` (`required`), `isLast=false`, `sessionId=0`, `minListenedSecond
 - `listenMore()` : passe à `nextDuration()` et appelle `audio.extend(next)` — **prolongations libres et chaînables**, pas de limite au nombre d'appels (jusqu'au dernier palier configuré). Le template masque le bouton uniquement quand `nextDuration()` est `null` (dernier palier atteint) — il n'y a plus de garde `!audio.extended()` empêchant une deuxième prolongation.
 - `submit()`/`doSubmit()` : si aucune suggestion sélectionnée mais `searchQuery` non vide, split naïf sur `" - "` (artiste / reste = titre) en fallback texte libre. Si vide après trim → confirmation inline (`showEmptyConfirm`) avant soumission plutôt qu'envoi direct.
 - `setResult(r, isNetworkError=false)` (appelée par le parent via `viewChild`) : anime `displayedScore` (`countUp`, défaut 600ms). Si `isNetworkError` → toast 4000ms (timer nettoyé/relancé proprement). **Replay preview** : si preview existe et `chosenDuration()>0`, `audio.replayFull()` — rejoue le morceau en entier après révélation, indépendamment du palier choisi.
+- **Histogramme de révélation** : le bloc résultat n'affiche plus la ligne texte « Ton temps / Moy. / Pas trouvé » mais `<app-guess-time-chart>` (`shared/guess-time-chart/`) alimenté par `r.guessTimeDistribution` + `r.notFoundCount`, avec `highlightDuration` = palier écouté si le joueur a trouvé, sinon `highlightNotFound`. Aucun état ni helper local ajouté — tout le calcul (hauteurs de barres, couleurs, surbrillance) est dans le composant partagé.
 - `next()` : reset complet de l'état local (audio, result, displayedScore, réponses, recherche, suggestions, chosenDuration, isSubmitting, toast + timer), émet `nextTrack`.
 - `ngOnDestroy` : `audio.reset()` + nettoyage timer réseau (évite qu'un audio continue ou qu'un timer déclenche un set-state après destruction).
 - Sélection de suggestion sur `(mousedown)` et non `(click)` — doit primer sur le `blur` du champ qui masque la liste après 150ms (`onBlur()`).
@@ -117,11 +118,13 @@ Tous `OnPush`, présentationnels (sauf `already-played-screen` qui type `stats` 
   }
   ```
   Inputs (required) : `results`, `displayedScore`. `shareCopied`/`shareFailed=false`, `canShare=true`, `countdown=''` → `share`.
+  `RoundResult` et cet écran **ne changent pas** avec l'ajout de l'histogramme (limité à l'écran de révélation) : `averageSecondsWhenCorrect`/`failureRatePercent` restent affichés en texte ici, `guessTimeDistribution`/`notFoundCount` de la réponse ne sont pas mappés dans `RoundResult`.
 
 ## Composants partagés utilisés
 
 - **`shared/confirm-sheet/`** : `tone: 'danger'|'warning'`, `title`/`body`/`confirmLabel`/`cancelLabel` (required), `loading=false`, `confirmStyle`/`cancelStyle` personnalisables (utilisé pour inverser les couleurs entre confirmation d'abandon et confirmation de sortie). Outputs `confirm`/`cancelled`.
 - **`shared/share-button/`** : `copied` (required), `failed=false`, `disabled=false` → `share`.
+- **`shared/guess-time-chart/`** : histogramme « en combien de temps les autres ont trouvé » sur l'écran de révélation. Inputs `distribution` (`DurationBucketDto[]`, required), `notFoundCount=0`, `highlightDuration: number|null=null`, `highlightNotFound=false`, `titleKey=''`. Présentationnel pur (computed `buckets`), pas d'output.
 
 ## Services `core/` consommés (hors périmètre `game/` mais central ici)
 

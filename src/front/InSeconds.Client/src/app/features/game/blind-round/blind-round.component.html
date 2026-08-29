@@ -210,12 +210,13 @@
             <span class="text-lg font-normal" style="color:var(--text-faint)"> {{ 'blindRound.points' | translate }}</span>
           </p>
 
-          <div class="flex justify-center flex-wrap gap-4 text-xs" style="color:var(--text-faint)">
-            <span>{{ 'blindRound.yourTime' | translate }} <span style="color:var(--text-hover)">{{ r.listenedDurationSeconds }}s</span></span>
-            @if (r.averageSecondsWhenCorrect != null) {
-              <span>{{ 'blindRound.average' | translate }} <span style="color:var(--text-hover)">{{ r.averageSecondsWhenCorrect!.toFixed(1) }}s</span></span>
-            }
-            <span>{{ 'blindRound.notFound' | translate }} <span style="color:var(--text-hover)">{{ r.failureRatePercent.toFixed(0) }}%</span></span>
+          <div class="w-full">
+            <app-guess-time-chart
+              titleKey="blindRound.guessTimeChart"
+              [distribution]="r.guessTimeDistribution"
+              [notFoundCount]="r.notFoundCount"
+              [highlightDuration]="(r.artistCorrect || r.titleCorrect) ? r.listenedDurationSeconds : null"
+              [highlightNotFound]="!(r.artistCorrect || r.titleCorrect)" />
           </div>
 
           @if (showNetworkError()) {

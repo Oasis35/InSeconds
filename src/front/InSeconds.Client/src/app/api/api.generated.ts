@@ -1504,6 +1504,13 @@ export interface DeezerTrackInfo {
     [key: string]: any;
 }
 
+export interface DurationBucketDto {
+    durationSeconds: number;
+    count: number;
+
+    [key: string]: any;
+}
+
 export interface GetTodaySessionResponse {
     state: string;
     tracksCount: number;
@@ -1587,6 +1594,8 @@ export interface SubmitAnswerResponse {
     listenedDurationSeconds: number;
     averageSecondsWhenCorrect: number | undefined;
     failureRatePercent: number;
+    guessTimeDistribution: DurationBucketDto[];
+    notFoundCount: number;
 
     [key: string]: any;
 }

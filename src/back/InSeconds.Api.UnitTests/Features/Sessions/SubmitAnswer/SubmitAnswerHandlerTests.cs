@@ -458,4 +458,102 @@ public sealed class SubmitAnswerHandlerTests
         session!.Status.Should().Be(SessionStatus.Pending);
         session.CompletedAt.Should().BeNull();
     }
+
+    // ---------------------------------------------------------------------------
+    // Histogramme "en combien de temps les autres ont trouvé"
+    // ---------------------------------------------------------------------------
+
+    private static async Task AddPriorAnswerAsync(
+        ApplicationDbContext db, int gameSessionId, decimal duration, bool correct)
+    {
+        // Une vraie GameSession (joueur non supprimé) est nécessaire : le query filter
+        // global sur GameSessionAnswers (!a.GameSession.Player.IsDeleted) masque sinon la ligne.
+        db.GameSessions.Add(new GameSession
+        {
+            Id                   = gameSessionId,
+            PlayerId             = FakePlayerId,
+            DailyChallengeId     = 1,
+            TotalScore           = 0,
+            TotalDurationSeconds = 0,
+            CreatedAt            = DateTime.UtcNow,
+            Status               = SessionStatus.Completed,
+        });
+        db.GameSessionAnswers.Add(new GameSessionAnswer
+        {
+            GameSessionId           = gameSessionId,
+            DailyChallengeTrackId   = 1,
+            ListenedDurationSeconds = duration,
+            WasExtended             = false,
+            ArtistCorrect           = correct,
+            TitleCorrect            = correct,
+            Score                   = correct ? 100 : 0,
+        });
+        await db.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task Handle_Distribution_FirstCorrectPlayer_OneBucketPerAllowedPalier()
+    {
+        // Arrange — aucune réponse antérieure, on répond correctement à 1s.
+        await using var db = CreateDbContext();
+        await SeedAsync(db);
+
+        // Act
+        var result = await CreateHandler(db).Handle(BuildCommand(duration: 1), CancellationToken.None);
+
+        // Assert
+        var response = AssertOk<SubmitAnswerResponse>(result).Value!;
+        response.GuessTimeDistribution.Select(b => b.DurationSeconds)
+            .Should().Equal(new AppSettings().AllowedDurationsSeconds.OrderBy(d => d));
+        response.GuessTimeDistribution.Single(b => b.DurationSeconds == 1m).Count.Should().Be(1);
+        response.GuessTimeDistribution.Where(b => b.DurationSeconds != 1m)
+            .Should().OnlyContain(b => b.Count == 0);
+        response.NotFoundCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Handle_Distribution_WithPriorAnswers_CountsCorrectPerPalierAndIncludesCurrent()
+    {
+        // Arrange — 2 bonnes réponses à 0.5s, 1 bonne à 3s, 1 mauvaise à 2s déjà en base,
+        // puis on répond correctement à 3s.
+        await using var db = CreateDbContext();
+        await SeedAsync(db);
+        await AddPriorAnswerAsync(db, gameSessionId: 2, duration: 0.5m, correct: true);
+        await AddPriorAnswerAsync(db, gameSessionId: 3, duration: 0.5m, correct: true);
+        await AddPriorAnswerAsync(db, gameSessionId: 4, duration: 3m,   correct: true);
+        await AddPriorAnswerAsync(db, gameSessionId: 5, duration: 2m,   correct: false);
+
+        // Act
+        var result = await CreateHandler(db).Handle(BuildCommand(duration: 3), CancellationToken.None);
+
+        // Assert
+        var response = AssertOk<SubmitAnswerResponse>(result).Value!;
+        response.GuessTimeDistribution.Single(b => b.DurationSeconds == 0.5m).Count.Should().Be(2);
+        response.GuessTimeDistribution.Single(b => b.DurationSeconds == 3m).Count.Should().Be(2); // 1 antérieure + la courante
+        response.GuessTimeDistribution.Where(b => b.DurationSeconds is not (0.5m or 3m))
+            .Should().OnlyContain(b => b.Count == 0);
+        response.NotFoundCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Handle_Distribution_IncorrectAnswer_OnlyIncrementsNotFound()
+    {
+        // Arrange — 1 bonne réponse à 1s, 1 mauvaise à 2s déjà en base,
+        // puis on répond FAUX à 5s.
+        await using var db = CreateDbContext();
+        await SeedAsync(db);
+        await AddPriorAnswerAsync(db, gameSessionId: 2, duration: 1m, correct: true);
+        await AddPriorAnswerAsync(db, gameSessionId: 3, duration: 2m, correct: false);
+
+        // Act
+        var result = await CreateHandler(db).Handle(
+            BuildCommand(duration: 5, artist: "mauvais", title: "mauvais"), CancellationToken.None);
+
+        // Assert
+        var response = AssertOk<SubmitAnswerResponse>(result).Value!;
+        response.GuessTimeDistribution.Single(b => b.DurationSeconds == 1m).Count.Should().Be(1);
+        response.GuessTimeDistribution.Where(b => b.DurationSeconds != 1m)
+            .Should().OnlyContain(b => b.Count == 0); // le 5s FAUX n'incrémente aucun bucket durée
+        response.NotFoundCount.Should().Be(2);
+    }
 }

@@ -182,6 +182,43 @@ public class SessionTests(IntegrationTestFactory factory) : IAsyncLifetime
         Assert.True(result1.Score > result2.Score);
     }
 
+    [Fact]
+    public async Task SubmitAnswer_Distribution_RefleteLesReponsesDuDefiEtLaCourante()
+    {
+        // J1 répond correctement au 1er morceau à 2s.
+        var session1 = await StartSessionAsync();
+        var trackId = session1.Tracks[0].Id;
+        await SubmitAsync(session1.SessionId, trackId, 2m, "Eminem", "Lose Yourself");
+
+        // J2 = client indépendant (cookie container distinct) → nouveau guest, même défi.
+        var client2 = factory.CreateClient();
+        var start2 = await client2.PostAsync("/api/sessions", null);
+        start2.EnsureSuccessStatusCode();
+        var session2 = (await start2.Content.ReadFromJsonAsync<StartSessionResponse>())!;
+
+        // J2 répond correctement au même morceau, aussi à 2s.
+        var body2 = new SubmitAnswerBody(session2.Tracks[0].Id, 2m, false, "Eminem", "Lose Yourself");
+        var resp2 = await client2.PostAsJsonAsync($"/api/sessions/{session2.SessionId}/answers", body2);
+        var result2 = (await resp2.Content.ReadFromJsonAsync<SubmitAnswerResponse>())!;
+
+        // Le bucket 2s compte les deux bonnes réponses, aucun échec pour l'instant.
+        Assert.Equal(7, result2.GuessTimeDistribution.Count); // un bucket par palier AllowedDurationsSeconds
+        Assert.Equal(result2.GuessTimeDistribution.Select(b => b.DurationSeconds).OrderBy(d => d),
+                     result2.GuessTimeDistribution.Select(b => b.DurationSeconds));
+        Assert.Equal(2, result2.GuessTimeDistribution.Single(b => b.DurationSeconds == 2m).Count);
+        Assert.All(result2.GuessTimeDistribution.Where(b => b.DurationSeconds != 2m),
+                   b => Assert.Equal(0, b.Count));
+        Assert.Equal(0, result2.NotFoundCount);
+
+        // J2 répond FAUX au 2e morceau → NotFoundCount = 1 pour ce morceau, buckets durée à 0.
+        var body3 = new SubmitAnswerBody(session2.Tracks[1].Id, 3m, false, "zzz", "zzz");
+        var resp3 = await client2.PostAsJsonAsync($"/api/sessions/{session2.SessionId}/answers", body3);
+        var result3 = (await resp3.Content.ReadFromJsonAsync<SubmitAnswerResponse>())!;
+
+        Assert.Equal(1, result3.NotFoundCount);
+        Assert.All(result3.GuessTimeDistribution, b => Assert.Equal(0, b.Count));
+    }
+
     // ── SubmitAnswer — nettoyage du titre affiché ──────────────────────────────
 
     [Fact]

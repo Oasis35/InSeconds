@@ -14,6 +14,7 @@ import { DeezerAutocompleteService, DeezerSuggestion } from '../services/deezer-
 import { TrackSlot, SubmitAnswerResponse } from '../../../core/models/game.models';
 import { countUp } from '../../../core/count-up';
 import { DeezerBadgeComponent } from '../../../shared/deezer-badge.component';
+import { GuessTimeChartComponent } from '../../../shared/guess-time-chart/guess-time-chart.component';
 
 export interface AnsweredEvent {
   trackId: number;
@@ -25,7 +26,7 @@ export interface AnsweredEvent {
 
 @Component({
   selector: 'app-blind-round',
-  imports: [FormsModule, DecimalPipe, TranslatePipe, DeezerBadgeComponent],
+  imports: [FormsModule, DecimalPipe, TranslatePipe, DeezerBadgeComponent, GuessTimeChartComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './blind-round.component.html',
 })

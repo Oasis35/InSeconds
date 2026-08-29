@@ -49,6 +49,8 @@ src/front/InSeconds.Client/
 │   │   │   │   └── browser-id.component.ts     # ID court du navigateur + bouton copier (login + shell admin)
 │   │   │   ├── decor-background/
 │   │   │   │   └── decor-background.component.ts # décor DA (grille/scanlines) en arrière-plan
+│   │   │   ├── guess-time-chart/
+│   │   │   │   └── guess-time-chart.component.ts # histogramme temps de réponse réutilisable (écran de révélation)
 │   │   │   └── deezer-badge.component.ts       # badge "À écouter sur Deezer" (fichier plat, sans sous-dossier)
 │   │   ├── features/
 │   │   │   ├── admin/
@@ -272,6 +274,12 @@ Layout B — deux zones toujours présentes :
 Polish UX : `isSubmitting` (loading sur Valider), bouton `✕` lié à `(mousedown)`, tooltip paliers (`scoreForDuration`), score count-up (`countUp` rAF), toast erreur réseau (4s).
 
 `setResult(r, isNetworkError?)` — méthode publique appelée depuis `GameComponent` via `viewChild`.
+
+**Écran de révélation** : au lieu d'une ligne texte « Ton temps / Moy. / Pas trouvé », affiche `<app-guess-time-chart>` (`GuessTimeChartComponent`) alimenté par `r.guessTimeDistribution` + `r.notFoundCount` — colonne du palier écouté en surbrillance si le joueur a trouvé, sinon barre « ✗ » en surbrillance.
+
+### `GuessTimeChartComponent`
+
+Histogramme réutilisable (`shared/guess-time-chart/`) : une barre par palier d'écoute (comptes de bonnes réponses) + une barre finale « ✗ » (`notFoundCount`). Inputs : `distribution: DurationBucketDto[]` (required), `notFoundCount?: number`, `highlightDuration?: number | null` (surbrillance de la colonne du joueur), `highlightNotFound?: boolean`, `titleKey?: string` (clé i18n du titre, masqué si vide). Aucun output — présentationnel pur (computed `buckets` : hauteurs relatives au max, couleurs). Tokens couleur : `--color-violet` (barres paliers), `--color-accent-3` (surbrillance), `--color-fail` (barre « ✗ » sans surbrillance), `--text-faint` (labels). Utilisé sur l'écran de révélation du blind round ; conçu pour être réemployé ailleurs.
 
 ### `ConfirmSheetComponent`
 

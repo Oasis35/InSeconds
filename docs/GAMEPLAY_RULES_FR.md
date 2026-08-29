@@ -46,6 +46,11 @@ Moins on écoute, plus on marque. Le score de base est un **lookup exact** du pa
 - Un seul des deux correct (artiste OU titre) → **score de base × 0,5** (du palier finalement écouté).
 - Les deux corrects → score de base plein (du palier finalement écouté).
 
+## Feedback après chaque réponse
+
+- L'écran de révélation d'un morceau affiche un **histogramme « en combien de temps les autres ont trouvé »** : une barre par palier d'écoute (`0.5s … 10s`) = nombre de joueurs ayant trouvé (artiste OU titre) à ce palier, plus une barre « ✗ » finale = nombre de joueurs n'ayant pas trouvé. La colonne du palier écouté par le joueur courant est mise en avant (ou la barre « ✗ » s'il n'a pas trouvé). Purement informatif, n'affecte pas le score. Données : `SubmitAnswerResponse.GuessTimeDistribution` + `NotFoundCount` (réponse courante incluse dans les comptes). **[Back + Front]**
+- Le récap final et l'écran « déjà joué » gardent l'affichage texte (temps du joueur, moyenne des joueurs ayant trouvé, % d'échec).
+
 ## Stats admin sur la prolongation
 
 - **`ExtendedRate`** (`TrackStatsDto`, `GET /api/admin/stats`) — % des réponses sur un morceau où le joueur a prolongé l'écoute au moins une fois (`WasExtended=true`). Purement informatif (n'affecte rien côté jeu), affiché dans l'onglet Défis de l'admin, tuile « Prolongé » à côté des taux artiste/titre/écoute moyenne. **[Back + Front]**

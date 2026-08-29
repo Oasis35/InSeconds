@@ -242,6 +242,8 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
           listenedDurationSeconds: 0,
           averageSecondsWhenCorrect: undefined,
           failureRatePercent: 0,
+          guessTimeDistribution: [],
+          notFoundCount: 0,
         }, true);
       },
     });
