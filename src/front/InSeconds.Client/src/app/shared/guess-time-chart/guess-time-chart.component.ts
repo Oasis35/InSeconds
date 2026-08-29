@@ -12,7 +12,7 @@ interface GuessBucket {
   labelColor: string;
 }
 
-const BAR_MAX_PX = 28;
+const BAR_MAX_PX = 32;
 const HIGHLIGHT = 'var(--color-accent-3)';
 const DURATION_BAR = 'var(--color-violet)';
 const NOT_FOUND_BAR = 'var(--color-fail)';
