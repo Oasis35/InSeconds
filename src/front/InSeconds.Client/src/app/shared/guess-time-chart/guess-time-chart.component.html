@@ -8,9 +8,8 @@
   <div class="mx-auto" style="max-width:210px">
     <div class="flex items-end gap-1" style="height:36px">
       @for (b of buckets(); track b.key) {
-        <div class="flex-1 flex flex-col items-center justify-end gap-0.5 h-full"
+        <div class="flex-1 flex flex-col items-center justify-end h-full"
              [attr.data-bucket]="b.key" [attr.data-highlight]="b.highlighted ? 'true' : null">
-          <span class="text-[9px] leading-none tabular-nums" [style.color]="b.labelColor">{{ b.count }}</span>
           <div class="rounded-full" style="width:14px" [style.height]="b.heightPx" [style.background]="b.barColor"></div>
         </div>
       }
