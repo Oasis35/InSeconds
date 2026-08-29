@@ -54,6 +54,7 @@ Moins on écoute, plus on marque. Le score de base est un **lookup exact** du pa
 ## Stats admin sur la prolongation
 
 - **`ExtendedRate`** (`TrackStatsDto`, `GET /api/admin/stats`) — % des réponses sur un morceau où le joueur a prolongé l'écoute au moins une fois (`WasExtended=true`). Purement informatif (n'affecte rien côté jeu), affiché dans l'onglet Défis de l'admin, tuile « Prolongé » à côté des taux artiste/titre/écoute moyenne. **[Back + Front]**
+- **Histogramme admin** — `TrackStatsDto.GuessTimeDistribution`/`NotFoundCount` (`GET /api/admin/stats`) : une icône « graphique » sur chaque carte morceau de l'onglet Défis ouvre une pop-up avec l'histogramme « en combien de temps les autres ont trouvé » **avec les chiffres au-dessus des barres** (`GuessTimeChartComponent showCounts=true`). Purement informatif. **[Back + Front]**
 
 ## Morceaux sans preview
 

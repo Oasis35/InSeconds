@@ -54,8 +54,8 @@ export class GamePage {
     this.guessTimeChart        = page.getByTestId('guess-time-chart');
   }
 
-  /** Joue une partie complète (3 morceaux, réponses vides) puis recharge → écran already_played. */
-  async completeGameThenReload(round: BlindRoundPage): Promise<void> {
+  /** Démarre et joue les 3 morceaux (réponses vides) jusqu'à l'écran de récap. */
+  async playFullGame(round: BlindRoundPage): Promise<void> {
     await this.goto();
     await this.waitForWelcome();
     await this.clickStart();
@@ -63,6 +63,11 @@ export class GamePage {
       await round.playRound(1);
     }
     await this.waitForDone();
+  }
+
+  /** `playFullGame` puis recharge → écran already_played. */
+  async completeGameThenReload(round: BlindRoundPage): Promise<void> {
+    await this.playFullGame(round);
     await this.goto();
   }
 

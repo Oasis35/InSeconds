@@ -40,6 +40,8 @@ export class GuessTimeChartComponent {
   readonly highlightNotFound = input(false);
   /** Clé i18n du titre affiché au-dessus du graphique ; masqué si vide. */
   readonly titleKey = input<string>('');
+  /** Affiche le nombre de joueurs au-dessus de chaque barre (vue admin). */
+  readonly showCounts = input(false);
 
   protected readonly buckets = computed<GuessBucket[]>(() => {
     const distribution = this.distribution();

@@ -1,3 +1,5 @@
+using InSeconds.Api.Common.Stats;
+
 namespace InSeconds.Api.Features.Admin.Stats.GetAdminStats;
 
 public sealed record AdminStatsResponse(
@@ -33,7 +35,9 @@ public sealed record TrackStatsDto(
     double ArtistCorrectRate,
     double TitleCorrectRate,
     double ExtendedRate,
-    double? AvgListenedSeconds);
+    double? AvgListenedSeconds,
+    IReadOnlyList<DurationBucketDto> GuessTimeDistribution,
+    int NotFoundCount);
 
 public sealed record DailyActivityDto(DateOnly Date, int PlayerCount);
 

@@ -1656,6 +1656,8 @@ export interface TrackStatsDto {
     titleCorrectRate: number;
     extendedRate: number;
     avgListenedSeconds: number | undefined;
+    guessTimeDistribution: DurationBucketDto[];
+    notFoundCount: number;
 
     [key: string]: any;
 }
