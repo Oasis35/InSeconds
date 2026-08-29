@@ -60,9 +60,9 @@ src/front/InSeconds.Client/
 │   │   │   │   ├── admin.models.ts             # interfaces partagées (TrackDto, ChallengeDto, …)
 │   │   │   │   ├── services/
 │   │   │   │   │   ├── admin-http.service.ts   # HTTP brut + signal authenticated + login/logout/checkAuth
-│   │   │   │   │   ├── admin-state.service.ts  # signals partagés (selectedDay, poolReloadTrigger, …)
-│   │   │   │   │   ├── admin-api.service.ts    # rxResource (pool, stats, challenges) + computed accessors
-│   │   │   │   │   ├── admin-stats.service.ts  # état dashboard (navigation, formatage dates, …)
+│   │   │   │   │   ├── admin-state.service.ts  # signals partagés (selectedDay, activeTab + visitedTabs, poolReloadTrigger, …)
+│   │   │   │   │   ├── admin-api.service.ts    # 5 rxResource (pool, stats, challenge-stats, challenges, search) — chargement paresseux par onglet
+│   │   │   │   │   ├── admin-stats.service.ts  # état dashboard + onglet Défis (navigation, formatage dates, …)
 │   │   │   │   │   ├── admin-pool.service.ts   # filtres/pagination/sélection pool, modales ajout/suppression
 │   │   │   │   │   └── admin-actions.service.ts # generateToday(), reset(), refreshPreviews()
 │   │   │   │   └── components/
@@ -313,21 +313,25 @@ Page confidentialité (`features/privacy/`), route lazy `/privacy` + alias `/con
 
 ### `AdminComponent`
 
-Shell ~45 lignes. Fournit les 6 services via `providers: [AdminHttpService, AdminStateService, AdminApiService, AdminStatsService, AdminPoolService, AdminActionsService]` au niveau du composant (pas `root`). Ordre des onglets : **Dashboard, Défis, Pool, Actions**. Délègue à 7 sous-composants :
+Shell ~45 lignes. Fournit les 6 services via `providers: [AdminHttpService, AdminStateService, AdminApiService, AdminStatsService, AdminPoolService, AdminActionsService]` au niveau du composant (pas `root`). Ordre des onglets : **Dashboard, Défis, Pool, Actions**. L'onglet actif vit dans `AdminStateService` (`activeTab` + `setActiveTab`), pas dans le shell.
+
+**Chargement paresseux par onglet** (2026-08-29) : à l'ouverture de l'admin, seul `GET /api/admin/stats` (Dashboard, léger) part. Les `rxResource` de Pool (`/api/admin/tracks`) et Défis (`/api/admin/challenge-stats` + `/api/admin/challenges`) restent `idle` (`params → undefined`) tant que `http.authenticated()` est faux **ou** que l'onglet n'a pas été ouvert (`AdminStateService.hasVisited(tab)`, `Set` `visitedTabs` init `['dashboard']`). Un onglet reste « visité » toute la session → données chargées une fois puis cachées par le `rxResource`. Corollaire UI : les badges de compteur des onglets Pool/Défis n'affichent leur `(N)` qu'une fois l'onglet ouvert (`admin.tabs.poolPlain`/`challengesPlain` sinon).
+
+Délègue à 7 sous-composants :
 
 - **`AdminLoginComponent`** : formulaire login, `loginStatus` signal local
 - **`DashboardTabComponent`** : injecte `AdminStatsService` — sélecteur de jour + KPIs, activité 30 jours, répartition joueurs
 - **`PoolTabComponent`** : injecte `AdminPoolService`, contient `AddTrackModalComponent` + `DeleteTrackModalComponent` ; affiche l'**autonomie du pool** (« X jours de défis restants ») en ligne à côté du compteur disponible/utilisé
-- **`ChallengesTabComponent`** : injecte `AdminStatsService` — **stats par défi** (accordéon médiane/min/max, taux artiste/titre par morceau) + historique des défis, avec un navigateur ‹ Mois Année › unique en haut de l'onglet. Injecte aussi `PlayerIdentityService`/`ClipboardService` directement (`core/`) pour afficher, sous chaque défi, un chip ID court par joueur (`c.players`, toutes sessions) cliquable pour copier l'ID complet, avec surbrillance + libellé « toi » automatiques si l'ID correspond au navigateur courant — repérer les joueurs qui reviennent
+- **`ChallengesTabComponent`** : injecte `AdminStatsService` — **stats par défi** (`challengeStats()` = `GET /api/admin/challenge-stats`, chargé à l'ouverture de l'onglet ; accordéon médiane/min/max, taux artiste/titre par morceau ; guard `challengeStatsLoading()` → spinner) + historique des défis (`challenges()` = `GET /api/admin/challenges`), avec un navigateur ‹ Mois Année › unique en haut de l'onglet. Injecte aussi `PlayerIdentityService`/`ClipboardService` directement (`core/`) pour afficher, sous chaque défi, un chip ID court par joueur (`c.players`, toutes sessions) cliquable pour copier l'ID complet, avec surbrillance + libellé « toi » automatiques si l'ID correspond au navigateur courant — repérer les joueurs qui reviennent
 - **`ActionsTabComponent`** : injecte `AdminActionsService`
 - **`AddTrackModalComponent`** : injecte `AdminPoolService`
 - **`DeleteTrackModalComponent`** : injecte `AdminPoolService`
 
 Services admin (`features/admin/services/`) :
 - `AdminHttpService` — HTTP brut + signal `authenticated` + `login`/`logout`/`checkAuth`
-- `AdminStateService` — signals partagés (`selectedDay`, `poolSearchQuery`, `poolReloadTrigger`, `challengesReloadTrigger`)
-- `AdminApiService` — rxResource (pool/stats/challenges/search) + computed accessors ; délègue HTTP à `AdminHttpService`, état à `AdminStateService`
-- `AdminStatsService` — état dashboard + onglet Défis (navigation jour/mois, formatage dates, accordéon stats par défi)
+- `AdminStateService` — signals partagés (`selectedDay`, `poolSearchQuery`, `poolReloadTrigger`, `challengesReloadTrigger`) + pilotage des onglets (`activeTab`, `setActiveTab`, `hasVisited` sur le `Set` privé `visitedTabs`)
+- `AdminApiService` — 5 rxResource (`poolSearch`, `poolTracks`, `stats`, `challengeStats`, `challenges`) + computed accessors ; délègue HTTP à `AdminHttpService`, état à `AdminStateService`. **Chargement paresseux** : `poolTracks`/`challengeStats`/`challenges` gardés sur `authenticated() && hasVisited(<onglet>)` ; `stats` (Dashboard) gardé sur `authenticated()` seul. `challengeStats` et `challenges` partagent le trigger `challengesReloadTrigger` → `reloadAll()` / une génération de défi rafraîchit les deux
+- `AdminStatsService` — état dashboard + onglet Défis (navigation jour/mois, formatage dates, accordéon stats par défi) ; `challengeMonths`/`challengesForMonth` dérivent de `challengeStats()` (Stats par défi) et `challenges()` (Historique)
 - `AdminPoolService` — filtres, pagination, sélection multiple, état modales add/delete, lecteur preview ; computed `poolDaysRemaining` = `floor(disponibles avec preview ÷ tracksPerChallenge)` (mêmes critères que `DailyChallengeGenerator`, calculé depuis `poolTracks` déjà chargé + signal `tracksPerChallenge` du `SettingsService` — aucun appel serveur), rouge < 3 jours, orange < 7, vert sinon
 - `AdminActionsService` — `generateToday()`, `reset()`, `refreshPreviews()` (re-check des previews Deezer : affiche « X vérifiés, Y corrigés, Z échecs » puis recharge le pool)
 

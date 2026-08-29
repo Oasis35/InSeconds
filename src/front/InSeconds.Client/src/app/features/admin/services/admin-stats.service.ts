@@ -10,6 +10,8 @@ export class AdminStatsService {
   readonly statsLoading = this.api.statsLoading;
   readonly selectedDay = this.api.selectedDay;
   readonly challenges = this.api.challenges;
+  readonly challengeStats = this.api.challengeStats;
+  readonly challengeStatsLoading = this.api.challengeStatsLoading;
 
   readonly expandedChallenges = signal<Set<number>>(new Set());
   readonly challengeMonth = signal<string>(new Date().toISOString().slice(0, 7));
@@ -37,10 +39,10 @@ export class AdminStatsService {
     this.challenges().filter(c => c.date.slice(0, 7) === this.challengeMonth()));
 
   readonly challengeMonths = computed(() =>
-    [...new Set(this.adminStats()?.challenges.map(c => new Date(c.date).toISOString().slice(0, 7)) ?? [])].sort((a, b) => b.localeCompare(a)));
+    [...new Set(this.challengeStats().map(c => new Date(c.date).toISOString().slice(0, 7)))].sort((a, b) => b.localeCompare(a)));
 
   readonly challengesForMonth = computed(() =>
-    (this.adminStats()?.challenges ?? []).filter(c => new Date(c.date).toISOString().slice(0, 7) === this.challengeMonth()));
+    this.challengeStats().filter(c => new Date(c.date).toISOString().slice(0, 7) === this.challengeMonth()));
 
   readonly canGoPrevChallengeMonth = computed(() => {
     const months = this.challengeMonths();

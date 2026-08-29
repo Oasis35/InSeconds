@@ -311,6 +311,57 @@ test.describe('Admin — défis', () => {
   });
 });
 
+test.describe('Admin — chargement paresseux par onglet', () => {
+  test.beforeEach(async ({ api }) => {
+    await api.reseed();
+  });
+
+  test('ne charge les données d\'un onglet qu\'à son ouverture', async ({ page }) => {
+    const admin = new AdminPage(page);
+    const adminCalls: string[] = [];
+    page.on('request', req => {
+      const u = req.url();
+      if (u.includes('/api/admin/')) adminCalls.push(u);
+    });
+
+    await admin.goto();
+    await admin.login();
+
+    // Dashboard = onglet d'atterrissage → ses stats se chargent...
+    await expect.poll(() => adminCalls.some(u => u.includes('/api/admin/stats'))).toBe(true);
+    // ...mais pas le pool, ni les stats par défi (endpoint scindé), ni l'historique
+    expect(adminCalls.some(u => u.endsWith('/api/admin/tracks'))).toBe(false);
+    expect(adminCalls.some(u => u.includes('/api/admin/challenge-stats'))).toBe(false);
+    expect(adminCalls.some(u => /\/api\/admin\/challenges(\?|$)/.test(u))).toBe(false);
+
+    // Ouvrir Pool → GET /api/admin/tracks (une seule fois), toujours rien pour Défis
+    await admin.clickTab('Pool');
+    await expect.poll(() => adminCalls.some(u => u.endsWith('/api/admin/tracks'))).toBe(true);
+    expect(adminCalls.some(u => u.includes('/api/admin/challenge-stats'))).toBe(false);
+
+    // Ouvrir Défis → challenge-stats + challenges
+    await admin.clickTab('Défis');
+    await expect.poll(() => adminCalls.some(u => u.includes('/api/admin/challenge-stats'))).toBe(true);
+    await expect.poll(() => adminCalls.some(u => /\/api\/admin\/challenges(\?|$)/.test(u))).toBe(true);
+  });
+
+  test('le compteur des onglets Pool / Défis n\'apparaît qu\'après leur première ouverture', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+
+    // Avant visite : libellé nu (pas de "(N)")
+    await expect(admin.tab('Pool')).toBeVisible();
+    await expect(admin.tab('Défis')).toBeVisible();
+
+    await admin.clickTab('Pool');
+    await expect(page.getByRole('button', { name: /^Pool \(\d+\)$/ })).toBeVisible();
+
+    await admin.clickTab('Défis');
+    await expect(page.getByRole('button', { name: /^Défis \(\d+\)$/ })).toBeVisible();
+  });
+});
+
 test.describe('Admin — indicateur joueurs / ID navigateur', () => {
   test('affiche l\'ID du navigateur sur l\'écran de connexion et permet de le copier', async ({ page, api }) => {
     await api.reseed();

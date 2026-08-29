@@ -15,40 +15,44 @@
 
     <!-- Onglets -->
     <div class="flex gap-1 p-1 rounded-lg w-full max-w-2xl" style="background:var(--bg-surface)">
-      <button (click)="activeTab.set('dashboard')"
+      <button (click)="state.setActiveTab('dashboard')"
         class="flex-1 py-2 rounded-md text-sm font-medium transition-colors"
-        [style.background]="activeTab() === 'dashboard' ? 'var(--bg-inactive)' : null"
-        [style.color]="activeTab() === 'dashboard' ? 'var(--text-hi)' : 'var(--text-muted)'">
+        [style.background]="state.activeTab() === 'dashboard' ? 'var(--bg-inactive)' : null"
+        [style.color]="state.activeTab() === 'dashboard' ? 'var(--text-hi)' : 'var(--text-muted)'">
         {{ 'admin.tabs.dashboard' | translate }}
       </button>
-      <button (click)="activeTab.set('defis')"
+      <button (click)="state.setActiveTab('defis')"
         class="flex-1 py-2 rounded-md text-sm font-medium transition-colors"
-        [style.background]="activeTab() === 'defis' ? 'var(--bg-inactive)' : null"
-        [style.color]="activeTab() === 'defis' ? 'var(--text-hi)' : 'var(--text-muted)'">
-        {{ 'admin.tabs.challenges' | translate: { count: stats.challenges().length } }}
+        [style.background]="state.activeTab() === 'defis' ? 'var(--bg-inactive)' : null"
+        [style.color]="state.activeTab() === 'defis' ? 'var(--text-hi)' : 'var(--text-muted)'">
+        {{ state.hasVisited('defis')
+          ? ('admin.tabs.challenges' | translate: { count: stats.challenges().length })
+          : ('admin.tabs.challengesPlain' | translate) }}
       </button>
-      <button (click)="activeTab.set('pool')"
+      <button (click)="state.setActiveTab('pool')"
         class="flex-1 py-2 rounded-md text-sm font-medium transition-colors"
-        [style.background]="activeTab() === 'pool' ? 'var(--bg-inactive)' : null"
-        [style.color]="activeTab() === 'pool' ? 'var(--text-hi)' : 'var(--text-muted)'">
-        {{ 'admin.tabs.pool' | translate: { count: pool.poolTracks().available.length + pool.poolTracks().used.length } }}
+        [style.background]="state.activeTab() === 'pool' ? 'var(--bg-inactive)' : null"
+        [style.color]="state.activeTab() === 'pool' ? 'var(--text-hi)' : 'var(--text-muted)'">
+        {{ state.hasVisited('pool')
+          ? ('admin.tabs.pool' | translate: { count: pool.poolTracks().available.length + pool.poolTracks().used.length })
+          : ('admin.tabs.poolPlain' | translate) }}
       </button>
-      <button (click)="activeTab.set('actions')"
+      <button (click)="state.setActiveTab('actions')"
         class="flex-1 py-2 rounded-md text-sm font-medium transition-colors"
-        [style.background]="activeTab() === 'actions' ? 'var(--bg-inactive)' : null"
-        [style.color]="activeTab() === 'actions' ? 'var(--text-hi)' : 'var(--text-muted)'">
+        [style.background]="state.activeTab() === 'actions' ? 'var(--bg-inactive)' : null"
+        [style.color]="state.activeTab() === 'actions' ? 'var(--text-hi)' : 'var(--text-muted)'">
         {{ 'admin.tabs.actions' | translate }}
       </button>
     </div>
 
     <div class="w-full max-w-2xl">
-      @if (activeTab() === 'dashboard') {
+      @if (state.activeTab() === 'dashboard') {
         <app-dashboard-tab />
-      } @else if (activeTab() === 'pool') {
+      } @else if (state.activeTab() === 'pool') {
         <app-pool-tab />
-      } @else if (activeTab() === 'defis') {
+      } @else if (state.activeTab() === 'defis') {
         <app-challenges-tab />
-      } @else if (activeTab() === 'actions') {
+      } @else if (state.activeTab() === 'actions') {
         <app-actions-tab />
       }
     </div>
