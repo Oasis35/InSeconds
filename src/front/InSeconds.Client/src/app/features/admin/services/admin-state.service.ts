@@ -6,6 +6,7 @@ export class AdminStateService {
   readonly poolSearchQuery = signal('');
   readonly poolReloadTrigger = signal(0);
   readonly challengesReloadTrigger = signal(0);
+  readonly allowedEmailsReloadTrigger = signal(0);
 
   reloadPool(): void {
     this.poolReloadTrigger.update(v => v + 1);
@@ -13,5 +14,9 @@ export class AdminStateService {
 
   reloadChallenges(): void {
     this.challengesReloadTrigger.update(v => v + 1);
+  }
+
+  reloadAllowedEmails(): void {
+    this.allowedEmailsReloadTrigger.update(v => v + 1);
   }
 }

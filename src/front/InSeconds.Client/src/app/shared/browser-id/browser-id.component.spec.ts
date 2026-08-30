@@ -1,38 +1,33 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
+import { signal } from '@angular/core';
 import { BrowserIdComponent } from './browser-id.component';
 import { ClipboardService } from '../../core/services/clipboard.service';
-import { environment } from '../../../environments/environment';
+import { PlayerSessionService } from '../../core/services/player-session.service';
 
 // Pas de fixture.detectChanges() ici (comme blind-round.component.spec.ts) : le template
 // utilise TranslatePipe, qui exigerait un TranslateService complet. Les signals/méthodes
 // protégés sont exercés directement via bracket-notation, sans rendre le template.
 describe('BrowserIdComponent', () => {
   let component: BrowserIdComponent;
-  let httpMock: HttpTestingController;
   let clipboard: ClipboardService;
-  const meUrl = `${environment.apiUrl}/api/players/me`;
   const fakeId = 'aaaaaaaa-0000-0000-0000-000000000001';
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        {
+          provide: PlayerSessionService,
+          useValue: { playerId: signal<string | null>(fakeId) },
+        },
+      ],
     });
 
     const fixture = TestBed.createComponent(BrowserIdComponent);
     component = fixture.componentInstance;
-    httpMock = TestBed.inject(HttpTestingController);
     clipboard = TestBed.inject(ClipboardService);
-
-    httpMock.expectOne(meUrl).flush({ playerId: fakeId });
   });
 
-  afterEach(() => {
-    httpMock.verify();
-  });
-
-  it('should expose the current player id via PlayerIdentityService', () => {
+  it('should expose the current player id via PlayerSessionService', () => {
     expect(component['identity'].playerId()).toBe(fakeId);
   });
 

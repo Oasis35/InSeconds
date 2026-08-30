@@ -71,7 +71,7 @@
                         @if (p.status !== 'Completed') {
                           <span class="w-1 h-1 rounded-full shrink-0" [style.background]="statusColor(p.status)"></span>
                         }
-                        {{ shortId(p.playerId) }}@if (mine) { · {{ 'admin.dashboard.you' | translate }} }
+                        {{ p.pseudo ?? shortId(p.playerId) }}@if (mine) { · {{ 'admin.dashboard.you' | translate }} }
                       }
                     </button>
                   }

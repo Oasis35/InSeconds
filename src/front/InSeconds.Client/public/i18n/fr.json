@@ -85,7 +85,38 @@
     "admin": "Admin",
     "privacy": "Confidentialité",
     "contact": "Nous contacter",
-    "language": "Switch to English"
+    "language": "Switch to English",
+    "login": "Se connecter",
+    "logout": "Se déconnecter"
+  },
+  "login": {
+    "request": {
+      "title": "Connexion",
+      "subtitle": "Réservé aux emails autorisés — reçois un lien de connexion sans mot de passe.",
+      "emailPlaceholder": "ton@email.com",
+      "submit": "Recevoir un lien",
+      "sending": "Envoi...",
+      "sent": "Si cet email est autorisé, un lien de connexion vient de lui être envoyé. Vérifie ta boîte mail.",
+      "invalidEmail": "Adresse email invalide.",
+      "backToGame": "← Retour au jeu",
+      "devTitle": "Connexion rapide (dev)"
+    },
+    "verify": {
+      "title": "Confirmer la connexion",
+      "subtitle": "Clique pour finaliser ta connexion sur cet appareil.",
+      "confirm": "Confirmer la connexion",
+      "confirming": "Connexion...",
+      "pseudoTitle": "Choisis ton pseudo",
+      "pseudoPlaceholder": "Ton pseudo",
+      "pseudoHint": "3 à 20 caractères (lettres, chiffres, espace, . _ -).",
+      "pseudoSubmit": "Valider",
+      "pseudoTaken": "Ce pseudo est déjà pris, essaie-en un autre.",
+      "invalidPseudo": "Pseudo invalide (3 à 20 caractères autorisés).",
+      "invalidOrExpired": "Ce lien est invalide ou a expiré.",
+      "missingToken": "Lien de connexion incomplet.",
+      "genericError": "Une erreur est survenue, réessaie.",
+      "backToLogin": "← Demander un nouveau lien"
+    }
   },
   "privacy": {
     "title": "Politique de confidentialité",
@@ -177,7 +208,25 @@
       "dashboard": "Dashboard",
       "pool": "Pool ({{ count }})",
       "challenges": "Défis ({{ count }})",
+      "allowedEmails": "Emails autorisés ({{ count }})",
       "actions": "Actions"
+    },
+    "allowedEmails": {
+      "emailPlaceholder": "email@exemple.com",
+      "authorize": "Autoriser",
+      "email": "Email",
+      "addedOn": "Ajouté le",
+      "status": "Statut",
+      "active": "Compte actif",
+      "pending": "En attente",
+      "remove": "Retirer",
+      "cancel": "Annuler",
+      "empty": "Aucun email autorisé pour le moment.",
+      "duplicate": "Cet email est déjà autorisé.",
+      "addError": "Impossible d'ajouter cet email.",
+      "confirmTitle": "Retirer cet email ?",
+      "confirmBody": "{{ email }} ne pourra plus créer de compte ni se reconnecter.",
+      "confirmBodyActive": "{{ email }} a un compte actif. Il ne pourra plus se reconnecter une fois déconnecté, mais son compte et son historique sont conservés."
     },
     "dashboard": {
       "loading": "Chargement des stats...",
@@ -277,7 +326,12 @@
       "trackCooldown": "Cooldown de réutilisation des morceaux",
       "saveCooldown": "Enregistrer",
       "cooldownSaved": "Cooldown mis à jour.",
-      "cooldownError": "Erreur lors de la mise à jour."
+      "cooldownError": "Erreur lors de la mise à jour.",
+      "testSmtp": "Test SMTP",
+      "testSmtpPlaceholder": "email@exemple.com",
+      "sendTestEmail": "Envoyer un email de test",
+      "testSmtpSuccess": "Email de test envoyé.",
+      "testSmtpError": "Échec de l'envoi"
     },
     "challenges": {
       "history": "Historique",

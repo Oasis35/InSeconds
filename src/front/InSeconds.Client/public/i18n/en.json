@@ -85,7 +85,38 @@
     "admin": "Admin",
     "privacy": "Privacy",
     "contact": "Contact us",
-    "language": "Passer en français"
+    "language": "Passer en français",
+    "login": "Log in",
+    "logout": "Log out"
+  },
+  "login": {
+    "request": {
+      "title": "Log in",
+      "subtitle": "Restricted to allowed emails — get a passwordless login link.",
+      "emailPlaceholder": "your@email.com",
+      "submit": "Send me a link",
+      "sending": "Sending...",
+      "sent": "If this email is allowed, a login link has just been sent. Check your inbox.",
+      "invalidEmail": "Invalid email address.",
+      "backToGame": "← Back to the game",
+      "devTitle": "Quick login (dev)"
+    },
+    "verify": {
+      "title": "Confirm login",
+      "subtitle": "Click to finish logging in on this device.",
+      "confirm": "Confirm login",
+      "confirming": "Logging in...",
+      "pseudoTitle": "Choose your pseudo",
+      "pseudoPlaceholder": "Your pseudo",
+      "pseudoHint": "3 to 20 characters (letters, digits, space, . _ -).",
+      "pseudoSubmit": "Confirm",
+      "pseudoTaken": "This pseudo is already taken, try another one.",
+      "invalidPseudo": "Invalid pseudo (3 to 20 allowed characters).",
+      "invalidOrExpired": "This link is invalid or has expired.",
+      "missingToken": "Incomplete login link.",
+      "genericError": "Something went wrong, please try again.",
+      "backToLogin": "← Request a new link"
+    }
   },
   "privacy": {
     "title": "Privacy policy",
@@ -177,7 +208,25 @@
       "dashboard": "Dashboard",
       "pool": "Pool ({{ count }})",
       "challenges": "Challenges ({{ count }})",
+      "allowedEmails": "Allowed emails ({{ count }})",
       "actions": "Actions"
+    },
+    "allowedEmails": {
+      "emailPlaceholder": "email@example.com",
+      "authorize": "Authorize",
+      "email": "Email",
+      "addedOn": "Added on",
+      "status": "Status",
+      "active": "Active account",
+      "pending": "Pending",
+      "remove": "Remove",
+      "cancel": "Cancel",
+      "empty": "No allowed email yet.",
+      "duplicate": "This email is already allowed.",
+      "addError": "Could not add this email.",
+      "confirmTitle": "Remove this email?",
+      "confirmBody": "{{ email }} will no longer be able to create an account or log back in.",
+      "confirmBodyActive": "{{ email }} has an active account. They won't be able to log back in once signed out, but their account and history are kept."
     },
     "dashboard": {
       "loading": "Loading stats...",
@@ -277,7 +326,12 @@
       "trackCooldown": "Track reuse cooldown",
       "saveCooldown": "Save",
       "cooldownSaved": "Cooldown updated.",
-      "cooldownError": "Error while updating."
+      "cooldownError": "Error while updating.",
+      "testSmtp": "SMTP test",
+      "testSmtpPlaceholder": "email@example.com",
+      "sendTestEmail": "Send a test email",
+      "testSmtpSuccess": "Test email sent.",
+      "testSmtpError": "Send failed"
     },
     "challenges": {
       "history": "History",

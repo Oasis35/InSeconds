@@ -12,4 +12,4 @@ export interface PoolTracksResponse { available: PoolTrackDto[]; used: PoolTrack
 export interface ChallengeDto { id: number; date: string; tracks: TrackDto[]; }
 export interface DeezerTrackInfo { artist: string; title: string; previewUrl: string | null; deezerTrackId: number; coverHash?: string | null; }
 
-export type AdminTab = 'dashboard' | 'pool' | 'defis' | 'actions';
+export type AdminTab = 'dashboard' | 'pool' | 'defis' | 'allowedEmails' | 'actions';

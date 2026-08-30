@@ -23,7 +23,10 @@ public static class GetCurrentPlayerEndpoint
                 .FirstAsync(ct);
 
             return Results.Ok(player);
-        });
+        })
+        .WithName("GetCurrentPlayer")
+        .WithTags("Players")
+        .Produces<GetCurrentPlayerResponse>(StatusCodes.Status200OK);
 
         return app;
     }

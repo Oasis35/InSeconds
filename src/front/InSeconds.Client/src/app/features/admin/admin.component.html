@@ -33,6 +33,12 @@
         [style.color]="activeTab() === 'pool' ? 'var(--text-hi)' : 'var(--text-muted)'">
         {{ 'admin.tabs.pool' | translate: { count: pool.poolTracks().available.length + pool.poolTracks().used.length } }}
       </button>
+      <button (click)="activeTab.set('allowedEmails')"
+        class="flex-1 py-2 rounded-md text-sm font-medium transition-colors"
+        [style.background]="activeTab() === 'allowedEmails' ? 'var(--bg-inactive)' : null"
+        [style.color]="activeTab() === 'allowedEmails' ? 'var(--text-hi)' : 'var(--text-muted)'">
+        {{ 'admin.tabs.allowedEmails' | translate: { count: allowedEmails.allowedEmails().length } }}
+      </button>
       <button (click)="activeTab.set('actions')"
         class="flex-1 py-2 rounded-md text-sm font-medium transition-colors"
         [style.background]="activeTab() === 'actions' ? 'var(--bg-inactive)' : null"
@@ -48,6 +54,8 @@
         <app-pool-tab />
       } @else if (activeTab() === 'defis') {
         <app-challenges-tab />
+      } @else if (activeTab() === 'allowedEmails') {
+        <app-allowed-emails-tab />
       } @else if (activeTab() === 'actions') {
         <app-actions-tab />
       }

@@ -20,6 +20,8 @@ export class AdminActionsService {
   readonly refreshPreviewsResult = signal<RefreshPreviewsResult | null>(null);
   readonly trackCooldownDaysInput = signal<number | null>(null);
   readonly updateCooldownStatus = signal<SimpleAsyncStatus>('idle');
+  readonly sendTestEmailStatus = signal<SimpleAsyncStatus>('idle');
+  readonly sendTestEmailError = signal<string | null>(null);
   private generateStatusTimer: ReturnType<typeof setTimeout> | null = null;
   private updateCooldownStatusTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -87,6 +89,20 @@ export class AdminActionsService {
           if (this.updateCooldownStatus() === 'error') this.updateCooldownStatus.set('idle');
           this.updateCooldownStatusTimer = null;
         }, 3000);
+      },
+    });
+  }
+
+  // Contrairement aux autres actions, l'erreur réelle (SMTP) est remontée à
+  // l'admin plutôt qu'avalée — c'est tout l'intérêt de ce bouton de diagnostic.
+  sendTestEmail(toEmail: string): void {
+    this.sendTestEmailStatus.set('loading');
+    this.sendTestEmailError.set(null);
+    this.api.sendTestEmail(toEmail).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => this.sendTestEmailStatus.set('success'),
+      error: (err) => {
+        this.sendTestEmailStatus.set('error');
+        this.sendTestEmailError.set(err?.error?.message ?? null);
       },
     });
   }

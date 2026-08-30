@@ -1,6 +1,6 @@
 import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { PlayerIdentityService } from '../../core/services/player-identity.service';
+import { PlayerSessionService } from '../../core/services/player-session.service';
 import { ClipboardService } from '../../core/services/clipboard.service';
 
 @Component({
@@ -10,7 +10,7 @@ import { ClipboardService } from '../../core/services/clipboard.service';
   templateUrl: './browser-id.component.html',
 })
 export class BrowserIdComponent {
-  protected readonly identity = inject(PlayerIdentityService);
+  protected readonly identity = inject(PlayerSessionService);
   private readonly clipboard = inject(ClipboardService);
 
   protected readonly copied = signal(false);
