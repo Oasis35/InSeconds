@@ -33,7 +33,7 @@
       <p class="text-sm leading-relaxed" style="color:var(--text-light)">{{ 'login.request.sent' | translate }}</p>
     }
 
-    @if (!isProduction) {
+    @if (showDevLogin) {
       <div class="pt-4 mt-4 space-y-2" style="border-top:1px solid var(--border-strong)">
         <p class="text-xs uppercase tracking-wide" style="color:var(--text-faint)">{{ 'login.request.devTitle' | translate }}</p>
         <div class="flex justify-center gap-2">

@@ -21,7 +21,11 @@ export class RequestLoginComponent {
   private readonly playerSession = inject(PlayerSessionService);
   private readonly router = inject(Router);
 
-  protected readonly isProduction = environment.production;
+  // `!environment.production` seul ne suffit pas : la config e2e/e2e-ci a aussi
+  // production=false (apiUrl vide, proxy Angular) mais /api/auth/dev-login n'y est
+  // jamais monté (IsDevelopment() uniquement côté back, jamais Testing) — un vrai
+  // dev local a un apiUrl non vide (environment.development.ts).
+  protected readonly showDevLogin = !environment.production && !!environment.apiUrl;
   protected readonly devEmails = ['user1@dev.local', 'user2@dev.local', 'user3@dev.local'];
 
   protected email = '';

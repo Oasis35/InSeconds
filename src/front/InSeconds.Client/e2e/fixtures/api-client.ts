@@ -1,8 +1,13 @@
 // CI utilise 5171 (port standard), local utilise 5172 (évite le conflit avec le dev normal)
 const BASE = process.env['CI'] ? 'http://localhost:5171' : 'http://localhost:5172';
+// LoginEndpoint.IsAdminAuthenticated vérifie aussi l'origine (cf. OriginValidator) — un
+// fetch() Node (pas un vrai navigateur) n'envoie jamais d'Origin automatiquement, il faut
+// le poser explicitement ici avec le port réel du front (cf. playwright.config.ts baseURL).
+const FRONT_ORIGIN = process.env['CI'] ? 'http://localhost:5173' : 'http://localhost:5174';
 const ADMIN_HEADERS = {
   Authorization: 'Bearer admin-token',
   'Content-Type': 'application/json',
+  Origin: FRONT_ORIGIN,
 };
 
 export class ApiTestClient {
@@ -22,6 +27,17 @@ export class ApiTestClient {
       headers: ADMIN_HEADERS,
     });
     if (!res.ok) throw new Error(`E2E reseed failed: ${res.status}`);
+  }
+
+  // Le token brut n'est jamais persisté en base (seul son hash l'est) — cet endpoint
+  // E2E-only relit l'URL depuis le dernier email capturé (NullEmailSender en Testing).
+  async getLastMagicLinkUrl(email: string): Promise<string> {
+    const res = await fetch(`${BASE}/api/e2e/last-magic-link?email=${encodeURIComponent(email)}`, {
+      headers: ADMIN_HEADERS,
+    });
+    if (!res.ok) throw new Error(`getLastMagicLinkUrl failed: ${res.status}`);
+    const body = (await res.json()) as { url: string };
+    return body.url;
   }
 
   async generateToday(): Promise<void> {
