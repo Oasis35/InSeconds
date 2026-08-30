@@ -1,3 +1,4 @@
+using InSeconds.Api.Common.Auth;
 using Wolverine;
 
 namespace InSeconds.Api.Features.Admin.Login;
@@ -30,7 +31,12 @@ public static class LoginEndpoint
     public static bool IsAdminAuthenticated(HttpContext ctx)
     {
         var auth = ctx.Request.Headers.Authorization.ToString();
-        return auth == $"Bearer {AdminToken}";
+        if (auth != $"Bearer {AdminToken}")
+            return false;
+
+        var configuration = ctx.RequestServices.GetRequiredService<IConfiguration>();
+        var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+        return OriginValidator.IsTrustedOrigin(ctx, allowedOrigins);
     }
 }
 

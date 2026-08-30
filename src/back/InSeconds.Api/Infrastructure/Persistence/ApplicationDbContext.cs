@@ -19,6 +19,8 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<DailyChallengeTrack> DailyChallengeTracks => Set<DailyChallengeTrack>();
     public DbSet<GameSession> GameSessions => Set<GameSession>();
     public DbSet<GameSessionAnswer> GameSessionAnswers => Set<GameSessionAnswer>();
+    public DbSet<AllowedEmail> AllowedEmails => Set<AllowedEmail>();
+    public DbSet<MagicLinkToken> MagicLinkTokens => Set<MagicLinkToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

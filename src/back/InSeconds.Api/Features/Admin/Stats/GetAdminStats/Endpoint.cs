@@ -67,7 +67,7 @@ public static class GetAdminStatsEndpoint
                 // Une seule projection des sessions, réutilisée pour les scores/compteurs
                 // (ci-dessous) ET la liste des joueurs par défi (ChallengePlayerDto) — évite
                 // de répéter trois fois le même parcours de c.GameSessions.
-                Sessions = c.GameSessions.Select(s => new { s.PlayerId, s.Status, s.TotalScore }).ToList(),
+                Sessions = c.GameSessions.Select(s => new { s.PlayerId, s.Status, s.TotalScore, s.Player.Pseudo }).ToList(),
                 Tracks         = c.Tracks
                     .OrderBy(t => t.Position)
                     .Select(t => new
@@ -118,7 +118,7 @@ public static class GetAdminStatsEndpoint
             var pendingCount   = isPast ? 0 : pendingRaw;
             var expiredCount   = isPast ? expiredRaw + pendingRaw : expiredRaw;
             var players = c.Sessions
-                .Select(s => new ChallengePlayerDto(s.PlayerId, s.Status.ToString(), s.TotalScore))
+                .Select(s => new ChallengePlayerDto(s.PlayerId, s.Status.ToString(), s.TotalScore, s.Pseudo))
                 .ToList();
 
             var sorted = scores.OrderBy(s => s).ToList();
