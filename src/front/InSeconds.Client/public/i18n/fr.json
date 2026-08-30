@@ -176,7 +176,9 @@
     "tabs": {
       "dashboard": "Dashboard",
       "pool": "Pool ({{ count }})",
+      "poolPlain": "Pool",
       "challenges": "Défis ({{ count }})",
+      "challengesPlain": "Défis",
       "actions": "Actions"
     },
     "dashboard": {

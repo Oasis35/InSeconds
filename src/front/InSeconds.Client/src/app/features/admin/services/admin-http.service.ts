@@ -2,7 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { lastValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { AdminStatsResponse } from '../../../api/api.generated';
+import { AdminStatsResponse, ChallengeStatsResponse } from '../../../api/api.generated';
 import {
   ChallengeDto, DeezerTrackInfo, PoolTracksResponse, RefreshPreviewsResult, ResetResult,
 } from '../admin.models';
@@ -46,5 +46,6 @@ export class AdminHttpService {
   searchDeezer(q: string) { return this.http.get<DeezerTrackInfo[]>(`${this.base}/deezer-search?q=${encodeURIComponent(q)}`); }
   getPoolTracks() { return this.http.get<PoolTracksResponse>(`${this.base}/tracks`); }
   getStats(day: string) { return this.http.get<AdminStatsResponse>(`${this.base}/stats?date=${day}`); }
+  getChallengeStats() { return this.http.get<ChallengeStatsResponse>(`${this.base}/challenge-stats`); }
   getChallenges() { return this.http.get<ChallengeDto[]>(`${this.base}/challenges`); }
 }

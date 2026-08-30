@@ -1,7 +1,7 @@
 import { Injectable, inject, computed } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { of, timer, switchMap } from 'rxjs';
-import { AdminStatsResponse } from '../../../api/api.generated';
+import { AdminStatsResponse, ChallengeStatsDto, ChallengeStatsResponse } from '../../../api/api.generated';
 import { ChallengeDto, DeezerTrackInfo, PoolTracksResponse } from '../admin.models';
 import { AdminHttpService } from './admin-http.service';
 import { AdminStateService } from './admin-state.service';
@@ -27,22 +27,44 @@ export class AdminApiService {
   readonly poolSearchResults = computed(() => this.poolSearchResource.value() ?? []);
   readonly poolSearchLoading = computed(() => this.poolSearchResource.isLoading());
 
-  private readonly poolTracksResource = rxResource<PoolTracksResponse, number>({
-    params: () => this.state.poolReloadTrigger(),
+  // Chargement paresseux par onglet : chaque resource ne fetch qu'une fois l'utilisateur
+  // authentifié ET l'onglet concerné ouvert au moins une fois (params → undefined = resource idle).
+  // Évite les 3 appels BDD simultanés à l'ouverture de l'admin (et les appels avant login).
+
+  private readonly poolTracksResource = rxResource<PoolTracksResponse, number | undefined>({
+    params: () => (this.http.authenticated() && this.state.hasVisited('pool'))
+      ? this.state.poolReloadTrigger()
+      : undefined,
     stream: () => this.http.getPoolTracks(),
   });
   readonly poolTracks = computed(() => this.poolTracksResource.value() ?? { available: [], used: [] });
   readonly poolTracksLoading = computed(() => this.poolTracksResource.isLoading());
 
-  private readonly statsResource = rxResource<AdminStatsResponse, string>({
-    params: () => this.state.selectedDay(),
+  // Dashboard uniquement (KPIs, activité 30j, répartition joueurs). La partie lourde
+  // « Stats par défi » a son propre endpoint/resource, chargé à l'ouverture de l'onglet Défis.
+  // Pas de garde hasVisited : le Dashboard est l'onglet d'atterrissage, ses stats se chargent
+  // dès l'auth (et lire visitedTabs ici retriggerait inutilement au changement d'onglet).
+  private readonly statsResource = rxResource<AdminStatsResponse, string | undefined>({
+    params: () => this.http.authenticated() ? this.state.selectedDay() : undefined,
     stream: ({ params: day }) => this.http.getStats(day),
   });
   readonly adminStats = computed(() => this.statsResource.value() ?? null);
   readonly statsLoading = computed(() => this.statsResource.isLoading());
 
-  private readonly challengesResource = rxResource<ChallengeDto[], number>({
-    params: () => this.state.challengesReloadTrigger(),
+  // « Stats par défi » de l'onglet Défis — endpoint séparé, gardé sur hasVisited('defis').
+  private readonly challengeStatsResource = rxResource<ChallengeStatsResponse, number | undefined>({
+    params: () => (this.http.authenticated() && this.state.hasVisited('defis'))
+      ? this.state.challengesReloadTrigger()
+      : undefined,
+    stream: () => this.http.getChallengeStats(),
+  });
+  readonly challengeStats = computed<ChallengeStatsDto[]>(() => this.challengeStatsResource.value()?.challenges ?? []);
+  readonly challengeStatsLoading = computed(() => this.challengeStatsResource.isLoading());
+
+  private readonly challengesResource = rxResource<ChallengeDto[], number | undefined>({
+    params: () => (this.http.authenticated() && this.state.hasVisited('defis'))
+      ? this.state.challengesReloadTrigger()
+      : undefined,
     stream: () => this.http.getChallenges(),
   });
   readonly challenges = computed(() => this.challengesResource.value() ?? []);

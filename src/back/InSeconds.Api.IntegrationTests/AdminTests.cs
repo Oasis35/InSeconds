@@ -6,6 +6,7 @@ using InSeconds.Api.Features.Admin.Tracks.GetTracks;
 using InSeconds.Api.Features.Admin.Tracks.UpdateTrack;
 using InSeconds.Api.Features.Admin.Challenges.GetChallenges;
 using InSeconds.Api.Features.Admin.Stats.GetAdminStats;
+using InSeconds.Api.Features.Admin.Stats.GetChallengeStats;
 using InSeconds.Api.Features.Players.GetCurrentPlayer;
 using InSeconds.Api.Features.Sessions.StartSession;
 using InSeconds.Api.Features.Sessions.SubmitAnswer;
@@ -219,6 +220,21 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ChallengeStats_SansAuth_Retourne401()
+    {
+        var resp = await _client.GetAsync("/api/admin/challenge-stats");
+        Assert.Equal(HttpStatusCode.Unauthorized, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task ChallengeStats_RetourneLesTroisDefisDuSeed()
+    {
+        var challenges = await AdminGetChallengeStatsAsync();
+        Assert.Equal(3, challenges.Count);
+        Assert.All(challenges, c => Assert.NotEmpty(c.Tracks));
+    }
+
+    [Fact]
     public async Task AdminStats_RetourneStructureComplete()
     {
         var resp = await AdminGetAsync("/api/admin/stats");
@@ -226,9 +242,12 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
 
         var body = await resp.Content.ReadFromJsonAsync<AdminStatsResponse>();
         Assert.NotNull(body);
-        Assert.NotNull(body.Challenges);
         Assert.NotNull(body.DailyActivity);
         Assert.NotNull(body.PlayerBreakdown);
+
+        // Les stats par défi vivent dans un endpoint séparé désormais.
+        var challenges = await AdminGetChallengeStatsAsync();
+        Assert.NotNull(challenges);
     }
 
     [Fact]
@@ -247,11 +266,9 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
             await db.SaveChangesAsync();
         }
 
-        var resp = await AdminGetAsync("/api/admin/stats");
-        var body = await resp.Content.ReadFromJsonAsync<AdminStatsResponse>();
-        Assert.NotNull(body);
+        var challenges = await AdminGetChallengeStatsAsync();
 
-        var todayStats = body.Challenges.Single(c => c.Date == today);
+        var todayStats = challenges.Single(c => c.Date == today);
         var track = todayStats.Tracks.Single(t => t.Position == 1);
         Assert.Equal("Lose Yourself", track.Title);
     }
@@ -263,12 +280,10 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         foreach (var track in session.Tracks)
             await SubmitAsync(session.SessionId, track.Id, 1m, "X", null);
 
-        var resp = await AdminGetAsync("/api/admin/stats");
-        var body = await resp.Content.ReadFromJsonAsync<AdminStatsResponse>();
-        Assert.NotNull(body);
+        var challenges = await AdminGetChallengeStatsAsync();
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var todayStats = body.Challenges.FirstOrDefault(c => c.Date == today);
+        var todayStats = challenges.FirstOrDefault(c => c.Date == today);
         Assert.NotNull(todayStats);
         Assert.Equal(1, todayStats.PlayerCount);
         Assert.Equal(0, todayStats.PendingCount);
@@ -283,12 +298,10 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         var session = await StartSessionAsync();
         await _client.PutAsync($"/api/sessions/{session.SessionId}/abandon", null);
 
-        var resp = await AdminGetAsync("/api/admin/stats");
-        var body = await resp.Content.ReadFromJsonAsync<AdminStatsResponse>();
-        Assert.NotNull(body);
+        var challenges = await AdminGetChallengeStatsAsync();
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var todayStats = body.Challenges.FirstOrDefault(c => c.Date == today);
+        var todayStats = challenges.FirstOrDefault(c => c.Date == today);
         Assert.NotNull(todayStats);
         Assert.Equal(0, todayStats.PlayerCount);
         Assert.Equal(1, todayStats.AbandonedCount);
@@ -302,12 +315,10 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         var session = await StartSessionAsync();
         await SubmitAsync(session.SessionId, session.Tracks[0].Id, 1m, "X", null);
 
-        var resp = await AdminGetAsync("/api/admin/stats");
-        var body = await resp.Content.ReadFromJsonAsync<AdminStatsResponse>();
-        Assert.NotNull(body);
+        var challenges = await AdminGetChallengeStatsAsync();
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var todayStats = body.Challenges.FirstOrDefault(c => c.Date == today);
+        var todayStats = challenges.FirstOrDefault(c => c.Date == today);
         Assert.NotNull(todayStats);
         Assert.Equal(0, todayStats.PlayerCount);
         Assert.Equal(1, todayStats.PendingCount);
@@ -324,12 +335,10 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         foreach (var track in session.Tracks)
             await SubmitAsync(session.SessionId, track.Id, 1m, "X", null);
 
-        var resp = await AdminGetAsync("/api/admin/stats");
-        var body = await resp.Content.ReadFromJsonAsync<AdminStatsResponse>();
-        Assert.NotNull(body);
+        var challenges = await AdminGetChallengeStatsAsync();
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var todayStats = body.Challenges.FirstOrDefault(c => c.Date == today);
+        var todayStats = challenges.FirstOrDefault(c => c.Date == today);
         Assert.NotNull(todayStats);
 
         var myEntry = todayStats.Players.SingleOrDefault(p => p.PlayerId == myId);
@@ -349,12 +358,10 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         foreach (var track in session.Tracks.Skip(1))
             await SubmitAsync(session.SessionId, track.Id, 1m, "X", null);
 
-        var resp = await AdminGetAsync("/api/admin/stats");
-        var body = await resp.Content.ReadFromJsonAsync<AdminStatsResponse>();
-        Assert.NotNull(body);
+        var challenges = await AdminGetChallengeStatsAsync();
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var todayStats = body.Challenges.Single(c => c.Date == today);
+        var todayStats = challenges.Single(c => c.Date == today);
         var track1 = todayStats.Tracks.Single(t => t.Position == 1);
 
         Assert.NotEmpty(track1.GuessTimeDistribution);                        // un bucket par palier autorisé
@@ -373,12 +380,10 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         var session = await StartSessionAsync();
         await _client.PutAsync($"/api/sessions/{session.SessionId}/abandon", null);
 
-        var resp = await AdminGetAsync("/api/admin/stats");
-        var body = await resp.Content.ReadFromJsonAsync<AdminStatsResponse>();
-        Assert.NotNull(body);
+        var challenges = await AdminGetChallengeStatsAsync();
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var todayStats = body.Challenges.FirstOrDefault(c => c.Date == today);
+        var todayStats = challenges.FirstOrDefault(c => c.Date == today);
         Assert.NotNull(todayStats);
 
         var myEntry = todayStats.Players.SingleOrDefault(p => p.PlayerId == myId);
@@ -393,12 +398,10 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         var session = await StartSessionAsync();
         await SubmitAsync(session.SessionId, session.Tracks[0].Id, 1m, "X", null);
 
-        var resp = await AdminGetAsync("/api/admin/stats");
-        var body = await resp.Content.ReadFromJsonAsync<AdminStatsResponse>();
-        Assert.NotNull(body);
+        var challenges = await AdminGetChallengeStatsAsync();
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var todayStats = body.Challenges.FirstOrDefault(c => c.Date == today);
+        var todayStats = challenges.FirstOrDefault(c => c.Date == today);
         Assert.NotNull(todayStats);
 
         var myEntry = todayStats.Players.SingleOrDefault(p => p.PlayerId == myId);
@@ -484,7 +487,8 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         Assert.Equal(2, body.SelectedDayKpis.TotalSessions);
 
         // Convergence : la section « Stats par défi » reporte les mêmes chiffres
-        var yStats = body.Challenges.First(c => c.Date == yesterday);
+        var challenges = await AdminGetChallengeStatsAsync();
+        var yStats = challenges.First(c => c.Date == yesterday);
         Assert.Equal(0, yStats.AbandonedCount);
         Assert.Equal(1, yStats.ExpiredCount);
         Assert.Equal(0, yStats.PendingCount);
@@ -504,7 +508,8 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         Assert.Equal(1, body.SelectedDayKpis.AbandonedCount);
         Assert.Equal(0, body.SelectedDayKpis.ExpiredCount);
 
-        var todayStats = body.Challenges.First(c => c.Date == today);
+        var challenges = await AdminGetChallengeStatsAsync();
+        var todayStats = challenges.First(c => c.Date == today);
         Assert.Equal(1, todayStats.AbandonedCount);
         Assert.Equal(0, todayStats.ExpiredCount);
     }
@@ -580,6 +585,16 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         var req = new HttpRequestMessage(HttpMethod.Get, url);
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "admin-token");
         return _client.SendAsync(req);
+    }
+
+    // « Stats par défi » — endpoint scindé de /api/admin/stats (cf. GetChallengeStats).
+    private async Task<IReadOnlyList<ChallengeStatsDto>> AdminGetChallengeStatsAsync()
+    {
+        var resp = await AdminGetAsync("/api/admin/challenge-stats");
+        resp.EnsureSuccessStatusCode();
+        var body = await resp.Content.ReadFromJsonAsync<ChallengeStatsResponse>();
+        Assert.NotNull(body);
+        return body.Challenges;
     }
 
     private Task<HttpResponseMessage> AdminPostAsync(string url, object body)

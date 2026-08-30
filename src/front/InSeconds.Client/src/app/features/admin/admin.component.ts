@@ -1,8 +1,7 @@
-import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import { BUILD_TIME } from '../../core/build-info';
-import { AdminTab } from './admin.models';
 import { AdminHttpService } from './services/admin-http.service';
 import { AdminStateService } from './services/admin-state.service';
 import { AdminApiService } from './services/admin-api.service';
@@ -30,11 +29,11 @@ import { BrowserIdComponent } from '../../shared/browser-id/browser-id.component
 })
 export class AdminComponent {
   protected readonly api = inject(AdminApiService);
+  protected readonly state = inject(AdminStateService);
   protected readonly stats = inject(AdminStatsService);
   protected readonly pool = inject(AdminPoolService);
 
   protected readonly buildTime = BUILD_TIME;
-  protected readonly activeTab = signal<AdminTab>('dashboard');
 
   constructor() {
     this.api.checkAuth();
