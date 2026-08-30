@@ -56,6 +56,11 @@ test.describe('Admin — emails autorisés', () => {
     await playerPage.goto('/login');
     await playerPage.getByPlaceholder('ton@email.com').fill('allowed@e2e.test');
     await playerPage.getByRole('button', { name: 'Recevoir un lien' }).click();
+    // Attendre la confirmation avant de lire le lien : sinon race condition, le clic
+    // (POST /api/auth/magic-link/request) peut ne pas être encore traité côté serveur
+    // (cf. TestEmailCapture) quand getLastMagicLinkUrl interroge — même pattern que
+    // requestMagicLink() dans login.spec.ts.
+    await playerPage.getByText('un lien de connexion vient de lui être envoyé').waitFor();
 
     const linkUrl = await api.getLastMagicLinkUrl('allowed@e2e.test');
     const { pathname, search } = new URL(linkUrl);
