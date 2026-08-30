@@ -18,7 +18,9 @@
       @case ('needsPseudo') {
         <h1 class="text-2xl font-bold" style="color:var(--text-hi)">{{ 'login.verify.pseudoTitle' | translate }}</h1>
         <form (ngSubmit)="submitPseudo()" class="space-y-3">
+          <label for="login-pseudo" class="sr-only">{{ 'login.verify.pseudoPlaceholder' | translate }}</label>
           <input
+            id="login-pseudo"
             [(ngModel)]="pseudo"
             name="pseudo"
             autocomplete="off"
@@ -40,7 +42,9 @@
         <h1 class="text-2xl font-bold" style="color:var(--text-hi)">{{ 'login.verify.pseudoTitle' | translate }}</h1>
         <p class="text-sm" style="color:var(--color-danger, #e05252)">{{ 'login.verify.pseudoTaken' | translate }}</p>
         <form (ngSubmit)="submitPseudo()" class="space-y-3">
+          <label for="login-pseudo" class="sr-only">{{ 'login.verify.pseudoPlaceholder' | translate }}</label>
           <input
+            id="login-pseudo"
             [(ngModel)]="pseudo"
             name="pseudo"
             autocomplete="off"
@@ -61,7 +65,9 @@
         <h1 class="text-2xl font-bold" style="color:var(--text-hi)">{{ 'login.verify.pseudoTitle' | translate }}</h1>
         <p class="text-sm" style="color:var(--color-danger, #e05252)">{{ 'login.verify.invalidPseudo' | translate }}</p>
         <form (ngSubmit)="submitPseudo()" class="space-y-3">
+          <label for="login-pseudo" class="sr-only">{{ 'login.verify.pseudoPlaceholder' | translate }}</label>
           <input
+            id="login-pseudo"
             [(ngModel)]="pseudo"
             name="pseudo"
             autocomplete="off"

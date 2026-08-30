@@ -156,6 +156,21 @@ describe('AdminHttpService', () => {
     });
   });
 
+  describe('getChallengeStats()', () => {
+    it('should GET /api/admin/challenge-stats (distinct de /challenges)', () => {
+      let result: any;
+      service.getChallengeStats().subscribe(r => (result = r));
+
+      const req = httpMock.expectOne(`${base}/challenge-stats`);
+      expect(req.request.method).toBe('GET');
+      const body = { challenges: [] };
+      req.flush(body);
+
+      expect(result).toEqual(body);
+      httpMock.expectNone(`${base}/challenges`);
+    });
+  });
+
   describe('addTrack()', () => {
     it('should POST to /api/admin/tracks with deezerTrackId', () => {
       let completed = false;

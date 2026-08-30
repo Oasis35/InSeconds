@@ -207,8 +207,11 @@
     "tabs": {
       "dashboard": "Dashboard",
       "pool": "Pool ({{ count }})",
+      "poolPlain": "Pool",
       "challenges": "Challenges ({{ count }})",
+      "challengesPlain": "Challenges",
       "allowedEmails": "Allowed emails ({{ count }})",
+      "allowedEmailsPlain": "Allowed emails",
       "actions": "Actions"
     },
     "allowedEmails": {

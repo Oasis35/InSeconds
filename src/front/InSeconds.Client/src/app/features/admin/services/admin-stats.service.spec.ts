@@ -2,18 +2,24 @@ import { TestBed } from '@angular/core/testing';
 import { signal, computed } from '@angular/core';
 import { AdminStatsService } from './admin-stats.service';
 import { AdminApiService } from './admin-api.service';
-import { AdminStatsResponse, DailyActivityDto } from '../../../api/api.generated';
+import { AdminStatsResponse, ChallengeStatsDto, DailyActivityDto } from '../../../api/api.generated';
 import { PoolTracksResponse } from '../admin.models';
 
 /** Construit un AdminStatsResponse valide avec des overrides partiels. */
 function makeStats(overrides: Partial<AdminStatsResponse> = {}): AdminStatsResponse {
   return {
-    challenges: [],
     dailyActivity: [],
     playerBreakdown: { totalGuests: 0, totalRegistered: 0, activeLast7Days: 0, activeLast30Days: 0 },
     availableDates: [],
     selectedDayKpis: undefined,
     ...overrides,
+  };
+}
+
+function makeChallengeStat(id: number, dateIso: string): ChallengeStatsDto {
+  return {
+    id, date: new Date(dateIso), playerCount: 0, pendingCount: 0, abandonedCount: 0, expiredCount: 0,
+    scoreMin: undefined, scoreMax: undefined, scoreAvg: undefined, scoreMedian: undefined, tracks: [], players: [],
   };
 }
 
@@ -27,6 +33,8 @@ function makeAdminApiStub() {
   const adminStats = signal<AdminStatsResponse | null>(null);
   const statsLoading = signal(false);
   const challenges = signal<any[]>([]);
+  const challengeStats = signal<ChallengeStatsDto[]>([]);
+  const challengeStatsLoading = signal(false);
   const poolTracks = signal<PoolTracksResponse>({ available: [], used: [] });
 
   return {
@@ -34,10 +42,13 @@ function makeAdminApiStub() {
     adminStats: computed(() => adminStats()),
     statsLoading: computed(() => statsLoading()),
     challenges: computed(() => challenges()),
+    challengeStats: computed(() => challengeStats()),
+    challengeStatsLoading: computed(() => challengeStatsLoading()),
     poolTracks: computed(() => poolTracks()),
     // helpers to set values in tests
     _setAdminStats: (v: AdminStatsResponse | null) => adminStats.set(v),
     _setChallenges: (v: any[]) => challenges.set(v),
+    _setChallengeStats: (v: ChallengeStatsDto[]) => challengeStats.set(v),
     _setPoolTracks: (v: PoolTracksResponse) => poolTracks.set(v),
     reloadStats: () => {},
     reloadAll: () => {},
@@ -248,13 +259,11 @@ describe('AdminStatsService', () => {
 
   describe('shiftChallengeMonth()', () => {
     beforeEach(() => {
-      apiStub._setAdminStats(makeStats({
-        challenges: [
-          { id: 1, date: new Date('2026-05-01T12:00:00Z'), playerCount: 0, pendingCount: 0, abandonedCount: 0, expiredCount: 0, scoreMin: undefined, scoreMax: undefined, scoreAvg: undefined, scoreMedian: undefined, tracks: [], players: [] },
-          { id: 2, date: new Date('2026-06-01T12:00:00Z'), playerCount: 0, pendingCount: 0, abandonedCount: 0, expiredCount: 0, scoreMin: undefined, scoreMax: undefined, scoreAvg: undefined, scoreMedian: undefined, tracks: [], players: [] },
-          { id: 3, date: new Date('2026-07-01T12:00:00Z'), playerCount: 0, pendingCount: 0, abandonedCount: 0, expiredCount: 0, scoreMin: undefined, scoreMax: undefined, scoreAvg: undefined, scoreMedian: undefined, tracks: [], players: [] },
-        ],
-      }));
+      apiStub._setChallengeStats([
+        makeChallengeStat(1, '2026-05-01T12:00:00Z'),
+        makeChallengeStat(2, '2026-06-01T12:00:00Z'),
+        makeChallengeStat(3, '2026-07-01T12:00:00Z'),
+      ]);
     });
 
     it('should shift to next month (delta=1 goes toward more recent)', () => {

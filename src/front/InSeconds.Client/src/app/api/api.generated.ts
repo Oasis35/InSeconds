@@ -1309,6 +1309,60 @@ export class ApiClient {
     /**
      * @return OK
      */
+    apiAdminChallengeStats(): Observable<ChallengeStatsResponse> {
+        let url_ = this.baseUrl + "/api/admin/challenge-stats";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processApiAdminChallengeStats(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processApiAdminChallengeStats(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ChallengeStatsResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ChallengeStatsResponse>;
+        }));
+    }
+
+    protected processApiAdminChallengeStats(response: HttpResponseBase): Observable<ChallengeStatsResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ChallengeStatsResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Unauthorized", status, _responseText, _headers);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
     apiAdminDeezerSearch(q: string): Observable<DeezerTrackInfo[]> {
         let url_ = this.baseUrl + "/api/admin/deezer-search?";
         if (q === undefined || q === null)
@@ -1896,7 +1950,6 @@ export interface AddTrackResponse {
 }
 
 export interface AdminStatsResponse {
-    challenges: ChallengeStatsDto[];
     dailyActivity: DailyActivityDto[];
     playerBreakdown: PlayerBreakdownDto;
     availableDates: Date[];
@@ -1944,6 +1997,12 @@ export interface ChallengeStatsDto {
     scoreMedian: number | undefined;
     tracks: TrackStatsDto[];
     players: ChallengePlayerDto[];
+
+    [key: string]: any;
+}
+
+export interface ChallengeStatsResponse {
+    challenges: ChallengeStatsDto[];
 
     [key: string]: any;
 }

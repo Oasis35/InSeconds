@@ -18,10 +18,14 @@
   }
 
   <!-- Stats par défi -->
-  @if (stats.adminStats(); as adminStats) {
+  @if (stats.challengeStatsLoading()) {
+    <div class="rounded-xl p-5 flex items-center justify-center h-24" style="background:var(--bg-surface)">
+      <p class="text-sm" style="color:var(--text-muted)">{{ 'admin.dashboard.loading' | translate }}</p>
+    </div>
+  } @else {
     <div class="rounded-xl p-5 flex flex-col gap-3" style="background:var(--bg-surface)">
       <h2 class="text-sm font-semibold uppercase tracking-wide" style="color:var(--text-muted)">{{ 'admin.dashboard.statsPerChallenge' | translate }}</h2>
-      @if (adminStats.challenges.length === 0) {
+      @if (stats.challengeStats().length === 0) {
         <p class="text-sm" style="color:var(--text-muted)">{{ 'admin.dashboard.noChallenge' | translate }}</p>
       } @else if (stats.challengesForMonth().length === 0) {
         <p class="text-sm" style="color:var(--text-muted)">{{ 'admin.dashboard.noChallengeThisMonth' | translate }}</p>
