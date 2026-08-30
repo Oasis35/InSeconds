@@ -326,7 +326,7 @@ Page confidentialité (`features/privacy/`), route lazy `/privacy` + alias `/con
 
 ### `AdminComponent`
 
-Shell ~45 lignes. Fournit les 6 services via `providers: [AdminHttpService, AdminStateService, AdminApiService, AdminStatsService, AdminPoolService, AdminActionsService]` au niveau du composant (pas `root`). Ordre des onglets : **Dashboard, Défis, Pool, Actions**. L'onglet actif vit dans `AdminStateService` (`activeTab` + `setActiveTab`), pas dans le shell.
+Shell ~45 lignes. Fournit les 6 services via `providers: [AdminHttpService, AdminStateService, AdminApiService, AdminStatsService, AdminPoolService, AdminActionsService]` au niveau du composant (pas `root`). Ordre des onglets : **Dashboard, Défis, Pool, Actions, Emails autorisés**. L'onglet actif vit dans `AdminStateService` (`activeTab` + `setActiveTab`), pas dans le shell.
 
 **Chargement paresseux par onglet** (2026-08-29) : à l'ouverture de l'admin, seul `GET /api/admin/stats` (Dashboard, léger) part. Les `rxResource` de Pool (`/api/admin/tracks`) et Défis (`/api/admin/challenge-stats` + `/api/admin/challenges`) restent `idle` (`params → undefined`) tant que `http.authenticated()` est faux **ou** que l'onglet n'a pas été ouvert (`AdminStateService.hasVisited(tab)`, `Set` `visitedTabs` init `['dashboard']`). Un onglet reste « visité » toute la session → données chargées une fois puis cachées par le `rxResource`. Corollaire UI : les badges de compteur des onglets Pool/Défis n'affichent leur `(N)` qu'une fois l'onglet ouvert (`admin.tabs.poolPlain`/`challengesPlain` sinon).
 

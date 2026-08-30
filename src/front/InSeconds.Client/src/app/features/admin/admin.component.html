@@ -37,6 +37,12 @@
           ? ('admin.tabs.pool' | translate: { count: pool.poolTracks().available.length + pool.poolTracks().used.length })
           : ('admin.tabs.poolPlain' | translate) }}
       </button>
+      <button (click)="state.setActiveTab('actions')"
+        class="flex-1 py-2 rounded-md text-sm font-medium transition-colors"
+        [style.background]="state.activeTab() === 'actions' ? 'var(--bg-inactive)' : null"
+        [style.color]="state.activeTab() === 'actions' ? 'var(--text-hi)' : 'var(--text-muted)'">
+        {{ 'admin.tabs.actions' | translate }}
+      </button>
       <button (click)="state.setActiveTab('allowedEmails')"
         class="flex-1 py-2 rounded-md text-sm font-medium transition-colors"
         [style.background]="state.activeTab() === 'allowedEmails' ? 'var(--bg-inactive)' : null"
@@ -44,12 +50,6 @@
         {{ state.hasVisited('allowedEmails')
           ? ('admin.tabs.allowedEmails' | translate: { count: allowedEmails.allowedEmails().length })
           : ('admin.tabs.allowedEmailsPlain' | translate) }}
-      </button>
-      <button (click)="state.setActiveTab('actions')"
-        class="flex-1 py-2 rounded-md text-sm font-medium transition-colors"
-        [style.background]="state.activeTab() === 'actions' ? 'var(--bg-inactive)' : null"
-        [style.color]="state.activeTab() === 'actions' ? 'var(--text-hi)' : 'var(--text-muted)'">
-        {{ 'admin.tabs.actions' | translate }}
       </button>
     </div>
 
@@ -60,10 +60,10 @@
         <app-pool-tab />
       } @else if (state.activeTab() === 'defis') {
         <app-challenges-tab />
-      } @else if (state.activeTab() === 'allowedEmails') {
-        <app-allowed-emails-tab />
       } @else if (state.activeTab() === 'actions') {
         <app-actions-tab />
+      } @else if (state.activeTab() === 'allowedEmails') {
+        <app-allowed-emails-tab />
       }
     </div>
 
