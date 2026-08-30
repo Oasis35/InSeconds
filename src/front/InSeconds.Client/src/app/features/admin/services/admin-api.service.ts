@@ -27,29 +27,37 @@ export class AdminApiService {
   readonly poolSearchResults = computed(() => this.poolSearchResource.value() ?? []);
   readonly poolSearchLoading = computed(() => this.poolSearchResource.isLoading());
 
-  private readonly poolTracksResource = rxResource<PoolTracksResponse, number>({
-    params: () => this.state.poolReloadTrigger(),
-    stream: () => this.http.getPoolTracks(),
+  // `authenticated` fait partie de `params` (pas juste un garde dans `stream`) exprès : ces
+  // resources doivent aussi se redéclencher automatiquement dès que `login()` bascule le
+  // signal, sans attendre le `reloadAll()` explicite. Avant ce fix, ces requêtes partaient
+  // dès la construction du composant (donc dès l'écran de login, sans token) : la réponse
+  // 401 mettait la resource en état d'erreur, et lire `.value()` sur une resource en erreur
+  // dans un `computed()` lève une `ResourceValueError` non catchée qui casse le rendu de
+  // toute la page (bug pré-existant, découvert lors de l'implémentation des comptes
+  // utilisateurs — cf. piège correspondant dans CLAUDE.md).
+  private readonly poolTracksResource = rxResource<PoolTracksResponse, { trigger: number; authed: boolean }>({
+    params: () => ({ trigger: this.state.poolReloadTrigger(), authed: this.http.authenticated() }),
+    stream: ({ params }) => (params.authed ? this.http.getPoolTracks() : of({ available: [], used: [] })),
   });
   readonly poolTracks = computed(() => this.poolTracksResource.value() ?? { available: [], used: [] });
   readonly poolTracksLoading = computed(() => this.poolTracksResource.isLoading());
 
-  private readonly statsResource = rxResource<AdminStatsResponse, string>({
-    params: () => this.state.selectedDay(),
-    stream: ({ params: day }) => this.http.getStats(day),
+  private readonly statsResource = rxResource<AdminStatsResponse | null, { day: string; authed: boolean }>({
+    params: () => ({ day: this.state.selectedDay(), authed: this.http.authenticated() }),
+    stream: ({ params }) => (params.authed ? this.http.getStats(params.day) : of(null)),
   });
   readonly adminStats = computed(() => this.statsResource.value() ?? null);
   readonly statsLoading = computed(() => this.statsResource.isLoading());
 
-  private readonly challengesResource = rxResource<ChallengeDto[], number>({
-    params: () => this.state.challengesReloadTrigger(),
-    stream: () => this.http.getChallenges(),
+  private readonly challengesResource = rxResource<ChallengeDto[], { trigger: number; authed: boolean }>({
+    params: () => ({ trigger: this.state.challengesReloadTrigger(), authed: this.http.authenticated() }),
+    stream: ({ params }) => (params.authed ? this.http.getChallenges() : of([] as ChallengeDto[])),
   });
   readonly challenges = computed(() => this.challengesResource.value() ?? []);
 
-  private readonly allowedEmailsResource = rxResource<GetAllowedEmailsResponse, number>({
-    params: () => this.state.allowedEmailsReloadTrigger(),
-    stream: () => this.http.getAllowedEmails(),
+  private readonly allowedEmailsResource = rxResource<GetAllowedEmailsResponse, { trigger: number; authed: boolean }>({
+    params: () => ({ trigger: this.state.allowedEmailsReloadTrigger(), authed: this.http.authenticated() }),
+    stream: ({ params }) => (params.authed ? this.http.getAllowedEmails() : of({ emails: [] })),
   });
   readonly allowedEmails = computed(() => this.allowedEmailsResource.value()?.emails ?? []);
   readonly allowedEmailsLoading = computed(() => this.allowedEmailsResource.isLoading());
