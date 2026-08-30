@@ -269,14 +269,14 @@ Orchestre une session complète. États : `loading` → `welcome` → `playing` 
 
 Délègue l'affichage à des sous-composants :
 - **`GameHeaderComponent`** : titre InSeconds + streak + score en cours + barre de progression + bouton abandon
-- **`GameFooterComponent`** : liens admin / confidentialité + bouton langue FR/EN
+- **`GameFooterComponent`** : liens admin / confidentialité + bouton langue FR/EN + icône de connexion discrète (guest → `/login`, compte lié → pop-up "Compte connecté" avec bouton "Se déconnecter" explicite, `ConfirmSheetComponent`)
 - **`WelcomeScreenComponent`** : état `welcome`
 - **`ResumeScreenComponent`** : état `resume_prompt` (avec confirmation abandon inline)
 - **`StatusScreenComponent`** : états `no_challenge` + `error` (inputs `titleKey`/`bodyKey` i18n)
 - **`AlreadyPlayedScreenComponent`** : état `already_played` (score vs médiane, `ShareButtonComponent`). L'accordéon morceaux délègue à `<app-track-results-list [rows]="playedRows()">` (mappe `stats().tracks`) → **mêmes lignes que le récap** (chips `✓/✗`, durée, `+score` cliquable → pop-up histogramme)
 - **`FinalRecapScreenComponent`** : état `done` (score animé, `ShareButtonComponent`). Input `stats: TodayStatsResponse | null` (`GameComponent` appelle `apiStatsToday()` en entrant dans `done`). L'accordéon délègue à `<app-track-results-list [rows]="recapRows()">` — `recapRows` mappe `results()` (`RoundResult`) + fusionne l'histogramme depuis `stats` par `position`. Liste + pop-up rendues par `TrackResultsListComponent`
 - **`BlindRoundComponent`** : état `playing`
-- **`ConfirmSheetComponent`** : modales abandon + quitter
+- **`ConfirmSheetComponent`** : modales abandon + quitter + "Compte connecté" (footer, cf. `GameFooterComponent`)
 
 **Confirmation de sortie** : implémente `UnsavedGameComponent` (`canDeactivate()`). Si `gameState() === 'playing'`, ouvre une modale et renvoie une `Promise<boolean>`. `@HostListener('window:beforeunload')` couvre la fermeture d'onglet.
 

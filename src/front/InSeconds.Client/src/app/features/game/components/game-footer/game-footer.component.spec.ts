@@ -83,16 +83,43 @@ describe('GameFooterComponent', () => {
       component.onLoginIconClick();
       expect(router.navigateByUrl).toHaveBeenCalledWith('/login');
       expect(playerSessionStub.logout).not.toHaveBeenCalled();
+      expect(component['showAccountSheet']()).toBeFalse();
     });
 
-    it('should log out and reload the session when linked', () => {
+    it('should open the account sheet (not log out directly) when linked', () => {
       playerSessionStub.isLinked.set(true);
 
       component.onLoginIconClick();
 
+      expect(component['showAccountSheet']()).toBeTrue();
+      expect(playerSessionStub.logout).not.toHaveBeenCalled();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('confirmLogout()', () => {
+    it('should log out, reload the session and close the sheet', () => {
+      playerSessionStub.isLinked.set(true);
+      component.onLoginIconClick();
+
+      component.confirmLogout();
+
       expect(playerSessionStub.logout).toHaveBeenCalled();
       expect(playerSessionStub.load).toHaveBeenCalled();
-      expect(router.navigateByUrl).not.toHaveBeenCalled();
+      expect(component['showAccountSheet']()).toBeFalse();
+      expect(component['loggingOut']()).toBeFalse();
+    });
+  });
+
+  describe('closeAccountSheet()', () => {
+    it('should close the sheet without logging out', () => {
+      playerSessionStub.isLinked.set(true);
+      component.onLoginIconClick();
+
+      component.closeAccountSheet();
+
+      expect(component['showAccountSheet']()).toBeFalse();
+      expect(playerSessionStub.logout).not.toHaveBeenCalled();
     });
   });
 
@@ -101,11 +128,11 @@ describe('GameFooterComponent', () => {
       expect(component.loginTooltip()).toBe('footer.login');
     });
 
-    it('should return the pseudo + logout label for a linked account', () => {
+    it('should return the bare pseudo for a linked account', () => {
       playerSessionStub.isLinked.set(true);
       playerSessionStub.pseudo.set('Alice');
 
-      expect(component.loginTooltip()).toBe('Alice · footer.logout');
+      expect(component.loginTooltip()).toBe('Alice');
     });
   });
 });

@@ -38,3 +38,15 @@
     <span class="text-xs font-bold uppercase leading-none" style="font-family:var(--font-display);letter-spacing:0.06em">{{ currentLang() }}</span>
   </button>
 </footer>
+
+@if (showAccountSheet()) {
+  <app-confirm-sheet
+    [title]="'footer.accountSheet.title' | translate"
+    [body]="'footer.accountSheet.body' | translate: { pseudo: pseudo() }"
+    tone="danger"
+    [confirmLabel]="'footer.logout' | translate"
+    [cancelLabel]="'footer.accountSheet.close' | translate"
+    [loading]="loggingOut()"
+    (confirm)="confirmLogout()"
+    (cancelled)="closeAccountSheet()" />
+}

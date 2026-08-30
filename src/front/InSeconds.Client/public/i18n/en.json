@@ -87,7 +87,12 @@
     "contact": "Contact us",
     "language": "Passer en français",
     "login": "Log in",
-    "logout": "Log out"
+    "logout": "Log out",
+    "accountSheet": {
+      "title": "Logged in",
+      "body": "Logged in as {{pseudo}}.",
+      "close": "Close"
+    }
   },
   "login": {
     "request": {

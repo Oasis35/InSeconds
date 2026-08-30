@@ -40,7 +40,7 @@ test.describe('Connexion par lien magique', () => {
 
     const game = new GamePage(page);
     await game.waitForWelcome();
-    await expect(page.getByTitle(/AliceE2E · Se déconnecter/)).toBeVisible();
+    await expect(page.getByTitle('AliceE2E')).toBeVisible();
   });
 
   test('email non whitelisté : message générique identique, aucun lien à récupérer', async ({ page, api }) => {
@@ -90,7 +90,7 @@ test.describe('Connexion par lien magique', () => {
     // Compte déjà lié -> pas de nouveau prompt pseudo, résolution directe.
     const gameB = new GamePage(pageB);
     await gameB.waitForWelcome();
-    await expect(pageB.getByTitle(/BobE2E · Se déconnecter/)).toBeVisible();
+    await expect(pageB.getByTitle('BobE2E')).toBeVisible();
 
     await contextB.close();
   });
@@ -106,7 +106,11 @@ test.describe('Connexion par lien magique', () => {
     const game = new GamePage(page);
     await game.waitForWelcome();
 
-    await page.getByTitle(/CarlE2E · Se déconnecter/).click();
+    // Le clic ouvre la pop-up "compte connecté" (plus de déconnexion directe) —
+    // il faut confirmer explicitement via son bouton "Se déconnecter".
+    await page.getByTitle('CarlE2E').click();
+    await expect(page.getByText('Compte connecté')).toBeVisible();
+    await page.getByRole('button', { name: 'Se déconnecter' }).click();
 
     await expect(page.getByTitle('Se connecter')).toBeVisible();
   });

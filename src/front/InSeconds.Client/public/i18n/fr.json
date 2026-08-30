@@ -87,7 +87,12 @@
     "contact": "Nous contacter",
     "language": "Switch to English",
     "login": "Se connecter",
-    "logout": "Se déconnecter"
+    "logout": "Se déconnecter",
+    "accountSheet": {
+      "title": "Compte connecté",
+      "body": "Connecté en tant que {{pseudo}}.",
+      "close": "Fermer"
+    }
   },
   "login": {
     "request": {
