@@ -1,5 +1,6 @@
 import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { AdminAllowedEmailsService } from '../../services/admin-allowed-emails.service';
 import { ConfirmSheetComponent } from '../../../../shared/confirm-sheet/confirm-sheet.component';
@@ -7,7 +8,7 @@ import { AllowedEmailDto } from '../../../../api/api.generated';
 
 @Component({
   selector: 'app-allowed-emails-tab',
-  imports: [DatePipe, TranslatePipe, ConfirmSheetComponent],
+  imports: [DatePipe, FormsModule, TranslatePipe, ConfirmSheetComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './allowed-emails-tab.component.html',
 })

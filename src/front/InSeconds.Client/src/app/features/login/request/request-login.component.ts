@@ -34,7 +34,7 @@ export class RequestLoginComponent {
 
   submit(): void {
     const trimmed = this.email.trim();
-    if (!trimmed || !trimmed.includes('@')) {
+    if (!trimmed?.includes('@')) {
       this.status.set('invalid');
       return;
     }

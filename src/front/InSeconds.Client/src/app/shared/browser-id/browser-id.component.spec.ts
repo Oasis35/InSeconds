@@ -17,7 +17,7 @@ describe('BrowserIdComponent', () => {
       providers: [
         {
           provide: PlayerSessionService,
-          useValue: { playerId: signal<string | null>(fakeId) },
+          useValue: { playerId: signal<string | null>(fakeId), ensureCreated: () => {} },
         },
       ],
     });

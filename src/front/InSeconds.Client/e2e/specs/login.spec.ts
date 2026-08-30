@@ -69,8 +69,18 @@ test.describe('Connexion par lien magique', () => {
     const gameA = new GamePage(page);
     await gameA.waitForWelcome();
 
-    // Appareil B : nouveau contexte Playwright, aucun cookie partagé avec A.
+    // Appareil B : nouveau contexte Playwright, aucun cookie partagé avec A. Ce contexte
+    // ne passe pas par le fixture `page` (cf. e2e/fixtures/test.ts) qui force lang=fr —
+    // sans ça, la locale par défaut du navigateur (souvent en anglais en CI) ferait
+    // échouer les sélecteurs de texte français ci-dessous.
     const contextB = await browser.newContext();
+    await contextB.addInitScript(() => {
+      try {
+        localStorage.setItem('lang', 'fr');
+      } catch {
+        // localStorage indisponible — ignore
+      }
+    });
     const pageB = await contextB.newPage();
     await requestMagicLink(pageB, WHITELISTED_EMAIL);
     linkUrl = await api.getLastMagicLinkUrl(WHITELISTED_EMAIL);

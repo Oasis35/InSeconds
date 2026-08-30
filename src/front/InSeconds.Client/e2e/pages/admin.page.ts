@@ -1,6 +1,11 @@
 import { Page, Locator } from '@playwright/test';
 
 const BASE = process.env['CI'] ? 'http://localhost:5171' : 'http://localhost:5172';
+// LoginEndpoint.IsAdminAuthenticated vérifie aussi l'origine (cf. OriginValidator) — un
+// fetch() Node (pas un vrai navigateur) n'envoie jamais d'Origin automatiquement, il faut
+// le poser explicitement ici avec le port réel du front (cf. e2e/fixtures/api-client.ts,
+// même besoin). Sans ça ces helpers échouent silencieusement en 401 (cf. piège 22 racine).
+const FRONT_ORIGIN = process.env['CI'] ? 'http://localhost:5173' : 'http://localhost:5174';
 
 export class AdminPage {
   readonly passwordInput: Locator;
@@ -140,16 +145,17 @@ export class AdminPage {
   async apiReseed(): Promise<void> {
     const res = await fetch(`${BASE}/api/e2e/reseed`, {
       method: 'POST',
-      headers: { Authorization: 'Bearer admin-token', 'Content-Type': 'application/json' },
+      headers: { Authorization: 'Bearer admin-token', 'Content-Type': 'application/json', Origin: FRONT_ORIGIN },
     });
     if (!res.ok) throw new Error(`reseed failed: ${res.status}`);
   }
 
   async apiDeleteTodayChallenge(): Promise<void> {
-    await fetch(`${BASE}/api/e2e/reset?deleteChallenge=true`, {
+    const res = await fetch(`${BASE}/api/e2e/reset?deleteChallenge=true`, {
       method: 'DELETE',
-      headers: { Authorization: 'Bearer admin-token' },
+      headers: { Authorization: 'Bearer admin-token', Origin: FRONT_ORIGIN },
     });
+    if (!res.ok) throw new Error(`apiDeleteTodayChallenge failed: ${res.status}`);
   }
 
   // GET /api/settings lit IOptions<AppSettings> figé au boot (pas de live-reload générique) —
@@ -158,7 +164,7 @@ export class AdminPage {
   // calculées avec la valeur fraîche de TrackCooldownDays).
   async apiGetPoolUnlockDate(deezerTrackId: number): Promise<string | null | undefined> {
     const res = await fetch(`${BASE}/api/admin/tracks`, {
-      headers: { Authorization: 'Bearer admin-token' },
+      headers: { Authorization: 'Bearer admin-token', Origin: FRONT_ORIGIN },
     });
     if (!res.ok) throw new Error(`get tracks failed: ${res.status}`);
     const body = await res.json() as { available: { deezerTrackId: number; unlockDate: string | null }[] };

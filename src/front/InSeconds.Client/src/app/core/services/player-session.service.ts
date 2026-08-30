@@ -17,9 +17,12 @@ export class PlayerSessionService {
   readonly isLinked = computed(() => !this.isGuest());
 
   load(): Observable<void> {
-    return this.api.apiPlayersMe().pipe(
+    // peek=true : ne crée jamais de Player/cookie pour un simple chargement de page
+    // (cf. Features/Players/GetCurrentPlayer/Endpoint.cs) — sinon tout visiteur guest
+    // se verrait poser un cookie authToken avant même de cliquer "Commencer à jouer".
+    return this.api.apiPlayersMe(true).pipe(
       tap(res => {
-        this.playerId.set(res.playerId);
+        this.playerId.set(res.playerId === '00000000-0000-0000-0000-000000000000' ? null : res.playerId);
         this.isGuest.set(res.isGuest);
         this.email.set(res.email ?? null);
         this.pseudo.set(res.pseudo ?? null);
@@ -35,5 +38,24 @@ export class PlayerSessionService {
 
   logout(): Observable<void> {
     return this.api.apiAuthLogout().pipe(map(() => void 0));
+  }
+
+  /**
+   * Garantit un Player créé (usage admin uniquement, BrowserIdComponent) : contrairement à
+   * load() (peek, jamais d'écriture), crée un guest à la demande si aucun cookie valide
+   * n'existe déjà — pour que l'admin affiche toujours un ID navigateur, même s'il ne joue
+   * jamais. No-op si un Player est déjà résolu (évite un appel réseau superflu).
+   */
+  ensureCreated(): void {
+    if (this.playerId()) return;
+    this.api.apiPlayersMe(false).pipe(
+      tap(res => {
+        this.playerId.set(res.playerId);
+        this.isGuest.set(res.isGuest);
+        this.email.set(res.email ?? null);
+        this.pseudo.set(res.pseudo ?? null);
+      }),
+      catchError(() => of(void 0))
+    ).subscribe();
   }
 }

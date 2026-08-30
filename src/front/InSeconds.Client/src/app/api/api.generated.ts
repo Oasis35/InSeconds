@@ -22,7 +22,7 @@ export class ApiClient {
 
     constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
         this.http = http;
-        this.baseUrl = baseUrl ?? "http://localhost:5171/";
+        this.baseUrl = baseUrl ?? "http://localhost:5175/";
     }
 
     /**
@@ -120,10 +120,15 @@ export class ApiClient {
     }
 
     /**
+     * @param peek (optional) 
      * @return OK
      */
-    apiPlayersMe(): Observable<GetCurrentPlayerResponse> {
-        let url_ = this.baseUrl + "/api/players/me";
+    apiPlayersMe(peek: boolean | undefined): Observable<GetCurrentPlayerResponse> {
+        let url_ = this.baseUrl + "/api/players/me?";
+        if (peek === null)
+            throw new globalThis.Error("The parameter 'peek' cannot be null.");
+        else if (peek !== undefined)
+            url_ += "peek=" + encodeURIComponent("" + peek) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {

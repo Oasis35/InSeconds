@@ -15,6 +15,13 @@ export class BrowserIdComponent {
 
   protected readonly copied = signal(false);
 
+  constructor() {
+    // PlayerSessionService.load() (app initializer) est en mode peek — ne crée jamais de
+    // Player. L'admin doit voir un ID navigateur même s'il ne joue jamais : on force la
+    // création ici si nécessaire.
+    this.identity.ensureCreated();
+  }
+
   protected copy(id: string): void {
     this.clipboard.copy(id).then(ok => {
       if (!ok) return;
