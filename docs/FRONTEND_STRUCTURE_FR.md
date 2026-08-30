@@ -38,7 +38,7 @@ src/front/InSeconds.Client/
 │   │   │       ├── clipboard.service.ts        # copy(text): Promise<boolean>, mutualisé game/admin
 │   │   │       ├── game.service.ts             # POST /sessions + /answers
 │   │   │       ├── language.service.ts         # détection/changement FR/EN, persist localStorage
-│   │   │       ├── player-identity.service.ts  # GET /players/me → signal playerId (root, 1 seul appel)
+│   │   │       ├── player-session.service.ts   # GET /players/me → isGuest/email/pseudo (root, appelé au boot)
 │   │   │       └── settings.service.ts         # GET /settings → signals
 │   │   ├── shared/
 │   │   │   ├── confirm-sheet/
@@ -56,20 +56,22 @@ src/front/InSeconds.Client/
 │   │   │   └── deezer-badge.component.ts       # badge "À écouter sur Deezer" (fichier plat, sans sous-dossier)
 │   │   ├── features/
 │   │   │   ├── admin/
-│   │   │   │   ├── admin.component.ts          # shell (~45 lignes) — injecte les 6 services
+│   │   │   │   ├── admin.component.ts          # shell (~45 lignes) — injecte les 7 services
 │   │   │   │   ├── admin.models.ts             # interfaces partagées (TrackDto, ChallengeDto, …)
 │   │   │   │   ├── services/
 │   │   │   │   │   ├── admin-http.service.ts   # HTTP brut + signal authenticated + login/logout/checkAuth
 │   │   │   │   │   ├── admin-state.service.ts  # signals partagés (selectedDay, poolReloadTrigger, …)
-│   │   │   │   │   ├── admin-api.service.ts    # rxResource (pool, stats, challenges) + computed accessors
+│   │   │   │   │   ├── admin-api.service.ts    # rxResource (pool, stats, challenges, allowedEmails) + computed accessors
 │   │   │   │   │   ├── admin-stats.service.ts  # état dashboard (navigation, formatage dates, …)
 │   │   │   │   │   ├── admin-pool.service.ts   # filtres/pagination/sélection pool, modales ajout/suppression
-│   │   │   │   │   └── admin-actions.service.ts # generateToday(), reset(), refreshPreviews()
+│   │   │   │   │   ├── admin-actions.service.ts # generateToday(), reset(), refreshPreviews(), sendTestEmail()
+│   │   │   │   │   └── admin-allowed-emails.service.ts # add(), remove() whitelist
 │   │   │   │   └── components/
 │   │   │   │       ├── admin-login/
 │   │   │   │       ├── dashboard-tab/
 │   │   │   │       ├── pool-tab/
 │   │   │   │       ├── challenges-tab/
+│   │   │   │       ├── allowed-emails-tab/     # whitelist admin (comptes utilisateurs)
 │   │   │   │       ├── actions-tab/
 │   │   │   │       ├── add-track-modal/
 │   │   │   │       └── delete-track-modal/
@@ -83,13 +85,16 @@ src/front/InSeconds.Client/
 │   │   │   │   │   └── blind-round.component.ts  # choix palier + lecture + saisie + polish UX
 │   │   │   │   ├── components/
 │   │   │   │   │   ├── game-header/            # en-tête (titre + streak + score + barre progression)
-│   │   │   │   │   └── game-footer/            # pied de page (liens admin/confidentialité + langue FR/EN)
+│   │   │   │   │   └── game-footer/            # pied de page (liens admin/confidentialité/connexion + langue FR/EN)
 │   │   │   │   └── screens/
 │   │   │   │       ├── welcome-screen/
 │   │   │   │       ├── resume-screen/
 │   │   │   │       ├── status-screen/          # handles no_challenge + error (titleKey/bodyKey)
 │   │   │   │       ├── already-played-screen/
 │   │   │   │       └── final-recap-screen/     # exporte aussi RoundResult
+│   │   │   ├── login/                          # connexion par magic link (comptes utilisateurs)
+│   │   │   │   ├── request/                    # /login — demande de lien + connexion rapide dev
+│   │   │   │   └── verify/                     # /login/verify — confirmation explicite + choix pseudo
 │   │   │   ├── not-found/
 │   │   │   ├── privacy/                       # page confidentialité (routes /privacy + /confidentialite)
 │   │   │   └── service-down/
@@ -113,6 +118,7 @@ providers: [
   ApiClient,
   provideAppInitializer(() => inject(SettingsService).load()),
   provideAppInitializer(() => inject(LanguageService).init()),
+  provideAppInitializer(() => inject(PlayerSessionService).load()),
   provideTranslateService({ loader: provideTranslateHttpLoader({ prefix: 'i18n/', suffix: '.json' }) }),
 ]
 ```
@@ -240,13 +246,20 @@ copy(text: string): Promise<boolean>  // wrapper navigator.clipboard.writeText, 
 
 `providedIn: 'root'`. Mutualise la copie presse-papier entre `GameComponent` (partage de score) et `admin/` (`BrowserIdComponent`, `ChallengesTabComponent` — copie de l'ID joueur/navigateur).
 
-### `PlayerIdentityService`
+### `PlayerSessionService`
 
 ```typescript
-readonly playerId = signal<string | null>(null);  // rempli au premier inject via GET /api/players/me
+readonly playerId = signal<string | null>(null);
+readonly isGuest = signal(true);
+readonly email = signal<string | null>(null);
+readonly pseudo = signal<string | null>(null);
+readonly isLinked = computed(() => !this.isGuest());
+
+load(): Observable<void>;   // GET /api/players/me — appelé via provideAppInitializer
+logout(): Observable<void>; // POST /api/auth/logout
 ```
 
-`providedIn: 'root'` — le constructeur déclenche l'appel une seule fois pour toute la durée de vie de l'app (singleton), le résultat reste en cache dans le signal. Sert à afficher/copier l'ID du navigateur courant en admin et à le comparer aux joueurs listés dans « Stats par défi » (`ChallengesTabComponent.isYou()`). Le cookie `authToken` étant `HttpOnly` et chiffré (Data Protection back), le `PlayerId` est structurellement illisible côté client sans cet appel.
+`providedIn: 'root'`. **Remplace l'ancien `player-identity.service.ts`** (comptes utilisateurs, 2026-08) : en plus de l'ID navigateur (usage admin, `isYou()`), expose l'état de connexion (guest vs compte lié) consommé par l'icône de connexion du footer (`GameFooterComponent`) et les écrans `/login`. `load()` est appelé une fois au boot via `provideAppInitializer` (`app.config.ts`, même pattern que `SettingsService`) — **conséquence** : contrairement au reste de l'app (création paresseuse du `Player`), `GET /api/players/me` crée un `Player` guest dès la première page vue, même pour un visiteur qui ne joue jamais (cf. `CookieAuthService`/`GetCurrentPlayerEndpoint` côté back). Le cookie `authToken` étant `HttpOnly` et chiffré (Data Protection back), ces informations sont structurellement illisibles côté client sans cet appel.
 
 ## Composants
 
@@ -297,7 +310,7 @@ Bouton partage réutilisable (`shared/share-button/`). Inputs : `copied: boolean
 
 ### `BrowserIdComponent`
 
-ID court (8 premiers caractères du `PlayerId`) + bouton copier (`shared/browser-id/`), aucun `@Input`/`@Output` — injecte lui-même `PlayerIdentityService` + `ClipboardService`. Monté une seule fois dans `admin.component.html`, au-dessus du `@if (authenticated)` : visible aussi bien sur l'écran de login que dans le shell admin authentifié.
+ID court (8 premiers caractères du `PlayerId`) + bouton copier (`shared/browser-id/`), aucun `@Input`/`@Output` — injecte lui-même `PlayerSessionService` + `ClipboardService`. Monté une seule fois dans `admin.component.html`, au-dessus du `@if (authenticated)` : visible aussi bien sur l'écran de login que dans le shell admin authentifié.
 
 ### `DecorBackgroundComponent`
 
@@ -318,7 +331,7 @@ Shell ~45 lignes. Fournit les 6 services via `providers: [AdminHttpService, Admi
 - **`AdminLoginComponent`** : formulaire login, `loginStatus` signal local
 - **`DashboardTabComponent`** : injecte `AdminStatsService` — sélecteur de jour + KPIs, activité 30 jours, répartition joueurs
 - **`PoolTabComponent`** : injecte `AdminPoolService`, contient `AddTrackModalComponent` + `DeleteTrackModalComponent` ; affiche l'**autonomie du pool** (« X jours de défis restants ») en ligne à côté du compteur disponible/utilisé
-- **`ChallengesTabComponent`** : injecte `AdminStatsService` — **stats par défi** (accordéon médiane/min/max, taux artiste/titre par morceau) + historique des défis, avec un navigateur ‹ Mois Année › unique en haut de l'onglet. Injecte aussi `PlayerIdentityService`/`ClipboardService` directement (`core/`) pour afficher, sous chaque défi, un chip ID court par joueur (`c.players`, toutes sessions) cliquable pour copier l'ID complet, avec surbrillance + libellé « toi » automatiques si l'ID correspond au navigateur courant — repérer les joueurs qui reviennent
+- **`ChallengesTabComponent`** : injecte `AdminStatsService` — **stats par défi** (accordéon médiane/min/max, taux artiste/titre par morceau) + historique des défis, avec un navigateur ‹ Mois Année › unique en haut de l'onglet. Injecte aussi `PlayerSessionService`/`ClipboardService` directement (`core/`) pour afficher, sous chaque défi, un chip ID court par joueur (`c.players`, toutes sessions) cliquable pour copier l'ID complet, avec surbrillance + libellé « toi » automatiques si l'ID correspond au navigateur courant — repérer les joueurs qui reviennent
 - **`ActionsTabComponent`** : injecte `AdminActionsService`
 - **`AddTrackModalComponent`** : injecte `AdminPoolService`
 - **`DeleteTrackModalComponent`** : injecte `AdminPoolService`

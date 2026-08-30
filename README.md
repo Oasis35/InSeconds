@@ -12,6 +12,7 @@
 - Free, unlimited "listen more" extensions per track (up to the last duration tier) — scoring is always based on the final tier listened, no penalty for extending
 - Scoring is entirely server-side — no client-side manipulation possible
 - Guest mode: play without signing up, no leaderboard
+- Optional linked accounts (admin-whitelisted emails, passwordless magic-link login) — keeps history/streak across devices; guest play stays fully open regardless
 - Daily streak tracked and displayed on the final recap screen
 - Share your score in Wordle-style emoji format via the clipboard
 - Available in French and English — auto-detected from the browser, switchable anytime from the footer (choice saved in localStorage)

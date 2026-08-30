@@ -134,6 +134,18 @@
 - [ ] **Frontend** — page ou modale "Rejouer un ancien défi" accessible depuis l'écran "déjà joué" ou la home ; liste les derniers défis disponibles
 - [ ] **Frontend** — indicateur visuel "Mode entraînement" pendant la partie (bandeau ou badge), récap final sans partage emoji ni mise à jour du streak
 - [ ] **UX** — décider si les anciens défis sont accessibles sans limite (tout l'historique) ou fenêtre glissante (ex : 7 derniers jours)
+- Note : ce chantier bénéficie de l'infrastructure de comptes posée en 2026-08 (whitelist + magic link, cf. section ci-dessous) — un `Player` identifié de façon stable dans le temps (pas seulement un cookie guest) est un prérequis naturel pour "reprendre où on en était" sur un ancien défi, même si le rattrapage lui-même reste hors scope de cette livraison.
+
+## ✅ Comptes utilisateurs (whitelist + magic link)
+
+> Le jeu guest reste 100% ouvert — la whitelist gate uniquement qui peut créer/utiliser un compte lié. Détail complet : `CLAUDE.md` racine ("Comptes utilisateurs — whitelist admin + login par magic link") et `src/back/InSeconds.Api/CLAUDE.md` (`Features/Auth/`, `Features/Admin/AllowedEmails/`, `Common/Auth/AccountLinkingService`).
+
+- [x] Whitelist admin des emails autorisés (`Features/Admin/AllowedEmails/`, CQRS complet) + email d'invitation automatique (7 jours)
+- [x] Login par magic link (15 min, `RequestMagicLink`/`VerifyMagicLink`), envoi SMTP direct (MailKit, pas de service tiers)
+- [x] `AccountLinkingService` — conversion du guest courant à la première connexion, résolution multi-appareils aux suivantes (terrain préparé pour un futur Google OAuth)
+- [x] Anti-CSRF (`OriginValidator`) sur `VerifyMagicLink` et l'authentification admin
+- [x] Connexion rapide dev (3 comptes seed, `Features/Auth/DevLogin/`, jamais en Testing/Production)
+- [x] Front : `PlayerSessionService`, écrans `/login` + `/login/verify`, icône de connexion discrète dans le footer, onglet admin "Emails autorisés", diagnostic "Test SMTP", pseudo dans les chips joueur admin
 
 ## 🚧 Rétention & Engagement
 
