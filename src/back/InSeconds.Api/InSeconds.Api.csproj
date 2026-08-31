@@ -15,6 +15,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Corps HTML des emails : embarqués dans l'assembly (lus par EmailTemplateRenderer),
+         donc rien à copier côté Dockerfile.prod / publish. -->
+    <Content Remove="Common\Email\Templates\**\*.html" />
+    <EmbeddedResource Include="Common\Email\Templates\**\*.html" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="FluentValidation" Version="12.1.1" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="10.0.9" />
