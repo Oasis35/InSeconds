@@ -61,15 +61,18 @@ public sealed class EmailTemplatesTests
     [Theory]
     [InlineData("magic-link")]
     [InlineData("whitelist-invitation")]
-    public void Render_SubstitueLeLienEtNeLaissePasDeJeton(string template)
+    public void Render_AppliqueLeLayoutPartageEtNeLaissePasDeJeton(string template)
     {
         var html = EmailTemplateRenderer.Render(
             template,
             new Dictionary<string, string> { ["MAGIC_LINK_URL"] = MagicLinkUrl });
 
         html.Should().Contain("<!DOCTYPE html>");
+        html.Should().Contain(".da-grid::before");   // vient de _layout.html (layout appliqué)
         html.Should().Contain(MagicLinkUrl);
         html.Should().NotContain("{{MAGIC_LINK_URL}}");
+        html.Should().NotContain("{{SECTION:");       // toutes les sections injectées
+        html.Should().NotContain("<!--#");            // marqueurs de section consommés
     }
 
     [Fact]
