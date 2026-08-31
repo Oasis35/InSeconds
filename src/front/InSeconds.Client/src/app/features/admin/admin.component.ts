@@ -8,10 +8,12 @@ import { AdminApiService } from './services/admin-api.service';
 import { AdminStatsService } from './services/admin-stats.service';
 import { AdminPoolService } from './services/admin-pool.service';
 import { AdminActionsService } from './services/admin-actions.service';
+import { AdminAllowedEmailsService } from './services/admin-allowed-emails.service';
 import { AdminLoginComponent } from './components/admin-login/admin-login.component';
 import { DashboardTabComponent } from './components/dashboard-tab/dashboard-tab.component';
 import { PoolTabComponent } from './components/pool-tab/pool-tab.component';
 import { ChallengesTabComponent } from './components/challenges-tab/challenges-tab.component';
+import { AllowedEmailsTabComponent } from './components/allowed-emails-tab/allowed-emails-tab.component';
 import { ActionsTabComponent } from './components/actions-tab/actions-tab.component';
 import { DecorBackgroundComponent } from '../../shared/decor-background/decor-background.component';
 import { BrowserIdComponent } from '../../shared/browser-id/browser-id.component';
@@ -21,10 +23,13 @@ import { BrowserIdComponent } from '../../shared/browser-id/browser-id.component
   imports: [
     DatePipe, TranslatePipe,
     AdminLoginComponent, DashboardTabComponent, PoolTabComponent,
-    ChallengesTabComponent, ActionsTabComponent, DecorBackgroundComponent, BrowserIdComponent,
+    ChallengesTabComponent, AllowedEmailsTabComponent, ActionsTabComponent, DecorBackgroundComponent, BrowserIdComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [AdminHttpService, AdminStateService, AdminApiService, AdminStatsService, AdminPoolService, AdminActionsService],
+  providers: [
+    AdminHttpService, AdminStateService, AdminApiService, AdminStatsService,
+    AdminPoolService, AdminActionsService, AdminAllowedEmailsService,
+  ],
   templateUrl: './admin.component.html',
 })
 export class AdminComponent {
@@ -32,6 +37,7 @@ export class AdminComponent {
   protected readonly state = inject(AdminStateService);
   protected readonly stats = inject(AdminStatsService);
   protected readonly pool = inject(AdminPoolService);
+  protected readonly allowedEmails = inject(AdminAllowedEmailsService);
 
   protected readonly buildTime = BUILD_TIME;
 

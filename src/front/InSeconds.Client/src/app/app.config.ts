@@ -11,6 +11,7 @@ import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 import { routes } from './app.routes';
 import { SettingsService } from './core/services/settings.service';
 import { LanguageService } from './core/services/language.service';
+import { PlayerSessionService } from './core/services/player-session.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -25,5 +26,6 @@ export const appConfig: ApplicationConfig = {
     }),
     provideAppInitializer(() => inject(LanguageService).init()),
     provideAppInitializer(() => inject(SettingsService).load()),
+    provideAppInitializer(() => inject(PlayerSessionService).load()),
   ],
 };

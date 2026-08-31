@@ -34,7 +34,7 @@ public sealed class CookieAuthService(
         }
 
         await db.SaveChangesAsync(ct);
-        SetCookie(httpContext, player.AuthToken);
+        IssueCookie(httpContext, player.AuthToken);
 
         return player.Id;
     }
@@ -72,7 +72,7 @@ public sealed class CookieAuthService(
         }
     }
 
-    private void SetCookie(HttpContext httpContext, Guid authToken)
+    public void IssueCookie(HttpContext httpContext, Guid authToken)
     {
         var protectedValue = protector.Protect(authToken.ToString());
 
@@ -83,6 +83,16 @@ public sealed class CookieAuthService(
             Secure   = !(env.IsDevelopment() || env.IsEnvironment("Testing")),
             Expires  = DateTimeOffset.UtcNow.Add(CookieLifetime),
             MaxAge   = CookieLifetime,
+        });
+    }
+
+    public void ClearCookie(HttpContext httpContext)
+    {
+        httpContext.Response.Cookies.Delete(CookieName, new CookieOptions
+        {
+            HttpOnly = true,
+            SameSite = (env.IsDevelopment() || env.IsEnvironment("Testing")) ? SameSiteMode.Strict : SameSiteMode.None,
+            Secure   = !(env.IsDevelopment() || env.IsEnvironment("Testing")),
         });
     }
 }

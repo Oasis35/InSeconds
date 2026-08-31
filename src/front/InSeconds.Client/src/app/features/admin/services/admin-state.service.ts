@@ -7,6 +7,7 @@ export class AdminStateService {
   readonly poolSearchQuery = signal('');
   readonly poolReloadTrigger = signal(0);
   readonly challengesReloadTrigger = signal(0);
+  readonly allowedEmailsReloadTrigger = signal(0);
 
   /** Onglet affiché. Piloté ici (et non dans AdminComponent) pour que les rxResource d'AdminApiService puissent charger paresseusement. */
   readonly activeTab = signal<AdminTab>('dashboard');
@@ -35,5 +36,9 @@ export class AdminStateService {
 
   reloadChallenges(): void {
     this.challengesReloadTrigger.update(v => v + 1);
+  }
+
+  reloadAllowedEmails(): void {
+    this.allowedEmailsReloadTrigger.update(v => v + 1);
   }
 }

@@ -43,6 +43,14 @@
         [style.color]="state.activeTab() === 'actions' ? 'var(--text-hi)' : 'var(--text-muted)'">
         {{ 'admin.tabs.actions' | translate }}
       </button>
+      <button (click)="state.setActiveTab('allowedEmails')"
+        class="flex-1 py-2 rounded-md text-sm font-medium transition-colors"
+        [style.background]="state.activeTab() === 'allowedEmails' ? 'var(--bg-inactive)' : null"
+        [style.color]="state.activeTab() === 'allowedEmails' ? 'var(--text-hi)' : 'var(--text-muted)'">
+        {{ state.hasVisited('allowedEmails')
+          ? ('admin.tabs.allowedEmails' | translate: { count: allowedEmails.allowedEmails().length })
+          : ('admin.tabs.allowedEmailsPlain' | translate) }}
+      </button>
     </div>
 
     <div class="w-full max-w-2xl">
@@ -54,6 +62,8 @@
         <app-challenges-tab />
       } @else if (state.activeTab() === 'actions') {
         <app-actions-tab />
+      } @else if (state.activeTab() === 'allowedEmails') {
+        <app-allowed-emails-tab />
       }
     </div>
 

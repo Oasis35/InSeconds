@@ -1,0 +1,101 @@
+<div class="da-bg min-h-dvh flex flex-col items-center justify-center p-6 relative" style="color:var(--text-body)">
+  <app-decor-background />
+
+  <div class="w-full max-w-sm py-8 screen-enter text-center space-y-6">
+    @switch (state()) {
+      @case ('missingToken') {
+        <h1 class="text-2xl font-bold" style="color:var(--text-hi)">{{ 'login.verify.title' | translate }}</h1>
+        <p class="text-sm" style="color:var(--text-muted)">{{ 'login.verify.missingToken' | translate }}</p>
+        <a routerLink="/login" class="inline-block text-sm transition-colors" style="color:var(--text-accent)">{{ 'login.verify.backToLogin' | translate }}</a>
+      }
+
+      @case ('error') {
+        <h1 class="text-2xl font-bold" style="color:var(--text-hi)">{{ 'login.verify.title' | translate }}</h1>
+        <p class="text-sm" style="color:var(--text-muted)">{{ 'login.verify.invalidOrExpired' | translate }}</p>
+        <a routerLink="/login" class="inline-block text-sm transition-colors" style="color:var(--text-accent)">{{ 'login.verify.backToLogin' | translate }}</a>
+      }
+
+      @case ('needsPseudo') {
+        <h1 class="text-2xl font-bold" style="color:var(--text-hi)">{{ 'login.verify.pseudoTitle' | translate }}</h1>
+        <form (ngSubmit)="submitPseudo()" class="space-y-3">
+          <label for="login-pseudo" class="sr-only">{{ 'login.verify.pseudoPlaceholder' | translate }}</label>
+          <input
+            id="login-pseudo"
+            [(ngModel)]="pseudo"
+            name="pseudo"
+            autocomplete="off"
+            [placeholder]="'login.verify.pseudoPlaceholder' | translate"
+            class="w-full px-4 py-3.5 rounded-xl text-sm text-center transition"
+            style="background:var(--bg-surface);color:var(--text-body);border:1px solid var(--border-strong);outline:none"
+          />
+          <p class="text-xs" style="color:var(--text-faint)">{{ 'login.verify.pseudoHint' | translate }}</p>
+          <button
+            type="submit"
+            class="w-full py-3.5 rounded-full font-bold text-base tracking-wide uppercase transition-all active:scale-95 touch-manipulation"
+            style="font-family:var(--font-display);background:var(--gradient-primary);color:var(--text-on-primary);letter-spacing:0.06em;box-shadow:var(--glow-primary)">
+            {{ 'login.verify.pseudoSubmit' | translate }}
+          </button>
+        </form>
+      }
+
+      @case ('pseudoTaken') {
+        <h1 class="text-2xl font-bold" style="color:var(--text-hi)">{{ 'login.verify.pseudoTitle' | translate }}</h1>
+        <p class="text-sm" style="color:var(--color-danger, #e05252)">{{ 'login.verify.pseudoTaken' | translate }}</p>
+        <form (ngSubmit)="submitPseudo()" class="space-y-3">
+          <label for="login-pseudo" class="sr-only">{{ 'login.verify.pseudoPlaceholder' | translate }}</label>
+          <input
+            id="login-pseudo"
+            [(ngModel)]="pseudo"
+            name="pseudo"
+            autocomplete="off"
+            [placeholder]="'login.verify.pseudoPlaceholder' | translate"
+            class="w-full px-4 py-3.5 rounded-xl text-sm text-center transition"
+            style="background:var(--bg-surface);color:var(--text-body);border:1px solid var(--border-strong);outline:none"
+          />
+          <button
+            type="submit"
+            class="w-full py-3.5 rounded-full font-bold text-base tracking-wide uppercase transition-all active:scale-95 touch-manipulation"
+            style="font-family:var(--font-display);background:var(--gradient-primary);color:var(--text-on-primary);letter-spacing:0.06em;box-shadow:var(--glow-primary)">
+            {{ 'login.verify.pseudoSubmit' | translate }}
+          </button>
+        </form>
+      }
+
+      @case ('invalidPseudo') {
+        <h1 class="text-2xl font-bold" style="color:var(--text-hi)">{{ 'login.verify.pseudoTitle' | translate }}</h1>
+        <p class="text-sm" style="color:var(--color-danger, #e05252)">{{ 'login.verify.invalidPseudo' | translate }}</p>
+        <form (ngSubmit)="submitPseudo()" class="space-y-3">
+          <label for="login-pseudo" class="sr-only">{{ 'login.verify.pseudoPlaceholder' | translate }}</label>
+          <input
+            id="login-pseudo"
+            [(ngModel)]="pseudo"
+            name="pseudo"
+            autocomplete="off"
+            [placeholder]="'login.verify.pseudoPlaceholder' | translate"
+            class="w-full px-4 py-3.5 rounded-xl text-sm text-center transition"
+            style="background:var(--bg-surface);color:var(--text-body);border:1px solid var(--border-strong);outline:none"
+          />
+          <button
+            type="submit"
+            class="w-full py-3.5 rounded-full font-bold text-base tracking-wide uppercase transition-all active:scale-95 touch-manipulation"
+            style="font-family:var(--font-display);background:var(--gradient-primary);color:var(--text-on-primary);letter-spacing:0.06em;box-shadow:var(--glow-primary)">
+            {{ 'login.verify.pseudoSubmit' | translate }}
+          </button>
+        </form>
+      }
+
+      @default {
+        <h1 class="text-2xl font-bold" style="color:var(--text-hi)">{{ 'login.verify.title' | translate }}</h1>
+        <p class="text-sm leading-relaxed" style="color:var(--text-muted)">{{ 'login.verify.subtitle' | translate }}</p>
+        <button
+          type="button"
+          (click)="confirm()"
+          [disabled]="state() === 'confirming'"
+          class="w-full py-3.5 rounded-full font-bold text-base tracking-wide uppercase transition-all active:scale-95 touch-manipulation disabled:opacity-60"
+          style="font-family:var(--font-display);background:var(--gradient-primary);color:var(--text-on-primary);letter-spacing:0.06em;box-shadow:var(--glow-primary)">
+          {{ (state() === 'confirming' ? 'login.verify.confirming' : 'login.verify.confirm') | translate }}
+        </button>
+      }
+    }
+  </div>
+</div>

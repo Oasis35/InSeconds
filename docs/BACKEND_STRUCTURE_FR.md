@@ -55,7 +55,7 @@ src/back/InSeconds.Api/
 - **`Select()` projeté plutôt que `Include().ThenInclude()`** pour les queries lecture-seule — ne charger que les colonnes réellement utilisées
 - **`Task.WhenAll()` pour les queries indépendantes** — `Stats/Today`, `GetAdminStats` et `GetChallengeStats` parallélisent leurs requêtes DB (via `IDbContextFactory`) ; ne pas réintroduire des `await` séquentiels sans dépendance réelle
 
-## Modèle de données — 7 entités
+## Modèle de données — 9 entités
 
 Toutes les entités dans `Domain/` (sans annotations EF). Contraintes/index/cascades dans `Infrastructure/Persistence/Configurations/`.
 
@@ -180,6 +180,37 @@ public sealed class GameSessionAnswer
 
 Voir la table des valeurs par défaut dans [`CLAUDE.md`](../CLAUDE.md#settings-en-base-valeurs-par-défaut).
 
+### AllowedEmail (whitelist admin — comptes utilisateurs)
+
+```csharp
+public sealed class AllowedEmail
+{
+    public int Id { get; set; }
+    public required string Email { get; set; }  // normalisé lowercase
+    public DateTime CreatedAt { get; set; }
+}
+```
+
+- `IX_AllowedEmails_Email` (unique)
+- Gate uniquement qui peut **créer/utiliser un compte lié** — le jeu guest reste ouvert à tous. Voir `CLAUDE.md` (racine, "Comptes utilisateurs — whitelist admin + login par magic link") et le `CLAUDE.md` de `InSeconds.Api` (`Features/Admin/AllowedEmails/`, `Features/Auth/`) pour le détail du flow.
+
+### MagicLinkToken (login sans mot de passe)
+
+```csharp
+public sealed class MagicLinkToken
+{
+    public int Id { get; set; }
+    public required string Email { get; set; }
+    public required string TokenHash { get; set; }  // SHA-256 — le token brut n'est jamais stocké
+    public DateTime ExpiresAt { get; set; }          // 15 min (self-service) ou 7 jours (invitation admin)
+    public DateTime? ConsumedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+```
+
+- `IX_MagicLinkTokens_TokenHash` (unique)
+- Un token consommé (`ConsumedAt != null`) ou expiré est rejeté par `VerifyMagicLink`. Génération/hash dans `Common/Auth/MagicLinkTokenGenerator` (pur, testé unitairement).
+
 ## Settings — chargement au boot
 
 `AppDbConfigurationSource` / `AppDbConfigurationProvider` lit la table `Settings` via ADO.NET brut au démarrage et injecte les valeurs sous le préfixe `AppDb:` dans `IConfiguration`. L'auto-binding `IOptions<AppSettings>` fait le reste.
@@ -224,10 +255,27 @@ public sealed class SettingsService(IOptions<AppSettings> options)
 
 Résout un `Player` guest à partir du cookie HTTP-only signé. `SameSite=None; Secure=true` en prod (cross-origin Northflank). Deux méthodes sur `ICookieAuthService` :
 
-- `ResolveOrCreatePlayerAsync` — crée un `Player` si aucun n'est résolu (et pose le cookie). Réservé aux deux seuls points d'entrée qui doivent en créer un : `StartSession` (démarrer une partie) et `GetCurrentPlayer` (admin).
+- `ResolveOrCreatePlayerAsync` — crée un `Player` si aucun n'est résolu (et pose le cookie). Utilisé par les points d'entrée qui doivent en créer un à la demande : `StartSession` (démarrer une partie), `GetCurrentPlayer` (`/api/players/me`, appelé à chaque page vue côté joueur via `PlayerSessionService`), `VerifyMagicLink`/`DevLogin` (se connecter est une action délibérée).
 - `TryResolvePlayerAsync` — résout sans jamais créer, retourne `null` sinon. Utilisé par `PlayerAuthMiddleware` sur toutes les autres routes joueur (settings, autocomplete, stats/today...) — **création paresseuse du Player** (2026-08-21) : un simple chargement de page ne crée plus de ligne `Players` en base.
+- `IssueCookie(ctx, authToken)` — pose le cookie pour un `AuthToken` donné (compte lié résolu différent du guest courant, reconnexion multi-appareils). `ClearCookie(ctx)` — supprime le cookie (déconnexion).
 
 **Clés Data Protection persistées en base** : le cookie est chiffré avec les clés ASP.NET Data Protection ; elles sont stockées dans la table `DataProtectionKeys` via `PersistKeysToDbContext<ApplicationDbContext>()` (package `Microsoft.AspNetCore.DataProtection.EntityFrameworkCore`, migration `PersistDataProtectionKeys`). Sans cette persistance, chaque redémarrage/redéploiement Northflank régénérait les clés et invalidait tous les cookies joueurs (streaks et historiques perdus).
+
+### AccountLinkingService
+
+`IAccountLinkingService.ResolveOrLinkAsync(email, currentGuestPlayerId, pseudo, ct)` → `LinkResult(LinkOutcome, PlayerId, AuthToken)`. Logique "email vérifié → compte", indépendante du moyen de vérification (magic link aujourd'hui — terrain préparé pour un futur Google OAuth, même clé de résolution : l'email). `LinkOutcome.Found` (compte existant, reconnexion) / `NeedsPseudo` (pas de compte pour cet email, pseudo requis) / `Linked` (conversion du guest courant : `IsGuest=false`, `Email`, `Pseudo`).
+
+### MagicLinkTokenService
+
+`IMagicLinkTokenService.IssueAsync(email, validity, ct)` — génère un token (`MagicLinkTokenGenerator.GenerateRawToken()`, `RandomNumberGenerator` 32 bytes → base64url), stocke son hash SHA-256 (**jamais le token brut**) avec une expiration, retourne l'URL de vérification complète. Mutualisé entre le login self-service (15 min) et l'invitation admin (7 jours).
+
+### ResendEmailSender / IEmailSender
+
+Envoi d'emails (lien de connexion, invitation whitelist) via **l'API HTTP Resend** (plan gratuit), `HttpClient` typé configuré une fois à l'enregistrement (`BaseAddress` + header `Authorization: Bearer {ApiKey}`, cf. `Program.cs`). Remplace l'ancien envoi SMTP direct/MailKit (compte Gmail + alias "Envoyer en tant que"), abandonné pour la délivrabilité et la simplicité de config (plus de mot de passe d'application à gérer). `NullEmailSender` (Dev/Testing) logue le lien au lieu d'un vrai envoi et l'enregistre dans `TestEmailCapture` pour les tests E2E/intégration (le token brut n'étant jamais en base, c'est l'unique moyen de le récupérer côté test).
+
+### OriginValidator
+
+`IsTrustedOrigin(ctx, allowedOrigins)` — anti-CSRF léger, vérifie `Origin`/`Referer` contre `Cors:AllowedOrigins` déjà existant. Appliqué sur `VerifyMagicLink` (cookie posé sur un `POST`) et sur l'authentification admin (`LoginEndpoint.IsAdminAuthenticated`, défense en profondeur).
 
 ### DeezerClient
 

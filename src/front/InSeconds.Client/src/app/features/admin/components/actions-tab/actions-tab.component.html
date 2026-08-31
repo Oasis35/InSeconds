@@ -61,4 +61,28 @@
       @if (actions.updateCooldownStatus() === 'error') { <span class="text-xs" style="color:var(--text-error)">{{ 'admin.actions.cooldownError' | translate }}</span> }
     </div>
   </div>
+  <div style="border-top:1px solid var(--border-medium)"></div>
+  <div class="flex flex-col gap-2">
+    <h2 class="text-xs font-semibold uppercase tracking-wide" style="color:var(--text-muted)">{{ 'admin.actions.testSmtp' | translate }}</h2>
+    <div class="flex items-center gap-3">
+      <label for="test-email-input" class="sr-only">{{ 'admin.actions.testSmtpPlaceholder' | translate }}</label>
+      <input id="test-email-input" type="email"
+        [value]="testEmail" (input)="testEmail = $any($event.target).value"
+        [placeholder]="'admin.actions.testSmtpPlaceholder' | translate"
+        class="flex-1 text-sm rounded-lg px-3 py-1.5 outline-none"
+        style="background:var(--bg-inactive);color:var(--text-hi)" />
+      <button (click)="actions.sendTestEmail(testEmail)"
+        [disabled]="actions.sendTestEmailStatus() === 'loading' || !testEmail"
+        class="text-sm font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 shrink-0"
+        style="background:var(--bg-primary);color:var(--text-on-primary)">
+        {{ 'admin.actions.sendTestEmail' | translate }}
+      </button>
+    </div>
+    @if (actions.sendTestEmailStatus() === 'success') { <span class="text-xs" style="color:var(--color-success)">{{ 'admin.actions.testSmtpSuccess' | translate }}</span> }
+    @if (actions.sendTestEmailStatus() === 'error') {
+      <span class="text-xs" style="color:var(--text-error)">
+        {{ 'admin.actions.testSmtpError' | translate }}@if (actions.sendTestEmailError(); as detail) { : {{ detail }} }
+      </span>
+    }
+  </div>
 </div>

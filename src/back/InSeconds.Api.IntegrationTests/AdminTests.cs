@@ -556,6 +556,49 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         Assert.NotNull(body.SelectedDayKpis.MedianScore);
     }
 
+    [Fact]
+    public async Task AdminStats_CompteLie_ChallengePlayerDtoAPseudoRenseigne()
+    {
+        var session = await StartSessionAsync();
+        foreach (var track in session.Tracks)
+            await SubmitAsync(session.SessionId, track.Id, 1m, "X", null);
+
+        await LinkCurrentClientAsync("allowed@e2e.test", "StatsPseudo");
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var challenges = await AdminGetChallengeStatsAsync();
+        var challenge = challenges.Single(c => c.Date == today);
+        Assert.Contains(challenge.Players, p => p.Pseudo == "StatsPseudo");
+    }
+
+    [Fact]
+    public async Task AdminStats_ApresConversionCompte_TotalRegisteredIncremente()
+    {
+        var before = await AdminGetAsync("/api/admin/stats");
+        var beforeBody = await before.Content.ReadFromJsonAsync<AdminStatsResponse>();
+        var beforeCount = beforeBody!.PlayerBreakdown.TotalRegistered;
+
+        await LinkCurrentClientAsync("allowed@e2e.test", "RegisteredCountTest");
+
+        var after = await AdminGetAsync("/api/admin/stats");
+        var afterBody = await after.Content.ReadFromJsonAsync<AdminStatsResponse>();
+
+        Assert.Equal(beforeCount + 1, afterBody!.PlayerBreakdown.TotalRegistered);
+    }
+
+    // Convertit le joueur courant de _client (guest) en compte lié, via le vrai flow
+    // magic link (request + capture via TestEmailCapture, puisque le token brut n'est
+    // jamais stocké en base).
+    private async Task LinkCurrentClientAsync(string email, string pseudo)
+    {
+        await _client.PostAsJsonAsync("/api/auth/magic-link/request", new { Email = email });
+        var capture = factory.Services.GetRequiredService<InSeconds.Api.Common.Email.TestEmailCapture>();
+        Assert.True(capture.TryGetLast(email, out var lastEmail));
+        var match = System.Text.RegularExpressions.Regex.Match(lastEmail.Html, "token=([^&\"]+)");
+        Assert.True(match.Success);
+        await _client.PostAsJsonAsync("/api/auth/magic-link/verify", new { Token = match.Groups[1].Value, Pseudo = pseudo });
+    }
+
     // ── helpers ──────────────────────────────────────────────────────────────
 
     private async Task<Guid> MyPlayerIdAsync()

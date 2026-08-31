@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using InSeconds.Api.Features.Players.GetCurrentPlayer;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace InSeconds.Api.IntegrationTests;
 
@@ -47,5 +48,41 @@ public class PlayersTests(IntegrationTestFactory factory) : IAsyncLifetime
         var resp = await _client.GetAsync("/api/players/me");
 
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetCurrentPlayer_Guest_IsGuestTrueEtEmailPseudoNull()
+    {
+        var client = factory.CreateClient();
+
+        var body = await client.GetFromJsonAsync<GetCurrentPlayerResponse>("/api/players/me");
+
+        Assert.NotNull(body);
+        Assert.True(body.IsGuest);
+        Assert.Null(body.Email);
+        Assert.Null(body.Pseudo);
+    }
+
+    [Fact]
+    public async Task GetCurrentPlayer_CompteLie_IsGuestFalseEtEmailPseudoRenseignes()
+    {
+        var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Add("Origin", "http://localhost:5173");
+
+        await client.PostAsJsonAsync("/api/auth/magic-link/request", new { Email = "allowed@e2e.test" });
+
+        var capture = factory.Services.GetRequiredService<InSeconds.Api.Common.Email.TestEmailCapture>();
+        Assert.True(capture.TryGetLast("allowed@e2e.test", out var lastEmail));
+        var match = System.Text.RegularExpressions.Regex.Match(lastEmail.Html, "token=([^&\"]+)");
+        Assert.True(match.Success);
+
+        await client.PostAsJsonAsync("/api/auth/magic-link/verify", new { Token = match.Groups[1].Value, Pseudo = "CompteLieTest" });
+
+        var body = await client.GetFromJsonAsync<GetCurrentPlayerResponse>("/api/players/me");
+
+        Assert.NotNull(body);
+        Assert.False(body.IsGuest);
+        Assert.Equal("allowed@e2e.test", body.Email);
+        Assert.Equal("CompteLieTest", body.Pseudo);
     }
 }

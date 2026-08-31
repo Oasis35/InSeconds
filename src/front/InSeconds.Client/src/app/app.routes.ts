@@ -24,6 +24,16 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
   {
+    path: 'login',
+    loadComponent: () =>
+      import('./features/login/request/request-login.component').then(m => m.RequestLoginComponent),
+  },
+  {
+    path: 'login/verify',
+    loadComponent: () =>
+      import('./features/login/verify/verify-login.component').then(m => m.VerifyLoginComponent),
+  },
+  {
     path: 'admin',
     loadComponent: () =>
       import('./features/admin/admin.component').then(m => m.AdminComponent),

@@ -1,24 +1,48 @@
 import { TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
+import { of } from 'rxjs';
 import { GameFooterComponent } from './game-footer.component';
 import { LanguageService } from '../../../../core/services/language.service';
+import { PlayerSessionService } from '../../../../core/services/player-session.service';
 
 /** Stub minimal de TranslateService (même approche que language.service.spec.ts). */
 class TranslateServiceStub {
   use(_lang: string): void {}
+  instant(key: string): string {
+    return key;
+  }
 }
 
 describe('GameFooterComponent', () => {
   let component: GameFooterComponent;
   let language: LanguageService;
+  let playerSessionStub: {
+    isLinked: ReturnType<typeof signal<boolean>>;
+    pseudo: ReturnType<typeof signal<string | null>>;
+    load: jasmine.Spy;
+    logout: jasmine.Spy;
+  };
+  let router: { navigateByUrl: jasmine.Spy };
 
   beforeEach(() => {
     localStorage.clear();
+
+    playerSessionStub = {
+      isLinked: signal(false),
+      pseudo: signal<string | null>(null),
+      load: jasmine.createSpy('load').and.returnValue(of(void 0)),
+      logout: jasmine.createSpy('logout').and.returnValue(of(void 0)),
+    };
+    router = { navigateByUrl: jasmine.createSpy('navigateByUrl') };
 
     TestBed.configureTestingModule({
       providers: [
         LanguageService,
         { provide: TranslateService, useClass: TranslateServiceStub },
+        { provide: PlayerSessionService, useValue: playerSessionStub },
+        { provide: Router, useValue: router },
       ],
     });
 
@@ -51,6 +75,64 @@ describe('GameFooterComponent', () => {
     it('should persist the chosen language to localStorage', () => {
       component.toggleLanguage();
       expect(localStorage.getItem('lang')).toBe('en');
+    });
+  });
+
+  describe('onLoginIconClick()', () => {
+    it('should navigate to /login when guest', () => {
+      component.onLoginIconClick();
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/login');
+      expect(playerSessionStub.logout).not.toHaveBeenCalled();
+      expect(component['showAccountSheet']()).toBeFalse();
+    });
+
+    it('should open the account sheet (not log out directly) when linked', () => {
+      playerSessionStub.isLinked.set(true);
+
+      component.onLoginIconClick();
+
+      expect(component['showAccountSheet']()).toBeTrue();
+      expect(playerSessionStub.logout).not.toHaveBeenCalled();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('confirmLogout()', () => {
+    it('should log out, reload the session and close the sheet', () => {
+      playerSessionStub.isLinked.set(true);
+      component.onLoginIconClick();
+
+      component.confirmLogout();
+
+      expect(playerSessionStub.logout).toHaveBeenCalled();
+      expect(playerSessionStub.load).toHaveBeenCalled();
+      expect(component['showAccountSheet']()).toBeFalse();
+      expect(component['loggingOut']()).toBeFalse();
+    });
+  });
+
+  describe('closeAccountSheet()', () => {
+    it('should close the sheet without logging out', () => {
+      playerSessionStub.isLinked.set(true);
+      component.onLoginIconClick();
+
+      component.closeAccountSheet();
+
+      expect(component['showAccountSheet']()).toBeFalse();
+      expect(playerSessionStub.logout).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('loginTooltip()', () => {
+    it('should return the generic login label for a guest', () => {
+      expect(component.loginTooltip()).toBe('footer.login');
+    });
+
+    it('should return the bare pseudo for a linked account', () => {
+      playerSessionStub.isLinked.set(true);
+      playerSessionStub.pseudo.set('Alice');
+
+      expect(component.loginTooltip()).toBe('Alice');
     });
   });
 });

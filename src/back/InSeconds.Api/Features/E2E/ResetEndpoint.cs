@@ -65,12 +65,43 @@ public static class E2EResetEndpoint
             await db.DailyChallengeTracks.ExecuteDeleteAsync(ct);
             await db.DailyChallenges.ExecuteDeleteAsync(ct);
             await db.Tracks.ExecuteDeleteAsync(ct);
+            await db.AllowedEmails.ExecuteDeleteAsync(ct);
+            await db.MagicLinkTokens.ExecuteDeleteAsync(ct);
 
             SeedData(db);
 
             return Results.Ok(new { reseeded = true });
         })
         .WithName("E2EReseed")
+        .WithTags("E2E");
+
+        // Utilisé par les tests d'intégration/E2E pour "recevoir" un magic link sans
+        // vrai envoi de mail (NullEmailSender actif en Testing). Le token brut n'est
+        // jamais stocké en base (seul son hash SHA-256 l'est) : impossible de
+        // reconstruire l'URL depuis la BDD — on la relit depuis TestEmailCapture
+        // (peuplé par NullEmailSender à chaque envoi), en extrayant le premier
+        // href="..." du HTML de l'email.
+        routes.MapGet("/api/e2e/last-magic-link", (
+            HttpContext ctx,
+            InSeconds.Api.Common.Email.TestEmailCapture capture,
+            string email,
+            CancellationToken ct = default) =>
+        {
+            if (!LoginEndpoint.IsAdminAuthenticated(ctx))
+                return Results.Unauthorized();
+
+            var normalizedEmail = email.Trim().ToLowerInvariant();
+
+            if (!capture.TryGetLast(normalizedEmail, out var lastEmail))
+                return Results.NotFound();
+
+            var match = System.Text.RegularExpressions.Regex.Match(lastEmail.Html, "href=\"([^\"]+)\"");
+            if (!match.Success)
+                return Results.NotFound();
+
+            return Results.Ok(new { url = match.Groups[1].Value });
+        })
+        .WithName("E2ELastMagicLink")
         .WithTags("E2E");
 
         return routes;
@@ -81,6 +112,8 @@ public static class E2EResetEndpoint
         db.GameSessionAnswers.ExecuteDelete();
         db.GameSessions.ExecuteDelete();
         db.Players.ExecuteDelete();
+        db.AllowedEmails.ExecuteDelete();
+        db.MagicLinkTokens.ExecuteDelete();
         db.DailyChallengeTracks.ExecuteDelete();
         db.DailyChallenges.ExecuteDelete();
         db.Tracks.ExecuteDelete();
@@ -215,6 +248,11 @@ public static class E2EResetEndpoint
             LastPlayedDate = today.AddDays(-1),
         };
         db.Players.Add(devPlayer);
+
+        // Email pré-whitelisté déterministe pour les specs E2E/intégration du login —
+        // évite de passer par l'onglet admin à chaque test.
+        db.AllowedEmails.Add(new AllowedEmail { Email = "allowed@e2e.test", CreatedAt = DateTime.UtcNow });
+
         db.SaveChanges();
 
         // Sessions J-2 et J-1 — Status=Completed pour apparaître dans les stats
@@ -236,6 +274,30 @@ public static class E2EResetEndpoint
                 CompletedAt = completedAt,
             });
         }
+        db.SaveChanges();
+    }
+
+    // Development uniquement (jamais Testing/Production, cf. Program.cs) : comptes de
+    // test déjà liés, prêts à l'emploi via /api/auth/dev-login sans passer par un vrai
+    // envoi d'email.
+    public static void SeedDevOnlyAccounts(ApplicationDbContext db)
+    {
+        for (var i = 1; i <= 3; i++)
+        {
+            var email = $"user{i}@dev.local";
+
+            db.AllowedEmails.Add(new AllowedEmail { Email = email, CreatedAt = DateTime.UtcNow });
+            db.Players.Add(new Player
+            {
+                Id        = Guid.NewGuid(),
+                IsGuest   = false,
+                Email     = email,
+                Pseudo    = $"User{i}",
+                AuthToken = Guid.NewGuid(),
+                CreatedAt = DateTime.UtcNow,
+            });
+        }
+
         db.SaveChanges();
     }
 }

@@ -9,11 +9,14 @@ import { SettingsService } from '../../../../core/services/settings.service';
 describe('ActionsTabComponent', () => {
   let component: ActionsTabComponent;
   let actions: AdminActionsService;
-  let apiStub: { updateTrackCooldownDays: jasmine.Spy };
+  let apiStub: { updateTrackCooldownDays: jasmine.Spy; sendTestEmail: jasmine.Spy };
   let settingsStub: { trackCooldownDays: ReturnType<typeof signal<number>>; load: jasmine.Spy };
 
   beforeEach(() => {
-    apiStub = { updateTrackCooldownDays: jasmine.createSpy('updateTrackCooldownDays') };
+    apiStub = {
+      updateTrackCooldownDays: jasmine.createSpy('updateTrackCooldownDays'),
+      sendTestEmail: jasmine.createSpy('sendTestEmail'),
+    };
     settingsStub = {
       trackCooldownDays: signal(30),
       load: jasmine.createSpy('load').and.returnValue(of(undefined)),
@@ -52,6 +55,28 @@ describe('ActionsTabComponent', () => {
       actions.updateTrackCooldownDays(0);
 
       expect(actions.updateCooldownStatus()).toBe('error');
+    });
+  });
+
+  describe('sendTestEmail()', () => {
+    it('calls the API and sets success status', () => {
+      apiStub.sendTestEmail.and.returnValue(of(undefined));
+
+      actions.sendTestEmail('test@example.com');
+
+      expect(apiStub.sendTestEmail).toHaveBeenCalledWith('test@example.com');
+      expect(actions.sendTestEmailStatus()).toBe('success');
+    });
+
+    it('sets error status and surfaces the SMTP error message on failure', () => {
+      apiStub.sendTestEmail.and.returnValue(
+        throwError(() => ({ error: { message: 'Authentication failed' } }))
+      );
+
+      actions.sendTestEmail('test@example.com');
+
+      expect(actions.sendTestEmailStatus()).toBe('error');
+      expect(actions.sendTestEmailError()).toBe('Authentication failed');
     });
   });
 });

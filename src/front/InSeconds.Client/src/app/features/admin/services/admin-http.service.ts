@@ -2,7 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { lastValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { AdminStatsResponse, ChallengeStatsResponse } from '../../../api/api.generated';
+import { AddAllowedEmailResponse, AdminStatsResponse, ChallengeStatsResponse, GetAllowedEmailsResponse } from '../../../api/api.generated';
 import {
   ChallengeDto, DeezerTrackInfo, PoolTracksResponse, RefreshPreviewsResult, ResetResult,
 } from '../admin.models';
@@ -48,4 +48,8 @@ export class AdminHttpService {
   getStats(day: string) { return this.http.get<AdminStatsResponse>(`${this.base}/stats?date=${day}`); }
   getChallengeStats() { return this.http.get<ChallengeStatsResponse>(`${this.base}/challenge-stats`); }
   getChallenges() { return this.http.get<ChallengeDto[]>(`${this.base}/challenges`); }
+  getAllowedEmails() { return this.http.get<GetAllowedEmailsResponse>(`${this.base}/allowed-emails`); }
+  addAllowedEmail(email: string) { return this.http.post<AddAllowedEmailResponse>(`${this.base}/allowed-emails`, { email }); }
+  removeAllowedEmail(id: number) { return this.http.delete(`${this.base}/allowed-emails/${id}`); }
+  sendTestEmail(toEmail: string) { return this.http.post(`${this.base}/send-test-email`, { toEmail }); }
 }

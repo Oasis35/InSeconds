@@ -2,7 +2,7 @@ import { Component, inject, signal, effect, HostListener, ChangeDetectionStrateg
 import { DecimalPipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import { AdminStatsService } from '../../services/admin-stats.service';
-import { PlayerIdentityService } from '../../../../core/services/player-identity.service';
+import { PlayerSessionService } from '../../../../core/services/player-session.service';
 import { ClipboardService } from '../../../../core/services/clipboard.service';
 import { GuessTimeChartComponent } from '../../../../shared/guess-time-chart/guess-time-chart.component';
 import { TrackStatsDto } from '../../../../api/api.generated';
@@ -15,7 +15,7 @@ import { TrackStatsDto } from '../../../../api/api.generated';
 })
 export class ChallengesTabComponent {
   protected readonly stats = inject(AdminStatsService);
-  private readonly identity = inject(PlayerIdentityService);
+  private readonly identity = inject(PlayerSessionService);
   private readonly clipboard = inject(ClipboardService);
 
   // Feedback "copié" affiché uniquement sur le chip cliqué (pas un booléen global).

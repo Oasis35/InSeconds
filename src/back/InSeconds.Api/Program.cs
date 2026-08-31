@@ -1,8 +1,18 @@
+using System.Net.Http.Headers;
 using FluentValidation;
 using InSeconds.Api.Common.Auth;
+using InSeconds.Api.Common.Email;
 using InSeconds.Api.Common.Scoring;
 using InSeconds.Api.Common.Settings;
 using InSeconds.Api.Common.Text;
+using InSeconds.Api.Features.Admin.AllowedEmails.AddAllowedEmail;
+using InSeconds.Api.Features.Admin.AllowedEmails.RemoveAllowedEmail;
+using InSeconds.Api.Features.Admin.AllowedEmails.GetAllowedEmails;
+using InSeconds.Api.Features.Admin.SendTestEmail;
+using InSeconds.Api.Features.Auth.RequestMagicLink;
+using InSeconds.Api.Features.Auth.VerifyMagicLink;
+using InSeconds.Api.Features.Auth.Logout;
+using InSeconds.Api.Features.Auth.DevLogin;
 using InSeconds.Api.Features.Admin.Challenges.CreateChallenge;
 using InSeconds.Api.Features.Admin.GenerateToday;
 using InSeconds.Api.Features.Admin.Challenges.DeezerSearch;
@@ -77,6 +87,8 @@ builder.Services.AddOptions<AppSettings>()
 builder.Services.AddSingleton<IPostConfigureOptions<AppSettings>, AppSettingsPostConfigure>();
 builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<GetTracksHandler>();
+builder.Services.AddScoped<GetAllowedEmailsHandler>();
+builder.Services.AddScoped<LogoutHandler>();
 builder.Services.AddScoped<TodayStatsHandler>();
 builder.Services.AddScoped<GetTodaySessionHandler>();
 builder.Services.AddScoped<DailyChallengeGenerator>();
@@ -123,6 +135,27 @@ builder.Services.AddScoped<ICookieAuthService>(sp => new CookieAuthService(
     sp.GetRequiredService<IDataProtectionProvider>().CreateProtector("InSeconds.Auth.Cookie"),
     sp.GetRequiredService<IHostEnvironment>()));
 
+builder.Services.AddScoped<IMagicLinkTokenService, MagicLinkTokenService>();
+builder.Services.AddScoped<IAccountLinkingService, AccountLinkingService>();
+
+// ResendEmailSender hors Dev/Testing (config réelle requise) ; NullEmailSender sinon
+// (aucune config nécessaire pour développer — logue le contenu de l'email).
+builder.Services.AddOptions<ResendOptions>().BindConfiguration("Resend");
+if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddSingleton<TestEmailCapture>();
+    builder.Services.AddScoped<IEmailSender, NullEmailSender>();
+}
+else
+{
+    builder.Services.AddHttpClient<IEmailSender, ResendEmailSender>((sp, client) =>
+    {
+        var resend = sp.GetRequiredService<IOptions<ResendOptions>>().Value;
+        client.BaseAddress = new Uri("https://api.resend.com/");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", resend.ApiKey);
+    });
+}
+
 builder.Services.AddOpenApi();
 
 // Health checks : /health (liveness, app vivante) et /health/ready (readiness,
@@ -151,6 +184,11 @@ using (var scope = app.Services.CreateScope())
             app.Logger.LogWarning("===================================================");
             app.Logger.LogWarning("---------- SEED OK ----------");
             app.Logger.LogWarning("===================================================");
+
+            if (app.Environment.IsDevelopment())
+            {
+                InSeconds.Api.Features.E2E.E2EResetEndpoint.SeedDevOnlyAccounts(db);
+            }
         }
     }
 }
@@ -223,6 +261,18 @@ app.MapGetChallengeStats();
 app.MapDeezerSearch();
 app.MapDeezerSearchPublic();
 app.MapCreateChallenge();
+app.MapAddAllowedEmail();
+app.MapRemoveAllowedEmail();
+app.MapGetAllowedEmails();
+app.MapSendTestEmail();
+app.MapRequestMagicLink();
+app.MapVerifyMagicLink();
+app.MapLogout();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapDevLoginEndpoint();
+}
 
 if (app.Environment.IsEnvironment("Testing"))
 {

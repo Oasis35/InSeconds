@@ -12,6 +12,7 @@
 - Prolongations "écouter plus" libres et illimitées par morceau (jusqu'au dernier palier) — le score dépend toujours du palier final écouté, sans malus
 - Le scoring est entièrement côté serveur — impossible de tricher côté client
 - Mode guest : joue sans créer de compte, hors classement
+- Comptes utilisateurs optionnels (emails whitelistés par l'admin, connexion sans mot de passe par lien magique) — conserve historique/streak entre appareils ; le jeu guest reste ouvert à tous
 - Streak quotidien affiché sur l'écran récap final
 - Partage de score en format emoji Wordle (copie dans le presse-papier)
 - Disponible en français et en anglais — détecté automatiquement depuis le navigateur, changeable à tout moment depuis le pied de page (choix sauvegardé en localStorage)

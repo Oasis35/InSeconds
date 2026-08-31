@@ -53,7 +53,8 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 ✅ **Fait** :
 
 - Architecture vertical slice complète (Features/Domain/Infrastructure/Common)
-- 7 entités du domaine + configurations EF + migrations appliquées (PostgreSQL)
+- 9 entités du domaine + configurations EF + migrations appliquées (PostgreSQL)
+- **Comptes utilisateurs** (whitelist admin + login par magic link, sans mot de passe) — voir `CLAUDE.md` racine ("Comptes utilisateurs — whitelist admin + login par magic link") pour le détail complet
 - Setup Docker : conteneurs `inseconds.database` (PostgreSQL) + `inseconds.api` (hot-reload)
 - Vertical slices `Sessions/StartSession` + `Sessions/SubmitAnswer` (scoring serveur + stats par morceau)
 - Stats après chaque réponse : sur l'écran de révélation, histogramme « en combien de temps les autres ont trouvé » (une barre par palier d'écoute = nb de joueurs ayant trouvé, + une barre « ✗ » pour ceux qui n'ont pas trouvé ; colonne du palier écouté par le joueur en surbrillance). Sur le récap final **et l'écran « déjà joué »** (liste de morceaux mutualisée), le même histogramme s'ouvre en pop-up au clic sur le score d'un morceau
@@ -130,6 +131,8 @@ Le joueur peut jouer le défi du jour **sans créer de compte** :
 - Un cookie HTTP-only signé porte le `Player.AuthToken` pour le reconnaître
 - Pas de leaderboard (décision délibérée — app volontairement simple, stats globales suffisent)
 - Cleanup périodique des guests inactifs > 30 jours (à implémenter — la migration `PurgeUnplayedPlayers` n'est qu'un nettoyage ponctuel des Players jamais joués, pas une purge récurrente)
+
+**Coexistence avec les comptes utilisateurs** : le jeu guest reste ouvert à tous, sans aucune fermeture d'accès — la whitelist admin (`AllowedEmails`) gate uniquement **qui peut créer/utiliser un compte lié** (login par magic link, historique/streak partagés entre appareils), pas qui peut jouer. Un guest qui ne s'intéresse jamais aux comptes n'est pas affecté ; l'icône de connexion du footer reste discrète pour ne pas le confondre.
 
 ---
 

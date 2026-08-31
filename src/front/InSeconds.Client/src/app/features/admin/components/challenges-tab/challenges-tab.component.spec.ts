@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { ChallengesTabComponent } from './challenges-tab.component';
 import { AdminStatsService } from '../../services/admin-stats.service';
-import { PlayerIdentityService } from '../../../../core/services/player-identity.service';
+import { PlayerSessionService } from '../../../../core/services/player-session.service';
 import { ClipboardService } from '../../../../core/services/clipboard.service';
 
 const DEV_ID = 'aaaaaaaa-0000-0000-0000-000000000001';
@@ -20,7 +20,7 @@ describe('ChallengesTabComponent', () => {
       providers: [
         // `challengeMonth` : lu par l'effect du constructeur (reset de la surbrillance au changement de mois).
         { provide: AdminStatsService, useValue: { challengeMonth: signal('2026-08') } },
-        { provide: PlayerIdentityService, useValue: identityStub },
+        { provide: PlayerSessionService, useValue: identityStub },
         { provide: ClipboardService, useValue: clipboardStub },
       ],
     });
