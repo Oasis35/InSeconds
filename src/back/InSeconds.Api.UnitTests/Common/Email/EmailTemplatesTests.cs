@@ -55,6 +55,28 @@ public sealed class EmailTemplatesTests
     {
         var (subject, _) = WhitelistInvitationEmailTemplate.Build(MagicLinkUrl);
 
-        subject.Should().Be("Tu es invité·e sur IN//SECONDS");
+        subject.Should().Be("Tu es invité·e à tester les comptes IN//SECONDS");
+    }
+
+    [Theory]
+    [InlineData("magic-link")]
+    [InlineData("whitelist-invitation")]
+    public void Render_SubstitueLeLienEtNeLaissePasDeJeton(string template)
+    {
+        var html = EmailTemplateRenderer.Render(
+            template,
+            new Dictionary<string, string> { ["MAGIC_LINK_URL"] = MagicLinkUrl });
+
+        html.Should().Contain("<!DOCTYPE html>");
+        html.Should().Contain(MagicLinkUrl);
+        html.Should().NotContain("{{MAGIC_LINK_URL}}");
+    }
+
+    [Fact]
+    public void Render_TemplateInconnu_Leve()
+    {
+        var act = () => EmailTemplateRenderer.Render("does-not-exist", new Dictionary<string, string>());
+
+        act.Should().Throw<InvalidOperationException>();
     }
 }

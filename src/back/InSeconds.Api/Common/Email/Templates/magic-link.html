@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
+<title>Ton lien de connexion IN//SECONDS</title>
+<!--[if mso]>
+<xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml>
+<![endif]-->
+<style>
+  /* Fond repris tel quel de src/styles.scss — .da-bg / .da-grid / .scanlines.
+     Les clients qui suppriment <style> (Outlook) retombent sur bgcolor="#0a0612". */
+  :root{
+    --rgb-bg:10 6 18;
+    --rgb-accent-2:0 229 255;
+    --rgb-violet:168 85 247;
+  }
+  .da-bg{
+    background:radial-gradient(circle at 50% -8%, rgb(var(--rgb-violet) / 0.12), transparent 55%), rgb(var(--rgb-bg));
+    overflow-x:clip;
+  }
+  .da-decor{position:relative;}
+  .da-grid{
+    position:absolute;
+    inset:0;
+    overflow:hidden;
+    opacity:0.5;
+    pointer-events:none;
+  }
+  .da-grid::before{
+    content:'';
+    position:absolute;
+    inset:0;
+    background-image:
+      linear-gradient(rgb(var(--rgb-accent-2) / 0.16) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--rgb-accent-2) / 0.16) 1px, transparent 1px);
+    background-size:26px 18px;
+    transform:perspective(220px) rotateX(58deg) scale(2.1);
+    transform-origin:top;
+  }
+  .scanlines{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    opacity:0.03;
+    background-image:repeating-linear-gradient(0deg, #fff 0 1px, transparent 1px 3px);
+  }
+  .da-content{position:relative;}
+  /* Carte reprise des cartes du jeu : surface translucide + backdrop-blur,
+     bordure hairline à 18%, radius asymétrique. Fallback bgcolor pour Outlook. */
+  .card{
+    background:rgb(19 10 36 / 0.6)!important;
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+    border:1px solid rgb(74 82 102 / 0.18)!important;
+  }
+  .cta{
+    background:linear-gradient(90deg,#ff8a00,#f0857a)!important;
+    box-shadow:0 0 16px rgb(240 133 122 / 0.55), 0 0 32px rgb(240 133 122 / 0.25);
+  }
+  .panel{background:rgb(28 16 51 / 0.7)!important;}
+  .hairline{background:rgb(74 82 102 / 0.3)!important;}
+  @media only screen and (max-width:620px){
+    .container{width:100%!important}
+    .px{padding-left:28px!important;padding-right:28px!important}
+    .h1{font-size:26px!important;line-height:32px!important}
+  }
+</style>
+</head>
+<body class="da-bg" bgcolor="#0a0612" style="margin:0;padding:0;background-color:#0a0612;">
+<span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;mso-hide:all;">Ton lien de connexion arrive — valable 15 minutes, un seul clic et tu joues.</span>
+
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="da-bg" bgcolor="#0a0612" style="background-color:#0a0612;">
+<tr>
+<td align="center" class="da-decor" style="padding:0;">
+
+  <div class="da-grid"></div>
+  <div class="scanlines"></div>
+
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" class="container da-content" style="width:600px;max-width:600px;">
+
+    <tr>
+      <td align="center" style="padding:48px 24px 40px 24px;">
+        <span style="font-family:Tahoma,Verdana,Arial,sans-serif;font-size:15px;font-weight:bold;letter-spacing:3px;color:#e8ecf4;mso-line-height-rule:exactly;line-height:20px;">IN<span style="color:#f0857a;">//</span>SECONDS</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td style="padding:0 12px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="card" bgcolor="#130a24" style="width:100%;background-color:#130a24;border:1px solid #2a2542;border-radius:28px 8px 28px 8px;">
+          <tr>
+            <td class="px" style="padding:52px 48px 0 48px;">
+              <p class="h1" style="margin:0 0 20px 0;font-family:Tahoma,Verdana,Arial,sans-serif;font-size:30px;font-weight:bold;letter-spacing:-0.5px;color:#e8ecf4;mso-line-height-rule:exactly;line-height:36px;">Connexion</p>
+              <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;color:#9aa3b8;mso-line-height-rule:exactly;line-height:28px;">Clique sur le bouton ci-dessous pour te connecter.</p>
+            </td>
+          </tr>
+          <tr><td height="36" style="height:36px;line-height:36px;font-size:0;">&nbsp;</td></tr>
+          <tr>
+            <td class="px" align="center" style="padding:8px 48px 0 48px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;">
+              <tr>
+                <td align="center" class="cta" bgcolor="#e8703f" style="border-radius:999px;background-color:#e8703f;">
+                  <a href="{{MAGIC_LINK_URL}}" style="display:block;padding:18px 24px;font-family:Tahoma,Verdana,Arial,sans-serif;font-size:15px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;color:#ffffff;text-decoration:none;mso-line-height-rule:exactly;line-height:20px;">Se connecter</a>
+                </td>
+              </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td class="px" align="center" style="padding:16px 48px 0 48px;">
+              <p style="margin:0;font-family:Tahoma,Verdana,Arial,sans-serif;font-size:11px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;color:#6f778c;mso-line-height-rule:exactly;line-height:18px;">Expire dans <span style="color:#00e5ff;">15 minutes</span></p>
+            </td>
+          </tr>
+          <tr>
+            <td class="px" style="padding:36px 48px 0 48px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;">
+              <tr><td height="1" class="hairline" bgcolor="#2a2542" style="height:1px;line-height:1px;font-size:0;">&nbsp;</td></tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td class="px" style="padding:24px 48px 0 48px;">
+              <p style="margin:0 0 8px 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#6f778c;mso-line-height-rule:exactly;line-height:20px;">Le bouton ne fonctionne pas&nbsp;? Copie ce lien dans ton navigateur&nbsp;:</p>
+              <p style="margin:0;font-family:'Courier New',Courier,monospace;font-size:12px;word-break:break-all;mso-line-height-rule:exactly;line-height:20px;"><a href="{{MAGIC_LINK_URL}}" style="color:#00e5ff;text-decoration:underline;">{{MAGIC_LINK_URL}}</a></p>
+            </td>
+          </tr>
+          <tr>
+            <td class="px" style="padding:24px 48px 52px 48px;">
+              <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#6f778c;mso-line-height-rule:exactly;line-height:22px;">Si tu n'es pas à l'origine de cette demande, ignore cet e-mail — aucun compte ne sera créé et rien ne changera.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr>
+      <td align="center" style="padding:36px 24px 52px 24px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6f778c;mso-line-height-rule:exactly;line-height:20px;">
+        Le blind test musical quotidien.<br>
+        <a href="https://inseconds.cc" style="color:#8f97ab;text-decoration:underline;">inseconds.cc</a>
+        &nbsp;·&nbsp;
+        <a href="mailto:contact@inseconds.cc" style="color:#8f97ab;text-decoration:underline;">contact@inseconds.cc</a>
+      </td>
+    </tr>
+  </table>
+
+</td>
+</tr>
+</table>
+</body>
+</html>

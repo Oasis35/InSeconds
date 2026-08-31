@@ -273,6 +273,8 @@ Résout un `Player` guest à partir du cookie HTTP-only signé. `SameSite=None; 
 
 Envoi d'emails (lien de connexion, invitation whitelist) via **l'API HTTP Resend** (plan gratuit), `HttpClient` typé configuré une fois à l'enregistrement (`BaseAddress` + header `Authorization: Bearer {ApiKey}`, cf. `Program.cs`). Remplace l'ancien envoi SMTP direct/MailKit (compte Gmail + alias "Envoyer en tant que"), abandonné pour la délivrabilité et la simplicité de config (plus de mot de passe d'application à gérer). `NullEmailSender` (Dev/Testing) logue le lien au lieu d'un vrai envoi et l'enregistre dans `TestEmailCapture` pour les tests E2E/intégration (le token brut n'étant jamais en base, c'est l'unique moyen de le récupérer côté test).
 
+Les **corps HTML** des emails (lien de connexion, invitation whitelist) vivent dans `Common/Email/Templates/*.html` — documents HTML complets à la DA du jeu, marqués `<EmbeddedResource>` (compilés dans la DLL, rien à copier au déploiement). `EmailTemplateRenderer.Render(name, vars)` charge le fichier (cache par nom) et remplace le jeton `{{MAGIC_LINK_URL}}` (substitution littérale, pas de moteur de template). Les classes `MagicLinkEmailTemplate` / `WhitelistInvitationEmailTemplate` exposent `Build(url) → (Subject, Html)` : sujet en `const`, HTML délégué au renderer.
+
 ### OriginValidator
 
 `IsTrustedOrigin(ctx, allowedOrigins)` — anti-CSRF léger, vérifie `Origin`/`Referer` contre `Cors:AllowedOrigins` déjà existant. Appliqué sur `VerifyMagicLink` (cookie posé sur un `POST`) et sur l'authentification admin (`LoginEndpoint.IsAdminAuthenticated`, défense en profondeur).
