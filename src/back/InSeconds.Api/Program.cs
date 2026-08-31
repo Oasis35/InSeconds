@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using FluentValidation;
 using InSeconds.Api.Common.Auth;
 using InSeconds.Api.Common.Email;
@@ -137,9 +138,9 @@ builder.Services.AddScoped<ICookieAuthService>(sp => new CookieAuthService(
 builder.Services.AddScoped<IMagicLinkTokenService, MagicLinkTokenService>();
 builder.Services.AddScoped<IAccountLinkingService, AccountLinkingService>();
 
-// SmtpEmailSender hors Dev/Testing (config réelle requise) ; NullEmailSender sinon
+// ResendEmailSender hors Dev/Testing (config réelle requise) ; NullEmailSender sinon
 // (aucune config nécessaire pour développer — logue le contenu de l'email).
-builder.Services.AddOptions<SmtpOptions>().BindConfiguration("Smtp");
+builder.Services.AddOptions<ResendOptions>().BindConfiguration("Resend");
 if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing"))
 {
     builder.Services.AddSingleton<TestEmailCapture>();
@@ -147,7 +148,12 @@ if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Te
 }
 else
 {
-    builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
+    builder.Services.AddHttpClient<IEmailSender, ResendEmailSender>((sp, client) =>
+    {
+        var resend = sp.GetRequiredService<IOptions<ResendOptions>>().Value;
+        client.BaseAddress = new Uri("https://api.resend.com/");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", resend.ApiKey);
+    });
 }
 
 builder.Services.AddOpenApi();

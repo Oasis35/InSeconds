@@ -143,11 +143,11 @@
 > Le jeu guest reste 100% ouvert — la whitelist gate uniquement qui peut créer/utiliser un compte lié. Détail complet : `CLAUDE.md` racine ("Comptes utilisateurs — whitelist admin + login par magic link") et `src/back/InSeconds.Api/CLAUDE.md` (`Features/Auth/`, `Features/Admin/AllowedEmails/`, `Common/Auth/AccountLinkingService`).
 
 - [x] Whitelist admin des emails autorisés (`Features/Admin/AllowedEmails/`, CQRS complet) + email d'invitation automatique (7 jours)
-- [x] Login par magic link (15 min, `RequestMagicLink`/`VerifyMagicLink`), envoi SMTP direct (MailKit, pas de service tiers)
+- [x] Login par magic link (15 min, `RequestMagicLink`/`VerifyMagicLink`), envoi via l'API Resend (plan gratuit)
 - [x] `AccountLinkingService` — conversion du guest courant à la première connexion, résolution multi-appareils aux suivantes (terrain préparé pour un futur Google OAuth)
 - [x] Anti-CSRF (`OriginValidator`) sur `VerifyMagicLink` et l'authentification admin
 - [x] Connexion rapide dev (3 comptes seed, `Features/Auth/DevLogin/`, jamais en Testing/Production)
-- [x] Front : `PlayerSessionService`, écrans `/login` + `/login/verify`, icône de connexion discrète dans le footer, onglet admin "Emails autorisés", diagnostic "Test SMTP", pseudo dans les chips joueur admin
+- [x] Front : `PlayerSessionService`, écrans `/login` + `/login/verify`, icône de connexion discrète dans le footer, onglet admin "Emails autorisés", diagnostic "Test email", pseudo dans les chips joueur admin
 
 ## 🚧 Rétention & Engagement
 

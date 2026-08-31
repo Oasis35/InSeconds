@@ -269,9 +269,9 @@ Résout un `Player` guest à partir du cookie HTTP-only signé. `SameSite=None; 
 
 `IMagicLinkTokenService.IssueAsync(email, validity, ct)` — génère un token (`MagicLinkTokenGenerator.GenerateRawToken()`, `RandomNumberGenerator` 32 bytes → base64url), stocke son hash SHA-256 (**jamais le token brut**) avec une expiration, retourne l'URL de vérification complète. Mutualisé entre le login self-service (15 min) et l'invitation admin (7 jours).
 
-### SmtpEmailSender / IEmailSender
+### ResendEmailSender / IEmailSender
 
-Envoi d'emails (lien de connexion, invitation whitelist) en **SMTP direct** via MailKit — pas de service tiers (Brevo, etc.) : un compte Gmail existant avec un alias "Envoyer en tant que" `noreply@inseconds.cc`. `NullEmailSender` (Dev/Testing) logue le lien au lieu d'un vrai envoi et l'enregistre dans `TestEmailCapture` pour les tests E2E/intégration (le token brut n'étant jamais en base, c'est l'unique moyen de le récupérer côté test).
+Envoi d'emails (lien de connexion, invitation whitelist) via **l'API HTTP Resend** (plan gratuit), `HttpClient` typé configuré une fois à l'enregistrement (`BaseAddress` + header `Authorization: Bearer {ApiKey}`, cf. `Program.cs`). Remplace l'ancien envoi SMTP direct/MailKit (compte Gmail + alias "Envoyer en tant que"), abandonné pour la délivrabilité et la simplicité de config (plus de mot de passe d'application à gérer). `NullEmailSender` (Dev/Testing) logue le lien au lieu d'un vrai envoi et l'enregistre dans `TestEmailCapture` pour les tests E2E/intégration (le token brut n'étant jamais en base, c'est l'unique moyen de le récupérer côté test).
 
 ### OriginValidator
 

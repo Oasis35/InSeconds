@@ -335,7 +335,7 @@
       "saveCooldown": "Enregistrer",
       "cooldownSaved": "Cooldown mis à jour.",
       "cooldownError": "Erreur lors de la mise à jour.",
-      "testSmtp": "Test SMTP",
+      "testSmtp": "Test email",
       "testSmtpPlaceholder": "email@exemple.com",
       "sendTestEmail": "Envoyer un email de test",
       "testSmtpSuccess": "Email de test envoyé.",
