@@ -1,13 +1,27 @@
 import { TestBed } from '@angular/core/testing';
+import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { AdminStateService } from './admin-state.service';
 
 describe('AdminStateService', () => {
   let service: AdminStateService;
+  let routerNavigateSpy: jasmine.Spy;
 
-  beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [AdminStateService] });
+  function setup(queryParams: Record<string, string> = {}): void {
+    routerNavigateSpy = jasmine.createSpy('navigate').and.resolveTo(true);
+    TestBed.configureTestingModule({
+      providers: [
+        AdminStateService,
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { queryParamMap: convertToParamMap(queryParams) } },
+        },
+        { provide: Router, useValue: { navigate: routerNavigateSpy } },
+      ],
+    });
     service = TestBed.inject(AdminStateService);
-  });
+  }
+
+  beforeEach(() => setup());
 
   describe('état par défaut', () => {
     it("l'onglet actif est 'dashboard'", () => {
@@ -54,6 +68,34 @@ describe('AdminStateService', () => {
       service.setActiveTab('pool');
       service.setActiveTab('pool');
       expect(service.hasVisited('pool')).toBeTrue();
+    });
+  });
+
+  describe('restauration depuis le paramètre d’URL ?tab=', () => {
+    it("initialise l'onglet actif depuis ?tab= s'il est valide", () => {
+      setup({ tab: 'pool' });
+      expect(service.activeTab()).toBe('pool');
+    });
+
+    it("marque l'onglet restauré comme visité (F5 sur cet onglet ne recharge pas la page vide)", () => {
+      setup({ tab: 'defis' });
+      expect(service.hasVisited('defis')).toBeTrue();
+    });
+
+    it('retombe sur dashboard si ?tab= est absent ou invalide', () => {
+      setup({ tab: 'not-a-real-tab' });
+      expect(service.activeTab()).toBe('dashboard');
+    });
+  });
+
+  describe('synchronisation de l’URL', () => {
+    it("setActiveTab() met à jour le paramètre d'URL ?tab= (replaceUrl, sans polluer l'historique)", () => {
+      service.setActiveTab('pool');
+      expect(routerNavigateSpy).toHaveBeenCalledWith([], jasmine.objectContaining({
+        queryParams: { tab: 'pool' },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      }));
     });
   });
 
