@@ -2,10 +2,10 @@ import { Injectable, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AdminTab } from '../admin.models';
 
-const VALID_TABS: readonly AdminTab[] = ['dashboard', 'pool', 'defis', 'allowedEmails', 'actions'];
+const VALID_TABS: ReadonlySet<AdminTab> = new Set<AdminTab>(['dashboard', 'pool', 'defis', 'allowedEmails', 'actions']);
 
 function isAdminTab(value: string | null): value is AdminTab {
-  return VALID_TABS.includes(value as AdminTab);
+  return VALID_TABS.has(value as AdminTab);
 }
 
 @Injectable()

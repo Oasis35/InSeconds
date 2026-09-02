@@ -8,6 +8,7 @@ describe('AdminStateService', () => {
 
   function setup(queryParams: Record<string, string> = {}): void {
     routerNavigateSpy = jasmine.createSpy('navigate').and.resolveTo(true);
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         AdminStateService,
