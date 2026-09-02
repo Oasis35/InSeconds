@@ -253,7 +253,7 @@ public sealed class SettingsService(IOptions<AppSettings> options)
 
 ### CookieAuthService
 
-Résout un `Player` guest à partir du cookie HTTP-only signé. `SameSite=None; Secure=true` en prod (cross-origin Northflank). Deux méthodes sur `ICookieAuthService` :
+Résout un `Player` guest à partir du cookie HTTP-only signé. `SameSite=Lax; Secure=true` en prod (front `inseconds.cc`/API `api.inseconds.cc` same-site depuis le passage au domaine public ; `SameSite=None` historiquement, sur les anciennes URLs `code.run` cross-site — cf. CLAUDE.md racine, piège 23). Deux méthodes sur `ICookieAuthService` :
 
 - `ResolveOrCreatePlayerAsync` — crée un `Player` si aucun n'est résolu (et pose le cookie). Utilisé par les points d'entrée qui doivent en créer un à la demande : `StartSession` (démarrer une partie), `GetCurrentPlayer` (`/api/players/me`, appelé à chaque page vue côté joueur via `PlayerSessionService`), `VerifyMagicLink`/`DevLogin` (se connecter est une action délibérée).
 - `TryResolvePlayerAsync` — résout sans jamais créer, retourne `null` sinon. Utilisé par `PlayerAuthMiddleware` sur toutes les autres routes joueur (settings, autocomplete, stats/today...) — **création paresseuse du Player** (2026-08-21) : un simple chargement de page ne crée plus de ligne `Players` en base.

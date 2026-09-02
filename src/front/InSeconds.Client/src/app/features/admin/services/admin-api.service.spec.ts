@@ -1,6 +1,7 @@
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
 import { AdminHttpService } from './admin-http.service';
 import { AdminApiService } from './admin-api.service';
 import { AdminStateService } from './admin-state.service';
@@ -256,6 +257,7 @@ describe('AdminApiService — delegation', () => {
         AdminApiService,
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([]),
       ],
     });
     apiService = TestBed.inject(AdminApiService);
