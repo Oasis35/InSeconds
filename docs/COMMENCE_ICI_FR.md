@@ -59,7 +59,7 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - Vertical slices `Sessions/StartSession` + `Sessions/SubmitAnswer` (scoring serveur + stats par morceau)
 - Stats après chaque réponse : sur l'écran de révélation, histogramme « en combien de temps les autres ont trouvé » (une barre par palier d'écoute = nb de joueurs ayant trouvé, + une barre « ✗ » pour ceux qui n'ont pas trouvé ; colonne du palier écouté par le joueur en surbrillance). Sur le récap final **et l'écran « déjà joué »** (liste de morceaux mutualisée), le même histogramme s'ouvre en pop-up au clic sur le score d'un morceau
 - Services Common : `TextNormalizer` (Levenshtein), `ScoreCalculator`, `SettingsService`
-- `CookieAuthService` — résout/crée Player guest, cookie HttpOnly `SameSite=None` en prod
+- `CookieAuthService` — résout/crée Player guest, cookie HttpOnly `SameSite=Lax` en prod (cf. CLAUDE.md racine, piège 23)
 - **Création paresseuse du Player** (2026-08-21) — un simple chargement de page ne crée plus de ligne `Players` : seuls `POST /api/sessions` (démarrer une partie) et `GET /api/players/me` (admin) créent un Player à la demande ; `PlayerAuthMiddleware` se contente de résoudre un Player existant sans jamais en créer. Migration `PurgeUnplayedPlayers` (one-shot) pour nettoyer les Players existants sans aucune session. **Depuis** : la création de la session elle-même est aussi décalée — l'écran d'accueil est piloté par un peek lecture seule `GET /api/sessions/today` (ne crée rien), `POST /api/sessions` n'est appelé qu'au clic « Commencer à jouer » / « Reprendre ».
 - `playerAuthInterceptor` Angular — `withCredentials: true` sur toutes les requêtes joueur
 - `DeezerClient` — recherche + preview + extraction `CoverHash`

@@ -1,6 +1,6 @@
 # InSeconds — Liste des Tâches
 
-> Mis à jour le 2026-08-29.
+> Mis à jour le 2026-09-02.
 
 ## ✅ Bootstrap projet
 
@@ -18,7 +18,7 @@
 - [x] Settings chargés depuis la BD via `AppDbConfigurationSource` → `IOptions<AppSettings>`
 - [x] `TextNormalizer` (Levenshtein) + tests unitaires
 - [x] `ScoreCalculator` (paliers `decimal`, scoring partiel — malus de prolongation retiré le 2026-07-17, voir plus bas) + tests unitaires
-- [x] `CookieAuthService` — guest auto, cookie HttpOnly `SameSite=None` en prod
+- [x] `CookieAuthService` — guest auto, cookie HttpOnly `SameSite=Lax` en prod (cf. CLAUDE.md racine, piège 23)
 - [x] `DeezerClient` — recherche + preview + extraction `CoverHash`
 - [x] `BackgroundService` génération défi quotidien (minuit UTC, retry toutes les 10 min en cas d'échec — planification via `DailySchedule.NextUtcHour` + `DelayUntilAsync`, attente sur cible d'horloge murale : un réveil anticipé de `Task.Delay` ne saute plus de jour, incident du 2026-07-13 / piège 19)
 - [x] **Génération paresseuse dans `StartSession`** (2026-07-14) — si le défi du jour manque, le premier joueur le régénère à la volée (sélection déterministe, course gérée par la contrainte unique sur `Date`) ; 503 « pas de défi » seulement si pool insuffisant. Reset E2E : paramètre `emptyPool=true`
@@ -112,6 +112,7 @@
 - [x] **`AudioPlayerService.extend()` branché depuis `listenMore()`** (2026-07-16) — temps restant et progression basés sur `audio.currentTime` réel. Redesign complet le 2026-07-17 : voir l'entrée « Refonte de la prolongation » ci-dessus (plus de limite à une seule prolongation, plus de malus de score) — voir [`GAMEPLAY_RULES_FR.md`](GAMEPLAY_RULES_FR.md)
 - [x] **Indicateur joueurs par défi + ID navigateur en admin** (2026-08-15) — `ChallengesTabComponent` affiche un chip ID court par joueur sous chaque défi (clic = copie l'ID complet, surbrillance auto + libellé « toi » si l'ID correspond au navigateur courant) ; `BrowserIdComponent` (`shared/browser-id/`, sans `@Input`/`@Output`) affiche l'ID court du navigateur + bouton copier, monté une seule fois dans `admin.component.html` (visible sur l'écran de login et dans le shell admin) ; `PlayerIdentityService` (`core/`, root) charge `GET /api/players/me` une seule fois par session ; `ClipboardService` (`core/`, root) mutualise `navigator.clipboard.writeText`, réutilisé par `game.component.copyToClipboard` (comportement de partage de score inchangé)
 - [x] **Chargement paresseux par onglet admin** (2026-08-29) — `activeTab` déplacé de `AdminComponent` vers `AdminStateService` (+ `Set` `visitedTabs`, `hasVisited`, `setActiveTab`). Les `rxResource` `poolTracks`/`challengeStats`/`challenges` d'`AdminApiService` restent `idle` (`params → undefined`) tant que `authenticated()` est faux **ou** que l'onglet concerné n'a pas été ouvert ; `stats` (Dashboard) gardé sur `authenticated()` seul. À l'ouverture de l'admin : 1 seul appel (`/api/admin/stats`, léger) au lieu de 3, zéro avant login. Nouveau `challengeStatsResource` → `GET /api/admin/challenge-stats` (endpoint scindé), même trigger de reload que l'historique. Badges d'onglets Pool/Défis : libellé sans `(N)` tant que non visité (`admin.tabs.poolPlain`/`challengesPlain`). Tests : `admin-state.service.spec.ts` créé (10 cas — défaut, `setActiveTab` sticky, triggers), `admin-api.service.spec.ts` +1 (`getChallengeStats` distinct de `/challenges`), stub `admin-stats.service.spec.ts` mis à jour, +2 E2E admin (appels réseau différés + compteur d'onglet différé) → 179 tests unitaires front + 114 intégration + 63 E2E OK
+- [x] **Onglet admin actif persisté dans l'URL** (2026-09-02) — `AdminStateService` injecte `ActivatedRoute`/`Router` : `activeTab` est initialisé depuis `?tab=` au chargement (validé contre la liste des onglets connus, retombe sur `dashboard` sinon — et marqué visité d'office, donc son chargement paresseux fonctionne dès le F5) ; `setActiveTab` synchronise ensuite l'URL via `router.navigate([], {queryParams:{tab}, queryParamsHandling:'merge', replaceUrl:true})` (`replaceUrl` pour ne pas empiler une entrée d'historique par clic d'onglet). Corrige un F5 qui ramenait toujours à Dashboard. Tests `admin-state.service.spec.ts` +5 cas (restauration depuis l'URL, fallback si `?tab=` invalide, synchronisation au clic) ; `admin-api.service.spec.ts` (bloc "delegation") et `admin-state.service.spec.ts` fournissent désormais `ActivatedRoute`/`Router` explicitement
 
 ## ✅ Déploiement
 
@@ -148,6 +149,7 @@
 - [x] Anti-CSRF (`OriginValidator`) sur `VerifyMagicLink` et l'authentification admin
 - [x] Connexion rapide dev (3 comptes seed, `Features/Auth/DevLogin/`, jamais en Testing/Production)
 - [x] Front : `PlayerSessionService`, écrans `/login` + `/login/verify`, icône de connexion discrète dans le footer, onglet admin "Emails autorisés", diagnostic "Test email", pseudo dans les chips joueur admin
+- [x] **Cookie `authToken` en `SameSite=Lax` en prod** (2026-09-02) — front (`inseconds.cc`) et API (`api.inseconds.cc`) same-site depuis le passage au domaine public, `SameSite=None` n'était plus nécessaire et exposait le cookie (durée nominale 90 jours) à la purge agressive des navigateurs sur les cookies cross-site (Safari ITP notamment) → symptôme rapporté : reconnexion quasi quotidienne par magic link. Détail : `CLAUDE.md` racine, piège 23
 
 ## 🚧 Rétention & Engagement
 
