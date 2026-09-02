@@ -79,7 +79,7 @@ public sealed class CookieAuthService(
         httpContext.Response.Cookies.Append(CookieName, protectedValue, new CookieOptions
         {
             HttpOnly = true,
-            SameSite = (env.IsDevelopment() || env.IsEnvironment("Testing")) ? SameSiteMode.Strict : SameSiteMode.None,
+            SameSite = (env.IsDevelopment() || env.IsEnvironment("Testing")) ? SameSiteMode.Strict : SameSiteMode.Lax,
             Secure   = !(env.IsDevelopment() || env.IsEnvironment("Testing")),
             Expires  = DateTimeOffset.UtcNow.Add(CookieLifetime),
             MaxAge   = CookieLifetime,
@@ -91,7 +91,7 @@ public sealed class CookieAuthService(
         httpContext.Response.Cookies.Delete(CookieName, new CookieOptions
         {
             HttpOnly = true,
-            SameSite = (env.IsDevelopment() || env.IsEnvironment("Testing")) ? SameSiteMode.Strict : SameSiteMode.None,
+            SameSite = (env.IsDevelopment() || env.IsEnvironment("Testing")) ? SameSiteMode.Strict : SameSiteMode.Lax,
             Secure   = !(env.IsDevelopment() || env.IsEnvironment("Testing")),
         });
     }
