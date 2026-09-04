@@ -4,6 +4,12 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Server GC réserve un tas par cœur CPU détecté et consomme beaucoup de mémoire par avance :
+         inadapté à un conteneur à mémoire très restreinte (plan gratuit Northflank). Workstation GC
+         (concurrent) a un pic mémoire nettement plus bas, au prix d'un débit moindre sous forte charge
+         concurrente — acceptable ici vu le trafic. -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
   </PropertyGroup>
 
   <ItemGroup>

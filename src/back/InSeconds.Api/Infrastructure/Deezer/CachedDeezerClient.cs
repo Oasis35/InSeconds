@@ -37,7 +37,7 @@ public sealed partial class CachedDeezerClient(DeezerClient deezer, IMemoryCache
         {
             var ttl = ComputeTtl(preview);
             if (ttl > TimeSpan.Zero)
-                cache.Set(key, preview, ttl);
+                cache.Set(key, preview, new MemoryCacheEntryOptions { Size = 1, AbsoluteExpirationRelativeToNow = ttl });
         }
 
         return preview;
@@ -69,7 +69,7 @@ public sealed partial class CachedDeezerClient(DeezerClient deezer, IMemoryCache
         // Une liste vide peut être un échec réseau (DeezerClient renvoie [] dans les deux cas) :
         // on ne cache que les résultats non vides.
         if (results.Count > 0)
-            cache.Set(key, results, SearchTtl);
+            cache.Set(key, results, new MemoryCacheEntryOptions { Size = 1, AbsoluteExpirationRelativeToNow = SearchTtl });
 
         return results;
     }

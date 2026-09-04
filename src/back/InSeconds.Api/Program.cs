@@ -99,7 +99,7 @@ builder.Services.AddHostedService<RefreshPreviewStatusService>();
 builder.Services.AddSingleton<ScoreCalculator>();
 builder.Services.AddSingleton<TextNormalizer>();
 
-builder.Services.AddMemoryCache();
+builder.Services.AddMemoryCache(options => options.SizeLimit = 2000);
 builder.Services.AddTransient<CachedDeezerClient>();
 
 var deezerHttpBuilder = builder.Services.AddHttpClient<DeezerClient>(client =>
@@ -287,7 +287,7 @@ static string BuildNpgsqlConnectionString(string uri)
     var u = new Uri(uri);
     var userInfo = u.UserInfo.Split(':');
     var db = u.AbsolutePath.TrimStart('/').Split('?')[0];
-    return $"Host={u.Host};Port={u.Port};Database={db};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+    return $"Host={u.Host};Port={u.Port};Database={db};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true;Maximum Pool Size=20;Timeout=15;Command Timeout=30;Keepalive=30";
 }
 
 // Rend Program accessible à WebApplicationFactory dans les tests d'intégration
