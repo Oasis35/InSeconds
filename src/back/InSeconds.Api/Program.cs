@@ -99,7 +99,7 @@ builder.Services.AddHostedService<RefreshPreviewStatusService>();
 builder.Services.AddSingleton<ScoreCalculator>();
 builder.Services.AddSingleton<TextNormalizer>();
 
-builder.Services.AddMemoryCache();
+builder.Services.AddMemoryCache(options => options.SizeLimit = 2000);
 builder.Services.AddTransient<CachedDeezerClient>();
 
 var deezerHttpBuilder = builder.Services.AddHttpClient<DeezerClient>(client =>
