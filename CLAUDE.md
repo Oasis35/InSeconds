@@ -267,6 +267,17 @@ Runners Ubuntu, ~5-7 min par run (jobs `back`/`front`/`unit-tests-front`/`integr
 - Si un job casse sur du formatage / lint (futur `dotnet format` ou `ng lint`), corriger en local avant de re-pusher — ne pas désactiver le check
 - Repo sur `Oasis35/InSeconds` (GitHub). Tier gratuit : 2000 min/mois si privé, illimité si public
 
+### Dependabot (`.github/dependabot.yml`)
+
+**Cible `main` directement** (plus de branche d'intégration séparée `feat/dependabot` — retirée le 2026-09-08 : elle n'apportait rien, chaque PR Dependabot passe déjà par la CI complète comme n'importe quelle PR vers `main`, et devoir merger `feat/dependabot` → `main` à part était une étape manuelle en plus sans bénéfice).
+
+**Groupes par risque, pas un seul `-all` fourre-tout** — l'ancien setup groupait tout npm (ou tout nuget) dans une seule PR mensuelle, ce qui a cassé `npm ci` une fois : le bump groupé npm-all a embarqué `typescript` 7 et `jasmine-core` 7, tous deux au-delà de ce que le reste de la toolchain supportait (peer dep `@angular/build` sur TypeScript, API dépréciées retirées côté Jasmine/Karma), nécessitant un repin manuel après coup (cf. commit `bea8548`, PR #119). Setup actuel :
+- **npm** : groupe `angular` (tous les `@angular/*`, minor+patch uniquement) — ces paquets ont des peer deps strictement alignées entre eux (cf. piège 15 racine), donc toujours groupés pour ne jamais bumper partiellement. Groupe `npm-minor-patch` pour le reste (minor+patch). **Les majeures ne sont jamais groupées** (ni Angular ni le reste) — chacune part dans sa propre PR, review individuelle obligatoire (c'est précisément une majeure isolée — `typescript`/`jasmine-core` — qui avait cassé la CI la dernière fois).
+- **nuget** : même logique (`nuget-minor-patch` groupé, majeures individuelles).
+- **github-actions** : ajouté (pas groupé, peu de mises à jour attendues) — tient à jour les versions des actions (`actions/checkout@v4`, etc.), complète le durcissement CI du piège Sonar `S8543`/`S6505` (versions non épinglées, cf. plus haut).
+
+**Hebdomadaire** (au lieu de mensuel) + `open-pull-requests-limit: 10` (au lieu de 2) — des PR plus petites et plus fréquentes plutôt qu'un gros lot mensuel difficile à review, la cible `main` directe assume plusieurs PR ouvertes en parallèle sans bottleneck.
+
 ## Conventions .NET
 
 - **Solutions au format `.slnx`** (jamais `.sln` classique). Créer avec `dotnet new sln --format slnx`

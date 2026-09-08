@@ -2,22 +2,48 @@ version: 2
 updates:
   - package-ecosystem: "nuget"
     directory: "/"
-    target-branch: "feat/dependabot"
     schedule:
-      interval: "monthly"
-    open-pull-requests-limit: 2
+      interval: "weekly"
+    open-pull-requests-limit: 10
     groups:
-      nuget-all:
+      nuget-minor-patch:
         patterns:
           - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    # Les majeures ne sont jamais groupées : chacune part dans sa propre PR,
+    # à review individuellement (changement de comportement potentiel).
 
   - package-ecosystem: "npm"
     directory: "/src/front/InSeconds.Client"
-    target-branch: "feat/dependabot"
     schedule:
-      interval: "monthly"
-    open-pull-requests-limit: 2
+      interval: "weekly"
+    open-pull-requests-limit: 10
     groups:
-      npm-all:
+      angular:
+        # Les paquets @angular/* doivent toujours bouger ensemble (peer deps
+        # strictement alignées, cf. piège 15 du CLAUDE.md racine) — groupe dédié
+        # pour qu'un bump partiel ne casse jamais `npm ci`.
+        patterns:
+          - "@angular/*"
+        update-types:
+          - "minor"
+          - "patch"
+      npm-minor-patch:
         patterns:
           - "*"
+        exclude-patterns:
+          - "@angular/*"
+        update-types:
+          - "minor"
+          - "patch"
+    # Les majeures (npm et @angular/*) ne sont jamais groupées : chacune part
+    # dans sa propre PR. Une majeure peut dépasser ce que le reste de la
+    # toolchain supporte (ex: typescript 7 / jasmine-core 7, cf. #119) —
+    # mieux vaut le découvrir sur une PR isolée que noyé dans un gros bump.
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
