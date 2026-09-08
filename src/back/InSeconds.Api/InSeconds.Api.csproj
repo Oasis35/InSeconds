@@ -4,6 +4,13 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Server GC (défaut du SDK Web) dimensionne son tas par cœur et retient la mémoire
+         plutôt que de la rendre à l'OS — inadapté au conteneur Northflank (512 MB / 0,2 vCPU
+         partagé), où ça pousse l'usage mémoire à saturation du plafond en continu (OOMKilled
+         observé en prod, 2026-09-08). Workstation GC a une empreinte bien plus faible, seul un
+         débit légèrement inférieur en contrepartie — sans impact perceptible vu le trafic. -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
   </PropertyGroup>
 
   <ItemGroup>

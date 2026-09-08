@@ -99,7 +99,11 @@ builder.Services.AddHostedService<RefreshPreviewStatusService>();
 builder.Services.AddSingleton<ScoreCalculator>();
 builder.Services.AddSingleton<TextNormalizer>();
 
-builder.Services.AddMemoryCache();
+// SizeLimit par sécurité : évite qu'un pool de morceaux ou un volume de recherches
+// admin/joueur en forte hausse ne fasse grossir le cache sans borne avant expiration
+// du TTL (conteneur prod à seulement 512 MB, cf. piège OOM 2026-09-08). Chaque entrée
+// est comptée pour 1 (URL de preview ou petite liste de résultats de recherche).
+builder.Services.AddMemoryCache(options => options.SizeLimit = 2000);
 builder.Services.AddTransient<CachedDeezerClient>();
 
 var deezerHttpBuilder = builder.Services.AddHttpClient<DeezerClient>(client =>
