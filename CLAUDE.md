@@ -276,7 +276,7 @@ Runners Ubuntu, ~5-7 min par run (jobs `back`/`front`/`unit-tests-front`/`integr
 - **nuget** : même logique (`nuget-minor-patch` groupé, majeures individuelles).
 - **github-actions** : ajouté (pas groupé, peu de mises à jour attendues) — tient à jour les versions des actions (`actions/checkout@v4`, etc.), complète le durcissement CI du piège Sonar `S8543`/`S6505` (versions non épinglées, cf. plus haut).
 
-**Hebdomadaire** (au lieu de mensuel) + `open-pull-requests-limit: 10` (au lieu de 2) — des PR plus petites et plus fréquentes plutôt qu'un gros lot mensuel difficile à review, la cible `main` directe assume plusieurs PR ouvertes en parallèle sans bottleneck.
+**Reste mensuel** (l'hebdomadaire a été essayé puis abandonné le jour même — trop de bruit) + `open-pull-requests-limit: 5` (au lieu de 2) — juste assez pour que les groupes minor/patch et une éventuelle majeure isolée coexistent le même mois sans se bloquer mutuellement.
 
 ## Conventions .NET
 
