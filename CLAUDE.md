@@ -6,7 +6,7 @@ Instructions pour Claude quand il travaille dans ce repo. Pour la documentation 
 
 InSeconds = blind test musical quotidien. N morceaux/jour (configurable via `TracksPerChallenge`, défaut 3), l'utilisateur choisit combien de secondes il écoute (paliers : 0.5, 1, 1.5, 2, 3, 5, 10) avant de tenter artiste + titre. Moins de temps écouté = plus de points. Même défi pour tout le monde, même jour. Mode guest dispo (joue sans s'inscrire, hors classement).
 
-Stack : .NET 10 / Wolverine / EF Core / PostgreSQL côté back, Angular 22 / Tailwind v4 / SCSS côté front, Docker Compose pour back + DB. Hébergé sur **Northflank** (front + back + PostgreSQL addon). `environment.ts#appUrl` pointe vers `https://oasis35.github.io/InSeconds`, une simple page de rebond GitHub Pages vers l'URL Northflank réelle (URL plus lisible pour le partage) — le front tourne bien sur Northflank.
+Stack : .NET 10 / Wolverine / EF Core / PostgreSQL côté back, Angular 22 / Tailwind v4 / SCSS côté front, Docker Compose pour back + DB. Hébergé sur **Northflank** (front + back + PostgreSQL addon). `environment.ts#appUrl` pointe vers `https://inseconds.cc`, le nom de domaine public (front servi dessus depuis 2026-08-28). **La page de rebond GitHub Pages (`oasis35.github.io/InSeconds`) a été retirée** (2026-09-08, remplacée par le domaine public, plus lisible et plus stable) — ne pas la recréer.
 
 ## Ports (ATTENTION — non standards)
 
@@ -115,7 +115,7 @@ Angular 22 standalone + signals + ngx-translate (i18n FR/EN).
 - `src/environments/environment{,.development}.ts` : `apiUrl` + `appUrl`, swap auto via `fileReplacements`. En prod `apiUrl = https://api.inseconds.cc` (sous-domaine Northflank dédié au service `api`, CNAME Cloudflare en DNS-only vers `…dns.northflank.app`, cert Let's Encrypt géré par Northflank) — l'ancienne URL `https://p01--api--b5cnx77tvxgb.code.run` reste servie en parallèle par Northflank mais n'est plus ciblée par le front
 - `src/styles.scss` : `@use "tailwindcss";` + **variables CSS `:root`** pour toute la palette couleurs (ne pas mettre de hex en dur dans les templates)
 - `.postcssrc.json` : plugin `@tailwindcss/postcss`
-- **CORS** : le back autorise `http://localhost:5173`, `http://localhost:65075`, `https://p01--front--b5cnx77tvxgb.code.run` (URL Northflank interne du front) et `https://inseconds.cc` + `https://www.inseconds.cc` (nom de domaine public, front servi dessus depuis 2026-08-28) dans `appsettings.json` (`Cors:AllowedOrigins`) ; `oasis35.github.io` n'y figure pas volontairement car ce n'est qu'une page de rebond statique (pas d'appels API directs depuis ce domaine)
+- **CORS** : le back autorise `http://localhost:5173`, `http://localhost:65075`, `https://p01--front--b5cnx77tvxgb.code.run` (URL Northflank interne du front) et `https://inseconds.cc` + `https://www.inseconds.cc` (nom de domaine public, front servi dessus depuis 2026-08-28) dans `appsettings.json` (`Cors:AllowedOrigins`)
 - **Redirection front `code.run` → nom de domaine + pop-up favori** : `nginx.conf` (prod) renvoie un **301 vers `https://inseconds.cc`** pour toute requête dont le `Host` est `p01--front--b5cnx77tvxgb.code.run` (chemin + query préservés), en ajoutant `from=legacy` à la query (séparateur `?`/`&` géré par une directive `map $args`). Côté front, `App.checkLegacyUrlNotice()` détecte ce paramètre au boot → affiche `LegacyUrlNoticeComponent` (`features/legacy-url-notice/`, pop-up « l'adresse a changé, pense à mettre à jour ton favori », i18n `legacyUrl.*`) puis retire `from=legacy` de l'URL via `history.replaceState` (pas de ré-affichage au reload, pas de param qui fuit dans un partage). Le check CI `nginx-headers` n'est pas impacté (il interroge `localhost`, `Host` ≠ domaine `code.run`). Cette redirection garantit qu'il n'existe plus de front cross-site vis-à-vis de `api.inseconds.cc` (un client encore sur l'ancienne URL `code.run` continue d'être redirigé sans perte, sans jamais y déposer de requête cross-site authentifiée) — condition qui a permis de passer le cookie `authToken` de `SameSite=None` à `SameSite=Lax` en prod, cf. piège 23
 - **Conventions templates** : `var(--...)` pour les couleurs, `hover:` Tailwind pour les hovers (pas de `onmouseenter`/`onmouseleave` JS), `TranslatePipe` dans chaque composant affichant du texte, un composant = un dossier avec `.ts` + `.html` externes
 
@@ -266,6 +266,17 @@ Runners Ubuntu, ~5-7 min par run (jobs `back`/`front`/`unit-tests-front`/`integr
 - **Tests d'intégration** : le job `integration-tests` utilise Testcontainers (Docker requis sur le runner — GitHub Actions ubuntu-latest l'a par défaut). Pas de `services:` YAML nécessaire. Les tables `Settings`, `Tracks`, `DailyChallenges`, `DailyChallengeTracks` sont exclues du reset Respawn (données de référence du seed).
 - Si un job casse sur du formatage / lint (futur `dotnet format` ou `ng lint`), corriger en local avant de re-pusher — ne pas désactiver le check
 - Repo sur `Oasis35/InSeconds` (GitHub). Tier gratuit : 2000 min/mois si privé, illimité si public
+
+### Dependabot (`.github/dependabot.yml`)
+
+**Cible `main` directement** (plus de branche d'intégration séparée `feat/dependabot` — retirée le 2026-09-08 : elle n'apportait rien, chaque PR Dependabot passe déjà par la CI complète comme n'importe quelle PR vers `main`, et devoir merger `feat/dependabot` → `main` à part était une étape manuelle en plus sans bénéfice).
+
+**Groupes par risque, pas un seul `-all` fourre-tout** — l'ancien setup groupait tout npm (ou tout nuget) dans une seule PR mensuelle, ce qui a cassé `npm ci` une fois : le bump groupé npm-all a embarqué `typescript` 7 et `jasmine-core` 7, tous deux au-delà de ce que le reste de la toolchain supportait (peer dep `@angular/build` sur TypeScript, API dépréciées retirées côté Jasmine/Karma), nécessitant un repin manuel après coup (cf. commit `bea8548`, PR #119). Setup actuel :
+- **npm** : groupe `angular` (tous les `@angular/*`, minor+patch uniquement) — ces paquets ont des peer deps strictement alignées entre eux (cf. piège 15 racine), donc toujours groupés pour ne jamais bumper partiellement. Groupe `npm-minor-patch` pour le reste (minor+patch). **Les majeures ne sont jamais groupées** (ni Angular ni le reste) — chacune part dans sa propre PR, review individuelle obligatoire (c'est précisément une majeure isolée — `typescript`/`jasmine-core` — qui avait cassé la CI la dernière fois).
+- **nuget** : même logique (`nuget-minor-patch` groupé, majeures individuelles).
+- **github-actions** : ajouté (pas groupé, peu de mises à jour attendues) — tient à jour les versions des actions (`actions/checkout@v4`, etc.), complète le durcissement CI du piège Sonar `S8543`/`S6505` (versions non épinglées, cf. plus haut).
+
+**Reste mensuel** (l'hebdomadaire a été essayé puis abandonné le jour même — trop de bruit) + `open-pull-requests-limit: 5` (au lieu de 2) — juste assez pour que les groupes minor/patch et une éventuelle majeure isolée coexistent le même mois sans se bloquer mutuellement.
 
 ## Conventions .NET
 

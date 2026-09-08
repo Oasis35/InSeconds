@@ -77,7 +77,7 @@ jobs:
 
       - name: Install (clean)
         working-directory: src/front/InSeconds.Client
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Build (production)
         working-directory: src/front/InSeconds.Client
@@ -99,7 +99,7 @@ jobs:
 
       - name: Install (clean)
         working-directory: src/front/InSeconds.Client
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Generate build-info
         working-directory: src/front/InSeconds.Client
@@ -107,7 +107,7 @@ jobs:
 
       - name: Run unit tests
         working-directory: src/front/InSeconds.Client
-        run: npx ng test --watch=false --browsers=ChromeHeadless
+        run: npx --no-install ng test --watch=false --browsers=ChromeHeadless
 
   nginx-headers:
     name: Frontend (nginx cache headers smoke test)
@@ -202,7 +202,7 @@ jobs:
 
       - name: Install npm dependencies
         working-directory: src/front/InSeconds.Client
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Generate build-info
         working-directory: src/front/InSeconds.Client
@@ -210,11 +210,11 @@ jobs:
 
       - name: Start Angular dev server
         working-directory: src/front/InSeconds.Client
-        run: npx ng serve --configuration e2e-ci --port 5173 > /tmp/angular.log 2>&1 &
+        run: npx --no-install ng serve --configuration e2e-ci --port 5173 > /tmp/angular.log 2>&1 &
 
       - name: Install Playwright browsers
         working-directory: src/front/InSeconds.Client
-        run: npx playwright install --with-deps chromium
+        run: npx --no-install playwright install --with-deps chromium
 
       - name: Wait for backend
         run: |
@@ -234,7 +234,7 @@ jobs:
 
       - name: Run E2E tests
         working-directory: src/front/InSeconds.Client
-        run: npx playwright test
+        run: npx --no-install playwright test
         env:
           CI: 'true'
 
