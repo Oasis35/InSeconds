@@ -11,3 +11,10 @@
 	}
 	reverse_proxy inseconds.api:8080
 }
+
+cv.inseconds.cc {
+	tls {
+		dns cloudflare {env.CF_API_TOKEN}
+	}
+	reverse_proxy portfolio.front:8080
+}
