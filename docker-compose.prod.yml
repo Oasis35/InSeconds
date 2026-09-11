@@ -1,0 +1,40 @@
+services:
+  api:
+    build:
+      context: ./src/back
+      dockerfile: InSeconds.Api/Dockerfile.prod
+    container_name: inseconds.api
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Host=shared-postgres;Port=5432;Database=inseconds;Username=inseconds;Password=${INSECONDS_DB_PASSWORD}"
+      AdminPassword: ${ADMIN_PASSWORD}
+      App__PublicUrl: https://inseconds.cc
+      Resend__ApiKey: ${RESEND_API_KEY}
+    networks:
+      - shared-postgres
+      - inseconds-internal
+    # Publication temporaire sur localhost pour vérifier le stack avant la mise
+    # en place de Caddy (étape 5) — à retirer une fois le reverse proxy en place.
+    ports:
+      - "127.0.0.1:5171:8080"
+
+  front:
+    build:
+      context: ./src/front/InSeconds.Client
+      dockerfile: Dockerfile.prod
+    container_name: inseconds.front
+    restart: unless-stopped
+    depends_on:
+      - api
+    networks:
+      - inseconds-internal
+    # Idem : temporaire, à retirer une fois Caddy en place.
+    ports:
+      - "127.0.0.1:8081:8080"
+
+networks:
+  shared-postgres:
+    external: true
+  inseconds-internal:
+    driver: bridge
