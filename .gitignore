@@ -150,6 +150,7 @@ playwright-report/
 # ---------------------------------------------------------------
 .env
 .env.local
+.env.prod
 .env.*.local
 *.pfx
 *.key
