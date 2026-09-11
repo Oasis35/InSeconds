@@ -6,7 +6,7 @@ Instructions pour Claude quand il travaille dans ce repo. Pour la documentation 
 
 InSeconds = blind test musical quotidien. N morceaux/jour (configurable via `TracksPerChallenge`, défaut 3), l'utilisateur choisit combien de secondes il écoute (paliers : 0.5, 1, 1.5, 2, 3, 5, 10) avant de tenter artiste + titre. Moins de temps écouté = plus de points. Même défi pour tout le monde, même jour. Mode guest dispo (joue sans s'inscrire, hors classement).
 
-Stack : .NET 10 / Wolverine / EF Core / PostgreSQL côté back, Angular 22 / Tailwind v4 / SCSS côté front, Docker Compose pour back + DB. Hébergé sur **Northflank** (front + back + PostgreSQL addon). `environment.ts#appUrl` pointe vers `https://inseconds.cc`, le nom de domaine public (front servi dessus depuis 2026-08-28). **La page de rebond GitHub Pages (`oasis35.github.io/InSeconds`) a été retirée** (2026-09-08, remplacée par le domaine public, plus lisible et plus stable) — ne pas la recréer.
+Stack : .NET 10 / Wolverine / EF Core / PostgreSQL côté back, Angular 22 / Tailwind v4 / SCSS côté front, Docker Compose pour back + DB. **Hébergé sur un VPS OVH** (Debian 13, Gravelines) depuis le 2026-09-11 — front + API + PostgreSQL en conteneurs Docker derrière Caddy (reverse proxy, HTTPS auto), détail complet dans [Déploiement VPS](#déploiement-vps) plus bas. **Northflank** (ancien hébergeur) reste en pause quelques jours comme filet de sécurité post-bascule, pas encore supprimé — ne pas s'y fier pour du code/config à jour, le VPS est la source de vérité. `environment.ts#appUrl` pointe vers `https://inseconds.cc`, le nom de domaine public (front servi dessus depuis 2026-08-28, sert maintenant depuis le VPS). **La page de rebond GitHub Pages (`oasis35.github.io/InSeconds`) a été retirée** (2026-09-08, remplacée par le domaine public, plus lisible et plus stable) — ne pas la recréer.
 
 ## Ports (ATTENTION — non standards)
 
@@ -112,7 +112,7 @@ Angular 22 standalone + signals + ngx-translate (i18n FR/EN).
 - `src/app/core/services/language.service.ts` : détection langue (`localStorage` → `navigator.language` → FR), `translate.use()`, signal `current`
 - `src/app/core/models/game.models.ts` : re-exports depuis `api.generated.ts`
 - `src/app/api/api.generated.ts` : **fichier généré commité volontairement**, regénérer avec `npm run generate-api` après tout changement d'endpoint back
-- `src/environments/environment{,.development}.ts` : `apiUrl` + `appUrl`, swap auto via `fileReplacements`. En prod `apiUrl = https://api.inseconds.cc` (sous-domaine Northflank dédié au service `api`, CNAME Cloudflare en DNS-only vers `…dns.northflank.app`, cert Let's Encrypt géré par Northflank) — l'ancienne URL `https://p01--api--b5cnx77tvxgb.code.run` reste servie en parallèle par Northflank mais n'est plus ciblée par le front
+- `src/environments/environment{,.development}.ts` : `apiUrl` + `appUrl`, swap auto via `fileReplacements`. En prod `apiUrl = https://api.inseconds.cc` — depuis le 2026-09-11, ce sous-domaine pointe vers le **VPS** (A record Cloudflare Proxied vers l'IP du VPS, cert Let's Encrypt géré par Caddy via challenge DNS-01, cf. [Déploiement VPS](#déploiement-vps)) ; auparavant CNAME Northflank. **Aucun rebuild du front n'a été nécessaire à la bascule** — l'URL `apiUrl` était déjà la bonne, seul le DNS a changé de cible
 - `src/styles.scss` : `@use "tailwindcss";` + **variables CSS `:root`** pour toute la palette couleurs (ne pas mettre de hex en dur dans les templates)
 - `.postcssrc.json` : plugin `@tailwindcss/postcss`
 - **CORS** : le back autorise `http://localhost:5173`, `http://localhost:65075`, `https://p01--front--b5cnx77tvxgb.code.run` (URL Northflank interne du front) et `https://inseconds.cc` + `https://www.inseconds.cc` (nom de domaine public, front servi dessus depuis 2026-08-28) dans `appsettings.json` (`Cors:AllowedOrigins`)
@@ -230,6 +230,55 @@ npm run e2e
 npm run e2e:ui   # mode UI interactif Playwright
 ```
 
+## Déploiement VPS
+
+**Hébergement principal depuis le 2026-09-11** : VPS OVH (`VPS-1 2027`, 2 vCores, 4 Go RAM, 40 Go, Debian 13 Trixie, zone Gravelines/GRA), IP `151.80.234.203`. Accès SSH par clé uniquement (`ssh vpsovh`, user `debian`). Northflank (ancien hébergeur) reste **en pause** quelques jours en filet de sécurité (retour arrière = re-basculer le DNS), pas encore supprimé.
+
+### Durcissement serveur
+
+- **SSH** : `/etc/ssh/sshd_config.d/10-hardening.conf` (`PasswordAuthentication no`, `PermitRootLogin no`, `KbdInteractiveAuthentication no`). **Nommé `10-` et pas `99-`** — piège : `sshd` retient la *première* valeur rencontrée pour chaque directive dans l'ordre du glob `Include /etc/ssh/sshd_config.d/*.conf`, et `50-cloud-init.conf` (déjà présent sur une Debian OVH fraîche, avec `PasswordAuthentication yes`) est inclus *avant* un fichier `99-*`. Un drop-in `99-hardening.conf` serait donc silencieusement ignoré pour cette directive. Vérifier avec `sudo sshd -T | grep -i passwordauth` après toute modif.
+- **fail2ban** : `/etc/fail2ban/jail.local` (`bantime=1h`, `maxretry=3` sur le jail `sshd`, backend `systemd` déjà fourni par le paquet Debian).
+- **UFW** : OpenSSH + 80/tcp + 443/tcp uniquement.
+- **Docker** : dépôt officiel (pas celui de Debian), `/etc/docker/daemon.json` avec rotation des logs (`max-size: 10m`, `max-file: 3` — important vu les 40 Go de disque).
+
+### Architecture — 3 stacks Docker Compose indépendants
+
+Un seul VPS pensé pour héberger **plusieurs projets perso** à terme (pas seulement InSeconds) — d'où la séparation infra partagée / apps :
+
+1. **`deploy/infra/`** — Postgres 17 **partagé**, une base + un utilisateur par projet (pas de conteneur DB dédié par projet). Réseau Docker `shared-postgres` (créé ici, `external: true` ailleurs). Aucun port publié sur l'hôte — joignable uniquement depuis les conteneurs du réseau. `init/01-inseconds.sh` crée la base `inseconds` au tout premier démarrage (les scripts `docker-entrypoint-initdb.d/*.sh` ne rejouent jamais sur un volume déjà initialisé — ajouter un futur projet = `CREATE DATABASE`/`CREATE USER` manuel, cf. `deploy/infra/README.md`).
+2. **`deploy/caddy/`** — reverse proxy **partagé**, HTTPS automatique, un seul point d'entrée public (80/443) pour tout le VPS. Réseau `caddy-net` (même pattern que `shared-postgres`). Image Caddy **custom** (`Dockerfile`, build `xcaddy` + module `caddy-dns/cloudflare`) : le certificat Let's Encrypt est validé par **challenge DNS-01** (Caddy crée un TXT temporaire via l'API Cloudflare) plutôt que HTTP-01 — ça permet de garder le **proxy Cloudflare actif (nuage orange)** sur les domaines, donc l'IP réelle du VPS n'est **jamais exposée publiquement dans le DNS** (`dig`/`nslookup` public ne renvoie que les IP Cloudflare). Nécessite `CF_API_TOKEN` scopé en écriture DNS sur la zone uniquement (pas le token de compte global). Conteneur Caddy tourne en **utilisateur non-root** (`uid 1000`, `CAP_NET_BIND_SERVICE` posée sur le binaire via `setcap` pour bind 80/443 sans root — corrige un finding Sonar "Security Rating", cf. `deploy/caddy/Dockerfile`). Le `Caddyfile` route par domaine (`{$FRONT_DOMAIN}`/`{$API_DOMAIN}`, valeurs réelles dans `deploy/caddy/.env`, non commité) vers `inseconds.front:8080`/`inseconds.api:8080` par nom de conteneur.
+3. **`docker-compose.prod.yml`** (racine du repo, InSeconds uniquement) — juste `api` + `front`, rejoint `shared-postgres` et `caddy-net` en réseaux externes. **Aucun port publié sur l'hôte** (Caddy est l'unique point d'entrée). Variables dans `.env.prod` (non commité, cf. `.env.prod.example`) : `INSECONDS_DB_PASSWORD` (doit être identique à celui de `deploy/infra/.env`), `ADMIN_PASSWORD`, `RESEND_API_KEY`.
+
+**Ajouter un futur projet** = créer sa base (`deploy/infra`), ajouter un bloc domaine dans `deploy/caddy/Caddyfile` (+ `caddy reload`), et son propre `docker-compose.prod.yml` rejoignant les deux réseaux externes — **aucun redéploiement d'InSeconds n'est déclenché**, chaque stack ne touche que ses propres conteneurs.
+
+### CI/CD
+
+Job `deploy` dans `.github/workflows/ci.yml`, déclenché **uniquement sur push `main`** (pas sur PR ni les autres branches), après succès de toute la suite de tests (`needs: [back, unit-tests, front, unit-tests-front, nginx-headers, integration-tests, e2e]`). Se connecte en SSH au VPS avec une clé **dédiée** (générée sur le VPS, jamais la clé perso — secrets GitHub `VPS_SSH_PRIVATE_KEY`/`VPS_HOST`/`VPS_USER`) et relance `git pull && docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build`. Ne touche **jamais** `deploy/infra`/`deploy/caddy` (déploiement manuel volontaire — une erreur automatisée dessus impacterait tous les futurs projets, pas seulement InSeconds).
+
+**CI/CD Northflank désactivé** (toggles "CI"/"CD" du service, dans le dashboard Northflank) pour éviter des builds/déploiements redondants et une consommation inutile de minutes de build pendant que Northflank reste en pause.
+
+### Migration des données (Northflank → VPS)
+
+`pg_dump`/`pg_restore` via un conteneur `postgres:17-alpine` jetable (même version majeure que la prod, évite tout risque d'incompatibilité de format de dump). Piège : l'addon Postgres Northflank n'est **pas joignable sur le port interne `5432`** depuis l'extérieur de leur réseau — utiliser la connection string **externe** (variable `EXTERNAL_POSTGRES_URI`/port `EXTERNAL_PORT_PRIMARY` dans les secrets Northflank de l'addon, différent de `NF_INSECONDS_DB_POSTGRES_URI` utilisé en interne par l'API). `pg_dump --no-owner --no-privileges` (l'utilisateur Northflank n'existe pas côté VPS). 4 erreurs bénignes attendues au restore (`pg_stat_statements`/`pg_stat_kcache`, extensions de monitoring internes à l'infra Northflank, sans rapport avec le schéma applicatif) — `pg_restore` continue et restaure tout le reste normalement (`errors ignored on restore: N`, pas un échec).
+
+### Commandes utiles VPS
+
+```bash
+# Déployer manuellement (normalement automatique via CI/CD sur push main)
+ssh vpsovh "cd ~/apps/InSeconds && git pull --ff-only && docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build"
+
+# Logs
+ssh vpsovh "docker logs inseconds.api --tail 50"
+ssh vpsovh "docker logs caddy --tail 50"
+
+# État des 4 conteneurs attendus
+ssh vpsovh "docker ps --format 'table {{.Names}}\t{{.Status}}'"
+# → shared-postgres, caddy, inseconds.api, inseconds.front
+
+# Recharger Caddy après modif du Caddyfile (sans coupure)
+ssh vpsovh "docker compose -f deploy/caddy/docker-compose.yml exec caddy caddy reload --config /etc/caddy/Caddyfile"
+```
+
 ## Conventions Git
 
 - **Pas de `Co-Authored-By: Claude` dans les commits**, jamais
@@ -290,7 +339,7 @@ Runners Ubuntu, ~5-7 min par run (jobs `back`/`front`/`unit-tests-front`/`integr
 2. **Healthcheck PostgreSQL** — utiliser `pg_isready` dans le conteneur. SQL Server n'est plus utilisé (migration vers PostgreSQL effectuée).
 3. **Hot-reload dans le conteneur sur Windows** — nécessite `DOTNET_USE_POLLING_FILE_WATCHER=1` (déjà dans le Dockerfile) car les events fichiers ne traversent pas les bind mounts Linux/Windows.
 4. **CORS** — quand on change le port front, mettre à jour `appsettings.json` côté back PUIS `docker compose restart api` ou recréer.
-5. **Auth admin cross-domain** — le cookie `SameSite=None` est bloqué par Chrome en cross-site. L'auth admin utilise `Authorization: Bearer admin-token` + `localStorage` à la place. Le secret `AdminPassword` doit être configuré dans Northflank (variable d'env `AdminPassword` sur le service api).
+5. **Auth admin cross-domain** — le cookie `SameSite=None` est bloqué par Chrome en cross-site. L'auth admin utilise `Authorization: Bearer admin-token` + `localStorage` à la place. Le secret `AdminPassword` est configuré via `.env.prod` sur le VPS (variable `ADMIN_PASSWORD`, injectée dans le conteneur `api` par `docker-compose.prod.yml`).
 6. **`Results.Forbid()` nécessite `AddAuthentication()`** — si l'app n'enregistre pas l'auth middleware ASP.NET, `Results.Forbid()` lève une `InvalidOperationException` au runtime. Utiliser `Results.StatusCode(403)` à la place.
 7. **Cookie joueur cross-origin (Northflank)** — historique : sur les URLs `code.run` (front et back sur des sous-domaines Northflank sans domaine commun), le cookie devait être `SameSite=None; Secure=true` en prod pour être envoyé cross-site. Depuis le passage au domaine public (`inseconds.cc`/`api.inseconds.cc`, same-site), le cookie est passé à **`SameSite=Lax`** (2026-09-02, cf. piège 23) — mieux toléré par les navigateurs (Safari ITP notamment, qui purgeait le cookie `SameSite=None` bien avant ses 90 jours de durée de vie nominale, forçant une reconnexion quasi quotidienne).
 8. **`AppDbConfigurationProvider` silencieux si DB absente** — le `catch` dans `Load()` est intentionnel : en test (in-memory EF) ou lors de la première migration, la BD peut ne pas exister. Les initialiseurs de propriété d'`AppSettings` servent alors de fallback.
@@ -337,7 +386,7 @@ Runners Ubuntu, ~5-7 min par run (jobs `back`/`front`/`unit-tests-front`/`integr
 - `GET /api/stats/today` — score du joueur, médiane joueurs, taux d'échec + moyenne d'écoute par morceau (PostgreSQL `PERCENTILE_CONT(0.5)`). `TrackStat` inclut les champs joueur `ArtistCorrect`/`TitleCorrect`/`ListenedDurationSeconds` (nullable — null si pas de session complétée pour ce joueur)
 - Écran "déjà joué" : ton score vs médiane joueurs, accordéon par morceau (pochette + badge Deezer), compte à rebours jusqu'à minuit UTC, bouton "🔗 Partager mon score" (visible uniquement si session `Completed`, càd `yourScore != null`)
 - `ListenedDurationSeconds` et `TotalDurationSeconds` en `decimal` (paliers décimaux, ex: 0.5s)
-- Déploiement Northflank (front + back + PostgreSQL), CI/CD auto sur push `main`
+- **Déploiement VPS OVH** (front + API + PostgreSQL en Docker derrière Caddy, HTTPS auto), CI/CD auto sur push `main` — détail complet dans [Déploiement VPS](#déploiement-vps) plus haut. Northflank (ancien hébergeur) en pause, filet de sécurité temporaire.
 - **UX blind round** : layout B (zone player / zone saisie toujours visibles, pas de clignotement), bouton unique Stop/Replay, barre de progression live (`requestAnimationFrame`), autocomplete Deezer sur champ unique `"Artiste - Titre"`
 - **Polish UX blind round** : bouton "Valider" avec état loading (désactivé + `…` pendant l'appel serveur, via signal `isSubmitting`), bouton `✕` pour effacer la saisie (`(mousedown)` pour battre le `blur`), score animé en count-up (`displayedScore` + helper `countUp` rAF, easing quadratique), toast d'erreur réseau si le `submit` échoue (timer 4s nettoyé dans `next()`/`ngOnDestroy`). Le tooltip de survol des paliers affichant les points gagnés (`scoreForDuration`) a été retiré avec le passage à l'auto-play (2026-08, cf. bullet "Refonte DA + auto-play blind round" plus bas) — il n'y a plus de boutons de paliers à survoler
 - **Refonte DA "IN//SECONDS" + auto-play blind round** (2026-08) — nouvelle palette terracotta/cyan/violet + `DecorBackgroundComponent` (décor grille/scanlines en arrière-plan). Changement de fond du round de jeu : **plus de choix de palier initial**, la lecture démarre automatiquement au premier palier autorisé dès que le morceau est prêt (`BlindRoundComponent`, `effect()` sur `audio.isIdle() && track().previewUrl`). Pendant l'écoute, la barre de progression affiche des repères aux positions des paliers restants + un texte `blindRound.stepsUpTo` (« tu peux écouter jusqu'à Xs ») tant qu'il reste des paliers au-dessus du palier en cours — le bouton « écouter plus » (`listenMore()`) reste l'unique moyen de prolonger. Détail complet (computeds `maxDuration`/`scaleRatio`, etc.) : voir [`features/game/CLAUDE.md`](src/front/InSeconds.Client/src/app/features/game/CLAUDE.md)
@@ -373,7 +422,7 @@ Runners Ubuntu, ~5-7 min par run (jobs `back`/`front`/`unit-tests-front`/`integr
 - **Partage score** : bouton "🔗 Partager mon score" sur l'écran récap final ET sur l'écran "déjà joué" (si session `Completed`) — copie dans le presse-papier un résumé `✅/❌` par morceau (`✅` = trouvé, `❌` = raté, daltonien-friendly) + durée + score total + lien `/blindtest`. Bouton désactivé (`disabled`) tant que tous les résultats ne sont pas revenus du serveur (fix race condition HTTP dernier morceau).
 - **Route `/blindtest`** — alias de `/`, utilisée dans les liens de partage et les balises Open Graph
 - **Open Graph + Twitter Card** dans `index.html` — balises méta pour le partage WhatsApp/Signal/Twitter (sans image)
-- **`environment.appUrl`** dans les fichiers d'environnement Angular (prod : URL Northflank, dev : `http://localhost:5173`) — utilisé pour le lien de partage
+- **`environment.appUrl`** dans les fichiers d'environnement Angular (prod : `https://inseconds.cc`, dev : `http://localhost:5173`) — utilisé pour le lien de partage
 - **Tests E2E Playwright** : 34 tests jeu + 21 tests admin (55 au total). Jeu : happy path, écran "déjà joué", bouton partage "déjà joué", abandon mid-game, reprise, abandon depuis reprise, sync multi-onglets, pas de défi (`no-challenge.spec.ts` : nécessite `emptyPool` depuis la génération paresseuse — supprimer le défi seul le fait renaître au premier joueur, ce qui est aussi testé), partage fin de partie + échec de copie presse-papier (`share-button.spec.ts` : `clipboard.writeText` forcé en rejet → message d'erreur), scoring (palier/mauvaise réponse/partiel), anti-cheat paliers bloqués à la reprise (paliers < durée écoutée masqués), confirmation de sortie (`leave-guard.spec.ts` : annuler reste sur la partie, confirmer navigue vers `/admin`, pas de confirmation hors `playing`), bouton `✕` d'effacement (`clear-search.spec.ts`), autocomplete Deezer — nettoyage parenthèses + déduplication (`autocomplete-dedup.spec.ts` : déclencheur `dedup-test` du `FakeDeezerHandler` back, fusion des suggestions + valeur nettoyée injectée dans le champ à la sélection) et navigation clavier (`autocomplete-keyboard-nav.spec.ts` : ↓/↑/Entrée/Échap, cycle avec wrap-around), overlay "Service indisponible" (`service-down.spec.ts` : `/health` interceptée via `page.route` → overlay visible puis disparaît au retour du back via `page.clock.runFor(5000)`, pas d'overlay à l'état `loading`), footer (`footer.spec.ts` : toggle langue FR ↔ EN — la persistance au rechargement n'est pas testable en E2E car le fixture ré-force `lang='fr'` à chaque navigation —, lien confidentialité → `/privacy`, alias `/confidentialite`). Admin : login, pool (tableau, filtres), ajout, suppression, actualisation, actions, liste défis, indicateur joueurs par défi + ID navigateur (chip copiable, surbrillance « toi », login + shell)
 - **Flags de test E2E** (`e2e/fixtures/test.ts`, posés via `addInitScript` sur tous les specs) : `window.__disableAnimations` coupe le count-up du score (lu par `countUp()` dans `BlindRoundComponent` — sinon `requestAnimationFrame` ne tourne pas sous `page.clock` figée et le score final ne s'affiche jamais) ; `window.__disableHealthPolling` coupe le polling `/health` de `app.ts` (sinon les sauts d'horloge cumulent les ticks du `timer` et `switchMap` annule les requêtes en vol → faux overlay "Service indisponible"). Le spec `service-down.spec.ts` réactive le polling dans son `beforeEach`. **Soumission de réponse en E2E** : `BlindRoundPage.submit()` presse `Entrée` dans le champ (pas un clic sur "Valider") car la dropdown autocomplete Deezer, repeuplée de façon asynchrone, peut recouvrir le bouton et intercepter le clic.
 - **`SessionStatus`** (Pending/Completed/Abandoned/Expired) : `StartSession` retourne `IsResuming=true` + `completedAnswers` si session Pending. Expiry paresseuse : Pending de la veille → **`Expired`** au prochain StartSession (**pas `Abandoned`** — réservé au bouton). Stats/leaderboard filtrés sur `Completed`. Dashboard admin : 3 buckets de non-complétion (`abandonedCount` bouton / `expiredCount` sortie sans terminer / `pendingCount` en cours), convergents entre le KPI du jour (`GetAdminStats.BuildDailyKpis`) et « Stats par défi » (`GetChallengeStats.BuildChallengeStats`) — les deux endpoints recalculent `today` indépendamment et replient le Pending d'un jour passé sur `expiredCount`

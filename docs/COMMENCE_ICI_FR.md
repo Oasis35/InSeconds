@@ -11,12 +11,12 @@ InSeconds est un **blind test musical quotidien**. Le joueur choisit combien de 
 | Couche | Tech |
 |--------|------|
 | Backend | .NET 10, Wolverine (messaging), FluentValidation, EF Core 10 |
-| Base de données | PostgreSQL (addon Northflank en prod, image Docker en dev) |
+| Base de données | PostgreSQL (conteneur partagé sur le VPS en prod, image Docker en dev) |
 | Frontend | Angular 22 (standalone + signals), TypeScript, Tailwind CSS v4, SCSS |
 | Musique | API Deezer (intégrée — recherche + preview + extraction `CoverHash`) |
 | Infra dev | Docker Compose, `dotnet watch` (back), `ng serve` (front) |
 | CI | GitHub Actions (build back + front + check migrations EF + tests unitaires + tests d'intégration Testcontainers + E2E Playwright), Dependabot |
-| Déploiement | Northflank (front + back + PostgreSQL addon) |
+| Déploiement | VPS OVH (Debian) — front + API + Postgres en Docker derrière Caddy (reverse proxy, HTTPS auto), CI/CD GitHub Actions sur push `main` |
 
 ## Architecture en deux mots
 
@@ -79,7 +79,7 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - Écran "déjà joué" : ton score vs médiane, streak, accordéon détail par morceau
 - `ListenedDurationSeconds` et `TotalDurationSeconds` en `decimal` (paliers décimaux jusqu'à 0.5s)
 - CI GitHub Actions (build back/front + check migrations) + CI/CD auto sur push `main`
-- Déploiement Northflank (front + back + PostgreSQL)
+- Déploiement VPS OVH (front + API + PostgreSQL en Docker derrière Caddy, HTTPS auto) — cf. section "Déploiement VPS" de [CLAUDE.md](../CLAUDE.md)
 - `TextNormalizer` : suppression parenthèses/crochets avant comparaison — `(feat. X)`, `[Radio Edit]`
 - Page d'accueil "welcome" — session chargée en background, bouton "Commencer à jouer" sans latence
 - Préchargement audio non-bloquant (`<link rel="preload" as="audio">`)

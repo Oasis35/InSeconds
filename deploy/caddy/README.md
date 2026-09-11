@@ -38,29 +38,37 @@ docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
 Le nouveau projet doit rejoindre `caddy-net` en réseau externe dans son propre
 `docker-compose.prod.yml`, comme InSeconds.
 
-## Note de test (avant bascule DNS)
+## Bascule DNS (terminée le 2026-09-11)
 
-`FRONT_DOMAIN`/`API_DOMAIN` pointent temporairement vers des sous-domaines de test
-(`vps.inseconds.cc` / `vps-api.inseconds.cc`) plutôt que les domaines réels, pour valider tout
-le mécanisme (HTTPS, routage) sans toucher au DNS de production tant que Northflank sert encore
-`inseconds.cc`. Le front Angular ayant son `apiUrl` de prod figé au build sur
-`https://api.inseconds.cc`, tester via ces sous-domaines ne valide pas le parcours applicatif
-complet (front → API), seulement que Caddy route et sert chaque service correctement en HTTPS.
-Le parcours complet se valide naturellement à la bascule DNS réelle (étape 6).
+`FRONT_DOMAIN`/`API_DOMAIN` ont d'abord pointé vers des sous-domaines de test
+(`vps.inseconds.cc` / `vps-api.inseconds.cc`) pour valider tout le mécanisme (HTTPS, routage)
+sans toucher au DNS de production tant que Northflank servait `inseconds.cc`. Un point clé
+découvert à cette occasion : le challenge **DNS-01 fonctionne indépendamment de la cible DNS
+actuelle du domaine** (il ne fait que créer un enregistrement TXT via l'API Cloudflare) — les
+certificats pour les **vrais** domaines (`inseconds.cc`, `www.inseconds.cc`, `api.inseconds.cc`)
+ont donc pu être obtenus **avant** la bascule DNS elle-même, réduisant le downtime à quasi zéro
+au moment du switch. `.env` porte maintenant les domaines définitifs (`FRONT_DOMAIN=inseconds.cc,
+www.inseconds.cc`, `API_DOMAIN=api.inseconds.cc`) — le front Angular avait déjà son `apiUrl` de
+prod figé sur `https://api.inseconds.cc` au build, donc **aucun rebuild n'a été nécessaire**,
+seul le DNS a changé de cible.
 
 ## Challenge DNS Cloudflare (IP du VPS jamais exposée)
 
 Image Caddy custom (`Dockerfile`, build via `xcaddy` + module `caddy-dns/cloudflare`) : le
 certificat Let's Encrypt est validé par un enregistrement TXT temporaire créé via l'API
 Cloudflare, pas par une requête HTTP entrante sur le VPS. Ça permet de garder le proxy
-Cloudflare **actif** (nuage orange) sur `vps.inseconds.cc`/`vps-api.inseconds.cc` — les
-enregistrements DNS pointent bien vers l'IP du VPS en interne, mais seule l'IP Cloudflare est
-visible publiquement (`dig` depuis l'extérieur ne révèle jamais l'IP réelle).
+Cloudflare **actif** (nuage orange) sur tous les domaines — les enregistrements DNS pointent
+bien vers l'IP du VPS en interne (champ "Content" visible seulement par le propriétaire du
+compte Cloudflare), mais seule l'IP Cloudflare est visible publiquement (`dig`/`nslookup` depuis
+l'extérieur ne révèle jamais l'IP réelle du VPS).
 
 Nécessite `CF_API_TOKEN` (cf. `.env.example`) — token scopé en écriture DNS sur la zone
 `inseconds.cc` uniquement, jamais le token de compte Cloudflare global.
 
-Recommandé côté Cloudflare : mode SSL/TLS **"Full (strict)"** sur la zone (Caddy expose un
-certificat Let's Encrypt valide en origine, donc compatible — à vérifier que ça ne casse pas
-la config Northflank existante avant de changer ce réglage, qui est au niveau de la zone
-entière et pas par sous-domaine).
+Conteneur Caddy tourne en **utilisateur non-root** (`uid 1000`, capacité Linux
+`CAP_NET_BIND_SERVICE` posée sur le binaire via `setcap` pour bind les ports 80/443 sans être
+root) — corrige un finding SonarCloud "Security Rating on New Code" (B → A) détecté à l'ouverture
+de la première PR de ce stack. Nécessite de recréer les volumes `caddy_data`/`caddy_config` si
+appliqué après coup sur un déploiement déjà en place (permissions root existantes sur les
+certificats déjà stockés) — sans impact ici car domaines de test, certificats réémis en
+quelques secondes.

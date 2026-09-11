@@ -300,7 +300,7 @@ Chargement en 3 couches, **une seule fois au démarrage** (pas de rafraîchissem
 
 **DI notable** :
 - `AddDbContextFactory<ApplicationDbContext>` — permet aux handlers qui parallélisent (GetAdminStats, GetChallengeStats, TodayStats) de créer un contexte dédié par requête (DbContext non thread-safe).
-- Connection string : priorité `NF_INSECONDS_DB_POSTGRES_URI` (Northflank, converti via `BuildNpgsqlConnectionString`), fallback `ConnectionStrings:DefaultConnection`.
+- Connection string : priorité `NF_INSECONDS_DB_POSTGRES_URI` (ancien format Northflank, converti via `BuildNpgsqlConnectionString` — n'est plus la branche active depuis la bascule VPS, gardée pour compat/retour arrière tant que Northflank existe), fallback `ConnectionStrings:DefaultConnection` — **c'est cette branche que le VPS utilise** (`ConnectionStrings__DefaultConnection` posé par `docker-compose.prod.yml`, pointant vers le Postgres partagé `deploy/infra/`, cf. CLAUDE.md racine § Déploiement VPS).
 - `UseWolverine` : `ServiceLocationPolicy=AllowedButWarn`, `UseRuntimeCompilation()`, `UseFluentValidation()` (validators invoqués auto avant les handlers via le bus).
 - CORS `"AllowAngular"` : origines depuis `Cors:AllowedOrigins`, `AllowCredentials()` (cookies cross-site).
 - HttpClient Deezer : résilience standard (`AttemptTimeout=4s`, `TotalRequestTimeout=15s`, circuit breaker `SamplingDuration=30s`) hors Testing — évite qu'un appel lent bloque `StartSession` (timeout HttpClient défaut 100s sinon).
