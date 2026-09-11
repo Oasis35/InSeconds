@@ -14,10 +14,7 @@ services:
     networks:
       - shared-postgres
       - inseconds-internal
-    # Publication temporaire sur localhost pour vérifier le stack avant la mise
-    # en place de Caddy (étape 5) — à retirer une fois le reverse proxy en place.
-    ports:
-      - "127.0.0.1:5171:8080"
+      - caddy-net
 
   front:
     build:
@@ -29,12 +26,12 @@ services:
       - api
     networks:
       - inseconds-internal
-    # Idem : temporaire, à retirer une fois Caddy en place.
-    ports:
-      - "127.0.0.1:8081:8080"
+      - caddy-net
 
 networks:
   shared-postgres:
+    external: true
+  caddy-net:
     external: true
   inseconds-internal:
     driver: bridge
