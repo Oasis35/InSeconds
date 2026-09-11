@@ -1,0 +1,13 @@
+{$FRONT_DOMAIN} {
+	tls {
+		dns cloudflare {env.CF_API_TOKEN}
+	}
+	reverse_proxy inseconds.front:8080
+}
+
+{$API_DOMAIN} {
+	tls {
+		dns cloudflare {env.CF_API_TOKEN}
+	}
+	reverse_proxy inseconds.api:8080
+}

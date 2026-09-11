@@ -1,0 +1,26 @@
+services:
+  caddy:
+    build: .
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      FRONT_DOMAIN: ${FRONT_DOMAIN}
+      API_DOMAIN: ${API_DOMAIN}
+      CF_API_TOKEN: ${CF_API_TOKEN}
+    networks:
+      - caddy-net
+
+networks:
+  caddy-net:
+    name: caddy-net
+
+volumes:
+  caddy_data:
+  caddy_config:
