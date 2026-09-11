@@ -11,12 +11,12 @@ InSeconds est un **blind test musical quotidien**. Le joueur choisit combien de 
 | Couche | Tech |
 |--------|------|
 | Backend | .NET 10, Wolverine (messaging), FluentValidation, EF Core 10 |
-| Base de données | PostgreSQL (addon Northflank en prod, image Docker en dev) |
+| Base de données | PostgreSQL (conteneur partagé sur le VPS en prod, image Docker en dev) |
 | Frontend | Angular 22 (standalone + signals), TypeScript, Tailwind CSS v4, SCSS |
 | Musique | API Deezer (intégrée — recherche + preview + extraction `CoverHash`) |
 | Infra dev | Docker Compose, `dotnet watch` (back), `ng serve` (front) |
 | CI | GitHub Actions (build back + front + check migrations EF + tests unitaires + tests d'intégration Testcontainers + E2E Playwright), Dependabot |
-| Déploiement | Northflank (front + back + PostgreSQL addon) |
+| Déploiement | VPS OVH (Debian) — front + API + Postgres en Docker derrière Caddy (reverse proxy, HTTPS auto), CI/CD GitHub Actions sur push `main` |
 
 ## Architecture en deux mots
 
@@ -69,7 +69,7 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - Auth admin via Bearer token + `adminAuthInterceptor` Angular
 - `BackgroundService` génération défi quotidien automatique (à minuit UTC, retry toutes les 10 min en cas d'échec) — filtre sur `Track.HasPreview` en DB, Fisher-Yates, transaction ; planification via `DailySchedule.NextUtcHour` + `DelayUntilAsync` (attente sur cible d'horloge murale : un réveil anticipé de `Task.Delay` ne saute plus de jour, cf. piège 19)
 - **Génération paresseuse dans `StartSession`** — si le défi du jour manque (job de minuit raté), le premier joueur le régénère à la volée (sélection déterministe seed = `DayNumber`, course gérée par la contrainte unique sur `Date`) ; le 503 « pas de défi » ne subsiste que si le pool est insuffisant
-- **Clés Data Protection persistées en base** (`PersistKeysToDbContext`, table `DataProtectionKeys`) — les cookies joueurs survivent aux redémarrages/redéploiements Northflank (piège 17 résolu)
+- **Clés Data Protection persistées en base** (`PersistKeysToDbContext`, table `DataProtectionKeys`) — les cookies joueurs survivent aux redémarrages/redéploiements (piège 17 résolu)
 - `BackgroundService` refresh preview (à 23h UTC, avant la génération de minuit) — vérifie Deezer pour tous les tracks disponibles par lots (rate-limit safe), met à jour `Track.HasPreview` uniquement sur réponse Deezer déterminée (jamais sur un échec quota/panne) ; relançable à la demande via `POST /api/admin/refresh-previews` (bouton « 🔄 Re-vérifier les previews » dans l'onglet Actions admin)
 - Frontend complet (Angular 22 + Tailwind v4 + SCSS) — UI jeu jouable
 - NSwag : `ApiClient` généré depuis l'OpenAPI back, `api.generated.ts` commité, types synchronisés automatiquement
@@ -79,7 +79,7 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - Écran "déjà joué" : ton score vs médiane, streak, accordéon détail par morceau
 - `ListenedDurationSeconds` et `TotalDurationSeconds` en `decimal` (paliers décimaux jusqu'à 0.5s)
 - CI GitHub Actions (build back/front + check migrations) + CI/CD auto sur push `main`
-- Déploiement Northflank (front + back + PostgreSQL)
+- Déploiement VPS OVH (front + API + PostgreSQL en Docker derrière Caddy, HTTPS auto) — cf. section "Déploiement VPS" de [CLAUDE.md](../CLAUDE.md)
 - `TextNormalizer` : suppression parenthèses/crochets avant comparaison — `(feat. X)`, `[Radio Edit]`
 - Page d'accueil "welcome" — session chargée en background, bouton "Commencer à jouer" sans latence
 - Préchargement audio non-bloquant (`<link rel="preload" as="audio">`)

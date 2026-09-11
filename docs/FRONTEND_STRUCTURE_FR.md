@@ -102,7 +102,7 @@ src/front/InSeconds.Client/
 │   │   ├── app.routes.ts                  # routes
 │   │   └── app.ts                         # composant racine + polling /health
 │   ├── environments/
-│   │   ├── environment.ts                 # prod (apiUrl + appUrl Northflank)
+│   │   ├── environment.ts                 # prod (apiUrl + appUrl — api.inseconds.cc, VPS)
 │   │   └── environment.development.ts     # dev (apiUrl http://localhost:5171, appUrl http://localhost:5173)
 │   └── styles.scss                        # Tailwind + variables CSS :root + keyframes globaux
 ├── angular.json                           # port 5173, fileReplacements dev/prod
@@ -352,7 +352,7 @@ Services admin (`features/admin/services/`) :
 
 ### `playerAuthInterceptor`
 
-Ajoute `withCredentials: true` sur toutes les requêtes vers `/api` **sauf** `/api/admin`. Nécessaire pour envoyer le cookie HTTP-only joueur en cross-origin (Northflank).
+Ajoute `withCredentials: true` sur toutes les requêtes vers `/api` **sauf** `/api/admin`. Nécessaire pour envoyer le cookie HTTP-only joueur en cross-origin (front sur `inseconds.cc`, API sur `api.inseconds.cc` — deux sous-domaines distincts).
 
 ### `adminAuthInterceptor`
 

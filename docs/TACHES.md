@@ -116,15 +116,16 @@
 
 ## ✅ Déploiement
 
-- [x] Déploiement Northflank (front + back + PostgreSQL addon)
-- [x] CI/CD auto sur push `main`
-- [x] Secrets prod via Northflank (`AdminPassword`, connection string)
+- [x] **Déploiement VPS OVH** (2026-09-11) — durcissement serveur (SSH clé uniquement, fail2ban, UFW), Docker Engine, stack Postgres partagé multi-projets (`deploy/infra/`), Caddy en reverse proxy avec HTTPS auto via challenge DNS-01 Cloudflare (IP du VPS jamais exposée publiquement, cf. `deploy/caddy/`), `docker-compose.prod.yml` (api+front), bascule DNS Cloudflare. Détail complet dans la section "Déploiement VPS" de [CLAUDE.md](../CLAUDE.md)
+- [x] CI/CD auto sur push `main` — déploie sur le VPS (job `deploy`, SSH + `docker compose up -d --build`)
+- [x] Secrets prod via `.env.prod`/`deploy/infra/.env`/`deploy/caddy/.env` sur le VPS (non commités) + secrets GitHub Actions (`VPS_SSH_PRIVATE_KEY`/`VPS_HOST`/`VPS_USER`) pour le déploiement automatique
+- [ ] **Backups PostgreSQL automatiques externalisés** (étape 7 du plan de migration VPS, pas encore fait) — le VPS est un single point of failure, dump quotidien à envoyer hors du VPS (objet storage ou équivalent)
 
 ## ✅ Bugs streak perdue à tort (diagnostiqués le 2026-07-08, corrigés les 2026-07-11 et 2026-07-14)
 
 > Cf. pièges 17 et 18 de [CLAUDE.md](../CLAUDE.md) pour le détail.
 
-- [x] **Persister les clés Data Protection en base** (corrigé le 2026-07-14) — package `Microsoft.AspNetCore.DataProtection.EntityFrameworkCore`, `PersistKeysToDbContext<ApplicationDbContext>()`, table `DataProtectionKeys` (migration `PersistDataProtectionKeys`) : les cookies joueurs survivent aux redémarrages/redéploiements Northflank. Note : une dernière invalidation des cookies a lieu au premier déploiement du fix (anciennes clés perdues avec le conteneur)
+- [x] **Persister les clés Data Protection en base** (corrigé le 2026-07-14) — package `Microsoft.AspNetCore.DataProtection.EntityFrameworkCore`, `PersistKeysToDbContext<ApplicationDbContext>()`, table `DataProtectionKeys` (migration `PersistDataProtectionKeys`) : les cookies joueurs survivent aux redémarrages/redéploiements. Note : une dernière invalidation des cookies a lieu au premier déploiement du fix (anciennes clés perdues avec le conteneur)
 - [x] **Baser la streak sur la date du défi** (corrigé le 2026-07-11) — `SubmitAnswer/Handler.cs` compare désormais `LastPlayedDate` à `DailyChallenge.Date − 1 jour` et stocke la date du défi : terminer le défi de la veille après minuit UTC ne casse plus la streak. Couvert par tests unitaires + intégration
 - [ ] (optionnel, produit) **Jour de grâce / streak freeze** — voir section Rétention
 

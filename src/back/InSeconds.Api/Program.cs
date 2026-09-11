@@ -51,10 +51,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 const string CorsPolicyName = "AllowAngular";
 
-var pgUri = Environment.GetEnvironmentVariable("NF_INSECONDS_DB_POSTGRES_URI");
-var connectionString = pgUri is not null
-    ? BuildNpgsqlConnectionString(pgUri)
-    : builder.Configuration.GetConnectionString("DefaultConnection")!;
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
 
 builder.Configuration.Sources.Add(new AppDbConfigurationSource(connectionString));
 
@@ -284,15 +281,6 @@ if (app.Environment.IsEnvironment("Testing"))
 }
 
 app.Run();
-
-// Convertit postgresql://user:pass@host:port/db?sslmode=xxx en format Npgsql key=value
-static string BuildNpgsqlConnectionString(string uri)
-{
-    var u = new Uri(uri);
-    var userInfo = u.UserInfo.Split(':');
-    var db = u.AbsolutePath.TrimStart('/').Split('?')[0];
-    return $"Host={u.Host};Port={u.Port};Database={db};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
-}
 
 // Rend Program accessible à WebApplicationFactory dans les tests d'intégration
 public partial class Program { }

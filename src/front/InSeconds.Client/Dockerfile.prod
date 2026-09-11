@@ -5,6 +5,13 @@ COPY package*.json ./
 RUN npm ci --ignore-scripts
 
 COPY . .
+
+# BUILD_TIME change à chaque déploiement -> invalide volontairement le cache
+# Docker de cette couche, sinon npm run build (et le prebuild qui génère
+# build-info.ts) est ignoré quand le code front n'a pas changé, et l'heure
+# de déploiement affichée en admin reste figée sur le dernier build front.
+ARG BUILD_TIME
+ENV BUILD_TIME=$BUILD_TIME
 RUN npm run build
 
 FROM nginxinc/nginx-unprivileged:alpine AS runtime

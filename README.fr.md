@@ -56,7 +56,7 @@ Ouvre `http://localhost:5173`.
 |-----|-------|
 | `http://localhost:5173` | Frontend (serveur de dev Angular) |
 | `http://localhost:5171/health` | Liveness de l'API (l'app répond aux requêtes) — renvoie aussi la date de build (`build`) pour identifier la version déployée |
-| `http://localhost:5171/health/ready` | Readiness de l'API (base de données joignable) — sondé par Northflank |
+| `http://localhost:5171/health/ready` | Readiness de l'API (base de données joignable) |
 | `http://localhost:5171/openapi/v1.json` | Spec OpenAPI (utilisée par NSwag pour la génération du client TS) |
 
 ## Stack
@@ -64,11 +64,11 @@ Ouvre `http://localhost:5173`.
 | Couche | Tech |
 |--------|------|
 | Backend | .NET 10, Wolverine (messaging), FluentValidation, EF Core 10 |
-| Base de données | PostgreSQL (Docker en dev, addon Northflank en prod) |
+| Base de données | PostgreSQL (Docker en dev, conteneur Postgres partagé sur le VPS en prod) |
 | Frontend | Angular 22 (standalone + signals), TypeScript, Tailwind CSS v4, SCSS |
 | Musique | API Deezer (recherche, previews 30s, pochettes) |
 | Infra dev | Docker Compose, `dotnet watch` (backend), `ng serve` (frontend) |
-| Déploiement | Northflank (front + back + PostgreSQL) |
+| Déploiement | VPS OVH (Debian), Docker Compose derrière Caddy (reverse proxy, HTTPS auto), CI/CD GitHub Actions |
 
 ## Structure du dépôt
 
