@@ -259,7 +259,7 @@ Résout un `Player` guest à partir du cookie HTTP-only signé. `SameSite=Lax; S
 - `TryResolvePlayerAsync` — résout sans jamais créer, retourne `null` sinon. Utilisé par `PlayerAuthMiddleware` sur toutes les autres routes joueur (settings, autocomplete, stats/today...) — **création paresseuse du Player** (2026-08-21) : un simple chargement de page ne crée plus de ligne `Players` en base.
 - `IssueCookie(ctx, authToken)` — pose le cookie pour un `AuthToken` donné (compte lié résolu différent du guest courant, reconnexion multi-appareils). `ClearCookie(ctx)` — supprime le cookie (déconnexion).
 
-**Clés Data Protection persistées en base** : le cookie est chiffré avec les clés ASP.NET Data Protection ; elles sont stockées dans la table `DataProtectionKeys` via `PersistKeysToDbContext<ApplicationDbContext>()` (package `Microsoft.AspNetCore.DataProtection.EntityFrameworkCore`, migration `PersistDataProtectionKeys`). Sans cette persistance, chaque redémarrage/redéploiement Northflank régénérait les clés et invalidait tous les cookies joueurs (streaks et historiques perdus).
+**Clés Data Protection persistées en base** : le cookie est chiffré avec les clés ASP.NET Data Protection ; elles sont stockées dans la table `DataProtectionKeys` via `PersistKeysToDbContext<ApplicationDbContext>()` (package `Microsoft.AspNetCore.DataProtection.EntityFrameworkCore`, migration `PersistDataProtectionKeys`). Sans cette persistance, chaque redémarrage/redéploiement régénérait les clés et invalidait tous les cookies joueurs (streaks et historiques perdus).
 
 ### AccountLinkingService
 

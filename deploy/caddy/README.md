@@ -42,7 +42,7 @@ Le nouveau projet doit rejoindre `caddy-net` en réseau externe dans son propre
 
 `FRONT_DOMAIN`/`API_DOMAIN` ont d'abord pointé vers des sous-domaines de test
 (`vps.inseconds.cc` / `vps-api.inseconds.cc`) pour valider tout le mécanisme (HTTPS, routage)
-sans toucher au DNS de production tant que Northflank servait `inseconds.cc`. Un point clé
+sans toucher au DNS de production. Un point clé
 découvert à cette occasion : le challenge **DNS-01 fonctionne indépendamment de la cible DNS
 actuelle du domaine** (il ne fait que créer un enregistrement TXT via l'API Cloudflare) — les
 certificats pour les **vrais** domaines (`inseconds.cc`, `www.inseconds.cc`, `api.inseconds.cc`)
