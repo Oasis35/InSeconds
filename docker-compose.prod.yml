@@ -20,6 +20,8 @@ services:
     build:
       context: ./src/front/InSeconds.Client
       dockerfile: Dockerfile.prod
+      args:
+        BUILD_TIME: ${BUILD_TIME}
     container_name: inseconds.front
     restart: unless-stopped
     depends_on:
