@@ -96,6 +96,20 @@ builder.Services.AddRateLimiter(options =>
                 SegmentsPerWindow = 5,
                 QueueLimit = 0,
             }));
+
+    // Anti "email bombing" sur /api/auth/magic-link/request : le throttle existant de 60s
+    // par email (RequestMagicLinkHandler) n'empêche pas de spammer une victime une fois par
+    // minute indéfiniment, ni de solliciter Resend en masse sur des emails différents.
+    options.AddPolicy(RequestMagicLinkEndpoint.RateLimiterPolicy, httpContext =>
+        RateLimitPartition.GetSlidingWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(10),
+                SegmentsPerWindow = 5,
+                QueueLimit = 0,
+            }));
 });
 
 builder.Services.AddOptions<AppSettings>()
@@ -156,6 +170,9 @@ builder.Services.AddScoped<ICookieAuthService>(sp => new CookieAuthService(
 
 builder.Services.AddScoped<IMagicLinkTokenService, MagicLinkTokenService>();
 builder.Services.AddScoped<IAccountLinkingService, AccountLinkingService>();
+
+// Singleton : jetons admin en mémoire, un seul process API sur le VPS (pas de scale-out).
+builder.Services.AddSingleton<IAdminTokenStore, AdminTokenStore>();
 
 // ResendEmailSender hors Dev/Testing (config réelle requise) ; NullEmailSender sinon
 // (aucune config nécessaire pour développer — logue le contenu de l'email).
@@ -242,6 +259,8 @@ app.UseCors(CorsPolicyName);
 app.UseRateLimiter();
 app.UseMiddleware<PlayerAuthMiddleware>();
 
+var isTesting = app.Environment.IsEnvironment("Testing");
+
 // Liveness : l'app répond. Renvoie un JSON { status, utc, build } consommé par le badge
 // d'état backend du front (app.ts) — ne pas changer le format sans adapter le front
 // (ajouter un champ est OK). `build` = date UTC de compilation (AssemblyMetadata BuildUtc,
@@ -272,7 +291,7 @@ app.MapGetTodaySession();
 app.MapSubmitAnswer();
 app.MapAbandonSession();
 app.MapUpdateListening();
-app.MapAdminLogin(enableRateLimiting: !app.Environment.IsEnvironment("Testing"));
+app.MapAdminLogin(enableRateLimiting: !isTesting);
 app.MapResetToday();
 app.MapGenerateToday();
 app.MapRefreshPreviews();
@@ -283,7 +302,7 @@ app.MapDeezerSearch();
 app.MapDeezerSearchPublic();
 app.MapCreateChallenge();
 app.MapSendTestEmail();
-app.MapRequestMagicLink();
+app.MapRequestMagicLink(enableRateLimiting: !isTesting);
 app.MapVerifyMagicLink();
 app.MapLogout();
 
@@ -292,7 +311,7 @@ if (app.Environment.IsDevelopment())
     app.MapDevLoginEndpoint();
 }
 
-if (app.Environment.IsEnvironment("Testing"))
+if (isTesting)
 {
     app.MapE2EReset();
 }

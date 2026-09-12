@@ -1,9 +1,10 @@
 using System.Security.Cryptography;
 using System.Text;
+using InSeconds.Api.Common.Auth;
 
 namespace InSeconds.Api.Features.Admin.Login;
 
-public sealed class LoginHandler(IConfiguration configuration)
+public sealed class LoginHandler(IConfiguration configuration, IAdminTokenStore adminTokens)
 {
     public Task<IResult> Handle(LoginCommand command, CancellationToken cancellationToken)
     {
@@ -12,7 +13,7 @@ public sealed class LoginHandler(IConfiguration configuration)
         if (string.IsNullOrEmpty(adminPassword) || !PasswordEquals(command.Password, adminPassword))
             return Task.FromResult(Results.Unauthorized());
 
-        return Task.FromResult(Results.Ok(new { token = LoginEndpoint.AdminToken }));
+        return Task.FromResult(Results.Ok(new { token = adminTokens.IssueToken() }));
     }
 
     // Comparaison en temps constant : un simple "!=" sur string court-circuite au premier
