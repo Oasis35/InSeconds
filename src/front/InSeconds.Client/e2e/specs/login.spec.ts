@@ -1,16 +1,13 @@
 import { test, expect } from '../fixtures/test';
 import { GamePage } from '../pages/game.page';
 
-const WHITELISTED_EMAIL = 'allowed@e2e.test';
-
-// La whitelist e2e (Features/E2E/ResetEndpoint.SeedData) pré-autorise
-// allowed@e2e.test — pas besoin de passer par l'onglet admin.
+const TEST_EMAIL = 'testeur@e2e.test';
 
 async function requestMagicLink(page: import('@playwright/test').Page, email: string): Promise<void> {
   await page.goto('/login');
   await page.getByPlaceholder('ton@email.com').fill(email);
   await page.getByRole('button', { name: 'Recevoir un lien' }).click();
-  await expect(page.getByText('un lien de connexion vient de lui être envoyé')).toBeVisible();
+  await expect(page.getByText('un lien de connexion vient de t\'être envoyé')).toBeVisible();
 }
 
 // L'URL du lien magique est générée avec App:PublicUrl (fixe, ne suit pas forcément le
@@ -25,10 +22,10 @@ test.describe('Connexion par lien magique', () => {
     await api.reset();
   });
 
-  test('parcours complet : email whitelisté -> lien -> pseudo -> connecté', async ({ page, api }) => {
-    await requestMagicLink(page, WHITELISTED_EMAIL);
+  test('parcours complet : nimporte quel email -> lien -> pseudo -> connecté', async ({ page, api }) => {
+    await requestMagicLink(page, TEST_EMAIL);
 
-    const linkUrl = await api.getLastMagicLinkUrl(WHITELISTED_EMAIL);
+    const linkUrl = await api.getLastMagicLinkUrl(TEST_EMAIL);
     await page.goto(pathOf(linkUrl));
 
     await page.getByRole('button', { name: 'Confirmer la connexion' }).click();
@@ -43,12 +40,6 @@ test.describe('Connexion par lien magique', () => {
     await expect(page.getByTitle('AliceE2E')).toBeVisible();
   });
 
-  test('email non whitelisté : message générique identique, aucun lien à récupérer', async ({ page, api }) => {
-    await requestMagicLink(page, 'inconnu@e2e.test');
-
-    await expect(api.getLastMagicLinkUrl('inconnu@e2e.test')).rejects.toThrow();
-  });
-
   test('lien invalide affiche une erreur avec un retour vers /login', async ({ page }) => {
     await page.goto('/login/verify?token=un-token-qui-nexiste-pas');
     await page.getByRole('button', { name: 'Confirmer la connexion' }).click();
@@ -60,8 +51,8 @@ test.describe('Connexion par lien magique', () => {
 
   test('reconnexion depuis un autre appareil résout le même compte', async ({ page, api, browser }) => {
     // Appareil A : première connexion, crée le compte.
-    await requestMagicLink(page, WHITELISTED_EMAIL);
-    let linkUrl = await api.getLastMagicLinkUrl(WHITELISTED_EMAIL);
+    await requestMagicLink(page, TEST_EMAIL);
+    let linkUrl = await api.getLastMagicLinkUrl(TEST_EMAIL);
     await page.goto(pathOf(linkUrl));
     await page.getByRole('button', { name: 'Confirmer la connexion' }).click();
     await page.getByPlaceholder('Ton pseudo').fill('BobE2E');
@@ -82,8 +73,8 @@ test.describe('Connexion par lien magique', () => {
       }
     });
     const pageB = await contextB.newPage();
-    await requestMagicLink(pageB, WHITELISTED_EMAIL);
-    linkUrl = await api.getLastMagicLinkUrl(WHITELISTED_EMAIL);
+    await requestMagicLink(pageB, TEST_EMAIL);
+    linkUrl = await api.getLastMagicLinkUrl(TEST_EMAIL);
     await pageB.goto(pathOf(linkUrl));
     await pageB.getByRole('button', { name: 'Confirmer la connexion' }).click();
 
@@ -96,8 +87,8 @@ test.describe('Connexion par lien magique', () => {
   });
 
   test('déconnexion depuis le footer revient à l\'état guest', async ({ page, api }) => {
-    await requestMagicLink(page, WHITELISTED_EMAIL);
-    const linkUrl = await api.getLastMagicLinkUrl(WHITELISTED_EMAIL);
+    await requestMagicLink(page, TEST_EMAIL);
+    const linkUrl = await api.getLastMagicLinkUrl(TEST_EMAIL);
     await page.goto(pathOf(linkUrl));
     await page.getByRole('button', { name: 'Confirmer la connexion' }).click();
     await page.getByPlaceholder('Ton pseudo').fill('CarlE2E');
@@ -106,12 +97,15 @@ test.describe('Connexion par lien magique', () => {
     const game = new GamePage(page);
     await game.waitForWelcome();
 
-    // Le clic ouvre la pop-up "compte connecté" (plus de déconnexion directe) —
-    // il faut confirmer explicitement via son bouton "Se déconnecter".
+    // Le clic sur l'icône du footer ouvre l'écran Profil (plus de déconnexion
+    // directe) — il faut confirmer explicitement via son bouton "Se déconnecter".
     await page.getByTitle('CarlE2E').click();
-    await expect(page.getByText('Compte connecté')).toBeVisible();
+    await expect(page).toHaveURL(/\/profile$/);
     await page.getByRole('button', { name: 'Se déconnecter' }).click();
+    await expect(page.getByText('Se déconnecter ?')).toBeVisible();
+    await page.getByRole('button', { name: 'Oui, me déconnecter' }).click();
 
+    await game.waitForWelcome();
     await expect(page.getByTitle('Se connecter')).toBeVisible();
   });
 });

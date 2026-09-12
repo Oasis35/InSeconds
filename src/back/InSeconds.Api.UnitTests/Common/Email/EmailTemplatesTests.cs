@@ -33,34 +33,8 @@ public sealed class EmailTemplatesTests
         subject.Should().Be("Ton lien de connexion IN//SECONDS");
     }
 
-    [Fact]
-    public void WhitelistInvitationEmailTemplate_ContientLUrlPassee()
-    {
-        var (_, html) = WhitelistInvitationEmailTemplate.Build(MagicLinkUrl);
-
-        html.Should().Contain(MagicLinkUrl);
-    }
-
-    [Fact]
-    public void WhitelistInvitationEmailTemplate_MentionneLaDureeDe7Jours()
-    {
-        var (_, html) = WhitelistInvitationEmailTemplate.Build(MagicLinkUrl);
-
-        html.Should().Contain("7 jours");
-        html.Should().NotContain("15 minutes");
-    }
-
-    [Fact]
-    public void WhitelistInvitationEmailTemplate_SujetAttendu()
-    {
-        var (subject, _) = WhitelistInvitationEmailTemplate.Build(MagicLinkUrl);
-
-        subject.Should().Be("Tu es invité·e à tester les comptes IN//SECONDS");
-    }
-
     [Theory]
     [InlineData("magic-link")]
-    [InlineData("whitelist-invitation")]
     public void Render_AppliqueLeLayoutPartageEtNeLaissePasDeJeton(string template)
     {
         var html = EmailTemplateRenderer.Render(

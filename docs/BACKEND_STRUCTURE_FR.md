@@ -180,20 +180,6 @@ public sealed class GameSessionAnswer
 
 Voir la table des valeurs par défaut dans [`CLAUDE.md`](../CLAUDE.md#settings-en-base-valeurs-par-défaut).
 
-### AllowedEmail (whitelist admin — comptes utilisateurs)
-
-```csharp
-public sealed class AllowedEmail
-{
-    public int Id { get; set; }
-    public required string Email { get; set; }  // normalisé lowercase
-    public DateTime CreatedAt { get; set; }
-}
-```
-
-- `IX_AllowedEmails_Email` (unique)
-- Gate uniquement qui peut **créer/utiliser un compte lié** — le jeu guest reste ouvert à tous. Voir `CLAUDE.md` (racine, "Comptes utilisateurs — whitelist admin + login par magic link") et le `CLAUDE.md` de `InSeconds.Api` (`Features/Admin/AllowedEmails/`, `Features/Auth/`) pour le détail du flow.
-
 ### MagicLinkToken (login sans mot de passe)
 
 ```csharp
@@ -202,7 +188,7 @@ public sealed class MagicLinkToken
     public int Id { get; set; }
     public required string Email { get; set; }
     public required string TokenHash { get; set; }  // SHA-256 — le token brut n'est jamais stocké
-    public DateTime ExpiresAt { get; set; }          // 15 min (self-service) ou 7 jours (invitation admin)
+    public DateTime ExpiresAt { get; set; }          // 15 min
     public DateTime? ConsumedAt { get; set; }
     public DateTime CreatedAt { get; set; }
 }
@@ -255,7 +241,7 @@ public sealed class SettingsService(IOptions<AppSettings> options)
 
 Résout un `Player` guest à partir du cookie HTTP-only signé. `SameSite=Lax; Secure=true` en prod (front `inseconds.cc`/API `api.inseconds.cc` same-site depuis le passage au domaine public ; `SameSite=None` historiquement, sur les anciennes URLs `code.run` cross-site — cf. CLAUDE.md racine, piège 23). Deux méthodes sur `ICookieAuthService` :
 
-- `ResolveOrCreatePlayerAsync` — crée un `Player` si aucun n'est résolu (et pose le cookie). Utilisé par les points d'entrée qui doivent en créer un à la demande : `StartSession` (démarrer une partie), `GetCurrentPlayer` (`/api/players/me`, appelé à chaque page vue côté joueur via `PlayerSessionService`), `VerifyMagicLink`/`DevLogin` (se connecter est une action délibérée).
+- `ResolveOrCreatePlayerAsync` — crée un `Player` si aucun n'est résolu (et pose le cookie). Utilisé par les points d'entrée qui doivent en créer un à la demande : `StartSession` (démarrer une partie), `GetCurrentPlayer` en mode `peek=false` (usage admin, `BrowserIdComponent`), `VerifyMagicLink`/`DevLogin` (se connecter est une action délibérée). **Pas** utilisé par `PlayerSessionService.load()` côté joueur, qui appelle `GetCurrentPlayer` avec `peek=true` (lecture seule, `TryResolvePlayerAsync`) à chaque page vue — sans ça, tout visiteur guest se verrait poser un cookie dès la première page.
 - `TryResolvePlayerAsync` — résout sans jamais créer, retourne `null` sinon. Utilisé par `PlayerAuthMiddleware` sur toutes les autres routes joueur (settings, autocomplete, stats/today...) — **création paresseuse du Player** (2026-08-21) : un simple chargement de page ne crée plus de ligne `Players` en base.
 - `IssueCookie(ctx, authToken)` — pose le cookie pour un `AuthToken` donné (compte lié résolu différent du guest courant, reconnexion multi-appareils). `ClearCookie(ctx)` — supprime le cookie (déconnexion).
 
@@ -271,9 +257,9 @@ Résout un `Player` guest à partir du cookie HTTP-only signé. `SameSite=Lax; S
 
 ### ResendEmailSender / IEmailSender
 
-Envoi d'emails (lien de connexion, invitation whitelist) via **l'API HTTP Resend** (plan gratuit), `HttpClient` typé configuré une fois à l'enregistrement (`BaseAddress` + header `Authorization: Bearer {ApiKey}`, cf. `Program.cs`). Remplace l'ancien envoi SMTP direct/MailKit (compte Gmail + alias "Envoyer en tant que"), abandonné pour la délivrabilité et la simplicité de config (plus de mot de passe d'application à gérer). `NullEmailSender` (Dev/Testing) logue le lien au lieu d'un vrai envoi et l'enregistre dans `TestEmailCapture` pour les tests E2E/intégration (le token brut n'étant jamais en base, c'est l'unique moyen de le récupérer côté test).
+Envoi d'emails (lien de connexion) via **l'API HTTP Resend** (plan gratuit), `HttpClient` typé configuré une fois à l'enregistrement (`BaseAddress` + header `Authorization: Bearer {ApiKey}`, cf. `Program.cs`). Remplace l'ancien envoi SMTP direct/MailKit (compte Gmail + alias "Envoyer en tant que"), abandonné pour la délivrabilité et la simplicité de config (plus de mot de passe d'application à gérer). `NullEmailSender` (Dev/Testing) logue le lien au lieu d'un vrai envoi et l'enregistre dans `TestEmailCapture` pour les tests E2E/intégration (le token brut n'étant jamais en base, c'est l'unique moyen de le récupérer côté test).
 
-Le **HTML** des emails (lien de connexion, invitation whitelist) vit dans `Common/Email/Templates/*.html`, marqués `<EmbeddedResource>` (compilés dans la DLL, rien à copier au déploiement). `_layout.html` contient tout le commun (DA du jeu : `<style>`, décor, header, carte, footer) avec des trous `{{SECTION:preheader/body/footer}}` ; chaque `magic-link.html` / `whitelist-invitation.html` ne fournit que ces sections, délimitées par des marqueurs `<!--#nom-->`. `EmailTemplateRenderer.Render(name, vars)` charge layout + fichier (cache par nom), injecte les sections et substitue le jeton `{{MAGIC_LINK_URL}}` (substitution littérale, pas de moteur de template). Les classes `MagicLinkEmailTemplate` / `WhitelistInvitationEmailTemplate` exposent `Build(url) → (Subject, Html)` : sujet en `const`, HTML délégué au renderer.
+Le **HTML** de l'email (lien de connexion) vit dans `Common/Email/Templates/*.html`, marqués `<EmbeddedResource>` (compilés dans la DLL, rien à copier au déploiement). `_layout.html` contient tout le commun (DA du jeu : `<style>`, décor, header, carte, footer) avec des trous `{{SECTION:preheader/body/footer}}` ; `magic-link.html` ne fournit que ces sections, délimitées par des marqueurs `<!--#nom-->`. `EmailTemplateRenderer.Render(name, vars)` charge layout + fichier (cache par nom), injecte les sections et substitue le jeton `{{MAGIC_LINK_URL}}` (substitution littérale, pas de moteur de template). La classe `MagicLinkEmailTemplate` expose `Build(url) → (Subject, Html)` : sujet en `const`, HTML délégué au renderer.
 
 ### OriginValidator
 
@@ -314,7 +300,8 @@ Les deux endpoints sont publics (mappés avant `PlayerAuthMiddleware`). Logging 
 | `Sessions/AbandonSession` | `PUT /api/sessions/{id}/abandon` | Marque une session Pending comme abandonnée |
 | `Stats/Today` | `GET /api/stats/today` | Score joueur, médiane, stats par morceau. `TrackStat` inclut `ArtistCorrect`/`TitleCorrect`/`ListenedDurationSeconds`/`Score` (nullable — remplis seulement si le joueur a une session `Completed`) + `GuessTimeDistribution`/`NotFoundCount` (histogramme) |
 | `Settings/GetSettings` | `GET /api/settings` | Expose les settings publics (paliers, timer, scores) |
-| `Players/GetCurrentPlayer` | `GET /api/players/me` | Résout **et crée si besoin** le `Player` du cookie du navigateur courant (`ResolveOrCreatePlayerAsync`, pas juste une lecture du middleware) — utilisé par l'admin pour afficher/copier son propre ID et le reconnaître dans les listes de joueurs |
+| `Players/GetCurrentPlayer` | `GET /api/players/me?peek=` | `peek=false` (défaut, usage admin) : résout **et crée si besoin** le `Player` (`ResolveOrCreatePlayerAsync`) — affiche/copie son propre ID, reconnaissance dans les listes de joueurs. `peek=true` (usage joueur, `PlayerSessionService.load()`) : lecture seule, **ne crée jamais** de Player/cookie. Réponse : `PlayerId`/`IsGuest`/`Email?`/`Pseudo?`/`CurrentStreak`/`GamesPlayed` (2026-09 — `GamesPlayed` calculé, pas stocké : `COUNT` des `GameSessions.Completed`) |
+| `Players/UpdatePseudo` | `PUT /api/players/me/pseudo` | Change le pseudo du compte lié (écran `/profile`, 2026-09) — 403 si guest, 409 `pseudo_taken`, même allowlist regex que `VerifyMagicLink` |
 | `Admin/Login` | `POST /api/admin/login` | Génère un Bearer token admin |
 | `Admin/Tracks/GetTracks` | `GET /api/admin/tracks` | Liste Available / Used (`TrackDto.HasPreview` lu depuis la DB) |
 | `Admin/Tracks/AddTrack` | `POST /api/admin/tracks` | Ajoute un morceau au pool (upsert sur DeezerTrackId) |

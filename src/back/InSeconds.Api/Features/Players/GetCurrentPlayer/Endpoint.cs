@@ -1,4 +1,5 @@
 using InSeconds.Api.Common.Auth;
+using InSeconds.Api.Domain;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -22,12 +23,18 @@ public static class GetCurrentPlayerEndpoint
                 : await cookieAuth.ResolveOrCreatePlayerAsync(ctx, ct);
 
             if (playerId is null)
-                return Results.Ok(new GetCurrentPlayerResponse(Guid.Empty, true, null, null));
+                return Results.Ok(new GetCurrentPlayerResponse(Guid.Empty, true, null, null, 0, 0));
 
             var player = await db.Players
                 .AsNoTracking()
                 .Where(p => p.Id == playerId)
-                .Select(p => new GetCurrentPlayerResponse(p.Id, p.IsGuest, p.Email, p.Pseudo))
+                .Select(p => new GetCurrentPlayerResponse(
+                    p.Id,
+                    p.IsGuest,
+                    p.Email,
+                    p.Pseudo,
+                    p.CurrentStreak,
+                    p.GameSessions.Count(s => s.Status == SessionStatus.Completed)))
                 .FirstAsync(ct);
 
             return Results.Ok(player);
@@ -40,4 +47,4 @@ public static class GetCurrentPlayerEndpoint
     }
 }
 
-public sealed record GetCurrentPlayerResponse(Guid PlayerId, bool IsGuest, string? Email, string? Pseudo);
+public sealed record GetCurrentPlayerResponse(Guid PlayerId, bool IsGuest, string? Email, string? Pseudo, int CurrentStreak, int GamesPlayed);

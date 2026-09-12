@@ -138,19 +138,19 @@
 - [ ] **Frontend** — page ou modale "Rejouer un ancien défi" accessible depuis l'écran "déjà joué" ou la home ; liste les derniers défis disponibles
 - [ ] **Frontend** — indicateur visuel "Mode entraînement" pendant la partie (bandeau ou badge), récap final sans partage emoji ni mise à jour du streak
 - [ ] **UX** — décider si les anciens défis sont accessibles sans limite (tout l'historique) ou fenêtre glissante (ex : 7 derniers jours)
-- Note : ce chantier bénéficie de l'infrastructure de comptes posée en 2026-08 (whitelist + magic link, cf. section ci-dessous) — un `Player` identifié de façon stable dans le temps (pas seulement un cookie guest) est un prérequis naturel pour "reprendre où on en était" sur un ancien défi, même si le rattrapage lui-même reste hors scope de cette livraison.
+- Note : ce chantier bénéficie de l'infrastructure de comptes posée en 2026-08 (magic link, cf. section ci-dessous) — un `Player` identifié de façon stable dans le temps (pas seulement un cookie guest) est un prérequis naturel pour "reprendre où on en était" sur un ancien défi, même si le rattrapage lui-même reste hors scope de cette livraison.
 
-## ✅ Comptes utilisateurs (whitelist + magic link)
+## ✅ Comptes utilisateurs (signup ouvert par magic link)
 
-> Le jeu guest reste 100% ouvert — la whitelist gate uniquement qui peut créer/utiliser un compte lié. Détail complet : `CLAUDE.md` racine ("Comptes utilisateurs — whitelist admin + login par magic link") et `src/back/InSeconds.Api/CLAUDE.md` (`Features/Auth/`, `Features/Admin/AllowedEmails/`, `Common/Auth/AccountLinkingService`).
+> Le jeu guest reste 100% ouvert — n'importe quel email peut créer/utiliser un compte lié (whitelist admin retirée le 2026-09). Détail complet : `CLAUDE.md` racine ("Comptes utilisateurs — signup ouvert par magic link") et `src/back/InSeconds.Api/CLAUDE.md` (`Features/Auth/`, `Common/Auth/AccountLinkingService`).
 
-- [x] Whitelist admin des emails autorisés (`Features/Admin/AllowedEmails/`, CQRS complet) + email d'invitation automatique (7 jours)
 - [x] Login par magic link (15 min, `RequestMagicLink`/`VerifyMagicLink`), envoi via l'API Resend (plan gratuit)
 - [x] `AccountLinkingService` — conversion du guest courant à la première connexion, résolution multi-appareils aux suivantes (terrain préparé pour un futur Google OAuth)
 - [x] Anti-CSRF (`OriginValidator`) sur `VerifyMagicLink` et l'authentification admin
 - [x] Connexion rapide dev (3 comptes seed, `Features/Auth/DevLogin/`, jamais en Testing/Production)
-- [x] Front : `PlayerSessionService`, écrans `/login` + `/login/verify`, icône de connexion discrète dans le footer, onglet admin "Emails autorisés", diagnostic "Test email", pseudo dans les chips joueur admin
+- [x] Front : `PlayerSessionService`, écrans `/login` + `/login/verify`, icône de connexion discrète dans le footer, diagnostic "Test email", pseudo dans les chips joueur admin
 - [x] **Cookie `authToken` en `SameSite=Lax` en prod** (2026-09-02) — front (`inseconds.cc`) et API (`api.inseconds.cc`) same-site depuis le passage au domaine public, `SameSite=None` n'était plus nécessaire et exposait le cookie (durée nominale 90 jours) à la purge agressive des navigateurs sur les cookies cross-site (Safari ITP notamment) → symptôme rapporté : reconnexion quasi quotidienne par magic link. Détail : `CLAUDE.md` racine, piège 23
+- [x] **Écran Profil `/profile` + avatar header + nudges de connexion** (2026-09) — écran dédié (pseudo éditable via `PUT /api/players/me/pseudo`, streak, parties jouées calculées, déconnexion) remplaçant l'ancienne pop-up "Compte connecté" du footer ; avatar dans le header pour un compte lié ; rappels contextuels pour les guests (boutons accueil/reprise, bannières déjà-joué/récap, toast de streak), tous masqués pour un compte lié. Détail complet : `features/game/CLAUDE.md`
 
 ## 🚧 Rétention & Engagement
 

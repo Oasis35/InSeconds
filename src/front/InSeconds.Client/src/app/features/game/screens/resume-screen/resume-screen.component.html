@@ -15,6 +15,14 @@
         style="font-family:var(--font-display);background:var(--gradient-primary);color:var(--text-on-primary);letter-spacing:0.06em;box-shadow:var(--glow-primary)">
         {{ 'resume.resume' | translate }}
       </button>
+      @if (!playerSession.isLinked()) {
+        <a routerLink="/login"
+           class="w-full inline-flex items-center justify-center gap-2 rounded-2xl font-bold text-xs tracking-wide uppercase transition-all active:scale-95 touch-manipulation"
+           style="min-height:46px;font-family:var(--font-display);letter-spacing:0.06em;border:1.5px solid rgb(var(--rgb-accent-2) / 0.7);color:var(--color-accent-2)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          {{ 'resume.loginCta' | translate }}
+        </a>
+      }
       <button (click)="showAbandonConfirm.set(true)"
         class="w-full py-3 rounded-2xl text-sm font-semibold transition-all active:scale-95"
         style="background:var(--bg-inactive);color:var(--text-slate);border:1px solid var(--border-subtle)">

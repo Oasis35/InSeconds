@@ -1,7 +1,9 @@
 import { Component, inject, signal, computed, effect, viewChild, OnInit, OnDestroy, HostListener, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
 import { ClipboardService } from '../../core/services/clipboard.service';
+import { PlayerSessionService } from '../../core/services/player-session.service';
 import { GameFacadeService } from './services/game-facade.service';
 import { TrackSlot, ResumedAnswer } from '../../core/models/game.models';
 import { BlindRoundComponent, AnsweredEvent } from './blind-round/blind-round.component';
@@ -25,7 +27,7 @@ type GameState = 'loading' | 'welcome' | 'resume_prompt' | 'playing' | 'done' | 
 @Component({
   selector: 'app-game',
   imports: [
-    BlindRoundComponent, ConfirmSheetComponent, TranslatePipe,
+    BlindRoundComponent, ConfirmSheetComponent, TranslatePipe, RouterLink,
     WelcomeScreenComponent, ResumeScreenComponent, StatusScreenComponent,
     AlreadyPlayedScreenComponent, FinalRecapScreenComponent,
     GameHeaderComponent, GameFooterComponent, DecorBackgroundComponent,
@@ -39,6 +41,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
   private readonly api = inject(ApiClient);
   private readonly audioPlayer = inject(AudioPlayerService);
   private readonly clipboard = inject(ClipboardService);
+  protected readonly playerSession = inject(PlayerSessionService);
   private readonly translate = inject(TranslateService);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly gameState = signal<GameState>('loading');
@@ -66,6 +69,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
   protected readonly showAbandonConfirm = signal(false);
   protected readonly abandonLoading = signal(false);
   protected readonly sessionAbandoned = signal(false);
+  protected readonly streakToastDismissed = signal(false);
 
   // Streak à afficher : depuis la session (welcome/playing/done) ou depuis les stats (already_played)
   protected readonly displayStreak = computed(() => {
@@ -192,6 +196,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
         this.showAbandonConfirm.set(false);
         this.sessionAbandoned.set(true);
         this.gameState.set('already_played');
+        this.streakToastDismissed.set(false);
         this.startCountdown();
       },
       error: () => {
@@ -254,6 +259,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
     this.currentTrackMinListenedSeconds.set(null);
     if (next >= this.tracks().length) {
       this.gameState.set('done');
+      this.streakToastDismissed.set(false);
       this.displayedTotalScore.set(0);
       countUp(this.totalScore(), v => this.displayedTotalScore.set(v), 1000);
       this.startCountdown();
@@ -410,6 +416,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
           const errorCode = err.error?.error as string | undefined;
           this.sessionAbandoned.set(errorCode === 'abandoned');
           this.gameState.set('already_played');
+          this.streakToastDismissed.set(false);
           this.startCountdown();
           if (!this.sessionAbandoned()) {
             this.api.apiStatsToday().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(stats => this.todayStats.set(stats));
@@ -448,6 +455,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
           case 'already_played':
             this.sessionAbandoned.set(false);
             this.gameState.set('already_played');
+            this.streakToastDismissed.set(false);
             this.startCountdown();
             this.api.apiStatsToday().pipe(takeUntilDestroyed(this.destroyRef))
               .subscribe(stats => this.todayStats.set(stats));
@@ -455,6 +463,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
           case 'abandoned':
             this.sessionAbandoned.set(true);
             this.gameState.set('already_played');
+            this.streakToastDismissed.set(false);
             this.startCountdown();
             break;
           case 'no_challenge':

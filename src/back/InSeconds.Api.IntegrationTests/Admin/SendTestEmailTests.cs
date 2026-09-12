@@ -46,13 +46,11 @@ public class SendTestEmailTests(IntegrationTestFactory factory) : IAsyncLifetime
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
         var playersBefore = await db.Players.CountAsync();
-        var allowedBefore = await db.AllowedEmails.CountAsync();
         var tokensBefore = await db.MagicLinkTokens.CountAsync();
 
         await AdminPostAsync("/api/admin/send-test-email", new { ToEmail = "diagnostic-sans-effet@example.com" });
 
         Assert.Equal(playersBefore, await db.Players.CountAsync());
-        Assert.Equal(allowedBefore, await db.AllowedEmails.CountAsync());
         Assert.Equal(tokensBefore, await db.MagicLinkTokens.CountAsync());
     }
 

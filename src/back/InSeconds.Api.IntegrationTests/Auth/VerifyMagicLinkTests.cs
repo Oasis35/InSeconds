@@ -13,7 +13,7 @@ namespace InSeconds.Api.IntegrationTests.Auth;
 [Collection("Integration")]
 public class VerifyMagicLinkTests(IntegrationTestFactory factory) : IAsyncLifetime
 {
-    private const string WhitelistedEmail = "allowed@e2e.test";
+    private const string TestEmail = "testeur@example.com";
 
     public Task InitializeAsync() => factory.ResetAsync();
     public Task DisposeAsync() => Task.CompletedTask;
@@ -22,7 +22,7 @@ public class VerifyMagicLinkTests(IntegrationTestFactory factory) : IAsyncLifeti
     public async Task VerifyMagicLink_PremiereConnexion_SansPseudo_ReturnsNeedsPseudo()
     {
         var client = factory.CreateClient();
-        var token = await RequestAndExtractTokenAsync(client, WhitelistedEmail);
+        var token = await RequestAndExtractTokenAsync(client, TestEmail);
 
         var resp = await client.PostAsJsonAsync("/api/auth/magic-link/verify", new { Token = token, Pseudo = (string?)null });
 
@@ -42,7 +42,7 @@ public class VerifyMagicLinkTests(IntegrationTestFactory factory) : IAsyncLifeti
         // front appelle GetCurrentPlayer via PlayerSessionService avant de proposer le login).
         var meBefore = await client.GetFromJsonAsync<PlayerMeDto>("/api/players/me");
 
-        var token = await RequestAndExtractTokenAsync(client, WhitelistedEmail);
+        var token = await RequestAndExtractTokenAsync(client, TestEmail);
         var resp = await client.PostAsJsonAsync("/api/auth/magic-link/verify", new { Token = token, Pseudo = "Testeur" });
 
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
@@ -52,7 +52,7 @@ public class VerifyMagicLinkTests(IntegrationTestFactory factory) : IAsyncLifeti
         var meAfter = await client.GetFromJsonAsync<PlayerMeDto>("/api/players/me");
         Assert.Equal(meBefore!.PlayerId, meAfter!.PlayerId);
         Assert.False(meAfter.IsGuest);
-        Assert.Equal(WhitelistedEmail, meAfter.Email);
+        Assert.Equal(TestEmail, meAfter.Email);
         Assert.Equal("Testeur", meAfter.Pseudo);
     }
 
@@ -75,7 +75,7 @@ public class VerifyMagicLinkTests(IntegrationTestFactory factory) : IAsyncLifeti
         }
 
         var client = factory.CreateClient();
-        var token = await RequestAndExtractTokenAsync(client, WhitelistedEmail);
+        var token = await RequestAndExtractTokenAsync(client, TestEmail);
 
         var resp = await client.PostAsJsonAsync("/api/auth/magic-link/verify", new { Token = token, Pseudo = "PseudoPris" });
 
@@ -101,7 +101,7 @@ public class VerifyMagicLinkTests(IntegrationTestFactory factory) : IAsyncLifeti
         }
 
         var client = factory.CreateClient();
-        var token = await RequestAndExtractTokenAsync(client, WhitelistedEmail);
+        var token = await RequestAndExtractTokenAsync(client, TestEmail);
 
         var firstAttempt = await client.PostAsJsonAsync("/api/auth/magic-link/verify", new { Token = token, Pseudo = "DejaPris" });
         Assert.Equal(HttpStatusCode.Conflict, firstAttempt.StatusCode);
@@ -117,7 +117,7 @@ public class VerifyMagicLinkTests(IntegrationTestFactory factory) : IAsyncLifeti
     public async Task VerifyMagicLink_PseudoCaracteresInterdits_Returns400()
     {
         var client = factory.CreateClient();
-        var token = await RequestAndExtractTokenAsync(client, WhitelistedEmail);
+        var token = await RequestAndExtractTokenAsync(client, TestEmail);
 
         var resp = await client.PostAsJsonAsync("/api/auth/magic-link/verify", new { Token = token, Pseudo = "<script>" });
 
@@ -128,13 +128,13 @@ public class VerifyMagicLinkTests(IntegrationTestFactory factory) : IAsyncLifeti
     public async Task VerifyMagicLink_CompteDejaLie_ReconnexionAutreAppareil_ResoutLeMemePlayer()
     {
         var deviceA = factory.CreateClient();
-        var tokenA = await RequestAndExtractTokenAsync(deviceA, WhitelistedEmail);
+        var tokenA = await RequestAndExtractTokenAsync(deviceA, TestEmail);
         await deviceA.PostAsJsonAsync("/api/auth/magic-link/verify", new { Token = tokenA, Pseudo = "MultiDevice" });
         var meA = await deviceA.GetFromJsonAsync<PlayerMeDto>("/api/players/me");
 
         // Deuxième "appareil" = deuxième HttpClient sans cookie partagé
         var deviceB = factory.CreateClient();
-        var tokenB = await RequestAndExtractTokenAsync(deviceB, WhitelistedEmail);
+        var tokenB = await RequestAndExtractTokenAsync(deviceB, TestEmail);
         var respB = await deviceB.PostAsJsonAsync("/api/auth/magic-link/verify", new { Token = tokenB, Pseudo = (string?)null });
         Assert.Equal(HttpStatusCode.OK, respB.StatusCode);
         var bodyB = await respB.Content.ReadFromJsonAsync<VerifyMagicLinkResponse>();
@@ -149,12 +149,12 @@ public class VerifyMagicLinkTests(IntegrationTestFactory factory) : IAsyncLifeti
     public async Task VerifyMagicLink_TokenExpire_Returns400()
     {
         var client = factory.CreateClient();
-        var token = await RequestAndExtractTokenAsync(client, WhitelistedEmail);
+        var token = await RequestAndExtractTokenAsync(client, TestEmail);
 
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var stored = await db.MagicLinkTokens.SingleAsync(m => m.Email == WhitelistedEmail);
+            var stored = await db.MagicLinkTokens.SingleAsync(m => m.Email == TestEmail);
             stored.ExpiresAt = DateTime.UtcNow.AddMinutes(-1);
             await db.SaveChangesAsync();
         }
@@ -168,7 +168,7 @@ public class VerifyMagicLinkTests(IntegrationTestFactory factory) : IAsyncLifeti
     public async Task VerifyMagicLink_TokenDejaConsomme_Returns400()
     {
         var client = factory.CreateClient();
-        var token = await RequestAndExtractTokenAsync(client, WhitelistedEmail);
+        var token = await RequestAndExtractTokenAsync(client, TestEmail);
 
         var first = await client.PostAsJsonAsync("/api/auth/magic-link/verify", new { Token = token, Pseudo = "PremierEssai" });
         Assert.Equal(HttpStatusCode.OK, first.StatusCode);
@@ -193,7 +193,7 @@ public class VerifyMagicLinkTests(IntegrationTestFactory factory) : IAsyncLifeti
     public async Task VerifyMagicLink_OrigineNonAutorisee_Returns403()
     {
         var client = factory.CreateClient();
-        var token = await RequestAndExtractTokenAsync(client, WhitelistedEmail);
+        var token = await RequestAndExtractTokenAsync(client, TestEmail);
 
         var req = new HttpRequestMessage(HttpMethod.Post, "/api/auth/magic-link/verify")
         {
