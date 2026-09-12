@@ -6,15 +6,23 @@ namespace InSeconds.Api.Features.Admin.Login;
 public static class LoginEndpoint
 {
     public const string AdminToken = "admin-token";
+    public const string LoginRateLimiterPolicy = "admin-login";
 
-    public static IEndpointRouteBuilder MapAdminLogin(this IEndpointRouteBuilder routes)
+    // enableRateLimiting=false en Testing (E2E/intégration font ~20 appels de login réels
+    // sur la suite complète, potentiellement en quelques secondes) — jamais désactivé en
+    // Dev/Production, où c'est la seule protection anti brute-force sur ce mot de passe unique.
+    public static IEndpointRouteBuilder MapAdminLogin(this IEndpointRouteBuilder routes, bool enableRateLimiting = true)
     {
-        routes.MapPost("/api/admin/login", async (LoginBody body, IMessageBus bus, CancellationToken ct) =>
+        var loginRoute = routes.MapPost("/api/admin/login", async (LoginBody body, IMessageBus bus, CancellationToken ct) =>
             await bus.InvokeAsync<IResult>(new LoginCommand(body.Password), ct))
         .WithName("AdminLogin")
         .WithTags("Admin")
         .Produces(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status401Unauthorized);
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status429TooManyRequests);
+
+        if (enableRateLimiting)
+            loginRoute.RequireRateLimiting(LoginRateLimiterPolicy);
 
         routes.MapPost("/api/admin/logout", () => Results.Ok())
         .WithName("AdminLogout")
