@@ -7,7 +7,7 @@
 
     <!-- Streak header (tous les écrans sauf loading / playing) -->
     @if (showStreak()) {
-      <span class="absolute right-4 flex items-center gap-1 text-xs font-bold tabular-nums"
+      <span class="absolute left-4 flex items-center gap-1 text-xs font-bold tabular-nums"
             style="font-family:var(--font-display);color:var(--text-streak)">
         🔥 {{ streak() }}
       </span>
@@ -15,9 +15,19 @@
 
     <!-- Score en cours de partie (par-dessus streak si playing) -->
     @if (playing()) {
-      <span class="absolute right-4 text-base font-extrabold tabular-nums" style="font-family:var(--font-display);color:var(--text-hi)">
+      <span class="absolute left-4 text-base font-extrabold tabular-nums" style="font-family:var(--font-display);color:var(--text-hi)">
         {{ totalScore() }} <span style="color:var(--text-faint);font-weight:400;font-size:0.625rem">{{ 'common.points' | translate }}</span>
       </span>
+    }
+
+    <!-- Avatar profil (compte connecté, hors partie) -->
+    @if (playerSession.isLinked() && !playing()) {
+      <a routerLink="/profile"
+         [title]="playerSession.pseudo() ?? ''"
+         class="absolute right-2 flex items-center justify-center rounded-full font-extrabold text-white"
+         style="width:32px;height:32px;font-family:var(--font-display);font-size:0.75rem;background:var(--gradient-primary);box-shadow:var(--glow-primary)">
+        {{ profileInitial() }}
+      </a>
     }
   </div>
   @if (playing()) {

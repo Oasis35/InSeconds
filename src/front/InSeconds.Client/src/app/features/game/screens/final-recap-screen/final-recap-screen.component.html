@@ -39,5 +39,9 @@
 
   </div>
 
+  @if (!playerSession.isLinked()) {
+    <app-login-nudge-banner titleKey="loginNudge.keepScoreTitle" bodyKey="loginNudge.keepScoreBody" />
+  }
+
   <p class="text-center text-xs pb-4" style="color:var(--text-muted)">{{ 'done.comeBack' | translate }}</p>
 </div>

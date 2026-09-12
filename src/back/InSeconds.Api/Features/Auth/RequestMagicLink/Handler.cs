@@ -17,10 +17,6 @@ public sealed class RequestMagicLinkHandler(
     {
         var email = command.Email.Trim().ToLowerInvariant();
 
-        var isAllowed = await db.AllowedEmails.AnyAsync(a => a.Email == email, cancellationToken);
-        if (!isAllowed)
-            return Results.Ok(new RequestMagicLinkResponse());
-
         // Anti-spam simple : pas de nouveau token/email si un non-consommé a été
         // créé il y a moins de 60s pour cet email — réponse générique dans tous les cas.
         var throttleCutoff = DateTime.UtcNow.Subtract(ThrottleWindow);

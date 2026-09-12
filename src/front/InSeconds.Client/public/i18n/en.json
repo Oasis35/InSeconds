@@ -12,13 +12,17 @@
     "title": "Today's Blind Test",
     "subtitle": "{{ count }} tracks · listen & guess",
     "tagline": "The less you listen, the more you score",
-    "start": "Start"
+    "start": "Start",
+    "loginCta": "Log in / Create an account",
+    "loginHint": "To keep your streak across all your devices.",
+    "loggedInAs": "Logged in as {{ pseudo }}"
   },
   "resume": {
     "title": "Game in progress",
     "progress": "You've played {{ done }} / {{ total }} tracks.",
     "question": "Do you want to resume where you left off?",
     "resume": "Resume",
+    "loginCta": "Don't lose my games",
     "warningTitle": "Warning",
     "warningBody": "By giving up, today's challenge will be counted as played.\nYou won't be able to play it again until tomorrow.",
     "confirmAbandon": "Yes, give up",
@@ -35,6 +39,19 @@
     "body": "Your game isn't finished.\nYou can resume it tomorrow, but the challenge will be lost if you don't finish it today.",
     "confirm": "Leave anyway",
     "cancel": "Keep playing"
+  },
+  "loginNudge": {
+    "cta": "Log in",
+    "anyDeviceTitle": "Come back on any device",
+    "anyDeviceBody": "Your {{ streak }}-day streak will follow you.",
+    "keepScoreTitle": "Keep this score",
+    "keepScoreBody": "It will disappear if you switch browsers."
+  },
+  "streakToast": {
+    "body": "{{ streak }}-day streak.",
+    "hint": "Create an account so you don't lose it.",
+    "cta": "Create",
+    "dismiss": "Close"
   },
   "noChallenge": {
     "title": "No challenge today",
@@ -87,21 +104,36 @@
     "contact": "Contact us",
     "language": "Passer en français",
     "login": "Log in",
+    "logout": "Log out"
+  },
+  "profile": {
+    "title": "Your profile",
+    "pseudoPlaceholder": "Your nickname",
+    "save": "Change",
+    "saving": "…",
+    "saved": "OK",
+    "pseudoHint": "3 to 20 characters. Visible to other players.",
+    "pseudoTooShort": "Three characters minimum.",
+    "pseudoTaken": "This nickname is already taken.",
+    "pseudoSaved": "Nickname updated.",
+    "pseudoError": "Something went wrong, try again.",
+    "streakLabel": "Streak",
+    "gamesPlayedLabel": "Games played",
     "logout": "Log out",
-    "accountSheet": {
-      "title": "Logged in",
-      "body": "Logged in as {{pseudo}}.",
-      "close": "Close"
-    }
+    "logoutConfirmTitle": "Log out?",
+    "logoutConfirmBody": "You'll be able to come back with a new link sent to {{ email }}.",
+    "logoutConfirmAction": "Yes, log me out",
+    "logoutCancel": "Cancel",
+    "backToGame": "Back to game"
   },
   "login": {
     "request": {
       "title": "Log in",
-      "subtitle": "Restricted to allowed emails — get a passwordless login link.",
+      "subtitle": "Get a passwordless login link.",
       "emailPlaceholder": "your@email.com",
       "submit": "Send me a link",
       "sending": "Sending...",
-      "sent": "If this email is allowed, a login link has just been sent. Check your inbox.",
+      "sent": "A login link has just been sent. Check your inbox.",
       "invalidEmail": "Invalid email address.",
       "backToGame": "← Back to the game",
       "devTitle": "Quick login (dev)"
@@ -215,26 +247,7 @@
       "poolPlain": "Pool",
       "challenges": "Challenges ({{ count }})",
       "challengesPlain": "Challenges",
-      "allowedEmails": "Allowed emails ({{ count }})",
-      "allowedEmailsPlain": "Allowed emails",
       "actions": "Actions"
-    },
-    "allowedEmails": {
-      "emailPlaceholder": "email@example.com",
-      "authorize": "Authorize",
-      "email": "Email",
-      "addedOn": "Added on",
-      "status": "Status",
-      "active": "Active account",
-      "pending": "Pending",
-      "remove": "Remove",
-      "cancel": "Cancel",
-      "empty": "No allowed email yet.",
-      "duplicate": "This email is already allowed.",
-      "addError": "Could not add this email.",
-      "confirmTitle": "Remove this email?",
-      "confirmBody": "{{ email }} will no longer be able to create an account or log back in.",
-      "confirmBodyActive": "{{ email }} has an active account. They won't be able to log back in once signed out, but their account and history are kept."
     },
     "dashboard": {
       "loading": "Loading stats...",

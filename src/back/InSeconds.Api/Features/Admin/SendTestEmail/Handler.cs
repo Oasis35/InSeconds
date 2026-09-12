@@ -2,11 +2,10 @@ using InSeconds.Api.Common.Email;
 
 namespace InSeconds.Api.Features.Admin.SendTestEmail;
 
-// Outil de diagnostic email pour l'admin — contrairement à AddAllowedEmail, l'échec
+// Outil de diagnostic email pour l'admin — contrairement à RequestMagicLink, l'échec
 // d'envoi n'est PAS avalé : c'est tout l'intérêt de ce bouton (remonter l'erreur
 // réelle : clé API Resend invalide, domaine d'expéditeur non vérifié...). Aucun
-// effet de bord sur les données métier (pas de Player, AllowedEmail ni
-// MagicLinkToken créé).
+// effet de bord sur les données métier (pas de Player ni MagicLinkToken créé).
 public sealed class SendTestEmailHandler(IEmailSender emailSender)
 {
     public async Task<IResult> Handle(SendTestEmailCommand command, CancellationToken cancellationToken)

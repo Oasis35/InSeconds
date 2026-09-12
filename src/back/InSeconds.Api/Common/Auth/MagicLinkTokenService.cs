@@ -9,9 +9,6 @@ public interface IMagicLinkTokenService
     Task<string> IssueAsync(string email, TimeSpan validity, CancellationToken ct = default);
 }
 
-// Commun à RequestMagicLink (self-service, 15 min) et AddAllowedEmail (invitation
-// automatique, 7 jours) — même mécanisme de génération/hash/stockage, seule la durée
-// de vie diffère selon le contexte d'émission (cf. plan).
 public sealed class MagicLinkTokenService(ApplicationDbContext db, IConfiguration configuration) : IMagicLinkTokenService
 {
     public async Task<string> IssueAsync(string email, TimeSpan validity, CancellationToken ct = default)

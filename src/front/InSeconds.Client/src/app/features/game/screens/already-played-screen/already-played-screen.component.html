@@ -68,6 +68,12 @@
         }
       </div>
 
+      @if (!playerSession.isLinked()) {
+        <app-login-nudge-banner
+          titleKey="loginNudge.anyDeviceTitle"
+          bodyKey="loginNudge.anyDeviceBody"
+          [bodyParams]="{ streak: s.currentStreak }" />
+      }
     }
   }
 </div>

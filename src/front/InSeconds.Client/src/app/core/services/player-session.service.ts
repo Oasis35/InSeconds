@@ -13,6 +13,8 @@ export class PlayerSessionService {
   readonly isGuest = signal(true);
   readonly email = signal<string | null>(null);
   readonly pseudo = signal<string | null>(null);
+  readonly currentStreak = signal(0);
+  readonly gamesPlayed = signal(0);
 
   readonly isLinked = computed(() => !this.isGuest());
 
@@ -26,6 +28,8 @@ export class PlayerSessionService {
         this.isGuest.set(res.isGuest);
         this.email.set(res.email ?? null);
         this.pseudo.set(res.pseudo ?? null);
+        this.currentStreak.set(res.currentStreak);
+        this.gamesPlayed.set(res.gamesPlayed);
       }),
       map(() => void 0),
       // L'app doit démarrer même si /api/players/me échoue : reste en état guest par défaut.
@@ -38,6 +42,14 @@ export class PlayerSessionService {
 
   logout(): Observable<void> {
     return this.api.apiAuthLogout().pipe(map(() => void 0));
+  }
+
+  /** Change le pseudo du joueur connecté (écran Profil). Met à jour le signal local en cas de succès. */
+  updatePseudo(pseudo: string): Observable<string> {
+    return this.api.apiPlayersMePseudo({ pseudo }).pipe(
+      tap(res => this.pseudo.set(res.pseudo)),
+      map(res => res.pseudo)
+    );
   }
 
   /**

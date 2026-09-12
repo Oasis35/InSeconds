@@ -2,7 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AdminTab } from '../admin.models';
 
-const VALID_TABS: ReadonlySet<AdminTab> = new Set<AdminTab>(['dashboard', 'pool', 'defis', 'allowedEmails', 'actions']);
+const VALID_TABS: ReadonlySet<AdminTab> = new Set<AdminTab>(['dashboard', 'pool', 'defis', 'actions']);
 
 function isAdminTab(value: string | null): value is AdminTab {
   return VALID_TABS.has(value as AdminTab);
@@ -17,7 +17,6 @@ export class AdminStateService {
   readonly poolSearchQuery = signal('');
   readonly poolReloadTrigger = signal(0);
   readonly challengesReloadTrigger = signal(0);
-  readonly allowedEmailsReloadTrigger = signal(0);
 
   /**
    * Onglet affiché. Piloté ici (et non dans AdminComponent) pour que les rxResource d'AdminApiService
@@ -61,9 +60,5 @@ export class AdminStateService {
 
   reloadChallenges(): void {
     this.challengesReloadTrigger.update(v => v + 1);
-  }
-
-  reloadAllowedEmails(): void {
-    this.allowedEmailsReloadTrigger.update(v => v + 1);
   }
 }

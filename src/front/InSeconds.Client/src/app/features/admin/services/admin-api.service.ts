@@ -1,7 +1,7 @@
 import { Injectable, inject, computed } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { of, timer, switchMap } from 'rxjs';
-import { AdminStatsResponse, ChallengeStatsDto, ChallengeStatsResponse, GetAllowedEmailsResponse } from '../../../api/api.generated';
+import { AdminStatsResponse, ChallengeStatsDto, ChallengeStatsResponse } from '../../../api/api.generated';
 import { ChallengeDto, DeezerTrackInfo, PoolTracksResponse } from '../admin.models';
 import { AdminHttpService } from './admin-http.service';
 import { AdminStateService } from './admin-state.service';
@@ -73,15 +73,6 @@ export class AdminApiService {
   });
   readonly challenges = computed(() => this.challengesResource.value() ?? []);
 
-  private readonly allowedEmailsResource = rxResource<GetAllowedEmailsResponse, number | undefined>({
-    params: () => (this.http.authenticated() && this.state.hasVisited('allowedEmails'))
-      ? this.state.allowedEmailsReloadTrigger()
-      : undefined,
-    stream: () => this.http.getAllowedEmails(),
-  });
-  readonly allowedEmails = computed(() => this.allowedEmailsResource.value()?.emails ?? []);
-  readonly allowedEmailsLoading = computed(() => this.allowedEmailsResource.isLoading());
-
   checkAuth(): void { this.http.checkAuth(); }
 
   login(password: string): Promise<void> {
@@ -108,8 +99,5 @@ export class AdminApiService {
   updateTrack(id: number, deezerTrackId: number) { return this.http.updateTrack(id, deezerTrackId); }
   deleteTrack(id: number) { return this.http.deleteTrack(id); }
   searchDeezer(q: string) { return this.http.searchDeezer(q); }
-  reloadAllowedEmails(): void { this.state.reloadAllowedEmails(); }
-  addAllowedEmail(email: string) { return this.http.addAllowedEmail(email); }
-  removeAllowedEmail(id: number) { return this.http.removeAllowedEmail(id); }
   sendTestEmail(toEmail: string) { return this.http.sendTestEmail(toEmail); }
 }

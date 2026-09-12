@@ -38,7 +38,7 @@ src/front/InSeconds.Client/
 │   │   │       ├── clipboard.service.ts        # copy(text): Promise<boolean>, mutualisé game/admin
 │   │   │       ├── game.service.ts             # POST /sessions + /answers
 │   │   │       ├── language.service.ts         # détection/changement FR/EN, persist localStorage
-│   │   │       ├── player-session.service.ts   # GET /players/me → isGuest/email/pseudo (root, appelé au boot)
+│   │   │       ├── player-session.service.ts   # GET /players/me (peek) → isGuest/email/pseudo/streak/gamesPlayed + updatePseudo()
 │   │   │       └── settings.service.ts         # GET /settings → signals
 │   │   ├── shared/
 │   │   │   ├── confirm-sheet/
@@ -53,6 +53,8 @@ src/front/InSeconds.Client/
 │   │   │   │   └── guess-time-chart.component.ts # histogramme temps de réponse réutilisable
 │   │   │   ├── track-results-list/
 │   │   │   │   └── track-results-list.component.ts # liste de morceaux + pop-up histogramme (récap + déjà joué)
+│   │   │   ├── login-nudge-banner/
+│   │   │   │   └── login-nudge-banner.component.ts # bannière nudge connexion (already-played + done, 2026-09)
 │   │   │   └── deezer-badge.component.ts       # badge "À écouter sur Deezer" (fichier plat, sans sous-dossier)
 │   │   ├── features/
 │   │   │   ├── admin/
@@ -61,17 +63,15 @@ src/front/InSeconds.Client/
 │   │   │   │   ├── services/
 │   │   │   │   │   ├── admin-http.service.ts   # HTTP brut + signal authenticated + login/logout/checkAuth
 │   │   │   │   │   ├── admin-state.service.ts  # signals partagés (selectedDay, activeTab + visitedTabs, poolReloadTrigger, …)
-│   │   │   │   │   ├── admin-api.service.ts    # 6 rxResource (pool, stats, challenge-stats, challenges, allowedEmails, search) — chargement paresseux par onglet
+│   │   │   │   │   ├── admin-api.service.ts    # 5 rxResource (pool, stats, challenge-stats, challenges, search) — chargement paresseux par onglet
 │   │   │   │   │   ├── admin-stats.service.ts  # état dashboard + onglet Défis (navigation, formatage dates, …)
 │   │   │   │   │   ├── admin-pool.service.ts   # filtres/pagination/sélection pool, modales ajout/suppression
-│   │   │   │   │   ├── admin-actions.service.ts # generateToday(), reset(), refreshPreviews(), sendTestEmail()
-│   │   │   │   │   └── admin-allowed-emails.service.ts # add(), remove() whitelist
+│   │   │   │   │   └── admin-actions.service.ts # generateToday(), reset(), refreshPreviews(), sendTestEmail()
 │   │   │   │   └── components/
 │   │   │   │       ├── admin-login/
 │   │   │   │       ├── dashboard-tab/
 │   │   │   │       ├── pool-tab/
 │   │   │   │       ├── challenges-tab/
-│   │   │   │       ├── allowed-emails-tab/     # whitelist admin (comptes utilisateurs)
 │   │   │   │       ├── actions-tab/
 │   │   │   │       ├── add-track-modal/
 │   │   │   │       └── delete-track-modal/
@@ -97,6 +97,7 @@ src/front/InSeconds.Client/
 │   │   │   │   └── verify/                     # /login/verify — confirmation explicite + choix pseudo
 │   │   │   ├── not-found/
 │   │   │   ├── privacy/                       # page confidentialité (routes /privacy + /confidentialite)
+│   │   │   ├── profile/                       # /profile — pseudo éditable, streak/parties jouées, déconnexion (2026-09)
 │   │   │   └── service-down/
 │   │   ├── app.config.ts                  # providers globaux
 │   │   ├── app.routes.ts                  # routes
@@ -253,13 +254,16 @@ readonly playerId = signal<string | null>(null);
 readonly isGuest = signal(true);
 readonly email = signal<string | null>(null);
 readonly pseudo = signal<string | null>(null);
+readonly currentStreak = signal(0);   // 2026-09
+readonly gamesPlayed = signal(0);     // 2026-09
 readonly isLinked = computed(() => !this.isGuest());
 
-load(): Observable<void>;   // GET /api/players/me — appelé via provideAppInitializer
-logout(): Observable<void>; // POST /api/auth/logout
+load(): Observable<void>;               // GET /api/players/me?peek=true — appelé via provideAppInitializer
+logout(): Observable<void>;             // POST /api/auth/logout
+updatePseudo(pseudo): Observable<string>; // PUT /api/players/me/pseudo (2026-09, écran /profile)
 ```
 
-`providedIn: 'root'`. **Remplace l'ancien `player-identity.service.ts`** (comptes utilisateurs, 2026-08) : en plus de l'ID navigateur (usage admin, `isYou()`), expose l'état de connexion (guest vs compte lié) consommé par l'icône de connexion du footer (`GameFooterComponent`) et les écrans `/login`. `load()` est appelé une fois au boot via `provideAppInitializer` (`app.config.ts`, même pattern que `SettingsService`) — **conséquence** : contrairement au reste de l'app (création paresseuse du `Player`), `GET /api/players/me` crée un `Player` guest dès la première page vue, même pour un visiteur qui ne joue jamais (cf. `CookieAuthService`/`GetCurrentPlayerEndpoint` côté back). Le cookie `authToken` étant `HttpOnly` et chiffré (Data Protection back), ces informations sont structurellement illisibles côté client sans cet appel.
+`providedIn: 'root'`. **Remplace l'ancien `player-identity.service.ts`** (comptes utilisateurs, 2026-08) : en plus de l'ID navigateur (usage admin, `isYou()`), expose l'état de connexion (guest vs compte lié) consommé par l'icône de connexion du footer (`GameFooterComponent`), les nudges de connexion (`welcome-screen`/`resume-screen`/`already-played-screen`/`final-recap-screen`), l'avatar du header et l'écran `/profile`. `load()` est appelé une fois au boot via `provideAppInitializer` (`app.config.ts`, même pattern que `SettingsService`), avec `peek=true` — **ne crée jamais de `Player`/cookie** pour un simple chargement de page (cf. « Création paresseuse du Player » dans le `CLAUDE.md` racine) ; seuls `POST /api/sessions` (démarrer une partie) et une connexion réelle (magic link) en créent un. Le cookie `authToken` étant `HttpOnly` et chiffré (Data Protection back), ces informations sont structurellement illisibles côté client sans cet appel. `updatePseudo()` met à jour le signal `pseudo` local en cas de succès (pas de rechargement complet).
 
 ## Composants
 
@@ -268,17 +272,22 @@ logout(): Observable<void>; // POST /api/auth/logout
 Orchestre une session complète. États : `loading` → `welcome` → `playing` → `done` (+ `resume_prompt`, `already_played`, `no_challenge`, `error`).
 
 Délègue l'affichage à des sous-composants :
-- **`GameHeaderComponent`** : titre InSeconds + streak + score en cours + barre de progression + bouton abandon
-- **`GameFooterComponent`** : liens admin / confidentialité + bouton langue FR/EN + icône de connexion discrète (guest → `/login`, compte lié → pop-up "Compte connecté" avec bouton "Se déconnecter" explicite, `ConfirmSheetComponent`)
-- **`WelcomeScreenComponent`** : état `welcome`
-- **`ResumeScreenComponent`** : état `resume_prompt` (avec confirmation abandon inline)
+- **`GameHeaderComponent`** : titre InSeconds + streak/score en cours (côté gauche depuis 2026-09) + barre de progression + bouton abandon + avatar profil (côté droit, compte lié hors partie, `routerLink="/profile"`)
+- **`GameFooterComponent`** : liens admin / confidentialité + bouton langue FR/EN + icône de connexion discrète (guest → `/login`, compte lié → `/profile` — simple navigation depuis 2026-09, plus de pop-up "Compte connecté" ici)
+- **`WelcomeScreenComponent`** : état `welcome`. Guest → bouton outline "Se connecter / Créer un compte" (`/login`) ; compte lié → lien "Connecté comme {{pseudo}}" (`/profile`)
+- **`ResumeScreenComponent`** : état `resume_prompt` (avec confirmation abandon inline). Guest → bouton outline "Ne plus perdre mes parties" (`/login`)
 - **`StatusScreenComponent`** : états `no_challenge` + `error` (inputs `titleKey`/`bodyKey` i18n)
-- **`AlreadyPlayedScreenComponent`** : état `already_played` (score vs médiane, `ShareButtonComponent`). L'accordéon morceaux délègue à `<app-track-results-list [rows]="playedRows()">` (mappe `stats().tracks`) → **mêmes lignes que le récap** (chips `✓/✗`, durée, `+score` cliquable → pop-up histogramme)
-- **`FinalRecapScreenComponent`** : état `done` (score animé, `ShareButtonComponent`). Input `stats: TodayStatsResponse | null` (`GameComponent` appelle `apiStatsToday()` en entrant dans `done`). L'accordéon délègue à `<app-track-results-list [rows]="recapRows()">` — `recapRows` mappe `results()` (`RoundResult`) + fusionne l'histogramme depuis `stats` par `position`. Liste + pop-up rendues par `TrackResultsListComponent`
+- **`AlreadyPlayedScreenComponent`** : état `already_played` (score vs médiane, `ShareButtonComponent`). L'accordéon morceaux délègue à `<app-track-results-list [rows]="playedRows()">` (mappe `stats().tracks`) → **mêmes lignes que le récap** (chips `✓/✗`, durée, `+score` cliquable → pop-up histogramme). Guest + partie complétée → `LoginNudgeBannerComponent` ("Reviens sur n'importe quel appareil")
+- **`FinalRecapScreenComponent`** : état `done` (score animé, `ShareButtonComponent`). Input `stats: TodayStatsResponse | null` (`GameComponent` appelle `apiStatsToday()` en entrant dans `done`). L'accordéon délègue à `<app-track-results-list [rows]="recapRows()">` — `recapRows` mappe `results()` (`RoundResult`) + fusionne l'histogramme depuis `stats` par `position`. Liste + pop-up rendues par `TrackResultsListComponent`. Guest → `LoginNudgeBannerComponent` ("Garde ce score")
 - **`BlindRoundComponent`** : état `playing`
-- **`ConfirmSheetComponent`** : modales abandon + quitter + "Compte connecté" (footer, cf. `GameFooterComponent`)
+- **`ConfirmSheetComponent`** : modales abandon + quitter (la confirmation de déconnexion vit désormais dans `ProfileComponent`)
+- **Toast de streak** (inline, pas un composant partagé) : guest, streak > 0, états `done`/`already_played` — dismissible, `streakToastDismissed` remis à `false` à chaque (ré)entrée dans ces états
 
 **Confirmation de sortie** : implémente `UnsavedGameComponent` (`canDeactivate()`). Si `gameState() === 'playing'`, ouvre une modale et renvoie une `Promise<boolean>`. `@HostListener('window:beforeunload')` couvre la fermeture d'onglet.
+
+### `ProfileComponent` (2026-09)
+
+Écran `/profile` (`features/profile/`), destination de l'avatar header et de l'icône footer pour un compte lié. `ngOnInit()` redirige un guest vers `/login`. Pseudo éditable (`playerSession.updatePseudo()`, mêmes règles/statuts que le choix de pseudo à la connexion — `taken`/`tooShort`/`saving`/`saved`), email en lecture seule, carte streak/parties jouées (`playerSession.currentStreak`/`gamesPlayed`), déconnexion via `ConfirmSheetComponent` (logique reprise de l'ancien `GameFooterComponent.confirmLogout()`).
 
 ### `BlindRoundComponent`
 
@@ -307,6 +316,10 @@ Bottom-sheet de confirmation réutilisable (`shared/confirm-sheet/`). Inputs : `
 ### `ShareButtonComponent`
 
 Bouton partage réutilisable (`shared/share-button/`). Inputs : `copied: boolean`, `failed?: boolean`, `disabled?: boolean`. Output : `share`. Utilisé dans `AlreadyPlayedScreenComponent` et `FinalRecapScreenComponent`. Si `failed` est vrai (rejet de `clipboard.writeText` : permission refusée, contexte non sécurisé), le hint est remplacé par un message d'erreur (`share.failed`, signal `shareFailed` posé 3 s par `GameComponent.copyToClipboard()`).
+
+### `LoginNudgeBannerComponent`
+
+Bannière de nudge connexion réutilisable (`shared/login-nudge-banner/`, 2026-09). Inputs : `titleKey`/`bodyKey` (required, clés i18n — titre **et** corps varient selon l'écran), `bodyParams?: Record<string, unknown>` (interpolation, ex. `{streak}`). Le bouton CTA (`routerLink="/login"`, libellé fixe `loginNudge.cta`) est intégré au composant. Aucun output. Utilisé (guest uniquement, gardé par `PlayerSessionService.isLinked()`) dans `AlreadyPlayedScreenComponent` (titre "Reviens sur n'importe quel appareil") et `FinalRecapScreenComponent` (titre "Garde ce score").
 
 ### `BrowserIdComponent`
 

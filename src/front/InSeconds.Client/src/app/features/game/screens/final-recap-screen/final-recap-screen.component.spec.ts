@@ -1,7 +1,9 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { provideTranslateService } from '@ngx-translate/core';
 import { FinalRecapScreenComponent, RoundResult } from './final-recap-screen.component';
 import { TodayStatsResponse } from '../../../../api/api.generated';
+import { PlayerSessionService } from '../../../../core/services/player-session.service';
 
 // `createComponent` évalue les bindings top-level du template (dont un `| translate`
 // hors `@if`) → il faut un TranslateService. On exerce ensuite le computed `recapRows`.
@@ -19,7 +21,10 @@ describe('FinalRecapScreenComponent', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [FinalRecapScreenComponent],
-      providers: [provideTranslateService()],
+      providers: [
+        provideTranslateService(),
+        { provide: PlayerSessionService, useValue: { isLinked: signal(true) } },
+      ],
     });
     fixture = TestBed.createComponent(FinalRecapScreenComponent);
     component = fixture.componentInstance;

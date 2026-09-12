@@ -65,7 +65,6 @@ public static class E2EResetEndpoint
             await db.DailyChallengeTracks.ExecuteDeleteAsync(ct);
             await db.DailyChallenges.ExecuteDeleteAsync(ct);
             await db.Tracks.ExecuteDeleteAsync(ct);
-            await db.AllowedEmails.ExecuteDeleteAsync(ct);
             await db.MagicLinkTokens.ExecuteDeleteAsync(ct);
 
             SeedData(db);
@@ -112,7 +111,6 @@ public static class E2EResetEndpoint
         db.GameSessionAnswers.ExecuteDelete();
         db.GameSessions.ExecuteDelete();
         db.Players.ExecuteDelete();
-        db.AllowedEmails.ExecuteDelete();
         db.MagicLinkTokens.ExecuteDelete();
         db.DailyChallengeTracks.ExecuteDelete();
         db.DailyChallenges.ExecuteDelete();
@@ -249,10 +247,6 @@ public static class E2EResetEndpoint
         };
         db.Players.Add(devPlayer);
 
-        // Email pré-whitelisté déterministe pour les specs E2E/intégration du login —
-        // évite de passer par l'onglet admin à chaque test.
-        db.AllowedEmails.Add(new AllowedEmail { Email = "allowed@e2e.test", CreatedAt = DateTime.UtcNow });
-
         db.SaveChanges();
 
         // Sessions J-2 et J-1 — Status=Completed pour apparaître dans les stats
@@ -286,7 +280,6 @@ public static class E2EResetEndpoint
         {
             var email = $"user{i}@dev.local";
 
-            db.AllowedEmails.Add(new AllowedEmail { Email = email, CreatedAt = DateTime.UtcNow });
             db.Players.Add(new Player
             {
                 Id        = Guid.NewGuid(),

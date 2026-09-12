@@ -35,7 +35,7 @@ public sealed class ResendEmailSender(HttpClient http, IOptions<ResendOptions> o
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             // Ne jamais avaler silencieusement (cf. piège DeezerClient) — les appelants
-            // (AddAllowedEmailHandler, SendTestEmailHandler) décident chacun s'il faut
+            // (RequestMagicLinkHandler, SendTestEmailHandler) décident chacun s'il faut
             // logger un warning et continuer, ou remonter l'erreur au client.
             logger.LogWarning(ex, "Échec de l'envoi Resend à {To}", to);
             throw;

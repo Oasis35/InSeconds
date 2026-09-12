@@ -1,0 +1,11 @@
+<div class="flex items-center gap-3 p-3.5 rounded-2xl" style="background:var(--bg-surface);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--border-medium)">
+  <div class="flex-1 min-w-0 text-left">
+    <p class="text-xs font-bold" style="font-family:var(--font-display);letter-spacing:0.03em;color:var(--text-hi)">{{ titleKey() | translate }}</p>
+    <p class="text-xs leading-snug mt-0.5" style="color:var(--text-muted)">{{ bodyKey() | translate: bodyParams() }}</p>
+  </div>
+  <a routerLink="/login"
+     class="flex-shrink-0 inline-flex items-center justify-center px-3.5 rounded-full text-xs font-bold uppercase transition-all active:scale-95 touch-manipulation"
+     style="min-height:44px;font-family:var(--font-display);letter-spacing:0.06em;border:1.5px solid rgb(var(--rgb-accent-2) / 0.7);color:var(--color-accent-2)">
+    {{ 'loginNudge.cta' | translate }}
+  </a>
+</div>

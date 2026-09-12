@@ -7,7 +7,7 @@ import { ApiClient } from '../../../api/api.generated';
 import { PlayerSessionService } from '../../../core/services/player-session.service';
 import { environment } from '../../../../environments/environment';
 
-// Écran /login : demande d'un lien de connexion par email (whitelist admin).
+// Écran /login : demande d'un lien de connexion par email.
 // Toujours le même message générique après soumission (jamais d'info sur
 // l'existence de l'email — cohérent avec le comportement back).
 @Component({

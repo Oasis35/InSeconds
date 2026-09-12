@@ -34,6 +34,11 @@ export const routes: Routes = [
       import('./features/login/verify/verify-login.component').then(m => m.VerifyLoginComponent),
   },
   {
+    path: 'profile',
+    loadComponent: () =>
+      import('./features/profile/profile.component').then(m => m.ProfileComponent),
+  },
+  {
     path: 'admin',
     loadComponent: () =>
       import('./features/admin/admin.component').then(m => m.AdminComponent),
