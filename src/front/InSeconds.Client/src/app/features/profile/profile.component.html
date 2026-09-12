@@ -7,7 +7,9 @@
     <!-- Pseudo -->
     <div>
       <div class="flex gap-2">
+        <label for="profile-pseudo" class="sr-only">{{ 'profile.pseudoPlaceholder' | translate }}</label>
         <input
+          id="profile-pseudo"
           [ngModel]="pseudoDraft()"
           (ngModelChange)="onPseudoInput($event)"
           name="pseudo"

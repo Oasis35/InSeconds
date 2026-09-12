@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
-import { of, throwError } from 'rxjs';
+import { of, throwError, Subject } from 'rxjs';
 import { ProfileComponent } from './profile.component';
 import { PlayerSessionService } from '../../core/services/player-session.service';
 
@@ -80,7 +80,10 @@ describe('ProfileComponent', () => {
 
     it('is disabled while saving', () => {
       component.onPseudoInput('Bob');
-      playerSessionStub.updatePseudo.and.returnValue(of('Bob'));
+      // Observable qui n'émet jamais : contrairement à `of(...)` (synchrone, résoudrait
+      // immédiatement et ferait passer le statut à 'saved' avant l'assertion), ça permet
+      // d'observer l'état transitoire 'saving' juste après l'appel à savePseudo().
+      playerSessionStub.updatePseudo.and.returnValue(new Subject<string>());
       component.savePseudo();
       expect(component['saveDisabled']()).toBeTrue();
     });
