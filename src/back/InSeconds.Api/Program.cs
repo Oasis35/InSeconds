@@ -38,8 +38,10 @@ using InSeconds.Api.Features.E2E;
 using InSeconds.Api.Features.Settings.GetSettings;
 using InSeconds.Api.Infrastructure.Deezer;
 using InSeconds.Api.Infrastructure.Persistence;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Wolverine;
@@ -75,6 +77,25 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials());
+});
+
+// Anti brute-force sur /api/admin/login : le mot de passe admin est un secret unique
+// comparé côté serveur sans autre protection (pas de lockout de compte, un seul "compte").
+// Fenêtre glissante par IP — volontairement permissif pour ne jamais gêner un admin
+// légitime qui retape son mot de passe, mais suffisant pour bloquer un brute-force massif.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy(LoginEndpoint.LoginRateLimiterPolicy, httpContext =>
+        RateLimitPartition.GetSlidingWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(5),
+                SegmentsPerWindow = 5,
+                QueueLimit = 0,
+            }));
 });
 
 builder.Services.AddOptions<AppSettings>()
@@ -218,6 +239,7 @@ app.Use(async (ctx, next) =>
 });
 
 app.UseCors(CorsPolicyName);
+app.UseRateLimiter();
 app.UseMiddleware<PlayerAuthMiddleware>();
 
 // Liveness : l'app répond. Renvoie un JSON { status, utc, build } consommé par le badge
@@ -250,7 +272,7 @@ app.MapGetTodaySession();
 app.MapSubmitAnswer();
 app.MapAbandonSession();
 app.MapUpdateListening();
-app.MapAdminLogin();
+app.MapAdminLogin(enableRateLimiting: !app.Environment.IsEnvironment("Testing"));
 app.MapResetToday();
 app.MapGenerateToday();
 app.MapRefreshPreviews();

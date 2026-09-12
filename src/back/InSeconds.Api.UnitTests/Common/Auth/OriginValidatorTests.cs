@@ -52,4 +52,15 @@ public sealed class OriginValidatorTests
 
         OriginValidator.IsTrustedOrigin(ctx, AllowedOrigins).Should().BeTrue();
     }
+
+    [Fact]
+    public void IsTrustedOrigin_OrigineAbsente_RefererDomaineRessemblantMaisDifferent_False()
+    {
+        // Régression : un ancien `referer.StartsWith(origine autorisée)` laissait passer
+        // un domaine attaquant construit pour partager le même préfixe de chaîne.
+        var ctx = new DefaultHttpContext();
+        ctx.Request.Headers.Referer = "https://inseconds.cc.attaquant.com/page-piegee";
+
+        OriginValidator.IsTrustedOrigin(ctx, AllowedOrigins).Should().BeFalse();
+    }
 }
