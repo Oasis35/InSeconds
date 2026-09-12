@@ -78,6 +78,14 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
     return this.currentStreak();
   });
 
+  // Streak pour le toast (guest, done/already_played) : `currentStreak()` reflète la valeur
+  // AVANT la partie qui vient de se terminer (posée par loadSession() au démarrage) — sur
+  // l'écran `done`, `todayStats()` (chargé à l'entrée dans cet état) porte déjà la valeur
+  // à jour post-complétion. Préférer cette dernière dès qu'elle est disponible, sinon
+  // retomber sur `displayStreak()` (évite un flash à 0 avant que `apiStatsToday()` résolve).
+  protected readonly toastStreak = computed(() =>
+    this.todayStats()?.currentStreak ?? this.displayStreak());
+
   protected sessionId = 0;
   protected readonly currentTrackMinListenedSeconds = signal<number | null>(null);
   private countdownInterval: ReturnType<typeof setInterval> | null = null;

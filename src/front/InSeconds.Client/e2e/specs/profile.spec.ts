@@ -33,7 +33,8 @@ test.describe('Profil', () => {
     const game = new GamePage(page);
     await game.waitForWelcome();
 
-    await page.getByTitle('AvatarUserE2E').first().click();
+    // Le footer porte aussi une icône avec le même `title` — scoper au header.
+    await page.locator('app-game-header').getByTitle('AvatarUserE2E').click();
     await expect(page).toHaveURL(/\/profile$/);
   });
 
