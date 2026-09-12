@@ -1,8 +1,10 @@
-import { Component, input, output, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, input, output, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { TodayStatsResponse } from '../../../../api/api.generated';
 import { ShareButtonComponent } from '../../../../shared/share-button/share-button.component';
 import { TrackResultsListComponent, TrackResultRow } from '../../../../shared/track-results-list/track-results-list.component';
+import { LoginNudgeBannerComponent } from '../../../../shared/login-nudge-banner/login-nudge-banner.component';
+import { PlayerSessionService } from '../../../../core/services/player-session.service';
 
 export interface RoundResult {
   artistCorrect: boolean;
@@ -20,11 +22,13 @@ export interface RoundResult {
 
 @Component({
   selector: 'app-final-recap-screen',
-  imports: [TranslatePipe, ShareButtonComponent, TrackResultsListComponent],
+  imports: [TranslatePipe, ShareButtonComponent, TrackResultsListComponent, LoginNudgeBannerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './final-recap-screen.component.html',
 })
 export class FinalRecapScreenComponent {
+  protected readonly playerSession = inject(PlayerSessionService);
+
   readonly results = input.required<RoundResult[]>();
   /** Stats du jour (`GET /api/stats/today`) — porte l'histogramme par morceau. */
   readonly stats = input<TodayStatsResponse | null>(null);

@@ -1,6 +1,8 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { AlreadyPlayedScreenComponent } from './already-played-screen.component';
 import { TodayStatsResponse } from '../../../../api/api.generated';
+import { PlayerSessionService } from '../../../../core/services/player-session.service';
 
 // Pas de fixture.detectChanges() (TranslatePipe) : on exerce le computed `playedRows`.
 describe('AlreadyPlayedScreenComponent', () => {
@@ -8,7 +10,12 @@ describe('AlreadyPlayedScreenComponent', () => {
   let component: AlreadyPlayedScreenComponent;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [AlreadyPlayedScreenComponent] });
+    TestBed.configureTestingModule({
+      imports: [AlreadyPlayedScreenComponent],
+      providers: [
+        { provide: PlayerSessionService, useValue: { isLinked: signal(true) } },
+      ],
+    });
     fixture = TestBed.createComponent(AlreadyPlayedScreenComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput('countdown', '01:02:03');

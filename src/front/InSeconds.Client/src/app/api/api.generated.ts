@@ -22,7 +22,7 @@ export class ApiClient {
 
     constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
         this.http = http;
-        this.baseUrl = baseUrl ?? "http://localhost:5175/";
+        this.baseUrl = baseUrl ?? "http://localhost:5171/";
     }
 
     /**
@@ -165,6 +165,76 @@ export class ApiClient {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as GetCurrentPlayerResponse;
             return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    apiPlayersMePseudo(body: UpdatePseudoBody): Observable<UpdatePseudoResponse> {
+        let url_ = this.baseUrl + "/api/players/me/pseudo";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processApiPlayersMePseudo(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processApiPlayersMePseudo(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<UpdatePseudoResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<UpdatePseudoResponse>;
+        }));
+    }
+
+    protected processApiPlayersMePseudo(response: HttpResponseBase): Observable<UpdatePseudoResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UpdatePseudoResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Bad Request", status, _responseText, _headers);
+            }));
+        } else if (status === 403) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Forbidden", status, _responseText, _headers);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Not Found", status, _responseText, _headers);
+            }));
+        } else if (status === 409) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Conflict", status, _responseText, _headers);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -1473,180 +1543,6 @@ export class ApiClient {
     /**
      * @return OK
      */
-    apiAdminAllowedEmailsPost(body: AddAllowedEmailBody): Observable<AddAllowedEmailResponse> {
-        let url_ = this.baseUrl + "/api/admin/allowed-emails";
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(body);
-
-        let options_ : any = {
-            body: content_,
-            observe: "response",
-            responseType: "blob",
-            headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
-        };
-
-        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processApiAdminAllowedEmailsPost(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processApiAdminAllowedEmailsPost(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<AddAllowedEmailResponse>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<AddAllowedEmailResponse>;
-        }));
-    }
-
-    protected processApiAdminAllowedEmailsPost(response: HttpResponseBase): Observable<AddAllowedEmailResponse> {
-        const status = response.status;
-        const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
-
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AddAllowedEmailResponse;
-            return _observableOf(result200);
-            }));
-        } else if (status === 401) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("Unauthorized", status, _responseText, _headers);
-            }));
-        } else if (status === 409) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("Conflict", status, _responseText, _headers);
-            }));
-        } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
-        }
-        return _observableOf(null as any);
-    }
-
-    /**
-     * @return OK
-     */
-    apiAdminAllowedEmailsGet(): Observable<GetAllowedEmailsResponse> {
-        let url_ = this.baseUrl + "/api/admin/allowed-emails";
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
-            headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
-        };
-
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processApiAdminAllowedEmailsGet(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processApiAdminAllowedEmailsGet(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<GetAllowedEmailsResponse>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<GetAllowedEmailsResponse>;
-        }));
-    }
-
-    protected processApiAdminAllowedEmailsGet(response: HttpResponseBase): Observable<GetAllowedEmailsResponse> {
-        const status = response.status;
-        const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
-
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as GetAllowedEmailsResponse;
-            return _observableOf(result200);
-            }));
-        } else if (status === 401) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("Unauthorized", status, _responseText, _headers);
-            }));
-        } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
-        }
-        return _observableOf(null as any);
-    }
-
-    /**
-     * @return OK
-     */
-    apiAdminAllowedEmailsDelete(id: number): Observable<void> {
-        let url_ = this.baseUrl + "/api/admin/allowed-emails/{id}";
-        if (id === undefined || id === null)
-            throw new globalThis.Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
-            headers: new HttpHeaders({
-            })
-        };
-
-        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processApiAdminAllowedEmailsDelete(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processApiAdminAllowedEmailsDelete(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<void>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<void>;
-        }));
-    }
-
-    protected processApiAdminAllowedEmailsDelete(response: HttpResponseBase): Observable<void> {
-        const status = response.status;
-        const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
-
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return _observableOf(null as any);
-            }));
-        } else if (status === 401) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("Unauthorized", status, _responseText, _headers);
-            }));
-        } else if (status === 404) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("Not Found", status, _responseText, _headers);
-            }));
-        } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
-        }
-        return _observableOf(null as any);
-    }
-
-    /**
-     * @return OK
-     */
     apiAdminSendTestEmail(body: SendTestEmailBody): Observable<void> {
         let url_ = this.baseUrl + "/api/admin/send-test-email";
         url_ = url_.replace(/[?&]$/, "");
@@ -1926,19 +1822,6 @@ export class ApiClient {
     }
 }
 
-export interface AddAllowedEmailBody {
-    email: string;
-
-    [key: string]: any;
-}
-
-export interface AddAllowedEmailResponse {
-    id: number;
-    email: string;
-
-    [key: string]: any;
-}
-
 export interface AddTrackBody {
     deezerTrackId: number;
 
@@ -1959,15 +1842,6 @@ export interface AdminStatsResponse {
     playerBreakdown: PlayerBreakdownDto;
     availableDates: Date[];
     selectedDayKpis: DailyKpisDto | undefined;
-
-    [key: string]: any;
-}
-
-export interface AllowedEmailDto {
-    id: number;
-    email: string;
-    createdAt: Date;
-    isActivated: boolean;
 
     [key: string]: any;
 }
@@ -2062,17 +1936,13 @@ export interface DurationBucketDto {
     [key: string]: any;
 }
 
-export interface GetAllowedEmailsResponse {
-    emails: AllowedEmailDto[];
-
-    [key: string]: any;
-}
-
 export interface GetCurrentPlayerResponse {
     playerId: string;
     isGuest: boolean;
     email: string | undefined;
     pseudo: string | undefined;
+    currentStreak: number;
+    gamesPlayed: number;
 
     [key: string]: any;
 }
@@ -2249,6 +2119,18 @@ export interface TrackStatsDto {
 export interface UpdateListeningRequest {
     trackId: number;
     listenedSeconds: number;
+
+    [key: string]: any;
+}
+
+export interface UpdatePseudoBody {
+    pseudo: string;
+
+    [key: string]: any;
+}
+
+export interface UpdatePseudoResponse {
+    pseudo: string;
 
     [key: string]: any;
 }

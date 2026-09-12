@@ -2,7 +2,6 @@ import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
-import { of } from 'rxjs';
 import { GameFooterComponent } from './game-footer.component';
 import { LanguageService } from '../../../../core/services/language.service';
 import { PlayerSessionService } from '../../../../core/services/player-session.service';
@@ -21,8 +20,6 @@ describe('GameFooterComponent', () => {
   let playerSessionStub: {
     isLinked: ReturnType<typeof signal<boolean>>;
     pseudo: ReturnType<typeof signal<string | null>>;
-    load: jasmine.Spy;
-    logout: jasmine.Spy;
   };
   let router: { navigateByUrl: jasmine.Spy };
 
@@ -32,8 +29,6 @@ describe('GameFooterComponent', () => {
     playerSessionStub = {
       isLinked: signal(false),
       pseudo: signal<string | null>(null),
-      load: jasmine.createSpy('load').and.returnValue(of(void 0)),
-      logout: jasmine.createSpy('logout').and.returnValue(of(void 0)),
     };
     router = { navigateByUrl: jasmine.createSpy('navigateByUrl') };
 
@@ -82,44 +77,14 @@ describe('GameFooterComponent', () => {
     it('should navigate to /login when guest', () => {
       component.onLoginIconClick();
       expect(router.navigateByUrl).toHaveBeenCalledWith('/login');
-      expect(playerSessionStub.logout).not.toHaveBeenCalled();
-      expect(component['showAccountSheet']()).toBeFalse();
     });
 
-    it('should open the account sheet (not log out directly) when linked', () => {
+    it('should navigate to /profile when linked', () => {
       playerSessionStub.isLinked.set(true);
 
       component.onLoginIconClick();
 
-      expect(component['showAccountSheet']()).toBeTrue();
-      expect(playerSessionStub.logout).not.toHaveBeenCalled();
-      expect(router.navigateByUrl).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('confirmLogout()', () => {
-    it('should log out, reload the session and close the sheet', () => {
-      playerSessionStub.isLinked.set(true);
-      component.onLoginIconClick();
-
-      component.confirmLogout();
-
-      expect(playerSessionStub.logout).toHaveBeenCalled();
-      expect(playerSessionStub.load).toHaveBeenCalled();
-      expect(component['showAccountSheet']()).toBeFalse();
-      expect(component['loggingOut']()).toBeFalse();
-    });
-  });
-
-  describe('closeAccountSheet()', () => {
-    it('should close the sheet without logging out', () => {
-      playerSessionStub.isLinked.set(true);
-      component.onLoginIconClick();
-
-      component.closeAccountSheet();
-
-      expect(component['showAccountSheet']()).toBeFalse();
-      expect(playerSessionStub.logout).not.toHaveBeenCalled();
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/profile');
     });
   });
 

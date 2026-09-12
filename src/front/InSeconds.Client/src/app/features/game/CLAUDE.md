@@ -14,7 +14,7 @@ type GameState = 'loading' | 'welcome' | 'resume_prompt' | 'playing' | 'done' | 
 
 ```
 GameComponent
- ├─ app-game-header          toujours affiché : playing/streak/score/progression → (abandon)
+ ├─ app-game-header          toujours affiché : playing/streak/score/progression/avatar profil → (abandon)
  ├─ app-welcome-screen       [welcome]         → (startGame → beginGame → POST)
  ├─ app-resume-screen        [resume_prompt]   → (resumeGame → beginResume → POST) / (abandon → beginAbandonFromResume → POST)
  ├─ app-confirm-sheet        abandon en jeu OU confirmation de sortie → (confirm)/(cancelled)
@@ -23,7 +23,8 @@ GameComponent
  ├─ app-blind-round #roundRef [playing]        → (answered) / (nextTrack)
  │     (le parent appelle roundRef().setResult(...) en retour — seule communication impérative)
  ├─ app-final-recap-screen   [done]            → (share)
- └─ app-game-footer          toujours affiché, hors état
+ ├─ app-game-footer          toujours affiché, hors état
+ └─ toast de streak (inline) [done | already_played], guest uniquement → (dismiss local)
 ```
 
 ### `peekSession(context)` (appelée dans `ngOnInit` + `retry()`) — lecture seule
@@ -52,6 +53,10 @@ Appelée par `beginGame()` (clic « Commencer à jouer »), `beginResume()` (cli
 ### Synchronisation multi-onglets
 
 Listener `visibilitychange` posé dans `ngOnInit` (retiré dans `ngOnDestroy`) : au retour au premier plan, `peekSession('refocus')` si l'état est `welcome`/`resume_prompt`, `peekSession('playing')` si l'état est `playing` — détecte qu'une partie a été complétée/abandonnée ailleurs (bascule vers `already_played`) sans jamais relancer de `POST`.
+
+### Toast de streak (guest, écrans `done`/`already_played`)
+
+Bloc `position:fixed` inline dans `game.component.html` (pas un composant partagé — usage unique), à côté des blocs `showLeaveConfirm`/confirm-sheet déjà inlinés là. Signal `streakToastDismissed`, condition d'affichage : `!playerSession.isLinked() && !streakToastDismissed() && displayStreak() > 0 && (gameState()==='done' || gameState()==='already_played')`. **Remis à `false` à chaque (ré)entrée dans ces deux états** — 5 points d'écriture à garder synchronisés si la machine à états est retouchée : les deux branches `already_played`/`abandoned` de `peekSession()`, la branche 409 de `loadSession()`, `confirmAbandon()`, et `onNextTrack()` (transition vers `done`). Le bouton ✕ se contente de `streakToastDismissed.set(true)` (inline, pas de méthode dédiée) ; le bouton "Créer" est un simple `routerLink="/login"`. Testé dans `game.component.spec.ts` (les 5 points de reset, pas le rendu du template).
 
 ### Garde de sortie (`UnsavedGameComponent`, branché sur `unsavedGameGuard`)
 
@@ -98,17 +103,27 @@ Inputs : `track` (`required`), `isLast=false`, `sessionId=0`, `minListenedSecond
 
 ## `components/game-header/` et `components/game-footer/`
 
-- **`game-header`** : purement présentationnel. Inputs `required` : `playing`, `showStreak`, `streak`, `totalScore`, `currentIndex`, `trackCount`. Output `abandon`. Badge streak 🔥 si `showStreak()`, recouvert visuellement par le score si `playing()`.
-- **`game-footer`** : pas d'inputs/outputs. Injecte `LanguageService`, `currentLang = language.current` réexposé. `toggleLanguage()` bascule fr↔en. Liens `/admin`, `/privacy`. Injecte aussi `PlayerSessionService` (`isLinked`/`pseudo` réexposés) — icône de connexion discrète (silhouette SVG monochrome, même registre que admin/privacy/contact, **pas** la pilule colorée du bouton langue), placée juste avant celui-ci. Volontairement sans libellé visible : `[title]`/`aria-label` dynamique via `loginTooltip()` (`"Se connecter"` guest, pseudo nu — sans suffixe — pour un compte lié). `onLoginIconClick()` : guest → `router.navigateByUrl('/login')` ; compte lié → **n'appelle plus `logout()` directement** — ouvre une pop-up `ConfirmSheetComponent` (`showAccountSheet` signal, tone `danger`) affichant le pseudo connecté, avec bouton "Se déconnecter" (`confirmLogout()`, `loggingOut` signal pour l'état de chargement du bouton) et bouton "Fermer" (`closeAccountSheet()`, ferme sans rien faire) — évite une déconnexion accidentelle sur un point d'entrée sans libellé visible. `confirmLogout()` : `playerSession.logout()` puis `playerSession.load()` (recharge un guest frais), ferme la pop-up. Testé (`game-footer.component.spec.ts`) : bascule fr→en/en→fr + persistance `localStorage`, navigation login vs ouverture de la pop-up (guest/lié), `confirmLogout()`/`closeAccountSheet()` séparés, tooltip guest vs compte lié (pseudo nu).
+- **`game-header`** : présentationnel + injecte `PlayerSessionService` directement (pattern déjà établi côté admin pour des services `core/` injectés dans un composant présentationnel, cf. `admin/CLAUDE.md`). Inputs `required` : `playing`, `showStreak`, `streak`, `totalScore`, `currentIndex`, `trackCount`. Output `abandon`. Badge streak 🔥 / score en cours de partie : **`left-4`** (déplacé depuis `right-4` en 2026-09 pour laisser la place à l'avatar). **Avatar profil** : bouton rond 32px (initiale du pseudo via `profileInitial()`, `'?'` si pas de pseudo), dégradé `--gradient-primary`, `routerLink="/profile"`, visible si `playerSession.isLinked() && !playing()` — posé à droite (`right-2`). Pas de spec avant 2026-09 ; `game-header.component.spec.ts` couvre `profileInitial()` (majuscule / fallback) + l'output `abandon`.
+- **`game-footer`** : pas d'inputs/outputs. Injecte `LanguageService`, `currentLang = language.current` réexposé. `toggleLanguage()` bascule fr↔en. Liens `/admin`, `/privacy`. Injecte aussi `PlayerSessionService` (`isLinked`/`pseudo` réexposés) — icône de connexion discrète (silhouette SVG monochrome, même registre que admin/privacy/contact, **pas** la pilule colorée du bouton langue), placée juste avant celui-ci. Volontairement sans libellé visible : `[title]`/`aria-label` dynamique via `loginTooltip()` (`"Se connecter"` guest, pseudo nu — sans suffixe — pour un compte lié). `onLoginIconClick()` : `router.navigateByUrl(isLinked() ? '/profile' : '/login')` — **simple navigation, plus de pop-up "compte connecté" ni de `logout()` local** depuis 2026-09 (la déconnexion vit désormais uniquement dans `features/profile/`, cf. plus bas). Testé (`game-footer.component.spec.ts`) : bascule fr→en/en→fr + persistance `localStorage`, navigation `/login` vs `/profile` selon `isLinked()`, tooltip guest vs compte lié (pseudo nu).
+
+## `features/profile/` — écran Profil (2026-09)
+
+Hors arbre `game/` (feature standalone sœur, route lazy `/profile` dans `app.routes.ts`) mais documenté ici car c'est la destination de l'avatar header et de l'icône footer ci-dessus, et il reprend la logique de déconnexion qui vivait auparavant dans `game-footer`.
+
+- **`ProfileComponent`** : même charpente que `features/login/request/` (`da-bg` + `<app-decor-background/>` + colonne centrée `screen-enter`). `ngOnInit()` : `!playerSession.isLinked()` → `router.navigateByUrl('/login')` (pas de guard de route dédié, cohérent avec la légèreté des autres routes).
+- **Pseudo éditable** : signal `pseudoDraft` (init depuis `playerSession.pseudo()`), computeds `saveDisabled`/`saveLabel`/`hint`/`hintIsError` qui reproduisent exactement la logique de choix de pseudo de `login/verify` (`unchanged`/`tooShort (<3)`/`invalid (>20 ou vide)`/`taken`/`saved`/`saving`). `savePseudo()` appelle `playerSession.updatePseudo(...)` (`PUT /api/players/me/pseudo`, back `Features/Players/UpdatePseudo/`) — `409` → statut `taken`, autre erreur → `error`.
+- **Stats** : carte 2 colonnes streak (`playerSession.currentStreak`) / parties jouées (`playerSession.gamesPlayed`), toutes deux peuplées par `GET /api/players/me` (étendu 2026-09, cf. `src/back/InSeconds.Api/CLAUDE.md`).
+- **Déconnexion** : bouton → `<app-confirm-sheet tone="danger">` (logique reprise telle quelle de l'ancien `game-footer.confirmLogout()` : `playerSession.logout()` puis `playerSession.load()`), puis retour à `/`.
+- Testé : `profile.component.spec.ts` (redirection guest, `saveDisabled`/statuts de sauvegarde, flow de déconnexion) + `e2e/specs/profile.spec.ts` (avatar → profil, changement de pseudo succès/pris, redirection guest).
 
 ## `screens/*`
 
 Tous `OnPush`, présentationnels (sauf `already-played-screen` qui type `stats` sur `TodayStatsResponse`).
 
-- **`welcome-screen`** : `trackCount` (required) → `startGame`.
-- **`resume-screen`** : `completedCount`, `trackCount` (required), `abandonLoading=false` → `resumeGame`/`abandon`. Signal local `showAbandonConfirm` : double confirmation avant d'émettre réellement `abandon`.
+- **`welcome-screen`** : `trackCount` (required) → `startGame`. Injecte aussi `PlayerSessionService` directement (2026-09) : sous le bouton "Jouer", guest → bouton outline "Se connecter / Créer un compte" (`routerLink="/login"`) + texte d'accroche ; compte lié → lien discret "Connecté comme {{pseudo}}" (`routerLink="/profile"`).
+- **`resume-screen`** : `completedCount`, `trackCount` (required), `abandonLoading=false` → `resumeGame`/`abandon`. Signal local `showAbandonConfirm` : double confirmation avant d'émettre réellement `abandon`. Injecte `PlayerSessionService` (2026-09) : guest uniquement → bouton outline "Ne plus perdre mes parties" (`routerLink="/login"`) entre "Reprendre" et "Abandonner".
 - **`status-screen`** : générique, réutilisé pour `no_challenge` ET `error` — `titleKey`/`bodyKey` (clés i18n passées par le parent) → `retry`.
-- **`already-played-screen`** : `stats: TodayStatsResponse|null`, `abandoned=false`, `countdown` (required), `shareCopied`/`shareFailed=false` → `share`. Signal `showTrackDetails` (accordéon). Si `abandoned()` : message simple + countdown. Sinon : carte score/médiane (fallback `—` si `medianScore<=0`), `app-share-button`, puis l'accordéon délègue à **`<app-track-results-list [rows]="playedRows()">`** — `playedRows` (computed) mappe `stats().tracks` (`TrackStat`) → `TrackResultRow[]`. Lignes **identiques au récap** (chips `✓/✗`, durée, `+score` cliquable → pop-up histogramme).
+- **`already-played-screen`** : `stats: TodayStatsResponse|null`, `abandoned=false`, `countdown` (required), `shareCopied`/`shareFailed=false` → `share`. Signal `showTrackDetails` (accordéon). Si `abandoned()` : message simple + countdown. Sinon : carte score/médiane (fallback `—` si `medianScore<=0`), `app-share-button`, puis l'accordéon délègue à **`<app-track-results-list [rows]="playedRows()">`** — `playedRows` (computed) mappe `stats().tracks` (`TrackStat`) → `TrackResultRow[]`. Lignes **identiques au récap** (chips `✓/✗`, durée, `+score` cliquable → pop-up histogramme). Injecte `PlayerSessionService` (2026-09) : si complété (pas abandonné) et guest, `<app-login-nudge-banner>` sous la carte (`bodyKey="loginNudge.anyDeviceBody"`, `bodyParams={streak: s.currentStreak}`).
 - **`final-recap-screen`** : **exporte `RoundResult`** — le contrat que `GameComponent` construit dans `onAnswered`/`resumePlaying` :
   ```ts
   interface RoundResult {
@@ -118,7 +133,7 @@ Tous `OnPush`, présentationnels (sauf `already-played-screen` qui type `stats` 
   }
   ```
   Inputs (required) : `results`, `displayedScore`. `shareCopied`/`shareFailed=false`, `canShare=true`, `countdown=''` → `share`.
-  `RoundResult` porte toujours `averageSecondsWhenCorrect`/`failureRatePercent`. Input `stats: TodayStatsResponse | null` (fourni par `GameComponent`, qui appelle `apiStatsToday()` à l'entrée de l'état `done`). L'accordéon délègue à **`<app-track-results-list [rows]="recapRows()">`** — `recapRows` (computed) mappe `results()` (`RoundResult`) + fusionne l'histogramme (`guessTimeDistribution`/`notFoundCount`) depuis `stats` par `position`. Résilience : la liste vient de `results()` (toujours présent) ; si `stats` est `null` la liste s'affiche quand même, seule la pop-up est indisponible. La pop-up (`openChart` signal, fermeture backdrop / ✕ / `Échap`) et le rendu des lignes vivent **dans `TrackResultsListComponent`** (`shared/track-results-list/`), plus dans cet écran.
+  `RoundResult` porte toujours `averageSecondsWhenCorrect`/`failureRatePercent`. Input `stats: TodayStatsResponse | null` (fourni par `GameComponent`, qui appelle `apiStatsToday()` à l'entrée de l'état `done`). L'accordéon délègue à **`<app-track-results-list [rows]="recapRows()">`** — `recapRows` (computed) mappe `results()` (`RoundResult`) + fusionne l'histogramme (`guessTimeDistribution`/`notFoundCount`) depuis `stats` par `position`. Résilience : la liste vient de `results()` (toujours présent) ; si `stats` est `null` la liste s'affiche quand même, seule la pop-up est indisponible. La pop-up (`openChart` signal, fermeture backdrop / ✕ / `Échap`) et le rendu des lignes vivent **dans `TrackResultsListComponent`** (`shared/track-results-list/`), plus dans cet écran. Injecte `PlayerSessionService` (2026-09) : guest → `<app-login-nudge-banner titleKey="loginNudge.keepScoreTitle" bodyKey="loginNudge.keepScoreBody">` sous la carte.
 
 ## Composants partagés utilisés
 
@@ -126,6 +141,7 @@ Tous `OnPush`, présentationnels (sauf `already-played-screen` qui type `stats` 
 - **`shared/share-button/`** : `copied` (required), `failed=false`, `disabled=false` → `share`.
 - **`shared/guess-time-chart/`** : histogramme « en combien de temps les autres ont trouvé » (écran de révélation + pop-up de `track-results-list`). Inputs `distribution` (`DurationBucketDto[]`, required), `notFoundCount=0`, `highlightDuration: number|null=null`, `highlightNotFound=false`, `titleKey=''`. Présentationnel pur (computed `buckets`), pas d'output.
 - **`shared/track-results-list/`** : liste accordéon des morceaux d'un défi + pop-up histogramme au clic sur un `+score`. Input unique `rows: TrackResultRow[]` (interface exportée). Possède `openChart` signal + `@HostListener('document:keydown.escape')`. Mutualisé entre `final-recap-screen` (`recapRows`) et `already-played-screen` (`playedRows`).
+- **`shared/login-nudge-banner/`** (2026-09) : bannière de nudge connexion (carte `rounded-2xl`, pas la forme asymétrique réservée aux cartes principales). Inputs `titleKey`/`bodyKey` (required, clés i18n — le titre **et** le corps varient selon l'écran, contrairement à un CTA fixe), `bodyParams={}` (interpolation optionnelle, ex. `{streak}`). Le CTA (`routerLink="/login"`) et son libellé (`loginNudge.cta`) sont fixes. Pas d'output. Mutualisé entre `already-played-screen` et `final-recap-screen` uniquement — `welcome-screen`/`resume-screen` utilisent un bouton outline inline (pattern différent, pas de carte).
 
 ## Services `core/` consommés (hors périmètre `game/` mais central ici)
 
@@ -138,6 +154,7 @@ Tous `OnPush`, présentationnels (sauf `already-played-screen` qui type `stats` 
   - `extend(nextDuration)` : **prolongations libres, chaînables sans limite** (jusqu'au dernier palier). Comportement dual selon `state()` : si `'playing'`, continue depuis `audio.currentTime` réel jusqu'au nouveau palier (pas de replay, juste un reschedule de l'arrêt auto) ; sinon (`'finished'`/`'idle'`), relit depuis le début (`currentTime=0`) jusqu'au nouveau palier. Pose `wasExtended=true`/`extended.set(true)` dans les deux cas — appelé depuis `BlindRoundComponent.listenMore()` à chaque clic sur « écouter plus ».
   - `stop()` : retourne `{listenedSeconds, wasExtended}`, `navigator.vibrate?.(50)` (haptique mobile).
   - `preloadAll(urls)` : injecte des `<link rel="preload" as="audio">` (hint navigateur, pas de vrai fetch), no-op SSR-safe, retourne `Promise.resolve()` immédiat.
+- **`core/services/player-session.service.ts`** (`providedIn: 'root'`) : `isGuest`/`isLinked`/`email`/`pseudo`/`currentStreak`/`gamesPlayed` signals, peuplés par `load()` (`GET /api/players/me?peek=true`, jamais d'écriture). `updatePseudo(pseudo)` (2026-09) appelle `PUT /api/players/me/pseudo` et met à jour le signal `pseudo` local en cas de succès. Consommé directement par `game-header`, `game-footer`, `welcome-screen`, `resume-screen`, `already-played-screen`, `final-recap-screen` (nudges connexion) et `features/profile/`.
 - **`core/guards/unsaved-game.guard.ts`** : `unsavedGameGuard: CanDeactivateFn<UnsavedGameComponent> = c => c.canDeactivate()` — délègue entièrement à `GameComponent`.
 - **`core/models/game.models.ts`** : ré-export pur depuis `api/api.generated.ts` (`TrackSlot`, `StartSessionResponse`, `ResumedAnswer`, `SubmitAnswerBody as SubmitAnswerRequest`, `SubmitAnswerResponse`).
 - **`core/count-up.ts`** : `countUp(target, setter, duration=600)` — anime via rAF, easing quadratique. Court-circuite (`setter(target)` direct) si `target===0`, `prefers-reduced-motion`, ou `window.__disableAnimations===true` (flag posé par les tests E2E Playwright — sinon l'animation rAF ne tourne pas sous horloge figée `page.clock`).
@@ -161,3 +178,5 @@ Tous `OnPush`, présentationnels (sauf `already-played-screen` qui type `stats` 
 2. Toute nouvelle valeur par défaut de `Settings` (back) doit être répliquée dans `settings.service.ts` (fallback front) — cf. règle générale du CLAUDE.md racine sur l'ajout de settings.
 3. **Prolongation libre depuis le 2026-07-17** — `AudioPlayerService.extend()` n'a plus de limite au nombre d'appels ni de malus de score associé (`ScoreCalculator` ne lit plus `WasExtended`). Ne pas réintroduire de garde « une seule prolongation » sans repasser par une décision produit explicite.
 4. **Code mort — `BlindRoundComponent.mainAction()`** : n'est référencé nulle part (ni le template, ni les tests) depuis le passage à l'auto-play (2026-08) — le bouton replay du template appelle `audio.play(...)` directement. À muscler (brancher sur un bouton) ou supprimer plutôt que laisser traîner si un futur agent le retrouve.
+5. **Toast de streak — 5 points de reset à garder synchronisés** (cf. section dédiée plus haut) : toute nouvelle transition vers `done`/`already_played` ajoutée à `game.component.ts` doit remettre `streakToastDismissed` à `false`, sinon le toast resterait masqué indéfiniment après un premier dismiss.
+6. **Nudges de connexion = uniquement des rappels, jamais un blocage** — tous gardés par `PlayerSessionService.isLinked()` (`welcome-screen`/`resume-screen`/`already-played-screen`/`final-recap-screen`/toast de streak). Le jeu guest doit rester 100% fonctionnel sans jamais afficher ces éléments pour un compte lié — cf. décision d'architecture racine "pas de fermeture d'accès".
