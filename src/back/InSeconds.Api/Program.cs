@@ -77,7 +77,7 @@ builder.Host.UseWolverine(opts =>
 // Docker interne. Sans ce middleware, HttpContext.Connection.RemoteIpAddress vaut toujours l'IP
 // interne de Caddy (jamais celle du vrai client) — ce qui rendrait les rate limiters ci-dessous
 // (admin-login, magic-link-request) inefficaces : un seul compteur partagé par tout le trafic
-// externe, qu'un attaquant peut épuiser pour bloquer l'admin légitime (DoS trivial). KnownNetworks/
+// externe, qu'un attaquant peut épuiser pour bloquer l'admin légitime (DoS trivial). KnownIPNetworks/
 // KnownProxies vidés car l'IP de Caddy sur le réseau Docker partagé n'est pas figée — approche
 // recommandée par Microsoft pour un reverse proxy conteneurisé à IP non fixe. Sûr ici uniquement
 // parce que l'API n'est jamais atteignable directement en prod ; en local (docker-compose.yml),
@@ -86,7 +86,7 @@ builder.Host.UseWolverine(opts =>
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    options.KnownNetworks.Clear();
+    options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
 });
 
@@ -284,7 +284,7 @@ using (var scope = app.Services.CreateScope())
 // Doit être le tout premier middleware : réécrit HttpContext.Connection.RemoteIpAddress /
 // Request.Scheme à partir des en-têtes X-Forwarded-For/-Proto AVANT que quoi que ce soit
 // (rate limiter, logs, OriginValidator...) ne lise ces valeurs. Cf. IServiceCollection ci-dessus
-// pour le pourquoi de KnownNetworks/KnownProxies vidés.
+// pour le pourquoi de KnownIPNetworks/KnownProxies vidés.
 app.UseForwardedHeaders();
 
 if (app.Environment.IsDevelopment())
