@@ -1,6 +1,12 @@
 import { TestBed } from '@angular/core/testing';
+import { TranslateService } from '@ngx-translate/core';
 import { GameFooterComponent } from './game-footer.component';
 import { LanguageService } from '../../../../core/services/language.service';
+
+/** Stub minimal de TranslateService (même approche que language.service.spec.ts) — LanguageService en dépend. */
+class TranslateServiceStub {
+  use(_lang: string): void {}
+}
 
 describe('GameFooterComponent', () => {
   let component: GameFooterComponent;
@@ -10,7 +16,7 @@ describe('GameFooterComponent', () => {
     localStorage.clear();
 
     TestBed.configureTestingModule({
-      providers: [LanguageService],
+      providers: [LanguageService, { provide: TranslateService, useClass: TranslateServiceStub }],
     });
 
     language = TestBed.inject(LanguageService);
