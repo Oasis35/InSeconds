@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using FluentValidation;
 using InSeconds.Api.Common.Auth;
 using InSeconds.Api.Common.Email;
+using InSeconds.Api.Common.Networking;
 using InSeconds.Api.Common.RateLimiting;
 using InSeconds.Api.Common.Scoring;
 using InSeconds.Api.Common.Settings;
@@ -72,22 +73,31 @@ builder.Host.UseWolverine(opts =>
     opts.UseFluentValidation();
 });
 
-// En prod, l'API n'a jamais de port publié sur l'hôte (cf. docker-compose.prod.yml) : Caddy est
-// l'unique point d'entrée, tout le trafic arrive donc via un seul reverse proxy sur le réseau
-// Docker interne. Sans ce middleware, HttpContext.Connection.RemoteIpAddress vaut toujours l'IP
-// interne de Caddy (jamais celle du vrai client) — ce qui rendrait les rate limiters ci-dessous
-// (admin-login, magic-link-request) inefficaces : un seul compteur partagé par tout le trafic
-// externe, qu'un attaquant peut épuiser pour bloquer l'admin légitime (DoS trivial). KnownIPNetworks/
-// KnownProxies vidés car l'IP de Caddy sur le réseau Docker partagé n'est pas figée — approche
-// recommandée par Microsoft pour un reverse proxy conteneurisé à IP non fixe. Sûr ici uniquement
-// parce que l'API n'est jamais atteignable directement en prod ; en local (docker-compose.yml),
-// le port 5171 est publié sans proxy devant, donc l'en-tête est de facto non fiable — impact
-// mineur limité au poste du développeur (bypass possible du rate limit local uniquement).
+// En prod, deux sauts séparent le vrai client de l'API : Cloudflare (edge, DNS proxied) puis
+// Caddy (VPS, seul point d'entrée, l'API n'a jamais de port publié sur l'hôte — cf.
+// docker-compose.prod.yml). Sans ce middleware, Connection.RemoteIpAddress vaut toujours l'IP
+// interne de Caddy, ce qui rendrait les rate limiters ci-dessous inefficaces (DoS trivial) —
+// cf. commit qui a introduit ce bloc. Une première version ne peuplait pas KnownIPNetworks
+// (vidé, "trust everything" sur le premier saut) avec ForwardLimit=1 par défaut : ça ne
+// déroulait qu'UN seul saut, donc Connection.RemoteIpAddress s'arrêtait sur l'IP du edge
+// Cloudflare — partagée par des milliers de visiteurs distincts — au lieu de la vraie IP
+// cliente. Résultat en prod : le rate limiter admin-login (10 req/5min) se faisait épuiser par
+// du trafic sans rapport, et l'admin légitime tombait sur un 429 que le front affiche comme
+// "mot de passe incorrect" (message générique pour toute erreur HTTP, cf. piège 27 racine).
+// Fix : KnownIPNetworks peuplé (TrustedProxyNetworks, Common/Networking/) avec les plages
+// privées RFC1918 (couvre Caddy quelle que soit l'IP Docker lui attribue — non falsifiable
+// depuis l'extérieur, la source TCP réelle est vérifiée par le noyau) ET les plages publiques
+// Cloudflare (permet de dérouler le saut suivant), + ForwardLimit=null (sûr uniquement parce
+// que KnownIPNetworks borne désormais la confiance — recommandation Microsoft). Un attaquant
+// qui contournerait Cloudflare pour taper directement sur Caddy (UFW autorise 80/443 au monde
+// entier) se retrouve avec sa vraie IP TCP hors de ces deux listes : le déroulement s'arrête
+// immédiatement à son IP réelle, non usurpable.
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    options.KnownIPNetworks.Clear();
-    options.KnownProxies.Clear();
+    options.ForwardLimit = null;
+    foreach (var network in TrustedProxyNetworks.All)
+        options.KnownIPNetworks.Add(network);
 });
 
 builder.Services.AddCors(options =>
@@ -284,7 +294,7 @@ using (var scope = app.Services.CreateScope())
 // Doit être le tout premier middleware : réécrit HttpContext.Connection.RemoteIpAddress /
 // Request.Scheme à partir des en-têtes X-Forwarded-For/-Proto AVANT que quoi que ce soit
 // (rate limiter, logs, OriginValidator...) ne lise ces valeurs. Cf. IServiceCollection ci-dessus
-// pour le pourquoi de KnownIPNetworks/KnownProxies vidés.
+// pour le pourquoi des plages KnownIPNetworks (RFC1918 + Cloudflare).
 app.UseForwardedHeaders();
 
 if (app.Environment.IsDevelopment())

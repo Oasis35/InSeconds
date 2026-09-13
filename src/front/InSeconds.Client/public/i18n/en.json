@@ -232,6 +232,7 @@
     "loginButton": "Sign in",
     "loggingIn": "Signing in...",
     "wrongPassword": "Incorrect password.",
+    "tooManyAttempts": "Too many attempts. Try again in a few minutes.",
     "backToGame": "Back to the game",
     "logout": "Sign out",
     "browserId": {
