@@ -41,6 +41,7 @@ using InSeconds.Api.Infrastructure.Persistence;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -68,6 +69,24 @@ builder.Host.UseWolverine(opts =>
     opts.ServiceLocationPolicy = JasperFx.CodeGeneration.Model.ServiceLocationPolicy.AllowedButWarn;
     opts.UseRuntimeCompilation();
     opts.UseFluentValidation();
+});
+
+// En prod, l'API n'a jamais de port publié sur l'hôte (cf. docker-compose.prod.yml) : Caddy est
+// l'unique point d'entrée, tout le trafic arrive donc via un seul reverse proxy sur le réseau
+// Docker interne. Sans ce middleware, HttpContext.Connection.RemoteIpAddress vaut toujours l'IP
+// interne de Caddy (jamais celle du vrai client) — ce qui rendrait les rate limiters ci-dessous
+// (admin-login, magic-link-request) inefficaces : un seul compteur partagé par tout le trafic
+// externe, qu'un attaquant peut épuiser pour bloquer l'admin légitime (DoS trivial). KnownNetworks/
+// KnownProxies vidés car l'IP de Caddy sur le réseau Docker partagé n'est pas figée — approche
+// recommandée par Microsoft pour un reverse proxy conteneurisé à IP non fixe. Sûr ici uniquement
+// parce que l'API n'est jamais atteignable directement en prod ; en local (docker-compose.yml),
+// le port 5171 est publié sans proxy devant, donc l'en-tête est de facto non fiable — impact
+// mineur limité au poste du développeur (bypass possible du rate limit local uniquement).
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
 });
 
 builder.Services.AddCors(options =>
@@ -228,6 +247,12 @@ using (var scope = app.Services.CreateScope())
         }
     }
 }
+
+// Doit être le tout premier middleware : réécrit HttpContext.Connection.RemoteIpAddress /
+// Request.Scheme à partir des en-têtes X-Forwarded-For/-Proto AVANT que quoi que ce soit
+// (rate limiter, logs, OriginValidator...) ne lise ces valeurs. Cf. IServiceCollection ci-dessus
+// pour le pourquoi de KnownNetworks/KnownProxies vidés.
+app.UseForwardedHeaders();
 
 if (app.Environment.IsDevelopment())
 {
