@@ -1,4 +1,5 @@
 using InSeconds.Api.Common.Auth;
+using InSeconds.Api.Common.RateLimiting;
 using InSeconds.Api.Domain;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -14,9 +15,12 @@ public static class GetCurrentPlayerEndpoint
     // "un chargement de page ne pose aucun cookie" testé par happy-path.spec.ts, cf. création
     // paresseuse du Player). En mode peek, un visiteur sans cookie valide reste un guest anonyme
     // (PlayerId=Guid.Empty) sans aucune écriture en base.
-    public static IEndpointRouteBuilder MapGetCurrentPlayer(this IEndpointRouteBuilder app)
+    // enableRateLimiting=false en Testing (appelé à chaque chargement de page par la quasi-
+    // totalité des tests d'intégration/E2E) — jamais désactivé en Dev/Production, cf.
+    // RateLimiterPolicies.PlayerCreation (partagée avec StartSession, même ressource protégée).
+    public static IEndpointRouteBuilder MapGetCurrentPlayer(this IEndpointRouteBuilder app, bool enableRateLimiting = true)
     {
-        app.MapGet("/api/players/me", async (HttpContext ctx, ICookieAuthService cookieAuth, ApplicationDbContext db, bool peek = false, CancellationToken ct = default) =>
+        var route = app.MapGet("/api/players/me", async (HttpContext ctx, ICookieAuthService cookieAuth, ApplicationDbContext db, bool peek = false, CancellationToken ct = default) =>
         {
             Guid? playerId = peek
                 ? await cookieAuth.TryResolvePlayerAsync(ctx, ct)
@@ -41,7 +45,11 @@ public static class GetCurrentPlayerEndpoint
         })
         .WithName("GetCurrentPlayer")
         .WithTags("Players")
-        .Produces<GetCurrentPlayerResponse>(StatusCodes.Status200OK);
+        .Produces<GetCurrentPlayerResponse>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status429TooManyRequests);
+
+        if (enableRateLimiting)
+            route.RequireRateLimiting(RateLimiterPolicies.PlayerCreation);
 
         return app;
     }

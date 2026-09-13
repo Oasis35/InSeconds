@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using FluentValidation;
 using InSeconds.Api.Common.Auth;
 using InSeconds.Api.Common.Email;
+using InSeconds.Api.Common.RateLimiting;
 using InSeconds.Api.Common.Scoring;
 using InSeconds.Api.Common.Settings;
 using InSeconds.Api.Common.Text;
@@ -38,8 +39,11 @@ using InSeconds.Api.Features.E2E;
 using InSeconds.Api.Features.Settings.GetSettings;
 using InSeconds.Api.Infrastructure.Deezer;
 using InSeconds.Api.Infrastructure.Persistence;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Wolverine;
@@ -68,6 +72,24 @@ builder.Host.UseWolverine(opts =>
     opts.UseFluentValidation();
 });
 
+// En prod, l'API n'a jamais de port publié sur l'hôte (cf. docker-compose.prod.yml) : Caddy est
+// l'unique point d'entrée, tout le trafic arrive donc via un seul reverse proxy sur le réseau
+// Docker interne. Sans ce middleware, HttpContext.Connection.RemoteIpAddress vaut toujours l'IP
+// interne de Caddy (jamais celle du vrai client) — ce qui rendrait les rate limiters ci-dessous
+// (admin-login, magic-link-request) inefficaces : un seul compteur partagé par tout le trafic
+// externe, qu'un attaquant peut épuiser pour bloquer l'admin légitime (DoS trivial). KnownIPNetworks/
+// KnownProxies vidés car l'IP de Caddy sur le réseau Docker partagé n'est pas figée — approche
+// recommandée par Microsoft pour un reverse proxy conteneurisé à IP non fixe. Sûr ici uniquement
+// parce que l'API n'est jamais atteignable directement en prod ; en local (docker-compose.yml),
+// le port 5171 est publié sans proxy devant, donc l'en-tête est de facto non fiable — impact
+// mineur limité au poste du développeur (bypass possible du rate limit local uniquement).
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(CorsPolicyName, policy =>
@@ -75,6 +97,71 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials());
+});
+
+// Anti brute-force sur /api/admin/login : le mot de passe admin est un secret unique
+// comparé côté serveur sans autre protection (pas de lockout de compte, un seul "compte").
+// Fenêtre glissante par IP — volontairement permissif pour ne jamais gêner un admin
+// légitime qui retape son mot de passe, mais suffisant pour bloquer un brute-force massif.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy(LoginEndpoint.LoginRateLimiterPolicy, httpContext =>
+        RateLimitPartition.GetSlidingWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(5),
+                SegmentsPerWindow = 5,
+                QueueLimit = 0,
+            }));
+
+    // Anti "email bombing" sur /api/auth/magic-link/request : le throttle existant de 60s
+    // par email (RequestMagicLinkHandler) n'empêche pas de spammer une victime une fois par
+    // minute indéfiniment, ni de solliciter Resend en masse sur des emails différents.
+    options.AddPolicy(RequestMagicLinkEndpoint.RateLimiterPolicy, httpContext =>
+        RateLimitPartition.GetSlidingWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(10),
+                SegmentsPerWindow = 5,
+                QueueLimit = 0,
+            }));
+
+    // GetCurrentPlayer (peek=false) et StartSession créent chacun un Player à la demande sans
+    // authentification préalable — sans limite, un visiteur qui boucle dessus fait grossir la
+    // table Players indéfiniment. Seuil généreux (30/10min) pour ne jamais gêner un vrai joueur
+    // qui recharge la page ou relance une partie plusieurs fois.
+    options.AddPolicy(RateLimiterPolicies.PlayerCreation, httpContext =>
+        RateLimitPartition.GetSlidingWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 30,
+                Window = TimeSpan.FromMinutes(10),
+                SegmentsPerWindow = 5,
+                QueueLimit = 0,
+            }));
+
+    // GET /api/deezer/search (proxy public, pas d'auth) : sans limite, un abus soutenu peut
+    // épuiser le quota Deezer partagé par tous les joueurs (previews/covers cassées pour tout
+    // le monde). CachedDeezerClient (TTL 1h) atténue déjà les requêtes identiques répétées mais
+    // pas une query qui varie à chaque appel. Seuil généreux (60/5min) : l'autocomplete debounce
+    // 300ms génère plusieurs requêtes par recherche tapée normalement, potentiellement pour
+    // plusieurs joueurs derrière la même IP (NAT partagé).
+    options.AddPolicy(SearchEndpoint.RateLimiterPolicy, httpContext =>
+        RateLimitPartition.GetSlidingWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 60,
+                Window = TimeSpan.FromMinutes(5),
+                SegmentsPerWindow = 5,
+                QueueLimit = 0,
+            }));
 });
 
 builder.Services.AddOptions<AppSettings>()
@@ -136,6 +223,9 @@ builder.Services.AddScoped<ICookieAuthService>(sp => new CookieAuthService(
 builder.Services.AddScoped<IMagicLinkTokenService, MagicLinkTokenService>();
 builder.Services.AddScoped<IAccountLinkingService, AccountLinkingService>();
 
+// Singleton : jetons admin en mémoire, un seul process API sur le VPS (pas de scale-out).
+builder.Services.AddSingleton<IAdminTokenStore, AdminTokenStore>();
+
 // ResendEmailSender hors Dev/Testing (config réelle requise) ; NullEmailSender sinon
 // (aucune config nécessaire pour développer — logue le contenu de l'email).
 builder.Services.AddOptions<ResendOptions>().BindConfiguration("Resend");
@@ -191,6 +281,12 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// Doit être le tout premier middleware : réécrit HttpContext.Connection.RemoteIpAddress /
+// Request.Scheme à partir des en-têtes X-Forwarded-For/-Proto AVANT que quoi que ce soit
+// (rate limiter, logs, OriginValidator...) ne lise ces valeurs. Cf. IServiceCollection ci-dessus
+// pour le pourquoi de KnownIPNetworks/KnownProxies vidés.
+app.UseForwardedHeaders();
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -218,7 +314,10 @@ app.Use(async (ctx, next) =>
 });
 
 app.UseCors(CorsPolicyName);
+app.UseRateLimiter();
 app.UseMiddleware<PlayerAuthMiddleware>();
+
+var isTesting = app.Environment.IsEnvironment("Testing");
 
 // Liveness : l'app répond. Renvoie un JSON { status, utc, build } consommé par le badge
 // d'état backend du front (app.ts) — ne pas changer le format sans adapter le front
@@ -237,7 +336,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
 });
 
 app.MapGetSettings();
-app.MapGetCurrentPlayer();
+app.MapGetCurrentPlayer(enableRateLimiting: !isTesting);
 app.MapUpdatePseudo();
 app.MapTodayStats();
 app.MapAddTrack();
@@ -245,12 +344,12 @@ app.MapGetTracks();
 app.MapDeleteTrack();
 app.MapUpdateTrack();
 app.MapUpdateTrackCooldown();
-app.MapStartSession();
+app.MapStartSession(enableRateLimiting: !isTesting);
 app.MapGetTodaySession();
 app.MapSubmitAnswer();
 app.MapAbandonSession();
 app.MapUpdateListening();
-app.MapAdminLogin();
+app.MapAdminLogin(enableRateLimiting: !isTesting);
 app.MapResetToday();
 app.MapGenerateToday();
 app.MapRefreshPreviews();
@@ -258,10 +357,10 @@ app.MapGetChallenges();
 app.MapGetAdminStats();
 app.MapGetChallengeStats();
 app.MapDeezerSearch();
-app.MapDeezerSearchPublic();
+app.MapDeezerSearchPublic(enableRateLimiting: !isTesting);
 app.MapCreateChallenge();
 app.MapSendTestEmail();
-app.MapRequestMagicLink();
+app.MapRequestMagicLink(enableRateLimiting: !isTesting);
 app.MapVerifyMagicLink();
 app.MapLogout();
 
@@ -270,7 +369,7 @@ if (app.Environment.IsDevelopment())
     app.MapDevLoginEndpoint();
 }
 
-if (app.Environment.IsEnvironment("Testing"))
+if (isTesting)
 {
     app.MapE2EReset();
 }

@@ -13,11 +13,17 @@ public static class OriginValidator
         if (!string.IsNullOrEmpty(origin))
             return allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase);
 
+        // Comparaison sur l'autorité exacte (scheme+host+port) du Referer, jamais sur un
+        // préfixe de chaîne brute : un `referer.StartsWith(o)` laisserait passer un Referer
+        // du type "https://inseconds.cc.attaquant.com/..." pour l'origine "https://inseconds.cc".
         var referer = ctx.Request.Headers.Referer.ToString();
-        if (!string.IsNullOrEmpty(referer))
-            return allowedOrigins.Any(o => referer.StartsWith(o, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrEmpty(referer) && Uri.TryCreate(referer, UriKind.Absolute, out var refererUri))
+        {
+            var refererOrigin = refererUri.GetLeftPart(UriPartial.Authority);
+            return allowedOrigins.Contains(refererOrigin, StringComparer.OrdinalIgnoreCase);
+        }
 
-        // Ni Origin ni Referer : un appel fetch/XHR légitime envoie toujours l'un des deux.
+        // Ni Origin ni Referer exploitable : un appel fetch/XHR légitime envoie toujours l'un des deux.
         return false;
     }
 }

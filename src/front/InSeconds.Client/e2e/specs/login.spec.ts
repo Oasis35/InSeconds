@@ -37,8 +37,6 @@ test.describe('Connexion par lien magique', () => {
 
     const game = new GamePage(page);
     await game.waitForWelcome();
-    // Le pseudo apparaît à la fois sur l'avatar du header et sur l'icône du footer
-    // (même `title`) — scoper au header pour éviter la violation "strict mode".
     await expect(page.locator('app-game-header').getByTitle('AliceE2E')).toBeVisible();
   });
 
@@ -88,7 +86,7 @@ test.describe('Connexion par lien magique', () => {
     await contextB.close();
   });
 
-  test('déconnexion depuis le footer revient à l\'état guest', async ({ page, api }) => {
+  test('déconnexion depuis le profil revient à l\'état guest', async ({ page, api }) => {
     await requestMagicLink(page, TEST_EMAIL);
     const linkUrl = await api.getLastMagicLinkUrl(TEST_EMAIL);
     await page.goto(pathOf(linkUrl));
@@ -99,16 +97,15 @@ test.describe('Connexion par lien magique', () => {
     const game = new GamePage(page);
     await game.waitForWelcome();
 
-    // Le clic sur l'icône du footer ouvre l'écran Profil (plus de déconnexion
+    // Le clic sur l'avatar du header ouvre l'écran Profil (plus de déconnexion
     // directe) — il faut confirmer explicitement via son bouton "Se déconnecter".
-    // Le header a aussi un avatar portant le même `title` : scoper au footer.
-    await page.locator('app-game-footer').getByTitle('CarlE2E').click();
+    await page.locator('app-game-header').getByTitle('CarlE2E').click();
     await expect(page).toHaveURL(/\/profile$/);
     await page.getByRole('button', { name: 'Se déconnecter' }).click();
     await expect(page.getByText('Se déconnecter ?')).toBeVisible();
     await page.getByRole('button', { name: 'Oui, me déconnecter' }).click();
 
     await game.waitForWelcome();
-    await expect(page.getByTitle('Se connecter')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Se connecter / Créer un compte' })).toBeVisible();
   });
 });

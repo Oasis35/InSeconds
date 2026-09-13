@@ -10,9 +10,19 @@ public static class SearchEndpoint
     private const int FetchLimit = 20;
     private const int ResultLimit = 10;
 
-    public static IEndpointRouteBuilder MapDeezerSearchPublic(this IEndpointRouteBuilder app)
+    public const string RateLimiterPolicy = "deezer-search-public";
+
+    // enableRateLimiting=false en Testing (autocomplete appelée abondamment par les tests
+    // d'intégration/E2E dédiés + par tout parcours de jeu simulé) — jamais désactivé en
+    // Dev/Production. Le CachedDeezerClient (TTL 1h) atténue déjà les requêtes identiques
+    // répétées mais ne protège pas contre une requête qui varie la query à chaque appel
+    // (script qui martèle l'API Deezer via notre proxy, épuisant le quota partagé par tous
+    // les joueurs) — d'où ce rate limit par IP en complément, volontairement généreux pour ne
+    // jamais gêner un joueur qui tape/corrige sa recherche normalement (autocomplete debounce
+    // 300ms côté front, plusieurs requêtes par recherche tapée sont normales).
+    public static IEndpointRouteBuilder MapDeezerSearchPublic(this IEndpointRouteBuilder app, bool enableRateLimiting = true)
     {
-        app.MapGet("/api/deezer/search", async (string q, CachedDeezerClient deezer, CancellationToken ct) =>
+        var route = app.MapGet("/api/deezer/search", async (string q, CachedDeezerClient deezer, CancellationToken ct) =>
         {
             if (string.IsNullOrWhiteSpace(q) || q.Length < 2)
                 return Results.Ok(Array.Empty<DeezerSearchResult>());
@@ -20,7 +30,11 @@ public static class SearchEndpoint
             var tracks = await deezer.SearchTracksAsync(q, ct, FetchLimit);
             var results = CleanAndDeduplicate(tracks);
             return Results.Ok(results);
-        });
+        })
+        .Produces(StatusCodes.Status429TooManyRequests);
+
+        if (enableRateLimiting)
+            route.RequireRateLimiting(RateLimiterPolicy);
 
         return app;
     }
