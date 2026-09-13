@@ -232,6 +232,7 @@
     "loginButton": "Se connecter",
     "loggingIn": "Connexion...",
     "wrongPassword": "Mot de passe incorrect.",
+    "tooManyAttempts": "Trop de tentatives. Réessaie dans quelques minutes.",
     "backToGame": "Retour au jeu",
     "logout": "Se déconnecter",
     "browserId": {

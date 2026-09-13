@@ -13,5 +13,8 @@
   @if (loginStatus() === 'error') {
     <p class="text-sm" style="color:var(--text-error)">{{ 'admin.wrongPassword' | translate }}</p>
   }
+  @if (loginStatus() === 'rate_limited') {
+    <p class="text-sm" style="color:var(--text-error)">{{ 'admin.tooManyAttempts' | translate }}</p>
+  }
 </div>
 <a routerLink="/" class="text-sm transition-colors text-center w-full block mt-4" style="color:var(--text-faint)">{{ 'admin.backToGame' | translate }}</a>
