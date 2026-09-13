@@ -481,6 +481,7 @@ Runners Ubuntu, ~5-7 min par run (jobs `back`/`front`/`unit-tests-front`/`integr
 - Tests mobiles (iOS Safari, Android Chrome)
 - Polish : messages d'erreur, accessibilité WCAG 2.1 AA, RGPD
 - **Cache Redis pour les preview URLs Deezer** : un cache **mémoire** existe déjà (`CachedDeezerClient`, cf. Déjà implémenté). Redis n'apporterait un plus qu'en multi-instances (partage du cache entre replicas) ou pour survivre aux redémarrages. Si implémenté : remplacer l'`IMemoryCache` de `CachedDeezerClient` par Redis (clé = DeezerTrackId, TTL borné par l'`exp` de la signature comme aujourd'hui). Nécessite `StackExchange.Redis` + entrée Redis dans `docker-compose.yml`.
+- **Job de nettoyage récurrent des `Players` invités jamais joués** — même avec le rate limiting par IP sur `GetCurrentPlayer`/`StartSession` (cf. `RateLimiterPolicies.PlayerCreation`, 2026-09-13), la table `Players` peut continuer à grossir lentement (guests créés puis jamais revenus, trafic légitime dispersé sur beaucoup d'IP différentes). Il existe déjà une migration one-shot `PurgeUnplayedPlayers` (purge ponctuelle au moment de son application), mais pas de `BackgroundService` récurrent équivalent. Si implémenté : un job nocturne (même pattern que `GenerateDailyChallengeService`/`RefreshPreviewStatusService`, `DailySchedule.NextUtcHour`) qui soft-delete (`IsDeleted=true`) les `Player` `IsGuest=true` sans aucune `GameSession` et dont `CreatedAt` dépasse un seuil (ex: 30 jours).
 
 ## Décisions d'architecture notables
 

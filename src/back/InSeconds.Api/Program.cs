@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using FluentValidation;
 using InSeconds.Api.Common.Auth;
 using InSeconds.Api.Common.Email;
+using InSeconds.Api.Common.RateLimiting;
 using InSeconds.Api.Common.Scoring;
 using InSeconds.Api.Common.Settings;
 using InSeconds.Api.Common.Text;
@@ -126,6 +127,38 @@ builder.Services.AddRateLimiter(options =>
             {
                 PermitLimit = 5,
                 Window = TimeSpan.FromMinutes(10),
+                SegmentsPerWindow = 5,
+                QueueLimit = 0,
+            }));
+
+    // GetCurrentPlayer (peek=false) et StartSession créent chacun un Player à la demande sans
+    // authentification préalable — sans limite, un visiteur qui boucle dessus fait grossir la
+    // table Players indéfiniment. Seuil généreux (30/10min) pour ne jamais gêner un vrai joueur
+    // qui recharge la page ou relance une partie plusieurs fois.
+    options.AddPolicy(RateLimiterPolicies.PlayerCreation, httpContext =>
+        RateLimitPartition.GetSlidingWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 30,
+                Window = TimeSpan.FromMinutes(10),
+                SegmentsPerWindow = 5,
+                QueueLimit = 0,
+            }));
+
+    // GET /api/deezer/search (proxy public, pas d'auth) : sans limite, un abus soutenu peut
+    // épuiser le quota Deezer partagé par tous les joueurs (previews/covers cassées pour tout
+    // le monde). CachedDeezerClient (TTL 1h) atténue déjà les requêtes identiques répétées mais
+    // pas une query qui varie à chaque appel. Seuil généreux (60/5min) : l'autocomplete debounce
+    // 300ms génère plusieurs requêtes par recherche tapée normalement, potentiellement pour
+    // plusieurs joueurs derrière la même IP (NAT partagé).
+    options.AddPolicy(SearchEndpoint.RateLimiterPolicy, httpContext =>
+        RateLimitPartition.GetSlidingWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 60,
+                Window = TimeSpan.FromMinutes(5),
                 SegmentsPerWindow = 5,
                 QueueLimit = 0,
             }));
@@ -303,7 +336,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
 });
 
 app.MapGetSettings();
-app.MapGetCurrentPlayer();
+app.MapGetCurrentPlayer(enableRateLimiting: !isTesting);
 app.MapUpdatePseudo();
 app.MapTodayStats();
 app.MapAddTrack();
@@ -311,7 +344,7 @@ app.MapGetTracks();
 app.MapDeleteTrack();
 app.MapUpdateTrack();
 app.MapUpdateTrackCooldown();
-app.MapStartSession();
+app.MapStartSession(enableRateLimiting: !isTesting);
 app.MapGetTodaySession();
 app.MapSubmitAnswer();
 app.MapAbandonSession();
@@ -324,7 +357,7 @@ app.MapGetChallenges();
 app.MapGetAdminStats();
 app.MapGetChallengeStats();
 app.MapDeezerSearch();
-app.MapDeezerSearchPublic();
+app.MapDeezerSearchPublic(enableRateLimiting: !isTesting);
 app.MapCreateChallenge();
 app.MapSendTestEmail();
 app.MapRequestMagicLink(enableRateLimiting: !isTesting);
