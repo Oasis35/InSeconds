@@ -102,9 +102,7 @@
     "admin": "Admin",
     "privacy": "Confidentialité",
     "contact": "Nous contacter",
-    "language": "Switch to English",
-    "login": "Se connecter",
-    "logout": "Se déconnecter"
+    "language": "Switch to English"
   },
   "profile": {
     "title": "Ton profil",
