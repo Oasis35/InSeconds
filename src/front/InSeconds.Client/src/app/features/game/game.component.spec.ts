@@ -3,6 +3,8 @@ import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import { GameComponent } from './game.component';
 import { GameFacadeService } from './services/game-facade.service';
+import { GameShareService } from './services/game-share.service';
+import { LeaveConfirmationService } from './services/leave-confirmation.service';
 import { ApiClient } from '../../api/api.generated';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
 import { ClipboardService } from '../../core/services/clipboard.service';
@@ -53,6 +55,8 @@ describe('GameComponent — streak toast', () => {
         { provide: ClipboardService, useValue: {} },
         { provide: PlayerSessionService, useValue: { isLinked: signal(false) } },
         { provide: TranslateService, useClass: TranslateServiceStub },
+        GameShareService,
+        LeaveConfirmationService,
       ],
     });
 

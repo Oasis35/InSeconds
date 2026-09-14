@@ -2,17 +2,17 @@ import { Component, inject, signal, computed, effect, viewChild, OnInit, OnDestr
 import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
-import { ClipboardService } from '../../core/services/clipboard.service';
 import { PlayerSessionService } from '../../core/services/player-session.service';
 import { GameFacadeService } from './services/game-facade.service';
+import { GameShareService } from './services/game-share.service';
+import { LeaveConfirmationService } from './services/leave-confirmation.service';
 import { TrackSlot, ResumedAnswer } from '../../core/models/game.models';
 import { BlindRoundComponent, AnsweredEvent } from './blind-round/blind-round.component';
 import { ConfirmSheetComponent } from '../../shared/confirm-sheet/confirm-sheet.component';
 import { ApiClient, TodayStatsResponse } from '../../api/api.generated';
-import { environment } from '../../../environments/environment';
 import { UnsavedGameComponent } from '../../core/guards/unsaved-game.guard';
 import { countUp } from '../../core/count-up';
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { WelcomeScreenComponent } from './screens/welcome-screen/welcome-screen.component';
 import { ResumeScreenComponent } from './screens/resume-screen/resume-screen.component';
 import { StatusScreenComponent } from './screens/status-screen/status-screen.component';
@@ -34,15 +34,15 @@ type GameState = 'loading' | 'welcome' | 'resume_prompt' | 'playing' | 'done' | 
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './game.component.html',
-  providers: [GameFacadeService],
+  providers: [GameFacadeService, GameShareService, LeaveConfirmationService],
 })
 export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
   private readonly gameService = inject(GameFacadeService);
   private readonly api = inject(ApiClient);
   private readonly audioPlayer = inject(AudioPlayerService);
-  private readonly clipboard = inject(ClipboardService);
+  private readonly gameShare = inject(GameShareService);
+  private readonly leaveConfirmation = inject(LeaveConfirmationService);
   protected readonly playerSession = inject(PlayerSessionService);
-  private readonly translate = inject(TranslateService);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly gameState = signal<GameState>('loading');
   protected readonly todayStats = signal<TodayStatsResponse | null>(null);
@@ -279,8 +279,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
     }
   }
 
-  protected readonly showLeaveConfirm = signal(false);
-  private leaveResolve: ((ok: boolean) => void) | null = null;
+  protected readonly showLeaveConfirm = this.leaveConfirmation.showLeaveConfirm;
 
   constructor() {
     // Si la partie quitte l'état 'playing' (terminée/abandonnée en arrière-plan,
@@ -288,8 +287,8 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
     // sortie est ouverte, on laisse la navigation se faire — il n'y a plus de
     // partie à protéger.
     effect(() => {
-      if (this.gameState() !== 'playing' && this.leaveResolve) {
-        this.resolveLeave(true);
+      if (this.gameState() !== 'playing' && this.leaveConfirmation.hasPending) {
+        this.leaveConfirmation.resolve(true);
       }
     });
   }
@@ -303,86 +302,28 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
 
   canDeactivate(): boolean | Promise<boolean> {
     if (this.gameState() !== 'playing') return true;
-    // Une confirmation déjà en attente (navigation ré-entrante) : on la résout
-    // avant d'en ouvrir une nouvelle pour ne pas laisser de Promise orpheline.
-    this.resolveLeave(false);
-    this.showLeaveConfirm.set(true);
-    return new Promise<boolean>(resolve => {
-      this.leaveResolve = resolve;
-    });
-  }
-
-  private resolveLeave(ok: boolean): void {
-    this.showLeaveConfirm.set(false);
-    const resolve = this.leaveResolve;
-    this.leaveResolve = null;
-    resolve?.(ok);
+    return this.leaveConfirmation.request();
   }
 
   protected confirmLeave(): void {
-    this.resolveLeave(true);
+    this.leaveConfirmation.confirm();
   }
 
   protected cancelLeave(): void {
-    this.resolveLeave(false);
+    this.leaveConfirmation.cancel();
   }
 
-  protected readonly shareCopied = signal(false);
-  protected readonly shareFailed = signal(false);
+  protected readonly shareCopied = this.gameShare.copied;
+  protected readonly shareFailed = this.gameShare.failed;
 
   protected shareFromStats(): void {
     const stats = this.todayStats();
     if (!stats) return;
-
-    const date = new Date();
-    const dateStr = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
-    const lines = stats.tracks.map(t => {
-      if (t.listenedDurationSeconds == null) return null;
-      const artist = t.artistCorrect ? '✅' : '❌';
-      const title  = t.titleCorrect  ? '✅' : '❌';
-      return `${artist}/${title} ${t.listenedDurationSeconds}s`;
-    }).filter(Boolean);
-
-    const text = [
-      this.translate.instant('share.title', { date: dateStr }),
-      lines.join('\n'),
-      this.translate.instant('share.score', { score: stats.yourScore }),
-      environment.appUrl,
-    ].join('\n');
-
-    this.copyToClipboard(text);
+    this.gameShare.shareStats(stats);
   }
 
   protected share(): void {
-    const date = new Date();
-    const dateStr = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
-
-    const lines = this.results().map(r => {
-      const artist = r.artistCorrect ? '✅' : '❌';
-      const title  = r.titleCorrect  ? '✅' : '❌';
-      return `${artist}/${title} ${r.listenedDurationSeconds}s`;
-    });
-
-    const text = [
-      this.translate.instant('share.title', { date: dateStr }),
-      lines.join('\n'),
-      this.translate.instant('share.score', { score: this.totalScore() }),
-      environment.appUrl,
-    ].join('\n');
-
-    this.copyToClipboard(text);
-  }
-
-  private copyToClipboard(text: string): void {
-    this.clipboard.copy(text).then(ok => {
-      if (ok) {
-        this.shareCopied.set(true);
-        setTimeout(() => this.shareCopied.set(false), 2000);
-      } else {
-        this.shareFailed.set(true);
-        setTimeout(() => this.shareFailed.set(false), 3000);
-      }
-    });
+    this.gameShare.shareResults(this.results(), this.totalScore());
   }
 
   private loadSession(): void {
