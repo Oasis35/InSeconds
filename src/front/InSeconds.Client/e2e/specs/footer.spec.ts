@@ -45,7 +45,7 @@ test.describe('Footer — langue et confidentialité', () => {
       page.getByRole('heading', { name: 'Confidentialité & mentions légales' })
     ).toBeVisible();
     // La page réunit les deux : mentions légales (éditeur/hébergeur) + politique de confidentialité
-    await expect(page.getByText('Mentions légales — Éditeur et hébergement')).toBeVisible();
+    await expect(page.getByText('Mentions légales : éditeur et hébergement')).toBeVisible();
   });
 
   test("l'alias /confidentialite redirige vers /privacy", async ({ page }) => {
