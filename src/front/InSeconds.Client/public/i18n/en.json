@@ -101,6 +101,7 @@
   "footer": {
     "admin": "Admin",
     "privacy": "Privacy",
+    "legalNotice": "Legal notice",
     "contact": "Contact us",
     "language": "Passer en français"
   },
@@ -190,6 +191,26 @@
       "body": "In accordance with Articles 15 to 21 of the GDPR, you have the right to access, rectify, erase, restrict the processing of, object to the processing of, and port the data associated with your identifier or account (email, pseudo, game history, current streak). If you created an account, you may also withdraw your consent at any time, without affecting the lawfulness of processing carried out before that withdrawal.\nDeletion permanently erases your game history, your current streak and, where applicable, your email and pseudo.\nYou also have the right to lodge a complaint with a supervisory authority (in France, the CNIL — www.cnil.fr).",
       "contact": "To exercise these rights, or for any question:",
       "contactLabel": "✉️ contact@inseconds.cc"
+    },
+    "disclaimer": "This document was drafted for guidance only and does not constitute legal advice; it is recommended that it be reviewed by a legal professional before publication or any substantial change.",
+    "back": "Back to the game"
+  },
+  "legalNotice": {
+    "title": "Legal notice",
+    "updated": "Last updated: September 14, 2026",
+    "intro": "In accordance with Article 1-1 of French law n° 2004-575 of June 21, 2004 for confidence in the digital economy (LCEN, as amended by law n° 2024-449 of May 21, 2024), this legal notice identifies the publisher and the host of the site available at https://inseconds.cc.",
+    "editor": {
+      "title": "Site publisher",
+      "body": "InSeconds is published by an individual based in France, acting on a non-professional basis: it is a personal project, developed in the publisher's free time, with no commercial activity (the game is free, with no advertising and nothing for sale).\nUnder Article 1-1, II of the LCEN, a non-professional publisher may remain anonymous to the public, provided they have communicated their identity and contact details to their host — which is the case here.\nNo publication director has been appointed: this requirement, under the French law of July 29, 1982, only applies to legal entities.\nFor any question, the publisher can be reached at the contact address given at the bottom of this page."
+    },
+    "host": {
+      "title": "Host",
+      "body": "OVH SAS\n2 rue Kellermann\n59100 Roubaix — France\nRCS Lille Métropole n° 424 761 419"
+    },
+    "dataProcessing": {
+      "title": "Personal data",
+      "body": "This legal notice identifies the site's publisher and host, in accordance with the LCEN. The processing of your personal data (cookie, account, game statistics, recipients, retention periods, your rights...) is described separately, in accordance with the GDPR, in the privacy policy.",
+      "link": "→ Read the privacy policy"
     },
     "disclaimer": "This document was drafted for guidance only and does not constitute legal advice; it is recommended that it be reviewed by a legal professional before publication or any substantial change.",
     "back": "Back to the game"

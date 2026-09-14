@@ -54,4 +54,27 @@ test.describe('Footer — langue et confidentialité', () => {
       page.getByRole('heading', { name: 'Politique de confidentialité' })
     ).toBeVisible();
   });
+
+  test('le lien mentions légales ouvre la page /legal-notice', async ({ page }) => {
+    const game = new GamePage(page);
+
+    await game.goto();
+    await game.waitForWelcome();
+
+    await page.getByTitle('Mentions légales').click();
+
+    await expect(page).toHaveURL(/\/legal-notice$/);
+    await expect(
+      page.getByRole('heading', { name: 'Mentions légales' })
+    ).toBeVisible();
+  });
+
+  test("l'alias /mentions-legales redirige vers /legal-notice", async ({ page }) => {
+    await page.goto('/mentions-legales');
+
+    await expect(page).toHaveURL(/\/legal-notice$/);
+    await expect(
+      page.getByRole('heading', { name: 'Mentions légales' })
+    ).toBeVisible();
+  });
 });

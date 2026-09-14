@@ -101,6 +101,7 @@
   "footer": {
     "admin": "Admin",
     "privacy": "Confidentialité",
+    "legalNotice": "Mentions légales",
     "contact": "Nous contacter",
     "language": "Switch to English"
   },
@@ -190,6 +191,26 @@
       "body": "Conformément aux articles 15 à 21 du RGPD, vous disposez d'un droit d'accès, de rectification, d'effacement, de limitation du traitement, d'opposition et de portabilité sur les données associées à votre identifiant ou à votre compte (email, pseudo, historique de parties, série en cours). Si vous avez créé un compte, vous pouvez également retirer votre consentement à tout moment, sans que cela affecte la licéité des traitements effectués avant ce retrait.\nLa suppression efface définitivement votre historique de parties, votre série en cours et, le cas échéant, votre email et votre pseudo.\nVous disposez également du droit d'introduire une réclamation auprès de la CNIL (www.cnil.fr), l'autorité de contrôle compétente en France.",
       "contact": "Pour exercer ces droits, ou pour toute question :",
       "contactLabel": "✉️ contact@inseconds.cc"
+    },
+    "disclaimer": "Ce document a été rédigé à titre indicatif et ne constitue pas un avis juridique ; il est recommandé de le faire relire par un professionnel du droit avant toute publication ou modification substantielle.",
+    "back": "Retour au jeu"
+  },
+  "legalNotice": {
+    "title": "Mentions légales",
+    "updated": "Dernière mise à jour : 14 septembre 2026",
+    "intro": "Conformément à l'article 1-1 de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique (LCEN, dans sa rédaction issue de la loi n° 2024-449 du 21 mai 2024), les présentes mentions légales identifient l'éditeur et l'hébergeur du site accessible à l'adresse https://inseconds.cc.",
+    "editor": {
+      "title": "Éditeur du site",
+      "body": "InSeconds est édité par une personne physique établie en France, agissant à titre non professionnel : c'est un projet personnel, développé sur le temps libre de son éditeur, sans activité commerciale (jeu gratuit, sans publicité, sans vente).\nConformément à l'article 1-1, II de la LCEN, un éditeur non professionnel peut préserver son anonymat vis-à-vis du public, à la condition d'avoir communiqué son identité et ses coordonnées à son hébergeur — ce qui est le cas ici.\nAucun directeur de publication n'est désigné : cette obligation, issue de la loi du 29 juillet 1982, ne s'applique qu'aux personnes morales.\nPour toute question, l'éditeur reste joignable à l'adresse de contact indiquée en bas de cette page."
+    },
+    "host": {
+      "title": "Hébergeur",
+      "body": "OVH SAS\n2 rue Kellermann\n59100 Roubaix — France\nRCS Lille Métropole n° 424 761 419"
+    },
+    "dataProcessing": {
+      "title": "Données personnelles",
+      "body": "Les présentes mentions légales identifient l'éditeur et l'hébergeur du site, conformément à la LCEN. Le traitement de vos données personnelles (cookie, compte, statistiques de jeu, destinataires, durées de conservation, vos droits...) est décrit séparément, conformément au RGPD, dans la politique de confidentialité.",
+      "link": "→ Consulter la politique de confidentialité"
     },
     "disclaimer": "Ce document a été rédigé à titre indicatif et ne constitue pas un avis juridique ; il est recommandé de le faire relire par un professionnel du droit avant toute publication ou modification substantielle.",
     "back": "Retour au jeu"

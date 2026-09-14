@@ -24,6 +24,16 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
   {
+    path: 'legal-notice',
+    loadComponent: () =>
+      import('./features/legal-notice/legal-notice.component').then(m => m.LegalNoticeComponent),
+  },
+  {
+    path: 'mentions-legales',
+    redirectTo: 'legal-notice',
+    pathMatch: 'full',
+  },
+  {
     path: 'login',
     loadComponent: () =>
       import('./features/login/request/request-login.component').then(m => m.RequestLoginComponent),
