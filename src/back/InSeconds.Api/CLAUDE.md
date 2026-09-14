@@ -54,7 +54,7 @@ Doc détaillée du backend. Vue d'ensemble générale, conventions .NET globales
 
 ### Admin/Challenges/CreateChallenge — `POST /api/admin/challenges`
 
-Validation manuelle dans l'endpoint (pas FluentValidation) : 1 à **3** `DeezerTrackIds` (littéral codé en dur dans l'endpoint — `body.DeezerTrackIds.Count > 3` —, pas dérivé de `TracksPerChallenge`/`SettingsService`, contrairement à `DailyChallengeGenerator` qui lit `settings.TracksPerChallenge` ; inoffensif tant que le défaut reste 3, mais à corriger si `TracksPerChallenge` devient un jour éditable), pas de doublons → 400 sinon. Handler (`db, DeezerClient`) : 409 si défi déjà présent pour `Date` ; réutilise le `Track` existant sinon fetch Deezer (**422** `invalid_track` si `null`) ; crée `DailyChallenge(Seed=Date.DayNumber)` + `DailyChallengeTrack(Position=i+1, DeezerRankSnapshot=i+1)`. Pas de gestion explicite de race condition ici (contrairement à `AddTrack`).
+Validation manuelle dans l'endpoint (pas FluentValidation) : 1 à `TracksPerChallenge` `DeezerTrackIds` — la borne haute est lue via `SettingsService.GetAsync()` (2026-09-14, avant : littéral codé en dur `> 3`, désynchronisable de `DailyChallengeGenerator` qui lit déjà `settings.TracksPerChallenge` pour la génération automatique), pas de doublons → 400 sinon. Handler (`db, DeezerClient`) : 409 si défi déjà présent pour `Date` ; réutilise le `Track` existant sinon fetch Deezer (**422** `invalid_track` si `null`) ; crée `DailyChallenge(Seed=Date.DayNumber)` + `DailyChallengeTrack(Position=i+1, DeezerRankSnapshot=i+1)`. Pas de gestion explicite de race condition ici (contrairement à `AddTrack`).
 
 ### Admin/Challenges/DeezerSearch — `GET /api/admin/deezer-search?q=`
 
@@ -248,7 +248,7 @@ Implémente `IDataProtectionKeyContext` (clés persistées en base, cf. piège 1
 ### `DeezerClient` (accès direct, non caché)
 
 - `GetPreviewUrlAsync` → délègue à `ProbePreviewAsync`.
-- **`ProbePreviewAsync` → `DeezerPreviewProbe(bool Succeeded, string? PreviewUrl)`** : distingue "échec de requête" (`Succeeded=false`) de "vraie absence de preview" (`Succeeded=true, PreviewUrl=""`). **Deezer renvoie ses erreurs (quota, busy, track supprimé) en HTTP 200** avec `error.code`/`error.message` — `DeezerErrorCodeNoData=800` = track n'existe plus (absence déterminée), tout autre code (4=quota, 700=busy) → `Succeeded=false` (cf. piège 16 racine).
+- **`ProbePreviewAsync` → `DeezerPreviewProbe(bool Succeeded, string? PreviewUrl)`** : distingue "échec de requête" (`Succeeded=false`) de "vraie absence de preview" (`Succeeded=true, PreviewUrl=""`). **Deezer renvoie ses erreurs (quota, busy, track supprimé) en HTTP 200** avec `error.code`/`error.message` — `DefinitiveNoDataErrorCodes` (`HashSet<int>`, aujourd'hui `{800}` = "no data", track n'existe plus) liste les codes traités comme une absence déterminée ; tout code absent de ce set (4=quota, 700=busy, ou un futur code Deezer inconnu) → `Succeeded=false` (cf. piège 16 racine). Un futur code à traiter en absence déterminée s'ajoute au set, sans toucher à `ProbePreviewAsync`.
 - `GetTrackInfoAsync` → `DeezerTrackInfo(Artist, Title, PreviewUrl, DeezerTrackId, CoverHash)` ou `null`.
 - `SearchTracksAsync` → `[]` en cas d'erreur (jamais d'exception propagée sauf `OperationCanceledException`, re-thrown — cf. piège 13 racine).
 - **`ExtractCoverHash`** : parse `.../images/cover/{hash}/250x250-...jpg`, extrait uniquement `{hash}`.

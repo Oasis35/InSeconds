@@ -1,3 +1,4 @@
+using InSeconds.Api.Common.Settings;
 using InSeconds.Api.Features.Admin.Login;
 using Wolverine;
 
@@ -11,13 +12,16 @@ public static class CreateChallengeEndpoint
             CreateChallengeBody body,
             HttpContext ctx,
             IMessageBus bus,
+            SettingsService settingsService,
             CancellationToken ct) =>
         {
             if (!LoginEndpoint.IsAdminAuthenticated(ctx))
                 return Results.Unauthorized();
 
-            if (body.DeezerTrackIds is null || body.DeezerTrackIds.Count == 0 || body.DeezerTrackIds.Count > 3)
-                return Results.BadRequest(new { error = "invalid_tracks", message = "Entre 1 et 3 tracks requis." });
+            var maxTracks = (await settingsService.GetAsync(ct)).TracksPerChallenge;
+
+            if (body.DeezerTrackIds is null || body.DeezerTrackIds.Count == 0 || body.DeezerTrackIds.Count > maxTracks)
+                return Results.BadRequest(new { error = "invalid_tracks", message = $"Entre 1 et {maxTracks} tracks requis." });
 
             if (body.DeezerTrackIds.Distinct().Count() != body.DeezerTrackIds.Count)
                 return Results.BadRequest(new { error = "duplicate_tracks", message = "Les tracks doivent être distinctes." });

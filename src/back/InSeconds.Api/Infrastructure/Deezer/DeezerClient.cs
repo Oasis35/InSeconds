@@ -10,7 +10,10 @@ public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger)
         PropertyNameCaseInsensitive = true,
     };
 
-    private const int DeezerErrorCodeNoData = 800;
+    // Codes d'erreur Deezer traités comme une absence de preview déterminée (pas un échec de requête) :
+    // 800 = "no data", le track n'existe plus sur Deezer. Ajouter un nouveau code ici n'exige de
+    // toucher à aucune branche conditionnelle (ProbePreviewAsync reste inchangé).
+    private static readonly HashSet<int> DefinitiveNoDataErrorCodes = [800];
 
     public async Task<string?> GetPreviewUrlAsync(long deezerTrackId, CancellationToken ct = default)
     {
@@ -36,9 +39,9 @@ public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger)
                     "Deezer a renvoyé une erreur pour le track {DeezerTrackId} : code {Code} ({Message}).",
                     deezerTrackId, response.Error.Code, response.Error.Message);
 
-                // Code 800 = "no data" : le track n'existe plus sur Deezer — réponse déterminée
-                // (pas de preview), contrairement au quota (4) ou service busy (700).
-                return response.Error.Code == DeezerErrorCodeNoData
+                // Réponse déterminée (pas de preview) pour les codes connus de "no data" ;
+                // tout autre code (quota=4, service busy=700, ou un futur code inconnu) → échec de requête.
+                return DefinitiveNoDataErrorCodes.Contains(response.Error.Code)
                     ? new DeezerPreviewProbe(true, "")
                     : new DeezerPreviewProbe(false, null);
             }
