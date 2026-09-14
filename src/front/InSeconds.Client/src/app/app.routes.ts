@@ -24,13 +24,13 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
   {
-    path: 'legal-notice',
-    loadComponent: () =>
-      import('./features/legal-notice/legal-notice.component').then(m => m.LegalNoticeComponent),
+    path: 'mentions-legales',
+    redirectTo: 'privacy',
+    pathMatch: 'full',
   },
   {
-    path: 'mentions-legales',
-    redirectTo: 'legal-notice',
+    path: 'legal-notice',
+    redirectTo: 'privacy',
     pathMatch: 'full',
   },
   {
