@@ -36,11 +36,16 @@ describe('PoolAudioPreviewService', () => {
     expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();
   });
 
-  it('stops the previous track and starts a new one when the url changes mid-playback', async () => {
+  // `toggle()` sur une URL différente pendant la lecture ne fait que mettre en pause
+  // (comportement porté tel quel de l'ancien `togglePreviewUrl` d'AdminPoolService) : dans
+  // l'usage réel, les appelants (openAddModal/selectModalTrack/openPreviewModal) appellent
+  // toujours stop() avant de changer de piste — c'est ce chemin qui est couvert ici.
+  it('starts a new track after an explicit stop() when a different url is requested', async () => {
     service.toggle('https://example.com/a.mp3');
     await Promise.resolve();
     expect(service.playing()).toBe(true);
 
+    service.stop();
     service.toggle('https://example.com/b.mp3');
     await Promise.resolve();
     expect(playSpy).toHaveBeenCalledTimes(2);
