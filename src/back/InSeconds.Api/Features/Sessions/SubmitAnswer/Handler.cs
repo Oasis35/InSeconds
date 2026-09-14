@@ -55,29 +55,7 @@ public sealed class SubmitAnswerHandler(
             titleCorrect,
             appSettings.DurationScores);
 
-        // Stats calculées sur les réponses déjà en base, avant d'ajouter la nôtre —
-        // on la combine en mémoire pour éviter un aller-retour DB après le save.
-        var priorStats = await db.GameSessionAnswers
-            .Where(a => a.DailyChallengeTrackId == command.DailyChallengeTrackId)
-            .GroupBy(_ => 1)
-            .Select(g => new
-            {
-                Total        = g.Count(),
-                CorrectCount = g.Count(a => a.ArtistCorrect || a.TitleCorrect),
-                CorrectSum   = g.Where(a => a.ArtistCorrect || a.TitleCorrect)
-                                .Sum(a => (double?)a.ListenedDurationSeconds),
-                FailCount    = g.Count(a => !a.ArtistCorrect && !a.TitleCorrect),
-            })
-            .FirstOrDefaultAsync(cancellationToken);
-
-        // Répartition par palier des réponses correctes déjà en base (pour l'histogramme
-        // "en combien de temps les autres ont trouvé" affiché à la révélation).
-        var priorByDuration = await db.GameSessionAnswers
-            .Where(a => a.DailyChallengeTrackId == command.DailyChallengeTrackId
-                        && (a.ArtistCorrect || a.TitleCorrect))
-            .GroupBy(a => a.ListenedDurationSeconds)
-            .Select(g => new { Duration = g.Key, Count = g.Count() })
-            .ToListAsync(cancellationToken);
+        var priorStats = await GetPriorStatsAsync(command.DailyChallengeTrackId, cancellationToken);
 
         db.GameSessionAnswers.Add(new GameSessionAnswer
         {
@@ -106,41 +84,12 @@ public sealed class SubmitAnswerHandler(
         var isLastAnswer = (answeredCount + 1) >= appSettings.TracksPerChallenge;
 
         if (isLastAnswer && session.Status == SessionStatus.Pending)
-        {
-            session.Status      = SessionStatus.Completed;
-            session.CompletedAt = DateTime.UtcNow;
-
-            // Streak basée sur la date du défi, pas la date de complétion : terminer
-            // le défi de lundi mardi à 00:15 UTC ne doit pas casser la streak (piège 18).
-            var challengeDate = await db.DailyChallenges
-                .Where(c => c.Id == session.DailyChallengeId)
-                .Select(c => c.Date)
-                .FirstAsync(cancellationToken);
-
-            var player = await db.Players.FirstAsync(p => p.Id == command.PlayerId, cancellationToken);
-            player.CurrentStreak  = player.LastPlayedDate == challengeDate.AddDays(-1) ? player.CurrentStreak + 1 : 1;
-            player.LastPlayedDate = challengeDate;
-        }
+            await CompleteSessionAsync(session, command.PlayerId, cancellationToken);
 
         await db.SaveChangesAsync(cancellationToken);
 
-        var isCorrectNow      = artistCorrect || titleCorrect;
-        var totalAfter        = (priorStats?.Total ?? 0) + 1;
-        var correctCountAfter = (priorStats?.CorrectCount ?? 0) + (isCorrectNow ? 1 : 0);
-        var correctSumAfter   = (priorStats?.CorrectSum ?? 0) + (isCorrectNow ? (double)command.ListenedDurationSeconds : 0);
-        var failCountAfter    = (priorStats?.FailCount ?? 0) + (isCorrectNow ? 0 : 1);
-
-        var correctAvg  = correctCountAfter == 0 ? (double?)null : correctSumAfter / correctCountAfter;
-        var failureRate = totalAfter == 0 ? 0d : Math.Round((double)failCountAfter / totalAfter * 100, 1);
-
-        // Distribution projetée sur tous les paliers autorisés (comptes à 0 inclus, ordre croissant),
-        // réponse courante ajoutée en mémoire si elle est correcte.
-        var durationCounts = priorByDuration.ToDictionary(x => x.Duration, x => x.Count);
-        if (isCorrectNow)
-            durationCounts[command.ListenedDurationSeconds] =
-                durationCounts.GetValueOrDefault(command.ListenedDurationSeconds) + 1;
-
-        var distribution = GuessTimeDistribution.Build(appSettings.AllowedDurationsSeconds, durationCounts);
+        var isCorrectNow = artistCorrect || titleCorrect;
+        var stats = BuildAnswerStats(priorStats, isCorrectNow, command.ListenedDurationSeconds, appSettings.AllowedDurationsSeconds);
 
         return Results.Ok(new SubmitAnswerResponse(
             ArtistCorrect:             artistCorrect,
@@ -149,9 +98,92 @@ public sealed class SubmitAnswerHandler(
             CorrectArtist:             challengeTrack.Artist,
             CorrectTitle:              TextNormalizationHelpers.CleanDisplayTitle(challengeTrack.Title),
             ListenedDurationSeconds:   command.ListenedDurationSeconds,
-            AverageSecondsWhenCorrect: correctAvg,
-            FailureRatePercent:        failureRate,
-            GuessTimeDistribution:     distribution,
-            NotFoundCount:             failCountAfter));
+            AverageSecondsWhenCorrect: stats.AverageSecondsWhenCorrect,
+            FailureRatePercent:        stats.FailureRatePercent,
+            GuessTimeDistribution:     stats.GuessTimeDistribution,
+            NotFoundCount:             stats.NotFoundCount));
     }
+
+    // Stats déjà en base pour ce morceau, avant d'ajouter la réponse courante — combinées
+    // en mémoire par BuildAnswerStats pour éviter un aller-retour DB après le save.
+    private async Task<PriorAnswerStats> GetPriorStatsAsync(int dailyChallengeTrackId, CancellationToken ct)
+    {
+        var totals = await db.GameSessionAnswers
+            .Where(a => a.DailyChallengeTrackId == dailyChallengeTrackId)
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                Total        = g.Count(),
+                CorrectCount = g.Count(a => a.ArtistCorrect || a.TitleCorrect),
+                CorrectSum   = g.Where(a => a.ArtistCorrect || a.TitleCorrect)
+                                .Sum(a => (double?)a.ListenedDurationSeconds),
+                FailCount    = g.Count(a => !a.ArtistCorrect && !a.TitleCorrect),
+            })
+            .FirstOrDefaultAsync(ct);
+
+        // Répartition par palier des réponses correctes déjà en base (pour l'histogramme
+        // "en combien de temps les autres ont trouvé" affiché à la révélation).
+        var byDuration = await db.GameSessionAnswers
+            .Where(a => a.DailyChallengeTrackId == dailyChallengeTrackId
+                        && (a.ArtistCorrect || a.TitleCorrect))
+            .GroupBy(a => a.ListenedDurationSeconds)
+            .Select(g => new { Duration = g.Key, Count = g.Count() })
+            .ToListAsync(ct);
+
+        return new PriorAnswerStats(
+            totals?.Total ?? 0,
+            totals?.CorrectCount ?? 0,
+            totals?.CorrectSum,
+            totals?.FailCount ?? 0,
+            byDuration.ToDictionary(x => x.Duration, x => x.Count));
+    }
+
+    // Streak basée sur la date du défi, pas la date de complétion : terminer le défi de
+    // lundi mardi à 00:15 UTC ne doit pas casser la streak (piège 18).
+    private async Task CompleteSessionAsync(GameSession session, Guid playerId, CancellationToken ct)
+    {
+        session.Status      = SessionStatus.Completed;
+        session.CompletedAt = DateTime.UtcNow;
+
+        var challengeDate = await db.DailyChallenges
+            .Where(c => c.Id == session.DailyChallengeId)
+            .Select(c => c.Date)
+            .FirstAsync(ct);
+
+        var player = await db.Players.FirstAsync(p => p.Id == playerId, ct);
+        player.CurrentStreak  = player.LastPlayedDate == challengeDate.AddDays(-1) ? player.CurrentStreak + 1 : 1;
+        player.LastPlayedDate = challengeDate;
+    }
+
+    // Combine les stats déjà en base avec la réponse courante (pas encore persistée au
+    // moment de l'appel) pour construire la réponse sans second aller-retour DB.
+    private static AnswerStats BuildAnswerStats(
+        PriorAnswerStats prior, bool isCorrectNow, decimal listenedDurationSeconds, IReadOnlyList<decimal> allowedDurations)
+    {
+        var totalAfter        = prior.Total + 1;
+        var correctCountAfter = prior.CorrectCount + (isCorrectNow ? 1 : 0);
+        var correctSumAfter   = (prior.CorrectSum ?? 0) + (isCorrectNow ? (double)listenedDurationSeconds : 0);
+        var failCountAfter    = prior.FailCount + (isCorrectNow ? 0 : 1);
+
+        var correctAvg  = correctCountAfter == 0 ? (double?)null : correctSumAfter / correctCountAfter;
+        var failureRate = totalAfter == 0 ? 0d : Math.Round((double)failCountAfter / totalAfter * 100, 1);
+
+        // Distribution projetée sur tous les paliers autorisés (comptes à 0 inclus, ordre croissant),
+        // réponse courante ajoutée en mémoire si elle est correcte.
+        var durationCounts = new Dictionary<decimal, int>(prior.CorrectCountsByDuration);
+        if (isCorrectNow)
+            durationCounts[listenedDurationSeconds] = durationCounts.GetValueOrDefault(listenedDurationSeconds) + 1;
+
+        var distribution = GuessTimeDistribution.Build(allowedDurations, durationCounts);
+
+        return new AnswerStats(correctAvg, failureRate, distribution, failCountAfter);
+    }
+
+    private sealed record PriorAnswerStats(
+        int Total, int CorrectCount, double? CorrectSum, int FailCount,
+        Dictionary<decimal, int> CorrectCountsByDuration);
+
+    private sealed record AnswerStats(
+        double? AverageSecondsWhenCorrect, double FailureRatePercent,
+        List<DurationBucketDto> GuessTimeDistribution, int NotFoundCount);
 }

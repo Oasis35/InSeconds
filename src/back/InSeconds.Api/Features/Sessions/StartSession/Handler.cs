@@ -19,23 +19,7 @@ public sealed class StartSessionHandler(
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        // Expirer les sessions Pending des jours précédents (timeout paresseux)
-        var expiredSessions = await db.GameSessions
-            .Where(s => s.PlayerId == command.PlayerId
-                     && s.Status == SessionStatus.Pending
-                     && s.DailyChallenge.Date < today)
-            .ToListAsync(cancellationToken);
-
-        foreach (var expired in expiredSessions)
-        {
-            // Expired (pas Abandoned) : le joueur n'a pas cliqué « Abandonner », il a
-            // simplement quitté sans terminer. Les stats admin distinguent les deux.
-            expired.Status      = SessionStatus.Expired;
-            expired.AbandonedAt = DateTime.UtcNow;
-        }
-
-        if (expiredSessions.Count > 0)
-            await db.SaveChangesAsync(cancellationToken);
+        await ExpireStaleSessionsAsync(command.PlayerId, today, cancellationToken);
 
         var challenge = await LoadTodayChallengeAsync(today, cancellationToken)
                         ?? await TryLazyGenerateAsync(today, cancellationToken);
@@ -47,27 +31,7 @@ public sealed class StartSessionHandler(
                 statusCode: StatusCodes.Status503ServiceUnavailable);
         }
 
-        // Chercher une session existante pour ce joueur + ce défi
-        var existingSession = await db.GameSessions
-            .Where(s => s.PlayerId == command.PlayerId && s.DailyChallengeId == challenge.Id)
-            .Select(s => new
-            {
-                s.Id,
-                s.Status,
-                s.CurrentTrackId,
-                s.CurrentTrackMinListenedSeconds,
-                Answers = s.Answers.Select(a => new
-                {
-                    a.ArtistCorrect,
-                    a.TitleCorrect,
-                    a.Score,
-                    a.ListenedDurationSeconds,
-                    TrackPosition = a.Track.Position,
-                    TrackArtist   = a.Track.Track.Artist,
-                    TrackTitle    = a.Track.Track.Title,
-                }).ToList()
-            })
-            .FirstOrDefaultAsync(cancellationToken);
+        var existingSession = await LoadExistingSessionAsync(command.PlayerId, challenge.Id, cancellationToken);
 
         if (existingSession is not null)
         {
@@ -77,64 +41,112 @@ public sealed class StartSessionHandler(
             if (existingSession.Status is SessionStatus.Abandoned or SessionStatus.Expired)
                 return Results.Conflict(new { error = "abandoned", message = "Vous avez abandonné le défi du jour." });
 
-            // Session Pending → retourner les données de reprise
-            var appSettingsResume = await settingsService.GetAsync(cancellationToken);
-            var orderedTracksResume = challenge.Tracks.OrderBy(t => t.Position).ToList();
-            var previewUrlsResume = await Task.WhenAll(
-                orderedTracksResume.Select(t => deezer.GetPreviewUrlAsync(t.DeezerTrackId, cancellationToken)));
-
-            var tracksResume = orderedTracksResume
-                .Select((t, i) => new TrackSlot(
-                    Id:            t.Id,
-                    Position:      t.Position,
-                    PreviewUrl:    previewUrlsResume[i] ?? string.Empty,
-                    CoverUrl:      t.CoverHash is not null ? appSettingsResume.BuildCoverUrl(t.CoverHash) : null,
-                    DeezerTrackId: t.DeezerTrackId))
-                .ToList();
-
-            var answeredPositions = existingSession.Answers
-                .Select(a => a.TrackPosition)
-                .ToHashSet();
-
-            var completedAnswers = existingSession.Answers
-                .OrderBy(a => a.TrackPosition)
-                .Select(a => new ResumedAnswer(
-                    Position:                a.TrackPosition,
-                    ArtistCorrect:           a.ArtistCorrect,
-                    TitleCorrect:            a.TitleCorrect,
-                    Score:                   a.Score,
-                    ListenedDurationSeconds: a.ListenedDurationSeconds,
-                    CorrectArtist:           a.TrackArtist,
-                    CorrectTitle:            TextNormalizationHelpers.CleanDisplayTitle(a.TrackTitle)))
-                .ToList();
-
-            // Index 0-based de la première track sans réponse
-            var resumeFromPosition = orderedTracksResume
-                .Select((t, i) => (t, i))
-                .Where(x => !answeredPositions.Contains(x.t.Position))
-                .Select(x => x.i)
-                .DefaultIfEmpty(orderedTracksResume.Count)
-                .First();
-
-            var playerResume = await db.Players.AsNoTracking().FirstAsync(p => p.Id == command.PlayerId, cancellationToken);
-
-            return Results.Ok(new StartSessionResponse(
-                SessionId:          existingSession.Id,
-                Tracks:             tracksResume,
-                CurrentStreak:      playerResume.CurrentStreak,
-                IsResuming:         true,
-                ResumeFromPosition: resumeFromPosition,
-                CompletedAnswers:   completedAnswers,
-                CurrentTrackId:     existingSession.CurrentTrackId,
-                MinListenedSeconds: existingSession.CurrentTrackMinListenedSeconds));
+            return await BuildResumeResponseAsync(existingSession, challenge, command.PlayerId, cancellationToken);
         }
 
-        // Nouvelle session
-        var player = await db.Players.AsNoTracking().FirstAsync(p => p.Id == command.PlayerId, cancellationToken);
+        return await BuildNewSessionResponseAsync(challenge, command.PlayerId, cancellationToken);
+    }
+
+    // Expirer les sessions Pending des jours précédents (timeout paresseux). Expired (pas
+    // Abandoned) : le joueur n'a pas cliqué « Abandonner », il a simplement quitté sans
+    // terminer — les stats admin distinguent les deux.
+    private async Task ExpireStaleSessionsAsync(Guid playerId, DateOnly today, CancellationToken ct)
+    {
+        var expiredSessions = await db.GameSessions
+            .Where(s => s.PlayerId == playerId
+                     && s.Status == SessionStatus.Pending
+                     && s.DailyChallenge.Date < today)
+            .ToListAsync(ct);
+
+        foreach (var expired in expiredSessions)
+        {
+            expired.Status      = SessionStatus.Expired;
+            expired.AbandonedAt = DateTime.UtcNow;
+        }
+
+        if (expiredSessions.Count > 0)
+            await db.SaveChangesAsync(ct);
+    }
+
+    private Task<ExistingSessionProjection?> LoadExistingSessionAsync(Guid playerId, int challengeId, CancellationToken ct)
+        => db.GameSessions
+            .Where(s => s.PlayerId == playerId && s.DailyChallengeId == challengeId)
+            .Select(s => new ExistingSessionProjection(
+                s.Id,
+                s.Status,
+                s.CurrentTrackId,
+                s.CurrentTrackMinListenedSeconds,
+                s.Answers.Select(a => new ExistingAnswerProjection(
+                    a.ArtistCorrect,
+                    a.TitleCorrect,
+                    a.Score,
+                    a.ListenedDurationSeconds,
+                    a.Track.Position,
+                    a.Track.Track.Artist,
+                    a.Track.Track.Title)).ToList()))
+            .FirstOrDefaultAsync(ct);
+
+    private async Task<IResult> BuildResumeResponseAsync(
+        ExistingSessionProjection existingSession, ChallengeProjection challenge, Guid playerId, CancellationToken ct)
+    {
+        var appSettings = await settingsService.GetAsync(ct);
+        var orderedTracks = challenge.Tracks.OrderBy(t => t.Position).ToList();
+        var previewUrls = await Task.WhenAll(
+            orderedTracks.Select(t => deezer.GetPreviewUrlAsync(t.DeezerTrackId, ct)));
+
+        var tracks = orderedTracks
+            .Select((t, i) => new TrackSlot(
+                Id:            t.Id,
+                Position:      t.Position,
+                PreviewUrl:    previewUrls[i] ?? string.Empty,
+                CoverUrl:      t.CoverHash is not null ? appSettings.BuildCoverUrl(t.CoverHash) : null,
+                DeezerTrackId: t.DeezerTrackId))
+            .ToList();
+
+        var answeredPositions = existingSession.Answers
+            .Select(a => a.TrackPosition)
+            .ToHashSet();
+
+        var completedAnswers = existingSession.Answers
+            .OrderBy(a => a.TrackPosition)
+            .Select(a => new ResumedAnswer(
+                Position:                a.TrackPosition,
+                ArtistCorrect:           a.ArtistCorrect,
+                TitleCorrect:            a.TitleCorrect,
+                Score:                   a.Score,
+                ListenedDurationSeconds: a.ListenedDurationSeconds,
+                CorrectArtist:           a.TrackArtist,
+                CorrectTitle:            TextNormalizationHelpers.CleanDisplayTitle(a.TrackTitle)))
+            .ToList();
+
+        // Index 0-based de la première track sans réponse
+        var resumeFromPosition = orderedTracks
+            .Select((t, i) => (t, i))
+            .Where(x => !answeredPositions.Contains(x.t.Position))
+            .Select(x => x.i)
+            .DefaultIfEmpty(orderedTracks.Count)
+            .First();
+
+        var player = await db.Players.AsNoTracking().FirstAsync(p => p.Id == playerId, ct);
+
+        return Results.Ok(new StartSessionResponse(
+            SessionId:          existingSession.Id,
+            Tracks:             tracks,
+            CurrentStreak:      player.CurrentStreak,
+            IsResuming:         true,
+            ResumeFromPosition: resumeFromPosition,
+            CompletedAnswers:   completedAnswers,
+            CurrentTrackId:     existingSession.CurrentTrackId,
+            MinListenedSeconds: existingSession.CurrentTrackMinListenedSeconds));
+    }
+
+    private async Task<IResult> BuildNewSessionResponseAsync(ChallengeProjection challenge, Guid playerId, CancellationToken ct)
+    {
+        var player = await db.Players.AsNoTracking().FirstAsync(p => p.Id == playerId, ct);
 
         var session = new GameSession
         {
-            PlayerId             = command.PlayerId,
+            PlayerId             = playerId,
             DailyChallengeId     = challenge.Id,
             TotalScore           = 0,
             TotalDurationSeconds = 0,
@@ -142,13 +154,13 @@ public sealed class StartSessionHandler(
             Status               = SessionStatus.Pending,
         };
         db.GameSessions.Add(session);
-        await db.SaveChangesAsync(cancellationToken);
+        await db.SaveChangesAsync(ct);
 
         var orderedTracks = challenge.Tracks.OrderBy(t => t.Position).ToList();
         var previewUrls = await Task.WhenAll(
-            orderedTracks.Select(t => deezer.GetPreviewUrlAsync(t.DeezerTrackId, cancellationToken)));
+            orderedTracks.Select(t => deezer.GetPreviewUrlAsync(t.DeezerTrackId, ct)));
 
-        var appSettings = await settingsService.GetAsync(cancellationToken);
+        var appSettings = await settingsService.GetAsync(ct);
 
         var tracks = orderedTracks
             .Select((t, i) => new TrackSlot(
@@ -210,4 +222,12 @@ public sealed class StartSessionHandler(
 
     private sealed record ChallengeTrackProjection(int Id, int Position, long DeezerTrackId, string? CoverHash);
     private sealed record ChallengeProjection(int Id, List<ChallengeTrackProjection> Tracks);
+
+    private sealed record ExistingAnswerProjection(
+        bool ArtistCorrect, bool TitleCorrect, int Score, decimal ListenedDurationSeconds,
+        int TrackPosition, string TrackArtist, string TrackTitle);
+
+    private sealed record ExistingSessionProjection(
+        int Id, SessionStatus Status, int? CurrentTrackId, decimal? CurrentTrackMinListenedSeconds,
+        List<ExistingAnswerProjection> Answers);
 }
