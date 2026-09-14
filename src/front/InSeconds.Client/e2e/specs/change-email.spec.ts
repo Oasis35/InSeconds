@@ -1,31 +1,10 @@
 import { test, expect } from '../fixtures/test';
 import { GamePage } from '../pages/game.page';
-import { ApiTestClient } from '../fixtures/api-client';
+import { linkAccount, pathOf } from '../pages/login.page';
 
 const EMAIL_A = 'change-email-a@e2e.test';
 const EMAIL_B = 'change-email-b@e2e.test';
 const NEW_EMAIL = 'nouvel-email@e2e.test';
-
-function pathOf(url: string): string {
-  const parsed = new URL(url);
-  return parsed.pathname + parsed.search;
-}
-
-async function linkAccount(page: import('@playwright/test').Page, api: ApiTestClient, email: string, pseudo: string): Promise<void> {
-  await page.goto('/login');
-  await page.getByPlaceholder('ton@email.com').fill(email);
-  await page.getByRole('button', { name: 'Recevoir un lien' }).click();
-  // Le clic ne fait que déclencher la requête HTTP asynchrone — attendre la confirmation
-  // affichée avant d'interroger le backend, sinon on peut arriver avant que l'email soit
-  // réellement capturé (cf. login.spec.ts, qui a toujours eu cette attente).
-  await expect(page.getByText('un lien de connexion vient de t\'être envoyé')).toBeVisible();
-
-  const linkUrl = await api.getLastMagicLinkUrl(email);
-  await page.goto(pathOf(linkUrl));
-  await page.getByRole('button', { name: 'Confirmer la connexion' }).click();
-  await page.getByPlaceholder('Ton pseudo').fill(pseudo);
-  await page.getByRole('button', { name: 'Valider' }).click();
-}
 
 test.describe('Changement d\'email', () => {
   test.beforeEach(async ({ api }) => {
