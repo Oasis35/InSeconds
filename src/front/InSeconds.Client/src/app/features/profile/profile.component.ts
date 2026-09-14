@@ -11,7 +11,10 @@ type EmailStatus = 'idle' | 'sending' | 'sent' | 'sameEmail' | 'taken' | 'error'
 
 // Format simple, aligné sur EmailAddress() FluentValidation côté back — pas de RFC
 // exhaustive ici, juste de quoi éviter un aller-retour serveur pour une saisie vide/absurde.
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Quantificateurs bornés (au lieu de `+` illimités) : évite le risque de backtracking
+// super-linéaire sur une entrée pathologique (Sonar typescript:S8786), sans changer le
+// comportement pour une adresse email réelle (limites RFC 5321 généreuses : 64/253/24).
+const EMAIL_PATTERN = /^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,24}$/;
 
 @Component({
   selector: 'app-profile',
