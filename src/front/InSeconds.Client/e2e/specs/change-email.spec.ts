@@ -15,6 +15,10 @@ async function linkAccount(page: import('@playwright/test').Page, api: ApiTestCl
   await page.goto('/login');
   await page.getByPlaceholder('ton@email.com').fill(email);
   await page.getByRole('button', { name: 'Recevoir un lien' }).click();
+  // Le clic ne fait que déclencher la requête HTTP asynchrone — attendre la confirmation
+  // affichée avant d'interroger le backend, sinon on peut arriver avant que l'email soit
+  // réellement capturé (cf. login.spec.ts, qui a toujours eu cette attente).
+  await expect(page.getByText('un lien de connexion vient de t\'être envoyé')).toBeVisible();
 
   const linkUrl = await api.getLastMagicLinkUrl(email);
   await page.goto(pathOf(linkUrl));
