@@ -8,6 +8,8 @@ using InSeconds.Api.Common.Scoring;
 using InSeconds.Api.Common.Settings;
 using InSeconds.Api.Common.Text;
 using InSeconds.Api.Features.Admin.SendTestEmail;
+using InSeconds.Api.Features.Auth.ConfirmEmailChange;
+using InSeconds.Api.Features.Auth.RequestEmailChange;
 using InSeconds.Api.Features.Auth.RequestMagicLink;
 using InSeconds.Api.Features.Auth.VerifyMagicLink;
 using InSeconds.Api.Features.Auth.Logout;
@@ -141,6 +143,21 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0,
             }));
 
+    // Anti "email bombing" sur PUT /api/players/me/email : même raisonnement que
+    // RequestMagicLink ci-dessus, le throttle de 60s par joueur (RequestEmailChangeHandler)
+    // n'empêche pas de solliciter Resend en masse en changeant de nouvelle adresse à chaque
+    // appel.
+    options.AddPolicy(RequestEmailChangeEndpoint.RateLimiterPolicy, httpContext =>
+        RateLimitPartition.GetSlidingWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(10),
+                SegmentsPerWindow = 5,
+                QueueLimit = 0,
+            }));
+
     // GetCurrentPlayer (peek=false) et StartSession créent chacun un Player à la demande sans
     // authentification préalable — sans limite, un visiteur qui boucle dessus fait grossir la
     // table Players indéfiniment. Seuil généreux (30/10min) pour ne jamais gêner un vrai joueur
@@ -231,6 +248,7 @@ builder.Services.AddScoped<ICookieAuthService>(sp => new CookieAuthService(
     sp.GetRequiredService<IHostEnvironment>()));
 
 builder.Services.AddScoped<IMagicLinkTokenService, MagicLinkTokenService>();
+builder.Services.AddScoped<IEmailChangeTokenService, EmailChangeTokenService>();
 builder.Services.AddScoped<IAccountLinkingService, AccountLinkingService>();
 
 // Singleton : jetons admin en mémoire, un seul process API sur le VPS (pas de scale-out).
@@ -372,6 +390,8 @@ app.MapCreateChallenge();
 app.MapSendTestEmail();
 app.MapRequestMagicLink(enableRateLimiting: !isTesting);
 app.MapVerifyMagicLink();
+app.MapRequestEmailChange(enableRateLimiting: !isTesting);
+app.MapConfirmEmailChange();
 app.MapLogout();
 
 if (app.Environment.IsDevelopment())

@@ -197,6 +197,26 @@ public sealed class MagicLinkToken
 - `IX_MagicLinkTokens_TokenHash` (unique)
 - Un token consommé (`ConsumedAt != null`) ou expiré est rejeté par `VerifyMagicLink`. Génération/hash dans `Common/Auth/MagicLinkTokenGenerator` (pur, testé unitairement).
 
+### EmailChangeToken (changement d'email depuis `/profile`)
+
+Même forme que `MagicLinkToken`, mais clé `PlayerId + NewEmail` au lieu de `Email` (le joueur est déjà identifié — pas de résolution de compte à faire, juste appliquer le nouvel email au bon `Player`) :
+
+```csharp
+public sealed class EmailChangeToken
+{
+    public int Id { get; set; }
+    public required Guid PlayerId { get; set; }
+    public required string NewEmail { get; set; }
+    public required string TokenHash { get; set; }  // SHA-256 — le token brut n'est jamais stocké
+    public DateTime ExpiresAt { get; set; }          // 15 min
+    public DateTime? ConsumedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+```
+
+- `IX_EmailChangeTokens_TokenHash` (unique), `IX_EmailChangeTokens_PlayerId`
+- Un token consommé ou expiré est rejeté par `ConfirmEmailChange`. Génération/hash réutilise `Common/Auth/MagicLinkTokenGenerator` tel quel (générique, pas de duplication).
+
 ## Settings — chargement au boot
 
 `AppDbConfigurationSource` / `AppDbConfigurationProvider` lit la table `Settings` via ADO.NET brut au démarrage et injecte les valeurs sous le préfixe `AppDb:` dans `IConfiguration`. L'auto-binding `IOptions<AppSettings>` fait le reste.

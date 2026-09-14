@@ -122,7 +122,31 @@
     "logoutConfirmBody": "You'll be able to come back with a new link sent to {{ email }}.",
     "logoutConfirmAction": "Yes, log me out",
     "logoutCancel": "Cancel",
-    "backToGame": "Back to game"
+    "backToGame": "Back to game",
+    "email": {
+      "placeholder": "your@email.com",
+      "change": "Send",
+      "sending": "…",
+      "sent": "OK",
+      "hint": "Confirm the change via the email sent to the new address.",
+      "sentHint": "Check your inbox at {{ email }} to confirm.",
+      "invalid": "Invalid email address.",
+      "sameEmail": "That's already your current address.",
+      "taken": "This address is already used by another account.",
+      "error": "Something went wrong, try again."
+    }
+  },
+  "confirmEmail": {
+    "title": "Confirm email change",
+    "subtitle": "Click to confirm your new email address.",
+    "confirm": "Confirm",
+    "confirming": "Confirming...",
+    "success": "Address confirmed: {{ email }}",
+    "invalidOrExpired": "This link is invalid or has expired.",
+    "emailTaken": "This address is now used by another account.",
+    "missingToken": "Incomplete confirmation link.",
+    "genericError": "Something went wrong, please try again.",
+    "backToProfile": "← Back to profile"
   },
   "login": {
     "request": {

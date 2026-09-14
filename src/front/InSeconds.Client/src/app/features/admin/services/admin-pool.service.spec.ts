@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { signal, computed } from '@angular/core';
 import { AdminPoolService } from './admin-pool.service';
 import { AdminApiService } from './admin-api.service';
+import { PoolAudioPreviewService } from './pool-audio-preview.service';
 import { SettingsService } from '../../../core/services/settings.service';
 import { PoolTracksResponse } from '../admin.models';
 
@@ -36,6 +37,7 @@ describe('AdminPoolService', () => {
         AdminPoolService,
         { provide: AdminApiService, useValue: apiStub },
         { provide: SettingsService, useValue: { tracksPerChallenge: signal(3) } },
+        { provide: PoolAudioPreviewService, useValue: { stop: () => {}, toggle: () => {} } },
       ],
     });
 

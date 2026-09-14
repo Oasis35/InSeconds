@@ -2,17 +2,19 @@ import { Injectable, inject, signal, computed, DestroyRef } from '@angular/core'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SettingsService } from '../../../core/services/settings.service';
 import { AdminApiService } from './admin-api.service';
+import { PoolAudioPreviewService } from './pool-audio-preview.service';
 import { DeezerTrackInfo, PoolTrackDto } from '../admin.models';
 
 type PoolTrackWithFlag = PoolTrackDto & { isAvailable: boolean };
 export type PoolSortColumn = 'artist' | 'title' | 'preview' | 'status' | 'lastUsedDate' | 'unlockDate' | 'usageCount';
 
-/** État de l'onglet pool : filtres, pagination, sélection, modales ajout/suppression, audio preview. */
+/** État de l'onglet pool : filtres, pagination, sélection, modales ajout/suppression. */
 @Injectable()
 export class AdminPoolService {
   private readonly api = inject(AdminApiService);
   private readonly settings = inject(SettingsService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly audioPreview = inject(PoolAudioPreviewService);
 
   readonly poolTracks = this.api.poolTracks;
   readonly poolTracksLoading = this.api.poolTracksLoading;
@@ -39,17 +41,14 @@ export class AdminPoolService {
   readonly addModalOpen = signal(false);
   readonly addModalTrack = signal<DeezerTrackInfo | null>(null);
   readonly addModalTrackIdToUpdate = signal<number | null>(null);
-  readonly modalPlaying = signal(false);
-  readonly modalProgress = signal(0);
-  private modalAudio: HTMLAudioElement | null = null;
-  private modalRafId: number | null = null;
 
   // --- modale écoute (preview d'une ligne du pool) ---
-  // Réutilise le lecteur audio de la modale d'ajout (modalAudio/modalPlaying/modalProgress).
+  // Le lecteur audio (play/pause/progress) vit dans PoolAudioPreviewService, partagé
+  // entre cette modale et la modale d'ajout (une seule instance Audio() active à la fois).
   readonly previewModalOpen = signal(false);
   readonly previewModalTrack = signal<PoolTrackDto | null>(null);
   readonly previewModalStatus = signal<'loading' | 'ready' | 'error'>('loading');
-  private readonly previewModalUrl = signal<string | null>(null);
+  readonly previewModalUrl = signal<string | null>(null);
 
   // --- modale suppression ---
   readonly deleteModalOpen = signal(false);
@@ -166,9 +165,8 @@ export class AdminPoolService {
 
   // --- modale ajout ---
   openAddModal(track: DeezerTrackInfo | null, trackIdToUpdate: number | null = null, prefillSearch = ''): void {
-    this.stopModalAudio();
+    this.audioPreview.stop();
     this.addToPoolStatus.set('idle');
-    this.modalProgress.set(0);
     this.addModalTrack.set(track);
     this.addModalTrackIdToUpdate.set(trackIdToUpdate);
     if (prefillSearch) this.poolSearchQuery.set(prefillSearch);
@@ -177,81 +175,26 @@ export class AdminPoolService {
 
   selectModalTrack(track: DeezerTrackInfo): void {
     if (this.addModalTrack()?.deezerTrackId === track.deezerTrackId) return;
-    this.stopModalAudio();
+    this.audioPreview.stop();
     this.addToPoolStatus.set('idle');
-    this.modalProgress.set(0);
     this.addModalTrack.set(track);
   }
 
   closeAddModal(): void {
-    this.stopModalAudio();
+    this.audioPreview.stop();
     this.addModalOpen.set(false);
     this.addModalTrack.set(null);
     this.addModalTrackIdToUpdate.set(null);
     this.addToPoolStatus.set('idle');
-    this.modalProgress.set(0);
     this.poolSearchQuery.set('');
-  }
-
-  /** Lecteur preview de la modale d'ajout. */
-  toggleModalPreview(): void {
-    this.togglePreviewUrl(this.addModalTrack()?.previewUrl ?? null);
-  }
-
-  /** Lecteur preview de la modale d'écoute (ligne du pool). */
-  togglePreviewModalAudio(): void {
-    this.togglePreviewUrl(this.previewModalUrl());
-  }
-
-  private togglePreviewUrl(url: string | null): void {
-    if (!url) return;
-    if (this.modalPlaying()) { this.pauseModalAudio(); return; }
-
-    if (this.modalAudio?.src !== url) {
-      this.stopModalAudio();
-      this.modalAudio = new Audio(url);
-      this.modalAudio.onended = () => {
-        this.modalPlaying.set(false);
-        this.modalProgress.set(100);
-        if (this.modalRafId !== null) { cancelAnimationFrame(this.modalRafId); this.modalRafId = null; }
-      };
-    }
-
-    const audio = this.modalAudio; // non-null : inchangé (src === url) ou recréé ci-dessus
-    if (!audio) return;
-    audio.play().then(() => {
-      this.modalPlaying.set(true);
-      const tick = () => {
-        const current = this.modalAudio;
-        if (!current) return;
-        if (current.paused) return;
-        const pct = current.duration ? (current.currentTime / current.duration) * 100 : 0;
-        this.modalProgress.set(pct);
-        this.modalRafId = requestAnimationFrame(tick);
-      };
-      this.modalRafId = requestAnimationFrame(tick);
-    }).catch(() => {});
-  }
-
-  private pauseModalAudio(): void {
-    this.modalAudio?.pause();
-    this.modalPlaying.set(false);
-    if (this.modalRafId !== null) { cancelAnimationFrame(this.modalRafId); this.modalRafId = null; }
-  }
-
-  private stopModalAudio(): void {
-    if (this.modalRafId !== null) { cancelAnimationFrame(this.modalRafId); this.modalRafId = null; }
-    if (this.modalAudio) { this.modalAudio.pause(); this.modalAudio.onended = null; this.modalAudio = null; }
-    this.modalPlaying.set(false);
   }
 
   // --- modale écoute ---
   openPreviewModal(t: PoolTrackDto): void {
-    this.stopModalAudio();
+    this.audioPreview.stop();
     this.previewModalTrack.set(t);
     this.previewModalUrl.set(null);
     this.previewModalStatus.set('loading');
-    this.modalProgress.set(0);
     this.previewModalOpen.set(true);
 
     // Réutilise la recherche Deezer admin pour retrouver l'URL de preview de ce morceau.
@@ -263,7 +206,7 @@ export class AdminPoolService {
           if (match?.previewUrl) {
             this.previewModalUrl.set(match.previewUrl);
             this.previewModalStatus.set('ready');
-            this.togglePreviewModalAudio(); // démarre la lecture directement
+            this.audioPreview.toggle(match.previewUrl); // démarre la lecture directement
           } else {
             this.previewModalStatus.set('error');
           }
@@ -273,12 +216,11 @@ export class AdminPoolService {
   }
 
   closePreviewModal(): void {
-    this.stopModalAudio();
+    this.audioPreview.stop();
     this.previewModalOpen.set(false);
     this.previewModalTrack.set(null);
     this.previewModalUrl.set(null);
     this.previewModalStatus.set('loading');
-    this.modalProgress.set(0);
   }
 
   addToPoolFromModal(andClose: boolean): void {

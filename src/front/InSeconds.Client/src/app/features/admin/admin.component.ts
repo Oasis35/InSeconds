@@ -8,6 +8,7 @@ import { AdminApiService } from './services/admin-api.service';
 import { AdminStatsService } from './services/admin-stats.service';
 import { AdminPoolService } from './services/admin-pool.service';
 import { AdminActionsService } from './services/admin-actions.service';
+import { PoolAudioPreviewService } from './services/pool-audio-preview.service';
 import { AdminLoginComponent } from './components/admin-login/admin-login.component';
 import { DashboardTabComponent } from './components/dashboard-tab/dashboard-tab.component';
 import { PoolTabComponent } from './components/pool-tab/pool-tab.component';
@@ -26,7 +27,7 @@ import { BrowserIdComponent } from '../../shared/browser-id/browser-id.component
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [
     AdminHttpService, AdminStateService, AdminApiService, AdminStatsService,
-    AdminPoolService, AdminActionsService,
+    AdminPoolService, AdminActionsService, PoolAudioPreviewService,
   ],
   templateUrl: './admin.component.html',
 })

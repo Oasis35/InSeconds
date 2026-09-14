@@ -1,0 +1,50 @@
+<div class="da-bg min-h-dvh flex flex-col items-center justify-center p-6 relative" style="color:var(--text-body)">
+  <app-decor-background />
+
+  <div class="w-full max-w-sm py-8 screen-enter text-center space-y-6">
+    @switch (state()) {
+      @case ('missingToken') {
+        <h1 class="text-2xl font-bold" style="color:var(--text-hi)">{{ 'confirmEmail.title' | translate }}</h1>
+        <p class="text-sm" style="color:var(--text-muted)">{{ 'confirmEmail.missingToken' | translate }}</p>
+        <a routerLink="/profile" class="inline-block text-sm transition-colors" style="color:var(--text-accent)">{{ 'confirmEmail.backToProfile' | translate }}</a>
+      }
+
+      @case ('invalidOrExpired') {
+        <h1 class="text-2xl font-bold" style="color:var(--text-hi)">{{ 'confirmEmail.title' | translate }}</h1>
+        <p class="text-sm" style="color:var(--text-muted)">{{ 'confirmEmail.invalidOrExpired' | translate }}</p>
+        <a routerLink="/profile" class="inline-block text-sm transition-colors" style="color:var(--text-accent)">{{ 'confirmEmail.backToProfile' | translate }}</a>
+      }
+
+      @case ('emailTaken') {
+        <h1 class="text-2xl font-bold" style="color:var(--text-hi)">{{ 'confirmEmail.title' | translate }}</h1>
+        <p class="text-sm" style="color:var(--color-danger, #e05252)">{{ 'confirmEmail.emailTaken' | translate }}</p>
+        <a routerLink="/profile" class="inline-block text-sm transition-colors" style="color:var(--text-accent)">{{ 'confirmEmail.backToProfile' | translate }}</a>
+      }
+
+      @case ('error') {
+        <h1 class="text-2xl font-bold" style="color:var(--text-hi)">{{ 'confirmEmail.title' | translate }}</h1>
+        <p class="text-sm" style="color:var(--text-muted)">{{ 'confirmEmail.genericError' | translate }}</p>
+        <a routerLink="/profile" class="inline-block text-sm transition-colors" style="color:var(--text-accent)">{{ 'confirmEmail.backToProfile' | translate }}</a>
+      }
+
+      @case ('success') {
+        <h1 class="text-2xl font-bold" style="color:var(--text-hi)">{{ 'confirmEmail.title' | translate }}</h1>
+        <p class="text-sm" style="color:var(--text-muted)">{{ 'confirmEmail.success' | translate: { email: confirmedEmail() } }}</p>
+        <a routerLink="/profile" class="inline-block text-sm transition-colors" style="color:var(--text-accent)">{{ 'confirmEmail.backToProfile' | translate }}</a>
+      }
+
+      @default {
+        <h1 class="text-2xl font-bold" style="color:var(--text-hi)">{{ 'confirmEmail.title' | translate }}</h1>
+        <p class="text-sm leading-relaxed" style="color:var(--text-muted)">{{ 'confirmEmail.subtitle' | translate }}</p>
+        <button
+          type="button"
+          (click)="confirm()"
+          [disabled]="state() === 'confirming'"
+          class="w-full py-3.5 rounded-full font-bold text-base tracking-wide uppercase transition-all active:scale-95 touch-manipulation disabled:opacity-60"
+          style="font-family:var(--font-display);background:var(--gradient-primary);color:var(--text-on-primary);letter-spacing:0.06em;box-shadow:var(--glow-primary)">
+          {{ (state() === 'confirming' ? 'confirmEmail.confirming' : 'confirmEmail.confirm') | translate }}
+        </button>
+      }
+    }
+  </div>
+</div>

@@ -21,6 +21,7 @@ describe('ProfileComponent', () => {
     currentStreak: ReturnType<typeof signal<number>>;
     gamesPlayed: ReturnType<typeof signal<number>>;
     updatePseudo: jasmine.Spy;
+    requestEmailChange: jasmine.Spy;
     logout: jasmine.Spy;
     load: jasmine.Spy;
   };
@@ -34,6 +35,7 @@ describe('ProfileComponent', () => {
       currentStreak: signal(5),
       gamesPlayed: signal(12),
       updatePseudo: jasmine.createSpy('updatePseudo'),
+      requestEmailChange: jasmine.createSpy('requestEmailChange'),
       logout: jasmine.createSpy('logout').and.returnValue(of(void 0)),
       load: jasmine.createSpy('load').and.returnValue(of(void 0)),
     };
@@ -115,6 +117,67 @@ describe('ProfileComponent', () => {
       component.savePseudo();
 
       expect(component['pseudoStatus']()).toBe('error');
+    });
+  });
+
+  describe('emailSaveDisabled()', () => {
+    it('is disabled when unchanged', () => {
+      expect(component['emailSaveDisabled']()).toBeTrue();
+    });
+
+    it('is enabled once the draft differs and is a valid email', () => {
+      component.onEmailInput('bob@example.com');
+      expect(component['emailSaveDisabled']()).toBeFalse();
+    });
+
+    it('is disabled when the draft is not a valid email', () => {
+      component.onEmailInput('not-an-email');
+      expect(component['emailSaveDisabled']()).toBeTrue();
+    });
+
+    it('is disabled while sending', () => {
+      component.onEmailInput('bob@example.com');
+      playerSessionStub.requestEmailChange.and.returnValue(new Subject<void>());
+      component.saveEmail();
+      expect(component['emailSaveDisabled']()).toBeTrue();
+    });
+  });
+
+  describe('saveEmail()', () => {
+    it('sets status to sent on success', () => {
+      component.onEmailInput('bob@example.com');
+      playerSessionStub.requestEmailChange.and.returnValue(of(void 0));
+
+      component.saveEmail();
+
+      expect(component['emailStatus']()).toBe('sent');
+    });
+
+    it('sets status to taken on 409', () => {
+      component.onEmailInput('bob@example.com');
+      playerSessionStub.requestEmailChange.and.returnValue(throwError(() => ({ status: 409 })));
+
+      component.saveEmail();
+
+      expect(component['emailStatus']()).toBe('taken');
+    });
+
+    it('sets status to sameEmail on 400', () => {
+      component.onEmailInput('bob@example.com');
+      playerSessionStub.requestEmailChange.and.returnValue(throwError(() => ({ status: 400 })));
+
+      component.saveEmail();
+
+      expect(component['emailStatus']()).toBe('sameEmail');
+    });
+
+    it('sets status to error on other failures', () => {
+      component.onEmailInput('bob@example.com');
+      playerSessionStub.requestEmailChange.and.returnValue(throwError(() => ({ status: 500 })));
+
+      component.saveEmail();
+
+      expect(component['emailStatus']()).toBe('error');
     });
   });
 

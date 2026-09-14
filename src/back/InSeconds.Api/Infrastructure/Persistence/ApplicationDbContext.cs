@@ -20,6 +20,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<GameSession> GameSessions => Set<GameSession>();
     public DbSet<GameSessionAnswer> GameSessionAnswers => Set<GameSessionAnswer>();
     public DbSet<MagicLinkToken> MagicLinkTokens => Set<MagicLinkToken>();
+    public DbSet<EmailChangeToken> EmailChangeTokens => Set<EmailChangeToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

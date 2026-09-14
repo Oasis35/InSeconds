@@ -97,7 +97,8 @@ src/front/InSeconds.Client/
 │   │   │   │   └── verify/                     # /login/verify — confirmation explicite + choix pseudo
 │   │   │   ├── not-found/
 │   │   │   ├── privacy/                       # page confidentialité (routes /privacy + /confidentialite)
-│   │   │   ├── profile/                       # /profile — pseudo éditable, streak/parties jouées, déconnexion (2026-09)
+│   │   │   ├── profile/                       # /profile — pseudo + email éditables, streak/parties jouées, déconnexion (2026-09)
+│   │   │   │   └── confirm-email/              # /profile/confirm-email — confirmation explicite du changement d'email (2026-09-14)
 │   │   │   └── service-down/
 │   │   ├── app.config.ts                  # providers globaux
 │   │   ├── app.routes.ts                  # routes
@@ -261,9 +262,11 @@ readonly isLinked = computed(() => !this.isGuest());
 load(): Observable<void>;               // GET /api/players/me?peek=true — appelé via provideAppInitializer
 logout(): Observable<void>;             // POST /api/auth/logout
 updatePseudo(pseudo): Observable<string>; // PUT /api/players/me/pseudo (2026-09, écran /profile)
+requestEmailChange(newEmail): Observable<void>;  // PUT /api/players/me/email (2026-09-14, écran /profile)
+confirmEmailChange(token): Observable<string>;   // POST /api/auth/email-change/confirm, puis re-load() (2026-09-14)
 ```
 
-`providedIn: 'root'`. **Remplace l'ancien `player-identity.service.ts`** (comptes utilisateurs, 2026-08) : en plus de l'ID navigateur (usage admin, `isYou()`), expose l'état de connexion (guest vs compte lié) consommé par l'icône de connexion du footer (`GameFooterComponent`), les nudges de connexion (`welcome-screen`/`resume-screen`/`already-played-screen`/`final-recap-screen`), l'avatar du header et l'écran `/profile`. `load()` est appelé une fois au boot via `provideAppInitializer` (`app.config.ts`, même pattern que `SettingsService`), avec `peek=true` — **ne crée jamais de `Player`/cookie** pour un simple chargement de page (cf. « Création paresseuse du Player » dans le `CLAUDE.md` racine) ; seuls `POST /api/sessions` (démarrer une partie) et une connexion réelle (magic link) en créent un. Le cookie `authToken` étant `HttpOnly` et chiffré (Data Protection back), ces informations sont structurellement illisibles côté client sans cet appel. `updatePseudo()` met à jour le signal `pseudo` local en cas de succès (pas de rechargement complet).
+`providedIn: 'root'`. **Remplace l'ancien `player-identity.service.ts`** (comptes utilisateurs, 2026-08) : en plus de l'ID navigateur (usage admin, `isYou()`), expose l'état de connexion (guest vs compte lié) consommé par l'icône de connexion du footer (`GameFooterComponent`), les nudges de connexion (`welcome-screen`/`resume-screen`/`already-played-screen`/`final-recap-screen`), l'avatar du header et l'écran `/profile`. `load()` est appelé une fois au boot via `provideAppInitializer` (`app.config.ts`, même pattern que `SettingsService`), avec `peek=true` — **ne crée jamais de `Player`/cookie** pour un simple chargement de page (cf. « Création paresseuse du Player » dans le `CLAUDE.md` racine) ; seuls `POST /api/sessions` (démarrer une partie) et une connexion réelle (magic link) en créent un. Le cookie `authToken` étant `HttpOnly` et chiffré (Data Protection back), ces informations sont structurellement illisibles côté client sans cet appel. `updatePseudo()` met à jour le signal `pseudo` local en cas de succès (pas de rechargement complet). `requestEmailChange()` **ne modifie pas** le signal `email` local (le changement n'est pas confirmé) ; `confirmEmailChange()` rappelle `load()` via `switchMap` pour rafraîchir `email` une fois le changement appliqué côté serveur.
 
 ## Composants
 
@@ -285,9 +288,13 @@ Délègue l'affichage à des sous-composants :
 
 **Confirmation de sortie** : implémente `UnsavedGameComponent` (`canDeactivate()`). Si `gameState() === 'playing'`, ouvre une modale et renvoie une `Promise<boolean>`. `@HostListener('window:beforeunload')` couvre la fermeture d'onglet.
 
-### `ProfileComponent` (2026-09)
+### `ProfileComponent` (2026-09, email éditable ajouté le 2026-09-14)
 
-Écran `/profile` (`features/profile/`), destination de l'avatar header et de l'icône footer pour un compte lié. `ngOnInit()` redirige un guest vers `/login`. Pseudo éditable (`playerSession.updatePseudo()`, mêmes règles/statuts que le choix de pseudo à la connexion — `taken`/`tooShort`/`saving`/`saved`), email en lecture seule, carte streak/parties jouées (`playerSession.currentStreak`/`gamesPlayed`), déconnexion via `ConfirmSheetComponent` (logique reprise de l'ancien `GameFooterComponent.confirmLogout()`).
+Écran `/profile` (`features/profile/`), destination de l'avatar header et de l'icône footer pour un compte lié. `ngOnInit()` redirige un guest vers `/login`. Pseudo éditable (`playerSession.updatePseudo()`, mêmes règles/statuts que le choix de pseudo à la connexion — `taken`/`tooShort`/`saving`/`saved`), email éditable avec la même forme de state machine (`emailDraft`/`emailStatus` : `idle`/`sending`/`sent`/`sameEmail`/`taken`/`error`, `playerSession.requestEmailChange()`) — envoie un email de confirmation à la nouvelle adresse, ne modifie **pas** le signal `email` tant que le lien n'a pas été confirmé (cf. `ConfirmEmailComponent` ci-dessous), carte streak/parties jouées (`playerSession.currentStreak`/`gamesPlayed`), déconnexion via `ConfirmSheetComponent` (logique reprise de l'ancien `GameFooterComponent.confirmLogout()`).
+
+### `ConfirmEmailComponent` (2026-09-14)
+
+Écran `/profile/confirm-email` (`features/profile/confirm-email/`), mirroring `VerifyLoginComponent` (`login/verify/`) : lit `token` en query param au montage (`route.snapshot`), **ne consomme pas le token automatiquement** — un bouton "Confirmer" explicite déclenche `playerSession.confirmEmailChange(token)` (même protection que le login contre les scanners de sécurité email qui pré-visitent les liens, cf. piège 21 du `CLAUDE.md` racine). États : `idle`/`confirming`/`success`/`invalidOrExpired`/`emailTaken`/`error`/`missingToken`. Sur succès, affiche l'email confirmé et un lien retour `/profile`.
 
 ### `BlindRoundComponent`
 
@@ -339,26 +346,28 @@ Page confidentialité (`features/privacy/`), route lazy `/privacy` + alias `/con
 
 ### `AdminComponent`
 
-Shell ~45 lignes. Fournit les 6 services via `providers: [AdminHttpService, AdminStateService, AdminApiService, AdminStatsService, AdminPoolService, AdminActionsService]` au niveau du composant (pas `root`). Ordre des onglets : **Dashboard, Défis, Pool, Actions, Emails autorisés**. L'onglet actif vit dans `AdminStateService` (`activeTab` + `setActiveTab`), pas dans le shell — **persisté dans l'URL** (`?tab=`, 2026-09-02) : `setActiveTab` synchronise `router.navigate([], {queryParams:{tab}, queryParamsHandling:'merge', replaceUrl:true})`, et `activeTab` est initialisé au constructeur depuis `route.snapshot.queryParamMap.get('tab')` — un F5 sur `/admin?tab=pool` rouvre directement l'onglet Pool (et le marque visité, donc son chargement paresseux fonctionne dès le F5) au lieu de retomber sur Dashboard.
+Shell ~45 lignes. Fournit les 7 services via `providers: [AdminHttpService, AdminStateService, AdminApiService, AdminStatsService, AdminPoolService, AdminActionsService, PoolAudioPreviewService]` au niveau du composant (pas `root`). Ordre des onglets : **Dashboard, Défis, Pool, Actions, Emails autorisés**. L'onglet actif vit dans `AdminStateService` (`activeTab` + `setActiveTab`), pas dans le shell — **persisté dans l'URL** (`?tab=`, 2026-09-02) : `setActiveTab` synchronise `router.navigate([], {queryParams:{tab}, queryParamsHandling:'merge', replaceUrl:true})`, et `activeTab` est initialisé au constructeur depuis `route.snapshot.queryParamMap.get('tab')` — un F5 sur `/admin?tab=pool` rouvre directement l'onglet Pool (et le marque visité, donc son chargement paresseux fonctionne dès le F5) au lieu de retomber sur Dashboard.
 
 **Chargement paresseux par onglet** (2026-08-29) : à l'ouverture de l'admin, seul `GET /api/admin/stats` (Dashboard, léger) part. Les `rxResource` de Pool (`/api/admin/tracks`) et Défis (`/api/admin/challenge-stats` + `/api/admin/challenges`) restent `idle` (`params → undefined`) tant que `http.authenticated()` est faux **ou** que l'onglet n'a pas été ouvert (`AdminStateService.hasVisited(tab)`, `Set` `visitedTabs` init `['dashboard']`). Un onglet reste « visité » toute la session → données chargées une fois puis cachées par le `rxResource`. Corollaire UI : les badges de compteur des onglets Pool/Défis n'affichent leur `(N)` qu'une fois l'onglet ouvert (`admin.tabs.poolPlain`/`challengesPlain` sinon).
 
-Délègue à 7 sous-composants :
+Délègue à 8 sous-composants :
 
 - **`AdminLoginComponent`** : formulaire login, `loginStatus` signal local
 - **`DashboardTabComponent`** : injecte `AdminStatsService` — sélecteur de jour + KPIs, activité 30 jours, répartition joueurs
-- **`PoolTabComponent`** : injecte `AdminPoolService`, contient `AddTrackModalComponent` + `DeleteTrackModalComponent` ; affiche l'**autonomie du pool** (« X jours de défis restants ») en ligne à côté du compteur disponible/utilisé
+- **`PoolTabComponent`** : injecte `AdminPoolService`, contient `AddTrackModalComponent` + `DeleteTrackModalComponent` + `PreviewTrackModalComponent` ; affiche l'**autonomie du pool** (« X jours de défis restants ») en ligne à côté du compteur disponible/utilisé
 - **`ChallengesTabComponent`** : injecte `AdminStatsService` — **stats par défi** (`challengeStats()` = `GET /api/admin/challenge-stats`, chargé à l'ouverture de l'onglet ; accordéon médiane/min/max, taux artiste/titre par morceau ; guard `challengeStatsLoading()` → spinner) + historique des défis (`challenges()` = `GET /api/admin/challenges`), avec un navigateur ‹ Mois Année › unique en haut de l'onglet. Injecte aussi `PlayerSessionService`/`ClipboardService` directement (`core/`) pour afficher, sous chaque défi, un chip par joueur (`c.players`, toutes sessions) affichant `p.pseudo ?? shortId(p.playerId)` (pseudo pour un compte lié, ID tronqué en fallback pour un guest), cliquable pour copier l'ID complet, avec surbrillance + libellé « toi » automatiques si l'ID correspond au navigateur courant — repérer les joueurs qui reviennent
 - **`ActionsTabComponent`** : injecte `AdminActionsService`
-- **`AddTrackModalComponent`** : injecte `AdminPoolService`
-- **`DeleteTrackModalComponent`** : injecte `AdminPoolService`
+- **`AddTrackModalComponent`** : injecte `AdminPoolService` + `PoolAudioPreviewService` (lecteur preview 30s)
+- **`DeleteTrackModalComponent`** : injecte `AdminPoolService` (seul, pas d'audio)
+- **`PreviewTrackModalComponent`** : injecte `AdminPoolService` + `PoolAudioPreviewService` — modale d'écoute d'une ligne du pool (recherche Deezer par artiste/titre, joue la preview trouvée)
 
 Services admin (`features/admin/services/`) :
 - `AdminHttpService` — HTTP brut + signal `authenticated` + `login`/`logout`/`checkAuth`
 - `AdminStateService` — signals partagés (`selectedDay`, `poolSearchQuery`, `poolReloadTrigger`, `challengesReloadTrigger`, `allowedEmailsReloadTrigger`) + pilotage des onglets (`activeTab`, `setActiveTab`, `hasVisited` sur le `Set` privé `visitedTabs`) ; injecte `ActivatedRoute`/`Router` pour synchroniser `activeTab` avec `?tab=` dans l'URL (restauration au F5, `replaceUrl` pour ne pas empiler l'historique)
 - `AdminApiService` — 6 rxResource (`poolSearch`, `poolTracks`, `stats`, `challengeStats`, `challenges`, `allowedEmails`) + computed accessors ; délègue HTTP à `AdminHttpService`, état à `AdminStateService`. **Chargement paresseux** : `poolTracks`/`challengeStats`/`challenges`/`allowedEmails` gardés sur `authenticated() && hasVisited(<onglet>)` (`params` retourne `undefined` tant que la condition n'est pas remplie, ce qui laisse la resource idle plutôt que de partir en 401 avant connexion) ; `stats` (Dashboard) gardé sur `authenticated()` seul. `challengeStats` et `challenges` partagent le trigger `challengesReloadTrigger` → `reloadAll()` / une génération de défi rafraîchit les deux
 - `AdminStatsService` — état dashboard + onglet Défis (navigation jour/mois, formatage dates, accordéon stats par défi) ; `challengeMonths`/`challengesForMonth` dérivent de `challengeStats()` (Stats par défi) et `challenges()` (Historique)
-- `AdminPoolService` — filtres, pagination, sélection multiple, état modales add/delete, lecteur preview ; computed `poolDaysRemaining` = `floor(disponibles avec preview ÷ tracksPerChallenge)` (mêmes critères que `DailyChallengeGenerator`, calculé depuis `poolTracks` déjà chargé + signal `tracksPerChallenge` du `SettingsService` — aucun appel serveur), rouge < 3 jours, orange < 7, vert sinon
+- `AdminPoolService` — filtres, pagination, sélection multiple, état modales add/delete/preview ; computed `poolDaysRemaining` = `floor(disponibles avec preview ÷ tracksPerChallenge)` (mêmes critères que `DailyChallengeGenerator`, calculé depuis `poolTracks` déjà chargé + signal `tracksPerChallenge` du `SettingsService` — aucun appel serveur), rouge < 3 jours, orange < 7, vert sinon. Le lecteur audio (play/pause/progress) n'est plus dans ce service (cf. `PoolAudioPreviewService`) — il n'appelle plus que `.stop()` aux ouvertures/fermetures de modale
+- `PoolAudioPreviewService` (2026-09-14) — lecteur audio partagé (`playing`/`progress` signals, `toggle(url)`/`stop()`), extrait d'`AdminPoolService` pour que les modales n'aient plus à dépendre de toute sa surface juste pour lire une preview 30s. Injecté directement par `AddTrackModalComponent`/`PreviewTrackModalComponent`
 - `AdminActionsService` — `generateToday()`, `reset()`, `refreshPreviews()` (re-check des previews Deezer : affiche « X vérifiés, Y corrigés, Z échecs » puis recharge le pool)
 
 ## Intercepteurs

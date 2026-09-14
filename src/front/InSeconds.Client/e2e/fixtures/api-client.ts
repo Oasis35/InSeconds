@@ -40,6 +40,16 @@ export class ApiTestClient {
     return body.url;
   }
 
+  // Même principe que getLastMagicLinkUrl, pour le flux de changement d'email.
+  async getLastEmailChangeLinkUrl(email: string): Promise<string> {
+    const res = await fetch(`${BASE}/api/e2e/last-email-change-link?email=${encodeURIComponent(email)}`, {
+      headers: ADMIN_HEADERS,
+    });
+    if (!res.ok) throw new Error(`getLastEmailChangeLinkUrl failed: ${res.status}`);
+    const body = (await res.json()) as { url: string };
+    return body.url;
+  }
+
   async generateToday(): Promise<void> {
     const res = await fetch(`${BASE}/api/admin/generate-today`, {
       method: 'POST',

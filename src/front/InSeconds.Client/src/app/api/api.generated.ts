@@ -166,6 +166,10 @@ export class ApiClient {
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as GetCurrentPlayerResponse;
             return _observableOf(result200);
             }));
+        } else if (status === 429) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Too Many Requests", status, _responseText, _headers);
+            }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
@@ -657,6 +661,10 @@ export class ApiClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             return throwException("Conflict", status, _responseText, _headers);
             }));
+        } else if (status === 429) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Too Many Requests", status, _responseText, _headers);
+            }));
         } else if (status === 503) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             return throwException("Service Unavailable", status, _responseText, _headers);
@@ -958,6 +966,10 @@ export class ApiClient {
         } else if (status === 401) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             return throwException("Unauthorized", status, _responseText, _headers);
+            }));
+        } else if (status === 429) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Too Many Requests", status, _responseText, _headers);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -1489,9 +1501,6 @@ export class ApiClient {
         return _observableOf(null as any);
     }
 
-    /**
-     * @return OK
-     */
     apiDeezerSearch(q: string): Observable<void> {
         let url_ = this.baseUrl + "/api/deezer/search?";
         if (q === undefined || q === null)
@@ -1528,9 +1537,9 @@ export class ApiClient {
             (response as any).error instanceof Blob ? (response as any).error : undefined;
 
         let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 200) {
+        if (status === 429) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return _observableOf(null as any);
+            return throwException("Too Many Requests", status, _responseText, _headers);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -1645,6 +1654,10 @@ export class ApiClient {
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RequestMagicLinkResponse;
             return _observableOf(result200);
             }));
+        } else if (status === 429) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Too Many Requests", status, _responseText, _headers);
+            }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
@@ -1706,6 +1719,142 @@ export class ApiClient {
         } else if (status === 403) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             return throwException("Forbidden", status, _responseText, _headers);
+            }));
+        } else if (status === 409) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Conflict", status, _responseText, _headers);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    apiPlayersMeEmail(body: RequestEmailChangeBody): Observable<RequestEmailChangeResponse> {
+        let url_ = this.baseUrl + "/api/players/me/email";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processApiPlayersMeEmail(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processApiPlayersMeEmail(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<RequestEmailChangeResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<RequestEmailChangeResponse>;
+        }));
+    }
+
+    protected processApiPlayersMeEmail(response: HttpResponseBase): Observable<RequestEmailChangeResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RequestEmailChangeResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Bad Request", status, _responseText, _headers);
+            }));
+        } else if (status === 403) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Forbidden", status, _responseText, _headers);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Not Found", status, _responseText, _headers);
+            }));
+        } else if (status === 409) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Conflict", status, _responseText, _headers);
+            }));
+        } else if (status === 429) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Too Many Requests", status, _responseText, _headers);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    apiAuthEmailChangeConfirm(body: ConfirmEmailChangeBody): Observable<ConfirmEmailChangeResponse> {
+        let url_ = this.baseUrl + "/api/auth/email-change/confirm";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processApiAuthEmailChangeConfirm(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processApiAuthEmailChangeConfirm(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ConfirmEmailChangeResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ConfirmEmailChangeResponse>;
+        }));
+    }
+
+    protected processApiAuthEmailChangeConfirm(response: HttpResponseBase): Observable<ConfirmEmailChangeResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ConfirmEmailChangeResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Bad Request", status, _responseText, _headers);
             }));
         } else if (status === 409) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -1886,6 +2035,18 @@ export interface ChallengeStatsResponse {
     [key: string]: any;
 }
 
+export interface ConfirmEmailChangeBody {
+    token: string;
+
+    [key: string]: any;
+}
+
+export interface ConfirmEmailChangeResponse {
+    email: string;
+
+    [key: string]: any;
+}
+
 export interface CreateChallengeBody {
     date: Date;
     deezerTrackIds: number[];
@@ -1982,6 +2143,18 @@ export interface RefreshPreviewsResponse {
     checked: number;
     updated: number;
     failed: number;
+
+    [key: string]: any;
+}
+
+export interface RequestEmailChangeBody {
+    newEmail: string;
+
+    [key: string]: any;
+}
+
+export interface RequestEmailChangeResponse {
+    message?: string;
 
     [key: string]: any;
 }

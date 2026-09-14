@@ -94,7 +94,7 @@ GitHub Actions workflow on every push and every PR to `main`:
 - **Backend** — build in Release + `dotnet ef migrations has-pending-model-changes`
 - **Unit tests** — `dotnet test` on `InSeconds.Api.UnitTests` (xUnit, no DB required)
 - **Frontend** — `npm ci` + production build
-- **Frontend unit tests** — `ng test --watch=false --browsers=ChromeHeadless` (Karma + Jasmine, 179 tests)
+- **Frontend unit tests** — `ng test --watch=false --browsers=ChromeHeadless` (Karma + Jasmine, 202 tests)
 - **Integration tests** — `dotnet test` on `InSeconds.Api.IntegrationTests` (Testcontainers spins up a real PostgreSQL container, no extra YAML needed)
 - **E2E** — Playwright tests (Chromium) against a real backend in `Testing` mode with a PostgreSQL service — runs after all jobs above pass
 - **Nginx cache headers smoke test** — builds and runs the actual production Docker image (`Dockerfile.prod`), checks `Cache-Control` headers via `curl` (`scripts/check-nginx-cache-headers.sh`) — the only job that exercises `nginx.conf`
@@ -119,7 +119,7 @@ cd src/front/InSeconds.Client
 npx ng test --watch=false --browsers=ChromeHeadless
 ```
 
-**179 tests** (Karma + Jasmine) covering `App`, `GameService`, `SettingsService`, `LanguageService`, `GameFooterComponent` (language toggle), `AdminHttpService`, `AdminStatsService`, `AdminPoolService` (pool runway), `BlindRoundComponent` (autocomplete keyboard navigation), `GuessTimeChartComponent` + `TrackResultsListComponent` (guess-time histogram + popup), `ChallengesTabComponent` (player identity chips + guess-time popup), `ClipboardService`, `PlayerIdentityService`, `BrowserIdComponent`. Uses `HttpTestingController` — no real HTTP calls.
+**202 tests** (Karma + Jasmine) covering `App`, `GameService`, `SettingsService`, `LanguageService`, `GameFooterComponent` (language toggle), `AdminHttpService`, `AdminStatsService`, `AdminPoolService` (pool runway), `BlindRoundComponent` (autocomplete keyboard navigation), `GuessTimeChartComponent` + `TrackResultsListComponent` (guess-time histogram + popup), `ChallengesTabComponent` (player identity chips + guess-time popup), `ClipboardService`, `PlayerIdentityService`, `BrowserIdComponent`. Uses `HttpTestingController` — no real HTTP calls.
 
 ### Integration tests (backend)
 

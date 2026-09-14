@@ -1,5 +1,5 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { Observable, tap, map, catchError, of } from 'rxjs';
+import { Observable, tap, map, catchError, of, switchMap } from 'rxjs';
 import { ApiClient } from '../../api/api.generated';
 
 // État de session du joueur courant (guest ou compte lié). Remplace l'ancien
@@ -49,6 +49,22 @@ export class PlayerSessionService {
     return this.api.apiPlayersMePseudo({ pseudo }).pipe(
       tap(res => this.pseudo.set(res.pseudo)),
       map(res => res.pseudo)
+    );
+  }
+
+  /**
+   * Demande le changement d'email du joueur connecté (écran Profil) : envoie un email de
+   * confirmation à la nouvelle adresse. Ne modifie pas le signal `email` local — le
+   * changement ne prend effet qu'après confirmation du lien (cf. confirmEmailChange).
+   */
+  requestEmailChange(newEmail: string): Observable<void> {
+    return this.api.apiPlayersMeEmail({ newEmail }).pipe(map(() => void 0));
+  }
+
+  /** Confirme un changement d'email via le token reçu par email, puis rafraîchit la session. */
+  confirmEmailChange(token: string): Observable<string> {
+    return this.api.apiAuthEmailChangeConfirm({ token }).pipe(
+      switchMap(res => this.load().pipe(map(() => res.email)))
     );
   }
 
