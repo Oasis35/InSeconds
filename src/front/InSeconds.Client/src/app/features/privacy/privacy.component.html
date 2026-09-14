@@ -43,6 +43,11 @@
       </p>
     </section>
 
+    <section class="mb-6">
+      <h2 class="text-xl font-semibold mb-2" style="color:var(--text-hi)">{{ 'privacy.security.title' | translate }}</h2>
+      <p class="whitespace-pre-line" style="color:var(--text-light)">{{ 'privacy.security.body' | translate }}</p>
+    </section>
+
     <section class="mb-8">
       <h2 class="text-xl font-semibold mb-2" style="color:var(--text-hi)">{{ 'privacy.rights.title' | translate }}</h2>
       <p class="whitespace-pre-line" style="color:var(--text-light)">{{ 'privacy.rights.body' | translate }}</p>
@@ -51,6 +56,8 @@
         <a [href]="'mailto:' + contactEmail" class="underline transition-colors" style="color:var(--text-accent)">{{ 'privacy.rights.contactLabel' | translate }}</a>
       </p>
     </section>
+
+    <p class="text-xs italic mb-6" style="color:var(--text-muted)">{{ 'privacy.disclaimer' | translate }}</p>
 
     <a routerLink="/"
       class="inline-block px-6 py-3 rounded-full font-semibold transition-colors"
