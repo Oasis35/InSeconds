@@ -48,30 +48,14 @@ test.describe('Footer — langue et confidentialité', () => {
     await expect(page.getByText('Mentions légales : éditeur et hébergement')).toBeVisible();
   });
 
-  test("l'alias /confidentialite redirige vers /privacy", async ({ page }) => {
-    await page.goto('/confidentialite');
+  for (const alias of ['/confidentialite', '/mentions-legales', '/legal-notice']) {
+    test(`l'alias ${alias} redirige vers /privacy`, async ({ page }) => {
+      await page.goto(alias);
 
-    await expect(page).toHaveURL(/\/privacy$/);
-    await expect(
-      page.getByRole('heading', { name: 'Confidentialité & mentions légales' })
-    ).toBeVisible();
-  });
-
-  test("l'alias /mentions-legales redirige vers /privacy", async ({ page }) => {
-    await page.goto('/mentions-legales');
-
-    await expect(page).toHaveURL(/\/privacy$/);
-    await expect(
-      page.getByRole('heading', { name: 'Confidentialité & mentions légales' })
-    ).toBeVisible();
-  });
-
-  test("l'alias /legal-notice redirige vers /privacy", async ({ page }) => {
-    await page.goto('/legal-notice');
-
-    await expect(page).toHaveURL(/\/privacy$/);
-    await expect(
-      page.getByRole('heading', { name: 'Confidentialité & mentions légales' })
-    ).toBeVisible();
-  });
+      await expect(page).toHaveURL(/\/privacy$/);
+      await expect(
+        page.getByRole('heading', { name: 'Confidentialité & mentions légales' })
+      ).toBeVisible();
+    });
+  }
 });
