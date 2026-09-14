@@ -1,6 +1,7 @@
 import { Page } from '@playwright/test';
 import { expect } from '../fixtures/test';
 import { ApiTestClient } from '../fixtures/api-client';
+import { GamePage } from './game.page';
 
 /** L'URL du lien magique est générée avec App:PublicUrl (fixe, ne suit pas forcément le
  * port réel du front local vs CI) — on ne navigue que sur le chemin+query, jamais l'origine. */
@@ -27,4 +28,10 @@ export async function linkAccount(page: Page, api: ApiTestClient, email: string,
   await page.getByRole('button', { name: 'Confirmer la connexion' }).click();
   await page.getByPlaceholder('Ton pseudo').fill(pseudo);
   await page.getByRole('button', { name: 'Valider' }).click();
+  // Attendre que la connexion/conversion de compte soit réellement terminée côté serveur
+  // avant de rendre la main : un context.close() (cf. tests multi-comptes) juste après
+  // annulerait sinon la requête VerifyMagicLink (avec pseudo) encore en vol, laissant le
+  // compte jamais réellement créé avec son email — bug constaté (VerifyMagicLinkCommand
+  // annulé en CI/local, "email déjà pris" jamais détecté côté second compte).
+  await new GamePage(page).waitForWelcome();
 }
