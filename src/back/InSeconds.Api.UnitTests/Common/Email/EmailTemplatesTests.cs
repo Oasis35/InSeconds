@@ -56,4 +56,49 @@ public sealed class EmailTemplatesTests
 
         act.Should().Throw<InvalidOperationException>();
     }
+
+    private const string ConfirmUrl = "https://inseconds.cc/profile/confirm-email?token=abc123";
+    private const string NewEmail = "nouveau@example.com";
+
+    [Fact]
+    public void ConfirmEmailChangeEmailTemplate_ContientLUrlEtLaNouvelleAdresse()
+    {
+        var (_, html) = ConfirmEmailChangeEmailTemplate.Build(ConfirmUrl, NewEmail);
+
+        html.Should().Contain(ConfirmUrl);
+        html.Should().Contain(NewEmail);
+    }
+
+    [Fact]
+    public void ConfirmEmailChangeEmailTemplate_MentionneLaDureeDe15Minutes()
+    {
+        var (_, html) = ConfirmEmailChangeEmailTemplate.Build(ConfirmUrl, NewEmail);
+
+        html.Should().Contain("15 minutes");
+    }
+
+    [Fact]
+    public void ConfirmEmailChangeEmailTemplate_SujetAttendu()
+    {
+        var (subject, _) = ConfirmEmailChangeEmailTemplate.Build(ConfirmUrl, NewEmail);
+
+        subject.Should().Be("Confirme ta nouvelle adresse email IN//SECONDS");
+    }
+
+    [Fact]
+    public void Render_ConfirmEmailChange_AppliqueLeLayoutPartageEtNeLaissePasDeJeton()
+    {
+        var html = EmailTemplateRenderer.Render(
+            "confirm-email-change",
+            new Dictionary<string, string> { ["CONFIRM_URL"] = ConfirmUrl, ["NEW_EMAIL"] = NewEmail });
+
+        html.Should().Contain("<!DOCTYPE html>");
+        html.Should().Contain(".da-grid::before");
+        html.Should().Contain(ConfirmUrl);
+        html.Should().Contain(NewEmail);
+        html.Should().NotContain("{{CONFIRM_URL}}");
+        html.Should().NotContain("{{NEW_EMAIL}}");
+        html.Should().NotContain("{{SECTION:");
+        html.Should().NotContain("<!--#");
+    }
 }

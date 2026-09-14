@@ -49,6 +49,11 @@ export const routes: Routes = [
       import('./features/profile/profile.component').then(m => m.ProfileComponent),
   },
   {
+    path: 'profile/confirm-email',
+    loadComponent: () =>
+      import('./features/profile/confirm-email/confirm-email.component').then(m => m.ConfirmEmailComponent),
+  },
+  {
     path: 'admin',
     loadComponent: () =>
       import('./features/admin/admin.component').then(m => m.AdminComponent),

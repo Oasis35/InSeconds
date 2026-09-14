@@ -66,6 +66,7 @@ public static class E2EResetEndpoint
             await db.DailyChallenges.ExecuteDeleteAsync(ct);
             await db.Tracks.ExecuteDeleteAsync(ct);
             await db.MagicLinkTokens.ExecuteDeleteAsync(ct);
+            await db.EmailChangeTokens.ExecuteDeleteAsync(ct);
 
             SeedData(db);
 
@@ -103,6 +104,31 @@ public static class E2EResetEndpoint
         .WithName("E2ELastMagicLink")
         .WithTags("E2E");
 
+        // Même principe que /api/e2e/last-magic-link, pour le flux de changement d'email
+        // (ConfirmEmailChangeEmailTemplate) — token brut jamais stocké en base.
+        routes.MapGet("/api/e2e/last-email-change-link", (
+            HttpContext ctx,
+            InSeconds.Api.Common.Email.TestEmailCapture capture,
+            string email,
+            CancellationToken ct = default) =>
+        {
+            if (!LoginEndpoint.IsAdminAuthenticated(ctx))
+                return Results.Unauthorized();
+
+            var normalizedEmail = email.Trim().ToLowerInvariant();
+
+            if (!capture.TryGetLast(normalizedEmail, out var lastEmail))
+                return Results.NotFound();
+
+            var match = System.Text.RegularExpressions.Regex.Match(lastEmail.Html, "href=\"([^\"]+)\"");
+            if (!match.Success)
+                return Results.NotFound();
+
+            return Results.Ok(new { url = match.Groups[1].Value });
+        })
+        .WithName("E2ELastEmailChangeLink")
+        .WithTags("E2E");
+
         return routes;
     }
 
@@ -112,6 +138,7 @@ public static class E2EResetEndpoint
         db.GameSessions.ExecuteDelete();
         db.Players.ExecuteDelete();
         db.MagicLinkTokens.ExecuteDelete();
+        db.EmailChangeTokens.ExecuteDelete();
         db.DailyChallengeTracks.ExecuteDelete();
         db.DailyChallenges.ExecuteDelete();
         db.Tracks.ExecuteDelete();

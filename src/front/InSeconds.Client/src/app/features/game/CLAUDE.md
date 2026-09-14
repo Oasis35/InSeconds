@@ -8,7 +8,7 @@ Doc détaillée de la feature de jeu. Vue d'ensemble générale : voir le `CLAUD
 type GameState = 'loading' | 'welcome' | 'resume_prompt' | 'playing' | 'done' | 'error' | 'no_challenge' | 'already_played'
 ```
 
-`GameComponent` porte tout l'état métier (session, tracks, score, résultats). Les screens et `blind-round` sont des composants de présentation purs (inputs/outputs), sans état de session partagé entre eux. `providers: [GameFacadeService]` — instance scopée au composant, pas root.
+`GameComponent` porte tout l'état métier (session, tracks, score, résultats). Les screens et `blind-round` sont des composants de présentation purs (inputs/outputs), sans état de session partagé entre eux. `providers: [GameFacadeService, GameShareService, LeaveConfirmationService]` — trois instances scopées au composant, pas root (partage et guard de sortie extraits en services dédiés le 2026-09-14, cf. sections dédiées plus bas — `GameComponent` ne porte plus que la machine à états elle-même).
 
 ### Orchestration parent/enfants
 
@@ -60,9 +60,13 @@ Bloc `position:fixed` inline dans `game.component.html` (pas un composant partag
 
 ### Garde de sortie (`UnsavedGameComponent`, branché sur `unsavedGameGuard`)
 
-- `@HostListener('window:beforeunload')` : `preventDefault()` si `gameState()==='playing'` (dialog natif navigateur).
-- `canDeactivate()` : `true` immédiat hors `playing`. Sinon résout toute confirmation déjà pendante à `false` (évite Promise orpheline en navigation ré-entrante), ouvre `showLeaveConfirm`, retourne une `Promise<boolean>` résolue par `confirmLeave()`/`cancelLeave()`.
-- `effect()` constructeur : si l'état quitte `playing` en tâche de fond (ex. dernière réponse HTTP qui résout) alors que la confirmation est ouverte, résout automatiquement à `true`.
+La machine à états de la modale (signal `showLeaveConfirm`, Promise en attente) vit dans **`services/leave-confirmation.service.ts`** (`LeaveConfirmationService`, scopé, extrait de `game.component.ts` le 2026-09-14 pour SRP) — `GameComponent` ne garde que ce qu'Angular exige sur le composant lui-même (décorateurs, interface `UnsavedGameComponent`) et délègue le reste :
+
+- `@HostListener('window:beforeunload')` (reste sur le composant, Angular n'attache les décorateurs qu'à des composants/directives) : `preventDefault()` si `gameState()==='playing'`.
+- `canDeactivate()` : `true` immédiat hors `playing`. Sinon `leaveConfirmation.request()` — le service résout lui-même toute confirmation déjà pendante à `false` (évite Promise orpheline en navigation ré-entrante) avant d'ouvrir la modale et de retourner la nouvelle `Promise<boolean>`.
+- `confirmLeave()`/`cancelLeave()` délèguent à `leaveConfirmation.confirm()`/`.cancel()`.
+- `effect()` constructeur (reste sur le composant, a besoin de lire `gameState()`) : si l'état quitte `playing` en tâche de fond (ex. dernière réponse HTTP qui résout) alors que `leaveConfirmation.hasPending` est vrai, résout automatiquement à `true` via `leaveConfirmation.resolve(true)`.
+- `showLeaveConfirm` reste un membre `protected` de `GameComponent` (alias direct du signal du service, `= this.leaveConfirmation.showLeaveConfirm`) pour que le template n'ait pas à changer.
 
 ### Progression du round
 
@@ -71,7 +75,7 @@ Bloc `position:fixed` inline dans `game.component.html` (pas un composant partag
 
 ### Partage / countdown
 
-`share()`/`shareFromStats()` construisent un texte (date, lignes ✅/❌ par morceau, score, `environment.appUrl`), délèguent la copie à `copyToClipboard()` → **`ClipboardService.copy()`** (`core/services/clipboard.service.ts`, `providedIn: root`) qui encapsule `navigator.clipboard.writeText` et résout `Promise<boolean>` (jamais de rejet à catcher côté appelant). Succès → `shareCopied=true` 2s. Échec (permission refusée / contexte non sécurisé) → `shareFailed=true` 3s. `ClipboardService` est mutualisé avec la feature `admin/` (`BrowserIdComponent`, `ChallengesTabComponent` — copie de l'ID joueur/navigateur) ; le comportement de `game.component` est inchangé par cette extraction, seule la ligne `navigator.clipboard.writeText` a été déplacée dans le service partagé. `startCountdown()` : `setInterval` 1s jusqu'à minuit UTC, formaté `HH:MM:SS`, nettoyé dans `ngOnDestroy`.
+La construction du texte de partage + la copie presse-papier vivent dans **`services/game-share.service.ts`** (`GameShareService`, scopé, extrait de `game.component.ts` le 2026-09-14 pour SRP) : `shareResults(results, totalScore)` (récap final) et `shareStats(stats)` (écran « déjà joué ») construisent chacun un texte (date, lignes ✅/❌ par morceau, score, `environment.appUrl`) et délèguent la copie à **`ClipboardService.copy()`** (`core/services/clipboard.service.ts`, `providedIn: root`) qui encapsule `navigator.clipboard.writeText` et résout `Promise<boolean>` (jamais de rejet à catcher côté appelant). Succès → signal `copied=true` 2s. Échec (permission refusée / contexte non sécurisé) → signal `failed=true` 3s. `GameComponent.shareCopied`/`shareFailed` restent des membres `protected` (alias directs des signals du service) pour que le template n'ait pas à changer ; `share()`/`shareFromStats()` ne font plus que lire l'état local nécessaire (`results()`/`totalScore()`/`todayStats()`) et appeler la méthode du service. `ClipboardService` reste mutualisé avec la feature `admin/` (`BrowserIdComponent`, `ChallengesTabComponent` — copie de l'ID joueur/navigateur). `startCountdown()` : `setInterval` 1s jusqu'à minuit UTC, formaté `HH:MM:SS`, nettoyé dans `ngOnDestroy` (reste dans `GameComponent`, couplé à `gameState`/`secondsUntilMidnightUtc`).
 
 ## `blind-round/blind-round.component.ts` — le round de jeu
 
@@ -96,6 +100,14 @@ Inputs : `track` (`required`), `isLast=false`, `sessionId=0`, `minListenedSecond
 ## `services/game-facade.service.ts`
 
 `@Injectable()` (pas root, scopé au `GameComponent`). Pure délégation vers `core/services/game.service.ts` (`peekToday`, `startToday`, `submitAnswer`, `abandonSession`, `updateListening`) sans logique propre — existe pour permettre le mock/l'injection scopée en test sans toucher au service global.
+
+## `services/game-share.service.ts`
+
+`@Injectable()` (pas root, scopé au `GameComponent`, extrait le 2026-09-14). Signals `copied`/`failed`. `shareResults(results, totalScore)` / `shareStats(stats)` construisent le texte de partage et délèguent à `ClipboardService.copy()`. Détail complet : section "Partage / countdown" plus haut.
+
+## `services/leave-confirmation.service.ts`
+
+`@Injectable()` (pas root, scopé au `GameComponent`, extrait le 2026-09-14). Signal `showLeaveConfirm` + Promise de confirmation en attente (`request()`/`confirm()`/`cancel()`/`resolve(ok)`/`hasPending`). Ne porte aucun décorateur Angular (`@HostListener` reste sur `GameComponent`) — détail complet : section "Garde de sortie" plus haut.
 
 ## `services/deezer-autocomplete.service.ts`
 
@@ -166,7 +178,7 @@ Tous `OnPush`, présentationnels (sauf `already-played-screen` qui type `stats` 
 | `300ms` / `2` car. | `deezer-autocomplete.service.ts` | debounce autocomplete / seuil avant appel réseau |
 | `150ms` | `blind-round` `onBlur()` | délai avant fermeture suggestions (laisse le `mousedown` s'exécuter) |
 | `4000ms` | `blind-round` | durée toast erreur réseau |
-| `2000ms` / `3000ms` | `game.component` `copyToClipboard` | durée `shareCopied` / `shareFailed` |
+| `2000ms` / `3000ms` | `GameShareService` (`copyText`, privé) | durée `copied` / `failed` |
 | `600ms` défaut / `1000ms` | `count-up.ts` / `game.component.onNextTrack` | durée animation score |
 | `600px` | `game.component` `viewportTall` | seuil viewport "grand écran" |
 | `50ms` | `audio-player.service` | vibration à l'arrêt auto |

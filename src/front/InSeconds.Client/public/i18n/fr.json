@@ -122,7 +122,31 @@
     "logoutConfirmBody": "Tu pourras revenir avec un nouveau lien envoyé à {{ email }}.",
     "logoutConfirmAction": "Oui, me déconnecter",
     "logoutCancel": "Annuler",
-    "backToGame": "Retour au jeu"
+    "backToGame": "Retour au jeu",
+    "email": {
+      "placeholder": "ton@email.com",
+      "change": "Envoyer",
+      "sending": "…",
+      "sent": "OK",
+      "hint": "Confirme le changement via l'email envoyé à la nouvelle adresse.",
+      "sentHint": "Vérifie ta boîte mail à {{ email }} pour confirmer.",
+      "invalid": "Adresse email invalide.",
+      "sameEmail": "C'est déjà ton adresse actuelle.",
+      "taken": "Cette adresse est déjà utilisée par un autre compte.",
+      "error": "Une erreur est survenue, réessaie."
+    }
+  },
+  "confirmEmail": {
+    "title": "Confirmer le changement d'email",
+    "subtitle": "Clique pour confirmer ta nouvelle adresse email.",
+    "confirm": "Confirmer",
+    "confirming": "Confirmation...",
+    "success": "Adresse confirmée : {{ email }}",
+    "invalidOrExpired": "Ce lien est invalide ou a expiré.",
+    "emailTaken": "Cette adresse est désormais utilisée par un autre compte.",
+    "missingToken": "Lien de confirmation incomplet.",
+    "genericError": "Une erreur est survenue, réessaie.",
+    "backToProfile": "← Retour au profil"
   },
   "login": {
     "request": {

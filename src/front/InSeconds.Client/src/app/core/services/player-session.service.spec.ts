@@ -9,13 +9,20 @@ import { ApiClient } from '../../api/api.generated';
 // sur la logique de PlayerSessionService elle-même.
 describe('PlayerSessionService', () => {
   let service: PlayerSessionService;
-  let apiClient: { apiPlayersMe: jasmine.Spy; apiAuthLogout: jasmine.Spy };
+  let apiClient: {
+    apiPlayersMe: jasmine.Spy;
+    apiAuthLogout: jasmine.Spy;
+    apiPlayersMeEmail: jasmine.Spy;
+    apiAuthEmailChangeConfirm: jasmine.Spy;
+  };
   const fakeId = 'aaaaaaaa-0000-0000-0000-000000000001';
 
   beforeEach(() => {
     apiClient = {
       apiPlayersMe: jasmine.createSpy('apiPlayersMe'),
       apiAuthLogout: jasmine.createSpy('apiAuthLogout'),
+      apiPlayersMeEmail: jasmine.createSpy('apiPlayersMeEmail'),
+      apiAuthEmailChangeConfirm: jasmine.createSpy('apiAuthEmailChangeConfirm'),
     };
 
     TestBed.configureTestingModule({
@@ -77,6 +84,33 @@ describe('PlayerSessionService', () => {
       service.logout().subscribe();
 
       expect(apiClient.apiAuthLogout).toHaveBeenCalled();
+    });
+  });
+
+  describe('requestEmailChange()', () => {
+    it('should call apiPlayersMeEmail with the new email and not touch the local signal', () => {
+      apiClient.apiPlayersMeEmail.and.returnValue(of({ message: 'ok' }));
+
+      service.requestEmailChange('new@example.com').subscribe();
+
+      expect(apiClient.apiPlayersMeEmail).toHaveBeenCalledWith({ newEmail: 'new@example.com' });
+      expect(service.email()).toBeNull();
+    });
+  });
+
+  describe('confirmEmailChange()', () => {
+    it('should call apiAuthEmailChangeConfirm then reload the session', () => {
+      apiClient.apiAuthEmailChangeConfirm.and.returnValue(of({ email: 'new@example.com' }));
+      apiClient.apiPlayersMe.and.returnValue(
+        of({ playerId: fakeId, isGuest: false, email: 'new@example.com', pseudo: 'Alice' })
+      );
+
+      let result: string | undefined;
+      service.confirmEmailChange('tok123').subscribe(email => (result = email));
+
+      expect(apiClient.apiAuthEmailChangeConfirm).toHaveBeenCalledWith({ token: 'tok123' });
+      expect(result).toBe('new@example.com');
+      expect(service.email()).toBe('new@example.com');
     });
   });
 });

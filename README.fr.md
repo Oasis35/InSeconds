@@ -94,7 +94,7 @@ Workflow GitHub Actions sur chaque push et chaque PR vers `main` :
 - **Backend** — build Release + `dotnet ef migrations has-pending-model-changes`
 - **Tests unitaires** — `dotnet test` sur `InSeconds.Api.UnitTests` (xUnit, pas de BD requise)
 - **Frontend** — `npm ci` + build production
-- **Tests unitaires frontend** — `ng test --watch=false --browsers=ChromeHeadless` (Karma + Jasmine, 179 tests)
+- **Tests unitaires frontend** — `ng test --watch=false --browsers=ChromeHeadless` (Karma + Jasmine, 202 tests)
 - **Tests d'intégration** — `dotnet test` sur `InSeconds.Api.IntegrationTests` (Testcontainers crée un conteneur PostgreSQL réel, pas de YAML supplémentaire)
 - **E2E** — tests Playwright (Chromium) contre un vrai backend en mode `Testing` avec un service PostgreSQL — s'exécute après tous les jobs précédents
 - **Smoke test headers de cache nginx** — construit et lance la vraie image Docker de prod (`Dockerfile.prod`), vérifie les headers `Cache-Control` via `curl` (`scripts/check-nginx-cache-headers.sh`) — seul job qui teste réellement `nginx.conf`
@@ -119,7 +119,7 @@ cd src/front/InSeconds.Client
 npx ng test --watch=false --browsers=ChromeHeadless
 ```
 
-**179 tests** (Karma + Jasmine) couvrant `App`, `GameService`, `SettingsService`, `LanguageService`, `GameFooterComponent` (toggle langue), `AdminHttpService`, `AdminStatsService`, `AdminPoolService` (autonomie du pool), `BlindRoundComponent` (navigation clavier de l'autocomplete), `GuessTimeChartComponent` + `TrackResultsListComponent` (histogramme + pop-up), `ChallengesTabComponent` (chips d'identité joueur + pop-up histogramme), `ClipboardService`, `PlayerIdentityService`, `BrowserIdComponent`. Utilise `HttpTestingController` — pas de vraies requêtes HTTP.
+**202 tests** (Karma + Jasmine) couvrant `App`, `GameService`, `SettingsService`, `LanguageService`, `GameFooterComponent` (toggle langue), `AdminHttpService`, `AdminStatsService`, `AdminPoolService` (autonomie du pool), `BlindRoundComponent` (navigation clavier de l'autocomplete), `GuessTimeChartComponent` + `TrackResultsListComponent` (histogramme + pop-up), `ChallengesTabComponent` (chips d'identité joueur + pop-up histogramme), `ClipboardService`, `PlayerIdentityService`, `BrowserIdComponent`. Utilise `HttpTestingController` — pas de vraies requêtes HTTP.
 
 ### Tests d'intégration (backend)
 

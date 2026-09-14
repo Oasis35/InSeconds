@@ -1,26 +1,9 @@
 import { test, expect } from '../fixtures/test';
 import { GamePage } from '../pages/game.page';
-import { ApiTestClient } from '../fixtures/api-client';
+import { linkAccount } from '../pages/login.page';
 
 const EMAIL_A = 'profile-a@e2e.test';
 const EMAIL_B = 'profile-b@e2e.test';
-
-function pathOf(url: string): string {
-  const parsed = new URL(url);
-  return parsed.pathname + parsed.search;
-}
-
-async function linkAccount(page: import('@playwright/test').Page, api: ApiTestClient, email: string, pseudo: string): Promise<void> {
-  await page.goto('/login');
-  await page.getByPlaceholder('ton@email.com').fill(email);
-  await page.getByRole('button', { name: 'Recevoir un lien' }).click();
-
-  const linkUrl = await api.getLastMagicLinkUrl(email);
-  await page.goto(pathOf(linkUrl));
-  await page.getByRole('button', { name: 'Confirmer la connexion' }).click();
-  await page.getByPlaceholder('Ton pseudo').fill(pseudo);
-  await page.getByRole('button', { name: 'Valider' }).click();
-}
 
 test.describe('Profil', () => {
   test.beforeEach(async ({ api }) => {

@@ -7,6 +7,14 @@ import { ConfirmSheetComponent } from '../../shared/confirm-sheet/confirm-sheet.
 import { PlayerSessionService } from '../../core/services/player-session.service';
 
 type PseudoStatus = 'idle' | 'saving' | 'saved' | 'taken' | 'error';
+type EmailStatus = 'idle' | 'sending' | 'sent' | 'sameEmail' | 'taken' | 'error';
+
+// Format simple, aligné sur EmailAddress() FluentValidation côté back — pas de RFC
+// exhaustive ici, juste de quoi éviter un aller-retour serveur pour une saisie vide/absurde.
+// Quantificateurs bornés (au lieu de `+` illimités) : évite le risque de backtracking
+// super-linéaire sur une entrée pathologique (Sonar typescript:S8786), sans changer le
+// comportement pour une adresse email réelle (limites RFC 5321 généreuses : 64/253/24).
+const EMAIL_PATTERN = /^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,24}$/;
 
 @Component({
   selector: 'app-profile',
@@ -59,6 +67,43 @@ export class ProfileComponent implements OnInit {
   protected readonly hintIsError = computed(() =>
     this.pseudoStatus() === 'taken' || this.pseudoStatus() === 'error' || this.tooShort());
 
+  protected emailDraft = signal(this.playerSession.email() ?? '');
+  protected readonly emailStatus = signal<EmailStatus>('idle');
+
+  private readonly trimmedEmailDraft = computed(() => this.emailDraft().trim());
+  private readonly emailInvalid = computed(() =>
+    this.trimmedEmailDraft().length === 0 || !EMAIL_PATTERN.test(this.trimmedEmailDraft()));
+  private readonly emailUnchanged = computed(() =>
+    this.trimmedEmailDraft().toLowerCase() === (this.playerSession.email() ?? '').toLowerCase());
+
+  protected readonly emailSaveDisabled = computed(() =>
+    this.emailInvalid() || this.emailUnchanged() || this.emailStatus() === 'sending');
+
+  protected readonly emailSaveLabel = computed(() => {
+    switch (this.emailStatus()) {
+      case 'sending': return this.translate.instant('profile.email.sending');
+      case 'sent':    return this.translate.instant('profile.email.sent');
+      default:        return this.translate.instant('profile.email.change');
+    }
+  });
+
+  protected readonly emailHint = computed(() => {
+    switch (this.emailStatus()) {
+      case 'sent':      return this.translate.instant('profile.email.sentHint', { email: this.trimmedEmailDraft() });
+      case 'sameEmail': return this.translate.instant('profile.email.sameEmail');
+      case 'taken':     return this.translate.instant('profile.email.taken');
+      case 'error':     return this.translate.instant('profile.email.error');
+      default:
+        return this.emailInvalid() && this.trimmedEmailDraft().length > 0
+          ? this.translate.instant('profile.email.invalid')
+          : this.translate.instant('profile.email.hint');
+    }
+  });
+
+  protected readonly emailHintIsError = computed(() =>
+    this.emailStatus() === 'sameEmail' || this.emailStatus() === 'taken' || this.emailStatus() === 'error' ||
+    (this.emailInvalid() && this.trimmedEmailDraft().length > 0));
+
   ngOnInit(): void {
     if (!this.playerSession.isLinked()) {
       this.router.navigateByUrl('/login');
@@ -76,6 +121,24 @@ export class ProfileComponent implements OnInit {
     this.playerSession.updatePseudo(this.trimmedDraft()).subscribe({
       next: () => this.pseudoStatus.set('saved'),
       error: (err) => this.pseudoStatus.set(err.status === 409 ? 'taken' : 'error'),
+    });
+  }
+
+  onEmailInput(value: string): void {
+    this.emailDraft.set(value);
+    this.emailStatus.set('idle');
+  }
+
+  saveEmail(): void {
+    if (this.emailSaveDisabled()) return;
+    this.emailStatus.set('sending');
+    this.playerSession.requestEmailChange(this.trimmedEmailDraft()).subscribe({
+      next: () => this.emailStatus.set('sent'),
+      error: (err) => {
+        if (err.status === 409) this.emailStatus.set('taken');
+        else if (err.status === 400) this.emailStatus.set('sameEmail');
+        else this.emailStatus.set('error');
+      },
     });
   }
 

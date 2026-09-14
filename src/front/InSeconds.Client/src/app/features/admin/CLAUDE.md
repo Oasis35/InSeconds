@@ -6,12 +6,15 @@ Doc détaillée de la feature admin. Vue d'ensemble générale : voir le `CLAUDE
 
 **Aucun `@Input()`/`@Output()` n'est utilisé nulle part dans la feature.** Les 8 sous-composants (`admin-login`, `dashboard-tab`, `pool-tab`, `challenges-tab`, `actions-tab`, `add-track-modal`, `delete-track-modal`, `preview-track-modal`) sont des "dumb components" côté données mais communiquent exclusivement via les services partagés injectés indépendamment dans chacun — pas de prop-drilling.
 
-`AdminComponent` (shell ~45 lignes) fournit les 6 services via `providers: [...]` (portée composant — une instance par affichage de `<app-admin>`) :
+`AdminComponent` (shell ~45 lignes) fournit les 7 services via `providers: [...]` (portée composant — une instance par affichage de `<app-admin>`) :
 
 ```
 AdminActionsService ──────┐
 AdminStatsService ────────┼─→ AdminApiService ─┬─→ AdminHttpService (HTTP réel)
 AdminPoolService ─────────┘                     └─→ AdminStateService (signals d'état/triggers)
+AdminPoolService ──→ PoolAudioPreviewService (appelé pour stop() aux ouvertures/fermetures de
+                      modale) ; add-track-modal/preview-track-modal injectent aussi
+                      PoolAudioPreviewService directement pour piloter play/pause/progress
 ```
 
 `AdminApiService` est le hub unique : combine `AdminHttpService` (I/O réseau) + `AdminStateService` (état/triggers) en `rxResource` réactifs, sert de façade à `Stats`/`Pool`/`Actions` qui n'appellent **jamais** `AdminHttpService` directement.
@@ -19,13 +22,14 @@ AdminPoolService ─────────┘                     └─→ Ad
 ### Graphe d'injection
 
 ```
-AdminComponent (providers: les 6 services)
+AdminComponent (providers: les 7 services)
  ├─ injecte directement : AdminApiService (api), AdminStatsService (stats), AdminPoolService (pool)
  ├─ <app-admin-login>          → injecte AdminApiService
  ├─ <app-dashboard-tab>        → injecte AdminStatsService
  ├─ <app-pool-tab>             → injecte AdminPoolService
- │    ├─ <app-add-track-modal>    → injecte AdminPoolService
- │    └─ <app-delete-track-modal> → injecte AdminPoolService
+ │    ├─ <app-add-track-modal>     → injecte AdminPoolService + PoolAudioPreviewService
+ │    ├─ <app-preview-track-modal> → injecte AdminPoolService + PoolAudioPreviewService
+ │    └─ <app-delete-track-modal>  → injecte AdminPoolService (seul, pas d'audio)
  ├─ <app-challenges-tab>       → injecte AdminStatsService (même instance que dashboard-tab)
  │                               + PlayerSessionService/ClipboardService (core/, exception au tableau
  │                               ci-dessus — cf. note plus bas)
@@ -92,15 +96,15 @@ Computed clés : `totalPlayers`/`maxDailyPlayers` (sur `dailyActivity`), `challe
 
 Méthodes notables : `shiftChallengeMonth(delta)` — liste triée desc donc `next = idx - delta` (`delta=+1` = plus récent = index qui diminue). `toIso(d)` — corrige le fuseau horaire local pour un `Date` (`d.getTime() - d.getTimezoneOffset()*60000`) avant `toISOString()`, évite un décalage de jour. `shiftSelectedDay(delta)` — même logique inversée sur `availableDates` (`+1` = vers le passé). `activityBarHeightPx(count)` — `2px` si `max===0||count===0`, sinon `max(4, round(count/max*64))px`. Seuils couleur : `completionRateColor` (rouge<40, jaune<70, vert≥70), `rateColor`/`rateBarColor` (rouge<30, jaune<60, vert≥60 — seuils **différents** de `completionRateColor`, utilisés pour les taux artiste/titre par piste).
 
-## `services/admin-pool.service.ts` — filtres/pagination/sélection/modales/audio preview
+## `services/admin-pool.service.ts` — filtres/pagination/sélection/modales
 
-`@Injectable()`. Injecte `AdminApiService` (`api`), `SettingsService` (`settings`), `DestroyRef`.
+`@Injectable()`. Injecte `AdminApiService` (`api`), `SettingsService` (`settings`), `DestroyRef`, `PoolAudioPreviewService` (`audioPreview`, **uniquement pour appeler `.stop()`** aux ouvertures/fermetures de modale — la lecture/pause/progression n'est plus exposée par ce service, cf. sous-section dédiée ci-dessous).
 
 **`poolPageSize = 15`** — taille de page du tableau unique fusionné available+used.
 
 Signals filtres/pagination : `allTracksPage=0`, `poolFilterText=''`, `poolFilterStatus: 'all'|'available'|'used'`, `poolFilterPreview: 'all'|'ok'|'missing'`, `poolFilterLastUsedFrom/poolFilterLastUsedTo: string` (ISO `yyyy-MM-dd`, `''` = pas de borne), `poolSortColumn: PoolSortColumn|null`, `poolSortDirection: 'asc'|'desc'`, `selectedTrackIds = Set<number>`.
-Signals modale ajout : `addToPoolStatus: 'idle'|'loading'|'success'|'error'`, `addModalOpen`, `addModalTrack: DeezerTrackInfo|null`, `addModalTrackIdToUpdate: number|null` (non-null = mode "remplacement d'un morceau sans preview" plutôt qu'ajout), `modalPlaying`, `modalProgress` (0-100).
-Signals modale écoute (preview d'une ligne du pool) : `previewModalOpen`, `previewModalTrack: PoolTrackDto|null`, `previewModalStatus: 'loading'|'ready'|'error'`, `previewModalUrl` (privé). **Réutilise le lecteur audio de la modale d'ajout** (`modalAudio`/`modalPlaying`/`modalProgress`) — une seule instance `Audio()` partagée, les deux modales étant mutuellement exclusives à l'usage.
+Signals modale ajout : `addToPoolStatus: 'idle'|'loading'|'success'|'error'`, `addModalOpen`, `addModalTrack: DeezerTrackInfo|null`, `addModalTrackIdToUpdate: number|null` (non-null = mode "remplacement d'un morceau sans preview" plutôt qu'ajout).
+Signals modale écoute (preview d'une ligne du pool) : `previewModalOpen`, `previewModalTrack: PoolTrackDto|null`, `previewModalStatus: 'loading'|'ready'|'error'`, `previewModalUrl` (non-privé — lu directement par le template de `preview-track-modal` pour piloter `PoolAudioPreviewService.toggle(...)`).
 Signals modale suppression : `deleteModalOpen`, `deleteModalTracks: PoolTrackDto[]`, `deleteStatus: 'idle'|'loading'|'error'`.
 
 **Computed** :
@@ -111,7 +115,17 @@ Signals modale suppression : `deleteModalOpen`, `deleteModalTracks: PoolTrackDto
 - `sortedTracks` — `filteredTracks()` trié selon `poolSortColumn`/`poolSortDirection` (`sortValue(track, column)` mappe chaque colonne triable : texte en `toLowerCase()`, `preview` en `2/1/0` selon `true/null/false`, `status` en `1/0`, dates/`usageCount` en valeur brute). **Nulls (`lastUsedDate`/`unlockDate` absents) toujours en dernier, quelle que soit la direction** — évite qu'un morceau "jamais utilisé" saute en tête sur un tri descendant.
 - `allTotalPages`/`pagedAllTracks` — pagination classique sur `sortedTracks()` (pas `filteredTracks()` — seule la source de la slice paginée change, le compteur affiché reste basé sur `filteredTracks().length`).
 
-Méthodes : `poolDaysColor(days)` — rouge<3, orange<7, vert≥7. `setPoolFilter*`/`setPoolFilterLastUsedFrom`/`setPoolFilterLastUsedTo` — **remettent systématiquement `allTracksPage` à 0**. `setPoolSort(column)` — même colonne → bascule `asc`/`desc` ; nouvelle colonne → `asc`. `onPoolSearchChange(q)` — met à jour `poolSearchQuery` (déclenche le `rxResource` recherche Deezer) + reset page. `toggleSelection`/`clearSelection` — sélection multiple (nouvelle `Set` à chaque mutation). `openAddModal(track, trackIdToUpdate=null, prefillSearch='')` — arrête l'audio, reset statut/progression, pré-remplit la recherche si fournie (bouton "Actualiser" du pool-tab). `toggleModalPreview()` / `togglePreviewModalAudio()` — lecture/pause preview 30s, délèguent au privé `togglePreviewUrl(url)` (une instance `Audio()` + boucle `requestAnimationFrame` pour `modalProgress`, helpers `pauseModalAudio`/`stopModalAudio`). `openPreviewModal(t: PoolTrackDto)` — ouvre la modale d'écoute : `api.searchDeezer("artist title")`, prend le résultat dont `deezerTrackId` correspond (sinon le premier), joue son `previewUrl` directement ; pas de preview trouvée → statut `error`. `closePreviewModal()` — stoppe l'audio + reset. `addToPoolFromModal(andClose)` — `api.addTrack(...)` si `addModalTrackIdToUpdate()===null` sinon `api.updateTrack(id,...)`. Succès → `api.reloadPool()`, ferme direct si `andClose` sinon timer 2s retour `idle`. Erreur → timer 3s retour `idle`. `openDeleteModal(track|null)` — `null` = suppression groupée des `selectedTrackIds()` filtrés sur `available` uniquement (**jamais** les `used`). `confirmDelete()` — `Promise.all` d'un `deleteTrack` par morceau, succès → `api.reloadPool()`.
+Méthodes : `poolDaysColor(days)` — rouge<3, orange<7, vert≥7. `setPoolFilter*`/`setPoolFilterLastUsedFrom`/`setPoolFilterLastUsedTo` — **remettent systématiquement `allTracksPage` à 0**. `setPoolSort(column)` — même colonne → bascule `asc`/`desc` ; nouvelle colonne → `asc`. `onPoolSearchChange(q)` — met à jour `poolSearchQuery` (déclenche le `rxResource` recherche Deezer) + reset page. `toggleSelection`/`clearSelection` — sélection multiple (nouvelle `Set` à chaque mutation). `openAddModal(track, trackIdToUpdate=null, prefillSearch='')` — `audioPreview.stop()`, reset statut, pré-remplit la recherche si fournie (bouton "Actualiser" du pool-tab). `openPreviewModal(t: PoolTrackDto)` — ouvre la modale d'écoute : `api.searchDeezer("artist title")`, prend le résultat dont `deezerTrackId` correspond (sinon le premier), démarre la lecture via `audioPreview.toggle(match.previewUrl)` ; pas de preview trouvée → statut `error`. `closePreviewModal()` — `audioPreview.stop()` + reset. `addToPoolFromModal(andClose)` — `api.addTrack(...)` si `addModalTrackIdToUpdate()===null` sinon `api.updateTrack(id,...)`. Succès → `api.reloadPool()`, ferme direct si `andClose` sinon timer 2s retour `idle`. Erreur → timer 3s retour `idle`. `openDeleteModal(track|null)` — `null` = suppression groupée des `selectedTrackIds()` filtrés sur `available` uniquement (**jamais** les `used`). `confirmDelete()` — `Promise.all` d'un `deleteTrack` par morceau, succès → `api.reloadPool()`.
+
+## `services/pool-audio-preview.service.ts` — lecteur audio partagé (preview 30s)
+
+`@Injectable()` (portée composant, fourni par `AdminComponent`), sans autre dépendance — extrait d'`AdminPoolService` (2026-09-14) pour que `add-track-modal`/`preview-track-modal` n'aient plus besoin de dépendre de toute la surface d'`AdminPoolService` pour lire/piloter l'audio, et pour qu'`AdminPoolService` n'ait plus la responsabilité du lecteur audio en plus de filtres/tri/pagination/sélection/modales.
+
+Signaux : `playing = signal(false)`, `progress = signal(0)` (0-100). État interne privé : `audio: HTMLAudioElement|null`, `rafId: number|null`.
+
+Méthodes : `toggle(url)` — no-op si `url` absent ; si déjà en lecture, pause ; sinon crée un `Audio(url)` (réutilise l'instance si même `src`), lit, et boucle `requestAnimationFrame` pour mettre à jour `progress` depuis `currentTime/duration`. `onended` → `playing=false`, `progress=100`. `stop()` (public — appelé par `AdminPoolService` aux ouvertures/fermetures de modale) — coupe la lecture, annule le rAF, libère l'instance `Audio`.
+
+`add-track-modal`/`preview-track-modal` l'injectent **directement** (en plus d'`AdminPoolService` pour le reste de leur état) pour piloter play/pause/progress dans leur template — `pool-tab` et `delete-track-modal` n'en ont pas besoin.
 
 ## `services/admin-actions.service.ts` — génération/reset/refresh
 
@@ -137,7 +151,7 @@ Spec (`actions-tab.component.spec.ts`) : couvre la lecture de `settings.trackCoo
 - **`pool-tab`** : injecte `AdminPoolService`. Monte `<app-add-track-modal/>`, `<app-delete-track-modal/>` et `<app-preview-track-modal/>` en bas du template (toujours dans le DOM dès l'onglet actif, masquées par leur `@if` interne). Tableau fusionné, checkbox de sélection uniquement sur non-`used`, bouton "Actualiser" par ligne sans preview → `openAddModal(null, t.id, "artist title")`. **Toutes les colonnes sont triables** (clic sur l'en-tête → `pool.setPoolSort(column)`, flèche ▲/▼ affichée sur la colonne active), **colonnes réordonnées** : `Actions` en 2ᵉ position (après la case à cocher de sélection, avant Artiste) ; boutons par ligne non-`used` : `▶` (`openPreviewModal(t)` — écoute), `↻ Actualiser` (si `hasPreview === false`), `🗑`. Colonnes `LastUsedDate`/`UnlockDate`/`UsageCount` en fin de tableau (cellule vide si `null`), filtre par plage de dates (`type="date"`) sur `LastUsedDate` en plus des filtres texte/statut/preview existants.
 - **`challenges-tab`** : injecte `AdminStatsService` (**même instance** que dashboard-tab) **et**, directement, `PlayerSessionService`/`ClipboardService` (`core/services/`) — deuxième composant de la feature (après `actions-tab`/`SettingsService`) à injecter un service `core/` en direct, ici pour comparer l'ID du navigateur courant aux joueurs listés. Un seul navigateur de mois pilote deux sections aux sources différentes : "Stats par défi" (`challengeStats()` = `GET /api/admin/challenge-stats`, type généré ; guard `@if (stats.challengeStatsLoading())` → spinner sinon carte) et "Historique" (`challenges()` = `GET /api/admin/challenges`, type local) — synchronisées via l'`effect()` d'`AdminStatsService`. Sous chaque ligne de « Stats par défi », un chip par joueur (`c.players`, toutes sessions Completed/Pending/Abandoned/Expired) affiche `p.pseudo ?? shortId(p.playerId)` — pseudo pour un compte lié, 8 premiers caractères du `PlayerId` en fallback pour un guest. **Couleur de fond/bordure/texte = teinte HSL déterministe dérivée de l'ID** (`idHue`/`idBg`/`idBorder`/`idText`, hash `h = h*31 + charCode`) : un même joueur garde la même couleur d'un défi à l'autre → repérage visuel des habitués. Le **statut** (hors `Completed`) est rendu par un petit point coloré en tête de chip (`statusColor` : Abandoned = ambre, Expired = gris, Pending = faint). Interactions : **clic gauche** = `selectPlayer()` → surbrillance (`box-shadow`) de tous les chips du même ID sur tous les défis affichés + les autres passent à `opacity 0.3` (`isHighlighted`/`isDimmed`, signal `highlightedPlayerId`, re-clic ou autre chip = bascule) ; **clic droit** = `onChipContextMenu()` → `preventDefault` + `copyPlayerId()` (copie l'ID complet via `ClipboardService`, feedback "copié" 1,5s sur le chip via `copiedPlayerId`). Surbrillance + libellé « toi » automatiques (`isYou()`) si l'ID correspond à `PlayerSessionService.playerId()` (prioritaire sur la teinte HSL).
 - **`actions-tab`** : injecte `AdminActionsService` **et** `SettingsService` (seul composant de la feature à injecter un service `core/` directement, pour lire la valeur courante de `trackCooldownDays` avant édition). 5 blocs (génération/reset/refresh previews/cooldown/**test email**) avec messages conditionnels par statut. Le bloc cooldown utilise un `<input type="number">` avec événements DOM bruts (`(input)`/`$any($event.target).value`), pas `ngModel` — cohérent avec le pattern déjà utilisé par les filtres de `pool-tab` plutôt que d'introduire `FormsModule` dans ce composant (même pattern pour le champ email du bloc test email — un simple bouton `(click)`, pas de `<form (ngSubmit)>`). Le bloc "Test email" affiche le détail de l'erreur (`actions.sendTestEmailError()`) en cas d'échec, contrairement aux autres blocs qui n'affichent qu'un statut générique.
-- **`add-track-modal`** / **`delete-track-modal`** / **`preview-track-modal`** : injectent `AdminPoolService`, zéro logique propre — pur reflet des signals du service (`@if (pool.addModalOpen())` / `deleteModalOpen()` / `previewModalOpen()`, overlay + `Escape` pour fermer). `preview-track-modal` : `@switch (pool.previewModalStatus())` → spinner / erreur / lecteur (bouton `▶`/`⏸` + barre `modalProgress`, mêmes classes que le lecteur de `add-track-modal`).
+- **`add-track-modal`** / **`delete-track-modal`** / **`preview-track-modal`** : injectent `AdminPoolService`, zéro logique propre — pur reflet des signals du service (`@if (pool.addModalOpen())` / `deleteModalOpen()` / `previewModalOpen()`, overlay + `Escape` pour fermer). `add-track-modal`/`preview-track-modal` injectent en plus `PoolAudioPreviewService` directement pour le lecteur (`delete-track-modal` n'en a pas besoin). `preview-track-modal` : `@switch (pool.previewModalStatus())` → spinner / erreur / lecteur (bouton `▶`/`⏸` + barre `audioPreview.progress()`, mêmes classes que le lecteur de `add-track-modal`).
 
 ## Constantes à connaître
 
@@ -158,7 +172,7 @@ Spec (`actions-tab.component.spec.ts`) : couvre la lecture de `settings.trackCoo
 
 ## Points d'attention pour un futur agent
 
-1. **Ne pas ajouter d'`@Input`/`@Output`** dans cette feature sans bonne raison — le pattern établi est service-as-store scopé à `AdminComponent`. Un nouvel état partagé va dans un des 6 services existants (ou un nouveau service fourni au même niveau), pas en prop-drilling. **Exception tolérée** : injecter un service `core/` (root, hors des services scopés) directement dans un composant quand l'état est global à l'app et non spécifique à l'admin — précédent `actions-tab`/`SettingsService`, repris par `challenges-tab`/`PlayerSessionService`+`ClipboardService`.
+1. **Ne pas ajouter d'`@Input`/`@Output`** dans cette feature sans bonne raison — le pattern établi est service-as-store scopé à `AdminComponent`. Un nouvel état partagé va dans un des 7 services existants (ou un nouveau service fourni au même niveau), pas en prop-drilling. **Exception tolérée** : injecter un service `core/` (root, hors des services scopés) directement dans un composant quand l'état est global à l'app et non spécifique à l'admin — précédent `actions-tab`/`SettingsService`, repris par `challenges-tab`/`PlayerSessionService`+`ClipboardService`.
 2. **`ChallengeDto` local vs généré** — vérifier systématiquement lequel des deux types est importé (`../admin.models` vs `api/api.generated`) avant de manipuler `date`.
 3. **`logout()` ne fait pas d'appel serveur** — purement local (localStorage). Si un jour une invalidation côté back est nécessaire, elle n'existe pas aujourd'hui.
 4. Après toute mutation du pool (ajout/suppression/update), le reload passe toujours par `api.reloadPool()` — jamais de mutation optimiste locale des signals `poolTracks`.
