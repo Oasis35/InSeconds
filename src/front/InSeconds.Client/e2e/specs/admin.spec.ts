@@ -17,6 +17,7 @@ test.describe('Admin — login', () => {
     await page.goto('/login');
     await page.getByPlaceholder('ton@email.com').fill(email);
     await page.getByRole('button', { name: 'Recevoir un lien' }).click();
+    await expect(page.getByText('un lien de connexion vient de t\'être envoyé')).toBeVisible();
 
     const linkUrl = await api.getLastMagicLinkUrl(email);
     const parsed = new URL(linkUrl);
