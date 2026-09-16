@@ -87,7 +87,6 @@ test.describe('Admin — pool', () => {
     await admin.poolFilterPreview().selectOption('missing');
     // 5 morceaux sans preview dans le seed
     await expect(page.getByRole('cell', { name: 'Manquante' })).toHaveCount(5);
-    await expect(page.getByRole('button', { name: '↻ Actualiser' })).toHaveCount(5);
   });
 
   test('filtre statut "Disponible" masque les morceaux utilisés', async ({ page }) => {
@@ -100,24 +99,23 @@ test.describe('Admin — pool', () => {
     await expect(page.getByRole('cell', { name: 'Disponible' }).first()).toBeVisible();
   });
 
-  test('ajoute un morceau via la modale', async ({ page }) => {
+  test('ajoute un morceau via le panneau de recherche', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
     await page.getByRole('button', { name: /Pool/ }).click();
     await admin.addButton().click();
 
-    // Cherche dans la modale (placeholder distinct du filtre pool)
-    const modalSearch = page.getByPlaceholder('Rechercher sur Deezer...');
-    await modalSearch.fill('E2E Track');
+    // Cherche dans le panneau (placeholder distinct du filtre pool)
+    await admin.addPanelSearchInput().fill('E2E Track');
     // FakeDeezerHandler retourne "E2E Track" — attendre le résultat (debounce 300ms + réseau)
     const result = page.getByText('E2E Artist — E2E Track');
     await expect(result).toBeVisible({ timeout: 10000 });
-    await result.click();
-    await admin.modalAddAndCloseButton().click();
+    await admin.addPanelAddButton().click();
 
-    // La modale se ferme et le pool est rechargé
-    await expect(page.getByText('Confirmer la suppression')).not.toBeVisible();
+    // Le tableau du pool est rechargé, le panneau reste ouvert
+    await expect(page.getByRole('cell', { name: 'E2E Artist', exact: true })).toBeVisible();
+    await expect(admin.addPanelSearchInput()).toBeVisible();
   });
 
   test('supprime un morceau individuel avec confirmation', async ({ page }) => {
@@ -156,23 +154,6 @@ test.describe('Admin — pool', () => {
     await expect(admin.deleteModal()).not.toBeVisible();
     // Le morceau est toujours là
     await expect(page.getByRole('cell', { name: 'Sabrina Carpenter', exact: true })).toBeVisible();
-  });
-
-  test('actualise un morceau sans preview — modale pré-remplie', async ({ page }) => {
-    const admin = new AdminPage(page);
-    await admin.goto();
-    await admin.login();
-    await page.getByRole('button', { name: /Pool/ }).click();
-
-    // Filtre sur les manquantes
-    await admin.poolFilterPreview().selectOption('missing');
-    await expect(page.getByRole('button', { name: '↻ Actualiser' }).first()).toBeVisible();
-
-    await page.getByRole('button', { name: '↻ Actualiser' }).first().click();
-
-    // La modale s'ouvre avec le champ de recherche pré-rempli
-    const modalSearch = page.getByPlaceholder('Rechercher sur Deezer...');
-    await expect(modalSearch).not.toHaveValue('');
   });
 
   test('affiche les colonnes cooldown avec les bonnes valeurs', async ({ page }) => {

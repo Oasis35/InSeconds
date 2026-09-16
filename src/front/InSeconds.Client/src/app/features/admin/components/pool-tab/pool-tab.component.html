@@ -18,12 +18,14 @@
         · <span [style.color]="pool.poolDaysColor(pool.poolDaysRemaining())">{{ pool.poolDaysRemaining() }} {{ (pool.poolDaysRemaining() > 1 ? 'admin.pool.runwayDays' : 'admin.pool.runwayDay') | translate }}</span>
       </span>
     }
-    <button (click)="pool.openAddModal(null)"
+    <button (click)="pool.toggleAddPanel()"
       class="text-sm font-medium px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 shrink-0"
       style="background:var(--bg-inactive);color:var(--text-light);border:1px solid var(--border-strong)">
-      {{ 'admin.pool.add' | translate }}
+      {{ (pool.addPanelOpen() ? 'admin.pool.close' : 'admin.pool.add') | translate }}
     </button>
   </div>
+
+  <app-pool-search-panel />
 
   <!-- Filtres -->
   <div class="flex flex-wrap items-center gap-2">
@@ -115,12 +117,6 @@
                         class="text-xs px-2 py-1 rounded transition-colors"
                         style="color:var(--text-indigo);border:1px solid rgba(184,166,255,0.3)"
                         [title]="'admin.pool.listenTitle' | translate">▶</button>
-                      @if (t.hasPreview === false) {
-                        <button (click)="pool.openAddModal(null, t.id, t.artist + ' ' + t.title)"
-                          class="text-xs px-2 py-1 rounded transition-colors"
-                          style="color:var(--color-warn);border:1px solid rgba(251,191,36,0.3)"
-                          [title]="'admin.pool.refreshTitle' | translate">{{ 'admin.pool.refresh' | translate }}</button>
-                      }
                       <button (click)="pool.openDeleteModal(t)"
                         class="text-xs px-2 py-1 rounded transition-colors"
                         style="color:var(--text-muted);border:1px solid var(--border-strong)"
@@ -188,5 +184,4 @@
 </div>
 
 <app-delete-track-modal />
-<app-add-track-modal />
 <app-preview-track-modal />

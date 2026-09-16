@@ -328,6 +328,7 @@
       "delete": "Delete ({{ count }})",
       "availableUsed": "{{ available }} available · {{ used }} used",
       "add": "+ Add",
+      "close": "✕ Close",
       "searchPlaceholder": "Search artist or title...",
       "allPreviews": "All previews",
       "previewOk": "Preview OK",
@@ -347,8 +348,6 @@
       "colUsageCount": "Usage count",
       "colActions": "Actions",
       "ok": "OK",
-      "refresh": "↻ Refresh",
-      "refreshTitle": "Find a version with a preview",
       "listenTitle": "Play the preview",
       "deleteTitle": "Delete",
       "tracksCount": "track(s)",
@@ -392,21 +391,20 @@
       "title": "Play the preview",
       "loading": "Fetching the preview...",
       "error": "No preview available for this track.",
-      "close": "Close"
+      "close": "Close",
+      "playing": "Now playing...",
+      "preview30s": "30s preview"
     },
-    "addModal": {
-      "title": "Add to pool",
+    "addPanel": {
+      "title": "Add a track",
       "searchPlaceholder": "Search on Deezer...",
       "searching": "Searching...",
-      "choose": "Choose",
-      "playing": "Now playing...",
-      "preview30s": "30s preview",
-      "noPreview": "No preview available for this track",
-      "added": "Track added to the pool.",
-      "addError": "Couldn't add this track.",
-      "addTrack": "Add",
-      "refreshAndClose": "Refresh and close",
-      "addAndClose": "Add and close"
+      "alreadyInPool": "Already in pool",
+      "linked": "Linked searches",
+      "unlinked": "Independent searches",
+      "added": "Added",
+      "addError": "Error",
+      "addTrack": "Add"
     }
   }
 }

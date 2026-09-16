@@ -14,7 +14,7 @@ internal sealed class FakeDeezerHandler : HttpMessageHandler
         if (path.StartsWith("/track/", StringComparison.OrdinalIgnoreCase)
             && long.TryParse(path["/track/".Length..], out var id))
         {
-            // IDs >= 9_000_000_000 : morceaux sans preview (pour tester le flux "↻ Actualiser")
+            // IDs >= 9_000_000_000 : morceaux sans preview (pour tester le filtre "Preview manquante"/l'indicateur rouge et le bouton général "Re-vérifier les previews")
             var preview = id >= 9_000_000_000L ? "" : PreviewUrl;
             var json = $$"""
                 {

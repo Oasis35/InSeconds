@@ -38,7 +38,7 @@ describe('PoolAudioPreviewService', () => {
 
   // `toggle()` sur une URL différente pendant la lecture ne fait que mettre en pause
   // (comportement porté tel quel de l'ancien `togglePreviewUrl` d'AdminPoolService) : dans
-  // l'usage réel, les appelants (openAddModal/selectModalTrack/openPreviewModal) appellent
+  // l'usage réel, les appelants (toggleAddPanel/previewSearchResult/openPreviewModal) appellent
   // toujours stop() avant de changer de piste — c'est ce chemin qui est couvert ici.
   it('starts a new track after an explicit stop() when a different url is requested', async () => {
     service.toggle('https://example.com/a.mp3');

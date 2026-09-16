@@ -1,0 +1,63 @@
+@if (pool.addPanelOpen()) {
+  <div class="rounded-xl p-4 flex flex-col gap-3" style="background:var(--bg-surface)">
+    <div class="flex items-center justify-between gap-3">
+      <h3 class="text-sm font-semibold uppercase tracking-wide" style="color:var(--text-light)">{{ 'admin.addPanel.title' | translate }}</h3>
+      <button type="button" (click)="pool.toggleSearchLink()"
+        class="text-xs px-2 py-1 rounded-lg transition-colors flex items-center gap-1 shrink-0"
+        [style.color]="pool.searchLinked() ? 'var(--text-indigo)' : 'var(--text-muted)'"
+        style="border:1px solid var(--border-strong)">
+        {{ pool.searchLinked() ? '🔗' : '🔓' }} {{ (pool.searchLinked() ? 'admin.addPanel.linked' : 'admin.addPanel.unlinked') | translate }}
+      </button>
+    </div>
+
+    <input type="text" [ngModel]="pool.poolSearchQuery()" (ngModelChange)="pool.onPoolSearchChange($event)"
+      [placeholder]="'admin.addPanel.searchPlaceholder' | translate"
+      [attr.aria-label]="'admin.addPanel.searchPlaceholder' | translate"
+      class="rounded-lg px-3 py-2 outline-none text-sm"
+      style="background:var(--bg-inactive);color:var(--text-hi)" />
+
+    @if (pool.poolSearchLoading()) {
+      <p class="text-xs" style="color:var(--text-muted)">{{ 'admin.addPanel.searching' | translate }}</p>
+    }
+
+    @if (pool.poolSearchResults().length > 0) {
+      <ul class="rounded-lg max-h-72 overflow-y-auto flex flex-col" style="background:var(--bg-inactive)">
+        @for (track of pool.poolSearchResults(); track track.deezerTrackId) {
+          <li class="flex items-center gap-3 px-4 py-2.5" style="border-bottom:1px solid var(--border-medium)">
+            <button type="button" (click)="pool.previewSearchResult(track.previewUrl)"
+              [disabled]="!track.previewUrl"
+              class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors text-sm disabled:opacity-30"
+              style="background:var(--bg-primary-dk);color:var(--text-on-primary)">
+              {{ pool.previewingUrl() === track.previewUrl && audioPreview.playing() ? '⏸' : '▶' }}
+            </button>
+            <div class="flex-1 min-w-0 flex flex-col gap-0.5">
+              <span class="text-sm truncate" style="color:var(--text-light)">{{ track.artist }} — {{ track.title }}</span>
+              @if (pool.existingDeezerTrackIds().has(track.deezerTrackId)) {
+                <span class="text-xs" style="color:var(--color-warn)">⚠ {{ 'admin.addPanel.alreadyInPool' | translate }}</span>
+              }
+              @if (pool.previewingUrl() === track.previewUrl) {
+                <div class="w-full rounded-full h-1 mt-0.5" style="background:var(--bg-surface-2)">
+                  <div class="h-1 rounded-full transition-all" style="background:var(--text-indigo)" [style.width.%]="audioPreview.progress()"></div>
+                </div>
+              }
+            </div>
+            <button type="button" (click)="pool.addTrackFromPanel(track)"
+              [disabled]="pool.addingTrackId() === track.deezerTrackId && pool.addToPoolStatus() === 'loading'"
+              class="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors shrink-0 disabled:opacity-50"
+              style="background:var(--bg-primary-dk);color:var(--text-on-primary)">
+              @if (pool.addingTrackId() === track.deezerTrackId && pool.addToPoolStatus() === 'loading') {
+                …
+              } @else if (pool.addingTrackId() === track.deezerTrackId && pool.addToPoolStatus() === 'success') {
+                {{ 'admin.addPanel.added' | translate }}
+              } @else if (pool.addingTrackId() === track.deezerTrackId && pool.addToPoolStatus() === 'error') {
+                {{ 'admin.addPanel.addError' | translate }}
+              } @else {
+                {{ 'admin.addPanel.addTrack' | translate }}
+              }
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+}

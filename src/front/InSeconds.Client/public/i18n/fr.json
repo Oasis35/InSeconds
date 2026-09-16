@@ -328,6 +328,7 @@
       "delete": "Supprimer ({{ count }})",
       "availableUsed": "{{ available }} disponible(s) · {{ used }} utilisé(s)",
       "add": "+ Ajouter",
+      "close": "✕ Fermer",
       "searchPlaceholder": "Rechercher artiste ou titre...",
       "allPreviews": "Toutes les previews",
       "previewOk": "Preview OK",
@@ -347,8 +348,6 @@
       "colUsageCount": "Nb. utilisations",
       "colActions": "Actions",
       "ok": "OK",
-      "refresh": "↻ Actualiser",
-      "refreshTitle": "Chercher une version avec preview",
       "listenTitle": "Écouter l'extrait",
       "deleteTitle": "Supprimer",
       "tracksCount": "morceau(x)",
@@ -392,21 +391,20 @@
       "title": "Écouter l'extrait",
       "loading": "Récupération de l'extrait...",
       "error": "Aucun extrait disponible pour ce morceau.",
-      "close": "Fermer"
+      "close": "Fermer",
+      "playing": "Lecture en cours...",
+      "preview30s": "Preview 30s"
     },
-    "addModal": {
-      "title": "Ajouter au pool",
+    "addPanel": {
+      "title": "Ajouter un morceau",
       "searchPlaceholder": "Rechercher sur Deezer...",
       "searching": "Recherche...",
-      "choose": "Choisir",
-      "playing": "Lecture en cours...",
-      "preview30s": "Preview 30s",
-      "noPreview": "Aucune preview disponible pour ce morceau",
-      "added": "Morceau ajouté au pool.",
-      "addError": "Impossible d'ajouter ce morceau.",
-      "addTrack": "Ajouter",
-      "refreshAndClose": "Actualiser et fermer",
-      "addAndClose": "Ajouter et fermer"
+      "alreadyInPool": "Déjà en pool",
+      "linked": "Recherches liées",
+      "unlinked": "Recherches indépendantes",
+      "added": "Ajouté",
+      "addError": "Erreur",
+      "addTrack": "Ajouter"
     }
   }
 }
