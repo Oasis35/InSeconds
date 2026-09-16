@@ -17,7 +17,7 @@ public sealed class PlayerAuthMiddlewareTests
         return ctx;
     }
 
-    private static IHostEnvironment CreateEnv(string name = Environments.Production)
+    private static IHostEnvironment CreateEnv(string name = "Production")
     {
         var env = Substitute.For<IHostEnvironment>();
         env.EnvironmentName.Returns(name);

@@ -29,18 +29,19 @@ describe('GameFooterComponent', () => {
     component = TestBed.runInInjectionContext(() => new GameFooterComponent());
   }
 
-  beforeEach(() => setup());
-
   afterEach(() => {
     localStorage.clear();
     document.documentElement.lang = '';
   });
 
   it('should expose the current language signal', () => {
+    setup();
     expect(component.currentLang()).toBe('fr');
   });
 
   describe('toggleLanguage()', () => {
+    beforeEach(() => setup());
+
     it('should switch from fr to en', () => {
       component.toggleLanguage();
       expect(component.currentLang()).toBe('en');
