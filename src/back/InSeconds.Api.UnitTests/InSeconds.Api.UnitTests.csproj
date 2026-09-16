@@ -27,6 +27,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../InSeconds.Api/InSeconds.Api.csproj" />
+    <ProjectReference Include="../InSeconds.Deezer/InSeconds.Deezer.csproj" />
   </ItemGroup>
 
 </Project>

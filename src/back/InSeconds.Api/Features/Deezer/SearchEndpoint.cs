@@ -1,5 +1,5 @@
 using InSeconds.Api.Common.Text;
-using InSeconds.Api.Infrastructure.Deezer;
+using InSeconds.Deezer;
 
 namespace InSeconds.Api.Features.Deezer;
 

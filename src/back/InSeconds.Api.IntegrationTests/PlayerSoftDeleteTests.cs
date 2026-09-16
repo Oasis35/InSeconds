@@ -40,7 +40,7 @@ public class PlayerSoftDeleteTests(IntegrationTestFactory factory) : IAsyncLifet
             .Select(s => s.PlayerId)
             .FirstAsync();
         var player = await db.Players.FirstAsync(p => p.Id == playerId);
-        player.IsDeleted = true;
+        player.Delete(DateTime.UtcNow);
         await db.SaveChangesAsync();
 
         // Un nouveau client sans cookie (nouveau joueur guest) lit les stats
@@ -68,7 +68,7 @@ public class PlayerSoftDeleteTests(IntegrationTestFactory factory) : IAsyncLifet
         var player1 = await db.Players.SingleAsync(p => p.Id != devPlayerId);
 
         // Soft-delete
-        player1.IsDeleted = true;
+        player1.Delete(DateTime.UtcNow);
         await db.SaveChangesAsync();
 
         // Nouveau client (cookie différent) → nouveau guest

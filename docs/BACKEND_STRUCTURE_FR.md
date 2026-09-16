@@ -30,17 +30,20 @@ src/back/InSeconds.Api/
 │   ├── GameSessionAnswer.cs
 │   └── Setting.cs
 ├── Infrastructure/
-│   ├── Persistence/
-│   │   ├── ApplicationDbContext.cs
-│   │   ├── Configurations/                # 1 IEntityTypeConfiguration<T> par entité
-│   │   └── Migrations/
-│   └── Deezer/                            # DeezerClient (HttpClient typed) + CachedDeezerClient (IMemoryCache)
+│   └── Persistence/
+│       ├── ApplicationDbContext.cs
+│       ├── Configurations/                # 1 IEntityTypeConfiguration<T> par entité
+│       └── Migrations/
 ├── Common/
-│   ├── Auth/                              # CookieAuthService + PlayerAuthMiddleware
+│   ├── Auth/                              # CookieAuthService + PlayerAuthMiddleware + PlayerQueryExtensions
+│   ├── Sessions/                          # GameSessionQueryExtensions
 │   ├── Scoring/                           # ScoreCalculator
 │   ├── Settings/                          # AppSettings, SettingsService, AppDbConfigurationSource
 │   └── Text/                              # TextNormalizer + TextNormalizationHelpers (Levenshtein, accents, regex)
 └── Program.cs
+
+src/back/InSeconds.Deezer/                   # projet séparé — DeezerClient/CachedDeezerClient/FakeDeezerHandler,
+                                              # référencé par InSeconds.Api via ProjectReference
 ```
 
 ### Règles dures (ne pas dévier)
@@ -64,17 +67,22 @@ Toutes les entités dans `Domain/` (sans annotations EF). Contraintes/index/casc
 ```csharp
 public sealed class Player
 {
-    public Guid Id { get; set; }            // URL-safe, exposable dans les routes
-    public bool IsGuest { get; set; }
-    public string? Pseudo { get; set; }     // null pour guests, ≤20 chars sinon
-    public Guid AuthToken { get; set; }     // secret porté par le cookie HTTP-only
-    public string? Email { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime? LastSeenAt { get; set; }
-    public bool IsDeleted { get; set; }     // soft-delete
-    public DateTime? DeletedAt { get; set; }
-    public int CurrentStreak { get; set; }  // jours consécutifs joués
-    public DateOnly? LastPlayedDate { get; set; }
+    public Guid Id { get; private set; }            // URL-safe, exposable dans les routes
+    public bool IsGuest { get; private set; }
+    public string? Pseudo { get; private set; }     // null pour guests, ≤20 chars sinon
+    public Guid AuthToken { get; private set; }     // secret porté par le cookie HTTP-only
+    public string? Email { get; private set; }
+    public DateTime CreatedAt { get; private set; }
+    public DateTime? LastSeenAt { get; private set; }
+    public bool IsDeleted { get; private set; }     // soft-delete
+    public DateTime? DeletedAt { get; private set; }
+    public int CurrentStreak { get; private set; }  // jours consécutifs joués
+    public DateOnly? LastPlayedDate { get; private set; }
+    public bool IsAdmin { get; private set; }
+
+    // Mutations via méthodes métier : CreateGuest() (factory), RecordSeen(now),
+    // RecordChallengeCompletion(challengeDate), LinkToAccount(email, pseudo),
+    // UpdatePseudo(pseudo), ChangeEmail(newEmail), Delete(deletedAt).
 }
 ```
 
@@ -82,7 +90,8 @@ public sealed class Player
 - `IX_Players_LastSeenAt` (filtré `NOT NULL`) — requêtes `BuildPlayerBreakdown` dans `GetAdminStats`
 - `CK_Players_GuestPseudo` : invariant `IsGuest ⇔ Pseudo IS NULL` garanti en BD
 - **Global query filter EF** `!IsDeleted` propagé en cascade sur sessions/answers
-- `CurrentStreak` et `LastPlayedDate` mis à jour dans `SubmitAnswer/Handler.cs` à la complétion (parties complètes uniquement) — basés sur `DailyChallenge.Date`, pas sur la date de complétion UTC : `LastPlayedDate` stocke la date du défi, streak +1 si le défi complété est celui du lendemain du dernier défi complété
+- `CurrentStreak`/`LastPlayedDate` mis à jour via `player.RecordChallengeCompletion(challengeDate)` (appelé dans `SubmitAnswer/Handler.cs` à la complétion, parties complètes uniquement) — basés sur `DailyChallenge.Date`, pas sur la date de complétion UTC : `LastPlayedDate` stocke la date du défi, streak +1 si le défi complété est celui du lendemain du dernier défi complété
+- **Setters tous `private`** (invariants protégés par méthode) — `IsAdmin` n'a aucune méthode publique de mutation, l'attribution du rôle admin se fait hors application (SQL manuel en prod, cf. CLAUDE.md racine)
 
 ### Track
 
@@ -129,17 +138,20 @@ Contraintes : `UNIQUE (DailyChallengeId, Position)` + `UNIQUE (DailyChallengeId,
 ```csharp
 public sealed class GameSession
 {
-    public int Id { get; set; }
-    public Guid PlayerId { get; set; }
-    public int DailyChallengeId { get; set; }
-    public int TotalScore { get; set; }
-    public decimal TotalDurationSeconds { get; set; }  // somme des paliers joués
-    public DateTime CreatedAt { get; set; }
-    public SessionStatus Status { get; set; }          // Pending=0, Completed=1, Abandoned=2 (bouton), Expired=3 (expiry paresseuse)
-    public DateTime? CompletedAt { get; set; }
-    public DateTime? AbandonedAt { get; set; }
-    public int? CurrentTrackId { get; set; }            // anti-cheat : track en cours
-    public decimal? CurrentTrackMinListenedSeconds { get; set; } // anti-cheat : durée max déjà écoutée
+    public int Id { get; private set; }
+    public Guid PlayerId { get; private set; }
+    public int DailyChallengeId { get; private set; }
+    public int TotalScore { get; private set; }
+    public decimal TotalDurationSeconds { get; private set; }  // somme des paliers joués
+    public DateTime CreatedAt { get; private set; }
+    public SessionStatus Status { get; private set; }          // Pending=0, Completed=1, Abandoned=2 (bouton), Expired=3 (expiry paresseuse)
+    public DateTime? CompletedAt { get; private set; }
+    public DateTime? AbandonedAt { get; private set; }
+    public int? CurrentTrackId { get; private set; }            // anti-cheat : track en cours
+    public decimal? CurrentTrackMinListenedSeconds { get; private set; } // anti-cheat : durée max déjà écoutée
+
+    // Mutations via méthodes métier : StartNew() (factory), AddAnswerScore(score, duration),
+    // Complete(now), Abandon(now), Expire(now), ReleaseTrackLock(), UpdateTrackLock(trackId, seconds).
 }
 ```
 
@@ -151,7 +163,8 @@ public sealed class GameSession
 - **Anti-rejeu** : `Completed`, `Abandoned` ou `Expired` → 409. `Pending` → reprise avec `IsResuming=true`.
 - **Complétion auto** dans `SubmitAnswer/Handler.cs` : quand `réponses soumises + 1 >= TracksPerChallenge`.
 - **Histogramme « en combien de temps les autres ont trouvé »** : `SubmitAnswerResponse`, `TrackStat` (`GET /api/stats/today`) **et `TrackStatsDto` (`GET /api/admin/challenge-stats`)** portent `GuessTimeDistribution` (`DurationBucketDto(decimal DurationSeconds, int Count)[]` — type dans `Common/Stats/` : un bucket par palier `AllowedDurationsSeconds`, comptes des bonnes réponses artiste-ou-titre pour ce morceau) et `NotFoundCount`. `SubmitAnswer` : requête agrégée dédiée `GroupBy(ListenedDurationSeconds)` sur les réponses correctes, combinée en mémoire avec la réponse courante. `Stats/Today` : requête parallèle `GroupBy((Position, ListenedDurationSeconds))` sur les sessions complétées, `NotFoundCount = TotalAnswers - CorrectAnswers`. `GetChallengeStats` (`BuildChallengeStats` — endpoint scindé de `GetAdminStats` le 2026-08-29) : 2ᵉ requête séquentielle `GroupBy((DailyChallengeId, Position, ListenedDurationSeconds))` sur les 30 derniers défis, `NotFoundCount` scalaire dans la projection principale. La projection sur les paliers est mutualisée dans `Common/Stats/GuessTimeDistribution.Build`. `TrackStat` porte aussi **`int? Score`** (score du joueur pour ce morceau, `null` sans session complétée). Front : `GuessTimeChartComponent` sur l'écran de révélation du blind round, **en pop-up dans `TrackResultsListComponent`** (récap final + écran « déjà joué », clic sur le `+score`) et **en pop-up dans `ChallengesTabComponent`** (onglet Défis admin, icône par carte morceau, `showCounts=true` → chiffres au-dessus des barres).
-- **Expiry paresseuse** : les sessions `Pending` de la veille sont passées à **`Expired`** (pas `Abandoned`) au prochain appel `StartSession`.
+- **Expiry paresseuse** : les sessions `Pending` de la veille sont passées à **`Expired`** (pas `Abandoned`) au prochain appel `StartSession` — via `session.Expire(now)`.
+- **Setters tous `private`** : `Complete`/`Abandon`/`Expire` posent `Status` + le bon timestamp ensemble (jamais l'un sans l'autre), `UpdateTrackLock` garantit que le minimum anti-cheat n'est jamais réduit.
 
 ### GameSessionAnswer
 
@@ -285,23 +298,9 @@ Le **HTML** de l'email (lien de connexion) vit dans `Common/Email/Templates/*.ht
 
 `IsTrustedOrigin(ctx, allowedOrigins)` — anti-CSRF léger, vérifie `Origin`/`Referer` contre `Cors:AllowedOrigins` déjà existant. Appliqué uniquement sur `VerifyMagicLink` (cookie posé sur un `POST`) — les routes admin ne l'utilisent pas (auth admin = rôle `Player.IsAdmin` sur le cookie joueur classique, cf. CLAUDE.md racine).
 
-### DeezerClient
+### DeezerClient / CachedDeezerClient (projet séparé `InSeconds.Deezer`)
 
-`GetPreviewUrlAsync(trackId)` + `ProbePreviewAsync(trackId)` + `GetTrackInfoAsync(trackId)` + `SearchTracksAsync(query)`. Extrait le `CoverHash` depuis l'URL Deezer via `ExtractCoverHash()`.
-
-**Résilience** : le `HttpClient` typé est configuré avec `AddStandardResilienceHandler` (`Program.cs`, hors `Testing`) — timeout 4s/tentative, 15s total, retry exponentiel (429/5xx) + circuit breaker. Sans cela, un appel Deezer lent pourrait bloquer `StartSession` jusqu'au timeout `HttpClient` par défaut (100s).
-
-**Gestion d'erreurs** : chaque méthode logge en `Warning` sur échec HTTP ou preview vide, et **re-throw `OperationCanceledException`** (l'annulation n'est jamais transformée en `null`/`[]`). Pas de `catch {}` nu.
-
-**Erreurs Deezer en HTTP 200** : Deezer renvoie quota / rate-limit / track supprimé en **200 OK avec un payload `{"error":{"code":...}}`** — ça contourne le handler de résilience. Les trois méthodes détectent ce payload et le traitent comme un échec. `ProbePreviewAsync` retourne un `DeezerPreviewProbe(Succeeded, PreviewUrl)` qui distingue l'échec de requête (`Succeeded=false` : quota code 4, service busy 700… → état Deezer inconnu) de la réponse déterminée (`Succeeded=true` : preview présente, ou vide, ou code 800 "no data" = track supprimé). C'est ce qui permet au `PreviewStatusRefresher` de ne jamais écrire un faux `HasPreview=false` sur un simple échec réseau.
-
-### CachedDeezerClient
-
-Cache `IMemoryCache` devant `DeezerClient` pour les données partagées entre joueurs (utilisé par `StartSession` et le proxy `/api/deezer/search` ; **pas** côté admin ni dans `PreviewStatusRefresher`, qui ont besoin de l'état Deezer réel).
-
-- **Preview URLs** : TTL 24h **borné par l'expiration de la signature CDN** de l'URL (`?hdnea=exp=<unix>~...`) moins 1h de marge. Une URL signée expirée provoque un 403 CDN à la lecture côté joueur — un TTL fixe qui dépasse la validité de la signature reproduit ce bug.
-- **Recherches autocomplete** : TTL 1h, clé normalisée (trim + lowercase + `limit`, paramètre optionnel défaut 10 — l'endpoint public sur-demande 20 pour compenser la dédup).
-- Ne cache jamais une preview absente ni un résultat de recherche vide (un échec Deezer transitoire ne doit pas être mémorisé).
+Extraits d'`InSeconds.Api/Infrastructure/Deezer/` vers un projet class library indépendant, `src/back/InSeconds.Deezer/` — premier pas modular monolith (module isolé, zéro dépendance entrante d'autre code). `InSeconds.Api` les consomme via `ProjectReference` + `using InSeconds.Deezer;`, l'enregistrement DI passe par `builder.Services.AddDeezerHttpClient(useFakeHandler:, baseUrl:)`. Détail exhaustif (résilience, gestion d'erreurs, `ProbePreviewAsync`/`DeezerPreviewProbe`, TTL de cache, `FakeDeezerHandler`) : [`src/back/InSeconds.Deezer/CLAUDE.md`](../src/back/InSeconds.Deezer/CLAUDE.md).
 
 ## Observabilité
 

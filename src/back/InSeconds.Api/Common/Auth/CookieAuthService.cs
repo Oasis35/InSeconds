@@ -19,18 +19,12 @@ public sealed class CookieAuthService(
 
         if (player is null)
         {
-            player = new Player
-            {
-                Id        = Guid.NewGuid(),
-                IsGuest   = true,
-                AuthToken = Guid.NewGuid(),
-                CreatedAt = DateTime.UtcNow,
-            };
+            player = Player.CreateGuest(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow);
             db.Players.Add(player);
         }
         else
         {
-            player.LastSeenAt = DateTime.UtcNow;
+            player.RecordSeen(DateTime.UtcNow);
         }
 
         await db.SaveChangesAsync(ct);
@@ -45,7 +39,7 @@ public sealed class CookieAuthService(
         if (player is null)
             return null;
 
-        player.LastSeenAt = DateTime.UtcNow;
+        player.RecordSeen(DateTime.UtcNow);
         await db.SaveChangesAsync(ct);
 
         return new PlayerAuthResolution(player.Id, player.IsAdmin);

@@ -1,11 +1,11 @@
 using System.Net;
 using System.Text;
 using FluentAssertions;
-using InSeconds.Api.Infrastructure.Deezer;
+using InSeconds.Deezer;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
-namespace InSeconds.Api.UnitTests.Infrastructure.Deezer;
+namespace InSeconds.Api.UnitTests.Deezer;
 
 public sealed class DeezerClientTests
 {

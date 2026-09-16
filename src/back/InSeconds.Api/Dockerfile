@@ -8,6 +8,7 @@ WORKDIR /src
 # Restore en couche dédiée pour profiter du cache Docker au build initial.
 COPY global.json ./
 COPY InSeconds.Api/InSeconds.Api.csproj InSeconds.Api/
+COPY InSeconds.Deezer/InSeconds.Deezer.csproj InSeconds.Deezer/
 RUN dotnet restore InSeconds.Api/InSeconds.Api.csproj
 
 # Polling nécessaire : les events de fichiers ne traversent pas

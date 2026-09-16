@@ -94,7 +94,7 @@ public static class E2EResetEndpoint
             var player = await db.Players.SingleAsync(p => p.Id == playerId, ct);
             if (!player.IsAdmin)
             {
-                player.IsAdmin = true;
+                player.PromoteToAdminForTesting();
                 await db.SaveChangesAsync(ct);
             }
 
@@ -291,15 +291,11 @@ public static class E2EResetEndpoint
         tracks[14].LastUsedDate = today.AddDays(-15); tracks[14].UsageCount = 1;                    // Ed Sheeran — valeur intermédiaire
         db.SaveChanges();
 
-        var devPlayer = new Player
-        {
-            Id             = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001"),
-            IsGuest        = true,
-            AuthToken      = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000001"),
-            CreatedAt      = DateTime.UtcNow,
-            CurrentStreak  = 2,
-            LastPlayedDate = today.AddDays(-1),
-        };
+        var devPlayer = Player.CreateGuest(
+            Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001"),
+            Guid.Parse("bbbbbbbb-0000-0000-0000-000000000001"),
+            DateTime.UtcNow);
+        devPlayer.RestoreStreakForTesting(2, today.AddDays(-1));
         db.Players.Add(devPlayer);
 
         db.SaveChanges();
@@ -310,18 +306,16 @@ public static class E2EResetEndpoint
             var completedAt = DateTime.SpecifyKind(
                 days[dayOffset].ToDateTime(TimeOnly.FromTimeSpan(TimeSpan.FromHours(12, 5, 0))),
                 DateTimeKind.Utc);
-            db.GameSessions.Add(new GameSession
-            {
-                PlayerId             = devPlayer.Id,
-                DailyChallengeId     = challenge.Id,
-                TotalScore           = 2550,
-                TotalDurationSeconds = 1.5m,
-                CreatedAt            = DateTime.SpecifyKind(
+            db.GameSessions.Add(GameSession.Restore(
+                playerId: devPlayer.Id,
+                dailyChallengeId: challenge.Id,
+                totalScore: 2550,
+                totalDurationSeconds: 1.5m,
+                createdAt: DateTime.SpecifyKind(
                     days[dayOffset].ToDateTime(TimeOnly.FromTimeSpan(TimeSpan.FromHours(12))),
                     DateTimeKind.Utc),
-                Status      = Domain.SessionStatus.Completed,
-                CompletedAt = completedAt,
-            });
+                status: Domain.SessionStatus.Completed,
+                completedAt: completedAt));
         }
         db.SaveChanges();
     }
@@ -335,15 +329,9 @@ public static class E2EResetEndpoint
         {
             var email = $"user{i}@dev.local";
 
-            db.Players.Add(new Player
-            {
-                Id        = Guid.NewGuid(),
-                IsGuest   = false,
-                Email     = email,
-                Pseudo    = $"User{i}",
-                AuthToken = Guid.NewGuid(),
-                CreatedAt = DateTime.UtcNow,
-            });
+            var player = Player.CreateGuest(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow);
+            player.LinkToAccount(email, $"User{i}");
+            db.Players.Add(player);
         }
 
         db.SaveChanges();

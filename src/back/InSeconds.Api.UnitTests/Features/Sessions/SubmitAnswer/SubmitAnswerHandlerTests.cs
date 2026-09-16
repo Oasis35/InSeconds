@@ -36,14 +36,7 @@ public sealed class SubmitAnswerHandlerTests
     // Builders
     // ---------------------------------------------------------------------------
 
-    private static Player BuildPlayer() => new()
-    {
-        Id        = FakePlayerId,
-        IsGuest   = true,
-        AuthToken = Guid.NewGuid(),
-        CreatedAt = DateTime.UtcNow,
-        IsDeleted = false,
-    };
+    private static Player BuildPlayer() => Player.CreateGuest(FakePlayerId, Guid.NewGuid(), DateTime.UtcNow);
 
     private static (DailyChallenge challenge, DailyChallengeTrack challengeTrack) BuildChallengeWithTrack(
         string artist = "Daft Punk",
@@ -79,16 +72,8 @@ public sealed class SubmitAnswerHandlerTests
         return (challenge, challengeTrack);
     }
 
-    private static GameSession BuildSession(int id = 1, int challengeId = 1, SessionStatus status = SessionStatus.Pending) => new()
-    {
-        Id                   = id,
-        PlayerId             = FakePlayerId,
-        DailyChallengeId     = challengeId,
-        TotalScore           = 0,
-        TotalDurationSeconds = 0,
-        CreatedAt            = DateTime.UtcNow,
-        Status               = status,
-    };
+    private static GameSession BuildSession(int id = 1, int challengeId = 1, SessionStatus status = SessionStatus.Pending) =>
+        GameSession.Restore(playerId: FakePlayerId, dailyChallengeId: challengeId, id: id, createdAt: DateTime.UtcNow, status: status);
 
     private static async Task<(GameSession session, DailyChallengeTrack challengeTrack)> SeedAsync(
         ApplicationDbContext db,
@@ -385,8 +370,7 @@ public sealed class SubmitAnswerHandlerTests
         var yesterday = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1);
 
         var player = BuildPlayer();
-        player.CurrentStreak  = 5;
-        player.LastPlayedDate = yesterday.AddDays(-1);
+        player.RestoreStreakForTesting(5, yesterday.AddDays(-1));
         db.Players.Add(player);
 
         var (challenge, _) = BuildChallengeWithTrack();
@@ -417,8 +401,7 @@ public sealed class SubmitAnswerHandlerTests
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
         var player = BuildPlayer();
-        player.CurrentStreak  = 5;
-        player.LastPlayedDate = today.AddDays(-3);
+        player.RestoreStreakForTesting(5, today.AddDays(-3));
         db.Players.Add(player);
 
         var (challenge, _) = BuildChallengeWithTrack();
@@ -468,16 +451,9 @@ public sealed class SubmitAnswerHandlerTests
     {
         // Une vraie GameSession (joueur non supprimé) est nécessaire : le query filter
         // global sur GameSessionAnswers (!a.GameSession.Player.IsDeleted) masque sinon la ligne.
-        db.GameSessions.Add(new GameSession
-        {
-            Id                   = gameSessionId,
-            PlayerId             = FakePlayerId,
-            DailyChallengeId     = 1,
-            TotalScore           = 0,
-            TotalDurationSeconds = 0,
-            CreatedAt            = DateTime.UtcNow,
-            Status               = SessionStatus.Completed,
-        });
+        db.GameSessions.Add(GameSession.Restore(
+            playerId: FakePlayerId, dailyChallengeId: 1, id: gameSessionId,
+            createdAt: DateTime.UtcNow, status: SessionStatus.Completed));
         db.GameSessionAnswers.Add(new GameSessionAnswer
         {
             GameSessionId           = gameSessionId,

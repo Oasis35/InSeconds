@@ -1,5 +1,5 @@
 using InSeconds.Api.Common.Auth;
-using InSeconds.Api.Infrastructure.Deezer;
+using InSeconds.Deezer;
 
 namespace InSeconds.Api.Features.Admin.Challenges.DeezerSearch;
 

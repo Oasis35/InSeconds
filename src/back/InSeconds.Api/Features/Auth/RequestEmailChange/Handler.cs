@@ -15,16 +15,17 @@ public sealed class RequestEmailChangeHandler(
 
     public async Task<IResult> Handle(RequestEmailChangeCommand command, CancellationToken cancellationToken)
     {
-        var player = await db.Players.FirstOrDefaultAsync(p => p.Id == command.PlayerId, cancellationToken);
-        if (player is null)
+        var (player, failure) = await db.LoadLinkedPlayerAsync(command.PlayerId, cancellationToken);
+
+        if (failure == PlayerLookupFailure.NotFound)
             return Results.NotFound();
 
-        if (player.IsGuest)
+        if (failure == PlayerLookupFailure.IsGuest)
             return Results.StatusCode(StatusCodes.Status403Forbidden);
 
         var newEmail = command.NewEmail.Trim().ToLowerInvariant();
 
-        if (newEmail == player.Email)
+        if (newEmail == player!.Email)
             return Results.BadRequest(new { error = "same_email", message = "C'est déjà ton adresse actuelle." });
 
         var emailTaken = await db.Players.AnyAsync(p => p.Email == newEmail && p.Id != command.PlayerId, cancellationToken);

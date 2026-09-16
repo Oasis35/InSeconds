@@ -1,3 +1,4 @@
+using InSeconds.Api.Common.Auth;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -8,15 +9,15 @@ public sealed class UpdatePseudoHandler(ApplicationDbContext db)
 {
     public async Task<IResult> Handle(UpdatePseudoCommand command, CancellationToken cancellationToken)
     {
-        var player = await db.Players.FirstOrDefaultAsync(p => p.Id == command.PlayerId, cancellationToken);
+        var (player, failure) = await db.LoadLinkedPlayerAsync(command.PlayerId, cancellationToken);
 
-        if (player is null)
+        if (failure == PlayerLookupFailure.NotFound)
             return Results.NotFound();
 
-        if (player.IsGuest)
+        if (failure == PlayerLookupFailure.IsGuest)
             return Results.StatusCode(403);
 
-        player.Pseudo = command.Pseudo;
+        player!.UpdatePseudo(command.Pseudo);
 
         try
         {

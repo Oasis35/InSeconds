@@ -4,7 +4,7 @@ using FluentAssertions;
 using Xunit;
 using InSeconds.Api.Domain;
 using InSeconds.Api.Features.Admin.Tracks.AddTrack;
-using InSeconds.Api.Infrastructure.Deezer;
+using InSeconds.Deezer;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;

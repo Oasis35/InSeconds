@@ -26,7 +26,7 @@ public class AdminCookieAuthorizationTests(IntegrationTestFactory factory) : IAs
     {
         var client = factory.CreateClient();
         await LinkPlayerAsync(client, TestEmail, "AdminCookieTest");
-        await SetIsAdminAsync(TestEmail, true);
+        await SetIsAdminAsync(TestEmail);
 
         var me = await client.GetAsync("/api/admin/me");
         Assert.Equal(HttpStatusCode.OK, me.StatusCode);
@@ -79,12 +79,12 @@ public class AdminCookieAuthorizationTests(IntegrationTestFactory factory) : IAs
         resp.EnsureSuccessStatusCode();
     }
 
-    private async Task SetIsAdminAsync(string email, bool isAdmin)
+    private async Task SetIsAdminAsync(string email)
     {
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var player = await db.Players.SingleAsync(p => p.Email == email);
-        player.IsAdmin = isAdmin;
+        player.PromoteToAdminForTesting();
         await db.SaveChangesAsync();
     }
 }

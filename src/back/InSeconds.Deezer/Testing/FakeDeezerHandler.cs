@@ -1,4 +1,4 @@
-namespace InSeconds.Api.Infrastructure.Deezer;
+namespace InSeconds.Deezer.Testing;
 
 internal sealed class FakeDeezerHandler : HttpMessageHandler
 {

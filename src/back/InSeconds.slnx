@@ -2,6 +2,7 @@
   <Project Path="InSeconds.Api.IntegrationTests/InSeconds.Api.IntegrationTests.csproj" />
   <Project Path="InSeconds.Api.UnitTests/InSeconds.Api.UnitTests.csproj" />
   <Project Path="InSeconds.Api/InSeconds.Api.csproj" />
+  <Project Path="InSeconds.Deezer/InSeconds.Deezer.csproj" />
   <Project Path="../../docker-compose.dcproj">
     <Build />
   </Project>

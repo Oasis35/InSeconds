@@ -1,7 +1,9 @@
+using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Logging;
 
-namespace InSeconds.Api.Infrastructure.Deezer;
+namespace InSeconds.Deezer;
 
 public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger)
 {

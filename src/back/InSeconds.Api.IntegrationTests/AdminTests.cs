@@ -429,7 +429,7 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var gs = await db.GameSessions.FindAsync(session.SessionId);
             var yChallenge = await db.DailyChallenges.FirstAsync(c => c.Date == yesterday);
-            gs!.DailyChallengeId = yChallenge.Id;
+            gs!.RelocateToChallengeForTesting(yChallenge.Id);
             await db.SaveChangesAsync();
         }
 

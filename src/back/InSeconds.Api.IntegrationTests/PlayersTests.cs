@@ -105,9 +105,9 @@ public class PlayersTests(IntegrationTestFactory factory) : IAsyncLifetime
             Assert.True(challenges.Count >= 3, "Le seed E2E doit fournir au moins 3 DailyChallenges (J-2/J-1/aujourd'hui).");
 
             db.GameSessions.AddRange(
-                new GameSession { PlayerId = me.PlayerId, DailyChallengeId = challenges[0].Id, Status = SessionStatus.Completed, TotalScore = 100, CreatedAt = DateTime.UtcNow, CompletedAt = DateTime.UtcNow },
-                new GameSession { PlayerId = me.PlayerId, DailyChallengeId = challenges[1].Id, Status = SessionStatus.Abandoned, TotalScore = 0, CreatedAt = DateTime.UtcNow, AbandonedAt = DateTime.UtcNow },
-                new GameSession { PlayerId = me.PlayerId, DailyChallengeId = challenges[2].Id, Status = SessionStatus.Pending, TotalScore = 0, CreatedAt = DateTime.UtcNow }
+                GameSession.Restore(playerId: me.PlayerId, dailyChallengeId: challenges[0].Id, status: SessionStatus.Completed, totalScore: 100, createdAt: DateTime.UtcNow, completedAt: DateTime.UtcNow),
+                GameSession.Restore(playerId: me.PlayerId, dailyChallengeId: challenges[1].Id, status: SessionStatus.Abandoned, totalScore: 0, createdAt: DateTime.UtcNow, abandonedAt: DateTime.UtcNow),
+                GameSession.Restore(playerId: me.PlayerId, dailyChallengeId: challenges[2].Id, status: SessionStatus.Pending, totalScore: 0, createdAt: DateTime.UtcNow)
             );
             await db.SaveChangesAsync();
         }

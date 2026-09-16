@@ -3,7 +3,7 @@ using System.Text;
 using FluentAssertions;
 using InSeconds.Api.Domain;
 using InSeconds.Api.Features.ChallengeGeneration;
-using InSeconds.Api.Infrastructure.Deezer;
+using InSeconds.Deezer;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
