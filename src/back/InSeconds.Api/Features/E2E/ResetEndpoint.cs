@@ -76,9 +76,11 @@ public static class E2EResetEndpoint
         .WithTags("E2E");
 
         // Raccourci E2E-only pour obtenir un vrai cookie authToken sur un compte IsAdmin=true,
-        // sans passer par le flux magic-link complet à chaque test. Crée (ou réutilise) un
-        // Player lié dédié aux tests puis pose son cookie via IssueCookie — après ça, le test
-        // navigue normalement sur /admin avec ce cookie, exactement comme un vrai admin.
+        // sans passer par le flux magic-link complet à chaque test. Promeut le Player déjà
+        // résolu (ou créé) depuis le cookie courant du navigateur — jamais un compte admin fixe
+        // distinct — pour que l'identité reste continue si le navigateur a déjà joué avant
+        // d'appeler cet endpoint (ex. tests qui vérifient qu'un joueur se reconnaît "toi" dans
+        // les stats admin après avoir joué puis s'être connecté en admin sur le même navigateur).
         routes.MapPost("/api/e2e/login-as-admin", async (
             HttpContext ctx,
             ApplicationDbContext db,
@@ -88,30 +90,14 @@ public static class E2EResetEndpoint
             if (!ctx.GetPlayerIsAdmin())
                 return Results.Unauthorized();
 
-            const string email = "e2e-admin@test.local";
-            var player = await db.Players.FirstOrDefaultAsync(p => p.Email == email, ct);
-            if (player is null)
-            {
-                player = new Player
-                {
-                    Id        = Guid.NewGuid(),
-                    IsGuest   = false,
-                    Email     = email,
-                    Pseudo    = "E2EAdmin",
-                    AuthToken = Guid.NewGuid(),
-                    CreatedAt = DateTime.UtcNow,
-                    IsAdmin   = true,
-                };
-                db.Players.Add(player);
-            }
-            else if (!player.IsAdmin)
+            var playerId = await cookieAuth.ResolveOrCreatePlayerAsync(ctx, ct);
+            var player = await db.Players.SingleAsync(p => p.Id == playerId, ct);
+            if (!player.IsAdmin)
             {
                 player.IsAdmin = true;
+                await db.SaveChangesAsync(ct);
             }
 
-            await db.SaveChangesAsync(ct);
-
-            cookieAuth.IssueCookie(ctx, player.AuthToken);
             return Results.Ok();
         })
         .WithName("E2ELoginAsAdmin")
