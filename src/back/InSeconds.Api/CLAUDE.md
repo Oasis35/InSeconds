@@ -138,7 +138,7 @@ Body `UpdateTrackCooldownBody(TrackCooldownDays)`. Validator : `TrackCooldownDay
 
 ### Admin/Tracks/UpdateTrack — `PUT /api/admin/tracks/{id}`
 
-Body `UpdateTrackBody(DeezerTrackId)`. 404 introuvable, **409** `track_in_use` si utilisé, **409** `deezer_id_taken` si le nouveau `DeezerTrackId` déjà pris par un autre track, **422** si Deezer ne renvoie rien, sinon met à jour Artist/Title/CoverHash/HasPreview.
+Body `UpdateTrackBody(DeezerTrackId)`. 404 introuvable, **409** `track_in_use` si utilisé, **409** `deezer_id_taken` si le nouveau `DeezerTrackId` déjà pris par un autre track, **422** si Deezer ne renvoie rien, sinon met à jour Artist/Title/CoverHash/HasPreview. **Plus appelé depuis le front** (2026-09-16) — le bouton "↻ Actualiser" par ligne du pool admin a été retiré au profit du bouton général de refresh previews (cf. `features/admin/CLAUDE.md`) ; endpoint et tests d'intégration conservés inchangés.
 
 ### ChallengeGeneration (pas un endpoint)
 

@@ -34,7 +34,7 @@
               {{ audioPreview.playing() ? '⏸' : '▶' }}
             </button>
             <div class="flex-1 flex flex-col gap-1">
-              <div class="text-xs" style="color:var(--text-muted)">{{ (audioPreview.playing() ? 'admin.addModal.playing' : 'admin.addModal.preview30s') | translate }}</div>
+              <div class="text-xs" style="color:var(--text-muted)">{{ (audioPreview.playing() ? 'admin.previewModal.playing' : 'admin.previewModal.preview30s') | translate }}</div>
               <div class="w-full rounded-full h-1" style="background:var(--bg-surface-2)">
                 <div class="h-1 rounded-full transition-all" style="background:var(--text-indigo)" [style.width.%]="audioPreview.progress()"></div>
               </div>

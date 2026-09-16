@@ -64,7 +64,7 @@ src/front/InSeconds.Client/
 │   │   │   │   │   ├── admin-state.service.ts  # signals partagés (selectedDay, activeTab + visitedTabs, poolReloadTrigger, …)
 │   │   │   │   │   ├── admin-api.service.ts    # 5 rxResource (pool, stats, challenge-stats, challenges, search) — chargement paresseux par onglet
 │   │   │   │   │   ├── admin-stats.service.ts  # état dashboard + onglet Défis (navigation, formatage dates, …)
-│   │   │   │   │   ├── admin-pool.service.ts   # filtres/pagination/sélection pool, modales ajout/suppression
+│   │   │   │   │   ├── admin-pool.service.ts   # filtres/pagination/sélection pool, panneau de recherche/ajout, modale suppression
 │   │   │   │   │   └── admin-actions.service.ts # generateToday(), refreshPreviews(), updateTrackCooldownDays()
 │   │   │   │   └── components/
 │   │   │   │       ├── admin-login/
@@ -72,7 +72,7 @@ src/front/InSeconds.Client/
 │   │   │   │       ├── pool-tab/
 │   │   │   │       ├── challenges-tab/
 │   │   │   │       ├── actions-tab/
-│   │   │   │       ├── add-track-modal/
+│   │   │   │       ├── pool-search-panel/
 │   │   │   │       └── delete-track-modal/
 │   │   │   ├── game/
 │   │   │   │   ├── game.component.ts           # orchestration session — ~370 lignes

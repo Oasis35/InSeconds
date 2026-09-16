@@ -5,12 +5,12 @@ import { AdminPoolService } from '../../services/admin-pool.service';
 import { PoolAudioPreviewService } from '../../services/pool-audio-preview.service';
 
 @Component({
-  selector: 'app-add-track-modal',
+  selector: 'app-pool-search-panel',
   imports: [FormsModule, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  templateUrl: './add-track-modal.component.html',
+  templateUrl: './pool-search-panel.component.html',
 })
-export class AddTrackModalComponent {
+export class PoolSearchPanelComponent {
   protected readonly pool = inject(AdminPoolService);
   protected readonly audioPreview = inject(PoolAudioPreviewService);
 }

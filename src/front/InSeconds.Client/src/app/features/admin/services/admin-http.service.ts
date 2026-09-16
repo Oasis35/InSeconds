@@ -39,7 +39,6 @@ export class AdminHttpService {
     return this.http.put<{ trackCooldownDays: number }>(`${this.base}/settings/track-cooldown-days`, { trackCooldownDays: days });
   }
   addTrack(deezerTrackId: number) { return this.http.post(`${this.base}/tracks`, { deezerTrackId }); }
-  updateTrack(id: number, deezerTrackId: number) { return this.http.put(`${this.base}/tracks/${id}`, { deezerTrackId }); }
   deleteTrack(id: number) { return this.http.delete(`${this.base}/tracks/${id}`); }
   searchDeezer(q: string) { return this.http.get<DeezerTrackInfo[]>(`${this.base}/deezer-search?q=${encodeURIComponent(q)}`); }
   getPoolTracks() { return this.http.get<PoolTracksResponse>(`${this.base}/tracks`); }

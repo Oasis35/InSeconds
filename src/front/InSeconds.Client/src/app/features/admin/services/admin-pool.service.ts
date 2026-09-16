@@ -8,7 +8,7 @@ import { DeezerTrackInfo, PoolTrackDto } from '../admin.models';
 type PoolTrackWithFlag = PoolTrackDto & { isAvailable: boolean };
 export type PoolSortColumn = 'artist' | 'title' | 'preview' | 'status' | 'lastUsedDate' | 'unlockDate' | 'usageCount';
 
-/** État de l'onglet pool : filtres, pagination, sélection, modales ajout/suppression. */
+/** État de l'onglet pool : filtres, pagination, sélection, panneau de recherche/ajout, modale suppression. */
 @Injectable()
 export class AdminPoolService {
   private readonly api = inject(AdminApiService);
@@ -35,16 +35,20 @@ export class AdminPoolService {
 
   readonly selectedTrackIds = signal<Set<number>>(new Set());
 
-  // --- modale ajout ---
+  // --- panneau de recherche/ajout (bandeau intégré, remplace l'ancienne modale) ---
   readonly addToPoolStatus = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
   private addToPoolStatusTimer: ReturnType<typeof setTimeout> | null = null;
-  readonly addModalOpen = signal(false);
-  readonly addModalTrack = signal<DeezerTrackInfo | null>(null);
-  readonly addModalTrackIdToUpdate = signal<number | null>(null);
+  readonly addPanelOpen = signal(false);
+  readonly addingTrackId = signal<number | null>(null);
+  readonly previewingUrl = signal<string | null>(null);
+  // Indépendantes par défaut ; liées, la saisie dans l'un des deux champs (filtre pool /
+  // recherche Deezer) met à jour l'autre. Les deux champs restent affichés en permanence
+  // dans les deux états — seule la propagation de valeur change (cf. admin/CLAUDE.md).
+  readonly searchLinked = signal(false);
 
   // --- modale écoute (preview d'une ligne du pool) ---
   // Le lecteur audio (play/pause/progress) vit dans PoolAudioPreviewService, partagé
-  // entre cette modale et la modale d'ajout (une seule instance Audio() active à la fois).
+  // entre cette modale et le panneau de recherche/ajout (une seule instance Audio() active à la fois).
   readonly previewModalOpen = signal(false);
   readonly previewModalTrack = signal<PoolTrackDto | null>(null);
   readonly previewModalStatus = signal<'loading' | 'ready' | 'error'>('loading');
@@ -112,6 +116,11 @@ export class AdminPoolService {
     }
   }
 
+  // Détection de doublon dans le panneau de recherche Deezer : DeezerTrackId exact,
+  // disponible ou utilisé (peu importe où le morceau vit dans le pool).
+  readonly existingDeezerTrackIds = computed(() =>
+    new Set(this.allTracks().map(t => t.deezerTrackId)));
+
   // Autonomie du pool : mêmes critères que DailyChallengeGenerator côté back
   // (jamais utilisé + preview active), calculée depuis les données déjà chargées
   // — pas d'appel serveur supplémentaire.
@@ -136,7 +145,11 @@ export class AdminPoolService {
   });
 
   // --- filtres ---
-  setPoolFilter(text: string): void { this.poolFilterText.set(text); this.allTracksPage.set(0); }
+  setPoolFilter(text: string): void {
+    this.poolFilterText.set(text);
+    this.allTracksPage.set(0);
+    if (this.searchLinked()) this.poolSearchQuery.set(text);
+  }
   setPoolFilterStatus(v: 'all' | 'available' | 'used'): void { this.poolFilterStatus.set(v); this.allTracksPage.set(0); }
   setPoolFilterPreview(v: 'all' | 'ok' | 'missing'): void { this.poolFilterPreview.set(v); this.allTracksPage.set(0); }
   setPoolFilterLastUsedFrom(v: string): void { this.poolFilterLastUsedFrom.set(v); this.allTracksPage.set(0); }
@@ -152,7 +165,17 @@ export class AdminPoolService {
     }
   }
 
-  onPoolSearchChange(q: string): void { this.poolSearchQuery.set(q); this.allTracksPage.set(0); }
+  onPoolSearchChange(q: string): void {
+    this.poolSearchQuery.set(q);
+    this.allTracksPage.set(0);
+    if (this.searchLinked()) this.poolFilterText.set(q);
+  }
+
+  toggleSearchLink(): void {
+    const linked = !this.searchLinked();
+    this.searchLinked.set(linked);
+    if (linked) this.poolSearchQuery.set(this.poolFilterText());
+  }
 
   // --- sélection ---
   toggleSelection(id: number): void {
@@ -163,30 +186,23 @@ export class AdminPoolService {
 
   clearSelection(): void { this.selectedTrackIds.set(new Set()); }
 
-  // --- modale ajout ---
-  openAddModal(track: DeezerTrackInfo | null, trackIdToUpdate: number | null = null, prefillSearch = ''): void {
-    this.audioPreview.stop();
-    this.addToPoolStatus.set('idle');
-    this.addModalTrack.set(track);
-    this.addModalTrackIdToUpdate.set(trackIdToUpdate);
-    if (prefillSearch) this.poolSearchQuery.set(prefillSearch);
-    this.addModalOpen.set(true);
+  // --- panneau de recherche/ajout ---
+  toggleAddPanel(): void {
+    const open = !this.addPanelOpen();
+    this.addPanelOpen.set(open);
+    if (!open) {
+      this.audioPreview.stop();
+      this.previewingUrl.set(null);
+      this.poolSearchQuery.set('');
+      this.addingTrackId.set(null);
+      this.addToPoolStatus.set('idle');
+    }
   }
 
-  selectModalTrack(track: DeezerTrackInfo): void {
-    if (this.addModalTrack()?.deezerTrackId === track.deezerTrackId) return;
-    this.audioPreview.stop();
-    this.addToPoolStatus.set('idle');
-    this.addModalTrack.set(track);
-  }
-
-  closeAddModal(): void {
-    this.audioPreview.stop();
-    this.addModalOpen.set(false);
-    this.addModalTrack.set(null);
-    this.addModalTrackIdToUpdate.set(null);
-    this.addToPoolStatus.set('idle');
-    this.poolSearchQuery.set('');
+  previewSearchResult(url: string | null | undefined): void {
+    if (!url) return;
+    this.previewingUrl.set(url);
+    this.audioPreview.toggle(url);
   }
 
   // --- modale écoute ---
@@ -223,36 +239,25 @@ export class AdminPoolService {
     this.previewModalStatus.set('loading');
   }
 
-  addToPoolFromModal(andClose: boolean): void {
-    const track = this.addModalTrack();
-    if (!track) return;
+  addTrackFromPanel(track: DeezerTrackInfo): void {
+    this.addingTrackId.set(track.deezerTrackId);
     this.addToPoolStatus.set('loading');
 
-    const trackIdToUpdate = this.addModalTrackIdToUpdate();
-    const req$ = trackIdToUpdate === null
-      ? this.api.addTrack(track.deezerTrackId)
-      : this.api.updateTrack(trackIdToUpdate, track.deezerTrackId);
-
-    req$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.api.addTrack(track.deezerTrackId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.addToPoolStatus.set('success');
         this.api.reloadPool();
-        if (andClose) {
-          this.poolSearchQuery.set('');
-          this.closeAddModal();
-        } else {
-          if (this.addToPoolStatusTimer) clearTimeout(this.addToPoolStatusTimer);
-          this.addToPoolStatusTimer = setTimeout(() => {
-            if (this.addToPoolStatus() === 'success') this.addToPoolStatus.set('idle');
-            this.addToPoolStatusTimer = null;
-          }, 2000);
-        }
+        if (this.addToPoolStatusTimer) clearTimeout(this.addToPoolStatusTimer);
+        this.addToPoolStatusTimer = setTimeout(() => {
+          if (this.addToPoolStatus() === 'success') { this.addToPoolStatus.set('idle'); this.addingTrackId.set(null); }
+          this.addToPoolStatusTimer = null;
+        }, 2000);
       },
       error: () => {
         this.addToPoolStatus.set('error');
         if (this.addToPoolStatusTimer) clearTimeout(this.addToPoolStatusTimer);
         this.addToPoolStatusTimer = setTimeout(() => {
-          if (this.addToPoolStatus() === 'error') this.addToPoolStatus.set('idle');
+          if (this.addToPoolStatus() === 'error') { this.addToPoolStatus.set('idle'); this.addingTrackId.set(null); }
           this.addToPoolStatusTimer = null;
         }, 3000);
       },

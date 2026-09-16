@@ -160,30 +160,6 @@ describe('AdminHttpService', () => {
     });
   });
 
-  describe('updateTrack()', () => {
-    it('should PUT to /api/admin/tracks/{id}', () => {
-      let completed = false;
-      service.updateTrack(7, 999888).subscribe(() => (completed = true));
-
-      const req = httpMock.expectOne(`${base}/tracks/7`);
-      expect(req.request.method).toBe('PUT');
-      expect(req.request.body).toEqual({ deezerTrackId: 999888 });
-      req.flush({});
-
-      expect(completed).toBeTrue();
-    });
-
-    it('should propagate 409 when deezerTrackId already exists', () => {
-      let error: any;
-      service.updateTrack(7, 999888).subscribe({ error: e => (error = e) });
-
-      const req = httpMock.expectOne(`${base}/tracks/7`);
-      req.flush('Conflict', { status: 409, statusText: 'Conflict' });
-
-      expect(error.status).toBe(409);
-    });
-  });
-
   describe('deleteTrack()', () => {
     it('should DELETE /api/admin/tracks/{id}', () => {
       let completed = false;

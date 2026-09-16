@@ -83,17 +83,13 @@ export class AdminPage {
     return this.page.getByRole('button', { name: 'Enregistrer' });
   }
 
-  // Modale ajout (placeholder distinct du filtre pool)
-  modalSearchInput(): Locator {
+  // Panneau de recherche/ajout (bandeau intégré, placeholder distinct du filtre pool)
+  addPanelSearchInput(): Locator {
     return this.page.getByPlaceholder('Rechercher sur Deezer...');
   }
 
-  modalAddAndCloseButton(): Locator {
-    return this.page.getByRole('button', { name: 'Ajouter et fermer' });
-  }
-
-  modalUpdateAndCloseButton(): Locator {
-    return this.page.getByRole('button', { name: 'Actualiser et fermer' });
+  addPanelAddButton(): Locator {
+    return this.page.getByRole('button', { name: 'Ajouter', exact: true });
   }
 
   // Suppression
