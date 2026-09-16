@@ -62,7 +62,7 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - `CookieAuthService` — résout/crée Player guest, cookie HttpOnly `SameSite=Lax` en prod (cf. CLAUDE.md racine, piège 23)
 - **Création paresseuse du Player** (2026-08-21) — un simple chargement de page ne crée plus de ligne `Players` : seuls `POST /api/sessions` (démarrer une partie) et `GET /api/players/me` (admin) créent un Player à la demande ; `PlayerAuthMiddleware` se contente de résoudre un Player existant sans jamais en créer. Migration `PurgeUnplayedPlayers` (one-shot) pour nettoyer les Players existants sans aucune session. **Depuis** : la création de la session elle-même est aussi décalée — l'écran d'accueil est piloté par un peek lecture seule `GET /api/sessions/today` (ne crée rien), `POST /api/sessions` n'est appelé qu'au clic « Commencer à jouer » / « Reprendre ».
 - `playerAuthInterceptor` Angular — `withCredentials: true` sur toutes les requêtes joueur
-- `DeezerClient` — recherche + preview + extraction `CoverHash`
+- `DeezerClient` (projet séparé `InSeconds.Deezer`) — recherche + preview + extraction `CoverHash`
 - Settings via `IOptions<AppSettings>` chargé depuis la BD au boot (ADO.NET brut)
 - `Track.CoverHash` + `AppSettings.CoverUrlTemplate` (URL reconstruite à la volée)
 - Page admin (`/admin`) — login, pool (sous-onglets + indicateur preview + popup ajout avec lecteur), défis, stats dashboard, reset sessions
@@ -108,7 +108,7 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - **Headers `Cache-Control` nginx** (2026-08-15) — `nginx.conf` (prod) pose `immutable, max-age=31536000` sur les bundles JS/CSS hashés et `no-cache` (revalidation systématique) sur `i18n/*.json`/`index.html`/routes SPA — corrige un incident de cache navigateur affichant des clés de traduction en brut après déploiement (piège 20 du [`CLAUDE.md`](../CLAUDE.md)) ; premier smoke test post-déploiement du projet, job CI dédié `nginx-headers` qui construit et sert réellement l'image Docker de prod
 - **Nettoyage des titres affichés au-delà de l'autocomplete** (2026-08-17) — `TextNormalizationHelpers.CleanDisplayTitle` (extrait de `SearchEndpoint.CleanTitle`) retire les parenthèses/crochets de tout titre de morceau révélé après coup : réponse par morceau + récap final (`SubmitAnswer`), reprise de partie (`StartSession`), écran "déjà joué" (`Stats/Today`), onglet Défis admin — sections Stats par défi (`GetAdminStats`) et Historique (`GetChallenges`, corrigé après coup le même jour). `Track.Title` en base et la recherche admin restent bruts (nécessaires pour le re-sync Deezer)
 
-- **Cache Deezer** — `CachedDeezerClient` (`IMemoryCache`) : preview URLs (TTL borné par l'expiration de la signature CDN, sinon 403 à la lecture) + recherches autocomplete (1h)
+- **Cache Deezer** — `CachedDeezerClient` (`IMemoryCache`, projet séparé `InSeconds.Deezer`) : preview URLs (TTL borné par l'expiration de la signature CDN, sinon 403 à la lecture) + recherches autocomplete (1h)
 
 🚧 **À faire** : élargir les smoke tests post-deploy (un seul couvert pour l'instant : headers de cache nginx), tests mobiles, polish, éventuel passage du cache Deezer sur Redis (multi-instances). Voir [`TACHES.md`](TACHES.md).
 
