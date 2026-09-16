@@ -304,6 +304,7 @@ docker run --rm --network shared-postgres -e PGPASSWORD="$infra_pw" postgres:17-
 ## Conventions Git
 
 - **Pas de `Co-Authored-By: Claude` dans les commits**, jamais
+- **Author ET committer de CHAQUE commit doivent être l'utilisateur, jamais Claude** — l'identité git par défaut de cet environnement (`user.name`/`user.email`, ex. `Claude <noreply@anthropic.com>`) ne doit **jamais** apparaître dans l'historique, ni comme author ni comme committer, aucune exception. `git commit --author="<nom> <email>"` seul est **insuffisant** : ça ne fixe que l'author, le committer retombe silencieusement sur `user.name`/`user.email` de la config git locale (ne jamais modifier cette config globale, cf. règles de sécurité git). Poser explicitement les deux avant chaque commit, ex. `GIT_AUTHOR_NAME="..." GIT_AUTHOR_EMAIL="..." GIT_COMMITTER_NAME="..." GIT_COMMITTER_EMAIL="..." git commit -m "..."` (variables d'environnement locales à la commande, pas de `git config`). Vérifier après coup avec `git log --format='%an <%ae> | %cn <%ce>' -1`. Si des commits déjà poussés ont un committer incorrect, les corriger (`git filter-branch --env-filter ...` sur la plage concernée, jamais `rebase -i`) puis `git push --force-with-lease` sur la branche de travail (jamais sur `main`).
 - Préférer commits atomiques, messages clairs (FR ou EN, peu importe)
 - Branche de travail : `feat/<sujet>` (ex: `feat/redis-cache`). Cible des PR : `main`
 
