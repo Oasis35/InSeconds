@@ -83,10 +83,6 @@ routes.MapGet("/api/admin/me", (HttpContext ctx) =>
 
 **Bypass Testing** : `Authorization: Bearer admin-token` en environnement `Testing` force `IsAdmin=true` — vit dans `PlayerAuthMiddleware` (double garde `IsEnvironment("Testing")` + constante fixe, jamais atteignable en Dev/Production), utilisé par les helpers de tests d'intégration (`IntegrationTestFactory`, `AdminTests.cs`, etc.) et les fixtures E2E (`e2e/fixtures/api-client.ts`, `e2e/pages/admin.page.ts`). `POST /api/e2e/login-as-admin` (Testing-only, `Features/E2E/ResetEndpoint.cs`) promeut le Player déjà résolu (ou créé) depuis le cookie **courant** du navigateur (`ICookieAuthService.ResolveOrCreatePlayerAsync`) — jamais un compte admin fixe distinct, pour que l'identité reste continue si le navigateur a déjà joué avant d'appeler cet endpoint. Utilisé par `AdminPage.login()` en E2E pour tester le vrai flux cookie plutôt que le seul bypass Bearer.
 
-### Admin/SendTestEmail — `POST /api/admin/send-test-email`
-
-Outil de diagnostic email. `SendTestEmailHandler` construit un email minimal inline (pas de template dédié — sujet `"[Test] IN//SECONDS"`) et appelle `IEmailSender.SendAsync(...)`. **Contrairement à `RequestMagicLink`, l'échec n'est PAS avalé** : `catch (Exception ex)` retourne `Results.Json({error="email_send_failed", message=ex.Message}, 500)` — c'est tout l'intérêt du bouton (remonter la vraie erreur Resend : clé API invalide, domaine d'expéditeur non vérifié...). Aucun effet de bord sur les données métier (pas de `Player`/`MagicLinkToken` créé).
-
 ### Admin/RefreshPreviews — `POST /api/admin/refresh-previews`
 
 Délègue à `PreviewStatusRefresher.RefreshAsync` (voir ChallengeGeneration). `RefreshPreviewsResponse(Checked, Updated, Failed)`.

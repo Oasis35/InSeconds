@@ -46,5 +46,4 @@ export class AdminHttpService {
   getStats(day: string) { return this.http.get<AdminStatsResponse>(`${this.base}/stats?date=${day}`); }
   getChallengeStats() { return this.http.get<ChallengeStatsResponse>(`${this.base}/challenge-stats`); }
   getChallenges() { return this.http.get<ChallengeDto[]>(`${this.base}/challenges`); }
-  sendTestEmail(toEmail: string) { return this.http.post(`${this.base}/send-test-email`, { toEmail }); }
 }

@@ -65,7 +65,7 @@ src/front/InSeconds.Client/
 │   │   │   │   │   ├── admin-api.service.ts    # 5 rxResource (pool, stats, challenge-stats, challenges, search) — chargement paresseux par onglet
 │   │   │   │   │   ├── admin-stats.service.ts  # état dashboard + onglet Défis (navigation, formatage dates, …)
 │   │   │   │   │   ├── admin-pool.service.ts   # filtres/pagination/sélection pool, modales ajout/suppression
-│   │   │   │   │   └── admin-actions.service.ts # generateToday(), reset(), refreshPreviews(), sendTestEmail()
+│   │   │   │   │   └── admin-actions.service.ts # generateToday(), refreshPreviews(), updateTrackCooldownDays()
 │   │   │   │   └── components/
 │   │   │   │       ├── admin-login/
 │   │   │   │       ├── dashboard-tab/

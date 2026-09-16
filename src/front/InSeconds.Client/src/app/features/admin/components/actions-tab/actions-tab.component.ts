@@ -12,6 +12,4 @@ import { SettingsService } from '../../../../core/services/settings.service';
 export class ActionsTabComponent {
   protected readonly actions = inject(AdminActionsService);
   protected readonly settings = inject(SettingsService);
-
-  protected testEmail = '';
 }
