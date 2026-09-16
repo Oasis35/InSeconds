@@ -1,3 +1,4 @@
+using InSeconds.Deezer.Testing;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 

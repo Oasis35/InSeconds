@@ -18,7 +18,7 @@ Projet séparé (pas un sous-dossier d'`InSeconds.Api`) — premier pas vers un 
 - `GetPreviewUrlAsync` : clé `deezer:preview:{id}`, **ne cache jamais une absence**. `ComputeTtl` extrait `exp=<unix>` de l'URL signée (regex `[?&~=]exp=(\d+)`) et borne le TTL : `ttl = min(PreviewTtl, expiration - now - SignatureSafetyMargin)` — cf. piège 14 racine (bug prod 2026-07-03, TTL fixe 24h > validité signature).
 - `SearchTracksAsync` : clé `deezer:search:{limit}:{query normalisée}` (le `limit` fait partie de la clé depuis l'ajout du paramètre `limit` optionnel — `DeezerClient.SearchTracksAsync(query, ct, limit=10)`), ne cache que si résultats non vides.
 
-## `FakeDeezerHandler` (Testing, `internal` — jamais référencé directement depuis `InSeconds.Api`)
+## `Testing/FakeDeezerHandler` (`InSeconds.Deezer.Testing`, `internal` — jamais référencé directement depuis `InSeconds.Api`)
 
 Remplace le vrai `HttpClient`. `/track/{id}` : preview vide si `id >= 9_000_000_000`, sinon URL `http://localhost:{E2E_FRONT_PORT ?? 5174}/test-audio.mp3`. Gère aussi `/search` (réponse par défaut à un seul morceau, ou déclencheur `dedup-test` → 3 variantes parenthésées + 1 morceau distinct) — consommé côté tests par la section E2E du CLAUDE.md backend.
 
