@@ -29,8 +29,7 @@ src/front/InSeconds.Client/
 │   │   │   ├── guards/
 │   │   │   │   └── unsaved-game.guard.ts   # CanDeactivate : confirme la sortie en cours de partie
 │   │   │   ├── interceptors/
-│   │   │   │   ├── player-auth.interceptor.ts  # withCredentials: true sur /api (hors /admin)
-│   │   │   │   └── admin-auth.interceptor.ts   # Bearer token sur /api/admin
+│   │   │   │   └── player-auth.interceptor.ts  # withCredentials: true sur /api, admin compris
 │   │   │   ├── models/
 │   │   │   │   └── game.models.ts         # re-exports depuis api.generated.ts
 │   │   │   └── services/
@@ -351,7 +350,7 @@ Shell ~45 lignes. Fournit les 7 services via `providers: [AdminHttpService, Admi
 
 Délègue à 8 sous-composants :
 
-- **`AdminLoginComponent`** : simple écran d'état (2026-09-16, plus de formulaire) — injecte `PlayerSessionService.isLinked` : pas connecté → invite à se connecter via `/login` ; connecté mais pas admin → « Accès refusé » + retour au jeu
+- **`AdminLoginComponent`** : simple écran d'état, pas de formulaire — injecte `PlayerSessionService.isLinked` : pas connecté → invite à se connecter via `/login` ; connecté mais pas admin → « Accès refusé » + retour au jeu
 - **`DashboardTabComponent`** : injecte `AdminStatsService` — sélecteur de jour + KPIs, activité 30 jours, répartition joueurs
 - **`PoolTabComponent`** : injecte `AdminPoolService`, contient `AddTrackModalComponent` + `DeleteTrackModalComponent` + `PreviewTrackModalComponent` ; affiche l'**autonomie du pool** (« X jours de défis restants ») en ligne à côté du compteur disponible/utilisé
 - **`ChallengesTabComponent`** : injecte `AdminStatsService` — **stats par défi** (`challengeStats()` = `GET /api/admin/challenge-stats`, chargé à l'ouverture de l'onglet ; accordéon médiane/min/max, taux artiste/titre par morceau ; guard `challengeStatsLoading()` → spinner) + historique des défis (`challenges()` = `GET /api/admin/challenges`), avec un navigateur ‹ Mois Année › unique en haut de l'onglet. Injecte aussi `PlayerSessionService`/`ClipboardService` directement (`core/`) pour afficher, sous chaque défi, un chip par joueur (`c.players`, toutes sessions) affichant `p.pseudo ?? shortId(p.playerId)` (pseudo pour un compte lié, ID tronqué en fallback pour un guest), cliquable pour copier l'ID complet, avec surbrillance + libellé « toi » automatiques si l'ID correspond au navigateur courant — repérer les joueurs qui reviennent
@@ -373,7 +372,7 @@ Services admin (`features/admin/services/`) :
 
 ### `playerAuthInterceptor`
 
-Ajoute `withCredentials: true` sur **toutes** les requêtes vers `/api`, `/api/admin` compris. Nécessaire pour envoyer le cookie HTTP-only joueur en cross-origin (front sur `inseconds.cc`, API sur `api.inseconds.cc` — deux sous-domaines distincts). Depuis la refonte profils admin (2026-09-16), l'auth admin est un rôle sur ce même cookie joueur (`Player.IsAdmin`) — il n'y a plus d'interceptor ni de token dédié pour `/api/admin`.
+Ajoute `withCredentials: true` sur **toutes** les requêtes vers `/api`, `/api/admin` compris. Nécessaire pour envoyer le cookie HTTP-only joueur en cross-origin (front sur `inseconds.cc`, API sur `api.inseconds.cc` — deux sous-domaines distincts). L'auth admin est un rôle sur ce même cookie joueur (`Player.IsAdmin`) — pas d'interceptor ni de token dédié pour `/api/admin`.
 
 ## Conventions
 

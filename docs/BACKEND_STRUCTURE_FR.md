@@ -283,7 +283,7 @@ Le **HTML** de l'email (lien de connexion) vit dans `Common/Email/Templates/*.ht
 
 ### OriginValidator
 
-`IsTrustedOrigin(ctx, allowedOrigins)` — anti-CSRF léger, vérifie `Origin`/`Referer` contre `Cors:AllowedOrigins` déjà existant. Appliqué uniquement sur `VerifyMagicLink` (cookie posé sur un `POST`) — les routes admin ne l'utilisent plus depuis la refonte profils admin (2026-09-16, auth admin = rôle `Player.IsAdmin` sur le cookie joueur classique, cf. CLAUDE.md racine).
+`IsTrustedOrigin(ctx, allowedOrigins)` — anti-CSRF léger, vérifie `Origin`/`Referer` contre `Cors:AllowedOrigins` déjà existant. Appliqué uniquement sur `VerifyMagicLink` (cookie posé sur un `POST`) — les routes admin ne l'utilisent pas (auth admin = rôle `Player.IsAdmin` sur le cookie joueur classique, cf. CLAUDE.md racine).
 
 ### DeezerClient
 
