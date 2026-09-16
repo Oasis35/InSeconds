@@ -283,7 +283,7 @@ Le **HTML** de l'email (lien de connexion) vit dans `Common/Email/Templates/*.ht
 
 ### OriginValidator
 
-`IsTrustedOrigin(ctx, allowedOrigins)` — anti-CSRF léger, vérifie `Origin`/`Referer` contre `Cors:AllowedOrigins` déjà existant. Appliqué sur `VerifyMagicLink` (cookie posé sur un `POST`) et sur l'authentification admin (`LoginEndpoint.IsAdminAuthenticated`, défense en profondeur).
+`IsTrustedOrigin(ctx, allowedOrigins)` — anti-CSRF léger, vérifie `Origin`/`Referer` contre `Cors:AllowedOrigins` déjà existant. Appliqué uniquement sur `VerifyMagicLink` (cookie posé sur un `POST`) — les routes admin ne l'utilisent plus depuis la refonte profils admin (2026-09-16, auth admin = rôle `Player.IsAdmin` sur le cookie joueur classique, cf. CLAUDE.md racine).
 
 ### DeezerClient
 
@@ -322,7 +322,7 @@ Les deux endpoints sont publics (mappés avant `PlayerAuthMiddleware`). Logging 
 | `Settings/GetSettings` | `GET /api/settings` | Expose les settings publics (paliers, timer, scores) |
 | `Players/GetCurrentPlayer` | `GET /api/players/me?peek=` | `peek=false` (défaut, usage admin) : résout **et crée si besoin** le `Player` (`ResolveOrCreatePlayerAsync`) — affiche/copie son propre ID, reconnaissance dans les listes de joueurs. `peek=true` (usage joueur, `PlayerSessionService.load()`) : lecture seule, **ne crée jamais** de Player/cookie. Réponse : `PlayerId`/`IsGuest`/`Email?`/`Pseudo?`/`CurrentStreak`/`GamesPlayed` (2026-09 — `GamesPlayed` calculé, pas stocké : `COUNT` des `GameSessions.Completed`) |
 | `Players/UpdatePseudo` | `PUT /api/players/me/pseudo` | Change le pseudo du compte lié (écran `/profile`, 2026-09) — 403 si guest, 409 `pseudo_taken`, même allowlist regex que `VerifyMagicLink` |
-| `Admin/Login` | `POST /api/admin/login` | Génère un Bearer token admin |
+| `Admin/CheckAdminAuth` | `GET /api/admin/me` | Vérifie `ctx.GetPlayerIsAdmin()` (rôle sur le cookie joueur, cf. CLAUDE.md racine piège 5) |
 | `Admin/Tracks/GetTracks` | `GET /api/admin/tracks` | Liste Available / Used (`TrackDto.HasPreview` lu depuis la DB) |
 | `Admin/Tracks/AddTrack` | `POST /api/admin/tracks` | Ajoute un morceau au pool (upsert sur DeezerTrackId) |
 | `Admin/Tracks/DeleteTrack` | `DELETE /api/admin/tracks/{id}` | Supprime un morceau du pool s'il n'est pas utilisé dans un défi (404/409) |

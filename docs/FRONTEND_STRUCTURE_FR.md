@@ -61,7 +61,7 @@ src/front/InSeconds.Client/
 │   │   │   │   ├── admin.component.ts          # shell (~45 lignes) — injecte les 7 services
 │   │   │   │   ├── admin.models.ts             # interfaces partagées (TrackDto, ChallengeDto, …)
 │   │   │   │   ├── services/
-│   │   │   │   │   ├── admin-http.service.ts   # HTTP brut + signal authenticated + login/logout/checkAuth
+│   │   │   │   │   ├── admin-http.service.ts   # HTTP brut + signal authenticated + logout/checkAuth
 │   │   │   │   │   ├── admin-state.service.ts  # signals partagés (selectedDay, activeTab + visitedTabs, poolReloadTrigger, …)
 │   │   │   │   │   ├── admin-api.service.ts    # 5 rxResource (pool, stats, challenge-stats, challenges, search) — chargement paresseux par onglet
 │   │   │   │   │   ├── admin-stats.service.ts  # état dashboard + onglet Défis (navigation, formatage dates, …)
@@ -115,7 +115,7 @@ src/front/InSeconds.Client/
 
 ```typescript
 providers: [
-  provideHttpClient(withFetch(), withInterceptors([playerAuthInterceptor, adminAuthInterceptor])),
+  provideHttpClient(withFetch(), withInterceptors([playerAuthInterceptor])),
   { provide: API_BASE_URL, useValue: environment.apiUrl },
   ApiClient,
   provideAppInitializer(() => inject(SettingsService).load()),
@@ -125,7 +125,6 @@ providers: [
 ]
 ```
 
-- `playerAuthInterceptor` passe avant `adminAuthInterceptor` — ordre important
 - `LanguageService.init()` détecte la langue (`localStorage` → `navigator.language` → FR) et appelle `translate.use()`
 
 ## Palette CSS — variables `:root`
@@ -352,7 +351,7 @@ Shell ~45 lignes. Fournit les 7 services via `providers: [AdminHttpService, Admi
 
 Délègue à 8 sous-composants :
 
-- **`AdminLoginComponent`** : formulaire login, `loginStatus` signal local
+- **`AdminLoginComponent`** : simple écran d'état (2026-09-16, plus de formulaire) — injecte `PlayerSessionService.isLinked` : pas connecté → invite à se connecter via `/login` ; connecté mais pas admin → « Accès refusé » + retour au jeu
 - **`DashboardTabComponent`** : injecte `AdminStatsService` — sélecteur de jour + KPIs, activité 30 jours, répartition joueurs
 - **`PoolTabComponent`** : injecte `AdminPoolService`, contient `AddTrackModalComponent` + `DeleteTrackModalComponent` + `PreviewTrackModalComponent` ; affiche l'**autonomie du pool** (« X jours de défis restants ») en ligne à côté du compteur disponible/utilisé
 - **`ChallengesTabComponent`** : injecte `AdminStatsService` — **stats par défi** (`challengeStats()` = `GET /api/admin/challenge-stats`, chargé à l'ouverture de l'onglet ; accordéon médiane/min/max, taux artiste/titre par morceau ; guard `challengeStatsLoading()` → spinner) + historique des défis (`challenges()` = `GET /api/admin/challenges`), avec un navigateur ‹ Mois Année › unique en haut de l'onglet. Injecte aussi `PlayerSessionService`/`ClipboardService` directement (`core/`) pour afficher, sous chaque défi, un chip par joueur (`c.players`, toutes sessions) affichant `p.pseudo ?? shortId(p.playerId)` (pseudo pour un compte lié, ID tronqué en fallback pour un guest), cliquable pour copier l'ID complet, avec surbrillance + libellé « toi » automatiques si l'ID correspond au navigateur courant — repérer les joueurs qui reviennent
@@ -362,7 +361,7 @@ Délègue à 8 sous-composants :
 - **`PreviewTrackModalComponent`** : injecte `AdminPoolService` + `PoolAudioPreviewService` — modale d'écoute d'une ligne du pool (recherche Deezer par artiste/titre, joue la preview trouvée)
 
 Services admin (`features/admin/services/`) :
-- `AdminHttpService` — HTTP brut + signal `authenticated` + `login`/`logout`/`checkAuth`
+- `AdminHttpService` — HTTP brut + signal `authenticated` + `logout`/`checkAuth` (plus de `login`, cf. `AdminLoginComponent` — `logout()` délègue à `PlayerSessionService.logout()`)
 - `AdminStateService` — signals partagés (`selectedDay`, `poolSearchQuery`, `poolReloadTrigger`, `challengesReloadTrigger`, `allowedEmailsReloadTrigger`) + pilotage des onglets (`activeTab`, `setActiveTab`, `hasVisited` sur le `Set` privé `visitedTabs`) ; injecte `ActivatedRoute`/`Router` pour synchroniser `activeTab` avec `?tab=` dans l'URL (restauration au F5, `replaceUrl` pour ne pas empiler l'historique)
 - `AdminApiService` — 6 rxResource (`poolSearch`, `poolTracks`, `stats`, `challengeStats`, `challenges`, `allowedEmails`) + computed accessors ; délègue HTTP à `AdminHttpService`, état à `AdminStateService`. **Chargement paresseux** : `poolTracks`/`challengeStats`/`challenges`/`allowedEmails` gardés sur `authenticated() && hasVisited(<onglet>)` (`params` retourne `undefined` tant que la condition n'est pas remplie, ce qui laisse la resource idle plutôt que de partir en 401 avant connexion) ; `stats` (Dashboard) gardé sur `authenticated()` seul. `challengeStats` et `challenges` partagent le trigger `challengesReloadTrigger` → `reloadAll()` / une génération de défi rafraîchit les deux
 - `AdminStatsService` — état dashboard + onglet Défis (navigation jour/mois, formatage dates, accordéon stats par défi) ; `challengeMonths`/`challengesForMonth` dérivent de `challengeStats()` (Stats par défi) et `challenges()` (Historique)
@@ -374,11 +373,7 @@ Services admin (`features/admin/services/`) :
 
 ### `playerAuthInterceptor`
 
-Ajoute `withCredentials: true` sur toutes les requêtes vers `/api` **sauf** `/api/admin`. Nécessaire pour envoyer le cookie HTTP-only joueur en cross-origin (front sur `inseconds.cc`, API sur `api.inseconds.cc` — deux sous-domaines distincts).
-
-### `adminAuthInterceptor`
-
-Ajoute `Authorization: Bearer <token>` sur toutes les requêtes vers `/api/admin`. Token lu depuis `localStorage` (`admin_token`).
+Ajoute `withCredentials: true` sur **toutes** les requêtes vers `/api`, `/api/admin` compris. Nécessaire pour envoyer le cookie HTTP-only joueur en cross-origin (front sur `inseconds.cc`, API sur `api.inseconds.cc` — deux sous-domaines distincts). Depuis la refonte profils admin (2026-09-16), l'auth admin est un rôle sur ce même cookie joueur (`Player.IsAdmin`) — il n'y a plus d'interceptor ni de token dédié pour `/api/admin`.
 
 ## Conventions
 

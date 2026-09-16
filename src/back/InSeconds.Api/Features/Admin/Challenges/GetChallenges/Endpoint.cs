@@ -1,5 +1,5 @@
+using InSeconds.Api.Common.Auth;
 using InSeconds.Api.Common.Text;
-using InSeconds.Api.Features.Admin.Login;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,7 +14,7 @@ public static class GetChallengesEndpoint
             ApplicationDbContext db,
             CancellationToken ct) =>
         {
-            if (!LoginEndpoint.IsAdminAuthenticated(ctx))
+            if (!ctx.GetPlayerIsAdmin())
                 return Results.Unauthorized();
 
             var raw = await db.DailyChallenges

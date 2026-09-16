@@ -8,7 +8,6 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__DefaultConnection: "Host=shared-postgres;Port=5432;Database=inseconds;Username=inseconds;Password=${INSECONDS_DB_PASSWORD}"
-      AdminPassword: ${ADMIN_PASSWORD}
       App__PublicUrl: https://inseconds.cc
       Resend__ApiKey: ${RESEND_API_KEY}
     networks:

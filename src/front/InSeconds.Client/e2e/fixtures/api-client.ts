@@ -1,13 +1,11 @@
 // CI utilise 5171 (port standard), local utilise 5172 (évite le conflit avec le dev normal)
 const BASE = process.env['CI'] ? 'http://localhost:5171' : 'http://localhost:5172';
-// LoginEndpoint.IsAdminAuthenticated vérifie aussi l'origine (cf. OriginValidator) — un
-// fetch() Node (pas un vrai navigateur) n'envoie jamais d'Origin automatiquement, il faut
-// le poser explicitement ici avec le port réel du front (cf. playwright.config.ts baseURL).
-const FRONT_ORIGIN = process.env['CI'] ? 'http://localhost:5173' : 'http://localhost:5174';
+// L'auth admin est désormais un rôle sur le cookie joueur (Player.IsAdmin, cf. refonte
+// profils admin) — plus d'OriginValidator sur ces routes, donc plus besoin d'Origin ici.
+// Bearer admin-token reste le bypass Testing-only posé dans PlayerAuthMiddleware.
 const ADMIN_HEADERS = {
   Authorization: 'Bearer admin-token',
   'Content-Type': 'application/json',
-  Origin: FRONT_ORIGIN,
 };
 
 export class ApiTestClient {

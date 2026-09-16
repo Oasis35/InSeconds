@@ -49,7 +49,6 @@ export default defineConfig({
             ASPNETCORE_ENVIRONMENT: 'Testing',
             ConnectionStrings__DefaultConnection:
               'Host=localhost;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=inseconds_e2e',
-            AdminPassword: 'e2e-admin-password',
           },
         },
         {

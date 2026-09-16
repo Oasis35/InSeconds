@@ -1,62 +1,26 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpErrorResponse } from '@angular/common/http';
+import { signal } from '@angular/core';
 import { AdminLoginComponent } from './admin-login.component';
-import { AdminApiService } from '../../services/admin-api.service';
+import { PlayerSessionService } from '../../../../core/services/player-session.service';
 
 describe('AdminLoginComponent', () => {
-  let component: AdminLoginComponent;
-  let apiStub: { login: jasmine.Spy };
-
-  beforeEach(() => {
-    apiStub = { login: jasmine.createSpy('login') };
-
+  function setup(isLinked: boolean) {
     TestBed.configureTestingModule({
-      providers: [{ provide: AdminApiService, useValue: apiStub }],
+      providers: [{ provide: PlayerSessionService, useValue: { isLinked: signal(isLinked) } }],
     });
 
-    component = TestBed.runInInjectionContext(() => new AdminLoginComponent());
+    return TestBed.runInInjectionContext(() => new AdminLoginComponent());
+  }
+
+  it('exposes isLinked=false for a guest / not-logged-in account', () => {
+    const component = setup(false);
+
+    expect(component['isLinked']()).toBe(false);
   });
 
-  it('sets loginStatus to idle and clears the password on success', async () => {
-    apiStub.login.and.returnValue(Promise.resolve());
-    component['password'] = 'secret';
+  it('exposes isLinked=true for a linked but non-admin account', () => {
+    const component = setup(true);
 
-    component.login();
-    expect(component['loginStatus']()).toBe('loading');
-    await Promise.resolve().then(() => Promise.resolve());
-
-    expect(component['loginStatus']()).toBe('idle');
-    expect(component['password']).toBe('');
-  });
-
-  it('sets loginStatus to error on a plain 401', async () => {
-    apiStub.login.and.returnValue(
-      Promise.reject(new HttpErrorResponse({ status: 401 }))
-    );
-
-    component.login();
-    await Promise.resolve().then(() => Promise.resolve());
-
-    expect(component['loginStatus']()).toBe('error');
-  });
-
-  it('sets loginStatus to rate_limited on a 429 (admin-login rate limiter)', async () => {
-    apiStub.login.and.returnValue(
-      Promise.reject(new HttpErrorResponse({ status: 429 }))
-    );
-
-    component.login();
-    await Promise.resolve().then(() => Promise.resolve());
-
-    expect(component['loginStatus']()).toBe('rate_limited');
-  });
-
-  it('sets loginStatus to error on a non-HttpErrorResponse rejection (e.g. network failure)', async () => {
-    apiStub.login.and.returnValue(Promise.reject(new Error('network down')));
-
-    component.login();
-    await Promise.resolve().then(() => Promise.resolve());
-
-    expect(component['loginStatus']()).toBe('error');
+    expect(component['isLinked']()).toBe(true);
   });
 });

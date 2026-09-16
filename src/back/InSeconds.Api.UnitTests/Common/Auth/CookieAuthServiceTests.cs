@@ -149,10 +149,10 @@ public sealed class CookieAuthServiceTests
         var httpContext = CreateHttpContext();
 
         // Act
-        var playerId = await service.TryResolvePlayerAsync(httpContext);
+        var resolution = await service.TryResolvePlayerAsync(httpContext);
 
         // Assert
-        playerId.Should().BeNull();
+        resolution.Should().BeNull();
         (await db.Players.CountAsync()).Should().Be(0);
         httpContext.Response.Headers.ContainsKey("Set-Cookie").Should().BeFalse();
     }
@@ -176,12 +176,44 @@ public sealed class CookieAuthServiceTests
         secondContext.Request.Headers["Cookie"] = $"{CookieAuthService.CookieName}={cookieValue}";
 
         // Act
-        var resolvedPlayerId = await service.TryResolvePlayerAsync(secondContext);
+        var resolution = await service.TryResolvePlayerAsync(secondContext);
 
         // Assert
-        resolvedPlayerId.Should().Be(createdId);
+        resolution.Should().NotBeNull();
+        resolution!.PlayerId.Should().Be(createdId);
+        resolution.IsAdmin.Should().BeFalse();
         (await db.Players.CountAsync()).Should().Be(1);
         (await db.Players.FindAsync(createdId))!.LastSeenAt.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task TryResolvePlayer_WhenPlayerIsAdmin_ReturnsIsAdminTrue()
+    {
+        // Arrange
+        await using var db = CreateDbContext();
+        var service = CreateService(db);
+
+        var firstContext = CreateHttpContext();
+        var createdId = await service.ResolveOrCreatePlayerAsync(firstContext);
+
+        var player = await db.Players.FindAsync(createdId);
+        player!.IsAdmin = true;
+        await db.SaveChangesAsync();
+
+        var setCookieHeader = firstContext.Response.Headers["Set-Cookie"].ToString();
+        var cookieValue = setCookieHeader
+            .Split(';')[0]
+            .Replace($"{CookieAuthService.CookieName}=", "");
+
+        var secondContext = CreateHttpContext();
+        secondContext.Request.Headers["Cookie"] = $"{CookieAuthService.CookieName}={cookieValue}";
+
+        // Act
+        var resolution = await service.TryResolvePlayerAsync(secondContext);
+
+        // Assert
+        resolution.Should().NotBeNull();
+        resolution!.IsAdmin.Should().BeTrue();
     }
 
     [Fact]

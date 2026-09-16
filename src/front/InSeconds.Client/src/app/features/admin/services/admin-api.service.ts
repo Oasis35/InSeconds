@@ -75,11 +75,7 @@ export class AdminApiService {
 
   checkAuth(): void { this.http.checkAuth(); }
 
-  login(password: string): Promise<void> {
-    return this.http.login(password).then(() => this.reloadAll());
-  }
-
-  logout(): void { this.http.logout(); }
+  logout(): Promise<void> { return this.http.logout(); }
 
   reloadPool(): void { this.state.reloadPool(); }
 

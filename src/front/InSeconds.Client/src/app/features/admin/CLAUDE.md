@@ -48,13 +48,13 @@ AdminComponent (providers: les 7 services)
 
 ## `services/admin-http.service.ts` — couche HTTP pure
 
-`@Injectable()` (pas root — fourni par `AdminComponent`). `base = ${environment.apiUrl}/api/admin`, `storageKey = 'admin_token'`.
+`@Injectable()` (pas root — fourni par `AdminComponent`). `base = ${environment.apiUrl}/api/admin`.
 
 Signal `authenticated = signal(false)` — unique source de vérité, réexposée telle quelle par `AdminApiService.authenticated`.
 
-- `checkAuth()` : `GET /me` fire-and-forget, positionne `authenticated`.
-- `login(password)` : `POST /login`, succès → stocke `res.token` dans `localStorage['admin_token']`, `authenticated=true`. Échec → promesse rejetée, propagée à l'appelant.
-- `logout()` : retire le token localStorage, `authenticated=false`. **Pas d'appel serveur** (logout purement local).
+- `checkAuth()` : `GET /me` fire-and-forget, positionne `authenticated` (cookie joueur envoyé automatiquement par `playerAuthInterceptor`, plus de token dédié — cf. CLAUDE.md racine piège 5).
+- **Plus de `login()`** (2026-09-16) — un admin se connecte comme un joueur normal via `/login` (magic link) ; `AdminLoginComponent` n'est plus qu'un écran d'état (connecté-mais-pas-admin / pas connecté).
+- `logout()` : injecte `PlayerSessionService`, délègue au vrai logout joueur (`playerSession.logout()` puis `.load()`) — devient `Promise<void>`. Se déconnecter de l'admin met donc fin à la session joueur/guest du même navigateur (identité unique).
 - `generateToday()`, `resetToday()`, `refreshPreviews()`, `addTrack(deezerTrackId)`, `updateTrack(id, deezerTrackId)`, `deleteTrack(id)`, `searchDeezer(q)`, `getPoolTracks()`, `getStats(day)`, `getChallengeStats()`, `getChallenges()`, `updateTrackCooldownDays(days)` — tous retournent des `Observable` bruts non souscrits, sans gestion d'erreur ici (déléguée à l'appelant/`AdminApiService`).
 
 ## `services/admin-state.service.ts` — état UI pur (triggers)
@@ -158,7 +158,6 @@ Spec (`actions-tab.component.spec.ts`) : couvre la lecture de `settings.trackCoo
 | Valeur | Emplacement | Rôle |
 |---|---|---|
 | `15` | `AdminPoolService.poolPageSize` | lignes par page tableau pool |
-| `'admin_token'` | `AdminHttpService.storageKey` | clé localStorage du token admin |
 | `300ms` / `2` car. | `AdminApiService` (recherche Deezer) | debounce manuel `timer`+`switchMap` / seuil avant appel réseau |
 | `2000ms` / `3000ms` | `AdminPoolService.addToPoolFromModal` | retour `idle` après succès / erreur ajout pool |
 | `3000ms` | `AdminActionsService.generateToday`/`updateTrackCooldownDays` | retour `idle` (succès et erreur) |

@@ -1,7 +1,7 @@
 namespace InSeconds.Api.Common.RateLimiting;
 
 // Regroupe les noms de policies de rate limiting partagées entre plusieurs features. Les
-// policies propres à un seul endpoint restent définies dessus (cf. LoginEndpoint.LoginRateLimiterPolicy,
+// policies propres à un seul endpoint restent définies dessus (cf.
 // RequestMagicLinkEndpoint.RateLimiterPolicy, SearchEndpoint.RateLimiterPolicy).
 public static class RateLimiterPolicies
 {

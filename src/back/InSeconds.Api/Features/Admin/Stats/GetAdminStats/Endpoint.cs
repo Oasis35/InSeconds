@@ -1,4 +1,4 @@
-using InSeconds.Api.Features.Admin.Login;
+using InSeconds.Api.Common.Auth;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,7 +15,7 @@ public static class GetAdminStatsEndpoint
             [FromQuery] string? date,
             CancellationToken ct) =>
         {
-            if (!LoginEndpoint.IsAdminAuthenticated(ctx))
+            if (!ctx.GetPlayerIsAdmin())
                 return Results.Unauthorized();
 
             var today = DateOnly.FromDateTime(DateTime.UtcNow);

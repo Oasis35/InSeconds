@@ -7,8 +7,10 @@ public interface ICookieAuthService
     /// <summary>
     /// Résout le player depuis le cookie existant, sans jamais en créer un nouveau.
     /// Retourne null si le cookie est absent/invalide/inconnu (visiteur n'ayant jamais joué).
+    /// Porte aussi IsAdmin (déjà chargé avec l'entité Player, aucun coût supplémentaire) —
+    /// consommé par PlayerAuthMiddleware pour l'autorisation admin.
     /// </summary>
-    Task<Guid?> TryResolvePlayerAsync(HttpContext httpContext, CancellationToken ct = default);
+    Task<PlayerAuthResolution?> TryResolvePlayerAsync(HttpContext httpContext, CancellationToken ct = default);
 
     /// <summary>
     /// Pose le cookie authToken pour l'AuthToken donné — utilisé par VerifyMagicLink/DevLogin

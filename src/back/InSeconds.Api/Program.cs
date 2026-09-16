@@ -21,7 +21,7 @@ using InSeconds.Api.Features.Deezer;
 using InSeconds.Api.Features.Admin.Challenges.GetChallenges;
 using InSeconds.Api.Features.Admin.Stats.GetAdminStats;
 using InSeconds.Api.Features.Admin.Stats.GetChallengeStats;
-using InSeconds.Api.Features.Admin.Login;
+using InSeconds.Api.Features.Admin.CheckAdminAuth;
 using InSeconds.Api.Features.Admin.RefreshPreviews;
 using InSeconds.Api.Features.Admin.ResetToday;
 using InSeconds.Api.Features.Admin.Tracks.AddTrack;
@@ -83,8 +83,9 @@ builder.Host.UseWolverine(opts =>
 // (vidé, "trust everything" sur le premier saut) avec ForwardLimit=1 par défaut : ça ne
 // déroulait qu'UN seul saut, donc Connection.RemoteIpAddress s'arrêtait sur l'IP du edge
 // Cloudflare — partagée par des milliers de visiteurs distincts — au lieu de la vraie IP
-// cliente. Résultat en prod : le rate limiter admin-login (10 req/5min) se faisait épuiser par
-// du trafic sans rapport, et l'admin légitime tombait sur un 429 que le front affiche comme
+// cliente. Résultat en prod : le rate limiter admin-login (10 req/5min, depuis supprimé
+// avec le mot de passe admin — cf. refonte profils admin) se faisait épuiser par du trafic
+// sans rapport, et l'admin légitime tombait sur un 429 que le front affiche comme
 // "mot de passe incorrect" (message générique pour toute erreur HTTP, cf. piège 27 racine).
 // Fix : KnownIPNetworks peuplé (TrustedProxyNetworks, Common/Networking/) avec les plages
 // privées RFC1918 (couvre Caddy quelle que soit l'IP Docker lui attribue — non falsifiable
@@ -111,23 +112,9 @@ builder.Services.AddCors(options =>
               .AllowCredentials());
 });
 
-// Anti brute-force sur /api/admin/login : le mot de passe admin est un secret unique
-// comparé côté serveur sans autre protection (pas de lockout de compte, un seul "compte").
-// Fenêtre glissante par IP — volontairement permissif pour ne jamais gêner un admin
-// légitime qui retape son mot de passe, mais suffisant pour bloquer un brute-force massif.
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    options.AddPolicy(LoginEndpoint.LoginRateLimiterPolicy, httpContext =>
-        RateLimitPartition.GetSlidingWindowLimiter(
-            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-            factory: _ => new SlidingWindowRateLimiterOptions
-            {
-                PermitLimit = 10,
-                Window = TimeSpan.FromMinutes(5),
-                SegmentsPerWindow = 5,
-                QueueLimit = 0,
-            }));
 
     // Anti "email bombing" sur /api/auth/magic-link/request : le throttle existant de 60s
     // par email (RequestMagicLinkHandler) n'empêche pas de spammer une victime une fois par
@@ -250,9 +237,6 @@ builder.Services.AddScoped<ICookieAuthService>(sp => new CookieAuthService(
 builder.Services.AddScoped<IMagicLinkTokenService, MagicLinkTokenService>();
 builder.Services.AddScoped<IEmailChangeTokenService, EmailChangeTokenService>();
 builder.Services.AddScoped<IAccountLinkingService, AccountLinkingService>();
-
-// Singleton : jetons admin en mémoire, un seul process API sur le VPS (pas de scale-out).
-builder.Services.AddSingleton<IAdminTokenStore, AdminTokenStore>();
 
 // ResendEmailSender hors Dev/Testing (config réelle requise) ; NullEmailSender sinon
 // (aucune config nécessaire pour développer — logue le contenu de l'email).
@@ -377,7 +361,7 @@ app.MapGetTodaySession();
 app.MapSubmitAnswer();
 app.MapAbandonSession();
 app.MapUpdateListening();
-app.MapAdminLogin(enableRateLimiting: !isTesting);
+app.MapCheckAdminAuth();
 app.MapResetToday();
 app.MapGenerateToday();
 app.MapRefreshPreviews();

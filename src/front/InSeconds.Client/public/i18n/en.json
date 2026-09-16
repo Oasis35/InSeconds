@@ -259,12 +259,11 @@
   "admin": {
     "title": "Admin",
     "deployedAt": "Deployed {{ date }}",
-    "login": "Login",
-    "passwordPlaceholder": "Admin password",
-    "loginButton": "Sign in",
-    "loggingIn": "Signing in...",
-    "wrongPassword": "Incorrect password.",
-    "tooManyAttempts": "Too many attempts. Try again in a few minutes.",
+    "notLoggedIn": "Log in first",
+    "notLoggedInBody": "Admin access requires a logged-in account.",
+    "goToLogin": "Log in",
+    "accessDenied": "Access denied",
+    "accessDeniedBody": "This account doesn't have admin rights.",
     "backToGame": "Back to the game",
     "logout": "Sign out",
     "browserId": {

@@ -13,6 +13,7 @@ public sealed class Player
     public DateOnly? LastPlayedDate { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }
+    public bool IsAdmin { get; set; }
 
     public ICollection<GameSession> GameSessions { get; set; } = [];
 }

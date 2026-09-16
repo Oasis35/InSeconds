@@ -1,20 +1,17 @@
-<div class="rounded-xl p-8 flex flex-col items-center gap-6 w-full max-w-md" style="background:var(--bg-surface)">
-  <h2 class="text-lg font-semibold" style="color:var(--text-hi)">{{ 'admin.login' | translate }}</h2>
-  <input type="password" [(ngModel)]="password" [placeholder]="'admin.passwordPlaceholder' | translate"
-    [attr.aria-label]="'admin.passwordPlaceholder' | translate"
-    (keydown.enter)="login()"
-    class="w-full rounded-lg px-4 py-3 outline-none"
-    style="background:var(--bg-inactive);color:var(--text-hi)" />
-  <button (click)="login()" [disabled]="loginStatus() === 'loading'"
-    class="w-full font-semibold py-3 rounded-lg transition-colors disabled:opacity-50"
-    style="background:var(--bg-primary);color:var(--text-on-primary)">
-    @if (loginStatus() === 'loading') { {{ 'admin.loggingIn' | translate }} } @else { {{ 'admin.loginButton' | translate }} }
-  </button>
-  @if (loginStatus() === 'error') {
-    <p class="text-sm" style="color:var(--text-error)">{{ 'admin.wrongPassword' | translate }}</p>
-  }
-  @if (loginStatus() === 'rate_limited') {
-    <p class="text-sm" style="color:var(--text-error)">{{ 'admin.tooManyAttempts' | translate }}</p>
-  }
-</div>
+@if (!isLinked()) {
+  <div class="rounded-xl p-8 flex flex-col items-center gap-4 w-full max-w-md text-center" style="background:var(--bg-surface)">
+    <h2 class="text-lg font-semibold" style="color:var(--text-hi)">{{ 'admin.notLoggedIn' | translate }}</h2>
+    <p class="text-sm" style="color:var(--text-muted)">{{ 'admin.notLoggedInBody' | translate }}</p>
+    <a routerLink="/login"
+      class="w-full font-semibold py-3 rounded-lg transition-colors text-center"
+      style="background:var(--bg-primary);color:var(--text-on-primary)">
+      {{ 'admin.goToLogin' | translate }}
+    </a>
+  </div>
+} @else {
+  <div class="rounded-xl p-8 flex flex-col items-center gap-4 w-full max-w-md text-center" style="background:var(--bg-surface)">
+    <h2 class="text-lg font-semibold" style="color:var(--text-hi)">{{ 'admin.accessDenied' | translate }}</h2>
+    <p class="text-sm" style="color:var(--text-muted)">{{ 'admin.accessDeniedBody' | translate }}</p>
+  </div>
+}
 <a routerLink="/" class="text-sm transition-colors text-center w-full block mt-4" style="color:var(--text-faint)">{{ 'admin.backToGame' | translate }}</a>

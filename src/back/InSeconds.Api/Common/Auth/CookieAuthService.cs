@@ -39,7 +39,7 @@ public sealed class CookieAuthService(
         return player.Id;
     }
 
-    public async Task<Guid?> TryResolvePlayerAsync(HttpContext httpContext, CancellationToken ct = default)
+    public async Task<PlayerAuthResolution?> TryResolvePlayerAsync(HttpContext httpContext, CancellationToken ct = default)
     {
         var player = await TryResolveExistingPlayerEntityAsync(httpContext, ct);
         if (player is null)
@@ -48,7 +48,7 @@ public sealed class CookieAuthService(
         player.LastSeenAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
 
-        return player.Id;
+        return new PlayerAuthResolution(player.Id, player.IsAdmin);
     }
 
     private async Task<Player?> TryResolveExistingPlayerEntityAsync(HttpContext httpContext, CancellationToken ct)

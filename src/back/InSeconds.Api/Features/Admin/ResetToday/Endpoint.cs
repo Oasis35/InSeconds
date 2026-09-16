@@ -1,4 +1,4 @@
-using InSeconds.Api.Features.Admin.Login;
+using InSeconds.Api.Common.Auth;
 using Wolverine;
 
 namespace InSeconds.Api.Features.Admin.ResetToday;
@@ -12,7 +12,7 @@ public static class ResetTodayEndpoint
             HttpContext ctx,
             CancellationToken ct) =>
         {
-            if (!LoginEndpoint.IsAdminAuthenticated(ctx))
+            if (!ctx.GetPlayerIsAdmin())
                 return Results.Unauthorized();
 
             return await bus.InvokeAsync<IResult>(new ResetTodayCommand(), ct);

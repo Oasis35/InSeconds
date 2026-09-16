@@ -1,5 +1,5 @@
+using InSeconds.Api.Common.Auth;
 using InSeconds.Api.Domain;
-using InSeconds.Api.Features.Admin.Login;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,7 +16,7 @@ public static class E2EResetEndpoint
             bool emptyPool = false,
             CancellationToken ct = default) =>
         {
-            if (!LoginEndpoint.IsAdminAuthenticated(ctx))
+            if (!ctx.GetPlayerIsAdmin())
                 return Results.Unauthorized();
 
             await db.GameSessionAnswers.ExecuteDeleteAsync(ct);
@@ -55,7 +55,7 @@ public static class E2EResetEndpoint
             ApplicationDbContext db,
             CancellationToken ct = default) =>
         {
-            if (!LoginEndpoint.IsAdminAuthenticated(ctx))
+            if (!ctx.GetPlayerIsAdmin())
                 return Results.Unauthorized();
 
             // IgnoreQueryFilters : supprime aussi les lignes des joueurs soft-deleted
@@ -75,6 +75,48 @@ public static class E2EResetEndpoint
         .WithName("E2EReseed")
         .WithTags("E2E");
 
+        // Raccourci E2E-only pour obtenir un vrai cookie authToken sur un compte IsAdmin=true,
+        // sans passer par le flux magic-link complet à chaque test. Crée (ou réutilise) un
+        // Player lié dédié aux tests puis pose son cookie via IssueCookie — après ça, le test
+        // navigue normalement sur /admin avec ce cookie, exactement comme un vrai admin.
+        routes.MapPost("/api/e2e/login-as-admin", async (
+            HttpContext ctx,
+            ApplicationDbContext db,
+            ICookieAuthService cookieAuth,
+            CancellationToken ct = default) =>
+        {
+            if (!ctx.GetPlayerIsAdmin())
+                return Results.Unauthorized();
+
+            const string email = "e2e-admin@test.local";
+            var player = await db.Players.FirstOrDefaultAsync(p => p.Email == email, ct);
+            if (player is null)
+            {
+                player = new Player
+                {
+                    Id        = Guid.NewGuid(),
+                    IsGuest   = false,
+                    Email     = email,
+                    Pseudo    = "E2EAdmin",
+                    AuthToken = Guid.NewGuid(),
+                    CreatedAt = DateTime.UtcNow,
+                    IsAdmin   = true,
+                };
+                db.Players.Add(player);
+            }
+            else if (!player.IsAdmin)
+            {
+                player.IsAdmin = true;
+            }
+
+            await db.SaveChangesAsync(ct);
+
+            cookieAuth.IssueCookie(ctx, player.AuthToken);
+            return Results.Ok();
+        })
+        .WithName("E2ELoginAsAdmin")
+        .WithTags("E2E");
+
         // Utilisé par les tests d'intégration/E2E pour "recevoir" un magic link sans
         // vrai envoi de mail (NullEmailSender actif en Testing). Le token brut n'est
         // jamais stocké en base (seul son hash SHA-256 l'est) : impossible de
@@ -87,7 +129,7 @@ public static class E2EResetEndpoint
             string email,
             CancellationToken ct = default) =>
         {
-            if (!LoginEndpoint.IsAdminAuthenticated(ctx))
+            if (!ctx.GetPlayerIsAdmin())
                 return Results.Unauthorized();
 
             var normalizedEmail = email.Trim().ToLowerInvariant();
@@ -112,7 +154,7 @@ public static class E2EResetEndpoint
             string email,
             CancellationToken ct = default) =>
         {
-            if (!LoginEndpoint.IsAdminAuthenticated(ctx))
+            if (!ctx.GetPlayerIsAdmin())
                 return Results.Unauthorized();
 
             var normalizedEmail = email.Trim().ToLowerInvariant();

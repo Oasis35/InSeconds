@@ -2,6 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { lastValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
+import { PlayerSessionService } from '../../../core/services/player-session.service';
 import { AdminStatsResponse, ChallengeStatsResponse } from '../../../api/api.generated';
 import {
   ChallengeDto, DeezerTrackInfo, PoolTracksResponse, RefreshPreviewsResult, ResetResult,
@@ -10,8 +11,8 @@ import {
 @Injectable()
 export class AdminHttpService {
   private readonly http = inject(HttpClient);
+  private readonly playerSession = inject(PlayerSessionService);
   readonly base = `${environment.apiUrl}/api/admin`;
-  private readonly storageKey = 'admin_token';
 
   readonly authenticated = signal(false);
 
@@ -21,17 +22,15 @@ export class AdminHttpService {
       .catch(() => this.authenticated.set(false));
   }
 
-  login(password: string): Promise<void> {
-    return lastValueFrom(this.http.post<{ token: string }>(`${this.base}/login`, { password }))
-      .then(res => {
-        localStorage.setItem(this.storageKey, res.token);
-        this.authenticated.set(true);
-      });
-  }
-
-  logout(): void {
-    localStorage.removeItem(this.storageKey);
-    this.authenticated.set(false);
+  // L'accès admin est désormais un rôle sur le compte joueur (Player.IsAdmin) : se
+  // déconnecter de l'admin déconnecte donc aussi la session de jeu du même navigateur.
+  // Recharge PlayerSessionService après coup pour que isLinked() reflète immédiatement
+  // l'état guest, sinon l'écran de login afficherait encore "accès refusé" au lieu du
+  // lien vers /login.
+  logout(): Promise<void> {
+    return lastValueFrom(this.playerSession.logout())
+      .then(() => lastValueFrom(this.playerSession.load()))
+      .then(() => { this.authenticated.set(false); });
   }
 
   generateToday() { return this.http.post(`${this.base}/generate-today`, {}); }
