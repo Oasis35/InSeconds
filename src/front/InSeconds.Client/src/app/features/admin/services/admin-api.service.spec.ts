@@ -121,20 +121,6 @@ describe('AdminHttpService', () => {
     });
   });
 
-  describe('resetToday()', () => {
-    it('should DELETE /api/admin/reset-today and return a ResetResult', () => {
-      const mockResult = { deleted: 5, date: '2026-06-29' };
-      let result: any;
-      service.resetToday().subscribe(r => (result = r));
-
-      const req = httpMock.expectOne(`${base}/reset-today`);
-      expect(req.request.method).toBe('DELETE');
-      req.flush(mockResult);
-
-      expect(result).toEqual(mockResult);
-    });
-  });
-
   describe('getChallengeStats()', () => {
     it('should GET /api/admin/challenge-stats (distinct de /challenges)', () => {
       let result: any;

@@ -5,7 +5,7 @@ import { environment } from '../../../../environments/environment';
 import { PlayerSessionService } from '../../../core/services/player-session.service';
 import { AdminStatsResponse, ChallengeStatsResponse } from '../../../api/api.generated';
 import {
-  ChallengeDto, DeezerTrackInfo, PoolTracksResponse, RefreshPreviewsResult, ResetResult,
+  ChallengeDto, DeezerTrackInfo, PoolTracksResponse, RefreshPreviewsResult,
 } from '../admin.models';
 
 @Injectable()
@@ -34,7 +34,6 @@ export class AdminHttpService {
   }
 
   generateToday() { return this.http.post(`${this.base}/generate-today`, {}); }
-  resetToday() { return this.http.delete<ResetResult>(`${this.base}/reset-today`); }
   refreshPreviews() { return this.http.post<RefreshPreviewsResult>(`${this.base}/refresh-previews`, {}); }
   updateTrackCooldownDays(days: number) {
     return this.http.put<{ trackCooldownDays: number }>(`${this.base}/settings/track-cooldown-days`, { trackCooldownDays: days });

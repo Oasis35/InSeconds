@@ -91,10 +91,6 @@ Outil de diagnostic email. `SendTestEmailHandler` construit un email minimal inl
 
 Délègue à `PreviewStatusRefresher.RefreshAsync` (voir ChallengeGeneration). `RefreshPreviewsResponse(Checked, Updated, Failed)`.
 
-### Admin/ResetToday — `DELETE /api/admin/reset-today`
-
-404 si pas de défi du jour. Supprime toutes les `GameSessions` liées (cascade sur `GameSessionAnswers`). Retourne `{deleted, date}`.
-
 ### Admin/Stats/GetAdminStats — `GET /api/admin/stats?date=` (Dashboard)
 
 Payload du **Dashboard uniquement**. Utilise `IDbContextFactory<ApplicationDbContext>` pour **4 requêtes en parallèle**, chacune avec son propre `DbContext` (non thread-safe sinon) : `BuildDailyActivity` (30 jours glissants, 0 par défaut), `BuildPlayerBreakdown` (guests/registered/actifs 7j/30j, exclut `IsDeleted`), `BuildAvailableDates`, `BuildDailyKpis` (date sélectionnée). Médiane calculée manuellement (tri + moyenne des 2 valeurs centrales si pair). `AdminStatsResponse(DailyActivity, PlayerBreakdown, AvailableDates, SelectedDayKpis)` — **plus de champ `Challenges`** (scindé, voir ci-dessous).

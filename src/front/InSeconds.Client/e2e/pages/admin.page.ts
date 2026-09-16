@@ -114,10 +114,6 @@ export class AdminPage {
     return this.page.getByRole('button', { name: /Générer le défi du jour/ });
   }
 
-  resetButton(): Locator {
-    return this.page.getByRole('button', { name: /Réinitialiser les parties du jour/ });
-  }
-
   // Défis — bouton créer
   createChallengeButton(): Locator {
     return this.page.getByRole('button', { name: /Créer le défi|Générer/ }).first();

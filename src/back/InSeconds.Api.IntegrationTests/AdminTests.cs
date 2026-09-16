@@ -168,27 +168,6 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         Assert.Single(body.Tracks);
     }
 
-    // ── ResetToday ────────────────────────────────────────────────────────────
-
-    [Fact]
-    public async Task ResetToday_SansAuth_Retourne401()
-    {
-        var resp = await _client.DeleteAsync("/api/admin/reset-today");
-
-        Assert.Equal(HttpStatusCode.Unauthorized, resp.StatusCode);
-    }
-
-    [Fact]
-    public async Task ResetToday_AvecDefi_Retourne200()
-    {
-        // Crée une session d'abord
-        await _client.PostAsync("/api/sessions", null);
-
-        var resp = await AdminDeleteAsync("/api/admin/reset-today");
-
-        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
-    }
-
     // ── Admin Stats ───────────────────────────────────────────────────────────
 
     [Fact]

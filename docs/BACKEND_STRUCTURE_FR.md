@@ -330,7 +330,6 @@ Les deux endpoints sont publics (mappés avant `PlayerAuthMiddleware`). Logging 
 | `Admin/Challenges/*` | `/api/admin/challenges` | Création défis + recherche Deezer |
 | `Admin/GenerateToday` | `POST /api/admin/generate-today` | Génère le défi du jour à la demande |
 | `Admin/RefreshPreviews` | `POST /api/admin/refresh-previews` | Relance le re-check des previews (délègue à `PreviewStatusRefresher`), retourne `{ checked, updated, failed }` |
-| `Admin/ResetToday` | `DELETE /api/admin/reset-today` | Supprime le défi du jour |
 | `Admin/Stats/GetAdminStats` | `GET /api/admin/stats` | Dashboard : KPIs du jour, activité 30j, répartition joueurs, dates disponibles (4 requêtes légères) |
 | `Admin/Stats/GetChallengeStats` | `GET /api/admin/challenge-stats` | « Stats par défi » de l'onglet Défis (**scindé de `/stats` le 2026-08-29**) : 30 derniers défis, médianes, taux artiste/titre par morceau, `ExtendedRate`, histogrammes, liste des joueurs par défi (`ChallengeStatsDto.Players`, `{PlayerId, Status, Score}` par session). Le front ne l'appelle qu'à l'ouverture de l'onglet Défis |
 | `Deezer/Search` (public) | `GET /api/deezer/search?q=` | Proxy autocomplete Deezer (contourne CORS navigateur) ; nettoie parenthèses/crochets des titres et déduplique (`SearchEndpoint.CleanAndDeduplicate`), sur-demande 20 résultats bruts pour compenser |

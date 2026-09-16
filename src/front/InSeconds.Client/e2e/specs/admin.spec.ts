@@ -275,16 +275,6 @@ test.describe('Admin — actions', () => {
     await expect(page.getByText('déjà généré')).toBeVisible({ timeout: 5000 });
   });
 
-  test('réinitialise les parties du jour', async ({ page }) => {
-    const admin = new AdminPage(page);
-    await admin.goto();
-    await admin.login();
-    await admin.clickTab('Actions');
-
-    await admin.resetButton().click();
-    await expect(page.getByText(/partie\(s\) supprimée\(s\)/)).toBeVisible({ timeout: 5000 });
-  });
-
   test('édite le cooldown de réutilisation et persiste en base', async ({ page }) => {
     const adminPage = new AdminPage(page);
     await adminPage.goto();
