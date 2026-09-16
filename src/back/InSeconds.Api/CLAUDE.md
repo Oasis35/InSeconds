@@ -38,7 +38,7 @@ Doc détaillée du backend. Vue d'ensemble générale, conventions .NET globales
 - Vérifs : session introuvable→404, `PlayerId` différent→403, `Status!=Pending`→403, track introuvable dans ce défi→404, déjà répondue→**409** `already_answered`.
 - Correction via `TextNormalizer.IsMatch` (artiste et titre séparément), score via `ScoreCalculator.Calculate` — **basé uniquement sur le palier `ListenedDurationSeconds` finalement écouté**, `WasExtended` n'entre plus dans le calcul (cf. `ScoreCalculator` ci-dessous). `WasExtended` reste stocké sur `GameSessionAnswer` pour les stats admin (`ExtendedRate`).
 - **Stats avant/après calculées en mémoire** : lit les stats agrégées déjà en base avant d'insérer la réponse courante, combine en mémoire — évite un aller-retour DB après `SaveChanges`.
-- Réinitialise le verrou anti-cheat (`CurrentTrackId=null`, `CurrentTrackMinListenedSeconds=null`).
+- Réinitialise le verrou anti-cheat via `session.ReleaseTrackLock()`.
 - **Détection de complétion** : réponses en base +1 (courante pas encore persistée) ≥ `TracksPerChallenge` et `Status==Pending` → `Completed`, `CompletedAt=UtcNow`.
 - **Streak basée sur `DailyChallenge.Date`, jamais la date de complétion** (cf. piège 18 du CLAUDE.md racine) : `CurrentStreak = LastPlayedDate == challengeDate.AddDays(-1) ? +1 : 1`, `LastPlayedDate = challengeDate`.
 - **Response** : `SubmitAnswerResponse(ArtistCorrect, TitleCorrect, Score, CorrectArtist, CorrectTitle, ListenedDurationSeconds, AverageSecondsWhenCorrect?, FailureRatePercent, GuessTimeDistribution, NotFoundCount)` — `CorrectTitle` passe par `TextNormalizationHelpers.CleanDisplayTitle` (parenthèses/crochets retirés, cf. Common/Text) avant d'être renvoyé ; `challengeTrack.Title` (utilisé pour la comparaison `TextNormalizer.IsMatch` juste au-dessus) reste brut, sans impact sur le matching qui normalise déjà les parenthèses de son côté.
@@ -46,11 +46,11 @@ Doc détaillée du backend. Vue d'ensemble générale, conventions .NET globales
 
 ### Sessions/AbandonSession — `PUT /api/sessions/{sessionId}/abandon`
 
-`AbandonSessionCommand(PlayerId, SessionId)`. 404 si introuvable, 403 si joueur différent, **400** `already_completed` (Completed) / `already_abandoned` (Abandoned **ou** Expired) si état final déjà atteint, sinon `Status=Abandoned`, `AbandonedAt=UtcNow` → **204**.
+`AbandonSessionCommand(PlayerId, SessionId)`. 404 si introuvable, 403 si joueur différent, **400** `already_completed` (Completed) / `already_abandoned` (Abandoned **ou** Expired) si état final déjà atteint, sinon `session.Abandon(DateTime.UtcNow)` → **204**.
 
 ### Sessions/UpdateListening — `PATCH /api/sessions/{sessionId}/listening`
 
-`UpdateListeningCommand(PlayerId, SessionId, TrackId, ListenedSeconds)`. Validator : `ListenedSeconds` doit être dans `AllowedDurationsSeconds` (**pas de tolérance à 0**, contrairement à SubmitAnswer). Handler (verrou anti-cheat) : 404/403/**400** `session_not_pending`. Si `CurrentTrackId==TrackId` : met à jour `CurrentTrackMinListenedSeconds` **seulement si la nouvelle valeur est supérieure** (jamais réduire le minimum). Sinon (nouvelle track) : réinitialise les deux champs. → 204.
+`UpdateListeningCommand(PlayerId, SessionId, TrackId, ListenedSeconds)`. Validator : `ListenedSeconds` doit être dans `AllowedDurationsSeconds` (**pas de tolérance à 0**, contrairement à SubmitAnswer). Handler : 404/403/**400** `session_not_pending`, sinon `session.UpdateTrackLock(command.TrackId, command.ListenedSeconds)` — même track : met à jour `CurrentTrackMinListenedSeconds` **seulement si la nouvelle valeur est supérieure** (jamais réduire le minimum) ; nouvelle track : réinitialise les deux champs. → 204.
 
 ### Admin/Challenges/CreateChallenge — `POST /api/admin/challenges`
 
@@ -164,7 +164,7 @@ Body `UpdateTrackBody(DeezerTrackId)`. 404 introuvable, **409** `track_in_use` s
 - **`RequestEmailChange`** — `PUT /api/players/me/email` (`{NewEmail}`, authentifié). Changement d'email depuis l'écran `/profile` (front), en 2 étapes comme le login par magic link. Endpoint lit `httpContext.GetPlayerIdOrNull()` (**403** si `null`), mirroring `Players/UpdatePseudo` pour la forme. Handler (`db, IEmailChangeTokenService, IEmailSender`) : **403** si `Player.IsGuest`, normalise l'email (trim+lower), **400** `same_email` si inchangé, **409** `email_taken` si un **autre** `Player` a déjà cet email, throttle 60s par joueur (token `EmailChangeToken` non consommé créé il y a moins de 60s → réponse générique sans nouveau token, mirroring `RequestMagicLinkHandler`), sinon `IEmailChangeTokenService.IssueAsync(playerId, newEmail, 15min)` + `ConfirmEmailChangeEmailTemplate.Build(url, newEmail)` envoyé à **la nouvelle adresse uniquement** (pas de notification à l'ancienne — décision volontaire, scope minimal). Contrairement à `RequestMagicLink` (flux public, message toujours générique pour ne pas énumérer les emails), `RequestEmailChange` est authentifié : renvoyer **409** `email_taken` explicite ne fuite rien qu'un attaquant ne puisse déjà déduire. **Rate limiting** dédié (`RequestEmailChangeEndpoint.RateLimiterPolicy = "email-change-request"`, 5 req/10min par IP, même calibrage que `magic-link-request`), désactivé en Testing.
 - **`ConfirmEmailChange`** — `POST /api/auth/email-change/confirm` (`{Token}`, public). Handler (`db`) : hash le token, cherche l'`EmailChangeToken`, **400** `invalid_or_expired_token` si introuvable/consommé/expiré. Revérifie que `token.NewEmail` n'a pas été pris entre-temps par un autre `Player` (**409** `email_taken`, token **non consommé** — le joueur garde la main pour redemander une autre adresse), puis `player.Email = token.NewEmail` + `token.ConsumedAt = UtcNow` dans le même `SaveChangesAsync` (`try/catch` sur `23505` en filet de sécurité si la vérif rate une course serrée, même pattern que `UpdatePseudo`/`VerifyMagicLink`). **Pas d'`OriginValidator`** ici, contrairement à `VerifyMagicLink` : cet endpoint ne pose aucun cookie, son autorisation repose entièrement sur la possession du token (secret, à usage unique, 15 min) envoyé par email — le risque CSRF qu'`OriginValidator` mitige (poser un cookie au nom de la victime) ne s'applique pas. Pas de rate limiting dédié non plus (mirroring `VerifyMagicLink`, token à usage unique + expiration courte).
 
-### Deezer (feature publique, distincte d'`Infrastructure/Deezer`) — `GET /api/deezer/search?q=`
+### Deezer (feature publique, distincte du projet `InSeconds.Deezer`) — `GET /api/deezer/search?q=`
 
 Publique (pas admin). Utilise **`CachedDeezerClient`**. `q` vide/<2 → `200 []`. Projection minimaliste `DeezerSearchResult(Artist, Title)` — pas d'ID ni preview exposés côté joueur.
 
@@ -216,6 +216,14 @@ Renvoie directement `SettingsService.GetAsync()` → `AppSettings` sérialisé.
 | `MagicLinkToken` | `Id`, `Email`, `TokenHash` (SHA-256, jamais le token brut), `ExpiresAt`, `ConsumedAt?`, `CreatedAt` | — |
 | `EmailChangeToken` | `Id`, `PlayerId(Guid)`, `NewEmail`, `TokenHash` (SHA-256), `ExpiresAt`, `ConsumedAt?`, `CreatedAt` — même forme que `MagicLinkToken`, clé `PlayerId+NewEmail` au lieu de `Email` | — |
 
+**`Player`/`GameSession` sont encapsulés** (tous les autres champs de la table ci-dessus restent des POCO à setters publics classiques) : tous les setters sont `private`, les mutations passent par des méthodes métier qui protègent l'invariant — élimine structurellement la classe de bug du piège 18 (streak/statut mutés en clair dans un handler, sans garde).
+
+- `Player` : `CreateGuest(id, authToken, createdAt)` (factory), `RecordSeen(now)`, `RecordChallengeCompletion(challengeDate)` (streak — toujours comparé à `challengeDate`, jamais `DateTime.UtcNow`), `LinkToAccount(email, pseudo)`, `UpdatePseudo(pseudo)`, `ChangeEmail(newEmail)`, `Delete(deletedAt)`. `IsAdmin` n'a **aucune** méthode publique de mutation (attribution du rôle hors application par design, cf. `Admin/CheckAdminAuth`) — seul un mutateur `internal PromoteToAdminForTesting()` existe, pour le bypass E2E Testing-only et les tests.
+- `GameSession` : `StartNew(playerId, dailyChallengeId, now)` (factory), `AddAnswerScore(score, durationSeconds)`, `Complete(now)`, `Abandon(now)`, `Expire(now)` (distinct d'`Abandon` — même `AbandonedAt` posé, `Status` différent, distinction utilisée par les stats admin), `ReleaseTrackLock()`, `UpdateTrackLock(trackId, listenedSeconds)` (anti-cheat : ne réduit jamais le minimum déjà écouté sur la track en cours).
+- Reconstruction d'état arbitraire réservée aux tests/seed : `Player.Restore(...)`/`GameSession.Restore(...)` (`internal static`, tous les champs en paramètres nommés), `Player.RestoreStreakForTesting(...)`, `GameSession.RelocateToChallengeForTesting(...)` — jamais appelés en production, utilisés par `Features/E2E/ResetEndpoint.cs` et les deux projets de tests (`InSeconds.Api.csproj` déclare un `InternalsVisibleTo` vers `InSeconds.Api.IntegrationTests` en plus d'`InSeconds.Api.UnitTests` pour ça).
+- Couverts par des tests dédiés au Domain (`InSeconds.Api.UnitTests/Domain/PlayerTests.cs`, `GameSessionTests.cs`) plutôt que seulement indirectement via les tests de Handlers.
+- EF Core matérialise/persiste via réflexion sur `PropertyInfo`, indépendamment du modificateur d'accès du setter — aucune configuration `UsePropertyAccessMode` nécessaire dans `PlayerConfiguration`/`GameSessionConfiguration`, et `dotnet ef migrations has-pending-model-changes` reste vert après ce refactor (aucune migration requise).
+
 ## Infrastructure/Persistence
 
 ### `ApplicationDbContext`
@@ -240,25 +248,9 @@ Implémente `IDataProtectionKeyContext` (clés persistées en base, cf. piège 1
 
 **`SessionStatus.Expired=3` n'a pas de migration** : l'enum est stocké en `int` sans CHECK constraint ni `HasConversion`, ajouter un membre ne change pas le modèle EF (`dotnet ef migrations has-pending-model-changes` reste vert). Aucune rétro-classification des `Abandoned` existants (impossible de deviner bouton vs expiry a posteriori).
 
-## Infrastructure/Deezer
+## Deezer (projet séparé `InSeconds.Deezer`)
 
-### `DeezerClient` (accès direct, non caché)
-
-- `GetPreviewUrlAsync` → délègue à `ProbePreviewAsync`.
-- **`ProbePreviewAsync` → `DeezerPreviewProbe(bool Succeeded, string? PreviewUrl)`** : distingue "échec de requête" (`Succeeded=false`) de "vraie absence de preview" (`Succeeded=true, PreviewUrl=""`). **Deezer renvoie ses erreurs (quota, busy, track supprimé) en HTTP 200** avec `error.code`/`error.message` — `DefinitiveNoDataErrorCodes` (`HashSet<int>`, aujourd'hui `{800}` = "no data", track n'existe plus) liste les codes traités comme une absence déterminée ; tout code absent de ce set (4=quota, 700=busy, ou un futur code Deezer inconnu) → `Succeeded=false` (cf. piège 16 racine). Un futur code à traiter en absence déterminée s'ajoute au set, sans toucher à `ProbePreviewAsync`.
-- `GetTrackInfoAsync` → `DeezerTrackInfo(Artist, Title, PreviewUrl, DeezerTrackId, CoverHash)` ou `null`.
-- `SearchTracksAsync` → `[]` en cas d'erreur (jamais d'exception propagée sauf `OperationCanceledException`, re-thrown — cf. piège 13 racine).
-- **`ExtractCoverHash`** : parse `.../images/cover/{hash}/250x250-...jpg`, extrait uniquement `{hash}`.
-
-### `CachedDeezerClient` (cache mémoire, joueurs/public uniquement — **jamais admin ni `PreviewStatusRefresher`**)
-
-`PreviewTtl=24h`, `SearchTtl=1h`, `SignatureSafetyMargin=1h`.
-- `GetPreviewUrlAsync` : clé `deezer:preview:{id}`, **ne cache jamais une absence**. `ComputeTtl` extrait `exp=<unix>` de l'URL signée (regex `[?&~=]exp=(\d+)`) et borne le TTL : `ttl = min(PreviewTtl, expiration - now - SignatureSafetyMargin)` — cf. piège 14 racine (bug prod 2026-07-03, TTL fixe 24h > validité signature).
-- `SearchTracksAsync` : clé `deezer:search:{limit}:{query normalisée}` (le `limit` fait partie de la clé depuis l'ajout du paramètre `limit` optionnel — `DeezerClient.SearchTracksAsync(query, ct, limit=10)`), ne cache que si résultats non vides.
-
-### `FakeDeezerHandler` (Testing)
-
-Remplace le vrai `HttpClient`. `/track/{id}` : preview vide si `id >= 9_000_000_000`, sinon URL `http://localhost:{E2E_FRONT_PORT ?? 5174}/test-audio.mp3`. Gère aussi `/search` (réponse par défaut à un seul morceau, ou déclencheur `dedup-test` → 3 variantes parenthésées + 1 morceau distinct) — détaillé dans la section `E2E` plus bas plutôt qu'ici, car c'est là que ce comportement est consommé par les tests.
+`DeezerClient`/`CachedDeezerClient`/`FakeDeezerHandler` vivent désormais dans `src/back/InSeconds.Deezer/` (extraction, premier pas modular monolith) et non plus sous `InSeconds.Api/Infrastructure/`. `InSeconds.Api` les consomme via `ProjectReference` + `using InSeconds.Deezer;`. Détail exhaustif : [`src/back/InSeconds.Deezer/CLAUDE.md`](../InSeconds.Deezer/CLAUDE.md).
 
 ## Common/Auth
 
@@ -315,7 +307,7 @@ Chargement en 3 couches, **une seule fois au démarrage** (pas de rafraîchissem
 - Connection string : `ConnectionStrings:DefaultConnection` (`ConnectionStrings__DefaultConnection` posé par `docker-compose.prod.yml` en prod, pointant vers le Postgres partagé `deploy/infra/`, cf. CLAUDE.md racine § Déploiement VPS).
 - `UseWolverine` : `ServiceLocationPolicy=AllowedButWarn`, `UseRuntimeCompilation()`, `UseFluentValidation()` (validators invoqués auto avant les handlers via le bus).
 - CORS `"AllowAngular"` : origines depuis `Cors:AllowedOrigins`, `AllowCredentials()` (cookies cross-site).
-- HttpClient Deezer : résilience standard (`AttemptTimeout=4s`, `TotalRequestTimeout=15s`, circuit breaker `SamplingDuration=30s`) hors Testing — évite qu'un appel lent bloque `StartSession` (timeout HttpClient défaut 100s sinon).
+- Deezer : `builder.Services.AddDeezerHttpClient(useFakeHandler:, baseUrl:)` (projet `InSeconds.Deezer`) enregistre `CachedDeezerClient`/`HttpClient<DeezerClient>` + résilience standard (`AttemptTimeout=4s`, `TotalRequestTimeout=15s`, circuit breaker `SamplingDuration=30s`) hors Testing — évite qu'un appel lent bloque `StartSession` (timeout HttpClient défaut 100s sinon). Détail : `src/back/InSeconds.Deezer/CLAUDE.md`.
 - Data Protection : `PersistKeysToDbContext<ApplicationDbContext>()` + `SetApplicationName("InSeconds")`.
 
 **BackgroundServices** : `GenerateDailyChallengeService` (00:00 UTC, retry 10min) + `RefreshPreviewStatusService` (23:00 UTC) — tous deux via `DailySchedule.NextUtcHour`/`DelayUntilAsync` (anti-dérive, cf. piège 19 racine).

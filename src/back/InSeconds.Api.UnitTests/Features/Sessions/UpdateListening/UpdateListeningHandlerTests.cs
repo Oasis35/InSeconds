@@ -26,13 +26,7 @@ public sealed class UpdateListeningHandlerTests
     {
         var db = CreateDbContext();
 
-        db.Players.Add(new Player
-        {
-            Id        = PlayerId,
-            IsGuest   = true,
-            AuthToken = Guid.NewGuid(),
-            CreatedAt = DateTime.UtcNow,
-        });
+        db.Players.Add(Player.CreateGuest(PlayerId, Guid.NewGuid(), DateTime.UtcNow));
         db.DailyChallenges.Add(new DailyChallenge
         {
             Id     = 1,
@@ -42,18 +36,14 @@ public sealed class UpdateListeningHandlerTests
         });
         await db.SaveChangesAsync();
 
-        db.GameSessions.Add(new GameSession
-        {
-            Id                               = 1,
-            PlayerId                         = PlayerId,
-            DailyChallengeId                 = 1,
-            TotalScore                       = 0,
-            TotalDurationSeconds             = 0,
-            CreatedAt                        = DateTime.UtcNow,
-            Status                           = status,
-            CurrentTrackId                   = existingTrackId,
-            CurrentTrackMinListenedSeconds   = existingMin,
-        });
+        db.GameSessions.Add(GameSession.Restore(
+            playerId: PlayerId,
+            dailyChallengeId: 1,
+            id: 1,
+            createdAt: DateTime.UtcNow,
+            status: status,
+            currentTrackId: existingTrackId,
+            currentTrackMinListenedSeconds: existingMin));
         await db.SaveChangesAsync();
 
         return (db, 1);

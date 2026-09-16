@@ -5,7 +5,7 @@ using Xunit;
 using InSeconds.Api.Common.Settings;
 using InSeconds.Api.Domain;
 using InSeconds.Api.Features.Sessions.StartSession;
-using InSeconds.Api.Infrastructure.Deezer;
+using InSeconds.Deezer;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -67,14 +67,7 @@ public sealed class StartSessionHandlerTests
     // Builders
     // ---------------------------------------------------------------------------
 
-    private static Player BuildPlayer() => new()
-    {
-        Id        = PlayerId,
-        IsGuest   = true,
-        AuthToken = Guid.NewGuid(),
-        CreatedAt = DateTime.UtcNow,
-        IsDeleted = false,
-    };
+    private static Player BuildPlayer() => Player.CreateGuest(PlayerId, Guid.NewGuid(), DateTime.UtcNow);
 
     private static DailyChallenge BuildTodayChallenge(int id = 1, int trackCount = 10)
     {
@@ -110,16 +103,8 @@ public sealed class StartSessionHandlerTests
         };
     }
 
-    private static GameSession BuildGameSession(Guid playerId, int challengeId, int id = 99, SessionStatus status = SessionStatus.Completed) => new()
-    {
-        Id                   = id,
-        PlayerId             = playerId,
-        DailyChallengeId     = challengeId,
-        TotalScore           = 0,
-        TotalDurationSeconds = 0,
-        CreatedAt            = DateTime.UtcNow,
-        Status               = status,
-    };
+    private static GameSession BuildGameSession(Guid playerId, int challengeId, int id = 99, SessionStatus status = SessionStatus.Completed) =>
+        GameSession.Restore(playerId: playerId, dailyChallengeId: challengeId, id: id, createdAt: DateTime.UtcNow, status: status);
 
     // ---------------------------------------------------------------------------
     // Helpers assertion IResult
@@ -269,15 +254,9 @@ public sealed class StartSessionHandlerTests
         db.DailyChallenges.Add(oldChallenge);
         await db.SaveChangesAsync();
 
-        var oldSession = new GameSession
-        {
-            PlayerId             = PlayerId,
-            DailyChallengeId     = oldChallenge.Id,
-            TotalScore           = 0,
-            TotalDurationSeconds = 0,
-            CreatedAt            = DateTime.UtcNow.AddDays(-1),
-            Status               = SessionStatus.Pending,
-        };
+        var oldSession = GameSession.Restore(
+            playerId: PlayerId, dailyChallengeId: oldChallenge.Id,
+            createdAt: DateTime.UtcNow.AddDays(-1), status: SessionStatus.Pending);
         db.GameSessions.Add(oldSession);
 
         // Défi d'aujourd'hui

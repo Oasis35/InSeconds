@@ -197,7 +197,7 @@ public sealed class CookieAuthServiceTests
         var createdId = await service.ResolveOrCreatePlayerAsync(firstContext);
 
         var player = await db.Players.FindAsync(createdId);
-        player!.IsAdmin = true;
+        player!.PromoteToAdminForTesting();
         await db.SaveChangesAsync();
 
         var setCookieHeader = firstContext.Response.Headers["Set-Cookie"].ToString();

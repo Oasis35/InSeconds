@@ -37,7 +37,7 @@ public class SessionEdgeCaseTests(IntegrationTestFactory factory) : IAsyncLifeti
             var yesterdayChallenge = await db.DailyChallenges.FirstOrDefaultAsync(c => c.Date == yesterday);
             if (yesterdayChallenge is not null)
             {
-                gs.DailyChallengeId = yesterdayChallenge.Id;
+                gs.RelocateToChallengeForTesting(yesterdayChallenge.Id);
                 await db.SaveChangesAsync();
             }
         }
@@ -169,12 +169,11 @@ public class SessionEdgeCaseTests(IntegrationTestFactory factory) : IAsyncLifeti
             var yesterdayChallenge = await db.DailyChallenges.FirstAsync(c => c.Date == yesterday);
 
             var gs = await db.GameSessions.FindAsync(session.SessionId);
-            gs!.DailyChallengeId = yesterdayChallenge.Id;
+            gs!.RelocateToChallengeForTesting(yesterdayChallenge.Id);
             playerId = gs.PlayerId;
 
             var player = await db.Players.FirstAsync(p => p.Id == playerId);
-            player.LastPlayedDate = dayBefore;
-            player.CurrentStreak  = 5;
+            player.RestoreStreakForTesting(5, dayBefore);
 
             trackIds = await db.DailyChallengeTracks
                 .Where(t => t.DailyChallengeId == yesterdayChallenge.Id)
@@ -214,8 +213,7 @@ public class SessionEdgeCaseTests(IntegrationTestFactory factory) : IAsyncLifeti
             playerId = gs!.PlayerId;
 
             var player = await db.Players.FirstAsync(p => p.Id == playerId);
-            player.LastPlayedDate = today.AddDays(-3); // trou de 2 jours
-            player.CurrentStreak  = 5;
+            player.RestoreStreakForTesting(5, today.AddDays(-3)); // trou de 2 jours
             await db.SaveChangesAsync();
         }
 

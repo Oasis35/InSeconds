@@ -62,15 +62,9 @@ public class VerifyMagicLinkTests(IntegrationTestFactory factory) : IAsyncLifeti
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            db.Players.Add(new Player
-            {
-                Id = Guid.NewGuid(),
-                IsGuest = false,
-                Email = "autrecompte@example.com",
-                Pseudo = "PseudoPris",
-                AuthToken = Guid.NewGuid(),
-                CreatedAt = DateTime.UtcNow,
-            });
+            var existingPlayer = Player.CreateGuest(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow);
+            existingPlayer.LinkToAccount("autrecompte@example.com", "PseudoPris");
+            db.Players.Add(existingPlayer);
             await db.SaveChangesAsync();
         }
 
@@ -88,15 +82,9 @@ public class VerifyMagicLinkTests(IntegrationTestFactory factory) : IAsyncLifeti
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            db.Players.Add(new Player
-            {
-                Id = Guid.NewGuid(),
-                IsGuest = false,
-                Email = "autrecompte2@example.com",
-                Pseudo = "DejaPris",
-                AuthToken = Guid.NewGuid(),
-                CreatedAt = DateTime.UtcNow,
-            });
+            var existingPlayer = Player.CreateGuest(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow);
+            existingPlayer.LinkToAccount("autrecompte2@example.com", "DejaPris");
+            db.Players.Add(existingPlayer);
             await db.SaveChangesAsync();
         }
 

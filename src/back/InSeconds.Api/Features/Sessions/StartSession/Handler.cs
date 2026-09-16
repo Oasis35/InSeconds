@@ -2,7 +2,7 @@ using InSeconds.Api.Common.Settings;
 using InSeconds.Api.Common.Text;
 using InSeconds.Api.Domain;
 using InSeconds.Api.Features.ChallengeGeneration;
-using InSeconds.Api.Infrastructure.Deezer;
+using InSeconds.Deezer;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -59,10 +59,7 @@ public sealed class StartSessionHandler(
             .ToListAsync(ct);
 
         foreach (var expired in expiredSessions)
-        {
-            expired.Status      = SessionStatus.Expired;
-            expired.AbandonedAt = DateTime.UtcNow;
-        }
+            expired.Expire(DateTime.UtcNow);
 
         if (expiredSessions.Count > 0)
             await db.SaveChangesAsync(ct);
@@ -144,15 +141,7 @@ public sealed class StartSessionHandler(
     {
         var player = await db.Players.AsNoTracking().FirstAsync(p => p.Id == playerId, ct);
 
-        var session = new GameSession
-        {
-            PlayerId             = playerId,
-            DailyChallengeId     = challenge.Id,
-            TotalScore           = 0,
-            TotalDurationSeconds = 0,
-            CreatedAt            = DateTime.UtcNow,
-            Status               = SessionStatus.Pending,
-        };
+        var session = GameSession.StartNew(playerId, challenge.Id, DateTime.UtcNow);
         db.GameSessions.Add(session);
         await db.SaveChangesAsync(ct);
 

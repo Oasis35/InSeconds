@@ -27,7 +27,7 @@ public sealed class ConfirmEmailChangeHandler(ApplicationDbContext db)
             return Results.Conflict(new { error = "email_taken", message = "Cette adresse est désormais utilisée par un autre compte." });
 
         var player = await db.Players.FirstAsync(p => p.Id == token.PlayerId, cancellationToken);
-        player.Email = token.NewEmail;
+        player.ChangeEmail(token.NewEmail);
         token.ConsumedAt = DateTime.UtcNow;
 
         try

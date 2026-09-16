@@ -35,10 +35,7 @@ public sealed class TodayStatsHandlerTests
         public ApplicationDbContext CreateDbContext() => new(_options);
     }
 
-    private static Player BuildPlayer(Guid id) => new()
-    {
-        Id = id, IsGuest = true, AuthToken = Guid.NewGuid(), CreatedAt = DateTime.UtcNow,
-    };
+    private static Player BuildPlayer(Guid id) => Player.CreateGuest(id, Guid.NewGuid(), DateTime.UtcNow);
 
     private static (DailyChallenge challenge, DailyChallengeTrack challengeTrack) BuildTodayChallenge()
     {
@@ -100,9 +97,9 @@ public sealed class TodayStatsHandlerTests
         db.DailyChallenges.Add(challenge);
         db.Players.AddRange(BuildPlayer(Player1), BuildPlayer(Player2), BuildPlayer(Player3));
         db.GameSessions.AddRange(
-            new GameSession { Id = 1, PlayerId = Player1, DailyChallengeId = 1, TotalScore = 100, TotalDurationSeconds = 3, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed },
-            new GameSession { Id = 2, PlayerId = Player2, DailyChallengeId = 1, TotalScore = 500, TotalDurationSeconds = 2, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed },
-            new GameSession { Id = 3, PlayerId = Player3, DailyChallengeId = 1, TotalScore = 300, TotalDurationSeconds = 5, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed });
+            GameSession.Restore(playerId: Player1, dailyChallengeId: 1, id: 1, totalScore: 100, totalDurationSeconds: 3, createdAt: DateTime.UtcNow, status: SessionStatus.Completed),
+            GameSession.Restore(playerId: Player2, dailyChallengeId: 1, id: 2, totalScore: 500, totalDurationSeconds: 2, createdAt: DateTime.UtcNow, status: SessionStatus.Completed),
+            GameSession.Restore(playerId: Player3, dailyChallengeId: 1, id: 3, totalScore: 300, totalDurationSeconds: 5, createdAt: DateTime.UtcNow, status: SessionStatus.Completed));
         await db.SaveChangesAsync();
 
         var result = await CreateHandler(db).Handle(null, CancellationToken.None);
@@ -122,10 +119,10 @@ public sealed class TodayStatsHandlerTests
         var player4 = new Guid("44444444-4444-4444-4444-444444444444");
         db.Players.AddRange(BuildPlayer(Player1), BuildPlayer(Player2), BuildPlayer(Player3), BuildPlayer(player4));
         db.GameSessions.AddRange(
-            new GameSession { Id = 1, PlayerId = Player1, DailyChallengeId = 1, TotalScore = 400, TotalDurationSeconds = 1, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed },
-            new GameSession { Id = 2, PlayerId = Player2, DailyChallengeId = 1, TotalScore = 100, TotalDurationSeconds = 5, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed },
-            new GameSession { Id = 3, PlayerId = Player3, DailyChallengeId = 1, TotalScore = 300, TotalDurationSeconds = 2, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed },
-            new GameSession { Id = 4, PlayerId = player4, DailyChallengeId = 1, TotalScore = 200, TotalDurationSeconds = 3, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed });
+            GameSession.Restore(playerId: Player1, dailyChallengeId: 1, id: 1, totalScore: 400, totalDurationSeconds: 1, createdAt: DateTime.UtcNow, status: SessionStatus.Completed),
+            GameSession.Restore(playerId: Player2, dailyChallengeId: 1, id: 2, totalScore: 100, totalDurationSeconds: 5, createdAt: DateTime.UtcNow, status: SessionStatus.Completed),
+            GameSession.Restore(playerId: Player3, dailyChallengeId: 1, id: 3, totalScore: 300, totalDurationSeconds: 2, createdAt: DateTime.UtcNow, status: SessionStatus.Completed),
+            GameSession.Restore(playerId: player4, dailyChallengeId: 1, id: 4, totalScore: 200, totalDurationSeconds: 3, createdAt: DateTime.UtcNow, status: SessionStatus.Completed));
         await db.SaveChangesAsync();
 
         var result = await CreateHandler(db).Handle(null, CancellationToken.None);
@@ -145,10 +142,7 @@ public sealed class TodayStatsHandlerTests
         var (challenge, _) = BuildTodayChallenge();
         db.DailyChallenges.Add(challenge);
         db.Players.Add(BuildPlayer(Player1));
-        db.GameSessions.Add(new GameSession
-        {
-            Id = 1, PlayerId = Player1, DailyChallengeId = 1, TotalScore = 850, TotalDurationSeconds = 1, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed,
-        });
+        db.GameSessions.Add(GameSession.Restore(playerId: Player1, dailyChallengeId: 1, id: 1, totalScore: 850, totalDurationSeconds: 1, createdAt: DateTime.UtcNow, status: SessionStatus.Completed));
         await db.SaveChangesAsync();
 
         var result = await CreateHandler(db).Handle(Player1, CancellationToken.None);
@@ -164,10 +158,7 @@ public sealed class TodayStatsHandlerTests
         var (challenge, _) = BuildTodayChallenge();
         db.DailyChallenges.Add(challenge);
         db.Players.Add(BuildPlayer(Player1));
-        db.GameSessions.Add(new GameSession
-        {
-            Id = 1, PlayerId = Player1, DailyChallengeId = 1, TotalScore = 500, TotalDurationSeconds = 2, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed,
-        });
+        db.GameSessions.Add(GameSession.Restore(playerId: Player1, dailyChallengeId: 1, id: 1, totalScore: 500, totalDurationSeconds: 2, createdAt: DateTime.UtcNow, status: SessionStatus.Completed));
         await db.SaveChangesAsync();
 
         var result = await CreateHandler(db).Handle(Player2, CancellationToken.None);
@@ -207,8 +198,8 @@ public sealed class TodayStatsHandlerTests
         db.DailyChallenges.Add(challenge);
         db.Players.AddRange(BuildPlayer(Player1), BuildPlayer(Player2));
         db.GameSessions.AddRange(
-            new GameSession { Id = 1, PlayerId = Player1, DailyChallengeId = 1, TotalScore = 400, TotalDurationSeconds = 3, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed },
-            new GameSession { Id = 2, PlayerId = Player2, DailyChallengeId = 1, TotalScore = 400, TotalDurationSeconds = 3, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed });
+            GameSession.Restore(playerId: Player1, dailyChallengeId: 1, id: 1, totalScore: 400, totalDurationSeconds: 3, createdAt: DateTime.UtcNow, status: SessionStatus.Completed),
+            GameSession.Restore(playerId: Player2, dailyChallengeId: 1, id: 2, totalScore: 400, totalDurationSeconds: 3, createdAt: DateTime.UtcNow, status: SessionStatus.Completed));
         db.GameSessionAnswers.AddRange(
             new GameSessionAnswer { Id = 1, GameSessionId = 1, DailyChallengeTrackId = challengeTrack.Id, ListenedDurationSeconds = 3, ArtistCorrect = true, TitleCorrect = true, Score = 400 },
             new GameSessionAnswer { Id = 2, GameSessionId = 2, DailyChallengeTrackId = challengeTrack.Id, ListenedDurationSeconds = 5, ArtistCorrect = true, TitleCorrect = true, Score = 250 });
@@ -238,8 +229,8 @@ public sealed class TodayStatsHandlerTests
         db.DailyChallenges.Add(challenge);
         db.Players.AddRange(BuildPlayer(Player1), BuildPlayer(Player2));
         db.GameSessions.AddRange(
-            new GameSession { Id = 1, PlayerId = Player1, DailyChallengeId = 1, TotalScore = 400, TotalDurationSeconds = 3, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed },
-            new GameSession { Id = 2, PlayerId = Player2, DailyChallengeId = 1, TotalScore = 0, TotalDurationSeconds = 3, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed });
+            GameSession.Restore(playerId: Player1, dailyChallengeId: 1, id: 1, totalScore: 400, totalDurationSeconds: 3, createdAt: DateTime.UtcNow, status: SessionStatus.Completed),
+            GameSession.Restore(playerId: Player2, dailyChallengeId: 1, id: 2, totalScore: 0, totalDurationSeconds: 3, createdAt: DateTime.UtcNow, status: SessionStatus.Completed));
         db.GameSessionAnswers.AddRange(
             new GameSessionAnswer { Id = 1, GameSessionId = 1, DailyChallengeTrackId = challengeTrack.Id, ListenedDurationSeconds = 3, ArtistCorrect = true, TitleCorrect = true, Score = 400 },
             new GameSessionAnswer { Id = 2, GameSessionId = 2, DailyChallengeTrackId = challengeTrack.Id, ListenedDurationSeconds = 3, ArtistCorrect = false, TitleCorrect = false, Score = 0 });
@@ -264,10 +255,7 @@ public sealed class TodayStatsHandlerTests
         var (challenge, challengeTrack) = BuildTodayChallenge();
         db.DailyChallenges.Add(challenge);
         db.Players.Add(BuildPlayer(Player1));
-        db.GameSessions.Add(new GameSession
-        {
-            Id = 1, PlayerId = Player1, DailyChallengeId = 1, TotalScore = 700, TotalDurationSeconds = 1, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed,
-        });
+        db.GameSessions.Add(GameSession.Restore(playerId: Player1, dailyChallengeId: 1, id: 1, totalScore: 700, totalDurationSeconds: 1, createdAt: DateTime.UtcNow, status: SessionStatus.Completed));
         db.GameSessionAnswers.Add(new GameSessionAnswer
         {
             Id = 1, GameSessionId = 1, DailyChallengeTrackId = challengeTrack.Id,
@@ -292,10 +280,7 @@ public sealed class TodayStatsHandlerTests
         var (challenge, challengeTrack) = BuildTodayChallenge();
         db.DailyChallenges.Add(challenge);
         db.Players.Add(BuildPlayer(Player1));
-        db.GameSessions.Add(new GameSession
-        {
-            Id = 1, PlayerId = Player1, DailyChallengeId = 1, TotalScore = 400, TotalDurationSeconds = 3, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Completed,
-        });
+        db.GameSessions.Add(GameSession.Restore(playerId: Player1, dailyChallengeId: 1, id: 1, totalScore: 400, totalDurationSeconds: 3, createdAt: DateTime.UtcNow, status: SessionStatus.Completed));
         db.GameSessionAnswers.Add(new GameSessionAnswer
         {
             Id = 1, GameSessionId = 1, DailyChallengeTrackId = challengeTrack.Id,
@@ -320,10 +305,7 @@ public sealed class TodayStatsHandlerTests
         var (challenge, _) = BuildTodayChallenge();
         db.DailyChallenges.Add(challenge);
         db.Players.AddRange(BuildPlayer(Player1), BuildPlayer(Player2));
-        db.GameSessions.Add(new GameSession
-        {
-            Id = 1, PlayerId = Player1, DailyChallengeId = 1, TotalScore = 0, TotalDurationSeconds = 0, CreatedAt = DateTime.UtcNow, Status = SessionStatus.Abandoned,
-        });
+        db.GameSessions.Add(GameSession.Restore(playerId: Player1, dailyChallengeId: 1, id: 1, totalScore: 0, totalDurationSeconds: 0, createdAt: DateTime.UtcNow, status: SessionStatus.Abandoned));
         await db.SaveChangesAsync();
 
         // Player2 demande les stats — n'a pas joué

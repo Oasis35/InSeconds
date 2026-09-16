@@ -1,5 +1,5 @@
 using InSeconds.Api.Domain;
-using InSeconds.Api.Infrastructure.Deezer;
+using InSeconds.Deezer;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;

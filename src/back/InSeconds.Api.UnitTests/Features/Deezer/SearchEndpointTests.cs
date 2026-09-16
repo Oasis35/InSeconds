@@ -1,6 +1,6 @@
 using FluentAssertions;
 using InSeconds.Api.Features.Deezer;
-using InSeconds.Api.Infrastructure.Deezer;
+using InSeconds.Deezer;
 using Xunit;
 
 namespace InSeconds.Api.UnitTests.Features.Deezer;

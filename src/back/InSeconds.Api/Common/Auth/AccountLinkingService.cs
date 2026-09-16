@@ -34,7 +34,7 @@ public sealed class AccountLinkingService(ApplicationDbContext db) : IAccountLin
 
         if (existing is not null)
         {
-            existing.LastSeenAt = DateTime.UtcNow;
+            existing.RecordSeen(DateTime.UtcNow);
             await db.SaveChangesAsync(ct);
             return new LinkResult(LinkOutcome.Found, existing.Id, existing.AuthToken);
         }
@@ -46,9 +46,7 @@ public sealed class AccountLinkingService(ApplicationDbContext db) : IAccountLin
         }
 
         var player = await db.Players.FirstAsync(p => p.Id == currentGuestPlayerId, ct);
-        player.IsGuest = false;
-        player.Email = email;
-        player.Pseudo = pseudo;
+        player.LinkToAccount(email, pseudo);
         await db.SaveChangesAsync(ct);
 
         return new LinkResult(LinkOutcome.Linked, player.Id, player.AuthToken);

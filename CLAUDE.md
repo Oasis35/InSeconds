@@ -31,7 +31,8 @@ InSeconds/
 │   │   ├── InSeconds.slnx              # solution .NET (FORMAT .slnx OBLIGATOIRE)
 │   │   ├── global.json                 # rollForward: latestFeature sur .NET 10
 │   │   ├── InSeconds.Api/              # web API
-│   │   ├── InSeconds.Api.UnitTests/    # tests unitaires xUnit (ScoreCalculator, TextNormalizer, SettingsService)
+│   │   ├── InSeconds.Deezer/           # client Deezer (DeezerClient/CachedDeezerClient), projet séparé
+│   │   ├── InSeconds.Api.UnitTests/    # tests unitaires xUnit (ScoreCalculator, TextNormalizer, SettingsService, Domain)
 │   │   └── InSeconds.Api.IntegrationTests/ # tests d'intégration (Testcontainers + WebApplicationFactory)
 │   └── front/
 │       └── InSeconds.Client/  # app Angular
@@ -40,7 +41,7 @@ InSeconds/
 
 ## Architecture backend — vertical slice
 
-> **Détail exhaustif** (chaque feature slice, entités Domain, configurations EF/migrations structurantes, `DeezerClient`/`CachedDeezerClient`, `CookieAuthService`, `ScoreCalculator`, mécanisme Settings, pipeline `Program.cs`) : voir [`src/back/InSeconds.Api/CLAUDE.md`](src/back/InSeconds.Api/CLAUDE.md). Ci-dessous : conventions et règles générales seulement.
+> **Détail exhaustif** (chaque feature slice, entités Domain, configurations EF/migrations structurantes, `CookieAuthService`, `ScoreCalculator`, mécanisme Settings, pipeline `Program.cs`) : voir [`src/back/InSeconds.Api/CLAUDE.md`](src/back/InSeconds.Api/CLAUDE.md). `DeezerClient`/`CachedDeezerClient` vivent désormais dans le projet séparé `InSeconds.Deezer` (premier pas vers un modular monolith — module isolé sans dépendance entrante d'autre code) : voir [`src/back/InSeconds.Deezer/CLAUDE.md`](src/back/InSeconds.Deezer/CLAUDE.md). Ci-dessous : conventions et règles générales seulement.
 
 Une **feature = un dossier** dans `Features/<Aggregate>/<UseCase>/` contenant : `Endpoint.cs` (Minimal API), `Command.cs`/`Query.cs`, `Handler.cs` (Wolverine), `Validator.cs` (FluentValidation), `Response.cs`.
 
@@ -48,25 +49,29 @@ Layout fixe :
 ```
 InSeconds.Api/
 ├── Features/<Aggregate>/<UseCase>/   # 1 dossier = 1 use-case complet
-├── Domain/                            # entités EF pures (pas d'annotations)
+├── Domain/                            # entités EF (invariants encapsulés : setters privés + méthodes métier
+│                                       # sur Player/GameSession, cf. piège 18 racine)
 ├── Infrastructure/
-│   ├── Persistence/
-│   │   ├── ApplicationDbContext.cs
-│   │   ├── Configurations/            # 1 IEntityTypeConfiguration<T> par entité
-│   │   └── Migrations/
-│   └── Deezer/                        # client API Deezer
+│   └── Persistence/
+│       ├── ApplicationDbContext.cs
+│       ├── Configurations/            # 1 IEntityTypeConfiguration<T> par entité
+│       └── Migrations/
 ├── Common/
-│   ├── Auth/                          # CookieAuthService + PlayerAuthMiddleware
+│   ├── Auth/                          # CookieAuthService + PlayerAuthMiddleware + PlayerQueryExtensions
+│   ├── Sessions/                      # GameSessionQueryExtensions
 │   ├── Scoring/                       # ScoreCalculator
 │   ├── Settings/                      # AppSettings, SettingsService, AppDbConfigurationSource
 │   └── Text/                          # TextNormalizer + TextNormalizationHelpers (Levenshtein, accents, regex)
 └── Program.cs
+
+InSeconds.Deezer/                      # projet séparé — DeezerClient/CachedDeezerClient/FakeDeezerHandler,
+                                        # référencé par InSeconds.Api via ProjectReference
 ```
 
 ### Règles dures (ne pas dévier)
 
 - **Pas de couche service partagée fourre-tout** — chaque feature porte sa logique
-- **Pas d'abstraction `IRepository<T>`** — `ApplicationDbContext` est injecté directement dans les handlers
+- **Pas d'abstraction `IRepository<T>`** — `ApplicationDbContext` est injecté directement dans les handlers. Pour une requête + règle métier dupliquée mot pour mot entre plusieurs handlers (ex: "charger une session et vérifier qu'elle appartient au joueur"), extraire une extension method **ciblée** sur `ApplicationDbContext` (`Common/Sessions/GameSessionQueryExtensions.LoadOwnedSessionAsync`, `Common/Auth/PlayerQueryExtensions.LoadLinkedPlayerAsync`) plutôt qu'un repository générique — nommée par l'intention, pas par un CRUD générique
 - **Wolverine handlers par convention** (méthodes nommées `Handle`, pas d'interface à implémenter)
 - **Validation = FluentValidation par command** (pas DataAnnotations)
 - **Endpoints = Minimal API**, un fichier par endpoint avec `MapXxx(this IEndpointRouteBuilder)`

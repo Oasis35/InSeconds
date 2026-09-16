@@ -38,7 +38,7 @@ using InSeconds.Api.Features.Sessions.UpdateListening;
 using InSeconds.Api.Features.Sessions.SubmitAnswer;
 using InSeconds.Api.Features.E2E;
 using InSeconds.Api.Features.Settings.GetSettings;
-using InSeconds.Api.Infrastructure.Deezer;
+using InSeconds.Deezer;
 using InSeconds.Api.Infrastructure.Persistence;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.DataProtection;
@@ -192,34 +192,13 @@ builder.Services.AddHostedService<RefreshPreviewStatusService>();
 builder.Services.AddSingleton<ScoreCalculator>();
 builder.Services.AddSingleton<TextNormalizer>();
 
-// SizeLimit par sécurité : évite qu'un pool de morceaux ou un volume de recherches
-// admin/joueur en forte hausse ne fasse grossir le cache sans borne avant expiration
-// du TTL (conteneur prod à seulement 512 MB, cf. piège OOM 2026-09-08). Chaque entrée
-// est comptée pour 1 (URL de preview ou petite liste de résultats de recherche).
-builder.Services.AddMemoryCache(options => options.SizeLimit = 2000);
-builder.Services.AddTransient<CachedDeezerClient>();
-
-var deezerHttpBuilder = builder.Services.AddHttpClient<DeezerClient>(client =>
-{
-    client.BaseAddress = new Uri(builder.Configuration["Deezer:BaseUrl"] ?? "https://api.deezer.com");
-});
-
-if (builder.Environment.IsEnvironment("Testing"))
-{
-    deezerHttpBuilder.ConfigurePrimaryHttpMessageHandler(() => new FakeDeezerHandler());
-}
-else
-{
-    // Résilience HTTP sur l'API Deezer : timeout court par tentative, retry
-    // exponentiel (incluant 429/5xx) et circuit breaker. Évite qu'un appel
-    // Deezer lent ne bloque StartSession (timeout HttpClient par défaut = 100s).
-    deezerHttpBuilder.AddStandardResilienceHandler(options =>
-    {
-        options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(4);
-        options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(15);
-        options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
-    });
-}
+// Enregistrement DeezerClient/CachedDeezerClient + résilience HTTP (ou FakeDeezerHandler
+// en Testing) délégué à InSeconds.Deezer (module séparé, cf. AddDeezerHttpClient) — SizeLimit
+// du cache mémoire par sécurité côté module (conteneur prod à seulement 512 MB, cf. piège
+// OOM 2026-09-08).
+builder.Services.AddDeezerHttpClient(
+    useFakeHandler: builder.Environment.IsEnvironment("Testing"),
+    baseUrl: builder.Configuration["Deezer:BaseUrl"] ?? "https://api.deezer.com");
 
 // PersistKeysToDbContext : sans persistance, les clés vivent dans le filesystem du
 // conteneur et sautent à chaque redéploiement/redémarrage → cookies joueurs invalidés

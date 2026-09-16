@@ -19,25 +19,10 @@ public sealed class AbandonSessionHandlerTests
 
     private static AbandonSessionHandler CreateHandler(ApplicationDbContext db) => new(db);
 
-    private static Player BuildPlayer() => new()
-    {
-        Id        = PlayerId,
-        IsGuest   = true,
-        AuthToken = Guid.NewGuid(),
-        CreatedAt = DateTime.UtcNow,
-        IsDeleted = false,
-    };
+    private static Player BuildPlayer() => Player.CreateGuest(PlayerId, Guid.NewGuid(), DateTime.UtcNow);
 
-    private static GameSession BuildSession(int id = 1, SessionStatus status = SessionStatus.Pending) => new()
-    {
-        Id                   = id,
-        PlayerId             = PlayerId,
-        DailyChallengeId     = 1,
-        TotalScore           = 0,
-        TotalDurationSeconds = 0,
-        CreatedAt            = DateTime.UtcNow,
-        Status               = status,
-    };
+    private static GameSession BuildSession(int id = 1, SessionStatus status = SessionStatus.Pending) =>
+        GameSession.Restore(playerId: PlayerId, dailyChallengeId: 1, id: id, createdAt: DateTime.UtcNow, status: status);
 
     private static async Task SeedAsync(ApplicationDbContext db, SessionStatus status = SessionStatus.Pending)
     {

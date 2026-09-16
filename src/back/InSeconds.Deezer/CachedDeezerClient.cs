@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Caching.Memory;
 
-namespace InSeconds.Api.Infrastructure.Deezer;
+namespace InSeconds.Deezer;
 
 /// <summary>
 /// Cache mémoire devant <see cref="DeezerClient"/> pour les données partagées entre joueurs

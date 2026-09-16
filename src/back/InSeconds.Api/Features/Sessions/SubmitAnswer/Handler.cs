@@ -1,4 +1,5 @@
 using InSeconds.Api.Common.Scoring;
+using InSeconds.Api.Common.Sessions;
 using InSeconds.Api.Common.Settings;
 using InSeconds.Api.Common.Stats;
 using InSeconds.Api.Common.Text;
@@ -16,16 +17,15 @@ public sealed class SubmitAnswerHandler(
 {
     public async Task<IResult> Handle(SubmitAnswerCommand command, CancellationToken cancellationToken)
     {
-        var session = await db.GameSessions
-            .FirstOrDefaultAsync(s => s.Id == command.SessionId, cancellationToken);
+        var (session, failure) = await db.LoadOwnedSessionAsync(command.SessionId, command.PlayerId, cancellationToken);
 
-        if (session is null)
+        if (failure == SessionLookupFailure.NotFound)
             return Results.NotFound(new { error = "session_not_found", message = "Session introuvable." });
 
-        if (session.PlayerId != command.PlayerId)
+        if (failure == SessionLookupFailure.WrongPlayer)
             return Results.StatusCode(403);
 
-        if (session.Status != SessionStatus.Pending)
+        if (session!.Status != SessionStatus.Pending)
             return Results.StatusCode(403);
 
         var challengeTrack = await db.DailyChallengeTracks
@@ -70,12 +70,10 @@ public sealed class SubmitAnswerHandler(
             Score                   = score,
         });
 
-        session.TotalScore           += score;
-        session.TotalDurationSeconds += command.ListenedDurationSeconds;
+        session.AddAnswerScore(score, command.ListenedDurationSeconds);
 
         // Réinitialiser le verrou anti-cheat (la track est répondue, plus besoin)
-        session.CurrentTrackId                = null;
-        session.CurrentTrackMinListenedSeconds = null;
+        session.ReleaseTrackLock();
 
         // Vérifier si tous les morceaux du défi ont été répondus → complétion
         var answeredCount = await db.GameSessionAnswers
@@ -142,8 +140,7 @@ public sealed class SubmitAnswerHandler(
     // lundi mardi à 00:15 UTC ne doit pas casser la streak (piège 18).
     private async Task CompleteSessionAsync(GameSession session, Guid playerId, CancellationToken ct)
     {
-        session.Status      = SessionStatus.Completed;
-        session.CompletedAt = DateTime.UtcNow;
+        session.Complete(DateTime.UtcNow);
 
         var challengeDate = await db.DailyChallenges
             .Where(c => c.Id == session.DailyChallengeId)
@@ -151,8 +148,7 @@ public sealed class SubmitAnswerHandler(
             .FirstAsync(ct);
 
         var player = await db.Players.FirstAsync(p => p.Id == playerId, ct);
-        player.CurrentStreak  = player.LastPlayedDate == challengeDate.AddDays(-1) ? player.CurrentStreak + 1 : 1;
-        player.LastPlayedDate = challengeDate;
+        player.RecordChallengeCompletion(challengeDate);
     }
 
     // Combine les stats déjà en base avec la réponse courante (pas encore persistée au
