@@ -1,33 +1,19 @@
-import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { FormsModule } from '@angular/forms';
-import { HttpErrorResponse } from '@angular/common/http';
 import { TranslatePipe } from '@ngx-translate/core';
-import { AdminApiService } from '../../services/admin-api.service';
+import { PlayerSessionService } from '../../../../core/services/player-session.service';
 
 @Component({
   selector: 'app-admin-login',
-  imports: [FormsModule, RouterLink, TranslatePipe],
+  imports: [RouterLink, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './admin-login.component.html',
 })
 export class AdminLoginComponent {
-  private readonly api = inject(AdminApiService);
+  private readonly playerSession = inject(PlayerSessionService);
 
-  protected password = '';
-  protected readonly loginStatus = signal<'idle' | 'loading' | 'error' | 'rate_limited'>('idle');
-
-  login(): void {
-    this.loginStatus.set('loading');
-    this.api.login(this.password).then(() => {
-      this.loginStatus.set('idle');
-      this.password = '';
-    }).catch((err: unknown) => {
-      // Distinguer le 429 (rate limiter admin-login) du 401 (vrai mauvais mot de passe) —
-      // sinon un simple dépassement de quota (cf. piège 27 CLAUDE.md racine) s'affiche comme
-      // "mot de passe incorrect" et fait perdre du temps à chercher un problème inexistant.
-      const isRateLimited = err instanceof HttpErrorResponse && err.status === 429;
-      this.loginStatus.set(isRateLimited ? 'rate_limited' : 'error');
-    });
-  }
+  // Deux cas distincts derrière ce même écran : pas de compte lié (guest ou pas
+  // connecté) → lien vers /login ; compte lié mais IsAdmin=false → simple message,
+  // pas d'action possible depuis l'UI (cf. features/admin/CLAUDE.md).
+  protected readonly isLinked = this.playerSession.isLinked;
 }

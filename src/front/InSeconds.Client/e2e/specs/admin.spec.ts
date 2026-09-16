@@ -4,15 +4,37 @@ import { GamePage } from '../pages/game.page';
 import { BlindRoundPage } from '../pages/blind-round.page';
 
 test.describe('Admin — login', () => {
-  test('affiche une erreur avec un mauvais mot de passe', async ({ page }) => {
+  test('visiteur non connecté : /admin invite à se connecter', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
-    await admin.passwordInput.fill('mauvais-mdp');
-    await admin.loginButton.click();
-    await expect(admin.loginError).toBeVisible();
+    await expect(admin.notLoggedInMessage).toBeVisible();
+    await expect(page.getByRole('link', { name: /Se connecter/ })).toBeVisible();
   });
 
-  test('se connecte et affiche le dashboard', async ({ page }) => {
+  test('compte lié mais pas admin : /admin affiche accès refusé', async ({ page, api }) => {
+    await api.reset();
+    const email = 'joueur-normal@e2e.test';
+    await page.goto('/login');
+    await page.getByPlaceholder('ton@email.com').fill(email);
+    await page.getByRole('button', { name: 'Recevoir un lien' }).click();
+    await expect(page.getByText('un lien de connexion vient de t\'être envoyé')).toBeVisible();
+
+    const linkUrl = await api.getLastMagicLinkUrl(email);
+    const parsed = new URL(linkUrl);
+    await page.goto(parsed.pathname + parsed.search);
+    await page.getByRole('button', { name: 'Confirmer la connexion' }).click();
+    await page.getByPlaceholder('Ton pseudo').fill('JoueurE2E');
+    await page.getByRole('button', { name: 'Valider' }).click();
+
+    const game = new GamePage(page);
+    await game.waitForWelcome();
+
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await expect(admin.accessDeniedMessage).toBeVisible();
+  });
+
+  test('se connecte et affiche le dashboard directement', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
@@ -25,7 +47,7 @@ test.describe('Admin — login', () => {
     await admin.goto();
     await admin.login();
     await admin.logoutButton.click();
-    await expect(admin.loginButton).toBeVisible();
+    await expect(admin.notLoggedInMessage).toBeVisible();
   });
 });
 
@@ -251,16 +273,6 @@ test.describe('Admin — actions', () => {
 
     await admin.generateButton().click();
     await expect(page.getByText('déjà généré')).toBeVisible({ timeout: 5000 });
-  });
-
-  test('réinitialise les parties du jour', async ({ page }) => {
-    const admin = new AdminPage(page);
-    await admin.goto();
-    await admin.login();
-    await admin.clickTab('Actions');
-
-    await admin.resetButton().click();
-    await expect(page.getByText(/partie\(s\) supprimée\(s\)/)).toBeVisible({ timeout: 5000 });
   });
 
   test('édite le cooldown de réutilisation et persiste en base', async ({ page }) => {

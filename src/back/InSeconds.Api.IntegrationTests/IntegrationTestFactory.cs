@@ -47,10 +47,10 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>, IAsyncLife
         Client = CreateClient();
 
         // HttpClient n'envoie jamais de header Origin automatiquement (contrairement à
-        // un navigateur) : sans ça, OriginValidator ferait échouer en 403 tous les
-        // endpoints admin (LoginEndpoint.IsAdminAuthenticated) et VerifyMagicLink dès
-        // le premier appel. Origine de confiance déjà présente dans
-        // Cors:AllowedOrigins (appsettings.Testing.json).
+        // un navigateur) : sans ça, OriginValidator ferait échouer VerifyMagicLink en 403
+        // dès le premier appel (seul point d'application restant depuis que l'auth admin
+        // n'en dépend plus, cf. refonte profils admin). Origine de confiance déjà présente
+        // dans Cors:AllowedOrigins (appsettings.Testing.json).
         Client.DefaultRequestHeaders.Add("Origin", "http://localhost:5173");
 
         // Déclenche le startup (migration + seed) via le premier appel HTTP

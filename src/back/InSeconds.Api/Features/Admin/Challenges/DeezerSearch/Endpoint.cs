@@ -1,4 +1,4 @@
-using InSeconds.Api.Features.Admin.Login;
+using InSeconds.Api.Common.Auth;
 using InSeconds.Api.Infrastructure.Deezer;
 
 namespace InSeconds.Api.Features.Admin.Challenges.DeezerSearch;
@@ -13,7 +13,7 @@ public static class DeezerSearchEndpoint
             DeezerClient deezer,
             CancellationToken ct) =>
         {
-            if (!LoginEndpoint.IsAdminAuthenticated(ctx))
+            if (!ctx.GetPlayerIsAdmin())
                 return Results.Unauthorized();
 
             if (string.IsNullOrWhiteSpace(q) || q.Length < 2)

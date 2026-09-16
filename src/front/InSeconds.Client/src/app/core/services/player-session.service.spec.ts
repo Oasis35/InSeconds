@@ -65,6 +65,16 @@ describe('PlayerSessionService', () => {
       expect(service.pseudo()).toBe('Alice');
     });
 
+    it('should populate isAdmin from the response', () => {
+      apiClient.apiPlayersMe.and.returnValue(
+        of({ playerId: fakeId, isGuest: false, email: 'admin@b.com', pseudo: 'Admin', isAdmin: true })
+      );
+
+      service.load().subscribe();
+
+      expect(service.isAdmin()).toBeTrue();
+    });
+
     it('should swallow HTTP errors so app bootstrap is not blocked', () => {
       apiClient.apiPlayersMe.and.returnValue(throwError(() => new Error('network error')));
 

@@ -66,7 +66,7 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - Settings via `IOptions<AppSettings>` chargé depuis la BD au boot (ADO.NET brut)
 - `Track.CoverHash` + `AppSettings.CoverUrlTemplate` (URL reconstruite à la volée)
 - Page admin (`/admin`) — login, pool (sous-onglets + indicateur preview + popup ajout avec lecteur), défis, stats dashboard, reset sessions
-- Auth admin via Bearer token + `adminAuthInterceptor` Angular
+- Auth admin = rôle `Player.IsAdmin` sur le cookie joueur — connexion identique à un joueur normal (`/login`, magic link), accès direct au dashboard si le compte a `IsAdmin=true`, rôle attribué uniquement par SQL manuel sur le VPS (aucune UI ni endpoint dédié)
 - `BackgroundService` génération défi quotidien automatique (à minuit UTC, retry toutes les 10 min en cas d'échec) — filtre sur `Track.HasPreview` en DB, Fisher-Yates, transaction ; planification via `DailySchedule.NextUtcHour` + `DelayUntilAsync` (attente sur cible d'horloge murale : un réveil anticipé de `Task.Delay` ne saute plus de jour, cf. piège 19)
 - **Génération paresseuse dans `StartSession`** — si le défi du jour manque (job de minuit raté), le premier joueur le régénère à la volée (sélection déterministe seed = `DayNumber`, course gérée par la contrainte unique sur `Date`) ; le 503 « pas de défi » ne subsiste que si le pool est insuffisant
 - **Clés Data Protection persistées en base** (`PersistKeysToDbContext`, table `DataProtectionKeys`) — les cookies joueurs survivent aux redémarrages/redéploiements (piège 17 résolu)

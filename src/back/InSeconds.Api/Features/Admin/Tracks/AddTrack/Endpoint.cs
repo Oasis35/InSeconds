@@ -1,4 +1,4 @@
-using InSeconds.Api.Features.Admin.Login;
+using InSeconds.Api.Common.Auth;
 using Wolverine;
 
 namespace InSeconds.Api.Features.Admin.Tracks.AddTrack;
@@ -13,7 +13,7 @@ public static class AddTrackEndpoint
             IMessageBus bus,
             CancellationToken ct) =>
         {
-            if (!LoginEndpoint.IsAdminAuthenticated(ctx))
+            if (!ctx.GetPlayerIsAdmin())
                 return Results.Unauthorized();
 
             return await bus.InvokeAsync<IResult>(new AddTrackCommand(body.DeezerTrackId), ct);

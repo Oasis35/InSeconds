@@ -1,5 +1,5 @@
+using InSeconds.Api.Common.Auth;
 using InSeconds.Api.Common.Settings;
-using InSeconds.Api.Features.Admin.Login;
 using Wolverine;
 
 namespace InSeconds.Api.Features.Admin.Challenges.CreateChallenge;
@@ -15,7 +15,7 @@ public static class CreateChallengeEndpoint
             SettingsService settingsService,
             CancellationToken ct) =>
         {
-            if (!LoginEndpoint.IsAdminAuthenticated(ctx))
+            if (!ctx.GetPlayerIsAdmin())
                 return Results.Unauthorized();
 
             var maxTracks = (await settingsService.GetAsync(ct)).TracksPerChallenge;

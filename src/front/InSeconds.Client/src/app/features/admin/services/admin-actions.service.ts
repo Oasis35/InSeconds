@@ -2,7 +2,7 @@ import { Injectable, inject, signal, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AdminApiService } from './admin-api.service';
 import { SettingsService } from '../../../core/services/settings.service';
-import { RefreshPreviewsResult, ResetResult } from '../admin.models';
+import { RefreshPreviewsResult } from '../admin.models';
 
 type SimpleAsyncStatus = 'idle' | 'loading' | 'success' | 'error';
 
@@ -14,14 +14,10 @@ export class AdminActionsService {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly generateStatus = signal<'idle' | 'loading' | 'success' | 'already' | 'pool_insufficient' | 'error'>('idle');
-  readonly resetStatus = signal<SimpleAsyncStatus>('idle');
-  readonly resetResult = signal<ResetResult | null>(null);
   readonly refreshPreviewsStatus = signal<SimpleAsyncStatus>('idle');
   readonly refreshPreviewsResult = signal<RefreshPreviewsResult | null>(null);
   readonly trackCooldownDaysInput = signal<number | null>(null);
   readonly updateCooldownStatus = signal<SimpleAsyncStatus>('idle');
-  readonly sendTestEmailStatus = signal<SimpleAsyncStatus>('idle');
-  readonly sendTestEmailError = signal<string | null>(null);
   private generateStatusTimer: ReturnType<typeof setTimeout> | null = null;
   private updateCooldownStatusTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -41,19 +37,6 @@ export class AdminActionsService {
         if (this.generateStatusTimer) clearTimeout(this.generateStatusTimer);
         this.generateStatusTimer = setTimeout(() => { this.generateStatus.set('idle'); this.generateStatusTimer = null; }, 3000);
       },
-    });
-  }
-
-  reset(): void {
-    this.resetStatus.set('loading');
-    this.resetResult.set(null);
-    this.api.resetToday().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: res => {
-        this.resetResult.set(res);
-        this.resetStatus.set('success');
-        this.api.reloadStats();
-      },
-      error: () => this.resetStatus.set('error'),
     });
   }
 
@@ -89,20 +72,6 @@ export class AdminActionsService {
           if (this.updateCooldownStatus() === 'error') this.updateCooldownStatus.set('idle');
           this.updateCooldownStatusTimer = null;
         }, 3000);
-      },
-    });
-  }
-
-  // Contrairement aux autres actions, l'erreur réelle (SMTP) est remontée à
-  // l'admin plutôt qu'avalée — c'est tout l'intérêt de ce bouton de diagnostic.
-  sendTestEmail(toEmail: string): void {
-    this.sendTestEmailStatus.set('loading');
-    this.sendTestEmailError.set(null);
-    this.api.sendTestEmail(toEmail).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => this.sendTestEmailStatus.set('success'),
-      error: (err) => {
-        this.sendTestEmailStatus.set('error');
-        this.sendTestEmailError.set(err?.error?.message ?? null);
       },
     });
   }

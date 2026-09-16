@@ -1,4 +1,4 @@
-using InSeconds.Api.Features.Admin.Login;
+using InSeconds.Api.Common.Auth;
 using Wolverine;
 
 namespace InSeconds.Api.Features.Admin.Settings.UpdateTrackCooldown;
@@ -13,7 +13,7 @@ public static class UpdateTrackCooldownEndpoint
             IMessageBus bus,
             CancellationToken ct) =>
         {
-            if (!LoginEndpoint.IsAdminAuthenticated(ctx))
+            if (!ctx.GetPlayerIsAdmin())
                 return Results.Unauthorized();
 
             return await bus.InvokeAsync<IResult>(new UpdateTrackCooldownCommand(body.TrackCooldownDays), ct);

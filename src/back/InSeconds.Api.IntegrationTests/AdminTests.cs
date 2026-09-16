@@ -30,27 +30,6 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
     public Task InitializeAsync() => factory.ResetAsync();
     public Task DisposeAsync() => Task.CompletedTask;
 
-    // ── Login ────────────────────────────────────────────────────────────────
-
-    [Fact]
-    public async Task Login_BonMotDePasse_Retourne200AvecToken()
-    {
-        var resp = await _client.PostAsJsonAsync("/api/admin/login", new { Password = "e2e-admin-password" });
-
-        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
-        var body = await resp.Content.ReadFromJsonAsync<LoginResponse>();
-        Assert.NotNull(body);
-        Assert.Equal("admin-token", body.Token);
-    }
-
-    [Fact]
-    public async Task Login_MauvaisMotDePasse_Retourne401()
-    {
-        var resp = await _client.PostAsJsonAsync("/api/admin/login", new { Password = "wrong" });
-
-        Assert.Equal(HttpStatusCode.Unauthorized, resp.StatusCode);
-    }
-
     // ── AddTrack ─────────────────────────────────────────────────────────────
 
     [Fact]
@@ -187,27 +166,6 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         var body = await resp.Content.ReadFromJsonAsync<ChallengeDto>();
         Assert.NotNull(body);
         Assert.Single(body.Tracks);
-    }
-
-    // ── ResetToday ────────────────────────────────────────────────────────────
-
-    [Fact]
-    public async Task ResetToday_SansAuth_Retourne401()
-    {
-        var resp = await _client.DeleteAsync("/api/admin/reset-today");
-
-        Assert.Equal(HttpStatusCode.Unauthorized, resp.StatusCode);
-    }
-
-    [Fact]
-    public async Task ResetToday_AvecDefi_Retourne200()
-    {
-        // Crée une session d'abord
-        await _client.PostAsync("/api/sessions", null);
-
-        var resp = await AdminDeleteAsync("/api/admin/reset-today");
-
-        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
     }
 
     // ── Admin Stats ───────────────────────────────────────────────────────────
@@ -775,6 +733,4 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
     }
-
-    private sealed record LoginResponse(string Token);
 }

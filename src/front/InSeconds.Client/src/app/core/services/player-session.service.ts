@@ -5,6 +5,8 @@ import { ApiClient } from '../../api/api.generated';
 // État de session du joueur courant (guest ou compte lié). Remplace l'ancien
 // player-identity.service.ts : en plus de playerId (ID navigateur, usage admin),
 // expose désormais isGuest/email/pseudo pour piloter l'UI login (footer, écrans /login).
+// isAdmin reflète Player.IsAdmin (back) — pilote l'affichage de l'icône admin du footer
+// et l'écran /admin (cf. game-footer, admin/CLAUDE.md).
 @Injectable({ providedIn: 'root' })
 export class PlayerSessionService {
   private readonly api = inject(ApiClient);
@@ -15,6 +17,7 @@ export class PlayerSessionService {
   readonly pseudo = signal<string | null>(null);
   readonly currentStreak = signal(0);
   readonly gamesPlayed = signal(0);
+  readonly isAdmin = signal(false);
 
   readonly isLinked = computed(() => !this.isGuest());
 
@@ -30,6 +33,7 @@ export class PlayerSessionService {
         this.pseudo.set(res.pseudo ?? null);
         this.currentStreak.set(res.currentStreak);
         this.gamesPlayed.set(res.gamesPlayed);
+        this.isAdmin.set(res.isAdmin);
       }),
       map(() => void 0),
       // L'app doit démarrer même si /api/players/me échoue : reste en état guest par défaut.

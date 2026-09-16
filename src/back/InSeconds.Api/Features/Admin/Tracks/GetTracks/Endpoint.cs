@@ -1,4 +1,4 @@
-using InSeconds.Api.Features.Admin.Login;
+using InSeconds.Api.Common.Auth;
 
 namespace InSeconds.Api.Features.Admin.Tracks.GetTracks;
 
@@ -11,7 +11,7 @@ public static class GetTracksEndpoint
             GetTracksHandler handler,
             CancellationToken ct) =>
         {
-            if (!LoginEndpoint.IsAdminAuthenticated(ctx))
+            if (!ctx.GetPlayerIsAdmin())
                 return Results.Unauthorized();
 
             return await handler.Handle(ct);

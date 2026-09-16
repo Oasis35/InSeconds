@@ -1,23 +1,38 @@
-using InSeconds.Api.Common.Auth;
-
 namespace InSeconds.Api.Common.Auth;
 
-public sealed class PlayerAuthMiddleware(RequestDelegate next)
+public sealed class PlayerAuthMiddleware(RequestDelegate next, IHostEnvironment env)
 {
+    private const string TestingBypassToken = "admin-token";
+    private const string BearerPrefix = "Bearer ";
+
     public async Task InvokeAsync(HttpContext httpContext, ICookieAuthService cookieAuth)
     {
-        if (!httpContext.Request.Path.StartsWithSegments("/api/admin") &&
-            !httpContext.Request.Path.StartsWithSegments("/health"))
+        if (!httpContext.Request.Path.StartsWithSegments("/health"))
         {
             // Ne crée jamais de Player ici : un visiteur qui n'a jamais démarré de partie
             // (settings, autocomplete, stats/today...) ne doit pas polluer la table Players.
             // La création reste à la charge des endpoints qui en ont vraiment besoin
             // (StartSession, GetCurrentPlayer) via ICookieAuthService.ResolveOrCreatePlayerAsync.
-            var playerId = await cookieAuth.TryResolvePlayerAsync(httpContext);
-            if (playerId is not null)
-                httpContext.Items[PlayerHttpContextExtensions.PlayerIdKey] = playerId.Value;
+            // Résolu aussi sur /api/admin : l'accès admin est désormais un rôle sur ce même
+            // cookie joueur (Player.IsAdmin), plus un mécanisme séparé.
+            var resolution = await cookieAuth.TryResolvePlayerAsync(httpContext);
+            if (resolution is not null)
+            {
+                httpContext.Items[PlayerHttpContextExtensions.PlayerIdKey] = resolution.PlayerId;
+                httpContext.Items[PlayerHttpContextExtensions.IsAdminKey] = resolution.IsAdmin;
+            }
+
+            // Bypass Testing uniquement : les tests d'intégration/E2E forgent directement
+            // "Authorization: Bearer admin-token" sans passer par un vrai compte IsAdmin=true
+            // (IntegrationTestFactory, e2e/fixtures/api-client.ts, e2e/pages/admin.page.ts).
+            // Double garde : jamais atteignable hors Testing.
+            if (env.IsEnvironment("Testing") && HasTestingAdminBearer(httpContext))
+                httpContext.Items[PlayerHttpContextExtensions.IsAdminKey] = true;
         }
 
         await next(httpContext);
     }
+
+    private static bool HasTestingAdminBearer(HttpContext httpContext) =>
+        httpContext.Request.Headers.Authorization.ToString() == BearerPrefix + TestingBypassToken;
 }

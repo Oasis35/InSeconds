@@ -1,7 +1,6 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZoneChangeDetection, provideAppInitializer, inject } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
-import { adminAuthInterceptor } from './core/interceptors/admin-auth.interceptor';
 import { playerAuthInterceptor } from './core/interceptors/player-auth.interceptor';
 import { ApiClient, API_BASE_URL } from './api/api.generated';
 import { environment } from '../environments/environment';
@@ -18,7 +17,7 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
-    provideHttpClient(withFetch(), withInterceptors([playerAuthInterceptor, adminAuthInterceptor])),
+    provideHttpClient(withFetch(), withInterceptors([playerAuthInterceptor])),
     { provide: API_BASE_URL, useValue: environment.apiUrl },
     ApiClient,
     provideTranslateService({

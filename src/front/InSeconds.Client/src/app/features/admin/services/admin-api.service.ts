@@ -75,11 +75,7 @@ export class AdminApiService {
 
   checkAuth(): void { this.http.checkAuth(); }
 
-  login(password: string): Promise<void> {
-    return this.http.login(password).then(() => this.reloadAll());
-  }
-
-  logout(): void { this.http.logout(); }
+  logout(): Promise<void> { return this.http.logout(); }
 
   reloadPool(): void { this.state.reloadPool(); }
 
@@ -92,12 +88,10 @@ export class AdminApiService {
   }
 
   generateToday() { return this.http.generateToday(); }
-  resetToday() { return this.http.resetToday(); }
   refreshPreviews() { return this.http.refreshPreviews(); }
   updateTrackCooldownDays(days: number) { return this.http.updateTrackCooldownDays(days); }
   addTrack(deezerTrackId: number) { return this.http.addTrack(deezerTrackId); }
   updateTrack(id: number, deezerTrackId: number) { return this.http.updateTrack(id, deezerTrackId); }
   deleteTrack(id: number) { return this.http.deleteTrack(id); }
   searchDeezer(q: string) { return this.http.searchDeezer(q); }
-  sendTestEmail(toEmail: string) { return this.http.sendTestEmail(toEmail); }
 }

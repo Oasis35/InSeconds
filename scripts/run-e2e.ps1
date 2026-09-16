@@ -40,7 +40,6 @@ $backJob = Start-Job -ScriptBlock {
     Set-Location $apiDir
     $env:ASPNETCORE_ENVIRONMENT = 'Testing'
     $env:ConnectionStrings__DefaultConnection = $connStr
-    $env:AdminPassword = 'e2e-admin-password'
     $env:E2E_FRONT_PORT = '5174'
     dotnet run --no-launch-profile --urls http://localhost:5172
 } -ArgumentList "$root\src\back\InSeconds.Api", $connStr

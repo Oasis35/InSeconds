@@ -2,23 +2,31 @@ import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 import { AdminHttpService } from './admin-http.service';
 import { AdminApiService } from './admin-api.service';
 import { AdminStateService } from './admin-state.service';
+import { PlayerSessionService } from '../../../core/services/player-session.service';
 import { environment } from '../../../../environments/environment';
 
 describe('AdminHttpService', () => {
   let service: AdminHttpService;
   let httpMock: HttpTestingController;
+  let playerSessionStub: { logout: jasmine.Spy; load: jasmine.Spy };
   const base = `${environment.apiUrl}/api/admin`;
 
   beforeEach(() => {
-    localStorage.clear();
+    playerSessionStub = {
+      logout: jasmine.createSpy('logout').and.returnValue(of(undefined)),
+      load: jasmine.createSpy('load').and.returnValue(of(undefined)),
+    };
+
     TestBed.configureTestingModule({
       providers: [
         AdminHttpService,
         provideHttpClient(),
         provideHttpClientTesting(),
+        { provide: PlayerSessionService, useValue: playerSessionStub },
       ],
     });
     service = TestBed.inject(AdminHttpService);
@@ -27,7 +35,6 @@ describe('AdminHttpService', () => {
 
   afterEach(() => {
     httpMock.verify();
-    localStorage.clear();
   });
 
   describe('initial state', () => {
@@ -40,44 +47,15 @@ describe('AdminHttpService', () => {
     });
   });
 
-  describe('login()', () => {
-    it('should POST to /api/admin/login and set authenticated to true', fakeAsync(async () => {
-      const loginPromise = service.login('secret');
-
-      const req = httpMock.expectOne(`${base}/login`);
-      expect(req.request.method).toBe('POST');
-      expect(req.request.body).toEqual({ password: 'secret' });
-      req.flush({ token: 'my-admin-token' });
-
-      await loginPromise;
-
-      expect(service.authenticated()).toBeTrue();
-      expect(localStorage.getItem('admin_token')).toBe('my-admin-token');
-    }));
-
-    it('should reject the promise on wrong password (401)', fakeAsync(async () => {
-      let error: any;
-      const loginPromise = service.login('wrong').catch(e => { error = e; });
-
-      const req = httpMock.expectOne(`${base}/login`);
-      req.flush('Unauthorized', { status: 401, statusText: 'Unauthorized' });
-
-      await loginPromise;
-
-      expect(error).toBeTruthy();
-      expect(service.authenticated()).toBeFalse();
-    }));
-  });
-
   describe('logout()', () => {
-    it('should set authenticated to false and remove token from localStorage', () => {
-      localStorage.setItem('admin_token', 'some-token');
+    it('should delegate to PlayerSessionService, reload the session, then set authenticated to false', async () => {
       service.authenticated.set(true);
 
-      service.logout();
+      await service.logout();
 
+      expect(playerSessionStub.logout).toHaveBeenCalled();
+      expect(playerSessionStub.load).toHaveBeenCalled();
       expect(service.authenticated()).toBeFalse();
-      expect(localStorage.getItem('admin_token')).toBeNull();
     });
   });
 
@@ -140,20 +118,6 @@ describe('AdminHttpService', () => {
       req.flush('Unprocessable', { status: 422, statusText: 'Unprocessable Entity' });
 
       expect(error.status).toBe(422);
-    });
-  });
-
-  describe('resetToday()', () => {
-    it('should DELETE /api/admin/reset-today and return a ResetResult', () => {
-      const mockResult = { deleted: 5, date: '2026-06-29' };
-      let result: any;
-      service.resetToday().subscribe(r => (result = r));
-
-      const req = httpMock.expectOne(`${base}/reset-today`);
-      expect(req.request.method).toBe('DELETE');
-      req.flush(mockResult);
-
-      expect(result).toEqual(mockResult);
     });
   });
 
@@ -258,6 +222,10 @@ describe('AdminApiService — delegation', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
+        {
+          provide: PlayerSessionService,
+          useValue: { logout: () => of(undefined), load: () => of(undefined) },
+        },
       ],
     });
     apiService = TestBed.inject(AdminApiService);
@@ -276,9 +244,9 @@ describe('AdminApiService — delegation', () => {
     expect(apiService.selectedDay()).toBe(today);
   });
 
-  it('logout() should delegate to AdminHttpService', () => {
+  it('logout() should delegate to AdminHttpService', async () => {
     httpService.authenticated.set(true);
-    apiService.logout();
+    await apiService.logout();
     expect(httpService.authenticated()).toBeFalse();
   });
 

@@ -1,32 +1,35 @@
 import { Page, Locator } from '@playwright/test';
 
 const BASE = process.env['CI'] ? 'http://localhost:5171' : 'http://localhost:5172';
-// LoginEndpoint.IsAdminAuthenticated vérifie aussi l'origine (cf. OriginValidator) — un
-// fetch() Node (pas un vrai navigateur) n'envoie jamais d'Origin automatiquement, il faut
-// le poser explicitement ici avec le port réel du front (cf. e2e/fixtures/api-client.ts,
-// même besoin). Sans ça ces helpers échouent silencieusement en 401 (cf. piège 22 racine).
-const FRONT_ORIGIN = process.env['CI'] ? 'http://localhost:5173' : 'http://localhost:5174';
+// L'auth admin est désormais un rôle sur le cookie joueur (Player.IsAdmin, cf. refonte
+// profils admin) — plus d'OriginValidator sur ces routes, donc plus besoin d'Origin ici.
 
 export class AdminPage {
-  readonly passwordInput: Locator;
-  readonly loginButton: Locator;
-  readonly loginError: Locator;
   readonly logoutButton: Locator;
+  readonly notLoggedInMessage: Locator;
+  readonly accessDeniedMessage: Locator;
 
   constructor(readonly page: Page) {
-    this.passwordInput = page.getByPlaceholder('Mot de passe admin');
-    this.loginButton   = page.getByRole('button', { name: 'Se connecter' });
-    this.loginError    = page.getByText('Mot de passe incorrect');
-    this.logoutButton  = page.getByRole('button', { name: 'Se déconnecter' });
+    this.logoutButton = page.getByRole('button', { name: 'Se déconnecter' });
+    this.notLoggedInMessage = page.getByRole('heading', { name: "Connecte-toi d'abord" });
+    this.accessDeniedMessage = page.getByRole('heading', { name: 'Accès refusé' });
   }
 
   async goto(): Promise<void> {
     await this.page.goto('/admin');
   }
 
-  async login(password = 'e2e-admin-password'): Promise<void> {
-    await this.passwordInput.fill(password);
-    await this.loginButton.click();
+  // Raccourci E2E-only : crée/réutilise un compte lié dédié aux tests avec IsAdmin=true
+  // et pose son cookie directement (POST /api/e2e/login-as-admin, cf. Features/E2E/ResetEndpoint.cs),
+  // sans passer par le formulaire mot de passe qui n'existe plus. page.request partage le
+  // cookie jar du contexte navigateur : le Set-Cookie de la réponse s'applique à `page`.
+  async login(): Promise<void> {
+    const res = await this.page.request.post(`${BASE}/api/e2e/login-as-admin`, {
+      headers: { Authorization: 'Bearer admin-token' },
+    });
+    if (!res.ok()) throw new Error(`login-as-admin failed: ${res.status()}`);
+
+    await this.page.goto('/admin');
     await this.logoutButton.waitFor({ state: 'visible' });
   }
 
@@ -111,10 +114,6 @@ export class AdminPage {
     return this.page.getByRole('button', { name: /Générer le défi du jour/ });
   }
 
-  resetButton(): Locator {
-    return this.page.getByRole('button', { name: /Réinitialiser les parties du jour/ });
-  }
-
   // Défis — bouton créer
   createChallengeButton(): Locator {
     return this.page.getByRole('button', { name: /Créer le défi|Générer/ }).first();
@@ -145,7 +144,7 @@ export class AdminPage {
   async apiReseed(): Promise<void> {
     const res = await fetch(`${BASE}/api/e2e/reseed`, {
       method: 'POST',
-      headers: { Authorization: 'Bearer admin-token', 'Content-Type': 'application/json', Origin: FRONT_ORIGIN },
+      headers: { Authorization: 'Bearer admin-token', 'Content-Type': 'application/json' },
     });
     if (!res.ok) throw new Error(`reseed failed: ${res.status}`);
   }
@@ -153,7 +152,7 @@ export class AdminPage {
   async apiDeleteTodayChallenge(): Promise<void> {
     const res = await fetch(`${BASE}/api/e2e/reset?deleteChallenge=true`, {
       method: 'DELETE',
-      headers: { Authorization: 'Bearer admin-token', Origin: FRONT_ORIGIN },
+      headers: { Authorization: 'Bearer admin-token' },
     });
     if (!res.ok) throw new Error(`apiDeleteTodayChallenge failed: ${res.status}`);
   }
@@ -164,7 +163,7 @@ export class AdminPage {
   // calculées avec la valeur fraîche de TrackCooldownDays).
   async apiGetPoolUnlockDate(deezerTrackId: number): Promise<string | null | undefined> {
     const res = await fetch(`${BASE}/api/admin/tracks`, {
-      headers: { Authorization: 'Bearer admin-token', Origin: FRONT_ORIGIN },
+      headers: { Authorization: 'Bearer admin-token' },
     });
     if (!res.ok) throw new Error(`get tracks failed: ${res.status}`);
     const body = await res.json() as { available: { deezerTrackId: number; unlockDate: string | null }[] };

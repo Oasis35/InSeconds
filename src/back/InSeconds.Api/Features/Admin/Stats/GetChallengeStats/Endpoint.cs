@@ -1,7 +1,7 @@
+using InSeconds.Api.Common.Auth;
 using InSeconds.Api.Common.Stats;
 using InSeconds.Api.Common.Settings;
 using InSeconds.Api.Common.Text;
-using InSeconds.Api.Features.Admin.Login;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,7 +20,7 @@ public static class GetChallengeStatsEndpoint
             SettingsService settingsService,
             CancellationToken ct) =>
         {
-            if (!LoginEndpoint.IsAdminAuthenticated(ctx))
+            if (!ctx.GetPlayerIsAdmin())
                 return Results.Unauthorized();
 
             var today = DateOnly.FromDateTime(DateTime.UtcNow);

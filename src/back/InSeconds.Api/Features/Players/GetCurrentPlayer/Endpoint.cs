@@ -22,12 +22,19 @@ public static class GetCurrentPlayerEndpoint
     {
         var route = app.MapGet("/api/players/me", async (HttpContext ctx, ICookieAuthService cookieAuth, ApplicationDbContext db, bool peek = false, CancellationToken ct = default) =>
         {
-            Guid? playerId = peek
-                ? await cookieAuth.TryResolvePlayerAsync(ctx, ct)
-                : await cookieAuth.ResolveOrCreatePlayerAsync(ctx, ct);
+            Guid? playerId;
+            if (peek)
+            {
+                var resolution = await cookieAuth.TryResolvePlayerAsync(ctx, ct);
+                playerId = resolution?.PlayerId;
+            }
+            else
+            {
+                playerId = await cookieAuth.ResolveOrCreatePlayerAsync(ctx, ct);
+            }
 
             if (playerId is null)
-                return Results.Ok(new GetCurrentPlayerResponse(Guid.Empty, true, null, null, 0, 0));
+                return Results.Ok(new GetCurrentPlayerResponse(Guid.Empty, true, null, null, 0, 0, false));
 
             var player = await db.Players
                 .AsNoTracking()
@@ -38,7 +45,8 @@ public static class GetCurrentPlayerEndpoint
                     p.Email,
                     p.Pseudo,
                     p.CurrentStreak,
-                    p.GameSessions.Count(s => s.Status == SessionStatus.Completed)))
+                    p.GameSessions.Count(s => s.Status == SessionStatus.Completed),
+                    p.IsAdmin))
                 .FirstAsync(ct);
 
             return Results.Ok(player);
@@ -55,4 +63,4 @@ public static class GetCurrentPlayerEndpoint
     }
 }
 
-public sealed record GetCurrentPlayerResponse(Guid PlayerId, bool IsGuest, string? Email, string? Pseudo, int CurrentStreak, int GamesPlayed);
+public sealed record GetCurrentPlayerResponse(Guid PlayerId, bool IsGuest, string? Email, string? Pseudo, int CurrentStreak, int GamesPlayed, bool IsAdmin);

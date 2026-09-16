@@ -38,6 +38,9 @@ public sealed class PlayerConfiguration : IEntityTypeConfiguration<Player>
         builder.Property(p => p.IsDeleted)
             .HasDefaultValue(false);
 
+        builder.Property(p => p.IsAdmin)
+            .HasDefaultValue(false);
+
         builder.HasIndex(p => p.AuthToken).IsUnique();
 
         builder.HasIndex(p => p.LastSeenAt)

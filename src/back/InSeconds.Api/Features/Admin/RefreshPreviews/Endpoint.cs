@@ -1,4 +1,4 @@
-using InSeconds.Api.Features.Admin.Login;
+using InSeconds.Api.Common.Auth;
 using InSeconds.Api.Features.ChallengeGeneration;
 
 namespace InSeconds.Api.Features.Admin.RefreshPreviews;
@@ -12,7 +12,7 @@ public static class RefreshPreviewsEndpoint
             HttpContext ctx,
             CancellationToken ct) =>
         {
-            if (!LoginEndpoint.IsAdminAuthenticated(ctx))
+            if (!ctx.GetPlayerIsAdmin())
                 return Results.Unauthorized();
 
             var result = await refresher.RefreshAsync(ct);

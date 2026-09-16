@@ -3,8 +3,10 @@ namespace InSeconds.Api.Common.Auth;
 // Anti-CSRF léger : vérifie Origin (ou Referer en repli) contre la liste déjà
 // existante Cors:AllowedOrigins — pas de nouvelle config, pas de système de token
 // CSRF complet (over-engineering pour cette échelle). Utilisé par VerifyMagicLink
-// (point critique : pose un cookie sur la base d'un POST) et par
-// LoginEndpoint.IsAdminAuthenticated (défense en profondeur, cf. plan).
+// (point critique : pose un cookie sur la base d'un POST). Pas utilisé par l'auth
+// admin (ctx.GetPlayerIsAdmin()) — les routes admin sont des endpoints joueur
+// authentifiés comme les autres, aucun ne pose de cookie, donc le risque CSRF
+// qu'OriginValidator mitige ne s'applique pas.
 public static class OriginValidator
 {
     public static bool IsTrustedOrigin(HttpContext ctx, IReadOnlyList<string> allowedOrigins)

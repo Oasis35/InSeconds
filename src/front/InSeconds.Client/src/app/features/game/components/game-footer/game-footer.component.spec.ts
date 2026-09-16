@@ -1,7 +1,9 @@
 import { TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { GameFooterComponent } from './game-footer.component';
 import { LanguageService } from '../../../../core/services/language.service';
+import { PlayerSessionService } from '../../../../core/services/player-session.service';
 
 /** Stub minimal de TranslateService (même approche que language.service.spec.ts) — LanguageService en dépend. */
 class TranslateServiceStub {
@@ -12,16 +14,20 @@ describe('GameFooterComponent', () => {
   let component: GameFooterComponent;
   let language: LanguageService;
 
-  beforeEach(() => {
+  function setup(isAdmin = false) {
     localStorage.clear();
 
     TestBed.configureTestingModule({
-      providers: [LanguageService, { provide: TranslateService, useClass: TranslateServiceStub }],
+      providers: [
+        LanguageService,
+        { provide: TranslateService, useClass: TranslateServiceStub },
+        { provide: PlayerSessionService, useValue: { isAdmin: signal(isAdmin) } },
+      ],
     });
 
     language = TestBed.inject(LanguageService);
     component = TestBed.runInInjectionContext(() => new GameFooterComponent());
-  });
+  }
 
   afterEach(() => {
     localStorage.clear();
@@ -29,10 +35,13 @@ describe('GameFooterComponent', () => {
   });
 
   it('should expose the current language signal', () => {
+    setup();
     expect(component.currentLang()).toBe('fr');
   });
 
   describe('toggleLanguage()', () => {
+    beforeEach(() => setup());
+
     it('should switch from fr to en', () => {
       component.toggleLanguage();
       expect(component.currentLang()).toBe('en');
@@ -48,6 +57,18 @@ describe('GameFooterComponent', () => {
     it('should persist the chosen language to localStorage', () => {
       component.toggleLanguage();
       expect(localStorage.getItem('lang')).toBe('en');
+    });
+  });
+
+  describe('isAdmin', () => {
+    it('should be false for a non-admin account', () => {
+      setup(false);
+      expect(component.isAdmin()).toBeFalse();
+    });
+
+    it('should be true for an admin account', () => {
+      setup(true);
+      expect(component.isAdmin()).toBeTrue();
     });
   });
 });

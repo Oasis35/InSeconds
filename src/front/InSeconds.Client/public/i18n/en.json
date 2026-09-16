@@ -259,12 +259,11 @@
   "admin": {
     "title": "Admin",
     "deployedAt": "Deployed {{ date }}",
-    "login": "Login",
-    "passwordPlaceholder": "Admin password",
-    "loginButton": "Sign in",
-    "loggingIn": "Signing in...",
-    "wrongPassword": "Incorrect password.",
-    "tooManyAttempts": "Too many attempts. Try again in a few minutes.",
+    "notLoggedIn": "Log in first",
+    "notLoggedInBody": "Admin access requires a logged-in account.",
+    "goToLogin": "Log in",
+    "accessDenied": "Access denied",
+    "accessDeniedBody": "This account doesn't have admin rights.",
     "backToGame": "Back to the game",
     "logout": "Sign out",
     "browserId": {
@@ -365,11 +364,6 @@
       "alreadyGenerated": "Today's challenge is already generated.",
       "poolInsufficient": "Pool insufficient: add tracks with a preview.",
       "generateError": "Error during generation.",
-      "gamesOfDay": "Today's games",
-      "resetting": "Resetting...",
-      "reset": "Reset today's games",
-      "resetSuccess": "{{ count }} game(s) deleted.",
-      "resetError": "No challenge found for today.",
       "previews": "Deezer previews",
       "refreshPreviews": "Re-check previews",
       "refreshingPreviews": "Checking (may take ~1 min)...",
@@ -378,12 +372,7 @@
       "trackCooldown": "Track reuse cooldown",
       "saveCooldown": "Save",
       "cooldownSaved": "Cooldown updated.",
-      "cooldownError": "Error while updating.",
-      "testSmtp": "Test email",
-      "testSmtpPlaceholder": "email@example.com",
-      "sendTestEmail": "Send a test email",
-      "testSmtpSuccess": "Test email sent.",
-      "testSmtpError": "Send failed"
+      "cooldownError": "Error while updating."
     },
     "challenges": {
       "history": "History",

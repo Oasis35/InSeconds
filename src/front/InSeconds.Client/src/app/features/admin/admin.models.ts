@@ -1,4 +1,3 @@
-export interface ResetResult { deleted: number; date: string; }
 export interface RefreshPreviewsResult { checked: number; updated: number; failed: number; }
 export interface TrackDto { position: number; artist: string; title: string; deezerTrackId: number; }
 export interface PoolTrackDto {

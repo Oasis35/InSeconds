@@ -259,12 +259,11 @@
   "admin": {
     "title": "Admin",
     "deployedAt": "Déployé le {{ date }}",
-    "login": "Connexion",
-    "passwordPlaceholder": "Mot de passe admin",
-    "loginButton": "Se connecter",
-    "loggingIn": "Connexion...",
-    "wrongPassword": "Mot de passe incorrect.",
-    "tooManyAttempts": "Trop de tentatives. Réessaie dans quelques minutes.",
+    "notLoggedIn": "Connecte-toi d'abord",
+    "notLoggedInBody": "L'accès admin nécessite un compte connecté.",
+    "goToLogin": "Se connecter",
+    "accessDenied": "Accès refusé",
+    "accessDeniedBody": "Ce compte n'a pas les droits admin.",
     "backToGame": "Retour au jeu",
     "logout": "Se déconnecter",
     "browserId": {
@@ -365,11 +364,6 @@
       "alreadyGenerated": "Le défi du jour est déjà généré.",
       "poolInsufficient": "Pool insuffisant : ajoutez des morceaux avec preview.",
       "generateError": "Erreur lors de la génération.",
-      "gamesOfDay": "Parties du jour",
-      "resetting": "Réinitialisation...",
-      "reset": "Réinitialiser les parties du jour",
-      "resetSuccess": "{{ count }} partie(s) supprimée(s).",
-      "resetError": "Aucun défi trouvé pour aujourd'hui.",
       "previews": "Previews Deezer",
       "refreshPreviews": "Re-vérifier les previews",
       "refreshingPreviews": "Vérification en cours (peut prendre ~1 min)...",
@@ -378,12 +372,7 @@
       "trackCooldown": "Cooldown de réutilisation des morceaux",
       "saveCooldown": "Enregistrer",
       "cooldownSaved": "Cooldown mis à jour.",
-      "cooldownError": "Erreur lors de la mise à jour.",
-      "testSmtp": "Test email",
-      "testSmtpPlaceholder": "email@exemple.com",
-      "sendTestEmail": "Envoyer un email de test",
-      "testSmtpSuccess": "Email de test envoyé.",
-      "testSmtpError": "Échec de l'envoi"
+      "cooldownError": "Erreur lors de la mise à jour."
     },
     "challenges": {
       "history": "Historique",
