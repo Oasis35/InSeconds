@@ -80,6 +80,7 @@ InSeconds/
 │   ├── back/
 │   │   ├── InSeconds.slnx              # .NET solution (.slnx format)
 │   │   ├── InSeconds.Api/              # Web API (vertical slice architecture)
+│   │   ├── InSeconds.Deezer/           # Deezer client (DeezerClient / CachedDeezerClient), separate project
 │   │   ├── InSeconds.Api.UnitTests/    # xUnit unit tests (no DB)
 │   │   └── InSeconds.Api.IntegrationTests/ # xUnit integration tests (Testcontainers)
 │   └── front/
@@ -146,7 +147,7 @@ npm run e2e        # headless
 npm run e2e:ui     # interactive Playwright UI
 ```
 
-**81 tests** — 57 game tests (happy path, already-played, abandon, resume, multi-tab sync, no-challenge + automatic rebirth of a deleted challenge, share + clipboard failure, scoring, guess-time histogram on the reveal screen + in the recap/already-played track list popup, anti-cheat min duration lock, leave-confirmation guard, clear-search button, autocomplete cleanup/deduplication + keyboard navigation, service-down overlay, footer language toggle + privacy page) + 24 admin tests (login, pool table with filters, add track via the integrated search panel, delete track, generate challenge, reset sessions, challenge list, browser ID display/copy, player chip "it's you" highlighting, per-track guess-time histogram popup, lazy per-tab loading — deferred network calls + deferred tab counter).
+**81 tests** — 57 game tests (happy path, already-played, abandon, resume, multi-tab sync, no-challenge + automatic rebirth of a deleted challenge, share + clipboard failure, scoring, guess-time histogram on the reveal screen + in the recap/already-played track list popup, anti-cheat min duration lock, leave-confirmation guard, clear-search button, autocomplete cleanup/deduplication + keyboard navigation, service-down overlay, footer language toggle + privacy page) + 24 admin tests (login, pool table with filters, add track via the integrated search panel, delete track, generate challenge / already generated, cooldown edit, challenge list, browser ID display/copy, player chip "it's you" highlighting, per-track guess-time histogram popup, lazy per-tab loading — deferred network calls + deferred tab counter).
 
 The backend runs in `ASPNETCORE_ENVIRONMENT=Testing` which activates:
 - `FakeDeezerHandler` — returns a local `test-audio.mp3`; tracks with DeezerTrackId >= 9_000_000_000 return an empty preview (5 seed tracks: The Beatles, Pink Floyd, Bob Dylan, Led Zeppelin, Fleetwood Mac) to test the "missing preview" filter/red indicator and the general "Re-check previews" button

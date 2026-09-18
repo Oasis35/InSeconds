@@ -22,7 +22,7 @@ InSeconds est un **blind test musical quotidien**. Le joueur choisit combien de 
 
 - **Backend** : Vertical Slice Architecture — chaque feature vit dans son propre dossier `Features/<Aggregate>/<UseCase>/` (Endpoint + Command/Query + Handler + Validator). Pas de couche service partagée fourre-tout. Wolverine route les messages aux handlers par convention.
 - **Frontend** : Angular 22 standalone (pas de NgModules) avec signals pour l'état. Tailwind utility-first par-dessus SCSS pour les overrides locaux.
-- **Modèle de données** : 7 tables (`Players`, `Tracks`, `DailyChallenges`, `DailyChallengeTracks`, `GameSessions`, `GameSessionAnswers`, `Settings`). Voir [`BACKEND_STRUCTURE_FR.md`](BACKEND_STRUCTURE_FR.md) pour le détail.
+- **Modèle de données** : 9 tables (`Players`, `Tracks`, `DailyChallenges`, `DailyChallengeTracks`, `GameSessions`, `GameSessionAnswers`, `Settings`, `MagicLinkTokens`, `EmailChangeTokens`) + `DataProtectionKeys`. Voir [`BACKEND_STRUCTURE_FR.md`](BACKEND_STRUCTURE_FR.md) pour le détail.
 - **Gameplay anti-triche** : scoring serveur seulement, contrainte unique `(PlayerId, DailyChallengeId)` qui garantit 1 partie/jour/joueur, durée d'écoute = choix discret (pas une mesure → pas de tentative de manipulation client).
 
 ## Les autres documents de ce dossier
@@ -53,7 +53,7 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 ✅ **Fait** :
 
 - Architecture vertical slice complète (Features/Domain/Infrastructure/Common)
-- 8 entités du domaine + configurations EF + migrations appliquées (PostgreSQL)
+- 9 tables + `DataProtectionKeys`, configurations EF + migrations appliquées (PostgreSQL)
 - **Comptes utilisateurs** (signup ouvert par magic link, sans mot de passe) — voir `CLAUDE.md` racine ("Comptes utilisateurs — signup ouvert par magic link") pour le détail complet
 - Setup Docker : conteneurs `inseconds.database` (PostgreSQL) + `inseconds.api` (hot-reload)
 - Vertical slices `Sessions/StartSession` + `Sessions/SubmitAnswer` (scoring serveur + stats par morceau)
@@ -65,7 +65,7 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - `DeezerClient` (projet séparé `InSeconds.Deezer`) — recherche + preview + extraction `CoverHash`
 - Settings via `IOptions<AppSettings>` chargé depuis la BD au boot (ADO.NET brut)
 - `Track.CoverHash` + `AppSettings.CoverUrlTemplate` (URL reconstruite à la volée)
-- Page admin (`/admin`) — login, pool (sous-onglets + indicateur preview + popup ajout avec lecteur), défis, stats dashboard, reset sessions
+- Page admin (`/admin`) — login, pool (tableau paginé + indicateur preview + panneau de recherche/ajout avec lecteur), défis, stats dashboard, reset sessions
 - Auth admin = rôle `Player.IsAdmin` sur le cookie joueur — connexion identique à un joueur normal (`/login`, magic link), accès direct au dashboard si le compte a `IsAdmin=true`, rôle attribué uniquement par SQL manuel sur le VPS (aucune UI ni endpoint dédié)
 - `BackgroundService` génération défi quotidien automatique (à minuit UTC, retry toutes les 10 min en cas d'échec) — filtre sur `Track.HasPreview` en DB, Fisher-Yates, transaction ; planification via `DailySchedule.NextUtcHour` + `DelayUntilAsync` (attente sur cible d'horloge murale : un réveil anticipé de `Task.Delay` ne saute plus de jour, cf. piège 19)
 - **Génération paresseuse dans `StartSession`** — si le défi du jour manque (job de minuit raté), le premier joueur le régénère à la volée (sélection déterministe seed = `DayNumber`, course gérée par la contrainte unique sur `Date`) ; le 503 « pas de défi » ne subsiste que si le pool est insuffisant

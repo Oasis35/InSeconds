@@ -80,6 +80,7 @@ InSeconds/
 │   ├── back/
 │   │   ├── InSeconds.slnx              # Solution .NET (format .slnx)
 │   │   ├── InSeconds.Api/              # Web API (vertical slice)
+│   │   ├── InSeconds.Deezer/           # Client Deezer (DeezerClient / CachedDeezerClient), projet séparé
 │   │   ├── InSeconds.Api.UnitTests/    # Tests unitaires xUnit (pas de BD)
 │   │   └── InSeconds.Api.IntegrationTests/ # Tests d'intégration xUnit (Testcontainers)
 │   └── front/
@@ -146,7 +147,7 @@ npm run e2e        # headless
 npm run e2e:ui     # UI interactive Playwright
 ```
 
-**81 tests** — 57 tests jeu (happy path, déjà joué, abandon, reprise, sync multi-onglets, pas de défi + renaissance automatique du défi supprimé, partage + échec de copie presse-papier, scoring, histogramme des temps de réponse (écran de révélation + pop-up de la liste récap/déjà joué), paliers bloqués à la reprise anti-triche, confirmation de sortie, bouton ✕ d'effacement, nettoyage/déduplication + navigation clavier de l'autocomplete, overlay "Service indisponible", toggle langue + page confidentialité) + 24 tests admin (login, tableau pool avec filtres, ajout de morceau via le panneau de recherche intégré, suppression morceau, générer défi, reset sessions, liste défis, affichage/copie de l'ID navigateur, surbrillance "toi" sur le chip joueur, pop-up histogramme par morceau, chargement paresseux par onglet — appels réseau différés + compteur d'onglet différé).
+**81 tests** — 57 tests jeu (happy path, déjà joué, abandon, reprise, sync multi-onglets, pas de défi + renaissance automatique du défi supprimé, partage + échec de copie presse-papier, scoring, histogramme des temps de réponse (écran de révélation + pop-up de la liste récap/déjà joué), paliers bloqués à la reprise anti-triche, confirmation de sortie, bouton ✕ d'effacement, nettoyage/déduplication + navigation clavier de l'autocomplete, overlay "Service indisponible", toggle langue + page confidentialité) + 24 tests admin (login, tableau pool avec filtres, ajout de morceau via le panneau de recherche intégré, suppression morceau, générer défi / déjà généré, édition du cooldown, liste défis, affichage/copie de l'ID navigateur, surbrillance "toi" sur le chip joueur, pop-up histogramme par morceau, chargement paresseux par onglet — appels réseau différés + compteur d'onglet différé).
 
 Le backend tourne en `ASPNETCORE_ENVIRONMENT=Testing` qui active :
 - `FakeDeezerHandler` — retourne un `test-audio.mp3` local ; les IDs >= 9_000_000_000 retournent une preview vide (5 morceaux seed : The Beatles, Pink Floyd, Bob Dylan, Led Zeppelin, Fleetwood Mac) pour tester le filtre "Preview manquante"/l'indicateur rouge et le bouton général "Re-vérifier les previews"

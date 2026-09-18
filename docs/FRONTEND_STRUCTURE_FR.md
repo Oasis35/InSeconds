@@ -73,7 +73,8 @@ src/front/InSeconds.Client/
 │   │   │   │       ├── challenges-tab/
 │   │   │   │       ├── actions-tab/
 │   │   │   │       ├── pool-search-panel/
-│   │   │   │       └── delete-track-modal/
+│   │   │   │       ├── delete-track-modal/
+│   │   │       └── preview-track-modal/
 │   │   │   ├── game/
 │   │   │   │   ├── game.component.ts           # orchestration session — ~370 lignes
 │   │   │   │   ├── game.component.html         # ~110 lignes (délègue aux sous-composants)
@@ -353,10 +354,10 @@ Délègue à 8 sous-composants :
 
 - **`AdminLoginComponent`** : simple écran d'état, pas de formulaire — injecte `PlayerSessionService.isLinked` : pas connecté → invite à se connecter via `/login` ; connecté mais pas admin → « Accès refusé » + retour au jeu
 - **`DashboardTabComponent`** : injecte `AdminStatsService` — sélecteur de jour + KPIs, activité 30 jours, répartition joueurs
-- **`PoolTabComponent`** : injecte `AdminPoolService`, contient `AddTrackModalComponent` + `DeleteTrackModalComponent` + `PreviewTrackModalComponent` ; affiche l'**autonomie du pool** (« X jours de défis restants ») en ligne à côté du compteur disponible/utilisé
+- **`PoolTabComponent`** : injecte `AdminPoolService`, contient `PoolSearchPanelComponent` (panneau de recherche/ajout intégré, remplace l'ancienne modale `AddTrackModalComponent`) + `DeleteTrackModalComponent` + `PreviewTrackModalComponent` ; affiche l'**autonomie du pool** (« X jours de défis restants ») en ligne à côté du compteur disponible/utilisé
 - **`ChallengesTabComponent`** : injecte `AdminStatsService` — **stats par défi** (`challengeStats()` = `GET /api/admin/challenge-stats`, chargé à l'ouverture de l'onglet ; accordéon médiane/min/max, taux artiste/titre par morceau ; guard `challengeStatsLoading()` → spinner) + historique des défis (`challenges()` = `GET /api/admin/challenges`), avec un navigateur ‹ Mois Année › unique en haut de l'onglet. Injecte aussi `PlayerSessionService`/`ClipboardService` directement (`core/`) pour afficher, sous chaque défi, un chip par joueur (`c.players`, toutes sessions) affichant `p.pseudo ?? shortId(p.playerId)` (pseudo pour un compte lié, ID tronqué en fallback pour un guest), cliquable pour copier l'ID complet, avec surbrillance + libellé « toi » automatiques si l'ID correspond au navigateur courant — repérer les joueurs qui reviennent
 - **`ActionsTabComponent`** : injecte `AdminActionsService`
-- **`AddTrackModalComponent`** : injecte `AdminPoolService` + `PoolAudioPreviewService` (lecteur preview 30s)
+- **`PoolSearchPanelComponent`** (2026-09-16, remplace `AddTrackModalComponent`) : injecte `AdminPoolService` + `PoolAudioPreviewService` (lecteur preview 30s)
 - **`DeleteTrackModalComponent`** : injecte `AdminPoolService` (seul, pas d'audio)
 - **`PreviewTrackModalComponent`** : injecte `AdminPoolService` + `PoolAudioPreviewService` — modale d'écoute d'une ligne du pool (recherche Deezer par artiste/titre, joue la preview trouvée)
 
@@ -366,7 +367,7 @@ Services admin (`features/admin/services/`) :
 - `AdminApiService` — 6 rxResource (`poolSearch`, `poolTracks`, `stats`, `challengeStats`, `challenges`, `allowedEmails`) + computed accessors ; délègue HTTP à `AdminHttpService`, état à `AdminStateService`. **Chargement paresseux** : `poolTracks`/`challengeStats`/`challenges`/`allowedEmails` gardés sur `authenticated() && hasVisited(<onglet>)` (`params` retourne `undefined` tant que la condition n'est pas remplie, ce qui laisse la resource idle plutôt que de partir en 401 avant connexion) ; `stats` (Dashboard) gardé sur `authenticated()` seul. `challengeStats` et `challenges` partagent le trigger `challengesReloadTrigger` → `reloadAll()` / une génération de défi rafraîchit les deux
 - `AdminStatsService` — état dashboard + onglet Défis (navigation jour/mois, formatage dates, accordéon stats par défi) ; `challengeMonths`/`challengesForMonth` dérivent de `challengeStats()` (Stats par défi) et `challenges()` (Historique)
 - `AdminPoolService` — filtres, pagination, sélection multiple, état modales add/delete/preview ; computed `poolDaysRemaining` = `floor(disponibles avec preview ÷ tracksPerChallenge)` (mêmes critères que `DailyChallengeGenerator`, calculé depuis `poolTracks` déjà chargé + signal `tracksPerChallenge` du `SettingsService` — aucun appel serveur), rouge < 3 jours, orange < 7, vert sinon. Le lecteur audio (play/pause/progress) n'est plus dans ce service (cf. `PoolAudioPreviewService`) — il n'appelle plus que `.stop()` aux ouvertures/fermetures de modale
-- `PoolAudioPreviewService` (2026-09-14) — lecteur audio partagé (`playing`/`progress` signals, `toggle(url)`/`stop()`), extrait d'`AdminPoolService` pour que les modales n'aient plus à dépendre de toute sa surface juste pour lire une preview 30s. Injecté directement par `AddTrackModalComponent`/`PreviewTrackModalComponent`
+- `PoolAudioPreviewService` (2026-09-14) — lecteur audio partagé (`playing`/`progress` signals, `toggle(url)`/`stop()`), extrait d'`AdminPoolService` pour que les modales n'aient plus à dépendre de toute sa surface juste pour lire une preview 30s. Injecté directement par `PoolSearchPanelComponent`/`PreviewTrackModalComponent`
 - `AdminActionsService` — `generateToday()`, `reset()`, `refreshPreviews()` (re-check des previews Deezer : affiche « X vérifiés, Y corrigés, Z échecs » puis recharge le pool)
 
 ## Intercepteurs
