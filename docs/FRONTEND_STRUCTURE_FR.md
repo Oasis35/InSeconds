@@ -406,6 +406,8 @@ Ajoute `withCredentials: true` sur **toutes** les requêtes vers `/api`, `/api/a
 
 Vérifié par le job CI `nginx-headers` (`scripts/check-nginx-cache-headers.sh`) — construit et sert réellement l'image Docker de prod (le seul job à le faire ; les tests E2E tournent contre `ng serve`, pas contre nginx).
 
+**`robots.txt` et `sitemap.xml`** vivent dans `public/` (copiés à la racine du build, servis tels quels par `try_files $uri` avant le fallback SPA — aucune règle nginx dédiée). Le job `nginx-headers` vérifie qu'ils sont bien servis en `text/plain` / `text/xml` et non en `index.html`. `sitemap.xml` liste uniquement les pages publiques indexables (`/`, `/privacy`) : à mettre à jour à chaque nouvelle page publique ; `robots.txt` exclut `/admin`, `/login`, `/profile`.
+
 ## À venir
 
 - Tests mobiles (iOS Safari, Android Chrome)
