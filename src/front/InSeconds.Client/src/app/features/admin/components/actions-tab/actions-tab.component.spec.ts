@@ -9,12 +9,13 @@ import { SettingsService } from '../../../../core/services/settings.service';
 describe('ActionsTabComponent', () => {
   let component: ActionsTabComponent;
   let actions: AdminActionsService;
-  let apiStub: { updateTrackCooldownDays: jasmine.Spy };
+  let apiStub: { updateTrackCooldownDays: jasmine.Spy; refreshReleaseYears: jasmine.Spy };
   let settingsStub: { trackCooldownDays: ReturnType<typeof signal<number>>; load: jasmine.Spy };
 
   beforeEach(() => {
     apiStub = {
       updateTrackCooldownDays: jasmine.createSpy('updateTrackCooldownDays'),
+      refreshReleaseYears: jasmine.createSpy('refreshReleaseYears'),
     };
     settingsStub = {
       trackCooldownDays: signal(30),
@@ -54,6 +55,26 @@ describe('ActionsTabComponent', () => {
       actions.updateTrackCooldownDays(0);
 
       expect(actions.updateCooldownStatus()).toBe('error');
+    });
+  });
+
+  describe('refreshReleaseYears()', () => {
+    it('calls the API and stores the result on success', () => {
+      apiStub.refreshReleaseYears.and.returnValue(of({ checked: 55, updated: 55, failed: 0 }));
+
+      actions.refreshReleaseYears();
+
+      expect(apiStub.refreshReleaseYears).toHaveBeenCalled();
+      expect(actions.refreshReleaseYearsStatus()).toBe('success');
+      expect(actions.refreshReleaseYearsResult()).toEqual({ checked: 55, updated: 55, failed: 0 });
+    });
+
+    it('sets error status on failure', () => {
+      apiStub.refreshReleaseYears.and.returnValue(throwError(() => new Error('boom')));
+
+      actions.refreshReleaseYears();
+
+      expect(actions.refreshReleaseYearsStatus()).toBe('error');
     });
   });
 });

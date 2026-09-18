@@ -923,6 +923,75 @@ export class ApiClient {
     /**
      * @return OK
      */
+    apiSessionsHint(sessionId: number, body: RequestHintBody): Observable<RequestHintResponse> {
+        let url_ = this.baseUrl + "/api/sessions/{sessionId}/hint";
+        if (sessionId === undefined || sessionId === null)
+            throw new globalThis.Error("The parameter 'sessionId' must be defined.");
+        url_ = url_.replace("{sessionId}", encodeURIComponent("" + sessionId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processApiSessionsHint(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processApiSessionsHint(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<RequestHintResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<RequestHintResponse>;
+        }));
+    }
+
+    protected processApiSessionsHint(response: HttpResponseBase): Observable<RequestHintResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RequestHintResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Bad Request", status, _responseText, _headers);
+            }));
+        } else if (status === 403) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Forbidden", status, _responseText, _headers);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Not Found", status, _responseText, _headers);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
     apiAdminMe(): Observable<void> {
         let url_ = this.baseUrl + "/api/admin/me";
         url_ = url_.replace(/[?&]$/, "");
@@ -958,6 +1027,10 @@ export class ApiClient {
         if (status === 200) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             return _observableOf(null as any);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Unauthorized", status, _responseText, _headers);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -1054,6 +1127,56 @@ export class ApiClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RefreshPreviewsResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    apiAdminRefreshReleaseYears(): Observable<RefreshReleaseYearsResponse> {
+        let url_ = this.baseUrl + "/api/admin/refresh-release-years";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processApiAdminRefreshReleaseYears(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processApiAdminRefreshReleaseYears(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<RefreshReleaseYearsResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<RefreshReleaseYearsResponse>;
+        }));
+    }
+
+    protected processApiAdminRefreshReleaseYears(response: HttpResponseBase): Observable<RefreshReleaseYearsResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RefreshReleaseYearsResponse;
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -1864,6 +1987,7 @@ export interface DeezerTrackInfo {
     previewUrl: string | undefined;
     deezerTrackId: number;
     coverHash: string | undefined;
+    releaseYear?: number | undefined;
 
     [key: string]: any;
 }
@@ -1926,6 +2050,14 @@ export interface RefreshPreviewsResponse {
     [key: string]: any;
 }
 
+export interface RefreshReleaseYearsResponse {
+    checked: number;
+    updated: number;
+    failed: number;
+
+    [key: string]: any;
+}
+
 export interface RequestEmailChangeBody {
     newEmail: string;
 
@@ -1934,6 +2066,20 @@ export interface RequestEmailChangeBody {
 
 export interface RequestEmailChangeResponse {
     message?: string;
+
+    [key: string]: any;
+}
+
+export interface RequestHintBody {
+    dailyChallengeTrackId: number;
+    level: number;
+
+    [key: string]: any;
+}
+
+export interface RequestHintResponse {
+    year: number | undefined;
+    artistMasked: string | undefined;
 
     [key: string]: any;
 }
@@ -1996,6 +2142,8 @@ export interface SubmitAnswerResponse {
     failureRatePercent: number;
     guessTimeDistribution: DurationBucketDto[];
     notFoundCount: number;
+    hintLevelUsed: number;
+    hintPenaltyPercentApplied: number;
 
     [key: string]: any;
 }

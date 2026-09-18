@@ -247,12 +247,15 @@ public int Calculate(
     decimal listenedDurationSeconds,
     bool artistCorrect,
     bool titleCorrect,
-    Dictionary<decimal, int> durationScores)
+    Dictionary<decimal, int> durationScores,
+    int hintLevelUsed = 0,
+    Dictionary<int, int>? hintPenaltyPercent = null)
 ```
 
 - Score de base = `durationScores[listenedDurationSeconds]`
 - Scoring partiel : `ArtistCorrect XOR TitleCorrect` → `× 0.5`
 - **Pas de malus de prolongation** — le score ne dépend que du palier finalement écouté, qu'il soit atteint directement ou via une ou plusieurs prolongations « écouter plus » (`WasExtended` n'est plus un paramètre de `Calculate`, voir [`GAMEPLAY_RULES_FR.md`](GAMEPLAY_RULES_FR.md))
+- **Pénalité indice** — appliquée en dernier, après le calcul base/moitié : `score × (1 - hintPenaltyPercent[hintLevelUsed]/100)` si `hintLevelUsed > 0` et une entrée existe pour ce niveau. `hintLevelUsed` vient de `GameSession.CurrentTrackHintLevelUsed` (jamais du client), voir [`GAMEPLAY_RULES_FR.md`](GAMEPLAY_RULES_FR.md#indices-hints).
 
 ### TextNormalizer
 

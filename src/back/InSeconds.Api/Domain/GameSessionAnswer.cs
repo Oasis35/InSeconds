@@ -7,6 +7,7 @@ public sealed class GameSessionAnswer
     public int DailyChallengeTrackId { get; set; }
     public decimal ListenedDurationSeconds { get; set; }
     public bool WasExtended { get; set; }
+    public int HintLevelUsed { get; set; }
     public string? ArtistAnswer { get; set; }
     public string? TitleAnswer { get; set; }
     public bool ArtistCorrect { get; set; }

@@ -64,6 +64,29 @@ export class BlindRoundComponent implements OnDestroy {
   protected readonly showNetworkError = signal(false);
   private networkErrorTimer: ReturnType<typeof setTimeout> | null = null;
 
+  // Indices (hints) — cf. Common/Scoring/RequestHint côté back. Contenu révélé au clic,
+  // jamais automatiquement en atteignant un palier (masqué avant déblocage, pas juste désactivé).
+  protected readonly hint1Revealed = signal(false);
+  protected readonly hint2Revealed = signal(false);
+  protected readonly hintYear = signal<number | null>(null);
+  protected readonly hintArtistMasked = signal<string | null>(null);
+  protected readonly hintRequestPending = signal(false);
+
+  protected readonly hint1Unlocked = computed(() => {
+    const threshold = this.settings.hintUnlockDurations()[0];
+    return threshold != null && this.chosenDuration() >= threshold;
+  });
+  protected readonly hint2Unlocked = computed(() => {
+    const threshold = this.settings.hintUnlockDurations()[1];
+    return threshold != null && this.chosenDuration() >= threshold;
+  });
+  protected readonly showAnyHintButton = computed(() => this.hint1Unlocked());
+  protected readonly hint1Locked = computed(() => this.hint1Unlocked() && !this.hint1Revealed());
+  protected readonly hint2Locked = computed(() => this.hint2Unlocked() && !this.hint2Revealed());
+
+  protected readonly resultHintUsed = computed(() => (this.result()?.hintLevelUsed ?? 0) > 0);
+  protected readonly resultHintPercent = computed(() => this.result()?.hintPenaltyPercentApplied ?? 0);
+
   private readonly query$ = new Subject<string>();
 
   protected readonly nextDuration = computed(() => {
@@ -210,6 +233,40 @@ export class BlindRoundComponent implements OnDestroy {
     }
   }
 
+  useHint1(): void {
+    if (this.hintRequestPending() || this.hint1Revealed()) return;
+    this.hintRequestPending.set(true);
+    this.gameService.requestHint(this.sessionId(), this.track().id, 1)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: r => {
+          this.hintYear.set(r.year ?? null);
+          this.hint1Revealed.set(true);
+          this.hintRequestPending.set(false);
+        },
+        error: () => this.hintRequestPending.set(false),
+      });
+  }
+
+  useHint2(): void {
+    if (this.hintRequestPending() || this.hint2Revealed()) return;
+    this.hintRequestPending.set(true);
+    this.gameService.requestHint(this.sessionId(), this.track().id, 2)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: r => {
+          // Cumulatif : le niveau 2 renvoie aussi l'année, que le niveau 1 ait été
+          // révélé séparément avant ou non.
+          this.hintYear.set(r.year ?? null);
+          this.hintArtistMasked.set(r.artistMasked ?? null);
+          this.hint1Revealed.set(true);
+          this.hint2Revealed.set(true);
+          this.hintRequestPending.set(false);
+        },
+        error: () => this.hintRequestPending.set(false),
+      });
+  }
+
   submit(): void {
     // Si pas de suggestion sélectionnée, tenter de splitter sur " - "
     if (!this.artistAnswer && !this.titleAnswer && this.searchQuery.trim()) {
@@ -274,6 +331,11 @@ export class BlindRoundComponent implements OnDestroy {
     this.chosenDuration.set(0);
     this.isSubmitting.set(false);
     this.showNetworkError.set(false);
+    this.hint1Revealed.set(false);
+    this.hint2Revealed.set(false);
+    this.hintYear.set(null);
+    this.hintArtistMasked.set(null);
+    this.hintRequestPending.set(false);
     if (this.networkErrorTimer) { clearTimeout(this.networkErrorTimer); this.networkErrorTimer = null; }
     this.nextTrack.emit();
   }

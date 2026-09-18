@@ -192,4 +192,33 @@ describe('GameService', () => {
       expect(error.status).toBe(500);
     });
   });
+
+  describe('requestHint()', () => {
+    it('should POST to /api/sessions/{id}/hint with dailyChallengeTrackId and level', () => {
+      const sessionId = 10;
+      const dailyChallengeTrackId = 3;
+      const level = 1;
+      const mockResponse = { year: 2016, artistMasked: null };
+
+      let result: any;
+      service.requestHint(sessionId, dailyChallengeTrackId, level).subscribe(r => (result = r));
+
+      const req = httpMock.expectOne(`${base}/${sessionId}/hint`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ dailyChallengeTrackId, level });
+      req.flush(mockResponse);
+
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should propagate 409 when the hint level is not yet unlocked', () => {
+      let error: any;
+      service.requestHint(10, 3, 2).subscribe({ error: e => (error = e) });
+
+      const req = httpMock.expectOne(`${base}/10/hint`);
+      req.flush('Conflict', { status: 409, statusText: 'Conflict' });
+
+      expect(error.status).toBe(409);
+    });
+  });
 });

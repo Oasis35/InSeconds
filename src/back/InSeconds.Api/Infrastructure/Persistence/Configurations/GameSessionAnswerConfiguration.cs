@@ -14,6 +14,7 @@ public sealed class GameSessionAnswerConfiguration : IEntityTypeConfiguration<Ga
 
         builder.Property(a => a.ListenedDurationSeconds).IsRequired();
         builder.Property(a => a.WasExtended).IsRequired();
+        builder.Property(a => a.HintLevelUsed).HasDefaultValue(0).IsRequired();
         builder.Property(a => a.ArtistAnswer).HasMaxLength(200);
         builder.Property(a => a.TitleAnswer).HasMaxLength(300);
         builder.Property(a => a.ArtistCorrect).IsRequired();

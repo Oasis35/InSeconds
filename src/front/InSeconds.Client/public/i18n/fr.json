@@ -241,6 +241,15 @@
     "seeResult": "Voir le résultat",
     "nextTrack": "Piste suivante →"
   },
+  "hint": {
+    "costWarning": "Chaque indice révélé impacte les points du tour",
+    "tooltip": "Indice — coûte des points",
+    "level1": "Indice année",
+    "level2": "Indice artiste",
+    "yearLabel": "Année",
+    "artistLabel": "Artiste",
+    "usedLabel": "Indice utilisé (-{{ percent }}%)"
+  },
   "notFound": {
     "title": "Page introuvable",
     "body": "Cette page n'existe pas ou a été déplacée.",
@@ -368,6 +377,11 @@
       "refreshingPreviews": "Vérification en cours (peut prendre ~1 min)...",
       "refreshPreviewsSuccess": "{{ checked }} vérifié(s), {{ updated }} corrigé(s), {{ failed }} échec(s) Deezer.",
       "refreshPreviewsError": "Erreur lors de la vérification des previews.",
+      "releaseYears": "Années de sortie",
+      "refreshReleaseYears": "Re-vérifier les années de sortie",
+      "refreshingReleaseYears": "Vérification en cours (peut prendre ~1 min)...",
+      "refreshReleaseYearsSuccess": "{{ checked }} vérifié(s), {{ updated }} corrigé(s), {{ failed }} échec(s) Deezer.",
+      "refreshReleaseYearsError": "Erreur lors de la vérification des années de sortie.",
       "trackCooldown": "Cooldown de réutilisation des morceaux",
       "saveCooldown": "Enregistrer",
       "cooldownSaved": "Cooldown mis à jour.",

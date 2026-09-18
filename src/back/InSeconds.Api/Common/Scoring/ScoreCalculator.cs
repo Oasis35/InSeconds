@@ -6,7 +6,9 @@ public sealed class ScoreCalculator
         decimal listenedDurationSeconds,
         bool artistCorrect,
         bool titleCorrect,
-        Dictionary<decimal, int> durationScores)
+        Dictionary<decimal, int> durationScores,
+        int hintLevelUsed = 0,
+        Dictionary<int, int>? hintPenaltyPercent = null)
     {
         if (!artistCorrect && !titleCorrect)
             return 0;
@@ -14,9 +16,17 @@ public sealed class ScoreCalculator
         if (!durationScores.TryGetValue(listenedDurationSeconds, out var baseScore))
             return 0;
 
-        if (artistCorrect && titleCorrect)
-            return baseScore;
+        var score = artistCorrect && titleCorrect
+            ? baseScore
+            : (int)Math.Round(baseScore * 0.5);
 
-        return (int)Math.Round(baseScore * 0.5);
+        if (hintLevelUsed > 0
+            && hintPenaltyPercent is not null
+            && hintPenaltyPercent.TryGetValue(hintLevelUsed, out var penaltyPercent))
+        {
+            score = (int)Math.Round(score * (1 - penaltyPercent / 100m));
+        }
+
+        return score;
     }
 }

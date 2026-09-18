@@ -241,6 +241,15 @@
     "seeResult": "See result",
     "nextTrack": "Next track →"
   },
+  "hint": {
+    "costWarning": "Every hint revealed costs points this round",
+    "tooltip": "Hint — costs points",
+    "level1": "Year hint",
+    "level2": "Artist hint",
+    "yearLabel": "Year",
+    "artistLabel": "Artist",
+    "usedLabel": "Hint used (-{{ percent }}%)"
+  },
   "notFound": {
     "title": "Page not found",
     "body": "This page doesn't exist or has been moved.",
@@ -368,6 +377,11 @@
       "refreshingPreviews": "Checking (may take ~1 min)...",
       "refreshPreviewsSuccess": "{{ checked }} checked, {{ updated }} fixed, {{ failed }} Deezer failure(s).",
       "refreshPreviewsError": "Error while checking previews.",
+      "releaseYears": "Release years",
+      "refreshReleaseYears": "Re-check release years",
+      "refreshingReleaseYears": "Checking in progress (can take ~1 min)...",
+      "refreshReleaseYearsSuccess": "{{ checked }} checked, {{ updated }} updated, {{ failed }} Deezer failure(s).",
+      "refreshReleaseYearsError": "Error while checking release years.",
       "trackCooldown": "Track reuse cooldown",
       "saveCooldown": "Save",
       "cooldownSaved": "Cooldown updated.",

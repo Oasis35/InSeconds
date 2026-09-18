@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { GameService } from '../../../core/services/game.service';
-import { StartSessionResponse, SubmitAnswerRequest, SubmitAnswerResponse, GetTodaySessionResponse } from '../../../core/models/game.models';
+import { StartSessionResponse, SubmitAnswerRequest, SubmitAnswerResponse, GetTodaySessionResponse, RequestHintResponse } from '../../../core/models/game.models';
 
 @Injectable()
 export class GameFacadeService {
@@ -25,5 +25,9 @@ export class GameFacadeService {
 
   updateListening(sessionId: number, trackId: number, listenedSeconds: number): Observable<void> {
     return this.gameService.updateListening(sessionId, trackId, listenedSeconds);
+  }
+
+  requestHint(sessionId: number, dailyChallengeTrackId: number, level: number): Observable<RequestHintResponse> {
+    return this.gameService.requestHint(sessionId, dailyChallengeTrackId, level);
   }
 }

@@ -133,6 +133,54 @@ public sealed class DeezerClientTests
         await act.Should().ThrowAsync<OperationCanceledException>();
     }
 
+    // ---------------------------------------------------------------------------
+    // ReleaseYear — parsing du champ Deezer "release_date" ("yyyy-MM-dd")
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetTrackInfoAsync_ParsesReleaseYear_WhenPresent()
+    {
+        var client = Create(new StubHandler(Json(
+            """{"id":123,"title":"T","preview":"p","artist":{"name":"A"},"release_date":"2016-05-20"}""")));
+
+        var info = await client.GetTrackInfoAsync(123);
+
+        info!.ReleaseYear.Should().Be(2016);
+    }
+
+    [Fact]
+    public async Task GetTrackInfoAsync_ReleaseYear_IsNull_WhenFieldAbsent()
+    {
+        var client = Create(new StubHandler(Json(
+            """{"id":123,"title":"T","preview":"p","artist":{"name":"A"}}""")));
+
+        var info = await client.GetTrackInfoAsync(123);
+
+        info!.ReleaseYear.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetTrackInfoAsync_ReleaseYear_IsNull_OnUnexpectedFormat()
+    {
+        var client = Create(new StubHandler(Json(
+            """{"id":123,"title":"T","preview":"p","artist":{"name":"A"},"release_date":"n/a"}""")));
+
+        var info = await client.GetTrackInfoAsync(123);
+
+        info!.ReleaseYear.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task SearchTracksAsync_ParsesReleaseYear()
+    {
+        var client = Create(new StubHandler(Json(
+            """{"data":[{"id":1,"title":"T","preview":"p","artist":{"name":"A"},"release_date":"2001-01-01"}]}""")));
+
+        var results = await client.SearchTracksAsync("daft punk");
+
+        results.Should().ContainSingle().Which.ReleaseYear.Should().Be(2001);
+    }
+
     [Fact]
     public async Task GetTrackInfoAsync_returns_null_on_deezer_error_payload()
     {

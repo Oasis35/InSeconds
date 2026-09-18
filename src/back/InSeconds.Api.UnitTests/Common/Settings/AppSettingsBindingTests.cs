@@ -71,4 +71,39 @@ public sealed class AppSettingsBindingTests
 
         result.AllowedDurationsSeconds.Should().Equal(new AppSettings().AllowedDurationsSeconds);
     }
+
+    // ---------------------------------------------------------------------------
+    // Indices (hints) — HintUnlockDurationsSeconds (decimal[]) / HintPenaltyPercent (Dictionary<int,int>)
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public void Configure_ParsesHintSettings()
+    {
+        var result = Configure(new()
+        {
+            ["HintUnlockDurationsSeconds"] = "5,10",
+            ["HintPenaltyPercent"]         = "1:30,2:60",
+        });
+
+        result.HintUnlockDurationsSeconds.Should().Equal(5, 10);
+        result.HintPenaltyPercent.Should().BeEquivalentTo(new Dictionary<int, int> { [1] = 30, [2] = 60 });
+    }
+
+    [Fact]
+    public void Configure_WhenHintSettingsMissing_ReturnsDefaults()
+    {
+        var result   = Configure(new());
+        var defaults = new AppSettings();
+
+        result.HintUnlockDurationsSeconds.Should().Equal(defaults.HintUnlockDurationsSeconds);
+        result.HintPenaltyPercent.Should().BeEquivalentTo(defaults.HintPenaltyPercent);
+    }
+
+    [Fact]
+    public void Configure_WhenHintPenaltyPercentMalformed_ReturnsDefault()
+    {
+        var result = Configure(new() { ["HintPenaltyPercent"] = "invalide" });
+
+        result.HintPenaltyPercent.Should().BeEquivalentTo(new AppSettings().HintPenaltyPercent);
+    }
 }

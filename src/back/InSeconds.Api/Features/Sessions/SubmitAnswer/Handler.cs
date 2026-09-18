@@ -49,11 +49,20 @@ public sealed class SubmitAnswerHandler(
         var artistCorrect = textNormalizer.IsMatch(command.ArtistAnswer, challengeTrack.Artist);
         var titleCorrect  = textNormalizer.IsMatch(command.TitleAnswer,  challengeTrack.Title);
 
+        // Source de vérité serveur — jamais envoyé par le client (cf. RequestHint/anti-triche).
+        var hintLevelUsed = session.CurrentTrackHintLevelUsed;
+
         var score = scoreCalculator.Calculate(
             command.ListenedDurationSeconds,
             artistCorrect,
             titleCorrect,
-            appSettings.DurationScores);
+            appSettings.DurationScores,
+            hintLevelUsed,
+            appSettings.HintPenaltyPercent);
+
+        var hintPenaltyPercentApplied = hintLevelUsed > 0 && appSettings.HintPenaltyPercent.TryGetValue(hintLevelUsed, out var penaltyPercent)
+            ? penaltyPercent
+            : 0;
 
         var priorStats = await GetPriorStatsAsync(command.DailyChallengeTrackId, cancellationToken);
 
@@ -68,6 +77,7 @@ public sealed class SubmitAnswerHandler(
             ArtistCorrect           = artistCorrect,
             TitleCorrect            = titleCorrect,
             Score                   = score,
+            HintLevelUsed           = hintLevelUsed,
         });
 
         session.AddAnswerScore(score, command.ListenedDurationSeconds);
@@ -99,7 +109,9 @@ public sealed class SubmitAnswerHandler(
             AverageSecondsWhenCorrect: stats.AverageSecondsWhenCorrect,
             FailureRatePercent:        stats.FailureRatePercent,
             GuessTimeDistribution:     stats.GuessTimeDistribution,
-            NotFoundCount:             stats.NotFoundCount));
+            NotFoundCount:             stats.NotFoundCount,
+            HintLevelUsed:             hintLevelUsed,
+            HintPenaltyPercentApplied: hintPenaltyPercentApplied));
     }
 
     // Stats déjà en base pour ce morceau, avant d'ajouter la réponse courante — combinées

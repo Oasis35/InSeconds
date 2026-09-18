@@ -229,6 +229,113 @@ public sealed class SubmitAnswerHandlerTests
         stored.WasExtended.Should().BeTrue(); // conservé pour les stats admin, sans effet sur le score
     }
 
+    // ---------------------------------------------------------------------------
+    // Indices (hints) — pénalité appliquée depuis la source de vérité serveur
+    // (session.CurrentTrackHintLevelUsed), jamais depuis un champ envoyé par le client.
+    // ---------------------------------------------------------------------------
+
+    private static async Task<GameSession> SeedWithHintUsageAsync(
+        ApplicationDbContext db, int hintLevel, int challengeTrackId = 1)
+    {
+        db.Players.Add(BuildPlayer());
+        var (challenge, _) = BuildChallengeWithTrack();
+        db.DailyChallenges.Add(challenge);
+        await db.SaveChangesAsync();
+
+        var session = BuildSession();
+        session.UpdateTrackLock(challengeTrackId, listenedSeconds: 10m);
+        session.RecordHintUsage(challengeTrackId, hintLevel);
+        db.GameSessions.Add(session);
+        await db.SaveChangesAsync();
+
+        return session;
+    }
+
+    [Fact]
+    public async Task Handle_WhenHintLevel1Used_AppliesPenaltyFromDefaultSettings()
+    {
+        await using var db = CreateDbContext();
+        await SeedWithHintUsageAsync(db, hintLevel: 1);
+        var command = BuildCommand(duration: 10, artist: "Daft Punk", title: "Get Lucky");
+
+        var result = await CreateHandler(db).Handle(command, CancellationToken.None);
+
+        var response = AssertOk<SubmitAnswerResponse>(result).Value!;
+        response.Score.Should().Be(70); // 10s=100 × (1 - 0.30)
+        response.HintLevelUsed.Should().Be(1);
+        response.HintPenaltyPercentApplied.Should().Be(30);
+    }
+
+    [Fact]
+    public async Task Handle_WhenHintLevel2Used_AppliesPenaltyFromDefaultSettings()
+    {
+        await using var db = CreateDbContext();
+        await SeedWithHintUsageAsync(db, hintLevel: 2);
+        var command = BuildCommand(duration: 10, artist: "Daft Punk", title: "Get Lucky");
+
+        var result = await CreateHandler(db).Handle(command, CancellationToken.None);
+
+        var response = AssertOk<SubmitAnswerResponse>(result).Value!;
+        response.Score.Should().Be(40); // 10s=100 × (1 - 0.60)
+        response.HintLevelUsed.Should().Be(2);
+        response.HintPenaltyPercentApplied.Should().Be(60);
+    }
+
+    [Fact]
+    public async Task Handle_WhenNoHintUsed_NoPenaltyApplied()
+    {
+        await using var db = CreateDbContext();
+        await SeedAsync(db);
+        var command = BuildCommand(duration: 3, artist: "Daft Punk", title: "Get Lucky");
+
+        var result = await CreateHandler(db).Handle(command, CancellationToken.None);
+
+        var response = AssertOk<SubmitAnswerResponse>(result).Value!;
+        response.HintLevelUsed.Should().Be(0);
+        response.HintPenaltyPercentApplied.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Handle_WhenHintUsed_PersistsHintLevelOnAnswer()
+    {
+        await using var db = CreateDbContext();
+        await SeedWithHintUsageAsync(db, hintLevel: 2);
+        var command = BuildCommand(duration: 10, artist: "Daft Punk", title: "Get Lucky");
+
+        await CreateHandler(db).Handle(command, CancellationToken.None);
+
+        var stored = await db.GameSessionAnswers.SingleAsync(a => a.GameSessionId == 1);
+        stored.HintLevelUsed.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task Handle_WhenHintUsed_ResetsSessionHintLevelAfterSubmit()
+    {
+        // Le verrou anti-cheat (dont le niveau d'indice) est relâché une fois la track répondue,
+        // comme CurrentTrackId/CurrentTrackMinListenedSeconds (cf. ReleaseTrackLock).
+        await using var db = CreateDbContext();
+        var session = await SeedWithHintUsageAsync(db, hintLevel: 2);
+        var command = BuildCommand(duration: 10, artist: "Daft Punk", title: "Get Lucky");
+
+        await CreateHandler(db).Handle(command, CancellationToken.None);
+
+        var updatedSession = await db.GameSessions.FindAsync(session.Id);
+        updatedSession!.CurrentTrackHintLevelUsed.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Handle_WhenHintUsedButAnswerWrong_ScoreStaysZero()
+    {
+        await using var db = CreateDbContext();
+        await SeedWithHintUsageAsync(db, hintLevel: 2);
+        var command = BuildCommand(duration: 10, artist: "mauvais", title: "mauvais");
+
+        var result = await CreateHandler(db).Handle(command, CancellationToken.None);
+
+        var response = AssertOk<SubmitAnswerResponse>(result).Value!;
+        response.Score.Should().Be(0);
+    }
+
     [Fact]
     public async Task Handle_WhenSessionNotFound_Returns404()
     {

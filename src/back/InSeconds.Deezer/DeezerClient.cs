@@ -80,7 +80,7 @@ public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger)
             }
 
             return response is { Title: not null, Artist.Name: not null }
-                ? new DeezerTrackInfo(response.Artist.Name, response.Title, response.Preview, response.Id, ExtractCoverHash(response.Album?.CoverMedium))
+                ? new DeezerTrackInfo(response.Artist.Name, response.Title, response.Preview, response.Id, ExtractCoverHash(response.Album?.CoverMedium), ExtractReleaseYear(response.ReleaseDate))
                 : null;
         }
         catch (OperationCanceledException)
@@ -111,7 +111,7 @@ public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger)
 
             return response?.Data?
                 .Where(t => t.Title is not null && t.Artist?.Name is not null)
-                .Select(t => new DeezerTrackInfo(t.Artist!.Name!, t.Title!, t.Preview, t.Id, ExtractCoverHash(t.Album?.CoverMedium)))
+                .Select(t => new DeezerTrackInfo(t.Artist!.Name!, t.Title!, t.Preview, t.Id, ExtractCoverHash(t.Album?.CoverMedium), ExtractReleaseYear(t.ReleaseDate)))
                 .ToList() ?? [];
         }
         catch (OperationCanceledException)
@@ -123,6 +123,18 @@ public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger)
             logger.LogWarning(ex, "Échec de la recherche Deezer pour la requête {Query}.", query);
             return [];
         }
+    }
+
+    // Parse l'année depuis le champ Deezer "release_date" (format "yyyy-MM-dd"). Retourne null
+    // si absent ou dans un format inattendu — jamais d'exception, cohérent avec le reste du
+    // client (dégradation silencieuse, tolérant aux variations de l'API Deezer).
+    private static int? ExtractReleaseYear(string? releaseDate)
+    {
+        if (string.IsNullOrEmpty(releaseDate))
+            return null;
+
+        var yearPart = releaseDate.Length >= 4 ? releaseDate[..4] : releaseDate;
+        return int.TryParse(yearPart, out var year) ? year : null;
     }
 
     // Extrait le hash depuis "https://cdn-images.dzcdn.net/images/cover/{hash}/250x250-000000-80-0-0.jpg"
@@ -153,6 +165,9 @@ public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger)
 
         [JsonPropertyName("album")]
         public DeezerAlbum? Album { get; set; }
+
+        [JsonPropertyName("release_date")]
+        public string? ReleaseDate { get; set; }
 
         [JsonPropertyName("error")]
         public DeezerError? Error { get; set; }
@@ -190,7 +205,7 @@ public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger)
     }
 }
 
-public sealed record DeezerTrackInfo(string Artist, string Title, string? PreviewUrl, long DeezerTrackId, string? CoverHash);
+public sealed record DeezerTrackInfo(string Artist, string Title, string? PreviewUrl, long DeezerTrackId, string? CoverHash, int? ReleaseYear = null);
 
 /// <summary>Résultat d'un sondage de preview : Succeeded = false signifie « état Deezer inconnu », pas « pas de preview ».</summary>
 public sealed record DeezerPreviewProbe(bool Succeeded, string? PreviewUrl);

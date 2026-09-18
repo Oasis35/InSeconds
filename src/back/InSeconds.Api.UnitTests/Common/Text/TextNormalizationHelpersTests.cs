@@ -27,4 +27,32 @@ public sealed class TextNormalizationHelpersTests
     {
         TextNormalizationHelpers.CleanDisplayTitle("Song (Live) Version").Should().Be("Song Version");
     }
+
+    // ---------------------------------------------------------------------------
+    // BuildHangmanPattern — indice niveau 2 (artiste masqué)
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public void BuildHangmanPattern_SingleWord_RevealsFirstLetterOnly()
+    {
+        TextNormalizationHelpers.BuildHangmanPattern("Muse").Should().Be("M _ _ _");
+    }
+
+    [Fact]
+    public void BuildHangmanPattern_MultipleWords_RevealsFirstLetterOfEachWord()
+    {
+        TextNormalizationHelpers.BuildHangmanPattern("Daft Punk").Should().Be("D _ _ _   P _ _ _");
+    }
+
+    [Fact]
+    public void BuildHangmanPattern_KeepsAccentedFirstLetterVisible()
+    {
+        TextNormalizationHelpers.BuildHangmanPattern("Étienne").Should().Be("É _ _ _ _ _ _");
+    }
+
+    [Fact]
+    public void BuildHangmanPattern_CollapsesExtraWhitespaceBetweenWords()
+    {
+        TextNormalizationHelpers.BuildHangmanPattern("The  Weeknd").Should().Be("T _ _   W _ _ _ _ _");
+    }
 }

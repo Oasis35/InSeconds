@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { StartSessionResponse, SubmitAnswerRequest, SubmitAnswerResponse, GetTodaySessionResponse } from '../models/game.models';
+import { StartSessionResponse, SubmitAnswerRequest, SubmitAnswerResponse, GetTodaySessionResponse, RequestHintResponse } from '../models/game.models';
 
 @Injectable({ providedIn: 'root' })
 export class GameService {
@@ -32,5 +32,9 @@ export class GameService {
 
   updateListening(sessionId: number, trackId: number, listenedSeconds: number): Observable<void> {
     return this.http.patch<void>(`${this.base}/${sessionId}/listening`, { trackId, listenedSeconds });
+  }
+
+  requestHint(sessionId: number, dailyChallengeTrackId: number, level: number): Observable<RequestHintResponse> {
+    return this.http.post<RequestHintResponse>(`${this.base}/${sessionId}/hint`, { dailyChallengeTrackId, level });
   }
 }

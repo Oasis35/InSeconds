@@ -64,6 +64,17 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         Assert.Equal(FakeDeezerTrackId, body.DeezerTrackId);
     }
 
+    [Fact]
+    public async Task AddTrack_NouvelleTrack_PersisteReleaseYear()
+    {
+        await AdminPostAsync("/api/admin/tracks", new { DeezerTrackId = FakeDeezerTrackId });
+
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var track = await db.Tracks.SingleAsync(t => t.DeezerTrackId == FakeDeezerTrackId);
+        Assert.Equal(2015, track.ReleaseYear); // FakeDeezerHandler renvoie release_date=2015-06-01
+    }
+
     // ── GetTracks ─────────────────────────────────────────────────────────────
 
     [Fact]
