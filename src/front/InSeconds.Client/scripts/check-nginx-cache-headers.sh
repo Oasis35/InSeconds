@@ -67,4 +67,21 @@ if [[ -n "$js_file" ]]; then
   check_header "/$js_file" "public, max-age=31536000, immutable"
 fi
 
+# robots.txt / sitemap.xml : sans fichier réel dans public/, le fallback SPA (try_files ... /index.html)
+# renverrait l'index.html en text/html pour ces URLs — un crawler recevrait du HTML au lieu du fichier.
+check_content_type() {
+  local path="$1" expected="$2" actual
+  actual=$(curl -sS -D - -o /dev/null "http://localhost:$PORT$path" | tr -d '\r' | grep -i '^content-type:' | cut -d' ' -f2- | cut -d';' -f1)
+  if [[ ! "$actual" =~ ^($expected)$ ]]; then
+    echo "FAIL $path: expected content-type \"$expected\", got \"$actual\""
+    fail=1
+  else
+    echo "OK   $path -> $actual"
+  fi
+}
+
+check_content_type "/robots.txt" "text/plain"
+# nginx mappe .xml vers text/xml par défaut ; application/xml serait tout aussi valide.
+check_content_type "/sitemap.xml" "text/xml|application/xml"
+
 exit $fail
