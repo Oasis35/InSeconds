@@ -168,3 +168,125 @@ describe('BlindRoundComponent — navigation clavier autocomplete', () => {
     expect(component['highlightedIndex']()).toBe(-1);
   });
 });
+
+describe('BlindRoundComponent — indices (hints)', () => {
+  let component: BlindRoundComponent;
+  let requestHintSpy: jasmine.Spy;
+
+  beforeEach(async () => {
+    requestHintSpy = jasmine.createSpy('requestHint');
+
+    await TestBed.configureTestingModule({
+      imports: [BlindRoundComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: GameFacadeService,
+          useValue: {
+            peekToday: () => of(undefined),
+            startToday: () => of(undefined),
+            submitAnswer: () => of(undefined),
+            abandonSession: () => of(undefined),
+            updateListening: () => of(undefined),
+            requestHint: requestHintSpy,
+          },
+        },
+        { provide: DeezerAutocompleteService, useClass: DeezerAutocompleteStub },
+        { provide: AudioPlayerService, useClass: AudioPlayerStub },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(BlindRoundComponent);
+    fixture.componentRef.setInput('track', TRACK);
+    fixture.componentRef.setInput('sessionId', 42);
+    component = fixture.componentInstance;
+  });
+
+  // Défauts de settings.service.ts (aucun appel /api/settings dans ce test) : [5, 10].
+
+  it('hint1Unlocked est faux avant le palier 5s', () => {
+    component['chosenDuration'].set(3);
+    expect(component['hint1Unlocked']()).toBe(false);
+    expect(component['showAnyHintButton']()).toBe(false);
+  });
+
+  it('hint1Unlocked devient vrai au palier 5s', () => {
+    component['chosenDuration'].set(5);
+    expect(component['hint1Unlocked']()).toBe(true);
+    expect(component['showAnyHintButton']()).toBe(true);
+    expect(component['hint2Unlocked']()).toBe(false);
+  });
+
+  it('hint2Unlocked devient vrai au palier 10s', () => {
+    component['chosenDuration'].set(10);
+    expect(component['hint1Unlocked']()).toBe(true);
+    expect(component['hint2Unlocked']()).toBe(true);
+  });
+
+  it('hint1Locked est vrai tant que non révélé, une fois débloqué', () => {
+    component['chosenDuration'].set(5);
+    expect(component['hint1Locked']()).toBe(true);
+  });
+
+  it('useHint1 appelle requestHint(sessionId, trackId, 1) et révèle l\'année', () => {
+    requestHintSpy.and.returnValue(of({ year: 2016, artistMasked: null }));
+    component['chosenDuration'].set(5);
+
+    component.useHint1();
+
+    expect(requestHintSpy).toHaveBeenCalledWith(42, TRACK.id, 1);
+    expect(component['hintYear']()).toBe(2016);
+    expect(component['hint1Revealed']()).toBe(true);
+    expect(component['hint1Locked']()).toBe(false);
+  });
+
+  it('useHint2 révèle année + artiste masqué, et marque aussi le niveau 1 comme révélé', () => {
+    requestHintSpy.and.returnValue(of({ year: 2016, artistMasked: 'D _ _ _   P _ _ _' }));
+    component['chosenDuration'].set(10);
+
+    component.useHint2();
+
+    expect(requestHintSpy).toHaveBeenCalledWith(42, TRACK.id, 2);
+    expect(component['hintYear']()).toBe(2016);
+    expect(component['hintArtistMasked']()).toBe('D _ _ _   P _ _ _');
+    expect(component['hint1Revealed']()).toBe(true, 'cumulatif : niveau 2 révèle aussi le niveau 1');
+    expect(component['hint2Revealed']()).toBe(true);
+  });
+
+  it('useHint1 ne rappelle pas requestHint si déjà révélé', () => {
+    requestHintSpy.and.returnValue(of({ year: 2016, artistMasked: null }));
+    component['chosenDuration'].set(5);
+
+    component.useHint1();
+    component.useHint1();
+
+    expect(requestHintSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('next() réinitialise tous les signaux indice', () => {
+    requestHintSpy.and.returnValue(of({ year: 2016, artistMasked: 'D _ _ _' }));
+    component['chosenDuration'].set(10);
+    component.useHint2();
+
+    component.next();
+
+    expect(component['hint1Revealed']()).toBe(false);
+    expect(component['hint2Revealed']()).toBe(false);
+    expect(component['hintYear']()).toBeNull();
+    expect(component['hintArtistMasked']()).toBeNull();
+  });
+
+  it('resultHintUsed/resultHintPercent reflètent le résultat soumis', () => {
+    component.setResult({
+      artistCorrect: true, titleCorrect: true, score: 40,
+      correctArtist: 'A', correctTitle: 'T', listenedDurationSeconds: 10,
+      averageSecondsWhenCorrect: undefined, failureRatePercent: 0,
+      guessTimeDistribution: [], notFoundCount: 0,
+      hintLevelUsed: 2, hintPenaltyPercentApplied: 60,
+    } as any);
+
+    expect(component['resultHintUsed']()).toBe(true);
+    expect(component['resultHintPercent']()).toBe(60);
+  });
+});

@@ -56,6 +56,25 @@ Moins on écoute, plus on marque. Le score de base est un **lookup exact** du pa
 - **`ExtendedRate`** (`TrackStatsDto`, `GET /api/admin/challenge-stats`) — % des réponses sur un morceau où le joueur a prolongé l'écoute au moins une fois (`WasExtended=true`). Purement informatif (n'affecte rien côté jeu), affiché dans l'onglet Défis de l'admin, tuile « Prolongé » à côté des taux artiste/titre/écoute moyenne. **[Back + Front]**
 - **Histogramme admin** — `TrackStatsDto.GuessTimeDistribution`/`NotFoundCount` (`GET /api/admin/challenge-stats` — endpoint « Stats par défi » scindé de `/api/admin/stats` le 2026-08-29, chargé seulement à l'ouverture de l'onglet Défis) : une icône « graphique » sur chaque carte morceau de l'onglet Défis ouvre une pop-up avec l'histogramme « en combien de temps les autres ont trouvé » **avec les chiffres au-dessus des barres** (`GuessTimeChartComponent showCounts=true`). Purement informatif. **[Back + Front]**
 
+## Indices (hints)
+
+- **2 niveaux**, débloqués respectivement aux paliers d'écoute configurés dans `Settings.HintUnlockDurationsSeconds` (défaut **5s** pour le niveau 1, **10s** pour le niveau 2). Le bouton "Indice" est **masqué avant déblocage** (pas juste désactivé) — apparaît seulement une fois le palier atteint, révélation sur **clic explicite** uniquement, jamais automatique. **[Back + Front]**
+- **Contenu** : niveau 1 = année de sortie du morceau (`Track.ReleaseYear`) ; niveau 2 = **cumulatif**, ajoute le nom d'artiste masqué façon "pendu" (1re lettre de chaque mot révélée, le reste en `_`, ex. `D _ _ _   P _ _ _`). Demander directement l'indice niveau 2 renvoie les deux contenus d'un coup, que le niveau 1 ait été révélé séparément avant ou non. **[Back]**, `Common/Text/TextNormalizationHelpers.BuildHangmanPattern`.
+- **Pénalité** : appliquée sur le score du **palier d'écoute réellement atteint** (`ScoreCalculator`, après le calcul base/moitié habituel), proportionnelle au **niveau max révélé** — `Settings.HintPenaltyPercent` (défaut **30%** niveau 1, **60%** niveau 2). Aucune pénalité si l'indice n'a jamais été révélé. **[Back]**
+- **Anti-triche** : le niveau d'indice utilisé n'est **jamais envoyé par le client** à `SubmitAnswer` — source de vérité serveur (`GameSession.CurrentTrackHintLevelUsed`, même pattern que `CurrentTrackMinListenedSeconds`), posée par `POST /api/sessions/{id}/hint` (vérifie que le palier requis est bien atteint avant de révéler, **409** sinon) et lue au moment du calcul du score. **[Back]**
+- **Interaction avec "écouter plus"** : **prolonger l'écoute seule ne coûte jamais de points liés aux indices** — cohérent avec la règle "pas de malus de prolongation" ci-dessus. Le niveau d'indice révélé garde son **maximum** (`RecordHintUsage`), il ne redescend jamais si l'utilisateur redemande un niveau inférieur, et il **n'est pas réinitialisé** par une simple prolongation d'écoute sur le même morceau (seul un changement de morceau, ou la soumission de la réponse, le remet à 0). Exemples (pénalités par défaut 30%/60%, `DurationScores[5]=250`, `DurationScores[10]=100`) :
+
+  | Scénario | Palier final | Indice révélé | Score |
+  |---|---|---|---|
+  | Répond à 5s sans indice | 5s | aucun | 250 |
+  | Révèle indice 1 à 5s, répond à 5s | 5s | niveau 1 | 250 × 0.70 ≈ 175 |
+  | Révèle indice 1 à 5s, prolonge à 10s sans redemander, répond à 10s | 10s | niveau 1 | 100 × 0.70 = 70 |
+  | Révèle indice 1 à 5s, prolonge à 10s, révèle aussi indice 2, répond à 10s | 10s | niveau 2 (max) | 100 × 0.40 = 40 |
+  | Prolonge direct jusqu'à 10s sans jamais cliquer indice 1, révèle indice 2 | 10s | niveau 2 | 100 × 0.40 = 40 |
+
+- **`Track.ReleaseYear` absent** (pool pas encore backfillé, cf. bouton admin "Re-vérifier les années de sortie") : l'indice niveau 1 renvoie `null`, le front masque simplement la pastille année — pas d'erreur, l'indice niveau 2 (artiste) reste disponible indépendamment.
+- **Feedback** : `SubmitAnswerResponse.HintLevelUsed`/`HintPenaltyPercentApplied` (pourcentage **réellement appliqué**, pas à recalculer côté front) alimentent un tag "Indice utilisé (-X%)" sur l'écran de révélation du blind round.
+
 ## Morceaux sans preview
 
 Si `Track.HasPreview = false`, le joueur ne peut pas écouter : bouton « Passer » qui soumet directement `ListenedDurationSeconds = 0` (accepté explicitement par `SubmitAnswerValidator`, seul cas où `0` est valide en dehors des paliers configurés). Score = 0 automatiquement (aucun palier ne matche `0` dans `DurationScores`).
@@ -86,5 +105,7 @@ Si `Track.HasPreview = false`, le joueur ne peut pas écouter : bouton « Passer
 | `DurationScores` | voir table ci-dessus | ✅ Back (scoring) + Front (tooltip points) |
 | `CoverUrlTemplate` | URL Deezer | ✅ Back (reconstruction des pochettes) |
 | `GuessTimerSeconds` | `20` | ❌ Non appliqué — aucun timer réel en jeu aujourd'hui |
+| `HintUnlockDurationsSeconds` | `5,10` | ✅ Back (déblocage server-side via `RequestHint`) + Front (affichage des boutons) |
+| `HintPenaltyPercent` | `1:30,2:60` | ✅ Back (pénalité appliquée dans `ScoreCalculator`) |
 
 Détail du mécanisme de chargement (`AppDbConfigurationSource`, `IOptions<AppSettings>`) : voir [`BACKEND_STRUCTURE_FR.md`](BACKEND_STRUCTURE_FR.md#settings--chargement-au-boot) et [`CLAUDE.md`](../CLAUDE.md).

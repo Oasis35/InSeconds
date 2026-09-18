@@ -22,9 +22,10 @@ public sealed class AddTrackHandler(ApplicationDbContext db, DeezerClient deezer
             var fix = await deezer.GetTrackInfoAsync(command.DeezerTrackId, cancellationToken);
             if (fix is not null)
             {
-                existing.Artist    = fix.Artist;
-                existing.Title     = fix.Title;
-                existing.CoverHash = fix.CoverHash;
+                existing.Artist      = fix.Artist;
+                existing.Title       = fix.Title;
+                existing.CoverHash   = fix.CoverHash;
+                existing.ReleaseYear = fix.ReleaseYear;
                 await db.SaveChangesAsync(cancellationToken);
             }
             return Results.Ok(new AddTrackResponse(existing.Id, existing.Artist, existing.Title, existing.DeezerTrackId));
@@ -40,6 +41,7 @@ public sealed class AddTrackHandler(ApplicationDbContext db, DeezerClient deezer
             Artist        = info.Artist,
             Title         = info.Title,
             CoverHash     = info.CoverHash,
+            ReleaseYear   = info.ReleaseYear,
             HasPreview    = !string.IsNullOrEmpty(info.PreviewUrl),
             CreatedAt     = DateTime.UtcNow,
         };

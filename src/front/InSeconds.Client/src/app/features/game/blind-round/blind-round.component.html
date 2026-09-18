@@ -95,6 +95,60 @@
       @if (!audio.isIdle() && !result()) {
         <form (ngSubmit)="submit()" class="space-y-3">
 
+          @if (showAnyHintButton()) {
+            <div class="flex flex-col gap-2">
+              <p class="text-center text-xs font-semibold tracking-widest uppercase" style="font-family:var(--font-display);color:var(--text-faint);opacity:0.75">
+                {{ 'hint.costWarning' | translate }}
+              </p>
+
+              @if (hint1Locked()) {
+                <button
+                  type="button"
+                  (click)="useHint1()"
+                  [disabled]="hintRequestPending()"
+                  [title]="'hint.tooltip' | translate"
+                  class="w-full flex items-center justify-center gap-2 rounded-full transition active:scale-95 touch-manipulation disabled:opacity-60"
+                  style="min-height:40px;border:1.5px dashed rgb(var(--rgb-accent-2) / 0.5);background:transparent;color:var(--color-accent-2);font-family:var(--font-display);font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase">
+                  💡 {{ 'hint.level1' | translate }}
+                </button>
+              }
+              @if (hint1Revealed()) {
+                <div class="w-full flex items-center gap-2 rounded-full px-3.5"
+                     style="min-height:40px;border:1.5px solid rgb(var(--rgb-accent-2) / 0.5);background:rgb(var(--rgb-accent-2) / 0.1)">
+                  <span class="flex items-center gap-1.5 text-xs font-bold uppercase" style="font-family:var(--font-display);letter-spacing:0.08em;color:var(--color-accent-2)">
+                    💡 {{ 'hint.yearLabel' | translate }}
+                  </span>
+                  <span class="flex-1 text-center font-extrabold" style="font-family:var(--font-display);color:var(--text-light)">
+                    {{ hintYear() ?? '—' }}
+                  </span>
+                </div>
+              }
+
+              @if (hint2Locked()) {
+                <button
+                  type="button"
+                  (click)="useHint2()"
+                  [disabled]="hintRequestPending()"
+                  [title]="'hint.tooltip' | translate"
+                  class="w-full flex items-center justify-center gap-2 rounded-full transition active:scale-95 touch-manipulation disabled:opacity-60"
+                  style="min-height:40px;border:1.5px dashed rgb(var(--rgb-accent-2) / 0.5);background:transparent;color:var(--color-accent-2);font-family:var(--font-display);font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase">
+                  💡 {{ 'hint.level2' | translate }}
+                </button>
+              }
+              @if (hint2Revealed()) {
+                <div class="w-full flex items-center gap-2 rounded-full px-3.5 py-2"
+                     style="min-height:40px;border:1.5px solid rgb(var(--rgb-accent-2) / 0.5);background:rgb(var(--rgb-accent-2) / 0.1)">
+                  <span class="flex items-center gap-1.5 text-xs font-bold uppercase shrink-0" style="font-family:var(--font-display);letter-spacing:0.08em;color:var(--color-accent-2)">
+                    💡 {{ 'hint.artistLabel' | translate }}
+                  </span>
+                  <span class="flex-1 text-center font-semibold tracking-wide" style="color:var(--text-light);overflow-wrap:break-word">
+                    {{ hintArtistMasked() }}
+                  </span>
+                </div>
+              }
+            </div>
+          }
+
           <div class="relative">
             <input
               [(ngModel)]="searchQuery"
@@ -209,6 +263,13 @@
             +{{ displayedScore() }}
             <span class="text-base font-normal" style="color:var(--text-faint)"> {{ 'blindRound.points' | translate }}</span>
           </p>
+
+          @if (resultHintUsed()) {
+            <span class="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
+                  style="background:rgb(var(--rgb-accent-2) / 0.12);border:1px solid rgb(var(--rgb-accent-2) / 0.4);color:var(--color-accent-2)">
+              💡 {{ 'hint.usedLabel' | translate: { percent: resultHintPercent() } }}
+            </span>
+          }
 
           <div class="w-full">
             <app-guess-time-chart

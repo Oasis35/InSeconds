@@ -12,4 +12,6 @@ public sealed record SubmitAnswerResponse(
     double? AverageSecondsWhenCorrect,
     double FailureRatePercent,
     IReadOnlyList<DurationBucketDto> GuessTimeDistribution,
-    int NotFoundCount);
+    int NotFoundCount,
+    int HintLevelUsed,
+    int HintPenaltyPercentApplied);

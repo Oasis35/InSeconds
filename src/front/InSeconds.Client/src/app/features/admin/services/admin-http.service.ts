@@ -35,6 +35,7 @@ export class AdminHttpService {
 
   generateToday() { return this.http.post(`${this.base}/generate-today`, {}); }
   refreshPreviews() { return this.http.post<RefreshPreviewsResult>(`${this.base}/refresh-previews`, {}); }
+  refreshReleaseYears() { return this.http.post<RefreshPreviewsResult>(`${this.base}/refresh-release-years`, {}); }
   updateTrackCooldownDays(days: number) {
     return this.http.put<{ trackCooldownDays: number }>(`${this.base}/settings/track-cooldown-days`, { trackCooldownDays: days });
   }

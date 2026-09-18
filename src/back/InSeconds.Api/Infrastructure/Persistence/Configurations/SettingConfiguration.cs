@@ -61,6 +61,22 @@ public sealed class SettingConfiguration : IEntityTypeConfiguration<Setting>
                 Value = "30",
                 Description = "Nombre de jours avant qu'un morceau déjà utilisé redevienne éligible à la génération.",
                 UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new Setting
+            {
+                Id = 8,
+                Key = "HintUnlockDurationsSeconds",
+                Value = "5,10",
+                Description = "Paliers d'écoute (secondes) débloquant respectivement l'indice niveau 1 et niveau 2.",
+                UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new Setting
+            {
+                Id = 9,
+                Key = "HintPenaltyPercent",
+                Value = "1:30,2:60",
+                Description = "Pénalité de score (%) appliquée selon le niveau d'indice révélé (format niveau:pourcentage, séparés par virgule).",
+                UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             }
         );
     }

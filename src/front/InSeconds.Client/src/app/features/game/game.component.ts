@@ -257,6 +257,8 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
           failureRatePercent: 0,
           guessTimeDistribution: [],
           notFoundCount: 0,
+          hintLevelUsed: 0,
+          hintPenaltyPercentApplied: 0,
         }, true);
       },
     });

@@ -20,9 +20,10 @@ public sealed class AddTrackHandlerTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options);
 
-    private static DeezerClient CreateFakeDeezerClient(string artist = "Artist", string title = "Title", long id = 12345)
+    private static DeezerClient CreateFakeDeezerClient(string artist = "Artist", string title = "Title", long id = 12345, string? releaseDate = null)
     {
-        var json = $$$"""{"id":{{{id}}},"title":"{{{title}}}","preview":"https://fake.mp3","artist":{"name":"{{{artist}}}"}}""";
+        var releaseDateField = releaseDate is null ? "" : $",\"release_date\":\"{releaseDate}\"";
+        var json = $$$"""{"id":{{{id}}},"title":"{{{title}}}","preview":"https://fake.mp3","artist":{"name":"{{{artist}}}"}{{{releaseDateField}}}}""";
         var handler = new FakeHttpMessageHandler(
             new HttpResponseMessage(HttpStatusCode.OK)
             {
@@ -84,6 +85,17 @@ public sealed class AddTrackHandlerTests
         response.Artist.Should().Be("Daft Punk");
 
         (await db.Tracks.CountAsync()).Should().Be(1, "pas de doublon");
+    }
+
+    [Fact]
+    public async Task Handle_WhenTrackDoesNotExist_PersistsReleaseYear()
+    {
+        await using var db = CreateDbContext();
+        var handler = new AddTrackHandler(db, CreateFakeDeezerClient("Daft Punk", "Get Lucky", 12345, releaseDate: "2013-04-19"));
+
+        await handler.Handle(new AddTrackCommand(12345), CancellationToken.None);
+
+        (await db.Tracks.SingleAsync()).ReleaseYear.Should().Be(2013);
     }
 
     [Fact]

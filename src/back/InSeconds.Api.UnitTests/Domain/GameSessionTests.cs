@@ -179,4 +179,91 @@ public sealed class GameSessionTests
         session.CurrentTrackId.Should().BeNull();
         session.CurrentTrackMinListenedSeconds.Should().BeNull();
     }
+
+    [Fact]
+    public void ReleaseTrackLock_AlsoResetsHintLevel()
+    {
+        var session = BuildSession();
+        session.UpdateTrackLock(trackId: 42, listenedSeconds: 10m);
+        session.RecordHintUsage(trackId: 42, level: 2);
+
+        session.ReleaseTrackLock();
+
+        session.CurrentTrackHintLevelUsed.Should().Be(0);
+    }
+
+    // ---------------------------------------------------------------------------
+    // RecordHintUsage — anti-triche : source de vérité serveur pour le niveau
+    // d'indice révélé. Garde le niveau max, comme UpdateTrackLock garde le max écouté.
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public void RecordHintUsage_OnCurrentTrack_SetsLevel()
+    {
+        var session = BuildSession();
+        session.UpdateTrackLock(trackId: 42, listenedSeconds: 5m);
+
+        session.RecordHintUsage(trackId: 42, level: 1);
+
+        session.CurrentTrackHintLevelUsed.Should().Be(1);
+    }
+
+    [Fact]
+    public void RecordHintUsage_HigherLevelThenLower_KeepsMax()
+    {
+        var session = BuildSession();
+        session.UpdateTrackLock(trackId: 42, listenedSeconds: 10m);
+        session.RecordHintUsage(trackId: 42, level: 2);
+
+        session.RecordHintUsage(trackId: 42, level: 1);
+
+        session.CurrentTrackHintLevelUsed.Should().Be(2, "le niveau max révélé ne doit jamais redescendre");
+    }
+
+    [Fact]
+    public void RecordHintUsage_LowerThenHigherLevel_UpdatesToMax()
+    {
+        var session = BuildSession();
+        session.UpdateTrackLock(trackId: 42, listenedSeconds: 10m);
+        session.RecordHintUsage(trackId: 42, level: 1);
+
+        session.RecordHintUsage(trackId: 42, level: 2);
+
+        session.CurrentTrackHintLevelUsed.Should().Be(2);
+    }
+
+    [Fact]
+    public void RecordHintUsage_OnDifferentTrack_IsIgnored()
+    {
+        var session = BuildSession();
+        session.UpdateTrackLock(trackId: 42, listenedSeconds: 10m);
+
+        session.RecordHintUsage(trackId: 99, level: 2);
+
+        session.CurrentTrackHintLevelUsed.Should().Be(0);
+    }
+
+    [Fact]
+    public void UpdateTrackLock_DifferentTrack_ResetsHintLevel()
+    {
+        var session = BuildSession();
+        session.UpdateTrackLock(trackId: 42, listenedSeconds: 10m);
+        session.RecordHintUsage(trackId: 42, level: 2);
+
+        session.UpdateTrackLock(trackId: 99, listenedSeconds: 1m);
+
+        session.CurrentTrackHintLevelUsed.Should().Be(0, "nouvelle track — l'indice révélé sur la précédente ne doit pas persister");
+    }
+
+    [Fact]
+    public void UpdateTrackLock_SameTrackHigherDuration_KeepsHintLevel()
+    {
+        var session = BuildSession();
+        session.UpdateTrackLock(trackId: 42, listenedSeconds: 5m);
+        session.RecordHintUsage(trackId: 42, level: 1);
+
+        session.UpdateTrackLock(trackId: 42, listenedSeconds: 10m);
+
+        session.CurrentTrackHintLevelUsed.Should().Be(1, "prolonger l'écoute sur le même morceau ne doit pas effacer l'indice déjà révélé");
+    }
 }

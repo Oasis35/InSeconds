@@ -36,6 +36,28 @@ internal static partial class TextNormalizationHelpers
         return cleaned.Length == 0 ? title : cleaned;
     }
 
+    // Pattern façon "pendu" pour l'indice niveau 2 : révèle la 1re lettre de chaque mot,
+    // masque le reste en "_" (ex: "Daft Punk" → "D _ _ _   P _ _ _"). Les mots sont les
+    // tokens séparés par des espaces ; la ponctuation interne (apostrophes, tirets) reste
+    // visible telle quelle, seules les lettres/chiffres sont masqués.
+    internal static string BuildHangmanPattern(string input)
+    {
+        var words = input.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        var maskedWords = words.Select(word =>
+        {
+            var chars = word.ToCharArray();
+            for (var i = 1; i < chars.Length; i++)
+            {
+                if (char.IsLetterOrDigit(chars[i]))
+                    chars[i] = '_';
+            }
+            return string.Join(' ', chars.Select(c => c.ToString()));
+        });
+
+        return string.Join("   ", maskedWords);
+    }
+
     internal static int LevenshteinDistance(string a, string b)
     {
         if (a.Length == 0) return b.Length;

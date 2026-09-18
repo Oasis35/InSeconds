@@ -22,7 +22,8 @@ internal sealed class FakeDeezerHandler : HttpMessageHandler
                   "title": "E2E Track {{id}}",
                   "preview": "{{preview}}",
                   "artist": { "id": 1, "name": "E2E Artist" },
-                  "album": { "id": 1, "cover_medium": null }
+                  "album": { "id": 1, "cover_medium": null },
+                  "release_date": "2015-06-01"
                 }
                 """;
             return Task.FromResult(JsonResponse(json));

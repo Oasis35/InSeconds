@@ -44,6 +44,10 @@ describe('SettingsService', () => {
       expect(scores[1]).toBe(850);
       expect(scores[10]).toBe(100);
     });
+
+    it('should have default hintUnlockDurations', () => {
+      expect(service.hintUnlockDurations()).toEqual([5, 10]);
+    });
   });
 
   describe('load()', () => {
@@ -117,6 +121,21 @@ describe('SettingsService', () => {
       expect(scores[0.5]).toBe(1000);
       expect(scores[1.5]).toBe(700);
       expect(scores[10]).toBe(100);
+    });
+
+    it('should update hintUnlockDurations signal after load', () => {
+      service.load().subscribe();
+
+      const req = httpMock.expectOne(settingsUrl);
+      req.flush({
+        allowedDurationsSeconds: [0.5],
+        guessTimerSeconds: 20,
+        tracksPerChallenge: 3,
+        durationScores: {},
+        hintUnlockDurationsSeconds: [3, 8],
+      });
+
+      expect(service.hintUnlockDurations()).toEqual([3, 8]);
     });
 
     it('should complete the observable with void after load', () => {

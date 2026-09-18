@@ -122,6 +122,7 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - **Timer de saisie** : 20s après la fin de la lecture pour saisir artiste + titre (configurable)
 - **Scoring partiel** : `ArtistCorrect` et `TitleCorrect` séparés
 - **Anti-triche** : scoring 100% serveur, contrainte BD `UNIQUE (PlayerId, DailyChallengeId)`, durée stockée = palier choisi (validée côté serveur contre la liste autorisée)
+- **Indices** : 2 niveaux débloqués aux paliers 5s/10s (configurable), année de sortie puis artiste masqué façon pendu — pénalise le score (30%/60% par défaut), niveau max révélé lu côté serveur (jamais envoyé par le client)
 - **Mobile-first** : `playsinline` audio, `100dvh`, inputs ≥ 16px, `touch-action: manipulation`
 
 ## Mode guest

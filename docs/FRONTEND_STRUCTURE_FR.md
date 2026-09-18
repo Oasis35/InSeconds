@@ -196,6 +196,7 @@ readonly allowedDurations = signal<number[]>([0.5, 1, 1.5, 2, 3, 5, 10]);
 readonly guessTimerSeconds = signal(20);
 readonly tracksPerChallenge = signal(3);
 readonly durationScores = signal<Record<number, number>>({});
+readonly hintUnlockDurations = signal<number[]>([5, 10]);
 ```
 
 `load()` fait un `catchError` : si `/api/settings` est indisponible au boot, l'app démarre quand même avec les valeurs par défaut des signals (mêmes défauts que le back), `console.warn` seulement.

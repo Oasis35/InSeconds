@@ -16,6 +16,10 @@ public sealed class GameSession
     public int? CurrentTrackId { get; private set; }
     public decimal? CurrentTrackMinListenedSeconds { get; private set; }
 
+    // Niveau d'indice max explicitement révélé sur le morceau en cours (0 = aucun). Source de
+    // vérité serveur pour la pénalité de score — jamais envoyé par le client à SubmitAnswer.
+    public int CurrentTrackHintLevelUsed { get; private set; }
+
     public Player Player { get; set; } = null!;
     public DailyChallenge DailyChallenge { get; set; } = null!;
     public ICollection<GameSessionAnswer> Answers { get; set; } = [];
@@ -61,6 +65,7 @@ public sealed class GameSession
     {
         CurrentTrackId = null;
         CurrentTrackMinListenedSeconds = null;
+        CurrentTrackHintLevelUsed = 0;
     }
 
     // Anti-cheat : jamais réduire le minimum déjà écouté sur la track en cours.
@@ -75,7 +80,19 @@ public sealed class GameSession
         {
             CurrentTrackId = trackId;
             CurrentTrackMinListenedSeconds = listenedSeconds;
+            CurrentTrackHintLevelUsed = 0;
         }
+    }
+
+    // Indice explicitement révélé sur le morceau en cours — garde le niveau max (comme
+    // UpdateTrackLock garde le max écouté), jamais dégradé par un niveau inférieur redemandé.
+    public void RecordHintUsage(int trackId, int level)
+    {
+        if (CurrentTrackId != trackId)
+            return;
+
+        if (level > CurrentTrackHintLevelUsed)
+            CurrentTrackHintLevelUsed = level;
     }
 
     // --- Réservé aux tests/seed E2E ---
@@ -91,7 +108,8 @@ public sealed class GameSession
         DateTime? completedAt = null,
         DateTime? abandonedAt = null,
         int? currentTrackId = null,
-        decimal? currentTrackMinListenedSeconds = null) => new()
+        decimal? currentTrackMinListenedSeconds = null,
+        int currentTrackHintLevelUsed = 0) => new()
         {
             Id = id,
             PlayerId = playerId,
@@ -104,6 +122,7 @@ public sealed class GameSession
             AbandonedAt = abandonedAt,
             CurrentTrackId = currentTrackId,
             CurrentTrackMinListenedSeconds = currentTrackMinListenedSeconds,
+            CurrentTrackHintLevelUsed = currentTrackHintLevelUsed,
         };
 
     // Aucun handler de production ne relocalise jamais une session vers un autre défi —

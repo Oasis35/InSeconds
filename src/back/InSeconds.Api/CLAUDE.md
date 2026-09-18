@@ -37,12 +37,17 @@ Doc détaillée du backend. Vue d'ensemble générale, conventions .NET globales
 **Handler** (`db, ScoreCalculator, TextNormalizer, SettingsService`) :
 - Vérifs : session introuvable→404, `PlayerId` différent→403, `Status!=Pending`→403, track introuvable dans ce défi→404, déjà répondue→**409** `already_answered`.
 - Correction via `TextNormalizer.IsMatch` (artiste et titre séparément), score via `ScoreCalculator.Calculate` — **basé uniquement sur le palier `ListenedDurationSeconds` finalement écouté**, `WasExtended` n'entre plus dans le calcul (cf. `ScoreCalculator` ci-dessous). `WasExtended` reste stocké sur `GameSessionAnswer` pour les stats admin (`ExtendedRate`).
+- **Pénalité indice** : `hintLevelUsed = session.CurrentTrackHintLevelUsed` lu **avant** `session.ReleaseTrackLock()` (qui le remet à 0), passé à `ScoreCalculator.Calculate` avec `appSettings.HintPenaltyPercent`. Persisté sur `GameSessionAnswer.HintLevelUsed`. `hintPenaltyPercentApplied` (le pourcentage réellement appliqué, 0 si `hintLevelUsed=0`) calculé une fois de plus pour la réponse — évite au front de devoir relire `Settings.HintPenaltyPercent` séparément (pas de risque de désynchronisation).
 - **Stats avant/après calculées en mémoire** : lit les stats agrégées déjà en base avant d'insérer la réponse courante, combine en mémoire — évite un aller-retour DB après `SaveChanges`.
 - Réinitialise le verrou anti-cheat via `session.ReleaseTrackLock()`.
 - **Détection de complétion** : réponses en base +1 (courante pas encore persistée) ≥ `TracksPerChallenge` et `Status==Pending` → `Completed`, `CompletedAt=UtcNow`.
 - **Streak basée sur `DailyChallenge.Date`, jamais la date de complétion** (cf. piège 18 du CLAUDE.md racine) : `CurrentStreak = LastPlayedDate == challengeDate.AddDays(-1) ? +1 : 1`, `LastPlayedDate = challengeDate`.
-- **Response** : `SubmitAnswerResponse(ArtistCorrect, TitleCorrect, Score, CorrectArtist, CorrectTitle, ListenedDurationSeconds, AverageSecondsWhenCorrect?, FailureRatePercent, GuessTimeDistribution, NotFoundCount)` — `CorrectTitle` passe par `TextNormalizationHelpers.CleanDisplayTitle` (parenthèses/crochets retirés, cf. Common/Text) avant d'être renvoyé ; `challengeTrack.Title` (utilisé pour la comparaison `TextNormalizer.IsMatch` juste au-dessus) reste brut, sans impact sur le matching qui normalise déjà les parenthèses de son côté.
+- **Response** : `SubmitAnswerResponse(ArtistCorrect, TitleCorrect, Score, CorrectArtist, CorrectTitle, ListenedDurationSeconds, AverageSecondsWhenCorrect?, FailureRatePercent, GuessTimeDistribution, NotFoundCount, HintLevelUsed, HintPenaltyPercentApplied)` — `CorrectTitle` passe par `TextNormalizationHelpers.CleanDisplayTitle` (parenthèses/crochets retirés, cf. Common/Text) avant d'être renvoyé ; `challengeTrack.Title` (utilisé pour la comparaison `TextNormalizer.IsMatch` juste au-dessus) reste brut, sans impact sur le matching qui normalise déjà les parenthèses de son côté.
 - **`GuessTimeDistribution`** (`IReadOnlyList<DurationBucketDto>`, `DurationBucketDto(decimal DurationSeconds, int Count)` — vit dans `Common/Stats/`) : histogramme des temps d'écoute des joueurs ayant trouvé (artiste OU titre) ce morceau. Une requête agrégée supplémentaire `GameSessionAnswers.Where(track & (ArtistCorrect||TitleCorrect)).GroupBy(ListenedDurationSeconds)` (lue avant l'insert, comme `priorStats`), combinée en mémoire avec la réponse courante si elle est correcte, puis **projetée sur `appSettings.AllowedDurationsSeconds`** via `Common/Stats/GuessTimeDistribution.Build(allowed, correctCountsByDuration)` (tous les paliers, comptes à 0 inclus, ordre croissant — helper mutualisé avec `Stats/Today`). `NotFoundCount` = `failCountAfter` (mêmes fautes que `FailureRatePercent`, en valeur absolue). Consommé côté front par `GuessTimeChartComponent` sur l'écran de révélation du blind round **et** dans la pop-up de `TrackResultsListComponent` (récap final + écran « déjà joué », qui lisent `TrackStat.GuessTimeDistribution`/`NotFoundCount` via `GET /api/stats/today`).
+
+### Sessions/RequestHint — `POST /api/sessions/{sessionId}/hint`
+
+`RequestHintCommand(PlayerId, SessionId, DailyChallengeTrackId, Level)`. Validator : `Level` ∈ `[1, HintUnlockDurationsSeconds.Length]`. Handler (`db, SettingsService`) : mêmes gardes 404/403 que les autres endpoints de session (`LoadOwnedSessionAsync`), **400** `session_not_pending` / `track_not_current` (le track demandé n'est pas `session.CurrentTrackId` — anti-triche : impossible de révéler un indice sur un morceau qu'on n'est pas en train d'écouter), **409** `hint_not_unlocked` si `session.CurrentTrackMinListenedSeconds` n'a pas encore atteint le seuil du niveau demandé (`AppSettings.HintUnlockDurationsSeconds[level-1]`). Pose `session.RecordHintUsage(trackId, level)` (garde le niveau max, jamais dégradé — même pattern que `UpdateTrackLock` pour la durée), `SaveChangesAsync`. **Response** : `RequestHintResponse(int? Year, string? ArtistMasked)` — niveau 1 renvoie l'année (`Track.ReleaseYear`, `null` si pool pas encore backfillé) ; niveau 2 renvoie **en plus** `ArtistMasked` (`TextNormalizationHelpers.BuildHangmanPattern(artist)`), cumulatif : demander le niveau 2 directement renvoie les deux, que le niveau 1 ait été révélé séparément avant ou non. **Le niveau d'indice n'est jamais renvoyé par le client à `SubmitAnswer`** — celui-ci lit `session.CurrentTrackHintLevelUsed` directement (source de vérité serveur), cf. section `Sessions/SubmitAnswer` ci-dessous. Détail complet des règles produit (interaction avec "écouter plus", exemples chiffrés) : `GAMEPLAY_RULES_FR.md` § Indices.
 
 ### Sessions/AbandonSession — `PUT /api/sessions/{sessionId}/abandon`
 
@@ -87,6 +92,10 @@ routes.MapGet("/api/admin/me", (HttpContext ctx) =>
 
 Délègue à `PreviewStatusRefresher.RefreshAsync` (voir ChallengeGeneration). `RefreshPreviewsResponse(Checked, Updated, Failed)`.
 
+### Admin/RefreshReleaseYears — `POST /api/admin/refresh-release-years`
+
+Backfill à la demande de `Track.ReleaseYear` (donnée introduite avec le système d'indices, cf. Déjà implémenté racine) pour le pool existant. Délègue à `ReleaseYearRefresher.RefreshAsync` (voir ChallengeGeneration, même pacing 10/1.5s que `PreviewStatusRefresher`) : candidats = **tous** les `Track` avec `ReleaseYear == null` (contrairement à `PreviewStatusRefresher`, pas d'exclusion des morceaux déjà utilisés — le backfill doit couvrir tout l'historique). `RefreshReleaseYearsResponse(Checked, Updated, Failed)`. Bouton admin dans l'onglet Actions, mirroring "🔄 Re-vérifier les previews". Une fois le pool backfillé, plus jamais nécessaire en usage normal : `AddTrack`/`UpdateTrack` capturent `ReleaseYear` dès l'ajout/l'actualisation.
+
 ### Admin/Stats/GetAdminStats — `GET /api/admin/stats?date=` (Dashboard)
 
 Payload du **Dashboard uniquement**. Utilise `IDbContextFactory<ApplicationDbContext>` pour **4 requêtes en parallèle**, chacune avec son propre `DbContext` (non thread-safe sinon) : `BuildDailyActivity` (30 jours glissants, 0 par défaut), `BuildPlayerBreakdown` (guests/registered/actifs 7j/30j, exclut `IsDeleted`), `BuildAvailableDates`, `BuildDailyKpis` (date sélectionnée). Médiane calculée manuellement (tri + moyenne des 2 valeurs centrales si pair). `AdminStatsResponse(DailyActivity, PlayerBreakdown, AvailableDates, SelectedDayKpis)` — **plus de champ `Challenges`** (scindé, voir ci-dessous).
@@ -112,7 +121,7 @@ C'est cette convergence qui supprime l'ancien écart « KPI du jour ≠ Stats pa
 
 ### Admin/Tracks/AddTrack — `POST /api/admin/tracks`
 
-Validator : `DeezerTrackId > 0`. Existe déjà avec données complètes → renvoyé tel quel ; existe mais incomplet → re-fetch Deezer et corrige ; sinon fetch (422 si `null`), crée le `Track`.
+Validator : `DeezerTrackId > 0`. Existe déjà avec données complètes → renvoyé tel quel ; existe mais incomplet → re-fetch Deezer et corrige ; sinon fetch (422 si `null`), crée le `Track` (capture `ReleaseYear` depuis `DeezerTrackInfo.ReleaseYear` au passage, cf. Déjà implémenté racine — système d'indices).
 
 **Gestion de race condition explicite** :
 ```csharp
@@ -138,7 +147,7 @@ Body `UpdateTrackCooldownBody(TrackCooldownDays)`. Validator : `TrackCooldownDay
 
 ### Admin/Tracks/UpdateTrack — `PUT /api/admin/tracks/{id}`
 
-Body `UpdateTrackBody(DeezerTrackId)`. 404 introuvable, **409** `track_in_use` si utilisé, **409** `deezer_id_taken` si le nouveau `DeezerTrackId` déjà pris par un autre track, **422** si Deezer ne renvoie rien, sinon met à jour Artist/Title/CoverHash/HasPreview. **Plus appelé depuis le front** (2026-09-16) — le bouton "↻ Actualiser" par ligne du pool admin a été retiré au profit du bouton général de refresh previews (cf. `features/admin/CLAUDE.md`) ; endpoint et tests d'intégration conservés inchangés.
+Body `UpdateTrackBody(DeezerTrackId)`. 404 introuvable, **409** `track_in_use` si utilisé, **409** `deezer_id_taken` si le nouveau `DeezerTrackId` déjà pris par un autre track, **422** si Deezer ne renvoie rien, sinon met à jour Artist/Title/CoverHash/ReleaseYear/HasPreview. **Plus appelé depuis le front** (2026-09-16) — le bouton "↻ Actualiser" par ligne du pool admin a été retiré au profit du bouton général de refresh previews (cf. `features/admin/CLAUDE.md`) ; endpoint et tests d'intégration conservés inchangés.
 
 ### ChallengeGeneration (pas un endpoint)
 
@@ -206,11 +215,11 @@ Renvoie directement `SettingsService.GetAsync()` → `AppSettings` sérialisé.
 | Entité | Champs clés | Relations |
 |---|---|---|
 | `Player` | `Id(Guid)`, `IsGuest`, `Pseudo?`, `Email?`, `AuthToken(Guid)`, `LastSeenAt?`, `CurrentStreak`, `LastPlayedDate(DateOnly?)`, `IsAdmin(default false)`, `IsDeleted`, `DeletedAt?` | 1—N `GameSession` (cascade) |
-| `Track` | `Id`, `DeezerTrackId(long)`, `Artist`, `Title`, `CoverHash?`, `HasPreview(default true)`, `UpdatedAt?`, `LastUsedDate(DateOnly?)`, `UsageCount(default 0)` | 1—N `DailyChallengeTrack` (restrict) |
+| `Track` | `Id`, `DeezerTrackId(long)`, `Artist`, `Title`, `CoverHash?`, `ReleaseYear(int?)`, `HasPreview(default true)`, `UpdatedAt?`, `LastUsedDate(DateOnly?)`, `UsageCount(default 0)` | 1—N `DailyChallengeTrack` (restrict) |
 | `DailyChallenge` | `Id`, `Date(DateOnly)`, `Seed(int)` | 1—N `DailyChallengeTrack` (cascade), 1—N `GameSession` (restrict) |
 | `DailyChallengeTrack` | `Id`, `DailyChallengeId`, `TrackId`, `DeezerRankSnapshot`, `Position` | 1—N `GameSessionAnswer` (restrict) |
-| `GameSession` | `Id`, `PlayerId`, `DailyChallengeId`, `TotalScore`, `TotalDurationSeconds(decimal)`, `Status(SessionStatus)`, `CompletedAt?`, `AbandonedAt?`, `CurrentTrackId?`, `CurrentTrackMinListenedSeconds(decimal?)` | 1—N `GameSessionAnswer` (cascade) |
-| `GameSessionAnswer` | `Id`, `GameSessionId`, `DailyChallengeTrackId`, `ListenedDurationSeconds`, `WasExtended`, `ArtistAnswer?`, `TitleAnswer?`, `ArtistCorrect`, `TitleCorrect`, `Score` | — |
+| `GameSession` | `Id`, `PlayerId`, `DailyChallengeId`, `TotalScore`, `TotalDurationSeconds(decimal)`, `Status(SessionStatus)`, `CompletedAt?`, `AbandonedAt?`, `CurrentTrackId?`, `CurrentTrackMinListenedSeconds(decimal?)`, `CurrentTrackHintLevelUsed(int, default 0)` | 1—N `GameSessionAnswer` (cascade) |
+| `GameSessionAnswer` | `Id`, `GameSessionId`, `DailyChallengeTrackId`, `ListenedDurationSeconds`, `WasExtended`, `ArtistAnswer?`, `TitleAnswer?`, `ArtistCorrect`, `TitleCorrect`, `Score`, `HintLevelUsed(int, default 0)` | — |
 | `SessionStatus` (enum) | `Pending=0`, `Completed=1`, `Abandoned=2` (clic « Abandonner »), `Expired=3` (expiry paresseuse d'un Pending — sortie sans terminer) | — |
 | `Setting` | `Id`, `Key`, `Value`, `Description?`, `UpdatedAt` | — |
 | `MagicLinkToken` | `Id`, `Email`, `TokenHash` (SHA-256, jamais le token brut), `ExpiresAt`, `ConsumedAt?`, `CreatedAt` | — |
@@ -219,7 +228,7 @@ Renvoie directement `SettingsService.GetAsync()` → `AppSettings` sérialisé.
 **`Player`/`GameSession` sont encapsulés** (tous les autres champs de la table ci-dessus restent des POCO à setters publics classiques) : tous les setters sont `private`, les mutations passent par des méthodes métier qui protègent l'invariant — élimine structurellement la classe de bug du piège 18 (streak/statut mutés en clair dans un handler, sans garde).
 
 - `Player` : `CreateGuest(id, authToken, createdAt)` (factory), `RecordSeen(now)`, `RecordChallengeCompletion(challengeDate)` (streak — toujours comparé à `challengeDate`, jamais `DateTime.UtcNow`), `LinkToAccount(email, pseudo)`, `UpdatePseudo(pseudo)`, `ChangeEmail(newEmail)`, `Delete(deletedAt)`. `IsAdmin` n'a **aucune** méthode publique de mutation (attribution du rôle hors application par design, cf. `Admin/CheckAdminAuth`) — seul un mutateur `internal PromoteToAdminForTesting()` existe, pour le bypass E2E Testing-only et les tests.
-- `GameSession` : `StartNew(playerId, dailyChallengeId, now)` (factory), `AddAnswerScore(score, durationSeconds)`, `Complete(now)`, `Abandon(now)`, `Expire(now)` (distinct d'`Abandon` — même `AbandonedAt` posé, `Status` différent, distinction utilisée par les stats admin), `ReleaseTrackLock()`, `UpdateTrackLock(trackId, listenedSeconds)` (anti-cheat : ne réduit jamais le minimum déjà écouté sur la track en cours).
+- `GameSession` : `StartNew(playerId, dailyChallengeId, now)` (factory), `AddAnswerScore(score, durationSeconds)`, `Complete(now)`, `Abandon(now)`, `Expire(now)` (distinct d'`Abandon` — même `AbandonedAt` posé, `Status` différent, distinction utilisée par les stats admin), `ReleaseTrackLock()` (reset aussi `CurrentTrackHintLevelUsed`), `UpdateTrackLock(trackId, listenedSeconds)` (anti-cheat : ne réduit jamais le minimum déjà écouté sur la track en cours ; reset `CurrentTrackHintLevelUsed` seulement au changement de track), `RecordHintUsage(trackId, level)` (garde le niveau max révélé sur la track en cours, no-op si `trackId` ne correspond pas à `CurrentTrackId`).
 - Reconstruction d'état arbitraire réservée aux tests/seed : `Player.Restore(...)`/`GameSession.Restore(...)` (`internal static`, tous les champs en paramètres nommés), `Player.RestoreStreakForTesting(...)`, `GameSession.RelocateToChallengeForTesting(...)` — jamais appelés en production, utilisés par `Features/E2E/ResetEndpoint.cs` et les deux projets de tests (`InSeconds.Api.csproj` déclare un `InternalsVisibleTo` vers `InSeconds.Api.IntegrationTests` en plus d'`InSeconds.Api.UnitTests` pour ça).
 - Couverts par des tests dédiés au Domain (`InSeconds.Api.UnitTests/Domain/PlayerTests.cs`, `GameSessionTests.cs`) plutôt que seulement indirectement via les tests de Handlers.
 - EF Core matérialise/persiste via réflexion sur `PropertyInfo`, indépendamment du modificateur d'accès du setter — aucune configuration `UsePropertyAccessMode` nécessaire dans `PlayerConfiguration`/`GameSessionConfiguration`, et `dotnet ef migrations has-pending-model-changes` reste vert après ce refactor (aucune migration requise).
@@ -272,14 +281,15 @@ Implémente `IDataProtectionKeyContext` (clés persistées en base, cf. piège 1
 ## Common/Scoring — `ScoreCalculator`
 
 ```
-Calculate(listenedDuration, artistCorrect, titleCorrect, durationScores):
+Calculate(listenedDuration, artistCorrect, titleCorrect, durationScores, hintLevelUsed=0, hintPenaltyPercent=null):
   !artistCorrect && !titleCorrect → 0
   duration absente de durationScores → 0
   base = durationScores[duration]
-  artistCorrect && titleCorrect → base
-  sinon (un seul correct) → round(base * 0.5)
+  score = artistCorrect && titleCorrect ? base : round(base * 0.5)
+  hintLevelUsed > 0 && hintPenaltyPercent[hintLevelUsed] existe → score = round(score * (1 - percent/100))
+  → score
 ```
-Lookup exact du palier (pas d'interpolation), pas de bonus streak/vitesse hors palier. **Pas de malus de prolongation** (décision du 2026-07-17, cf. `GAMEPLAY_RULES_FR.md`) : le score ne dépend que du palier finalement écouté, qu'il ait été atteint directement ou via « écouter plus » — `WasExtended` n'est plus un paramètre de `Calculate`, il reste seulement stocké sur `GameSessionAnswer` pour les stats admin.
+Lookup exact du palier (pas d'interpolation), pas de bonus streak/vitesse hors palier. **Pas de malus de prolongation** (décision du 2026-07-17, cf. `GAMEPLAY_RULES_FR.md`) : le score ne dépend que du palier finalement écouté, qu'il ait été atteint directement ou via « écouter plus » — `WasExtended` n'est plus un paramètre de `Calculate`, il reste seulement stocké sur `GameSessionAnswer` pour les stats admin. **Pénalité indice** (2026-09-18, cf. `GAMEPLAY_RULES_FR.md` § Indices) appliquée en dernier, sur le score déjà réduit par le scoring partiel — `hintLevelUsed` vient de `GameSession.CurrentTrackHintLevelUsed` (source de vérité serveur, jamais du client).
 
 ## Common/Settings
 
@@ -293,7 +303,7 @@ Chargement en 3 couches, **une seule fois au démarrage** (pas de rafraîchissem
 
 ## Common/Text
 
-- **`TextNormalizationHelpers`** (interne) : `ParenthesesPattern()` (regex générée `[\(\[].*?[\)\]]`), `RemoveAccents` (`Normalize(FormD)` + filtre `NonSpacingMark` + `Normalize(FormC)`), `LevenshteinDistance` (matrice classique), `CleanDisplayTitle` (retire parenthèses/crochets + collapse espaces, fallback sur l'original si résultat vide — utilisé par l'autocomplete Deezer ET par tout titre affiché après coup au joueur/admin, cf. Déjà implémenté racine).
+- **`TextNormalizationHelpers`** (interne) : `ParenthesesPattern()` (regex générée `[\(\[].*?[\)\]]`), `RemoveAccents` (`Normalize(FormD)` + filtre `NonSpacingMark` + `Normalize(FormC)`), `LevenshteinDistance` (matrice classique), `CleanDisplayTitle` (retire parenthèses/crochets + collapse espaces, fallback sur l'original si résultat vide — utilisé par l'autocomplete Deezer ET par tout titre affiché après coup au joueur/admin, cf. Déjà implémenté racine), `BuildHangmanPattern` (2026-09-18, indice niveau 2) : révèle la 1re lettre de chaque mot, masque le reste en `_` (ex. `"Daft Punk"` → `"D _ _ _   P _ _ _"`), utilisé par `RequestHintHandler` sur `Track.Artist`.
 - **`TextNormalizer.IsMatch(given, expected, threshold=2)`** : normalise les deux chaînes (supprime parenthèses, minuscule, accents, ne garde que lettres/chiffres/espaces, tokenise, **filtre stop-words** `["the","le","la","les","un","une","de","du","des","and","et","feat","ft","vs"]`), match exact après normalisation → `true`, sinon `LevenshteinDistance <= threshold` (2 par défaut).
 
 ## Program.cs — pipeline et DI

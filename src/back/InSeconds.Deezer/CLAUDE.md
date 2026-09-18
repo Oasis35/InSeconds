@@ -8,7 +8,7 @@ Projet séparé (pas un sous-dossier d'`InSeconds.Api`) — premier pas vers un 
 
 - `GetPreviewUrlAsync` → délègue à `ProbePreviewAsync`.
 - **`ProbePreviewAsync` → `DeezerPreviewProbe(bool Succeeded, string? PreviewUrl)`** : distingue "échec de requête" (`Succeeded=false`) de "vraie absence de preview" (`Succeeded=true, PreviewUrl=""`). **Deezer renvoie ses erreurs (quota, busy, track supprimé) en HTTP 200** avec `error.code`/`error.message` — `DefinitiveNoDataErrorCodes` (`HashSet<int>`, aujourd'hui `{800}` = "no data", track n'existe plus) liste les codes traités comme une absence déterminée ; tout code absent de ce set (4=quota, 700=busy, ou un futur code Deezer inconnu) → `Succeeded=false` (cf. piège 16 racine). Un futur code à traiter en absence déterminée s'ajoute au set, sans toucher à `ProbePreviewAsync`.
-- `GetTrackInfoAsync` → `DeezerTrackInfo(Artist, Title, PreviewUrl, DeezerTrackId, CoverHash)` ou `null`.
+- `GetTrackInfoAsync` → `DeezerTrackInfo(Artist, Title, PreviewUrl, DeezerTrackId, CoverHash, ReleaseYear?)` ou `null`. `ReleaseYear` parsé depuis le champ Deezer `release_date` (format `yyyy-MM-dd`, `ExtractReleaseYear` — retourne `null` en silence si absent/format inattendu, jamais d'exception). `SearchTracksAsync` parse aussi `ReleaseYear` sur chaque résultat (même helper).
 - `SearchTracksAsync` → `[]` en cas d'erreur (jamais d'exception propagée sauf `OperationCanceledException`, re-thrown — cf. piège 13 racine).
 - **`ExtractCoverHash`** : parse `.../images/cover/{hash}/250x250-...jpg`, extrait uniquement `{hash}`.
 
@@ -20,7 +20,7 @@ Projet séparé (pas un sous-dossier d'`InSeconds.Api`) — premier pas vers un 
 
 ## `Testing/FakeDeezerHandler` (`InSeconds.Deezer.Testing`, `internal` — jamais référencé directement depuis `InSeconds.Api`)
 
-Remplace le vrai `HttpClient`. `/track/{id}` : preview vide si `id >= 9_000_000_000`, sinon URL `http://localhost:{E2E_FRONT_PORT ?? 5174}/test-audio.mp3`. Gère aussi `/search` (réponse par défaut à un seul morceau, ou déclencheur `dedup-test` → 3 variantes parenthésées + 1 morceau distinct) — consommé côté tests par la section E2E du CLAUDE.md backend.
+Remplace le vrai `HttpClient`. `/track/{id}` : preview vide si `id >= 9_000_000_000`, sinon URL `http://localhost:{E2E_FRONT_PORT ?? 5174}/test-audio.mp3`. Renvoie systématiquement `"release_date": "2015-06-01"` (2026-09-18, ajouté avec le système d'indices) — `ReleaseYearRefresher`/`AddTrack`/`UpdateTrack` en test obtiennent donc toujours `ReleaseYear=2015`. Gère aussi `/search` (réponse par défaut à un seul morceau, ou déclencheur `dedup-test` → 3 variantes parenthésées + 1 morceau distinct) — consommé côté tests par la section E2E du CLAUDE.md backend.
 
 ## `DeezerServiceCollectionExtensions.AddDeezerHttpClient` — point d'entrée DI
 

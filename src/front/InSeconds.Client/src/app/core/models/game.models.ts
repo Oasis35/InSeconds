@@ -6,4 +6,5 @@ export type {
   SubmitAnswerResponse,
   DurationBucketDto,
   GetTodaySessionResponse,
+  RequestHintResponse,
 } from '../../api/api.generated';
