@@ -13,7 +13,7 @@ public sealed class ResendEmailSenderTests
     private static ResendEmailSender Create(HttpMessageHandler handler, ResendOptions? options = null)
         => new(
             new HttpClient(handler) { BaseAddress = new Uri("https://api.resend.com/") },
-            Options.Create(options ?? new ResendOptions { SenderEmail = "noreply@inseconds.cc", SenderName = "IN//SECONDS", ApiKey = "re_test" }),
+            Options.Create(options ?? new ResendOptions { SenderEmail = "compte@inseconds.cc", SenderName = "IN//SECONDS", ApiKey = "re_test" }),
             NullLogger<ResendEmailSender>.Instance);
 
     [Fact]
@@ -30,7 +30,7 @@ public sealed class ResendEmailSenderTests
 
         using var body = JsonDocument.Parse(handler.LastBody!);
         var root = body.RootElement;
-        root.GetProperty("from").GetString().Should().Be("IN//SECONDS <noreply@inseconds.cc>");
+        root.GetProperty("from").GetString().Should().Be("IN//SECONDS <compte@inseconds.cc>");
         root.GetProperty("to").EnumerateArray().Select(e => e.GetString()).Should().ContainSingle().Which.Should().Be("player@example.com");
         root.GetProperty("subject").GetString().Should().Be("Sujet du test");
         root.GetProperty("html").GetString().Should().Be("<p>Corps</p>");
