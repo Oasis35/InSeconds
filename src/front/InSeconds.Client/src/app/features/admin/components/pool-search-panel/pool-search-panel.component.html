@@ -33,7 +33,9 @@
             <div class="flex-1 min-w-0 flex flex-col gap-0.5">
               <span class="text-sm truncate" style="color:var(--text-light)">{{ track.artist }} — {{ track.title }}</span>
               @if (pool.existingDeezerTrackIds().has(track.deezerTrackId)) {
-                <span class="text-xs" style="color:var(--color-warn)">⚠ {{ 'admin.addPanel.alreadyInPool' | translate }}</span>
+                <span class="text-xs" style="color:var(--color-warn)">
+                  ⚠ {{ (pool.existingDeezerTrackIds().get(track.deezerTrackId) ? 'admin.addPanel.alreadyInPool' : 'admin.addPanel.alreadyUsed') | translate }}
+                </span>
               }
               @if (pool.previewingUrl() === track.previewUrl) {
                 <div class="w-full rounded-full h-1 mt-0.5" style="background:var(--bg-surface-2)">

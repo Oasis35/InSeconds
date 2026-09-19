@@ -72,7 +72,17 @@ export class AdminPoolService {
     const from = this.poolFilterLastUsedFrom();
     const to = this.poolFilterLastUsedTo();
     return this.allTracks().filter(t => {
-      if (text && !t.artist.toLowerCase().includes(text) && !t.title.toLowerCase().includes(text)) return false;
+      // Teste le texte contre artiste et titre séparément, mais aussi combinés
+      // ("Artiste Titre") — la recherche Deezer liée (cf. searchLinked) tape
+      // typiquement les deux ensemble ("Nicki Minaj Starships"), ce qui ne matche
+      // ni l'artiste seul ni le titre seul et faisait disparaître un morceau
+      // pourtant bien présent dans le pool.
+      if (text) {
+        const artist = t.artist.toLowerCase();
+        const title = t.title.toLowerCase();
+        const combined = `${artist} ${title}`;
+        if (!artist.includes(text) && !title.includes(text) && !combined.includes(text)) return false;
+      }
       if (status === 'available' && !t.isAvailable) return false;
       if (status === 'used' && t.isAvailable) return false;
       if (preview === 'ok' && t.hasPreview !== true) return false;
@@ -117,9 +127,16 @@ export class AdminPoolService {
   }
 
   // Détection de doublon dans le panneau de recherche Deezer : DeezerTrackId exact,
-  // disponible ou utilisé (peu importe où le morceau vit dans le pool).
-  readonly existingDeezerTrackIds = computed(() =>
-    new Set(this.allTracks().map(t => t.deezerTrackId)));
+  // disponible ou utilisé (peu importe où le morceau vit dans le pool). La valeur associée
+  // distingue les deux cas pour que le badge affiché à l'admin soit sans ambiguïté — un
+  // morceau "utilisé" (déjà servi dans un ancien défi) n'apparaît pas dans la vue "Disponible"
+  // du tableau Pool, ce qui pouvait donner l'impression d'un faux positif si le badge ne le
+  // précisait pas.
+  readonly existingDeezerTrackIds = computed(() => {
+    const map = new Map<number, boolean>();
+    for (const t of this.allTracks()) map.set(t.deezerTrackId, t.isAvailable);
+    return map;
+  });
 
   // Autonomie du pool : mêmes critères que DailyChallengeGenerator côté back
   // (jamais utilisé + preview active), calculée depuis les données déjà chargées
