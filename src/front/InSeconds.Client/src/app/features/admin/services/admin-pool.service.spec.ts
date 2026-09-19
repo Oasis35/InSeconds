@@ -163,45 +163,34 @@ describe('AdminPoolService', () => {
       });
     });
 
-    it('matches when the query targets only the artist field', () => {
-      service.setPoolFilter('nicki minaj');
-      expect(service.filteredTracks().map(t => t.id)).toEqual([1]);
-    });
-
-    it('matches when the query targets only the title field', () => {
-      service.setPoolFilter('starships');
-      expect(service.filteredTracks().map(t => t.id)).toEqual([1]);
-    });
-
-    it('matches when the query combines artist and title, as propagated by "Recherches liées"', () => {
-      // Régression : avant le fix, un texte combinant les deux champs ne matchait ni
-      // l'artiste seul ni le titre seul et faisait disparaître le morceau du tableau.
-      service.setPoolFilter('Nicki Minaj Starships');
-      expect(service.filteredTracks().map(t => t.id)).toEqual([1]);
-    });
-
-    it('excludes tracks matching neither field nor their combination', () => {
-      service.setPoolFilter('Daft Punk');
-      expect(service.filteredTracks().map(t => t.id)).toEqual([]);
-    });
+    // Régression : avant le fix, un texte combinant artiste + titre ("Nicki Minaj Starships",
+    // propagé par "Recherches liées" depuis la recherche Deezer) ne matchait ni l'artiste
+    // seul ni le titre seul et faisait disparaître le morceau du tableau.
+    const cases: [string, number[]][] = [
+      ['nicki minaj', [1]],
+      ['starships', [1]],
+      ['Nicki Minaj Starships', [1]],
+      ['Daft Punk', []],
+    ];
+    for (const [query, expectedIds] of cases) {
+      it(`"${query}" → ${JSON.stringify(expectedIds)}`, () => {
+        service.setPoolFilter(query);
+        expect(service.filteredTracks().map(t => t.id)).toEqual(expectedIds);
+      });
+    }
   });
 
   describe('existingDeezerTrackIds', () => {
-    it('maps an available track to isAvailable=true', () => {
-      apiStub._setPoolTracks({ available: [makePoolTrack(101, true)], used: [] });
-      const ids = service.existingDeezerTrackIds();
-      expect(ids.get(101)).toBe(true);
-    });
-
-    it('maps a used track to isAvailable=false', () => {
-      apiStub._setPoolTracks({ available: [], used: [makePoolTrack(101, true)] });
-      const ids = service.existingDeezerTrackIds();
-      expect(ids.get(101)).toBe(false);
-    });
-
-    it('does not contain an id absent from the pool', () => {
-      apiStub._setPoolTracks({ available: [makePoolTrack(101, true)], used: [] });
-      expect(service.existingDeezerTrackIds().has(999)).toBe(false);
-    });
+    const cases: [string, PoolTracksResponse, boolean | undefined][] = [
+      ['available track', { available: [makePoolTrack(101, true)], used: [] }, true],
+      ['used track', { available: [], used: [makePoolTrack(101, true)] }, false],
+      ['id absent from the pool', { available: [makePoolTrack(101, true)], used: [] }, undefined],
+    ];
+    for (const [label, pool, expected] of cases) {
+      it(`maps a ${label} accordingly`, () => {
+        apiStub._setPoolTracks(pool);
+        expect(service.existingDeezerTrackIds().get(label === 'id absent from the pool' ? 999 : 101)).toBe(expected);
+      });
+    }
   });
 });
