@@ -7,6 +7,8 @@ import { DeezerTrackInfo, PoolTrackDto } from '../admin.models';
 
 type PoolTrackWithFlag = PoolTrackDto & { isAvailable: boolean };
 export type PoolSortColumn = 'artist' | 'title' | 'preview' | 'status' | 'lastUsedDate' | 'unlockDate' | 'usageCount';
+type PoolFilterStatus = 'all' | 'available' | 'used';
+type PoolFilterPreview = 'all' | 'ok' | 'missing';
 
 /** État de l'onglet pool : filtres, pagination, sélection, panneau de recherche/ajout, modale suppression. */
 @Injectable()
@@ -25,8 +27,8 @@ export class AdminPoolService {
   readonly poolPageSize = 15;
   readonly allTracksPage = signal(0);
   readonly poolFilterText = signal('');
-  readonly poolFilterStatus = signal<'all' | 'available' | 'used'>('all');
-  readonly poolFilterPreview = signal<'all' | 'ok' | 'missing'>('all');
+  readonly poolFilterStatus = signal<PoolFilterStatus>('all');
+  readonly poolFilterPreview = signal<PoolFilterPreview>('all');
   readonly poolFilterLastUsedFrom = signal<string>(''); // ISO yyyy-MM-dd, '' = pas de borne basse
   readonly poolFilterLastUsedTo = signal<string>('');   // ISO yyyy-MM-dd, '' = pas de borne haute
 
@@ -91,13 +93,13 @@ export class AdminPoolService {
     return artist.includes(text) || title.includes(text) || `${artist} ${title}`.includes(text);
   }
 
-  private matchesStatus(t: PoolTrackWithFlag, status: 'all' | 'available' | 'used'): boolean {
+  private matchesStatus(t: PoolTrackWithFlag, status: PoolFilterStatus): boolean {
     if (status === 'available') return t.isAvailable;
     if (status === 'used') return !t.isAvailable;
     return true;
   }
 
-  private matchesPreview(t: PoolTrackWithFlag, preview: 'all' | 'ok' | 'missing'): boolean {
+  private matchesPreview(t: PoolTrackWithFlag, preview: PoolFilterPreview): boolean {
     if (preview === 'ok') return t.hasPreview === true;
     if (preview === 'missing') return t.hasPreview === false;
     return true;
@@ -183,8 +185,8 @@ export class AdminPoolService {
     this.allTracksPage.set(0);
     if (this.searchLinked()) this.poolSearchQuery.set(text);
   }
-  setPoolFilterStatus(v: 'all' | 'available' | 'used'): void { this.poolFilterStatus.set(v); this.allTracksPage.set(0); }
-  setPoolFilterPreview(v: 'all' | 'ok' | 'missing'): void { this.poolFilterPreview.set(v); this.allTracksPage.set(0); }
+  setPoolFilterStatus(v: PoolFilterStatus): void { this.poolFilterStatus.set(v); this.allTracksPage.set(0); }
+  setPoolFilterPreview(v: PoolFilterPreview): void { this.poolFilterPreview.set(v); this.allTracksPage.set(0); }
   setPoolFilterLastUsedFrom(v: string): void { this.poolFilterLastUsedFrom.set(v); this.allTracksPage.set(0); }
   setPoolFilterLastUsedTo(v: string): void { this.poolFilterLastUsedTo.set(v); this.allTracksPage.set(0); }
 
