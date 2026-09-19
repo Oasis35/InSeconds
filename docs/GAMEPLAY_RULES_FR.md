@@ -58,7 +58,7 @@ Moins on écoute, plus on marque. Le score de base est un **lookup exact** du pa
 
 ## Indices (hints)
 
-- **2 niveaux**, débloqués respectivement aux paliers d'écoute configurés dans `Settings.HintUnlockDurationsSeconds` (défaut **5s** pour le niveau 1, **10s** pour le niveau 2). Le bouton "Indice" est **masqué avant déblocage** (pas juste désactivé) — apparaît seulement une fois le palier atteint, révélation sur **clic explicite** uniquement, jamais automatique. **[Back + Front]**
+- **2 niveaux**, débloqués respectivement aux paliers d'écoute configurés dans `Settings.HintUnlockDurationsSeconds` (défaut **5s** pour le niveau 1, **10s** pour le niveau 2). Le bouton "Indice" est **masqué avant déblocage** (pas juste désactivé) — apparaît et devient utilisable dès que le joueur a **choisi** ce palier (ex. clic sur "écouter plus" jusqu'à 5s), sans attendre que l'audio ait fini de le jouer jusqu'au bout ; révélation sur **clic explicite** uniquement, jamais automatique. **[Back + Front]**
 - **Contenu** : niveau 1 = année de sortie du morceau (`Track.ReleaseYear`) ; niveau 2 = **cumulatif**, ajoute le nom d'artiste masqué façon "pendu" (1re lettre de chaque mot révélée, le reste en `_`, ex. `D _ _ _   P _ _ _`). Demander directement l'indice niveau 2 renvoie les deux contenus d'un coup, que le niveau 1 ait été révélé séparément avant ou non. **[Back]**, `Common/Text/TextNormalizationHelpers.BuildHangmanPattern`.
 - **Pénalité** : appliquée sur le score du **palier d'écoute réellement atteint** (`ScoreCalculator`, après le calcul base/moitié habituel), proportionnelle au **niveau max révélé** — `Settings.HintPenaltyPercent` (défaut **30%** niveau 1, **60%** niveau 2). Aucune pénalité si l'indice n'a jamais été révélé. **[Back]**
 - **Anti-triche** : le niveau d'indice utilisé n'est **jamais envoyé par le client** à `SubmitAnswer` — source de vérité serveur (`GameSession.CurrentTrackHintLevelUsed`, même pattern que `CurrentTrackMinListenedSeconds`), posée par `POST /api/sessions/{id}/hint` (vérifie que le palier requis est bien atteint avant de révéler, **409** sinon) et lue au moment du calcul du score. **[Back]**
@@ -73,7 +73,7 @@ Moins on écoute, plus on marque. Le score de base est un **lookup exact** du pa
   | Prolonge direct jusqu'à 10s sans jamais cliquer indice 1, révèle indice 2 | 10s | niveau 2 | 100 × 0.40 = 40 |
 
 - **`Track.ReleaseYear` absent** (pool pas encore backfillé, cf. bouton admin "Re-vérifier les années de sortie") : l'indice niveau 1 renvoie `null`, le front masque simplement la pastille année — pas d'erreur, l'indice niveau 2 (artiste) reste disponible indépendamment.
-- **Feedback** : `SubmitAnswerResponse.HintLevelUsed`/`HintPenaltyPercentApplied` (pourcentage **réellement appliqué**, pas à recalculer côté front) alimentent un tag "Indice utilisé (-X%)" sur l'écran de révélation du blind round.
+- **Feedback** : `SubmitAnswerResponse.HintLevelUsed`/`HintPenaltyPercentApplied` (pourcentage **réellement appliqué**, pas à recalculer côté front) — donnée disponible mais **plus affichée** sur l'écran de révélation du blind round depuis le 2026-09-19 (retiré à la demande produit, cf. issue #153).
 
 ## Morceaux sans preview
 

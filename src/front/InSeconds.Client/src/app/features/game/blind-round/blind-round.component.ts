@@ -121,15 +121,16 @@ export class BlindRoundComponent implements OnDestroy {
       }
     });
 
-    // Quand le timer s'arrête (état finished, pas encore de résultat), mémoriser la durée écoutée
+    // Dès que le joueur s'engage sur un palier (startPlay/listenMore), mémoriser la durée
+    // choisie côté serveur — sans attendre que l'audio ait fini de la jouer. Nécessaire pour
+    // que le déblocage d'indice (basé sur ce même champ côté back) suive le palier choisi et
+    // non la fin de lecture, cf. RequestHint/Handler.cs.
     effect(() => {
-      if (this.audio.state() === 'finished' && !this.result()) {
-        const sid = this.sessionId();
-        const tid = this.track().id;
-        const dur = this.chosenDuration();
-        if (sid > 0 && tid > 0 && dur > 0) {
-          this.gameService.updateListening(sid, tid, dur).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
-        }
+      const dur = this.chosenDuration();
+      const sid = this.sessionId();
+      const tid = this.track().id;
+      if (sid > 0 && tid > 0 && dur > 0) {
+        this.gameService.updateListening(sid, tid, dur).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
       }
     });
   }

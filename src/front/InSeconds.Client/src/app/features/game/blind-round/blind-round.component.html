@@ -108,15 +108,23 @@
                   [disabled]="hintRequestPending()"
                   [title]="'hint.tooltip' | translate"
                   class="w-full flex items-center justify-center gap-2 rounded-full transition active:scale-95 touch-manipulation disabled:opacity-60"
-                  style="min-height:40px;border:1.5px dashed rgb(var(--rgb-accent-2) / 0.5);background:transparent;color:var(--color-accent-2);font-family:var(--font-display);font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase">
-                  💡 {{ 'hint.level1' | translate }}
+                  style="min-height:40px;border:1.5px dashed rgb(var(--rgb-violet) / 0.5);background:transparent;color:var(--color-violet);font-family:var(--font-display);font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0">
+                    <path d="M9 18h6"></path><path d="M10 22h4"></path>
+                    <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5.6.61 1.2 1.42 1.41 2.5"></path>
+                  </svg>
+                  {{ 'hint.level1' | translate }}
                 </button>
               }
               @if (hint1Revealed()) {
                 <div class="w-full flex items-center gap-2 rounded-full px-3.5"
-                     style="min-height:40px;border:1.5px solid rgb(var(--rgb-accent-2) / 0.5);background:rgb(var(--rgb-accent-2) / 0.1)">
-                  <span class="flex items-center gap-1.5 text-xs font-bold uppercase" style="font-family:var(--font-display);letter-spacing:0.08em;color:var(--color-accent-2)">
-                    💡 {{ 'hint.yearLabel' | translate }}
+                     style="min-height:40px;border:1.5px solid rgb(var(--rgb-violet) / 0.6);background:rgb(var(--rgb-violet) / 0.15)">
+                  <span class="flex items-center gap-1.5 text-xs font-bold uppercase" style="font-family:var(--font-display);letter-spacing:0.08em;color:var(--color-violet)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0">
+                      <path d="M9 18h6"></path><path d="M10 22h4"></path>
+                      <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5.6.61 1.2 1.42 1.41 2.5"></path>
+                    </svg>
+                    {{ 'hint.yearLabel' | translate }}
                   </span>
                   <span class="flex-1 text-center font-extrabold" style="font-family:var(--font-display);color:var(--text-light)">
                     {{ hintYear() ?? '—' }}
@@ -131,15 +139,23 @@
                   [disabled]="hintRequestPending()"
                   [title]="'hint.tooltip' | translate"
                   class="w-full flex items-center justify-center gap-2 rounded-full transition active:scale-95 touch-manipulation disabled:opacity-60"
-                  style="min-height:40px;border:1.5px dashed rgb(var(--rgb-accent-2) / 0.5);background:transparent;color:var(--color-accent-2);font-family:var(--font-display);font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase">
-                  💡 {{ 'hint.level2' | translate }}
+                  style="min-height:40px;border:1.5px dashed rgb(var(--rgb-violet) / 0.5);background:transparent;color:var(--color-violet);font-family:var(--font-display);font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0">
+                    <path d="M9 18h6"></path><path d="M10 22h4"></path>
+                    <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5.6.61 1.2 1.42 1.41 2.5"></path>
+                  </svg>
+                  {{ 'hint.level2' | translate }}
                 </button>
               }
               @if (hint2Revealed()) {
                 <div class="w-full flex items-center gap-2 rounded-full px-3.5 py-2"
-                     style="min-height:40px;border:1.5px solid rgb(var(--rgb-accent-2) / 0.5);background:rgb(var(--rgb-accent-2) / 0.1)">
-                  <span class="flex items-center gap-1.5 text-xs font-bold uppercase shrink-0" style="font-family:var(--font-display);letter-spacing:0.08em;color:var(--color-accent-2)">
-                    💡 {{ 'hint.artistLabel' | translate }}
+                     style="min-height:40px;border:1.5px solid rgb(var(--rgb-violet) / 0.6);background:rgb(var(--rgb-violet) / 0.15)">
+                  <span class="flex items-center gap-1.5 text-xs font-bold uppercase shrink-0" style="font-family:var(--font-display);letter-spacing:0.08em;color:var(--color-violet)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0">
+                      <path d="M9 18h6"></path><path d="M10 22h4"></path>
+                      <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5.6.61 1.2 1.42 1.41 2.5"></path>
+                    </svg>
+                    {{ 'hint.artistLabel' | translate }}
                   </span>
                   <span class="flex-1 text-center font-semibold tracking-wide" style="color:var(--text-light);overflow-wrap:break-word">
                     {{ hintArtistMasked() }}
@@ -263,13 +279,6 @@
             +{{ displayedScore() }}
             <span class="text-base font-normal" style="color:var(--text-faint)"> {{ 'blindRound.points' | translate }}</span>
           </p>
-
-          @if (resultHintUsed()) {
-            <span class="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
-                  style="background:rgb(var(--rgb-accent-2) / 0.12);border:1px solid rgb(var(--rgb-accent-2) / 0.4);color:var(--color-accent-2)">
-              💡 {{ 'hint.usedLabel' | translate: { percent: resultHintPercent() } }}
-            </span>
-          }
 
           <div class="w-full">
             <app-guess-time-chart
