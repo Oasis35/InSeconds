@@ -1,4 +1,5 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed, ComponentFixture } from '@angular/core/testing';
+import { provideTranslateService } from '@ngx-translate/core';
 import { signal } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
@@ -171,16 +172,20 @@ describe('BlindRoundComponent — navigation clavier autocomplete', () => {
 
 describe('BlindRoundComponent — indices (hints)', () => {
   let component: BlindRoundComponent;
+  let fixture: ComponentFixture<BlindRoundComponent>;
   let requestHintSpy: jasmine.Spy;
+  let updateListeningSpy: jasmine.Spy;
 
   beforeEach(async () => {
     requestHintSpy = jasmine.createSpy('requestHint');
+    updateListeningSpy = jasmine.createSpy('updateListening').and.returnValue(of(undefined));
 
     await TestBed.configureTestingModule({
       imports: [BlindRoundComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideTranslateService(),
         {
           provide: GameFacadeService,
           useValue: {
@@ -188,7 +193,7 @@ describe('BlindRoundComponent — indices (hints)', () => {
             startToday: () => of(undefined),
             submitAnswer: () => of(undefined),
             abandonSession: () => of(undefined),
-            updateListening: () => of(undefined),
+            updateListening: updateListeningSpy,
             requestHint: requestHintSpy,
           },
         },
@@ -197,7 +202,7 @@ describe('BlindRoundComponent — indices (hints)', () => {
       ],
     }).compileComponents();
 
-    const fixture = TestBed.createComponent(BlindRoundComponent);
+    fixture = TestBed.createComponent(BlindRoundComponent);
     fixture.componentRef.setInput('track', TRACK);
     fixture.componentRef.setInput('sessionId', 42);
     component = fixture.componentInstance;
@@ -227,6 +232,17 @@ describe('BlindRoundComponent — indices (hints)', () => {
   it('hint1Locked est vrai tant que non révélé, une fois débloqué', () => {
     component['chosenDuration'].set(5);
     expect(component['hint1Locked']()).toBe(true);
+  });
+
+  it('updateListening est appelé dès que le palier est choisi, sans attendre la fin de la lecture', () => {
+    fixture.detectChanges(); // exécute les effects du constructeur (dont l'auto-play, qui met chosenDuration à jour une 1re fois)
+    updateListeningSpy.calls.reset();
+
+    component.startPlay(5);
+    fixture.detectChanges();
+
+    // Appelé immédiatement au choix du palier, sans dépendre de audio.state() === 'finished'.
+    expect(updateListeningSpy).toHaveBeenCalledWith(42, TRACK.id, 5);
   });
 
   it('useHint1 appelle requestHint(sessionId, trackId, 1) et révèle l\'année', () => {
