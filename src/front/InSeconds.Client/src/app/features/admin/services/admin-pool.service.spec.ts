@@ -154,4 +154,54 @@ describe('AdminPoolService', () => {
       expect(service.sortedTracks().map(t => t.id)).toEqual([1, 3, 2]);
     });
   });
+
+  describe('filtre texte (artiste + titre combinés)', () => {
+    beforeEach(() => {
+      apiStub._setPoolTracks({
+        available: [{ id: 1, artist: 'Nicki Minaj', title: 'Starships', deezerTrackId: 101, hasPreview: true, usageCount: 0 }],
+        used: [],
+      });
+    });
+
+    it('matches when the query targets only the artist field', () => {
+      service.setPoolFilter('nicki minaj');
+      expect(service.filteredTracks().map(t => t.id)).toEqual([1]);
+    });
+
+    it('matches when the query targets only the title field', () => {
+      service.setPoolFilter('starships');
+      expect(service.filteredTracks().map(t => t.id)).toEqual([1]);
+    });
+
+    it('matches when the query combines artist and title, as propagated by "Recherches liées"', () => {
+      // Régression : avant le fix, un texte combinant les deux champs ne matchait ni
+      // l'artiste seul ni le titre seul et faisait disparaître le morceau du tableau.
+      service.setPoolFilter('Nicki Minaj Starships');
+      expect(service.filteredTracks().map(t => t.id)).toEqual([1]);
+    });
+
+    it('excludes tracks matching neither field nor their combination', () => {
+      service.setPoolFilter('Daft Punk');
+      expect(service.filteredTracks().map(t => t.id)).toEqual([]);
+    });
+  });
+
+  describe('existingDeezerTrackIds', () => {
+    it('maps an available track to isAvailable=true', () => {
+      apiStub._setPoolTracks({ available: [makePoolTrack(101, true)], used: [] });
+      const ids = service.existingDeezerTrackIds();
+      expect(ids.get(101)).toBe(true);
+    });
+
+    it('maps a used track to isAvailable=false', () => {
+      apiStub._setPoolTracks({ available: [], used: [makePoolTrack(101, true)] });
+      const ids = service.existingDeezerTrackIds();
+      expect(ids.get(101)).toBe(false);
+    });
+
+    it('does not contain an id absent from the pool', () => {
+      apiStub._setPoolTracks({ available: [makePoolTrack(101, true)], used: [] });
+      expect(service.existingDeezerTrackIds().has(999)).toBe(false);
+    });
+  });
 });
