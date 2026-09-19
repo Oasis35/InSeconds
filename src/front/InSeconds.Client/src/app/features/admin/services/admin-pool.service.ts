@@ -7,6 +7,8 @@ import { DeezerTrackInfo, PoolTrackDto } from '../admin.models';
 
 type PoolTrackWithFlag = PoolTrackDto & { isAvailable: boolean };
 export type PoolSortColumn = 'artist' | 'title' | 'preview' | 'status' | 'lastUsedDate' | 'unlockDate' | 'usageCount';
+type PoolFilterStatus = 'all' | 'available' | 'used';
+type PoolFilterPreview = 'all' | 'ok' | 'missing';
 
 /** État de l'onglet pool : filtres, pagination, sélection, panneau de recherche/ajout, modale suppression. */
 @Injectable()
@@ -25,8 +27,8 @@ export class AdminPoolService {
   readonly poolPageSize = 15;
   readonly allTracksPage = signal(0);
   readonly poolFilterText = signal('');
-  readonly poolFilterStatus = signal<'all' | 'available' | 'used'>('all');
-  readonly poolFilterPreview = signal<'all' | 'ok' | 'missing'>('all');
+  readonly poolFilterStatus = signal<PoolFilterStatus>('all');
+  readonly poolFilterPreview = signal<PoolFilterPreview>('all');
   readonly poolFilterLastUsedFrom = signal<string>(''); // ISO yyyy-MM-dd, '' = pas de borne basse
   readonly poolFilterLastUsedTo = signal<string>('');   // ISO yyyy-MM-dd, '' = pas de borne haute
 
@@ -71,17 +73,43 @@ export class AdminPoolService {
     const preview = this.poolFilterPreview();
     const from = this.poolFilterLastUsedFrom();
     const to = this.poolFilterLastUsedTo();
-    return this.allTracks().filter(t => {
-      if (text && !t.artist.toLowerCase().includes(text) && !t.title.toLowerCase().includes(text)) return false;
-      if (status === 'available' && !t.isAvailable) return false;
-      if (status === 'used' && t.isAvailable) return false;
-      if (preview === 'ok' && t.hasPreview !== true) return false;
-      if (preview === 'missing' && t.hasPreview !== false) return false;
-      if (from && (!t.lastUsedDate || t.lastUsedDate.localeCompare(from) < 0)) return false;
-      if (to && (!t.lastUsedDate || t.lastUsedDate.localeCompare(to) > 0)) return false;
-      return true;
-    });
+    return this.allTracks().filter(t =>
+      this.matchesText(t, text) &&
+      this.matchesStatus(t, status) &&
+      this.matchesPreview(t, preview) &&
+      this.matchesLastUsedRange(t, from, to)
+    );
   });
+
+  // Teste le texte contre artiste et titre séparément, mais aussi combinés
+  // ("Artiste Titre") — la recherche Deezer liée (cf. searchLinked) tape
+  // typiquement les deux ensemble ("Nicki Minaj Starships"), ce qui ne matche
+  // ni l'artiste seul ni le titre seul et faisait disparaître un morceau
+  // pourtant bien présent dans le pool.
+  private matchesText(t: PoolTrackWithFlag, text: string): boolean {
+    if (!text) return true;
+    const artist = t.artist.toLowerCase();
+    const title = t.title.toLowerCase();
+    return artist.includes(text) || title.includes(text) || `${artist} ${title}`.includes(text);
+  }
+
+  private matchesStatus(t: PoolTrackWithFlag, status: PoolFilterStatus): boolean {
+    if (status === 'available') return t.isAvailable;
+    if (status === 'used') return !t.isAvailable;
+    return true;
+  }
+
+  private matchesPreview(t: PoolTrackWithFlag, preview: PoolFilterPreview): boolean {
+    if (preview === 'ok') return t.hasPreview === true;
+    if (preview === 'missing') return t.hasPreview === false;
+    return true;
+  }
+
+  private matchesLastUsedRange(t: PoolTrackWithFlag, from: string, to: string): boolean {
+    if (from && (!t.lastUsedDate || t.lastUsedDate.localeCompare(from) < 0)) return false;
+    if (to && (!t.lastUsedDate || t.lastUsedDate.localeCompare(to) > 0)) return false;
+    return true;
+  }
 
   readonly sortedTracks = computed(() => {
     const column = this.poolSortColumn();
@@ -117,9 +145,16 @@ export class AdminPoolService {
   }
 
   // Détection de doublon dans le panneau de recherche Deezer : DeezerTrackId exact,
-  // disponible ou utilisé (peu importe où le morceau vit dans le pool).
-  readonly existingDeezerTrackIds = computed(() =>
-    new Set(this.allTracks().map(t => t.deezerTrackId)));
+  // disponible ou utilisé (peu importe où le morceau vit dans le pool). La valeur associée
+  // distingue les deux cas pour que le badge affiché à l'admin soit sans ambiguïté — un
+  // morceau "utilisé" (déjà servi dans un ancien défi) n'apparaît pas dans la vue "Disponible"
+  // du tableau Pool, ce qui pouvait donner l'impression d'un faux positif si le badge ne le
+  // précisait pas.
+  readonly existingDeezerTrackIds = computed(() => {
+    const map = new Map<number, boolean>();
+    for (const t of this.allTracks()) map.set(t.deezerTrackId, t.isAvailable);
+    return map;
+  });
 
   // Autonomie du pool : mêmes critères que DailyChallengeGenerator côté back
   // (jamais utilisé + preview active), calculée depuis les données déjà chargées
@@ -150,8 +185,8 @@ export class AdminPoolService {
     this.allTracksPage.set(0);
     if (this.searchLinked()) this.poolSearchQuery.set(text);
   }
-  setPoolFilterStatus(v: 'all' | 'available' | 'used'): void { this.poolFilterStatus.set(v); this.allTracksPage.set(0); }
-  setPoolFilterPreview(v: 'all' | 'ok' | 'missing'): void { this.poolFilterPreview.set(v); this.allTracksPage.set(0); }
+  setPoolFilterStatus(v: PoolFilterStatus): void { this.poolFilterStatus.set(v); this.allTracksPage.set(0); }
+  setPoolFilterPreview(v: PoolFilterPreview): void { this.poolFilterPreview.set(v); this.allTracksPage.set(0); }
   setPoolFilterLastUsedFrom(v: string): void { this.poolFilterLastUsedFrom.set(v); this.allTracksPage.set(0); }
   setPoolFilterLastUsedTo(v: string): void { this.poolFilterLastUsedTo.set(v); this.allTracksPage.set(0); }
 

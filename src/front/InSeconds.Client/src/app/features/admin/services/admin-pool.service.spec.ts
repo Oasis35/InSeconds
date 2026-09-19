@@ -154,4 +154,43 @@ describe('AdminPoolService', () => {
       expect(service.sortedTracks().map(t => t.id)).toEqual([1, 3, 2]);
     });
   });
+
+  describe('filtre texte (artiste + titre combinés)', () => {
+    beforeEach(() => {
+      apiStub._setPoolTracks({
+        available: [{ id: 1, artist: 'Nicki Minaj', title: 'Starships', deezerTrackId: 101, hasPreview: true, usageCount: 0 }],
+        used: [],
+      });
+    });
+
+    // Régression : avant le fix, un texte combinant artiste + titre ("Nicki Minaj Starships",
+    // propagé par "Recherches liées" depuis la recherche Deezer) ne matchait ni l'artiste
+    // seul ni le titre seul et faisait disparaître le morceau du tableau.
+    const cases: [string, number[]][] = [
+      ['nicki minaj', [1]],
+      ['starships', [1]],
+      ['Nicki Minaj Starships', [1]],
+      ['Daft Punk', []],
+    ];
+    for (const [query, expectedIds] of cases) {
+      it(`"${query}" → ${JSON.stringify(expectedIds)}`, () => {
+        service.setPoolFilter(query);
+        expect(service.filteredTracks().map(t => t.id)).toEqual(expectedIds);
+      });
+    }
+  });
+
+  describe('existingDeezerTrackIds', () => {
+    const cases: [string, PoolTracksResponse, boolean | undefined][] = [
+      ['available track', { available: [makePoolTrack(101, true)], used: [] }, true],
+      ['used track', { available: [], used: [makePoolTrack(101, true)] }, false],
+      ['id absent from the pool', { available: [makePoolTrack(101, true)], used: [] }, undefined],
+    ];
+    for (const [label, pool, expected] of cases) {
+      it(`maps a ${label} accordingly`, () => {
+        apiStub._setPoolTracks(pool);
+        expect(service.existingDeezerTrackIds().get(label === 'id absent from the pool' ? 999 : 101)).toBe(expected);
+      });
+    }
+  });
 });
