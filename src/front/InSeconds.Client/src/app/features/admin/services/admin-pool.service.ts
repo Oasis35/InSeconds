@@ -71,27 +71,43 @@ export class AdminPoolService {
     const preview = this.poolFilterPreview();
     const from = this.poolFilterLastUsedFrom();
     const to = this.poolFilterLastUsedTo();
-    return this.allTracks().filter(t => {
-      // Teste le texte contre artiste et titre séparément, mais aussi combinés
-      // ("Artiste Titre") — la recherche Deezer liée (cf. searchLinked) tape
-      // typiquement les deux ensemble ("Nicki Minaj Starships"), ce qui ne matche
-      // ni l'artiste seul ni le titre seul et faisait disparaître un morceau
-      // pourtant bien présent dans le pool.
-      if (text) {
-        const artist = t.artist.toLowerCase();
-        const title = t.title.toLowerCase();
-        const combined = `${artist} ${title}`;
-        if (!artist.includes(text) && !title.includes(text) && !combined.includes(text)) return false;
-      }
-      if (status === 'available' && !t.isAvailable) return false;
-      if (status === 'used' && t.isAvailable) return false;
-      if (preview === 'ok' && t.hasPreview !== true) return false;
-      if (preview === 'missing' && t.hasPreview !== false) return false;
-      if (from && (!t.lastUsedDate || t.lastUsedDate.localeCompare(from) < 0)) return false;
-      if (to && (!t.lastUsedDate || t.lastUsedDate.localeCompare(to) > 0)) return false;
-      return true;
-    });
+    return this.allTracks().filter(t =>
+      this.matchesText(t, text) &&
+      this.matchesStatus(t, status) &&
+      this.matchesPreview(t, preview) &&
+      this.matchesLastUsedRange(t, from, to)
+    );
   });
+
+  // Teste le texte contre artiste et titre séparément, mais aussi combinés
+  // ("Artiste Titre") — la recherche Deezer liée (cf. searchLinked) tape
+  // typiquement les deux ensemble ("Nicki Minaj Starships"), ce qui ne matche
+  // ni l'artiste seul ni le titre seul et faisait disparaître un morceau
+  // pourtant bien présent dans le pool.
+  private matchesText(t: PoolTrackWithFlag, text: string): boolean {
+    if (!text) return true;
+    const artist = t.artist.toLowerCase();
+    const title = t.title.toLowerCase();
+    return artist.includes(text) || title.includes(text) || `${artist} ${title}`.includes(text);
+  }
+
+  private matchesStatus(t: PoolTrackWithFlag, status: 'all' | 'available' | 'used'): boolean {
+    if (status === 'available') return t.isAvailable;
+    if (status === 'used') return !t.isAvailable;
+    return true;
+  }
+
+  private matchesPreview(t: PoolTrackWithFlag, preview: 'all' | 'ok' | 'missing'): boolean {
+    if (preview === 'ok') return t.hasPreview === true;
+    if (preview === 'missing') return t.hasPreview === false;
+    return true;
+  }
+
+  private matchesLastUsedRange(t: PoolTrackWithFlag, from: string, to: string): boolean {
+    if (from && (!t.lastUsedDate || t.lastUsedDate.localeCompare(from) < 0)) return false;
+    if (to && (!t.lastUsedDate || t.lastUsedDate.localeCompare(to) > 0)) return false;
+    return true;
+  }
 
   readonly sortedTracks = computed(() => {
     const column = this.poolSortColumn();
