@@ -2,6 +2,12 @@
 
 # InSeconds 🎵
 
+**▶ Play now: [https://inseconds.cc](https://inseconds.cc)**
+
+[![CI](https://github.com/Oasis35/InSeconds/actions/workflows/ci.yml/badge.svg)](https://github.com/Oasis35/InSeconds/actions/workflows/ci.yml)
+
+![InSeconds screenshots](docs/screenshot.png)
+
 > Daily music blind test. Listen as briefly as you can, guess artist + title. Less time = more points. Same challenge for everyone, every day.
 
 ## How it works
@@ -95,7 +101,7 @@ GitHub Actions workflow on every push and every PR to `main`:
 - **Backend** — build in Release + `dotnet ef migrations has-pending-model-changes`
 - **Unit tests** — `dotnet test` on `InSeconds.Api.UnitTests` (xUnit, no DB required)
 - **Frontend** — `npm ci` + production build
-- **Frontend unit tests** — `ng test --watch=false --browsers=ChromeHeadless` (Karma + Jasmine, 274 tests)
+- **Frontend unit tests** — `ng test --watch=false --browsers=ChromeHeadless` (Karma + Jasmine, 277 tests)
 - **Integration tests** — `dotnet test` on `InSeconds.Api.IntegrationTests` (Testcontainers spins up a real PostgreSQL container, no extra YAML needed)
 - **E2E** — Playwright tests (Chromium) against a real backend in `Testing` mode with a PostgreSQL service — runs after all jobs above pass
 - **Nginx cache headers smoke test** — builds and runs the actual production Docker image (`Dockerfile.prod`), checks `Cache-Control` headers and the `Content-Type` of `robots.txt`/`sitemap.xml` via `curl` (`scripts/check-nginx-cache-headers.sh`) — the only job that exercises `nginx.conf`
@@ -120,7 +126,7 @@ cd src/front/InSeconds.Client
 npx ng test --watch=false --browsers=ChromeHeadless
 ```
 
-**274 tests** (Karma + Jasmine) covering `App`, `GameService`, `SettingsService`, `LanguageService`, `GameFooterComponent` (language toggle), `AdminHttpService`, `AdminStatsService`, `AdminPoolService` (pool runway), `BlindRoundComponent` (autocomplete keyboard navigation), `GuessTimeChartComponent` + `TrackResultsListComponent` (guess-time histogram + popup), `ChallengesTabComponent` (player identity chips + guess-time popup), `ClipboardService`, `PlayerIdentityService`, `BrowserIdComponent`. Uses `HttpTestingController` — no real HTTP calls.
+**277 tests** across 32 spec files (Karma + Jasmine), covering `App`, `GameService`, `SettingsService`, `LanguageService`, `GameFooterComponent` (language toggle), `AdminHttpService`, `AdminStatsService`, `AdminPoolService` (pool runway), `BlindRoundComponent` (autocomplete keyboard navigation), `GuessTimeChartComponent` + `TrackResultsListComponent` (guess-time histogram + popup), `ChallengesTabComponent` (player identity chips + guess-time popup), `ClipboardService`, `PlayerIdentityService`, `PlayerSessionService`, `BrowserIdComponent`, plus the login/profile/email-change flows. Uses `HttpTestingController` — no real HTTP calls.
 
 ### Integration tests (backend)
 
@@ -129,7 +135,7 @@ cd src/back
 dotnet test InSeconds.Api.IntegrationTests
 ```
 
-Requires Docker (Testcontainers starts a real PostgreSQL container). **170 tests** covering `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (Dashboard: KPIs, activity, player breakdown) + `ChallengeStats` (`GET /api/admin/challenge-stats`, the "per-challenge stats" endpoint split off the Dashboard — including the per-challenge player list), `Players` (`GET /api/players/me`), `PlayerSoftDelete`, `SessionEdgeCases` (lazy expiry, streak — including finishing yesterday's challenge after midnight UTC, submit on abandoned session, UpdateListening anti-cheat), `ChallengeGeneration`, `LazyChallengeGeneration` (on-the-fly challenge regeneration), `Admin/Tracks`, `Admin/Challenges`, `Admin/RefreshPreviews`, `Admin/RefreshReleaseYears`, `RequestHint` (hint unlock/penalty), `DeezerSearch` (public autocomplete cleanup + deduplication), guess-time distribution histogram on submitted answers + on `Stats/Today` + `ChallengeStats` TrackStat (per-track score + histogram), title-cleaning on every display path (submitted answer, resumed session, "already played" stats, admin challenges stats), `HealthCheck`.
+Requires Docker (Testcontainers starts a real PostgreSQL container). **162 tests** covering `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (Dashboard: KPIs, activity, player breakdown) + `ChallengeStats` (`GET /api/admin/challenge-stats`, the "per-challenge stats" endpoint split off the Dashboard — including the per-challenge player list), `Players` (`GET /api/players/me`), `PlayerSoftDelete`, `SessionEdgeCases` (lazy expiry, streak — including finishing yesterday's challenge after midnight UTC, submit on abandoned session, UpdateListening anti-cheat), `ChallengeGeneration`, `LazyChallengeGeneration` (on-the-fly challenge regeneration), `Admin/Tracks`, `Admin/Challenges`, `Admin/RefreshPreviews`, `Admin/RefreshReleaseYears`, `RequestHint` (hint unlock/penalty), `DeezerSearch` (public autocomplete cleanup + deduplication), guess-time distribution histogram on submitted answers + on `Stats/Today` + `ChallengeStats` TrackStat (per-track score + histogram), title-cleaning on every display path (submitted answer, resumed session, "already played" stats, admin challenges stats), `HealthCheck`.
 
 ### E2E tests (Playwright)
 
@@ -146,7 +152,7 @@ npm run e2e        # headless
 npm run e2e:ui     # interactive Playwright UI
 ```
 
-**80 tests** — 55 game tests (happy path, already-played, abandon, resume, multi-tab sync, no-challenge + automatic rebirth of a deleted challenge, share + clipboard failure, scoring, guess-time histogram on the reveal screen + in the recap/already-played track list popup, anti-cheat min duration lock, leave-confirmation guard, clear-search button, autocomplete cleanup/deduplication + keyboard navigation, service-down overlay, footer language toggle + privacy page) + 25 admin tests (login, pool table with filters, add track via the integrated search panel, delete track, generate challenge, reset sessions, challenge list, browser ID display/copy, player chip "it's you" highlighting, per-track guess-time histogram popup, lazy per-tab loading — deferred network calls + deferred tab counter).
+**81 tests** in 19 spec files — 57 game tests (happy path, already-played, login/profile/email-change flows, login nudges, abandon, resume, multi-tab sync, no-challenge + automatic rebirth of a deleted challenge, share + clipboard failure, scoring, guess-time histogram on the reveal screen + in the recap/already-played track list popup, anti-cheat min duration lock, leave-confirmation guard, clear-search button, autocomplete cleanup/deduplication + keyboard navigation, service-down overlay, footer language toggle + privacy page) + 24 admin tests (login, pool table with filters, add track via the integrated search panel, delete track, generate challenge, reset sessions, challenge list, browser ID display/copy, player chip "it's you" highlighting, per-track guess-time histogram popup, lazy per-tab loading — deferred network calls + deferred tab counter).
 
 The backend runs in `ASPNETCORE_ENVIRONMENT=Testing` which activates:
 - `FakeDeezerHandler` — returns a local `test-audio.mp3`; tracks with DeezerTrackId >= 9_000_000_000 return an empty preview (5 seed tracks: The Beatles, Pink Floyd, Bob Dylan, Led Zeppelin, Fleetwood Mac) to test the "missing preview" filter/red indicator and the general "Re-check previews" button
