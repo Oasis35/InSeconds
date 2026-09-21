@@ -2,6 +2,12 @@
 
 # InSeconds 🎵
 
+**▶ Joue maintenant : [https://inseconds.cc](https://inseconds.cc)**
+
+[![CI](https://github.com/Oasis35/InSeconds/actions/workflows/ci.yml/badge.svg)](https://github.com/Oasis35/InSeconds/actions/workflows/ci.yml)
+
+![Captures d'écran InSeconds](docs/screenshot.png)
+
 > Blind test musical quotidien. Écoute le moins longtemps possible, devine artiste + titre. Moins de temps = plus de points. Même défi pour tout le monde, chaque jour.
 
 ## Comment ça marche
@@ -95,7 +101,7 @@ Workflow GitHub Actions sur chaque push et chaque PR vers `main` :
 - **Backend** — build Release + `dotnet ef migrations has-pending-model-changes`
 - **Tests unitaires** — `dotnet test` sur `InSeconds.Api.UnitTests` (xUnit, pas de BD requise)
 - **Frontend** — `npm ci` + build production
-- **Tests unitaires frontend** — `ng test --watch=false --browsers=ChromeHeadless` (Karma + Jasmine, 274 tests)
+- **Tests unitaires frontend** — `ng test --watch=false --browsers=ChromeHeadless` (Karma + Jasmine, 277 tests)
 - **Tests d'intégration** — `dotnet test` sur `InSeconds.Api.IntegrationTests` (Testcontainers crée un conteneur PostgreSQL réel, pas de YAML supplémentaire)
 - **E2E** — tests Playwright (Chromium) contre un vrai backend en mode `Testing` avec un service PostgreSQL — s'exécute après tous les jobs précédents
 - **Smoke test headers de cache nginx** — construit et lance la vraie image Docker de prod (`Dockerfile.prod`), vérifie les headers `Cache-Control` et le `Content-Type` de `robots.txt`/`sitemap.xml` via `curl` (`scripts/check-nginx-cache-headers.sh`) — seul job qui teste réellement `nginx.conf`
@@ -120,7 +126,7 @@ cd src/front/InSeconds.Client
 npx ng test --watch=false --browsers=ChromeHeadless
 ```
 
-**274 tests** (Karma + Jasmine) couvrant `App`, `GameService`, `SettingsService`, `LanguageService`, `GameFooterComponent` (toggle langue), `AdminHttpService`, `AdminStatsService`, `AdminPoolService` (autonomie du pool), `BlindRoundComponent` (navigation clavier de l'autocomplete), `GuessTimeChartComponent` + `TrackResultsListComponent` (histogramme + pop-up), `ChallengesTabComponent` (chips d'identité joueur + pop-up histogramme), `ClipboardService`, `PlayerIdentityService`, `BrowserIdComponent`. Utilise `HttpTestingController` — pas de vraies requêtes HTTP.
+**277 tests** répartis sur 32 fichiers de spec (Karma + Jasmine), couvrant `App`, `GameService`, `SettingsService`, `LanguageService`, `GameFooterComponent` (toggle langue), `AdminHttpService`, `AdminStatsService`, `AdminPoolService` (autonomie du pool), `BlindRoundComponent` (navigation clavier de l'autocomplete), `GuessTimeChartComponent` + `TrackResultsListComponent` (histogramme + pop-up), `ChallengesTabComponent` (chips d'identité joueur + pop-up histogramme), `ClipboardService`, `PlayerIdentityService`, `PlayerSessionService`, `BrowserIdComponent`, ainsi que les parcours connexion/profil/changement d'email. Utilise `HttpTestingController` — pas de vraies requêtes HTTP.
 
 ### Tests d'intégration (backend)
 
@@ -129,7 +135,7 @@ cd src/back
 dotnet test InSeconds.Api.IntegrationTests
 ```
 
-Nécessite Docker (Testcontainers démarre un vrai conteneur PostgreSQL). **170 tests** couvrant `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (Dashboard : KPIs, activité, répartition joueurs) + `ChallengeStats` (`GET /api/admin/challenge-stats`, endpoint « Stats par défi » scindé du Dashboard — dont la liste des joueurs par défi), `Players` (`GET /api/players/me`), `PlayerSoftDelete`, `SessionEdgeCases` (expiry paresseuse, streak — dont défi de la veille terminé après minuit UTC, submit sur session abandonnée, UpdateListening anti-triche), `ChallengeGeneration`, `LazyChallengeGeneration` (régénération du défi à la volée), `Admin/Tracks`, `Admin/Challenges`, `Admin/RefreshPreviews`, `Admin/RefreshReleaseYears`, `RequestHint` (déblocage/pénalité indice), `DeezerSearch` (nettoyage + déduplication de l'autocomplete public), histogramme des temps de réponse sur les réponses soumises + sur `Stats/Today` + `ChallengeStats` TrackStat (score + histogramme par morceau), nettoyage des titres sur tous les écrans d'affichage (réponse soumise, reprise, stats "déjà joué", stats admin), `HealthCheck`.
+Nécessite Docker (Testcontainers démarre un vrai conteneur PostgreSQL). **162 tests** couvrant `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (Dashboard : KPIs, activité, répartition joueurs) + `ChallengeStats` (`GET /api/admin/challenge-stats`, endpoint « Stats par défi » scindé du Dashboard — dont la liste des joueurs par défi), `Players` (`GET /api/players/me`), `PlayerSoftDelete`, `SessionEdgeCases` (expiry paresseuse, streak — dont défi de la veille terminé après minuit UTC, submit sur session abandonnée, UpdateListening anti-triche), `ChallengeGeneration`, `LazyChallengeGeneration` (régénération du défi à la volée), `Admin/Tracks`, `Admin/Challenges`, `Admin/RefreshPreviews`, `Admin/RefreshReleaseYears`, `RequestHint` (déblocage/pénalité indice), `DeezerSearch` (nettoyage + déduplication de l'autocomplete public), histogramme des temps de réponse sur les réponses soumises + sur `Stats/Today` + `ChallengeStats` TrackStat (score + histogramme par morceau), nettoyage des titres sur tous les écrans d'affichage (réponse soumise, reprise, stats "déjà joué", stats admin), `HealthCheck`.
 
 ### Tests E2E (Playwright)
 
@@ -146,7 +152,7 @@ npm run e2e        # headless
 npm run e2e:ui     # UI interactive Playwright
 ```
 
-**80 tests** — 55 tests jeu (happy path, déjà joué, abandon, reprise, sync multi-onglets, pas de défi + renaissance automatique du défi supprimé, partage + échec de copie presse-papier, scoring, histogramme des temps de réponse (écran de révélation + pop-up de la liste récap/déjà joué), paliers bloqués à la reprise anti-triche, confirmation de sortie, bouton ✕ d'effacement, nettoyage/déduplication + navigation clavier de l'autocomplete, overlay "Service indisponible", toggle langue + page confidentialité) + 25 tests admin (login, tableau pool avec filtres, ajout de morceau via le panneau de recherche intégré, suppression morceau, générer défi, reset sessions, liste défis, affichage/copie de l'ID navigateur, surbrillance "toi" sur le chip joueur, pop-up histogramme par morceau, chargement paresseux par onglet — appels réseau différés + compteur d'onglet différé).
+**81 tests** répartis sur 19 fichiers de spec — 57 tests jeu (happy path, déjà joué, parcours connexion/profil/changement d'email, nudges de connexion, abandon, reprise, sync multi-onglets, pas de défi + renaissance automatique du défi supprimé, partage + échec de copie presse-papier, scoring, histogramme des temps de réponse (écran de révélation + pop-up de la liste récap/déjà joué), paliers bloqués à la reprise anti-triche, confirmation de sortie, bouton ✕ d'effacement, nettoyage/déduplication + navigation clavier de l'autocomplete, overlay "Service indisponible", toggle langue + page confidentialité) + 24 tests admin (login, tableau pool avec filtres, ajout de morceau via le panneau de recherche intégré, suppression morceau, générer défi, reset sessions, liste défis, affichage/copie de l'ID navigateur, surbrillance "toi" sur le chip joueur, pop-up histogramme par morceau, chargement paresseux par onglet — appels réseau différés + compteur d'onglet différé).
 
 Le backend tourne en `ASPNETCORE_ENVIRONMENT=Testing` qui active :
 - `FakeDeezerHandler` — retourne un `test-audio.mp3` local ; les IDs >= 9_000_000_000 retournent une preview vide (5 morceaux seed : The Beatles, Pink Floyd, Bob Dylan, Led Zeppelin, Fleetwood Mac) pour tester le filtre "Preview manquante"/l'indicateur rouge et le bouton général "Re-vérifier les previews"
