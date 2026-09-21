@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/Oasis35/InSeconds/actions/workflows/ci.yml/badge.svg)](https://github.com/Oasis35/InSeconds/actions/workflows/ci.yml)
 
-![InSeconds screenshots](docs/screenshot.png)
+![InSeconds screenshots](docs/screenshot.jpg)
 
 > Daily music blind test. Listen as briefly as you can, guess artist + title. Less time = more points. Same challenge for everyone, every day.
 

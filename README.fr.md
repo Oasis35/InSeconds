@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/Oasis35/InSeconds/actions/workflows/ci.yml/badge.svg)](https://github.com/Oasis35/InSeconds/actions/workflows/ci.yml)
 
-![Captures d'écran InSeconds](docs/screenshot.png)
+![Captures d'écran InSeconds](docs/screenshot.jpg)
 
 > Blind test musical quotidien. Écoute le moins longtemps possible, devine artiste + titre. Moins de temps = plus de points. Même défi pour tout le monde, chaque jour.
 
