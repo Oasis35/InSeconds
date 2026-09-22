@@ -332,6 +332,7 @@ export class AdminPoolService {
       const deleted = new Set(tracks.map(t => t.id));
       this.selectedTrackIds.set(new Set([...this.selectedTrackIds()].filter(id => !deleted.has(id))));
       this.closeDeleteModal();
+      this.allTracksPage.set(0);
       this.api.reloadPool();
     }).catch(() => {
       this.deleteStatus.set('error');

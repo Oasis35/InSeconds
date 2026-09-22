@@ -50,6 +50,9 @@
             </button>
           }
         </div>
+        @if (devLoginStatus() === 'error') {
+          <p class="text-xs" style="color:var(--color-danger, #e05252)">{{ 'login.request.devError' | translate }}</p>
+        }
       </div>
     }
 

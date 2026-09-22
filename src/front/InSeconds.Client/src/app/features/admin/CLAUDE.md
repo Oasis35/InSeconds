@@ -168,7 +168,7 @@ Spec (`actions-tab.component.spec.ts`) : couvre la lecture de `settings.trackCoo
 | `3000ms` | `AdminActionsService.generateToday`/`updateTrackCooldownDays` | retour `idle` (succès et erreur) |
 | `1500ms` | `ChallengesTabComponent.copyPlayerId` | feedback "copié" sur le chip joueur cliqué |
 | `2000ms` | `BrowserIdComponent.copy` | feedback "copié" sur le bouton copier l'ID navigateur |
-| défaut `10` | `SettingsService.tracksPerChallenge` | dénominateur de `poolDaysRemaining` |
+| défaut `3` | `SettingsService.tracksPerChallenge` | dénominateur de `poolDaysRemaining` |
 | défaut `30` | `SettingsService.trackCooldownDays` | valeur affichée dans l'input avant première édition |
 | rouge<3 / orange<7 / vert≥7 | `poolDaysColor` | autonomie du pool |
 | rouge<40 / jaune<70 / vert≥70 | `completionRateColor` | taux de complétion |

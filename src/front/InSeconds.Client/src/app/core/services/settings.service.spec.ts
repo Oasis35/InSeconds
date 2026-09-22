@@ -34,8 +34,8 @@ describe('SettingsService', () => {
       expect(service.guessTimerSeconds()).toBe(20);
     });
 
-    it('should have default tracksPerChallenge of 10', () => {
-      expect(service.tracksPerChallenge()).toBe(10);
+    it('should have default tracksPerChallenge of 3', () => {
+      expect(service.tracksPerChallenge()).toBe(3);
     });
 
     it('should have default durationScores', () => {

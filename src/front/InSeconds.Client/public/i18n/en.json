@@ -158,7 +158,8 @@
       "sent": "A login link has just been sent. Check your inbox.",
       "invalidEmail": "Invalid email address.",
       "backToGame": "← Back to the game",
-      "devTitle": "Quick login (dev)"
+      "devTitle": "Quick login (dev)",
+      "devError": "Quick login failed. Try again."
     },
     "verify": {
       "title": "Confirm login",
