@@ -179,6 +179,25 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         Assert.Single(body.Tracks);
     }
 
+    [Fact]
+    public async Task CreateChallenge_NouvelleTrackViaDeezer_PersisteReleaseYear()
+    {
+        var futureDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(31).ToString("yyyy-MM-dd");
+
+        var resp = await AdminPostAsync("/api/admin/challenges", new
+        {
+            Date = futureDate,
+            DeezerTrackIds = new[] { FakeDeezerTrackId } // pas en base — passe par deezer.GetTrackInfoAsync
+        });
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var track = await db.Tracks.SingleAsync(t => t.DeezerTrackId == FakeDeezerTrackId);
+        Assert.Equal(2015, track.ReleaseYear); // FakeDeezerHandler renvoie release_date=2015-06-01
+    }
+
     // ── Admin Stats ───────────────────────────────────────────────────────────
 
     [Fact]
