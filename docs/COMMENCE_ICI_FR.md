@@ -117,7 +117,7 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 
 > Détail complet (barème exact, ce qui est réellement appliqué vs juste configuré) : [`GAMEPLAY_RULES_FR.md`](GAMEPLAY_RULES_FR.md).
 
-- **N morceaux par jour** (configurable via `TracksPerChallenge` en BD, défaut 3), même set pour tout le monde
+- **N morceaux par jour** (configurable via `TracksPerChallenge` en BD, défaut 5), même set pour tout le monde
 - **Paliers d'écoute** : 0.5, 1, 1.5, 2, 3, 5, 10 secondes (configurable via la table `Settings`)
 - **Prolongations libres** (« écouter plus »), sans limite de nombre, jusqu'au dernier palier — scoring toujours basé sur le palier final, aucun malus
 - **Timer de saisie** : 20s après la fin de la lecture pour saisir artiste + titre (configurable)

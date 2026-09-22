@@ -112,7 +112,7 @@ Signals modale suppression : `deleteModalOpen`, `deleteModalTracks: PoolTrackDto
 - `filteredTracks` — applique les 3 filtres.
 - **`existingDeezerTrackIds`** — `Map<number, boolean>` des `deezerTrackId` déjà présents dans `allTracks()` → `isAvailable` du match (disponible ou déjà utilisé dans un ancien défi). Alimente le badge d'avertissement du panneau de recherche (`pool-search-panel`) — **non bloquant**, l'ajout reste possible même en cas de match. Le badge distingue "Déjà en pool (disponible)" de "Déjà utilisé dans un défi passé" (2026-09-19) — avant cette distinction, un morceau déjà servi dans un ancien défi (donc absent de la vue "Disponible" du tableau Pool) déclenchait le même libellé générique qu'un doublon disponible, source de confusion ("le badge dit qu'il est déjà là mais je ne le vois pas dans le pool").
 - `poolAvailableWithPreview` — nombre de morceaux disponibles **et** avec preview active (`hasPreview !== false`, donc inclut `true`/`null`/`undefined`), calculé depuis `poolTracks().available` **indépendamment des filtres UI**. *Mêmes critères que `DailyChallengeGenerator` côté back.*
-- **`poolDaysRemaining`** : `Math.floor(poolAvailableWithPreview() / Math.max(1, settings.tracksPerChallenge()))` — jours restants avant épuisement du pool. `settings.tracksPerChallenge` = signal partagé (défaut `10`, synchronisé serveur), `Math.max(1,...)` protège la division par zéro. Testé : 7 dispo/preview ÷ 3 = `floor(7/3)=2`.
+- **`poolDaysRemaining`** : `Math.floor(poolAvailableWithPreview() / Math.max(1, settings.tracksPerChallenge()))` — jours restants avant épuisement du pool. `settings.tracksPerChallenge` = signal partagé (défaut `5`, synchronisé serveur), `Math.max(1,...)` protège la division par zéro. Testé (`admin-pool.service.spec.ts`, valeur de test indépendante du vrai défaut) : 7 dispo/preview ÷ 3 = `floor(7/3)=2`.
 - `sortedTracks` — `filteredTracks()` trié selon `poolSortColumn`/`poolSortDirection` (`sortValue(track, column)` mappe chaque colonne triable : texte en `toLowerCase()`, `preview` en `2/1/0` selon `true/null/false`, `status` en `1/0`, dates/`usageCount` en valeur brute). **Nulls (`lastUsedDate`/`unlockDate` absents) toujours en dernier, quelle que soit la direction** — évite qu'un morceau "jamais utilisé" saute en tête sur un tri descendant.
 - `allTotalPages`/`pagedAllTracks` — pagination classique sur `sortedTracks()` (pas `filteredTracks()` — seule la source de la slice paginée change, le compteur affiché reste basé sur `filteredTracks().length`).
 
@@ -168,7 +168,7 @@ Spec (`actions-tab.component.spec.ts`) : couvre la lecture de `settings.trackCoo
 | `3000ms` | `AdminActionsService.generateToday`/`updateTrackCooldownDays` | retour `idle` (succès et erreur) |
 | `1500ms` | `ChallengesTabComponent.copyPlayerId` | feedback "copié" sur le chip joueur cliqué |
 | `2000ms` | `BrowserIdComponent.copy` | feedback "copié" sur le bouton copier l'ID navigateur |
-| défaut `3` | `SettingsService.tracksPerChallenge` | dénominateur de `poolDaysRemaining` |
+| défaut `5` | `SettingsService.tracksPerChallenge` | dénominateur de `poolDaysRemaining` |
 | défaut `30` | `SettingsService.trackCooldownDays` | valeur affichée dans l'input avant première édition |
 | rouge<3 / orange<7 / vert≥7 | `poolDaysColor` | autonomie du pool |
 | rouge<40 / jaune<70 / vert≥70 | `completionRateColor` | taux de complétion |
