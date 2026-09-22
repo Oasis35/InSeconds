@@ -326,7 +326,7 @@ public sealed class StartSessionHandlerTests
 
         // Assert — session créée sur le défi régénéré (TracksPerChallenge = 5 par défaut)
         var response = AssertOk<StartSessionResponse>(result).Value!;
-        response.Tracks.Should().HaveCount(3);
+        response.Tracks.Should().HaveCount(5);
         response.IsResuming.Should().BeFalse();
 
         var challenge = await db.DailyChallenges
