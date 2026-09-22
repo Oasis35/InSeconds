@@ -95,7 +95,7 @@
       @if (!audio.isIdle() && !result()) {
         <form (ngSubmit)="submit()" class="space-y-3">
 
-          @if (showAnyHintButton()) {
+          @if (hint1Unlocked()) {
             <div class="flex flex-col gap-2">
               <p class="text-center text-xs font-semibold tracking-widest uppercase" style="font-family:var(--font-display);color:var(--text-faint);opacity:0.75">
                 {{ 'hint.costWarning' | translate }}
