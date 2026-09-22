@@ -168,13 +168,13 @@ test.describe('Admin — pool', () => {
 
     // Colonnes (après réordonnancement) : 0=sélection, 1=Actions, 2=Artiste, 3=Titre,
     // 4=Preview, 5=Statut, 6=Dernière utilisation, 7=Date de déblocage, 8=Nb. utilisations.
-    // Queen (index 10 du seed) a été mise en cooldown récent (-5j, defaut 30j) : dates non vides.
+    // Queen (index 16 du seed) a été mise en cooldown récent (-5j, defaut 30j) : dates non vides.
     await admin.poolSearchInput().fill('Queen');
     const queenRow = admin.poolRow('Queen');
     await expect(queenRow.getByRole('cell').nth(6)).not.toHaveText('');
     await expect(queenRow.getByRole('cell').nth(7)).not.toHaveText('');
 
-    // Michael Jackson (index 9) n'a jamais été utilisé : date de déblocage vide.
+    // Michael Jackson (index 15) n'a jamais été utilisé : date de déblocage vide.
     await admin.poolSearchInput().fill('Michael Jackson');
     const mjRow = admin.poolRow('Michael Jackson');
     await expect(mjRow.getByRole('cell').nth(7)).toHaveText('');
@@ -186,7 +186,7 @@ test.describe('Admin — pool', () => {
     await admin.login();
     await page.getByRole('button', { name: /Pool/ }).click();
 
-    // Ed Sheeran (index 14, -15j) tombe dans la plage ; Queen (-5j) et Adele (-90j) en dehors.
+    // Ed Sheeran (index 20, -15j) tombe dans la plage ; Queen (-5j) et Adele (-90j) en dehors.
     const today = new Date();
     const from = new Date(today); from.setUTCDate(from.getUTCDate() - 20);
     const to = new Date(today); to.setUTCDate(to.getUTCDate() - 10);
@@ -204,7 +204,7 @@ test.describe('Admin — pool', () => {
     await admin.login();
     await page.getByRole('button', { name: /Pool/ }).click();
 
-    // Adele (index 13) a le UsageCount le plus élevé du seed (7) — tri desc doit la faire remonter.
+    // Adele (index 19) a le UsageCount le plus élevé du seed (7) — tri desc doit la faire remonter.
     await admin.poolColumnHeader('Nb. utilisations').click();
     await admin.poolColumnHeader('Nb. utilisations').click(); // 2e clic → desc
     // Colonne Artiste = cell index 2 (0=sélection, 1=Actions, 2=Artiste).

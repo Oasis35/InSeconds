@@ -27,14 +27,14 @@ public class RefreshPreviewsTests(IntegrationTestFactory factory) : IAsyncLifeti
     [Fact]
     public async Task RefreshPreviews_SeedCoherent_RetourneCompteursSansModification()
     {
-        // Le seed a 46 tracks disponibles (9 utilisées dans des défis, exclues) avec des
+        // Le seed a 40 tracks disponibles (15 utilisées dans des défis, exclues) avec des
         // flags déjà cohérents avec le FakeDeezerHandler : rien à corriger, aucun échec.
         var resp = await AdminPostAsync("/api/admin/refresh-previews");
 
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
         var body = await resp.Content.ReadFromJsonAsync<RefreshPreviewsResponse>();
         Assert.NotNull(body);
-        Assert.Equal(46, body.Checked);
+        Assert.Equal(40, body.Checked);
         Assert.Equal(0, body.Updated);
         Assert.Equal(0, body.Failed);
     }

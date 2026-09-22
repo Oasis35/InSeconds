@@ -441,7 +441,7 @@ public sealed class SubmitAnswerHandlerTests
     [Fact]
     public async Task Handle_WhenLastAnswer_MarksSessionCompleted()
     {
-        // Arrange — challenge à 1 track (TracksPerChallenge par défaut = 3 dans AppSettings mais on simule 1 track répondue)
+        // Arrange — challenge à 1 track (TracksPerChallenge par défaut = 5 dans AppSettings mais on simule 1 track répondue)
         // On utilise AppSettings avec TracksPerChallenge = 1 pour simplifier
         await using var db = CreateDbContext();
         db.Players.Add(BuildPlayer());
@@ -533,7 +533,7 @@ public sealed class SubmitAnswerHandlerTests
     [Fact]
     public async Task Handle_WhenNotLastAnswer_StatusRemainsActive()
     {
-        // Arrange — TracksPerChallenge = 3 (défaut), on soumet seulement 1 réponse
+        // Arrange — TracksPerChallenge = 5 (défaut), on soumet seulement 1 réponse
         await using var db = CreateDbContext();
         await SeedAsync(db);
         var command = BuildCommand(duration: 1, artist: "Daft Punk", title: "Get Lucky");

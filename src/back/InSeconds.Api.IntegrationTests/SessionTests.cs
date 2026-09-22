@@ -19,7 +19,7 @@ public class SessionTests(IntegrationTestFactory factory) : IAsyncLifetime
     // ── StartSession ────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task StartSession_RetourneSession_AvecTroisTracks()
+    public async Task StartSession_RetourneSession_AvecCinqTracks()
     {
         var resp = await _client.PostAsync("/api/sessions", null);
 
@@ -27,7 +27,7 @@ public class SessionTests(IntegrationTestFactory factory) : IAsyncLifetime
 
         var session = await resp.Content.ReadFromJsonAsync<StartSessionResponse>();
         Assert.NotNull(session);
-        Assert.Equal(3, session.Tracks.Count);
+        Assert.Equal(5, session.Tracks.Count);
         Assert.All(session.Tracks, t => Assert.NotEmpty(t.PreviewUrl));
         Assert.False(session.IsResuming);
         Assert.Equal(0, session.ResumeFromPosition);

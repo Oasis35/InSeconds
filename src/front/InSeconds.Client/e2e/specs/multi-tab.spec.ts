@@ -76,7 +76,7 @@ test.describe('Multi-onglets — synchronisation état', () => {
     await game.goto();
     await game.waitForWelcome();
     await game.clickStart();
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 5; i++) {
       await round.playRound(1);
     }
     await game.waitForDone();

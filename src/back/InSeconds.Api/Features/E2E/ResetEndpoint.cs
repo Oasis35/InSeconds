@@ -177,35 +177,38 @@ public static class E2EResetEndpoint
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
         // IDs Deezer vérifiés + CoverHash réels (extraits de l'API Deezer)
-        // Les 9 premiers morceaux sont utilisés pour les défis J-2/J-1/aujourd'hui (ordre fixe — tests E2E).
-        // Les suivants constituent le pool disponible (admin).
+        // Les 15 premiers morceaux sont utilisés pour les défis J-2/J-1/aujourd'hui, 5 chacun
+        // (ordre fixe — tests E2E). Les 6 suivants (Michael Jackson → Ed Sheeran) restent dans le
+        // pool disponible mais servent à diversifier l'état de cooldown pour les tests (cf. plus
+        // bas) — regroupés et jamais utilisés dans un défi, contrairement au reste du pool.
         var allTracks = new (long DeezerTrackId, string Artist, string Title, string? CoverHash)[]
         {
             // J-2
             (66609426,    "Daft Punk",              "Get Lucky",                    "bc49adb87758e0c8c4e508a9c5cce85d"),
             (6297555,     "Stromae",                "Alors on danse",               "43bd78a4753df33da9efc2207c4286ee"),
             (3128096,     "Coldplay",               "Yellow",                       "970dce98eeea6729244c0ae71707a83d"),
+            (92734438,    "Mark Ronson",            "Uptown Funk",                  "3734366a73152d0367a83a4b09fd163f"),
+            (2553265,     "Beyoncé",                "Halo",                         "7cf0bdc409e7a7898c745bf0244df312"),
             // J-1
             (701326562,   "Pharrell Williams",      "Happy",                        "a1939a9a40dc97ed404cc4597c6a32bc"),
             (2176852,     "Amy Winehouse",           "Rehab",                        "5772b495f0dcdf660d0fc88c4c38a3fa"),
             (3129407,     "Gorillaz",               "Feel Good Inc.",               "3dc29a565149240729afc08e1f251b46"),
+            (925106,      "Rihanna",                "Umbrella",                     "91276466fbc876d96be9e6926060af60"),
+            (969494,      "Justin Timberlake",       "Cry Me a River",               "7cba368fa8466d72d149264577cb19d7"),
             // Aujourd'hui
             (1109731,     "Eminem",                 "Lose Yourself",                "e2b36a9fda865cb2e9ed1476b6291a7d"),
             (138547415,   "Radiohead",              "Creep",                        "1dd56fd8824492e1a5106c99a00a85ec"),
             (655095912,   "Billie Eilish",           "bad guy",                      "6630083f454d48eadb6a9b53f035d734"),
-            // Pool disponible
+            (1178682,     "Kanye West",             "Stronger",                     "15012d974c6263aec95e52e6d86cba23"),
+            (676960,      "JAY Z",                  "99 Problems",                  "7245b8fe756d39f20a53020163168dbe"),
+            // Pool disponible — diversité de cooldown pour les tests (cf. plus bas)
             (4603408,     "Michael Jackson",         "Billie Jean",                  "a0ad67d1beb761f2cb9f8b60e5bcf07a"),
             (5055001,     "Queen",                  "Bohemian Rhapsody",            "6bfb24a6d8f37ba563284d311586f2be"),
             (13791930,    "Nirvana",                "Smells Like Teen Spirit",      "f0282817b697279e56df13909962a54a"),
             (908604612,   "The Weeknd",             "Blinding Lights",              "fd00ebd6d30d7253f813dba3bb1c66a9"),
             (8086126,     "Adele",                  "Rolling in the Deep",          "dc1ce848d830ecc93521be5a78350364"),
             (139470659,   "Ed Sheeran",             "Shape of You",                 "107c2b43f10c249077c1f7618563bb63"),
-            (92734438,    "Mark Ronson",            "Uptown Funk",                  "3734366a73152d0367a83a4b09fd163f"),
-            (2553265,     "Beyoncé",                "Halo",                         "7cf0bdc409e7a7898c745bf0244df312"),
-            (925106,      "Rihanna",                "Umbrella",                     "91276466fbc876d96be9e6926060af60"),
-            (969494,      "Justin Timberlake",       "Cry Me a River",               "7cba368fa8466d72d149264577cb19d7"),
-            (1178682,     "Kanye West",             "Stronger",                     "15012d974c6263aec95e52e6d86cba23"),
-            (676960,      "JAY Z",                  "99 Problems",                  "7245b8fe756d39f20a53020163168dbe"),
+            // Pool disponible
             (350171311,   "Kendrick Lamar",         "HUMBLE.",                      "7ce6b8452fae425557067db6e6a1cad5"),
             (533609232,   "Drake",                  "God's Plan",                   "b69d3bcbd130ad4cc9259de543889e30"),
             (2783963122,  "Kendrick Lamar",         "Not Like Us",                  "84345d29bc2ed8e713112425f8417e97"),
@@ -261,7 +264,7 @@ public static class E2EResetEndpoint
         db.DailyChallenges.AddRange(challenges);
         db.SaveChanges();
 
-        var tracksByDay = new[] { tracks[..3], tracks[3..6], tracks[6..9] };
+        var tracksByDay = new[] { tracks[..5], tracks[5..10], tracks[10..15] };
         for (var i = 0; i < challenges.Count; i++)
         {
             db.DailyChallengeTracks.AddRange(tracksByDay[i].Select((t, pos) => new DailyChallengeTrack
@@ -272,7 +275,7 @@ public static class E2EResetEndpoint
                 DeezerRankSnapshot = pos + 1,
             }));
             // Le générateur ne filtre plus sur "appartient à un défi" mais sur LastUsedDate
-            // (cooldown) — sans ce tamponnage, les 9 morceaux des défis J-2/J-1/aujourd'hui
+            // (cooldown) — sans ce tamponnage, les 15 morceaux des défis J-2/J-1/aujourd'hui
             // redeviendraient immédiatement éligibles à la génération.
             foreach (var t in tracksByDay[i])
                 t.LastUsedDate = days[i];
@@ -283,12 +286,12 @@ public static class E2EResetEndpoint
         // morceau nécessaire) pour couvrir : jamais utilisé, dans la fenêtre de cooldown
         // (30j défaut, exclu), exactement à la limite (exclu), juste hors cooldown (éligible),
         // usage élevé (éligible), valeur intermédiaire pour les tests de filtre par date.
-        tracks[9].LastUsedDate = null; tracks[9].UsageCount = 0;                                    // Michael Jackson — jamais utilisé
-        tracks[10].LastUsedDate = today.AddDays(-5);  tracks[10].UsageCount = 1;                    // Queen — en cooldown
-        tracks[11].LastUsedDate = today.AddDays(-30); tracks[11].UsageCount = 3;                    // Nirvana — exactement à la limite
-        tracks[12].LastUsedDate = today.AddDays(-31); tracks[12].UsageCount = 2;                    // The Weeknd — juste hors cooldown
-        tracks[13].LastUsedDate = today.AddDays(-90); tracks[13].UsageCount = 7;                    // Adele — usage élevé
-        tracks[14].LastUsedDate = today.AddDays(-15); tracks[14].UsageCount = 1;                    // Ed Sheeran — valeur intermédiaire
+        tracks[15].LastUsedDate = null; tracks[15].UsageCount = 0;                                    // Michael Jackson — jamais utilisé
+        tracks[16].LastUsedDate = today.AddDays(-5);  tracks[16].UsageCount = 1;                    // Queen — en cooldown
+        tracks[17].LastUsedDate = today.AddDays(-30); tracks[17].UsageCount = 3;                    // Nirvana — exactement à la limite
+        tracks[18].LastUsedDate = today.AddDays(-31); tracks[18].UsageCount = 2;                    // The Weeknd — juste hors cooldown
+        tracks[19].LastUsedDate = today.AddDays(-90); tracks[19].UsageCount = 7;                    // Adele — usage élevé
+        tracks[20].LastUsedDate = today.AddDays(-15); tracks[20].UsageCount = 1;                    // Ed Sheeran — valeur intermédiaire
         db.SaveChanges();
 
         var devPlayer = Player.CreateGuest(

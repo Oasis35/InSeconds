@@ -93,10 +93,10 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
         var body = await resp.Content.ReadFromJsonAsync<GetTracksResponse>();
         Assert.NotNull(body);
-        // Le seed a 55 tracks : 9 assignées à des défis (J-2, J-1, aujourd'hui) = Used, 46 disponibles
-        // (dont 5 morceaux sans preview : IDs >= 9_000_000_000)
-        Assert.Equal(46, body.Available.Count);
-        Assert.Equal(9, body.Used.Count);
+        // Le seed a 55 tracks : 15 assignées à des défis (J-2, J-1, aujourd'hui, 5 chacun) = Used,
+        // 40 disponibles (dont 5 morceaux sans preview : IDs >= 9_000_000_000)
+        Assert.Equal(40, body.Available.Count);
+        Assert.Equal(15, body.Used.Count);
     }
 
     // ── GetChallenges ─────────────────────────────────────────────────────────
@@ -118,7 +118,7 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         var body = await resp.Content.ReadFromJsonAsync<List<ChallengeDto>>();
         Assert.NotNull(body);
         Assert.Equal(3, body.Count); // seed crée exactement J-2, J-1, aujourd'hui
-        Assert.All(body, c => Assert.Equal(3, c.Tracks.Count));
+        Assert.All(body, c => Assert.Equal(5, c.Tracks.Count));
     }
 
     [Fact]

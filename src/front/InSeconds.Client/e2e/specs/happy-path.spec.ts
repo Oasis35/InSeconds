@@ -7,7 +7,7 @@ test.describe('Happy path — partie complète', () => {
     await api.reset();
   });
 
-  test('joue 3 morceaux et voit le score final', async ({ page, api }) => {
+  test('joue 5 morceaux et voit le score final', async ({ page, api }) => {
     await page.clock.install({ time: Date.now() });
 
     const game = new GamePage(page);
@@ -17,8 +17,8 @@ test.describe('Happy path — partie complète', () => {
     await game.waitForWelcome();
     await game.clickStart();
 
-    // 3 morceaux — réponses vides (confirme quand même) pour aller vite
-    for (let i = 0; i < 3; i++) {
+    // 5 morceaux — réponses vides (confirme quand même) pour aller vite
+    for (let i = 0; i < 5; i++) {
       await round.playRound(1);
     }
 
@@ -40,13 +40,13 @@ test.describe('Happy path — partie complète', () => {
 
     // Le cookie n'apparaît qu'au clic « Commencer à jouer » (POST /api/sessions).
     await game.clickStart();
-    await expect(page.getByText('Piste 1 / 3')).toBeVisible();
+    await expect(page.getByText('Piste 1 / 5')).toBeVisible();
 
     const after = await page.context().cookies();
     expect(after.find(c => c.name === 'authToken')).toBeDefined();
   });
 
-  test('affiche la progression piste X / 3 pendant la partie', async ({ page }) => {
+  test('affiche la progression piste X / 5 pendant la partie', async ({ page }) => {
     await page.clock.install({ time: Date.now() });
 
     const game = new GamePage(page);
@@ -56,9 +56,9 @@ test.describe('Happy path — partie complète', () => {
     await game.waitForWelcome();
     await game.clickStart();
 
-    await expect(page.getByText('Piste 1 / 3')).toBeVisible();
+    await expect(page.getByText('Piste 1 / 5')).toBeVisible();
 
     await round.playRound(1);
-    await expect(page.getByText('Piste 2 / 3')).toBeVisible();
+    await expect(page.getByText('Piste 2 / 5')).toBeVisible();
   });
 });
