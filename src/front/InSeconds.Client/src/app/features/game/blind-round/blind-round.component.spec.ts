@@ -245,40 +245,8 @@ describe('BlindRoundComponent — indices (hints)', () => {
     expect(updateListeningSpy).toHaveBeenCalledWith(42, TRACK.id, 5);
   });
 
-  it('useHint1 appelle requestHint(sessionId, trackId, 1) et révèle l\'année', () => {
-    requestHintSpy.and.returnValue(of({ year: 2016, artistMasked: null }));
-    component['chosenDuration'].set(5);
-
-    component.useHint1();
-
-    expect(requestHintSpy).toHaveBeenCalledWith(42, TRACK.id, 1);
-    expect(component['hintYear']()).toBe(2016);
-    expect(component['hint1Revealed']()).toBe(true);
-    expect(component['hint1Locked']()).toBe(false);
-  });
-
-  it('useHint2 révèle année + artiste masqué, et marque aussi le niveau 1 comme révélé', () => {
-    requestHintSpy.and.returnValue(of({ year: 2016, artistMasked: 'D _ _ _   P _ _ _' }));
-    component['chosenDuration'].set(10);
-
-    component.useHint2();
-
-    expect(requestHintSpy).toHaveBeenCalledWith(42, TRACK.id, 2);
-    expect(component['hintYear']()).toBe(2016);
-    expect(component['hintArtistMasked']()).toBe('D _ _ _   P _ _ _');
-    expect(component['hint1Revealed']()).toBe(true, 'cumulatif : niveau 2 révèle aussi le niveau 1');
-    expect(component['hint2Revealed']()).toBe(true);
-  });
-
-  it('useHint1 ne rappelle pas requestHint si déjà révélé', () => {
-    requestHintSpy.and.returnValue(of({ year: 2016, artistMasked: null }));
-    component['chosenDuration'].set(5);
-
-    component.useHint1();
-    component.useHint1();
-
-    expect(requestHintSpy).toHaveBeenCalledTimes(1);
-  });
+  // useHint1/useHint2 (appel requestHint, révélation cumulative, idempotence) sont
+  // couverts par hint.service.spec.ts depuis l'extraction de HintService (2026-09-22).
 
   it('next() réinitialise tous les signaux indice', () => {
     requestHintSpy.and.returnValue(of({ year: 2016, artistMasked: 'D _ _ _' }));

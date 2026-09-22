@@ -9,6 +9,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { Subject } from 'rxjs';
 import { AudioPlayerService } from '../../../core/services/audio-player.service';
 import { GameFacadeService } from '../services/game-facade.service';
+import { HintService } from '../services/hint.service';
 import { SettingsService } from '../../../core/services/settings.service';
 import { DeezerAutocompleteService, DeezerSuggestion } from '../services/deezer-autocomplete.service';
 import { TrackSlot, SubmitAnswerResponse } from '../../../core/models/game.models';
@@ -29,6 +30,7 @@ export interface AnsweredEvent {
   imports: [FormsModule, DecimalPipe, TranslatePipe, DeezerBadgeComponent, GuessTimeChartComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './blind-round.component.html',
+  providers: [HintService],
 })
 export class BlindRoundComponent implements OnDestroy {
   readonly track = input.required<TrackSlot>();
@@ -41,6 +43,7 @@ export class BlindRoundComponent implements OnDestroy {
   protected readonly audio = inject(AudioPlayerService);
   private readonly settings = inject(SettingsService);
   private readonly gameService = inject(GameFacadeService);
+  private readonly hintService = inject(HintService);
   private readonly deezerSearch = inject(DeezerAutocompleteService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -64,13 +67,13 @@ export class BlindRoundComponent implements OnDestroy {
   protected readonly showNetworkError = signal(false);
   private networkErrorTimer: ReturnType<typeof setTimeout> | null = null;
 
-  // Indices (hints) — cf. Common/Scoring/RequestHint côté back. Contenu révélé au clic,
-  // jamais automatiquement en atteignant un palier (masqué avant déblocage, pas juste désactivé).
-  protected readonly hint1Revealed = signal(false);
-  protected readonly hint2Revealed = signal(false);
-  protected readonly hintYear = signal<number | null>(null);
-  protected readonly hintArtistMasked = signal<string | null>(null);
-  protected readonly hintRequestPending = signal(false);
+  // Indices (hints) — demande/révélation déléguées à HintService (masqué avant déblocage,
+  // pas juste désactivé). Ces membres sont des alias directs des signals du service.
+  protected readonly hint1Revealed = this.hintService.hint1Revealed;
+  protected readonly hint2Revealed = this.hintService.hint2Revealed;
+  protected readonly hintYear = this.hintService.hintYear;
+  protected readonly hintArtistMasked = this.hintService.hintArtistMasked;
+  protected readonly hintRequestPending = this.hintService.hintRequestPending;
 
   protected readonly hint1Unlocked = computed(() => {
     const threshold = this.settings.hintUnlockDurations()[0];
@@ -218,14 +221,6 @@ export class BlindRoundComponent implements OnDestroy {
     this.audio.play(this.track().previewUrl, duration);
   }
 
-  mainAction(): void {
-    if (this.audio.isPlaying()) {
-      this.audio.stop();
-    } else {
-      this.audio.play(this.track().previewUrl, this.chosenDuration());
-    }
-  }
-
   listenMore(): void {
     const next = this.nextDuration();
     if (next) {
@@ -235,37 +230,11 @@ export class BlindRoundComponent implements OnDestroy {
   }
 
   useHint1(): void {
-    if (this.hintRequestPending() || this.hint1Revealed()) return;
-    this.hintRequestPending.set(true);
-    this.gameService.requestHint(this.sessionId(), this.track().id, 1)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: r => {
-          this.hintYear.set(r.year ?? null);
-          this.hint1Revealed.set(true);
-          this.hintRequestPending.set(false);
-        },
-        error: () => this.hintRequestPending.set(false),
-      });
+    this.hintService.useHint1(this.sessionId(), this.track().id);
   }
 
   useHint2(): void {
-    if (this.hintRequestPending() || this.hint2Revealed()) return;
-    this.hintRequestPending.set(true);
-    this.gameService.requestHint(this.sessionId(), this.track().id, 2)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: r => {
-          // Cumulatif : le niveau 2 renvoie aussi l'année, que le niveau 1 ait été
-          // révélé séparément avant ou non.
-          this.hintYear.set(r.year ?? null);
-          this.hintArtistMasked.set(r.artistMasked ?? null);
-          this.hint1Revealed.set(true);
-          this.hint2Revealed.set(true);
-          this.hintRequestPending.set(false);
-        },
-        error: () => this.hintRequestPending.set(false),
-      });
+    this.hintService.useHint2(this.sessionId(), this.track().id);
   }
 
   submit(): void {
@@ -332,11 +301,7 @@ export class BlindRoundComponent implements OnDestroy {
     this.chosenDuration.set(0);
     this.isSubmitting.set(false);
     this.showNetworkError.set(false);
-    this.hint1Revealed.set(false);
-    this.hint2Revealed.set(false);
-    this.hintYear.set(null);
-    this.hintArtistMasked.set(null);
-    this.hintRequestPending.set(false);
+    this.hintService.reset();
     if (this.networkErrorTimer) { clearTimeout(this.networkErrorTimer); this.networkErrorTimer = null; }
     this.nextTrack.emit();
   }
