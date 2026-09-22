@@ -266,6 +266,65 @@ public class SessionTests(IntegrationTestFactory factory) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.Conflict, resp2.StatusCode);
     }
 
+    // ── SubmitAnswer — anti-triche (durée soumise vs. durée réellement écoutée) ──
+
+    [Fact]
+    public async Task SubmitAnswer_DureeSoumiseInferieureAuMinimumVerrouille_Retourne400()
+    {
+        var session = await StartSessionAsync();
+        var track = session.Tracks[0];
+
+        // Le client verrouille 10s d'écoute réelle (ex: pour débloquer les indices)...
+        await UpdateListeningAsync(session.SessionId, track.Id, 10m);
+
+        // ... puis tente de mentir sur la durée soumise pour maximiser le score.
+        var resp = await SubmitAsync(session.SessionId, track.Id, 0.5m, "Eminem", "Lose Yourself");
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+        Assert.Equal("listened_duration_below_verified_minimum", body.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task SubmitAnswer_DureeSoumiseEgaleAuMinimumVerrouille_Accepte()
+    {
+        var session = await StartSessionAsync();
+        var track = session.Tracks[0];
+
+        await UpdateListeningAsync(session.SessionId, track.Id, 2m);
+
+        var resp = await SubmitAsync(session.SessionId, track.Id, 2m, "Eminem", "Lose Yourself");
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task SubmitAnswer_DureeSoumiseSuperieureAuMinimumVerrouille_Accepte()
+    {
+        var session = await StartSessionAsync();
+        var track = session.Tracks[0];
+
+        await UpdateListeningAsync(session.SessionId, track.Id, 1m);
+
+        // Prolongation légitime ("écouter plus") : palier final > minimum verrouillé.
+        var resp = await SubmitAsync(session.SessionId, track.Id, 2m, "Eminem", "Lose Yourself");
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task SubmitAnswer_AucuneEcouteVerrouillee_SkipSansPreview_Accepte()
+    {
+        // Morceau jamais verrouillé via /listening (ex: skip sans preview, ListenedDurationSeconds=0)
+        // — le contrôle anti-triche ne s'applique que si un verrou existe pour ce morceau précis.
+        var session = await StartSessionAsync();
+        var track = session.Tracks[0];
+
+        var resp = await SubmitAsync(session.SessionId, track.Id, 0m, "", "");
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+    }
+
     [Fact]
     public async Task SubmitAnswer_DerniereReponse_MarqueSessionComplete()
     {
@@ -304,4 +363,7 @@ public class SessionTests(IntegrationTestFactory factory) : IAsyncLifetime
 
         return _client.PostAsJsonAsync($"/api/sessions/{sessionId}/answers", body);
     }
+
+    private Task<HttpResponseMessage> UpdateListeningAsync(int sessionId, int trackId, decimal listenedSeconds) =>
+        _client.PatchAsJsonAsync($"/api/sessions/{sessionId}/listening", new { trackId, listenedSeconds });
 }

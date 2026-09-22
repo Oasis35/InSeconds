@@ -44,6 +44,23 @@ public sealed class SubmitAnswerHandler(
         if (challengeTrack.AlreadyAnswered)
             return Results.Conflict(new { error = "already_answered", message = "Cette track a déjà été répondue." });
 
+        // Anti-triche : la durée soumise ne peut jamais être inférieure au minimum
+        // réellement verrouillé côté serveur via PATCH /listening pour ce morceau — sinon un
+        // appel API direct pourrait écouter longuement (ou débloquer les indices) puis mentir
+        // sur la durée soumise pour maximiser le score. Ne s'applique que si un verrou existe
+        // pour ce morceau précis (CurrentTrackId == track soumis) — un skip sans preview
+        // (ListenedDurationSeconds=0, jamais verrouillé) reste inchangé.
+        if (session.CurrentTrackId == command.DailyChallengeTrackId
+            && session.CurrentTrackMinListenedSeconds is { } minListenedSeconds
+            && command.ListenedDurationSeconds < minListenedSeconds)
+        {
+            return Results.BadRequest(new
+            {
+                error = "listened_duration_below_verified_minimum",
+                message = "La durée soumise est inférieure à la durée réellement écoutée pour ce morceau.",
+            });
+        }
+
         var appSettings = await settingsService.GetAsync(cancellationToken);
 
         var artistCorrect = textNormalizer.IsMatch(command.ArtistAnswer, challengeTrack.Artist);
