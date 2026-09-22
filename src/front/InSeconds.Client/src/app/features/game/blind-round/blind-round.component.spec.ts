@@ -121,8 +121,8 @@ describe('BlindRoundComponent — navigation clavier autocomplete', () => {
     press('ArrowDown');
     const event = press('Enter');
 
-    expect(component['artistAnswer']).toBe('E2E Artist');
-    expect(component['titleAnswer']).toBe('E2E Track');
+    expect(component['search'].artistAnswer).toBe('E2E Artist');
+    expect(component['search'].titleAnswer).toBe('E2E Track');
     expect(component['searchQuery']).toBe('E2E Artist - E2E Track');
     expect(component['showSuggestions']()).toBe(false);
     expect(component['highlightedIndex']()).toBe(-1);
@@ -132,8 +132,8 @@ describe('BlindRoundComponent — navigation clavier autocomplete', () => {
   it('Entrée sans sélection active ne modifie rien (laisse la soumission par défaut)', () => {
     const event = press('Enter');
 
-    expect(component['artistAnswer']).toBe('');
-    expect(component['titleAnswer']).toBe('');
+    expect(component['search'].artistAnswer).toBe('');
+    expect(component['search'].titleAnswer).toBe('');
     expect(event.defaultPrevented).toBe(false);
   });
 
@@ -213,13 +213,11 @@ describe('BlindRoundComponent — indices (hints)', () => {
   it('hint1Unlocked est faux avant le palier 5s', () => {
     component['chosenDuration'].set(3);
     expect(component['hint1Unlocked']()).toBe(false);
-    expect(component['showAnyHintButton']()).toBe(false);
   });
 
   it('hint1Unlocked devient vrai au palier 5s', () => {
     component['chosenDuration'].set(5);
     expect(component['hint1Unlocked']()).toBe(true);
-    expect(component['showAnyHintButton']()).toBe(true);
     expect(component['hint2Unlocked']()).toBe(false);
   });
 

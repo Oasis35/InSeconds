@@ -6,14 +6,14 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
-import { Subject } from 'rxjs';
 import { AudioPlayerService } from '../../../core/services/audio-player.service';
 import { GameFacadeService } from '../services/game-facade.service';
 import { HintService } from '../services/hint.service';
+import { AnswerSearchService } from '../services/answer-search.service';
+import { AnswerSubmissionService } from '../services/answer-submission.service';
 import { SettingsService } from '../../../core/services/settings.service';
-import { DeezerAutocompleteService, DeezerSuggestion } from '../services/deezer-autocomplete.service';
+import { DeezerSuggestion } from '../services/deezer-autocomplete.service';
 import { TrackSlot, SubmitAnswerResponse } from '../../../core/models/game.models';
-import { countUp } from '../../../core/count-up';
 import { DeezerBadgeComponent } from '../../../shared/deezer-badge.component';
 import { GuessTimeChartComponent } from '../../../shared/guess-time-chart/guess-time-chart.component';
 
@@ -30,7 +30,7 @@ export interface AnsweredEvent {
   imports: [FormsModule, DecimalPipe, TranslatePipe, DeezerBadgeComponent, GuessTimeChartComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './blind-round.component.html',
-  providers: [HintService],
+  providers: [HintService, AnswerSearchService, AnswerSubmissionService],
 })
 export class BlindRoundComponent implements OnDestroy {
   readonly track = input.required<TrackSlot>();
@@ -44,7 +44,8 @@ export class BlindRoundComponent implements OnDestroy {
   private readonly settings = inject(SettingsService);
   private readonly gameService = inject(GameFacadeService);
   private readonly hintService = inject(HintService);
-  private readonly deezerSearch = inject(DeezerAutocompleteService);
+  private readonly search = inject(AnswerSearchService);
+  private readonly submission = inject(AnswerSubmissionService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly durations = computed(() => {
@@ -53,19 +54,21 @@ export class BlindRoundComponent implements OnDestroy {
     if (min == null) return all;
     return all.filter(d => d >= min);
   });
-  protected artistAnswer = '';
-  protected titleAnswer = '';
-  protected searchQuery = '';
-  protected readonly result = signal<SubmitAnswerResponse | null>(null);
   protected readonly chosenDuration = signal(0);
-  protected readonly suggestions = signal<DeezerSuggestion[]>([]);
-  protected readonly showSuggestions = signal(false);
-  protected readonly highlightedIndex = signal(-1);
-  protected readonly showEmptyConfirm = signal(false);
-  protected readonly isSubmitting = signal(false);
-  protected readonly displayedScore = signal(0);
-  protected readonly showNetworkError = signal(false);
-  private networkErrorTimer: ReturnType<typeof setTimeout> | null = null;
+  protected readonly showEmptyConfirm = this.submission.showEmptyConfirm;
+  protected readonly isSubmitting = this.submission.isSubmitting;
+  protected readonly displayedScore = this.submission.displayedScore;
+  protected readonly showNetworkError = this.submission.showNetworkError;
+  protected readonly result = this.submission.result;
+
+  // Recherche/autocomplete — délégués à AnswerSearchService (masqué avant déblocage, pas juste
+  // désactivé). `searchQuery` reste un accesseur pour garder `[(ngModel)]="searchQuery"` inchangé.
+  protected readonly suggestions = this.search.suggestions;
+  protected readonly showSuggestions = this.search.showSuggestions;
+  protected readonly highlightedIndex = this.search.highlightedIndex;
+
+  protected get searchQuery(): string { return this.search.searchQuery; }
+  protected set searchQuery(value: string) { this.search.searchQuery = value; }
 
   // Indices (hints) — demande/révélation déléguées à HintService (masqué avant déblocage,
   // pas juste désactivé). Ces membres sont des alias directs des signals du service.
@@ -83,17 +86,14 @@ export class BlindRoundComponent implements OnDestroy {
     const threshold = this.settings.hintUnlockDurations()[1];
     return threshold != null && this.chosenDuration() >= threshold;
   });
-  protected readonly showAnyHintButton = computed(() => this.hint1Unlocked());
   protected readonly hint1Locked = computed(() => this.hint1Unlocked() && !this.hint1Revealed());
   protected readonly hint2Locked = computed(() => this.hint2Unlocked() && !this.hint2Revealed());
 
   protected readonly resultHintUsed = computed(() => (this.result()?.hintLevelUsed ?? 0) > 0);
   protected readonly resultHintPercent = computed(() => this.result()?.hintPenaltyPercentApplied ?? 0);
 
-  private readonly query$ = new Subject<string>();
-
   protected readonly nextDuration = computed(() => {
-    const durations = this.settings.allowedDurations();
+    const durations = this.durations();
     const idx = durations.indexOf(this.chosenDuration());
     return idx >= 0 && idx < durations.length - 1 ? durations[idx + 1] : null;
   });
@@ -111,11 +111,6 @@ export class BlindRoundComponent implements OnDestroy {
   });
 
   constructor() {
-    this.deezerSearch.search(this.query$).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(s => {
-      this.suggestions.set(s);
-      this.highlightedIndex.set(-1);
-    });
-
     // Démarre automatiquement l'écoute au premier palier autorisé dès que le morceau est prêt — plus de choix initial.
     effect(() => {
       if (this.audio.isIdle() && this.track().previewUrl) {
@@ -140,75 +135,29 @@ export class BlindRoundComponent implements OnDestroy {
 
   clearSearch(event: MouseEvent): void {
     event.preventDefault();
-    this.searchQuery = '';
-    this.artistAnswer = '';
-    this.titleAnswer = '';
-    this.suggestions.set([]);
-    this.showSuggestions.set(false);
-    this.showEmptyConfirm.set(false);
-    this.highlightedIndex.set(-1);
+    this.search.clearAll();
+    this.submission.showEmptyConfirm.set(false);
   }
 
   onQueryChange(q: string): void {
-    this.artistAnswer = '';
-    this.titleAnswer = '';
-    this.query$.next(q);
-    this.showSuggestions.set(true);
-    this.showEmptyConfirm.set(false);
+    this.search.onQueryChange(q);
+    this.submission.showEmptyConfirm.set(false);
   }
 
   onBlur(): void {
-    setTimeout(() => this.showSuggestions.set(false), 150);
+    this.search.onBlur();
   }
 
   onSearchKeydown(event: KeyboardEvent): void {
-    if (!this.showSuggestions() || this.suggestions().length === 0) return;
-
-    switch (event.key) {
-      case 'ArrowDown':
-        event.preventDefault();
-        this.moveHighlight(1);
-        break;
-      case 'ArrowUp':
-        event.preventDefault();
-        this.moveHighlight(-1);
-        break;
-      case 'Enter':
-        if (this.highlightedIndex() >= 0) {
-          event.preventDefault();
-          this.selectSuggestion(this.suggestions()[this.highlightedIndex()]);
-        }
-        break;
-      case 'Escape':
-        this.showSuggestions.set(false);
-        this.highlightedIndex.set(-1);
-        break;
-    }
-  }
-
-  private moveHighlight(delta: number): void {
-    const count = this.suggestions().length;
-    const current = this.highlightedIndex();
-
-    if (current === -1) {
-      this.highlightedIndex.set(delta > 0 ? 0 : count - 1);
-      return;
-    }
-
-    this.highlightedIndex.set((current + delta + count) % count);
+    this.search.onSearchKeydown(event);
   }
 
   selectSuggestion(s: DeezerSuggestion): void {
-    this.artistAnswer = s.artist;
-    this.titleAnswer = s.title;
-    this.searchQuery = `${s.artist} - ${s.title}`;
-    this.showSuggestions.set(false);
-    this.highlightedIndex.set(-1);
+    this.search.selectSuggestion(s);
   }
 
   skipNoPreview(): void {
-    this.answered.emit({
-      trackId: this.track().id,
+    this.emitAnswer({
       listenedDurationSeconds: 0,
       wasExtended: false,
       artistAnswer: null,
@@ -238,52 +187,38 @@ export class BlindRoundComponent implements OnDestroy {
   }
 
   submit(): void {
-    // Si pas de suggestion sélectionnée, tenter de splitter sur " - "
-    if (!this.artistAnswer && !this.titleAnswer && this.searchQuery.trim()) {
-      const parts = this.searchQuery.split(' - ');
-      this.artistAnswer = parts[0]?.trim() ?? '';
-      this.titleAnswer  = parts.slice(1).join(' - ').trim();
-    }
+    const answer = this.search.resolveAnswer();
 
     // Confirmation inline si champ vide
-    if (!this.artistAnswer.trim() && !this.titleAnswer.trim()) {
-      this.showEmptyConfirm.set(true);
+    if (!answer.artist && !answer.title) {
+      this.submission.showEmptyConfirm.set(true);
       return;
     }
 
-    this.doSubmit();
+    this.doSubmit(answer);
   }
 
   protected confirmSubmit(): void {
-    this.showEmptyConfirm.set(false);
-    this.doSubmit();
+    this.submission.showEmptyConfirm.set(false);
+    this.doSubmit(this.search.resolveAnswer());
   }
 
-  private doSubmit(): void {
-    this.isSubmitting.set(true);
-    const wasExtended = this.audio.extended();
-    this.answered.emit({
-      trackId:                 this.track().id,
+  private doSubmit(answer: { artist: string | null; title: string | null }): void {
+    this.submission.isSubmitting.set(true);
+    this.emitAnswer({
       listenedDurationSeconds: this.chosenDuration(),
-      wasExtended,
-      artistAnswer: this.artistAnswer.trim() || null,
-      titleAnswer:  this.titleAnswer.trim() || null,
+      wasExtended: this.audio.extended(),
+      artistAnswer: answer.artist,
+      titleAnswer: answer.title,
     });
   }
 
+  private emitAnswer(overrides: Pick<AnsweredEvent, 'listenedDurationSeconds' | 'wasExtended' | 'artistAnswer' | 'titleAnswer'>): void {
+    this.answered.emit({ trackId: this.track().id, ...overrides });
+  }
+
   setResult(r: SubmitAnswerResponse, isNetworkError = false): void {
-    this.isSubmitting.set(false);
-    this.result.set(r);
-    this.displayedScore.set(0);
-    countUp(r.score, v => this.displayedScore.set(v));
-    if (isNetworkError) {
-      this.showNetworkError.set(true);
-      if (this.networkErrorTimer) clearTimeout(this.networkErrorTimer);
-      this.networkErrorTimer = setTimeout(() => {
-        this.showNetworkError.set(false);
-        this.networkErrorTimer = null;
-      }, 4000);
-    }
+    this.submission.setResult(r, isNetworkError);
     if (this.track().previewUrl && this.chosenDuration() > 0) {
       this.audio.replayFull();
     }
@@ -291,23 +226,14 @@ export class BlindRoundComponent implements OnDestroy {
 
   next(): void {
     this.audio.reset();
-    this.result.set(null);
-    this.displayedScore.set(0);
-    this.artistAnswer = '';
-    this.titleAnswer = '';
-    this.searchQuery = '';
-    this.suggestions.set([]);
-    this.highlightedIndex.set(-1);
+    this.submission.reset();
+    this.search.reset();
     this.chosenDuration.set(0);
-    this.isSubmitting.set(false);
-    this.showNetworkError.set(false);
     this.hintService.reset();
-    if (this.networkErrorTimer) { clearTimeout(this.networkErrorTimer); this.networkErrorTimer = null; }
     this.nextTrack.emit();
   }
 
   ngOnDestroy(): void {
     this.audio.reset();
-    if (this.networkErrorTimer) { clearTimeout(this.networkErrorTimer); this.networkErrorTimer = null; }
   }
 }
