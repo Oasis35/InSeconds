@@ -43,7 +43,7 @@ public class GetTodaySessionTests(IntegrationTestFactory factory) : IAsyncLifeti
         var body = await resp.Content.ReadFromJsonAsync<GetTodaySessionResponse>();
         Assert.NotNull(body);
         Assert.Equal("can_start", body.State);
-        Assert.Equal(3, body.TracksCount);
+        Assert.Equal(5, body.TracksCount);
         Assert.Equal(0, body.CompletedCount);
 
         // Aucun Player créé
@@ -66,7 +66,7 @@ public class GetTodaySessionTests(IntegrationTestFactory factory) : IAsyncLifeti
 
         Assert.NotNull(body);
         Assert.Equal("resumable", body.State);
-        Assert.Equal(3, body.TracksCount);
+        Assert.Equal(5, body.TracksCount);
         Assert.Equal(1, body.CompletedCount);
     }
 

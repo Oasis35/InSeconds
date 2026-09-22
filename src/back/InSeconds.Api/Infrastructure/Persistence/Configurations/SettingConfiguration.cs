@@ -42,7 +42,7 @@ public sealed class SettingConfiguration : IEntityTypeConfiguration<Setting>
             {
                 Id = 4,
                 Key = "TracksPerChallenge",
-                Value = "3",
+                Value = "5",
                 Description = "Nombre de morceaux dans un défi quotidien.",
                 UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             },

@@ -53,6 +53,28 @@ public sealed class TextNormalizerTests
         _sut.IsMatch("Coldxyzabc", "Coldplay").Should().BeFalse(); // distance > 2
 
     // ---------------------------------------------------------------------------
+    // Seuil proportionné à la longueur (réponses courtes) — sinon une chaîne de
+    // 2-3 caractères tolère une distance de 2, ce qui revient à accepter presque
+    // n'importe quelle autre chaîne de même longueur.
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public void IsMatch_ReponseCourte_2Caracteres_ExigeEgaliteExacte() =>
+        _sut.IsMatch("XX", "U2").Should().BeFalse(); // longueur 2 < 3 → seuil 0, distance = 2
+
+    [Fact]
+    public void IsMatch_ReponseCourte_2Caracteres_MemeChaineAcceptee() =>
+        _sut.IsMatch("U2", "U2").Should().BeTrue(); // égalité stricte après normalisation
+
+    [Fact]
+    public void IsMatch_ReponseCourte_3Caracteres_ToleranceUnCaractere() =>
+        _sut.IsMatch("N83", "M83").Should().BeTrue(); // longueur 3 → seuil 1, distance = 1
+
+    [Fact]
+    public void IsMatch_ReponseCourte_3Caracteres_DeuxCaracteresRefuses() =>
+        _sut.IsMatch("N93", "M83").Should().BeFalse(); // longueur 3 → seuil 1, distance = 2
+
+    // ---------------------------------------------------------------------------
     // Réponses vides ou nulles
     // ---------------------------------------------------------------------------
 

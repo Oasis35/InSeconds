@@ -43,18 +43,16 @@
                 </div>
               }
             </div>
+            @let addStatus = pool.addTrackStatus(track.deezerTrackId);
             <button type="button" (click)="pool.addTrackFromPanel(track)"
-              [disabled]="pool.addingTrackId() === track.deezerTrackId && pool.addToPoolStatus() === 'loading'"
+              [disabled]="addStatus === 'loading'"
               class="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors shrink-0 disabled:opacity-50"
               style="background:var(--bg-primary-dk);color:var(--text-on-primary)">
-              @if (pool.addingTrackId() === track.deezerTrackId && pool.addToPoolStatus() === 'loading') {
-                …
-              } @else if (pool.addingTrackId() === track.deezerTrackId && pool.addToPoolStatus() === 'success') {
-                {{ 'admin.addPanel.added' | translate }}
-              } @else if (pool.addingTrackId() === track.deezerTrackId && pool.addToPoolStatus() === 'error') {
-                {{ 'admin.addPanel.addError' | translate }}
-              } @else {
-                {{ 'admin.addPanel.addTrack' | translate }}
+              @switch (addStatus) {
+                @case ('loading') { … }
+                @case ('success') { {{ 'admin.addPanel.added' | translate }} }
+                @case ('error') { {{ 'admin.addPanel.addError' | translate }} }
+                @default { {{ 'admin.addPanel.addTrack' | translate }} }
               }
             </button>
           </li>

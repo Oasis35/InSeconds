@@ -8,7 +8,7 @@
 
 ## Déroulé d'une partie
 
-- **N morceaux par jour** (`Settings.TracksPerChallenge`, défaut **3**), même défi pour tout le monde, généré à minuit UTC. **[Back]**
+- **N morceaux par jour** (`Settings.TracksPerChallenge`, défaut **5**), même défi pour tout le monde, généré à minuit UTC. **[Back]**
 - Une seule session par joueur par défi — contrainte unique `(PlayerId, DailyChallengeId)`. Une partie déjà `Completed`, `Abandoned` (bouton) ou `Expired` (Pending non terminé, basculé par l'expiry paresseuse) ne peut pas être rejouée (409). Une partie `Pending` peut être reprise jusqu'à minuit. **[Back]**
 - Pour chaque morceau : le joueur choisit un palier d'écoute, écoute, saisit artiste + titre (ou passe si pas de preview), score calculé côté serveur.
 
@@ -100,7 +100,7 @@ Si `Track.HasPreview = false`, le joueur ne peut pas écouter : bouton « Passer
 
 | Clé | Défaut | Appliqué réellement ? |
 |---|---|---|
-| `TracksPerChallenge` | `3` | ✅ Back (génération du défi + détection de complétion) |
+| `TracksPerChallenge` | `5` | ✅ Back (génération du défi + détection de complétion) |
 | `AllowedDurationsSeconds` | `0.50,1,1.5,2,3,5,10` | ✅ Back (validation) + Front (paliers affichés) |
 | `DurationScores` | voir table ci-dessus | ✅ Back (scoring) + Front (tooltip points) |
 | `CoverUrlTemplate` | URL Deezer | ✅ Back (reconstruction des pochettes) |

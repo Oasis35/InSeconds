@@ -13,7 +13,7 @@ test.describe('Confirmation de sortie en cours de partie (guard CanDeactivate)',
     await game.goto();
     await game.waitForWelcome();
     await game.clickStart();
-    await expect(page.getByText('Piste 1 / 3')).toBeVisible();
+    await expect(page.getByText('Piste 1 / 5')).toBeVisible();
 
     // Tenter de quitter via un lien interne du footer (icône Confidentialité — l'icône Admin
     // n'est visible que pour un compte IsAdmin=true, cf. game-footer.component.html)
@@ -26,7 +26,7 @@ test.describe('Confirmation de sortie en cours de partie (guard CanDeactivate)',
     // « Continuer à jouer » → on reste sur la partie, l'URL n'a pas changé
     await game.leaveCancelButton.click();
     await expect(game.leaveConfirmButton).not.toBeVisible();
-    await expect(page.getByText('Piste 1 / 3')).toBeVisible();
+    await expect(page.getByText('Piste 1 / 5')).toBeVisible();
     expect(new URL(page.url()).pathname).toBe('/');
   });
 
@@ -37,7 +37,7 @@ test.describe('Confirmation de sortie en cours de partie (guard CanDeactivate)',
     await game.goto();
     await game.waitForWelcome();
     await game.clickStart();
-    await expect(page.getByText('Piste 1 / 3')).toBeVisible();
+    await expect(page.getByText('Piste 1 / 5')).toBeVisible();
 
     await page.getByTitle(/Confidentialité/).click();
     await expect(game.leaveConfirmButton).toBeVisible();

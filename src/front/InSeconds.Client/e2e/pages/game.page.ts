@@ -54,12 +54,12 @@ export class GamePage {
     this.guessTimeChart        = page.getByTestId('guess-time-chart');
   }
 
-  /** Démarre et joue les 3 morceaux (réponses vides) jusqu'à l'écran de récap. */
+  /** Démarre et joue les 5 morceaux (réponses vides) jusqu'à l'écran de récap. */
   async playFullGame(round: BlindRoundPage): Promise<void> {
     await this.goto();
     await this.waitForWelcome();
     await this.clickStart();
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 5; i++) {
       await round.playRound(1);
     }
     await this.waitForDone();

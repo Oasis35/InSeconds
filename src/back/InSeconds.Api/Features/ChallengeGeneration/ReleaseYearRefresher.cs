@@ -40,12 +40,12 @@ public sealed class ReleaseYearRefresher(
                 await Task.Delay(BatchDelay, ct);
 
             var batch = candidates.Skip(offset).Take(BatchSize).ToList();
-            var infos = await Task.WhenAll(
+            var probes = await Task.WhenAll(
                 batch.Select(t => deezer.GetTrackInfoAsync(t.DeezerTrackId, ct)));
 
             for (var i = 0; i < batch.Count; i++)
             {
-                if (infos[i]?.ReleaseYear is not { } year)
+                if (probes[i].Info?.ReleaseYear is not { } year)
                 {
                     failed++;
                     continue;

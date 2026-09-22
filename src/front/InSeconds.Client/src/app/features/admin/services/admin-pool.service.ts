@@ -38,10 +38,11 @@ export class AdminPoolService {
   readonly selectedTrackIds = signal<Set<number>>(new Set());
 
   // --- panneau de recherche/ajout (bandeau intégré, remplace l'ancienne modale) ---
-  readonly addToPoolStatus = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
-  private addToPoolStatusTimer: ReturnType<typeof setTimeout> | null = null;
+  // Par ligne de résultat (deezerTrackId → statut) — plusieurs ajouts peuvent être lancés
+  // à la suite sans attendre la réponse du précédent, chaque ligne doit refléter son propre état.
+  private readonly addTrackStatuses = signal<ReadonlyMap<number, 'loading' | 'success' | 'error'>>(new Map());
+  private readonly addTrackStatusTimers = new Map<number, ReturnType<typeof setTimeout>>();
   readonly addPanelOpen = signal(false);
-  readonly addingTrackId = signal<number | null>(null);
   readonly previewingUrl = signal<string | null>(null);
   // Indépendantes par défaut ; liées, la saisie dans l'un des deux champs (filtre pool /
   // recherche Deezer) met à jour l'autre. Les deux champs restent affichés en permanence
@@ -229,9 +230,15 @@ export class AdminPoolService {
       this.audioPreview.stop();
       this.previewingUrl.set(null);
       this.poolSearchQuery.set('');
-      this.addingTrackId.set(null);
-      this.addToPoolStatus.set('idle');
+      for (const timer of this.addTrackStatusTimers.values()) clearTimeout(timer);
+      this.addTrackStatusTimers.clear();
+      this.addTrackStatuses.set(new Map());
     }
+  }
+
+  /** Statut d'ajout de cette ligne de résultat précise ('idle' si jamais tentée). */
+  addTrackStatus(deezerTrackId: number): 'idle' | 'loading' | 'success' | 'error' {
+    return this.addTrackStatuses().get(deezerTrackId) ?? 'idle';
   }
 
   previewSearchResult(url: string | null | undefined): void {
@@ -275,28 +282,41 @@ export class AdminPoolService {
   }
 
   addTrackFromPanel(track: DeezerTrackInfo): void {
-    this.addingTrackId.set(track.deezerTrackId);
-    this.addToPoolStatus.set('loading');
+    const deezerTrackId = track.deezerTrackId;
+    this.setAddTrackStatus(deezerTrackId, 'loading');
 
-    this.api.addTrack(track.deezerTrackId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.api.addTrack(deezerTrackId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
-        this.addToPoolStatus.set('success');
+        this.setAddTrackStatus(deezerTrackId, 'success');
         this.api.reloadPool();
-        if (this.addToPoolStatusTimer) clearTimeout(this.addToPoolStatusTimer);
-        this.addToPoolStatusTimer = setTimeout(() => {
-          if (this.addToPoolStatus() === 'success') { this.addToPoolStatus.set('idle'); this.addingTrackId.set(null); }
-          this.addToPoolStatusTimer = null;
-        }, 2000);
+        this.scheduleAddTrackStatusReset(deezerTrackId, 'success', 2000);
       },
       error: () => {
-        this.addToPoolStatus.set('error');
-        if (this.addToPoolStatusTimer) clearTimeout(this.addToPoolStatusTimer);
-        this.addToPoolStatusTimer = setTimeout(() => {
-          if (this.addToPoolStatus() === 'error') { this.addToPoolStatus.set('idle'); this.addingTrackId.set(null); }
-          this.addToPoolStatusTimer = null;
-        }, 3000);
+        this.setAddTrackStatus(deezerTrackId, 'error');
+        this.scheduleAddTrackStatusReset(deezerTrackId, 'error', 3000);
       },
     });
+  }
+
+  private setAddTrackStatus(deezerTrackId: number, status: 'loading' | 'success' | 'error'): void {
+    const next = new Map(this.addTrackStatuses());
+    next.set(deezerTrackId, status);
+    this.addTrackStatuses.set(next);
+  }
+
+  private scheduleAddTrackStatusReset(deezerTrackId: number, expected: 'success' | 'error', delayMs: number): void {
+    const existingTimer = this.addTrackStatusTimers.get(deezerTrackId);
+    if (existingTimer) clearTimeout(existingTimer);
+
+    const timer = setTimeout(() => {
+      if (this.addTrackStatus(deezerTrackId) === expected) {
+        const next = new Map(this.addTrackStatuses());
+        next.delete(deezerTrackId);
+        this.addTrackStatuses.set(next);
+      }
+      this.addTrackStatusTimers.delete(deezerTrackId);
+    }, delayMs);
+    this.addTrackStatusTimers.set(deezerTrackId, timer);
   }
 
   // --- modale suppression ---
@@ -332,6 +352,7 @@ export class AdminPoolService {
       const deleted = new Set(tracks.map(t => t.id));
       this.selectedTrackIds.set(new Set([...this.selectedTrackIds()].filter(id => !deleted.has(id))));
       this.closeDeleteModal();
+      this.allTracksPage.set(0);
       this.api.reloadPool();
     }).catch(() => {
       this.deleteStatus.set('error');

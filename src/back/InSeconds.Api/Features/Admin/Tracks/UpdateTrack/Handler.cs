@@ -29,10 +29,13 @@ public sealed class UpdateTrackHandler(ApplicationDbContext db, DeezerClient dee
                 return Results.Conflict(new { error = "deezer_id_taken", message = "Ce DeezerTrackId est déjà utilisé par un autre morceau." });
         }
 
-        var info = await deezer.GetTrackInfoAsync(command.NewDeezerTrackId, cancellationToken);
-        if (info is null)
+        var probe = await deezer.GetTrackInfoAsync(command.NewDeezerTrackId, cancellationToken);
+        if (!probe.Succeeded)
+            return Results.Json(new { error = "deezer_unavailable", message = "Deezer momentanément indisponible, réessaie." }, statusCode: StatusCodes.Status503ServiceUnavailable);
+        if (probe.Info is null)
             return Results.UnprocessableEntity(new { error = "invalid_track", message = $"Track Deezer introuvable : {command.NewDeezerTrackId}." });
 
+        var info = probe.Info;
         track.DeezerTrackId = command.NewDeezerTrackId;
         track.Artist        = info.Artist;
         track.Title         = info.Title;

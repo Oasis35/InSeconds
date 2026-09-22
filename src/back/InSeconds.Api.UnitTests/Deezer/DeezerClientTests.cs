@@ -46,13 +46,14 @@ public sealed class DeezerClientTests
     }
 
     [Fact]
-    public async Task GetTrackInfoAsync_returns_null_on_http_error()
+    public async Task GetTrackInfoAsync_fails_on_http_error()
     {
         var client = Create(new StubHandler(new HttpResponseMessage(HttpStatusCode.NotFound)));
 
-        var info = await client.GetTrackInfoAsync(123);
+        var probe = await client.GetTrackInfoAsync(123);
 
-        info.Should().BeNull();
+        probe.Succeeded.Should().BeFalse();
+        probe.Info.Should().BeNull();
     }
 
     [Fact]
@@ -143,9 +144,9 @@ public sealed class DeezerClientTests
         var client = Create(new StubHandler(Json(
             """{"id":123,"title":"T","preview":"p","artist":{"name":"A"},"release_date":"2016-05-20"}""")));
 
-        var info = await client.GetTrackInfoAsync(123);
+        var probe = await client.GetTrackInfoAsync(123);
 
-        info!.ReleaseYear.Should().Be(2016);
+        probe.Info!.ReleaseYear.Should().Be(2016);
     }
 
     [Fact]
@@ -154,9 +155,9 @@ public sealed class DeezerClientTests
         var client = Create(new StubHandler(Json(
             """{"id":123,"title":"T","preview":"p","artist":{"name":"A"}}""")));
 
-        var info = await client.GetTrackInfoAsync(123);
+        var probe = await client.GetTrackInfoAsync(123);
 
-        info!.ReleaseYear.Should().BeNull();
+        probe.Info!.ReleaseYear.Should().BeNull();
     }
 
     [Fact]
@@ -165,9 +166,9 @@ public sealed class DeezerClientTests
         var client = Create(new StubHandler(Json(
             """{"id":123,"title":"T","preview":"p","artist":{"name":"A"},"release_date":"n/a"}""")));
 
-        var info = await client.GetTrackInfoAsync(123);
+        var probe = await client.GetTrackInfoAsync(123);
 
-        info!.ReleaseYear.Should().BeNull();
+        probe.Info!.ReleaseYear.Should().BeNull();
     }
 
     [Fact]
@@ -182,13 +183,28 @@ public sealed class DeezerClientTests
     }
 
     [Fact]
-    public async Task GetTrackInfoAsync_returns_null_on_deezer_error_payload()
+    public async Task GetTrackInfoAsync_fails_on_deezer_transient_error_payload()
     {
+        // Code 4 = quota, pas "no data" : échec de requête, pas un track réellement introuvable
+        // (cf. piège 16 racine — un ancien bug traitait les deux cas identiquement).
         var client = Create(new StubHandler(Json("""{"error":{"type":"Exception","message":"Quota limit exceeded","code":4}}""")));
 
-        var info = await client.GetTrackInfoAsync(123);
+        var probe = await client.GetTrackInfoAsync(123);
 
-        info.Should().BeNull();
+        probe.Succeeded.Should().BeFalse();
+        probe.Info.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetTrackInfoAsync_succeeds_with_null_info_on_deezer_no_data_error()
+    {
+        // Code 800 "no data" = le track n'existe plus sur Deezer : réponse déterminée, pas un échec.
+        var client = Create(new StubHandler(Json("""{"error":{"type":"DataException","message":"no data","code":800}}""")));
+
+        var probe = await client.GetTrackInfoAsync(123);
+
+        probe.Succeeded.Should().BeTrue();
+        probe.Info.Should().BeNull();
     }
 
     [Fact]

@@ -22,7 +22,7 @@ test.describe('Scoring par palier', () => {
     await game.clickStart();
 
     // Morceau 1 : 0.5s avec bonne réponse → 1000 pts (artiste + titre)
-    // Les tracks du seed aujourd'hui : Eminem, Radiohead, Billie Eilish
+    // Les tracks du seed aujourd'hui : Eminem, Radiohead, Billie Eilish, Kanye West, JAY Z
     await round.chooseDuration(0.5);
     await round.waitForAnswerInput();
     await round.typeAnswer('Eminem - Lose Yourself');
@@ -48,7 +48,10 @@ test.describe('Scoring par palier', () => {
     expect(score1).toBeGreaterThan(score2);
 
     await round.goNext();
-    await round.playRound(1);
+    // Finir les 3 morceaux restants (5 morceaux/défi au total)
+    for (let i = 0; i < 3; i++) {
+      await round.playRound(1);
+    }
     await game.waitForDone();
   });
 
@@ -72,8 +75,8 @@ test.describe('Scoring par palier', () => {
     await expect(round.page.getByText('+0')).toBeVisible();
 
     await round.goNext();
-    // Finir les 2 morceaux restants
-    for (let i = 0; i < 2; i++) {
+    // Finir les 4 morceaux restants (5 morceaux/défi au total)
+    for (let i = 0; i < 4; i++) {
       await round.playRound(1);
     }
     await game.waitForDone();
@@ -103,7 +106,8 @@ test.describe('Scoring par palier', () => {
     expect(score).toBe(425);
 
     await round.goNext();
-    for (let i = 0; i < 2; i++) {
+    // Finir les 4 morceaux restants (5 morceaux/défi au total)
+    for (let i = 0; i < 4; i++) {
       await round.playRound(1);
     }
     await game.waitForDone();

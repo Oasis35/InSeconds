@@ -55,7 +55,7 @@ test.describe('Reprise de partie', () => {
 
     // Cliquer Reprendre → morceau 2
     await game.resumeButton.click();
-    await expect(page.getByText('Piste 2 / 3')).toBeVisible();
+    await expect(page.getByText('Piste 2 / 5')).toBeVisible();
   });
 
   test('abandonner depuis l\'écran de reprise marque la session comme jouée', async ({ page, api }) => {

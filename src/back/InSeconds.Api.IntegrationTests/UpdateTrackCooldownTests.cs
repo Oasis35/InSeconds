@@ -64,18 +64,18 @@ public class UpdateTrackCooldownTests(IntegrationTestFactory factory) : IAsyncLi
             await db.SaveChangesAsync();
         }
 
-        // Force le pool éligible à exactement 3 morceaux (TracksPerChallenge par défaut) :
-        // 2 tracks neutres jamais utilisées + 1 track utilisée il y a 10 jours. Avec le cooldown
+        // Force le pool éligible à exactement 5 morceaux (TracksPerChallenge par défaut) :
+        // 4 tracks neutres jamais utilisées + 1 track utilisée il y a 10 jours. Avec le cooldown
         // par défaut (30j) cette dernière serait exclue (pool insuffisant) ; une fois le cooldown
-        // réduit à 5j via l'endpoint, elle redevient le 3e candidat et doit obligatoirement être
-        // sélectionnée (seule combinaison possible pour former un défi de 3 morceaux).
+        // réduit à 5j via l'endpoint, elle redevient le 5e candidat et doit obligatoirement être
+        // sélectionnée (seule combinaison possible pour former un défi de 5 morceaux).
         // Note : le générateur ne filtre plus sur "appartient à un défi" (c'est tout le principe
         // du cooldown) — donc TOUTES les tracks avec preview, y compris celles des défis J-2/J-1
-        // encore en base, doivent être mises en cooldown pour isoler les 3 candidats voulus.
+        // encore en base, doivent être mises en cooldown pour isoler les 5 candidats voulus.
         var allWithPreview = await db.Tracks.Where(t => t.HasPreview).ToListAsync();
         var target = allWithPreview[0];
-        var keepEligible = allWithPreview.Skip(1).Take(2).ToList();
-        var keepIds = new HashSet<int> { target.Id, keepEligible[0].Id, keepEligible[1].Id };
+        var keepEligible = allWithPreview.Skip(1).Take(4).ToList();
+        var keepIds = new HashSet<int>(keepEligible.Select(t => t.Id)) { target.Id };
 
         target.LastUsedDate = today.AddDays(-10);
         foreach (var other in allWithPreview.Where(t => !keepIds.Contains(t.Id)))

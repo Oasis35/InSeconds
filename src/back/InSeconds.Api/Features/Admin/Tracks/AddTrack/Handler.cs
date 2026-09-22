@@ -19,8 +19,8 @@ public sealed class AddTrackHandler(ApplicationDbContext db, DeezerClient deezer
                 return Results.Ok(new AddTrackResponse(existing.Id, existing.Artist, existing.Title, existing.DeezerTrackId));
 
             // Données incomplètes en base — re-fetch Deezer pour corriger
-            var fix = await deezer.GetTrackInfoAsync(command.DeezerTrackId, cancellationToken);
-            if (fix is not null)
+            var fixProbe = await deezer.GetTrackInfoAsync(command.DeezerTrackId, cancellationToken);
+            if (fixProbe.Info is { } fix)
             {
                 existing.Artist      = fix.Artist;
                 existing.Title       = fix.Title;
@@ -31,10 +31,13 @@ public sealed class AddTrackHandler(ApplicationDbContext db, DeezerClient deezer
             return Results.Ok(new AddTrackResponse(existing.Id, existing.Artist, existing.Title, existing.DeezerTrackId));
         }
 
-        var info = await deezer.GetTrackInfoAsync(command.DeezerTrackId, cancellationToken);
-        if (info is null)
+        var probe = await deezer.GetTrackInfoAsync(command.DeezerTrackId, cancellationToken);
+        if (!probe.Succeeded)
+            return Results.Json(new { error = "deezer_unavailable", message = "Deezer momentanément indisponible, réessaie." }, statusCode: StatusCodes.Status503ServiceUnavailable);
+        if (probe.Info is null)
             return Results.UnprocessableEntity(new { error = "invalid_track", message = $"Track Deezer introuvable : {command.DeezerTrackId}." });
 
+        var info = probe.Info;
         var track = new Track
         {
             DeezerTrackId = command.DeezerTrackId,

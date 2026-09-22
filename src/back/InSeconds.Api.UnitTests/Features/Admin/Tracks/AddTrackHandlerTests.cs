@@ -32,9 +32,24 @@ public sealed class AddTrackHandlerTests
         return new DeezerClient(new HttpClient(handler) { BaseAddress = new Uri("https://api.deezer.com") }, NullLogger<DeezerClient>.Instance);
     }
 
+    // Deezer répond en HTTP 200 avec un payload d'erreur "no data" (code 800) : track réellement
+    // introuvable, réponse déterminée — distinct d'un échec de transport (cf. CreateUnavailableDeezerClient).
     private static DeezerClient CreateFailingDeezerClient()
     {
-        var handler = new FakeHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.NotFound));
+        var json = """{"error":{"type":"DataException","message":"no data","code":800}}""";
+        var handler = new FakeHttpMessageHandler(
+            new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json"),
+            });
+        return new DeezerClient(new HttpClient(handler) { BaseAddress = new Uri("https://api.deezer.com") }, NullLogger<DeezerClient>.Instance);
+    }
+
+    // Échec de transport (timeout, réseau, HTTP 500...) : état Deezer inconnu, pas une absence
+    // déterminée du track — doit rester distinguable d'un vrai "introuvable" (cf. piège 16 racine).
+    private static DeezerClient CreateUnavailableDeezerClient()
+    {
+        var handler = new FakeHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.InternalServerError));
         return new DeezerClient(new HttpClient(handler) { BaseAddress = new Uri("https://api.deezer.com") }, NullLogger<DeezerClient>.Instance);
     }
 
@@ -108,6 +123,20 @@ public sealed class AddTrackHandlerTests
 
         result.Should().BeAssignableTo<IStatusCodeHttpResult>()
             .Which.StatusCode.Should().Be(422);
+
+        (await db.Tracks.AnyAsync()).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Handle_WhenDeezerUnavailable_Returns503()
+    {
+        await using var db = CreateDbContext();
+        var handler = new AddTrackHandler(db, CreateUnavailableDeezerClient());
+
+        var result = await handler.Handle(new AddTrackCommand(99999), CancellationToken.None);
+
+        result.Should().BeAssignableTo<IStatusCodeHttpResult>()
+            .Which.StatusCode.Should().Be(503);
 
         (await db.Tracks.AnyAsync()).Should().BeFalse();
     }

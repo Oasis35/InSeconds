@@ -64,7 +64,12 @@ public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger)
         }
     }
 
-    public async Task<DeezerTrackInfo?> GetTrackInfoAsync(long deezerTrackId, CancellationToken ct = default)
+    /// <summary>
+    /// Comme <see cref="ProbePreviewAsync"/>, distingue l'échec de requête (Succeeded = false :
+    /// erreur HTTP, ou payload d'erreur Deezer autre que "no data" — quota/busy renvoyés en 200)
+    /// de la vraie absence du track (Succeeded = true, Info = null).
+    /// </summary>
+    public async Task<DeezerTrackInfoProbe> GetTrackInfoAsync(long deezerTrackId, CancellationToken ct = default)
     {
         try
         {
@@ -76,12 +81,19 @@ public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger)
                 logger.LogWarning(
                     "Deezer a renvoyé une erreur pour le track {DeezerTrackId} : code {Code} ({Message}).",
                     deezerTrackId, response.Error.Code, response.Error.Message);
-                return null;
+
+                // Réponse déterminée (track introuvable) pour les codes connus de "no data" ;
+                // tout autre code (quota=4, service busy=700, ou un futur code inconnu) → échec de requête.
+                return DefinitiveNoDataErrorCodes.Contains(response.Error.Code)
+                    ? new DeezerTrackInfoProbe(true, null)
+                    : new DeezerTrackInfoProbe(false, null);
             }
 
-            return response is { Title: not null, Artist.Name: not null }
+            var info = response is { Title: not null, Artist.Name: not null }
                 ? new DeezerTrackInfo(response.Artist.Name, response.Title, response.Preview, response.Id, ExtractCoverHash(response.Album?.CoverMedium), ExtractReleaseYear(response.ReleaseDate))
                 : null;
+
+            return new DeezerTrackInfoProbe(true, info);
         }
         catch (OperationCanceledException)
         {
@@ -90,7 +102,7 @@ public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger)
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Échec de récupération des infos Deezer pour le track {DeezerTrackId}.", deezerTrackId);
-            return null;
+            return new DeezerTrackInfoProbe(false, null);
         }
     }
 
@@ -209,3 +221,6 @@ public sealed record DeezerTrackInfo(string Artist, string Title, string? Previe
 
 /// <summary>Résultat d'un sondage de preview : Succeeded = false signifie « état Deezer inconnu », pas « pas de preview ».</summary>
 public sealed record DeezerPreviewProbe(bool Succeeded, string? PreviewUrl);
+
+/// <summary>Résultat d'un sondage de track : Succeeded = false signifie « état Deezer inconnu », pas « track introuvable ».</summary>
+public sealed record DeezerTrackInfoProbe(bool Succeeded, DeezerTrackInfo? Info);

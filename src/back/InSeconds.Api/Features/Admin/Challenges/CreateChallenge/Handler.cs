@@ -29,16 +29,20 @@ public sealed class CreateChallengeHandler(ApplicationDbContext db, DeezerClient
                 continue;
             }
 
-            var info = await deezer.GetTrackInfoAsync(deezerTrackId, cancellationToken);
-            if (info is null)
+            var probe = await deezer.GetTrackInfoAsync(deezerTrackId, cancellationToken);
+            if (!probe.Succeeded)
+                return Results.Json(new { error = "deezer_unavailable", message = "Deezer momentanément indisponible, réessaie." }, statusCode: StatusCodes.Status503ServiceUnavailable);
+            if (probe.Info is null)
                 return Results.UnprocessableEntity(new { error = "invalid_track", message = $"Track Deezer introuvable : {deezerTrackId}." });
 
+            var info = probe.Info;
             var newTrack = new Track
             {
                 DeezerTrackId = deezerTrackId,
                 Artist        = info.Artist,
                 Title         = info.Title,
                 CoverHash     = info.CoverHash,
+                ReleaseYear   = info.ReleaseYear,
                 HasPreview    = !string.IsNullOrEmpty(info.PreviewUrl),
                 CreatedAt     = DateTime.UtcNow,
             };

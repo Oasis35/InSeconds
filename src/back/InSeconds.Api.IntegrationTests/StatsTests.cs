@@ -27,7 +27,7 @@ public class StatsTests(IntegrationTestFactory factory) : IAsyncLifetime
         Assert.NotNull(body);
         Assert.Null(body.YourScore);
         Assert.Equal(0, body.TotalPlayers);
-        Assert.Equal(3, body.Tracks.Count); // le défi du jour a 3 morceaux
+        Assert.Equal(5, body.Tracks.Count); // le défi du jour a 5 morceaux
     }
 
     [Fact]

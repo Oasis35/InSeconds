@@ -54,12 +54,12 @@ public class ChallengeGenerationTests(IntegrationTestFactory factory) : IAsyncLi
 
         Assert.Equal(GenerateResult.Success, result);
 
-        // Vérifie que le défi a bien été créé avec 3 morceaux (TracksPerChallenge = 3 par défaut)
+        // Vérifie que le défi a bien été créé avec 5 morceaux (TracksPerChallenge = 5 par défaut)
         var created = await db.DailyChallenges
             .Include(c => c.Tracks)
             .FirstOrDefaultAsync(c => c.Date == today);
         Assert.NotNull(created);
-        Assert.Equal(3, created.Tracks.Count);
+        Assert.Equal(5, created.Tracks.Count);
     }
 
     [Fact]

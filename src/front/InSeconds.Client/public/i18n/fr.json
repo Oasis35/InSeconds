@@ -122,6 +122,7 @@
     "logoutConfirmBody": "Tu pourras revenir avec un nouveau lien envoyé à {{ email }}.",
     "logoutConfirmAction": "Oui, me déconnecter",
     "logoutCancel": "Annuler",
+    "logoutError": "La déconnexion a échoué. Réessaie.",
     "backToGame": "Retour au jeu",
     "email": {
       "placeholder": "ton@email.com",
@@ -158,7 +159,8 @@
       "sent": "Un lien de connexion vient de t'être envoyé. Vérifie ta boîte mail.",
       "invalidEmail": "Adresse email invalide.",
       "backToGame": "← Retour au jeu",
-      "devTitle": "Connexion rapide (dev)"
+      "devTitle": "Connexion rapide (dev)",
+      "devError": "Échec de la connexion rapide. Réessaie."
     },
     "verify": {
       "title": "Confirmer la connexion",
