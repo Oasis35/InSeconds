@@ -35,6 +35,7 @@ export class ProfileComponent implements OnInit {
   protected readonly pseudoStatus = signal<PseudoStatus>('idle');
   protected readonly showLogoutConfirm = signal(false);
   protected readonly loggingOut = signal(false);
+  protected readonly logoutError = signal(false);
 
   private readonly trimmedDraft = computed(() => this.pseudoDraft().trim());
   private readonly tooShort = computed(() => this.trimmedDraft().length > 0 && this.trimmedDraft().length < 3);
@@ -143,6 +144,7 @@ export class ProfileComponent implements OnInit {
   }
 
   askLogout(): void {
+    this.logoutError.set(false);
     this.showLogoutConfirm.set(true);
   }
 
@@ -152,12 +154,19 @@ export class ProfileComponent implements OnInit {
 
   confirmLogout(): void {
     this.loggingOut.set(true);
-    this.playerSession.logout().subscribe(() => {
-      this.playerSession.load().subscribe(() => {
+    this.logoutError.set(false);
+    this.playerSession.logout().subscribe({
+      next: () => {
+        this.playerSession.load().subscribe(() => {
+          this.loggingOut.set(false);
+          this.showLogoutConfirm.set(false);
+          this.router.navigateByUrl('/');
+        });
+      },
+      error: () => {
         this.loggingOut.set(false);
-        this.showLogoutConfirm.set(false);
-        this.router.navigateByUrl('/');
-      });
+        this.logoutError.set(true);
+      },
     });
   }
 }

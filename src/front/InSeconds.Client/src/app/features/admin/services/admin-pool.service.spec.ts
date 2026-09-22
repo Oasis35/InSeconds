@@ -1,12 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { signal, computed } from '@angular/core';
+import { Observable, Subject, of, throwError } from 'rxjs';
 import { AdminPoolService } from './admin-pool.service';
 import { AdminApiService } from './admin-api.service';
 import { PoolAudioPreviewService } from './pool-audio-preview.service';
 import { SettingsService } from '../../../core/services/settings.service';
-import { PoolTracksResponse } from '../admin.models';
+import { DeezerTrackInfo, PoolTracksResponse } from '../admin.models';
 
-/** Stub minimal d'AdminApiService : uniquement les signals consommés par AdminPoolService. */
+/** Stub minimal d'AdminApiService : uniquement les signals/méthodes consommés par AdminPoolService. */
 function makeAdminApiStub() {
   const poolTracks = signal<PoolTracksResponse>({ available: [], used: [] });
   const poolSearchQuery = signal('');
@@ -17,8 +18,14 @@ function makeAdminApiStub() {
     poolSearchResults: computed(() => []),
     poolSearchLoading: computed(() => false),
     poolSearchQuery,
+    addTrack: jasmine.createSpy('addTrack').and.returnValue(of(void 0)),
+    reloadPool: jasmine.createSpy('reloadPool'),
     _setPoolTracks: (v: PoolTracksResponse) => poolTracks.set(v),
   };
+}
+
+function makeDeezerTrackInfo(deezerTrackId: number): DeezerTrackInfo {
+  return { artist: `A${deezerTrackId}`, title: `T${deezerTrackId}`, previewUrl: null, deezerTrackId };
 }
 
 function makePoolTrack(id: number, hasPreview: boolean, extra: Partial<{ lastUsedDate: string | null; usageCount: number }> = {}) {
@@ -192,5 +199,79 @@ describe('AdminPoolService', () => {
         expect(service.existingDeezerTrackIds().get(label === 'id absent from the pool' ? 999 : 101)).toBe(expected);
       });
     }
+  });
+
+  describe('addTrackFromPanel (état par ligne)', () => {
+    afterEach(() => jasmine.clock().uninstall());
+
+    it('should report idle for a track never added', () => {
+      expect(service.addTrackStatus(101)).toBe('idle');
+    });
+
+    it('should report loading only for the row being added', () => {
+      apiStub.addTrack.and.returnValue(new Subject<void>()); // ne résout jamais
+
+      service.addTrackFromPanel(makeDeezerTrackInfo(101));
+
+      expect(service.addTrackStatus(101)).toBe('loading');
+      expect(service.addTrackStatus(102)).toBe('idle');
+    });
+
+    it('should not let a concurrent add on another row clobber the first row\'s state', () => {
+      const subjectA = new Subject<void>();
+      const subjectB = new Subject<void>();
+      apiStub.addTrack.and.callFake((id: number) => (id === 101 ? subjectA : subjectB) as unknown as Observable<void>);
+
+      service.addTrackFromPanel(makeDeezerTrackInfo(101)); // reste en 'loading'
+      service.addTrackFromPanel(makeDeezerTrackInfo(102));
+      subjectB.next(void 0); // seule la ligne 102 résout
+
+      expect(service.addTrackStatus(101)).toBe('loading');
+      expect(service.addTrackStatus(102)).toBe('success');
+      expect(apiStub.reloadPool).toHaveBeenCalledTimes(1);
+    });
+
+    it('should set error only for the failing row and reset it after its own timer', () => {
+      jasmine.clock().install();
+      apiStub.addTrack.and.returnValue(throwError(() => new Error('boom')));
+
+      service.addTrackFromPanel(makeDeezerTrackInfo(101));
+      expect(service.addTrackStatus(101)).toBe('error');
+
+      jasmine.clock().tick(2999);
+      expect(service.addTrackStatus(101)).toBe('error');
+
+      jasmine.clock().tick(1);
+      expect(service.addTrackStatus(101)).toBe('idle');
+    });
+
+    it('should reset a successful row to idle after its own timer, independently of other rows', () => {
+      jasmine.clock().install();
+      apiStub.addTrack.and.returnValue(of(void 0));
+
+      service.addTrackFromPanel(makeDeezerTrackInfo(101));
+      expect(service.addTrackStatus(101)).toBe('success');
+
+      jasmine.clock().tick(1999);
+      expect(service.addTrackStatus(101)).toBe('success');
+
+      jasmine.clock().tick(1);
+      expect(service.addTrackStatus(101)).toBe('idle');
+    });
+
+    it('should cancel all pending reset timers and clear every row status on toggleAddPanel close', () => {
+      jasmine.clock().install();
+      apiStub.addTrack.and.returnValue(of(void 0));
+
+      service.addPanelOpen.set(true);
+      service.addTrackFromPanel(makeDeezerTrackInfo(101));
+      expect(service.addTrackStatus(101)).toBe('success');
+
+      service.toggleAddPanel(); // ferme le panneau avant l'expiration du timer 2s
+      expect(service.addTrackStatus(101)).toBe('idle');
+
+      jasmine.clock().tick(2000); // ne doit pas re-déclencher quoi que ce soit
+      expect(service.addTrackStatus(101)).toBe('idle');
+    });
   });
 });

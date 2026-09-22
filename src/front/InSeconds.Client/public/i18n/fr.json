@@ -122,6 +122,7 @@
     "logoutConfirmBody": "Tu pourras revenir avec un nouveau lien envoyé à {{ email }}.",
     "logoutConfirmAction": "Oui, me déconnecter",
     "logoutCancel": "Annuler",
+    "logoutError": "La déconnexion a échoué. Réessaie.",
     "backToGame": "Retour au jeu",
     "email": {
       "placeholder": "ton@email.com",

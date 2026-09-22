@@ -122,6 +122,7 @@
     "logoutConfirmBody": "You'll be able to come back with a new link sent to {{ email }}.",
     "logoutConfirmAction": "Yes, log me out",
     "logoutCancel": "Cancel",
+    "logoutError": "Logout failed. Try again.",
     "backToGame": "Back to game",
     "email": {
       "placeholder": "your@email.com",

@@ -203,5 +203,29 @@ describe('ProfileComponent', () => {
       expect(component['showLogoutConfirm']()).toBeFalse();
       expect(router.navigateByUrl).toHaveBeenCalledWith('/');
     });
+
+    it('sets logoutError and stops loading on confirmLogout() failure', () => {
+      playerSessionStub.logout.and.returnValue(throwError(() => new Error('network error')));
+
+      component.askLogout();
+      component.confirmLogout();
+
+      expect(component['loggingOut']()).toBeFalse();
+      expect(component['logoutError']()).toBeTrue();
+      expect(component['showLogoutConfirm']()).toBeTrue();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+
+    it('clears logoutError when reopening the confirm sheet via askLogout()', () => {
+      playerSessionStub.logout.and.returnValue(throwError(() => new Error('network error')));
+      component.askLogout();
+      component.confirmLogout();
+      expect(component['logoutError']()).toBeTrue();
+
+      component.cancelLogout();
+      component.askLogout();
+
+      expect(component['logoutError']()).toBeFalse();
+    });
   });
 });

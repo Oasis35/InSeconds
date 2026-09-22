@@ -93,7 +93,7 @@
     <app-confirm-sheet
       tone="danger"
       [title]="'profile.logoutConfirmTitle' | translate"
-      [body]="'profile.logoutConfirmBody' | translate: { email: email() }"
+      [body]="(logoutError() ? 'profile.logoutError' : 'profile.logoutConfirmBody') | translate: { email: email() }"
       [confirmLabel]="'profile.logoutConfirmAction' | translate"
       [cancelLabel]="'profile.logoutCancel' | translate"
       [loading]="loggingOut()"
