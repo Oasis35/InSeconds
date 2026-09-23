@@ -40,8 +40,10 @@ export class GamePage {
     this.resumePromptHeading   = page.getByRole('heading', { name: 'Partie en pause' });
     this.resumeButton          = page.getByRole('button', { name: 'Reprendre' });
     this.abandonButton         = page.getByRole('button', { name: 'Abandonner', exact: true }).first();
-    // Même libellé que le bouton d'ouverture : la confirmation (écran reprise ou panneau) est rendue après lui.
-    this.abandonConfirmButton  = page.getByRole('button', { name: 'Abandonner', exact: true }).last();
+    // Même libellé que le bouton d'ouverture (header en partie) : on cible la confirmation dans son
+    // conteneur — panneau de confirmation en cours de partie, encart de l'écran de reprise sinon.
+    this.abandonConfirmButton  = page.locator('app-confirm-sheet, app-resume-screen')
+      .getByRole('button', { name: 'Abandonner', exact: true });
     this.leaveConfirmButton    = page.getByRole('button', { name: 'Quitter quand même' });
     this.leaveCancelButton     = page.getByRole('button', { name: 'Continuer à jouer' });
     this.serviceDownHeading    = page.getByRole('heading', { name: 'Service indisponible' });
