@@ -20,25 +20,25 @@ describe('FreezeCellsComponent', () => {
 
   it('affiche une case par gel possible, pleines puis vides', () => {
     const el = render(1, 2);
-    expect(el.querySelectorAll('[data-testid="freeze-cell-full"]').length).toBe(1);
-    expect(el.querySelectorAll('[data-testid="freeze-cell-empty"]').length).toBe(1);
+    expect(el.querySelectorAll('[data-testid="freeze-cell-full"]')).toHaveSize(1);
+    expect(el.querySelectorAll('[data-testid="freeze-cell-empty"]')).toHaveSize(1);
   });
 
   it('plafonne les cases pleines au maximum', () => {
     const el = render(5, 2);
-    expect(el.querySelectorAll('[data-testid="freeze-cell-full"]').length).toBe(2);
-    expect(el.querySelectorAll('[data-testid="freeze-cell-empty"]').length).toBe(0);
+    expect(el.querySelectorAll('[data-testid="freeze-cell-full"]')).toHaveSize(2);
+    expect(el.querySelectorAll('[data-testid="freeze-cell-empty"]')).toHaveSize(0);
   });
 
   it('aucune case pour un invité (max 0)', () => {
     const el = render(0, 0);
-    expect(el.querySelectorAll('[data-testid^="freeze-cell"]').length).toBe(0);
+    expect(el.querySelectorAll('[data-testid^="freeze-cell"]')).toHaveSize(0);
   });
 
   it('fillLast anime uniquement la dernière case pleine', () => {
     const el = render(2, 2, { fillLast: true });
     const animated = el.querySelectorAll('[data-anim]');
-    expect(animated.length).toBe(1);
+    expect(animated).toHaveSize(1);
     const cells = el.querySelectorAll('[data-testid="freeze-cell-full"]');
     expect(cells[1].querySelector('[data-anim]')).not.toBeNull();
     expect(cells[0].querySelector('[data-anim]')).toBeNull();
@@ -46,7 +46,7 @@ describe('FreezeCellsComponent', () => {
 
   it('sans fillLast, aucune animation', () => {
     const el = render(2, 2);
-    expect(el.querySelectorAll('[data-anim]').length).toBe(0);
+    expect(el.querySelectorAll('[data-anim]')).toHaveSize(0);
   });
 
   it('dimensionne les cases selon la taille', () => {
