@@ -35,6 +35,9 @@ public sealed class PlayerConfiguration : IEntityTypeConfiguration<Player>
         builder.Property(p => p.LastPlayedDate)
             .HasColumnType("date");
 
+        builder.Property(p => p.StreakFreezes)
+            .HasDefaultValue(0);
+
         builder.Property(p => p.IsDeleted)
             .HasDefaultValue(false);
 

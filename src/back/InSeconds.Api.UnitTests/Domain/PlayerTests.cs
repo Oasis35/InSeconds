@@ -6,8 +6,26 @@ namespace InSeconds.Api.UnitTests.Domain;
 
 public sealed class PlayerTests
 {
+    private static readonly StreakRules Rules = new(FreezeEveryDays: 7, FreezeMax: 2, LostNudgeMinDays: 2);
+    private static readonly DateOnly Today = DateOnly.FromDateTime(DateTime.UtcNow);
+
     private static Player BuildPlayer() =>
         Player.CreateGuest(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow);
+
+    private static Player BuildLinkedPlayer(int streak, int lastPlayedDaysAgo, int freezes)
+    {
+        var player = BuildPlayer();
+        player.LinkToAccount("player@example.com", "PlayerPseudo");
+        player.RestoreStreakForTesting(streak, Today.AddDays(-lastPlayedDaysAgo), freezes);
+        return player;
+    }
+
+    private static Player BuildGuestPlayer(int streak, int lastPlayedDaysAgo)
+    {
+        var player = BuildPlayer();
+        player.RestoreStreakForTesting(streak, Today.AddDays(-lastPlayedDaysAgo));
+        return player;
+    }
 
     // ---------------------------------------------------------------------------
     // CreateGuest
@@ -41,9 +59,9 @@ public sealed class PlayerTests
     {
         var player = BuildPlayer();
         var challengeDate = DateOnly.FromDateTime(DateTime.UtcNow);
-        player.RecordChallengeCompletion(challengeDate.AddDays(-1)); // streak = 1, LastPlayedDate = J-1
+        player.RecordChallengeCompletion(challengeDate.AddDays(-1), Rules); // streak = 1, LastPlayedDate = J-1
 
-        player.RecordChallengeCompletion(challengeDate);
+        player.RecordChallengeCompletion(challengeDate, Rules);
 
         player.CurrentStreak.Should().Be(2);
         player.LastPlayedDate.Should().Be(challengeDate);
@@ -54,9 +72,9 @@ public sealed class PlayerTests
     {
         var player = BuildPlayer();
         var challengeDate = DateOnly.FromDateTime(DateTime.UtcNow);
-        player.RecordChallengeCompletion(challengeDate.AddDays(-5)); // streak = 1, LastPlayedDate = J-5
+        player.RecordChallengeCompletion(challengeDate.AddDays(-5), Rules); // streak = 1, LastPlayedDate = J-5
 
-        player.RecordChallengeCompletion(challengeDate); // trou de plusieurs jours
+        player.RecordChallengeCompletion(challengeDate, Rules); // trou de plusieurs jours
 
         player.CurrentStreak.Should().Be(1);
         player.LastPlayedDate.Should().Be(challengeDate);
@@ -68,7 +86,7 @@ public sealed class PlayerTests
         var player = BuildPlayer();
         var challengeDate = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        player.RecordChallengeCompletion(challengeDate);
+        player.RecordChallengeCompletion(challengeDate, Rules);
 
         player.CurrentStreak.Should().Be(1);
         player.LastPlayedDate.Should().Be(challengeDate);
@@ -82,10 +100,181 @@ public sealed class PlayerTests
         var player = BuildPlayer();
         var challengeDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1);
 
-        player.RecordChallengeCompletion(challengeDate);
+        player.RecordChallengeCompletion(challengeDate, Rules);
 
         player.LastPlayedDate.Should().Be(challengeDate);
         player.LastPlayedDate.Should().NotBe(DateOnly.FromDateTime(DateTime.UtcNow));
+    }
+
+    // ---------------------------------------------------------------------------
+    // RecordChallengeCompletion — gel de série
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public void RecordChallengeCompletion_LinkedWithOneMissedDayAndOneFreeze_ConsumesFreezeAndContinues()
+    {
+        var player = BuildLinkedPlayer(streak: 12, lastPlayedDaysAgo: 2, freezes: 1);
+
+        var result = player.RecordChallengeCompletion(Today, Rules);
+
+        player.CurrentStreak.Should().Be(13);
+        player.StreakFreezes.Should().Be(0);
+        result.FreezesUsed.Should().Be(1);
+        result.FreezeEarned.Should().BeFalse();
+    }
+
+    [Fact]
+    public void RecordChallengeCompletion_LinkedWithTwoMissedDaysAndTwoFreezes_ConsumesBoth()
+    {
+        var player = BuildLinkedPlayer(streak: 5, lastPlayedDaysAgo: 3, freezes: 2);
+
+        var result = player.RecordChallengeCompletion(Today, Rules);
+
+        player.CurrentStreak.Should().Be(6);
+        player.StreakFreezes.Should().Be(0);
+        result.FreezesUsed.Should().Be(2);
+    }
+
+    [Fact]
+    public void RecordChallengeCompletion_LinkedWithMoreMissedDaysThanFreezes_ResetsAndKeepsFreezes()
+    {
+        var player = BuildLinkedPlayer(streak: 5, lastPlayedDaysAgo: 3, freezes: 1);
+
+        var result = player.RecordChallengeCompletion(Today, Rules);
+
+        player.CurrentStreak.Should().Be(1);
+        player.StreakFreezes.Should().Be(1);
+        result.FreezesUsed.Should().Be(0);
+    }
+
+    [Fact]
+    public void RecordChallengeCompletion_GuestWithMissedDay_NeverUsesFreeze()
+    {
+        var player = BuildGuestPlayer(streak: 5, lastPlayedDaysAgo: 2);
+
+        var result = player.RecordChallengeCompletion(Today, Rules);
+
+        player.CurrentStreak.Should().Be(1);
+        result.FreezesUsed.Should().Be(0);
+        player.StreakFreezes.Should().Be(0);
+    }
+
+    [Fact]
+    public void RecordChallengeCompletion_LinkedReachingMultipleOfSeven_EarnsFreeze()
+    {
+        var player = BuildLinkedPlayer(streak: 13, lastPlayedDaysAgo: 1, freezes: 1);
+
+        var result = player.RecordChallengeCompletion(Today, Rules);
+
+        player.CurrentStreak.Should().Be(14);
+        player.StreakFreezes.Should().Be(2);
+        result.FreezeEarned.Should().BeTrue();
+    }
+
+    [Fact]
+    public void RecordChallengeCompletion_LinkedReachingMultipleOfSevenWithFullStock_EarnsNothing()
+    {
+        var player = BuildLinkedPlayer(streak: 13, lastPlayedDaysAgo: 1, freezes: 2);
+
+        var result = player.RecordChallengeCompletion(Today, Rules);
+
+        player.StreakFreezes.Should().Be(2);
+        result.FreezeEarned.Should().BeFalse();
+    }
+
+    [Fact]
+    public void RecordChallengeCompletion_GuestReachingMultipleOfSeven_EarnsNothing()
+    {
+        var player = BuildGuestPlayer(streak: 6, lastPlayedDaysAgo: 1);
+
+        var result = player.RecordChallengeCompletion(Today, Rules);
+
+        player.CurrentStreak.Should().Be(7);
+        player.StreakFreezes.Should().Be(0);
+        result.FreezeEarned.Should().BeFalse();
+    }
+
+    // ---------------------------------------------------------------------------
+    // GetStreakView
+    // ---------------------------------------------------------------------------
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public void GetStreakView_WhenNoMissedDay_IsActive(int lastPlayedDaysAgo)
+    {
+        var player = BuildLinkedPlayer(streak: 12, lastPlayedDaysAgo, freezes: 2);
+
+        var view = player.GetStreakView(Today, Rules);
+
+        view.Status.Should().Be(StreakStatus.Active);
+        view.Streak.Should().Be(12);
+        view.Freezes.Should().Be(2);
+        view.MaxFreezes.Should().Be(2);
+        view.MissedDays.Should().Be(0);
+        view.NextFreezeInDays.Should().Be(2);
+        view.LostStreak.Should().BeNull();
+    }
+
+    [Fact]
+    public void GetStreakView_LinkedWithMissedDaysCoveredByFreezes_IsProtected()
+    {
+        var player = BuildLinkedPlayer(streak: 12, lastPlayedDaysAgo: 2, freezes: 1);
+
+        var view = player.GetStreakView(Today, Rules);
+
+        view.Status.Should().Be(StreakStatus.Protected);
+        view.Streak.Should().Be(12);
+        view.MissedDays.Should().Be(1);
+    }
+
+    [Fact]
+    public void GetStreakView_LinkedWithMissedDaysNotCovered_IsBrokenWithoutLostStreak()
+    {
+        var player = BuildLinkedPlayer(streak: 12, lastPlayedDaysAgo: 4, freezes: 2);
+
+        var view = player.GetStreakView(Today, Rules);
+
+        view.Status.Should().Be(StreakStatus.Broken);
+        view.Streak.Should().Be(0);
+        view.LostStreak.Should().BeNull();
+        view.NextFreezeInDays.Should().Be(7);
+    }
+
+    [Fact]
+    public void GetStreakView_GuestWithMissedDayAboveThreshold_ExposesLostStreak()
+    {
+        var player = BuildGuestPlayer(streak: 6, lastPlayedDaysAgo: 2);
+
+        var view = player.GetStreakView(Today, Rules);
+
+        view.Status.Should().Be(StreakStatus.Broken);
+        view.Streak.Should().Be(0);
+        view.LostStreak.Should().Be(6);
+        view.Freezes.Should().Be(0);
+        view.MaxFreezes.Should().Be(0);
+        view.NextFreezeInDays.Should().BeNull();
+    }
+
+    [Fact]
+    public void GetStreakView_GuestWithLostStreakBelowThreshold_HasNoLostStreak()
+    {
+        var player = BuildGuestPlayer(streak: 1, lastPlayedDaysAgo: 3);
+
+        var view = player.GetStreakView(Today, Rules);
+
+        view.Status.Should().Be(StreakStatus.Broken);
+        view.LostStreak.Should().BeNull();
+    }
+
+    [Fact]
+    public void GetStreakView_WhenNeverPlayed_IsActiveAtZero()
+    {
+        var view = BuildPlayer().GetStreakView(Today, Rules);
+
+        view.Status.Should().Be(StreakStatus.Active);
+        view.Streak.Should().Be(0);
+        view.LastPlayedDate.Should().BeNull();
     }
 
     // ---------------------------------------------------------------------------
@@ -102,6 +291,16 @@ public sealed class PlayerTests
         player.IsGuest.Should().BeFalse();
         player.Email.Should().Be("player@example.com");
         player.Pseudo.Should().Be("PlayerPseudo");
+    }
+
+    [Fact]
+    public void LinkToAccount_GrantsSignupFreeze()
+    {
+        var player = BuildPlayer();
+
+        player.LinkToAccount("player@example.com", "PlayerPseudo");
+
+        player.StreakFreezes.Should().Be(Player.SignupFreezeGift);
     }
 
     [Fact]

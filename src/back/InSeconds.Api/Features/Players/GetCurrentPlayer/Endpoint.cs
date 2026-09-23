@@ -1,5 +1,6 @@
 using InSeconds.Api.Common.Auth;
 using InSeconds.Api.Common.RateLimiting;
+using InSeconds.Api.Common.Streak;
 using InSeconds.Api.Domain;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -34,22 +35,39 @@ public static class GetCurrentPlayerEndpoint
             }
 
             if (playerId is null)
-                return Results.Ok(new GetCurrentPlayerResponse(Guid.Empty, true, null, null, 0, 0, false));
+                return Results.Ok(new GetCurrentPlayerResponse(Guid.Empty, true, null, null, 0, 0, false, StreakDto.None));
 
             var player = await db.Players
                 .AsNoTracking()
                 .Where(p => p.Id == playerId)
-                .Select(p => new GetCurrentPlayerResponse(
+                .Select(p => new
+                {
                     p.Id,
                     p.IsGuest,
                     p.Email,
                     p.Pseudo,
                     p.CurrentStreak,
-                    p.GameSessions.Count(s => s.Status == SessionStatus.Completed),
-                    p.IsAdmin))
+                    p.LastPlayedDate,
+                    p.StreakFreezes,
+                    GamesPlayed = p.GameSessions.Count(s => s.Status == SessionStatus.Completed),
+                    p.IsAdmin,
+                })
                 .FirstAsync(ct);
 
-            return Results.Ok(player);
+            var rules = await StreakRulesReader.LoadAsync(db, ct);
+            var streak = StreakDto.From(Player.ComputeStreakView(
+                player.IsGuest, player.CurrentStreak, player.LastPlayedDate, player.StreakFreezes,
+                DateOnly.FromDateTime(DateTime.UtcNow), rules));
+
+            return Results.Ok(new GetCurrentPlayerResponse(
+                player.Id,
+                player.IsGuest,
+                player.Email,
+                player.Pseudo,
+                streak.Streak,
+                player.GamesPlayed,
+                player.IsAdmin,
+                streak));
         })
         .WithName("GetCurrentPlayer")
         .WithTags("Players")
@@ -63,4 +81,5 @@ public static class GetCurrentPlayerEndpoint
     }
 }
 
-public sealed record GetCurrentPlayerResponse(Guid PlayerId, bool IsGuest, string? Email, string? Pseudo, int CurrentStreak, int GamesPlayed, bool IsAdmin);
+// CurrentStreak = série effective (0 si perdue) ; Streak = détail série + gels (rangée « Gels » du profil).
+public sealed record GetCurrentPlayerResponse(Guid PlayerId, bool IsGuest, string? Email, string? Pseudo, int CurrentStreak, int GamesPlayed, bool IsAdmin, StreakDto Streak);

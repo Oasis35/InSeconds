@@ -159,6 +159,38 @@ public sealed class StartSessionHandlerTests
     }
 
     [Fact]
+    public async Task Handle_WhenStreakBrokenSinceLastGame_ReturnsEffectiveStreakZero()
+    {
+        // Série stockée figée à 5, dernier défi il y a 3 jours (invité, sans gel) → série effective 0.
+        await using var db = CreateDbContext();
+        var player = BuildPlayer();
+        player.RestoreStreakForTesting(5, DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-3));
+        db.Players.Add(player);
+        db.DailyChallenges.Add(BuildTodayChallenge(id: 1, trackCount: 5));
+        await db.SaveChangesAsync();
+
+        var result = await CreateHandler(db).Handle(new StartSessionCommand(PlayerId), CancellationToken.None);
+
+        AssertOk<StartSessionResponse>(result).Value!.CurrentStreak.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Handle_WhenStreakProtectedByFreeze_ReturnsStoredStreak()
+    {
+        await using var db = CreateDbContext();
+        var player = BuildPlayer();
+        player.LinkToAccount("player@example.com", "PlayerPseudo");
+        player.RestoreStreakForTesting(12, DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-2), streakFreezes: 1);
+        db.Players.Add(player);
+        db.DailyChallenges.Add(BuildTodayChallenge(id: 1, trackCount: 5));
+        await db.SaveChangesAsync();
+
+        var result = await CreateHandler(db).Handle(new StartSessionCommand(PlayerId), CancellationToken.None);
+
+        AssertOk<StartSessionResponse>(result).Value!.CurrentStreak.Should().Be(12);
+    }
+
+    [Fact]
     public async Task Handle_WhenSessionCompleted_Returns409()
     {
         // Arrange

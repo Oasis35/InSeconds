@@ -10,6 +10,10 @@ public sealed class AppSettings
     public int                     TrackCooldownDays       { get; set; } = 30;
     public decimal[]               HintUnlockDurationsSeconds { get; set; } = [5m, 10m];
     public Dictionary<int,int>     HintPenaltyPercent      { get; set; } = new() { [1] = 30, [2] = 60 };
+    // Gel de série — relus à chaud par Common/Streak/StreakRulesReader (valeurs ci-dessous = secours).
+    public int                     StreakFreezeEveryDays   { get; set; } = 7;
+    public int                     StreakFreezeMax         { get; set; } = 2;
+    public int                     StreakLostNudgeMinDays  { get; set; } = 2;
 
     public string BuildCoverUrl(string? hash) =>
         hash is null ? string.Empty : CoverUrlTemplate.Replace("{hash}", hash);

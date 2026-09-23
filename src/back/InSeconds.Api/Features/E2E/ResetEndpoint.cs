@@ -157,6 +157,32 @@ public static class E2EResetEndpoint
         .WithName("E2ELastEmailChangeLink")
         .WithTags("E2E");
 
+        // Pose directement l'état de série d'un joueur (Testing-only, admin requis) pour tester
+        // les états du gel de série (protégée, perdue, palier) sans simuler des jours de jeu.
+        // Le PlayerId du navigateur s'obtient via GET /api/players/me avec son cookie.
+        routes.MapPost("/api/e2e/set-streak", async (
+            HttpContext ctx,
+            ApplicationDbContext db,
+            SetStreakRequest request,
+            CancellationToken ct = default) =>
+        {
+            if (!ctx.GetPlayerIsAdmin())
+                return Results.Unauthorized();
+
+            var player = await db.Players.SingleOrDefaultAsync(p => p.Id == request.PlayerId, ct);
+            if (player is null)
+                return Results.NotFound();
+
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            DateOnly? lastPlayedDate = request.LastPlayedDaysAgo is { } daysAgo ? today.AddDays(-daysAgo) : null;
+            player.RestoreStreakForTesting(request.Streak, lastPlayedDate, request.Freezes);
+            await db.SaveChangesAsync(ct);
+
+            return Results.Ok();
+        })
+        .WithName("E2ESetStreak")
+        .WithTags("E2E");
+
         return routes;
     }
 
@@ -326,17 +352,32 @@ public static class E2EResetEndpoint
     // Development uniquement (jamais Testing/Production, cf. Program.cs) : comptes de
     // test déjà liés, prêts à l'emploi via /api/auth/dev-login sans passer par un vrai
     // envoi d'email.
+    // Chaque compte montre un état différent du gel de série (sans sessions associées, même
+    // approche que le joueur dev) : User1 stock plein, User2 série protégée (« Bon retour ! »),
+    // User3 à un jour du palier (« +1 gel gagné ! » au prochain défi terminé).
     public static void SeedDevOnlyAccounts(ApplicationDbContext db)
     {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        (int Streak, int LastPlayedDaysAgo, int Freezes)[] states =
+        [
+            (12, 1, 2),
+            (12, 2, 1),
+            (6, 1, 1),
+        ];
+
         for (var i = 1; i <= 3; i++)
         {
             var email = $"user{i}@dev.local";
 
             var player = Player.CreateGuest(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow);
             player.LinkToAccount(email, $"User{i}");
+            var (streak, daysAgo, freezes) = states[i - 1];
+            player.RestoreStreakForTesting(streak, today.AddDays(-daysAgo), freezes);
             db.Players.Add(player);
         }
 
         db.SaveChanges();
     }
 }
+
+public sealed record SetStreakRequest(Guid PlayerId, int Streak, int? LastPlayedDaysAgo, int Freezes);

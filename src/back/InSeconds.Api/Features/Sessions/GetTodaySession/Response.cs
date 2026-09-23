@@ -1,3 +1,5 @@
+using InSeconds.Api.Common.Streak;
+
 namespace InSeconds.Api.Features.Sessions.GetTodaySession;
 
 /// <summary>
@@ -11,5 +13,6 @@ namespace InSeconds.Api.Features.Sessions.GetTodaySession;
 /// </param>
 /// <param name="TracksCount">Nombre de morceaux du défi (0 si <c>no_challenge</c>).</param>
 /// <param name="CompletedCount">Nombre de morceaux déjà répondus — non nul uniquement si <c>resumable</c>.</param>
-/// <param name="CurrentStreak">Streak du joueur courant (0 si aucun cookie / joueur jamais créé) — pour le badge de l'écran d'accueil.</param>
-public sealed record GetTodaySessionResponse(string State, int TracksCount, int CompletedCount, int CurrentStreak);
+/// <param name="CurrentStreak">Série effective du joueur courant (0 si aucun cookie / joueur jamais créé, ou série perdue) — pour le badge de l'écran d'accueil.</param>
+/// <param name="Streak">Détail de la série et des gels (gélule du header, accueil « Bon retour ! », toast invité « série perdue »).</param>
+public sealed record GetTodaySessionResponse(string State, int TracksCount, int CompletedCount, int CurrentStreak, StreakDto Streak);

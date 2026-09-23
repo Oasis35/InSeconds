@@ -77,6 +77,30 @@ public sealed class SettingConfiguration : IEntityTypeConfiguration<Setting>
                 Value = "1:30,2:60",
                 Description = "Pénalité de score (%) appliquée selon le niveau d'indice révélé (format niveau:pourcentage, séparés par virgule).",
                 UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new Setting
+            {
+                Id = 10,
+                Key = "StreakFreezeEveryDays",
+                Value = "7",
+                Description = "Gel de série : +1 gel à chaque multiple de ce nombre de jours de série (comptes connectés).",
+                UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new Setting
+            {
+                Id = 11,
+                Key = "StreakFreezeMax",
+                Value = "2",
+                Description = "Gel de série : nombre maximum de gels en stock.",
+                UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new Setting
+            {
+                Id = 12,
+                Key = "StreakLostNudgeMinDays",
+                Value = "2",
+                Description = "Série minimale (jours) perdue par un invité pour afficher l'incitation à créer un compte.",
+                UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             }
         );
     }

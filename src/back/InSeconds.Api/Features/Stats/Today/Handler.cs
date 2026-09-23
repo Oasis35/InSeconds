@@ -1,5 +1,7 @@
 using InSeconds.Api.Common.Settings;
 using InSeconds.Api.Common.Stats;
+using InSeconds.Api.Common.Streak;
+using InSeconds.Api.Domain;
 using InSeconds.Api.Common.Text;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -20,10 +22,12 @@ public sealed class TodayStatsHandler(
             .FirstOrDefaultAsync(c => c.Date == today, ct);
 
         if (challenge is null)
-            return Results.Ok(new TodayStatsResponse(null, 0, 0, 0, []));
+            return Results.Ok(new TodayStatsResponse(null, 0, 0, 0, [], 0, false));
 
         int? yourScore = null;
         int currentStreak = 0;
+        int freezesUsed = 0;
+        bool freezeMilestone = false;
         Dictionary<int, (bool ArtistCorrect, bool TitleCorrect, decimal ListenedDuration, int Score)> playerAnswersByPosition = [];
         if (playerId.HasValue)
         {
@@ -32,7 +36,7 @@ public sealed class TodayStatsHandler(
                 .Where(s => s.DailyChallengeId == challenge.Id
                          && s.PlayerId == playerId.Value
                          && s.Status == Domain.SessionStatus.Completed)
-                .Select(s => new { s.TotalScore, s.Id })
+                .Select(s => new { s.TotalScore, s.Id, s.FreezesUsed, s.FreezeEarned })
                 .FirstOrDefaultAsync(ct);
 
             if (playerSession is not null)
@@ -55,11 +59,31 @@ public sealed class TodayStatsHandler(
                     a => (a.ArtistCorrect, a.TitleCorrect, a.ListenedDurationSeconds, a.Score));
             }
 
-            currentStreak = await db.Players
+            var player = await db.Players
                 .AsNoTracking()
                 .Where(p => p.Id == playerId.Value)
-                .Select(p => p.CurrentStreak)
+                .Select(p => new { p.IsGuest, p.CurrentStreak, p.LastPlayedDate, p.StreakFreezes })
                 .FirstOrDefaultAsync(ct);
+
+            if (player is not null)
+            {
+                var rules = await StreakRulesReader.LoadAsync(db, ct);
+                currentStreak = Player.ComputeStreakView(
+                    player.IsGuest, player.CurrentStreak, player.LastPlayedDate, player.StreakFreezes, today, rules).Streak;
+
+                if (playerSession is not null)
+                {
+                    freezesUsed = playerSession.FreezesUsed;
+                    // Compte connecté : gel réellement gagné par la partie du jour. Invité : palier
+                    // atteint (« Tu aurais gagné un gel ! ») — il n'a jamais de stock.
+                    freezeMilestone = player.IsGuest
+                        ? rules.FreezeEveryDays > 0
+                          && player.LastPlayedDate == today
+                          && player.CurrentStreak > 0
+                          && player.CurrentStreak % rules.FreezeEveryDays == 0
+                        : playerSession.FreezeEarned;
+                }
+            }
         }
 
         // Queries parallèles : un DbContext dédié par query (un contexte ne supporte
@@ -144,7 +168,7 @@ public sealed class TodayStatsHandler(
             );
         }).ToList();
 
-        return Results.Ok(new TodayStatsResponse(yourScore, medianResult, totalPlayers, currentStreak, tracks));
+        return Results.Ok(new TodayStatsResponse(yourScore, medianResult, totalPlayers, currentStreak, tracks, freezesUsed, freezeMilestone));
     }
 
     private static int ComputeMedian(List<int> values)

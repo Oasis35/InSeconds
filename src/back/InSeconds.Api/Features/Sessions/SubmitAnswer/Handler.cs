@@ -2,6 +2,7 @@ using InSeconds.Api.Common.Scoring;
 using InSeconds.Api.Common.Sessions;
 using InSeconds.Api.Common.Settings;
 using InSeconds.Api.Common.Stats;
+using InSeconds.Api.Common.Streak;
 using InSeconds.Api.Common.Text;
 using InSeconds.Api.Domain;
 using InSeconds.Api.Infrastructure.Persistence;
@@ -177,7 +178,8 @@ public sealed class SubmitAnswerHandler(
             .FirstAsync(ct);
 
         var player = await db.Players.FirstAsync(p => p.Id == playerId, ct);
-        player.RecordChallengeCompletion(challengeDate);
+        var rules = await StreakRulesReader.LoadAsync(db, ct);
+        session.RecordStreakEffect(player.RecordChallengeCompletion(challengeDate, rules));
     }
 
     // Combine les stats déjà en base avec la réponse courante (pas encore persistée au
