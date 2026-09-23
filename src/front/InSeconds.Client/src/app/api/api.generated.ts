@@ -2128,6 +2128,7 @@ export interface StreakDto {
     streak: number;
     freezes: number;
     maxFreezes: number;
+    freezeEveryDays: number;
     nextFreezeInDays: number | undefined;
     missedDays: number;
     lostStreak: number | undefined;

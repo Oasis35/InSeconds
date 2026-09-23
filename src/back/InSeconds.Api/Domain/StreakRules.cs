@@ -21,6 +21,7 @@ public enum StreakStatus
 
 /// <summary>État de la série vu depuis <c>today</c>, calculé sans requête (cf. <see cref="Player.GetStreakView"/>).</summary>
 /// <param name="Streak">Série effective (0 si <see cref="StreakStatus.Broken"/>).</param>
+/// <param name="FreezeEveryDays">Rythme de gain d'un gel (0 pour un invité).</param>
 /// <param name="NextFreezeInDays">Jours de série restants avant le prochain gel (null pour un invité).</param>
 /// <param name="MissedDays">Jours manqués entre le dernier défi joué et aujourd'hui (aujourd'hui exclu).</param>
 /// <param name="LostStreak">Série perdue par un invité, si elle atteint le seuil d'incitation (sinon null).</param>
@@ -29,6 +30,7 @@ public sealed record StreakView(
     int Streak,
     int Freezes,
     int MaxFreezes,
+    int FreezeEveryDays,
     int? NextFreezeInDays,
     int MissedDays,
     int? LostStreak,

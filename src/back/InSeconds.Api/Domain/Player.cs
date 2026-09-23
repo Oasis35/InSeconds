@@ -101,6 +101,7 @@ public sealed class Player
             streak,
             isGuest ? 0 : streakFreezes,
             isGuest ? 0 : rules.FreezeMax,
+            isGuest ? 0 : rules.FreezeEveryDays,
             nextFreezeInDays,
             missed,
             lostStreak,
