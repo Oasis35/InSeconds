@@ -56,6 +56,19 @@ export class ApiTestClient {
     if (!res.ok && res.status !== 409) throw new Error(`generate-today failed: ${res.status}`);
   }
 
+  /**
+   * Pose directement l'état de série d'un joueur (Testing-only) — pour tester les états du
+   * gel de série sans simuler des jours de jeu. `lastPlayedDaysAgo` : 1 = hier.
+   */
+  async setStreak(playerId: string, state: { streak: number; lastPlayedDaysAgo: number | null; freezes: number }): Promise<void> {
+    const res = await fetch(`${BASE}/api/e2e/set-streak`, {
+      method: 'POST',
+      headers: ADMIN_HEADERS,
+      body: JSON.stringify({ playerId, ...state }),
+    });
+    if (!res.ok) throw new Error(`set-streak failed: ${res.status}`);
+  }
+
   /** Complète la partie du joueur identifié par son cookie (extrait depuis la page Playwright). */
   async completeSessionAs(cookieHeader: string): Promise<void> {
     const headers = { 'Content-Type': 'application/json', Cookie: cookieHeader };
