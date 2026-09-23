@@ -1,9 +1,11 @@
-<div class="fixed inset-0 flex items-end justify-center" style="background:var(--overlay-dark);z-index:50" (click)="closed.emit()">
-  <div role="dialog" aria-modal="true" data-testid="streak-sheet" [attr.data-variant]="variant()"
-       class="w-full max-w-[430px] box-border flex flex-col gap-[18px] rounded-t-3xl"
+<div class="fixed inset-0 flex items-end justify-center" style="z-index:50">
+  <!-- Fond cliquable = <button> (accessible clavier) placé derrière le panneau -->
+  <button type="button" (click)="closed.emit()" [attr.aria-label]="'streakFreeze.sheet.close' | translate"
+          class="absolute inset-0 w-full h-full cursor-default" style="background:var(--overlay-dark)"></button>
+  <div data-testid="streak-sheet" [attr.data-variant]="variant()"
+       class="relative w-full max-w-[430px] box-border flex flex-col gap-[18px] rounded-t-3xl"
        data-anim
-       style="padding:14px 20px 24px;background:rgb(var(--rgb-panel) / 0.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid rgb(var(--rgb-accent-2) / 0.6);animation:gel-toast .4s cubic-bezier(.2,.8,.2,1) both"
-       (click)="$event.stopPropagation()">
+       style="padding:14px 20px 24px;background:rgb(var(--rgb-panel) / 0.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid rgb(var(--rgb-accent-2) / 0.6);animation:gel-toast .4s cubic-bezier(.2,.8,.2,1) both">
     <div class="mx-auto rounded-full" style="width:40px;height:4px;background:var(--text-faint)"></div>
 
     @switch (variant()) {
@@ -74,7 +76,7 @@
           <strong class="font-semibold" style="color:var(--text-hi)">{{ 'streakFreeze.sheet.protectedUse.' + missedKey() | translate: { missed: streak().missedDays } }}</strong>
         </p>
         <div class="flex flex-col gap-2.5">
-          <button type="button" (click)="play.emit()"
+          <button type="button" (click)="playNow.emit()"
                   class="w-full rounded-full font-bold uppercase cursor-pointer"
                   style="min-height:50px;font-family:var(--font-display);font-size:15px;letter-spacing:.08em;color:var(--text-on-primary);background:var(--gradient-primary);box-shadow:var(--glow-primary)">
             {{ 'streakFreeze.sheet.playNow' | translate }}

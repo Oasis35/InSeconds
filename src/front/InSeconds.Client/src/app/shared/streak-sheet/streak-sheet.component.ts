@@ -32,7 +32,7 @@ export class StreakSheetComponent {
   readonly linked = input.required<boolean>();
 
   readonly closed = output<void>();
-  readonly play = output<void>();
+  readonly playNow = output<void>();
   readonly signup = output<void>();
 
   protected readonly variant = computed<StreakSheetVariant>(() => {

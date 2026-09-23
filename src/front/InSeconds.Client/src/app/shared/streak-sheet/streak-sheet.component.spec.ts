@@ -93,7 +93,7 @@ describe('StreakSheetComponent', () => {
     (root.querySelector('[data-testid="streak-sheet"]') as HTMLElement).click();
     expect(spy).not.toHaveBeenCalled();
 
-    (root.firstElementChild as HTMLElement).click();
+    (root.querySelector('button[aria-label]') as HTMLElement).click();
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
