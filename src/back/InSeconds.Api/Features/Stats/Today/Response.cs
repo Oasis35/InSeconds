@@ -7,7 +7,12 @@ public sealed record TodayStatsResponse(
     int MedianScore,
     int TotalPlayers,
     int CurrentStreak,
-    IReadOnlyList<TrackStat> Tracks);
+    IReadOnlyList<TrackStat> Tracks,
+    // Gels consommés par la partie du jour (toast « 1 gel a sauvé ta série »).
+    int FreezesUsed,
+    // Connecté : gel gagné par la partie du jour (« +1 gel gagné ! ») ; invité : palier de
+    // gel atteint (« Tu aurais gagné un gel ! »).
+    bool FreezeMilestone);
 
 public sealed record TrackStat(
     int Position,

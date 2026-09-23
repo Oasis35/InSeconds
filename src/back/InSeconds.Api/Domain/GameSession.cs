@@ -20,6 +20,11 @@ public sealed class GameSession
     // vérité serveur pour la pénalité de score — jamais envoyé par le client à SubmitAnswer.
     public int CurrentTrackHintLevelUsed { get; private set; }
 
+    // Effet de la complétion sur les gels de série (cf. Player.RecordChallengeCompletion) —
+    // relu par GET /api/stats/today pour les toasts « 1 gel a sauvé ta série » / « +1 gel gagné ».
+    public int FreezesUsed { get; private set; }
+    public bool FreezeEarned { get; private set; }
+
     public Player Player { get; set; } = null!;
     public DailyChallenge DailyChallenge { get; set; } = null!;
     public ICollection<GameSessionAnswer> Answers { get; set; } = [];
@@ -46,6 +51,12 @@ public sealed class GameSession
     {
         Status = SessionStatus.Completed;
         CompletedAt = now;
+    }
+
+    public void RecordStreakEffect(StreakCompletionResult result)
+    {
+        FreezesUsed = result.FreezesUsed;
+        FreezeEarned = result.FreezeEarned;
     }
 
     public void Abandon(DateTime now)

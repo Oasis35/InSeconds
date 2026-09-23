@@ -31,25 +31,26 @@ export class GamePage {
     this.startButton           = page.getByRole('button', { name: 'Commencer' });
     this.noChallengeHeading    = page.getByText("Pas de défi aujourd'hui");
     this.alreadyPlayedHeading  = page.getByText('Déjà joué aujourd\'hui');
-    this.abandonedHeading      = page.getByText("Tu as abandonné le défi aujourd'hui");
+    this.abandonedHeading      = page.getByText('Partie abandonnée');
     this.countdown             = page.getByText(/^\d{2}:\d{2}:\d{2}$/);
     this.finalScoreLabel       = page.getByText('Score final');
     this.shareButton           = page.getByRole('button', { name: /Partager mon score/i });
     this.shareCopiedButton     = page.getByRole('button', { name: /Copié/i });
     this.retryButton           = page.getByRole('button', { name: 'Réessayer' });
-    // Scopé sur le <h2> de l'écran reprise : le titre de la modale de sortie
-    // porte le même texte "Partie en cours" mais est rendu dans un <p>.
-    this.resumePromptHeading   = page.getByRole('heading', { name: 'Partie en cours' });
+    this.resumePromptHeading   = page.getByRole('heading', { name: 'Partie en pause' });
     this.resumeButton          = page.getByRole('button', { name: 'Reprendre' });
-    this.abandonButton         = page.getByRole('button', { name: 'Abandonner' });
-    this.abandonConfirmButton  = page.getByRole('button', { name: 'Oui, abandonner' });
+    this.abandonButton         = page.getByRole('button', { name: 'Abandonner', exact: true }).first();
+    // Même libellé que le bouton d'ouverture (header en partie) : on cible la confirmation dans son
+    // conteneur — panneau de confirmation en cours de partie, encart de l'écran de reprise sinon.
+    this.abandonConfirmButton  = page.locator('app-confirm-sheet, app-resume-screen')
+      .getByRole('button', { name: 'Abandonner', exact: true });
     this.leaveConfirmButton    = page.getByRole('button', { name: 'Quitter quand même' });
     this.leaveCancelButton     = page.getByRole('button', { name: 'Continuer à jouer' });
     this.serviceDownHeading    = page.getByRole('heading', { name: 'Service indisponible' });
     this.showTracksButton      = page.getByRole('button', { name: /Voir les morceaux/i });
-    // Le bouton du score porte un aria-label (« Voir l'histogramme… ») qui prime sur le texte « +N ».
+    // Le bouton du score porte un aria-label (« Voir la répartition des temps ») qui prime sur le texte « +N ».
     this.trackScoreButtons     = page.locator('app-track-results-list')
-      .getByRole('button', { name: /histogramme des temps de réponse/i });
+      .getByRole('button', { name: /répartition des temps/i });
     this.trackChip             = page.locator('app-track-results-list').getByText(/✓ Artiste|✗ Artiste/).first();
     this.guessTimeChart        = page.getByTestId('guess-time-chart');
   }

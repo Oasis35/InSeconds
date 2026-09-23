@@ -20,7 +20,7 @@
 - Le scoring est entièrement côté serveur — impossible de tricher côté client
 - Mode guest : joue sans créer de compte, hors classement
 - Comptes utilisateurs optionnels (inscription ouverte à tous, connexion sans mot de passe par lien magique) — conserve historique/streak entre appareils ; le jeu guest reste ouvert à tous
-- Streak quotidien affiché sur l'écran récap final
+- Streak quotidien affiché sur l'écran récap final, avec des gels de série pour les comptes connectés (1 offert à l'inscription, +1 tous les 7 jours, 2 max, utilisés automatiquement sur un jour manqué)
 - Partage de score en format emoji Wordle (copie dans le presse-papier)
 - Disponible en français et en anglais — détecté automatiquement depuis le navigateur, changeable à tout moment depuis le pied de page (choix sauvegardé en localStorage)
 - Page politique de confidentialité sur `/confidentialite` (alias `/privacy`)
@@ -135,7 +135,7 @@ cd src/back
 dotnet test InSeconds.Api.IntegrationTests
 ```
 
-Nécessite Docker (Testcontainers démarre un vrai conteneur PostgreSQL). **162 tests** couvrant `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (Dashboard : KPIs, activité, répartition joueurs) + `ChallengeStats` (`GET /api/admin/challenge-stats`, endpoint « Stats par défi » scindé du Dashboard — dont la liste des joueurs par défi), `Players` (`GET /api/players/me`), `PlayerSoftDelete`, `SessionEdgeCases` (expiry paresseuse, streak — dont défi de la veille terminé après minuit UTC, submit sur session abandonnée, UpdateListening anti-triche), `ChallengeGeneration`, `LazyChallengeGeneration` (régénération du défi à la volée), `Admin/Tracks`, `Admin/Challenges`, `Admin/RefreshPreviews`, `Admin/RefreshReleaseYears`, `RequestHint` (déblocage/pénalité indice), `DeezerSearch` (nettoyage + déduplication de l'autocomplete public), histogramme des temps de réponse sur les réponses soumises + sur `Stats/Today` + `ChallengeStats` TrackStat (score + histogramme par morceau), nettoyage des titres sur tous les écrans d'affichage (réponse soumise, reprise, stats "déjà joué", stats admin), `HealthCheck`.
+Nécessite Docker (Testcontainers démarre un vrai conteneur PostgreSQL). **180 tests** couvrant `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (Dashboard : KPIs, activité, répartition joueurs) + `ChallengeStats` (`GET /api/admin/challenge-stats`, endpoint « Stats par défi » scindé du Dashboard — dont la liste des joueurs par défi), `Players` (`GET /api/players/me`), `PlayerSoftDelete`, `SessionEdgeCases` (expiry paresseuse, streak — dont défi de la veille terminé après minuit UTC, submit sur session abandonnée, UpdateListening anti-triche), `ChallengeGeneration`, `LazyChallengeGeneration` (régénération du défi à la volée), `Admin/Tracks`, `Admin/Challenges`, `Admin/RefreshPreviews`, `Admin/RefreshReleaseYears`, `RequestHint` (déblocage/pénalité indice), `DeezerSearch` (nettoyage + déduplication de l'autocomplete public), histogramme des temps de réponse sur les réponses soumises + sur `Stats/Today` + `ChallengeStats` TrackStat (score + histogramme par morceau), nettoyage des titres sur tous les écrans d'affichage (réponse soumise, reprise, stats "déjà joué", stats admin), `HealthCheck`.
 
 ### Tests E2E (Playwright)
 

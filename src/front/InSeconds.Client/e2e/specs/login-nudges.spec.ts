@@ -40,18 +40,18 @@ test.describe('Nudges de connexion (guest)', () => {
     await expect(page.getByRole('link', { name: 'Ne plus perdre mes parties' })).toBeVisible();
   });
 
-  test('affiche la bannière "Garde ce score" sur le récap final', async ({ page, api }) => {
+  test('pas de bannière "Garde ce score" sur le récap final', async ({ page, api }) => {
     await api.reset();
     await page.clock.install({ time: Date.now() });
 
     const game = new GamePage(page);
     await game.playFullGame(new BlindRoundPage(page));
 
-    await expect(page.getByText('Garde ce score')).toBeVisible();
-    await expect(page.getByText('Il disparaîtra si tu changes de navigateur.')).toBeVisible();
+    await expect(page.getByText('Score final')).toBeVisible();
+    await expect(page.getByText('Garde ce score')).toHaveCount(0);
   });
 
-  test('affiche la bannière "Reviens sur n\'importe quel appareil" sur l\'écran déjà joué', async ({ page, api }) => {
+  test('pas de bannière "Reviens sur n\'importe quel appareil" sur l\'écran déjà joué', async ({ page, api }) => {
     await api.reset();
     await page.clock.install({ time: Date.now() });
 
@@ -59,8 +59,7 @@ test.describe('Nudges de connexion (guest)', () => {
     await game.completeGameThenReload(new BlindRoundPage(page));
 
     await expect(game.alreadyPlayedHeading).toBeVisible();
-    await expect(page.getByText('Reviens sur n\'importe quel appareil')).toBeVisible();
-    await expect(page.getByText(/Ta série de \d+ jours te suivra\./)).toBeVisible();
+    await expect(page.getByText('Reviens sur n\'importe quel appareil')).toHaveCount(0);
   });
 
   test('affiche puis masque le toast de série sur le récap final', async ({ page, api }) => {
@@ -70,7 +69,7 @@ test.describe('Nudges de connexion (guest)', () => {
     const game = new GamePage(page);
     await game.playFullGame(new BlindRoundPage(page));
 
-    const toast = page.getByText(/Série de \d+ jours\./);
+    const toast = page.getByText(/Série de \d+ jours?\./);
     await expect(toast).toBeVisible();
     await expect(page.getByRole('link', { name: 'Créer' })).toBeVisible();
 

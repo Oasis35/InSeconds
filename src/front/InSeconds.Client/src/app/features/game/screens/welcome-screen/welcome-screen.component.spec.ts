@@ -45,6 +45,30 @@ describe('WelcomeScreenComponent', () => {
     expect(spy).toHaveBeenCalled();
   });
 
+  describe('isProtected()', () => {
+    const protectedStreak = {
+      status: 'protected', streak: 12, freezes: 1, maxFreezes: 2, freezeEveryDays: 7,
+      nextFreezeInDays: 2, missedDays: 1, lostStreak: undefined, lastPlayedDate: undefined,
+    };
+
+    it('is true for a linked account whose streak is protected by a freeze', () => {
+      playerSessionStub.isLinked.set(true);
+      fixture.componentRef.setInput('streak', protectedStreak);
+      expect(component['isProtected']()).toBeTrue();
+    });
+
+    it('is false for a guest', () => {
+      fixture.componentRef.setInput('streak', protectedStreak);
+      expect(component['isProtected']()).toBeFalse();
+    });
+
+    it('is false for an active streak', () => {
+      playerSessionStub.isLinked.set(true);
+      fixture.componentRef.setInput('streak', { ...protectedStreak, status: 'active', missedDays: 0 });
+      expect(component['isProtected']()).toBeFalse();
+    });
+  });
+
   it('reflects PlayerSessionService.isLinked() for guest vs linked', () => {
     expect(component['playerSession'].isLinked()).toBeFalse();
     playerSessionStub.isLinked.set(true);

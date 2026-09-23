@@ -1,6 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { Observable, tap, map, catchError, of, switchMap } from 'rxjs';
-import { ApiClient } from '../../api/api.generated';
+import { ApiClient, StreakDto } from '../../api/api.generated';
 
 // État de session du joueur courant (guest ou compte lié). Remplace l'ancien
 // player-identity.service.ts : en plus de playerId (ID navigateur, usage admin),
@@ -16,6 +16,8 @@ export class PlayerSessionService {
   readonly email = signal<string | null>(null);
   readonly pseudo = signal<string | null>(null);
   readonly currentStreak = signal(0);
+  /** Détail série + gels (rangée « Gels » du profil). */
+  readonly streak = signal<StreakDto | null>(null);
   readonly gamesPlayed = signal(0);
   readonly isAdmin = signal(false);
 
@@ -32,6 +34,7 @@ export class PlayerSessionService {
         this.email.set(res.email ?? null);
         this.pseudo.set(res.pseudo ?? null);
         this.currentStreak.set(res.currentStreak);
+        this.streak.set(res.streak ?? null);
         this.gamesPlayed.set(res.gamesPlayed);
         this.isAdmin.set(res.isAdmin);
       }),

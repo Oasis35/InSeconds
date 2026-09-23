@@ -95,6 +95,17 @@ Si `Track.HasPreview = false`, le joueur ne peut pas écouter : bouton « Passer
 - `Player.CurrentStreak` + `Player.LastPlayedDate` mis à jour uniquement à la **complétion** d'une partie (`SubmitAnswer/Handler.cs`), jamais à l'abandon. **[Back]**
 - Basée sur **`DailyChallenge.Date`**, jamais sur l'horodatage réel de complétion : `CurrentStreak += 1` si `LastPlayedDate == DailyChallenge.Date - 1 jour`, sinon reset à `1`. `LastPlayedDate` stocke alors la date du défi (pas `UtcNow`).
 - Conséquence : terminer le défi de la veille après minuit UTC (ex. à 00h15) ne casse pas la streak — seul un vrai jour manqué la remet à 1. Voir piège 18 du [`CLAUDE.md`](../CLAUDE.md) pour l'historique du bug corrigé.
+- **Série effective** : la valeur affichée (header, accueil, profil, récap) est recalculée à la lecture depuis `LastPlayedDate` — une série cassée s'affiche à 0 tout de suite, sans attendre la prochaine partie. **[Back]**
+
+### Gel de série (streak freeze)
+
+- **Comptes connectés uniquement.** Un invité n'a jamais de gel. **[Back]**
+- **1 gel offert** à la création du compte (conversion invité → compte ; une reconnexion n'en redonne pas). **[Back]**
+- **+1 gel à chaque multiple de `StreakFreezeEveryDays`** (7) jours de série, dans la limite de **`StreakFreezeMax`** (2). Stock plein → rien de gagné. **[Back]**
+- **Consommation automatique** : à la complétion du défi suivant, chaque jour manqué consomme un gel. La série **ne monte pas** pour le jour gelé mais **ne casse pas** (+1 pour le défi joué). Pas assez de gels pour tous les jours manqués → la série repart à 1 et les gels restent en stock. **[Back]**
+- Entre-temps, une série dont les jours manqués sont couverts par le stock est **« protégée »** (gélule cyan, accueil « Bon retour ! ») ; sinon elle est **« perdue »** (0). **[Back + Front]**
+- **Invité** : série perdue ≥ `StreakLostNudgeMinDays` (2) → toast « Ta série de N jours s'est arrêtée… un gel l'aurait sauvée », une seule fois par série perdue ; palier de 7 jours atteint → « Tu aurais gagné un gel ! ». **[Front]**
+- Exemples (7/2) : série 12, dernier défi avant-hier, 1 gel → joue aujourd'hui → série 13, 0 gel. Série 5, week-end manqué, 2 gels → 6, 0 gel. Même cas avec 1 gel → 1, 1 gel. Série 13 → 14 avec 1 gel → 2 gels.
 
 ## Settings modifiables (table `Settings`)
 
@@ -103,6 +114,7 @@ Si `Track.HasPreview = false`, le joueur ne peut pas écouter : bouton « Passer
 | `TracksPerChallenge` | `5` | ✅ Back (génération du défi + détection de complétion) |
 | `AllowedDurationsSeconds` | `0.50,1,1.5,2,3,5,10` | ✅ Back (validation) + Front (paliers affichés) |
 | `DurationScores` | voir table ci-dessus | ✅ Back (scoring) + Front (tooltip points) |
+| `StreakFreezeEveryDays` / `StreakFreezeMax` / `StreakLostNudgeMinDays` | `7` / `2` / `2` | ✅ Back, **lus à chaud** (gel de série, cf. § Streak) |
 | `CoverUrlTemplate` | URL Deezer | ✅ Back (reconstruction des pochettes) |
 | `GuessTimerSeconds` | `20` | ❌ Non appliqué — aucun timer réel en jeu aujourd'hui |
 | `HintUnlockDurationsSeconds` | `5,10` | ✅ Back (déblocage server-side via `RequestHint`) + Front (affichage des boutons) |

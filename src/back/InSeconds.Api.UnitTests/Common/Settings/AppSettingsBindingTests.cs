@@ -72,6 +72,31 @@ public sealed class AppSettingsBindingTests
         result.AllowedDurationsSeconds.Should().Equal(new AppSettings().AllowedDurationsSeconds);
     }
 
+    [Fact]
+    public void Configure_ParsesStreakFreezeSettings()
+    {
+        var result = Configure(new()
+        {
+            ["StreakFreezeEveryDays"]  = "5",
+            ["StreakFreezeMax"]        = "3",
+            ["StreakLostNudgeMinDays"] = "4",
+        });
+
+        result.StreakFreezeEveryDays.Should().Be(5);
+        result.StreakFreezeMax.Should().Be(3);
+        result.StreakLostNudgeMinDays.Should().Be(4);
+    }
+
+    [Fact]
+    public void Configure_WhenNoStreakFreezeSettings_ReturnsDefaults()
+    {
+        var result = Configure(new());
+
+        result.StreakFreezeEveryDays.Should().Be(7);
+        result.StreakFreezeMax.Should().Be(2);
+        result.StreakLostNudgeMinDays.Should().Be(2);
+    }
+
     // ---------------------------------------------------------------------------
     // Indices (hints) — HintUnlockDurationsSeconds (decimal[]) / HintPenaltyPercent (Dictionary<int,int>)
     // ---------------------------------------------------------------------------

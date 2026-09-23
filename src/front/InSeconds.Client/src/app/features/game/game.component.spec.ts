@@ -10,6 +10,7 @@ import { AudioPlayerService } from '../../core/services/audio-player.service';
 import { ClipboardService } from '../../core/services/clipboard.service';
 import { PlayerSessionService } from '../../core/services/player-session.service';
 import { TranslateService } from '@ngx-translate/core';
+import { Router } from '@angular/router';
 
 class TranslateServiceStub {
   instant(key: string): string {
@@ -32,10 +33,14 @@ describe('GameComponent — streak toast', () => {
     updateListening: jasmine.Spy;
   };
   let apiStub: { apiStatsToday: jasmine.Spy };
+  let isLinked: ReturnType<typeof signal<boolean>>;
+  let router: { navigate: jasmine.Spy };
 
   beforeEach(() => {
     gameFacadeStub = {
-      peekToday: jasmine.createSpy('peekToday'),
+      peekToday: jasmine.createSpy('peekToday').and.returnValue(of({
+        state: 'can_start', currentStreak: 0, tracksCount: 3, completedCount: 0,
+      })),
       startToday: jasmine.createSpy('startToday'),
       submitAnswer: jasmine.createSpy('submitAnswer'),
       abandonSession: jasmine.createSpy('abandonSession').and.returnValue(of(void 0)),
@@ -47,13 +52,17 @@ describe('GameComponent — streak toast', () => {
       })),
     };
 
+    isLinked = signal(false);
+    router = { navigate: jasmine.createSpy('navigate') };
+
     TestBed.configureTestingModule({
       providers: [
         { provide: GameFacadeService, useValue: gameFacadeStub },
         { provide: ApiClient, useValue: apiStub },
         { provide: AudioPlayerService, useValue: { preloadAll: () => Promise.resolve() } },
         { provide: ClipboardService, useValue: {} },
-        { provide: PlayerSessionService, useValue: { isLinked: signal(false) } },
+        { provide: PlayerSessionService, useValue: { isLinked } },
+        { provide: Router, useValue: router },
         { provide: TranslateService, useClass: TranslateServiceStub },
         GameShareService,
         LeaveConfirmationService,
@@ -121,5 +130,149 @@ describe('GameComponent — streak toast', () => {
 
     expect(component['gameState']()).toBe('already_played');
     expect(component['streakToastDismissed']()).toBeFalse();
+  });
+});
+
+describe('GameComponent — gel de série', () => {
+  let component: GameComponent;
+  let gameFacadeStub: { peekToday: jasmine.Spy; startToday: jasmine.Spy };
+  let apiStub: { apiStatsToday: jasmine.Spy };
+  let isLinked: ReturnType<typeof signal<boolean>>;
+  let router: { navigate: jasmine.Spy };
+
+  const streak = (overrides: Record<string, unknown> = {}) => ({
+    status: 'active', streak: 12, freezes: 2, maxFreezes: 2, freezeEveryDays: 7,
+    nextFreezeInDays: 2, missedDays: 0, lostStreak: undefined, lastPlayedDate: '2026-09-22',
+    ...overrides,
+  });
+
+  const stats = (overrides: Record<string, unknown> = {}) => ({
+    yourScore: 100, medianScore: 100, totalPlayers: 1, currentStreak: 13, tracks: [],
+    freezesUsed: 0, freezeMilestone: false, ...overrides,
+  });
+
+  beforeEach(() => {
+    localStorage.removeItem('inseconds.lostStreakNudgeSeen');
+    isLinked = signal(true);
+    router = { navigate: jasmine.createSpy('navigate') };
+    gameFacadeStub = {
+      peekToday: jasmine.createSpy('peekToday').and.returnValue(of({
+        state: 'can_start', currentStreak: 12, tracksCount: 3, completedCount: 0, streak: streak(),
+      })),
+      startToday: jasmine.createSpy('startToday').and.returnValue(of({
+        sessionId: 1, tracks: [], currentStreak: 12, isResuming: false, resumeFromPosition: 0, completedAnswers: [],
+      })),
+    };
+    apiStub = { apiStatsToday: jasmine.createSpy('apiStatsToday').and.returnValue(of(stats())) };
+
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: GameFacadeService, useValue: gameFacadeStub },
+        { provide: ApiClient, useValue: apiStub },
+        { provide: AudioPlayerService, useValue: { preloadAll: () => Promise.resolve() } },
+        { provide: ClipboardService, useValue: {} },
+        { provide: PlayerSessionService, useValue: { isLinked } },
+        { provide: Router, useValue: router },
+        { provide: TranslateService, useClass: TranslateServiceStub },
+        GameShareService,
+        LeaveConfirmationService,
+      ],
+    });
+
+    component = TestBed.runInInjectionContext(() => new GameComponent());
+  });
+
+  afterEach(() => localStorage.removeItem('inseconds.lostStreakNudgeSeen'));
+
+  function finishGame(todayStats: ReturnType<typeof stats>): void {
+    apiStub.apiStatsToday.and.returnValue(of(todayStats));
+    component['tracks'].set([{ id: 1, previewUrl: null, coverUrl: null, deezerTrackId: 1 } as any]);
+    component['currentIndex'].set(0);
+    component['onNextTrack']();
+  }
+
+  it('stores the peek streak detail for the header pill', () => {
+    component['retry']();
+    expect(component['streakInfo']()?.freezes).toBe(2);
+  });
+
+  it('refreshes the streak detail after the last answer (freeze used or earned)', () => {
+    gameFacadeStub.peekToday.and.returnValue(of({
+      state: 'already_played', currentStreak: 13, tracksCount: 3, completedCount: 3, streak: streak({ streak: 13, freezes: 1 }),
+    }));
+
+    finishGame(stats({ freezesUsed: 1 }));
+
+    expect(component['streakInfo']()?.freezes).toBe(1);
+  });
+
+  it('shows "1 gel a sauvé ta série" to a linked player after a game that used a freeze', () => {
+    finishGame(stats({ freezesUsed: 1 }));
+
+    expect(component['showGelUsedToast']()).toBeTrue();
+    expect(component['showGelEarnedToast']()).toBeFalse();
+    expect(component['freezesUsedKey']()).toBe('one');
+  });
+
+  it('shows "+1 gel gagné" (and not the used toast) when a freeze was earned', () => {
+    finishGame(stats({ freezesUsed: 1, freezeMilestone: true }));
+
+    expect(component['showGelEarnedToast']()).toBeTrue();
+    expect(component['showGelUsedToast']()).toBeFalse();
+  });
+
+  it('hides the freeze toasts once dismissed', () => {
+    finishGame(stats({ freezeMilestone: true }));
+
+    component['gelToastDismissed'].set(true);
+
+    expect(component['showGelEarnedToast']()).toBeFalse();
+  });
+
+  it('never shows freeze toasts to a guest, but switches the streak toast to "Tu aurais gagné un gel"', () => {
+    isLinked.set(false);
+    finishGame(stats({ currentStreak: 7, freezeMilestone: true }));
+
+    expect(component['showGelEarnedToast']()).toBeFalse();
+    expect(component['showStreakToast']()).toBeTrue();
+    expect(component['guestFreezeMiss']()).toBeTrue();
+  });
+
+  it('shows the guest "série perdue" toast on welcome, once per lost streak', () => {
+    isLinked.set(false);
+    gameFacadeStub.peekToday.and.returnValue(of({
+      state: 'can_start', currentStreak: 0, tracksCount: 3, completedCount: 0,
+      streak: streak({ status: 'broken', streak: 0, freezes: 0, maxFreezes: 0, lostStreak: 6, lastPlayedDate: '2026-09-20' }),
+    }));
+
+    component['retry']();
+
+    expect(component['showLostToast']()).toBeTrue();
+    expect(component['lostStreak']()).toBe(6);
+    expect(localStorage.getItem('inseconds.lostStreakNudgeSeen')).toBe('2026-09-20');
+
+    // Second chargement de la page : déjà vu pour cette série perdue.
+    component['lostStreak'].set(null);
+    component['retry']();
+    expect(component['showLostToast']()).toBeFalse();
+  });
+
+  it('"Jouer maintenant" in the protected sheet starts the game from welcome', () => {
+    component['retry']();
+    component['showStreakSheet'].set(true);
+
+    component['playFromStreakSheet']();
+
+    expect(component['showStreakSheet']()).toBeFalse();
+    expect(gameFacadeStub.startToday).toHaveBeenCalled();
+  });
+
+  it('"Créer un compte" in the guest sheet navigates to /login', () => {
+    component['showStreakSheet'].set(true);
+
+    component['signupFromStreakSheet']();
+
+    expect(component['showStreakSheet']()).toBeFalse();
+    expect(router.navigate).toHaveBeenCalledWith(['/login']);
   });
 });

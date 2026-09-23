@@ -90,6 +90,7 @@ Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les 
 - Badge officiel "À écouter sur Deezer" (`DeezerBadgeComponent`) + favicon SVG note Deezer
 - Route `/blindtest` + balises Open Graph/Twitter Card pour partage WhatsApp/Signal
 - Streak joueur (`Player.CurrentStreak` + `Player.LastPlayedDate`) mis à jour à la complétion dans `SubmitAnswer/Handler.cs`, basée sur `DailyChallenge.Date` (terminer le défi de la veille après minuit UTC ne casse plus la streak)
+- Gel de série (2026-09-23) : comptes connectés, 1 gel offert à l'inscription, +1 tous les 7 jours (2 max), consommé automatiquement par jour manqué ; série effective affichée (0 si perdue) ; incitations invité — cf. [`GAMEPLAY_RULES_FR.md`](GAMEPLAY_RULES_FR.md) § Streak
 - Gestion morceaux sans preview : skip 0s accepté par le validateur, bouton "Passer" dans le jeu
 - Replay preview après soumission de réponse (`AudioPlayerService.replayFull()`)
 - Synchronisation multi-onglets via `visibilitychange` — si la partie est terminée dans un autre onglet, le front bascule en `already_played` au retour au premier plan

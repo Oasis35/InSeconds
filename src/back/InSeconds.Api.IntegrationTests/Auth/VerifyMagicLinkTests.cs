@@ -54,6 +54,7 @@ public class VerifyMagicLinkTests(IntegrationTestFactory factory) : IAsyncLifeti
         Assert.False(meAfter.IsGuest);
         Assert.Equal(TestEmail, meAfter.Email);
         Assert.Equal("Testeur", meAfter.Pseudo);
+        Assert.Equal(1, meAfter.Streak!.Freezes); // gel offert à l'inscription
     }
 
     [Fact]
@@ -131,6 +132,32 @@ public class VerifyMagicLinkTests(IntegrationTestFactory factory) : IAsyncLifeti
         var meB = await deviceB.GetFromJsonAsync<PlayerMeDto>("/api/players/me");
         Assert.Equal(meA!.PlayerId, meB!.PlayerId);
         Assert.Equal("MultiDevice", meB.Pseudo);
+    }
+
+    [Fact]
+    public async Task VerifyMagicLink_Reconnexion_NeRedonnePasDeGel()
+    {
+        var deviceA = factory.CreateClient();
+        var tokenA = await RequestAndExtractTokenAsync(deviceA, TestEmail);
+        await deviceA.PostAsJsonAsync("/api/auth/magic-link/verify", new { Token = tokenA, Pseudo = "GelUnique" });
+        var meA = await deviceA.GetFromJsonAsync<PlayerMeDto>("/api/players/me");
+
+        // Le gel offert a été consommé entre-temps
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var player = await db.Players.FirstAsync(p => p.Id == meA!.PlayerId);
+            player.RestoreStreakForTesting(3, DateOnly.FromDateTime(DateTime.UtcNow), streakFreezes: 0);
+            await db.SaveChangesAsync();
+        }
+
+        var deviceB = factory.CreateClient();
+        var tokenB = await RequestAndExtractTokenAsync(deviceB, TestEmail);
+        await deviceB.PostAsJsonAsync("/api/auth/magic-link/verify", new { Token = tokenB, Pseudo = (string?)null });
+
+        var meB = await deviceB.GetFromJsonAsync<PlayerMeDto>("/api/players/me");
+        Assert.Equal(meA!.PlayerId, meB!.PlayerId);
+        Assert.Equal(0, meB.Streak!.Freezes);
     }
 
     [Fact]
@@ -216,5 +243,6 @@ public class VerifyMagicLinkTests(IntegrationTestFactory factory) : IAsyncLifeti
         return tokenMatch.Groups[1].Value;
     }
 
-    private sealed record PlayerMeDto(Guid PlayerId, bool IsGuest, string? Email, string? Pseudo);
+    private sealed record PlayerMeDto(Guid PlayerId, bool IsGuest, string? Email, string? Pseudo, StreakLiteDto? Streak = null);
+    private sealed record StreakLiteDto(int Freezes);
 }

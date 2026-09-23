@@ -152,6 +152,16 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                     b.Property<int>("DailyChallengeId")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("FreezeEarned")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<int>("FreezesUsed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
                     b.Property<Guid>("PlayerId")
                         .HasColumnType("uuid");
 
@@ -325,6 +335,11 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
+                    b.Property<int>("StreakFreezes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
                     b.HasKey("Id");
 
                     b.HasIndex("AuthToken")
@@ -438,6 +453,30 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                             Key = "HintPenaltyPercent",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Value = "1:30,2:60"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            Description = "Gel de série : +1 gel à chaque multiple de ce nombre de jours de série (comptes connectés).",
+                            Key = "StreakFreezeEveryDays",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "7"
+                        },
+                        new
+                        {
+                            Id = 11,
+                            Description = "Gel de série : nombre maximum de gels en stock.",
+                            Key = "StreakFreezeMax",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "2"
+                        },
+                        new
+                        {
+                            Id = 12,
+                            Description = "Série minimale (jours) perdue par un invité pour afficher l'incitation à créer un compte.",
+                            Key = "StreakLostNudgeMinDays",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Value = "2"
                         });
                 });
 

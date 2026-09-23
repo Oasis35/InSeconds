@@ -266,4 +266,28 @@ public sealed class GameSessionTests
 
         session.CurrentTrackHintLevelUsed.Should().Be(1, "prolonger l'écoute sur le même morceau ne doit pas effacer l'indice déjà révélé");
     }
+
+    // ---------------------------------------------------------------------------
+    // RecordStreakEffect (gel de série)
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public void StartNew_AucunEffetDeGelParDefaut()
+    {
+        var session = BuildSession();
+
+        session.FreezesUsed.Should().Be(0);
+        session.FreezeEarned.Should().BeFalse();
+    }
+
+    [Fact]
+    public void RecordStreakEffect_StockeGelsUtilisesEtGelGagne()
+    {
+        var session = BuildSession();
+
+        session.RecordStreakEffect(new StreakCompletionResult(FreezesUsed: 2, FreezeEarned: true));
+
+        session.FreezesUsed.Should().Be(2);
+        session.FreezeEarned.Should().BeTrue();
+    }
 }

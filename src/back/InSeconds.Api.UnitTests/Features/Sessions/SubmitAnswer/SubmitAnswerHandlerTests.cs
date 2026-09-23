@@ -531,6 +531,70 @@ public sealed class SubmitAnswerHandlerTests
     }
 
     [Fact]
+    public async Task Handle_WhenLinkedPlayerMissedADayWithAFreeze_ConsumesFreezeAndRecordsItOnSession()
+    {
+        // Arrange — compte connecté, dernier défi il y a 2 jours (1 jour manqué), 1 gel en stock
+        await using var db = CreateDbContext();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var player = BuildPlayer();
+        player.LinkToAccount("player@example.com", "PlayerPseudo");
+        player.RestoreStreakForTesting(12, today.AddDays(-2), streakFreezes: 1);
+        db.Players.Add(player);
+
+        var (challenge, _) = BuildChallengeWithTrack();
+        db.DailyChallenges.Add(challenge);
+        await db.SaveChangesAsync();
+
+        db.GameSessions.Add(BuildSession());
+        await db.SaveChangesAsync();
+
+        var settings = new AppSettings { TracksPerChallenge = 1 };
+        var handler = new SubmitAnswerHandler(db, new ScoreCalculator(), new TextNormalizer(), new SettingsService(Options.Create(settings)));
+
+        // Act
+        await handler.Handle(BuildCommand(duration: 1), CancellationToken.None);
+
+        // Assert
+        var updatedPlayer = await db.Players.FindAsync(FakePlayerId);
+        updatedPlayer!.CurrentStreak.Should().Be(13);
+        updatedPlayer.StreakFreezes.Should().Be(0);
+        var updatedSession = await db.GameSessions.FindAsync(1);
+        updatedSession!.FreezesUsed.Should().Be(1);
+        updatedSession.FreezeEarned.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Handle_WhenLinkedPlayerReachesSevenDays_RecordsFreezeEarnedOnSession()
+    {
+        await using var db = CreateDbContext();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var player = BuildPlayer();
+        player.LinkToAccount("player@example.com", "PlayerPseudo");
+        player.RestoreStreakForTesting(6, today.AddDays(-1), streakFreezes: 1);
+        db.Players.Add(player);
+
+        var (challenge, _) = BuildChallengeWithTrack();
+        db.DailyChallenges.Add(challenge);
+        await db.SaveChangesAsync();
+
+        db.GameSessions.Add(BuildSession());
+        await db.SaveChangesAsync();
+
+        var settings = new AppSettings { TracksPerChallenge = 1 };
+        var handler = new SubmitAnswerHandler(db, new ScoreCalculator(), new TextNormalizer(), new SettingsService(Options.Create(settings)));
+
+        await handler.Handle(BuildCommand(duration: 1), CancellationToken.None);
+
+        var updatedPlayer = await db.Players.FindAsync(FakePlayerId);
+        updatedPlayer!.CurrentStreak.Should().Be(7);
+        updatedPlayer.StreakFreezes.Should().Be(2);
+        var updatedSession = await db.GameSessions.FindAsync(1);
+        updatedSession!.FreezeEarned.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task Handle_WhenNotLastAnswer_StatusRemainsActive()
     {
         // Arrange — TracksPerChallenge = 5 (défaut), on soumet seulement 1 réponse

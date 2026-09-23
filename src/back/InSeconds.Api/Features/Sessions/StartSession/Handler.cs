@@ -1,4 +1,5 @@
 using InSeconds.Api.Common.Settings;
+using InSeconds.Api.Common.Streak;
 using InSeconds.Api.Common.Text;
 using InSeconds.Api.Domain;
 using InSeconds.Api.Features.ChallengeGeneration;
@@ -124,12 +125,12 @@ public sealed class StartSessionHandler(
             .DefaultIfEmpty(orderedTracks.Count)
             .First();
 
-        var player = await db.Players.AsNoTracking().FirstAsync(p => p.Id == playerId, ct);
+        var currentStreak = await LoadEffectiveStreakAsync(playerId, ct);
 
         return Results.Ok(new StartSessionResponse(
             SessionId:          existingSession.Id,
             Tracks:             tracks,
-            CurrentStreak:      player.CurrentStreak,
+            CurrentStreak:      currentStreak,
             IsResuming:         true,
             ResumeFromPosition: resumeFromPosition,
             CompletedAnswers:   completedAnswers,
@@ -139,7 +140,7 @@ public sealed class StartSessionHandler(
 
     private async Task<IResult> BuildNewSessionResponseAsync(ChallengeProjection challenge, Guid playerId, CancellationToken ct)
     {
-        var player = await db.Players.AsNoTracking().FirstAsync(p => p.Id == playerId, ct);
+        var currentStreak = await LoadEffectiveStreakAsync(playerId, ct);
 
         var session = GameSession.StartNew(playerId, challenge.Id, DateTime.UtcNow);
         db.GameSessions.Add(session);
@@ -163,10 +164,18 @@ public sealed class StartSessionHandler(
         return Results.Ok(new StartSessionResponse(
             SessionId:          session.Id,
             Tracks:             tracks,
-            CurrentStreak:      player.CurrentStreak,
+            CurrentStreak:      currentStreak,
             IsResuming:         false,
             ResumeFromPosition: 0,
             CompletedAnswers:   []));
+    }
+
+    // Série effective (0 si perdue) — CurrentStreak brut resterait figé jusqu'à la prochaine complétion.
+    private async Task<int> LoadEffectiveStreakAsync(Guid playerId, CancellationToken ct)
+    {
+        var player = await db.Players.AsNoTracking().FirstAsync(p => p.Id == playerId, ct);
+        var rules = await StreakRulesReader.LoadAsync(db, ct);
+        return player.GetStreakView(DateOnly.FromDateTime(DateTime.UtcNow), rules).Streak;
     }
 
     private Task<ChallengeProjection?> LoadTodayChallengeAsync(DateOnly today, CancellationToken ct)

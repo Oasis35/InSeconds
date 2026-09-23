@@ -57,6 +57,12 @@ export class App {
   constructor() {
     this.checkLegacyUrlNotice();
 
+    // E2E : coupe les animations CSS du gel de série ([data-anim]), comme countUp() pour
+    // le score — sous page.clock figée, une animation en cours peut masquer un élément.
+    if (typeof window !== 'undefined' && (window as { __disableAnimations?: boolean }).__disableAnimations === true) {
+      document.documentElement.classList.add('no-anim');
+    }
+
     // Sous une horloge figée par page.clock (E2E), les sauts d'horloge cumulent les ticks
     // du timer et switchMap annule les requêtes /health en vol — comptées comme échecs,
     // ce qui déclencherait un faux overlay "Service indisponible". On neutralise donc le

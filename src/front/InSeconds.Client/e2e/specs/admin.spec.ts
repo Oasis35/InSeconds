@@ -16,13 +16,13 @@ test.describe('Admin — login', () => {
     const email = 'joueur-normal@e2e.test';
     await page.goto('/login');
     await page.getByPlaceholder('ton@email.com').fill(email);
-    await page.getByRole('button', { name: 'Recevoir un lien' }).click();
-    await expect(page.getByText('un lien de connexion vient de t\'être envoyé')).toBeVisible();
+    await page.getByRole('button', { name: 'Recevoir le lien' }).click();
+    await expect(page.getByText('Lien envoyé.')).toBeVisible();
 
     const linkUrl = await api.getLastMagicLinkUrl(email);
     const parsed = new URL(linkUrl);
     await page.goto(parsed.pathname + parsed.search);
-    await page.getByRole('button', { name: 'Confirmer la connexion' }).click();
+    await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
     await page.getByPlaceholder('Ton pseudo').fill('JoueurE2E');
     await page.getByRole('button', { name: 'Valider' }).click();
 
@@ -424,7 +424,7 @@ test.describe('Admin — indicateur joueurs / ID navigateur', () => {
     const todayRow = admin.challengeRow(today);
     await todayRow.locator('button').first().click(); // bouton d'accordéon → déplie « Stats par défi »
 
-    const chartIcon = todayRow.getByRole('button', { name: /histogramme des temps de réponse/i }).first();
+    const chartIcon = todayRow.getByRole('button', { name: /répartition des temps/i }).first();
     await chartIcon.click();
 
     const chart = page.getByTestId('guess-time-chart');

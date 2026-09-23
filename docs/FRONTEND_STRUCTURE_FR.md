@@ -37,7 +37,7 @@ src/front/InSeconds.Client/
 │   │   │       ├── clipboard.service.ts        # copy(text): Promise<boolean>, mutualisé game/admin
 │   │   │       ├── game.service.ts             # POST /sessions + /answers
 │   │   │       ├── language.service.ts         # détection/changement FR/EN, persist localStorage
-│   │   │       ├── player-session.service.ts   # GET /players/me (peek) → isGuest/email/pseudo/streak/gamesPlayed + updatePseudo()
+│   │   │       ├── player-session.service.ts   # GET /players/me (peek) → isGuest/email/pseudo/currentStreak/streak (gels)/gamesPlayed + updatePseudo()
 │   │   │       └── settings.service.ts         # GET /settings → signals
 │   │   ├── shared/
 │   │   │   ├── confirm-sheet/
@@ -52,8 +52,6 @@ src/front/InSeconds.Client/
 │   │   │   │   └── guess-time-chart.component.ts # histogramme temps de réponse réutilisable
 │   │   │   ├── track-results-list/
 │   │   │   │   └── track-results-list.component.ts # liste de morceaux + pop-up histogramme (récap + déjà joué)
-│   │   │   ├── login-nudge-banner/
-│   │   │   │   └── login-nudge-banner.component.ts # bannière nudge connexion (already-played + done, 2026-09)
 │   │   │   └── deezer-badge.component.ts       # badge "À écouter sur Deezer" (fichier plat, sans sous-dossier)
 │   │   ├── features/
 │   │   │   ├── admin/
@@ -83,7 +81,7 @@ src/front/InSeconds.Client/
 │   │   │   │   ├── blind-round/
 │   │   │   │   │   └── blind-round.component.ts  # choix palier + lecture + saisie + polish UX
 │   │   │   │   ├── components/
-│   │   │   │   │   ├── game-header/            # en-tête (titre + streak + score + barre progression)
+│   │   │   │   │   ├── game-header/            # en-tête (titre + gélule série/gels + score + barre progression + avatar)
 │   │   │   │   │   └── game-footer/            # pied de page (liens admin/confidentialité/connexion + langue FR/EN)
 │   │   │   │   └── screens/
 │   │   │   │       ├── welcome-screen/
@@ -147,6 +145,7 @@ Toutes les couleurs sont centralisées dans `styles.scss` sous `:root` et utilis
 | `--text-sep` | `#1e293b` | séparateurs |
 | `--text-accent` | `#6366f1` | logo InSeconds |
 | `--text-streak` | `#f59e0b` | streak feu |
+| `--gradient-ice` | `#BEFAFF → accent-2 → violet` | gel de série (cases de stock, dégradé « glace ») |
 | `--text-error` | `#fca5a5` | erreurs texte |
 | `--text-hover` | `#64748b` | hover liens, valeurs stats |
 | `--text-slate` | `#94a3b8` | boutons secondaires |
@@ -274,16 +273,17 @@ confirmEmailChange(token): Observable<string>;   // POST /api/auth/email-change/
 Orchestre une session complète. États : `loading` → `welcome` → `playing` → `done` (+ `resume_prompt`, `already_played`, `no_challenge`, `error`).
 
 Délègue l'affichage à des sous-composants :
-- **`GameHeaderComponent`** : titre InSeconds + streak/score en cours (côté gauche depuis 2026-09) + barre de progression + bouton abandon + avatar profil (côté droit, compte lié hors partie, `routerLink="/profile"`)
+- **`GameHeaderComponent`** : titre InSeconds + gélule série/gels cliquable (côté gauche, 4 états `on`/`protected`/`guest`/`lost`, ouvre `StreakSheetComponent`) ou score en cours + barre de progression + bouton abandon + avatar profil en silhouette SVG (côté droit, compte lié hors partie, `routerLink="/profile"`)
 - **`GameFooterComponent`** : liens admin / confidentialité + bouton langue FR/EN + icône de connexion discrète (guest → `/login`, compte lié → `/profile` — simple navigation depuis 2026-09, plus de pop-up "Compte connecté" ici)
 - **`WelcomeScreenComponent`** : état `welcome`. Guest → bouton outline "Se connecter / Créer un compte" (`/login`) ; compte lié → lien "Connecté comme {{pseudo}}" (`/profile`)
 - **`ResumeScreenComponent`** : état `resume_prompt` (avec confirmation abandon inline). Guest → bouton outline "Ne plus perdre mes parties" (`/login`)
 - **`StatusScreenComponent`** : états `no_challenge` + `error` (inputs `titleKey`/`bodyKey` i18n)
-- **`AlreadyPlayedScreenComponent`** : état `already_played` (score vs médiane, `ShareButtonComponent`). L'accordéon morceaux délègue à `<app-track-results-list [rows]="playedRows()">` (mappe `stats().tracks`) → **mêmes lignes que le récap** (chips `✓/✗`, durée, `+score` cliquable → pop-up histogramme). Guest + partie complétée → `LoginNudgeBannerComponent` ("Reviens sur n'importe quel appareil")
-- **`FinalRecapScreenComponent`** : état `done` (score animé, `ShareButtonComponent`). Input `stats: TodayStatsResponse | null` (`GameComponent` appelle `apiStatsToday()` en entrant dans `done`). L'accordéon délègue à `<app-track-results-list [rows]="recapRows()">` — `recapRows` mappe `results()` (`RoundResult`) + fusionne l'histogramme depuis `stats` par `position`. Liste + pop-up rendues par `TrackResultsListComponent`. Guest → `LoginNudgeBannerComponent` ("Garde ce score")
+- **`AlreadyPlayedScreenComponent`** : état `already_played` (score vs médiane, `ShareButtonComponent`). L'accordéon morceaux délègue à `<app-track-results-list [rows]="playedRows()">` (mappe `stats().tracks`) → **mêmes lignes que le récap** (chips `✓/✗`, durée, `+score` cliquable → pop-up histogramme).
+- **`FinalRecapScreenComponent`** : état `done` (score animé, `ShareButtonComponent`). Input `stats: TodayStatsResponse | null` (`GameComponent` appelle `apiStatsToday()` en entrant dans `done`). L'accordéon délègue à `<app-track-results-list [rows]="recapRows()">` — `recapRows` mappe `results()` (`RoundResult`) + fusionne l'histogramme depuis `stats` par `position`. Liste + pop-up rendues par `TrackResultsListComponent`.
 - **`BlindRoundComponent`** : état `playing`
 - **`ConfirmSheetComponent`** : modales abandon + quitter (la confirmation de déconnexion vit désormais dans `ProfileComponent`)
-- **Toast de streak** (inline, pas un composant partagé) : guest, streak > 0, états `done`/`already_played` — dismissible, `streakToastDismissed` remis à `false` à chaque (ré)entrée dans ces états
+- **Toast de streak** (inline, pas un composant partagé) : guest, streak > 0, états `done`/`already_played` — dismissible, `streakToastDismissed` remis à `false` à chaque (ré)entrée dans ces états ; variante « Tu aurais gagné un gel ! » au palier de 7 jours
+- **Gel de série** (2026-09-23) : `StreakSheetComponent` (`shared/streak-sheet/`, panneau bas 3 variantes), toasts inline « 1 gel a sauvé ta série » / « +1 gel gagné ! » (compte lié) et « série perdue » (invité, une fois par série perdue), `FreezeCellsComponent`/`StreakIconComponent` partagés — détail : `features/game/CLAUDE.md` § Gel de série
 
 **Confirmation de sortie** : implémente `UnsavedGameComponent` (`canDeactivate()`). Si `gameState() === 'playing'`, ouvre une modale et renvoie une `Promise<boolean>`. `@HostListener('window:beforeunload')` couvre la fermeture d'onglet.
 
@@ -322,10 +322,6 @@ Bottom-sheet de confirmation réutilisable (`shared/confirm-sheet/`). Inputs : `
 ### `ShareButtonComponent`
 
 Bouton partage réutilisable (`shared/share-button/`). Inputs : `copied: boolean`, `failed?: boolean`, `disabled?: boolean`. Output : `share`. Utilisé dans `AlreadyPlayedScreenComponent` et `FinalRecapScreenComponent`. Si `failed` est vrai (rejet de `clipboard.writeText` : permission refusée, contexte non sécurisé), le hint est remplacé par un message d'erreur (`share.failed`, signal `shareFailed` posé 3 s par `GameComponent.copyToClipboard()`).
-
-### `LoginNudgeBannerComponent`
-
-Bannière de nudge connexion réutilisable (`shared/login-nudge-banner/`, 2026-09). Inputs : `titleKey`/`bodyKey` (required, clés i18n — titre **et** corps varient selon l'écran), `bodyParams?: Record<string, unknown>` (interpolation, ex. `{streak}`). Le bouton CTA (`routerLink="/login"`, libellé fixe `loginNudge.cta`) est intégré au composant. Aucun output. Utilisé (guest uniquement, gardé par `PlayerSessionService.isLinked()`) dans `AlreadyPlayedScreenComponent` (titre "Reviens sur n'importe quel appareil") et `FinalRecapScreenComponent` (titre "Garde ce score").
 
 ### `BrowserIdComponent`
 

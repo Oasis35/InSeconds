@@ -18,21 +18,21 @@
     "loggedInAs": "Logged in as {{ pseudo }}"
   },
   "resume": {
-    "title": "Game in progress",
-    "progress": "You've played {{ done }} / {{ total }} tracks.",
-    "question": "Do you want to resume where you left off?",
+    "title": "Game paused",
+    "progress": "{{ done }} / {{ total }} tracks already played.",
+    "question": "Pick up where you left off?",
     "resume": "Resume",
     "loginCta": "Don't lose my games",
-    "warningTitle": "Warning",
-    "warningBody": "By giving up, today's challenge will be counted as played.\nYou won't be able to play it again until tomorrow.",
-    "confirmAbandon": "Yes, give up",
-    "cancelAbandon": "No, resume"
+    "warningTitle": "You'll lose your progress",
+    "warningBody": "This game can't be resumed. Your streak will be reset.",
+    "confirmAbandon": "Give up",
+    "cancelAbandon": "Cancel"
   },
   "abandonSheet": {
     "title": "Give up the game?",
-    "body": "Today's challenge will be counted as played.\nYou won't be able to play it again until tomorrow.",
-    "confirm": "Yes, give up",
-    "cancel": "Keep playing"
+    "body": "Your progress will be lost and your streak reset.",
+    "confirm": "Give up",
+    "cancel": "Cancel"
   },
   "leaveSheet": {
     "title": "Game in progress",
@@ -40,45 +40,39 @@
     "confirm": "Leave anyway",
     "cancel": "Keep playing"
   },
-  "loginNudge": {
-    "cta": "Log in",
-    "anyDeviceTitle": "Come back on any device",
-    "anyDeviceBody": "Your {{ streak }}-day streak will follow you.",
-    "keepScoreTitle": "Keep this score",
-    "keepScoreBody": "It will disappear if you switch browsers."
-  },
   "streakToast": {
-    "body": "{{ streak }}-day streak.",
+    "body": {
+      "one": "{{ streak }}-day streak.",
+      "other": "{{ streak }}-day streak."
+    },
     "hint": "Create an account so you don't lose it.",
     "cta": "Create",
     "dismiss": "Close"
   },
   "noChallenge": {
     "title": "No challenge today",
-    "body": "The challenge hasn't been generated yet.\nTry again in a few minutes."
+    "body": "Come back a little later,\nthe next challenge is on its way."
   },
   "error": {
-    "title": "Couldn't load the challenge",
-    "body": "The server may be unavailable.\nTry again in a few seconds."
+    "title": "Something went wrong",
+    "body": "Couldn't load today's challenge."
   },
   "alreadyPlayed": {
-    "abandonedTitle": "You gave up today's challenge",
+    "abandonedTitle": "Game abandoned",
     "abandonedBody": "Come back tomorrow for a new challenge.",
     "nextChallengeIn": "Next challenge in",
     "title": "Already played today",
     "yourScore": "Your score",
     "median": "Median",
-    "medianToday": "pts today",
     "showTracks": "Show tracks",
     "hideTracks": "Hide",
     "coverAlt": "Cover",
-    "failedPercent": "{{ percent }}% missed",
-    "averageSeconds": "· avg. {{ seconds }}s"
+    "failedPercent": "{{ percent }}% failed",
+    "averageSeconds": "avg. {{ seconds }}s"
   },
   "share": {
-    "button": "🔗 Share my score",
-    "copied": "✓ Copied!",
-    "hint": "Copies an emoji summary to the clipboard",
+    "button": "Share my score",
+    "copied": "Copied!",
     "failed": "Couldn't copy to the clipboard.",
     "title": "InSeconds 🎵 {{ date }}",
     "score": "🏆 {{ score }} pts"
@@ -91,11 +85,11 @@
     "points": "points",
     "artist": "Artist",
     "title": "Title",
-    "comeBack": "Come back tomorrow for a new challenge"
+    "comeBack": "Come back tomorrow for a new challenge."
   },
   "trackList": {
-    "guessTimeTitle": "How long it took others to guess",
-    "showChart": "View the guess-time histogram",
+    "guessTimeTitle": "Other players' listening time",
+    "showChart": "See the time breakdown",
     "close": "Close"
   },
   "footer": {
@@ -120,7 +114,7 @@
     "logout": "Log out",
     "logoutConfirmTitle": "Log out?",
     "logoutConfirmBody": "You'll be able to come back with a new link sent to {{ email }}.",
-    "logoutConfirmAction": "Yes, log me out",
+    "logoutConfirmAction": "Log out",
     "logoutCancel": "Cancel",
     "logoutError": "Logout failed. Try again.",
     "backToGame": "Back to game",
@@ -152,31 +146,31 @@
   "login": {
     "request": {
       "title": "Log in",
-      "subtitle": "Get a passwordless login link.",
+      "subtitle": "Get a magic link by email to keep your streak and scores on all your devices.",
       "emailPlaceholder": "your@email.com",
-      "submit": "Send me a link",
-      "sending": "Sending...",
-      "sent": "A login link has just been sent. Check your inbox.",
+      "submit": "Get the link",
+      "sending": "Sending…",
+      "sent": "Link sent. Open the email on this device to log in.",
       "invalidEmail": "Invalid email address.",
-      "backToGame": "← Back to the game",
+      "backToGame": "Back to the game",
       "devTitle": "Quick login (dev)",
       "devError": "Quick login failed. Try again."
     },
     "verify": {
-      "title": "Confirm login",
-      "subtitle": "Click to finish logging in on this device.",
-      "confirm": "Confirm login",
+      "title": "Verification",
+      "subtitle": "Confirm the login to link this device to your account.",
+      "confirm": "Confirm",
       "confirming": "Logging in...",
       "pseudoTitle": "Choose your pseudo",
       "pseudoPlaceholder": "Your pseudo",
-      "pseudoHint": "3 to 20 characters (letters, digits, space, . _ -).",
+      "pseudoHint": "3 to 20 characters. Visible to other players.",
       "pseudoSubmit": "Confirm",
-      "pseudoTaken": "This pseudo is already taken, try another one.",
+      "pseudoTaken": "This pseudo is already taken.",
       "invalidPseudo": "Invalid pseudo (3 to 20 allowed characters).",
       "invalidOrExpired": "This link is invalid or has expired.",
       "missingToken": "Incomplete login link.",
       "genericError": "Something went wrong, please try again.",
-      "backToLogin": "← Request a new link"
+      "backToLogin": "Back to login"
     }
   },
   "privacy": {
@@ -227,7 +221,7 @@
     "noPreview": "Preview not available for this track.",
     "skip": "Skip (0 pts)",
     "replay": "↺ {{ seconds }}s",
-    "listenUpTo": "▶ up to {{ seconds }}s",
+    "listenUpTo": "Listen up to {{ seconds }}s",
     "stepsUpTo": "You can listen up to {{ seconds }}s if you need to",
     "placeholder": "Artist — Title",
     "emptyConfirm": "You didn't enter anything. Submit anyway?",
@@ -422,6 +416,84 @@
       "added": "Added",
       "addError": "Error",
       "addTrack": "Add"
+    }
+  },
+  "streakFreeze": {
+    "pillLabel": "{{ streak }}-day streak, see details",
+    "pillProtectedLabel": "Streak protected",
+    "avatarTitle": "My profile — {{ pseudo }}",
+    "avatarLabel": "My profile",
+    "welcomeBack": "Welcome back!",
+    "frozenLineBefore": "Your",
+    "frozenLineStrong": "{{ streak }}-day streak",
+    "frozenLineAfter": "is kept safe by a freeze. Play to keep it going!",
+    "sheet": {
+      "streakTitle": "{{ streak }}-day streak",
+      "stockLabel": "Your freezes · {{ count }} / {{ max }}",
+      "nextFreeze": "Next freeze at {{ next }} days",
+      "remaining": {
+        "one": "{{ n }} day to go",
+        "other": "{{ n }} days to go"
+      },
+      "rule": "Every {{ every }} days of streak, you earn 1 freeze ({{ max }} max). If you miss a day, it’s used automatically: your streak doesn’t go up, but it doesn’t break either.",
+      "close": "Close",
+      "protectedTitle": "Streak protected",
+      "freezeDay": "freeze",
+      "today": "today",
+      "protectedBody": {
+        "one": "You missed yesterday, your {{ streak }}-day streak still holds.",
+        "other": "You missed {{ missed }} days, your {{ streak }}-day streak still holds."
+      },
+      "protectedUse": {
+        "one": "1 freeze will be used when you finish today’s challenge.",
+        "other": "{{ missed }} freezes will be used when you finish today’s challenge."
+      },
+      "playNow": "Play now",
+      "later": "Later",
+      "guestBody": "Play every day to make it grow. Skip a day and it starts over from zero.",
+      "guestFreeze": "With an account, freezes protect your streak on days you don’t play.",
+      "signup": "Create an account"
+    },
+    "usedToast": {
+      "title": {
+        "one": "1 freeze saved your streak!",
+        "other": "{{ n }} freezes saved your streak!"
+      },
+      "body": {
+        "one": "You missed yesterday, your {{ streak }}-day streak goes on.",
+        "other": "You missed {{ n }} days, your {{ streak }}-day streak goes on."
+      }
+    },
+    "earnedToast": {
+      "titleHighlight": "+1 freeze",
+      "titleRest": "earned!",
+      "body": "{{ streak }}-day streak. It will protect your streak if you miss a day."
+    },
+    "lostToast": {
+      "titleBefore": "Your",
+      "titleStrike": "{{ streak }}-day",
+      "titleAfter": "streak has ended.",
+      "hintBefore": "With an account, a freeze",
+      "hintAfter": "would have saved it. The first one is free."
+    },
+    "guestMissToast": {
+      "title": "You would have earned a freeze!",
+      "body": "Create an account to protect your {{ streak }} days."
+    },
+    "ctaLine1": "Create an account /",
+    "ctaLine2": "Log in",
+    "dismiss": "Close",
+    "profile": {
+      "label": "Freezes",
+      "full": "{{ max }} freezes · stock full",
+      "stock": {
+        "one": "{{ n }} freeze · next in {{ days }}",
+        "other": "{{ n }} freezes · next in {{ days }}"
+      },
+      "days": {
+        "one": "{{ n }} day",
+        "other": "{{ n }} days"
+      }
     }
   }
 }

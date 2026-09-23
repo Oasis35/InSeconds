@@ -2013,6 +2013,7 @@ export interface GetCurrentPlayerResponse {
     currentStreak: number;
     gamesPlayed: number;
     isAdmin: boolean;
+    streak: StreakDto;
 
     [key: string]: any;
 }
@@ -2022,6 +2023,7 @@ export interface GetTodaySessionResponse {
     tracksCount: number;
     completedCount: number;
     currentStreak: number;
+    streak: StreakDto;
 
     [key: string]: any;
 }
@@ -2121,6 +2123,20 @@ export interface StartSessionResponse {
     [key: string]: any;
 }
 
+export interface StreakDto {
+    status: string;
+    streak: number;
+    freezes: number;
+    maxFreezes: number;
+    freezeEveryDays: number;
+    nextFreezeInDays: number | undefined;
+    missedDays: number;
+    lostStreak: number | undefined;
+    lastPlayedDate: Date | undefined;
+
+    [key: string]: any;
+}
+
 export interface SubmitAnswerBody {
     dailyChallengeTrackId: number;
     listenedDurationSeconds: number;
@@ -2154,6 +2170,8 @@ export interface TodayStatsResponse {
     totalPlayers: number;
     currentStreak: number;
     tracks: TrackStat[];
+    freezesUsed: number;
+    freezeMilestone: boolean;
 
     [key: string]: any;
 }

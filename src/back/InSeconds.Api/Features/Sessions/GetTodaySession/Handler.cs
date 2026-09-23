@@ -1,3 +1,4 @@
+using InSeconds.Api.Common.Streak;
 using InSeconds.Api.Domain;
 using InSeconds.Api.Features.ChallengeGeneration;
 using InSeconds.Api.Infrastructure.Persistence;
@@ -23,7 +24,7 @@ public sealed class GetTodaySessionHandler(
                   ?? await TryLazyGenerateAsync(today, playerId, ct);
 
         if (row is null)
-            return new GetTodaySessionResponse("no_challenge", 0, 0, 0);
+            return new GetTodaySessionResponse("no_challenge", 0, 0, 0, StreakDto.None);
 
         var state = row.SessionStatus switch
         {
@@ -33,7 +34,15 @@ public sealed class GetTodaySessionHandler(
             _                       => "abandoned", // Abandoned (bouton) ou Expired (sortie sans terminer)
         };
 
-        return new GetTodaySessionResponse(state, row.TracksCount, row.AnswerCount, row.CurrentStreak);
+        var streak = StreakDto.None;
+        if (row.Player is { } p)
+        {
+            var rules = await StreakRulesReader.LoadAsync(db, ct);
+            streak = StreakDto.From(Player.ComputeStreakView(
+                p.IsGuest, p.CurrentStreak, p.LastPlayedDate, p.StreakFreezes, today, rules));
+        }
+
+        return new GetTodaySessionResponse(state, row.TracksCount, row.AnswerCount, streak.Streak, streak);
     }
 
     // 1 seul aller-retour BDD : le défi du jour + (si un joueur est résolu) le statut de
@@ -49,7 +58,7 @@ public sealed class GetTodaySessionHandler(
                 .Select(x => new { TracksCount = x.Tracks.Count })
                 .FirstOrDefaultAsync(ct);
 
-            return c is null ? null : new Row(c.TracksCount, null, 0, 0);
+            return c is null ? null : new Row(c.TracksCount, null, 0, null);
         }
 
         var pid = playerId.Value;
@@ -63,14 +72,21 @@ public sealed class GetTodaySessionHandler(
                     .Where(s => s.PlayerId == pid)
                     .Select(s => new { s.Status, AnswerCount = s.Answers.Count })
                     .FirstOrDefault(),
-                // Sous-requête scalaire non corrélée au défi → repliée dans le même SQL par EF.
-                Streak = db.Players.Where(p => p.Id == pid).Select(p => p.CurrentStreak).FirstOrDefault(),
+                // Sous-requête non corrélée au défi → repliée dans le même SQL par EF.
+                Player = db.Players
+                    .Where(p => p.Id == pid)
+                    .Select(p => new { p.IsGuest, p.CurrentStreak, p.LastPlayedDate, p.StreakFreezes })
+                    .FirstOrDefault(),
             })
             .FirstOrDefaultAsync(ct);
 
         return row is null
             ? null
-            : new Row(row.TracksCount, row.Session?.Status, row.Session?.AnswerCount ?? 0, row.Streak);
+            : new Row(
+                row.TracksCount,
+                row.Session?.Status,
+                row.Session?.AnswerCount ?? 0,
+                row.Player is null ? null : new PlayerStreakRow(row.Player.IsGuest, row.Player.CurrentStreak, row.Player.LastPlayedDate, row.Player.StreakFreezes));
     }
 
     // Mirroir de StartSessionHandler.TryLazyGenerateAsync : sélection déterministe
@@ -95,5 +111,7 @@ public sealed class GetTodaySessionHandler(
         return await QueryAsync(today, playerId, ct);
     }
 
-    private sealed record Row(int TracksCount, SessionStatus? SessionStatus, int AnswerCount, int CurrentStreak);
+    private sealed record Row(int TracksCount, SessionStatus? SessionStatus, int AnswerCount, PlayerStreakRow? Player);
+
+    private sealed record PlayerStreakRow(bool IsGuest, int CurrentStreak, DateOnly? LastPlayedDate, int StreakFreezes);
 }

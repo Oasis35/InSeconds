@@ -18,21 +18,21 @@
     "loggedInAs": "Connecté comme {{ pseudo }}"
   },
   "resume": {
-    "title": "Partie en cours",
-    "progress": "Tu as joué {{ done }} / {{ total }} morceaux.",
-    "question": "Veux-tu reprendre où tu t'étais arrêté ?",
+    "title": "Partie en pause",
+    "progress": "{{ done }} / {{ total }} pistes déjà écoutées.",
+    "question": "Tu reprends où tu t'es arrêté ?",
     "resume": "Reprendre",
     "loginCta": "Ne plus perdre mes parties",
-    "warningTitle": "Attention",
-    "warningBody": "En abandonnant, le défi d'aujourd'hui sera considéré comme joué.\nTu ne pourras plus y rejouer avant demain.",
-    "confirmAbandon": "Oui, abandonner",
-    "cancelAbandon": "Non, reprendre"
+    "warningTitle": "Tu vas perdre ta progression",
+    "warningBody": "Cette partie ne pourra pas être reprise. Ta série sera remise à zéro.",
+    "confirmAbandon": "Abandonner",
+    "cancelAbandon": "Annuler"
   },
   "abandonSheet": {
     "title": "Abandonner la partie ?",
-    "body": "Le défi d'aujourd'hui sera considéré comme joué.\nTu ne pourras plus y rejouer avant demain.",
-    "confirm": "Oui, abandonner",
-    "cancel": "Continuer"
+    "body": "Ta progression sera perdue et ta série remise à zéro.",
+    "confirm": "Abandonner",
+    "cancel": "Annuler"
   },
   "leaveSheet": {
     "title": "Partie en cours",
@@ -40,45 +40,39 @@
     "confirm": "Quitter quand même",
     "cancel": "Continuer à jouer"
   },
-  "loginNudge": {
-    "cta": "Connexion",
-    "anyDeviceTitle": "Reviens sur n'importe quel appareil",
-    "anyDeviceBody": "Ta série de {{ streak }} jours te suivra.",
-    "keepScoreTitle": "Garde ce score",
-    "keepScoreBody": "Il disparaîtra si tu changes de navigateur."
-  },
   "streakToast": {
-    "body": "Série de {{ streak }} jours.",
+    "body": {
+      "one": "Série de {{ streak }} jour.",
+      "other": "Série de {{ streak }} jours."
+    },
     "hint": "Crée un compte pour ne pas la perdre.",
     "cta": "Créer",
     "dismiss": "Fermer"
   },
   "noChallenge": {
     "title": "Pas de défi aujourd'hui",
-    "body": "Le défi n'a pas encore été généré.\nRéessaie dans quelques minutes."
+    "body": "Reviens un peu plus tard,\nle prochain défi arrive."
   },
   "error": {
-    "title": "Impossible de charger le défi",
-    "body": "Le serveur est peut-être indisponible.\nRéessaie dans quelques secondes."
+    "title": "Une erreur est survenue",
+    "body": "Impossible de charger le défi du jour."
   },
   "alreadyPlayed": {
-    "abandonedTitle": "Tu as abandonné le défi aujourd'hui",
+    "abandonedTitle": "Partie abandonnée",
     "abandonedBody": "Reviens demain pour un nouveau défi.",
     "nextChallengeIn": "Prochain défi dans",
     "title": "Déjà joué aujourd'hui",
     "yourScore": "Ton score",
     "median": "Médiane",
-    "medianToday": "pts aujourd'hui",
     "showTracks": "Voir les morceaux",
     "hideTracks": "Masquer",
     "coverAlt": "Pochette",
-    "failedPercent": "{{ percent }}% ratés",
-    "averageSeconds": "· moy. {{ seconds }}s"
+    "failedPercent": "{{ percent }}% ont échoué",
+    "averageSeconds": "moy. {{ seconds }}s"
   },
   "share": {
-    "button": "🔗 Partager mon score",
-    "copied": "✓ Copié !",
-    "hint": "Copie un résumé en emojis dans le presse-papier",
+    "button": "Partager mon score",
+    "copied": "Copié !",
     "failed": "Impossible de copier dans le presse-papier.",
     "title": "InSeconds 🎵 {{ date }}",
     "score": "🏆 {{ score }} pts"
@@ -88,11 +82,11 @@
     "points": "points",
     "artist": "Artiste",
     "title": "Titre",
-    "comeBack": "Reviens demain pour un nouveau défi"
+    "comeBack": "Reviens demain pour un nouveau défi."
   },
   "trackList": {
-    "guessTimeTitle": "En combien de temps les autres ont trouvé",
-    "showChart": "Voir l'histogramme des temps de réponse",
+    "guessTimeTitle": "Temps d'écoute des autres joueurs",
+    "showChart": "Voir la répartition des temps",
     "close": "Fermer"
   },
   "deezerBadge": {
@@ -120,7 +114,7 @@
     "logout": "Se déconnecter",
     "logoutConfirmTitle": "Se déconnecter ?",
     "logoutConfirmBody": "Tu pourras revenir avec un nouveau lien envoyé à {{ email }}.",
-    "logoutConfirmAction": "Oui, me déconnecter",
+    "logoutConfirmAction": "Se déconnecter",
     "logoutCancel": "Annuler",
     "logoutError": "La déconnexion a échoué. Réessaie.",
     "backToGame": "Retour au jeu",
@@ -152,31 +146,31 @@
   "login": {
     "request": {
       "title": "Connexion",
-      "subtitle": "Reçois un lien de connexion sans mot de passe.",
+      "subtitle": "Reçois un lien magique par e-mail pour garder ta série et tes scores sur tous tes appareils.",
       "emailPlaceholder": "ton@email.com",
-      "submit": "Recevoir un lien",
-      "sending": "Envoi...",
-      "sent": "Un lien de connexion vient de t'être envoyé. Vérifie ta boîte mail.",
-      "invalidEmail": "Adresse email invalide.",
-      "backToGame": "← Retour au jeu",
+      "submit": "Recevoir le lien",
+      "sending": "Envoi…",
+      "sent": "Lien envoyé. Ouvre l'e-mail depuis cet appareil pour te connecter.",
+      "invalidEmail": "Adresse e-mail invalide.",
+      "backToGame": "Retour au jeu",
       "devTitle": "Connexion rapide (dev)",
       "devError": "Échec de la connexion rapide. Réessaie."
     },
     "verify": {
-      "title": "Confirmer la connexion",
-      "subtitle": "Clique pour finaliser ta connexion sur cet appareil.",
-      "confirm": "Confirmer la connexion",
+      "title": "Vérification",
+      "subtitle": "Confirme la connexion pour associer cet appareil à ton compte.",
+      "confirm": "Confirmer",
       "confirming": "Connexion...",
       "pseudoTitle": "Choisis ton pseudo",
       "pseudoPlaceholder": "Ton pseudo",
-      "pseudoHint": "3 à 20 caractères (lettres, chiffres, espace, . _ -).",
+      "pseudoHint": "3 à 20 caractères. Visible par les autres joueurs.",
       "pseudoSubmit": "Valider",
-      "pseudoTaken": "Ce pseudo est déjà pris, essaie-en un autre.",
+      "pseudoTaken": "Ce pseudo est déjà pris.",
       "invalidPseudo": "Pseudo invalide (3 à 20 caractères autorisés).",
       "invalidOrExpired": "Ce lien est invalide ou a expiré.",
       "missingToken": "Lien de connexion incomplet.",
       "genericError": "Une erreur est survenue, réessaie.",
-      "backToLogin": "← Demander un nouveau lien"
+      "backToLogin": "Retour à la connexion"
     }
   },
   "privacy": {
@@ -227,7 +221,7 @@
     "noPreview": "Aperçu non disponible pour ce morceau.",
     "skip": "Passer (0 pts)",
     "replay": "↺ {{ seconds }}s",
-    "listenUpTo": "▶ jusqu'à {{ seconds }}s",
+    "listenUpTo": "Écouter jusqu'à {{ seconds }}s",
     "stepsUpTo": "Tu peux écouter jusqu'à {{ seconds }}s si besoin",
     "placeholder": "Artiste — Titre",
     "emptyConfirm": "Tu n'as rien saisi. Valider quand même ?",
@@ -422,6 +416,84 @@
       "added": "Ajouté",
       "addError": "Erreur",
       "addTrack": "Ajouter"
+    }
+  },
+  "streakFreeze": {
+    "pillLabel": "Série de {{ streak }} jours, voir le détail",
+    "pillProtectedLabel": "Série protégée",
+    "avatarTitle": "Mon profil — {{ pseudo }}",
+    "avatarLabel": "Mon profil",
+    "welcomeBack": "Bon retour !",
+    "frozenLineBefore": "Tes",
+    "frozenLineStrong": "{{ streak }} jours de série",
+    "frozenLineAfter": "au chaud grâce à un gel. Joue pour continuer !",
+    "sheet": {
+      "streakTitle": "Série de {{ streak }} jours",
+      "stockLabel": "Tes gels · {{ count }} / {{ max }}",
+      "nextFreeze": "Prochain gel à {{ next }} jours",
+      "remaining": {
+        "one": "encore {{ n }} jour",
+        "other": "encore {{ n }} jours"
+      },
+      "rule": "Tous les {{ every }} jours de série, tu gagnes 1 gel ({{ max }} max). Si tu manques un jour, il s’utilise tout seul : ta série ne monte pas, mais elle ne s’arrête pas.",
+      "close": "Fermer",
+      "protectedTitle": "Série protégée",
+      "freezeDay": "gel",
+      "today": "aujourd’hui",
+      "protectedBody": {
+        "one": "Tu as manqué hier, ta série de {{ streak }} jours tient toujours.",
+        "other": "Tu as manqué {{ missed }} jours, ta série de {{ streak }} jours tient toujours."
+      },
+      "protectedUse": {
+        "one": "1 gel sera utilisé quand tu termineras le défi d’aujourd’hui.",
+        "other": "{{ missed }} gels seront utilisés quand tu termineras le défi d’aujourd’hui."
+      },
+      "playNow": "Jouer maintenant",
+      "later": "Plus tard",
+      "guestBody": "Joue chaque jour pour la faire grimper. Un jour sans partie, et elle repart de zéro.",
+      "guestFreeze": "Avec un compte, des gels protègent ta série les jours où tu ne joues pas.",
+      "signup": "Créer un compte"
+    },
+    "usedToast": {
+      "title": {
+        "one": "1 gel a sauvé ta série !",
+        "other": "{{ n }} gels ont sauvé ta série !"
+      },
+      "body": {
+        "one": "Tu as manqué hier, ta série de {{ streak }} jours continue.",
+        "other": "Tu as manqué {{ n }} jours, ta série de {{ streak }} jours continue."
+      }
+    },
+    "earnedToast": {
+      "titleHighlight": "+1 gel",
+      "titleRest": "gagné !",
+      "body": "{{ streak }} jours de série. Il protégera ta série si tu manques un jour."
+    },
+    "lostToast": {
+      "titleBefore": "Ta série de",
+      "titleStrike": "{{ streak }} jours",
+      "titleAfter": "s’est arrêtée.",
+      "hintBefore": "Avec un compte, un gel",
+      "hintAfter": "l’aurait sauvée. Le premier est offert."
+    },
+    "guestMissToast": {
+      "title": "Tu aurais gagné un gel !",
+      "body": "Crée un compte pour protéger tes {{ streak }} jours."
+    },
+    "ctaLine1": "Créer un compte /",
+    "ctaLine2": "Se connecter",
+    "dismiss": "Fermer",
+    "profile": {
+      "label": "Gels",
+      "full": "{{ max }} gels · stock plein",
+      "stock": {
+        "one": "{{ n }} gel · prochain dans {{ days }}",
+        "other": "{{ n }} gels · prochain dans {{ days }}"
+      },
+      "days": {
+        "one": "{{ n }} jour",
+        "other": "{{ n }} jours"
+      }
     }
   }
 }

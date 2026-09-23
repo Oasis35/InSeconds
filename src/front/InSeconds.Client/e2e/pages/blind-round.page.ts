@@ -25,7 +25,7 @@ export class BlindRoundPage {
     // Score affiché dans le résultat du round : "+850 pts"
     this.roundScore          = page.locator('p').filter({ hasText: ' pts' }).last();
     // Bouton "écouter plus" : texte visible "+X" (ex: "+1", "+1.5"), tooltip "jusqu'à Xs" en title uniquement.
-    this.listenMoreButton    = page.getByRole('button', { name: /^\+\d/ });
+    this.listenMoreButton    = page.getByRole('button', { name: /^▶ \d/ });
     // Histogramme "en combien de temps les autres ont trouvé" affiché à la révélation.
     this.guessTimeChart       = page.getByTestId('guess-time-chart');
     this.guessTimeBars        = this.guessTimeChart.locator('[data-bucket]');

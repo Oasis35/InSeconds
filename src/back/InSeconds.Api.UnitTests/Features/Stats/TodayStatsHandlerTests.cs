@@ -168,6 +168,71 @@ public sealed class TodayStatsHandlerTests
     }
 
     // ---------------------------------------------------------------------------
+    // Tests — gel de série
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task Handle_WhenLinkedPlayerUsedAndEarnedFreezes_ReturnsThemFromSession()
+    {
+        await using var db = CreateDbContext();
+        var (challenge, _) = BuildTodayChallenge();
+        db.DailyChallenges.Add(challenge);
+        var player = BuildPlayer(Player1);
+        player.LinkToAccount("player@example.com", "PlayerPseudo");
+        player.RestoreStreakForTesting(14, DateOnly.FromDateTime(DateTime.UtcNow), streakFreezes: 2);
+        db.Players.Add(player);
+        var session = GameSession.Restore(playerId: Player1, dailyChallengeId: 1, id: 1, totalScore: 850, totalDurationSeconds: 1, createdAt: DateTime.UtcNow, status: SessionStatus.Completed);
+        session.RecordStreakEffect(new StreakCompletionResult(FreezesUsed: 1, FreezeEarned: true));
+        db.GameSessions.Add(session);
+        await db.SaveChangesAsync();
+
+        var result = await CreateHandler(db).Handle(Player1, CancellationToken.None);
+
+        var response = ((Ok<TodayStatsResponse>)result).Value!;
+        response.CurrentStreak.Should().Be(14);
+        response.FreezesUsed.Should().Be(1);
+        response.FreezeMilestone.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Handle_WhenGuestReachesSevenDaysToday_ReturnsFreezeMilestone()
+    {
+        await using var db = CreateDbContext();
+        var (challenge, _) = BuildTodayChallenge();
+        db.DailyChallenges.Add(challenge);
+        var player = BuildPlayer(Player1);
+        player.RestoreStreakForTesting(7, DateOnly.FromDateTime(DateTime.UtcNow));
+        db.Players.Add(player);
+        db.GameSessions.Add(GameSession.Restore(playerId: Player1, dailyChallengeId: 1, id: 1, totalScore: 850, totalDurationSeconds: 1, createdAt: DateTime.UtcNow, status: SessionStatus.Completed));
+        await db.SaveChangesAsync();
+
+        var result = await CreateHandler(db).Handle(Player1, CancellationToken.None);
+
+        var response = ((Ok<TodayStatsResponse>)result).Value!;
+        response.FreezesUsed.Should().Be(0);
+        response.FreezeMilestone.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Handle_WhenGuestStreakBrokenSinceLastGame_ReturnsZeroStreak()
+    {
+        // Série figée à 5 mais dernier défi il y a 3 jours et aucune partie aujourd'hui → 0.
+        await using var db = CreateDbContext();
+        var (challenge, _) = BuildTodayChallenge();
+        db.DailyChallenges.Add(challenge);
+        var player = BuildPlayer(Player1);
+        player.RestoreStreakForTesting(5, DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-3));
+        db.Players.Add(player);
+        await db.SaveChangesAsync();
+
+        var result = await CreateHandler(db).Handle(Player1, CancellationToken.None);
+
+        var response = ((Ok<TodayStatsResponse>)result).Value!;
+        response.CurrentStreak.Should().Be(0);
+        response.FreezeMilestone.Should().BeFalse();
+    }
+
+    // ---------------------------------------------------------------------------
     // Tests — stats par track
     // ---------------------------------------------------------------------------
 

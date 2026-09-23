@@ -1,12 +1,14 @@
 import { Component, inject, signal, computed, effect, viewChild, OnInit, OnDestroy, HostListener, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+import { NgTemplateOutlet } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
 import { PlayerSessionService } from '../../core/services/player-session.service';
 import { GameFacadeService } from './services/game-facade.service';
 import { GameShareService } from './services/game-share.service';
 import { LeaveConfirmationService } from './services/leave-confirmation.service';
-import { TrackSlot, ResumedAnswer } from '../../core/models/game.models';
+import { TrackSlot, ResumedAnswer, StreakDto } from '../../core/models/game.models';
+import { dateKey, pluralKey } from '../../core/models/streak';
 import { BlindRoundComponent, AnsweredEvent } from './blind-round/blind-round.component';
 import { ConfirmSheetComponent } from '../../shared/confirm-sheet/confirm-sheet.component';
 import { ApiClient, TodayStatsResponse } from '../../api/api.generated';
@@ -21,6 +23,12 @@ import { FinalRecapScreenComponent, RoundResult } from './screens/final-recap-sc
 import { GameHeaderComponent } from './components/game-header/game-header.component';
 import { GameFooterComponent } from './components/game-footer/game-footer.component';
 import { DecorBackgroundComponent } from '../../shared/decor-background/decor-background.component';
+import { StreakSheetComponent } from '../../shared/streak-sheet/streak-sheet.component';
+import { StreakIconComponent } from '../../shared/streak-icon/streak-icon.component';
+import { FreezeCellsComponent } from '../../shared/freeze-cells/freeze-cells.component';
+
+// Toast invité « série perdue » : une seule fois par série perdue (clé = date du dernier défi joué).
+const LOST_STREAK_SEEN_KEY = 'inseconds.lostStreakNudgeSeen';
 
 type GameState = 'loading' | 'welcome' | 'resume_prompt' | 'playing' | 'done' | 'error' | 'no_challenge' | 'already_played';
 
@@ -31,6 +39,7 @@ type GameState = 'loading' | 'welcome' | 'resume_prompt' | 'playing' | 'done' | 
     WelcomeScreenComponent, ResumeScreenComponent, StatusScreenComponent,
     AlreadyPlayedScreenComponent, FinalRecapScreenComponent,
     GameHeaderComponent, GameFooterComponent, DecorBackgroundComponent,
+    StreakSheetComponent, StreakIconComponent, FreezeCellsComponent, NgTemplateOutlet,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './game.component.html',
@@ -43,6 +52,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
   private readonly gameShare = inject(GameShareService);
   private readonly leaveConfirmation = inject(LeaveConfirmationService);
   protected readonly playerSession = inject(PlayerSessionService);
+  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly gameState = signal<GameState>('loading');
   protected readonly todayStats = signal<TodayStatsResponse | null>(null);
@@ -70,6 +80,48 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
   protected readonly abandonLoading = signal(false);
   protected readonly sessionAbandoned = signal(false);
   protected readonly streakToastDismissed = signal(false);
+
+  // ── Gel de série ─────────────────────────────────────────────────────────
+  // Détail série/gels du peek (rafraîchi après la dernière réponse d'une partie).
+  protected readonly streakInfo = signal<StreakDto | null>(null);
+  protected readonly showStreakSheet = signal(false);
+  protected readonly gelToastDismissed = signal(false);
+  /** Série vue par le panneau : état neutre tant que le peek n'a pas répondu. */
+  protected readonly sheetStreak = computed<StreakDto>(() => this.streakInfo() ?? {
+    status: 'active', streak: 0, freezes: 0, maxFreezes: 0, freezeEveryDays: 0,
+    nextFreezeInDays: undefined, missedDays: 0, lostStreak: undefined, lastPlayedDate: undefined,
+  });
+  /** Série perdue à afficher dans le toast invité (null = pas de toast). */
+  protected readonly lostStreak = signal<number | null>(null);
+
+  private readonly onRecap = computed(() => {
+    const state = this.gameState();
+    return state === 'done' || state === 'already_played';
+  });
+
+  /** Compte connecté : gel gagné par la partie du jour (« +1 gel gagné ! »). */
+  protected readonly showGelEarnedToast = computed(() =>
+    this.playerSession.isLinked() && this.onRecap() && !this.sessionAbandoned()
+    && !this.gelToastDismissed() && this.todayStats()?.freezeMilestone === true);
+
+  /** Compte connecté : gel(s) consommé(s) par la partie du jour (« 1 gel a sauvé ta série ! »). */
+  protected readonly showGelUsedToast = computed(() =>
+    this.playerSession.isLinked() && this.onRecap() && !this.sessionAbandoned()
+    && !this.gelToastDismissed() && !this.showGelEarnedToast() && (this.todayStats()?.freezesUsed ?? 0) > 0);
+
+  protected readonly freezesUsed = computed(() => this.todayStats()?.freezesUsed ?? 0);
+  protected readonly freezesUsedKey = computed(() => pluralKey(this.freezesUsed()));
+  protected readonly toastStreakKey = computed(() => pluralKey(this.toastStreak()));
+
+  /** Invité : palier de gel atteint (« Tu aurais gagné un gel ! ») — variante du toast de série. */
+  protected readonly guestFreezeMiss = computed(() =>
+    !this.playerSession.isLinked() && this.todayStats()?.freezeMilestone === true);
+
+  protected readonly showStreakToast = computed(() =>
+    !this.playerSession.isLinked() && !this.streakToastDismissed() && this.toastStreak() > 0 && this.onRecap());
+
+  protected readonly showLostToast = computed(() =>
+    !this.playerSession.isLinked() && this.gameState() === 'welcome' && this.lostStreak() !== null);
 
   // Streak à afficher : depuis la session (welcome/playing/done) ou depuis les stats (already_played)
   protected readonly displayStreak = computed(() => {
@@ -205,6 +257,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
         this.sessionAbandoned.set(true);
         this.gameState.set('already_played');
         this.streakToastDismissed.set(false);
+        this.gelToastDismissed.set(false);
         this.startCountdown();
       },
       error: () => {
@@ -270,12 +323,15 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
     if (next >= this.tracks().length) {
       this.gameState.set('done');
       this.streakToastDismissed.set(false);
+      this.gelToastDismissed.set(false);
       this.displayedTotalScore.set(0);
       countUp(this.totalScore(), v => this.displayedTotalScore.set(v), 1000);
       this.startCountdown();
       // Stats du jour → histogrammes par morceau dans le récap (popup au clic sur un score).
       this.api.apiStatsToday().pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe(stats => this.todayStats.set(stats));
+      // Série/gels après complétion (gel consommé ou gagné) pour la gélule du header.
+      this.refreshStreakInfo();
     } else {
       this.currentIndex.set(next);
     }
@@ -368,6 +424,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
           this.sessionAbandoned.set(errorCode === 'abandoned');
           this.gameState.set('already_played');
           this.streakToastDismissed.set(false);
+          this.gelToastDismissed.set(false);
           this.startCountdown();
           if (!this.sessionAbandoned()) {
             this.api.apiStatsToday().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(stats => this.todayStats.set(stats));
@@ -389,10 +446,48 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
    *  - 'playing'  : retour au premier plan pendant une partie — on ne bascule QUE si la
    *                 partie a été terminée/abandonnée ailleurs (jamais vers welcome/resume).
    */
+  // ── Gel de série ─────────────────────────────────────────────────────────
+
+  protected closeStreakSheet(): void {
+    this.showStreakSheet.set(false);
+  }
+
+  /** « Jouer maintenant » (série protégée) : lance ou reprend la partie du jour. */
+  protected playFromStreakSheet(): void {
+    this.showStreakSheet.set(false);
+    if (this.gameState() === 'welcome') this.beginGame();
+    else if (this.gameState() === 'resume_prompt') this.beginResume();
+  }
+
+  protected signupFromStreakSheet(): void {
+    this.showStreakSheet.set(false);
+    this.router.navigate(['/login']);
+  }
+
+  private refreshStreakInfo(): void {
+    this.gameService.peekToday().pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({ next: res => this.streakInfo.set(res.streak ?? null), error: () => {} });
+  }
+
+  /** Toast invité « série perdue » : une seule fois par série perdue (localStorage). */
+  private checkLostStreak(streak: StreakDto | null): void {
+    const key = dateKey(streak?.lastPlayedDate);
+    if (streak?.lostStreak == null || key === null) return;
+    try {
+      if (localStorage.getItem(LOST_STREAK_SEEN_KEY) === key) return;
+      localStorage.setItem(LOST_STREAK_SEEN_KEY, key);
+    } catch {
+      // Stockage indisponible (navigation privée…) : on affiche quand même, sans mémoriser.
+    }
+    this.lostStreak.set(streak.lostStreak);
+  }
+
   private peekSession(context: 'initial' | 'refocus' | 'playing'): void {
     this.gameService.peekToday().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         this.currentStreak.set(res.currentStreak);
+        this.streakInfo.set(res.streak ?? null);
+        if (context === 'initial') this.checkLostStreak(res.streak ?? null);
         this.peekTracksCount.set(res.tracksCount);
         this.peekCompletedCount.set(res.completedCount);
 
@@ -407,6 +502,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
             this.sessionAbandoned.set(false);
             this.gameState.set('already_played');
             this.streakToastDismissed.set(false);
+            this.gelToastDismissed.set(false);
             this.startCountdown();
             this.api.apiStatsToday().pipe(takeUntilDestroyed(this.destroyRef))
               .subscribe(stats => this.todayStats.set(stats));
@@ -415,6 +511,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
             this.sessionAbandoned.set(true);
             this.gameState.set('already_played');
             this.streakToastDismissed.set(false);
+            this.gelToastDismissed.set(false);
             this.startCountdown();
             break;
           case 'no_challenge':
