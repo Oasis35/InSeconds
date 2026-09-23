@@ -42,6 +42,7 @@
               class="text-lg font-bold transition-opacity hover:opacity-70 touch-manipulation"
               style="font-family:var(--font-display);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px"
               [style.color]="r.score > 0 ? 'var(--color-success)' : 'var(--text-hover)'"
+              [title]="'trackList.showChart' | translate"
               [attr.aria-label]="'trackList.showChart' | translate">
               +{{ r.score }}
             </button>

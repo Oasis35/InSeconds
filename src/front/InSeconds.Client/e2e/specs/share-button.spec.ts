@@ -24,7 +24,7 @@ test.describe('Bouton partager', () => {
     await game.waitForDone();
     await game.shareButton.click();
 
-    // Le bouton passe en "✓ Copié !"
+    // Le bouton passe en "Copié !"
     await expect(game.shareCopiedButton).toBeVisible();
 
     const clipText = await page.evaluate(() => navigator.clipboard.readText());
@@ -59,7 +59,7 @@ test.describe('Bouton partager', () => {
     await game.waitForDone();
     await game.shareButton.click();
 
-    // Le hint est remplacé par le message d'erreur, pas d'état "Copié"
+    // Le message d'erreur s'affiche, pas d'état "Copié"
     await expect(page.getByText('Impossible de copier dans le presse-papier.')).toBeVisible();
     await expect(game.shareCopiedButton).not.toBeVisible();
   });

@@ -17,15 +17,15 @@ export function pathOf(url: string): string {
 export async function linkAccount(page: Page, api: ApiTestClient, email: string, pseudo: string): Promise<void> {
   await page.goto('/login');
   await page.getByPlaceholder('ton@email.com').fill(email);
-  await page.getByRole('button', { name: 'Recevoir un lien' }).click();
+  await page.getByRole('button', { name: 'Recevoir le lien' }).click();
   // Le clic ne fait que déclencher la requête HTTP asynchrone — attendre la confirmation
   // affichée avant d'interroger le backend, sinon on peut arriver avant que l'email soit
   // réellement capturé.
-  await expect(page.getByText('un lien de connexion vient de t\'être envoyé')).toBeVisible();
+  await expect(page.getByText('Lien envoyé.')).toBeVisible();
 
   const linkUrl = await api.getLastMagicLinkUrl(email);
   await page.goto(pathOf(linkUrl));
-  await page.getByRole('button', { name: 'Confirmer la connexion' }).click();
+  await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
   await page.getByPlaceholder('Ton pseudo').fill(pseudo);
   await page.getByRole('button', { name: 'Valider' }).click();
   // Attendre que la connexion/conversion de compte soit réellement terminée côté serveur

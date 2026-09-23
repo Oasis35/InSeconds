@@ -281,7 +281,7 @@ Délègue l'affichage à des sous-composants :
 - **`ResumeScreenComponent`** : état `resume_prompt` (avec confirmation abandon inline). Guest → bouton outline "Ne plus perdre mes parties" (`/login`)
 - **`StatusScreenComponent`** : états `no_challenge` + `error` (inputs `titleKey`/`bodyKey` i18n)
 - **`AlreadyPlayedScreenComponent`** : état `already_played` (score vs médiane, `ShareButtonComponent`). L'accordéon morceaux délègue à `<app-track-results-list [rows]="playedRows()">` (mappe `stats().tracks`) → **mêmes lignes que le récap** (chips `✓/✗`, durée, `+score` cliquable → pop-up histogramme). Guest + partie complétée → `LoginNudgeBannerComponent` ("Reviens sur n'importe quel appareil")
-- **`FinalRecapScreenComponent`** : état `done` (score animé, `ShareButtonComponent`). Input `stats: TodayStatsResponse | null` (`GameComponent` appelle `apiStatsToday()` en entrant dans `done`). L'accordéon délègue à `<app-track-results-list [rows]="recapRows()">` — `recapRows` mappe `results()` (`RoundResult`) + fusionne l'histogramme depuis `stats` par `position`. Liste + pop-up rendues par `TrackResultsListComponent`. Guest → `LoginNudgeBannerComponent` ("Garde ce score")
+- **`FinalRecapScreenComponent`** : état `done` (score animé, `ShareButtonComponent`). Input `stats: TodayStatsResponse | null` (`GameComponent` appelle `apiStatsToday()` en entrant dans `done`). L'accordéon délègue à `<app-track-results-list [rows]="recapRows()">` — `recapRows` mappe `results()` (`RoundResult`) + fusionne l'histogramme depuis `stats` par `position`. Liste + pop-up rendues par `TrackResultsListComponent`.
 - **`BlindRoundComponent`** : état `playing`
 - **`ConfirmSheetComponent`** : modales abandon + quitter (la confirmation de déconnexion vit désormais dans `ProfileComponent`)
 - **Toast de streak** (inline, pas un composant partagé) : guest, streak > 0, états `done`/`already_played` — dismissible, `streakToastDismissed` remis à `false` à chaque (ré)entrée dans ces états ; variante « Tu aurais gagné un gel ! » au palier de 7 jours
@@ -327,7 +327,7 @@ Bouton partage réutilisable (`shared/share-button/`). Inputs : `copied: boolean
 
 ### `LoginNudgeBannerComponent`
 
-Bannière de nudge connexion réutilisable (`shared/login-nudge-banner/`, 2026-09). Inputs : `titleKey`/`bodyKey` (required, clés i18n — titre **et** corps varient selon l'écran), `bodyParams?: Record<string, unknown>` (interpolation, ex. `{streak}`). Le bouton CTA (`routerLink="/login"`, libellé fixe `loginNudge.cta`) est intégré au composant. Aucun output. Utilisé (guest uniquement, gardé par `PlayerSessionService.isLinked()`) dans `AlreadyPlayedScreenComponent` (titre "Reviens sur n'importe quel appareil") et `FinalRecapScreenComponent` (titre "Garde ce score").
+Bannière de nudge connexion réutilisable (`shared/login-nudge-banner/`, 2026-09). Inputs : `titleKey`/`bodyKey` (required, clés i18n — titre **et** corps varient selon l'écran), `bodyParams?: Record<string, unknown>` (interpolation, ex. `{streak}`). Le bouton CTA (`routerLink="/login"`, libellé fixe `loginNudge.cta`) est intégré au composant. Aucun output. Utilisé (guest uniquement, gardé par `PlayerSessionService.isLinked()`) dans `AlreadyPlayedScreenComponent` (titre "Reviens sur n'importe quel appareil").
 
 ### `BrowserIdComponent`
 

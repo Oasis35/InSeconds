@@ -14,13 +14,13 @@ describe('LoginNudgeBannerComponent', () => {
     });
     fixture = TestBed.createComponent(LoginNudgeBannerComponent);
     component = fixture.componentInstance;
-    fixture.componentRef.setInput('titleKey', 'loginNudge.keepScoreTitle');
-    fixture.componentRef.setInput('bodyKey', 'loginNudge.keepScoreBody');
+    fixture.componentRef.setInput('titleKey', 'loginNudge.anyDeviceTitle');
+    fixture.componentRef.setInput('bodyKey', 'loginNudge.anyDeviceBody');
   });
 
   it('exposes the given titleKey/bodyKey', () => {
-    expect(component.titleKey()).toBe('loginNudge.keepScoreTitle');
-    expect(component.bodyKey()).toBe('loginNudge.keepScoreBody');
+    expect(component.titleKey()).toBe('loginNudge.anyDeviceTitle');
+    expect(component.bodyKey()).toBe('loginNudge.anyDeviceBody');
   });
 
   it('defaults bodyParams to an empty object', () => {

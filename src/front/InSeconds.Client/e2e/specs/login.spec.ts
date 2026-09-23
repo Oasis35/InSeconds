@@ -6,8 +6,8 @@ const TEST_EMAIL = 'testeur@e2e.test';
 async function requestMagicLink(page: import('@playwright/test').Page, email: string): Promise<void> {
   await page.goto('/login');
   await page.getByPlaceholder('ton@email.com').fill(email);
-  await page.getByRole('button', { name: 'Recevoir un lien' }).click();
-  await expect(page.getByText('un lien de connexion vient de t\'être envoyé')).toBeVisible();
+  await page.getByRole('button', { name: 'Recevoir le lien' }).click();
+  await expect(page.getByText('Lien envoyé.')).toBeVisible();
 }
 
 // L'URL du lien magique est générée avec App:PublicUrl (fixe, ne suit pas forcément le
@@ -28,7 +28,7 @@ test.describe('Connexion par lien magique', () => {
     const linkUrl = await api.getLastMagicLinkUrl(TEST_EMAIL);
     await page.goto(pathOf(linkUrl));
 
-    await page.getByRole('button', { name: 'Confirmer la connexion' }).click();
+    await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
 
     // Première connexion pour cet email -> pas encore de compte -> choix du pseudo
     await expect(page.getByRole('heading', { name: 'Choisis ton pseudo' })).toBeVisible();
@@ -42,10 +42,10 @@ test.describe('Connexion par lien magique', () => {
 
   test('lien invalide affiche une erreur avec un retour vers /login', async ({ page }) => {
     await page.goto('/login/verify?token=un-token-qui-nexiste-pas');
-    await page.getByRole('button', { name: 'Confirmer la connexion' }).click();
+    await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
 
     await expect(page.getByText('Ce lien est invalide ou a expiré.')).toBeVisible();
-    await page.getByRole('link', { name: '← Demander un nouveau lien' }).click();
+    await page.getByRole('link', { name: 'Retour à la connexion' }).click();
     await expect(page).toHaveURL(/\/login$/);
   });
 
@@ -54,7 +54,7 @@ test.describe('Connexion par lien magique', () => {
     await requestMagicLink(page, TEST_EMAIL);
     let linkUrl = await api.getLastMagicLinkUrl(TEST_EMAIL);
     await page.goto(pathOf(linkUrl));
-    await page.getByRole('button', { name: 'Confirmer la connexion' }).click();
+    await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
     await page.getByPlaceholder('Ton pseudo').fill('BobE2E');
     await page.getByRole('button', { name: 'Valider' }).click();
     const gameA = new GamePage(page);
@@ -76,7 +76,7 @@ test.describe('Connexion par lien magique', () => {
     await requestMagicLink(pageB, TEST_EMAIL);
     linkUrl = await api.getLastMagicLinkUrl(TEST_EMAIL);
     await pageB.goto(pathOf(linkUrl));
-    await pageB.getByRole('button', { name: 'Confirmer la connexion' }).click();
+    await pageB.getByRole('button', { name: 'Confirmer', exact: true }).click();
 
     // Compte déjà lié -> pas de nouveau prompt pseudo, résolution directe.
     const gameB = new GamePage(pageB);
@@ -90,7 +90,7 @@ test.describe('Connexion par lien magique', () => {
     await requestMagicLink(page, TEST_EMAIL);
     const linkUrl = await api.getLastMagicLinkUrl(TEST_EMAIL);
     await page.goto(pathOf(linkUrl));
-    await page.getByRole('button', { name: 'Confirmer la connexion' }).click();
+    await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
     await page.getByPlaceholder('Ton pseudo').fill('CarlE2E');
     await page.getByRole('button', { name: 'Valider' }).click();
 

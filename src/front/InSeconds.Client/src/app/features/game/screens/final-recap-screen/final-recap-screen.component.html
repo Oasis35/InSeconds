@@ -28,7 +28,6 @@
       class="w-full flex items-center justify-center gap-2 py-3.5 text-xs font-bold tracking-wide uppercase transition-colors hover:text-slate-400"
       style="font-family:var(--font-display);color:var(--text-faint);border-top:1px solid var(--border-medium)">
       <span>{{ (showTrackDetails() ? 'alreadyPlayed.hideTracks' : 'alreadyPlayed.showTracks') | translate }}</span>
-      <span>{{ showTrackDetails() ? '▲' : '▼' }}</span>
     </button>
 
     @if (showTrackDetails()) {
@@ -38,10 +37,6 @@
     }
 
   </div>
-
-  @if (!playerSession.isLinked()) {
-    <app-login-nudge-banner titleKey="loginNudge.keepScoreTitle" bodyKey="loginNudge.keepScoreBody" />
-  }
 
   <p class="text-center text-xs pb-4" style="color:var(--text-muted)">{{ 'done.comeBack' | translate }}</p>
 </div>

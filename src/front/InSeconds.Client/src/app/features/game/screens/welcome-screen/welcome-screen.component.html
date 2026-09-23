@@ -4,7 +4,7 @@
     <h2 class="text-3xl font-extrabold tracking-tight" style="font-family:var(--font-display);color:var(--text-hi)">{{ (isProtected() ? 'streakFreeze.welcomeBack' : 'welcome.title') | translate }}</h2>
     <p class="text-sm leading-relaxed" style="color:var(--text-muted)">
       {{ 'welcome.subtitle' | translate: { count: trackCount() } }}<br>
-      {{ 'welcome.tagline' | translate }}
+      <strong style="color:var(--color-accent)">{{ 'welcome.tagline' | translate }}</strong>
     </p>
   </div>
 

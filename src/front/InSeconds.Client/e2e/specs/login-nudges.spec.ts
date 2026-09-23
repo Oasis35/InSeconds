@@ -40,15 +40,15 @@ test.describe('Nudges de connexion (guest)', () => {
     await expect(page.getByRole('link', { name: 'Ne plus perdre mes parties' })).toBeVisible();
   });
 
-  test('affiche la bannière "Garde ce score" sur le récap final', async ({ page, api }) => {
+  test('pas de bannière "Garde ce score" sur le récap final', async ({ page, api }) => {
     await api.reset();
     await page.clock.install({ time: Date.now() });
 
     const game = new GamePage(page);
     await game.playFullGame(new BlindRoundPage(page));
 
-    await expect(page.getByText('Garde ce score')).toBeVisible();
-    await expect(page.getByText('Il disparaîtra si tu changes de navigateur.')).toBeVisible();
+    await expect(page.getByText('Score final')).toBeVisible();
+    await expect(page.getByText('Garde ce score')).toHaveCount(0);
   });
 
   test('affiche la bannière "Reviens sur n\'importe quel appareil" sur l\'écran déjà joué', async ({ page, api }) => {
