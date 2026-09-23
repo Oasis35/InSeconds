@@ -78,10 +78,12 @@ public sealed class Player
     public DateTime? DeletedAt { get; private set; }
     public int CurrentStreak { get; private set; }  // jours consécutifs joués
     public DateOnly? LastPlayedDate { get; private set; }
+    public int StreakFreezes { get; private set; }   // gels de série (comptes connectés)
     public bool IsAdmin { get; private set; }
 
     // Mutations via méthodes métier : CreateGuest() (factory), RecordSeen(now),
-    // RecordChallengeCompletion(challengeDate), LinkToAccount(email, pseudo),
+    // RecordChallengeCompletion(challengeDate, rules) (streak + gels), GetStreakView(today, rules)
+    // (série effective, lecture pure), LinkToAccount(email, pseudo) (+1 gel offert),
     // UpdatePseudo(pseudo), ChangeEmail(newEmail), Delete(deletedAt).
 }
 ```
@@ -90,7 +92,7 @@ public sealed class Player
 - `IX_Players_LastSeenAt` (filtré `NOT NULL`) — requêtes `BuildPlayerBreakdown` dans `GetAdminStats`
 - `CK_Players_GuestPseudo` : invariant `IsGuest ⇔ Pseudo IS NULL` garanti en BD
 - **Global query filter EF** `!IsDeleted` propagé en cascade sur sessions/answers
-- `CurrentStreak`/`LastPlayedDate` mis à jour via `player.RecordChallengeCompletion(challengeDate)` (appelé dans `SubmitAnswer/Handler.cs` à la complétion, parties complètes uniquement) — basés sur `DailyChallenge.Date`, pas sur la date de complétion UTC : `LastPlayedDate` stocke la date du défi, streak +1 si le défi complété est celui du lendemain du dernier défi complété
+- `CurrentStreak`/`LastPlayedDate`/`StreakFreezes` mis à jour via `player.RecordChallengeCompletion(challengeDate, rules)` (appelé dans `SubmitAnswer/Handler.cs` à la complétion, parties complètes uniquement) — basés sur `DailyChallenge.Date`, pas sur la date de complétion UTC : `LastPlayedDate` stocke la date du défi, streak +1 si le défi complété est celui du lendemain du dernier défi complété, ou si les jours manqués sont couverts par les gels d'un compte connecté (gels consommés) ; +1 gel tous les 7 jours (2 max). Effet stocké sur `GameSession.FreezesUsed`/`FreezeEarned`. La série **affichée** est la série effective (`GetStreakView`, 0 si perdue), cf. `docs/GAMEPLAY_RULES_FR.md` § Streak
 - **Setters tous `private`** (invariants protégés par méthode) — `IsAdmin` n'a aucune méthode publique de mutation, l'attribution du rôle admin se fait hors application (SQL manuel en prod, cf. CLAUDE.md racine)
 
 ### Track

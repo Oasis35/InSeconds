@@ -127,7 +127,7 @@
 
 - [x] **Persister les clés Data Protection en base** (corrigé le 2026-07-14) — package `Microsoft.AspNetCore.DataProtection.EntityFrameworkCore`, `PersistKeysToDbContext<ApplicationDbContext>()`, table `DataProtectionKeys` (migration `PersistDataProtectionKeys`) : les cookies joueurs survivent aux redémarrages/redéploiements. Note : une dernière invalidation des cookies a lieu au premier déploiement du fix (anciennes clés perdues avec le conteneur)
 - [x] **Baser la streak sur la date du défi** (corrigé le 2026-07-11) — `SubmitAnswer/Handler.cs` compare désormais `LastPlayedDate` à `DailyChallenge.Date − 1 jour` et stocke la date du défi : terminer le défi de la veille après minuit UTC ne casse plus la streak. Couvert par tests unitaires + intégration
-- [ ] (optionnel, produit) **Jour de grâce / streak freeze** — voir section Rétention
+- [x] **Gel de série (streak freeze)** (2026-09-23, PR #162) — comptes connectés, 1 offert à l'inscription, +1 tous les 7 jours (2 max), consommation automatique ; incitation invité
 
 ## 🚧 Mode entraînement (anciens défis)
 
