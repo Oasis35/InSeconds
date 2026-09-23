@@ -69,7 +69,7 @@ test.describe('Nudges de connexion (guest)', () => {
     const game = new GamePage(page);
     await game.playFullGame(new BlindRoundPage(page));
 
-    const toast = page.getByText(/Série de \d+ jours\./);
+    const toast = page.getByText(/Série de \d+ jours?\./);
     await expect(toast).toBeVisible();
     await expect(page.getByRole('link', { name: 'Créer' })).toBeVisible();
 

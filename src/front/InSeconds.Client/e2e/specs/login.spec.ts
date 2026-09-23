@@ -101,9 +101,10 @@ test.describe('Connexion par lien magique', () => {
     // directe) — il faut confirmer explicitement via son bouton "Se déconnecter".
     await page.locator('app-game-header').getByTitle('CarlE2E').click();
     await expect(page).toHaveURL(/\/profile$/);
-    await page.getByRole('button', { name: 'Se déconnecter' }).click();
+    await page.getByRole('button', { name: 'Se déconnecter', exact: true }).click();
     await expect(page.getByText('Se déconnecter ?')).toBeVisible();
-    await page.getByRole('button', { name: 'Oui, me déconnecter' }).click();
+    // Même libellé que le bouton du profil : la confirmation du panneau est rendue après lui.
+    await page.getByRole('button', { name: 'Se déconnecter', exact: true }).last().click();
 
     await game.waitForWelcome();
     await expect(page.getByRole('link', { name: 'Se connecter / Créer un compte' })).toBeVisible();

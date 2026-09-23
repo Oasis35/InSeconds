@@ -424,7 +424,7 @@ test.describe('Admin — indicateur joueurs / ID navigateur', () => {
     const todayRow = admin.challengeRow(today);
     await todayRow.locator('button').first().click(); // bouton d'accordéon → déplie « Stats par défi »
 
-    const chartIcon = todayRow.getByRole('button', { name: /histogramme des temps de réponse/i }).first();
+    const chartIcon = todayRow.getByRole('button', { name: /répartition des temps/i }).first();
     await chartIcon.click();
 
     const chart = page.getByTestId('guess-time-chart');
