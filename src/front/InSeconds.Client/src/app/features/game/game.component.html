@@ -86,7 +86,6 @@
           [countdown]="countdown()"
           [shareCopied]="shareCopied()"
           [shareFailed]="shareFailed()"
-          [hideLoginNudge]="showStreakToast() && guestFreezeMiss()"
           (share)="shareFromStats()" />
       }
 
@@ -134,7 +133,7 @@
           } @else {
             <span class="text-lg" style="color:var(--color-accent-3)"><app-streak-icon name="flame" /></span>
             <p class="flex-1 text-xs leading-snug" style="color:var(--text-body)">
-              {{ 'streakToast.body' | translate: { streak: toastStreak() } }}
+              {{ 'streakToast.body.' + toastStreakKey() | translate: { streak: toastStreak() } }}
               <span style="color:var(--text-muted)">{{ 'streakToast.hint' | translate }}</span>
             </p>
           }

@@ -111,6 +111,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
 
   protected readonly freezesUsed = computed(() => this.todayStats()?.freezesUsed ?? 0);
   protected readonly freezesUsedKey = computed(() => pluralKey(this.freezesUsed()));
+  protected readonly toastStreakKey = computed(() => pluralKey(this.toastStreak()));
 
   /** Invité : palier de gel atteint (« Tu aurais gagné un gel ! ») — variante du toast de série. */
   protected readonly guestFreezeMiss = computed(() =>

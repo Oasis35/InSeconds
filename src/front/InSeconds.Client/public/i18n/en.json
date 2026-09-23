@@ -40,13 +40,11 @@
     "confirm": "Leave anyway",
     "cancel": "Keep playing"
   },
-  "loginNudge": {
-    "cta": "Log in",
-    "anyDeviceTitle": "Come back on any device",
-    "anyDeviceBody": "Your {{ streak }}-day streak will follow you."
-  },
   "streakToast": {
-    "body": "{{ streak }}-day streak.",
+    "body": {
+      "one": "{{ streak }}-day streak.",
+      "other": "{{ streak }}-day streak."
+    },
     "hint": "Create an account so you don't lose it.",
     "cta": "Create",
     "dismiss": "Close"

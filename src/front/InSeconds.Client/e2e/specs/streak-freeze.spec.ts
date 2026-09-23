@@ -142,7 +142,7 @@ test.describe('Gel de série — invité', () => {
     await expect(page).toHaveURL(/\/login$/);
   });
 
-  test('palier de 7 jours : « Tu aurais gagné un gel ! » remplace la carte « Reviens sur n\'importe quel appareil »', async ({ page, api }) => {
+  test('palier de 7 jours : toast invité « Tu aurais gagné un gel ! » sur l\'écran déjà joué', async ({ page, api }) => {
     await page.clock.install({ time: Date.now() });
     await page.goto('/');
     await setStreak(page, api, { streak: 6, lastPlayedDaysAgo: 1, freezes: 0 });
@@ -152,6 +152,5 @@ test.describe('Gel de série — invité', () => {
 
     await expect(game.alreadyPlayedHeading).toBeVisible();
     await expect(page.getByText('Tu aurais gagné un gel !')).toBeVisible();
-    await expect(page.getByText('Reviens sur n\'importe quel appareil')).toBeHidden();
   });
 });

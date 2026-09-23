@@ -40,13 +40,11 @@
     "confirm": "Quitter quand même",
     "cancel": "Continuer à jouer"
   },
-  "loginNudge": {
-    "cta": "Connexion",
-    "anyDeviceTitle": "Reviens sur n'importe quel appareil",
-    "anyDeviceBody": "Ta série de {{ streak }} jours te suivra."
-  },
   "streakToast": {
-    "body": "Série de {{ streak }} jours.",
+    "body": {
+      "one": "Série de {{ streak }} jour.",
+      "other": "Série de {{ streak }} jours."
+    },
     "hint": "Crée un compte pour ne pas la perdre.",
     "cta": "Créer",
     "dismiss": "Fermer"
