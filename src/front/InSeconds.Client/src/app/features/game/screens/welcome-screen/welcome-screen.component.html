@@ -1,7 +1,7 @@
 <div class="screen-enter relative flex-1 flex flex-col items-center justify-center gap-10 text-center px-2">
   <div class="relative space-y-4">
     <p class="text-6xl" style="line-height:1;color:var(--color-accent)">♪</p>
-    <h2 class="text-3xl font-extrabold tracking-tight" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'welcome.title' | translate }}</h2>
+    <h2 class="text-3xl font-extrabold tracking-tight" style="font-family:var(--font-display);color:var(--text-hi)">{{ (isProtected() ? 'streakFreeze.welcomeBack' : 'welcome.title') | translate }}</h2>
     <p class="text-sm leading-relaxed" style="color:var(--text-muted)">
       {{ 'welcome.subtitle' | translate: { count: trackCount() } }}<br>
       {{ 'welcome.tagline' | translate }}
@@ -9,6 +9,15 @@
   </div>
 
   <div class="relative w-full max-w-[280px] flex flex-col gap-3.5">
+    @if (isProtected()) {
+      <div data-testid="frozen-line" class="px-3 py-2.5 rounded-xl text-xs leading-normal text-left"
+           style="border:1px solid rgb(var(--rgb-accent-2) / 0.45);background:rgb(var(--rgb-accent-2) / 0.06);color:var(--text-hi)">
+        <span class="inline-flex align-[-0.16em]" style="color:var(--color-accent-2)"><app-streak-icon name="snowflake" /></span>
+        {{ 'streakFreeze.frozenLineBefore' | translate }}
+        <strong class="font-semibold" style="color:var(--color-accent-3)">{{ 'streakFreeze.frozenLineStrong' | translate: { streak: streak()?.streak } }}</strong>
+        {{ 'streakFreeze.frozenLineAfter' | translate }}
+      </div>
+    }
     <button
       (click)="startGame.emit()"
       class="w-full py-4.5 rounded-full font-bold text-base tracking-wide uppercase transition-all active:scale-95 touch-manipulation"
@@ -17,13 +26,15 @@
     </button>
 
     @if (!playerSession.isLinked()) {
-      <a routerLink="/login"
-         class="w-full inline-flex items-center justify-center gap-2 rounded-full font-bold text-xs tracking-wide uppercase transition-all active:scale-95 touch-manipulation"
-         style="min-height:48px;font-family:var(--font-display);letter-spacing:0.06em;border:1.5px solid rgb(var(--rgb-accent-2) / 0.7);color:var(--color-accent-2)">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-        {{ 'welcome.loginCta' | translate }}
-      </a>
-      <p class="text-xs leading-snug" style="color:var(--text-muted)">{{ 'welcome.loginHint' | translate }}</p>
+      @if (!hideLoginCta()) {
+        <a routerLink="/login"
+           class="w-full inline-flex items-center justify-center gap-2 rounded-full font-bold text-xs tracking-wide uppercase transition-all active:scale-95 touch-manipulation"
+           style="min-height:48px;font-family:var(--font-display);letter-spacing:0.06em;border:1.5px solid rgb(var(--rgb-accent-2) / 0.7);color:var(--color-accent-2)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          {{ 'welcome.loginCta' | translate }}
+        </a>
+        <p class="text-xs leading-snug" style="color:var(--text-muted)">{{ 'welcome.loginHint' | translate }}</p>
+      }
     } @else {
       <a routerLink="/profile"
          class="w-full inline-flex items-center justify-center gap-1.5 text-xs"

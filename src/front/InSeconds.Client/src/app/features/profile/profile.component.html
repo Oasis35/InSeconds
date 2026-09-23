@@ -75,6 +75,15 @@
         <p class="text-xs font-bold tracking-widest uppercase mb-1.5" style="font-family:var(--font-display);color:var(--text-muted)">{{ 'profile.gamesPlayedLabel' | translate }}</p>
         <p class="text-2xl font-extrabold tabular-nums" style="font-family:var(--font-display);color:var(--text-hi)">{{ gamesPlayed() }}</p>
       </div>
+      @if (maxFreezes() > 0) {
+        <div data-testid="profile-freezes" class="col-span-2 flex items-center gap-3 px-4 py-3.5" style="border-top:1px solid var(--border-medium)">
+          <app-freeze-cells [count]="freezes()" [max]="maxFreezes()" size="md" />
+          <div class="flex-1 min-w-0">
+            <p class="m-0 mb-0.5 font-semibold uppercase" style="font-family:var(--font-display);font-size:10px;letter-spacing:.12em;color:var(--text-muted)">{{ 'streakFreeze.profile.label' | translate }}</p>
+            <p class="m-0 text-[13px]" style="color:var(--text-hi)">{{ freezesText() }}</p>
+          </div>
+        </div>
+      }
     </div>
 
     <div class="flex flex-col gap-2.5 mt-1">

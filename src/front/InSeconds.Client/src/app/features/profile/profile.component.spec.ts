@@ -5,6 +5,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { of, throwError, Subject } from 'rxjs';
 import { ProfileComponent } from './profile.component';
 import { PlayerSessionService } from '../../core/services/player-session.service';
+import { StreakDto } from '../../core/models/game.models';
 
 class TranslateServiceStub {
   instant(key: string): string {
@@ -19,6 +20,7 @@ describe('ProfileComponent', () => {
     pseudo: ReturnType<typeof signal<string | null>>;
     email: ReturnType<typeof signal<string | null>>;
     currentStreak: ReturnType<typeof signal<number>>;
+    streak: ReturnType<typeof signal<StreakDto | null>>;
     gamesPlayed: ReturnType<typeof signal<number>>;
     updatePseudo: jasmine.Spy;
     requestEmailChange: jasmine.Spy;
@@ -33,6 +35,7 @@ describe('ProfileComponent', () => {
       pseudo: signal<string | null>('Alice'),
       email: signal<string | null>('alice@example.com'),
       currentStreak: signal(5),
+      streak: signal<StreakDto | null>(null),
       gamesPlayed: signal(12),
       updatePseudo: jasmine.createSpy('updatePseudo'),
       requestEmailChange: jasmine.createSpy('requestEmailChange'),
@@ -50,6 +53,34 @@ describe('ProfileComponent', () => {
     });
 
     component = TestBed.runInInjectionContext(() => new ProfileComponent());
+  });
+
+  describe('freezes row', () => {
+    const streak = (freezes: number, nextFreezeInDays: number): StreakDto => ({
+      status: 'active', streak: 5, freezes, maxFreezes: 2, freezeEveryDays: 7,
+      nextFreezeInDays, missedDays: 0, lostStreak: undefined, lastPlayedDate: undefined,
+    });
+
+    it('is hidden before the streak detail is loaded', () => {
+      expect(component['maxFreezes']()).toBe(0);
+      expect(component['freezesText']()).toBe('');
+    });
+
+    it('reads "stock plein" when the stock is full', () => {
+      playerSessionStub.streak.set(streak(2, 2));
+      expect(component['freezes']()).toBe(2);
+      expect(component['freezesText']()).toBe('streakFreeze.profile.full');
+    });
+
+    it('reads the next freeze countdown otherwise (singular)', () => {
+      playerSessionStub.streak.set(streak(1, 2));
+      expect(component['freezesText']()).toBe('streakFreeze.profile.stock.one');
+    });
+
+    it('reads the next freeze countdown otherwise (plural, 0 freeze stays singular)', () => {
+      playerSessionStub.streak.set(streak(0, 1));
+      expect(component['freezesText']()).toBe('streakFreeze.profile.stock.one');
+    });
   });
 
   describe('ngOnInit()', () => {

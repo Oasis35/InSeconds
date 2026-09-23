@@ -61,6 +61,11 @@
   --glow-primary: 0 0 16px rgb(var(--rgb-accent) / 0.55), 0 0 32px rgb(var(--rgb-accent) / 0.25);
   --glow-accent-2: 0 0 12px rgb(var(--rgb-accent-2) / 0.5);
   --glow-success: 0 0 12px rgb(var(--rgb-success) / 0.4);
+  --glow-ice: 0 0 12px rgb(var(--rgb-accent-2) / 0.35);
+
+  /* Gel de série — seul ajout de la maquette : le dégradé « glace » (froid) opposé
+     à l'orange de la série (chaud). */
+  --gradient-ice: linear-gradient(135deg, #BEFAFF, rgb(var(--rgb-accent-2)) 55%, rgb(var(--rgb-violet)));
 
   /* Typo */
   --font-display: 'Poppins', system-ui, -apple-system, sans-serif;
@@ -94,6 +99,42 @@ h1, h2, h3, .font-display {
 .toast-enter {
   animation: slide-up 0.2s ease-out both;
 }
+
+/* ── Gel de série — animations de la maquette ──────────────────────────────
+   Toutes s'arrêtent d'elles-mêmes. Les éléments animés portent [data-anim] :
+   simple fondu en mouvement réduit, aucune animation sous E2E (.no-anim posé
+   par App quand window.__disableAnimations est vrai). */
+@keyframes gel-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(var(--rgb-accent-2) / 0); }
+  50%      { box-shadow: 0 0 0 5px rgb(var(--rgb-accent-2) / 0.15), 0 0 18px rgb(var(--rgb-accent-2) / 0.55); }
+}
+@keyframes gel-spin   { from { transform: rotate(-180deg) scale(0.6); } to { transform: rotate(0) scale(1); } }
+@keyframes gel-shine  { from { transform: translateX(0); } to { transform: translateX(450%); } }
+@keyframes gel-fill   { from { opacity: 0; transform: scale(0.2); } to { opacity: 1; transform: scale(1); } }
+@keyframes gel-halo {
+  0%, 100% { box-shadow: inset 0 0 0 0 rgb(var(--rgb-accent-2) / 0); }
+  50%      { box-shadow: inset 0 0 26px 2px rgb(var(--rgb-accent-2) / 0.45); }
+}
+@keyframes gel-shake {
+  0%, 100% { transform: none; }
+  20%      { transform: rotate(-14deg); }
+  40%      { transform: rotate(11deg); }
+  60%      { transform: rotate(-7deg); }
+  80%      { transform: rotate(3deg); }
+}
+@keyframes gel-toast  { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
+@keyframes gel-bounce {
+  0%   { opacity: 0; transform: translateY(28px); }
+  60%  { opacity: 1; transform: translateY(-4px); }
+  80%  { transform: translateY(1px); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes gel-fade   { from { opacity: 0; } to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-anim] { animation: gel-fade 0.3s ease both !important; }
+}
+.no-anim [data-anim] { animation: none !important; }
 
 @keyframes inseconds-scan {
   from { background-position: 0 0; }

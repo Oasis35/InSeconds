@@ -5,12 +5,35 @@
       IN<span style="color:var(--text-accent)">//</span>SECONDS
     </h1>
 
-    <!-- Streak header (tous les écrans sauf loading / playing) -->
+    <!-- Gélule série / gels (tous les écrans sauf loading / playing) — ouvre le panneau série -->
     @if (showStreak()) {
-      <span class="absolute left-4 flex items-center gap-1 text-xs font-bold tabular-nums"
-            style="font-family:var(--font-display);color:var(--text-streak)">
-        🔥 {{ streak() }}
-      </span>
+      @let mode = pillMode();
+      <button type="button" (click)="openStreak.emit()"
+              data-testid="streak-pill"
+              [attr.data-mode]="mode"
+              [attr.data-anim]="pillAnimation() ? '' : null"
+              [style.animation]="pillAnimation()"
+              [attr.aria-label]="mode === 'protected' ? ('streakFreeze.pillProtectedLabel' | translate) : ('streakFreeze.pillLabel' | translate: { streak: streak()?.streak ?? 0 })"
+              class="absolute left-2 flex items-center gap-[7px] h-[30px] px-2.5 rounded-full text-xs font-bold tabular-nums whitespace-nowrap cursor-pointer"
+              [style]="mode === 'protected'
+                ? 'font-family:var(--font-display);border:1px solid rgb(var(--rgb-accent-2) / 0.75);background:rgb(var(--rgb-accent-2) / 0.08)'
+                : mode === 'lost'
+                  ? 'font-family:var(--font-display);border:1px solid rgb(var(--rgb-border) / 0.2);background:rgb(var(--rgb-panel) / 0.35);color:var(--text-muted)'
+                  : 'font-family:var(--font-display);border:1px solid rgb(var(--rgb-border) / 0.25);background:rgb(var(--rgb-panel) / 0.5)'">
+        @if (mode === 'lost') {
+          <span class="flex" style="color:var(--color-accent-3);filter:grayscale(1);opacity:.6"><app-streak-icon name="flame" /></span>0
+        } @else {
+          <span class="flex items-center gap-1" style="color:var(--color-accent-3)">
+            <app-streak-icon name="flame" />{{ streak()?.streak }}
+          </span>
+          @if (mode === 'on' || mode === 'protected') {
+            <span style="width:1px;height:12px;background:rgb(var(--rgb-border) / 0.45)"></span>
+            <span class="flex items-center gap-1" style="color:var(--color-accent-2)">
+              <app-streak-icon name="snowflake" />{{ streak()?.freezes }}
+            </span>
+          }
+        }
+      </button>
     }
 
     <!-- Score en cours de partie (par-dessus streak si playing) -->
@@ -23,10 +46,11 @@
     <!-- Avatar profil (compte connecté, hors partie) -->
     @if (playerSession.isLinked() && !playing()) {
       <a routerLink="/profile"
-         [title]="playerSession.pseudo() ?? ''"
-         class="absolute right-2 flex items-center justify-center rounded-full font-extrabold text-white"
-         style="width:32px;height:32px;font-family:var(--font-display);font-size:0.75rem;background:var(--gradient-primary);box-shadow:var(--glow-primary)">
-        {{ profileInitial() }}
+         [title]="'streakFreeze.avatarTitle' | translate: { pseudo: playerSession.pseudo() ?? '' }"
+         [attr.aria-label]="'streakFreeze.avatarLabel' | translate"
+         class="absolute right-2 flex items-center justify-center rounded-full text-white"
+         style="width:32px;height:32px;background:var(--gradient-primary);box-shadow:var(--glow-primary)">
+        <app-streak-icon name="user" size="16" />
       </a>
     }
   </div>

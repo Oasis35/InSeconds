@@ -423,5 +423,83 @@
       "addError": "Erreur",
       "addTrack": "Ajouter"
     }
+  },
+  "streakFreeze": {
+    "pillLabel": "Série de {{ streak }} jours, voir le détail",
+    "pillProtectedLabel": "Série protégée",
+    "avatarTitle": "Mon profil — {{ pseudo }}",
+    "avatarLabel": "Mon profil",
+    "welcomeBack": "Bon retour !",
+    "frozenLineBefore": "Tes",
+    "frozenLineStrong": "{{ streak }} jours de série",
+    "frozenLineAfter": "au chaud grâce à un gel. Joue pour continuer !",
+    "sheet": {
+      "streakTitle": "Série de {{ streak }} jours",
+      "stockLabel": "Tes gels · {{ count }} / {{ max }}",
+      "nextFreeze": "Prochain gel à {{ next }} jours",
+      "remaining": {
+        "one": "encore {{ n }} jour",
+        "other": "encore {{ n }} jours"
+      },
+      "rule": "Tous les {{ every }} jours de série, tu gagnes 1 gel ({{ max }} max). Si tu manques un jour, il s’utilise tout seul : ta série ne monte pas, mais elle ne s’arrête pas.",
+      "close": "Fermer",
+      "protectedTitle": "Série protégée",
+      "freezeDay": "gel",
+      "today": "aujourd’hui",
+      "protectedBody": {
+        "one": "Tu as manqué hier, ta série de {{ streak }} jours tient toujours.",
+        "other": "Tu as manqué {{ missed }} jours, ta série de {{ streak }} jours tient toujours."
+      },
+      "protectedUse": {
+        "one": "1 gel sera utilisé quand tu termineras le défi d’aujourd’hui.",
+        "other": "{{ missed }} gels seront utilisés quand tu termineras le défi d’aujourd’hui."
+      },
+      "playNow": "Jouer maintenant",
+      "later": "Plus tard",
+      "guestBody": "Joue chaque jour pour la faire grimper. Un jour sans partie, et elle repart de zéro.",
+      "guestFreeze": "Avec un compte, des gels protègent ta série les jours où tu ne joues pas.",
+      "signup": "Créer un compte"
+    },
+    "usedToast": {
+      "title": {
+        "one": "1 gel a sauvé ta série !",
+        "other": "{{ n }} gels ont sauvé ta série !"
+      },
+      "body": {
+        "one": "Tu as manqué hier, ta série de {{ streak }} jours continue.",
+        "other": "Tu as manqué {{ n }} jours, ta série de {{ streak }} jours continue."
+      }
+    },
+    "earnedToast": {
+      "titleHighlight": "+1 gel",
+      "titleRest": "gagné !",
+      "body": "{{ streak }} jours de série. Il protégera ta série si tu manques un jour."
+    },
+    "lostToast": {
+      "titleBefore": "Ta série de",
+      "titleStrike": "{{ streak }} jours",
+      "titleAfter": "s’est arrêtée.",
+      "hintBefore": "Avec un compte, un gel",
+      "hintAfter": "l’aurait sauvée. Le premier est offert."
+    },
+    "guestMissToast": {
+      "title": "Tu aurais gagné un gel !",
+      "body": "Crée un compte pour protéger tes {{ streak }} jours."
+    },
+    "ctaLine1": "Créer un compte /",
+    "ctaLine2": "Se connecter",
+    "dismiss": "Fermer",
+    "profile": {
+      "label": "Gels",
+      "full": "{{ max }} gels · stock plein",
+      "stock": {
+        "one": "{{ n }} gel · prochain dans {{ days }}",
+        "other": "{{ n }} gels · prochain dans {{ days }}"
+      },
+      "days": {
+        "one": "{{ n }} jour",
+        "other": "{{ n }} jours"
+      }
+    }
   }
 }

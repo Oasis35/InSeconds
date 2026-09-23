@@ -5,6 +5,8 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { DecorBackgroundComponent } from '../../shared/decor-background/decor-background.component';
 import { ConfirmSheetComponent } from '../../shared/confirm-sheet/confirm-sheet.component';
 import { PlayerSessionService } from '../../core/services/player-session.service';
+import { pluralKey } from '../../core/models/streak';
+import { FreezeCellsComponent } from '../../shared/freeze-cells/freeze-cells.component';
 
 type PseudoStatus = 'idle' | 'saving' | 'saved' | 'taken' | 'error';
 type EmailStatus = 'idle' | 'sending' | 'sent' | 'sameEmail' | 'taken' | 'error';
@@ -18,7 +20,7 @@ const EMAIL_PATTERN = /^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,24}$/;
 
 @Component({
   selector: 'app-profile',
-  imports: [FormsModule, RouterLink, TranslatePipe, DecorBackgroundComponent, ConfirmSheetComponent],
+  imports: [FormsModule, RouterLink, TranslatePipe, DecorBackgroundComponent, ConfirmSheetComponent, FreezeCellsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './profile.component.html',
 })
@@ -30,6 +32,19 @@ export class ProfileComponent implements OnInit {
   protected readonly streak = this.playerSession.currentStreak;
   protected readonly gamesPlayed = this.playerSession.gamesPlayed;
   protected readonly email = this.playerSession.email;
+  protected readonly freezes = computed(() => this.playerSession.streak()?.freezes ?? 0);
+  protected readonly maxFreezes = computed(() => this.playerSession.streak()?.maxFreezes ?? 0);
+
+  /** « 2 gels · stock plein » ou « 1 gel · prochain dans 5 jours ». */
+  protected readonly freezesText = computed(() => {
+    const streak = this.playerSession.streak();
+    if (!streak) return '';
+    if (streak.freezes >= streak.maxFreezes)
+      return this.translate.instant('streakFreeze.profile.full', { max: streak.maxFreezes });
+    const remaining = streak.nextFreezeInDays ?? 0;
+    const days = this.translate.instant(`streakFreeze.profile.days.${pluralKey(remaining)}`, { n: remaining });
+    return this.translate.instant(`streakFreeze.profile.stock.${pluralKey(streak.freezes)}`, { n: streak.freezes, days });
+  });
 
   protected pseudoDraft = signal(this.playerSession.pseudo() ?? '');
   protected readonly pseudoStatus = signal<PseudoStatus>('idle');

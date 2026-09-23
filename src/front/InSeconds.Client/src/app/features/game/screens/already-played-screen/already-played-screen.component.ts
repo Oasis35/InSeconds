@@ -20,6 +20,8 @@ export class AlreadyPlayedScreenComponent {
   readonly countdown = input.required<string>();
   readonly shareCopied = input(false);
   readonly shareFailed = input(false);
+  /** Masque la carte « Reviens sur n'importe quel appareil » quand le toast « Tu aurais gagné un gel ! » la remplace. */
+  readonly hideLoginNudge = input(false);
   readonly share = output<void>();
 
   protected readonly showTrackDetails = signal(false);

@@ -423,5 +423,83 @@
       "addError": "Error",
       "addTrack": "Add"
     }
+  },
+  "streakFreeze": {
+    "pillLabel": "{{ streak }}-day streak, see details",
+    "pillProtectedLabel": "Streak protected",
+    "avatarTitle": "My profile — {{ pseudo }}",
+    "avatarLabel": "My profile",
+    "welcomeBack": "Welcome back!",
+    "frozenLineBefore": "Your",
+    "frozenLineStrong": "{{ streak }}-day streak",
+    "frozenLineAfter": "is kept safe by a freeze. Play to keep it going!",
+    "sheet": {
+      "streakTitle": "{{ streak }}-day streak",
+      "stockLabel": "Your freezes · {{ count }} / {{ max }}",
+      "nextFreeze": "Next freeze at {{ next }} days",
+      "remaining": {
+        "one": "{{ n }} day to go",
+        "other": "{{ n }} days to go"
+      },
+      "rule": "Every {{ every }} days of streak, you earn 1 freeze ({{ max }} max). If you miss a day, it’s used automatically: your streak doesn’t go up, but it doesn’t break either.",
+      "close": "Close",
+      "protectedTitle": "Streak protected",
+      "freezeDay": "freeze",
+      "today": "today",
+      "protectedBody": {
+        "one": "You missed yesterday, your {{ streak }}-day streak still holds.",
+        "other": "You missed {{ missed }} days, your {{ streak }}-day streak still holds."
+      },
+      "protectedUse": {
+        "one": "1 freeze will be used when you finish today’s challenge.",
+        "other": "{{ missed }} freezes will be used when you finish today’s challenge."
+      },
+      "playNow": "Play now",
+      "later": "Later",
+      "guestBody": "Play every day to make it grow. Skip a day and it starts over from zero.",
+      "guestFreeze": "With an account, freezes protect your streak on days you don’t play.",
+      "signup": "Create an account"
+    },
+    "usedToast": {
+      "title": {
+        "one": "1 freeze saved your streak!",
+        "other": "{{ n }} freezes saved your streak!"
+      },
+      "body": {
+        "one": "You missed yesterday, your {{ streak }}-day streak goes on.",
+        "other": "You missed {{ n }} days, your {{ streak }}-day streak goes on."
+      }
+    },
+    "earnedToast": {
+      "titleHighlight": "+1 freeze",
+      "titleRest": "earned!",
+      "body": "{{ streak }}-day streak. It will protect your streak if you miss a day."
+    },
+    "lostToast": {
+      "titleBefore": "Your",
+      "titleStrike": "{{ streak }}-day",
+      "titleAfter": "streak has ended.",
+      "hintBefore": "With an account, a freeze",
+      "hintAfter": "would have saved it. The first one is free."
+    },
+    "guestMissToast": {
+      "title": "You would have earned a freeze!",
+      "body": "Create an account to protect your {{ streak }} days."
+    },
+    "ctaLine1": "Create an account /",
+    "ctaLine2": "Log in",
+    "dismiss": "Close",
+    "profile": {
+      "label": "Freezes",
+      "full": "{{ max }} freezes · stock full",
+      "stock": {
+        "one": "{{ n }} freeze · next in {{ days }}",
+        "other": "{{ n }} freezes · next in {{ days }}"
+      },
+      "days": {
+        "one": "{{ n }} day",
+        "other": "{{ n }} days"
+      }
+    }
   }
 }

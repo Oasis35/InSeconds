@@ -68,7 +68,7 @@
         }
       </div>
 
-      @if (!playerSession.isLinked()) {
+      @if (!playerSession.isLinked() && !hideLoginNudge()) {
         <app-login-nudge-banner
           titleKey="loginNudge.anyDeviceTitle"
           bodyKey="loginNudge.anyDeviceBody"

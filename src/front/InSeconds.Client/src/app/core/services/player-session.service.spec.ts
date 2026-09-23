@@ -65,6 +65,21 @@ describe('PlayerSessionService', () => {
       expect(service.pseudo()).toBe('Alice');
     });
 
+    it('should populate the streak detail (freezes) from the response', () => {
+      const streak = {
+        status: 'active', streak: 12, freezes: 2, maxFreezes: 2, freezeEveryDays: 7,
+        nextFreezeInDays: 2, missedDays: 0, lostStreak: undefined, lastPlayedDate: undefined,
+      };
+      apiClient.apiPlayersMe.and.returnValue(
+        of({ playerId: fakeId, isGuest: false, email: 'a@b.com', pseudo: 'Alice', currentStreak: 12, streak })
+      );
+
+      service.load().subscribe();
+
+      expect(service.currentStreak()).toBe(12);
+      expect(service.streak()).toEqual(streak);
+    });
+
     it('should populate isAdmin from the response', () => {
       apiClient.apiPlayersMe.and.returnValue(
         of({ playerId: fakeId, isGuest: false, email: 'admin@b.com', pseudo: 'Admin', isAdmin: true })
