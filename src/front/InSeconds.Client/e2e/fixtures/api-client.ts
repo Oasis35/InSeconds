@@ -60,7 +60,7 @@ export class ApiTestClient {
    * Pose directement l'état de série d'un joueur (Testing-only) — pour tester les états du
    * gel de série sans simuler des jours de jeu. `lastPlayedDaysAgo` : 1 = hier.
    */
-  async setStreak(playerId: string, state: { streak: number; lastPlayedDaysAgo: number | null; freezes: number }): Promise<void> {
+  async setStreak(playerId: string, state: { streak: number; lastPlayedDaysAgo: number | null; freezes: number; hasReachedMaxFreezes?: boolean }): Promise<void> {
     const res = await fetch(`${BASE}/api/e2e/set-streak`, {
       method: 'POST',
       headers: ADMIN_HEADERS,

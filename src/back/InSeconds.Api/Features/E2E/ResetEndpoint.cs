@@ -175,7 +175,7 @@ public static class E2EResetEndpoint
 
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
             DateOnly? lastPlayedDate = request.LastPlayedDaysAgo is { } daysAgo ? today.AddDays(-daysAgo) : null;
-            player.RestoreStreakForTesting(request.Streak, lastPlayedDate, request.Freezes);
+            player.RestoreStreakForTesting(request.Streak, lastPlayedDate, request.Freezes, request.HasReachedMaxFreezes);
             await db.SaveChangesAsync(ct);
 
             return Results.Ok();
@@ -380,4 +380,5 @@ public static class E2EResetEndpoint
     }
 }
 
-public sealed record SetStreakRequest(Guid PlayerId, int Streak, int? LastPlayedDaysAgo, int Freezes);
+public sealed record SetStreakRequest(
+    Guid PlayerId, int Streak, int? LastPlayedDaysAgo, int Freezes, bool HasReachedMaxFreezes = false);
