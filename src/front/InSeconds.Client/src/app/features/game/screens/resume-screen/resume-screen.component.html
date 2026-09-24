@@ -32,7 +32,7 @@
   } @else {
     <div class="w-full rounded-2xl p-6 space-y-4" style="background:rgb(var(--rgb-danger) / 0.1);border:1px solid rgb(var(--rgb-danger) / 0.35)">
       <p class="text-sm font-bold uppercase" style="font-family:var(--font-display);color:var(--text-error)">{{ 'resume.warningTitle' | translate }}</p>
-      <p class="text-sm leading-relaxed" style="color:var(--text-body);white-space:pre-line">{{ 'resume.warningBody' | translate }}</p>
+      <p class="text-sm leading-relaxed" style="color:var(--text-body);white-space:pre-line">{{ (playerSession.isLinked() ? 'resume.warningBodyLinked' : 'resume.warningBody') | translate }}</p>
       <div class="flex gap-3 pt-1">
         <button (click)="abandon.emit()"
           [disabled]="abandonLoading()"

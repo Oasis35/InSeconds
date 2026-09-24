@@ -46,7 +46,7 @@
         <app-confirm-sheet
           tone="danger"
           [title]="'abandonSheet.title' | translate"
-          [body]="'abandonSheet.body' | translate"
+          [body]="(playerSession.isLinked() ? 'abandonSheet.bodyLinked' : 'abandonSheet.body') | translate"
           [confirmLabel]="'abandonSheet.confirm' | translate"
           [cancelLabel]="'abandonSheet.cancel' | translate"
           [loading]="abandonLoading()"
