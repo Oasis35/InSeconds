@@ -2,6 +2,8 @@ using System.Net;
 using System.Text.Json;
 using FluentAssertions;
 using InSeconds.Api.Common.Email;
+using InSeconds.Api.UnitTests.Common.Observability;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Xunit;
@@ -10,11 +12,11 @@ namespace InSeconds.Api.UnitTests.Common.Email;
 
 public sealed class ResendEmailSenderTests
 {
-    private static ResendEmailSender Create(HttpMessageHandler handler, ResendOptions? options = null)
+    private static ResendEmailSender Create(HttpMessageHandler handler, ResendOptions? options = null, ILogger<ResendEmailSender>? logger = null)
         => new(
             new HttpClient(handler) { BaseAddress = new Uri("https://api.resend.com/") },
             Options.Create(options ?? new ResendOptions { SenderEmail = "compte@inseconds.cc", SenderName = "IN//SECONDS", ApiKey = "re_test" }),
-            NullLogger<ResendEmailSender>.Instance);
+            logger ?? NullLogger<ResendEmailSender>.Instance);
 
     [Fact]
     public async Task SendAsync_posts_to_emails_endpoint_with_expected_payload()
@@ -51,15 +53,36 @@ public sealed class ResendEmailSenderTests
     {
         var response = new HttpResponseMessage(HttpStatusCode.Unauthorized)
         {
-            Content = new StringContent("""{"message":"Invalid API key"}""")
+            Content = new StringContent("""{"name":"validation_error","message":"Invalid `to` field: player@example.com"}""", System.Text.Encoding.UTF8, "application/json")
         };
-        var sender = Create(new CapturingHandler(response));
+        var logger = new CapturingLogger<ResendEmailSender>();
+        var sender = Create(new CapturingHandler(response), logger: logger);
 
         var act = () => sender.SendAsync("player@example.com", "Sujet", "<p>Corps</p>");
 
         var ex = await act.Should().ThrowAsync<HttpRequestException>();
         ex.Which.Message.Should().Contain("401");
-        ex.Which.Message.Should().Contain("Invalid API key");
+        ex.Which.Message.Should().Contain("validation_error");
+        // Confidentialité : l'adresse du destinataire n'atteint ni l'exception ni les logs.
+        ex.Which.Message.Should().NotContain("player@example.com");
+        logger.Messages.Should().ContainSingle(m => m.Contains("Échec") && m.Contains("Sujet") && m.Contains("401"));
+        logger.Messages.Should().NotContain(m => m.Contains("player@example.com"));
+    }
+
+    [Fact]
+    public async Task SendAsync_logs_the_resend_id_without_the_recipient()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"id":"49a3999c-0ce1-4ea6-ab68-afcd6dc2e794"}""", System.Text.Encoding.UTF8, "application/json")
+        };
+        var logger = new CapturingLogger<ResendEmailSender>();
+        var sender = Create(new CapturingHandler(response), logger: logger);
+
+        await sender.SendAsync("player@example.com", "Sujet", "<p>Corps</p>");
+
+        logger.Messages.Should().ContainSingle(m => m.Contains("Sujet") && m.Contains("49a3999c-0ce1-4ea6-ab68-afcd6dc2e794"));
+        logger.Messages.Should().NotContain(m => m.Contains("player@example.com"));
     }
 
     [Fact]

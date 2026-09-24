@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using InSeconds.Api.Common.Observability;
 using Microsoft.Extensions.Options;
 
 namespace InSeconds.Api.Common.Email;
@@ -36,16 +37,39 @@ public sealed class ResendEmailSender(HttpClient http, IOptions<ResendOptions> o
         {
             // Ne jamais avaler silencieusement (cf. piège DeezerClient) — l'appelant
             // (RequestMagicLinkHandler) décide s'il faut logger un warning et
-            // continuer, ou remonter l'erreur au client.
-            logger.LogWarning(ex, "Échec de l'envoi Resend à {To}", to);
+            // continuer, ou remonter l'erreur au client. Jamais l'adresse du destinataire
+            // dans les logs (règle de confidentialité de la télémétrie) : le sujet suffit.
+            PlayerActionLog.EmailFailed(logger, ex, subject, null);
             throw;
         }
 
         if (!response.IsSuccessStatusCode)
         {
-            var body = await response.Content.ReadAsStringAsync(ct);
-            logger.LogWarning("Resend a répondu {Status} pour {To} : {Body}", response.StatusCode, to, body);
-            throw new HttpRequestException($"Resend a répondu {(int)response.StatusCode} pour l'envoi à {to} : {body}");
+            // Seul le type d'erreur Resend (ex. "validation_error") : son message peut citer
+            // l'adresse du destinataire, qui ne doit jamais atteindre les logs.
+            var errorName = (await ReadJsonAsync<ResendError>(response, ct))?.Name;
+            PlayerActionLog.EmailFailed(logger, null, subject, (int)response.StatusCode);
+            throw new HttpRequestException($"Resend a répondu {(int)response.StatusCode} ({errorName ?? "erreur inconnue"})");
+        }
+
+        // L'identifiant renvoyé par Resend permet de retrouver l'envoi dans son tableau de bord.
+        var sent = await ReadJsonAsync<ResendSentEmail>(response, ct);
+        PlayerActionLog.EmailSent(logger, subject, sent?.Id);
+    }
+
+    private static async Task<T?> ReadJsonAsync<T>(HttpResponseMessage response, CancellationToken ct) where T : class
+    {
+        try
+        {
+            return await response.Content.ReadFromJsonAsync<T>(ct);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return null; // Corps absent ou non JSON : on garde le statut HTTP, seul le détail manque.
         }
     }
+
+    private sealed record ResendSentEmail(string? Id);
+
+    private sealed record ResendError(string? Name);
 }

@@ -37,6 +37,14 @@ public static partial class PlayerActionLog
         Message = "Connexion par magic link : {PlayerId} ({LinkOutcome})")]
     public static partial void SignedIn(ILogger logger, Guid playerId, string linkOutcome);
 
+    [LoggerMessage(EventId = 1007, Level = LogLevel.Information,
+        Message = "Email « {EmailSubject} » envoyé (Resend {ResendEmailId})")]
+    public static partial void EmailSent(ILogger logger, string emailSubject, string? resendEmailId);
+
+    [LoggerMessage(EventId = 1101, Level = LogLevel.Warning,
+        Message = "Échec de l'envoi de l'email « {EmailSubject} » (HTTP {HttpStatus})")]
+    public static partial void EmailFailed(ILogger logger, Exception? exception, string emailSubject, int? httpStatus);
+
     [LoggerMessage(EventId = 1100, Level = LogLevel.Error,
         Message = "Erreur front ({Source}) sur {Url} : {ClientMessage} (HTTP {HttpStatus}, trace liée {RelatedTraceId}) — stack : {ClientStack}")]
     public static partial void ClientError(ILogger logger, string source, string? url, string clientMessage,
