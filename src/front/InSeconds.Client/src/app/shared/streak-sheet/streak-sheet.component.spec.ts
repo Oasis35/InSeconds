@@ -64,6 +64,32 @@ describe('StreakSheetComponent', () => {
     expect(component['progressPercent']()).toBe(0);
   });
 
+  it('is at max once the freeze stock reaches the cap', () => {
+    fixture.componentRef.setInput('streak', buildStreak({ freezes: 2, maxFreezes: 2 }));
+    expect(component['atMax']()).toBeTrue();
+  });
+
+  it('is not at max while the freeze stock is below the cap', () => {
+    fixture.componentRef.setInput('streak', buildStreak({ freezes: 1, maxFreezes: 2 }));
+    expect(component['atMax']()).toBeFalse();
+  });
+
+  it('hides the next-freeze progress and shows the full message once at max', () => {
+    fixture.componentRef.setInput('streak', buildStreak({ freezes: 2, maxFreezes: 2 }));
+    fixture.detectChanges();
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('streakFreeze.sheet.full');
+    expect(text).not.toContain('streakFreeze.sheet.nextFreeze');
+  });
+
+  it('shows the next-freeze progress while below the cap', () => {
+    fixture.componentRef.setInput('streak', buildStreak({ freezes: 1, maxFreezes: 2 }));
+    fixture.detectChanges();
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('streakFreeze.sheet.nextFreeze');
+    expect(text).not.toContain('streakFreeze.sheet.full');
+  });
+
   it('builds the frieze: last played days, frozen days, then today', () => {
     fixture.componentRef.setInput('streak', buildStreak({
       status: 'protected', missedDays: 1, lastPlayedDate: '2026-09-22' as unknown as Date,

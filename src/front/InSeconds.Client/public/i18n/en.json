@@ -25,12 +25,14 @@
     "loginCta": "Don't lose my games",
     "warningTitle": "You'll lose your progress",
     "warningBody": "This game can't be resumed. Your streak will be reset.",
+    "warningBodyLinked": "This game can't be resumed. Your streak will end unless a freeze protects it.",
     "confirmAbandon": "Give up",
     "cancelAbandon": "Cancel"
   },
   "abandonSheet": {
     "title": "Give up the game?",
     "body": "Your progress will be lost and your streak reset.",
+    "bodyLinked": "Your progress will be lost and your streak will end unless a freeze protects it.",
     "confirm": "Give up",
     "cancel": "Cancel"
   },
@@ -175,11 +177,11 @@
   },
   "privacy": {
     "title": "Privacy & legal notice",
-    "updated": "Last updated: September 14, 2026",
-    "intro": "InSeconds is a free music blind test game, available at https://inseconds.cc. It remains fully playable as a guest, without any account or registration; creating an account, using only an email address, is optional and lets you find your progress again on another device. This page brings together the site's legal notice, in accordance with Article 1-1 of French law n° 2004-575 of June 21, 2004 for confidence in the digital economy (LCEN), and its privacy policy, in accordance with the General Data Protection Regulation (GDPR, Regulation EU 2016/679).",
+    "updated": "Last updated: September 24, 2026",
+    "intro": "InSeconds is a free music blind test game, available at https://inseconds.cc. It remains fully playable as a guest, without any account or registration; creating an account, using only an email address, is optional and lets you find your progress again on another device. This page brings together the site's legal notice, in accordance with Article 6-III of French law n° 2004-575 of June 21, 2004 for confidence in the digital economy (LCEN), and its privacy policy, in accordance with the General Data Protection Regulation (GDPR, Regulation EU 2016/679).",
     "legalIdentity": {
       "title": "Legal notice: publisher and host",
-      "body": "InSeconds is published by an individual based in France, acting on a non-professional basis: it is a personal project, developed in the publisher's free time, with no commercial activity (the game is free, with no advertising and nothing for sale).\nUnder Article 1-1, II of the LCEN, a non-professional publisher may remain anonymous to the public, provided they have communicated their identity and contact details to their host, which is the case here. No publication director has been appointed: this requirement, under the French law of July 29, 1982, only applies to legal entities.\nHost: OVH SAS, 2 rue Kellermann, 59100 Roubaix, France, RCS Lille Métropole n° 424 761 419.\nFor any question, the publisher can be reached at the contact address given at the bottom of this page."
+      "body": "InSeconds is published by an individual based in France, acting on a non-professional basis: it is a personal project, developed in the publisher's free time, with no commercial activity (the game is free, with no advertising and nothing for sale).\nUnder Article 6-III of the LCEN, a non-professional publisher may remain anonymous to the public, provided they have communicated their identity and contact details to their host, which is the case here: this identity remains known to the host and can be disclosed to judicial authorities on request. No publication director has been appointed: this requirement, under the French law of July 29, 1982, only applies to legal entities.\nHost: OVH SAS, 2 rue Kellermann, 59100 Roubaix, France, RCS Lille Métropole n° 424 761 419.\nDomain name: inseconds.cc.\nThe source code, text and design of the InSeconds site are the property of the publisher and protected by copyright; any reproduction without authorization is prohibited (except for Deezer music excerpts, see \"Legal notice: music content\" below).\nFor any question, the only means of contact is the email address given at the bottom of this page."
     },
     "controller": {
       "title": "Data controller",
@@ -191,7 +193,7 @@
     },
     "cookie": {
       "title": "Cookie",
-      "body": "A single technical cookie (\"authToken\") is set, whether you play as a guest or with an account. It contains your identifier in encrypted form and is used exclusively to run the game (recognizing your browser, resuming a game). It lasts 90 days from your last visit.\nIf you create an account, logging in from another device (via the link received by email) sets a new cookie specific to that device, linked to the same account: each device keeps its own cookie.\nThis cookie is strictly necessary to provide the service: in line with the ePrivacy rules and the guidelines of the French data protection authority (CNIL), it is exempt from prior consent and therefore does not require a consent banner.\nNo advertising cookies, trackers or audience measurement tools are used."
+      "body": "A single technical cookie (\"authToken\") is set, whether you play as a guest or with an account. It contains your identifier in encrypted form and is used exclusively to run the game (recognizing your browser, resuming a game). It lasts 90 days from your last visit.\nIf you create an account, logging in from another device (via the link received by email) sets a new cookie specific to that device, linked to the same account: each device keeps its own cookie.\nThis cookie is strictly necessary to provide the service: in line with the ePrivacy rules and the guidelines of the French data protection authority (CNIL), it is exempt from prior consent and therefore does not require a consent banner.\nNo advertising cookies, trackers or audience measurement tools are used at this time. Should an analytics tool be added in the future, this page will be updated accordingly (the tool's name and purpose) and, if that tool is not exempt from consent under CNIL guidelines, a consent banner will be put in place before it is activated."
     },
     "retention": {
       "title": "Data retention",
@@ -207,7 +209,7 @@
     },
     "security": {
       "title": "Data security",
-      "body": "InSeconds implements reasonable technical measures to protect your data:\n· all communication between your browser and our servers is encrypted (HTTPS);\n· the identification cookie is encrypted and marked HttpOnly (inaccessible to a script running on the page, including in the event of an XSS flaw);\n· logging in by email relies on no password: only a single-use link, valid for 15 minutes, is used, and only its cryptographic fingerprint is stored in the database, never the link itself;\n· login and account creation attempts are rate-limited per IP address, to prevent automated abuse;\n· the admin area is protected by a password and a revocable session token.\nNo security measure offers an absolute guarantee; should a security incident affect your data, we are committed to notifying the CNIL and, where necessary, the individuals concerned, in accordance with Articles 33 and 34 of the GDPR."
+      "body": "InSeconds implements reasonable technical measures to protect your data:\n· all communication between your browser and our servers is encrypted (HTTPS);\n· the identification cookie is encrypted and marked HttpOnly (inaccessible to a script running on the page, including in the event of an XSS flaw);\n· logging in by email relies on no password: only a single-use link, valid for 15 minutes, is used, and only its cryptographic fingerprint is stored in the database, never the link itself;\n· login and account creation attempts are rate-limited per IP address, to prevent automated abuse;\n· the admin area is only accessible to accounts that the publisher has manually granted this role: it uses the same email-link login as players, with no additional password, and no feature of the application allows anyone to obtain this role.\nNo security measure offers an absolute guarantee; should a security incident affect your data, we are committed to notifying the CNIL and, where necessary, the individuals concerned, in accordance with Articles 33 and 34 of the GDPR."
     },
     "rights": {
       "title": "Your rights",
@@ -431,6 +433,7 @@
       "streakTitle": "{{ streak }}-day streak",
       "stockLabel": "Your freezes · {{ count }} / {{ max }}",
       "nextFreeze": "Next freeze at {{ next }} days",
+      "full": "Full stock: you can't earn more freezes for now.",
       "remaining": {
         "one": "{{ n }} day to go",
         "other": "{{ n }} days to go"

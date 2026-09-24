@@ -1,7 +1,9 @@
 <div class="screen-enter flex-1 flex flex-col items-center justify-center gap-8 text-center px-4">
   @if (!showAbandonConfirm()) {
     <div class="space-y-3">
-      <p class="text-5xl" style="line-height:1">⏸</p>
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto" aria-hidden="true" style="color:var(--text-hi)">
+        <circle cx="12" cy="12" r="10"></circle><line x1="10" y1="15" x2="10" y2="9"></line><line x1="14" y1="15" x2="14" y2="9"></line>
+      </svg>
       <h2 class="text-2xl font-bold tracking-tight uppercase" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'resume.title' | translate }}</h2>
       <p class="text-sm leading-relaxed" style="color:var(--text-muted)">
         {{ 'resume.progress' | translate: { done: completedCount(), total: trackCount() } }}<br>
@@ -32,7 +34,7 @@
   } @else {
     <div class="w-full rounded-2xl p-6 space-y-4" style="background:rgb(var(--rgb-danger) / 0.1);border:1px solid rgb(var(--rgb-danger) / 0.35)">
       <p class="text-sm font-bold uppercase" style="font-family:var(--font-display);color:var(--text-error)">{{ 'resume.warningTitle' | translate }}</p>
-      <p class="text-sm leading-relaxed" style="color:var(--text-body);white-space:pre-line">{{ 'resume.warningBody' | translate }}</p>
+      <p class="text-sm leading-relaxed" style="color:var(--text-body);white-space:pre-line">{{ (playerSession.isLinked() ? 'resume.warningBodyLinked' : 'resume.warningBody') | translate }}</p>
       <div class="flex gap-3 pt-1">
         <button (click)="abandon.emit()"
           [disabled]="abandonLoading()"

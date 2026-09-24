@@ -40,6 +40,10 @@ export class StreakSheetComponent {
     return this.streak().status === 'protected' ? 'protected' : 'linked';
   });
 
+  /** Stock déjà au plafond : aucun nouveau gel ne peut être gagné pour l'instant (`nextFreezeInDays`
+   * reste un pur compteur de série, sans regarder le stock — c'est ici qu'on le fait). */
+  protected readonly atMax = computed(() => this.streak().freezes >= this.streak().maxFreezes);
+
   protected readonly remaining = computed(() => this.streak().nextFreezeInDays ?? 0);
   protected readonly nextFreezeAt = computed(() => this.streak().streak + this.remaining());
   protected readonly remainingKey = computed(() => `streakFreeze.sheet.remaining.${pluralKey(this.remaining())}`);

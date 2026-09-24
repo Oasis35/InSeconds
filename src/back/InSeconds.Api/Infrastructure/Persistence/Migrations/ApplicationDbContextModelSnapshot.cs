@@ -553,7 +553,7 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("DataProtectionKeys");
+                    b.ToTable("DataProtectionKeys", (string)null);
                 });
 
             modelBuilder.Entity("InSeconds.Api.Domain.DailyChallengeTrack", b =>

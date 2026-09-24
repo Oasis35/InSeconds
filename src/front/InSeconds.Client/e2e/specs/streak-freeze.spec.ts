@@ -34,7 +34,7 @@ test.describe('Gel de série — compte connecté', () => {
     await api.reset();
   });
 
-  test('série active : la gélule affiche série et gels, le panneau le stock et la progression', async ({ page, api }) => {
+  test('série active, stock plein : la gélule affiche série et gels, le panneau annonce le stock plein (plus de progression)', async ({ page, api }) => {
     await linkAccount(page, api, 'freeze-active@e2e.test', 'FreezeActifE2E');
     await setStreak(page, api, { streak: 12, lastPlayedDaysAgo: 1, freezes: 2 });
 
@@ -49,11 +49,29 @@ test.describe('Gel de série — compte connecté', () => {
     await expect(sheet(page)).toHaveAttribute('data-variant', 'linked');
     await expect(sheet(page).getByText('Série de 12 jours')).toBeVisible();
     await expect(sheet(page).getByText('Tes gels · 2 / 2')).toBeVisible();
-    await expect(sheet(page).getByText('Prochain gel à 14 jours')).toBeVisible();
-    await expect(sheet(page).getByText('encore 2 jours')).toBeVisible();
+    // Stock déjà au plafond : aucun nouveau gel à venir, plus de bloc « Prochain gel ».
+    await expect(sheet(page).getByText('Stock plein', { exact: false })).toBeVisible();
+    await expect(sheet(page).getByText('Prochain gel', { exact: false })).not.toBeVisible();
 
     await sheet(page).getByRole('button', { name: 'Fermer' }).click();
     await expect(sheet(page)).toBeHidden();
+  });
+
+  test('série active, stock non plein : le panneau affiche la progression vers le prochain gel', async ({ page, api }) => {
+    await linkAccount(page, api, 'freeze-active-partial@e2e.test', 'FreezePartielE2E');
+    await setStreak(page, api, { streak: 12, lastPlayedDaysAgo: 1, freezes: 1 });
+
+    const game = new GamePage(page);
+    await game.goto();
+    await game.waitForWelcome();
+    await pill(page).click();
+
+    await expect(sheet(page)).toHaveAttribute('data-variant', 'linked');
+    await expect(sheet(page).getByText('Tes gels · 1 / 2')).toBeVisible();
+    // Stock pas encore plein : le bloc « Prochain gel » reste affiché normalement.
+    await expect(sheet(page).getByText('Prochain gel à 14 jours')).toBeVisible();
+    await expect(sheet(page).getByText('encore 2 jours')).toBeVisible();
+    await expect(sheet(page).getByText('Stock plein', { exact: false })).not.toBeVisible();
   });
 
   test('série protégée : « Bon retour ! », panneau avec frise, puis toast « 1 gel a sauvé ta série »', async ({ page, api }) => {

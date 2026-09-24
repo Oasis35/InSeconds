@@ -49,4 +49,20 @@ describe('ResumeScreenComponent', () => {
     playerSessionStub.isLinked.set(true);
     expect(component['playerSession'].isLinked()).toBeTrue();
   });
+
+  // Sans traductions chargées, le TranslatePipe rend la clé brute : on vérifie la clé choisie.
+  it('warns a guest that the streak will be reset', () => {
+    component['showAbandonConfirm'].set(true);
+    fixture.detectChanges();
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('resume.warningBody');
+    expect(text).not.toContain('resume.warningBodyLinked');
+  });
+
+  it('tells a linked account that a freeze may protect the streak', () => {
+    playerSessionStub.isLinked.set(true);
+    component['showAbandonConfirm'].set(true);
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('resume.warningBodyLinked');
+  });
 });

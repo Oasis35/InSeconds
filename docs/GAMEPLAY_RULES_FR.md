@@ -102,6 +102,7 @@ Si `Track.HasPreview = false`, le joueur ne peut pas écouter : bouton « Passer
 - **Comptes connectés uniquement.** Un invité n'a jamais de gel. **[Back]**
 - **1 gel offert** à la création du compte (conversion invité → compte ; une reconnexion n'en redonne pas). **[Back]**
 - **+1 gel à chaque multiple de `StreakFreezeEveryDays`** (7) jours de série, dans la limite de **`StreakFreezeMax`** (2). Stock plein → rien de gagné. **[Back]**
+- **Panneau série (gélule → `StreakSheetComponent`)** : le bloc « Prochain gel à N jours » + barre de progression n'est affiché que si le stock n'est pas déjà au plafond (2026-09-24) — une fois à 2/2, le panneau affiche un message « Stock plein » à la place, pour ne pas annoncer un gel qui ne peut pas être gagné tant qu'aucun n'a été consommé. **[Front]**
 - **Consommation automatique** : à la complétion du défi suivant, chaque jour manqué consomme un gel. La série **ne monte pas** pour le jour gelé mais **ne casse pas** (+1 pour le défi joué). Pas assez de gels pour tous les jours manqués → la série repart à 1 et les gels restent en stock. **[Back]**
 - Entre-temps, une série dont les jours manqués sont couverts par le stock est **« protégée »** (gélule cyan, accueil « Bon retour ! ») ; sinon elle est **« perdue »** (0). **[Back + Front]**
 - **Invité** : série perdue ≥ `StreakLostNudgeMinDays` (2) → toast « Ta série de N jours s'est arrêtée… un gel l'aurait sauvée », une seule fois par série perdue ; palier de 7 jours atteint → « Tu aurais gagné un gel ! ». **[Front]**

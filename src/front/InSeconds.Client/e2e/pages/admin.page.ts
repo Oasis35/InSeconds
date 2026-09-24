@@ -8,15 +8,24 @@ export class AdminPage {
   readonly logoutButton: Locator;
   readonly notLoggedInMessage: Locator;
   readonly accessDeniedMessage: Locator;
+  readonly browserIdLabel: Locator;
 
   constructor(readonly page: Page) {
     this.logoutButton = page.getByRole('button', { name: 'Se déconnecter' });
     this.notLoggedInMessage = page.getByRole('heading', { name: "Connecte-toi d'abord" });
     this.accessDeniedMessage = page.getByRole('heading', { name: 'Accès refusé' });
+    this.browserIdLabel = page.getByText('Ton identifiant navigateur :');
   }
 
+  // Attend l'affichage de l'ID navigateur (BrowserIdComponent) : sans cookie, il appelle
+  // GET /api/players/me sans peek, qui crée un invité et pose son cookie authToken. Tant que
+  // cette réponse n'est pas revenue, un login() enchaîné juste derrière était instable : si
+  // elle arrivait après POST /api/e2e/login-as-admin, son Set-Cookie écrasait le cookie admin
+  // (course → /admin affichait « Connecte-toi d'abord », timeout sur « Se déconnecter »).
+  // L'ID n'est rendu qu'une fois playerId résolu, donc aucun Set-Cookie ne reste en vol.
   async goto(): Promise<void> {
     await this.page.goto('/admin');
+    await this.browserIdLabel.waitFor({ state: 'visible' });
   }
 
   // Raccourci E2E-only : crée/réutilise un compte lié dédié aux tests avec IsAdmin=true
