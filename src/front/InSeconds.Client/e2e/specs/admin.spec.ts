@@ -74,9 +74,9 @@ test.describe('Admin — pool', () => {
     await admin.login();
     await page.getByRole('button', { name: /Pool/ }).click();
     await admin.poolSearchInput().fill('Eminem');
-    await expect(page.getByRole('cell', { name: 'Eminem' })).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Eminem', exact: true })).toBeVisible();
     // Les autres artistes ne doivent pas apparaître
-    await expect(page.getByRole('cell', { name: 'Coldplay' })).not.toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Coldplay', exact: true })).not.toBeVisible();
   });
 
   test('filtre preview "Manquante" affiche les 5 morceaux sans preview', async ({ page }) => {
