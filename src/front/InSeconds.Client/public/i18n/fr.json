@@ -406,7 +406,22 @@
       "colCreated": "Inscrit le",
       "colGames": "Parties",
       "adminBadge": "Admin",
-      "neverSeen": "Jamais"
+      "neverSeen": "Jamais",
+      "colStreak": "Série",
+      "colFreezes": "Gels",
+      "streakProtected": "Série protégée par un gel",
+      "historyToggle": "Afficher l'historique des 30 derniers jours",
+      "historyTitle": "30 derniers jours",
+      "historyLoading": "Chargement de l'historique...",
+      "historyError": "Impossible de charger l'historique.",
+      "historyEmpty": "Aucune partie sur les 30 derniers jours.",
+      "freezesUsed": "{{count}} gel(s) utilisé(s)",
+      "status": {
+        "Completed": "Terminée",
+        "Pending": "En cours",
+        "Abandoned": "Abandonnée",
+        "Expired": "Inachevée"
+      }
     },
     "deleteModal": {
       "title": "Confirmer la suppression",

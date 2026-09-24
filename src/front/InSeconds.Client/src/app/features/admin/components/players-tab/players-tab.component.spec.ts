@@ -1,24 +1,29 @@
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
+import { of, throwError } from 'rxjs';
 import { PlayersTabComponent } from './players-tab.component';
 import { AdminApiService } from '../../services/admin-api.service';
 import { LanguageService } from '../../../../core/services/language.service';
 import { RegisteredPlayerDto } from '../../admin.models';
 
 const PLAYERS: RegisteredPlayerDto[] = [
-  { id: 'a', pseudo: 'Alice', email: 'alice@example.com', createdAt: '2026-09-01T10:00:00Z', lastSeenAt: '2026-09-24T09:00:00Z', gamesPlayed: 12, isAdmin: true },
-  { id: 'b', pseudo: 'Bob', email: 'bob@test.fr', createdAt: '2026-09-10T10:00:00Z', lastSeenAt: null, gamesPlayed: 0, isAdmin: false },
+  { id: 'a', pseudo: 'Alice', email: 'alice@example.com', createdAt: '2026-09-01T10:00:00Z', lastSeenAt: '2026-09-24T09:00:00Z', gamesPlayed: 12, isAdmin: true, currentStreak: 5, streakFreezes: 1, streakProtected: false },
+  { id: 'b', pseudo: 'Bob', email: 'bob@test.fr', createdAt: '2026-09-10T10:00:00Z', lastSeenAt: null, gamesPlayed: 0, isAdmin: false, currentStreak: 0, streakFreezes: 1, streakProtected: false },
 ];
 
 // Même approche que challenges-tab.component.spec.ts : pas de fixture, méthodes/signals
 // protégés exercés en bracket-notation (pas besoin de TranslateService).
 describe('PlayersTabComponent', () => {
   let component: PlayersTabComponent;
+  let getPlayerHistory: jasmine.Spy;
 
   beforeEach(() => {
+    getPlayerHistory = jasmine.createSpy('getPlayerHistory').and.returnValue(of({
+      games: [{ date: '2026-09-24', status: 'Completed', score: 3200, freezesUsed: 0, freezeEarned: false }],
+    }));
     TestBed.configureTestingModule({
       providers: [
-        { provide: AdminApiService, useValue: { registeredPlayers: signal(PLAYERS), registeredPlayersLoading: signal(false) } },
+        { provide: AdminApiService, useValue: { registeredPlayers: signal(PLAYERS), registeredPlayersLoading: signal(false), getPlayerHistory } },
         { provide: LanguageService, useValue: { current: signal('fr') } },
       ],
     });
@@ -45,5 +50,37 @@ describe('PlayersTabComponent', () => {
     const now = Date.parse('2026-09-24T12:00:00Z');
     expect(component['relativeTime']('2026-09-24T09:00:00Z', now)).toBe('il y a 3 heures');
     expect(component['relativeTime']('2026-09-23T12:00:00Z', now)).toBe('hier');
+  });
+
+  it('toggle charge l\'historique au premier dépliage seulement', () => {
+    component['toggle']('a');
+    expect(component['expandedId']()).toBe('a');
+    expect(component['historyOf']('a')).toEqual([
+      { date: '2026-09-24', status: 'Completed', score: 3200, freezesUsed: 0, freezeEarned: false },
+    ]);
+
+    component['toggle']('a'); // repli
+    expect(component['expandedId']()).toBeNull();
+    component['toggle']('a'); // re-dépliage : déjà en mémoire
+    expect(getPlayerHistory).toHaveBeenCalledTimes(1);
+  });
+
+  it('une seule ligne dépliée à la fois', () => {
+    component['toggle']('a');
+    component['toggle']('b');
+    expect(component['expandedId']()).toBe('b');
+    expect(getPlayerHistory).toHaveBeenCalledWith('b');
+  });
+
+  it('retente le chargement après une erreur', () => {
+    getPlayerHistory.and.returnValue(throwError(() => new Error('500')));
+    component['toggle']('a');
+    expect(component['historyOf']('a')).toBe('error');
+
+    component['toggle']('a');
+    getPlayerHistory.and.returnValue(of({ games: [] }));
+    component['toggle']('a');
+    expect(component['historyOf']('a')).toEqual([]);
+    expect(getPlayerHistory).toHaveBeenCalledTimes(2);
   });
 });

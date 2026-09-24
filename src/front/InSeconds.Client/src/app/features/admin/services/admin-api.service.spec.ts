@@ -150,6 +150,20 @@ describe('AdminHttpService', () => {
     });
   });
 
+  describe('getPlayerHistory()', () => {
+    it('should GET /api/admin/players/{id}/history', () => {
+      let result: any;
+      service.getPlayerHistory('abc-123').subscribe(r => (result = r));
+
+      const req = httpMock.expectOne(`${base}/players/abc-123/history`);
+      expect(req.request.method).toBe('GET');
+      const body = { games: [] };
+      req.flush(body);
+
+      expect(result).toEqual(body);
+    });
+  });
+
   describe('addTrack()', () => {
     it('should POST to /api/admin/tracks with deezerTrackId', () => {
       let completed = false;

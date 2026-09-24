@@ -53,7 +53,8 @@
       </button>
     </div>
 
-    <div class="w-full max-w-2xl">
+    <!-- L'onglet Joueurs (7 colonnes) a besoin de plus de largeur que les autres. -->
+    <div class="w-full" [class]="state.activeTab() === 'joueurs' ? 'max-w-4xl' : 'max-w-2xl'">
       @if (state.activeTab() === 'dashboard') {
         <app-dashboard-tab />
       } @else if (state.activeTab() === 'pool') {

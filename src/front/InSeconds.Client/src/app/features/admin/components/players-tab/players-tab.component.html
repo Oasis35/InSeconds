@@ -1,4 +1,4 @@
-<div class="flex flex-col gap-4 w-full max-w-2xl">
+<div class="flex flex-col gap-4 w-full">
   <div class="rounded-xl flex flex-col overflow-hidden" style="background:var(--bg-surface)">
     <div class="flex flex-wrap items-center justify-between gap-3 p-4">
       <h2 class="text-sm font-semibold uppercase tracking-wide" style="color:var(--text-muted)">
@@ -28,14 +28,30 @@
               <th class="px-3 py-2.5">{{ 'admin.players.colEmail' | translate }}</th>
               <th class="px-3 py-2.5 whitespace-nowrap">{{ 'admin.players.colLastSeen' | translate }}</th>
               <th class="px-3 py-2.5 whitespace-nowrap">{{ 'admin.players.colCreated' | translate }}</th>
-              <th class="px-4 py-2.5 text-right">{{ 'admin.players.colGames' | translate }}</th>
+              <th class="px-3 py-2.5 text-right">{{ 'admin.players.colGames' | translate }}</th>
+              <th class="px-3 py-2.5 text-right">{{ 'admin.players.colStreak' | translate }}</th>
+              <th class="px-4 py-2.5 text-right">{{ 'admin.players.colFreezes' | translate }}</th>
             </tr>
           </thead>
           <tbody>
             @for (p of filteredPlayers(); track p.id) {
-              <tr data-testid="registered-player" style="border-bottom:1px solid var(--border-subtle)">
-                <td class="px-4 py-2.5 whitespace-nowrap" style="color:var(--text-hi)">
-                  {{ p.pseudo ?? '—' }}
+              @let expanded = expandedId() === p.id;
+              <tr data-testid="registered-player"
+                [style.border-bottom]="expanded ? 'none' : '1px solid var(--border-subtle)'"
+                [style.background]="expanded ? 'var(--bg-inactive)' : null">
+                <td class="px-4 py-2.5 whitespace-nowrap">
+                  <button type="button" (click)="toggle(p.id)"
+                    [attr.aria-expanded]="expanded"
+                    [attr.aria-controls]="'player-history-' + p.id"
+                    [title]="'admin.players.historyToggle' | translate"
+                    class="inline-flex items-center gap-1.5 text-left cursor-pointer hover:underline"
+                    style="color:var(--text-hi)">
+                    <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"
+                      class="transition-transform" [style.transform]="expanded ? 'rotate(90deg)' : null">
+                      <path d="M3 1.5 6.5 5 3 8.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    {{ p.pseudo ?? '—' }}
+                  </button>
                   @if (p.isAdmin) {
                     <span class="ml-1.5 text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded-full align-middle"
                       style="color:var(--color-violet);background:rgb(var(--rgb-violet) / 0.15)">{{ 'admin.players.adminBadge' | translate }}</span>
@@ -50,8 +66,55 @@
                   }
                 </td>
                 <td class="px-3 py-2.5 whitespace-nowrap" style="color:var(--text-muted)">{{ p.createdAt | date:'dd/MM/yyyy' }}</td>
-                <td class="px-4 py-2.5 text-right tabular-nums" style="color:var(--text-body)">{{ p.gamesPlayed }}</td>
+                <td class="px-3 py-2.5 text-right tabular-nums" style="color:var(--text-body)">{{ p.gamesPlayed }}</td>
+                <td class="px-3 py-2.5 text-right tabular-nums whitespace-nowrap"
+                  [title]="p.streakProtected ? ('admin.players.streakProtected' | translate) : ''"
+                  [style.color]="p.streakProtected ? 'var(--color-accent-2)' : (p.currentStreak > 0 ? 'var(--color-accent-3)' : 'var(--text-faint)')">
+                  <span class="inline-flex items-center gap-1">
+                    <app-streak-icon [name]="p.streakProtected ? 'snowflake' : 'flame'" size="13px" />{{ p.currentStreak }}
+                  </span>
+                </td>
+                <td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap"
+                  [style.color]="p.streakFreezes > 0 ? 'var(--color-accent-2)' : 'var(--text-faint)'">
+                  <span class="inline-flex items-center gap-1">
+                    <app-streak-icon name="snowflake" size="13px" />{{ p.streakFreezes }}
+                  </span>
+                </td>
               </tr>
+              @if (expanded) {
+                <tr data-testid="player-history" [id]="'player-history-' + p.id"
+                  style="border-bottom:1px solid var(--border-subtle);background:var(--bg-inactive)">
+                  <td colspan="7" class="px-4 pb-3 pt-1">
+                    @let history = historyOf(p.id);
+                    @if (history === 'loading' || history === undefined) {
+                      <p class="text-xs" style="color:var(--text-muted)">{{ 'admin.players.historyLoading' | translate }}</p>
+                    } @else if (history === 'error') {
+                      <p class="text-xs" style="color:var(--text-error)">{{ 'admin.players.historyError' | translate }}</p>
+                    } @else if (history.length === 0) {
+                      <p class="text-xs" style="color:var(--text-muted)">{{ 'admin.players.historyEmpty' | translate }}</p>
+                    } @else {
+                      <p class="text-[11px] uppercase tracking-wide mb-1.5" style="color:var(--text-faint)">{{ 'admin.players.historyTitle' | translate }}</p>
+                      <!-- Largeur bornée à l'écran : lisible sur mobile même quand le tableau défile en largeur. -->
+                      <ul class="flex flex-col text-xs" style="width:min(24rem, calc(100vw - 6rem))">
+                        @for (g of history; track g.date) {
+                          <li class="grid grid-cols-[6.5rem_1fr_auto] items-center gap-3 py-1" style="border-top:1px solid var(--border-subtle)">
+                            <span class="tabular-nums" style="color:var(--text-body)">{{ g.date | date:'dd/MM/yyyy' }}</span>
+                            <span class="inline-flex items-center gap-1.5" [style.color]="statusColor(g.status)">
+                              {{ 'admin.players.status.' + g.status | translate }}
+                              @if (g.freezesUsed > 0) {
+                                <span [title]="'admin.players.freezesUsed' | translate: { count: g.freezesUsed }" style="color:var(--color-accent-2)">
+                                  <app-streak-icon name="snowflake" size="11px" />
+                                </span>
+                              }
+                            </span>
+                            <span class="tabular-nums text-right" style="color:var(--text-hi)">{{ g.score ?? '—' }}</span>
+                          </li>
+                        }
+                      </ul>
+                    }
+                  </td>
+                </tr>
+              }
             }
           </tbody>
         </table>

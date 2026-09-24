@@ -14,7 +14,17 @@ export interface DeezerTrackInfo { artist: string; title: string; previewUrl: st
 export interface RegisteredPlayerDto {
   id: string; pseudo: string | null; email: string | null;
   createdAt: string; lastSeenAt: string | null; gamesPlayed: number; isAdmin: boolean;
+  /** Série effective (0 si cassée). */
+  currentStreak: number; streakFreezes: number;
+  /** Jours manqués couverts par les gels (série « au chaud »). */
+  streakProtected: boolean;
 }
 export interface RegisteredPlayersResponse { players: RegisteredPlayerDto[]; }
+
+export type PlayerGameStatus = 'Completed' | 'Pending' | 'Abandoned' | 'Expired';
+export interface PlayerHistoryEntryDto {
+  date: string; status: PlayerGameStatus; score: number | null; freezesUsed: number; freezeEarned: boolean;
+}
+export interface PlayerHistoryResponse { games: PlayerHistoryEntryDto[]; }
 
 export type AdminTab = 'dashboard' | 'pool' | 'defis' | 'joueurs' | 'actions';

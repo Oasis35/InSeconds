@@ -406,7 +406,22 @@
       "colCreated": "Signed up",
       "colGames": "Games",
       "adminBadge": "Admin",
-      "neverSeen": "Never"
+      "neverSeen": "Never",
+      "colStreak": "Streak",
+      "colFreezes": "Freezes",
+      "streakProtected": "Streak protected by a freeze",
+      "historyToggle": "Show the last 30 days",
+      "historyTitle": "Last 30 days",
+      "historyLoading": "Loading history...",
+      "historyError": "Couldn't load the history.",
+      "historyEmpty": "No games in the last 30 days.",
+      "freezesUsed": "{{count}} freeze(s) used",
+      "status": {
+        "Completed": "Completed",
+        "Pending": "In progress",
+        "Abandoned": "Abandoned",
+        "Expired": "Unfinished"
+      }
     },
     "deleteModal": {
       "title": "Confirm deletion",

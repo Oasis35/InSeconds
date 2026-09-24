@@ -102,4 +102,5 @@ export class AdminApiService {
   addTrack(deezerTrackId: number) { return this.http.addTrack(deezerTrackId); }
   deleteTrack(id: number) { return this.http.deleteTrack(id); }
   searchDeezer(q: string) { return this.http.searchDeezer(q); }
+  getPlayerHistory(playerId: string) { return this.http.getPlayerHistory(playerId); }
 }

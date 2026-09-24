@@ -5,7 +5,7 @@ import { environment } from '../../../../environments/environment';
 import { PlayerSessionService } from '../../../core/services/player-session.service';
 import { AdminStatsResponse, ChallengeStatsResponse } from '../../../api/api.generated';
 import {
-  ChallengeDto, DeezerTrackInfo, PoolTracksResponse, RefreshPreviewsResult, RegisteredPlayersResponse,
+  ChallengeDto, DeezerTrackInfo, PoolTracksResponse, RefreshPreviewsResult, RegisteredPlayersResponse, PlayerHistoryResponse,
 } from '../admin.models';
 
 @Injectable()
@@ -47,4 +47,7 @@ export class AdminHttpService {
   getChallengeStats() { return this.http.get<ChallengeStatsResponse>(`${this.base}/challenge-stats`); }
   getChallenges() { return this.http.get<ChallengeDto[]>(`${this.base}/challenges`); }
   getRegisteredPlayers() { return this.http.get<RegisteredPlayersResponse>(`${this.base}/players`); }
+  getPlayerHistory(playerId: string) {
+    return this.http.get<PlayerHistoryResponse>(`${this.base}/players/${encodeURIComponent(playerId)}/history`);
+  }
 }
