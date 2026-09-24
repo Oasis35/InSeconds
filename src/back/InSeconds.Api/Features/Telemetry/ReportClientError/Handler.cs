@@ -6,11 +6,24 @@ namespace InSeconds.Api.Features.Telemetry.ReportClientError;
 // exception back. PlayerId vient du scope posé par PlayerTelemetryMiddleware.
 public sealed class ReportClientErrorHandler(ILogger<ReportClientErrorHandler> logger)
 {
+    // Séparateur des lignes de la stack une fois aplatie.
+    internal const string LineSeparator = " | ";
+
     public IResult Handle(ReportClientErrorCommand command)
     {
-        PlayerActionLog.ClientError(logger, command.Source, command.Url, command.Message,
-            command.HttpStatus, command.RelatedTraceId, command.Stack);
+        // Tous les champs viennent du navigateur : retours à la ligne neutralisés pour qu'un
+        // client ne puisse pas forger de fausses lignes dans les logs texte (injection de logs).
+        PlayerActionLog.ClientError(logger,
+            ToSingleLine(command.Source, " ")!,
+            ToSingleLine(command.Url, " "),
+            ToSingleLine(command.Message, " ")!,
+            command.HttpStatus,
+            ToSingleLine(command.RelatedTraceId, " "),
+            ToSingleLine(command.Stack, LineSeparator));
 
         return Results.NoContent();
     }
+
+    internal static string? ToSingleLine(string? value, string separator)
+        => value?.Replace("\r\n", separator).Replace("\r", separator).Replace("\n", separator);
 }

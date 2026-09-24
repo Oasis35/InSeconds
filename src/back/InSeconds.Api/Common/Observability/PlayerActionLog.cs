@@ -37,7 +37,7 @@ public static partial class PlayerActionLog
     public static partial void SignedIn(ILogger logger, Guid playerId, string linkOutcome);
 
     [LoggerMessage(EventId = 1100, Level = LogLevel.Error,
-        Message = "Erreur front ({Source}) sur {Url} : {ClientMessage} (HTTP {HttpStatus}, trace liée {RelatedTraceId})\n{ClientStack}")]
+        Message = "Erreur front ({Source}) sur {Url} : {ClientMessage} (HTTP {HttpStatus}, trace liée {RelatedTraceId}) — stack : {ClientStack}")]
     public static partial void ClientError(ILogger logger, string source, string? url, string clientMessage,
         int? httpStatus, string? relatedTraceId, string? clientStack);
 }
