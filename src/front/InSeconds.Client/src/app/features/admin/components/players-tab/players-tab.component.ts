@@ -3,16 +3,11 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import { AdminApiService } from '../../services/admin-api.service';
-import { LanguageService } from '../../../../core/services/language.service';
 import { StreakIconComponent } from '../../../../shared/streak-icon/streak-icon.component';
 import { PlayerGameStatus, PlayerHistoryEntryDto } from '../../admin.models';
 
 /** Historique d'un joueur : chargé au premier dépliage de sa ligne, puis gardé en mémoire. */
 export type PlayerHistoryState = PlayerHistoryEntryDto[] | 'loading' | 'error';
-
-const MINUTE = 60_000;
-const HOUR = 60 * MINUTE;
-const DAY = 24 * HOUR;
 
 @Component({
   selector: 'app-players-tab',
@@ -22,7 +17,6 @@ const DAY = 24 * HOUR;
 })
 export class PlayersTabComponent {
   protected readonly api = inject(AdminApiService);
-  private readonly language = inject(LanguageService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly filter = signal('');
@@ -72,16 +66,5 @@ export class PlayersTabComponent {
 
   private setHistory(playerId: string, state: PlayerHistoryState): void {
     this.histories.update(h => ({ ...h, [playerId]: state }));
-  }
-
-  /** « il y a 3 h », « hier »… dans la langue courante, ou null si jamais vu. */
-  protected relativeTime(iso: string | null, now = Date.now()): string | null {
-    if (!iso) return null;
-    const diff = new Date(iso).getTime() - now;
-    const abs = Math.abs(diff);
-    const rtf = new Intl.RelativeTimeFormat(this.language.current(), { numeric: 'auto' });
-    if (abs < HOUR) return rtf.format(Math.round(diff / MINUTE), 'minute');
-    if (abs < DAY) return rtf.format(Math.round(diff / HOUR), 'hour');
-    return rtf.format(Math.round(diff / DAY), 'day');
   }
 }

@@ -3,7 +3,6 @@ import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import { PlayersTabComponent } from './players-tab.component';
 import { AdminApiService } from '../../services/admin-api.service';
-import { LanguageService } from '../../../../core/services/language.service';
 import { RegisteredPlayerDto } from '../../admin.models';
 
 const PLAYERS: RegisteredPlayerDto[] = [
@@ -24,7 +23,6 @@ describe('PlayersTabComponent', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: AdminApiService, useValue: { registeredPlayers: signal(PLAYERS), registeredPlayersLoading: signal(false), getPlayerHistory } },
-        { provide: LanguageService, useValue: { current: signal('fr') } },
       ],
     });
     component = TestBed.runInInjectionContext(() => new PlayersTabComponent());
@@ -40,16 +38,6 @@ describe('PlayersTabComponent', () => {
 
     component['filter'].set('test.fr');
     expect(component['filteredPlayers']().map(p => p.id)).toEqual(['b']);
-  });
-
-  it('relativeTime renvoie null si le joueur n\'a jamais été vu', () => {
-    expect(component['relativeTime'](null)).toBeNull();
-  });
-
-  it('relativeTime formate en heures puis en jours', () => {
-    const now = Date.parse('2026-09-24T12:00:00Z');
-    expect(component['relativeTime']('2026-09-24T09:00:00Z', now)).toBe('il y a 3 heures');
-    expect(component['relativeTime']('2026-09-23T12:00:00Z', now)).toBe('hier');
   });
 
   it('toggle charge l\'historique au premier dépliage seulement', () => {

@@ -421,7 +421,8 @@
         "Pending": "In progress",
         "Abandoned": "Abandoned",
         "Expired": "Unfinished"
-      }
+      },
+      "lastSeenAt": "{{date}} at {{time}}"
     },
     "deleteModal": {
       "title": "Confirm deletion",

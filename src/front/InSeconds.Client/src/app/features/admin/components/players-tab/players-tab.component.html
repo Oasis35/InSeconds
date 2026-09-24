@@ -74,7 +74,7 @@
                 </td>
                 <td class="px-3 py-2.5 whitespace-nowrap">
                   @if (p.lastSeenAt) {
-                    <span style="color:var(--text-body)" [title]="p.lastSeenAt | date:'dd/MM/yyyy HH:mm'">{{ relativeTime(p.lastSeenAt) }}</span>
+                    <span style="color:var(--text-body)">{{ 'admin.players.lastSeenAt' | translate: { date: (p.lastSeenAt | date:'dd/MM/yy'), time: (p.lastSeenAt | date:'HH:mm') } }}</span>
                   } @else {
                     <span style="color:var(--text-faint)">{{ 'admin.players.neverSeen' | translate }}</span>
                   }

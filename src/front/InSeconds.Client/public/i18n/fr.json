@@ -421,7 +421,8 @@
         "Pending": "En cours",
         "Abandoned": "Abandonnée",
         "Expired": "Inachevée"
-      }
+      },
+      "lastSeenAt": "{{date}} à {{time}}"
     },
     "deleteModal": {
       "title": "Confirmer la suppression",
