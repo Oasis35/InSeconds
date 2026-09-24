@@ -164,6 +164,17 @@ describe('AdminHttpService', () => {
     });
   });
 
+  describe('renameTrack()', () => {
+    it('should PATCH /api/admin/tracks/{id} with artist and title', () => {
+      service.renameTrack(5, 'Étienne Daho', 'Week-end à Rome').subscribe();
+
+      const req = httpMock.expectOne(`${base}/tracks/5`);
+      expect(req.request.method).toBe('PATCH');
+      expect(req.request.body).toEqual({ artist: 'Étienne Daho', title: 'Week-end à Rome' });
+      req.flush({ id: 5, artist: 'Étienne Daho', title: 'Week-end à Rome' });
+    });
+  });
+
   describe('addTrack()', () => {
     it('should POST to /api/admin/tracks with deezerTrackId', () => {
       let completed = false;

@@ -83,6 +83,12 @@ describe('AdminStateService', () => {
       expect(service.hasVisited('defis')).toBeTrue();
     });
 
+    it("restaure l'onglet Joueurs depuis ?tab=joueurs", () => {
+      setup({ tab: 'joueurs' });
+      expect(service.activeTab()).toBe('joueurs');
+      expect(service.hasVisited('joueurs')).toBeTrue();
+    });
+
     it('retombe sur dashboard si ?tab= est absent ou invalide', () => {
       setup({ tab: 'not-a-real-tab' });
       expect(service.activeTab()).toBe('dashboard');

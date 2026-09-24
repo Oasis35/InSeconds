@@ -114,6 +114,19 @@ export class AdminPage {
     return this.page.getByRole('button', { name: 'Annuler' });
   }
 
+  // Modification (artiste / titre)
+  editModalTitle(): Locator {
+    return this.page.getByRole('heading', { name: 'Modifier le morceau' });
+  }
+
+  editTitleInput(): Locator {
+    return this.page.getByLabel('Titre', { exact: true });
+  }
+
+  editSaveButton(): Locator {
+    return this.page.getByRole('button', { name: 'Enregistrer' });
+  }
+
   // Actions
   generateButton(): Locator {
     return this.page.getByRole('button', { name: /Générer le défi du jour/ });
