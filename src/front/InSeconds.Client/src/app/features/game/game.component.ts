@@ -4,6 +4,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
 import { PlayerSessionService } from '../../core/services/player-session.service';
+import { ErrorReportingService } from '../../core/services/error-reporting.service';
 import { GameFacadeService } from './services/game-facade.service';
 import { GameShareService } from './services/game-share.service';
 import { LeaveConfirmationService } from './services/leave-confirmation.service';
@@ -52,6 +53,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
   private readonly gameShare = inject(GameShareService);
   private readonly leaveConfirmation = inject(LeaveConfirmationService);
   protected readonly playerSession = inject(PlayerSessionService);
+  protected readonly errorReporting = inject(ErrorReportingService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly gameState = signal<GameState>('loading');

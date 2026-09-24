@@ -22,6 +22,9 @@
 
 ## Infra & exploitation
 
+- [ ] **Grafana Cloud : alertes et tableau de bord** — l'export OpenTelemetry est en place (logs, traces, métriques, cf. `CLAUDE.md` § Observabilité) ; reste à configurer côté Grafana : alerte mail sur les logs `Error` (API + erreurs front), sonde externe de `https://api.inseconds.cc/health` (Synthetic Monitoring, prévient même si le VPS est à terre), tableau de bord simple (requêtes, temps de réponse, taux d'erreurs, mémoire)
+- [ ] **Bruit des erreurs de validation** — Wolverine logue en `Error` (avec stack) chaque échec FluentValidation d'un `bus.InvokeAsync`, alors que l'API répond un 400 normal : à rabaisser (filtre de log ou politique Wolverine) pour ne pas déclencher les alertes « erreurs »
+- [ ] (optionnel) Collecteur Grafana Alloy sur le VPS pour remonter aussi les logs Caddy/nginx
 - [ ] **Backups PostgreSQL automatiques externalisés** — le VPS est un point de défaillance unique : dump quotidien envoyé hors du VPS (object storage ou équivalent)
 - [ ] **Job récurrent de nettoyage des invités jamais joués** — `BackgroundService` nocturne (même pattern que `GenerateDailyChallengeService`) qui soft-delete les `Player` invités sans `GameSession` au-delà d'un seuil (ex : 30 jours) ; la migration `PurgeUnplayedPlayers` n'était qu'un nettoyage ponctuel
 - [ ] Élargir les smoke tests post-deploy au-delà des headers nginx (ex : vérifier que `/health` répond depuis l'URL publique juste après déploiement)

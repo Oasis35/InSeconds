@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using FluentAssertions;
 using Xunit;
 using InSeconds.Api.Domain;
@@ -17,7 +18,7 @@ public sealed class AbandonSessionHandlerTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options);
 
-    private static AbandonSessionHandler CreateHandler(ApplicationDbContext db) => new(db);
+    private static AbandonSessionHandler CreateHandler(ApplicationDbContext db) => new(db, NullLogger<AbandonSessionHandler>.Instance);
 
     private static Player BuildPlayer() => Player.CreateGuest(PlayerId, Guid.NewGuid(), DateTime.UtcNow);
 

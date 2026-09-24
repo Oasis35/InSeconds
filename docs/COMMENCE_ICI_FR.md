@@ -16,6 +16,7 @@ InSeconds est un **blind test musical quotidien**. La lecture démarre automatiq
 | Musique | API Deezer (intégrée — recherche + preview + extraction `CoverHash`) |
 | Infra dev | Docker Compose, `dotnet watch` (back), `ng serve` (front) |
 | CI | GitHub Actions (build back + front + check migrations EF + tests unitaires back et front + tests d'intégration Testcontainers + E2E Playwright + contrôle des headers nginx de l'image de prod), déploiement VPS auto sur push `main`, Dependabot |
+| Observabilité | OpenTelemetry (logs, traces, métriques) → Grafana Cloud, erreurs front relayées par l'API — cf. `CLAUDE.md` § Observabilité |
 | Déploiement | VPS OVH (Debian) — front + API + Postgres en Docker derrière Caddy (reverse proxy, HTTPS auto), CI/CD GitHub Actions sur push `main` |
 
 ## Architecture en deux mots

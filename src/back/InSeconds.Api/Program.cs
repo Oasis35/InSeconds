@@ -3,6 +3,7 @@ using FluentValidation;
 using InSeconds.Api.Common.Auth;
 using InSeconds.Api.Common.Email;
 using InSeconds.Api.Common.Networking;
+using InSeconds.Api.Common.Observability;
 using InSeconds.Api.Common.RateLimiting;
 using InSeconds.Api.Common.Scoring;
 using InSeconds.Api.Common.Settings;
@@ -33,6 +34,7 @@ using InSeconds.Api.Features.Admin.Players.GetPlayerHistory;
 using InSeconds.Api.Features.Players.GetCurrentPlayer;
 using InSeconds.Api.Features.Players.UpdatePseudo;
 using InSeconds.Api.Features.Stats.Today;
+using InSeconds.Api.Features.Telemetry.ReportClientError;
 using InSeconds.Api.Features.ChallengeGeneration;
 using InSeconds.Api.Features.Sessions.AbandonSession;
 using InSeconds.Api.Features.Sessions.StartSession;
@@ -59,6 +61,23 @@ var builder = WebApplication.CreateBuilder(args);
 const string CorsPolicyName = "AllowAngular";
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
+
+// Date UTC de compilation (AssemblyMetadata BuildUtc, stampée dans le csproj) : exposée par
+// /health et comme version du service dans la télémétrie.
+var buildUtc = typeof(Program).Assembly
+    .GetCustomAttributes(typeof(System.Reflection.AssemblyMetadataAttribute), false)
+    .Cast<System.Reflection.AssemblyMetadataAttribute>()
+    .FirstOrDefault(a => a.Key == "BuildUtc")?.Value ?? "unknown";
+
+// Logs, traces et métriques OpenTelemetry, exportés en OTLP seulement si
+// OTEL_EXPORTER_OTLP_ENDPOINT est défini (cf. Common/Observability).
+builder.AddInSecondsObservability(serviceVersion: buildUtc);
+
+// Réponses d'erreur au format ProblemDetails avec un code d'erreur (traceId) que le joueur peut
+// communiquer : il se recherche tel quel dans l'outil d'observabilité (trace + logs liés).
+builder.Services.AddProblemDetails(options =>
+    options.CustomizeProblemDetails = context =>
+        context.ProblemDetails.Extensions["traceId"] = ObservabilityExtensions.CurrentTraceId(context.HttpContext));
 
 builder.Configuration.Sources.Add(new AppDbConfigurationSource(connectionString));
 
@@ -158,6 +177,20 @@ builder.Services.AddRateLimiter(options =>
             {
                 PermitLimit = 30,
                 Window = TimeSpan.FromMinutes(10),
+                SegmentsPerWindow = 5,
+                QueueLimit = 0,
+            }));
+
+    // POST /api/client-errors (public, pas d'auth) : sans limite, un script pourrait noyer les
+    // logs et l'outil d'observabilité. Le front plafonne déjà ses envois par page
+    // (ErrorReportingService), 20/5min par IP ne gêne donc jamais un vrai joueur.
+    options.AddPolicy(ReportClientErrorEndpoint.RateLimiterPolicy, httpContext =>
+        RateLimitPartition.GetSlidingWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 20,
+                Window = TimeSpan.FromMinutes(5),
                 SegmentsPerWindow = 5,
                 QueueLimit = 0,
             }));
@@ -280,6 +313,12 @@ using (var scope = app.Services.CreateScope())
 // pour le pourquoi des plages KnownIPNetworks (RFC1918 + Cloudflare).
 app.UseForwardedHeaders();
 
+// Toute exception non gérée → 500 ProblemDetails avec traceId (cf. AddProblemDetails plus haut),
+// loguée en Error avec sa stack trace par le middleware, rattachée au PlayerId par le scope de
+// PlayerTelemetryMiddleware. Les en-têtes CORS restent posés (CorsMiddleware les applique au
+// démarrage de la réponse), le front peut donc lire le code d'erreur.
+app.UseExceptionHandler();
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -309,17 +348,14 @@ app.Use(async (ctx, next) =>
 app.UseCors(CorsPolicyName);
 app.UseRateLimiter();
 app.UseMiddleware<PlayerAuthMiddleware>();
+app.UseMiddleware<PlayerTelemetryMiddleware>();
 
 var isTesting = app.Environment.IsEnvironment("Testing");
 
 // Liveness : l'app répond. Renvoie un JSON { status, utc, build } consommé par le badge
 // d'état backend du front (app.ts) — ne pas changer le format sans adapter le front
-// (ajouter un champ est OK). `build` = date UTC de compilation (AssemblyMetadata BuildUtc,
-// stampée dans le csproj) : permet de vérifier quelle version tourne en prod.
-var buildUtc = typeof(Program).Assembly
-    .GetCustomAttributes(typeof(System.Reflection.AssemblyMetadataAttribute), false)
-    .Cast<System.Reflection.AssemblyMetadataAttribute>()
-    .FirstOrDefault(a => a.Key == "BuildUtc")?.Value ?? "unknown";
+// (ajouter un champ est OK). `build` = date UTC de compilation : permet de vérifier quelle
+// version tourne en prod.
 app.MapGet("/health", () => Results.Ok(new { status = "ok", utc = DateTime.UtcNow, build = buildUtc }));
 
 // Readiness : la DB est joignable (tag "ready"). Sondé par Northflank.
@@ -360,6 +396,7 @@ app.MapVerifyMagicLink();
 app.MapRequestEmailChange(enableRateLimiting: !isTesting);
 app.MapConfirmEmailChange();
 app.MapLogout();
+app.MapReportClientError(enableRateLimiting: !isTesting);
 
 if (app.Environment.IsDevelopment())
 {
