@@ -12,12 +12,11 @@ public sealed class PlayerTests
     private static Player BuildPlayer() =>
         Player.CreateGuest(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow);
 
-    private static Player BuildLinkedPlayer(
-        int streak, int lastPlayedDaysAgo, int freezes, bool hasReachedMaxFreezes = false)
+    private static Player BuildLinkedPlayer(int streak, int lastPlayedDaysAgo, int freezes)
     {
         var player = BuildPlayer();
         player.LinkToAccount("player@example.com", "PlayerPseudo");
-        player.RestoreStreakForTesting(streak, Today.AddDays(-lastPlayedDaysAgo), freezes, hasReachedMaxFreezes);
+        player.RestoreStreakForTesting(streak, Today.AddDays(-lastPlayedDaysAgo), freezes);
         return player;
     }
 
@@ -163,8 +162,6 @@ public sealed class PlayerTests
     [Fact]
     public void RecordChallengeCompletion_LinkedReachingMultipleOfSeven_EarnsFreeze()
     {
-        // Atteint le plafond pour la première fois (2e gel) : notifié, et le plafond est
-        // désormais mémorisé pour toujours (même après une future consommation).
         var player = BuildLinkedPlayer(streak: 13, lastPlayedDaysAgo: 1, freezes: 1);
 
         var result = player.RecordChallengeCompletion(Today, Rules);
@@ -172,7 +169,6 @@ public sealed class PlayerTests
         player.CurrentStreak.Should().Be(14);
         player.StreakFreezes.Should().Be(2);
         result.FreezeEarned.Should().BeTrue();
-        player.HasReachedMaxFreezes.Should().BeTrue();
     }
 
     [Fact]
@@ -184,37 +180,6 @@ public sealed class PlayerTests
 
         player.StreakFreezes.Should().Be(2);
         result.FreezeEarned.Should().BeFalse();
-    }
-
-    [Fact]
-    public void RecordChallengeCompletion_FirstTimeReachingMax_MarksHasReachedMaxFreezes()
-    {
-        // 1er gel (streak 1→7) : le joueur n'a jamais été au plafond, la notification doit
-        // sortir. StreakFreezes(0) < FreezeMax(2), donc pas encore au plafond après ce gain.
-        var player = BuildLinkedPlayer(streak: 6, lastPlayedDaysAgo: 1, freezes: 0);
-
-        var result = player.RecordChallengeCompletion(Today, Rules);
-
-        player.StreakFreezes.Should().Be(1);
-        result.FreezeEarned.Should().BeTrue();
-        player.HasReachedMaxFreezes.Should().BeFalse();
-    }
-
-    [Fact]
-    public void RecordChallengeCompletion_RegainAfterConsumptionOnceAlreadyMaxed_GainsSilently()
-    {
-        // Le joueur a déjà atteint le plafond une fois par le passé (HasReachedMaxFreezes=true),
-        // a depuis consommé un gel (stock=1, sous le plafond), et regagne un gel en rejouant sur
-        // un nouveau multiple de 7 jours : le stock remonte bien à 2 (freeze réellement gagné),
-        // mais la notification « +1 gel gagné ! » ne doit plus sortir — le joueur les a déjà eus.
-        var player = BuildLinkedPlayer(streak: 27, lastPlayedDaysAgo: 1, freezes: 1, hasReachedMaxFreezes: true);
-
-        var result = player.RecordChallengeCompletion(Today, Rules);
-
-        player.CurrentStreak.Should().Be(28);
-        player.StreakFreezes.Should().Be(2);
-        result.FreezeEarned.Should().BeFalse();
-        player.HasReachedMaxFreezes.Should().BeTrue();
     }
 
     [Fact]

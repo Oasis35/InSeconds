@@ -13,10 +13,6 @@ public sealed class Player
     public DateOnly? LastPlayedDate { get; private set; }
     // Gels de série en stock — comptes connectés uniquement (toujours 0 pour un invité).
     public int StreakFreezes { get; private set; }
-    // A déjà atteint le plafond de gels au moins une fois (jamais remis à false, même après
-    // consommation) — sert uniquement à ne notifier « +1 gel gagné ! » que pour les tout
-    // premiers gels (cf. RecordChallengeCompletion), pas pour un regain après consommation.
-    public bool HasReachedMaxFreezes { get; private set; }
     public bool IsDeleted { get; private set; }
     public DateTime? DeletedAt { get; private set; }
     public bool IsAdmin { get; private set; }
@@ -64,23 +60,12 @@ public sealed class Player
 
         LastPlayedDate = challengeDate;
 
-        var wasAlreadyMaxed = HasReachedMaxFreezes;
-        var freezeGained = !IsGuest
+        var freezeEarned = !IsGuest
             && rules.FreezeEveryDays > 0
             && CurrentStreak % rules.FreezeEveryDays == 0
             && StreakFreezes < rules.FreezeMax;
-        if (freezeGained)
-        {
+        if (freezeEarned)
             StreakFreezes++;
-            if (StreakFreezes >= rules.FreezeMax)
-                HasReachedMaxFreezes = true;
-        }
-
-        // « +1 gel gagné ! » ne notifie que pour le 1er ou le 2e gel jamais obtenus (streak de
-        // FreezeEveryDays ou 2×FreezeEveryDays jours, tant que le plafond n'a jamais été atteint) —
-        // un regain après consommation d'un gel augmente bien le stock (freezeGained) mais ne le
-        // signale plus une fois le plafond déjà connu du joueur.
-        var freezeEarned = freezeGained && !wasAlreadyMaxed;
 
         return new StreakCompletionResult(freezesUsed, freezeEarned);
     }
@@ -158,8 +143,7 @@ public sealed class Player
         DateOnly? lastPlayedDate = null,
         bool isDeleted = false,
         int streakFreezes = 0,
-        DateTime? deletedAt = null,
-        bool hasReachedMaxFreezes = false) => new()
+        DateTime? deletedAt = null) => new()
         {
             Id = id,
             IsGuest = isGuest,
@@ -173,16 +157,13 @@ public sealed class Player
             StreakFreezes = streakFreezes,
             IsDeleted = isDeleted,
             DeletedAt = deletedAt,
-            HasReachedMaxFreezes = hasReachedMaxFreezes,
         };
 
-    internal void RestoreStreakForTesting(
-        int currentStreak, DateOnly? lastPlayedDate, int streakFreezes = 0, bool hasReachedMaxFreezes = false)
+    internal void RestoreStreakForTesting(int currentStreak, DateOnly? lastPlayedDate, int streakFreezes = 0)
     {
         CurrentStreak = currentStreak;
         LastPlayedDate = lastPlayedDate;
         StreakFreezes = streakFreezes;
-        HasReachedMaxFreezes = hasReachedMaxFreezes;
     }
 
     // Utilisé par POST /api/e2e/login-as-admin (Testing-only, Features/E2E/ResetEndpoint.cs)

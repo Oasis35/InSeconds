@@ -38,9 +38,6 @@ public sealed class PlayerConfiguration : IEntityTypeConfiguration<Player>
         builder.Property(p => p.StreakFreezes)
             .HasDefaultValue(0);
 
-        builder.Property(p => p.HasReachedMaxFreezes)
-            .HasDefaultValue(false);
-
         builder.Property(p => p.IsDeleted)
             .HasDefaultValue(false);
 

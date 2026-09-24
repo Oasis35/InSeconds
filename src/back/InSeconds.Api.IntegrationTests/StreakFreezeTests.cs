@@ -109,26 +109,6 @@ public class StreakFreezeTests(IntegrationTestFactory factory) : IAsyncLifetime
         Assert.False(stats!.FreezeMilestone);
     }
 
-    [Fact]
-    public async Task Connecte_RegagneUnGelApresDejaAvoirAtteintLePlafond_PasDeNotification()
-    {
-        // Le joueur a déjà eu 2 gels par le passé (a consommé un gel depuis, stock=1) : en
-        // regagnant un gel sur un nouveau multiple de 7 jours, le stock remonte bien à 2
-        // (regain réel), mais « +1 gel gagné ! » ne doit plus se déclencher — cf. capture
-        // d'écran signalée par l'utilisateur, gel de série #162 follow-up.
-        var (client, playerId) = await CreatePlayerAsync(
-            linked: true, streak: 27, lastPlayedDaysAgo: 1, freezes: 1, hasReachedMaxFreezes: true);
-
-        await PlayFullGameAsync(client);
-
-        var (streak, freezes) = await ReadPlayerAsync(playerId);
-        Assert.Equal(28, streak);
-        Assert.Equal(2, freezes);
-
-        var stats = await client.GetFromJsonAsync<TodayStatsResponse>("/api/stats/today");
-        Assert.False(stats!.FreezeMilestone);
-    }
-
     // ── Invités ─────────────────────────────────────────────────────────────
 
     [Fact]
@@ -231,7 +211,7 @@ public class StreakFreezeTests(IntegrationTestFactory factory) : IAsyncLifetime
     // ── Helpers ─────────────────────────────────────────────────────────────
 
     private async Task<(HttpClient Client, Guid PlayerId)> CreatePlayerAsync(
-        bool linked, int streak, int lastPlayedDaysAgo, int freezes, bool hasReachedMaxFreezes = false)
+        bool linked, int streak, int lastPlayedDaysAgo, int freezes)
     {
         var client = factory.CreateClient();
         // Crée le Player (guest) et pose son cookie sur ce client.
@@ -242,7 +222,7 @@ public class StreakFreezeTests(IntegrationTestFactory factory) : IAsyncLifetime
         var player = await db.Players.FirstAsync(p => p.Id == me!.PlayerId);
         if (linked)
             player.LinkToAccount($"{Guid.NewGuid():N}@example.com", $"P{Random.Shared.Next(10_000, 99_999)}");
-        player.RestoreStreakForTesting(streak, Today.AddDays(-lastPlayedDaysAgo), freezes, hasReachedMaxFreezes);
+        player.RestoreStreakForTesting(streak, Today.AddDays(-lastPlayedDaysAgo), freezes);
         await db.SaveChangesAsync();
 
         return (client, me!.PlayerId);
