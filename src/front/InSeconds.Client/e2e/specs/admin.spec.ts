@@ -500,7 +500,10 @@ test.describe('Admin — joueurs', () => {
     await page.getByPlaceholder('Ton pseudo').fill('JoueurTab');
     await page.getByRole('button', { name: 'Valider' }).click();
 
+    // Attendre la fin de la connexion (redirection vers l'accueil) : sans ça, la navigation
+    // de playFullGame annule la requête de vérification en vol et le compte reste invité.
     const game = new GamePage(page);
+    await game.waitForWelcome();
     await game.playFullGame(new BlindRoundPage(page));
 
     // login-as-admin promeut le compte courant : il apparaît donc lui-même dans la liste.
