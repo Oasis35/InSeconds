@@ -4,7 +4,7 @@ Doc détaillée de la feature admin. Vue d'ensemble générale : voir le `CLAUDE
 
 ## Pattern architectural : service-as-store, zéro `@Input`/`@Output`
 
-**Aucun `@Input()`/`@Output()` n'est utilisé nulle part dans la feature.** Les 9 sous-composants (`admin-login`, `dashboard-tab`, `pool-tab`, `challenges-tab`, `players-tab`, `actions-tab`, `pool-search-panel`, `delete-track-modal`, `preview-track-modal`) sont des "dumb components" côté données mais communiquent exclusivement via les services partagés injectés indépendamment dans chacun — pas de prop-drilling.
+**Aucun `@Input()`/`@Output()` n'est utilisé nulle part dans la feature.** Les 10 sous-composants (`admin-login`, `dashboard-tab`, `pool-tab`, `challenges-tab`, `players-tab`, `actions-tab`, `pool-search-panel`, `delete-track-modal`, `edit-track-modal`, `preview-track-modal`) sont des "dumb components" côté données mais communiquent exclusivement via les services partagés injectés indépendamment dans chacun — pas de prop-drilling.
 
 `AdminComponent` (shell ~45 lignes) fournit les 7 services via `providers: [...]` (portée composant — une instance par affichage de `<app-admin>`) :
 
@@ -109,6 +109,7 @@ Signals modale suppression : `deleteModalOpen`, `deleteModalTracks: PoolTrackDto
 
 **Computed** :
 - `allTracks` — fusion `poolTracks().available` (`isAvailable:true`) + `.used` (`isAvailable:false`, `hasPreview` réel depuis le 2026-09-24 — un morceau utilisé redevient tirable après cooldown, son état de preview compte ; le back le renvoie désormais aussi pour `Used`).
+- **Modale modification** (2026-09-24, `edit-track-modal`) — `editModalTrack`/`editArtist`/`editTitle`/`editStatus: 'idle'|'loading'|'error'|'todayChallenge'`, `editSaveDisabled` (champ vide après trim, rien changé, ou envoi en cours). `openEditModal(t)` no-op si `t.inTodayChallenge` ; `confirmEdit()` → `api.renameTrack` (`PATCH /api/admin/tracks/{id}`) puis `reloadPool()`, 409 → `todayChallenge`. Bouton ✎ sur **toutes** les lignes (utilisées comprises), désactivé pour un morceau du défi du jour (tooltip `admin.pool.editTodayTitle`).
 - **`selectionHasUsedTrack`** (2026-09-24) — vrai si la sélection contient un morceau de `poolTracks().used`. Désactive le bouton « Supprimer (N) » de la barre d'outils (tooltip `admin.pool.deleteUsedSelection`) ; `openDeleteModal(null)` ne s'ouvre pas dans ce cas (garde-fou, le back renverrait 409). Les lignes utilisées ne sont plus grisées : case à cocher et écoute ▶ actives, seule la corbeille 🗑 est désactivée (tooltip `admin.pool.deleteUsedTitle`, porté par un `<span>` car un bouton désactivé n'affiche pas son `title` partout).
 - `filteredTracks` — applique les 3 filtres.
 - **`existingDeezerTrackIds`** — `Map<number, boolean>` des `deezerTrackId` déjà présents dans `allTracks()` → `isAvailable` du match (disponible ou déjà utilisé dans un ancien défi). Alimente le badge d'avertissement du panneau de recherche (`pool-search-panel`) — **non bloquant**, l'ajout reste possible même en cas de match. Le badge distingue "Déjà en pool (disponible)" de "Déjà utilisé dans un défi passé" (2026-09-19) — avant cette distinction, un morceau déjà servi dans un ancien défi (donc absent de la vue "Disponible" du tableau Pool) déclenchait le même libellé générique qu'un doublon disponible, source de confusion ("le badge dit qu'il est déjà là mais je ne le vois pas dans le pool").

@@ -92,6 +92,10 @@ routes.MapGet("/api/admin/me", (HttpContext ctx) =>
 
 Délègue à `PreviewStatusRefresher.RefreshAsync` (voir ChallengeGeneration). `RefreshPreviewsResponse(Checked, Updated, Failed)`.
 
+### Admin/Tracks/RenameTrack — `PATCH /api/admin/tracks/{id}`
+
+(2026-09-24) Corrige `Artist`/`Title` d'un morceau, utilisé ou non (bouton ✎ du pool admin). Validator : champs non vides après trim, 200/300 caractères max (comme `TrackConfiguration`). **409 `track_in_today_challenge`** si le morceau est dans le défi du jour : ces champs sont la référence de correction de `SubmitAnswer` (`TextNormalizer.IsMatch`), les changer en cours de journée corrigerait une même partie du jour avec deux noms différents. Ne touche ni `DeezerTrackId` (seule clé du contrôle de doublon, `AddTrack` + badge « Déjà en pool ») ni les réponses déjà enregistrées (booléens `ArtistCorrect`/`TitleCorrect` figés, seul l'affichage montre le nouveau nom). `GetTracks` expose `InTodayChallenge` sur chaque `TrackDto` pour désactiver le bouton côté front. Contrairement à `UpdateTrack` (re-sync Deezer, interdit dès qu'un morceau a servi), pas d'appel Deezer. Tests : `AdminTests.RenameTrack_*`.
+
 ### Admin/Stats/GetAdminStats — `GET /api/admin/stats?date=` (Dashboard)
 
 Payload du **Dashboard uniquement**. Utilise `IDbContextFactory<ApplicationDbContext>` pour **4 requêtes en parallèle**, chacune avec son propre `DbContext` (non thread-safe sinon) : `BuildDailyActivity` (30 jours glissants, 0 par défaut), `BuildPlayerBreakdown` (guests/registered/actifs 7j/30j, exclut `IsDeleted`), `BuildAvailableDates`, `BuildDailyKpis` (date sélectionnée). Médiane calculée manuellement (tri + moyenne des 2 valeurs centrales si pair). `AdminStatsResponse(DailyActivity, PlayerBreakdown, AvailableDates, SelectedDayKpis)` — **plus de champ `Challenges`** (scindé, voir ci-dessous).

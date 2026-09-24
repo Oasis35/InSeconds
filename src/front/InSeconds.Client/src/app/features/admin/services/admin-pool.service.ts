@@ -62,6 +62,20 @@ export class AdminPoolService {
   readonly deleteModalTracks = signal<PoolTrackDto[]>([]);
   readonly deleteStatus = signal<'idle' | 'loading' | 'error'>('idle');
 
+  // --- modale modification (artiste / titre) ---
+  readonly editModalTrack = signal<PoolTrackDto | null>(null);
+  readonly editArtist = signal('');
+  readonly editTitle = signal('');
+  readonly editStatus = signal<'idle' | 'loading' | 'error' | 'todayChallenge'>('idle');
+  /** Désactive « Enregistrer » : champ vide, rien de changé, ou envoi en cours. */
+  readonly editSaveDisabled = computed(() => {
+    const track = this.editModalTrack();
+    const artist = this.editArtist().trim();
+    const title = this.editTitle().trim();
+    return !track || !artist || !title || this.editStatus() === 'loading'
+      || (artist === track.artist && title === track.title);
+  });
+
   readonly allTracks = computed(() => {
     const available = this.poolTracks().available.map(t => ({ ...t, isAvailable: true }));
     const used = this.poolTracks().used.map(t => ({ ...t, isAvailable: false }));
@@ -323,6 +337,36 @@ export class AdminPoolService {
       this.addTrackStatusTimers.delete(deezerTrackId);
     }, delayMs);
     this.addTrackStatusTimers.set(deezerTrackId, timer);
+  }
+
+  // --- modale modification ---
+  openEditModal(track: PoolTrackDto): void {
+    if (track.inTodayChallenge) return;
+    this.editModalTrack.set(track);
+    this.editArtist.set(track.artist);
+    this.editTitle.set(track.title);
+    this.editStatus.set('idle');
+  }
+
+  closeEditModal(): void {
+    this.editModalTrack.set(null);
+    this.editStatus.set('idle');
+  }
+
+  confirmEdit(): void {
+    const track = this.editModalTrack();
+    if (!track || this.editSaveDisabled()) return;
+    this.editStatus.set('loading');
+    this.api.renameTrack(track.id, this.editArtist().trim(), this.editTitle().trim())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.closeEditModal();
+          this.api.reloadPool();
+        },
+        // 409 = morceau passé dans le défi du jour entre-temps.
+        error: err => this.editStatus.set(err?.status === 409 ? 'todayChallenge' : 'error'),
+      });
   }
 
   // --- modale suppression ---

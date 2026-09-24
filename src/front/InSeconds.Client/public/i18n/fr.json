@@ -366,7 +366,9 @@
       "lastUsedFrom": "Utilisé depuis le",
       "lastUsedTo": "Utilisé jusqu'au",
       "deleteUsedTitle": "Déjà utilisé dans un défi : suppression impossible",
-      "deleteUsedSelection": "La sélection contient un morceau déjà utilisé dans un défi : suppression impossible"
+      "deleteUsedSelection": "La sélection contient un morceau déjà utilisé dans un défi : suppression impossible",
+      "editTitle": "Modifier l'artiste ou le titre",
+      "editTodayTitle": "Morceau du défi du jour : modifiable à partir de demain"
     },
     "actions": {
       "challengeOfDay": "Défi du jour",
@@ -429,6 +431,18 @@
       "cancel": "Annuler",
       "delete": "Supprimer",
       "deleting": "Suppression..."
+    },
+    "editModal": {
+      "title": "Modifier le morceau",
+      "artist": "Artiste",
+      "titleField": "Titre",
+      "hint": "Sert de bonne réponse pour la correction des parties à venir. Les parties déjà jouées ne sont pas recalculées.",
+      "todayChallenge": "Ce morceau fait partie du défi du jour : modifiable à partir de demain.",
+      "error": "Erreur lors de l'enregistrement.",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "saving": "Enregistrement...",
+      "close": "Fermer"
     },
     "previewModal": {
       "title": "Écouter l'extrait",

@@ -6,6 +6,8 @@ export interface PoolTrackDto {
   lastUsedDate?: string | null;
   usageCount?: number;
   unlockDate?: string | null;
+  /** Morceau du défi du jour : non renommable avant demain. */
+  inTodayChallenge?: boolean;
 }
 export interface PoolTracksResponse { available: PoolTrackDto[]; used: PoolTrackDto[]; }
 export interface ChallengeDto { id: number; date: string; tracks: TrackDto[]; }

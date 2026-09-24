@@ -366,7 +366,9 @@
       "lastUsedFrom": "Used from",
       "lastUsedTo": "Used until",
       "deleteUsedTitle": "Already used in a challenge: can't be deleted",
-      "deleteUsedSelection": "The selection includes a track already used in a challenge: can't be deleted"
+      "deleteUsedSelection": "The selection includes a track already used in a challenge: can't be deleted",
+      "editTitle": "Edit artist or title",
+      "editTodayTitle": "In today's challenge: editable from tomorrow"
     },
     "actions": {
       "challengeOfDay": "Today's challenge",
@@ -429,6 +431,18 @@
       "cancel": "Cancel",
       "delete": "Delete",
       "deleting": "Deleting..."
+    },
+    "editModal": {
+      "title": "Edit track",
+      "artist": "Artist",
+      "titleField": "Title",
+      "hint": "Used as the correct answer for upcoming games. Games already played aren't recalculated.",
+      "todayChallenge": "This track is in today's challenge: editable from tomorrow.",
+      "error": "Error while saving.",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving...",
+      "close": "Close"
     },
     "previewModal": {
       "title": "Play the preview",

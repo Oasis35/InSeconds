@@ -100,6 +100,7 @@ export class AdminApiService {
   updateTrackCooldownDays(days: number) { return this.http.updateTrackCooldownDays(days); }
   addTrack(deezerTrackId: number) { return this.http.addTrack(deezerTrackId); }
   deleteTrack(id: number) { return this.http.deleteTrack(id); }
+  renameTrack(id: number, artist: string, title: string) { return this.http.renameTrack(id, artist, title); }
   searchDeezer(q: string) { return this.http.searchDeezer(q); }
   getPlayerHistory(playerId: string) { return this.http.getPlayerHistory(playerId); }
 }

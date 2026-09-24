@@ -115,6 +115,11 @@
                       class="text-xs px-2 py-1 rounded transition-colors"
                       style="color:var(--text-indigo);border:1px solid rgba(184,166,255,0.3)"
                       [title]="'admin.pool.listenTitle' | translate">▶</button>
+                    <span [title]="(t.inTodayChallenge ? 'admin.pool.editTodayTitle' : 'admin.pool.editTitle') | translate">
+                      <button (click)="pool.openEditModal(t)" [disabled]="t.inTodayChallenge"
+                        class="text-xs px-2 py-1 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        style="color:var(--text-muted);border:1px solid var(--border-strong)">✎</button>
+                    </span>
                     <!-- Le title est porté par un span : un bouton désactivé n'affiche pas son tooltip partout. -->
                     <span [title]="(isUsed ? 'admin.pool.deleteUsedTitle' : 'admin.pool.deleteTitle') | translate">
                       <button (click)="pool.openDeleteModal(t)" [disabled]="isUsed"
@@ -181,4 +186,5 @@
 </div>
 
 <app-delete-track-modal />
+<app-edit-track-modal />
 <app-preview-track-modal />

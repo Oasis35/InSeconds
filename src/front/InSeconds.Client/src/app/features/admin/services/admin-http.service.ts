@@ -40,6 +40,9 @@ export class AdminHttpService {
   }
   addTrack(deezerTrackId: number) { return this.http.post(`${this.base}/tracks`, { deezerTrackId }); }
   deleteTrack(id: number) { return this.http.delete(`${this.base}/tracks/${id}`); }
+  renameTrack(id: number, artist: string, title: string) {
+    return this.http.patch(`${this.base}/tracks/${id}`, { artist, title });
+  }
   searchDeezer(q: string) { return this.http.get<DeezerTrackInfo[]>(`${this.base}/deezer-search?q=${encodeURIComponent(q)}`); }
   getPoolTracks() { return this.http.get<PoolTracksResponse>(`${this.base}/tracks`); }
   getStats(day: string) { return this.http.get<AdminStatsResponse>(`${this.base}/stats?date=${day}`); }

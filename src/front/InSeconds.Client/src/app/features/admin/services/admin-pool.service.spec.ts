@@ -20,6 +20,7 @@ function makeAdminApiStub() {
     poolSearchQuery,
     addTrack: jasmine.createSpy('addTrack').and.returnValue(of(void 0)),
     reloadPool: jasmine.createSpy('reloadPool'),
+    renameTrack: jasmine.createSpy('renameTrack').and.returnValue(of({})),
     _setPoolTracks: (v: PoolTracksResponse) => poolTracks.set(v),
   };
 }
@@ -216,6 +217,47 @@ describe('AdminPoolService', () => {
       service.openDeleteModal(null);
       expect(service.deleteModalOpen()).toBeTrue();
       expect(service.deleteModalTracks().map(t => t.id)).toEqual([1]);
+    });
+  });
+
+  describe('modification artiste / titre', () => {
+    const track = { ...makePoolTrack(5, true), artist: 'Etienne Daho', title: 'Tombe pour la France' };
+
+    it('pré-remplit les champs et désactive « Enregistrer » tant que rien ne change', () => {
+      service.openEditModal(track);
+      expect(service.editArtist()).toBe('Etienne Daho');
+      expect(service.editSaveDisabled()).toBeTrue();
+
+      service.editArtist.set('Étienne Daho');
+      expect(service.editSaveDisabled()).toBeFalse();
+
+      service.editTitle.set('   ');
+      expect(service.editSaveDisabled()).toBeTrue();
+    });
+
+    it('ne s\'ouvre pas pour un morceau du défi du jour', () => {
+      service.openEditModal({ ...track, inTodayChallenge: true });
+      expect(service.editModalTrack()).toBeNull();
+    });
+
+    it('envoie les valeurs nettoyées, ferme la modale et recharge le pool', () => {
+      service.openEditModal(track);
+      service.editArtist.set('  Étienne Daho ');
+      service.confirmEdit();
+
+      expect(apiStub.renameTrack).toHaveBeenCalledWith(5, 'Étienne Daho', 'Tombe pour la France');
+      expect(service.editModalTrack()).toBeNull();
+      expect(apiStub.reloadPool).toHaveBeenCalled();
+    });
+
+    it('passe en « défi du jour » sur un 409 et garde la modale ouverte', () => {
+      apiStub.renameTrack.and.returnValue(throwError(() => ({ status: 409 })));
+      service.openEditModal(track);
+      service.editTitle.set('Tombé pour la France');
+      service.confirmEdit();
+
+      expect(service.editStatus()).toBe('todayChallenge');
+      expect(service.editModalTrack()).not.toBeNull();
     });
   });
 
