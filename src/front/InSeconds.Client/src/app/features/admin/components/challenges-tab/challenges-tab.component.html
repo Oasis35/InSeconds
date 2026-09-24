@@ -62,7 +62,7 @@
                     <button type="button"
                       (click)="selectPlayer(p.playerId)"
                       (contextmenu)="onChipContextMenu($event, p.playerId)"
-                      [attr.title]="p.playerId + ' — ' + p.status"
+                      [attr.title]="chipTitle(p)"
                       class="text-[10px] font-mono px-1.5 py-0.5 rounded border transition-all inline-flex items-center gap-1"
                       [style.opacity]="isDimmed(p.playerId) ? '0.3' : null"
                       [style.background]="mine ? 'var(--bg-primary)' : col.bg"
