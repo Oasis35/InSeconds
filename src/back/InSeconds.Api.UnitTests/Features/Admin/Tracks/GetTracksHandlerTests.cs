@@ -113,21 +113,30 @@ public sealed class GetTracksHandlerTests
     }
 
     [Fact]
-    public async Task Handle_UsedTrackHasNoPreviewField()
+    public async Task Handle_UsedTrack_ExposesPreviewAndTodayChallengeFlag()
     {
+        // Un morceau utilisé redevient tirable après cooldown : son état de preview est exposé.
+        // InTodayChallenge bloque le renommage (cf. RenameTrack) pour le seul défi du jour.
         await using var db = CreateDbContext();
-        db.Tracks.Add(BuildTrack(1, 1001, "Daft Punk", "Get Lucky"));
-        db.DailyChallenges.Add(new DailyChallenge { Id = 1, Date = DateOnly.FromDateTime(DateTime.UtcNow), Seed = 1 });
-        db.DailyChallengeTracks.Add(new DailyChallengeTrack
-        {
-            Id = 1, DailyChallengeId = 1, TrackId = 1, Position = 1, DeezerRankSnapshot = 1,
-        });
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        db.Tracks.AddRange(
+            BuildTrack(1, 1001, "Daft Punk", "Get Lucky", hasPreview: false),
+            BuildTrack(2, 1002, "Justice", "D.A.N.C.E."));
+        db.DailyChallenges.AddRange(
+            new DailyChallenge { Id = 1, Date = today, Seed = 1 },
+            new DailyChallenge { Id = 2, Date = today.AddDays(-1), Seed = 2 });
+        db.DailyChallengeTracks.AddRange(
+            new DailyChallengeTrack { Id = 1, DailyChallengeId = 1, TrackId = 1, Position = 1, DeezerRankSnapshot = 1 },
+            new DailyChallengeTrack { Id = 2, DailyChallengeId = 2, TrackId = 2, Position = 1, DeezerRankSnapshot = 1 });
         await db.SaveChangesAsync();
 
         var result = await new GetTracksHandler(db).Handle(CancellationToken.None);
 
         var response = ((Ok<GetTracksResponse>)result).Value!;
-        response.Used.Single().HasPreview.Should().BeNull();
+        var todayTrack = response.Used.Single(t => t.Id == 1);
+        todayTrack.HasPreview.Should().Be(false);
+        todayTrack.InTodayChallenge.Should().BeTrue();
+        response.Used.Single(t => t.Id == 2).InTodayChallenge.Should().BeFalse();
     }
 
     [Fact]
