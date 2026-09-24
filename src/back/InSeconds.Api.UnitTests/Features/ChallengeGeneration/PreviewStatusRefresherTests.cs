@@ -132,15 +132,36 @@ public sealed class PreviewStatusRefresherTests
     }
 
     [Fact]
-    public async Task Tracks_used_in_a_challenge_are_skipped()
+    public async Task Tracks_still_in_cooldown_are_skipped()
     {
+        // Utilisé il y a 5 jours (cooldown par défaut 30j) : pas éligible demain, pas vérifié.
         using var db = CreateDbContext();
         var track = BuildTrack(1, hasPreview: true);
+        track.LastUsedDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-5);
+        db.Tracks.Add(track);
+        await db.SaveChangesAsync();
+
+        var refresher = CreateRefresher(db, _ => TrackWithoutPreview());
+        var result = await refresher.RefreshAsync();
+
+        result.Should().Be(new RefreshPreviewsResult(Checked: 0, Updated: 0, Failed: 0));
+        (await db.Tracks.SingleAsync()).HasPreview.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Used_track_out_of_cooldown_is_checked()
+    {
+        // Déjà utilisé dans un défi mais cooldown écoulé : le générateur peut le retirer,
+        // son flag doit donc être revérifié (avant, tout morceau utilisé une fois était ignoré à vie).
+        using var db = CreateDbContext();
+        var track = BuildTrack(1, hasPreview: true);
+        track.LastUsedDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-60);
+        track.UsageCount = 1;
         db.Tracks.Add(track);
         db.DailyChallenges.Add(new DailyChallenge
         {
             Id    = 1,
-            Date  = new DateOnly(2026, 7, 1),
+            Date  = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-60),
             Seed  = 42,
             Tracks = [new DailyChallengeTrack { TrackId = 1, Position = 1 }],
         });
@@ -149,8 +170,8 @@ public sealed class PreviewStatusRefresherTests
         var refresher = CreateRefresher(db, _ => TrackWithoutPreview());
         var result = await refresher.RefreshAsync();
 
-        result.Should().Be(new RefreshPreviewsResult(Checked: 0, Updated: 0, Failed: 0));
-        (await db.Tracks.SingleAsync()).HasPreview.Should().BeTrue();
+        result.Should().Be(new RefreshPreviewsResult(Checked: 1, Updated: 1, Failed: 0));
+        (await db.Tracks.SingleAsync()).HasPreview.Should().BeFalse();
     }
 
     // Route chaque appel /track/{id} vers la réponse voulue.

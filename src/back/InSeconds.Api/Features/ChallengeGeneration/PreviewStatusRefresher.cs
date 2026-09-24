@@ -1,3 +1,4 @@
+using InSeconds.Api.Common.Settings;
 using InSeconds.Deezer;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -17,13 +18,18 @@ public sealed class PreviewStatusRefresher(
 
     public async Task<RefreshPreviewsResult> RefreshAsync(CancellationToken ct = default)
     {
-        var usedTrackIds = await db.DailyChallengeTracks
-            .Select(dct => dct.TrackId)
-            .Distinct()
-            .ToListAsync(ct);
+        // Mêmes critères de cooldown que DailyChallengeGenerator, évalués pour demain (le job tourne
+        // à 23h, la veille de la génération) : un morceau déjà utilisé redevient éligible une fois
+        // son cooldown écoulé, son flag doit donc être revérifié avant qu'il puisse être tiré.
+        // Les morceaux encore en cooldown sont ignorés (pas éligibles, et ça borne la durée de
+        // l'appel admin synchrone).
+        var cooldownDays = await SettingsRawReader.GetIntAsync(
+            db, "TrackCooldownDays", new AppSettings().TrackCooldownDays, ct);
+        var tomorrow = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(1);
+        var cutoff = tomorrow.AddDays(-cooldownDays);
 
         var candidates = await db.Tracks
-            .Where(t => !usedTrackIds.Contains(t.Id))
+            .Where(t => t.LastUsedDate == null || t.LastUsedDate < cutoff)
             .ToListAsync(ct);
 
         if (candidates.Count == 0)
