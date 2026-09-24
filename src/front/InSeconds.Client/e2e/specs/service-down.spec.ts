@@ -28,19 +28,39 @@ test.describe('Service indisponible — backend KO', () => {
       }
     });
 
+    // Échec de la prochaine sonde /health. Chaque tick du polling est avancé séparément et
+    // attendu jusqu'à son échec : un runFor(15000) d'un bloc déclenchait les ticks quasi
+    // simultanément, et switchMap annulait la requête encore en vol à chaque nouveau tick.
+    // Une requête annulée n'est pas comptée comme échec : le seuil de 3 n'était atteint que
+    // si les abort de page.route gagnaient la course (test instable).
+    const isHealth = (url: string) => new URL(url).pathname === '/health';
+    const nextHealthFailure = () => page.waitForEvent('requestfailed', (r) => isHealth(r.url()));
+
     const game = new GamePage(page);
+    let failure = nextHealthFailure();
     await game.goto();
+    await failure; // 1er échec (tick immédiat au démarrage)
 
     // Un seul échec ne doit PAS masquer l'app (tolérance au hoquet transitoire).
     await expect(game.serviceDownHeading).not.toBeVisible();
 
-    // Après le seuil d'échecs consécutifs (3 polls), l'overlay bloquant s'affiche.
-    await page.clock.runFor(15000);
+    // 2e échec : toujours pas d'overlay.
+    failure = nextHealthFailure();
+    await page.clock.runFor(5000);
+    await failure;
+    await expect(game.serviceDownHeading).not.toBeVisible();
+
+    // 3e échec consécutif = seuil atteint : l'overlay bloquant s'affiche.
+    failure = nextHealthFailure();
+    await page.clock.runFor(5000);
+    await failure;
     await expect(game.serviceDownHeading).toBeVisible();
 
     // Le backend revient. Au prochain poll (5s), l'overlay disparaît tout seul.
     healthDown = false;
+    const recovered = page.waitForResponse((r) => isHealth(r.url()));
     await page.clock.runFor(5000);
+    await recovered;
 
     await expect(game.serviceDownHeading).not.toBeVisible();
   });
