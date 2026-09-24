@@ -20,8 +20,6 @@ public sealed class PlayerAuthMiddleware(RequestDelegate next, IHostEnvironment 
             {
                 httpContext.Items[PlayerHttpContextExtensions.PlayerIdKey] = resolution.PlayerId;
                 httpContext.Items[PlayerHttpContextExtensions.IsAdminKey] = resolution.IsAdmin;
-                if (resolution.Pseudo is not null)
-                    httpContext.Items[PlayerHttpContextExtensions.PseudoKey] = resolution.Pseudo;
             }
 
             // Bypass Testing uniquement : les tests d'intégration/E2E forgent directement

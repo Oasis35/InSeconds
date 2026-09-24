@@ -4,7 +4,6 @@ public static class PlayerHttpContextExtensions
 {
     public const string PlayerIdKey = "PlayerId";
     public const string IsAdminKey = "IsAdmin";
-    public const string PseudoKey = "Pseudo";
 
     public static Guid GetPlayerId(this HttpContext httpContext)
     {
@@ -28,11 +27,4 @@ public static class PlayerHttpContextExtensions
     /// </summary>
     public static bool GetPlayerIsAdmin(this HttpContext httpContext) =>
         httpContext.Items.TryGetValue(IsAdminKey, out var value) && value is true;
-
-    /// <summary>
-    /// Pseudo du compte connecté, tel que résolu en début de requête par PlayerAuthMiddleware ;
-    /// null pour un invité ou un visiteur sans joueur.
-    /// </summary>
-    public static string? GetPlayerPseudoOrNull(this HttpContext httpContext) =>
-        httpContext.Items.TryGetValue(PseudoKey, out var value) ? value as string : null;
 }
