@@ -122,4 +122,4 @@ Les morceaux `Track.HasPreview = false` ne sont jamais tirés dans un défi. Si 
 | `HintUnlockDurationsSeconds` | `5,10` | ✅ Back (déblocage server-side via `RequestHint`) + Front (affichage des boutons) |
 | `HintPenaltyPercent` | `1:30,2:60` | ✅ Back (pénalité appliquée dans `ScoreCalculator`) |
 
-Détail du mécanisme de chargement (`AppDbConfigurationSource`, `IOptions<AppSettings>`) : voir [`BACKEND_STRUCTURE_FR.md`](BACKEND_STRUCTURE_FR.md#settings--chargement-au-boot) et [`CLAUDE.md`](../CLAUDE.md).
+Détail du mécanisme de chargement (`AppDbConfigurationSource`, `IOptions<AppSettings>`) : voir [`CLAUDE.md`](../CLAUDE.md) (§ Settings) et [`src/back/InSeconds.Api/CLAUDE.md`](../src/back/InSeconds.Api/CLAUDE.md).

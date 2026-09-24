@@ -24,8 +24,8 @@ Tous les ports InSeconds en `51xx` par convention. Si tu modifies un port, propa
 InSeconds/
 ├── docker-compose.yml         # services database + api
 ├── docker-compose.dcproj      # intégration VS (F5 lance le compose)
-├── docs/                      # docs d'archi (FR), source de vérité conceptuelle
-│                              # ⚠️ certains détails sont obsolètes — vérifier le code
+├── docs/                      # COMMENCE_ICI (sommaire), GAMEPLAY_RULES (spec produit), TACHES (reste à faire)
+│                              # l'archi détaillée vit dans les CLAUDE.md, pas dans docs/
 ├── src/
 │   ├── back/
 │   │   ├── InSeconds.slnx              # solution .NET (FORMAT .slnx OBLIGATOIRE)

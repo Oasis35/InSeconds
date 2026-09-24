@@ -1,199 +1,48 @@
-# InSeconds — Liste des Tâches
+# InSeconds — Reste à faire
 
-> Mis à jour le 2026-09-24.
+> Mis à jour le 2026-09-24. Ce fichier ne liste que ce qui reste à faire : l'historique de ce qui est livré vit dans git et les PR, et l'état courant dans [`CLAUDE.md`](../CLAUDE.md) (§ Déjà implémenté). Une tâche terminée est retirée d'ici, pas cochée.
 
-## ✅ Bootstrap projet
+## Mode entraînement (anciens défis)
 
-- [x] Repo Git, structure `src/back/` + `src/front/` + `docs/`
-- [x] Docker Compose : `inseconds.database` (PostgreSQL) + `inseconds.api` (.NET 10 hot-reload)
-- [x] README bilingue (FR + EN) + `CLAUDE.md`
-- [x] CI GitHub Actions : build back + front + check migrations EF + tests unitaires + tests d'intégration + E2E Playwright
-- [x] **`CLAUDE.md` éclaté en fichiers imbriqués** (2026-07-16) — `src/back/InSeconds.Api/CLAUDE.md` (détail exhaustif par feature slice), `src/front/InSeconds.Client/src/app/features/game/CLAUDE.md`, `.../features/admin/CLAUDE.md` ; le `CLAUDE.md` racine reste la vue d'ensemble + pointeurs. Nouveau doc [`GAMEPLAY_RULES_FR.md`](GAMEPLAY_RULES_FR.md) consolidant les règles de scoring/anti-triche/streak (avant éparpillées entre plusieurs fichiers)
-
-## ✅ Backend
-
-- [x] Solution `InSeconds.slnx` (format `.slnx` obligatoire)
-- [x] Vertical slice architecture (Features / Domain / Infrastructure / Common)
-- [x] 9 entités + configurations EF + migrations PostgreSQL
-- [x] Settings chargés depuis la BD via `AppDbConfigurationSource` → `IOptions<AppSettings>`
-- [x] `TextNormalizer` (Levenshtein) + tests unitaires
-- [x] `ScoreCalculator` (paliers `decimal`, scoring partiel — malus de prolongation retiré le 2026-07-17, voir plus bas) + tests unitaires
-- [x] `CookieAuthService` — guest auto, cookie HttpOnly `SameSite=Lax` en prod (cf. CLAUDE.md racine, piège 23)
-- [x] `DeezerClient` — recherche + preview + extraction `CoverHash`
-- [x] `BackgroundService` génération défi quotidien (minuit UTC, retry toutes les 10 min en cas d'échec — planification via `DailySchedule.NextUtcHour` + `DelayUntilAsync`, attente sur cible d'horloge murale : un réveil anticipé de `Task.Delay` ne saute plus de jour, incident du 2026-07-13 / piège 19)
-- [x] **Génération paresseuse dans `StartSession`** (2026-07-14) — si le défi du jour manque, le premier joueur le régénère à la volée (sélection déterministe, course gérée par la contrainte unique sur `Date`) ; 503 « pas de défi » seulement si pool insuffisant. Reset E2E : paramètre `emptyPool=true`
-- [x] **Date de build dans `GET /health`** (2026-07-14) — champ `build` (AssemblyMetadata `BuildUtc`) pour identifier la version déployée
-- [x] **Autonomie du pool dans l'onglet Pool admin** (2026-07-14) — « X jours de défis restants » calculé côté front (`AdminPoolService`), rouge < 3 j, orange < 7 j
-- [x] **Onglet Défis regroupe stats par défi + historique** (2026-07-14) — carte « Stats par défi » déplacée du Dashboard, navigateur de mois unique ; ordre des onglets : Dashboard, Défis, Pool, Actions
-- [x] Slice `Sessions/StartSession` + `Sessions/SubmitAnswer` (scoring serveur + stats)
-- [x] Slice `Sessions/AbandonSession` — `PUT /api/sessions/{id}/abandon`, marque une session Pending comme abandonnée
-- [x] `SessionStatus` enum (Pending=0, Completed=1, Abandoned=2, Expired=3) — seules les sessions complétées comptent dans les stats
-- [x] Reprise de partie — `StartSession` retourne `IsResuming=true` + `CompletedAnswers` si session Pending existante
-- [x] Expiry paresseuse — sessions Pending du jour précédent passées à Expired (pas Abandoned, réservé au bouton) au prochain `StartSession`
-- [x] Slice `Stats/Today` — score joueur, médiane (`PERCENTILE_CONT(0.5)`), stats par morceau
-- [x] Page admin : accès par le rôle `Player.IsAdmin` sur le cookie joueur (l'ancien login Bearer a été retiré), pool morceaux, création défis, reset sessions
-- [x] `ListenedDurationSeconds` / `TotalDurationSeconds` en `decimal` (paliers 0.5, 1, 1.5, 2, 3, 5, 10)
-- [x] Tests unitaires back : `TextNormalizer`, `ScoreCalculator`, `CookieAuthService`, `PlayerAuthMiddleware`, `AppSettingsBinding`, `StartSessionHandler`, `SubmitAnswerHandler`, `GenerateDailyChallengeService`, `AddTrackHandler`, `GetTracksHandler`, `SubmitAnswerValidator`
-- [x] Streak joueur : `Player.CurrentStreak` + `Player.LastPlayedDate`, mis à jour dans `SubmitAnswer/Handler.cs` à la complétion (parties complètes uniquement), basée sur `DailyChallenge.Date` (pas la date de complétion UTC)
-- [x] Morceaux sans preview : `SubmitAnswerValidator` accepte `ListenedDurationSeconds = 0` (skip), `BlindRoundComponent` affiche un bouton "Passer" si `previewUrl` est vide
-- [x] `Track.HasPreview` persisté en base (migration `AddTrackHasPreview`) — flag mis à jour à l'ajout/actualisation d'un track et nuitamment par `RefreshPreviewStatusService` (23h UTC)
-- [x] **Anti-cheat durée min écoutée** : `GameSession.CurrentTrackId` + `GameSession.CurrentTrackMinListenedSeconds` (migration `AddSessionAntiCheat`), slice `Sessions/UpdateListening` (`PATCH /api/sessions/{id}/listening`), appelé depuis `BlindRoundComponent` dès que le palier écouté change (depuis le 2026-09-19) ; à la reprise, `StartSession` renvoie `CurrentTrackId`/`MinListenedSeconds` et le front masque les paliers inférieurs
-- [x] `RefreshPreviewStatusService` — `BackgroundService` qui vérifie Deezer à 23h UTC pour les tracks éligibles (jamais utilisés ou sortis du cooldown `TrackCooldownDays`) et met à jour `HasPreview`
-- [x] Refresh previews fiabilisé : appels par lots de 10 espacés de 1,5 s (rate-limit Deezer ~50 req/5 s), détection des erreurs Deezer renvoyées en HTTP 200 (`{"error":{...}}` — quota, track supprimé), `HasPreview` jamais modifié sur un échec (`DeezerClient.ProbePreviewAsync`) — corrige les ~200 faux « sans preview » du 2026-07-06
-- [x] `POST /api/admin/refresh-previews` — relance le re-check à la demande, retourne `{ checked, updated, failed }` ; bouton « 🔄 Re-vérifier les previews » dans l'onglet Actions admin
-- [x] `DailyChallengeGenerator` filtre sur `Track.HasPreview` en DB (plus d'appel Deezer à la génération), shuffle Fisher-Yates avec seed déterministe, transaction explicite autour des deux `SaveChangesAsync`
-- [x] `GenerateResult` enum (`Success`/`AlreadyExists`/`PoolInsufficient`) — `POST /api/admin/generate-today` retourne `422 pool_insufficient` distinct du `409 already_exists`
-- [x] `GetTracksHandler` lit `HasPreview` depuis la DB (plus d'appel Deezer au chargement du pool admin)
-- [x] `GET /api/admin/stats` — dashboard admin : activité 30 jours, répartition joueurs (les stats par défi ont été scindées dans `GET /api/admin/challenge-stats` le 2026-08-29)
-- [x] Page admin — Pool : tableau paginé (15 lignes/page), filtres combinables (texte, statut, preview), indicateur preview (vert/rouge) via `TrackDto.HasPreview`, panneau de recherche/ajout intégré à l'onglet (remplace la popup le 2026-09-16) avec recherche Deezer + lecteur preview 30s
-- [x] Suppression d'un morceau du pool depuis la page admin (`DELETE /api/admin/tracks/{id}`) — interdit si utilisé dans un défi, confirmation modale, sélection multiple
-- [x] Actualisation d'un morceau sans preview (`PUT /api/admin/tracks/{id}`) — écrase DeezerTrackId/Artist/Title/CoverHash (endpoint conservé ; le bouton "↻ Actualiser" du front a été retiré le 2026-09-16)
-- [x] Pool admin redesigné en tableau paginé (15 lignes/page), filtres combinables (texte, statut, preview), sous-onglets supprimés, onglet "Actions" dédié (générer défi + reset sessions)
-- [x] Seed enrichi : 5 morceaux sans preview (The Beatles, Pink Floyd, Bob Dylan, Led Zeppelin, Fleetwood Mac — IDs >= `9_000_000_000`) pour tester le flux « sans preview »
-- [x] Dashboard admin redesigné : KPI tiles jour sélectionné (complétés, abandons, taux de complétion, score médian), sélecteur de jour (← → sur les dates ayant un défi), barres 30j cliquables (jours sans activité affichés à zéro), `GET /api/admin/stats?date=` (param date, `AvailableDates`, `SelectedDayKpis`, Pending→Abandoned pour les jours passés)
-- [x] **Corrections d'incohérences trouvées lors d'un audit de code** (2026-07-16) — `/api/admin/login` invoque maintenant réellement `LoginHandler` via le bus Wolverine au lieu de dupliquer sa logique dans l'endpoint (le handler était du code mort, testé mais jamais exécuté) ; `DeezerRankSnapshot` posé de façon cohérente (`i+1`) par `DailyChallengeGenerator` et le seed E2E, comme `CreateChallengeHandler` (avant toujours `0` sur les deux premiers chemins)
-- [x] **Refonte de la prolongation « écouter plus »** (2026-07-17) — plus de malus de score (`ScoreCalculator.Calculate` n'a plus de paramètre `wasExtended` ; le score dépend uniquement du palier finalement écouté, direct ou prolongé) ; prolongations libres et chaînables côté front (`AudioPlayerService.extend()`, plus de limite à une seule), comportement dual selon que l'audio joue encore (continue depuis la position réelle) ou non (relit depuis le début) ; setting `MaxExtensionsPerAnswer` supprimé (jamais appliqué nulle part) via la migration `RemoveMaxExtensionsPerAnswerSetting` ; `GameSessionAnswer.WasExtended` conservé uniquement pour les stats admin — nouveau champ `TrackStatsDto.ExtendedRate` (% de réponses prolongées) affiché dans l'onglet Défis
-- [x] **`GET /api/players/me`** (2026-08-15) — slice `Features/Players/GetCurrentPlayer/`, expose le `PlayerId` du cookie du navigateur courant (déjà résolu par `PlayerAuthMiddleware`, aucune requête DB supplémentaire) ; nécessaire côté front car le cookie `authToken` est `HttpOnly` et chiffré (Data Protection), donc illisible/indéchiffrable côté client. **Mise à jour (2026-08-21)** : depuis la création paresseuse ci-dessous, cet endpoint appelle directement `ResolveOrCreatePlayerAsync` (donc une requête/écriture DB si besoin) au lieu de se contenter de relire ce que le middleware avait déjà résolu.
-- [x] **`GetAdminStats` renvoie la liste des joueurs par défi** (2026-08-15) — `ChallengeStatsDto.Players` (`{PlayerId, Status, Score}` par session, Completed/Pending/Abandoned) pour repérer les joueurs qui reviennent d'un jour à l'autre ; `BuildChallengeStats` mutualise en une seule projection `Sessions` ce qui remplaçait 3 requêtes séparées (scores/pending/abandoned)
-- [x] **Création paresseuse du Player** (2026-08-21) — `PlayerAuthMiddleware` ne crée plus de `Player` par défaut sur chaque requête `/api/*` (un simple chargement de page — settings, autocomplete Deezer, stats/today — ne crée plus de ligne en base). `ICookieAuthService` expose deux méthodes : `ResolveOrCreatePlayerAsync` (crée si besoin, réservée à `StartSession` et `GetCurrentPlayer`) et `TryResolvePlayerAsync` (résout sans jamais créer, utilisée par le middleware et par tous les autres endpoints joueur via `GetPlayerIdOrNull()`). Migration `PurgeUnplayedPlayers` (one-shot, data-only) pour nettoyer les `Players` existants sans aucune `GameSession`.
-- [x] **Création paresseuse de la session + distinction des abandons** — (1) nouvel endpoint peek `GET /api/sessions/today` (`Sessions/GetTodaySession`, lecture seule, 1 requête projetée) qui pilote l'écran d'accueil **sans créer Player, cookie ni session** ; `POST /api/sessions` n'est appelé qu'au clic « Commencer à jouer » / « Reprendre » / « Abandonner ». Un visiteur qui ne joue jamais ne laisse aucune trace. (2) `SessionStatus.Expired=3` (sans migration : enum int, pas de CHECK) — l'expiry paresseuse d'un `Pending` écrit désormais `Expired` (pas `Abandoned`, réservé au bouton). (3) `GetAdminStats` : `DailyKpisDto`/`ChallengeStatsDto` gagnent `ExpiredCount` (+ `PendingCount` sur `DailyKpisDto`), le Pending d'un jour passé est replié sur `ExpiredCount` **des deux côtés** (`today` passé à `BuildChallengeStats` **et** `BuildDailyKpis`) → l'écart « KPI du jour ≠ Stats par défi » disparaît. Front : `game.component` refondu (`peekSession`/`beginGame`/`beginResume`/`beginAbandonFromResume`), tuile dashboard « Non terminés » avec breakdown abandon/inachevé, chip joueur gris pour `Expired`. +6 tests d'intégration (`GetTodaySessionTests.cs` + abandon vs expired), specs E2E multi-onglets ajustées.
-- [x] **Split `GET /api/admin/stats` → `GET /api/admin/challenge-stats`** (2026-08-29) — la partie lourde `BuildChallengeStats` (30 derniers défis + agrégats par morceau + 2ᵉ requête histogrammes + liste des joueurs) sort dans une slice dédiée `Features/Admin/Stats/GetChallengeStats/` ; `AdminStatsResponse` perd son champ `Challenges` (ne garde que les 4 blocs Dashboard, tous légers), les DTO `ChallengeStatsDto`/`ChallengePlayerDto`/`TrackStatsDto` sont déplacés dans la nouvelle slice. `today` est recalculé indépendamment dans chaque endpoint (convergence des buckets non-complétion préservée). 15 tests d'intégration réécrits vers le nouvel endpoint (helper `AdminGetChallengeStatsAsync`) + 2 nouveaux (401, structure). NSwag régénéré.
-
-## ✅ Frontend
-
-- [x] Angular 22 standalone + signals, Tailwind v4, port 5173
-- [x] `SettingsService` — charge les Settings BD au boot, expose des signals
-- [x] `AudioPlayerService` — modèle "durée choisie", signal-based
-- [x] `GameComponent` — session complète, récap final avec liens Deezer
-- [x] `BlindRoundComponent` — lecture auto au premier palier, prolongation, indices, feedback stats (plus de choix de palier ni de timer)
-- [x] `AdminComponent` — accès par rôle admin, pool, défis, recherche Deezer
-- [x] `playerAuthInterceptor` (seul intercepteur, admin compris — `adminAuthInterceptor` retiré)
-- [x] NSwag : `ApiClient` généré, `api.generated.ts` commité
-- [x] Pages d'erreur : 404, "déjà joué" (compte à rebours + stats), "pas de défi"
-- [x] Écran "déjà joué" : ton score vs médiane, accordéon détail par morceau (pochette + lien Deezer)
-- [x] `TextNormalizer` : suppression parenthèses/crochets avant comparaison (`(feat. X)`, `[Radio Edit]`)
-- [x] Page d'accueil "welcome" avec bouton "Commencer à jouer" (session chargée en background — 0 latence au clic)
-- [x] Préchargement audio non-bloquant (`AudioPlayerService.preloadAll` via `<link rel="preload" as="audio">`)
-- [x] Bouton Stop pendant l'écoute pour passer directement à la saisie
-- [x] Badge officiel "À écouter sur Deezer" (SVG Deezer branché) — `DeezerBadgeComponent`
-- [x] Favicon SVG note Deezer (icône violette `#A238FF`)
-- [x] Layout B — player haut + zone saisie toujours visible (sans clignotement)
-- [x] Barre de progression live + chrono (`requestAnimationFrame` dans `AudioPlayerService`)
-- [x] Champ unique artiste+titre avec autocomplete Deezer (proxy `GET /api/deezer/search`, debounce 300ms)
-- [x] `DeezerAutocompleteService` (`features/game/services/`, `providedIn: root`, stateless) + `Features/Deezer/SearchEndpoint` (proxy public, contourne CORS)
-- [x] **Nettoyage + déduplication de l'autocomplete Deezer joueur** (2026-07-23) — `SearchEndpoint.CleanAndDeduplicate` retire les parenthèses/crochets des titres (même regex que `TextNormalizer`) et fusionne les doublons résultants, sur-demande de 20 résultats bruts pour compenser ; recherche admin inchangée, titres bruts nécessaires pour `Track.Title`
-- [x] **Nettoyage des titres affichés au-delà de l'autocomplete** (2026-08-17) — `SearchEndpoint.CleanTitle` extrait vers `TextNormalizationHelpers.CleanDisplayTitle` (`internal`, réutilisable dans tout le backend) et appliqué à chaque titre révélé après coup : `SubmitAnswer` (réponse par morceau + récap final), `StartSession` (reprise de partie), `Stats/Today` (écran "déjà joué"), `GetAdminStats` et `GetChallenges` (onglet Défis admin, sections Stats par défi + Historique — `GetChallenges` corrigé après coup le même jour, oublié dans le premier passage). `Track.Title` en base et la recherche admin restent bruts (nécessaires pour le re-sync Deezer)
-- [x] **Navigation clavier dans l'autocomplete du blind-round** (2026-07-23) — `BlindRoundComponent.onSearchKeydown` : ↓/↑ déplacent la surbrillance (cycle avec wrap-around), Entrée sélectionne sans soumettre, Échap ferme la dropdown
-- [x] `chosenDuration` en signal dans `BlindRoundComponent` (nécessaire pour `computed()` réactif)
-- [x] Streak affiché (aujourd'hui dans la gélule du header)
-- [x] Replay preview après réponse — `AudioPlayerService.replayFull()`, relance depuis le début jusqu'à la fin naturelle du morceau
-- [x] Synchronisation multi-onglets — `visibilitychange` dans `GameComponent`, relance `loadSession()` au retour au premier plan si partie non terminée
-- [x] Partage score emoji Wordle-style (✅/❌ par morceau + durée + lien `/blindtest`) — copie presse-papier
-- [x] Route `/blindtest` (alias de `/`) pour les liens de partage
-- [x] Open Graph + Twitter Card dans `index.html` (partage WhatsApp / Signal)
-- [x] `environment.appUrl` dans les fichiers d'environnement (prod/dev)
-- [x] Confirmation de sortie en cours de partie — guard `CanDeactivate` (`unsaved-game.guard.ts`) + modale (`ConfirmSheetComponent`) sur la navigation interne, `beforeunload` natif sur la fermeture d'onglet ; la partie reste `Pending` (reprenable)
-- [x] `ConfirmSheetComponent` (`shared/confirm-sheet/`) — bottom-sheet de confirmation réutilisable, mutualise les modales "abandonner" et "quitter"
-- [x] Polish UX blind round — loading sur "Valider" (`isSubmitting`), bouton `✕` d'effacement, score en count-up animé, toast d'erreur réseau (4s)
-- [x] Animations d'écran — keyframes `fade-in`/`slide-up`, classe `.screen-enter` sur chaque état
-- [x] **i18n FR/EN** — ngx-translate v18, `LanguageService`, fichiers `public/i18n/{fr,en}.json`, `TranslatePipe` dans tous les composants, E2E force `'fr'` via `addInitScript`
-- [x] **Refacto `game.component`** — découpé en `GameHeaderComponent` + `GameFooterComponent` + 5 screens standalone (`welcome-screen`, `resume-screen`, `status-screen`, `already-played-screen`, `final-recap-screen`), chaque composant dans son dossier avec `.html` externe
-- [x] **Refacto `admin.component`** — shell ~45 lignes + 7 services dédiés (`AdminHttpService`, `AdminStateService`, `AdminApiService`, `AdminStatsService`, `AdminPoolService`, `AdminActionsService`, `PoolAudioPreviewService` — extrait d'`AdminPoolService` le 2026-09-14, lecteur audio partagé des modales pool) + 8 sous-composants (`admin-login`, `dashboard-tab`, `pool-tab`, `challenges-tab`, `actions-tab`, `pool-search-panel`, `delete-track-modal`, `preview-track-modal`)
-- [x] **`GameFacadeService`** (`features/game/services/`, fourni par `GameComponent`) — façade métier délégant à `GameService` (VSA frontend)
-- [x] **Refonte DA "IN//SECONDS" + auto-play blind round** (2026-08) — nouvelle palette terracotta/cyan/violet, `DecorBackgroundComponent` (décor grille/scanlines). Blind round : plus de choix de palier initial, lecture auto-démarrée au premier palier autorisé (`BlindRoundComponent`, `effect()` sur `audio.isIdle()`), repères de paliers + texte `blindRound.stepsUpTo` sur la barre de progression pendant l'écoute (computeds `maxDuration`/`scaleRatio`), le tooltip de survol des paliers (`scoreForDuration`) est retiré (plus de boutons à survoler). Détail : [`features/game/CLAUDE.md`](../src/front/InSeconds.Client/src/app/features/game/CLAUDE.md)
-- [x] **Palette CSS centralisée** — 50 variables `:root` dans `styles.scss` depuis la refonte DA "IN//SECONDS" (31 sur les préfixes `--bg-*`/`--text-*`/`--border-*`/`--color-*` d'origine + `--rgb-*`/gradient/glow/font), plus de hex inline dans les templates, hovers via `hover:` Tailwind
-- [x] **Histogramme « en combien de temps les autres ont trouvé »** — sur l'écran de révélation du blind round, à la place de la ligne texte « Ton temps / Moy. / Pas trouvé ». Composant partagé réutilisable `shared/guess-time-chart/` (`GuessTimeChartComponent`), alimenté par `SubmitAnswerResponse.GuessTimeDistribution` (bonnes réponses par palier) + `NotFoundCount` (barre « ✗ »), colonne du joueur en surbrillance. **Aussi en pop-up sur le récap final ET l'écran « déjà joué »** au clic sur le `+score` d'un morceau — la liste de morceaux est mutualisée dans `shared/track-results-list/` (`TrackResultsListComponent`, input `rows: TrackResultRow[]`), consommée par `FinalRecapScreenComponent` (`recapRows` ← `RoundResult` + `stats`) et `AlreadyPlayedScreenComponent` (`playedRows` ← `TrackStat`). Données `TrackStat.GuessTimeDistribution`/`NotFoundCount`/`Score` via `GET /api/stats/today`. **Aussi dans l'onglet Défis admin** : une icône par carte morceau ouvre la pop-up avec les **chiffres au-dessus des barres** (`GuessTimeChartComponent showCounts=true`), données `TrackStatsDto.GuessTimeDistribution`/`NotFoundCount` via `GET /api/admin/challenge-stats` (endpoint scindé le 2026-08-29). Projection sur les paliers mutualisée dans `Common/Stats/GuessTimeDistribution.Build`
-- [x] **`ShareButtonComponent`** (`shared/share-button/`) — bouton partage réutilisable, mutualisé entre `AlreadyPlayedScreenComponent` et `FinalRecapScreenComponent`
-- [x] **Sélecteur de langue dans le footer** (2026-07-08) — bouton monochrome (globe + code `FR`/`EN`) dans `GameFooterComponent`, toggle FR ↔ EN via `LanguageService.use()` (persist localStorage), tooltip `footer.language` dans la langue cible
-- [x] **Page confidentialité** — `PrivacyComponent` (`features/privacy/`), routes lazy `/privacy` + alias `/confidentialite`, lien bouclier dans le footer, clés i18n `privacy.*`
-- [x] **Boot tolérant si `/api/settings` KO** — `catchError` dans `SettingsService.load()`, l'app démarre avec les valeurs par défaut des signals
-- [x] **Feedback échec de copie partage** — `GameComponent.copyToClipboard()` catch le rejet de `clipboard.writeText`, input `failed` sur `ShareButtonComponent` + clé `share.failed`
-- [x] **Optimisations performance front** (2026-07-02) — `ChangeDetectionStrategy.OnPush` sur les 23 composants Angular, `takeUntilDestroyed(destroyRef)` sur toutes les subscriptions Observables (`game.component.ts`, `blind-round.component.ts`, `admin-pool.service.ts`, `admin-actions.service.ts`), tracking des handles `setTimeout` + `clearTimeout()` avant recréation dans `admin-pool.service.ts` et `admin-actions.service.ts`
-- [x] **`AudioPlayerService.extend()` branché depuis `listenMore()`** (2026-07-16) — temps restant et progression basés sur `audio.currentTime` réel. Redesign complet le 2026-07-17 : voir l'entrée « Refonte de la prolongation » ci-dessus (plus de limite à une seule prolongation, plus de malus de score) — voir [`GAMEPLAY_RULES_FR.md`](GAMEPLAY_RULES_FR.md)
-- [x] **Indicateur joueurs par défi + ID navigateur en admin** (2026-08-15) — `ChallengesTabComponent` affiche un chip ID court par joueur sous chaque défi (clic = copie l'ID complet, surbrillance auto + libellé « toi » si l'ID correspond au navigateur courant) ; `BrowserIdComponent` (`shared/browser-id/`, sans `@Input`/`@Output`) affiche l'ID court du navigateur + bouton copier, monté une seule fois dans `admin.component.html` (visible sur l'écran de login et dans le shell admin) ; `PlayerIdentityService` (`core/`, root, remplacé depuis par `PlayerSessionService`) chargeait `GET /api/players/me` une seule fois par session ; `ClipboardService` (`core/`, root) mutualise `navigator.clipboard.writeText`, réutilisé par `game.component.copyToClipboard` (comportement de partage de score inchangé)
-- [x] **Chargement paresseux par onglet admin** (2026-08-29) — `activeTab` déplacé de `AdminComponent` vers `AdminStateService` (+ `Set` `visitedTabs`, `hasVisited`, `setActiveTab`). Les `rxResource` `poolTracks`/`challengeStats`/`challenges` d'`AdminApiService` restent `idle` (`params → undefined`) tant que `authenticated()` est faux **ou** que l'onglet concerné n'a pas été ouvert ; `stats` (Dashboard) gardé sur `authenticated()` seul. À l'ouverture de l'admin : 1 seul appel (`/api/admin/stats`, léger) au lieu de 3, zéro avant login. Nouveau `challengeStatsResource` → `GET /api/admin/challenge-stats` (endpoint scindé), même trigger de reload que l'historique. Badges d'onglets Pool/Défis : libellé sans `(N)` tant que non visité (`admin.tabs.poolPlain`/`challengesPlain`). Tests : `admin-state.service.spec.ts` créé (10 cas — défaut, `setActiveTab` sticky, triggers), `admin-api.service.spec.ts` +1 (`getChallengeStats` distinct de `/challenges`), stub `admin-stats.service.spec.ts` mis à jour, +2 E2E admin (appels réseau différés + compteur d'onglet différé) → 179 tests unitaires front + 114 intégration + 63 E2E OK
-- [x] **Onglet admin actif persisté dans l'URL** (2026-09-02) — `AdminStateService` injecte `ActivatedRoute`/`Router` : `activeTab` est initialisé depuis `?tab=` au chargement (validé contre la liste des onglets connus, retombe sur `dashboard` sinon — et marqué visité d'office, donc son chargement paresseux fonctionne dès le F5) ; `setActiveTab` synchronise ensuite l'URL via `router.navigate([], {queryParams:{tab}, queryParamsHandling:'merge', replaceUrl:true})` (`replaceUrl` pour ne pas empiler une entrée d'historique par clic d'onglet). Corrige un F5 qui ramenait toujours à Dashboard. Tests `admin-state.service.spec.ts` +5 cas (restauration depuis l'URL, fallback si `?tab=` invalide, synchronisation au clic) ; `admin-api.service.spec.ts` (bloc "delegation") et `admin-state.service.spec.ts` fournissent désormais `ActivatedRoute`/`Router` explicitement
-
-## ✅ Déploiement
-
-- [x] **Déploiement VPS OVH** (2026-09-11) — durcissement serveur (SSH clé uniquement, fail2ban, UFW), Docker Engine, stack Postgres partagé multi-projets (`deploy/infra/`), Caddy en reverse proxy avec HTTPS auto via challenge DNS-01 Cloudflare (IP du VPS jamais exposée publiquement, cf. `deploy/caddy/`), `docker-compose.prod.yml` (api+front), bascule DNS Cloudflare. Détail complet dans la section "Déploiement VPS" de [CLAUDE.md](../CLAUDE.md)
-- [x] CI/CD auto sur push `main` — déploie sur le VPS (job `deploy`, SSH + `docker compose up -d --build`)
-- [x] Secrets prod via `.env.prod`/`deploy/infra/.env`/`deploy/caddy/.env` sur le VPS (non commités) + secrets GitHub Actions (`VPS_SSH_PRIVATE_KEY`/`VPS_HOST`/`VPS_USER`) pour le déploiement automatique
-- [ ] **Backups PostgreSQL automatiques externalisés** (étape 7 du plan de migration VPS, pas encore fait) — le VPS est un single point of failure, dump quotidien à envoyer hors du VPS (objet storage ou équivalent)
-
-## ✅ Bugs streak perdue à tort (diagnostiqués le 2026-07-08, corrigés les 2026-07-11 et 2026-07-14)
-
-> Cf. pièges 17 et 18 de [CLAUDE.md](../CLAUDE.md) pour le détail.
-
-- [x] **Persister les clés Data Protection en base** (corrigé le 2026-07-14) — package `Microsoft.AspNetCore.DataProtection.EntityFrameworkCore`, `PersistKeysToDbContext<ApplicationDbContext>()`, table `DataProtectionKeys` (migration `PersistDataProtectionKeys`) : les cookies joueurs survivent aux redémarrages/redéploiements. Note : une dernière invalidation des cookies a lieu au premier déploiement du fix (anciennes clés perdues avec le conteneur)
-- [x] **Baser la streak sur la date du défi** (corrigé le 2026-07-11) — `SubmitAnswer/Handler.cs` compare désormais `LastPlayedDate` à `DailyChallenge.Date − 1 jour` et stocke la date du défi : terminer le défi de la veille après minuit UTC ne casse plus la streak. Couvert par tests unitaires + intégration
-- [x] **Gel de série (streak freeze)** (2026-09-23, PR #162) — comptes connectés, 1 offert à l'inscription, +1 tous les 7 jours (2 max), consommation automatique ; incitation invité
-
-## 🚧 Mode entraînement (anciens défis)
-
-> Rejouer un défi passé sans impacter le classement ni le streak. Score calculé côté serveur mais non persisté.
+> Rejouer un défi passé sans impacter les stats ni la série. Score calculé côté serveur mais non persisté.
 
 - [ ] **Backend** — nouveau paramètre `trainingMode: true` sur `StartSession` (ou endpoint dédié) : vérifie que le `DailyChallengeId` visé n'est pas le défi du jour, lève la contrainte d'unicité `(PlayerId, DailyChallengeId)`, n'écrit pas de `GameSession` en base (ou la marque `IsTraining=true`)
 - [ ] **Backend** — `SubmitAnswer` en mode entraînement : calcule et renvoie le score normalement mais ne le cumule pas dans `GameSessions.TotalScore` / pas de ligne `GameSessionAnswers` persistée
-- [ ] **Frontend** — page ou modale "Rejouer un ancien défi" accessible depuis l'écran "déjà joué" ou la home ; liste les derniers défis disponibles
-- [ ] **Frontend** — indicateur visuel "Mode entraînement" pendant la partie (bandeau ou badge), récap final sans partage emoji ni mise à jour du streak
-- [ ] **UX** — décider si les anciens défis sont accessibles sans limite (tout l'historique) ou fenêtre glissante (ex : 7 derniers jours)
-- Note : ce chantier bénéficie de l'infrastructure de comptes posée en 2026-08 (magic link, cf. section ci-dessous) — un `Player` identifié de façon stable dans le temps (pas seulement un cookie guest) est un prérequis naturel pour "reprendre où on en était" sur un ancien défi, même si le rattrapage lui-même reste hors scope de cette livraison.
+- [ ] **Frontend** — page ou modale « Rejouer un ancien défi » accessible depuis l'écran « déjà joué » ou l'accueil ; liste les derniers défis disponibles
+- [ ] **Frontend** — indicateur visuel « Mode entraînement » pendant la partie, récap final sans partage ni mise à jour de la série
+- [ ] **UX** — décider si les anciens défis sont accessibles sans limite (tout l'historique) ou en fenêtre glissante (ex : 7 derniers jours)
 
-## ✅ Comptes utilisateurs (signup ouvert par magic link)
-
-> Le jeu guest reste 100% ouvert — n'importe quel email peut créer/utiliser un compte lié (whitelist admin retirée le 2026-09). Détail complet : `CLAUDE.md` racine ("Comptes utilisateurs — signup ouvert par magic link") et `src/back/InSeconds.Api/CLAUDE.md` (`Features/Auth/`, `Common/Auth/AccountLinkingService`).
-
-- [x] Login par magic link (15 min, `RequestMagicLink`/`VerifyMagicLink`), envoi via l'API Resend (plan gratuit)
-- [x] `AccountLinkingService` — conversion du guest courant à la première connexion, résolution multi-appareils aux suivantes (terrain préparé pour un futur Google OAuth)
-- [x] Anti-CSRF (`OriginValidator`) sur `VerifyMagicLink` (plus sur l'admin, qui passe par le cookie joueur)
-- [x] Connexion rapide dev (3 comptes seed, `Features/Auth/DevLogin/`, jamais en Testing/Production)
-- [x] Front : `PlayerSessionService`, écrans `/login` + `/login/verify`, pseudo dans les chips joueur admin
-- [x] **Cookie `authToken` en `SameSite=Lax` en prod** (2026-09-02) — front (`inseconds.cc`) et API (`api.inseconds.cc`) same-site depuis le passage au domaine public, `SameSite=None` n'était plus nécessaire et exposait le cookie (durée nominale 90 jours) à la purge agressive des navigateurs sur les cookies cross-site (Safari ITP notamment) → symptôme rapporté : reconnexion quasi quotidienne par magic link. Détail : `CLAUDE.md` racine, piège 23
-- [x] **Écran Profil `/profile` + avatar header + nudges de connexion** (2026-09) — écran dédié (pseudo éditable via `PUT /api/players/me/pseudo`, streak, parties jouées calculées, déconnexion) remplaçant l'ancienne pop-up "Compte connecté" du footer ; avatar dans le header pour un compte lié ; rappels contextuels pour les guests (boutons accueil/reprise, toast de streak ; bannières déjà-joué/récap retirées le 2026-09-23), tous masqués pour un compte lié. Détail complet : `features/game/CLAUDE.md`
-- [x] **Changement d'email depuis `/profile`, confirmation par email** (2026-09-14) — `PUT /api/players/me/email` + `POST /api/auth/email-change/confirm`, flux en 2 étapes calqué sur le magic-link login (token 15 min, confirmation à la nouvelle adresse uniquement). Détail complet : `CLAUDE.md` racine et `src/back/InSeconds.Api/CLAUDE.md` (`Features/Auth/RequestEmailChange`/`ConfirmEmailChange`)
-
-## 🚧 Rétention & Engagement
+## Rétention & engagement
 
 > Inspiré des mécaniques Wordle / Heardle / NYT Connections. Priorité décroissante.
 
-- [x] **Partage emoji spoiler-free** — grid résultats copiable (✅/❌ + durée par morceau, sans révéler les titres)
-- [x] **Streak affiché** — nombre de jours consécutifs joués, affiché dans la gélule du header
-- [x] **Gel de série** (2026-09-23, PR #162) — comptes connectés : 1 gel offert à la création du compte, +1 tous les 7 jours de série (max 2), chaque jour manqué consomme un gel
-- [x] **Indices** (2026-09-18) — année de sortie puis artiste façon pendu, débloqués à 5 s/10 s, pénalité 30 %/60 %
-- [ ] **Badges de difficulté** — récompense visuelle selon la durée moyenne écoutée (ex : "Légende" si moyenne ≤ 1s, "Explorateur" si ≤ 3s)
-- [ ] **Meilleur score personnel** — stocker et afficher le record du joueur sur chaque morceau (écran "déjà joué")
-- [ ] **Classement du jour anonyme** — top scores + médiane, sans pseudo ni leaderboard permanent
+- [ ] **Badges de difficulté** — récompense visuelle selon la durée moyenne écoutée (ex : « Légende » si moyenne ≤ 1 s, « Explorateur » si ≤ 3 s)
+- [ ] **Meilleur score personnel** — stocker et afficher le record du joueur sur chaque morceau (écran « déjà joué »)
+- [ ] **Classement du jour anonyme** — top scores + médiane, sans leaderboard permanent
 
-## 🚧 Tests
+## Infra & exploitation
 
-- [x] **Optimisations performance back** (2026-07-02) — `.AsNoTracking()` sur toutes les queries lecture-seule, `Select()` projections à la place de `Include().ThenInclude()` dans `StartSession/Handler.cs`, `Task.WhenAll()` dans `Stats/Today` et `GetAdminStats` (`BuildPlayerBreakdown`), migration EF `AddPerformanceIndexes` : `IX_GameSessions_PlayerStatusChallenge`, `IX_GameSessionAnswers_DailyChallengeTrackId`, `IX_Players_LastSeenAt`
-- [x] Tests d'intégration backend (Testcontainers, 180 tests) — `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (KPIs jour, AvailableDates, fix 30j, Pending→Abandoned, `Players` par défi avec statut Completed/Pending/Abandoned), `Players` (`GET /api/players/me` — stabilité de l'ID sur appels répétés, endpoint public), `PlayerSoftDelete`, `SessionEdgeCases` (expiry paresseuse, streak — dont défi de la veille terminé après minuit UTC et reset après un trou, submit sur session abandonnée, UpdateListening : store/max/reset-after-submit/returned-on-resume), `ChallengeGeneration`, `LazyChallengeGeneration` (régénération à la volée + 503 si pool insuffisant), `Admin/Tracks` (AddTrack, GetTracks, DeleteTrack, UpdateTrack), `Admin/Challenges` (GetChallenges, CreateChallenge, ResetToday), `Admin/RefreshPreviews` (401, compteurs seed, réparation d'un flag corrompu), `Admin/Settings` (`UpdateTrackCooldownTests.cs`), `DeezerSearch` (nettoyage + déduplication de l'autocomplete public), `HealthCheck` (liveness + date de build + readiness) ; **nettoyage des titres affichés** (2026-08-17, 5 tests) — un par point d'appel (`SubmitAnswer`, reprise `StartSession`, `Stats/Today`, `GetAdminStats`, `GetChallenges`), chacun injecte un titre parenthésé directement en base puis vérifie la valeur nettoyée retournée (`GetChallenges` a été corrigé après coup — un premier passage avait oublié que l'onglet Défis admin lit aussi ce endpoint pour sa section Historique)
-- [x] Tests unitaires frontend Karma/Jasmine (environ 360 tests) — `App`, `GameService`, `SettingsService` (dont fallback `catchError` au boot), `LanguageService`, `GameFooterComponent` (toggle langue), `AdminHttpService` + délégation `AdminApiService`, `AdminStatsService`, `AdminPoolService` (autonomie du pool), `BlindRoundComponent` (navigation clavier de l'autocomplete), `ClipboardService`, `PlayerSessionService`, `BrowserIdComponent`, `ChallengesTabComponent` (chips d'identité joueur), gel de série, profil/changement d'email ; job CI `unit-tests-front` (`ChromeHeadless`)
-- [x] Tests E2E Playwright (86 scénarios : 62 jeu + 24 admin, dont login, profil, changement d'email et gel de série). Jeu : happy path, écran déjà joué, abandon mid-game, reprise, abandon depuis reprise, sync multi-onglets, pas de défi (pool vide via `emptyPool`) + renaissance paresseuse du défi supprimé, partage + échec de copie presse-papier, scoring palier/mauvaise réponse/partiel, anti-cheat paliers bloqués à la reprise, confirmation de sortie (`leave-guard` : annuler/confirmer/hors-playing), bouton `✕` d'effacement (`clear-search`), autocomplete Deezer — nettoyage/déduplication (`autocomplete-dedup`) et navigation clavier (`autocomplete-keyboard-nav`), footer (`footer` : toggle langue FR ↔ EN, lien confidentialité, alias `/confidentialite`). Admin : login erreur/succès/déconnexion, pool tableau+filtres texte/preview/statut, ajout morceau, suppression individuelle+annulation, actualisation morceau sans preview (modale pré-remplie), actions générer/déjà généré/reset, liste défis, affichage/copie de l'ID navigateur (login + shell), surbrillance "toi" sur le chip joueur après une partie
+- [ ] **Backups PostgreSQL automatiques externalisés** — le VPS est un point de défaillance unique : dump quotidien envoyé hors du VPS (object storage ou équivalent)
+- [ ] **Job récurrent de nettoyage des invités jamais joués** — `BackgroundService` nocturne (même pattern que `GenerateDailyChallengeService`) qui soft-delete les `Player` invités sans `GameSession` au-delà d'un seuil (ex : 30 jours) ; la migration `PurgeUnplayedPlayers` n'était qu'un nettoyage ponctuel
+- [ ] Élargir les smoke tests post-deploy au-delà des headers nginx (ex : vérifier que `/health` répond depuis l'URL publique juste après déploiement)
+- [ ] Cache Redis en remplacement de l'`IMemoryCache` (utile seulement en multi-instances ou pour survivre aux redémarrages)
 
-## 🚧 Mobile
+## Mobile
 
 - [ ] Tests sur vrai appareil iOS (Safari + Chrome iOS)
 - [ ] Tests sur vrai appareil Android (Chrome)
-- [ ] Vérifier audio en mode silencieux iOS
+- [ ] Vérifier l'audio en mode silencieux iOS
 
-## 🚧 Polish & Launch
+## Polish & conformité
 
-- [x] Cache mémoire pour les preview URLs Deezer (`CachedDeezerClient` : `IMemoryCache`, TTL borné par l'expiration de la signature CDN — fix 403 prod)
-- [ ] Cache Redis en remplacement de l'`IMemoryCache` (utile seulement en multi-instances / pour survivre aux redémarrages — `StackExchange.Redis`)
-- [x] **Premier smoke test automatisé** (2026-08-15) — job CI `nginx-headers` (`src/front/InSeconds.Client/scripts/check-nginx-cache-headers.sh`) construit et sert réellement l'image Docker de prod (`Dockerfile.prod`), vérifie via `curl` les headers `Cache-Control` (`immutable` sur JS/CSS hashés, `no-cache` sur `i18n/*.json`/routes SPA) — corrige un incident de cache navigateur (piège 20 du [`CLAUDE.md`](../CLAUDE.md)). Seul job qui teste réellement `nginx.conf` (E2E tourne contre `ng serve`, pas contre nginx)
-- [x] **`robots.txt` + `sitemap.xml`** (2026-09-18) — fichiers statiques dans `public/` du front, `Content-Type` vérifié par le job CI `nginx-headers`
-- [ ] Soft 404 : les URLs inexistantes renvoient 200 (fallback SPA `try_files … /index.html`), une page 404 n'est rendue que côté Angular — pourrait être indexée par les moteurs de recherche
-- [ ] Élargir les smoke tests post-deploy au-delà des headers de cache (ex : vérifier `/health` répond bien depuis l'URL publique juste après déploiement)
+- [ ] Soft 404 : les URLs inexistantes renvoient 200 (fallback SPA), la page 404 n'est rendue que côté Angular
 - [ ] Charte graphique / `@theme` Tailwind (palette déjà centralisée en variables CSS `:root`)
 - [ ] Audit accessibilité WCAG 2.1 AA
-- [ ] Vérifier politique d'usage API Deezer (CGU, rate limits)
+- [ ] Vérifier la politique d'usage de l'API Deezer (CGU, rate limits)
 - [ ] RGPD : anonymisation au soft-delete (pas juste `IsDeleted=true`)
-- [x] Page politique de confidentialité (`/privacy` + `/confidentialite`, lien footer)
 - [ ] Mentions légales + CGU minimales
 
 ## Décisions définitives (ne pas réimplémenter)
 
-- **Pas de Leaderboard permanent** — app volontairement simple, pas de classement inter-jours (les pseudos existent depuis les comptes, mais ne servent pas à classer). Un classement anonyme du jour (top scores + médiane) reste envisageable
+- **Pas de leaderboard permanent** — app volontairement simple, pas de classement inter-jours (les pseudos existent depuis les comptes, mais ne servent pas à classer). Un classement anonyme du jour reste envisageable
 - **Pas de mot de passe** — le jeu reste 100 % jouable en guest ; un compte optionnel (magic link + pseudo) garde historique et série entre appareils

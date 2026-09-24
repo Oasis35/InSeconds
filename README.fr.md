@@ -166,10 +166,9 @@ Le backend tourne en `ASPNETCORE_ENVIRONMENT=Testing` qui active :
 
 ## Documentation
 
-- [`docs/COMMENCE_ICI_FR.md`](docs/COMMENCE_ICI_FR.md) — point d'entrée et état du projet
-- [`docs/TACHES.md`](docs/TACHES.md) — liste des tâches
-- [`docs/BACKEND_STRUCTURE_FR.md`](docs/BACKEND_STRUCTURE_FR.md) — référence d'architecture backend
-- [`docs/FRONTEND_STRUCTURE_FR.md`](docs/FRONTEND_STRUCTURE_FR.md) — référence d'architecture frontend
+- [`docs/COMMENCE_ICI_FR.md`](docs/COMMENCE_ICI_FR.md) — point d'entrée : pitch, stack, où trouver quoi
+- [`docs/TACHES.md`](docs/TACHES.md) — ce qui reste à faire
+- Architecture : [`src/back/InSeconds.Api/CLAUDE.md`](src/back/InSeconds.Api/CLAUDE.md) (backend), [`features/game/CLAUDE.md`](src/front/InSeconds.Client/src/app/features/game/CLAUDE.md) et [`features/admin/CLAUDE.md`](src/front/InSeconds.Client/src/app/features/admin/CLAUDE.md) (frontend)
 - [`docs/GAMEPLAY_RULES_FR.md`](docs/GAMEPLAY_RULES_FR.md) — règles de jeu (scoring, prolongation, anti-triche, streak) — ce qui est réellement appliqué vs juste configuré
 - [`CLAUDE.md`](CLAUDE.md) — conventions et pièges du repo (à lire avant de contribuer)
 

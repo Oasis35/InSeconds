@@ -166,10 +166,9 @@ The backend runs in `ASPNETCORE_ENVIRONMENT=Testing` which activates:
 
 ## Documentation
 
-- [`docs/COMMENCE_ICI_FR.md`](docs/COMMENCE_ICI_FR.md) — project entry point and state overview
-- [`docs/TACHES.md`](docs/TACHES.md) — task list
-- [`docs/BACKEND_STRUCTURE_FR.md`](docs/BACKEND_STRUCTURE_FR.md) — backend architecture reference
-- [`docs/FRONTEND_STRUCTURE_FR.md`](docs/FRONTEND_STRUCTURE_FR.md) — frontend architecture reference
+- [`docs/COMMENCE_ICI_FR.md`](docs/COMMENCE_ICI_FR.md) — entry point: pitch, stack, where to find what
+- [`docs/TACHES.md`](docs/TACHES.md) — remaining work
+- Architecture: [`src/back/InSeconds.Api/CLAUDE.md`](src/back/InSeconds.Api/CLAUDE.md) (backend), [`features/game/CLAUDE.md`](src/front/InSeconds.Client/src/app/features/game/CLAUDE.md) and [`features/admin/CLAUDE.md`](src/front/InSeconds.Client/src/app/features/admin/CLAUDE.md) (frontend)
 - [`docs/GAMEPLAY_RULES_FR.md`](docs/GAMEPLAY_RULES_FR.md) — gameplay rules (scoring, extension, anti-cheat, streak) — what's actually enforced vs just configured
 - [`CLAUDE.md`](CLAUDE.md) — repo conventions and gotchas (read this before contributing)
 
