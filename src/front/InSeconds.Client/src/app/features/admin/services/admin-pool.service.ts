@@ -64,7 +64,7 @@ export class AdminPoolService {
 
   readonly allTracks = computed(() => {
     const available = this.poolTracks().available.map(t => ({ ...t, isAvailable: true }));
-    const used = this.poolTracks().used.map(t => ({ ...t, isAvailable: false, hasPreview: null as boolean | null }));
+    const used = this.poolTracks().used.map(t => ({ ...t, isAvailable: false }));
     return [...available, ...used];
   });
 
@@ -222,6 +222,12 @@ export class AdminPoolService {
 
   clearSelection(): void { this.selectedTrackIds.set(new Set()); }
 
+  /** Un morceau déjà utilisé dans un défi ne peut pas être supprimé (le back renvoie 409). */
+  readonly selectionHasUsedTrack = computed(() => {
+    const selected = this.selectedTrackIds();
+    return this.poolTracks().used.some(t => selected.has(t.id));
+  });
+
   // --- panneau de recherche/ajout ---
   toggleAddPanel(): void {
     const open = !this.addPanelOpen();
@@ -324,6 +330,8 @@ export class AdminPoolService {
     if (track) {
       this.deleteModalTracks.set([track]);
     } else {
+      // Garde-fou : le bouton est désactivé si la sélection contient un morceau utilisé.
+      if (this.selectionHasUsedTrack()) return;
       const available = this.poolTracks().available;
       this.deleteModalTracks.set(available.filter(t => this.selectedTrackIds().has(t.id)));
     }

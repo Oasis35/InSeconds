@@ -364,7 +364,9 @@
       "tracksCount": "track(s)",
       "page": "page {{ current }}/{{ total }}",
       "lastUsedFrom": "Used from",
-      "lastUsedTo": "Used until"
+      "lastUsedTo": "Used until",
+      "deleteUsedTitle": "Already used in a challenge: can't be deleted",
+      "deleteUsedSelection": "The selection includes a track already used in a challenge: can't be deleted"
     },
     "actions": {
       "challengeOfDay": "Today's challenge",

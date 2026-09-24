@@ -364,7 +364,9 @@
       "tracksCount": "morceau(x)",
       "page": "page {{ current }}/{{ total }}",
       "lastUsedFrom": "Utilisé depuis le",
-      "lastUsedTo": "Utilisé jusqu'au"
+      "lastUsedTo": "Utilisé jusqu'au",
+      "deleteUsedTitle": "Déjà utilisé dans un défi : suppression impossible",
+      "deleteUsedSelection": "La sélection contient un morceau déjà utilisé dans un défi : suppression impossible"
     },
     "actions": {
       "challengeOfDay": "Défi du jour",

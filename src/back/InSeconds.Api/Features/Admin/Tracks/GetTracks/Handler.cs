@@ -44,6 +44,8 @@ public sealed class GetTracksHandler(ApplicationDbContext db)
             .Where(t => t.IsUsed)
             .Select(t => new TrackDto(
                 t.Id, t.Artist, t.Title, t.DeezerTrackId,
+                // Un morceau utilisé redevient tirable après le cooldown : son état de preview compte aussi.
+                HasPreview: t.HasPreview,
                 LastUsedDate: t.LastUsedDate,
                 UsageCount: t.UsageCount,
                 UnlockDate: ComputeUnlock(t.LastUsedDate)))
