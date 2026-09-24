@@ -111,7 +111,7 @@ export class BlindRoundPage {
   async readRoundScore(): Promise<number> {
     await this.nextButton.waitFor({ state: 'visible' });
     const text = await this.roundScore.textContent();
-    return parseInt(text?.replace(/\D/g, '') ?? '0', 10);
+    return Number.parseInt(text?.replaceAll(/\D/g, '') ?? '0', 10);
   }
 
   async submit(): Promise<void> {
