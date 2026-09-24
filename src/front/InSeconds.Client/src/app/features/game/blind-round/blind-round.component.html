@@ -213,8 +213,8 @@
 
           @if (pendingConfirm(); as kind) {
             <div class="rounded-xl px-4 py-3 space-y-3"
-                 style="background:rgb(var(--rgb-warning) / 0.12);border:1px solid rgb(var(--rgb-warning) / 0.35)">
-              <p class="text-sm text-center font-semibold" style="color:var(--color-warn)">{{ (kind === 'skip' ? 'blindRound.skipConfirm' : 'blindRound.emptyConfirm') | translate }}</p>
+                 style="background:rgb(var(--rgb-accent) / 0.08);border:1px solid rgb(var(--rgb-accent) / 0.35)">
+              <p class="text-sm text-center font-semibold" style="color:var(--color-accent)">{{ (kind === 'skip' ? 'blindRound.skipConfirm' : 'blindRound.emptyConfirm') | translate }}</p>
               <div class="flex gap-2">
                 <button
                   type="button"
@@ -227,7 +227,7 @@
                   type="button"
                   (click)="confirmPending()"
                   class="flex-1 py-2.5 rounded-lg text-sm font-bold uppercase transition touch-manipulation"
-                  style="font-family:var(--font-display);letter-spacing:0.04em;background:var(--color-warn);color:var(--bg-page)">
+                  style="font-family:var(--font-display);letter-spacing:0.04em;background:var(--gradient-primary);color:var(--text-on-primary)">
                   {{ (kind === 'skip' ? 'blindRound.skipAnyway' : 'blindRound.submitAnyway') | translate }}
                 </button>
               </div>
