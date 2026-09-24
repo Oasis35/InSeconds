@@ -29,7 +29,7 @@ describe('PlayersTabComponent', () => {
   });
 
   it('affiche tous les joueurs sans filtre', () => {
-    expect(component['filteredPlayers']().length).toBe(2);
+    expect(component['filteredPlayers']()).toHaveSize(2);
   });
 
   it('filtre par pseudo ou email, sans tenir compte de la casse', () => {

@@ -75,7 +75,7 @@ describe('GameShareService', () => {
 
     const text = clipboardStub.copy.calls.mostRecent().args[0] as string;
     expect(text).toContain('✅/✅ 2s');
-    expect(text.match(/\n/g)?.length).toBe(3); // title + 1 track line + score, pas de ligne pour le track sans durée
+    expect(text.match(/\n/g)).toHaveSize(3); // title + 1 track line + score, pas de ligne pour le track sans durée
   });
 
   it('sets failed (not copied) when the clipboard copy fails', async () => {
