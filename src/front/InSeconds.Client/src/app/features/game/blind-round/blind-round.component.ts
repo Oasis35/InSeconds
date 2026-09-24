@@ -203,6 +203,11 @@ export class BlindRoundComponent implements OnDestroy {
     this.doSubmit(this.search.resolveAnswer());
   }
 
+  /** Passe le morceau (0 pt) : réponse vide envoyée sans confirmation, au palier écouté. */
+  protected skip(): void {
+    this.doSubmit({ artist: null, title: null });
+  }
+
   private doSubmit(answer: { artist: string | null; title: string | null }): void {
     this.submission.isSubmitting.set(true);
     this.emitAnswer({

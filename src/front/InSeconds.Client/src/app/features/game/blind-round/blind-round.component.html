@@ -240,6 +240,16 @@
               style="font-family:var(--font-display);background:var(--gradient-primary);color:var(--text-on-primary);letter-spacing:0.06em;box-shadow:var(--glow-primary)">
               {{ isSubmitting() ? '…' : ('blindRound.validate' | translate) }}
             </button>
+            @if (track().previewUrl) {
+              <button
+                type="button"
+                (click)="skip()"
+                [disabled]="isSubmitting()"
+                class="w-full py-3.5 rounded-lg text-sm font-bold tracking-wide uppercase transition active:scale-95 touch-manipulation disabled:opacity-60"
+                style="font-family:var(--font-display);letter-spacing:0.06em;border:1.5px solid rgb(var(--rgb-accent-2) / 0.7);background:transparent;color:var(--color-accent-2)">
+                {{ 'blindRound.skip' | translate }}
+              </button>
+            }
           }
         </form>
       }

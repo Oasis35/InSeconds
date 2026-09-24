@@ -271,4 +271,18 @@ describe('BlindRoundComponent — indices (hints)', () => {
     expect(component['resultHintUsed']()).toBe(true);
     expect(component['resultHintPercent']()).toBe(60);
   });
+
+  it('skip() émet une réponse vide au palier écouté, sans confirmation', () => {
+    const emitted: unknown[] = [];
+    component.answered.subscribe(e => emitted.push(e));
+    component['chosenDuration'].set(2);
+
+    component['skip']();
+
+    expect(component['showEmptyConfirm']()).toBe(false);
+    expect(component['isSubmitting']()).toBe(true);
+    expect(emitted).toEqual([jasmine.objectContaining({
+      trackId: TRACK.id, listenedDurationSeconds: 2, artistAnswer: null, titleAnswer: null,
+    })]);
+  });
 });
