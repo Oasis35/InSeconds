@@ -4,7 +4,8 @@
       <h2 class="text-sm font-semibold uppercase tracking-wide" style="color:var(--text-muted)">
         {{ 'admin.players.title' | translate: { count: api.registeredPlayers().length } }}
       </h2>
-      <input type="search"
+      <label for="players-filter-text" class="sr-only">{{ 'admin.players.filterPlaceholder' | translate }}</label>
+      <input id="players-filter-text" type="search"
         [value]="filter()"
         (input)="filter.set($any($event.target).value)"
         [placeholder]="'admin.players.filterPlaceholder' | translate"
