@@ -47,15 +47,15 @@ describe('ErrorReportingService', () => {
     service.report({ source: 'js', message: 'm'.repeat(2000), stack: 's'.repeat(9000) });
 
     const body = httpMock.expectOne(endpoint).request.body;
-    expect(body.message.length).toBe(1000);
-    expect(body.stack.length).toBe(8000);
+    expect(body.message).toHaveSize(1000);
+    expect(body.stack).toHaveSize(8000);
   });
 
   it('n\'envoie pas deux fois la même erreur', () => {
     service.report({ source: 'js', message: 'boom' });
     service.report({ source: 'js', message: 'boom' });
 
-    httpMock.expectOne(endpoint);
+    expect(httpMock.match(endpoint)).toHaveSize(1);
   });
 
   it('plafonne le nombre d\'envois par page', () => {
@@ -63,7 +63,7 @@ describe('ErrorReportingService', () => {
       service.report({ source: 'js', message: `boom ${i}` });
     }
 
-    expect(httpMock.match(endpoint).length).toBe(ErrorReportingService.MAX_REPORTS_PER_PAGE);
+    expect(httpMock.match(endpoint)).toHaveSize(ErrorReportingService.MAX_REPORTS_PER_PAGE);
   });
 
   it('avale un échec d\'envoi sans lever d\'erreur', () => {

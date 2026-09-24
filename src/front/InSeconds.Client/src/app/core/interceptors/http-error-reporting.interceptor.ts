@@ -39,7 +39,8 @@ function shouldReport(url: string, status: number): boolean {
 
 function pathOf(url: string): string {
   try {
-    return new URL(url, 'http://local').pathname;
+    // Base factice pour résoudre une URL relative ; seul le chemin est gardé.
+    return new URL(url, 'https://inseconds.invalid').pathname;
   } catch {
     return url;
   }
