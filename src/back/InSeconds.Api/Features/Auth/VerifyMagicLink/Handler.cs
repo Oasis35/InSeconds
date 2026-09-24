@@ -1,11 +1,15 @@
 using InSeconds.Api.Common.Auth;
+using InSeconds.Api.Common.Observability;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 namespace InSeconds.Api.Features.Auth.VerifyMagicLink;
 
-public sealed class VerifyMagicLinkHandler(ApplicationDbContext db, IAccountLinkingService accountLinking)
+public sealed class VerifyMagicLinkHandler(
+    ApplicationDbContext db,
+    IAccountLinkingService accountLinking,
+    ILogger<VerifyMagicLinkHandler> logger)
 {
     public async Task<VerifyMagicLinkOutcome> Handle(VerifyMagicLinkCommand command, CancellationToken cancellationToken)
     {
@@ -45,6 +49,9 @@ public sealed class VerifyMagicLinkHandler(ApplicationDbContext db, IAccountLink
         // Found ou Linked : résolution terminée, le token est désormais consommé.
         token.ConsumedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(cancellationToken);
+
+        // Jamais l'email : le PlayerId suffit pour relier la connexion au reste du parcours.
+        PlayerActionLog.SignedIn(logger, link.PlayerId, link.Outcome.ToString());
 
         return new VerifyMagicLinkOutcome(Results.Ok(new VerifyMagicLinkResponse(NeedsPseudo: false)), link.AuthToken);
     }

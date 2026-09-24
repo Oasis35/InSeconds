@@ -10,6 +10,11 @@ services:
       ConnectionStrings__DefaultConnection: "Host=shared-postgres;Port=5432;Database=inseconds;Username=inseconds;Password=${INSECONDS_DB_PASSWORD}"
       App__PublicUrl: https://inseconds.cc
       Resend__ApiKey: ${RESEND_API_KEY}
+      # Logs, traces et métriques OpenTelemetry (OTLP) vers Grafana Cloud. Vides = aucun export
+      # (l'API tourne normalement). Valeurs dans .env.prod, cf. .env.prod.example.
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS:-}
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
     networks:
       - shared-postgres
       - inseconds-internal

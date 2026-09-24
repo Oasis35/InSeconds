@@ -4,7 +4,7 @@ export type AudioState = 'idle' | 'loading' | 'playing' | 'finished';
 
 @Injectable({ providedIn: 'root' })
 export class AudioPlayerService {
-  private audio: HTMLAudioElement | null = null;
+  private readonly audio: HTMLAudioElement | null = null;
   private stopTimer: ReturnType<typeof setTimeout> | null = null;
   private currentDuration = 0;
   private wasExtended = false;

@@ -183,6 +183,14 @@ public static class E2EResetEndpoint
         .WithName("E2ESetStreak")
         .WithTags("E2E");
 
+        // Lève une exception non gérée (Testing-only) : vérifie le gestionnaire d'erreurs global
+        // (500 ProblemDetails + traceId) et, côté E2E, l'affichage du code d'erreur.
+        routes.MapGet("/api/e2e/throw", () =>
+        {
+            throw new InvalidOperationException("Exception de test (e2e/throw)");
+        })
+        .ExcludeFromDescription();
+
         return routes;
     }
 

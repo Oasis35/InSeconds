@@ -18,6 +18,30 @@ class TranslateServiceStub {
   }
 }
 
+// Configuration commune aux deux suites : seuls les stubs changent d'une suite à l'autre.
+function createComponent(
+  gameFacade: object,
+  api: object,
+  isLinked: ReturnType<typeof signal<boolean>>,
+  router: { navigate: jasmine.Spy },
+): GameComponent {
+  TestBed.configureTestingModule({
+    providers: [
+      { provide: GameFacadeService, useValue: gameFacade },
+      { provide: ApiClient, useValue: api },
+      { provide: AudioPlayerService, useValue: { preloadAll: () => Promise.resolve() } },
+      { provide: ClipboardService, useValue: {} },
+      { provide: PlayerSessionService, useValue: { isLinked } },
+      { provide: Router, useValue: router },
+      { provide: TranslateService, useClass: TranslateServiceStub },
+      GameShareService,
+      LeaveConfirmationService,
+    ],
+  });
+
+  return TestBed.runInInjectionContext(() => new GameComponent());
+}
+
 // Ces tests couvrent uniquement le toast de streak (guest, écrans done/already_played) :
 // `streakToastDismissed` doit être remis à `false` à chaque (ré)entrée dans ces états,
 // pour que le toast puisse réapparaître après un aller-retour dans une partie suivante.
@@ -55,21 +79,7 @@ describe('GameComponent — streak toast', () => {
     isLinked = signal(false);
     router = { navigate: jasmine.createSpy('navigate') };
 
-    TestBed.configureTestingModule({
-      providers: [
-        { provide: GameFacadeService, useValue: gameFacadeStub },
-        { provide: ApiClient, useValue: apiStub },
-        { provide: AudioPlayerService, useValue: { preloadAll: () => Promise.resolve() } },
-        { provide: ClipboardService, useValue: {} },
-        { provide: PlayerSessionService, useValue: { isLinked } },
-        { provide: Router, useValue: router },
-        { provide: TranslateService, useClass: TranslateServiceStub },
-        GameShareService,
-        LeaveConfirmationService,
-      ],
-    });
-
-    component = TestBed.runInInjectionContext(() => new GameComponent());
+    component = createComponent(gameFacadeStub, apiStub, isLinked, router);
   });
 
   it('defaults to not dismissed', () => {
@@ -165,21 +175,7 @@ describe('GameComponent — gel de série', () => {
     };
     apiStub = { apiStatsToday: jasmine.createSpy('apiStatsToday').and.returnValue(of(stats())) };
 
-    TestBed.configureTestingModule({
-      providers: [
-        { provide: GameFacadeService, useValue: gameFacadeStub },
-        { provide: ApiClient, useValue: apiStub },
-        { provide: AudioPlayerService, useValue: { preloadAll: () => Promise.resolve() } },
-        { provide: ClipboardService, useValue: {} },
-        { provide: PlayerSessionService, useValue: { isLinked } },
-        { provide: Router, useValue: router },
-        { provide: TranslateService, useClass: TranslateServiceStub },
-        GameShareService,
-        LeaveConfirmationService,
-      ],
-    });
-
-    component = TestBed.runInInjectionContext(() => new GameComponent());
+    component = createComponent(gameFacadeStub, apiStub, isLinked, router);
   });
 
   afterEach(() => localStorage.removeItem('inseconds.lostStreakNudgeSeen'));

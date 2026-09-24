@@ -1,3 +1,4 @@
+using InSeconds.Api.Common.Observability;
 using InSeconds.Api.Common.Scoring;
 using InSeconds.Api.Common.Sessions;
 using InSeconds.Api.Common.Settings;
@@ -14,7 +15,8 @@ public sealed class SubmitAnswerHandler(
     ApplicationDbContext db,
     ScoreCalculator scoreCalculator,
     TextNormalizer textNormalizer,
-    SettingsService settingsService)
+    SettingsService settingsService,
+    ILogger<SubmitAnswerHandler> logger)
 {
     public async Task<IResult> Handle(SubmitAnswerCommand command, CancellationToken cancellationToken)
     {
@@ -113,6 +115,12 @@ public sealed class SubmitAnswerHandler(
             await CompleteSessionAsync(session, command.PlayerId, cancellationToken);
 
         await db.SaveChangesAsync(cancellationToken);
+
+        // Jamais la réponse saisie (texte libre du joueur) : seulement le résultat.
+        PlayerActionLog.AnswerSubmitted(logger, command.PlayerId, command.SessionId, command.DailyChallengeTrackId,
+            command.ListenedDurationSeconds, artistCorrect, titleCorrect, hintLevelUsed, score);
+        if (session.Status == SessionStatus.Completed)
+            PlayerActionLog.SessionCompleted(logger, command.SessionId, command.PlayerId, session.TotalScore);
 
         var isCorrectNow = artistCorrect || titleCorrect;
         var stats = BuildAnswerStats(priorStats, isCorrectNow, command.ListenedDurationSeconds, appSettings.AllowedDurationsSeconds);

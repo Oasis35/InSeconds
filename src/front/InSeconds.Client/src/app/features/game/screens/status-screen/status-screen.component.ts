@@ -12,5 +12,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 export class StatusScreenComponent {
   readonly titleKey = input.required<string>();
   readonly bodyKey = input.required<string>();
+  /** Code d'erreur (traceId renvoyé par l'API) que le joueur peut communiquer, masqué si absent. */
+  readonly errorCode = input<string | null>(null);
   readonly retry = output<void>();
 }

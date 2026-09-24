@@ -1,4 +1,4 @@
-import { Page, Locator } from '@playwright/test';
+import { Page, Locator, expect } from '@playwright/test';
 
 // Paliers par défaut exposés par les settings (cf. AppSettings.AllowedDurationsSeconds).
 // La lecture démarre automatiquement au premier (0.5s) — il n'y a plus de bouton de choix initial.
@@ -91,6 +91,27 @@ export class BlindRoundPage {
     await this.answerInput.evaluate(el => (el as HTMLElement).blur());
     // Avance la clock pour que le setTimeout(150ms) de onBlur() s'exécute
     await this.page.clock.fastForward(200);
+  }
+
+  /**
+   * Tape le déclencheur `dedup-test` du FakeDeezerHandler (back, mode Testing) : 3 variantes
+   * parenthésées du même morceau + un morceau distinct, soit 2 suggestions une fois nettoyées.
+   */
+  async showDedupSuggestions(): Promise<Locator> {
+    await this.answerInput.fill('dedup-test');
+    // Déclenche le debounce 300ms de DeezerAutocompleteService (RxJS, soumis à la fake clock) ;
+    // la requête HTTP réelle qui suit revient en temps réel.
+    await this.page.clock.fastForward(350);
+    const suggestions = this.page.getByRole('listitem');
+    await expect(suggestions).toHaveCount(2);
+    return suggestions;
+  }
+
+  /** Attend l'écran de résultat du morceau et renvoie les points marqués. */
+  async readRoundScore(): Promise<number> {
+    await this.nextButton.waitFor({ state: 'visible' });
+    const text = await this.roundScore.textContent();
+    return Number.parseInt(text?.replaceAll(/\D/g, '') ?? '0', 10);
   }
 
   async submit(): Promise<void> {

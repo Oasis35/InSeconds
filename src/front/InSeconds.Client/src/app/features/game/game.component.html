@@ -75,7 +75,7 @@
 
       <!-- Erreur -->
       @if (gameState() === 'error') {
-        <app-status-screen titleKey="error.title" bodyKey="error.body" (retry)="retry()" />
+        <app-status-screen titleKey="error.title" bodyKey="error.body" [errorCode]="errorReporting.lastErrorCode()" (retry)="retry()" />
       }
 
       <!-- Déjà joué aujourd'hui (Completed ou Abandoned) -->

@@ -10,15 +10,8 @@ test.describe('Passer un morceau', () => {
   });
 
   test('annuler referme la confirmation, confirmer passe le morceau à 0 pt', async ({ page }) => {
-    await page.clock.install({ time: Date.now() });
-
-    const game = new GamePage(page);
     const round = new BlindRoundPage(page);
-    await game.goto();
-    await game.waitForWelcome();
-    await game.clickStart();
-    await round.chooseDuration(0.5);
-    await round.waitForAnswerInput();
+    await new GamePage(page).startFirstRound(round, 0.5);
 
     const skipButton = page.getByRole('button', { name: 'Passer (0 pts)' });
     const confirmText = page.getByText('Passer ce morceau ? Tu marqueras 0 points');
@@ -32,8 +25,6 @@ test.describe('Passer un morceau', () => {
     await skipButton.click();
     await page.getByRole('button', { name: 'Passer', exact: true }).click();
 
-    await round.nextButton.waitFor({ state: 'visible' });
-    const scoreText = await round.roundScore.textContent();
-    expect(parseInt(scoreText?.replace(/\D/g, '') ?? '', 10)).toBe(0);
+    expect(await round.readRoundScore()).toBe(0);
   });
 });

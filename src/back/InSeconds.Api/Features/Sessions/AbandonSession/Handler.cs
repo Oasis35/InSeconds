@@ -1,10 +1,11 @@
+using InSeconds.Api.Common.Observability;
 using InSeconds.Api.Common.Sessions;
 using InSeconds.Api.Domain;
 using InSeconds.Api.Infrastructure.Persistence;
 
 namespace InSeconds.Api.Features.Sessions.AbandonSession;
 
-public sealed class AbandonSessionHandler(ApplicationDbContext db)
+public sealed class AbandonSessionHandler(ApplicationDbContext db, ILogger<AbandonSessionHandler> logger)
 {
     public async Task<IResult> Handle(AbandonSessionCommand command, CancellationToken cancellationToken)
     {
@@ -25,6 +26,8 @@ public sealed class AbandonSessionHandler(ApplicationDbContext db)
         session.Abandon(DateTime.UtcNow);
 
         await db.SaveChangesAsync(cancellationToken);
+
+        PlayerActionLog.SessionAbandoned(logger, command.SessionId, command.PlayerId);
 
         return Results.NoContent();
     }

@@ -2,6 +2,11 @@
   <div class="space-y-2">
     <h2 class="text-xl font-bold" style="font-family:var(--font-display);color:var(--text-hi)">{{ titleKey() | translate }}</h2>
     <p class="text-sm" style="color:var(--text-faint);white-space:pre-line">{{ bodyKey() | translate }}</p>
+    @if (errorCode()) {
+      <p class="text-xs" data-testid="error-code" style="color:var(--text-faint)">
+        {{ 'error.code' | translate }} <span class="select-all font-mono">{{ errorCode() }}</span>
+      </p>
+    }
   </div>
   <button (click)="retry.emit()"
     class="px-6 py-3 rounded-xl text-sm font-bold uppercase transition-colors"

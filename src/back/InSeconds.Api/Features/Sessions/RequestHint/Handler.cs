@@ -1,3 +1,4 @@
+using InSeconds.Api.Common.Observability;
 using InSeconds.Api.Common.Sessions;
 using InSeconds.Api.Common.Settings;
 using InSeconds.Api.Common.Text;
@@ -7,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace InSeconds.Api.Features.Sessions.RequestHint;
 
-public sealed class RequestHintHandler(ApplicationDbContext db, SettingsService settingsService)
+public sealed class RequestHintHandler(ApplicationDbContext db, SettingsService settingsService, ILogger<RequestHintHandler> logger)
 {
     public async Task<IResult> Handle(RequestHintCommand command, CancellationToken cancellationToken)
     {
@@ -43,6 +44,8 @@ public sealed class RequestHintHandler(ApplicationDbContext db, SettingsService 
         session.RecordHintUsage(command.DailyChallengeTrackId, command.Level);
 
         await db.SaveChangesAsync(cancellationToken);
+
+        PlayerActionLog.HintRequested(logger, command.Level, command.PlayerId, command.SessionId, command.DailyChallengeTrackId);
 
         // Cumulatif : le niveau 2 renvoie aussi l'année (niveau 1), que le joueur l'ait
         // révélée séparément avant ou non.

@@ -1,3 +1,4 @@
+using InSeconds.Api.Common.Observability;
 using InSeconds.Api.Common.Settings;
 using InSeconds.Api.Common.Streak;
 using InSeconds.Api.Common.Text;
@@ -127,6 +128,8 @@ public sealed class StartSessionHandler(
 
         var currentStreak = await LoadEffectiveStreakAsync(playerId, ct);
 
+        PlayerActionLog.SessionResumed(logger, existingSession.Id, playerId, completedAnswers.Count);
+
         return Results.Ok(new StartSessionResponse(
             SessionId:          existingSession.Id,
             Tracks:             tracks,
@@ -145,6 +148,8 @@ public sealed class StartSessionHandler(
         var session = GameSession.StartNew(playerId, challenge.Id, DateTime.UtcNow);
         db.GameSessions.Add(session);
         await db.SaveChangesAsync(ct);
+
+        PlayerActionLog.SessionStarted(logger, session.Id, playerId, challenge.Id);
 
         var orderedTracks = challenge.Tracks.OrderBy(t => t.Position).ToList();
         var previewUrls = await Task.WhenAll(

@@ -1,7 +1,9 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZoneChangeDetection, provideAppInitializer, inject } from '@angular/core';
+import { ApplicationConfig, ErrorHandler, provideBrowserGlobalErrorListeners, provideZoneChangeDetection, provideAppInitializer, inject } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { playerAuthInterceptor } from './core/interceptors/player-auth.interceptor';
+import { httpErrorReportingInterceptor } from './core/interceptors/http-error-reporting.interceptor';
+import { GlobalErrorHandler } from './core/error-handling/global-error-handler';
 import { ApiClient, API_BASE_URL } from './api/api.generated';
 import { environment } from '../environments/environment';
 import { provideTranslateService } from '@ngx-translate/core';
@@ -15,9 +17,10 @@ import { PlayerSessionService } from './core/services/player-session.service';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
+    { provide: ErrorHandler, useClass: GlobalErrorHandler },
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
-    provideHttpClient(withFetch(), withInterceptors([playerAuthInterceptor])),
+    provideHttpClient(withFetch(), withInterceptors([playerAuthInterceptor, httpErrorReportingInterceptor])),
     { provide: API_BASE_URL, useValue: environment.apiUrl },
     ApiClient,
     provideTranslateService({

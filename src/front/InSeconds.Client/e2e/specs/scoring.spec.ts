@@ -12,14 +12,9 @@ test.describe('Scoring par palier', () => {
   });
 
   test('palier court (0.5s) donne plus de points que palier long (10s)', async ({ page }) => {
-    await page.clock.install({ time: Date.now() });
-
     const game = new GamePage(page);
     const round = new BlindRoundPage(page);
-
-    await game.goto();
-    await game.waitForWelcome();
-    await game.clickStart();
+    await game.startWithFakeClock();
 
     // Morceau 1 : 0.5s avec bonne réponse → 1000 pts (artiste + titre)
     // Les tracks du seed aujourd'hui : Eminem, Radiohead, Billie Eilish, Kanye West, JAY Z
@@ -28,10 +23,7 @@ test.describe('Scoring par palier', () => {
     await round.typeAnswer('Eminem - Lose Yourself');
     await round.submit();
 
-    // Attendre l'écran résultat avant de lire le score
-    await round.nextButton.waitFor({ state: 'visible' });
-    const score1Text = await round.roundScore.textContent();
-    const score1 = parseInt(score1Text?.replace(/\D/g, '') ?? '0', 10);
+    const score1 = await round.readRoundScore();
 
     await round.goNext();
 
@@ -41,29 +33,19 @@ test.describe('Scoring par palier', () => {
     await round.typeAnswer('Radiohead - Creep');
     await round.submit();
 
-    await round.nextButton.waitFor({ state: 'visible' });
-    const score2Text = await round.roundScore.textContent();
-    const score2 = parseInt(score2Text?.replace(/\D/g, '') ?? '0', 10);
+    const score2 = await round.readRoundScore();
 
     expect(score1).toBeGreaterThan(score2);
 
     await round.goNext();
     // Finir les 3 morceaux restants (5 morceaux/défi au total)
-    for (let i = 0; i < 3; i++) {
-      await round.playRound(1);
-    }
-    await game.waitForDone();
+    await game.finishGame(round, 3);
   });
 
   test('mauvaise réponse donne 0 point', async ({ page }) => {
-    await page.clock.install({ time: Date.now() });
-
     const game = new GamePage(page);
     const round = new BlindRoundPage(page);
-
-    await game.goto();
-    await game.waitForWelcome();
-    await game.clickStart();
+    await game.startWithFakeClock();
 
     // Morceau 1 : réponse clairement fausse
     await round.chooseDuration(1);
@@ -76,21 +58,13 @@ test.describe('Scoring par palier', () => {
 
     await round.goNext();
     // Finir les 4 morceaux restants (5 morceaux/défi au total)
-    for (let i = 0; i < 4; i++) {
-      await round.playRound(1);
-    }
-    await game.waitForDone();
+    await game.finishGame(round, 4);
   });
 
   test('scoring partiel : artiste seul = moitié des points du palier', async ({ page }) => {
-    await page.clock.install({ time: Date.now() });
-
     const game = new GamePage(page);
     const round = new BlindRoundPage(page);
-
-    await game.goto();
-    await game.waitForWelcome();
-    await game.clickStart();
+    await game.startWithFakeClock();
 
     // Morceau 1 à 1s (850 pts full) : on ne soumet que l'artiste
     // Format "Artiste - " sans titre → split donne artist='Eminem', title=''
@@ -99,17 +73,12 @@ test.describe('Scoring par palier', () => {
     await round.typeAnswer('Eminem - ');
     await round.submit();
 
-    await round.nextButton.waitFor({ state: 'visible' });
-    const scoreText = await round.roundScore.textContent();
-    const score = parseInt(scoreText?.replace(/\D/g, '') ?? '0', 10);
+    const score = await round.readRoundScore();
     // Artiste seul = 50 % × 850 = 425 pts
     expect(score).toBe(425);
 
     await round.goNext();
     // Finir les 4 morceaux restants (5 morceaux/défi au total)
-    for (let i = 0; i < 4; i++) {
-      await round.playRound(1);
-    }
-    await game.waitForDone();
+    await game.finishGame(round, 4);
   });
 });

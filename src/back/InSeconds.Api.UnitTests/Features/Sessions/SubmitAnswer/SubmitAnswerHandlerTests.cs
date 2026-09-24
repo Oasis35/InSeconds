@@ -1,6 +1,8 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using FluentAssertions;
 using Xunit;
 using InSeconds.Api.Common.Scoring;
+using InSeconds.Api.UnitTests.Common.Observability;
 using InSeconds.Api.Common.Settings;
 using InSeconds.Api.Common.Text;
 using InSeconds.Api.Domain;
@@ -30,7 +32,7 @@ public sealed class SubmitAnswerHandlerTests
         new(Options.Create(new AppSettings()));
 
     private static SubmitAnswerHandler CreateHandler(ApplicationDbContext db) =>
-        new(db, new ScoreCalculator(), new TextNormalizer(), CreateSettingsService());
+        new(db, new ScoreCalculator(), new TextNormalizer(), CreateSettingsService(), NullLogger<SubmitAnswerHandler>.Instance);
 
     // ---------------------------------------------------------------------------
     // Builders
@@ -123,6 +125,25 @@ public sealed class SubmitAnswerHandlerTests
     // ---------------------------------------------------------------------------
     // Tests
     // ---------------------------------------------------------------------------
+
+    // Confidentialité : l'événement de réponse part dans l'outil d'observabilité avec le
+    // résultat (correct ou non, score), jamais le texte saisi par le joueur.
+    [Fact]
+    public async Task Handle_LogueLaReponseSansLeTexteSaisi()
+    {
+        await using var db = CreateDbContext();
+        await SeedAsync(db);
+        var logger = new CapturingLogger<SubmitAnswerHandler>();
+        var handler = new SubmitAnswerHandler(db, new ScoreCalculator(), new TextNormalizer(), CreateSettingsService(), logger);
+
+        await handler.Handle(BuildCommand(artist: "Dafft Punkk saisie-privee", title: "Get Lucky"), CancellationToken.None);
+
+        var answerLog = logger.States.Should().ContainSingle(s => s.Any(p => p.Key == "Score")).Subject;
+        answerLog.Should().Contain(p => p.Key == "PlayerId" && Equals(p.Value, FakePlayerId));
+        answerLog.Should().Contain(p => p.Key == "TitleCorrect" && Equals(p.Value, true));
+        logger.Messages.Should().NotContain(m => m.Contains("saisie-privee") || m.Contains("Dafft"));
+        logger.States.SelectMany(s => s).Should().NotContain(p => (p.Value ?? "").ToString()!.Contains("saisie-privee"));
+    }
 
     [Fact]
     public async Task Handle_WhenBothCorrect_ReturnsFullScore()
@@ -454,7 +475,7 @@ public sealed class SubmitAnswerHandlerTests
         await db.SaveChangesAsync();
 
         var settings = new AppSettings { TracksPerChallenge = 1 };
-        var handler = new SubmitAnswerHandler(db, new ScoreCalculator(), new TextNormalizer(), new SettingsService(Options.Create(settings)));
+        var handler = new SubmitAnswerHandler(db, new ScoreCalculator(), new TextNormalizer(), new SettingsService(Options.Create(settings)), NullLogger<SubmitAnswerHandler>.Instance);
         var command = BuildCommand(duration: 1, artist: "Daft Punk", title: "Get Lucky");
 
         // Act
@@ -489,7 +510,7 @@ public sealed class SubmitAnswerHandlerTests
         await db.SaveChangesAsync();
 
         var settings = new AppSettings { TracksPerChallenge = 1 };
-        var handler = new SubmitAnswerHandler(db, new ScoreCalculator(), new TextNormalizer(), new SettingsService(Options.Create(settings)));
+        var handler = new SubmitAnswerHandler(db, new ScoreCalculator(), new TextNormalizer(), new SettingsService(Options.Create(settings)), NullLogger<SubmitAnswerHandler>.Instance);
 
         // Act
         await handler.Handle(BuildCommand(duration: 1), CancellationToken.None);
@@ -519,7 +540,7 @@ public sealed class SubmitAnswerHandlerTests
         await db.SaveChangesAsync();
 
         var settings = new AppSettings { TracksPerChallenge = 1 };
-        var handler = new SubmitAnswerHandler(db, new ScoreCalculator(), new TextNormalizer(), new SettingsService(Options.Create(settings)));
+        var handler = new SubmitAnswerHandler(db, new ScoreCalculator(), new TextNormalizer(), new SettingsService(Options.Create(settings)), NullLogger<SubmitAnswerHandler>.Instance);
 
         // Act
         await handler.Handle(BuildCommand(duration: 1), CancellationToken.None);
@@ -550,7 +571,7 @@ public sealed class SubmitAnswerHandlerTests
         await db.SaveChangesAsync();
 
         var settings = new AppSettings { TracksPerChallenge = 1 };
-        var handler = new SubmitAnswerHandler(db, new ScoreCalculator(), new TextNormalizer(), new SettingsService(Options.Create(settings)));
+        var handler = new SubmitAnswerHandler(db, new ScoreCalculator(), new TextNormalizer(), new SettingsService(Options.Create(settings)), NullLogger<SubmitAnswerHandler>.Instance);
 
         // Act
         await handler.Handle(BuildCommand(duration: 1), CancellationToken.None);
@@ -583,7 +604,7 @@ public sealed class SubmitAnswerHandlerTests
         await db.SaveChangesAsync();
 
         var settings = new AppSettings { TracksPerChallenge = 1 };
-        var handler = new SubmitAnswerHandler(db, new ScoreCalculator(), new TextNormalizer(), new SettingsService(Options.Create(settings)));
+        var handler = new SubmitAnswerHandler(db, new ScoreCalculator(), new TextNormalizer(), new SettingsService(Options.Create(settings)), NullLogger<SubmitAnswerHandler>.Instance);
 
         await handler.Handle(BuildCommand(duration: 1), CancellationToken.None);
 
