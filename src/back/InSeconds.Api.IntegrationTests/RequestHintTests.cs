@@ -153,7 +153,7 @@ public class RequestHintTests(IntegrationTestFactory factory) : IAsyncLifetime
     [Fact]
     public async Task RequestHint_TrackReleaseYearNull_NeRetournePasDErreur()
     {
-        // Le pool seed n'a pas encore de ReleaseYear backfillé (cf. RefreshReleaseYears) —
+        // Le pool seed n'a pas de ReleaseYear (morceaux ajoutés sans année) —
         // l'indice niveau 1 doit dégrader gracieusement plutôt que planter.
         var session = await StartSessionAsync();
         var trackId = session.Tracks[0].Id;

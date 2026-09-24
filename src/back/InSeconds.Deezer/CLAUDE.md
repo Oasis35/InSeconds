@@ -20,7 +20,7 @@ Projet séparé (pas un sous-dossier d'`InSeconds.Api`) — premier pas vers un 
 
 ## `Testing/FakeDeezerHandler` (`InSeconds.Deezer.Testing`, `internal` — jamais référencé directement depuis `InSeconds.Api`)
 
-Remplace le vrai `HttpClient`. `/track/{id}` : preview vide si `id >= 9_000_000_000`, sinon URL `http://localhost:{E2E_FRONT_PORT ?? 5174}/test-audio.mp3`. Renvoie systématiquement `"release_date": "2015-06-01"` (2026-09-18, ajouté avec le système d'indices) — `ReleaseYearRefresher`/`AddTrack`/`UpdateTrack` en test obtiennent donc toujours `ReleaseYear=2015`. Gère aussi `/search` (réponse par défaut à un seul morceau, ou déclencheur `dedup-test` → 3 variantes parenthésées + 1 morceau distinct) — consommé côté tests par la section E2E du CLAUDE.md backend.
+Remplace le vrai `HttpClient`. `/track/{id}` : preview vide si `id >= 9_000_000_000`, sinon URL `http://localhost:{E2E_FRONT_PORT ?? 5174}/test-audio.mp3`. Renvoie systématiquement `"release_date": "2015-06-01"` (2026-09-18, ajouté avec le système d'indices) — `AddTrack`/`UpdateTrack` en test obtiennent donc toujours `ReleaseYear=2015`. Gère aussi `/search` (réponse par défaut à un seul morceau, ou déclencheur `dedup-test` → 3 variantes parenthésées + 1 morceau distinct) — consommé côté tests par la section E2E du CLAUDE.md backend.
 
 ## `DeezerServiceCollectionExtensions.AddDeezerHttpClient` — point d'entrée DI
 
@@ -34,7 +34,7 @@ builder.Services.AddDeezerHttpClient(
 
 ## Consommateurs (dans `InSeconds.Api`, via `ProjectReference`)
 
-`Features/Sessions/StartSession/Handler.cs` (`CachedDeezerClient.GetPreviewUrlAsync`), `Features/Admin/Challenges/DeezerSearch/Endpoint.cs` (`DeezerClient.SearchTracksAsync` non caché), `Features/Admin/Challenges/CreateChallenge/Handler.cs`, `Features/Admin/Tracks/AddTrack/Handler.cs`, `Features/Admin/Tracks/UpdateTrack/Handler.cs` (`DeezerClient.GetTrackInfoAsync`), `Features/ChallengeGeneration/PreviewStatusRefresher.cs` (`DeezerClient.ProbePreviewAsync`, batché/rate-limité), `Features/ChallengeGeneration/ReleaseYearRefresher.cs` (`DeezerClient.GetTrackInfoAsync`, même pacing, backfill `Track.ReleaseYear`), `Features/Deezer/SearchEndpoint.cs` (`CachedDeezerClient`, endpoint public).
+`Features/Sessions/StartSession/Handler.cs` (`CachedDeezerClient.GetPreviewUrlAsync`), `Features/Admin/Challenges/DeezerSearch/Endpoint.cs` (`DeezerClient.SearchTracksAsync` non caché), `Features/Admin/Challenges/CreateChallenge/Handler.cs`, `Features/Admin/Tracks/AddTrack/Handler.cs`, `Features/Admin/Tracks/UpdateTrack/Handler.cs` (`DeezerClient.GetTrackInfoAsync`), `Features/ChallengeGeneration/PreviewStatusRefresher.cs` (`DeezerClient.ProbePreviewAsync`, batché/rate-limité), `Features/Deezer/SearchEndpoint.cs` (`CachedDeezerClient`, endpoint public).
 
 ## Tests
 

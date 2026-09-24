@@ -142,7 +142,7 @@ Signals : `generateStatus: 'idle'|'loading'|'success'|'already'|'pool_insufficie
 
 - `generateToday()` : succès → `'success'` + **`api.reloadAll()`** (un nouveau défi consomme du pool + crée stats/challenge) ; erreur → `409`→`'already'`, `422`→`'pool_insufficient'`, sinon `'error'` ; retour `idle` après 3s dans tous les cas (timer annulé/relancé proprement).
 - `refreshPreviews()` : succès → stocke le résultat, **`api.reloadPool()`** (modifie potentiellement `hasPreview`).
-- **Plus de `refreshReleaseYears()`** (retiré 2026-09-24 avec le bouton « Re-vérifier les années de sortie » de l'onglet Actions — backfill fait ; l'endpoint back `POST /api/admin/refresh-release-years` reste, sans appelant front).
+- **Plus de `refreshReleaseYears()`** (retiré 2026-09-24 avec le bouton « Re-vérifier les années de sortie » de l'onglet Actions — backfill fait ; l'endpoint back a été supprimé en même temps).
 - `updateTrackCooldownDays(days)` : succès → `'success'` + **`settings.load().subscribe()`** (recharge `/api/settings` pour resynchroniser `SettingsService.trackCooldownDays` — pas `api.reloadAll()`, ce setting n'affecte ni le pool ni les stats déjà affichés) ; erreur → `'error'` ; retour `idle` après 3s dans les deux cas.
 
 Spec (`actions-tab.component.spec.ts`) : couvre la lecture de `settings.trackCooldownDays()` et le succès/erreur d'`updateTrackCooldownDays`. Pas de spec pour `AdminActionsService` au-delà de ça.
