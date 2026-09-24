@@ -10,7 +10,7 @@
 
 - **N morceaux par jour** (`Settings.TracksPerChallenge`, défaut **5**), même défi pour tout le monde, généré à minuit UTC. **[Back]**
 - Une seule session par joueur par défi — contrainte unique `(PlayerId, DailyChallengeId)`. Une partie déjà `Completed`, `Abandoned` (bouton) ou `Expired` (Pending non terminé, basculé par l'expiry paresseuse) ne peut pas être rejouée (409). Une partie `Pending` peut être reprise jusqu'à minuit. **[Back]**
-- Pour chaque morceau : le joueur choisit un palier d'écoute, écoute, saisit artiste + titre (ou passe si pas de preview), score calculé côté serveur.
+- Pour chaque morceau : la lecture démarre automatiquement au premier palier (0,5 s), le joueur prolonge s'il le veut (« écouter plus »), saisit artiste + titre (ou passe si pas de preview), score calculé côté serveur.
 
 ## Paliers d'écoute et barème de points
 
@@ -77,13 +77,13 @@ Moins on écoute, plus on marque. Le score de base est un **lookup exact** du pa
 
 ## Morceaux sans preview
 
-Si `Track.HasPreview = false`, le joueur ne peut pas écouter : bouton « Passer » qui soumet directement `ListenedDurationSeconds = 0` (accepté explicitement par `SubmitAnswerValidator`, seul cas où `0` est valide en dehors des paliers configurés). Score = 0 automatiquement (aucun palier ne matche `0` dans `DurationScores`).
+Les morceaux `Track.HasPreview = false` ne sont jamais tirés dans un défi. Si Deezer ne renvoie malgré tout aucune URL de preview au démarrage de la session (`previewUrl` vide), le joueur ne peut pas écouter : bouton « Passer » qui soumet directement `ListenedDurationSeconds = 0` (accepté explicitement par `SubmitAnswerValidator`, seul cas où `0` est valide en dehors des paliers configurés). Score = 0 automatiquement (aucun palier ne matche `0` dans `DurationScores`).
 
 ## Anti-triche
 
 - **Scoring 100 % serveur** — le client n'envoie que le palier choisi et le texte saisi ; `SubmitAnswerHandler` recalcule tout, le front ne fait qu'afficher le résultat renvoyé.
 - **Anti-rejeu** : contrainte unique BD `(PlayerId, DailyChallengeId)` — impossible de rejouer un défi déjà `Completed`/`Abandoned`/`Expired` en re-soumettant une requête. **[Back]**
-- **Durée minimale déjà écoutée (anti-reprise)** : `PATCH /api/sessions/{id}/listening` enregistre, à chaque arrêt du timer sur un morceau, la durée maximale déjà écoutée (`GameSession.CurrentTrackMinListenedSeconds`). Si le joueur recharge la page en pleine écoute puis reprend, les paliers plus courts que ce qui a déjà été « consommé » sont masqués — impossible de re-choisir un palier plus court après coup pour gonfler artificiellement le score. **[Back + Front]**, verrou posé côté back, filtrage des paliers affichés côté front (`BlindRoundComponent.durations` computed).
+- **Durée minimale déjà écoutée (anti-reprise)** : `PATCH /api/sessions/{id}/listening` enregistre, dès que le palier écouté change (démarrage auto et chaque « écouter plus », depuis le 2026-09-19), la durée maximale déjà écoutée (`GameSession.CurrentTrackMinListenedSeconds`). Si le joueur recharge la page en pleine écoute puis reprend, les paliers plus courts que ce qui a déjà été « consommé » sont masqués — impossible de re-choisir un palier plus court après coup pour gonfler artificiellement le score. **[Back + Front]**, verrou posé côté back, filtrage des paliers affichés côté front (`BlindRoundComponent.durations` computed).
 - **Durée validée serveur** : `ListenedDurationSeconds` doit appartenir à `Settings.AllowedDurationsSeconds` (sauf `0` pour le skip sans preview) — un palier inventé côté client est rejeté par `SubmitAnswerValidator`. **[Back]**
 
 ## Timer de saisie
@@ -114,7 +114,8 @@ Si `Track.HasPreview = false`, le joueur ne peut pas écouter : bouton « Passer
 |---|---|---|
 | `TracksPerChallenge` | `5` | ✅ Back (génération du défi + détection de complétion) |
 | `AllowedDurationsSeconds` | `0.50,1,1.5,2,3,5,10` | ✅ Back (validation) + Front (paliers affichés) |
-| `DurationScores` | voir table ci-dessus | ✅ Back (scoring) + Front (tooltip points) |
+| `DurationScores` | voir table ci-dessus | ✅ Back (scoring) — le front le charge mais ne l'affiche plus (tooltip des paliers retiré avec l'auto-play) |
+| `TrackCooldownDays` | `30` | ✅ Back, **lu à chaud** (délai avant qu'un morceau déjà joué redevienne éligible, éditable dans l'onglet Actions admin) |
 | `StreakFreezeEveryDays` / `StreakFreezeMax` / `StreakLostNudgeMinDays` | `7` / `2` / `2` | ✅ Back, **lus à chaud** (gel de série, cf. § Streak) |
 | `CoverUrlTemplate` | URL Deezer | ✅ Back (reconstruction des pochettes) |
 | `GuessTimerSeconds` | `20` | ❌ Non appliqué — aucun timer réel en jeu aujourd'hui |

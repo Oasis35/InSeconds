@@ -19,7 +19,10 @@ src/back/InSeconds.Api/
 ├── Features/                              # 1 dossier = 1 use-case complet
 │   ├── Sessions/StartSession/
 │   ├── Sessions/SubmitAnswer/
+│   ├── Sessions/{GetTodaySession,UpdateListening,RequestHint,AbandonSession}/
 │   ├── Stats/Today/
+│   ├── Auth/…                             # magic link, changement d'email, logout, dev-login
+│   ├── Players/…
 │   └── Admin/…
 ├── Domain/                                # Entités EF pures, sans annotations
 │   ├── Player.cs
@@ -28,17 +31,26 @@ src/back/InSeconds.Api/
 │   ├── DailyChallengeTrack.cs
 │   ├── GameSession.cs
 │   ├── GameSessionAnswer.cs
-│   └── Setting.cs
+│   ├── MagicLinkToken.cs
+│   ├── EmailChangeToken.cs
+│   ├── Setting.cs
+│   ├── SessionStatus.cs                   # enum
+│   └── StreakRules.cs                     # règles du gel de série (record)
 ├── Infrastructure/
 │   └── Persistence/
 │       ├── ApplicationDbContext.cs
 │       ├── Configurations/                # 1 IEntityTypeConfiguration<T> par entité
 │       └── Migrations/
 ├── Common/
-│   ├── Auth/                              # CookieAuthService + PlayerAuthMiddleware + PlayerQueryExtensions
+│   ├── Auth/                              # CookieAuthService + PlayerAuthMiddleware + PlayerQueryExtensions + magic link/OriginValidator
+│   ├── Email/                             # ResendEmailSender + templates HTML embarqués
+│   ├── Networking/                        # TrustedProxyNetworks (ForwardedHeaders)
+│   ├── RateLimiting/                      # politiques de rate limiting par IP
 │   ├── Sessions/                          # GameSessionQueryExtensions
 │   ├── Scoring/                           # ScoreCalculator
-│   ├── Settings/                          # AppSettings, SettingsService, AppDbConfigurationSource
+│   ├── Settings/                          # AppSettings, SettingsService, AppDbConfigurationSource, SettingsRawReader
+│   ├── Stats/                             # GuessTimeDistribution + DurationBucketDto
+│   ├── Streak/                            # StreakRulesReader (settings du gel lus à chaud)
 │   └── Text/                              # TextNormalizer + TextNormalizationHelpers (Levenshtein, accents, regex)
 └── Program.cs
 
@@ -322,6 +334,14 @@ Les deux endpoints sont publics (mappés avant `PlayerAuthMiddleware`). Logging 
 | `Sessions/StartSession` | `POST /api/sessions` | **Seul point qui crée le Player + le cookie + la session.** Déclenché uniquement au clic « Commencer à jouer » / « Reprendre » / « Abandonner ». Crée session Pending ou retourne reprise si Pending existante ; régénère le défi du jour à la volée s'il manque (503 seulement si pool insuffisant) |
 | `Sessions/SubmitAnswer` | `POST /api/sessions/{id}/answers` | Scoring serveur + stats + complétion auto |
 | `Sessions/AbandonSession` | `PUT /api/sessions/{id}/abandon` | Marque une session Pending comme abandonnée |
+| `Sessions/UpdateListening` | `PATCH /api/sessions/{id}/listening` | Anti-triche : mémorise la durée max déjà écoutée sur le morceau en cours |
+| `Sessions/RequestHint` | `POST /api/sessions/{id}/hint` | Révèle un indice (409 si le palier requis n'est pas atteint), pose `CurrentTrackHintLevelUsed` |
+| `Auth/RequestMagicLink` | `POST /api/auth/magic-link/request` | Envoie un lien de connexion (réponse générique, rate limité par IP) |
+| `Auth/VerifyMagicLink` | `POST /api/auth/magic-link/verify` | Consomme le lien, lie ou convertit le compte, pose le cookie (`OriginValidator`) |
+| `Auth/RequestEmailChange` | `PUT /api/players/me/email` | Envoie un lien de confirmation à la nouvelle adresse (403 guest, 400 même email, 409 pris) |
+| `Auth/ConfirmEmailChange` | `POST /api/auth/email-change/confirm` | Applique le nouvel email (400 token invalide, 409 pris entre-temps) |
+| `Auth/Logout` | `POST /api/auth/logout` | Déconnexion (efface le cookie) |
+| `Auth/DevLogin` | `POST /api/auth/dev-login` | Connexion rapide aux comptes seed, **Development uniquement** |
 | `Stats/Today` | `GET /api/stats/today` | Score joueur, médiane, stats par morceau. `TrackStat` inclut `ArtistCorrect`/`TitleCorrect`/`ListenedDurationSeconds`/`Score` (nullable — remplis seulement si le joueur a une session `Completed`) + `GuessTimeDistribution`/`NotFoundCount` (histogramme) |
 | `Settings/GetSettings` | `GET /api/settings` | Expose les settings publics (paliers, timer, scores) |
 | `Players/GetCurrentPlayer` | `GET /api/players/me?peek=` | `peek=false` (défaut, usage admin) : résout **et crée si besoin** le `Player` (`ResolveOrCreatePlayerAsync`) — affiche/copie son propre ID, reconnaissance dans les listes de joueurs. `peek=true` (usage joueur, `PlayerSessionService.load()`) : lecture seule, **ne crée jamais** de Player/cookie. Réponse : `PlayerId`/`IsGuest`/`Email?`/`Pseudo?`/`CurrentStreak`/`GamesPlayed` (2026-09 — `GamesPlayed` calculé, pas stocké : `COUNT` des `GameSessions.Completed`) |
@@ -333,12 +353,14 @@ Les deux endpoints sont publics (mappés avant `PlayerAuthMiddleware`). Logging 
 | `Admin/Tracks/UpdateTrack` | `PUT /api/admin/tracks/{id}` | Met à jour DeezerTrackId/Artist/Title/CoverHash — interdit si utilisé dans un défi (409) |
 | `Admin/Challenges/*` | `/api/admin/challenges` | Création défis + recherche Deezer |
 | `Admin/GenerateToday` | `POST /api/admin/generate-today` | Génère le défi du jour à la demande |
+| `Admin/RefreshReleaseYears` | `POST /api/admin/refresh-release-years` | Backfill de `Track.ReleaseYear` (indice niveau 1) via `ReleaseYearRefresher` |
+| `Admin/Settings/UpdateTrackCooldown` | `PUT /api/admin/settings/track-cooldown-days` | Modifie `TrackCooldownDays` (lu à chaud à la génération) |
 | `Admin/RefreshPreviews` | `POST /api/admin/refresh-previews` | Relance le re-check des previews (délègue à `PreviewStatusRefresher`), retourne `{ checked, updated, failed }` |
 | `Admin/Stats/GetAdminStats` | `GET /api/admin/stats` | Dashboard : KPIs du jour, activité 30j, répartition joueurs, dates disponibles (4 requêtes légères) |
 | `Admin/Stats/GetChallengeStats` | `GET /api/admin/challenge-stats` | « Stats par défi » de l'onglet Défis (**scindé de `/stats` le 2026-08-29**) : 30 derniers défis, médianes, taux artiste/titre par morceau, `ExtendedRate`, histogrammes, liste des joueurs par défi (`ChallengeStatsDto.Players`, `{PlayerId, Status, Score}` par session). Le front ne l'appelle qu'à l'ouverture de l'onglet Défis |
 | `Deezer/Search` (public) | `GET /api/deezer/search?q=` | Proxy autocomplete Deezer (contourne CORS navigateur) ; nettoie parenthèses/crochets des titres et déduplique (`SearchEndpoint.CleanAndDeduplicate`), sur-demande 20 résultats bruts pour compenser |
 | `ChallengeGeneration` | BackgroundService | Génère le défi quotidien à minuit UTC (retry toutes les 10 min en cas d'échec ou de pool insuffisant) — filtre les tracks sans preview active ; planification via `DailySchedule.NextUtcHour` + `DelayUntilAsync` (attente sur cible d'horloge murale — un réveil anticipé de `Task.Delay` ne saute plus de jour) |
-| `ChallengeGeneration` (refresh) | BackgroundService | `RefreshPreviewStatusService` à 23h UTC (avant la génération de minuit) — re-vérifie `Track.HasPreview` via `PreviewStatusRefresher` (lots de 10 espacés de 1,5 s, flag jamais modifié sur un échec Deezer) |
+| `ChallengeGeneration` (refresh) | BackgroundService | `RefreshPreviewStatusService` à 23h UTC (avant la génération de minuit) — re-vérifie `Track.HasPreview` des morceaux éligibles (jamais utilisés ou sortis du cooldown) via `PreviewStatusRefresher` (lots de 10 espacés de 1,5 s, flag jamais modifié sur un échec Deezer) |
 
 **Nettoyage des titres au-delà de l'autocomplete** — `TextNormalizationHelpers.CleanDisplayTitle` (`Common/Text/`, extrait de l'ancien `SearchEndpoint.CleanTitle`) retire les parenthèses/crochets d'un titre partout où il est révélé après coup, pas seulement dans l'autocomplete : `Sessions/SubmitAnswer` (`CorrectTitle`), `Sessions/StartSession` (`ResumedAnswer.CorrectTitle` du chemin de reprise), `Stats/Today` (`TrackStat.Title`), `Admin/Stats/GetChallengeStats` (`TrackStatsDto.Title` — code déplacé depuis `GetAdminStats` lors du split du 2026-08-29), `Admin/Challenges/GetChallenges` (`TrackDto.Title` — corrigé après coup le même jour : le premier passage avait couvert les stats par défi mais oublié que le même onglet Défis admin lit aussi cet endpoint pour sa section Historique). `Track.Title` en base reste brut (nécessaire pour le re-sync Deezer), tout comme la recherche admin.
 

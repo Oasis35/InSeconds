@@ -52,6 +52,9 @@ src/front/InSeconds.Client/
 │   │   │   │   └── guess-time-chart.component.ts # histogramme temps de réponse réutilisable
 │   │   │   ├── track-results-list/
 │   │   │   │   └── track-results-list.component.ts # liste de morceaux + pop-up histogramme (récap + déjà joué)
+│   │   │   ├── streak-sheet/                   # panneau bas du gel de série (3 variantes)
+│   │   │   ├── freeze-cells/                   # cases de gels (pleines/vides)
+│   │   │   ├── streak-icon/                    # icône flamme/gel de la série
 │   │   │   └── deezer-badge.component.ts       # badge "À écouter sur Deezer" (fichier plat, sans sous-dossier)
 │   │   ├── features/
 │   │   │   ├── admin/
@@ -63,7 +66,8 @@ src/front/InSeconds.Client/
 │   │   │   │   │   ├── admin-api.service.ts    # 5 rxResource (pool, stats, challenge-stats, challenges, search) — chargement paresseux par onglet
 │   │   │   │   │   ├── admin-stats.service.ts  # état dashboard + onglet Défis (navigation, formatage dates, …)
 │   │   │   │   │   ├── admin-pool.service.ts   # filtres/pagination/sélection pool, panneau de recherche/ajout, modale suppression
-│   │   │   │   │   └── admin-actions.service.ts # generateToday(), refreshPreviews(), updateTrackCooldownDays()
+│   │   │   │   │   ├── admin-actions.service.ts # generateToday(), refreshPreviews(), updateTrackCooldownDays()
+│   │   │   │   │   └── pool-audio-preview.service.ts # lecteur preview 30s partagé (panneau de recherche + modale d'écoute)
 │   │   │   │   └── components/
 │   │   │   │       ├── admin-login/
 │   │   │   │       ├── dashboard-tab/
@@ -71,18 +75,24 @@ src/front/InSeconds.Client/
 │   │   │   │       ├── challenges-tab/
 │   │   │   │       ├── actions-tab/
 │   │   │   │       ├── pool-search-panel/
-│   │   │   │       └── delete-track-modal/
+│   │   │   │       ├── delete-track-modal/
+│   │   │   │       └── preview-track-modal/
 │   │   │   ├── game/
-│   │   │   │   ├── game.component.ts           # orchestration session — ~370 lignes
-│   │   │   │   ├── game.component.html         # ~110 lignes (délègue aux sous-composants)
+│   │   │   │   ├── game.component.ts           # orchestration session — ~530 lignes
+│   │   │   │   ├── game.component.html         # ~245 lignes (délègue aux sous-composants)
 │   │   │   │   ├── services/
 │   │   │   │   │   ├── game-facade.service.ts      # façade métier (fournie par GameComponent, pas root)
-│   │   │   │   │   └── deezer-autocomplete.service.ts  # autocomplete Deezer (providedIn: root, stateless)
+│   │   │   │   │   ├── deezer-autocomplete.service.ts  # autocomplete Deezer (providedIn: root, stateless)
+│   │   │   │   │   ├── answer-search.service.ts    # saisie + suggestions du blind round
+│   │   │   │   │   ├── answer-submission.service.ts # résultat affiché (score animé, toast erreur réseau)
+│   │   │   │   │   ├── hint.service.ts             # indices (déblocage + appel /hint)
+│   │   │   │   │   ├── game-share.service.ts       # texte de partage ✅/❌ + copie presse-papier
+│   │   │   │   │   └── leave-confirmation.service.ts # confirmation de sortie en cours de partie
 │   │   │   │   ├── blind-round/
-│   │   │   │   │   └── blind-round.component.ts  # choix palier + lecture + saisie + polish UX
+│   │   │   │   │   └── blind-round.component.ts  # lecture auto + « écouter plus » + indices + saisie + polish UX
 │   │   │   │   ├── components/
 │   │   │   │   │   ├── game-header/            # en-tête (titre + gélule série/gels + score + barre progression + avatar)
-│   │   │   │   │   └── game-footer/            # pied de page (liens admin/confidentialité/connexion + langue FR/EN)
+│   │   │   │   │   └── game-footer/            # pied de page (liens admin/confidentialité + langue FR/EN)
 │   │   │   │   └── screens/
 │   │   │   │       ├── welcome-screen/
 │   │   │   │       ├── resume-screen/
@@ -135,7 +145,7 @@ Toutes les couleurs sont centralisées dans `styles.scss` sous `:root` et utilis
 | `--bg-surface-2` | `#1a1a2e` | placeholder pochettes |
 | `--bg-inactive` | `#1e1e2e` | boutons secondaires, barres vides |
 | `--bg-primary` | `#6366f1` | boutons primaires, accent indigo |
-| `--bg-primary-dk` | `#312e81` | fond indigo foncé (tooltip paliers) |
+| `--bg-primary-dk` | `#312e81` | fond indigo foncé (surbrillance autocomplete) |
 | `--bg-danger` | `#ef4444` | bouton abandon |
 | `--bg-warn` | `#92400e` | fond avertissement |
 | `--text-hi` | `#f8fafc` | titres, valeurs importantes |
@@ -202,7 +212,7 @@ readonly hintUnlockDurations = signal<number[]>([5, 10]);
 
 ### `AudioPlayerService`
 
-Modèle "durée choisie" : l'utilisateur choisit le palier AVANT d'écouter, l'audio joue exactement cette durée puis s'arrête automatiquement. Prolongations libres et chaînables, sans limite de nombre, jusqu'au dernier palier configuré.
+Modèle « palier courant » : `BlindRoundComponent` lance la lecture automatiquement au premier palier, l'audio joue exactement cette durée puis s'arrête automatiquement. Prolongations libres et chaînables, sans limite de nombre, jusqu'au dernier palier configuré.
 
 Signals exposés : `state` (`idle | loading | playing | finished`), `listenedSeconds`, `extended`, `progress` (0→1, mis à jour via `requestAnimationFrame` pour la barre de progression live).
 
@@ -274,7 +284,7 @@ Orchestre une session complète. États : `loading` → `welcome` → `playing` 
 
 Délègue l'affichage à des sous-composants :
 - **`GameHeaderComponent`** : titre InSeconds + gélule série/gels cliquable (côté gauche, 4 états `on`/`protected`/`guest`/`lost`, ouvre `StreakSheetComponent`) ou score en cours + barre de progression + bouton abandon + avatar profil en silhouette SVG (côté droit, compte lié hors partie, `routerLink="/profile"`)
-- **`GameFooterComponent`** : liens admin / confidentialité + bouton langue FR/EN + icône de connexion discrète (guest → `/login`, compte lié → `/profile` — simple navigation depuis 2026-09, plus de pop-up "Compte connecté" ici)
+- **`GameFooterComponent`** : liens admin / confidentialité + bouton langue FR/EN (plus d'icône de connexion : l'accès au profil passe par l'avatar du header, la connexion par les boutons de l'accueil et de la reprise)
 - **`WelcomeScreenComponent`** : état `welcome`. Guest → bouton outline "Se connecter / Créer un compte" (`/login`) ; compte lié → lien "Connecté comme {{pseudo}}" (`/profile`)
 - **`ResumeScreenComponent`** : état `resume_prompt` (avec confirmation abandon inline). Guest → bouton outline "Ne plus perdre mes parties" (`/login`)
 - **`StatusScreenComponent`** : états `no_challenge` + `error` (inputs `titleKey`/`bodyKey` i18n)
@@ -289,7 +299,7 @@ Délègue l'affichage à des sous-composants :
 
 ### `ProfileComponent` (2026-09, email éditable ajouté le 2026-09-14)
 
-Écran `/profile` (`features/profile/`), destination de l'avatar header et de l'icône footer pour un compte lié. `ngOnInit()` redirige un guest vers `/login`. Pseudo éditable (`playerSession.updatePseudo()`, mêmes règles/statuts que le choix de pseudo à la connexion — `taken`/`tooShort`/`saving`/`saved`), email éditable avec la même forme de state machine (`emailDraft`/`emailStatus` : `idle`/`sending`/`sent`/`sameEmail`/`taken`/`error`, `playerSession.requestEmailChange()`) — envoie un email de confirmation à la nouvelle adresse, ne modifie **pas** le signal `email` tant que le lien n'a pas été confirmé (cf. `ConfirmEmailComponent` ci-dessous), carte streak/parties jouées (`playerSession.currentStreak`/`gamesPlayed`), déconnexion via `ConfirmSheetComponent` (logique reprise de l'ancien `GameFooterComponent.confirmLogout()`).
+Écran `/profile` (`features/profile/`), destination de l'avatar header pour un compte lié. `ngOnInit()` redirige un guest vers `/login`. Pseudo éditable (`playerSession.updatePseudo()`, mêmes règles/statuts que le choix de pseudo à la connexion — `taken`/`tooShort`/`saving`/`saved`), email éditable avec la même forme de state machine (`emailDraft`/`emailStatus` : `idle`/`sending`/`sent`/`sameEmail`/`taken`/`error`, `playerSession.requestEmailChange()`) — envoie un email de confirmation à la nouvelle adresse, ne modifie **pas** le signal `email` tant que le lien n'a pas été confirmé (cf. `ConfirmEmailComponent` ci-dessous), carte streak/parties jouées (`playerSession.currentStreak`/`gamesPlayed`), déconnexion via `ConfirmSheetComponent` (logique reprise de l'ancien `GameFooterComponent.confirmLogout()`).
 
 ### `ConfirmEmailComponent` (2026-09-14)
 
@@ -298,10 +308,10 @@ Délègue l'affichage à des sous-composants :
 ### `BlindRoundComponent`
 
 Layout B — deux zones toujours présentes :
-- **Zone player** : paliers au départ, puis bouton Replay + "Écouter jusqu'à Xs" + barre de progression live + chrono
+- **Zone player** : lecture lancée automatiquement au premier palier, puis bouton Replay + "Écouter jusqu'à Xs" + barre de progression live + chrono
 - **Zone saisie** : champ unique `"Artiste - Titre"` avec dropdown autocomplete Deezer (debounce 300ms), navigable au clavier (↓/↑/Entrée/Échap, `onSearchKeydown` + signal `highlightedIndex`), bouton Valider
 
-Polish UX : `isSubmitting` (loading sur Valider), bouton `✕` lié à `(mousedown)`, tooltip paliers (`scoreForDuration`), score count-up (`countUp` rAF), toast erreur réseau (4s).
+Polish UX : `isSubmitting` (loading sur Valider), bouton `✕` lié à `(mousedown)`, boutons d'indice (via `HintService`), score count-up (`countUp` rAF), toast erreur réseau (4s).
 
 `setResult(r, isNetworkError?)` — méthode publique appelée depuis `GameComponent` via `viewChild`.
 
@@ -341,7 +351,7 @@ Page confidentialité (`features/privacy/`), route lazy `/privacy` + alias `/con
 
 ### `AdminComponent`
 
-Shell ~45 lignes. Fournit les 7 services via `providers: [AdminHttpService, AdminStateService, AdminApiService, AdminStatsService, AdminPoolService, AdminActionsService, PoolAudioPreviewService]` au niveau du composant (pas `root`). Ordre des onglets : **Dashboard, Défis, Pool, Actions, Emails autorisés**. L'onglet actif vit dans `AdminStateService` (`activeTab` + `setActiveTab`), pas dans le shell — **persisté dans l'URL** (`?tab=`, 2026-09-02) : `setActiveTab` synchronise `router.navigate([], {queryParams:{tab}, queryParamsHandling:'merge', replaceUrl:true})`, et `activeTab` est initialisé au constructeur depuis `route.snapshot.queryParamMap.get('tab')` — un F5 sur `/admin?tab=pool` rouvre directement l'onglet Pool (et le marque visité, donc son chargement paresseux fonctionne dès le F5) au lieu de retomber sur Dashboard.
+Shell ~45 lignes. Fournit les 7 services via `providers: [AdminHttpService, AdminStateService, AdminApiService, AdminStatsService, AdminPoolService, AdminActionsService, PoolAudioPreviewService]` au niveau du composant (pas `root`). Ordre des onglets : **Dashboard, Défis, Pool, Actions**. L'onglet actif vit dans `AdminStateService` (`activeTab` + `setActiveTab`), pas dans le shell — **persisté dans l'URL** (`?tab=`, 2026-09-02) : `setActiveTab` synchronise `router.navigate([], {queryParams:{tab}, queryParamsHandling:'merge', replaceUrl:true})`, et `activeTab` est initialisé au constructeur depuis `route.snapshot.queryParamMap.get('tab')` — un F5 sur `/admin?tab=pool` rouvre directement l'onglet Pool (et le marque visité, donc son chargement paresseux fonctionne dès le F5) au lieu de retomber sur Dashboard.
 
 **Chargement paresseux par onglet** (2026-08-29) : à l'ouverture de l'admin, seul `GET /api/admin/stats` (Dashboard, léger) part. Les `rxResource` de Pool (`/api/admin/tracks`) et Défis (`/api/admin/challenge-stats` + `/api/admin/challenges`) restent `idle` (`params → undefined`) tant que `http.authenticated()` est faux **ou** que l'onglet n'a pas été ouvert (`AdminStateService.hasVisited(tab)`, `Set` `visitedTabs` init `['dashboard']`). Un onglet reste « visité » toute la session → données chargées une fois puis cachées par le `rxResource`. Corollaire UI : les badges de compteur des onglets Pool/Défis n'affichent leur `(N)` qu'une fois l'onglet ouvert (`admin.tabs.poolPlain`/`challengesPlain` sinon).
 
@@ -349,20 +359,20 @@ Délègue à 8 sous-composants :
 
 - **`AdminLoginComponent`** : simple écran d'état, pas de formulaire — injecte `PlayerSessionService.isLinked` : pas connecté → invite à se connecter via `/login` ; connecté mais pas admin → « Accès refusé » + retour au jeu
 - **`DashboardTabComponent`** : injecte `AdminStatsService` — sélecteur de jour + KPIs, activité 30 jours, répartition joueurs
-- **`PoolTabComponent`** : injecte `AdminPoolService`, contient `AddTrackModalComponent` + `DeleteTrackModalComponent` + `PreviewTrackModalComponent` ; affiche l'**autonomie du pool** (« X jours de défis restants ») en ligne à côté du compteur disponible/utilisé
+- **`PoolTabComponent`** : injecte `AdminPoolService`, contient `PoolSearchPanelComponent` + `DeleteTrackModalComponent` + `PreviewTrackModalComponent` ; affiche l'**autonomie du pool** (« X jours de défis restants ») en ligne à côté du compteur disponible/utilisé
 - **`ChallengesTabComponent`** : injecte `AdminStatsService` — **stats par défi** (`challengeStats()` = `GET /api/admin/challenge-stats`, chargé à l'ouverture de l'onglet ; accordéon médiane/min/max, taux artiste/titre par morceau ; guard `challengeStatsLoading()` → spinner) + historique des défis (`challenges()` = `GET /api/admin/challenges`), avec un navigateur ‹ Mois Année › unique en haut de l'onglet. Injecte aussi `PlayerSessionService`/`ClipboardService` directement (`core/`) pour afficher, sous chaque défi, un chip par joueur (`c.players`, toutes sessions) affichant `p.pseudo ?? shortId(p.playerId)` (pseudo pour un compte lié, ID tronqué en fallback pour un guest), cliquable pour copier l'ID complet, avec surbrillance + libellé « toi » automatiques si l'ID correspond au navigateur courant — repérer les joueurs qui reviennent
 - **`ActionsTabComponent`** : injecte `AdminActionsService`
-- **`AddTrackModalComponent`** : injecte `AdminPoolService` + `PoolAudioPreviewService` (lecteur preview 30s)
+- **`PoolSearchPanelComponent`** : panneau de recherche/ajout intégré en haut de l'onglet Pool (remplace l'ancienne `AddTrackModalComponent` le 2026-09-16), injecte `AdminPoolService` + `PoolAudioPreviewService` (lecteur preview 30s)
 - **`DeleteTrackModalComponent`** : injecte `AdminPoolService` (seul, pas d'audio)
 - **`PreviewTrackModalComponent`** : injecte `AdminPoolService` + `PoolAudioPreviewService` — modale d'écoute d'une ligne du pool (recherche Deezer par artiste/titre, joue la preview trouvée)
 
 Services admin (`features/admin/services/`) :
 - `AdminHttpService` — HTTP brut + signal `authenticated` + `logout`/`checkAuth` (plus de `login`, cf. `AdminLoginComponent` — `logout()` délègue à `PlayerSessionService.logout()`)
-- `AdminStateService` — signals partagés (`selectedDay`, `poolSearchQuery`, `poolReloadTrigger`, `challengesReloadTrigger`, `allowedEmailsReloadTrigger`) + pilotage des onglets (`activeTab`, `setActiveTab`, `hasVisited` sur le `Set` privé `visitedTabs`) ; injecte `ActivatedRoute`/`Router` pour synchroniser `activeTab` avec `?tab=` dans l'URL (restauration au F5, `replaceUrl` pour ne pas empiler l'historique)
-- `AdminApiService` — 6 rxResource (`poolSearch`, `poolTracks`, `stats`, `challengeStats`, `challenges`, `allowedEmails`) + computed accessors ; délègue HTTP à `AdminHttpService`, état à `AdminStateService`. **Chargement paresseux** : `poolTracks`/`challengeStats`/`challenges`/`allowedEmails` gardés sur `authenticated() && hasVisited(<onglet>)` (`params` retourne `undefined` tant que la condition n'est pas remplie, ce qui laisse la resource idle plutôt que de partir en 401 avant connexion) ; `stats` (Dashboard) gardé sur `authenticated()` seul. `challengeStats` et `challenges` partagent le trigger `challengesReloadTrigger` → `reloadAll()` / une génération de défi rafraîchit les deux
+- `AdminStateService` — signals partagés (`selectedDay`, `poolSearchQuery`, `poolReloadTrigger`, `challengesReloadTrigger`) + pilotage des onglets (`activeTab`, `setActiveTab`, `hasVisited` sur le `Set` privé `visitedTabs`) ; injecte `ActivatedRoute`/`Router` pour synchroniser `activeTab` avec `?tab=` dans l'URL (restauration au F5, `replaceUrl` pour ne pas empiler l'historique)
+- `AdminApiService` — 5 rxResource (`poolSearch`, `poolTracks`, `stats`, `challengeStats`, `challenges`) + computed accessors ; délègue HTTP à `AdminHttpService`, état à `AdminStateService`. **Chargement paresseux** : `poolTracks`/`challengeStats`/`challenges` gardés sur `authenticated() && hasVisited(<onglet>)` (`params` retourne `undefined` tant que la condition n'est pas remplie, ce qui laisse la resource idle plutôt que de partir en 401 avant connexion) ; `stats` (Dashboard) gardé sur `authenticated()` seul. `challengeStats` et `challenges` partagent le trigger `challengesReloadTrigger` → `reloadAll()` / une génération de défi rafraîchit les deux
 - `AdminStatsService` — état dashboard + onglet Défis (navigation jour/mois, formatage dates, accordéon stats par défi) ; `challengeMonths`/`challengesForMonth` dérivent de `challengeStats()` (Stats par défi) et `challenges()` (Historique)
 - `AdminPoolService` — filtres, pagination, sélection multiple, état modales add/delete/preview ; computed `poolDaysRemaining` = `floor(disponibles avec preview ÷ tracksPerChallenge)` (mêmes critères que `DailyChallengeGenerator`, calculé depuis `poolTracks` déjà chargé + signal `tracksPerChallenge` du `SettingsService` — aucun appel serveur), rouge < 3 jours, orange < 7, vert sinon. Le lecteur audio (play/pause/progress) n'est plus dans ce service (cf. `PoolAudioPreviewService`) — il n'appelle plus que `.stop()` aux ouvertures/fermetures de modale
-- `PoolAudioPreviewService` (2026-09-14) — lecteur audio partagé (`playing`/`progress` signals, `toggle(url)`/`stop()`), extrait d'`AdminPoolService` pour que les modales n'aient plus à dépendre de toute sa surface juste pour lire une preview 30s. Injecté directement par `AddTrackModalComponent`/`PreviewTrackModalComponent`
+- `PoolAudioPreviewService` (2026-09-14) — lecteur audio partagé (`playing`/`progress` signals, `toggle(url)`/`stop()`), extrait d'`AdminPoolService` pour que les modales n'aient plus à dépendre de toute sa surface juste pour lire une preview 30s. Injecté directement par `PoolSearchPanelComponent`/`PreviewTrackModalComponent`
 - `AdminActionsService` — `generateToday()`, `reset()`, `refreshPreviews()` (re-check des previews Deezer : affiche « X vérifiés, Y corrigés, Z échecs » puis recharge le pool)
 
 ## Intercepteurs
