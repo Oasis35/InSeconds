@@ -16,8 +16,6 @@ export class AdminActionsService {
   readonly generateStatus = signal<'idle' | 'loading' | 'success' | 'already' | 'pool_insufficient' | 'error'>('idle');
   readonly refreshPreviewsStatus = signal<SimpleAsyncStatus>('idle');
   readonly refreshPreviewsResult = signal<RefreshPreviewsResult | null>(null);
-  readonly refreshReleaseYearsStatus = signal<SimpleAsyncStatus>('idle');
-  readonly refreshReleaseYearsResult = signal<RefreshPreviewsResult | null>(null);
   readonly trackCooldownDaysInput = signal<number | null>(null);
   readonly updateCooldownStatus = signal<SimpleAsyncStatus>('idle');
   private generateStatusTimer: ReturnType<typeof setTimeout> | null = null;
@@ -52,18 +50,6 @@ export class AdminActionsService {
         this.api.reloadPool();
       },
       error: () => this.refreshPreviewsStatus.set('error'),
-    });
-  }
-
-  refreshReleaseYears(): void {
-    this.refreshReleaseYearsStatus.set('loading');
-    this.refreshReleaseYearsResult.set(null);
-    this.api.refreshReleaseYears().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: res => {
-        this.refreshReleaseYearsResult.set(res);
-        this.refreshReleaseYearsStatus.set('success');
-      },
-      error: () => this.refreshReleaseYearsStatus.set('error'),
     });
   }
 

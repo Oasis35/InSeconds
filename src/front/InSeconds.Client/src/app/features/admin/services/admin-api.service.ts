@@ -97,7 +97,6 @@ export class AdminApiService {
 
   generateToday() { return this.http.generateToday(); }
   refreshPreviews() { return this.http.refreshPreviews(); }
-  refreshReleaseYears() { return this.http.refreshReleaseYears(); }
   updateTrackCooldownDays(days: number) { return this.http.updateTrackCooldownDays(days); }
   addTrack(deezerTrackId: number) { return this.http.addTrack(deezerTrackId); }
   deleteTrack(id: number) { return this.http.deleteTrack(id); }
