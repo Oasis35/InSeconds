@@ -20,6 +20,7 @@ function makeAdminApiStub() {
     poolSearchQuery,
     addTrack: jasmine.createSpy('addTrack').and.returnValue(of(void 0)),
     reloadPool: jasmine.createSpy('reloadPool'),
+    renameTrack: jasmine.createSpy('renameTrack').and.returnValue(of({})),
     _setPoolTracks: (v: PoolTracksResponse) => poolTracks.set(v),
   };
 }
@@ -185,6 +186,79 @@ describe('AdminPoolService', () => {
         expect(service.filteredTracks().map(t => t.id)).toEqual(expectedIds);
       });
     }
+  });
+
+  describe('morceaux utilisés (sélection / suppression)', () => {
+    beforeEach(() => {
+      apiStub._setPoolTracks({ available: [makePoolTrack(1, true)], used: [makePoolTrack(2, false)] });
+    });
+
+    it('garde l\'état de preview d\'un morceau utilisé', () => {
+      const used = service.allTracks().find(t => t.id === 2);
+      expect(used?.hasPreview).toBeFalse();
+    });
+
+    it('selectionHasUsedTrack détecte un morceau utilisé dans la sélection', () => {
+      service.toggleSelection(1);
+      expect(service.selectionHasUsedTrack()).toBeFalse();
+      service.toggleSelection(2);
+      expect(service.selectionHasUsedTrack()).toBeTrue();
+    });
+
+    it('openDeleteModal(null) ne s\'ouvre pas si la sélection contient un morceau utilisé', () => {
+      service.toggleSelection(1);
+      service.toggleSelection(2);
+      service.openDeleteModal(null);
+      expect(service.deleteModalOpen()).toBeFalse();
+    });
+
+    it('openDeleteModal(null) s\'ouvre avec les seuls morceaux disponibles sélectionnés', () => {
+      service.toggleSelection(1);
+      service.openDeleteModal(null);
+      expect(service.deleteModalOpen()).toBeTrue();
+      expect(service.deleteModalTracks().map(t => t.id)).toEqual([1]);
+    });
+  });
+
+  describe('modification artiste / titre', () => {
+    const track = { ...makePoolTrack(5, true), artist: 'Etienne Daho', title: 'Tombe pour la France' };
+
+    it('pré-remplit les champs et désactive « Enregistrer » tant que rien ne change', () => {
+      service.openEditModal(track);
+      expect(service.editArtist()).toBe('Etienne Daho');
+      expect(service.editSaveDisabled()).toBeTrue();
+
+      service.editArtist.set('Étienne Daho');
+      expect(service.editSaveDisabled()).toBeFalse();
+
+      service.editTitle.set('   ');
+      expect(service.editSaveDisabled()).toBeTrue();
+    });
+
+    it('ne s\'ouvre pas pour un morceau verrouillé (partie en cours)', () => {
+      service.openEditModal({ ...track, renameLocked: true });
+      expect(service.editModalTrack()).toBeNull();
+    });
+
+    it('envoie les valeurs nettoyées, ferme la modale et recharge le pool', () => {
+      service.openEditModal(track);
+      service.editArtist.set('  Étienne Daho ');
+      service.confirmEdit();
+
+      expect(apiStub.renameTrack).toHaveBeenCalledWith(5, 'Étienne Daho', 'Tombe pour la France');
+      expect(service.editModalTrack()).toBeNull();
+      expect(apiStub.reloadPool).toHaveBeenCalled();
+    });
+
+    it('passe en « verrouillé » sur un 409 et garde la modale ouverte', () => {
+      apiStub.renameTrack.and.returnValue(throwError(() => ({ status: 409 })));
+      service.openEditModal(track);
+      service.editTitle.set('Tombé pour la France');
+      service.confirmEdit();
+
+      expect(service.editStatus()).toBe('locked');
+      expect(service.editModalTrack()).not.toBeNull();
+    });
   });
 
   describe('existingDeezerTrackIds', () => {

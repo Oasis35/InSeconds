@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using InSeconds.Api.Features.Admin.Tracks.AddTrack;
 using InSeconds.Api.Features.Admin.Tracks.GetTracks;
 using InSeconds.Api.Features.Admin.Tracks.UpdateTrack;
+using InSeconds.Api.Features.Admin.Tracks.RenameTrack;
 using InSeconds.Api.Features.Admin.Challenges.GetChallenges;
 using InSeconds.Api.Features.Admin.Stats.GetAdminStats;
 using InSeconds.Api.Features.Admin.Stats.GetChallengeStats;
@@ -655,6 +656,16 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
         return _client.SendAsync(req);
     }
 
+    private Task<HttpResponseMessage> AdminPatchAsync(string url, object body)
+    {
+        var req = new HttpRequestMessage(HttpMethod.Patch, url)
+        {
+            Content = JsonContent.Create(body)
+        };
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "admin-token");
+        return _client.SendAsync(req);
+    }
+
     // ── DeleteTrack ───────────────────────────────────────────────────────────
 
     [Fact]
@@ -760,6 +771,97 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
     public async Task UpdateTrack_TrackInexistant_Retourne404()
     {
         var resp = await AdminPutAsync("/api/admin/tracks/99999", new { DeezerTrackId = FakeDeezerTrackId });
+
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+    }
+
+    // ── RenameTrack ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task RenameTrack_SansAuth_Retourne401()
+    {
+        var resp = await _client.PatchAsJsonAsync("/api/admin/tracks/1", new { Artist = "A", Title = "T" });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task RenameTrack_TrackUtiliseHorsDefiDuJour_Retourne200EtRenomme()
+    {
+        var tracks = await (await AdminGetAsync("/api/admin/tracks")).Content.ReadFromJsonAsync<GetTracksResponse>();
+        var track = tracks!.Used.First(t => !t.RenameLocked);
+
+        var resp = await AdminPatchAsync($"/api/admin/tracks/{track.Id}", new { Artist = "  Nouvel Artiste ", Title = " Nouveau Titre  " });
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<RenameTrackResponse>();
+        Assert.Equal("Nouvel Artiste", body!.Artist);
+        Assert.Equal("Nouveau Titre", body.Title);
+
+        var after = await (await AdminGetAsync("/api/admin/tracks")).Content.ReadFromJsonAsync<GetTracksResponse>();
+        var renamed = Assert.Single(after!.Used, t => t.Id == track.Id);
+        Assert.Equal("Nouvel Artiste", renamed.Artist);
+        Assert.Equal("Nouveau Titre", renamed.Title);
+        Assert.Equal(track.DeezerTrackId, renamed.DeezerTrackId);
+    }
+
+    [Fact]
+    public async Task RenameTrack_TrackDuDefiDuJour_Retourne409()
+    {
+        var tracks = await (await AdminGetAsync("/api/admin/tracks")).Content.ReadFromJsonAsync<GetTracksResponse>();
+        var todayTrack = tracks!.Used.First(t => t.RenameLocked);
+
+        var resp = await AdminPatchAsync($"/api/admin/tracks/{todayTrack.Id}", new { Artist = "X", Title = "Y" });
+
+        Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task RenameTrack_DefiDeLaVeilleAvecPartieEnCours_Retourne409PuisLibereApresExpiration()
+    {
+        // Une partie commencée hier avant minuit accepte encore des réponses : renommer un de
+        // ses morceaux la corrigerait avec deux noms différents.
+        var player = factory.CreateClient();
+        var start = await (await player.PostAsync("/api/sessions", null)).Content.ReadFromJsonAsync<StartSessionResponse>();
+        var yesterday = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1));
+        int yesterdayTrackId;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var challenge = await db.DailyChallenges.SingleAsync(c => c.Date == yesterday);
+            var gs = await db.GameSessions.SingleAsync(s => s.Id == start!.SessionId);
+            gs.RelocateToChallengeForTesting(challenge.Id);
+            await db.SaveChangesAsync();
+            yesterdayTrackId = await db.DailyChallengeTracks
+                .Where(d => d.DailyChallengeId == challenge.Id).Select(d => d.TrackId).FirstAsync();
+        }
+
+        var tracks = await (await AdminGetAsync("/api/admin/tracks")).Content.ReadFromJsonAsync<GetTracksResponse>();
+        Assert.True(tracks!.Used.Single(t => t.Id == yesterdayTrackId).RenameLocked);
+        var locked = await AdminPatchAsync($"/api/admin/tracks/{yesterdayTrackId}", new { Artist = "X", Title = "Y" });
+        Assert.Equal(HttpStatusCode.Conflict, locked.StatusCode);
+
+        // Le joueur revient : l'expiry paresseuse bascule la partie d'hier en Expired, le verrou tombe.
+        (await player.PostAsync("/api/sessions", null)).EnsureSuccessStatusCode();
+        var unlocked = await AdminPatchAsync($"/api/admin/tracks/{yesterdayTrackId}", new { Artist = "X", Title = "Y" });
+        Assert.Equal(HttpStatusCode.OK, unlocked.StatusCode);
+    }
+
+    [Fact]
+    public async Task RenameTrack_ChampVide_Retourne400()
+    {
+        var tracks = await (await AdminGetAsync("/api/admin/tracks")).Content.ReadFromJsonAsync<GetTracksResponse>();
+        var track = tracks!.Available.First();
+
+        var resp = await AdminPatchAsync($"/api/admin/tracks/{track.Id}", new { Artist = "   ", Title = "Titre" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task RenameTrack_TrackInexistant_Retourne404()
+    {
+        var resp = await AdminPatchAsync("/api/admin/tracks/99999", new { Artist = "A", Title = "T" });
 
         Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
     }

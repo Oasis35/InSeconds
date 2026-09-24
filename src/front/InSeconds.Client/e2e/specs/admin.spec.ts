@@ -74,9 +74,9 @@ test.describe('Admin — pool', () => {
     await admin.login();
     await page.getByRole('button', { name: /Pool/ }).click();
     await admin.poolSearchInput().fill('Eminem');
-    await expect(page.getByRole('cell', { name: 'Eminem' })).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Eminem', exact: true })).toBeVisible();
     // Les autres artistes ne doivent pas apparaître
-    await expect(page.getByRole('cell', { name: 'Coldplay' })).not.toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Coldplay', exact: true })).not.toBeVisible();
   });
 
   test('filtre preview "Manquante" affiche les 5 morceaux sans preview', async ({ page }) => {
@@ -154,6 +154,49 @@ test.describe('Admin — pool', () => {
     await expect(admin.deleteModal()).not.toBeVisible();
     // Le morceau est toujours là
     await expect(page.getByRole('cell', { name: 'Sabrina Carpenter', exact: true })).toBeVisible();
+  });
+
+  test('un morceau déjà utilisé reste sélectionnable mais ne peut pas être supprimé', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('button', { name: /Pool/ }).click();
+
+    // Coldplay — Yellow fait partie du défi J-2 du seed.
+    await admin.poolSearchInput().fill('Coldplay');
+    const row = admin.poolRow('Coldplay');
+    await expect(row.getByRole('button', { name: '🗑' })).toBeDisabled();
+    await expect(row.getByRole('button', { name: '▶' })).toBeEnabled();
+
+    await row.getByRole('checkbox').check();
+    await expect(page.getByRole('button', { name: 'Supprimer (1)' })).toBeDisabled();
+  });
+
+  test('renomme un morceau déjà utilisé, bloque ceux du défi du jour', async ({ page, api }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('button', { name: /Pool/ }).click();
+
+    // Eminem est dans le défi du jour : ✎ désactivé.
+    await admin.poolSearchInput().fill('Eminem');
+    await expect(admin.poolRow('Eminem').getByRole('button', { name: '✎' })).toBeDisabled();
+
+    // Coldplay (défi J-2) : renommable. Échap referme la modale sans rien changer.
+    await admin.poolSearchInput().fill('Coldplay');
+    await admin.poolRow('Coldplay').getByRole('button', { name: '✎' }).click();
+    await expect(admin.editModalTitle()).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(admin.editModalTitle()).not.toBeVisible();
+
+    await admin.poolRow('Coldplay').getByRole('button', { name: '✎' }).click();
+    await admin.editTitleInput().fill('Yellow (Live)');
+    await admin.editSaveButton().click();
+    await expect(admin.editModalTitle()).not.toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Yellow (Live)', exact: true })).toBeVisible();
+
+    // Remet le seed d'origine pour les specs suivants.
+    await api.reseed();
   });
 
   test('affiche les colonnes cooldown avec les bonnes valeurs', async ({ page }) => {
@@ -434,5 +477,48 @@ test.describe('Admin — indicateur joueurs / ID navigateur', () => {
 
     await page.keyboard.press('Escape');
     await expect(chart).toBeHidden();
+  });
+});
+
+test.describe('Admin — joueurs', () => {
+  test.beforeEach(async ({ api }) => {
+    await api.reset();
+  });
+
+  test('liste les comptes inscrits et déplie l\'historique d\'un joueur', async ({ page, api }) => {
+    await page.clock.install({ time: Date.now() });
+
+    // Compte lié (magic link) qui termine le défi du jour.
+    const email = 'joueurs-tab@e2e.test';
+    await page.goto('/login');
+    await page.getByPlaceholder('ton@email.com').fill(email);
+    await page.getByRole('button', { name: 'Recevoir le lien' }).click();
+    await expect(page.getByText('Lien envoyé.')).toBeVisible();
+    const parsed = new URL(await api.getLastMagicLinkUrl(email));
+    await page.goto(parsed.pathname + parsed.search);
+    await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
+    await page.getByPlaceholder('Ton pseudo').fill('JoueurTab');
+    await page.getByRole('button', { name: 'Valider' }).click();
+
+    const game = new GamePage(page);
+    await game.playFullGame(new BlindRoundPage(page));
+
+    // login-as-admin promeut le compte courant : il apparaît donc lui-même dans la liste.
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await admin.clickTab('Joueurs');
+
+    const row = page.getByTestId('registered-player').filter({ hasText: 'JoueurTab' });
+    await expect(row).toContainText(email);
+    await expect(row).toContainText('Admin');
+
+    await row.getByRole('button', { name: /JoueurTab/ }).click();
+    const history = page.getByTestId('player-history');
+    await expect(history).toContainText('Terminée');
+
+    // Re-cliquer replie la ligne.
+    await row.getByRole('button', { name: /JoueurTab/ }).click();
+    await expect(history).not.toBeVisible();
   });
 });

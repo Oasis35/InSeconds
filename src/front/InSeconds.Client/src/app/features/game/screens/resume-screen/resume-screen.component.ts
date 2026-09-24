@@ -8,6 +8,7 @@ import { PlayerSessionService } from '../../../../core/services/player-session.s
   imports: [TranslatePipe, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './resume-screen.component.html',
+  host: { class: 'flex-1 flex flex-col' },
 })
 export class ResumeScreenComponent {
   protected readonly playerSession = inject(PlayerSessionService);

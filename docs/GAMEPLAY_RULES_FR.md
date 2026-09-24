@@ -72,8 +72,12 @@ Moins on écoute, plus on marque. Le score de base est un **lookup exact** du pa
   | Révèle indice 1 à 5s, prolonge à 10s, révèle aussi indice 2, répond à 10s | 10s | niveau 2 (max) | 100 × 0.40 = 40 |
   | Prolonge direct jusqu'à 10s sans jamais cliquer indice 1, révèle indice 2 | 10s | niveau 2 | 100 × 0.40 = 40 |
 
-- **`Track.ReleaseYear` absent** (pool pas encore backfillé, cf. bouton admin "Re-vérifier les années de sortie") : l'indice niveau 1 renvoie `null`, le front masque simplement la pastille année — pas d'erreur, l'indice niveau 2 (artiste) reste disponible indépendamment.
+- **`Track.ReleaseYear` absent** (morceau ajouté avant le système d'indices, année jamais capturée) : l'indice niveau 1 renvoie `null`, le front masque simplement la pastille année — pas d'erreur, l'indice niveau 2 (artiste) reste disponible indépendamment.
 - **Feedback** : `SubmitAnswerResponse.HintLevelUsed`/`HintPenaltyPercentApplied` (pourcentage **réellement appliqué**, pas à recalculer côté front) — donnée disponible mais **plus affichée** sur l'écran de révélation du blind round depuis le 2026-09-19 (retiré à la demande produit, cf. issue #153).
+
+## Passer un morceau
+
+Pendant l'écoute, un bouton **« Passer (0 pts) »** sous « Valider » permet d'abandonner le morceau en cours sans répondre. Il demande une confirmation (même encart que la confirmation d'une réponse vide), puis envoie une réponse vide au palier déjà écouté : **0 point**, le morceau compte comme « pas trouvé » dans les stats. Aucune règle serveur spécifique : c'est une réponse vide ordinaire. **[Front]**
 
 ## Morceaux sans preview
 

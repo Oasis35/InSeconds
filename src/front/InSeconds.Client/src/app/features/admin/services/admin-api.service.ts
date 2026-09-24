@@ -2,7 +2,7 @@ import { Injectable, inject, computed } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { of, timer, switchMap } from 'rxjs';
 import { AdminStatsResponse, ChallengeStatsDto, ChallengeStatsResponse } from '../../../api/api.generated';
-import { ChallengeDto, DeezerTrackInfo, PoolTracksResponse } from '../admin.models';
+import { ChallengeDto, DeezerTrackInfo, PoolTracksResponse, RegisteredPlayerDto, RegisteredPlayersResponse } from '../admin.models';
 import { AdminHttpService } from './admin-http.service';
 import { AdminStateService } from './admin-state.service';
 
@@ -73,6 +73,14 @@ export class AdminApiService {
   });
   readonly challenges = computed(() => this.challengesResource.value() ?? []);
 
+  // Comptes inscrits (onglet Joueurs), chargés à la première ouverture de l'onglet.
+  private readonly registeredPlayersResource = rxResource<RegisteredPlayersResponse, true | undefined>({
+    params: () => (this.http.authenticated() && this.state.hasVisited('joueurs')) ? true : undefined,
+    stream: () => this.http.getRegisteredPlayers(),
+  });
+  readonly registeredPlayers = computed<RegisteredPlayerDto[]>(() => this.registeredPlayersResource.value()?.players ?? []);
+  readonly registeredPlayersLoading = computed(() => this.registeredPlayersResource.isLoading());
+
   checkAuth(): void { this.http.checkAuth(); }
 
   logout(): Promise<void> { return this.http.logout(); }
@@ -89,9 +97,10 @@ export class AdminApiService {
 
   generateToday() { return this.http.generateToday(); }
   refreshPreviews() { return this.http.refreshPreviews(); }
-  refreshReleaseYears() { return this.http.refreshReleaseYears(); }
   updateTrackCooldownDays(days: number) { return this.http.updateTrackCooldownDays(days); }
   addTrack(deezerTrackId: number) { return this.http.addTrack(deezerTrackId); }
   deleteTrack(id: number) { return this.http.deleteTrack(id); }
+  renameTrack(id: number, artist: string, title: string) { return this.http.renameTrack(id, artist, title); }
   searchDeezer(q: string) { return this.http.searchDeezer(q); }
+  getPlayerHistory(playerId: string) { return this.http.getPlayerHistory(playerId); }
 }

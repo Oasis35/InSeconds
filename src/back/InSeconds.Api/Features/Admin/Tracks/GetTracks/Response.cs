@@ -12,4 +12,6 @@ public sealed record TrackDto(
     bool? HasPreview = null,
     DateOnly? LastUsedDate = null,
     int UsageCount = 0,
-    DateOnly? UnlockDate = null);
+    DateOnly? UnlockDate = null,
+    // Morceau dans une partie encore en cours : non renommable avant demain (cf. RenameLock).
+    bool RenameLocked = false);

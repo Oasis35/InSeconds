@@ -136,6 +136,45 @@ describe('AdminHttpService', () => {
     });
   });
 
+  describe('getRegisteredPlayers()', () => {
+    it('should GET /api/admin/players', () => {
+      let result: any;
+      service.getRegisteredPlayers().subscribe(r => (result = r));
+
+      const req = httpMock.expectOne(`${base}/players`);
+      expect(req.request.method).toBe('GET');
+      const body = { players: [] };
+      req.flush(body);
+
+      expect(result).toEqual(body);
+    });
+  });
+
+  describe('getPlayerHistory()', () => {
+    it('should GET /api/admin/players/{id}/history', () => {
+      let result: any;
+      service.getPlayerHistory('abc-123').subscribe(r => (result = r));
+
+      const req = httpMock.expectOne(`${base}/players/abc-123/history`);
+      expect(req.request.method).toBe('GET');
+      const body = { games: [] };
+      req.flush(body);
+
+      expect(result).toEqual(body);
+    });
+  });
+
+  describe('renameTrack()', () => {
+    it('should PATCH /api/admin/tracks/{id} with artist and title', () => {
+      service.renameTrack(5, 'Étienne Daho', 'Week-end à Rome').subscribe();
+
+      const req = httpMock.expectOne(`${base}/tracks/5`);
+      expect(req.request.method).toBe('PATCH');
+      expect(req.request.body).toEqual({ artist: 'Étienne Daho', title: 'Week-end à Rome' });
+      req.flush({ id: 5, artist: 'Étienne Daho', title: 'Week-end à Rome' });
+    });
+  });
+
   describe('addTrack()', () => {
     it('should POST to /api/admin/tracks with deezerTrackId', () => {
       let completed = false;

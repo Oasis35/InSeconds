@@ -62,9 +62,23 @@ export class AdminPoolService {
   readonly deleteModalTracks = signal<PoolTrackDto[]>([]);
   readonly deleteStatus = signal<'idle' | 'loading' | 'error'>('idle');
 
+  // --- modale modification (artiste / titre) ---
+  readonly editModalTrack = signal<PoolTrackDto | null>(null);
+  readonly editArtist = signal('');
+  readonly editTitle = signal('');
+  readonly editStatus = signal<'idle' | 'loading' | 'error' | 'locked'>('idle');
+  /** Désactive « Enregistrer » : champ vide, rien de changé, ou envoi en cours. */
+  readonly editSaveDisabled = computed(() => {
+    const track = this.editModalTrack();
+    const artist = this.editArtist().trim();
+    const title = this.editTitle().trim();
+    return !track || !artist || !title || this.editStatus() === 'loading'
+      || (artist === track.artist && title === track.title);
+  });
+
   readonly allTracks = computed(() => {
     const available = this.poolTracks().available.map(t => ({ ...t, isAvailable: true }));
-    const used = this.poolTracks().used.map(t => ({ ...t, isAvailable: false, hasPreview: null as boolean | null }));
+    const used = this.poolTracks().used.map(t => ({ ...t, isAvailable: false }));
     return [...available, ...used];
   });
 
@@ -222,6 +236,12 @@ export class AdminPoolService {
 
   clearSelection(): void { this.selectedTrackIds.set(new Set()); }
 
+  /** Un morceau déjà utilisé dans un défi ne peut pas être supprimé (le back renvoie 409). */
+  readonly selectionHasUsedTrack = computed(() => {
+    const selected = this.selectedTrackIds();
+    return this.poolTracks().used.some(t => selected.has(t.id));
+  });
+
   // --- panneau de recherche/ajout ---
   toggleAddPanel(): void {
     const open = !this.addPanelOpen();
@@ -319,11 +339,43 @@ export class AdminPoolService {
     this.addTrackStatusTimers.set(deezerTrackId, timer);
   }
 
+  // --- modale modification ---
+  openEditModal(track: PoolTrackDto): void {
+    if (track.renameLocked) return;
+    this.editModalTrack.set(track);
+    this.editArtist.set(track.artist);
+    this.editTitle.set(track.title);
+    this.editStatus.set('idle');
+  }
+
+  closeEditModal(): void {
+    this.editModalTrack.set(null);
+    this.editStatus.set('idle');
+  }
+
+  confirmEdit(): void {
+    const track = this.editModalTrack();
+    if (!track || this.editSaveDisabled()) return;
+    this.editStatus.set('loading');
+    this.api.renameTrack(track.id, this.editArtist().trim(), this.editTitle().trim())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.closeEditModal();
+          this.api.reloadPool();
+        },
+        // 409 = morceau entré entre-temps dans une partie en cours (défi du jour).
+        error: err => this.editStatus.set(err?.status === 409 ? 'locked' : 'error'),
+      });
+  }
+
   // --- modale suppression ---
   openDeleteModal(track: PoolTrackDto | null): void {
     if (track) {
       this.deleteModalTracks.set([track]);
     } else {
+      // Garde-fou : le bouton est désactivé si la sélection contient un morceau utilisé.
+      if (this.selectionHasUsedTrack()) return;
       const available = this.poolTracks().available;
       this.deleteModalTracks.set(available.filter(t => this.selectedTrackIds().has(t.id)));
     }

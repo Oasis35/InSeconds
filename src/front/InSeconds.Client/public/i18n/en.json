@@ -229,6 +229,8 @@
     "emptyConfirm": "You didn't enter anything. Submit anyway?",
     "cancel": "Cancel",
     "submitAnyway": "Submit anyway",
+    "skipConfirm": "Skip this track? You'll score 0 points",
+    "skipAnyway": "Skip",
     "validate": "Submit",
     "coverAlt": "Cover",
     "artist": "Artist",
@@ -284,6 +286,8 @@
       "poolPlain": "Pool",
       "challenges": "Challenges ({{ count }})",
       "challengesPlain": "Challenges",
+      "players": "Players ({{ count }})",
+      "playersPlain": "Players",
       "actions": "Actions"
     },
     "dashboard": {
@@ -360,7 +364,11 @@
       "tracksCount": "track(s)",
       "page": "page {{ current }}/{{ total }}",
       "lastUsedFrom": "Used from",
-      "lastUsedTo": "Used until"
+      "lastUsedTo": "Used until",
+      "deleteUsedTitle": "Already used in a challenge: can't be deleted",
+      "deleteUsedSelection": "The selection includes a track already used in a challenge: can't be deleted",
+      "editTitle": "Edit artist or title",
+      "editLockedTitle": "Track in a game still in progress: editable from tomorrow"
     },
     "actions": {
       "challengeOfDay": "Today's challenge",
@@ -375,11 +383,6 @@
       "refreshingPreviews": "Checking (may take ~1 min)...",
       "refreshPreviewsSuccess": "{{ checked }} checked, {{ updated }} fixed, {{ failed }} Deezer failure(s).",
       "refreshPreviewsError": "Error while checking previews.",
-      "releaseYears": "Release years",
-      "refreshReleaseYears": "Re-check release years",
-      "refreshingReleaseYears": "Checking in progress (can take ~1 min)...",
-      "refreshReleaseYearsSuccess": "{{ checked }} checked, {{ updated }} updated, {{ failed }} Deezer failure(s).",
-      "refreshReleaseYearsError": "Error while checking release years.",
       "trackCooldown": "Track reuse cooldown",
       "saveCooldown": "Save",
       "cooldownSaved": "Cooldown updated.",
@@ -390,6 +393,36 @@
       "noChallenge": "No challenge recorded.",
       "noChallengeThisMonth": "No challenge this month."
     },
+    "players": {
+      "title": "Registered accounts ({{ count }})",
+      "filterPlaceholder": "Filter by username or email",
+      "loading": "Loading players...",
+      "empty": "No registered account yet.",
+      "noMatch": "No player matches this filter.",
+      "colPseudo": "Username",
+      "colEmail": "Email",
+      "colLastSeen": "Last visit",
+      "colCreated": "Signed up",
+      "colGames": "Games",
+      "adminBadge": "Admin",
+      "neverSeen": "Never",
+      "colStreak": "Streak",
+      "colFreezes": "Freezes",
+      "streakProtected": "Streak protected by a freeze",
+      "historyToggle": "Show the last 30 days",
+      "historyTitle": "Last 30 days",
+      "historyLoading": "Loading history...",
+      "historyError": "Couldn't load the history.",
+      "historyEmpty": "No games in the last 30 days.",
+      "freezesUsed": "{{count}} freeze(s) used",
+      "status": {
+        "Completed": "Completed",
+        "Pending": "In progress",
+        "Abandoned": "Abandoned",
+        "Expired": "Unfinished"
+      },
+      "lastSeenAt": "{{date}} at {{time}}"
+    },
     "deleteModal": {
       "title": "Confirm deletion",
       "single": "Delete {{ track }} from the pool?",
@@ -398,6 +431,18 @@
       "cancel": "Cancel",
       "delete": "Delete",
       "deleting": "Deleting..."
+    },
+    "editModal": {
+      "title": "Edit track",
+      "artist": "Artist",
+      "titleField": "Title",
+      "hint": "Used as the correct answer for upcoming games. Games already played aren't recalculated.",
+      "locked": "This track is in a game still in progress (today's challenge, or yesterday's not finished yet): editable from tomorrow.",
+      "error": "Error while saving.",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving...",
+      "close": "Close"
     },
     "previewModal": {
       "title": "Play the preview",

@@ -10,6 +10,9 @@ import { StreakIconComponent } from '../../../../shared/streak-icon/streak-icon.
   imports: [TranslatePipe, RouterLink, StreakIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './welcome-screen.component.html',
+  // L'hôte doit occuper la hauteur restante de <main> (flex-col) pour que le
+  // justify-center du template centre le bloc verticalement entre header et footer.
+  host: { class: 'flex-1 flex flex-col' },
 })
 export class WelcomeScreenComponent {
   protected readonly playerSession = inject(PlayerSessionService);

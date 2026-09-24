@@ -37,6 +37,14 @@
           ? ('admin.tabs.pool' | translate: { count: pool.poolTracks().available.length + pool.poolTracks().used.length })
           : ('admin.tabs.poolPlain' | translate) }}
       </button>
+      <button (click)="state.setActiveTab('joueurs')"
+        class="flex-1 py-2 rounded-md text-sm font-medium transition-colors"
+        [style.background]="state.activeTab() === 'joueurs' ? 'var(--bg-inactive)' : null"
+        [style.color]="state.activeTab() === 'joueurs' ? 'var(--text-hi)' : 'var(--text-muted)'">
+        {{ state.hasVisited('joueurs')
+          ? ('admin.tabs.players' | translate: { count: api.registeredPlayers().length })
+          : ('admin.tabs.playersPlain' | translate) }}
+      </button>
       <button (click)="state.setActiveTab('actions')"
         class="flex-1 py-2 rounded-md text-sm font-medium transition-colors"
         [style.background]="state.activeTab() === 'actions' ? 'var(--bg-inactive)' : null"
@@ -45,13 +53,16 @@
       </button>
     </div>
 
-    <div class="w-full max-w-2xl">
+    <!-- L'onglet Joueurs (7 colonnes) a besoin de plus de largeur que les autres. -->
+    <div class="w-full" [class]="state.activeTab() === 'joueurs' ? 'max-w-4xl' : 'max-w-2xl'">
       @if (state.activeTab() === 'dashboard') {
         <app-dashboard-tab />
       } @else if (state.activeTab() === 'pool') {
         <app-pool-tab />
       } @else if (state.activeTab() === 'defis') {
         <app-challenges-tab />
+      } @else if (state.activeTab() === 'joueurs') {
+        <app-players-tab />
       } @else if (state.activeTab() === 'actions') {
         <app-actions-tab />
       }

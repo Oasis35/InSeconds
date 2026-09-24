@@ -49,6 +49,18 @@ describe('ChallengesTabComponent', () => {
     });
   });
 
+  describe('chipTitle()', () => {
+    it('includes the score when the player completed the challenge', () => {
+      expect(component['chipTitle']({ playerId: DEV_ID, status: 'Completed', score: 1175 } as never))
+        .toBe(`${DEV_ID} — Completed — 1175 pts`);
+    });
+
+    it('omits the score otherwise', () => {
+      expect(component['chipTitle']({ playerId: DEV_ID, status: 'Abandoned', score: 0 } as never))
+        .toBe(`${DEV_ID} — Abandoned`);
+    });
+  });
+
   describe('statusColor()', () => {
     it('returns amber for Abandoned', () => {
       expect(component['statusColor']('Abandoned')).toBe('var(--bg-warn)');

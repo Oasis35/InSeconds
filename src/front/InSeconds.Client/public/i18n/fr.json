@@ -229,6 +229,8 @@
     "emptyConfirm": "Tu n'as rien saisi. Valider quand même ?",
     "cancel": "Annuler",
     "submitAnyway": "Valider quand même",
+    "skipConfirm": "Passer ce morceau ? Tu marqueras 0 points",
+    "skipAnyway": "Passer",
     "validate": "Valider",
     "coverAlt": "Pochette",
     "artist": "Artiste",
@@ -284,6 +286,8 @@
       "poolPlain": "Pool",
       "challenges": "Défis ({{ count }})",
       "challengesPlain": "Défis",
+      "players": "Joueurs ({{ count }})",
+      "playersPlain": "Joueurs",
       "actions": "Actions"
     },
     "dashboard": {
@@ -360,7 +364,11 @@
       "tracksCount": "morceau(x)",
       "page": "page {{ current }}/{{ total }}",
       "lastUsedFrom": "Utilisé depuis le",
-      "lastUsedTo": "Utilisé jusqu'au"
+      "lastUsedTo": "Utilisé jusqu'au",
+      "deleteUsedTitle": "Déjà utilisé dans un défi : suppression impossible",
+      "deleteUsedSelection": "La sélection contient un morceau déjà utilisé dans un défi : suppression impossible",
+      "editTitle": "Modifier l'artiste ou le titre",
+      "editLockedTitle": "Morceau d'une partie encore en cours : modifiable à partir de demain"
     },
     "actions": {
       "challengeOfDay": "Défi du jour",
@@ -375,11 +383,6 @@
       "refreshingPreviews": "Vérification en cours (peut prendre ~1 min)...",
       "refreshPreviewsSuccess": "{{ checked }} vérifié(s), {{ updated }} corrigé(s), {{ failed }} échec(s) Deezer.",
       "refreshPreviewsError": "Erreur lors de la vérification des previews.",
-      "releaseYears": "Années de sortie",
-      "refreshReleaseYears": "Re-vérifier les années de sortie",
-      "refreshingReleaseYears": "Vérification en cours (peut prendre ~1 min)...",
-      "refreshReleaseYearsSuccess": "{{ checked }} vérifié(s), {{ updated }} corrigé(s), {{ failed }} échec(s) Deezer.",
-      "refreshReleaseYearsError": "Erreur lors de la vérification des années de sortie.",
       "trackCooldown": "Cooldown de réutilisation des morceaux",
       "saveCooldown": "Enregistrer",
       "cooldownSaved": "Cooldown mis à jour.",
@@ -390,6 +393,36 @@
       "noChallenge": "Aucun défi enregistré.",
       "noChallengeThisMonth": "Aucun défi ce mois."
     },
+    "players": {
+      "title": "Comptes inscrits ({{ count }})",
+      "filterPlaceholder": "Filtrer par pseudo ou email",
+      "loading": "Chargement des joueurs...",
+      "empty": "Aucun compte inscrit pour l'instant.",
+      "noMatch": "Aucun joueur ne correspond à ce filtre.",
+      "colPseudo": "Pseudo",
+      "colEmail": "Email",
+      "colLastSeen": "Dernière visite",
+      "colCreated": "Inscrit le",
+      "colGames": "Parties",
+      "adminBadge": "Admin",
+      "neverSeen": "Jamais",
+      "colStreak": "Série",
+      "colFreezes": "Gels",
+      "streakProtected": "Série protégée par un gel",
+      "historyToggle": "Afficher l'historique des 30 derniers jours",
+      "historyTitle": "30 derniers jours",
+      "historyLoading": "Chargement de l'historique...",
+      "historyError": "Impossible de charger l'historique.",
+      "historyEmpty": "Aucune partie sur les 30 derniers jours.",
+      "freezesUsed": "{{count}} gel(s) utilisé(s)",
+      "status": {
+        "Completed": "Terminée",
+        "Pending": "En cours",
+        "Abandoned": "Abandonnée",
+        "Expired": "Inachevée"
+      },
+      "lastSeenAt": "{{date}} à {{time}}"
+    },
     "deleteModal": {
       "title": "Confirmer la suppression",
       "single": "Supprimer {{ track }} du pool ?",
@@ -398,6 +431,18 @@
       "cancel": "Annuler",
       "delete": "Supprimer",
       "deleting": "Suppression..."
+    },
+    "editModal": {
+      "title": "Modifier le morceau",
+      "artist": "Artiste",
+      "titleField": "Titre",
+      "hint": "Sert de bonne réponse pour la correction des parties à venir. Les parties déjà jouées ne sont pas recalculées.",
+      "locked": "Ce morceau est dans une partie encore en cours (défi du jour, ou partie de la veille pas terminée) : modifiable à partir de demain.",
+      "error": "Erreur lors de l'enregistrement.",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "saving": "Enregistrement...",
+      "close": "Fermer"
     },
     "previewModal": {
       "title": "Écouter l'extrait",

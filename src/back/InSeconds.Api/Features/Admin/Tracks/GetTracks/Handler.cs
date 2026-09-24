@@ -1,4 +1,5 @@
 using InSeconds.Api.Common.Settings;
+using InSeconds.Api.Features.Admin.Tracks.RenameTrack;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,6 +11,8 @@ public sealed class GetTracksHandler(ApplicationDbContext db)
     {
         var cooldownDays = await SettingsRawReader.GetIntAsync(
             db, "TrackCooldownDays", new AppSettings().TrackCooldownDays, cancellationToken);
+
+        var renameLock = RenameLock.Locks(DateOnly.FromDateTime(DateTime.UtcNow));
 
         var allTracks = await db.Tracks
             .AsNoTracking()
@@ -24,6 +27,7 @@ public sealed class GetTracksHandler(ApplicationDbContext db)
                 t.LastUsedDate,
                 t.UsageCount,
                 IsUsed = t.DailyChallengeTracks.Any(),
+                RenameLocked = t.DailyChallengeTracks.AsQueryable().Any(renameLock),
             })
             .ToListAsync(cancellationToken);
 
@@ -37,16 +41,20 @@ public sealed class GetTracksHandler(ApplicationDbContext db)
                 HasPreview: t.HasPreview,
                 LastUsedDate: t.LastUsedDate,
                 UsageCount: t.UsageCount,
-                UnlockDate: ComputeUnlock(t.LastUsedDate)))
+                UnlockDate: ComputeUnlock(t.LastUsedDate),
+                RenameLocked: t.RenameLocked))
             .ToList();
 
         var used = allTracks
             .Where(t => t.IsUsed)
             .Select(t => new TrackDto(
                 t.Id, t.Artist, t.Title, t.DeezerTrackId,
+                // Un morceau utilisé redevient tirable après le cooldown : son état de preview compte aussi.
+                HasPreview: t.HasPreview,
                 LastUsedDate: t.LastUsedDate,
                 UsageCount: t.UsageCount,
-                UnlockDate: ComputeUnlock(t.LastUsedDate)))
+                UnlockDate: ComputeUnlock(t.LastUsedDate),
+                RenameLocked: t.RenameLocked))
             .ToList();
 
         return Results.Ok(new GetTracksResponse(available, used));

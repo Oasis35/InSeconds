@@ -2,6 +2,7 @@ import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { AdminPoolService, PoolSortColumn } from '../../services/admin-pool.service';
 import { DeleteTrackModalComponent } from '../delete-track-modal/delete-track-modal.component';
+import { EditTrackModalComponent } from '../edit-track-modal/edit-track-modal.component';
 import { PoolSearchPanelComponent } from '../pool-search-panel/pool-search-panel.component';
 import { PreviewTrackModalComponent } from '../preview-track-modal/preview-track-modal.component';
 
@@ -13,7 +14,7 @@ interface PoolSortableColumn {
 
 @Component({
   selector: 'app-pool-tab',
-  imports: [TranslatePipe, DeleteTrackModalComponent, PoolSearchPanelComponent, PreviewTrackModalComponent],
+  imports: [TranslatePipe, DeleteTrackModalComponent, EditTrackModalComponent, PoolSearchPanelComponent, PreviewTrackModalComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pool-tab.component.html',
 })

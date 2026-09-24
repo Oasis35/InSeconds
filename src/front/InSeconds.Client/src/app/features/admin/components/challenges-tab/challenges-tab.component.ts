@@ -5,7 +5,7 @@ import { AdminStatsService } from '../../services/admin-stats.service';
 import { PlayerSessionService } from '../../../../core/services/player-session.service';
 import { ClipboardService } from '../../../../core/services/clipboard.service';
 import { GuessTimeChartComponent } from '../../../../shared/guess-time-chart/guess-time-chart.component';
-import { TrackStatsDto } from '../../../../api/api.generated';
+import { ChallengePlayerDto, TrackStatsDto } from '../../../../api/api.generated';
 
 @Component({
   selector: 'app-challenges-tab',
@@ -71,6 +71,11 @@ export class ChallengesTabComponent {
 
   protected shortId(playerId: string): string {
     return playerId.slice(0, 8);
+  }
+
+  protected chipTitle(p: ChallengePlayerDto): string {
+    const base = `${p.playerId} — ${p.status}`;
+    return p.status === 'Completed' ? `${base} — ${p.score} pts` : base;
   }
 
   protected isYou(playerId: string): boolean {

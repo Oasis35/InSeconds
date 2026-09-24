@@ -5,7 +5,7 @@ import { environment } from '../../../../environments/environment';
 import { PlayerSessionService } from '../../../core/services/player-session.service';
 import { AdminStatsResponse, ChallengeStatsResponse } from '../../../api/api.generated';
 import {
-  ChallengeDto, DeezerTrackInfo, PoolTracksResponse, RefreshPreviewsResult,
+  ChallengeDto, DeezerTrackInfo, PoolTracksResponse, RefreshPreviewsResult, RegisteredPlayersResponse, PlayerHistoryResponse,
 } from '../admin.models';
 
 @Injectable()
@@ -35,15 +35,21 @@ export class AdminHttpService {
 
   generateToday() { return this.http.post(`${this.base}/generate-today`, {}); }
   refreshPreviews() { return this.http.post<RefreshPreviewsResult>(`${this.base}/refresh-previews`, {}); }
-  refreshReleaseYears() { return this.http.post<RefreshPreviewsResult>(`${this.base}/refresh-release-years`, {}); }
   updateTrackCooldownDays(days: number) {
     return this.http.put<{ trackCooldownDays: number }>(`${this.base}/settings/track-cooldown-days`, { trackCooldownDays: days });
   }
   addTrack(deezerTrackId: number) { return this.http.post(`${this.base}/tracks`, { deezerTrackId }); }
   deleteTrack(id: number) { return this.http.delete(`${this.base}/tracks/${id}`); }
+  renameTrack(id: number, artist: string, title: string) {
+    return this.http.patch(`${this.base}/tracks/${id}`, { artist, title });
+  }
   searchDeezer(q: string) { return this.http.get<DeezerTrackInfo[]>(`${this.base}/deezer-search?q=${encodeURIComponent(q)}`); }
   getPoolTracks() { return this.http.get<PoolTracksResponse>(`${this.base}/tracks`); }
   getStats(day: string) { return this.http.get<AdminStatsResponse>(`${this.base}/stats?date=${day}`); }
   getChallengeStats() { return this.http.get<ChallengeStatsResponse>(`${this.base}/challenge-stats`); }
   getChallenges() { return this.http.get<ChallengeDto[]>(`${this.base}/challenges`); }
+  getRegisteredPlayers() { return this.http.get<RegisteredPlayersResponse>(`${this.base}/players`); }
+  getPlayerHistory(playerId: string) {
+    return this.http.get<PlayerHistoryResponse>(`${this.base}/players/${encodeURIComponent(playerId)}/history`);
+  }
 }

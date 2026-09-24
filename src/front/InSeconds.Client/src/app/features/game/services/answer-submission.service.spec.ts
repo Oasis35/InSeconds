@@ -27,7 +27,7 @@ describe('AnswerSubmissionService', () => {
 
   it('defaults to no result and nothing pending', () => {
     expect(service.result()).toBeNull();
-    expect(service.showEmptyConfirm()).toBe(false);
+    expect(service.pendingConfirm()).toBeNull();
     expect(service.isSubmitting()).toBe(false);
     expect(service.displayedScore()).toBe(0);
     expect(service.showNetworkError()).toBe(false);
@@ -67,9 +67,9 @@ describe('AnswerSubmissionService', () => {
     expect(service.showNetworkError()).toBe(false);
   }));
 
-  it('reset clears result/score/submitting/network toast but not showEmptyConfirm', fakeAsync(() => {
+  it('reset clears result/score/submitting/network toast and pending confirmation', fakeAsync(() => {
     service.setResult(RESPONSE, true);
-    service.showEmptyConfirm.set(true);
+    service.pendingConfirm.set('skip');
 
     service.reset();
 
@@ -77,7 +77,7 @@ describe('AnswerSubmissionService', () => {
     expect(service.displayedScore()).toBe(0);
     expect(service.isSubmitting()).toBe(false);
     expect(service.showNetworkError()).toBe(false);
-    expect(service.showEmptyConfirm()).toBe(true);
+    expect(service.pendingConfirm()).toBeNull();
 
     tick(4000); // le timer réseau a bien été nettoyé par reset(), rien ne doit se déclencher
   }));
