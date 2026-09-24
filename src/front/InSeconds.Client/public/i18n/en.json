@@ -368,7 +368,7 @@
       "deleteUsedTitle": "Already used in a challenge: can't be deleted",
       "deleteUsedSelection": "The selection includes a track already used in a challenge: can't be deleted",
       "editTitle": "Edit artist or title",
-      "editTodayTitle": "In today's challenge: editable from tomorrow"
+      "editLockedTitle": "Track in a game still in progress: editable from tomorrow"
     },
     "actions": {
       "challengeOfDay": "Today's challenge",
@@ -437,7 +437,7 @@
       "artist": "Artist",
       "titleField": "Title",
       "hint": "Used as the correct answer for upcoming games. Games already played aren't recalculated.",
-      "todayChallenge": "This track is in today's challenge: editable from tomorrow.",
+      "locked": "This track is in a game still in progress (today's challenge, or yesterday's not finished yet): editable from tomorrow.",
       "error": "Error while saving.",
       "cancel": "Cancel",
       "save": "Save",

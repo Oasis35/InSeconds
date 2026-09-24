@@ -40,7 +40,7 @@ describe('PlayersTabComponent', () => {
     expect(component['filteredPlayers']().map(p => p.id)).toEqual(['b']);
   });
 
-  it('toggle charge l\'historique au premier dépliage seulement', () => {
+  it('toggle recharge l\'historique à chaque dépliage', () => {
     component['toggle']('a');
     expect(component['expandedId']()).toBe('a');
     expect(component['historyOf']('a')).toEqual([
@@ -49,8 +49,20 @@ describe('PlayersTabComponent', () => {
 
     component['toggle']('a'); // repli
     expect(component['expandedId']()).toBeNull();
-    component['toggle']('a'); // re-dépliage : déjà en mémoire
-    expect(getPlayerHistory).toHaveBeenCalledTimes(1);
+    getPlayerHistory.and.returnValue(of({ games: [] }));
+    component['toggle']('a'); // re-dépliage : une partie a pu être jouée entre-temps
+    expect(getPlayerHistory).toHaveBeenCalledTimes(2);
+    expect(component['historyOf']('a')).toEqual([]);
+  });
+
+  it('garde l\'historique affiché si un rechargement échoue', () => {
+    component['toggle']('a');
+    component['toggle']('a');
+    getPlayerHistory.and.returnValue(throwError(() => new Error('500')));
+    component['toggle']('a');
+    expect(component['historyOf']('a')).toEqual([
+      { date: '2026-09-24', status: 'Completed', score: 3200, freezesUsed: 0, freezeEarned: false },
+    ]);
   });
 
   it('une seule ligne dépliée à la fois', () => {

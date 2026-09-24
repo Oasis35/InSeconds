@@ -6,7 +6,7 @@ import { AdminApiService } from '../../services/admin-api.service';
 import { StreakIconComponent } from '../../../../shared/streak-icon/streak-icon.component';
 import { PlayerGameStatus, PlayerHistoryEntryDto } from '../../admin.models';
 
-/** Historique d'un joueur : chargé au premier dépliage de sa ligne, puis gardé en mémoire. */
+/** Historique d'un joueur : chargé au dépliage de sa ligne, rechargé à chaque nouveau dépliage. */
 export type PlayerHistoryState = PlayerHistoryEntryDto[] | 'loading' | 'error';
 
 @Component({
@@ -34,22 +34,25 @@ export class PlayersTabComponent {
   protected readonly expandedId = signal<string | null>(null);
   protected readonly histories = signal<Record<string, PlayerHistoryState>>({});
 
-  /** Déplie/replie la ligne ; l'historique n'est demandé qu'au premier dépliage (ou après une erreur). */
+  /**
+   * Déplie/replie la ligne. L'historique est redemandé à chaque dépliage (une partie a pu être
+   * jouée entre-temps) ; la version déjà chargée reste affichée pendant le rechargement.
+   */
   protected toggle(playerId: string): void {
     if (this.expandedId() === playerId) {
       this.expandedId.set(null);
       return;
     }
     this.expandedId.set(playerId);
-    const current = this.histories()[playerId];
-    if (current && current !== 'error') return;
+    const hasData = Array.isArray(this.histories()[playerId]);
+    if (!hasData) this.setHistory(playerId, 'loading');
 
-    this.setHistory(playerId, 'loading');
     this.api.getPlayerHistory(playerId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: res => this.setHistory(playerId, res.games),
-        error: () => this.setHistory(playerId, 'error'),
+        // Échec d'un rechargement : on garde la version déjà affichée.
+        error: () => { if (!hasData) this.setHistory(playerId, 'error'); },
       });
   }
 

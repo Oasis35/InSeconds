@@ -235,8 +235,8 @@ describe('AdminPoolService', () => {
       expect(service.editSaveDisabled()).toBeTrue();
     });
 
-    it('ne s\'ouvre pas pour un morceau du défi du jour', () => {
-      service.openEditModal({ ...track, inTodayChallenge: true });
+    it('ne s\'ouvre pas pour un morceau verrouillé (partie en cours)', () => {
+      service.openEditModal({ ...track, renameLocked: true });
       expect(service.editModalTrack()).toBeNull();
     });
 
@@ -250,13 +250,13 @@ describe('AdminPoolService', () => {
       expect(apiStub.reloadPool).toHaveBeenCalled();
     });
 
-    it('passe en « défi du jour » sur un 409 et garde la modale ouverte', () => {
+    it('passe en « verrouillé » sur un 409 et garde la modale ouverte', () => {
       apiStub.renameTrack.and.returnValue(throwError(() => ({ status: 409 })));
       service.openEditModal(track);
       service.editTitle.set('Tombé pour la France');
       service.confirmEdit();
 
-      expect(service.editStatus()).toBe('todayChallenge');
+      expect(service.editStatus()).toBe('locked');
       expect(service.editModalTrack()).not.toBeNull();
     });
   });

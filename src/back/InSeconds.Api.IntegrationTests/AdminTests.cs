@@ -789,7 +789,7 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
     public async Task RenameTrack_TrackUtiliseHorsDefiDuJour_Retourne200EtRenomme()
     {
         var tracks = await (await AdminGetAsync("/api/admin/tracks")).Content.ReadFromJsonAsync<GetTracksResponse>();
-        var track = tracks!.Used.First(t => !t.InTodayChallenge);
+        var track = tracks!.Used.First(t => !t.RenameLocked);
 
         var resp = await AdminPatchAsync($"/api/admin/tracks/{track.Id}", new { Artist = "  Nouvel Artiste ", Title = " Nouveau Titre  " });
 
@@ -809,11 +809,42 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
     public async Task RenameTrack_TrackDuDefiDuJour_Retourne409()
     {
         var tracks = await (await AdminGetAsync("/api/admin/tracks")).Content.ReadFromJsonAsync<GetTracksResponse>();
-        var todayTrack = tracks!.Used.First(t => t.InTodayChallenge);
+        var todayTrack = tracks!.Used.First(t => t.RenameLocked);
 
         var resp = await AdminPatchAsync($"/api/admin/tracks/{todayTrack.Id}", new { Artist = "X", Title = "Y" });
 
         Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task RenameTrack_DefiDeLaVeilleAvecPartieEnCours_Retourne409PuisLibereApresExpiration()
+    {
+        // Une partie commencée hier avant minuit accepte encore des réponses : renommer un de
+        // ses morceaux la corrigerait avec deux noms différents.
+        var player = factory.CreateClient();
+        var start = await (await player.PostAsync("/api/sessions", null)).Content.ReadFromJsonAsync<StartSessionResponse>();
+        var yesterday = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1));
+        int yesterdayTrackId;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var challenge = await db.DailyChallenges.SingleAsync(c => c.Date == yesterday);
+            var gs = await db.GameSessions.SingleAsync(s => s.Id == start!.SessionId);
+            gs.RelocateToChallengeForTesting(challenge.Id);
+            await db.SaveChangesAsync();
+            yesterdayTrackId = await db.DailyChallengeTracks
+                .Where(d => d.DailyChallengeId == challenge.Id).Select(d => d.TrackId).FirstAsync();
+        }
+
+        var tracks = await (await AdminGetAsync("/api/admin/tracks")).Content.ReadFromJsonAsync<GetTracksResponse>();
+        Assert.True(tracks!.Used.Single(t => t.Id == yesterdayTrackId).RenameLocked);
+        var locked = await AdminPatchAsync($"/api/admin/tracks/{yesterdayTrackId}", new { Artist = "X", Title = "Y" });
+        Assert.Equal(HttpStatusCode.Conflict, locked.StatusCode);
+
+        // Le joueur revient : l'expiry paresseuse bascule la partie d'hier en Expired, le verrou tombe.
+        (await player.PostAsync("/api/sessions", null)).EnsureSuccessStatusCode();
+        var unlocked = await AdminPatchAsync($"/api/admin/tracks/{yesterdayTrackId}", new { Artist = "X", Title = "Y" });
+        Assert.Equal(HttpStatusCode.OK, unlocked.StatusCode);
     }
 
     [Fact]

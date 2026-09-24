@@ -115,6 +115,18 @@ public class GetRegisteredPlayersTests(IntegrationTestFactory factory) : IAsyncL
         Assert.Equal(HttpStatusCode.Unauthorized, resp.StatusCode);
     }
 
+    [Fact]
+    public async Task Historique_JoueurInconnu_Retourne404()
+    {
+        var admin = factory.CreateClient();
+        await LinkPlayerAsync(admin, AdminEmail, "ChefAdmin");
+        await SetIsAdminAsync(AdminEmail);
+
+        var resp = await admin.GetAsync($"/api/admin/players/{Guid.NewGuid()}/history");
+
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+    }
+
     // ── helpers ──────────────────────────────────────────────────────────────
 
     private async Task LinkPlayerAsync(HttpClient client, string email, string pseudo)

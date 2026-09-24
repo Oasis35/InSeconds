@@ -113,10 +113,11 @@ public sealed class GetTracksHandlerTests
     }
 
     [Fact]
-    public async Task Handle_UsedTrack_ExposesPreviewAndTodayChallengeFlag()
+    public async Task Handle_UsedTrack_ExposesPreviewAndRenameLock()
     {
         // Un morceau utilisé redevient tirable après cooldown : son état de preview est exposé.
-        // InTodayChallenge bloque le renommage (cf. RenameTrack) pour le seul défi du jour.
+        // RenameLocked bloque le renommage (cf. RenameLock) : défi du jour, ou de la veille tant qu'une
+        // session y est Pending.
         await using var db = CreateDbContext();
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         db.Tracks.AddRange(
@@ -135,8 +136,8 @@ public sealed class GetTracksHandlerTests
         var response = ((Ok<GetTracksResponse>)result).Value!;
         var todayTrack = response.Used.Single(t => t.Id == 1);
         todayTrack.HasPreview.Should().Be(false);
-        todayTrack.InTodayChallenge.Should().BeTrue();
-        response.Used.Single(t => t.Id == 2).InTodayChallenge.Should().BeFalse();
+        todayTrack.RenameLocked.Should().BeTrue();
+        response.Used.Single(t => t.Id == 2).RenameLocked.Should().BeFalse();
     }
 
     [Fact]

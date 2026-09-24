@@ -13,5 +13,5 @@ public sealed record TrackDto(
     DateOnly? LastUsedDate = null,
     int UsageCount = 0,
     DateOnly? UnlockDate = null,
-    // Morceau du défi du jour : non renommable avant demain (cf. RenameTrack).
-    bool InTodayChallenge = false);
+    // Morceau dans une partie encore en cours : non renommable avant demain (cf. RenameLock).
+    bool RenameLocked = false);

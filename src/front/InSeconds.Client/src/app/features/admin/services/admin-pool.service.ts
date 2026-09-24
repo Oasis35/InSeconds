@@ -66,7 +66,7 @@ export class AdminPoolService {
   readonly editModalTrack = signal<PoolTrackDto | null>(null);
   readonly editArtist = signal('');
   readonly editTitle = signal('');
-  readonly editStatus = signal<'idle' | 'loading' | 'error' | 'todayChallenge'>('idle');
+  readonly editStatus = signal<'idle' | 'loading' | 'error' | 'locked'>('idle');
   /** Désactive « Enregistrer » : champ vide, rien de changé, ou envoi en cours. */
   readonly editSaveDisabled = computed(() => {
     const track = this.editModalTrack();
@@ -341,7 +341,7 @@ export class AdminPoolService {
 
   // --- modale modification ---
   openEditModal(track: PoolTrackDto): void {
-    if (track.inTodayChallenge) return;
+    if (track.renameLocked) return;
     this.editModalTrack.set(track);
     this.editArtist.set(track.artist);
     this.editTitle.set(track.title);
@@ -364,8 +364,8 @@ export class AdminPoolService {
           this.closeEditModal();
           this.api.reloadPool();
         },
-        // 409 = morceau passé dans le défi du jour entre-temps.
-        error: err => this.editStatus.set(err?.status === 409 ? 'todayChallenge' : 'error'),
+        // 409 = morceau entré entre-temps dans une partie en cours (défi du jour).
+        error: err => this.editStatus.set(err?.status === 409 ? 'locked' : 'error'),
       });
   }
 

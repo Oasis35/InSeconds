@@ -368,7 +368,7 @@
       "deleteUsedTitle": "Déjà utilisé dans un défi : suppression impossible",
       "deleteUsedSelection": "La sélection contient un morceau déjà utilisé dans un défi : suppression impossible",
       "editTitle": "Modifier l'artiste ou le titre",
-      "editTodayTitle": "Morceau du défi du jour : modifiable à partir de demain"
+      "editLockedTitle": "Morceau d'une partie encore en cours : modifiable à partir de demain"
     },
     "actions": {
       "challengeOfDay": "Défi du jour",
@@ -437,7 +437,7 @@
       "artist": "Artiste",
       "titleField": "Titre",
       "hint": "Sert de bonne réponse pour la correction des parties à venir. Les parties déjà jouées ne sont pas recalculées.",
-      "todayChallenge": "Ce morceau fait partie du défi du jour : modifiable à partir de demain.",
+      "locked": "Ce morceau est dans une partie encore en cours (défi du jour, ou partie de la veille pas terminée) : modifiable à partir de demain.",
       "error": "Erreur lors de l'enregistrement.",
       "cancel": "Annuler",
       "save": "Enregistrer",

@@ -20,6 +20,9 @@ public static class GetPlayerHistoryEndpoint
             if (!ctx.GetPlayerIsAdmin())
                 return Results.Unauthorized();
 
+            if (!await db.Players.AnyAsync(p => p.Id == playerId, ct))
+                return Results.NotFound(new { error = "not_found", message = "Joueur introuvable." });
+
             // Parties des 30 derniers jours (aujourd'hui inclus), plus récentes d'abord.
             // Chargé à la demande depuis l'onglet Joueurs (dépliage d'une ligne).
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -57,7 +60,8 @@ public static class GetPlayerHistoryEndpoint
         .WithName("GetPlayerHistory")
         .WithTags("Admin")
         .Produces<PlayerHistoryResponse>(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status401Unauthorized);
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
 
         return routes;
     }

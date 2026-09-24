@@ -5,8 +5,8 @@ namespace InSeconds.Api.Features.Admin.Tracks.RenameTrack;
 
 // Corrige l'artiste/le titre d'un morceau (faute, nom Deezer peu reconnaissable…), qu'il ait
 // déjà été utilisé ou non. Ces champs sont la référence de correction des réponses
-// (SubmitAnswer) : seul le défi du jour est bloqué, pour ne pas corriger une même partie
-// du jour avec deux noms différents. Le contrôle de doublon (DeezerTrackId) n'est pas touché.
+// (SubmitAnswer) : bloqué tant qu'une partie qui le contient peut encore recevoir des réponses
+// (cf. RenameLock). Le contrôle de doublon (DeezerTrackId) n'est pas touché.
 public sealed class RenameTrackHandler(ApplicationDbContext db)
 {
     public async Task<IResult> Handle(RenameTrackCommand command, CancellationToken cancellationToken)
@@ -18,11 +18,12 @@ public sealed class RenameTrackHandler(ApplicationDbContext db)
             return Results.NotFound(new { error = "not_found", message = "Morceau introuvable." });
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var inTodayChallenge = await db.DailyChallengeTracks
-            .AnyAsync(dct => dct.TrackId == command.TrackId && dct.DailyChallenge.Date == today, cancellationToken);
+        var locked = await db.DailyChallengeTracks
+            .Where(dct => dct.TrackId == command.TrackId)
+            .AnyAsync(RenameLock.Locks(today), cancellationToken);
 
-        if (inTodayChallenge)
-            return Results.Conflict(new { error = "track_in_today_challenge", message = "Ce morceau fait partie du défi du jour : modifiable à partir de demain." });
+        if (locked)
+            return Results.Conflict(new { error = "track_locked", message = "Ce morceau est dans une partie encore en cours : modifiable à partir de demain." });
 
         track.Artist    = command.Artist.Trim();
         track.Title     = command.Title.Trim();

@@ -1,4 +1,5 @@
 using InSeconds.Api.Common.Settings;
+using InSeconds.Api.Features.Admin.Tracks.RenameTrack;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,7 +12,7 @@ public sealed class GetTracksHandler(ApplicationDbContext db)
         var cooldownDays = await SettingsRawReader.GetIntAsync(
             db, "TrackCooldownDays", new AppSettings().TrackCooldownDays, cancellationToken);
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var renameLock = RenameLock.Locks(DateOnly.FromDateTime(DateTime.UtcNow));
 
         var allTracks = await db.Tracks
             .AsNoTracking()
@@ -26,7 +27,7 @@ public sealed class GetTracksHandler(ApplicationDbContext db)
                 t.LastUsedDate,
                 t.UsageCount,
                 IsUsed = t.DailyChallengeTracks.Any(),
-                InTodayChallenge = t.DailyChallengeTracks.Any(d => d.DailyChallenge.Date == today),
+                RenameLocked = t.DailyChallengeTracks.AsQueryable().Any(renameLock),
             })
             .ToListAsync(cancellationToken);
 
@@ -41,7 +42,7 @@ public sealed class GetTracksHandler(ApplicationDbContext db)
                 LastUsedDate: t.LastUsedDate,
                 UsageCount: t.UsageCount,
                 UnlockDate: ComputeUnlock(t.LastUsedDate),
-                InTodayChallenge: t.InTodayChallenge))
+                RenameLocked: t.RenameLocked))
             .ToList();
 
         var used = allTracks
@@ -53,7 +54,7 @@ public sealed class GetTracksHandler(ApplicationDbContext db)
                 LastUsedDate: t.LastUsedDate,
                 UsageCount: t.UsageCount,
                 UnlockDate: ComputeUnlock(t.LastUsedDate),
-                InTodayChallenge: t.InTodayChallenge))
+                RenameLocked: t.RenameLocked))
             .ToList();
 
         return Results.Ok(new GetTracksResponse(available, used));
