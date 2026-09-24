@@ -26,11 +26,11 @@
             <tr class="text-left text-xs uppercase tracking-wide" style="border-bottom:1px solid var(--border-medium);color:var(--text-muted)">
               <th class="px-4 py-2.5">{{ 'admin.players.colPseudo' | translate }}</th>
               <th class="px-3 py-2.5">{{ 'admin.players.colEmail' | translate }}</th>
-              <th class="px-3 py-2.5 whitespace-nowrap">{{ 'admin.players.colLastSeen' | translate }}</th>
-              <th class="px-3 py-2.5 whitespace-nowrap">{{ 'admin.players.colCreated' | translate }}</th>
               <th class="px-3 py-2.5 text-right">{{ 'admin.players.colGames' | translate }}</th>
               <th class="px-3 py-2.5 text-right">{{ 'admin.players.colStreak' | translate }}</th>
-              <th class="px-4 py-2.5 text-right">{{ 'admin.players.colFreezes' | translate }}</th>
+              <th class="px-3 py-2.5 text-right">{{ 'admin.players.colFreezes' | translate }}</th>
+              <th class="px-3 py-2.5 whitespace-nowrap">{{ 'admin.players.colLastSeen' | translate }}</th>
+              <th class="px-4 py-2.5 whitespace-nowrap">{{ 'admin.players.colCreated' | translate }}</th>
             </tr>
           </thead>
           <tbody>
@@ -58,14 +58,6 @@
                   }
                 </td>
                 <td class="px-3 py-2.5" style="color:var(--text-body)">{{ p.email ?? '—' }}</td>
-                <td class="px-3 py-2.5 whitespace-nowrap">
-                  @if (p.lastSeenAt) {
-                    <span style="color:var(--text-body)" [title]="p.lastSeenAt | date:'dd/MM/yyyy HH:mm'">{{ relativeTime(p.lastSeenAt) }}</span>
-                  } @else {
-                    <span style="color:var(--text-faint)">{{ 'admin.players.neverSeen' | translate }}</span>
-                  }
-                </td>
-                <td class="px-3 py-2.5 whitespace-nowrap" style="color:var(--text-muted)">{{ p.createdAt | date:'dd/MM/yyyy' }}</td>
                 <td class="px-3 py-2.5 text-right tabular-nums" style="color:var(--text-body)">{{ p.gamesPlayed }}</td>
                 <td class="px-3 py-2.5 text-right tabular-nums whitespace-nowrap"
                   [title]="p.streakProtected ? ('admin.players.streakProtected' | translate) : ''"
@@ -74,12 +66,20 @@
                     <app-streak-icon [name]="p.streakProtected ? 'snowflake' : 'flame'" size="13px" />{{ p.currentStreak }}
                   </span>
                 </td>
-                <td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap"
+                <td class="px-3 py-2.5 text-right tabular-nums whitespace-nowrap"
                   [style.color]="p.streakFreezes > 0 ? 'var(--color-accent-2)' : 'var(--text-faint)'">
                   <span class="inline-flex items-center gap-1">
                     <app-streak-icon name="snowflake" size="13px" />{{ p.streakFreezes }}
                   </span>
                 </td>
+                <td class="px-3 py-2.5 whitespace-nowrap">
+                  @if (p.lastSeenAt) {
+                    <span style="color:var(--text-body)" [title]="p.lastSeenAt | date:'dd/MM/yyyy HH:mm'">{{ relativeTime(p.lastSeenAt) }}</span>
+                  } @else {
+                    <span style="color:var(--text-faint)">{{ 'admin.players.neverSeen' | translate }}</span>
+                  }
+                </td>
+                <td class="px-4 py-2.5 whitespace-nowrap" style="color:var(--text-muted)">{{ p.createdAt | date:'dd/MM/yyyy' }}</td>
               </tr>
               @if (expanded) {
                 <tr data-testid="player-history" [id]="'player-history-' + p.id"
