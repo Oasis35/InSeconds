@@ -272,17 +272,36 @@ describe('BlindRoundComponent — indices (hints)', () => {
     expect(component['resultHintPercent']()).toBe(60);
   });
 
-  it('skip() émet une réponse vide au palier écouté, sans confirmation', () => {
+  it('confirmPending() sur « Passer » ferme l\'encart et émet une réponse vide au palier écouté', () => {
     const emitted: unknown[] = [];
     component.answered.subscribe(e => emitted.push(e));
     component['chosenDuration'].set(2);
+    component['searchQuery'] = 'Daft Punk - One More Time'; // ignoré : on passe, pas de réponse
+    component['pendingConfirm'].set('skip');
 
-    component['skip']();
+    component['confirmPending']();
 
-    expect(component['showEmptyConfirm']()).toBe(false);
+    expect(component['pendingConfirm']()).toBeNull();
     expect(component['isSubmitting']()).toBe(true);
     expect(emitted).toEqual([jasmine.objectContaining({
       trackId: TRACK.id, listenedDurationSeconds: 2, artistAnswer: null, titleAnswer: null,
     })]);
+  });
+
+  it('submit() avec un champ vide ouvre l\'encart en mode « réponse vide »', () => {
+    component.submit();
+    expect(component['pendingConfirm']()).toBe('empty');
+  });
+
+  it('l\'encart de confirmation se ferme dès que le joueur reprend la saisie', () => {
+    component['pendingConfirm'].set('skip');
+    component.onQueryChange('dua');
+    expect(component['pendingConfirm']()).toBeNull();
+  });
+
+  it('next() ferme l\'encart de confirmation', () => {
+    component['pendingConfirm'].set('skip');
+    component.next();
+    expect(component['pendingConfirm']()).toBeNull();
   });
 });

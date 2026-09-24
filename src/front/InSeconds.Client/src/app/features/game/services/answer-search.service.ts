@@ -6,7 +6,7 @@ import { DeezerAutocompleteService, DeezerSuggestion } from './deezer-autocomple
 /**
  * État de la recherche/autocomplete Deezer du round en cours : champ de saisie, suggestions,
  * navigation clavier dans la dropdown. Extrait de `BlindRoundComponent` pour SRP (même pattern
- * que `HintService`). Ne porte pas `showEmptyConfirm` (état de soumission, cf.
+ * que `HintService`). Ne porte pas `pendingConfirm` (état de soumission, cf.
  * `AnswerSubmissionService`) — `onQueryChange`/`clearSearch`, qui touchent aux deux, restent
  * orchestrés par `BlindRoundComponent`.
  */

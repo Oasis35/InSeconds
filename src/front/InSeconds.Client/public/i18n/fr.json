@@ -229,6 +229,8 @@
     "emptyConfirm": "Tu n'as rien saisi. Valider quand même ?",
     "cancel": "Annuler",
     "submitAnyway": "Valider quand même",
+    "skipConfirm": "Passer ce morceau ? Tu marques 0 point.",
+    "skipAnyway": "Passer",
     "validate": "Valider",
     "coverAlt": "Pochette",
     "artist": "Artiste",

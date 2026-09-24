@@ -55,7 +55,7 @@ export class BlindRoundComponent implements OnDestroy {
     return all.filter(d => d >= min);
   });
   protected readonly chosenDuration = signal(0);
-  protected readonly showEmptyConfirm = this.submission.showEmptyConfirm;
+  protected readonly pendingConfirm = this.submission.pendingConfirm;
   protected readonly isSubmitting = this.submission.isSubmitting;
   protected readonly displayedScore = this.submission.displayedScore;
   protected readonly showNetworkError = this.submission.showNetworkError;
@@ -136,12 +136,12 @@ export class BlindRoundComponent implements OnDestroy {
   clearSearch(event: MouseEvent): void {
     event.preventDefault();
     this.search.clearAll();
-    this.submission.showEmptyConfirm.set(false);
+    this.submission.pendingConfirm.set(null);
   }
 
   onQueryChange(q: string): void {
     this.search.onQueryChange(q);
-    this.submission.showEmptyConfirm.set(false);
+    this.submission.pendingConfirm.set(null);
   }
 
   onBlur(): void {
@@ -187,25 +187,23 @@ export class BlindRoundComponent implements OnDestroy {
   }
 
   submit(): void {
+    this.submission.pendingConfirm.set(null);
     const answer = this.search.resolveAnswer();
 
     // Confirmation inline si champ vide
     if (!answer.artist && !answer.title) {
-      this.submission.showEmptyConfirm.set(true);
+      this.submission.pendingConfirm.set('empty');
       return;
     }
 
     this.doSubmit(answer);
   }
 
-  protected confirmSubmit(): void {
-    this.submission.showEmptyConfirm.set(false);
-    this.doSubmit(this.search.resolveAnswer());
-  }
-
-  /** Passe le morceau (0 pt) : réponse vide envoyée sans confirmation, au palier écouté. */
-  protected skip(): void {
-    this.doSubmit({ artist: null, title: null });
+  /** Valide la confirmation inline en attente (« réponse vide » ou « Passer »). */
+  protected confirmPending(): void {
+    const kind = this.submission.pendingConfirm();
+    this.submission.pendingConfirm.set(null);
+    this.doSubmit(kind === 'skip' ? { artist: null, title: null } : this.search.resolveAnswer());
   }
 
   private doSubmit(answer: { artist: string | null; title: string | null }): void {

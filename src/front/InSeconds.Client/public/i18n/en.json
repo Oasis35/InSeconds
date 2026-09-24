@@ -229,6 +229,8 @@
     "emptyConfirm": "You didn't enter anything. Submit anyway?",
     "cancel": "Cancel",
     "submitAnyway": "Submit anyway",
+    "skipConfirm": "Skip this track? You'll score 0 points.",
+    "skipAnyway": "Skip",
     "validate": "Submit",
     "coverAlt": "Cover",
     "artist": "Artist",
