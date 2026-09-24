@@ -8,18 +8,8 @@ test.describe('Bouton ✕ — effacement de la saisie', () => {
   });
 
   test('le bouton ✕ vide le champ et disparaît', async ({ page }) => {
-    await page.clock.install({ time: Date.now() });
-
-    const game = new GamePage(page);
     const round = new BlindRoundPage(page);
-
-    await game.goto();
-    await game.waitForWelcome();
-    await game.clickStart();
-
-    // Laisser le premier palier se jouer pour faire apparaître le champ de saisie
-    await round.chooseDuration(1);
-    await round.waitForAnswerInput();
+    await new GamePage(page).startFirstRound(round);
 
     // Champ vide → pas de bouton ✕
     await expect(round.clearSearchButton).not.toBeVisible();

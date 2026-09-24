@@ -72,6 +72,34 @@ export class GamePage {
     await this.goto();
   }
 
+  /** Horloge simulée installée, puis écran d'accueil affiché. */
+  async openWithFakeClock(): Promise<void> {
+    await this.page.clock.install({ time: Date.now() });
+    await this.goto();
+    await this.waitForWelcome();
+  }
+
+  /** `openWithFakeClock` puis démarrage de la partie (premier morceau). */
+  async startWithFakeClock(): Promise<void> {
+    await this.openWithFakeClock();
+    await this.clickStart();
+  }
+
+  /** Démarre la partie et écoute le premier morceau jusqu'à `durationSeconds`, champ de réponse prêt. */
+  async startFirstRound(round: BlindRoundPage, durationSeconds = 1): Promise<void> {
+    await this.startWithFakeClock();
+    await round.chooseDuration(durationSeconds);
+    await round.waitForAnswerInput();
+  }
+
+  /** Joue les `remaining` morceaux restants (réponses vides) jusqu'à l'écran de récap. */
+  async finishGame(round: BlindRoundPage, remaining: number): Promise<void> {
+    for (let i = 0; i < remaining; i++) {
+      await round.playRound(1);
+    }
+    await this.waitForDone();
+  }
+
   async goto(): Promise<void> {
     await this.page.goto('/');
   }

@@ -7,12 +7,8 @@ test.describe('Confirmation de sortie en cours de partie (guard CanDeactivate)',
   });
 
   test('annuler la sortie garde le joueur sur la partie', async ({ page }) => {
-    await page.clock.install({ time: Date.now() });
-
     const game = new GamePage(page);
-    await game.goto();
-    await game.waitForWelcome();
-    await game.clickStart();
+    await game.startWithFakeClock();
     await expect(page.getByText('Piste 1 / 5')).toBeVisible();
 
     // Tenter de quitter via un lien interne du footer (icône Confidentialité — l'icône Admin
@@ -31,12 +27,8 @@ test.describe('Confirmation de sortie en cours de partie (guard CanDeactivate)',
   });
 
   test('confirmer la sortie navigue hors de la partie', async ({ page }) => {
-    await page.clock.install({ time: Date.now() });
-
     const game = new GamePage(page);
-    await game.goto();
-    await game.waitForWelcome();
-    await game.clickStart();
+    await game.startWithFakeClock();
     await expect(page.getByText('Piste 1 / 5')).toBeVisible();
 
     await page.getByTitle(/Confidentialité/).click();
@@ -48,11 +40,8 @@ test.describe('Confirmation de sortie en cours de partie (guard CanDeactivate)',
   });
 
   test('aucune confirmation si la partie n\'est pas commencée', async ({ page }) => {
-    await page.clock.install({ time: Date.now() });
-
     const game = new GamePage(page);
-    await game.goto();
-    await game.waitForWelcome();
+    await game.openWithFakeClock();
 
     // Sur l'écran welcome (pas playing) le guard laisse passer directement
     await page.getByTitle(/Confidentialité/).click();
