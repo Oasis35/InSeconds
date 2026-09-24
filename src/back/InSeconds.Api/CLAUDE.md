@@ -96,6 +96,14 @@ Délègue à `PreviewStatusRefresher.RefreshAsync` (voir ChallengeGeneration). `
 
 (2026-09-24) Corrige `Artist`/`Title` d'un morceau, utilisé ou non (bouton ✎ du pool admin). Validator : champs non vides après trim, 200/300 caractères max (comme `TrackConfiguration`). **409 `track_locked`** si le morceau est dans une partie qui accepte encore des réponses : défi du jour, ou défi de la veille tant qu'une session y est `Pending` (partie commencée avant minuit, `SubmitAnswer` ne vérifie que le statut). Ces champs sont la référence de correction de `SubmitAnswer` (`TextNormalizer.IsMatch`), les changer à ce moment-là corrigerait une même partie avec deux noms différents. Règle unique dans `RenameTrack/RenameLock.Locks(today)` (expression EF), partagée avec `GetTracks`. Ne touche ni `DeezerTrackId` (seule clé du contrôle de doublon, `AddTrack` + badge « Déjà en pool ») ni les réponses déjà enregistrées (booléens `ArtistCorrect`/`TitleCorrect` figés, seul l'affichage montre le nouveau nom). `GetTracks` expose `RenameLocked` sur chaque `TrackDto` pour désactiver le bouton côté front. Contrairement à `UpdateTrack` (re-sync Deezer, interdit dès qu'un morceau a servi), pas d'appel Deezer. Tests : `AdminTests.RenameTrack_*`.
 
+### Admin/Players/GetRegisteredPlayers — `GET /api/admin/players`
+
+(2026-09-24) Onglet Joueurs admin. Endpoint direct (pas de Command/Handler, même forme que `GetChallengeStats`), `ctx.GetPlayerIsAdmin()` sinon 401. Liste les comptes inscrits (`IsGuest=false`, soft-deleted exclus par le query filter) : pseudo, email, `LastSeenAt` (dernière requête authentifiée), `CreatedAt`, parties `Completed`, `IsAdmin`, série **effective** (`Player.ComputeStreakView` avec les règles de `StreakRulesReader`, 0 si cassée), gels en stock, `StreakProtected` (jours manqués couverts par les gels). Tri : `LastSeenAt` décroissant, jamais vus en dernier. Tests : `Admin/GetRegisteredPlayersTests.cs`.
+
+### Admin/Players/GetPlayerHistory — `GET /api/admin/players/{id}/history`
+
+(2026-09-24) Historique déplié d'une ligne de l'onglet Joueurs. 401 si non admin, **404** si le joueur n'existe pas (ou est soft-deleted). Parties des 30 derniers jours (date du défi décroissante) : date, statut (`Pending` d'un jour passé replié en `Expired`, comme dans les stats admin), score si `Completed`, gels consommés (`FreezesUsed`). Tests : `Admin/GetRegisteredPlayersTests.cs`.
+
 ### Admin/Stats/GetAdminStats — `GET /api/admin/stats?date=` (Dashboard)
 
 Payload du **Dashboard uniquement**. Utilise `IDbContextFactory<ApplicationDbContext>` pour **4 requêtes en parallèle**, chacune avec son propre `DbContext` (non thread-safe sinon) : `BuildDailyActivity` (30 jours glissants, 0 par défaut), `BuildPlayerBreakdown` (guests/registered/actifs 7j/30j, exclut `IsDeleted`), `BuildAvailableDates`, `BuildDailyKpis` (date sélectionnée). Médiane calculée manuellement (tri + moyenne des 2 valeurs centrales si pair). `AdminStatsResponse(DailyActivity, PlayerBreakdown, AvailableDates, SelectedDayKpis)` — **plus de champ `Challenges`** (scindé, voir ci-dessous).
@@ -139,7 +147,7 @@ catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlS
 
 ### Admin/Tracks/GetTracks — `GET /api/admin/tracks`
 
-`GetTracksHandler` : tri par `Artist`, projette `IsUsed = DailyChallengeTracks.Any()`, sépare `Available` (avec `HasPreview`) / `Used` (`HasPreview` toujours `null`). Ajoute par track `LastUsedDate`/`UsageCount` (colonnes réelles sur `Track`) et `UnlockDate` — **calculée à la volée** (`LastUsedDate?.AddDays(cooldownDays)`, jamais persistée), avec `cooldownDays` lu frais via `SettingsRawReader.GetIntAsync` (voir ChallengeGeneration ci-dessous).
+`GetTracksHandler` : tri par `Artist`, projette `IsUsed = DailyChallengeTracks.Any()`, sépare `Available` / `Used`, `HasPreview` renvoyé pour les deux (un morceau utilisé redevient tirable après le cooldown, depuis le 2026-09-24 ; avant, `null` pour `Used`), plus `RenameLocked` par morceau (`RenameLock.Locks(today)`, cf. RenameTrack). Ajoute par track `LastUsedDate`/`UsageCount` (colonnes réelles sur `Track`) et `UnlockDate` — **calculée à la volée** (`LastUsedDate?.AddDays(cooldownDays)`, jamais persistée), avec `cooldownDays` lu frais via `SettingsRawReader.GetIntAsync` (voir ChallengeGeneration ci-dessous).
 
 ### Admin/Settings/UpdateTrackCooldown — `PUT /api/admin/settings/track-cooldown-days`
 

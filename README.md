@@ -16,6 +16,7 @@
 - Preview availability is re-checked nightly against Deezer (rate-limit aware, batched calls); admins can also re-run the check on demand from the admin panel
 - Playback starts automatically at the shortest step (0.5s); extend step by step (1, 1.5, 2, 3, 5, 10s) with "listen more" before attempting artist + title
 - Free, unlimited "listen more" extensions per track (up to the last duration tier) — scoring is always based on the final tier listened, no penalty for extending
+- A "Skip (0 pts)" button (with confirmation) moves on to the next track without answering
 - Optional hints (release year, then a masked artist name) unlockable at 5s/10s of listening — costs points, server-authoritative
 - Scoring is entirely server-side — no client-side manipulation possible
 - Guest mode: play without signing up (no leaderboard, only global stats)
@@ -106,7 +107,7 @@ GitHub Actions workflow on every push and every PR to `main`:
 - **Backend** — build in Release + `dotnet ef migrations has-pending-model-changes`
 - **Unit tests** — `dotnet test` on `InSeconds.Api.UnitTests` (xUnit, no DB required)
 - **Frontend** — `npm ci` + production build
-- **Frontend unit tests** — `ng test --watch=false --browsers=ChromeHeadless` (Karma + Jasmine, ~360 tests)
+- **Frontend unit tests** — `ng test --watch=false --browsers=ChromeHeadless` (Karma + Jasmine, ~390 tests)
 - **Integration tests** — `dotnet test` on `InSeconds.Api.IntegrationTests` (Testcontainers spins up a real PostgreSQL container, no extra YAML needed)
 - **E2E** — Playwright tests (Chromium) against a real backend in `Testing` mode with a PostgreSQL service — runs after all jobs above pass
 - **Nginx cache headers smoke test** — builds and runs the actual production Docker image (`Dockerfile.prod`), checks `Cache-Control` headers and the `Content-Type` of `robots.txt`/`sitemap.xml` via `curl` (`src/front/InSeconds.Client/scripts/check-nginx-cache-headers.sh`) — the only job that exercises `nginx.conf`
@@ -131,7 +132,7 @@ cd src/front/InSeconds.Client
 npx ng test --watch=false --browsers=ChromeHeadless
 ```
 
-**~360 tests** across 37 spec files (Karma + Jasmine), covering `App`, `GameService`, `SettingsService`, `LanguageService`, `GameFooterComponent` (language toggle), `AdminHttpService`, `AdminStatsService`, `AdminPoolService` (pool runway), `BlindRoundComponent` (autocomplete keyboard navigation), `GuessTimeChartComponent` + `TrackResultsListComponent` (guess-time histogram + popup), `ChallengesTabComponent` (player identity chips + guess-time popup), `ClipboardService`, `PlayerSessionService`, `BrowserIdComponent`, the services extracted from the game round (search, submission, hints), streak freezes (panel, freeze cells, header pill), plus the login/profile/email-change flows. Uses `HttpTestingController` — no real HTTP calls.
+**~390 tests** across 41 spec files (Karma + Jasmine), covering `App`, `GameService`, `SettingsService`, `LanguageService`, `GameFooterComponent` (language toggle), `AdminHttpService`, `AdminStatsService`, `AdminPoolService` (pool runway), `BlindRoundComponent` (autocomplete keyboard navigation), `GuessTimeChartComponent` + `TrackResultsListComponent` (guess-time histogram + popup), `ChallengesTabComponent` (player identity chips + guess-time popup), `ClipboardService`, `PlayerSessionService`, `BrowserIdComponent`, the services extracted from the game round (search, submission, hints), streak freezes (panel, freeze cells, header pill), plus the login/profile/email-change flows. Uses `HttpTestingController` — no real HTTP calls.
 
 ### Integration tests (backend)
 
@@ -157,7 +158,7 @@ npm run e2e        # headless
 npm run e2e:ui     # interactive Playwright UI
 ```
 
-**~86 tests** in 20 spec files — ~62 game tests (streak freezes, happy path, already-played, login/profile/email-change flows, login nudges, abandon, resume, multi-tab sync, no-challenge + automatic rebirth of a deleted challenge, share + clipboard failure, scoring, guess-time histogram on the reveal screen + in the recap/already-played track list popup, anti-cheat min duration lock, leave-confirmation guard, clear-search button, autocomplete cleanup/deduplication + keyboard navigation, service-down overlay, footer language toggle + privacy page) + 24 admin tests (login, pool table with filters, add track via the integrated search panel, delete track, generate challenge, reset sessions, challenge list, browser ID display/copy, player chip "it's you" highlighting, per-track guess-time histogram popup, lazy per-tab loading — deferred network calls + deferred tab counter).
+**~92 tests** in 21 spec files — ~65 game tests (streak freezes, skip button, happy path, already-played, login/profile/email-change flows, login nudges, abandon, resume, multi-tab sync, no-challenge + automatic rebirth of a deleted challenge, share + clipboard failure, scoring, guess-time histogram on the reveal screen + in the recap/already-played track list popup, anti-cheat min duration lock, leave-confirmation guard, clear-search button, autocomplete cleanup/deduplication + keyboard navigation, service-down overlay, footer language toggle + privacy page) + 27 admin tests (login, pool table with filters, used tracks selectable but not deletable, rename a track (today's challenge locked), players tab with expandable history, add track via the integrated search panel, delete track, generate challenge, reset sessions, challenge list, browser ID display/copy, player chip "it's you" highlighting, per-track guess-time histogram popup, lazy per-tab loading — deferred network calls + deferred tab counter).
 
 The backend runs in `ASPNETCORE_ENVIRONMENT=Testing` which activates:
 - `FakeDeezerHandler` — returns a local `test-audio.mp3`; tracks with DeezerTrackId >= 9_000_000_000 return an empty preview (5 seed tracks: The Beatles, Pink Floyd, Bob Dylan, Led Zeppelin, Fleetwood Mac) to test the "missing preview" filter/red indicator and the general "Re-check previews" button

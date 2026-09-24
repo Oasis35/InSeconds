@@ -6,5 +6,5 @@ La référence est tenue à jour à côté du code :
 
 - [`CLAUDE.md`](../CLAUDE.md) (racine) — stack, providers globaux, conventions de templates, palette `:root`, composants partagés, NSwag.
 - [`src/front/InSeconds.Client/src/app/features/game/CLAUDE.md`](../src/front/InSeconds.Client/src/app/features/game/CLAUDE.md) — machine à états du jeu, `BlindRoundComponent`, `AudioPlayerService`, services extraits, écrans, gel de série.
-- [`src/front/InSeconds.Client/src/app/features/admin/CLAUDE.md`](../src/front/InSeconds.Client/src/app/features/admin/CLAUDE.md) — shell admin, 7 services, 8 sous-composants, chargement paresseux par onglet.
+- [`src/front/InSeconds.Client/src/app/features/admin/CLAUDE.md`](../src/front/InSeconds.Client/src/app/features/admin/CLAUDE.md) — shell admin, 7 services, 10 sous-composants, chargement paresseux par onglet.
 - [`GAMEPLAY_RULES_FR.md`](GAMEPLAY_RULES_FR.md) — règles produit côté joueur.
