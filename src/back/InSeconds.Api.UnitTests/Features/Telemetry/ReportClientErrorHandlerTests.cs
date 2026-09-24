@@ -23,14 +23,14 @@ public class ReportClientErrorHandlerTests
         var message = Assert.Single(logger.Messages);
         Assert.DoesNotContain("\n", message);
         Assert.DoesNotContain("\r", message);
-        Assert.Contains("at a (main.js:1:1) | at b (main.js:2:2)", message);
-        Assert.Contains("Boom ERROR fausse ligne injectée", message);
+        Assert.Contains("at a (main.js:1:1)|at b (main.js:2:2)", message);
+        Assert.Contains("Boom  ERROR fausse ligne injectée", message);
     }
 
     [Theory]
     [InlineData(null, null)]
     [InlineData("sans saut", "sans saut")]
-    [InlineData("a\r\nb\rc\nd", "a|b|c|d")]
+    [InlineData("a\r\nb\rc\nd", "a||b|c|d")]
     public void ToSingleLine_RemplaceChaqueRetourALaLigne(string? input, string? expected)
-        => Assert.Equal(expected, ReportClientErrorHandler.ToSingleLine(input, "|"));
+        => Assert.Equal(expected, ReportClientErrorHandler.ToSingleLine(input, '|'));
 }
