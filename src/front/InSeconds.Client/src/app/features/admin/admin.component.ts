@@ -14,6 +14,7 @@ import { DashboardTabComponent } from './components/dashboard-tab/dashboard-tab.
 import { PoolTabComponent } from './components/pool-tab/pool-tab.component';
 import { ChallengesTabComponent } from './components/challenges-tab/challenges-tab.component';
 import { ActionsTabComponent } from './components/actions-tab/actions-tab.component';
+import { PlayersTabComponent } from './components/players-tab/players-tab.component';
 import { DecorBackgroundComponent } from '../../shared/decor-background/decor-background.component';
 import { BrowserIdComponent } from '../../shared/browser-id/browser-id.component';
 
@@ -22,7 +23,7 @@ import { BrowserIdComponent } from '../../shared/browser-id/browser-id.component
   imports: [
     DatePipe, TranslatePipe,
     AdminLoginComponent, DashboardTabComponent, PoolTabComponent,
-    ChallengesTabComponent, ActionsTabComponent, DecorBackgroundComponent, BrowserIdComponent,
+    ChallengesTabComponent, PlayersTabComponent, ActionsTabComponent, DecorBackgroundComponent, BrowserIdComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [

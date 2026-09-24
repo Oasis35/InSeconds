@@ -2,7 +2,7 @@ import { Injectable, inject, computed } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { of, timer, switchMap } from 'rxjs';
 import { AdminStatsResponse, ChallengeStatsDto, ChallengeStatsResponse } from '../../../api/api.generated';
-import { ChallengeDto, DeezerTrackInfo, PoolTracksResponse } from '../admin.models';
+import { ChallengeDto, DeezerTrackInfo, PoolTracksResponse, RegisteredPlayerDto, RegisteredPlayersResponse } from '../admin.models';
 import { AdminHttpService } from './admin-http.service';
 import { AdminStateService } from './admin-state.service';
 
@@ -72,6 +72,14 @@ export class AdminApiService {
     stream: () => this.http.getChallenges(),
   });
   readonly challenges = computed(() => this.challengesResource.value() ?? []);
+
+  // Comptes inscrits (onglet Joueurs), chargés à la première ouverture de l'onglet.
+  private readonly registeredPlayersResource = rxResource<RegisteredPlayersResponse, true | undefined>({
+    params: () => (this.http.authenticated() && this.state.hasVisited('joueurs')) ? true : undefined,
+    stream: () => this.http.getRegisteredPlayers(),
+  });
+  readonly registeredPlayers = computed<RegisteredPlayerDto[]>(() => this.registeredPlayersResource.value()?.players ?? []);
+  readonly registeredPlayersLoading = computed(() => this.registeredPlayersResource.isLoading());
 
   checkAuth(): void { this.http.checkAuth(); }
 

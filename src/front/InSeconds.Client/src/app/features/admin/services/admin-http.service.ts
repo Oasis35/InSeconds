@@ -5,7 +5,7 @@ import { environment } from '../../../../environments/environment';
 import { PlayerSessionService } from '../../../core/services/player-session.service';
 import { AdminStatsResponse, ChallengeStatsResponse } from '../../../api/api.generated';
 import {
-  ChallengeDto, DeezerTrackInfo, PoolTracksResponse, RefreshPreviewsResult,
+  ChallengeDto, DeezerTrackInfo, PoolTracksResponse, RefreshPreviewsResult, RegisteredPlayersResponse,
 } from '../admin.models';
 
 @Injectable()
@@ -46,4 +46,5 @@ export class AdminHttpService {
   getStats(day: string) { return this.http.get<AdminStatsResponse>(`${this.base}/stats?date=${day}`); }
   getChallengeStats() { return this.http.get<ChallengeStatsResponse>(`${this.base}/challenge-stats`); }
   getChallenges() { return this.http.get<ChallengeDto[]>(`${this.base}/challenges`); }
+  getRegisteredPlayers() { return this.http.get<RegisteredPlayersResponse>(`${this.base}/players`); }
 }

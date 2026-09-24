@@ -37,6 +37,14 @@
           ? ('admin.tabs.pool' | translate: { count: pool.poolTracks().available.length + pool.poolTracks().used.length })
           : ('admin.tabs.poolPlain' | translate) }}
       </button>
+      <button (click)="state.setActiveTab('joueurs')"
+        class="flex-1 py-2 rounded-md text-sm font-medium transition-colors"
+        [style.background]="state.activeTab() === 'joueurs' ? 'var(--bg-inactive)' : null"
+        [style.color]="state.activeTab() === 'joueurs' ? 'var(--text-hi)' : 'var(--text-muted)'">
+        {{ state.hasVisited('joueurs')
+          ? ('admin.tabs.players' | translate: { count: api.registeredPlayers().length })
+          : ('admin.tabs.playersPlain' | translate) }}
+      </button>
       <button (click)="state.setActiveTab('actions')"
         class="flex-1 py-2 rounded-md text-sm font-medium transition-colors"
         [style.background]="state.activeTab() === 'actions' ? 'var(--bg-inactive)' : null"
@@ -52,6 +60,8 @@
         <app-pool-tab />
       } @else if (state.activeTab() === 'defis') {
         <app-challenges-tab />
+      } @else if (state.activeTab() === 'joueurs') {
+        <app-players-tab />
       } @else if (state.activeTab() === 'actions') {
         <app-actions-tab />
       }

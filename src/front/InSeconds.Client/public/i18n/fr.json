@@ -286,6 +286,8 @@
       "poolPlain": "Pool",
       "challenges": "Défis ({{ count }})",
       "challengesPlain": "Défis",
+      "players": "Joueurs ({{ count }})",
+      "playersPlain": "Joueurs",
       "actions": "Actions"
     },
     "dashboard": {
@@ -391,6 +393,20 @@
       "history": "Historique",
       "noChallenge": "Aucun défi enregistré.",
       "noChallengeThisMonth": "Aucun défi ce mois."
+    },
+    "players": {
+      "title": "Comptes inscrits ({{ count }})",
+      "filterPlaceholder": "Filtrer par pseudo ou email",
+      "loading": "Chargement des joueurs...",
+      "empty": "Aucun compte inscrit pour l'instant.",
+      "noMatch": "Aucun joueur ne correspond à ce filtre.",
+      "colPseudo": "Pseudo",
+      "colEmail": "Email",
+      "colLastSeen": "Dernière visite",
+      "colCreated": "Inscrit le",
+      "colGames": "Parties",
+      "adminBadge": "Admin",
+      "neverSeen": "Jamais"
     },
     "deleteModal": {
       "title": "Confirmer la suppression",

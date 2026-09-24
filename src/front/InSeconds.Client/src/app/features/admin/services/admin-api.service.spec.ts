@@ -136,6 +136,20 @@ describe('AdminHttpService', () => {
     });
   });
 
+  describe('getRegisteredPlayers()', () => {
+    it('should GET /api/admin/players', () => {
+      let result: any;
+      service.getRegisteredPlayers().subscribe(r => (result = r));
+
+      const req = httpMock.expectOne(`${base}/players`);
+      expect(req.request.method).toBe('GET');
+      const body = { players: [] };
+      req.flush(body);
+
+      expect(result).toEqual(body);
+    });
+  });
+
   describe('addTrack()', () => {
     it('should POST to /api/admin/tracks with deezerTrackId', () => {
       let completed = false;

@@ -286,6 +286,8 @@
       "poolPlain": "Pool",
       "challenges": "Challenges ({{ count }})",
       "challengesPlain": "Challenges",
+      "players": "Players ({{ count }})",
+      "playersPlain": "Players",
       "actions": "Actions"
     },
     "dashboard": {
@@ -391,6 +393,20 @@
       "history": "History",
       "noChallenge": "No challenge recorded.",
       "noChallengeThisMonth": "No challenge this month."
+    },
+    "players": {
+      "title": "Registered accounts ({{ count }})",
+      "filterPlaceholder": "Filter by username or email",
+      "loading": "Loading players...",
+      "empty": "No registered account yet.",
+      "noMatch": "No player matches this filter.",
+      "colPseudo": "Username",
+      "colEmail": "Email",
+      "colLastSeen": "Last visit",
+      "colCreated": "Signed up",
+      "colGames": "Games",
+      "adminBadge": "Admin",
+      "neverSeen": "Never"
     },
     "deleteModal": {
       "title": "Confirm deletion",
