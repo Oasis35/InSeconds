@@ -433,6 +433,7 @@
       "streakTitle": "{{ streak }}-day streak",
       "stockLabel": "Your freezes · {{ count }} / {{ max }}",
       "nextFreeze": "Next freeze at {{ next }} days",
+      "full": "Full stock: you can't earn more freezes for now.",
       "remaining": {
         "one": "{{ n }} day to go",
         "other": "{{ n }} days to go"

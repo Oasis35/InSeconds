@@ -20,15 +20,19 @@
           </p>
           <app-freeze-cells [count]="streak().freezes" [max]="streak().maxFreezes" size="lg" />
         </div>
-        <div>
-          <div class="flex justify-between gap-2 mb-2 text-xs" style="color:var(--text-muted)">
-            <span>{{ 'streakFreeze.sheet.nextFreeze' | translate: { next: nextFreezeAt() } }}</span>
-            <span class="font-semibold" style="color:var(--color-accent-2)">{{ remainingKey() | translate: { n: remaining() } }}</span>
+        @if (!atMax()) {
+          <div>
+            <div class="flex justify-between gap-2 mb-2 text-xs" style="color:var(--text-muted)">
+              <span>{{ 'streakFreeze.sheet.nextFreeze' | translate: { next: nextFreezeAt() } }}</span>
+              <span class="font-semibold" style="color:var(--color-accent-2)">{{ remainingKey() | translate: { n: remaining() } }}</span>
+            </div>
+            <div class="rounded-full" style="height:6px;background:rgb(var(--rgb-border) / 0.25)">
+              <div class="rounded-full" style="height:6px;background:var(--gradient-ice)" [style.width.%]="progressPercent()"></div>
+            </div>
           </div>
-          <div class="rounded-full" style="height:6px;background:rgb(var(--rgb-border) / 0.25)">
-            <div class="rounded-full" style="height:6px;background:var(--gradient-ice)" [style.width.%]="progressPercent()"></div>
-          </div>
-        </div>
+        } @else {
+          <p class="m-0 text-xs" style="color:var(--text-muted)">{{ 'streakFreeze.sheet.full' | translate }}</p>
+        }
         <p class="m-0 text-[13px] leading-relaxed" style="color:var(--text-muted)">
           {{ 'streakFreeze.sheet.rule' | translate: { every: streak().freezeEveryDays, max: streak().maxFreezes } }}
         </p>

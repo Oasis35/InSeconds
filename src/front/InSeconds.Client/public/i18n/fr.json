@@ -433,6 +433,7 @@
       "streakTitle": "Série de {{ streak }} jours",
       "stockLabel": "Tes gels · {{ count }} / {{ max }}",
       "nextFreeze": "Prochain gel à {{ next }} jours",
+      "full": "Stock plein : impossible de gagner plus de gels pour l’instant.",
       "remaining": {
         "one": "encore {{ n }} jour",
         "other": "encore {{ n }} jours"
