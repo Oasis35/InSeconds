@@ -145,6 +145,25 @@ public sealed class SubmitAnswerHandlerTests
         logger.States.SelectMany(s => s).Should().NotContain(p => (p.Value ?? "").ToString()!.Contains("saisie-privee"));
     }
 
+    // Stats par morceau dans l'outil d'observabilité : le log porte le morceau attendu
+    // (position dans le défi, artiste, titre) — données publiques du défi.
+    [Fact]
+    public async Task Handle_LogueLeMorceauAttendu()
+    {
+        await using var db = CreateDbContext();
+        await SeedAsync(db);
+        var logger = new CapturingLogger<SubmitAnswerHandler>();
+        var handler = new SubmitAnswerHandler(db, new ScoreCalculator(), new TextNormalizer(), CreateSettingsService(), logger);
+
+        await handler.Handle(BuildCommand(artist: "x", title: "y"), CancellationToken.None);
+
+        var answerLog = logger.States.Should().ContainSingle(s => s.Any(p => p.Key == "Score")).Subject;
+        answerLog.Should().Contain(p => p.Key == "TrackPosition" && Equals(p.Value, 1));
+        answerLog.Should().Contain(p => p.Key == "TrackArtist" && Equals(p.Value, "Daft Punk"));
+        answerLog.Should().Contain(p => p.Key == "TrackTitle" && Equals(p.Value, "Get Lucky"));
+        logger.Messages.Should().Contain(m => m.Contains("morceau n°1 : Daft Punk / Get Lucky"));
+    }
+
     [Fact]
     public async Task Handle_WhenBothCorrect_ReturnsFullScore()
     {

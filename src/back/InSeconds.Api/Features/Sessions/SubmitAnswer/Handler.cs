@@ -37,6 +37,7 @@ public sealed class SubmitAnswerHandler(
             {
                 t.Track.Artist,
                 t.Track.Title,
+                t.Position,
                 AlreadyAnswered = t.Answers.Any(a => a.GameSessionId == command.SessionId),
             })
             .FirstOrDefaultAsync(cancellationToken);
@@ -116,9 +117,11 @@ public sealed class SubmitAnswerHandler(
 
         await db.SaveChangesAsync(cancellationToken);
 
-        // Jamais la réponse saisie (texte libre du joueur) : seulement le résultat.
+        // Jamais la réponse saisie (texte libre du joueur) : seulement le résultat, plus le
+        // morceau attendu (donnée publique du défi) pour lire les stats par morceau.
         PlayerActionLog.AnswerSubmitted(logger, command.PlayerId, command.SessionId, command.DailyChallengeTrackId,
-            command.ListenedDurationSeconds, artistCorrect, titleCorrect, hintLevelUsed, score);
+            command.ListenedDurationSeconds, artistCorrect, titleCorrect, hintLevelUsed, score,
+            challengeTrack.Position, challengeTrack.Artist, TextNormalizationHelpers.CleanDisplayTitle(challengeTrack.Title));
         if (session.Status == SessionStatus.Completed)
             PlayerActionLog.SessionCompleted(logger, command.SessionId, command.PlayerId, session.TotalScore);
 
