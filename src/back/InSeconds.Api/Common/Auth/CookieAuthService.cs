@@ -42,7 +42,7 @@ public sealed class CookieAuthService(
         player.RecordSeen(DateTime.UtcNow);
         await db.SaveChangesAsync(ct);
 
-        return new PlayerAuthResolution(player.Id, player.IsAdmin);
+        return new PlayerAuthResolution(player.Id, player.IsAdmin, player.Pseudo);
     }
 
     private async Task<Player?> TryResolveExistingPlayerEntityAsync(HttpContext httpContext, CancellationToken ct)

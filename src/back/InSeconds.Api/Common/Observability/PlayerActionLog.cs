@@ -3,8 +3,9 @@ namespace InSeconds.Api.Common.Observability;
 // Événements métier du parcours joueur, centralisés ici pour garder des noms de propriétés
 // identiques partout (PlayerId, SessionId…) : c'est ce qui permet de reconstituer la
 // chronologie d'un joueur en filtrant sur son PlayerId dans l'outil d'observabilité.
-// Règle : jamais d'email, de pseudo ni de réponse saisie — seulement des identifiants
-// techniques, des résultats (correct ou non, score) et le morceau attendu (public).
+// Règle : jamais d'email ni de réponse saisie — seulement des identifiants techniques, des
+// résultats (correct ou non, score) et le morceau attendu (public). Le pseudo des comptes
+// connectés arrive par le scope de PlayerTelemetryMiddleware, pas par ces messages.
 public static partial class PlayerActionLog
 {
     [LoggerMessage(EventId = 1000, Level = LogLevel.Information,

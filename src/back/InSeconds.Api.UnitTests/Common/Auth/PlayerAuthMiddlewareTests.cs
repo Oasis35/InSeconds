@@ -47,6 +47,36 @@ public sealed class PlayerAuthMiddlewareTests
     }
 
     [Fact]
+    public async Task InvokeAsync_WhenLinkedAccount_StoresPseudo()
+    {
+        var cookieAuth = Substitute.For<ICookieAuthService>();
+        cookieAuth.TryResolvePlayerAsync(Arg.Any<HttpContext>(), Arg.Any<CancellationToken>())
+            .Returns(new PlayerAuthResolution(Guid.NewGuid(), false, "Clem"));
+
+        var middleware = new PlayerAuthMiddleware(_ => Task.CompletedTask, CreateEnv());
+        var httpContext = CreateHttpContext("/api/sessions");
+
+        await middleware.InvokeAsync(httpContext, cookieAuth);
+
+        httpContext.GetPlayerPseudoOrNull().Should().Be("Clem");
+    }
+
+    [Fact]
+    public async Task InvokeAsync_WhenGuest_HasNoPseudo()
+    {
+        var cookieAuth = Substitute.For<ICookieAuthService>();
+        cookieAuth.TryResolvePlayerAsync(Arg.Any<HttpContext>(), Arg.Any<CancellationToken>())
+            .Returns(new PlayerAuthResolution(Guid.NewGuid(), false));
+
+        var middleware = new PlayerAuthMiddleware(_ => Task.CompletedTask, CreateEnv());
+        var httpContext = CreateHttpContext("/api/sessions");
+
+        await middleware.InvokeAsync(httpContext, cookieAuth);
+
+        httpContext.GetPlayerPseudoOrNull().Should().BeNull();
+    }
+
+    [Fact]
     public async Task InvokeAsync_OnPlayerRoute_WhenPlayerIsAdmin_SetsIsAdminTrue()
     {
         // Arrange

@@ -1,3 +1,4 @@
 namespace InSeconds.Api.Common.Auth;
 
-public sealed record PlayerAuthResolution(Guid PlayerId, bool IsAdmin);
+// Pseudo : null pour un invité (contrainte guest ⇔ pseudo) ; sert à lire les journaux par joueur.
+public sealed record PlayerAuthResolution(Guid PlayerId, bool IsAdmin, string? Pseudo = null);
