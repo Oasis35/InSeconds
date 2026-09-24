@@ -27,14 +27,25 @@ public class RefreshPreviewsTests(IntegrationTestFactory factory) : IAsyncLifeti
     [Fact]
     public async Task RefreshPreviews_SeedCoherent_RetourneCompteursSansModification()
     {
-        // Le seed a 40 tracks disponibles (15 utilisées dans des défis, exclues) avec des
-        // flags déjà cohérents avec le FakeDeezerHandler : rien à corriger, aucun échec.
+        // Le seed a 40 tracks hors défi, dont 2 encore en cooldown (utilisées il y a 5 et 15 jours),
+        // et 15 tracks des défis J-2/J-1/aujourd'hui, elles aussi en cooldown : 38 à vérifier.
+        // Flags déjà cohérents avec le FakeDeezerHandler : rien à corriger, aucun échec.
+        // Cooldown remis explicitement à 30j : le reseed ne touche pas la table Settings, et
+        // UpdateTrackCooldownTests peut l'avoir modifié dans la même collection.
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            await db.Settings
+                .Where(s => s.Key == "TrackCooldownDays")
+                .ExecuteUpdateAsync(u => u.SetProperty(s => s.Value, "30"));
+        }
+
         var resp = await AdminPostAsync("/api/admin/refresh-previews");
 
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
         var body = await resp.Content.ReadFromJsonAsync<RefreshPreviewsResponse>();
         Assert.NotNull(body);
-        Assert.Equal(40, body.Checked);
+        Assert.Equal(38, body.Checked);
         Assert.Equal(0, body.Updated);
         Assert.Equal(0, body.Failed);
     }
@@ -49,7 +60,7 @@ public class RefreshPreviewsTests(IntegrationTestFactory factory) : IAsyncLifeti
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var usedIds = await db.DailyChallengeTracks.Select(dct => dct.TrackId).ToListAsync();
             var track = await db.Tracks
-                .Where(t => t.DeezerTrackId < 9_000_000_000L && !usedIds.Contains(t.Id))
+                .Where(t => t.DeezerTrackId < 9_000_000_000L && !usedIds.Contains(t.Id) && t.LastUsedDate == null)
                 .OrderBy(t => t.Id)
                 .FirstAsync();
             track.HasPreview = false;

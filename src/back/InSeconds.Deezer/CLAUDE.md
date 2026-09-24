@@ -34,7 +34,7 @@ builder.Services.AddDeezerHttpClient(
 
 ## Consommateurs (dans `InSeconds.Api`, via `ProjectReference`)
 
-`Features/Sessions/StartSession/Handler.cs` (`CachedDeezerClient.GetPreviewUrlAsync`), `Features/Admin/Challenges/DeezerSearch/Endpoint.cs` (`DeezerClient.SearchTracksAsync` non caché), `Features/Admin/Challenges/CreateChallenge/Handler.cs`, `Features/Admin/Tracks/AddTrack/Handler.cs`, `Features/Admin/Tracks/UpdateTrack/Handler.cs` (`DeezerClient.GetTrackInfoAsync`), `Features/ChallengeGeneration/PreviewStatusRefresher.cs` (`DeezerClient.ProbePreviewAsync`, batché/rate-limité), `Features/Deezer/SearchEndpoint.cs` (`CachedDeezerClient`, endpoint public).
+`Features/Sessions/StartSession/Handler.cs` (`CachedDeezerClient.GetPreviewUrlAsync`), `Features/Admin/Challenges/DeezerSearch/Endpoint.cs` (`DeezerClient.SearchTracksAsync` non caché), `Features/Admin/Challenges/CreateChallenge/Handler.cs`, `Features/Admin/Tracks/AddTrack/Handler.cs`, `Features/Admin/Tracks/UpdateTrack/Handler.cs` (`DeezerClient.GetTrackInfoAsync`), `Features/ChallengeGeneration/PreviewStatusRefresher.cs` (`DeezerClient.ProbePreviewAsync`, batché/rate-limité), `Features/ChallengeGeneration/ReleaseYearRefresher.cs` (`DeezerClient.GetTrackInfoAsync`, même pacing, backfill `Track.ReleaseYear`), `Features/Deezer/SearchEndpoint.cs` (`CachedDeezerClient`, endpoint public).
 
 ## Tests
 
