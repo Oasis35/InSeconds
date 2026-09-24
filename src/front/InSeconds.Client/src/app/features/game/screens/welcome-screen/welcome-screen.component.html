@@ -1,6 +1,8 @@
 <div class="screen-enter relative flex-1 flex flex-col items-center justify-center gap-10 text-center px-2">
   <div class="relative space-y-4">
-    <p class="text-6xl" style="line-height:1;color:var(--color-accent)">♪</p>
+    <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto" aria-hidden="true" style="color:var(--color-accent)">
+      <circle cx="8" cy="18" r="4"></circle><path d="M12 18V2l7 4"></path>
+    </svg>
     <h2 class="text-3xl font-extrabold tracking-tight" style="font-family:var(--font-display);color:var(--text-hi)">{{ (isProtected() ? 'streakFreeze.welcomeBack' : 'welcome.title') | translate }}</h2>
     <p class="text-sm leading-relaxed" style="color:var(--text-muted)">
       {{ 'welcome.subtitle' | translate: { count: trackCount() } }}<br>
