@@ -7,6 +7,7 @@ import { TranslatePipe } from '@ngx-translate/core';
   imports: [TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './status-screen.component.html',
+  host: { class: 'flex-1 flex flex-col' },
 })
 export class StatusScreenComponent {
   readonly titleKey = input.required<string>();
