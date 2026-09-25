@@ -3,6 +3,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { TodayStatsResponse } from '../../../../api/api.generated';
 import { ShareButtonComponent } from '../../../../shared/share-button/share-button.component';
 import { TrackResultsListComponent, TrackResultRow } from '../../../../shared/track-results-list/track-results-list.component';
+import { ScoreDistributionChartComponent } from '../../../../shared/score-distribution-chart/score-distribution-chart.component';
 
 export interface RoundResult {
   artistCorrect: boolean;
@@ -20,13 +21,13 @@ export interface RoundResult {
 
 @Component({
   selector: 'app-final-recap-screen',
-  imports: [TranslatePipe, ShareButtonComponent, TrackResultsListComponent],
+  imports: [TranslatePipe, ShareButtonComponent, TrackResultsListComponent, ScoreDistributionChartComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './final-recap-screen.component.html',
 })
 export class FinalRecapScreenComponent {
   readonly results = input.required<RoundResult[]>();
-  /** Stats du jour (`GET /api/stats/today`) — porte l'histogramme par morceau. */
+  /** Stats du jour (`GET /api/stats/today`) — histogramme par morceau + répartition des scores. */
   readonly stats = input<TodayStatsResponse | null>(null);
   readonly displayedScore = input.required<number>();
   readonly shareCopied = input(false);

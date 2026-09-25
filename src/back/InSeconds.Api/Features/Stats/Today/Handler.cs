@@ -22,7 +22,7 @@ public sealed class TodayStatsHandler(
             .FirstOrDefaultAsync(c => c.Date == today, ct);
 
         if (challenge is null)
-            return Results.Ok(new TodayStatsResponse(null, 0, 0, 0, [], 0, false));
+            return Results.Ok(new TodayStatsResponse(null, 0, 0, 0, [], 0, false, null, null, 0, [], null));
 
         int? yourScore = null;
         int currentStreak = 0;
@@ -168,7 +168,16 @@ public sealed class TodayStatsHandler(
             );
         }).ToList();
 
-        return Results.Ok(new TodayStatsResponse(yourScore, medianResult, totalPlayers, currentStreak, tracks, freezesUsed, freezeMilestone));
+        // Score maximal possible = nb de morceaux du défi × meilleur palier (les indices ne font que retirer des points).
+        var maxPossibleScore = trackStats.Count * (appSettings.DurationScores.Count == 0 ? 0 : appSettings.DurationScores.Values.Max());
+
+        return Results.Ok(new TodayStatsResponse(
+            yourScore, medianResult, totalPlayers, currentStreak, tracks, freezesUsed, freezeMilestone,
+            MinScore:          totalPlayers == 0 ? null : scores.Min(),
+            MaxScore:          totalPlayers == 0 ? null : scores.Max(),
+            MaxPossibleScore:  maxPossibleScore,
+            ScoreDistribution: ScoreDistribution.Build(scores, maxPossibleScore),
+            BetterThanPercent: ScoreDistribution.BetterThanPercent(scores, yourScore)));
     }
 
     private static int ComputeMedian(List<int> values)

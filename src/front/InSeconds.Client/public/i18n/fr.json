@@ -66,7 +66,6 @@
     "nextChallengeIn": "Prochain défi dans",
     "title": "Déjà joué aujourd'hui",
     "yourScore": "Ton score",
-    "median": "Médiane",
     "showTracks": "Voir les morceaux",
     "hideTracks": "Masquer",
     "coverAlt": "Pochette",
@@ -86,6 +85,14 @@
     "artist": "Artiste",
     "title": "Titre",
     "comeBack": "Reviens demain pour un nouveau défi."
+  },
+  "scoreChart": {
+    "median": "médiane",
+    "lowest": "plus bas",
+    "highest": "plus haut",
+    "betterThanPrefix": "Tu fais mieux que",
+    "betterThanSuffix": "des joueurs",
+    "ariaLabel": "Répartition des scores du jour : plus bas {{ lowest }}, médiane {{ median }}, plus haut {{ highest }}"
   },
   "trackList": {
     "guessTimeTitle": "Temps d'écoute des autres joueurs",

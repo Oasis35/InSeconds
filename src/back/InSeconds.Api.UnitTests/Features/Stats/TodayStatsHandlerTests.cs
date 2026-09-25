@@ -110,6 +110,47 @@ public sealed class TodayStatsHandlerTests
     }
 
     [Fact]
+    public async Task Handle_WithSessions_ReturnsScoreDistributionMinMaxAndBetterThanPercent()
+    {
+        // 1 morceau × 1000 pts max → axe 0–1000, tranches de 100 ; scores 100, 300, 500
+        await using var db = CreateDbContext();
+        var (challenge, _) = BuildTodayChallenge();
+        db.DailyChallenges.Add(challenge);
+        db.Players.AddRange(BuildPlayer(Player1), BuildPlayer(Player2), BuildPlayer(Player3));
+        db.GameSessions.AddRange(
+            GameSession.Restore(playerId: Player1, dailyChallengeId: 1, id: 1, totalScore: 100, totalDurationSeconds: 3, createdAt: DateTime.UtcNow, status: SessionStatus.Completed),
+            GameSession.Restore(playerId: Player2, dailyChallengeId: 1, id: 2, totalScore: 500, totalDurationSeconds: 2, createdAt: DateTime.UtcNow, status: SessionStatus.Completed),
+            GameSession.Restore(playerId: Player3, dailyChallengeId: 1, id: 3, totalScore: 300, totalDurationSeconds: 5, createdAt: DateTime.UtcNow, status: SessionStatus.Completed));
+        await db.SaveChangesAsync();
+
+        var result = await CreateHandler(db).Handle(Player3, CancellationToken.None);
+
+        var response = ((Ok<TodayStatsResponse>)result).Value!;
+        response.MinScore.Should().Be(100);
+        response.MaxScore.Should().Be(500);
+        response.MaxPossibleScore.Should().Be(1000);
+        response.ScoreDistribution.Select(b => b.Count).Should().Equal(0, 1, 0, 1, 0, 1, 0, 0, 0, 0);
+        response.BetterThanPercent.Should().Be(50); // bat 100, pas 500
+    }
+
+    [Fact]
+    public async Task Handle_WhenNoSessions_ReturnsNullMinMaxAndEmptyBuckets()
+    {
+        await using var db = CreateDbContext();
+        var (challenge, _) = BuildTodayChallenge();
+        db.DailyChallenges.Add(challenge);
+        await db.SaveChangesAsync();
+
+        var result = await CreateHandler(db).Handle(null, CancellationToken.None);
+
+        var response = ((Ok<TodayStatsResponse>)result).Value!;
+        response.MinScore.Should().BeNull();
+        response.MaxScore.Should().BeNull();
+        response.BetterThanPercent.Should().BeNull();
+        response.ScoreDistribution.Should().OnlyContain(b => b.Count == 0);
+    }
+
+    [Fact]
     public async Task Handle_WithEvenNumberOfSessions_ReturnsAverageOfTwoMiddleValues()
     {
         // scores : 100, 200, 300, 400 → médiane = (200+300)/2 = 250

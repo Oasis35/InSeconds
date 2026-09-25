@@ -30,19 +30,14 @@
     @if (stats(); as s) {
       <div class="w-full overflow-hidden" style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:28px 8px 28px 8px">
 
-        <div class="grid grid-cols-2" style="border-bottom:1px solid var(--border-medium)">
-          <div class="flex flex-col items-center py-7 px-4" style="border-right:1px solid var(--border-medium)">
-            <p class="text-xs font-bold tracking-widest uppercase mb-2" style="font-family:var(--font-display);color:var(--text-faint)">{{ 'alreadyPlayed.yourScore' | translate }}</p>
-            <p class="text-5xl font-extrabold tabular-nums" style="font-family:var(--font-display);color:var(--text-hi);letter-spacing:-0.02em">{{ s.yourScore ?? '—' }}</p>
-          </div>
-          <div class="flex flex-col items-center py-7 px-4">
-            <p class="text-xs font-bold tracking-widest uppercase mb-2" style="font-family:var(--font-display);color:var(--text-faint)">{{ 'alreadyPlayed.median' | translate }}</p>
-            @if (s.medianScore > 0) {
-              <p class="text-5xl font-extrabold tabular-nums" style="font-family:var(--font-display);color:var(--color-accent-2);letter-spacing:-0.02em">{{ s.medianScore }}</p>
-            } @else {
-              <p class="text-sm mt-4" style="color:var(--text-sep)">—</p>
-            }
-          </div>
+        <div class="flex flex-col items-center pt-4 pb-3.5 px-4">
+          <p class="text-xs font-bold tracking-widest uppercase mb-1.5" style="font-family:var(--font-display);color:var(--text-faint)">{{ 'alreadyPlayed.yourScore' | translate }}</p>
+          <p class="font-extrabold tabular-nums" style="font-family:var(--font-display);color:var(--text-hi);font-size:2.6rem;line-height:1;letter-spacing:-0.02em">{{ s.yourScore ?? '—' }}</p>
+        </div>
+
+        <!-- Répartition des scores du jour -->
+        <div class="px-4 pt-4 pb-4" style="border-top:1px solid var(--border-medium)">
+          <app-score-distribution-chart [stats]="s" />
         </div>
 
         <!-- Bouton partage -->

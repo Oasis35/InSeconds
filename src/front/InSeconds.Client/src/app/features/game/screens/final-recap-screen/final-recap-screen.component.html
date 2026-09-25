@@ -4,11 +4,18 @@
   <div class="overflow-hidden" style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:28px 8px 28px 8px">
 
     <!-- Score -->
-    <div class="px-6 pt-7 pb-6 text-center">
-      <p class="text-xs font-bold tracking-widest uppercase mb-3" style="font-family:var(--font-display);color:var(--text-faint)">{{ 'done.finalScore' | translate }}</p>
-      <p class="font-extrabold tabular-nums" style="font-family:var(--font-display);color:var(--text-hi);font-size:4rem;line-height:1;letter-spacing:-0.03em">{{ displayedScore() }}</p>
-      <p class="text-xs mt-2" style="color:var(--text-faint)">{{ 'done.points' | translate }}</p>
+    <div class="px-6 pt-5 pb-4 text-center">
+      <p class="text-xs font-bold tracking-widest uppercase mb-2" style="font-family:var(--font-display);color:var(--text-faint)">{{ 'done.finalScore' | translate }}</p>
+      <p class="font-extrabold tabular-nums" style="font-family:var(--font-display);color:var(--text-hi);font-size:3rem;line-height:1;letter-spacing:-0.03em">{{ displayedScore() }}</p>
+      <p class="text-xs mt-1.5" style="color:var(--text-faint)">{{ 'done.points' | translate }}</p>
     </div>
+
+    <!-- Répartition des scores du jour (dès que les stats sont revenues du serveur) -->
+    @if (stats(); as s) {
+      <div class="px-4 pt-4 pb-4" style="border-top:1px solid var(--border-medium)">
+        <app-score-distribution-chart [stats]="s" />
+      </div>
+    }
 
     <!-- Compte à rebours -->
     @if (countdown()) {

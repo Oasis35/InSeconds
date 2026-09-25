@@ -2052,6 +2052,14 @@ export interface ResumedAnswer {
     [key: string]: any;
 }
 
+export interface ScoreBucketDto {
+    minScore: number;
+    maxScore: number;
+    count: number;
+
+    [key: string]: any;
+}
+
 export interface StartSessionResponse {
     sessionId: number;
     tracks: TrackSlot[];
@@ -2114,6 +2122,11 @@ export interface TodayStatsResponse {
     tracks: TrackStat[];
     freezesUsed: number;
     freezeMilestone: boolean;
+    minScore: number | undefined;
+    maxScore: number | undefined;
+    maxPossibleScore: number;
+    scoreDistribution: ScoreBucketDto[];
+    betterThanPercent: number | undefined;
 
     [key: string]: any;
 }
