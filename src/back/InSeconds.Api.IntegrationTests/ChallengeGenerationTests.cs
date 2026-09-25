@@ -118,6 +118,64 @@ public class ChallengeGenerationTests(IntegrationTestFactory factory) : IAsyncLi
         Assert.Equal(preGenerationUsageCount, untouched.UsageCount);
     }
 
+    [Fact]
+    public async Task DailyChallengeGenerator_ExclutLesMorceauxDesactives()
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var existingChallenge = await db.DailyChallenges.FirstOrDefaultAsync(c => c.Date == today);
+        if (existingChallenge != null)
+        {
+            db.DailyChallenges.Remove(existingChallenge);
+            await db.SaveChangesAsync();
+        }
+
+        // Tous les candidats éligibles sont désactivés sauf exactement 5 (TracksPerChallenge) :
+        // le défi ne peut être composé que de ces 5-là.
+        var cutoff = today.AddDays(-30);
+        var eligible = await db.Tracks
+            .Where(t => t.HasPreview && (t.LastUsedDate == null || t.LastUsedDate < cutoff))
+            .OrderBy(t => t.Id)
+            .ToListAsync();
+        Assert.True(eligible.Count > 5);
+        var kept = eligible.Take(5).Select(t => t.Id).ToHashSet();
+        foreach (var t in eligible.Skip(5))
+            t.IsDisabled = true;
+        await db.SaveChangesAsync();
+
+        var generator = scope.ServiceProvider.GetRequiredService<DailyChallengeGenerator>();
+        var result = await generator.GenerateAsync();
+
+        Assert.Equal(GenerateResult.Success, result);
+        var created = await db.DailyChallenges
+            .Include(c => c.Tracks)
+            .SingleAsync(c => c.Date == today);
+        Assert.Equal(kept, created.Tracks.Select(dct => dct.TrackId).ToHashSet());
+    }
+
+    [Fact]
+    public async Task DailyChallengeGenerator_TousLesMorceauxDesactives_PoolInsuffisant()
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var existingChallenge = await db.DailyChallenges.FirstOrDefaultAsync(c => c.Date == today);
+        if (existingChallenge != null)
+        {
+            db.DailyChallenges.Remove(existingChallenge);
+            await db.SaveChangesAsync();
+        }
+        await db.Tracks.ExecuteUpdateAsync(s => s.SetProperty(t => t.IsDisabled, true));
+
+        var generator = scope.ServiceProvider.GetRequiredService<DailyChallengeGenerator>();
+        var result = await generator.GenerateAsync();
+
+        Assert.Equal(GenerateResult.PoolInsufficient, result);
+    }
+
     // ── helper ───────────────────────────────────────────────────────────────
 
     private Task<HttpResponseMessage> AdminPostAsync(string url, object? body)

@@ -373,10 +373,19 @@
       "page": "page {{ current }}/{{ total }}",
       "lastUsedFrom": "Utilisé depuis le",
       "lastUsedTo": "Utilisé jusqu'au",
-      "deleteUsedTitle": "Déjà utilisé dans un défi : suppression impossible",
       "deleteUsedSelection": "La sélection contient un morceau déjà utilisé dans un défi : suppression impossible",
       "editTitle": "Modifier l'artiste ou le titre",
-      "editLockedTitle": "Morceau d'une partie encore en cours : modifiable à partir de demain"
+      "editLockedTitle": "Morceau d'une partie encore en cours : modifiable à partir de demain",
+      "disable": "Désactiver",
+      "enable": "Réactiver",
+      "disabled": "Désactivé",
+      "disabledFilter": "Désactivés",
+      "disabledCount": "{{ count }} désactivé(s)",
+      "disableTitle": "Déjà utilisé : le retirer des prochains défis (il reste dans le pool)",
+      "enableTitle": "Remettre ce morceau dans le tirage des prochains défis",
+      "disableTodayTitle": "Morceau du défi du jour : désactivable à partir de demain",
+      "disableInTodayError": "Ce morceau est dans le défi du jour : désactivable à partir de demain.",
+      "disableError": "La modification a échoué, réessaie."
     },
     "actions": {
       "challengeOfDay": "Défi du jour",

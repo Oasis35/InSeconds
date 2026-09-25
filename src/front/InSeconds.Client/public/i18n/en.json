@@ -373,10 +373,19 @@
       "page": "page {{ current }}/{{ total }}",
       "lastUsedFrom": "Used from",
       "lastUsedTo": "Used until",
-      "deleteUsedTitle": "Already used in a challenge: can't be deleted",
       "deleteUsedSelection": "The selection includes a track already used in a challenge: can't be deleted",
       "editTitle": "Edit artist or title",
-      "editLockedTitle": "Track in a game still in progress: editable from tomorrow"
+      "editLockedTitle": "Track in a game still in progress: editable from tomorrow",
+      "disable": "Disable",
+      "enable": "Enable",
+      "disabled": "Disabled",
+      "disabledFilter": "Disabled",
+      "disabledCount": "{{ count }} disabled",
+      "disableTitle": "Already used: remove it from upcoming challenges (it stays in the pool)",
+      "enableTitle": "Put this track back into upcoming challenges",
+      "disableTodayTitle": "In today's challenge: can be disabled from tomorrow",
+      "disableInTodayError": "This track is in today's challenge: it can be disabled from tomorrow.",
+      "disableError": "The change failed, please try again."
     },
     "actions": {
       "challengeOfDay": "Today's challenge",

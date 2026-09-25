@@ -14,4 +14,8 @@ public sealed record TrackDto(
     int UsageCount = 0,
     DateOnly? UnlockDate = null,
     // Morceau dans une partie encore en cours : non renommable avant demain (cf. RenameLock).
-    bool RenameLocked = false);
+    bool RenameLocked = false,
+    // Retiré du tirage des prochains défis par l'admin (cf. SetTrackDisabled).
+    bool IsDisabled = false,
+    // Morceau du défi du jour : non désactivable avant demain (cf. SetTrackDisabled).
+    bool InTodayChallenge = false);

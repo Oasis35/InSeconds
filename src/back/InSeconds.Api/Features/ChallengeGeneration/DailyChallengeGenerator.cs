@@ -28,7 +28,8 @@ public sealed class DailyChallengeGenerator(
         var cutoff = today.AddDays(-cooldownDays);
 
         var candidates = await db.Tracks
-            .Where(t => t.HasPreview && (t.LastUsedDate == null || t.LastUsedDate < cutoff))
+            // Un morceau désactivé par l'admin n'est jamais tiré (cf. SetTrackDisabled).
+            .Where(t => t.HasPreview && !t.IsDisabled && (t.LastUsedDate == null || t.LastUsedDate < cutoff))
             .ToListAsync(ct);
 
         var settings = await settingsService.GetAsync(ct);

@@ -18,6 +18,7 @@ public sealed class TrackConfiguration : IEntityTypeConfiguration<Track>
         builder.Property(t => t.CoverHash).HasMaxLength(64);
         builder.Property(t => t.ReleaseYear).IsRequired(false);
         builder.Property(t => t.HasPreview).HasDefaultValue(true).IsRequired();
+        builder.Property(t => t.IsDisabled).HasDefaultValue(false).IsRequired();
         builder.Property(t => t.UsageCount).HasDefaultValue(0).IsRequired();
 
         builder.Property(t => t.CreatedAt)

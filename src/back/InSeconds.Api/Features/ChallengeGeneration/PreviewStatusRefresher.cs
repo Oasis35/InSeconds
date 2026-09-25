@@ -22,14 +22,14 @@ public sealed class PreviewStatusRefresher(
         // à 23h, la veille de la génération) : un morceau déjà utilisé redevient éligible une fois
         // son cooldown écoulé, son flag doit donc être revérifié avant qu'il puisse être tiré.
         // Les morceaux encore en cooldown sont ignorés (pas éligibles, et ça borne la durée de
-        // l'appel admin synchrone).
+        // l'appel admin synchrone). Les morceaux désactivés aussi : ils ne seront pas tirés.
         var cooldownDays = await SettingsRawReader.GetIntAsync(
             db, "TrackCooldownDays", new AppSettings().TrackCooldownDays, ct);
         var tomorrow = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(1);
         var cutoff = tomorrow.AddDays(-cooldownDays);
 
         var candidates = await db.Tracks
-            .Where(t => t.LastUsedDate == null || t.LastUsedDate < cutoff)
+            .Where(t => !t.IsDisabled && (t.LastUsedDate == null || t.LastUsedDate < cutoff))
             .ToListAsync(ct);
 
         if (candidates.Count == 0)
