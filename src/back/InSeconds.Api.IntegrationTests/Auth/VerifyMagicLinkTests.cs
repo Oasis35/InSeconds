@@ -135,6 +135,67 @@ public class VerifyMagicLinkTests(IntegrationTestFactory factory) : IAsyncLifeti
     }
 
     [Fact]
+    public async Task VerifyMagicLink_NavigateurDejaConnecte_EmailInconnu_CreeUnNouveauCompteSansToucherAuPremier()
+    {
+        var client = factory.CreateClient();
+        var ownerToken = await RequestAndExtractTokenAsync(client, TestEmail);
+        await client.PostAsJsonAsync("/api/auth/magic-link/verify", new { Token = ownerToken, Pseudo = "Proprio" });
+        var owner = await client.GetFromJsonAsync<PlayerMeDto>("/api/players/me");
+
+        // Même navigateur, toujours connecté : lien pour une adresse sans compte.
+        var otherToken = await RequestAndExtractTokenAsync(client, "autre@example.com");
+        var needsPseudo = await client.PostAsJsonAsync("/api/auth/magic-link/verify", new { Token = otherToken, Pseudo = (string?)null });
+        Assert.True((await needsPseudo.Content.ReadFromJsonAsync<VerifyMagicLinkResponse>())!.NeedsPseudo);
+
+        var resp = await client.PostAsJsonAsync("/api/auth/magic-link/verify", new { Token = otherToken, Pseudo = "Autre" });
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+
+        // Le navigateur est désormais sur un compte neuf pour la nouvelle adresse…
+        var now = await client.GetFromJsonAsync<PlayerMeDto>("/api/players/me");
+        Assert.NotEqual(owner!.PlayerId, now!.PlayerId);
+        Assert.Equal("autre@example.com", now.Email);
+        Assert.Equal("Autre", now.Pseudo);
+
+        // …et le premier compte est intact.
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var ownerInDb = await db.Players.AsNoTracking().SingleAsync(p => p.Id == owner.PlayerId);
+        Assert.Equal(TestEmail, ownerInDb.Email);
+        Assert.Equal("Proprio", ownerInDb.Pseudo);
+    }
+
+    [Fact]
+    public async Task VerifyMagicLink_LienDunTiersOuvertParUnJoueurConnecte_NeDonnePasAccesASonCompte()
+    {
+        // La victime est connectée sur son compte.
+        var victim = factory.CreateClient();
+        var victimToken = await RequestAndExtractTokenAsync(victim, TestEmail);
+        await victim.PostAsJsonAsync("/api/auth/magic-link/verify", new { Token = victimToken, Pseudo = "Victime" });
+        var victimMe = await victim.GetFromJsonAsync<PlayerMeDto>("/api/players/me");
+
+        // L'attaquant demande un lien pour sa propre adresse, que la victime ouvre et confirme.
+        var attacker = factory.CreateClient();
+        var trapToken = await RequestAndExtractTokenAsync(attacker, "pirate@example.com");
+        var trap = await victim.PostAsJsonAsync("/api/auth/magic-link/verify", new { Token = trapToken, Pseudo = "Pirate" });
+        Assert.Equal(HttpStatusCode.OK, trap.StatusCode);
+
+        // L'attaquant se reconnecte avec son adresse : il obtient le compte neuf, pas celui de la victime.
+        var loginToken = await RequestAndExtractTokenAsync(attacker, "pirate@example.com");
+        await attacker.PostAsJsonAsync("/api/auth/magic-link/verify", new { Token = loginToken, Pseudo = (string?)null });
+        var attackerMe = await attacker.GetFromJsonAsync<PlayerMeDto>("/api/players/me");
+
+        Assert.NotEqual(victimMe!.PlayerId, attackerMe!.PlayerId);
+        Assert.Equal("pirate@example.com", attackerMe.Email);
+
+        // La victime peut toujours se reconnecter à son compte avec son adresse.
+        var againToken = await RequestAndExtractTokenAsync(victim, TestEmail);
+        await victim.PostAsJsonAsync("/api/auth/magic-link/verify", new { Token = againToken, Pseudo = (string?)null });
+        var victimAgain = await victim.GetFromJsonAsync<PlayerMeDto>("/api/players/me");
+        Assert.Equal(victimMe.PlayerId, victimAgain!.PlayerId);
+        Assert.Equal("Victime", victimAgain.Pseudo);
+    }
+
+    [Fact]
     public async Task VerifyMagicLink_Reconnexion_NeRedonnePasDeGel()
     {
         var deviceA = factory.CreateClient();

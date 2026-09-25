@@ -46,6 +46,16 @@ public sealed class AccountLinkingService(ApplicationDbContext db) : IAccountLin
         }
 
         var player = await db.Players.FirstAsync(p => p.Id == currentGuestPlayerId, ct);
+
+        // Le navigateur est déjà connecté à un autre compte : on ne le touche pas (sinon son
+        // email et son pseudo seraient remplacés par ceux du lien), on crée un compte neuf
+        // pour cette adresse et c'est lui qui recevra le cookie.
+        if (!player.IsGuest)
+        {
+            player = Player.CreateGuest(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow);
+            db.Players.Add(player);
+        }
+
         player.LinkToAccount(email, pseudo);
         await db.SaveChangesAsync(ct);
 

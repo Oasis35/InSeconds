@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -27,6 +27,13 @@ export class VerifyLoginComponent {
 
   protected readonly state = signal<VerifyState>(this.token ? 'idle' : 'missingToken');
   protected pseudo = '';
+
+  // Navigateur déjà connecté à un compte : on prévient avant de confirmer. Un lien envoyé à
+  // une autre adresse connecte à un autre compte (le compte actuel n'est jamais modifié, cf.
+  // AccountLinkingService) — et un lien reçu de quelqu'un d'autre ne doit pas être confirmé.
+  protected readonly connectedEmail = computed(() =>
+    this.playerSession.isLinked() ? this.playerSession.email() : null
+  );
 
   confirm(): void {
     if (!this.token) return;

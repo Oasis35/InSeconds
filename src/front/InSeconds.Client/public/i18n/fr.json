@@ -169,6 +169,8 @@
     "verify": {
       "title": "Vérification",
       "subtitle": "Confirme la connexion pour associer cet appareil à ton compte.",
+      "alreadyConnected": "Tu es déjà connecté avec {{email}}. Si ce lien a été envoyé à une autre adresse, confirmer te connectera à un autre compte. Ne confirme jamais un lien que quelqu'un d'autre t'a envoyé.",
+      "newAccountNotice": "Ce lien correspond à une nouvelle adresse : un nouveau compte va être créé. Ton compte actuel ({{email}}) ne sera pas modifié.",
       "confirm": "Confirmer",
       "confirming": "Connexion...",
       "pseudoTitle": "Choisis ton pseudo",

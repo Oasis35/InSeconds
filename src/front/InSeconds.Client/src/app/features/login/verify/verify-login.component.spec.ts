@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router } from '@angular/router';
+import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import { VerifyLoginComponent } from './verify-login.component';
 import { ApiClient, ApiException } from '../../../api/api.generated';
@@ -9,16 +10,20 @@ import { PlayerSessionService } from '../../../core/services/player-session.serv
 // test via HttpTestingController inutilement complexe pour la logique testée ici).
 describe('VerifyLoginComponent', () => {
   let apiClient: { apiAuthMagicLinkVerify: jasmine.Spy };
-  let playerSession: { load: jasmine.Spy };
+  let playerSession: { load: jasmine.Spy; isLinked: ReturnType<typeof signal<boolean>>; email: ReturnType<typeof signal<string | null>> };
   let router: { navigateByUrl: jasmine.Spy };
 
   function apiError(status: number): ApiException {
     return new ApiException('error', status, '', {}, null);
   }
 
-  function setup(token: string | null): VerifyLoginComponent {
+  function setup(token: string | null, connectedEmail: string | null = null): VerifyLoginComponent {
     apiClient = { apiAuthMagicLinkVerify: jasmine.createSpy('apiAuthMagicLinkVerify') };
-    playerSession = { load: jasmine.createSpy('load').and.returnValue(of(void 0)) };
+    playerSession = {
+      load: jasmine.createSpy('load').and.returnValue(of(void 0)),
+      isLinked: signal(connectedEmail !== null),
+      email: signal(connectedEmail),
+    };
     router = { navigateByUrl: jasmine.createSpy('navigateByUrl') };
 
     TestBed.configureTestingModule({
@@ -44,6 +49,18 @@ describe('VerifyLoginComponent', () => {
   it('should start in idle state when a token is present', () => {
     const component = setup('abc123');
     expect(component['state']()).toBe('idle');
+  });
+
+  describe('connectedEmail', () => {
+    it('should be null for a guest', () => {
+      const component = setup('abc123');
+      expect(component['connectedEmail']()).toBeNull();
+    });
+
+    it('should expose the current email when the browser is already signed in', () => {
+      const component = setup('abc123', 'moi@example.com');
+      expect(component['connectedEmail']()).toBe('moi@example.com');
+    });
   });
 
   describe('confirm()', () => {
