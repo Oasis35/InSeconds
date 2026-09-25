@@ -21,6 +21,7 @@ function makeAdminApiStub() {
     addTrack: jasmine.createSpy('addTrack').and.returnValue(of(void 0)),
     reloadPool: jasmine.createSpy('reloadPool'),
     renameTrack: jasmine.createSpy('renameTrack').and.returnValue(of({})),
+    setTrackDisabled: jasmine.createSpy('setTrackDisabled').and.returnValue(of({})),
     _setPoolTracks: (v: PoolTracksResponse) => poolTracks.set(v),
   };
 }
@@ -29,7 +30,7 @@ function makeDeezerTrackInfo(deezerTrackId: number): DeezerTrackInfo {
   return { artist: `A${deezerTrackId}`, title: `T${deezerTrackId}`, previewUrl: null, deezerTrackId };
 }
 
-function makePoolTrack(id: number, hasPreview: boolean, extra: Partial<{ lastUsedDate: string | null; usageCount: number }> = {}) {
+function makePoolTrack(id: number, hasPreview: boolean, extra: Partial<{ lastUsedDate: string | null; usageCount: number; isDisabled: boolean; inTodayChallenge: boolean }> = {}) {
   return { id, artist: `A${id}`, title: `T${id}`, deezerTrackId: id, hasPreview, usageCount: 0, ...extra };
 }
 
@@ -346,6 +347,95 @@ describe('AdminPoolService', () => {
 
       jasmine.clock().tick(2000); // ne doit pas re-déclencher quoi que ce soit
       expect(service.addTrackStatus(101)).toBe('idle');
+    });
+  });
+  describe('désactivation des morceaux', () => {
+    afterEach(() => jasmine.clock().uninstall());
+
+    it('should exclude disabled tracks from the pool runway', () => {
+      apiStub._setPoolTracks({
+        available: [makePoolTrack(1, true), makePoolTrack(2, true), makePoolTrack(3, true, { isDisabled: true })],
+        used: [makePoolTrack(4, true, { isDisabled: true })],
+      });
+
+      expect(service.poolAvailableWithPreview()).toBe(2);
+      expect(service.disabledCount()).toBe(2);
+    });
+
+    it('should always sort disabled tracks last, with or without a sort column', () => {
+      apiStub._setPoolTracks({
+        available: [makePoolTrack(1, true)],
+        used: [makePoolTrack(2, true, { isDisabled: true }), makePoolTrack(3, true), makePoolTrack(4, true, { isDisabled: true })],
+      });
+
+      expect(service.sortedTracks().map(t => t.id)).toEqual([1, 3, 2, 4]);
+
+      service.setPoolSort('artist');
+      service.setPoolSort('artist'); // desc : A4, A3, A2, A1 sans la règle
+      expect(service.sortedTracks().map(t => t.id)).toEqual([3, 1, 4, 2]);
+    });
+
+    it('should filter disabled tracks with the "disabled" status', () => {
+      apiStub._setPoolTracks({
+        available: [makePoolTrack(1, true)],
+        used: [makePoolTrack(2, true, { isDisabled: true }), makePoolTrack(3, true)],
+      });
+
+      service.setPoolFilterStatus('disabled');
+
+      expect(service.filteredTracks().map(t => t.id)).toEqual([2]);
+    });
+
+    it('should disable an enabled track, then reload the pool', () => {
+      service.toggleDisabled(makePoolTrack(5, true));
+
+      expect(apiStub.setTrackDisabled).toHaveBeenCalledOnceWith(5, true);
+      expect(apiStub.reloadPool).toHaveBeenCalled();
+      expect(service.togglingDisabledIds().has(5)).toBeFalse();
+    });
+
+    it('should re-enable a disabled track, even from today\'s challenge', () => {
+      service.toggleDisabled(makePoolTrack(5, true, { isDisabled: true, inTodayChallenge: true }));
+
+      expect(apiStub.setTrackDisabled).toHaveBeenCalledOnceWith(5, false);
+    });
+
+    it('should not call the API to disable a track of today\'s challenge', () => {
+      service.toggleDisabled(makePoolTrack(5, true, { inTodayChallenge: true }));
+
+      expect(apiStub.setTrackDisabled).not.toHaveBeenCalled();
+    });
+
+    it('should ignore a second click while the request is pending', () => {
+      const pending = new Subject<object>();
+      apiStub.setTrackDisabled.and.returnValue(pending);
+
+      service.toggleDisabled(makePoolTrack(5, true));
+      service.toggleDisabled(makePoolTrack(5, true));
+
+      expect(apiStub.setTrackDisabled).toHaveBeenCalledTimes(1);
+      expect(service.togglingDisabledIds().has(5)).toBeTrue();
+    });
+
+    it('should show the "in today" error on 409, then clear it after 4s', () => {
+      jasmine.clock().install();
+      apiStub.setTrackDisabled.and.returnValue(throwError(() => ({ status: 409 })));
+
+      service.toggleDisabled(makePoolTrack(5, true));
+
+      expect(service.toggleDisabledError()).toBe('inToday');
+      expect(apiStub.reloadPool).not.toHaveBeenCalled();
+      jasmine.clock().tick(4000);
+      expect(service.toggleDisabledError()).toBeNull();
+    });
+
+    it('should show a generic error on other failures', () => {
+      apiStub.setTrackDisabled.and.returnValue(throwError(() => ({ status: 500 })));
+
+      service.toggleDisabled(makePoolTrack(5, true));
+
+      expect(service.toggleDisabledError()).toBe('error');
+      expect(service.togglingDisabledIds().has(5)).toBeFalse();
     });
   });
 });

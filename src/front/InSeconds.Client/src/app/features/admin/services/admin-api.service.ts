@@ -101,6 +101,7 @@ export class AdminApiService {
   addTrack(deezerTrackId: number) { return this.http.addTrack(deezerTrackId); }
   deleteTrack(id: number) { return this.http.deleteTrack(id); }
   renameTrack(id: number, artist: string, title: string) { return this.http.renameTrack(id, artist, title); }
+  setTrackDisabled(id: number, isDisabled: boolean) { return this.http.setTrackDisabled(id, isDisabled); }
   searchDeezer(q: string) { return this.http.searchDeezer(q); }
   getPlayerHistory(playerId: string) { return this.http.getPlayerHistory(playerId); }
 }

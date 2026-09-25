@@ -27,6 +27,11 @@ public static class E2EResetEndpoint
                 .Where(p => p.Id != devPlayerId)
                 .ExecuteDeleteAsync(ct);
 
+            // Un test qui désactive un morceau du pool ne doit pas fausser les suivants.
+            await db.Tracks
+                .Where(t => t.IsDisabled)
+                .ExecuteUpdateAsync(s => s.SetProperty(t => t.IsDisabled, false), ct);
+
             if (deleteChallenge)
             {
                 var today = DateOnly.FromDateTime(DateTime.UtcNow);

@@ -175,6 +175,17 @@ describe('AdminHttpService', () => {
     });
   });
 
+  describe('setTrackDisabled()', () => {
+    it('should PUT /api/admin/tracks/{id}/disabled with isDisabled', () => {
+      service.setTrackDisabled(7, true).subscribe();
+
+      const req = httpMock.expectOne(`${base}/tracks/7/disabled`);
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual({ isDisabled: true });
+      req.flush({ id: 7, isDisabled: true });
+    });
+  });
+
   describe('addTrack()', () => {
     it('should POST to /api/admin/tracks with deezerTrackId', () => {
       let completed = false;

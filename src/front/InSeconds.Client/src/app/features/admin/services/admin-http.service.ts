@@ -43,6 +43,9 @@ export class AdminHttpService {
   renameTrack(id: number, artist: string, title: string) {
     return this.http.patch(`${this.base}/tracks/${id}`, { artist, title });
   }
+  setTrackDisabled(id: number, isDisabled: boolean) {
+    return this.http.put(`${this.base}/tracks/${id}/disabled`, { isDisabled });
+  }
   searchDeezer(q: string) { return this.http.get<DeezerTrackInfo[]>(`${this.base}/deezer-search?q=${encodeURIComponent(q)}`); }
   getPoolTracks() { return this.http.get<PoolTracksResponse>(`${this.base}/tracks`); }
   getStats(day: string) { return this.http.get<AdminStatsResponse>(`${this.base}/stats?date=${day}`); }

@@ -7,7 +7,7 @@ import { DeezerTrackInfo, PoolTrackDto } from '../admin.models';
 
 type PoolTrackWithFlag = PoolTrackDto & { isAvailable: boolean };
 export type PoolSortColumn = 'artist' | 'title' | 'preview' | 'status' | 'lastUsedDate' | 'unlockDate' | 'usageCount';
-type PoolFilterStatus = 'all' | 'available' | 'used';
+type PoolFilterStatus = 'all' | 'available' | 'used' | 'disabled';
 type PoolFilterPreview = 'all' | 'ok' | 'missing';
 
 /** État de l'onglet pool : filtres, pagination, sélection, panneau de recherche/ajout, modale suppression. */
@@ -36,6 +36,12 @@ export class AdminPoolService {
   readonly poolSortDirection = signal<'asc' | 'desc'>('asc');
 
   readonly selectedTrackIds = signal<Set<number>>(new Set());
+
+  // --- désactivation (morceaux utilisés, à la place de la suppression) ---
+  // Ids en cours d'envoi (bouton désactivé le temps de la requête) + erreur affichée dans la barre d'outils.
+  readonly togglingDisabledIds = signal<ReadonlySet<number>>(new Set());
+  readonly toggleDisabledError = signal<'error' | 'inToday' | null>(null);
+  private toggleDisabledErrorTimer: ReturnType<typeof setTimeout> | null = null;
 
   // --- panneau de recherche/ajout (bandeau intégré, remplace l'ancienne modale) ---
   // Par ligne de résultat (deezerTrackId → statut) — plusieurs ajouts peuvent être lancés
@@ -111,6 +117,7 @@ export class AdminPoolService {
   private matchesStatus(t: PoolTrackWithFlag, status: PoolFilterStatus): boolean {
     if (status === 'available') return t.isAvailable;
     if (status === 'used') return !t.isAvailable;
+    if (status === 'disabled') return t.isDisabled === true;
     return true;
   }
 
@@ -130,8 +137,13 @@ export class AdminPoolService {
     const column = this.poolSortColumn();
     const dir = this.poolSortDirection() === 'asc' ? 1 : -1;
     const list = [...this.filteredTracks()];
-    if (!column) return list;
+    // Les morceaux désactivés vont toujours en fin de liste, quel que soit le tri choisi
+    // (Array.sort est stable : l'ordre d'origine est conservé à l'intérieur de chaque groupe).
+    const byDisabled = (a: PoolTrackWithFlag, b: PoolTrackWithFlag) => Number(!!a.isDisabled) - Number(!!b.isDisabled);
+    if (!column) return list.sort(byDisabled);
     list.sort((a, b) => {
+      const disabledOrder = byDisabled(a, b);
+      if (disabledOrder !== 0) return disabledOrder;
       const va = this.sortValue(a, column);
       const vb = this.sortValue(b, column);
       if (va == null && vb == null) return 0;
@@ -171,11 +183,13 @@ export class AdminPoolService {
     return map;
   });
 
-  // Autonomie du pool : mêmes critères que DailyChallengeGenerator côté back
-  // (jamais utilisé + preview active), calculée depuis les données déjà chargées
+  // Autonomie du pool : jamais utilisé + preview active + non désactivé (DailyChallengeGenerator
+  // exclut aussi les désactivés), calculée depuis les données déjà chargées
   // — pas d'appel serveur supplémentaire.
   readonly poolAvailableWithPreview = computed(() =>
-    this.poolTracks().available.filter(t => t.hasPreview !== false).length);
+    this.poolTracks().available.filter(t => t.hasPreview !== false && !t.isDisabled).length);
+
+  readonly disabledCount = computed(() => this.allTracks().filter(t => t.isDisabled).length);
 
   readonly poolDaysRemaining = computed(() =>
     Math.floor(this.poolAvailableWithPreview() / Math.max(1, this.settings.tracksPerChallenge())));
@@ -367,6 +381,38 @@ export class AdminPoolService {
         // 409 = morceau entré entre-temps dans une partie en cours (défi du jour).
         error: err => this.editStatus.set(err?.status === 409 ? 'locked' : 'error'),
       });
+  }
+
+  // --- désactivation ---
+  /** Retire le morceau du tirage des prochains défis, ou l'y remet. Refusé (409) pour un morceau du défi du jour. */
+  toggleDisabled(track: PoolTrackDto): void {
+    const disable = !track.isDisabled;
+    if (this.togglingDisabledIds().has(track.id) || (disable && track.inTodayChallenge)) return;
+    this.setToggling(track.id, true);
+    this.api.setTrackDisabled(track.id, disable)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.setToggling(track.id, false);
+          this.api.reloadPool();
+        },
+        error: err => {
+          this.setToggling(track.id, false);
+          this.showToggleDisabledError(err?.status === 409 ? 'inToday' : 'error');
+        },
+      });
+  }
+
+  private setToggling(id: number, on: boolean): void {
+    const next = new Set(this.togglingDisabledIds());
+    if (on) next.add(id); else next.delete(id);
+    this.togglingDisabledIds.set(next);
+  }
+
+  private showToggleDisabledError(kind: 'error' | 'inToday'): void {
+    if (this.toggleDisabledErrorTimer) clearTimeout(this.toggleDisabledErrorTimer);
+    this.toggleDisabledError.set(kind);
+    this.toggleDisabledErrorTimer = setTimeout(() => this.toggleDisabledError.set(null), 4000);
   }
 
   // --- modale suppression ---
