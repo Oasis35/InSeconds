@@ -27,7 +27,8 @@ public class StatsTests(IntegrationTestFactory factory) : IAsyncLifetime
         Assert.NotNull(body);
         Assert.Null(body.YourScore);
         Assert.Equal(0, body.TotalPlayers);
-        Assert.Equal(5, body.Tracks.Count); // le défi du jour a 5 morceaux
+        // Appel anonyme (sans partie finie) : les morceaux du jour ne sont pas révélés.
+        Assert.Empty(body.Tracks);
     }
 
     [Fact]
@@ -83,18 +84,48 @@ public class StatsTests(IntegrationTestFactory factory) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task TodayStats_RetourneStatsParMorceau()
+    public async Task TodayStats_ApresPartieComplete_ReveleLesMorceaux()
     {
-        var resp = await _client.GetAsync("/api/stats/today");
+        await PlayFullGameAsync(_client);
 
-        var body = await resp.Content.ReadFromJsonAsync<TodayStatsResponse>();
+        var body = await _client.GetFromJsonAsync<TodayStatsResponse>("/api/stats/today");
+
         Assert.NotNull(body);
+        Assert.Equal(5, body.Tracks.Count); // le défi du jour a 5 morceaux
         Assert.All(body.Tracks, t =>
         {
             Assert.True(t.Position >= 1);
             Assert.NotEmpty(t.Artist);
             Assert.NotEmpty(t.Title);
+            Assert.True(t.DeezerTrackId > 0);
         });
+    }
+
+    [Fact]
+    public async Task TodayStats_PartieEnCours_NeRevelePasLesMorceaux()
+    {
+        // Scénario de triche : démarrer la partie puis lire les stats dans un autre onglet.
+        var session = await StartSessionAsync(_client);
+        await _client.PostAsJsonAsync($"/api/sessions/{session.SessionId}/answers",
+            new SubmitAnswerBody(session.Tracks[0].Id, 1m, false, "X", null));
+
+        var body = await _client.GetFromJsonAsync<TodayStatsResponse>("/api/stats/today");
+
+        Assert.NotNull(body);
+        Assert.Empty(body.Tracks);
+    }
+
+    [Fact]
+    public async Task TodayStats_AutreJoueurAFini_NeRevelePasLesMorceauxAUnAnonyme()
+    {
+        await PlayFullGameAsync(_client);
+
+        var anonymous = factory.CreateClient();
+        var body = await anonymous.GetFromJsonAsync<TodayStatsResponse>("/api/stats/today");
+
+        Assert.NotNull(body);
+        Assert.Equal(1, body.TotalPlayers); // les chiffres anonymes restent visibles
+        Assert.Empty(body.Tracks);
     }
 
     [Fact]
@@ -113,6 +144,7 @@ public class StatsTests(IntegrationTestFactory factory) : IAsyncLifetime
             await db.SaveChangesAsync();
         }
 
+        await PlayFullGameAsync(_client);
         var resp = await _client.GetAsync("/api/stats/today");
 
         var body = await resp.Content.ReadFromJsonAsync<TodayStatsResponse>();
@@ -200,19 +232,34 @@ public class StatsTests(IntegrationTestFactory factory) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task TodayStats_SansSessionComplete_RetourneNullPourReponsesJoueur()
+    public async Task TodayStats_PartieAbandonnee_ReveleLesMorceauxSansReponsesJoueur()
     {
-        // Pas de session démarrée — les champs joueur doivent être null
-        var resp = await _client.GetAsync("/api/stats/today");
-        var body = await resp.Content.ReadFromJsonAsync<TodayStatsResponse>();
-        Assert.NotNull(body);
+        // Partie abandonnée : morceaux révélés, mais pas de réponse joueur (session non complétée).
+        var session = await StartSessionAsync(_client);
+        await _client.PutAsync($"/api/sessions/{session.SessionId}/abandon", null);
 
-        Assert.All(body.Tracks, t =>
+        var body = await _client.GetFromJsonAsync<TodayStatsResponse>("/api/stats/today");
+
+        Assert.NotNull(body);
+        Assert.Equal(5, body.Tracks.Count);
+        Assert.All(body.Tracks, t => Assert.Null(t.Score));
+    }
+
+    private static async Task<StartSessionResponse> StartSessionAsync(HttpClient client)
+    {
+        var resp = await client.PostAsync("/api/sessions", null);
+        var session = await resp.Content.ReadFromJsonAsync<StartSessionResponse>();
+        Assert.NotNull(session);
+        return session;
+    }
+
+    private static async Task PlayFullGameAsync(HttpClient client)
+    {
+        var session = await StartSessionAsync(client);
+        foreach (var track in session.Tracks)
         {
-            Assert.Null(t.ArtistCorrect);
-            Assert.Null(t.TitleCorrect);
-            Assert.Null(t.ListenedDurationSeconds);
-            Assert.Null(t.Score);
-        });
+            await client.PostAsJsonAsync($"/api/sessions/{session.SessionId}/answers",
+                new SubmitAnswerBody(track.Id, 1m, false, "Eminem", "Lose Yourself"));
+        }
     }
 }

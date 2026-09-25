@@ -240,7 +240,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
         failureRatePercent:        0,
         position:                  a.position,
         coverUrl:                  track?.coverUrl ?? null,
-        deezerTrackId:             track?.deezerTrackId ?? 0,
+        deezerTrackId:             a.deezerTrackId ?? 0,
       };
     }));
     this.gameState.set('playing');
@@ -296,7 +296,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
           failureRatePercent:        response.failureRatePercent,
           position:                  index + 1,
           coverUrl:                  track.coverUrl ?? null,
-          deezerTrackId:             track['deezerTrackId'],
+          deezerTrackId:             response.deezerTrackId,
         }]);
         this.roundRef()?.setResult(response);
       },
@@ -307,6 +307,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
           score: 0,
           correctArtist: '?',
           correctTitle: '?',
+          deezerTrackId: 0, // inconnu sans réponse du serveur → pas de badge Deezer
           listenedDurationSeconds: 0,
           averageSecondsWhenCorrect: undefined,
           failureRatePercent: 0,

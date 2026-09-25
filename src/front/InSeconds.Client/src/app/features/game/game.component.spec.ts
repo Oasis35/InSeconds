@@ -123,7 +123,7 @@ describe('GameComponent — streak toast', () => {
 
   it('resets on onNextTrack() reaching the last track (done)', () => {
     component['streakToastDismissed'].set(true);
-    component['tracks'].set([{ id: 1, previewUrl: null, coverUrl: null, deezerTrackId: 1 } as any]);
+    component['tracks'].set([{ id: 1, previewUrl: null, coverUrl: null } as any]);
     component['currentIndex'].set(0);
 
     component['onNextTrack']();
@@ -182,7 +182,7 @@ describe('GameComponent — gel de série', () => {
 
   function finishGame(todayStats: ReturnType<typeof stats>): void {
     apiStub.apiStatsToday.and.returnValue(of(todayStats));
-    component['tracks'].set([{ id: 1, previewUrl: null, coverUrl: null, deezerTrackId: 1 } as any]);
+    component['tracks'].set([{ id: 1, previewUrl: null, coverUrl: null } as any]);
     component['currentIndex'].set(0);
     component['onNextTrack']();
   }
@@ -270,5 +270,55 @@ describe('GameComponent — gel de série', () => {
 
     expect(component['showStreakSheet']()).toBeFalse();
     expect(router.navigate).toHaveBeenCalledWith(['/login']);
+  });
+});
+
+// L'identifiant Deezer n'arrive plus au démarrage (il donnerait la réponse) : le récap le
+// lit dans la réponse à chaque morceau, ou dans les réponses déjà données à la reprise.
+describe('GameComponent — identifiant Deezer révélé après la réponse', () => {
+  let component: GameComponent;
+  let gameFacadeStub: { peekToday: jasmine.Spy; startToday: jasmine.Spy; submitAnswer: jasmine.Spy };
+
+  beforeEach(() => {
+    gameFacadeStub = {
+      peekToday: jasmine.createSpy('peekToday'),
+      startToday: jasmine.createSpy('startToday'),
+      submitAnswer: jasmine.createSpy('submitAnswer').and.returnValue(of({
+        artistCorrect: true, titleCorrect: true, score: 1000, correctArtist: 'Eminem',
+        correctTitle: 'Lose Yourself', deezerTrackId: 3135556, listenedDurationSeconds: 0.5,
+        averageSecondsWhenCorrect: undefined, failureRatePercent: 0, guessTimeDistribution: [],
+        notFoundCount: 0, hintLevelUsed: 0, hintPenaltyPercentApplied: 0,
+      })),
+    };
+    component = createComponent(
+      gameFacadeStub, { apiStatsToday: jasmine.createSpy('apiStatsToday') }, signal(false),
+      { navigate: jasmine.createSpy('navigate') });
+  });
+
+  it('takes the Deezer id of an answered track from the answer response', () => {
+    component['sessionId'] = 1;
+    component['tracks'].set([{ id: 7, position: 1, previewUrl: 'x', coverUrl: undefined }]);
+    component['currentIndex'].set(0);
+
+    component['onAnswered']({
+      trackId: 7, listenedDurationSeconds: 0.5, wasExtended: false, artistAnswer: 'Eminem', titleAnswer: 'Lose Yourself',
+    } as any);
+
+    expect(component['results']()[0].deezerTrackId).toBe(3135556);
+  });
+
+  it('takes the Deezer id of already answered tracks from the resumed answers', () => {
+    component['tracks'].set([
+      { id: 7, position: 1, previewUrl: 'x', coverUrl: undefined },
+      { id: 8, position: 2, previewUrl: 'y', coverUrl: undefined },
+    ]);
+    component['resumeCompletedAnswers'].set([{
+      position: 1, artistCorrect: true, titleCorrect: false, score: 500, listenedDurationSeconds: 1,
+      correctArtist: 'Eminem', correctTitle: 'Lose Yourself', deezerTrackId: 3135556,
+    }]);
+
+    component['resumePlaying']();
+
+    expect(component['results']()[0].deezerTrackId).toBe(3135556);
   });
 });

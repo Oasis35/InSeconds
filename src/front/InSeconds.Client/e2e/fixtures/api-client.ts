@@ -93,6 +93,13 @@ export class ApiTestClient {
     }
   }
 
+  /** `GET /api/stats/today` sans cookie (visiteur qui n'a pas joué). */
+  async getTodayStatsAnonymously(): Promise<{ totalPlayers: number; tracks: unknown[] }> {
+    const res = await fetch(`${BASE}/api/stats/today`);
+    if (!res.ok) throw new Error(`stats/today failed: ${res.status}`);
+    return res.json();
+  }
+
   /**
    * Fait jouer une partie complète (réponses vides → 0 pt) à un nouvel invité : le cookie
    * posé par `POST /api/sessions` est réutilisé pour les réponses.
