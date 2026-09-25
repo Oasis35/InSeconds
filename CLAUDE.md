@@ -253,13 +253,13 @@ npm run e2e:ui   # mode UI interactif Playwright
 
 ## Déploiement VPS
 
-VPS OVH (`VPS-1 2027`, 2 vCores, 4 Go RAM, 40 Go, Debian 13 Trixie, zone Gravelines/GRA), IP `151.80.234.203`. Accès SSH par clé uniquement (`ssh vpsovh`, user `debian`).
+VPS OVH (`VPS-1 2027`, 2 vCores, 4 Go RAM, 40 Go, Debian 13 Trixie, zone Gravelines/GRA). Accès SSH par clé uniquement (`ssh vpsovh`, user `debian`). **L'IP publique du VPS n'est jamais écrite dans le dépôt** (ni doc, ni code, ni workflow) : le proxy Cloudflare sert justement à la cacher, la publier permettrait de contourner Cloudflare (WAF, anti-DDoS) en tapant directement Caddy. Elle vit uniquement dans le `~/.ssh/config` local (alias `vpsovh`), le secret GitHub `VPS_HOST` et le DNS Cloudflare. Elle a figuré dans ce fichier jusqu'au 2026-09-25 et reste donc dans l'historique git.
 
 ### Durcissement serveur
 
 - **SSH** : `/etc/ssh/sshd_config.d/10-hardening.conf` (`PasswordAuthentication no`, `PermitRootLogin no`, `KbdInteractiveAuthentication no`). **Nommé `10-` et pas `99-`** — piège : `sshd` retient la *première* valeur rencontrée pour chaque directive dans l'ordre du glob `Include /etc/ssh/sshd_config.d/*.conf`, et `50-cloud-init.conf` (déjà présent sur une Debian OVH fraîche, avec `PasswordAuthentication yes`) est inclus *avant* un fichier `99-*`. Un drop-in `99-hardening.conf` serait donc silencieusement ignoré pour cette directive. Vérifier avec `sudo sshd -T | grep -i passwordauth` après toute modif.
 - **fail2ban** : `/etc/fail2ban/jail.local` (`bantime=1h`, `maxretry=3` sur le jail `sshd`, backend `systemd` déjà fourni par le paquet Debian).
-- **UFW** : OpenSSH + 80/tcp + 443/tcp uniquement.
+- **UFW** : OpenSSH + 80/tcp + 443/tcp uniquement. 80/443 restent ouverts au monde entier (pas seulement aux plages Cloudflare) : quelqu'un qui connaît l'IP peut joindre Caddy sans passer par Cloudflare — restriction aux plages Cloudflare à faire, cf. `docs/TACHES.md` § Infra.
 - **Docker** : dépôt officiel (pas celui de Debian), `/etc/docker/daemon.json` avec rotation des logs (`max-size: 10m`, `max-file: 3` — important vu les 40 Go de disque).
 
 ### Architecture — 3 stacks Docker Compose indépendants
