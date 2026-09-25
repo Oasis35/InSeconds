@@ -162,14 +162,43 @@ test.describe('Admin — pool', () => {
     await admin.login();
     await page.getByRole('button', { name: /Pool/ }).click();
 
-    // Coldplay — Yellow fait partie du défi J-2 du seed.
+    // Coldplay — Yellow fait partie du défi J-2 du seed : pas de corbeille, un bouton « Désactiver » à la place.
     await admin.poolSearchInput().fill('Coldplay');
     const row = admin.poolRow('Coldplay');
-    await expect(row.getByRole('button', { name: '🗑' })).toBeDisabled();
+    await expect(row.getByRole('button', { name: '🗑' })).toHaveCount(0);
+    await expect(row.getByRole('button', { name: 'Désactiver' })).toBeEnabled();
     await expect(row.getByRole('button', { name: '▶' })).toBeEnabled();
 
     await row.getByRole('checkbox').check();
     await expect(page.getByRole('button', { name: 'Supprimer (1)' })).toBeDisabled();
+  });
+
+  test('désactive puis réactive un morceau utilisé, bloque ceux du défi du jour', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('button', { name: /Pool/ }).click();
+
+    // Eminem est dans le défi du jour : « Désactiver » grisé.
+    await admin.poolSearchInput().fill('Eminem');
+    await expect(admin.poolRow('Eminem').getByRole('button', { name: 'Désactiver' })).toBeDisabled();
+
+    // Coldplay (défi J-2) : désactivable, reste dans le pool avec le badge « Désactivé ».
+    await admin.poolSearchInput().fill('Coldplay');
+    await admin.poolRow('Coldplay').getByRole('button', { name: 'Désactiver' }).click();
+    await expect(admin.poolRow('Coldplay').getByRole('button', { name: 'Réactiver' })).toBeVisible();
+    await expect(admin.poolRow('Coldplay').getByText('Désactivé', { exact: true })).toBeVisible();
+
+    // Retrouvable via le filtre « Désactivés », qui ne montre que lui.
+    await admin.poolSearchInput().fill('');
+    await admin.poolFilterStatus().selectOption('disabled');
+    await expect(admin.poolRow('Coldplay')).toBeVisible();
+
+    await admin.poolRow('Coldplay').getByRole('button', { name: 'Réactiver' }).click();
+    await expect(admin.poolRow('Coldplay')).not.toBeVisible();
+    await admin.poolFilterStatus().selectOption('all');
+    await admin.poolSearchInput().fill('Coldplay');
+    await expect(admin.poolRow('Coldplay').getByRole('button', { name: 'Désactiver' })).toBeEnabled();
   });
 
   test('renomme un morceau déjà utilisé, bloque ceux du défi du jour', async ({ page, api }) => {

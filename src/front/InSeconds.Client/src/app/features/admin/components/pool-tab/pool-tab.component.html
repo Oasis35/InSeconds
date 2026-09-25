@@ -17,6 +17,7 @@
     } @else {
       <span class="text-xs" style="color:var(--text-muted)">
         {{ 'admin.pool.availableUsed' | translate: { available: pool.poolTracks().available.length, used: pool.poolTracks().used.length } }}
+        @if (pool.disabledCount() > 0) { · {{ 'admin.pool.disabledCount' | translate: { count: pool.disabledCount() } }} }
         · <span [style.color]="pool.poolDaysColor(pool.poolDaysRemaining())">{{ pool.poolDaysRemaining() }} {{ (pool.poolDaysRemaining() > 1 ? 'admin.pool.runwayDays' : 'admin.pool.runwayDay') | translate }}</span>
       </span>
     }
@@ -51,6 +52,7 @@
       <option value="all">{{ 'admin.pool.allStatuses' | translate }}</option>
       <option value="available">{{ 'admin.pool.available' | translate }}</option>
       <option value="used">{{ 'admin.pool.used' | translate }}</option>
+      <option value="disabled">{{ 'admin.pool.disabledFilter' | translate }}</option>
     </select>
     <label for="pool-filter-lastused-from" class="sr-only">{{ 'admin.pool.lastUsedFrom' | translate }}</label>
     <input id="pool-filter-lastused-from" type="date" [value]="pool.poolFilterLastUsedFrom()"
@@ -71,6 +73,12 @@
       </button>
     }
   </div>
+
+  @if (pool.toggleDisabledError(); as err) {
+    <p class="text-xs" role="alert" style="color:var(--color-fail)">
+      {{ (err === 'inToday' ? 'admin.pool.disableInTodayError' : 'admin.pool.disableError') | translate }}
+    </p>
+  }
 
   <!-- Tableau unique -->
   <div class="rounded-xl flex flex-col overflow-hidden" style="background:var(--bg-surface)">
@@ -121,15 +129,28 @@
                         style="color:var(--text-muted);border:1px solid var(--border-strong)">✎</button>
                     </span>
                     <!-- Le title est porté par un span : un bouton désactivé n'affiche pas son tooltip partout. -->
-                    <span [title]="(isUsed ? 'admin.pool.deleteUsedTitle' : 'admin.pool.deleteTitle') | translate">
-                      <button (click)="pool.openDeleteModal(t)" [disabled]="isUsed"
-                        class="text-xs px-2 py-1 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                        style="color:var(--text-muted);border:1px solid var(--border-strong)">🗑</button>
-                    </span>
+                    @if (isUsed || t.isDisabled) {
+                      <!-- Un morceau utilisé ne se supprime pas : on le retire du tirage des prochains défis. -->
+                      @let lockedToday = !t.isDisabled && t.inTodayChallenge;
+                      <span [title]="(lockedToday ? 'admin.pool.disableTodayTitle' : (t.isDisabled ? 'admin.pool.enableTitle' : 'admin.pool.disableTitle')) | translate">
+                        <button (click)="pool.toggleDisabled(t)" [disabled]="lockedToday || pool.togglingDisabledIds().has(t.id)"
+                          class="text-xs px-2 py-1 rounded transition-colors whitespace-nowrap disabled:opacity-30 disabled:cursor-not-allowed"
+                          [style.color]="t.isDisabled ? 'var(--color-success)' : 'var(--text-muted)'"
+                          style="border:1px solid var(--border-strong)">
+                          {{ (t.isDisabled ? 'admin.pool.enable' : 'admin.pool.disable') | translate }}
+                        </button>
+                      </span>
+                    } @else {
+                      <span [title]="'admin.pool.deleteTitle' | translate">
+                        <button (click)="pool.openDeleteModal(t)"
+                          class="text-xs px-2 py-1 rounded transition-colors"
+                          style="color:var(--text-muted);border:1px solid var(--border-strong)">🗑</button>
+                      </span>
+                    }
                   </div>
                 </td>
-                <td class="px-3 py-2.5 font-medium max-w-[130px] truncate" style="color:var(--text-hi)">{{ t.artist }}</td>
-                <td class="px-3 py-2.5 max-w-[150px] truncate" style="color:var(--text-muted)">{{ t.title }}</td>
+                <td class="px-3 py-2.5 font-medium max-w-[130px] truncate" [class.opacity-50]="t.isDisabled" style="color:var(--text-hi)">{{ t.artist }}</td>
+                <td class="px-3 py-2.5 max-w-[150px] truncate" [class.opacity-50]="t.isDisabled" style="color:var(--text-muted)">{{ t.title }}</td>
                 <td class="px-3 py-2.5">
                   @if (t.hasPreview === true) {
                     <span class="inline-flex items-center gap-1 text-xs font-medium" style="color:var(--color-success)">
@@ -142,7 +163,9 @@
                   }
                 </td>
                 <td class="px-3 py-2.5">
-                  @if (isUsed) {
+                  @if (t.isDisabled) {
+                    <span class="text-xs px-2 py-0.5 rounded-full whitespace-nowrap" style="color:var(--color-fail);background:var(--bg-inactive)">{{ 'admin.pool.disabled' | translate }}</span>
+                  } @else if (isUsed) {
                     <span class="text-xs px-2 py-0.5 rounded-full" style="color:var(--text-muted);background:var(--bg-inactive)">{{ 'admin.pool.used' | translate }}</span>
                   } @else {
                     <span class="text-xs px-2 py-0.5 rounded-full" style="color:var(--text-indigo);background:rgba(184,166,255,0.12)">{{ 'admin.pool.available' | translate }}</span>

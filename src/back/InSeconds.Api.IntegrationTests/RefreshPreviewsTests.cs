@@ -81,6 +81,37 @@ public class RefreshPreviewsTests(IntegrationTestFactory factory) : IAsyncLifeti
         Assert.True(repaired.HasPreview);
     }
 
+    [Fact]
+    public async Task RefreshPreviews_MorceauDesactive_EstIgnore()
+    {
+        // Un morceau désactivé ne sera pas tiré : inutile de le vérifier, son flag reste tel quel.
+        int disabledId;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var usedIds = await db.DailyChallengeTracks.Select(dct => dct.TrackId).ToListAsync();
+            var track = await db.Tracks
+                .Where(t => t.DeezerTrackId < 9_000_000_000L && !usedIds.Contains(t.Id) && t.LastUsedDate == null)
+                .OrderBy(t => t.Id)
+                .FirstAsync();
+            track.HasPreview = false;
+            track.IsDisabled = true;
+            disabledId = track.Id;
+            await db.SaveChangesAsync();
+        }
+
+        var resp = await AdminPostAsync("/api/admin/refresh-previews");
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<RefreshPreviewsResponse>();
+        Assert.NotNull(body);
+        Assert.Equal(0, body.Updated);
+
+        using var verifyScope = factory.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Assert.False((await verifyDb.Tracks.SingleAsync(t => t.Id == disabledId)).HasPreview);
+    }
+
     private Task<HttpResponseMessage> AdminPostAsync(string url)
     {
         var req = new HttpRequestMessage(HttpMethod.Post, url);

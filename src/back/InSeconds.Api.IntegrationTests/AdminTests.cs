@@ -5,6 +5,7 @@ using InSeconds.Api.Features.Admin.Tracks.AddTrack;
 using InSeconds.Api.Features.Admin.Tracks.GetTracks;
 using InSeconds.Api.Features.Admin.Tracks.UpdateTrack;
 using InSeconds.Api.Features.Admin.Tracks.RenameTrack;
+using InSeconds.Api.Features.Admin.Tracks.SetTrackDisabled;
 using InSeconds.Api.Features.Admin.Challenges.GetChallenges;
 using InSeconds.Api.Features.Admin.Stats.GetAdminStats;
 using InSeconds.Api.Features.Admin.Stats.GetChallengeStats;
@@ -862,6 +863,69 @@ public class AdminTests(IntegrationTestFactory factory) : IAsyncLifetime
     public async Task RenameTrack_TrackInexistant_Retourne404()
     {
         var resp = await AdminPatchAsync("/api/admin/tracks/99999", new { Artist = "A", Title = "T" });
+
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+    }
+
+    // ── SetTrackDisabled ──────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task SetTrackDisabled_SansAuth_Retourne401()
+    {
+        var resp = await _client.PutAsJsonAsync("/api/admin/tracks/1/disabled", new { IsDisabled = true });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task SetTrackDisabled_TrackUtilise_DesactiveEtReactive()
+    {
+        // Alternative à la suppression (409) pour un morceau déjà utilisé : il reste dans le pool.
+        var tracks = await (await AdminGetAsync("/api/admin/tracks")).Content.ReadFromJsonAsync<GetTracksResponse>();
+        var track = tracks!.Used.First(t => !t.InTodayChallenge);
+        Assert.False(track.IsDisabled);
+
+        var disable = await AdminPutAsync($"/api/admin/tracks/{track.Id}/disabled", new { IsDisabled = true });
+
+        Assert.Equal(HttpStatusCode.OK, disable.StatusCode);
+        var body = await disable.Content.ReadFromJsonAsync<SetTrackDisabledResponse>();
+        Assert.Equal(new SetTrackDisabledResponse(track.Id, true), body);
+        var afterDisable = await (await AdminGetAsync("/api/admin/tracks")).Content.ReadFromJsonAsync<GetTracksResponse>();
+        Assert.True(Assert.Single(afterDisable!.Used, t => t.Id == track.Id).IsDisabled);
+
+        var enable = await AdminPutAsync($"/api/admin/tracks/{track.Id}/disabled", new { IsDisabled = false });
+
+        Assert.Equal(HttpStatusCode.OK, enable.StatusCode);
+        var afterEnable = await (await AdminGetAsync("/api/admin/tracks")).Content.ReadFromJsonAsync<GetTracksResponse>();
+        Assert.False(Assert.Single(afterEnable!.Used, t => t.Id == track.Id).IsDisabled);
+    }
+
+    [Fact]
+    public async Task SetTrackDisabled_TrackDuDefiDuJour_Retourne409MaisReactivable()
+    {
+        var tracks = await (await AdminGetAsync("/api/admin/tracks")).Content.ReadFromJsonAsync<GetTracksResponse>();
+        var todayTrack = tracks!.Used.First(t => t.InTodayChallenge);
+
+        var disable = await AdminPutAsync($"/api/admin/tracks/{todayTrack.Id}/disabled", new { IsDisabled = true });
+
+        Assert.Equal(HttpStatusCode.Conflict, disable.StatusCode);
+
+        // Désactivé puis tiré malgré tout (défi créé à la main) : la réactivation reste permise.
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            await db.Tracks.Where(t => t.Id == todayTrack.Id)
+                .ExecuteUpdateAsync(s => s.SetProperty(t => t.IsDisabled, true));
+        }
+        var enable = await AdminPutAsync($"/api/admin/tracks/{todayTrack.Id}/disabled", new { IsDisabled = false });
+
+        Assert.Equal(HttpStatusCode.OK, enable.StatusCode);
+    }
+
+    [Fact]
+    public async Task SetTrackDisabled_TrackInexistant_Retourne404()
+    {
+        var resp = await AdminPutAsync("/api/admin/tracks/99999/disabled", new { IsDisabled = true });
 
         Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
     }

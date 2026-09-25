@@ -9,6 +9,8 @@ public sealed class Track
     public string? CoverHash { get; set; }
     public int? ReleaseYear { get; set; }
     public bool HasPreview { get; set; } = true;
+    // Retiré du tirage par l'admin (reste dans le pool, réactivable). Les défis déjà générés ne changent pas.
+    public bool IsDisabled { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public DateOnly? LastUsedDate { get; set; }

@@ -12,7 +12,8 @@ public sealed class GetTracksHandler(ApplicationDbContext db)
         var cooldownDays = await SettingsRawReader.GetIntAsync(
             db, "TrackCooldownDays", new AppSettings().TrackCooldownDays, cancellationToken);
 
-        var renameLock = RenameLock.Locks(DateOnly.FromDateTime(DateTime.UtcNow));
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var renameLock = RenameLock.Locks(today);
 
         var allTracks = await db.Tracks
             .AsNoTracking()
@@ -24,10 +25,12 @@ public sealed class GetTracksHandler(ApplicationDbContext db)
                 t.Title,
                 t.DeezerTrackId,
                 t.HasPreview,
+                t.IsDisabled,
                 t.LastUsedDate,
                 t.UsageCount,
                 IsUsed = t.DailyChallengeTracks.Any(),
                 RenameLocked = t.DailyChallengeTracks.AsQueryable().Any(renameLock),
+                InTodayChallenge = t.DailyChallengeTracks.Any(dct => dct.DailyChallenge.Date == today),
             })
             .ToListAsync(cancellationToken);
 
@@ -42,7 +45,9 @@ public sealed class GetTracksHandler(ApplicationDbContext db)
                 LastUsedDate: t.LastUsedDate,
                 UsageCount: t.UsageCount,
                 UnlockDate: ComputeUnlock(t.LastUsedDate),
-                RenameLocked: t.RenameLocked))
+                RenameLocked: t.RenameLocked,
+                IsDisabled: t.IsDisabled,
+                InTodayChallenge: t.InTodayChallenge))
             .ToList();
 
         var used = allTracks
@@ -54,7 +59,9 @@ public sealed class GetTracksHandler(ApplicationDbContext db)
                 LastUsedDate: t.LastUsedDate,
                 UsageCount: t.UsageCount,
                 UnlockDate: ComputeUnlock(t.LastUsedDate),
-                RenameLocked: t.RenameLocked))
+                RenameLocked: t.RenameLocked,
+                IsDisabled: t.IsDisabled,
+                InTodayChallenge: t.InTodayChallenge))
             .ToList();
 
         return Results.Ok(new GetTracksResponse(available, used));
