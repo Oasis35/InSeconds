@@ -8,6 +8,9 @@ public sealed record SubmitAnswerResponse(
     int Score,
     string CorrectArtist,
     string CorrectTitle,
+    // Révélé seulement après la réponse (lien « À écouter sur Deezer ») : jamais dans
+    // StartSession, sinon deezer.com/track/{id} donnerait la réponse avant de jouer.
+    long DeezerTrackId,
     decimal ListenedDurationSeconds,
     double? AverageSecondsWhenCorrect,
     double FailureRatePercent,

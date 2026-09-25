@@ -72,3 +72,40 @@ de la première PR de ce stack. Nécessite de recréer les volumes `caddy_data`/
 appliqué après coup sur un déploiement déjà en place (permissions root existantes sur les
 certificats déjà stockés) — sans impact ici car domaines de test, certificats réémis en
 quelques secondes.
+
+## Ports 80/443 réservés à Cloudflare (`cloudflare-only.sh`, optionnel)
+
+UFW ouvre 80/443 au monde entier : quelqu'un qui connaît l'IP du VPS peut joindre Caddy en
+direct, sans le WAF ni l'anti-DDoS de Cloudflare. `cloudflare-only.sh` n'accepte ces deux ports
+que depuis les plages publiées par Cloudflare (https://www.cloudflare.com/ips-v4 et `ips-v6`).
+SSH et les autres ports ne sont pas touchés, et le certificat reste renouvelable (challenge
+DNS-01, aucune connexion entrante de Let's Encrypt).
+
+Le filtre ne passe pas par UFW : les ports publiés par Docker contournent UFW (chaîne
+`FORWARD`). Il est posé dans `DOCKER-USER`, la chaîne prévue par Docker pour ça, et dans
+`INPUT` (ports servis par `docker-proxy`, IPv6). Les plages sont dans deux `ipset`
+(`cf-ipv4`, `cf-ipv6`), remplacées d'un bloc à chaque mise à jour ; une liste vide ou
+invalide est refusée, l'ancienne reste en place.
+
+```bash
+cd ~/apps/InSeconds/deploy/caddy
+sudo apt install ipset            # si absent
+sudo ./cloudflare-only.sh apply   # pose le filtre (non persistant)
+sudo ./cloudflare-only.sh status  # règles + nombre de plages chargées
+```
+
+Vérifier, **en gardant la session SSH ouverte** :
+
+```bash
+curl -I https://inseconds.cc                              # depuis n'importe où : 200, via Cloudflare
+curl -m 5 -k -I https://<IP-du-VPS> -H 'Host: inseconds.cc'  # depuis un PC hors Cloudflare : timeout
+```
+
+Si tout va bien, le rendre permanent : `sudo ./cloudflare-only.sh install` copie le script dans
+`/usr/local/sbin`, le rejoue au démarrage (`cloudflare-only.service`, après Docker et UFW) et
+chaque jour (`cloudflare-only.timer`) : mise à jour des plages Cloudflare, et remise en place
+du filtre si un redémarrage de Docker ou un `ufw reload` l'a fait sauter entre-temps.
+
+Retour arrière : `sudo ./cloudflare-only.sh remove` (filtre seul) ou `uninstall` (filtre +
+service + timer). Interface publique détectée via la route par défaut, forçable avec
+`EXT_IF=eth0`.

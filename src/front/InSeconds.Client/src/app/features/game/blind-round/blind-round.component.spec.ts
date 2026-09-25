@@ -47,7 +47,6 @@ const TRACK: TrackSlot = {
   position: 1,
   previewUrl: 'https://example.test/preview.mp3',
   coverUrl: undefined,
-  deezerTrackId: 1,
 };
 
 describe('BlindRoundComponent — navigation clavier autocomplete', () => {

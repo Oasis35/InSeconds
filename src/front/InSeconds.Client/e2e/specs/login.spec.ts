@@ -1,5 +1,6 @@
 import { test, expect } from '../fixtures/test';
 import { GamePage } from '../pages/game.page';
+import { linkAccount } from '../pages/login.page';
 
 const TEST_EMAIL = 'testeur@e2e.test';
 
@@ -84,6 +85,32 @@ test.describe('Connexion par lien magique', () => {
     await expect(pageB.locator('app-game-header').getByTitle('BobE2E')).toBeVisible();
 
     await contextB.close();
+  });
+
+  test('déjà connecté, un lien pour une autre adresse crée un autre compte sans modifier le premier', async ({ page, api }) => {
+    const OTHER_EMAIL = 'autre@e2e.test';
+    await linkAccount(page, api, TEST_EMAIL, 'ProprioE2E');
+
+    // Toujours connecté : on ouvre un lien envoyé à une autre adresse.
+    await requestMagicLink(page, OTHER_EMAIL);
+    await page.goto(pathOf(await api.getLastMagicLinkUrl(OTHER_EMAIL)));
+    await expect(page.getByText(`Tu es déjà connecté avec ${TEST_EMAIL}.`)).toBeVisible();
+
+    await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
+    await expect(page.getByText(`Ton compte actuel (${TEST_EMAIL}) ne sera pas modifié.`)).toBeVisible();
+    await page.getByPlaceholder('Ton pseudo').fill('AutreE2E');
+    await page.getByRole('button', { name: 'Valider' }).click();
+
+    const game = new GamePage(page);
+    await game.waitForWelcome();
+    await expect(page.locator('app-game-header').getByTitle('AutreE2E')).toBeVisible();
+
+    // Le premier compte est intact : se reconnecter avec sa propre adresse le retrouve, pseudo compris.
+    await requestMagicLink(page, TEST_EMAIL);
+    await page.goto(pathOf(await api.getLastMagicLinkUrl(TEST_EMAIL)));
+    await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
+    await game.waitForWelcome();
+    await expect(page.locator('app-game-header').getByTitle('ProprioE2E')).toBeVisible();
   });
 
   test('déconnexion depuis le profil revient à l\'état guest', async ({ page, api }) => {

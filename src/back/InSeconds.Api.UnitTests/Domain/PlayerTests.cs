@@ -304,6 +304,19 @@ public sealed class PlayerTests
     }
 
     [Fact]
+    public void LinkToAccount_OnLinkedAccount_Throws_AndKeepsEmailAndPseudo()
+    {
+        var player = BuildPlayer();
+        player.LinkToAccount("owner@example.com", "Owner");
+
+        var act = () => player.LinkToAccount("other@example.com", "Other");
+
+        act.Should().Throw<InvalidOperationException>();
+        player.Email.Should().Be("owner@example.com");
+        player.Pseudo.Should().Be("Owner");
+    }
+
+    [Fact]
     public void UpdatePseudo_ChangesPseudoOnly()
     {
         var player = BuildPlayer();

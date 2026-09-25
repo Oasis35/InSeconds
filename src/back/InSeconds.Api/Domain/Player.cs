@@ -108,8 +108,13 @@ public sealed class Player
             lastPlayedDate);
     }
 
+    // Invité uniquement : appelé sur un compte déjà lié, ça remplacerait son email et son
+    // pseudo (prise de contrôle via un lien magique ouvert dans un navigateur connecté).
     public void LinkToAccount(string email, string pseudo)
     {
+        if (!IsGuest)
+            throw new InvalidOperationException("Seul un invité peut être converti en compte.");
+
         IsGuest = false;
         Email = email;
         Pseudo = pseudo;

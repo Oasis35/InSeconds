@@ -169,6 +169,8 @@
     "verify": {
       "title": "Verification",
       "subtitle": "Confirm the login to link this device to your account.",
+      "alreadyConnected": "You're already signed in as {{email}}. If this link was sent to another address, confirming will sign you in to a different account. Never confirm a link someone else sent you.",
+      "newAccountNotice": "This link is for a new address: a new account will be created. Your current account ({{email}}) won't be changed.",
       "confirm": "Confirm",
       "confirming": "Logging in...",
       "pseudoTitle": "Choose your pseudo",

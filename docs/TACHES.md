@@ -1,6 +1,6 @@
 # InSeconds — Reste à faire
 
-> Mis à jour le 2026-09-24. Ce fichier ne liste que ce qui reste à faire : l'historique de ce qui est livré vit dans git et les PR, et l'état courant dans [`CLAUDE.md`](../CLAUDE.md) (§ Déjà implémenté). Une tâche terminée est retirée d'ici, pas cochée.
+> Mis à jour le 2026-09-25. Ce fichier ne liste que ce qui reste à faire : l'historique de ce qui est livré vit dans git et les PR, et l'état courant dans [`CLAUDE.md`](../CLAUDE.md) (§ Déjà implémenté). Une tâche terminée est retirée d'ici, pas cochée.
 
 ## Mode entraînement (anciens défis)
 
@@ -22,6 +22,7 @@
 
 ## Infra & exploitation
 
+- [ ] **Limiter 80/443 aux plages Cloudflare** (sur le VPS) — l'IP du VPS a été publiée dans `CLAUDE.md` jusqu'au 2026-09-25 (encore visible dans l'historique git) : tant que 80/443 sont ouverts à tous, on peut attaquer Caddy directement, sans le WAF ni l'anti-DDoS de Cloudflare. Script prêt, à lancer à la main sur le VPS : `deploy/caddy/cloudflare-only.sh` (`apply`, vérifier, puis `install` ; mode d'emploi dans `deploy/caddy/README.md`). Alternative : Authenticated Origin Pulls. Pour que l'IP connue ne serve plus du tout, changer d'IP (OVH : IP additionnelle ou nouveau VPS)
 - [ ] **Grafana Cloud : alertes et tableau de bord** — l'export OpenTelemetry est en place (logs, traces, métriques, cf. `CLAUDE.md` § Observabilité) ; reste à configurer côté Grafana : alerte mail sur les logs `Error` (API + erreurs front), sonde externe de `https://api.inseconds.cc/health` (Synthetic Monitoring, prévient même si le VPS est à terre), tableau de bord simple (requêtes, temps de réponse, taux d'erreurs, mémoire)
 - [ ] **Bruit des erreurs de validation** — Wolverine logue en `Error` (avec stack) chaque échec FluentValidation d'un `bus.InvokeAsync`, alors que l'API répond un 400 normal : à rabaisser (filtre de log ou politique Wolverine) pour ne pas déclencher les alertes « erreurs »
 - [ ] (optionnel) Collecteur Grafana Alloy sur le VPS pour remonter aussi les logs Caddy/nginx
