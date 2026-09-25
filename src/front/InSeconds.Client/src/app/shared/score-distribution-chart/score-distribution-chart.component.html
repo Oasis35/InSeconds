@@ -1,0 +1,43 @@
+@if (chart(); as c) {
+  <div class="flex flex-col gap-3.5" data-testid="score-distribution-chart">
+    <svg [attr.viewBox]="'0 0 300 ' + viewHeight" class="block w-full h-auto overflow-visible" role="img"
+         [attr.aria-label]="'scoreChart.ariaLabel' | translate: { lowest: c.lowest?.value ?? '—', median: c.median?.value ?? '—', highest: c.highest?.value ?? '—' }">
+      @for (cell of c.cells; track cell.key) {
+        <rect [attr.x]="cell.x" [attr.y]="cell.y" [attr.width]="c.cellWidth" [attr.height]="cellHeight" rx="2"
+              [attr.fill]="cell.fill" [attr.fill-opacity]="cell.opacity"
+              [attr.data-lit]="cell.lit ? 'true' : null" />
+      }
+      <line [attr.x1]="left" [attr.x2]="right" [attr.y1]="axisY" [attr.y2]="axisY" stroke="var(--text-sep)" />
+
+      @if (c.lowest; as m) {
+        <line [attr.x1]="m.tickX" [attr.x2]="m.tickX" [attr.y1]="axisY - 3" [attr.y2]="axisY + 5"
+              stroke="var(--text-muted)" stroke-width="1.5" />
+        <text [attr.x]="m.labelX" [attr.y]="axisY + 15" text-anchor="start" style="font-size:9px;fill:var(--text-faint)">{{ 'scoreChart.lowest' | translate }}</text>
+        <text [attr.x]="m.labelX" [attr.y]="axisY + 28" text-anchor="start" data-testid="score-lowest"
+              style="font-size:12px;font-weight:700;font-family:var(--font-display);fill:var(--text-hi)">{{ m.value }}</text>
+      }
+      @if (c.highest; as m) {
+        <line [attr.x1]="m.tickX" [attr.x2]="m.tickX" [attr.y1]="axisY - 3" [attr.y2]="axisY + 5"
+              stroke="var(--text-muted)" stroke-width="1.5" />
+        <text [attr.x]="m.labelX" [attr.y]="axisY + 15" text-anchor="end" style="font-size:9px;fill:var(--text-faint)">{{ 'scoreChart.highest' | translate }}</text>
+        <text [attr.x]="m.labelX" [attr.y]="axisY + 28" text-anchor="end" data-testid="score-highest"
+              style="font-size:12px;font-weight:700;font-family:var(--font-display);fill:var(--text-hi)">{{ m.value }}</text>
+      }
+      @if (c.median; as m) {
+        <line [attr.x1]="m.tickX" [attr.x2]="m.tickX" y1="0" [attr.y2]="axisY + 4"
+              stroke="var(--color-accent-2)" stroke-width="1.5" stroke-dasharray="3 3" />
+        <text [attr.x]="m.labelX" [attr.y]="axisY + 15" text-anchor="middle" style="font-size:9px;fill:var(--color-accent-2)">{{ 'scoreChart.median' | translate }}</text>
+        <text [attr.x]="m.labelX" [attr.y]="axisY + 28" text-anchor="middle" data-testid="score-median"
+              style="font-size:12px;font-weight:700;font-family:var(--font-display);fill:var(--color-accent-2)">{{ m.value }}</text>
+      }
+    </svg>
+
+    @if (betterThanPercent() !== null) {
+      <p class="text-center text-sm" style="color:var(--text-muted)" data-testid="score-better-than">
+        {{ 'scoreChart.betterThanPrefix' | translate }}
+        <b style="font-family:var(--font-display);color:var(--color-accent-3)">{{ betterThanPercent() }} %</b>
+        {{ 'scoreChart.betterThanSuffix' | translate }}
+      </p>
+    }
+  </div>
+}

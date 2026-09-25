@@ -3,10 +3,11 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { TodayStatsResponse } from '../../../../api/api.generated';
 import { ShareButtonComponent } from '../../../../shared/share-button/share-button.component';
 import { TrackResultsListComponent, TrackResultRow } from '../../../../shared/track-results-list/track-results-list.component';
+import { ScoreDistributionChartComponent } from '../../../../shared/score-distribution-chart/score-distribution-chart.component';
 
 @Component({
   selector: 'app-already-played-screen',
-  imports: [TranslatePipe, ShareButtonComponent, TrackResultsListComponent],
+  imports: [TranslatePipe, ShareButtonComponent, TrackResultsListComponent, ScoreDistributionChartComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './already-played-screen.component.html',
 })

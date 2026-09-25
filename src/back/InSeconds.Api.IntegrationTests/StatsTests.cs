@@ -55,6 +55,34 @@ public class StatsTests(IntegrationTestFactory factory) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task TodayStats_ApresUnePartie_RetourneRepartitionDesScores()
+    {
+        var sessionResp = await _client.PostAsync("/api/sessions", null);
+        var session = await sessionResp.Content.ReadFromJsonAsync<StartSessionResponse>();
+        Assert.NotNull(session);
+
+        foreach (var track in session.Tracks)
+        {
+            await _client.PostAsJsonAsync($"/api/sessions/{session.SessionId}/answers",
+                new SubmitAnswerBody(track.Id, 1m, false, "Eminem", "Lose Yourself"));
+        }
+
+        var body = await _client.GetFromJsonAsync<TodayStatsResponse>("/api/stats/today");
+
+        Assert.NotNull(body);
+        Assert.NotNull(body.YourScore);
+        // Seul joueur : plus bas = plus haut = son score, pas de % (personne d'autre à battre).
+        Assert.Equal(body.YourScore, body.MinScore);
+        Assert.Equal(body.YourScore, body.MaxScore);
+        Assert.Null(body.BetterThanPercent);
+        Assert.True(body.MaxPossibleScore >= body.YourScore);
+        Assert.Equal(10, body.ScoreDistribution.Count);
+        var bucket = body.ScoreDistribution.Single(b => b.Count > 0);
+        Assert.Equal(1, bucket.Count);
+        Assert.InRange(body.YourScore.Value, bucket.MinScore, bucket.MaxScore);
+    }
+
+    [Fact]
     public async Task TodayStats_RetourneStatsParMorceau()
     {
         var resp = await _client.GetAsync("/api/stats/today");

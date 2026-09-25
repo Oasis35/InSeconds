@@ -93,6 +93,33 @@ export class ApiTestClient {
     }
   }
 
+  /**
+   * Fait jouer une partie complète (réponses vides → 0 pt) à un nouvel invité : le cookie
+   * posé par `POST /api/sessions` est réutilisé pour les réponses.
+   */
+  async completeSessionAsNewGuest(): Promise<void> {
+    const startRes = await fetch(`${BASE}/api/sessions`, { method: 'POST' });
+    if (!startRes.ok) throw new Error(`startSession failed: ${startRes.status}`);
+    const cookieHeader = startRes.headers.getSetCookie().map(c => c.split(';')[0]).join('; ');
+    const session = await startRes.json();
+    const headers = { 'Content-Type': 'application/json', Cookie: cookieHeader };
+
+    for (const track of session.tracks) {
+      const submitRes = await fetch(`${BASE}/api/sessions/${session.sessionId}/answers`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          dailyChallengeTrackId: track.id,
+          listenedDurationSeconds: 1,
+          wasExtended: false,
+          artistAnswer: null,
+          titleAnswer: null,
+        }),
+      });
+      if (!submitRes.ok) throw new Error(`submitAnswer failed: ${submitRes.status}`);
+    }
+  }
+
   /** Abandonne la partie du joueur identifié par son cookie. */
   async abandonSessionAs(cookieHeader: string): Promise<void> {
     const headers = { 'Content-Type': 'application/json', Cookie: cookieHeader };
