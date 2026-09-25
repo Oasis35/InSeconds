@@ -11,12 +11,13 @@ public sealed record StartSessionResponse(
     int? CurrentTrackId = null,
     decimal? MinListenedSeconds = null);
 
+// Pas d'identifiant Deezer ici : envoyé avant de jouer, il donnerait la réponse
+// (deezer.com/track/{id}). Il n'arrive qu'avec la réponse (SubmitAnswer, ResumedAnswer).
 public sealed record TrackSlot(
     int Id,
     int Position,
     string PreviewUrl,
-    string? CoverUrl,
-    long DeezerTrackId);
+    string? CoverUrl);
 
 public sealed record ResumedAnswer(
     int Position,
@@ -25,4 +26,5 @@ public sealed record ResumedAnswer(
     int Score,
     decimal ListenedDurationSeconds,
     string CorrectArtist = "",
-    string CorrectTitle = "");
+    string CorrectTitle = "",
+    long DeezerTrackId = 0);

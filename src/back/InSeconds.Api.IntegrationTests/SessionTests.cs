@@ -85,6 +85,41 @@ public class SessionTests(IntegrationTestFactory factory) : IAsyncLifetime
         Assert.Equal(session.SessionId, resume.SessionId);
         Assert.Equal(1, resume.ResumeFromPosition);
         Assert.Single(resume.CompletedAnswers);
+        // Morceau déjà répondu : son identifiant Deezer est révélé (lien du récap).
+        Assert.Equal(await DeezerTrackIdAsync(session.Tracks[0].Id), resume.CompletedAnswers[0].DeezerTrackId);
+    }
+
+    [Fact]
+    public async Task StartSession_NEnvoiePasLIdentifiantDeezerDesMorceaux()
+    {
+        // deezer.com/track/{id} donnerait la réponse avant de jouer.
+        var resp = await _client.PostAsync("/api/sessions", null);
+
+        var json = await resp.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("deezerTrackId", json, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task SubmitAnswer_RetourneLIdentifiantDeezerDuMorceau()
+    {
+        var session = await StartSessionAsync();
+        var track = session.Tracks[0];
+
+        var resp = await SubmitAsync(session.SessionId, track.Id, 1m, "X", null);
+
+        var result = await resp.Content.ReadFromJsonAsync<SubmitAnswerResponse>();
+        Assert.NotNull(result);
+        Assert.Equal(await DeezerTrackIdAsync(track.Id), result.DeezerTrackId);
+    }
+
+    private async Task<long> DeezerTrackIdAsync(int dailyChallengeTrackId)
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        return await db.DailyChallengeTracks
+            .Where(t => t.Id == dailyChallengeTrackId)
+            .Select(t => t.Track.DeezerTrackId)
+            .SingleAsync();
     }
 
     // ── AbandonSession ───────────────────────────────────────────────────────

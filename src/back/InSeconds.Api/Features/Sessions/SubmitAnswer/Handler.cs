@@ -37,6 +37,7 @@ public sealed class SubmitAnswerHandler(
             {
                 t.Track.Artist,
                 t.Track.Title,
+                t.Track.DeezerTrackId,
                 t.Position,
                 AlreadyAnswered = t.Answers.Any(a => a.GameSessionId == command.SessionId),
             })
@@ -134,6 +135,7 @@ public sealed class SubmitAnswerHandler(
             Score:                     score,
             CorrectArtist:             challengeTrack.Artist,
             CorrectTitle:              TextNormalizationHelpers.CleanDisplayTitle(challengeTrack.Title),
+            DeezerTrackId:             challengeTrack.DeezerTrackId,
             ListenedDurationSeconds:   command.ListenedDurationSeconds,
             AverageSecondsWhenCorrect: stats.AverageSecondsWhenCorrect,
             FailureRatePercent:        stats.FailureRatePercent,

@@ -82,7 +82,8 @@ public sealed class StartSessionHandler(
                     a.ListenedDurationSeconds,
                     a.Track.Position,
                     a.Track.Track.Artist,
-                    a.Track.Track.Title)).ToList()))
+                    a.Track.Track.Title,
+                    a.Track.Track.DeezerTrackId)).ToList()))
             .FirstOrDefaultAsync(ct);
 
     private async Task<IResult> BuildResumeResponseAsync(
@@ -98,8 +99,7 @@ public sealed class StartSessionHandler(
                 Id:            t.Id,
                 Position:      t.Position,
                 PreviewUrl:    previewUrls[i] ?? string.Empty,
-                CoverUrl:      t.CoverHash is not null ? appSettings.BuildCoverUrl(t.CoverHash) : null,
-                DeezerTrackId: t.DeezerTrackId))
+                CoverUrl:      t.CoverHash is not null ? appSettings.BuildCoverUrl(t.CoverHash) : null))
             .ToList();
 
         var answeredPositions = existingSession.Answers
@@ -115,7 +115,8 @@ public sealed class StartSessionHandler(
                 Score:                   a.Score,
                 ListenedDurationSeconds: a.ListenedDurationSeconds,
                 CorrectArtist:           a.TrackArtist,
-                CorrectTitle:            TextNormalizationHelpers.CleanDisplayTitle(a.TrackTitle)))
+                CorrectTitle:            TextNormalizationHelpers.CleanDisplayTitle(a.TrackTitle),
+                DeezerTrackId:           a.TrackDeezerId))
             .ToList();
 
         // Index 0-based de la première track sans réponse
@@ -162,8 +163,7 @@ public sealed class StartSessionHandler(
                 Id:            t.Id,
                 Position:      t.Position,
                 PreviewUrl:    previewUrls[i] ?? string.Empty,
-                CoverUrl:      t.CoverHash is not null ? appSettings.BuildCoverUrl(t.CoverHash) : null,
-                DeezerTrackId: t.DeezerTrackId))
+                CoverUrl:      t.CoverHash is not null ? appSettings.BuildCoverUrl(t.CoverHash) : null))
             .ToList();
 
         return Results.Ok(new StartSessionResponse(
@@ -228,7 +228,7 @@ public sealed class StartSessionHandler(
 
     private sealed record ExistingAnswerProjection(
         bool ArtistCorrect, bool TitleCorrect, int Score, decimal ListenedDurationSeconds,
-        int TrackPosition, string TrackArtist, string TrackTitle);
+        int TrackPosition, string TrackArtist, string TrackTitle, long TrackDeezerId);
 
     private sealed record ExistingSessionProjection(
         int Id, SessionStatus Status, int? CurrentTrackId, decimal? CurrentTrackMinListenedSeconds,

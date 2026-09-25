@@ -2048,6 +2048,7 @@ export interface ResumedAnswer {
     listenedDurationSeconds: number;
     correctArtist?: string;
     correctTitle?: string;
+    deezerTrackId?: number;
 
     [key: string]: any;
 }
@@ -2103,6 +2104,7 @@ export interface SubmitAnswerResponse {
     score: number;
     correctArtist: string;
     correctTitle: string;
+    deezerTrackId: number;
     listenedDurationSeconds: number;
     averageSecondsWhenCorrect: number | undefined;
     failureRatePercent: number;
@@ -2145,7 +2147,6 @@ export interface TrackSlot {
     position: number;
     previewUrl: string;
     coverUrl: string | undefined;
-    deezerTrackId: number;
 
     [key: string]: any;
 }

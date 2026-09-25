@@ -28,9 +28,19 @@ public sealed class TodayStatsHandler(
         int currentStreak = 0;
         int freezesUsed = 0;
         bool freezeMilestone = false;
+        // Morceaux du jour (artiste, titre, id Deezer, pochette) réservés à un joueur dont la
+        // partie est finie (terminée, abandonnée ou expirée) : sinon l'endpoint public
+        // donnerait les réponses avant de jouer.
+        bool revealTracks = false;
         Dictionary<int, (bool ArtistCorrect, bool TitleCorrect, decimal ListenedDuration, int Score)> playerAnswersByPosition = [];
         if (playerId.HasValue)
         {
+            revealTracks = await db.GameSessions
+                .AsNoTracking()
+                .AnyAsync(s => s.DailyChallengeId == challenge.Id
+                            && s.PlayerId == playerId.Value
+                            && s.Status != Domain.SessionStatus.Pending, ct);
+
             var playerSession = await db.GameSessions
                 .AsNoTracking()
                 .Where(s => s.DailyChallengeId == challenge.Id
@@ -146,7 +156,7 @@ public sealed class TodayStatsHandler(
         var totalPlayers = scores.Count;
         var medianResult = ComputeMedian(scores);
 
-        var tracks = trackStats.Select(t =>
+        var tracks = !revealTracks ? [] : trackStats.Select(t =>
         {
             playerAnswersByPosition.TryGetValue(t.Position, out var pa);
             return new TrackStat(

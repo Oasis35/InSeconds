@@ -283,9 +283,12 @@ public sealed class TodayStatsHandlerTests
         await using var db = CreateDbContext();
         var (challenge, _) = BuildTodayChallenge();
         db.DailyChallenges.Add(challenge);
+        db.Players.Add(BuildPlayer(Player1));
+        // Partie abandonnée : morceaux révélés, aucune réponse complétée.
+        db.GameSessions.Add(GameSession.Restore(playerId: Player1, dailyChallengeId: 1, id: 1, totalScore: 0, totalDurationSeconds: 0, createdAt: DateTime.UtcNow, status: SessionStatus.Abandoned));
         await db.SaveChangesAsync();
 
-        var result = await CreateHandler(db).Handle(null, CancellationToken.None);
+        var result = await CreateHandler(db).Handle(Player1, CancellationToken.None);
 
         var response = ((Ok<TodayStatsResponse>)result).Value!;
         response.Tracks.Should().ContainSingle();
@@ -311,7 +314,7 @@ public sealed class TodayStatsHandlerTests
             new GameSessionAnswer { Id = 2, GameSessionId = 2, DailyChallengeTrackId = challengeTrack.Id, ListenedDurationSeconds = 5, ArtistCorrect = true, TitleCorrect = true, Score = 250 });
         await db.SaveChangesAsync();
 
-        var result = await CreateHandler(db).Handle(null, CancellationToken.None);
+        var result = await CreateHandler(db).Handle(Player1, CancellationToken.None);
 
         var response = ((Ok<TodayStatsResponse>)result).Value!;
         var track = response.Tracks[0];
@@ -342,7 +345,7 @@ public sealed class TodayStatsHandlerTests
             new GameSessionAnswer { Id = 2, GameSessionId = 2, DailyChallengeTrackId = challengeTrack.Id, ListenedDurationSeconds = 3, ArtistCorrect = false, TitleCorrect = false, Score = 0 });
         await db.SaveChangesAsync();
 
-        var result = await CreateHandler(db).Handle(null, CancellationToken.None);
+        var result = await CreateHandler(db).Handle(Player1, CancellationToken.None);
 
         var response = ((Ok<TodayStatsResponse>)result).Value!;
         response.Tracks[0].FailureRatePercent.Should().Be(50.0);
@@ -380,7 +383,7 @@ public sealed class TodayStatsHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenNoPlayerId_ReturnsNullPlayerAnswerFields()
+    public async Task Handle_WhenNoPlayerId_HidesTracks()
     {
         await using var db = CreateDbContext();
         var (challenge, challengeTrack) = BuildTodayChallenge();
@@ -396,12 +399,41 @@ public sealed class TodayStatsHandlerTests
 
         var result = await CreateHandler(db).Handle(null, CancellationToken.None);
 
+        // Appel anonyme : les réponses du jour ne sont pas révélées, les chiffres anonymes restent.
         var response = ((Ok<TodayStatsResponse>)result).Value!;
-        var track = response.Tracks[0];
-        track.ArtistCorrect.Should().BeNull();
-        track.TitleCorrect.Should().BeNull();
-        track.ListenedDurationSeconds.Should().BeNull();
-        track.Score.Should().BeNull();
+        response.Tracks.Should().BeEmpty();
+        response.TotalPlayers.Should().Be(1);
+        response.MedianScore.Should().Be(400);
+    }
+
+    [Fact]
+    public async Task Handle_WhenPlayerHasNotPlayed_HidesTracks()
+    {
+        await using var db = CreateDbContext();
+        var (challenge, _) = BuildTodayChallenge();
+        db.DailyChallenges.Add(challenge);
+        db.Players.AddRange(BuildPlayer(Player1), BuildPlayer(Player2));
+        db.GameSessions.Add(GameSession.Restore(playerId: Player1, dailyChallengeId: 1, id: 1, totalScore: 400, totalDurationSeconds: 3, createdAt: DateTime.UtcNow, status: SessionStatus.Completed));
+        await db.SaveChangesAsync();
+
+        var result = await CreateHandler(db).Handle(Player2, CancellationToken.None);
+
+        ((Ok<TodayStatsResponse>)result).Value!.Tracks.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Handle_WhenPlayerSessionPending_HidesTracks()
+    {
+        await using var db = CreateDbContext();
+        var (challenge, _) = BuildTodayChallenge();
+        db.DailyChallenges.Add(challenge);
+        db.Players.Add(BuildPlayer(Player1));
+        db.GameSessions.Add(GameSession.Restore(playerId: Player1, dailyChallengeId: 1, id: 1, totalScore: 0, totalDurationSeconds: 0, createdAt: DateTime.UtcNow, status: SessionStatus.Pending));
+        await db.SaveChangesAsync();
+
+        var result = await CreateHandler(db).Handle(Player1, CancellationToken.None);
+
+        ((Ok<TodayStatsResponse>)result).Value!.Tracks.Should().BeEmpty();
     }
 
     [Fact]
@@ -414,8 +446,8 @@ public sealed class TodayStatsHandlerTests
         db.GameSessions.Add(GameSession.Restore(playerId: Player1, dailyChallengeId: 1, id: 1, totalScore: 0, totalDurationSeconds: 0, createdAt: DateTime.UtcNow, status: SessionStatus.Abandoned));
         await db.SaveChangesAsync();
 
-        // Player2 demande les stats — n'a pas joué
-        var result = await CreateHandler(db).Handle(Player2, CancellationToken.None);
+        // Player1 a abandonné : morceaux révélés, mais aucune réponse joueur (session non complétée).
+        var result = await CreateHandler(db).Handle(Player1, CancellationToken.None);
 
         var response = ((Ok<TodayStatsResponse>)result).Value!;
         var track = response.Tracks[0];
