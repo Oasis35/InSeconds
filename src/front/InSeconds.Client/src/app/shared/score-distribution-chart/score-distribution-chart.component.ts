@@ -83,7 +83,7 @@ export class ScoreDistributionChartComponent {
     const cells: EqualizerCell[] = [];
     buckets.forEach((b, i) => {
       const litCount = b.count === 0 ? 0 : Math.max(1, Math.round((b.count / maxCount) * SEGMENTS));
-      const isMine = i === mineIndex;
+      const litFill = i === mineIndex ? MINE : OTHERS;
       for (let k = 0; k < SEGMENTS; k++) {
         const lit = k < litCount;
         cells.push({
@@ -91,9 +91,9 @@ export class ScoreDistributionChartComponent {
           x: LEFT + i * bucketWidth + CELL_GAP_X,
           y: BARS_HEIGHT - (k + 1) * (BARS_HEIGHT / SEGMENTS) + CELL_GAP_Y - 1,
           lit,
-          fill: !lit ? UNLIT : isMine ? MINE : OTHERS,
+          fill: lit ? litFill : UNLIT,
           // Colonnes des autres joueurs : dégradé du bas (sombre) vers le haut (vif).
-          opacity: lit && !isMine ? 0.35 + (0.65 * (k + 1)) / SEGMENTS : 1,
+          opacity: lit && litFill === OTHERS ? 0.35 + (0.65 * (k + 1)) / SEGMENTS : 1,
         });
       }
     });
