@@ -160,8 +160,12 @@ export class BlindRoundComponent implements OnDestroy {
   }
 
   skipNoPreview(): void {
+    // `chosenDuration()` reste à 0 pour un morceau réellement sans preview (jamais verrouillé
+    // côté serveur), mais peut être non nul si l'auto-play a déjà appelé updateListening avant
+    // d'échouer (état d'erreur, cf. piège E4 CLAUDE.md) — soumettre 0 dans ce cas serait rejeté
+    // (400 listened_duration_below_verified_minimum, anti-triche SubmitAnswer/Handler.cs).
     this.emitAnswer({
-      listenedDurationSeconds: 0,
+      listenedDurationSeconds: this.chosenDuration(),
       wasExtended: false,
       artistAnswer: null,
       titleAnswer: null,
