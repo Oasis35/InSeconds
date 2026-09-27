@@ -407,7 +407,21 @@
       "trackCooldown": "Track reuse cooldown",
       "saveCooldown": "Save",
       "cooldownSaved": "Cooldown updated.",
-      "cooldownError": "Error while updating."
+      "cooldownError": "Error while updating.",
+      "weeklyStory": {
+        "title": "Weekly Instagram stories",
+        "hint": "2 visuals (1080×1920) covering the last 7 days: most found (add the Music sticker in Instagram) and most missed (add a \"Did you know it?\" poll). Add the Link sticker to the site on both.",
+        "generate": "Generate weekly stories",
+        "generating": "Generating...",
+        "showGuides": "Sticker guides",
+        "insufficient": "Not enough answers this week (at least {{ min }} per track).",
+        "error": "Error while generating the stories.",
+        "onlyOne": "Only one track has enough answers: no \"most missed\" story this week.",
+        "found": "Most found",
+        "missed": "Most missed",
+        "download": "Download",
+        "downloadAll": "Download all"
+      }
     },
     "challenges": {
       "history": "History",
