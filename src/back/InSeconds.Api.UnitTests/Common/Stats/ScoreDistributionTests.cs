@@ -51,6 +51,13 @@ public sealed class ScoreDistributionTests
         ScoreDistribution.Build([100], 0).Should().BeEmpty();
     }
 
+    [Fact]
+    public void Build_MaximumNegatif_RetourneListeVide()
+    {
+        // Défi sans morceau / settings de score mal configurés : ne doit jamais lever.
+        ScoreDistribution.Build([100], -5000).Should().BeEmpty();
+    }
+
     // ---------------------------------------------------------------------------
     // BetterThanPercent — % des autres joueurs battus
     // ---------------------------------------------------------------------------

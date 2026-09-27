@@ -55,4 +55,12 @@ public sealed class TextNormalizationHelpersTests
     {
         TextNormalizationHelpers.BuildHangmanPattern("The  Weeknd").Should().Be("T _ _   W _ _ _ _ _");
     }
+
+    [Fact]
+    public void BuildHangmanPattern_WhitespaceOnlyArtist_ReturnsEmptyWithoutThrowing()
+    {
+        // Artiste sans lettres/chiffres (donnée Deezer corrompue) : ne doit jamais planter
+        // RequestHint niveau 2, un pattern vide reste un dégradé acceptable.
+        TextNormalizationHelpers.BuildHangmanPattern("   ").Should().BeEmpty();
+    }
 }
