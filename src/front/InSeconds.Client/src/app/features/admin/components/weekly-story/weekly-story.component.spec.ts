@@ -124,4 +124,51 @@ describe('WeeklyStoryComponent', () => {
     expect(capture).toHaveBeenCalledTimes(2);
     expect(http.getWeeklyRecap).toHaveBeenCalledTimes(1);
   });
+
+  it('masquer le pourcentage retire le chiffre et sa légende et relance la capture', async () => {
+    http.getWeeklyRecap.and.returnValue(of(okRecap));
+    await component.generate();
+    expect(fixture.nativeElement.querySelectorAll('.rate')).toHaveSize(2);
+    expect(fixture.nativeElement.textContent).not.toContain('réponses');
+    capture.calls.reset();
+
+    component.togglePercent(false);
+    await fixture.whenStable();
+
+    expect(story.showPercent()).toBeFalse();
+    expect(fixture.nativeElement.querySelectorAll('.rate')).toHaveSize(0);
+    expect(fixture.nativeElement.querySelectorAll('.caption')).toHaveSize(0);
+    expect(capture).toHaveBeenCalledTimes(2);
+    expect(http.getWeeklyRecap).toHaveBeenCalledTimes(1);
+  });
+
+  it('changer le titre met à jour les gabarits et relance la capture', async () => {
+    http.getWeeklyRecap.and.returnValue(of(okRecap));
+    await component.generate();
+    const titles = () => Array.from(fixture.nativeElement.querySelectorAll('.story .title') as NodeListOf<Element>).map(e => e.textContent?.trim());
+    expect(titles()).toEqual(['Cette semaine dans InSeconds 🎧', 'Cette semaine dans InSeconds 🎧']);
+    capture.calls.reset();
+
+    component.setTitleMode('lastWeek');
+    await fixture.whenStable();
+    expect(titles()).toEqual(['La semaine dernière dans InSeconds 🎧', 'La semaine dernière dans InSeconds 🎧']);
+    expect(capture).toHaveBeenCalledTimes(2);
+
+    component.setTitleMode('custom');
+    await fixture.whenStable();
+    // Champs désactivés pendant une capture : le texte n'est saisi qu'une fois la précédente finie.
+    component.setCustomTitle('Best of de septembre');
+    await fixture.whenStable();
+    expect(titles()).toEqual(['Best of de septembre', 'Best of de septembre']);
+    expect(http.getWeeklyRecap).toHaveBeenCalledTimes(1);
+  });
+
+  it('période invalide : pas d\'appel API', async () => {
+    story.from.set('2026-09-10');
+    story.to.set('2026-09-01');
+
+    await component.generate();
+
+    expect(http.getWeeklyRecap).not.toHaveBeenCalled();
+  });
 });

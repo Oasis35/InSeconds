@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { lastValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { PlayerSessionService } from '../../../core/services/player-session.service';
@@ -56,5 +56,10 @@ export class AdminHttpService {
   getPlayerHistory(playerId: string) {
     return this.http.get<PlayerHistoryResponse>(`${this.base}/players/${encodeURIComponent(playerId)}/history`);
   }
-  getWeeklyRecap() { return this.http.get<WeeklyRecapResponse>(`${this.base}/weekly-recap`); }
+  getWeeklyRecap(from?: string, to?: string) {
+    let params = new HttpParams();
+    if (from) params = params.set('from', from);
+    if (to) params = params.set('to', to);
+    return this.http.get<WeeklyRecapResponse>(`${this.base}/weekly-recap`, { params });
+  }
 }

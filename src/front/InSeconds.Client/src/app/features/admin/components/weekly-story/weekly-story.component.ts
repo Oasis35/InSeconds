@@ -2,7 +2,7 @@ import { Component, ChangeDetectionStrategy, ChangeDetectorRef, ElementRef, inje
 import { NgTemplateOutlet } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import type { Options as Html2CanvasOptions } from 'html2canvas-pro';
-import { AdminWeeklyStoryService, WeeklyStoryImage, WeeklyStoryKind } from '../../services/admin-weekly-story.service';
+import { AdminWeeklyStoryService, CUSTOM_TITLE_MAX_LENGTH, WeeklyStoryImage, WeeklyStoryKind, WeeklyStoryTitleMode } from '../../services/admin-weekly-story.service';
 import { formatPercent, formatPeriod, hiResCover, sizeClass, storyFileName } from './weekly-story.format';
 
 export type CaptureFn = (element: HTMLElement, options: Partial<Html2CanvasOptions>) => Promise<HTMLCanvasElement>;
@@ -40,12 +40,14 @@ export class WeeklyStoryComponent {
   protected readonly found = computed(() => this.story.recap()?.mostFound ?? null);
   protected readonly missed = computed(() => this.story.recap()?.mostMissed ?? null);
 
+  protected readonly customTitleMaxLength = CUSTOM_TITLE_MAX_LENGTH;
+  protected readonly titleModes: WeeklyStoryTitleMode[] = ['thisWeek', 'lastWeek', 'custom'];
   protected readonly formatPercent = formatPercent;
   protected readonly sizeClass = sizeClass;
   protected readonly hiResCover = hiResCover;
 
   async generate(): Promise<void> {
-    if (this.story.busy()) return;
+    if (this.story.busy() || !this.story.periodValid()) return;
     if (!(await this.story.load())) return;
     await this.render();
   }
@@ -88,6 +90,30 @@ export class WeeklyStoryComponent {
 
   toggleGuides(show: boolean): void {
     this.story.showGuides.set(show);
+    this.rerender();
+  }
+
+  togglePercent(show: boolean): void {
+    this.story.showPercent.set(show);
+    this.rerender();
+  }
+
+  setTitleMode(mode: WeeklyStoryTitleMode): void {
+    this.story.titleMode.set(mode);
+    this.rerender();
+  }
+
+  /** Appelé à la validation du champ (change), pas à chaque frappe : une capture coûte ~1 s. */
+  setCustomTitle(text: string): void {
+    this.story.customTitle.set(text.slice(0, CUSTOM_TITLE_MAX_LENGTH));
+    if (this.story.titleMode() === 'custom') this.rerender();
+  }
+
+  /** Les dates ne servent qu'au prochain « Générer » (nouvel appel API). */
+  setFrom(value: string): void { this.story.from.set(value); }
+  setTo(value: string): void { this.story.to.set(value); }
+
+  private rerender(): void {
     if (this.story.status() === 'ready') void this.render();
   }
 
