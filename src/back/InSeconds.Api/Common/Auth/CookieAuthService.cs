@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using InSeconds.Api.Domain;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.DataProtection;
@@ -50,20 +51,25 @@ public sealed class CookieAuthService(
         if (!httpContext.Request.Cookies.TryGetValue(CookieName, out var rawValue))
             return null;
 
+        // (M3, revue du 25/09) Le try/catch ne couvre plus que le déchiffrement du cookie —
+        // une erreur DB transitoire (timeout Npgsql, etc.) ne doit jamais être traitée comme
+        // "aucun Player trouvé" : ResolveOrCreatePlayerAsync créerait alors un nouvel invité et
+        // réécrirait le cookie, faisant perdre définitivement la série et l'historique du
+        // joueur pour un simple hoquet réseau.
+        Guid authToken;
         try
         {
             var unprotected = protector.Unprotect(rawValue);
-            if (!Guid.TryParse(unprotected, out var authToken))
+            if (!Guid.TryParse(unprotected, out authToken))
                 return null;
-
-            return await db.Players
-                .FirstOrDefaultAsync(p => p.AuthToken == authToken, ct);
         }
-        catch
+        catch (Exception ex) when (ex is CryptographicException or FormatException)
         {
-            // Cookie falsifié ou clé Data Protection expirée
+            // Cookie falsifié ou clé Data Protection expirée/absente
             return null;
         }
+
+        return await db.Players.FirstOrDefaultAsync(p => p.AuthToken == authToken, ct);
     }
 
     public void IssueCookie(HttpContext httpContext, Guid authToken)

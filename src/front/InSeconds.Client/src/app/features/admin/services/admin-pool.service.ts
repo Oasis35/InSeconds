@@ -1,5 +1,6 @@
 import { Injectable, inject, signal, computed, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subscription } from 'rxjs';
 import { SettingsService } from '../../../core/services/settings.service';
 import { AdminApiService } from './admin-api.service';
 import { PoolAudioPreviewService } from './pool-audio-preview.service';
@@ -282,7 +283,16 @@ export class AdminPoolService {
   }
 
   // --- modale écoute ---
+  // M14 (revue du 25/09) : takeUntilDestroyed(this.destroyRef) ne protège pas ici — ce
+  // destroyRef est celui du service (scopé à AdminComponent, cf. CLAUDE.md admin), pas de la
+  // modale, donc une réponse Deezer tardive après fermeture appelait quand même
+  // audioPreview.toggle(...) et redémarrait la lecture (ou écrasait l'état d'une modale
+  // rouverte entre-temps sur un autre morceau). La souscription est désormais gardée à la
+  // main et annulée explicitement à chaque nouvelle ouverture et à la fermeture.
+  private previewSearchSubscription: Subscription | null = null;
+
   openPreviewModal(t: PoolTrackDto): void {
+    this.previewSearchSubscription?.unsubscribe();
     this.audioPreview.stop();
     this.previewModalTrack.set(t);
     this.previewModalUrl.set(null);
@@ -290,7 +300,7 @@ export class AdminPoolService {
     this.previewModalOpen.set(true);
 
     // Réutilise la recherche Deezer admin pour retrouver l'URL de preview de ce morceau.
-    this.api.searchDeezer(`${t.artist} ${t.title}`)
+    this.previewSearchSubscription = this.api.searchDeezer(`${t.artist} ${t.title}`)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (results) => {
@@ -308,6 +318,7 @@ export class AdminPoolService {
   }
 
   closePreviewModal(): void {
+    this.previewSearchSubscription?.unsubscribe();
     this.audioPreview.stop();
     this.previewModalOpen.set(false);
     this.previewModalTrack.set(null);

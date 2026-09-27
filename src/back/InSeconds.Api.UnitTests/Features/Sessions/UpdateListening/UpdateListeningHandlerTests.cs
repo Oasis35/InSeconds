@@ -36,6 +36,15 @@ public sealed class UpdateListeningHandlerTests
         });
         await db.SaveChangesAsync();
 
+        // M1 (revue du 25/09) : le handler vérifie désormais que le TrackId appartient
+        // bien à ce défi (db.DailyChallengeTracks) — les tests utilisent les ids 42/99,
+        // il faut donc de vraies lignes DailyChallengeTrack sous ces ids.
+        db.Tracks.Add(new Track { Id = 42, DeezerTrackId = 942, Artist = "A42", Title = "T42", CreatedAt = DateTime.UtcNow });
+        db.Tracks.Add(new Track { Id = 99, DeezerTrackId = 999, Artist = "A99", Title = "T99", CreatedAt = DateTime.UtcNow });
+        db.DailyChallengeTracks.Add(new DailyChallengeTrack { Id = 42, DailyChallengeId = 1, TrackId = 42, Position = 1, DeezerRankSnapshot = 1 });
+        db.DailyChallengeTracks.Add(new DailyChallengeTrack { Id = 99, DailyChallengeId = 1, TrackId = 99, Position = 2, DeezerRankSnapshot = 2 });
+        await db.SaveChangesAsync();
+
         db.GameSessions.Add(GameSession.Restore(
             playerId: PlayerId,
             dailyChallengeId: 1,
@@ -104,20 +113,45 @@ public sealed class UpdateListeningHandlerTests
         await db.DisposeAsync();
     }
 
+    // M1 (revue du 25/09) : déplacer le verrou vers un autre morceau du défi sans être
+    // passé par SubmitAnswer (qui libère le verrou via ReleaseTrackLock) est désormais
+    // refusé — avant ce fix, ce déplacement remettait silencieusement à zéro
+    // CurrentTrackHintLevelUsed/CurrentTrackMinListenedSeconds du morceau réellement en
+    // cours, contournant la pénalité d'indice et le plancher de durée écoutée.
     [Fact]
-    public async Task Handle_DifferentTrack_ResetsMin()
+    public async Task Handle_DifferentTrack_WhileLockedAndUnanswered_ReturnsConflict()
     {
         // Arrange
         var (db, sessionId) = await SeedAsync(existingTrackId: 42, existingMin: 5m);
         var command = new UpdateListeningCommand(PlayerId, sessionId, TrackId: 99, ListenedSeconds: 1m);
 
         // Act
-        await CreateHandler(db).Handle(command, CancellationToken.None);
+        var result = await CreateHandler(db).Handle(command, CancellationToken.None);
 
         // Assert
+        result.Should().BeAssignableTo<IStatusCodeHttpResult>()
+            .Which.StatusCode.Should().Be(StatusCodes.Status409Conflict);
+
         var session = await db.GameSessions.FindAsync(sessionId);
-        session!.CurrentTrackId.Should().Be(99);
-        session.CurrentTrackMinListenedSeconds.Should().Be(1m, "nouvelle track — le min repart de la durée actuelle");
+        session!.CurrentTrackId.Should().Be(42, "le verrou ne doit pas bouger tant que le morceau en cours n'a pas été répondu");
+        session.CurrentTrackMinListenedSeconds.Should().Be(5m);
+
+        await db.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Handle_UnknownTrackId_ReturnsNotFound()
+    {
+        // Arrange — TrackId qui n'appartient à aucun DailyChallengeTrack de ce défi.
+        var (db, sessionId) = await SeedAsync();
+        var command = new UpdateListeningCommand(PlayerId, sessionId, TrackId: 12345, ListenedSeconds: 1m);
+
+        // Act
+        var result = await CreateHandler(db).Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Should().BeAssignableTo<IStatusCodeHttpResult>()
+            .Which.StatusCode.Should().Be(StatusCodes.Status404NotFound);
 
         await db.DisposeAsync();
     }

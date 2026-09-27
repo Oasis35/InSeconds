@@ -24,6 +24,7 @@ class AudioPlayerStub {
   readonly isError = () => this.state() === 'error';
   play(): void { this.state.set('playing'); }
   replayFull(): void {}
+  replayCurrent(): void {}
   extend(): void {}
   stop(): { listenedSeconds: number; wasExtended: boolean } { return { listenedSeconds: 0, wasExtended: false }; }
   reset(): void { this.state.set('idle'); }

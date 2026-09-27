@@ -216,6 +216,46 @@ public sealed class CookieAuthServiceTests
         resolution!.IsAdmin.Should().BeTrue();
     }
 
+    // M3 (revue du 25/09) : une erreur inattendue (ex: DB indisponible) pendant la résolution
+    // du cookie ne doit plus être avalée comme "cookie invalide" — sinon le joueur perdait
+    // définitivement son identité (nouvel invité créé + cookie réécrit) sur un simple hoquet
+    // réseau. Seules les erreurs de déchiffrement (CryptographicException/FormatException)
+    // restent traitées comme "pas de Player".
+    //
+    // Ne pas simuler ce cas en faisant lever une exception depuis IDataProtector.Unprotect
+    // (byte[]) : l'extension ASP.NET Core Unprotect(string) enveloppe elle-même TOUTE
+    // exception qui n'est pas déjà une CryptographicException dans... une CryptographicException
+    // (homogénéisation des erreurs de déchiffrement) — un mock qui throw à cet endroit atterrit
+    // donc toujours dans notre propre catch, jamais en propagation, quel que soit le type
+    // d'exception levée par le mock. Le seul endroit qui peut réellement laisser fuiter un type
+    // d'exception arbitraire est la requête DB elle-même, hors du try/catch restreint.
+    [Fact]
+    public async Task ResolveOrCreate_WhenDbQueryThrowsUnexpectedException_Propagates()
+    {
+        // Arrange
+        var db = CreateDbContext();
+        var protectionProvider = new EphemeralDataProtectionProvider();
+        var protector = protectionProvider.CreateProtector("InSeconds.Auth.Cookie");
+        var env = Substitute.For<IHostEnvironment>();
+        env.EnvironmentName.Returns(Environments.Development);
+        var service = new CookieAuthService(db, protector, env);
+
+        var httpContext = CreateHttpContext();
+        // Cookie syntaxiquement valide (déchiffrement réussi) — l'échec doit venir d'ailleurs.
+        var validToken = protector.Protect(Guid.NewGuid().ToString());
+        httpContext.Request.Headers["Cookie"] = $"{CookieAuthService.CookieName}={validToken}";
+
+        // Simule une panne DB (timeout, connexion coupée...) au moment de la requête —
+        // db.Players.FirstOrDefaultAsync lève ObjectDisposedException sur un contexte disposé.
+        await db.DisposeAsync();
+
+        // Act
+        Func<Task> act = () => service.ResolveOrCreatePlayerAsync(httpContext);
+
+        // Assert
+        await act.Should().ThrowAsync<ObjectDisposedException>();
+    }
+
     [Fact]
     public async Task ResolveOrCreate_InProduction_SetsCookieSecure()
     {

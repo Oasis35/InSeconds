@@ -115,9 +115,11 @@ public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger)
 
             if (response?.Error is not null)
             {
+                // Jamais le texte de la requête (saisie en cours de l'autocomplete public,
+                // potentiellement la réponse) — seulement sa longueur (M2, revue du 25/09).
                 logger.LogWarning(
-                    "Deezer a renvoyé une erreur pour la recherche {Query} : code {Code} ({Message}).",
-                    query, response.Error.Code, response.Error.Message);
+                    "Deezer a renvoyé une erreur pour une recherche ({QueryLength} caractères) : code {Code} ({Message}).",
+                    query.Length, response.Error.Code, response.Error.Message);
                 return [];
             }
 
@@ -132,7 +134,7 @@ public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger)
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Échec de la recherche Deezer pour la requête {Query}.", query);
+            logger.LogWarning(ex, "Échec de la recherche Deezer pour une requête ({QueryLength} caractères).", query.Length);
             return [];
         }
     }
