@@ -5,7 +5,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { DecorBackgroundComponent } from '../../shared/decor-background/decor-background.component';
 import { ConfirmSheetComponent } from '../../shared/confirm-sheet/confirm-sheet.component';
 import { PlayerSessionService } from '../../core/services/player-session.service';
-import { pluralKey } from '../../core/models/streak';
+import { isFreezeStockFull, pluralKey } from '../../core/models/streak';
 import { FreezeCellsComponent } from '../../shared/freeze-cells/freeze-cells.component';
 
 type PseudoStatus = 'idle' | 'saving' | 'saved' | 'taken' | 'error';
@@ -39,7 +39,7 @@ export class ProfileComponent implements OnInit {
   protected readonly freezesText = computed(() => {
     const streak = this.playerSession.streak();
     if (!streak) return '';
-    if (streak.freezes >= streak.maxFreezes)
+    if (isFreezeStockFull(streak))
       return this.translate.instant('streakFreeze.profile.full', { max: streak.maxFreezes });
     const remaining = streak.nextFreezeInDays ?? 0;
     const days = this.translate.instant(`streakFreeze.profile.days.${pluralKey(remaining)}`, { n: remaining });

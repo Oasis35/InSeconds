@@ -1,5 +1,5 @@
 import { StreakDto } from './game.models';
-import { dateKey, pluralKey, streakPillMode, toUtcDate } from './streak';
+import { dateKey, emptyStreak, isFreezeStockFull, isStreakProtected, pluralKey, streakPillMode, toUtcDate } from './streak';
 
 function dto(partial: Partial<StreakDto>): StreakDto {
   return { status: 'active', streak: 5, freezes: 1, maxFreezes: 2, freezeEveryDays: 7, missedDays: 0, ...partial } as StreakDto;
@@ -53,5 +53,33 @@ describe('streak (helpers gel de série)', () => {
     expect(dateKey('2026-09-21')).toBe('2026-09-21');
     expect(dateKey(new Date('2026-09-21T23:59:00Z'))).toBe('2026-09-21');
     expect(dateKey(null)).toBeNull();
+  });
+
+  describe('isFreezeStockFull', () => {
+    it('vrai quand le stock a atteint le plafond', () => {
+      expect(isFreezeStockFull(dto({ freezes: 2, maxFreezes: 2 }))).toBe(true);
+    });
+
+    it('faux tant qu\'il reste de la place', () => {
+      expect(isFreezeStockFull(dto({ freezes: 1, maxFreezes: 2 }))).toBe(false);
+    });
+  });
+
+  describe('isStreakProtected', () => {
+    it('vrai pour un compte connecté avec un statut protected', () => {
+      expect(isStreakProtected(dto({ status: 'protected' }), true)).toBe(true);
+    });
+
+    it('faux pour un invité même avec un statut protected', () => {
+      expect(isStreakProtected(dto({ status: 'protected' }), false)).toBe(false);
+    });
+
+    it('faux sans série (null)', () => {
+      expect(isStreakProtected(null, true)).toBe(false);
+    });
+  });
+
+  it('emptyStreak : état neutre à 0', () => {
+    expect(emptyStreak()).toEqual(dto({ streak: 0, freezes: 0, maxFreezes: 0, freezeEveryDays: 0 }));
   });
 });
