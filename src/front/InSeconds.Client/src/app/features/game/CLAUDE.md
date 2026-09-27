@@ -29,26 +29,35 @@ GameComponent
  └─ app-streak-sheet         [showStreakSheet] panneau série/gel → (closed) / (playNow) / (signup)
 ```
 
-### `peekSession(context)` (appelée dans `ngOnInit` + `retry()`) — lecture seule
+### `GameFacadeService.peekSession()`/`loadSession()` — HTTP + interprétation réseau (2026-09-27)
 
-Appelle `gameService.peekToday()` (`GET /api/sessions/today`) qui **ne crée ni session ni cookie** (cf. `CLAUDE.md` racine « Création paresseuse de la session »). Stocke `currentStreak`, **`streakInfo`** (`StreakDto`, gélule/panneau/accueil), `peekTracksCount`, `peekCompletedCount` (+ `checkLostStreak()` en contexte `initial`, cf. « Gel de série »), puis mappe `res.state` :
+`GameFacadeService` (toujours scopé à `GameComponent`, cf. plus bas) porte désormais, en plus de la pure délégation HTTP (`peekToday`/`startToday`/...), deux méthodes qui **interprètent** la réponse/l'erreur réseau en un résultat typé (`PeekOutcome`/`LoadOutcome`, `kind: 'ok' | 'error' | ...`), **sans jamais faire échouer l'Observable** ni toucher aux signals de `GameComponent` — la décision de transition d'état (quel `GameState`) reste entièrement dans `GameComponent`, qui `subscribe` au résultat et l'applique. Ce découpage évite que le facade (partagé par DI avec `BlindRoundComponent` via `HintService`) devienne propriétaire de l'état de session — `GameComponent` reste seul à "porter tout l'état métier" (cf. plus haut).
+
+- `peekSession(): Observable<PeekOutcome>` — `{ kind: 'ok'; response }` ou `{ kind: 'error' }` (toute erreur HTTP, y compris réseau).
+- `loadSession(): Observable<LoadOutcome>` — `{ kind: 'ok'; response }`, `{ kind: 'already_played'; abandoned }` (409), `{ kind: 'no_challenge' }` (503), ou `{ kind: 'error' }` (autre).
+
+### `peekSession(context)` (méthode de `GameComponent`, appelée dans `ngOnInit` + `retry()`) — lecture seule
+
+Appelle `gameService.peekSession()` (`GET /api/sessions/today` interprété) qui **ne crée ni session ni cookie** (cf. `CLAUDE.md` racine « Création paresseuse de la session »). Sur `'error'` : `gameState.set('error')` (sauf en contexte `'playing'`). Sur `'ok'` : stocke `currentStreak`, **`streakInfo`** (`StreakDto`, gélule/panneau/accueil), `peekTracksCount`, `peekCompletedCount` (+ `checkLostStreak()` en contexte `initial`, cf. « Gel de série »), puis mappe `res.state` :
 - `can_start` → état `welcome`
 - `resumable` → état `resume_prompt` (le back ne renvoie **pas** encore les tracks : `peekCompletedCount`/`peekTracksCount` suffisent à l'écran de reprise)
-- `already_played` → état `already_played` + countdown + `api.apiStatsToday()` pour `todayStats`
-- `abandoned` → état `already_played` avec `sessionAbandoned=true`
+- `already_played` → `enterAlreadyPlayed(false)` (état `already_played` + countdown + `api.apiStatsToday()` pour `todayStats`)
+- `abandoned` → `enterAlreadyPlayed(true)` (état `already_played`, `sessionAbandoned=true`, pas de fetch stats)
 - `no_challenge` → état `no_challenge`
 
 `context` : `'initial'` (premier chargement / retry) · `'refocus'` (retour au premier plan depuis welcome/resume_prompt) · `'playing'` (retour au premier plan pendant une partie — on ne bascule **que** sur `already_played`/`abandoned`, jamais vers welcome/resume, pour ne pas éjecter le joueur de son round).
 
-### `loadSession()` — POST, déclenché uniquement sur action explicite
+### `loadSession()` (méthode de `GameComponent`) — POST, déclenché uniquement sur action explicite
 
-Appelée par `beginGame()` (clic « Commencer à jouer »), `beginResume()` (clic « Reprendre ») — les deux passent d'abord l'état à `loading`. Appelle `gameService.startToday()` (`POST /api/sessions` → **c'est ici que le Player + le cookie + la session sont créés**) :
-- **Succès `isResuming=true`** → restaure `resumeCompletedAnswers`, `currentIndex`, `totalScore`, **anti-cheat de reprise** (`currentTrackId`/`minListenedSeconds` → `currentTrackMinListenedSeconds`), `preloadAll`, puis **directement `resumePlaying()`** (pas de retour à l'écran de reprise — le joueur a déjà cliqué).
-- **Succès `isResuming=false`** → reset complet, `preloadAll`, puis **directement `startPlaying()`** (état `playing`).
-- **Erreur `409`** (`abandoned` → `sessionAbandoned=true`) → `already_played` + countdown (+ `apiStatsToday()` si complété).
-- **Erreur `503`** → `no_challenge`. **Autre** → `error`.
+Appelée par `beginGame()` (clic « Commencer à jouer »), `beginResume()` (clic « Reprendre ») — les deux passent d'abord l'état à `loading`. Appelle `gameService.loadSession()` (`POST /api/sessions` interprété → **c'est ici que le Player + le cookie + la session sont créés**) :
+- **`{ kind: 'ok', response }`, `isResuming=true`** → restaure `resumeCompletedAnswers`, `currentIndex`, `totalScore`, **anti-cheat de reprise** (`currentTrackId`/`minListenedSeconds` → `currentTrackMinListenedSeconds`), `preloadAll`, puis **directement `resumePlaying()`** (pas de retour à l'écran de reprise — le joueur a déjà cliqué).
+- **`{ kind: 'ok', response }`, `isResuming=false`** → reset complet, `preloadAll`, puis **directement `startPlaying()`** (état `playing`).
+- **`{ kind: 'already_played', abandoned }`** (409) → `enterAlreadyPlayed(abandoned)`.
+- **`{ kind: 'no_challenge' }`** (503) → `no_challenge`. **`{ kind: 'error' }`** → `error`.
 
-`beginAbandonFromResume()` (clic « Abandonner » sur l'écran de reprise) : `startToday()` d'abord (pour matérialiser `sessionId`), puis `confirmAbandon()`.
+**`enterAlreadyPlayed(abandoned)`** : helper privé de `GameComponent` qui factorise la transition commune vers l'écran « déjà joué » — `sessionAbandoned`, `gameState.set('already_played')`, reset `streakToastDismissed`/`gelToastDismissed`, `startCountdown()`, et `api.apiStatsToday()` si `!abandoned`. Utilisé par `peekSession` (branches `already_played`/`abandoned`), `loadSession` (branche 409) et `confirmAbandon()` (abandon en jeu) — 4 points d'entrée qui redirigent vers le même état, plus besoin de les garder synchronisés à la main.
+
+`beginAbandonFromResume()` (clic « Abandonner » sur l'écran de reprise) : `gameService.startToday()` d'abord (délégation HTTP pure, pas besoin d'interprétation ici — juste matérialiser `sessionId`), puis `confirmAbandon()`.
 
 `resumePlaying()` reconstitue `results()` (`RoundResult`, voir `final-recap-screen`) à partir de `resumeCompletedAnswers` ; `currentIndex` = nb de réponses ; état `playing`.
 
@@ -58,7 +67,7 @@ Listener `visibilitychange` posé dans `ngOnInit` (retiré dans `ngOnDestroy`) :
 
 ### Toast de streak (guest, écrans `done`/`already_played`)
 
-Bloc `position:fixed` inline dans `game.component.html` (pas un composant partagé — usage unique), à côté des blocs `showLeaveConfirm`/confirm-sheet déjà inlinés là. Signal `streakToastDismissed`, condition d'affichage : `!playerSession.isLinked() && !streakToastDismissed() && displayStreak() > 0 && (gameState()==='done' || gameState()==='already_played')`. **Remis à `false` à chaque (ré)entrée dans ces deux états** — 5 points d'écriture à garder synchronisés si la machine à états est retouchée : les deux branches `already_played`/`abandoned` de `peekSession()`, la branche 409 de `loadSession()`, `confirmAbandon()`, et `onNextTrack()` (transition vers `done`). Le bouton ✕ se contente de `streakToastDismissed.set(true)` (inline, pas de méthode dédiée) ; le bouton "Créer" est un simple `routerLink="/login"`. Testé dans `game.component.spec.ts` (les 5 points de reset, pas le rendu du template).
+Bloc `position:fixed` inline dans `game.component.html` (pas un composant partagé — usage unique), à côté des blocs `showLeaveConfirm`/confirm-sheet déjà inlinés là. Signal `streakToastDismissed`, condition d'affichage : `!playerSession.isLinked() && !streakToastDismissed() && displayStreak() > 0 && (gameState()==='done' || gameState()==='already_played')`. **Remis à `false` à chaque (ré)entrée dans ces deux états** — 2 points d'écriture à garder synchronisés depuis le regroupement du 2026-09-27 dans `enterAlreadyPlayed()` (cf. plus haut, appelée par `peekSession()`/`loadSession()`/`confirmAbandon()`) et `onNextTrack()` (transition vers `done`). Le bouton ✕ se contente de `streakToastDismissed.set(true)` (inline, pas de méthode dédiée) ; le bouton "Créer" est un simple `routerLink="/login"`. Testé dans `game.component.spec.ts` (les points de reset, pas le rendu du template).
 
 ### Gel de série (2026-09-23, maquette `InSeconds Game.dc.html`)
 
@@ -66,8 +75,8 @@ Règles produit : `docs/GAMEPLAY_RULES_FR.md` § Streak. État porté par `GameC
 - `streakInfo` (`StreakDto | null`) : posé par chaque peek, **rafraîchi après la dernière réponse** (`refreshStreakInfo()` = peek sans changer d'état) pour que la gélule reflète le gel consommé/gagné. `sheetStreak` = `streakInfo` ou état neutre.
 - Header : `[streak]="streakInfo()"`, `[showStreak]` hors `loading`/`playing` (la gélule s'affiche désormais aussi à 0, mode `lost`), `[pulse]="showGelEarnedToast()"`, `(openStreak)` → `showStreakSheet`.
 - `StreakSheetComponent` : `(playNow)` → `playFromStreakSheet()` (`beginGame()` depuis `welcome`, `beginResume()` depuis `resume_prompt`), `(signup)` → `router.navigate(['/login'])`.
-- Toasts (computeds, tous inline dans `game.component.html`) : `showGelEarnedToast` (connecté, récap, `stats.freezeMilestone`, prioritaire) / `showGelUsedToast` (connecté, récap, `stats.freezesUsed > 0`), fermés par `gelToastDismissed` (remis à `false` aux **mêmes 5 points** que `streakToastDismissed`) ; `showStreakToast` + variante `guestFreezeMiss` (invité, `stats.freezeMilestone`) ; `showLostToast` (invité, `welcome`, `lostStreak` posé par `checkLostStreak()` **une seule fois par série perdue** — clé `localStorage` `inseconds.lostStreakNudgeSeen` = `LastPlayedDate`, marquée dès l'affichage). Pendant le toast « série perdue », `welcome-screen` masque son CTA de connexion (`[hideLoginCta]`). CTA invité des toasts sur 2 lignes (`<ng-template #signupCta>`).
-- Helpers purs `core/models/streak.ts` : `streakPillMode(streak, linked)` (`on`/`protected`/`guest`/`lost`), `pluralKey(n)` (clés i18n `.one`/`.other`), `toUtcDate`/`dateKey` (`DateOnly` reçu en chaîne `yyyy-MM-dd`).
+- Toasts (computeds, tous inline dans `game.component.html`) : `showGelEarnedToast` (connecté, récap, `stats.freezeMilestone`, prioritaire) / `showGelUsedToast` (connecté, récap, `stats.freezesUsed > 0`), fermés par `gelToastDismissed` (remis à `false` aux **mêmes points** que `streakToastDismissed`) ; `showStreakToast` + variante `guestFreezeMiss` (invité, `stats.freezeMilestone`) ; `showLostToast` (invité, `welcome`, `lostStreak` posé par `checkLostStreak()` **une seule fois par série perdue** — clé `localStorage` `inseconds.lostStreakNudgeSeen` = `LastPlayedDate`, marquée dès l'affichage). Pendant le toast « série perdue », `welcome-screen` masque son CTA de connexion (`[hideLoginCta]`). CTA invité des toasts sur 2 lignes (`<ng-template #signupCta>`).
+- Helpers purs `core/models/streak.ts` : `streakPillMode(streak, linked)` (`on`/`protected`/`guest`/`lost`), `pluralKey(n)` (clés i18n `.one`/`.other`), `toUtcDate`/`dateKey` (`DateOnly` reçu en chaîne `yyyy-MM-dd`), `isFreezeStockFull(streak)`/`isStreakProtected(streak, linked)`/`emptyStreak()` (2026-09-27, extraits d'un doublon entre `game.component.ts`/`streak-sheet.component.ts`/`profile.component.ts`/`welcome-screen.component.ts` — cf. `atMax` de `streak-sheet`, `freezesText` de `profile`, `isProtected` de `welcome-screen`, `sheetStreak` de `game.component`, tous réécrivaient la même règle « stock plein »/« série protégée »/état neutre).
 - Animations `gel-*` (`styles.scss`) sur les éléments `[data-anim]` : fondu en mouvement réduit, coupées en E2E (`.no-anim`). Clés i18n `streakFreeze.*` (FR/EN).
 
 ### Garde de sortie (`UnsavedGameComponent`, branché sur `unsavedGameGuard`)
@@ -113,7 +122,7 @@ Inputs : `track` (`required`), `isLast=false`, `sessionId=0`, `minListenedSecond
 
 ## `services/game-facade.service.ts`
 
-`@Injectable()` (pas root, scopé au `GameComponent`). Pure délégation vers `core/services/game.service.ts` (`peekToday`, `startToday`, `submitAnswer`, `abandonSession`, `updateListening`, `requestHint`) sans logique propre — existe pour permettre le mock/l'injection scopée en test sans toucher au service global.
+`@Injectable()` (pas root, scopé au `GameComponent`). Pure délégation vers `core/services/game.service.ts` (`peekToday`, `startToday`, `submitAnswer`, `abandonSession`, `updateListening`, `requestHint`) — existe pour permettre le mock/l'injection scopée en test sans toucher au service global. **Depuis le 2026-09-27**, porte aussi `peekSession()`/`loadSession()` (cf. section dédiée plus haut) : ces deux méthodes interprètent la réponse/l'erreur réseau (`PeekOutcome`/`LoadOutcome`, `kind: 'ok' | 'error' | ...`) sans jamais faire échouer l'Observable, mais **ne possèdent aucun signal** — la décision de transition d'état reste entièrement dans `GameComponent`. Ne pas transférer l'état de session (tracks/sessionId/streakInfo/...) ici : ce serait dupliquer le rôle de `GameComponent`, et ce facade est aussi injecté (via DI en cascade) par `HintService`/`BlindRoundComponent`, qui n'a besoin d'aucun de ces signaux.
 
 ## `services/game-share.service.ts`
 
@@ -220,7 +229,7 @@ Tous `OnPush`, présentationnels (sauf `already-played-screen` qui type `stats` 
 1. **`roundRef()?.setResult(...)`** est la seule communication impérative parent→enfant de toute la feature (le reste passe par inputs/outputs standards) — à préserver si on refactore `game.component`/`blind-round`.
 2. Toute nouvelle valeur par défaut de `Settings` (back) doit être répliquée dans `settings.service.ts` (fallback front) — cf. règle générale du CLAUDE.md racine sur l'ajout de settings.
 3. **Prolongation libre depuis le 2026-07-17** — `AudioPlayerService.extend()` n'a plus de limite au nombre d'appels ni de malus de score associé (`ScoreCalculator` ne lit plus `WasExtended`). Ne pas réintroduire de garde « une seule prolongation » sans repasser par une décision produit explicite.
-4. **Toast de streak — 5 points de reset à garder synchronisés** (cf. section dédiée plus haut) : toute nouvelle transition vers `done`/`already_played` ajoutée à `game.component.ts` doit remettre `streakToastDismissed` à `false`, sinon le toast resterait masqué indéfiniment après un premier dismiss.
+4. **Toast de streak — points de reset à garder synchronisés** (cf. section dédiée plus haut) : toute nouvelle transition vers `done`/`already_played` ajoutée à `game.component.ts` doit remettre `streakToastDismissed` à `false` — passer par `enterAlreadyPlayed()` pour toute nouvelle voie vers `already_played` plutôt que de le refaire à la main, sinon le toast resterait masqué indéfiniment après un premier dismiss.
 5. **Indices — reset à chaque changement de morceau** : `BlindRoundComponent.next()` appelle `hintService.reset()` (déjà fait) — un futur refactor qui oublierait cet appel laisserait l'indice du morceau précédent affiché sur le suivant.
 6. **Nudges de connexion = uniquement des rappels, jamais un blocage** — tous gardés par `PlayerSessionService.isLinked()` (`welcome-screen`/`resume-screen`/toasts de série — les bannières de `already-played-screen`/`final-recap-screen` ont été retirées le 2026-09-23). Le jeu guest doit rester 100% fonctionnel sans jamais afficher ces éléments pour un compte lié — cf. décision d'architecture racine "pas de fermeture d'accès".
 7. **`AnswerSearchService`/`AnswerSubmissionService` — croisement `pendingConfirm`** : `onQueryChange`/`clearSearch` doivent fermer l'encart de confirmation (`submission.pendingConfirm.set(null)`) en plus de leur reset côté recherche — ce sont les deux seules méthodes qui orchestrent explicitement les deux services depuis `BlindRoundComponent` plutôt que de déléguer 1:1. Un futur refactor qui les rendrait purement délégantes réintroduirait le bug où retaper après un envoi vide laisse la confirmation affichée par-dessus la nouvelle saisie.

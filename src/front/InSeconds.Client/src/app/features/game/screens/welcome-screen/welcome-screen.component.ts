@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { PlayerSessionService } from '../../../../core/services/player-session.service';
 import { StreakDto } from '../../../../core/models/game.models';
+import { isStreakProtected } from '../../../../core/models/streak';
 import { StreakIconComponent } from '../../../../shared/streak-icon/streak-icon.component';
 
 @Component({
@@ -25,5 +26,5 @@ export class WelcomeScreenComponent {
 
   /** Compte connecté revenant après un jour manqué couvert par un gel. */
   protected readonly isProtected = computed(() =>
-    this.playerSession.isLinked() && this.streak()?.status === 'protected');
+    isStreakProtected(this.streak(), this.playerSession.isLinked()));
 }

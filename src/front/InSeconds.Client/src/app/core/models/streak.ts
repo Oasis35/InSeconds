@@ -15,6 +15,24 @@ export function streakPillMode(streak: StreakDto | null, linked: boolean): Strea
   return streak.status === 'protected' ? 'protected' : 'on';
 }
 
+/** Stock de gels déjà au plafond — `nextFreezeInDays` (back) l'ignore, c'est ici qu'on le vérifie. */
+export function isFreezeStockFull(streak: StreakDto): boolean {
+  return streak.freezes >= streak.maxFreezes;
+}
+
+/** Compte connecté dont la série est actuellement protégée par un gel. */
+export function isStreakProtected(streak: StreakDto | null, linked: boolean): boolean {
+  return linked && streak?.status === 'protected';
+}
+
+/** État neutre d'une série, tant qu'aucun peek n'a encore répondu. */
+export function emptyStreak(): StreakDto {
+  return {
+    status: 'active', streak: 0, freezes: 0, maxFreezes: 0, freezeEveryDays: 0,
+    nextFreezeInDays: undefined, missedDays: 0, lostStreak: undefined, lastPlayedDate: undefined,
+  };
+}
+
 /** Suffixe de clé i18n singulier/pluriel (« 1 jour », « 2 jours » — 0 et 1 au singulier). */
 export function pluralKey(n: number): 'one' | 'other' {
   return n > 1 ? 'other' : 'one';

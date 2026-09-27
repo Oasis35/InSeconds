@@ -1,7 +1,7 @@
 import { Component, input, output, inject, computed, ChangeDetectionStrategy, HostListener } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { StreakDto } from '../../core/models/game.models';
-import { pluralKey, toUtcDate } from '../../core/models/streak';
+import { isFreezeStockFull, isStreakProtected, pluralKey, toUtcDate } from '../../core/models/streak';
 import { LanguageService } from '../../core/services/language.service';
 import { StreakIconComponent } from '../streak-icon/streak-icon.component';
 import { FreezeCellsComponent } from '../freeze-cells/freeze-cells.component';
@@ -37,12 +37,12 @@ export class StreakSheetComponent {
 
   protected readonly variant = computed<StreakSheetVariant>(() => {
     if (!this.linked()) return 'guest';
-    return this.streak().status === 'protected' ? 'protected' : 'linked';
+    return isStreakProtected(this.streak(), this.linked()) ? 'protected' : 'linked';
   });
 
   /** Stock déjà au plafond : aucun nouveau gel ne peut être gagné pour l'instant (`nextFreezeInDays`
    * reste un pur compteur de série, sans regarder le stock — c'est ici qu'on le fait). */
-  protected readonly atMax = computed(() => this.streak().freezes >= this.streak().maxFreezes);
+  protected readonly atMax = computed(() => isFreezeStockFull(this.streak()));
 
   protected readonly remaining = computed(() => this.streak().nextFreezeInDays ?? 0);
   protected readonly nextFreezeAt = computed(() => this.streak().streak + this.remaining());
