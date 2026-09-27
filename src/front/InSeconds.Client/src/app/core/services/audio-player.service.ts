@@ -53,12 +53,40 @@ export class AudioPlayerService {
       // 'error', jamais 'idle' : un retour à 'idle' relancerait en boucle l'autoplay de
       // BlindRoundComponent (effect sur isIdle()), cf. piège E4 CLAUDE.md.
       this.audio!.play().catch(() => { if (this.playToken === token) this.state.set('error'); });
-      this.scheduleStop(durationSeconds, token);
+      // this.currentDuration (pas le paramètre durationSeconds figé à l'appel) : si extend()
+      // a été appelé pendant le chargement (état 'loading'), la valeur a pu changer entre
+      // temps — cf. piège M11 CLAUDE.md.
+      this.scheduleStop(this.currentDuration, token);
       this.startRaf(token);
     };
 
     this.audio.onerror = () => { if (this.playToken === token) this.state.set('error'); };
     this.audio.load();
+  }
+
+  /**
+   * Relit le palier en cours depuis le début, jusqu'à l'arrêt automatique à `currentDuration`
+   * (bouton ↺ pendant l'écoute). Contrairement à `play()`, ne réinitialise ni `wasExtended` ni
+   * `extended` — ce n'est pas un nouveau palier, juste une relecture du même, cf. piège M12
+   * CLAUDE.md (le bouton fait actuellement croire à une prolongation jamais eue dans les stats
+   * admin `ExtendedRate`).
+   */
+  replayCurrent(): void {
+    if (!this.audio?.src || this.state() === 'error') return;
+
+    const token = ++this.playToken;
+    if (this.stopTimer !== null) { clearTimeout(this.stopTimer); this.stopTimer = null; }
+    this.stopRaf();
+    this.audio.oncanplay = null;
+    this.audio.onerror = null;
+    this.audio.onended = null;
+
+    this.audio.currentTime = 0;
+    this.state.set('playing');
+    this.progress.set(0);
+    this.audio.play().catch(() => { if (this.playToken === token) this.state.set('error'); });
+    this.scheduleStop(this.currentDuration, token);
+    this.startRaf(token);
   }
 
   /** Rejoue le morceau déjà chargé depuis le début, jusqu'à la fin naturelle. */
@@ -94,6 +122,14 @@ export class AudioPlayerService {
     this.wasExtended = true;
     this.extended.set(true);
     this.currentDuration = nextDurationSeconds;
+
+    // Le palier n'a pas encore commencé à jouer (chargement en cours) : rien d'autre à faire
+    // maintenant, currentDuration est déjà à jour et le gestionnaire oncanplay de play() le
+    // relit à son déclenchement pour programmer l'arrêt sur la bonne valeur. Sans cette garde,
+    // le code tombait dans la branche "pas en cours de lecture" ci-dessous, qui programmait un
+    // arrêt dès maintenant (avant même que la lecture réelle ait commencé) — écoute
+    // effectivement plus courte que le palier choisi (cf. piège M11 CLAUDE.md).
+    if (this.state() === 'loading') return;
 
     if (this.stopTimer !== null) { clearTimeout(this.stopTimer); this.stopTimer = null; }
 

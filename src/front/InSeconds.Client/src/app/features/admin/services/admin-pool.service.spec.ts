@@ -22,6 +22,7 @@ function makeAdminApiStub() {
     reloadPool: jasmine.createSpy('reloadPool'),
     renameTrack: jasmine.createSpy('renameTrack').and.returnValue(of({})),
     setTrackDisabled: jasmine.createSpy('setTrackDisabled').and.returnValue(of({})),
+    searchDeezer: jasmine.createSpy('searchDeezer').and.returnValue(of([])),
     _setPoolTracks: (v: PoolTracksResponse) => poolTracks.set(v),
   };
 }
@@ -38,15 +39,18 @@ describe('AdminPoolService', () => {
   let service: AdminPoolService;
   let apiStub: ReturnType<typeof makeAdminApiStub>;
 
+  let audioPreviewStub: { stop: jasmine.Spy; toggle: jasmine.Spy };
+
   beforeEach(() => {
     apiStub = makeAdminApiStub();
+    audioPreviewStub = { stop: jasmine.createSpy('stop'), toggle: jasmine.createSpy('toggle') };
 
     TestBed.configureTestingModule({
       providers: [
         AdminPoolService,
         { provide: AdminApiService, useValue: apiStub },
         { provide: SettingsService, useValue: { tracksPerChallenge: signal(3) } },
-        { provide: PoolAudioPreviewService, useValue: { stop: () => {}, toggle: () => {} } },
+        { provide: PoolAudioPreviewService, useValue: audioPreviewStub },
       ],
     });
 
@@ -436,6 +440,50 @@ describe('AdminPoolService', () => {
 
       expect(service.toggleDisabledError()).toBe('error');
       expect(service.togglingDisabledIds().has(5)).toBeFalse();
+    });
+  });
+
+  // M14 (revue du 25/09) : la recherche Deezer de la modale écoute passait par
+  // takeUntilDestroyed(this.destroyRef), qui n'est détruit qu'avec le service (scopé à
+  // AdminComponent) — pas à la fermeture de la modale. Une réponse tardive après fermeture,
+  // ou après réouverture sur un autre morceau, appelait quand même audioPreview.toggle(...) et
+  // écrasait l'état affiché.
+  describe('modale écoute (openPreviewModal/closePreviewModal)', () => {
+    it('should not call audioPreview.toggle for a search that resolves after the modal was closed', () => {
+      const pending = new Subject<{ deezerTrackId: number; previewUrl: string | null }[]>();
+      apiStub.searchDeezer.and.returnValue(pending);
+
+      service.openPreviewModal(makePoolTrack(5, true) as any);
+      service.closePreviewModal();
+      pending.next([{ deezerTrackId: 5, previewUrl: 'https://example.com/5.mp3' }]);
+
+      expect(audioPreviewStub.toggle).not.toHaveBeenCalled();
+      expect(service.previewModalUrl()).toBeNull();
+    });
+
+    it('should cancel the previous pending search when opening a different track', () => {
+      const firstSearch = new Subject<{ deezerTrackId: number; previewUrl: string | null }[]>();
+      apiStub.searchDeezer.and.returnValue(firstSearch);
+
+      const trackA = makePoolTrack(5, true) as any;
+      const trackB = makePoolTrack(6, true) as any;
+      service.openPreviewModal(trackA);
+
+      const secondSearch = new Subject<{ deezerTrackId: number; previewUrl: string | null }[]>();
+      apiStub.searchDeezer.and.returnValue(secondSearch);
+      service.openPreviewModal(trackB);
+
+      // La réponse tardive du premier morceau ne doit plus rien pouvoir modifier.
+      firstSearch.next([{ deezerTrackId: 5, previewUrl: 'https://example.com/5.mp3' }]);
+
+      expect(service.previewModalTrack()).toBe(trackB);
+      expect(service.previewModalUrl()).toBeNull();
+      expect(audioPreviewStub.toggle).not.toHaveBeenCalled();
+
+      secondSearch.next([{ deezerTrackId: 6, previewUrl: 'https://example.com/6.mp3' }]);
+
+      expect(service.previewModalUrl()).toBe('https://example.com/6.mp3');
+      expect(audioPreviewStub.toggle).toHaveBeenCalledOnceWith('https://example.com/6.mp3');
     });
   });
 });

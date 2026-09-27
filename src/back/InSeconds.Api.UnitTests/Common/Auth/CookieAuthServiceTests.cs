@@ -216,6 +216,35 @@ public sealed class CookieAuthServiceTests
         resolution!.IsAdmin.Should().BeTrue();
     }
 
+    // M3 (revue du 25/09) : une erreur inattendue (ex: DB indisponible) pendant la résolution
+    // du cookie ne doit plus être avalée comme "cookie invalide" — sinon le joueur perdait
+    // définitivement son identité (nouvel invité créé + cookie réécrit) sur un simple hoquet
+    // réseau. Seules les erreurs de déchiffrement (CryptographicException/FormatException)
+    // restent traitées comme "pas de Player".
+    [Fact]
+    public async Task ResolveOrCreate_WhenUnprotectThrowsUnexpectedException_PropagatesInsteadOfCreatingNewPlayer()
+    {
+        // Arrange
+        await using var db = CreateDbContext();
+        var protector = Substitute.For<IDataProtector>();
+        protector.Unprotect(Arg.Any<byte[]>()).Returns(_ => throw new InvalidOperationException("boom"));
+        var env = Substitute.For<IHostEnvironment>();
+        env.EnvironmentName.Returns(Environments.Development);
+        var service = new CookieAuthService(db, protector, env);
+
+        var httpContext = CreateHttpContext();
+        // Base64 valide (l'extension Unprotect(string) décode avant d'appeler Unprotect(byte[])).
+        httpContext.Request.Headers["Cookie"] =
+            $"{CookieAuthService.CookieName}={Convert.ToBase64String("whatever"u8.ToArray())}";
+
+        // Act
+        Func<Task> act = () => service.ResolveOrCreatePlayerAsync(httpContext);
+
+        // Assert
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        (await db.Players.CountAsync()).Should().Be(0);
+    }
+
     [Fact]
     public async Task ResolveOrCreate_InProduction_SetsCookieSecure()
     {

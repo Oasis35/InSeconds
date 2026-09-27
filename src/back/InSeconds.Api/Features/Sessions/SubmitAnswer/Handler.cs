@@ -72,7 +72,12 @@ public sealed class SubmitAnswerHandler(
         var titleCorrect  = textNormalizer.IsMatch(command.TitleAnswer,  challengeTrack.Title);
 
         // Source de vérité serveur — jamais envoyé par le client (cf. RequestHint/anti-triche).
-        var hintLevelUsed = session.CurrentTrackHintLevelUsed;
+        // Défense en profondeur (M1, revue du 25/09) : n'applique le niveau d'indice révélé
+        // que si le verrou porte bien sur le morceau soumis — cf. UpdateListening/Handler.cs
+        // qui empêche déjà de déplacer ce verrou avant réponse.
+        var hintLevelUsed = session.CurrentTrackId == command.DailyChallengeTrackId
+            ? session.CurrentTrackHintLevelUsed
+            : 0;
 
         var score = scoreCalculator.Calculate(
             command.ListenedDurationSeconds,
@@ -107,11 +112,18 @@ public sealed class SubmitAnswerHandler(
         // Réinitialiser le verrou anti-cheat (la track est répondue, plus besoin)
         session.ReleaseTrackLock();
 
-        // Vérifier si tous les morceaux du défi ont été répondus → complétion
+        // Vérifier si tous les morceaux du défi ont été répondus → complétion. Compte les
+        // morceaux réellement générés pour CE défi (M4, revue du 25/09), pas le réglage
+        // TracksPerChallenge courant : celui-ci a pu changer depuis la génération du défi
+        // (CreateChallenge accepte aussi un nombre différent), auquel cas comparer au réglage
+        // actuel ne termine jamais la session, ou la termine trop tôt (le dernier morceau
+        // répondrait alors 403 session déjà complétée).
         var answeredCount = await db.GameSessionAnswers
             .CountAsync(a => a.GameSessionId == command.SessionId, cancellationToken);
+        var totalTracksInChallenge = await db.DailyChallengeTracks
+            .CountAsync(t => t.DailyChallengeId == session.DailyChallengeId, cancellationToken);
         // +1 pour inclure la réponse qu'on vient d'ajouter (pas encore persistée)
-        var isLastAnswer = (answeredCount + 1) >= appSettings.TracksPerChallenge;
+        var isLastAnswer = (answeredCount + 1) >= totalTracksInChallenge;
 
         if (isLastAnswer && session.Status == SessionStatus.Pending)
             await CompleteSessionAsync(session, command.PlayerId, cancellationToken);

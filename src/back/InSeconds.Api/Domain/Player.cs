@@ -121,6 +121,14 @@ public sealed class Player
         StreakFreezes = Math.Max(StreakFreezes, SignupFreezeGift);
     }
 
+    // Invalide le cookie actuellement en circulation pour ce compte (M6, revue du 25/09) —
+    // sans ça, un cookie authToken copié restait valide indéfiniment (90 jours glissants,
+    // jamais révoqués côté serveur). Appelé à la déconnexion : le nouveau token n'est jamais
+    // renvoyé au client (aucun cookie n'est réémis), donc tout cookie déjà en circulation
+    // (copié, volé) devient immédiatement orphelin — plus aucun Player ne correspond à
+    // l'ancien AuthToken.
+    public void RotateAuthToken(Guid newAuthToken) => AuthToken = newAuthToken;
+
     public void UpdatePseudo(string pseudo) => Pseudo = pseudo;
 
     public void ChangeEmail(string newEmail) => Email = newEmail;
