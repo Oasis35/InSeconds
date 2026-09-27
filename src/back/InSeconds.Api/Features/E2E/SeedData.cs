@@ -1,5 +1,6 @@
 using InSeconds.Api.Domain;
 using InSeconds.Api.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace InSeconds.Api.Features.E2E;
 
