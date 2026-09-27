@@ -356,3 +356,55 @@ describe('GameComponent — échec réseau à la soumission d\'une réponse', ()
     expect(component['totalScore']()).toBe(0);
   });
 });
+
+// M13 (revue du 25/09, cf. piège 41 CLAUDE.md racine) : apiStatsToday() est appelé sans
+// callback error explicite avant le fix ; loadTodayStats() en pose un (error: () => {}) —
+// vérifie que le fix tient, sur les deux points d'entrée qui l'appellent (onNextTrack → done,
+// et enterAlreadyPlayed(false) → peekSession 'already_played' / loadSession 409).
+describe('GameComponent — échec réseau de apiStatsToday (piège 41)', () => {
+  let component: GameComponent;
+  let gameFacadeStub: { peekSession: jasmine.Spy; loadSession: jasmine.Spy };
+  let apiStub: { apiStatsToday: jasmine.Spy };
+
+  beforeEach(() => {
+    gameFacadeStub = {
+      peekSession: jasmine.createSpy('peekSession'),
+      loadSession: jasmine.createSpy('loadSession'),
+    };
+    apiStub = {
+      apiStatsToday: jasmine.createSpy('apiStatsToday').and.returnValue(throwError(() => new Error('network'))),
+    };
+    component = createComponent(
+      gameFacadeStub, apiStub, signal(false), { navigate: jasmine.createSpy('navigate') });
+  });
+
+  it('onNextTrack (fin de partie) n\'expose pas l\'erreur et laisse todayStats à null', () => {
+    component['tracks'].set([{ id: 1, previewUrl: null, coverUrl: null } as any]);
+    component['currentIndex'].set(0);
+
+    expect(() => component['onNextTrack']()).not.toThrow();
+
+    expect(component['gameState']()).toBe('done');
+    expect(component['todayStats']()).toBeNull();
+  });
+
+  it('peekSession → already_played n\'expose pas l\'erreur et laisse todayStats à null', () => {
+    gameFacadeStub.peekSession.and.returnValue(of({
+      kind: 'ok', response: { state: 'already_played', currentStreak: 3, tracksCount: 3, completedCount: 3 },
+    }));
+
+    expect(() => component['retry']()).not.toThrow();
+
+    expect(component['gameState']()).toBe('already_played');
+    expect(component['todayStats']()).toBeNull();
+  });
+
+  it('loadSession → 409 already_played n\'expose pas l\'erreur et laisse todayStats à null', () => {
+    gameFacadeStub.loadSession.and.returnValue(of({ kind: 'already_played', abandoned: false }));
+
+    expect(() => component['beginGame']()).not.toThrow();
+
+    expect(component['gameState']()).toBe('already_played');
+    expect(component['todayStats']()).toBeNull();
+  });
+});

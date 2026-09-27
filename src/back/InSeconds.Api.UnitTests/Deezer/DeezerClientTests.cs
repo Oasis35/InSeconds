@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using FluentAssertions;
+using InSeconds.Api.UnitTests.Common.Observability;
 using InSeconds.Deezer;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
@@ -11,6 +12,12 @@ public sealed class DeezerClientTests
 {
     private static DeezerClient Create(HttpMessageHandler handler)
         => new(new HttpClient(handler) { BaseAddress = new Uri("https://api.deezer.com") }, NullLogger<DeezerClient>.Instance);
+
+    private static DeezerClient Create(HttpMessageHandler handler, out CapturingLogger<DeezerClient> logger)
+    {
+        logger = new CapturingLogger<DeezerClient>();
+        return new DeezerClient(new HttpClient(handler) { BaseAddress = new Uri("https://api.deezer.com") }, logger);
+    }
 
     private static HttpResponseMessage Json(string body)
         => new(HttpStatusCode.OK) { Content = new StringContent(body, Encoding.UTF8, "application/json") };
@@ -239,6 +246,37 @@ public sealed class DeezerClientTests
         var act = () => client.SearchTracksAsync("daft punk", cts.Token);
 
         await act.Should().ThrowAsync<OperationCanceledException>();
+    }
+
+    // ---------------------------------------------------------------------------
+    // Confidentialité — piège 36 (revue du 25/09) : la requête tapée par le joueur ne doit
+    // jamais apparaître dans les logs, seulement sa longueur.
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task SearchTracksAsync_LogueLaLongueurDeLaQuery_JamaisSonContenu_SurErreurDeezer()
+    {
+        const string query = "un nom tres identifiant clement rageau";
+        var client = Create(new StubHandler(Json(
+            """{"error":{"type":"Exception","message":"Quota limit exceeded","code":4}}""")), out var logger);
+
+        await client.SearchTracksAsync(query);
+
+        logger.Messages.Should().NotBeEmpty();
+        logger.Messages.Should().OnlyContain(m => !m.Contains(query));
+        logger.Messages.Should().ContainSingle(m => m.Contains(query.Length.ToString()));
+    }
+
+    [Fact]
+    public async Task SearchTracksAsync_LogueLaLongueurDeLaQuery_JamaisSonContenu_SurExceptionHttp()
+    {
+        const string query = "un nom tres identifiant clement rageau";
+        var client = Create(new StubHandler(new HttpResponseMessage(HttpStatusCode.InternalServerError)), out var logger);
+
+        await client.SearchTracksAsync(query);
+
+        logger.Messages.Should().NotBeEmpty();
+        logger.Messages.Should().OnlyContain(m => !m.Contains(query));
     }
 
     // Honore l'annulation avant d'émettre la requête, sinon renvoie la réponse stub.
