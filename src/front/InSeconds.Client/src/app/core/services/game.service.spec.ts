@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { GameService } from './game.service';
@@ -123,7 +123,7 @@ describe('GameService', () => {
       expect(result).toEqual(mockResponse);
     });
 
-    it('should propagate 409 when session already completed', () => {
+    it('should propagate 409 immediately, without retrying (session already completed)', () => {
       let error: any;
       service.submitAnswer(1, {
         dailyChallengeTrackId: 1,
@@ -136,8 +136,52 @@ describe('GameService', () => {
       const req = httpMock.expectOne(`${base}/1/answers`);
       req.flush('Conflict', { status: 409, statusText: 'Conflict' });
 
+      // Erreur applicative (4xx) : pas de nouvelle requête, l'erreur remonte tout de suite.
+      httpMock.verify();
       expect(error.status).toBe(409);
     });
+
+    // E5 : une coupure réseau (status 0) ou une erreur serveur (5xx) ne doit pas faire perdre
+    // la réponse — GameService.submitAnswer réessaie 2 fois (délai 1s) avant d'abandonner.
+    it('retries on a network error and succeeds if a later attempt goes through', fakeAsync(() => {
+      const body = {
+        dailyChallengeTrackId: 3, listenedDurationSeconds: 1.5, wasExtended: false,
+        artistAnswer: 'Daft Punk', titleAnswer: 'Around the World',
+      };
+      const mockResponse = {
+        artistCorrect: true, titleCorrect: true, score: 700, correctArtist: 'Daft Punk',
+        correctTitle: 'Around the World', failureRatePercent: 20, averageSecondsWhenCorrect: 2,
+        listenedDurationSeconds: 1.5,
+      };
+
+      let result: any;
+      service.submitAnswer(7, body).subscribe(r => (result = r));
+
+      httpMock.expectOne(`${base}/7/answers`).error(new ProgressEvent('network error'));
+      tick(1000);
+
+      const retryReq = httpMock.expectOne(`${base}/7/answers`);
+      retryReq.flush(mockResponse);
+
+      expect(result).toEqual(mockResponse);
+    }));
+
+    it('gives up after 2 retries on a persistent network error', fakeAsync(() => {
+      let error: any;
+      service.submitAnswer(7, {
+        dailyChallengeTrackId: 3, listenedDurationSeconds: 1, wasExtended: false,
+        artistAnswer: '', titleAnswer: '',
+      }).subscribe({ error: e => (error = e) });
+
+      httpMock.expectOne(`${base}/7/answers`).error(new ProgressEvent('network error'));
+      tick(1000);
+      httpMock.expectOne(`${base}/7/answers`).error(new ProgressEvent('network error'));
+      tick(1000);
+      httpMock.expectOne(`${base}/7/answers`).error(new ProgressEvent('network error'));
+
+      expect(error).toBeTruthy();
+      httpMock.verify();
+    }));
   });
 
   describe('abandonSession()', () => {

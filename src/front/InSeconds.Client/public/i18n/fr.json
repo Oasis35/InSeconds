@@ -247,7 +247,9 @@
     "title": "Titre",
     "correctAnswer": "Bonne réponse",
     "points": "pts",
-    "networkError": "Erreur réseau — la réponse n'a pas pu être enregistrée.",
+    "submitFailed": "Ta réponse n'a pas pu être enregistrée. Vérifie ta connexion et réessaie.",
+    "retry": "Réessayer",
+    "playbackError": "Impossible de lire l'aperçu. Réessaie, ou passe ce morceau.",
     "seeResult": "Voir le résultat",
     "nextTrack": "Piste suivante →"
   },

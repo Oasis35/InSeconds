@@ -322,3 +322,35 @@ describe('GameComponent — identifiant Deezer révélé après la réponse', ()
     expect(component['results']()[0].deezerTrackId).toBe(3135556);
   });
 });
+
+// Échec réseau définitif à la soumission (E5) : plus de faux résultat à 0 poussé dans
+// `results()` ni d'avancée silencieuse — sinon la partie ne se termine jamais côté serveur
+// (le back ne clôt la session qu'après TracksPerChallenge réponses réellement enregistrées).
+describe('GameComponent — échec réseau à la soumission d\'une réponse', () => {
+  let component: GameComponent;
+
+  beforeEach(() => {
+    const gameFacadeStub = {
+      peekToday: jasmine.createSpy('peekToday'),
+      startToday: jasmine.createSpy('startToday'),
+      submitAnswer: jasmine.createSpy('submitAnswer').and.returnValue(throwError(() => new Error('network'))),
+    };
+    component = createComponent(
+      gameFacadeStub, { apiStatsToday: jasmine.createSpy('apiStatsToday') }, signal(false),
+      { navigate: jasmine.createSpy('navigate') });
+  });
+
+  it('ne pousse aucun résultat ni score sur un échec de soumission', () => {
+    component['sessionId'] = 1;
+    component['tracks'].set([{ id: 7, position: 1, previewUrl: 'x', coverUrl: undefined }]);
+    component['currentIndex'].set(0);
+    component['totalScore'].set(0);
+
+    expect(() => component['onAnswered']({
+      trackId: 7, listenedDurationSeconds: 5, wasExtended: false, artistAnswer: 'Eminem', titleAnswer: 'Lose Yourself',
+    } as any)).not.toThrow();
+
+    expect(component['results']()).toEqual([]);
+    expect(component['totalScore']()).toBe(0);
+  });
+});

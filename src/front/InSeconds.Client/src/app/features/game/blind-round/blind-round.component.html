@@ -17,8 +17,31 @@
             </div>
           }
 
+          <!-- Échec de lecture (URL expirée, autoplay refusé...) : jamais de boucle silencieuse, cf. piège E4 -->
+          @if (audio.isError()) {
+            <div class="space-y-4 text-center">
+              <p class="text-sm" style="color:var(--text-error)">{{ 'blindRound.playbackError' | translate }}</p>
+              <div class="flex justify-center gap-3">
+                <button
+                  type="button"
+                  (click)="retryPlayback()"
+                  class="px-5 py-3 rounded-xl font-bold uppercase text-sm transition active:scale-95 touch-manipulation"
+                  style="font-family:var(--font-display);letter-spacing:0.04em;background:var(--gradient-primary);color:var(--text-on-primary)">
+                  {{ 'blindRound.retry' | translate }}
+                </button>
+                <button
+                  type="button"
+                  (click)="skipNoPreview()"
+                  class="px-5 py-3 rounded-xl font-bold uppercase text-sm transition active:scale-95 touch-manipulation"
+                  style="font-family:var(--font-display);letter-spacing:0.04em;border:1.5px solid rgb(var(--rgb-accent-2) / 0.7);background:transparent;color:var(--color-accent-2)">
+                  {{ 'blindRound.skip' | translate }}
+                </button>
+              </div>
+            </div>
+          }
+
           <!-- Lecture en cours -->
-          @if (!audio.isIdle()) {
+          @if (!audio.isIdle() && !audio.isError()) {
             <div class="space-y-4">
 
               <!-- Chrono -->
@@ -92,7 +115,7 @@
       }
 
       <!-- ── Zone saisie ── -->
-      @if (!audio.isIdle() && !result()) {
+      @if (!audio.isIdle() && !audio.isError() && !result()) {
         <form (ngSubmit)="submit()" class="space-y-3">
 
           @if (hint1Unlocked()) {
@@ -211,7 +234,19 @@
             }
           </div>
 
-          @if (pendingConfirm(); as kind) {
+          @if (submitFailed()) {
+            <div class="rounded-xl px-4 py-3 space-y-3"
+                 style="background:rgb(var(--rgb-danger) / 0.08);border:1px solid rgb(var(--rgb-danger) / 0.3)">
+              <p class="text-sm text-center font-semibold" style="color:var(--text-error)">{{ 'blindRound.submitFailed' | translate }}</p>
+              <button
+                type="button"
+                (click)="retry()"
+                class="w-full py-3.5 rounded-full text-sm font-bold tracking-wide uppercase transition touch-manipulation"
+                style="font-family:var(--font-display);letter-spacing:0.06em;background:var(--gradient-primary);color:var(--text-on-primary);box-shadow:var(--glow-primary)">
+                {{ 'blindRound.retry' | translate }}
+              </button>
+            </div>
+          } @else if (pendingConfirm(); as kind) {
             <div class="rounded-xl px-4 py-3 space-y-3"
                  style="background:rgb(var(--rgb-accent) / 0.08);border:1px solid rgb(var(--rgb-accent) / 0.35)">
               <p class="text-sm text-center font-semibold" style="color:var(--color-accent)">{{ (kind === 'skip' ? 'blindRound.skipConfirm' : 'blindRound.emptyConfirm') | translate }}</p>
@@ -297,13 +332,6 @@
               [highlightDuration]="(r.artistCorrect || r.titleCorrect) ? r.listenedDurationSeconds : null"
               [highlightNotFound]="!(r.artistCorrect || r.titleCorrect)" />
           </div>
-
-          @if (showNetworkError()) {
-            <div class="toast-enter w-full rounded-xl px-4 py-3 text-sm text-center"
-                 style="background:rgb(var(--rgb-danger) / 0.12);border:1px solid rgb(var(--rgb-danger) / 0.3);color:var(--text-error)">
-              {{ 'blindRound.networkError' | translate }}
-            </div>
-          }
 
           <button
             (click)="next()"

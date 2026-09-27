@@ -58,8 +58,11 @@ export class BlindRoundComponent implements OnDestroy {
   protected readonly pendingConfirm = this.submission.pendingConfirm;
   protected readonly isSubmitting = this.submission.isSubmitting;
   protected readonly displayedScore = this.submission.displayedScore;
-  protected readonly showNetworkError = this.submission.showNetworkError;
+  protected readonly submitFailed = this.submission.submitFailed;
   protected readonly result = this.submission.result;
+
+  /** Dernière réponse envoyée — permet à `retry()` de la renvoyer telle quelle après un échec. */
+  private lastSubmission: Pick<AnsweredEvent, 'listenedDurationSeconds' | 'wasExtended' | 'artistAnswer' | 'titleAnswer'> | null = null;
 
   // Recherche/autocomplete — délégués à AnswerSearchService (masqué avant déblocage, pas juste
   // désactivé). `searchQuery` reste un accesseur pour garder `[(ngModel)]="searchQuery"` inchangé.
@@ -157,8 +160,12 @@ export class BlindRoundComponent implements OnDestroy {
   }
 
   skipNoPreview(): void {
+    // `chosenDuration()` reste à 0 pour un morceau réellement sans preview (jamais verrouillé
+    // côté serveur), mais peut être non nul si l'auto-play a déjà appelé updateListening avant
+    // d'échouer (état d'erreur, cf. piège E4 CLAUDE.md) — soumettre 0 dans ce cas serait rejeté
+    // (400 listened_duration_below_verified_minimum, anti-triche SubmitAnswer/Handler.cs).
     this.emitAnswer({
-      listenedDurationSeconds: 0,
+      listenedDurationSeconds: this.chosenDuration(),
       wasExtended: false,
       artistAnswer: null,
       titleAnswer: null,
@@ -168,6 +175,11 @@ export class BlindRoundComponent implements OnDestroy {
   startPlay(duration: number): void {
     this.chosenDuration.set(duration);
     this.audio.play(this.track().previewUrl, duration);
+  }
+
+  /** Relance la lecture après un échec (`audio.isError()`) — cf. piège E4 CLAUDE.md. */
+  protected retryPlayback(): void {
+    this.startPlay(this.chosenDuration() || this.durations()[0]);
   }
 
   listenMore(): void {
@@ -217,14 +229,31 @@ export class BlindRoundComponent implements OnDestroy {
   }
 
   private emitAnswer(overrides: Pick<AnsweredEvent, 'listenedDurationSeconds' | 'wasExtended' | 'artistAnswer' | 'titleAnswer'>): void {
+    this.lastSubmission = overrides;
     this.answered.emit({ trackId: this.track().id, ...overrides });
   }
 
-  setResult(r: SubmitAnswerResponse, isNetworkError = false): void {
-    this.submission.setResult(r, isNetworkError);
-    if (this.track().previewUrl && this.chosenDuration() > 0) {
+  /** Renvoie la dernière réponse après un échec d'envoi (`submitFailed`) — cf. piège E5 CLAUDE.md. */
+  protected retry(): void {
+    if (!this.lastSubmission) return;
+    this.submission.isSubmitting.set(true);
+    this.submission.submitFailed.set(false);
+    this.answered.emit({ trackId: this.track().id, ...this.lastSubmission });
+  }
+
+  setResult(r: SubmitAnswerResponse): void {
+    this.submission.setResult(r);
+    // Rien à rejouer si l'aperçu n'a jamais réellement joué (ex: « Passer » cliqué depuis
+    // l'état d'erreur) — éviter une 2e tentative de lecture inutile sur une source qui a déjà
+    // échoué, cf. piège E4 CLAUDE.md.
+    if (this.track().previewUrl && this.chosenDuration() > 0 && !this.audio.isError()) {
       this.audio.replayFull();
     }
+  }
+
+  /** La soumission a échoué après les tentatives automatiques du back — cf. `GameService.submitAnswer`. */
+  setSubmitError(): void {
+    this.submission.setError();
   }
 
   next(): void {
@@ -233,6 +262,7 @@ export class BlindRoundComponent implements OnDestroy {
     this.search.reset();
     this.chosenDuration.set(0);
     this.hintService.reset();
+    this.lastSubmission = null;
     this.nextTrack.emit();
   }
 

@@ -247,7 +247,9 @@
     "title": "Title",
     "correctAnswer": "Correct answer",
     "points": "pts",
-    "networkError": "Network error — your answer couldn't be saved.",
+    "submitFailed": "Your answer couldn't be saved. Check your connection and try again.",
+    "retry": "Retry",
+    "playbackError": "Couldn't play the preview. Try again, or skip this track.",
     "seeResult": "See result",
     "nextTrack": "Next track →"
   },

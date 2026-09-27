@@ -1,6 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
 
-export type AudioState = 'idle' | 'loading' | 'playing' | 'finished';
+export type AudioState = 'idle' | 'loading' | 'playing' | 'finished' | 'error';
 
 @Injectable({ providedIn: 'root' })
 export class AudioPlayerService {
@@ -20,6 +20,7 @@ export class AudioPlayerService {
   readonly isIdle = computed(() => this.state() === 'idle');
   readonly isPlaying = computed(() => this.state() === 'playing');
   readonly isFinished = computed(() => this.state() === 'finished');
+  readonly isError = computed(() => this.state() === 'error');
 
   constructor() {
     if (typeof document !== 'undefined') {
@@ -49,18 +50,22 @@ export class AudioPlayerService {
       if (this.playToken !== token) return; // callback périmé, ignorer
       this.state.set('playing');
       this.progress.set(0);
-      this.audio!.play().catch(() => { if (this.playToken === token) this.state.set('idle'); });
+      // 'error', jamais 'idle' : un retour à 'idle' relancerait en boucle l'autoplay de
+      // BlindRoundComponent (effect sur isIdle()), cf. piège E4 CLAUDE.md.
+      this.audio!.play().catch(() => { if (this.playToken === token) this.state.set('error'); });
       this.scheduleStop(durationSeconds, token);
       this.startRaf(token);
     };
 
-    this.audio.onerror = () => { if (this.playToken === token) this.state.set('idle'); };
+    this.audio.onerror = () => { if (this.playToken === token) this.state.set('error'); };
     this.audio.load();
   }
 
   /** Rejoue le morceau déjà chargé depuis le début, jusqu'à la fin naturelle. */
   replayFull(): void {
-    if (!this.audio?.src) return;
+    // Rien à rejouer si la source n'a jamais chargé avec succès (cf. piège E4 CLAUDE.md) —
+    // éviter une nouvelle tentative de lecture sur une source déjà en échec.
+    if (!this.audio?.src || this.state() === 'error') return;
 
     const token = ++this.playToken;
     if (this.stopTimer !== null) { clearTimeout(this.stopTimer); this.stopTimer = null; }

@@ -73,6 +73,30 @@ appliqué après coup sur un déploiement déjà en place (permissions root exis
 certificats déjà stockés) — sans impact ici car domaines de test, certificats réémis en
 quelques secondes.
 
+## IP réelle du visiteur (`trusted_proxies cloudflare`)
+
+Sans `trusted_proxies` déclaré, Caddy (≥ 2.5) ne fait confiance à personne pour
+`X-Forwarded-For` et le remplace par l'IP de qui lui parle directement — le serveur Cloudflare
+(edge), jamais le vrai visiteur. Le back (rate limiting par IP — magic link, création de joueur,
+autocomplete Deezer…) recevait donc la même IP pour tous les visiteurs d'un même edge Cloudflare
+(cf. CLAUDE.md racine, pièges 27 et 34).
+
+Le `Caddyfile` déclare en tête un bloc d'options globales avec le module
+`github.com/WeidiDeng/caddy-cloudflare-ip` (ajouté au build `xcaddy` du `Dockerfile`) :
+télécharge et rafraîchit périodiquement les plages IP publiées par Cloudflare, pour que Caddy
+les reconnaisse comme proxy de confiance et déroule `X-Forwarded-For` jusqu'à l'IP réelle du
+visiteur.
+
+```bash
+cd ~/apps/InSeconds/deploy/caddy
+docker compose build --no-cache caddy
+docker compose up -d
+```
+
+Vérifier après coup que l'API voit bien la vraie IP (pas celle de Cloudflare) — ex. en
+observant `docker logs inseconds.api` sur une requête de test, ou toute route qui logue l'IP
+source.
+
 ## Ports 80/443 réservés à Cloudflare (`cloudflare-only.sh`, optionnel)
 
 UFW ouvre 80/443 au monde entier : quelqu'un qui connaît l'IP du VPS peut joindre Caddy en
