@@ -221,31 +221,39 @@ public sealed class CookieAuthServiceTests
     // définitivement son identité (nouvel invité créé + cookie réécrit) sur un simple hoquet
     // réseau. Seules les erreurs de déchiffrement (CryptographicException/FormatException)
     // restent traitées comme "pas de Player".
+    //
+    // Ne pas simuler ce cas en faisant lever une exception depuis IDataProtector.Unprotect
+    // (byte[]) : l'extension ASP.NET Core Unprotect(string) enveloppe elle-même TOUTE
+    // exception qui n'est pas déjà une CryptographicException dans... une CryptographicException
+    // (homogénéisation des erreurs de déchiffrement) — un mock qui throw à cet endroit atterrit
+    // donc toujours dans notre propre catch, jamais en propagation, quel que soit le type
+    // d'exception levée par le mock. Le seul endroit qui peut réellement laisser fuiter un type
+    // d'exception arbitraire est la requête DB elle-même, hors du try/catch restreint.
     [Fact]
-    public async Task ResolveOrCreate_WhenUnprotectThrowsUnexpectedException_PropagatesInsteadOfCreatingNewPlayer()
+    public async Task ResolveOrCreate_WhenDbQueryThrowsUnexpectedException_Propagates()
     {
         // Arrange
-        await using var db = CreateDbContext();
-        var protector = Substitute.For<IDataProtector>();
-        protector.Unprotect(Arg.Any<byte[]>()).Returns(_ => throw new InvalidOperationException("boom"));
+        var db = CreateDbContext();
+        var protectionProvider = new EphemeralDataProtectionProvider();
+        var protector = protectionProvider.CreateProtector("InSeconds.Auth.Cookie");
         var env = Substitute.For<IHostEnvironment>();
         env.EnvironmentName.Returns(Environments.Development);
         var service = new CookieAuthService(db, protector, env);
 
         var httpContext = CreateHttpContext();
-        // Base64URL valide (Unprotect(string) utilise WebEncoders.Base64UrlDecode, pas
-        // Convert.FromBase64String — un Base64 standard avec +/=/ aurait levé un
-        // FormatException AVANT même d'atteindre le mock, faussant ce test : il aurait alors
-        // vérifié le catch CryptographicException/FormatException plutôt que la propagation).
-        var base64Url = Convert.ToBase64String("whatever"u8.ToArray()).TrimEnd('=').Replace('+', '-').Replace('/', '_');
-        httpContext.Request.Headers["Cookie"] = $"{CookieAuthService.CookieName}={base64Url}";
+        // Cookie syntaxiquement valide (déchiffrement réussi) — l'échec doit venir d'ailleurs.
+        var validToken = protector.Protect(Guid.NewGuid().ToString());
+        httpContext.Request.Headers["Cookie"] = $"{CookieAuthService.CookieName}={validToken}";
+
+        // Simule une panne DB (timeout, connexion coupée...) au moment de la requête —
+        // db.Players.FirstOrDefaultAsync lève ObjectDisposedException sur un contexte disposé.
+        await db.DisposeAsync();
 
         // Act
         Func<Task> act = () => service.ResolveOrCreatePlayerAsync(httpContext);
 
         // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>();
-        (await db.Players.CountAsync()).Should().Be(0);
+        await act.Should().ThrowAsync<ObjectDisposedException>();
     }
 
     [Fact]
