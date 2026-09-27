@@ -100,18 +100,13 @@ public static class GetChallengeStatsEndpoint
             // Défi passé : les Pending que l'expiry paresseuse n'a pas encore basculés
             // (joueur jamais revenu) comptent comme des « non terminés ». Défi du jour :
             // ils sont encore réellement en cours.
-            var isPast         = c.Date < today;
-            var pendingCount   = isPast ? 0 : pendingRaw;
-            var expiredCount   = isPast ? expiredRaw + pendingRaw : expiredRaw;
+            var isPast = c.Date < today;
+            var (pendingCount, expiredCount) = SessionStatusBucketing.ReclassifyPastDay(pendingRaw, expiredRaw, isPast);
             var players = c.Sessions
                 .Select(s => new ChallengePlayerDto(s.PlayerId, s.Status.ToString(), s.TotalScore, s.Pseudo))
                 .ToList();
 
-            var sorted = scores.OrderBy(s => s).ToList();
-            double? median = sorted.Count == 0 ? null
-                : sorted.Count % 2 == 1
-                    ? sorted[sorted.Count / 2]
-                    : (sorted[sorted.Count / 2 - 1] + sorted[sorted.Count / 2]) / 2.0;
+            var median = MedianCalculator.Compute(scores);
 
             var tracks = c.Tracks.Select(t => new TrackStatsDto(
                 t.Position,

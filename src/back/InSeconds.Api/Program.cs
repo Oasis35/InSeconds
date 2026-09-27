@@ -290,19 +290,19 @@ using (var scope = app.Services.CreateScope())
     {
         if (app.Environment.IsEnvironment("Testing"))
         {
-            InSeconds.Api.Features.E2E.E2EResetEndpoint.PurgeSeedData(db);
+            InSeconds.Api.Features.E2E.E2ESeedData.PurgeSeedData(db);
         }
 
         if (!db.Tracks.Any())
         {
-            InSeconds.Api.Features.E2E.E2EResetEndpoint.SeedData(db);
+            InSeconds.Api.Features.E2E.E2ESeedData.SeedData(db);
             app.Logger.LogWarning("===================================================");
             app.Logger.LogWarning("---------- SEED OK ----------");
             app.Logger.LogWarning("===================================================");
 
             if (app.Environment.IsDevelopment())
             {
-                InSeconds.Api.Features.E2E.E2EResetEndpoint.SeedDevOnlyAccounts(db);
+                InSeconds.Api.Features.E2E.E2ESeedData.SeedDevOnlyAccounts(db);
             }
         }
     }
