@@ -634,12 +634,23 @@ public sealed class SubmitAnswerHandlerTests
         updatedSession!.FreezeEarned.Should().BeTrue();
     }
 
+    // M4 (revue du 25/09) : la complétion compare désormais au nombre réel de
+    // DailyChallengeTracks de ce défi, plus à Settings.TracksPerChallenge (qui peut avoir
+    // changé depuis la génération du défi) — défi à 2 morceaux réels, on ne répond qu'au 1er.
     [Fact]
     public async Task Handle_WhenNotLastAnswer_StatusRemainsActive()
     {
-        // Arrange — TracksPerChallenge = 5 (défaut), on soumet seulement 1 réponse
+        // Arrange
         await using var db = CreateDbContext();
         await SeedAsync(db);
+
+        var secondTrack = new Track { Id = 2, DeezerTrackId = 916425, Artist = "Autre Artiste", Title = "Autre Titre", CreatedAt = DateTime.UtcNow };
+        db.DailyChallengeTracks.Add(new DailyChallengeTrack
+        {
+            Id = 2, DailyChallengeId = 1, TrackId = 2, Position = 2, DeezerRankSnapshot = 2, Track = secondTrack,
+        });
+        await db.SaveChangesAsync();
+
         var command = BuildCommand(duration: 1, artist: "Daft Punk", title: "Get Lucky");
 
         // Act

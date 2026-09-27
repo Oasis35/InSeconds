@@ -233,9 +233,12 @@ public sealed class CookieAuthServiceTests
         var service = new CookieAuthService(db, protector, env);
 
         var httpContext = CreateHttpContext();
-        // Base64 valide (l'extension Unprotect(string) décode avant d'appeler Unprotect(byte[])).
-        httpContext.Request.Headers["Cookie"] =
-            $"{CookieAuthService.CookieName}={Convert.ToBase64String("whatever"u8.ToArray())}";
+        // Base64URL valide (Unprotect(string) utilise WebEncoders.Base64UrlDecode, pas
+        // Convert.FromBase64String — un Base64 standard avec +/=/ aurait levé un
+        // FormatException AVANT même d'atteindre le mock, faussant ce test : il aurait alors
+        // vérifié le catch CryptographicException/FormatException plutôt que la propagation).
+        var base64Url = Convert.ToBase64String("whatever"u8.ToArray()).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        httpContext.Request.Headers["Cookie"] = $"{CookieAuthService.CookieName}={base64Url}";
 
         // Act
         Func<Task> act = () => service.ResolveOrCreatePlayerAsync(httpContext);
