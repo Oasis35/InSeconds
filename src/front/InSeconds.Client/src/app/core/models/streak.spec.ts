@@ -80,6 +80,9 @@ describe('streak (helpers gel de série)', () => {
   });
 
   it('emptyStreak : état neutre à 0', () => {
-    expect(emptyStreak()).toEqual(dto({ streak: 0, freezes: 0, maxFreezes: 0, freezeEveryDays: 0 }));
+    expect(emptyStreak()).toEqual(dto({
+      streak: 0, freezes: 0, maxFreezes: 0, freezeEveryDays: 0,
+      nextFreezeInDays: undefined, lostStreak: undefined, lastPlayedDate: undefined,
+    }));
   });
 });
