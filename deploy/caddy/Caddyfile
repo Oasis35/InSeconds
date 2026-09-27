@@ -1,3 +1,19 @@
+{
+	# Sans ça, X-Forwarded-For n'est déroulé que sur un seul saut de confiance (défaut ASP.NET
+	# Core ForwardLimit) et Caddy fait confiance sans condition au premier saut qui lui parle —
+	# ici le serveur Cloudflare, pas le vrai visiteur. Le module cloudflare télécharge et
+	# rafraîchit périodiquement les plages IP publiées par Cloudflare (cf. cloudflare-only.sh,
+	# même source), pour que Caddy reconnaisse Cloudflare comme proxy de confiance et dérive
+	# correctement l'IP réelle du client dans X-Forwarded-For — lue ensuite par
+	# TrustedProxyNetworks côté API (cf. CLAUDE.md racine, piège 27).
+	servers {
+		trusted_proxies cloudflare {
+			interval 12h
+			timeout 15s
+		}
+	}
+}
+
 {$FRONT_DOMAIN} {
 	tls {
 		dns cloudflare {env.CF_API_TOKEN}
