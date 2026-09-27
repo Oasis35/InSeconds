@@ -34,7 +34,7 @@ for i in $(seq 1 20); do
   echo "  API pas encore prête (tentative $i/20)..."
   sleep 3
 done
-if [ "$healthy" != "true" ]; then
+if [[ "$healthy" != "true" ]]; then
   echo "ERREUR : l'API ne répond pas sur https://api.inseconds.cc/health après déploiement." >&2
   docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail=80 api >&2 || true
   exit 1
