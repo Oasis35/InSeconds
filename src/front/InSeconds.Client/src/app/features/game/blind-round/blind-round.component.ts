@@ -239,7 +239,10 @@ export class BlindRoundComponent implements OnDestroy {
 
   setResult(r: SubmitAnswerResponse): void {
     this.submission.setResult(r);
-    if (this.track().previewUrl && this.chosenDuration() > 0) {
+    // Rien à rejouer si l'aperçu n'a jamais réellement joué (ex: « Passer » cliqué depuis
+    // l'état d'erreur) — éviter une 2e tentative de lecture inutile sur une source qui a déjà
+    // échoué, cf. piège E4 CLAUDE.md.
+    if (this.track().previewUrl && this.chosenDuration() > 0 && !this.audio.isError()) {
       this.audio.replayFull();
     }
   }

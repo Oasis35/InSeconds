@@ -63,7 +63,9 @@ export class AudioPlayerService {
 
   /** Rejoue le morceau déjà chargé depuis le début, jusqu'à la fin naturelle. */
   replayFull(): void {
-    if (!this.audio?.src) return;
+    // Rien à rejouer si la source n'a jamais chargé avec succès (cf. piège E4 CLAUDE.md) —
+    // éviter une nouvelle tentative de lecture sur une source déjà en échec.
+    if (!this.audio?.src || this.state() === 'error') return;
 
     const token = ++this.playToken;
     if (this.stopTimer !== null) { clearTimeout(this.stopTimer); this.stopTimer = null; }

@@ -321,7 +321,7 @@ describe('BlindRoundComponent — indices (hints)', () => {
     component['searchQuery'] = 'Daft Punk - One More Time';
 
     component.submit();
-    expect(emitted.length).toBe(1);
+    expect(emitted).toHaveSize(1);
 
     component.setSubmitError();
     expect(component['submitFailed']()).toBe(true);
@@ -342,7 +342,7 @@ describe('BlindRoundComponent — indices (hints)', () => {
 
     component['retry']();
 
-    expect(emitted.length).toBe(0);
+    expect(emitted).toHaveSize(0);
   });
 
   it('next() réinitialise la dernière soumission mémorisée', () => {
@@ -351,11 +351,11 @@ describe('BlindRoundComponent — indices (hints)', () => {
     component['chosenDuration'].set(5);
     component['searchQuery'] = 'Daft Punk - One More Time';
     component.submit();
-    expect(emitted.length).toBe(1);
+    expect(emitted).toHaveSize(1);
 
     component.next();
     component['retry']();
 
-    expect(emitted.length).toBe(1); // retry() n'a rien réémis après next()
+    expect(emitted).toHaveSize(1); // retry() n'a rien réémis après next()
   });
 });

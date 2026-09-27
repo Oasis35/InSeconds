@@ -36,8 +36,9 @@ test.describe('Échec de lecture audio', () => {
     // Le formulaire de réponse ne doit pas être affiché tant que la lecture n'a pas repris.
     await expect(round.answerInput).not.toBeVisible();
 
-    // Laisse le temps à un éventuel bug de boucle de se manifester (plusieurs tentatives auto).
-    await page.waitForTimeout(1500);
+    // Une boucle (l'ancien bug E4) rappellerait startPlay() de façon quasi synchrone dès que
+    // l'état retombe à 'idle' — les assertions ci-dessus (qui pollent déjà) lui ont largement
+    // laissé le temps de se manifester avant cette lecture du compteur.
     expect(requestCount).toBe(1);
   });
 
