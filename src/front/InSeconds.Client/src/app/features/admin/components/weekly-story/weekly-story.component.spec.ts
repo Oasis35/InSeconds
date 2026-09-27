@@ -124,4 +124,21 @@ describe('WeeklyStoryComponent', () => {
     expect(capture).toHaveBeenCalledTimes(2);
     expect(http.getWeeklyRecap).toHaveBeenCalledTimes(1);
   });
+
+  it('masquer le pourcentage retire le chiffre et sa légende et relance la capture', async () => {
+    http.getWeeklyRecap.and.returnValue(of(okRecap));
+    await component.generate();
+    expect(fixture.nativeElement.querySelectorAll('.rate')).toHaveSize(2);
+    expect(fixture.nativeElement.textContent).not.toContain('réponses');
+    capture.calls.reset();
+
+    component.togglePercent(false);
+    await fixture.whenStable();
+
+    expect(story.showPercent()).toBeFalse();
+    expect(fixture.nativeElement.querySelectorAll('.rate')).toHaveSize(0);
+    expect(fixture.nativeElement.querySelectorAll('.caption')).toHaveSize(0);
+    expect(capture).toHaveBeenCalledTimes(2);
+    expect(http.getWeeklyRecap).toHaveBeenCalledTimes(1);
+  });
 });

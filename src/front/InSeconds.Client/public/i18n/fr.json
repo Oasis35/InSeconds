@@ -414,6 +414,7 @@
         "generate": "Générer les stories hebdo",
         "generating": "Génération...",
         "showGuides": "Repères pour les stickers",
+        "showPercent": "Afficher le pourcentage",
         "insufficient": "Pas assez de réponses cette semaine (au moins {{ min }} par morceau).",
         "error": "Erreur lors de la génération des stories.",
         "onlyOne": "Un seul morceau a assez de réponses : pas de story « plus raté » cette semaine.",

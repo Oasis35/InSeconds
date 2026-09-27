@@ -414,6 +414,7 @@
         "generate": "Generate weekly stories",
         "generating": "Generating...",
         "showGuides": "Sticker guides",
+        "showPercent": "Show percentage",
         "insufficient": "Not enough answers this week (at least {{ min }} per track).",
         "error": "Error while generating the stories.",
         "onlyOne": "Only one track has enough answers: no \"most missed\" story this week.",

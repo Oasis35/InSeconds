@@ -91,6 +91,11 @@ export class WeeklyStoryComponent {
     if (this.story.status() === 'ready') void this.render();
   }
 
+  togglePercent(show: boolean): void {
+    this.story.showPercent.set(show);
+    if (this.story.status() === 'ready') void this.render();
+  }
+
   downloadAll(): void {
     for (const img of this.story.images()) this.download(img);
   }

@@ -26,6 +26,8 @@ export class AdminWeeklyStoryService {
   readonly images = signal<WeeklyStoryImage[]>([]);
   /** Pointillés indiquant où poser les stickers Instagram (musique / sondage). */
   readonly showGuides = signal(true);
+  /** Pourcentage de réussite (et sa légende) sous le titre du morceau. */
+  readonly showPercent = signal(true);
 
   readonly busy = computed(() => this.status() === 'loading' || this.status() === 'rendering');
 

@@ -12,6 +12,11 @@
         (change)="toggleGuides($any($event.target).checked)" />
       {{ 'admin.actions.weeklyStory.showGuides' | translate }}
     </label>
+    <label class="flex items-center gap-2 text-xs cursor-pointer" style="color:var(--text-light)">
+      <input type="checkbox" [checked]="story.showPercent()" [disabled]="story.busy()"
+        (change)="togglePercent($any($event.target).checked)" />
+      {{ 'admin.actions.weeklyStory.showPercent' | translate }}
+    </label>
   </div>
 
   @if (story.status() === 'insufficient') {
@@ -54,8 +59,10 @@
         <div class="body">
           <div [class]="'artist ' + sizeClass(t.artist)">{{ t.artist }}</div>
           <div [class]="'song ' + sizeClass(t.title)">{{ t.title }}</div>
-          <div class="rate">{{ formatPercent(t.successRatePercent) }}</div>
-          <div class="caption">ont trouvé artiste + titre · sur {{ t.answers }} réponses</div>
+          @if (story.showPercent()) {
+            <div class="rate">{{ formatPercent(t.successRatePercent) }}</div>
+            <div class="caption">ont trouvé artiste + titre</div>
+          }
         </div>
         @if (story.showGuides()) {
           <div class="guide guide-music"><span>🎵 sticker musique</span></div>
@@ -71,8 +78,10 @@
         <div class="body">
           <div [class]="'artist ' + sizeClass(t.artist)">{{ t.artist }}</div>
           <div [class]="'song ' + sizeClass(t.title)">{{ t.title }}</div>
-          <div class="rate"><span class="rate-prefix">seulement</span>{{ formatPercent(t.successRatePercent) }}</div>
-          <div class="caption">l'ont trouvé · sur {{ t.answers }} réponses</div>
+          @if (story.showPercent()) {
+            <div class="rate"><span class="rate-prefix">seulement</span>{{ formatPercent(t.successRatePercent) }}</div>
+            <div class="caption">l'ont trouvé</div>
+          }
         </div>
         @if (story.showGuides()) {
           <div class="guide guide-poll"><span>📊 sondage</span><span class="guide-sub">« Tu le connaissais ? »</span></div>
