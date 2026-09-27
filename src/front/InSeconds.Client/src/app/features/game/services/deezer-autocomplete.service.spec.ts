@@ -58,13 +58,16 @@ describe('DeezerAutocompleteService', () => {
   }));
 
   it('trims the query before searching', fakeAsync(() => {
-    service.search(query$).subscribe();
+    const results: DeezerSuggestion[][] = [];
+    service.search(query$).subscribe(r => results.push(r));
 
     query$.next('  daft punk  ');
     tick(300);
 
     const req = httpMock.expectOne(`${base}?q=${encodeURIComponent('daft punk')}`);
     req.flush(SUGGESTIONS);
+
+    expect(results).toEqual([SUGGESTIONS]);
   }));
 
   it('drops an identical consecutive query without a new request (distinctUntilChanged)', fakeAsync(() => {
@@ -92,11 +95,11 @@ describe('DeezerAutocompleteService', () => {
 
     query$.next('daft');
     tick(300);
+    // switchMap désabonne l'observable HTTP précédent, ce qui annule la requête sous-jacente
+    // (HttpTestingController la marque "cancelled" — la flusher lèverait une erreur).
+    expect(stale.cancelled).toBeTrue();
     const fresh = httpMock.expectOne(`${base}?q=daft`);
     fresh.flush(SUGGESTIONS);
-
-    // La requête périmée n'est plus écoutée : la résoudre après coup ne doit rien pousser de plus.
-    stale.flush([{ artist: 'Stale', title: 'Result' }]);
 
     expect(results).toEqual([SUGGESTIONS]);
   }));

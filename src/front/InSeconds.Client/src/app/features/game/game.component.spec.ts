@@ -368,7 +368,9 @@ describe('GameComponent — échec réseau de apiStatsToday (piège 41)', () => 
 
   beforeEach(() => {
     gameFacadeStub = {
-      peekSession: jasmine.createSpy('peekSession'),
+      // Défaut utilisé par refreshStreakInfo() (appelé sans condition par onNextTrack) :
+      // un simple peek qui ne fait rien de spécial, chaque test surcharge au besoin.
+      peekSession: jasmine.createSpy('peekSession').and.returnValue(of({ kind: 'error' })),
       loadSession: jasmine.createSpy('loadSession'),
     };
     apiStub = {
