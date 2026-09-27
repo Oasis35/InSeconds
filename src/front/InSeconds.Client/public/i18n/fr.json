@@ -407,7 +407,21 @@
       "trackCooldown": "Cooldown de réutilisation des morceaux",
       "saveCooldown": "Enregistrer",
       "cooldownSaved": "Cooldown mis à jour.",
-      "cooldownError": "Erreur lors de la mise à jour."
+      "cooldownError": "Erreur lors de la mise à jour.",
+      "weeklyStory": {
+        "title": "Stories Instagram hebdo",
+        "hint": "2 visuels 1080×1920 sur les 7 derniers jours : le plus trouvé (ajoute le sticker Musique dans Instagram) et le plus raté (ajoute un sondage « Tu le connaissais ? »). Sur les deux, ajoute le sticker Lien vers le site.",
+        "generate": "Générer les stories hebdo",
+        "generating": "Génération...",
+        "showGuides": "Repères pour les stickers",
+        "insufficient": "Pas assez de réponses cette semaine (au moins {{ min }} par morceau).",
+        "error": "Erreur lors de la génération des stories.",
+        "onlyOne": "Un seul morceau a assez de réponses : pas de story « plus raté » cette semaine.",
+        "found": "Le plus trouvé",
+        "missed": "Le plus raté",
+        "download": "Télécharger",
+        "downloadAll": "Tout télécharger"
+      }
     },
     "challenges": {
       "history": "Historique",

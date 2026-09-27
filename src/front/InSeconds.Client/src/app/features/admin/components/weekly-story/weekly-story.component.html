@@ -1,0 +1,111 @@
+<div class="flex flex-col gap-3">
+  <h2 class="text-xs font-semibold uppercase tracking-wide" style="color:var(--text-muted)">{{ 'admin.actions.weeklyStory.title' | translate }}</h2>
+  <p class="text-xs" style="color:var(--text-faint)">{{ 'admin.actions.weeklyStory.hint' | translate }}</p>
+  <div class="flex flex-wrap items-center gap-3">
+    <button (click)="generate()" [disabled]="story.busy()"
+      class="text-sm font-medium py-2 px-4 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
+      style="background:var(--bg-primary);color:var(--text-on-primary)">
+      @if (story.busy()) { <span>⏳</span> {{ 'admin.actions.weeklyStory.generating' | translate }} } @else { <span>📸</span> {{ 'admin.actions.weeklyStory.generate' | translate }} }
+    </button>
+    <label class="flex items-center gap-2 text-xs cursor-pointer" style="color:var(--text-light)">
+      <input type="checkbox" [checked]="story.showGuides()" [disabled]="story.busy()"
+        (change)="toggleGuides($any($event.target).checked)" />
+      {{ 'admin.actions.weeklyStory.showGuides' | translate }}
+    </label>
+  </div>
+
+  @if (story.status() === 'insufficient') {
+    <span class="text-xs" style="color:var(--color-warn)">{{ 'admin.actions.weeklyStory.insufficient' | translate: { min: story.recap()?.minAnswers ?? 3 } }}</span>
+  }
+  @if (story.status() === 'error') {
+    <span class="text-xs" style="color:var(--text-error)">{{ 'admin.actions.weeklyStory.error' | translate }}</span>
+  }
+
+  @if (story.status() === 'ready') {
+    @if (!missed()) {
+      <span class="text-xs" style="color:var(--color-warn)">{{ 'admin.actions.weeklyStory.onlyOne' | translate }}</span>
+    }
+    <div class="flex flex-wrap gap-4">
+      @for (img of story.images(); track img.kind) {
+        <div class="flex flex-col items-center gap-2">
+          <img [src]="img.dataUrl" [alt]="'admin.actions.weeklyStory.' + img.kind | translate"
+            class="rounded-lg" style="width:135px;height:240px;border:1px solid var(--border-strong)" />
+          <span class="text-xs" style="color:var(--text-muted)">{{ 'admin.actions.weeklyStory.' + img.kind | translate }}</span>
+          <button (click)="download(img)" class="text-xs font-medium py-1 px-3 rounded-lg hover:opacity-80"
+            style="background:var(--bg-inactive);color:var(--text-hi)">⬇ {{ 'admin.actions.weeklyStory.download' | translate }}</button>
+        </div>
+      }
+    </div>
+    @if (story.images().length > 1) {
+      <button (click)="downloadAll()" class="self-start text-sm font-medium py-2 px-4 rounded-lg hover:opacity-80"
+        style="background:var(--bg-inactive);color:var(--text-hi)">⬇ {{ 'admin.actions.weeklyStory.downloadAll' | translate }}</button>
+    }
+  }
+</div>
+
+<!-- Gabarits capturés en PNG — hors écran, textes volontairement en français (public Instagram). -->
+@if (story.recap()?.status === 'ok') {
+  <div class="story-stage" data-story-stage aria-hidden="true">
+    @if (found(); as t) {
+      <div class="story" data-story="found">
+        <ng-container *ngTemplateOutlet="header" />
+        <div class="pill-row"><div class="pill">🏆&nbsp; LE PLUS TROUVÉ</div></div>
+        <ng-container *ngTemplateOutlet="cover; context: { $implicit: t }" />
+        <div class="body">
+          <div [class]="'artist ' + sizeClass(t.artist)">{{ t.artist }}</div>
+          <div [class]="'song ' + sizeClass(t.title)">{{ t.title }}</div>
+          <div class="rate">{{ formatPercent(t.successRatePercent) }}</div>
+          <div class="caption">ont trouvé artiste + titre · sur {{ t.answers }} réponses</div>
+        </div>
+        @if (story.showGuides()) {
+          <div class="guide guide-music"><span>🎵 sticker musique</span></div>
+        }
+        <ng-container *ngTemplateOutlet="cta" />
+      </div>
+    }
+    @if (missed(); as t) {
+      <div class="story" data-story="missed">
+        <ng-container *ngTemplateOutlet="header" />
+        <div class="pill-row"><div class="pill pill-reverse">💀&nbsp; LE PLUS RATÉ</div></div>
+        <ng-container *ngTemplateOutlet="cover; context: { $implicit: t }" />
+        <div class="body">
+          <div [class]="'artist ' + sizeClass(t.artist)">{{ t.artist }}</div>
+          <div [class]="'song ' + sizeClass(t.title)">{{ t.title }}</div>
+          <div class="rate"><span class="rate-prefix">seulement</span>{{ formatPercent(t.successRatePercent) }}</div>
+          <div class="caption">l'ont trouvé · sur {{ t.answers }} réponses</div>
+        </div>
+        @if (story.showGuides()) {
+          <div class="guide guide-poll"><span>📊 sondage</span><span class="guide-sub">« Tu le connaissais ? »</span></div>
+        }
+        <ng-container *ngTemplateOutlet="cta" />
+      </div>
+    }
+  </div>
+}
+
+<ng-template #header>
+  <div class="veil"></div>
+  <div class="head">
+    <span class="logo">IN<span class="logo-accent">//</span>SECONDS</span>
+    <span class="period">{{ period() }}</span>
+  </div>
+  <div class="title">Cette semaine dans InSeconds 🎧</div>
+</ng-template>
+
+<ng-template #cta>
+  <div class="cta">
+    Et toi, tu l'aurais eu&nbsp;?
+    @if (story.showGuides()) { <span class="guide-link">🔗 sticker lien</span> }
+  </div>
+</ng-template>
+
+<ng-template #cover let-t>
+  <div class="cover">
+    <div class="cover-fallback">
+      <svg width="170" height="170" viewBox="0 0 24 24" fill="#fff"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z"/></svg>
+    </div>
+    @if (hiResCover(t.coverUrl); as src) {
+      <img [src]="src" crossorigin="anonymous" alt="" (error)="$any($event.target).style.display = 'none'" />
+    }
+  </div>
+</ng-template>

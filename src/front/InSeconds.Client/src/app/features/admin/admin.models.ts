@@ -34,3 +34,17 @@ export interface PlayerHistoryEntryDto {
 export interface PlayerHistoryResponse { games: PlayerHistoryEntryDto[]; }
 
 export type AdminTab = 'dashboard' | 'pool' | 'defis' | 'joueurs' | 'actions';
+
+/** GET /api/admin/weekly-recap — stories Instagram hebdo (onglet Actions). */
+export type WeeklyRecapStatus = 'ok' | 'insufficient_data';
+export interface WeeklyTrackDto {
+  artist: string; title: string; coverUrl: string | null;
+  /** % de réponses avec artiste ET titre justes. */
+  successRatePercent: number; answers: number;
+}
+export interface WeeklyRecapResponse {
+  status: WeeklyRecapStatus; from: string; to: string; minAnswers: number;
+  mostFound: WeeklyTrackDto | null;
+  /** null si un seul morceau est éligible. */
+  mostMissed: WeeklyTrackDto | null;
+}

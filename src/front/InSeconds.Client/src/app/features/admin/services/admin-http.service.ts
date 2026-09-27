@@ -6,6 +6,7 @@ import { PlayerSessionService } from '../../../core/services/player-session.serv
 import { AdminStatsResponse, ChallengeStatsResponse } from '../../../api/api.generated';
 import {
   ChallengeDto, DeezerTrackInfo, PoolTracksResponse, RefreshPreviewsResult, RegisteredPlayersResponse, PlayerHistoryResponse,
+  WeeklyRecapResponse,
 } from '../admin.models';
 
 @Injectable()
@@ -55,4 +56,5 @@ export class AdminHttpService {
   getPlayerHistory(playerId: string) {
     return this.http.get<PlayerHistoryResponse>(`${this.base}/players/${encodeURIComponent(playerId)}/history`);
   }
+  getWeeklyRecap() { return this.http.get<WeeklyRecapResponse>(`${this.base}/weekly-recap`); }
 }
