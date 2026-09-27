@@ -19,6 +19,7 @@
 - Un bouton « Passer (0 pts) » (avec confirmation) permet de passer au morceau suivant sans répondre
 - Indices optionnels (année de sortie, puis nom d'artiste masqué) débloqués à 5s/10s d'écoute — coûte des points, contrôlé côté serveur
 - Le scoring est entièrement côté serveur — impossible de tricher côté client
+- À chaque révélation, un histogramme montre en combien de temps les autres joueurs ont trouvé ce morceau
 - Mode guest : joue sans créer de compte (pas de classement, seulement des stats globales)
 - Comptes utilisateurs optionnels (inscription ouverte à tous, connexion sans mot de passe par lien magique) — conserve historique/streak entre appareils ; le jeu guest reste ouvert à tous
 - Série quotidienne affichée dans l'en-tête (panneau de détail au clic), avec des gels de série pour les comptes connectés (1 offert à l'inscription, +1 tous les 7 jours, 2 max, utilisés automatiquement sur un jour manqué)

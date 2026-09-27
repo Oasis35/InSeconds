@@ -19,6 +19,7 @@
 - A "Skip (0 pts)" button (with confirmation) moves on to the next track without answering
 - Optional hints (release year, then a masked artist name) unlockable at 5s/10s of listening — costs points, server-authoritative
 - Scoring is entirely server-side — no client-side manipulation possible
+- On each reveal, see a histogram of how long other players needed to guess that track
 - Guest mode: play without signing up (no leaderboard, only global stats)
 - Optional linked accounts (open signup, passwordless magic-link login) — keeps history/streak across devices; guest play stays fully open regardless
 - Daily streak shown in the header (details panel on click), with streak freezes for linked accounts (1 free on signup, +1 every 7 days, 2 max, used automatically on a missed day)
