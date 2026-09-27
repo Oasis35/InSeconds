@@ -155,6 +155,8 @@ describe('WeeklyStoryComponent', () => {
     expect(capture).toHaveBeenCalledTimes(2);
 
     component.setTitleMode('custom');
+    await fixture.whenStable();
+    // Champs désactivés pendant une capture : le texte n'est saisi qu'une fois la précédente finie.
     component.setCustomTitle('Best of de septembre');
     await fixture.whenStable();
     expect(titles()).toEqual(['Best of de septembre', 'Best of de septembre']);
