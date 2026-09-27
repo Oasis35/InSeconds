@@ -58,8 +58,11 @@ export class BlindRoundComponent implements OnDestroy {
   protected readonly pendingConfirm = this.submission.pendingConfirm;
   protected readonly isSubmitting = this.submission.isSubmitting;
   protected readonly displayedScore = this.submission.displayedScore;
-  protected readonly showNetworkError = this.submission.showNetworkError;
+  protected readonly submitFailed = this.submission.submitFailed;
   protected readonly result = this.submission.result;
+
+  /** Dernière réponse envoyée — permet à `retry()` de la renvoyer telle quelle après un échec. */
+  private lastSubmission: Pick<AnsweredEvent, 'listenedDurationSeconds' | 'wasExtended' | 'artistAnswer' | 'titleAnswer'> | null = null;
 
   // Recherche/autocomplete — délégués à AnswerSearchService (masqué avant déblocage, pas juste
   // désactivé). `searchQuery` reste un accesseur pour garder `[(ngModel)]="searchQuery"` inchangé.
@@ -170,6 +173,11 @@ export class BlindRoundComponent implements OnDestroy {
     this.audio.play(this.track().previewUrl, duration);
   }
 
+  /** Relance la lecture après un échec (`audio.isError()`) — cf. piège E4 CLAUDE.md. */
+  protected retryPlayback(): void {
+    this.startPlay(this.chosenDuration() || this.durations()[0]);
+  }
+
   listenMore(): void {
     const next = this.nextDuration();
     if (next) {
@@ -217,14 +225,28 @@ export class BlindRoundComponent implements OnDestroy {
   }
 
   private emitAnswer(overrides: Pick<AnsweredEvent, 'listenedDurationSeconds' | 'wasExtended' | 'artistAnswer' | 'titleAnswer'>): void {
+    this.lastSubmission = overrides;
     this.answered.emit({ trackId: this.track().id, ...overrides });
   }
 
-  setResult(r: SubmitAnswerResponse, isNetworkError = false): void {
-    this.submission.setResult(r, isNetworkError);
+  /** Renvoie la dernière réponse après un échec d'envoi (`submitFailed`) — cf. piège E5 CLAUDE.md. */
+  protected retry(): void {
+    if (!this.lastSubmission) return;
+    this.submission.isSubmitting.set(true);
+    this.submission.submitFailed.set(false);
+    this.answered.emit({ trackId: this.track().id, ...this.lastSubmission });
+  }
+
+  setResult(r: SubmitAnswerResponse): void {
+    this.submission.setResult(r);
     if (this.track().previewUrl && this.chosenDuration() > 0) {
       this.audio.replayFull();
     }
+  }
+
+  /** La soumission a échoué après les tentatives automatiques du back — cf. `GameService.submitAnswer`. */
+  setSubmitError(): void {
+    this.submission.setError();
   }
 
   next(): void {
@@ -233,6 +255,7 @@ export class BlindRoundComponent implements OnDestroy {
     this.search.reset();
     this.chosenDuration.set(0);
     this.hintService.reset();
+    this.lastSubmission = null;
     this.nextTrack.emit();
   }
 

@@ -300,22 +300,11 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
         }]);
         this.roundRef()?.setResult(response);
       },
+      // `GameService.submitAnswer` a déjà réessayé automatiquement — échec définitif : le joueur
+      // reste sur ce morceau (bouton « Réessayer »), pas de faux résultat ni de passage au
+      // morceau suivant, sinon la partie ne se termine jamais côté serveur (cf. piège E5 CLAUDE.md).
       error: () => {
-        this.roundRef()?.setResult({
-          artistCorrect: false,
-          titleCorrect: false,
-          score: 0,
-          correctArtist: '?',
-          correctTitle: '?',
-          deezerTrackId: 0, // inconnu sans réponse du serveur → pas de badge Deezer
-          listenedDurationSeconds: 0,
-          averageSecondsWhenCorrect: undefined,
-          failureRatePercent: 0,
-          guessTimeDistribution: [],
-          notFoundCount: 0,
-          hintLevelUsed: 0,
-          hintPenaltyPercentApplied: 0,
-        }, true);
+        this.roundRef()?.setSubmitError();
       },
     });
   }

@@ -14,13 +14,14 @@ import { TrackSlot } from '../../../core/models/game.models';
 // au premier palier dès sa création (effect() constructeur) — sans ce stub, les tests
 // déclencheraient un vrai <audio> réseau non déterministe.
 class AudioPlayerStub {
-  readonly state = signal<'idle' | 'loading' | 'playing' | 'finished'>('idle');
+  readonly state = signal<'idle' | 'loading' | 'playing' | 'finished' | 'error'>('idle');
   readonly listenedSeconds = signal(0);
   readonly extended = signal(false);
   readonly progress = signal(0);
   readonly isIdle = () => this.state() === 'idle';
   readonly isPlaying = () => this.state() === 'playing';
   readonly isFinished = () => this.state() === 'finished';
+  readonly isError = () => this.state() === 'error';
   play(): void { this.state.set('playing'); }
   replayFull(): void {}
   extend(): void {}
@@ -302,5 +303,59 @@ describe('BlindRoundComponent — indices (hints)', () => {
     component['pendingConfirm'].set('skip');
     component.next();
     expect(component['pendingConfirm']()).toBeNull();
+  });
+
+  // Échec de soumission (E5) : le joueur reste bloqué sur le morceau, avec un bouton
+  // « Réessayer » qui renvoie exactement la même réponse, plutôt qu'un faux résultat à 0
+  // qui laissait la partie inachevée côté serveur.
+  it('setSubmitError() marque submitFailed sans poser de résultat', () => {
+    component.setSubmitError();
+    expect(component['submitFailed']()).toBe(true);
+    expect(component['result']()).toBeNull();
+  });
+
+  it('retry() renvoie la dernière réponse soumise après un échec', () => {
+    const emitted: unknown[] = [];
+    component.answered.subscribe(e => emitted.push(e));
+    component['chosenDuration'].set(5);
+    component['searchQuery'] = 'Daft Punk - One More Time';
+
+    component.submit();
+    expect(emitted.length).toBe(1);
+
+    component.setSubmitError();
+    expect(component['submitFailed']()).toBe(true);
+
+    component['retry']();
+
+    expect(component['submitFailed']()).toBe(false);
+    expect(component['isSubmitting']()).toBe(true);
+    expect(emitted).toEqual([
+      jasmine.objectContaining({ trackId: TRACK.id, listenedDurationSeconds: 5 }),
+      jasmine.objectContaining({ trackId: TRACK.id, listenedDurationSeconds: 5 }),
+    ]);
+  });
+
+  it('retry() est un no-op si aucune réponse n\'a encore été soumise', () => {
+    const emitted: unknown[] = [];
+    component.answered.subscribe(e => emitted.push(e));
+
+    component['retry']();
+
+    expect(emitted.length).toBe(0);
+  });
+
+  it('next() réinitialise la dernière soumission mémorisée', () => {
+    const emitted: unknown[] = [];
+    component.answered.subscribe(e => emitted.push(e));
+    component['chosenDuration'].set(5);
+    component['searchQuery'] = 'Daft Punk - One More Time';
+    component.submit();
+    expect(emitted.length).toBe(1);
+
+    component.next();
+    component['retry']();
+
+    expect(emitted.length).toBe(1); // retry() n'a rien réémis après next()
   });
 });
