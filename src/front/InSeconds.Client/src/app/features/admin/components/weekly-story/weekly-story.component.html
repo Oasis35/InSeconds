@@ -25,10 +25,13 @@
       </select>
     </label>
     @if (story.titleMode() === 'custom') {
-      <input type="text" [value]="story.customTitle()" [maxlength]="customTitleMaxLength" [disabled]="story.busy()"
-        [placeholder]="'admin.actions.weeklyStory.customTitlePlaceholder' | translate"
-        (change)="setCustomTitle($any($event.target).value)"
-        class="text-sm rounded-lg px-2 py-1 flex-1 min-w-48" style="background:var(--bg-inactive);color:var(--text-hi);border:1px solid var(--border-strong)" />
+      <label for="weekly-story-custom-title" class="flex flex-col gap-1 text-xs flex-1 min-w-48" style="color:var(--text-light)">
+        {{ 'admin.actions.weeklyStory.titleModes.custom' | translate }}
+        <input id="weekly-story-custom-title" type="text" [value]="story.customTitle()" [attr.maxlength]="customTitleMaxLength" [disabled]="story.busy()"
+          [placeholder]="'admin.actions.weeklyStory.customTitlePlaceholder' | translate"
+          (change)="setCustomTitle($any($event.target).value)"
+          class="text-sm rounded-lg px-2 py-1" style="background:var(--bg-inactive);color:var(--text-hi);border:1px solid var(--border-strong)" />
+      </label>
     }
   </div>
   @if (!story.periodValid()) {
