@@ -1,4 +1,5 @@
 using InSeconds.Api.Common.Auth;
+using InSeconds.Api.Common.Stats;
 using InSeconds.Api.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -103,22 +104,17 @@ public static class GetAdminStatsEndpoint
 
         // Jour passé : les Pending que l'expiry paresseuse n'a pas encore basculés
         // comptent comme « non terminés » (Expired), pas comme des abandons explicites.
-        var isPast           = date < today;
-        var effectiveExpired = isPast ? expiredRaw + pending : expiredRaw;
-        var effectivePending = isPast ? 0 : pending;
+        var isPast = date < today;
+        var (effectivePending, effectiveExpired) = SessionStatusBucketing.ReclassifyPastDay(pending, expiredRaw, isPast);
         var total = completed + abandoned + expiredRaw + pending;
         var completionRate = total == 0 ? 0.0 : Math.Round((double)completed / total * 100, 1);
 
         var scores = sessions
             .Where(s => s.Status == Domain.SessionStatus.Completed)
             .Select(s => s.TotalScore)
-            .OrderBy(s => s)
             .ToList();
 
-        double? median = scores.Count == 0 ? null
-            : scores.Count % 2 == 1
-                ? scores[scores.Count / 2]
-                : (scores[scores.Count / 2 - 1] + scores[scores.Count / 2]) / 2.0;
+        var median = MedianCalculator.Compute(scores);
 
         return new DailyKpisDto(date, completed, abandoned, effectiveExpired, effectivePending, total, completionRate, median);
     }
