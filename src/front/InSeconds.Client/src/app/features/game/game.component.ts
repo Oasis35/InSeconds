@@ -313,8 +313,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
       countUp(this.totalScore(), v => this.displayedTotalScore.set(v), 1000);
       this.startCountdown();
       // Stats du jour → histogrammes par morceau dans le récap (popup au clic sur un score).
-      this.api.apiStatsToday().pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe(stats => this.todayStats.set(stats));
+      this.loadTodayStats();
       // Série/gels après complétion (gel consommé ou gagné) pour la gélule du header.
       this.refreshStreakInfo();
     } else {
@@ -426,10 +425,7 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
     this.streakToastDismissed.set(false);
     this.gelToastDismissed.set(false);
     this.startCountdown();
-    if (!abandoned) {
-      this.api.apiStatsToday().pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe(stats => this.todayStats.set(stats));
-    }
+    if (!abandoned) this.loadTodayStats();
   }
 
   // ── Gel de série ─────────────────────────────────────────────────────────
@@ -455,6 +451,17 @@ export class GameComponent implements OnInit, OnDestroy, UnsavedGameComponent {
       .subscribe(outcome => {
         if (outcome.kind === 'ok') this.streakInfo.set(outcome.response.streak ?? null);
       });
+  }
+
+  // M13 (revue du 25/09) : sans callback error, une ApiException (client NSwag, pas une
+  // HttpErrorResponse — cf. GlobalErrorHandler) remontait comme un crash JS non géré au lieu
+  // de simplement laisser todayStats à null, déjà toléré par les écrans (égaliseur et pop-up
+  // d'histogramme absents, le reste du récap/de l'écran « déjà joué » s'affiche quand même).
+  private loadTodayStats(): void {
+    this.api.apiStatsToday().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: stats => this.todayStats.set(stats),
+      error: () => {},
+    });
   }
 
   /** Toast invité « série perdue » : une seule fois par série perdue (localStorage). */

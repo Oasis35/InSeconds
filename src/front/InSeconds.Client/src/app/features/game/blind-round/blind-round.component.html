@@ -80,7 +80,7 @@
               <div class="flex items-center justify-center gap-4 pt-1">
                 <button
                   type="button"
-                  (click)="audio.play(track().previewUrl, chosenDuration())"
+                  (click)="audio.replayCurrent()"
                   title="{{ 'blindRound.replay' | translate: { seconds: chosenDuration() } }}"
                   class="rounded-full transition active:scale-95 touch-manipulation flex items-center justify-center shrink-0"
                   style="width:72px;height:72px;background:linear-gradient(145deg,var(--color-accent-3),var(--color-accent));box-shadow:var(--glow-primary);border:none;color:#fff">
