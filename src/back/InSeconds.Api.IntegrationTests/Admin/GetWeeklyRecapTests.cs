@@ -130,6 +130,38 @@ public class GetWeeklyRecapTests(IntegrationTestFactory factory) : IAsyncLifetim
     }
 
     [Fact]
+    public async Task Recap_PeriodeChoisie_InclutLesDefisDeLaPeriode()
+    {
+        var admin = await CreateAdminClientAsync();
+        await CreateChallengeAsync(OutOfWindowDate, await GetTrackAsync(Today, 4));
+        await SeedAnswersAsync(OutOfWindowDate, 1, (true, true), (true, true), (true, true));
+        // Aujourd'hui, hors de la période demandée : ignoré.
+        await SeedAnswersAsync(Today, 2, (false, false), (false, false), (false, false));
+
+        var body = await admin.GetFromJsonAsync<WeeklyRecapResponse>(
+            $"/api/admin/weekly-recap?from={OutOfWindowDate:yyyy-MM-dd}&to={OutOfWindowDate:yyyy-MM-dd}");
+
+        Assert.NotNull(body);
+        Assert.Equal(WeeklyRecapStatus.Ok, body.Status);
+        Assert.Equal(OutOfWindowDate, body.From);
+        Assert.Equal(OutOfWindowDate, body.To);
+        Assert.Equal(100, body.MostFound!.SuccessRatePercent);
+        Assert.Null(body.MostMissed);
+    }
+
+    [Theory]
+    [InlineData("?from=2026-09-10&to=2026-09-01")]
+    [InlineData("?from=10-09-2026")]
+    public async Task Recap_PeriodeInvalide_Retourne400(string query)
+    {
+        var admin = await CreateAdminClientAsync();
+
+        var resp = await admin.GetAsync($"/api/admin/weekly-recap{query}");
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+    }
+
+    [Fact]
     public async Task Recap_CompteNonAdmin_Retourne401()
     {
         var client = factory.CreateClient();

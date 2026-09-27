@@ -63,4 +63,35 @@ describe('AdminWeeklyStoryService', () => {
     expect(service.status()).toBe('ready');
     expect(service.images()).toEqual(images);
   });
+
+  it('load() transmet la période choisie à l\'API', async () => {
+    http.getWeeklyRecap.and.returnValue(of(okRecap));
+    service.from.set('2026-09-01');
+    service.to.set('2026-09-10');
+
+    await service.load();
+
+    expect(http.getWeeklyRecap).toHaveBeenCalledWith('2026-09-01', '2026-09-10');
+  });
+
+  it('période par défaut : 7 jours, fin incluse', () => {
+    const days = (Date.parse(service.to()) - Date.parse(service.from())) / 86_400_000;
+    expect(days).toBe(6);
+    expect(service.periodValid()).toBeTrue();
+  });
+
+  it('periodValid() : faux si le début est après la fin', () => {
+    service.from.set('2026-09-10');
+    service.to.set('2026-09-01');
+    expect(service.periodValid()).toBeFalse();
+  });
+
+  it('storyTitle() : titres prédéfinis et texte libre', () => {
+    expect(service.storyTitle()).toBe('Cette semaine dans InSeconds 🎧');
+    service.titleMode.set('lastWeek');
+    expect(service.storyTitle()).toBe('La semaine dernière dans InSeconds 🎧');
+    service.titleMode.set('custom');
+    service.customTitle.set('  Spécial été ☀️  ');
+    expect(service.storyTitle()).toBe('Spécial été ☀️');
+  });
 });

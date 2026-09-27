@@ -1,8 +1,41 @@
 <div class="flex flex-col gap-3">
   <h2 class="text-xs font-semibold uppercase tracking-wide" style="color:var(--text-muted)">{{ 'admin.actions.weeklyStory.title' | translate }}</h2>
   <p class="text-xs" style="color:var(--text-faint)">{{ 'admin.actions.weeklyStory.hint' | translate }}</p>
+  <div class="flex flex-wrap items-end gap-3">
+    <label class="flex flex-col gap-1 text-xs" style="color:var(--text-light)">
+      {{ 'admin.actions.weeklyStory.from' | translate }}
+      <input type="date" [value]="story.from()" [max]="story.to()" [disabled]="story.busy()"
+        (change)="setFrom($any($event.target).value)"
+        class="text-sm rounded-lg px-2 py-1" style="background:var(--bg-inactive);color:var(--text-hi);border:1px solid var(--border-strong)" />
+    </label>
+    <label class="flex flex-col gap-1 text-xs" style="color:var(--text-light)">
+      {{ 'admin.actions.weeklyStory.to' | translate }}
+      <input type="date" [value]="story.to()" [min]="story.from()" [disabled]="story.busy()"
+        (change)="setTo($any($event.target).value)"
+        class="text-sm rounded-lg px-2 py-1" style="background:var(--bg-inactive);color:var(--text-hi);border:1px solid var(--border-strong)" />
+    </label>
+    <label class="flex flex-col gap-1 text-xs" style="color:var(--text-light)">
+      {{ 'admin.actions.weeklyStory.titleLabel' | translate }}
+      <select [value]="story.titleMode()" [disabled]="story.busy()"
+        (change)="setTitleMode($any($event.target).value)"
+        class="text-sm rounded-lg px-2 py-1" style="background:var(--bg-inactive);color:var(--text-hi);border:1px solid var(--border-strong)">
+        @for (mode of titleModes; track mode) {
+          <option [value]="mode" [selected]="mode === story.titleMode()">{{ 'admin.actions.weeklyStory.titleModes.' + mode | translate }}</option>
+        }
+      </select>
+    </label>
+    @if (story.titleMode() === 'custom') {
+      <input type="text" [value]="story.customTitle()" [maxlength]="customTitleMaxLength" [disabled]="story.busy()"
+        [placeholder]="'admin.actions.weeklyStory.customTitlePlaceholder' | translate"
+        (change)="setCustomTitle($any($event.target).value)"
+        class="text-sm rounded-lg px-2 py-1 flex-1 min-w-48" style="background:var(--bg-inactive);color:var(--text-hi);border:1px solid var(--border-strong)" />
+    }
+  </div>
+  @if (!story.periodValid()) {
+    <span class="text-xs" style="color:var(--color-warn)">{{ 'admin.actions.weeklyStory.invalidPeriod' | translate }}</span>
+  }
   <div class="flex flex-wrap items-center gap-3">
-    <button (click)="generate()" [disabled]="story.busy()"
+    <button (click)="generate()" [disabled]="story.busy() || !story.periodValid()"
       class="text-sm font-medium py-2 px-4 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
       style="background:var(--bg-primary);color:var(--text-on-primary)">
       @if (story.busy()) { <span>⏳</span> {{ 'admin.actions.weeklyStory.generating' | translate }} } @else { <span>📸</span> {{ 'admin.actions.weeklyStory.generate' | translate }} }
@@ -98,7 +131,9 @@
     <span class="logo">IN<span class="logo-accent">//</span>SECONDS</span>
     <span class="period">{{ period() }}</span>
   </div>
-  <div class="title">Cette semaine dans InSeconds 🎧</div>
+  @if (story.storyTitle(); as title) {
+    <div class="title" [class.title-long]="title.length > 36">{{ title }}</div>
+  }
 </ng-template>
 
 <ng-template #cta>
