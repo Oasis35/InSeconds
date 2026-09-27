@@ -50,8 +50,8 @@ function createComponent(
 describe('GameComponent — streak toast', () => {
   let component: GameComponent;
   let gameFacadeStub: {
-    peekToday: jasmine.Spy;
-    startToday: jasmine.Spy;
+    peekSession: jasmine.Spy;
+    loadSession: jasmine.Spy;
     submitAnswer: jasmine.Spy;
     abandonSession: jasmine.Spy;
     updateListening: jasmine.Spy;
@@ -62,10 +62,10 @@ describe('GameComponent — streak toast', () => {
 
   beforeEach(() => {
     gameFacadeStub = {
-      peekToday: jasmine.createSpy('peekToday').and.returnValue(of({
-        state: 'can_start', currentStreak: 0, tracksCount: 3, completedCount: 0,
+      peekSession: jasmine.createSpy('peekSession').and.returnValue(of({
+        kind: 'ok', response: { state: 'can_start', currentStreak: 0, tracksCount: 3, completedCount: 0 },
       })),
-      startToday: jasmine.createSpy('startToday'),
+      loadSession: jasmine.createSpy('loadSession'),
       submitAnswer: jasmine.createSpy('submitAnswer'),
       abandonSession: jasmine.createSpy('abandonSession').and.returnValue(of(void 0)),
       updateListening: jasmine.createSpy('updateListening'),
@@ -88,8 +88,8 @@ describe('GameComponent — streak toast', () => {
 
   it('resets on peekSession → already_played (via retry())', () => {
     component['streakToastDismissed'].set(true);
-    gameFacadeStub.peekToday.and.returnValue(of({
-      state: 'already_played', currentStreak: 3, tracksCount: 3, completedCount: 3,
+    gameFacadeStub.peekSession.and.returnValue(of({
+      kind: 'ok', response: { state: 'already_played', currentStreak: 3, tracksCount: 3, completedCount: 3 },
     }));
 
     component['retry']();
@@ -100,8 +100,8 @@ describe('GameComponent — streak toast', () => {
 
   it('resets on peekSession → abandoned (via retry())', () => {
     component['streakToastDismissed'].set(true);
-    gameFacadeStub.peekToday.and.returnValue(of({
-      state: 'abandoned', currentStreak: 3, tracksCount: 3, completedCount: 1,
+    gameFacadeStub.peekSession.and.returnValue(of({
+      kind: 'ok', response: { state: 'abandoned', currentStreak: 3, tracksCount: 3, completedCount: 1 },
     }));
 
     component['retry']();
@@ -134,7 +134,7 @@ describe('GameComponent — streak toast', () => {
 
   it('resets on the 409 branch of loadSession() (via beginGame())', () => {
     component['streakToastDismissed'].set(true);
-    gameFacadeStub.startToday.and.returnValue(throwError(() => ({ status: 409, error: { error: 'already_played' } })));
+    gameFacadeStub.loadSession.and.returnValue(of({ kind: 'already_played', abandoned: false }));
 
     component['beginGame']();
 
@@ -145,7 +145,7 @@ describe('GameComponent — streak toast', () => {
 
 describe('GameComponent — gel de série', () => {
   let component: GameComponent;
-  let gameFacadeStub: { peekToday: jasmine.Spy; startToday: jasmine.Spy };
+  let gameFacadeStub: { peekSession: jasmine.Spy; loadSession: jasmine.Spy };
   let apiStub: { apiStatsToday: jasmine.Spy };
   let isLinked: ReturnType<typeof signal<boolean>>;
   let router: { navigate: jasmine.Spy };
@@ -166,11 +166,11 @@ describe('GameComponent — gel de série', () => {
     isLinked = signal(true);
     router = { navigate: jasmine.createSpy('navigate') };
     gameFacadeStub = {
-      peekToday: jasmine.createSpy('peekToday').and.returnValue(of({
-        state: 'can_start', currentStreak: 12, tracksCount: 3, completedCount: 0, streak: streak(),
+      peekSession: jasmine.createSpy('peekSession').and.returnValue(of({
+        kind: 'ok', response: { state: 'can_start', currentStreak: 12, tracksCount: 3, completedCount: 0, streak: streak() },
       })),
-      startToday: jasmine.createSpy('startToday').and.returnValue(of({
-        sessionId: 1, tracks: [], currentStreak: 12, isResuming: false, resumeFromPosition: 0, completedAnswers: [],
+      loadSession: jasmine.createSpy('loadSession').and.returnValue(of({
+        kind: 'ok', response: { sessionId: 1, tracks: [], currentStreak: 12, isResuming: false, resumeFromPosition: 0, completedAnswers: [] },
       })),
     };
     apiStub = { apiStatsToday: jasmine.createSpy('apiStatsToday').and.returnValue(of(stats())) };
@@ -193,8 +193,8 @@ describe('GameComponent — gel de série', () => {
   });
 
   it('refreshes the streak detail after the last answer (freeze used or earned)', () => {
-    gameFacadeStub.peekToday.and.returnValue(of({
-      state: 'already_played', currentStreak: 13, tracksCount: 3, completedCount: 3, streak: streak({ streak: 13, freezes: 1 }),
+    gameFacadeStub.peekSession.and.returnValue(of({
+      kind: 'ok', response: { state: 'already_played', currentStreak: 13, tracksCount: 3, completedCount: 3, streak: streak({ streak: 13, freezes: 1 }) },
     }));
 
     finishGame(stats({ freezesUsed: 1 }));
@@ -236,9 +236,11 @@ describe('GameComponent — gel de série', () => {
 
   it('shows the guest "série perdue" toast on welcome, once per lost streak', () => {
     isLinked.set(false);
-    gameFacadeStub.peekToday.and.returnValue(of({
-      state: 'can_start', currentStreak: 0, tracksCount: 3, completedCount: 0,
-      streak: streak({ status: 'broken', streak: 0, freezes: 0, maxFreezes: 0, lostStreak: 6, lastPlayedDate: '2026-09-20' }),
+    gameFacadeStub.peekSession.and.returnValue(of({
+      kind: 'ok', response: {
+        state: 'can_start', currentStreak: 0, tracksCount: 3, completedCount: 0,
+        streak: streak({ status: 'broken', streak: 0, freezes: 0, maxFreezes: 0, lostStreak: 6, lastPlayedDate: '2026-09-20' }),
+      },
     }));
 
     component['retry']();
@@ -260,7 +262,7 @@ describe('GameComponent — gel de série', () => {
     component['playFromStreakSheet']();
 
     expect(component['showStreakSheet']()).toBeFalse();
-    expect(gameFacadeStub.startToday).toHaveBeenCalled();
+    expect(gameFacadeStub.loadSession).toHaveBeenCalled();
   });
 
   it('"Créer un compte" in the guest sheet navigates to /login', () => {
@@ -277,12 +279,12 @@ describe('GameComponent — gel de série', () => {
 // lit dans la réponse à chaque morceau, ou dans les réponses déjà données à la reprise.
 describe('GameComponent — identifiant Deezer révélé après la réponse', () => {
   let component: GameComponent;
-  let gameFacadeStub: { peekToday: jasmine.Spy; startToday: jasmine.Spy; submitAnswer: jasmine.Spy };
+  let gameFacadeStub: { peekSession: jasmine.Spy; loadSession: jasmine.Spy; submitAnswer: jasmine.Spy };
 
   beforeEach(() => {
     gameFacadeStub = {
-      peekToday: jasmine.createSpy('peekToday'),
-      startToday: jasmine.createSpy('startToday'),
+      peekSession: jasmine.createSpy('peekSession'),
+      loadSession: jasmine.createSpy('loadSession'),
       submitAnswer: jasmine.createSpy('submitAnswer').and.returnValue(of({
         artistCorrect: true, titleCorrect: true, score: 1000, correctArtist: 'Eminem',
         correctTitle: 'Lose Yourself', deezerTrackId: 3135556, listenedDurationSeconds: 0.5,
@@ -331,8 +333,8 @@ describe('GameComponent — échec réseau à la soumission d\'une réponse', ()
 
   beforeEach(() => {
     const gameFacadeStub = {
-      peekToday: jasmine.createSpy('peekToday'),
-      startToday: jasmine.createSpy('startToday'),
+      peekSession: jasmine.createSpy('peekSession'),
+      loadSession: jasmine.createSpy('loadSession'),
       submitAnswer: jasmine.createSpy('submitAnswer').and.returnValue(throwError(() => new Error('network'))),
     };
     component = createComponent(
