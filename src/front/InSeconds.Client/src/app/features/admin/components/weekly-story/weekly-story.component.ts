@@ -53,7 +53,7 @@ export class WeeklyStoryComponent {
   /** Recapture à partir du récap déjà chargé (ex : après avoir coché/décoché les repères). */
   async render(): Promise<void> {
     const recap = this.story.recap();
-    if (!recap || recap.status !== 'ok') return;
+    if (recap?.status !== 'ok') return;
     this.story.startRendering();
     try {
       // Les gabarits n'existent qu'une fois le récap affiché : rendu synchrone avant capture.

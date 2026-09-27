@@ -111,16 +111,16 @@ describe('WeeklyStoryComponent', () => {
   it('masquer les repères retire les pointillés et relance la capture', async () => {
     http.getWeeklyRecap.and.returnValue(of(okRecap));
     await component.generate();
-    expect(fixture.nativeElement.querySelectorAll('.guide').length).toBe(2);
-    expect(fixture.nativeElement.querySelectorAll('.guide-link').length).toBe(2);
+    expect(fixture.nativeElement.querySelectorAll('.guide')).toHaveSize(2);
+    expect(fixture.nativeElement.querySelectorAll('.guide-link')).toHaveSize(2);
     capture.calls.reset();
 
     component.toggleGuides(false);
     await fixture.whenStable();
 
     expect(story.showGuides()).toBeFalse();
-    expect(fixture.nativeElement.querySelectorAll('.guide').length).toBe(0);
-    expect(fixture.nativeElement.querySelectorAll('.guide-link').length).toBe(0);
+    expect(fixture.nativeElement.querySelectorAll('.guide')).toHaveSize(0);
+    expect(fixture.nativeElement.querySelectorAll('.guide-link')).toHaveSize(0);
     expect(capture).toHaveBeenCalledTimes(2);
     expect(http.getWeeklyRecap).toHaveBeenCalledTimes(1);
   });
