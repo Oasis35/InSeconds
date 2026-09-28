@@ -270,12 +270,33 @@ if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Te
 }
 else
 {
-    builder.Services.AddHttpClient<IEmailSender, ResendEmailSender>((sp, client) =>
+    builder.Services.AddHttpClient<ResendEmailSender>((sp, client) =>
     {
         var resend = sp.GetRequiredService<IOptions<ResendOptions>>().Value;
         client.BaseAddress = new Uri("https://api.resend.com/");
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", resend.ApiKey);
     });
+
+    // Redirection de tous les emails vers une seule adresse (cf. RedirectingEmailSender).
+    // Obligatoire en Staging : sa base est une copie de la prod, un email ne doit jamais
+    // partir vers un vrai joueur — l'API refuse de démarrer sans adresse de redirection.
+    var emailRedirect = builder.Configuration.GetSection("EmailRedirect").Get<EmailRedirectOptions>() ?? new();
+    if (builder.Environment.IsStaging() && !emailRedirect.Enabled)
+    {
+        throw new InvalidOperationException("EmailRedirect:To doit être renseigné en Staging (cf. .env.staging).");
+    }
+
+    builder.Services.AddOptions<EmailRedirectOptions>().BindConfiguration("EmailRedirect");
+    if (emailRedirect.Enabled)
+    {
+        builder.Services.AddTransient<IEmailSender>(sp => new RedirectingEmailSender(
+            sp.GetRequiredService<ResendEmailSender>(),
+            sp.GetRequiredService<IOptions<EmailRedirectOptions>>()));
+    }
+    else
+    {
+        builder.Services.AddTransient<IEmailSender>(sp => sp.GetRequiredService<ResendEmailSender>());
+    }
 }
 
 builder.Services.AddOpenApi();
