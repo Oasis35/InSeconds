@@ -19,10 +19,9 @@
     </div>
   } @else {
     <!-- Partie complétée — récap complet (-mb-3 : carte score plus proche du compte à rebours) -->
-    <div class="space-y-3 -mb-3">
-      <h2 class="text-2xl font-bold tracking-tight" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'alreadyPlayed.title' | translate }}</h2>
+    <div class="space-y-1 -mb-3">
+      <h2 class="text-2xl font-bold tracking-tight" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'alreadyPlayed.nextChallengeIn' | translate }}</h2>
       <div>
-        <p class="text-xs font-bold tracking-widest uppercase mb-1" style="font-family:var(--font-display);color:var(--text-muted)">{{ 'alreadyPlayed.nextChallengeIn' | translate }}</p>
         <p class="text-3xl font-extrabold tabular-nums" style="font-family:var(--font-display);color:var(--text-body);letter-spacing:0.05em">{{ countdown() }}</p>
       </div>
     </div>
