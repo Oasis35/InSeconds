@@ -51,6 +51,10 @@ compose up -d --build
 # `latest` de l'ancienne image sans la supprimer ; sans ce nettoyage régulier, ces images
 # orphelines s'accumulent et finissent par saturer les 40 Go de disque.
 docker image prune -f
+# Cache de build (couches npm ci / dotnet restore / publish de chaque déploiement) : jamais
+# nettoyé jusqu'au 2026-09-28, il avait atteint 25 Go sur 40. On garde les 3 derniers jours
+# pour que les builds suivants restent rapides.
+docker builder prune -f --filter until=72h
 
 echo "Vérification de la santé de l'API ($target) après déploiement..."
 healthy=false
