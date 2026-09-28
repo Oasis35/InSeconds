@@ -1,4 +1,4 @@
-<div class="screen-enter flex-1 flex flex-col gap-7 text-center px-2 pt-4">
+<div class="screen-enter flex-1 flex flex-col gap-7 text-center px-2 pt-1">
 
   @if (abandoned()) {
     <!-- Partie abandonnée — message simple -->
@@ -18,8 +18,8 @@
       </div>
     </div>
   } @else {
-    <!-- Partie complétée — récap complet -->
-    <div class="space-y-3">
+    <!-- Partie complétée — récap complet (-mb-3 : carte score plus proche du compte à rebours) -->
+    <div class="space-y-3 -mb-3">
       <h2 class="text-2xl font-bold tracking-tight" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'alreadyPlayed.title' | translate }}</h2>
       <div>
         <p class="text-xs font-bold tracking-widest uppercase mb-1" style="font-family:var(--font-display);color:var(--text-muted)">{{ 'alreadyPlayed.nextChallengeIn' | translate }}</p>
