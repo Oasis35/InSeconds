@@ -34,11 +34,13 @@ export const MIN_PLAYERS_FOR_PERCENT = 5;
 // Géométrie du SVG (viewBox 300 × VIEW_HEIGHT).
 const LEFT = 10;
 const WIDTH = 280;
-const BARS_HEIGHT = 100;
-const SEGMENTS = 8;
+// 6 cases de haut (au lieu de 8) : l'écran « Déjà joué » doit tenir sans défilement sur mobile.
+// Hauteur par case inchangée (BARS_HEIGHT / SEGMENTS = 12.5).
+const BARS_HEIGHT = 75;
+const SEGMENTS = 6;
 const CELL_GAP_X = 3;
 const CELL_GAP_Y = 3;
-export const VIEW_HEIGHT = 136;
+export const VIEW_HEIGHT = BARS_HEIGHT + 36;
 /** Distance minimale entre l'étiquette de la médiane et les bords (où sont « plus bas »/« plus haut »). */
 const LABEL_GUARD = 45;
 

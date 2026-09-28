@@ -35,13 +35,13 @@ describe('ScoreDistributionChartComponent', () => {
     expect(component['chart']()).toBeNull();
   });
 
-  it('draws 8 cells per bucket and fills the tallest column entirely', () => {
+  it('draws 6 cells per bucket and fills the tallest column entirely', () => {
     fixture.componentRef.setInput('stats', stats());
     const chart = component['chart']()!;
-    expect(chart.cells).toHaveSize(10 * 8);
-    expect(litCells(4)).toHaveSize(8);          // 12 = max
+    expect(chart.cells).toHaveSize(10 * 6);
+    expect(litCells(4)).toHaveSize(6);          // 12 = max
     expect(litCells(1)).toHaveSize(1);          // 1/12 → au moins une case
-    expect(litCells(0).length).toBeLessThan(8);
+    expect(litCells(0).length).toBeLessThan(6);
   });
 
   it('keeps an empty bucket entirely unlit', () => {
