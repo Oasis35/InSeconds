@@ -107,7 +107,7 @@ jobs:
 
       - name: Run unit tests
         working-directory: src/front/InSeconds.Client
-        run: npx --no-install ng test --watch=false --browsers=ChromeHeadless
+        run: npx --no-install ng test --watch=false --browsers=ChromeHeadlessAutoplay
 
   nginx-headers:
     name: Frontend (nginx cache headers smoke test)

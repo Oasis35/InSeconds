@@ -1,5 +1,13 @@
 import { Injectable, signal, computed } from '@angular/core';
 
+/** Marge sous laquelle le palier est considéré atteint par la boucle rAF. */
+const STOP_TOLERANCE_SECONDS = 0.01;
+
+/** `play()` rejeté parce qu'interrompu par pause()/load() — pas une panne de lecture. */
+function isAbort(err: unknown): boolean {
+  return err instanceof DOMException && err.name === 'AbortError';
+}
+
 export type AudioState = 'idle' | 'loading' | 'playing' | 'finished' | 'error';
 
 @Injectable({ providedIn: 'root' })
@@ -39,6 +47,9 @@ export class AudioPlayerService {
     this.audio.pause();
     this.audio.oncanplay = null;
     this.audio.onerror = null;
+    this.audio.onended = null;
+    this.audio.onplaying = null;
+    this.audio.onwaiting = null;
 
     this.currentDuration = durationSeconds;
     this.wasExtended = false;
@@ -48,16 +59,12 @@ export class AudioPlayerService {
     this.audio.src = trackUrl;
     this.audio.oncanplay = () => {
       if (this.playToken !== token) return; // callback périmé, ignorer
+      this.audio!.oncanplay = null; // canplay peut se répéter (seek, rebuffering) : un seul démarrage
       this.state.set('playing');
       this.progress.set(0);
       // 'error', jamais 'idle' : un retour à 'idle' relancerait en boucle l'autoplay de
       // BlindRoundComponent (effect sur isIdle()), cf. piège E4 CLAUDE.md.
-      this.audio!.play().catch(() => { if (this.playToken === token) this.state.set('error'); });
-      // this.currentDuration (pas le paramètre durationSeconds figé à l'appel) : si extend()
-      // a été appelé pendant le chargement (état 'loading'), la valeur a pu changer entre
-      // temps — cf. piège M11 CLAUDE.md.
-      this.scheduleStop(this.currentDuration, token);
-      this.startRaf(token);
+      this.startPlayback(token);
     };
 
     this.audio.onerror = () => { if (this.playToken === token) this.state.set('error'); };
@@ -84,9 +91,7 @@ export class AudioPlayerService {
     this.audio.currentTime = 0;
     this.state.set('playing');
     this.progress.set(0);
-    this.audio.play().catch(() => { if (this.playToken === token) this.state.set('error'); });
-    this.scheduleStop(this.currentDuration, token);
-    this.startRaf(token);
+    this.startPlayback(token);
   }
 
   /** Rejoue le morceau déjà chargé depuis le début, jusqu'à la fin naturelle. */
@@ -98,6 +103,8 @@ export class AudioPlayerService {
     const token = ++this.playToken;
     if (this.stopTimer !== null) { clearTimeout(this.stopTimer); this.stopTimer = null; }
     this.stopRaf();
+    this.audio.onplaying = null; // pas d'arrêt sur palier : lecture jusqu'à la fin naturelle
+    this.audio.onwaiting = null;
 
     this.audio.onended = () => {
       if (this.playToken !== token) return;
@@ -107,7 +114,11 @@ export class AudioPlayerService {
 
     this.audio.currentTime = 0;
     this.state.set('playing');
-    this.audio.play().catch(() => { if (this.playToken === token) this.state.set('idle'); });
+    // 'finished', jamais 'idle' : le round est terminé, rien à proposer au joueur, et un
+    // retour à 'idle' relancerait l'autoplay de BlindRoundComponent (cf. piège 33 CLAUDE.md).
+    this.audio.play().catch((err: unknown) => {
+      if (this.playToken === token && !isAbort(err)) this.state.set('finished');
+    });
   }
 
   /**
@@ -134,10 +145,9 @@ export class AudioPlayerService {
     if (this.stopTimer !== null) { clearTimeout(this.stopTimer); this.stopTimer = null; }
 
     if (this.state() === 'playing') {
-      // Continue depuis la position réelle de lecture (pas un delta théorique) : pas de replay.
-      const token = this.playToken; // continuité de la même lecture, pas un nouveau token
-      const remaining = Math.max(0, nextDurationSeconds - this.audio.currentTime);
-      this.scheduleStop(remaining, token);
+      // Continue depuis la position réelle de lecture, sans replay ni nouveau token :
+      // scheduleStop() calcule le reliquat d'après currentTime.
+      this.scheduleStop(this.playToken);
       return;
     }
 
@@ -151,9 +161,9 @@ export class AudioPlayerService {
     this.audio.currentTime = 0;
     this.state.set('playing');
     this.progress.set(0);
-    this.audio.play().catch(() => { if (this.playToken === token) this.state.set('idle'); });
-    this.scheduleStop(nextDurationSeconds, token);
-    this.startRaf(token);
+    // 'error', jamais 'idle' : un retour à 'idle' relançait l'autoplay de BlindRoundComponent
+    // au premier palier (palier choisi remis à 0,5s), cf. piège 44 CLAUDE.md.
+    this.startPlayback(token);
   }
 
   stop(): { listenedSeconds: number; wasExtended: boolean } {
@@ -183,6 +193,8 @@ export class AudioPlayerService {
       this.audio.oncanplay = null;
       this.audio.onerror = null;
       this.audio.onended = null;
+      this.audio.onplaying = null;
+      this.audio.onwaiting = null;
       this.audio.pause();
       this.audio.src = '';
     }
@@ -206,10 +218,42 @@ export class AudioPlayerService {
     return Promise.resolve();
   }
 
-  private scheduleStop(seconds: number, token: number): void {
+  /**
+   * Lance la lecture d'un palier. L'arrêt se cale sur le son réellement joué, pas sur l'heure
+   * de l'appel (cf. piège 44 CLAUDE.md) : sur mobile, le son met parfois plusieurs centaines de
+   * millisecondes à sortir après `play()`, un chrono lancé à l'appel coupait donc le palier
+   * avant la fin (voire avant tout son à 0,5s). Le chrono part à l'événement `playing` et la
+   * boucle rAF coupe dès que `currentTime` atteint le palier.
+   */
+  private startPlayback(token: number): void {
+    const audio = this.audio!;
+    audio.onplaying = () => { if (this.playToken === token) this.scheduleStop(token); };
+    // Son bloqué en cours de route (réseau) : suspendre le chrono, `playing` le reprogrammera.
+    audio.onwaiting = () => {
+      if (this.playToken === token && this.stopTimer !== null) { clearTimeout(this.stopTimer); this.stopTimer = null; }
+    };
+    // Extrait plus court que le palier : fin naturelle = palier écouté en entier.
+    audio.onended = () => { if (this.playToken === token && this.state() === 'playing') this.stop(); };
+    audio.play().catch((err: unknown) => {
+      // AbortError = lecture interrompue par notre propre pause()/changement de source, pas
+      // une vraie panne : ne rien afficher (sinon « Réessayer » apparaîtrait à tort).
+      if (this.playToken === token && !isAbort(err)) this.state.set('error');
+    });
+    this.startRaf(token);
+  }
+
+  /**
+   * Programme l'arrêt au palier courant pour le reliquat *réellement* restant à écouter
+   * (palier − position de lecture). Appelé à l'événement `playing` — donc une fois le son sorti,
+   * et de nouveau après chaque coupure de chargement (`waiting` suspend le chrono).
+   */
+  private scheduleStop(token: number): void {
+    if (this.stopTimer !== null) { clearTimeout(this.stopTimer); this.stopTimer = null; }
+    const remaining = Math.max(0, this.currentDuration - (this.audio?.currentTime ?? 0));
     this.stopTimer = setTimeout(() => {
-      if (this.playToken === token) this.stop();
-    }, seconds * 1000);
+      this.stopTimer = null;
+      if (this.playToken === token && this.state() === 'playing') this.stop();
+    }, remaining * 1000);
   }
 
   private startRaf(token: number): void {
@@ -219,6 +263,12 @@ export class AudioPlayerService {
       const elapsed = this.audio?.currentTime ?? 0;
       // Lit currentDuration à chaque frame (pas figé en paramètre) : reflète une éventuelle extension.
       this.progress.set(Math.min(elapsed / this.currentDuration, 1));
+      // Arrêt précis (~1 frame) sur la position réelle ; le chrono de scheduleStop() couvre le
+      // cas où rAF est suspendu (onglet en arrière-plan, écran éteint).
+      if (this.state() === 'playing' && elapsed >= this.currentDuration - STOP_TOLERANCE_SECONDS) {
+        this.stop();
+        return;
+      }
       if (this.state() === 'playing') {
         this.rafId = requestAnimationFrame(tick);
       }

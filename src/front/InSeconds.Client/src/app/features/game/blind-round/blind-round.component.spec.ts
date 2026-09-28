@@ -22,7 +22,7 @@ class AudioPlayerStub {
   readonly isPlaying = () => this.state() === 'playing';
   readonly isFinished = () => this.state() === 'finished';
   readonly isError = () => this.state() === 'error';
-  play(): void { this.state.set('playing'); }
+  play(_url?: string, _durationSeconds?: number): void { this.state.set('playing'); }
   replayFull(): void {}
   replayCurrent(): void {}
   extend(): void {}
@@ -358,5 +358,68 @@ describe('BlindRoundComponent — indices (hints)', () => {
     component['retry']();
 
     expect(emitted).toHaveSize(1); // retry() n'a rien réémis après next()
+  });
+});
+
+// Piège 44 CLAUDE.md : un échec de lecture pendant « écouter plus » ramenait le lecteur à
+// 'idle', l'autoplay relançait alors le premier palier et écrasait le palier choisi (1s → 0,5s).
+describe('BlindRoundComponent — lecture automatique une seule fois par morceau', () => {
+  let component: BlindRoundComponent;
+  let fixture: ComponentFixture<BlindRoundComponent>;
+  let audio: AudioPlayerStub;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [BlindRoundComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideTranslateService(),
+        {
+          provide: GameFacadeService,
+          useValue: {
+            updateListening: () => of(undefined),
+            requestHint: () => of(undefined),
+          },
+        },
+        { provide: DeezerAutocompleteService, useClass: DeezerAutocompleteStub },
+        { provide: AudioPlayerService, useClass: AudioPlayerStub },
+      ],
+    }).compileComponents();
+
+    audio = TestBed.inject(AudioPlayerService) as unknown as AudioPlayerStub;
+    spyOn(audio, 'play').and.callThrough();
+    fixture = TestBed.createComponent(BlindRoundComponent);
+    fixture.componentRef.setInput('track', TRACK);
+    fixture.componentRef.setInput('sessionId', 42);
+    component = fixture.componentInstance;
+  });
+
+  it('lance le premier palier au chargement du morceau', () => {
+    fixture.detectChanges();
+
+    expect(audio.play).toHaveBeenCalledOnceWith(TRACK.previewUrl, 0.5);
+    expect(component['chosenDuration']()).toBe(0.5);
+  });
+
+  it('ne relance pas le premier palier si le lecteur retombe à idle en cours de round', () => {
+    fixture.detectChanges();
+    component.listenMore();
+    expect(component['chosenDuration']()).toBe(1);
+
+    audio.state.set('idle');
+    fixture.detectChanges();
+
+    expect(audio.play).toHaveBeenCalledTimes(1);
+    expect(component['chosenDuration']()).toBe(1);
+  });
+
+  it('relance bien la lecture automatique au morceau suivant', () => {
+    fixture.detectChanges();
+    component.next();
+    fixture.componentRef.setInput('track', { ...TRACK, id: 2, position: 2 });
+    fixture.detectChanges();
+
+    expect(audio.play).toHaveBeenCalledTimes(2);
   });
 });

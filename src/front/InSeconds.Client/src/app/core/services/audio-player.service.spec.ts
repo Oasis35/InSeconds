@@ -106,3 +106,69 @@ describe('AudioPlayerService', () => {
     expect(service.progress()).toBe(0);
   });
 });
+
+// Piège 44 CLAUDE.md (palier 1s réduit à 0,5s sur mobile).
+describe('AudioPlayerService — arrêt calé sur le son réel', () => {
+  let service: AudioPlayerService;
+  let el: HTMLAudioElement;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({});
+    service = TestBed.inject(AudioPlayerService);
+    el = (service as unknown as { audio: HTMLAudioElement }).audio;
+  });
+
+  afterEach(() => service.reset());
+
+  it('un démarrage lent du son ne raccourcit pas le palier', async () => {
+    // Simule un mobile : le son ne sort que 400 ms après l'appel à play(), soit plus que le
+    // palier. L'ancien chrono, lancé à l'appel, coupait avant tout son.
+    const realPlay = el.play.bind(el);
+    spyOn(el, 'play').and.callFake(() =>
+      new Promise<void>((resolve, reject) => setTimeout(() => realPlay().then(resolve, reject), 400)));
+
+    let startedAt: number | null = null;
+    el.addEventListener('playing', () => { startedAt ??= performance.now(); });
+
+    service.play(SILENCE_WAV_DATA_URI, 0.2);
+    await waitUntil(() => service.isFinished(), 5000);
+
+    // L'arrêt se compte à partir du son réellement démarré, pas de l'appel à play().
+    expect(startedAt).not.toBeNull();
+    expect(performance.now() - startedAt!).toBeGreaterThanOrEqual(190);
+  });
+
+  it("un échec de lecture pendant extend() passe en 'error', jamais en 'idle'", async () => {
+    service.play(SILENCE_WAV_DATA_URI, 0.05);
+    await waitUntil(() => service.isFinished());
+
+    spyOn(el, 'play').and.returnValue(Promise.reject(new DOMException('refusé', 'NotAllowedError')));
+    service.extend(0.1);
+
+    await waitUntil(() => service.isError());
+    expect(service.state()).not.toBe('idle');
+  });
+
+  it('une lecture interrompue par notre propre pause (AbortError) n\'est pas une erreur', async () => {
+    service.play(SILENCE_WAV_DATA_URI, 0.05);
+    await waitUntil(() => service.isFinished());
+
+    spyOn(el, 'play').and.returnValue(Promise.reject(new DOMException('interrompu', 'AbortError')));
+    service.extend(0.1);
+    await new Promise(r => setTimeout(r, 50));
+
+    expect(service.isError()).toBe(false);
+    expect(service.isIdle()).toBe(false);
+  });
+
+  it("un échec de replayFull() termine le round sans repasser par 'idle'", async () => {
+    service.play(SILENCE_WAV_DATA_URI, 0.05);
+    await waitUntil(() => service.isFinished());
+
+    spyOn(el, 'play').and.returnValue(Promise.reject(new DOMException('refusé', 'NotAllowedError')));
+    service.replayFull();
+    await new Promise(r => setTimeout(r, 50));
+
+    expect(service.state()).toBe('finished');
+  });
+});
