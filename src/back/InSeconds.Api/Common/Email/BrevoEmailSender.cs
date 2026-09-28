@@ -4,34 +4,34 @@ using Microsoft.Extensions.Options;
 
 namespace InSeconds.Api.Common.Email;
 
-public sealed class ResendOptions
+public sealed class BrevoOptions
 {
     public string ApiKey { get; set; } = "";
     public string SenderEmail { get; set; } = "";
     public string SenderName { get; set; } = "IN//SECONDS";
 }
 
-// Envoi via l'API HTTP Resend (https://resend.com/docs/api-reference/emails/send-email) —
-// remplace l'ancien SmtpEmailSender/MailKit (compte Gmail + alias "Envoyer en tant que").
-// HttpClient injecté via AddHttpClient<ResendEmailSender> (BaseAddress + header
-// Authorization posés une fois à l'enregistrement, cf. Program.cs).
-public sealed class ResendEmailSender(HttpClient http, IOptions<ResendOptions> options, ILogger<ResendEmailSender> logger) : IEmailSender
+// Envoi via l'API transactionnelle Brevo (https://developers.brevo.com/reference/sendtransacemail) —
+// remplace Resend (société française, données hébergées dans l'UE, quota gratuit plus large).
+// HttpClient injecté via AddHttpClient<BrevoEmailSender> (BaseAddress + header
+// api-key posés une fois à l'enregistrement, cf. Program.cs).
+public sealed class BrevoEmailSender(HttpClient http, IOptions<BrevoOptions> options, ILogger<BrevoEmailSender> logger) : IEmailSender
 {
     public async Task SendAsync(string to, string subject, string htmlBody, CancellationToken ct = default)
     {
-        var resend = options.Value;
+        var brevo = options.Value;
         var payload = new
         {
-            from = $"{resend.SenderName} <{resend.SenderEmail}>",
-            to = new[] { to },
+            sender = new { name = brevo.SenderName, email = brevo.SenderEmail },
+            to = new[] { new { email = to } },
             subject,
-            html = htmlBody,
+            htmlContent = htmlBody,
         };
 
         HttpResponseMessage response;
         try
         {
-            response = await http.PostAsJsonAsync("emails", payload, ct);
+            response = await http.PostAsJsonAsync("smtp/email", payload, ct);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -45,16 +45,16 @@ public sealed class ResendEmailSender(HttpClient http, IOptions<ResendOptions> o
 
         if (!response.IsSuccessStatusCode)
         {
-            // Seul le type d'erreur Resend (ex. "validation_error") : son message peut citer
+            // Seul le code d'erreur Brevo (ex. "invalid_parameter") : son message peut citer
             // l'adresse du destinataire, qui ne doit jamais atteindre les logs.
-            var errorName = (await ReadJsonAsync<ResendError>(response, ct))?.Name;
+            var errorCode = (await ReadJsonAsync<BrevoError>(response, ct))?.Code;
             PlayerActionLog.EmailFailed(logger, null, subject, (int)response.StatusCode);
-            throw new HttpRequestException($"Resend a répondu {(int)response.StatusCode} ({errorName ?? "erreur inconnue"})");
+            throw new HttpRequestException($"Brevo a répondu {(int)response.StatusCode} ({errorCode ?? "erreur inconnue"})");
         }
 
-        // L'identifiant renvoyé par Resend permet de retrouver l'envoi dans son tableau de bord.
-        var sent = await ReadJsonAsync<ResendSentEmail>(response, ct);
-        PlayerActionLog.EmailSent(logger, subject, sent?.Id);
+        // L'identifiant renvoyé par Brevo permet de retrouver l'envoi dans ses journaux transactionnels.
+        var sent = await ReadJsonAsync<BrevoSentEmail>(response, ct);
+        PlayerActionLog.EmailSent(logger, subject, sent?.MessageId);
     }
 
     private static async Task<T?> ReadJsonAsync<T>(HttpResponseMessage response, CancellationToken ct) where T : class
@@ -69,7 +69,7 @@ public sealed class ResendEmailSender(HttpClient http, IOptions<ResendOptions> o
         }
     }
 
-    private sealed record ResendSentEmail(string? Id);
+    private sealed record BrevoSentEmail(string? MessageId);
 
-    private sealed record ResendError(string? Name);
+    private sealed record BrevoError(string? Code);
 }
