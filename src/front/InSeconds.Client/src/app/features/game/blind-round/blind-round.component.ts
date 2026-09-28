@@ -55,6 +55,8 @@ export class BlindRoundComponent implements OnDestroy {
     return all.filter(d => d >= min);
   });
   protected readonly chosenDuration = signal(0);
+  /** Morceau déjà lancé automatiquement — l'autoplay ne se déclenche qu'une fois par morceau. */
+  private autoPlayedTrackId: number | null = null;
   protected readonly pendingConfirm = this.submission.pendingConfirm;
   protected readonly isSubmitting = this.submission.isSubmitting;
   protected readonly displayedScore = this.submission.displayedScore;
@@ -115,10 +117,18 @@ export class BlindRoundComponent implements OnDestroy {
 
   constructor() {
     // Démarre automatiquement l'écoute au premier palier autorisé dès que le morceau est prêt — plus de choix initial.
+    // Une seule fois par morceau : si le lecteur retombait à 'idle' en cours de round (échec de
+    // lecture), l'autoplay ramènerait le joueur au premier palier en écrasant le palier choisi
+    // (cf. piège 44 CLAUDE.md). Les relectures voulues par le joueur (↺, « écouter plus »,
+    // « Réessayer ») passent par d'autres chemins et ne sont pas concernées.
     effect(() => {
-      if (this.audio.isIdle() && this.track().previewUrl) {
+      const track = this.track();
+      if (this.audio.isIdle() && track.previewUrl && this.autoPlayedTrackId !== track.id) {
         const first = this.durations()[0];
-        if (first) this.startPlay(first);
+        if (first) {
+          this.autoPlayedTrackId = track.id;
+          this.startPlay(first);
+        }
       }
     });
 

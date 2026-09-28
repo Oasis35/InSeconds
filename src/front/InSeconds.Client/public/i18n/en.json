@@ -64,7 +64,6 @@
     "abandonedTitle": "Game abandoned",
     "abandonedBody": "Come back tomorrow for a new challenge.",
     "nextChallengeIn": "Next challenge in",
-    "title": "Already played today",
     "yourScore": "Your score",
     "showTracks": "Show tracks",
     "hideTracks": "Hide",
@@ -84,7 +83,6 @@
   },
   "done": {
     "finalScore": "Final score",
-    "points": "points",
     "artist": "Artist",
     "title": "Title",
     "comeBack": "Come back tomorrow for a new challenge."

@@ -30,7 +30,7 @@ export class GamePage {
   constructor(readonly page: Page) {
     this.startButton           = page.getByRole('button', { name: 'Commencer' });
     this.noChallengeHeading    = page.getByText("Pas de défi aujourd'hui");
-    this.alreadyPlayedHeading  = page.getByText('Déjà joué aujourd\'hui');
+    this.alreadyPlayedHeading  = page.getByRole('heading', { name: 'Prochain défi dans' });
     this.abandonedHeading      = page.getByText('Partie abandonnée');
     this.countdown             = page.getByText(/^\d{2}:\d{2}:\d{2}$/);
     this.finalScoreLabel       = page.getByText('Score final');

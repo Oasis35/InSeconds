@@ -1,4 +1,4 @@
-<div class="screen-enter flex-1 flex flex-col gap-7 text-center px-2 pt-4">
+<div class="screen-enter flex-1 flex flex-col gap-7 text-center px-2 pt-1">
 
   @if (abandoned()) {
     <!-- Partie abandonnée — message simple -->
@@ -18,11 +18,10 @@
       </div>
     </div>
   } @else {
-    <!-- Partie complétée — récap complet -->
-    <div class="space-y-3">
-      <h2 class="text-2xl font-bold tracking-tight" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'alreadyPlayed.title' | translate }}</h2>
+    <!-- Partie complétée — récap complet (-mb-3 : carte score plus proche du compte à rebours) -->
+    <div class="space-y-1 -mb-3">
+      <h2 class="text-2xl font-bold tracking-tight" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'alreadyPlayed.nextChallengeIn' | translate }}</h2>
       <div>
-        <p class="text-xs font-bold tracking-widest uppercase mb-1" style="font-family:var(--font-display);color:var(--text-muted)">{{ 'alreadyPlayed.nextChallengeIn' | translate }}</p>
         <p class="text-3xl font-extrabold tabular-nums" style="font-family:var(--font-display);color:var(--text-body);letter-spacing:0.05em">{{ countdown() }}</p>
       </div>
     </div>
@@ -30,13 +29,13 @@
     @if (stats(); as s) {
       <div class="w-full overflow-hidden" style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:28px 8px 28px 8px">
 
-        <div class="flex flex-col items-center pt-4 pb-3.5 px-4">
-          <p class="text-xs font-bold tracking-widest uppercase mb-1.5" style="font-family:var(--font-display);color:var(--text-faint)">{{ 'alreadyPlayed.yourScore' | translate }}</p>
-          <p class="font-extrabold tabular-nums" style="font-family:var(--font-display);color:var(--text-hi);font-size:2.6rem;line-height:1;letter-spacing:-0.02em">{{ s.yourScore ?? '—' }}</p>
+        <div class="flex flex-col items-center pt-3 pb-2.5 px-4">
+          <p class="text-xs font-bold tracking-widest uppercase mb-1" style="font-family:var(--font-display);color:var(--text-faint)">{{ 'alreadyPlayed.yourScore' | translate }}</p>
+          <p class="font-extrabold tabular-nums" style="font-family:var(--font-display);color:var(--text-hi);font-size:2.2rem;line-height:1;letter-spacing:-0.02em">{{ s.yourScore ?? '—' }}</p>
         </div>
 
         <!-- Répartition des scores du jour -->
-        <div class="px-4 pt-4 pb-4" style="border-top:1px solid var(--border-medium)">
+        <div class="px-4 pt-3 pb-3" style="border-top:1px solid var(--border-medium)">
           <app-score-distribution-chart [stats]="s" />
         </div>
 
