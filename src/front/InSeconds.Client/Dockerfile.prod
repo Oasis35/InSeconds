@@ -12,7 +12,10 @@ COPY . .
 # de déploiement affichée en admin reste figée sur le dernier build front.
 ARG BUILD_TIME
 ENV BUILD_TIME=$BUILD_TIME
-RUN npm run build
+# production (défaut, docker-compose.prod.yml) ou staging (docker-compose.staging.yml) :
+# choisit le fichier environment*.ts (apiUrl/appUrl) via angular.json.
+ARG BUILD_CONFIGURATION=production
+RUN npm run build -- --configuration "$BUILD_CONFIGURATION"
 
 FROM nginxinc/nginx-unprivileged:alpine AS runtime
 COPY --from=build /app/dist/InSeconds.Client/browser /usr/share/nginx/html

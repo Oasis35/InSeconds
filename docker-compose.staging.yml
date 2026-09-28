@@ -1,0 +1,54 @@
+# Environnement de staging (dev.inseconds.cc / api-dev.inseconds.cc), même VPS que la prod.
+# Déployé par le job `deploy-staging` de .github/workflows/ci.yml sur push de la branche
+# `env/staging`, depuis un checkout séparé (~/apps/InSeconds-staging) pour ne jamais toucher
+# celui de la prod. Nom de projet, conteneurs et réseau interne distincts de la prod :
+# les deux stacks cohabitent sans se voir, seuls shared-postgres et caddy-net sont communs.
+# Variables dans .env.staging (non commité, cf. .env.staging.example).
+name: inseconds-staging
+
+services:
+  api:
+    build:
+      context: ./src/back
+      dockerfile: InSeconds.Api/Dockerfile.prod
+    container_name: inseconds-staging.api
+    restart: unless-stopped
+    environment:
+      # Jamais Development (monte /api/auth/dev-login) ni Testing (monte /api/e2e/*) : l'API
+      # staging est publique (Cloudflare Access ne protège que le front, cf. CLAUDE.md racine).
+      ASPNETCORE_ENVIRONMENT: Staging
+      ConnectionStrings__DefaultConnection: "Host=shared-postgres;Port=5432;Database=inseconds_staging;Username=inseconds_staging;Password=${INSECONDS_STAGING_DB_PASSWORD}"
+      Resend__ApiKey: ${RESEND_API_KEY}
+      # Tous les emails du staging partent vers cette seule adresse, objet préfixé [DEV]
+      # (RedirectingEmailSender). Obligatoire : l'API refuse de démarrer sans.
+      EmailRedirect__To: ${STAGING_EMAIL_REDIRECT_TO}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS:-}
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+    networks:
+      - shared-postgres
+      - internal
+      - caddy-net
+
+  front:
+    build:
+      context: ./src/front/InSeconds.Client
+      dockerfile: Dockerfile.prod
+      args:
+        BUILD_TIME: ${BUILD_TIME}
+        BUILD_CONFIGURATION: staging
+    container_name: inseconds-staging.front
+    restart: unless-stopped
+    depends_on:
+      - api
+    networks:
+      - internal
+      - caddy-net
+
+networks:
+  shared-postgres:
+    external: true
+  caddy-net:
+    external: true
+  internal:
+    driver: bridge

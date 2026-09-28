@@ -269,21 +269,15 @@ jobs:
       group: deploy-vps
       cancel-in-progress: false
     steps:
+      - name: Checkout (action locale vps-ssh)
+        uses: actions/checkout@v7
+
       - name: Configure SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.VPS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          if [ -n "${{ secrets.VPS_SSH_HOST_KEY }}" ]; then
-            # Clé d'hôte épinglée à l'avance (secret GitHub, ligne `ssh-keyscan` récupérée une
-            # fois puis vérifiée hors bande — ex. console OVH) : élimine le "trust on first
-            # use" du ssh-keyscan à chaque run, vulnérable à un MITM entre le runner GitHub et
-            # le VPS. Cf. CLAUDE.md racine § Déploiement VPS pour la procédure de mise en place.
-            echo "${{ secrets.VPS_SSH_HOST_KEY }}" > ~/.ssh/known_hosts
-          else
-            echo "::warning::VPS_SSH_HOST_KEY absent — clé d'hôte acceptée en confiance aveugle (ssh-keyscan, TOFU) au lieu d'être épinglée. Voir CLAUDE.md racine § Déploiement VPS."
-            ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
-          fi
+        uses: ./.github/actions/vps-ssh
+        with:
+          private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          host: ${{ secrets.VPS_HOST }}
+          host-key: ${{ secrets.VPS_SSH_HOST_KEY }}
 
       - name: Deploy (checkout commit tested by this run + rebuild + vérification santé)
         run: |
@@ -296,4 +290,40 @@ jobs:
             git reset --hard ${{ github.sha }}
             chmod +x deploy/vps/deploy.sh
             ./deploy/vps/deploy.sh
+          '
+
+  deploy-staging:
+    name: Deploy to staging (dev.inseconds.cc)
+    runs-on: ubuntu-latest
+    needs: [back, unit-tests, front, unit-tests-front, nginx-headers, integration-tests, e2e]
+    # Branche de déploiement du staging : on y pousse (en force) n'importe quelle branche à
+    # tester, ex. `git push -f origin feat/xxx:env/staging`. Cf. CLAUDE.md racine § Staging.
+    if: github.ref == 'refs/heads/env/staging' && github.event_name == 'push'
+    # Groupe distinct de deploy-vps (prod) : GitHub ne garde qu'un seul job en attente par
+    # groupe et annule le précédent — un groupe commun pourrait faire sauter un déploiement
+    # prod en attente au profit d'un déploiement staging poussé juste après.
+    concurrency:
+      group: deploy-vps-staging
+      cancel-in-progress: false
+    steps:
+      - name: Checkout (action locale vps-ssh)
+        uses: actions/checkout@v7
+
+      - name: Configure SSH
+        uses: ./.github/actions/vps-ssh
+        with:
+          private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          host: ${{ secrets.VPS_HOST }}
+          host-key: ${{ secrets.VPS_SSH_HOST_KEY }}
+
+      - name: Deploy staging (checkout commit tested by this run + rebuild + vérification santé)
+        run: |
+          echo "Deploying commit ${{ github.sha }} to staging"
+          ssh -i ~/.ssh/id_ed25519 "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" '
+            set -e
+            cd ~/apps/InSeconds-staging
+            git fetch origin
+            git checkout --force --detach ${{ github.sha }}
+            chmod +x deploy/vps/deploy.sh
+            ./deploy/vps/deploy.sh staging
           '
