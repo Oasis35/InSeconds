@@ -18,7 +18,8 @@ STAGING_DIR="${STAGING_DIR:-$HOME/apps/InSeconds-staging}"
 PG_IMAGE=postgres:17-alpine
 
 read_env() { # read_env <fichier> <clé>
-  grep -E "^$2=" "$1" | tail -n1 | cut -d= -f2-
+  local file="$1" key="$2"
+  grep -E "^$key=" "$file" | tail -n1 | cut -d= -f2-
 }
 
 prod_pw=$(read_env "$PROD_DIR/.env.prod" INSECONDS_DB_PASSWORD)
