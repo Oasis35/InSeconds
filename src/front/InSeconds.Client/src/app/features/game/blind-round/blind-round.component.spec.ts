@@ -22,7 +22,7 @@ class AudioPlayerStub {
   readonly isPlaying = () => this.state() === 'playing';
   readonly isFinished = () => this.state() === 'finished';
   readonly isError = () => this.state() === 'error';
-  play(_url?: string, _durationSeconds?: number): void { this.state.set('playing'); }
+  play(): void { this.state.set('playing'); }
   replayFull(): void {}
   replayCurrent(): void {}
   extend(): void {}
@@ -367,6 +367,7 @@ describe('BlindRoundComponent — lecture automatique une seule fois par morceau
   let component: BlindRoundComponent;
   let fixture: ComponentFixture<BlindRoundComponent>;
   let audio: AudioPlayerStub;
+  let playSpy: jasmine.Spy;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -388,7 +389,7 @@ describe('BlindRoundComponent — lecture automatique une seule fois par morceau
     }).compileComponents();
 
     audio = TestBed.inject(AudioPlayerService) as unknown as AudioPlayerStub;
-    spyOn(audio, 'play').and.callThrough();
+    playSpy = spyOn(audio, 'play').and.callThrough();
     fixture = TestBed.createComponent(BlindRoundComponent);
     fixture.componentRef.setInput('track', TRACK);
     fixture.componentRef.setInput('sessionId', 42);
@@ -398,7 +399,7 @@ describe('BlindRoundComponent — lecture automatique une seule fois par morceau
   it('lance le premier palier au chargement du morceau', () => {
     fixture.detectChanges();
 
-    expect(audio.play).toHaveBeenCalledOnceWith(TRACK.previewUrl, 0.5);
+    expect(playSpy).toHaveBeenCalledOnceWith(TRACK.previewUrl, 0.5);
     expect(component['chosenDuration']()).toBe(0.5);
   });
 
@@ -410,7 +411,7 @@ describe('BlindRoundComponent — lecture automatique une seule fois par morceau
     audio.state.set('idle');
     fixture.detectChanges();
 
-    expect(audio.play).toHaveBeenCalledTimes(1);
+    expect(playSpy).toHaveBeenCalledTimes(1);
     expect(component['chosenDuration']()).toBe(1);
   });
 
@@ -420,6 +421,6 @@ describe('BlindRoundComponent — lecture automatique une seule fois par morceau
     fixture.componentRef.setInput('track', { ...TRACK, id: 2, position: 2 });
     fixture.detectChanges();
 
-    expect(audio.play).toHaveBeenCalledTimes(2);
+    expect(playSpy).toHaveBeenCalledTimes(2);
   });
 });
