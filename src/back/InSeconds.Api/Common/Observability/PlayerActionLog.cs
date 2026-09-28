@@ -38,8 +38,8 @@ public static partial class PlayerActionLog
     public static partial void SignedIn(ILogger logger, Guid playerId, string linkOutcome);
 
     [LoggerMessage(EventId = 1007, Level = LogLevel.Information,
-        Message = "Email « {EmailSubject} » envoyé (Resend {ResendEmailId})")]
-    public static partial void EmailSent(ILogger logger, string emailSubject, string? resendEmailId);
+        Message = "Email « {EmailSubject} » envoyé (Brevo {EmailMessageId})")]
+    public static partial void EmailSent(ILogger logger, string emailSubject, string? emailMessageId);
 
     [LoggerMessage(EventId = 1101, Level = LogLevel.Warning,
         Message = "Échec de l'envoi de l'email « {EmailSubject} » (HTTP {HttpStatus})")]

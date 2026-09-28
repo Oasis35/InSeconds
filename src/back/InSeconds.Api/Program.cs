@@ -141,7 +141,7 @@ builder.Services.AddRateLimiter(options =>
 
     // Anti "email bombing" sur /api/auth/magic-link/request : le throttle existant de 60s
     // par email (RequestMagicLinkHandler) n'empêche pas de spammer une victime une fois par
-    // minute indéfiniment, ni de solliciter Resend en masse sur des emails différents.
+    // minute indéfiniment, ni de solliciter Brevo en masse sur des emails différents.
     options.AddPolicy(RequestMagicLinkEndpoint.RateLimiterPolicy, httpContext =>
         RateLimitPartition.GetSlidingWindowLimiter(
             partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
@@ -155,7 +155,7 @@ builder.Services.AddRateLimiter(options =>
 
     // Anti "email bombing" sur PUT /api/players/me/email : même raisonnement que
     // RequestMagicLink ci-dessus, le throttle de 60s par joueur (RequestEmailChangeHandler)
-    // n'empêche pas de solliciter Resend en masse en changeant de nouvelle adresse à chaque
+    // n'empêche pas de solliciter Brevo en masse en changeant de nouvelle adresse à chaque
     // appel.
     options.AddPolicy(RequestEmailChangeEndpoint.RateLimiterPolicy, httpContext =>
         RateLimitPartition.GetSlidingWindowLimiter(
@@ -260,9 +260,9 @@ builder.Services.AddScoped<IMagicLinkTokenService, MagicLinkTokenService>();
 builder.Services.AddScoped<IEmailChangeTokenService, EmailChangeTokenService>();
 builder.Services.AddScoped<IAccountLinkingService, AccountLinkingService>();
 
-// ResendEmailSender hors Dev/Testing (config réelle requise) ; NullEmailSender sinon
+// BrevoEmailSender hors Dev/Testing (config réelle requise) ; NullEmailSender sinon
 // (aucune config nécessaire pour développer — logue le contenu de l'email).
-builder.Services.AddOptions<ResendOptions>().BindConfiguration("Resend");
+builder.Services.AddOptions<BrevoOptions>().BindConfiguration("Brevo");
 if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing"))
 {
     builder.Services.AddSingleton<TestEmailCapture>();
@@ -270,11 +270,12 @@ if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Te
 }
 else
 {
-    builder.Services.AddHttpClient<ResendEmailSender>((sp, client) =>
+    builder.Services.AddHttpClient<BrevoEmailSender>((sp, client) =>
     {
-        var resend = sp.GetRequiredService<IOptions<ResendOptions>>().Value;
-        client.BaseAddress = new Uri("https://api.resend.com/");
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", resend.ApiKey);
+        var brevo = sp.GetRequiredService<IOptions<BrevoOptions>>().Value;
+        client.BaseAddress = new Uri("https://api.brevo.com/v3/");
+        client.DefaultRequestHeaders.Add("api-key", brevo.ApiKey);
+        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
     });
 
     // Redirection de tous les emails vers une seule adresse (cf. RedirectingEmailSender).
@@ -290,12 +291,12 @@ else
     if (emailRedirect.Enabled)
     {
         builder.Services.AddTransient<IEmailSender>(sp => new RedirectingEmailSender(
-            sp.GetRequiredService<ResendEmailSender>(),
+            sp.GetRequiredService<BrevoEmailSender>(),
             sp.GetRequiredService<IOptions<EmailRedirectOptions>>()));
     }
     else
     {
-        builder.Services.AddTransient<IEmailSender>(sp => sp.GetRequiredService<ResendEmailSender>());
+        builder.Services.AddTransient<IEmailSender>(sp => sp.GetRequiredService<BrevoEmailSender>());
     }
 }
 
