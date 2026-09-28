@@ -35,6 +35,17 @@ docker exec -it shared-postgres psql -U postgres -c "CREATE USER <projet> WITH P
 docker exec -it shared-postgres psql -U postgres -c "CREATE DATABASE <projet> OWNER <projet>;"
 ```
 
+### Base du staging InSeconds
+
+Même principe pour l'environnement de staging (`docker-compose.staging.yml`, cf. CLAUDE.md
+racine § Staging) — mot de passe à reporter dans `~/apps/InSeconds-staging/.env.staging`
+(`INSECONDS_STAGING_DB_PASSWORD`) :
+
+```bash
+docker exec -it shared-postgres psql -U postgres -c "CREATE USER inseconds_staging WITH PASSWORD '<mdp>';"
+docker exec -it shared-postgres psql -U postgres -c "CREATE DATABASE inseconds_staging OWNER inseconds_staging;"
+```
+
 ## Supprimer la base d'un projet
 
 ```bash

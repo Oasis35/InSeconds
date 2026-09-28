@@ -27,3 +27,21 @@
 	}
 	reverse_proxy inseconds.api:8080
 }
+
+# Staging (docker-compose.staging.yml). dev.inseconds.cc est protégé en amont par Cloudflare
+# Access (seules les adresses autorisées passent) ; api-dev.inseconds.cc ne l'est pas, les appels
+# fetch du front ne pouvant pas suivre la redirection de connexion Access (cf. CLAUDE.md racine
+# § Staging).
+dev.inseconds.cc {
+	tls {
+		dns cloudflare {env.CF_API_TOKEN}
+	}
+	reverse_proxy inseconds-staging.front:8080
+}
+
+api-dev.inseconds.cc {
+	tls {
+		dns cloudflare {env.CF_API_TOKEN}
+	}
+	reverse_proxy inseconds-staging.api:8080
+}

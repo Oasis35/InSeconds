@@ -1,0 +1,40 @@
+name: Configure SSH to VPS
+description: >
+  Installe la clé de déploiement et la clé d'hôte du VPS dans ~/.ssh, pour les jobs qui se
+  connectent au VPS (déploiement prod/staging, copie de base). Les secrets passent par des
+  variables d'environnement plutôt qu'interpolés dans le script.
+
+inputs:
+  private-key:
+    description: Clé privée SSH de déploiement (secret VPS_SSH_PRIVATE_KEY)
+    required: true
+  host:
+    description: Hôte du VPS (secret VPS_HOST)
+    required: true
+  host-key:
+    description: Ligne known_hosts épinglée (secret optionnel VPS_SSH_HOST_KEY)
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        SSH_PRIVATE_KEY: ${{ inputs.private-key }}
+        SSH_HOST: ${{ inputs.host }}
+        SSH_HOST_KEY: ${{ inputs.host-key }}
+      run: |
+        mkdir -p ~/.ssh
+        printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+        if [ -n "$SSH_HOST_KEY" ]; then
+          # Clé d'hôte épinglée à l'avance (ligne `ssh-keyscan` récupérée une fois puis vérifiée
+          # hors bande — ex. console OVH) : élimine le "trust on first use" du ssh-keyscan à
+          # chaque run, vulnérable à un MITM entre le runner GitHub et le VPS. Cf. CLAUDE.md
+          # racine § Déploiement VPS (piège 43).
+          printf '%s\n' "$SSH_HOST_KEY" > ~/.ssh/known_hosts
+        else
+          echo "::warning::VPS_SSH_HOST_KEY absent — clé d'hôte acceptée en confiance aveugle (ssh-keyscan, TOFU) au lieu d'être épinglée. Voir CLAUDE.md racine § Déploiement VPS."
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
+        fi

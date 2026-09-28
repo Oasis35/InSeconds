@@ -1,0 +1,41 @@
+name: Copy prod DB to staging
+
+# Lancement manuel uniquement (onglet Actions → "Copy prod DB to staging" → Run workflow).
+# Copie la base de prod dans celle du staging puis l'anonymise, cf.
+# deploy/vps/copy-prod-db-to-staging.sh. La prod n'est lue qu'en pg_dump, jamais modifiée.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Tape "staging" pour confirmer : la base du staging sera entièrement remplacée'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  copy:
+    name: Copy + anonymize
+    runs-on: ubuntu-latest
+    if: inputs.confirm == 'staging'
+    # Même groupe que le déploiement staging : pas de copie pendant un rebuild du staging
+    # (l'API est arrêtée puis relancée par le script).
+    concurrency:
+      group: deploy-vps-staging
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Configure SSH
+        uses: ./.github/actions/vps-ssh
+        with:
+          private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          host: ${{ secrets.VPS_HOST }}
+          host-key: ${{ secrets.VPS_SSH_HOST_KEY }}
+
+      - name: Copy prod DB to staging
+        # Le script part de ce checkout (bash -s) : pas besoin qu'il soit déjà présent sur le VPS.
+        run: |
+          ssh -i ~/.ssh/id_ed25519 "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" 'bash -s' \
+            < deploy/vps/copy-prod-db-to-staging.sh

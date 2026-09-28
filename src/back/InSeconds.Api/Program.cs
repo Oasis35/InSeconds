@@ -226,7 +226,13 @@ builder.Services.AddScoped<GetTodaySessionHandler>();
 builder.Services.AddScoped<DailyChallengeGenerator>();
 builder.Services.AddScoped<PreviewStatusRefresher>();
 builder.Services.AddHostedService<GenerateDailyChallengeService>();
-builder.Services.AddHostedService<RefreshPreviewStatusService>();
+// Coupé en Staging (appsettings.Staging.json) : prod et staging partagent l'IP du VPS, deux
+// refresh à 23h UTC se partageraient le rate limit Deezer et marqueraient à tort des morceaux
+// « sans preview » (cf. piège 16). En staging, le re-check reste disponible depuis l'admin.
+if (builder.Configuration.GetValue("Jobs:RefreshPreviewStatusEnabled", true))
+{
+    builder.Services.AddHostedService<RefreshPreviewStatusService>();
+}
 
 builder.Services.AddSingleton<ScoreCalculator>();
 builder.Services.AddSingleton<TextNormalizer>();
