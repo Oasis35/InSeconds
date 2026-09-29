@@ -420,10 +420,37 @@ test.describe('Admin — chargement paresseux par onglet', () => {
     await expect(admin.tab('Défis')).toBeVisible();
 
     await admin.clickTab('Pool');
-    await expect(page.getByRole('button', { name: /^Pool \(\d+\)$/ })).toBeVisible();
+    await expect(page.getByRole('link', { name: /^Pool \(\d+\)$/ })).toBeVisible();
 
     await admin.clickTab('Défis');
-    await expect(page.getByRole('button', { name: /^Défis \(\d+\)$/ })).toBeVisible();
+    await expect(page.getByRole('link', { name: /^Défis \(\d+\)$/ })).toBeVisible();
+  });
+
+  test('l\'onglet et la page de la grille du pool survivent au rechargement', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+
+    await admin.clickTab('Pool');
+    await expect(page).toHaveURL(/\/admin\/pool$/);
+    await expect(page.getByText(/page 1\/\d+/)).toBeVisible();
+
+    await page.getByRole('button', { name: '→' }).click();
+    await expect(page).toHaveURL(/\/admin\/pool\?page=2$/);
+
+    await page.reload();
+    await expect(page.getByText(/page 2\/\d+/)).toBeVisible();
+    await expect(page).toHaveURL(/\/admin\/pool\?page=2$/);
+  });
+
+  test('une ancienne adresse /admin?tab=pool ouvre l\'onglet Pool', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+
+    await page.goto('/admin?tab=pool');
+    await expect(page).toHaveURL(/\/admin\/pool$/);
+    await expect(page.getByRole('link', { name: /^Pool/ })).toHaveAttribute('aria-current', 'page');
   });
 });
 

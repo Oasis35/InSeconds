@@ -16,6 +16,7 @@ function makeAdminApiStub() {
   return {
     poolTracks: computed(() => poolTracks()),
     poolTracksLoading: computed(() => false),
+    poolTracksLoaded: computed(() => true),
     poolSearchResults: computed(() => []),
     poolSearchLoading: computed(() => false),
     poolSearchQuery,
@@ -132,6 +133,37 @@ describe('AdminPoolService', () => {
       service['_allTracksPage'].set(2);
       service.setPoolFilterLastUsedFrom('2026-01-01');
       expect(service.allTracksPage()).toBe(0);
+    });
+  });
+
+  // La page de la grille est reprise de l'adresse au F5 (?page=, cf. PoolTabComponent).
+  describe('pagination', () => {
+    beforeEach(() => {
+      // 40 morceaux, 15 par page → 3 pages.
+      apiStub._setPoolTracks({ available: Array.from({ length: 40 }, (_, i) => makePoolTrack(i + 1, true)), used: [] });
+    });
+
+    it('setPage() va à la page demandée', () => {
+      service.setPage(2);
+      expect(service.allTracksPage()).toBe(2);
+      expect(service.pagedAllTracks()).toHaveLength(10);
+    });
+
+    it('borne une page trop grande (reprise de l\'adresse) à la dernière page', () => {
+      service.setPage(9);
+      expect(service.allTracksPage()).toBe(2);
+    });
+
+    it('previousPage() repart de la page affichée, pas de la page demandée', () => {
+      service.setPage(9);
+      service.previousPage();
+      expect(service.allTracksPage()).toBe(1);
+    });
+
+    it('nextPage() ne dépasse pas la dernière page', () => {
+      service.setPage(2);
+      service.nextPage();
+      expect(service.allTracksPage()).toBe(2);
     });
   });
 

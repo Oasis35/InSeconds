@@ -43,6 +43,8 @@ export class AdminApiService {
   });
   readonly poolTracks = computed(() => this.poolTracksResource.value() ?? { available: [], used: [] });
   readonly poolTracksLoading = computed(() => this.poolTracksResource.isLoading());
+  /** Vrai dès que le pool a été chargé une fois (il reste affiché pendant un rechargement). */
+  readonly poolTracksLoaded = computed(() => this.poolTracksResource.hasValue());
 
   // Dashboard uniquement (KPIs, activité 30j, répartition joueurs). La partie lourde
   // « Stats par défi » a son propre endpoint/resource, chargé à l'ouverture de l'onglet Défis.

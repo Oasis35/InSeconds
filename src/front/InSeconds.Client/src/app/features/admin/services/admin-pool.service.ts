@@ -22,13 +22,18 @@ export class AdminPoolService {
 
   readonly poolTracks = this.api.poolTracks;
   readonly poolTracksLoading = this.api.poolTracksLoading;
+  readonly poolTracksLoaded = this.api.poolTracksLoaded;
   readonly poolSearchResults = this.api.poolSearchResults;
   readonly poolSearchLoading = this.api.poolSearchLoading;
   readonly poolSearchQuery = this.api.poolSearchQuery;
 
   readonly poolPageSize = 15;
   private readonly _allTracksPage = signal(0);
-  readonly allTracksPage = this._allTracksPage.asReadonly();
+  /**
+   * Page affichée (à partir de 0), bornée au nombre de pages : une page reprise de l'adresse
+   * (`?page=`, cf. PoolTabComponent) peut dépasser après une suppression ou un filtre.
+   */
+  readonly allTracksPage = computed(() => Math.min(this._allTracksPage(), this.allTotalPages() - 1));
   private readonly _poolFilterText = signal('');
   readonly poolFilterText = this._poolFilterText.asReadonly();
   private readonly _poolFilterStatus = signal<PoolFilterStatus>('all');
@@ -252,8 +257,10 @@ export class AdminPoolService {
   });
 
   // --- pagination ---
-  previousPage(): void { this._allTracksPage.update(p => Math.max(0, p - 1)); }
-  nextPage(): void { this._allTracksPage.update(p => Math.min(this.allTotalPages() - 1, p + 1)); }
+  previousPage(): void { this._allTracksPage.set(Math.max(0, this.allTracksPage() - 1)); }
+  nextPage(): void { this._allTracksPage.set(Math.min(this.allTotalPages() - 1, this.allTracksPage() + 1)); }
+  /** Va à une page précise (à partir de 0), ex. celle reprise de l'adresse au F5. */
+  setPage(page: number): void { this._allTracksPage.set(Math.max(0, Math.floor(page))); }
 
   // --- filtres ---
   setPoolFilter(text: string): void {
