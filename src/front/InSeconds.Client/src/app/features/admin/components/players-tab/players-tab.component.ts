@@ -1,6 +1,6 @@
-import { Component, inject, signal, computed, linkedSignal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { map } from 'rxjs';
+import { map, tap } from 'rxjs';
 import { DatePipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import { AdminApiService } from '../../services/admin-api.service';
@@ -38,24 +38,20 @@ export class PlayersTabComponent {
    * (une partie a pu être jouée entre-temps), même si c'est le même joueur que la dernière fois.
    */
   private readonly historyRequest = signal<{ id: string; n: number } | undefined>(undefined);
+
+  /**
+   * Dernier historique chargé par joueur : reste affiché pendant un rechargement et si celui-ci échoue.
+   * Rempli à l'arrivée de chaque réponse (et non dérivé de la resource) pour ne rien perdre même si
+   * personne ne lit l'historique entre deux dépliages.
+   */
+  private readonly loadedHistories = signal<Readonly<Record<string, PlayerHistoryEntryDto[]>>>({});
+
   private readonly historyResource = rxResource({
     params: () => this.historyRequest(),
-    stream: ({ params }) => this.api.getPlayerHistory(params.id).pipe(map(res => res.games)),
-  });
-
-  /** Dernier historique chargé par joueur : reste affiché pendant un rechargement et si celui-ci échoue. */
-  private readonly loadedHistories = linkedSignal<
-    { id: string | undefined; games: PlayerHistoryEntryDto[] | undefined },
-    Readonly<Record<string, PlayerHistoryEntryDto[]>>
-  >({
-    source: () => ({
-      id: this.historyRequest()?.id,
-      games: this.historyResource.status() === 'resolved' ? this.historyResource.value() : undefined,
-    }),
-    computation: ({ id, games }, previous) => {
-      const cache = previous?.value ?? {};
-      return id && games ? { ...cache, [id]: games } : cache;
-    },
+    stream: ({ params }) => this.api.getPlayerHistory(params.id).pipe(
+      map(res => res.games),
+      tap(games => this.loadedHistories.update(cache => ({ ...cache, [params.id]: games }))),
+    ),
   });
 
   /** Déplie/replie la ligne ; chaque dépliage relance le chargement de l'historique. */

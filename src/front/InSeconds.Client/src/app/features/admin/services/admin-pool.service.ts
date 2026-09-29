@@ -336,11 +336,13 @@ export class AdminPoolService {
   }
 
   // --- modale écoute ---
-  // La lecture démarre d'elle-même dès que l'URL de preview est trouvée.
-  private readonly autoplayPreview = effect(() => {
-    const url = this.previewModalUrl();
-    if (url) untracked(() => this.audioPreview.toggle(url));
-  });
+  constructor() {
+    // La lecture démarre d'elle-même dès que l'URL de preview est trouvée.
+    effect(() => {
+      const url = this.previewModalUrl();
+      if (url) untracked(() => this.audioPreview.toggle(url));
+    });
+  }
 
   openPreviewModal(t: PoolTrackDto): void {
     this.audioPreview.stop();

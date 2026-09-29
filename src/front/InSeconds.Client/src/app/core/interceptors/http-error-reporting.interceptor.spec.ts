@@ -1,4 +1,4 @@
-import type { Mock, MockedObject } from 'vitest';
+import type { MockedObject } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -8,21 +8,14 @@ import { ErrorReportingService } from '../services/error-reporting.service';
 describe('httpErrorReportingInterceptor', () => {
   let http: HttpClient;
   let httpMock: HttpTestingController;
-  let reporting: MockedObject<ErrorReportingService> & {
-    lastErrorCode: {
-      set: Mock;
-    };
-  };
+  let reporting: MockedObject<ErrorReportingService>;
   const traceId = '0123456789abcdef0123456789abcdef';
 
   beforeEach(() => {
-    reporting = Object.assign({
-      report: vi.fn().mockName('ErrorReportingService.report')
-    }, {
-      lastErrorCode: {
-        set: vi.fn().mockName('lastErrorCode.set')
-      },
-    }) as never;
+    reporting = {
+      report: vi.fn().mockName('ErrorReportingService.report'),
+      setLastErrorCode: vi.fn().mockName('ErrorReportingService.setLastErrorCode'),
+    } as never;
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(withInterceptors([httpErrorReportingInterceptor])),
@@ -47,7 +40,7 @@ describe('httpErrorReportingInterceptor', () => {
     await flushMicrotasks();
 
     expect(propagated).toBe(true);
-    expect(reporting.lastErrorCode.set).toHaveBeenCalledWith(traceId);
+    expect(reporting.setLastErrorCode).toHaveBeenCalledWith(traceId);
     expect(reporting.report).toHaveBeenCalledWith(expect.objectContaining({
       source: 'http', httpStatus: 500, relatedTraceId: traceId, url: '/api/sessions/today',
     }));

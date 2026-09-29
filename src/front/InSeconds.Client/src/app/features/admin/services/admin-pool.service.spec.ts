@@ -501,6 +501,8 @@ describe('AdminPoolService', () => {
   // écrasait l'état affiché. La recherche passe désormais par une resource, qui annule la
   // requête précédente dès que le morceau change ou que la modale se ferme.
   describe('modale écoute (openPreviewModal/closePreviewModal)', () => {
+    const flushMicrotasks = () => new Promise(resolve => setTimeout(resolve));
+
     it('should not call audioPreview.toggle for a search that resolves after the modal was closed', () => {
       const pending = new Subject<{
         deezerTrackId: number;
@@ -519,7 +521,7 @@ describe('AdminPoolService', () => {
       expect(service.previewModalUrl()).toBeNull();
     });
 
-    it('should cancel the previous pending search when opening a different track', () => {
+    it('should cancel the previous pending search when opening a different track', async () => {
       const firstSearch = new Subject<{
         deezerTrackId: number;
         previewUrl: string | null;
@@ -538,6 +540,9 @@ describe('AdminPoolService', () => {
       apiStub.searchDeezer.mockReturnValue(secondSearch);
       service.openPreviewModal(trackB);
       TestBed.tick();
+      // La resource s'abonne au flux de recherche après une micro-tâche : sans cette attente,
+      // la réponse émise juste après (Subject sans rejeu) partirait avant l'abonnement.
+      await flushMicrotasks();
 
       // La réponse tardive du premier morceau ne doit plus rien pouvoir modifier.
       firstSearch.next([{ deezerTrackId: 5, previewUrl: 'https://example.com/5.mp3' }]);
@@ -548,6 +553,7 @@ describe('AdminPoolService', () => {
       expect(audioPreviewStub.toggle).not.toHaveBeenCalled();
 
       secondSearch.next([{ deezerTrackId: 6, previewUrl: 'https://example.com/6.mp3' }]);
+      await flushMicrotasks(); // la resource passe à « resolved » dans une micro-tâche
       TestBed.tick();
 
       expect(service.previewModalUrl()).toBe('https://example.com/6.mp3');
