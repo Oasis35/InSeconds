@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideTranslateService } from '@ngx-translate/core';
 import { of, throwError } from 'rxjs';
@@ -17,11 +18,13 @@ describe('WeeklyStoryComponent', () => {
   let fixture: ComponentFixture<WeeklyStoryComponent>;
   let component: WeeklyStoryComponent;
   let story: AdminWeeklyStoryService;
-  let http: { getWeeklyRecap: jasmine.Spy };
-  let capture: jasmine.Spy;
+  let http: {
+    getWeeklyRecap: Mock;
+  };
+  let capture: Mock;
 
   beforeEach(() => {
-    http = { getWeeklyRecap: jasmine.createSpy('getWeeklyRecap') };
+    http = { getWeeklyRecap: vi.fn().mockName('getWeeklyRecap') };
     TestBed.configureTestingModule({
       imports: [WeeklyStoryComponent],
       providers: [
@@ -33,7 +36,7 @@ describe('WeeklyStoryComponent', () => {
     fixture = TestBed.createComponent(WeeklyStoryComponent);
     component = fixture.componentInstance;
     story = TestBed.inject(AdminWeeklyStoryService);
-    capture = jasmine.createSpy('capture').and.callFake(() => {
+    capture = vi.fn().mockName('capture').mockImplementation(() => {
       const canvas = document.createElement('canvas');
       canvas.width = 1080;
       canvas.height = 1920;
@@ -44,12 +47,12 @@ describe('WeeklyStoryComponent', () => {
   });
 
   it('génère une image par story, dans l\'ordre, au format 1080×1920', async () => {
-    http.getWeeklyRecap.and.returnValue(of(okRecap));
+    http.getWeeklyRecap.mockReturnValue(of(okRecap));
 
     await component.generate();
 
     expect(capture).toHaveBeenCalledTimes(2);
-    const [, options] = capture.calls.first().args;
+    const [, options] = vi.mocked(capture).mock.calls[0];
     expect(options.width).toBe(1080);
     expect(options.height).toBe(1920);
     expect(story.status()).toBe('ready');
@@ -59,7 +62,7 @@ describe('WeeklyStoryComponent', () => {
   });
 
   it('remplit les gabarits avec le récap', async () => {
-    http.getWeeklyRecap.and.returnValue(of(okRecap));
+    http.getWeeklyRecap.mockReturnValue(of(okRecap));
 
     await component.generate();
 
@@ -73,7 +76,7 @@ describe('WeeklyStoryComponent', () => {
   });
 
   it('un seul morceau éligible : une seule story', async () => {
-    http.getWeeklyRecap.and.returnValue(of({ ...okRecap, mostMissed: null }));
+    http.getWeeklyRecap.mockReturnValue(of({ ...okRecap, mostMissed: null }));
 
     await component.generate();
 
@@ -82,7 +85,7 @@ describe('WeeklyStoryComponent', () => {
   });
 
   it('pas assez de réponses : aucune capture', async () => {
-    http.getWeeklyRecap.and.returnValue(of({ ...okRecap, status: 'insufficient_data', mostFound: null, mostMissed: null }));
+    http.getWeeklyRecap.mockReturnValue(of({ ...okRecap, status: 'insufficient_data', mostFound: null, mostMissed: null }));
 
     await component.generate();
 
@@ -91,7 +94,7 @@ describe('WeeklyStoryComponent', () => {
   });
 
   it('erreur API : aucune capture, statut error', async () => {
-    http.getWeeklyRecap.and.returnValue(throwError(() => new Error('500')));
+    http.getWeeklyRecap.mockReturnValue(throwError(() => new Error('500')));
 
     await component.generate();
 
@@ -100,8 +103,8 @@ describe('WeeklyStoryComponent', () => {
   });
 
   it('échec de capture : statut error', async () => {
-    http.getWeeklyRecap.and.returnValue(of(okRecap));
-    capture.and.returnValue(Promise.reject(new Error('canvas')));
+    http.getWeeklyRecap.mockReturnValue(of(okRecap));
+    capture.mockRejectedValue(new Error('canvas'));
 
     await component.generate();
 
@@ -109,45 +112,45 @@ describe('WeeklyStoryComponent', () => {
   });
 
   it('masquer les repères retire les pointillés et relance la capture', async () => {
-    http.getWeeklyRecap.and.returnValue(of(okRecap));
+    http.getWeeklyRecap.mockReturnValue(of(okRecap));
     await component.generate();
-    expect(fixture.nativeElement.querySelectorAll('.guide')).toHaveSize(2);
-    expect(fixture.nativeElement.querySelectorAll('.guide-link')).toHaveSize(2);
-    capture.calls.reset();
+    expect(fixture.nativeElement.querySelectorAll('.guide')).toHaveLength(2);
+    expect(fixture.nativeElement.querySelectorAll('.guide-link')).toHaveLength(2);
+    capture.mockClear();
 
     component.toggleGuides(false);
     await fixture.whenStable();
 
-    expect(story.showGuides()).toBeFalse();
-    expect(fixture.nativeElement.querySelectorAll('.guide')).toHaveSize(0);
-    expect(fixture.nativeElement.querySelectorAll('.guide-link')).toHaveSize(0);
+    expect(story.showGuides()).toBe(false);
+    expect(fixture.nativeElement.querySelectorAll('.guide')).toHaveLength(0);
+    expect(fixture.nativeElement.querySelectorAll('.guide-link')).toHaveLength(0);
     expect(capture).toHaveBeenCalledTimes(2);
     expect(http.getWeeklyRecap).toHaveBeenCalledTimes(1);
   });
 
   it('masquer le pourcentage retire le chiffre et sa légende et relance la capture', async () => {
-    http.getWeeklyRecap.and.returnValue(of(okRecap));
+    http.getWeeklyRecap.mockReturnValue(of(okRecap));
     await component.generate();
-    expect(fixture.nativeElement.querySelectorAll('.rate')).toHaveSize(2);
+    expect(fixture.nativeElement.querySelectorAll('.rate')).toHaveLength(2);
     expect(fixture.nativeElement.textContent).not.toContain('réponses');
-    capture.calls.reset();
+    capture.mockClear();
 
     component.togglePercent(false);
     await fixture.whenStable();
 
-    expect(story.showPercent()).toBeFalse();
-    expect(fixture.nativeElement.querySelectorAll('.rate')).toHaveSize(0);
-    expect(fixture.nativeElement.querySelectorAll('.caption')).toHaveSize(0);
+    expect(story.showPercent()).toBe(false);
+    expect(fixture.nativeElement.querySelectorAll('.rate')).toHaveLength(0);
+    expect(fixture.nativeElement.querySelectorAll('.caption')).toHaveLength(0);
     expect(capture).toHaveBeenCalledTimes(2);
     expect(http.getWeeklyRecap).toHaveBeenCalledTimes(1);
   });
 
   it('changer le titre met à jour les gabarits et relance la capture', async () => {
-    http.getWeeklyRecap.and.returnValue(of(okRecap));
+    http.getWeeklyRecap.mockReturnValue(of(okRecap));
     await component.generate();
     const titles = () => Array.from(fixture.nativeElement.querySelectorAll('.story .title') as NodeListOf<Element>).map(e => e.textContent?.trim());
     expect(titles()).toEqual(['Cette semaine dans InSeconds 🎧', 'Cette semaine dans InSeconds 🎧']);
-    capture.calls.reset();
+    capture.mockClear();
 
     component.setTitleMode('lastWeek');
     await fixture.whenStable();

@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { ChallengesTabComponent } from './challenges-tab.component';
@@ -9,12 +10,16 @@ const DEV_ID = 'aaaaaaaa-0000-0000-0000-000000000001';
 
 describe('ChallengesTabComponent', () => {
   let component: ChallengesTabComponent;
-  let identityStub: { playerId: ReturnType<typeof signal<string | null>> };
-  let clipboardStub: { copy: jasmine.Spy };
+  let identityStub: {
+    playerId: ReturnType<typeof signal<string | null>>;
+  };
+  let clipboardStub: {
+    copy: Mock;
+  };
 
   beforeEach(() => {
     identityStub = { playerId: signal<string | null>(DEV_ID) };
-    clipboardStub = { copy: jasmine.createSpy('copy').and.returnValue(Promise.resolve(true)) };
+    clipboardStub = { copy: vi.fn().mockName('copy').mockResolvedValue(true) };
 
     TestBed.configureTestingModule({
       providers: [
@@ -36,16 +41,16 @@ describe('ChallengesTabComponent', () => {
 
   describe('isYou()', () => {
     it('returns true when the id matches the browser identity', () => {
-      expect(component['isYou'](DEV_ID)).toBeTrue();
+      expect(component['isYou'](DEV_ID)).toBe(true);
     });
 
     it('returns false when the id does not match', () => {
-      expect(component['isYou']('bbbbbbbb-0000-0000-0000-000000000002')).toBeFalse();
+      expect(component['isYou']('bbbbbbbb-0000-0000-0000-000000000002')).toBe(false);
     });
 
     it('returns false while the browser identity is not yet loaded', () => {
       identityStub.playerId.set(null);
-      expect(component['isYou'](DEV_ID)).toBeFalse();
+      expect(component['isYou'](DEV_ID)).toBe(false);
     });
   });
 
@@ -104,35 +109,35 @@ describe('ChallengesTabComponent', () => {
 
     it('highlights the clicked id, dims the others', () => {
       component['selectPlayer'](DEV_ID);
-      expect(component['isHighlighted'](DEV_ID)).toBeTrue();
-      expect(component['isDimmed'](DEV_ID)).toBeFalse();
-      expect(component['isDimmed'](OTHER)).toBeTrue();
-      expect(component['isHighlighted'](OTHER)).toBeFalse();
+      expect(component['isHighlighted'](DEV_ID)).toBe(true);
+      expect(component['isDimmed'](DEV_ID)).toBe(false);
+      expect(component['isDimmed'](OTHER)).toBe(true);
+      expect(component['isHighlighted'](OTHER)).toBe(false);
     });
 
     it('toggles off when the same id is clicked again', () => {
       component['selectPlayer'](DEV_ID);
       component['selectPlayer'](DEV_ID);
       expect(component['highlightedPlayerId']()).toBeNull();
-      expect(component['isDimmed'](OTHER)).toBeFalse();
+      expect(component['isDimmed'](OTHER)).toBe(false);
     });
 
     it('switches highlight when a different id is clicked', () => {
       component['selectPlayer'](DEV_ID);
       component['selectPlayer'](OTHER);
-      expect(component['isHighlighted'](OTHER)).toBeTrue();
-      expect(component['isDimmed'](DEV_ID)).toBeTrue();
+      expect(component['isHighlighted'](OTHER)).toBe(true);
+      expect(component['isDimmed'](DEV_ID)).toBe(true);
     });
 
     it('nothing is dimmed when no id is selected', () => {
-      expect(component['isDimmed'](DEV_ID)).toBeFalse();
-      expect(component['isDimmed'](OTHER)).toBeFalse();
+      expect(component['isDimmed'](DEV_ID)).toBe(false);
+      expect(component['isDimmed'](OTHER)).toBe(false);
     });
   });
 
   describe('onChipContextMenu() → copy', () => {
     it('prevents the default menu and copies the full id', async () => {
-      const evt = { preventDefault: jasmine.createSpy('preventDefault') } as unknown as MouseEvent;
+      const evt = { preventDefault: vi.fn().mockName('preventDefault') } as unknown as MouseEvent;
       component['onChipContextMenu'](evt, DEV_ID);
       await Promise.resolve();
 
@@ -152,7 +157,7 @@ describe('ChallengesTabComponent', () => {
     });
 
     it('does not set copiedPlayerId when the copy fails', async () => {
-      clipboardStub.copy.and.returnValue(Promise.resolve(false));
+      clipboardStub.copy.mockResolvedValue(false);
 
       component['copyPlayerId'](DEV_ID);
       await Promise.resolve();

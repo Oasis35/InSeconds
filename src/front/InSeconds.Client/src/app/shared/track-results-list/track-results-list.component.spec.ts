@@ -32,8 +32,8 @@ describe('TrackResultsListComponent', () => {
   });
 
   it('hasChart() is true only when the row has a non-empty distribution', () => {
-    expect(component['hasChart'](baseRow())).toBeTrue();
-    expect(component['hasChart'](baseRow({ guessTimeDistribution: [] }))).toBeFalse();
+    expect(component['hasChart'](baseRow())).toBe(true);
+    expect(component['hasChart'](baseRow({ guessTimeDistribution: [] }))).toBe(false);
   });
 
   it('openChartFor() opens the popup only when the row has a chart', () => {

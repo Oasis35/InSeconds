@@ -24,7 +24,7 @@ describe('GuessTimeChartComponent', () => {
 
   it('appends a "not found" bucket after the duration buckets', () => {
     const buckets = component['buckets']();
-    expect(buckets).toHaveSize(distribution.length + 1);
+    expect(buckets).toHaveLength(distribution.length + 1);
     expect(buckets.at(-1)!.key).toBe('nf');
     expect(buckets.at(-1)!.label).toBe('✗');
     expect(buckets.at(-1)!.count).toBe(2);
@@ -41,7 +41,7 @@ describe('GuessTimeChartComponent', () => {
     fixture.componentRef.setInput('highlightDuration', 1);
     const buckets = component['buckets']();
     const highlighted = buckets.filter(b => b.highlighted);
-    expect(highlighted).toHaveSize(1);
+    expect(highlighted).toHaveLength(1);
     expect(highlighted[0].key).toBe('d1');
     expect(highlighted[0].barColor).toBe('var(--color-accent-3)');
     expect(highlighted[0].labelColor).toBe('var(--color-accent-3)');
@@ -63,8 +63,8 @@ describe('GuessTimeChartComponent', () => {
   it('gives a 2px height to empty buckets and scales the rest against the max', () => {
     const buckets = component['buckets']();
     const barMax = 32;
-    expect(buckets[0].heightPx).toBe('2px');           // count 0
-    expect(buckets[1].heightPx).toBe(`${barMax}px`);   // count 3 == max → full height
+    expect(buckets[0].heightPx).toBe('2px'); // count 0
+    expect(buckets[1].heightPx).toBe(`${barMax}px`); // count 3 == max → full height
     expect(buckets[2].heightPx).toBe(`${Math.max(4, Math.round((1 / 3) * barMax))}px`); // count 1
   });
 });

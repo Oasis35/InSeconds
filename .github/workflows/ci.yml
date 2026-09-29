@@ -105,9 +105,13 @@ jobs:
         working-directory: src/front/InSeconds.Client
         run: node scripts/generate-build-info.mjs
 
+      - name: Install Playwright browsers
+        working-directory: src/front/InSeconds.Client
+        run: npx --no-install playwright install --with-deps chromium
+
       - name: Run unit tests
         working-directory: src/front/InSeconds.Client
-        run: npx --no-install ng test --watch=false --browsers=ChromeHeadlessAutoplay
+        run: npx --no-install ng test --watch=false
 
   nginx-headers:
     name: Frontend (nginx cache headers smoke test)

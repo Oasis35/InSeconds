@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { EditTrackModalComponent } from './edit-track-modal.component';
@@ -8,11 +9,11 @@ import { PoolTrackDto } from '../../admin.models';
 describe('EditTrackModalComponent', () => {
   let component: EditTrackModalComponent;
   let editModalTrack: ReturnType<typeof signal<PoolTrackDto | null>>;
-  let closeEditModal: jasmine.Spy;
+  let closeEditModal: Mock;
 
   beforeEach(() => {
     editModalTrack = signal<PoolTrackDto | null>(null);
-    closeEditModal = jasmine.createSpy('closeEditModal');
+    closeEditModal = vi.fn().mockName('closeEditModal');
     TestBed.configureTestingModule({
       providers: [{ provide: AdminPoolService, useValue: { editModalTrack, closeEditModal } }],
     });

@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { TranslateService } from '@ngx-translate/core';
 import { GameShareService } from './game-share.service';
@@ -30,10 +31,12 @@ function makeResult(overrides: Partial<RoundResult> = {}): RoundResult {
 
 describe('GameShareService', () => {
   let service: GameShareService;
-  let clipboardStub: { copy: jasmine.Spy };
+  let clipboardStub: {
+    copy: Mock;
+  };
 
   beforeEach(() => {
-    clipboardStub = { copy: jasmine.createSpy('copy').and.returnValue(Promise.resolve(true)) };
+    clipboardStub = { copy: vi.fn().mockName('copy').mockResolvedValue(true) };
 
     TestBed.configureTestingModule({
       providers: [
@@ -47,8 +50,8 @@ describe('GameShareService', () => {
   });
 
   it('defaults copied/failed to false', () => {
-    expect(service.copied()).toBeFalse();
-    expect(service.failed()).toBeFalse();
+    expect(service.copied()).toBe(false);
+    expect(service.failed()).toBe(false);
   });
 
   it('shareResults() copies a text built from the round results and sets copied on success', async () => {
@@ -56,9 +59,9 @@ describe('GameShareService', () => {
     await Promise.resolve();
 
     expect(clipboardStub.copy).toHaveBeenCalledTimes(1);
-    const text = clipboardStub.copy.calls.mostRecent().args[0] as string;
+    const text = vi.mocked(clipboardStub.copy).mock.lastCall![0] as string;
     expect(text).toContain('✅/❌ 3s');
-    expect(service.copied()).toBeTrue();
+    expect(service.copied()).toBe(true);
   });
 
   it('shareStats() skips tracks with no listened duration and copies the rest', async () => {
@@ -73,18 +76,18 @@ describe('GameShareService', () => {
     service.shareStats(stats);
     await Promise.resolve();
 
-    const text = clipboardStub.copy.calls.mostRecent().args[0] as string;
+    const text = vi.mocked(clipboardStub.copy).mock.lastCall![0] as string;
     expect(text).toContain('✅/✅ 2s');
-    expect(text.match(/\n/g)).toHaveSize(3); // title + 1 track line + score, pas de ligne pour le track sans durée
+    expect(text.match(/\n/g)).toHaveLength(3); // title + 1 track line + score, pas de ligne pour le track sans durée
   });
 
   it('sets failed (not copied) when the clipboard copy fails', async () => {
-    clipboardStub.copy.and.returnValue(Promise.resolve(false));
+    clipboardStub.copy.mockResolvedValue(false);
 
     service.shareResults([makeResult()], 850);
     await Promise.resolve();
 
-    expect(service.copied()).toBeFalse();
-    expect(service.failed()).toBeTrue();
+    expect(service.copied()).toBe(false);
+    expect(service.failed()).toBe(true);
   });
 });

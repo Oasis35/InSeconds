@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
@@ -19,12 +20,9 @@ class TranslateServiceStub {
 }
 
 // Configuration commune aux deux suites : seuls les stubs changent d'une suite à l'autre.
-function createComponent(
-  gameFacade: object,
-  api: object,
-  isLinked: ReturnType<typeof signal<boolean>>,
-  router: { navigate: jasmine.Spy },
-): GameComponent {
+function createComponent(gameFacade: object, api: object, isLinked: ReturnType<typeof signal<boolean>>, router: {
+  navigate: Mock;
+}): GameComponent {
   TestBed.configureTestingModule({
     providers: [
       { provide: GameFacadeService, useValue: gameFacade },
@@ -50,65 +48,69 @@ function createComponent(
 describe('GameComponent — streak toast', () => {
   let component: GameComponent;
   let gameFacadeStub: {
-    peekSession: jasmine.Spy;
-    loadSession: jasmine.Spy;
-    submitAnswer: jasmine.Spy;
-    abandonSession: jasmine.Spy;
-    updateListening: jasmine.Spy;
+    peekSession: Mock;
+    loadSession: Mock;
+    submitAnswer: Mock;
+    abandonSession: Mock;
+    updateListening: Mock;
   };
-  let apiStub: { apiStatsToday: jasmine.Spy };
+  let apiStub: {
+    apiStatsToday: Mock;
+  };
   let isLinked: ReturnType<typeof signal<boolean>>;
-  let router: { navigate: jasmine.Spy };
+  let router: {
+    navigate: Mock;
+  };
 
   beforeEach(() => {
     gameFacadeStub = {
-      peekSession: jasmine.createSpy('peekSession').and.returnValue(of({
+      peekSession: vi.fn().mockName('peekSession').mockReturnValue(of({
         kind: 'ok', response: { state: 'can_start', currentStreak: 0, tracksCount: 3, completedCount: 0 },
       })),
-      loadSession: jasmine.createSpy('loadSession'),
-      submitAnswer: jasmine.createSpy('submitAnswer'),
-      abandonSession: jasmine.createSpy('abandonSession').and.returnValue(of(void 0)),
-      updateListening: jasmine.createSpy('updateListening'),
+      loadSession: vi.fn().mockName('loadSession'),
+      submitAnswer: vi.fn().mockName('submitAnswer'),
+      abandonSession: vi.fn().mockName('abandonSession').mockReturnValue(of(void 0)),
+      updateListening: vi.fn().mockName('updateListening'),
     };
     apiStub = {
-      apiStatsToday: jasmine.createSpy('apiStatsToday').and.returnValue(of({
+      apiStatsToday: vi.fn().mockName('apiStatsToday').mockReturnValue(of({
         yourScore: 100, medianScore: 100, totalPlayers: 1, currentStreak: 3, tracks: [],
       })),
     };
 
     isLinked = signal(false);
-    router = { navigate: jasmine.createSpy('navigate') };
+    router = { navigate: vi.fn().mockName('navigate') };
 
     component = createComponent(gameFacadeStub, apiStub, isLinked, router);
   });
 
   it('defaults to not dismissed', () => {
-    expect(component['streakToastDismissed']()).toBeFalse();
+    expect(component['streakToastDismissed']()).toBe(false);
   });
 
   it('resets on peekSession → already_played (via retry())', () => {
     component['streakToastDismissed'].set(true);
-    gameFacadeStub.peekSession.and.returnValue(of({
+    gameFacadeStub.peekSession.mockReturnValue(of({
       kind: 'ok', response: { state: 'already_played', currentStreak: 3, tracksCount: 3, completedCount: 3 },
     }));
 
     component['retry']();
 
     expect(component['gameState']()).toBe('already_played');
-    expect(component['streakToastDismissed']()).toBeFalse();
+    expect(component['streakToastDismissed']()).toBe(false);
   });
 
   it('resets on peekSession → abandoned (via retry())', () => {
     component['streakToastDismissed'].set(true);
-    gameFacadeStub.peekSession.and.returnValue(of({
+    gameFacadeStub.peekSession.mockReturnValue(of({
       kind: 'ok', response: { state: 'abandoned', currentStreak: 3, tracksCount: 3, completedCount: 1 },
     }));
 
     component['retry']();
 
     expect(component['gameState']()).toBe('already_played');
-    expect(component['sessionAbandoned']()).toBeTrue();
-    expect(component['streakToastDismissed']()).toBeFalse();
+    expect(component['sessionAbandoned']()).toBe(true);
+    expect(component['streakToastDismissed']()).toBe(false);
   });
 
   it('resets on confirmAbandon()', () => {
@@ -118,7 +120,7 @@ describe('GameComponent — streak toast', () => {
     component['confirmAbandon']();
 
     expect(component['gameState']()).toBe('already_played');
-    expect(component['streakToastDismissed']()).toBeFalse();
+    expect(component['streakToastDismissed']()).toBe(false);
   });
 
   it('resets on onNextTrack() reaching the last track (done)', () => {
@@ -129,26 +131,33 @@ describe('GameComponent — streak toast', () => {
     component['onNextTrack']();
 
     expect(component['gameState']()).toBe('done');
-    expect(component['streakToastDismissed']()).toBeFalse();
+    expect(component['streakToastDismissed']()).toBe(false);
   });
 
   it('resets on the 409 branch of loadSession() (via beginGame())', () => {
     component['streakToastDismissed'].set(true);
-    gameFacadeStub.loadSession.and.returnValue(of({ kind: 'already_played', abandoned: false }));
+    gameFacadeStub.loadSession.mockReturnValue(of({ kind: 'already_played', abandoned: false }));
 
     component['beginGame']();
 
     expect(component['gameState']()).toBe('already_played');
-    expect(component['streakToastDismissed']()).toBeFalse();
+    expect(component['streakToastDismissed']()).toBe(false);
   });
 });
 
 describe('GameComponent — gel de série', () => {
   let component: GameComponent;
-  let gameFacadeStub: { peekSession: jasmine.Spy; loadSession: jasmine.Spy };
-  let apiStub: { apiStatsToday: jasmine.Spy };
+  let gameFacadeStub: {
+    peekSession: Mock;
+    loadSession: Mock;
+  };
+  let apiStub: {
+    apiStatsToday: Mock;
+  };
   let isLinked: ReturnType<typeof signal<boolean>>;
-  let router: { navigate: jasmine.Spy };
+  let router: {
+    navigate: Mock;
+  };
 
   const streak = (overrides: Record<string, unknown> = {}) => ({
     status: 'active', streak: 12, freezes: 2, maxFreezes: 2, freezeEveryDays: 7,
@@ -164,16 +173,16 @@ describe('GameComponent — gel de série', () => {
   beforeEach(() => {
     localStorage.removeItem('inseconds.lostStreakNudgeSeen');
     isLinked = signal(true);
-    router = { navigate: jasmine.createSpy('navigate') };
+    router = { navigate: vi.fn().mockName('navigate') };
     gameFacadeStub = {
-      peekSession: jasmine.createSpy('peekSession').and.returnValue(of({
+      peekSession: vi.fn().mockName('peekSession').mockReturnValue(of({
         kind: 'ok', response: { state: 'can_start', currentStreak: 12, tracksCount: 3, completedCount: 0, streak: streak() },
       })),
-      loadSession: jasmine.createSpy('loadSession').and.returnValue(of({
+      loadSession: vi.fn().mockName('loadSession').mockReturnValue(of({
         kind: 'ok', response: { sessionId: 1, tracks: [], currentStreak: 12, isResuming: false, resumeFromPosition: 0, completedAnswers: [] },
       })),
     };
-    apiStub = { apiStatsToday: jasmine.createSpy('apiStatsToday').and.returnValue(of(stats())) };
+    apiStub = { apiStatsToday: vi.fn().mockName('apiStatsToday').mockReturnValue(of(stats())) };
 
     component = createComponent(gameFacadeStub, apiStub, isLinked, router);
   });
@@ -181,7 +190,7 @@ describe('GameComponent — gel de série', () => {
   afterEach(() => localStorage.removeItem('inseconds.lostStreakNudgeSeen'));
 
   function finishGame(todayStats: ReturnType<typeof stats>): void {
-    apiStub.apiStatsToday.and.returnValue(of(todayStats));
+    apiStub.apiStatsToday.mockReturnValue(of(todayStats));
     component['tracks'].set([{ id: 1, previewUrl: null, coverUrl: null } as any]);
     component['currentIndex'].set(0);
     component['onNextTrack']();
@@ -193,7 +202,7 @@ describe('GameComponent — gel de série', () => {
   });
 
   it('refreshes the streak detail after the last answer (freeze used or earned)', () => {
-    gameFacadeStub.peekSession.and.returnValue(of({
+    gameFacadeStub.peekSession.mockReturnValue(of({
       kind: 'ok', response: { state: 'already_played', currentStreak: 13, tracksCount: 3, completedCount: 3, streak: streak({ streak: 13, freezes: 1 }) },
     }));
 
@@ -205,16 +214,16 @@ describe('GameComponent — gel de série', () => {
   it('shows "1 gel a sauvé ta série" to a linked player after a game that used a freeze', () => {
     finishGame(stats({ freezesUsed: 1 }));
 
-    expect(component['showGelUsedToast']()).toBeTrue();
-    expect(component['showGelEarnedToast']()).toBeFalse();
+    expect(component['showGelUsedToast']()).toBe(true);
+    expect(component['showGelEarnedToast']()).toBe(false);
     expect(component['freezesUsedKey']()).toBe('one');
   });
 
   it('shows "+1 gel gagné" (and not the used toast) when a freeze was earned', () => {
     finishGame(stats({ freezesUsed: 1, freezeMilestone: true }));
 
-    expect(component['showGelEarnedToast']()).toBeTrue();
-    expect(component['showGelUsedToast']()).toBeFalse();
+    expect(component['showGelEarnedToast']()).toBe(true);
+    expect(component['showGelUsedToast']()).toBe(false);
   });
 
   it('hides the freeze toasts once dismissed', () => {
@@ -222,21 +231,21 @@ describe('GameComponent — gel de série', () => {
 
     component['gelToastDismissed'].set(true);
 
-    expect(component['showGelEarnedToast']()).toBeFalse();
+    expect(component['showGelEarnedToast']()).toBe(false);
   });
 
   it('never shows freeze toasts to a guest, but switches the streak toast to "Tu aurais gagné un gel"', () => {
     isLinked.set(false);
     finishGame(stats({ currentStreak: 7, freezeMilestone: true }));
 
-    expect(component['showGelEarnedToast']()).toBeFalse();
-    expect(component['showStreakToast']()).toBeTrue();
-    expect(component['guestFreezeMiss']()).toBeTrue();
+    expect(component['showGelEarnedToast']()).toBe(false);
+    expect(component['showStreakToast']()).toBe(true);
+    expect(component['guestFreezeMiss']()).toBe(true);
   });
 
   it('shows the guest "série perdue" toast on welcome, once per lost streak', () => {
     isLinked.set(false);
-    gameFacadeStub.peekSession.and.returnValue(of({
+    gameFacadeStub.peekSession.mockReturnValue(of({
       kind: 'ok', response: {
         state: 'can_start', currentStreak: 0, tracksCount: 3, completedCount: 0,
         streak: streak({ status: 'broken', streak: 0, freezes: 0, maxFreezes: 0, lostStreak: 6, lastPlayedDate: '2026-09-20' }),
@@ -245,14 +254,14 @@ describe('GameComponent — gel de série', () => {
 
     component['retry']();
 
-    expect(component['showLostToast']()).toBeTrue();
+    expect(component['showLostToast']()).toBe(true);
     expect(component['lostStreak']()).toBe(6);
     expect(localStorage.getItem('inseconds.lostStreakNudgeSeen')).toBe('2026-09-20');
 
     // Second chargement de la page : déjà vu pour cette série perdue.
     component['lostStreak'].set(null);
     component['retry']();
-    expect(component['showLostToast']()).toBeFalse();
+    expect(component['showLostToast']()).toBe(false);
   });
 
   it('"Jouer maintenant" in the protected sheet starts the game from welcome', () => {
@@ -261,7 +270,7 @@ describe('GameComponent — gel de série', () => {
 
     component['playFromStreakSheet']();
 
-    expect(component['showStreakSheet']()).toBeFalse();
+    expect(component['showStreakSheet']()).toBe(false);
     expect(gameFacadeStub.loadSession).toHaveBeenCalled();
   });
 
@@ -270,7 +279,7 @@ describe('GameComponent — gel de série', () => {
 
     component['signupFromStreakSheet']();
 
-    expect(component['showStreakSheet']()).toBeFalse();
+    expect(component['showStreakSheet']()).toBe(false);
     expect(router.navigate).toHaveBeenCalledWith(['/login']);
   });
 });
@@ -279,22 +288,24 @@ describe('GameComponent — gel de série', () => {
 // lit dans la réponse à chaque morceau, ou dans les réponses déjà données à la reprise.
 describe('GameComponent — identifiant Deezer révélé après la réponse', () => {
   let component: GameComponent;
-  let gameFacadeStub: { peekSession: jasmine.Spy; loadSession: jasmine.Spy; submitAnswer: jasmine.Spy };
+  let gameFacadeStub: {
+    peekSession: Mock;
+    loadSession: Mock;
+    submitAnswer: Mock;
+  };
 
   beforeEach(() => {
     gameFacadeStub = {
-      peekSession: jasmine.createSpy('peekSession'),
-      loadSession: jasmine.createSpy('loadSession'),
-      submitAnswer: jasmine.createSpy('submitAnswer').and.returnValue(of({
+      peekSession: vi.fn().mockName('peekSession'),
+      loadSession: vi.fn().mockName('loadSession'),
+      submitAnswer: vi.fn().mockName('submitAnswer').mockReturnValue(of({
         artistCorrect: true, titleCorrect: true, score: 1000, correctArtist: 'Eminem',
         correctTitle: 'Lose Yourself', deezerTrackId: 3135556, listenedDurationSeconds: 0.5,
         averageSecondsWhenCorrect: undefined, failureRatePercent: 0, guessTimeDistribution: [],
         notFoundCount: 0, hintLevelUsed: 0, hintPenaltyPercentApplied: 0,
       })),
     };
-    component = createComponent(
-      gameFacadeStub, { apiStatsToday: jasmine.createSpy('apiStatsToday') }, signal(false),
-      { navigate: jasmine.createSpy('navigate') });
+    component = createComponent(gameFacadeStub, { apiStatsToday: vi.fn().mockName('apiStatsToday') }, signal(false), { navigate: vi.fn().mockName('navigate') });
   });
 
   it('takes the Deezer id of an answered track from the answer response', () => {
@@ -315,9 +326,9 @@ describe('GameComponent — identifiant Deezer révélé après la réponse', ()
       { id: 8, position: 2, previewUrl: 'y', coverUrl: undefined },
     ]);
     component['resumeCompletedAnswers'].set([{
-      position: 1, artistCorrect: true, titleCorrect: false, score: 500, listenedDurationSeconds: 1,
-      correctArtist: 'Eminem', correctTitle: 'Lose Yourself', deezerTrackId: 3135556,
-    }]);
+        position: 1, artistCorrect: true, titleCorrect: false, score: 500, listenedDurationSeconds: 1,
+        correctArtist: 'Eminem', correctTitle: 'Lose Yourself', deezerTrackId: 3135556,
+      }]);
 
     component['resumePlaying']();
 
@@ -333,13 +344,11 @@ describe('GameComponent — échec réseau à la soumission d\'une réponse', ()
 
   beforeEach(() => {
     const gameFacadeStub = {
-      peekSession: jasmine.createSpy('peekSession'),
-      loadSession: jasmine.createSpy('loadSession'),
-      submitAnswer: jasmine.createSpy('submitAnswer').and.returnValue(throwError(() => new Error('network'))),
+      peekSession: vi.fn().mockName('peekSession'),
+      loadSession: vi.fn().mockName('loadSession'),
+      submitAnswer: vi.fn().mockName('submitAnswer').mockReturnValue(throwError(() => new Error('network'))),
     };
-    component = createComponent(
-      gameFacadeStub, { apiStatsToday: jasmine.createSpy('apiStatsToday') }, signal(false),
-      { navigate: jasmine.createSpy('navigate') });
+    component = createComponent(gameFacadeStub, { apiStatsToday: vi.fn().mockName('apiStatsToday') }, signal(false), { navigate: vi.fn().mockName('navigate') });
   });
 
   it('ne pousse aucun résultat ni score sur un échec de soumission', () => {
@@ -363,21 +372,25 @@ describe('GameComponent — échec réseau à la soumission d\'une réponse', ()
 // et enterAlreadyPlayed(false) → peekSession 'already_played' / loadSession 409).
 describe('GameComponent — échec réseau de apiStatsToday (piège 41)', () => {
   let component: GameComponent;
-  let gameFacadeStub: { peekSession: jasmine.Spy; loadSession: jasmine.Spy };
-  let apiStub: { apiStatsToday: jasmine.Spy };
+  let gameFacadeStub: {
+    peekSession: Mock;
+    loadSession: Mock;
+  };
+  let apiStub: {
+    apiStatsToday: Mock;
+  };
 
   beforeEach(() => {
     gameFacadeStub = {
       // Défaut utilisé par refreshStreakInfo() (appelé sans condition par onNextTrack) :
       // un simple peek qui ne fait rien de spécial, chaque test surcharge au besoin.
-      peekSession: jasmine.createSpy('peekSession').and.returnValue(of({ kind: 'error' })),
-      loadSession: jasmine.createSpy('loadSession'),
+      peekSession: vi.fn().mockName('peekSession').mockReturnValue(of({ kind: 'error' })),
+      loadSession: vi.fn().mockName('loadSession'),
     };
     apiStub = {
-      apiStatsToday: jasmine.createSpy('apiStatsToday').and.returnValue(throwError(() => new Error('network'))),
+      apiStatsToday: vi.fn().mockName('apiStatsToday').mockReturnValue(throwError(() => new Error('network'))),
     };
-    component = createComponent(
-      gameFacadeStub, apiStub, signal(false), { navigate: jasmine.createSpy('navigate') });
+    component = createComponent(gameFacadeStub, apiStub, signal(false), { navigate: vi.fn().mockName('navigate') });
   });
 
   it('onNextTrack (fin de partie) n\'expose pas l\'erreur et laisse todayStats à null', () => {
@@ -391,7 +404,7 @@ describe('GameComponent — échec réseau de apiStatsToday (piège 41)', () => 
   });
 
   it('peekSession → already_played n\'expose pas l\'erreur et laisse todayStats à null', () => {
-    gameFacadeStub.peekSession.and.returnValue(of({
+    gameFacadeStub.peekSession.mockReturnValue(of({
       kind: 'ok', response: { state: 'already_played', currentStreak: 3, tracksCount: 3, completedCount: 3 },
     }));
 
@@ -402,7 +415,7 @@ describe('GameComponent — échec réseau de apiStatsToday (piège 41)', () => 
   });
 
   it('loadSession → 409 already_played n\'expose pas l\'erreur et laisse todayStats à null', () => {
-    gameFacadeStub.loadSession.and.returnValue(of({ kind: 'already_played', abandoned: false }));
+    gameFacadeStub.loadSession.mockReturnValue(of({ kind: 'already_played', abandoned: false }));
 
     expect(() => component['beginGame']()).not.toThrow();
 

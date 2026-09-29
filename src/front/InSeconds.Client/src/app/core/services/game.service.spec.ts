@@ -1,10 +1,16 @@
-import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { GameService } from './game.service';
 import { environment } from '../../../environments/environment';
 
 describe('GameService', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
   let service: GameService;
   let httpMock: HttpTestingController;
   const base = `${environment.apiUrl}/api/sessions`;
@@ -143,7 +149,7 @@ describe('GameService', () => {
 
     // E5 : une coupure réseau (status 0) ou une erreur serveur (5xx) ne doit pas faire perdre
     // la réponse — GameService.submitAnswer réessaie 2 fois (délai 1s) avant d'abandonner.
-    it('retries on a network error and succeeds if a later attempt goes through', fakeAsync(() => {
+    it('retries on a network error and succeeds if a later attempt goes through', async () => {
       const body = {
         dailyChallengeTrackId: 3, listenedDurationSeconds: 1.5, wasExtended: false,
         artistAnswer: 'Daft Punk', titleAnswer: 'Around the World',
@@ -158,15 +164,15 @@ describe('GameService', () => {
       service.submitAnswer(7, body).subscribe(r => (result = r));
 
       httpMock.expectOne(`${base}/7/answers`).error(new ProgressEvent('network error'));
-      tick(1000);
+      await vi.advanceTimersByTimeAsync(1000);
 
       const retryReq = httpMock.expectOne(`${base}/7/answers`);
       retryReq.flush(mockResponse);
 
       expect(result).toEqual(mockResponse);
-    }));
+    });
 
-    it('gives up after 2 retries on a persistent network error', fakeAsync(() => {
+    it('gives up after 2 retries on a persistent network error', async () => {
       let error: any;
       service.submitAnswer(7, {
         dailyChallengeTrackId: 3, listenedDurationSeconds: 1, wasExtended: false,
@@ -174,14 +180,14 @@ describe('GameService', () => {
       }).subscribe({ error: e => (error = e) });
 
       httpMock.expectOne(`${base}/7/answers`).error(new ProgressEvent('network error'));
-      tick(1000);
+      await vi.advanceTimersByTimeAsync(1000);
       httpMock.expectOne(`${base}/7/answers`).error(new ProgressEvent('network error'));
-      tick(1000);
+      await vi.advanceTimersByTimeAsync(1000);
       httpMock.expectOne(`${base}/7/answers`).error(new ProgressEvent('network error'));
 
       expect(error).toBeTruthy();
       httpMock.verify();
-    }));
+    });
   });
 
   describe('abandonSession()', () => {
@@ -195,7 +201,7 @@ describe('GameService', () => {
       expect(req.request.body).toEqual({});
       req.flush(null);
 
-      expect(completed).toBeTrue();
+      expect(completed).toBe(true);
     });
 
     it('should propagate errors from abandonSession', () => {
@@ -223,7 +229,7 @@ describe('GameService', () => {
       expect(req.request.body).toEqual({ trackId, listenedSeconds });
       req.flush(null);
 
-      expect(completed).toBeTrue();
+      expect(completed).toBe(true);
     });
 
     it('should propagate errors from updateListening', () => {

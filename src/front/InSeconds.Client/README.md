@@ -16,10 +16,13 @@ Ouvre `http://localhost:5173/` (port non standard volontaire — cf. CLAUDE.md r
 npm run build
 ```
 
-## Tests unitaires (Karma + Jasmine)
+## Tests unitaires (Vitest)
+
+Vitest en mode navigateur (Chromium piloté par Playwright, config `vitest.config.ts`).
 
 ```bash
-npx ng test --watch=false --browsers=ChromeHeadless
+npx playwright install chromium   # une fois
+npx ng test --watch=false
 ```
 
 ## Tests E2E (Playwright)

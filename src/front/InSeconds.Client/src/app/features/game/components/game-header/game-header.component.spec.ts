@@ -86,7 +86,7 @@ describe('GameHeaderComponent', () => {
   });
 
   it('emits openStreak on demand', () => {
-    const spy = jasmine.createSpy('openStreak');
+    const spy = vi.fn().mockName('openStreak');
     component.openStreak.subscribe(spy);
 
     component.openStreak.emit();
@@ -95,7 +95,7 @@ describe('GameHeaderComponent', () => {
   });
 
   it('emits abandon on demand', () => {
-    const spy = jasmine.createSpy('abandon');
+    const spy = vi.fn().mockName('abandon');
     component.abandon.subscribe(spy);
 
     component.abandon.emit();

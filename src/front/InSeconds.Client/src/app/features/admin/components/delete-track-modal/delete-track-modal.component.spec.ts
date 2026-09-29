@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { DeleteTrackModalComponent } from './delete-track-modal.component';
@@ -7,11 +8,11 @@ import { AdminPoolService } from '../../services/admin-pool.service';
 describe('DeleteTrackModalComponent', () => {
   let component: DeleteTrackModalComponent;
   let open: ReturnType<typeof signal<boolean>>;
-  let close: jasmine.Spy;
+  let close: Mock;
 
   beforeEach(() => {
     open = signal(false);
-    close = jasmine.createSpy('closeDeleteModal');
+    close = vi.fn().mockName('closeDeleteModal');
     TestBed.configureTestingModule({
       providers: [
         { provide: AdminPoolService, useValue: { deleteModalOpen: open, closeDeleteModal: close } },

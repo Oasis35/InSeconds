@@ -53,13 +53,13 @@ describe('LanguageService', () => {
 
   describe('init()', () => {
     it('should call translate.addLangs with all supported languages', () => {
-      spyOn(translateStub, 'addLangs').and.callThrough();
+      vi.spyOn(translateStub, 'addLangs');
       service.init();
       expect(translateStub.addLangs).toHaveBeenCalledWith([...SUPPORTED_LANGS]);
     });
 
     it('should call translate.setFallbackLang with "fr"', () => {
-      spyOn(translateStub, 'setFallbackLang').and.callThrough();
+      vi.spyOn(translateStub, 'setFallbackLang');
       service.init();
       expect(translateStub.setFallbackLang).toHaveBeenCalledWith('fr');
     });
@@ -103,7 +103,7 @@ describe('LanguageService', () => {
     });
 
     it('should call translate.use()', () => {
-      spyOn(translateStub, 'use').and.callThrough();
+      vi.spyOn(translateStub, 'use');
       service.use('en');
       expect(translateStub.use).toHaveBeenCalledWith('en');
     });

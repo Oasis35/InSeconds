@@ -50,8 +50,8 @@ function makeAdminApiStub() {
     _setChallenges: (v: any[]) => challenges.set(v),
     _setChallengeStats: (v: ChallengeStatsDto[]) => challengeStats.set(v),
     _setPoolTracks: (v: PoolTracksResponse) => poolTracks.set(v),
-    reloadStats: () => {},
-    reloadAll: () => {},
+    reloadStats: () => { },
+    reloadAll: () => { },
   };
 }
 
@@ -121,23 +121,23 @@ describe('AdminStatsService', () => {
   describe('toggleChallenge()', () => {
     it('should add id to expandedChallenges when not present', () => {
       service.toggleChallenge(1);
-      expect(service.expandedChallenges().has(1)).toBeTrue();
+      expect(service.expandedChallenges().has(1)).toBe(true);
     });
 
     it('should remove id from expandedChallenges when already present', () => {
       service.toggleChallenge(1);
       service.toggleChallenge(1);
-      expect(service.expandedChallenges().has(1)).toBeFalse();
+      expect(service.expandedChallenges().has(1)).toBe(false);
     });
 
     it('should handle multiple ids independently', () => {
       service.toggleChallenge(1);
       service.toggleChallenge(2);
-      expect(service.expandedChallenges().has(1)).toBeTrue();
-      expect(service.expandedChallenges().has(2)).toBeTrue();
+      expect(service.expandedChallenges().has(1)).toBe(true);
+      expect(service.expandedChallenges().has(2)).toBe(true);
       service.toggleChallenge(1);
-      expect(service.expandedChallenges().has(1)).toBeFalse();
-      expect(service.expandedChallenges().has(2)).toBeTrue();
+      expect(service.expandedChallenges().has(1)).toBe(false);
+      expect(service.expandedChallenges().has(2)).toBe(true);
     });
   });
 
@@ -241,12 +241,12 @@ describe('AdminStatsService', () => {
   describe('isBarSelected()', () => {
     it('should return true when date matches selectedDay', () => {
       apiStub.selectedDay.set('2026-06-29');
-      expect(service.isBarSelected('2026-06-29')).toBeTrue();
+      expect(service.isBarSelected('2026-06-29')).toBe(true);
     });
 
     it('should return false when date does not match selectedDay', () => {
       apiStub.selectedDay.set('2026-06-28');
-      expect(service.isBarSelected('2026-06-29')).toBeFalse();
+      expect(service.isBarSelected('2026-06-29')).toBe(false);
     });
   });
 
@@ -291,19 +291,19 @@ describe('AdminStatsService', () => {
     it('should return true when selectedDay is today', () => {
       const today = new Date().toISOString().slice(0, 10);
       apiStub.selectedDay.set(today);
-      expect(service.isSelectedDayToday()).toBeTrue();
+      expect(service.isSelectedDayToday()).toBe(true);
     });
 
     it('should return false when selectedDay is not today', () => {
       apiStub.selectedDay.set('2000-01-01');
-      expect(service.isSelectedDayToday()).toBeFalse();
+      expect(service.isSelectedDayToday()).toBe(false);
     });
   });
 
   describe('canGoToPrevDay() / canGoToNextDay()', () => {
     it('should return false when no available dates', () => {
-      expect(service.canGoToPrevDay()).toBeFalse();
-      expect(service.canGoToNextDay()).toBeFalse();
+      expect(service.canGoToPrevDay()).toBe(false);
+      expect(service.canGoToNextDay()).toBe(false);
     });
 
     it('should return false for prevDay when on oldest date', () => {
@@ -315,7 +315,7 @@ describe('AdminStatsService', () => {
         ],
       }));
       apiStub.selectedDay.set('2026-06-27');
-      expect(service.canGoToPrevDay()).toBeFalse();
+      expect(service.canGoToPrevDay()).toBe(false);
     });
 
     it('should return true for nextDay when not on most recent date', () => {
@@ -326,7 +326,7 @@ describe('AdminStatsService', () => {
         ],
       }));
       apiStub.selectedDay.set('2026-06-28');
-      expect(service.canGoToNextDay()).toBeTrue();
+      expect(service.canGoToNextDay()).toBe(true);
     });
   });
 });

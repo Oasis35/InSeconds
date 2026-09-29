@@ -9,8 +9,14 @@ function waitUntil(predicate: () => boolean, timeoutMs = 4000): Promise<void> {
   return new Promise((resolve, reject) => {
     const start = Date.now();
     const check = () => {
-      if (predicate()) { resolve(); return; }
-      if (Date.now() - start > timeoutMs) { reject(new Error('waitUntil timeout')); return; }
+      if (predicate()) {
+        resolve();
+        return;
+      }
+      if (Date.now() - start > timeoutMs) {
+        reject(new Error('waitUntil timeout'));
+        return;
+      }
       setTimeout(check, 20);
     };
     check();
@@ -115,7 +121,9 @@ describe('AudioPlayerService — arrêt calé sur le son réel', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({});
     service = TestBed.inject(AudioPlayerService);
-    el = (service as unknown as { audio: HTMLAudioElement }).audio;
+    el = (service as unknown as {
+      audio: HTMLAudioElement;
+    }).audio;
   });
 
   afterEach(() => service.reset());
@@ -124,8 +132,7 @@ describe('AudioPlayerService — arrêt calé sur le son réel', () => {
     // Simule un mobile : le son ne sort que 400 ms après l'appel à play(), soit plus que le
     // palier. L'ancien chrono, lancé à l'appel, coupait avant tout son.
     const realPlay = el.play.bind(el);
-    spyOn(el, 'play').and.callFake(() =>
-      new Promise<void>((resolve, reject) => setTimeout(() => realPlay().then(resolve, reject), 400)));
+    vi.spyOn(el, 'play').mockImplementation(() => new Promise<void>((resolve, reject) => setTimeout(() => realPlay().then(resolve, reject), 400)));
 
     let startedAt: number | null = null;
     el.addEventListener('playing', () => { startedAt ??= performance.now(); });
@@ -142,7 +149,7 @@ describe('AudioPlayerService — arrêt calé sur le son réel', () => {
     service.play(SILENCE_WAV_DATA_URI, 0.05);
     await waitUntil(() => service.isFinished());
 
-    spyOn(el, 'play').and.returnValue(Promise.reject(new DOMException('refusé', 'NotAllowedError')));
+    vi.spyOn(el, 'play').mockRejectedValue(new DOMException('refusé', 'NotAllowedError'));
     service.extend(0.1);
 
     await waitUntil(() => service.isError());
@@ -153,7 +160,7 @@ describe('AudioPlayerService — arrêt calé sur le son réel', () => {
     service.play(SILENCE_WAV_DATA_URI, 0.05);
     await waitUntil(() => service.isFinished());
 
-    spyOn(el, 'play').and.returnValue(Promise.reject(new DOMException('interrompu', 'AbortError')));
+    vi.spyOn(el, 'play').mockRejectedValue(new DOMException('interrompu', 'AbortError'));
     service.extend(0.1);
     await new Promise(r => setTimeout(r, 50));
 
@@ -165,7 +172,7 @@ describe('AudioPlayerService — arrêt calé sur le son réel', () => {
     service.play(SILENCE_WAV_DATA_URI, 0.05);
     await waitUntil(() => service.isFinished());
 
-    spyOn(el, 'play').and.returnValue(Promise.reject(new DOMException('refusé', 'NotAllowedError')));
+    vi.spyOn(el, 'play').mockRejectedValue(new DOMException('refusé', 'NotAllowedError'));
     service.replayFull();
     await new Promise(r => setTimeout(r, 50));
 
