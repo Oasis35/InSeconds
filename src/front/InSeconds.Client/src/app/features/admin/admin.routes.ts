@@ -2,10 +2,10 @@ import { inject } from '@angular/core';
 import { Router, Routes } from '@angular/router';
 import { AdminTab } from './admin.models';
 
-const TABS: readonly AdminTab[] = ['dashboard', 'defis', 'pool', 'joueurs', 'actions'];
+const TABS: ReadonlySet<AdminTab> = new Set<AdminTab>(['dashboard', 'defis', 'pool', 'joueurs', 'actions']);
 
 function isAdminTab(value: unknown): value is AdminTab {
-  return TABS.includes(value as AdminTab);
+  return TABS.has(value as AdminTab);
 }
 
 /**
