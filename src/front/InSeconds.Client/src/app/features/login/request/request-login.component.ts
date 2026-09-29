@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormField, FormRoot, form, validate } from '@angular/forms/signals';
 import { RouterLink, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { DecorBackgroundComponent } from '../../../shared/decor-background/decor-background.component';
@@ -12,7 +12,7 @@ import { environment } from '../../../../environments/environment';
 // l'existence de l'email — cohérent avec le comportement back).
 @Component({
   selector: 'app-request-login',
-  imports: [FormsModule, RouterLink, TranslatePipe, DecorBackgroundComponent],
+  imports: [FormField, FormRoot, RouterLink, TranslatePipe, DecorBackgroundComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './request-login.component.html',
 })
@@ -28,16 +28,19 @@ export class RequestLoginComponent {
   protected readonly showDevLogin = !environment.production && !!environment.apiUrl;
   protected readonly devEmails = ['user1@dev.local', 'user2@dev.local', 'user3@dev.local'];
 
-  protected email = '';
+  /** Champ email : on ne vérifie que la présence d'un « @ », le back fait le reste. */
+  protected readonly loginForm = form(signal({ email: '' }), p => {
+    validate(p.email, ({ value }) => (value().trim().includes('@') ? null : { kind: 'email' }));
+  });
   protected readonly status = signal<'idle' | 'sending' | 'sent' | 'invalid'>('idle');
   protected readonly devLoginStatus = signal<'idle' | 'loading' | 'error'>('idle');
 
   submit(): void {
-    const trimmed = this.email.trim();
-    if (!trimmed?.includes('@')) {
+    if (this.loginForm.email().invalid()) {
       this.status.set('invalid');
       return;
     }
+    const trimmed = this.loginForm.email().value().trim();
 
     this.status.set('sending');
     this.api.apiAuthMagicLinkRequest({ email: trimmed }).subscribe({

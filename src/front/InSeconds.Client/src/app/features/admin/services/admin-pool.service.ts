@@ -1,5 +1,6 @@
 import { Injectable, inject, signal, computed, effect, untracked, DestroyRef } from '@angular/core';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { form, maxLength, validate } from '@angular/forms/signals';
 import { map } from 'rxjs';
 import { SettingsService } from '../../../core/services/settings.service';
 import { AdminApiService } from './admin-api.service';
@@ -104,10 +105,15 @@ export class AdminPoolService {
   // --- modale modification (artiste / titre) ---
   private readonly _editModalTrack = signal<PoolTrackDto | null>(null);
   readonly editModalTrack = this._editModalTrack.asReadonly();
-  private readonly _editArtist = signal('');
-  readonly editArtist = this._editArtist.asReadonly();
-  private readonly _editTitle = signal('');
-  readonly editTitle = this._editTitle.asReadonly();
+  /** Champs Artiste / Titre (Signal Forms) : non vides une fois les espaces retirés, longueurs du back. */
+  readonly editForm = form(signal({ artist: '', title: '' }), p => {
+    validate(p.artist, ({ value }) => (value().trim() ? null : { kind: 'required' }));
+    validate(p.title, ({ value }) => (value().trim() ? null : { kind: 'required' }));
+    maxLength(p.artist, 200);
+    maxLength(p.title, 300);
+  });
+  readonly editArtist = computed(() => this.editForm.artist().value());
+  readonly editTitle = computed(() => this.editForm.title().value());
   private readonly _editStatus = signal<'idle' | 'loading' | 'error' | 'locked'>('idle');
   readonly editStatus = this._editStatus.asReadonly();
   /** Désactive « Enregistrer » : champ vide, rien de changé, ou envoi en cours. */
@@ -115,7 +121,7 @@ export class AdminPoolService {
     const track = this.editModalTrack();
     const artist = this.editArtist().trim();
     const title = this.editTitle().trim();
-    return !track || !artist || !title || this.editStatus() === 'loading'
+    return !track || this.editForm().invalid() || this.editStatus() === 'loading'
       || (artist === track.artist && title === track.title);
   });
 
@@ -381,13 +387,10 @@ export class AdminPoolService {
   openEditModal(track: PoolTrackDto): void {
     if (track.renameLocked) return;
     this._editModalTrack.set(track);
-    this._editArtist.set(track.artist);
-    this._editTitle.set(track.title);
+    this.editForm().value.set({ artist: track.artist, title: track.title });
     this._editStatus.set('idle');
   }
 
-  setEditArtist(value: string): void { this._editArtist.set(value); }
-  setEditTitle(value: string): void { this._editTitle.set(value); }
 
   closeEditModal(): void {
     this._editModalTrack.set(null);

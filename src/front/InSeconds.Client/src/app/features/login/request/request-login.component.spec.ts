@@ -44,7 +44,7 @@ describe('RequestLoginComponent', () => {
 
   describe('submit()', () => {
     it('should mark the email invalid without calling the API', () => {
-      component['email'] = 'pas-un-email';
+      component['loginForm'].email().value.set('pas-un-email');
       component.submit();
 
       expect(component['status']()).toBe('invalid');
@@ -54,7 +54,7 @@ describe('RequestLoginComponent', () => {
     it('should call the request endpoint and show the generic message on success', () => {
       apiClient.apiAuthMagicLinkRequest.mockReturnValue(of({ message: 'ok' }));
 
-      component['email'] = 'test@example.com';
+      component['loginForm'].email().value.set('test@example.com');
       component.submit();
 
       expect(apiClient.apiAuthMagicLinkRequest).toHaveBeenCalledWith({ email: 'test@example.com' });
@@ -64,7 +64,7 @@ describe('RequestLoginComponent', () => {
     it('should show the same generic message even on a network error', () => {
       apiClient.apiAuthMagicLinkRequest.mockReturnValue(throwError(() => new Error('network error')));
 
-      component['email'] = 'test@example.com';
+      component['loginForm'].email().value.set('test@example.com');
       component.submit();
 
       expect(component['status']()).toBe('sent');

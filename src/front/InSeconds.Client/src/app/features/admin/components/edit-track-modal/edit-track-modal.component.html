@@ -9,18 +9,18 @@
       aria-modal="true">
       <h2 class="text-sm font-semibold uppercase tracking-wide" style="color:var(--text-light)">{{ 'admin.editModal.title' | translate }}</h2>
 
-      <form class="flex flex-col gap-3" (submit)="$event.preventDefault(); pool.confirmEdit()">
+      <form class="flex flex-col gap-3" [formRoot]="pool.editForm" (submit)="pool.confirmEdit()">
         <div class="flex flex-col gap-1">
           <label for="edit-track-artist" class="text-xs" style="color:var(--text-muted)">{{ 'admin.editModal.artist' | translate }}</label>
-          <input #artistInput id="edit-track-artist" type="text" maxlength="200"
-            [value]="pool.editArtist()" (input)="pool.setEditArtist($any($event.target).value)"
+          <input #artistInput id="edit-track-artist" type="text"
+            [formField]="pool.editForm.artist"
             class="text-sm rounded-lg px-3 py-2 outline-none"
             style="background:var(--bg-inactive);color:var(--text-hi);border:1px solid var(--border-medium)" />
         </div>
         <div class="flex flex-col gap-1">
           <label for="edit-track-title" class="text-xs" style="color:var(--text-muted)">{{ 'admin.editModal.titleField' | translate }}</label>
-          <input id="edit-track-title" type="text" maxlength="300"
-            [value]="pool.editTitle()" (input)="pool.setEditTitle($any($event.target).value)"
+          <input id="edit-track-title" type="text"
+            [formField]="pool.editForm.title"
             class="text-sm rounded-lg px-3 py-2 outline-none"
             style="background:var(--bg-inactive);color:var(--text-hi);border:1px solid var(--border-medium)" />
         </div>

@@ -16,6 +16,15 @@ class TranslateServiceStub {
 
 describe('ProfileComponent', () => {
   let component: ProfileComponent;
+
+  /** Saisie dans les champs (Signal Forms) : écrit directement la valeur du champ. */
+  function typePseudo(value: string): void {
+    component['pseudoForm'].pseudo().value.set(value);
+  }
+
+  function typeEmail(value: string): void {
+    component['emailForm'].email().value.set(value);
+  }
   let playerSessionStub: {
     isLinked: ReturnType<typeof signal<boolean>>;
     pseudo: ReturnType<typeof signal<string | null>>;
@@ -105,17 +114,17 @@ describe('ProfileComponent', () => {
     });
 
     it('is enabled once the draft differs and is valid', () => {
-      component.onPseudoInput('Bob');
+      typePseudo('Bob');
       expect(component['saveDisabled']()).toBe(false);
     });
 
     it('is disabled when the draft is too short', () => {
-      component.onPseudoInput('ab');
+      typePseudo('ab');
       expect(component['saveDisabled']()).toBe(true);
     });
 
     it('is disabled while saving', () => {
-      component.onPseudoInput('Bob');
+      typePseudo('Bob');
       // Observable qui n'émet jamais : contrairement à `of(...)` (synchrone, résoudrait
       // immédiatement et ferait passer le statut à 'saved' avant l'assertion), ça permet
       // d'observer l'état transitoire 'saving' juste après l'appel à savePseudo().
@@ -127,7 +136,7 @@ describe('ProfileComponent', () => {
 
   describe('savePseudo()', () => {
     it('sets status to saved on success', () => {
-      component.onPseudoInput('Bob');
+      typePseudo('Bob');
       playerSessionStub.updatePseudo.mockReturnValue(of('Bob'));
 
       component.savePseudo();
@@ -136,7 +145,7 @@ describe('ProfileComponent', () => {
     });
 
     it('sets status to taken on 409', () => {
-      component.onPseudoInput('Bob');
+      typePseudo('Bob');
       playerSessionStub.updatePseudo.mockReturnValue(throwError(() => ({ status: 409 })));
 
       component.savePseudo();
@@ -145,7 +154,7 @@ describe('ProfileComponent', () => {
     });
 
     it('sets status to error on other failures', () => {
-      component.onPseudoInput('Bob');
+      typePseudo('Bob');
       playerSessionStub.updatePseudo.mockReturnValue(throwError(() => ({ status: 500 })));
 
       component.savePseudo();
@@ -160,17 +169,17 @@ describe('ProfileComponent', () => {
     });
 
     it('is enabled once the draft differs and is a valid email', () => {
-      component.onEmailInput('bob@example.com');
+      typeEmail('bob@example.com');
       expect(component['emailSaveDisabled']()).toBe(false);
     });
 
     it('is disabled when the draft is not a valid email', () => {
-      component.onEmailInput('not-an-email');
+      typeEmail('not-an-email');
       expect(component['emailSaveDisabled']()).toBe(true);
     });
 
     it('is disabled while sending', () => {
-      component.onEmailInput('bob@example.com');
+      typeEmail('bob@example.com');
       playerSessionStub.requestEmailChange.mockReturnValue(new Subject<void>());
       component.saveEmail();
       expect(component['emailSaveDisabled']()).toBe(true);
@@ -179,7 +188,7 @@ describe('ProfileComponent', () => {
 
   describe('saveEmail()', () => {
     it('sets status to sent on success', () => {
-      component.onEmailInput('bob@example.com');
+      typeEmail('bob@example.com');
       playerSessionStub.requestEmailChange.mockReturnValue(of(void 0));
 
       component.saveEmail();
@@ -192,7 +201,7 @@ describe('ProfileComponent', () => {
       { status: 400, expected: 'sameEmail' },
       { status: 500, expected: 'error' },
     ])('sets status to $expected on a $status error', ({ status, expected }) => {
-      component.onEmailInput('bob@example.com');
+      typeEmail('bob@example.com');
       playerSessionStub.requestEmailChange.mockReturnValue(throwError(() => ({ status })));
 
       component.saveEmail();

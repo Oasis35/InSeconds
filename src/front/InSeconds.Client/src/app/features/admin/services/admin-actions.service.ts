@@ -1,5 +1,6 @@
-import { Injectable, inject, signal, DestroyRef } from '@angular/core';
+import { Injectable, inject, signal, linkedSignal, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { form, min, required } from '@angular/forms/signals';
 import { AdminApiService } from './admin-api.service';
 import { SettingsService } from '../../../core/services/settings.service';
 import { RefreshPreviewsResult } from '../admin.models';
@@ -19,16 +20,21 @@ export class AdminActionsService {
   readonly refreshPreviewsStatus = this._refreshPreviewsStatus.asReadonly();
   private readonly _refreshPreviewsResult = signal<RefreshPreviewsResult | null>(null);
   readonly refreshPreviewsResult = this._refreshPreviewsResult.asReadonly();
-  private readonly _trackCooldownDaysInput = signal<number | null>(null);
-  readonly trackCooldownDaysInput = this._trackCooldownDaysInput.asReadonly();
+  /**
+   * Champ « délai avant réutilisation » (Signal Forms) : repart de la valeur serveur courante
+   * (et s'y recale après chaque rechargement des settings), au moins 1 jour.
+   */
+  readonly cooldownForm = form(
+    linkedSignal(() => ({ days: this.settings.trackCooldownDays() as number | null })),
+    p => {
+      required(p.days);
+      min(p.days, 1);
+    },
+  );
   private readonly _updateCooldownStatus = signal<SimpleAsyncStatus>('idle');
   readonly updateCooldownStatus = this._updateCooldownStatus.asReadonly();
   private generateStatusTimer: ReturnType<typeof setTimeout> | null = null;
   private updateCooldownStatusTimer: ReturnType<typeof setTimeout> | null = null;
-
-  setTrackCooldownDaysInput(days: number | null): void {
-    this._trackCooldownDaysInput.set(days);
-  }
 
   generateToday(): void {
     this._generateStatus.set('loading');
@@ -60,6 +66,13 @@ export class AdminActionsService {
       },
       error: () => this._refreshPreviewsStatus.set('error'),
     });
+  }
+
+  /** Bouton « Enregistrer » du délai : envoie la valeur saisie si elle est valide. */
+  saveTrackCooldownDays(): void {
+    const days = this.cooldownForm.days().value();
+    if (days === null || this.cooldownForm().invalid()) return;
+    this.updateTrackCooldownDays(days);
   }
 
   updateTrackCooldownDays(days: number): void {

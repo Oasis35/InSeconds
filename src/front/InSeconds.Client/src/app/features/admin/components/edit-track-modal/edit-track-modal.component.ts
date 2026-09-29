@@ -1,10 +1,11 @@
 import { Component, ElementRef, HostListener, effect, inject, viewChild, ChangeDetectionStrategy } from '@angular/core';
+import { FormField, FormRoot } from '@angular/forms/signals';
 import { TranslatePipe } from '@ngx-translate/core';
 import { AdminPoolService } from '../../services/admin-pool.service';
 
 @Component({
   selector: 'app-edit-track-modal',
-  imports: [TranslatePipe],
+  imports: [FormField, FormRoot, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './edit-track-modal.component.html',
 })

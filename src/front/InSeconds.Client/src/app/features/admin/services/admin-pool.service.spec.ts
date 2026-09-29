@@ -246,10 +246,10 @@ describe('AdminPoolService', () => {
       expect(service.editArtist()).toBe('Etienne Daho');
       expect(service.editSaveDisabled()).toBe(true);
 
-      service['_editArtist'].set('Étienne Daho');
+      service.editForm.artist().value.set('Étienne Daho');
       expect(service.editSaveDisabled()).toBe(false);
 
-      service['_editTitle'].set('   ');
+      service.editForm.title().value.set('   ');
       expect(service.editSaveDisabled()).toBe(true);
     });
 
@@ -260,7 +260,7 @@ describe('AdminPoolService', () => {
 
     it('envoie les valeurs nettoyées, ferme la modale et recharge le pool', () => {
       service.openEditModal(track);
-      service['_editArtist'].set('  Étienne Daho ');
+      service.editForm.artist().value.set('  Étienne Daho ');
       service.confirmEdit();
 
       expect(apiStub.renameTrack).toHaveBeenCalledWith(5, 'Étienne Daho', 'Tombe pour la France');
@@ -271,7 +271,7 @@ describe('AdminPoolService', () => {
     it('passe en « verrouillé » sur un 409 et garde la modale ouverte', () => {
       apiStub.renameTrack.mockReturnValue(throwError(() => ({ status: 409 })));
       service.openEditModal(track);
-      service['_editTitle'].set('Tombé pour la France');
+      service.editForm.title().value.set('Tombé pour la France');
       service.confirmEdit();
 
       expect(service.editStatus()).toBe('locked');
