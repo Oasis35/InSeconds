@@ -44,7 +44,7 @@ export class AdminStateService {
   );
 
   private readTabFromRoute(): AdminTab {
-    return (this.route.firstChild?.snapshot.data['tab'] as AdminTab | undefined) ?? 'dashboard';
+    return (this.route.snapshot.firstChild?.data['tab'] as AdminTab | undefined) ?? 'dashboard';
   }
 
   hasVisited(tab: AdminTab): boolean {

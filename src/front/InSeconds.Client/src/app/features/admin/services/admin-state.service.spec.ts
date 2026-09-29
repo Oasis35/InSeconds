@@ -8,11 +8,11 @@ import { AdminTab } from '../admin.models';
 // ActivatedRoute et Router sont simulés, `goTo()` imite une navigation terminée.
 describe('AdminStateService', () => {
   let service: AdminStateService;
-  let route: { firstChild: { snapshot: { data: { tab?: AdminTab } } } | null };
+  let route: { snapshot: { firstChild: { data: { tab?: AdminTab } } | null } };
   let events: Subject<unknown>;
 
   function setup(tab?: AdminTab): void {
-    route = { firstChild: tab ? { snapshot: { data: { tab } } } : null };
+    route = { snapshot: { firstChild: tab ? { data: { tab } } : null } };
     events = new Subject();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -26,7 +26,7 @@ describe('AdminStateService', () => {
   }
 
   function goTo(tab: AdminTab): void {
-    route.firstChild = { snapshot: { data: { tab } } };
+    route.snapshot.firstChild = { data: { tab } };
     events.next(new NavigationEnd(1, `/admin/${tab}`, `/admin/${tab}`));
   }
 
@@ -74,7 +74,7 @@ describe('AdminStateService', () => {
     });
 
     it('ignore les événements du routeur autres que NavigationEnd', () => {
-      route.firstChild = { snapshot: { data: { tab: 'pool' } } };
+      route.snapshot.firstChild = { data: { tab: 'pool' } };
       events.next({ type: 'autre' });
       expect(service.activeTab()).toBe('dashboard');
     });
