@@ -39,6 +39,7 @@ function makeAdminApiStub() {
 
   return {
     selectedDay,
+    setSelectedDay: (day: string) => selectedDay.set(day),
     adminStats: computed(() => adminStats()),
     statsLoading: computed(() => statsLoading()),
     challenges: computed(() => challenges()),

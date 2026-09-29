@@ -19,6 +19,7 @@ function makeAdminApiStub() {
     poolSearchResults: computed(() => []),
     poolSearchLoading: computed(() => false),
     poolSearchQuery,
+    setPoolSearchQuery: (q: string) => poolSearchQuery.set(q),
     addTrack: vi.fn().mockName('addTrack').mockReturnValue(of(void 0)),
     reloadPool: vi.fn().mockName('reloadPool'),
     renameTrack: vi.fn().mockName('renameTrack').mockReturnValue(of({})),
