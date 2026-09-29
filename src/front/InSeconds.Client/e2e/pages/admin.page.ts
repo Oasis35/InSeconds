@@ -43,7 +43,7 @@ export class AdminPage {
   }
 
   tab(name: string): Locator {
-    return this.page.getByRole('button', { name, exact: true });
+    return this.page.getByRole('link', { name, exact: true });
   }
 
   async clickTab(name: string): Promise<void> {

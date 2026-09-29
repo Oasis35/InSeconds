@@ -1,32 +1,39 @@
-import type { Mock } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
+import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
+import { Subject } from 'rxjs';
 import { AdminStateService } from './admin-state.service';
+import { AdminTab } from '../admin.models';
 
+// L'onglet actif vient de la route enfant (/admin/pool → data.tab = 'pool', cf. admin.routes.ts) :
+// ActivatedRoute et Router sont simulés, `goTo()` imite une navigation terminée.
 describe('AdminStateService', () => {
   let service: AdminStateService;
-  let routerNavigateSpy: Mock;
+  let route: { firstChild: { snapshot: { data: { tab?: AdminTab } } } | null };
+  let events: Subject<unknown>;
 
-  function setup(queryParams: Record<string, string> = {}): void {
-    routerNavigateSpy = vi.fn().mockName('navigate').mockResolvedValue(true);
+  function setup(tab?: AdminTab): void {
+    route = { firstChild: tab ? { snapshot: { data: { tab } } } : null };
+    events = new Subject();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         AdminStateService,
-        {
-          provide: ActivatedRoute,
-          useValue: { snapshot: { queryParamMap: convertToParamMap(queryParams) } },
-        },
-        { provide: Router, useValue: { navigate: routerNavigateSpy } },
+        { provide: ActivatedRoute, useValue: route },
+        { provide: Router, useValue: { events } },
       ],
     });
     service = TestBed.inject(AdminStateService);
   }
 
+  function goTo(tab: AdminTab): void {
+    route.firstChild = { snapshot: { data: { tab } } };
+    events.next(new NavigationEnd(1, `/admin/${tab}`, `/admin/${tab}`));
+  }
+
   beforeEach(() => setup());
 
   describe('état par défaut', () => {
-    it("l'onglet actif est 'dashboard'", () => {
+    it("l'onglet actif est 'dashboard' sans route enfant", () => {
       expect(service.activeTab()).toBe('dashboard');
     });
 
@@ -45,65 +52,44 @@ describe('AdminStateService', () => {
     });
   });
 
-  describe('setActiveTab()', () => {
-    it("met à jour l'onglet actif", () => {
-      service.setActiveTab('pool');
+  describe('navigation entre onglets', () => {
+    it("suit la route enfant après une navigation", () => {
+      goTo('pool');
       expect(service.activeTab()).toBe('pool');
     });
 
     it("marque l'onglet comme visité", () => {
       expect(service.hasVisited('pool')).toBe(false);
-      service.setActiveTab('pool');
+      goTo('pool');
       expect(service.hasVisited('pool')).toBe(true);
     });
 
     it('un onglet reste visité après avoir changé pour un autre (sticky)', () => {
-      service.setActiveTab('pool');
-      service.setActiveTab('defis');
-      service.setActiveTab('dashboard');
+      goTo('pool');
+      goTo('defis');
+      goTo('dashboard');
       expect(service.hasVisited('pool')).toBe(true);
       expect(service.hasVisited('defis')).toBe(true);
       expect(service.activeTab()).toBe('dashboard');
     });
 
-    it('revisiter un onglet ne casse pas le Set des visités', () => {
-      service.setActiveTab('pool');
-      service.setActiveTab('pool');
-      expect(service.hasVisited('pool')).toBe(true);
+    it('ignore les événements du routeur autres que NavigationEnd', () => {
+      route.firstChild = { snapshot: { data: { tab: 'pool' } } };
+      events.next({ type: 'autre' });
+      expect(service.activeTab()).toBe('dashboard');
     });
   });
 
-  describe('restauration depuis le paramètre d’URL ?tab=', () => {
-    it("initialise l'onglet actif depuis ?tab= s'il est valide", () => {
-      setup({ tab: 'pool' });
+  describe('ouverture directe sur un onglet (F5 sur /admin/pool)', () => {
+    it("initialise l'onglet actif depuis la route enfant", () => {
+      setup('pool');
       expect(service.activeTab()).toBe('pool');
     });
 
-    it("marque l'onglet restauré comme visité (F5 sur cet onglet ne recharge pas la page vide)", () => {
-      setup({ tab: 'defis' });
-      expect(service.hasVisited('defis')).toBe(true);
-    });
-
-    it("restaure l'onglet Joueurs depuis ?tab=joueurs", () => {
-      setup({ tab: 'joueurs' });
-      expect(service.activeTab()).toBe('joueurs');
+    it("marque l'onglet ouvert comme visité, et dashboard aussi", () => {
+      setup('joueurs');
       expect(service.hasVisited('joueurs')).toBe(true);
-    });
-
-    it('retombe sur dashboard si ?tab= est absent ou invalide', () => {
-      setup({ tab: 'not-a-real-tab' });
-      expect(service.activeTab()).toBe('dashboard');
-    });
-  });
-
-  describe('synchronisation de l’URL', () => {
-    it("setActiveTab() met à jour le paramètre d'URL ?tab= (replaceUrl, sans polluer l'historique)", () => {
-      service.setActiveTab('pool');
-      expect(routerNavigateSpy).toHaveBeenCalledWith([], expect.objectContaining({
-        queryParams: { tab: 'pool' },
-        queryParamsHandling: 'merge',
-        replaceUrl: true,
-      }));
+      expect(service.hasVisited('dashboard')).toBe(true);
     });
   });
 
