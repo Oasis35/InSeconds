@@ -89,29 +89,29 @@ export class WeeklyStoryComponent {
   }
 
   toggleGuides(show: boolean): void {
-    this.story.showGuides.set(show);
+    this.story.setShowGuides(show);
     this.rerender();
   }
 
   togglePercent(show: boolean): void {
-    this.story.showPercent.set(show);
+    this.story.setShowPercent(show);
     this.rerender();
   }
 
   setTitleMode(mode: WeeklyStoryTitleMode): void {
-    this.story.titleMode.set(mode);
+    this.story.setTitleMode(mode);
     this.rerender();
   }
 
   /** Appelé à la validation du champ (change), pas à chaque frappe : une capture coûte ~1 s. */
   setCustomTitle(text: string): void {
-    this.story.customTitle.set(text.slice(0, CUSTOM_TITLE_MAX_LENGTH));
+    this.story.setCustomTitle(text);
     if (this.story.titleMode() === 'custom') this.rerender();
   }
 
   /** Les dates ne servent qu'au prochain « Générer » (nouvel appel API). */
-  setFrom(value: string): void { this.story.from.set(value); }
-  setTo(value: string): void { this.story.to.set(value); }
+  setFrom(value: string): void { this.story.setFrom(value); }
+  setTo(value: string): void { this.story.setTo(value); }
 
   private rerender(): void {
     if (this.story.status() === 'ready') void this.render();

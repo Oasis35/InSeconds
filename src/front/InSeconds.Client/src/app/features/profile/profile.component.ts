@@ -1,5 +1,5 @@
-import { Component, ChangeDetectionStrategy, OnInit, inject, signal, computed } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, ChangeDetectionStrategy, OnInit, inject, signal, computed, linkedSignal } from '@angular/core';
+import { FormField, form, validate } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { DecorBackgroundComponent } from '../../shared/decor-background/decor-background.component';
@@ -20,7 +20,7 @@ const EMAIL_PATTERN = /^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,24}$/;
 
 @Component({
   selector: 'app-profile',
-  imports: [FormsModule, RouterLink, TranslatePipe, DecorBackgroundComponent, ConfirmSheetComponent, FreezeCellsComponent],
+  imports: [FormField, RouterLink, TranslatePipe, DecorBackgroundComponent, ConfirmSheetComponent, FreezeCellsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './profile.component.html',
 })
@@ -46,15 +46,28 @@ export class ProfileComponent implements OnInit {
     return this.translate.instant(`streakFreeze.profile.stock.${pluralKey(streak.freezes)}`, { n: streak.freezes, days });
   });
 
-  protected pseudoDraft = signal(this.playerSession.pseudo() ?? '');
-  protected readonly pseudoStatus = signal<PseudoStatus>('idle');
+  /** Champ pseudo (Signal Forms) : mêmes bornes que le back, sur la valeur sans espaces autour. */
+  protected readonly pseudoForm = form(signal({ pseudo: this.playerSession.pseudo() ?? '' }), p => {
+    validate(p.pseudo, ({ value }) => {
+      const length = value().trim().length;
+      if (length === 0) return { kind: 'required' };
+      if (length < 3) return { kind: 'tooShort' };
+      if (length > 20) return { kind: 'tooLong' };
+      return null;
+    });
+  });
+  /** Repart à 'idle' dès que le joueur retape (efface « Enregistré » / « Pseudo déjà pris »). */
+  protected readonly pseudoStatus = linkedSignal<string, PseudoStatus>({
+    source: () => this.pseudoForm.pseudo().value(),
+    computation: () => 'idle',
+  });
   protected readonly showLogoutConfirm = signal(false);
   protected readonly loggingOut = signal(false);
   protected readonly logoutError = signal(false);
 
-  private readonly trimmedDraft = computed(() => this.pseudoDraft().trim());
-  private readonly tooShort = computed(() => this.trimmedDraft().length > 0 && this.trimmedDraft().length < 3);
-  private readonly invalid = computed(() => this.trimmedDraft().length === 0 || this.tooShort() || this.trimmedDraft().length > 20);
+  private readonly trimmedDraft = computed(() => this.pseudoForm.pseudo().value().trim());
+  private readonly tooShort = computed(() => this.pseudoForm.pseudo().errors().some(e => e.kind === 'tooShort'));
+  private readonly invalid = computed(() => this.pseudoForm.pseudo().invalid());
   private readonly unchanged = computed(() => this.trimmedDraft() === (this.playerSession.pseudo() ?? ''));
 
   protected readonly saveDisabled = computed(() =>
@@ -83,12 +96,18 @@ export class ProfileComponent implements OnInit {
   protected readonly hintIsError = computed(() =>
     this.pseudoStatus() === 'taken' || this.pseudoStatus() === 'error' || this.tooShort());
 
-  protected emailDraft = signal(this.playerSession.email() ?? '');
-  protected readonly emailStatus = signal<EmailStatus>('idle');
+  /** Champ email (Signal Forms), validé sur la valeur sans espaces autour. */
+  protected readonly emailForm = form(signal({ email: this.playerSession.email() ?? '' }), p => {
+    validate(p.email, ({ value }) => (EMAIL_PATTERN.test(value().trim()) ? null : { kind: 'email' }));
+  });
+  /** Repart à 'idle' dès que le joueur retape. */
+  protected readonly emailStatus = linkedSignal<string, EmailStatus>({
+    source: () => this.emailForm.email().value(),
+    computation: () => 'idle',
+  });
 
-  private readonly trimmedEmailDraft = computed(() => this.emailDraft().trim());
-  private readonly emailInvalid = computed(() =>
-    this.trimmedEmailDraft().length === 0 || !EMAIL_PATTERN.test(this.trimmedEmailDraft()));
+  private readonly trimmedEmailDraft = computed(() => this.emailForm.email().value().trim());
+  private readonly emailInvalid = computed(() => this.emailForm.email().invalid());
   private readonly emailUnchanged = computed(() =>
     this.trimmedEmailDraft().toLowerCase() === (this.playerSession.email() ?? '').toLowerCase());
 
@@ -126,11 +145,6 @@ export class ProfileComponent implements OnInit {
     }
   }
 
-  onPseudoInput(value: string): void {
-    this.pseudoDraft.set(value);
-    this.pseudoStatus.set('idle');
-  }
-
   savePseudo(): void {
     if (this.saveDisabled()) return;
     this.pseudoStatus.set('saving');
@@ -138,11 +152,6 @@ export class ProfileComponent implements OnInit {
       next: () => this.pseudoStatus.set('saved'),
       error: (err) => this.pseudoStatus.set(err.status === 409 ? 'taken' : 'error'),
     });
-  }
-
-  onEmailInput(value: string): void {
-    this.emailDraft.set(value);
-    this.emailStatus.set('idle');
   }
 
   saveEmail(): void {

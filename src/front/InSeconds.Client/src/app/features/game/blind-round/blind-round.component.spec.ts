@@ -151,7 +151,7 @@ describe('BlindRoundComponent — navigation clavier autocomplete', () => {
   });
 
   it('ArrowDown ne fait rien si la dropdown est fermée', () => {
-    component['showSuggestions'].set(false);
+    component['search']['_showSuggestions'].set(false);
     press('ArrowDown');
     expect(component['highlightedIndex']()).toBe(-1);
   });
@@ -282,7 +282,7 @@ describe('BlindRoundComponent — indices (hints)', () => {
     component.answered.subscribe(e => emitted.push(e));
     component['chosenDuration'].set(2);
     component['searchQuery'] = 'Daft Punk - One More Time'; // ignoré : on passe, pas de réponse
-    component['pendingConfirm'].set('skip');
+    component['askSkip']();
 
     component['confirmPending']();
 
@@ -299,13 +299,13 @@ describe('BlindRoundComponent — indices (hints)', () => {
   });
 
   it('l\'encart de confirmation se ferme dès que le joueur reprend la saisie', () => {
-    component['pendingConfirm'].set('skip');
+    component['askSkip']();
     component.onQueryChange('dua');
     expect(component['pendingConfirm']()).toBeNull();
   });
 
   it('next() ferme l\'encart de confirmation', () => {
-    component['pendingConfirm'].set('skip');
+    component['askSkip']();
     component.next();
     expect(component['pendingConfirm']()).toBeNull();
   });

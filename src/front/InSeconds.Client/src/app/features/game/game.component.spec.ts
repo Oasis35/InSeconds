@@ -1,425 +1,79 @@
-import type { Mock } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { GameComponent } from './game.component';
-import { GameFacadeService } from './services/game-facade.service';
+import { GameStore, GameState } from './game.store';
 import { GameShareService } from './services/game-share.service';
 import { LeaveConfirmationService } from './services/leave-confirmation.service';
-import { ApiClient } from '../../api/api.generated';
-import { AudioPlayerService } from '../../core/services/audio-player.service';
-import { ClipboardService } from '../../core/services/clipboard.service';
 import { PlayerSessionService } from '../../core/services/player-session.service';
-import { TranslateService } from '@ngx-translate/core';
-import { Router } from '@angular/router';
+import { ErrorReportingService } from '../../core/services/error-reporting.service';
+import { AnsweredEvent } from './blind-round/blind-round.component';
 
-class TranslateServiceStub {
-  instant(key: string): string {
-    return key;
-  }
-}
-
-// Configuration commune aux deux suites : seuls les stubs changent d'une suite à l'autre.
-function createComponent(gameFacade: object, api: object, isLinked: ReturnType<typeof signal<boolean>>, router: {
-  navigate: Mock;
-}): GameComponent {
-  TestBed.configureTestingModule({
-    providers: [
-      { provide: GameFacadeService, useValue: gameFacade },
-      { provide: ApiClient, useValue: api },
-      { provide: AudioPlayerService, useValue: { preloadAll: () => Promise.resolve() } },
-      { provide: ClipboardService, useValue: {} },
-      { provide: PlayerSessionService, useValue: { isLinked } },
-      { provide: Router, useValue: router },
-      { provide: TranslateService, useClass: TranslateServiceStub },
-      GameShareService,
-      LeaveConfirmationService,
-    ],
-  });
-
-  return TestBed.runInInjectionContext(() => new GameComponent());
-}
-
-// Ces tests couvrent uniquement le toast de streak (guest, écrans done/already_played) :
-// `streakToastDismissed` doit être remis à `false` à chaque (ré)entrée dans ces états,
-// pour que le toast puisse réapparaître après un aller-retour dans une partie suivante.
-// Le reste de la machine à états n'a pas de spec dédiée dans ce repo (couverture via les
-// écrans de présentation + les tests E2E) — on ne l'étend pas ici.
-describe('GameComponent — streak toast', () => {
+// L'état et les transitions du jeu sont testés dans game.store.spec.ts ; ici, seulement ce que
+// le composant garde : panneau de série, confirmation de sortie, lien avec le round affiché.
+describe('GameComponent', () => {
   let component: GameComponent;
-  let gameFacadeStub: {
-    peekSession: Mock;
-    loadSession: Mock;
-    submitAnswer: Mock;
-    abandonSession: Mock;
-    updateListening: Mock;
-  };
-  let apiStub: {
-    apiStatsToday: Mock;
-  };
-  let isLinked: ReturnType<typeof signal<boolean>>;
-  let router: {
-    navigate: Mock;
-  };
+  let state: ReturnType<typeof signal<GameState>>;
+  let store: { state: typeof state; init: ReturnType<typeof vi.fn>; refresh: ReturnType<typeof vi.fn>; playNow: ReturnType<typeof vi.fn>; submitAnswer: ReturnType<typeof vi.fn> };
+  let router: { navigate: ReturnType<typeof vi.fn> };
+  const event: AnsweredEvent = { trackId: 7, listenedDurationSeconds: 1, wasExtended: false, artistAnswer: 'a', titleAnswer: 't' };
 
   beforeEach(() => {
-    gameFacadeStub = {
-      peekSession: vi.fn().mockName('peekSession').mockReturnValue(of({
-        kind: 'ok', response: { state: 'can_start', currentStreak: 0, tracksCount: 3, completedCount: 0 },
-      })),
-      loadSession: vi.fn().mockName('loadSession'),
-      submitAnswer: vi.fn().mockName('submitAnswer'),
-      abandonSession: vi.fn().mockName('abandonSession').mockReturnValue(of(void 0)),
-      updateListening: vi.fn().mockName('updateListening'),
-    };
-    apiStub = {
-      apiStatsToday: vi.fn().mockName('apiStatsToday').mockReturnValue(of({
-        yourScore: 100, medianScore: 100, totalPlayers: 1, currentStreak: 3, tracks: [],
-      })),
-    };
-
-    isLinked = signal(false);
-    router = { navigate: vi.fn().mockName('navigate') };
-
-    component = createComponent(gameFacadeStub, apiStub, isLinked, router);
+    state = signal<GameState>('welcome');
+    store = { state, init: vi.fn(), refresh: vi.fn(), playNow: vi.fn(), submitAnswer: vi.fn() };
+    router = { navigate: vi.fn() };
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: GameStore, useValue: store },
+        { provide: GameShareService, useValue: { copied: signal(false), failed: signal(false) } },
+        LeaveConfirmationService,
+        { provide: PlayerSessionService, useValue: { isLinked: signal(false) } },
+        { provide: ErrorReportingService, useValue: { lastErrorCode: signal(null) } },
+        { provide: Router, useValue: router },
+      ],
+    });
+    component = TestBed.runInInjectionContext(() => new GameComponent());
   });
 
-  it('defaults to not dismissed', () => {
-    expect(component['streakToastDismissed']()).toBe(false);
+  it('starts the store on init', () => {
+    component.ngOnInit();
+    expect(store.init).toHaveBeenCalled();
   });
 
-  it('resets on peekSession → already_played (via retry())', () => {
-    component['streakToastDismissed'].set(true);
-    gameFacadeStub.peekSession.mockReturnValue(of({
-      kind: 'ok', response: { state: 'already_played', currentStreak: 3, tracksCount: 3, completedCount: 3 },
-    }));
-
-    component['retry']();
-
-    expect(component['gameState']()).toBe('already_played');
-    expect(component['streakToastDismissed']()).toBe(false);
-  });
-
-  it('resets on peekSession → abandoned (via retry())', () => {
-    component['streakToastDismissed'].set(true);
-    gameFacadeStub.peekSession.mockReturnValue(of({
-      kind: 'ok', response: { state: 'abandoned', currentStreak: 3, tracksCount: 3, completedCount: 1 },
-    }));
-
-    component['retry']();
-
-    expect(component['gameState']()).toBe('already_played');
-    expect(component['sessionAbandoned']()).toBe(true);
-    expect(component['streakToastDismissed']()).toBe(false);
-  });
-
-  it('resets on confirmAbandon()', () => {
-    component['streakToastDismissed'].set(true);
-    component['sessionId'] = 1;
-
-    component['confirmAbandon']();
-
-    expect(component['gameState']()).toBe('already_played');
-    expect(component['streakToastDismissed']()).toBe(false);
-  });
-
-  it('resets on onNextTrack() reaching the last track (done)', () => {
-    component['streakToastDismissed'].set(true);
-    component['tracks'].set([{ id: 1, previewUrl: null, coverUrl: null } as any]);
-    component['currentIndex'].set(0);
-
-    component['onNextTrack']();
-
-    expect(component['gameState']()).toBe('done');
-    expect(component['streakToastDismissed']()).toBe(false);
-  });
-
-  it('resets on the 409 branch of loadSession() (via beginGame())', () => {
-    component['streakToastDismissed'].set(true);
-    gameFacadeStub.loadSession.mockReturnValue(of({ kind: 'already_played', abandoned: false }));
-
-    component['beginGame']();
-
-    expect(component['gameState']()).toBe('already_played');
-    expect(component['streakToastDismissed']()).toBe(false);
-  });
-});
-
-describe('GameComponent — gel de série', () => {
-  let component: GameComponent;
-  let gameFacadeStub: {
-    peekSession: Mock;
-    loadSession: Mock;
-  };
-  let apiStub: {
-    apiStatsToday: Mock;
-  };
-  let isLinked: ReturnType<typeof signal<boolean>>;
-  let router: {
-    navigate: Mock;
-  };
-
-  const streak = (overrides: Record<string, unknown> = {}) => ({
-    status: 'active', streak: 12, freezes: 2, maxFreezes: 2, freezeEveryDays: 7,
-    nextFreezeInDays: 2, missedDays: 0, lostStreak: undefined, lastPlayedDate: '2026-09-22',
-    ...overrides,
-  });
-
-  const stats = (overrides: Record<string, unknown> = {}) => ({
-    yourScore: 100, medianScore: 100, totalPlayers: 1, currentStreak: 13, tracks: [],
-    freezesUsed: 0, freezeMilestone: false, ...overrides,
-  });
-
-  beforeEach(() => {
-    localStorage.removeItem('inseconds.lostStreakNudgeSeen');
-    isLinked = signal(true);
-    router = { navigate: vi.fn().mockName('navigate') };
-    gameFacadeStub = {
-      peekSession: vi.fn().mockName('peekSession').mockReturnValue(of({
-        kind: 'ok', response: { state: 'can_start', currentStreak: 12, tracksCount: 3, completedCount: 0, streak: streak() },
-      })),
-      loadSession: vi.fn().mockName('loadSession').mockReturnValue(of({
-        kind: 'ok', response: { sessionId: 1, tracks: [], currentStreak: 12, isResuming: false, resumeFromPosition: 0, completedAnswers: [] },
-      })),
-    };
-    apiStub = { apiStatsToday: vi.fn().mockName('apiStatsToday').mockReturnValue(of(stats())) };
-
-    component = createComponent(gameFacadeStub, apiStub, isLinked, router);
-  });
-
-  afterEach(() => localStorage.removeItem('inseconds.lostStreakNudgeSeen'));
-
-  function finishGame(todayStats: ReturnType<typeof stats>): void {
-    apiStub.apiStatsToday.mockReturnValue(of(todayStats));
-    component['tracks'].set([{ id: 1, previewUrl: null, coverUrl: null } as any]);
-    component['currentIndex'].set(0);
-    component['onNextTrack']();
-  }
-
-  it('stores the peek streak detail for the header pill', () => {
-    component['retry']();
-    expect(component['streakInfo']()?.freezes).toBe(2);
-  });
-
-  it('refreshes the streak detail after the last answer (freeze used or earned)', () => {
-    gameFacadeStub.peekSession.mockReturnValue(of({
-      kind: 'ok', response: { state: 'already_played', currentStreak: 13, tracksCount: 3, completedCount: 3, streak: streak({ streak: 13, freezes: 1 }) },
-    }));
-
-    finishGame(stats({ freezesUsed: 1 }));
-
-    expect(component['streakInfo']()?.freezes).toBe(1);
-  });
-
-  it('shows "1 gel a sauvé ta série" to a linked player after a game that used a freeze', () => {
-    finishGame(stats({ freezesUsed: 1 }));
-
-    expect(component['showGelUsedToast']()).toBe(true);
-    expect(component['showGelEarnedToast']()).toBe(false);
-    expect(component['freezesUsedKey']()).toBe('one');
-  });
-
-  it('shows "+1 gel gagné" (and not the used toast) when a freeze was earned', () => {
-    finishGame(stats({ freezesUsed: 1, freezeMilestone: true }));
-
-    expect(component['showGelEarnedToast']()).toBe(true);
-    expect(component['showGelUsedToast']()).toBe(false);
-  });
-
-  it('hides the freeze toasts once dismissed', () => {
-    finishGame(stats({ freezeMilestone: true }));
-
-    component['gelToastDismissed'].set(true);
-
-    expect(component['showGelEarnedToast']()).toBe(false);
-  });
-
-  it('never shows freeze toasts to a guest, but switches the streak toast to "Tu aurais gagné un gel"', () => {
-    isLinked.set(false);
-    finishGame(stats({ currentStreak: 7, freezeMilestone: true }));
-
-    expect(component['showGelEarnedToast']()).toBe(false);
-    expect(component['showStreakToast']()).toBe(true);
-    expect(component['guestFreezeMiss']()).toBe(true);
-  });
-
-  it('shows the guest "série perdue" toast on welcome, once per lost streak', () => {
-    isLinked.set(false);
-    gameFacadeStub.peekSession.mockReturnValue(of({
-      kind: 'ok', response: {
-        state: 'can_start', currentStreak: 0, tracksCount: 3, completedCount: 0,
-        streak: streak({ status: 'broken', streak: 0, freezes: 0, maxFreezes: 0, lostStreak: 6, lastPlayedDate: '2026-09-20' }),
-      },
-    }));
-
-    component['retry']();
-
-    expect(component['showLostToast']()).toBe(true);
-    expect(component['lostStreak']()).toBe(6);
-    expect(localStorage.getItem('inseconds.lostStreakNudgeSeen')).toBe('2026-09-20');
-
-    // Second chargement de la page : déjà vu pour cette série perdue.
-    component['lostStreak'].set(null);
-    component['retry']();
-    expect(component['showLostToast']()).toBe(false);
-  });
-
-  it('"Jouer maintenant" in the protected sheet starts the game from welcome', () => {
-    component['retry']();
-    component['showStreakSheet'].set(true);
+  it('"Jouer maintenant" closes the streak sheet and asks the store to play', () => {
+    component['openStreakSheet']();
 
     component['playFromStreakSheet']();
 
     expect(component['showStreakSheet']()).toBe(false);
-    expect(gameFacadeStub.loadSession).toHaveBeenCalled();
+    expect(store.playNow).toHaveBeenCalled();
   });
 
-  it('"Créer un compte" in the guest sheet navigates to /login', () => {
-    component['showStreakSheet'].set(true);
+  it('"Créer un compte" closes the streak sheet and navigates to /login', () => {
+    component['openStreakSheet']();
 
     component['signupFromStreakSheet']();
 
     expect(component['showStreakSheet']()).toBe(false);
     expect(router.navigate).toHaveBeenCalledWith(['/login']);
   });
-});
 
-// L'identifiant Deezer n'arrive plus au démarrage (il donnerait la réponse) : le récap le
-// lit dans la réponse à chaque morceau, ou dans les réponses déjà données à la reprise.
-describe('GameComponent — identifiant Deezer révélé après la réponse', () => {
-  let component: GameComponent;
-  let gameFacadeStub: {
-    peekSession: Mock;
-    loadSession: Mock;
-    submitAnswer: Mock;
-  };
-
-  beforeEach(() => {
-    gameFacadeStub = {
-      peekSession: vi.fn().mockName('peekSession'),
-      loadSession: vi.fn().mockName('loadSession'),
-      submitAnswer: vi.fn().mockName('submitAnswer').mockReturnValue(of({
-        artistCorrect: true, titleCorrect: true, score: 1000, correctArtist: 'Eminem',
-        correctTitle: 'Lose Yourself', deezerTrackId: 3135556, listenedDurationSeconds: 0.5,
-        averageSecondsWhenCorrect: undefined, failureRatePercent: 0, guessTimeDistribution: [],
-        notFoundCount: 0, hintLevelUsed: 0, hintPenaltyPercentApplied: 0,
-      })),
-    };
-    component = createComponent(gameFacadeStub, { apiStatsToday: vi.fn().mockName('apiStatsToday') }, signal(false), { navigate: vi.fn().mockName('navigate') });
+  it('lets navigation through when no game is being played', () => {
+    expect(component.canDeactivate()).toBe(true);
   });
 
-  it('takes the Deezer id of an answered track from the answer response', () => {
-    component['sessionId'] = 1;
-    component['tracks'].set([{ id: 7, position: 1, previewUrl: 'x', coverUrl: undefined }]);
-    component['currentIndex'].set(0);
-
-    component['onAnswered']({
-      trackId: 7, listenedDurationSeconds: 0.5, wasExtended: false, artistAnswer: 'Eminem', titleAnswer: 'Lose Yourself',
-    } as any);
-
-    expect(component['results']()[0].deezerTrackId).toBe(3135556);
+  it('asks for confirmation before leaving a game in progress', () => {
+    state.set('playing');
+    expect(component.canDeactivate()).toBeInstanceOf(Promise);
   });
 
-  it('takes the Deezer id of already answered tracks from the resumed answers', () => {
-    component['tracks'].set([
-      { id: 7, position: 1, previewUrl: 'x', coverUrl: undefined },
-      { id: 8, position: 2, previewUrl: 'y', coverUrl: undefined },
-    ]);
-    component['resumeCompletedAnswers'].set([{
-        position: 1, artistCorrect: true, titleCorrect: false, score: 500, listenedDurationSeconds: 1,
-        correctArtist: 'Eminem', correctTitle: 'Lose Yourself', deezerTrackId: 3135556,
-      }]);
+  it('forwards a submitted answer to the store without throwing, success or failure', () => {
+    store.submitAnswer.mockReturnValue(of({ score: 100 }));
+    expect(() => component['onAnswered'](event)).not.toThrow();
 
-    component['resumePlaying']();
-
-    expect(component['results']()[0].deezerTrackId).toBe(3135556);
-  });
-});
-
-// Échec réseau définitif à la soumission (E5) : plus de faux résultat à 0 poussé dans
-// `results()` ni d'avancée silencieuse — sinon la partie ne se termine jamais côté serveur
-// (le back ne clôt la session qu'après TracksPerChallenge réponses réellement enregistrées).
-describe('GameComponent — échec réseau à la soumission d\'une réponse', () => {
-  let component: GameComponent;
-
-  beforeEach(() => {
-    const gameFacadeStub = {
-      peekSession: vi.fn().mockName('peekSession'),
-      loadSession: vi.fn().mockName('loadSession'),
-      submitAnswer: vi.fn().mockName('submitAnswer').mockReturnValue(throwError(() => new Error('network'))),
-    };
-    component = createComponent(gameFacadeStub, { apiStatsToday: vi.fn().mockName('apiStatsToday') }, signal(false), { navigate: vi.fn().mockName('navigate') });
-  });
-
-  it('ne pousse aucun résultat ni score sur un échec de soumission', () => {
-    component['sessionId'] = 1;
-    component['tracks'].set([{ id: 7, position: 1, previewUrl: 'x', coverUrl: undefined }]);
-    component['currentIndex'].set(0);
-    component['totalScore'].set(0);
-
-    expect(() => component['onAnswered']({
-      trackId: 7, listenedDurationSeconds: 5, wasExtended: false, artistAnswer: 'Eminem', titleAnswer: 'Lose Yourself',
-    } as any)).not.toThrow();
-
-    expect(component['results']()).toEqual([]);
-    expect(component['totalScore']()).toBe(0);
-  });
-});
-
-// M13 (revue du 25/09, cf. piège 41 CLAUDE.md racine) : apiStatsToday() est appelé sans
-// callback error explicite avant le fix ; loadTodayStats() en pose un (error: () => {}) —
-// vérifie que le fix tient, sur les deux points d'entrée qui l'appellent (onNextTrack → done,
-// et enterAlreadyPlayed(false) → peekSession 'already_played' / loadSession 409).
-describe('GameComponent — échec réseau de apiStatsToday (piège 41)', () => {
-  let component: GameComponent;
-  let gameFacadeStub: {
-    peekSession: Mock;
-    loadSession: Mock;
-  };
-  let apiStub: {
-    apiStatsToday: Mock;
-  };
-
-  beforeEach(() => {
-    gameFacadeStub = {
-      // Défaut utilisé par refreshStreakInfo() (appelé sans condition par onNextTrack) :
-      // un simple peek qui ne fait rien de spécial, chaque test surcharge au besoin.
-      peekSession: vi.fn().mockName('peekSession').mockReturnValue(of({ kind: 'error' })),
-      loadSession: vi.fn().mockName('loadSession'),
-    };
-    apiStub = {
-      apiStatsToday: vi.fn().mockName('apiStatsToday').mockReturnValue(throwError(() => new Error('network'))),
-    };
-    component = createComponent(gameFacadeStub, apiStub, signal(false), { navigate: vi.fn().mockName('navigate') });
-  });
-
-  it('onNextTrack (fin de partie) n\'expose pas l\'erreur et laisse todayStats à null', () => {
-    component['tracks'].set([{ id: 1, previewUrl: null, coverUrl: null } as any]);
-    component['currentIndex'].set(0);
-
-    expect(() => component['onNextTrack']()).not.toThrow();
-
-    expect(component['gameState']()).toBe('done');
-    expect(component['todayStats']()).toBeNull();
-  });
-
-  it('peekSession → already_played n\'expose pas l\'erreur et laisse todayStats à null', () => {
-    gameFacadeStub.peekSession.mockReturnValue(of({
-      kind: 'ok', response: { state: 'already_played', currentStreak: 3, tracksCount: 3, completedCount: 3 },
-    }));
-
-    expect(() => component['retry']()).not.toThrow();
-
-    expect(component['gameState']()).toBe('already_played');
-    expect(component['todayStats']()).toBeNull();
-  });
-
-  it('loadSession → 409 already_played n\'expose pas l\'erreur et laisse todayStats à null', () => {
-    gameFacadeStub.loadSession.mockReturnValue(of({ kind: 'already_played', abandoned: false }));
-
-    expect(() => component['beginGame']()).not.toThrow();
-
-    expect(component['gameState']()).toBe('already_played');
-    expect(component['todayStats']()).toBeNull();
+    store.submitAnswer.mockReturnValue(throwError(() => new Error('network')));
+    expect(() => component['onAnswered'](event)).not.toThrow();
+    expect(store.submitAnswer).toHaveBeenCalledTimes(2);
   });
 });

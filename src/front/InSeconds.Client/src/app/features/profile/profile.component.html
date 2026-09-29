@@ -10,9 +10,7 @@
         <label for="profile-pseudo" class="sr-only">{{ 'profile.pseudoPlaceholder' | translate }}</label>
         <input
           id="profile-pseudo"
-          [ngModel]="pseudoDraft()"
-          (ngModelChange)="onPseudoInput($event)"
-          name="pseudo"
+          [formField]="pseudoForm.pseudo"
           autocomplete="off"
           [placeholder]="'profile.pseudoPlaceholder' | translate"
           class="flex-1 min-w-0 px-4 py-3.5 rounded-xl text-sm transition"
@@ -41,9 +39,7 @@
         <input
           id="profile-email"
           type="email"
-          [ngModel]="emailDraft()"
-          (ngModelChange)="onEmailInput($event)"
-          name="email"
+          [formField]="emailForm.email"
           autocomplete="off"
           [placeholder]="'profile.email.placeholder' | translate"
           class="flex-1 min-w-0 px-4 py-3.5 rounded-xl text-sm transition"

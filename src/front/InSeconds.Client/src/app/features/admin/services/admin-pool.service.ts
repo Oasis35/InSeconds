@@ -1,6 +1,7 @@
-import { Injectable, inject, signal, computed, DestroyRef } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Subscription } from 'rxjs';
+import { Injectable, inject, signal, computed, effect, untracked, DestroyRef } from '@angular/core';
+import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { form, maxLength, validate } from '@angular/forms/signals';
+import { map } from 'rxjs';
 import { SettingsService } from '../../../core/services/settings.service';
 import { AdminApiService } from './admin-api.service';
 import { PoolAudioPreviewService } from './pool-audio-preview.service';
@@ -21,27 +22,43 @@ export class AdminPoolService {
 
   readonly poolTracks = this.api.poolTracks;
   readonly poolTracksLoading = this.api.poolTracksLoading;
+  readonly poolTracksLoaded = this.api.poolTracksLoaded;
   readonly poolSearchResults = this.api.poolSearchResults;
   readonly poolSearchLoading = this.api.poolSearchLoading;
   readonly poolSearchQuery = this.api.poolSearchQuery;
 
   readonly poolPageSize = 15;
-  readonly allTracksPage = signal(0);
-  readonly poolFilterText = signal('');
-  readonly poolFilterStatus = signal<PoolFilterStatus>('all');
-  readonly poolFilterPreview = signal<PoolFilterPreview>('all');
-  readonly poolFilterLastUsedFrom = signal<string>(''); // ISO yyyy-MM-dd, '' = pas de borne basse
-  readonly poolFilterLastUsedTo = signal<string>('');   // ISO yyyy-MM-dd, '' = pas de borne haute
+  private readonly _allTracksPage = signal(0);
+  /**
+   * Page affichée (à partir de 0), bornée au nombre de pages : une page reprise de l'adresse
+   * (`?page=`, cf. PoolTabComponent) peut dépasser après une suppression ou un filtre.
+   */
+  readonly allTracksPage = computed(() => Math.min(this._allTracksPage(), this.allTotalPages() - 1));
+  private readonly _poolFilterText = signal('');
+  readonly poolFilterText = this._poolFilterText.asReadonly();
+  private readonly _poolFilterStatus = signal<PoolFilterStatus>('all');
+  readonly poolFilterStatus = this._poolFilterStatus.asReadonly();
+  private readonly _poolFilterPreview = signal<PoolFilterPreview>('all');
+  readonly poolFilterPreview = this._poolFilterPreview.asReadonly();
+  private readonly _poolFilterLastUsedFrom = signal<string>(''); // ISO yyyy-MM-dd, '' = pas de borne basse
+  readonly poolFilterLastUsedFrom = this._poolFilterLastUsedFrom.asReadonly();
+  private readonly _poolFilterLastUsedTo = signal<string>(''); // ISO yyyy-MM-dd, '' = pas de borne haute
+  readonly poolFilterLastUsedTo = this._poolFilterLastUsedTo.asReadonly();
 
-  readonly poolSortColumn = signal<PoolSortColumn | null>(null);
-  readonly poolSortDirection = signal<'asc' | 'desc'>('asc');
+  private readonly _poolSortColumn = signal<PoolSortColumn | null>(null);
+  readonly poolSortColumn = this._poolSortColumn.asReadonly();
+  private readonly _poolSortDirection = signal<'asc' | 'desc'>('asc');
+  readonly poolSortDirection = this._poolSortDirection.asReadonly();
 
-  readonly selectedTrackIds = signal<Set<number>>(new Set());
+  private readonly _selectedTrackIds = signal<Set<number>>(new Set());
+  readonly selectedTrackIds = this._selectedTrackIds.asReadonly();
 
   // --- désactivation (morceaux utilisés, à la place de la suppression) ---
   // Ids en cours d'envoi (bouton désactivé le temps de la requête) + erreur affichée dans la barre d'outils.
-  readonly togglingDisabledIds = signal<ReadonlySet<number>>(new Set());
-  readonly toggleDisabledError = signal<'error' | 'inToday' | null>(null);
+  private readonly _togglingDisabledIds = signal<ReadonlySet<number>>(new Set());
+  readonly togglingDisabledIds = this._togglingDisabledIds.asReadonly();
+  private readonly _toggleDisabledError = signal<'error' | 'inToday' | null>(null);
+  readonly toggleDisabledError = this._toggleDisabledError.asReadonly();
   private toggleDisabledErrorTimer: ReturnType<typeof setTimeout> | null = null;
 
   // --- panneau de recherche/ajout (bandeau intégré, remplace l'ancienne modale) ---
@@ -49,37 +66,67 @@ export class AdminPoolService {
   // à la suite sans attendre la réponse du précédent, chaque ligne doit refléter son propre état.
   private readonly addTrackStatuses = signal<ReadonlyMap<number, 'loading' | 'success' | 'error'>>(new Map());
   private readonly addTrackStatusTimers = new Map<number, ReturnType<typeof setTimeout>>();
-  readonly addPanelOpen = signal(false);
-  readonly previewingUrl = signal<string | null>(null);
+  private readonly _addPanelOpen = signal(false);
+  readonly addPanelOpen = this._addPanelOpen.asReadonly();
+  private readonly _previewingUrl = signal<string | null>(null);
+  readonly previewingUrl = this._previewingUrl.asReadonly();
   // Indépendantes par défaut ; liées, la saisie dans l'un des deux champs (filtre pool /
   // recherche Deezer) met à jour l'autre. Les deux champs restent affichés en permanence
   // dans les deux états — seule la propagation de valeur change (cf. admin/CLAUDE.md).
-  readonly searchLinked = signal(false);
+  private readonly _searchLinked = signal(false);
+  readonly searchLinked = this._searchLinked.asReadonly();
 
   // --- modale écoute (preview d'une ligne du pool) ---
   // Le lecteur audio (play/pause/progress) vit dans PoolAudioPreviewService, partagé
   // entre cette modale et le panneau de recherche/ajout (une seule instance Audio() active à la fois).
-  readonly previewModalOpen = signal(false);
-  readonly previewModalTrack = signal<PoolTrackDto | null>(null);
-  readonly previewModalStatus = signal<'loading' | 'ready' | 'error'>('loading');
-  readonly previewModalUrl = signal<string | null>(null);
+  // Modale écoute : la recherche Deezer passe par une resource. Changer de morceau ou fermer
+  // la modale annule la recherche en cours (M14, revue du 25/09 : une réponse tardive après
+  // fermeture, ou après réouverture sur un autre morceau, relançait la lecture).
+  private readonly previewRequest = signal<{ track: PoolTrackDto } | undefined>(undefined);
+  private readonly previewSearchResource = rxResource({
+    params: () => this.previewRequest(),
+    stream: ({ params: { track } }) => this.api.searchDeezer(`${track.artist} ${track.title}`).pipe(
+      map(results => (results.find(r => r.deezerTrackId === track.deezerTrackId) ?? results[0])?.previewUrl ?? null)),
+  });
+  readonly previewModalOpen = computed(() => this.previewRequest() !== undefined);
+  readonly previewModalTrack = computed(() => this.previewRequest()?.track ?? null);
+  readonly previewModalUrl = computed<string | null>(() =>
+    (this.previewSearchResource.status() === 'resolved' ? this.previewSearchResource.value() : null) ?? null);
+  readonly previewModalStatus = computed<'loading' | 'ready' | 'error'>(() => {
+    const status = this.previewSearchResource.status();
+    if (status === 'error') return 'error';
+    if (status === 'resolved') return this.previewModalUrl() ? 'ready' : 'error';
+    return 'loading';
+  });
 
   // --- modale suppression ---
-  readonly deleteModalOpen = signal(false);
-  readonly deleteModalTracks = signal<PoolTrackDto[]>([]);
-  readonly deleteStatus = signal<'idle' | 'loading' | 'error'>('idle');
+  private readonly _deleteModalOpen = signal(false);
+  readonly deleteModalOpen = this._deleteModalOpen.asReadonly();
+  private readonly _deleteModalTracks = signal<PoolTrackDto[]>([]);
+  readonly deleteModalTracks = this._deleteModalTracks.asReadonly();
+  private readonly _deleteStatus = signal<'idle' | 'loading' | 'error'>('idle');
+  readonly deleteStatus = this._deleteStatus.asReadonly();
 
   // --- modale modification (artiste / titre) ---
-  readonly editModalTrack = signal<PoolTrackDto | null>(null);
-  readonly editArtist = signal('');
-  readonly editTitle = signal('');
-  readonly editStatus = signal<'idle' | 'loading' | 'error' | 'locked'>('idle');
+  private readonly _editModalTrack = signal<PoolTrackDto | null>(null);
+  readonly editModalTrack = this._editModalTrack.asReadonly();
+  /** Champs Artiste / Titre (Signal Forms) : non vides une fois les espaces retirés, longueurs du back. */
+  readonly editForm = form(signal({ artist: '', title: '' }), p => {
+    validate(p.artist, ({ value }) => (value().trim() ? null : { kind: 'required' }));
+    validate(p.title, ({ value }) => (value().trim() ? null : { kind: 'required' }));
+    maxLength(p.artist, 200);
+    maxLength(p.title, 300);
+  });
+  readonly editArtist = computed(() => this.editForm.artist().value());
+  readonly editTitle = computed(() => this.editForm.title().value());
+  private readonly _editStatus = signal<'idle' | 'loading' | 'error' | 'locked'>('idle');
+  readonly editStatus = this._editStatus.asReadonly();
   /** Désactive « Enregistrer » : champ vide, rien de changé, ou envoi en cours. */
   readonly editSaveDisabled = computed(() => {
     const track = this.editModalTrack();
     const artist = this.editArtist().trim();
     const title = this.editTitle().trim();
-    return !track || !artist || !title || this.editStatus() === 'loading'
+    return !track || this.editForm().invalid() || this.editStatus() === 'loading'
       || (artist === track.artist && title === track.title);
   });
 
@@ -209,47 +256,53 @@ export class AdminPoolService {
     return this.sortedTracks().slice(page * this.poolPageSize, (page + 1) * this.poolPageSize);
   });
 
+  // --- pagination ---
+  previousPage(): void { this._allTracksPage.set(Math.max(0, this.allTracksPage() - 1)); }
+  nextPage(): void { this._allTracksPage.set(Math.min(this.allTotalPages() - 1, this.allTracksPage() + 1)); }
+  /** Va à une page précise (à partir de 0), ex. celle reprise de l'adresse au F5. */
+  setPage(page: number): void { this._allTracksPage.set(Math.max(0, Math.floor(page))); }
+
   // --- filtres ---
   setPoolFilter(text: string): void {
-    this.poolFilterText.set(text);
-    this.allTracksPage.set(0);
-    if (this.searchLinked()) this.poolSearchQuery.set(text);
+    this._poolFilterText.set(text);
+    this._allTracksPage.set(0);
+    if (this.searchLinked()) this.api.setPoolSearchQuery(text);
   }
-  setPoolFilterStatus(v: PoolFilterStatus): void { this.poolFilterStatus.set(v); this.allTracksPage.set(0); }
-  setPoolFilterPreview(v: PoolFilterPreview): void { this.poolFilterPreview.set(v); this.allTracksPage.set(0); }
-  setPoolFilterLastUsedFrom(v: string): void { this.poolFilterLastUsedFrom.set(v); this.allTracksPage.set(0); }
-  setPoolFilterLastUsedTo(v: string): void { this.poolFilterLastUsedTo.set(v); this.allTracksPage.set(0); }
+  setPoolFilterStatus(v: PoolFilterStatus): void { this._poolFilterStatus.set(v); this._allTracksPage.set(0); }
+  setPoolFilterPreview(v: PoolFilterPreview): void { this._poolFilterPreview.set(v); this._allTracksPage.set(0); }
+  setPoolFilterLastUsedFrom(v: string): void { this._poolFilterLastUsedFrom.set(v); this._allTracksPage.set(0); }
+  setPoolFilterLastUsedTo(v: string): void { this._poolFilterLastUsedTo.set(v); this._allTracksPage.set(0); }
 
   // --- tri ---
   setPoolSort(column: PoolSortColumn): void {
     if (this.poolSortColumn() === column) {
-      this.poolSortDirection.set(this.poolSortDirection() === 'asc' ? 'desc' : 'asc');
+      this._poolSortDirection.set(this.poolSortDirection() === 'asc' ? 'desc' : 'asc');
     } else {
-      this.poolSortColumn.set(column);
-      this.poolSortDirection.set('asc');
+      this._poolSortColumn.set(column);
+      this._poolSortDirection.set('asc');
     }
   }
 
   onPoolSearchChange(q: string): void {
-    this.poolSearchQuery.set(q);
-    this.allTracksPage.set(0);
-    if (this.searchLinked()) this.poolFilterText.set(q);
+    this.api.setPoolSearchQuery(q);
+    this._allTracksPage.set(0);
+    if (this.searchLinked()) this._poolFilterText.set(q);
   }
 
   toggleSearchLink(): void {
     const linked = !this.searchLinked();
-    this.searchLinked.set(linked);
-    if (linked) this.poolSearchQuery.set(this.poolFilterText());
+    this._searchLinked.set(linked);
+    if (linked) this.api.setPoolSearchQuery(this.poolFilterText());
   }
 
   // --- sélection ---
   toggleSelection(id: number): void {
     const set = new Set(this.selectedTrackIds());
     if (set.has(id)) set.delete(id); else set.add(id);
-    this.selectedTrackIds.set(set);
+    this._selectedTrackIds.set(set);
   }
 
-  clearSelection(): void { this.selectedTrackIds.set(new Set()); }
+  clearSelection(): void { this._selectedTrackIds.set(new Set()); }
 
   /** Un morceau déjà utilisé dans un défi ne peut pas être supprimé (le back renvoie 409). */
   readonly selectionHasUsedTrack = computed(() => {
@@ -260,11 +313,11 @@ export class AdminPoolService {
   // --- panneau de recherche/ajout ---
   toggleAddPanel(): void {
     const open = !this.addPanelOpen();
-    this.addPanelOpen.set(open);
+    this._addPanelOpen.set(open);
     if (!open) {
       this.audioPreview.stop();
-      this.previewingUrl.set(null);
-      this.poolSearchQuery.set('');
+      this._previewingUrl.set(null);
+      this.api.setPoolSearchQuery('');
       for (const timer of this.addTrackStatusTimers.values()) clearTimeout(timer);
       this.addTrackStatusTimers.clear();
       this.addTrackStatuses.set(new Map());
@@ -278,52 +331,27 @@ export class AdminPoolService {
 
   previewSearchResult(url: string | null | undefined): void {
     if (!url) return;
-    this.previewingUrl.set(url);
+    this._previewingUrl.set(url);
     this.audioPreview.toggle(url);
   }
 
   // --- modale écoute ---
-  // M14 (revue du 25/09) : takeUntilDestroyed(this.destroyRef) ne protège pas ici — ce
-  // destroyRef est celui du service (scopé à AdminComponent, cf. CLAUDE.md admin), pas de la
-  // modale, donc une réponse Deezer tardive après fermeture appelait quand même
-  // audioPreview.toggle(...) et redémarrait la lecture (ou écrasait l'état d'une modale
-  // rouverte entre-temps sur un autre morceau). La souscription est désormais gardée à la
-  // main et annulée explicitement à chaque nouvelle ouverture et à la fermeture.
-  private previewSearchSubscription: Subscription | null = null;
+  constructor() {
+    // La lecture démarre d'elle-même dès que l'URL de preview est trouvée.
+    effect(() => {
+      const url = this.previewModalUrl();
+      if (url) untracked(() => this.audioPreview.toggle(url));
+    });
+  }
 
   openPreviewModal(t: PoolTrackDto): void {
-    this.previewSearchSubscription?.unsubscribe();
     this.audioPreview.stop();
-    this.previewModalTrack.set(t);
-    this.previewModalUrl.set(null);
-    this.previewModalStatus.set('loading');
-    this.previewModalOpen.set(true);
-
-    // Réutilise la recherche Deezer admin pour retrouver l'URL de preview de ce morceau.
-    this.previewSearchSubscription = this.api.searchDeezer(`${t.artist} ${t.title}`)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (results) => {
-          const match = results.find(r => r.deezerTrackId === t.deezerTrackId) ?? results[0];
-          if (match?.previewUrl) {
-            this.previewModalUrl.set(match.previewUrl);
-            this.previewModalStatus.set('ready');
-            this.audioPreview.toggle(match.previewUrl); // démarre la lecture directement
-          } else {
-            this.previewModalStatus.set('error');
-          }
-        },
-        error: () => this.previewModalStatus.set('error'),
-      });
+    this.previewRequest.set({ track: t });
   }
 
   closePreviewModal(): void {
-    this.previewSearchSubscription?.unsubscribe();
     this.audioPreview.stop();
-    this.previewModalOpen.set(false);
-    this.previewModalTrack.set(null);
-    this.previewModalUrl.set(null);
-    this.previewModalStatus.set('loading');
+    this.previewRequest.set(undefined);
   }
 
   addTrackFromPanel(track: DeezerTrackInfo): void {
@@ -367,21 +395,21 @@ export class AdminPoolService {
   // --- modale modification ---
   openEditModal(track: PoolTrackDto): void {
     if (track.renameLocked) return;
-    this.editModalTrack.set(track);
-    this.editArtist.set(track.artist);
-    this.editTitle.set(track.title);
-    this.editStatus.set('idle');
+    this._editModalTrack.set(track);
+    this.editForm().value.set({ artist: track.artist, title: track.title });
+    this._editStatus.set('idle');
   }
 
+
   closeEditModal(): void {
-    this.editModalTrack.set(null);
-    this.editStatus.set('idle');
+    this._editModalTrack.set(null);
+    this._editStatus.set('idle');
   }
 
   confirmEdit(): void {
     const track = this.editModalTrack();
     if (!track || this.editSaveDisabled()) return;
-    this.editStatus.set('loading');
+    this._editStatus.set('loading');
     this.api.renameTrack(track.id, this.editArtist().trim(), this.editTitle().trim())
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
@@ -390,7 +418,7 @@ export class AdminPoolService {
           this.api.reloadPool();
         },
         // 409 = morceau entré entre-temps dans une partie en cours (défi du jour).
-        error: err => this.editStatus.set(err?.status === 409 ? 'locked' : 'error'),
+        error: err => this._editStatus.set(err?.status === 409 ? 'locked' : 'error'),
       });
   }
 
@@ -417,39 +445,39 @@ export class AdminPoolService {
   private setToggling(id: number, on: boolean): void {
     const next = new Set(this.togglingDisabledIds());
     if (on) next.add(id); else next.delete(id);
-    this.togglingDisabledIds.set(next);
+    this._togglingDisabledIds.set(next);
   }
 
   private showToggleDisabledError(kind: 'error' | 'inToday'): void {
     if (this.toggleDisabledErrorTimer) clearTimeout(this.toggleDisabledErrorTimer);
-    this.toggleDisabledError.set(kind);
-    this.toggleDisabledErrorTimer = setTimeout(() => this.toggleDisabledError.set(null), 4000);
+    this._toggleDisabledError.set(kind);
+    this.toggleDisabledErrorTimer = setTimeout(() => this._toggleDisabledError.set(null), 4000);
   }
 
   // --- modale suppression ---
   openDeleteModal(track: PoolTrackDto | null): void {
     if (track) {
-      this.deleteModalTracks.set([track]);
+      this._deleteModalTracks.set([track]);
     } else {
       // Garde-fou : le bouton est désactivé si la sélection contient un morceau utilisé.
       if (this.selectionHasUsedTrack()) return;
       const available = this.poolTracks().available;
-      this.deleteModalTracks.set(available.filter(t => this.selectedTrackIds().has(t.id)));
+      this._deleteModalTracks.set(available.filter(t => this.selectedTrackIds().has(t.id)));
     }
-    this.deleteStatus.set('idle');
-    this.deleteModalOpen.set(true);
+    this._deleteStatus.set('idle');
+    this._deleteModalOpen.set(true);
   }
 
   closeDeleteModal(): void {
-    this.deleteModalOpen.set(false);
-    this.deleteModalTracks.set([]);
-    this.deleteStatus.set('idle');
+    this._deleteModalOpen.set(false);
+    this._deleteModalTracks.set([]);
+    this._deleteStatus.set('idle');
   }
 
   confirmDelete(): void {
     const tracks = this.deleteModalTracks();
     if (tracks.length === 0) return;
-    this.deleteStatus.set('loading');
+    this._deleteStatus.set('loading');
 
     const requests = tracks.map(t =>
       new Promise<number>((resolve, reject) => {
@@ -459,12 +487,12 @@ export class AdminPoolService {
 
     Promise.all(requests).then(() => {
       const deleted = new Set(tracks.map(t => t.id));
-      this.selectedTrackIds.set(new Set([...this.selectedTrackIds()].filter(id => !deleted.has(id))));
+      this._selectedTrackIds.set(new Set([...this.selectedTrackIds()].filter(id => !deleted.has(id))));
       this.closeDeleteModal();
-      this.allTracksPage.set(0);
+      this._allTracksPage.set(0);
       this.api.reloadPool();
     }).catch(() => {
-      this.deleteStatus.set('error');
+      this._deleteStatus.set('error');
     });
   }
 }

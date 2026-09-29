@@ -190,12 +190,12 @@
         </span>
         @if (pool.allTotalPages() > 1) {
           <div class="flex items-center gap-1">
-            <button (click)="pool.allTracksPage.set(pool.allTracksPage() - 1)" [disabled]="pool.allTracksPage() === 0"
+            <button (click)="pool.previousPage()" [disabled]="pool.allTracksPage() === 0"
               class="px-2.5 py-1 text-xs rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               style="background:var(--bg-inactive);color:var(--text-hi)">
               ←
             </button>
-            <button (click)="pool.allTracksPage.set(pool.allTracksPage() + 1)" [disabled]="pool.allTracksPage() >= pool.allTotalPages() - 1"
+            <button (click)="pool.nextPage()" [disabled]="pool.allTracksPage() >= pool.allTotalPages() - 1"
               class="px-2.5 py-1 text-xs rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               style="background:var(--bg-inactive);color:var(--text-hi)">
               →

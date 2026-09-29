@@ -106,7 +106,7 @@ describe('VerifyLoginComponent', () => {
   describe('submitPseudo()', () => {
     it('should reject a pseudo with forbidden characters', () => {
       const component = setup('abc123');
-      component['pseudo'] = '<script>';
+      component['pseudoForm'].pseudo().value.set('<script>');
       component.submitPseudo();
 
       expect(component['state']()).toBe('invalidPseudo');
@@ -117,7 +117,7 @@ describe('VerifyLoginComponent', () => {
       const component = setup('abc123');
       apiClient.apiAuthMagicLinkVerify.mockReturnValue(of({ needsPseudo: false }));
 
-      component['pseudo'] = 'Alice';
+      component['pseudoForm'].pseudo().value.set('Alice');
       component.submitPseudo();
 
       expect(apiClient.apiAuthMagicLinkVerify).toHaveBeenCalledWith({ token: 'abc123', pseudo: 'Alice' });
@@ -128,7 +128,7 @@ describe('VerifyLoginComponent', () => {
       const component = setup('abc123');
       apiClient.apiAuthMagicLinkVerify.mockReturnValue(throwError(() => apiError(409)));
 
-      component['pseudo'] = 'Alice';
+      component['pseudoForm'].pseudo().value.set('Alice');
       component.submitPseudo();
 
       expect(component['state']()).toBe('pseudoTaken');

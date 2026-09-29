@@ -16,9 +16,11 @@ function makeAdminApiStub() {
   return {
     poolTracks: computed(() => poolTracks()),
     poolTracksLoading: computed(() => false),
+    poolTracksLoaded: computed(() => true),
     poolSearchResults: computed(() => []),
     poolSearchLoading: computed(() => false),
     poolSearchQuery,
+    setPoolSearchQuery: (q: string) => poolSearchQuery.set(q),
     addTrack: vi.fn().mockName('addTrack').mockReturnValue(of(void 0)),
     reloadPool: vi.fn().mockName('reloadPool'),
     renameTrack: vi.fn().mockName('renameTrack').mockReturnValue(of({})),
@@ -128,9 +130,40 @@ describe('AdminPoolService', () => {
     });
 
     it('resets allTracksPage on change', () => {
-      service.allTracksPage.set(2);
+      service['_allTracksPage'].set(2);
       service.setPoolFilterLastUsedFrom('2026-01-01');
       expect(service.allTracksPage()).toBe(0);
+    });
+  });
+
+  // La page de la grille est reprise de l'adresse au F5 (?page=, cf. PoolTabComponent).
+  describe('pagination', () => {
+    beforeEach(() => {
+      // 40 morceaux, 15 par page → 3 pages.
+      apiStub._setPoolTracks({ available: Array.from({ length: 40 }, (_, i) => makePoolTrack(i + 1, true)), used: [] });
+    });
+
+    it('setPage() va à la page demandée', () => {
+      service.setPage(2);
+      expect(service.allTracksPage()).toBe(2);
+      expect(service.pagedAllTracks()).toHaveLength(10);
+    });
+
+    it('borne une page trop grande (reprise de l\'adresse) à la dernière page', () => {
+      service.setPage(9);
+      expect(service.allTracksPage()).toBe(2);
+    });
+
+    it('previousPage() repart de la page affichée, pas de la page demandée', () => {
+      service.setPage(9);
+      service.previousPage();
+      expect(service.allTracksPage()).toBe(1);
+    });
+
+    it('nextPage() ne dépasse pas la dernière page', () => {
+      service.setPage(2);
+      service.nextPage();
+      expect(service.allTracksPage()).toBe(2);
     });
   });
 
@@ -245,10 +278,10 @@ describe('AdminPoolService', () => {
       expect(service.editArtist()).toBe('Etienne Daho');
       expect(service.editSaveDisabled()).toBe(true);
 
-      service.editArtist.set('Étienne Daho');
+      service.editForm.artist().value.set('Étienne Daho');
       expect(service.editSaveDisabled()).toBe(false);
 
-      service.editTitle.set('   ');
+      service.editForm.title().value.set('   ');
       expect(service.editSaveDisabled()).toBe(true);
     });
 
@@ -259,7 +292,7 @@ describe('AdminPoolService', () => {
 
     it('envoie les valeurs nettoyées, ferme la modale et recharge le pool', () => {
       service.openEditModal(track);
-      service.editArtist.set('  Étienne Daho ');
+      service.editForm.artist().value.set('  Étienne Daho ');
       service.confirmEdit();
 
       expect(apiStub.renameTrack).toHaveBeenCalledWith(5, 'Étienne Daho', 'Tombe pour la France');
@@ -270,7 +303,7 @@ describe('AdminPoolService', () => {
     it('passe en « verrouillé » sur un 409 et garde la modale ouverte', () => {
       apiStub.renameTrack.mockReturnValue(throwError(() => ({ status: 409 })));
       service.openEditModal(track);
-      service.editTitle.set('Tombé pour la France');
+      service.editForm.title().value.set('Tombé pour la France');
       service.confirmEdit();
 
       expect(service.editStatus()).toBe('locked');
@@ -358,7 +391,7 @@ describe('AdminPoolService', () => {
       vi.useFakeTimers();
       apiStub.addTrack.mockReturnValue(of(void 0));
 
-      service.addPanelOpen.set(true);
+      service['_addPanelOpen'].set(true);
       service.addTrackFromPanel(makeDeezerTrackInfo(101));
       expect(service.addTrackStatus(101)).toBe('success');
 
@@ -463,12 +496,13 @@ describe('AdminPoolService', () => {
     });
   });
 
-  // M14 (revue du 25/09) : la recherche Deezer de la modale écoute passait par
-  // takeUntilDestroyed(this.destroyRef), qui n'est détruit qu'avec le service (scopé à
-  // AdminComponent) — pas à la fermeture de la modale. Une réponse tardive après fermeture,
-  // ou après réouverture sur un autre morceau, appelait quand même audioPreview.toggle(...) et
-  // écrasait l'état affiché.
+  // M14 (revue du 25/09) : une réponse Deezer tardive après fermeture de la modale écoute, ou
+  // après réouverture sur un autre morceau, appelait quand même audioPreview.toggle(...) et
+  // écrasait l'état affiché. La recherche passe désormais par une resource, qui annule la
+  // requête précédente dès que le morceau change ou que la modale se ferme.
   describe('modale écoute (openPreviewModal/closePreviewModal)', () => {
+    const flushMicrotasks = () => new Promise(resolve => setTimeout(resolve));
+
     it('should not call audioPreview.toggle for a search that resolves after the modal was closed', () => {
       const pending = new Subject<{
         deezerTrackId: number;
@@ -477,14 +511,17 @@ describe('AdminPoolService', () => {
       apiStub.searchDeezer.mockReturnValue(pending);
 
       service.openPreviewModal(makePoolTrack(5, true) as any);
+      TestBed.tick();
       service.closePreviewModal();
+      TestBed.tick();
       pending.next([{ deezerTrackId: 5, previewUrl: 'https://example.com/5.mp3' }]);
+      TestBed.tick();
 
       expect(audioPreviewStub.toggle).not.toHaveBeenCalled();
       expect(service.previewModalUrl()).toBeNull();
     });
 
-    it('should cancel the previous pending search when opening a different track', () => {
+    it('should cancel the previous pending search when opening a different track', async () => {
       const firstSearch = new Subject<{
         deezerTrackId: number;
         previewUrl: string | null;
@@ -494,6 +531,7 @@ describe('AdminPoolService', () => {
       const trackA = makePoolTrack(5, true) as any;
       const trackB = makePoolTrack(6, true) as any;
       service.openPreviewModal(trackA);
+      TestBed.tick();
 
       const secondSearch = new Subject<{
         deezerTrackId: number;
@@ -501,15 +539,22 @@ describe('AdminPoolService', () => {
       }[]>();
       apiStub.searchDeezer.mockReturnValue(secondSearch);
       service.openPreviewModal(trackB);
+      TestBed.tick();
+      // La resource s'abonne au flux de recherche après une micro-tâche : sans cette attente,
+      // la réponse émise juste après (Subject sans rejeu) partirait avant l'abonnement.
+      await flushMicrotasks();
 
       // La réponse tardive du premier morceau ne doit plus rien pouvoir modifier.
       firstSearch.next([{ deezerTrackId: 5, previewUrl: 'https://example.com/5.mp3' }]);
+      TestBed.tick();
 
       expect(service.previewModalTrack()).toBe(trackB);
       expect(service.previewModalUrl()).toBeNull();
       expect(audioPreviewStub.toggle).not.toHaveBeenCalled();
 
       secondSearch.next([{ deezerTrackId: 6, previewUrl: 'https://example.com/6.mp3' }]);
+      await flushMicrotasks(); // la resource passe à « resolved » dans une micro-tâche
+      TestBed.tick();
 
       expect(service.previewModalUrl()).toBe('https://example.com/6.mp3');
       expect(audioPreviewStub.toggle).toHaveBeenCalledTimes(1);

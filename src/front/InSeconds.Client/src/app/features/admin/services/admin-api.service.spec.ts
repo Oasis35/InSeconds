@@ -59,7 +59,7 @@ describe('AdminHttpService', () => {
 
   describe('logout()', () => {
     it('should delegate to PlayerSessionService, reload the session, then set authenticated to false', async () => {
-      service.authenticated.set(true);
+      service['_authenticated'].set(true);
 
       await service.logout();
 
@@ -84,7 +84,7 @@ describe('AdminHttpService', () => {
     });
 
     it('should set authenticated to false when GET /api/admin/me fails (401)', async () => {
-      service.authenticated.set(true);
+      service['_authenticated'].set(true);
       service.checkAuth();
 
       const req = httpMock.expectOne(`${base}/me`);
@@ -271,7 +271,7 @@ describe('AdminApiService — delegation', () => {
 
   it('should expose authenticated signal from AdminHttpService', () => {
     expect(apiService.authenticated()).toBe(false);
-    httpService.authenticated.set(true);
+    httpService['_authenticated'].set(true);
     expect(apiService.authenticated()).toBe(true);
   });
 
@@ -281,7 +281,7 @@ describe('AdminApiService — delegation', () => {
   });
 
   it('logout() should delegate to AdminHttpService', async () => {
-    httpService.authenticated.set(true);
+    httpService['_authenticated'].set(true);
     await apiService.logout();
     expect(httpService.authenticated()).toBe(false);
   });

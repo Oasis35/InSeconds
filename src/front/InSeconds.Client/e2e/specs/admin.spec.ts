@@ -60,7 +60,7 @@ test.describe('Admin — pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('button', { name: /Pool/ }).click();
+    await page.getByRole('link', { name: /^Pool/ }).click();
     // En-têtes du tableau
     await expect(page.getByRole('columnheader', { name: 'Artiste' })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Titre' })).toBeVisible();
@@ -72,7 +72,7 @@ test.describe('Admin — pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('button', { name: /Pool/ }).click();
+    await page.getByRole('link', { name: /^Pool/ }).click();
     await admin.poolSearchInput().fill('Eminem');
     await expect(page.getByRole('cell', { name: 'Eminem', exact: true })).toBeVisible();
     // Les autres artistes ne doivent pas apparaître
@@ -83,7 +83,7 @@ test.describe('Admin — pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('button', { name: /Pool/ }).click();
+    await page.getByRole('link', { name: /^Pool/ }).click();
     await admin.poolFilterPreview().selectOption('missing');
     // 5 morceaux sans preview dans le seed
     await expect(page.getByRole('cell', { name: 'Manquante' })).toHaveCount(5);
@@ -93,7 +93,7 @@ test.describe('Admin — pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('button', { name: /Pool/ }).click();
+    await page.getByRole('link', { name: /^Pool/ }).click();
     await admin.poolFilterStatus().selectOption('available');
     await expect(page.getByRole('cell', { name: 'Utilisé' })).not.toBeVisible();
     await expect(page.getByRole('cell', { name: 'Disponible' }).first()).toBeVisible();
@@ -103,7 +103,7 @@ test.describe('Admin — pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('button', { name: /Pool/ }).click();
+    await page.getByRole('link', { name: /^Pool/ }).click();
     await admin.addButton().click();
 
     // Cherche dans le panneau (placeholder distinct du filtre pool)
@@ -122,7 +122,7 @@ test.describe('Admin — pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('button', { name: /Pool/ }).click();
+    await page.getByRole('link', { name: /^Pool/ }).click();
 
     // Filtre sur un morceau disponible connu
     await admin.poolSearchInput().fill('Sabrina Carpenter');
@@ -144,7 +144,7 @@ test.describe('Admin — pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('button', { name: /Pool/ }).click();
+    await page.getByRole('link', { name: /^Pool/ }).click();
 
     await admin.poolSearchInput().fill('Sabrina Carpenter');
     await page.getByRole('button', { name: '🗑' }).first().click();
@@ -160,7 +160,7 @@ test.describe('Admin — pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('button', { name: /Pool/ }).click();
+    await page.getByRole('link', { name: /^Pool/ }).click();
 
     // Coldplay — Yellow fait partie du défi J-2 du seed : pas de corbeille, un bouton « Désactiver » à la place.
     await admin.poolSearchInput().fill('Coldplay');
@@ -177,7 +177,7 @@ test.describe('Admin — pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('button', { name: /Pool/ }).click();
+    await page.getByRole('link', { name: /^Pool/ }).click();
 
     // Eminem est dans le défi du jour : « Désactiver » grisé.
     await admin.poolSearchInput().fill('Eminem');
@@ -205,7 +205,7 @@ test.describe('Admin — pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('button', { name: /Pool/ }).click();
+    await page.getByRole('link', { name: /^Pool/ }).click();
 
     // Eminem est dans le défi du jour : ✎ désactivé.
     await admin.poolSearchInput().fill('Eminem');
@@ -232,7 +232,7 @@ test.describe('Admin — pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('button', { name: /Pool/ }).click();
+    await page.getByRole('link', { name: /^Pool/ }).click();
 
     await expect(admin.poolColumnHeader('Dernière utilisation')).toBeVisible();
     await expect(admin.poolColumnHeader('Date de déblocage')).toBeVisible();
@@ -256,7 +256,7 @@ test.describe('Admin — pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('button', { name: /Pool/ }).click();
+    await page.getByRole('link', { name: /^Pool/ }).click();
 
     // Ed Sheeran (index 20, -15j) tombe dans la plage ; Queen (-5j) et Adele (-90j) en dehors.
     const today = new Date();
@@ -274,7 +274,7 @@ test.describe('Admin — pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('button', { name: /Pool/ }).click();
+    await page.getByRole('link', { name: /^Pool/ }).click();
 
     // Adele (index 19) a le UsageCount le plus élevé du seed (7) — tri desc doit la faire remonter.
     await admin.poolColumnHeader('Nb. utilisations').click();
@@ -287,7 +287,7 @@ test.describe('Admin — pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('button', { name: /Pool/ }).click();
+    await page.getByRole('link', { name: /^Pool/ }).click();
 
     await page.getByRole('button', { name: '▶', exact: true }).first().click();
 
@@ -359,7 +359,7 @@ test.describe('Admin — défis', () => {
     // Le seed crée 3 défis (J-2, J-1, aujourd'hui) — mais en début de mois, J-2 et/ou J-1
     // peuvent tomber dans le mois précédent. On compte donc dynamiquement combien tombent
     // dans le mois UTC courant plutôt que de coder en dur "3".
-    await page.getByRole('button', { name: /Défis/ }).click();
+    await page.getByRole('link', { name: /^Défis/ }).click();
     const now = new Date();
     const monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
     const currentMonth = `${monthNames[now.getUTCMonth()]} ${now.getUTCFullYear()}`;
@@ -420,10 +420,37 @@ test.describe('Admin — chargement paresseux par onglet', () => {
     await expect(admin.tab('Défis')).toBeVisible();
 
     await admin.clickTab('Pool');
-    await expect(page.getByRole('button', { name: /^Pool \(\d+\)$/ })).toBeVisible();
+    await expect(page.getByRole('link', { name: /^Pool \(\d+\)$/ })).toBeVisible();
 
     await admin.clickTab('Défis');
-    await expect(page.getByRole('button', { name: /^Défis \(\d+\)$/ })).toBeVisible();
+    await expect(page.getByRole('link', { name: /^Défis \(\d+\)$/ })).toBeVisible();
+  });
+
+  test('l\'onglet et la page de la grille du pool survivent au rechargement', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+
+    await admin.clickTab('Pool');
+    await expect(page).toHaveURL(/\/admin\/pool$/);
+    await expect(page.getByText(/page 1\/\d+/)).toBeVisible();
+
+    await page.getByRole('button', { name: '→' }).click();
+    await expect(page).toHaveURL(/\/admin\/pool\?page=2$/);
+
+    await page.reload();
+    await expect(page.getByText(/page 2\/\d+/)).toBeVisible();
+    await expect(page).toHaveURL(/\/admin\/pool\?page=2$/);
+  });
+
+  test('une ancienne adresse /admin?tab=pool ouvre l\'onglet Pool', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+
+    await page.goto('/admin?tab=pool');
+    await expect(page).toHaveURL(/\/admin\/pool$/);
+    await expect(page.getByRole('link', { name: /^Pool/ })).toHaveAttribute('aria-current', 'page');
   });
 });
 
@@ -459,7 +486,7 @@ test.describe('Admin — indicateur joueurs / ID navigateur', () => {
     expect(browserShortId).toMatch(/^[0-9a-f]{8}$/);
 
     await admin.login();
-    await page.getByRole('button', { name: /Défis/ }).click();
+    await page.getByRole('link', { name: /^Défis/ }).click();
 
     const today = new Date().toISOString().slice(0, 10);
     const todayRow = admin.challengeRow(today);
@@ -490,7 +517,7 @@ test.describe('Admin — indicateur joueurs / ID navigateur', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('button', { name: /Défis/ }).click();
+    await page.getByRole('link', { name: /^Défis/ }).click();
 
     const today = new Date().toISOString().slice(0, 10);
     const todayRow = admin.challengeRow(today);

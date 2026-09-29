@@ -6,12 +6,11 @@
     <p class="text-sm leading-relaxed" style="color:var(--text-muted)">{{ 'login.request.subtitle' | translate }}</p>
 
     @if (status() !== 'sent') {
-      <form (ngSubmit)="submit()" class="space-y-3">
+      <form [formRoot]="loginForm" (submit)="submit()" class="space-y-3">
         <label for="login-email" class="sr-only">{{ 'login.request.emailPlaceholder' | translate }}</label>
         <input
           id="login-email"
-          [(ngModel)]="email"
-          name="email"
+          [formField]="loginForm.email"
           type="email"
           autocomplete="email"
           [placeholder]="'login.request.emailPlaceholder' | translate"

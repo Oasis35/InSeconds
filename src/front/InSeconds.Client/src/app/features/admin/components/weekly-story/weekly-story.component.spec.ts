@@ -167,8 +167,8 @@ describe('WeeklyStoryComponent', () => {
   });
 
   it('période invalide : pas d\'appel API', async () => {
-    story.from.set('2026-09-10');
-    story.to.set('2026-09-01');
+    story['_from'].set('2026-09-10');
+    story['_to'].set('2026-09-01');
 
     await component.generate();
 

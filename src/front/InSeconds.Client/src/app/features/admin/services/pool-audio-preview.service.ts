@@ -3,8 +3,10 @@ import { Injectable, signal } from '@angular/core';
 /** Lecteur audio partagé par les modales ajout/écoute du pool admin (preview 30s Deezer). */
 @Injectable()
 export class PoolAudioPreviewService {
-  readonly playing = signal(false);
-  readonly progress = signal(0); // 0-100
+  private readonly _playing = signal(false);
+  readonly playing = this._playing.asReadonly();
+  private readonly _progress = signal(0); // 0-100
+  readonly progress = this._progress.asReadonly();
 
   private audio: HTMLAudioElement | null = null;
   private rafId: number | null = null;
@@ -18,8 +20,8 @@ export class PoolAudioPreviewService {
       this.stop();
       this.audio = new Audio(url);
       this.audio.onended = () => {
-        this.playing.set(false);
-        this.progress.set(100);
+        this._playing.set(false);
+        this._progress.set(100);
         if (this.rafId !== null) { cancelAnimationFrame(this.rafId); this.rafId = null; }
       };
     }
@@ -27,12 +29,12 @@ export class PoolAudioPreviewService {
     const audio = this.audio;
     if (!audio) return;
     audio.play().then(() => {
-      this.playing.set(true);
+      this._playing.set(true);
       const tick = () => {
         const current = this.audio;
         if (!current || current.paused) return;
         const pct = current.duration ? (current.currentTime / current.duration) * 100 : 0;
-        this.progress.set(pct);
+        this._progress.set(pct);
         this.rafId = requestAnimationFrame(tick);
       };
       this.rafId = requestAnimationFrame(tick);
@@ -41,13 +43,13 @@ export class PoolAudioPreviewService {
 
   private pause(): void {
     this.audio?.pause();
-    this.playing.set(false);
+    this._playing.set(false);
     if (this.rafId !== null) { cancelAnimationFrame(this.rafId); this.rafId = null; }
   }
 
   stop(): void {
     if (this.rafId !== null) { cancelAnimationFrame(this.rafId); this.rafId = null; }
     if (this.audio) { this.audio.pause(); this.audio.onended = null; this.audio = null; }
-    this.playing.set(false);
+    this._playing.set(false);
   }
 }

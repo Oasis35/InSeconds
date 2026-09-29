@@ -5,53 +5,53 @@
 
       <!-- En-tête -->
       <app-game-header
-        [playing]="gameState() === 'playing'"
-        [showStreak]="gameState() !== 'loading' && gameState() !== 'playing'"
-        [streak]="streakInfo()"
-        [pulse]="showGelEarnedToast()"
-        [totalScore]="totalScore()"
-        [currentIndex]="currentIndex()"
-        [trackCount]="tracks().length"
-        (abandon)="requestAbandon()"
-        (openStreak)="showStreakSheet.set(true)" />
+        [playing]="store.state() === 'playing'"
+        [showStreak]="store.state() !== 'loading' && store.state() !== 'playing'"
+        [streak]="store.streakInfo()"
+        [pulse]="store.showGelEarnedToast()"
+        [totalScore]="store.totalScore()"
+        [currentIndex]="store.currentIndex()"
+        [trackCount]="store.tracks().length"
+        (abandon)="store.requestAbandon()"
+        (openStreak)="openStreakSheet()" />
 
       <!-- Chargement -->
-      @if (gameState() === 'loading') {
+      @if (store.state() === 'loading') {
         <div class="flex-1 flex items-center justify-center">
           <p class="text-sm animate-pulse" style="color:var(--text-faint)">{{ 'common.loading' | translate }}</p>
         </div>
       }
 
       <!-- Accueil -->
-      @if (gameState() === 'welcome') {
+      @if (store.state() === 'welcome') {
         <app-welcome-screen
-          [trackCount]="peekTracksCount()"
-          [streak]="streakInfo()"
-          [hideLoginCta]="showLostToast()"
-          (startGame)="beginGame()" />
+          [trackCount]="store.peekTracksCount()"
+          [streak]="store.streakInfo()"
+          [hideLoginCta]="store.showLostToast()"
+          (startGame)="store.beginGame()" />
       }
 
       <!-- Reprise de partie en cours -->
-      @if (gameState() === 'resume_prompt') {
+      @if (store.state() === 'resume_prompt') {
         <app-resume-screen
-          [completedCount]="peekCompletedCount()"
-          [trackCount]="peekTracksCount()"
-          [abandonLoading]="abandonLoading()"
-          (resumeGame)="beginResume()"
-          (abandon)="beginAbandonFromResume()" />
+          [completedCount]="store.peekCompletedCount()"
+          [trackCount]="store.peekTracksCount()"
+          [abandonLoading]="store.abandonLoading()"
+          (resumeGame)="store.beginResume()"
+          (abandon)="store.beginAbandonFromResume()" />
       }
 
       <!-- Confirmation abandon en cours de partie -->
-      @if (gameState() === 'playing' && showAbandonConfirm()) {
+      @if (store.state() === 'playing' && store.showAbandonConfirm()) {
         <app-confirm-sheet
           tone="danger"
           [title]="'abandonSheet.title' | translate"
           [body]="(playerSession.isLinked() ? 'abandonSheet.bodyLinked' : 'abandonSheet.body') | translate"
           [confirmLabel]="'abandonSheet.confirm' | translate"
           [cancelLabel]="'abandonSheet.cancel' | translate"
-          [loading]="abandonLoading()"
-          (confirm)="confirmAbandon()"
-          (cancelled)="showAbandonConfirm.set(false)" />
+          [loading]="store.abandonLoading()"
+          (confirm)="store.confirmAbandon()"
+          (cancelled)="store.cancelAbandon()" />
       }
 
       <!-- Confirmation quitter la page en cours de partie -->
@@ -69,50 +69,50 @@
       }
 
       <!-- Pas de défi aujourd'hui -->
-      @if (gameState() === 'no_challenge') {
-        <app-status-screen titleKey="noChallenge.title" bodyKey="noChallenge.body" (retry)="retry()" />
+      @if (store.state() === 'no_challenge') {
+        <app-status-screen titleKey="noChallenge.title" bodyKey="noChallenge.body" (retry)="store.init()" />
       }
 
       <!-- Erreur -->
-      @if (gameState() === 'error') {
-        <app-status-screen titleKey="error.title" bodyKey="error.body" [errorCode]="errorReporting.lastErrorCode()" (retry)="retry()" />
+      @if (store.state() === 'error') {
+        <app-status-screen titleKey="error.title" bodyKey="error.body" [errorCode]="errorReporting.lastErrorCode()" (retry)="store.init()" />
       }
 
       <!-- Déjà joué aujourd'hui (Completed ou Abandoned) -->
-      @if (gameState() === 'already_played') {
+      @if (store.state() === 'already_played') {
         <app-already-played-screen
-          [stats]="todayStats()"
-          [abandoned]="sessionAbandoned()"
-          [countdown]="countdown()"
+          [stats]="store.todayStats()"
+          [abandoned]="store.sessionAbandoned()"
+          [countdown]="store.countdown()"
           [shareCopied]="shareCopied()"
           [shareFailed]="shareFailed()"
           (share)="shareFromStats()" />
       }
 
       <!-- Jeu en cours -->
-      @if (gameState() === 'playing' && currentTrack()) {
+      @if (store.state() === 'playing' && store.currentTrack(); as track) {
         <div class="screen-enter flex-1 flex flex-col justify-start pt-4">
           <app-blind-round
             #roundRef
-            [track]="currentTrack()!"
-            [isLast]="currentIndex() === tracks().length - 1"
-            [sessionId]="sessionId"
-            [minListenedSeconds]="currentTrackMinListenedSeconds()"
+            [track]="track"
+            [isLast]="store.isLastTrack()"
+            [sessionId]="store.sessionId()"
+            [minListenedSeconds]="store.currentTrackMinListenedSeconds()"
             (answered)="onAnswered($event)"
-            (nextTrack)="onNextTrack()" />
+            (nextTrack)="store.nextTrack()" />
         </div>
       }
 
       <!-- Récapitulatif final -->
-      @if (gameState() === 'done') {
+      @if (store.state() === 'done') {
         <app-final-recap-screen
-          [results]="results()"
-          [stats]="todayStats()"
-          [displayedScore]="displayedTotalScore()"
+          [results]="store.results()"
+          [stats]="store.todayStats()"
+          [displayedScore]="store.displayedTotalScore()"
           [shareCopied]="shareCopied()"
           [shareFailed]="shareFailed()"
-          [canShare]="results().length >= tracks().length"
-          [countdown]="countdown()"
+          [canShare]="store.canShare()"
+          [countdown]="store.countdown()"
           (share)="share()" />
       }
 
@@ -120,32 +120,32 @@
     <app-game-footer class="mt-auto" />
 
     <!-- Toast de série non sauvegardée (guest, écrans fin de partie) — variante « Tu aurais gagné un gel ! » au palier -->
-    @if (showStreakToast()) {
+    @if (store.showStreakToast()) {
       <div class="fixed left-1/2 z-20 w-full px-4" style="bottom:18px;transform:translateX(-50%);max-width:402px">
         <div class="flex items-center gap-3 min-h-14 px-3.5 py-3 rounded-xl"
              style="background:rgb(var(--rgb-panel) / 0.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-left:3px solid var(--color-accent-3)">
-          @if (guestFreezeMiss()) {
+          @if (store.guestFreezeMiss()) {
             <span class="text-lg" style="color:var(--color-accent-2)"><app-streak-icon name="snowflake" /></span>
             <p class="flex-1 text-xs leading-snug" style="color:var(--text-body)">
               <strong class="font-semibold">{{ 'streakFreeze.guestMissToast.title' | translate }}</strong>
-              <span style="color:var(--text-muted)">{{ 'streakFreeze.guestMissToast.body' | translate: { streak: toastStreak() } }}</span>
+              <span style="color:var(--text-muted)">{{ 'streakFreeze.guestMissToast.body' | translate: { streak: store.toastStreak() } }}</span>
             </p>
           } @else {
             <span class="text-lg" style="color:var(--color-accent-3)"><app-streak-icon name="flame" /></span>
             <p class="flex-1 text-xs leading-snug" style="color:var(--text-body)">
-              {{ 'streakToast.body.' + toastStreakKey() | translate: { streak: toastStreak() } }}
+              {{ 'streakToast.body.' + store.toastStreakKey() | translate: { streak: store.toastStreak() } }}
               <span style="color:var(--text-muted)">{{ 'streakToast.hint' | translate }}</span>
             </p>
           }
           <ng-container *ngTemplateOutlet="signupCta" />
-          <button type="button" (click)="streakToastDismissed.set(true)" [attr.aria-label]="'streakToast.dismiss' | translate"
+          <button type="button" (click)="store.dismissStreakToast()" [attr.aria-label]="'streakToast.dismiss' | translate"
                   class="flex-shrink-0 w-6 h-6 text-sm leading-none" style="color:var(--text-muted)">✕</button>
         </div>
       </div>
     }
 
     <!-- Toast invité « série perdue » (accueil, une fois par série perdue) -->
-    @if (showLostToast()) {
+    @if (store.showLostToast()) {
       <div class="fixed left-1/2 z-20 w-full px-4" style="bottom:18px;transform:translateX(-50%);max-width:402px">
         <div data-testid="lost-streak-toast" data-anim class="relative overflow-hidden flex items-center gap-3 min-h-14 px-3.5 py-3 rounded-xl"
              style="background:rgb(var(--rgb-panel) / 0.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-left:3px solid var(--color-accent-3);animation:gel-toast .45s cubic-bezier(.2,.8,.2,1) .3s both">
@@ -153,7 +153,7 @@
           <p class="flex-1 text-xs leading-snug" style="color:var(--text-body)">
             <strong class="font-semibold">
               {{ 'streakFreeze.lostToast.titleBefore' | translate }}
-              <s style="color:var(--text-muted)">{{ 'streakFreeze.lostToast.titleStrike' | translate: { streak: lostStreak() } }}</s>
+              <s style="color:var(--text-muted)">{{ 'streakFreeze.lostToast.titleStrike' | translate: { streak: store.lostStreak() } }}</s>
               {{ 'streakFreeze.lostToast.titleAfter' | translate }}
             </strong>
             <span style="color:var(--text-muted)">
@@ -163,30 +163,30 @@
             </span>
           </p>
           <ng-container *ngTemplateOutlet="signupCta" />
-          <button type="button" (click)="lostStreak.set(null)" [attr.aria-label]="'streakFreeze.dismiss' | translate"
+          <button type="button" (click)="store.dismissLostToast()" [attr.aria-label]="'streakFreeze.dismiss' | translate"
                   class="flex-shrink-0 w-6 h-6 text-sm leading-none" style="color:var(--text-muted)">✕</button>
         </div>
       </div>
     }
 
     <!-- Toast compte connecté « 1 gel a sauvé ta série » (écrans fin de partie) -->
-    @if (showGelUsedToast()) {
+    @if (store.showGelUsedToast()) {
       <div class="fixed left-1/2 z-20 w-full px-4" style="bottom:18px;transform:translateX(-50%);max-width:402px">
         <div data-testid="gel-used-toast" data-anim class="relative overflow-hidden flex items-center gap-3 min-h-14 px-3.5 py-3 rounded-xl"
              style="background:rgb(var(--rgb-panel) / 0.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-left:3px solid var(--color-accent-2);animation:gel-toast .45s cubic-bezier(.2,.8,.2,1) .3s both">
           <span class="text-lg" style="color:var(--color-accent-2)"><app-streak-icon name="snowflake" /></span>
           <p class="flex-1 text-xs leading-snug" style="color:var(--text-body)">
-            <strong class="font-semibold">{{ 'streakFreeze.usedToast.title.' + freezesUsedKey() | translate: { n: freezesUsed() } }}</strong>
-            <span style="color:var(--text-muted)">{{ 'streakFreeze.usedToast.body.' + freezesUsedKey() | translate: { n: freezesUsed(), streak: streakInfo()?.streak } }}</span>
+            <strong class="font-semibold">{{ 'streakFreeze.usedToast.title.' + store.freezesUsedKey() | translate: { n: store.freezesUsed() } }}</strong>
+            <span style="color:var(--text-muted)">{{ 'streakFreeze.usedToast.body.' + store.freezesUsedKey() | translate: { n: store.freezesUsed(), streak: store.streakInfo()?.streak } }}</span>
           </p>
-          <button type="button" (click)="gelToastDismissed.set(true)" [attr.aria-label]="'streakFreeze.dismiss' | translate"
+          <button type="button" (click)="store.dismissGelToast()" [attr.aria-label]="'streakFreeze.dismiss' | translate"
                   class="flex-shrink-0 w-6 h-6 text-sm leading-none" style="color:var(--text-muted)">✕</button>
         </div>
       </div>
     }
 
     <!-- Toast compte connecté « +1 gel gagné ! » (écrans fin de partie) -->
-    @if (showGelEarnedToast()) {
+    @if (store.showGelEarnedToast()) {
       <div class="fixed left-1/2 z-20 w-full px-4" style="bottom:18px;transform:translateX(-50%);max-width:402px">
         <div data-testid="gel-earned-toast" data-anim class="relative overflow-hidden flex items-center gap-3 min-h-14 px-3.5 py-3 rounded-xl"
              style="background:rgb(var(--rgb-panel) / 0.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-left:3px solid var(--color-accent-2);animation:gel-bounce .6s cubic-bezier(.2,.8,.2,1) .3s both, gel-halo .8s ease-in-out 1.3s 2">
@@ -212,10 +212,10 @@
               <span style="background:var(--gradient-ice);-webkit-background-clip:text;background-clip:text;color:transparent">{{ 'streakFreeze.earnedToast.titleHighlight' | translate }}</span>
               {{ 'streakFreeze.earnedToast.titleRest' | translate }}
             </p>
-            <p class="mt-[3px] mb-0 text-xs leading-snug" style="color:var(--text-muted)">{{ 'streakFreeze.earnedToast.body' | translate: { streak: streakInfo()?.streak } }}</p>
+            <p class="mt-[3px] mb-0 text-xs leading-snug" style="color:var(--text-muted)">{{ 'streakFreeze.earnedToast.body' | translate: { streak: store.streakInfo()?.streak } }}</p>
           </div>
-          <app-freeze-cells [count]="streakInfo()?.freezes ?? 0" [max]="streakInfo()?.maxFreezes ?? 0" size="sm" [fillLast]="true" />
-          <button type="button" (click)="gelToastDismissed.set(true)" [attr.aria-label]="'streakFreeze.dismiss' | translate"
+          <app-freeze-cells [count]="store.streakInfo()?.freezes ?? 0" [max]="store.streakInfo()?.maxFreezes ?? 0" size="sm" [fillLast]="true" />
+          <button type="button" (click)="store.dismissGelToast()" [attr.aria-label]="'streakFreeze.dismiss' | translate"
                   class="flex-shrink-0 w-6 h-6 text-sm leading-none" style="color:var(--text-muted)">✕</button>
           <span data-anim class="absolute top-0 bottom-0 pointer-events-none"
                 style="left:-50%;width:40%;background:linear-gradient(100deg,transparent,rgb(255 255 255 / .35),transparent);animation:gel-shine .9s ease-in-out .7s both"></span>
@@ -236,7 +236,7 @@
     <!-- Panneau série / gel (clic sur la gélule du header) -->
     @if (showStreakSheet()) {
       <app-streak-sheet
-        [streak]="sheetStreak()"
+        [streak]="store.sheetStreak()"
         [linked]="playerSession.isLinked()"
         (closed)="closeStreakSheet()"
         (playNow)="playFromStreakSheet()"

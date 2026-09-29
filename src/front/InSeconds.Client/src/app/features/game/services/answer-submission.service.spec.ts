@@ -34,7 +34,7 @@ describe('AnswerSubmissionService', () => {
   });
 
   it('setResult stores the result, stops isSubmitting and animates the displayed score', () => {
-    service.isSubmitting.set(true);
+    service.startSubmitting();
 
     service.setResult(RESPONSE);
 
@@ -45,7 +45,7 @@ describe('AnswerSubmissionService', () => {
   });
 
   it('setError marks the submission as failed and stops isSubmitting, without setting a result', () => {
-    service.isSubmitting.set(true);
+    service.startSubmitting();
 
     service.setError();
 
@@ -63,9 +63,26 @@ describe('AnswerSubmissionService', () => {
     expect(service.result()).toBe(RESPONSE);
   });
 
+  it('setPendingConfirm opens and closes the inline confirmation', () => {
+    service.setPendingConfirm('empty');
+    expect(service.pendingConfirm()).toBe('empty');
+
+    service.setPendingConfirm(null);
+    expect(service.pendingConfirm()).toBeNull();
+  });
+
+  it('startSubmitting marks the answer as being sent and clears a previous failure', () => {
+    service.setError();
+
+    service.startSubmitting();
+
+    expect(service.isSubmitting()).toBe(true);
+    expect(service.submitFailed()).toBe(false);
+  });
+
   it('reset clears result/score/submitting/failed state and pending confirmation', () => {
     service.setError();
-    service.pendingConfirm.set('skip');
+    service.setPendingConfirm('skip');
 
     service.reset();
 
