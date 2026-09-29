@@ -88,6 +88,11 @@ public sealed class Player
 
         var streak = status == StreakStatus.Broken ? 0 : currentStreak;
 
+        // Série protégée : les gels qui couvrent les jours manqués ne sont retirés du stock
+        // qu'à la complétion du défi, mais ils sont déjà engagés — on affiche le stock restant
+        // (sinon la gélule montre encore 2 gels alors que l'accueil annonce qu'un gel a servi).
+        var freezes = status == StreakStatus.Protected ? streakFreezes - missed : streakFreezes;
+
         int? nextFreezeInDays = isGuest || rules.FreezeEveryDays <= 0
             ? null
             : rules.FreezeEveryDays - streak % rules.FreezeEveryDays;
@@ -99,7 +104,7 @@ public sealed class Player
         return new StreakView(
             status,
             streak,
-            isGuest ? 0 : streakFreezes,
+            isGuest ? 0 : freezes,
             isGuest ? 0 : rules.FreezeMax,
             isGuest ? 0 : rules.FreezeEveryDays,
             nextFreezeInDays,

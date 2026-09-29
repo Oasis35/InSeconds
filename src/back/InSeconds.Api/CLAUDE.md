@@ -312,7 +312,7 @@ Implémente `IDataProtectionKeyContext` (clés persistées en base, cf. piège 1
 ## Common/Streak (gel de série, 2026-09-23)
 
 - **`StreakRulesReader.LoadAsync(db, ct)`** → `Domain/StreakRules(FreezeEveryDays, FreezeMax, LostNudgeMinDays)` : lit à chaud `StreakFreezeEveryDays`/`StreakFreezeMax`/`StreakLostNudgeMinDays` (`WHERE Key IN (...)`), fallback sur les valeurs d'`AppSettings` si absent/invalide. Appelé par `SubmitAnswer` (complétion), le peek, `GetCurrentPlayer`, `StartSession`, `Stats/Today`.
-- **`StreakDto(Status, Streak, Freezes, MaxFreezes, FreezeEveryDays, NextFreezeInDays?, MissedDays, LostStreak?, LastPlayedDate?)`** : projection de `Domain/StreakView` (`Status` sérialisé en `string` `active`/`protected`/`broken`). Invité : `Freezes`/`MaxFreezes`/`FreezeEveryDays` = 0, `NextFreezeInDays` = null. `StreakDto.None` pour un visiteur sans Player.
+- **`StreakDto(Status, Streak, Freezes, MaxFreezes, FreezeEveryDays, NextFreezeInDays?, MissedDays, LostStreak?, LastPlayedDate?)`** : projection de `Domain/StreakView` (`Status` sérialisé en `string` `active`/`protected`/`broken`). `Freezes` = stock affiché : en statut `protected`, stock − `MissedDays` (gels déjà engagés, la base ne baisse qu'à la complétion). Invité : `Freezes`/`MaxFreezes`/`FreezeEveryDays` = 0, `NextFreezeInDays` = null. `StreakDto.None` pour un visiteur sans Player.
 - Règles produit : `docs/GAMEPLAY_RULES_FR.md` § Streak.
 
 ## Common/Scoring — `ScoreCalculator`

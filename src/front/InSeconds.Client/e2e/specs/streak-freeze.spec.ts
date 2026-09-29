@@ -74,10 +74,10 @@ test.describe('Gel de série — compte connecté', () => {
     await expect(sheet(page).getByText('Stock plein', { exact: false })).not.toBeVisible();
   });
 
-  test('série protégée : « Bon retour ! », panneau avec frise, puis toast « 1 gel a sauvé ta série »', async ({ page, api }) => {
+  test('série protégée : « Bon retour ! », gel engagé retiré de la gélule, panneau avec frise, puis toast « 1 gel a sauvé ta série »', async ({ page, api }) => {
     await page.clock.install({ time: Date.now() });
     await linkAccount(page, api, 'freeze-protected@e2e.test', 'FreezeProtegeE2E');
-    await setStreak(page, api, { streak: 12, lastPlayedDaysAgo: 2, freezes: 1 });
+    await setStreak(page, api, { streak: 12, lastPlayedDaysAgo: 2, freezes: 2 });
 
     const game = new GamePage(page);
     await game.goto();
@@ -86,6 +86,8 @@ test.describe('Gel de série — compte connecté', () => {
     await expect(page.getByRole('heading', { name: 'Bon retour !' })).toBeVisible();
     await expect(page.getByTestId('frozen-line')).toContainText('12 jours de série');
     await expect(pill(page)).toHaveAttribute('data-mode', 'protected');
+    // 2 gels en stock, 1 déjà engagé sur le jour manqué : la gélule en affiche 1 (pas 2).
+    await expect(pill(page)).toHaveText(/12\s*1/);
 
     await pill(page).click();
     await expect(sheet(page)).toHaveAttribute('data-variant', 'protected');

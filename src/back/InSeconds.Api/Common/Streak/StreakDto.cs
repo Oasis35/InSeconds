@@ -7,7 +7,7 @@ namespace InSeconds.Api.Common.Streak;
 /// </summary>
 /// <param name="Status"><c>active</c> | <c>protected</c> | <c>broken</c>.</param>
 /// <param name="Streak">Série effective (0 si <c>broken</c>).</param>
-/// <param name="Freezes">Gels en stock (0 pour un invité).</param>
+/// <param name="Freezes">Gels en stock, déduction faite de ceux déjà engagés sur les jours manqués d'une série protégée (0 pour un invité).</param>
 /// <param name="MaxFreezes">Stock maximum (0 pour un invité).</param>
 /// <param name="FreezeEveryDays">+1 gel tous les N jours de série (0 pour un invité).</param>
 /// <param name="NextFreezeInDays">Jours de série restants avant le prochain gel (null pour un invité).</param>
