@@ -7,7 +7,7 @@ import { PlayerSessionService } from '../../../../core/services/player-session.s
 
 /** Stub minimal de TranslateService (même approche que language.service.spec.ts) — LanguageService en dépend. */
 class TranslateServiceStub {
-  use(_lang: string): void {}
+  use(_lang: string): void { }
 }
 
 describe('GameFooterComponent', () => {
@@ -63,12 +63,12 @@ describe('GameFooterComponent', () => {
   describe('isAdmin', () => {
     it('should be false for a non-admin account', () => {
       setup(false);
-      expect(component.isAdmin()).toBeFalse();
+      expect(component.isAdmin()).toBe(false);
     });
 
     it('should be true for an admin account', () => {
       setup(true);
-      expect(component.isAdmin()).toBeTrue();
+      expect(component.isAdmin()).toBe(true);
     });
   });
 });

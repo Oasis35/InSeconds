@@ -1,15 +1,16 @@
+import type { Mock } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { PoolAudioPreviewService } from './pool-audio-preview.service';
 
 describe('PoolAudioPreviewService', () => {
   let service: PoolAudioPreviewService;
-  let playSpy: jasmine.Spy;
+  let playSpy: Mock;
 
   beforeEach(() => {
     TestBed.configureTestingModule({ providers: [PoolAudioPreviewService] });
     service = TestBed.inject(PoolAudioPreviewService);
-    playSpy = spyOn(HTMLMediaElement.prototype, 'play').and.returnValue(Promise.resolve());
-    spyOn(HTMLMediaElement.prototype, 'pause');
+    playSpy = vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue();
+    vi.spyOn(HTMLMediaElement.prototype, 'pause').mockReturnValue(undefined);
   });
 
   it('does nothing when the url is missing', () => {
@@ -64,7 +65,9 @@ describe('PoolAudioPreviewService', () => {
     await Promise.resolve();
     expect(service.playing()).toBe(true);
 
-    (service as unknown as { audio: HTMLAudioElement }).audio.onended?.(new Event('ended'));
+    (service as unknown as {
+      audio: HTMLAudioElement;
+    }).audio.onended?.(new Event('ended'));
 
     expect(service.playing()).toBe(false);
     expect(service.progress()).toBe(100);

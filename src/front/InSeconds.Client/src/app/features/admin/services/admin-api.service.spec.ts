@@ -1,4 +1,5 @@
-import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+import type { Mock } from 'vitest';
+import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
@@ -10,15 +11,24 @@ import { PlayerSessionService } from '../../../core/services/player-session.serv
 import { environment } from '../../../../environments/environment';
 
 describe('AdminHttpService', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
   let service: AdminHttpService;
   let httpMock: HttpTestingController;
-  let playerSessionStub: { logout: jasmine.Spy; load: jasmine.Spy };
+  let playerSessionStub: {
+    logout: Mock;
+    load: Mock;
+  };
   const base = `${environment.apiUrl}/api/admin`;
 
   beforeEach(() => {
     playerSessionStub = {
-      logout: jasmine.createSpy('logout').and.returnValue(of(undefined)),
-      load: jasmine.createSpy('load').and.returnValue(of(undefined)),
+      logout: vi.fn().mockName('logout').mockReturnValue(of(undefined)),
+      load: vi.fn().mockName('load').mockReturnValue(of(undefined)),
     };
 
     TestBed.configureTestingModule({
@@ -39,7 +49,7 @@ describe('AdminHttpService', () => {
 
   describe('initial state', () => {
     it('should have authenticated = false by default', () => {
-      expect(service.authenticated()).toBeFalse();
+      expect(service.authenticated()).toBe(false);
     });
 
     it('should expose base URL pointing to admin API', () => {
@@ -55,12 +65,12 @@ describe('AdminHttpService', () => {
 
       expect(playerSessionStub.logout).toHaveBeenCalled();
       expect(playerSessionStub.load).toHaveBeenCalled();
-      expect(service.authenticated()).toBeFalse();
+      expect(service.authenticated()).toBe(false);
     });
   });
 
   describe('checkAuth()', () => {
-    it('should set authenticated to true when GET /api/admin/me succeeds', fakeAsync(async () => {
+    it('should set authenticated to true when GET /api/admin/me succeeds', async () => {
       service.checkAuth();
 
       const req = httpMock.expectOne(`${base}/me`);
@@ -68,12 +78,12 @@ describe('AdminHttpService', () => {
       req.flush({ id: 1 });
 
       await Promise.resolve();
-      tick();
+      await vi.advanceTimersByTimeAsync(0);
 
-      expect(service.authenticated()).toBeTrue();
-    }));
+      expect(service.authenticated()).toBe(true);
+    });
 
-    it('should set authenticated to false when GET /api/admin/me fails (401)', fakeAsync(async () => {
+    it('should set authenticated to false when GET /api/admin/me fails (401)', async () => {
       service.authenticated.set(true);
       service.checkAuth();
 
@@ -81,10 +91,10 @@ describe('AdminHttpService', () => {
       req.flush('Unauthorized', { status: 401, statusText: 'Unauthorized' });
 
       await Promise.resolve();
-      tick();
+      await vi.advanceTimersByTimeAsync(0);
 
-      expect(service.authenticated()).toBeFalse();
-    }));
+      expect(service.authenticated()).toBe(false);
+    });
   });
 
   describe('generateToday()', () => {
@@ -97,7 +107,7 @@ describe('AdminHttpService', () => {
       expect(req.request.body).toEqual({});
       req.flush({});
 
-      expect(completed).toBeTrue();
+      expect(completed).toBe(true);
     });
 
     it('should propagate 409 when challenge already exists', () => {
@@ -196,7 +206,7 @@ describe('AdminHttpService', () => {
       expect(req.request.body).toEqual({ deezerTrackId: 123456 });
       req.flush({});
 
-      expect(completed).toBeTrue();
+      expect(completed).toBe(true);
     });
 
     it('should propagate errors from addTrack', () => {
@@ -219,7 +229,7 @@ describe('AdminHttpService', () => {
       expect(req.request.method).toBe('DELETE');
       req.flush(null);
 
-      expect(completed).toBeTrue();
+      expect(completed).toBe(true);
     });
 
     it('should propagate 409 when track is used in a challenge', () => {
@@ -260,9 +270,9 @@ describe('AdminApiService — delegation', () => {
   });
 
   it('should expose authenticated signal from AdminHttpService', () => {
-    expect(apiService.authenticated()).toBeFalse();
+    expect(apiService.authenticated()).toBe(false);
     httpService.authenticated.set(true);
-    expect(apiService.authenticated()).toBeTrue();
+    expect(apiService.authenticated()).toBe(true);
   });
 
   it('should expose selectedDay signal from AdminStateService', () => {
@@ -273,7 +283,7 @@ describe('AdminApiService — delegation', () => {
   it('logout() should delegate to AdminHttpService', async () => {
     httpService.authenticated.set(true);
     await apiService.logout();
-    expect(httpService.authenticated()).toBeFalse();
+    expect(httpService.authenticated()).toBe(false);
   });
 
   it('reloadPool() should increment poolReloadTrigger', () => {

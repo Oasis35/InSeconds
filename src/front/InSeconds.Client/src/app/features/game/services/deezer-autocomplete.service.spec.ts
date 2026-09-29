@@ -1,4 +1,4 @@
-import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { Subject } from 'rxjs';
@@ -9,6 +9,12 @@ import { environment } from '../../../../environments/environment';
 // catchError silencieux) mais jamais exercée par un spec dédié — seulement stubbée ailleurs
 // (answer-search.service.spec.ts).
 describe('DeezerAutocompleteService', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
   let service: DeezerAutocompleteService;
   let httpMock: HttpTestingController;
   let query$: Subject<string>;
@@ -31,104 +37,104 @@ describe('DeezerAutocompleteService', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('debounces 300ms before calling the API', fakeAsync(() => {
+  it('debounces 300ms before calling the API', async () => {
     const results: DeezerSuggestion[][] = [];
     service.search(query$).subscribe(r => results.push(r));
 
     query$.next('daft');
-    tick(299);
+    await vi.advanceTimersByTimeAsync(299);
     httpMock.expectNone(`${base}?q=daft`);
 
-    tick(1);
+    await vi.advanceTimersByTimeAsync(1);
     const req = httpMock.expectOne(`${base}?q=daft`);
     req.flush(SUGGESTIONS);
 
     expect(results).toEqual([SUGGESTIONS]);
-  }));
+  });
 
-  it('does not call the API below the 2-character threshold (after trim)', fakeAsync(() => {
+  it('does not call the API below the 2-character threshold (after trim)', async () => {
     const results: DeezerSuggestion[][] = [];
     service.search(query$).subscribe(r => results.push(r));
 
     query$.next(' a ');
-    tick(300);
+    await vi.advanceTimersByTimeAsync(300);
 
     httpMock.expectNone(() => true);
     expect(results).toEqual([[]]);
-  }));
+  });
 
-  it('trims the query before searching', fakeAsync(() => {
+  it('trims the query before searching', async () => {
     const results: DeezerSuggestion[][] = [];
     service.search(query$).subscribe(r => results.push(r));
 
     query$.next('  daft punk  ');
-    tick(300);
+    await vi.advanceTimersByTimeAsync(300);
 
     const req = httpMock.expectOne(`${base}?q=${encodeURIComponent('daft punk')}`);
     req.flush(SUGGESTIONS);
 
     expect(results).toEqual([SUGGESTIONS]);
-  }));
+  });
 
-  it('drops an identical consecutive query without a new request (distinctUntilChanged)', fakeAsync(() => {
+  it('drops an identical consecutive query without a new request (distinctUntilChanged)', async () => {
     const results: DeezerSuggestion[][] = [];
     service.search(query$).subscribe(r => results.push(r));
 
     query$.next('daft');
-    tick(300);
+    await vi.advanceTimersByTimeAsync(300);
     httpMock.expectOne(`${base}?q=daft`).flush(SUGGESTIONS);
 
     query$.next('daft');
-    tick(300);
+    await vi.advanceTimersByTimeAsync(300);
 
     httpMock.expectNone(`${base}?q=daft`);
     expect(results).toEqual([SUGGESTIONS]);
-  }));
+  });
 
-  it('cancels an in-flight request when a newer query arrives (switchMap)', fakeAsync(() => {
+  it('cancels an in-flight request when a newer query arrives (switchMap)', async () => {
     const results: DeezerSuggestion[][] = [];
     service.search(query$).subscribe(r => results.push(r));
 
     query$.next('daf');
-    tick(300);
+    await vi.advanceTimersByTimeAsync(300);
     const stale = httpMock.expectOne(`${base}?q=daf`);
 
     query$.next('daft');
-    tick(300);
+    await vi.advanceTimersByTimeAsync(300);
     // switchMap désabonne l'observable HTTP précédent, ce qui annule la requête sous-jacente
     // (HttpTestingController la marque "cancelled" — la flusher lèverait une erreur).
-    expect(stale.cancelled).toBeTrue();
+    expect(stale.cancelled).toBe(true);
     const fresh = httpMock.expectOne(`${base}?q=daft`);
     fresh.flush(SUGGESTIONS);
 
     expect(results).toEqual([SUGGESTIONS]);
-  }));
+  });
 
-  it('swallows a network error and emits an empty array instead of propagating it', fakeAsync(() => {
+  it('swallows a network error and emits an empty array instead of propagating it', async () => {
     const results: DeezerSuggestion[][] = [];
     const errors: unknown[] = [];
     service.search(query$).subscribe({ next: r => results.push(r), error: e => errors.push(e) });
 
     query$.next('daft');
-    tick(300);
+    await vi.advanceTimersByTimeAsync(300);
     httpMock.expectOne(`${base}?q=daft`).error(new ProgressEvent('network error'));
 
     expect(errors).toEqual([]);
     expect(results).toEqual([[]]);
-  }));
+  });
 
-  it('keeps working after a failed search for a subsequent query', fakeAsync(() => {
+  it('keeps working after a failed search for a subsequent query', async () => {
     const results: DeezerSuggestion[][] = [];
     service.search(query$).subscribe(r => results.push(r));
 
     query$.next('daft');
-    tick(300);
+    await vi.advanceTimersByTimeAsync(300);
     httpMock.expectOne(`${base}?q=daft`).error(new ProgressEvent('network error'));
 
     query$.next('punk');
-    tick(300);
+    await vi.advanceTimersByTimeAsync(300);
     httpMock.expectOne(`${base}?q=punk`).flush(SUGGESTIONS);
 
     expect(results).toEqual([[], SUGGESTIONS]);
-  }));
+  });
 });

@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideTranslateService } from '@ngx-translate/core';
 import { signal } from '@angular/core';
@@ -23,10 +24,13 @@ class AudioPlayerStub {
   readonly isFinished = () => this.state() === 'finished';
   readonly isError = () => this.state() === 'error';
   play(): void { this.state.set('playing'); }
-  replayFull(): void {}
-  replayCurrent(): void {}
-  extend(): void {}
-  stop(): { listenedSeconds: number; wasExtended: boolean } { return { listenedSeconds: 0, wasExtended: false }; }
+  replayFull(): void { }
+  replayCurrent(): void { }
+  extend(): void { }
+  stop(): {
+    listenedSeconds: number;
+    wasExtended: boolean;
+  } { return { listenedSeconds: 0, wasExtended: false }; }
   reset(): void { this.state.set('idle'); }
   preloadAll(): Promise<void> { return Promise.resolve(); }
 }
@@ -79,7 +83,7 @@ describe('BlindRoundComponent — navigation clavier autocomplete', () => {
     fixture.componentRef.setInput('track', TRACK);
     component = fixture.componentInstance;
 
-    // Ouvre la dropdown avec les 2 suggestions du stub (synchrone, pas de fakeAsync requis).
+    // Ouvre la dropdown avec les 2 suggestions du stub (synchrone, pas de faux timers requis).
     component.onQueryChange('dedup-test');
   });
 
@@ -174,12 +178,12 @@ describe('BlindRoundComponent — navigation clavier autocomplete', () => {
 describe('BlindRoundComponent — indices (hints)', () => {
   let component: BlindRoundComponent;
   let fixture: ComponentFixture<BlindRoundComponent>;
-  let requestHintSpy: jasmine.Spy;
-  let updateListeningSpy: jasmine.Spy;
+  let requestHintSpy: Mock;
+  let updateListeningSpy: Mock;
 
   beforeEach(async () => {
-    requestHintSpy = jasmine.createSpy('requestHint');
-    updateListeningSpy = jasmine.createSpy('updateListening').and.returnValue(of(undefined));
+    requestHintSpy = vi.fn().mockName('requestHint');
+    updateListeningSpy = vi.fn().mockName('updateListening').mockReturnValue(of(undefined));
 
     await TestBed.configureTestingModule({
       imports: [BlindRoundComponent],
@@ -235,7 +239,7 @@ describe('BlindRoundComponent — indices (hints)', () => {
 
   it('updateListening est appelé dès que le palier est choisi, sans attendre la fin de la lecture', () => {
     fixture.detectChanges(); // exécute les effects du constructeur (dont l'auto-play, qui met chosenDuration à jour une 1re fois)
-    updateListeningSpy.calls.reset();
+    updateListeningSpy.mockClear();
 
     component.startPlay(5);
     fixture.detectChanges();
@@ -248,7 +252,7 @@ describe('BlindRoundComponent — indices (hints)', () => {
   // couverts par hint.service.spec.ts depuis l'extraction de HintService (2026-09-22).
 
   it('next() réinitialise tous les signaux indice', () => {
-    requestHintSpy.and.returnValue(of({ year: 2016, artistMasked: 'D _ _ _' }));
+    requestHintSpy.mockReturnValue(of({ year: 2016, artistMasked: 'D _ _ _' }));
     component['chosenDuration'].set(10);
     component.useHint2();
 
@@ -284,9 +288,9 @@ describe('BlindRoundComponent — indices (hints)', () => {
 
     expect(component['pendingConfirm']()).toBeNull();
     expect(component['isSubmitting']()).toBe(true);
-    expect(emitted).toEqual([jasmine.objectContaining({
-      trackId: TRACK.id, listenedDurationSeconds: 2, artistAnswer: null, titleAnswer: null,
-    })]);
+    expect(emitted).toEqual([expect.objectContaining({
+        trackId: TRACK.id, listenedDurationSeconds: 2, artistAnswer: null, titleAnswer: null,
+      })]);
   });
 
   it('submit() avec un champ vide ouvre l\'encart en mode « réponse vide »', () => {
@@ -322,7 +326,7 @@ describe('BlindRoundComponent — indices (hints)', () => {
     component['searchQuery'] = 'Daft Punk - One More Time';
 
     component.submit();
-    expect(emitted).toHaveSize(1);
+    expect(emitted).toHaveLength(1);
 
     component.setSubmitError();
     expect(component['submitFailed']()).toBe(true);
@@ -332,8 +336,8 @@ describe('BlindRoundComponent — indices (hints)', () => {
     expect(component['submitFailed']()).toBe(false);
     expect(component['isSubmitting']()).toBe(true);
     expect(emitted).toEqual([
-      jasmine.objectContaining({ trackId: TRACK.id, listenedDurationSeconds: 5 }),
-      jasmine.objectContaining({ trackId: TRACK.id, listenedDurationSeconds: 5 }),
+      expect.objectContaining({ trackId: TRACK.id, listenedDurationSeconds: 5 }),
+      expect.objectContaining({ trackId: TRACK.id, listenedDurationSeconds: 5 }),
     ]);
   });
 
@@ -343,7 +347,7 @@ describe('BlindRoundComponent — indices (hints)', () => {
 
     component['retry']();
 
-    expect(emitted).toHaveSize(0);
+    expect(emitted).toHaveLength(0);
   });
 
   it('next() réinitialise la dernière soumission mémorisée', () => {
@@ -352,12 +356,12 @@ describe('BlindRoundComponent — indices (hints)', () => {
     component['chosenDuration'].set(5);
     component['searchQuery'] = 'Daft Punk - One More Time';
     component.submit();
-    expect(emitted).toHaveSize(1);
+    expect(emitted).toHaveLength(1);
 
     component.next();
     component['retry']();
 
-    expect(emitted).toHaveSize(1); // retry() n'a rien réémis après next()
+    expect(emitted).toHaveLength(1); // retry() n'a rien réémis après next()
   });
 });
 
@@ -367,7 +371,7 @@ describe('BlindRoundComponent — lecture automatique une seule fois par morceau
   let component: BlindRoundComponent;
   let fixture: ComponentFixture<BlindRoundComponent>;
   let audio: AudioPlayerStub;
-  let playSpy: jasmine.Spy;
+  let playSpy: Mock;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -389,7 +393,7 @@ describe('BlindRoundComponent — lecture automatique une seule fois par morceau
     }).compileComponents();
 
     audio = TestBed.inject(AudioPlayerService) as unknown as AudioPlayerStub;
-    playSpy = spyOn(audio, 'play').and.callThrough();
+    playSpy = vi.spyOn(audio, 'play');
     fixture = TestBed.createComponent(BlindRoundComponent);
     fixture.componentRef.setInput('track', TRACK);
     fixture.componentRef.setInput('sessionId', 42);
@@ -399,7 +403,9 @@ describe('BlindRoundComponent — lecture automatique une seule fois par morceau
   it('lance le premier palier au chargement du morceau', () => {
     fixture.detectChanges();
 
-    expect(playSpy).toHaveBeenCalledOnceWith(TRACK.previewUrl, 0.5);
+    expect(playSpy).toHaveBeenCalledTimes(1);
+
+    expect(playSpy).toHaveBeenCalledWith(TRACK.previewUrl, 0.5);
     expect(component['chosenDuration']()).toBe(0.5);
   });
 

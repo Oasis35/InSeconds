@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { AdminWeeklyStoryService } from './admin-weekly-story.service';
@@ -11,10 +12,12 @@ const okRecap: WeeklyRecapResponse = {
 
 describe('AdminWeeklyStoryService', () => {
   let service: AdminWeeklyStoryService;
-  let http: { getWeeklyRecap: jasmine.Spy };
+  let http: {
+    getWeeklyRecap: Mock;
+  };
 
   beforeEach(() => {
-    http = { getWeeklyRecap: jasmine.createSpy('getWeeklyRecap') };
+    http = { getWeeklyRecap: vi.fn().mockName('getWeeklyRecap') };
     TestBed.configureTestingModule({
       providers: [AdminWeeklyStoryService, { provide: AdminHttpService, useValue: http }],
     });
@@ -22,34 +25,34 @@ describe('AdminWeeklyStoryService', () => {
   });
 
   it('load() : récap exploitable → true, statut rendering', async () => {
-    http.getWeeklyRecap.and.returnValue(of(okRecap));
+    http.getWeeklyRecap.mockReturnValue(of(okRecap));
 
-    expect(await service.load()).toBeTrue();
+    expect(await service.load()).toBe(true);
     expect(service.status()).toBe('rendering');
     expect(service.recap()).toEqual(okRecap);
-    expect(service.busy()).toBeTrue();
+    expect(service.busy()).toBe(true);
   });
 
   it('load() : insufficient_data → false, statut insufficient', async () => {
-    http.getWeeklyRecap.and.returnValue(of({ ...okRecap, status: 'insufficient_data', mostFound: null, mostMissed: null }));
+    http.getWeeklyRecap.mockReturnValue(of({ ...okRecap, status: 'insufficient_data', mostFound: null, mostMissed: null }));
 
-    expect(await service.load()).toBeFalse();
+    expect(await service.load()).toBe(false);
     expect(service.status()).toBe('insufficient');
-    expect(service.busy()).toBeFalse();
+    expect(service.busy()).toBe(false);
   });
 
   it('load() : erreur HTTP → false, statut error, récap vidé', async () => {
     service.recap.set(okRecap);
-    http.getWeeklyRecap.and.returnValue(throwError(() => new Error('500')));
+    http.getWeeklyRecap.mockReturnValue(throwError(() => new Error('500')));
 
-    expect(await service.load()).toBeFalse();
+    expect(await service.load()).toBe(false);
     expect(service.status()).toBe('error');
     expect(service.recap()).toBeNull();
   });
 
   it('load() efface les images précédentes', async () => {
     service.setImages([{ kind: 'found', dataUrl: 'data:x', fileName: 'a.png' }]);
-    http.getWeeklyRecap.and.returnValue(of(okRecap));
+    http.getWeeklyRecap.mockReturnValue(of(okRecap));
 
     await service.load();
 
@@ -65,7 +68,7 @@ describe('AdminWeeklyStoryService', () => {
   });
 
   it('load() transmet la période choisie à l\'API', async () => {
-    http.getWeeklyRecap.and.returnValue(of(okRecap));
+    http.getWeeklyRecap.mockReturnValue(of(okRecap));
     service.from.set('2026-09-01');
     service.to.set('2026-09-10');
 
@@ -75,15 +78,15 @@ describe('AdminWeeklyStoryService', () => {
   });
 
   it('période par défaut : 7 jours, fin incluse', () => {
-    const days = (Date.parse(service.to()) - Date.parse(service.from())) / 86_400_000;
+    const days = (Date.parse(service.to()) - Date.parse(service.from())) / 86400000;
     expect(days).toBe(6);
-    expect(service.periodValid()).toBeTrue();
+    expect(service.periodValid()).toBe(true);
   });
 
   it('periodValid() : faux si le début est après la fin', () => {
     service.from.set('2026-09-10');
     service.to.set('2026-09-01');
-    expect(service.periodValid()).toBeFalse();
+    expect(service.periodValid()).toBe(false);
   });
 
   it('storyTitle() : titres prédéfinis et texte libre', () => {

@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { Router } from '@angular/router';
@@ -22,12 +23,14 @@ describe('ProfileComponent', () => {
     currentStreak: ReturnType<typeof signal<number>>;
     streak: ReturnType<typeof signal<StreakDto | null>>;
     gamesPlayed: ReturnType<typeof signal<number>>;
-    updatePseudo: jasmine.Spy;
-    requestEmailChange: jasmine.Spy;
-    logout: jasmine.Spy;
-    load: jasmine.Spy;
+    updatePseudo: Mock;
+    requestEmailChange: Mock;
+    logout: Mock;
+    load: Mock;
   };
-  let router: { navigateByUrl: jasmine.Spy };
+  let router: {
+    navigateByUrl: Mock;
+  };
 
   beforeEach(() => {
     playerSessionStub = {
@@ -37,12 +40,12 @@ describe('ProfileComponent', () => {
       currentStreak: signal(5),
       streak: signal<StreakDto | null>(null),
       gamesPlayed: signal(12),
-      updatePseudo: jasmine.createSpy('updatePseudo'),
-      requestEmailChange: jasmine.createSpy('requestEmailChange'),
-      logout: jasmine.createSpy('logout').and.returnValue(of(void 0)),
-      load: jasmine.createSpy('load').and.returnValue(of(void 0)),
+      updatePseudo: vi.fn().mockName('updatePseudo'),
+      requestEmailChange: vi.fn().mockName('requestEmailChange'),
+      logout: vi.fn().mockName('logout').mockReturnValue(of(void 0)),
+      load: vi.fn().mockName('load').mockReturnValue(of(void 0)),
     };
-    router = { navigateByUrl: jasmine.createSpy('navigateByUrl') };
+    router = { navigateByUrl: vi.fn().mockName('navigateByUrl') };
 
     TestBed.configureTestingModule({
       providers: [
@@ -98,17 +101,17 @@ describe('ProfileComponent', () => {
 
   describe('saveDisabled()', () => {
     it('is disabled when unchanged', () => {
-      expect(component['saveDisabled']()).toBeTrue();
+      expect(component['saveDisabled']()).toBe(true);
     });
 
     it('is enabled once the draft differs and is valid', () => {
       component.onPseudoInput('Bob');
-      expect(component['saveDisabled']()).toBeFalse();
+      expect(component['saveDisabled']()).toBe(false);
     });
 
     it('is disabled when the draft is too short', () => {
       component.onPseudoInput('ab');
-      expect(component['saveDisabled']()).toBeTrue();
+      expect(component['saveDisabled']()).toBe(true);
     });
 
     it('is disabled while saving', () => {
@@ -116,16 +119,16 @@ describe('ProfileComponent', () => {
       // Observable qui n'émet jamais : contrairement à `of(...)` (synchrone, résoudrait
       // immédiatement et ferait passer le statut à 'saved' avant l'assertion), ça permet
       // d'observer l'état transitoire 'saving' juste après l'appel à savePseudo().
-      playerSessionStub.updatePseudo.and.returnValue(new Subject<string>());
+      playerSessionStub.updatePseudo.mockReturnValue(new Subject<string>());
       component.savePseudo();
-      expect(component['saveDisabled']()).toBeTrue();
+      expect(component['saveDisabled']()).toBe(true);
     });
   });
 
   describe('savePseudo()', () => {
     it('sets status to saved on success', () => {
       component.onPseudoInput('Bob');
-      playerSessionStub.updatePseudo.and.returnValue(of('Bob'));
+      playerSessionStub.updatePseudo.mockReturnValue(of('Bob'));
 
       component.savePseudo();
 
@@ -134,7 +137,7 @@ describe('ProfileComponent', () => {
 
     it('sets status to taken on 409', () => {
       component.onPseudoInput('Bob');
-      playerSessionStub.updatePseudo.and.returnValue(throwError(() => ({ status: 409 })));
+      playerSessionStub.updatePseudo.mockReturnValue(throwError(() => ({ status: 409 })));
 
       component.savePseudo();
 
@@ -143,7 +146,7 @@ describe('ProfileComponent', () => {
 
     it('sets status to error on other failures', () => {
       component.onPseudoInput('Bob');
-      playerSessionStub.updatePseudo.and.returnValue(throwError(() => ({ status: 500 })));
+      playerSessionStub.updatePseudo.mockReturnValue(throwError(() => ({ status: 500 })));
 
       component.savePseudo();
 
@@ -153,75 +156,61 @@ describe('ProfileComponent', () => {
 
   describe('emailSaveDisabled()', () => {
     it('is disabled when unchanged', () => {
-      expect(component['emailSaveDisabled']()).toBeTrue();
+      expect(component['emailSaveDisabled']()).toBe(true);
     });
 
     it('is enabled once the draft differs and is a valid email', () => {
       component.onEmailInput('bob@example.com');
-      expect(component['emailSaveDisabled']()).toBeFalse();
+      expect(component['emailSaveDisabled']()).toBe(false);
     });
 
     it('is disabled when the draft is not a valid email', () => {
       component.onEmailInput('not-an-email');
-      expect(component['emailSaveDisabled']()).toBeTrue();
+      expect(component['emailSaveDisabled']()).toBe(true);
     });
 
     it('is disabled while sending', () => {
       component.onEmailInput('bob@example.com');
-      playerSessionStub.requestEmailChange.and.returnValue(new Subject<void>());
+      playerSessionStub.requestEmailChange.mockReturnValue(new Subject<void>());
       component.saveEmail();
-      expect(component['emailSaveDisabled']()).toBeTrue();
+      expect(component['emailSaveDisabled']()).toBe(true);
     });
   });
 
   describe('saveEmail()', () => {
     it('sets status to sent on success', () => {
       component.onEmailInput('bob@example.com');
-      playerSessionStub.requestEmailChange.and.returnValue(of(void 0));
+      playerSessionStub.requestEmailChange.mockReturnValue(of(void 0));
 
       component.saveEmail();
 
       expect(component['emailStatus']()).toBe('sent');
     });
 
-    it('sets status to taken on 409', () => {
+    it.each([
+      { status: 409, expected: 'taken' },
+      { status: 400, expected: 'sameEmail' },
+      { status: 500, expected: 'error' },
+    ])('sets status to $expected on a $status error', ({ status, expected }) => {
       component.onEmailInput('bob@example.com');
-      playerSessionStub.requestEmailChange.and.returnValue(throwError(() => ({ status: 409 })));
+      playerSessionStub.requestEmailChange.mockReturnValue(throwError(() => ({ status })));
 
       component.saveEmail();
 
-      expect(component['emailStatus']()).toBe('taken');
-    });
-
-    it('sets status to sameEmail on 400', () => {
-      component.onEmailInput('bob@example.com');
-      playerSessionStub.requestEmailChange.and.returnValue(throwError(() => ({ status: 400 })));
-
-      component.saveEmail();
-
-      expect(component['emailStatus']()).toBe('sameEmail');
-    });
-
-    it('sets status to error on other failures', () => {
-      component.onEmailInput('bob@example.com');
-      playerSessionStub.requestEmailChange.and.returnValue(throwError(() => ({ status: 500 })));
-
-      component.saveEmail();
-
-      expect(component['emailStatus']()).toBe('error');
+      expect(component['emailStatus']()).toBe(expected);
     });
   });
 
   describe('logout flow', () => {
     it('opens the confirm sheet on askLogout()', () => {
       component.askLogout();
-      expect(component['showLogoutConfirm']()).toBeTrue();
+      expect(component['showLogoutConfirm']()).toBe(true);
     });
 
     it('closes the confirm sheet without logging out on cancelLogout()', () => {
       component.askLogout();
       component.cancelLogout();
-      expect(component['showLogoutConfirm']()).toBeFalse();
+      expect(component['showLogoutConfirm']()).toBe(false);
       expect(playerSessionStub.logout).not.toHaveBeenCalled();
     });
 
@@ -231,32 +220,32 @@ describe('ProfileComponent', () => {
 
       expect(playerSessionStub.logout).toHaveBeenCalled();
       expect(playerSessionStub.load).toHaveBeenCalled();
-      expect(component['showLogoutConfirm']()).toBeFalse();
+      expect(component['showLogoutConfirm']()).toBe(false);
       expect(router.navigateByUrl).toHaveBeenCalledWith('/');
     });
 
     it('sets logoutError and stops loading on confirmLogout() failure', () => {
-      playerSessionStub.logout.and.returnValue(throwError(() => new Error('network error')));
+      playerSessionStub.logout.mockReturnValue(throwError(() => new Error('network error')));
 
       component.askLogout();
       component.confirmLogout();
 
-      expect(component['loggingOut']()).toBeFalse();
-      expect(component['logoutError']()).toBeTrue();
-      expect(component['showLogoutConfirm']()).toBeTrue();
+      expect(component['loggingOut']()).toBe(false);
+      expect(component['logoutError']()).toBe(true);
+      expect(component['showLogoutConfirm']()).toBe(true);
       expect(router.navigateByUrl).not.toHaveBeenCalled();
     });
 
     it('clears logoutError when reopening the confirm sheet via askLogout()', () => {
-      playerSessionStub.logout.and.returnValue(throwError(() => new Error('network error')));
+      playerSessionStub.logout.mockReturnValue(throwError(() => new Error('network error')));
       component.askLogout();
       component.confirmLogout();
-      expect(component['logoutError']()).toBeTrue();
+      expect(component['logoutError']()).toBe(true);
 
       component.cancelLogout();
       component.askLogout();
 
-      expect(component['logoutError']()).toBeFalse();
+      expect(component['logoutError']()).toBe(false);
     });
   });
 });

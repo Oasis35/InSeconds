@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 import { of, throwError } from 'rxjs';
@@ -5,10 +6,12 @@ import { ConfirmEmailComponent } from './confirm-email.component';
 import { PlayerSessionService } from '../../../core/services/player-session.service';
 
 describe('ConfirmEmailComponent', () => {
-  let playerSession: { confirmEmailChange: jasmine.Spy };
+  let playerSession: {
+    confirmEmailChange: Mock;
+  };
 
   function setup(token: string | null): ConfirmEmailComponent {
-    playerSession = { confirmEmailChange: jasmine.createSpy('confirmEmailChange') };
+    playerSession = { confirmEmailChange: vi.fn().mockName('confirmEmailChange') };
 
     TestBed.configureTestingModule({
       providers: [
@@ -36,7 +39,7 @@ describe('ConfirmEmailComponent', () => {
   describe('confirm()', () => {
     it('should call confirmEmailChange and switch to success on success', () => {
       const component = setup('abc123');
-      playerSession.confirmEmailChange.and.returnValue(of('new@example.com'));
+      playerSession.confirmEmailChange.mockReturnValue(of('new@example.com'));
 
       component.confirm();
 
@@ -45,31 +48,17 @@ describe('ConfirmEmailComponent', () => {
       expect(component['confirmedEmail']()).toBe('new@example.com');
     });
 
-    it('should switch to invalidOrExpired on 400', () => {
+    it.each([
+      { status: 400, expected: 'invalidOrExpired' },
+      { status: 409, expected: 'emailTaken' },
+      { status: 500, expected: 'error' },
+    ])('should switch to $expected on a $status error', ({ status, expected }) => {
       const component = setup('abc123');
-      playerSession.confirmEmailChange.and.returnValue(throwError(() => ({ status: 400 })));
+      playerSession.confirmEmailChange.mockReturnValue(throwError(() => ({ status })));
 
       component.confirm();
 
-      expect(component['state']()).toBe('invalidOrExpired');
-    });
-
-    it('should switch to emailTaken on 409', () => {
-      const component = setup('abc123');
-      playerSession.confirmEmailChange.and.returnValue(throwError(() => ({ status: 409 })));
-
-      component.confirm();
-
-      expect(component['state']()).toBe('emailTaken');
-    });
-
-    it('should switch to error on other failures', () => {
-      const component = setup('abc123');
-      playerSession.confirmEmailChange.and.returnValue(throwError(() => ({ status: 500 })));
-
-      component.confirm();
-
-      expect(component['state']()).toBe('error');
+      expect(component['state']()).toBe(expected);
     });
 
     it('should do nothing when there is no token', () => {

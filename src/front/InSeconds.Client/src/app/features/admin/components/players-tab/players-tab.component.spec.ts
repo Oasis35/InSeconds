@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
@@ -14,10 +15,10 @@ const PLAYERS: RegisteredPlayerDto[] = [
 // protégés exercés en bracket-notation (pas besoin de TranslateService).
 describe('PlayersTabComponent', () => {
   let component: PlayersTabComponent;
-  let getPlayerHistory: jasmine.Spy;
+  let getPlayerHistory: Mock;
 
   beforeEach(() => {
-    getPlayerHistory = jasmine.createSpy('getPlayerHistory').and.returnValue(of({
+    getPlayerHistory = vi.fn().mockName('getPlayerHistory').mockReturnValue(of({
       games: [{ date: '2026-09-24', status: 'Completed', score: 3200, freezesUsed: 0, freezeEarned: false }],
     }));
     TestBed.configureTestingModule({
@@ -29,7 +30,7 @@ describe('PlayersTabComponent', () => {
   });
 
   it('affiche tous les joueurs sans filtre', () => {
-    expect(component['filteredPlayers']()).toHaveSize(2);
+    expect(component['filteredPlayers']()).toHaveLength(2);
   });
 
   it('filtre par pseudo ou email, sans tenir compte de la casse', () => {
@@ -49,7 +50,7 @@ describe('PlayersTabComponent', () => {
 
     component['toggle']('a'); // repli
     expect(component['expandedId']()).toBeNull();
-    getPlayerHistory.and.returnValue(of({ games: [] }));
+    getPlayerHistory.mockReturnValue(of({ games: [] }));
     component['toggle']('a'); // re-dépliage : une partie a pu être jouée entre-temps
     expect(getPlayerHistory).toHaveBeenCalledTimes(2);
     expect(component['historyOf']('a')).toEqual([]);
@@ -58,7 +59,7 @@ describe('PlayersTabComponent', () => {
   it('garde l\'historique affiché si un rechargement échoue', () => {
     component['toggle']('a');
     component['toggle']('a');
-    getPlayerHistory.and.returnValue(throwError(() => new Error('500')));
+    getPlayerHistory.mockReturnValue(throwError(() => new Error('500')));
     component['toggle']('a');
     expect(component['historyOf']('a')).toEqual([
       { date: '2026-09-24', status: 'Completed', score: 3200, freezesUsed: 0, freezeEarned: false },
@@ -73,12 +74,12 @@ describe('PlayersTabComponent', () => {
   });
 
   it('retente le chargement après une erreur', () => {
-    getPlayerHistory.and.returnValue(throwError(() => new Error('500')));
+    getPlayerHistory.mockReturnValue(throwError(() => new Error('500')));
     component['toggle']('a');
     expect(component['historyOf']('a')).toBe('error');
 
     component['toggle']('a');
-    getPlayerHistory.and.returnValue(of({ games: [] }));
+    getPlayerHistory.mockReturnValue(of({ games: [] }));
     component['toggle']('a');
     expect(component['historyOf']('a')).toEqual([]);
     expect(getPlayerHistory).toHaveBeenCalledTimes(2);

@@ -110,7 +110,7 @@ GitHub Actions workflow on every push and every PR to `main`:
 - **Backend** — build in Release + `dotnet ef migrations has-pending-model-changes`
 - **Unit tests** — `dotnet test` on `InSeconds.Api.UnitTests` (xUnit, no DB required)
 - **Frontend** — `npm ci` + production build
-- **Frontend unit tests** — `ng test --watch=false --browsers=ChromeHeadlessAutoplay` (Karma + Jasmine, ~420 tests)
+- **Frontend unit tests** — `ng test --watch=false` (Vitest in a real Chromium, ~420 tests)
 - **Integration tests** — `dotnet test` on `InSeconds.Api.IntegrationTests` (Testcontainers spins up a real PostgreSQL container, no extra YAML needed)
 - **E2E** — Playwright tests (Chromium) against a real backend in `Testing` mode with a PostgreSQL service — runs after all jobs above pass
 - **Nginx cache headers smoke test** — builds and runs the actual production Docker image (`Dockerfile.prod`), checks `Cache-Control` headers and the `Content-Type` of `robots.txt`/`sitemap.xml` via `curl` (`src/front/InSeconds.Client/scripts/check-nginx-cache-headers.sh`) — the only job that exercises `nginx.conf`
@@ -132,10 +132,10 @@ Covers `ScoreCalculator`, `TextNormalizer`, `SettingsService` and other Common s
 
 ```bash
 cd src/front/InSeconds.Client
-npx ng test --watch=false --browsers=ChromeHeadlessAutoplay
+npx ng test --watch=false
 ```
 
-**~420 tests** across 46 spec files (Karma + Jasmine), covering `App`, `GameService`, `SettingsService`, `LanguageService`, `GameFooterComponent` (language toggle), `AdminHttpService`, `AdminStatsService`, `AdminPoolService` (pool runway), `BlindRoundComponent` (autocomplete keyboard navigation), `GuessTimeChartComponent` + `TrackResultsListComponent` (guess-time histogram + popup), `ChallengesTabComponent` (player identity chips + guess-time popup), `ClipboardService`, `PlayerSessionService`, `BrowserIdComponent`, the services extracted from the game round (search, submission, hints), streak freezes (panel, freeze cells, header pill), plus the login/profile/email-change flows and error reporting (global handler, HTTP interceptor, displayed error code). Uses `HttpTestingController` — no real HTTP calls.
+**~420 tests** across 46 spec files (Vitest, browser mode via Playwright — run `npx playwright install chromium` once), covering `App`, `GameService`, `SettingsService`, `LanguageService`, `GameFooterComponent` (language toggle), `AdminHttpService`, `AdminStatsService`, `AdminPoolService` (pool runway), `BlindRoundComponent` (autocomplete keyboard navigation), `GuessTimeChartComponent` + `TrackResultsListComponent` (guess-time histogram + popup), `ChallengesTabComponent` (player identity chips + guess-time popup), `ClipboardService`, `PlayerSessionService`, `BrowserIdComponent`, the services extracted from the game round (search, submission, hints), streak freezes (panel, freeze cells, header pill), plus the login/profile/email-change flows and error reporting (global handler, HTTP interceptor, displayed error code). Uses `HttpTestingController` — no real HTTP calls.
 
 ### Integration tests (backend)
 

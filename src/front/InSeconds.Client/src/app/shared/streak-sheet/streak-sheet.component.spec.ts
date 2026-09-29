@@ -31,8 +31,7 @@ describe('StreakSheetComponent', () => {
     fixture.componentRef.setInput('linked', true);
   });
 
-  const variantAttr = () =>
-    (fixture.nativeElement as HTMLElement).querySelector('[data-testid="streak-sheet"]')?.getAttribute('data-variant');
+  const variantAttr = () => (fixture.nativeElement as HTMLElement).querySelector('[data-testid="streak-sheet"]')?.getAttribute('data-variant');
 
   it('renders the linked variant for an active linked streak', () => {
     fixture.detectChanges();
@@ -66,12 +65,12 @@ describe('StreakSheetComponent', () => {
 
   it('is at max once the freeze stock reaches the cap', () => {
     fixture.componentRef.setInput('streak', buildStreak({ freezes: 2, maxFreezes: 2 }));
-    expect(component['atMax']()).toBeTrue();
+    expect(component['atMax']()).toBe(true);
   });
 
   it('is not at max while the freeze stock is below the cap', () => {
     fixture.componentRef.setInput('streak', buildStreak({ freezes: 1, maxFreezes: 2 }));
-    expect(component['atMax']()).toBeFalse();
+    expect(component['atMax']()).toBe(false);
   });
 
   it('hides the next-freeze progress and shows the full message once at max', () => {
@@ -111,7 +110,7 @@ describe('StreakSheetComponent', () => {
   });
 
   it('closes on backdrop click but not on a click inside the panel', () => {
-    const spy = jasmine.createSpy('closed');
+    const spy = vi.fn().mockName('closed');
     component.closed.subscribe(spy);
     fixture.detectChanges();
     const root = fixture.nativeElement as HTMLElement;
@@ -124,7 +123,7 @@ describe('StreakSheetComponent', () => {
   });
 
   it('closes on Escape', () => {
-    const spy = jasmine.createSpy('closed');
+    const spy = vi.fn().mockName('closed');
     component.closed.subscribe(spy);
     fixture.detectChanges();
 

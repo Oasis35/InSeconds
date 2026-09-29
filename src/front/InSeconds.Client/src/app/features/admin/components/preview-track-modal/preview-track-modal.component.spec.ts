@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { PreviewTrackModalComponent } from './preview-track-modal.component';
@@ -8,11 +9,11 @@ import { PoolAudioPreviewService } from '../../services/pool-audio-preview.servi
 describe('PreviewTrackModalComponent', () => {
   let component: PreviewTrackModalComponent;
   let open: ReturnType<typeof signal<boolean>>;
-  let close: jasmine.Spy;
+  let close: Mock;
 
   beforeEach(() => {
     open = signal(false);
-    close = jasmine.createSpy('closePreviewModal');
+    close = vi.fn().mockName('closePreviewModal');
     TestBed.configureTestingModule({
       providers: [
         { provide: AdminPoolService, useValue: { previewModalOpen: open, closePreviewModal: close } },
