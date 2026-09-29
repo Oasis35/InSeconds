@@ -1,0 +1,15 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center" [class]="variant() === 'card' ? 'p-6' : 'p-4'">
+  <!-- Fond cliquable = <button> (accessible au clavier) placé derrière la fenêtre -->
+  <button type="button" class="absolute inset-0 w-full h-full cursor-default" [attr.aria-label]="closeLabel()"
+    [style.background]="'var(--overlay-dark)'"
+    [style.backdrop-filter]="variant() === 'card' ? 'blur(2px)' : null"
+    (click)="closed.emit()"></button>
+  <dialog #panel open aria-modal="true" tabindex="-1"
+    class="relative w-full rounded-2xl m-0 outline-none"
+    [class]="variant() === 'card' ? 'p-5' : 'p-6 flex flex-col gap-4 shadow-2xl'"
+    [style.max-width]="maxWidth()"
+    [style.background]="variant() === 'card' ? 'var(--bg-surface-2)' : 'var(--bg-surface)'"
+    [style.border]="variant() === 'card' ? '1px solid var(--border-medium)' : null">
+    <ng-content />
+  </dialog>
+</div>

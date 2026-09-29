@@ -1,6 +1,7 @@
-import { Component, inject, signal, effect, HostListener, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, effect, ChangeDetectionStrategy } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
+import { ModalComponent } from '../../../../shared/modal/modal.component';
 import { AdminStatsService } from '../../services/admin-stats.service';
 import { PlayerSessionService } from '../../../../core/services/player-session.service';
 import { ClipboardService } from '../../../../core/services/clipboard.service';
@@ -9,7 +10,7 @@ import { ChallengePlayerDto, TrackStatsDto } from '../../../../api/api.generated
 
 @Component({
   selector: 'app-challenges-tab',
-  imports: [DecimalPipe, TranslatePipe, GuessTimeChartComponent],
+  imports: [ModalComponent, DecimalPipe, TranslatePipe, GuessTimeChartComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './challenges-tab.component.html',
 })
@@ -34,11 +35,6 @@ export class ChallengesTabComponent {
 
   protected closeChart(): void {
     this.chartTrack.set(null);
-  }
-
-  @HostListener('document:keydown.escape')
-  protected onEscape(): void {
-    this.closeChart();
   }
 
   constructor() {

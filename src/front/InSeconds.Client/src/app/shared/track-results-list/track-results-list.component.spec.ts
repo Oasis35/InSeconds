@@ -46,14 +46,11 @@ describe('TrackResultsListComponent', () => {
     expect(component['openChart']()).toBeNull();
   });
 
-  it('closeChart() and onEscape() clear the open popup', () => {
+  // Échap et le fond cliquable passent par ModalComponent, qui appelle closeChart().
+  it('closeChart() clears the open popup', () => {
     component['openChartFor'](baseRow());
     expect(component['openChart']()).not.toBeNull();
 
-    component['onEscape']();
-    expect(component['openChart']()).toBeNull();
-
-    component['openChartFor'](baseRow());
     component['closeChart']();
     expect(component['openChart']()).toBeNull();
   });

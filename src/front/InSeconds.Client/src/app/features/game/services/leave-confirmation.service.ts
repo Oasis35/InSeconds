@@ -2,8 +2,8 @@ import { Injectable, signal } from '@angular/core';
 
 /**
  * État de la modale de confirmation de sortie en cours de partie (cf. `unsavedGameGuard`).
- * Le `HostListener('window:beforeunload')` et l'`effect()` de résolution automatique restent
- * dans `GameComponent` (Angular n'attache les décorateurs de composant qu'à des composants),
+ * L'écoute de `window:beforeunload` (`host` du composant) et l'`effect()` de résolution
+ * automatique restent dans `GameComponent` (liés au composant et à l'état de la partie),
  * ce service ne porte que la machine à états de la modale + la Promise en attente.
  */
 @Injectable()
