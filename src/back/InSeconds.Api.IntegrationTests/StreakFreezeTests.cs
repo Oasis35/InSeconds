@@ -36,7 +36,7 @@ public class StreakFreezeTests(IntegrationTestFactory factory) : IAsyncLifetime
         Assert.Equal("protected", peek.Streak.Status);
         Assert.Equal(12, peek.CurrentStreak);
         Assert.Equal(1, peek.Streak.MissedDays);
-        Assert.Equal(1, peek.Streak.Freezes);
+        Assert.Equal(0, peek.Streak.Freezes); // gel déjà engagé sur le jour manqué
 
         await PlayFullGameAsync(client);
 

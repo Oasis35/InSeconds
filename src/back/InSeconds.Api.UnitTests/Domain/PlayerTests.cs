@@ -226,6 +226,30 @@ public sealed class PlayerTests
         view.Status.Should().Be(StreakStatus.Protected);
         view.Streak.Should().Be(12);
         view.MissedDays.Should().Be(1);
+        view.Freezes.Should().Be(0);
+    }
+
+    [Fact]
+    public void GetStreakView_Protected_DeductsCommittedFreezesFromStock()
+    {
+        var player = BuildLinkedPlayer(streak: 31, lastPlayedDaysAgo: 2, freezes: 2);
+
+        var view = player.GetStreakView(Today, Rules);
+
+        view.Status.Should().Be(StreakStatus.Protected);
+        view.Freezes.Should().Be(1);
+    }
+
+    [Fact]
+    public void GetStreakView_Protected_ShowsSameStockAsAfterCompletion()
+    {
+        var player = BuildLinkedPlayer(streak: 31, lastPlayedDaysAgo: 3, freezes: 2);
+        var before = player.GetStreakView(Today, Rules).Freezes;
+
+        player.RecordChallengeCompletion(Today, Rules);
+
+        before.Should().Be(0);
+        player.StreakFreezes.Should().Be(before);
     }
 
     [Fact]
