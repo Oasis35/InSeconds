@@ -26,14 +26,14 @@ public sealed class RedirectingEmailSenderTests
     }
 
     [Fact]
-    public async Task SendAsync_redirige_vers_l_adresse_configuree_et_prefixe_l_objet()
+    public async Task SendAsync_redirige_vers_l_adresse_configuree_sans_toucher_a_l_objet()
     {
         var (sender, inner) = Create();
 
         await sender.SendAsync("joueur@example.com", "Ton lien de connexion", "<p>Corps</p>");
 
         inner.Last!.Value.To.Should().Be("dev@example.com");
-        inner.Last.Value.Subject.Should().Be("[DEV] Ton lien de connexion");
+        inner.Last.Value.Subject.Should().Be("Ton lien de connexion");
     }
 
     [Fact]
