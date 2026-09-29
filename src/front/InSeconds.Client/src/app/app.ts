@@ -7,6 +7,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { environment } from '../environments/environment';
 import { ServiceDownComponent } from './features/service-down/service-down.component';
 import { LegacyUrlNoticeComponent } from './features/legacy-url-notice/legacy-url-notice.component';
+import { EnvBannerComponent } from './shared/env-banner/env-banner.component';
 
 type HealthState = 'loading' | 'ok' | 'ko';
 
@@ -25,12 +26,15 @@ const HEALTH_KO_THRESHOLD = 3;
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, ServiceDownComponent, LegacyUrlNoticeComponent],
+  imports: [RouterOutlet, ServiceDownComponent, LegacyUrlNoticeComponent, EnvBannerComponent],
   templateUrl: './app.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class App {
   private readonly http = inject(HttpClient);
+
+  // 'staging' → bandeau DEV en haut de page (cf. EnvBannerComponent).
+  protected readonly environmentName = environment.name;
 
   protected readonly health = signal<HealthState>('loading');
   protected readonly healthUtc = signal<string | null>(null);

@@ -19,7 +19,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Staging
       ConnectionStrings__DefaultConnection: "Host=shared-postgres;Port=5432;Database=inseconds_staging;Username=inseconds_staging;Password=${INSECONDS_STAGING_DB_PASSWORD}"
       Brevo__ApiKey: ${BREVO_API_KEY}
-      # Tous les emails du staging partent vers cette seule adresse, objet préfixé [DEV]
+      # Tous les emails du staging partent vers cette seule adresse, avec un bandeau DEV
       # (RedirectingEmailSender). Obligatoire : l'API refuse de démarrer sans.
       EmailRedirect__To: ${STAGING_EMAIL_REDIRECT_TO}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
