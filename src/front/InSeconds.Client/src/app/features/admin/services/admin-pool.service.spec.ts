@@ -464,11 +464,10 @@ describe('AdminPoolService', () => {
     });
   });
 
-  // M14 (revue du 25/09) : la recherche Deezer de la modale écoute passait par
-  // takeUntilDestroyed(this.destroyRef), qui n'est détruit qu'avec le service (scopé à
-  // AdminComponent) — pas à la fermeture de la modale. Une réponse tardive après fermeture,
-  // ou après réouverture sur un autre morceau, appelait quand même audioPreview.toggle(...) et
-  // écrasait l'état affiché.
+  // M14 (revue du 25/09) : une réponse Deezer tardive après fermeture de la modale écoute, ou
+  // après réouverture sur un autre morceau, appelait quand même audioPreview.toggle(...) et
+  // écrasait l'état affiché. La recherche passe désormais par une resource, qui annule la
+  // requête précédente dès que le morceau change ou que la modale se ferme.
   describe('modale écoute (openPreviewModal/closePreviewModal)', () => {
     it('should not call audioPreview.toggle for a search that resolves after the modal was closed', () => {
       const pending = new Subject<{
@@ -478,8 +477,11 @@ describe('AdminPoolService', () => {
       apiStub.searchDeezer.mockReturnValue(pending);
 
       service.openPreviewModal(makePoolTrack(5, true) as any);
+      TestBed.tick();
       service.closePreviewModal();
+      TestBed.tick();
       pending.next([{ deezerTrackId: 5, previewUrl: 'https://example.com/5.mp3' }]);
+      TestBed.tick();
 
       expect(audioPreviewStub.toggle).not.toHaveBeenCalled();
       expect(service.previewModalUrl()).toBeNull();
@@ -495,6 +497,7 @@ describe('AdminPoolService', () => {
       const trackA = makePoolTrack(5, true) as any;
       const trackB = makePoolTrack(6, true) as any;
       service.openPreviewModal(trackA);
+      TestBed.tick();
 
       const secondSearch = new Subject<{
         deezerTrackId: number;
@@ -502,15 +505,18 @@ describe('AdminPoolService', () => {
       }[]>();
       apiStub.searchDeezer.mockReturnValue(secondSearch);
       service.openPreviewModal(trackB);
+      TestBed.tick();
 
       // La réponse tardive du premier morceau ne doit plus rien pouvoir modifier.
       firstSearch.next([{ deezerTrackId: 5, previewUrl: 'https://example.com/5.mp3' }]);
+      TestBed.tick();
 
       expect(service.previewModalTrack()).toBe(trackB);
       expect(service.previewModalUrl()).toBeNull();
       expect(audioPreviewStub.toggle).not.toHaveBeenCalled();
 
       secondSearch.next([{ deezerTrackId: 6, previewUrl: 'https://example.com/6.mp3' }]);
+      TestBed.tick();
 
       expect(service.previewModalUrl()).toBe('https://example.com/6.mp3');
       expect(audioPreviewStub.toggle).toHaveBeenCalledTimes(1);

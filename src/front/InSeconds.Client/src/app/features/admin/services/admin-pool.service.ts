@@ -1,6 +1,6 @@
-import { Injectable, inject, signal, computed, DestroyRef } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Subscription } from 'rxjs';
+import { Injectable, inject, signal, computed, effect, untracked, DestroyRef } from '@angular/core';
+import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { map } from 'rxjs';
 import { SettingsService } from '../../../core/services/settings.service';
 import { AdminApiService } from './admin-api.service';
 import { PoolAudioPreviewService } from './pool-audio-preview.service';
@@ -73,14 +73,25 @@ export class AdminPoolService {
   // --- modale écoute (preview d'une ligne du pool) ---
   // Le lecteur audio (play/pause/progress) vit dans PoolAudioPreviewService, partagé
   // entre cette modale et le panneau de recherche/ajout (une seule instance Audio() active à la fois).
-  private readonly _previewModalOpen = signal(false);
-  readonly previewModalOpen = this._previewModalOpen.asReadonly();
-  private readonly _previewModalTrack = signal<PoolTrackDto | null>(null);
-  readonly previewModalTrack = this._previewModalTrack.asReadonly();
-  private readonly _previewModalStatus = signal<'loading' | 'ready' | 'error'>('loading');
-  readonly previewModalStatus = this._previewModalStatus.asReadonly();
-  private readonly _previewModalUrl = signal<string | null>(null);
-  readonly previewModalUrl = this._previewModalUrl.asReadonly();
+  // Modale écoute : la recherche Deezer passe par une resource. Changer de morceau ou fermer
+  // la modale annule la recherche en cours (M14, revue du 25/09 : une réponse tardive après
+  // fermeture, ou après réouverture sur un autre morceau, relançait la lecture).
+  private readonly previewRequest = signal<{ track: PoolTrackDto } | undefined>(undefined);
+  private readonly previewSearchResource = rxResource({
+    params: () => this.previewRequest(),
+    stream: ({ params: { track } }) => this.api.searchDeezer(`${track.artist} ${track.title}`).pipe(
+      map(results => (results.find(r => r.deezerTrackId === track.deezerTrackId) ?? results[0])?.previewUrl ?? null)),
+  });
+  readonly previewModalOpen = computed(() => this.previewRequest() !== undefined);
+  readonly previewModalTrack = computed(() => this.previewRequest()?.track ?? null);
+  readonly previewModalUrl = computed<string | null>(() =>
+    (this.previewSearchResource.status() === 'resolved' ? this.previewSearchResource.value() : null) ?? null);
+  readonly previewModalStatus = computed<'loading' | 'ready' | 'error'>(() => {
+    const status = this.previewSearchResource.status();
+    if (status === 'error') return 'error';
+    if (status === 'resolved') return this.previewModalUrl() ? 'ready' : 'error';
+    return 'loading';
+  });
 
   // --- modale suppression ---
   private readonly _deleteModalOpen = signal(false);
@@ -312,47 +323,20 @@ export class AdminPoolService {
   }
 
   // --- modale écoute ---
-  // M14 (revue du 25/09) : takeUntilDestroyed(this.destroyRef) ne protège pas ici — ce
-  // destroyRef est celui du service (scopé à AdminComponent, cf. CLAUDE.md admin), pas de la
-  // modale, donc une réponse Deezer tardive après fermeture appelait quand même
-  // audioPreview.toggle(...) et redémarrait la lecture (ou écrasait l'état d'une modale
-  // rouverte entre-temps sur un autre morceau). La souscription est désormais gardée à la
-  // main et annulée explicitement à chaque nouvelle ouverture et à la fermeture.
-  private previewSearchSubscription: Subscription | null = null;
+  // La lecture démarre d'elle-même dès que l'URL de preview est trouvée.
+  private readonly autoplayPreview = effect(() => {
+    const url = this.previewModalUrl();
+    if (url) untracked(() => this.audioPreview.toggle(url));
+  });
 
   openPreviewModal(t: PoolTrackDto): void {
-    this.previewSearchSubscription?.unsubscribe();
     this.audioPreview.stop();
-    this._previewModalTrack.set(t);
-    this._previewModalUrl.set(null);
-    this._previewModalStatus.set('loading');
-    this._previewModalOpen.set(true);
-
-    // Réutilise la recherche Deezer admin pour retrouver l'URL de preview de ce morceau.
-    this.previewSearchSubscription = this.api.searchDeezer(`${t.artist} ${t.title}`)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (results) => {
-          const match = results.find(r => r.deezerTrackId === t.deezerTrackId) ?? results[0];
-          if (match?.previewUrl) {
-            this._previewModalUrl.set(match.previewUrl);
-            this._previewModalStatus.set('ready');
-            this.audioPreview.toggle(match.previewUrl); // démarre la lecture directement
-          } else {
-            this._previewModalStatus.set('error');
-          }
-        },
-        error: () => this._previewModalStatus.set('error'),
-      });
+    this.previewRequest.set({ track: t });
   }
 
   closePreviewModal(): void {
-    this.previewSearchSubscription?.unsubscribe();
     this.audioPreview.stop();
-    this._previewModalOpen.set(false);
-    this._previewModalTrack.set(null);
-    this._previewModalUrl.set(null);
-    this._previewModalStatus.set('loading');
+    this.previewRequest.set(undefined);
   }
 
   addTrackFromPanel(track: DeezerTrackInfo): void {

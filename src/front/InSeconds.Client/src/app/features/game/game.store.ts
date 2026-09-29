@@ -1,5 +1,5 @@
 import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, tap } from 'rxjs';
 import { ApiClient, TodayStatsResponse } from '../../api/api.generated';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
@@ -48,7 +48,6 @@ export class GameStore {
   private readonly _results = signal<RoundResult[]>([]);
   private readonly _currentStreak = signal(0);
   private readonly _currentTrackMinListenedSeconds = signal<number | null>(null);
-  private readonly _todayStats = signal<TodayStatsResponse | null>(null);
 
   // Renseignés par le peek (GET /api/sessions/today) avant toute création de session :
   // l'écran d'accueil / de reprise s'affiche sans qu'aucun POST /api/sessions n'ait eu lieu.
@@ -68,6 +67,21 @@ export class GameStore {
   private readonly _streakToastDismissed = signal(false);
   private readonly _gelToastDismissed = signal(false);
 
+  // Stats du jour (écrans de fin) : chargées à chaque entrée dans un récap non abandonné.
+  // `undefined` = pas de chargement ; le numéro change à chaque demande pour relire les stats.
+  private readonly statsRequest = signal<number | undefined>(undefined);
+  private readonly todayStatsResource = rxResource<TodayStatsResponse, number | undefined>({
+    params: () => this.statsRequest(),
+    stream: () => this.api.apiStatsToday(),
+  });
+  /**
+   * Null tant que les stats ne sont pas arrivées ou si l'appel échoue : les écrans le tolèrent
+   * (égaliseur et histogrammes absents, le reste s'affiche). `hasValue()` évite de lire la
+   * valeur d'une resource en erreur, qui lèverait une exception (piège 41).
+   */
+  readonly todayStats = computed<TodayStatsResponse | null>(() =>
+    this.todayStatsResource.hasValue() ? this.todayStatsResource.value() : null);
+
   private readonly _secondsUntilMidnightUtc = signal(0);
   private countdownInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -79,7 +93,6 @@ export class GameStore {
   readonly displayedTotalScore = this._displayedTotalScore.asReadonly();
   readonly results = this._results.asReadonly();
   readonly currentTrackMinListenedSeconds = this._currentTrackMinListenedSeconds.asReadonly();
-  readonly todayStats = this._todayStats.asReadonly();
   readonly peekTracksCount = this._peekTracksCount.asReadonly();
   readonly peekCompletedCount = this._peekCompletedCount.asReadonly();
   readonly resumeCompletedAnswers = this._resumeCompletedAnswers.asReadonly();
@@ -106,23 +119,23 @@ export class GameStore {
   /** Compte connecté : gel gagné par la partie du jour (« +1 gel gagné ! »). */
   readonly showGelEarnedToast = computed(() =>
     this.playerSession.isLinked() && this.onRecap() && !this._sessionAbandoned()
-    && !this._gelToastDismissed() && this._todayStats()?.freezeMilestone === true);
+    && !this._gelToastDismissed() && this.todayStats()?.freezeMilestone === true);
 
   /** Compte connecté : gel(s) consommé(s) par la partie du jour (« 1 gel a sauvé ta série ! »). */
   readonly showGelUsedToast = computed(() =>
     this.playerSession.isLinked() && this.onRecap() && !this._sessionAbandoned()
-    && !this._gelToastDismissed() && !this.showGelEarnedToast() && (this._todayStats()?.freezesUsed ?? 0) > 0);
+    && !this._gelToastDismissed() && !this.showGelEarnedToast() && (this.todayStats()?.freezesUsed ?? 0) > 0);
 
-  readonly freezesUsed = computed(() => this._todayStats()?.freezesUsed ?? 0);
+  readonly freezesUsed = computed(() => this.todayStats()?.freezesUsed ?? 0);
   readonly freezesUsedKey = computed(() => pluralKey(this.freezesUsed()));
 
   /** Invité : palier de gel atteint (« Tu aurais gagné un gel ! ») — variante du toast de série. */
   readonly guestFreezeMiss = computed(() =>
-    !this.playerSession.isLinked() && this._todayStats()?.freezeMilestone === true);
+    !this.playerSession.isLinked() && this.todayStats()?.freezeMilestone === true);
 
   // Série à afficher : depuis la session (welcome/playing/done) ou depuis les stats (already_played).
   private readonly displayStreak = computed(() => {
-    const stats = this._todayStats();
+    const stats = this.todayStats();
     if (this._state() === 'already_played' && stats) return stats.currentStreak;
     return this._currentStreak();
   });
@@ -131,7 +144,7 @@ export class GameStore {
   // AVANT la partie qui vient de se terminer (posée au démarrage) — sur l'écran `done`,
   // `todayStats` (chargé à l'entrée dans cet état) porte déjà la valeur à jour. La préférer
   // dès qu'elle est disponible, sinon retomber sur `displayStreak` (évite un flash à 0).
-  readonly toastStreak = computed(() => this._todayStats()?.currentStreak ?? this.displayStreak());
+  readonly toastStreak = computed(() => this.todayStats()?.currentStreak ?? this.displayStreak());
   readonly toastStreakKey = computed(() => pluralKey(this.toastStreak()));
 
   readonly showStreakToast = computed(() =>
@@ -400,13 +413,8 @@ export class GameStore {
     });
   }
 
-  // Sans callback error, une ApiException (client NSwag) remontait comme un crash JS non géré
-  // au lieu de laisser todayStats à null, déjà toléré par les écrans (piège 41).
   private loadTodayStats(): void {
-    this.api.apiStatsToday().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: stats => this._todayStats.set(stats),
-      error: () => {},
-    });
+    this.statsRequest.update(n => (n ?? 0) + 1);
   }
 
   /** Toast invité « série perdue » : une seule fois par série perdue (localStorage). */

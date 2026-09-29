@@ -169,6 +169,7 @@ describe('GameStore — gel de série', () => {
     store['_tracks'].set([{ id: 1, previewUrl: null, coverUrl: null } as any]);
     store['_currentIndex'].set(0);
     store.nextTrack();
+    TestBed.tick(); // les stats du jour arrivent par une resource (chargement asynchrone)
   }
 
   it('stores the peek streak detail for the header pill', () => {
@@ -367,6 +368,7 @@ describe('GameStore — échec réseau de apiStatsToday (piège 41)', () => {
     expect(() => store.nextTrack()).not.toThrow();
 
     expect(store.state()).toBe('done');
+    TestBed.tick(); // laisse la resource échouer : todayStats doit rester null sans lever
     expect(store.todayStats()).toBeNull();
   });
 
@@ -378,6 +380,7 @@ describe('GameStore — échec réseau de apiStatsToday (piège 41)', () => {
     expect(() => store.init()).not.toThrow();
 
     expect(store.state()).toBe('already_played');
+    TestBed.tick(); // laisse la resource échouer : todayStats doit rester null sans lever
     expect(store.todayStats()).toBeNull();
   });
 
@@ -387,6 +390,7 @@ describe('GameStore — échec réseau de apiStatsToday (piège 41)', () => {
     expect(() => store.beginGame()).not.toThrow();
 
     expect(store.state()).toBe('already_played');
+    TestBed.tick(); // laisse la resource échouer : todayStats doit rester null sans lever
     expect(store.todayStats()).toBeNull();
   });
 });
