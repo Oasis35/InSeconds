@@ -42,7 +42,7 @@ describe('AdminWeeklyStoryService', () => {
   });
 
   it('load() : erreur HTTP → false, statut error, récap vidé', async () => {
-    service.recap.set(okRecap);
+    service['_recap'].set(okRecap);
     http.getWeeklyRecap.mockReturnValue(throwError(() => new Error('500')));
 
     expect(await service.load()).toBe(false);
@@ -69,8 +69,8 @@ describe('AdminWeeklyStoryService', () => {
 
   it('load() transmet la période choisie à l\'API', async () => {
     http.getWeeklyRecap.mockReturnValue(of(okRecap));
-    service.from.set('2026-09-01');
-    service.to.set('2026-09-10');
+    service['_from'].set('2026-09-01');
+    service['_to'].set('2026-09-10');
 
     await service.load();
 
@@ -84,17 +84,17 @@ describe('AdminWeeklyStoryService', () => {
   });
 
   it('periodValid() : faux si le début est après la fin', () => {
-    service.from.set('2026-09-10');
-    service.to.set('2026-09-01');
+    service['_from'].set('2026-09-10');
+    service['_to'].set('2026-09-01');
     expect(service.periodValid()).toBe(false);
   });
 
   it('storyTitle() : titres prédéfinis et texte libre', () => {
     expect(service.storyTitle()).toBe('Cette semaine dans InSeconds 🎧');
-    service.titleMode.set('lastWeek');
+    service['_titleMode'].set('lastWeek');
     expect(service.storyTitle()).toBe('La semaine dernière dans InSeconds 🎧');
-    service.titleMode.set('custom');
-    service.customTitle.set('  Spécial été ☀️  ');
+    service['_titleMode'].set('custom');
+    service['_customTitle'].set('  Spécial été ☀️  ');
     expect(service.storyTitle()).toBe('Spécial été ☀️');
   });
 });

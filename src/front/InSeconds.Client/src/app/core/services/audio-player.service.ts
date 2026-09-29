@@ -18,10 +18,14 @@ export class AudioPlayerService {
   private wasExtended = false;
   private playToken = 0; // incrémenté à chaque play/reset — invalide les callbacks périmés
 
-  readonly state = signal<AudioState>('idle');
-  readonly listenedSeconds = signal(0);
-  readonly extended = signal(false);
-  readonly progress = signal(0); // 0→1 pendant l'écoute
+  private readonly _state = signal<AudioState>('idle');
+  readonly state = this._state.asReadonly();
+  private readonly _listenedSeconds = signal(0);
+  readonly listenedSeconds = this._listenedSeconds.asReadonly();
+  private readonly _extended = signal(false);
+  readonly extended = this._extended.asReadonly();
+  private readonly _progress = signal(0); // 0→1 pendant l'écoute
+  readonly progress = this._progress.asReadonly();
 
   private rafId: number | null = null;
 
@@ -53,21 +57,21 @@ export class AudioPlayerService {
 
     this.currentDuration = durationSeconds;
     this.wasExtended = false;
-    this.extended.set(false);
-    this.state.set('loading');
+    this._extended.set(false);
+    this._state.set('loading');
 
     this.audio.src = trackUrl;
     this.audio.oncanplay = () => {
       if (this.playToken !== token) return; // callback périmé, ignorer
       this.audio!.oncanplay = null; // canplay peut se répéter (seek, rebuffering) : un seul démarrage
-      this.state.set('playing');
-      this.progress.set(0);
+      this._state.set('playing');
+      this._progress.set(0);
       // 'error', jamais 'idle' : un retour à 'idle' relancerait en boucle l'autoplay de
       // BlindRoundComponent (effect sur isIdle()), cf. piège E4 CLAUDE.md.
       this.startPlayback(token);
     };
 
-    this.audio.onerror = () => { if (this.playToken === token) this.state.set('error'); };
+    this.audio.onerror = () => { if (this.playToken === token) this._state.set('error'); };
     this.audio.load();
   }
 
@@ -89,8 +93,8 @@ export class AudioPlayerService {
     this.audio.onended = null;
 
     this.audio.currentTime = 0;
-    this.state.set('playing');
-    this.progress.set(0);
+    this._state.set('playing');
+    this._progress.set(0);
     this.startPlayback(token);
   }
 
@@ -109,15 +113,15 @@ export class AudioPlayerService {
     this.audio.onended = () => {
       if (this.playToken !== token) return;
       this.audio!.onended = null;
-      this.state.set('finished');
+      this._state.set('finished');
     };
 
     this.audio.currentTime = 0;
-    this.state.set('playing');
+    this._state.set('playing');
     // 'finished', jamais 'idle' : le round est terminé, rien à proposer au joueur, et un
     // retour à 'idle' relancerait l'autoplay de BlindRoundComponent (cf. piège 33 CLAUDE.md).
     this.audio.play().catch((err: unknown) => {
-      if (this.playToken === token && !isAbort(err)) this.state.set('finished');
+      if (this.playToken === token && !isAbort(err)) this._state.set('finished');
     });
   }
 
@@ -131,7 +135,7 @@ export class AudioPlayerService {
     if (nextDurationSeconds <= this.currentDuration) return;
 
     this.wasExtended = true;
-    this.extended.set(true);
+    this._extended.set(true);
     this.currentDuration = nextDurationSeconds;
 
     // Le palier n'a pas encore commencé à jouer (chargement en cours) : rien d'autre à faire
@@ -159,8 +163,8 @@ export class AudioPlayerService {
     this.audio.onerror = null;
 
     this.audio.currentTime = 0;
-    this.state.set('playing');
-    this.progress.set(0);
+    this._state.set('playing');
+    this._progress.set(0);
     // 'error', jamais 'idle' : un retour à 'idle' relançait l'autoplay de BlindRoundComponent
     // au premier palier (palier choisi remis à 0,5s), cf. piège 44 CLAUDE.md.
     this.startPlayback(token);
@@ -174,9 +178,9 @@ export class AudioPlayerService {
     this.stopRaf();
     if (this.audio) this.audio.pause();
 
-    this.progress.set(1);
-    this.state.set('finished');
-    this.listenedSeconds.set(this.currentDuration);
+    this._progress.set(1);
+    this._state.set('finished');
+    this._listenedSeconds.set(this.currentDuration);
     navigator.vibrate?.(50);
 
     return { listenedSeconds: this.currentDuration, wasExtended: this.wasExtended };
@@ -198,10 +202,10 @@ export class AudioPlayerService {
       this.audio.pause();
       this.audio.src = '';
     }
-    this.state.set('idle');
-    this.listenedSeconds.set(0);
-    this.extended.set(false);
-    this.progress.set(0);
+    this._state.set('idle');
+    this._listenedSeconds.set(0);
+    this._extended.set(false);
+    this._progress.set(0);
     this.currentDuration = 0;
     this.wasExtended = false;
   }
@@ -237,7 +241,7 @@ export class AudioPlayerService {
     audio.play().catch((err: unknown) => {
       // AbortError = lecture interrompue par notre propre pause()/changement de source, pas
       // une vraie panne : ne rien afficher (sinon « Réessayer » apparaîtrait à tort).
-      if (this.playToken === token && !isAbort(err)) this.state.set('error');
+      if (this.playToken === token && !isAbort(err)) this._state.set('error');
     });
     this.startRaf(token);
   }
@@ -262,7 +266,7 @@ export class AudioPlayerService {
       if (this.playToken !== token) return;
       const elapsed = this.audio?.currentTime ?? 0;
       // Lit currentDuration à chaque frame (pas figé en paramètre) : reflète une éventuelle extension.
-      this.progress.set(Math.min(elapsed / this.currentDuration, 1));
+      this._progress.set(Math.min(elapsed / this.currentDuration, 1));
       // Arrêt précis (~1 frame) sur la position réelle ; le chrono de scheduleStop() couvre le
       // cas où rAF est suspendu (onglet en arrière-plan, écran éteint).
       if (this.state() === 'playing' && elapsed >= this.currentDuration - STOP_TOLERANCE_SECONDS) {

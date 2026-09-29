@@ -13,16 +13,21 @@ export class AdminStateService {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
-  readonly selectedDay = signal<string>(new Date().toISOString().slice(0, 10));
-  readonly poolSearchQuery = signal('');
-  readonly poolReloadTrigger = signal(0);
-  readonly challengesReloadTrigger = signal(0);
+  private readonly _selectedDay = signal<string>(new Date().toISOString().slice(0, 10));
+  readonly selectedDay = this._selectedDay.asReadonly();
+  private readonly _poolSearchQuery = signal('');
+  readonly poolSearchQuery = this._poolSearchQuery.asReadonly();
+  private readonly _poolReloadTrigger = signal(0);
+  readonly poolReloadTrigger = this._poolReloadTrigger.asReadonly();
+  private readonly _challengesReloadTrigger = signal(0);
+  readonly challengesReloadTrigger = this._challengesReloadTrigger.asReadonly();
 
   /**
    * Onglet affiché. Piloté ici (et non dans AdminComponent) pour que les rxResource d'AdminApiService
    * puissent charger paresseusement. Initialisé depuis le paramètre d'URL `?tab=` (F5 conserve l'onglet).
    */
-  readonly activeTab = signal<AdminTab>(this.readTabFromUrl());
+  private readonly _activeTab = signal<AdminTab>(this.readTabFromUrl());
+  readonly activeTab = this._activeTab.asReadonly();
 
   /**
    * Onglets déjà ouverts au moins une fois pendant la session admin courante.
@@ -42,7 +47,7 @@ export class AdminStateService {
   }
 
   setActiveTab(tab: AdminTab): void {
-    this.activeTab.set(tab);
+    this._activeTab.set(tab);
     if (!this.visitedTabs().has(tab)) {
       this.visitedTabs.update(s => new Set(s).add(tab));
     }
@@ -54,11 +59,19 @@ export class AdminStateService {
     });
   }
 
+  setSelectedDay(day: string): void {
+    this._selectedDay.set(day);
+  }
+
+  setPoolSearchQuery(q: string): void {
+    this._poolSearchQuery.set(q);
+  }
+
   reloadPool(): void {
-    this.poolReloadTrigger.update(v => v + 1);
+    this._poolReloadTrigger.update(v => v + 1);
   }
 
   reloadChallenges(): void {
-    this.challengesReloadTrigger.update(v => v + 1);
+    this._challengesReloadTrigger.update(v => v + 1);
   }
 }

@@ -220,7 +220,6 @@ Tous `OnPush`, présentationnels (sauf `already-played-screen` qui type `stats` 
 | `4000ms` | `AnswerSubmissionService` | durée toast erreur réseau |
 | `2000ms` / `3000ms` | `GameShareService` (`copyText`, privé) | durée `copied` / `failed` |
 | `600ms` défaut / `1000ms` | `count-up.ts` / `game.component.onNextTrack` | durée animation score |
-| `600px` | `game.component` `viewportTall` | seuil viewport "grand écran" |
 | `50ms` | `audio-player.service` | vibration à l'arrêt auto |
 | `409` / `503` | `game.component.loadSession` (POST) | 409 = session déjà existante (`already_played`/`abandoned`) / 503 = pas de défi. Au chargement de page c'est `peekSession` (GET) qui décide via `res.state`, sans code d'erreur. |
 

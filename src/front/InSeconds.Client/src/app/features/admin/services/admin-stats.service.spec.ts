@@ -268,19 +268,19 @@ describe('AdminStatsService', () => {
 
     it('should shift to next month (delta=1 goes toward more recent)', () => {
       // months are sorted DESC: ['2026-07', '2026-06', '2026-05']
-      service.challengeMonth.set('2026-06');
+      service['_challengeMonth'].set('2026-06');
       service.shiftChallengeMonth(1);
       expect(service.challengeMonth()).toBe('2026-07');
     });
 
     it('should shift to previous month (delta=-1 goes toward older)', () => {
-      service.challengeMonth.set('2026-06');
+      service['_challengeMonth'].set('2026-06');
       service.shiftChallengeMonth(-1);
       expect(service.challengeMonth()).toBe('2026-05');
     });
 
     it('should not shift beyond the oldest month', () => {
-      service.challengeMonth.set('2026-05');
+      service['_challengeMonth'].set('2026-05');
       service.shiftChallengeMonth(-1);
       // idx=2 (last), next = 2-(-1) = 3 which is out of range, so no change
       expect(service.challengeMonth()).toBe('2026-05');

@@ -35,7 +35,7 @@
       <label for="track-cooldown-days-input" class="sr-only">{{ 'admin.actions.trackCooldown' | translate }}</label>
       <input id="track-cooldown-days-input" type="number" min="1"
         [value]="actions.trackCooldownDaysInput() ?? settings.trackCooldownDays()"
-        (input)="actions.trackCooldownDaysInput.set(+$any($event.target).value)"
+        (input)="actions.setTrackCooldownDaysInput(+$any($event.target).value)"
         class="w-20 text-sm rounded-lg px-3 py-1.5 outline-none"
         style="background:var(--bg-inactive);color:var(--text-hi)" />
       <button (click)="actions.updateTrackCooldownDays(actions.trackCooldownDaysInput() ?? settings.trackCooldownDays())"

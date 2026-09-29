@@ -128,7 +128,7 @@ describe('AdminPoolService', () => {
     });
 
     it('resets allTracksPage on change', () => {
-      service.allTracksPage.set(2);
+      service['_allTracksPage'].set(2);
       service.setPoolFilterLastUsedFrom('2026-01-01');
       expect(service.allTracksPage()).toBe(0);
     });
@@ -245,10 +245,10 @@ describe('AdminPoolService', () => {
       expect(service.editArtist()).toBe('Etienne Daho');
       expect(service.editSaveDisabled()).toBe(true);
 
-      service.editArtist.set('Étienne Daho');
+      service['_editArtist'].set('Étienne Daho');
       expect(service.editSaveDisabled()).toBe(false);
 
-      service.editTitle.set('   ');
+      service['_editTitle'].set('   ');
       expect(service.editSaveDisabled()).toBe(true);
     });
 
@@ -259,7 +259,7 @@ describe('AdminPoolService', () => {
 
     it('envoie les valeurs nettoyées, ferme la modale et recharge le pool', () => {
       service.openEditModal(track);
-      service.editArtist.set('  Étienne Daho ');
+      service['_editArtist'].set('  Étienne Daho ');
       service.confirmEdit();
 
       expect(apiStub.renameTrack).toHaveBeenCalledWith(5, 'Étienne Daho', 'Tombe pour la France');
@@ -270,7 +270,7 @@ describe('AdminPoolService', () => {
     it('passe en « verrouillé » sur un 409 et garde la modale ouverte', () => {
       apiStub.renameTrack.mockReturnValue(throwError(() => ({ status: 409 })));
       service.openEditModal(track);
-      service.editTitle.set('Tombé pour la France');
+      service['_editTitle'].set('Tombé pour la France');
       service.confirmEdit();
 
       expect(service.editStatus()).toBe('locked');
@@ -358,7 +358,7 @@ describe('AdminPoolService', () => {
       vi.useFakeTimers();
       apiStub.addTrack.mockReturnValue(of(void 0));
 
-      service.addPanelOpen.set(true);
+      service['_addPanelOpen'].set(true);
       service.addTrackFromPanel(makeDeezerTrackInfo(101));
       expect(service.addTrackStatus(101)).toBe('success');
 

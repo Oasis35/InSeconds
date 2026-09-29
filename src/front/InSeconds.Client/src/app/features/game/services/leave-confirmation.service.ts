@@ -8,7 +8,8 @@ import { Injectable, signal } from '@angular/core';
  */
 @Injectable()
 export class LeaveConfirmationService {
-  readonly showLeaveConfirm = signal(false);
+  private readonly _showLeaveConfirm = signal(false);
+  readonly showLeaveConfirm = this._showLeaveConfirm.asReadonly();
   private leaveResolve: ((ok: boolean) => void) | null = null;
 
   get hasPending(): boolean {
@@ -20,14 +21,14 @@ export class LeaveConfirmationService {
     // Une confirmation déjà en attente (navigation ré-entrante) : on la résout
     // avant d'en ouvrir une nouvelle pour ne pas laisser de Promise orpheline.
     this.resolve(false);
-    this.showLeaveConfirm.set(true);
+    this._showLeaveConfirm.set(true);
     return new Promise<boolean>(resolve => {
       this.leaveResolve = resolve;
     });
   }
 
   resolve(ok: boolean): void {
-    this.showLeaveConfirm.set(false);
+    this._showLeaveConfirm.set(false);
     const resolve = this.leaveResolve;
     this.leaveResolve = null;
     resolve?.(ok);

@@ -85,6 +85,9 @@ export class AdminApiService {
 
   logout(): Promise<void> { return this.http.logout(); }
 
+  setSelectedDay(day: string): void { this.state.setSelectedDay(day); }
+  setPoolSearchQuery(q: string): void { this.state.setPoolSearchQuery(q); }
+
   reloadPool(): void { this.state.reloadPool(); }
 
   reloadStats(): void { this.statsResource.reload(); }

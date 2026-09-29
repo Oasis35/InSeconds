@@ -13,15 +13,17 @@ export class AdminStatsService {
   readonly challengeStats = this.api.challengeStats;
   readonly challengeStatsLoading = this.api.challengeStatsLoading;
 
-  readonly expandedChallenges = signal<Set<number>>(new Set());
-  readonly challengeMonth = signal<string>(new Date().toISOString().slice(0, 7));
+  private readonly _expandedChallenges = signal<Set<number>>(new Set());
+  readonly expandedChallenges = this._expandedChallenges.asReadonly();
+  private readonly _challengeMonth = signal<string>(new Date().toISOString().slice(0, 7));
+  readonly challengeMonth = this._challengeMonth.asReadonly();
 
   constructor() {
     // Synchronise le mois affiché avec les mois réellement disponibles.
     effect(() => {
       const months = [...new Set([...this.challengeMonths(), ...this.challengeListMonths()])].sort((a, b) => b.localeCompare(a));
       if (months.length > 0 && !months.includes(this.challengeMonth())) {
-        this.challengeMonth.set(months[0]);
+        this._challengeMonth.set(months[0]);
       }
     });
   }
@@ -57,14 +59,14 @@ export class AdminStatsService {
   toggleChallenge(id: number): void {
     const set = new Set(this.expandedChallenges());
     if (set.has(id)) set.delete(id); else set.add(id);
-    this.expandedChallenges.set(set);
+    this._expandedChallenges.set(set);
   }
 
   shiftChallengeMonth(delta: number): void {
     const months = this.challengeMonths();
     const idx = months.indexOf(this.challengeMonth());
     const next = idx - delta;
-    if (next >= 0 && next < months.length) this.challengeMonth.set(months[next]);
+    if (next >= 0 && next < months.length) this._challengeMonth.set(months[next]);
   }
 
   formatChallengeMonth(ym: string): string {
@@ -90,7 +92,7 @@ export class AdminStatsService {
   }
 
   selectDay(date: Date | string): void {
-    this.selectedDay.set(this.toIso(date));
+    this.api.setSelectedDay(this.toIso(date));
   }
 
   shiftSelectedDay(delta: number): void {
@@ -99,7 +101,7 @@ export class AdminStatsService {
     const idx = dates.indexOf(this.selectedDay());
     // availableDates est DESC (plus récent en premier), donc +1 = aller vers le passé
     const next = idx === -1 ? 0 : idx - delta;
-    if (next >= 0 && next < dates.length) this.selectedDay.set(dates[next]);
+    if (next >= 0 && next < dates.length) this.api.setSelectedDay(dates[next]);
   }
 
   canGoToPrevDay(): boolean {
