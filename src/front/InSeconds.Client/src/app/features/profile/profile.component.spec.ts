@@ -187,31 +187,17 @@ describe('ProfileComponent', () => {
       expect(component['emailStatus']()).toBe('sent');
     });
 
-    it('sets status to taken on 409', () => {
+    it.each([
+      { status: 409, expected: 'taken' },
+      { status: 400, expected: 'sameEmail' },
+      { status: 500, expected: 'error' },
+    ])('sets status to $expected on a $status error', ({ status, expected }) => {
       component.onEmailInput('bob@example.com');
-      playerSessionStub.requestEmailChange.mockReturnValue(throwError(() => ({ status: 409 })));
+      playerSessionStub.requestEmailChange.mockReturnValue(throwError(() => ({ status })));
 
       component.saveEmail();
 
-      expect(component['emailStatus']()).toBe('taken');
-    });
-
-    it('sets status to sameEmail on 400', () => {
-      component.onEmailInput('bob@example.com');
-      playerSessionStub.requestEmailChange.mockReturnValue(throwError(() => ({ status: 400 })));
-
-      component.saveEmail();
-
-      expect(component['emailStatus']()).toBe('sameEmail');
-    });
-
-    it('sets status to error on other failures', () => {
-      component.onEmailInput('bob@example.com');
-      playerSessionStub.requestEmailChange.mockReturnValue(throwError(() => ({ status: 500 })));
-
-      component.saveEmail();
-
-      expect(component['emailStatus']()).toBe('error');
+      expect(component['emailStatus']()).toBe(expected);
     });
   });
 
