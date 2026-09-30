@@ -20,6 +20,7 @@ public static class JobsSetup
             .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
             .UseSimpleAssemblyNameTypeSerializer()
             .UseRecommendedSerializerSettings()
+            .UseFilter(new JobTracingFilter())
             .UsePostgreSqlStorage(
                 options => options.UseNpgsqlConnection(connectionString),
                 new PostgreSqlStorageOptions

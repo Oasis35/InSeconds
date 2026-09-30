@@ -258,7 +258,7 @@ jobs:
           retention-days: 7
 
   back-v2:
-    name: Backend v2 (build, migrations, tests)
+    name: Backend v2 (build, migrations, tests, image)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -300,6 +300,17 @@ jobs:
       # Unitaires, architecture et intégration (Testcontainers : Docker est fourni par ubuntu-latest).
       - name: Test
         run: dotnet test --solution InSeconds.slnx --configuration Release --no-build
+
+      # S9 : l'hôte de test (routes /api/e2e, faux email) ne doit jamais atteindre l'image de prod.
+      - name: Build prod image and check it has no test host
+        run: |
+          docker build -f InSeconds.Api/Dockerfile -t inseconds-api-v2:ci .
+          files=$(docker run --rm --entrypoint ls inseconds-api-v2:ci /app)
+          echo "$files" | grep -q '^InSeconds.Api.dll$' || { echo "::error::InSeconds.Api.dll absent de l'image"; exit 1; }
+          if echo "$files" | grep -q 'InSeconds.Api.Testing'; then
+            echo "::error::InSeconds.Api.Testing présent dans l'image de prod (S9)."
+            exit 1
+          fi
 
   deploy:
     name: Deploy to VPS

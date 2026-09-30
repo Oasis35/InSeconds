@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../InSeconds.Api/InSeconds.Api.csproj" />
+    <ProjectReference Include="../../InSeconds.Infrastructure/InSeconds.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

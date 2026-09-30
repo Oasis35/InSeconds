@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- Hôte de test (E2E, tests d'intégration, dev local) : l'API complète plus ses faux (email,
+       plus tard Deezer) et les routes /api/e2e. Jamais dans l'image de prod (S9) : rien ne le
+       référence dans InSeconds.Api, le Dockerfile ne le copie pas et la CI le vérifie. -->
+  <PropertyGroup>
+    <RootNamespace>InSeconds.Api.Testing</RootNamespace>
+    <StartupObject>InSeconds.Api.Testing.TestingProgram</StartupObject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="InSeconds.IntegrationTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Respawn" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../InSeconds.Api/InSeconds.Api.csproj" />
+  </ItemGroup>
+
+</Project>

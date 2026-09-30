@@ -4,5 +4,7 @@
     <Project Path="tests/InSeconds.IntegrationTests/InSeconds.IntegrationTests.csproj" />
     <Project Path="tests/InSeconds.UnitTests/InSeconds.UnitTests.csproj" />
   </Folder>
+  <Project Path="InSeconds.Api.Testing/InSeconds.Api.Testing.csproj" />
   <Project Path="InSeconds.Api/InSeconds.Api.csproj" />
+  <Project Path="InSeconds.Infrastructure/InSeconds.Infrastructure.csproj" />
 </Solution>
