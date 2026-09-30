@@ -11,6 +11,10 @@ public static class DatabaseServiceCollectionExtensions
         return services;
     }
 
+    /// <summary>Migrations appliquées au démarrage de l'API (pas avec <c>--migrate-only</c>, qui les applique lui-même).</summary>
+    public static IServiceCollection AddDatabaseMigrationOnStartup(this IServiceCollection services) =>
+        services.AddHostedService<DatabaseStartupService>();
+
     /// <summary>Réglages communs à l'application, aux migrations et aux tests.</summary>
     public static DbContextOptionsBuilder Configure(DbContextOptionsBuilder options, string connectionString) =>
         options

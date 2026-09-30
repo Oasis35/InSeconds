@@ -285,6 +285,18 @@ jobs:
         working-directory: src/v2/back/InSeconds.Api
         run: dotnet ef migrations has-pending-model-changes --no-build --configuration Release
 
+      # En staging et en prod, Wolverine charge le code commité dans Internal/Generated au lieu de
+      # le compiler au démarrage : il doit correspondre aux handlers et endpoints actuels.
+      - name: Verify Wolverine generated code is up to date
+        run: |
+          rm -rf InSeconds.Api/Internal/Generated
+          dotnet run --project InSeconds.Api --configuration Release --no-build --no-launch-profile -- codegen write
+          if [ -n "$(git status --porcelain --untracked-files=all -- InSeconds.Api/Internal/Generated)" ]; then
+            git status --short -- InSeconds.Api/Internal/Generated
+            echo "::error::Code Wolverine généré pas à jour : lancer « dotnet run --project InSeconds.Api -- codegen write » (après avoir vidé InSeconds.Api/Internal/Generated) et commiter."
+            exit 1
+          fi
+
       # Unitaires, architecture et intégration (Testcontainers : Docker est fourni par ubuntu-latest).
       - name: Test
         run: dotnet test --solution InSeconds.slnx --configuration Release --no-build

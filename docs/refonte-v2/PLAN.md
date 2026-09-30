@@ -206,7 +206,7 @@ Le fantôme rejoue les morceaux enregistrés dans `run_tracks` de la partie d'or
 - `infra.settings` : `key text PK` préfixée par module, `value jsonb`, `description text`, `updated_at`.
 - `infra.data_protection_keys` : clés de chiffrement du cookie (même forme que la table actuelle).
 - `jobs.*` : tables de Hangfire (tâches planifiées et historique, § 5.4 bis), créées par Hangfire.
-- `messaging.*` : tables des messages durables, des messages planifiés et de l'outbox. Wolverine les crée ; son schéma par défaut est renommé en `messaging` (`PersistMessagesWithPostgresql(connectionString, "messaging")`). Le nom décrit le rôle, pas la librairie, et reste valable si on change un jour d'outil.
+- `messaging.*` : tables des messages durables, des messages planifiés et de l'outbox. Wolverine les crée **lui-même au démarrage** (pas les migrations EF, constaté en A2 : `MapWolverineEnvelopeStorage` ne fait que les déclarer au `DbContext`, exclues des migrations) ; son schéma par défaut est renommé en `messaging` (`PersistMessagesWithPostgresql(connectionString, "messaging")`). Le nom décrit le rôle, pas la librairie, et reste valable si on change un jour d'outil.
 
 **Settings repris et convertis :**
 
@@ -273,7 +273,7 @@ Chaque module expose un seul point d'entrée : `AddDaily(services)` et `MapDaily
 ### 5.2 Wolverine, pleinement utilisé
 
 - **Wolverine.Http :** l'endpoint est le handler. Une méthode sert au chargement (`Load`, qui renvoie 404 si besoin), une aux règles bloquantes (`Before`/`Validate`), et `Handle` contient la logique.
-- **Codegen statique en prod** (`TypeLoadMode.Static`, code généré au build) et dynamique en dev : plus de compilation à l'exécution en prod.
+- **Codegen statique en prod** (`TypeLoadMode.Static`, code généré par `codegen write` et **commité** dans `InSeconds.Api/Internal/Generated`, vérifié en CI ; fait en A2, en Production et Staging) et dynamique en dev : plus de compilation à l'exécution en prod.
 - **Transactions automatiques** (`AutoApplyTransactions`) : les handlers n'appellent jamais `SaveChangesAsync`.
 - **Outbox PostgreSQL :** un message enregistré dans la même transaction que la donnée est envoyé ensuite avec des retries. Concrètement :
   - emails (`SendMagicLinkEmail`, `SendEmailChangeConfirmation`) : une panne Brevo ne perd plus un lien ;
@@ -365,6 +365,7 @@ Clément veut des tâches de type cron, qu'il pilote lui-même, **avec des solut
 - `[DisableConcurrentExecution]` sur chaque tâche : une tâche ne tourne jamais deux fois en même temps.
 - Nombre d'essais et délai réglés par tâche (`[AutomaticRetry]`), par exemple la génération du défi réessaie toutes les 10 min, avec assez d'essais pour couvrir la journée (le défaut de Hangfire s'arrête à 10). Un pool insuffisant **lève une exception**, sinon Hangfire le compterait comme un succès et ne réessaierait pas. Pas de réessai Wolverine en plus, pour ne pas multiplier les tentatives.
 - Traces OpenTelemetry autour de chaque exécution, comme pour le reste de l'API.
+- **Fait en A2 :** chaque tâche implémente `IScheduledJob` et se déclare par `AddScheduledJob<T>(id, cron)` ; au démarrage, les tâches qui ne sont plus déclarées sont retirées. Un échec métier lève `JobFailedException(code)`, dont le code est rendu par `GET /api/admin/jobs/{id}` (toute autre exception devient `common.unexpected`, sans message). Deux workers seulement (`Jobs:Server:WorkerCount`) : peu de tâches, et chaque worker garde une connexion ouverte. Le tableau de bord exige aussi le jeton antiforgery sur ses actions.
 
 **Ce que Clément peut faire dans le tableau de bord :** voir toutes les tâches, leur cron, leur prochaine et leur dernière exécution ; **lancer maintenant** ; consulter l'historique (réussites, échecs avec la pile d'erreur) ; relancer une exécution échouée. **Changer un horaire ou mettre en pause** se fait par la configuration, le temps d'un déploiement, car le tableau de bord de base ne le propose pas (la pause depuis le tableau de bord est une [demande ouverte](https://github.com/HangfireIO/Hangfire/issues/2289)). C'est un choix assumé : ces changements sont rares, et ils restent tracés dans Git.
 
@@ -665,7 +666,7 @@ deploy/migration-v2/
 
 Tout se passe dans la même base, sans dump ni restauration :
 
-1. **À l'avance, sans coupure :** l'API v2 lancée avec `--migrate-only`, un point d'entrée qui applique les migrations **sans démarrer** ni Hangfire, ni Wolverine, ni le serveur HTTP (testé en CI). Elle crée les schémas v2, les tables, l'extension `citext` (dans un schéma `extensions`, pas dans `public`, pour que la copie prod → staging de `public` ne la touche pas) et les tables Wolverine (`messaging`), puis s'arrête. La v1 continue de tourner : elle ne voit rien de tout ça.
+1. **À l'avance, sans coupure :** l'API v2 lancée avec `--migrate-only`, un point d'entrée qui applique les migrations **sans démarrer** ni Hangfire, ni Wolverine, ni le serveur HTTP (testé en CI). Elle crée les schémas v2, les tables, l'extension `citext` (dans un schéma `extensions`, pas dans `public`, pour que la copie prod → staging de `public` ne la touche pas), puis s'arrête. Les tables de Wolverine (`messaging`) et de Hangfire (`jobs`) ne sont pas créées à ce moment : elles le sont au premier démarrage de l'API v2 (décision A2, § 4.6). La v1 continue de tourner : elle ne voit rien de tout ça.
 2. **Le jour J, v1 arrêtée :** `10-import.sql` dans une seule transaction. Il vide les tables v2 (le script est rejouable autant de fois que nécessaire), copie les données depuis `public.*`, puis remet les séquences à niveau (`setval` au plus grand identifiant importé). **Garde-fou :** une fois la v2 ouverte aux joueurs, un marqueur `infra.import_state` bloque toute nouvelle exécution (sinon on effacerait les parties jouées en v2), sauf option `--force` explicite.
 3. `20-verify.sql` : au moindre écart, **arrêt** (§ 8.5).
 4. Calcul des stats figées de tous les jours passés.
@@ -947,7 +948,7 @@ Deuxième relecture, en comparant le plan au code v1 (`env/staging`). Les points
 
 | # | Constat | Gravité | Traitement | Étape |
 |---|---|---|---|---|
-| A1 | Transactions automatiques et outbox derrière des stores : rien ne garantit que le store et l'outbox partagent la transaction. | moyenne | test d'intégration dès l'étape 1 (un message n'est envoyé que si la donnée est enregistrée, et inversement) ; `MapWolverineEnvelopeStorage` ; le schéma `messaging` créé par les migrations EF. | 1 |
+| A1 | Transactions automatiques et outbox derrière des stores : rien ne garantit que le store et l'outbox partagent la transaction. | moyenne | test d'intégration dès l'étape 1 (un message n'est envoyé que si la donnée est enregistrée, et inversement) ; `MapWolverineEnvelopeStorage` ; le schéma `messaging` créé par Wolverine au démarrage (les migrations EF ne peuvent pas le créer, constaté en A2). Fait en A2 : `OutboxTests`. | 1 |
 | A2 | Les clés étrangères entre schémas contredisent la règle « pas de dépendance hors `Contracts` ». | moyenne | exception écrite pour `Persistence` : les FK entre modules sont déclarées en SQL dans la migration, `ON DELETE RESTRICT`, sans navigation EF. | 1 |
 | A3 | Contradictions internes (outbox et série, `last_seen_at`, « un GET n'écrit jamais », date de build au lieu de `SwUpdate`). | faible | ✓ corrigées. | — |
 | A4 | Hangfire : `RequireAuthorization` ne suffit pas, le filtre local par défaut reste actif. | faible | `DashboardOptions.Authorization = []` en plus de la policy, couvert par le test 401/403 de S3. | 1 |

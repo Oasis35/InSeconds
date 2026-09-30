@@ -15,5 +15,14 @@ public static class DbSchemas
     /// </summary>
     public const string Extensions = "extensions";
 
+    /// <summary>
+    /// Messages durables de Wolverine (outbox, messages reçus, planifiés, en erreur). Le nom décrit
+    /// le rôle, pas la librairie (§ 4.6 du plan v2).
+    /// </summary>
+    public const string Messaging = "messaging";
+
+    /// <summary>Tables de Hangfire (tâches planifiées et leur historique), créées par Hangfire.</summary>
+    public const string Jobs = "jobs";
+
     public const string MigrationsHistoryTable = "__ef_migrations_history";
 }
