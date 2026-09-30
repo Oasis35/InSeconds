@@ -1,6 +1,6 @@
 # CLAUDE.md — back v2 (refonte)
 
-Back de la v2 d'InSeconds, en construction à côté de la v1 (`src/back/`), qui reste en service jusqu'à la bascule. Plan de référence : `refonte-v2-plan-detaille-2026-09-30.md` et `refonte-v2-plan-developpement-2026-09-30.md` (dossier `audit/` des fichiers du projet). Ce fichier décrit ce qui existe **déjà** dans le code ; il grossit à chaque PR.
+Back de la v2 d'InSeconds, en construction à côté de la v1 (`src/back/`), qui reste en service jusqu'à la bascule. Plan de référence : [`docs/refonte-v2/PLAN.md`](../../../docs/refonte-v2/PLAN.md) et [`docs/refonte-v2/DEVELOPPEMENT.md`](../../../docs/refonte-v2/DEVELOPPEMENT.md). Ce fichier décrit ce qui existe **déjà** dans le code ; il grossit à chaque PR.
 
 État : **PR A1, socle**. Pas encore de module métier, de Wolverine, de Hangfire ni d'authentification : ils arrivent dans les PR suivantes (A2 à A6).
 

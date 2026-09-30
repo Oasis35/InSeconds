@@ -10,7 +10,7 @@ Stack : .NET 10 / Wolverine / EF Core / PostgreSQL côté back, Angular 22 / Tai
 
 ## Refonte v2 (en cours)
 
-Une v2 complète (back modulaire, front NgRx SignalStore) se construit dans **`src/v2/`**, à côté de la v1 qui reste en service jusqu'à la bascule. Plans : `audit/refonte-v2-plan-detaille-2026-09-30.md` et `audit/refonte-v2-plan-developpement-2026-09-30.md` (fichiers du projet). Ce qui existe déjà côté back : [`src/v2/back/CLAUDE.md`](src/v2/back/CLAUDE.md). Job CI `back-v2` (build, migrations, tests), indépendant des déploiements v1.
+Une v2 complète (back modulaire, front NgRx SignalStore) se construit dans **`src/v2/`**, à côté de la v1 qui reste en service jusqu'à la bascule. Plans : [`docs/refonte-v2/PLAN.md`](docs/refonte-v2/PLAN.md) (le « quoi » : modèle, architecture, règles, import, sécurité) et [`docs/refonte-v2/DEVELOPPEMENT.md`](docs/refonte-v2/DEVELOPPEMENT.md) (découpage en PR et jalons). Avancement : ticket GitHub #205 et ses sous-tickets (étiquette `refonte-v2`). Toute décision prise en cours de route est reportée dans ces plans par la PR qui l'applique. Ce qui existe déjà côté back : [`src/v2/back/CLAUDE.md`](src/v2/back/CLAUDE.md). Job CI `back-v2` (build, migrations, tests), indépendant des déploiements v1.
 
 - **v1 gelée** : seulement des correctifs urgents, en PR **directement vers `main`**. Après chaque correctif, merger `main` dans `env/staging`.
 - **Le staging sert à la v2** : les PR de la refonte visent `env/staging`.
