@@ -85,5 +85,9 @@ describe('HealthService', () => {
     service.start();
 
     await probe(true, true);
+    await probe(true);
+
+    // Une seule requête par intervalle (expectOne échoue sur deux) ; verify() dans afterEach.
+    expect(service.state()).toBe('ok');
   });
 });

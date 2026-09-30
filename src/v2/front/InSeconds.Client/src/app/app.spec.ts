@@ -68,16 +68,17 @@ describe('App', () => {
     try {
       const fixture = TestBed.createComponent(App);
       await fixture.whenStable();
-      const element = fixture.nativeElement as HTMLElement;
 
       expect(window.location.search).toBe('');
-      const notice = element.querySelector('app-legacy-url-notice');
+      // Ouvert par ModalService : rendu dans l'overlay du CDK, hors de l'élément de l'app.
+      const notice = document.querySelector('app-legacy-url-notice');
       expect(notice).not.toBeNull();
+      expect(notice!.closest('[role="dialog"]')?.getAttribute('aria-labelledby')).toBeTruthy();
 
-      notice!.querySelector('button')!.click();
+      notice!.querySelector<HTMLButtonElement>('[modalActions] button')!.click();
       await fixture.whenStable();
 
-      expect(element.querySelector('app-legacy-url-notice')).toBeNull();
+      expect(document.querySelector('app-legacy-url-notice')).toBeNull();
     } finally {
       window.history.replaceState(window.history.state, '', original);
     }

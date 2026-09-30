@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 
 import { environment } from '../environments/environment';
@@ -8,6 +8,7 @@ import { LegacyUrlNoticeComponent } from './core/shell/legacy-url-notice/legacy-
 import { ServiceDownComponent } from './core/shell/service-down/service-down.component';
 import { UpdatePromptComponent } from './core/shell/update-prompt/update-prompt.component';
 import { EnvBannerComponent } from './ui/env-banner/env-banner.component';
+import { ModalService } from './ui/modal/modal.service';
 import { ToastHostComponent } from './ui/toast/toast-host.component';
 
 /** Drapeaux posés par les tests E2E (`addInitScript`), repris de la v1. */
@@ -21,8 +22,7 @@ interface E2EFlags {
 @Component({
   selector: 'app-root',
   imports: [
-    RouterOutlet, EnvBannerComponent, ToastHostComponent, UpdatePromptComponent, LegacyUrlNoticeComponent,
-    ServiceDownComponent,
+    RouterOutlet, EnvBannerComponent, ToastHostComponent, UpdatePromptComponent, ServiceDownComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './app.html',
@@ -30,11 +30,13 @@ interface E2EFlags {
 export class App {
   protected readonly environmentName = environment.name;
   protected readonly health = inject(HealthService);
-  protected readonly showLegacyUrlNotice = signal(consumeLegacyUrlFlag(window.location, window.history));
 
   constructor() {
     const flags = window as E2EFlags;
     if (flags.__disableAnimations === true) document.documentElement.classList.add('no-anim');
     if (flags.__disableHealthPolling !== true) this.health.start();
+    if (consumeLegacyUrlFlag(window.location, window.history)) {
+      inject(ModalService).open(LegacyUrlNoticeComponent, { maxWidth: '28rem' });
+    }
   }
 }

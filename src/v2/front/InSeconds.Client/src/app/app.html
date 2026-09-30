@@ -5,10 +5,6 @@
 <app-toast-host />
 <app-update-prompt />
 
-@if (showLegacyUrlNotice()) {
-  <app-legacy-url-notice (dismissed)="showLegacyUrlNotice.set(false)" />
-}
-
 @if (health.isDown()) {
   <app-service-down />
 }
