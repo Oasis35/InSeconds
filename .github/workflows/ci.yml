@@ -113,6 +113,38 @@ jobs:
         working-directory: src/front/InSeconds.Client
         run: npx --no-install ng test --watch=false
 
+  front-v2:
+    name: Frontend v2 (build, Vitest, Sheriff)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/v2/front/InSeconds.Client
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: src/v2/front/InSeconds.Client/package-lock.json
+
+      - name: Install (clean)
+        run: npm ci --ignore-scripts
+
+      - name: Architecture (Sheriff + pure domain layer)
+        run: npm run lint:arch
+
+      - name: Build (production, service worker included)
+        run: npm run build
+
+      - name: Install Playwright browsers
+        run: npx --no-install playwright install --with-deps chromium
+
+      - name: Run unit tests
+        run: npx --no-install ng test --watch=false
+
   nginx-headers:
     name: Frontend (nginx cache headers smoke test)
     runs-on: ubuntu-latest

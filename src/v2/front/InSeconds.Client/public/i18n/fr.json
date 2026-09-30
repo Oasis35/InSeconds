@@ -1,0 +1,52 @@
+{
+  "common": {
+    "close": "Fermer",
+    "retry": "Réessayer"
+  },
+  "errors": {
+    "code": "Code d'erreur :",
+    "common": {
+      "bad_request": "La demande n'est pas valide.",
+      "conflict": "Cette action n'est plus possible dans l'état actuel.",
+      "forbidden": "Tu n'as pas accès à cette page.",
+      "network": "Impossible de joindre le serveur. Vérifie ta connexion et réessaie.",
+      "new_version": "Une nouvelle version d'InSeconds est disponible. Recharge la page pour continuer.",
+      "not_found": "Ce que tu cherches n'existe pas ou plus.",
+      "too_many_requests": "Trop de demandes d'un coup. Patiente un peu avant de réessayer.",
+      "unauthorized": "Connecte-toi pour continuer.",
+      "unexpected": "Une erreur inattendue s'est produite. Réessaie dans un instant.",
+      "unknown": "Une erreur s'est produite. Si elle se répète, transmets-nous le code ci-dessous."
+    }
+  },
+  "shell": {
+    "comingSoon": {
+      "title": "La nouvelle version arrive",
+      "body": "Cette partie d'InSeconds est en cours de reconstruction. Reviens bientôt !"
+    },
+    "legacyUrl": {
+      "title": "L'adresse a changé",
+      "body": "InSeconds a maintenant sa propre adresse. Tu as été redirigé automatiquement — pense à mettre à jour ton favori.",
+      "cta": "J'ai compris"
+    },
+    "notFound": {
+      "title": "Page introuvable",
+      "body": "Cette page n'existe pas ou a été déplacée.",
+      "cta": "Retour au jeu"
+    },
+    "serviceDown": {
+      "title": "Service indisponible",
+      "body": "L'application revient dans un instant. Cette page se rafraîchira toute seule dès que le service sera de retour.",
+      "reconnecting": "Reconnexion en cours…"
+    },
+    "update": {
+      "body": "Une nouvelle version d'InSeconds est disponible.",
+      "reload": "Recharger",
+      "later": "Plus tard"
+    }
+  },
+  "ui": {
+    "envBanner": {
+      "label": "environnement de développement"
+    }
+  }
+}
