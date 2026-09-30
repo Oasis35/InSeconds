@@ -11,7 +11,11 @@ namespace InSeconds.IntegrationTests;
 /// </summary>
 public sealed class PostgresFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:17-alpine").Build();
+    // Chaque API de test ouvre plusieurs pools (EF, Wolverine, Hangfire) sur sa propre base : la
+    // limite par défaut (100 connexions) est vite atteinte quand les classes tournent en parallèle.
+    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:17-alpine")
+        .WithCommand("-c", "max_connections=500")
+        .Build();
 
     public async ValueTask InitializeAsync() => await _container.StartAsync();
 

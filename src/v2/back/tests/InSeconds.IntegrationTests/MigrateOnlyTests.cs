@@ -1,10 +1,16 @@
+using System.Reflection;
 using InSeconds.Api.Infrastructure.Hosting;
+using InSeconds.Api.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql;
 
 namespace InSeconds.IntegrationTests;
 
 public class MigrateOnlyTests(PostgresFixture postgres)
 {
+    private static readonly long MigrationCount = typeof(InSecondsDbContext).Assembly.GetTypes()
+        .LongCount(type => type.GetCustomAttribute<MigrationAttribute>() is not null);
+
     [Fact]
     public async Task MigrateOnly_AppliqueLesMigrationsPuisRendLaMain()
     {
@@ -16,8 +22,11 @@ public class MigrateOnlyTests(PostgresFixture postgres)
             TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exitCode);
-        Assert.Equal(1L, await CountAsync(connectionString, "SELECT count(*) FROM infra.__ef_migrations_history"));
+        Assert.Equal(MigrationCount, await CountAsync(connectionString, "SELECT count(*) FROM infra.__ef_migrations_history"));
         Assert.Equal(0L, await CountAsync(connectionString, "SELECT count(*) FROM infra.settings"));
+        // Ni Wolverine ni Hangfire n'ont démarré : ils créent leurs schémas au démarrage de l'API (E3).
+        Assert.Equal(0L, await CountAsync(connectionString,
+            "SELECT count(*) FROM information_schema.schemata WHERE schema_name IN ('messaging', 'jobs')"));
     }
 
     [Fact]
@@ -30,7 +39,7 @@ public class MigrateOnlyTests(PostgresFixture postgres)
         var exitCode = await MigrateOnlyCommand.RunAsync(args, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exitCode);
-        Assert.Equal(1L, await CountAsync(connectionString, "SELECT count(*) FROM infra.__ef_migrations_history"));
+        Assert.Equal(MigrationCount, await CountAsync(connectionString, "SELECT count(*) FROM infra.__ef_migrations_history"));
     }
 
     private static async Task<long> CountAsync(string connectionString, string sql)

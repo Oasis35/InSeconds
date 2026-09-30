@@ -20,8 +20,17 @@ public class DatabaseTests(PostgresFixture postgres) : IAsyncLifetime
     [Fact]
     public async Task Demarrage_CreeLesSchemasV2()
     {
-        Assert.Equal(2L, await _api.ScalarAsync<long>(
-            "SELECT count(*) FROM information_schema.schemata WHERE schema_name IN ('infra', 'extensions')"));
+        Assert.Equal(4L, await _api.ScalarAsync<long>(
+            "SELECT count(*) FROM information_schema.schemata WHERE schema_name IN ('infra', 'extensions', 'messaging', 'jobs')"));
+    }
+
+    [Fact]
+    public async Task Demarrage_WolverineEtHangfireCreentLeursTablesDansLeurSchema()
+    {
+        Assert.Equal(1L, await _api.ScalarAsync<long>(
+            "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'messaging' AND table_name = 'wolverine_outgoing_envelopes'"));
+        Assert.Equal(1L, await _api.ScalarAsync<long>(
+            "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'jobs' AND table_name = 'job'"));
     }
 
     [Fact]

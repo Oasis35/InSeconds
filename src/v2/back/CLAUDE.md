@@ -2,7 +2,7 @@
 
 Back de la v2 d'InSeconds, en construction à côté de la v1 (`src/back/`), qui reste en service jusqu'à la bascule. Plan de référence : [`docs/refonte-v2/PLAN.md`](../../../docs/refonte-v2/PLAN.md) et [`docs/refonte-v2/DEVELOPPEMENT.md`](../../../docs/refonte-v2/DEVELOPPEMENT.md). Ce fichier décrit ce qui existe **déjà** dans le code ; il grossit à chaque PR.
 
-État : **PR A1, socle**. Pas encore de module métier, de Wolverine, de Hangfire ni d'authentification : ils arrivent dans les PR suivantes (A2 à A6).
+État : **PR A2, Wolverine et Hangfire** (après A1, le socle). Pas encore de module métier ni de vraie connexion (B1) : l'authentification n'a que son socle (cookie, policy Admin).
 
 ## Commandes
 
@@ -12,6 +12,9 @@ dotnet build InSeconds.slnx
 dotnet test --solution InSeconds.slnx      # unitaires + architecture + intégration (Docker requis)
 dotnet run --project InSeconds.Api          # http://localhost:5175
 dotnet run --project InSeconds.Api -- --migrate-only   # applique les migrations puis rend la main
+
+# Régénérer le code Wolverine (après tout ajout ou changement de handler / endpoint), puis commiter
+rm -rf InSeconds.Api/Internal/Generated && dotnet run --project InSeconds.Api -- codegen write
 
 # Nouvelle migration (depuis src/v2/back/InSeconds.Api)
 dotnet ef migrations add <Nom> --output-dir Infrastructure/Persistence/Migrations
@@ -33,7 +36,11 @@ src/v2/back/
 │       ├── Time/          # IGameCalendar (jour de jeu = jour UTC)
 │       ├── Errors/        # ProblemDetails : code + traceId, rien d'interne sur un 500
 │       ├── Health/        # /health et /health/ready
-│       └── Hosting/       # --migrate-only
+│       ├── Auth/          # cookie, policy Admin (socle, complété en B1)
+│       ├── Messaging/     # Wolverine (HTTP, transactions, outbox)
+│       ├── Jobs/          # Hangfire : tâches planifiées, /jobs, GET /api/admin/jobs/{id}
+│       └── Hosting/       # --migrate-only, commandes Wolverine
+│   └── Internal/Generated/   # code Wolverine généré, COMMITÉ (vérifié en CI)
 └── tests/
     ├── InSeconds.UnitTests/
     ├── InSeconds.ArchitectureTests/   # règles de dépendance, horloge, schémas
@@ -62,9 +69,28 @@ Une ligne par réglage : `key` = chemin de configuration complet (`Daily:GuessTi
 
 ## Démarrage
 
-`Program.cs` : réglages en base → `DbContext` → calendrier → ProblemDetails → health checks. Les migrations s'appliquent au démarrage sauf si `Database:MigrateOnStartup=false` ; les réglages sont rechargés juste après (la table peut ne pas avoir existé à la construction de la configuration).
+`Program.cs` : réglages en base → `DbContext` → migrations → calendrier → ProblemDetails → health checks → auth → Wolverine → Hangfire, puis `RunJasperFxCommands(args)` (démarre l'API, ou exécute une commande Wolverine comme `codegen write`). Les migrations passent par `DatabaseStartupService` (`IHostedLifecycleService.StartingAsync`) : avant le démarrage de Wolverine et Hangfire, sauf si `Database:MigrateOnStartup=false` ; les réglages sont rechargés juste après (la table peut ne pas avoir existé à la construction de la configuration). Une commande Wolverine ne démarre pas l'hôte : pas de migration, et pas de lecture des réglages en base (`CommandLine.StartsServer`), pour que la CI génère le code sans base.
 
 `--migrate-only` (`MigrateOnlyCommand`) : hôte minimal (base seulement, ni serveur web ni tâche de fond), applique les migrations et rend la main avec le code 0. Sert au déploiement et à l'import des données v1.
+
+## Wolverine (`Infrastructure/Messaging/WolverineSetup.cs`)
+
+- Endpoints en **Wolverine.Http** (`[WolverineGet]`…), validation FluentValidation en ProblemDetails. Toute route `/api/admin*` reçoit la policy Admin (`ConfigureEndpoints`) : impossible d'oublier l'attribut.
+- `AutoApplyTransactions` + transactions EF Core : un handler qui modifie le `DbContext` et publie un message fait **une seule transaction** (donnée + outbox). Messages durables dans le schéma **`messaging`** (`PersistMessagesWithPostgresql(cs, "messaging")`, files locales durables). Vérifié par `Messaging/OutboxTests` : message envoyé seulement si la donnée est enregistrée, et aucun message ni enveloppe sinon.
+- **Les tables de `messaging` sont créées par Wolverine au démarrage, pas par les migrations EF.** `MapWolverineEnvelopeStorage("messaging")` ne fait que les déclarer au `DbContext` (exclues des migrations ; la migration `MapWolverineEnvelopeStorage` est vide exprès). `--migrate-only` ne les crée donc pas.
+- **Codegen statique** : en Production et Staging, `TypeLoadMode.Static` (`WolverineSetup.UsesStaticCodegen`) ; le code est lu dans `Internal/Generated`, commité. Ailleurs, génération à la volée (`UseRuntimeCompilation`). Oublier de régénérer = l'API refuse de démarrer en staging (`MissingPreBuiltTypesException`, testé par `StaticCodegenTests`) ; le job CI `back-v2` supprime le dossier, relance `codegen write` et échoue si le résultat diffère du dépôt. `codegen write` ne supprime pas les fichiers périmés : toujours `rm -rf` avant.
+
+## Tâches planifiées (Hangfire, `Infrastructure/Jobs/`)
+
+- Stockage PostgreSQL dans le schéma **`jobs`** (créé par Hangfire au démarrage, comme `messaging`). Serveur de tâches si `Jobs:Server:Enabled` (défaut `true`, `false` dans les tests d'intégration), `Jobs:Server:WorkerCount` (défaut 2 : peu de tâches, et chaque worker tient une connexion).
+- **Déclarer une tâche** : une classe `IScheduledJob` (`RunAsync` renvoie un résultat sérialisé en JSON, ou `null`), enregistrée par `services.AddScheduledJob<TJob>("id", Cron.Daily())`. Planning surchargeable par `Jobs:<id>:Cron`, fuseau UTC. `RecurringJobsRegistrar` enregistre les tâches au démarrage et **supprime celles qui ne sont plus déclarées**. Ajouter la tâche à `ExpectedJobs` de `Jobs/ScheduledJobsTests` (liste vide tant qu'aucun module n'en déclare).
+- **Échec métier** : lever `JobFailedException("module.code")` ; le code est renvoyé tel quel. Toute autre exception est rendue en `common.unexpected` (ni message ni pile exposés).
+- **Tableau de bord `/jobs`** : policy Admin (401 anonyme, 403 joueur), `Authorization = []` (le filtre par défaut de Hangfire n'accepte que localhost), jeton antiforgery exigé sur ses actions. À protéger en plus par Cloudflare Access avant la mise en ligne (S3).
+- **`GET /api/admin/jobs/{id}`** : état d'une exécution (`queued`, `processing`, `succeeded`, `failed`, `retry_scheduled`, `deleted`), `result` (JSON) si réussie, `errorCode` si échouée ; 404 `common.not_found` si l'id est inconnu.
+
+## Authentification (socle, `Infrastructure/Auth/AuthSetup.cs`)
+
+Cookie ASP.NET Core qui répond 401/403 (jamais de redirection), policy `Admin` = joueur authentifié avec le rôle `admin`, antiforgery enregistré. B1 le complète (`__Host-`, sessions par appareil, rôle lu en base). Tests : `TestAuthHandler` remplace l'authentification par deux en-têtes (`factory.CreateClient(TestUser.Admin)`, `TestUser.Player`) ; le refus reste celui du cookie de l'API.
 
 ## Ports
 

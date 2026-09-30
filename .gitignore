@@ -72,6 +72,8 @@ secrets/
 # Wolverine code generation
 # ---------------------------------------------------------------
 **/Internal/Generated/
+# v2 : code généré commité (mode statique en prod), la CI vérifie qu'il est à jour.
+!src/v2/back/InSeconds.Api/Internal/Generated/
 
 # ---------------------------------------------------------------
 # IDE — Visual Studio
