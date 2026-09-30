@@ -2,7 +2,7 @@
 
 Back de la v2 d'InSeconds, en construction à côté de la v1 (`src/back/`), qui reste en service jusqu'à la bascule. Plan de référence : [`docs/refonte-v2/PLAN.md`](../../../docs/refonte-v2/PLAN.md) et [`docs/refonte-v2/DEVELOPPEMENT.md`](../../../docs/refonte-v2/DEVELOPPEMENT.md). Ce fichier décrit ce qui existe **déjà** dans le code ; il grossit à chaque PR.
 
-État : **PR A2, Wolverine et Hangfire** (après A1, le socle). Pas encore de module métier ni de vraie connexion (B1) : l'authentification n'a que son socle (cookie, policy Admin).
+État : **PR A3, services transverses** (après A1, le socle, et A2, Wolverine et Hangfire) : emails, OpenTelemetry, proxies de confiance, rate limiting, en-têtes de sécurité, hôte de test. Pas encore de module métier ni de vraie connexion (B1) : l'authentification n'a que son socle (cookie, policy Admin).
 
 ## Commandes
 
@@ -12,6 +12,10 @@ dotnet build InSeconds.slnx
 dotnet test --solution InSeconds.slnx      # unitaires + architecture + intégration (Docker requis)
 dotnet run --project InSeconds.Api          # http://localhost:5175
 dotnet run --project InSeconds.Api -- --migrate-only   # applique les migrations puis rend la main
+dotnet run --project InSeconds.Api.Testing  # hôte de test (Development) : API + /api/e2e + faux email
+
+# Image de prod (contexte src/v2/back), sans l'hôte de test
+docker build -f InSeconds.Api/Dockerfile -t inseconds-api-v2 .
 
 # Régénérer le code Wolverine (après tout ajout ou changement de handler / endpoint), puis commiter
 rm -rf InSeconds.Api/Internal/Generated && dotnet run --project InSeconds.Api -- codegen write
@@ -28,8 +32,16 @@ dotnet ef migrations add <Nom> --output-dir Infrastructure/Persistence/Migration
 src/v2/back/
 ├── global.json / Directory.Build.props / Directory.Packages.props   # versions centralisées, warnings = erreurs
 ├── InSeconds.slnx
+├── InSeconds.Infrastructure/   # adaptateurs transverses, ne connaît ni l'API ni les modules
+│   ├── Email/          # IEmailSender, Brevo, redirection staging
+│   ├── Observability/  # OpenTelemetry (OTLP)
+│   ├── Networking/     # TrustedProxyNetworks (X-Forwarded-For)
+│   ├── RateLimiting/   # politiques par IP
+│   └── Http/           # en-têtes de sécurité
+├── InSeconds.Api.Testing/      # hôte de test : API + faux + /api/e2e (jamais dans l'image de prod)
 ├── InSeconds.Api/
-│   ├── Program.cs
+│   ├── Program.cs      # 3 lignes : ApiComposition
+│   ├── Dockerfile      # image de prod (Api + Infrastructure seulement)
 │   └── Infrastructure/
 │       ├── Persistence/   # InSecondsDbContext, schémas, migrations, migrateur
 │       ├── Settings/      # réglages en base (infra.settings) → IConfiguration
@@ -39,12 +51,13 @@ src/v2/back/
 │       ├── Auth/          # cookie, policy Admin (socle, complété en B1)
 │       ├── Messaging/     # Wolverine (HTTP, transactions, outbox)
 │       ├── Jobs/          # Hangfire : tâches planifiées, /jobs, GET /api/admin/jobs/{id}
-│       └── Hosting/       # --migrate-only, commandes Wolverine
+│       └── Hosting/       # ApiComposition, --migrate-only, commandes Wolverine
 │   └── Internal/Generated/   # code Wolverine généré, COMMITÉ (vérifié en CI)
 └── tests/
     ├── InSeconds.UnitTests/
     ├── InSeconds.ArchitectureTests/   # règles de dépendance, horloge, schémas
     └── InSeconds.IntegrationTests/    # Testcontainers postgres:17-alpine + WebApplicationFactory
+                                       # (Security/ : SecurityTests, en-têtes, proxies ; Testing/ : hôte de test)
 ```
 
 Les modules métier vivront dans `InSeconds.Api/Modules/<Module>/` ; un module n'utilise des autres que leur dossier `Contracts` (vérifié par `ArchitectureTests/ModuleDependencyTests`, qui s'applique dès qu'un module existe).
@@ -69,7 +82,7 @@ Une ligne par réglage : `key` = chemin de configuration complet (`Daily:GuessTi
 
 ## Démarrage
 
-`Program.cs` : réglages en base → `DbContext` → migrations → calendrier → ProblemDetails → health checks → auth → Wolverine → Hangfire, puis `RunJasperFxCommands(args)` (démarre l'API, ou exécute une commande Wolverine comme `codegen write`). Les migrations passent par `DatabaseStartupService` (`IHostedLifecycleService.StartingAsync`) : avant le démarrage de Wolverine et Hangfire, sauf si `Database:MigrateOnStartup=false` ; les réglages sont rechargés juste après (la table peut ne pas avoir existé à la construction de la configuration). Une commande Wolverine ne démarre pas l'hôte : pas de migration, et pas de lecture des réglages en base (`CommandLine.StartsServer`), pour que la CI génère le code sans base.
+`Program.cs` appelle `ApiComposition.AddInSecondsApi(args)` puis `UseInSecondsApi()`, partagés avec l'hôte de test. Services : réglages en base → OpenTelemetry → `DbContext` → migrations → calendrier → ProblemDetails → health checks → auth → proxies de confiance → rate limiting → email → Wolverine → Hangfire. Pipeline : `UseForwardedHeaders` (en premier : tout le reste voit l'IP réelle) → en-têtes de sécurité → erreurs → authentification → autorisation → rate limiter → routes. Puis `RunJasperFxCommands(args)` (démarre l'API, ou exécute une commande Wolverine comme `codegen write`). Les migrations passent par `DatabaseStartupService` (`IHostedLifecycleService.StartingAsync`) : avant le démarrage de Wolverine et Hangfire, sauf si `Database:MigrateOnStartup=false` ; les réglages sont rechargés juste après (la table peut ne pas avoir existé à la construction de la configuration). Une commande Wolverine ne démarre pas l'hôte : pas de migration, et pas de lecture des réglages en base (`CommandLine.StartsServer`), pour que la CI génère le code sans base.
 
 `--migrate-only` (`MigrateOnlyCommand`) : hôte minimal (base seulement, ni serveur web ni tâche de fond), applique les migrations et rend la main avec le code 0. Sert au déploiement et à l'import des données v1.
 
@@ -87,6 +100,26 @@ Une ligne par réglage : `key` = chemin de configuration complet (`Daily:GuessTi
 - **Échec métier** : lever `JobFailedException("module.code")` ; le code est renvoyé tel quel. Toute autre exception est rendue en `common.unexpected` (ni message ni pile exposés).
 - **Tableau de bord `/jobs`** : policy Admin (401 anonyme, 403 joueur), `Authorization = []` (le filtre par défaut de Hangfire n'accepte que localhost), jeton antiforgery exigé sur ses actions. À protéger en plus par Cloudflare Access avant la mise en ligne (S3).
 - **`GET /api/admin/jobs/{id}`** : état d'une exécution (`queued`, `processing`, `succeeded`, `failed`, `retry_scheduled`, `deleted`), `result` (JSON) si réussie, `errorCode` si échouée ; 404 `common.not_found` si l'id est inconnu.
+
+## Services transverses (`InSeconds.Infrastructure`)
+
+Projet sans dépendance vers l'API ni les modules (vérifié par `ArchitectureTests/ProjectDependencyTests`). L'API l'utilise par ses méthodes d'extension.
+
+- **Emails** (`Email/`) : les modules dépendent de `IEmailSender` seulement. `BrevoEmailSender` (API transactionnelle Brevo, `Brevo:ApiKey`/`SenderEmail`/`SenderName`, vérifiés au démarrage en Production et Staging). Si `EmailRedirect:To` est renseigné, `RedirectingEmailSender` envoie tout à cette adresse avec un bandeau (objet inchangé) ; **obligatoire en Staging** (l'API refuse de démarrer sans, `EmailStartupTests`). Journaux : sujet et identifiant Brevo (EventId 1007/1101 comme en v1), **jamais l'adresse**, ni celle que le message d'erreur Brevo pourrait citer.
+- **OpenTelemetry** (`Observability/`) : mêmes réglages que la v1 (`inseconds-api`, ASP.NET Core, HttpClient, Npgsql, Wolverine, runtime ; logs avec scopes). Export OTLP seulement si `OTEL_EXPORTER_OTLP_ENDPOINT` est défini. `/health` et `/jobs` exclus des traces. Une activité par exécution Hangfire (source `InSeconds.Jobs`, `Jobs/JobTracingFilter` dans l'API). **Confidentialité** : jamais d'email, de pseudo, de réponse saisie, de cookie ni d'`Authorization` ; aucune capture d'en-têtes.
+- **Proxies de confiance** (`Networking/TrustedProxyNetworks`) : RFC1918 + loopback (Caddy) et plages Cloudflare, `ForwardLimit = null` (piège 27 du CLAUDE.md racine). Un en-tête `X-Forwarded-For` forgé par un appelant hors de ces plages est ignoré.
+- **Rate limiting** (`RateLimiting/`) : fenêtres glissantes par IP réelle, noms et limites de la v1 (`RateLimitPolicies` : `magic-link-request` 5/10 min, `email-change-request` 5/10 min, `player-creation` 30/10 min, `client-error-report` 20/5 min, `deezer-search-public` 60/5 min). Une route s'y inscrit par `RequireRateLimiting(RateLimitPolicies.X)`. Refus : 429 ProblemDetails (`common.too_many_requests`, `Retry-After`). `RateLimiting:Enabled=false` en test (`ApiFactory`, `appsettings.Testing.json` de l'hôte de test) : les politiques restent sur les routes mais ne limitent rien.
+- **En-têtes de sécurité** (`Http/SecurityHeaders`, S15) : `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, HSTS 1 an, CSP `default-src 'none'; frame-ancestors 'none'` sur l'API. Le tableau de bord `/jobs` a sa propre CSP : scripts de `/jobs` seulement (Hangfire n'a aucun script en ligne, vérifié par `SecurityHeadersTests`), styles en ligne permis (attributs `style`). Posés au démarrage de la réponse, donc aussi sur les erreurs.
+
+## Hôte de test (`InSeconds.Api.Testing`)
+
+`TestingProgram` : la même composition que l'API, plus les faux et les routes `/api/e2e`. Refuse de démarrer hors `Testing` et `Development`. Jamais dans l'image de prod (S9) : l'API ne le référence pas (`ProjectDependencyTests`), le `Dockerfile` ne le copie pas, et le job CI `back-v2` construit l'image et échoue si `InSeconds.Api.Testing` s'y trouve.
+
+- `CapturingEmailSender` remplace `IEmailSender` (les emails restent en mémoire).
+- `POST /api/e2e/reset` : vide (Respawn) les tables de **tous les schémas sauf** `public` (tables v1), `infra`, `extensions`, `messaging` et `jobs`, lus en base à chaque appel (un nouveau module est couvert sans rien changer), et les emails capturés. Sans schéma de module, ne fait rien.
+- `GET /api/e2e/last-email?to=` : dernier email envoyé à cette adresse (404 sinon).
+- À venir : faux Deezer (C1), seed, connexion admin de test et dev-login (B1), `generate-today` (D).
+- Tests : `Testing/TestingFactory` (`WebApplicationFactory<TestingProgram>`).
 
 ## Authentification (socle, `Infrastructure/Auth/AuthSetup.cs`)
 

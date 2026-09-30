@@ -30,6 +30,8 @@ public sealed class ApiFactory(
         builder.UseSetting("ConnectionStrings:DefaultConnection", connectionString);
         // Les tests d'intégration appellent les tâches directement : pas de serveur Hangfire (§ 5.4 bis).
         builder.UseSetting("Jobs:Server:Enabled", "false");
+        // Les politiques restent sur les routes, mais ne limitent rien (RateLimitingTests les active).
+        builder.UseSetting("RateLimiting:Enabled", "false");
         foreach (var (key, value) in settings ?? new Dictionary<string, string>())
             builder.UseSetting(key, value);
 

@@ -1,4 +1,4 @@
-using System.Reflection;
+using InSeconds.Api.Infrastructure.Hosting;
 using InSeconds.Api.Infrastructure.Persistence;
 using InSeconds.Api.Infrastructure.Time;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -17,9 +17,7 @@ public static class HealthEndpoints
 
     public static IEndpointRouteBuilder MapInSecondsHealth(this IEndpointRouteBuilder routes)
     {
-        var build = typeof(HealthEndpoints).Assembly
-            .GetCustomAttributes<AssemblyMetadataAttribute>()
-            .FirstOrDefault(a => a.Key == "BuildUtc")?.Value;
+        var build = BuildInfo.BuildUtc;
 
         // Liveness. Même format qu'en v1 : { status, utc, build }, lu par le badge d'état du front
         // (on peut ajouter un champ, jamais en retirer). build = date UTC de compilation.

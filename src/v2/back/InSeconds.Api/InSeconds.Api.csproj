@@ -12,8 +12,13 @@
     <InternalsVisibleTo Include="InSeconds.UnitTests" />
     <InternalsVisibleTo Include="InSeconds.IntegrationTests" />
     <InternalsVisibleTo Include="InSeconds.ArchitectureTests" />
+    <InternalsVisibleTo Include="InSeconds.Api.Testing" />
     <!-- Date de build exposée par GET /health (champ "build"), comme en v1. -->
     <AssemblyMetadata Include="BuildUtc" Value="$([System.DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ'))" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../InSeconds.Infrastructure/InSeconds.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
