@@ -54,7 +54,9 @@ Environ **30 PR**. Les plus grosses sont A1, B1, E2 et E5. L'ordre A → B → C
 | **A3** Infrastructure | Brevo + redirection staging ; OpenTelemetry (mêmes règles de confidentialité) ; `TrustedProxyNetworks` (piège 27) ; politiques de rate limiting ; en-têtes de sécurité de l'API (S15) ; `InSeconds.Api.Testing` (reset, faux email ; le faux Deezer arrive avec C1, qui crée le port Deezer) ; squelette `SecurityTests` ; `Dockerfile` de prod v2 | tests verts ; image de prod sans `Api.Testing` (S9) |
 | **A4** Socle front | projet `src/v2/front` (Angular 22, Tailwind, tokens DA repris) ; `core` (erreurs par code, langue, session), `ui` (bouton, modale, panneau bas, toast) ; routes et redirections (query string gardée) ; `withRequestStatus` ; i18n par domaine + test de synchronisation FR/EN ; Sheriff ; Vitest ; PWA (`SwUpdate`, `safety-worker.js`) ; overlay « Service indisponible » ; avis `from=legacy` | build, Vitest, Sheriff verts |
 | **A5** CI | jobs v2 dans `ci.yml` (`dorny/paths-filter` + job agrégateur « CI OK ») ; E2E copiés dans `src/v2`, tous listés comme désactivés, check qui compare les listes v1/v2 ; `nginx-headers` étendu à la v2 (`ngsw.json`) ; Dependabot : groupes v2 | CI verte, temps d'un run sans changement v2 inchangé |
-| **A6** Staging v2 | `docker-compose.staging.yml` et `deploy.sh staging` construisent la v2 ; migrations au déploiement ; certificat Data Protection du staging monté ; test de fumée après déploiement (endpoints de test absents, en-têtes, `/jobs` protégé) | **J1** : `dev.inseconds.cc` sert la v2 |
+| **A6** Staging v2 | `docker-compose.staging.yml` et `deploy.sh staging` construisent la v2 ; CORS de l'API v2 pour `dev.inseconds.cc` et `POST /api/client-errors` (le front v2 les appelle dès A4) ; image front v2 (nginx, `ngsw.json` sans cache) ; migrations au déploiement ; certificat Data Protection du staging monté ; test de fumée après déploiement (endpoints de test absents, en-têtes, `/jobs` protégé) | **J1** : `dev.inseconds.cc` sert la v2 |
+
+**Fait en A4 :** en plus du contenu prévu, `ui/error-message`, `SessionStore` (vide jusqu'à B1), le port `StoragePort`, le job CI `front-v2` (build, Vitest, Sheriff) qu'A5 fera passer derrière le filtre par chemin. Front v2 en dev sur le port 5176, API relayée par le proxy d'`ng serve`. L'image Docker et `nginx.conf` du front v2 sont repoussés en A5/A6, où ils sont testés.
 
 **Action de Clément avant A6 :** ~~certificat Data Protection du staging~~ fait le 30/09 (`~/apps/InSeconds-staging/secrets/dataprotection.pfx`). Reste à mettre son mot de passe dans `.env.staging`, variable indiquée par la PR A6.
 
@@ -149,7 +151,7 @@ Le retour arrière reste possible tant que personne n'a joué en v2 (§ 10.3 du 
 |---|---|
 | J+1, bascule validée | `AuthToken` v1 vidé (S7) |
 | Quelques semaines | **I1** : sauvegarde archivée puis suppression des tables v1 de `public` ; suppression des routes en `410` |
-| Dans la foulée | **I2** : suppression de `src/back`, `src/front` et des jobs CI v1 ; déplacement de `src/v2` dans `src` ; chemins CI, Docker, Dependabot et Sonar mis à jour ; flux Git normal rétabli |
+| Dans la foulée | **I2** : suppression de `src/back`, `src/front` et des jobs CI v1 ; déplacement de `src/v2` dans `src` ; chemins CI, Docker, Dependabot et Sonar mis à jour, dont le retrait de l'exclusion de duplication SonarCloud `src/front/**, src/back/**` (posée dans l'UI pour la PR A4, #244) ; flux Git normal rétabli |
 | J+90 | **I3** : retrait du middleware de transition et de `legacy_tokens` ; suppression des anciennes clés Data Protection non chiffrées |
 | Ensuite | mode Runs, dans son fil |
 

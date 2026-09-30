@@ -1,0 +1,52 @@
+{
+  "common": {
+    "close": "Close",
+    "retry": "Try again"
+  },
+  "errors": {
+    "code": "Error code:",
+    "common": {
+      "bad_request": "This request isn't valid.",
+      "conflict": "This action is no longer possible right now.",
+      "forbidden": "You don't have access to this page.",
+      "network": "Can't reach the server. Check your connection and try again.",
+      "new_version": "A new version of InSeconds is available. Reload the page to continue.",
+      "not_found": "What you're looking for doesn't exist anymore.",
+      "too_many_requests": "Too many requests at once. Wait a moment before trying again.",
+      "unauthorized": "Sign in to continue.",
+      "unexpected": "Something unexpected happened. Try again in a moment.",
+      "unknown": "Something went wrong. If it keeps happening, send us the code below."
+    }
+  },
+  "shell": {
+    "comingSoon": {
+      "title": "The new version is on its way",
+      "body": "This part of InSeconds is being rebuilt. Come back soon!"
+    },
+    "legacyUrl": {
+      "title": "The address has changed",
+      "body": "InSeconds now has its own address. You were redirected automatically — remember to update your bookmark.",
+      "cta": "Got it"
+    },
+    "notFound": {
+      "title": "Page not found",
+      "body": "This page doesn't exist or has been moved.",
+      "cta": "Back to the game"
+    },
+    "serviceDown": {
+      "title": "Service unavailable",
+      "body": "The app will be back in a moment. This page will refresh on its own as soon as the service returns.",
+      "reconnecting": "Reconnecting…"
+    },
+    "update": {
+      "body": "A new version of InSeconds is available.",
+      "reload": "Reload",
+      "later": "Later"
+    }
+  },
+  "ui": {
+    "envBanner": {
+      "label": "development environment"
+    }
+  }
+}

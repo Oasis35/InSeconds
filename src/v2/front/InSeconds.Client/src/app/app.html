@@ -1,0 +1,10 @@
+<app-env-banner [environmentName]="environmentName" />
+
+<router-outlet />
+
+<app-toast-host />
+<app-update-prompt />
+
+@if (health.isDown()) {
+  <app-service-down />
+}
