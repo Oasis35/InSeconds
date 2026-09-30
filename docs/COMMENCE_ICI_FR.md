@@ -38,6 +38,7 @@ Chaque information n'est écrite qu'à un seul endroit, pour éviter que des cop
 | Détail frontend (jeu, admin) | [`features/game/CLAUDE.md`](../src/front/InSeconds.Client/src/app/features/game/CLAUDE.md), [`features/admin/CLAUDE.md`](../src/front/InSeconds.Client/src/app/features/admin/CLAUDE.md) |
 | Règles de jeu (scoring, anti-triche, série, indices) | [`GAMEPLAY_RULES_FR.md`](GAMEPLAY_RULES_FR.md) |
 | Ce qui reste à faire | [`TACHES.md`](TACHES.md) |
+| Refonte v2 en cours (plan, découpage en PR) | [`refonte-v2/PLAN.md`](refonte-v2/PLAN.md), [`refonte-v2/DEVELOPPEMENT.md`](refonte-v2/DEVELOPPEMENT.md), ticket GitHub #205 |
 
 `BACKEND_STRUCTURE_FR.md` et `FRONTEND_STRUCTURE_FR.md` ne sont plus que des renvois vers ces fichiers.
 

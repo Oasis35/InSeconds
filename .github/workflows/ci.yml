@@ -257,6 +257,38 @@ jobs:
           path: src/front/InSeconds.Client/playwright-report/
           retention-days: 7
 
+  back-v2:
+    name: Backend v2 (build, migrations, tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/v2/back
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: src/v2/back/global.json
+
+      - name: Restore
+        run: dotnet restore InSeconds.slnx
+
+      - name: Build (Release)
+        run: dotnet build InSeconds.slnx --configuration Release --no-restore
+
+      - name: Install dotnet-ef
+        run: dotnet tool install --global dotnet-ef --version 10.0.12
+
+      - name: Verify EF model has no pending migrations
+        working-directory: src/v2/back/InSeconds.Api
+        run: dotnet ef migrations has-pending-model-changes --no-build --configuration Release
+
+      # Unitaires, architecture et intégration (Testcontainers : Docker est fourni par ubuntu-latest).
+      - name: Test
+        run: dotnet test --solution InSeconds.slnx --configuration Release --no-build
+
   deploy:
     name: Deploy to VPS
     runs-on: ubuntu-latest

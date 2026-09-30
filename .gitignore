@@ -65,6 +65,8 @@ CodeCoverage/
 appsettings.*.local.json
 appsettings.Development.json
 secrets.json
+# Certificats Data Protection du VPS (~/apps/InSeconds*/secrets/)
+secrets/
 
 # ---------------------------------------------------------------
 # Wolverine code generation

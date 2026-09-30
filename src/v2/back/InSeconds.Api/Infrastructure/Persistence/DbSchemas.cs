@@ -1,0 +1,19 @@
+namespace InSeconds.Api.Infrastructure.Persistence;
+
+/// <summary>
+/// Schémas PostgreSQL de la v2. Aucune table v2 ne vit dans <c>public</c> : ce schéma garde
+/// les tables v1 jusqu'à leur suppression après la bascule.
+/// </summary>
+public static class DbSchemas
+{
+    /// <summary>Tables techniques : settings, historique des migrations EF, clés Data Protection.</summary>
+    public const string Infra = "infra";
+
+    /// <summary>
+    /// Extensions PostgreSQL (<c>citext</c>). Hors de <c>public</c> pour que la copie prod → staging,
+    /// limitée à <c>public</c>, ne les touche pas.
+    /// </summary>
+    public const string Extensions = "extensions";
+
+    public const string MigrationsHistoryTable = "__ef_migrations_history";
+}
