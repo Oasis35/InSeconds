@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>InSeconds.Api</RootNamespace>
+    <!-- Workstation GC : empreinte mémoire bien plus faible que le Server GC du SDK Web,
+         adaptée à un conteneur contraint (piège 24 du CLAUDE.md racine). -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="InSeconds.UnitTests" />
+    <InternalsVisibleTo Include="InSeconds.IntegrationTests" />
+    <InternalsVisibleTo Include="InSeconds.ArchitectureTests" />
+    <!-- Date de build exposée par GET /health (champ "build"), comme en v1. -->
+    <AssemblyMetadata Include="BuildUtc" Value="$([System.DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ'))" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="EFCore.NamingConventions" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+
+</Project>
