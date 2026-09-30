@@ -25,35 +25,32 @@ public class LogoutTests(IntegrationTestFactory factory) : IAsyncLifetime
         Assert.True(meAfter.IsGuest);
     }
 
-    // M6 (revue du 25/09) : se déconnecter doit révoquer le cookie côté serveur, pas
-    // seulement l'effacer côté navigateur — un cookie authToken déjà copié ailleurs (ou volé)
-    // restait valide jusqu'à ses 90 jours sinon. On capture le cookie brut manuellement
-    // (HandleCookies=false) pour le rejouer après logout, comme le ferait un cookie volé.
+    // Régression du 30/09 (piège 39) : tous les appareils d'un compte v1 partagent le même
+    // AuthToken. Se déconnecter sur un appareil ne doit effacer que son cookie : un autre
+    // appareil qui présente le même cookie doit rester connecté au même compte.
     [Fact]
-    public async Task Logout_RevoqueLAuthTokenCoteServeur_LAncienCookieRejoueDevientOrphelin()
+    public async Task Logout_SurUnAppareil_NeDeconnectePasLesAutresAppareilsDuCompte()
     {
-        var client = factory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = false });
+        var deviceA = factory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = false });
 
-        var firstResp = await client.GetAsync("/api/players/me");
+        var firstResp = await deviceA.GetAsync("/api/players/me");
         var meBefore = await firstResp.Content.ReadFromJsonAsync<PlayerMeDto>();
         var authTokenCookie = firstResp.Headers.GetValues("Set-Cookie").First().Split(';')[0];
 
-        client.DefaultRequestHeaders.Add("Cookie", authTokenCookie);
-        var logoutResp = await client.PostAsync("/api/auth/logout", content: null);
+        deviceA.DefaultRequestHeaders.Add("Cookie", authTokenCookie);
+        var logoutResp = await deviceA.PostAsync("/api/auth/logout", content: null);
         Assert.True(logoutResp.IsSuccessStatusCode);
 
-        // Client indépendant qui ne connaît que l'ancien cookie capturé avant la déconnexion —
-        // simule un cookie volé/copié rejoué après coup.
-        var replayClient = factory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = false });
-        replayClient.DefaultRequestHeaders.Add("Cookie", authTokenCookie);
+        // Deuxième appareil connecté au même compte (même cookie, cf. reconnexion par lien magique).
+        var deviceB = factory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = false });
+        deviceB.DefaultRequestHeaders.Add("Cookie", authTokenCookie);
 
-        // peek=true ne crée jamais de Player : PlayerId reste Guid.Empty si l'ancien cookie
-        // ne résout plus personne.
-        var afterResp = await replayClient.GetAsync("/api/players/me?peek=true");
+        // peek=true ne crée jamais de Player : PlayerId vaudrait Guid.Empty si le cookie ne
+        // résolvait plus personne.
+        var afterResp = await deviceB.GetAsync("/api/players/me?peek=true");
         var meAfter = await afterResp.Content.ReadFromJsonAsync<PlayerMeDto>();
 
-        Assert.Equal(Guid.Empty, meAfter!.PlayerId);
-        Assert.NotEqual(meBefore!.PlayerId, meAfter.PlayerId);
+        Assert.Equal(meBefore!.PlayerId, meAfter!.PlayerId);
     }
 
     private sealed record PlayerMeDto(Guid PlayerId, bool IsGuest, string? Email, string? Pseudo);
