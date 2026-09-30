@@ -151,7 +151,7 @@ Le retour arrière reste possible tant que personne n'a joué en v2 (§ 10.3 du 
 |---|---|
 | J+1, bascule validée | `AuthToken` v1 vidé (S7) |
 | Quelques semaines | **I1** : sauvegarde archivée puis suppression des tables v1 de `public` ; suppression des routes en `410` |
-| Dans la foulée | **I2** : suppression de `src/back`, `src/front` et des jobs CI v1 ; déplacement de `src/v2` dans `src` ; chemins CI, Docker, Dependabot et Sonar mis à jour ; flux Git normal rétabli |
+| Dans la foulée | **I2** : suppression de `src/back`, `src/front` et des jobs CI v1 ; déplacement de `src/v2` dans `src` ; chemins CI, Docker, Dependabot et Sonar mis à jour, dont le retrait de l'exclusion de duplication SonarCloud `src/front/**, src/back/**` (posée dans l'UI pour la PR A4, #244) ; flux Git normal rétabli |
 | J+90 | **I3** : retrait du middleware de transition et de `legacy_tokens` ; suppression des anciennes clés Data Protection non chiffrées |
 | Ensuite | mode Runs, dans son fil |
 
