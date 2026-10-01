@@ -207,9 +207,10 @@ test.describe('Admin — pool', () => {
     await admin.login();
     await page.getByRole('button', { name: /Pool/ }).click();
 
-    // Eminem est dans le défi du jour : renommable lui aussi.
+    // Eminem est dans le défi du jour : renommable lui aussi, avec un avertissement.
     await admin.poolSearchInput().fill('Eminem');
     await admin.poolRow('Eminem').getByRole('button', { name: '✎' }).click();
+    await expect(page.getByRole('alert').filter({ hasText: 'défi du jour' })).toBeVisible();
     await admin.editTitleInput().fill('Titre corrigé');
     await admin.editSaveButton().click();
     await expect(admin.editModalTitle()).not.toBeVisible();
@@ -219,6 +220,7 @@ test.describe('Admin — pool', () => {
     await admin.poolSearchInput().fill('Coldplay');
     await admin.poolRow('Coldplay').getByRole('button', { name: '✎' }).click();
     await expect(admin.editModalTitle()).toBeVisible();
+    await expect(page.getByRole('alert').filter({ hasText: 'défi du jour' })).toHaveCount(0);
     await page.keyboard.press('Escape');
     await expect(admin.editModalTitle()).not.toBeVisible();
 

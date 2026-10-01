@@ -476,6 +476,7 @@
       "artist": "Artiste",
       "titleField": "Titre",
       "hint": "Sert de bonne réponse dès l'enregistrement, défi du jour compris. Les réponses déjà données ne sont pas recalculées.",
+      "todayWarning": "Ce morceau est dans le défi du jour : les joueurs qui n'ont pas encore répondu seront corrigés avec le nouveau nom.",
       "error": "Erreur lors de l'enregistrement.",
       "cancel": "Annuler",
       "save": "Enregistrer",
