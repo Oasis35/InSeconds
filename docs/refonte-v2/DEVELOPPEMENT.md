@@ -80,7 +80,7 @@ Environ **30 PR**. Les plus grosses sont A1, B1, E2 et E5. L'ordre A → B → C
 |---|---|---|
 | **C1** Back Catalogue | `Track` (renommer, désactiver, vérifier la preview, rang) ; Deezer découpé en ports, avec son faux dans `InSeconds.Api.Testing` ; preview à 3 états (piège 16) ; cache borné par la signature (piège 14), tailles d'entrées ; recherche publique nettoyée et dédupliquée ; routes admin du pool ; tâche `catalogue-refresh` et bouton « Re-vérifier les previews » via Hangfire | tests d'intégration verts |
 | **C2** Import Catalogue | partie morceaux de l'import et de la vérification (preview, désactivation) | import staging sans écart |
-| **C3** Front admin catalogue | onglet Pool, panneau de recherche, modales (écoute, renommage, suppression), filtres (piège 28), écoute annulée à la fermeture (piège 42) | E2E du pool réactivés et verts |
+| **C3** Front admin catalogue | onglet Pool, panneau de recherche, modales (écoute, renommage — permis pour le défi du jour avec avertissement, PR v1 #246 —, suppression), filtres (piège 28), écoute annulée à la fermeture (piège 42) | E2E du pool réactivés et verts |
 
 ---
 
