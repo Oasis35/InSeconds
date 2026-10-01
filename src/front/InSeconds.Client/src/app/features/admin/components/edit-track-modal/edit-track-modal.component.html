@@ -2,6 +2,13 @@
   <app-modal [closeLabel]="'admin.editModal.close' | translate" (closed)="pool.closeEditModal()">
     <h2 class="text-sm font-semibold uppercase tracking-wide" style="color:var(--text-light)">{{ 'admin.editModal.title' | translate }}</h2>
 
+    @if (track.inTodayChallenge) {
+      <p role="alert" class="text-xs rounded-lg px-3 py-2"
+        style="color:var(--color-warn);background:rgb(var(--rgb-warning) / 0.08);border:1px solid rgb(var(--rgb-warning) / 0.3)">
+        ⚠ {{ 'admin.editModal.todayWarning' | translate }}
+      </p>
+    }
+
     <form class="flex flex-col gap-3" [formRoot]="pool.editForm" (submit)="pool.confirmEdit()">
       <div class="flex flex-col gap-1">
         <label for="edit-track-artist" class="text-xs" style="color:var(--text-muted)">{{ 'admin.editModal.artist' | translate }}</label>
@@ -20,9 +27,7 @@
 
       <p class="text-xs" style="color:var(--text-muted)">{{ 'admin.editModal.hint' | translate }}</p>
 
-      @if (pool.editStatus() === 'locked') {
-        <p class="text-xs" style="color:var(--text-error)">{{ 'admin.editModal.locked' | translate }}</p>
-      } @else if (pool.editStatus() === 'error') {
+      @if (pool.editStatus() === 'error') {
         <p class="text-xs" style="color:var(--text-error)">{{ 'admin.editModal.error' | translate }}</p>
       }
 

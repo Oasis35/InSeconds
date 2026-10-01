@@ -119,7 +119,7 @@ export class AdminPoolService {
   });
   readonly editArtist = computed(() => this.editForm.artist().value());
   readonly editTitle = computed(() => this.editForm.title().value());
-  private readonly _editStatus = signal<'idle' | 'loading' | 'error' | 'locked'>('idle');
+  private readonly _editStatus = signal<'idle' | 'loading' | 'error'>('idle');
   readonly editStatus = this._editStatus.asReadonly();
   /** Désactive « Enregistrer » : champ vide, rien de changé, ou envoi en cours. */
   readonly editSaveDisabled = computed(() => {
@@ -394,7 +394,6 @@ export class AdminPoolService {
 
   // --- modale modification ---
   openEditModal(track: PoolTrackDto): void {
-    if (track.renameLocked) return;
     this._editModalTrack.set(track);
     this.editForm().value.set({ artist: track.artist, title: track.title });
     this._editStatus.set('idle');
@@ -417,8 +416,7 @@ export class AdminPoolService {
           this.closeEditModal();
           this.api.reloadPool();
         },
-        // 409 = morceau entré entre-temps dans une partie en cours (défi du jour).
-        error: err => this._editStatus.set(err?.status === 409 ? 'locked' : 'error'),
+        error: () => this._editStatus.set('error'),
       });
   }
 
