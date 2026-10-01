@@ -201,20 +201,26 @@ test.describe('Admin — pool', () => {
     await expect(admin.poolRow('Coldplay').getByRole('button', { name: 'Désactiver' })).toBeEnabled();
   });
 
-  test('renomme un morceau déjà utilisé, bloque ceux du défi du jour', async ({ page, api }) => {
+  test('renomme un morceau déjà utilisé, défi du jour compris', async ({ page, api }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
     await page.getByRole('button', { name: /Pool/ }).click();
 
-    // Eminem est dans le défi du jour : ✎ désactivé.
+    // Eminem est dans le défi du jour : renommable lui aussi, avec un avertissement.
     await admin.poolSearchInput().fill('Eminem');
-    await expect(admin.poolRow('Eminem').getByRole('button', { name: '✎' })).toBeDisabled();
+    await admin.poolRow('Eminem').getByRole('button', { name: '✎' }).click();
+    await expect(page.getByRole('alert').filter({ hasText: 'défi du jour' })).toBeVisible();
+    await admin.editTitleInput().fill('Titre corrigé');
+    await admin.editSaveButton().click();
+    await expect(admin.editModalTitle()).not.toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Titre corrigé', exact: true })).toBeVisible();
 
     // Coldplay (défi J-2) : renommable. Échap referme la modale sans rien changer.
     await admin.poolSearchInput().fill('Coldplay');
     await admin.poolRow('Coldplay').getByRole('button', { name: '✎' }).click();
     await expect(admin.editModalTitle()).toBeVisible();
+    await expect(page.getByRole('alert').filter({ hasText: 'défi du jour' })).toHaveCount(0);
     await page.keyboard.press('Escape');
     await expect(admin.editModalTitle()).not.toBeVisible();
 

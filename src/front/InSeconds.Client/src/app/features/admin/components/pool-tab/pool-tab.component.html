@@ -123,11 +123,10 @@
                       class="text-xs px-2 py-1 rounded transition-colors"
                       style="color:var(--text-indigo);border:1px solid rgba(184,166,255,0.3)"
                       [title]="'admin.pool.listenTitle' | translate">▶</button>
-                    <span [title]="(t.renameLocked ? 'admin.pool.editLockedTitle' : 'admin.pool.editTitle') | translate">
-                      <button (click)="pool.openEditModal(t)" [disabled]="t.renameLocked"
-                        class="text-xs px-2 py-1 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                        style="color:var(--text-muted);border:1px solid var(--border-strong)">✎</button>
-                    </span>
+                    <button (click)="pool.openEditModal(t)"
+                      class="text-xs px-2 py-1 rounded transition-colors"
+                      style="color:var(--text-muted);border:1px solid var(--border-strong)"
+                      [title]="'admin.pool.editTitle' | translate">✎</button>
                     <!-- Le title est porté par un span : un bouton désactivé n'affiche pas son tooltip partout. -->
                     @if (isUsed || t.isDisabled) {
                       <!-- Un morceau utilisé ne se supprime pas : on le retire du tirage des prochains défis. -->

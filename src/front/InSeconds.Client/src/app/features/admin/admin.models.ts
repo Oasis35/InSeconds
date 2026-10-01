@@ -6,8 +6,6 @@ export interface PoolTrackDto {
   lastUsedDate?: string | null;
   usageCount?: number;
   unlockDate?: string | null;
-  /** Morceau dans une partie encore en cours (défi du jour, ou de la veille pas terminé) : non renommable avant demain. */
-  renameLocked?: boolean;
   /** Retiré du tirage des prochains défis par l'admin (reste dans le pool, réactivable). */
   isDisabled?: boolean;
   /** Morceau du défi du jour : non désactivable avant demain. */
