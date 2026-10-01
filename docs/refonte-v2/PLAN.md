@@ -323,7 +323,7 @@ Chaque module expose un seul point d'entrée : `AddDaily(services)` et `MapDaily
 **Catalogue**
 - `Track` avec des méthodes explicites : `Rename`, `Disable`/`Enable`, `RecordPreviewCheck`, `RecordRank`.
 - Règles gardées :
-  - renommage interdit tant que le morceau est dans une partie qui accepte encore des réponses ;
+  - renommage permis à tout moment, **défi du jour compris** (changé en v1 le 01/10, PR #246 : il fallait attendre le lendemain pour corriger une faute). Les réponses déjà enregistrées gardent leur verdict, les suivantes sont corrigées avec le nouveau nom, le nom affiché change pour tout le monde. Le front affiche un avertissement dans la modale quand le morceau est dans le défi du jour (`inTodayChallenge`) ; plus de code `catalogue.track_locked` ;
   - suppression interdite d'un morceau déjà utilisé ;
   - désactivation interdite pour un morceau du défi du jour.
 - Nettoyage des titres affichés (`CleanDisplayTitle`) exposé dans les `Contracts`.
