@@ -3,6 +3,9 @@ import { Injectable, signal, computed } from '@angular/core';
 /** Marge sous laquelle le palier est considéré atteint par la boucle rAF. */
 const STOP_TOLERANCE_SECONDS = 0.01;
 
+/** Délai minimal entre deux relectures de la position par le chrono d'arrêt (lecture bloquée). */
+const MIN_RECHECK_MS = 20;
+
 /** `play()` rejeté parce qu'interrompu par pause()/load() — pas une panne de lecture. */
 function isAbort(err: unknown): boolean {
   return err instanceof DOMException && err.name === 'AbortError';
@@ -248,16 +251,38 @@ export class AudioPlayerService {
 
   /**
    * Programme l'arrêt au palier courant pour le reliquat *réellement* restant à écouter
-   * (palier − position de lecture). Appelé à l'événement `playing` — donc une fois le son sorti,
-   * et de nouveau après chaque coupure de chargement (`waiting` suspend le chrono).
+   * (palier − position de lecture). Appelé à l'événement `playing`, et de nouveau après chaque
+   * coupure de chargement (`waiting` suspend le chrono).
+   *
+   * Le chrono ne coupe jamais à l'aveugle : à son échéance, il relit la position de lecture et
+   * se reprogramme pour le reliquat si le palier n'est pas atteint (piège 46 CLAUDE.md). Sur
+   * iPhone, `playing` part dès l'appel à `play()` alors que le son ne démarre que plusieurs
+   * centaines de millisecondes plus tard (relecture ↺ surtout) : un chrono fixe coupait un
+   * palier de 0,5 s après 0,1 s de son, voire sans aucun son.
    */
   private scheduleStop(token: number): void {
     if (this.stopTimer !== null) { clearTimeout(this.stopTimer); this.stopTimer = null; }
-    const remaining = Math.max(0, this.currentDuration - (this.audio?.currentTime ?? 0));
     this.stopTimer = setTimeout(() => {
       this.stopTimer = null;
-      if (this.playToken === token && this.state() === 'playing') this.stop();
-    }, remaining * 1000);
+      if (this.playToken !== token || this.state() !== 'playing') return;
+      if (this.reachedCurrentDuration()) this.stop();
+      else this.scheduleStop(token);
+    }, Math.max(MIN_RECHECK_MS, this.remainingSeconds() * 1000));
+  }
+
+  /** Reliquat à écouter d'après la position réelle de lecture (jamais négatif). */
+  private remainingSeconds(): number {
+    return Math.max(0, this.currentDuration - (this.audio?.currentTime ?? 0));
+  }
+
+  /**
+   * Palier atteint d'après la position réelle de lecture. Jamais pendant un seek : après
+   * `currentTime = 0` (relecture), Safari iOS peut encore renvoyer l'ancienne position, ce qui
+   * ferait couper la relecture avant qu'elle commence.
+   */
+  private reachedCurrentDuration(): boolean {
+    if (!this.audio || this.audio.seeking) return false;
+    return this.audio.ended || this.remainingSeconds() <= STOP_TOLERANCE_SECONDS;
   }
 
   private startRaf(token: number): void {
@@ -269,7 +294,7 @@ export class AudioPlayerService {
       this._progress.set(Math.min(elapsed / this.currentDuration, 1));
       // Arrêt précis (~1 frame) sur la position réelle ; le chrono de scheduleStop() couvre le
       // cas où rAF est suspendu (onglet en arrière-plan, écran éteint).
-      if (this.state() === 'playing' && elapsed >= this.currentDuration - STOP_TOLERANCE_SECONDS) {
+      if (this.state() === 'playing' && this.reachedCurrentDuration()) {
         this.stop();
         return;
       }

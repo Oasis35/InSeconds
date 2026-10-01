@@ -128,6 +128,16 @@ describe('AudioPlayerService — arrêt calé sur le son réel', () => {
 
   afterEach(() => service.reset());
 
+  /** Comme Safari iOS : `playing` part dès l'appel, le son 400 ms plus tard, sans second `playing`. */
+  function simulateIosLatePlaying(): void {
+    const realPlay = el.play.bind(el);
+    vi.spyOn(el, 'play').mockImplementation(() => {
+      el.onplaying?.call(el, new Event('playing')); // faux départ, position encore à 0
+      el.onplaying = null;                            // le vrai `playing` n'est plus écouté
+      return new Promise<void>((resolve, reject) => setTimeout(() => realPlay().then(resolve, reject), 400));
+    });
+  }
+
   it('un démarrage lent du son ne raccourcit pas le palier', async () => {
     // Simule un mobile : le son ne sort que 400 ms après l'appel à play(), soit plus que le
     // palier. L'ancien chrono, lancé à l'appel, coupait avant tout son.
@@ -143,6 +153,31 @@ describe('AudioPlayerService — arrêt calé sur le son réel', () => {
     // L'arrêt se compte à partir du son réellement démarré, pas de l'appel à play().
     expect(startedAt).not.toBeNull();
     expect(performance.now() - startedAt!).toBeGreaterThanOrEqual(190);
+  });
+
+  // Piège 46 CLAUDE.md : sur iPhone, `playing` part dès l'appel à play() alors que le son ne
+  // démarre que bien plus tard, et aucun second `playing` ne suit. Le chrono lancé sur ce faux
+  // départ coupait le palier avant (presque) tout son.
+  it('un événement playing émis avant le vrai démarrage du son ne raccourcit pas le palier', async () => {
+    simulateIosLatePlaying();
+
+    service.play(SILENCE_WAV_DATA_URI, 0.2);
+    await waitUntil(() => service.isFinished(), 5000);
+
+    // Arrêt seulement une fois 0,2 s de média réellement jouées.
+    expect(el.currentTime).toBeGreaterThanOrEqual(0.19);
+  });
+
+  it('une relecture (↺) joue le palier en entier même si le son tarde à repartir', async () => {
+    service.play(SILENCE_WAV_DATA_URI, 0.2);
+    await waitUntil(() => service.isFinished());
+
+    simulateIosLatePlaying();
+
+    service.replayCurrent();
+    await waitUntil(() => service.isFinished(), 5000);
+
+    expect(el.currentTime).toBeGreaterThanOrEqual(0.19);
   });
 
   it("un échec de lecture pendant extend() passe en 'error', jamais en 'idle'", async () => {

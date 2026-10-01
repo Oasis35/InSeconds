@@ -534,7 +534,7 @@ Dans chaque domaine :
 - **`domain/`** : machine à états d'un morceau, `chargement → écoute → saisie → envoi → révélé`, plus `erreur audio` et `erreur d'envoi`.
 - **`data-access/`** :
   - `withTrackRound` ;
-  - `AudioPort` et son implémentation `<audio>`, qui garde **toutes** les corrections des pièges 33, 40 et 44 et leurs tests : état `error` distinct de `idle`, arrêt calé sur l'événement `playing`, `AbortError` ignoré, prolongation pendant le chargement, relecture sans effacer `wasExtended`, autoplay une seule fois par morceau ;
+  - `AudioPort` et son implémentation `<audio>`, qui garde **toutes** les corrections des pièges 33, 40, 44 et 46 et leurs tests : état `error` distinct de `idle`, arrêt calé sur la position réelle du média (chrono lancé à l'événement `playing` puis reprogrammé tant que `currentTime` n'a pas atteint le palier, jamais de coupure pendant un seek : Safari iOS émet `playing` avant que le son reparte), `AbortError` ignoré, prolongation pendant le chargement, relecture sans effacer `wasExtended`, autoplay une seule fois par morceau ;
   - `AnswerSearchPort` (autocomplete, debounce 300 ms).
 - **`ui/`** : lecteur (barre, repères de paliers), saisie avec autocomplete et navigation clavier, bouton effacer, carte de révélation, histogramme (`GuessTimeChart`), liste de résultats en accordéon.
 - **Ce qui varie selon le mode est injecté :**
