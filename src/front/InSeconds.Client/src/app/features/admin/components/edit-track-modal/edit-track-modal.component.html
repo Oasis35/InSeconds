@@ -27,9 +27,7 @@
 
         <p class="text-xs" style="color:var(--text-muted)">{{ 'admin.editModal.hint' | translate }}</p>
 
-        @if (pool.editStatus() === 'locked') {
-          <p class="text-xs" style="color:var(--text-error)">{{ 'admin.editModal.locked' | translate }}</p>
-        } @else if (pool.editStatus() === 'error') {
+        @if (pool.editStatus() === 'error') {
           <p class="text-xs" style="color:var(--text-error)">{{ 'admin.editModal.error' | translate }}</p>
         }
 
