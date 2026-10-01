@@ -24,8 +24,7 @@ public static class RenameTrackEndpoint
         .Produces<RenameTrackResponse>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized)
-        .Produces(StatusCodes.Status404NotFound)
-        .Produces(StatusCodes.Status409Conflict);
+        .Produces(StatusCodes.Status404NotFound);
 
         return routes;
     }
