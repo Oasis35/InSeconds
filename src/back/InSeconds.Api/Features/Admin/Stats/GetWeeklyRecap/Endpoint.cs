@@ -1,5 +1,4 @@
 using InSeconds.Api.Common.Auth;
-using InSeconds.Api.Common.Settings;
 using InSeconds.Api.Common.Text;
 using System.Globalization;
 using InSeconds.Api.Infrastructure.Persistence;
@@ -12,6 +11,8 @@ namespace InSeconds.Api.Features.Admin.Stats.GetWeeklyRecap;
 // trouvé / le plus raté sur les défis d'une période (par défaut les 7 derniers jours, aujourd'hui
 // inclus ; ?from=&to= au format yyyy-MM-dd pour la choisir). 200 même sans assez de données :
 // « pas assez de données » est un statut, pas une erreur.
+// Pas de pochette dans la réponse : les stories sont des images enregistrées et publiées hors du
+// site, or Deezer interdit de stocker ses images (FAQ développeurs) — seuls artiste et titre y figurent.
 public static class GetWeeklyRecapEndpoint
 {
     public const int PeriodDays = 7;
@@ -25,7 +26,6 @@ public static class GetWeeklyRecapEndpoint
             [FromQuery] string? from,
             [FromQuery] string? to,
             ApplicationDbContext db,
-            SettingsService settingsService,
             CancellationToken ct) =>
         {
             if (!ctx.GetPlayerIsAdmin())
@@ -33,18 +33,16 @@ public static class GetWeeklyRecapEndpoint
 
             if (!TryResolvePeriod(from, to, DateOnly.FromDateTime(DateTime.UtcNow), out var fromDate, out var toDate, out var error))
                 return Results.BadRequest(new { error });
-            var appSettings = await settingsService.GetAsync(ct);
 
             // Groupé par Track (et non par DailyChallengeTrack) : un morceau réapparu dans la
             // fenêtre cumule ses réponses.
             var trackRows = await db.GameSessionAnswers
                 .AsNoTracking()
                 .Where(a => a.Track.DailyChallenge.Date >= fromDate && a.Track.DailyChallenge.Date <= toDate)
-                .GroupBy(a => new { a.Track.TrackId, a.Track.Track.Artist, a.Track.Track.Title, a.Track.Track.CoverHash })
+                .GroupBy(a => new { a.Track.TrackId, a.Track.Track.Artist, a.Track.Track.Title })
                 .Select(g => new WeeklyTrackRow(
                     g.Key.Artist,
                     g.Key.Title,
-                    g.Key.CoverHash,
                     g.Count(),
                     g.Count(a => a.ArtistCorrect && a.TitleCorrect)))
                 .ToListAsync(ct);
@@ -56,8 +54,8 @@ public static class GetWeeklyRecapEndpoint
                 fromDate,
                 toDate,
                 MinAnswers,
-                ToDto(mostFound, appSettings),
-                ToDto(mostMissed, appSettings)));
+                ToDto(mostFound),
+                ToDto(mostMissed)));
         })
         .WithName("GetWeeklyRecap")
         .WithTags("Admin")
@@ -104,7 +102,7 @@ public static class GetWeeklyRecapEndpoint
         return true;
     }
 
-    public sealed record WeeklyTrackRow(string Artist, string Title, string? CoverHash, int Answers, int FullyCorrect)
+    public sealed record WeeklyTrackRow(string Artist, string Title, int Answers, int FullyCorrect)
     {
         public double RatePercent => Rate(FullyCorrect, Answers);
     }
@@ -137,11 +135,10 @@ public static class GetWeeklyRecapEndpoint
     private static double Rate(int part, int total) =>
         total == 0 ? 0 : Math.Round((double)part / total * 100, 1);
 
-    private static WeeklyTrackDto? ToDto(WeeklyTrackRow? row, AppSettings settings) =>
+    private static WeeklyTrackDto? ToDto(WeeklyTrackRow? row) =>
         row is null ? null : new WeeklyTrackDto(
             row.Artist,
             TextNormalizationHelpers.CleanDisplayTitle(row.Title),
-            row.CoverHash is not null ? settings.BuildCoverUrl(row.CoverHash) : null,
             row.RatePercent,
             row.Answers);
 }

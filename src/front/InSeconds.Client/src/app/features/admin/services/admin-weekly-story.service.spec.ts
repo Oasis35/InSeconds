@@ -4,7 +4,7 @@ import { AdminWeeklyStoryService } from './admin-weekly-story.service';
 import { AdminHttpService } from './admin-http.service';
 import { WeeklyRecapResponse } from '../admin.models';
 
-const track = { artist: 'Daft Punk', title: 'One More Time', coverUrl: null, successRatePercent: 87, answers: 23 };
+const track = { artist: 'Daft Punk', title: 'One More Time', successRatePercent: 87, answers: 23 };
 const okRecap: WeeklyRecapResponse = {
   status: 'ok', from: '2026-09-21', to: '2026-09-27', minAnswers: 3, mostFound: track, mostMissed: { ...track, successRatePercent: 8 },
 };

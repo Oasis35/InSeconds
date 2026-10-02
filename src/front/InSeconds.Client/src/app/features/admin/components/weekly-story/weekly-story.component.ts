@@ -3,15 +3,13 @@ import { NgTemplateOutlet } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import type { Options as Html2CanvasOptions } from 'html2canvas-pro';
 import { AdminWeeklyStoryService, CUSTOM_TITLE_MAX_LENGTH, WeeklyStoryImage, WeeklyStoryKind, WeeklyStoryTitleMode } from '../../services/admin-weekly-story.service';
-import { formatPercent, formatPeriod, hiResCover, sizeClass, storyFileName } from './weekly-story.format';
+import { formatPercent, formatPeriod, sizeClass, storyFileName } from './weekly-story.format';
 
 export type CaptureFn = (element: HTMLElement, options: Partial<Html2CanvasOptions>) => Promise<HTMLCanvasElement>;
 
 // Chargé à la demande : html2canvas-pro (fork maintenu de html2canvas, ~270 Ko) ne doit pas peser sur le bundle principal.
 const defaultCapture: CaptureFn = (element, options) =>
   import('html2canvas-pro').then(m => m.default(element, options));
-
-const IMAGE_LOAD_TIMEOUT_MS = 5000;
 
 /**
  * Section « Stories hebdo » de l'onglet Actions : bouton de génération + 2 gabarits 1080×1920
@@ -44,7 +42,6 @@ export class WeeklyStoryComponent {
   protected readonly titleModes: WeeklyStoryTitleMode[] = ['thisWeek', 'lastWeek', 'custom'];
   protected readonly formatPercent = formatPercent;
   protected readonly sizeClass = sizeClass;
-  protected readonly hiResCover = hiResCover;
 
   async generate(): Promise<void> {
     if (this.story.busy() || !this.story.periodValid()) return;
@@ -132,22 +129,14 @@ export class WeeklyStoryComponent {
     return Array.from(this.host.nativeElement.querySelectorAll<HTMLElement>('[data-story]'));
   }
 
-  /** Polices (Poppins/Inter) et pochettes chargées avant capture, sinon html2canvas fige un rendu partiel. */
+  /** Polices (Poppins/Inter) chargées avant capture, sinon html2canvas fige un rendu partiel. */
   private async waitForAssets(): Promise<void> {
     const fonts = document.fonts;
-    if (fonts) {
-      await Promise.all([
-        fonts.load('800 64px Poppins'), fonts.load('700 36px Poppins'), fonts.load('600 44px Poppins'),
-        fonts.load('400 30px Inter'), fonts.load('600 30px Inter'),
-      ]).catch(() => undefined);
-      await fonts.ready;
-    }
-    const imgs = Array.from(this.host.nativeElement.querySelectorAll<HTMLImageElement>('[data-story] img'));
-    await Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise<void>(resolve => {
-      const done = () => resolve();
-      img.addEventListener('load', done, { once: true });
-      img.addEventListener('error', done, { once: true });
-      setTimeout(done, IMAGE_LOAD_TIMEOUT_MS);
-    })));
+    if (!fonts) return;
+    await Promise.all([
+      fonts.load('800 64px Poppins'), fonts.load('700 36px Poppins'), fonts.load('600 44px Poppins'),
+      fonts.load('400 30px Inter'), fonts.load('600 30px Inter'),
+    ]).catch(() => undefined);
+    await fonts.ready;
   }
 }

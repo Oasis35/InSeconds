@@ -114,7 +114,7 @@
   background: linear-gradient(270deg, rgb(var(--rgb-accent-3)), rgb(var(--rgb-accent)));
 }
 
-// Pochette posée sur la ligne de grille y = 955 ; elle masque l'axe central.
+// Vignette (note de musique, pas de pochette Deezer) posée sur la ligne de grille y = 955 ; elle masque l'axe central.
 .cover {
   position: absolute;
   top: 552px;
@@ -125,18 +125,6 @@
   overflow: hidden;
   border: 3px solid var(--color-accent-2);
   box-shadow: 0 0 40px rgb(var(--rgb-accent) / 0.55), 0 0 90px rgb(var(--rgb-accent-3) / 0.3);
-
-  img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-  }
-}
-
-.cover-fallback {
-  position: absolute;
-  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
