@@ -972,7 +972,7 @@ Deuxième relecture, en comparant le plan au code v1 (`env/staging`). Les points
 | E7 | Base de test de forme v1 figée, qui dériverait. | moyenne | ✓ générée en CI + contrôle `information_schema` (§ 8.5, 8.6). | 9 |
 | E8 | E2E copiés en v2 qui divergent de ceux de la v1. | moyenne | check CI qui compare les deux listes de tests (`playwright test --list`) ; tout écart doit être justifié. | 2 |
 | E9 | CI filtrée par chemin fragile (jobs requis jamais lancés). | moyenne | `dorny/paths-filter` et un job agrégateur « CI OK », seul check requis. | 2 |
-| E10 | Chantier sans estimation ni gel fonctionnel de la v1 ; Dependabot en double. | moyenne | ✓ décidé le 30/09 : v1 gelée, correctifs urgents seulement, reportés en v2 ; estimation à poser ; Dependabot : groupes v2 séparés, majeures v1 ignorées pendant le chantier. | 1 |
+| E10 | Chantier sans estimation ni gel fonctionnel de la v1 ; Dependabot en double. | moyenne | ✓ décidé le 30/09 : v1 gelée, correctifs urgents seulement, reportés en v2 ; estimation à poser ; Dependabot : groupes v2 séparés, majeures v1 ignorées pendant le chantier (fait en A5). | 1 |
 | E11 | Onglets v1 ouverts qui reçoivent un 410. | faible | ✓ § 10.2 ; message « nouvelle version, recharge » plutôt qu'une erreur générique. | 11 |
 | E12 | PWA : pouvoir la désinstaller et ne pas gêner les E2E. | faible | `safety-worker.js` prêt à déployer en cas de problème ; `serviceWorkers: 'block'` dans Playwright. | 10 |
 

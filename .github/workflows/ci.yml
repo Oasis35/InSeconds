@@ -14,10 +14,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Refonte v2 (PR A5) : les jobs v2 ne tournent que si leur code a changé, pour qu'un run sans
-  # changement v2 (correctif v1, Dependabot v1) prenne le même temps qu'avant. Les jobs v1 tournent
-  # toujours. Le job « CI OK » en fin de fichier agrège tout : c'est le seul check à exiger dans le
-  # ruleset (un job sauté y compte comme réussi).
+  # Refonte v2 (PR A5, PLAN § 9.1) : les jobs v2 ne tournent que si `src/v2/**` change, pour qu'un
+  # run sans changement v2 (correctif v1, Dependabot v1) prenne le même temps qu'avant. Tout changement
+  # v2 lance tous les jobs v2 (back et front) : ils tournent en parallèle des jobs v1, plus longs
+  # (E2E v1), donc sans allonger le run. Les jobs v1 tournent toujours. Le job « CI OK » en fin de
+  # fichier agrège tout : c'est le seul check à exiger dans le ruleset (un job sauté y compte comme
+  # réussi, E9).
   changes:
     name: Changed paths
     runs-on: ubuntu-latest
@@ -25,8 +27,7 @@ jobs:
       contents: read
       pull-requests: read # pull_request : liste des fichiers modifiés lue par l'API
     outputs:
-      v2-back: ${{ steps.filter.outputs.v2-back }}
-      v2-front: ${{ steps.filter.outputs.v2-front }}
+      v2: ${{ steps.filter.outputs.v2 }}
       e2e: ${{ steps.filter.outputs.e2e }}
     steps:
       - name: Checkout
@@ -46,12 +47,10 @@ jobs:
         uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         with:
           base: ${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/env/staging') && github.ref || 'env/staging' }}
+          # e2e : parité v1/v2 (E8), aussi relancée quand un correctif v1 modifie ses E2E.
           filters: |
-            v2-back:
-              - 'src/v2/back/**'
-              - '.github/workflows/ci.yml'
-            v2-front:
-              - 'src/v2/front/**'
+            v2:
+              - 'src/v2/**'
               - '.github/workflows/ci.yml'
             e2e:
               - 'src/front/InSeconds.Client/e2e/**'
@@ -164,7 +163,7 @@ jobs:
     name: Frontend v2 (build, Vitest, Sheriff)
     runs-on: ubuntu-latest
     needs: [changes]
-    if: needs.changes.outputs.v2-front == 'true'
+    if: needs.changes.outputs.v2 == 'true'
     defaults:
       run:
         working-directory: src/v2/front/InSeconds.Client
@@ -212,7 +211,7 @@ jobs:
     name: Frontend v2 (nginx headers smoke test)
     runs-on: ubuntu-latest
     needs: [changes]
-    if: needs.changes.outputs.v2-front == 'true'
+    if: needs.changes.outputs.v2 == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -387,7 +386,7 @@ jobs:
     name: Backend v2 (build, migrations, tests, image)
     runs-on: ubuntu-latest
     needs: [changes]
-    if: needs.changes.outputs.v2-back == 'true'
+    if: needs.changes.outputs.v2 == 'true'
     defaults:
       run:
         working-directory: src/v2/back
