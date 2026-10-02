@@ -47,3 +47,45 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
+
+  # Refonte v2 (src/v2, PR A5) : le code v2 n'existe que sur env/staging, d'où le target-branch.
+  # Mêmes règles que la v1 : minor + patch groupés, majeures une par une. Versions épinglées
+  # exactes dans package.json et Directory.Packages.props : Dependabot les met à jour telles quelles.
+  - package-ecosystem: "nuget"
+    directory: "/src/v2/back"
+    target-branch: "env/staging"
+    labels: ["dependencies", "refonte-v2"]
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    groups:
+      nuget-v2-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "npm"
+    directory: "/src/v2/front/InSeconds.Client"
+    target-branch: "env/staging"
+    labels: ["dependencies", "refonte-v2"]
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    groups:
+      angular-v2:
+        # @angular/* (dont le CDK et le service worker) toujours ensemble, cf. piège 15.
+        patterns:
+          - "@angular/*"
+        update-types:
+          - "minor"
+          - "patch"
+      npm-v2-minor-patch:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "@angular/*"
+        update-types:
+          - "minor"
+          - "patch"

@@ -1,0 +1,122 @@
+import { Page, Locator } from '@playwright/test';
+import { BlindRoundPage } from './blind-round.page';
+
+export class GamePage {
+  readonly startButton: Locator;
+  readonly noChallengeHeading: Locator;
+  readonly alreadyPlayedHeading: Locator;
+  readonly abandonedHeading: Locator;
+  readonly countdown: Locator;
+  readonly finalScoreLabel: Locator;
+  readonly shareButton: Locator;
+  readonly shareCopiedButton: Locator;
+  readonly retryButton: Locator;
+  // Reprise
+  readonly resumePromptHeading: Locator;
+  readonly resumeButton: Locator;
+  readonly abandonButton: Locator;
+  readonly abandonConfirmButton: Locator;
+  // Confirmation de sortie (guard CanDeactivate)
+  readonly leaveConfirmButton: Locator;
+  readonly leaveCancelButton: Locator;
+  // Overlay « Service indisponible » (backend KO)
+  readonly serviceDownHeading: Locator;
+  // Liste de morceaux mutualisée (récap + déjà joué) + pop-up histogramme
+  readonly showTracksButton: Locator;
+  readonly trackScoreButtons: Locator;
+  readonly trackChip: Locator;
+  readonly guessTimeChart: Locator;
+
+  constructor(readonly page: Page) {
+    this.startButton           = page.getByRole('button', { name: 'Commencer' });
+    this.noChallengeHeading    = page.getByText("Pas de défi aujourd'hui");
+    this.alreadyPlayedHeading  = page.getByRole('heading', { name: 'Prochain défi dans' });
+    this.abandonedHeading      = page.getByText('Partie abandonnée');
+    this.countdown             = page.getByText(/^\d{2}:\d{2}:\d{2}$/);
+    this.finalScoreLabel       = page.getByText('Score final');
+    this.shareButton           = page.getByRole('button', { name: /Partager mon score/i });
+    this.shareCopiedButton     = page.getByRole('button', { name: /Copié/i });
+    this.retryButton           = page.getByRole('button', { name: 'Réessayer' });
+    this.resumePromptHeading   = page.getByRole('heading', { name: 'Partie en pause' });
+    this.resumeButton          = page.getByRole('button', { name: 'Reprendre' });
+    this.abandonButton         = page.getByRole('button', { name: 'Abandonner', exact: true }).first();
+    // Même libellé que le bouton d'ouverture (header en partie) : on cible la confirmation dans son
+    // conteneur — panneau de confirmation en cours de partie, encart de l'écran de reprise sinon.
+    this.abandonConfirmButton  = page.locator('app-confirm-sheet, app-resume-screen')
+      .getByRole('button', { name: 'Abandonner', exact: true });
+    this.leaveConfirmButton    = page.getByRole('button', { name: 'Quitter quand même' });
+    this.leaveCancelButton     = page.getByRole('button', { name: 'Continuer à jouer' });
+    this.serviceDownHeading    = page.getByRole('heading', { name: 'Service indisponible' });
+    this.showTracksButton      = page.getByRole('button', { name: /Voir les morceaux/i });
+    // Le bouton du score porte un aria-label (« Voir la répartition des temps ») qui prime sur le texte « +N ».
+    this.trackScoreButtons     = page.locator('app-track-results-list')
+      .getByRole('button', { name: /répartition des temps/i });
+    this.trackChip             = page.locator('app-track-results-list').getByText(/✓ Artiste|✗ Artiste/).first();
+    this.guessTimeChart        = page.getByTestId('guess-time-chart');
+  }
+
+  /** Démarre et joue les 5 morceaux (réponses vides) jusqu'à l'écran de récap. */
+  async playFullGame(round: BlindRoundPage): Promise<void> {
+    await this.goto();
+    await this.waitForWelcome();
+    await this.clickStart();
+    for (let i = 0; i < 5; i++) {
+      await round.playRound(1);
+    }
+    await this.waitForDone();
+  }
+
+  /** `playFullGame` puis recharge → écran already_played. */
+  async completeGameThenReload(round: BlindRoundPage): Promise<void> {
+    await this.playFullGame(round);
+    await this.goto();
+  }
+
+  /** Horloge simulée installée, puis écran d'accueil affiché. */
+  async openWithFakeClock(): Promise<void> {
+    await this.page.clock.install({ time: Date.now() });
+    await this.goto();
+    await this.waitForWelcome();
+  }
+
+  /** `openWithFakeClock` puis démarrage de la partie (premier morceau). */
+  async startWithFakeClock(): Promise<void> {
+    await this.openWithFakeClock();
+    await this.clickStart();
+  }
+
+  /** Démarre la partie et écoute le premier morceau jusqu'à `durationSeconds`, champ de réponse prêt. */
+  async startFirstRound(round: BlindRoundPage, durationSeconds = 1): Promise<void> {
+    await this.startWithFakeClock();
+    await round.chooseDuration(durationSeconds);
+    await round.waitForAnswerInput();
+  }
+
+  /** Joue les `remaining` morceaux restants (réponses vides) jusqu'à l'écran de récap. */
+  async finishGame(round: BlindRoundPage, remaining: number): Promise<void> {
+    for (let i = 0; i < remaining; i++) {
+      await round.playRound(1);
+    }
+    await this.waitForDone();
+  }
+
+  async goto(): Promise<void> {
+    await this.page.goto('/');
+  }
+
+  async waitForWelcome(): Promise<void> {
+    await this.startButton.waitFor({ state: 'visible' });
+  }
+
+  async clickStart(): Promise<void> {
+    await this.startButton.click();
+  }
+
+  async waitForDone(): Promise<void> {
+    await this.finalScoreLabel.waitFor({ state: 'visible' });
+  }
+
+  async waitForResumePrompt(): Promise<void> {
+    await this.resumePromptHeading.waitFor({ state: 'visible' });
+  }
+}

@@ -14,6 +14,47 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Refonte v2 (PR A5) : les jobs v2 ne tournent que si leur code a changé, pour qu'un run sans
+  # changement v2 (correctif v1, Dependabot v1) prenne le même temps qu'avant. Les jobs v1 tournent
+  # toujours. Le job « CI OK » en fin de fichier agrège tout : c'est le seul check à exiger dans le
+  # ruleset (un job sauté y compte comme réussi).
+  changes:
+    name: Changed paths
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # pull_request : liste des fichiers modifiés lue par l'API
+    outputs:
+      v2-back: ${{ steps.filter.outputs.v2-back }}
+      v2-front: ${{ steps.filter.outputs.v2-front }}
+      e2e: ${{ steps.filter.outputs.e2e }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # push : base = la branche poussée → comparaison avec le commit d'avant le push (et non avec
+      # main, où src/v2 n'existe pas : tout serait vu comme modifié). pull_request : base ignorée,
+      # comparaison avec la branche cible de la PR.
+      - name: Filter
+        id: filter
+        uses: dorny/paths-filter@v4
+        with:
+          base: ${{ github.ref }}
+          filters: |
+            v2-back:
+              - 'src/v2/back/**'
+              - '.github/workflows/ci.yml'
+            v2-front:
+              - 'src/v2/front/**'
+              - '.github/workflows/ci.yml'
+            e2e:
+              - 'src/front/InSeconds.Client/e2e/**'
+              - 'src/front/InSeconds.Client/playwright.config.ts'
+              - 'src/v2/front/InSeconds.Client/e2e/**'
+              - 'src/v2/front/InSeconds.Client/playwright.config.ts'
+              - 'scripts/check-e2e-parity.mjs'
+              - '.github/workflows/ci.yml'
+
   back:
     name: Backend (build + EF migrations check)
     runs-on: ubuntu-latest
@@ -116,6 +157,8 @@ jobs:
   front-v2:
     name: Frontend v2 (build, Vitest, Sheriff)
     runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.v2-front == 'true'
     defaults:
       run:
         working-directory: src/v2/front/InSeconds.Client
@@ -156,6 +199,51 @@ jobs:
       - name: Build image and verify Cache-Control headers
         working-directory: src/front/InSeconds.Client
         run: bash scripts/check-nginx-cache-headers.sh
+
+  # Image de prod du front v2 : mêmes vérifications qu'en v1, plus la PWA (ngsw.json et worker sans
+  # cache, aucun dataGroups). En parallèle de front-v2, qui vérifie déjà le build.
+  nginx-headers-v2:
+    name: Frontend v2 (nginx headers smoke test)
+    runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.v2-front == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Build image and verify headers
+        working-directory: src/v2/front/InSeconds.Client
+        run: bash scripts/check-nginx-headers.sh
+
+  # E8 : les E2E copiés en v2 ne divergent pas de ceux de la v1 (listes `playwright test --list`).
+  e2e-parity:
+    name: E2E v1/v2 parity
+    runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.e2e == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: |
+            src/front/InSeconds.Client/package-lock.json
+            src/v2/front/InSeconds.Client/package-lock.json
+
+      - name: Install v1 (clean)
+        working-directory: src/front/InSeconds.Client
+        run: npm ci --ignore-scripts
+
+      - name: Install v2 (clean)
+        working-directory: src/v2/front/InSeconds.Client
+        run: npm ci --ignore-scripts
+
+      - name: Compare E2E lists
+        run: node scripts/check-e2e-parity.mjs
 
   integration-tests:
     name: Backend (integration tests)
@@ -292,6 +380,8 @@ jobs:
   back-v2:
     name: Backend v2 (build, migrations, tests, image)
     runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.v2-back == 'true'
     defaults:
       run:
         working-directory: src/v2/back
@@ -344,11 +434,45 @@ jobs:
             exit 1
           fi
 
+  # Seul check exigé par le ruleset « Branches protégées » : échoue si un job a échoué ou a été
+  # annulé ; un job sauté par le filtre de chemins compte comme réussi. Tout nouveau job doit être
+  # ajouté à `needs`, sinon il ne bloque pas le merge.
+  ci-ok:
+    name: CI OK
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - changes
+      - back
+      - unit-tests
+      - front
+      - unit-tests-front
+      - nginx-headers
+      - integration-tests
+      - e2e
+      - front-v2
+      - nginx-headers-v2
+      - back-v2
+      - e2e-parity
+    steps:
+      - name: Check job results
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          echo "$RESULTS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          failed=$(echo "$RESULTS" | jq -r 'to_entries[] | select(.value.result == "failure" or .value.result == "cancelled") | .key')
+          if [ -n "$failed" ]; then
+            echo "::error::Jobs en échec ou annulés : $(echo $failed)"
+            exit 1
+          fi
+
   deploy:
     name: Deploy to VPS
     runs-on: ubuntu-latest
-    needs: [back, unit-tests, front, unit-tests-front, nginx-headers, integration-tests, e2e]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [ci-ok]
+    # always() : sans lui, un job v2 sauté par le filtre de chemins sauterait aussi le déploiement
+    # (le statut « sauté » se propage à toute la chaîne de needs, malgré le if: always() de ci-ok).
+    if: always() && needs.ci-ok.result == 'success' && github.ref == 'refs/heads/main' && github.event_name == 'push'
     # M17 (revue du 25/09) : groupe de concurrency dédié, distinct de celui du workflow
     # (${{ github.workflow }}-${{ github.ref }}, cf. en-tête du fichier). Sans ça, un déploiement
     # en cours pouvait être annulé en plein milieu (cancel-in-progress du groupe workflow) par un
@@ -386,10 +510,11 @@ jobs:
   deploy-staging:
     name: Deploy to staging (dev.inseconds.cc)
     runs-on: ubuntu-latest
-    needs: [back, unit-tests, front, unit-tests-front, nginx-headers, integration-tests, e2e]
-    # Branche de déploiement du staging : on y pousse (en force) n'importe quelle branche à
-    # tester, ex. `git push -f origin feat/xxx:env/staging`. Cf. CLAUDE.md racine § Staging.
-    if: github.ref == 'refs/heads/env/staging' && github.event_name == 'push'
+    needs: [ci-ok]
+    # Branche de déploiement du staging (protégée, on y arrive par PR ; sert à la v2 pendant la
+    # refonte). Cf. CLAUDE.md racine § Staging.
+    # always() : cf. job deploy.
+    if: always() && needs.ci-ok.result == 'success' && github.ref == 'refs/heads/env/staging' && github.event_name == 'push'
     # Groupe distinct de deploy-vps (prod) : GitHub ne garde qu'un seul job en attente par
     # groupe et annule le précédent — un groupe commun pourrait faire sauter un déploiement
     # prod en attente au profit d'un déploiement staging poussé juste après.
