@@ -398,7 +398,7 @@ Runners Ubuntu, ~5-7 min par run (jobs `back`/`front`/`unit-tests-front`/`integr
 - **nuget** : même logique (`nuget-minor-patch` groupé, majeures individuelles). `directory: "/src/back"` (corrigé le 2026-09-27, relevé par la revue de code du 2026-09-25, M18 — pointait sur `/`, la racine du repo, où il n'y a aucun `.csproj`/`.sln*` : Dependabot n'y trouvait donc jamais de dépendance NuGet à surveiller, le groupe `nuget-minor-patch` ne produisait silencieusement aucune PR).
 - **github-actions** : ajouté (pas groupé, peu de mises à jour attendues) — tient à jour les versions des actions (`actions/checkout`, etc.), complète le durcissement CI du piège Sonar `S8543`/`S6505` (versions non épinglées, cf. plus haut).
 
-**Refonte v2** : la v2 a ses propres entrées `nuget`/`npm` (`src/v2/back`, `src/v2/front/InSeconds.Client`, `target-branch: env/staging`, étiquette `refonte-v2`, mêmes groupes que la v1).
+**Refonte v2** : la v2 a ses propres entrées `nuget`/`npm` (`src/v2/back`, `src/v2/front/InSeconds.Client`, `target-branch: env/staging`, étiquette `refonte-v2`, mêmes groupes que la v1, `@ngrx/signals` dans le groupe `angular-v2`).
 
 **Reste mensuel** (l'hebdomadaire a été essayé puis abandonné le jour même — trop de bruit) + `open-pull-requests-limit: 5` (au lieu de 2) — juste assez pour que les groupes minor/patch et une éventuelle majeure isolée coexistent le même mois sans se bloquer mutuellement.
 

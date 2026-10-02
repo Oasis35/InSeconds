@@ -75,9 +75,11 @@ updates:
     open-pull-requests-limit: 5
     groups:
       angular-v2:
-        # @angular/* (dont le CDK et le service worker) toujours ensemble, cf. piège 15.
+        # @angular/* (dont le CDK et le service worker) et @ngrx/signals toujours ensemble, cf. piège 15
+        # et PLAN § 6.2.
         patterns:
           - "@angular/*"
+          - "@ngrx/signals"
         update-types:
           - "minor"
           - "patch"
@@ -86,6 +88,7 @@ updates:
           - "*"
         exclude-patterns:
           - "@angular/*"
+          - "@ngrx/signals"
         update-types:
           - "minor"
           - "patch"

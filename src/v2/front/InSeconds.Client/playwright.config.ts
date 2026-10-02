@@ -22,8 +22,10 @@ export default defineConfig({
     : 'list',
 
   use: {
-    // CI utilise 5173 (port standard), local utilise 5174 (évite le conflit avec le dev normal)
-    baseURL: process.env['CI'] ? 'http://localhost:5173' : 'http://localhost:5174',
+    // Front v2 : 5176 en CI (port par défaut d'ng serve), 5178 en local (évite le conflit avec le dev normal)
+    baseURL: process.env['CI'] ? 'http://localhost:5176' : 'http://localhost:5178',
+    // E12 : le service worker de la PWA ne doit jamais servir une page ou intercepter une requête des E2E.
+    serviceWorkers: 'block',
     trace: 'on-first-retry',
     video: 'on-first-retry',
     // Désactive les animations (ex: count-up du score) — sinon le score final n'est pas
