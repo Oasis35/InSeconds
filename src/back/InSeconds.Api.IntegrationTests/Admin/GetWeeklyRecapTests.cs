@@ -70,6 +70,20 @@ public class GetWeeklyRecapTests(IntegrationTestFactory factory) : IAsyncLifetim
     }
 
     [Fact]
+    public async Task Recap_NeRenvoieAucunePochette()
+    {
+        // Les stories sont des images enregistrées puis publiées sur Instagram : Deezer interdit
+        // de stocker ses images, la réponse ne doit donc jamais contenir de pochette.
+        var admin = await CreateAdminClientAsync();
+        await SeedAnswersAsync(Today, 1, (true, true), (true, true), (true, true));
+
+        var json = await admin.GetStringAsync("/api/admin/weekly-recap");
+
+        Assert.Contains("mostFound", json);
+        Assert.DoesNotContain("cover", json, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task Recap_ExclutLesMorceauxAvecMoinsDe3Reponses()
     {
         var admin = await CreateAdminClientAsync();

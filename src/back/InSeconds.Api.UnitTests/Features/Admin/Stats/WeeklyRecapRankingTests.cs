@@ -6,7 +6,7 @@ namespace InSeconds.Api.UnitTests.Features.Admin.Stats;
 
 public class WeeklyRecapRankingTests
 {
-    private static Row R(string title, int answers, int correct) => new("Artiste", title, null, answers, correct);
+    private static Row R(string title, int answers, int correct) => new("Artiste", title, answers, correct);
 
     [Fact]
     public void Rank_ChoisitLeMeilleurEtLePireTaux()
