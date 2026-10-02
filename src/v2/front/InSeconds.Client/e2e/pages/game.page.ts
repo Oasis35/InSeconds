@@ -1,4 +1,5 @@
 import { Page, Locator } from '@playwright/test';
+import { times } from '../fixtures/sequence';
 import { BlindRoundPage } from './blind-round.page';
 
 export class GamePage {
@@ -60,9 +61,7 @@ export class GamePage {
     await this.goto();
     await this.waitForWelcome();
     await this.clickStart();
-    for (let i = 0; i < 5; i++) {
-      await round.playRound(1);
-    }
+    await times(5, () => round.playRound(1));
     await this.waitForDone();
   }
 
@@ -94,9 +93,7 @@ export class GamePage {
 
   /** Joue les `remaining` morceaux restants (réponses vides) jusqu'à l'écran de récap. */
   async finishGame(round: BlindRoundPage, remaining: number): Promise<void> {
-    for (let i = 0; i < remaining; i++) {
-      await round.playRound(1);
-    }
+    await times(remaining, () => round.playRound(1));
     await this.waitForDone();
   }
 

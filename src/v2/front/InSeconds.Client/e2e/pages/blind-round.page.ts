@@ -1,4 +1,5 @@
 import { Page, Locator, expect } from '@playwright/test';
+import { inSequence } from '../fixtures/sequence';
 
 // Paliers par défaut exposés par les settings (cf. AppSettings.AllowedDurationsSeconds).
 // La lecture démarre automatiquement au premier (0.5s) — il n'y a plus de bouton de choix initial.
@@ -62,12 +63,12 @@ export class BlindRoundPage {
     const targetIdx = ALLOWED_DURATIONS.indexOf(targetSeconds);
     if (targetIdx < 0) throw new Error(`Palier inconnu : ${targetSeconds}`);
 
-    for (let i = 1; i <= targetIdx; i++) {
+    await inSequence(ALLOWED_DURATIONS.slice(1, targetIdx + 1), async (duration) => {
       // Palier précédent déjà en 'finished' à ce stade (auto-start ou itération précédente).
       await this.listenMoreButton.click();
       await this.page.waitForTimeout(300);
-      await this.page.clock.fastForward(ALLOWED_DURATIONS[i] * 1000 + 200);
-    }
+      await this.page.clock.fastForward(duration * 1000 + 200);
+    });
   }
 
   /**

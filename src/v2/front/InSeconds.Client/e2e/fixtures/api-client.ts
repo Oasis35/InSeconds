@@ -1,3 +1,5 @@
+import { inSequence } from './sequence';
+
 // CI utilise 5175 (port de l'API v2), local utilise 5177 (évite le conflit avec le dev normal)
 const BASE = process.env['CI'] ? 'http://localhost:5175' : 'http://localhost:5177';
 // L'auth admin est désormais un rôle sur le cookie joueur (Player.IsAdmin, cf. refonte
@@ -7,6 +9,27 @@ const ADMIN_HEADERS = {
   Authorization: 'Bearer admin-token',
   'Content-Type': 'application/json',
 };
+
+/** Répond (réponse vide, palier 1 s) à chaque morceau de la session, dans l'ordre. */
+function submitEmptyAnswers(
+  session: { sessionId: string; tracks: { id: number }[] },
+  headers: Record<string, string>,
+): Promise<void> {
+  return inSequence(session.tracks, async (track) => {
+    const submitRes = await fetch(`${BASE}/api/sessions/${session.sessionId}/answers`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        dailyChallengeTrackId: track.id,
+        listenedDurationSeconds: 1,
+        wasExtended: false,
+        artistAnswer: null,
+        titleAnswer: null,
+      }),
+    });
+    if (!submitRes.ok) throw new Error(`submitAnswer failed: ${submitRes.status}`);
+  });
+}
 
 export class ApiTestClient {
   async reset(options: { deleteChallenge?: boolean; emptyPool?: boolean } = {}): Promise<void> {
@@ -77,20 +100,7 @@ export class ApiTestClient {
     if (!startRes.ok) throw new Error(`startSession failed: ${startRes.status}`);
     const session = await startRes.json();
 
-    for (const track of session.tracks) {
-      const submitRes = await fetch(`${BASE}/api/sessions/${session.sessionId}/answers`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          dailyChallengeTrackId: track.id,
-          listenedDurationSeconds: 1,
-          wasExtended: false,
-          artistAnswer: null,
-          titleAnswer: null,
-        }),
-      });
-      if (!submitRes.ok) throw new Error(`submitAnswer failed: ${submitRes.status}`);
-    }
+    await submitEmptyAnswers(session, headers);
   }
 
   /** `GET /api/stats/today` sans cookie (visiteur qui n'a pas joué). */
@@ -111,20 +121,7 @@ export class ApiTestClient {
     const session = await startRes.json();
     const headers = { 'Content-Type': 'application/json', Cookie: cookieHeader };
 
-    for (const track of session.tracks) {
-      const submitRes = await fetch(`${BASE}/api/sessions/${session.sessionId}/answers`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          dailyChallengeTrackId: track.id,
-          listenedDurationSeconds: 1,
-          wasExtended: false,
-          artistAnswer: null,
-          titleAnswer: null,
-        }),
-      });
-      if (!submitRes.ok) throw new Error(`submitAnswer failed: ${submitRes.status}`);
-    }
+    await submitEmptyAnswers(session, headers);
   }
 
   /** Abandonne la partie du joueur identifié par son cookie. */
