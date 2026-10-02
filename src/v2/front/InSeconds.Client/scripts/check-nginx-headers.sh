@@ -12,6 +12,7 @@ IMAGE_TAG="inseconds-front-v2-nginx-headers-check"
 CONTAINER_NAME="inseconds-front-v2-nginx-headers-check"
 PORT="${NGINX_HEADERS_CHECK_PORT:-8098}"
 BASE="http://localhost:$PORT"
+NO_CACHE="no-cache"
 
 cleanup() {
   docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
@@ -40,7 +41,8 @@ done
 fail=0
 
 header() {
-  curl -sS -D - -o /dev/null "$BASE$1" | tr -d '\r' | grep -i "^$2:" | cut -d' ' -f2- || true
+  local path="$1" name="$2"
+  curl -sS -D - -o /dev/null "$BASE$path" | tr -d '\r' | grep -i "^$name:" | cut -d' ' -f2- || true
 }
 
 check_header() {
@@ -83,15 +85,15 @@ if [[ -z "$js_file" ]]; then
 fi
 
 # Non hashé (index.html/routes SPA, traductions) : toujours revalider.
-check_header "/" "no-cache"
-check_header "/daily" "no-cache"
-check_header "/admin" "no-cache"
-check_header "/i18n/fr.json" "no-cache"
+check_header "/" "$NO_CACHE"
+check_header "/daily" "$NO_CACHE"
+check_header "/admin" "$NO_CACHE"
+check_header "/i18n/fr.json" "$NO_CACHE"
 
 # Service worker : jamais de cache dur, même pour les .js (la location dédiée passe avant celle des bundles).
 for path in /ngsw.json /ngsw-worker.js /safety-worker.js /manifest.webmanifest; do
   check_status "$path" 200
-  check_header "$path" "no-cache"
+  check_header "$path" "$NO_CACHE"
 done
 check_content_type "/ngsw.json" "application/json"
 check_content_type "/ngsw-worker.js" "application/javascript|text/javascript"

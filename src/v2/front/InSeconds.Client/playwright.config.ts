@@ -6,6 +6,7 @@ import disabledSpecs from './e2e/disabled-specs.json';
 // Réactiver un spec = retirer sa ligne. E2E_INCLUDE_DISABLED=1 les remet dans la liste : c'est ce
 // que fait le check CI de parité v1/v2 (scripts/check-e2e-parity.mjs, E8).
 const disabled = process.env['E2E_INCLUDE_DISABLED'] ? [] : Object.keys(disabledSpecs);
+const e2eDbConnection = process.env['E2E_DB_CONNECTION'];
 
 export default defineConfig({
   testDir: './e2e',
@@ -54,10 +55,11 @@ export default defineConfig({
           url: 'http://localhost:5177/health',
           timeout: 90_000,
           reuseExistingServer: true,
+          // Base dédiée aux E2E : chaîne de connexion à fournir par E2E_DB_CONNECTION (aucun mot de
+          // passe dans le dépôt), sinon celle de l'appsettings de l'API.
           env: {
             ASPNETCORE_ENVIRONMENT: 'Testing',
-            ConnectionStrings__DefaultConnection:
-              'Host=localhost;Port=5432;Database=inseconds_v2_e2e;Username=inseconds;Password=inseconds_e2e',
+            ...(e2eDbConnection ? { ConnectionStrings__DefaultConnection: e2eDbConnection } : {}),
           },
         },
         {
