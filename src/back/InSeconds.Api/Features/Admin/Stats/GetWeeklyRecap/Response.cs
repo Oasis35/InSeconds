@@ -20,7 +20,6 @@ public sealed record WeeklyRecapResponse(
 public sealed record WeeklyTrackDto(
     string Artist,
     string Title,
-    string? CoverUrl,
     double SuccessRatePercent,
     int Answers);
 

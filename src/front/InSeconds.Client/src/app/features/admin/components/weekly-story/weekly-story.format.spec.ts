@@ -1,4 +1,4 @@
-import { formatPercent, formatPeriod, hiResCover, sizeClass, storyFileName } from './weekly-story.format';
+import { formatPercent, formatPeriod, sizeClass, storyFileName } from './weekly-story.format';
 
 describe('weekly-story.format', () => {
   it('formatPeriod : même mois', () => {
@@ -18,12 +18,6 @@ describe('weekly-story.format', () => {
     expect(sizeClass('Daft Punk')).toBe('');
     expect(sizeClass('x'.repeat(23))).toBe('len-m');
     expect(sizeClass('x'.repeat(33))).toBe('len-l');
-  });
-
-  it('hiResCover passe la pochette Deezer en 1000×1000', () => {
-    expect(hiResCover('https://cdn-images.dzcdn.net/images/cover/abc/250x250-000000-80-0-0.jpg'))
-      .toBe('https://cdn-images.dzcdn.net/images/cover/abc/1000x1000-000000-80-0-0.jpg');
-    expect(hiResCover(null)).toBeNull();
   });
 
   it('storyFileName', () => {

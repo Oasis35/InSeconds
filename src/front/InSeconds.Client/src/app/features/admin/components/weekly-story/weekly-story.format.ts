@@ -23,11 +23,6 @@ export function sizeClass(text: string): 'len-m' | 'len-l' | '' {
   return '';
 }
 
-/** Pochette Deezer en 1000×1000 (le gabarit par défaut sert du 250×250, flou à 400 px). */
-export function hiResCover(url: string | null): string | null {
-  return url ? url.replace('/250x250-', '/1000x1000-') : null;
-}
-
 /** « instagram-trouve-2026-09-27.png » */
 export function storyFileName(kind: 'found' | 'missed', to: string): string {
   return `instagram-${kind === 'found' ? 'trouve' : 'rate'}-${to}.png`;
