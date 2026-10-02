@@ -474,10 +474,8 @@ jobs:
   deploy:
     name: Deploy to VPS
     runs-on: ubuntu-latest
-    needs: [ci-ok]
-    # always() : sans lui, un job v2 sauté par le filtre de chemins sauterait aussi le déploiement
-    # (le statut « sauté » se propage à toute la chaîne de needs, malgré le if: always() de ci-ok).
-    if: always() && needs.ci-ok.result == 'success' && github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [back, unit-tests, front, unit-tests-front, nginx-headers, integration-tests, e2e]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     # M17 (revue du 25/09) : groupe de concurrency dédié, distinct de celui du workflow
     # (${{ github.workflow }}-${{ github.ref }}, cf. en-tête du fichier). Sans ça, un déploiement
     # en cours pouvait être annulé en plein milieu (cancel-in-progress du groupe workflow) par un
@@ -515,11 +513,10 @@ jobs:
   deploy-staging:
     name: Deploy to staging (dev.inseconds.cc)
     runs-on: ubuntu-latest
-    needs: [ci-ok]
-    # Branche de déploiement du staging (protégée, on y arrive par PR ; sert à la v2 pendant la
-    # refonte). Cf. CLAUDE.md racine § Staging.
-    # always() : cf. job deploy.
-    if: always() && needs.ci-ok.result == 'success' && github.ref == 'refs/heads/env/staging' && github.event_name == 'push'
+    needs: [back, unit-tests, front, unit-tests-front, nginx-headers, integration-tests, e2e]
+    # Branche de déploiement du staging : on y pousse (en force) n'importe quelle branche à
+    # tester, ex. `git push -f origin feat/xxx:env/staging`. Cf. CLAUDE.md racine § Staging.
+    if: github.ref == 'refs/heads/env/staging' && github.event_name == 'push'
     # Groupe distinct de deploy-vps (prod) : GitHub ne garde qu'un seul job en attente par
     # groupe et annule le précédent — un groupe commun pourrait faire sauter un déploiement
     # prod en attente au profit d'un déploiement staging poussé juste après.

@@ -14,10 +14,6 @@ updates:
           - "patch"
     # Les majeures ne sont jamais groupées : chacune part dans sa propre PR,
     # à review individuellement (changement de comportement potentiel).
-    # Refonte v2 (PLAN E10) : v1 gelée, ses majeures sont ignorées jusqu'au retrait de la v1 (I2).
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "npm"
     directory: "/src/front/InSeconds.Client"
@@ -46,10 +42,6 @@ updates:
     # dans sa propre PR. Une majeure peut dépasser ce que le reste de la
     # toolchain supporte (ex: typescript 7 / jasmine-core 7, cf. #119) —
     # mieux vaut le découvrir sur une PR isolée que noyé dans un gros bump.
-    # Refonte v2 (PLAN E10) : v1 gelée, ses majeures sont ignorées jusqu'au retrait de la v1 (I2).
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
