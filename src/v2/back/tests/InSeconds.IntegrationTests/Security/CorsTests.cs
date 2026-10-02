@@ -97,6 +97,24 @@ public class CorsTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal("https://dev.inseconds.cc", Header(reported, "Access-Control-Allow-Origin"));
     }
 
+    [Theory]
+    [InlineData("https://inseconds.cc")]
+    [InlineData("https://www.inseconds.cc")]
+    public async Task Production_LeFrontDeLaProdAppelleLApi(string origin)
+    {
+        // Exigé au démarrage en production (EmailStartupTests).
+        await using var api = new ApiFactory(_connectionString, environment: Environments.Production,
+            settings: new Dictionary<string, string> { ["Brevo:ApiKey"] = "clé" });
+        var client = api.CreateClient();
+
+        var allowed = await GetHealthAsync(client, origin);
+        var staging = await GetHealthAsync(client, "https://dev.inseconds.cc");
+
+        Assert.Equal(origin, Header(allowed, "Access-Control-Allow-Origin"));
+        Assert.Equal("true", Header(allowed, "Access-Control-Allow-Credentials"));
+        Assert.False(staging.Headers.Contains("Access-Control-Allow-Origin"));
+    }
+
     private ApiFactory CreateApi(Action<IServiceCollection>? configureServices = null) =>
         new(_connectionString, configureServices, new Dictionary<string, string> { ["Cors:AllowedOrigins:0"] = Front });
 
