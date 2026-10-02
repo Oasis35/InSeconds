@@ -32,15 +32,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      # push : base = la branche poussée → comparaison avec le commit d'avant le push (et non avec
-      # main, où src/v2 n'existe pas : tout serait vu comme modifié). pull_request : base ignorée,
-      # comparaison avec la branche cible de la PR.
+      # Base de comparaison :
+      # - push sur une branche de travail : env/staging (merge-base), donc TOUS les changements de
+      #   la branche. Comparer au commit d'avant le push perdait les changements d'un run annulé
+      #   par un push suivant (cancel-in-progress) : un job v2 pouvait ne jamais tourner sur la PR.
+      #   Une branche v1 (partie de main) n'a aucun fichier v2 depuis la merge-base : rien ne tourne.
+      # - push sur main ou env/staging : base = la branche → commit d'avant le push (le merge de la
+      #   PR), chaque PR ayant déjà été testée en entier sur sa branche.
+      # - pull_request : base ignorée, comparaison avec la branche cible de la PR.
       - name: Filter
         id: filter
         # Action tierce : épinglée sur le SHA du commit (Sonar S7637), Dependabot le met à jour.
         uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         with:
-          base: ${{ github.ref }}
+          base: ${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/env/staging') && github.ref || 'env/staging' }}
           filters: |
             v2-back:
               - 'src/v2/back/**'
