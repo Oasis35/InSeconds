@@ -100,6 +100,7 @@ Une ligne par réglage : `key` = chemin de configuration complet (`Daily:GuessTi
 - **Échec métier** : lever `JobFailedException("module.code")` ; le code est renvoyé tel quel. Toute autre exception est rendue en `common.unexpected` (ni message ni pile exposés).
 - **Tableau de bord `/jobs`** : policy Admin (401 anonyme, 403 joueur), `Authorization = []` (le filtre par défaut de Hangfire n'accepte que localhost), jeton antiforgery exigé sur ses actions. À protéger en plus par Cloudflare Access avant la mise en ligne (S3).
 - **`GET /api/admin/jobs/{id}`** : état d'une exécution (`queued`, `processing`, `succeeded`, `failed`, `retry_scheduled`, `deleted`), `result` (JSON) si réussie, `errorCode` si échouée ; 404 `common.not_found` si l'id est inconnu.
+- **Tests avec un vrai serveur Hangfire** (`Jobs:Server:Enabled=true`, ex. `JobStatusTests`) : dans la collection `HangfireServerCollection`, qui passe seule. Hangfire garde son activateur de tâches en global : une autre API de test créée puis détruite en parallèle le remplace, et la tâche échoue sur un `IServiceProvider` détruit (vu en CI sur la PR A6).
 
 ## Services transverses (`InSeconds.Infrastructure`)
 

@@ -9,8 +9,9 @@ namespace InSeconds.IntegrationTests.Jobs;
 
 /// <summary>
 /// <c>GET /api/admin/jobs/{id}</c> : l'admin suit une exécution lancée par un bouton (§ 5.4 bis).
-/// Le serveur Hangfire tourne ici, pour de vraies exécutions.
+/// Le serveur Hangfire tourne ici, pour de vraies exécutions (d'où <see cref="HangfireServerCollection"/>).
 /// </summary>
+[Collection(nameof(HangfireServerCollection))]
 public class JobStatusTests(PostgresFixture postgres) : IAsyncLifetime
 {
     private ApiFactory _api = null!;
