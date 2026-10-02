@@ -78,8 +78,8 @@ describe('WeeklyStoryComponent', () => {
     await component.generate();
 
     const stage = fixture.nativeElement.querySelector('[data-story-stage]') as HTMLElement;
-    expect(stage.querySelectorAll('img').length).toBe(0);
-    expect(stage.querySelectorAll('.cover svg').length).toBe(2);
+    expect(stage.querySelectorAll('img')).toHaveSize(0);
+    expect(stage.querySelectorAll('.cover svg')).toHaveSize(2);
   });
 
   it('un seul morceau éligible : une seule story', async () => {
