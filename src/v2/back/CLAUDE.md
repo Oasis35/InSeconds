@@ -2,7 +2,7 @@
 
 Back de la v2 d'InSeconds, en construction à côté de la v1 (`src/back/`), qui reste en service jusqu'à la bascule. Plan de référence : [`docs/refonte-v2/PLAN.md`](../../../docs/refonte-v2/PLAN.md) et [`docs/refonte-v2/DEVELOPPEMENT.md`](../../../docs/refonte-v2/DEVELOPPEMENT.md). Ce fichier décrit ce qui existe **déjà** dans le code ; il grossit à chaque PR.
 
-État : **PR A3, services transverses** (après A1, le socle, et A2, Wolverine et Hangfire) : emails, OpenTelemetry, proxies de confiance, rate limiting, en-têtes de sécurité, hôte de test. Pas encore de module métier ni de vraie connexion (B1) : l'authentification n'a que son socle (cookie, policy Admin).
+État : **PR A6, staging v2** (après A1, le socle, A2, Wolverine et Hangfire, et A3, services transverses : emails, OpenTelemetry, proxies de confiance, rate limiting, en-têtes de sécurité, hôte de test) : CORS, `POST /api/client-errors`, déploiement du staging (cf. « Staging »). Pas encore de module métier ni de vraie connexion (B1) : l'authentification n'a que son socle (cookie, policy Admin).
 
 ## Commandes
 
@@ -37,7 +37,7 @@ src/v2/back/
 │   ├── Observability/  # OpenTelemetry (OTLP)
 │   ├── Networking/     # TrustedProxyNetworks (X-Forwarded-For)
 │   ├── RateLimiting/   # politiques par IP
-│   └── Http/           # en-têtes de sécurité
+│   └── Http/           # en-têtes de sécurité, CORS
 ├── InSeconds.Api.Testing/      # hôte de test : API + faux + /api/e2e (jamais dans l'image de prod)
 ├── InSeconds.Api/
 │   ├── Program.cs      # 3 lignes : ApiComposition
@@ -46,7 +46,7 @@ src/v2/back/
 │       ├── Persistence/   # InSecondsDbContext, schémas, migrations, migrateur
 │       ├── Settings/      # réglages en base (infra.settings) → IConfiguration
 │       ├── Time/          # IGameCalendar (jour de jeu = jour UTC)
-│       ├── Errors/        # ProblemDetails : code + traceId, rien d'interne sur un 500
+│       ├── Errors/        # ProblemDetails : code + traceId, rien d'interne sur un 500 ; POST /api/client-errors
 │       ├── Health/        # /health et /health/ready
 │       ├── Auth/          # cookie, policy Admin (socle, complété en B1)
 │       ├── Messaging/     # Wolverine (HTTP, transactions, outbox)
@@ -100,6 +100,7 @@ Une ligne par réglage : `key` = chemin de configuration complet (`Daily:GuessTi
 - **Échec métier** : lever `JobFailedException("module.code")` ; le code est renvoyé tel quel. Toute autre exception est rendue en `common.unexpected` (ni message ni pile exposés).
 - **Tableau de bord `/jobs`** : policy Admin (401 anonyme, 403 joueur), `Authorization = []` (le filtre par défaut de Hangfire n'accepte que localhost), jeton antiforgery exigé sur ses actions. À protéger en plus par Cloudflare Access avant la mise en ligne (S3).
 - **`GET /api/admin/jobs/{id}`** : état d'une exécution (`queued`, `processing`, `succeeded`, `failed`, `retry_scheduled`, `deleted`), `result` (JSON) si réussie, `errorCode` si échouée ; 404 `common.not_found` si l'id est inconnu.
+- **Tests avec un vrai serveur Hangfire** (`Jobs:Server:Enabled=true`, ex. `JobStatusTests`) : dans la collection `HangfireServerCollection`, qui passe seule. Hangfire garde son activateur de tâches en global : une autre API de test créée puis détruite en parallèle le remplace, et la tâche échoue sur un `IServiceProvider` détruit (vu en CI sur la PR A6).
 
 ## Services transverses (`InSeconds.Infrastructure`)
 
@@ -109,6 +110,7 @@ Projet sans dépendance vers l'API ni les modules (vérifié par `ArchitectureTe
 - **OpenTelemetry** (`Observability/`) : mêmes réglages que la v1 (`inseconds-api`, ASP.NET Core, HttpClient, Npgsql, Wolverine, runtime ; logs avec scopes). Export OTLP seulement si `OTEL_EXPORTER_OTLP_ENDPOINT` est défini. `/health` et `/jobs` exclus des traces. Une activité par exécution Hangfire (source `InSeconds.Jobs`, `Jobs/JobTracingFilter` dans l'API). **Confidentialité** : jamais d'email, de pseudo, de réponse saisie, de cookie ni d'`Authorization` ; aucune capture d'en-têtes.
 - **Proxies de confiance** (`Networking/TrustedProxyNetworks`) : RFC1918 + loopback (Caddy) et plages Cloudflare, `ForwardLimit = null` (piège 27 du CLAUDE.md racine). Un en-tête `X-Forwarded-For` forgé par un appelant hors de ces plages est ignoré.
 - **Rate limiting** (`RateLimiting/`) : fenêtres glissantes par IP réelle, noms et limites de la v1 (`RateLimitPolicies` : `magic-link-request` 5/10 min, `email-change-request` 5/10 min, `player-creation` 30/10 min, `client-error-report` 20/5 min, `deezer-search-public` 60/5 min). Une route s'y inscrit par `RequireRateLimiting(RateLimitPolicies.X)`. Refus : 429 ProblemDetails (`common.too_many_requests`, `Retry-After`). `RateLimiting:Enabled=false` en test (`ApiFactory`, `appsettings.Testing.json` de l'hôte de test) : les politiques restent sur les routes mais ne limitent rien.
+- **CORS** (`Http/CorsSetup`) : politique par défaut, repris de la v1 (`AllowAnyHeader`, `AllowAnyMethod`, `AllowCredentials`), origines dans `Cors:AllowedOrigins`. **Aucune par défaut** : en développement et en E2E, le front passe par le proxy d'`ng serve` (même origine). Staging : `https://dev.inseconds.cc` (`appsettings.Staging.json`) ; prod : `https://inseconds.cc` et `https://www.inseconds.cc` (`appsettings.Production.json`, sans effet avant la bascule). `UseCors` juste après la gestion des erreurs (les en-têtes, posés au démarrage de la réponse, restent sur un 500 : le front lit son code d'erreur) et avant l'authentification et le rate limiting (une requête préalable `OPTIONS` passe sans cookie ni quota). Tests : `Security/CorsTests`.
 - **En-têtes de sécurité** (`Http/SecurityHeaders`, S15) : `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, HSTS 1 an, CSP `default-src 'none'; frame-ancestors 'none'` sur l'API. Le tableau de bord `/jobs` a sa propre CSP : scripts de `/jobs` seulement (Hangfire n'a aucun script en ligne, vérifié par `SecurityHeadersTests`), styles en ligne permis (attributs `style`). Posés au démarrage de la réponse, donc aussi sur les erreurs.
 
 ## Hôte de test (`InSeconds.Api.Testing`)
@@ -124,6 +126,25 @@ Projet sans dépendance vers l'API ni les modules (vérifié par `ArchitectureTe
 ## Authentification (socle, `Infrastructure/Auth/AuthSetup.cs`)
 
 Cookie ASP.NET Core qui répond 401/403 (jamais de redirection), policy `Admin` = joueur authentifié avec le rôle `admin`, antiforgery enregistré. B1 le complète (`__Host-`, sessions par appareil, rôle lu en base). Tests : `TestAuthHandler` remplace l'authentification par deux en-têtes (`factory.CreateClient(TestUser.Admin)`, `TestUser.Player`) ; le refus reste celui du cookie de l'API.
+
+## Erreurs du front (`POST /api/client-errors`)
+
+`Infrastructure/Errors/ReportClientErrorEndpoint.cs`, même contrat qu'en v1 (`source` `js`/`http`, `message`, `stack`, `url`, `httpStatus`, `relatedTraceId`), appelé par `ErrorReportingService` du front v2 (via `HttpBackend`, hors client généré : `[ExcludeFromDescription]`).
+
+- Public, limité par IP (`[EnableRateLimiting(RateLimitPolicies.ClientErrorReport)]`, 20 / 5 min), bornes du validator reprises de la v1 (message ≤ 1000, pile ≤ 8000, URL ≤ 500, statut 0-599, trace ≤ 64). Réponse 204.
+- Journalisé en **Error**, EventId **1100** et message de la v1 (`ClientErrorLog`) : les tableaux de bord existants restent valables. Retours à la ligne neutralisés (pile aplatie avec `|`), **query string et fragment retirés de l'URL côté serveur** même si un client en envoie. Pas encore d'identité du joueur dans le journal : elle viendra du scope posé à partir de B1.
+- Tests : `UnitTests/Infrastructure/ReportClientErrorTests` (validation, journal), `IntegrationTests/ClientErrorTests` (204, 400 ProblemDetails, 429 au 21e rapport ; confidentialité : un cookie, un `Authorization` et un jeton dans l'URL n'apparaissent ni dans les traces ni dans les journaux, test v1 `Traces_NeContiennentNiCookieNiAuthorization` repris).
+
+## Staging
+
+Depuis A6, `docker-compose.staging.yml` (racine du dépôt) construit cette API (`InSeconds.Api/Dockerfile`) et le front v2, en `ASPNETCORE_ENVIRONMENT=Staging`, sur la base `inseconds_staging` (schémas v2 à côté des tables v1 de `public`). `deploy/vps/deploy.sh staging` :
+
+1. vérifie le certificat Data Protection (`secrets/dataprotection.pfx` à la racine du checkout du VPS, monté en lecture seule sur `/run/secrets/dataprotection.pfx`) : présent, et lisible par l'utilisateur de l'image (`app`, uid/gid **1654**) ;
+2. applique les migrations dans un conteneur jetable (`--migrate-only`), **avant** de remplacer les conteneurs ;
+3. redémarre l'API (Wolverine et Hangfire créent leurs schémas à ce moment) et le front ;
+4. lance `deploy/vps/smoke-test.sh` sur `https://api-dev.inseconds.cc` : `/api/e2e/reset` et `/api/auth/dev-login` en 404 (S9, sondés en GET : présents, ils répondraient 405 sans rien exécuter), en-têtes de sécurité (S15), `/jobs` en 401/403 ou derrière Cloudflare Access (S3).
+
+**Certificat Data Protection** : monté dès A6, lu par l'API à partir de B1 (`ProtectKeysWithCertificate`, PLAN S16), sous les clés `DataProtection:CertificatePath` (`/run/secrets/dataprotection.pfx`) et `DataProtection:CertificatePassword` (`DATA_PROTECTION_CERTIFICATE_PASSWORD` de `.env.staging`, obligatoire : compose refuse de démarrer sans).
 
 ## Ports
 

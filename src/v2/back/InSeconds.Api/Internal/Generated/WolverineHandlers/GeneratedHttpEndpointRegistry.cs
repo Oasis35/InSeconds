@@ -11,7 +11,7 @@ namespace Internal.Generated.WolverineHandlers
 
         public override System.Type[] EndpointTypes()
         {
-            return new System.Type[] { typeof(InSeconds.Api.Infrastructure.Jobs.GetJobStatusEndpoint) };
+            return new System.Type[] { typeof(InSeconds.Api.Infrastructure.Errors.ReportClientErrorEndpoint), typeof(InSeconds.Api.Infrastructure.Jobs.GetJobStatusEndpoint) };
         }
 
     }

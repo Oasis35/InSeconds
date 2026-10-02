@@ -40,6 +40,7 @@ public static class ApiComposition
         builder.Services.AddInSecondsHealthChecks();
         builder.Services.AddInSecondsAuth();
         builder.Services.AddInSecondsForwardedHeaders();
+        builder.Services.AddInSecondsCors(configuration);
         builder.Services.AddInSecondsRateLimiting(configuration);
         builder.Services.AddInSecondsEmail(configuration, builder.Environment);
         builder.AddInSecondsWolverine(connectionString);
@@ -53,6 +54,7 @@ public static class ApiComposition
         app.UseForwardedHeaders();
         app.UseInSecondsSecurityHeaders();
         app.UseInSecondsErrorHandling();
+        app.UseInSecondsCors();
         app.UseAuthentication();
         app.UseAuthorization();
         app.UseRateLimiter();
