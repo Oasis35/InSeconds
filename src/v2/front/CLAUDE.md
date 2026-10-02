@@ -2,7 +2,7 @@
 
 Front de la v2 d'InSeconds, en construction à côté de la v1 (`src/front/`), qui reste en service jusqu'à la bascule. Plan de référence : [`docs/refonte-v2/PLAN.md`](../../../docs/refonte-v2/PLAN.md) (§ 6 pour le front) et [`docs/refonte-v2/DEVELOPPEMENT.md`](../../../docs/refonte-v2/DEVELOPPEMENT.md). Ce fichier décrit ce qui existe **déjà** dans le code ; il grossit à chaque PR.
 
-État : **PR A4, socle front**. Aucun écran de jeu : toutes les routes des domaines affichent une page d'attente (« La nouvelle version arrive »). Les domaines arrivent avec leurs modules (B5 `account`, D `gameplay`, E `daily`, F `admin`).
+État : **PR A4, socle front** ; A5 : E2E copiés (désactivés), image nginx. Aucun écran de jeu : toutes les routes des domaines affichent une page d'attente (« La nouvelle version arrive »). Les domaines arrivent avec leurs modules (B5 `account`, D `gameplay`, E `daily`, F `admin`).
 
 ## Commandes
 
@@ -17,7 +17,7 @@ npm run lint:arch         # Sheriff + couche domain/ sans Angular
 
 - Angular CLI 22.2 exige **Node ≥ 22.22.3** (ou 24.15+). La CI prend le dernier Node 22.
 - Chromium déjà installé ailleurs (environnement sans `playwright install`) : `PLAYWRIGHT_CHROMIUM_PATH=/chemin/vers/chromium npx ng test --watch=false`.
-- Pas de E2E ni de client NSwag pour l'instant : les E2E sont copiés en A5, les clients `api/` arrivent avec le premier module (B1).
+- Pas de client NSwag pour l'instant : les clients `api/` arrivent avec le premier module (B1). E2E : cf. § E2E.
 
 ## Stack
 
@@ -99,13 +99,26 @@ Sheriff ne vérifie que les fichiers atteignables depuis `src/main.ts` (routes c
 - `provideServiceWorker('ngsw-worker.js')`, désactivé en dev. `ngsw-config.json` met en cache les fichiers du front (JS, CSS, index, traductions, icônes), jamais l'API (**aucun `dataGroups`**, S10), et exclut `/jobs` des navigations.
 - `VersionService` : `VERSION_READY` ou état irrécupérable → bandeau « Nouvelle version disponible, Recharger / Plus tard » (`<app-update-prompt>`), jamais de rechargement d'office ; vérification au retour de l'onglet au premier plan ; le code `common.new_version` (410 des anciennes routes après la bascule) déclenche le même bandeau.
 - **Désactiver le service worker chez tous les joueurs** (bug grave) : `safety-worker.js` est copié à la racine du build. Le servir à la place de `ngsw-worker.js` (et `worker-basic.min.js`) — par exemple un `location = /ngsw-worker.js { alias …/safety-worker.js; }` dans nginx — désinscrit le service worker et vide ses caches au prochain passage du joueur.
-- nginx doit servir `ngsw.json` et `ngsw-worker.js` sans cache (vérifié par le job `nginx-headers` étendu en A5) : l'image Docker et `nginx.conf` de la v2 arrivent en A5/A6.
+- Image de prod : `Dockerfile.prod` (nginx, arg `BUILD_CONFIGURATION` `production`/`staging`), `nginx/nginx.conf` + `nginx/security-headers.conf` (en-têtes de sécurité inclus dans chaque `location`). Repris de la v1 (cache immuable des bundles hashés, `no-cache` pour l'index et les traductions, redirection `code.run` → `from=legacy`), plus une `location` regex **déclarée avant celle des `.js`** qui sert `ngsw.json`, `ngsw-worker.js`, `safety-worker.js`, `worker-basic.min.js` et `manifest.webmanifest` en `no-cache` (sinon `ngsw-worker.js` prendrait le cache immuable des bundles). Vérifié par `scripts/check-nginx-headers.sh` (job CI `nginx-headers-v2`) : en-têtes de cache et de sécurité, types MIME, et `ngsw.json` servi sans aucun `dataGroups` (S10). Branchée sur le staging en A6.
 
 ## Coquille (`App`)
 
 - `HealthService` sonde `/health` toutes les 5 s ; overlay « Service indisponible » après 3 échecs consécutifs, retiré au premier succès (repris de la v1).
 - Avis « l'adresse a changé » (modale ouverte par `ModalService`) quand l'adresse contient `from=legacy` (redirection nginx de l'ancienne adresse `code.run`) ; le paramètre est retiré de l'adresse avant la première navigation.
 - Drapeaux E2E repris de la v1 : `window.__disableAnimations` (classe `no-anim`) et `window.__disableHealthPolling`.
+
+## E2E
+
+Les 25 specs Playwright de la v1 sont **copiés tels quels** dans `e2e/` (PR A5). Seuls changent les ports, et les boucles d'étapes séquentielles des fixtures et page objects, réécrites avec `inSequence`/`times` (`e2e/fixtures/sequence.ts`, Sonar S9382 : pas d'`await` dans une boucle, mêmes étapes dans le même ordre). Ports : API v2 de test (`InSeconds.Api.Testing`) sur **5175** en CI / **5177** en local, front sur **5176** en CI / **5178** en local (configurations `ng serve` `e2e-ci`/`e2e`, `proxy.e2e*.conf.json`, `environment.e2e.ts`). `serviceWorkers: 'block'` dans `playwright.config.ts` (E12). En local, `playwright.config.ts` démarre l'hôte de test et `ng serve` ; la base E2E se passe par `E2E_DB_CONNECTION` (chaîne de connexion complète, jamais commitée — Sonar S2068).
+
+- **Désactivés** : `e2e/disabled-specs.json` liste chaque spec avec la PR qui le réactive ; `playwright.config.ts` les passe en `testIgnore`. Réactiver un spec = retirer sa ligne, dans la PR qui livre la fonctionnalité. Liste vide au jalon J4. Tant qu'ils sont tous désactivés, aucun job CI ne lance les E2E v2 (il arrivera avec le premier spec réactivé, B5).
+- **Parité v1/v2** (E8) : `scripts/check-e2e-parity.mjs` (racine du repo, job CI `e2e-parity`) compare les listes `playwright test --list` des deux fronts (fichier › describe › titre, sans numéro de ligne ; `E2E_INCLUDE_DISABLED=1` y remet les specs désactivés). Tout écart (test renommé, ajouté ou retiré d'un seul côté) fait échouer la CI, sauf s'il est justifié dans `e2e/parity-exceptions.json` (`onlyInV1` / `onlyInV2`, titre complet → raison). Un correctif v1 qui ajoute un E2E doit donc le recopier ici au merge de `main` dans `env/staging`.
+
+```bash
+npm run e2e:list                       # specs actifs
+E2E_INCLUDE_DISABLED=1 npm run e2e:list # tous
+node ../../../../scripts/check-e2e-parity.mjs   # parité (npm ci fait dans les deux fronts)
+```
 
 ## SonarCloud
 

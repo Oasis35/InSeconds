@@ -7,7 +7,10 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "lint:arch": "sheriff verify src/main.ts && node scripts/check-pure-domain.mjs"
+    "lint:arch": "sheriff verify src/main.ts && node scripts/check-pure-domain.mjs",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "e2e:list": "playwright test --list"
   },
   "prettier": {
     "printWidth": 100,
@@ -41,8 +44,10 @@
     "@angular/build": "22.2.0",
     "@angular/cli": "22.2.0",
     "@angular/compiler-cli": "22.2.0",
+    "@playwright/test": "1.63.0",
     "@softarc/sheriff-core": "0.20.0",
     "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "22.20.5",
     "@vitest/browser-playwright": "5.0.2",
     "playwright": "1.63.0",
     "postcss": "^8.5.28",

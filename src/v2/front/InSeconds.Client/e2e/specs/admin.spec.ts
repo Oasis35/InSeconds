@@ -1,0 +1,589 @@
+import { test, expect } from '../fixtures/test';
+import { AdminPage } from '../pages/admin.page';
+import { GamePage } from '../pages/game.page';
+import { BlindRoundPage } from '../pages/blind-round.page';
+
+test.describe('Admin — login', () => {
+  test('visiteur non connecté : /admin invite à se connecter', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await expect(admin.notLoggedInMessage).toBeVisible();
+    await expect(page.getByRole('link', { name: /Se connecter/ })).toBeVisible();
+  });
+
+  test('compte lié mais pas admin : /admin affiche accès refusé', async ({ page, api }) => {
+    await api.reset();
+    const email = 'joueur-normal@e2e.test';
+    await page.goto('/login');
+    await page.getByPlaceholder('ton@email.com').fill(email);
+    await page.getByRole('button', { name: 'Recevoir le lien' }).click();
+    await expect(page.getByText('Lien envoyé.')).toBeVisible();
+
+    const linkUrl = await api.getLastMagicLinkUrl(email);
+    const parsed = new URL(linkUrl);
+    await page.goto(parsed.pathname + parsed.search);
+    await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
+    await page.getByPlaceholder('Ton pseudo').fill('JoueurE2E');
+    await page.getByRole('button', { name: 'Valider' }).click();
+
+    const game = new GamePage(page);
+    await game.waitForWelcome();
+
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await expect(admin.accessDeniedMessage).toBeVisible();
+  });
+
+  test('se connecte et affiche le dashboard directement', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await expect(admin.tab('Dashboard')).toBeVisible();
+    await expect(admin.logoutButton).toBeVisible();
+  });
+
+  test('se déconnecte', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await admin.logoutButton.click();
+    await expect(admin.notLoggedInMessage).toBeVisible();
+  });
+});
+
+test.describe('Admin — pool', () => {
+  test.beforeEach(async ({ api }) => {
+    await api.reseed();
+  });
+
+  test('affiche le tableau avec tous les morceaux', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('link', { name: /^Pool/ }).click();
+    // En-têtes du tableau
+    await expect(page.getByRole('columnheader', { name: 'Artiste' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Titre' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Preview' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Statut' })).toBeVisible();
+  });
+
+  test('filtre par texte sur artiste', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('link', { name: /^Pool/ }).click();
+    await admin.poolSearchInput().fill('Eminem');
+    await expect(page.getByRole('cell', { name: 'Eminem', exact: true })).toBeVisible();
+    // Les autres artistes ne doivent pas apparaître
+    await expect(page.getByRole('cell', { name: 'Coldplay', exact: true })).not.toBeVisible();
+  });
+
+  test('filtre preview "Manquante" affiche les 5 morceaux sans preview', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('link', { name: /^Pool/ }).click();
+    await admin.poolFilterPreview().selectOption('missing');
+    // 5 morceaux sans preview dans le seed
+    await expect(page.getByRole('cell', { name: 'Manquante' })).toHaveCount(5);
+  });
+
+  test('filtre statut "Disponible" masque les morceaux utilisés', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('link', { name: /^Pool/ }).click();
+    await admin.poolFilterStatus().selectOption('available');
+    await expect(page.getByRole('cell', { name: 'Utilisé' })).not.toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Disponible' }).first()).toBeVisible();
+  });
+
+  test('ajoute un morceau via le panneau de recherche', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('link', { name: /^Pool/ }).click();
+    await admin.addButton().click();
+
+    // Cherche dans le panneau (placeholder distinct du filtre pool)
+    await admin.addPanelSearchInput().fill('E2E Track');
+    // FakeDeezerHandler retourne "E2E Track" — attendre le résultat (debounce 300ms + réseau)
+    const result = page.getByText('E2E Artist — E2E Track');
+    await expect(result).toBeVisible({ timeout: 10000 });
+    await admin.addPanelAddButton().click();
+
+    // Le tableau du pool est rechargé, le panneau reste ouvert
+    await expect(page.getByRole('cell', { name: 'E2E Artist', exact: true })).toBeVisible();
+    await expect(admin.addPanelSearchInput()).toBeVisible();
+  });
+
+  test('supprime un morceau individuel avec confirmation', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('link', { name: /^Pool/ }).click();
+
+    // Filtre sur un morceau disponible connu
+    await admin.poolSearchInput().fill('Sabrina Carpenter');
+    await expect(page.getByRole('cell', { name: 'Sabrina Carpenter', exact: true })).toBeVisible();
+
+    // Clique sur la corbeille
+    await page.getByRole('button', { name: '🗑' }).first().click();
+    await expect(admin.deleteModal()).toBeVisible();
+    await expect(page.getByText('Sabrina Carpenter — Espresso')).toBeVisible();
+
+    await admin.confirmDeleteButton().click();
+    await expect(admin.deleteModal()).not.toBeVisible();
+
+    // Le morceau a disparu
+    await expect(page.getByRole('cell', { name: 'Sabrina Carpenter', exact: true })).not.toBeVisible();
+  });
+
+  test('annule une suppression', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('link', { name: /^Pool/ }).click();
+
+    await admin.poolSearchInput().fill('Sabrina Carpenter');
+    await page.getByRole('button', { name: '🗑' }).first().click();
+    await expect(admin.deleteModal()).toBeVisible();
+
+    await admin.cancelDeleteButton().click();
+    await expect(admin.deleteModal()).not.toBeVisible();
+    // Le morceau est toujours là
+    await expect(page.getByRole('cell', { name: 'Sabrina Carpenter', exact: true })).toBeVisible();
+  });
+
+  test('un morceau déjà utilisé reste sélectionnable mais ne peut pas être supprimé', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('link', { name: /^Pool/ }).click();
+
+    // Coldplay — Yellow fait partie du défi J-2 du seed : pas de corbeille, un bouton « Désactiver » à la place.
+    await admin.poolSearchInput().fill('Coldplay');
+    const row = admin.poolRow('Coldplay');
+    await expect(row.getByRole('button', { name: '🗑' })).toHaveCount(0);
+    await expect(row.getByRole('button', { name: 'Désactiver' })).toBeEnabled();
+    await expect(row.getByRole('button', { name: '▶' })).toBeEnabled();
+
+    await row.getByRole('checkbox').check();
+    await expect(page.getByRole('button', { name: 'Supprimer (1)' })).toBeDisabled();
+  });
+
+  test('désactive puis réactive un morceau utilisé, bloque ceux du défi du jour', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('link', { name: /^Pool/ }).click();
+
+    // Eminem est dans le défi du jour : « Désactiver » grisé.
+    await admin.poolSearchInput().fill('Eminem');
+    await expect(admin.poolRow('Eminem').getByRole('button', { name: 'Désactiver' })).toBeDisabled();
+
+    // Coldplay (défi J-2) : désactivable, reste dans le pool avec le badge « Désactivé ».
+    await admin.poolSearchInput().fill('Coldplay');
+    await admin.poolRow('Coldplay').getByRole('button', { name: 'Désactiver' }).click();
+    await expect(admin.poolRow('Coldplay').getByRole('button', { name: 'Réactiver' })).toBeVisible();
+    await expect(admin.poolRow('Coldplay').getByText('Désactivé', { exact: true })).toBeVisible();
+
+    // Retrouvable via le filtre « Désactivés », qui ne montre que lui.
+    await admin.poolSearchInput().fill('');
+    await admin.poolFilterStatus().selectOption('disabled');
+    await expect(admin.poolRow('Coldplay')).toBeVisible();
+
+    await admin.poolRow('Coldplay').getByRole('button', { name: 'Réactiver' }).click();
+    await expect(admin.poolRow('Coldplay')).not.toBeVisible();
+    await admin.poolFilterStatus().selectOption('all');
+    await admin.poolSearchInput().fill('Coldplay');
+    await expect(admin.poolRow('Coldplay').getByRole('button', { name: 'Désactiver' })).toBeEnabled();
+  });
+
+  test('renomme un morceau déjà utilisé, défi du jour compris', async ({ page, api }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('link', { name: /^Pool/ }).click();
+
+    // Eminem est dans le défi du jour : renommable lui aussi, avec un avertissement.
+    await admin.poolSearchInput().fill('Eminem');
+    await admin.poolRow('Eminem').getByRole('button', { name: '✎' }).click();
+    await expect(page.getByRole('alert').filter({ hasText: 'défi du jour' })).toBeVisible();
+    await admin.editTitleInput().fill('Titre corrigé');
+    await admin.editSaveButton().click();
+    await expect(admin.editModalTitle()).not.toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Titre corrigé', exact: true })).toBeVisible();
+
+    // Coldplay (défi J-2) : renommable. Échap referme la modale sans rien changer.
+    await admin.poolSearchInput().fill('Coldplay');
+    await admin.poolRow('Coldplay').getByRole('button', { name: '✎' }).click();
+    await expect(admin.editModalTitle()).toBeVisible();
+    await expect(page.getByRole('alert').filter({ hasText: 'défi du jour' })).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await expect(admin.editModalTitle()).not.toBeVisible();
+
+    await admin.poolRow('Coldplay').getByRole('button', { name: '✎' }).click();
+    await admin.editTitleInput().fill('Yellow (Live)');
+    await admin.editSaveButton().click();
+    await expect(admin.editModalTitle()).not.toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Yellow (Live)', exact: true })).toBeVisible();
+
+    // Remet le seed d'origine pour les specs suivants.
+    await api.reseed();
+  });
+
+  test('affiche les colonnes cooldown avec les bonnes valeurs', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('link', { name: /^Pool/ }).click();
+
+    await expect(admin.poolColumnHeader('Dernière utilisation')).toBeVisible();
+    await expect(admin.poolColumnHeader('Date de déblocage')).toBeVisible();
+    await expect(admin.poolColumnHeader('Nb. utilisations')).toBeVisible();
+
+    // Colonnes (après réordonnancement) : 0=sélection, 1=Actions, 2=Artiste, 3=Titre,
+    // 4=Preview, 5=Statut, 6=Dernière utilisation, 7=Date de déblocage, 8=Nb. utilisations.
+    // Queen (index 16 du seed) a été mise en cooldown récent (-5j, defaut 30j) : dates non vides.
+    await admin.poolSearchInput().fill('Queen');
+    const queenRow = admin.poolRow('Queen');
+    await expect(queenRow.getByRole('cell').nth(6)).not.toHaveText('');
+    await expect(queenRow.getByRole('cell').nth(7)).not.toHaveText('');
+
+    // Michael Jackson (index 15) n'a jamais été utilisé : date de déblocage vide.
+    await admin.poolSearchInput().fill('Michael Jackson');
+    const mjRow = admin.poolRow('Michael Jackson');
+    await expect(mjRow.getByRole('cell').nth(7)).toHaveText('');
+  });
+
+  test('filtre par plage de dates sur la dernière utilisation', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('link', { name: /^Pool/ }).click();
+
+    // Ed Sheeran (index 20, -15j) tombe dans la plage ; Queen (-5j) et Adele (-90j) en dehors.
+    const today = new Date();
+    const from = new Date(today); from.setUTCDate(from.getUTCDate() - 20);
+    const to = new Date(today); to.setUTCDate(to.getUTCDate() - 10);
+    await admin.poolFilterLastUsedFrom().fill(from.toISOString().slice(0, 10));
+    await admin.poolFilterLastUsedTo().fill(to.toISOString().slice(0, 10));
+
+    await expect(page.getByRole('cell', { name: 'Ed Sheeran', exact: true })).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Queen', exact: true })).not.toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Adele', exact: true })).not.toBeVisible();
+  });
+
+  test('trie par nombre d\'utilisations', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('link', { name: /^Pool/ }).click();
+
+    // Adele (index 19) a le UsageCount le plus élevé du seed (7) — tri desc doit la faire remonter.
+    await admin.poolColumnHeader('Nb. utilisations').click();
+    await admin.poolColumnHeader('Nb. utilisations').click(); // 2e clic → desc
+    // Colonne Artiste = cell index 2 (0=sélection, 1=Actions, 2=Artiste).
+    await expect(page.getByRole('row').nth(1).getByRole('cell').nth(2)).toHaveText('Adele');
+  });
+
+  test('le bouton ▶ ouvre la modale d\'écoute de l\'extrait', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('link', { name: /^Pool/ }).click();
+
+    await page.getByRole('button', { name: '▶', exact: true }).first().click();
+
+    const modal = page.getByRole('dialog').filter({ hasText: 'Écouter l\'extrait' });
+    await expect(modal).toBeVisible();
+    // FakeDeezerHandler renvoie un extrait → lecteur prêt (bouton lecture/pause).
+    await expect(modal.getByRole('button', { name: /▶|⏸/ })).toBeVisible();
+
+    await modal.getByRole('button', { name: 'Fermer' }).click();
+    await expect(modal).not.toBeVisible();
+  });
+});
+
+test.describe('Admin — actions', () => {
+  test.beforeEach(async ({ api }) => {
+    await api.reseed();
+  });
+
+  test('génère le défi du jour', async ({ page, api }) => {
+    const admin = new AdminPage(page);
+    // Supprime le défi du jour pour pouvoir le régénérer
+    await admin.apiDeleteTodayChallenge();
+    await admin.goto();
+    await admin.login();
+    await admin.clickTab('Actions');
+
+    await admin.generateButton().click();
+    await expect(page.getByText('Défi généré avec succès')).toBeVisible({ timeout: 10000 });
+  });
+
+  test('affiche "déjà généré" si le défi existe', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await admin.clickTab('Actions');
+
+    await admin.generateButton().click();
+    await expect(page.getByText('déjà généré')).toBeVisible({ timeout: 5000 });
+  });
+
+  test('édite le cooldown de réutilisation et persiste en base', async ({ page }) => {
+    const adminPage = new AdminPage(page);
+    await adminPage.goto();
+    await adminPage.login();
+    await adminPage.clickTab('Actions');
+
+    // Queen (LastUsedDate = today-5j) a une date de déblocage lue en base au chargement du pool
+    // (pas via /api/settings, figé au boot) — sert de preuve que le nouveau cooldown est bien pris
+    // en compte, cohérent avec "effectif au prochain calcul", pas de redémarrage requis.
+    const before = await adminPage.apiGetPoolUnlockDate(5055001); // Queen — Bohemian Rhapsody
+
+    await adminPage.trackCooldownInput().fill('45');
+    await adminPage.saveCooldownButton().click();
+    await expect(page.getByText('Cooldown mis à jour.')).toBeVisible({ timeout: 5000 });
+
+    await expect.poll(() => adminPage.apiGetPoolUnlockDate(5055001)).not.toBe(before);
+  });
+});
+
+test.describe('Admin — défis', () => {
+  test.beforeEach(async ({ api }) => {
+    await api.reseed();
+  });
+
+  test('liste les défis existants', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    // Le seed crée 3 défis (J-2, J-1, aujourd'hui) — mais en début de mois, J-2 et/ou J-1
+    // peuvent tomber dans le mois précédent. On compte donc dynamiquement combien tombent
+    // dans le mois UTC courant plutôt que de coder en dur "3".
+    await page.getByRole('link', { name: /^Défis/ }).click();
+    const now = new Date();
+    const monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+    const currentMonth = `${monthNames[now.getUTCMonth()]} ${now.getUTCFullYear()}`;
+    await expect(page.getByText(currentMonth)).toBeVisible();
+    const seededDates = [0, 1, 2].map(daysAgo => {
+      const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - daysAgo));
+      return d;
+    });
+    const expectedCount = seededDates.filter(
+      d => d.getUTCMonth() === now.getUTCMonth() && d.getUTCFullYear() === now.getUTCFullYear()
+    ).length;
+    const rows = page.locator('ul > li > p.font-mono');
+    await expect(rows).toHaveCount(expectedCount);
+  });
+});
+
+test.describe('Admin — chargement paresseux par onglet', () => {
+  test.beforeEach(async ({ api }) => {
+    await api.reseed();
+  });
+
+  test('ne charge les données d\'un onglet qu\'à son ouverture', async ({ page }) => {
+    const admin = new AdminPage(page);
+    const adminCalls: string[] = [];
+    page.on('request', req => {
+      const u = req.url();
+      if (u.includes('/api/admin/')) adminCalls.push(u);
+    });
+
+    await admin.goto();
+    await admin.login();
+
+    // Dashboard = onglet d'atterrissage → ses stats se chargent...
+    await expect.poll(() => adminCalls.some(u => u.includes('/api/admin/stats'))).toBe(true);
+    // ...mais pas le pool, ni les stats par défi (endpoint scindé), ni l'historique
+    expect(adminCalls.some(u => u.endsWith('/api/admin/tracks'))).toBe(false);
+    expect(adminCalls.some(u => u.includes('/api/admin/challenge-stats'))).toBe(false);
+    expect(adminCalls.some(u => /\/api\/admin\/challenges(\?|$)/.test(u))).toBe(false);
+
+    // Ouvrir Pool → GET /api/admin/tracks (une seule fois), toujours rien pour Défis
+    await admin.clickTab('Pool');
+    await expect.poll(() => adminCalls.some(u => u.endsWith('/api/admin/tracks'))).toBe(true);
+    expect(adminCalls.some(u => u.includes('/api/admin/challenge-stats'))).toBe(false);
+
+    // Ouvrir Défis → challenge-stats + challenges
+    await admin.clickTab('Défis');
+    await expect.poll(() => adminCalls.some(u => u.includes('/api/admin/challenge-stats'))).toBe(true);
+    await expect.poll(() => adminCalls.some(u => /\/api\/admin\/challenges(\?|$)/.test(u))).toBe(true);
+  });
+
+  test('le compteur des onglets Pool / Défis n\'apparaît qu\'après leur première ouverture', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+
+    // Avant visite : libellé nu (pas de "(N)")
+    await expect(admin.tab('Pool')).toBeVisible();
+    await expect(admin.tab('Défis')).toBeVisible();
+
+    await admin.clickTab('Pool');
+    await expect(page.getByRole('link', { name: /^Pool \(\d+\)$/ })).toBeVisible();
+
+    await admin.clickTab('Défis');
+    await expect(page.getByRole('link', { name: /^Défis \(\d+\)$/ })).toBeVisible();
+  });
+
+  test('l\'onglet et la page de la grille du pool survivent au rechargement', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+
+    await admin.clickTab('Pool');
+    await expect(page).toHaveURL(/\/admin\/pool$/);
+    await expect(page.getByText(/page 1\/\d+/)).toBeVisible();
+
+    await page.getByRole('button', { name: '→' }).click();
+    await expect(page).toHaveURL(/\/admin\/pool\?page=2$/);
+
+    await page.reload();
+    await expect(page.getByText(/page 2\/\d+/)).toBeVisible();
+    await expect(page).toHaveURL(/\/admin\/pool\?page=2$/);
+  });
+
+  test('une ancienne adresse /admin?tab=pool ouvre l\'onglet Pool', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+
+    await page.goto('/admin?tab=pool');
+    await expect(page).toHaveURL(/\/admin\/pool$/);
+    await expect(page.getByRole('link', { name: /^Pool/ })).toHaveAttribute('aria-current', 'page');
+  });
+});
+
+test.describe('Admin — indicateur joueurs / ID navigateur', () => {
+  test('affiche l\'ID du navigateur sur l\'écran de connexion et permet de le copier', async ({ page, api }) => {
+    await api.reseed();
+    const admin = new AdminPage(page);
+    await admin.goto();
+
+    // Visible avant même la connexion — le cookie authToken est posé dès le chargement de l'app.
+    await expect(admin.browserIdShort()).toBeVisible();
+    const shortId = await admin.browserIdShort().textContent();
+    expect(shortId).toMatch(/^[0-9a-f]{8}$/);
+
+    await admin.browserIdCopyButton().click();
+    await expect(page.getByText('Copié !')).toBeVisible();
+
+    const clipText = await page.evaluate(() => navigator.clipboard.readText());
+    expect(clipText).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(clipText.slice(0, 8)).toBe(shortId);
+  });
+
+  test('le joueur qui vient de jouer apparaît en surbrillance "toi" dans Stats par défi', async ({ page, api }) => {
+    await api.reset();
+    await page.clock.install({ time: Date.now() });
+
+    const game = new GamePage(page);
+    await game.playFullGame(new BlindRoundPage(page));
+
+    const admin = new AdminPage(page);
+    await admin.goto();
+    const browserShortId = await admin.browserIdShort().textContent();
+    expect(browserShortId).toMatch(/^[0-9a-f]{8}$/);
+
+    await admin.login();
+    await page.getByRole('link', { name: /^Défis/ }).click();
+
+    const today = new Date().toISOString().slice(0, 10);
+    const todayRow = admin.challengeRow(today);
+    const youChip = todayRow.getByRole('button', { name: /toi/ });
+    await expect(youChip).toBeVisible();
+    await expect(youChip).toContainText(browserShortId!);
+
+    // Clic gauche = surbrillance croisée : le chip reçoit un anneau (box-shadow non nul).
+    await youChip.click();
+    await expect(youChip).not.toHaveCSS('box-shadow', 'none');
+
+    // Clic droit = copie l'ID complet (le clic gauche sert à la surbrillance croisée).
+    await youChip.click({ button: 'right' });
+    await expect(todayRow.getByText('Copié !')).toBeVisible();
+
+    const clipText = await page.evaluate(() => navigator.clipboard.readText());
+    expect(clipText).toHaveLength(36);
+    expect(clipText.slice(0, 8)).toBe(browserShortId);
+  });
+
+  test('l\'icône d\'un morceau ouvre la pop-up histogramme (avec les chiffres)', async ({ page, api }) => {
+    await api.reset();
+    await page.clock.install({ time: Date.now() });
+
+    const game = new GamePage(page);
+    await game.playFullGame(new BlindRoundPage(page));
+
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('link', { name: /^Défis/ }).click();
+
+    const today = new Date().toISOString().slice(0, 10);
+    const todayRow = admin.challengeRow(today);
+    await todayRow.locator('button').first().click(); // bouton d'accordéon → déplie « Stats par défi »
+
+    const chartIcon = todayRow.getByRole('button', { name: /répartition des temps/i }).first();
+    await chartIcon.click();
+
+    const chart = page.getByTestId('guess-time-chart');
+    await expect(chart).toBeVisible();
+    // Vue admin → les chiffres au-dessus des barres sont affichés.
+    await expect(chart.locator('[data-bucket] span')).toHaveCount(8);
+
+    await page.keyboard.press('Escape');
+    await expect(chart).toBeHidden();
+  });
+});
+
+test.describe('Admin — joueurs', () => {
+  test.beforeEach(async ({ api }) => {
+    await api.reset();
+  });
+
+  test('liste les comptes inscrits et déplie l\'historique d\'un joueur', async ({ page, api }) => {
+    await page.clock.install({ time: Date.now() });
+
+    // Compte lié (magic link) qui termine le défi du jour.
+    const email = 'joueurs-tab@e2e.test';
+    await page.goto('/login');
+    await page.getByPlaceholder('ton@email.com').fill(email);
+    await page.getByRole('button', { name: 'Recevoir le lien' }).click();
+    await expect(page.getByText('Lien envoyé.')).toBeVisible();
+    const parsed = new URL(await api.getLastMagicLinkUrl(email));
+    await page.goto(parsed.pathname + parsed.search);
+    await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
+    await page.getByPlaceholder('Ton pseudo').fill('JoueurTab');
+    await page.getByRole('button', { name: 'Valider' }).click();
+
+    // Attendre la fin de la connexion (redirection vers l'accueil) : sans ça, la navigation
+    // de playFullGame annule la requête de vérification en vol et le compte reste invité.
+    const game = new GamePage(page);
+    await game.waitForWelcome();
+    await game.playFullGame(new BlindRoundPage(page));
+
+    // login-as-admin promeut le compte courant : il apparaît donc lui-même dans la liste.
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await admin.clickTab('Joueurs');
+
+    const row = page.getByTestId('registered-player').filter({ hasText: 'JoueurTab' });
+    await expect(row).toContainText(email);
+    await expect(row).toContainText('Admin');
+
+    await row.getByRole('button', { name: /JoueurTab/ }).click();
+    const history = page.getByTestId('player-history');
+    await expect(history).toContainText('Terminée');
+
+    // Re-cliquer replie la ligne.
+    await row.getByRole('button', { name: /JoueurTab/ }).click();
+    await expect(history).not.toBeVisible();
+  });
+});
