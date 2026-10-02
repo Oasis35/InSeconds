@@ -91,7 +91,7 @@
       <div class="story" data-story="found">
         <ng-container *ngTemplateOutlet="header" />
         <div class="pill-row"><div class="pill">🏆&nbsp; LE PLUS TROUVÉ</div></div>
-        <ng-container *ngTemplateOutlet="cover; context: { $implicit: t }" />
+        <ng-container *ngTemplateOutlet="cover" />
         <div class="body">
           <div [class]="'artist ' + sizeClass(t.artist)">{{ t.artist }}</div>
           <div [class]="'song ' + sizeClass(t.title)">{{ t.title }}</div>
@@ -110,7 +110,7 @@
       <div class="story" data-story="missed">
         <ng-container *ngTemplateOutlet="header" />
         <div class="pill-row"><div class="pill pill-reverse">💀&nbsp; LE PLUS RATÉ</div></div>
-        <ng-container *ngTemplateOutlet="cover; context: { $implicit: t }" />
+        <ng-container *ngTemplateOutlet="cover" />
         <div class="body">
           <div [class]="'artist ' + sizeClass(t.artist)">{{ t.artist }}</div>
           <div [class]="'song ' + sizeClass(t.title)">{{ t.title }}</div>
@@ -146,13 +146,10 @@
   </div>
 </ng-template>
 
-<ng-template #cover let-t>
+<!-- Pas de pochette Deezer : ces images sont enregistrées puis publiées sur Instagram, et Deezer
+     interdit de stocker ses images (FAQ développeurs). Vignette note de musique à la place. -->
+<ng-template #cover>
   <div class="cover">
-    <div class="cover-fallback">
-      <svg width="170" height="170" viewBox="0 0 24 24" fill="#fff"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z"/></svg>
-    </div>
-    @if (hiResCover(t.coverUrl); as src) {
-      <img [src]="src" crossorigin="anonymous" alt="" (error)="$any($event.target).style.display = 'none'" />
-    }
+    <svg width="170" height="170" viewBox="0 0 24 24" fill="#fff"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z"/></svg>
   </div>
 </ng-template>

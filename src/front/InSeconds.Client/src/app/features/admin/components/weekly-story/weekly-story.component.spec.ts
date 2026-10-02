@@ -7,7 +7,7 @@ import { AdminWeeklyStoryService } from '../../services/admin-weekly-story.servi
 import { AdminHttpService } from '../../services/admin-http.service';
 import { WeeklyRecapResponse } from '../../admin.models';
 
-const track = { artist: 'Daft Punk', title: 'One More Time', coverUrl: null, successRatePercent: 87, answers: 23 };
+const track = { artist: 'Daft Punk', title: 'One More Time', successRatePercent: 87, answers: 23 };
 const okRecap: WeeklyRecapResponse = {
   status: 'ok', from: '2026-09-21', to: '2026-09-27', minAnswers: 3,
   mostFound: track, mostMissed: { ...track, artist: 'Stromae', successRatePercent: 8 },
@@ -73,6 +73,16 @@ describe('WeeklyStoryComponent', () => {
     expect(fixture.nativeElement.querySelector('[data-story="missed"]').textContent).toContain('Stromae');
     // L'adresse du site n'est pas écrite : elle passe par le sticker « lien » d'Instagram.
     expect(found.textContent).not.toContain('inseconds.cc');
+  });
+
+  it('n\'intègre aucune image Deezer dans les stories (vignette note de musique à la place)', async () => {
+    http.getWeeklyRecap.mockReturnValue(of(okRecap));
+
+    await component.generate();
+
+    const stage = fixture.nativeElement.querySelector('[data-story-stage]') as HTMLElement;
+    expect(stage.querySelectorAll('img')).toHaveLength(0);
+    expect(stage.querySelectorAll('.cover svg')).toHaveLength(2);
   });
 
   it('un seul morceau éligible : une seule story', async () => {
