@@ -89,7 +89,7 @@ Environ **30 PR**. Les plus grosses sont A1, B1, E2 et E5. L'ordre A → B → C
 | PR | Contenu | Terminée quand |
 |---|---|---|
 | **D1** Back Gameplay | `TrackRound`, `FuzzyAnswerMatcher`, indices, `ISeededShuffle` | tests unitaires verts (correction, indices, plancher d'écoute) |
-| **D2** Front gameplay | machine à états d'une manche (`domain/`), `withTrackRound`, `AudioPort` avec un vrai `<audio>` (pièges 33, 40, 44), saisie et autocomplete (clavier, effacement), révélation, graphique « en combien de temps » | tests Vitest des pièges audio verts (lanceur autoplay) |
+| **D2** Front gameplay | machine à états d'une manche (`domain/`), `withTrackRound`, `AudioPort` sur Howler.js en Web Audio (décision du 01/10/2026, CORS Deezer vérifié le 02/10), comportements v1 gardés (pièges 33, 40, 44), saisie et autocomplete (clavier, effacement), révélation, graphique « en combien de temps » | tests Vitest de l'`AudioPort` verts dans un vrai Chromium (arrêt au palier, prolongation, relecture, erreur, autoplay unique) |
 
 ---
 

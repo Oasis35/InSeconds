@@ -534,7 +534,13 @@ Dans chaque domaine :
 - **`domain/`** : machine à états d'un morceau, `chargement → écoute → saisie → envoi → révélé`, plus `erreur audio` et `erreur d'envoi`.
 - **`data-access/`** :
   - `withTrackRound` ;
-  - `AudioPort` et son implémentation `<audio>`, qui garde **toutes** les corrections des pièges 33, 40, 44 et 46 et leurs tests : état `error` distinct de `idle`, arrêt calé sur la position réelle du média (chrono lancé à l'événement `playing` puis reprogrammé tant que `currentTime` n'a pas atteint le palier, jamais de coupure pendant un seek : Safari iOS émet `playing` avant que le son reparte), `AbortError` ignoré, prolongation pendant le chargement, relecture sans effacer `wasExtended`, autoplay une seule fois par morceau ;
+  - `AudioPort` implémenté avec **Howler.js en mode Web Audio** (décision du 01/10/2026), à la place de l'élément `<audio>` et du chrono de la v1. L'extrait est téléchargé puis décodé en mémoire, et le navigateur s'arrête lui-même au palier, à l'échantillon près : plus de chrono, d'événement `playing` ni de surveillance de `currentTime`, ce qui fait disparaître les pièges 44 et 46. Howler gère aussi le déverrouillage audio d'iOS et la reprise après une interruption. Points imposés :
+    - CORS du CDN des extraits vérifié le 02/10/2026 (`cdnt-preview.dzcdn.net` renvoie `Access-Control-Allow-Origin: *`, environ 480 Ko par extrait) : les extraits sont chargés directement depuis Deezer, sans passer par l'API ; une fois l'extrait chargé, l'expiration de sa signature (piège 14) n'a plus d'effet ;
+    - iPhone en mode silencieux : Web Audio y est muet par défaut, poser `navigator.audioSession.type = "playback"` quand c'est disponible ;
+    - mémoire : un extrait décodé pèse environ 10 Mo, ne décoder que le morceau en cours et le suivant ;
+    - « écouter plus » relance la lecture depuis la position atteinte avec le nouveau palier ;
+    - Howler évolue peu (dernière version vers 2023) : version figée, tickets iOS ouverts vérifiés avant de coder ;
+    - comportements v1 gardés et testés au niveau de l'`AudioPort` et de la manche : état `error` distinct de `idle` (piège 33), prolongation pendant le chargement et relecture sans effacer `wasExtended` (piège 40), autoplay une seule fois par morceau (piège 44) ;
   - `AnswerSearchPort` (autocomplete, debounce 300 ms).
 - **`ui/`** : lecteur (barre, repères de paliers), saisie avec autocomplete et navigation clavier, bouton effacer, carte de révélation, histogramme (`GuessTimeChart`), liste de résultats en accordéon.
 - **Ce qui varie selon le mode est injecté :**
@@ -584,7 +590,7 @@ Dans chaque domaine :
 - **Vitest :**
   - `domain/`, en TypeScript pur sans Angular : machines à états, règles de série, texte de partage ;
   - stores ;
-  - `AudioPort` avec un vrai `<audio>` ;
+  - `AudioPort` (Howler.js) dans un vrai Chromium, avec le lanceur qui autorise l'autoplay ;
   - composants de `ui/` sur leurs entrées/sorties.
 - **Sheriff en CI.**
 - **Playwright :**
@@ -859,7 +865,7 @@ Les étapes 4 à 8 peuvent se découper en plusieurs PR chacune (back, puis fron
 | Une partie en cours perdue | sessions `Pending` importées avec leur position ; vérification dédiée |
 | Une régression visible par le joueur | tous les E2E v1 verts sur la v2 avant la bascule |
 | Un job de nuit raté juste après la bascule | créneau hors 22 h 30 – 1 h UTC, génération à la volée gardée en secours, surveillance la première nuit |
-| Les pièges audio réintroduits | `AudioPort` repris avec ses tests (vrai `<audio>`, lanceur autoplay) |
+| Les pièges audio réintroduits | `AudioPort` sur Howler.js (arrêt au palier fait par le navigateur), comportements v1 repris avec leurs tests (vrai Chromium, lanceur autoplay) |
 | Un chantier trop long qui bloque les corrections | la v1 reste en prod et corrigeable ; PR courtes ; le staging reste déployable à chaque étape |
 | Une double maintenance v1 + v2 trop coûteuse | ne corriger en v1 que l'urgent ; noter chaque correction v1 pour la reporter en v2 (liste dans `docs/TACHES`) |
 | Le codegen statique de Wolverine qui dérive | génération vérifiée en CI (échec si le code généré n'est pas à jour) |
@@ -894,7 +900,7 @@ Relecture du plan sous l'angle des failles. Chaque point devient une exigence de
 
 | # | Risque | Parade proposée | Étape |
 |---|---|---|---|
-| S14 | **Pas de `Content-Security-Policy` sur le front** (connu, cf. CLAUDE.md). | CSP d'abord en `Report-Only` sur le staging (origines de l'API, `*.dzcdn.net` pour les previews et pochettes, Google Fonts si utilisé), remontée des violations vers `/api/client-errors`, puis CSP bloquante avant la bascule. | 2, 10 |
+| S14 | **Pas de `Content-Security-Policy` sur le front** (connu, cf. CLAUDE.md). | CSP d'abord en `Report-Only` sur le staging (origines de l'API, `*.dzcdn.net` pour les previews et pochettes, en `connect-src` aussi puisque Howler charge les extraits par `fetch`, Google Fonts si utilisé), remontée des violations vers `/api/client-errors`, puis CSP bloquante avant la bascule. | 2, 10 |
 | S15 | **Aucun en-tête de sécurité sur l'API** (nginx ne sert que le front). | en-têtes posés par l'API : `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Strict-Transport-Security` ; CSP `default-src 'none'` sur l'API, CSP stricte sur `/jobs` (scripts de `/jobs` seulement, styles en ligne permis pour Hangfire) — fait en A3. | 1 |
 | S16 | **Clés Data Protection en clair en base :** avec la base ou une sauvegarde, on peut fabriquer un cookie valide pour n'importe quel joueur. | **Décidé le 30/09 :** `ProtectKeysWithCertificate`. Le certificat `.pfx` (auto-signé, 10 ans) est généré par Clément sur le VPS, rangé hors du dépôt (`~/apps/InSeconds/secrets/`, `chmod 600`) et monté en lecture seule dans l'API ; son mot de passe est dans `.env.prod`. Le staging a son propre certificat. `UnprotectKeysWithAnyCertificate` permet d'en changer. Les anciennes clés en clair sont supprimées 90 jours après la bascule (tous les cookies ont été réémis). **Le certificat et son mot de passe sont sauvegardés hors de la base et hors de la sauvegarde R2** (gestionnaire de mots de passe) : les perdre ferait perdre leur identité aux invités. | 1 |
 | S17 | ✓ **Fait le 30/09** par Clément : `cloudflare-only.sh apply` puis `install` (service au démarrage + timer quotidien), site vérifié. Reste à mettre à jour le CLAUDE.md (§ Durcissement serveur) et `docs/TACHES` dans la première PR. | — | avant 3 |
