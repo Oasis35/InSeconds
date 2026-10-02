@@ -43,7 +43,31 @@ compose() { docker compose -f "$compose_file" --env-file "$env_file" "$@"; }
 export BUILD_TIME
 BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-compose up -d --build
+if [[ "$target" == "staging" ]]; then
+  # Staging en v2 (PR A6). Tout est vérifié avant de remplacer les conteneurs : en cas d'échec,
+  # la version en place continue de tourner.
+  #
+  # Certificat Data Protection (PLAN S16), lu par l'API à partir de B1. Vérifié dès maintenant :
+  # sinon un fichier absent ou illisible ne se verrait qu'à ce moment-là. Contrôlé ici d'abord,
+  # avant que Docker ne crée un dossier vide à la place d'un fichier absent.
+  cert=secrets/dataprotection.pfx
+  if [[ ! -f "$cert" ]]; then
+    echo "ERREUR : $cert absent du checkout (cf. .env.staging.example)." >&2
+    exit 1
+  fi
+  compose build
+  if ! compose run --rm -T --entrypoint sh api -c "test -f /run/secrets/dataprotection.pfx && test -r /run/secrets/dataprotection.pfx"; then
+    echo "ERREUR : $cert illisible par l'utilisateur de l'image de l'API (uid/gid 1654), cf. .env.staging.example." >&2
+    exit 1
+  fi
+  # --migrate-only ne démarre ni le serveur HTTP, ni Wolverine, ni Hangfire (leurs schémas sont
+  # créés au démarrage de l'API).
+  echo "Application des migrations ($target)..."
+  compose run --rm -T api --migrate-only
+  compose up -d
+else
+  compose up -d --build
+fi
 
 # Ne retire que les images "dangling" (non taguées) — jamais -a, qui supprimerait aussi les
 # images d'autres projets partageant ce VPS (cf. CLAUDE.md racine § Architecture — plusieurs
@@ -82,6 +106,10 @@ if [[ "$(docker inspect -f '{{.State.Running}}' "$(compose ps -q front)")" != "t
   echo "ERREUR : le conteneur front ($target) ne tourne pas après déploiement." >&2
   compose logs --tail=80 front >&2 || true
   exit 1
+fi
+
+if [[ "$target" == "staging" ]]; then
+  bash deploy/vps/smoke-test.sh "${api_url%/health}"
 fi
 
 echo "Déploiement $target vérifié OK (API + front répondent)."

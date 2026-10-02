@@ -4,27 +4,46 @@
 # celui de la prod. Nom de projet, conteneurs et réseau interne distincts de la prod :
 # les deux stacks cohabitent sans se voir, seuls shared-postgres et caddy-net sont communs.
 # Variables dans .env.staging (non commité, cf. .env.staging.example).
+#
+# Refonte v2 (PR A6) : le staging construit la v2 (src/v2). Même base inseconds_staging : la v2
+# vit dans ses propres schémas, les tables v1 restent dans public. Migrations appliquées par
+# deploy/vps/deploy.sh (--migrate-only) avant de remplacer les conteneurs. Mêmes noms de
+# conteneurs qu'en v1 : Caddy ne change pas.
 name: inseconds-staging
 
 services:
   api:
     build:
-      context: ./src/back
-      dockerfile: InSeconds.Api/Dockerfile.prod
+      context: ./src/v2/back
+      dockerfile: InSeconds.Api/Dockerfile
     container_name: inseconds-staging.api
     restart: unless-stopped
     environment:
-      # Jamais Development (monte /api/auth/dev-login) ni Testing (monte /api/e2e/*) : l'API
-      # staging est publique (Cloudflare Access ne protège que le front, cf. CLAUDE.md racine).
+      # Jamais Development ni Testing : l'API staging est publique (Cloudflare Access ne protège que
+      # le front, cf. CLAUDE.md racine). Les routes de test ne sont de toute façon pas dans l'image (S9).
       ASPNETCORE_ENVIRONMENT: Staging
       ConnectionStrings__DefaultConnection: "Host=shared-postgres;Port=5432;Database=inseconds_staging;Username=inseconds_staging;Password=${INSECONDS_STAGING_DB_PASSWORD}"
       Brevo__ApiKey: ${BREVO_API_KEY}
       # Tous les emails du staging partent vers cette seule adresse, avec un bandeau DEV
       # (RedirectingEmailSender). Obligatoire : l'API refuse de démarrer sans.
       EmailRedirect__To: ${STAGING_EMAIL_REDIRECT_TO}
+      # Certificat qui chiffrera les clés Data Protection (PLAN S16), lu par l'API à partir de B1.
+      DataProtection__CertificatePath: /run/secrets/dataprotection.pfx
+      DataProtection__CertificatePassword: ${DATA_PROTECTION_CERTIFICATE_PASSWORD:?à renseigner dans .env.staging (mot de passe de secrets/dataprotection.pfx)}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
       OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS:-}
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+    volumes:
+      # Hors du dépôt, à la racine du checkout (~/apps/InSeconds-staging/secrets/), lisible par
+      # l'utilisateur de l'image (uid/gid 1654), cf. .env.staging.example. deploy.sh vérifie sa
+      # présence et sa lecture avant de remplacer les conteneurs : selon le moteur, Docker crée un
+      # dossier vide à la place d'un fichier absent, même avec create_host_path: false.
+      - type: bind
+        source: ./secrets/dataprotection.pfx
+        target: /run/secrets/dataprotection.pfx
+        read_only: true
+        bind:
+          create_host_path: false
     networks:
       - shared-postgres
       - internal
@@ -32,10 +51,9 @@ services:
 
   front:
     build:
-      context: ./src/front/InSeconds.Client
+      context: ./src/v2/front/InSeconds.Client
       dockerfile: Dockerfile.prod
       args:
-        BUILD_TIME: ${BUILD_TIME}
         BUILD_CONFIGURATION: staging
     container_name: inseconds-staging.front
     restart: unless-stopped
