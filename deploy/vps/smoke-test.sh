@@ -46,6 +46,7 @@ check_header Content-Security-Policy "default-src 'none'*"
 # S3 : tableau de bord Hangfire refusé sans cookie admin (401), ou arrêté plus tôt par
 # Cloudflare Access s'il le protège (redirection vers sa page de connexion).
 read -r code location < <(curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' "$api/jobs")
+location=${location%$'\r'} # curl sous Windows termine la ligne par \r\n
 case "$code" in
   401 | 403)
     ok "/jobs protégé ($code)"

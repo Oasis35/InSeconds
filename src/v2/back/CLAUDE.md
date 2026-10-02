@@ -133,7 +133,7 @@ Cookie ASP.NET Core qui répond 401/403 (jamais de redirection), policy `Admin` 
 
 - Public, limité par IP (`[EnableRateLimiting(RateLimitPolicies.ClientErrorReport)]`, 20 / 5 min), bornes du validator reprises de la v1 (message ≤ 1000, pile ≤ 8000, URL ≤ 500, statut 0-599, trace ≤ 64). Réponse 204.
 - Journalisé en **Error**, EventId **1100** et message de la v1 (`ClientErrorLog`) : les tableaux de bord existants restent valables. Retours à la ligne neutralisés (pile aplatie avec `|`), **query string et fragment retirés de l'URL côté serveur** même si un client en envoie. Pas encore d'identité du joueur dans le journal : elle viendra du scope posé à partir de B1.
-- Tests : `UnitTests/Infrastructure/ReportClientErrorTests` (validation, journal), `IntegrationTests/ClientErrorTests` (204, 400 ProblemDetails, 429 au 21e rapport).
+- Tests : `UnitTests/Infrastructure/ReportClientErrorTests` (validation, journal), `IntegrationTests/ClientErrorTests` (204, 400 ProblemDetails, 429 au 21e rapport ; confidentialité : un cookie, un `Authorization` et un jeton dans l'URL n'apparaissent ni dans les traces ni dans les journaux, test v1 `Traces_NeContiennentNiCookieNiAuthorization` repris).
 
 ## Staging
 

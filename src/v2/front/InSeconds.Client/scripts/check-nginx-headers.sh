@@ -130,4 +130,21 @@ fi
 check_content_type "/robots.txt" "text/plain"
 check_content_type "/sitemap.xml" "text/xml|application/xml"
 
+# Ancienne adresse du front (code.run) : 301 vers inseconds.cc, chemin et query gardés, from=legacy
+# ajouté pour l'avis « l'adresse a changé » (repris de la v1).
+LEGACY_HOST="p01--front--b5cnx77tvxgb.code.run"
+check_legacy_redirect() {
+  local path="$1" expected="$2" code location
+  read -r code location < <(curl -sS -o /dev/null -w '%{http_code} %{redirect_url}\n' -H "Host: $LEGACY_HOST" "$BASE$path")
+  location=${location%$'\r'} # curl sous Windows termine la ligne par \r\n
+  if [[ "$code" != "301" || "$location" != "$expected" ]]; then
+    echo "FAIL $LEGACY_HOST$path: expected 301 to \"$expected\", got $code to \"$location\""
+    fail=1
+  else
+    echo "OK   $LEGACY_HOST$path -> 301 $location"
+  fi
+}
+check_legacy_redirect "/daily" "https://inseconds.cc/daily?from=legacy"
+check_legacy_redirect "/account/login/verify?token=abc" "https://inseconds.cc/account/login/verify?token=abc&from=legacy"
+
 exit $fail
