@@ -11,7 +11,7 @@ namespace Internal.Generated.WolverineHandlers
 
         public override System.Type[] HandlerTypes()
         {
-            return System.Array.Empty<System.Type>();
+            return new System.Type[] { typeof(InSeconds.Api.Modules.Players.Application.SendMagicLinkEmailHandler) };
         }
 
 
@@ -34,6 +34,11 @@ namespace Internal.Generated.WolverineHandlers
 
         [global::System.Runtime.CompilerServices.ModuleInitializer]
         [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::Internal.Generated.WolverineHandlers.GeneratedHandlerRegistry))]
+        [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::Internal.Generated.WolverineHandlers.SendMagicLinkEmailHandler21389592))]
+        [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::InSeconds.Api.Modules.Players.Application.SendMagicLinkEmailHandler))]
+        [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::InSeconds.Api.Modules.Players.Application.SendMagicLinkEmail))]
+        [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::Wolverine.Runtime.Routing.MessageRouter<InSeconds.Api.Modules.Players.Application.SendMagicLinkEmail>))]
+        [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::Wolverine.Runtime.Routing.EmptyMessageRouter<InSeconds.Api.Modules.Players.Application.SendMagicLinkEmail>))]
         public static void Pin()
         {
             // Intentionally empty. The [DynamicDependency] attributes above are the payload: they root the generated types for Native AOT, and [ModuleInitializer] guarantees this method is itself an ILC root.

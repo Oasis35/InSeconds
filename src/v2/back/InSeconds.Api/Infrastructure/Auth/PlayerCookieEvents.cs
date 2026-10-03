@@ -77,11 +77,21 @@ internal sealed class DeviceSessionValidator(IPlayerSessions sessions, DeviceSes
 internal sealed record CachedStatus(DeviceSessionStatus Status, DateTimeOffset CheckedAt);
 
 /// <summary>
+/// Oublie la validation gardée en cache d'une session qu'on vient de révoquer : elle est refusée dès
+/// la requête suivante, sans attendre la minute de cache (S5, l'ancienne session d'un navigateur
+/// qui se connecte).
+/// </summary>
+public interface IDeviceSessionValidationCache
+{
+    void Forget(Guid playerId, int deviceSessionId);
+}
+
+/// <summary>
 /// Cache des validations d'appareil, à part du cache mémoire partagé : une limite de taille y oblige
 /// chaque entrée à déclarer sa taille (piège 24), ce qu'une bibliothèque tierce ne ferait pas. La
 /// fraîcheur se juge sur <see cref="TimeProvider"/> (testable) ; l'expiration ne sert qu'au ménage.
 /// </summary>
-internal sealed class DeviceSessionStatusCache : IDisposable
+internal sealed class DeviceSessionStatusCache : IDeviceSessionValidationCache, IDisposable
 {
     private readonly MemoryCache _cache = new(new MemoryCacheOptions { SizeLimit = 10_000 });
 
@@ -94,6 +104,8 @@ internal sealed class DeviceSessionStatusCache : IDisposable
             Size = 1,
             AbsoluteExpirationRelativeToNow = DeviceSessionValidator.CacheDuration * 2,
         });
+
+    public void Forget(Guid playerId, int deviceSessionId) => _cache.Remove(Key(playerId, deviceSessionId));
 
     public void Dispose() => _cache.Dispose();
 

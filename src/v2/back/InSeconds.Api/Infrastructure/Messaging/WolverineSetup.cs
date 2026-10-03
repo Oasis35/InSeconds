@@ -38,6 +38,9 @@ public static class WolverineSetup
         opts.UseFluentValidation();
 
         opts.CodeGeneration.TypeLoadMode = UsesStaticCodegen(environment) ? TypeLoadMode.Static : TypeLoadMode.Dynamic;
+        // Choisi au démarrage par une fabrique (Brevo, redirigé en staging, capturé en test) : le code
+        // généré le demande au conteneur au lieu de le construire lui-même.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Infrastructure.Email.IEmailSender>();
         // Compilation à l'exécution en développement et en test seulement (Wolverine 6 ne l'embarque plus).
         opts.UseRuntimeCompilation();
     }

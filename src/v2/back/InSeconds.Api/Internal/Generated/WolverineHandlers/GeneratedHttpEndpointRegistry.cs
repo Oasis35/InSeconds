@@ -11,7 +11,7 @@ namespace Internal.Generated.WolverineHandlers
 
         public override System.Type[] EndpointTypes()
         {
-            return new System.Type[] { typeof(InSeconds.Api.Infrastructure.Errors.ReportClientErrorEndpoint), typeof(InSeconds.Api.Infrastructure.Jobs.GetJobStatusEndpoint), typeof(InSeconds.Api.Modules.Players.Application.CreateGuestEndpoint), typeof(InSeconds.Api.Modules.Players.Application.GetAdminMeEndpoint), typeof(InSeconds.Api.Modules.Players.Application.GetMeEndpoint) };
+            return new System.Type[] { typeof(InSeconds.Api.Infrastructure.Errors.ReportClientErrorEndpoint), typeof(InSeconds.Api.Infrastructure.Jobs.GetJobStatusEndpoint), typeof(InSeconds.Api.Modules.Players.Application.CreateGuestEndpoint), typeof(InSeconds.Api.Modules.Players.Application.GetAdminMeEndpoint), typeof(InSeconds.Api.Modules.Players.Application.GetMeEndpoint), typeof(InSeconds.Api.Modules.Players.Application.RequestMagicLinkEndpoint), typeof(InSeconds.Api.Modules.Players.Application.VerifyMagicLinkEndpoint) };
         }
 
     }

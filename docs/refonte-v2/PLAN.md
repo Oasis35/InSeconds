@@ -316,7 +316,7 @@ Chaque module expose un seul point d'entrée : `AddDaily(services)` et `MapDaily
 
 **Players**
 - `Player` (identité, suppression logique), `Account` (email, pseudo, admin), `DeviceSession` (jeton haché, révocation), `AuthToken` (connexion, changement d'email).
-- La conversion invité → compte crée l'`Account` et publie `PlayerLinked`. Un compte déjà lié n'est jamais converti (piège 30).
+- La conversion invité → compte crée l'`Account` et publie `PlayerLinked` (pas avant son premier consommateur, décidé en B2). Un compte déjà lié n'est jamais converti (piège 30).
 - `last_seen_at` (appareil et joueur) est écrit dans `OnValidatePrincipal` (§ 5.5), au plus une fois toutes les 5 minutes : plus d'écriture à chaque requête, et l'onglet Joueurs garde une « dernière visite » précise.
 - Les méthodes `…ForTesting` disparaissent : les tests utilisent des builders.
 
@@ -416,7 +416,7 @@ Sur le staging, `catalogue-refresh` est en `Cron.Never()` (même IP que la prod,
 - **Création d'invité par une commande explicite** (`POST /api/players/guest`), jamais par un `GET`. Le démarrage d'une partie la déclenche si besoin.
 - **Déconnexion :** révoque l'appareil courant. « Déconnecter les autres appareils » révoque tous les autres.
 - **Cookie :** `SameSite=Lax` et `Secure` en prod et en staging, `Strict` sans `Secure` en Testing (inchangé).
-- **Anti-CSRF :** `OriginValidator` gardé sur la vérification du magic link.
+- **Anti-CSRF :** `OriginValidator` gardé sur la vérification du magic link (`TrustedOrigins` en v2 : `Cors:AllowedOrigins` plus `Auth:TrustedOrigins` pour les fronts locaux servis par le proxy d'`ng serve`, décidé en B2).
 - **Rate limiting :** mêmes politiques qu'aujourd'hui, déclarées une fois par groupe de routes, désactivées en Testing par configuration et non par condition dans le code. Le piège 27 (`KnownIPNetworks`) est conservé.
 
 ### 5.6 Routes de l'API

@@ -28,4 +28,7 @@ public sealed class DeviceSession
 
     public static DeviceSession Open(Guid playerId, DateTimeOffset now) =>
         new() { PlayerId = playerId, CreatedAt = now, LastSeenAt = now };
+
+    /// <summary>Plus accepté par la validation du cookie. Une session déjà révoquée garde sa date.</summary>
+    public void Revoke(DateTimeOffset now) => RevokedAt ??= now;
 }

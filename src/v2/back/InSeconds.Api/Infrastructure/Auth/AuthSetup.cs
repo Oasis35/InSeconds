@@ -57,6 +57,8 @@ public static class AuthSetup
         services.AddScoped<PlayerCookieEvents>();
         services.AddScoped<DeviceSessionValidator>();
         services.AddSingleton<DeviceSessionStatusCache>();
+        services.AddSingleton<IDeviceSessionValidationCache>(sp => sp.GetRequiredService<DeviceSessionStatusCache>());
+        services.AddSingleton<TrustedOrigins>();
         services.AddSingleton<LegacyConversionCache>();
 
         services.AddAuthorizationBuilder()
