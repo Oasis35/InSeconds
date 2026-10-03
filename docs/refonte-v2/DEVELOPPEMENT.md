@@ -112,6 +112,17 @@ Laissé aux PR suivantes : `user_agent_label` reste vide (calculé avec la liste
 - `user_agent_label` sans langue (« Chrome · Android » plutôt que « Chrome sur Android ») : le front l'affiche tel quel dans les deux langues ;
 - purge : tous les jetons expirés, des deux usages (consommés compris), chaque nuit.
 
+**Fait en B4 :** `deploy/migration-v2/` (`run-import.sh`, `00-import-state.sql`, `10-import.sql`, `20-verify.sql`, `90-import-done.sql`, `import-to-staging.sh`, README), partie Players de l'import et de la vérification, projet `InSeconds.MigrationTests`, test de bout en bout du cookie v1. Décisions :
+- import, vérification et état dans **une seule transaction** (`psql --single-transaction`) : une vérification en échec annule l'import ;
+- les clés Data Protection font partie de B4 : sans elles, le test de bout en bout du cookie v1 n'a pas de sens ;
+- `infra.import_state` créée par l'import lui-même (hors migrations EF), `imported_at` noté à chaque import réussi ; la garde (`opened_at`, `--force`) reste en G1 ;
+- pré-contrôles avec messages clairs (identifiants seulement, S13) : pseudos en doublon de casse, compte sans email ;
+- tests : le **vrai `run-import.sh`** tourne dans le conteneur PostgreSQL de test (POSIX `sh`, scripts copiés en LF : la copie de travail Windows est en CRLF) ; schéma v1 généré par `dotnet ef migrations script` (CI : étape dédiée du job `back-v2`) ;
+- workflow : le workflow manuel « Copy prod DB to staging » existant fait l'import quand il est lancé depuis `env/staging` (un nouveau workflow manuel ne serait listé qu'une fois sur `main`, donc pas avant la bascule) ;
+- deux appareils qui convertissent le même cookie v1 dans la même minute partagent une session (`LegacyConversionCache`, B1) : le test de bout en bout avance l'horloge entre les deux navigateurs.
+
+**Action de Clément après B4 :** lancer « Copy prod DB to staging » depuis `env/staging` (critère « import staging sans écart pour les joueurs »).
+
 ---
 
 ## 5. Phase C : Catalogue (peut avancer en parallèle de D)

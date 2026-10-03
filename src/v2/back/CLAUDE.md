@@ -2,7 +2,7 @@
 
 Back de la v2 d'InSeconds, en construction à côté de la v1 (`src/back/`), qui reste en service jusqu'à la bascule. Plan de référence : [`docs/refonte-v2/PLAN.md`](../../../docs/refonte-v2/PLAN.md) et [`docs/refonte-v2/DEVELOPPEMENT.md`](../../../docs/refonte-v2/DEVELOPPEMENT.md). Ce fichier décrit ce qui existe **déjà** dans le code ; il grossit à chaque PR.
 
-État : **PR B3, profil et appareils** (après la phase A, puis B1 : identité et cookie, B2 : connexion par lien magique). Module `Players` : invités, appareils, cookie standard validé en base, reprise des cookies v1, clés Data Protection chiffrées par certificat, connexion par lien magique et dev-login, pseudo, changement d'email, déconnexion, liste et révocation des appareils, purge des jetons expirés (cf. « Authentification » et « Module Players »). `Daily` n'a encore que son contrat `IStreakGrants`. Prochaine étape de la phase B : l'import des joueurs v1 (B4).
+État : **PR B4, import des joueurs v1** (après la phase A, puis B1 : identité et cookie, B2 : connexion par lien magique, B3 : profil et appareils). Module `Players` : invités, appareils, cookie standard validé en base, reprise des cookies v1, clés Data Protection chiffrées par certificat, connexion par lien magique et dev-login, pseudo, changement d'email, déconnexion, liste et révocation des appareils, purge des jetons expirés (cf. « Authentification » et « Module Players »). `Daily` n'a encore que son contrat `IStreakGrants`. Import v1 → v2 de la partie Players : `deploy/migration-v2/` (cf. « Import v1 → v2 »). Prochaine étape de la phase B : le front du compte (B5).
 
 ## Commandes
 
@@ -59,9 +59,10 @@ src/v2/back/
 └── tests/
     ├── InSeconds.UnitTests/
     ├── InSeconds.ArchitectureTests/   # règles de dépendance, horloge, schémas
-    └── InSeconds.IntegrationTests/    # Testcontainers postgres:17-alpine + WebApplicationFactory
-                                       # (Security/ : SecurityTests, en-têtes, proxies, Data Protection ;
-                                       #  Players/ : invités, cookie, transition v1 ; Testing/ : hôte de test)
+    ├── InSeconds.IntegrationTests/    # Testcontainers postgres:17-alpine + WebApplicationFactory
+    │                                  # (Security/ : SecurityTests, en-têtes, proxies, Data Protection ;
+    │                                  #  Players/ : invités, cookie, transition v1 ; Testing/ : hôte de test)
+    └── InSeconds.MigrationTests/      # import v1 → v2 (deploy/migration-v2), base de forme v1 générée
 ```
 
 Les modules métier vivent dans `InSeconds.Api/Modules/<Module>/` (le premier : `Players`, B1) ; un module n'utilise des autres que leur dossier `Contracts` (vérifié par `ArchitectureTests/ModuleDependencyTests`, qui s'applique dès qu'un module existe).
@@ -174,6 +175,18 @@ Identité, compte, appareils, rôle admin (§ 3.1 du plan v2). Point d'entrée `
   - **Emails** (`Email/`) : `IEmailComposer<TModel>` par email ; gabarits v1 (`_layout.html`, `magic-link.html`) embarqués, assemblés par `EmailTemplateRenderer` (sections `<!--#nom-->`, jetons `{{CLEF}}`), sujet « Ton lien de connexion IN//SECONDS ».
   - Pseudo : 3 à 20 caractères parmi lettres, chiffres, espace, `_`, `.`, `-` (v1) ; unicité sans casse (`citext`).
   - Tests : `Players/MagicLinkTests` (dont pièges 21, 22 et 30, S1, S2, S5, double confirmation simultanée et pseudo pris au même moment, provoqués par `RecordingStreakGrants.OnGrant` au milieu de la création du compte), `Players/MagicLinkEmailFailureTests` (envoi en échec : aucun jeton en base), `UnitTests/Players` (`AuthTokenTests`, `TrustedOriginsTests`, `MagicLinkEmailComposerTests`, `AccountConflictExceptionHandlerTests`). B3 : `Players/ProfileTests` (pseudo, changement d'email, S2 dans l'autre sens, limite par joueur), `Players/DevicesTests` (liste et libellés, déconnexion sans toucher aux autres appareils, révocations, limite par joueur), `Players/PurgeExpiredAuthTokensTests`, `UnitTests/Players` (`DeviceLabelTests`, `ConfirmEmailChangeEmailComposerTests`).
+
+## Import v1 → v2 (`deploy/migration-v2/`, depuis B4)
+
+Mode d'emploi complet : [`deploy/migration-v2/README.md`](../../../deploy/migration-v2/README.md). Construit module par module (B4 Players, C2 Catalogue, E4 Daily, G1 complet).
+
+- `run-import.sh` (POSIX `sh`, variables `PG*`) : `00-import-state.sql` → `10-import.sql` → `20-verify.sql` → `90-import-done.sql`, **une seule transaction** : au moindre écart de vérification, rien n'est gardé. Rejouable (chaque partie vide d'abord ses tables v2). Prérequis : migrations v2 appliquées (`--migrate-only`).
+- **Partie Players (B4)** : `players.players` (supprimé sans date : dernière visite ou création, R16), `players.accounts` (joueurs non invités, `linked_at` vide), `players.legacy_tokens` (un par joueur, `sha256(AuthToken::text)`, le calcul de `LegacyToken.HashOf`), `players.auth_tokens` (jetons encore valables, hash hexadécimal v1 décodé, R14), `infra.data_protection_keys` (copiées avec leurs identifiants, séquence remise à niveau ; sans elles aucun cookie v1 ne se déchiffre). Pré-contrôles : pseudos en doublon de casse (R5), compte sans email. `device_sessions` vidée : chaque appareil en obtient une à sa première visite.
+- `infra.import_state` : créée par l'import (hors migrations EF), `imported_at` à chaque import réussi ; `opened_at` et la garde `--force` arrivent en G1.
+- Messages : des nombres et des identifiants seulement, jamais d'email ni de pseudo (S13).
+- **Tests** (`InSeconds.MigrationTests`, fixture `ImportDatabase`) : schéma v1 généré depuis le code v1 (`dotnet ef migrations script`, après `dotnet restore` du projet v1 ; fichier déjà généré par la CI dans `INSECONDS_V1_SCHEMA_SQL`), migrations v2 par `MigrateOnlyCommand`, scripts copiés en LF dans le conteneur PostgreSQL, **vrai `run-import.sh` exécuté dans le conteneur** (`sh` et `psql` d'Alpine). `PlayersImportTests` (cas limites, rejouable, refus, vérification qui détecte un écart) et `LegacyCookieEndToEndTests` (cookie émis par la v1 accepté par la v2 après import, même joueur, deux navigateurs = deux appareils ; horloge simulée avancée entre les deux, `LegacyConversionCache`).
+- **CI** : le job `back-v2` génère le schéma v1 avant les tests ; le filtre `v2` couvre aussi `deploy/migration-v2/**` et les migrations v1.
+- **Staging** : workflow « Copy prod DB to staging » lancé depuis `env/staging` : copie de `public`, anonymisation v1, import, seconde anonymisation v2 (`import-to-staging.sh`).
 
 ## Erreurs du front (`POST /api/client-errors`)
 

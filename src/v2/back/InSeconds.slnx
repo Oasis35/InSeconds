@@ -2,6 +2,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/InSeconds.ArchitectureTests/InSeconds.ArchitectureTests.csproj" />
     <Project Path="tests/InSeconds.IntegrationTests/InSeconds.IntegrationTests.csproj" />
+    <Project Path="tests/InSeconds.MigrationTests/InSeconds.MigrationTests.csproj" />
     <Project Path="tests/InSeconds.UnitTests/InSeconds.UnitTests.csproj" />
   </Folder>
   <Project Path="InSeconds.Api.Testing/InSeconds.Api.Testing.csproj" />
