@@ -10,8 +10,11 @@ public static class RateLimitPolicies
     /// <summary>Demande de lien de connexion : contre l'« email bombing ».</summary>
     public const string MagicLinkRequest = "magic-link-request";
 
-    /// <summary>Demande de changement d'email : même raison.</summary>
+    /// <summary>Demande de changement d'email : même raison. Par joueur (S11).</summary>
     public const string EmailChangeRequest = "email-change-request";
+
+    /// <summary>Révocation d'appareils (un appareil, ou « déconnecter les autres ») : par joueur (S11).</summary>
+    public const string DeviceRevocation = "device-revocation";
 
     /// <summary>Création d'un joueur invité, commune à toutes les routes qui en créent un.</summary>
     public const string PlayerCreation = "player-creation";

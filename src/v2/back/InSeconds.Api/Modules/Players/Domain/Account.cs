@@ -26,4 +26,9 @@ public sealed class Account
     /// <param name="email">Adresse vérifiée (lien magique), déjà normalisée.</param>
     public static Account Create(Guid playerId, string email, string pseudo, DateTimeOffset now) =>
         new() { PlayerId = playerId, Email = email, Pseudo = pseudo, LinkedAt = now };
+
+    public void Rename(string pseudo) => Pseudo = pseudo;
+
+    /// <param name="email">Nouvelle adresse, confirmée par le lien envoyé à cette adresse, déjà normalisée.</param>
+    public void ChangeEmail(string email) => Email = email;
 }

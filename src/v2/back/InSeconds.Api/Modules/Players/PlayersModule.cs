@@ -1,3 +1,4 @@
+using InSeconds.Api.Infrastructure.Jobs;
 using InSeconds.Api.Modules.Players.Application;
 using InSeconds.Api.Modules.Players.Contracts;
 using InSeconds.Api.Modules.Players.Domain;
@@ -20,7 +21,9 @@ public static class PlayersModule
         services.AddScoped<IPlayerSessions, EfPlayerSessions>();
         services.AddScoped<AccountSignIn>();
         services.AddSingleton<IEmailComposer<MagicLinkEmail>, MagicLinkEmailComposer>();
-        services.AddExceptionHandler<PseudoTakenExceptionHandler>();
+        services.AddSingleton<IEmailComposer<ConfirmEmailChangeEmail>, ConfirmEmailChangeEmailComposer>();
+        services.AddScheduledJob<PurgeExpiredAuthTokensJob>(PurgeExpiredAuthTokensJob.Id, PurgeExpiredAuthTokensJob.DefaultCron);
+        services.AddExceptionHandler<AccountConflictExceptionHandler>();
         return services;
     }
 }

@@ -11,6 +11,9 @@ public interface IPlayerQueries
 {
     /// <summary>Le joueur et son compte éventuel ; rien s'il n'existe pas ou a été supprimé.</summary>
     Task<PlayerMeResponse?> FindMeAsync(Guid playerId, CancellationToken ct);
+
+    /// <summary>Ses appareils encore connectés, le plus récemment vu d'abord.</summary>
+    Task<IReadOnlyList<DeviceResponse>> ListDevicesAsync(Guid playerId, int? currentDeviceSessionId, CancellationToken ct);
 }
 
 public static class GetMeEndpoint

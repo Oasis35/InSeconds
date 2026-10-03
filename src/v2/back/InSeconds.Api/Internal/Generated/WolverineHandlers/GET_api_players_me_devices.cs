@@ -11,26 +11,22 @@ using Wolverine.Runtime;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: POST_api_players_guest
+    // START: GET_api_players_me_devices
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class POST_api_players_guest : Wolverine.Http.HttpHandler
+    public sealed class GET_api_players_me_devices : Wolverine.Http.HttpHandler
     {
         private readonly Wolverine.Http.WolverineHttpOptions _wolverineHttpOptions;
-        private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor1;
-        private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor2;
+        private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor;
         private readonly Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _serviceScopeFactory;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
-        private readonly System.TimeProvider _timeProvider;
         private readonly Wolverine.Runtime.IWolverineRuntime _wolverineRuntime;
 
-        public POST_api_players_guest(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, Microsoft.AspNetCore.Http.IHttpContextAccessor __httpContextAccessor1, Microsoft.AspNetCore.Http.IHttpContextAccessor __httpContextAccessor2, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
+        public GET_api_players_me_devices(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
         {
             _wolverineHttpOptions = wolverineHttpOptions;
-            _httpContextAccessor1 = __httpContextAccessor1;
-            _httpContextAccessor2 = __httpContextAccessor2;
+            _httpContextAccessor = httpContextAccessor;
             _serviceScopeFactory = serviceScopeFactory;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
-            _timeProvider = timeProvider;
             _wolverineRuntime = wolverineRuntime;
         }
 
@@ -38,15 +34,14 @@ namespace Internal.Generated.WolverineHandlers
 
         public override async System.Threading.Tasks.Task Handle(Microsoft.AspNetCore.Http.HttpContext httpContext)
         {
-            var playerSignIn = new InSeconds.Api.Infrastructure.Auth.PlayerSignIn(_httpContextAccessor2);
             var messageContext = new Wolverine.Runtime.MessageContext(_wolverineRuntime);
             await using var serviceScope = _serviceScopeFactory.CreateAsyncScope();
             Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Wolverine.Runtime.ScopedMessageContextHolder>(serviceScope.ServiceProvider).Context = messageContext;
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var inSecondsDbContext = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>(serviceScope.ServiceProvider);
-            var efPlayerStore = new InSeconds.Api.Modules.Players.Persistence.EfPlayerStore(inSecondsDbContext);
-            var claimsCurrentPlayer = new InSeconds.Api.Infrastructure.Auth.ClaimsCurrentPlayer(_httpContextAccessor1);
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Players.Application.CreateGuestEndpoint");
+            var efPlayerQueries = new InSeconds.Api.Modules.Players.Persistence.EfPlayerQueries(inSecondsDbContext);
+            var claimsCurrentPlayer = new InSeconds.Api.Infrastructure.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
+            System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Players.Application.ListDevicesEndpoint");
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
             var efCoreEnvelopeTransaction = new Wolverine.EntityFrameworkCore.Internals.EfCoreEnvelopeTransaction(inSecondsDbContext, messageContext, _domainEventScraperIEnumerable);
@@ -61,7 +56,7 @@ namespace Internal.Generated.WolverineHandlers
             {
                 
                 // The actual HTTP request handler execution
-                var guestResponse_response = await InSeconds.Api.Modules.Players.Application.CreateGuestEndpoint.Post(httpContext, claimsCurrentPlayer, efPlayerStore, playerSignIn, _timeProvider, httpContext.RequestAborted).ConfigureAwait(false);
+                var deviceResponseIReadOnlyList_response = await InSeconds.Api.Modules.Players.Application.ListDevicesEndpoint.Get(claimsCurrentPlayer, efPlayerQueries, httpContext.RequestAborted).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware
@@ -70,7 +65,7 @@ namespace Internal.Generated.WolverineHandlers
                 // Commit the EF Core transaction and flush outgoing messages before writing the response (GH-2917)
                 await efCoreEnvelopeTransaction.CommitAsync(httpContext.RequestAborted).ConfigureAwait(false);
                 // Writing the response body to JSON because this was the first 'return variable' in the method signature
-                await WriteJsonAsync(httpContext, guestResponse_response, 404);
+                await WriteJsonAsync(httpContext, deviceResponseIReadOnlyList_response, 404);
             }
 
             catch (System.Exception)
@@ -83,7 +78,7 @@ namespace Internal.Generated.WolverineHandlers
 
     }
 
-    // END: POST_api_players_guest
+    // END: GET_api_players_me_devices
     
     
 }

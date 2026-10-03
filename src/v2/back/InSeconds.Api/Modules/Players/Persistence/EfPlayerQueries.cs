@@ -19,4 +19,11 @@ public sealed class EfPlayerQueries(InSecondsDbContext db) : IPlayerQueries
              account == null ? null : account.Pseudo,
              account != null && account.IsAdmin))
         .FirstOrDefaultAsync(ct);
+
+    public async Task<IReadOnlyList<DeviceResponse>> ListDevicesAsync(Guid playerId, int? currentDeviceSessionId, CancellationToken ct) =>
+        await db.Set<DeviceSession>().AsNoTracking()
+            .Where(s => s.PlayerId == playerId && s.RevokedAt == null)
+            .OrderByDescending(s => s.LastSeenAt)
+            .Select(s => new DeviceResponse(s.Id, s.UserAgentLabel, s.CreatedAt, s.LastSeenAt, s.Id == currentDeviceSessionId))
+            .ToListAsync(ct);
 }

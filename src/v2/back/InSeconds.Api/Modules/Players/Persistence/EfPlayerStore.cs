@@ -49,4 +49,29 @@ public sealed class EfPlayerStore(InSecondsDbContext db) : IPlayerStore
 
     public Task<DeviceSession?> FindDeviceSessionAsync(int id, CancellationToken ct) =>
         db.Set<DeviceSession>().FirstOrDefaultAsync(s => s.Id == id, ct);
+
+    public Task<Account?> FindAccountAsync(Guid playerId, CancellationToken ct) =>
+        (from account in db.Set<Account>()
+         join player in db.Set<Player>() on account.PlayerId equals player.Id
+         where account.PlayerId == playerId && player.DeletedAt == null
+         select account)
+        .FirstOrDefaultAsync(ct);
+
+    public Task<bool> IsPseudoTakenByAnotherAsync(string pseudo, Guid playerId, CancellationToken ct) =>
+        db.Set<Account>().AnyAsync(a => a.Pseudo == pseudo && a.PlayerId != playerId, ct);
+
+    public Task<bool> HasTokenIssuedForPlayerSinceAsync(AuthTokenPurpose purpose, Guid playerId, DateTimeOffset since, CancellationToken ct) =>
+        db.Set<AuthToken>().AnyAsync(
+            t => t.Purpose == purpose && t.PlayerId == playerId && t.ConsumedAt == null && t.CreatedAt > since, ct);
+
+    public async Task<IReadOnlyList<DeviceSession>> FindActiveDeviceSessionsAsync(Guid playerId, CancellationToken ct) =>
+        await db.Set<DeviceSession>().Where(s => s.PlayerId == playerId && s.RevokedAt == null).ToListAsync(ct);
+
+    // Exécuté tout de suite, dans la transaction ouverte par Wolverine s'il y en a une.
+    public Task<int> DeleteLegacyTokenAsync(Guid playerId, CancellationToken ct) =>
+        db.Set<LegacyToken>().Where(t => t.PlayerId == playerId).ExecuteDeleteAsync(ct);
+
+    // Exécuté tout de suite, dans la transaction ouverte par Wolverine s'il y en a une.
+    public Task<int> DeleteExpiredTokensAsync(DateTimeOffset now, CancellationToken ct) =>
+        db.Set<AuthToken>().Where(t => t.ExpiresAt <= now).ExecuteDeleteAsync(ct);
 }

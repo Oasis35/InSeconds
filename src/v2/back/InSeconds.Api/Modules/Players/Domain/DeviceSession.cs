@@ -23,11 +23,12 @@ public sealed class DeviceSession
 
     public DateTimeOffset? RevokedAt { get; private set; }
 
-    /// <summary>Libellé grossier de l'appareil (« Chrome sur Android »), pour la liste des appareils du profil.</summary>
+    /// <summary>Libellé grossier de l'appareil (« Chrome · Android »), pour la liste des appareils du profil.</summary>
     public string? UserAgentLabel { get; private set; }
 
-    public static DeviceSession Open(Guid playerId, DateTimeOffset now) =>
-        new() { PlayerId = playerId, CreatedAt = now, LastSeenAt = now };
+    /// <param name="userAgentLabel">Libellé calculé à l'ouverture (<see cref="DeviceLabel"/>), jamais l'en-tête brut.</param>
+    public static DeviceSession Open(Guid playerId, DateTimeOffset now, string? userAgentLabel = null) =>
+        new() { PlayerId = playerId, CreatedAt = now, LastSeenAt = now, UserAgentLabel = userAgentLabel };
 
     /// <summary>Plus accepté par la validation du cookie. Une session déjà révoquée garde sa date.</summary>
     public void Revoke(DateTimeOffset now) => RevokedAt ??= now;

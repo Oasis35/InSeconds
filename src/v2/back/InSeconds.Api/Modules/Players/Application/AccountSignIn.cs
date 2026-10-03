@@ -46,6 +46,7 @@ public sealed class AccountSignIn(
     IPlayerSignIn signIn,
     IStreakGrants streakGrants,
     IDeviceSessionValidationCache validationCache,
+    IHttpContextAccessor httpContext,
     TimeProvider time)
 {
     public async Task<AccountSignInPlan> PrepareAsync(string email, string? pseudo, CancellationToken ct)
@@ -97,7 +98,7 @@ public sealed class AccountSignIn(
             (isAdmin, outcome) = (false, "Linked");
         }
 
-        var session = DeviceSession.Open(playerId, now);
+        var session = DeviceSession.Open(playerId, now, DeviceLabel.From(httpContext.HttpContext?.Request.Headers.UserAgent));
         await store.AddAsync(session, ct);
 
         if (plan.PreviousDeviceSession is { } previous)

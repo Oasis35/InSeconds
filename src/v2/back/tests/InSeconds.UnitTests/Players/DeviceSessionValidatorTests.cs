@@ -116,7 +116,7 @@ public class DeviceSessionValidatorTests : IDisposable
             return Task.CompletedTask;
         }
 
-        public Task<OpenedDeviceSession?> OpenFromLegacyTokenAsync(Guid legacyAuthToken, DateTimeOffset now, CancellationToken ct) =>
+        public Task<OpenedDeviceSession?> OpenFromLegacyTokenAsync(Guid legacyAuthToken, DateTimeOffset now, string? userAgentLabel, CancellationToken ct) =>
             throw new NotSupportedException();
     }
 }
