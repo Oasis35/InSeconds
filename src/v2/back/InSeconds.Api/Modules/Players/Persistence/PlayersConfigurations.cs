@@ -20,6 +20,9 @@ internal sealed class PlayerConfiguration : IEntityTypeConfiguration<Player>
 
 internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
 {
+    /// <summary>Index unique du pseudo, reconnu dans l'erreur d'unicité par <see cref="PseudoTakenExceptionHandler"/>.</summary>
+    public const string PseudoIndex = "ix_accounts_pseudo";
+
     public void Configure(EntityTypeBuilder<Account> builder)
     {
         builder.ToTable("accounts", DbSchemas.Players);
@@ -29,7 +32,7 @@ internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
         builder.Property(a => a.Email).HasColumnType("citext");
         builder.Property(a => a.Pseudo).HasColumnType("citext");
         builder.HasIndex(a => a.Email).IsUnique();
-        builder.HasIndex(a => a.Pseudo).IsUnique();
+        builder.HasIndex(a => a.Pseudo).IsUnique().HasDatabaseName(PseudoIndex);
         builder.Property(a => a.IsAdmin).HasDefaultValue(false);
     }
 }

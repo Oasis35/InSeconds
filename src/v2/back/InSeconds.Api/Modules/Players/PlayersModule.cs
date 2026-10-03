@@ -20,6 +20,7 @@ public static class PlayersModule
         services.AddScoped<IPlayerSessions, EfPlayerSessions>();
         services.AddScoped<AccountSignIn>();
         services.AddSingleton<IEmailComposer<MagicLinkEmail>, MagicLinkEmailComposer>();
+        services.AddExceptionHandler<PseudoTakenExceptionHandler>();
         return services;
     }
 }

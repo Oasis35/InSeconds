@@ -95,6 +95,7 @@ Laissé aux PR suivantes : `user_agent_label` reste vide (calculé avec la liste
 - S1 : le message `SendMagicLinkEmail` ne porte que l'adresse ; son handler génère le jeton, l'enregistre et envoie l'email dans la même transaction (un échec d'envoi n'enregistre rien) ; un lien par minute et par adresse, comme en v1 ;
 - jeton et hash calculés comme en v1 (base64url, SHA-256 du texte), pour que l'import des jetons reste valable (R14) ;
 - vérification en étapes Wolverine (`Before` pour l'origine, `LoadAsync`, `Validate`, `Post`) ; le jeton n'est consommé qu'à la connexion effective, pas à l'étape du pseudo ni sur un pseudo pris ;
+- usage unique même sous concurrence : le jeton est lu en `FOR UPDATE`, une seconde confirmation simultanée (double clic) attend puis reçoit 400 (la v1 acceptait les deux) ; un pseudo pris au même moment par quelqu'un d'autre donne 409, pas 500 (`PseudoTakenExceptionHandler`, comme la v1) ;
 - connexion partagée (`AccountSignIn` : préparation sans écriture, puis exécution) entre la vérification et le dev-login ; le compte d'un joueur supprimé est refusé comme un lien invalide ;
 - S5 : à chaque connexion, nouvelle session, et l'ancienne session du navigateur révoquée et retirée du cache de validation (refusée dès la requête suivante, pas après la minute de cache) ;
 - origines de confiance (piège 22) : `Cors:AllowedOrigins` + `Auth:TrustedOrigins`, la v2 n'ayant aucune origine CORS en dev et en E2E (proxy d'`ng serve`) : 5176 et 5178 dans l'hôte de test ;

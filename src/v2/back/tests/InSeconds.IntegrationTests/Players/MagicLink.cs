@@ -117,11 +117,17 @@ internal sealed class RecordingStreakGrants : IStreakGrants
         }
     }
 
+    /// <summary>
+    /// Appelé à chaque gel accordé, au milieu de la création du compte (transaction ouverte, compte pas
+    /// encore enregistré) : pour provoquer une concurrence à ce moment précis.
+    /// </summary>
+    public Func<Guid, Task>? OnGrant { get; set; }
+
     public Task GrantAccountCreationFreezeAsync(Guid playerId, CancellationToken ct)
     {
         lock (_granted)
             _granted.Add(playerId);
-        return Task.CompletedTask;
+        return OnGrant?.Invoke(playerId) ?? Task.CompletedTask;
     }
 }
 

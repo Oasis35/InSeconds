@@ -208,6 +208,58 @@ public class MagicLinkTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task UsageUnique_DeuxConfirmationsSimultanees_UneSeulePasse()
+    {
+        var token = await _app.RequestTokenAsync("double@example.com");
+        var firstInside = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        // Seule la première confirmation s'arrête au milieu de la création du compte, jeton en main.
+        _app.Grants.OnGrant = async _ =>
+        {
+            if (firstInside.TrySetResult())
+                await release.Task;
+        };
+
+        var first = MagicLinkApi.VerifyAsync(_app.Browser(), token, "Double");
+        Task<HttpResponseMessage> second;
+        try
+        {
+            await firstInside.Task.WaitAsync(TimeSpan.FromSeconds(15), Ct);
+            second = MagicLinkApi.VerifyAsync(_app.Browser(), token, "Double");
+            // La seconde attend le verrou du jeton, que la première garde jusqu'à la fin de sa transaction.
+            await WaitForLockWaitAsync();
+        }
+        finally
+        {
+            release.TrySetResult();
+        }
+
+        Assert.Equal(HttpStatusCode.OK, (await first).StatusCode);
+        await AssertProblemAsync(await second, HttpStatusCode.BadRequest, PlayersErrorCodes.InvalidOrExpiredToken);
+        Assert.Equal(1L, await _app.Api.ScalarAsync<long>("SELECT count(*) FROM players.accounts"));
+        Assert.Equal(1L, await _app.Api.ScalarAsync<long>("SELECT count(*) FROM players.device_sessions"));
+    }
+
+    [Fact]
+    public async Task PseudoPrisAuMemeMoment_409_JetonGarde_SansCookie()
+    {
+        var token = await _app.RequestTokenAsync("course@example.com");
+        // Quelqu'un prend le pseudo entre la vérification préalable et l'enregistrement du compte.
+        _app.Grants.OnGrant = async _ => await InsertAccountAsync("rivale@example.com", "Course");
+        var browser = _app.Browser();
+
+        var response = await MagicLinkApi.VerifyAsync(browser, token, "COURSE");
+
+        await AssertProblemAsync(response, HttpStatusCode.Conflict, PlayersErrorCodes.PseudoTaken);
+        Assert.Empty(CookieHeaders.All(response));
+        Assert.Equal(0L, await _app.Api.ScalarAsync<long>("SELECT count(*) FROM players.auth_tokens WHERE consumed_at IS NOT NULL"));
+        Assert.Equal(0L, await _app.Api.ScalarAsync<long>("SELECT count(*) FROM players.accounts WHERE email = 'course@example.com'"));
+
+        _app.Grants.OnGrant = null;
+        Assert.Equal(HttpStatusCode.OK, (await MagicLinkApi.VerifyAsync(browser, token, "Libre")).StatusCode);
+    }
+
+    [Fact]
     public async Task PseudoInvalide_400()
     {
         var token = await _app.RequestTokenAsync("pseudo@example.com");
@@ -333,6 +385,19 @@ public class MagicLinkTests(PostgresFixture postgres) : IAsyncLifetime
             INSERT INTO players.accounts (player_id, email, pseudo, is_admin) VALUES ('{playerId}', '{email}', '{pseudo}', {isAdmin});
             """);
         return playerId;
+    }
+
+    /// <summary>Attend qu'une requête de cette base soit bloquée sur un verrou.</summary>
+    private async Task WaitForLockWaitAsync()
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(15);
+        while (await _app.Api.ScalarAsync<long>(
+                   "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock'") == 0)
+        {
+            if (DateTime.UtcNow > deadline)
+                throw new TimeoutException("Aucune requête n'attend de verrou.");
+            await Task.Delay(50, Ct);
+        }
     }
 
     /// <summary>Un jeton écrit directement en base ; renvoie sa valeur brute.</summary>

@@ -25,7 +25,8 @@ public interface IPlayerStore
 
     /// <summary>
     /// Le jeton de cet usage (S2) qui a ce hash, encore utilisable à cet instant ; suivi, pour être
-    /// consommé par la transaction en cours.
+    /// consommé par la transaction en cours, et verrouillé jusqu'à sa fin : une vérification simultanée
+    /// du même jeton attend, puis ne le trouve plus s'il a été consommé (usage unique).
     /// </summary>
     Task<AuthToken?> FindUsableTokenAsync(AuthTokenPurpose purpose, byte[] tokenHash, DateTimeOffset now, CancellationToken ct);
 

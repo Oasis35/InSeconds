@@ -29,9 +29,19 @@ public sealed class EfPlayerStore(InSecondsDbContext db) : IPlayerStore
     public Task<bool> HasAccountAsync(Guid playerId, CancellationToken ct) =>
         db.Set<Account>().AnyAsync(a => a.PlayerId == playerId, ct);
 
-    public Task<AuthToken?> FindUsableTokenAsync(AuthTokenPurpose purpose, byte[] tokenHash, DateTimeOffset now, CancellationToken ct) =>
-        db.Set<AuthToken>().FirstOrDefaultAsync(
-            t => t.TokenHash == tokenHash && t.Purpose == purpose && t.ConsumedAt == null && t.ExpiresAt > now, ct);
+    // FOR UPDATE : de deux vérifications simultanées du même jeton, la seconde attend que la première
+    // ait fini ; PostgreSQL relit alors la ligne, déjà consommée, et ne la renvoie plus (usage unique).
+    // Pas de composition LINQ derrière FromSql : FOR UPDATE doit rester à la fin de la requête.
+    public async Task<AuthToken?> FindUsableTokenAsync(AuthTokenPurpose purpose, byte[] tokenHash, DateTimeOffset now, CancellationToken ct) =>
+        (await db.Set<AuthToken>()
+            .FromSql($"""
+                SELECT * FROM players.auth_tokens
+                WHERE token_hash = {tokenHash} AND purpose = {(short)purpose}
+                  AND consumed_at IS NULL AND expires_at > {now}
+                FOR UPDATE
+                """)
+            .ToListAsync(ct))
+        .SingleOrDefault();
 
     public Task<bool> HasTokenIssuedSinceAsync(AuthTokenPurpose purpose, string email, DateTimeOffset since, CancellationToken ct) =>
         db.Set<AuthToken>().AnyAsync(
