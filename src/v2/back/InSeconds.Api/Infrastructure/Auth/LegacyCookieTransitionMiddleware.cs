@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using InSeconds.Api.Modules.Players.Contracts;
+using InSeconds.Api.Modules.Players.Domain;
 using Microsoft.AspNetCore.DataProtection;
 
 namespace InSeconds.Api.Infrastructure.Auth;
@@ -38,7 +39,8 @@ internal sealed class LegacyCookieTransitionMiddleware(
             // Une erreur de base remonte (500) et garde l'ancien cookie : rien n'est perdu (piège 37).
             var opened = await conversions.GetOrOpenAsync(
                 token,
-                () => sessions.OpenFromLegacyTokenAsync(token, time.GetUtcNow(), context.RequestAborted),
+                () => sessions.OpenFromLegacyTokenAsync(
+                    token, time.GetUtcNow(), DeviceLabel.From(context.Request.Headers.UserAgent), context.RequestAborted),
                 context.RequestAborted);
             if (opened is not null)
                 await signIn.SignInAsync(opened.PlayerId, opened.DeviceSessionId, opened.IsAdmin);

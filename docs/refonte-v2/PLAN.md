@@ -166,7 +166,7 @@ Le jeu est un ensemble de **modes** branchés sur des **noyaux** communs. C'est 
 | `legacy_tokens` | `player_id uuid PK FK`, `token_hash bytea UNIQUE` | provisoire : SHA-256 du jeton v1, pour reprendre les cookies v1 (§ 5.5). Plusieurs appareils peuvent présenter le même jeton, chacun obtient sa `device_session`. Table supprimée au retrait de la transition (J+90) |
 | `auth_tokens` | `id int PK`, `purpose smallint` (1 = connexion, 2 = changement d'email), `email citext`, `player_id uuid null`, `new_email citext null`, `token_hash bytea UNIQUE`, `expires_at`, `consumed_at null`, `created_at` | fusion de `MagicLinkTokens` et `EmailChangeTokens` ; CHECK cohérent avec `purpose` |
 
-`user_agent_label` est un libellé grossier (« Chrome sur Android »), calculé à la création, pour la liste des appareils du profil. Aucune adresse IP n'est stockée.
+`user_agent_label` est un libellé grossier (« Chrome · Android », sans langue, décidé en B3), calculé à la création, pour la liste des appareils du profil. Aucune adresse IP n'est stockée.
 
 ### 4.3 Schéma `catalogue`
 
@@ -376,7 +376,7 @@ Clément veut des tâches de type cron, qu'il pilote lui-même, **avec des solut
 | `catalogue-refresh` | `0 23 * * *` | previews et rang Deezer des morceaux éligibles au défi du lendemain |
 | `daily-generate-challenge` | `0 0 * * *` | génère le défi du jour (retry toutes les 10 min) |
 | `daily-close-day` | `5 0 * * *` | fige les stats de J-2 (la veille reste en calcul direct) |
-| `players-purge-expired-tokens` | `30 3 * * *` | supprime les jetons de connexion expirés |
+| `players-purge-expired-tokens` | `30 3 * * *` | supprime les jetons expirés (connexion et changement d'email) |
 
 Sur le staging, `catalogue-refresh` est en `Cron.Never()` (même IP que la prod, donc même quota Deezer, piège 16).
 

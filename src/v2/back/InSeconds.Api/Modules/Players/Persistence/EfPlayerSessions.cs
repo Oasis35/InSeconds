@@ -40,7 +40,7 @@ public sealed class EfPlayerSessions(InSecondsDbContext db) : IPlayerSessions
             .ExecuteUpdateAsync(set => set.SetProperty(p => p.LastSeenAt, now), ct);
     }
 
-    public async Task<OpenedDeviceSession?> OpenFromLegacyTokenAsync(Guid legacyAuthToken, DateTimeOffset now, CancellationToken ct)
+    public async Task<OpenedDeviceSession?> OpenFromLegacyTokenAsync(Guid legacyAuthToken, DateTimeOffset now, string? userAgentLabel, CancellationToken ct)
     {
         var hash = LegacyToken.HashOf(legacyAuthToken);
         var owner = await (
@@ -55,7 +55,7 @@ public sealed class EfPlayerSessions(InSecondsDbContext db) : IPlayerSessions
         if (owner is null)
             return null;
 
-        var session = DeviceSession.Open(owner.Id, now);
+        var session = DeviceSession.Open(owner.Id, now, userAgentLabel);
         await db.AddAsync(session, ct);
         await db.SaveChangesAsync(ct);
         await db.Set<Player>()

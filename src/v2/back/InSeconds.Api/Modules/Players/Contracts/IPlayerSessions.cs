@@ -17,7 +17,8 @@ public interface IPlayerSessions
     /// Ouvre une nouvelle session pour le joueur à qui appartient ce jeton v1, ou rien si le jeton
     /// est inconnu ou le joueur supprimé. Chaque appel crée sa propre session (un appareil chacun).
     /// </summary>
-    Task<OpenedDeviceSession?> OpenFromLegacyTokenAsync(Guid legacyAuthToken, DateTimeOffset now, CancellationToken ct);
+    /// <param name="userAgentLabel">Libellé de l'appareil (<c>DeviceLabel</c>), pour la liste du profil.</param>
+    Task<OpenedDeviceSession?> OpenFromLegacyTokenAsync(Guid legacyAuthToken, DateTimeOffset now, string? userAgentLabel, CancellationToken ct);
 }
 
 public sealed record DeviceSessionStatus(bool IsActive, bool IsAdmin, DateTimeOffset LastSeenAt)

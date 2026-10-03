@@ -47,6 +47,18 @@ public sealed class AuthToken
             CreatedAt = now,
         };
 
+    /// <summary>Jeton de changement d'email : ce joueur, vers cette nouvelle adresse (déjà normalisée).</summary>
+    public static AuthToken IssueEmailChange(Guid playerId, string newEmail, byte[] tokenHash, DateTimeOffset now) =>
+        new()
+        {
+            Purpose = AuthTokenPurpose.EmailChange,
+            PlayerId = playerId,
+            NewEmail = newEmail,
+            TokenHash = tokenHash,
+            ExpiresAt = now + Validity,
+            CreatedAt = now,
+        };
+
     public bool IsUsableAt(DateTimeOffset now) => ConsumedAt is null && ExpiresAt > now;
 
     public void Consume(DateTimeOffset now)

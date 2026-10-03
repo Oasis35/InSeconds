@@ -159,6 +159,6 @@ internal sealed class UnavailablePlayerSessions : IPlayerSessions
     public Task RecordSeenAsync(Guid playerId, int deviceSessionId, DateTimeOffset now, CancellationToken ct) =>
         throw new TimeoutException("base indisponible");
 
-    public Task<OpenedDeviceSession?> OpenFromLegacyTokenAsync(Guid legacyAuthToken, DateTimeOffset now, CancellationToken ct) =>
+    public Task<OpenedDeviceSession?> OpenFromLegacyTokenAsync(Guid legacyAuthToken, DateTimeOffset now, string? userAgentLabel, CancellationToken ct) =>
         throw new TimeoutException("base indisponible");
 }

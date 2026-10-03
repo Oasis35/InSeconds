@@ -10,9 +10,12 @@ public class ScheduledJobsTests(PostgresFixture postgres)
     /// <summary>
     /// Les tâches récurrentes de l'API et leur cron par défaut (tableau du § 5.4 bis du plan v2).
     /// Chaque module ajoute ici les siennes : catalogue-refresh (C1), daily-generate-challenge et
-    /// daily-close-day (E1, E3), players-purge-expired-tokens (B3).
+    /// daily-close-day (E1, E3).
     /// </summary>
-    private static readonly Dictionary<string, string> ExpectedJobs = [];
+    private static readonly Dictionary<string, string> ExpectedJobs = new()
+    {
+        ["players-purge-expired-tokens"] = "30 3 * * *",
+    };
 
     [Fact]
     public async Task LApi_DeclareExactementLesTachesDuPlan()

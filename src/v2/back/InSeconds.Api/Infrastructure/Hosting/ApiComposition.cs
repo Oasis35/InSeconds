@@ -45,7 +45,8 @@ public static class ApiComposition
         builder.Services.AddInSecondsAuth(builder.Environment);
         builder.Services.AddInSecondsForwardedHeaders();
         builder.Services.AddInSecondsCors(configuration);
-        builder.Services.AddInSecondsRateLimiting(configuration);
+        builder.Services.AddInSecondsRateLimiting(configuration,
+            httpContext => httpContext.User.FindFirst(PlayerClaims.PlayerId)?.Value);
         builder.Services.AddInSecondsEmail(configuration, builder.Environment);
         builder.AddInSecondsWolverine(connectionString);
         builder.Services.AddInSecondsJobs(connectionString, configuration);

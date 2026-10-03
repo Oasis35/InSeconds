@@ -19,14 +19,14 @@ public static class CreateGuestEndpoint
     [WolverinePost("/api/players/guest")]
     [EnableRateLimiting(RateLimitPolicies.PlayerCreation)]
     public static async Task<GuestResponse> Post(
-        ICurrentPlayer current, IPlayerStore store, IPlayerSignIn signIn, TimeProvider time, CancellationToken ct)
+        HttpContext context, ICurrentPlayer current, IPlayerStore store, IPlayerSignIn signIn, TimeProvider time, CancellationToken ct)
     {
         if (current.PlayerId is { } existing)
             return new GuestResponse(existing);
 
         var now = time.GetUtcNow();
         var player = Player.CreateGuest(Guid.NewGuid(), now);
-        var session = DeviceSession.Open(player.Id, now);
+        var session = DeviceSession.Open(player.Id, now, DeviceLabel.From(context.Request.Headers.UserAgent));
         store.Add(player);
         await store.AddAsync(session, ct);
         // Le cookie part avec la réponse, après l'enregistrement de la transaction par Wolverine : si

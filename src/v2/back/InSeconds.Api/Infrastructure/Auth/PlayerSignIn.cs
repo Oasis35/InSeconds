@@ -2,10 +2,13 @@ using Microsoft.AspNetCore.Authentication;
 
 namespace InSeconds.Api.Infrastructure.Auth;
 
-/// <summary>Pose le cookie d'un appareil (création d'invité, reprise d'un cookie v1, puis connexion en B2).</summary>
+/// <summary>Pose ou retire le cookie d'un appareil (création d'invité, reprise d'un cookie v1, connexion, déconnexion).</summary>
 public interface IPlayerSignIn
 {
     Task SignInAsync(Guid playerId, int deviceSessionId, bool isAdmin);
+
+    /// <summary>Supprime le cookie ; la suite de la requête est anonyme. La session se révoque à part.</summary>
+    Task SignOutAsync();
 }
 
 public sealed class PlayerSignIn(IHttpContextAccessor accessor) : IPlayerSignIn
@@ -22,5 +25,13 @@ public sealed class PlayerSignIn(IHttpContextAccessor accessor) : IPlayerSignIn
             new AuthenticationProperties { IsPersistent = true });
         // La suite de la requête voit déjà ce joueur, rôle compris.
         httpContext.User = PlayerClaims.Create(playerId, deviceSessionId, isAdmin);
+    }
+
+    public async Task SignOutAsync()
+    {
+        var httpContext = accessor.HttpContext
+            ?? throw new InvalidOperationException("Pas de requête HTTP en cours pour retirer le cookie.");
+        await httpContext.SignOutAsync(AuthSetup.Scheme);
+        httpContext.User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity());
     }
 }

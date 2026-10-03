@@ -87,6 +87,25 @@ internal sealed partial class MagicLinkApi : IAsyncDisposable
             throw new InvalidOperationException("Pseudo attendu pour créer le compte.");
     }
 
+    /// <summary>
+    /// Un appareil connecté à cette adresse, dont le cookie est rejoué tel quel à chaque requête (il
+    /// reste présenté après une révocation, comme le ferait un cookie copié).
+    /// </summary>
+    public async Task<Device> SignInDeviceAsync(string email, string? pseudo = null, string? userAgent = null)
+    {
+        var token = await RequestTokenAsync(email);
+        var client = Api.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = false });
+        client.DefaultRequestHeaders.Add("Origin", ApiFactory.FrontOrigin);
+        if (userAgent is not null)
+            client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", userAgent);
+
+        var response = await VerifyAsync(client, token, pseudo);
+        response.EnsureSuccessStatusCode();
+        var cookie = CookieHeaders.Pair(response, "inseconds");
+        client.DefaultRequestHeaders.Add("Cookie", cookie);
+        return new Device(client, cookie, (await MeAsync(client))!.PlayerId);
+    }
+
     public static async Task<PlayerMeResponse?> MeAsync(HttpClient browser)
     {
         var response = await browser.GetAsync("/api/players/me", Ct);
@@ -130,6 +149,9 @@ internal sealed class RecordingStreakGrants : IStreakGrants
         return OnGrant?.Invoke(playerId) ?? Task.CompletedTask;
     }
 }
+
+/// <summary>Un appareil connecté : son client (cookie rejoué tel quel), ce cookie et son joueur.</summary>
+internal sealed record Device(HttpClient Client, string Cookie, Guid PlayerId);
 
 internal static class BrowserExtensions
 {

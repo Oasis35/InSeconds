@@ -20,8 +20,11 @@ internal sealed class PlayerConfiguration : IEntityTypeConfiguration<Player>
 
 internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
 {
-    /// <summary>Index unique du pseudo, reconnu dans l'erreur d'unicité par <see cref="PseudoTakenExceptionHandler"/>.</summary>
+    /// <summary>Index unique du pseudo, reconnu dans l'erreur d'unicité par <see cref="AccountConflictExceptionHandler"/>.</summary>
     public const string PseudoIndex = "ix_accounts_pseudo";
+
+    /// <summary>Index unique de l'adresse, reconnu de la même façon.</summary>
+    public const string EmailIndex = "ix_accounts_email";
 
     public void Configure(EntityTypeBuilder<Account> builder)
     {
@@ -31,7 +34,7 @@ internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
         // citext : unicité insensible à la casse garantie par la base (« Bob » et « bob » sont le même pseudo).
         builder.Property(a => a.Email).HasColumnType("citext");
         builder.Property(a => a.Pseudo).HasColumnType("citext");
-        builder.HasIndex(a => a.Email).IsUnique();
+        builder.HasIndex(a => a.Email).IsUnique().HasDatabaseName(EmailIndex);
         builder.HasIndex(a => a.Pseudo).IsUnique().HasDatabaseName(PseudoIndex);
         builder.Property(a => a.IsAdmin).HasDefaultValue(false);
     }

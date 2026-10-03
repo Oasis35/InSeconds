@@ -35,6 +35,21 @@ public interface IPlayerStore
 
     /// <summary>La session d'appareil, suivie pour être modifiée (révocation).</summary>
     Task<DeviceSession?> FindDeviceSessionAsync(int id, CancellationToken ct);
+
+    /// <summary>Le compte de ce joueur, s'il en a un et n'est pas supprimé ; suivi pour être modifié.</summary>
+    Task<Account?> FindAccountAsync(Guid playerId, CancellationToken ct);
+
+    /// <summary>Pseudo déjà pris par un autre joueur que celui-ci (comparaison sans casse).</summary>
+    Task<bool> IsPseudoTakenByAnotherAsync(string pseudo, Guid playerId, CancellationToken ct);
+
+    /// <summary>Un jeton de cet usage, non consommé, a été émis pour ce joueur depuis <paramref name="since"/>.</summary>
+    Task<bool> HasTokenIssuedForPlayerSinceAsync(AuthTokenPurpose purpose, Guid playerId, DateTimeOffset since, CancellationToken ct);
+
+    /// <summary>Les sessions non révoquées de ce joueur, suivies pour être révoquées.</summary>
+    Task<IReadOnlyList<DeviceSession>> FindActiveDeviceSessionsAsync(Guid playerId, CancellationToken ct);
+
+    /// <summary>Supprime les jetons expirés, quel que soit leur usage ; renvoie leur nombre.</summary>
+    Task<int> DeleteExpiredTokensAsync(DateTimeOffset now, CancellationToken ct);
 }
 
 /// <summary>Le compte trouvé pour une adresse, et l'état de son joueur.</summary>
