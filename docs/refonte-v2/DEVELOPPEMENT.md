@@ -91,6 +91,19 @@ Environ **30 PR**. Les plus grosses sont A1, B1, E2 et E5. L'ordre A → B → C
 
 Laissé aux PR suivantes : `user_agent_label` reste vide (calculé avec la liste des appareils, B3) ; aucun compte n'est encore créé par l'API (conversion en B2), les tests insèrent `accounts` en SQL.
 
+**Fait en B2 :** `POST /api/players/auth/magic-link` (toujours 204) et `POST /api/players/auth/magic-link/verify` (`{ token, pseudo? }` → `{ needsPseudo }`), dev-login dans l'hôte de test. Pas de migration (tables posées en B1). Décisions :
+- S1 : le message `SendMagicLinkEmail` ne porte que l'adresse ; son handler génère le jeton, l'enregistre et envoie l'email dans la même transaction (un échec d'envoi n'enregistre rien) ; un lien par minute et par adresse, comme en v1 ;
+- jeton et hash calculés comme en v1 (base64url, SHA-256 du texte), pour que l'import des jetons reste valable (R14) ;
+- vérification en étapes Wolverine (`Before` pour l'origine, `LoadAsync`, `Validate`, `Post`) ; le jeton n'est consommé qu'à la connexion effective, pas à l'étape du pseudo ni sur un pseudo pris ;
+- usage unique même sous concurrence : le jeton est lu en `FOR UPDATE`, une seconde confirmation simultanée (double clic) attend puis reçoit 400 (la v1 acceptait les deux) ; un pseudo pris au même moment par quelqu'un d'autre donne 409, pas 500 (`PseudoTakenExceptionHandler`, comme la v1) ;
+- connexion partagée (`AccountSignIn` : préparation sans écriture, puis exécution) entre la vérification et le dev-login ; le compte d'un joueur supprimé est refusé comme un lien invalide ;
+- S5 : à chaque connexion, nouvelle session, et l'ancienne session du navigateur révoquée et retirée du cache de validation (refusée dès la requête suivante, pas après la minute de cache) ;
+- origines de confiance (piège 22) : `Cors:AllowedOrigins` + `Auth:TrustedOrigins`, la v2 n'ayant aucune origine CORS en dev et en E2E (proxy d'`ng serve`) : 5176 et 5178 dans l'hôte de test ;
+- `App:PublicUrl` (même clé qu'en v1) pour le lien, vers `/account/login/verify` ;
+- gel offert : contrat `IStreakGrants.GrantAccountCreationFreezeAsync` dans `Modules/Daily/Contracts`, appelé dans la transaction de la création du compte (conversion ou nouveau joueur) ; implémentation vide jusqu'à E2 ;
+- `PlayerLinked` (§ 5.4) n'est pas publié : aucun module ne l'écoute encore, il viendra avec son premier consommateur ;
+- `IEmailSender` résolu par le conteneur dans le code généré (`AlwaysUseServiceLocationFor`), seule exception à la règle.
+
 ---
 
 ## 5. Phase C : Catalogue (peut avancer en parallèle de D)

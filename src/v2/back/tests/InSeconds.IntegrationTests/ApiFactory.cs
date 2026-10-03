@@ -22,6 +22,9 @@ public sealed class ApiFactory(
         JasperFxEnvironment.AutoStartHost = true;
     }
 
+    /// <summary>Le front local, origine de confiance de la vérification du lien magique (piège 22).</summary>
+    public const string FrontOrigin = "http://localhost:5176";
+
     public string ConnectionString => connectionString;
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -32,6 +35,7 @@ public sealed class ApiFactory(
         builder.UseSetting("Jobs:Server:Enabled", "false");
         // Les politiques restent sur les routes, mais ne limitent rien (RateLimitingTests les active).
         builder.UseSetting("RateLimiting:Enabled", "false");
+        builder.UseSetting("Auth:TrustedOrigins:0", FrontOrigin);
         foreach (var (key, value) in settings ?? new Dictionary<string, string>())
             builder.UseSetting(key, value);
 

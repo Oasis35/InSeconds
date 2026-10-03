@@ -1,4 +1,5 @@
 using InSeconds.Api.Infrastructure.Hosting;
+using InSeconds.Api.Testing.Auth;
 using InSeconds.Api.Testing.E2E;
 using InSeconds.Api.Testing.Email;
 using JasperFx;
@@ -7,7 +8,7 @@ namespace InSeconds.Api.Testing;
 
 /// <summary>
 /// Point d'entrée de l'hôte de test : la composition de l'API (<see cref="ApiComposition"/>), plus les
-/// faux et les routes <c>/api/e2e</c>. Refuse de démarrer hors <c>Testing</c> et <c>Development</c>.
+/// faux, les routes <c>/api/e2e</c> et le dev-login. Refuse de démarrer hors <c>Testing</c> et <c>Development</c>.
 /// </summary>
 public sealed class TestingProgram
 {
@@ -29,6 +30,7 @@ public sealed class TestingProgram
         var app = builder.Build();
         app.UseInSecondsApi();
         app.MapE2EEndpoints();
+        app.MapDevLogin();
 
         return await app.RunJasperFxCommands(args);
     }

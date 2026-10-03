@@ -6,6 +6,7 @@ using InSeconds.Api.Infrastructure.Messaging;
 using InSeconds.Api.Infrastructure.Persistence;
 using InSeconds.Api.Infrastructure.Settings;
 using InSeconds.Api.Infrastructure.Time;
+using InSeconds.Api.Modules.Daily;
 using InSeconds.Api.Modules.Players;
 using InSeconds.Infrastructure.Email;
 using InSeconds.Infrastructure.Http;
@@ -48,7 +49,9 @@ public static class ApiComposition
         builder.Services.AddInSecondsEmail(configuration, builder.Environment);
         builder.AddInSecondsWolverine(connectionString);
         builder.Services.AddInSecondsJobs(connectionString, configuration);
+        AppOptions.AddAppOptions(builder.Services);
         builder.Services.AddPlayers();
+        builder.Services.AddDaily();
         return builder;
     }
 
