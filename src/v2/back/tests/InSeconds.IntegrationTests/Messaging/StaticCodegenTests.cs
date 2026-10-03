@@ -15,12 +15,8 @@ public class StaticCodegenTests(PostgresFixture postgres) : IAsyncLifetime
 
     public async ValueTask InitializeAsync() =>
         _api = new ApiFactory(await postgres.CreateDatabaseAsync(), environment: Environments.Staging,
-            // Exigés au démarrage en staging (EmailStartupTests).
-            settings: new Dictionary<string, string>
-            {
-                ["Brevo:ApiKey"] = "clé",
-                ["EmailRedirect:To"] = "moi+staging@example.com",
-            });
+            // Exigés au démarrage en staging (EmailStartupTests, DataProtectionTests).
+            settings: TestCertificate.StagingSettings());
 
     public ValueTask DisposeAsync() => _api.DisposeAsync();
 

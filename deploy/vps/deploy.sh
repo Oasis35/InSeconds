@@ -47,9 +47,9 @@ if [[ "$target" == "staging" ]]; then
   # Staging en v2 (PR A6). Tout est vérifié avant de remplacer les conteneurs : en cas d'échec,
   # la version en place continue de tourner.
   #
-  # Certificat Data Protection (PLAN S16), lu par l'API à partir de B1. Vérifié dès maintenant :
-  # sinon un fichier absent ou illisible ne se verrait qu'à ce moment-là. Contrôlé ici d'abord,
-  # avant que Docker ne crée un dossier vide à la place d'un fichier absent.
+  # Certificat Data Protection (PLAN S16), chargé par l'API au démarrage : absent ou illisible, elle
+  # ne démarrerait pas. Contrôlé ici d'abord, avant que Docker ne crée un dossier vide à la place
+  # d'un fichier absent, puis dans le conteneur.
   cert=secrets/dataprotection.pfx
   if [[ ! -f "$cert" ]]; then
     echo "ERREUR : $cert absent du checkout (cf. .env.staging.example)." >&2

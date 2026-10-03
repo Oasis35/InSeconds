@@ -76,12 +76,8 @@ public class CorsTests(PostgresFixture postgres) : IAsyncLifetime
     public async Task Staging_LeFrontDuStagingAppelleLApi()
     {
         await using var api = new ApiFactory(_connectionString, environment: Environments.Staging,
-            // Exigés au démarrage en staging (EmailStartupTests).
-            settings: new Dictionary<string, string>
-            {
-                ["Brevo:ApiKey"] = "clé",
-                ["EmailRedirect:To"] = "moi+staging@example.com",
-            });
+            // Exigés au démarrage en staging (EmailStartupTests, DataProtectionTests).
+            settings: TestCertificate.StagingSettings());
         var client = api.CreateClient();
 
         var health = await GetHealthAsync(client, "https://dev.inseconds.cc");
@@ -102,9 +98,9 @@ public class CorsTests(PostgresFixture postgres) : IAsyncLifetime
     [InlineData("https://www.inseconds.cc")]
     public async Task Production_LeFrontDeLaProdAppelleLApi(string origin)
     {
-        // Exigé au démarrage en production (EmailStartupTests).
+        // Exigés au démarrage en production (EmailStartupTests, DataProtectionTests).
         await using var api = new ApiFactory(_connectionString, environment: Environments.Production,
-            settings: new Dictionary<string, string> { ["Brevo:ApiKey"] = "clé" });
+            settings: new Dictionary<string, string>(TestCertificate.Settings()) { ["Brevo:ApiKey"] = "clé" });
         var client = api.CreateClient();
 
         var allowed = await GetHealthAsync(client, origin);

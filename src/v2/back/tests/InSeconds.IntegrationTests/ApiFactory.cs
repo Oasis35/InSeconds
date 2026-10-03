@@ -50,6 +50,14 @@ public sealed class ApiFactory(
         return client;
     }
 
+    public async Task ExecuteAsync(string sql)
+    {
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync();
+        await using var command = new NpgsqlCommand(sql, connection);
+        await command.ExecuteNonQueryAsync();
+    }
+
     public async Task<T?> ScalarAsync<T>(string sql)
     {
         await using var connection = new NpgsqlConnection(connectionString);
