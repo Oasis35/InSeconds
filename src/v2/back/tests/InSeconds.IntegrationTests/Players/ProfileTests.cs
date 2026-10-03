@@ -90,7 +90,7 @@ public partial class ProfileTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal("Confirme ta nouvelle adresse email IN//SECONDS", email.Subject);
         Assert.Contains("nouvelle@example.com", email.HtmlBody, StringComparison.Ordinal);
         Assert.DoesNotContain(_app.Emails.Sent, e => e.To == "ancienne@example.com" && e.Subject == email.Subject);
-        var token = ConfirmToken(email);
+        var token = await ConfirmTokenAsync(email);
         Assert.Equal("ancienne@example.com", (await MagicLinkApi.MeAsync(device.Client))!.Email);
 
         // Confirmé depuis n'importe quel navigateur : l'autorisation tient au jeton.
@@ -147,7 +147,7 @@ public partial class ProfileTests(PostgresFixture postgres) : IAsyncLifetime
     {
         var device = await _app.SignInDeviceAsync("lent@example.com", "Lent");
         await device.Client.PostAsJsonAsync("/api/players/me/email-change", new RequestEmailChange("convoitee@example.com"), Ct);
-        var token = ConfirmToken(await _app.WaitForEmailAsync("convoitee@example.com", 0));
+        var token = await ConfirmTokenAsync(await _app.WaitForEmailAsync("convoitee@example.com", 0));
         await _app.SignInDeviceAsync("convoitee@example.com", "Rapide");
 
         await AssertProblemAsync(await ConfirmAsync(_app.Api.CreateClient(), token), HttpStatusCode.Conflict, PlayersErrorCodes.EmailTaken);
@@ -161,7 +161,7 @@ public partial class ProfileTests(PostgresFixture postgres) : IAsyncLifetime
     {
         var device = await _app.SignInDeviceAsync("expire@example.com", "Expire");
         await device.Client.PostAsJsonAsync("/api/players/me/email-change", new RequestEmailChange("tardive@example.com"), Ct);
-        var token = ConfirmToken(await _app.WaitForEmailAsync("tardive@example.com", 0));
+        var token = await ConfirmTokenAsync(await _app.WaitForEmailAsync("tardive@example.com", 0));
         await _app.Api.ExecuteAsync($"UPDATE players.auth_tokens SET expires_at = now() - interval '1 minute' WHERE purpose = 2 AND player_id = '{device.PlayerId}'");
 
         await AssertProblemAsync(await ConfirmAsync(_app.Api.CreateClient(), token), HttpStatusCode.BadRequest, PlayersErrorCodes.InvalidOrExpiredToken);
@@ -210,8 +210,13 @@ public partial class ProfileTests(PostgresFixture postgres) : IAsyncLifetime
     private static Task<HttpResponseMessage> ConfirmAsync(HttpClient client, string token) =>
         client.PostAsJsonAsync("/api/players/email-change/confirm", new ConfirmEmailChange(token), Ct);
 
-    private static string ConfirmToken(Api.Testing.Email.CapturedEmail email) =>
-        ConfirmLink().Match(email.HtmlBody).Groups[1].Value;
+    /// <summary>Le jeton du lien de confirmation, une fois enregistré (<see cref="MagicLinkApi.WaitForTokenAsync"/>).</summary>
+    private async Task<string> ConfirmTokenAsync(Api.Testing.Email.CapturedEmail email)
+    {
+        var token = ConfirmLink().Match(email.HtmlBody).Groups[1].Value;
+        await _app.WaitForTokenAsync(token);
+        return token;
+    }
 
     private static Task<HttpResponseMessage> SendAsync(HttpClient client, string method, string path, object body) =>
         client.SendAsync(new HttpRequestMessage(new HttpMethod(method), path) { Content = JsonContent.Create(body) }, Ct);

@@ -663,9 +663,12 @@ Tout est versionné dans `deploy/migration-v2/` :
 
 ```
 deploy/migration-v2/
-├── run-import.sh           enchaîne les étapes, s'arrête à la première erreur
-├── 10-import.sql           vide les tables v2, puis INSERT … SELECT depuis public.*, une transaction
-├── 20-verify.sql           contrôles, lève une exception au moindre écart
+├── run-import.sh           enchaîne les étapes, une seule transaction, s'arrête à la première erreur
+├── 00-import-state.sql     crée infra.import_state (B4)
+├── 10-import.sql           vide les tables v2, puis INSERT … SELECT depuis public.*
+├── 20-verify.sql           contrôles, lève une exception au moindre écart (annule l'import)
+├── 90-import-done.sql      note l'import réussi (B4)
+├── import-to-staging.sh    staging : import puis seconde anonymisation (B4)
 ├── 30-stats.sql            (ou commande de l'API) calcul des stats figées de l'historique
 └── README.md               mode d'emploi, retour arrière
 ```

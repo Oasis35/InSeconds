@@ -32,6 +32,7 @@ public class MagicLinkTests(PostgresFixture postgres) : IAsyncLifetime
         var email = await _app.WaitForEmailAsync("joueuse@example.com", 0);
         Assert.Equal("Ton lien de connexion IN//SECONDS", email.Subject);
         var token = MagicLinkApi.TokenOf(email);
+        await _app.WaitForTokenAsync(token);
         Assert.Contains($"http://localhost:5176/account/login/verify?token={token}", email.HtmlBody, StringComparison.Ordinal);
         Assert.Equal(1L, await _app.Api.ScalarAsync<long>($"""
             SELECT count(*) FROM players.auth_tokens

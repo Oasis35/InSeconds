@@ -52,6 +52,9 @@ jobs:
             v2:
               - 'src/v2/**'
               - '.github/workflows/ci.yml'
+              # Import v1 → v2 (B4) : ses scripts, et le schéma v1 qu'il lit (InSeconds.MigrationTests).
+              - 'deploy/migration-v2/**'
+              - 'src/back/InSeconds.Api/Infrastructure/Persistence/Migrations/**'
             e2e:
               - 'src/front/InSeconds.Client/e2e/**'
               - 'src/front/InSeconds.Client/playwright.config.ts'
@@ -424,7 +427,16 @@ jobs:
             exit 1
           fi
 
-      # Unitaires, architecture et intégration (Testcontainers : Docker est fourni par ubuntu-latest).
+      # Base de forme v1 des tests d'import (InSeconds.MigrationTests, § 8.6 du plan v2) : générée depuis
+      # le code v1 à chaque run, jamais une copie figée qui dériverait.
+      - name: Generate v1 schema for import tests
+        working-directory: src/back
+        run: |
+          dotnet restore InSeconds.Api/InSeconds.Api.csproj
+          dotnet ef migrations script --project InSeconds.Api --output "$RUNNER_TEMP/v1-schema.sql"
+          echo "INSECONDS_V1_SCHEMA_SQL=$RUNNER_TEMP/v1-schema.sql" >> "$GITHUB_ENV"
+
+      # Unitaires, architecture, intégration et import (Testcontainers : Docker est fourni par ubuntu-latest).
       - name: Test
         run: dotnet test --solution InSeconds.slnx --configuration Release --no-build
 
