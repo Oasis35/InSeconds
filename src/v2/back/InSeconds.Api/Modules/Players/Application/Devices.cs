@@ -100,7 +100,8 @@ public static class RevokeOtherDevicesEndpoint
 {
     /// <summary>
     /// <c>POST /api/players/me/devices/revoke-others</c> : « déconnecter les autres appareils », tous sauf
-    /// celui de la requête. Limité par joueur (S11).
+    /// celui de la requête. Les appareils qui ont encore un cookie v1 non converti en font partie : le
+    /// jeton v1 du joueur est supprimé (S6), l'appareil courant a déjà son cookie v2. Limité par joueur (S11).
     /// </summary>
     [Authorize]
     [WolverinePost("/api/players/me/devices/revoke-others")]
@@ -118,6 +119,7 @@ public static class RevokeOtherDevicesEndpoint
             .ToList();
         foreach (var session in others)
             DeviceRevocation.Revoke(session, validationCache, now);
+        await store.DeleteLegacyTokenAsync(current.PlayerId!.Value, ct);
         return new RevokedDevicesResponse(others.Count);
     }
 }

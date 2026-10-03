@@ -98,6 +98,29 @@ public class LegacyCookieTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task DeconnecterLesAutres_CookieV1PasEncoreConverti_Refuse()
+    {
+        // Un appareil (ou un cookie copié) qui n'est pas revenu depuis la bascule est un « autre appareil » :
+        // son cookie v1 ne doit plus ouvrir de session une fois les autres appareils déconnectés (S6).
+        var (playerId, v1Cookie) = await CreateV1PlayerAsync();
+        var converted = await GetMeWithCookieAsync(v1Cookie);
+        var v2Cookie = CookieHeaders.Pair(converted, "inseconds");
+
+        var revoke = await SendWithCookieAsync(HttpMethod.Post, "/api/players/me/devices/revoke-others", v2Cookie);
+
+        Assert.Equal(HttpStatusCode.OK, revoke.StatusCode);
+        Assert.Equal(0L, await _api.ScalarAsync<long>($"SELECT count(*) FROM players.legacy_tokens WHERE player_id = '{playerId}'"));
+        // Au-delà de la minute de réutilisation de la conversion : le cookie v1 ne mène plus à rien.
+        _time.Advance(TimeSpan.FromMinutes(1));
+        var replayed = await GetMeWithCookieAsync(v1Cookie);
+        Assert.Equal(HttpStatusCode.NoContent, replayed.StatusCode);
+        Assert.True(CookieHeaders.Deletes(replayed, "authToken"));
+        Assert.Equal(1L, await _api.ScalarAsync<long>($"SELECT count(*) FROM players.device_sessions WHERE player_id = '{playerId}'"));
+        // L'appareil qui a demandé la déconnexion des autres reste connecté.
+        Assert.Equal(playerId, (await (await GetMeWithCookieAsync(v2Cookie)).Content.ReadFromJsonAsync<PlayerMeResponse>(Ct))!.PlayerId);
+    }
+
+    [Fact]
     public async Task CompteAdminV1_AdminDesLaPremiereRequete()
     {
         var (playerId, v1Cookie) = await CreateV1PlayerAsync();
@@ -223,10 +246,12 @@ public class LegacyCookieTests(PostgresFixture postgres) : IAsyncLifetime
 
     private Task<HttpResponseMessage> GetMeWithCookieAsync(string cookie) => SendWithCookieAsync("/api/players/me", cookie);
 
-    private async Task<HttpResponseMessage> SendWithCookieAsync(string path, string cookie)
+    private Task<HttpResponseMessage> SendWithCookieAsync(string path, string cookie) => SendWithCookieAsync(HttpMethod.Get, path, cookie);
+
+    private async Task<HttpResponseMessage> SendWithCookieAsync(HttpMethod method, string path, string cookie)
     {
         var client = _api.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = false });
-        using var request = new HttpRequestMessage(HttpMethod.Get, path);
+        using var request = new HttpRequestMessage(method, path);
         request.Headers.Add("Cookie", cookie);
         return await client.SendAsync(request, Ct);
     }

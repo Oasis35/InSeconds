@@ -157,6 +157,19 @@ public partial class ProfileTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Confirmation_JetonExpire_400_AdresseInchangee()
+    {
+        var device = await _app.SignInDeviceAsync("expire@example.com", "Expire");
+        await device.Client.PostAsJsonAsync("/api/players/me/email-change", new RequestEmailChange("tardive@example.com"), Ct);
+        var token = ConfirmToken(await _app.WaitForEmailAsync("tardive@example.com", 0));
+        await _app.Api.ExecuteAsync($"UPDATE players.auth_tokens SET expires_at = now() - interval '1 minute' WHERE purpose = 2 AND player_id = '{device.PlayerId}'");
+
+        await AssertProblemAsync(await ConfirmAsync(_app.Api.CreateClient(), token), HttpStatusCode.BadRequest, PlayersErrorCodes.InvalidOrExpiredToken);
+
+        Assert.Equal("expire@example.com", (await MagicLinkApi.MeAsync(device.Client))!.Email);
+    }
+
+    [Fact]
     public async Task Confirmation_JetonInconnu_400()
     {
         _ = await _app.Browser().PostAsync("/api/players/guest", null, Ct);

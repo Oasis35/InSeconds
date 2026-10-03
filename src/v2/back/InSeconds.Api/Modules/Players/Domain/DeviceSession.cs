@@ -23,7 +23,7 @@ public sealed class DeviceSession
 
     public DateTimeOffset? RevokedAt { get; private set; }
 
-    /// <summary>Libellé grossier de l'appareil (« Chrome sur Android »), pour la liste des appareils du profil.</summary>
+    /// <summary>Libellé grossier de l'appareil (« Chrome · Android »), pour la liste des appareils du profil.</summary>
     public string? UserAgentLabel { get; private set; }
 
     /// <param name="userAgentLabel">Libellé calculé à l'ouverture (<see cref="DeviceLabel"/>), jamais l'en-tête brut.</param>

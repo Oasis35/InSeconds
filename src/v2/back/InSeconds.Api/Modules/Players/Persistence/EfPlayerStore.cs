@@ -68,6 +68,10 @@ public sealed class EfPlayerStore(InSecondsDbContext db) : IPlayerStore
         await db.Set<DeviceSession>().Where(s => s.PlayerId == playerId && s.RevokedAt == null).ToListAsync(ct);
 
     // Exécuté tout de suite, dans la transaction ouverte par Wolverine s'il y en a une.
+    public Task<int> DeleteLegacyTokenAsync(Guid playerId, CancellationToken ct) =>
+        db.Set<LegacyToken>().Where(t => t.PlayerId == playerId).ExecuteDeleteAsync(ct);
+
+    // Exécuté tout de suite, dans la transaction ouverte par Wolverine s'il y en a une.
     public Task<int> DeleteExpiredTokensAsync(DateTimeOffset now, CancellationToken ct) =>
         db.Set<AuthToken>().Where(t => t.ExpiresAt <= now).ExecuteDeleteAsync(ct);
 }

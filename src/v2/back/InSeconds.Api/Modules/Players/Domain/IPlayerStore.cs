@@ -48,6 +48,12 @@ public interface IPlayerStore
     /// <summary>Les sessions non révoquées de ce joueur, suivies pour être révoquées.</summary>
     Task<IReadOnlyList<DeviceSession>> FindActiveDeviceSessionsAsync(Guid playerId, CancellationToken ct);
 
+    /// <summary>
+    /// Supprime le hash du jeton v1 de ce joueur : un cookie v1 pas encore converti n'est plus accepté
+    /// (« déconnecter les autres appareils »). Renvoie le nombre de lignes supprimées (0 ou 1).
+    /// </summary>
+    Task<int> DeleteLegacyTokenAsync(Guid playerId, CancellationToken ct);
+
     /// <summary>Supprime les jetons expirés, quel que soit leur usage ; renvoie leur nombre.</summary>
     Task<int> DeleteExpiredTokensAsync(DateTimeOffset now, CancellationToken ct);
 }
