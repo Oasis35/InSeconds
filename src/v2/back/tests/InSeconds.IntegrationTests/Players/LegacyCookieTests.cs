@@ -9,6 +9,7 @@ using InSeconds.Api.Modules.Players.Domain;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 
 namespace InSeconds.IntegrationTests.Players;
 
@@ -16,13 +17,16 @@ namespace InSeconds.IntegrationTests.Players;
 /// Reprise des cookies v1 (§ 5.5 du plan v2, R1, R10, S6). Le cookie v1 est fabriqué comme en v1 :
 /// Data Protection avec le nom d'application <c>InSeconds</c> et le purpose <c>InSeconds.Auth.Cookie</c>,
 /// sur le même trousseau de clés (copié à l'import). Le hash de <c>legacy_tokens</c> est calculé en SQL,
-/// comme à l'import (§ 8.2).
+/// comme à l'import (§ 8.2). L'horloge est simulée pour franchir la minute de réutilisation d'une
+/// conversion (<c>LegacyConversionCache</c>).
 /// </summary>
 public class LegacyCookieTests(PostgresFixture postgres) : IAsyncLifetime
 {
+    private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 10, 3, 12, 0, 0, TimeSpan.Zero));
     private ApiFactory _api = null!;
 
-    public async ValueTask InitializeAsync() => _api = new ApiFactory(await postgres.CreateDatabaseAsync());
+    public async ValueTask InitializeAsync() =>
+        _api = new ApiFactory(await postgres.CreateDatabaseAsync(), services => services.AddSingleton<TimeProvider>(_time));
 
     public ValueTask DisposeAsync() => _api.DisposeAsync();
 
@@ -51,6 +55,8 @@ public class LegacyCookieTests(PostgresFixture postgres) : IAsyncLifetime
         var (playerId, v1Cookie) = await CreateV1PlayerAsync();
 
         var first = await GetMeWithCookieAsync(v1Cookie);
+        // Au-delà de la minute de réutilisation : le second navigateur obtient sa propre session.
+        _time.Advance(TimeSpan.FromMinutes(1));
         var second = await GetMeWithCookieAsync(v1Cookie);
 
         Assert.Equal(2L, await _api.ScalarAsync<long>($"SELECT count(*) FROM players.device_sessions WHERE player_id = '{playerId}'"));
@@ -59,6 +65,36 @@ public class LegacyCookieTests(PostgresFixture postgres) : IAsyncLifetime
             var me = await GetMeWithCookieAsync(CookieHeaders.Pair(converted, "inseconds"));
             Assert.Equal(playerId, (await me.Content.ReadFromJsonAsync<PlayerMeResponse>(Ct))!.PlayerId);
         }
+    }
+
+    [Fact]
+    public async Task RequetesSimultaneesAvecLeMemeCookieV1_UneSeuleSession()
+    {
+        // Au premier chargement, le front envoie plusieurs requêtes en parallèle avec le cookie v1.
+        var (playerId, v1Cookie) = await CreateV1PlayerAsync();
+
+        var responses = await Task.WhenAll(Enumerable.Range(0, 3).Select(_ => GetMeWithCookieAsync(v1Cookie)));
+
+        Assert.Equal(1L, await _api.ScalarAsync<long>($"SELECT count(*) FROM players.device_sessions WHERE player_id = '{playerId}'"));
+        var sessionIds = responses
+            .Select(r => CookieHeaders.Ticket(_api.Services, r, "inseconds").FindFirstValue(PlayerClaims.DeviceSessionId))
+            .Distinct();
+        Assert.Single(sessionIds);
+    }
+
+    [Fact]
+    public async Task CookieV1Rejoue_DansLaMinute_PasDeNouvelleSession()
+    {
+        // Un cookie v1 copié et rejoué en boucle (le navigateur l'efface, un script non) ne remplit pas la table.
+        var (playerId, v1Cookie) = await CreateV1PlayerAsync();
+
+        for (var i = 0; i < 5; i++)
+        {
+            await GetMeWithCookieAsync(v1Cookie);
+            _time.Advance(TimeSpan.FromSeconds(10));
+        }
+
+        Assert.Equal(1L, await _api.ScalarAsync<long>($"SELECT count(*) FROM players.device_sessions WHERE player_id = '{playerId}'"));
     }
 
     [Fact]

@@ -86,6 +86,7 @@ Environ **30 PR**. Les plus grosses sont A1, B1, E2 et E5. L'ordre A → B → C
 - certificat Data Protection exigé seulement quand l'API démarre (pas pour `codegen write`, lancé par la CI sans certificat) ;
 - CHECK de `auth_tokens` : connexion = adresse sans nouvelle adresse, changement d'email = joueur et nouvelle adresse ;
 - convention EF qui retire la déclaration de `citext` hors schéma qu'Npgsql ajoute de lui-même (`citext` reste dans `extensions`) ;
+- conversion d'un cookie v1 : un même jeton converti depuis moins d'une minute retrouve sa session (`LegacyConversionCache`) ; sinon les requêtes parallèles du premier chargement ouvraient plusieurs sessions pour un seul navigateur, et un cookie v1 rejoué en boucle remplissait la table (revue de la PR, 03/10) ;
 - tests : `TestAuthHandler` renvoie au vrai cookie sans en-tête de test ; `TestCertificate` pour les tests en staging et en prod.
 
 Laissé aux PR suivantes : `user_agent_label` reste vide (calculé avec la liste des appareils, B3) ; aucun compte n'est encore créé par l'API (conversion en B2), les tests insèrent `accounts` en SQL.

@@ -57,6 +57,7 @@ public static class AuthSetup
         services.AddScoped<PlayerCookieEvents>();
         services.AddScoped<DeviceSessionValidator>();
         services.AddSingleton<DeviceSessionStatusCache>();
+        services.AddSingleton<LegacyConversionCache>();
 
         services.AddAuthorizationBuilder()
             .AddPolicy(AuthorizationPolicies.Admin, policy => policy.RequireAuthenticatedUser().RequireRole(Roles.Admin));

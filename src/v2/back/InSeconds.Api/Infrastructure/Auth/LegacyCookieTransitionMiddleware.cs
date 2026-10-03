@@ -10,10 +10,12 @@ namespace InSeconds.Api.Infrastructure.Auth;
 /// paramètres de la v1 (nom d'application <c>InSeconds</c>, purpose <c>InSeconds.Auth.Cookie</c>,
 /// R10) et les mêmes clés (copiées à l'import). Le jeton est haché et cherché dans
 /// <c>legacy_tokens</c> (S6) ; s'il y est, le navigateur reçoit un cookie v2 sur une nouvelle session
-/// d'appareil : en v1, tous les appareils d'un compte partagent le même jeton (R1). L'ancien cookie
-/// est ensuite supprimé, qu'il ait servi ou non.
+/// d'appareil : en v1, tous les appareils d'un compte partagent le même jeton (R1). Un même jeton
+/// converti depuis moins d'une minute retrouve sa session au lieu d'en ouvrir une autre
+/// (<see cref="LegacyConversionCache"/>). L'ancien cookie est ensuite supprimé, qu'il ait servi ou non.
 /// </summary>
-internal sealed class LegacyCookieTransitionMiddleware(RequestDelegate next, IDataProtectionProvider dataProtection, IHostEnvironment environment)
+internal sealed class LegacyCookieTransitionMiddleware(
+    RequestDelegate next, IDataProtectionProvider dataProtection, IHostEnvironment environment, LegacyConversionCache conversions)
 {
     public const string CookieName = "authToken";
 
@@ -34,7 +36,10 @@ internal sealed class LegacyCookieTransitionMiddleware(RequestDelegate next, IDa
         if (context.User.Identity?.IsAuthenticated != true && TryReadToken(raw, out var token))
         {
             // Une erreur de base remonte (500) et garde l'ancien cookie : rien n'est perdu (piège 37).
-            var opened = await sessions.OpenFromLegacyTokenAsync(token, time.GetUtcNow(), context.RequestAborted);
+            var opened = await conversions.GetOrOpenAsync(
+                token,
+                () => sessions.OpenFromLegacyTokenAsync(token, time.GetUtcNow(), context.RequestAborted),
+                context.RequestAborted);
             if (opened is not null)
                 await signIn.SignInAsync(opened.PlayerId, opened.DeviceSessionId, opened.IsAdmin);
         }
