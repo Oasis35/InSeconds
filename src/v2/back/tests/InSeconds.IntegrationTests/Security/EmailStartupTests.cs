@@ -15,7 +15,7 @@ public class EmailStartupTests(PostgresFixture postgres) : IAsyncLifetime
     public async Task Staging_SansRedirection_RefuseDeDemarrer()
     {
         await using var api = new ApiFactory(_connectionString,
-            settings: new Dictionary<string, string> { ["Brevo:ApiKey"] = "clé" }, environment: "Staging");
+            settings: new Dictionary<string, string>(TestCertificate.Settings()) { ["Brevo:ApiKey"] = "clé" }, environment: "Staging");
 
         var exception = Assert.ThrowsAny<Exception>(() => api.Server);
 
@@ -25,7 +25,7 @@ public class EmailStartupTests(PostgresFixture postgres) : IAsyncLifetime
     [Fact]
     public async Task Production_SansCleBrevo_RefuseDeDemarrer()
     {
-        await using var api = new ApiFactory(_connectionString, environment: "Production");
+        await using var api = new ApiFactory(_connectionString, settings: TestCertificate.Settings(), environment: "Production");
 
         var exception = Assert.ThrowsAny<Exception>(() => api.Server);
 

@@ -2,7 +2,7 @@
 
 Back de la v2 d'InSeconds, en construction à côté de la v1 (`src/back/`), qui reste en service jusqu'à la bascule. Plan de référence : [`docs/refonte-v2/PLAN.md`](../../../docs/refonte-v2/PLAN.md) et [`docs/refonte-v2/DEVELOPPEMENT.md`](../../../docs/refonte-v2/DEVELOPPEMENT.md). Ce fichier décrit ce qui existe **déjà** dans le code ; il grossit à chaque PR.
 
-État : **PR A6, staging v2** (après A1, le socle, A2, Wolverine et Hangfire, et A3, services transverses : emails, OpenTelemetry, proxies de confiance, rate limiting, en-têtes de sécurité, hôte de test) : CORS, `POST /api/client-errors`, déploiement du staging (cf. « Staging »). Pas encore de module métier ni de vraie connexion (B1) : l'authentification n'a que son socle (cookie, policy Admin).
+État : **PR B1, identité et cookie** (après la phase A : A1 le socle, A2 Wolverine et Hangfire, A3 les services transverses, A6 le staging). Premier module, `Players` : invités, appareils, cookie standard validé en base, reprise des cookies v1, clés Data Protection chiffrées par certificat (cf. « Authentification » et « Module Players »). Pas encore de connexion par lien magique (B2), ni de profil ou d'appareils côté joueur (B3).
 
 ## Commandes
 
@@ -48,19 +48,22 @@ src/v2/back/
 │       ├── Time/          # IGameCalendar (jour de jeu = jour UTC)
 │       ├── Errors/        # ProblemDetails : code + traceId, rien d'interne sur un 500 ; POST /api/client-errors
 │       ├── Health/        # /health et /health/ready
-│       ├── Auth/          # cookie, policy Admin (socle, complété en B1)
+│       ├── Auth/          # cookie standard, validation de l'appareil, transition v1, Data Protection, policy Admin
 │       ├── Messaging/     # Wolverine (HTTP, transactions, outbox)
 │       ├── Jobs/          # Hangfire : tâches planifiées, /jobs, GET /api/admin/jobs/{id}
 │       └── Hosting/       # ApiComposition, --migrate-only, commandes Wolverine
+│   └── Modules/
+│       └── Players/       # Domain, Application (endpoints), Contracts, Persistence, PlayersModule.cs
 │   └── Internal/Generated/   # code Wolverine généré, COMMITÉ (vérifié en CI)
 └── tests/
     ├── InSeconds.UnitTests/
     ├── InSeconds.ArchitectureTests/   # règles de dépendance, horloge, schémas
     └── InSeconds.IntegrationTests/    # Testcontainers postgres:17-alpine + WebApplicationFactory
-                                       # (Security/ : SecurityTests, en-têtes, proxies ; Testing/ : hôte de test)
+                                       # (Security/ : SecurityTests, en-têtes, proxies, Data Protection ;
+                                       #  Players/ : invités, cookie, transition v1 ; Testing/ : hôte de test)
 ```
 
-Les modules métier vivront dans `InSeconds.Api/Modules/<Module>/` ; un module n'utilise des autres que leur dossier `Contracts` (vérifié par `ArchitectureTests/ModuleDependencyTests`, qui s'applique dès qu'un module existe).
+Les modules métier vivent dans `InSeconds.Api/Modules/<Module>/` (le premier : `Players`, B1) ; un module n'utilise des autres que leur dossier `Contracts` (vérifié par `ArchitectureTests/ModuleDependencyTests`, qui s'applique dès qu'un module existe).
 
 ## Règles
 
@@ -82,7 +85,7 @@ Une ligne par réglage : `key` = chemin de configuration complet (`Daily:GuessTi
 
 ## Démarrage
 
-`Program.cs` appelle `ApiComposition.AddInSecondsApi(args)` puis `UseInSecondsApi()`, partagés avec l'hôte de test. Services : réglages en base → OpenTelemetry → `DbContext` → migrations → calendrier → ProblemDetails → health checks → auth → proxies de confiance → rate limiting → email → Wolverine → Hangfire. Pipeline : `UseForwardedHeaders` (en premier : tout le reste voit l'IP réelle) → en-têtes de sécurité → erreurs → authentification → autorisation → rate limiter → routes. Puis `RunJasperFxCommands(args)` (démarre l'API, ou exécute une commande Wolverine comme `codegen write`). Les migrations passent par `DatabaseStartupService` (`IHostedLifecycleService.StartingAsync`) : avant le démarrage de Wolverine et Hangfire, sauf si `Database:MigrateOnStartup=false` ; les réglages sont rechargés juste après (la table peut ne pas avoir existé à la construction de la configuration). Une commande Wolverine ne démarre pas l'hôte : pas de migration, et pas de lecture des réglages en base (`CommandLine.StartsServer`), pour que la CI génère le code sans base.
+`Program.cs` appelle `ApiComposition.AddInSecondsApi(args)` puis `UseInSecondsApi()`, partagés avec l'hôte de test. Services : réglages en base → OpenTelemetry → `DbContext` → migrations → calendrier → ProblemDetails → health checks → Data Protection → auth → proxies de confiance → rate limiting → email → Wolverine → Hangfire → modules (`AddPlayers`). Pipeline : `UseForwardedHeaders` (en premier : tout le reste voit l'IP réelle) → en-têtes de sécurité → erreurs → CORS → authentification → transition des cookies v1 → autorisation → rate limiter → routes. Puis `RunJasperFxCommands(args)` (démarre l'API, ou exécute une commande Wolverine comme `codegen write`). Les migrations passent par `DatabaseStartupService` (`IHostedLifecycleService.StartingAsync`) : avant le démarrage de Wolverine et Hangfire, sauf si `Database:MigrateOnStartup=false` ; les réglages sont rechargés juste après (la table peut ne pas avoir existé à la construction de la configuration). Une commande Wolverine ne démarre pas l'hôte : pas de migration, et pas de lecture des réglages en base (`CommandLine.StartsServer`), pour que la CI génère le code sans base.
 
 `--migrate-only` (`MigrateOnlyCommand`) : hôte minimal (base seulement, ni serveur web ni tâche de fond), applique les migrations et rend la main avec le code 0. Sert au déploiement et à l'import des données v1.
 
@@ -118,21 +121,43 @@ Projet sans dépendance vers l'API ni les modules (vérifié par `ArchitectureTe
 `TestingProgram` : la même composition que l'API, plus les faux et les routes `/api/e2e`. Refuse de démarrer hors `Testing` et `Development`. Jamais dans l'image de prod (S9) : l'API ne le référence pas (`ProjectDependencyTests`), le `Dockerfile` ne le copie pas, et le job CI `back-v2` construit l'image et échoue si `InSeconds.Api.Testing` s'y trouve.
 
 - `CapturingEmailSender` remplace `IEmailSender` (les emails restent en mémoire).
-- `POST /api/e2e/reset` : vide (Respawn) les tables de **tous les schémas sauf** `public` (tables v1), `infra`, `extensions`, `messaging` et `jobs`, lus en base à chaque appel (un nouveau module est couvert sans rien changer), et les emails capturés. Sans schéma de module, ne fait rien.
+- `POST /api/e2e/reset` : vide (Respawn) les tables de **tous les schémas sauf** `public` (tables v1), `infra`, `extensions`, `messaging` et `jobs`, lus en base à chaque appel (un nouveau module est couvert sans rien changer, `players` depuis B1), et les emails capturés.
 - `GET /api/e2e/last-email?to=` : dernier email envoyé à cette adresse (404 sinon).
-- À venir : faux Deezer (C1), seed, connexion admin de test et dev-login (B1), `generate-today` (D).
+- À venir : faux Deezer (C1), seed, dev-login (B2), connexion admin de test (avec les premiers E2E admin), `generate-today` (D).
 - Tests : `Testing/TestingFactory` (`WebApplicationFactory<TestingProgram>`).
 
-## Authentification (socle, `Infrastructure/Auth/AuthSetup.cs`)
+## Authentification (`Infrastructure/Auth/`)
 
-Cookie ASP.NET Core qui répond 401/403 (jamais de redirection), policy `Admin` = joueur authentifié avec le rôle `admin`, antiforgery enregistré. B1 le complète (`__Host-`, sessions par appareil, rôle lu en base). Tests : `TestAuthHandler` remplace l'authentification par deux en-têtes (`factory.CreateClient(TestUser.Admin)`, `TestUser.Player`) ; le refus reste celui du cookie de l'API.
+Cookie standard d'ASP.NET Core (§ 5.5 du plan v2), depuis B1.
+
+- **Cookie** (`AuthSetup`) : `__Host-inseconds` (`Secure`, `SameSite=Lax`) en prod et en staging, `inseconds` (`SameSite=Strict`, sans `Secure`) en développement et en test ; `HttpOnly`, persistant, 90 jours glissants. 401/403, jamais de redirection (`PlayerCookieEvents`).
+- **Ticket** (`PlayerClaims`) : `player_id` et `device_session_id` seulement. Le rôle admin n'y est ni écrit ni lu : la validation le relit en base et ne l'ajoute qu'au joueur de la requête.
+- **Validation à chaque requête** (`PlayerCookieEvents.ValidatePrincipal` → `DeviceSessionValidator`) : appareil existant, non révoqué, joueur non supprimé, rôle admin relu en base. Résultat gardé **une minute** dans un cache dédié (`DeviceSessionStatusCache`, pas l'`IMemoryCache` partagé : piège 24), fraîcheur jugée sur `TimeProvider` : une révocation ou un retrait du rôle s'appliquent en moins d'une minute. Dernière visite (appareil et joueur) notée au plus **toutes les 5 minutes** (R17). Appareil invalide : cookie supprimé, requête anonyme. **Erreur de base : 500, jamais de déconnexion** (piège 37).
+- **Joueur courant** : `ICurrentPlayer` (`Modules/Players/Contracts`), lu dans les claims par `ClaimsCurrentPlayer`. Pose du cookie : `IPlayerSignIn` (le joueur est visible dès la suite de la requête).
+- **Transition des cookies v1** (`LegacyCookieTransitionMiddleware`, juste après l'authentification) : cookie `authToken` déchiffré avec les paramètres v1 (application `InSeconds`, purpose `InSeconds.Auth.Cookie`, R10), jeton haché (`LegacyToken.HashOf` : SHA-256 du Guid en minuscules avec tirets, en UTF-8, le même calcul que l'import) et cherché dans `players.legacy_tokens` (S6). Trouvé : **nouvelle session d'appareil à chaque conversion** (en v1, tous les appareils d'un compte partagent le jeton, R1) et cookie v2. L'ancien cookie est toujours supprimé, sauf sur une erreur de base (piège 37). Un cookie v2 valide l'emporte.
+- **Data Protection** (`DataProtectionSetup`) : application `InSeconds` (comme en v1), clés dans `infra.data_protection_keys` (même forme que la table v1, copiée à l'import). Chiffrées par le certificat `DataProtection:CertificatePath`/`CertificatePassword` (S16, `ProtectKeysWithCertificate` + `UnprotectKeysWithAnyCertificate`), **exigé quand l'API démarre en prod et en staging** (pas pour `codegen write`). En développement et en test, sans certificat, les clés restent en clair.
+- **Policy `Admin`** : joueur authentifié avec le rôle `admin`, posée sur tout `/api/admin` (`WolverineSetup`) et sur `/jobs`. Antiforgery enregistré (actions du tableau de bord Hangfire).
+- **Tests** : `TestAuthHandler` simule un joueur par deux en-têtes (`factory.CreateClient(TestUser.Admin)`, `TestUser.Player`) pour les tests d'autorisation des routes ; **sans ces en-têtes, tout passe au vrai cookie** (validation comprise). `TestCertificate` fournit le certificat exigé en staging et en prod (`StagingSettings()`). Tests : `Players/GuestTests`, `Players/CookieValidationTests` (horloge simulée), `Players/LegacyCookieTests`, `Security/DataProtectionTests`, `UnitTests/Players`.
+
+## Module Players (`Modules/Players/`)
+
+Identité, compte, appareils, rôle admin (§ 3.1 du plan v2). Point d'entrée `PlayersModule.AddPlayers()`.
+
+- **Tables** (schéma `players`, migration `PlayersAndDataProtectionKeys`) : `players` (invité = joueur sans compte, suppression logique `deleted_at`), `accounts` (`email` et `pseudo` en `citext` uniques, `is_admin`, `linked_at` vide pour les comptes repris), `device_sessions` (index sur `player_id`), `legacy_tokens` (hash unique), `auth_tokens` (connexion et changement d'email, CHECK par `purpose` : S2). Clés étrangères vers `players`, sans navigation EF.
+- **`device_sessions.id` tiré d'une séquence (HiLo, `device_sessions_hilo`) dès l'ajout** : l'identifiant va dans le cookie avant que Wolverine n'enregistre la transaction, sans `SaveChangesAsync` dans le handler.
+- **Domaine** (`Domain/`) : `Player.CreateGuest`, `DeviceSession.Open`, `LegacyToken.HashOf` ; `Account` et `AuthToken` ne font que porter leurs colonnes (créés à partir de B2). Constructeurs privés, `private set` (concession EF).
+- **Ports** : `IPlayerStore` (écritures, `Domain/`), `IPlayerQueries` (lectures, `Application/`), `IPlayerSessions` (`Contracts/`, pour l'authentification : état d'un appareil, dernière visite, reprise d'un cookie v1 ; ces écritures-là s'enregistrent elles-mêmes, hors handler Wolverine). Implémentations EF publiques (`Persistence/`) : Wolverine construit lui-même les dépendances des endpoints, et refuse une implémentation interne (`InvalidServiceLocationException` au `codegen write`).
+- **Endpoints** (`Application/`, Wolverine.Http) :
+  - `POST /api/players/guest` : crée un invité et son appareil, pose le cookie ; un navigateur déjà identifié garde son joueur. Rate limit `player-creation` (30 / 10 min par IP, S11).
+  - `GET /api/players/me` : lecture seule, **204 sans identité** (`[NoContentIfMissing]`), ne crée jamais de joueur (R7) ; `{ playerId, isGuest, email, pseudo, isAdmin }`.
+  - `GET /api/admin/me` : `{ playerId }` pour un admin, 401/403 sinon.
 
 ## Erreurs du front (`POST /api/client-errors`)
 
 `Infrastructure/Errors/ReportClientErrorEndpoint.cs`, même contrat qu'en v1 (`source` `js`/`http`, `message`, `stack`, `url`, `httpStatus`, `relatedTraceId`), appelé par `ErrorReportingService` du front v2 (via `HttpBackend`, hors client généré : `[ExcludeFromDescription]`).
 
 - Public, limité par IP (`[EnableRateLimiting(RateLimitPolicies.ClientErrorReport)]`, 20 / 5 min), bornes du validator reprises de la v1 (message ≤ 1000, pile ≤ 8000, URL ≤ 500, statut 0-599, trace ≤ 64). Réponse 204.
-- Journalisé en **Error**, EventId **1100** et message de la v1 (`ClientErrorLog`) : les tableaux de bord existants restent valables. Retours à la ligne neutralisés (pile aplatie avec `|`), **query string et fragment retirés de l'URL côté serveur** même si un client en envoie. Pas encore d'identité du joueur dans le journal : elle viendra du scope posé à partir de B1.
+- Journalisé en **Error**, EventId **1100** et message de la v1 (`ClientErrorLog`) : les tableaux de bord existants restent valables. Retours à la ligne neutralisés (pile aplatie avec `|`), **query string et fragment retirés de l'URL côté serveur** même si un client en envoie. Pas encore d'identité du joueur dans le journal : la v1 la posait par un scope de journalisation (`PlayerTelemetryMiddleware`), que le plan v2 n'attribue encore à aucune PR.
 - Tests : `UnitTests/Infrastructure/ReportClientErrorTests` (validation, journal), `IntegrationTests/ClientErrorTests` (204, 400 ProblemDetails, 429 au 21e rapport ; confidentialité : un cookie, un `Authorization` et un jeton dans l'URL n'apparaissent ni dans les traces ni dans les journaux, test v1 `Traces_NeContiennentNiCookieNiAuthorization` repris).
 
 ## Staging
@@ -144,7 +169,7 @@ Depuis A6, `docker-compose.staging.yml` (racine du dépôt) construit cette API 
 3. redémarre l'API (Wolverine et Hangfire créent leurs schémas à ce moment) et le front ;
 4. lance `deploy/vps/smoke-test.sh` sur `https://api-dev.inseconds.cc` : `/api/e2e/reset` et `/api/auth/dev-login` en 404 (S9, sondés en GET : présents, ils répondraient 405 sans rien exécuter), en-têtes de sécurité (S15), `/jobs` en 401/403 ou derrière Cloudflare Access (S3).
 
-**Certificat Data Protection** : monté dès A6, lu par l'API à partir de B1 (`ProtectKeysWithCertificate`, PLAN S16), sous les clés `DataProtection:CertificatePath` (`/run/secrets/dataprotection.pfx`) et `DataProtection:CertificatePassword` (`DATA_PROTECTION_CERTIFICATE_PASSWORD` de `.env.staging`, obligatoire : compose refuse de démarrer sans).
+**Certificat Data Protection** : monté dès A6, lu par l'API depuis B1 (`ProtectKeysWithCertificate`, PLAN S16, cf. « Authentification »), sous les clés `DataProtection:CertificatePath` (`/run/secrets/dataprotection.pfx`) et `DataProtection:CertificatePassword` (`DATA_PROTECTION_CERTIFICATE_PASSWORD` de `.env.staging`, obligatoire : compose refuse de démarrer sans).
 
 ## Ports
 

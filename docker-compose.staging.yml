@@ -27,7 +27,7 @@ services:
       # Tous les emails du staging partent vers cette seule adresse, avec un bandeau DEV
       # (RedirectingEmailSender). Obligatoire : l'API refuse de démarrer sans.
       EmailRedirect__To: ${STAGING_EMAIL_REDIRECT_TO}
-      # Certificat qui chiffrera les clés Data Protection (PLAN S16), lu par l'API à partir de B1.
+      # Certificat qui chiffre les clés Data Protection (PLAN S16), chargé par l'API au démarrage.
       DataProtection__CertificatePath: /run/secrets/dataprotection.pfx
       DataProtection__CertificatePassword: ${DATA_PROTECTION_CERTIFICATE_PASSWORD:?à renseigner dans .env.staging (mot de passe de secrets/dataprotection.pfx)}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}

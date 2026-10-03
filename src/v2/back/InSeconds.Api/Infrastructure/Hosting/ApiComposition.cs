@@ -6,6 +6,7 @@ using InSeconds.Api.Infrastructure.Messaging;
 using InSeconds.Api.Infrastructure.Persistence;
 using InSeconds.Api.Infrastructure.Settings;
 using InSeconds.Api.Infrastructure.Time;
+using InSeconds.Api.Modules.Players;
 using InSeconds.Infrastructure.Email;
 using InSeconds.Infrastructure.Http;
 using InSeconds.Infrastructure.Networking;
@@ -28,7 +29,8 @@ public static class ApiComposition
 
         // Réglages lus en base, sauf pour une commande qui ne démarre pas l'API (la CI génère le code
         // Wolverine sans base).
-        if (CommandLine.StartsServer(args))
+        var startsServer = CommandLine.StartsServer(args);
+        if (startsServer)
             builder.AddDatabaseSettings(connectionString);
 
         builder.AddInSecondsObservability(BuildInfo.BuildUtc ?? "unknown");
@@ -38,13 +40,15 @@ public static class ApiComposition
         builder.Services.AddGameCalendar();
         builder.Services.AddInSecondsProblemDetails();
         builder.Services.AddInSecondsHealthChecks();
-        builder.Services.AddInSecondsAuth();
+        builder.Services.AddInSecondsDataProtection(configuration, builder.Environment, startsServer);
+        builder.Services.AddInSecondsAuth(builder.Environment);
         builder.Services.AddInSecondsForwardedHeaders();
         builder.Services.AddInSecondsCors(configuration);
         builder.Services.AddInSecondsRateLimiting(configuration);
         builder.Services.AddInSecondsEmail(configuration, builder.Environment);
         builder.AddInSecondsWolverine(connectionString);
         builder.Services.AddInSecondsJobs(connectionString, configuration);
+        builder.Services.AddPlayers();
         return builder;
     }
 
@@ -56,6 +60,7 @@ public static class ApiComposition
         app.UseInSecondsErrorHandling();
         app.UseInSecondsCors();
         app.UseAuthentication();
+        app.UseLegacyCookieTransition();
         app.UseAuthorization();
         app.UseRateLimiter();
         app.MapInSecondsHealth();

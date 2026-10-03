@@ -78,6 +78,18 @@ Environ **30 PR**. Les plus grosses sont A1, B1, E2 et E5. L'ordre A → B → C
 | **B4** Import Players | `deploy/migration-v2/` (squelette, `run-import.sh`, `import_state`) ; partie Players de l'import et de la vérification ; projet `InSeconds.MigrationTests` (base v1 générée en CI) ; **test de bout en bout du cookie v1**, dont deux navigateurs ; workflow « Import v1 → staging v2 » (copie `public`, anonymisation avant et après) | import staging sans écart pour les joueurs |
 | **B5** Front account | `/account/login`, `verify`, profil, appareils, confirmation d'email ; `BrowserId` ; header avec avatar et série (vide jusqu'à Daily) | **J2** : E2E login, profil, changement d'email réactivés et verts |
 
+**Fait en B1 :** module `Players` (`InSeconds.Api/Modules/Players/` : `Domain`, `Application`, `Contracts`, `Persistence`), migration `PlayersAndDataProtectionKeys` (schéma `players` et `infra.data_protection_keys`). Décisions :
+- `device_sessions.id` tiré d'une séquence EF (HiLo) dès l'ajout : l'identifiant va dans le cookie avant que Wolverine n'enregistre la transaction, sans `SaveChangesAsync` dans le handler ;
+- cookie `__Host-inseconds` en prod et en staging, `inseconds` en développement et en test ; claims `player_id` et `device_session_id` seulement, le rôle admin n'y est ni écrit ni lu (relu en base à chaque requête) ;
+- validation de l'appareil dans un cache dédié (pas l'`IMemoryCache` partagé, piège 24), fraîcheur jugée sur `TimeProvider` ;
+- `GET /api/players/me` en `[NoContentIfMissing]` : le 204 sans renvoyer d'`IResult` ;
+- certificat Data Protection exigé seulement quand l'API démarre (pas pour `codegen write`, lancé par la CI sans certificat) ;
+- CHECK de `auth_tokens` : connexion = adresse sans nouvelle adresse, changement d'email = joueur et nouvelle adresse ;
+- convention EF qui retire la déclaration de `citext` hors schéma qu'Npgsql ajoute de lui-même (`citext` reste dans `extensions`) ;
+- tests : `TestAuthHandler` renvoie au vrai cookie sans en-tête de test ; `TestCertificate` pour les tests en staging et en prod.
+
+Laissé aux PR suivantes : `user_agent_label` reste vide (calculé avec la liste des appareils, B3) ; aucun compte n'est encore créé par l'API (conversion en B2), les tests insèrent `accounts` en SQL.
+
 ---
 
 ## 5. Phase C : Catalogue (peut avancer en parallèle de D)

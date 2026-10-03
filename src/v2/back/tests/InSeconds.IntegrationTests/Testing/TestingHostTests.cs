@@ -38,7 +38,7 @@ public class TestingHostTests(PostgresFixture postgres) : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var reset = await response.Content.ReadFromJsonAsync<ResetResponse>(TestContext.Current.CancellationToken);
-        Assert.Equal(["module_test"], reset!.Schemas);
+        Assert.Equal(["module_test", "players"], reset!.Schemas);
         Assert.Equal(0, await CountAsync("module_test.items"));
         Assert.Equal(1, await CountAsync("public.\"Players\""));
         Assert.Equal(settingsBefore, await CountAsync("infra.settings"));
@@ -46,15 +46,18 @@ public class TestingHostTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Reset_SansModule_NeTouchePasLaBase()
+    public async Task Reset_VideLeModulePlayers_SansToucherAuxTablesV1()
     {
         var client = _host.CreateClient();
-        await client.GetAsync("/health", TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK,
+            (await client.PostAsync("/api/players/guest", null, TestContext.Current.CancellationToken)).StatusCode);
         await ExecuteAsync("""CREATE TABLE public."Players" (id int primary key); INSERT INTO public."Players" VALUES (1);""");
 
         var response = await client.PostAsync("/api/e2e/reset", null, TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(0, await CountAsync("players.players"));
+        Assert.Equal(0, await CountAsync("players.device_sessions"));
         Assert.Equal(1, await CountAsync("public.\"Players\""));
     }
 

@@ -24,5 +24,8 @@ public static class DbSchemas
     /// <summary>Tables de Hangfire (tâches planifiées et leur historique), créées par Hangfire.</summary>
     public const string Jobs = "jobs";
 
+    /// <summary>Module Players : joueurs, comptes, appareils, jetons (§ 4.2 du plan v2).</summary>
+    public const string Players = "players";
+
     public const string MigrationsHistoryTable = "__ef_migrations_history";
 }
