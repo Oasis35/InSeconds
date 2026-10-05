@@ -253,6 +253,102 @@ jobs:
       - name: Compare E2E lists
         run: node scripts/check-e2e-parity.mjs
 
+  # E2E v2 (J2, B5) : les specs réactivés (e2e/disabled-specs.json) contre l'hôte de test de l'API v2
+  # (InSeconds.Api.Testing, port 5175) et le front v2 servi par ng serve (port 5176, proxy /api).
+  # Même principe que le job `e2e` de la v1 ; la liste des specs actifs grandit à chaque PR qui en
+  # réactive, jusqu'au jalon J4 (liste vide).
+  e2e-v2:
+    name: E2E v2 (Playwright)
+    runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.v2 == 'true'
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: inseconds
+          POSTGRES_PASSWORD: inseconds_e2e
+          POSTGRES_DB: inseconds_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U inseconds"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: src/v2/back/global.json
+
+      - name: Build test host (Debug)
+        working-directory: src/v2/back
+        run: dotnet build InSeconds.Api.Testing/InSeconds.Api.Testing.csproj --configuration Debug
+
+      # --no-launch-profile : sans lui, launchSettings.json impose l'environnement Development
+      # (origines de confiance, limites de débit…), cf. piège 9 de la v1.
+      - name: Start test host
+        working-directory: src/v2/back/InSeconds.Api.Testing
+        run: dotnet run --no-build --no-launch-profile --configuration Debug --urls http://localhost:5175 > /tmp/backend-v2.log 2>&1 &
+        env:
+          ASPNETCORE_ENVIRONMENT: Testing
+          ConnectionStrings__DefaultConnection: >-
+            Host=localhost;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=inseconds_e2e
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: src/v2/front/InSeconds.Client/package-lock.json
+
+      - name: Install npm dependencies
+        working-directory: src/v2/front/InSeconds.Client
+        run: npm ci --ignore-scripts
+
+      - name: Start Angular dev server
+        working-directory: src/v2/front/InSeconds.Client
+        run: npx --no-install ng serve --configuration e2e-ci --port 5176 > /tmp/angular-v2.log 2>&1 &
+
+      - name: Install Playwright browsers
+        working-directory: src/v2/front/InSeconds.Client
+        run: npx --no-install playwright install --with-deps chromium
+
+      # --retry-connrefused : sans réponse au bout du délai, l'étape échoue (une boucle `curl && break` laisse passer).
+      - name: Wait for backend
+        run: curl -sf --retry 60 --retry-delay 3 --retry-connrefused --retry-all-errors http://localhost:5175/health
+
+      - name: Wait for frontend
+        run: curl -sf -o /dev/null --retry 120 --retry-delay 3 --retry-connrefused --retry-all-errors http://localhost:5176
+
+      - name: Run E2E tests
+        working-directory: src/v2/front/InSeconds.Client
+        run: npx --no-install playwright test
+        env:
+          CI: 'true'
+
+      - name: Diagnostics (on failure)
+        if: failure()
+        run: |
+          echo "=== Backend logs ==="
+          cat /tmp/backend-v2.log || true
+          echo "=== Angular logs ==="
+          cat /tmp/angular-v2.log || true
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-v2
+          path: src/v2/front/InSeconds.Client/playwright-report/
+          retention-days: 7
+
   integration-tests:
     name: Backend (integration tests)
     runs-on: ubuntu-latest
@@ -470,6 +566,7 @@ jobs:
       - front-v2
       - nginx-headers-v2
       - back-v2
+      - e2e-v2
       - e2e-parity
     steps:
       - name: Check job results

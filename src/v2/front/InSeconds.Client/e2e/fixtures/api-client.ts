@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test';
 import { inSequence } from './sequence';
 
 // CI utilise 5175 (port de l'API v2), local utilise 5177 (évite le conflit avec le dev normal)
@@ -31,14 +32,23 @@ function submitEmptyAnswers(
   });
 }
 
+/** Les liens que l'API envoie par email (adresse publique + chemin du front + jeton). */
+const MAGIC_LINK = /https?:\/\/[^\s"'<>]+\/account\/login\/verify\?token=[\w-]+/;
+const EMAIL_CHANGE_LINK = /https?:\/\/[^\s"'<>]+\/account\/confirm-email\?token=[\w-]+/;
+
 export class ApiTestClient {
+  /** Dernier lien lu par adresse : un nouveau lien est attendu tant qu'il n'a pas changé (chaque jeton est neuf). */
+  private readonly lastLinks = new Map<string, string>();
+
+  // Vide les tables des modules et les emails capturés (hôte de test v2 : POST, sans authentification).
   async reset(options: { deleteChallenge?: boolean; emptyPool?: boolean } = {}): Promise<void> {
     const params = new URLSearchParams();
     if (options.deleteChallenge) params.set('deleteChallenge', 'true');
     if (options.emptyPool) params.set('emptyPool', 'true');
     const query = params.size > 0 ? `?${params}` : '';
-    const res = await fetch(`${BASE}/api/e2e/reset${query}`, { method: 'DELETE', headers: ADMIN_HEADERS });
+    const res = await fetch(`${BASE}/api/e2e/reset${query}`, { method: 'POST' });
     if (!res.ok) throw new Error(`E2E reset failed: ${res.status}`);
+    this.lastLinks.clear();
   }
 
   // Purge complète + re-seed : recrée tracks, défis et joueur dev dans l'ordre connu
@@ -50,25 +60,34 @@ export class ApiTestClient {
     if (!res.ok) throw new Error(`E2E reseed failed: ${res.status}`);
   }
 
-  // Le token brut n'est jamais persisté en base (seul son hash l'est) — cet endpoint
-  // E2E-only relit l'URL depuis le dernier email capturé (NullEmailSender en Testing).
-  async getLastMagicLinkUrl(email: string): Promise<string> {
-    const res = await fetch(`${BASE}/api/e2e/last-magic-link?email=${encodeURIComponent(email)}`, {
-      headers: ADMIN_HEADERS,
-    });
-    if (!res.ok) throw new Error(`getLastMagicLinkUrl failed: ${res.status}`);
-    const body = (await res.json()) as { url: string };
-    return body.url;
+  // Le token brut n'est jamais persisté en base (seul son hash l'est) : on relit l'URL dans le
+  // dernier email capturé par l'hôte de test (/api/e2e/last-email). L'email part de l'outbox, donc un
+  // peu après la réponse 204 : on attend qu'un lien différent du précédent apparaisse.
+  getLastMagicLinkUrl(email: string): Promise<string> {
+    return this.waitForNewLink(email, MAGIC_LINK);
   }
 
   // Même principe que getLastMagicLinkUrl, pour le flux de changement d'email.
-  async getLastEmailChangeLinkUrl(email: string): Promise<string> {
-    const res = await fetch(`${BASE}/api/e2e/last-email-change-link?email=${encodeURIComponent(email)}`, {
-      headers: ADMIN_HEADERS,
-    });
-    if (!res.ok) throw new Error(`getLastEmailChangeLinkUrl failed: ${res.status}`);
-    const body = (await res.json()) as { url: string };
-    return body.url;
+  getLastEmailChangeLinkUrl(email: string): Promise<string> {
+    return this.waitForNewLink(email, EMAIL_CHANGE_LINK);
+  }
+
+  private async waitForNewLink(email: string, pattern: RegExp): Promise<string> {
+    const key = `${pattern.source}|${email.toLowerCase()}`;
+    const previous = this.lastLinks.get(key);
+    let found: string | undefined;
+    await expect
+      .poll(async () => {
+        const res = await fetch(`${BASE}/api/e2e/last-email?to=${encodeURIComponent(email)}`);
+        if (!res.ok) return undefined;
+        const { htmlBody } = (await res.json()) as { htmlBody: string };
+        const url = pattern.exec(htmlBody)?.[0];
+        found = url !== previous ? url : undefined;
+        return found;
+      }, { message: `Aucun nouvel email à ${email}`, timeout: 15_000 })
+      .toBeTruthy();
+    this.lastLinks.set(key, found!);
+    return found!;
   }
 
   async generateToday(): Promise<void> {

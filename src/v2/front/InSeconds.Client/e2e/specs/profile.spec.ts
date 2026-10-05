@@ -1,5 +1,4 @@
 import { test, expect } from '../fixtures/test';
-import { GamePage } from '../pages/game.page';
 import { linkAccount } from '../pages/login.page';
 
 const EMAIL_A = 'profile-a@e2e.test';
@@ -13,23 +12,17 @@ test.describe('Profil', () => {
   test('l\'avatar du header (compte connecté) mène au profil', async ({ page, api }) => {
     await linkAccount(page, api, EMAIL_A, 'AvatarUserE2E');
 
-    const game = new GamePage(page);
-    await game.waitForWelcome();
-
-    // Le footer porte aussi une icône avec le même `title` — scoper au header.
-    await page.locator('app-game-header').getByTitle('AvatarUserE2E').click();
+    // Le profil porte aussi des éléments avec le même texte — scoper au header.
+    await page.locator('app-header').getByTitle('AvatarUserE2E').click();
     await expect(page).toHaveURL(/\/profile$/);
   });
 
   test('change de pseudo avec succès', async ({ page, api }) => {
     await linkAccount(page, api, EMAIL_A, 'AncienPseudoE2E');
 
-    const game = new GamePage(page);
-    await game.waitForWelcome();
     await page.goto('/profile');
 
-    await expect(page.getByText('Série')).toBeVisible();
-    await expect(page.getByText('Parties jouées')).toBeVisible();
+    // La série et les parties jouées s'afficheront ici avec le module Daily (v1 : cartes « Série » et « Parties jouées »).
 
     await page.getByPlaceholder('Ton pseudo').fill('NouveauPseudoE2E');
     await page.getByRole('button', { name: 'Changer' }).click();
