@@ -1,0 +1,92 @@
+<main class="da-bg relative min-h-dvh flex flex-col items-center p-6 pt-20 screen-enter">
+  <app-decor-background />
+
+  <div class="relative flex w-full max-w-sm flex-col gap-6 py-8">
+    <h1 class="text-center text-2xl font-bold" style="font-family:var(--font-display);color:var(--text-hi)">
+      {{ 'account.profile.title' | translate }}
+    </h1>
+
+    <!-- Pseudo -->
+    <form [formRoot]="pseudoForm" (submit)="savePseudo()" novalidate>
+      <div class="flex gap-2">
+        <label for="profile-pseudo" class="sr-only">{{ 'account.profile.pseudo.label' | translate }}</label>
+        <input
+          id="profile-pseudo"
+          class="app-input min-w-0 flex-1"
+          autocomplete="off"
+          [formField]="pseudoForm.pseudo"
+          aria-describedby="profile-pseudo-help"
+          [placeholder]="'account.profile.pseudo.placeholder' | translate"
+          (input)="profile.clearPseudo()"
+        />
+        <button appButton type="submit" size="sm" [disabled]="pseudoSaveDisabled()">
+          {{ (profile.pseudoStatus() === 'pending' ? 'account.profile.pseudo.saving' : profile.pseudoStatus() === 'done' ? 'account.profile.pseudo.saved' : 'account.profile.pseudo.save') | translate }}
+        </button>
+      </div>
+      <p class="mt-2 text-xs" id="profile-pseudo-help" role="status" [style.color]="pseudoHint().isError ? 'var(--text-error)' : 'var(--text-muted)'">
+        {{ pseudoHint().key | translate }}
+      </p>
+    </form>
+
+    <!-- Email -->
+    <form [formRoot]="emailForm" (submit)="saveEmail()" novalidate>
+      <div class="flex gap-2">
+        <label for="profile-email" class="sr-only">{{ 'account.profile.email.label' | translate }}</label>
+        <input
+          id="profile-email"
+          class="app-input min-w-0 flex-1"
+          type="email"
+          autocomplete="off"
+          [formField]="emailForm.email"
+          aria-describedby="profile-email-help"
+          [placeholder]="'account.profile.email.placeholder' | translate"
+          (input)="profile.clearEmailChange()"
+        />
+        <button appButton type="submit" size="sm" [disabled]="emailSaveDisabled()">
+          {{ (profile.emailStatus() === 'pending' ? 'account.profile.email.sending' : profile.emailStatus() === 'done' ? 'account.profile.email.sent' : 'account.profile.email.change') | translate }}
+        </button>
+      </div>
+      <p class="mt-2 text-xs" id="profile-email-help" role="status" [style.color]="emailHint().isError ? 'var(--text-error)' : 'var(--text-muted)'">
+        {{ emailHint().key | translate: { email: emailForm.email().value().trim() } }}
+      </p>
+    </form>
+
+    <!-- Appareils -->
+    <section class="flex flex-col gap-3" aria-labelledby="devices-title">
+      <div>
+        <h2 id="devices-title" class="text-sm font-bold uppercase tracking-widest" style="font-family:var(--font-display);color:var(--text-muted)">
+          {{ 'account.devices.title' | translate }}
+        </h2>
+        <p class="mt-1 text-xs" style="color:var(--text-faint)">{{ 'account.devices.intro' | translate }}</p>
+      </div>
+
+      @if (devices.error()) {
+        <p class="text-xs" style="color:var(--text-error)">{{ 'account.devices.loadError' | translate }}</p>
+      }
+      <app-device-list [devices]="devices.devices()" [locale]="locale()" [busyId]="devices.busyId()" (revoke)="revoke($event)" />
+      @if (devicesActionError(); as error) {
+        <app-error-message [messageKey]="devicesActionKey()" [traceId]="error.traceId" />
+      }
+      @if (devices.others().length > 0) {
+        <button appButton type="button" variant="secondary" size="sm" (click)="revokeOthers()">
+          {{ 'account.devices.revokeOthers' | translate }}
+        </button>
+      }
+    </section>
+
+    <!-- Déconnexion -->
+    <div class="mt-1 flex flex-col gap-2.5">
+      @if (logoutError(); as error) {
+        <app-error-message [messageKey]="'account.profile.logout.error'" [traceId]="error.traceId" />
+      }
+      <button appButton type="button" variant="danger" [block]="true" (click)="logout()">
+        {{ 'account.profile.logout.action' | translate }}
+      </button>
+      <a routerLink="/" class="py-2 text-center text-sm" style="color:var(--text-faint)">{{ 'account.profile.backToGame' | translate }}</a>
+    </div>
+
+    @if (session.isAdmin()) {
+      <app-browser-id />
+    }
+  </div>
+</main>

@@ -14,17 +14,26 @@ describe('SessionStore', () => {
   });
 
   it('distingue un invité d\'un compte lié', () => {
-    store.signedIn({ id: 'p1', pseudo: null, isGuest: true, isAdmin: false });
+    store.signedIn({ id: 'p1', pseudo: null, email: null, isGuest: true, isAdmin: false });
     expect(store.isKnown()).toBe(true);
     expect(store.isLinked()).toBe(false);
 
-    store.signedIn({ id: 'p1', pseudo: 'Clem', isGuest: false, isAdmin: true });
+    store.signedIn({ id: 'p1', pseudo: 'Clem', email: 'clem@example.com', isGuest: false, isAdmin: true });
     expect(store.isLinked()).toBe(true);
     expect(store.isAdmin()).toBe(true);
   });
 
+  it('sait si l’identité a été lue (un visiteur sans joueur n’est pas « pas encore lu »)', () => {
+    expect(store.loaded()).toBe(false);
+
+    store.markLoaded();
+
+    expect(store.loaded()).toBe(true);
+    expect(store.player()).toBeNull();
+  });
+
   it('oublie le joueur à la déconnexion', () => {
-    store.signedIn({ id: 'p1', pseudo: 'Clem', isGuest: false, isAdmin: true });
+    store.signedIn({ id: 'p1', pseudo: 'Clem', email: 'clem@example.com', isGuest: false, isAdmin: true });
 
     store.signedOut();
 

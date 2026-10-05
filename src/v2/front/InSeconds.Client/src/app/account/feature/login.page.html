@@ -1,0 +1,33 @@
+<app-auth-page [heading]="'account.login.title' | translate">
+  <p class="text-sm leading-relaxed" style="color:var(--text-muted)">{{ 'account.login.subtitle' | translate }}</p>
+
+  @if (store.isFulfilled()) {
+    <p class="text-sm leading-relaxed" role="status" style="color:var(--text-light)">{{ 'account.login.sent' | translate }}</p>
+  } @else {
+    <form [formRoot]="loginForm" (submit)="submit()" class="space-y-3" novalidate>
+      <label for="login-email" class="sr-only">{{ 'account.login.emailLabel' | translate }}</label>
+      <input
+        id="login-email"
+        class="app-input text-center"
+        type="email"
+        autocomplete="email"
+        [formField]="loginForm.email"
+        [placeholder]="'account.login.emailPlaceholder' | translate"
+        [attr.aria-invalid]="showInvalid() ? 'true' : null"
+      />
+
+      @if (showInvalid()) {
+        <p class="text-xs" style="color:var(--text-error)">{{ 'account.login.invalidEmail' | translate }}</p>
+      }
+      @if (store.error(); as error) {
+        <app-error-message [messageKey]="errorKey()!" [traceId]="error.traceId" />
+      }
+
+      <button appButton type="submit" [block]="true" [disabled]="store.isPending()">
+        {{ (store.isPending() ? 'account.login.sending' : 'account.login.submit') | translate }}
+      </button>
+    </form>
+  }
+
+  <a routerLink="/" class="inline-block text-sm" style="color:var(--text-faint)">{{ 'account.login.backToGame' | translate }}</a>
+</app-auth-page>

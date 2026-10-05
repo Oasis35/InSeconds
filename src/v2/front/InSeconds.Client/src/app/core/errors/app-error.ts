@@ -36,18 +36,69 @@ export async function readProblemDetails(body: unknown): Promise<ProblemDetailsF
   }
 }
 
-/** Convertit n'importe quelle erreur levée par un appel HTTP en `AppError`. */
+/**
+ * Forme de l'`ApiException` que lèvent les clients NSwag (le dossier `api/` est généré, `core` ne
+ * l'importe pas) : le statut HTTP et le corps de la réponse en texte.
+ */
+interface NswagApiException {
+  readonly isApiException: true;
+  readonly status: number;
+  readonly response: string;
+}
+
+function isNswagApiException(error: unknown): error is NswagApiException {
+  return typeof error === 'object' && error !== null && (error as { isApiException?: unknown }).isApiException === true;
+}
+
+/**
+ * Pour une réponse d'erreur dont le corps est décrit dans OpenAPI (`ProblemDetails`), le client
+ * NSwag lève ce corps déjà lu plutôt qu'une `ApiException` : un objet avec `status`, `code` et `traceId`.
+ */
+interface ProblemLike {
+  readonly status: number;
+  readonly code: string;
+  readonly traceId?: unknown;
+}
+
+function isProblemLike(error: unknown): error is ProblemLike {
+  if (typeof error !== 'object' || error === null) return false;
+  const { status, code } = error as { status?: unknown; code?: unknown };
+  return typeof status === 'number' && typeof code === 'string';
+}
+
+/**
+ * Convertit n'importe quelle erreur levée par un appel HTTP en `AppError` : une `HttpErrorResponse`
+ * (appel `HttpClient` direct) ou ce que lève un client NSwag (`ApiException`, ou le `ProblemDetails` lu quand OpenAPI le décrit).
+ */
 export async function toAppError(error: unknown): Promise<AppError> {
+  if (isNswagApiException(error)) {
+    return fromResponse(error.status, error.response);
+  }
+  if (isProblemLike(error)) {
+    return fromResponse(error.status, error);
+  }
   if (!(error instanceof HttpErrorResponse)) {
     return { code: UNEXPECTED_ERROR_CODE, status: 0, traceId: null };
   }
-  if (error.status === 0) {
+  return fromResponse(error.status, error.error);
+}
+
+async function fromResponse(status: number, body: unknown): Promise<AppError> {
+  if (status === 0) {
     return { code: NETWORK_ERROR_CODE, status: 0, traceId: null };
   }
-  const problem = await readProblemDetails(error.error);
+  const problem = await readProblemDetails(typeof body === 'string' ? parseJson(body) : body);
   return {
     code: typeof problem?.code === 'string' ? problem.code : UNEXPECTED_ERROR_CODE,
-    status: error.status,
+    status,
     traceId: typeof problem?.traceId === 'string' ? problem.traceId : null,
   };
+}
+
+function parseJson(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
 }

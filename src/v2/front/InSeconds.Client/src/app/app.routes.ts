@@ -29,7 +29,7 @@ export const routes: Routes = [
 
   // Domaines : chacun remplace sa page d'attente par ses routes (chargées à la demande, avec leurs stores).
   { path: 'daily', loadComponent: comingSoon },
-  { path: 'account', children: [{ path: '**', loadComponent: comingSoon }] },
+  { path: 'account', loadChildren: () => import('./account/feature/account.routes').then(m => m.ACCOUNT_ROUTES) },
   { path: 'admin', children: [{ path: '**', loadComponent: comingSoon }] },
   { path: 'privacy', loadComponent: comingSoon },
 

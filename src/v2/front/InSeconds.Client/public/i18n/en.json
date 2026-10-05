@@ -16,6 +16,13 @@
       "unauthorized": "Sign in to continue.",
       "unexpected": "Something unexpected happened. Try again in a moment.",
       "unknown": "Something went wrong. If it keeps happening, send us the code below."
+    },
+    "players": {
+      "email_taken": "This address is already used by another account.",
+      "guest_forbidden": "This action is only available to signed-in accounts.",
+      "invalid_or_expired_token": "This link is invalid or has expired.",
+      "pseudo_taken": "This pseudo is already taken.",
+      "same_email": "That's already your current address."
     }
   },
   "shell": {
@@ -42,11 +49,110 @@
       "body": "A new version of InSeconds is available.",
       "reload": "Reload",
       "later": "Later"
+    },
+    "header": {
+      "home": "Home",
+      "login": "Log in",
+      "profile": "My profile"
     }
   },
   "ui": {
     "envBanner": {
       "label": "development environment"
+    }
+  },
+  "account": {
+    "login": {
+      "title": "Log in",
+      "subtitle": "Get a magic link by email to keep your streak and scores on all your devices.",
+      "emailLabel": "Email address",
+      "emailPlaceholder": "your@email.com",
+      "submit": "Get the link",
+      "sending": "Sending…",
+      "sent": "Link sent. Open the email on this device to log in.",
+      "invalidEmail": "Invalid email address.",
+      "backToGame": "Back to the game"
+    },
+    "verify": {
+      "title": "Verification",
+      "subtitle": "Confirm the login to link this device to your account.",
+      "alreadyConnected": "You're already signed in as {{ email }}. If this link was sent to another address, confirming will sign you in to a different account. Never confirm a link someone else sent you.",
+      "newAccountNotice": "This link is for a new address: a new account will be created. Your current account ({{ email }}) won't be changed.",
+      "confirm": "Confirm",
+      "confirming": "Logging in…",
+      "pseudoTitle": "Choose your pseudo",
+      "pseudoLabel": "Pseudo",
+      "pseudoPlaceholder": "Your pseudo",
+      "pseudoHint": "3 to 20 characters. Visible to other players.",
+      "pseudoSubmit": "Confirm",
+      "invalidPseudo": "Invalid pseudo (3 to 20 allowed characters).",
+      "missingToken": "Incomplete login link.",
+      "backToLogin": "Back to login"
+    },
+    "confirmEmail": {
+      "title": "Confirm email change",
+      "subtitle": "Click to confirm your new email address.",
+      "confirm": "Confirm",
+      "confirming": "Confirming…",
+      "success": "Address confirmed: {{ email }}",
+      "missingToken": "Incomplete confirmation link.",
+      "backToProfile": "← Back to profile"
+    },
+    "profile": {
+      "title": "Your profile",
+      "pseudo": {
+        "label": "Pseudo",
+        "placeholder": "Your pseudo",
+        "save": "Change",
+        "saving": "…",
+        "saved": "OK",
+        "hint": "3 to 20 characters. Visible to other players.",
+        "tooShort": "Three characters minimum.",
+        "tooLong": "Twenty characters maximum.",
+        "invalid": "Letters, digits, space, _, . or - only.",
+        "success": "Pseudo updated."
+      },
+      "email": {
+        "label": "Email address",
+        "placeholder": "your@email.com",
+        "change": "Send",
+        "sending": "…",
+        "sent": "OK",
+        "hint": "Confirm the change via the email sent to the new address.",
+        "sentHint": "Check your inbox at {{ email }} to confirm.",
+        "invalid": "Invalid email address."
+      },
+      "logout": {
+        "action": "Log out",
+        "confirmTitle": "Log out?",
+        "confirmBody": "You'll be able to come back with a new link sent to {{ email }}.",
+        "cancel": "Cancel",
+        "error": "Logout failed. Try again."
+      },
+      "backToGame": "Back to game"
+    },
+    "devices": {
+      "title": "Connected devices",
+      "intro": "The devices where you are signed in to this account.",
+      "current": "This device",
+      "unknownDevice": "Unknown device",
+      "lastSeen": "Seen {{ date }}",
+      "revoke": "Sign out",
+      "revokeConfirmTitle": "Sign out this device?",
+      "revokeConfirmBody": "It will have to sign in again with a new link.",
+      "revokeCurrentConfirmBody": "You'll be signed out of this browser.",
+      "revokeOthers": "Sign out other devices",
+      "revokeOthersConfirmTitle": "Sign out other devices?",
+      "revokeOthersConfirmBody": "All other devices will have to sign in again with a new link.",
+      "revoked": "Device signed out.",
+      "revokedOthers": "Other devices are signed out.",
+      "cancel": "Cancel",
+      "loadError": "Couldn't load your devices."
+    },
+    "browserId": {
+      "label": "Your browser ID:",
+      "copy": "Copy",
+      "copied": "Copied!"
     }
   }
 }

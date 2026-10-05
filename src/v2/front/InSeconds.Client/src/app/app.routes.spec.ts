@@ -2,13 +2,22 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { provideTranslateService } from '@ngx-translate/core';
+import { PlayersApi } from './account/data-access/players.api';
 import { routes } from './app.routes';
 
 describe('routes', () => {
   let harness: RouterTestingHarness;
 
   beforeEach(async () => {
-    TestBed.configureTestingModule({ providers: [provideRouter(routes), provideTranslateService()] });
+    // Le profil est réservé aux comptes (garde) : l'API des joueurs répond ici par un compte connecté.
+    const linkedPlayer = { id: 'p1', pseudo: 'Alice', email: 'alice@example.com', isGuest: false, isAdmin: false };
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes),
+        provideTranslateService(),
+        { provide: PlayersApi, useValue: { getMe: async () => linkedPlayer, listDevices: async () => [] } },
+      ],
+    });
     harness = await RouterTestingHarness.create();
   });
 
@@ -52,10 +61,18 @@ describe('routes', () => {
   });
 
   it('affiche la page d\'attente des domaines pas encore construits', async () => {
-    for (const url of ['/daily', '/account/login', '/admin/pool', '/privacy']) {
+    for (const url of ['/daily', '/admin/pool', '/privacy']) {
       const page = await harness.navigateByUrl(url);
       expect(harness.routeNativeElement?.textContent, url).toContain('shell.comingSoon.title');
       expect(page).toBeTruthy();
+    }
+  });
+
+  it('affiche les écrans du compte (connexion, vérification, confirmation d\'email)', async () => {
+    for (const url of ['/account/login', '/account/login/verify?token=t', '/account/confirm-email?token=t']) {
+      await harness.navigateByUrl(url);
+      expect(harness.routeNativeElement?.textContent, url).not.toContain('shell.comingSoon.title');
+      expect(harness.routeNativeElement?.querySelector('app-auth-page'), url).not.toBeNull();
     }
   });
 

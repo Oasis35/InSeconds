@@ -16,6 +16,13 @@
       "unauthorized": "Connecte-toi pour continuer.",
       "unexpected": "Une erreur inattendue s'est produite. Réessaie dans un instant.",
       "unknown": "Une erreur s'est produite. Si elle se répète, transmets-nous le code ci-dessous."
+    },
+    "players": {
+      "email_taken": "Cette adresse est déjà utilisée par un autre compte.",
+      "guest_forbidden": "Cette action est réservée aux comptes connectés.",
+      "invalid_or_expired_token": "Ce lien est invalide ou a expiré.",
+      "pseudo_taken": "Ce pseudo est déjà pris.",
+      "same_email": "C'est déjà ton adresse actuelle."
     }
   },
   "shell": {
@@ -42,11 +49,110 @@
       "body": "Une nouvelle version d'InSeconds est disponible.",
       "reload": "Recharger",
       "later": "Plus tard"
+    },
+    "header": {
+      "home": "Accueil",
+      "login": "Se connecter",
+      "profile": "Mon profil"
     }
   },
   "ui": {
     "envBanner": {
       "label": "environnement de développement"
+    }
+  },
+  "account": {
+    "login": {
+      "title": "Connexion",
+      "subtitle": "Reçois un lien magique par e-mail pour garder ta série et tes scores sur tous tes appareils.",
+      "emailLabel": "Adresse e-mail",
+      "emailPlaceholder": "ton@email.com",
+      "submit": "Recevoir le lien",
+      "sending": "Envoi…",
+      "sent": "Lien envoyé. Ouvre l'e-mail depuis cet appareil pour te connecter.",
+      "invalidEmail": "Adresse e-mail invalide.",
+      "backToGame": "Retour au jeu"
+    },
+    "verify": {
+      "title": "Vérification",
+      "subtitle": "Confirme la connexion pour associer cet appareil à ton compte.",
+      "alreadyConnected": "Tu es déjà connecté avec {{ email }}. Si ce lien a été envoyé à une autre adresse, confirmer te connectera à un autre compte. Ne confirme jamais un lien que quelqu'un d'autre t'a envoyé.",
+      "newAccountNotice": "Ce lien correspond à une nouvelle adresse : un nouveau compte va être créé. Ton compte actuel ({{ email }}) ne sera pas modifié.",
+      "confirm": "Confirmer",
+      "confirming": "Connexion…",
+      "pseudoTitle": "Choisis ton pseudo",
+      "pseudoLabel": "Pseudo",
+      "pseudoPlaceholder": "Ton pseudo",
+      "pseudoHint": "3 à 20 caractères. Visible par les autres joueurs.",
+      "pseudoSubmit": "Valider",
+      "invalidPseudo": "Pseudo invalide (3 à 20 caractères autorisés).",
+      "missingToken": "Lien de connexion incomplet.",
+      "backToLogin": "Retour à la connexion"
+    },
+    "confirmEmail": {
+      "title": "Confirmer le changement d'email",
+      "subtitle": "Clique pour confirmer ta nouvelle adresse email.",
+      "confirm": "Confirmer",
+      "confirming": "Confirmation…",
+      "success": "Adresse confirmée : {{ email }}",
+      "missingToken": "Lien de confirmation incomplet.",
+      "backToProfile": "← Retour au profil"
+    },
+    "profile": {
+      "title": "Ton profil",
+      "pseudo": {
+        "label": "Pseudo",
+        "placeholder": "Ton pseudo",
+        "save": "Changer",
+        "saving": "…",
+        "saved": "OK",
+        "hint": "3 à 20 caractères. Visible par les autres joueurs.",
+        "tooShort": "Trois caractères minimum.",
+        "tooLong": "Vingt caractères maximum.",
+        "invalid": "Lettres, chiffres, espace, _, . ou - seulement.",
+        "success": "Pseudo mis à jour."
+      },
+      "email": {
+        "label": "Adresse e-mail",
+        "placeholder": "ton@email.com",
+        "change": "Envoyer",
+        "sending": "…",
+        "sent": "OK",
+        "hint": "Confirme le changement via l'email envoyé à la nouvelle adresse.",
+        "sentHint": "Vérifie ta boîte mail à {{ email }} pour confirmer.",
+        "invalid": "Adresse email invalide."
+      },
+      "logout": {
+        "action": "Se déconnecter",
+        "confirmTitle": "Se déconnecter ?",
+        "confirmBody": "Tu pourras revenir avec un nouveau lien envoyé à {{ email }}.",
+        "cancel": "Annuler",
+        "error": "La déconnexion a échoué. Réessaie."
+      },
+      "backToGame": "Retour au jeu"
+    },
+    "devices": {
+      "title": "Appareils connectés",
+      "intro": "Les appareils sur lesquels tu es connecté à ce compte.",
+      "current": "Cet appareil",
+      "unknownDevice": "Appareil inconnu",
+      "lastSeen": "Vu {{ date }}",
+      "revoke": "Déconnecter",
+      "revokeConfirmTitle": "Déconnecter cet appareil ?",
+      "revokeConfirmBody": "Il devra se reconnecter avec un nouveau lien.",
+      "revokeCurrentConfirmBody": "Tu seras déconnecté de ce navigateur.",
+      "revokeOthers": "Déconnecter les autres appareils",
+      "revokeOthersConfirmTitle": "Déconnecter les autres appareils ?",
+      "revokeOthersConfirmBody": "Tous les autres appareils devront se reconnecter avec un nouveau lien.",
+      "revoked": "Appareil déconnecté.",
+      "revokedOthers": "Les autres appareils sont déconnectés.",
+      "cancel": "Annuler",
+      "loadError": "Impossible de charger tes appareils."
+    },
+    "browserId": {
+      "label": "Ton identifiant navigateur :",
+      "copy": "Copier",
+      "copied": "Copié !"
     }
   }
 }

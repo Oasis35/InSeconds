@@ -4,8 +4,9 @@
 // `sheriff verify` dans `npm run lint:arch`.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const APP = new URL('../src/app/', import.meta.url).pathname;
+const APP = fileURLToPath(new URL('../src/app/', import.meta.url));
 const FORBIDDEN = /from\s+['"](@angular\/|@ngrx\/|rxjs|@ngx-translate\/)/;
 
 function* filesIn(dir) {

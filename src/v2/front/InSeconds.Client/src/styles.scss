@@ -221,3 +221,25 @@ h1, h2, h3, .font-display {
     animation: gel-fade 0.2s ease both !important;
   }
 }
+
+/* Champ de saisie de la DA (connexion, profil) : posé en classe plutôt qu'en style répété dans chaque template. */
+.app-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-inactive);
+  color: var(--text-body);
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.app-input:focus-visible {
+  border-color: var(--color-accent-2);
+  box-shadow: var(--glow-accent-2);
+}
+
+.app-input[aria-invalid='true'] {
+  border-color: var(--text-error);
+}
