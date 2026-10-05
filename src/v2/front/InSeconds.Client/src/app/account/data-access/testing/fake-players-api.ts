@@ -18,19 +18,19 @@ export function device(overrides: Partial<Device> = {}): Device {
 
 function defaults() {
   return {
-    getMe: vi.fn<() => Promise<SessionPlayer | null>>(async () => null),
-    createGuest: vi.fn<() => Promise<string>>(async () => 'guest-1'),
-    requestMagicLink: vi.fn<(email: string) => Promise<void>>(async () => undefined),
+    getMe: vi.fn<() => Promise<SessionPlayer | null>>(() => Promise.resolve(null)),
+    createGuest: vi.fn<() => Promise<string>>(() => Promise.resolve('guest-1')),
+    requestMagicLink: vi.fn<(email: string) => Promise<void>>(() => Promise.resolve()),
     verifyMagicLink: vi.fn<(token: string, pseudo?: string) => Promise<{ needsPseudo: boolean }>>(
-      async () => ({ needsPseudo: false }),
+      () => Promise.resolve({ needsPseudo: false }),
     ),
-    logout: vi.fn<() => Promise<void>>(async () => undefined),
-    updatePseudo: vi.fn<(pseudo: string) => Promise<string>>(async pseudo => pseudo),
-    requestEmailChange: vi.fn<(newEmail: string) => Promise<void>>(async () => undefined),
-    confirmEmailChange: vi.fn<(token: string) => Promise<string>>(async () => 'nouveau@example.com'),
-    listDevices: vi.fn<() => Promise<Device[]>>(async () => []),
-    revokeDevice: vi.fn<(id: number) => Promise<void>>(async () => undefined),
-    revokeOtherDevices: vi.fn<() => Promise<number>>(async () => 0),
+    logout: vi.fn<() => Promise<void>>(() => Promise.resolve()),
+    updatePseudo: vi.fn<(pseudo: string) => Promise<string>>(pseudo => Promise.resolve(pseudo)),
+    requestEmailChange: vi.fn<(newEmail: string) => Promise<void>>(() => Promise.resolve()),
+    confirmEmailChange: vi.fn<(token: string) => Promise<string>>(() => Promise.resolve('nouveau@example.com')),
+    listDevices: vi.fn<() => Promise<Device[]>>(() => Promise.resolve([])),
+    revokeDevice: vi.fn<(id: number) => Promise<void>>(() => Promise.resolve()),
+    revokeOtherDevices: vi.fn<() => Promise<number>>(() => Promise.resolve(0)),
   } satisfies Record<keyof PlayersApi, unknown>;
 }
 

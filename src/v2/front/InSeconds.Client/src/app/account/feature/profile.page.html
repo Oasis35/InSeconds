@@ -23,9 +23,9 @@
           {{ (profile.pseudoStatus() === 'pending' ? 'account.profile.pseudo.saving' : profile.pseudoStatus() === 'done' ? 'account.profile.pseudo.saved' : 'account.profile.pseudo.save') | translate }}
         </button>
       </div>
-      <p class="mt-2 text-xs" id="profile-pseudo-help" role="status" [style.color]="pseudoHint().isError ? 'var(--text-error)' : 'var(--text-muted)'">
+      <output class="mt-2 block text-xs" id="profile-pseudo-help" [style.color]="pseudoHint().isError ? 'var(--text-error)' : 'var(--text-muted)'">
         {{ pseudoHint().key | translate }}
-      </p>
+      </output>
     </form>
 
     <!-- Email -->
@@ -46,9 +46,9 @@
           {{ (profile.emailStatus() === 'pending' ? 'account.profile.email.sending' : profile.emailStatus() === 'done' ? 'account.profile.email.sent' : 'account.profile.email.change') | translate }}
         </button>
       </div>
-      <p class="mt-2 text-xs" id="profile-email-help" role="status" [style.color]="emailHint().isError ? 'var(--text-error)' : 'var(--text-muted)'">
+      <output class="mt-2 block text-xs" id="profile-email-help" [style.color]="emailHint().isError ? 'var(--text-error)' : 'var(--text-muted)'">
         {{ emailHint().key | translate: { email: emailForm.email().value().trim() } }}
-      </p>
+      </output>
     </form>
 
     <!-- Appareils -->

@@ -16,7 +16,7 @@ const COPIED_MESSAGE_MS = 2000;
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (session.player(); as player) {
-      <app-browser-id-view [playerId]="player.id" [copied]="copied()" (copy)="copy(player.id)" />
+      <app-browser-id-view [playerId]="player.id" [copied]="copied()" (copyId)="copy(player.id)" />
     }
   `,
 })

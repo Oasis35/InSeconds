@@ -29,7 +29,7 @@
           [attr.aria-invalid]="pseudoInvalid() || pseudoTaken() ? 'true' : null"
           (input)="editPseudo()"
         />
-        <div id="login-pseudo-help" role="status">
+        <output id="login-pseudo-help" class="block">
           @if (pseudoInvalid()) {
             <p class="text-xs" style="color:var(--text-error)">{{ 'account.verify.invalidPseudo' | translate }}</p>
           } @else if (pseudoTaken()) {
@@ -37,7 +37,7 @@
           } @else {
             <p class="text-xs" style="color:var(--text-faint)">{{ 'account.verify.pseudoHint' | translate }}</p>
           }
-        </div>
+        </output>
         @if (store.error(); as error) {
           @if (step().kind === 'failed') {
             <app-error-message [messageKey]="failureKey()" [traceId]="error.traceId" />

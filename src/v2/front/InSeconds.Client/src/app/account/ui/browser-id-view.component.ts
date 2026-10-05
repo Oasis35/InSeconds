@@ -11,7 +11,7 @@ import { TranslatePipe } from '@ngx-translate/core';
       <span>{{ 'account.browserId.label' | translate }}</span>
       <span class="font-mono" style="color:var(--text-muted)" data-testid="browser-id">{{ playerId().slice(0, 8) }}</span>
       <button type="button" class="underline hover:opacity-80" style="color:var(--text-muted)" [attr.title]="playerId()"
-        (click)="copy.emit()">
+        (click)="copyId.emit()">
         {{ (copied() ? 'account.browserId.copied' : 'account.browserId.copy') | translate }}
       </button>
     </div>
@@ -21,5 +21,5 @@ export class BrowserIdViewComponent {
   readonly playerId = input.required<string>();
   readonly copied = input(false);
 
-  readonly copy = output();
+  readonly copyId = output();
 }

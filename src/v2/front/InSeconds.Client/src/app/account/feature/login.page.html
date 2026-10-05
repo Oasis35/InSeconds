@@ -2,7 +2,7 @@
   <p class="text-sm leading-relaxed" style="color:var(--text-muted)">{{ 'account.login.subtitle' | translate }}</p>
 
   @if (store.isFulfilled()) {
-    <p class="text-sm leading-relaxed" role="status" style="color:var(--text-light)">{{ 'account.login.sent' | translate }}</p>
+    <output class="block text-sm leading-relaxed" style="color:var(--text-light)">{{ 'account.login.sent' | translate }}</output>
   } @else {
     <form [formRoot]="loginForm" (submit)="submit()" class="space-y-3" novalidate>
       <label for="login-email" class="sr-only">{{ 'account.login.emailLabel' | translate }}</label>
