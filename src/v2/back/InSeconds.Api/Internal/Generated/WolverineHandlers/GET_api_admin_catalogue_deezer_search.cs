@@ -38,9 +38,19 @@ namespace Internal.Generated.WolverineHandlers
             var trackSearch = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Deezer.ITrackSearch>(serviceScope.ServiceProvider);
             System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Catalogue.Application.AdminDeezerSearchEndpoint");
             var q = httpContext.Request.Query["q"];
+            var searchLookup = await InSeconds.Api.Modules.Catalogue.Application.AdminDeezerSearchEndpoint.LoadAsync(q, trackSearch, httpContext.RequestAborted).ConfigureAwait(false);
+            var problemDetails1 = InSeconds.Api.Modules.Catalogue.Application.AdminDeezerSearchEndpoint.Validate(searchLookup);
+            // Evaluate whether the processing should stop if there are any problems
+            if (!(ReferenceEquals(problemDetails1, Wolverine.Http.WolverineContinue.NoProblems)))
+            {
+                await WriteProblems(problemDetails1, httpContext).ConfigureAwait(false);
+                return;
+            }
+
+
             
             // The actual HTTP request handler execution
-            var deezerTrackResultIReadOnlyList_response = await InSeconds.Api.Modules.Catalogue.Application.AdminDeezerSearchEndpoint.Get(q, trackSearch, _optionsMonitorOfCatalogueOptions, httpContext.RequestAborted).ConfigureAwait(false);
+            var deezerTrackResultIReadOnlyList_response = InSeconds.Api.Modules.Catalogue.Application.AdminDeezerSearchEndpoint.Get(searchLookup, _optionsMonitorOfCatalogueOptions);
 
             // Writing the response body to JSON because this was the first 'return variable' in the method signature
             await WriteJsonAsync(httpContext, deezerTrackResultIReadOnlyList_response, 404);

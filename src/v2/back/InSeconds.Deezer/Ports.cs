@@ -49,15 +49,27 @@ public interface IPreviewProvider
     Task<PreviewLookup> GetPreviewAsync(long deezerTrackId, CancellationToken ct = default);
 }
 
+/// <summary>
+/// Résultat d'une recherche, avec la même distinction que <see cref="PreviewLookup"/> : « Deezer n'a rien trouvé »
+/// (<see cref="Found"/> avec une liste vide) n'est pas « Deezer n'a pas répondu » (<see cref="Unavailable"/>).
+/// </summary>
+public abstract record SearchLookup
+{
+    private SearchLookup()
+    {
+    }
+
+    /// <summary>Les morceaux trouvés, dans l'ordre de pertinence de Deezer (liste vide si rien ne correspond).</summary>
+    public sealed record Found(IReadOnlyList<DeezerTrack> Tracks) : SearchLookup;
+
+    /// <summary>Pas de réponse exploitable (erreur HTTP, quota, service occupé) : on ne sait pas ce que Deezer aurait trouvé.</summary>
+    public sealed record Unavailable : SearchLookup;
+}
+
 /// <summary>Recherche de morceaux par texte.</summary>
 public interface ITrackSearch
 {
-    /// <summary>
-    /// Les morceaux trouvés, dans l'ordre de pertinence de Deezer. Liste vide si rien n'est trouvé, mais
-    /// aussi si Deezer n'a pas répondu (l'échec est journalisé) : un appelant ne doit donc pas conclure
-    /// d'une liste vide.
-    /// </summary>
-    Task<IReadOnlyList<DeezerTrack>> SearchAsync(string query, int limit, CancellationToken ct = default);
+    Task<SearchLookup> SearchAsync(string query, int limit, CancellationToken ct = default);
 }
 
 /// <summary>Les informations d'un morceau (artiste, titre, pochette, année, rang, extrait) : l'état réel chez Deezer.</summary>

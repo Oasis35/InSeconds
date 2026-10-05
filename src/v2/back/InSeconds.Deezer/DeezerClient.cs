@@ -43,12 +43,14 @@ public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger) 
         if (fetched.Outcome == FetchOutcome.Unavailable)
             return new TrackMetadataLookup.Unavailable();
 
+        // L'identifiant est celui demandé, pas le champ « id » de la réponse : c'est sur lui que le pool vérifie
+        // les doublons, et une réponse sans « id » donnerait 0 (v1 : l'identifiant demandé était enregistré).
         return fetched.Track is { } track && ToDeezerTrack(track) is { } found
-            ? new TrackMetadataLookup.Found(found)
+            ? new TrackMetadataLookup.Found(found with { DeezerTrackId = deezerTrackId })
             : new TrackMetadataLookup.NotFound();
     }
 
-    public async Task<IReadOnlyList<DeezerTrack>> SearchAsync(string query, int limit, CancellationToken ct = default)
+    public async Task<SearchLookup> SearchAsync(string query, int limit, CancellationToken ct = default)
     {
         try
         {
@@ -58,13 +60,15 @@ public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger) 
             if (response?.Error is { } error)
             {
                 DeezerLog.SearchError(logger, query.Length, error.Code, error.Message);
-                return [];
+                return new SearchLookup.Unavailable();
             }
 
-            return response?.Data?
+            // Un résultat sans identifiant ne pourrait pas être ajouté au pool : écarté.
+            return new SearchLookup.Found(response?.Data?
+                .Where(t => t.Id > 0)
                 .Select(ToDeezerTrack)
                 .OfType<DeezerTrack>()
-                .ToList() ?? [];
+                .ToList() ?? []);
         }
         // Seule l'annulation demandée par l'appelant est relancée : le délai d'attente interne d'un HttpClient lève aussi
         // une OperationCanceledException, qui est un échec de Deezer comme un autre.
@@ -75,7 +79,7 @@ public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger) 
         catch (Exception ex)
         {
             DeezerLog.SearchRequestFailed(logger, ex, query.Length);
-            return [];
+            return new SearchLookup.Unavailable();
         }
     }
 

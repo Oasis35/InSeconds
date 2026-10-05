@@ -476,6 +476,49 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task RechercheAdmin_DeezerIndisponible_503_PasUneListeVide()
+    {
+        // Quota dépassé en HTTP 200 (piège 16) : l'écran doit pouvoir dire « Deezer indisponible », pas « aucun résultat ».
+        _app.Deezer.Intercept = (_, _) => Task.FromResult<HttpResponseMessage?>(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"error":{"type":"Exception","message":"Quota limit exceeded","code":4}}""", System.Text.Encoding.UTF8, "application/json"),
+        });
+
+        var response = await _app.Admin().GetAsync("/api/admin/catalogue/deezer-search?q=daft punk", Ct);
+
+        await AssertProblemAsync(response, HttpStatusCode.ServiceUnavailable, CatalogueErrorCodes.DeezerUnavailable);
+    }
+
+    [Fact]
+    public async Task RechercheAdmin_AucunResultatChezDeezer_200ListeVide()
+    {
+        _app.Deezer.Intercept = (_, _) => Task.FromResult<HttpResponseMessage?>(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"data":[]}""", System.Text.Encoding.UTF8, "application/json"),
+        });
+
+        var response = await _app.Admin().GetAsync("/api/admin/catalogue/deezer-search?q=zzzzzz", Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Empty((await response.Content.ReadFromJsonAsync<List<DeezerTrackResult>>(Ct))!);
+    }
+
+    [Fact]
+    public async Task Ajout_ReponseDeezerAvecUnAutreIdentifiant_GardeLIdentifiantDemande()
+    {
+        // L'identifiant enregistré est celui sur lequel le doublon a été vérifié (comme en v1), pas le champ « id » de la réponse.
+        _app.Deezer.Intercept = (_, _) => Task.FromResult<HttpResponseMessage?>(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("{\"id\":4242,\"title\":\"T\",\"preview\":\"p\",\"artist\":{\"name\":\"A\"}}", System.Text.Encoding.UTF8, "application/json"),
+        });
+
+        var track = await _app.AddAsync(5557);
+
+        Assert.Equal(5557, track.DeezerTrackId);
+        Assert.Equal(5557, Assert.Single(await _app.ListAsync()).DeezerTrackId);
+    }
+
+    [Fact]
     public async Task RechercheAdmin_RequeteCourte_ListeVide()
     {
         Assert.Empty((await _app.Admin().GetFromJsonAsync<List<DeezerTrackResult>>("/api/admin/catalogue/deezer-search?q=a", Ct))!);

@@ -122,20 +122,53 @@ public class DeezerClientTests
             ]}
             """)).SearchAsync("a", 10, Ct);
 
-        var track = Assert.Single(results);
+        var track = Assert.Single(Assert.IsType<SearchLookup.Found>(results).Tracks);
         Assert.Equal(new DeezerTrack(1, "A", "T", "p", null, 2001, 10), track);
     }
 
     [Theory]
     [InlineData(Quota)]
     [InlineData(Busy)]
-    public async Task Recherche_ErreurDeezerEnHttp200_ListeVide(string body) =>
-        Assert.Empty(await Create(Ok(body)).SearchAsync("daft punk", 10, Ct));
+    public async Task Recherche_ErreurDeezerEnHttp200_Indisponible_PasUneListeVide(string body) =>
+        Assert.IsType<SearchLookup.Unavailable>(await Create(Ok(body)).SearchAsync("daft punk", 10, Ct));
 
     [Fact]
-    public async Task Recherche_ErreurHttp_ListeVide() =>
-        Assert.Empty(await Create(new StubHttpHandler((_, _) =>
+    public async Task Recherche_ErreurHttp_Indisponible() =>
+        Assert.IsType<SearchLookup.Unavailable>(await Create(new StubHttpHandler((_, _) =>
             Task.FromResult(new HttpResponseMessage(HttpStatusCode.InternalServerError)))).SearchAsync("daft punk", 10, Ct));
+
+    [Fact]
+    public async Task Recherche_AucunResultat_TrouveeMaisVide_PasIndisponible()
+    {
+        var lookup = await Create(Ok("""{"data":[]}""")).SearchAsync("zzz", 10, Ct);
+
+        Assert.Empty(Assert.IsType<SearchLookup.Found>(lookup).Tracks);
+    }
+
+    [Fact]
+    public async Task Recherche_ResultatSansIdentifiant_Ecarte()
+    {
+        var lookup = await Create(Ok("""
+            {"data":[
+              {"title":"T","artist":{"name":"A"}},
+              {"id":2,"title":"U","artist":{"name":"B"}}
+            ]}
+            """)).SearchAsync("a", 10, Ct);
+
+        Assert.Equal(2, Assert.Single(Assert.IsType<SearchLookup.Found>(lookup).Tracks).DeezerTrackId);
+    }
+
+    // ---------- Identifiant : celui demandé, pas celui de la réponse ----------
+
+    [Theory]
+    [InlineData("""{"title":"T","artist":{"name":"A"}}""")]
+    [InlineData("""{"id":999,"title":"T","artist":{"name":"A"}}""")]
+    public async Task Morceau_IdentifiantDeLaReponseAbsentOuDifferent_GardeLIdentifiantDemande(string body)
+    {
+        var found = Assert.IsType<TrackMetadataLookup.Found>(await Create(Ok(body)).GetTrackAsync(123, Ct));
+
+        Assert.Equal(123, found.Track.DeezerTrackId);
+    }
 
     // ---------- Annulation : relancée, jamais avalée (piège 13) ----------
 
@@ -163,7 +196,7 @@ public class DeezerClientTests
 
         Assert.IsType<PreviewLookup.Unavailable>(await client.GetPreviewAsync(123, Ct));
         Assert.IsType<TrackMetadataLookup.Unavailable>(await client.GetTrackAsync(123, Ct));
-        Assert.Empty(await client.SearchAsync("daft punk", 10, Ct));
+        Assert.IsType<SearchLookup.Unavailable>(await client.SearchAsync("daft punk", 10, Ct));
     }
 
     [Theory]
@@ -173,7 +206,7 @@ public class DeezerClientTests
     public async Task Morceau_ArtisteOuTitreBlanc_Introuvable(string body)
     {
         Assert.IsType<TrackMetadataLookup.NotFound>(await Create(Ok(body)).GetTrackAsync(1, Ct));
-        Assert.Empty(await Create(Ok("{\"data\":[" + body + "]}")).SearchAsync("a", 10, Ct));
+        Assert.Empty(Assert.IsType<SearchLookup.Found>(await Create(Ok("{\"data\":[" + body + "]}")).SearchAsync("a", 10, Ct)).Tracks);
     }
 
     [Theory]

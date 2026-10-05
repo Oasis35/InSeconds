@@ -27,7 +27,7 @@ public static class SearchTracksEndpoint
 
     /// <summary>
     /// <c>GET /api/catalogue/search?q=</c> : l'autocomplétion du jeu, publique (v1 : <c>/api/deezer/search</c>).
-    /// Titres nettoyés et dédupliqués, dix au plus ; une requête trop courte donne une liste vide. Limitée par
+    /// Titres nettoyés et dédupliqués, dix au plus ; une requête trop courte (ou trop longue) donne une liste vide, Deezer indisponible aussi. Limitée par
     /// IP (60 / 5 min) : le quota Deezer est partagé par tous les joueurs, et le cache d'une heure ne protège
     /// pas d'un script qui varie sa requête à chaque appel.
     /// </summary>
@@ -39,7 +39,10 @@ public static class SearchTracksEndpoint
         if (!IsSearchable(q))
             return [];
 
-        return CleanAndDeduplicate(await search.SearchAsync(q, FetchLimit, ct));
+        // Deezer indisponible : l'autocomplétion se tait simplement, le joueur peut toujours taper sa réponse.
+        return await search.SearchAsync(q, FetchLimit, ct) is SearchLookup.Found found
+            ? CleanAndDeduplicate(found.Tracks)
+            : [];
     }
 
     /// <summary>

@@ -37,7 +37,14 @@ public sealed partial class CachedPreviewProvider(IPreviewProvider inner, IMemor
         {
             var ttl = ComputeTtl(found.Url, time.GetUtcNow());
             if (ttl > TimeSpan.Zero)
-                cache.Set(key, found, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = ttl, Size = 1 });
+                // Priorité haute : le cache est partagé avec les recherches publiques, qu'un script peut multiplier ;
+                // ce sont elles qui doivent partir d'abord quand le cache est plein, pas les extraits du défi.
+                cache.Set(key, found, new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = ttl,
+                    Size = 1,
+                    Priority = CacheItemPriority.High,
+                });
         }
 
         return lookup;

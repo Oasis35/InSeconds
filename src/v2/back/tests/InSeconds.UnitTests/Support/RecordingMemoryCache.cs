@@ -3,7 +3,7 @@ using Microsoft.Extensions.Primitives;
 
 namespace InSeconds.UnitTests.Support;
 
-public sealed record CachedEntry(object Key, object? Value, TimeSpan? Ttl, long? Size);
+public sealed record CachedEntry(object Key, object? Value, TimeSpan? Ttl, long? Size, CacheItemPriority Priority = CacheItemPriority.Normal);
 
 /// <summary>
 /// Cache mémoire qui garde ce qu'on y écrit (clé, durée, taille) : les tests de cache vérifient ce que le
@@ -46,10 +46,10 @@ public sealed class RecordingMemoryCache : IMemoryCache
 
         public IList<PostEvictionCallbackRegistration> PostEvictionCallbacks { get; } = [];
 
-        public CacheItemPriority Priority { get; set; }
+        public CacheItemPriority Priority { get; set; } = CacheItemPriority.Normal;
 
         public long? Size { get; set; }
 
-        public void Dispose() => commit(new CachedEntry(Key, Value, AbsoluteExpirationRelativeToNow, Size));
+        public void Dispose() => commit(new CachedEntry(Key, Value, AbsoluteExpirationRelativeToNow, Size, Priority));
     }
 }

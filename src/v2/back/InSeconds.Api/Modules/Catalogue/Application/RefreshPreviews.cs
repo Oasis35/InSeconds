@@ -117,8 +117,10 @@ public sealed class RefreshPreviewsJob(IMessageBus bus) : IScheduledJob
     public const string Id = "catalogue-refresh";
     public const string DefaultCron = "0 23 * * *";
 
-    // Le contrôle dure plusieurs minutes pour un grand pool (lots espacés) : jamais deux à la fois.
-    [DisableConcurrentExecution(timeoutInSeconds: 60)]
+    // Le contrôle dure plusieurs minutes pour un grand pool (lots espacés) : jamais deux à la fois. Le délai d'attente du
+    // verrou dépasse la durée d'un contrôle : la tâche de 23 h lancée pendant un contrôle manuel attend qu'il finisse au
+    // lieu d'échouer puis de repartir dix minutes plus tard.
+    [DisableConcurrentExecution(timeoutInSeconds: 600)]
     [AutomaticRetry(Attempts = 2, DelaysInSeconds = [600])]
     public async Task<object?> RunAsync(CancellationToken cancellationToken) =>
         (await bus.InvokeAsync<PreviewRefreshResult>(new RefreshPreviews(), cancellationToken)).ToReport();

@@ -11,19 +11,19 @@ public sealed class CachedTrackSearch(ITrackSearch inner, IMemoryCache cache) : 
 {
     internal static readonly TimeSpan Ttl = TimeSpan.FromHours(1);
 
-    public async Task<IReadOnlyList<DeezerTrack>> SearchAsync(string query, int limit, CancellationToken ct = default)
+    public async Task<SearchLookup> SearchAsync(string query, int limit, CancellationToken ct = default)
     {
         var key = $"deezer:search:{limit}:{query.Trim().ToLowerInvariant()}";
-        if (cache.TryGetValue(key, out IReadOnlyList<DeezerTrack>? cached) && cached is not null)
+        if (cache.TryGetValue(key, out SearchLookup.Found? cached) && cached is not null)
             return cached;
 
-        var results = await inner.SearchAsync(query, limit, ct);
+        var lookup = await inner.SearchAsync(query, limit, ct);
 
-        // Une liste vide peut être un échec (le client renvoie [] dans les deux cas) : seuls les
-        // résultats non vides sont gardés.
-        if (results.Count > 0)
-            cache.Set(key, results, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = Ttl, Size = 1 });
+        // Jamais un échec, ni une recherche sans résultat : un catalogue qui s'enrichit, ou un incident chez
+        // Deezer qui renverrait une liste vide en 200, ne doit pas figer « aucun résultat » pendant une heure.
+        if (lookup is SearchLookup.Found { Tracks.Count: > 0 } found)
+            cache.Set(key, found, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = Ttl, Size = 1 });
 
-        return results;
+        return lookup;
     }
 }

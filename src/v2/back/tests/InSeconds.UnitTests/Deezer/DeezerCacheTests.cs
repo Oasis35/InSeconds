@@ -1,5 +1,6 @@
 using InSeconds.Deezer;
 using InSeconds.UnitTests.Support;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Time.Testing;
 
 namespace InSeconds.UnitTests.Deezer;
@@ -33,6 +34,8 @@ public class DeezerCacheTests
         var entry = Assert.Single(_recording.Entries);
         Assert.Equal(TimeSpan.FromHours(24), entry.Ttl);
         Assert.Equal(1, entry.Size);
+        // Les recherches publiques, qu'un script peut multiplier, partent avant les extraits du défi.
+        Assert.Equal(CacheItemPriority.High, entry.Priority);
     }
 
     [Fact]
@@ -130,6 +133,7 @@ public class DeezerCacheTests
         var entry = Assert.Single(_recording.Entries);
         Assert.Equal(TimeSpan.FromHours(1), entry.Ttl);
         Assert.Equal(1, entry.Size);
+        Assert.Equal(CacheItemPriority.Normal, entry.Priority);
     }
 
     [Fact]
@@ -152,6 +156,19 @@ public class DeezerCacheTests
 
         await search.SearchAsync("zzz", 20, Ct);
         await search.SearchAsync("zzz", 20, Ct);
+
+        Assert.Empty(_recording.Entries);
+        Assert.Equal(2, inner.Calls);
+    }
+
+    [Fact]
+    public async Task Recherche_DeezerIndisponible_JamaisMisEnCache()
+    {
+        var inner = new ScriptedSearch(new SearchLookup.Unavailable());
+        var search = new CachedTrackSearch(inner, _recording);
+
+        Assert.IsType<SearchLookup.Unavailable>(await search.SearchAsync("daft punk", 20, Ct));
+        await search.SearchAsync("daft punk", 20, Ct);
 
         Assert.Empty(_recording.Entries);
         Assert.Equal(2, inner.Calls);
@@ -202,14 +219,19 @@ public class DeezerCacheTests
         }
     }
 
-    private sealed class ScriptedSearch(IReadOnlyList<DeezerTrack> results) : ITrackSearch
+    private sealed class ScriptedSearch(SearchLookup lookup) : ITrackSearch
     {
+        public ScriptedSearch(IReadOnlyList<DeezerTrack> results)
+            : this(new SearchLookup.Found(results))
+        {
+        }
+
         public int Calls { get; private set; }
 
-        public Task<IReadOnlyList<DeezerTrack>> SearchAsync(string query, int limit, CancellationToken ct)
+        public Task<SearchLookup> SearchAsync(string query, int limit, CancellationToken ct)
         {
             Calls++;
-            return Task.FromResult(results);
+            return Task.FromResult(lookup);
         }
     }
 }
