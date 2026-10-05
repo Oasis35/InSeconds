@@ -14,6 +14,13 @@ export const ERROR_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   'common.too_many_requests': 'errors.common.too_many_requests',
   'common.unauthorized': 'errors.common.unauthorized',
   'common.unexpected': 'errors.common.unexpected',
+
+  // Players
+  'players.email_taken': 'errors.players.email_taken',
+  'players.guest_forbidden': 'errors.players.guest_forbidden',
+  'players.invalid_or_expired_token': 'errors.players.invalid_or_expired_token',
+  'players.pseudo_taken': 'errors.players.pseudo_taken',
+  'players.same_email': 'errors.players.same_email',
 };
 
 /** Message affiché pour un code inconnu, toujours avec le `traceId` quand il existe. */

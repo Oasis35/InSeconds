@@ -1,6 +1,5 @@
 import { test, expect } from '../fixtures/test';
-import { GamePage } from '../pages/game.page';
-import { linkAccount, pathOf } from '../pages/login.page';
+import { expectSignedIn, linkAccount, pathOf } from '../pages/login.page';
 
 const EMAIL_A = 'change-email-a@e2e.test';
 const EMAIL_B = 'change-email-b@e2e.test';
@@ -14,8 +13,6 @@ test.describe('Changement d\'email', () => {
   test('parcours complet : demande -> confirmation -> email mis à jour sur /profile', async ({ page, api }) => {
     await linkAccount(page, api, EMAIL_A, 'ChangeEmailUserE2E');
 
-    const game = new GamePage(page);
-    await game.waitForWelcome();
     await page.goto('/profile');
 
     await page.getByPlaceholder('ton@email.com').fill(NEW_EMAIL);
@@ -43,8 +40,7 @@ test.describe('Changement d\'email', () => {
     await linkAccount(pageB, api, EMAIL_B, 'ChangeEmailUserBE2E');
     await contextB.close();
 
-    const game = new GamePage(page);
-    await game.waitForWelcome();
+    await expectSignedIn(page, 'ChangeEmailUserAE2E');
     await page.goto('/profile');
 
     await page.getByPlaceholder('ton@email.com').fill(EMAIL_B);
@@ -58,7 +54,8 @@ test.describe('Changement d\'email', () => {
     await page.getByRole('button', { name: 'Confirmer' }).click();
 
     await expect(page.getByText('Ce lien est invalide ou a expiré.')).toBeVisible();
+    // Un invité n'a pas de profil : le lien « Retour au profil » le mène à la connexion (garde de la route).
     await page.getByRole('link', { name: '← Retour au profil' }).click();
-    await expect(page).toHaveURL(/\/profile$/);
+    await expect(page).toHaveURL(/\/login$/);
   });
 });

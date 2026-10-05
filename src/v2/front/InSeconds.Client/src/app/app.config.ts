@@ -8,6 +8,7 @@ import { provideServiceWorker } from '@angular/service-worker';
 import { provideTranslateService } from '@ngx-translate/core';
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 
+import { provideAccount } from './account/feature/provide-account';
 import { routes } from './app.routes';
 import { GlobalErrorHandler } from './core/errors/global-error-handler';
 import { credentialsInterceptor } from './core/http/credentials.interceptor';
@@ -29,6 +30,7 @@ export const appConfig: ApplicationConfig = {
       loader: provideTranslateHttpLoader({ prefix: 'i18n/', suffix: '.json' }),
     }),
     provideAppInitializer(() => inject(LanguageService).init()),
+    provideAccount(),
     // Désactivé en dev (`ng serve`) : un service worker y servirait d'anciens fichiers.
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),

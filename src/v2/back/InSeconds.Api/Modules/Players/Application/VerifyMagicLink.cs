@@ -62,7 +62,9 @@ public static class VerifyMagicLinkEndpoint
         _ => WolverineContinue.NoProblems,
     };
 
-    [WolverinePost("/api/players/auth/magic-link/verify")]
+    [WolverinePost("/api/players/auth/magic-link/verify", OperationId = "verifyMagicLink")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public static async Task<VerifyMagicLinkResponse> Post(
         VerifyMagicLink request,
         MagicLinkAttempt attempt,

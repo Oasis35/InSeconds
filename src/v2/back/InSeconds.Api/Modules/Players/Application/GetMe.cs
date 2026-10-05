@@ -22,7 +22,7 @@ public static class GetMeEndpoint
     /// <c>GET /api/players/me</c> : lecture seule, 204 sans identité. Ne crée jamais de joueur (R7) :
     /// le front appelle d'abord <c>POST /api/players/guest</c> quand il lui en faut un.
     /// </summary>
-    [WolverineGet("/api/players/me")]
+    [WolverineGet("/api/players/me", OperationId = "getMe")]
     [NoContentIfMissing]
     public static async Task<PlayerMeResponse?> Get(ICurrentPlayer current, IPlayerQueries queries, CancellationToken ct) =>
         current.PlayerId is { } playerId ? await queries.FindMeAsync(playerId, ct) : null;

@@ -53,7 +53,8 @@ export default defineConfig({
     : [
         {
           // Hôte de test de l'API v2 (InSeconds.Api.Testing : /api/e2e/*, faux email, dev-login).
-          command: 'dotnet run --project ../../back/InSeconds.Api.Testing/InSeconds.Api.Testing.csproj --urls http://localhost:5177',
+          // --no-launch-profile : sans lui, launchSettings.json impose l'environnement Development (origines de confiance, limites de débit…).
+          command: 'dotnet run --no-launch-profile --project ../../back/InSeconds.Api.Testing/InSeconds.Api.Testing.csproj --urls http://localhost:5177',
           url: 'http://localhost:5177/health',
           timeout: 90_000,
           reuseExistingServer: true,

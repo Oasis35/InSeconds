@@ -18,6 +18,32 @@ describe('toAppError', () => {
     });
   });
 
+  describe('ApiException d\'un client NSwag', () => {
+    const apiException = (status: number, response: string) => ({ isApiException: true as const, status, response });
+
+    it('relit le code et le traceId du corps de la réponse (texte JSON)', async () => {
+      const error = apiException(409, JSON.stringify({ code: 'players.pseudo_taken', traceId }));
+
+      expect(await toAppError(error)).toEqual({ code: 'players.pseudo_taken', status: 409, traceId });
+    });
+
+    it('traduit le statut 0 en erreur réseau', async () => {
+      expect(await toAppError(apiException(0, ''))).toEqual({ code: NETWORK_ERROR_CODE, status: 0, traceId: null });
+    });
+
+    it('tombe sur common.unexpected quand le corps n\'est pas un ProblemDetails', async () => {
+      expect(await toAppError(apiException(502, '<html>Bad Gateway</html>'))).toEqual({
+        code: UNEXPECTED_ERROR_CODE, status: 502, traceId: null,
+      });
+    });
+  });
+
+  it('relit le ProblemDetails que lève un client NSwag quand OpenAPI le décrit', async () => {
+    const problem = { status: 409, code: 'players.pseudo_taken', traceId, title: 'Conflict' };
+
+    expect(await toAppError(problem)).toEqual({ code: 'players.pseudo_taken', status: 409, traceId });
+  });
+
   it('traduit une absence de réponse (status 0) en erreur réseau', async () => {
     const error = new HttpErrorResponse({ status: 0, error: new ProgressEvent('error') });
 
