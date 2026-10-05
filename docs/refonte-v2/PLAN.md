@@ -292,6 +292,8 @@ Chaque module expose un seul point d'entrée : `AddDaily(services)` et `MapDaily
 | `IPlayerStore`, `ICatalogueStore`, `IDailyStore` (`IRunStore` plus tard) | chaque module | EF | `ApplicationDbContext` injecté partout |
 | `IDailyStatsQueries`, `IAdminPlayersQueries`… | chaque module | EF, projections directes | requêtes dans `Endpoint.cs` |
 | `IPreviewProvider` → `PreviewLookup` (`Found` / `Missing` / `Unavailable`) | Catalogue | Deezer + décorateur de cache | `CachedDeezerClient` concret, `null` ambigu |
+| `ITrackUsage` (usage des morceaux : dernier jour, nombre, fin du cooldown, présence dans le défi du jour), `ITrackDirectory` (lecture des morceaux : noms, titre affiché, pochette, année) | Catalogue/Contracts | `ITrackUsage` : Daily (E), « aucun usage » d'ici là ; `ITrackDirectory` : EF | lecture directe du cooldown et des morceaux par les autres modules |
+| `IJobTrigger` | `InSeconds.Api/Infrastructure/Jobs` | Hangfire (`TriggerJob`) | lancement d'une tâche par un bouton de l'admin (C1) |
 | `ITrackSearch` | Catalogue | Deezer (+ cache pour la recherche publique) | idem |
 | `ITrackMetadataSource` | Catalogue | Deezer | `GetTrackInfoAsync` |
 | `IAnswerMatcher` | Gameplay | `FuzzyAnswerMatcher` (Levenshtein, accents, parenthèses) | `TextNormalizer` |
@@ -463,7 +465,9 @@ Le préfixe change, pas l'adresse. Toutes les erreurs sont en `ProblemDetails` a
 | `/health`, `/health/ready` | inchangés (mêmes champs, le front les lit) |
 | `/api/e2e/*`, `/api/auth/dev-login` | mêmes chemins, servis uniquement par `InSeconds.Api.Testing` |
 
-**Codes d'erreur** (contrat publié dans OpenAPI), par exemple : `daily.no_challenge`, `daily.already_played`, `daily.session_not_found`, `daily.track_lock_not_released`, `daily.hint_locked`, `daily.already_answered`, `players.email_taken`, `players.pseudo_taken`, `players.same_email`, `players.invalid_or_expired_token`, `players.guest_forbidden`, `catalogue.track_in_use`, `catalogue.track_in_today_challenge`, `catalogue.duplicate_deezer_id`, `catalogue.not_found_on_deezer`, `admin.pool_insufficient`, `admin.challenge_exists`, `common.validation`, `common.rate_limited`, `common.new_version`.
+**Écarts de Catalogue avec la v1 (C1)** : ajouter un identifiant Deezer déjà dans le pool répond **409 `catalogue.duplicate_deezer_id`** (la v1 renvoyait le morceau existant) ; un identifiant inconnu de Deezer : **422 `catalogue.not_found_on_deezer`** ; Deezer en panne ou quota dépassé : **503 `catalogue.deezer_unavailable`** ; la suppression répond **204** ; la liste du pool est **plate**, l'usage (`usageCount`, `lastUsedDate`, `unlockDate`, `inTodayChallenge`) étant joint à chaque morceau (la v1 renvoyait `{ available, used }`) ; la recherche, publique ou admin, vide au-delà de 100 caractères comme en dessous de 2.
+
+**Codes d'erreur** (contrat publié dans OpenAPI), par exemple : `daily.no_challenge`, `daily.already_played`, `daily.session_not_found`, `daily.track_lock_not_released`, `daily.hint_locked`, `daily.already_answered`, `players.email_taken`, `players.pseudo_taken`, `players.same_email`, `players.invalid_or_expired_token`, `players.guest_forbidden`, `catalogue.track_in_use`, `catalogue.track_in_today_challenge`, `catalogue.duplicate_deezer_id`, `catalogue.not_found_on_deezer`, `catalogue.deezer_unavailable`, `admin.pool_insufficient`, `admin.challenge_exists`, `common.validation`, `common.rate_limited`, `common.new_version`.
 
 ### 5.7 Observabilité
 
