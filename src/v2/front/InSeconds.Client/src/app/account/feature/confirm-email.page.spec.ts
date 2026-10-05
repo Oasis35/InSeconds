@@ -1,25 +1,15 @@
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
-import { provideTranslateService } from '@ngx-translate/core';
-import { SessionLoader } from '../data-access/session-loader';
-import { FakePlayersApi, fakePlayersApi, problem, providePlayersApiFake } from '../data-access/testing/fake-players-api';
+import { FakePlayersApi, fakePlayersApi, problem } from '../data-access/testing/fake-players-api';
 import { query, settle, text } from '../testing/dom';
 import { ConfirmEmailPage } from './confirm-email.page';
+import { configureTokenPage } from './testing/token-page';
 
 describe('ConfirmEmailPage', () => {
   let api: FakePlayersApi;
 
   function render(token: string | null, overrides: Parameters<typeof fakePlayersApi>[0] = {}) {
     api = fakePlayersApi(overrides);
-    TestBed.configureTestingModule({
-      providers: [
-        provideRouter([]),
-        provideTranslateService(),
-        providePlayersApiFake(api),
-        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(token ? { token } : {}) } } },
-      ],
-    });
-    vi.spyOn(TestBed.inject(SessionLoader), 'reload').mockResolvedValue();
+    configureTokenPage(token, api);
     const fixture = TestBed.createComponent(ConfirmEmailPage);
     fixture.detectChanges();
     return fixture;

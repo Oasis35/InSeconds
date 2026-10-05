@@ -1,10 +1,9 @@
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
-import { provideTranslateService } from '@ngx-translate/core';
+import { Router } from '@angular/router';
 import { SessionStore } from '../../core/session/session.store';
-import { SessionLoader } from '../data-access/session-loader';
-import { FakePlayersApi, fakePlayersApi, linkedPlayer, problem, providePlayersApiFake } from '../data-access/testing/fake-players-api';
+import { FakePlayersApi, fakePlayersApi, linkedPlayer, problem } from '../data-access/testing/fake-players-api';
 import { query, settle, text, type } from '../testing/dom';
+import { configureTokenPage } from './testing/token-page';
 import { VerifyPage } from './verify.page';
 
 describe('VerifyPage', () => {
@@ -13,15 +12,7 @@ describe('VerifyPage', () => {
 
   function render(token: string | null, overrides: Parameters<typeof fakePlayersApi>[0] = {}) {
     api = fakePlayersApi(overrides);
-    TestBed.configureTestingModule({
-      providers: [
-        provideRouter([]),
-        provideTranslateService(),
-        providePlayersApiFake(api),
-        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(token ? { token } : {}) } } },
-      ],
-    });
-    vi.spyOn(TestBed.inject(SessionLoader), 'reload').mockResolvedValue();
+    configureTokenPage(token, api);
     navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
     const fixture = TestBed.createComponent(VerifyPage);
     fixture.detectChanges();
