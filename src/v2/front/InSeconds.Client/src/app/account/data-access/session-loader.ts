@@ -18,7 +18,7 @@ export class SessionLoader {
 
   /** Attend la première lecture de l'identité (la lance si besoin). */
   ensureLoaded(): Promise<void> {
-    if (this.loading === null) this.loading = this.read();
+    this.loading ??= this.read();
     return this.loading;
   }
 
