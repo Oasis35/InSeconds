@@ -1,8 +1,17 @@
 name: Copy prod DB to staging
 
 # Lancement manuel uniquement (onglet Actions → "Copy prod DB to staging" → Run workflow).
-# Copie la base de prod dans celle du staging puis l'anonymise, cf.
-# deploy/vps/copy-prod-db-to-staging.sh. La prod n'est lue qu'en pg_dump, jamais modifiée.
+#
+# Refonte v2 (PR B4) : le staging sert la v2. Lancé depuis env/staging (« Use workflow from »), ce
+# workflow fait l'import v1 → staging v2, comme à la bascule (§ 8 du plan v2) :
+#   1. copie de la base de prod (public) dans celle du staging, puis anonymisation des tables v1
+#      (deploy/vps/copy-prod-db-to-staging.sh) ;
+#   2. import v1 → v2 et vérifications, une seule transaction (deploy/migration-v2/run-import.sh) ;
+#   3. seconde anonymisation, sur les tables v2 (S8).
+# Un workflow manuel n'est listé que s'il existe sur main : celui-ci y est (version v1, copie
+# seule), c'est la version de la branche choisie au lancement qui s'exécute.
+# La prod n'est lue qu'en pg_dump, jamais modifiée. Les migrations v2 du staging doivent être à jour
+# (elles le sont après chaque déploiement d'env/staging).
 on:
   workflow_dispatch:
     inputs:
@@ -15,11 +24,11 @@ permissions:
 
 jobs:
   copy:
-    name: Copy + anonymize
+    name: Copy + anonymize + import v2
     runs-on: ubuntu-latest
     if: inputs.confirm == 'staging'
     # Même groupe que le déploiement staging : pas de copie pendant un rebuild du staging
-    # (l'API est arrêtée puis relancée par le script).
+    # (l'API est arrêtée puis relancée par les scripts).
     concurrency:
       group: deploy-vps-staging
       cancel-in-progress: false
@@ -39,3 +48,16 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_ed25519 "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" 'bash -s' \
             < deploy/vps/copy-prod-db-to-staging.sh
+
+      - name: Send import scripts
+        # Ceux de ce commit, pas ceux du checkout du staging. Supprimés par import-to-staging.sh.
+        run: |
+          tar -C deploy -cz migration-v2 \
+            | ssh -i ~/.ssh/id_ed25519 "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+                'rm -rf ~/inseconds-migration-v2 && mkdir -p ~/inseconds-migration-v2 && tar -xz -C ~/inseconds-migration-v2 --strip-components=1'
+
+      - name: Import v1 → v2, verify, anonymize v2 tables
+        run: |
+          ssh -i ~/.ssh/id_ed25519 "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            'IMPORT_DIR=$HOME/inseconds-migration-v2 bash -s' \
+            < deploy/migration-v2/import-to-staging.sh

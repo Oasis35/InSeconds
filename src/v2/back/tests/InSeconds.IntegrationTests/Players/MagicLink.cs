@@ -53,8 +53,26 @@ internal sealed partial class MagicLinkApi : IAsyncDisposable
         var before = Emails.Sent.Count;
         var response = await (browser ?? Browser()).PostAsJsonAsync("/api/players/auth/magic-link", new RequestMagicLink(email), Ct);
         response.EnsureSuccessStatusCode();
-        var sent = await WaitForEmailAsync(email, before);
-        return TokenOf(sent);
+        var token = TokenOf(await WaitForEmailAsync(email, before));
+        await WaitForTokenAsync(token);
+        return token;
+    }
+
+    /// <summary>
+    /// Attend que le jeton reçu par email soit enregistré : le handler envoie l'email juste avant de valider
+    /// sa transaction. Un humain met des secondes à cliquer ; un test, non.
+    /// </summary>
+    public async Task WaitForTokenAsync(string token)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(15);
+        while (DateTime.UtcNow < deadline)
+        {
+            if (await Api.ScalarAsync<long>($"SELECT count(*) FROM players.auth_tokens WHERE token_hash = sha256(convert_to('{token}', 'UTF8'))") == 1)
+                return;
+            await Task.Delay(50, Ct);
+        }
+
+        throw new TimeoutException("Jeton reçu par email jamais enregistré.");
     }
 
     /// <summary>Le prochain email envoyé à cette adresse, après les <paramref name="alreadySent"/> premiers.</summary>

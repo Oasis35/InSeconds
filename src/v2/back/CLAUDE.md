@@ -2,7 +2,7 @@
 
 Back de la v2 d'InSeconds, en construction à côté de la v1 (`src/back/`), qui reste en service jusqu'à la bascule. Plan de référence : [`docs/refonte-v2/PLAN.md`](../../../docs/refonte-v2/PLAN.md) et [`docs/refonte-v2/DEVELOPPEMENT.md`](../../../docs/refonte-v2/DEVELOPPEMENT.md). Ce fichier décrit ce qui existe **déjà** dans le code ; il grossit à chaque PR.
 
-État : **PR B3, profil et appareils** (après la phase A, puis B1 : identité et cookie, B2 : connexion par lien magique). Module `Players` : invités, appareils, cookie standard validé en base, reprise des cookies v1, clés Data Protection chiffrées par certificat, connexion par lien magique et dev-login, pseudo, changement d'email, déconnexion, liste et révocation des appareils, purge des jetons expirés (cf. « Authentification » et « Module Players »). `Daily` n'a encore que son contrat `IStreakGrants`. Prochaine étape de la phase B : l'import des joueurs v1 (B4).
+État : **PR B4, import des joueurs v1** (après la phase A, puis B1 : identité et cookie, B2 : connexion par lien magique, B3 : profil et appareils). Module `Players` : invités, appareils, cookie standard validé en base, reprise des cookies v1, clés Data Protection chiffrées par certificat, connexion par lien magique et dev-login, pseudo, changement d'email, déconnexion, liste et révocation des appareils, purge des jetons expirés (cf. « Authentification » et « Module Players »). `Daily` n'a encore que son contrat `IStreakGrants`. Import v1 → v2 de la partie Players : `deploy/migration-v2/` (cf. « Import v1 → v2 »). Prochaine étape de la phase B : le front du compte (B5).
 
 ## Commandes
 
@@ -12,6 +12,7 @@ dotnet build InSeconds.slnx
 dotnet test --solution InSeconds.slnx      # unitaires + architecture + intégration (Docker requis)
 dotnet run --project InSeconds.Api          # http://localhost:5175
 dotnet run --project InSeconds.Api -- --migrate-only   # applique les migrations puis rend la main
+dotnet run --project InSeconds.Api -- --rotate-data-protection-key   # crée une clé Data Protection neuve (après un import, B4)
 dotnet run --project InSeconds.Api.Testing  # hôte de test (Development) : API + /api/e2e + faux email
 
 # Image de prod (contexte src/v2/back), sans l'hôte de test
@@ -51,7 +52,7 @@ src/v2/back/
 │       ├── Auth/          # cookie standard, validation de l'appareil, transition v1, Data Protection, policy Admin
 │       ├── Messaging/     # Wolverine (HTTP, transactions, outbox)
 │       ├── Jobs/          # Hangfire : tâches planifiées, /jobs, GET /api/admin/jobs/{id}
-│       └── Hosting/       # ApiComposition, --migrate-only, commandes Wolverine
+│       └── Hosting/       # ApiComposition, --migrate-only, --rotate-data-protection-key, commandes Wolverine
 │   └── Modules/
 │       ├── Players/       # Domain, Application (endpoints), Contracts, Persistence, Email (gabarits), PlayersModule.cs
 │       └── Daily/         # Contracts/IStreakGrants seulement (gel offert à la création d'un compte, effet en E2)
@@ -59,9 +60,10 @@ src/v2/back/
 └── tests/
     ├── InSeconds.UnitTests/
     ├── InSeconds.ArchitectureTests/   # règles de dépendance, horloge, schémas
-    └── InSeconds.IntegrationTests/    # Testcontainers postgres:17-alpine + WebApplicationFactory
-                                       # (Security/ : SecurityTests, en-têtes, proxies, Data Protection ;
-                                       #  Players/ : invités, cookie, transition v1 ; Testing/ : hôte de test)
+    ├── InSeconds.IntegrationTests/    # Testcontainers postgres:17-alpine + WebApplicationFactory
+    │                                  # (Security/ : SecurityTests, en-têtes, proxies, Data Protection ;
+    │                                  #  Players/ : invités, cookie, transition v1 ; Testing/ : hôte de test)
+    └── InSeconds.MigrationTests/      # import v1 → v2 (deploy/migration-v2), base de forme v1 générée
 ```
 
 Les modules métier vivent dans `InSeconds.Api/Modules/<Module>/` (le premier : `Players`, B1) ; un module n'utilise des autres que leur dossier `Contracts` (vérifié par `ArchitectureTests/ModuleDependencyTests`, qui s'applique dès qu'un module existe).
@@ -89,6 +91,8 @@ Une ligne par réglage : `key` = chemin de configuration complet (`Daily:GuessTi
 `Program.cs` appelle `ApiComposition.AddInSecondsApi(args)` puis `UseInSecondsApi()`, partagés avec l'hôte de test. Services : réglages en base → OpenTelemetry → `DbContext` → migrations → calendrier → ProblemDetails → health checks → Data Protection → auth → proxies de confiance → rate limiting → email → Wolverine → Hangfire → `App:PublicUrl` → modules (`AddPlayers`, `AddDaily`). Pipeline : `UseForwardedHeaders` (en premier : tout le reste voit l'IP réelle) → en-têtes de sécurité → erreurs → CORS → authentification → transition des cookies v1 → autorisation → rate limiter → routes. Puis `RunJasperFxCommands(args)` (démarre l'API, ou exécute une commande Wolverine comme `codegen write`). Les migrations passent par `DatabaseStartupService` (`IHostedLifecycleService.StartingAsync`) : avant le démarrage de Wolverine et Hangfire, sauf si `Database:MigrateOnStartup=false` ; les réglages sont rechargés juste après (la table peut ne pas avoir existé à la construction de la configuration). Une commande Wolverine ne démarre pas l'hôte : pas de migration, et pas de lecture des réglages en base (`CommandLine.StartsServer`), pour que la CI génère le code sans base.
 
 `--migrate-only` (`MigrateOnlyCommand`) : hôte minimal (base seulement, ni serveur web ni tâche de fond), applique les migrations et rend la main avec le code 0. Sert au déploiement et à l'import des données v1.
+
+`--rotate-data-protection-key` (`RotateDataProtectionKeyCommand`, B4) : même principe (base et Data Protection seulement, le host n'est jamais démarré), crée par `IKeyManager.CreateNewKey` une clé active tout de suite, valable 90 jours, chiffrée par le certificat (exigé en prod et en staging). À lancer après chaque import v1 → v2, cf. « Import v1 → v2 ».
 
 ## Wolverine (`Infrastructure/Messaging/WolverineSetup.cs`)
 
@@ -175,12 +179,25 @@ Identité, compte, appareils, rôle admin (§ 3.1 du plan v2). Point d'entrée `
   - Pseudo : 3 à 20 caractères parmi lettres, chiffres, espace, `_`, `.`, `-` (v1) ; unicité sans casse (`citext`).
   - Tests : `Players/MagicLinkTests` (dont pièges 21, 22 et 30, S1, S2, S5, double confirmation simultanée et pseudo pris au même moment, provoqués par `RecordingStreakGrants.OnGrant` au milieu de la création du compte), `Players/MagicLinkEmailFailureTests` (envoi en échec : aucun jeton en base), `UnitTests/Players` (`AuthTokenTests`, `TrustedOriginsTests`, `MagicLinkEmailComposerTests`, `AccountConflictExceptionHandlerTests`). B3 : `Players/ProfileTests` (pseudo, changement d'email, S2 dans l'autre sens, limite par joueur), `Players/DevicesTests` (liste et libellés, déconnexion sans toucher aux autres appareils, révocations, limite par joueur), `Players/PurgeExpiredAuthTokensTests`, `UnitTests/Players` (`DeviceLabelTests`, `ConfirmEmailChangeEmailComposerTests`).
 
+## Import v1 → v2 (`deploy/migration-v2/`, depuis B4)
+
+Mode d'emploi complet : [`deploy/migration-v2/README.md`](../../../deploy/migration-v2/README.md). Construit module par module (B4 Players, C2 Catalogue, E4 Daily, G1 complet).
+
+- `run-import.sh` (POSIX `sh`, variables `PG*`) : `00-import-state.sql` → `10-import.sql` → `20-verify.sql` → `90-import-done.sql`, **une seule transaction** : au moindre écart de vérification, rien n'est gardé. Rejouable (chaque partie vide d'abord ses tables v2). Prérequis : migrations v2 appliquées (`--migrate-only`).
+- **Partie Players (B4)** : `players.players` (supprimé sans date : dernière visite ou création, R16), `players.accounts` (joueurs non invités, `linked_at` vide), `players.legacy_tokens` (un par joueur, `sha256(AuthToken::text)`, le calcul de `LegacyToken.HashOf`), `players.auth_tokens` (jetons encore valables, hash hexadécimal v1 décodé, R14), `infra.data_protection_keys` (copiées avec leurs identifiants, séquence remise à niveau ; sans elles aucun cookie v1 ne se déchiffre). Pré-contrôles : pseudos et adresses en doublon de casse (R5), compte sans email. Vérification des jetons envoyés par email : hash, adresse (ou joueur et nouvelle adresse) et dates comparés un à un. `device_sessions` vidée : chaque appareil en obtient une à sa première visite.
+- **Clé Data Protection neuve après l'import (S16)** : l'import copie les clés de la v1 **en clair** ; sans clé neuve, la plus récente deviendrait la clé par défaut de la v2 et chiffrerait les nouveaux cookies sans le certificat. `--rotate-data-protection-key` à lancer juste après `run-import.sh`, avant de démarrer l'API (procédure de bascule, G2 ; sur le staging, `import-to-staging.sh`, après la seconde anonymisation qui vide les clés).
+- `infra.import_state` : créée par l'import (hors migrations EF), `imported_at` à chaque import réussi ; `opened_at` et la garde `--force` arrivent en G1.
+- Messages : des nombres et des identifiants seulement, jamais d'email ni de pseudo (S13).
+- **Tests** (`InSeconds.MigrationTests`, fixture `ImportDatabase`) : schéma v1 généré depuis le code v1 (`dotnet ef migrations script`, après `dotnet restore` du projet v1 ; fichier déjà généré par la CI dans `INSECONDS_V1_SCHEMA_SQL`), migrations v2 par `MigrateOnlyCommand`, scripts copiés en LF dans le conteneur PostgreSQL, **vrai `run-import.sh` exécuté dans le conteneur** (`sh` et `psql` d'Alpine). `PlayersImportTests` (cas limites, rejouable, refus, vérification qui détecte un écart) et `LegacyCookieEndToEndTests` (cookie émis par la v1 accepté par la v2 après import, même joueur, deux navigateurs = deux appareils ; horloge simulée avancée entre les deux, `LegacyConversionCache` ; clé neuve : la clé par défaut lue dans l'en-tête de ce que l'API protège est la clé créée par la commande, chiffrée par le certificat, et le cookie v1 reste pris ; `SansRotation_…` montre le risque écarté). `TestCertificate` : certificat jetable, comme dans les tests d'intégration.
+- **CI** : le job `back-v2` génère le schéma v1 avant les tests ; le filtre `v2` couvre aussi `deploy/migration-v2/**` et les migrations v1.
+- **Staging** : workflow « Copy prod DB to staging » lancé depuis `env/staging` : copie de `public`, anonymisation v1, import, seconde anonymisation v2 (`import-to-staging.sh`, qui vide aussi `legacy_tokens` et la file `messaging`, § 10.1 du plan), puis clé Data Protection neuve.
+
 ## Erreurs du front (`POST /api/client-errors`)
 
 `Infrastructure/Errors/ReportClientErrorEndpoint.cs`, même contrat qu'en v1 (`source` `js`/`http`, `message`, `stack`, `url`, `httpStatus`, `relatedTraceId`), appelé par `ErrorReportingService` du front v2 (via `HttpBackend`, hors client généré : `[ExcludeFromDescription]`).
 
 - Public, limité par IP (`[EnableRateLimiting(RateLimitPolicies.ClientErrorReport)]`, 20 / 5 min), bornes du validator reprises de la v1 (message ≤ 1000, pile ≤ 8000, URL ≤ 500, statut 0-599, trace ≤ 64). Réponse 204.
-- Journalisé en **Error**, EventId **1100** et message de la v1 (`ClientErrorLog`) : les tableaux de bord existants restent valables. Retours à la ligne neutralisés (pile aplatie avec `|`), **query string et fragment retirés de l'URL côté serveur** même si un client en envoie. Pas encore d'identité du joueur dans le journal : la v1 la posait par un scope de journalisation (`PlayerTelemetryMiddleware`), que le plan v2 n'attribue encore à aucune PR.
+- Journalisé en **Error**, EventId **1100** et message de la v1 (`ClientErrorLog`) : les tableaux de bord existants restent valables. Retours à la ligne neutralisés (pile aplatie avec `|`), **query string et fragment retirés de l'URL côté serveur** même si un client en envoie. Pas encore d'identité du joueur dans le journal : la v1 la posait par un scope de journalisation (`PlayerTelemetryMiddleware`), repris en B5 (tag `inseconds.player_id` sur la trace, scope de log `PlayerId`, d'après `ICurrentPlayer`).
 - Tests : `UnitTests/Infrastructure/ReportClientErrorTests` (validation, journal), `IntegrationTests/ClientErrorTests` (204, 400 ProblemDetails, 429 au 21e rapport ; confidentialité : un cookie, un `Authorization` et un jeton dans l'URL n'apparaissent ni dans les traces ni dans les journaux, test v1 `Traces_NeContiennentNiCookieNiAuthorization` repris).
 
 ## Staging

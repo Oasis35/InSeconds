@@ -76,7 +76,7 @@ Environ **30 PR**. Les plus grosses sont A1, B1, E2 et E5. L'ordre A → B → C
 | **B2** Connexion | magic link : handler de l'outbox qui génère le jeton (S1), filtre `purpose` (S2), `OriginValidator` (piège 22), pas de conversion d'un compte lié (piège 30), nouvelle session à chaque connexion (S5) ; gel offert à la conversion (via Daily plus tard, contrat préparé) ; gabarits d'email repris ; dev-login | tests d'intégration des pièges 21, 22, 30 verts |
 | **B3** Profil | pseudo, changement d'email (demande + confirmation), déconnexion (révocation), appareils (liste, révocation, « déconnecter les autres ») ; purge des jetons expirés (tâche Hangfire) | tests verts |
 | **B4** Import Players | `deploy/migration-v2/` (squelette, `run-import.sh`, `import_state`) ; partie Players de l'import et de la vérification ; projet `InSeconds.MigrationTests` (base v1 générée en CI) ; **test de bout en bout du cookie v1**, dont deux navigateurs ; workflow « Import v1 → staging v2 » (copie `public`, anonymisation avant et après) | import staging sans écart pour les joueurs |
-| **B5** Front account | `/account/login`, `verify`, profil, appareils, confirmation d'email ; `BrowserId` ; header avec avatar et série (vide jusqu'à Daily) | **J2** : E2E login, profil, changement d'email réactivés et verts |
+| **B5** Front account | `/account/login`, `verify`, profil, appareils, confirmation d'email ; `BrowserId` ; header avec avatar et série (vide jusqu'à Daily) ; **identité du joueur dans la télémétrie du back** (équivalent de `PlayerTelemetryMiddleware` v1 : tag `inseconds.player_id` sur la trace, scope de log `PlayerId`, à partir d'`ICurrentPlayer`, sans email ni pseudo) | **J2** : E2E login, profil, changement d'email réactivés et verts |
 
 **Fait en B1 :** module `Players` (`InSeconds.Api/Modules/Players/` : `Domain`, `Application`, `Contracts`, `Persistence`), migration `PlayersAndDataProtectionKeys` (schéma `players` et `infra.data_protection_keys`). Décisions :
 - `device_sessions.id` tiré d'une séquence EF (HiLo) dès l'ajout : l'identifiant va dans le cookie avant que Wolverine n'enregistre la transaction, sans `SaveChangesAsync` dans le handler ;
@@ -111,6 +111,19 @@ Laissé aux PR suivantes : `user_agent_label` reste vide (calculé avec la liste
 - routes de compte (pseudo, changement d'email) : 403 `players.guest_forbidden` pour un invité ; appareils et déconnexion ouverts à tout joueur identifié ;
 - `user_agent_label` sans langue (« Chrome · Android » plutôt que « Chrome sur Android ») : le front l'affiche tel quel dans les deux langues ;
 - purge : tous les jetons expirés, des deux usages (consommés compris), chaque nuit.
+
+**Fait en B4 :** `deploy/migration-v2/` (`run-import.sh`, `00-import-state.sql`, `10-import.sql`, `20-verify.sql`, `90-import-done.sql`, `import-to-staging.sh`, README), partie Players de l'import et de la vérification, projet `InSeconds.MigrationTests`, test de bout en bout du cookie v1. Décisions :
+- import, vérification et état dans **une seule transaction** (`psql --single-transaction`) : une vérification en échec annule l'import ;
+- les clés Data Protection font partie de B4 : sans elles, le test de bout en bout du cookie v1 n'a pas de sens ;
+- `infra.import_state` créée par l'import lui-même (hors migrations EF), `imported_at` noté à chaque import réussi ; la garde (`opened_at`, `--force`) reste en G1 ;
+- pré-contrôles avec messages clairs (identifiants seulement, S13) : pseudos en doublon de casse, compte sans email ;
+- tests : le **vrai `run-import.sh`** tourne dans le conteneur PostgreSQL de test (POSIX `sh`, scripts copiés en LF : la copie de travail Windows est en CRLF) ; schéma v1 généré par `dotnet ef migrations script` (CI : étape dédiée du job `back-v2`) ;
+- workflow : le workflow manuel « Copy prod DB to staging » existant fait l'import quand il est lancé depuis `env/staging` (un nouveau workflow manuel ne serait listé qu'une fois sur `main`, donc pas avant la bascule) ;
+- deux appareils qui convertissent le même cookie v1 dans la même minute partagent une session (`LegacyConversionCache`, B1) : le test de bout en bout avance l'horloge entre les deux navigateurs ;
+- **clé Data Protection neuve après chaque import** (relevé en revue) : l'import copie les clés v1 en clair, et la plus récente serait devenue la clé par défaut de la v2 (S16 contourné jusqu'à 90 jours). Commande `--rotate-data-protection-key` (`IKeyManager.CreateNewKey`, chiffrée par le certificat), lancée par `import-to-staging.sh` après la seconde anonymisation (qui vide les clés) ; **à reprendre dans le workflow de bascule (G2), juste après l'import et avant le démarrage de l'API**. Testée avec le vrai certificat, y compris la preuve du risque sans rotation ;
+- pré-contrôle des adresses en doublon de casse (comme les pseudos) ; jetons envoyés par email comparés champ par champ (hash, adresse ou joueur, dates) ; seconde anonymisation alignée sur le plan (`legacy_tokens` et file `messaging` vidés).
+
+**Action de Clément après B4 :** une fois le merge déployé sur le staging (l'image de l'API doit contenir `--rotate-data-protection-key`), lancer « Copy prod DB to staging » depuis `env/staging` (critère « import staging sans écart pour les joueurs »).
 
 ---
 
@@ -159,7 +172,7 @@ Laissé aux PR suivantes : `user_agent_label` reste vide (calculé avec la liste
 | PR | Contenu | Terminée quand |
 |---|---|---|
 | **G1** Import complet | import complet rejoué d'un bloc, contrôle de forme de la source, garde `import_state`/`--force`, stats figées de l'historique | import staging complet sans écart |
-| **G2** Workflow « Bascule v2 » | `workflow_dispatch` : arrêt v1, import, vérification, démarrage v2 (mêmes noms de conteneurs), santé, et arrêt + redémarrage v1 au moindre écart ; anciennes routes en `410 common.new_version` ; déploiement auto sur `main` désactivé pour la v2 jusqu'à la bascule | testé sur le staging |
+| **G2** Workflow « Bascule v2 » | `workflow_dispatch` : arrêt v1, import, vérification, clé Data Protection neuve (`--rotate-data-protection-key`, B4), démarrage v2 (mêmes noms de conteneurs), santé, et arrêt + redémarrage v1 au moindre écart ; anciennes routes en `410 common.new_version` ; déploiement auto sur `main` désactivé pour la v2 jusqu'à la bascule | testé sur le staging |
 | **G3** CSP | CSP en `Report-Only` sur le staging, violations vers `/api/client-errors`, puis bloquante | une semaine sans violation sur le staging |
 | **G4** Documentation | CLAUDE.md v2 (racine et sous-dossiers), README FR/EN, `docs/*`, pièges à jour | relue |
 
