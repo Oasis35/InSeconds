@@ -200,6 +200,19 @@ describe('ProfilePage', () => {
       expect(toast).toHaveBeenCalledWith('account.devices.revokedOthers', { tone: 'success' });
     });
 
+    it('désactive « déconnecter les autres » pendant l\'envoi', async () => {
+      let answer!: (revoked: number) => void;
+      const fixture = await render({ revokeOtherDevices: vi.fn(() => new Promise<number>(resolve => (answer = resolve))) });
+
+      buttonLabelled(fixture, 'account.devices.revokeOthers').click();
+      await settle(fixture);
+      expect(buttonLabelled(fixture, 'account.devices.revokeOthers').disabled).toBe(true);
+
+      answer(1);
+      await settle(fixture);
+      expect(api.revokeOtherDevices).toHaveBeenCalledTimes(1);
+    });
+
     it('n\'offre pas « déconnecter les autres » quand il n\'y en a pas', async () => {
       const fixture = await render({ listDevices: vi.fn(async () => [current]) });
 

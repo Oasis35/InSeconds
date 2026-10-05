@@ -15,6 +15,8 @@ export class SessionLoader {
   private readonly session = inject(SessionStore);
 
   private loading: Promise<void> | null = null;
+  /** Numéro de la dernière lecture lancée : la réponse d'une lecture plus ancienne est ignorée. */
+  private latestRead = 0;
 
   /** Attend la première lecture de l'identité (la lance si besoin). */
   ensureLoaded(): Promise<void> {
@@ -44,15 +46,23 @@ export class SessionLoader {
     await this.reload();
   }
 
+  /**
+   * Lit l'identité. Deux lectures peuvent se croiser (celle du démarrage, puis `reload()` juste après
+   * une connexion) : seule la plus récente écrit dans la session, sinon une réponse partie avant la
+   * pose du cookie pourrait arriver en dernier et déconnecter l'écran à tort.
+   */
   private async read(): Promise<void> {
+    const readId = ++this.latestRead;
+    const isLatest = () => readId === this.latestRead;
     try {
       const player = await this.api.getMe();
+      if (!isLatest()) return;
       if (player) this.session.signedIn(player);
       else this.session.signedOut();
     } catch {
       // Identité inconnue : on garde l'état courant.
     } finally {
-      this.session.markLoaded();
+      if (isLatest()) this.session.markLoaded();
     }
   }
 }

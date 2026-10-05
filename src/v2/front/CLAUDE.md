@@ -139,7 +139,7 @@ Après tout changement d'endpoint d'un module : régénérer le document côté 
 
 `src/app/account/`, quatre couches (frontières vérifiées par Sheriff) :
 - `domain/` (TypeScript pur) : règles du pseudo (mêmes bornes et caractères que le back), adresse plausible, `Device`, et la machine à états de la vérification du lien (`verify-flow`) ;
-- `data-access/` : `PlayersApi` (adaptateur du client), `SessionLoader` (lit l'identité une seule fois au démarrage, la relit à la demande, crée l'invité si besoin), stores `LoginStore`, `VerifyStore` (enveloppe la machine à états), `ConfirmEmailStore`, `ProfileStore`, `DevicesStore` ; `players.providers.ts` donne l'adresse de l'API au client ;
+- `data-access/` : `PlayersApi` (adaptateur du client), `SessionLoader` (lit l'identité une seule fois au démarrage, la relit à la demande — seule la lecture la plus récente écrit dans la session —, crée l'invité si besoin), stores `LoginStore`, `VerifyStore` (enveloppe la machine à états), `ConfirmEmailStore`, `ProfileStore`, `DevicesStore` ; `players.providers.ts` donne l'adresse de l'API au client ;
 - `feature/` : pages `login`, `verify`, `confirm-email`, `profile`, routes `ACCOUNT_ROUTES` (chargées à la demande, chaque page fournit ses stores), `linkedAccountGuard` (compte requis, attend la lecture de l'identité), `provideAccount()` (branché dans `app.config.ts` : adresse de l'API et lecture de l'identité au démarrage, sans bloquer l'affichage), `BrowserIdComponent` ;
 - `ui/` : `auth-page` (cadre des écrans d'authentification), `device-list`, `browser-id-view`.
 

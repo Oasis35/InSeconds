@@ -68,7 +68,7 @@
         <app-error-message [messageKey]="devicesActionKey()" [traceId]="error.traceId" />
       }
       @if (devices.others().length > 0) {
-        <button appButton type="button" variant="secondary" size="sm" (click)="revokeOthers()">
+        <button appButton type="button" variant="secondary" size="sm" [disabled]="devices.action() === 'pending'" (click)="revokeOthers()">
           {{ 'account.devices.revokeOthers' | translate }}
         </button>
       }

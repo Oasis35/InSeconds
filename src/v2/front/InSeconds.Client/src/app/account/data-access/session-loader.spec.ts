@@ -74,6 +74,22 @@ describe('SessionLoader', () => {
     expect(session.player()).toEqual(linkedPlayer);
   });
 
+  it('ignore une lecture plus ancienne qui répond après la relecture (connexion pendant la lecture du démarrage)', async () => {
+    let answerFirstRead!: (player: null) => void;
+    setup();
+    api.getMe
+      .mockImplementationOnce((() => new Promise<null>(resolve => (answerFirstRead = resolve))) as never)
+      .mockResolvedValueOnce(linkedPlayer as never);
+
+    const firstRead = loader.ensureLoaded();
+    await loader.reload();
+    answerFirstRead(null);
+    await firstRead;
+
+    expect(session.player()).toEqual(linkedPlayer);
+    expect(session.loaded()).toBe(true);
+  });
+
   describe('ensureGuest', () => {
     it('crée l\'invité quand le navigateur n\'a aucune identité, puis relit l\'identité', async () => {
       setup();
