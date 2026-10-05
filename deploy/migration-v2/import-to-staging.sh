@@ -43,7 +43,7 @@ cleanup() {
 trap cleanup EXIT
 
 echo "Import v1 → v2 (import et vérifications, une seule transaction)..."
-pg sh /import/run-import.sh
+pg sh /import/run-import.sh < /dev/null
 
 # Seconde anonymisation, sur les tables v2 (S8) : la première, faite sur public avant l'import,
 # suffit en principe ; celle-ci garantit qu'aucune donnée de prod ne reste, même si l'import évolue.
@@ -59,7 +59,7 @@ DELETE FROM players.device_sessions;
 DELETE FROM players.legacy_tokens;
 DELETE FROM infra.data_protection_keys;
 -- File de messages de Wolverine : ses tables n'existent qu'une fois l'API démarrée au moins une fois.
-DO $
+DO $$
 BEGIN
     IF to_regclass('messaging.wolverine_incoming_envelopes') IS NOT NULL THEN
         DELETE FROM messaging.wolverine_incoming_envelopes;
@@ -67,7 +67,7 @@ BEGIN
     IF to_regclass('messaging.wolverine_outgoing_envelopes') IS NOT NULL THEN
         DELETE FROM messaging.wolverine_outgoing_envelopes;
     END IF;
-END $;
+END $$;
 COMMIT;
 SELECT count(*) AS comptes,
        count(*) FILTER (WHERE email::text NOT LIKE '%@example.invalid') AS emails_conserves,
@@ -85,7 +85,7 @@ echo "Clé Data Protection neuve..."
 cd "$STAGING_DIR"
 rotate_container=inseconds-staging.rotate-key
 if ! timeout 180 docker compose -f docker-compose.staging.yml --env-file .env.staging \
-    run --rm -T --name "$rotate_container" api --rotate-data-protection-key; then
+    run --rm -T --name "$rotate_container" api --rotate-data-protection-key < /dev/null; then
   docker rm -f "$rotate_container" > /dev/null 2>&1 || true
   echo "ERREUR : la clé Data Protection n'a pas pu être créée (image de l'API staging à jour ?)." >&2
   exit 1
