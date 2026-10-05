@@ -6,8 +6,10 @@ using InSeconds.Api.Infrastructure.Messaging;
 using InSeconds.Api.Infrastructure.Persistence;
 using InSeconds.Api.Infrastructure.Settings;
 using InSeconds.Api.Infrastructure.Time;
+using InSeconds.Api.Modules.Catalogue;
 using InSeconds.Api.Modules.Daily;
 using InSeconds.Api.Modules.Players;
+using InSeconds.Deezer;
 using InSeconds.Infrastructure.Email;
 using InSeconds.Infrastructure.Http;
 using InSeconds.Infrastructure.Networking;
@@ -48,10 +50,12 @@ public static class ApiComposition
         builder.Services.AddInSecondsRateLimiting(configuration,
             httpContext => httpContext.User.FindFirst(PlayerClaims.PlayerId)?.Value);
         builder.Services.AddInSecondsEmail(configuration, builder.Environment);
+        builder.Services.AddDeezer(configuration);
         builder.AddInSecondsWolverine(connectionString);
         builder.Services.AddInSecondsJobs(connectionString, configuration);
         AppOptions.AddAppOptions(builder.Services);
         builder.Services.AddPlayers();
+        builder.Services.AddCatalogue();
         builder.Services.AddDaily();
         return builder;
     }

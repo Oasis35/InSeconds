@@ -27,5 +27,8 @@ public static class DbSchemas
     /// <summary>Module Players : joueurs, comptes, appareils, jetons (§ 4.2 du plan v2).</summary>
     public const string Players = "players";
 
+    /// <summary>Module Catalogue : les morceaux du pool (§ 4.3 du plan v2).</summary>
+    public const string Catalogue = "catalogue";
+
     public const string MigrationsHistoryTable = "__ef_migrations_history";
 }
