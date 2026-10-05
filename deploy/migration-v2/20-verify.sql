@@ -30,6 +30,25 @@ SELECT pg_temp.expect('jetons de changement d''email encore valables',
     (SELECT count(*) FROM public."EmailChangeTokens" WHERE "ConsumedAt" IS NULL AND "ExpiresAt" > now()),
     (SELECT count(*) FROM players.auth_tokens WHERE purpose = 2));
 
+-- Jetons envoyés par email : même hash (hexadécimal v1 décodé), même adresse, mêmes dates.
+SELECT pg_temp.expect('jetons de connexion repris à l''identique', 0, (
+    SELECT count(*) FROM public."MagicLinkTokens" m
+    LEFT JOIN players.auth_tokens t ON t.purpose = 1 AND t.token_hash = decode(m."TokenHash", 'hex')
+    WHERE m."ConsumedAt" IS NULL AND m."ExpiresAt" > now()
+      AND (t.id IS NULL
+           OR t.email::text IS DISTINCT FROM m."Email"
+           OR t.expires_at IS DISTINCT FROM m."ExpiresAt"
+           OR t.created_at IS DISTINCT FROM m."CreatedAt")));
+SELECT pg_temp.expect('jetons de changement d''email repris à l''identique', 0, (
+    SELECT count(*) FROM public."EmailChangeTokens" e
+    LEFT JOIN players.auth_tokens t ON t.purpose = 2 AND t.token_hash = decode(e."TokenHash", 'hex')
+    WHERE e."ConsumedAt" IS NULL AND e."ExpiresAt" > now()
+      AND (t.id IS NULL
+           OR t.player_id IS DISTINCT FROM e."PlayerId"
+           OR t.new_email::text IS DISTINCT FROM e."NewEmail"
+           OR t.expires_at IS DISTINCT FROM e."ExpiresAt"
+           OR t.created_at IS DISTINCT FROM e."CreatedAt")));
+
 -- Joueurs : dates et suppression identiques (supprimé sans date : dernière visite ou création).
 SELECT pg_temp.expect('joueurs repris à l''identique', 0, (
     SELECT count(*) FROM public."Players" p

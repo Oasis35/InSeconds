@@ -26,6 +26,17 @@ BEGIN
         RAISE EXCEPTION 'Pseudos en doublon de casse (« Bob » et « bob ») à régler avant l''import, joueurs : %', ids;
     END IF;
 
+    -- Même chose pour les adresses : l'index unique de la v1 respecte la casse, celui de la v2 (citext) non.
+    SELECT string_agg(p."Id"::text, ', ' ORDER BY p."Id") INTO ids
+    FROM public."Players" p
+    WHERE NOT p."IsGuest"
+      AND lower(p."Email") IN (
+          SELECT lower("Email") FROM public."Players" WHERE NOT "IsGuest" AND "Email" IS NOT NULL
+          GROUP BY lower("Email") HAVING count(*) > 1);
+    IF ids IS NOT NULL THEN
+        RAISE EXCEPTION 'Adresses email en doublon de casse à régler avant l''import, joueurs : %', ids;
+    END IF;
+
     -- Un compte v2 a toujours une adresse.
     SELECT string_agg("Id"::text, ', ' ORDER BY "Id") INTO ids
     FROM public."Players" WHERE NOT "IsGuest" AND "Email" IS NULL;

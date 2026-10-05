@@ -11,7 +11,7 @@ Reprise des données de la v1 (schéma `public`) dans les schémas v2, § 8 de [
 | `10-import.sql` | vide les tables v2 qu'il remplit, puis `INSERT … SELECT` depuis `public` ; pré-contrôles avec messages clairs |
 | `20-verify.sql` | vérifications bloquantes (§ 8.5) : une exception au moindre écart |
 | `90-import-done.sql` | note l'import réussi (`imported_at`) |
-| `import-to-staging.sh` | sur le VPS : arrête l'API staging, lance l'import, seconde anonymisation des tables v2 (S8), relance l'API |
+| `import-to-staging.sh` | sur le VPS : arrête l'API staging, lance l'import, seconde anonymisation des tables v2 (S8, qui vide aussi `legacy_tokens` et la file `messaging`), crée une clé Data Protection neuve, relance l'API |
 
 L'import se construit **module par module** : chaque PR d'import ajoute sa partie à `10-import.sql` et `20-verify.sql`, et ses tests à `src/v2/back/tests/InSeconds.MigrationTests`.
 
@@ -41,6 +41,18 @@ docker run --rm --network shared-postgres -v "$PWD/deploy/migration-v2:/import:r
 ```
 
 **Staging** : workflow manuel « Copy prod DB to staging », lancé depuis la branche `env/staging` (« Use workflow from »). Il copie `public` depuis la prod, anonymise les tables v1, lance l'import, puis anonymise les tables v2. Le workflow n'est listé que parce qu'il existe sur `main` (version v1, copie seule) ; c'est la version de la branche choisie qui s'exécute.
+
+## Clé Data Protection neuve, après chaque import (S16)
+
+L'import copie les clés Data Protection de la v1, **en clair** : la v1 ne les chiffre pas. Sans clé neuve, la plus récente d'entre elles encore valable (jusqu'à 90 jours) deviendrait la clé par défaut de la v2 et chiffrerait les nouveaux cookies avec une clé lisible en base, ce que le certificat (S16) doit éviter. Il faut donc créer une clé neuve **juste après l'import et avant de démarrer l'API v2** :
+
+```bash
+dotnet InSeconds.Api.dll --rotate-data-protection-key      # même configuration que l'API : base et certificat
+```
+
+La commande (`RotateDataProtectionKeyCommand`, sur le modèle de `--migrate-only`) ne démarre ni serveur ni tâche : elle crée une clé active tout de suite, valable 90 jours, chiffrée par le certificat `DataProtection:CertificatePath` (exigé en prod et en staging). Les clés de la v1 restent en place pour relire les cookies v1 jusqu'à leur remplacement. À relancer après **chaque** import, qui vide d'abord `infra.data_protection_keys`. À reprendre dans la procédure de bascule (G2).
+
+Sur le staging, `import-to-staging.sh` la lance **après** la seconde anonymisation, qui vide les clés : avant, elle effacerait la clé neuve. Les clés de la v1 y sont déjà retirées par la première anonymisation, donc ce pas répète la procédure de bascule et vérifie la commande avec le vrai certificat, sans remplacer de clé en clair. L'image de l'API staging doit venir d'un déploiement de la PR B4 ou postérieur.
 
 ## Rejouer, revenir en arrière
 

@@ -23,3 +23,5 @@ psql --no-psqlrc --quiet --output=/dev/null -v ON_ERROR_STOP=1 --single-transact
   -f "$dir/90-import-done.sql"
 
 echo "Import v1 → v2 terminé, vérifications passées."
+echo "À lancer maintenant, avant de démarrer l'API v2 : dotnet InSeconds.Api.dll --rotate-data-protection-key"
+echo "(les clés de la v1, copiées en clair, ne doivent pas devenir la clé par défaut de la v2, S16)."

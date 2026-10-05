@@ -12,6 +12,7 @@ dotnet build InSeconds.slnx
 dotnet test --solution InSeconds.slnx      # unitaires + architecture + intégration (Docker requis)
 dotnet run --project InSeconds.Api          # http://localhost:5175
 dotnet run --project InSeconds.Api -- --migrate-only   # applique les migrations puis rend la main
+dotnet run --project InSeconds.Api -- --rotate-data-protection-key   # crée une clé Data Protection neuve (après un import, B4)
 dotnet run --project InSeconds.Api.Testing  # hôte de test (Development) : API + /api/e2e + faux email
 
 # Image de prod (contexte src/v2/back), sans l'hôte de test
@@ -51,7 +52,7 @@ src/v2/back/
 │       ├── Auth/          # cookie standard, validation de l'appareil, transition v1, Data Protection, policy Admin
 │       ├── Messaging/     # Wolverine (HTTP, transactions, outbox)
 │       ├── Jobs/          # Hangfire : tâches planifiées, /jobs, GET /api/admin/jobs/{id}
-│       └── Hosting/       # ApiComposition, --migrate-only, commandes Wolverine
+│       └── Hosting/       # ApiComposition, --migrate-only, --rotate-data-protection-key, commandes Wolverine
 │   └── Modules/
 │       ├── Players/       # Domain, Application (endpoints), Contracts, Persistence, Email (gabarits), PlayersModule.cs
 │       └── Daily/         # Contracts/IStreakGrants seulement (gel offert à la création d'un compte, effet en E2)
@@ -90,6 +91,8 @@ Une ligne par réglage : `key` = chemin de configuration complet (`Daily:GuessTi
 `Program.cs` appelle `ApiComposition.AddInSecondsApi(args)` puis `UseInSecondsApi()`, partagés avec l'hôte de test. Services : réglages en base → OpenTelemetry → `DbContext` → migrations → calendrier → ProblemDetails → health checks → Data Protection → auth → proxies de confiance → rate limiting → email → Wolverine → Hangfire → `App:PublicUrl` → modules (`AddPlayers`, `AddDaily`). Pipeline : `UseForwardedHeaders` (en premier : tout le reste voit l'IP réelle) → en-têtes de sécurité → erreurs → CORS → authentification → transition des cookies v1 → autorisation → rate limiter → routes. Puis `RunJasperFxCommands(args)` (démarre l'API, ou exécute une commande Wolverine comme `codegen write`). Les migrations passent par `DatabaseStartupService` (`IHostedLifecycleService.StartingAsync`) : avant le démarrage de Wolverine et Hangfire, sauf si `Database:MigrateOnStartup=false` ; les réglages sont rechargés juste après (la table peut ne pas avoir existé à la construction de la configuration). Une commande Wolverine ne démarre pas l'hôte : pas de migration, et pas de lecture des réglages en base (`CommandLine.StartsServer`), pour que la CI génère le code sans base.
 
 `--migrate-only` (`MigrateOnlyCommand`) : hôte minimal (base seulement, ni serveur web ni tâche de fond), applique les migrations et rend la main avec le code 0. Sert au déploiement et à l'import des données v1.
+
+`--rotate-data-protection-key` (`RotateDataProtectionKeyCommand`, B4) : même principe (base et Data Protection seulement, le host n'est jamais démarré), crée par `IKeyManager.CreateNewKey` une clé active tout de suite, valable 90 jours, chiffrée par le certificat (exigé en prod et en staging). À lancer après chaque import v1 → v2, cf. « Import v1 → v2 ».
 
 ## Wolverine (`Infrastructure/Messaging/WolverineSetup.cs`)
 
@@ -181,12 +184,13 @@ Identité, compte, appareils, rôle admin (§ 3.1 du plan v2). Point d'entrée `
 Mode d'emploi complet : [`deploy/migration-v2/README.md`](../../../deploy/migration-v2/README.md). Construit module par module (B4 Players, C2 Catalogue, E4 Daily, G1 complet).
 
 - `run-import.sh` (POSIX `sh`, variables `PG*`) : `00-import-state.sql` → `10-import.sql` → `20-verify.sql` → `90-import-done.sql`, **une seule transaction** : au moindre écart de vérification, rien n'est gardé. Rejouable (chaque partie vide d'abord ses tables v2). Prérequis : migrations v2 appliquées (`--migrate-only`).
-- **Partie Players (B4)** : `players.players` (supprimé sans date : dernière visite ou création, R16), `players.accounts` (joueurs non invités, `linked_at` vide), `players.legacy_tokens` (un par joueur, `sha256(AuthToken::text)`, le calcul de `LegacyToken.HashOf`), `players.auth_tokens` (jetons encore valables, hash hexadécimal v1 décodé, R14), `infra.data_protection_keys` (copiées avec leurs identifiants, séquence remise à niveau ; sans elles aucun cookie v1 ne se déchiffre). Pré-contrôles : pseudos en doublon de casse (R5), compte sans email. `device_sessions` vidée : chaque appareil en obtient une à sa première visite.
+- **Partie Players (B4)** : `players.players` (supprimé sans date : dernière visite ou création, R16), `players.accounts` (joueurs non invités, `linked_at` vide), `players.legacy_tokens` (un par joueur, `sha256(AuthToken::text)`, le calcul de `LegacyToken.HashOf`), `players.auth_tokens` (jetons encore valables, hash hexadécimal v1 décodé, R14), `infra.data_protection_keys` (copiées avec leurs identifiants, séquence remise à niveau ; sans elles aucun cookie v1 ne se déchiffre). Pré-contrôles : pseudos et adresses en doublon de casse (R5), compte sans email. Vérification des jetons envoyés par email : hash, adresse (ou joueur et nouvelle adresse) et dates comparés un à un. `device_sessions` vidée : chaque appareil en obtient une à sa première visite.
+- **Clé Data Protection neuve après l'import (S16)** : l'import copie les clés de la v1 **en clair** ; sans clé neuve, la plus récente deviendrait la clé par défaut de la v2 et chiffrerait les nouveaux cookies sans le certificat. `--rotate-data-protection-key` à lancer juste après `run-import.sh`, avant de démarrer l'API (procédure de bascule, G2 ; sur le staging, `import-to-staging.sh`, après la seconde anonymisation qui vide les clés).
 - `infra.import_state` : créée par l'import (hors migrations EF), `imported_at` à chaque import réussi ; `opened_at` et la garde `--force` arrivent en G1.
 - Messages : des nombres et des identifiants seulement, jamais d'email ni de pseudo (S13).
-- **Tests** (`InSeconds.MigrationTests`, fixture `ImportDatabase`) : schéma v1 généré depuis le code v1 (`dotnet ef migrations script`, après `dotnet restore` du projet v1 ; fichier déjà généré par la CI dans `INSECONDS_V1_SCHEMA_SQL`), migrations v2 par `MigrateOnlyCommand`, scripts copiés en LF dans le conteneur PostgreSQL, **vrai `run-import.sh` exécuté dans le conteneur** (`sh` et `psql` d'Alpine). `PlayersImportTests` (cas limites, rejouable, refus, vérification qui détecte un écart) et `LegacyCookieEndToEndTests` (cookie émis par la v1 accepté par la v2 après import, même joueur, deux navigateurs = deux appareils ; horloge simulée avancée entre les deux, `LegacyConversionCache`).
+- **Tests** (`InSeconds.MigrationTests`, fixture `ImportDatabase`) : schéma v1 généré depuis le code v1 (`dotnet ef migrations script`, après `dotnet restore` du projet v1 ; fichier déjà généré par la CI dans `INSECONDS_V1_SCHEMA_SQL`), migrations v2 par `MigrateOnlyCommand`, scripts copiés en LF dans le conteneur PostgreSQL, **vrai `run-import.sh` exécuté dans le conteneur** (`sh` et `psql` d'Alpine). `PlayersImportTests` (cas limites, rejouable, refus, vérification qui détecte un écart) et `LegacyCookieEndToEndTests` (cookie émis par la v1 accepté par la v2 après import, même joueur, deux navigateurs = deux appareils ; horloge simulée avancée entre les deux, `LegacyConversionCache` ; clé neuve : la clé par défaut lue dans l'en-tête de ce que l'API protège est la clé créée par la commande, chiffrée par le certificat, et le cookie v1 reste pris ; `SansRotation_…` montre le risque écarté). `TestCertificate` : certificat jetable, comme dans les tests d'intégration.
 - **CI** : le job `back-v2` génère le schéma v1 avant les tests ; le filtre `v2` couvre aussi `deploy/migration-v2/**` et les migrations v1.
-- **Staging** : workflow « Copy prod DB to staging » lancé depuis `env/staging` : copie de `public`, anonymisation v1, import, seconde anonymisation v2 (`import-to-staging.sh`).
+- **Staging** : workflow « Copy prod DB to staging » lancé depuis `env/staging` : copie de `public`, anonymisation v1, import, seconde anonymisation v2 (`import-to-staging.sh`, qui vide aussi `legacy_tokens` et la file `messaging`, § 10.1 du plan), puis clé Data Protection neuve.
 
 ## Erreurs du front (`POST /api/client-errors`)
 

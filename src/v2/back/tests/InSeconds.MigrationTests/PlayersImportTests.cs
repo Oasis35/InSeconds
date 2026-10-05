@@ -133,24 +133,68 @@ public class PlayersImportTests(ImportDatabase database)
     }
 
     [Fact]
+    public async Task EmailsEnDoublonDeCasse_ImportRefuse()
+    {
+        // L'index unique de la v1 respecte la casse : les deux adresses y cohabitent. La colonne v2 est en citext.
+        var cs = await database.CreateDatabaseAsync();
+        var first = V1Player.Account("Doublon@example.com", "Premier");
+        var second = V1Player.Account("doublon@example.com", "Second");
+        await V1Data.InsertAsync(cs, first, second, V1Player.Guest());
+
+        var result = await database.RunImportAsync(cs);
+
+        Assert.NotEqual(0, result.ExitCode);
+        Assert.Contains("Adresses email en doublon de casse", result.Output, StringComparison.Ordinal);
+        Assert.Contains(first.Id.ToString(), result.Output, StringComparison.Ordinal);
+        Assert.Contains(second.Id.ToString(), result.Output, StringComparison.Ordinal);
+        // Les identifiants seulement, jamais les adresses (S13).
+        Assert.DoesNotContain("doublon@example.com", result.Output, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(0L, await Count(cs, "players.players"));
+    }
+
+    [Fact]
     public async Task Verification_DetecteUnEcart_EtAnnuleTout()
     {
         var cs = await database.CreateDatabaseAsync();
         var admin = V1Player.Account("admin@example.com", "Admin") with { IsAdmin = true };
         await V1Data.InsertAsync(cs, admin);
 
-        // Même enchaînement que run-import.sh, avec un écart glissé entre l'import et la vérification.
+        var error = await ImportWithTamperingAsync(cs, $"UPDATE players.accounts SET is_admin = false WHERE player_id = '{admin.Id}';");
+
+        Assert.Contains("comptes repris à l'identique", error.MessageText, StringComparison.Ordinal);
+        Assert.Equal(0L, await Count(cs, "players.players"));
+    }
+
+    [Theory]
+    [InlineData("UPDATE players.auth_tokens SET email = 'autre@example.com' WHERE purpose = 1;", "jetons de connexion repris à l'identique")]
+    [InlineData("UPDATE players.auth_tokens SET expires_at = expires_at + interval '1 hour' WHERE purpose = 1;", "jetons de connexion repris à l'identique")]
+    [InlineData("UPDATE players.auth_tokens SET new_email = 'autre@example.com' WHERE purpose = 2;", "jetons de changement d'email repris à l'identique")]
+    [InlineData("UPDATE players.auth_tokens SET expires_at = expires_at + interval '1 hour' WHERE purpose = 2;", "jetons de changement d'email repris à l'identique")]
+    public async Task Verification_DetecteUnJetonAltere_EtAnnuleTout(string tampering, string expectedCheck)
+    {
+        var cs = await database.CreateDatabaseAsync();
+        var account = V1Player.Account("jeton@example.com", "Jeton");
+        await V1Data.InsertAsync(cs, account);
+        await V1Data.InsertMagicLinkTokenAsync(cs, "connexion@example.com", AuthTokenSecret.Hash("lien"), "10 minutes");
+        await V1Data.InsertEmailChangeTokenAsync(cs, account.Id, "nouvelle@example.com", AuthTokenSecret.Hash("changement"));
+
+        var error = await ImportWithTamperingAsync(cs, tampering);
+
+        Assert.Contains(expectedCheck, error.MessageText, StringComparison.Ordinal);
+        Assert.Equal(0L, await Count(cs, "players.players"));
+    }
+
+    /// <summary>Même enchaînement que run-import.sh, avec un écart glissé entre l'import et la vérification.</summary>
+    private static async Task<Npgsql.PostgresException> ImportWithTamperingAsync(string connectionString, string tamperingSql)
+    {
         var directory = Path.Combine(ImportDatabase.RepositoryRoot, "deploy", "migration-v2");
         var script = string.Join("\n",
             File.ReadAllText(Path.Combine(directory, "00-import-state.sql")),
             File.ReadAllText(Path.Combine(directory, "10-import.sql")),
-            $"UPDATE players.accounts SET is_admin = false WHERE player_id = '{admin.Id}';",
+            tamperingSql,
             File.ReadAllText(Path.Combine(directory, "20-verify.sql")));
-
-        var error = await Assert.ThrowsAsync<Npgsql.PostgresException>(() => ImportDatabase.ExecuteAsync(cs, $"BEGIN;\n{script}\nCOMMIT;"));
-
-        Assert.Contains("comptes repris à l'identique", error.MessageText, StringComparison.Ordinal);
-        Assert.Equal(0L, await Count(cs, "players.players"));
+        return await Assert.ThrowsAsync<Npgsql.PostgresException>(
+            () => ImportDatabase.ExecuteAsync(connectionString, $"BEGIN;\n{script}\nCOMMIT;"));
     }
 
     [Fact]

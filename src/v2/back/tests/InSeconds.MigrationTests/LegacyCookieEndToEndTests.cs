@@ -1,5 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
+using InSeconds.Api.Infrastructure.Auth;
+using InSeconds.Api.Infrastructure.Hosting;
 using InSeconds.Api.Modules.Players.Application;
 using JasperFx.CommandLine;
 using Microsoft.AspNetCore.DataProtection;
@@ -7,6 +9,7 @@ using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
@@ -57,6 +60,62 @@ public class LegacyCookieEndToEndTests(ImportDatabase database)
         Assert.Equal(player.Id, (await next.Content.ReadFromJsonAsync<PlayerMeResponse>(TestContext.Current.CancellationToken))!.PlayerId);
     }
 
+    [Fact]
+    public async Task ApresImport_UneCleNeuveChiffreeParLeCertificat_DevientLaCleParDefaut_LeCookieV1RestePris()
+    {
+        var cs = await database.CreateDatabaseAsync();
+        var player = V1Player.Account("cle@example.com", "Cle");
+        await V1Data.InsertAsync(cs, player);
+        var v1Cookie = $"authToken={V1Protector(cs).Protect(player.AuthToken.ToString())}";
+        Assert.True((await database.RunImportAsync(cs)).ExitCode == 0);
+        var lastV1KeyId = await ImportDatabase.ScalarAsync<int>(cs, "SELECT max(id) FROM infra.data_protection_keys");
+
+        Assert.Equal(0, await RotateDataProtectionKeyCommand.RunAsync(
+            [$"--ConnectionStrings:DefaultConnection={cs}", .. TestCertificate.Arguments()]));
+
+        await using var api = new V2Api(cs, new FakeTimeProvider(DateTimeOffset.UtcNow), TestCertificate.Settings());
+        var defaultKey = await DefaultKeyAsync(api, cs);
+        // S16 : la clé qui chiffre les nouveaux cookies est la clé neuve, protégée par le certificat...
+        Assert.True(defaultKey.Id > lastV1KeyId, "la clé par défaut est une clé de la v1");
+        Assert.Contains("encryptedSecret", defaultKey.Xml, StringComparison.Ordinal);
+        // ...les clés de la v1 restent, en clair, pour relire les anciens cookies.
+        Assert.Equal(1L, await ImportDatabase.ScalarAsync<long>(cs,
+            $"SELECT count(*) FROM infra.data_protection_keys WHERE id <= {lastV1KeyId} AND xml NOT LIKE '%encryptedSecret%'"));
+        var response = await api.GetMeAsync(v1Cookie);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(player.Id, (await response.Content.ReadFromJsonAsync<PlayerMeResponse>(TestContext.Current.CancellationToken))!.PlayerId);
+    }
+
+    [Fact]
+    public async Task SansRotation_LaCleDeLaV1EnClair_RestaitLaCleParDefaut()
+    {
+        // Le risque que la commande écarte : l'import copie les clés de la v1, en clair ; sans clé neuve, la
+        // plus récente d'entre elles chiffrerait les nouveaux cookies de la v2.
+        var cs = await database.CreateDatabaseAsync();
+        var player = V1Player.Account("sans-rotation@example.com", "SansRotation");
+        await V1Data.InsertAsync(cs, player);
+        _ = V1Protector(cs).Protect(player.AuthToken.ToString());
+        Assert.True((await database.RunImportAsync(cs)).ExitCode == 0);
+
+        await using var api = new V2Api(cs, new FakeTimeProvider(DateTimeOffset.UtcNow), TestCertificate.Settings());
+        var defaultKey = await DefaultKeyAsync(api, cs);
+
+        Assert.DoesNotContain("encryptedSecret", defaultKey.Xml, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// La clé qui chiffre les nouvelles données de l'API : son identifiant se lit dans l'en-tête de ce
+    /// qu'elle protège (4 octets de repère, puis l'identifiant de la clé sur 16 octets).
+    /// </summary>
+    private static async Task<(int Id, string Xml)> DefaultKeyAsync(V2Api api, string connectionString)
+    {
+        var protector = api.Services.GetRequiredService<IDataProtectionProvider>().CreateProtector("test");
+        var keyId = new Guid(WebEncoders.Base64UrlDecode(protector.Protect("x")).AsSpan(4, 16));
+        var where = $"xml LIKE '%id=\"{keyId:D}\"%'";
+        return (await ImportDatabase.ScalarAsync<int>(connectionString, $"SELECT id FROM infra.data_protection_keys WHERE {where}"),
+                (await ImportDatabase.ScalarAsync<string>(connectionString, $"SELECT xml FROM infra.data_protection_keys WHERE {where}"))!);
+    }
+
     /// <summary>Data Protection configuré comme la v1 (<c>Program.cs</c> v1), sur sa table <c>public."DataProtectionKeys"</c>.</summary>
     private static IDataProtector V1Protector(string connectionString)
     {
@@ -76,7 +135,8 @@ public class LegacyCookieEndToEndTests(ImportDatabase database)
     }
 
     /// <summary>L'API v2 complète, en mémoire, sur la base importée.</summary>
-    private sealed class V2Api(string connectionString, TimeProvider time) : WebApplicationFactory<Program>
+    private sealed class V2Api(string connectionString, TimeProvider time, IReadOnlyDictionary<string, string>? settings = null)
+        : WebApplicationFactory<Program>
     {
         static V2Api()
         {
@@ -96,6 +156,8 @@ public class LegacyCookieEndToEndTests(ImportDatabase database)
             builder.UseEnvironment("Testing");
             builder.UseSetting("ConnectionStrings:DefaultConnection", connectionString);
             builder.UseSetting("Jobs:Server:Enabled", "false");
+            foreach (var (key, value) in settings ?? new Dictionary<string, string>())
+                builder.UseSetting(key, value);
             builder.ConfigureTestServices(services => services.AddSingleton(time));
         }
     }

@@ -4,6 +4,9 @@ using JasperFx;
 if (MigrateOnlyCommand.IsRequested(args))
     return await MigrateOnlyCommand.RunAsync(args);
 
+if (RotateDataProtectionKeyCommand.IsRequested(args))
+    return await RotateDataProtectionKeyCommand.RunAsync(args);
+
 var builder = WebApplication.CreateBuilder(args);
 builder.AddInSecondsApi(args);
 
