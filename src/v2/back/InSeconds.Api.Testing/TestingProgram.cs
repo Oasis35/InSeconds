@@ -2,6 +2,7 @@ using InSeconds.Api.Infrastructure.Hosting;
 using InSeconds.Api.Testing.Auth;
 using InSeconds.Api.Testing.E2E;
 using InSeconds.Api.Testing.Email;
+using InSeconds.Api.Testing.ApiDocs;
 using JasperFx;
 
 namespace InSeconds.Api.Testing;
@@ -26,11 +27,13 @@ public sealed class TestingProgram
         builder.AddInSecondsApi(args);
         builder.Services.AddCapturingEmailSender();
         builder.Services.AddE2E();
+        builder.Services.AddOpenApiDocuments();
 
         var app = builder.Build();
         app.UseInSecondsApi();
         app.MapE2EEndpoints();
         app.MapDevLogin();
+        app.MapOpenApiDocuments();
 
         return await app.RunJasperFxCommands(args);
     }

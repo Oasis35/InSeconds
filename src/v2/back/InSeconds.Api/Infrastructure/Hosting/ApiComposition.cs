@@ -65,6 +65,7 @@ public static class ApiComposition
         app.UseInSecondsCors();
         app.UseAuthentication();
         app.UseLegacyCookieTransition();
+        app.UsePlayerTelemetry();
         app.UseAuthorization();
         app.UseRateLimiter();
         app.MapInSecondsHealth();

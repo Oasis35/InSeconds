@@ -1,0 +1,101 @@
+using Microsoft.AspNetCore.OpenApi;
+using Microsoft.OpenApi;
+
+namespace InSeconds.Api.Testing.ApiDocs;
+
+/// <summary>
+/// Documents OpenAPI de l'hôte de test (§ 6.1 du plan v2 : un client NSwag par module, généré depuis ces
+/// documents). Servis seulement ici, jamais par l'API de prod (S9). Un document par module, filtré sur
+/// le préfixe de ses routes ; <c>/openapi/players.json</c> pour le module Players. Le document sauvegardé
+/// pour le front est <c>openapi/players.json</c> (cf. CLAUDE.md du back).
+/// </summary>
+public static class OpenApiDocuments
+{
+    public const string Players = "players";
+
+    public static IServiceCollection AddOpenApiDocuments(this IServiceCollection services)
+    {
+        AddModuleDocument(services, Players, "api/players", tag: "Players");
+        return services;
+    }
+
+    public static IEndpointRouteBuilder MapOpenApiDocuments(this IEndpointRouteBuilder routes)
+    {
+        routes.MapOpenApi();
+        return routes;
+    }
+
+    /// <summary>
+    /// Dans un corps de requête, une propriété qui peut être nulle (<c>string? Pseudo</c>) est facultative :
+    /// le client généré n'oblige pas à l'envoyer. Dans une réponse, elle reste présente (nulle ou non).
+    /// </summary>
+    private static void MakeNullableRequestPropertiesOptional(OpenApiDocument document)
+    {
+        var requestSchemas = document.Paths.Values
+            .SelectMany(path => (IEnumerable<OpenApiOperation>?)path.Operations?.Values ?? [])
+            .Select(operation => operation.RequestBody?.Content is { } content && content.TryGetValue("application/json", out var json) ? json.Schema : null)
+            .OfType<OpenApiSchemaReference>()
+            .Select(reference => reference.Reference.Id)
+            .OfType<string>()
+            .ToHashSet(StringComparer.Ordinal);
+
+        foreach (var name in requestSchemas)
+        {
+            if (document.Components?.Schemas is not { } schemas || !schemas.TryGetValue(name, out var found) || found is not OpenApiSchema { Required: { } required, Properties: { } properties })
+                continue;
+            foreach (var (property, schema) in properties)
+                if (schema.Type is { } type && type.HasFlag(JsonSchemaType.Null))
+                    required.Remove(property);
+        }
+    }
+
+    private static void AddModuleDocument(IServiceCollection services, string name, string routePrefix, string tag) =>
+        services.AddOpenApi(name, options =>
+        {
+            options.ShouldInclude = description =>
+                description.RelativePath?.StartsWith(routePrefix, StringComparison.OrdinalIgnoreCase) == true;
+
+            // Le document ne doit pas dépendre de l'adresse où il a été lu.
+            options.AddDocumentTransformer((document, _, _) =>
+            {
+                document.Info = new OpenApiInfo { Title = $"InSeconds · {tag}", Version = "v2" };
+                document.Servers = [];
+                MakeNullableRequestPropertiesOptional(document);
+                return Task.CompletedTask;
+            });
+
+            // .NET décrit un entier comme "integer ou string" avec un motif : le client généré doit avoir un nombre.
+            options.AddSchemaTransformer((schema, _, _) =>
+            {
+                if (schema.Type is { } type && type.HasFlag(JsonSchemaType.Integer))
+                {
+                    schema.Type = JsonSchemaType.Integer;
+                    schema.Pattern = null;
+                }
+
+                return Task.CompletedTask;
+            });
+
+            options.AddOperationTransformer((operation, _, _) =>
+            {
+                // Un seul tag par module : NSwag en tire un seul client (PlayersClient). Les titres et
+                // descriptions que Wolverine déduit de la route n'apportent rien.
+                operation.Tags = new HashSet<OpenApiTagReference> { new(tag) };
+                operation.Summary = null;
+                operation.Description = null;
+
+                // Wolverine déclare un 404 sans schéma sur presque toutes ses routes : une réponse que
+                // l'API ne renvoie pas. Seul un 404 ProblemDetails déclaré (ProducesResponseType) reste.
+                if (operation.Responses is { } responses
+                    && responses.TryGetValue("404", out var notFound)
+                    && notFound.Content?.ContainsKey("application/problem+json") != true)
+                    responses.Remove("404");
+
+                // Une 204 n'a pas de corps.
+                if (operation.Responses is { } all && all.TryGetValue("204", out var noContent) && noContent is OpenApiResponse empty)
+                    empty.Content = null;
+
+                return Task.CompletedTask;
+            });
+        });
+}

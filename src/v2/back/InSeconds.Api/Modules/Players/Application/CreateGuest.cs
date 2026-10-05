@@ -3,6 +3,7 @@ using InSeconds.Api.Modules.Players.Contracts;
 using InSeconds.Api.Modules.Players.Domain;
 using InSeconds.Infrastructure.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Mvc;
 using Wolverine.Http;
 
 namespace InSeconds.Api.Modules.Players.Application;
@@ -16,7 +17,8 @@ public static class CreateGuestEndpoint
     /// par une commande explicite, jamais par un GET. Un navigateur déjà identifié garde son joueur.
     /// Limité par IP, comme toute création de joueur (S11).
     /// </summary>
-    [WolverinePost("/api/players/guest")]
+    [WolverinePost("/api/players/guest", OperationId = "createGuest")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
     [EnableRateLimiting(RateLimitPolicies.PlayerCreation)]
     public static async Task<GuestResponse> Post(
         HttpContext context, ICurrentPlayer current, IPlayerStore store, IPlayerSignIn signIn, TimeProvider time, CancellationToken ct)

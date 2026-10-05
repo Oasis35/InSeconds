@@ -50,7 +50,10 @@ public static class UpdatePseudoEndpoint
 
     /// <summary><c>PUT /api/players/me/pseudo</c> : comptes seulement. Pseudo pris au même moment : 409 aussi.</summary>
     [Authorize]
-    [WolverinePut("/api/players/me/pseudo")]
+    [WolverinePut("/api/players/me/pseudo", OperationId = "updatePseudo")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public static PseudoResponse Put(UpdatePseudo request, Account account)
     {
         account.Rename(request.Pseudo);
@@ -96,7 +99,11 @@ public static class RequestEmailChangeEndpoint
     /// adresse seulement (v1). Limité par joueur (S11), et un lien par minute.
     /// </summary>
     [Authorize]
-    [WolverinePost("/api/players/me/email-change")]
+    [WolverinePost("/api/players/me/email-change", OperationId = "requestEmailChange")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
     [EnableRateLimiting(RateLimitPolicies.EmailChangeRequest)]
     [EmptyResponse]
     public static SendEmailChangeConfirmation Post(RequestEmailChange request, Account account) =>
@@ -167,7 +174,8 @@ public static class ConfirmEmailChangeEndpoint
     /// unique (aucun cookie posé, d'où pas de contrôle d'origine, comme en v1). Bouton « Confirmer »
     /// explicite côté front (piège 21).
     /// </summary>
-    [WolverinePost("/api/players/email-change/confirm")]
+    [WolverinePost("/api/players/email-change/confirm", OperationId = "confirmEmailChange")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public static EmailChangedResponse Post(ConfirmEmailChange request, EmailChangeAttempt attempt, TimeProvider time)
     {
         attempt.Token!.Consume(time.GetUtcNow());

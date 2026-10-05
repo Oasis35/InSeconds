@@ -34,7 +34,7 @@ public static class LogoutEndpoint
     /// <c>POST /api/players/auth/logout</c> : révoque l'appareil courant et retire son cookie. Les
     /// autres appareils du compte restent connectés (piège 39). Sans cookie : 204 aussi.
     /// </summary>
-    [WolverinePost("/api/players/auth/logout")]
+    [WolverinePost("/api/players/auth/logout", OperationId = "logout")]
     [EmptyResponse]
     public static async Task Post(
         ICurrentPlayer current,
@@ -57,7 +57,8 @@ public static class ListDevicesEndpoint
 {
     /// <summary><c>GET /api/players/me/devices</c> : les appareils encore connectés, le plus récemment vu d'abord.</summary>
     [Authorize]
-    [WolverineGet("/api/players/me/devices")]
+    [WolverineGet("/api/players/me/devices", OperationId = "listDevices")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     public static Task<IReadOnlyList<DeviceResponse>> Get(ICurrentPlayer current, IPlayerQueries queries, CancellationToken ct) =>
         queries.ListDevicesAsync(current.PlayerId!.Value, current.DeviceSessionId, ct);
 }
@@ -78,7 +79,10 @@ public static class RevokeDeviceEndpoint
     /// comme une déconnexion, cookie retiré. Limité par joueur (S11).
     /// </summary>
     [Authorize]
-    [WolverineDelete("/api/players/me/devices/{id}")]
+    [WolverineDelete("/api/players/me/devices/{id}", OperationId = "revokeDevice")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
     [EnableRateLimiting(RateLimitPolicies.DeviceRevocation)]
     [EmptyResponse]
     public static async Task Delete(
@@ -104,7 +108,9 @@ public static class RevokeOtherDevicesEndpoint
     /// jeton v1 du joueur est supprimé (S6), l'appareil courant a déjà son cookie v2. Limité par joueur (S11).
     /// </summary>
     [Authorize]
-    [WolverinePost("/api/players/me/devices/revoke-others")]
+    [WolverinePost("/api/players/me/devices/revoke-others", OperationId = "revokeOtherDevices")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
     [EnableRateLimiting(RateLimitPolicies.DeviceRevocation)]
     public static async Task<RevokedDevicesResponse> Post(
         ICurrentPlayer current,

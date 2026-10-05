@@ -76,4 +76,8 @@ public static class AuthSetup
     /// <summary>Juste après l'authentification : un cookie v1 devient un cookie v2 avant l'autorisation.</summary>
     public static IApplicationBuilder UseLegacyCookieTransition(this IApplicationBuilder app) =>
         app.UseMiddleware<LegacyCookieTransitionMiddleware>();
+
+    /// <summary>Après l'authentification et la transition des cookies v1 : tag de trace et scope de journal du joueur.</summary>
+    public static IApplicationBuilder UsePlayerTelemetry(this IApplicationBuilder app) =>
+        app.UseMiddleware<PlayerTelemetryMiddleware>();
 }

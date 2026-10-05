@@ -4,6 +4,7 @@ using InSeconds.Api.Modules.Players.Domain;
 using InSeconds.Api.Modules.Players.Email;
 using InSeconds.Infrastructure.Email;
 using InSeconds.Infrastructure.RateLimiting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 using Wolverine.Attributes;
@@ -33,7 +34,8 @@ public static class RequestMagicLinkEndpoint
     /// d'énumération). Inscription ouverte : toute adresse reçoit un lien. Limité par IP (« email
     /// bombing »), en plus d'un lien par minute et par adresse.
     /// </summary>
-    [WolverinePost("/api/players/auth/magic-link")]
+    [WolverinePost("/api/players/auth/magic-link", OperationId = "requestMagicLink")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
     [EnableRateLimiting(RateLimitPolicies.MagicLinkRequest)]
     [EmptyResponse]
     public static SendMagicLinkEmail Post(RequestMagicLink request) => new(NormalizeEmail(request.Email));
