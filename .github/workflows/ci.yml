@@ -526,11 +526,14 @@ jobs:
     name: Deploy to staging (dev.inseconds.cc)
     runs-on: ubuntu-latest
     # Staging en v2 depuis A6 : attend « CI OK », qui agrège les jobs v1 et v2 (un job sauté par
-    # le filtre de chemins compte comme réussi). Sans `always()` dans le `if`, le job est sauté
-    # si « CI OK » échoue.
+    # le filtre de chemins compte comme réussi). `always()` est indispensable : sans lui, le `if`
+    # porte un `success()` implicite qui remonte toute la chaîne des `needs`, « CI OK » compris,
+    # et un seul job sauté en amont (ex. « E2E v1/v2 parity » quand aucun E2E n'a changé) faisait
+    # sauter le déploiement alors que « CI OK » était vert (B2, B3, #262 n'ont pas été déployés).
+    # Le résultat de « CI OK » est donc testé explicitement.
     needs: [ci-ok]
     # Branche de déploiement du staging, protégée : on y arrive par PR. Cf. CLAUDE.md racine § Staging.
-    if: github.ref == 'refs/heads/env/staging' && github.event_name == 'push'
+    if: ${{ always() && needs.ci-ok.result == 'success' && github.ref == 'refs/heads/env/staging' && github.event_name == 'push' }}
     # Groupe distinct de deploy-vps (prod) : GitHub ne garde qu'un seul job en attente par
     # groupe et annule le précédent — un groupe commun pourrait faire sauter un déploiement
     # prod en attente au profit d'un déploiement staging poussé juste après.
