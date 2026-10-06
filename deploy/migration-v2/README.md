@@ -18,7 +18,7 @@ L'import se construit **module par module** : chaque PR d'import ajoute sa parti
 | Partie | PR | Contenu |
 |---|---|---|
 | Players | B4 | joueurs (suppression comprise), comptes, un jeton v1 haché par joueur (`legacy_tokens`), jetons envoyés par email encore valables, clés Data Protection |
-| Catalogue | C2 | morceaux |
+| Catalogue | C2 | morceaux (identifiants conservés, extrait, désactivation), séquence des identifiants remise à niveau |
 | Daily | E4 | défis, sessions, réponses, séries, stats figées |
 | Complet | G1 | contrôle de forme de la source, garde `opened_at` / `--force` |
 

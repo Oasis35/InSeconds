@@ -24,9 +24,53 @@ public sealed record V1Player(Guid Id, Guid AuthToken)
         Guest() with { IsGuest = false, Email = email, Pseudo = pseudo };
 }
 
+/// <summary>Un morceau v1, tel que la table <c>public."Tracks"</c> le contient.</summary>
+public sealed record V1Track(int Id, long DeezerTrackId)
+{
+    public string Artist { get; init; } = "Artiste";
+    public string Title { get; init; } = "Titre";
+    public string? CoverHash { get; init; } = "abc123";
+    public int? ReleaseYear { get; init; } = 2001;
+    public bool HasPreview { get; init; } = true;
+    public bool IsDisabled { get; init; }
+    public DateTimeOffset CreatedAt { get; init; } = new(2026, 6, 1, 8, 0, 0, TimeSpan.Zero);
+    public DateTimeOffset? UpdatedAt { get; init; }
+    public DateOnly? LastUsedDate { get; init; }
+    public int UsageCount { get; init; }
+}
+
 /// <summary>Écrit des données de forme v1, comme la v1 les aurait enregistrées.</summary>
 public static class V1Data
 {
+    public static async Task InsertTracksAsync(string connectionString, params V1Track[] tracks)
+    {
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync();
+        foreach (var t in tracks)
+        {
+            await using var command = new NpgsqlCommand("""
+                INSERT INTO public."Tracks" ("Id", "DeezerTrackId", "Artist", "Title", "CoverHash", "ReleaseYear",
+                    "HasPreview", "IsDisabled", "CreatedAt", "UpdatedAt", "LastUsedDate", "UsageCount")
+                OVERRIDING SYSTEM VALUE
+                VALUES (@id, @deezerId, @artist, @title, @cover, @year, @hasPreview, @isDisabled, @createdAt,
+                    @updatedAt, @lastUsed, @usage)
+                """, connection);
+            command.Parameters.AddWithValue("id", t.Id);
+            command.Parameters.AddWithValue("deezerId", t.DeezerTrackId);
+            command.Parameters.AddWithValue("artist", t.Artist);
+            command.Parameters.AddWithValue("title", t.Title);
+            command.Parameters.AddWithValue("cover", (object?)t.CoverHash ?? DBNull.Value);
+            command.Parameters.AddWithValue("year", (object?)t.ReleaseYear ?? DBNull.Value);
+            command.Parameters.AddWithValue("hasPreview", t.HasPreview);
+            command.Parameters.AddWithValue("isDisabled", t.IsDisabled);
+            command.Parameters.AddWithValue("createdAt", t.CreatedAt);
+            command.Parameters.AddWithValue("updatedAt", (object?)t.UpdatedAt ?? DBNull.Value);
+            command.Parameters.AddWithValue("lastUsed", (object?)t.LastUsedDate ?? DBNull.Value);
+            command.Parameters.AddWithValue("usage", t.UsageCount);
+            await command.ExecuteNonQueryAsync();
+        }
+    }
+
     public static async Task InsertAsync(string connectionString, params V1Player[] players)
     {
         await using var connection = new NpgsqlConnection(connectionString);

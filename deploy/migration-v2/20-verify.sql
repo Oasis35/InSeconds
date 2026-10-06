@@ -86,3 +86,48 @@ SELECT pg_temp.expect('clés Data Protection identiques', 0, (
     LEFT JOIN infra.data_protection_keys v
            ON v.id = k."Id" AND v.friendly_name IS NOT DISTINCT FROM k."FriendlyName" AND v.xml IS NOT DISTINCT FROM k."Xml"
     WHERE v.id IS NULL));
+
+-- ============================================================================================
+-- Catalogue (PR C2)
+-- ============================================================================================
+
+-- Nombre de lignes
+SELECT pg_temp.expect('morceaux',
+    (SELECT count(*) FROM public."Tracks"), (SELECT count(*) FROM catalogue.tracks));
+SELECT pg_temp.expect('identifiants Deezer distincts',
+    (SELECT count(DISTINCT "DeezerTrackId") FROM public."Tracks"),
+    (SELECT count(DISTINCT deezer_track_id) FROM catalogue.tracks));
+
+-- Morceaux : identifiant, noms, pochette, année et dates repris à l'identique.
+SELECT pg_temp.expect('morceaux repris à l''identique', 0, (
+    SELECT count(*) FROM public."Tracks" t
+    LEFT JOIN catalogue.tracks v ON v.id = t."Id"
+    WHERE v.id IS NULL
+       OR v.deezer_track_id IS DISTINCT FROM t."DeezerTrackId"
+       OR v.artist IS DISTINCT FROM t."Artist"
+       OR v.title IS DISTINCT FROM t."Title"
+       OR v.cover_hash IS DISTINCT FROM t."CoverHash"
+       OR v.release_year::int IS DISTINCT FROM t."ReleaseYear"
+       OR v.created_at IS DISTINCT FROM t."CreatedAt"
+       OR v.updated_at IS DISTINCT FROM t."UpdatedAt"));
+
+-- Extrait : HasPreview devient disponible (1) ou absent (2), jamais inconnu ; rang et contrôle inconnus.
+SELECT pg_temp.expect('état de l''extrait', 0, (
+    SELECT count(*) FROM public."Tracks" t
+    JOIN catalogue.tracks v ON v.id = t."Id"
+    WHERE v.preview_status IS DISTINCT FROM CASE WHEN t."HasPreview" THEN 1 ELSE 2 END
+       OR v.preview_checked_at IS NOT NULL
+       OR v.deezer_rank IS NOT NULL
+       OR v.rank_updated_at IS NOT NULL));
+
+-- Désactivation : même ensemble de morceaux désactivés, avec la dernière modification pour date quand elle existe.
+SELECT pg_temp.expect('morceaux désactivés', 0, (
+    SELECT count(*) FROM public."Tracks" t
+    JOIN catalogue.tracks v ON v.id = t."Id"
+    WHERE (v.disabled_at IS NOT NULL) IS DISTINCT FROM t."IsDisabled"
+       OR (t."IsDisabled" AND t."UpdatedAt" IS NOT NULL AND v.disabled_at IS DISTINCT FROM t."UpdatedAt")));
+
+-- Séquence : le prochain lot d'identifiants commence au-delà du plus grand identifiant repris.
+SELECT pg_temp.expect('séquence des identifiants de morceaux', 1, (
+    SELECT CASE WHEN (SELECT CASE WHEN is_called THEN last_value + 10 ELSE last_value END FROM catalogue.tracks_hilo)
+                    > COALESCE((SELECT max(id) FROM catalogue.tracks), 0) THEN 1 ELSE 0 END));
