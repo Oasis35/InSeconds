@@ -44,7 +44,7 @@ public class CatalogueImportTests(ImportDatabase database)
     }
 
     [Fact]
-    public async Task Desactivation_DateDeLaDerniereModification_ABsenceMaintenant()
+    public async Task Desactivation_DateDeLaDerniereModification_ADefautMaintenant()
     {
         var cs = await database.CreateDatabaseAsync();
         await V1Data.InsertTracksAsync(cs,
@@ -59,6 +59,23 @@ public class CatalogueImportTests(ImportDatabase database)
         // Pas de date en v1 : l'instant de l'import, jamais une date plus ancienne inventée.
         Assert.Equal(1L, await Count(cs, "catalogue.tracks WHERE id = 2 AND disabled_at > now() - interval '5 minutes' AND disabled_at <= now()"));
         Assert.Equal(1L, await Count(cs, "catalogue.tracks WHERE id = 3 AND disabled_at IS NULL"));
+    }
+
+    [Fact]
+    public async Task AnneeInferieureA1_DevientNulle()
+    {
+        // Deezer renvoie parfois « 0000-00-00 », que la v1 enregistrait en 0 ; le client v2 en fait null.
+        var cs = await database.CreateDatabaseAsync();
+        await V1Data.InsertTracksAsync(cs,
+            new V1Track(1, 1) { ReleaseYear = 0 },
+            new V1Track(2, 2) { ReleaseYear = -5 },
+            new V1Track(3, 3) { ReleaseYear = 1 });
+
+        var result = await database.RunImportAsync(cs);
+
+        Assert.True(result.ExitCode == 0, result.Output);
+        Assert.Equal(2L, await Count(cs, "catalogue.tracks WHERE id IN (1, 2) AND release_year IS NULL"));
+        Assert.Equal(1L, await Count(cs, "catalogue.tracks WHERE id = 3 AND release_year = 1"));
     }
 
     [Fact]
@@ -146,6 +163,7 @@ public class CatalogueImportTests(ImportDatabase database)
     [Theory]
     [InlineData("UPDATE catalogue.tracks SET artist = 'Autre' WHERE id = 1;", "morceaux repris à l'identique")]
     [InlineData("UPDATE catalogue.tracks SET release_year = 1999 WHERE id = 1;", "morceaux repris à l'identique")]
+    [InlineData("UPDATE catalogue.tracks SET release_year = 0 WHERE id = 2;", "morceaux repris à l'identique")]
     [InlineData("UPDATE catalogue.tracks SET deezer_track_id = 777 WHERE id = 1;", "morceaux repris à l'identique")]
     [InlineData("DELETE FROM catalogue.tracks WHERE id = 2;", "Vérification « morceaux » :")]
     [InlineData("UPDATE catalogue.tracks SET title = 'Autre' WHERE id = 1;", "morceaux repris à l'identique")]
@@ -163,7 +181,7 @@ public class CatalogueImportTests(ImportDatabase database)
         var cs = await database.CreateDatabaseAsync();
         await V1Data.InsertTracksAsync(cs,
             new V1Track(1, 1),
-            new V1Track(2, 2) { HasPreview = false },
+            new V1Track(2, 2) { HasPreview = false, ReleaseYear = 0 },
             new V1Track(3, 3) { IsDisabled = true, HasPreview = false, UpdatedAt = Edited });
 
         var error = await ImportWithTamperingAsync(cs, tampering);

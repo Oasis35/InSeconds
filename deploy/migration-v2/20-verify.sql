@@ -98,7 +98,7 @@ SELECT pg_temp.expect('identifiants Deezer distincts',
     (SELECT count(DISTINCT "DeezerTrackId") FROM public."Tracks"),
     (SELECT count(DISTINCT deezer_track_id) FROM catalogue.tracks));
 
--- Morceaux : identifiant, noms, pochette, année et dates repris à l'identique.
+-- Morceaux : identifiant, noms, pochette, année et dates repris à l'identique (année inférieure à 1 → NULL).
 SELECT pg_temp.expect('morceaux repris à l''identique', 0, (
     SELECT count(*) FROM public."Tracks" t
     LEFT JOIN catalogue.tracks v ON v.id = t."Id"
@@ -107,7 +107,7 @@ SELECT pg_temp.expect('morceaux repris à l''identique', 0, (
        OR v.artist IS DISTINCT FROM t."Artist"
        OR v.title IS DISTINCT FROM t."Title"
        OR v.cover_hash IS DISTINCT FROM t."CoverHash"
-       OR v.release_year::int IS DISTINCT FROM t."ReleaseYear"
+       OR v.release_year::int IS DISTINCT FROM CASE WHEN t."ReleaseYear" >= 1 THEN t."ReleaseYear" END
        OR v.created_at IS DISTINCT FROM t."CreatedAt"
        OR v.updated_at IS DISTINCT FROM t."UpdatedAt"));
 
