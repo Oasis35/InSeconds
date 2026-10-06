@@ -7,5 +7,6 @@
   </Folder>
   <Project Path="InSeconds.Api.Testing/InSeconds.Api.Testing.csproj" />
   <Project Path="InSeconds.Api/InSeconds.Api.csproj" />
+  <Project Path="InSeconds.Deezer/InSeconds.Deezer.csproj" />
   <Project Path="InSeconds.Infrastructure/InSeconds.Infrastructure.csproj" />
 </Solution>

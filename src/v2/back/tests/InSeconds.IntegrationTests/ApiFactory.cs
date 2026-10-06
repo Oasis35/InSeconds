@@ -1,3 +1,4 @@
+using InSeconds.Api.Testing.Deezer;
 using JasperFx.CommandLine;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -27,6 +28,9 @@ public sealed class ApiFactory(
 
     public string ConnectionString => connectionString;
 
+    /// <summary>Ce que le faux Deezer a reçu, et le comportement que le test lui impose.</summary>
+    public FakeDeezerState FakeDeezer => Services.GetRequiredService<FakeDeezerState>();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment(environment);
@@ -36,14 +40,28 @@ public sealed class ApiFactory(
         // Les politiques restent sur les routes, mais ne limitent rien (RateLimitingTests les active).
         builder.UseSetting("RateLimiting:Enabled", "false");
         builder.UseSetting("Auth:TrustedOrigins:0", FrontOrigin);
+        // Jamais le vrai Deezer : le faux, sans la résilience HTTP (ses nouvelles tentatives ralentiraient les tests d'erreur).
+        builder.UseSetting("Deezer:ResilienceEnabled", "false");
         foreach (var (key, value) in settings ?? new Dictionary<string, string>())
             builder.UseSetting(key, value);
 
         builder.ConfigureTestServices(services =>
         {
             services.AddTestAuthentication();
+            services.AddFakeDeezer();
             configureServices?.Invoke(services);
         });
+    }
+
+    /// <summary>
+    /// Libère les connexions que les pools Npgsql (EF, Wolverine, Hangfire) de cette API gardent ouvertes : sans cela,
+    /// chaque API de test laisse ses connexions inactives jusqu'à leur expiration, et la suite atteint la limite du serveur.
+    /// </summary>
+    public override async ValueTask DisposeAsync()
+    {
+        await base.DisposeAsync();
+        NpgsqlConnection.ClearAllPools();
+        GC.SuppressFinalize(this);
     }
 
     /// <summary>Client HTTP authentifié comme un joueur (voir <see cref="TestAuthHandler"/>).</summary>

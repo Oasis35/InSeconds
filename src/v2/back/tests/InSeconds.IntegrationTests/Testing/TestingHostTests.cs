@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using InSeconds.Api.Testing.Deezer;
 using InSeconds.Api.Testing.E2E;
 using InSeconds.Api.Testing.Email;
 using InSeconds.Infrastructure.Email;
@@ -38,7 +39,7 @@ public class TestingHostTests(PostgresFixture postgres) : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var reset = await response.Content.ReadFromJsonAsync<ResetResponse>(TestContext.Current.CancellationToken);
-        Assert.Equal(["module_test", "players"], reset!.Schemas);
+        Assert.Equal(["catalogue", "module_test", "players"], reset!.Schemas);
         Assert.Equal(0, await CountAsync("module_test.items"));
         Assert.Equal(1, await CountAsync("public.\"Players\""));
         Assert.Equal(settingsBefore, await CountAsync("infra.settings"));
@@ -79,6 +80,45 @@ public class TestingHostTests(PostgresFixture postgres) : IAsyncLifetime
         await client.PostAsync("/api/e2e/reset", null, TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.NotFound,
             (await client.GetAsync("/api/e2e/last-email?to=joueur@example.com", TestContext.Current.CancellationToken)).StatusCode);
+    }
+
+    [Fact]
+    public async Task SeedCatalogue_AjouteLePoolDeTest_UneSeuleFois_ResetLeVide()
+    {
+        var client = _host.CreateClient();
+
+        var first = await client.PostAsync("/api/e2e/seed-catalogue", null, TestContext.Current.CancellationToken);
+        var second = await client.PostAsync("/api/e2e/seed-catalogue", null, TestContext.Current.CancellationToken);
+
+        Assert.Equal(45, (await first.Content.ReadFromJsonAsync<SeedResponse>(TestContext.Current.CancellationToken))!.Added);
+        Assert.Equal(0, (await second.Content.ReadFromJsonAsync<SeedResponse>(TestContext.Current.CancellationToken))!.Added);
+        Assert.Equal(45, await CountAsync("catalogue.tracks"));
+        // 40 jouables et 5 sans extrait, comme le pool de test de la v1.
+        Assert.Equal(40, await CountAsync("catalogue.tracks WHERE preview_status = 1"));
+        Assert.Equal(5, await CountAsync("catalogue.tracks WHERE preview_status = 2 AND deezer_track_id >= 9000000000"));
+
+        await client.PostAsync("/api/e2e/reset", null, TestContext.Current.CancellationToken);
+        Assert.Equal(0, await CountAsync("catalogue.tracks"));
+    }
+
+    [Fact]
+    public async Task Reset_RemetLeFauxDeezerEtSonCacheAZero()
+    {
+        var client = _host.CreateClient();
+        var deezer = _host.Services.GetRequiredService<FakeDeezerState>();
+        await client.GetAsync("/api/catalogue/search?q=daft-punk", TestContext.Current.CancellationToken);
+        await client.GetAsync("/api/catalogue/search?q=daft-punk", TestContext.Current.CancellationToken);
+        // La seconde recherche est servie par le cache : une seule requête est partie chez Deezer.
+        Assert.Single(deezer.Requests);
+        deezer.Intercept = (_, _) => Task.FromResult<HttpResponseMessage?>(new HttpResponseMessage(HttpStatusCode.InternalServerError));
+
+        await client.PostAsync("/api/e2e/reset", null, TestContext.Current.CancellationToken);
+
+        Assert.Empty(deezer.Requests);
+        Assert.Null(deezer.Intercept);
+        // Le cache est vidé aussi : la même recherche repart chez Deezer.
+        await client.GetAsync("/api/catalogue/search?q=daft-punk", TestContext.Current.CancellationToken);
+        Assert.Single(deezer.Requests);
     }
 
     [Theory]

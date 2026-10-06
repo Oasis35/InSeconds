@@ -41,6 +41,14 @@ public static class WolverineSetup
         // Choisi au démarrage par une fabrique (Brevo, redirigé en staging, capturé en test) : le code
         // généré le demande au conteneur au lieu de le construire lui-même.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Infrastructure.Email.IEmailSender>();
+        // Idem pour les ports Deezer : client HTTP typé et décorateurs de cache, enregistrés par fabrique.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Deezer.IPreviewProvider>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Deezer.ITrackSearch>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Deezer.ITrackMetadataSource>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Deezer.CachedTrackSearch>();
+        // L'usage des morceaux est fourni par Daily (E) : sans cela, le code généré construirait NoTrackUsage en dur et
+        // Daily devrait régénérer le code de Catalogue pour le remplacer.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Api.Modules.Catalogue.Contracts.ITrackUsage>();
         // Compilation à l'exécution en développement et en test seulement (Wolverine 6 ne l'embarque plus).
         opts.UseRuntimeCompilation();
     }

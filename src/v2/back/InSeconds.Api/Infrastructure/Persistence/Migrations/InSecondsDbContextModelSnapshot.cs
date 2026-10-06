@@ -27,6 +27,9 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
             modelBuilder.HasSequence("device_sessions_hilo", "players")
                 .IncrementsBy(10);
 
+            modelBuilder.HasSequence("tracks_hilo", "catalogue")
+                .IncrementsBy(10);
+
             modelBuilder.Entity("InSeconds.Api.Infrastructure.Settings.Setting", b =>
                 {
                     b.Property<string>("Key")
@@ -51,6 +54,78 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasName("pk_settings");
 
                     b.ToTable("settings", "infra");
+                });
+
+            modelBuilder.Entity("InSeconds.Api.Modules.Catalogue.Domain.Track", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<int>("Id"), "tracks_hilo", "catalogue");
+
+                    b.Property<string>("Artist")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("artist");
+
+                    b.Property<string>("CoverHash")
+                        .HasColumnType("text")
+                        .HasColumnName("cover_hash");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int?>("DeezerRank")
+                        .HasColumnType("integer")
+                        .HasColumnName("deezer_rank");
+
+                    b.Property<long>("DeezerTrackId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("deezer_track_id");
+
+                    b.Property<DateTimeOffset?>("DisabledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("disabled_at");
+
+                    b.Property<DateTimeOffset?>("PreviewCheckedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("preview_checked_at");
+
+                    b.Property<short>("PreviewStatus")
+                        .HasColumnType("smallint")
+                        .HasColumnName("preview_status");
+
+                    b.Property<DateTimeOffset?>("RankUpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("rank_updated_at");
+
+                    b.Property<short?>("ReleaseYear")
+                        .HasColumnType("smallint")
+                        .HasColumnName("release_year");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("title");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_tracks");
+
+                    b.HasIndex("DeezerTrackId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_tracks_deezer_track_id");
+
+                    b.ToTable("tracks", "catalogue", t =>
+                        {
+                            t.HasCheckConstraint("ck_tracks_preview_status", "preview_status IN (0, 1, 2)");
+                        });
                 });
 
             modelBuilder.Entity("InSeconds.Api.Modules.Players.Domain.Account", b =>

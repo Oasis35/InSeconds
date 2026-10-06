@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Client Deezer (§ 5.1 du plan v2) : trois ports par besoin (IPreviewProvider, ITrackSearch,
+       ITrackMetadataSource), leur implémentation HTTP et le cache des previews et des recherches.
+       Ne connaît ni l'API ni aucun module. -->
+  <PropertyGroup>
+    <RootNamespace>InSeconds.Deezer</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="InSeconds.UnitTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
+  </ItemGroup>
+
+</Project>

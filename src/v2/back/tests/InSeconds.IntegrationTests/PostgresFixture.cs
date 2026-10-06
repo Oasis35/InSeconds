@@ -13,6 +13,7 @@ public sealed class PostgresFixture : IAsyncLifetime
 {
     // Chaque API de test ouvre plusieurs pools (EF, Wolverine, Hangfire) sur sa propre base : la
     // limite par défaut (100 connexions) est vite atteinte quand les classes tournent en parallèle.
+    // Chaque API de test libère ses pools à sa destruction (ApiFactory.DisposeAsync).
     private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:17-alpine")
         .WithCommand("-c", "max_connections=500")
         .Build();

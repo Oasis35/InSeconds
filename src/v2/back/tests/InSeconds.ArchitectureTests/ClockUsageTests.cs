@@ -8,10 +8,12 @@ namespace InSeconds.ArchitectureTests;
 /// </summary>
 public partial class ClockUsageTests
 {
-    [Fact]
-    public void LeCodeDeLApi_NeLitJamaisLHorlogeSysteme()
+    [Theory]
+    [InlineData("InSeconds.Api")]
+    [InlineData("InSeconds.Deezer")]
+    public void LeCodeDe_NeLitJamaisLHorlogeSysteme(string project)
     {
-        var apiDirectory = Path.Combine(SolutionDirectory(), "InSeconds.Api");
+        var apiDirectory = Path.Combine(SolutionDirectory(), project);
         var offenders =
             from file in Directory.EnumerateFiles(apiDirectory, "*.cs", SearchOption.AllDirectories)
             where !IsBuildOutput(file)

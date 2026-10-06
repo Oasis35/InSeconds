@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../InSeconds.Deezer/InSeconds.Deezer.csproj" />
     <ProjectReference Include="../InSeconds.Infrastructure/InSeconds.Infrastructure.csproj" />
   </ItemGroup>
 

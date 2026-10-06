@@ -1,5 +1,6 @@
 using InSeconds.Api.Infrastructure.Hosting;
 using InSeconds.Api.Testing.Auth;
+using InSeconds.Api.Testing.Deezer;
 using InSeconds.Api.Testing.E2E;
 using InSeconds.Api.Testing.Email;
 using InSeconds.Api.Testing.ApiDocs;
@@ -26,6 +27,7 @@ public sealed class TestingProgram
 
         builder.AddInSecondsApi(args);
         builder.Services.AddCapturingEmailSender();
+        builder.Services.AddFakeDeezer();
         builder.Services.AddE2E();
         builder.Services.AddOpenApiDocuments();
 

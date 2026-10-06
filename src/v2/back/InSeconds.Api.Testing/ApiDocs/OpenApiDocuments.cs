@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
@@ -6,16 +7,20 @@ namespace InSeconds.Api.Testing.ApiDocs;
 /// <summary>
 /// Documents OpenAPI de l'hôte de test (§ 6.1 du plan v2 : un client NSwag par module, généré depuis ces
 /// documents). Servis seulement ici, jamais par l'API de prod (S9). Un document par module, filtré sur
-/// le préfixe de ses routes ; <c>/openapi/players.json</c> pour le module Players. Le document sauvegardé
-/// pour le front est <c>openapi/players.json</c> (cf. CLAUDE.md du back).
+/// le préfixe de ses routes ; <c>/openapi/players.json</c> pour le module Players, <c>/openapi/catalogue.json</c> pour
+/// Catalogue. Les documents sauvegardés pour le front sont <c>openapi/players.json</c> et <c>openapi/catalogue.json</c>
+/// (cf. CLAUDE.md du back).
 /// </summary>
 public static class OpenApiDocuments
 {
     public const string Players = "players";
+    public const string Catalogue = "catalogue";
 
     public static IServiceCollection AddOpenApiDocuments(this IServiceCollection services)
     {
-        AddModuleDocument(services, Players, "api/players", tag: "Players");
+        AddModuleDocument(services, Players, tag: "Players", "api/players");
+        // Deux préfixes : la recherche publique, et les routes admin du pool.
+        AddModuleDocument(services, Catalogue, tag: "Catalogue", "api/catalogue", "api/admin/catalogue");
         return services;
     }
 
@@ -49,11 +54,11 @@ public static class OpenApiDocuments
         }
     }
 
-    private static void AddModuleDocument(IServiceCollection services, string name, string routePrefix, string tag) =>
+    private static void AddModuleDocument(IServiceCollection services, string name, string tag, params string[] routePrefixes) =>
         services.AddOpenApi(name, options =>
         {
             options.ShouldInclude = description =>
-                description.RelativePath?.StartsWith(routePrefix, StringComparison.OrdinalIgnoreCase) == true;
+                routePrefixes.Any(prefix => description.RelativePath?.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) == true);
 
             // Le document ne doit pas dépendre de l'adresse où il a été lu.
             options.AddDocumentTransformer((document, _, _) =>
@@ -64,12 +69,15 @@ public static class OpenApiDocuments
                 return Task.CompletedTask;
             });
 
-            // .NET décrit un entier comme "integer ou string" avec un motif : le client généré doit avoir un nombre.
-            options.AddSchemaTransformer((schema, _, _) =>
+            // .NET décrit un entier comme "integer ou string" avec un motif : le client généré doit avoir un nombre
+            // (et un entier nullable, comme l'année d'un morceau, reste nullable). Sauf le « status » d'un ProblemDetails,
+            // que le client des joueurs (B5) a déjà généré en nombre : son schéma ne change pas.
+            options.AddSchemaTransformer((schema, context, _) =>
             {
                 if (schema.Type is { } type && type.HasFlag(JsonSchemaType.Integer))
                 {
-                    schema.Type = JsonSchemaType.Integer;
+                    var isProblemDetails = context.JsonPropertyInfo?.DeclaringType is { } owner && typeof(ProblemDetails).IsAssignableFrom(owner);
+                    schema.Type = type.HasFlag(JsonSchemaType.Null) && !isProblemDetails ? JsonSchemaType.Integer | JsonSchemaType.Null : JsonSchemaType.Integer;
                     schema.Pattern = null;
                 }
 

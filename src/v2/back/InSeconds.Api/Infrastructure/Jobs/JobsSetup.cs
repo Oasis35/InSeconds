@@ -13,14 +13,24 @@ public static class JobsSetup
 {
     public const string DashboardPath = "/jobs";
 
+    private static readonly Lock FilterLock = new();
+
     public static IServiceCollection AddInSecondsJobs(
         this IServiceCollection services, string connectionString, IConfiguration configuration)
     {
+        // Les filtres de Hangfire sont une liste **globale** au processus : un filtre ajouté à chaque configuration
+        // s'empile quand plusieurs API tournent dans le même processus (les tests d'intégration en créent une par
+        // test), et Hangfire finit par déborder de sa pile en les enchaînant (constat C1). Ajouté une seule fois.
+        lock (FilterLock)
+        {
+            if (!GlobalJobFilters.Filters.Any(filter => filter.Instance is JobTracingFilter))
+                GlobalJobFilters.Filters.Add(new JobTracingFilter());
+        }
+
         services.AddHangfire(config => config
             .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
             .UseSimpleAssemblyNameTypeSerializer()
             .UseRecommendedSerializerSettings()
-            .UseFilter(new JobTracingFilter())
             .UsePostgreSqlStorage(
                 options => options.UseNpgsqlConnection(connectionString),
                 new PostgreSqlStorageOptions
@@ -32,6 +42,7 @@ public static class JobsSetup
                 }));
 
         services.AddHostedService<RecurringJobsRegistrar>();
+        services.AddSingleton<IJobTrigger, HangfireJobTrigger>();
 
         // Le serveur (qui exécute les tâches) ne tourne pas dans les tests d'intégration : ils appellent
         // les tâches directement (Jobs:Server:Enabled=false).
