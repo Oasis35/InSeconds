@@ -10,6 +10,11 @@ export interface ModalOptions<D> {
   maxWidth?: string;
   /** Empêche la fermeture par Échap et par le fond (étape qui doit aller au bout). */
   disableClose?: boolean;
+  /**
+   * Injecteur de la fenêtre. Sans lui, elle ne voit que les services de la racine : pour qu'elle
+   * retrouve ceux de la page qui l'ouvre (un store fourni par la route), passer l'injecteur de la page.
+   */
+  injector?: Injector;
 }
 
 /**
@@ -29,6 +34,7 @@ export class ModalService {
     return this.dialog.open<R, D, C>(component, {
       data: options.data,
       disableClose: options.disableClose ?? false,
+      injector: options.injector,
       maxWidth: options.maxWidth ?? '24rem',
       width: 'calc(100% - 2rem)',
       panelClass: 'app-modal-panel',
@@ -43,6 +49,7 @@ export class ModalService {
     return this.dialog.open<R, D, C>(component, {
       data: options.data,
       disableClose: options.disableClose ?? false,
+      injector: options.injector,
       maxWidth: options.maxWidth ?? '32rem',
       width: '100%',
       panelClass: 'app-sheet-panel',

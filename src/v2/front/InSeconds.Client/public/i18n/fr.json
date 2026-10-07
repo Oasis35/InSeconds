@@ -23,6 +23,13 @@
       "invalid_or_expired_token": "Ce lien est invalide ou a expiré.",
       "pseudo_taken": "Ce pseudo est déjà pris.",
       "same_email": "C'est déjà ton adresse actuelle."
+    },
+    "catalogue": {
+      "duplicate_deezer_id": "Ce morceau est déjà dans le pool.",
+      "not_found_on_deezer": "Ce morceau est introuvable chez Deezer.",
+      "deezer_unavailable": "Deezer est indisponible pour le moment, réessaie dans un instant.",
+      "track_in_use": "Ce morceau a déjà servi dans un défi : il ne peut pas être supprimé (désactive-le).",
+      "track_in_today_challenge": "Ce morceau est dans le défi du jour : désactivable à partir de demain."
     }
   },
   "shell": {
@@ -153,6 +160,105 @@
       "label": "Ton identifiant navigateur :",
       "copy": "Copier",
       "copied": "Copié !"
+    }
+  },
+  "admin": {
+    "title": "Admin",
+    "notLoggedIn": "Connecte-toi d'abord",
+    "notLoggedInBody": "L'accès admin nécessite un compte connecté.",
+    "goToLogin": "Se connecter",
+    "accessDenied": "Accès refusé",
+    "accessDeniedBody": "Ce compte n'a pas les droits admin.",
+    "backToGame": "Retour au jeu",
+    "logout": "Se déconnecter",
+    "tabs": {
+      "poolPlain": "Pool"
+    },
+    "pool": {
+      "runwayDay": "jour de défis restant",
+      "runwayDays": "jours de défis restants",
+      "selected": "{{ count }} sélectionné(s)",
+      "deselectAll": "Tout déselectionner",
+      "delete": "Supprimer ({{ count }})",
+      "availableUsed": "{{ available }} disponible(s) · {{ used }} utilisé(s)",
+      "add": "+ Ajouter",
+      "close": "✕ Fermer",
+      "searchPlaceholder": "Rechercher artiste ou titre...",
+      "allPreviews": "Toutes les previews",
+      "previewOk": "Preview OK",
+      "previewMissing": "Manquante",
+      "allStatuses": "Tous les statuts",
+      "available": "Disponible",
+      "used": "Utilisé",
+      "resetFilters": "✕ Réinitialiser",
+      "checkingPreviews": "Vérification des previews...",
+      "empty": "Aucun morceau dans le pool.",
+      "colArtist": "Artiste",
+      "colTitle": "Titre",
+      "colPreview": "Preview",
+      "colStatus": "Statut",
+      "colLastUsed": "Dernière utilisation",
+      "colUnlockDate": "Date de déblocage",
+      "colUsageCount": "Nb. utilisations",
+      "colActions": "Actions",
+      "ok": "OK",
+      "listenTitle": "Écouter l'extrait",
+      "deleteTitle": "Supprimer",
+      "tracksCount": "morceau(x)",
+      "page": "page {{ current }}/{{ total }}",
+      "lastUsedFrom": "Utilisé depuis le",
+      "lastUsedTo": "Utilisé jusqu'au",
+      "deleteUsedSelection": "La sélection contient un morceau déjà utilisé dans un défi : suppression impossible",
+      "editTitle": "Modifier l'artiste ou le titre",
+      "disable": "Désactiver",
+      "enable": "Réactiver",
+      "disabled": "Désactivé",
+      "disabledFilter": "Désactivés",
+      "disabledCount": "{{ count }} désactivé(s)",
+      "disableTitle": "Déjà utilisé : le retirer des prochains défis (il reste dans le pool)",
+      "enableTitle": "Remettre ce morceau dans le tirage des prochains défis",
+      "disableTodayTitle": "Morceau du défi du jour : désactivable à partir de demain",
+      "disableInTodayError": "Ce morceau est dans le défi du jour : désactivable à partir de demain.",
+      "disableError": "La modification a échoué, réessaie."
+    },
+    "deleteModal": {
+      "title": "Confirmer la suppression",
+      "single": "Supprimer {{ track }} du pool ?",
+      "multiple": "Supprimer {{ count }} morceaux du pool ?",
+      "error": "Erreur lors de la suppression.",
+      "cancel": "Annuler",
+      "delete": "Supprimer",
+      "deleting": "Suppression..."
+    },
+    "editModal": {
+      "title": "Modifier le morceau",
+      "artist": "Artiste",
+      "titleField": "Titre",
+      "hint": "Sert de bonne réponse dès l'enregistrement, défi du jour compris. Les réponses déjà données ne sont pas recalculées.",
+      "todayWarning": "Ce morceau est dans le défi du jour : les joueurs qui n'ont pas encore répondu seront corrigés avec le nouveau nom.",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "saving": "Enregistrement..."
+    },
+    "previewModal": {
+      "title": "Écouter l'extrait",
+      "loading": "Récupération de l'extrait...",
+      "error": "Aucun extrait disponible pour ce morceau.",
+      "playing": "Lecture en cours...",
+      "preview30s": "Preview 30s",
+      "unavailable": "Deezer est indisponible : aucun extrait pour le moment."
+    },
+    "addPanel": {
+      "title": "Ajouter un morceau",
+      "searchPlaceholder": "Rechercher sur Deezer...",
+      "searching": "Recherche...",
+      "alreadyInPool": "Déjà en pool (disponible)",
+      "alreadyUsed": "Déjà utilisé dans un défi passé",
+      "linked": "Recherches liées",
+      "unlinked": "Recherches indépendantes",
+      "added": "Ajouté",
+      "addError": "Erreur",
+      "addTrack": "Ajouter"
     }
   }
 }

@@ -15,6 +15,13 @@ export const ERROR_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   'common.unauthorized': 'errors.common.unauthorized',
   'common.unexpected': 'errors.common.unexpected',
 
+  // Catalogue
+  'catalogue.deezer_unavailable': 'errors.catalogue.deezer_unavailable',
+  'catalogue.duplicate_deezer_id': 'errors.catalogue.duplicate_deezer_id',
+  'catalogue.not_found_on_deezer': 'errors.catalogue.not_found_on_deezer',
+  'catalogue.track_in_today_challenge': 'errors.catalogue.track_in_today_challenge',
+  'catalogue.track_in_use': 'errors.catalogue.track_in_use',
+
   // Players
   'players.email_taken': 'errors.players.email_taken',
   'players.guest_forbidden': 'errors.players.guest_forbidden',

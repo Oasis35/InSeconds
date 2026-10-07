@@ -2,39 +2,32 @@ import { test, expect } from '../fixtures/test';
 import { AdminPage } from '../pages/admin.page';
 import { GamePage } from '../pages/game.page';
 import { BlindRoundPage } from '../pages/blind-round.page';
+import { linkAccount } from '../pages/login.page';
+
+// Réactivé en C3 (le pool) : les tests qui dépendent des onglets de F2 (dashboard, défis, actions,
+// joueurs) ou du jeu (E5) sont en `test.fixme`, à réactiver par la PR qui livre la fonctionnalité
+// (titres inchangés : la parité avec la v1 les compare).
 
 test.describe('Admin — login', () => {
   test('visiteur non connecté : /admin invite à se connecter', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await expect(admin.notLoggedInMessage).toBeVisible();
-    await expect(page.getByRole('link', { name: /Se connecter/ })).toBeVisible();
+    // L'en-tête de l'app propose aussi « Se connecter » : on vise le lien de l'écran d'accès.
+    await expect(page.getByTestId('admin-gate').getByRole('link', { name: /Se connecter/ })).toBeVisible();
   });
 
   test('compte lié mais pas admin : /admin affiche accès refusé', async ({ page, api }) => {
     await api.reset();
-    const email = 'joueur-normal@e2e.test';
-    await page.goto('/login');
-    await page.getByPlaceholder('ton@email.com').fill(email);
-    await page.getByRole('button', { name: 'Recevoir le lien' }).click();
-    await expect(page.getByText('Lien envoyé.')).toBeVisible();
-
-    const linkUrl = await api.getLastMagicLinkUrl(email);
-    const parsed = new URL(linkUrl);
-    await page.goto(parsed.pathname + parsed.search);
-    await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
-    await page.getByPlaceholder('Ton pseudo').fill('JoueurE2E');
-    await page.getByRole('button', { name: 'Valider' }).click();
-
-    const game = new GamePage(page);
-    await game.waitForWelcome();
+    // Écart avec la v1 : l'accueil du jeu n'existe pas avant E5, la connexion se vérifie par l'avatar de l'en-tête.
+    await linkAccount(page, api, 'joueur-normal@e2e.test', 'JoueurE2E');
 
     const admin = new AdminPage(page);
     await admin.goto();
     await expect(admin.accessDeniedMessage).toBeVisible();
   });
 
-  test('se connecte et affiche le dashboard directement', async ({ page }) => {
+  test.fixme('se connecte et affiche le dashboard directement', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
@@ -312,7 +305,7 @@ test.describe('Admin — actions', () => {
     await api.reseed();
   });
 
-  test('génère le défi du jour', async ({ page, api }) => {
+  test.fixme('génère le défi du jour', async ({ page, api }) => {
     const admin = new AdminPage(page);
     // Supprime le défi du jour pour pouvoir le régénérer
     await admin.apiDeleteTodayChallenge();
@@ -324,7 +317,7 @@ test.describe('Admin — actions', () => {
     await expect(page.getByText('Défi généré avec succès')).toBeVisible({ timeout: 10000 });
   });
 
-  test('affiche "déjà généré" si le défi existe', async ({ page }) => {
+  test.fixme('affiche "déjà généré" si le défi existe', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
@@ -334,7 +327,7 @@ test.describe('Admin — actions', () => {
     await expect(page.getByText('déjà généré')).toBeVisible({ timeout: 5000 });
   });
 
-  test('édite le cooldown de réutilisation et persiste en base', async ({ page }) => {
+  test.fixme('édite le cooldown de réutilisation et persiste en base', async ({ page }) => {
     const adminPage = new AdminPage(page);
     await adminPage.goto();
     await adminPage.login();
@@ -358,7 +351,7 @@ test.describe('Admin — défis', () => {
     await api.reseed();
   });
 
-  test('liste les défis existants', async ({ page }) => {
+  test.fixme('liste les défis existants', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
@@ -387,7 +380,7 @@ test.describe('Admin — chargement paresseux par onglet', () => {
     await api.reseed();
   });
 
-  test('ne charge les données d\'un onglet qu\'à son ouverture', async ({ page }) => {
+  test.fixme('ne charge les données d\'un onglet qu\'à son ouverture', async ({ page }) => {
     const admin = new AdminPage(page);
     const adminCalls: string[] = [];
     page.on('request', req => {
@@ -416,7 +409,7 @@ test.describe('Admin — chargement paresseux par onglet', () => {
     await expect.poll(() => adminCalls.some(u => /\/api\/admin\/challenges(\?|$)/.test(u))).toBe(true);
   });
 
-  test('le compteur des onglets Pool / Défis n\'apparaît qu\'après leur première ouverture', async ({ page }) => {
+  test.fixme('le compteur des onglets Pool / Défis n\'apparaît qu\'après leur première ouverture', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
@@ -438,15 +431,15 @@ test.describe('Admin — chargement paresseux par onglet', () => {
     await admin.login();
 
     await admin.clickTab('Pool');
-    await expect(page).toHaveURL(/\/admin\/pool$/);
+    await expect(page).toHaveURL(/\/admin\/catalogue$/);
     await expect(page.getByText(/page 1\/\d+/)).toBeVisible();
 
     await page.getByRole('button', { name: '→' }).click();
-    await expect(page).toHaveURL(/\/admin\/pool\?page=2$/);
+    await expect(page).toHaveURL(/\/admin\/catalogue\?page=2$/);
 
     await page.reload();
     await expect(page.getByText(/page 2\/\d+/)).toBeVisible();
-    await expect(page).toHaveURL(/\/admin\/pool\?page=2$/);
+    await expect(page).toHaveURL(/\/admin\/catalogue\?page=2$/);
   });
 
   test('une ancienne adresse /admin?tab=pool ouvre l\'onglet Pool', async ({ page }) => {
@@ -455,7 +448,7 @@ test.describe('Admin — chargement paresseux par onglet', () => {
     await admin.login();
 
     await page.goto('/admin?tab=pool');
-    await expect(page).toHaveURL(/\/admin\/pool$/);
+    await expect(page).toHaveURL(/\/admin\/catalogue$/);
     await expect(page.getByRole('link', { name: /^Pool/ })).toHaveAttribute('aria-current', 'page');
   });
 });
@@ -479,7 +472,7 @@ test.describe('Admin — indicateur joueurs / ID navigateur', () => {
     expect(clipText.slice(0, 8)).toBe(shortId);
   });
 
-  test('le joueur qui vient de jouer apparaît en surbrillance "toi" dans Stats par défi', async ({ page, api }) => {
+  test.fixme('le joueur qui vient de jouer apparaît en surbrillance "toi" dans Stats par défi', async ({ page, api }) => {
     await api.reset();
     await page.clock.install({ time: Date.now() });
 
@@ -513,7 +506,7 @@ test.describe('Admin — indicateur joueurs / ID navigateur', () => {
     expect(clipText.slice(0, 8)).toBe(browserShortId);
   });
 
-  test('l\'icône d\'un morceau ouvre la pop-up histogramme (avec les chiffres)', async ({ page, api }) => {
+  test.fixme('l\'icône d\'un morceau ouvre la pop-up histogramme (avec les chiffres)', async ({ page, api }) => {
     await api.reset();
     await page.clock.install({ time: Date.now() });
 
@@ -547,7 +540,7 @@ test.describe('Admin — joueurs', () => {
     await api.reset();
   });
 
-  test('liste les comptes inscrits et déplie l\'historique d\'un joueur', async ({ page, api }) => {
+  test.fixme('liste les comptes inscrits et déplie l\'historique d\'un joueur', async ({ page, api }) => {
     await page.clock.install({ time: Date.now() });
 
     // Compte lié (magic link) qui termine le défi du jour.

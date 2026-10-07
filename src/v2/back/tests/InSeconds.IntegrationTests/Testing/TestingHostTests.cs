@@ -90,11 +90,11 @@ public class TestingHostTests(PostgresFixture postgres) : IAsyncLifetime
         var first = await client.PostAsync("/api/e2e/seed-catalogue", null, TestContext.Current.CancellationToken);
         var second = await client.PostAsync("/api/e2e/seed-catalogue", null, TestContext.Current.CancellationToken);
 
-        Assert.Equal(45, (await first.Content.ReadFromJsonAsync<SeedResponse>(TestContext.Current.CancellationToken))!.Added);
+        Assert.Equal(55, (await first.Content.ReadFromJsonAsync<SeedResponse>(TestContext.Current.CancellationToken))!.Added);
         Assert.Equal(0, (await second.Content.ReadFromJsonAsync<SeedResponse>(TestContext.Current.CancellationToken))!.Added);
-        Assert.Equal(45, await CountAsync("catalogue.tracks"));
-        // 40 jouables et 5 sans extrait, comme le pool de test de la v1.
-        Assert.Equal(40, await CountAsync("catalogue.tracks WHERE preview_status = 1"));
+        Assert.Equal(55, await CountAsync("catalogue.tracks"));
+        // 50 jouables et 5 sans extrait, comme le pool de test de la v1.
+        Assert.Equal(50, await CountAsync("catalogue.tracks WHERE preview_status = 1"));
         Assert.Equal(5, await CountAsync("catalogue.tracks WHERE preview_status = 2 AND deezer_track_id >= 9000000000"));
 
         await client.PostAsync("/api/e2e/reset", null, TestContext.Current.CancellationToken);

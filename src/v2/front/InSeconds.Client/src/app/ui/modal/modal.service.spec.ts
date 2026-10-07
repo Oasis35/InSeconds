@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, InjectionToken, Injector, inject } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideTranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
@@ -11,6 +11,16 @@ import { ModalService } from './modal.service';
   template: `<app-modal-frame title="Renommer"><input id="field" /></app-modal-frame>`,
 })
 class SampleContentComponent {}
+
+const PAGE_SERVICE = new InjectionToken<string>('PAGE_SERVICE');
+
+@Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<span id="page-service">{{ service }}</span>`,
+})
+class NeedsPageServiceComponent {
+  protected readonly service = inject(PAGE_SERVICE);
+}
 
 describe('ModalService', () => {
   let modal: ModalService;
@@ -45,6 +55,15 @@ describe('ModalService', () => {
     const title = document.getElementById(dialog.getAttribute('aria-labelledby')!.split(' ')[0]);
     expect(title?.textContent).toContain('Renommer');
     expect(dialog.contains(document.activeElement)).toBe(true);
+  });
+
+  it('donne à la fenêtre les services de la page qui l\'ouvre quand on lui passe son injecteur', async () => {
+    const page = Injector.create({ providers: [{ provide: PAGE_SERVICE, useValue: 'store de la page' }], parent: TestBed.inject(Injector) });
+
+    modal.open(NeedsPageServiceComponent, { injector: page });
+    await settle();
+
+    expect(document.getElementById('page-service')?.textContent).toBe('store de la page');
   });
 
   it('se ferme avec Échap et rend le focus à l\'élément d\'origine', async () => {

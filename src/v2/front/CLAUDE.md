@@ -2,7 +2,7 @@
 
 Front de la v2 d'InSeconds, en construction à côté de la v1 (`src/front/`), qui reste en service jusqu'à la bascule. Plan de référence : [`docs/refonte-v2/PLAN.md`](../../../docs/refonte-v2/PLAN.md) (§ 6 pour le front) et [`docs/refonte-v2/DEVELOPPEMENT.md`](../../../docs/refonte-v2/DEVELOPPEMENT.md). Ce fichier décrit ce qui existe **déjà** dans le code ; il grossit à chaque PR.
 
-État : **PR B5, front du compte** (après A4 : socle, A5 : E2E copiés et image nginx, A6 : staging). Le domaine `account` existe (connexion, profil, appareils, confirmation d'email) ; `/daily`, `/admin/**` et `/privacy` affichent encore une page d'attente (« La nouvelle version arrive »). Les autres domaines arrivent avec leurs modules (D `gameplay`, E `daily`, F `admin`).
+État : **PR C3, front du pool admin** (après A4 : socle, A5 : E2E copiés et image nginx, A6 : staging, B5 : compte). Les domaines `account` (connexion, profil, appareils, confirmation d'email) et `admin` (coquille et onglet Pool) existent ; `/daily`, `/privacy` et les autres onglets de l'admin affichent encore une page d'attente (« La nouvelle version arrive »). Les autres domaines arrivent avec leurs modules (D `gameplay`, E `daily`, F `admin` complet).
 
 ## Commandes
 
@@ -36,7 +36,7 @@ Angular, CDK, NgRx, ngx-translate, Tailwind, Vitest et Sheriff sont épinglés �
 src/v2/front/InSeconds.Client/
 ├── sheriff.config.ts          # frontières (cf. plus bas)
 ├── scripts/check-pure-domain.mjs
-├── nswag/players.nswag.json   # génération du client NSwag du module Players (un fichier par module)
+├── nswag/{players,catalogue}.nswag.json   # génération des clients NSwag (un fichier par module)
 ├── ngsw-config.json           # service worker : fichiers du front seulement, aucun dataGroups (S10)
 ├── proxy.conf.json            # dev : /api, /health, /jobs → http://localhost:5175
 ├── public/
@@ -47,8 +47,9 @@ src/v2/front/InSeconds.Client/
     ├── app.ts / app.html      # coquille : bandeau DEV, toasts, bandeau de mise à jour, avis d'ancienne adresse, overlay
     ├── app.config.ts          # zoneless, router, HttpClient + intercepteurs, ngx-translate, service worker
     ├── app.routes.ts          # routes, redirections des adresses v1
-    ├── api/players/           # client NSwag généré (api.generated.ts), importé seulement par account/data-access
+    ├── api/{players,catalogue}/   # clients NSwag générés (api.generated.ts), importés seulement par la couche data-access de leur domaine
     ├── account/               # connexion, vérification, profil, appareils, confirmation d'email (cf. § Domaine account)
+    ├── admin/                 # coquille de l'admin et pool de morceaux (cf. § Domaine admin)
     ├── core/                  # transverse
     │   ├── errors/            # AppError, table code → message, remontée des erreurs, ErrorHandler global
     │   ├── http/              # intercepteurs : cookie, nouvelle version (410), remontée des 5xx
@@ -86,7 +87,7 @@ Sheriff ne vérifie que les fichiers atteignables depuis `src/main.ts` (routes c
 - `/` → `/daily` (tant que le mode Runs n'est pas public).
 - Adresses v1 redirigées : `/blindtest` → `/daily`, `/login` → `/account/login`, `/login/verify` → `/account/login/verify`, `/profile` → `/account/profile`, `/profile/confirm-email` → `/account/confirm-email`, `/confidentialite`, `/mentions-legales`, `/legal-notice` → `/privacy`.
 - **Toutes les redirections gardent la query string et le fragment** (`redirectKeepingQuery`) : lien magique, confirmation d'email, `from=legacy`. Testé dans `app.routes.spec.ts`.
-- `/account/**` : domaine `account` (chargé à la demande). `/daily`, `/admin/**`, `/privacy` : page d'attente, remplacée par chaque domaine. Tout le reste : 404.
+- `/account/**` : domaine `account` (chargé à la demande). `/admin/**` : domaine `admin` (`/admin` → `/admin/catalogue`, l'ancien `/admin/pool` et `/admin?tab=pool` aussi, page de la grille et autres paramètres gardés). `/daily`, `/privacy` et les onglets de l'admin à venir (`/admin/dashboard`, `defis`, `joueurs`, `actions`) : page d'attente, remplacée par chaque domaine. Tout le reste : 404.
 
 ## Erreurs
 
@@ -116,6 +117,7 @@ Sheriff ne vérifie que les fichiers atteignables depuis `src/main.ts` (routes c
 Les 25 specs Playwright de la v1 sont **copiés tels quels** dans `e2e/` (PR A5). Seuls changent les ports, et les boucles d'étapes séquentielles des fixtures et page objects, réécrites avec `inSequence`/`times` (`e2e/fixtures/sequence.ts`, Sonar S9382 : pas d'`await` dans une boucle, mêmes étapes dans le même ordre). Ports : API v2 de test (`InSeconds.Api.Testing`) sur **5175** en CI / **5177** en local, front sur **5176** en CI / **5178** en local (configurations `ng serve` `e2e-ci`/`e2e`, `proxy.e2e*.conf.json`, `environment.e2e.ts`). `serviceWorkers: 'block'` dans `playwright.config.ts` (E12). En local, `playwright.config.ts` démarre l'hôte de test et `ng serve` ; la base E2E se passe par `E2E_DB_CONNECTION` (chaîne de connexion complète, jamais commitée — Sonar S2068).
 
 - **Désactivés** : `e2e/disabled-specs.json` liste chaque spec avec la PR qui le réactive ; `playwright.config.ts` les passe en `testIgnore`. Réactiver un spec = retirer sa ligne, dans la PR qui livre la fonctionnalité. Liste vide au jalon J4. Depuis B5 (jalon J2), `login`, `profile` et `change-email` sont actifs et le job CI `e2e-v2` les lance (hôte de test sur 5175, `ng serve --configuration e2e-ci` sur 5176). Les corps des specs réactivés sont adaptés à la v2 (l'écran d'accueil du jeu n'existe pas avant E5 : la connexion se vérifie par l'avatar de l'en-tête, `expectSignedIn` du page object) ; **les titres restent ceux de la v1** (contrôle de parité) et tout écart de scénario est justifié dans `DEVELOPPEMENT.md`. L'hôte de test se lance avec `--no-launch-profile` (sinon `launchSettings.json` impose `Development`). La fixture `api-client.ts` lit les liens dans le dernier email capturé (`/api/e2e/last-email`) et attend un lien différent du précédent : l'email part de l'outbox, après la réponse 204.
+- **`admin.spec.ts` réactivé en C3, en partie** : un fichier se réactive entier (`testIgnore`), alors que ses tests dépendent de PR différentes. Les tests du pool, de l'accès à l'admin et de l'ID navigateur sont actifs ; ceux qui attendent un onglet de F2 (dashboard, défis, actions, joueurs, compteurs d'onglets) ou le jeu (E5) sont en **`test.fixme`**, avec leur **titre inchangé** (la parité les liste). **La PR qui livre l'onglet retire le `fixme` de ses tests** (et adapte leurs URL : le pool est `/admin/catalogue`) ; `apiGetPoolUnlockDate` d'`admin.page.ts` (ancienne route `/api/admin/tracks`) sera à réécrire pour `/api/admin/catalogue/tracks` en F2. Le critère « liste des E2E désactivés vide » (J4) ne voit pas les `fixme` : chercher `test.fixme` avant de le déclarer atteint. L'admin se connecte par `POST /api/e2e/login-as-admin`, les données viennent de `POST /api/e2e/reseed` (cf. `src/v2/back/CLAUDE.md`, « Hôte de test »). L'extrait du faux Deezer est `/test-audio.mp3`, servi par le front (`public/`).
 - **Parité v1/v2** (E8) : `scripts/check-e2e-parity.mjs` (racine du repo, job CI `e2e-parity`) compare les listes `playwright test --list` des deux fronts (fichier › describe › titre, sans numéro de ligne ; `E2E_INCLUDE_DISABLED=1` y remet les specs désactivés). Tout écart (test renommé, ajouté ou retiré d'un seul côté) fait échouer la CI, sauf s'il est justifié dans `e2e/parity-exceptions.json` (`onlyInV1` / `onlyInV2`, titre complet → raison). Un correctif v1 qui ajoute un E2E doit donc le recopier ici au merge de `main` dans `env/staging`.
 
 ```bash
@@ -145,10 +147,20 @@ Après tout changement d'endpoint d'un module : régénérer le document côté 
 
 Règles : le lien magique et le lien de changement d'email ne se consomment **jamais** à l'ouverture de la page (piège 21), seulement au clic sur « Confirmer » ; un navigateur déjà connecté est prévenu avant de confirmer le lien d'une autre adresse (piège 30). Les aides de test (`**/testing/**`, faux `PlayersApi`, `dom.ts`) sont exclues du build de l'app.
 
+## Domaine admin
+
+`src/app/admin/`, quatre couches. Depuis C3 : la coquille et l'onglet **Pool** (`/admin/catalogue`) ; dashboard, défis, joueurs et actions arrivent en F2 (le domaine `admin` peut importer `account`, pour `BrowserIdComponent`).
+- `domain/` (TypeScript pur) : `PoolTrack` (disponible ou utilisé se déduit de `usageCount`), filtres (texte cherché dans l'artiste, le titre **et « artiste titre » collés**, piège 28 ; statut, extrait, plage de dernière utilisation), tri (**par défaut les disponibles avant les utilisés**, comme en v1 ; désactivés toujours en fin ; valeurs vides en dernier), pagination par 15, autonomie du pool en jours (`DEFAULT_TRACKS_PER_CHALLENGE` = 5 en attendant que le réglage vienne de l'API, F2/E) ;
+- `data-access/` : `CatalogueApi` (adaptateur du client, rend des types du domaine ; `findPreviewUrl` redemande l'extrait à Deezer, le pool n'en garde pas l'adresse signée), `PoolStore` (liste, filtres, tri, page, sélection, ajout, renommage, désactivation, suppression : **aucune mutation locale**, la liste est relue après chaque action ; les actions rendent l'erreur à afficher dans leur fenêtre ou `null`), `DeezerSearchStore` (panneau : attente de 300 ms, recherche annulée par la suivante, ajout par ligne, liaison avec le filtre), `AudioPreviewPlayer` (un seul son à la fois, aucun audio gardé, piège 47) ; `catalogue.providers.ts` donne l'adresse de l'API au client ;
+- `feature/` : `AdminShellPage` (accès : visiteur ou invité → « Connecte-toi d'abord » ; compte sans le rôle → « Accès refusé » ; admin → onglets et déconnexion ; l'ID navigateur est affiché dans tous les cas), `CataloguePage` (fournit `PoolStore`, `DeezerSearchStore` et `AudioPreviewPlayer`, câble la liaison filtre ↔ recherche, reprend et écrit `?page=` — numérotée à partir de 1, `replaceUrl` —, ouvre les fenêtres), fenêtres `PreviewTrackDialog`, `EditTrackDialog` (renommer est permis **à tout moment, défi du jour compris**, avec un avertissement dans ce cas), `DeleteTrackDialog`, `ADMIN_ROUTES`, `provideAdmin()` (branché dans `app.config.ts`) ;
+- `ui/` : `PoolToolbar`, `PoolFilterBar`, `PoolTable` (pagination comprise), `SearchPanel`, purement présentationnels.
+
+Règles : les fenêtres du pool s'ouvrent avec **`injector: inject(Injector)`** (option de `ModalService`) : sans elle, le CDK Dialog ne voit que la racine et ne trouverait pas `PoolStore`. Fermer la fenêtre d'écoute arrête le son et une réponse de Deezer arrivée après la fermeture ne relance rien (piège 42, testé). Un morceau utilisé ne se supprime pas (le bouton « Désactiver » le remplace) ; un morceau du défi du jour ne se désactive pas (bouton grisé). Les accès à l'admin sont revérifiés par l'API à chaque requête : l'écran d'accès n'est qu'un confort.
+
 ## SonarCloud
 
 Une grande partie de la v2 reprend du code de la v1 (styles, remontée d'erreurs, composants de la coquille), ce que Sonar compte comme de la duplication sur le nouveau code. Exclusion posée dans l'UI SonarCloud (Administration → Analysis Scope → Duplication Exclusions) : `src/front/**, src/back/**`. **À retirer en I2** (suppression de la v1, ticket #236).
 
 ## Conventions
 
-Mêmes que la v1 (cf. CLAUDE.md racine) : couleurs par `var(--…)`, un composant = `.ts` (+ `.html` s'il est long), `OnPush`, écouteurs globaux dans `host: {}`, état exposé en lecture seule, traductions dans chaque composant qui affiche du texte. En plus : modales **uniquement** par `ModalService` (plus de modale maison), boutons par `appButton`.
+Mêmes que la v1 (cf. CLAUDE.md racine) : couleurs par `var(--…)`, un composant = `.ts` (+ `.html` s'il est long), `OnPush`, écouteurs globaux dans `host: {}`, état exposé en lecture seule, traductions dans chaque composant qui affiche du texte. En plus : modales **uniquement** par `ModalService` (plus de modale maison ; `injector` pour qu'une fenêtre retrouve les stores de sa page), boutons par `appButton`.

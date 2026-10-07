@@ -30,7 +30,7 @@ const DOMAIN_DEPENDENCIES: Record<(typeof DOMAINS)[number], string[]> = {
   daily: ['domain:gameplay'],
   runs: ['domain:gameplay'],
   account: [],
-  admin: [],
+  admin: ['domain:account'],
   home: [],
 };
 
