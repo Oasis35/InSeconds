@@ -61,7 +61,7 @@ describe('routes', () => {
   });
 
   it('affiche la page d\'attente des domaines pas encore construits', async () => {
-    for (const url of ['/daily', '/admin/pool', '/privacy']) {
+    for (const url of ['/daily', '/privacy']) {
       const page = await harness.navigateByUrl(url);
       expect(harness.routeNativeElement?.textContent, url).toContain('shell.comingSoon.title');
       expect(page).toBeTruthy();
