@@ -95,10 +95,11 @@ public class FisherYatesShuffleTests
     [Fact]
     public void Shuffle_ChaquePositionPeutRecevoirChaqueElement()
     {
-        // Pas de biais de position (c'était la raison du Fisher-Yates) : sur beaucoup de graines, le premier
-        // élément n'est jamais toujours le même.
-        var firsts = Enumerable.Range(0, 400).Select(seed => _shuffle.Shuffle(Enumerable.Range(0, 5), seed)[0]).ToHashSet();
+        // Pas de biais de position (c'était la raison du Fisher-Yates) : sur beaucoup de graines, chaque position
+        // reçoit tour à tour chacun des éléments.
+        var orders = Enumerable.Range(0, 400).Select(seed => _shuffle.Shuffle(Enumerable.Range(0, 5), seed)).ToList();
 
-        Assert.Equal(5, firsts.Count);
+        for (var position = 0; position < 5; position++)
+            Assert.Equal(5, orders.Select(order => order[position]).ToHashSet().Count);
     }
 }

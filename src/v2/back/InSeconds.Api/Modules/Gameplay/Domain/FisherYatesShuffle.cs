@@ -4,9 +4,11 @@ namespace InSeconds.Api.Modules.Gameplay.Domain;
 
 /// <summary>
 /// Mélange de Fisher-Yates à graine, le tirage du défi du jour de la v1 mis derrière un port : distribution
-/// uniforme (aucun biais de position) et même graine, même ordre. La suite de <see cref="Random"/> pour une
-/// graine donnée est celle que .NET garantit stable, et c'est elle qui fixe l'ordre : un test épingle un ordre
-/// connu, pour qu'un changement d'algorithme (donc des défis différents pour une même date) ne passe pas inaperçu.
+/// uniforme (aucun biais de position) et même graine, même ordre. C'est la suite de <see cref="Random"/> pour une
+/// graine donnée qui fixe l'ordre, et .NET ne la garantit pas d'une version majeure à l'autre (en pratique, elle
+/// n'a pas changé depuis .NET Core). Un test épingle un ordre connu : si une montée de version de .NET le casse,
+/// recopier l'ancien générateur plutôt que mettre à jour l'ordre attendu (sinon, des défis différents pour une
+/// même date).
 /// </summary>
 public sealed class FisherYatesShuffle : ISeededShuffle
 {
