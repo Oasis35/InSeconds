@@ -68,6 +68,49 @@
       "label": "development environment"
     }
   },
+  "gameplay": {
+    "round": {
+      "noPreview": "Preview not available for this track.",
+      "skip": "Skip (0 pts)",
+      "replay": "↺ {{ seconds }}s",
+      "listenUpTo": "Listen up to {{ seconds }}s",
+      "stepsUpTo": "You can listen up to {{ seconds }}s if you need to",
+      "playbackError": "Couldn't play the preview. Try again, or skip this track.",
+      "retry": "Retry"
+    },
+    "answer": {
+      "placeholder": "Artist — Title",
+      "clear": "Clear",
+      "validate": "Submit",
+      "emptyConfirm": "You didn't enter anything. Submit anyway?",
+      "cancel": "Cancel",
+      "submitAnyway": "Submit anyway",
+      "skipConfirm": "Skip this track? You'll score 0 points",
+      "skipAnyway": "Skip",
+      "submitFailed": "Your answer couldn't be saved. Check your connection and try again.",
+      "retry": "Retry"
+    },
+    "hint": {
+      "costWarning": "Every hint revealed costs points this round",
+      "tooltip": "Hint — costs points",
+      "button": "Hint {{ level }}",
+      "ask": {
+        "year": "Year hint",
+        "artist": "Artist hint"
+      },
+      "kind": {
+        "year": "Year",
+        "artist": "Artist",
+        "other": "Hint"
+      }
+    },
+    "reveal": {
+      "coverAlt": "Cover",
+      "artist": "Artist",
+      "title": "Title",
+      "correctAnswer": "Correct answer"
+    }
+  },
   "account": {
     "login": {
       "title": "Log in",

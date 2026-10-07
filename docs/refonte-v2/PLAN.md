@@ -342,6 +342,7 @@ Chaque module expose un seul point d'entrée : `AddDaily(services)` et `MapDaily
   - contient le `TrackRound` en cours ;
   - n'accepte une réponse que pour la position en cours, et refuse de déplacer le verrou (piège 35) ;
   - calcule le score par `IDailyScoringPolicy` ;
+  - construit sa `HintPolicy` à partir de ses réglages et vérifie au démarrage qu'elle ne propose pas plus de niveaux que le plus haut `IHintProvider` (sinon, un niveau accepté et pénalisé ne révélerait rien) ; le niveau d'indice relu de la session est borné à cette politique (revue de D1) ;
   - se termine seule quand elle a atteint le nombre **réel** de morceaux du défi (piège 38) ;
   - met à jour la série et les gels dans la même transaction, puis émet `DailySessionCompleted`.
 - `DailyStreak` : appelé directement par la complétion (pas par un message), avec les règles actuelles (jours manqués sur la date du défi, piège 18 ; gels ; plafond) ; la vue de série effective est calculée à la lecture.
@@ -561,7 +562,8 @@ Dans chaque domaine :
 - **data-access :** `DailyGameStore`, `DailyStreakStore`, `DailyStatsStore`, adaptateur `DailyApi`.
 - **feature :**
   - pages : accueil, reprise, partie, récap, « déjà joué » ;
-  - garde de sortie en cours de partie, synchronisation multi-onglets, soumission avec réessais (piège 32).
+  - garde de sortie en cours de partie, synchronisation multi-onglets, soumission avec réessais (piège 32) ;
+  - **le son ne démarre que sur un clic du joueur** : les navigateurs refusent un son sans geste, et Howler attend alors en silence, sans erreur (l'écran afficherait « lecture en cours » sans son). Le premier morceau est lancé par le clic « Commencer » ou « Reprendre » (la reprise après rechargement passe par l'écran de reprise), les suivants par « Piste suivante » ; jamais à l'arrivée sur la route, depuis un `effect` ni au retour de l'onglet au premier plan. Un E2E le vérifie. `provideGameplay()` se met dans les `providers` de la route Daily.
 - **ui :** gélule série, panneau série, cases de gels, égaliseur des scores, bouton de partage, toasts de gel. Déplacés depuis `shared/`, puisqu'ils n'existent que pour ce mode.
 
 ### 6.5 `account` et `admin`
