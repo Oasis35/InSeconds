@@ -99,3 +99,46 @@ FROM public."DataProtectionKeys";
 SELECT setval(pg_get_serial_sequence('infra.data_protection_keys', 'id'),
               COALESCE(max(id), 1), max(id) IS NOT NULL)
 FROM infra.data_protection_keys;
+
+-- ============================================================================================
+-- Catalogue (PR C2) : les morceaux du pool, identifiants compris (un défi ou une réponse les
+-- référencera). L'usage (LastUsedDate, UsageCount) n'est pas repris : il se recalcule depuis les
+-- défis, et sa vérification vient avec l'import de Daily.
+-- ============================================================================================
+
+-- Une année au-delà de la plage de la colonne v2 (smallint) ferait échouer l'insertion sans dire quel morceau.
+-- (Les années inférieures à 1 ne posent pas de problème : elles deviennent NULL, voir plus bas.)
+DO $$
+DECLARE
+    ids text;
+BEGIN
+    SELECT string_agg("Id"::text, ', ' ORDER BY "Id") INTO ids
+    FROM public."Tracks" WHERE "ReleaseYear" > 32767;
+    IF ids IS NOT NULL THEN
+        RAISE EXCEPTION 'Morceaux v1 dont l''année de sortie est hors limites, morceaux : %', ids;
+    END IF;
+END $$;
+
+-- Les tables d'un module qui référencent catalogue.tracks s'ajoutent à cette liste avec leur import.
+TRUNCATE catalogue.tracks RESTART IDENTITY;
+
+-- HasPreview vaut 1 (disponible) ou 2 (absent) : l'état « inconnu » n'existe pas en v1. Le rang Deezer et
+-- la date du dernier contrôle sont inconnus : la tâche catalogue-refresh les remplit la nuit suivante (en
+-- staging, où elle ne tourne pas, au bouton « Re-vérifier les previews »).
+-- Année inférieure à 1 (Deezer renvoie parfois « 0000-00-00 », que la v1 enregistrait en 0) : NULL, comme le
+-- client Deezer de la v2, pour que l'indice « année » n'affiche jamais 0.
+-- Désactivé sans date en v1 : la dernière modification, à défaut maintenant (la date de la désactivation
+-- n'a jamais été conservée, jamais une date inventée plus ancienne).
+INSERT INTO catalogue.tracks (id, deezer_track_id, artist, title, cover_hash, release_year, deezer_rank,
+    rank_updated_at, preview_status, preview_checked_at, disabled_at, created_at, updated_at)
+SELECT "Id", "DeezerTrackId", "Artist", "Title", "CoverHash",
+       CASE WHEN "ReleaseYear" >= 1 THEN "ReleaseYear" END, NULL,
+       NULL, CASE WHEN "HasPreview" THEN 1 ELSE 2 END, NULL,
+       CASE WHEN "IsDisabled" THEN COALESCE("UpdatedAt", now()) END,
+       "CreatedAt", "UpdatedAt"
+FROM public."Tracks";
+
+-- Identifiants tirés d'une séquence HiLo en v2 (lots de 10) : le prochain lot commence après le plus grand
+-- identifiant repris, sans quoi le premier morceau ajouté en v2 prendrait celui d'un morceau de la v1.
+SELECT setval('catalogue.tracks_hilo', COALESCE(max(id), 0) + 1, false)
+FROM catalogue.tracks;
