@@ -1,4 +1,4 @@
-import { hintLabelKey } from './hint-label';
+import { hintButtonKey, hintLabelKey } from './hint-label';
 import { foundSomething, RoundResult } from './round-result';
 
 describe('hintLabelKey', () => {
@@ -9,6 +9,16 @@ describe('hintLabelKey', () => {
     ['ArtistMasked', 'gameplay.hint.kind.artist'],
     ['decade', 'gameplay.hint.kind.other'],
   ])('%s → %s', (kind, key) => expect(hintLabelKey(kind)).toBe(key));
+});
+
+describe('hintButtonKey', () => {
+  it.each([
+    ['year', 'gameplay.hint.ask.year'],
+    ['ArtistMasked', 'gameplay.hint.ask.artist'],
+    ['decade', 'gameplay.hint.button'],
+    [null, 'gameplay.hint.button'],
+    [undefined, 'gameplay.hint.button'],
+  ])('%s → %s', (kind, key) => expect(hintButtonKey(kind)).toBe(key));
 });
 
 describe('foundSomething', () => {

@@ -34,6 +34,11 @@ export interface ListenPolicy {
 /** Quand chaque niveau d'indice se débloque : `unlockSeconds[0]` pour le niveau 1, etc. Vient des réglages du back. */
 export interface HintPolicy {
   readonly unlockSeconds: readonly number[];
+  /**
+   * Ce que révèle chaque niveau, quand le back le dit (`kinds[0]` pour le niveau 1, ex. `year`,
+   * `artistMasked`) : le bouton s'appelle alors « Indice année », « Indice artiste ». Sans lui, « Indice 1 ».
+   */
+  readonly kinds?: readonly (string | null)[];
 }
 
 /** Un indice révélé par le back : l'année, l'artiste masqué… Le front l'affiche, il n'en invente aucun. */
@@ -56,6 +61,12 @@ export interface RoundConfig {
   /** Le niveau d'indice déjà révélé (reprise). */
   readonly hintLevel?: number;
   readonly hintFacts?: readonly HintFact[];
+  /**
+   * Redonne une adresse d'extrait fraîche avant « Réessayer » : la signature des extraits Deezer
+   * expire (piège 14), recharger la même adresse retomberait en erreur. Sans elle, la même adresse
+   * est rechargée ; `null` ou un échec la gardent aussi.
+   */
+  readonly refreshPreviewUrl?: () => Promise<string | null>;
 }
 
 /** Ce que le mode envoie au serveur pour répondre. */
@@ -84,6 +95,8 @@ export interface TrackRound {
   readonly steps: readonly number[];
   readonly extendable: boolean;
   readonly hintUnlockSeconds: readonly number[];
+  /** Ce que révèle chaque niveau (`null` : inconnu). */
+  readonly hintKinds: readonly (string | null)[];
   readonly phase: RoundPhase;
   /** Le palier en cours (0 tant que le joueur n'a pas commencé à écouter). */
   readonly chosenSeconds: number;
@@ -111,6 +124,7 @@ export function createRound(config: RoundConfig): TrackRound {
     steps,
     extendable: config.listen.extendable,
     hintUnlockSeconds: config.hints.unlockSeconds,
+    hintKinds: config.hints.kinds ?? [],
     phase: hasPreview ? 'ready' : 'no-preview',
     chosenSeconds: 0,
     extended: false,
@@ -161,10 +175,6 @@ export function retryPlayback(round: TrackRound): TrackRound {
   return { ...round, phase: 'loading', autoStarted: true, chosenSeconds: round.chosenSeconds || round.steps[0] };
 }
 
-/**
- * Suit le lecteur. Un retour à `idle` ne change rien, et une erreur de lecture reste une erreur
- * jusqu'au « Réessayer » du joueur : jamais de boucle silencieuse (piège 33).
- */
 /** La phase de la manche pour chaque état du lecteur ; `idle` ne change rien. */
 const PHASE_OF_AUDIO: Readonly<Record<AudioStatus, RoundPhase | null>> = {
   idle: null,
@@ -175,6 +185,16 @@ const PHASE_OF_AUDIO: Readonly<Record<AudioStatus, RoundPhase | null>> = {
   error: 'audio-error',
 };
 
+/** Une adresse d'extrait fraîche (« Réessayer »), pendant le rechargement seulement. */
+export function replacePreviewUrl(round: TrackRound, previewUrl: string): TrackRound {
+  if (round.phase !== 'loading' || !previewUrl || previewUrl === round.previewUrl) return round;
+  return { ...round, previewUrl };
+}
+
+/**
+ * Suit le lecteur. Un retour à `idle` ne change rien, et une erreur de lecture reste une erreur
+ * jusqu'au « Réessayer » du joueur : jamais de boucle silencieuse (piège 33).
+ */
 export function onAudio(round: TrackRound, audio: AudioStatus): TrackRound {
   if (!isAnswering(round)) return round;
   const phase = PHASE_OF_AUDIO[audio];
@@ -188,11 +208,15 @@ export function unlockedHintLevel(round: TrackRound): number {
   return round.hintUnlockSeconds.filter(seconds => round.chosenSeconds >= seconds).length;
 }
 
-/** Le niveau qu'on peut demander : le suivant, une fois débloqué (le 1, puis seulement le 2). */
+/**
+ * Les niveaux qu'on peut demander : tous ceux débloqués au-dessus du niveau déjà révélé, comme en
+ * v1 (à 10 s, « Indice année » et « Indice artiste » ensemble ; le niveau 2 révèle aussi l'année).
+ */
 export function availableHintLevels(round: TrackRound): number[] {
   if (!isAnswering(round)) return [];
-  const next = round.hintLevel + 1;
-  return next <= unlockedHintLevel(round) ? [next] : [];
+  const levels: number[] = [];
+  for (let level = round.hintLevel + 1; level <= unlockedHintLevel(round); level++) levels.push(level);
+  return levels;
 }
 
 /** Le back a révélé jusqu'à ce niveau, avec ces indices (cumulés). Le niveau ne redescend jamais. */

@@ -265,14 +265,14 @@ describe('TrackRoundComponent', () => {
   });
 
   describe('indices', () => {
-    it('proposent le niveau à demander (le 1, puis le 2) et relaient la demande au mode', () => {
-      start();
+    it('proposent les niveaux débloqués, nommés d\'après le back, et relaient la demande au mode', () => {
+      start({ hints: { unlockSeconds: [5, 10], kinds: ['year', 'artistMasked'] } });
       for (let i = 0; i < 4; i++) store.listenMore(); // 0,5 → 1 → 2 → 5 → 10 s
       emit('playing');
 
-      expect(element.querySelectorAll('[data-testid="hints"] button')).toHaveLength(1);
-      button('gameplay.hint.button')!.click();
-      expect(fixture.componentInstance.hints).toEqual([1]);
+      expect(element.querySelectorAll('[data-testid="hints"] button')).toHaveLength(2);
+      button('gameplay.hint.ask.artist')!.click();
+      expect(fixture.componentInstance.hints).toEqual([2]);
     });
 
     it('montrent ce que le back révèle', () => {

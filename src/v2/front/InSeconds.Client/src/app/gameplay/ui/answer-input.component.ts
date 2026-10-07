@@ -12,6 +12,8 @@ import { AnswerSuggestion } from '../domain/answer';
   selector: 'app-answer-input',
   imports: [TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // Bloc, pas en ligne : sinon l'espacement du formulaire parent (`space-y-3`) ne s'applique pas.
+  host: { class: 'block' },
   template: `
     <div class="relative">
       <input type="text" name="answer" autocomplete="off" role="combobox" aria-autocomplete="list"
@@ -20,9 +22,7 @@ import { AnswerSuggestion } from '../domain/answer';
         [attr.aria-label]="'gameplay.answer.placeholder' | translate"
         (input)="queryChange.emit($any($event.target).value)"
         (focus)="focused.emit()" (blur)="blurred.emit()" (keydown)="onKeydown($event)"
-        class="w-full pl-4 py-3.5 rounded-xl text-sm transition"
-        [style.paddingRight]="query() ? '2.5rem' : '1rem'"
-        style="background:var(--bg-surface);color:var(--text-body);border:1px solid var(--border-strong);outline:none" />
+        class="app-input" [style.paddingRight]="query() ? '2.5rem' : '1rem'" />
 
       @if (query()) {
         <button type="button" (mousedown)="onClear($event)" [title]="'gameplay.answer.clear' | translate"
@@ -31,8 +31,9 @@ import { AnswerSuggestion } from '../domain/answer';
       }
 
       @if (suggestions().length > 0) {
+        <!-- fond opaque : la liste passe par-dessus « Valider » et « Passer » -->
         <ul role="listbox" class="absolute z-10 w-full mt-1 rounded-xl overflow-hidden shadow-2xl"
-          style="background:var(--bg-surface);border:1px solid var(--border-strong)">
+          style="background:var(--bg-surface-2);border:1px solid var(--border-strong)">
           @for (suggestion of suggestions(); track suggestion.artist + ' — ' + suggestion.title; let i = $index) {
             <li role="option" [attr.aria-selected]="i === highlighted()"
               (mousedown)="onPick($event, suggestion)" (mouseenter)="highlight.emit(i)"

@@ -30,6 +30,11 @@ describe('HintPanelComponent', () => {
     expect(requested).toHaveBeenCalledWith(2);
   });
 
+  it('nomme le bouton d\'après ce que révèle le niveau, sinon par son numéro', () => {
+    const labels = render({ levels: [1, 2, 3], kinds: ['year', 'artistMasked'] }).buttons().map(b => b.textContent!.trim());
+    expect(labels).toEqual(['gameplay.hint.ask.year', 'gameplay.hint.ask.artist', 'gameplay.hint.button']);
+  });
+
   it('prévient que chaque indice coûte des points', () => {
     expect(render({ levels: [1] }).element.textContent).toContain('gameplay.hint.costWarning');
   });

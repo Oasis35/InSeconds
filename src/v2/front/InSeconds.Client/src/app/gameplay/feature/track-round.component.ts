@@ -35,7 +35,7 @@ import { RoundPlayerComponent } from '../ui/round-player.component';
 
         @if (round.showsInput()) {
           <form (submit)="onSubmit($event)" class="space-y-3">
-            <app-hint-panel [levels]="round.availableHintLevels()" [hints]="round.hints()" [pending]="hintPending()"
+            <app-hint-panel [levels]="round.availableHintLevels()" [kinds]="round.hintKinds()" [hints]="round.hints()" [pending]="hintPending()"
               (request)="hintRequested.emit($event)" />
 
             <app-answer-input [query]="search.query()" [suggestions]="search.visibleSuggestions()" [highlighted]="search.highlighted()"

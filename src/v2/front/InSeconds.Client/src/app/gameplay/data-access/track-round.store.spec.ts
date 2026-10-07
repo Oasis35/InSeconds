@@ -105,6 +105,21 @@ describe('TrackRoundStore', () => {
       expect(store.nextStep()).toBe(2);
     });
 
+    it('suit le lecteur qui ne repart pas (extrait déjà joué jusqu\'au bout) : jamais bloquée « en lecture »', () => {
+      listenedTo(1);
+      expect(store.phase()).toBe('listened');
+      store.listenMore(); // le faux lecteur reste `finished`, comme Howler quand l'extrait est fini
+      expect(audio.calls.at(-1)).toBe('playUntil 2');
+      expect(store.phase()).toBe('listened');
+    });
+
+    it('après un palier joué, passe en lecture quand le lecteur repart', () => {
+      listenedTo(1);
+      store.listenMore();
+      emit('playing');
+      expect(store.phase()).toBe('playing');
+    });
+
     it('marche pendant le chargement : le lecteur garde le dernier palier demandé (piège 40)', () => {
       store.start(CONFIG);
       store.listenMore();
@@ -175,6 +190,38 @@ describe('TrackRoundStore', () => {
       expect(audio.calls).toEqual([`load ${URL} next ${NEXT}`, 'playUntil 1']);
       expect(store.phase()).toBe('loading');
       expect(store.wasExtended()).toBe(true);
+    });
+
+    it('« Réessayer » recharge depuis une adresse fraîche quand le mode sait la redemander (piège 14)', async () => {
+      const refresh = vi.fn(() => Promise.resolve('https://cdn.example/frais.mp3'));
+      store.start({ ...CONFIG, refreshPreviewUrl: refresh });
+      emit('error');
+      audio.calls.length = 0;
+
+      store.retryPlayback();
+      expect(store.phase()).toBe('loading');
+
+      await vi.waitFor(() => expect(audio.calls).toEqual(['load https://cdn.example/frais.mp3', 'playUntil 0.5']));
+      expect(refresh).toHaveBeenCalledTimes(1);
+    });
+
+    it('« Réessayer » garde l\'adresse quand la redemande échoue, et ne relance rien si la manche est finie entre-temps', async () => {
+      store.start({ ...CONFIG, refreshPreviewUrl: () => Promise.reject(new Error('réseau')) });
+      emit('error');
+      audio.calls.length = 0;
+      store.retryPlayback();
+      await vi.waitFor(() => expect(audio.calls).toEqual([`load ${URL}`, 'playUntil 0.5']));
+
+      let resolve!: (url: string) => void;
+      store.start({ ...CONFIG, refreshPreviewUrl: () => new Promise<string>(r => (resolve = r)) });
+      emit('error');
+      store.retryPlayback();
+      store.reset();
+      audio.calls.length = 0;
+      resolve('https://cdn.example/frais.mp3');
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(audio.calls).toEqual([]);
     });
 
     it('« Passer » garde le palier déjà annoncé', () => {

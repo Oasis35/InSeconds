@@ -9,3 +9,14 @@ export function hintLabelKey(kind: string): string {
   if (normalized.includes('artist')) return 'gameplay.hint.kind.artist';
   return 'gameplay.hint.kind.other';
 }
+
+/**
+ * Le bouton qui demande un niveau : « Indice année », « Indice artiste » quand le back dit ce que le
+ * niveau révèle, sinon « Indice 1 », « Indice 2 » (clé `gameplay.hint.button`, avec `level`).
+ */
+export function hintButtonKey(kind: string | null | undefined): string {
+  const label = kind ? hintLabelKey(kind) : null;
+  if (label === 'gameplay.hint.kind.year') return 'gameplay.hint.ask.year';
+  if (label === 'gameplay.hint.kind.artist') return 'gameplay.hint.ask.artist';
+  return 'gameplay.hint.button';
+}

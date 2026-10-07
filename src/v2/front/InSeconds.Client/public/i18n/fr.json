@@ -94,6 +94,10 @@
       "costWarning": "Chaque indice révélé impacte les points du tour",
       "tooltip": "Indice — coûte des points",
       "button": "Indice {{ level }}",
+      "ask": {
+        "year": "Indice année",
+        "artist": "Indice artiste"
+      },
       "kind": {
         "year": "Année",
         "artist": "Artiste",

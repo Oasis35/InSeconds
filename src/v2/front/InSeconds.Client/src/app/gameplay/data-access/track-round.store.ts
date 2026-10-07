@@ -2,7 +2,7 @@ import { DestroyRef, computed, effect, inject, untracked } from '@angular/core';
 import { patchState, signalStore, signalStoreFeature, withComputed, withHooks, withMethods, withState } from '@ngrx/signals';
 import {
   HintFact, RoundAnswer, RoundConfig, RoundSubmission, TrackRound, applyHints, askSkip, availableHintLevels, beginListening,
-  cancelConfirm, confirmPending, createRound, listenMore, maxStep, nextStep, onAudio, retryPlayback, retrySubmission, reveal,
+  cancelConfirm, confirmPending, createRound, listenMore, maxStep, nextStep, onAudio, replacePreviewUrl, retryPlayback, retrySubmission, reveal,
   showsInput, skipUnplayable, submissionFailed, submitAnswer,
 } from '../domain/track-round';
 import { AudioPort } from './audio.port';
@@ -34,6 +34,8 @@ export function withTrackRound() {
       showsInput: computed(() => { const r = round(); return r ? showsInput(r) : false; }),
       hintLevel: computed(() => round()?.hintLevel ?? 0),
       hints: computed<readonly HintFact[]>(() => round()?.hints ?? []),
+      /** Ce que révèle chaque niveau, quand le back le dit (libellé des boutons). */
+      hintKinds: computed<readonly (string | null)[]>(() => round()?.hintKinds ?? []),
       availableHintLevels: computed(() => { const r = round(); return r ? availableHintLevels(r) : []; }),
       pendingConfirm: computed(() => round()?.confirm ?? null),
       submission: computed(() => round()?.submission ?? null),
@@ -43,6 +45,8 @@ export function withTrackRound() {
     withMethods((store, audio = inject(AudioPort)) => {
       /** L'extrait suivant, chargé en arrière-plan : le seul autre son gardé en mémoire. */
       let nextPreviewUrl: string | null = null;
+      /** Le mode qui sait redemander une adresse d'extrait (signature expirée), pour « Réessayer ». */
+      let refreshPreviewUrl: RoundConfig['refreshPreviewUrl'];
 
       const set = (round: TrackRound | null) => patchState(store, { round });
       /** Applique une transition ; rend la manche avant et après si elle a changé. */
@@ -67,6 +71,7 @@ export function withTrackRound() {
         start(config: RoundConfig, nextUrl: string | null = null): void {
           audio.stop();
           nextPreviewUrl = nextUrl;
+          refreshPreviewUrl = config.refreshPreviewUrl;
           const created = createRound(config);
           const started = beginListening(created);
           set(started);
@@ -76,7 +81,11 @@ export function withTrackRound() {
         /** « Écouter plus » : le palier suivant, pendant le chargement ou l'écoute comme après. */
         listenMore(): void {
           const changed = apply(listenMore);
-          if (changed) audio.playUntil(changed.after.chosenSeconds);
+          if (!changed) return;
+          audio.playUntil(changed.after.chosenSeconds);
+          // Un lecteur qui ne change pas d'état (extrait déjà joué jusqu'au bout : il reste `finished`)
+          // ne réveille pas l'effet : la manche se recale sur lui, sinon elle resterait « en lecture ».
+          apply(round => onAudio(round, audio.state()));
         },
 
         /** ↺ : rejoue le palier en cours depuis le début, sans toucher à `wasExtended` (piège 40). */
@@ -85,10 +94,28 @@ export function withTrackRound() {
           if (round && (round.phase === 'playing' || round.phase === 'listened')) audio.replay(round.chosenSeconds);
         },
 
-        /** « Réessayer » après un échec de lecture : recharge l'extrait et repart au palier choisi. */
+        /**
+         * « Réessayer » après un échec de lecture : recharge l'extrait et repart au palier choisi. Si
+         * le mode sait redemander l'adresse (`refreshPreviewUrl`), l'extrait est rechargé depuis une
+         * adresse fraîche (piège 14) ; sinon depuis la même.
+         */
         retryPlayback(): void {
           const changed = apply(retryPlayback);
-          if (changed) launch(changed.after);
+          if (!changed) return;
+          const refresh = refreshPreviewUrl;
+          if (!refresh) {
+            launch(changed.after);
+            return;
+          }
+          const trackId = changed.after.trackId;
+          void refresh().catch(() => null).then(url => {
+            const round = store.round();
+            // le joueur est passé à autre chose entre-temps (passé le morceau, morceau suivant)
+            if (round?.trackId !== trackId || round.phase !== 'loading') return;
+            const fresh = url ? replacePreviewUrl(round, url) : round;
+            set(fresh);
+            launch(fresh);
+          });
         },
 
         askSkip: (): void => {

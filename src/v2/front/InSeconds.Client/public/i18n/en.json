@@ -94,6 +94,10 @@
       "costWarning": "Every hint revealed costs points this round",
       "tooltip": "Hint — costs points",
       "button": "Hint {{ level }}",
+      "ask": {
+        "year": "Year hint",
+        "artist": "Artist hint"
+      },
       "kind": {
         "year": "Year",
         "artist": "Artist",

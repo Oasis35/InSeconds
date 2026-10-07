@@ -1,6 +1,6 @@
 import {
   RoundConfig, TrackRound, applyHints, askSkip, availableHintLevels, beginListening, cancelConfirm, confirmPending,
-  createRound, isAnswering, listenMore, maxStep, nextStep, onAudio, retryPlayback, retrySubmission, reveal, showsInput,
+  createRound, isAnswering, listenMore, maxStep, nextStep, onAudio, replacePreviewUrl, retryPlayback, retrySubmission, reveal, showsInput,
   skipUnplayable, submissionFailed, submitAnswer, unlockedHintLevel,
 } from './track-round';
 
@@ -167,6 +167,16 @@ describe('listenMore', () => {
   });
 });
 
+describe('replacePreviewUrl', () => {
+  it('prend l\'adresse fraîche pendant le rechargement, jamais ailleurs', () => {
+    const reloading = retryPlayback(onAudio(started(), 'error'));
+    expect(replacePreviewUrl(reloading, 'https://cdn/frais.mp3').previewUrl).toBe('https://cdn/frais.mp3');
+    const failed = onAudio(started(), 'error');
+    expect(replacePreviewUrl(failed, 'https://cdn/frais.mp3')).toBe(failed);
+    expect(replacePreviewUrl(reloading, '')).toBe(reloading);
+  });
+});
+
 describe('retryPlayback', () => {
   it('repart au palier choisi', () => {
     const failed = onAudio(listenMore(playing(started())), 'error');
@@ -195,13 +205,17 @@ describe('indices', () => {
     expect(unlockedHintLevel(at(10))).toBe(2);
   });
 
-  it('se demandent dans cet ordre : le 1, puis seulement le 2', () => {
+  it('tous les niveaux débloqués se proposent ensemble, comme en v1 (le 2 sans passer par le 1)', () => {
     expect(availableHintLevels(at(2))).toEqual([]);
     expect(availableHintLevels(at(5))).toEqual([1]);
-    // le palier du niveau 2 est atteint, mais le niveau 1 n'a pas été demandé
-    expect(availableHintLevels(at(10))).toEqual([1]);
+    expect(availableHintLevels(at(10))).toEqual([1, 2]);
     const first = applyHints(at(10), 1, [{ kind: 'year', value: '2013' }]);
     expect(availableHintLevels(first)).toEqual([2]);
+  });
+
+  it('garde ce que révèle chaque niveau, quand le back le dit', () => {
+    expect(started({ hints: { unlockSeconds: [5, 10], kinds: ['year', 'artistMasked'] } }).hintKinds).toEqual(['year', 'artistMasked']);
+    expect(at(5).hintKinds).toEqual([]);
   });
 
   it('le niveau suivant attend son palier', () => {
@@ -213,7 +227,7 @@ describe('indices', () => {
   it('le nombre de niveaux suit le réglage, jamais une liste en dur', () => {
     const r = started({ hints: { unlockSeconds: [1, 2, 5] } });
     const longer = listenMore(listenMore(listenMore(r))); // 5 s
-    expect(availableHintLevels(longer)).toEqual([1]);
+    expect(availableHintLevels(longer)).toEqual([1, 2, 3]);
     expect(availableHintLevels(applyHints(longer, 2, []))).toEqual([3]);
     expect(availableHintLevels(started({ hints: { unlockSeconds: [] } }))).toEqual([]);
   });
