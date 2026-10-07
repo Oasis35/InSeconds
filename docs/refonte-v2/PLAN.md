@@ -342,6 +342,7 @@ Chaque module expose un seul point d'entrée : `AddDaily(services)` et `MapDaily
   - contient le `TrackRound` en cours ;
   - n'accepte une réponse que pour la position en cours, et refuse de déplacer le verrou (piège 35) ;
   - calcule le score par `IDailyScoringPolicy` ;
+  - construit sa `HintPolicy` à partir de ses réglages et vérifie au démarrage qu'elle ne propose pas plus de niveaux que le plus haut `IHintProvider` (sinon, un niveau accepté et pénalisé ne révélerait rien) ; le niveau d'indice relu de la session est borné à cette politique (revue de D1) ;
   - se termine seule quand elle a atteint le nombre **réel** de morceaux du défi (piège 38) ;
   - met à jour la série et les gels dans la même transaction, puis émet `DailySessionCompleted`.
 - `DailyStreak` : appelé directement par la complétion (pas par un message), avec les règles actuelles (jours manqués sur la date du défi, piège 18 ; gels ; plafond) ; la vue de série effective est calculée à la lecture.
