@@ -41,8 +41,15 @@ describe('VersionService', () => {
     expect(service.updateAvailable()).toBe(true);
   });
 
+  it('vérifie dès le démarrage s\'il existe une nouvelle version', () => {
+    create();
+
+    expect(checkForUpdate).toHaveBeenCalledTimes(1);
+  });
+
   it('vérifie s\'il existe une nouvelle version quand l\'onglet revient au premier plan', () => {
     create();
+    checkForUpdate.mockClear();
 
     document.dispatchEvent(new Event('visibilitychange'));
 
