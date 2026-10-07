@@ -22,6 +22,7 @@ public static class CatalogueModule
         services.AddScoped<ICatalogueStore, EfCatalogueStore>();
         services.AddScoped<ICatalogueQueries, EfCatalogueQueries>();
         services.AddScoped<ITrackDirectory, EfTrackDirectory>();
+        services.AddScoped<ITrackPreviews, DeezerTrackPreviews>();
         // Aucun usage tant que Daily n'existe pas (E) : TryAdd, Daily enregistre sa propre implémentation.
         services.TryAddScoped<ITrackUsage, NoTrackUsage>();
         services.AddScheduledJob<RefreshPreviewsJob>(RefreshPreviewsJob.Id, RefreshPreviewsJob.DefaultCron);

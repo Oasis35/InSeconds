@@ -169,6 +169,36 @@ public class CatalogueImportTests(ImportDatabase database)
     }
 
     [Fact]
+    public async Task Rejouable_AvecDesPartiesJoueesSurLeStaging_LesPartiesLesReponsesEtLesSeriesSontEffacees()
+    {
+        // Sur le staging, des joueurs jouent (E2) : leurs parties référencent les joueurs et les défis, que l'import vide
+        // (PostgreSQL refuse de vider une table référencée par une clé étrangère). Le premier import ne contient aucune partie.
+        var cs = await database.CreateDatabaseAsync();
+        await V1Data.InsertTracksAsync(cs, new V1Track(1, 1), new V1Track(2, 2));
+        Assert.Equal(0, (await database.RunImportAsync(cs)).ExitCode);
+        await ImportDatabase.ExecuteAsync(cs, """
+            INSERT INTO players.players (id, created_at) VALUES ('11111111-1111-1111-1111-111111111111', now());
+            INSERT INTO daily.challenges (id, date, seed, origin) VALUES (1, '2026-10-05', 1, 1);
+            INSERT INTO daily.challenge_tracks (challenge_id, position, track_id) VALUES (1, 1, 1), (1, 2, 2);
+            INSERT INTO daily.sessions (id, player_id, challenge_id, status, started_at, total_score, total_listened_seconds)
+                VALUES (1, '11111111-1111-1111-1111-111111111111', 1, 1, now(), 850, 1);
+            INSERT INTO daily.answers (session_id, position, listened_seconds, was_extended, hint_level, artist_correct, title_correct, score)
+                VALUES (1, 1, 1, false, 0, true, true, 850);
+            INSERT INTO daily.streaks (player_id, current_streak, freezes)
+                VALUES ('11111111-1111-1111-1111-111111111111', 1, 0);
+            """);
+
+        var second = await database.RunImportAsync(cs);
+
+        Assert.True(second.ExitCode == 0, second.Output);
+        Assert.Equal(0L, await Count(cs, "daily.sessions"));
+        Assert.Equal(0L, await Count(cs, "daily.answers"));
+        Assert.Equal(0L, await Count(cs, "daily.streaks"));
+        Assert.Equal(0L, await Count(cs, "players.players"));
+        Assert.Equal(2L, await Count(cs, "catalogue.tracks"));
+    }
+
+    [Fact]
     public async Task AnneeHorsLimites_ImportRefuse_RienNEstGarde()
     {
         var cs = await database.CreateDatabaseAsync();

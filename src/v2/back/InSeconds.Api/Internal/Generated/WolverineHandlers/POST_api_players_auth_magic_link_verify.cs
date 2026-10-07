@@ -54,16 +54,17 @@ namespace Internal.Generated.WolverineHandlers
 
         public override async System.Threading.Tasks.Task Handle(Microsoft.AspNetCore.Http.HttpContext httpContext)
         {
-            var streakGrantsNotYetImplemented = new InSeconds.Api.Modules.Daily.StreakGrantsNotYetImplemented();
-            var playerSignIn = new InSeconds.Api.Infrastructure.Auth.PlayerSignIn(_httpContextAccessor2);
-            var claimsCurrentPlayer = new InSeconds.Api.Infrastructure.Auth.ClaimsCurrentPlayer(_httpContextAccessor1);
             var messageContext = new Wolverine.Runtime.MessageContext(_wolverineRuntime);
             await using var serviceScope = _serviceScopeFactory.CreateAsyncScope();
             Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Wolverine.Runtime.ScopedMessageContextHolder>(serviceScope.ServiceProvider).Context = messageContext;
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var inSecondsDbContext = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>(serviceScope.ServiceProvider);
+            var efDailyStore = new InSeconds.Api.Modules.Daily.Persistence.EfDailyStore(inSecondsDbContext);
+            var dailyStreakGrants = new InSeconds.Api.Modules.Daily.Application.DailyStreakGrants(efDailyStore);
+            var playerSignIn = new InSeconds.Api.Infrastructure.Auth.PlayerSignIn(_httpContextAccessor2);
+            var claimsCurrentPlayer = new InSeconds.Api.Infrastructure.Auth.ClaimsCurrentPlayer(_httpContextAccessor1);
             var efPlayerStore = new InSeconds.Api.Modules.Players.Persistence.EfPlayerStore(inSecondsDbContext);
-            var accountSignIn = new InSeconds.Api.Modules.Players.Application.AccountSignIn(efPlayerStore, claimsCurrentPlayer, playerSignIn, streakGrantsNotYetImplemented, _deviceSessionValidationCache, _httpContextAccessor3, _timeProvider);
+            var accountSignIn = new InSeconds.Api.Modules.Players.Application.AccountSignIn(efPlayerStore, claimsCurrentPlayer, playerSignIn, dailyStreakGrants, _deviceSessionValidationCache, _httpContextAccessor3, _timeProvider);
             // Reading the request body via JSON deserialization
             var (request, jsonContinue) = await ReadJsonAsync<InSeconds.Api.Modules.Players.Application.VerifyMagicLink>(httpContext);
             if (jsonContinue == Wolverine.HandlerContinuation.Stop) return;

@@ -8,6 +8,8 @@ public sealed class YearHint : IHintProvider
 {
     public int Level => 1;
 
+    public HintKind Kind => HintKind.Year;
+
     public HintFact Reveal(HintSubject subject)
     {
         ArgumentNullException.ThrowIfNull(subject);
@@ -23,6 +25,8 @@ public sealed class YearHint : IHintProvider
 public sealed class HangmanArtistHint : IHintProvider
 {
     public int Level => 2;
+
+    public HintKind Kind => HintKind.ArtistMasked;
 
     public HintFact Reveal(HintSubject subject)
     {
