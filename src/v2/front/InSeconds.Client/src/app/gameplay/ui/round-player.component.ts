@@ -123,7 +123,10 @@ export class RoundPlayerComponent {
   protected readonly filled = computed(() => {
     const max = this.maxStep();
     if (max <= 0) return 0;
-    const seconds = this.phase() === 'playing' ? this.position() : this.phase() === 'loading' ? 0 : this.chosenSeconds();
+    const phase = this.phase();
+    let seconds = this.chosenSeconds();
+    if (phase === 'playing') seconds = this.position();
+    else if (phase === 'loading') seconds = 0;
     return Math.min(100, (seconds / max) * 100);
   });
 }

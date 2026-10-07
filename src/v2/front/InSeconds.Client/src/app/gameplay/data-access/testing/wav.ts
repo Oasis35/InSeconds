@@ -7,7 +7,7 @@ export function makeToneUrl(seconds: number): string {
   const samples = Math.round(seconds * sampleRate);
   const buffer = new ArrayBuffer(44 + samples * 2);
   const view = new DataView(buffer);
-  const write = (offset: number, text: string) => [...text].forEach((c, i) => view.setUint8(offset + i, c.charCodeAt(0)));
+  const write = (offset: number, text: string) => [...text].forEach((c, i) => view.setUint8(offset + i, c.codePointAt(0)!));
 
   write(0, 'RIFF');
   view.setUint32(4, 36 + samples * 2, true);

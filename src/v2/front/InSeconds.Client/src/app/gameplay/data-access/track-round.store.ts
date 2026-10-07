@@ -91,8 +91,12 @@ export function withTrackRound() {
           if (changed) launch(changed.after);
         },
 
-        askSkip: (): void => void apply(askSkip),
-        cancelConfirm: (): void => void apply(cancelConfirm),
+        askSkip: (): void => {
+          apply(askSkip);
+        },
+        cancelConfirm: (): void => {
+          apply(cancelConfirm);
+        },
 
         /** Valide la saisie ; une saisie vide demande confirmation (`pendingConfirm`) et ne rend rien. */
         submit: (answer: RoundAnswer): RoundSubmission | null => submissionOf(apply(round => submitAnswer(round, answer))),
@@ -103,7 +107,9 @@ export function withTrackRound() {
         /** Passe un morceau sans extrait ou dont la lecture a échoué, sans confirmation. */
         skipUnplayable: (): RoundSubmission | null => submissionOf(apply(skipUnplayable)),
 
-        submissionFailed: (): void => void apply(submissionFailed),
+        submissionFailed: (): void => {
+          apply(submissionFailed);
+        },
 
         /** « Réessayer » après un échec d'envoi : la même réponse repart. */
         retrySubmission: (): RoundSubmission | null => submissionOf(apply(retrySubmission)),
@@ -115,7 +121,9 @@ export function withTrackRound() {
         },
 
         /** Le back a révélé jusqu'à ce niveau, avec ces indices cumulés. */
-        applyHints: (level: number, facts: readonly HintFact[]): void => void apply(round => applyHints(round, level, facts)),
+        applyHints: (level: number, facts: readonly HintFact[]): void => {
+          apply(round => applyHints(round, level, facts));
+        },
 
         /** Fin de la manche : coupe le son et oublie le morceau. */
         reset(): void {

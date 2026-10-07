@@ -97,7 +97,7 @@ export interface TrackRound {
 }
 
 /** Phases où la saisie est affichée : le joueur peut répondre dès que le son se charge. */
-const ANSWERING: readonly RoundPhase[] = ['loading', 'playing', 'listened'];
+const ANSWERING: ReadonlySet<RoundPhase> = new Set<RoundPhase>(['loading', 'playing', 'listened']);
 
 export function createRound(config: RoundConfig): TrackRound {
   const floor = config.listenedFloor ?? null;
@@ -124,7 +124,7 @@ export function createRound(config: RoundConfig): TrackRound {
 
 // --- lecture ---
 
-export const isAnswering = (round: TrackRound): boolean => ANSWERING.includes(round.phase);
+export const isAnswering = (round: TrackRound): boolean => ANSWERING.has(round.phase);
 
 /** La saisie est visible : pendant l'écoute, jusqu'à la réponse envoyée (et si l'envoi échoue). */
 export const showsInput = (round: TrackRound): boolean =>
@@ -165,14 +165,19 @@ export function retryPlayback(round: TrackRound): TrackRound {
  * Suit le lecteur. Un retour à `idle` ne change rien, et une erreur de lecture reste une erreur
  * jusqu'au « Réessayer » du joueur : jamais de boucle silencieuse (piège 33).
  */
+/** La phase de la manche pour chaque état du lecteur ; `idle` ne change rien. */
+const PHASE_OF_AUDIO: Readonly<Record<AudioStatus, RoundPhase | null>> = {
+  idle: null,
+  loading: 'loading',
+  ready: 'loading',
+  playing: 'playing',
+  finished: 'listened',
+  error: 'audio-error',
+};
+
 export function onAudio(round: TrackRound, audio: AudioStatus): TrackRound {
   if (!isAnswering(round)) return round;
-  const phase: RoundPhase | null =
-    audio === 'loading' || audio === 'ready' ? 'loading'
-    : audio === 'playing' ? 'playing'
-    : audio === 'finished' ? 'listened'
-    : audio === 'error' ? 'audio-error'
-    : null;
+  const phase = PHASE_OF_AUDIO[audio];
   return phase === null || phase === round.phase ? round : { ...round, phase };
 }
 
