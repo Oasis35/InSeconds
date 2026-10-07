@@ -19,13 +19,18 @@ public sealed record HintLevelInfo(int Level, decimal UnlockSeconds, HintKind Ki
 
 /// <summary>
 /// Les règles du défi du jour, lues **à chaque appel** dans les réglages (relus à chaud) : paliers, barème, indices, gels. La politique
-/// d'indices ne propose jamais plus de niveaux que le plus haut <see cref="IHintProvider"/> enregistré (sinon un niveau serait accepté,
-/// et pénalisé, sans rien révéler de plus) : le démarrage échoue si les réglages en demandent davantage
+/// d'indices ne propose jamais plus de niveaux que les <see cref="IHintProvider"/> n'en révèlent sans trou depuis le niveau 1 (sinon un
+/// niveau serait accepté, et pénalisé, sans rien révéler de plus) : le démarrage échoue si les réglages en demandent davantage
 /// (<see cref="DailyOptionsStartupCheck"/>), et un réglage changé à chaud vers trop de niveaux est borné ici, avec une erreur au journal.
 /// </summary>
 public sealed class DailyRules(IOptionsMonitor<DailyOptions> options, IEnumerable<IHintProvider> hintProviders, ILogger<DailyRules> logger)
 {
     private readonly IReadOnlyList<IHintProvider> _providers = hintProviders.OrderBy(p => p.Level).ToList();
+
+    // Le dernier réglage incohérent signalé, par problème : une même valeur n'est journalisée qu'une fois (les règles sont lues plusieurs
+    // fois par requête), et de nouveau si elle change ou revient après avoir été corrigée.
+    private string? _reportedInvalidThresholds;
+    private string? _reportedLevelsBeyondProviders;
 
     public DailyOptions Options => options.CurrentValue;
 
@@ -41,8 +46,11 @@ public sealed class DailyRules(IOptionsMonitor<DailyOptions> options, IEnumerabl
     public IDailyScoringPolicy Scoring =>
         new DurationScoringPolicy(Options.EffectiveDurationScores, Options.EffectiveHintPenaltyPercent);
 
-    /// <summary>Le niveau d'indice le plus haut qu'un fournisseur révèle.</summary>
-    public int MaxHintLevel => _providers.Count == 0 ? 0 : _providers.Max(p => p.Level);
+    /// <summary>
+    /// Le nombre de niveaux d'indice révélés **sans trou depuis le niveau 1** : un niveau sans fournisseur arrête la politique (un
+    /// fournisseur de niveau 3 sans niveau 2 n'est jamais proposé).
+    /// </summary>
+    public int MaxHintLevel { get; } = ContiguousLevels(hintProviders);
 
     public HintPolicy Hints => new(HintLevels.Select(l => l.UnlockSeconds));
 
@@ -51,11 +59,11 @@ public sealed class DailyRules(IOptionsMonitor<DailyOptions> options, IEnumerabl
         get
         {
             var thresholds = ValidThresholds(Options.EffectiveHintUnlockDurationsSeconds);
-            if (thresholds.Count > MaxHintLevel)
-            {
+            var beyond = thresholds.Count > MaxHintLevel;
+            if (ReportOnce(ref _reportedLevelsBeyondProviders, beyond ? $"{thresholds.Count}/{MaxHintLevel}" : null))
                 DailyLog.HintLevelsBeyondProviders(logger, thresholds.Count, MaxHintLevel);
+            if (beyond)
                 thresholds = thresholds.Take(MaxHintLevel).ToList();
-            }
 
             var penalties = Options.EffectiveHintPenaltyPercent;
             return thresholds.Select((seconds, i) =>
@@ -68,15 +76,30 @@ public sealed class DailyRules(IOptionsMonitor<DailyOptions> options, IEnumerabl
 
     private HintKind KindOf(int level) => _providers.First(p => p.Level == level).Kind;
 
+    private static int ContiguousLevels(IEnumerable<IHintProvider> providers)
+    {
+        var levels = providers.Select(p => p.Level).ToHashSet();
+        var count = 0;
+        while (levels.Contains(count + 1))
+            count++;
+        return count;
+    }
+
     // Des seuils incohérents (non croissants) ne doivent pas faire échouer chaque demande d'indice : ceux de la v1 les remplacent.
     private IReadOnlyList<decimal> ValidThresholds(IReadOnlyList<decimal> configured)
     {
-        if (DailyOptionsChecks.HintThresholdsAreValid(configured))
-            return configured;
-
-        DailyLog.InvalidHintThresholds(logger);
-        return DailyOptions.DefaultHintUnlockDurationsSeconds;
+        var valid = DailyOptionsChecks.HintThresholdsAreValid(configured);
+        if (ReportOnce(ref _reportedInvalidThresholds, valid ? null : string.Join(';', configured)))
+            DailyLog.InvalidHintThresholds(logger);
+        return valid ? configured : DailyOptions.DefaultHintUnlockDurationsSeconds;
     }
+
+    /// <summary>
+    /// Vrai si ce problème (vide : aucun) est nouveau et doit être journalisé. Un problème réglé efface la mémoire : s'il revient, il est
+    /// de nouveau signalé.
+    /// </summary>
+    private static bool ReportOnce(ref string? reported, string? problem) =>
+        Interlocked.Exchange(ref reported, problem) != problem && problem is not null;
 }
 
 /// <summary>Les règles de cohérence des réglages, partagées par le contrôle du démarrage et les tests.</summary>
@@ -101,7 +124,7 @@ public static class DailyOptionsChecks
         }
 
         // La colonne est numeric(4,2) : au plus deux décimales, moins de 100 s, sinon le palier relu ne serait plus celui annoncé.
-        if (options.AllowedDurationsSeconds is { } durations && durations.Any(d => d <= 0 || d >= 100 || decimal.Round(d, 2) != d))
+        if (options.AllowedDurationsSeconds is { } durations && !durations.All(DailyOptions.IsStorableDuration))
             problems.Add("Daily:AllowedDurationsSeconds : des paliers positifs, de moins de 100 s, avec au plus deux décimales.");
         if (options.DurationScores is { } scores && scores.Any(s => s.Seconds <= 0 || s.Score < 0))
             problems.Add("Daily:DurationScores : chaque palier doit être positif, avec des points qui ne le sont pas moins.");

@@ -2,6 +2,7 @@ using InSeconds.Api.Modules.Daily.Application;
 using InSeconds.Api.Modules.Daily.Domain;
 using InSeconds.Api.Modules.Gameplay.Contracts;
 using InSeconds.Api.Modules.Gameplay.Domain;
+using InSeconds.UnitTests.Support;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -125,6 +126,14 @@ public class DailyScoringAndRulesTests
         Assert.Equal([1m, 2m, 3m], new DailyOptions { AllowedDurationsSeconds = [3, 1, 2, 1] }.EffectiveAllowedDurationsSeconds);
     }
 
+    [Theory]
+    [InlineData(0.333)] // relu 0,33 depuis numeric(4,2) : la réponse suivante partirait sous le plancher
+    [InlineData(100)]
+    public void PalierQueLaBaseNeSaitPasGarder_PoseAChaud_RetombeSurLesPaliersParDefaut(double seconds) =>
+        Assert.Equal(
+            DailyOptions.DefaultAllowedDurationsSeconds,
+            new DailyOptions { AllowedDurationsSeconds = [1, (decimal)seconds] }.EffectiveAllowedDurationsSeconds);
+
     // --- le contrôle de cohérence ---
 
     [Fact]
@@ -210,6 +219,54 @@ public class DailyScoringAndRulesTests
     }
 
     [Fact]
+    public void Regles_TropDeNiveaux_UneSeuleErreurParValeur_EtDeNouveauSiElleRevient()
+    {
+        var monitor = new FixedMonitor(new DailyOptions { HintUnlockDurationsSeconds = [1, 2, 3] });
+        var logger = new CapturingLogger<DailyRules>();
+        var rules = new DailyRules(monitor, [new YearHint(), new HangmanArtistHint()], logger);
+
+        // Une demande d'indice lit les règles plusieurs fois : une seule erreur.
+        _ = rules.HintLevels;
+        _ = rules.Hints;
+        _ = rules.HintLevels;
+        Assert.Single(logger.Entries, e => e.EventId.Id == 1305);
+
+        monitor.Value = new DailyOptions { HintUnlockDurationsSeconds = [1, 2, 3, 4] };
+        _ = rules.HintLevels;
+        Assert.Equal(2, logger.Entries.Count(e => e.EventId.Id == 1305));
+
+        // Corrigé, puis le même réglage faux revient : il est signalé de nouveau.
+        monitor.Value = new DailyOptions();
+        _ = rules.HintLevels;
+        monitor.Value = new DailyOptions { HintUnlockDurationsSeconds = [1, 2, 3, 4] };
+        _ = rules.HintLevels;
+        Assert.Equal(3, logger.Entries.Count(e => e.EventId.Id == 1305));
+    }
+
+    [Fact]
+    public void Regles_SeuilsIncoherents_UneSeuleErreurParValeur()
+    {
+        var logger = new CapturingLogger<DailyRules>();
+        var rules = new DailyRules(
+            new FixedMonitor(new DailyOptions { HintUnlockDurationsSeconds = [10, 5] }), [new YearHint(), new HangmanArtistHint()], logger);
+
+        _ = rules.HintLevels;
+        _ = rules.Hints;
+
+        Assert.Single(logger.Entries, e => e.EventId.Id == 1306);
+    }
+
+    [Fact]
+    public void Regles_FournisseursAvecUnTrou_SArretentAuTrou()
+    {
+        var rules = Rules(new DailyOptions(), providers: [new YearHint(), new LevelThreeHint()]);
+
+        Assert.Equal(1, rules.MaxHintLevel);
+        var level = Assert.Single(rules.HintLevels);
+        Assert.Equal(HintKind.Year, level.Kind);
+    }
+
+    [Fact]
     public void Regles_PalierAutorise_LuAChaque_Appel()
     {
         var monitor = new FixedMonitor(new DailyOptions());
@@ -230,6 +287,15 @@ public class DailyScoringAndRulesTests
 
     private static DailyRules Rules(DailyOptions options, IEnumerable<IHintProvider>? providers = null) =>
         new(new FixedMonitor(options), providers ?? [new YearHint(), new HangmanArtistHint()], NullLogger<DailyRules>.Instance);
+
+    private sealed class LevelThreeHint : IHintProvider
+    {
+        public int Level => 3;
+
+        public HintKind Kind => HintKind.ArtistMasked;
+
+        public HintFact Reveal(HintSubject subject) => new(Kind, subject.Artist);
+    }
 
     private sealed class FixedMonitor(DailyOptions value) : IOptionsMonitor<DailyOptions>
     {

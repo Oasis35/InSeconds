@@ -66,23 +66,40 @@ public sealed class RequestHintValidator : AbstractValidator<RequestHint>
 /// <summary>Ce que révèlent les indices jusqu'au niveau demandé (cumulatif : le niveau 2 rend aussi l'année).</summary>
 public sealed record HintResponse(IReadOnlyList<HintFactResponse> Facts);
 
+/// <summary>
+/// La partie, et ce que la demande d'indice donnerait : calculé **une seule fois**, avec une seule lecture des réglages, pour que la
+/// vérification et l'enregistrement voient la même politique même si les réglages sont rechargés entre les deux.
+/// </summary>
+public sealed record HintAttempt(PlayableSession Loaded, HintReveal? Reveal);
+
 public static class RequestHintEndpoint
 {
-    public static Task<PlayableSession?> LoadAsync(int id, ICurrentPlayer current, IDailyStore store, CancellationToken ct) =>
-        SessionAccess.LoadAsync(id, current, store, ct);
-
-    public static ProblemDetails Validate(RequestHint request, PlayableSession? loaded, DailyRules rules)
+    public static async Task<HintAttempt?> LoadAsync(
+        int id, RequestHint request, ICurrentPlayer current, IDailyStore store, [NotBody] DailyRules rules, CancellationToken ct)
     {
-        var problem = SessionAccess.Check(loaded, request.Position);
-        if (loaded is null || !ReferenceEquals(problem, WolverineContinue.NoProblems))
-            return problem;
+        var loaded = await SessionAccess.LoadAsync(id, current, store, ct);
+        if (loaded is null)
+            return null;
+
+        // Hors du morceau en cours, Validate refuse avant de lire la révélation : rien à calculer.
+        if (loaded.Session.TurnOf(request.Position, loaded.Challenge.Tracks.Count) != TrackTurn.Current)
+            return new HintAttempt(loaded, null);
 
         // Le niveau ne se débloque que si la durée **vue par le serveur** (pas annoncée par le client) atteint son seuil.
-        var reveal = loaded.Session.RoundOfCurrentTrack(rules.Hints).RevealHint(request.Level, rules.Hints);
-        return reveal.Refusal switch
+        var policy = rules.Hints;
+        return new HintAttempt(loaded, loaded.Session.RoundOfCurrentTrack(policy).RevealHint(request.Level, policy));
+    }
+
+    public static ProblemDetails Validate(RequestHint request, HintAttempt? attempt)
+    {
+        var problem = SessionAccess.Check(attempt?.Loaded, request.Position);
+        if (!ReferenceEquals(problem, WolverineContinue.NoProblems))
+            return problem;
+
+        return attempt!.Reveal!.Refusal switch
         {
             null => WolverineContinue.NoProblems,
-            HintRefusal.NotUnlocked => DailyProblems.HintLocked(reveal.UnlocksAtSeconds!.Value),
+            HintRefusal.NotUnlocked => DailyProblems.HintLocked(attempt.Reveal.UnlocksAtSeconds!.Value),
             _ => DailyProblems.HintLocked(0),
         };
     }
@@ -98,15 +115,15 @@ public static class RequestHintEndpoint
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public static async Task<HintResponse> Post(
         RequestHint request,
-        PlayableSession loaded,
+        HintAttempt attempt,
         ITrackDirectory directory,
         DailyRules rules,
         ILogger<HintResponse> logger,
         CancellationToken ct)
     {
+        var loaded = attempt.Loaded;
         var session = loaded.Session;
-        var round = session.RoundOfCurrentTrack(rules.Hints).RevealHint(request.Level, rules.Hints).Round!;
-        session.KeepRound(round);
+        session.KeepRound(attempt.Reveal!.Round!);
 
         var trackId = loaded.TrackAt(request.Position)!.TrackId;
         var info = (await directory.GetAsync([trackId], ct))[trackId];

@@ -97,8 +97,8 @@ namespace Internal.Generated.WolverineHandlers
                     return;
                 }
 
-                var playableSession = await InSeconds.Api.Modules.Daily.Application.RequestHintEndpoint.LoadAsync(id, claimsCurrentPlayer, efDailyStore, httpContext.RequestAborted).ConfigureAwait(false);
-                var problemDetails2 = InSeconds.Api.Modules.Daily.Application.RequestHintEndpoint.Validate(request, playableSession, _dailyRules);
+                var hintAttempt = await InSeconds.Api.Modules.Daily.Application.RequestHintEndpoint.LoadAsync(id, request, claimsCurrentPlayer, efDailyStore, _dailyRules, httpContext.RequestAborted).ConfigureAwait(false);
+                var problemDetails2 = InSeconds.Api.Modules.Daily.Application.RequestHintEndpoint.Validate(request, hintAttempt);
                 // Evaluate whether the processing should stop if there are any problems
                 if (!(ReferenceEquals(problemDetails2, Wolverine.Http.WolverineContinue.NoProblems)))
                 {
@@ -109,7 +109,7 @@ namespace Internal.Generated.WolverineHandlers
 
                 
                 // The actual HTTP request handler execution
-                var hintResponse_response = await InSeconds.Api.Modules.Daily.Application.RequestHintEndpoint.Post(request, playableSession, efTrackDirectory, _dailyRules, _loggerOfHintResponse, httpContext.RequestAborted).ConfigureAwait(false);
+                var hintResponse_response = await InSeconds.Api.Modules.Daily.Application.RequestHintEndpoint.Post(request, hintAttempt, efTrackDirectory, _dailyRules, _loggerOfHintResponse, httpContext.RequestAborted).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

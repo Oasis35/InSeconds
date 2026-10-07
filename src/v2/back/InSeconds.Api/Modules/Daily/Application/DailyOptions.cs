@@ -44,9 +44,18 @@ public sealed class DailyOptions
 
     public static readonly decimal[] DefaultAllowedDurationsSeconds = [0.5m, 1m, 1.5m, 2m, 3m, 5m, 10m];
 
-    /// <summary>Les paliers, triés : jamais vide (un réglage vide retombe sur les paliers par défaut).</summary>
+    /// <summary>
+    /// Un palier que la base garde tel quel (colonnes <c>numeric(4,2)</c>) : positif, de moins de 100 s, avec au plus deux décimales. Sinon le
+    /// palier relu (0,33) ne serait plus celui annoncé (0,333), et la réponse suivante serait refusée sous le plancher.
+    /// </summary>
+    public static bool IsStorableDuration(decimal seconds) => seconds is > 0 and < 100 && decimal.Round(seconds, 2) == seconds;
+
+    /// <summary>
+    /// Les paliers, triés : jamais vide. Un réglage vide, ou dont un palier ne tient pas dans la base, retombe sur les paliers par défaut
+    /// (le contrôle du démarrage le refuse, mais un réglage changé à chaud n'y passe pas).
+    /// </summary>
     public IReadOnlyList<decimal> EffectiveAllowedDurationsSeconds =>
-        AllowedDurationsSeconds is { Length: > 0 } configured && configured.All(d => d > 0)
+        AllowedDurationsSeconds is { Length: > 0 } configured && configured.All(IsStorableDuration)
             ? configured.Distinct().Order().ToArray()
             : DefaultAllowedDurationsSeconds;
 
