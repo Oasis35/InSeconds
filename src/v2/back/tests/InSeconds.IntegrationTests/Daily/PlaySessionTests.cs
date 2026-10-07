@@ -49,6 +49,7 @@ public class PlaySessionTests(PostgresFixture postgres) : IAsyncLifetime
     [Fact]
     public async Task Reponse_RevèleLeMorceau_EtCeQuEnOntFaitLesAutres()
     {
+        await _game.Api.ExecuteAsync("UPDATE catalogue.tracks SET cover_hash = 'abcdef0123456789'");
         var bob = await _game.NewPlayerAsync();
         var bobSession = (await bob.StartAsync()).SessionId;
         await bob.AnswerCorrectlyAsync(bobSession, 1, 2);
@@ -57,6 +58,8 @@ public class PlaySessionTests(PostgresFixture postgres) : IAsyncLifetime
         var answer = await ReadAnswerAsync(await _alice.AnswerAsync(_session, 1, 1, $"Artiste {trackId}", "Zzzz"));
 
         Assert.Equal(($"Artiste {trackId}", $"Titre {trackId}", 1000L + trackId), (answer.CorrectArtist, answer.CorrectTitle, answer.DeezerTrackId));
+        // La pochette, comme le nom, n'arrive qu'avec la réponse.
+        Assert.Contains("cdn-images", answer.CoverUrl, StringComparison.Ordinal);
         // Un autre joueur a trouvé à 2 s, celui-ci (artiste seul) à 1 s : deux trouvés, aucun échec, moyenne 1,5 s.
         Assert.Equal(1.5, answer.AverageSecondsWhenCorrect);
         Assert.Equal(0, answer.FailureRatePercent);
@@ -161,6 +164,15 @@ public class PlaySessionTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.NoContent, (await _alice.ListenAsync(_session, 2, 0.5m)).StatusCode);
         var second = await ReadAnswerAsync(await _alice.AnswerAsync(_session, 2, 0.5m, "x", "y"));
         Assert.Equal(0, second.HintLevelUsed);
+    }
+
+    [Fact]
+    public async Task Plancher_PalierAnnonce0AvecUnePlancherPositif_400()
+    {
+        await _alice.ListenAsync(_session, 1, 1);
+
+        await GameAsserts.ProblemAsync(
+            await _alice.AnswerAsync(_session, 1, 0, null, null), HttpStatusCode.BadRequest, "daily.listened_duration_below_verified_minimum");
     }
 
     [Fact]

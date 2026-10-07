@@ -52,15 +52,43 @@ public class StartSessionTests(PostgresFixture postgres) : IAsyncLifetime
         var alice = await _game.NewPlayerAsync();
         await _game.GenerateAsync();
 
+        await _game.Api.ExecuteAsync("UPDATE catalogue.tracks SET cover_hash = 'abcdef0123456789'");
+
         var response = await alice.StartRawAsync();
         var body = await response.Content.ReadAsStringAsync(Ct);
 
-        // Ni artiste, ni titre, ni identifiant Deezer, ni année : tout cela donnerait la réponse (deezer.com/track/{id}).
+        // Ni artiste, ni titre, ni identifiant Deezer, ni année, ni pochette : tout cela donnerait la réponse (deezer.com/track/{id},
+        // recherche d'image inversée sur la pochette).
         Assert.DoesNotContain("Artiste", body, StringComparison.Ordinal);
         Assert.DoesNotContain("Titre", body, StringComparison.Ordinal);
         Assert.DoesNotContain("deezer", body, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("1001", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("abcdef0123456789", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("cover", body, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("releaseYear", body, StringComparison.OrdinalIgnoreCase);
+        foreach (var position in Enumerable.Range(1, 5))
+            Assert.DoesNotContain((1000 + await _game.TrackAtAsync(Today, position)).ToString(System.Globalization.CultureInfo.InvariantCulture), body, StringComparison.Ordinal);
+        // Les seules propriétés d'un morceau : sa position et son extrait.
+        var tracks = System.Text.Json.JsonDocument.Parse(body).RootElement.GetProperty("tracks");
+        Assert.All(tracks.EnumerateArray(), t => Assert.Equal(["position", "previewUrl"], t.EnumerateObject().Select(p => p.Name)));
+    }
+
+    [Fact]
+    public async Task Expiration_NeToucheJamaisUnePartieTerminee()
+    {
+        var alice = await _game.NewPlayerAsync();
+        await _game.App.AddChallengeAsync(Today.AddDays(-1), 1, 2, 3, 4, 5);
+        var old = await _game.Api.ScalarAsync<int>("SELECT nextval('daily.sessions_hilo')::int");
+        await _game.Api.ExecuteAsync(
+            $"""
+            INSERT INTO daily.sessions (id, player_id, challenge_id, status, started_at, ended_at, total_score, total_listened_seconds)
+            SELECT {old}, '{alice.Id}', id, 1, now(), now(), 4250, 5 FROM daily.challenges
+            """);
+        await _game.GenerateAsync();
+
+        await alice.StartAsync();
+
+        // Terminée hier, elle le reste : l'expiration ne vise que les parties encore en cours.
+        Assert.Equal((short)1, await _game.Api.ScalarAsync<short>($"SELECT status FROM daily.sessions WHERE id = {old}"));
     }
 
     [Fact]

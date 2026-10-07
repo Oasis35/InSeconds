@@ -150,12 +150,18 @@ public class DailyScoringAndRulesTests
             DailyOptionsChecks.Problems(new DailyOptions { HintUnlockDurationsSeconds = thresholds.Select(t => (decimal)t).ToArray() }, 2),
             p => p.Contains("strictement positif et croissant", StringComparison.Ordinal));
 
+    [Theory]
+    [InlineData(0.125)] // trois décimales : la colonne numeric(4,2) l'arrondirait
+    [InlineData(100)] // la colonne ne tient pas 100 s
+    public void Controle_PalierQueLaBaseNeSaitPasGarder_UnProbleme(double seconds) =>
+        Assert.Single(DailyOptionsChecks.Problems(new DailyOptions { AllowedDurationsSeconds = [(decimal)seconds] }, 2));
+
     [Fact]
     public void Controle_AutresReglagesAberrants()
     {
         var problems = DailyOptionsChecks.Problems(new DailyOptions
         {
-            AllowedDurationsSeconds = [],
+            AllowedDurationsSeconds = [-1],
             DurationScores = [new DurationScore(0, 10)],
             HintPenaltyPercent = new Dictionary<int, int> { [1] = 130 },
             StreakFreezeMax = -1,

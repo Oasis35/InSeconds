@@ -100,8 +100,9 @@ public static class DailyOptionsChecks
                 "un niveau serait accepté et pénalisé sans rien révéler de plus.");
         }
 
-        if (options.AllowedDurationsSeconds is { } durations && (durations.Length == 0 || durations.Any(d => d <= 0)))
-            problems.Add("Daily:AllowedDurationsSeconds doit contenir au moins un palier, tous positifs.");
+        // La colonne est numeric(4,2) : au plus deux décimales, moins de 100 s, sinon le palier relu ne serait plus celui annoncé.
+        if (options.AllowedDurationsSeconds is { } durations && durations.Any(d => d <= 0 || d >= 100 || decimal.Round(d, 2) != d))
+            problems.Add("Daily:AllowedDurationsSeconds : des paliers positifs, de moins de 100 s, avec au plus deux décimales.");
         if (options.DurationScores is { } scores && scores.Any(s => s.Seconds <= 0 || s.Score < 0))
             problems.Add("Daily:DurationScores : chaque palier doit être positif, avec des points qui ne le sont pas moins.");
         if (options.HintPenaltyPercent is { } penalties && penalties.Any(p => p.Key < 1 || p.Value is < 0 or > 100))

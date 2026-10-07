@@ -40,6 +40,7 @@ public sealed record SubmitAnswerResponse(
     string CorrectArtist,
     string CorrectTitle,
     long DeezerTrackId,
+    string? CoverUrl,
     decimal ListenedSeconds,
     double? AverageSecondsWhenCorrect,
     double FailureRatePercent,
@@ -124,7 +125,7 @@ public static class SubmitAnswerEndpoint
 
         var stats = TrackAnswerStats.Build(prior, outcome, rules.AllowedDurations);
         return new SubmitAnswerResponse(
-            outcome.ArtistCorrect, outcome.TitleCorrect, score, info.Artist, info.DisplayTitle, info.DeezerTrackId, outcome.ListenedSeconds,
+            outcome.ArtistCorrect, outcome.TitleCorrect, score, info.Artist, info.DisplayTitle, info.DeezerTrackId, info.CoverUrl, outcome.ListenedSeconds,
             stats.AverageSecondsWhenFound, stats.FailureRatePercent,
             stats.GuessTimeDistribution.Select(b => new GuessBucketResponse(b.Seconds, b.Count)).ToList(),
             stats.NotFoundCount, outcome.HintLevelUsed, scoring.HintPenaltyPercent(outcome.HintLevelUsed), completed);

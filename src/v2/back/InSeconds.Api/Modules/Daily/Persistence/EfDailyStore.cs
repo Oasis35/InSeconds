@@ -39,23 +39,24 @@ public sealed class EfDailyStore(InSecondsDbContext db) : IDailyStore
 
     public async Task ExpireStaleSessionsAsync(Guid playerId, DateOnly today, DateTimeOffset now, CancellationToken ct)
     {
-        var stale = await db.Set<DailySession>()
+        // Un seul UPDATE conditionnel, pas une lecture puis une écriture : une partie que le joueur termine au même moment (sa transaction tient
+        // le verrou de la ligne) n'est jamais repassée en « expirée » une fois comptés son score et sa série.
+        await db.Set<DailySession>()
             .Where(s => s.PlayerId == playerId && s.Status == SessionStatus.Pending
                 && db.Set<DailyChallenge>().Any(c => c.Id == s.ChallengeId && c.Date < today))
-            .ToListAsync(ct);
-        foreach (var session in stale)
-            session.Expire(now);
+            .ExecuteUpdateAsync(set => set.SetProperty(s => s.Status, SessionStatus.Expired).SetProperty(s => s.EndedAt, now), ct);
     }
 
     public Task<DailySession?> FindSessionAsync(Guid playerId, int challengeId, CancellationToken ct) =>
         db.Set<DailySession>().Include(s => s.Answers).FirstOrDefaultAsync(s => s.PlayerId == playerId && s.ChallengeId == challengeId, ct);
 
-    public async Task<DailySession?> FindSessionForUpdateAsync(int sessionId, CancellationToken ct)
+    public async Task<DailySession?> FindSessionForUpdateAsync(int sessionId, Guid playerId, CancellationToken ct)
     {
+        RequireTransaction("La lecture d'une partie à modifier");
         // FOR UPDATE doit rester à la fin de la requête : pas de composition (Include) derrière FromSql. Les réponses se chargent à part, EF
         // les rattache à la partie.
         var session = (await db.Set<DailySession>()
-                .FromSql($"SELECT * FROM daily.sessions WHERE id = {sessionId} FOR UPDATE")
+                .FromSql($"SELECT * FROM daily.sessions WHERE id = {sessionId} AND player_id = {playerId} FOR UPDATE")
                 .ToListAsync(ct))
             .SingleOrDefault();
         if (session is not null)

@@ -37,10 +37,10 @@ public interface IDailyStore
     Task<DailySession?> FindSessionAsync(Guid playerId, int challengeId, CancellationToken ct);
 
     /// <summary>
-    /// La partie de cet identifiant, avec ses réponses, **verrouillée** jusqu'à la fin de la transaction : deux requêtes simultanées sur la
+    /// La partie de cet identifiant **si elle est à ce joueur** (la ligne d'un autre n'est jamais verrouillée), avec ses réponses, **verrouillée** jusqu'à la fin de la transaction : deux requêtes simultanées sur la
     /// même partie (deux envois de la même réponse, une réponse et un abandon) se suivent au lieu de se croiser.
     /// </summary>
-    Task<DailySession?> FindSessionForUpdateAsync(int sessionId, CancellationToken ct);
+    Task<DailySession?> FindSessionForUpdateAsync(int sessionId, Guid playerId, CancellationToken ct);
 
     /// <summary>Ajoute la partie et lui attribue tout de suite son identifiant (la réponse de démarrage le porte).</summary>
     ValueTask AddAsync(DailySession session, CancellationToken ct);

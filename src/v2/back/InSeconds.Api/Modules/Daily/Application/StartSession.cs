@@ -11,16 +11,16 @@ using Wolverine.Http;
 namespace InSeconds.Api.Modules.Daily.Application;
 
 /// <summary>
-/// Un morceau à jouer. **Ni artiste, ni titre, ni année, ni identifiant Deezer** : envoyés avant la réponse, ils la donneraient
-/// (<c>deezer.com/track/{id}</c>, piège 31). Ils n'arrivent qu'avec la réponse du joueur.
+/// Un morceau à jouer. **Ni artiste, ni titre, ni année, ni identifiant Deezer, ni pochette** : envoyés avant la réponse, ils la donneraient
+/// (<c>deezer.com/track/{id}</c>, recherche d'image inversée sur la pochette, piège 31). Ils n'arrivent qu'avec la réponse du joueur.
 /// </summary>
 /// <param name="PreviewUrl">L'extrait de 30 s, signée et périssable (piège 14) ; vide si Deezer n'en a pas : le joueur passe le morceau.</param>
-public sealed record TrackSlot(int Position, string PreviewUrl, string? CoverUrl);
+public sealed record TrackSlot(int Position, string PreviewUrl);
 
 /// <summary>Une réponse déjà donnée, rendue à la reprise : le morceau est révélé, le joueur l'a répondu.</summary>
 public sealed record ResumedAnswer(
     int Position, bool ArtistCorrect, bool TitleCorrect, int Score, decimal ListenedSeconds, int HintLevel,
-    string CorrectArtist, string CorrectTitle, long DeezerTrackId);
+    string CorrectArtist, string CorrectTitle, long DeezerTrackId, string? CoverUrl);
 
 /// <summary>Le morceau en cours d'une partie reprise : ce que le serveur a vu et révélé (la reprise ne redonne pas ces indices à payer).</summary>
 /// <param name="ListenedSeconds">Le plus long palier déjà écouté : le plancher anti-triche, les paliers plus courts ne sont plus proposés.</param>
@@ -122,7 +122,7 @@ public static class StartSessionEndpoint
         var infos = await directory.GetAsync(positions.Select(t => t.TrackId).ToList(), ct);
         var previewUrls = await previews.GetUrlsAsync(positions.Select(t => infos[t.TrackId]).ToList(), ct);
         var slots = positions
-            .Select(t => new TrackSlot(t.Position, previewUrls.GetValueOrDefault(t.TrackId, string.Empty), infos[t.TrackId].CoverUrl))
+            .Select(t => new TrackSlot(t.Position, previewUrls.GetValueOrDefault(t.TrackId, string.Empty)))
             .ToList();
 
         var streak = await store.FindStreakAsync(playerId, ct);
@@ -140,7 +140,7 @@ public static class StartSessionEndpoint
         {
             var info = infos[positions.First(t => t.Position == a.Position).TrackId];
             return new ResumedAnswer(
-                a.Position, a.ArtistCorrect, a.TitleCorrect, a.Score, a.ListenedSeconds, a.HintLevel, info.Artist, info.DisplayTitle, info.DeezerTrackId);
+                a.Position, a.ArtistCorrect, a.TitleCorrect, a.Score, a.ListenedSeconds, a.HintLevel, info.Artist, info.DisplayTitle, info.DeezerTrackId, info.CoverUrl);
         }).ToList();
 
         return new StartSessionResponse(

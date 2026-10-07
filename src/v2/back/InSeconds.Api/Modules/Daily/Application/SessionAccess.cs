@@ -24,8 +24,8 @@ internal static class SessionAccess
         if (current.PlayerId is not { } playerId)
             return null;
 
-        var session = await store.FindSessionForUpdateAsync(sessionId, ct);
-        if (session is null || session.PlayerId != playerId)
+        var session = await store.FindSessionForUpdateAsync(sessionId, playerId, ct);
+        if (session is null)
             return null;
 
         // Le défi d'une partie existe toujours : la clé étrangère l'impose.
