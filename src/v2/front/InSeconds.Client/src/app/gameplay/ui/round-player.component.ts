@@ -75,10 +75,13 @@ import { RoundPhase } from '../domain/track-round';
             }
 
             <div class="flex items-center justify-center gap-4 pt-1">
-              <button type="button" (click)="replay.emit()" [title]="'gameplay.round.replay' | translate: { seconds: chosenSeconds() }"
-                class="rounded-full transition active:scale-95 touch-manipulation flex items-center justify-center shrink-0"
+              <button type="button" (click)="replay.emit()" [disabled]="locked()" [title]="'gameplay.round.replay' | translate: { seconds: chosenSeconds() }"
+                class="rounded-full transition active:scale-95 touch-manipulation flex items-center justify-center shrink-0 disabled:opacity-40 disabled:grayscale disabled:active:scale-100"
                 style="width:72px;height:72px;background:linear-gradient(145deg,var(--color-accent-3),var(--color-accent));box-shadow:var(--glow-primary);border:none;color:#fff">
-                @if (playing()) {
+                @if (submitting()) {
+                  <span data-testid="round-loader" class="animate-spin rounded-full"
+                    style="width:26px;height:26px;border:3px solid rgb(255 255 255 / 0.35);border-top-color:#fff"></span>
+                } @else if (playing()) {
                   <span class="flex gap-1" aria-hidden="true">
                     <span style="width:6px;height:19px;background:#fff;border-radius:2px"></span>
                     <span style="width:6px;height:19px;background:#fff;border-radius:2px"></span>
@@ -91,8 +94,8 @@ import { RoundPhase } from '../domain/track-round';
               </button>
 
               @if (nextStep(); as next) {
-                <button type="button" (click)="listenMore.emit()" [title]="'gameplay.round.listenUpTo' | translate: { seconds: next }"
-                  class="rounded-full transition active:scale-95 touch-manipulation flex items-center justify-center font-extrabold text-sm shrink-0"
+                <button type="button" (click)="listenMore.emit()" [disabled]="locked()" [title]="'gameplay.round.listenUpTo' | translate: { seconds: next }"
+                  class="rounded-full transition active:scale-95 touch-manipulation flex items-center justify-center font-extrabold text-sm shrink-0 disabled:opacity-40 disabled:grayscale"
                   style="font-family:var(--font-display);width:52px;height:52px;border:1.5px solid rgb(var(--rgb-accent-2) / 0.7);background:rgb(var(--rgb-accent-2) / 0.1);color:var(--color-accent-2)">
                   ▶ {{ next }}s
                 </button>
@@ -118,6 +121,9 @@ export class RoundPlayerComponent {
   readonly skip = output<void>();
 
   protected readonly playing = computed(() => this.phase() === 'playing');
+  /** La réponse part (ou son envoi a échoué) : on ne réécoute plus, on attend. */
+  protected readonly locked = computed(() => this.phase() === 'submitting' || this.phase() === 'submit-error');
+  protected readonly submitting = computed(() => this.phase() === 'submitting');
   protected readonly maxStep = computed(() => this.steps().at(-1) ?? 0);
   /** La barre va de 0 au dernier palier : le remplissage montre aussi ce qu'il reste à écouter. */
   protected readonly filled = computed(() => {

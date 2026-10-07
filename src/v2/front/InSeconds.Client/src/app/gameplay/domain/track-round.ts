@@ -39,7 +39,7 @@ export interface HintPolicy {
 /** Un indice révélé par le back : l'année, l'artiste masqué… Le front l'affiche, il n'en invente aucun. */
 export interface HintFact {
   readonly kind: string;
-  readonly value: string;
+  readonly value: string | null;
 }
 
 export interface RoundConfig {
@@ -188,13 +188,11 @@ export function unlockedHintLevel(round: TrackRound): number {
   return round.hintUnlockSeconds.filter(seconds => round.chosenSeconds >= seconds).length;
 }
 
-/** Les niveaux qu'on peut demander : débloqués et pas encore révélés. */
+/** Le niveau qu'on peut demander : le suivant, une fois débloqué (le 1, puis seulement le 2). */
 export function availableHintLevels(round: TrackRound): number[] {
   if (!isAnswering(round)) return [];
-  const unlocked = unlockedHintLevel(round);
-  const levels: number[] = [];
-  for (let level = round.hintLevel + 1; level <= unlocked; level++) levels.push(level);
-  return levels;
+  const next = round.hintLevel + 1;
+  return next <= unlockedHintLevel(round) ? [next] : [];
 }
 
 /** Le back a révélé jusqu'à ce niveau, avec ces indices (cumulés). Le niveau ne redescend jamais. */

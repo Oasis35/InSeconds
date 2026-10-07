@@ -90,3 +90,33 @@ describe('RoundPlayerComponent', () => {
     expect(skip).toHaveBeenCalledOnce();
   });
 });
+
+describe('RoundPlayerComponent pendant l\'envoi de la réponse', () => {
+  function render(phase: string) {
+    TestBed.configureTestingModule({ providers: [provideTranslateService()] });
+    const fixture = TestBed.createComponent(RoundPlayerComponent);
+    for (const [name, value] of Object.entries({ phase, chosenSeconds: 1, steps: [0.5, 1, 2], nextStep: 2 })) fixture.componentRef.setInput(name, value);
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    return { element, buttons: () => Array.from(element.querySelectorAll('button')) };
+  }
+
+  it('grise ↺ et « ▶ » et montre un loader', () => {
+    const { element, buttons } = render('submitting');
+    expect(buttons()).toHaveLength(2);
+    expect(buttons().every(button => button.disabled)).toBe(true);
+    expect(element.querySelector('[data-testid="round-loader"]')).not.toBeNull();
+  });
+
+  it('après un échec d\'envoi : toujours grisés, plus de loader', () => {
+    const { element, buttons } = render('submit-error');
+    expect(buttons().every(button => button.disabled)).toBe(true);
+    expect(element.querySelector('[data-testid="round-loader"]')).toBeNull();
+  });
+
+  it('pendant l\'écoute : actifs, sans loader', () => {
+    const { element, buttons } = render('listened');
+    expect(buttons().some(button => button.disabled)).toBe(false);
+    expect(element.querySelector('[data-testid="round-loader"]')).toBeNull();
+  });
+});

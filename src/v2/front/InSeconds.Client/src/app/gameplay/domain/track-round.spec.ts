@@ -195,16 +195,26 @@ describe('indices', () => {
     expect(unlockedHintLevel(at(10))).toBe(2);
   });
 
-  it('proposent les niveaux débloqués pas encore révélés', () => {
+  it('se demandent dans cet ordre : le 1, puis seulement le 2', () => {
     expect(availableHintLevels(at(2))).toEqual([]);
     expect(availableHintLevels(at(5))).toEqual([1]);
-    expect(availableHintLevels(at(10))).toEqual([1, 2]);
+    // le palier du niveau 2 est atteint, mais le niveau 1 n'a pas été demandé
+    expect(availableHintLevels(at(10))).toEqual([1]);
+    const first = applyHints(at(10), 1, [{ kind: 'year', value: '2013' }]);
+    expect(availableHintLevels(first)).toEqual([2]);
+  });
+
+  it('le niveau suivant attend son palier', () => {
+    const first = applyHints(at(5), 1, [{ kind: 'year', value: '2013' }]);
+    expect(availableHintLevels(first)).toEqual([]);
+    expect(availableHintLevels(listenMore(first))).toEqual([2]);
   });
 
   it('le nombre de niveaux suit le réglage, jamais une liste en dur', () => {
     const r = started({ hints: { unlockSeconds: [1, 2, 5] } });
     const longer = listenMore(listenMore(listenMore(r))); // 5 s
-    expect(availableHintLevels(longer)).toEqual([1, 2, 3]);
+    expect(availableHintLevels(longer)).toEqual([1]);
+    expect(availableHintLevels(applyHints(longer, 2, []))).toEqual([3]);
     expect(availableHintLevels(started({ hints: { unlockSeconds: [] } }))).toEqual([]);
   });
 

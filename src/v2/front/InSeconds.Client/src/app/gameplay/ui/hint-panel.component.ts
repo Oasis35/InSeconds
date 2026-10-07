@@ -31,7 +31,7 @@ import { HintFact } from '../domain/track-round';
               </svg>
               {{ labelKey(fact) | translate }}
             </span>
-            <span class="flex-1 text-center font-semibold tracking-wide" style="color:var(--text-light);overflow-wrap:break-word">{{ fact.value }}</span>
+            <span class="flex-1 text-center font-semibold tracking-wide" style="color:var(--text-light);overflow-wrap:break-word">{{ fact.value || '—' }}</span>
           </div>
         }
 
