@@ -19,13 +19,14 @@ describe('AdminShellPage', () => {
   const guest: SessionPlayer = { id: 'g1', pseudo: null, email: null, isGuest: true, isAdmin: false };
   let api: FakePlayersApi;
 
-  async function open(player: SessionPlayer | null, url = '/admin') {
+  async function open(player: SessionPlayer | null, url = '/admin', realTabs = false) {
     api = fakePlayersApi({ getMe: vi.fn(async () => player) });
+    const routes = realTabs ? ADMIN_ROUTES : [{ ...ADMIN_ROUTES[0], children: [{ path: '**', component: ChildComponent }] }];
     TestBed.configureTestingModule({
       providers: [
         provideTranslateService(),
         providePlayersApiFake(api),
-        provideRouter([{ path: 'admin', children: [{ ...ADMIN_ROUTES[0], children: [{ path: '**', component: ChildComponent }] }] }]),
+        provideRouter([{ path: 'admin', children: routes }]),
       ],
     });
     const harness = await RouterTestingHarness.create();
@@ -66,6 +67,34 @@ describe('AdminShellPage', () => {
     expect(element.querySelector('#child')).not.toBeNull();
     expect(text(element)).toContain('admin.logout');
     expect(text(element)).not.toContain('admin.accessDenied');
+  });
+
+  it('montre les cinq onglets dans l\'ordre de la v1, le catalogue actif', async () => {
+    const { element } = await open(admin, '/admin/catalogue');
+
+    const links = Array.from(element.querySelectorAll<HTMLAnchorElement>('nav a'));
+    expect(links.map(a => a.getAttribute('href'))).toEqual(
+      ['/admin/dashboard', '/admin/defis', '/admin/catalogue', '/admin/joueurs', '/admin/actions']);
+    expect(links.filter(a => a.getAttribute('aria-current') === 'page').map(a => a.getAttribute('href')))
+      .toEqual(['/admin/catalogue']);
+  });
+
+  it('met la déconnexion sous le contenu de l\'onglet, comme en v1', async () => {
+    const { element } = await open(admin, '/admin/catalogue');
+
+    const child = element.querySelector('#child')!;
+    const logout = Array.from(element.querySelectorAll('button')).find(b => b.textContent?.includes('admin.logout'))!;
+    expect(child.compareDocumentPosition(logout) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('affiche un onglet à venir sous la barre des onglets, qui reste en place', async () => {
+    const { harness, element } = await open(admin, '/admin/joueurs', true);
+    await harness.fixture.whenStable();
+    harness.detectChanges();
+
+    expect(element.querySelector('[data-testid="admin-tab-coming-soon"]')).not.toBeNull();
+    expect(element.querySelectorAll('nav a')).toHaveLength(5);
+    expect(element.querySelector('nav a[aria-current="page"]')?.getAttribute('href')).toBe('/admin/joueurs');
   });
 
   it('ne montre rien d\'une décision tant que l\'identité n\'est pas lue', async () => {

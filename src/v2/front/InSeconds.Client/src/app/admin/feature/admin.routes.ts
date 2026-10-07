@@ -1,9 +1,7 @@
 import { inject } from '@angular/core';
 import { RedirectFunction, Router, Routes } from '@angular/router';
 import { AdminShellPage } from './admin-shell.page';
-
-/** Onglets de l'admin qui arrivent avec leur module (F2) : en attendant, la page d'attente. */
-const TABS_TO_COME: ReadonlySet<string> = new Set(['dashboard', 'defis', 'joueurs', 'actions']);
+import { TABS_TO_COME } from './admin-tabs';
 
 /**
  * `/admin` n'a pas de contenu : il mène à un onglet. Les anciennes adresses `/admin?tab=…` (v1) sont
@@ -19,7 +17,7 @@ const defaultTab: RedirectFunction = ({ queryParams }) => {
 const poolToCatalogue: RedirectFunction = ({ queryParams, fragment }) =>
   inject(Router).createUrlTree(['/admin/catalogue'], { queryParams, fragment: fragment ?? undefined });
 
-const comingSoon = () => import('../../core/shell/coming-soon/coming-soon.page').then(m => m.ComingSoonPage);
+const comingSoon = () => import('./tab-coming-soon.page').then(m => m.TabComingSoonPage);
 
 /** Routes du domaine `admin`, chargées à la demande (`/admin/...`). Chaque page fournit ses stores. */
 export const ADMIN_ROUTES: Routes = [
