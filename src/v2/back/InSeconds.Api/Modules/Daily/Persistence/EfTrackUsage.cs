@@ -18,7 +18,7 @@ public sealed class EfTrackUsage(InSecondsDbContext db, IOptionsMonitor<DailyOpt
     {
         var ids = trackIds.Distinct().ToArray();
         var today = calendar.Today;
-        var cooldown = options.CurrentValue.TrackCooldownDays;
+        var cooldown = options.CurrentValue.EffectiveTrackCooldownDays;
 
         var rows = await Appearances()
             .Where(a => ids.Contains(a.TrackId))
@@ -34,7 +34,7 @@ public sealed class EfTrackUsage(InSecondsDbContext db, IOptionsMonitor<DailyOpt
         // Règle de la v1 (`LastUsedDate < jour - cooldown` pour être tirable) : tiré à une date >= jour - cooldown, un
         // morceau reste exclu. Il redevient donc tirable le lendemain du jour affiché comme `UnlockDate` (dernier usage +
         // cooldown), un écart d'un jour que la v1 avait déjà : les deux sont gardés tels quels.
-        var from = day.AddDays(-options.CurrentValue.TrackCooldownDays);
+        var from = day.AddDays(-options.CurrentValue.EffectiveTrackCooldownDays);
         var ids = await Appearances()
             .Where(a => a.Date >= from)
             .Select(a => a.TrackId)

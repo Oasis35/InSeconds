@@ -184,6 +184,36 @@ public class GenerateChallengeTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(3, (await _app.TracksOfAsync(Today)).Count);
     }
 
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-3")]
+    public async Task NombreDeMorceauxAberrant_RetombeSurLeDefaut_PasSurUnDefiDUnSeulMorceau(string configured)
+    {
+        await _app.DisposeAsync();
+        _app = DailyApi.Create(await postgres.CreateDatabaseAsync(), new Dictionary<string, string> { ["Daily:TracksPerChallenge"] = configured });
+        _ = _app.Api.Server;
+        await _app.AddPlayableTracksAsync(10);
+
+        var result = await _app.GenerateAsync();
+
+        Assert.Equal((5, 5), (result.TrackCount, result.Requested));
+    }
+
+    [Fact]
+    public async Task CooldownAberrant_NeFaitPasEchouerLesDatesNiNeDesactiveLeCooldown()
+    {
+        await _app.DisposeAsync();
+        _app = DailyApi.Create(await postgres.CreateDatabaseAsync(), new Dictionary<string, string> { ["Daily:TrackCooldownDays"] = "99999999" });
+        _ = _app.Api.Server;
+        await _app.AddPlayableTracksAsync(10);
+        await _app.AddChallengeAsync(Today.AddDays(-1), 1, 2, 3, 4, 5);
+
+        var result = await _app.GenerateAsync();
+
+        // Retombé sur 30 jours : les 5 morceaux d'hier restent exclus, il en reste exactement 5.
+        Assert.Equal((GenerationOutcome.Created, 5), (result.Outcome, result.EligibleCount));
+    }
+
     [Fact]
     public async Task UnMorceauNePeutEtreSupprime_DesQuilEstDansUnDefi()
     {
@@ -230,7 +260,7 @@ public class GenerateChallengeTests(PostgresFixture postgres) : IAsyncLifetime
     public async Task Course_DeuxJoursDifferents_NeSAttendentPas()
     {
         await _app.DisposeAsync();
-        var selector = new SlowSelector(TimeSpan.FromMilliseconds(500));
+        var selector = new SlowSelector(TimeSpan.FromMilliseconds(100), rendezvous: 2);
         _app = DailyApi.Create(await postgres.CreateDatabaseAsync(),
             configureServices: services => services.Replace(ServiceDescriptor.Singleton<ITrackSelector>(selector)));
         _ = _app.Api.Server;
@@ -240,8 +270,10 @@ public class GenerateChallengeTests(PostgresFixture postgres) : IAsyncLifetime
 
         Assert.Equal(2, selector.Calls);
         Assert.Equal(2, await _app.ChallengeCountAsync());
-        // Le verrou est par jour : les deux tirages ont été en cours en même temps (pas une durée, trop fragile sous charge).
+        // Le verrou est par jour : chaque tirage a attendu l'autre à un point de rendez-vous (10 s au plus), donc les
+        // deux étaient en cours en même temps. Déterministe : aucune durée mesurée.
         Assert.Equal(2, selector.MaxConcurrent);
+        Assert.Equal(2, selector.RendezvousReached);
     }
 
     // --- la tâche de minuit et celle du bouton ---
@@ -329,8 +361,14 @@ public class GenerateChallengeTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     /// <summary>Un sélecteur qui prend son temps, pour qu'une seconde génération démarre pendant que la première tire.</summary>
-    private sealed class SlowSelector(TimeSpan delay) : ITrackSelector
+    private sealed class SlowSelector(TimeSpan delay, int rendezvous = 1) : ITrackSelector
     {
+        private readonly Barrier? _barrier = rendezvous > 1 ? new Barrier(rendezvous) : null;
+        private int _rendezvousReached;
+
+        /// <summary>Combien de tirages ont trouvé les autres au point de rendez-vous.</summary>
+        public int RendezvousReached => _rendezvousReached;
+
         private int _calls;
         private int _running;
         private int _maxConcurrent;
@@ -349,6 +387,8 @@ public class GenerateChallengeTests(PostgresFixture postgres) : IAsyncLifetime
             {
             }
 
+            if (_barrier is not null && _barrier.SignalAndWait(TimeSpan.FromSeconds(10)))
+                Interlocked.Increment(ref _rendezvousReached);
             Thread.Sleep(delay);
             Interlocked.Decrement(ref _running);
             return new CooldownSeededSelector(new InSeconds.Api.Modules.Gameplay.Domain.FisherYatesShuffle()).Select(candidates, inCooldown, count, seed);

@@ -68,7 +68,9 @@ public static class GenerateDailyChallengeHandler
         CancellationToken ct)
     {
         var day = command.Day;
-        var requested = Math.Max(1, options.CurrentValue.TracksPerChallenge);
+        var requested = options.CurrentValue.EffectiveTracksPerChallenge;
+        if (requested != options.CurrentValue.TracksPerChallenge)
+            DailyLog.InvalidTracksPerChallenge(logger, options.CurrentValue.TracksPerChallenge, requested);
 
         // Deux générations du même jour se croisent : la seconde attend ici que la première ait enregistré.
         await store.LockGenerationAsync(day, ct);
@@ -155,6 +157,10 @@ public static class GenerateDailyChallengeEndpoint
 
 internal static partial class DailyLog
 {
+    [LoggerMessage(EventId = 1303, Level = LogLevel.Warning,
+        Message = "Daily:TracksPerChallenge vaut {Configured} : {Used} morceaux utilisés à la place.")]
+    public static partial void InvalidTracksPerChallenge(ILogger logger, int configured, int used);
+
     [LoggerMessage(EventId = 1300, Level = LogLevel.Information,
         Message = "Défi du {Day} généré : {TrackCount} morceaux ({Origin}).")]
     public static partial void ChallengeGenerated(ILogger logger, DateOnly day, int trackCount, ChallengeOrigin origin);
