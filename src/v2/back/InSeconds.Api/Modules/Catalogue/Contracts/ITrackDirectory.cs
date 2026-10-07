@@ -13,4 +13,10 @@ public interface ITrackDirectory
 {
     /// <summary>Les morceaux de ces identifiants ; un identifiant inconnu est absent du résultat.</summary>
     Task<IReadOnlyDictionary<int, TrackInfo>> GetAsync(IReadOnlyCollection<int> trackIds, CancellationToken ct);
+
+    /// <summary>
+    /// Les identifiants des morceaux qu'un mode peut faire jouer : non désactivés, extrait disponible (jamais « inconnu »).
+    /// Triés par identifiant : un tirage à graine doit partir du même ordre à chaque appel.
+    /// </summary>
+    Task<IReadOnlyList<int>> ListPlayableIdsAsync(CancellationToken ct);
 }

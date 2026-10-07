@@ -148,6 +148,27 @@ public class CatalogueImportTests(ImportDatabase database)
     }
 
     [Fact]
+    public async Task Rejouable_AvecUnDefiDejaGenereParLaTacheDeMinuit_LeDefiEstEfface()
+    {
+        // Le staging génère un défi chaque nuit (E1) : « Copy prod DB to staging » doit rester rejouable, alors que
+        // challenge_tracks référence les morceaux (PostgreSQL refuse de vider une table référencée).
+        var cs = await database.CreateDatabaseAsync();
+        await V1Data.InsertTracksAsync(cs, new V1Track(1, 1), new V1Track(2, 2));
+        Assert.Equal(0, (await database.RunImportAsync(cs)).ExitCode);
+        await ImportDatabase.ExecuteAsync(cs, """
+            INSERT INTO daily.challenges (id, date, seed, origin) VALUES (1, '2026-10-05', 1, 1);
+            INSERT INTO daily.challenge_tracks (challenge_id, position, track_id) VALUES (1, 1, 1), (1, 2, 2);
+            """);
+
+        var second = await database.RunImportAsync(cs);
+
+        Assert.True(second.ExitCode == 0, second.Output);
+        Assert.Equal(0L, await Count(cs, "daily.challenges"));
+        Assert.Equal(0L, await Count(cs, "daily.challenge_tracks"));
+        Assert.Equal(2L, await Count(cs, "catalogue.tracks"));
+    }
+
+    [Fact]
     public async Task AnneeHorsLimites_ImportRefuse_RienNEstGarde()
     {
         var cs = await database.CreateDatabaseAsync();

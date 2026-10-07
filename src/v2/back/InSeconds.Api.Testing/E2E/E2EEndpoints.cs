@@ -1,12 +1,14 @@
 using InSeconds.Api.Infrastructure.Persistence;
-using InSeconds.Api.Modules.Catalogue.Contracts;
+using InSeconds.Api.Infrastructure.Time;
+using InSeconds.Api.Modules.Daily.Application;
+using InSeconds.Api.Modules.Daily.Domain;
 using InSeconds.Api.Modules.Players.Application;
 using InSeconds.Api.Modules.Players.Domain;
 using InSeconds.Api.Testing.Deezer;
 using InSeconds.Api.Testing.Email;
 using InSeconds.Deezer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection.Extensions;
+using Wolverine;
 
 namespace InSeconds.Api.Testing.E2E;
 
@@ -19,16 +21,10 @@ public static class E2EEndpoints
     public const string Prefix = "/api/e2e";
     public const string AdminEmail = "admin-e2e@e2e.test";
     public const string AdminPseudo = "AdminE2E";
-    private const int DefaultCooldownDays = 30;
 
     public static IServiceCollection AddE2E(this IServiceCollection services)
     {
         services.AddSingleton<DatabaseResetter>();
-        // L'usage des morceaux est simulé tant que Daily (E) n'existe pas : enregistré après AddCatalogue, il remplace
-        // NoTrackUsage (ITrackUsage est résolu par le conteneur dans le code Wolverine généré).
-        services.AddSingleton<E2eTrackUsage>();
-        services.RemoveAll<ITrackUsage>();
-        services.AddSingleton<ITrackUsage>(sp => sp.GetRequiredService<E2eTrackUsage>());
         return services;
     }
 
@@ -36,23 +32,32 @@ public static class E2EEndpoints
     {
         var e2e = routes.MapGroup(Prefix).ExcludeFromDescription();
 
-        // Vide les tables des modules, les emails capturés, l'usage simulé, et remet le faux Deezer et son cache à zéro.
+        // Vide les tables des modules, les emails capturés, et remet le faux Deezer et son cache à zéro.
         e2e.MapPost("/reset", async (
-            DatabaseResetter resetter, CapturingEmailSender emails, FakeDeezerState deezer, DeezerCache deezerCache, E2eTrackUsage usage, CancellationToken ct) =>
-            Results.Ok(new ResetResponse(await ResetAsync(resetter, emails, deezer, deezerCache, usage, ct))));
+            DatabaseResetter resetter, CapturingEmailSender emails, FakeDeezerState deezer, DeezerCache deezerCache, CancellationToken ct) =>
+            Results.Ok(new ResetResponse(await ResetAsync(resetter, emails, deezer, deezerCache, ct))));
 
-        // Le pool de test : 50 morceaux jouables et 5 sans extrait, avec leur usage simulé (rien si le pool n'est pas vide).
-        e2e.MapPost("/seed-catalogue", async (
-            InSecondsDbContext db, TimeProvider time, E2eTrackUsage usage, IConfiguration configuration, CancellationToken ct) =>
-            Results.Ok(new SeedResponse(await CatalogueSeed.SeedAsync(db, time, usage, CooldownDays(configuration), ct))));
+        // Le pool de test : 50 morceaux jouables et 5 sans extrait, avec leurs défis (rien si le pool n'est pas vide).
+        e2e.MapPost("/seed-catalogue", async (InSecondsDbContext db, TimeProvider time, CancellationToken ct) =>
+            Results.Ok(new SeedResponse(await CatalogueSeed.SeedAsync(db, time, ct))));
 
         // Remise à zéro complète puis seed du catalogue (le fixture E2E de la v1 l'appelle avec un jeton admin, ignoré ici).
         e2e.MapPost("/reseed", async (
-            DatabaseResetter resetter, CapturingEmailSender emails, FakeDeezerState deezer, DeezerCache deezerCache, E2eTrackUsage usage,
-            InSecondsDbContext db, TimeProvider time, IConfiguration configuration, CancellationToken ct) =>
+            DatabaseResetter resetter, CapturingEmailSender emails, FakeDeezerState deezer, DeezerCache deezerCache,
+            InSecondsDbContext db, TimeProvider time, CancellationToken ct) =>
         {
-            await ResetAsync(resetter, emails, deezer, deezerCache, usage, ct);
-            return Results.Ok(new SeedResponse(await CatalogueSeed.SeedAsync(db, time, usage, CooldownDays(configuration), ct)));
+            await ResetAsync(resetter, emails, deezer, deezerCache, ct);
+            return Results.Ok(new SeedResponse(await CatalogueSeed.SeedAsync(db, time, ct)));
+        });
+
+        // Génère le défi du jour tout de suite, sans Hangfire (les fixtures qui ont juste besoin d'un défi, § 5.4 bis du plan v2) :
+        // 200 avec { created } (false si le défi existait déjà), 422 admin.pool_insufficient si le pool ne suffit pas.
+        e2e.MapPost("/generate-today", async (IMessageBus bus, IGameCalendar calendar, CancellationToken ct) =>
+        {
+            var result = await bus.InvokeAsync<GenerateChallengeResult>(new GenerateDailyChallenge(calendar.Today, ChallengeOrigin.Admin), ct);
+            return result.Outcome == GenerationOutcome.PoolInsufficient
+                ? Results.UnprocessableEntity(new { code = DailyErrorCodes.PoolInsufficient, eligible = result.EligibleCount, required = result.Requested })
+                : Results.Ok(new GenerateTodayResponse(result.Outcome == GenerationOutcome.Created, result.TrackCount));
         });
 
         // Connecte le navigateur appelant comme un compte lié admin dédié aux tests (créé au besoin), par le chemin du dev-login.
@@ -83,20 +88,19 @@ public static class E2EEndpoints
     }
 
     private static async Task<IReadOnlyList<string>> ResetAsync(
-        DatabaseResetter resetter, CapturingEmailSender emails, FakeDeezerState deezer, DeezerCache deezerCache, E2eTrackUsage usage, CancellationToken ct)
+        DatabaseResetter resetter, CapturingEmailSender emails, FakeDeezerState deezer, DeezerCache deezerCache, CancellationToken ct)
     {
         var schemas = await resetter.ResetAsync(ct);
         emails.Clear();
         deezer.Reset();
         deezerCache.Clear();
-        usage.Clear();
         return schemas;
     }
 
-    private static int CooldownDays(IConfiguration configuration) =>
-        configuration.GetValue<int?>("Daily:TrackCooldownDays") ?? DefaultCooldownDays;
 }
 
 public sealed record ResetResponse(IReadOnlyList<string> Schemas);
 
 public sealed record SeedResponse(int Added);
+
+public sealed record GenerateTodayResponse(bool Created, int Tracks);

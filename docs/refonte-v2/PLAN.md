@@ -377,7 +377,8 @@ Clément veut des tâches de type cron, qu'il pilote lui-même, **avec des solut
 | Tâche | Cron par défaut (UTC) | Rôle |
 |---|---|---|
 | `catalogue-refresh` | `0 23 * * *` | previews et rang Deezer des morceaux éligibles au défi du lendemain |
-| `daily-generate-challenge` | `0 0 * * *` | génère le défi du jour (retry toutes les 10 min) |
+| `daily-generate-challenge` | `0 0 * * *` | génère le défi du jour (retry toutes les 10 min, 144 essais : la journée) |
+| `daily-generate-challenge-admin` | jamais (en pause) | ce que lance le bouton « Générer le défi du jour » : sans réessai, défi marqué « admin » (ajoutée en E1) |
 | `daily-close-day` | `5 0 * * *` | fige les stats de J-2 (la veille reste en calcul direct) |
 | `players-purge-expired-tokens` | `30 3 * * *` | supprime les jetons expirés (connexion et changement d'email) |
 
@@ -998,3 +999,4 @@ Deuxième relecture, en comparant le plan au code v1 (`env/staging`). Les points
 7. ~~Pseudos en doublon de casse~~ : aucun en prod (vérifié par Clément le 30/09).
 8. ~~Défis créés à la main~~ : sans objet, la fonction n'a jamais eu d'écran ; route abandonnée en v2.
 9. ~~Gel de la v1~~ : décidé le 30/09, correctifs urgents seulement. **Reste l'estimation**, à poser au démarrage.
+10. **Cooldown dynamique selon la taille du stock** (idée du 07/10, **après la mise en prod**, ticket #275) : le cooldown du défi est un nombre de jours fixe (30) ; avec 5 morceaux par jour, un pool de moins de 155 morceaux jouables ne peut plus produire de défi. Piste recommandée : le réglage devient un **plafond**, le cooldown effectif étant le plus petit de ce réglage et d'une valeur déduite du pool (par exemple jouables ÷ morceaux par défi ÷ 2) ; à étudier avec la variante « pourcentage du pool » (qui supprime la date de déblocage du pool admin). À régler en même temps : l'écart d'un jour hérité de la v1 entre « déblocage » affiché et premier jour tirable (cf. « Fait en E1 » dans DEVELOPPEMENT.md). Rien ne change avant la bascule : la v2 reprend le comportement de la v1.

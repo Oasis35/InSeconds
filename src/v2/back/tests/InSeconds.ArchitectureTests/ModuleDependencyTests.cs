@@ -86,6 +86,41 @@ public class ModuleDependencyTests
         }
     }
 
+    /// <summary>
+    /// Daily s'appuie sur Catalogue (les morceaux, leur usage) et sur Gameplay (tirage, manche) : jamais l'inverse. L'usage des
+    /// morceaux est un contrat de Catalogue que Daily remplit, sans que Catalogue connaisse Daily.
+    /// </summary>
+    [Fact]
+    public void CatalogueEtGameplay_NeConnaissentPasDaily()
+    {
+        foreach (var core in new[] { "Catalogue", "Gameplay" })
+        {
+            var result = Types.InAssembly(Api)
+                .That().ResideInNamespace($"{ModulesNamespace}.{core}")
+                .ShouldNot().HaveDependencyOnAny($"{ModulesNamespace}.Daily")
+                .GetResult();
+
+            Assert.True(result.IsSuccessful, $"{core} : {string.Join(", ", result.FailingTypeNames ?? [])}");
+        }
+    }
+
+    /// <summary>Daily, comme Gameplay, ne touche ni au web des autres ni à Deezer : il lit les morceaux par le contrat de Catalogue.</summary>
+    [Fact]
+    public void Daily_NeDependQueDesContratsDeCatalogueEtDeGameplay_EtPasDeDeezer()
+    {
+        var daily = Types.InAssembly(Api).That().ResideInNamespace($"{ModulesNamespace}.Daily");
+        Assert.NotEmpty(daily.GetTypes());
+
+        var result = daily
+            .ShouldNot().HaveDependencyOnAny(
+                "InSeconds.Deezer", $"{ModulesNamespace}.Players.Domain", $"{ModulesNamespace}.Players.Application", $"{ModulesNamespace}.Players.Persistence",
+                $"{ModulesNamespace}.Catalogue.Domain", $"{ModulesNamespace}.Catalogue.Application", $"{ModulesNamespace}.Catalogue.Persistence",
+                $"{ModulesNamespace}.Gameplay.Domain")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
+    }
+
     private static string[] Modules() =>
         Api.GetTypes()
             .Select(t => t.Namespace)
