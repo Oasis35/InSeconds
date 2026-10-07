@@ -49,6 +49,43 @@ public class ModuleDependencyTests
         Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
     }
 
+    /// <summary>
+    /// Gameplay est de la logique pure (§ 3.3 du plan v2) : il ne dépend que de <c>Catalogue/Contracts</c> et n'a
+    /// besoin ni de l'accès aux données, ni du web, ni de l'infrastructure de l'API. Daily s'appuiera dessus.
+    /// </summary>
+    [Fact]
+    public void Gameplay_NeDependQueDeCatalogueContracts_EtResteSansAccesAuxDonneesNiAuWeb()
+    {
+        var gameplay = Types.InAssembly(Api).That().ResideInNamespace($"{ModulesNamespace}.Gameplay");
+        // Un renommage du dossier ne doit pas faire passer la règle à vide.
+        Assert.NotEmpty(gameplay.GetTypes());
+
+        var result = gameplay
+            .ShouldNot().HaveDependencyOnAny(
+                "Microsoft.EntityFrameworkCore", "Microsoft.AspNetCore", "Npgsql", "Wolverine", "Hangfire",
+                "InSeconds.Api.Infrastructure", "InSeconds.Infrastructure", "InSeconds.Deezer",
+                $"{ModulesNamespace}.Players", $"{ModulesNamespace}.Daily",
+                $"{ModulesNamespace}.Catalogue.Domain", $"{ModulesNamespace}.Catalogue.Application", $"{ModulesNamespace}.Catalogue.Persistence")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
+    }
+
+    /// <summary>Les règles d'un mode se construisent sur la manche : Gameplay ne connaît aucun mode, jamais l'inverse.</summary>
+    [Fact]
+    public void LesModulesDesNoyaux_NeDependentPasDeGameplay()
+    {
+        foreach (var core in new[] { "Players", "Catalogue" })
+        {
+            var result = Types.InAssembly(Api)
+                .That().ResideInNamespace($"{ModulesNamespace}.{core}")
+                .ShouldNot().HaveDependencyOnAny($"{ModulesNamespace}.Gameplay")
+                .GetResult();
+
+            Assert.True(result.IsSuccessful, $"{core} : {string.Join(", ", result.FailingTypeNames ?? [])}");
+        }
+    }
+
     private static string[] Modules() =>
         Api.GetTypes()
             .Select(t => t.Namespace)

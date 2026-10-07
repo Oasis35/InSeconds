@@ -8,6 +8,7 @@ using InSeconds.Api.Infrastructure.Settings;
 using InSeconds.Api.Infrastructure.Time;
 using InSeconds.Api.Modules.Catalogue;
 using InSeconds.Api.Modules.Daily;
+using InSeconds.Api.Modules.Gameplay;
 using InSeconds.Api.Modules.Players;
 using InSeconds.Deezer;
 using InSeconds.Infrastructure.Email;
@@ -56,6 +57,7 @@ public static class ApiComposition
         AppOptions.AddAppOptions(builder.Services);
         builder.Services.AddPlayers();
         builder.Services.AddCatalogue();
+        builder.Services.AddGameplay();
         builder.Services.AddDaily();
         return builder;
     }
