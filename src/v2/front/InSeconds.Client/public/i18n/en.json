@@ -215,7 +215,11 @@
     "backToGame": "Back to the game",
     "logout": "Sign out",
     "tabs": {
-      "poolPlain": "Pool"
+      "dashboard": "Dashboard",
+      "challengesPlain": "Challenges",
+      "poolPlain": "Pool",
+      "playersPlain": "Players",
+      "actions": "Actions"
     },
     "pool": {
       "runwayDay": "day of challenges left",

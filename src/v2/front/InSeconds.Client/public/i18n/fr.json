@@ -215,7 +215,11 @@
     "backToGame": "Retour au jeu",
     "logout": "Se déconnecter",
     "tabs": {
-      "poolPlain": "Pool"
+      "dashboard": "Dashboard",
+      "challengesPlain": "Défis",
+      "poolPlain": "Pool",
+      "playersPlain": "Joueurs",
+      "actions": "Actions"
     },
     "pool": {
       "runwayDay": "jour de défis restant",

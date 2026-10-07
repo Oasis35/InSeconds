@@ -180,6 +180,11 @@ Laissé aux PR suivantes : `user_agent_label` reste vide (calculé avec la liste
 - **Hôte de test** : seed de **55 morceaux réels** (ceux de la v1, dans le même ordre : 0-4 le défi d'avant-hier, 5-9 la veille, 10-14 le défi du jour, 15-20 cooldowns variés), `E2eTrackUsage` (usage simulé en mémoire, remplace `NoTrackUsage` : **à retirer quand Daily (E) fournira le vrai `ITrackUsage`**), `POST /api/e2e/reseed`, `POST /api/e2e/login-as-admin` (compte lié `admin-e2e@e2e.test`, promu en SQL). `test-audio.mp3` est copié dans `public/` du front (l'extrait du faux Deezer, annoncé en C1).
 - **Tests** : **430 Vitest** (dont 158 pour le domaine `admin` : domaine, stores, lecteur, composants, fenêtres, page, coquille, routes), **540 tests back**, 20 E2E admin actifs et verts en local (+ les 12 de B5), parité v1/v2 : 107 / 107.
 
+**Après C3, vu sur le staging (07/10) :**
+- **En-tête de l'admin recopié de la v1** : la première coquille (titre aligné à gauche, 80 px vides en haut, onglet Pool seul en pastille orange, déconnexion en haut à droite) s'écartait de la v1. Corrigé : titre et ID navigateur centrés, haut de page à 32 px comme en v1 (l'avatar de l'en-tête tient à côté du titre centré, même à 375 px), **barre des 5 onglets de la v1** (Dashboard, Défis, Pool, Joueurs, Actions, onglet actif sur fond gris), déconnexion sous le contenu. Les onglets de F2 mènent à une page d'attente **sous la barre** (`TabComingSoonPage`), qui reste utilisable ; la liste des onglets vit dans `admin/feature/admin-tabs.ts`. F2 n'aura qu'à remplacer leur route. 3 tests de la coquille en plus (433 Vitest).
+- **Accès à l'admin du staging** : aucun lien dans l'interface (comme en v1), on tape `dev.inseconds.cc/admin`. Seul le compte `STAGING_KEEP_EMAIL` garde le rôle admin après « Copy prod DB to staging » (anonymisation des tables v2, `deploy/migration-v2/import-to-staging.sh`), et seulement s'il était admin en prod ; tout autre compte voit « Accès refusé ».
+- **« 0 utilisé(s) » sur le staging : attendu jusqu'en E.** L'usage des morceaux (dernière utilisation, nombre, déblocage, défi du jour) vient de Daily (`ITrackUsage`) ; en attendant, `NoTrackUsage` répond « aucun usage » hors hôte de test : tout le pool compte comme disponible et l'autonomie affichée (en jours) est celle d'un pool neuf.
+
 ---
 
 ## 6. Phase D : Gameplay

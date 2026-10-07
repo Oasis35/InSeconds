@@ -4,6 +4,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { BrowserIdComponent } from '../../account/feature/browser-id.component';
 import { ProfileStore } from '../../account/data-access/profile.store';
 import { SessionStore } from '../../core/session/session.store';
+import { ADMIN_TABS } from './admin-tabs';
 import { DecorBackgroundComponent } from '../../ui/decor-background/decor-background.component';
 
 /**
@@ -12,7 +13,7 @@ import { DecorBackgroundComponent } from '../../ui/decor-background/decor-backgr
  * magique). Trois états, que l'API revérifie de toute façon à chaque requête :
  * - pas de compte connecté : invitation à se connecter ;
  * - compte sans le rôle : accès refusé ;
- * - admin : les onglets et la déconnexion.
+ * - admin : la barre des onglets, l'onglet ouvert, puis la déconnexion.
  * L'identifiant du navigateur est affiché dans tous les cas (repérer ses propres parties).
  */
 @Component({
@@ -21,11 +22,14 @@ import { DecorBackgroundComponent } from '../../ui/decor-background/decor-backgr
   providers: [ProfileStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="da-bg relative min-h-dvh flex flex-col items-center gap-6 px-4 pt-20 pb-10">
+    <!-- Mise en page de la v1 : titre et identifiant centrés, barre des onglets pleine largeur,
+         déconnexion en bas. Haut de page à 32 px comme en v1 : l'avatar de l'en-tête (en haut à
+         droite, en superposition) tient à côté du titre centré, même à 375 px. -->
+    <main class="da-bg relative min-h-dvh flex flex-col items-center gap-6 px-4 pt-8 pb-10" style="color:var(--text-body)">
       <app-decor-background />
       <div class="relative w-full flex flex-col items-center gap-6">
-      <div class="w-full max-w-2xl flex flex-col gap-2">
-        <h1 class="text-xl font-bold" style="color:var(--text-hi)">{{ 'admin.title' | translate }}</h1>
+      <div class="flex flex-col items-center gap-1">
+        <h1 class="text-2xl font-bold tracking-tight" style="color:var(--text-hi)">{{ 'admin.title' | translate }}</h1>
         <app-browser-id />
       </div>
 
@@ -43,29 +47,38 @@ import { DecorBackgroundComponent } from '../../ui/decor-background/decor-backgr
             <a routerLink="/daily" class="text-sm underline" style="color:var(--text-indigo)">{{ 'admin.backToGame' | translate }}</a>
           </section>
         } @else {
-          <div class="w-full max-w-2xl flex items-center justify-between gap-3">
-            <nav class="flex items-center gap-1" [attr.aria-label]="'admin.title' | translate">
-              <a routerLink="/admin/catalogue" routerLinkActive="is-active" ariaCurrentWhenActive="page" [replaceUrl]="true"
-                class="admin-tab text-sm font-medium px-3 py-1.5 rounded-lg">{{ 'admin.tabs.poolPlain' | translate }}</a>
-            </nav>
+          <!-- Onglets = routes enfants ; replaceUrl : pas une entrée d'historique par clic d'onglet.
+               Ceux qui n'ont pas encore leur module (F2) mènent à une page d'attente. -->
+          <nav class="flex gap-1 p-1 rounded-lg w-full max-w-2xl" style="background:var(--bg-surface)"
+            [attr.aria-label]="'admin.title' | translate">
+            @for (tab of tabs; track tab.path) {
+              <a [routerLink]="['/admin', tab.path]" routerLinkActive="is-active" ariaCurrentWhenActive="page" [replaceUrl]="true"
+                class="admin-tab flex-1 min-w-0 truncate text-center py-2 px-1 rounded-md text-xs sm:text-sm font-medium transition-colors">
+                {{ tab.label | translate }}
+              </a>
+            }
+          </nav>
+          <!-- Le contenu de l'onglet dans un bloc : sinon <router-outlet> compte comme un élément du flex et double l'écart. -->
+          <div class="w-full min-w-0"><router-outlet /></div>
+          <div class="pt-2">
             <button type="button" (click)="profile.logout()" [disabled]="profile.logoutStatus() === 'pending'"
-              class="text-xs px-3 py-1.5 rounded-lg transition-colors"
-              style="color:var(--text-muted);border:1px solid var(--border-strong)">
+              class="text-xs transition-colors" style="color:var(--text-faint)">
               {{ 'admin.logout' | translate }}
             </button>
           </div>
-          <router-outlet />
         }
       }
       </div>
     </main>
   `,
   styles: `
-    .admin-tab { color: var(--text-muted); background: var(--bg-inactive); }
-    .admin-tab.is-active { color: var(--text-on-primary); background: var(--bg-primary-dk); }
+    .admin-tab { color: var(--text-muted); }
+    .admin-tab.is-active { color: var(--text-hi); background: var(--bg-inactive); }
   `,
 })
 export class AdminShellPage {
+  /** Ordre et libellés de la v1. */
+  protected readonly tabs = ADMIN_TABS;
   protected readonly session = inject(SessionStore);
   protected readonly profile = inject(ProfileStore);
 }
