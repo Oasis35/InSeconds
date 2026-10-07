@@ -68,6 +68,49 @@
       "label": "environnement de développement"
     }
   },
+  "gameplay": {
+    "round": {
+      "noPreview": "Aperçu non disponible pour ce morceau.",
+      "skip": "Passer (0 pts)",
+      "replay": "↺ {{ seconds }}s",
+      "listenUpTo": "Écouter jusqu'à {{ seconds }}s",
+      "stepsUpTo": "Tu peux écouter jusqu'à {{ seconds }}s si besoin",
+      "playbackError": "Impossible de lire l'aperçu. Réessaie, ou passe ce morceau.",
+      "retry": "Réessayer"
+    },
+    "answer": {
+      "placeholder": "Artiste — Titre",
+      "clear": "Effacer",
+      "validate": "Valider",
+      "emptyConfirm": "Tu n'as rien saisi. Valider quand même ?",
+      "cancel": "Annuler",
+      "submitAnyway": "Valider quand même",
+      "skipConfirm": "Passer ce morceau ? Tu marqueras 0 points",
+      "skipAnyway": "Passer",
+      "submitFailed": "Ta réponse n'a pas pu être enregistrée. Vérifie ta connexion et réessaie.",
+      "retry": "Réessayer"
+    },
+    "hint": {
+      "costWarning": "Chaque indice révélé impacte les points du tour",
+      "tooltip": "Indice — coûte des points",
+      "button": "Indice {{ level }}",
+      "ask": {
+        "year": "Indice année",
+        "artist": "Indice artiste"
+      },
+      "kind": {
+        "year": "Année",
+        "artist": "Artiste",
+        "other": "Indice"
+      }
+    },
+    "reveal": {
+      "coverAlt": "Pochette",
+      "artist": "Artiste",
+      "title": "Titre",
+      "correctAnswer": "Bonne réponse"
+    }
+  },
   "account": {
     "login": {
       "title": "Connexion",

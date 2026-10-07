@@ -562,7 +562,8 @@ Dans chaque domaine :
 - **data-access :** `DailyGameStore`, `DailyStreakStore`, `DailyStatsStore`, adaptateur `DailyApi`.
 - **feature :**
   - pages : accueil, reprise, partie, récap, « déjà joué » ;
-  - garde de sortie en cours de partie, synchronisation multi-onglets, soumission avec réessais (piège 32).
+  - garde de sortie en cours de partie, synchronisation multi-onglets, soumission avec réessais (piège 32) ;
+  - **le son ne démarre que sur un clic du joueur** : les navigateurs refusent un son sans geste, et Howler attend alors en silence, sans erreur (l'écran afficherait « lecture en cours » sans son). Le premier morceau est lancé par le clic « Commencer » ou « Reprendre » (la reprise après rechargement passe par l'écran de reprise), les suivants par « Piste suivante » ; jamais à l'arrivée sur la route, depuis un `effect` ni au retour de l'onglet au premier plan. Un E2E le vérifie. `provideGameplay()` se met dans les `providers` de la route Daily.
 - **ui :** gélule série, panneau série, cases de gels, égaliseur des scores, bouton de partage, toasts de gel. Déplacés depuis `shared/`, puisqu'ils n'existent que pour ce mode.
 
 ### 6.5 `account` et `admin`
