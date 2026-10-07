@@ -53,23 +53,23 @@ describe('AudioPreviewPlayer', () => {
   });
 
   it('joue un extrait', async () => {
-    player.toggle('http://preview/1.mp3');
+    player.toggle('https://preview/1.mp3');
     await flush();
 
     expect(created[0].play).toHaveBeenCalledTimes(1);
-    expect(player.url()).toBe('http://preview/1.mp3');
+    expect(player.url()).toBe('https://preview/1.mp3');
     expect(player.playing()).toBe(true);
   });
 
   it('met en pause puis reprend le même extrait sans le recharger', async () => {
-    player.toggle('http://preview/1.mp3');
+    player.toggle('https://preview/1.mp3');
     await flush();
 
-    player.toggle('http://preview/1.mp3');
+    player.toggle('https://preview/1.mp3');
     expect(player.playing()).toBe(false);
     expect(created[0].pause).toHaveBeenCalled();
 
-    player.toggle('http://preview/1.mp3');
+    player.toggle('https://preview/1.mp3');
     await flush();
     expect(created).toHaveLength(1);
     expect(created[0].play).toHaveBeenCalledTimes(2);
@@ -77,19 +77,19 @@ describe('AudioPreviewPlayer', () => {
   });
 
   it('écouter un autre extrait coupe le premier', async () => {
-    player.toggle('http://preview/1.mp3');
+    player.toggle('https://preview/1.mp3');
     await flush();
 
-    player.toggle('http://preview/2.mp3');
+    player.toggle('https://preview/2.mp3');
     await flush();
 
     expect(created[0].pause).toHaveBeenCalled();
-    expect(player.url()).toBe('http://preview/2.mp3');
+    expect(player.url()).toBe('https://preview/2.mp3');
     expect(player.playing()).toBe(true);
   });
 
   it('suit l\'avancement de la lecture', async () => {
-    player.toggle('http://preview/1.mp3');
+    player.toggle('https://preview/1.mp3');
     await flush();
 
     created[0].currentTime = 15;
@@ -99,7 +99,7 @@ describe('AudioPreviewPlayer', () => {
   });
 
   it('s\'arrête à la fin de l\'extrait', async () => {
-    player.toggle('http://preview/1.mp3');
+    player.toggle('https://preview/1.mp3');
     await flush();
 
     created[0].onended?.(new Event('ended'));
@@ -109,7 +109,7 @@ describe('AudioPreviewPlayer', () => {
   });
 
   it('libère tout à l\'arrêt', async () => {
-    player.toggle('http://preview/1.mp3');
+    player.toggle('https://preview/1.mp3');
     await flush();
 
     player.stop();
@@ -124,7 +124,7 @@ describe('AudioPreviewPlayer', () => {
   it('revient au repos si la lecture est refusée', async () => {
     nextPlay = () => Promise.reject(new Error('NotAllowedError'));
 
-    player.toggle('http://preview/1.mp3');
+    player.toggle('https://preview/1.mp3');
     await flush();
 
     expect(player.playing()).toBe(false);
@@ -134,7 +134,7 @@ describe('AudioPreviewPlayer', () => {
   it('ignore la promesse d\'une lecture arrêtée entre-temps', async () => {
     let release!: () => void;
     nextPlay = () => new Promise<void>(resolve => { release = resolve; });
-    player.toggle('http://preview/1.mp3');
+    player.toggle('https://preview/1.mp3');
 
     player.stop();
     release();

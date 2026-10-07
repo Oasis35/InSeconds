@@ -15,6 +15,12 @@ export type ToggleError = 'inToday' | 'error';
 const TRACK_IN_TODAY_CHALLENGE = 'catalogue.track_in_today_challenge';
 const NOT_FOUND = 'common.not_found';
 
+/** Ce qu'une désactivation a rendu, vu de l'écran : rien, refus du défi du jour, ou autre échec. */
+function toToggleError(error: AppError | null): ToggleError | null {
+  if (error === null) return null;
+  return error.code === TRACK_IN_TODAY_CHALLENGE ? 'inToday' : 'error';
+}
+
 interface PoolState {
   tracks: readonly PoolTrack[];
   filters: PoolFilters;
@@ -92,6 +98,15 @@ export const PoolStore = signalStore(
       }
     }
 
+    /** Supprime un morceau ; déjà supprimé (une première tentative a abouti avant l'échec d'un autre) : rien à refaire. */
+    async function deleteIgnoringMissing(id: number): Promise<void> {
+      try {
+        await api.deleteTrack(id);
+      } catch (error_) {
+        if ((await toAppError(error_)).code !== NOT_FOUND) throw error_;
+      }
+    }
+
     /** Lance une action de l'API ; relit le pool si elle réussit, rend l'erreur sinon. */
     async function mutate(action: () => Promise<void>): Promise<AppError | null> {
       try {
@@ -135,16 +150,11 @@ export const PoolStore = signalStore(
 
       /** Supprime ces morceaux (aucun n'a servi) ; s'arrête à la première erreur. */
       async remove(ids: readonly number[]): Promise<AppError | null> {
-        const error = await mutate(async () => {
-          for (const id of ids) {
-            try {
-              await api.deleteTrack(id);
-            } catch (failure) {
-              // Déjà supprimé (une première tentative a abouti avant l'échec d'un autre morceau) : rien à refaire.
-              if ((await toAppError(failure)).code !== NOT_FOUND) throw failure;
-            }
-          }
-        });
+        // L'un après l'autre (une suppression attend la précédente) : arrêt à la première erreur.
+        const error = await mutate(() => ids.reduce<Promise<void>>(
+          (previous, id) => previous.then(() => deleteIgnoringMissing(id)),
+          Promise.resolve(),
+        ));
         if (error === null) {
           const removed = new Set(ids);
           patchState(store, { selectedIds: store.selectedIds().filter(id => !removed.has(id)) });
@@ -168,7 +178,7 @@ export const PoolStore = signalStore(
         const error = await mutate(() => api.setTrackDisabled(track.id, disable));
         patchState(store, {
           togglingIds: store.togglingIds().filter(id => id !== track.id),
-          toggleError: error === null ? null : error.code === TRACK_IN_TODAY_CHALLENGE ? 'inToday' : 'error',
+          toggleError: toToggleError(error),
         });
       },
       dismissToggleError: () => patchState(store, { toggleError: null }),

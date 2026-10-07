@@ -40,14 +40,14 @@ describe('PreviewTrackDialog', () => {
   const flush = () => new Promise<void>(resolve => setTimeout(resolve, 0));
 
   it('annonce la recherche de l\'extrait puis lance la lecture', async () => {
-    const { fixture, element, player } = open({ findPreviewUrl: vi.fn(async () => 'http://preview/77.mp3') });
+    const { fixture, element, player } = open({ findPreviewUrl: vi.fn(async () => 'https://preview/77.mp3') });
     expect(element.textContent).toContain('admin.previewModal.loading');
 
     await flush();
     fixture.detectChanges();
 
     expect(api.findPreviewUrl).toHaveBeenCalledWith(track);
-    expect(player.url()).toBe('http://preview/77.mp3');
+    expect(player.url()).toBe('https://preview/77.mp3');
     expect(player.playing()).toBe(true);
     expect(element.textContent).toContain('⏸');
   });
@@ -81,7 +81,7 @@ describe('PreviewTrackDialog', () => {
   });
 
   it('met en pause puis reprend au clic sur le bouton de lecture', async () => {
-    const { fixture, element, player } = open({ findPreviewUrl: vi.fn(async () => 'http://preview/77.mp3') });
+    const { fixture, element, player } = open({ findPreviewUrl: vi.fn(async () => 'https://preview/77.mp3') });
     await flush();
     fixture.detectChanges();
 
@@ -90,7 +90,7 @@ describe('PreviewTrackDialog', () => {
   });
 
   it('arrête le son à la fermeture', async () => {
-    const { fixture, player } = open({ findPreviewUrl: vi.fn(async () => 'http://preview/77.mp3') });
+    const { fixture, player } = open({ findPreviewUrl: vi.fn(async () => 'https://preview/77.mp3') });
     await flush();
     expect(player.playing()).toBe(true);
 
@@ -107,7 +107,7 @@ describe('PreviewTrackDialog', () => {
     const { fixture, player } = open({ findPreviewUrl: vi.fn(() => new Promise<string>(resolve => { answer = resolve; })) });
 
     fixture.destroy();
-    answer('http://preview/77.mp3');
+    answer('https://preview/77.mp3');
     await flush();
 
     expect(audios).toHaveLength(0);
@@ -128,7 +128,7 @@ describe('PreviewTrackDialog', () => {
 
   it('coupe l\'extrait que le panneau de recherche jouait', async () => {
     audios = [];
-    api = fakeCatalogueApi({ findPreviewUrl: vi.fn(async () => 'http://preview/77.mp3') });
+    api = fakeCatalogueApi({ findPreviewUrl: vi.fn(async () => 'https://preview/77.mp3') });
     TestBed.configureTestingModule({
       providers: [
         provideTranslateService(), AudioPreviewPlayer, provideCatalogueApiFake(api),
@@ -138,7 +138,7 @@ describe('PreviewTrackDialog', () => {
       ],
     });
     const player = TestBed.inject(AudioPreviewPlayer);
-    player.toggle('http://search/1.mp3');
+    player.toggle('https://search/1.mp3');
     await flush();
     expect(player.playing()).toBe(true);
 

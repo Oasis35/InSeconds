@@ -52,7 +52,7 @@ const FIELD_STYLE = 'background:var(--bg-surface);color:var(--text-light)';
         class="text-sm rounded-lg px-3 py-1.5 outline-none" [style]="fieldStyle" />
 
       @if (active()) {
-        <button type="button" (click)="reset.emit()" class="text-xs transition-colors px-1" style="color:var(--text-muted)">
+        <button type="button" (click)="resetFilters.emit()" class="text-xs transition-colors px-1" style="color:var(--text-muted)">
           {{ 'admin.pool.resetFilters' | translate }}
         </button>
       }
@@ -67,7 +67,7 @@ export class PoolFilterBarComponent {
   readonly statusChange = output<StatusFilter>();
   readonly lastUsedFromChange = output<string>();
   readonly lastUsedToChange = output<string>();
-  readonly reset = output();
+  readonly resetFilters = output();
 
   protected readonly fieldStyle = FIELD_STYLE;
   protected readonly active = computed(() => hasActiveFilters(this.filters()));

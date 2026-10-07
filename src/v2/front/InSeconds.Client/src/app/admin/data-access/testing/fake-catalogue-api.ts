@@ -15,7 +15,7 @@ export function poolTrack(overrides: Partial<PoolTrack> = {}): PoolTrack {
 }
 
 export function deezerResult(overrides: Partial<DeezerResult> = {}): DeezerResult {
-  return { deezerTrackId: 42, artist: 'E2E Artist', title: 'E2E Track', previewUrl: 'http://preview/42.mp3', ...overrides };
+  return { deezerTrackId: 42, artist: 'E2E Artist', title: 'E2E Track', previewUrl: 'https://preview/42.mp3', ...overrides };
 }
 
 function defaults() {

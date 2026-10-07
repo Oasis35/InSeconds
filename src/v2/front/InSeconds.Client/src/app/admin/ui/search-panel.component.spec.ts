@@ -4,7 +4,7 @@ import { DeezerResult } from '../domain/pool-track';
 import { SearchPanelComponent } from './search-panel.component';
 
 const result = (overrides: Partial<DeezerResult> = {}): DeezerResult =>
-  ({ deezerTrackId: 42, artist: 'E2E Artist', title: 'E2E Track', previewUrl: 'http://preview/42.mp3', ...overrides });
+  ({ deezerTrackId: 42, artist: 'E2E Artist', title: 'E2E Track', previewUrl: 'https://preview/42.mp3', ...overrides });
 
 describe('SearchPanelComponent', () => {
   function render(inputs: Record<string, unknown> = {}) {
@@ -108,8 +108,8 @@ describe('SearchPanelComponent', () => {
 
     it('montre ⏸ et la barre seulement sur l\'extrait en cours de lecture', () => {
       const { element } = render({
-        results: [result(), result({ deezerTrackId: 43, previewUrl: 'http://preview/43.mp3' })],
-        previewingUrl: 'http://preview/42.mp3', playing: true, progress: 40,
+        results: [result(), result({ deezerTrackId: 43, previewUrl: 'https://preview/43.mp3' })],
+        previewingUrl: 'https://preview/42.mp3', playing: true, progress: 40,
       });
 
       const [first, second] = Array.from(element.querySelectorAll('li'));
@@ -120,7 +120,7 @@ describe('SearchPanelComponent', () => {
     });
 
     it('revient à ▶ quand l\'extrait est en pause', () => {
-      const { play } = render({ results: [result()], previewingUrl: 'http://preview/42.mp3', playing: false });
+      const { play } = render({ results: [result()], previewingUrl: 'https://preview/42.mp3', playing: false });
 
       expect(play().textContent?.trim()).toBe('▶');
     });

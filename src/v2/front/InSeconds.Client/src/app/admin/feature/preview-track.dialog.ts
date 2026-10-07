@@ -1,10 +1,13 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { DIALOG_DATA } from '@angular/cdk/dialog';
 import { TranslatePipe } from '@ngx-translate/core';
+import { toAppError } from '../../core/errors/app-error';
 import { ModalFrameComponent } from '../../ui/modal/modal-frame.component';
 import { AudioPreviewPlayer } from '../data-access/audio-preview.player';
 import { CatalogueApi } from '../data-access/catalogue.api';
 import { PoolTrack } from '../domain/pool-track';
+
+const DEEZER_UNAVAILABLE = 'catalogue.deezer_unavailable';
 
 type PreviewStatus = 'loading' | 'ready' | 'error';
 
@@ -58,7 +61,7 @@ type PreviewStatus = 'loading' | 'ready' | 'error';
     </app-modal-frame>
   `,
 })
-export class PreviewTrackDialog {
+export class PreviewTrackDialog implements OnInit {
   protected readonly track = inject<PoolTrack>(DIALOG_DATA);
   protected readonly player = inject(AudioPreviewPlayer);
   private readonly api = inject(CatalogueApi);
@@ -76,6 +79,9 @@ export class PreviewTrackDialog {
       this.closed = true;
       this.player.stop();
     });
+  }
+
+  ngOnInit(): void {
     void this.load();
   }
 
@@ -88,8 +94,9 @@ export class PreviewTrackDialog {
     try {
       url = await this.api.findPreviewUrl(this.track);
     } catch (error) {
+      const { code } = await toAppError(error);
       if (this.closed) return;
-      this.unavailable.set((error as { status?: number }).status === 503);
+      this.unavailable.set(code === DEEZER_UNAVAILABLE);
       this.status.set('error');
       return;
     }

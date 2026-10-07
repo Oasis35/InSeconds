@@ -180,7 +180,7 @@ describe('CataloguePage', () => {
       const { click, player, search, detect } = await render();
       click(b => b.textContent?.includes('admin.pool.add') ?? false);
       await detect();
-      player.toggle('http://preview/1.mp3');
+      player.toggle('https://preview/1.mp3');
       await new Promise<void>(resolve => setTimeout(resolve, 0));
       expect(player.playing()).toBe(true);
 

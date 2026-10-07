@@ -3,7 +3,7 @@ import { RedirectFunction, Router, Routes } from '@angular/router';
 import { AdminShellPage } from './admin-shell.page';
 
 /** Onglets de l'admin qui arrivent avec leur module (F2) : en attendant, la page d'attente. */
-const TABS_TO_COME = ['dashboard', 'defis', 'joueurs', 'actions'];
+const TABS_TO_COME: ReadonlySet<string> = new Set(['dashboard', 'defis', 'joueurs', 'actions']);
 
 /**
  * `/admin` n'a pas de contenu : il mène à un onglet. Les anciennes adresses `/admin?tab=…` (v1) sont
@@ -11,7 +11,7 @@ const TABS_TO_COME = ['dashboard', 'defis', 'joueurs', 'actions'];
  */
 const defaultTab: RedirectFunction = ({ queryParams }) => {
   const { tab, ...others } = queryParams;
-  const target = typeof tab === 'string' && TABS_TO_COME.includes(tab) ? tab : 'catalogue';
+  const target = typeof tab === 'string' && TABS_TO_COME.has(tab) ? tab : 'catalogue';
   return inject(Router).createUrlTree(['/admin', target], { queryParams: others });
 };
 

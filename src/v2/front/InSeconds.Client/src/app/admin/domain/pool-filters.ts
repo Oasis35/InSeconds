@@ -78,11 +78,14 @@ export function filterTracks(tracks: readonly PoolTrack[], filters: PoolFilters)
     && matchesLastUsed(track, filters.lastUsedFrom, filters.lastUsedTo));
 }
 
+/** Ordre du tri par extrait : manquant, pas encore contrôlé, disponible. */
+const PREVIEW_ORDER: Readonly<Record<PoolTrack['preview'], number>> = { missing: 0, unknown: 1, available: 2 };
+
 function sortValue(track: PoolTrack, column: SortColumn): string | number | null {
   switch (column) {
     case 'artist': return track.artist.toLowerCase();
     case 'title': return track.title.toLowerCase();
-    case 'preview': return track.preview === 'available' ? 2 : track.preview === 'unknown' ? 1 : 0;
+    case 'preview': return PREVIEW_ORDER[track.preview];
     case 'status': return isUsed(track) ? 0 : 1;
     case 'lastUsedDate': return track.lastUsedDate;
     case 'unlockDate': return track.unlockDate;

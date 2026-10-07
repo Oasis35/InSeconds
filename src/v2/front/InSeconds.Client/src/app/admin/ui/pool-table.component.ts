@@ -28,6 +28,7 @@ const COLUMNS: readonly Column[] = [
   selector: 'app-pool-table',
   imports: [TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'block min-w-0' },
   template: `
     <div class="rounded-xl flex flex-col overflow-hidden" style="background:var(--bg-surface)">
       @if (loading()) {

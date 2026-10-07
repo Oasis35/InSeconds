@@ -32,6 +32,9 @@ const DIALOG_MAX_WIDTH = '26rem';
   ],
   providers: [PoolStore, DeezerSearchStore, AudioPreviewPlayer],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // Pleine largeur : centrée par la coquille (`items-center`), la page prendrait sinon la largeur du
+  // tableau et déborderait de l'écran du téléphone au lieu de faire défiler le tableau seul.
+  host: { class: 'flex w-full min-w-0 justify-center' },
   template: `
     <div class="flex flex-col gap-4 w-full max-w-2xl">
       <app-pool-toolbar
@@ -73,7 +76,7 @@ const DIALOG_MAX_WIDTH = '26rem';
         (statusChange)="pool.setStatus($event)"
         (lastUsedFromChange)="pool.setLastUsedFrom($event)"
         (lastUsedToChange)="pool.setLastUsedTo($event)"
-        (reset)="pool.resetFilters()" />
+        (resetFilters)="pool.resetFilters()" />
 
       @if (pool.toggleError(); as kind) {
         <p class="text-xs" role="alert" style="color:var(--color-fail)">

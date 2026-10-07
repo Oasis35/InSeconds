@@ -18,9 +18,9 @@ const RUNWAY_COLOR: Record<RunwayTone, string> = {
   imports: [TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex items-center justify-between gap-3">
+    <div class="flex flex-wrap items-center justify-between gap-3">
       @if (selectedCount() > 0) {
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-3">
           <span class="text-xs" style="color:var(--text-light)">{{ 'admin.pool.selected' | translate: { count: selectedCount() } }}</span>
           <button type="button" (click)="deselectAll.emit()" class="text-xs transition-colors" style="color:var(--text-muted)">
             {{ 'admin.pool.deselectAll' | translate }}

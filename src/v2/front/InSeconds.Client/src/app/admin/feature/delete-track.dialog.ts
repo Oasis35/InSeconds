@@ -52,7 +52,8 @@ export class DeleteTrackDialog {
   private readonly errorCode = signal<string | null>(null);
   protected readonly errorMessage = computed(() => {
     const code = this.errorCode();
-    return code === null ? null : code === '' ? 'admin.deleteModal.error' : errorMessageKey(code);
+    if (code === null) return null;
+    return code === '' ? 'admin.deleteModal.error' : errorMessageKey(code);
   });
 
   protected async confirm(): Promise<void> {
