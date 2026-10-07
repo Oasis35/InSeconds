@@ -16,7 +16,9 @@ export const PAGE_RELOAD = new InjectionToken<() => void>('PAGE_RELOAD', {
  * Détection d'une nouvelle version du front, par le service worker d'Angular (§ 6.6 du plan v2)
  * plutôt qu'une comparaison maison avec `/health` :
  * - `VERSION_READY` : la nouvelle version est téléchargée, on propose de recharger ;
- * - retour de l'onglet au premier plan : on vérifie s'il en existe une ;
+ * - au démarrage et au retour de l'onglet au premier plan : on vérifie s'il en existe une. Au
+ *   démarrage, sans cet appel, le service worker attendait qu'il n'y ait plus de requête en cours
+ *   pour vérifier (environ 25 s mesurées) : le joueur voyait l'ancienne version sans bandeau ;
  * - état irrécupérable du service worker : on propose aussi de recharger ;
  * - code `common.new_version` renvoyé par l'API (anciennes routes) : `markUpdateAvailable()`.
  * Service worker désactivé (dev, tests, navigateur sans support) : rien n'est surveillé.
@@ -45,6 +47,8 @@ export class VersionService {
     fromEvent(document, 'visibilitychange')
       .pipe(filter(() => document.visibilityState === 'visible'), takeUntilDestroyed(destroyRef))
       .subscribe(() => this.checkForUpdate());
+
+    this.checkForUpdate();
   }
 
   markUpdateAvailable(): void {
