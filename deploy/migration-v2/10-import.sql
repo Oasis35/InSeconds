@@ -119,8 +119,11 @@ BEGIN
     END IF;
 END $$;
 
--- Les tables d'un module qui référencent catalogue.tracks s'ajoutent à cette liste avec leur import.
-TRUNCATE catalogue.tracks RESTART IDENTITY;
+-- Les tables d'un module qui référencent catalogue.tracks s'ajoutent à cette liste avec leur import : PostgreSQL
+-- refuse de vider une table référencée par une clé étrangère, même vide. Les défis (E1) en font partie : le défi
+-- que la tâche de minuit a généré sur la base de staging, avant un nouvel import, part avec les morceaux (leur
+-- historique est repris par l'import de Daily, E4).
+TRUNCATE daily.challenge_tracks, daily.challenges, catalogue.tracks RESTART IDENTITY;
 
 -- HasPreview vaut 1 (disponible) ou 2 (absent) : l'état « inconnu » n'existe pas en v1. Le rang Deezer et
 -- la date du dernier contrôle sont inconnus : la tâche catalogue-refresh les remplit la nuit suivante (en

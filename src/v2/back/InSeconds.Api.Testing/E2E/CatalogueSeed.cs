@@ -1,5 +1,6 @@
 using InSeconds.Api.Infrastructure.Persistence;
 using InSeconds.Api.Modules.Catalogue.Domain;
+using InSeconds.Api.Modules.Daily.Domain;
 using InSeconds.Api.Testing.Deezer;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,7 +10,8 @@ namespace InSeconds.Api.Testing.E2E;
 /// Le pool de test, repris de la v1 (<c>E2ESeedData</c>) : 55 morceaux réels, dans l'ordre exact de la v1 (les
 /// index comptent). 0-4 : défi d'avant-hier, 5-9 : défi d'hier, 10-14 : défi du jour, 15-20 : cooldowns variés,
 /// le reste : le pool disponible. Les 5 derniers (identifiants Deezer ≥ <see cref="FakeDeezerHandler.NoPreviewFrom"/>)
-/// n'ont pas d'extrait. L'usage de ces morceaux (<see cref="E2eTrackUsage"/>) est simulé ici, Daily n'existant pas encore.
+/// n'ont pas d'extrait. L'usage de ces morceaux est celui de la v1, reconstitué par de vrais défis (Daily, E1) :
+/// le défi d'avant-hier, celui d'hier, celui du jour, et des défis plus anciens pour les cooldowns.
 /// </summary>
 public static class CatalogueSeed
 {
@@ -78,7 +80,7 @@ public static class CatalogueSeed
     ];
 
     /// <summary>Ajoute le pool s'il est vide. Renvoie le nombre de morceaux ajoutés.</summary>
-    public static async Task<int> SeedAsync(InSecondsDbContext db, TimeProvider time, E2eTrackUsage usage, int cooldownDays, CancellationToken ct)
+    public static async Task<int> SeedAsync(InSecondsDbContext db, TimeProvider time, CancellationToken ct)
     {
         if (await db.Set<Track>().AnyAsync(ct))
             return 0;
@@ -96,13 +98,25 @@ public static class CatalogueSeed
         await db.AddRangeAsync(tracks, ct);
         await db.SaveChangesAsync(ct);
 
-        // Les identifiants viennent de la séquence : connus seulement après l'enregistrement.
+        // Les identifiants viennent de la séquence : connus seulement après l'enregistrement. Un défi par jour où un morceau a
+        // servi ; les morceaux utilisés plusieurs fois (17, 18, 19) ont des défis plus anciens, une semaine d'écart.
         var today = DateOnly.FromDateTime(now.UtcDateTime);
+        var byDay = new SortedDictionary<DateOnly, List<int>>();
         for (var i = 0; i < tracks.Count; i++)
         {
-            if (Usage(i) is { } used)
-                usage.Record(tracks[i].Id, today.AddDays(-used.DaysAgo), used.Count, cooldownDays, inTodayChallenge: i is >= 10 and <= 14);
+            if (Usage(i) is not { } used)
+                continue;
+            for (var use = 0; use < used.Count; use++)
+            {
+                var day = today.AddDays(-(used.DaysAgo + use * 7));
+                if (!byDay.TryGetValue(day, out var ids))
+                    byDay[day] = ids = [];
+                ids.Add(tracks[i].Id);
+            }
         }
+
+        await db.AddRangeAsync(byDay.Select(d => DailyChallenge.Create(d.Key, ChallengeOrigin.Nightly, d.Value)), ct);
+        await db.SaveChangesAsync(ct);
 
         return tracks.Count;
     }

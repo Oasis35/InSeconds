@@ -30,5 +30,8 @@ public static class DbSchemas
     /// <summary>Module Catalogue : les morceaux du pool (§ 4.3 du plan v2).</summary>
     public const string Catalogue = "catalogue";
 
+    /// <summary>Module Daily : défis, parties, séries (§ 4.4 du plan v2).</summary>
+    public const string Daily = "daily";
+
     public const string MigrationsHistoryTable = "__ef_migrations_history";
 }

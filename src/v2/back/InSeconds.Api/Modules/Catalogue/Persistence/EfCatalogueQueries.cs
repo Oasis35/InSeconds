@@ -20,6 +20,13 @@ public sealed class EfCatalogueQueries(InSecondsDbContext db) : ICatalogueQuerie
 
 public sealed class EfTrackDirectory(InSecondsDbContext db, IOptionsMonitor<CatalogueOptions> options) : ITrackDirectory
 {
+    public async Task<IReadOnlyList<int>> ListPlayableIdsAsync(CancellationToken ct) =>
+        await db.Set<Track>().AsNoTracking()
+            .Where(t => t.DisabledAt == null && t.PreviewStatus == PreviewStatus.Available)
+            .OrderBy(t => t.Id)
+            .Select(t => t.Id)
+            .ToListAsync(ct);
+
     public async Task<IReadOnlyDictionary<int, TrackInfo>> GetAsync(IReadOnlyCollection<int> trackIds, CancellationToken ct)
     {
         var ids = trackIds.ToArray();

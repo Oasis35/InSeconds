@@ -4,11 +4,12 @@ using InSeconds.Api.Modules.Catalogue.Application;
 using InSeconds.Api.Modules.Catalogue.Contracts;
 using InSeconds.Api.Modules.Players.Application;
 using InSeconds.Api.Testing.E2E;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace InSeconds.IntegrationTests.Testing;
 
-/// <summary>Seed réaliste, usage simulé des morceaux, <c>reseed</c> et <c>login-as-admin</c> de l'hôte de test.</summary>
+/// <summary>Seed réaliste (morceaux et défis), <c>reseed</c>, <c>generate-today</c> et <c>login-as-admin</c> de l'hôte de test.</summary>
 public class E2eHostTests(PostgresFixture postgres) : IAsyncLifetime
 {
     private TestingFactory _host = null!;
@@ -62,22 +63,25 @@ public class E2eHostTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Cooldown_ListeLesMorceauxDontLeDeblocageEstPosterieurAuJour()
+    public async Task Cooldown_ListeLesMorceauxTiresDepuisMoinsDeTrenteJours_RegleDeLaV1()
     {
         var admin = await SeededAdminAsync();
         var tracks = await ListAsync(admin);
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var usage = _host.Services.GetRequiredService<ITrackUsage>();
+        using var scope = _host.Services.CreateScope();
+        var usage = scope.ServiceProvider.GetRequiredService<ITrackUsage>();
         var nirvana = tracks.Single(t => t.DeezerTrackId == 13791930).Id;
 
         var inCooldown = await usage.GetTracksInCooldownAsync(today, Ct);
 
-        // Les 15 des défis, Queen (+25 j) et Ed Sheeran (+15 j) ; ni Nirvana (déblocage aujourd'hui), ni Adele, ni Michael Jackson.
-        Assert.Equal(17, inCooldown.Count);
+        // Les 15 des défis, Queen (-5 j), Ed Sheeran (-15 j) et Nirvana (-30 j : la v1 ne le tire qu'à partir de -31 j, le
+        // lendemain du « déblocage » affiché) ; ni Adele (-90 j), ni Michael Jackson (jamais utilisé).
+        Assert.Equal(18, inCooldown.Count);
         Assert.Contains(Of(tracks, "Eminem").Id, inCooldown);
         Assert.Contains(Of(tracks, "Queen").Id, inCooldown);
         Assert.Contains(Of(tracks, "Ed Sheeran").Id, inCooldown);
-        Assert.DoesNotContain(nirvana, inCooldown);
+        Assert.Contains(nirvana, inCooldown);
+        Assert.DoesNotContain(nirvana, await usage.GetTracksInCooldownAsync(today.AddDays(1), Ct));
         Assert.DoesNotContain(Of(tracks, "Adele").Id, inCooldown);
         Assert.DoesNotContain(Of(tracks, "Michael Jackson").Id, inCooldown);
         Assert.DoesNotContain(Of(tracks, "Ed Sheeran").Id, await usage.GetTracksInCooldownAsync(today.AddDays(16), Ct));
@@ -105,11 +109,12 @@ public class E2eHostTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Reset_VideLUsageSimule()
+    public async Task Reset_VideLesDefis()
     {
         var admin = await SeededAdminAsync();
         var ids = (await ListAsync(admin)).Select(t => t.Id).ToList();
-        var usage = _host.Services.GetRequiredService<E2eTrackUsage>();
+        using var scope = _host.Services.CreateScope();
+        var usage = scope.ServiceProvider.GetRequiredService<ITrackUsage>();
         Assert.NotEmpty(await usage.GetAsync(ids, Ct));
 
         await admin.PostAsync("/api/e2e/reset", null, Ct);
@@ -134,6 +139,54 @@ public class E2eHostTests(PostgresFixture postgres) : IAsyncLifetime
         var tracks = await ListAsync(await LoggedAdminAsync());
         Assert.Equal(55, tracks.Count);
         Assert.Equal(5, tracks.Count(t => t.InTodayChallenge));
+    }
+
+    [Fact]
+    public async Task GenerateToday_LeSeedADejaUnDefiDuJour_NeLeRegenerePas()
+    {
+        var admin = await SeededAdminAsync();
+
+        var response = await admin.PostAsync("/api/e2e/generate-today", null, Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(new GenerateTodayResponse(false, 5), await response.Content.ReadFromJsonAsync<GenerateTodayResponse>(Ct));
+    }
+
+    [Fact]
+    public async Task GenerateToday_SansDefi_GenereCeluiDuJour_HorsCooldown()
+    {
+        var admin = await SeededAdminAsync();
+        var before = await ListAsync(admin);
+        var todayDate = DateOnly.FromDateTime(DateTime.UtcNow);
+        // Tirés ces 30 derniers jours, avant aujourd'hui : le défi d'aujourd'hui n'en reprend aucun.
+        var cooling = before.Where(t => t.LastUsedDate is { } d && d < todayDate && d >= todayDate.AddDays(-30)).Select(t => t.Id).ToHashSet();
+        using (var scope = _host.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>();
+            await db.Database.ExecuteSqlRawAsync("DELETE FROM daily.challenges WHERE date = current_date", Ct);
+        }
+
+        var response = await admin.PostAsync("/api/e2e/generate-today", null, Ct);
+
+        Assert.Equal(new GenerateTodayResponse(true, 5), await response.Content.ReadFromJsonAsync<GenerateTodayResponse>(Ct));
+        var today = (await ListAsync(admin)).Where(t => t.InTodayChallenge).ToList();
+        Assert.Equal(5, today.Count);
+        Assert.Equal(13, cooling.Count);
+        Assert.Empty(today.Select(t => t.Id).Intersect(cooling));
+        Assert.All(today, t => Assert.Equal(todayDate, t.LastUsedDate));
+    }
+
+    [Fact]
+    public async Task GenerateToday_PoolVide_422PoolInsuffisant()
+    {
+        var admin = await LoggedAdminAsync();
+        await admin.PostAsync("/api/e2e/reset", null, Ct);
+        await admin.PostAsync("/api/e2e/login-as-admin", null, Ct);
+
+        var response = await admin.PostAsync("/api/e2e/generate-today", null, Ct);
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        Assert.Contains("admin.pool_insufficient", await response.Content.ReadAsStringAsync(Ct));
     }
 
     [Fact]

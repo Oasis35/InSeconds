@@ -39,7 +39,7 @@ public class TestingHostTests(PostgresFixture postgres) : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var reset = await response.Content.ReadFromJsonAsync<ResetResponse>(TestContext.Current.CancellationToken);
-        Assert.Equal(["catalogue", "module_test", "players"], reset!.Schemas);
+        Assert.Equal(["catalogue", "daily", "module_test", "players"], reset!.Schemas);
         Assert.Equal(0, await CountAsync("module_test.items"));
         Assert.Equal(1, await CountAsync("public.\"Players\""));
         Assert.Equal(settingsBefore, await CountAsync("infra.settings"));
