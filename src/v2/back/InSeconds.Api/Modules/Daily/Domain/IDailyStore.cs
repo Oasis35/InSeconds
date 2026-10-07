@@ -45,6 +45,13 @@ public interface IDailyStore
     /// <summary>Ajoute la partie et lui attribue tout de suite son identifiant (la réponse de démarrage le porte).</summary>
     ValueTask AddAsync(DailySession session, CancellationToken ct);
 
+    /// <summary>
+    /// Réserve la série de ce joueur jusqu'à la fin de la transaction : la complétion d'une partie et le gel offert à la création d'un compte
+    /// lisent puis écrivent la même ligne (créée au premier besoin) ; sans cela, deux qui se croisent la créent toutes les deux, et la seconde échoue
+    /// sur la clé primaire. À prendre **avant** <see cref="FindStreakAsync"/>.
+    /// </summary>
+    Task LockStreakAsync(Guid playerId, CancellationToken ct);
+
     /// <summary>La série de ce joueur, suivie pour être modifiée ; rien s'il n'en a pas encore.</summary>
     Task<DailyStreak?> FindStreakAsync(Guid playerId, CancellationToken ct);
 

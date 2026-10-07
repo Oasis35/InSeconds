@@ -9,6 +9,9 @@ public sealed class EfDailyStore(InSecondsDbContext db) : IDailyStore
     /// <summary>Premier entier du verrou de génération (le second est le numéro du jour) : ne croise aucun autre verrou de l'API.</summary>
     private const int GenerationLockNamespace = 0x44_41_49_4C; // « DAIL »
 
+    /// <summary>Premier entier du verrou de la série d'un joueur (le second est dérivé du joueur).</summary>
+    private const int StreakLockNamespace = 0x44_53_54_4B; // « DSTK »
+
     /// <summary>Premier entier du verrou de démarrage d'une partie (le second est dérivé du joueur).</summary>
     private const int StartLockNamespace = 0x44_53_54_52; // « DSTR »
 
@@ -25,6 +28,13 @@ public sealed class EfDailyStore(InSecondsDbContext db) : IDailyStore
         // ils s'attendent alors un instant, sans autre conséquence.
         await db.Database.ExecuteSqlInterpolatedAsync(
             $"SELECT pg_advisory_xact_lock({StartLockNamespace}, hashtext({playerId.ToString()}))", ct);
+    }
+
+    public async Task LockStreakAsync(Guid playerId, CancellationToken ct)
+    {
+        RequireTransaction("La mise à jour d'une série");
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock({StreakLockNamespace}, hashtext({playerId.ToString()}))", ct);
     }
 
     // Le défi qu'une génération vient d'ajouter dans cette transaction n'est pas encore en base : on le trouve d'abord dans le contexte.

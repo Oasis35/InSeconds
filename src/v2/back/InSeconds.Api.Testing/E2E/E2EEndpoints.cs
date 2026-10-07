@@ -70,9 +70,12 @@ public static class E2EEndpoints
             if (plan.AccountUnavailable || plan.PseudoTaken)
                 return Results.Conflict();
 
+            // Hors de Wolverine : pas de transaction automatique, et le gel offert à la création du compte prend un verrou qui en exige une.
+            // Le compte doit exister avant d'être promu.
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
             var result = await accountSignIn.ExecuteAsync(plan, ct);
-            // Hors de Wolverine : pas de transaction automatique. Le compte doit exister avant d'être promu.
             await db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
             // Le rôle est relu en base à chaque validation de session (cache d'une minute) ; la session vient d'être
             // créée : aucune validation périmée n'est en cache, la requête suivante voit déjà le rôle admin.
             await db.Set<Account>().Where(a => a.PlayerId == result.PlayerId)

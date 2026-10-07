@@ -34,9 +34,11 @@ public static class DevLoginEndpoints
             if (plan.NeedsPseudo)
                 return Results.Ok(new VerifyMagicLinkResponse(NeedsPseudo: true));
 
+            // Hors de Wolverine : pas de transaction automatique. Le gel offert à la création du compte prend un verrou, qui en exige une.
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
             await accountSignIn.ExecuteAsync(plan, ct);
-            // Hors de Wolverine : pas de transaction automatique.
             await db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
             return Results.Ok(new VerifyMagicLinkResponse(NeedsPseudo: false));
         }).ExcludeFromDescription();
 

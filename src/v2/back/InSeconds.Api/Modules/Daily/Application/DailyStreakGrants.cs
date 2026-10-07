@@ -11,6 +11,7 @@ public sealed class DailyStreakGrants(IDailyStore store) : IStreakGrants
 {
     public async Task GrantAccountCreationFreezeAsync(Guid playerId, CancellationToken ct)
     {
+        await store.LockStreakAsync(playerId, ct);
         var streak = await store.FindStreakAsync(playerId, ct);
         if (streak is null)
         {

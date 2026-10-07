@@ -135,6 +135,7 @@ public static class SubmitAnswerEndpoint
     private static async Task CompleteAsync(
         DailySession session, DailyChallenge challenge, IDailyStore store, IPlayerDirectory players, DailyRules rules, CancellationToken ct)
     {
+        await store.LockStreakAsync(session.PlayerId, ct);
         var streak = await store.FindStreakAsync(session.PlayerId, ct);
         if (streak is null)
         {

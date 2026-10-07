@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using Microsoft.Extensions.DependencyInjection;
 using InSeconds.IntegrationTests.Players;
 using static InSeconds.IntegrationTests.Daily.DailyApi;
 
@@ -231,6 +232,33 @@ public class StreakTests(PostgresFixture postgres) : IAsyncLifetime
         (await MagicLinkApi.VerifyAsync(browser, token, "Dave")).EnsureSuccessStatusCode();
 
         Assert.Equal(2, await app.Api.ScalarAsync<short>($"SELECT freezes FROM daily.streaks WHERE player_id = '{guest}'"));
+    }
+
+    [Fact]
+    public async Task SerieCreeeDeuxFoisEnMemeTemps_LaSecondeAttend_UneSeuleLigne_AucuneErreur()
+    {
+        // Le gel offert et la première complétion créent tous deux la ligne de série d'un joueur qui n'en a pas : sans verrou, les deux
+        // l'insèrent et la seconde échoue sur la clé primaire (500).
+        var player = await _game.NewPlayerAsync("Eve");
+        async Task GrantAsync(int delayBeforeSaveMs)
+        {
+            using var scope = _game.Api.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>();
+            await using var transaction = await db.Database.BeginTransactionAsync(Ct);
+            await new InSeconds.Api.Modules.Daily.Application.DailyStreakGrants(new InSeconds.Api.Modules.Daily.Persistence.EfDailyStore(db))
+                .GrantAccountCreationFreezeAsync(player.Id, Ct);
+            await Task.Delay(delayBeforeSaveMs, Ct);
+            await db.SaveChangesAsync(Ct);
+            await transaction.CommitAsync(Ct);
+        }
+
+        var first = GrantAsync(delayBeforeSaveMs: 700);
+        await Task.Delay(150, Ct);
+        var second = GrantAsync(delayBeforeSaveMs: 0);
+        await Task.WhenAll(first, second);
+
+        Assert.Equal(1L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM daily.streaks WHERE player_id = '{player.Id}'"));
+        Assert.Equal(1, await FreezesAsync(player));
     }
 
     // --- outils ---
