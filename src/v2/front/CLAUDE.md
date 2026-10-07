@@ -2,7 +2,7 @@
 
 Front de la v2 d'InSeconds, en construction à côté de la v1 (`src/front/`), qui reste en service jusqu'à la bascule. Plan de référence : [`docs/refonte-v2/PLAN.md`](../../../docs/refonte-v2/PLAN.md) (§ 6 pour le front) et [`docs/refonte-v2/DEVELOPPEMENT.md`](../../../docs/refonte-v2/DEVELOPPEMENT.md). Ce fichier décrit ce qui existe **déjà** dans le code ; il grossit à chaque PR.
 
-État : **PR C3, front du pool admin** (après A4 : socle, A5 : E2E copiés et image nginx, A6 : staging, B5 : compte). Les domaines `account` (connexion, profil, appareils, confirmation d'email) et `admin` (coquille et onglet Pool) existent ; `/daily`, `/privacy` et les autres onglets de l'admin affichent encore une page d'attente (« La nouvelle version arrive »). Les autres domaines arrivent avec leurs modules (D `gameplay`, E `daily`, F `admin` complet).
+État : **PR D2, front de la manche** (après A4 : socle, A5 : E2E copiés et image nginx, A6 : staging, B5 : compte, C3 : pool admin). Les domaines `account` (connexion, profil, appareils, confirmation d'email) et `admin` (coquille et onglet Pool) existent ; `/daily`, `/privacy` et les autres onglets de l'admin affichent encore une page d'attente (« La nouvelle version arrive »). Le domaine `gameplay` (la manche d'un morceau) existe mais aucun écran ne le route encore ; les autres domaines arrivent avec leurs modules (E `daily`, F `admin` complet).
 
 ## Commandes
 
@@ -25,6 +25,7 @@ npm run generate-api      # régénère les clients NSwag (cf. « Clients de l'A
 Même base que la v1 (Angular 22 standalone, **zoneless**, signals, Tailwind v4 + tokens `:root` de la DA dans `styles.scss`, ngx-translate, Vitest navigateur), plus :
 - **NgRx SignalStore** (`@ngrx/signals`) pour les stores ;
 - **CDK Dialog** (`@angular/cdk`) pour les modales et panneaux bas ;
+- **Howler.js** (`howler`, version figée) pour le son de la manche, en Web Audio (cf. § Domaine gameplay) ;
 - **service worker Angular** (`@angular/service-worker`) : PWA et détection de nouvelle version ;
 - **Sheriff** (`@softarc/sheriff-core`) pour les frontières entre dossiers.
 
@@ -49,6 +50,7 @@ src/v2/front/InSeconds.Client/
     ├── app.routes.ts          # routes, redirections des adresses v1
     ├── api/{players,catalogue}/   # clients NSwag générés (api.generated.ts), importés seulement par la couche data-access de leur domaine
     ├── account/               # connexion, vérification, profil, appareils, confirmation d'email (cf. § Domaine account)
+    ├── gameplay/              # la manche d'un morceau : machine à états, lecteur Howler, saisie, révélation (cf. § Domaine gameplay)
     ├── admin/                 # coquille de l'admin et pool de morceaux (cf. § Domaine admin)
     ├── core/                  # transverse
     │   ├── errors/            # AppError, table code → message, remontée des erreurs, ErrorHandler global
@@ -80,7 +82,7 @@ Les domaines (`gameplay/`, `daily/`, `account/`, `admin/`, plus tard `runs/` et 
 - `gameplay` importe un mode, ou `daily` et `runs` s'importent mutuellement ;
 - `domain/` importe Angular, NgRx, RxJS ou ngx-translate (`scripts/check-pure-domain.mjs`, Sheriff ne voit pas les bibliothèques).
 
-Sheriff ne vérifie que les fichiers atteignables depuis `src/main.ts` (routes chargées à la demande comprises). Ajouter un domaine : rien à changer, les dossiers `src/app/<domaine>/<couche>` sont déjà déclarés dans `sheriff.config.ts` ; un nouveau domaine qui peut en importer un autre s'ajoute à `DOMAIN_DEPENDENCIES`.
+Sheriff ne vérifie que les fichiers atteignables depuis `src/main.ts` (routes chargées à la demande comprises). `gameplay` n'est atteint par aucune route avant E5 : `npm run lint:arch` lui donne donc ses propres fichiers d'entrée (`track-round.component.ts`, `provide-gameplay.ts`) ; **quand E5 route le domaine, ces deux entrées deviennent redondantes** et peuvent partir du script. Ajouter un domaine : rien à changer, les dossiers `src/app/<domaine>/<couche>` sont déjà déclarés dans `sheriff.config.ts` ; un nouveau domaine qui peut en importer un autre s'ajoute à `DOMAIN_DEPENDENCIES`.
 
 ## Routes
 
@@ -146,6 +148,22 @@ Après tout changement d'endpoint d'un module : régénérer le document côté 
 - `ui/` : `auth-page` (cadre des écrans d'authentification), `device-list`, `browser-id-view`.
 
 Règles : le lien magique et le lien de changement d'email ne se consomment **jamais** à l'ouverture de la page (piège 21), seulement au clic sur « Confirmer » ; un navigateur déjà connecté est prévenu avant de confirmer le lien d'une autre adresse (piège 30). Les aides de test (`**/testing/**`, faux `PlayersApi`, `dom.ts`) sont exclues du build de l'app.
+
+## Domaine gameplay
+
+`src/app/gameplay/`, quatre couches. La manche d'un morceau (écouter, répondre, voir la réponse), partagée par Daily et plus tard Runs ; elle ne connaît aucun mode (Sheriff : `gameplay` n'importe aucun mode). Depuis D2 ; aucun écran ne la route avant E5.
+- `domain/` (TypeScript pur) : `track-round.ts`, la machine à états (phases `ready`, `loading`, `playing`, `listened`, `submitting`, `revealed`, `audio-error`, `no-preview`, `submit-error`) : chaque transition rend la manche suivante (ou la même). Le mode fournit une `ListenPolicy` (paliers, prolongeable ou non) et une `HintPolicy` (seuils de déblocage, les réglages du back) ; la manche rend un `RoundSubmission` (palier annoncé, `wasExtended`, artiste, titre) à envoyer. `answer.ts` (saisie libre coupée au premier « - », navigation en boucle dans les propositions), `round-result.ts` (ce que le serveur révèle, **sans les points** : ils sont au mode), `hint-label.ts` ;
+- `data-access/` : `AudioPort` (classe abstraite) et son implémentation `HowlerAudioPort`, `withTrackRound()` (`signalStoreFeature` : l'état de la machine, ses transitions en méthodes, les ordres au lecteur, le lecteur qui fait avancer la manche par un `effect`) et `TrackRoundStore` (`signalStore(withTrackRound())`, à fournir à la page du mode), `AnswerSearchStore` (saisie et autocomplete) avec `AnswerSearchPort` / `CatalogueAnswerSearch` (`GET /api/catalogue/search`), `gameplay.providers.ts` ; aides de test dans `testing/` (`FakeAudioPort`, `makeToneUrl` : un vrai son WAV en adresse `blob:`) ;
+- `feature/` : `TrackRoundComponent` (`app-track-round`, lecteur + indices + saisie + confirmations + révélation ; il **injecte** le `TrackRoundStore` du mode et fournit lui-même son `AnswerSearchStore`), `provideGameplay()` ;
+- `ui/` : `RoundPlayerComponent` (chrono, barre avec un repère par palier, ↺, « ▶ Xs », erreur de lecture, pas d'extrait), `AnswerInputComponent` (champ, ✕, liste, clavier), `HintPanelComponent`, `RevealCardComponent`, `GuessTimeChartComponent`, tous présentationnels.
+
+Règles :
+- **Le mode pilote, la manche ne connaît ni le réseau ni les points.** Le mode appelle `store.start(config, extraitSuivant)`, écoute `answered` (le `RoundSubmission`), envoie la réponse puis appelle `store.reveal()` et passe le `result` à `<app-track-round>` — ou `store.submissionFailed()`. Pour un indice, `hintRequested(niveau)` part, le mode interroge le back puis appelle `store.applyHints(niveau, indices)`. Il projette ses éléments dans `[roundActions]`, `[roundBadge]`, `[roundScore]` et `[roundNext]`.
+- **Fourni par la route du mode** : `provideGameplay()` (Howler, autocomplete, adresse de l'API du catalogue) va dans les `providers` de la route Daily (E5), pas dans `app.config.ts` : Howler (CommonJS, `allowedCommonJsDependencies` dans `angular.json`) reste ainsi dans le morceau chargé à la demande.
+- **L'`AudioPort`** : `load(url, suivant)`, `playUntil(s)`, `replay(s)`, `playFull()`, `stop()`, signaux `state` (`idle`, `loading`, `ready`, `playing`, `finished`, `error`) et `position`. **Un échec est `error`, jamais `idle`** (piège 33). `HowlerAudioPort` joue chaque palier comme un segment (le « sprite » de Howler, dont l'objet est partagé avec Howl) : le navigateur s'arrête à l'échantillon près, aucun chrono. « Écouter plus » reprend depuis la position atteinte ; demandé pendant le chargement, il est gardé (piège 40). Un seul extrait en cours et le suivant restent décodés (un extrait décodé pèse environ 10 Mo). `navigator.audioSession.type = "playback"` est posé avant chaque lecture (iPhone en mode silencieux). L'extrait est téléchargé par `XMLHttpRequest` : CORS ouvert chez Deezer, et l'expiration de la signature n'a plus d'effet une fois le son chargé (piège 14). Aucun audio ni pochette Deezer n'est gardé hors de la mémoire de la page (piège 47).
+- **Tests du lecteur** : `howler-audio.port.spec.ts` joue de vrais sons dans Chromium (lancé avec `--autoplay-policy=no-user-gesture-required`, `vitest.config.ts`) et mesure le temps qui s'écoule jusqu'à la fin du palier. Les stores et composants utilisent `FakeAudioPort`.
+- **Indices** : le nombre de boutons suit `HintPolicy` ; le front n'invente aucun niveau. Étiquette d'un indice révélé : `hintLabelKey(kind)` (`year`, `artist…`, sinon générique) ; les types exacts viennent du back (E2).
+- Les sélecteurs que les E2E de la v1 utilisent sont gardés (champ « Artiste — Titre », ✕, « Valider », « Valider quand même », « ▶ Xs », « ↺ Xs », `data-testid="guess-time-chart"` et `data-bucket`) : E5 n'aura qu'à les rebrancher.
 
 ## Domaine admin
 
