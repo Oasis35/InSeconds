@@ -85,6 +85,9 @@ internal static partial class DailyLog
     public static partial void GeneratingOnTheFly(ILogger logger, DateOnly day);
 
     // Une erreur, comme le pool insuffisant : un réglage qui promet un indice que rien ne révèle doit alerter.
+    [LoggerMessage(EventId = 1307, Level = LogLevel.Information, Message = "Statistiques du {Day} figées.")]
+    public static partial void DayClosed(ILogger logger, DateOnly day);
+
     [LoggerMessage(EventId = 1305, Level = LogLevel.Error,
         Message = "Daily:HintUnlockDurationsSeconds propose {Configured} niveaux d'indice, les fournisseurs en révèlent {Available} : les niveaux en trop sont ignorés.")]
     public static partial void HintLevelsBeyondProviders(ILogger logger, int configured, int available);

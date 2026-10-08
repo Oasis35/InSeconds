@@ -128,8 +128,9 @@ END $$;
 -- refuse de vider une table référencée par une clé étrangère, même vide. Les défis (E1) en font partie : le défi
 -- que la tâche de minuit a généré sur la base de staging, avant un nouvel import, part avec les morceaux (leur
 -- historique est repris par l'import de Daily, E4). Les parties référencent les défis : elles sont déjà vides (premier
--- TRUNCATE), mais PostgreSQL les veut dans la même commande.
-TRUNCATE daily.answers, daily.sessions, daily.challenge_tracks, daily.challenges, catalogue.tracks RESTART IDENTITY;
+-- TRUNCATE), mais PostgreSQL les veut dans la même commande. Les photos figées des jours (E3) référencent les défis : elles partent avec eux,
+-- et sont recalculées pour tous les jours passés après l'import (E4).
+TRUNCATE daily.challenge_day_stats, daily.answers, daily.sessions, daily.challenge_tracks, daily.challenges, catalogue.tracks RESTART IDENTITY;
 
 -- HasPreview vaut 1 (disponible) ou 2 (absent) : l'état « inconnu » n'existe pas en v1. Le rang Deezer et
 -- la date du dernier contrôle sont inconnus : la tâche catalogue-refresh les remplit la nuit suivante (en

@@ -22,6 +22,7 @@ public static class DailyModule
         services.AddOptions<DailyOptions>().BindConfiguration(DailyOptions.Section);
         services.AddScoped<IDailyStore, EfDailyStore>();
         services.AddScoped<IDailyQueries, EfDailyQueries>();
+        services.AddScoped<IDailyStatsQueries, EfDailyStatsQueries>();
         services.AddSingleton<ITrackSelector, CooldownSeededSelector>();
         // Les règles du jeu lues à chaud dans les réglages (paliers, barème, indices, gels), et le contrôle de leur cohérence au démarrage.
         services.AddSingleton<DailyRules>();
@@ -32,6 +33,8 @@ public static class DailyModule
         services.AddScheduledJob<GenerateDailyChallengeJob>(GenerateDailyChallengeJob.Id, GenerateDailyChallengeJob.DefaultCron);
         // Le bouton de l'admin : une tâche en pause, sans réessai (cf. GenerateDailyChallengeAdminJob).
         services.AddScheduledJob<GenerateDailyChallengeAdminJob>(GenerateDailyChallengeAdminJob.Id, Cron.Never());
+        // Fige les statistiques de l'avant-veille (§ 5.4 bis). Tourne aussi en staging : elle n'appelle pas Deezer.
+        services.AddScheduledJob<DailyCloseDayJob>(DailyCloseDayJob.Id, DailyCloseDayJob.DefaultCron);
         services.AddScoped<IStreakGrants, DailyStreakGrants>();
         return services;
     }

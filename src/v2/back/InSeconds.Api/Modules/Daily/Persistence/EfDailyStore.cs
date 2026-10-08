@@ -12,6 +12,9 @@ public sealed class EfDailyStore(InSecondsDbContext db) : IDailyStore
     /// <summary>Premier entier du verrou de la série d'un joueur (le second est dérivé du joueur).</summary>
     private const int StreakLockNamespace = 0x44_53_54_4B; // « DSTK »
 
+    /// <summary>Premier entier du verrou de la photo figée d'un défi (le second est l'identifiant du défi).</summary>
+    private const int DayStatsLockNamespace = 0x44_53_54_41; // « DSTA »
+
     /// <summary>Premier entier du verrou de démarrage d'une partie (le second est dérivé du joueur).</summary>
     private const int StartLockNamespace = 0x44_53_54_52; // « DSTR »
 
@@ -82,6 +85,17 @@ public sealed class EfDailyStore(InSecondsDbContext db) : IDailyStore
         ?? await db.Set<DailyStreak>().FirstOrDefaultAsync(s => s.PlayerId == playerId, ct);
 
     public void Add(DailyStreak streak) => db.Add(streak);
+
+    public async Task LockDayStatsAsync(int challengeId, CancellationToken ct)
+    {
+        RequireTransaction("La photo figée d'un jour");
+        await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock({DayStatsLockNamespace}, {challengeId})", ct);
+    }
+
+    public Task<DayStatsSnapshot?> FindDayStatsAsync(int challengeId, CancellationToken ct) =>
+        db.Set<DayStatsSnapshot>().FirstOrDefaultAsync(s => s.ChallengeId == challengeId, ct);
+
+    public void Add(DayStatsSnapshot snapshot) => db.Add(snapshot);
 
     // Un verrou « de transaction » est relâché dès la fin d'une requête hors transaction : il ne protégerait rien.
     private void RequireTransaction(string what)

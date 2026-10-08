@@ -10,12 +10,13 @@ public class ScheduledJobsTests(PostgresFixture postgres)
 {
     /// <summary>
     /// Les tâches récurrentes de l'API et leur cron par défaut (tableau du § 5.4 bis du plan v2).
-    /// Chaque module ajoute ici les siennes : daily-close-day (E3) viendra. `daily-generate-challenge-admin` est la tâche du
+    /// Chaque module ajoute ici les siennes. `daily-generate-challenge-admin` est la tâche du
     /// bouton « Générer le défi du jour » : en pause, sans réessai.
     /// </summary>
     private static readonly Dictionary<string, string> ExpectedJobs = new()
     {
         ["catalogue-refresh"] = "0 23 * * *",
+        ["daily-close-day"] = "5 0 * * *",
         ["daily-generate-challenge"] = "0 0 * * *",
         ["daily-generate-challenge-admin"] = Cron.Never(),
         ["players-purge-expired-tokens"] = "30 3 * * *",
@@ -77,6 +78,7 @@ public class ScheduledJobsTests(PostgresFixture postgres)
         Assert.Equal("30 3 * * *", jobs["players-purge-expired-tokens"].Cron);
         // La génération du défi n'appelle pas Deezer : elle tourne aussi sur le staging, qui sert la v2.
         Assert.Equal("0 0 * * *", jobs["daily-generate-challenge"].Cron);
+        Assert.Equal("5 0 * * *", jobs["daily-close-day"].Cron);
     }
 
     [Fact]

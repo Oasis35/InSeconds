@@ -40,7 +40,7 @@ public class GenerateTodayButtonTests(GenerateTodayButtonTests.AppFixture fixtur
     public async ValueTask InitializeAsync()
     {
         _app = fixture.App;
-        await _app.Api.ExecuteAsync("TRUNCATE daily.answers, daily.sessions, daily.challenge_tracks, daily.challenges, catalogue.tracks");
+        await _app.Api.ExecuteAsync("TRUNCATE daily.challenge_day_stats, daily.answers, daily.sessions, daily.challenge_tracks, daily.challenges, catalogue.tracks");
     }
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
