@@ -194,7 +194,8 @@ SELECT pg_temp.expect('parties reprises à l''identique', 0, (
        OR v.challenge_id IS DISTINCT FROM r."DailyChallengeId"
        OR v.status::int IS DISTINCT FROM CASE WHEN r.expire THEN 3 ELSE r."Status" END
        OR v.started_at IS DISTINCT FROM r."CreatedAt"
-       OR v.ended_at IS DISTINCT FROM COALESCE(r."CompletedAt", r."AbandonedAt")
+       -- now() : l'heure de la transaction, celle de l'import (même transaction, run-import.sh).
+       OR v.ended_at IS DISTINCT FROM CASE WHEN r.expire THEN now() ELSE COALESCE(r."CompletedAt", r."AbandonedAt") END
        OR v.total_score IS DISTINCT FROM r."TotalScore"
        OR v.total_listened_seconds IS DISTINCT FROM r."TotalDurationSeconds"
        OR v.current_position::int IS DISTINCT FROM r.kept_position

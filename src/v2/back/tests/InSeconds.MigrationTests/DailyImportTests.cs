@@ -139,7 +139,7 @@ public class DailyImportTests(ImportDatabase database)
 
         Assert.True(result.ExitCode == 0, result.Output);
         Assert.Contains("reprises en « expirées » : 2", result.Output, StringComparison.Ordinal);
-        Assert.Equal(1L, await Count(cs, "daily.sessions WHERE id = 1 AND status = 3 AND ended_at IS NULL AND total_score = 1700 AND current_position IS NULL AND current_listened_seconds IS NULL AND current_hint_level = 0"));
+        Assert.Equal(1L, await Count(cs, "daily.sessions WHERE id = 1 AND status = 3 AND ended_at > now() - interval '1 hour' AND total_score = 1700 AND current_position IS NULL AND current_listened_seconds IS NULL AND current_hint_level = 0"));
         Assert.Equal(1L, await Count(cs, "daily.sessions WHERE id = 2 AND status = 3 AND total_score = 2550"));
         Assert.Equal(5L, await Count(cs, "daily.answers"));
         Assert.Equal(1L, await Count(cs, "daily.answers WHERE session_id = 1 AND position = 3"));

@@ -263,13 +263,14 @@ BEGIN
     RAISE NOTICE 'Verrous de morceau écartés (hors du défi, ou pas sur le morceau en cours) : %', dropped;
 END $$;
 
--- started_at = création ; ended_at = fin ou abandon (vide pour une partie en cours) ; le verrou de la v1 (un identifiant de
--- morceau du défi) devient la position du morceau dans le même défi.
+-- started_at = création ; ended_at = fin ou abandon (vide pour une partie en cours ; l'heure de l'import pour une partie que
+-- l'import expire, comme l'expiration paresseuse de la v1 et de la v2 note l'heure où elle passe) ; le verrou de la v1 (un
+-- identifiant de morceau du défi) devient la position du morceau dans le même défi.
 INSERT INTO daily.sessions (id, player_id, challenge_id, status, started_at, ended_at, total_score, total_listened_seconds,
     current_position, current_listened_seconds, current_hint_level, freezes_used, freeze_earned)
 SELECT s."Id", s."PlayerId", s."DailyChallengeId",
        CASE WHEN p.expire THEN 3 ELSE s."Status" END,
-       s."CreatedAt", COALESCE(s."CompletedAt", s."AbandonedAt"),
+       s."CreatedAt", CASE WHEN p.expire THEN now() ELSE COALESCE(s."CompletedAt", s."AbandonedAt") END,
        s."TotalScore", s."TotalDurationSeconds",
        CASE WHEN p.keep_lock THEN p.lock_position END,
        CASE WHEN p.keep_lock THEN s."CurrentTrackMinListenedSeconds" END,
