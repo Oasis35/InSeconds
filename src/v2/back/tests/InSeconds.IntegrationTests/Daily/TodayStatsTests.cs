@@ -124,6 +124,24 @@ public class TodayStatsTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task PartieExpiree_RevelelesMorceaux_SansScore()
+    {
+        await _game.GenerateAsync();
+        var alice = await _game.NewPlayerAsync();
+        var session = (await alice.StartAsync()).SessionId;
+        await alice.AnswerCorrectlyAsync(session, 1, 1);
+        // L'expiration ne touche qu'un défi passé : on pose l'état à la main pour vérifier que « expirée » compte comme une partie finie (piège 31).
+        await _game.Api.ExecuteAsync($"UPDATE daily.sessions SET status = 3 WHERE id = {session}");
+
+        var stats = await StatsAsync(alice.Client);
+
+        Assert.Equal(5, stats.Tracks.Count);
+        Assert.Null(stats.YourScore);
+        Assert.All(stats.Tracks, t => Assert.Null(t.Score));
+        Assert.Equal(0, stats.TotalPlayers);
+    }
+
+    [Fact]
     public async Task MeilleurQue_PartDesAutresJoueursBattus()
     {
         await _game.GenerateAsync();
