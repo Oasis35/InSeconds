@@ -146,10 +146,10 @@ public class DayStatsSnapshotTests(PostgresFixture postgres) : IAsyncLifetime
         // Une partie de la veille peut encore se finir après minuit (piège 18) : on ne la fige pas.
         await GameAsserts.ProblemAsync(
             await _game.App.Admin().PostAsync($"/api/admin/daily/challenges/{Today.AddDays(-1):yyyy-MM-dd}/stats/recompute", null, Ct),
-            HttpStatusCode.Conflict, "daily.day_not_over");
+            HttpStatusCode.Conflict, "admin.day_not_over");
         await GameAsserts.ProblemAsync(
             await _game.App.Admin().PostAsync($"/api/admin/daily/challenges/{Today:yyyy-MM-dd}/stats/recompute", null, Ct),
-            HttpStatusCode.Conflict, "daily.day_not_over");
+            HttpStatusCode.Conflict, "admin.day_not_over");
         Assert.Equal(0L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM daily.challenge_day_stats"));
     }
 
@@ -244,7 +244,7 @@ public class DayStatsSnapshotTests(PostgresFixture postgres) : IAsyncLifetime
         var failure = await Assert.ThrowsAsync<InSeconds.Api.Infrastructure.Jobs.JobFailedException>(() => RunJobAsync());
 
         // La tâche échoue (visible dans /jobs, Hangfire la retente), mais l'avant-veille et la veille de celle-ci sont figées.
-        Assert.Equal("daily.close_day_failed", failure.Code);
+        Assert.Equal("admin.close_day_failed", failure.Code);
         Assert.Equal(2L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM daily.challenge_day_stats"));
         Assert.Equal(0L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM daily.challenge_day_stats WHERE challenge_id = {oldest}"));
 

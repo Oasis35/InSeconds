@@ -87,7 +87,7 @@ public static class CloseChallengeDayHandler
 
 /// <summary>
 /// Tâche <c>daily-close-day</c> (§ 5.4 bis du plan v2, `5 0 * * *`) : fige les statistiques de l'avant-veille, et de **tout jour plus ancien resté sans
-/// photo** (la tâche n'a pas tourné un soir, ou le jour précède l'import de l'historique). Un jour qui échoue n'empêche pas les suivants : la tâche échoue à la fin (`daily.close_day_failed`), les autres jours sont figés.
+/// photo** (la tâche n'a pas tourné un soir, ou le jour précède l'import de l'historique). Un jour qui échoue n'empêche pas les suivants : la tâche échoue à la fin (`admin.close_day_failed`), les autres jours sont figés.
 /// </summary>
 public sealed class DailyCloseDayJob(IMessageBus bus, IGameCalendar calendar, IDailyStatsQueries stats, ILogger<DailyCloseDayJob> logger) : IScheduledJob
 {
@@ -122,7 +122,7 @@ public sealed class DailyCloseDayJob(IMessageBus bus, IGameCalendar calendar, ID
         return failed.Count == 0
             // Un dictionnaire : Hangfire n'écrit pas les propriétés à zéro d'un objet.
             ? new Dictionary<string, object?> { ["closed"] = closed.Count, ["days"] = closed }
-            : throw new JobFailedException(DailyErrorCodes.CloseDayFailed);
+            : throw new JobFailedException(DailyAdminErrorCodes.CloseDayFailed);
     }
 }
 
@@ -139,17 +139,17 @@ public static class RecomputeDayStatsEndpoint
     public static ProblemDetails Validate(string date, DailyChallenge? challenge, IGameCalendar calendar)
     {
         if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var day))
-            return ApiProblem.Of(StatusCodes.Status400BadRequest, DailyErrorCodes.InvalidDate, "La date doit être au format aaaa-mm-jj.");
+            return ApiProblem.Of(StatusCodes.Status400BadRequest, DailyAdminErrorCodes.InvalidDate, "La date doit être au format aaaa-mm-jj.");
         if (challenge is null)
             return ApiProblem.Of(StatusCodes.Status404NotFound, ErrorCodes.NotFound, "Aucun défi ce jour-là.");
         return day > CloseChallengeDayHandler.LastClosableDay(calendar)
-            ? ApiProblem.Of(StatusCodes.Status409Conflict, DailyErrorCodes.DayNotOver, "Ce jour n'est pas terminé : une partie peut encore s'y finir.")
+            ? ApiProblem.Of(StatusCodes.Status409Conflict, DailyAdminErrorCodes.DayNotOver, "Ce jour n'est pas terminé : une partie peut encore s'y finir.")
             : WolverineContinue.NoProblems;
     }
 
     /// <summary>
     /// <c>POST /api/admin/daily/challenges/{date}/stats/recompute</c> : refait la photo figée d'un jour terminé (J-2 et avant), par exemple après la
-    /// correction d'une donnée. 400 date invalide, 404 pas de défi ce jour-là, 409 <c>daily.day_not_over</c> pour la veille et le jour même.
+    /// correction d'une donnée. 400 date invalide, 404 pas de défi ce jour-là, 409 <c>admin.day_not_over</c> pour la veille et le jour même.
     /// </summary>
     [WolverinePost("/api/admin/daily/challenges/{date}/stats/recompute", OperationId = "recomputeDayStats")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]

@@ -40,7 +40,7 @@ public static class WeeklyRecapRules
         DateOnly? parsedFrom = null, parsedTo = null;
         if (!TryParse(fromRaw, ref parsedFrom) || !TryParse(toRaw, ref parsedTo))
         {
-            errorCode = DailyErrorCodes.InvalidDate;
+            errorCode = DailyAdminErrorCodes.InvalidDate;
             return false;
         }
 
@@ -48,7 +48,7 @@ public static class WeeklyRecapRules
         from = parsedFrom ?? to.AddDays(-(PeriodDays - 1));
         if (from > to || to.DayNumber - from.DayNumber + 1 > MaxPeriodDays)
         {
-            errorCode = DailyErrorCodes.InvalidPeriod;
+            errorCode = DailyAdminErrorCodes.InvalidPeriod;
             return false;
         }
 
@@ -98,7 +98,7 @@ public static class GetWeeklyRecapEndpoint
             ? WolverineContinue.NoProblems
             : ApiProblem.Of(
                 StatusCodes.Status400BadRequest, code!,
-                code == DailyErrorCodes.InvalidDate ? "Les dates doivent être au format aaaa-mm-jj." : "La période doit finir après son début, sur un an au plus.");
+                code == DailyAdminErrorCodes.InvalidDate ? "Les dates doivent être au format aaaa-mm-jj." : "La période doit finir après son début, sur un an au plus.");
 
     /// <summary>
     /// <c>GET /api/admin/daily/weekly-recap?from=&amp;to=</c> : le morceau le plus trouvé et le plus raté de la période (les 7 derniers jours,

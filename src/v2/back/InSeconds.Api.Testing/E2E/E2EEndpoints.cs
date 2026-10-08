@@ -56,7 +56,7 @@ public static class E2EEndpoints
         {
             var result = await bus.InvokeAsync<GenerateChallengeResult>(new GenerateDailyChallenge(calendar.Today, ChallengeOrigin.Admin), ct);
             return result.Outcome == GenerationOutcome.PoolInsufficient
-                ? Results.UnprocessableEntity(new { code = DailyErrorCodes.PoolInsufficient, eligible = result.EligibleCount, required = result.Requested })
+                ? Results.UnprocessableEntity(new { code = DailyAdminErrorCodes.PoolInsufficient, eligible = result.EligibleCount, required = result.Requested })
                 : Results.Ok(new GenerateTodayResponse(result.Outcome == GenerationOutcome.Created, result.TrackCount));
         });
 
