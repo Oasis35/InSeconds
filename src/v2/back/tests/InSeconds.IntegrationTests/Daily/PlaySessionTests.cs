@@ -322,6 +322,25 @@ public class PlaySessionTests(PostgresFixture postgres) : IAsyncLifetime
         await GameAsserts.ProblemAsync(await _alice.AbandonAsync(_session), HttpStatusCode.Conflict, "daily.already_played");
     }
 
+    [Fact]
+    public async Task DefiPlusVieuxQueLaVeille_PartieEnCours_NAccepteRien_409Abandoned()
+    {
+        await _alice.AnswerCorrectlyAsync(_session, 1, 1);
+
+        // La veille est encore jouable (piège 18) ; l'avant-veille, non : sa photo est figée.
+        _game.Time.Advance(TimeSpan.FromDays(1));
+        Assert.Equal(HttpStatusCode.NoContent, (await _alice.ListenAsync(_session, 2, 1)).StatusCode);
+
+        _game.Time.Advance(TimeSpan.FromDays(1));
+        await GameAsserts.ProblemAsync(await _alice.ListenAsync(_session, 2, 2), HttpStatusCode.Conflict, "daily.abandoned");
+        await GameAsserts.ProblemAsync(await _alice.HintAsync(_session, 2, 1), HttpStatusCode.Conflict, "daily.abandoned");
+        await GameAsserts.ProblemAsync(await _alice.AnswerAsync(_session, 2, 2, "x", "y"), HttpStatusCode.Conflict, "daily.abandoned");
+        await GameAsserts.ProblemAsync(await _alice.AbandonAsync(_session), HttpStatusCode.Conflict, "daily.abandoned");
+
+        Assert.Equal((short)0, await _game.Api.ScalarAsync<short>($"SELECT status FROM daily.sessions WHERE id = {_session}"));
+        Assert.Equal(1L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM daily.answers WHERE session_id = {_session}"));
+    }
+
     // --- l'abandon ---
 
     [Fact]

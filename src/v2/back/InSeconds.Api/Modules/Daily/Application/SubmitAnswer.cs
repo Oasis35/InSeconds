@@ -67,9 +67,9 @@ public static class SubmitAnswerEndpoint
         return new AnswerAttempt(loaded, info);
     }
 
-    public static ProblemDetails Validate(SubmitAnswer request, AnswerAttempt? attempt, DailyRules rules, IAnswerMatcher matcher)
+    public static ProblemDetails Validate(SubmitAnswer request, AnswerAttempt? attempt, DailyRules rules, IAnswerMatcher matcher, IGameCalendar calendar)
     {
-        var problem = SessionAccess.Check(attempt?.Loaded, request.Position);
+        var problem = SessionAccess.Check(attempt?.Loaded, request.Position, calendar.Today);
         if (!ReferenceEquals(problem, WolverineContinue.NoProblems))
             return problem;
         if (attempt!.Track is null)

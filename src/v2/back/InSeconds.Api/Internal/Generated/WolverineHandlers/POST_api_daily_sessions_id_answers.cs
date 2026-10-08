@@ -106,7 +106,7 @@ namespace Internal.Generated.WolverineHandlers
                 }
 
                 var answerAttempt = await InSeconds.Api.Modules.Daily.Application.SubmitAnswerEndpoint.LoadAsync(id, request, claimsCurrentPlayer, efDailyStore, efTrackDirectory, httpContext.RequestAborted).ConfigureAwait(false);
-                var problemDetails2 = InSeconds.Api.Modules.Daily.Application.SubmitAnswerEndpoint.Validate(request, answerAttempt, _dailyRules, _answerMatcher);
+                var problemDetails2 = InSeconds.Api.Modules.Daily.Application.SubmitAnswerEndpoint.Validate(request, answerAttempt, _dailyRules, _answerMatcher, _gameCalendar);
                 // Evaluate whether the processing should stop if there are any problems
                 if (!(ReferenceEquals(problemDetails2, Wolverine.Http.WolverineContinue.NoProblems)))
                 {
