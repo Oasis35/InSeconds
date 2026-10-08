@@ -87,9 +87,9 @@ public static class CloseChallengeDayHandler
 
 /// <summary>
 /// Tâche <c>daily-close-day</c> (§ 5.4 bis du plan v2, `5 0 * * *`) : fige les statistiques de l'avant-veille, et de **tout jour plus ancien resté sans
-/// photo** (la tâche n'a pas tourné un soir, ou le jour précède l'import de l'historique). Un jour qui échoue n'empêche pas les suivants.
+/// photo** (la tâche n'a pas tourné un soir, ou le jour précède l'import de l'historique). Un jour qui échoue n'empêche pas les suivants : la tâche échoue à la fin (`daily.close_day_failed`), les autres jours sont figés.
 /// </summary>
-public sealed class DailyCloseDayJob(IMessageBus bus, IGameCalendar calendar, IDailyStatsQueries stats) : IScheduledJob
+public sealed class DailyCloseDayJob(IMessageBus bus, IGameCalendar calendar, IDailyStatsQueries stats, ILogger<DailyCloseDayJob> logger) : IScheduledJob
 {
     public const string Id = "daily-close-day";
     public const string DefaultCron = "5 0 * * *";
@@ -100,15 +100,29 @@ public sealed class DailyCloseDayJob(IMessageBus bus, IGameCalendar calendar, ID
     {
         var days = await stats.ListUnfrozenChallengesAsync(CloseChallengeDayHandler.LastClosableDay(calendar), cancellationToken);
         var closed = new List<string>();
+        var failed = new List<string>();
         foreach (var day in days)
         {
-            var result = await bus.InvokeAsync<CloseDayResult>(new CloseChallengeDay(day.Date), cancellationToken);
-            if (result.Outcome == CloseOutcome.Closed)
-                closed.Add(day.Date.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
+            var label = day.Date.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+            try
+            {
+                var result = await bus.InvokeAsync<CloseDayResult>(new CloseChallengeDay(day.Date), cancellationToken);
+                if (result.Outcome == CloseOutcome.Closed)
+                    closed.Add(label);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // Un jour qui échoue (le plus ancien passe toujours en premier) ne doit pas empêcher de figer les suivants, l'avant-veille comprise.
+                failed.Add(label);
+                DailyLog.CloseDayFailed(logger, ex, label);
+            }
         }
 
-        // Un dictionnaire : Hangfire n'écrit pas les propriétés à zéro d'un objet.
-        return new Dictionary<string, object?> { ["closed"] = closed.Count, ["days"] = closed };
+        // La tâche échoue **après** avoir figé ce qu'elle pouvait : le jour fautif reste visible dans /jobs et se retente (Hangfire, puis le soir suivant).
+        return failed.Count == 0
+            // Un dictionnaire : Hangfire n'écrit pas les propriétés à zéro d'un objet.
+            ? new Dictionary<string, object?> { ["closed"] = closed.Count, ["days"] = closed }
+            : throw new JobFailedException(DailyErrorCodes.CloseDayFailed);
     }
 }
 

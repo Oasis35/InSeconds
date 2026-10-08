@@ -88,6 +88,9 @@ internal static partial class DailyLog
     [LoggerMessage(EventId = 1307, Level = LogLevel.Information, Message = "Statistiques du {Day} figées.")]
     public static partial void DayClosed(ILogger logger, DateOnly day);
 
+    [LoggerMessage(EventId = 1308, Level = LogLevel.Error, Message = "Impossible de figer les statistiques du {Day}.")]
+    public static partial void CloseDayFailed(ILogger logger, Exception exception, string day);
+
     [LoggerMessage(EventId = 1305, Level = LogLevel.Error,
         Message = "Daily:HintUnlockDurationsSeconds propose {Configured} niveaux d'indice, les fournisseurs en révèlent {Available} : les niveaux en trop sont ignorés.")]
     public static partial void HintLevelsBeyondProviders(ILogger logger, int configured, int available);

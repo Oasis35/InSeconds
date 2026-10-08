@@ -92,8 +92,7 @@ public static class GetTodayStatsEndpoint
             ? DailyStreak.Compute(s.CurrentStreak, s.LastPlayedDate, s.Freezes, today, isLinked, rules.Streak)
             : DailyStreak.None(today, isLinked, rules.Streak);
 
-        var sessions = await stats.GetSessionsAsync(row.ChallengeId, ct);
-        var scores = sessions.Where(x => x.Status == SessionStatus.Completed).Select(x => x.TotalScore).ToList();
+        var scores = await stats.GetCompletedScoresAsync(row.ChallengeId, ct);
         var tracks = await stats.GetChallengeTracksAsync(row.ChallengeId, ct);
         var aggregates = revealTracks ? await stats.GetTrackAggregatesAsync(row.ChallengeId, completedOnly: true, ct) : null;
 

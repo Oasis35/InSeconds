@@ -58,6 +58,12 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
             .Select(s => new DaySessionRow(s.PlayerId, s.Status, s.TotalScore))
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<int>> GetCompletedScoresAsync(int challengeId, CancellationToken ct) =>
+        await LiveData.Sessions(db)
+            .Where(s => s.ChallengeId == challengeId && s.Status == SessionStatus.Completed)
+            .Select(s => s.TotalScore)
+            .ToListAsync(ct);
+
     public async Task<IReadOnlyDictionary<int, TrackAggregate>> GetTrackAggregatesAsync(int challengeId, bool completedOnly, CancellationToken ct)
     {
         var answers = LiveData.Answers(db, challengeId, completedOnly);

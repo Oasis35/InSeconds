@@ -28,6 +28,9 @@ public interface IDailyStatsQueries
     /// <summary>Les parties du défi, de tous les joueurs non supprimés.</summary>
     Task<IReadOnlyList<DaySessionRow>> GetSessionsAsync(int challengeId, CancellationToken ct);
 
+    /// <summary>Les scores des parties **terminées** du défi (les joueurs non supprimés) : tout ce qu'il faut à `stats/today`, sans une ligne par partie de tout statut.</summary>
+    Task<IReadOnlyList<int>> GetCompletedScoresAsync(int challengeId, CancellationToken ct);
+
     /// <summary>Les réponses du défi agrégées par morceau, par position ; seulement celles des parties terminées si <paramref name="completedOnly"/>.</summary>
     Task<IReadOnlyDictionary<int, TrackAggregate>> GetTrackAggregatesAsync(int challengeId, bool completedOnly, CancellationToken ct);
 

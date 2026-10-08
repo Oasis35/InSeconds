@@ -166,6 +166,10 @@ public class TodayStatsTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal((1, 4250, 4250), (stats.TotalPlayers, stats.MinScore, stats.MaxScore));
         Assert.Equal(1, stats.ScoreDistribution.Sum(b => b.Count));
         Assert.Null(stats.BetterThanPercent);
+        // Ni dans les chiffres de chaque morceau : le supprimé a trouvé à 10 s, plus personne n'y est à 10 s, et il ne reste qu'une réponse par morceau.
+        Assert.All(stats.Tracks, t => Assert.Equal(0, t.GuessTimeDistribution.Single(b => b.DurationSeconds == 10m).Count));
+        Assert.All(stats.Tracks, t => Assert.Equal(1m, t.GuessTimeDistribution.Where(b => b.DurationSeconds == 1m).Sum(b => (decimal)b.Count)));
+        Assert.All(stats.Tracks, t => Assert.Equal(1, t.GuessTimeDistribution.Sum(b => b.Count)));
         // Ni dans ce que voient les autres joueurs à la révélation d'un morceau (statistiques de la réponse).
         var bob = await _game.NewPlayerAsync();
         var bobSession = (await bob.StartAsync()).SessionId;

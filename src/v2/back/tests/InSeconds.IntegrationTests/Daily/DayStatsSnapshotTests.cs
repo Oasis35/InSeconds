@@ -194,7 +194,8 @@ public class DayStatsSnapshotTests(PostgresFixture postgres) : IAsyncLifetime
         var job = new DailyCloseDayJob(
             scope.ServiceProvider.GetRequiredService<IMessageBus>(),
             scope.ServiceProvider.GetRequiredService<InSeconds.Api.Infrastructure.Time.IGameCalendar>(),
-            scope.ServiceProvider.GetRequiredService<IDailyStatsQueries>());
+            scope.ServiceProvider.GetRequiredService<IDailyStatsQueries>(),
+            scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Logging.ILogger<DailyCloseDayJob>>());
         return (IReadOnlyDictionary<string, object?>)(await job.RunAsync(Ct))!;
     }
 
@@ -229,6 +230,28 @@ public class DayStatsSnapshotTests(PostgresFixture postgres) : IAsyncLifetime
         // Les trois premières photos gardent leur date : seule la nouvelle est postérieure.
         Assert.Equal(3L, await _game.Api.ScalarAsync<long>(
             "SELECT count(*) FROM daily.challenge_day_stats WHERE computed_at < (SELECT max(computed_at) FROM daily.challenge_day_stats)"));
+    }
+
+    [Fact]
+    public async Task Tache_UnJourQuiEchoue_NEmpecheJamaisLesSuivants_PuisSeRetente()
+    {
+        foreach (var offset in new[] { -3, -4, -5 })
+            await _game.App.AddChallengeAsync(Today.AddDays(offset), 1, 2, 3, 4, 5);
+        // Le plus ancien jour ne peut pas être enregistré (une contrainte posée pour le test) : il passe toujours en premier.
+        var oldest = await _game.ChallengeIdAsync(Today.AddDays(-5));
+        await _game.Api.ExecuteAsync($"ALTER TABLE daily.challenge_day_stats ADD CONSTRAINT ck_test_refuse CHECK (challenge_id <> {oldest})");
+
+        var failure = await Assert.ThrowsAsync<InSeconds.Api.Infrastructure.Jobs.JobFailedException>(() => RunJobAsync());
+
+        // La tâche échoue (visible dans /jobs, Hangfire la retente), mais l'avant-veille et la veille de celle-ci sont figées.
+        Assert.Equal("daily.close_day_failed", failure.Code);
+        Assert.Equal(2L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM daily.challenge_day_stats"));
+        Assert.Equal(0L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM daily.challenge_day_stats WHERE challenge_id = {oldest}"));
+
+        await _game.Api.ExecuteAsync("ALTER TABLE daily.challenge_day_stats DROP CONSTRAINT ck_test_refuse");
+        var retry = await RunJobAsync();
+        Assert.Equal(1, retry["closed"]);
+        Assert.Equal(3L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM daily.challenge_day_stats"));
     }
 
     [Fact]

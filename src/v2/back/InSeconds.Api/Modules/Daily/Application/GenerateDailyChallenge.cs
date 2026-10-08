@@ -38,6 +38,9 @@ public static class DailyErrorCodes
     /// <summary>La photo figée n'a de sens que pour un jour terminé pour de bon (J-2 et avant) : la veille peut encore recevoir une fin de partie (piège 18).</summary>
     public const string DayNotOver = "daily.day_not_over";
 
+    /// <summary>La tâche qui fige les statistiques a échoué sur au moins un jour (les autres ont été figés) : voir le journal.</summary>
+    public const string CloseDayFailed = "daily.close_day_failed";
+
     /// <summary>Une date qui n'est pas au format aaaa-mm-jj.</summary>
     public const string InvalidDate = "admin.invalid_date";
 
