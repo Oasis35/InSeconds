@@ -165,7 +165,7 @@ SELECT pg_temp.expect('rang Deezer figé = position (colonne abandonnée)', 0, (
     SELECT count(*) FROM public."DailyChallengeTracks" WHERE "DeezerRankSnapshot" <> "Position"));
 
 -- Parties : tout à l'identique, sauf le statut d'une partie en cours qui ne se reprendrait pas (réponses non contiguës, ou aucun
--- morceau à jouer), reprise « expirée » ; et le verrou, gardé seulement s'il porte sur le morceau en cours d'une partie qui reste
+-- morceau à jouer, ou défi plus vieux que la veille), reprise « expirée » ; et le verrou, gardé seulement s'il porte sur le morceau en cours d'une partie qui reste
 -- en cours, ou sur un morceau du défi d'une partie qui n'est plus en cours. Recalculé ici sur les réponses de la v2.
 SELECT pg_temp.expect('parties reprises à l''identique', 0, (
     WITH answered AS (
@@ -176,17 +176,22 @@ SELECT pg_temp.expect('parties reprises à l''identique', 0, (
                s."FreezesUsed", s."FreezeEarned",
                COALESCE(a.n, 0) AS n, COALESCE(a.last_position, 0) AS last_position,
                (SELECT count(*) FROM daily.challenge_tracks t WHERE t.challenge_id = s."DailyChallengeId") AS tracks,
-               lk."Position" AS lock_position
+               lk."Position" AS lock_position,
+               dc."Date" AS challenge_date
         FROM public."GameSessions" s
+        JOIN public."DailyChallenges" dc ON dc."Id" = s."DailyChallengeId"
         LEFT JOIN answered a ON a.session_id = s."Id"
         LEFT JOIN public."DailyChallengeTracks" lk ON lk."Id" = s."CurrentTrackId" AND lk."DailyChallengeId" = s."DailyChallengeId"),
-    resolved AS (
+    flagged AS (
         SELECT e.*,
-               e."Status" = 0 AND NOT (e.last_position = e.n AND e.n < e.tracks) AS expire,
-               CASE WHEN e.lock_position IS NOT NULL
-                         AND (e."Status" <> 0 OR (NOT (e."Status" = 0 AND NOT (e.last_position = e.n AND e.n < e.tracks)) AND e.lock_position = e.n + 1))
-                    THEN e.lock_position END AS kept_position
-        FROM expected e)
+               e."Status" = 0 AND (NOT (e.last_position = e.n AND e.n < e.tracks)
+                                   OR e.challenge_date < (now() AT TIME ZONE 'UTC')::date - 1) AS expire
+        FROM expected e),
+    resolved AS (
+        SELECT f.*,
+               CASE WHEN f.lock_position IS NOT NULL AND (f."Status" <> 0 OR (NOT f.expire AND f.lock_position = f.n + 1))
+                    THEN f.lock_position END AS kept_position
+        FROM flagged f)
     SELECT count(*) FROM resolved r
     LEFT JOIN daily.sessions v ON v.id = r.id
     WHERE v.id IS NULL
@@ -204,13 +209,15 @@ SELECT pg_temp.expect('parties reprises à l''identique', 0, (
        OR v.freezes_used::int IS DISTINCT FROM r."FreezesUsed"
        OR v.freeze_earned IS DISTINCT FROM r."FreezeEarned"));
 
--- Parties en cours : chacune se reprend (réponses de 1 à N sans trou, un morceau à jouer) et son verrou, s'il y en a un, est celui du
--- morceau en cours.
+-- Parties en cours : chacune se reprend (défi de la veille ou du jour, réponses de 1 à N sans trou, un morceau à jouer) et son verrou,
+-- s'il y en a un, est celui du morceau en cours.
 SELECT pg_temp.expect('parties en cours reprenables, verrou sur le morceau en cours', 0, (
     SELECT count(*) FROM daily.sessions s
+    JOIN daily.challenges c ON c.id = s.challenge_id
     LEFT JOIN (SELECT session_id, count(*) AS n, max(position) AS last_position FROM daily.answers GROUP BY session_id) a ON a.session_id = s.id
     WHERE s.status = 0
-      AND (COALESCE(a.last_position, 0) <> COALESCE(a.n, 0)
+      AND (c.date < (now() AT TIME ZONE 'UTC')::date - 1
+           OR COALESCE(a.last_position, 0) <> COALESCE(a.n, 0)
            OR COALESCE(a.n, 0) >= (SELECT count(*) FROM daily.challenge_tracks t WHERE t.challenge_id = s.challenge_id)
            OR (s.current_position IS NOT NULL AND s.current_position <> COALESCE(a.n, 0) + 1))));
 

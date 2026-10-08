@@ -5,9 +5,10 @@ namespace InSeconds.MigrationTests;
 /// <summary>Partie Daily de l'import (§ 8.2, 8.5 et 8.6 du plan v2), par le vrai <c>run-import.sh</c>.</summary>
 public class DailyImportTests(ImportDatabase database)
 {
-    private static readonly DateOnly Day = new(2026, 9, 1);
-    private static readonly DateTimeOffset Started = new(2026, 9, 1, 9, 0, 0, TimeSpan.Zero);
-    private static readonly DateTimeOffset Finished = new(2026, 9, 1, 9, 3, 30, TimeSpan.Zero);
+    // Le défi est celui du jour : une partie en cours d'un défi plus vieux que la veille serait expirée par l'import.
+    private static readonly DateOnly Day = DateOnly.FromDateTime(DateTime.UtcNow);
+    private static readonly DateTimeOffset Started = new(Day.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+    private static readonly DateTimeOffset Finished = Started.AddSeconds(210);
 
     // Le défi 5, de trois morceaux. Les identifiants v1 des morceaux du défi ne suivent pas les positions : 30 est la position 1,
     // 10 la position 2, 20 la position 3 (la clé v2 est (défi, position), jamais cet identifiant).
@@ -23,7 +24,7 @@ public class DailyImportTests(ImportDatabase database)
         await SeedChallengeAsync(cs);
         // Un second défi, d'identifiant non contigu, qui reprend le morceau 1 (il a été tiré deux fois : le cooldown l'a laissé revenir).
         await V1Data.InsertTracksAsync(cs, new V1Track(4, 104) { LastUsedDate = Day.AddDays(40), UsageCount = 1 });
-        await ImportDatabase.ExecuteAsync(cs, """UPDATE public."Tracks" SET "LastUsedDate" = '2026-10-11', "UsageCount" = 2 WHERE "Id" = 1""");
+        await ImportDatabase.ExecuteAsync(cs, $"""UPDATE public."Tracks" SET "LastUsedDate" = '{Day.AddDays(40):yyyy-MM-dd}', "UsageCount" = 2 WHERE "Id" = 1""");
         await V1DailyData.InsertChallengesAsync(cs, new V1Challenge(42, Day.AddDays(40)) { Seed = 99 });
         await V1DailyData.InsertChallengeTracksAsync(cs, new V1ChallengeTrack(77, 42, 1, 1), new V1ChallengeTrack(78, 42, 4, 2));
 
@@ -31,8 +32,8 @@ public class DailyImportTests(ImportDatabase database)
 
         Assert.True(result.ExitCode == 0, result.Output);
         Assert.Equal(2L, await Count(cs, "daily.challenges"));
-        Assert.Equal(1L, await Count(cs, $"daily.challenges WHERE id = {ChallengeId} AND date = '2026-09-01' AND seed = 7 AND origin IS NULL"));
-        Assert.Equal(1L, await Count(cs, "daily.challenges WHERE id = 42 AND date = '2026-10-11' AND seed = 99 AND origin IS NULL"));
+        Assert.Equal(1L, await Count(cs, $"daily.challenges WHERE id = {ChallengeId} AND date = '{Day:yyyy-MM-dd}' AND seed = 7 AND origin IS NULL"));
+        Assert.Equal(1L, await Count(cs, $"daily.challenges WHERE id = 42 AND date = '{Day.AddDays(40):yyyy-MM-dd}' AND seed = 99 AND origin IS NULL"));
         Assert.Equal(5L, await Count(cs, "daily.challenge_tracks"));
         Assert.Equal(1L, await Count(cs, $"daily.challenge_tracks WHERE challenge_id = {ChallengeId} AND position = 1 AND track_id = 1"));
         Assert.Equal(1L, await Count(cs, $"daily.challenge_tracks WHERE challenge_id = {ChallengeId} AND position = 2 AND track_id = 2"));
@@ -143,6 +144,34 @@ public class DailyImportTests(ImportDatabase database)
         Assert.Equal(1L, await Count(cs, "daily.sessions WHERE id = 2 AND status = 3 AND total_score = 2550"));
         Assert.Equal(5L, await Count(cs, "daily.answers"));
         Assert.Equal(1L, await Count(cs, "daily.answers WHERE session_id = 1 AND position = 3"));
+    }
+
+    [Fact]
+    public async Task PartieEnCours_DUnDefiPlusVieuxQueLaVeille_EstRepriseExpiree_LaVeilleResteEnCours()
+    {
+        // La v2 refuse de jouer une partie d'un défi plus vieux que la veille (SessionAccess) : l'import l'expire tout de suite,
+        // au lieu d'attendre le prochain démarrage du joueur. La veille reste jouable après minuit (piège 18).
+        var cs = await database.CreateDatabaseAsync();
+        var (stale, yesterday) = (V1Player.Guest(), V1Player.Guest());
+        await V1Data.InsertAsync(cs, stale, yesterday);
+        var days = new[] { Day.AddDays(-2), Day.AddDays(-1) };
+        for (var i = 0; i < days.Length; i++)
+        {
+            await V1Data.InsertTracksAsync(cs, new V1Track(i + 1, 201 + i) { LastUsedDate = days[i], UsageCount = 1 });
+            await V1DailyData.InsertChallengesAsync(cs, new V1Challenge(i + 1, days[i]));
+            await V1DailyData.InsertChallengeTracksAsync(cs, new V1ChallengeTrack(100 + i, i + 1, i + 1, 1));
+        }
+        await V1DailyData.InsertSessionsAsync(cs,
+            new V1Session(1, stale.Id, 1) { CreatedAt = Started.AddDays(-2), CurrentTrackId = 100, CurrentTrackMinListenedSeconds = 1m },
+            new V1Session(2, yesterday.Id, 2) { CreatedAt = Started.AddDays(-1), CurrentTrackId = 101, CurrentTrackMinListenedSeconds = 1m });
+
+        var result = await database.RunImportAsync(cs);
+
+        Assert.True(result.ExitCode == 0, result.Output);
+        Assert.Contains("Parties en cours d'un défi plus vieux que la veille, reprises en « expirées » : 1", result.Output, StringComparison.Ordinal);
+        Assert.Contains("aux réponses non contiguës, reprises en « expirées » : 0", result.Output, StringComparison.Ordinal);
+        Assert.Equal(1L, await Count(cs, "daily.sessions WHERE id = 1 AND status = 3 AND ended_at > now() - interval '1 hour' AND current_position IS NULL"));
+        Assert.Equal(1L, await Count(cs, "daily.sessions WHERE id = 2 AND status = 0 AND ended_at IS NULL AND current_position = 1"));
     }
 
     [Fact]

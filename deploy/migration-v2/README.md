@@ -56,7 +56,7 @@ Sur le staging, `import-to-staging.sh` la lance **après** la seconde anonymisat
 
 ## Parties en cours, à l'import (E4)
 
-Une partie en cours dont les réponses ne vont pas de 1 à N sans trou (la v1 n'imposait l'ordre des morceaux que si le verrou était posé), ou qui n'a plus de morceau à jouer, ne pourrait plus continuer en v2 : elle est reprise **expirée**, réponses gardées. Un verrou de morceau qui ne porte pas sur le morceau en cours est écarté. L'import le dit (`Parties en cours aux réponses non contiguës, reprises en « expirées » : N`, `Verrous de morceau écartés … : N`) ; en prod, un nombre inattendu se regarde avant la bascule. Le reste (statut, verrou d'une partie finie, scores, séries) est repris tel quel et relu par `20-verify.sql`.
+Une partie en cours dont les réponses ne vont pas de 1 à N sans trou (la v1 n'imposait l'ordre des morceaux que si le verrou était posé), ou qui n'a plus de morceau à jouer, ne pourrait plus continuer en v2 : elle est reprise **expirée**, réponses gardées. Une partie en cours d'un défi plus vieux que la veille (que la v2 refuse de jouer) aussi, comptée à part (`Parties en cours d'un défi plus vieux que la veille, reprises en « expirées » : N`, un cas normal : la v1 attendait le retour du joueur pour l'expirer). Un verrou de morceau qui ne porte pas sur le morceau en cours est écarté. L'import le dit (`Parties en cours aux réponses non contiguës, reprises en « expirées » : N`, `Verrous de morceau écartés … : N`) ; en prod, un nombre inattendu se regarde avant la bascule. Le reste (statut, verrou d'une partie finie, scores, séries) est repris tel quel et relu par `20-verify.sql`.
 
 ## Statistiques figées de l'historique, après l'import (E4)
 

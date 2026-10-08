@@ -222,8 +222,10 @@ FROM public."DailyChallengeTracks";
 
 -- Le plan des parties : ce que l'import en fait. Une partie en cours ne se reprend en v2 que si ses réponses vont de 1 à N,
 -- sans trou, avec au moins un morceau à jouer (« le morceau en cours est le premier sans réponse », piège 35 : la v1 n'imposait
--- l'ordre que si le verrou était posé). Sinon elle passe en « expirée » (ses réponses sont gardées). Le verrou d'un morceau (durée
--- écoutée, indice) n'est gardé que s'il porte sur le morceau en cours ; ailleurs la v2 l'ignorerait de toute façon.
+-- l'ordre que si le verrou était posé). Sinon elle passe en « expirée » (ses réponses sont gardées). Une partie en cours d'un défi
+-- plus vieux que la veille (jour UTC) passe aussi en « expirée » : la v2 refuse déjà de la jouer (SessionAccess.OldestPlayableDay),
+-- et la v1 ne l'aurait expirée qu'au prochain démarrage du joueur. Le verrou d'un morceau (durée écoutée, indice) n'est gardé que
+-- s'il porte sur le morceau en cours ; ailleurs la v2 l'ignorerait de toute façon.
 DROP TABLE IF EXISTS pg_temp.import_session_counts;
 DROP TABLE IF EXISTS pg_temp.import_session_plan;
 CREATE TEMP TABLE import_session_counts AS
@@ -233,17 +235,22 @@ SELECT s."Id" AS session_id,
        COALESCE(max(ct."Position"), 0) AS last_position,
        (SELECT count(*) FROM public."DailyChallengeTracks" t WHERE t."DailyChallengeId" = s."DailyChallengeId") AS tracks,
        lk."Position" AS lock_position,
-       s."CurrentTrackId" IS NOT NULL AS has_lock
+       s."CurrentTrackId" IS NOT NULL AS has_lock,
+       dc."Date" AS challenge_date
 FROM public."GameSessions" s
+JOIN public."DailyChallenges" dc ON dc."Id" = s."DailyChallengeId"
 LEFT JOIN public."GameSessionAnswers" a ON a."GameSessionId" = s."Id"
 LEFT JOIN public."DailyChallengeTracks" ct ON ct."Id" = a."DailyChallengeTrackId"
 LEFT JOIN public."DailyChallengeTracks" lk ON lk."Id" = s."CurrentTrackId" AND lk."DailyChallengeId" = s."DailyChallengeId"
-GROUP BY s."Id", lk."Position";
+GROUP BY s."Id", lk."Position", dc."Date";
 
 CREATE TEMP TABLE import_session_plan AS
 SELECT e.*,
-       (e.lock_position IS NOT NULL AND (e.status <> 0 OR (NOT e.expire AND e.lock_position = e.answered + 1))) AS keep_lock
-FROM (SELECT c.*, (c.status = 0 AND NOT (c.last_position = c.answered AND c.answered < c.tracks)) AS expire
+       (e.broken OR e.stale) AS expire,
+       (e.lock_position IS NOT NULL AND (e.status <> 0 OR (NOT e.broken AND NOT e.stale AND e.lock_position = e.answered + 1))) AS keep_lock
+FROM (SELECT c.*,
+             (c.status = 0 AND NOT (c.last_position = c.answered AND c.answered < c.tracks)) AS broken,
+             (c.status = 0 AND c.challenge_date < (now() AT TIME ZONE 'UTC')::date - 1) AS stale
       FROM import_session_counts c) e;
 
 DO $$
@@ -252,14 +259,17 @@ DECLARE
     dropped bigint;
     ids text;
 BEGIN
-    SELECT count(*) INTO expired FROM import_session_plan WHERE expire;
+    SELECT count(*) INTO expired FROM import_session_plan WHERE broken;
     SELECT count(*) INTO dropped FROM import_session_plan WHERE has_lock AND NOT keep_lock;
     RAISE NOTICE 'Parties en cours aux réponses non contiguës, reprises en « expirées » : %', expired;
     -- Les identifiants, pour décider avant la bascule : une partie du jour expirée, c'est une partie du jour perdue pour son joueur.
-    SELECT string_agg(session_id::text, ', ' ORDER BY session_id) INTO ids FROM import_session_plan WHERE expire;
+    SELECT string_agg(session_id::text, ', ' ORDER BY session_id) INTO ids FROM import_session_plan WHERE broken;
     IF ids IS NOT NULL THEN
         RAISE NOTICE 'Parties reprises en « expirées », identifiants : %', ids;
     END IF;
+    -- Les parties abandonnées sans clic sur un jour révolu : attendues (la v1 attendait le retour du joueur), seulement comptées.
+    SELECT count(*) INTO expired FROM import_session_plan WHERE stale AND NOT broken;
+    RAISE NOTICE 'Parties en cours d''un défi plus vieux que la veille, reprises en « expirées » : %', expired;
     RAISE NOTICE 'Verrous de morceau écartés (hors du défi, ou pas sur le morceau en cours) : %', dropped;
 END $$;
 
