@@ -106,7 +106,8 @@ public sealed record DayTrackStats(
 
 /// <summary>
 /// La photo d'un jour (§ 5.4 du plan v2) : tout ce que montrent « stats par défi » et la répartition des scores, **plus les paliers et le barème en
-/// vigueur ce jour-là** (changer un réglage plus tard ne doit pas réécrire l'histoire). Les joueurs supprimés en sont exclus.
+/// vigueur au calcul** (deux jours après pour la tâche, le moment du recalcul pour l'admin) : changer un réglage ensuite ne réécrit pas la photo.
+/// L'histogramme garde aussi tout palier réellement écouté qui n'est plus dans le réglage. Les joueurs supprimés en sont exclus.
 /// </summary>
 /// <param name="PlayerCount">Parties terminées.</param>
 /// <param name="PendingCount">Parties en cours : toujours 0 pour un jour passé, repliées sur <paramref name="ExpiredCount"/> (le joueur n'est jamais revenu).</param>
@@ -160,10 +161,16 @@ public static class DayStatsCalculator
         var (pendingCount, expiredCount) = isPast ? (0, expired + pending) : (pending, expired);
         var maxPossible = tracks.Count * (durationScores.Count == 0 ? 0 : durationScores.Max(d => d.Score));
 
+        // Les paliers de l'histogramme : ceux du réglage, plus tout palier réellement écouté qui n'y est plus (réglage changé depuis ce jour-là, ou
+        // historique importé) ; sinon ces réponses trouvées disparaîtraient de la photo, alors qu'elle est figée pour de bon.
+        var guessDurations = allowedDurations
+            .Concat(aggregates.Values.SelectMany(a => a.FoundByDuration.Keys))
+            .Distinct().OrderBy(d => d).ToList();
+
         var trackStats = tracks.OrderBy(t => t.Position).Select(t =>
         {
             var a = aggregates.GetValueOrDefault(t.Position) ?? TrackAggregate.Empty(t.Position);
-            var distribution = allowedDurations.Distinct().OrderBy(d => d)
+            var distribution = guessDurations
                 .Select(d => new DurationBucket(d, a.FoundByDuration.GetValueOrDefault(d)))
                 .ToList();
             return new DayTrackStats(

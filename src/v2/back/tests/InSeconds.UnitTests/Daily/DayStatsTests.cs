@@ -159,6 +159,24 @@ public class DayStatsTests
     }
 
     [Fact]
+    public void Photo_UnPalierQuiNEstPlusAutorise_GardeSesReponsesDansLHistogramme()
+    {
+        // 4 s n'est pas (ou plus) un palier du réglage : les réponses trouvées à 4 s restent dans la photo, à leur place, pour tous les morceaux.
+        var aggregates = new Dictionary<int, TrackAggregate>
+        {
+            [1] = new(1, Total: 3, ArtistCorrect: 3, TitleCorrect: 3, Found: 3, Extended: 0, ListenedSum: 6m, FoundListenedSum: 6m,
+                new Dictionary<decimal, int> { [1m] = 2, [4m] = 1 }),
+        };
+
+        var tracks = Build(isPast: true, [Session(SessionStatus.Completed, 100)], aggregates).Tracks;
+
+        Assert.Equal([0.5m, 1m, 1.5m, 2m, 3m, 4m, 5m, 10m], tracks[0].GuessTimeDistribution.Select(b => b.Seconds));
+        Assert.Equal([0, 2, 0, 0, 0, 1, 0, 0], tracks[0].GuessTimeDistribution.Select(b => b.Count));
+        Assert.Equal(tracks[0].TotalAnswers - tracks[0].NotFoundCount, tracks[0].GuessTimeDistribution.Sum(b => b.Count));
+        Assert.Equal(8, tracks[1].GuessTimeDistribution.Count);
+    }
+
+    [Fact]
     public void Photo_MorceauSansReponse_ZeroPartout()
     {
         var second = Build(isPast: true, [], new Dictionary<int, TrackAggregate> { [1] = TrackAggregate.Empty(1) }).Tracks[1];
