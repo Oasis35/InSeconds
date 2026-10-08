@@ -155,14 +155,11 @@ SELECT pg_temp.expect('défis repris à l''identique', 0, (
     LEFT JOIN daily.challenges v ON v.id = c."Id"
     WHERE v.id IS NULL OR v.date IS DISTINCT FROM c."Date" OR v.seed IS DISTINCT FROM c."Seed" OR v.origin IS NOT NULL));
 
--- Morceaux des défis : même morceau à la même position dans le même défi. La colonne abandonnée (DeezerRankSnapshot) valait
--- la position partout : sinon elle portait une information qu'on perdrait.
+-- Morceaux des défis : même morceau à la même position dans le même défi.
 SELECT pg_temp.expect('morceaux des défis repris à l''identique', 0, (
     SELECT count(*) FROM public."DailyChallengeTracks" t
     LEFT JOIN daily.challenge_tracks v ON v.challenge_id = t."DailyChallengeId" AND v.position = t."Position"
     WHERE v.challenge_id IS NULL OR v.track_id IS DISTINCT FROM t."TrackId"));
-SELECT pg_temp.expect('rang Deezer figé = position (colonne abandonnée)', 0, (
-    SELECT count(*) FROM public."DailyChallengeTracks" WHERE "DeezerRankSnapshot" <> "Position"));
 
 -- Parties : tout à l'identique, sauf le statut d'une partie en cours qui ne se reprendrait pas (réponses non contiguës, ou aucun
 -- morceau à jouer, ou défi plus vieux que la veille), reprise « expirée » ; et le verrou, gardé seulement s'il porte sur le morceau en cours d'une partie qui reste

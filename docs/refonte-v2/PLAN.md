@@ -646,7 +646,7 @@ Dans chaque domaine :
 | `Tracks` | `catalogue.tracks` | repris ; `HasPreview` → `preview_status` (1 ou 2) ; `IsDisabled` → `disabled_at = COALESCE(UpdatedAt, now())` ; `deezer_rank = null` (rempli la nuit suivante) |
 | `Tracks.LastUsedDate`, `UsageCount` | (calculé) | **vérifiés** contre le calcul depuis `challenge_tracks`, puis abandonnés |
 | `DailyChallenges` | `daily.challenges` | repris, `origin = null` |
-| `DailyChallengeTracks` | `daily.challenge_tracks` | repris ; `DeezerRankSnapshot` abandonné après vérification qu'il vaut la position partout |
+| `DailyChallengeTracks` | `daily.challenge_tracks` | repris ; `DeezerRankSnapshot` abandonné (jamais lu par la v1) |
 | `GameSessions` | `daily.sessions` | repris ; `started_at = CreatedAt` ; `ended_at = COALESCE(CompletedAt, AbandonedAt)` ; `CurrentTrackId` (un `DailyChallengeTrack.Id`) → `current_position` par jointure ; `CurrentTrackMinListenedSeconds` → `current_listened_seconds`. **Deux normalisations (décidées en E4, comptées dans la sortie de l'import) :** une partie **en cours** dont les réponses ne vont pas de 1 à N sans trou (la v1 n'imposait l'ordre que si le verrou était posé), ou qui n'a plus de morceau à jouer, est reprise **expirée** (réponses gardées, `ended_at` = heure de l'import, comme une expiration en v2) : en v2 le morceau en cours est le premier sans réponse (piège 35). Une partie en cours d'un défi plus vieux que la veille est reprise expirée aussi (la v2 refuse de la jouer). Le verrou n'est gardé que s'il porte sur le morceau en cours (partie en cours) ou sur un morceau du défi (partie finie, abandonnée ou expirée) : ailleurs la v2 l'ignorerait |
 | `GameSessionAnswers` | `daily.answers` | repris ; `DailyChallengeTrackId` → `position` par jointure ; `answered_at = null` |
 | `MagicLinkTokens`, `EmailChangeTokens` | `players.auth_tokens` | seuls les jetons non consommés et non expirés (en pratique aucun, vu la coupure) ; `TokenHash` v1 est un texte hexadécimal, converti en `bytea` par `decode(…, 'hex')` |
@@ -659,7 +659,7 @@ Dans chaque domaine :
 | Donnée | Pourquoi |
 |---|---|
 | `Tracks.LastUsedDate`, `UsageCount` | recalculables depuis les défis ; un écart est **listé** dans la sortie de l'import, sans le bloquer (décision du 08/10, revue de E4 : la v2 ne lit que les défis). (La route de création à la main, qui ne mettait pas ces colonnes à jour, n'a jamais eu d'écran : aucun écart attendu.) |
-| `DailyChallengeTracks.DeezerRankSnapshot` | vaut la position partout (vérifié) |
+| `DailyChallengeTracks.DeezerRankSnapshot` | « photo du rang Deezer » (popularité du morceau chez Deezer au moment du défi), colonne de la migration initiale de la v1. **Jamais lue par la v1** (ni écran, ni calcul, ni API) : seulement écrite, avec la position dans le code actuel ; 210 lignes de défis anciens (42 défis) portent une autre valeur, sans doute le vrai rang de l'époque. **Sans effet sur la reprise de l'historique** : l'ordre des morceaux vient de `Position` (repris et vérifié), les réponses sont rattachées par l'identifiant du morceau du défi ; scores, séries et parties restent vérifiés. Ni reprise ni vérifiée (décision du 08/10, PR #284 : la copie prod → staging s'était arrêtée sur un contrôle « vaut la position » devenu inutile). Le rang actuel de chaque morceau est dans `catalogue.tracks.deezer_rank` |
 | `DailyChallengeTracks.Id`, `GameSessionAnswers.Id` | remplacés par les clés `(challenge_id, position)` et `(session_id, position)` ; aucune référence extérieure |
 | jetons de connexion expirés ou consommés | inutilisables |
 | `Players.IsGuest` | déduit de l'absence de ligne `accounts` |
@@ -723,7 +723,6 @@ Le format exact du texte haché (Guid en minuscules avec tirets) est fixé une f
 | Parties en cours | chaque session `Pending` se reprend (réponses de 1 à N sans trou, un morceau à jouer) et sa position en cours est celle du morceau en cours (ou `null` si aucun verrou) ; le statut, le verrou et tous les autres champs de chaque partie sont relus contre la v1 |
 | Cooldown (non bloquant) | dernière date et nombre d'utilisations recalculés comparés à `LastUsedDate` / `UsageCount` d'origine : les morceaux en écart sont listés, l'import continue |
 | Forme de la source | les colonnes lues dans `public` existent avec le type attendu (`information_schema`), pour détecter une migration v1 arrivée pendant le chantier |
-| Colonne morte | `DeezerRankSnapshot = Position` sur toutes les lignes |
 | Intégrité | aucune réponse orpheline, aucune position hors du défi, aucun doublon `(player_id, challenge_id)` |
 | Settings | toutes les clés v1 connues et converties ; valeurs relues par l'API v2 identiques aux valeurs v1 |
 
@@ -742,7 +741,7 @@ Le format exact du texte haché (Guid en minuscules avec tirets) est fixé une f
   - jeton de connexion en cours ;
   - settings aux valeurs non par défaut.
   - pseudos en doublon de casse, joueur supprimé sans date, session `Pending` d'un jour passé avec verrou ;
-  - partie en cours aux réponses non contiguës (reprise expirée), verrou posé sur un autre morceau que le morceau en cours (écarté), réponses rangées par position et non par identifiant v1, rang Deezer figé différent de la position, cooldown qui diffère du calcul, valeur hors des limites des colonnes v2 ;
+  - partie en cours aux réponses non contiguës (reprise expirée), verrou posé sur un autre morceau que le morceau en cours (écarté), réponses rangées par position et non par identifiant v1, cooldown qui diffère du calcul, valeur hors des limites des colonnes v2 ;
   - relance de l'import après ouverture : refusée sans `--force`.
 - **Test de bout en bout :** un cookie émis par la v1 (mêmes clés et paramètres Data Protection) est accepté par la v2 après import, donne le même joueur et est remplacé par le nouveau cookie standard. **Le même cookie v1 présenté par deux navigateurs** donne deux appareils du même joueur, sans déconnexion.
 

@@ -341,20 +341,6 @@ public class DailyImportTests(ImportDatabase database)
     }
 
     [Fact]
-    public async Task RangDeezerFigeDifferentDeLaPosition_ImportRefuse()
-    {
-        // La colonne abandonnée est vérifiée avant d'être perdue : si elle portait autre chose que la position, on s'arrête.
-        var cs = await database.CreateDatabaseAsync();
-        await SeedChallengeAsync(cs);
-        await ImportDatabase.ExecuteAsync(cs, """UPDATE public."DailyChallengeTracks" SET "DeezerRankSnapshot" = 42 WHERE "Id" = 10""");
-
-        var result = await database.RunImportAsync(cs);
-
-        Assert.NotEqual(0, result.ExitCode);
-        Assert.Contains("rang Deezer figé = position (colonne abandonnée)", result.Output, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public async Task ReponseSurUnMorceauDUnAutreDefi_ImportRefuse_PartieNommee()
     {
         var cs = await database.CreateDatabaseAsync();

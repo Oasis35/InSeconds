@@ -214,8 +214,8 @@ INSERT INTO daily.challenges (id, date, seed, origin)
 SELECT "Id", "Date", "Seed", NULL
 FROM public."DailyChallenges";
 
--- La clé d'un morceau du défi n'est plus son identifiant v1 mais (défi, position). DeezerRankSnapshot (qui vaut la position
--- partout, vérifié) est abandonné.
+-- La clé d'un morceau du défi n'est plus son identifiant v1 mais (défi, position). DeezerRankSnapshot, jamais lu par
+-- la v1, n'est pas repris.
 INSERT INTO daily.challenge_tracks (challenge_id, position, track_id)
 SELECT "DailyChallengeId", "Position", "TrackId"
 FROM public."DailyChallengeTracks";
