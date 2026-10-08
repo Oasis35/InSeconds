@@ -4,6 +4,7 @@ using InSeconds.Api.Infrastructure.Time;
 using InSeconds.Api.Modules.Daily.Application;
 using InSeconds.Api.Modules.Daily.Domain;
 using InSeconds.Api.Modules.Daily.Persistence;
+using InSeconds.Api.Modules.Gameplay;
 using Microsoft.EntityFrameworkCore;
 
 namespace InSeconds.Api.Infrastructure.Hosting;
@@ -30,19 +31,30 @@ public static class FreezeDayStatsCommand
             ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection manquante.");
 
         // La base, les réglages (paliers, barème) et les règles du jeu : le host n'est jamais démarré, aucun service hébergé ne tourne,
-        // ni Wolverine ni Hangfire. Les règles se passent d'indices (la photo n'en lit pas).
+        // ni Wolverine ni Hangfire. Les fournisseurs d'indices (Gameplay) servent au contrôle des réglages, comme au démarrage de l'API.
         builder.AddDatabaseSettings(connectionString);
         builder.Services.AddInSecondsDatabase(connectionString);
         builder.Services.AddGameCalendar();
         builder.Services.AddOptions<DailyOptions>().BindConfiguration(DailyOptions.Section);
         builder.Services.AddScoped<IDailyStore, EfDailyStore>();
         builder.Services.AddScoped<IDailyStatsQueries, EfDailyStatsQueries>();
+        builder.Services.AddGameplay();
         builder.Services.AddSingleton<DailyRules>();
         using var host = builder.Build();
 
         var logger = host.Services.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(FreezeDayStatsCommand));
         var calendar = host.Services.GetRequiredService<IGameCalendar>();
         logger.LogInformation("Statistiques des jours terminés (--freeze-day-stats)");
+
+        // Le contrôle de démarrage de l'API (DailyOptionsStartupCheck) : une photo est figée pour de bon, jamais avec des réglages incohérents.
+        var rules = host.Services.GetRequiredService<DailyRules>();
+        var problems = DailyOptionsChecks.Problems(rules.Options, rules.MaxHintLevel);
+        if (problems.Count > 0)
+        {
+            foreach (var problem in problems)
+                logger.LogError("Réglages incohérents, aucun jour figé : {Problem}", problem);
+            return 1;
+        }
 
         IReadOnlyList<UnfrozenChallenge> days;
         await using (var scope = host.Services.CreateAsyncScope())

@@ -519,6 +519,24 @@ public class DailyImportTests(ImportDatabase database)
         Assert.Equal(1L, await Count(cs, "daily.challenge_day_stats WHERE challenge_id = 2"));
     }
 
+    [Fact]
+    public async Task FigerLesStatistiques_ReglagesIncoherents_RienNEstFige_CodeDeSortie1()
+    {
+        // Le contrôle de démarrage de l'API : une photo figée avec un barème incohérent le resterait.
+        var cs = await database.CreateDatabaseAsync();
+        var oldDay = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-12);
+        await V1Data.InsertTracksAsync(cs, new V1Track(1, 201) { LastUsedDate = oldDay, UsageCount = 1 });
+        await V1DailyData.InsertChallengesAsync(cs, new V1Challenge(1, oldDay));
+        await V1DailyData.InsertChallengeTracksAsync(cs, new V1ChallengeTrack(100, 1, 1, 1));
+        Assert.Equal(0, (await database.RunImportAsync(cs)).ExitCode);
+        await ImportDatabase.ExecuteAsync(cs, """INSERT INTO infra.settings (key, value, updated_at) VALUES ('Daily:HintUnlockDurationsSeconds', '[10, 5]', now())""");
+
+        var exitCode = await FreezeDayStatsCommand.RunAsync([$"--ConnectionStrings:DefaultConnection={cs}"], TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, exitCode);
+        Assert.Equal(0L, await Count(cs, "daily.challenge_day_stats"));
+    }
+
     /// <summary>Un défi de trois morceaux (position 1, 2 et 3, voir les constantes), tirés ce jour-là pour la première fois.</summary>
     private static async Task SeedChallengeAsync(string cs)
     {

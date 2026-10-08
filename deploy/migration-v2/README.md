@@ -66,7 +66,7 @@ L'import ne calcule rien : la tâche `daily-close-day` n'attendrait que minuit p
 dotnet InSeconds.Api.dll --freeze-day-stats      # même configuration que l'API : base
 ```
 
-La commande (`FreezeDayStatsCommand`) fige tout jour terminé (J-2 et avant) resté sans photo, du plus ancien au plus récent, par la règle de la tâche. Ni serveur ni tâche ne démarrent. Un jour qui échoue n'empêche pas les suivants ; le code de sortie est 1 s'il y en a eu. Rejouable : un jour déjà figé n'est pas refait. La veille et le jour même restent calculés en direct (une partie peut encore s'y finir après minuit).
+La commande (`FreezeDayStatsCommand`) fige tout jour terminé (J-2 et avant) resté sans photo, du plus ancien au plus récent, par la règle de la tâche. Ni serveur ni tâche ne démarrent. Un jour qui échoue n'empêche pas les suivants ; le code de sortie est 1 s'il y en a eu. Des réglages du jeu incohérents (le contrôle du démarrage de l'API) : rien n'est figé, code de sortie 1. Rejouable : un jour déjà figé n'est pas refait. La veille et le jour même restent calculés en direct (une partie peut encore s'y finir après minuit).
 
 Sur le staging, `import-to-staging.sh` la lance après la clé Data Protection neuve ; comme elle, elle exige une image de l'API staging venue d'un déploiement de la PR E4 ou postérieur.
 
