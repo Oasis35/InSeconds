@@ -1,0 +1,12 @@
+<div class="flex flex-col items-center gap-1.5 w-full">
+  <button
+    (click)="share.emit()"
+    [disabled]="disabled()"
+    class="w-full py-3.5 rounded-full font-bold uppercase text-sm tracking-wide transition touch-manipulation disabled:opacity-40"
+    style="font-family:var(--font-display);background:var(--gradient-primary);color:var(--text-on-primary);letter-spacing:0.06em;box-shadow:var(--glow-primary)">
+    {{ (copied() ? 'daily.share.copied' : 'daily.share.button') | translate }}
+  </button>
+  @if (failed()) {
+    <p class="text-xs" style="color:var(--text-error)">{{ 'daily.share.failed' | translate }}</p>
+  }
+</div>

@@ -62,6 +62,8 @@ export default defineConfig({
           // passe dans le dépôt), sinon celle de l'appsettings de l'API.
           env: {
             ASPNETCORE_ENVIRONMENT: 'Testing',
+            // L'adresse de l'extrait du faux Deezer pointe sur le front de test (5178 en local, 5176 par défaut = CI).
+            E2E_FRONT_PORT: '5178',
             ...(e2eDbConnection ? { ConnectionStrings__DefaultConnection: e2eDbConnection } : {}),
           },
         },

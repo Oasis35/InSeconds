@@ -1,21 +1,27 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { SessionStore } from '../../session/session.store';
+import { HeaderSlot } from './header-slot';
 
 /**
  * En-tête de l'app : l'avatar du compte connecté (initiale du pseudo, mène au profil) à droite, ou
- * un lien « Se connecter » pour un invité ou un visiteur (rien tant que l'identité n'est pas lue). À gauche, l'emplacement de la série,
- * vide tant que le module Daily n'existe pas. Posé en superposition en haut de page : il ne
+ * un lien « Se connecter » pour un invité ou un visiteur (rien tant que l'identité n'est pas lue). À gauche, l'emplacement que la page courante remplit
+ * (`HeaderSlot` : la gélule de série du jeu du jour), vide sinon. Posé en superposition en haut de page : il ne
  * décale aucun écran.
  */
 @Component({
   selector: 'app-header',
-  imports: [RouterLink, TranslatePipe],
+  imports: [RouterLink, TranslatePipe, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-3 p-4">
-      <div data-testid="header-streak"></div>
+      <div data-testid="header-streak">
+        @if (slot.left(); as template) {
+          <ng-container [ngTemplateOutlet]="template" />
+        }
+      </div>
       @if (!session.loaded()) {
         <!-- Identité pas encore lue : ni avatar ni « Se connecter » (sinon un compte connecté voit un instant le lien). -->
       } @else if (session.isLinked()) {
@@ -42,6 +48,7 @@ import { SessionStore } from '../../session/session.store';
 })
 export class AppHeaderComponent {
   protected readonly session = inject(SessionStore);
+  protected readonly slot = inject(HeaderSlot);
 
   protected readonly pseudo = computed(() => this.session.player()?.pseudo ?? '');
   protected readonly initial = computed(() => [...this.pseudo()][0] ?? '?');

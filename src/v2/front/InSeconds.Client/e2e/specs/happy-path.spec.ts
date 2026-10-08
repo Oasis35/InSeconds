@@ -34,16 +34,16 @@ test.describe('Happy path — partie complète', () => {
     await game.goto();
     await game.waitForWelcome();
 
-    // Peek GET /api/sessions/today : lecture seule → aucun Player ni cookie authToken créé.
+    // Peek GET /api/daily/today : lecture seule → aucun Player ni cookie de session créé.
     const before = await page.context().cookies();
-    expect(before.find(c => c.name === 'authToken')).toBeUndefined();
+    expect(before.find(c => c.name === 'inseconds')).toBeUndefined();
 
-    // Le cookie n'apparaît qu'au clic « Commencer à jouer » (POST /api/sessions).
+    // Le cookie n'apparaît qu'au clic « Commencer à jouer » (POST /api/daily/sessions).
     await game.clickStart();
     await expect(page.getByText('Piste 1 / 5')).toBeVisible();
 
     const after = await page.context().cookies();
-    expect(after.find(c => c.name === 'authToken')).toBeDefined();
+    expect(after.find(c => c.name === 'inseconds')).toBeDefined();
   });
 
   test('affiche la progression piste X / 5 pendant la partie', async ({ page }) => {

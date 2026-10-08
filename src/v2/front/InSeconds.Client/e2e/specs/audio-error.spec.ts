@@ -36,10 +36,12 @@ test.describe('Échec de lecture audio', () => {
     // Le formulaire de réponse ne doit pas être affiché tant que la lecture n'a pas repris.
     await expect(round.answerInput).not.toBeVisible();
 
-    // Une boucle (l'ancien bug E4) rappellerait startPlay() de façon quasi synchrone dès que
-    // l'état retombe à 'idle' — les assertions ci-dessus (qui pollent déjà) lui ont largement
-    // laissé le temps de se manifester avant cette lecture du compteur.
-    expect(requestCount).toBe(1);
+    // Howler tente d'abord de télécharger l'extrait, puis se rabat une seule fois sur un élément <audio> (limite connue du lecteur) : au plus deux
+    // requêtes, et surtout pas de boucle. Une boucle (l'ancien bug E4) ferait grimper le compteur ; il reste figé.
+    const afterFirstFailure = requestCount;
+    expect(afterFirstFailure).toBeLessThanOrEqual(2);
+    await page.waitForTimeout(1500);
+    expect(requestCount).toBe(afterFirstFailure);
   });
 
   test("« Réessayer » relance la lecture et permet de terminer le morceau normalement", async ({ page }) => {

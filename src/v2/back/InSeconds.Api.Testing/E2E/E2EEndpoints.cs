@@ -60,6 +60,14 @@ public static class E2EEndpoints
                 : Results.Ok(new GenerateTodayResponse(result.Outcome == GenerationOutcome.Created, result.TrackCount));
         });
 
+        // Retire le défi du jour (et ses morceaux), le pool restant : le défi renaît à la première partie (génération à la volée).
+        e2e.MapPost("/delete-challenge", async (InSecondsDbContext db, IGameCalendar calendar, CancellationToken ct) =>
+        {
+            var day = calendar.Today;
+            await db.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM daily.challenges WHERE date = {day}", ct);
+            return Results.Ok();
+        });
+
         // Connecte le navigateur appelant comme un compte lié admin dédié aux tests (créé au besoin), par le chemin du dev-login.
         e2e.MapPost("/login-as-admin", async (AccountSignIn accountSignIn, InSecondsDbContext db, CancellationToken ct) =>
         {
@@ -80,6 +88,22 @@ public static class E2EEndpoints
             // créée : aucune validation périmée n'est en cache, la requête suivante voit déjà le rôle admin.
             await db.Set<Account>().Where(a => a.PlayerId == result.PlayerId)
                 .ExecuteUpdateAsync(set => set.SetProperty(a => a.IsAdmin, true), ct);
+            return Results.Ok();
+        });
+
+        // Pose directement l'état de série d'un joueur (valeurs brutes de daily.streaks) : les états du gel de série (protégée, perdue, palier) se
+        // testent sans simuler des jours de jeu. `lastPlayedDaysAgo` : 1 = hier ; vide = jamais joué.
+        e2e.MapPost("/set-streak", async (SetStreakRequest request, InSecondsDbContext db, IGameCalendar calendar, CancellationToken ct) =>
+        {
+            if (!await db.Set<Player>().AnyAsync(p => p.Id == request.PlayerId, ct))
+                return Results.NotFound();
+            DateOnly? lastPlayed = request.LastPlayedDaysAgo is { } daysAgo ? calendar.Today.AddDays(-daysAgo) : null;
+            await db.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO daily.streaks (player_id, current_streak, last_played_date, freezes)
+                VALUES ({request.PlayerId}, {request.Streak}, {lastPlayed}, {(short)request.Freezes})
+                ON CONFLICT (player_id) DO UPDATE
+                SET current_streak = EXCLUDED.current_streak, last_played_date = EXCLUDED.last_played_date, freezes = EXCLUDED.freezes
+                """, ct);
             return Results.Ok();
         });
 
@@ -105,5 +129,7 @@ public static class E2EEndpoints
 public sealed record ResetResponse(IReadOnlyList<string> Schemas);
 
 public sealed record SeedResponse(int Added);
+
+public sealed record SetStreakRequest(Guid PlayerId, int Streak, int? LastPlayedDaysAgo, int Freezes);
 
 public sealed record GenerateTodayResponse(bool Created, int Tracks);

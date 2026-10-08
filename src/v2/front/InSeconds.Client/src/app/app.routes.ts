@@ -11,8 +11,6 @@ export function redirectKeepingQuery(target: string): RedirectFunction {
     inject(Router).createUrlTree([target], { queryParams, fragment: fragment ?? undefined });
 }
 
-const comingSoon = () => import('./core/shell/coming-soon/coming-soon.page').then(m => m.ComingSoonPage);
-
 export const routes: Routes = [
   // Tant que le mode Runs n'est pas public, l'accueil est le défi du jour.
   { path: '', pathMatch: 'full', redirectTo: redirectKeepingQuery('/daily') },
@@ -28,10 +26,10 @@ export const routes: Routes = [
   { path: 'legal-notice', pathMatch: 'full', redirectTo: redirectKeepingQuery('/privacy') },
 
   // Domaines : chacun remplace sa page d'attente par ses routes (chargées à la demande, avec leurs stores).
-  { path: 'daily', loadComponent: comingSoon },
+  { path: 'daily', loadChildren: () => import('./daily/feature/daily.routes').then(m => m.DAILY_ROUTES) },
   { path: 'account', loadChildren: () => import('./account/feature/account.routes').then(m => m.ACCOUNT_ROUTES) },
   { path: 'admin', loadChildren: () => import('./admin/feature/admin.routes').then(m => m.ADMIN_ROUTES) },
-  { path: 'privacy', loadComponent: comingSoon },
+  { path: 'privacy', loadComponent: () => import('./core/shell/privacy/privacy.page').then(m => m.PrivacyPage) },
 
   {
     path: '**',

@@ -1,0 +1,129 @@
+<!-- Emplacement de gauche de l'en-tête global : la gélule de série, ou le score en cours de partie. -->
+<ng-template #headerLeft>
+  @if (store.screen() === 'playing') {
+    <span class="text-base font-extrabold tabular-nums" style="font-family:var(--font-display);color:var(--text-hi)">
+      {{ store.totalScore() }} <span style="color:var(--text-faint);font-weight:400;font-size:0.625rem">{{ 'daily.common.points' | translate }}</span>
+    </span>
+  } @else if (store.screen() !== 'loading') {
+    <app-streak-pill [streak]="store.pillStreak()" [linked]="store.linked()" [pulse]="store.toasts().gelEarned" (open)="openStreakSheet()" />
+  }
+</ng-template>
+
+<div class="da-bg min-h-dvh flex flex-col relative" style="color:var(--text-body)">
+  <app-decor-background />
+
+  <main class="relative flex-1 flex flex-col p-5 w-full max-w-lg mx-auto overflow-x-clip">
+
+    <header class="pt-12 pb-6">
+      <app-daily-brand />
+      @if (store.screen() === 'playing') {
+        <app-daily-progress [currentIndex]="store.currentIndex()" [trackCount]="store.trackCount()" (abandon)="confirmAbandon()" />
+      }
+    </header>
+
+    @switch (store.screen()) {
+      @case ('loading') {
+        <div class="flex-1 flex items-center justify-center">
+          <p class="text-sm animate-pulse" style="color:var(--text-faint)">{{ 'daily.common.loading' | translate }}</p>
+        </div>
+      }
+
+      @case ('welcome') {
+        <app-welcome-screen
+          [trackCount]="store.peekTracksCount()"
+          [streak]="store.pillStreak()"
+          [hideLoginCta]="store.showLostToast()"
+          [linked]="store.linked()"
+          [pseudo]="session.player()?.pseudo ?? null"
+          (startGame)="store.begin()" />
+      }
+
+      @case ('resume_prompt') {
+        <app-resume-screen
+          [completedCount]="store.peekCompletedCount()"
+          [trackCount]="store.peekTracksCount()"
+          [abandonLoading]="store.abandonLoading()"
+          [linked]="store.linked()"
+          (resumeGame)="store.begin()"
+          (abandon)="store.abandonFromResume()" />
+      }
+
+      @case ('no_challenge') {
+        <app-status-screen titleKey="daily.noChallenge.title" bodyKey="daily.noChallenge.body" (retry)="store.retryNoChallenge()" />
+      }
+
+      @case ('error') {
+        <app-status-screen titleKey="daily.error.title" bodyKey="daily.error.body" [errorCode]="errorReporting.lastErrorCode()" (retry)="store.init()" />
+      }
+
+      @case ('already_played') {
+        <app-already-played-screen
+          [stats]="store.stats()"
+          [abandoned]="store.abandoned()"
+          [countdown]="store.countdown()"
+          [shareCopied]="shareCopied()"
+          [shareFailed]="shareFailed()"
+          [lang]="language.current()"
+          (share)="share()" />
+      }
+
+      @case ('playing') {
+        <div class="screen-enter flex-1 flex flex-col justify-start pt-4">
+          <app-track-round [result]="store.roundResult()" [hintPending]="store.hintPending()"
+            (answered)="onAnswered($event)" (hintRequested)="store.requestHint($event)">
+            <div roundBadge class="absolute z-40 flex items-center justify-center rounded-2xl px-3"
+                 style="top:calc(0.75rem + 0.5rem);left:0;height:42px;background:rgb(var(--rgb-surface) / 0.55);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--border-medium)">
+              <app-deezer-badge [deezerTrackId]="store.roundDeezerTrackId() ?? undefined" width="98" height="14" [lang]="language.current()" />
+            </div>
+
+            <p roundScore class="font-extrabold tabular-nums"
+               style="font-family:var(--font-display);font-size:2.25rem;line-height:1;letter-spacing:-0.03em"
+               [style.color]="store.roundScore() > 0 ? 'var(--color-success)' : 'var(--text-muted)'">
+              +<app-score-count [value]="store.roundScore()" />
+              <span class="text-base font-normal" style="color:var(--text-faint)"> {{ 'daily.round.points' | translate }}</span>
+            </p>
+
+            <button roundNext type="button" (click)="store.nextTrack()"
+              class="w-full py-3.5 rounded-full text-sm font-bold tracking-wide uppercase transition touch-manipulation"
+              style="font-family:var(--font-display);background:var(--gradient-primary);color:var(--text-on-primary);letter-spacing:0.06em;box-shadow:var(--glow-primary)">
+              {{ (store.isLastTrack() ? 'daily.round.seeResult' : 'daily.round.nextTrack') | translate }}
+            </button>
+          </app-track-round>
+        </div>
+      }
+
+      @case ('done') {
+        <app-final-recap-screen
+          [results]="store.results()"
+          [stats]="store.stats()"
+          [displayedScore]="displayedTotal()"
+          [shareCopied]="shareCopied()"
+          [shareFailed]="shareFailed()"
+          [canShare]="store.canShare()"
+          [countdown]="store.countdown()"
+          [lang]="language.current()"
+          (share)="share()" />
+      }
+    }
+
+  </main>
+  <app-daily-footer class="mt-auto" [isAdmin]="session.isAdmin()" [lang]="language.current()" (toggleLanguage)="toggleLanguage()" />
+
+  <!-- Toasts de fin de partie et d'accueil (série, gels) -->
+  @if (store.toasts().guestStreak) {
+    <app-guest-streak-toast [streak]="store.toastStreak()" [freezeMiss]="store.toasts().guestFreezeMiss" (dismissed)="store.dismissStreakToast()" />
+  }
+  @if (store.showLostToast(); as _) {
+    <app-lost-streak-toast [lostStreak]="store.lostStreak() ?? 0" (dismissed)="store.dismissLostToast()" />
+  }
+  @if (store.toasts().gelUsed) {
+    <app-gel-used-toast [freezesUsed]="store.freezesUsed()" [streak]="store.pillStreak()?.streak ?? null" (dismissed)="store.dismissGelToast()" />
+  }
+  @if (store.toasts().gelEarned) {
+    <app-gel-earned-toast
+      [streak]="store.pillStreak()?.streak ?? null"
+      [freezes]="store.pillStreak()?.freezes ?? 0"
+      [maxFreezes]="store.pillStreak()?.maxFreezes ?? 0"
+      (dismissed)="store.dismissGelToast()" />
+  }
+</div>

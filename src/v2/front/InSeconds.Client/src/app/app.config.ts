@@ -10,6 +10,7 @@ import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 
 import { provideAccount } from './account/feature/provide-account';
 import { provideAdmin } from './admin/feature/provide-admin';
+import { provideDaily } from './daily/feature/provide-daily';
 import { routes } from './app.routes';
 import { GlobalErrorHandler } from './core/errors/global-error-handler';
 import { credentialsInterceptor } from './core/http/credentials.interceptor';
@@ -33,6 +34,7 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => inject(LanguageService).init()),
     provideAccount(),
     provideAdmin(),
+    provideDaily(),
     // Désactivé en dev (`ng serve`) : un service worker y servirait d'anciens fichiers.
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),

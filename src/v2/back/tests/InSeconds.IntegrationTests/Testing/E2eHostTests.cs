@@ -190,6 +190,43 @@ public class E2eHostTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task DeleteChallenge_RetireLeDefiDuJour_LePoolResteEtLeDefiRenaitAuPremierJoueur()
+    {
+        var admin = await SeededAdminAsync();
+
+        Assert.Equal(HttpStatusCode.OK, (await admin.PostAsync("/api/e2e/delete-challenge", null, Ct)).StatusCode);
+
+        Assert.Equal(55, (await ListAsync(admin)).Count);
+        var today = await admin.GetFromJsonAsync<Dictionary<string, object>>("/api/daily/today", Ct);
+        Assert.Equal("no_challenge", today!["state"]?.ToString());
+        // Le démarrage d'une partie régénère le défi à la volée (secours de la tâche de minuit).
+        var player = _host.CreateClient();
+        await player.PostAsync("/api/players/guest", null, Ct);
+        Assert.Equal(HttpStatusCode.OK, (await player.PostAsync("/api/daily/sessions", null, Ct)).StatusCode);
+        Assert.Equal("can_start", (await _host.CreateClient().GetFromJsonAsync<Dictionary<string, object>>("/api/daily/today", Ct))!["state"]?.ToString());
+    }
+
+    [Fact]
+    public async Task SetStreak_PoseLEtatBrutDeLaSerie_JoueurInconnu404()
+    {
+        var player = _host.CreateClient();
+        var me = await (await player.PostAsync("/api/players/guest", null, Ct)).Content.ReadFromJsonAsync<GuestCreated>(Ct);
+
+        var posed = await player.PostAsJsonAsync("/api/e2e/set-streak", new SetStreakRequest(me!.PlayerId, 12, 1, 2), Ct);
+        // Un second appel remplace l'état (rejouable).
+        var replaced = await player.PostAsJsonAsync("/api/e2e/set-streak", new SetStreakRequest(me.PlayerId, 3, null, 0), Ct);
+        var unknown = await player.PostAsJsonAsync("/api/e2e/set-streak", new SetStreakRequest(Guid.NewGuid(), 1, 1, 0), Ct);
+
+        Assert.Equal(HttpStatusCode.OK, posed.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, replaced.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, unknown.StatusCode);
+        using var scope = _host.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>();
+        var rows = await db.Database.SqlQueryRaw<int>("SELECT current_streak AS \"Value\" FROM daily.streaks").ToListAsync(Ct);
+        Assert.Equal([3], rows);
+    }
+
+    [Fact]
     public async Task LoginAsAdmin_ConnecteUnCompteAdmin_RejouableSansDoublon()
     {
         var client = _host.CreateClient();
@@ -247,6 +284,8 @@ public class E2eHostTests(PostgresFixture postgres) : IAsyncLifetime
         var problem = await response.Content.ReadFromJsonAsync<Microsoft.AspNetCore.Mvc.ProblemDetails>(Ct);
         Assert.Equal(code, problem!.Extensions["code"]?.ToString());
     }
+
+    private sealed record GuestCreated(Guid PlayerId);
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 }

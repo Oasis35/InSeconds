@@ -59,8 +59,11 @@ export class AnswerInputComponent {
 
   readonly queryChange = output<string>();
   readonly pick = output<AnswerSuggestion>();
-  /** Entrée avec une proposition en surbrillance : le store choisit celle-là. */
-  readonly pickHighlighted = output<void>();
+  /**
+   * Entrée : le parent choisit la proposition en surbrillance s'il y en a une (et empêche alors la validation du formulaire par
+   * `event.preventDefault()`), sinon la saisie se valide.
+   */
+  readonly enter = output<KeyboardEvent>();
   readonly clear = output<void>();
   readonly move = output<1 | -1>();
   readonly highlight = output<number>();
@@ -81,11 +84,9 @@ export class AnswerInputComponent {
         this.move.emit(-1);
         break;
       case 'Enter':
-        if (this.highlighted() >= 0) {
-          // choisit la proposition au lieu de valider le formulaire
-          event.preventDefault();
-          this.pickHighlighted.emit();
-        }
+        // Le parent décide : il lit la surbrillance du store au moment de l'appui. L'entrée `highlighted` n'est mise à jour qu'au prochain
+        // cycle d'affichage : `↓` puis `Entrée` enchaînés vite la verraient encore à -1 et valideraient le formulaire.
+        this.enter.emit(event);
         break;
       case 'Escape':
         this.dismiss.emit();

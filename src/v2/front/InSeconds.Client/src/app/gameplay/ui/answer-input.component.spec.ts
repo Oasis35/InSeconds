@@ -104,20 +104,20 @@ describe('AnswerInputComponent', () => {
 
     it('Entrée choisit la proposition en surbrillance, sans valider le formulaire', () => {
       const { component, press } = render({ suggestions: [DAFT, MUSE], highlighted: 0 });
-      const picked = vi.fn();
-      component.pickHighlighted.subscribe(picked);
+      // Le parent décide : il peut empêcher la validation du formulaire dans le gestionnaire (appel synchrone).
+      component.enter.subscribe(event => event.preventDefault());
 
       expect(press('Enter').defaultPrevented).toBe(true);
-      expect(picked).toHaveBeenCalledOnce();
     });
 
     it('Entrée sans surbrillance laisse le formulaire se valider', () => {
       const { component, press } = render({ suggestions: [DAFT, MUSE], highlighted: -1 });
-      const picked = vi.fn();
-      component.pickHighlighted.subscribe(picked);
+      const entered = vi.fn();
+      component.enter.subscribe(entered);
 
+      // Le composant ne bloque rien lui-même : sans choix du parent, le formulaire se valide.
       expect(press('Enter').defaultPrevented).toBe(false);
-      expect(picked).not.toHaveBeenCalled();
+      expect(entered).toHaveBeenCalledOnce();
     });
 
     it('Échap ferme la liste', () => {

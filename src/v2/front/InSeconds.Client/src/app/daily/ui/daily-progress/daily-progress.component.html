@@ -1,0 +1,15 @@
+<div class="mt-4 space-y-1.5">
+  <div class="flex justify-between text-xs font-semibold" style="color:var(--text-faint)">
+    <span>{{ 'daily.header.track' | translate: { current: currentIndex() + 1, total: trackCount() } }}</span>
+    <button (click)="abandon.emit()"
+            class="text-xs underline transition-colors hover:text-red-400"
+            style="color:var(--text-muted)">
+      {{ 'daily.common.abandon' | translate }}
+    </button>
+  </div>
+  <div class="w-full rounded-full" style="height:3px;background:var(--bg-inactive)">
+    <div class="rounded-full transition-all duration-500" style="height:3px;background:linear-gradient(90deg,var(--text-streak),var(--text-accent))"
+      [style.width.%]="(currentIndex() + 1) / trackCount() * 100">
+    </div>
+  </div>
+</div>

@@ -13,6 +13,8 @@ import { ApiTestClient } from '../fixtures/api-client';
 
 /** Résout (ou crée, pour un invité) le Player du navigateur et renvoie son ID. */
 async function currentPlayerId(page: Page): Promise<string> {
+  // Pas d'identité sans jeu : on la crée (POST, jamais un GET) si besoin, comme le fait le démarrage d'une partie.
+  await page.request.post('/api/players/guest');
   const res = await page.request.get('/api/players/me');
   const body = (await res.json()) as { playerId: string };
   return body.playerId;

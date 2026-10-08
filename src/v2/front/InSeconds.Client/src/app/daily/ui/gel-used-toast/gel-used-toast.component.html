@@ -1,0 +1,12 @@
+<div class="fixed left-1/2 z-20 w-full px-4" style="bottom:18px;transform:translateX(-50%);max-width:402px">
+  <div data-testid="gel-used-toast" data-anim class="relative overflow-hidden flex items-center gap-3 min-h-14 px-3.5 py-3 rounded-xl"
+       style="background:rgb(var(--rgb-panel) / 0.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-left:3px solid var(--color-accent-2);animation:gel-toast .45s cubic-bezier(.2,.8,.2,1) .3s both">
+    <span class="text-lg" style="color:var(--color-accent-2)"><app-streak-icon name="snowflake" /></span>
+    <p class="flex-1 text-xs leading-snug" style="color:var(--text-body)">
+      <strong class="font-semibold">{{ 'daily.streakFreeze.usedToast.title.' + usedKey() | translate: { n: freezesUsed() } }}</strong>
+      <span style="color:var(--text-muted)">{{ 'daily.streakFreeze.usedToast.body.' + usedKey() | translate: { n: freezesUsed(), streak: streak() } }}</span>
+    </p>
+    <button type="button" (click)="dismissed.emit()" [attr.aria-label]="'daily.streakFreeze.dismiss' | translate"
+            class="flex-shrink-0 w-6 h-6 text-sm leading-none" style="color:var(--text-muted)">✕</button>
+  </div>
+</div>

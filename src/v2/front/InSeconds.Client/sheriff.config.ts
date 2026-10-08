@@ -27,7 +27,8 @@ const domainModules = Object.fromEntries(
 /** Ce que chaque domaine peut importer, en plus de lui-même, de `core`, `ui` et `api`. */
 const DOMAIN_DEPENDENCIES: Record<(typeof DOMAINS)[number], string[]> = {
   gameplay: [],
-  daily: ['domain:gameplay'],
+  // Daily a besoin d'une identité (le guest se crée avant la première partie) : il lit `SessionLoader` du domaine account.
+  daily: ['domain:gameplay', 'domain:account'],
   runs: ['domain:gameplay'],
   account: [],
   admin: ['domain:account'],
