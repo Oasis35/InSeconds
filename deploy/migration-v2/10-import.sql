@@ -224,8 +224,9 @@ FROM public."DailyChallengeTracks";
 -- sans trou, avec au moins un morceau à jouer (« le morceau en cours est le premier sans réponse », piège 35 : la v1 n'imposait
 -- l'ordre que si le verrou était posé). Sinon elle passe en « expirée » (ses réponses sont gardées). Le verrou d'un morceau (durée
 -- écoutée, indice) n'est gardé que s'il porte sur le morceau en cours ; ailleurs la v2 l'ignorerait de toute façon.
+DROP TABLE IF EXISTS pg_temp.import_session_counts;
 DROP TABLE IF EXISTS pg_temp.import_session_plan;
-CREATE TEMP TABLE import_session_plan AS
+CREATE TEMP TABLE import_session_counts AS
 SELECT s."Id" AS session_id,
        s."Status" AS status,
        count(a."Id") AS answered,
@@ -239,11 +240,11 @@ LEFT JOIN public."DailyChallengeTracks" ct ON ct."Id" = a."DailyChallengeTrackId
 LEFT JOIN public."DailyChallengeTracks" lk ON lk."Id" = s."CurrentTrackId" AND lk."DailyChallengeId" = s."DailyChallengeId"
 GROUP BY s."Id", lk."Position";
 
-ALTER TABLE import_session_plan ADD COLUMN expire boolean, ADD COLUMN keep_lock boolean;
-UPDATE import_session_plan
-SET expire = (status = 0 AND NOT (last_position = answered AND answered < tracks));
-UPDATE import_session_plan
-SET keep_lock = (lock_position IS NOT NULL AND (status <> 0 OR (NOT expire AND lock_position = answered + 1)));
+CREATE TEMP TABLE import_session_plan AS
+SELECT e.*,
+       (e.lock_position IS NOT NULL AND (e.status <> 0 OR (NOT e.expire AND e.lock_position = e.answered + 1))) AS keep_lock
+FROM (SELECT c.*, (c.status = 0 AND NOT (c.last_position = c.answered AND c.answered < c.tracks)) AS expire
+      FROM import_session_counts c) e;
 
 DO $$
 DECLARE
