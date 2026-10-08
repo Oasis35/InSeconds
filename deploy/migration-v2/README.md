@@ -19,7 +19,7 @@ L'import se construit **module par module** : chaque PR d'import ajoute sa parti
 |---|---|---|
 | Players | B4 | joueurs (suppression comprise), comptes, un jeton v1 haché par joueur (`legacy_tokens`), jetons envoyés par email encore valables, clés Data Protection |
 | Catalogue | C2 | morceaux (identifiants conservés, extrait, désactivation), séquence des identifiants remise à niveau |
-| Daily | E4 | défis et leurs morceaux, parties (verrou joint sur le même défi), réponses, séries ; vérifications des scores, des séries et du cooldown. Les stats figées se calculent après, par `--freeze-day-stats` |
+| Daily | E4 | défis et leurs morceaux, parties (verrou joint sur le même défi), réponses, séries ; vérifications des scores et des séries, écarts de cooldown listés (non bloquants). Les stats figées se calculent après, par `--freeze-day-stats` |
 | Complet | G1 | contrôle de forme de la source, garde `opened_at` / `--force` |
 
 Les messages ne contiennent que des nombres et des identifiants, jamais d'email ni de pseudo (S13).

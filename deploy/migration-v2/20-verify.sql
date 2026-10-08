@@ -265,25 +265,23 @@ SELECT pg_temp.expect('séries reprises à l''identique', 0, (
        OR v.last_played_date IS DISTINCT FROM p."LastPlayedDate"
        OR COALESCE(v.freezes, 0) <> p."StreakFreezes"));
 
--- Cooldown : la dernière date et le nombre d'utilisations des morceaux, que la v2 recalcule depuis les défis, sont ceux que la v1
--- stockait (§ 8.3 : tout écart bloque l'import).
+-- Cooldown : la dernière date et le nombre d'utilisations des morceaux, que la v2 recalcule depuis les défis, comparés à ce que la v1
+-- stockait. Un écart ne bloque pas l'import (décision de Clément, revue de E4) : la v2 ne lit que les défis, qui sont repris tels quels ;
+-- seule la v1 tenait ces compteurs, et sa route de création de défi à la main ne les mettait pas à jour. Les morceaux sont listés.
 DO $$
 DECLARE
+    gaps bigint;
     ids text;
 BEGIN
-    SELECT string_agg(t."Id"::text, ', ' ORDER BY t."Id") INTO ids FROM public."Tracks" t
+    SELECT count(*), string_agg(t."Id"::text, ', ' ORDER BY t."Id") INTO gaps, ids FROM public."Tracks" t
     LEFT JOIN (SELECT ct.track_id, max(c.date) AS last_used, count(*) AS uses
                FROM daily.challenge_tracks ct JOIN daily.challenges c ON c.id = ct.challenge_id GROUP BY ct.track_id) u ON u.track_id = t."Id"
     WHERE t."LastUsedDate" IS DISTINCT FROM u.last_used OR t."UsageCount" <> COALESCE(u.uses, 0);
+    RAISE NOTICE 'Morceaux dont le cooldown de la v1 diffère du calcul sur les défis (non bloquant) : %', gaps;
     IF ids IS NOT NULL THEN
-        RAISE EXCEPTION 'Vérification « cooldown : dernière date et nombre d''utilisations recalculés » : écart sur les morceaux : %', ids;
+        RAISE NOTICE 'Écart de cooldown, morceaux : %', ids;
     END IF;
 END $$;
-SELECT pg_temp.expect('cooldown : dernière date et nombre d''utilisations recalculés', 0, (
-    SELECT count(*) FROM public."Tracks" t
-    LEFT JOIN (SELECT ct.track_id, max(c.date) AS last_used, count(*) AS uses
-               FROM daily.challenge_tracks ct JOIN daily.challenges c ON c.id = ct.challenge_id GROUP BY ct.track_id) u ON u.track_id = t."Id"
-    WHERE t."LastUsedDate" IS DISTINCT FROM u.last_used OR t."UsageCount" <> COALESCE(u.uses, 0)));
 
 -- Séquences : le prochain lot d'identifiants commence au-delà du plus grand identifiant repris.
 SELECT pg_temp.expect('séquence des identifiants de défis', 1, (

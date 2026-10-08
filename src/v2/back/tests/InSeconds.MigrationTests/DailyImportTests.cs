@@ -311,14 +311,17 @@ public class DailyImportTests(ImportDatabase database)
         var result = await database.RunImportAsync(cs);
 
         Assert.True(result.ExitCode == 0, result.Output);
+        Assert.Contains("diffère du calcul sur les défis (non bloquant) : 0", result.Output, StringComparison.Ordinal);
+        Assert.DoesNotContain("Écart de cooldown", result.Output, StringComparison.Ordinal);
     }
 
+    // Un écart ne bloque pas l'import (la v2 ne lit que les défis) : les morceaux sont listés dans la sortie.
     [Theory]
-    [InlineData("""UPDATE public."Tracks" SET "UsageCount" = 5 WHERE "Id" = 1""")]
-    [InlineData("""UPDATE public."Tracks" SET "LastUsedDate" = '2026-01-01' WHERE "Id" = 1""")]
-    [InlineData("""UPDATE public."Tracks" SET "UsageCount" = 1 WHERE "Id" = 3""")]
-    [InlineData("""UPDATE public."Tracks" SET "LastUsedDate" = NULL WHERE "Id" = 2""")]
-    public async Task Cooldown_ColonneDeLaV1QuiDiffereDuCalcul_ImportRefuse(string tampering)
+    [InlineData("""UPDATE public."Tracks" SET "UsageCount" = 5 WHERE "Id" = 1""", 1)]
+    [InlineData("""UPDATE public."Tracks" SET "LastUsedDate" = '2026-01-01' WHERE "Id" = 1""", 1)]
+    [InlineData("""UPDATE public."Tracks" SET "UsageCount" = 1 WHERE "Id" = 3""", 3)]
+    [InlineData("""UPDATE public."Tracks" SET "LastUsedDate" = NULL WHERE "Id" = 2""", 2)]
+    public async Task Cooldown_ColonneDeLaV1QuiDiffereDuCalcul_ImportPasse_MorceauListe(string tampering, int trackId)
     {
         var cs = await database.CreateDatabaseAsync();
         await V1Data.InsertTracksAsync(cs,
@@ -331,9 +334,10 @@ public class DailyImportTests(ImportDatabase database)
 
         var result = await database.RunImportAsync(cs);
 
-        Assert.NotEqual(0, result.ExitCode);
-        Assert.Contains("cooldown : dernière date et nombre d'utilisations recalculés", result.Output, StringComparison.Ordinal);
-        Assert.Equal(0L, await Count(cs, "daily.challenges"));
+        Assert.True(result.ExitCode == 0, result.Output);
+        Assert.Contains("diffère du calcul sur les défis (non bloquant) : 1", result.Output, StringComparison.Ordinal);
+        Assert.Contains($"Écart de cooldown, morceaux : {trackId}", result.Output, StringComparison.Ordinal);
+        Assert.Equal(1L, await Count(cs, "daily.challenges"));
     }
 
     [Fact]

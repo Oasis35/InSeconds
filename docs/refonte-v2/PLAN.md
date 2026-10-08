@@ -658,7 +658,7 @@ Dans chaque domaine :
 
 | Donnée | Pourquoi |
 |---|---|
-| `Tracks.LastUsedDate`, `UsageCount` | recalculables depuis les défis ; tout écart bloque l'import. (La route de création à la main, qui ne mettait pas ces colonnes à jour, n'a jamais eu d'écran : aucun écart attendu. S'il y en a un, l'import s'arrête et on regarde.) |
+| `Tracks.LastUsedDate`, `UsageCount` | recalculables depuis les défis ; un écart est **listé** dans la sortie de l'import, sans le bloquer (décision du 08/10, revue de E4 : la v2 ne lit que les défis). (La route de création à la main, qui ne mettait pas ces colonnes à jour, n'a jamais eu d'écran : aucun écart attendu.) |
 | `DailyChallengeTracks.DeezerRankSnapshot` | vaut la position partout (vérifié) |
 | `DailyChallengeTracks.Id`, `GameSessionAnswers.Id` | remplacés par les clés `(challenge_id, position)` et `(session_id, position)` ; aucune référence extérieure |
 | jetons de connexion expirés ou consommés | inutilisables |
@@ -721,7 +721,7 @@ Le format exact du texte haché (Guid en minuscules avec tirets) est fixé une f
 | Comptes | chaque email et chaque pseudo retrouvés, `is_admin` identique |
 | Jetons | pour chaque joueur, `sha256(AuthToken)` présent dans `legacy_tokens` |
 | Parties en cours | chaque session `Pending` se reprend (réponses de 1 à N sans trou, un morceau à jouer) et sa position en cours est celle du morceau en cours (ou `null` si aucun verrou) ; le statut, le verrou et tous les autres champs de chaque partie sont relus contre la v1 |
-| Cooldown | dernière date et nombre d'utilisations recalculés = `LastUsedDate` / `UsageCount` d'origine |
+| Cooldown (non bloquant) | dernière date et nombre d'utilisations recalculés comparés à `LastUsedDate` / `UsageCount` d'origine : les morceaux en écart sont listés, l'import continue |
 | Forme de la source | les colonnes lues dans `public` existent avec le type attendu (`information_schema`), pour détecter une migration v1 arrivée pendant le chantier |
 | Colonne morte | `DeezerRankSnapshot = Position` sur toutes les lignes |
 | Intégrité | aucune réponse orpheline, aucune position hors du défi, aucun doublon `(player_id, challenge_id)` |
@@ -943,7 +943,7 @@ Deuxième relecture, en comparant le plan au code v1 (`env/staging`). Les points
 | R1 | Tous les appareils d'un compte v1 partagent le même `AuthToken` : une seule `device_session` importée par joueur, effacée à la première conversion, aurait déconnecté les autres appareils. | haute | ✓ table `legacy_tokens`, une `device_session` par conversion, hash valable jusqu'à J+90, test « même cookie sur deux navigateurs » (§ 4.2, 5.5, 8.6). | 4 |
 | R2 | Série et gels mis à jour par l'outbox alors que le récap les relit tout de suite : toasts manquants ou faux, risque de double gel. | haute | ✓ mise à jour dans la transaction de la complétion ; gel offert dans celle de la conversion (§ 5.2, 5.4). | 4, 7 |
 | R3 | Stats de la veille figées à 0 h 05 alors qu'une partie de la veille peut encore se terminer. | haute | ✓ photo figée à J-2, veille en calcul direct (§ 5.4, 5.4 bis). | 7 |
-| R4 | Un défi créé à la main ne met pas à jour le cooldown en v1 : la vérification de l'import aurait bloqué. | haute | ✓ sans objet : la création à la main n'a jamais eu d'écran (confirmé par Clément le 30/09) ; route abandonnée en v2, vérification du cooldown gardée stricte (§ 5.6, 8.3). | 9 |
+| R4 | Un défi créé à la main ne met pas à jour le cooldown en v1 : la vérification de l'import aurait bloqué. | haute | ✓ sans objet : la création à la main n'a jamais eu d'écran (confirmé par Clément le 30/09) ; route abandonnée en v2 ; la vérification du cooldown, d'abord stricte, ne fait plus que lister les écarts depuis le 08/10 (revue de E4, § 8.3). | 9 |
 | R5 | Pseudos uniques en respectant la casse en v1, `citext UNIQUE` en v2 : « Bob » et « bob » feraient échouer l'import. | haute | ✓ aucun doublon en prod (vérifié à la main par Clément le 30/09) ; le contrôle reste dans `20-verify.sql` au cas où un doublon apparaîtrait d'ici la bascule. Ajouter aussi des contraintes CHECK sur les longueurs (pseudo 3 à 20). | 9 |
 | R6 | Retrait de `generate-today` et `refresh-previews` : l'admin perdait son compte rendu, les E2E cassaient ; `PoolInsufficient` vu comme un succès par Hangfire. | moyenne | ✓ boutons gardés, lancés par Hangfire avec suivi de l'exécution ; exception sur pool insuffisant, essais suffisants (§ 5.4 bis, 5.6). | 3, 7 |
 | R7 | `GET /players/me` ne crée plus d'invité : `BrowserIdComponent` et la spec `streak-freeze` en dépendent. | moyenne | ✓ `POST /players/guest` d'abord (§ 5.6) ; BrowserId et les chips « toi » ajoutés à `admin/` (§ 6.5). | 4, 8 |
