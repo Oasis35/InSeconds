@@ -36,4 +36,11 @@ export abstract class AudioPort {
 
   /** Coupe le son et revient au repos ; garde l'extrait en mémoire. */
   abstract stop(): void;
+
+  /**
+   * Déverrouille le son du navigateur. À appeler **dans le gestionnaire du clic** du joueur, avant
+   * toute attente (réseau…) : un son lancé plus tard, hors du geste, resterait muet sur iPhone
+   * jusqu'au geste suivant. Sans effet si le son est déjà déverrouillé.
+   */
+  abstract unlock(): void;
 }

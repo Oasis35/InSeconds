@@ -78,6 +78,14 @@ export function withTrackRound() {
           if (started !== created) launch(started);
         },
 
+        /**
+         * Déverrouille le son : le mode l'appelle dans le gestionnaire du clic qui lancera la manche,
+         * avant ses appels réseau (sur iPhone, un son lancé hors du geste reste muet).
+         */
+        unlockAudio(): void {
+          audio.unlock();
+        },
+
         /** « Écouter plus » : le palier suivant, pendant le chargement ou l'écoute comme après. */
         listenMore(): void {
           const changed = apply(listenMore);

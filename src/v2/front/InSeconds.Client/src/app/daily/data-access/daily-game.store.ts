@@ -269,6 +269,8 @@ export const DailyGameStore = signalStore(
 
     /** « Commencer à jouer » et « Reprendre » : crée (ou reprend) la partie, puis lance le premier morceau. */
     const begin = async (): Promise<void> => {
+      // Dans le clic, avant les appels réseau : sinon, sur iPhone, le premier morceau resterait muet jusqu'au geste suivant.
+      round.unlockAudio();
       patchState(store, { screen: 'loading' });
       await sessionLoader.ensureGuest();
       const settings = await ensureSettings();
@@ -324,6 +326,7 @@ export const DailyGameStore = signalStore(
        * un pool insuffisant ramène ici.
        */
       async retryNoChallenge(): Promise<void> {
+        round.unlockAudio();
         await init();
         if (store.screen() === 'no_challenge') await begin();
       },
@@ -383,6 +386,7 @@ export const DailyGameStore = signalStore(
 
       /** « Piste suivante » (un clic) : le morceau suivant, ou la fin de partie après le dernier. */
       nextTrack(): void {
+        round.unlockAudio();
         if (!store.isLastTrack()) {
           startTrack(store.position() + 1, null);
           return;

@@ -141,14 +141,17 @@ describe('DailyGameStore', () => {
   describe('« Commencer » et « Reprendre »', () => {
     it("crée l'identité, lit les réglages, démarre la partie et lance le premier morceau au clic", async () => {
       await store.init();
-      await store.begin();
+      const begun = store.begin();
+      // Le son est déverrouillé dans le clic même, avant tout appel réseau (iPhone).
+      expect(audio.calls).toEqual(['unlock']);
+      await begun;
 
       expect(guestCreated).toBe(1);
       expect(store.screen()).toBe('playing');
       expect(store.sessionId()).toBe(11);
       expect(store.position()).toBe(1);
       expect(round.phase()).toBe('loading');
-      expect(audio.calls).toEqual(['stop', 'load https://cdn.example/1.mp3 next https://cdn.example/2.mp3', 'playUntil 0.5']);
+      expect(audio.calls).toEqual(['unlock', 'stop', 'load https://cdn.example/1.mp3 next https://cdn.example/2.mp3', 'playUntil 0.5']);
     });
 
     it('une reprise relit les réponses, le plancher d\'écoute et les indices du morceau en cours (piège 35)', async () => {
@@ -250,7 +253,7 @@ describe('DailyGameStore', () => {
 
       expect(store.position()).toBe(2);
       expect(store.isLastTrack()).toBe(false);
-      expect(audio.calls).toEqual(['stop', 'load https://cdn.example/2.mp3 next https://cdn.example/3.mp3', 'playUntil 0.5']);
+      expect(audio.calls).toEqual(['unlock', 'stop', 'load https://cdn.example/2.mp3 next https://cdn.example/3.mp3', 'playUntil 0.5']);
     });
 
     it('après le dernier morceau : récap, statistiques du jour et série relues', async () => {

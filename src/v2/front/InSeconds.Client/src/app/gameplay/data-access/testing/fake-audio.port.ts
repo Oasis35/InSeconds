@@ -36,6 +36,10 @@ export class FakeAudioPort extends AudioPort {
     this.calls.push('playFull');
   }
 
+  unlock(): void {
+    this.calls.push('unlock');
+  }
+
   stop(): void {
     this.calls.push('stop');
     this._position.set(0);
