@@ -65,7 +65,6 @@
       "later": "Later"
     },
     "header": {
-      "home": "Home",
       "login": "Log in",
       "profile": "My profile"
     }
@@ -359,7 +358,6 @@
         "other": "{{ streak }}-day streak."
       },
       "hint": "Create an account so you don't lose it.",
-      "cta": "Create",
       "dismiss": "Close"
     },
     "noChallenge": {
@@ -404,8 +402,7 @@
     },
     "trackList": {
       "guessTimeTitle": "Other players' listening time",
-      "showChart": "See the time breakdown",
-      "close": "Close"
+      "showChart": "See the time breakdown"
     },
     "deezerBadge": {
       "ariaLabel": "Listen on Deezer"
@@ -417,16 +414,23 @@
       "language": "Passer en français"
     },
     "streakFreeze": {
-      "pillLabel": "{{ streak }}-day streak, see details",
+      "pillLabel": {
+        "one": "{{ streak }}-day streak, see details",
+        "other": "{{ streak }}-day streak, see details"
+      },
       "pillProtectedLabel": "Streak protected",
-      "avatarTitle": "My profile — {{ pseudo }}",
-      "avatarLabel": "My profile",
       "welcomeBack": "Welcome back!",
       "frozenLineBefore": "Your",
-      "frozenLineStrong": "{{ streak }}-day streak",
+      "frozenLineStrong": {
+        "one": "{{ streak }}-day streak",
+        "other": "{{ streak }}-day streak"
+      },
       "frozenLineAfter": "is kept safe by a freeze. Play to keep it going!",
       "sheet": {
-        "streakTitle": "{{ streak }}-day streak",
+        "streakTitle": {
+          "one": "{{ streak }}-day streak",
+          "other": "{{ streak }}-day streak"
+        },
         "stockLabel": "Your freezes · {{ count }} / {{ max }}",
         "nextFreeze": "Next freeze at {{ next }} days",
         "full": "Full stock: you can't earn more freezes for now.",

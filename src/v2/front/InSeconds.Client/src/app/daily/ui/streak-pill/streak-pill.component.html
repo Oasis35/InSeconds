@@ -4,7 +4,7 @@
         [attr.data-mode]="mode"
         [attr.data-anim]="animation() ? '' : null"
         [style.animation]="animation()"
-        [attr.aria-label]="mode === 'protected' ? ('daily.streakFreeze.pillProtectedLabel' | translate) : ('daily.streakFreeze.pillLabel' | translate: { streak: streak()?.streak ?? 0 })"
+        [attr.aria-label]="mode === 'protected' ? ('daily.streakFreeze.pillProtectedLabel' | translate) : (labelKey() | translate: { streak: streak()?.streak ?? 0 })"
         class="flex items-center gap-[7px] h-[30px] px-2.5 rounded-full text-xs font-bold tabular-nums whitespace-nowrap cursor-pointer"
         [style]="mode === 'protected'
           ? 'font-family:var(--font-display);border:1px solid rgb(var(--rgb-accent-2) / 0.75);background:rgb(var(--rgb-accent-2) / 0.08)'

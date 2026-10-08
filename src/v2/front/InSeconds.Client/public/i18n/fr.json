@@ -65,7 +65,6 @@
       "later": "Plus tard"
     },
     "header": {
-      "home": "Accueil",
       "login": "Se connecter",
       "profile": "Mon profil"
     }
@@ -359,7 +358,6 @@
         "other": "Série de {{ streak }} jours."
       },
       "hint": "Crée un compte pour ne pas la perdre.",
-      "cta": "Créer",
       "dismiss": "Fermer"
     },
     "noChallenge": {
@@ -404,8 +402,7 @@
     },
     "trackList": {
       "guessTimeTitle": "Temps d'écoute des autres joueurs",
-      "showChart": "Voir la répartition des temps",
-      "close": "Fermer"
+      "showChart": "Voir la répartition des temps"
     },
     "deezerBadge": {
       "ariaLabel": "À écouter sur Deezer"
@@ -417,16 +414,23 @@
       "language": "Switch to English"
     },
     "streakFreeze": {
-      "pillLabel": "Série de {{ streak }} jours, voir le détail",
+      "pillLabel": {
+        "one": "Série de {{ streak }} jour, voir le détail",
+        "other": "Série de {{ streak }} jours, voir le détail"
+      },
       "pillProtectedLabel": "Série protégée",
-      "avatarTitle": "Mon profil — {{ pseudo }}",
-      "avatarLabel": "Mon profil",
       "welcomeBack": "Bon retour !",
       "frozenLineBefore": "Tes",
-      "frozenLineStrong": "{{ streak }} jours de série",
+      "frozenLineStrong": {
+        "one": "{{ streak }} jour de série",
+        "other": "{{ streak }} jours de série"
+      },
       "frozenLineAfter": "au chaud grâce à un gel. Joue pour continuer !",
       "sheet": {
-        "streakTitle": "Série de {{ streak }} jours",
+        "streakTitle": {
+          "one": "Série de {{ streak }} jour",
+          "other": "Série de {{ streak }} jours"
+        },
         "stockLabel": "Tes gels · {{ count }} / {{ max }}",
         "nextFreeze": "Prochain gel à {{ next }} jours",
         "full": "Stock plein : impossible de gagner plus de gels pour l’instant.",

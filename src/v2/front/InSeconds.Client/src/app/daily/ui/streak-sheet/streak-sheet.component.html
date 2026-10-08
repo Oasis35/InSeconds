@@ -5,7 +5,7 @@
     @case ('linked') {
       <p class="m-0 flex items-center gap-2 text-lg font-bold" style="font-family:var(--font-display);color:var(--text-hi)">
         <span style="color:var(--color-accent-3)"><app-streak-icon name="flame" /></span>
-        <span>{{ 'daily.streakFreeze.sheet.streakTitle' | translate: { streak: streak().streak } }}</span>
+        <span>{{ streakTitleKey | translate: { streak: streak().streak } }}</span>
       </p>
       <div class="flex items-center justify-between gap-3">
         <p class="m-0 font-semibold uppercase" style="font-family:var(--font-display);font-size:10px;letter-spacing:.12em;color:var(--text-muted)">
@@ -89,7 +89,7 @@
     @case ('guest') {
       <p class="m-0 flex items-center gap-2 text-lg font-bold" style="font-family:var(--font-display);color:var(--text-hi)">
         <span style="color:var(--color-accent-3)"><app-streak-icon name="flame" /></span>
-        <span>{{ 'daily.streakFreeze.sheet.streakTitle' | translate: { streak: streak().streak } }}</span>
+        <span>{{ streakTitleKey | translate: { streak: streak().streak } }}</span>
       </p>
       <p class="m-0 text-[13px] leading-relaxed" style="color:var(--text-muted)">{{ 'daily.streakFreeze.sheet.guestBody' | translate }}</p>
       <p class="m-0 text-xs leading-normal" style="color:var(--text-muted)">

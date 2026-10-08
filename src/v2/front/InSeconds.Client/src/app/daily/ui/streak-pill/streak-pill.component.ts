@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { Streak, streakPillMode } from '../../domain/streak';
+import { Streak, pluralKey, streakPillMode } from '../../domain/streak';
 import { StreakIconComponent } from '../streak-icon/streak-icon.component';
 
 /**
@@ -19,6 +19,8 @@ export class StreakPillComponent {
   /** Pulse ×3 sur demande (gel gagné), pour la gélule d'un compte connecté. */
   readonly pulse = input(false);
   readonly open = output<void>();
+
+  protected readonly labelKey = computed(() => `daily.streakFreeze.pillLabel.${pluralKey(this.streak()?.streak ?? 0)}`);
 
   protected readonly pillMode = computed(() => streakPillMode(this.streak(), this.linked()));
 

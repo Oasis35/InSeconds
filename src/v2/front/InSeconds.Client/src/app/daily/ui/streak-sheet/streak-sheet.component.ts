@@ -46,6 +46,8 @@ export class StreakSheetComponent {
   protected readonly remaining = this.data.streak.nextFreezeInDays ?? 0;
   protected readonly nextFreezeAt = this.data.streak.streak + this.remaining;
   protected readonly remainingKey = `daily.streakFreeze.sheet.remaining.${pluralKey(this.remaining)}`;
+  /** « Série de 1 jour » / « Série de 12 jours ». */
+  protected readonly streakTitleKey = `daily.streakFreeze.sheet.streakTitle.${pluralKey(this.data.streak.streak)}`;
   protected readonly missedKey = pluralKey(this.data.streak.missedDays);
 
   /** Progression vers le prochain gel, en % (0 juste après un gain). */

@@ -1,7 +1,7 @@
 import { Component, input, output, computed, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
-import { Streak, isStreakProtected } from '../../domain/streak';
+import { Streak, isStreakProtected, pluralKey } from '../../domain/streak';
 import { StreakIconComponent } from '../streak-icon/streak-icon.component';
 
 /** Accueil du défi du jour : titre, démarrage, appel à se connecter (invité) ou lien vers le profil (connecté). */
@@ -25,5 +25,6 @@ export class WelcomeScreenComponent {
   readonly startGame = output<void>();
 
   /** Compte connecté revenant après un jour manqué couvert par un gel. */
+  protected readonly frozenLineKey = computed(() => `daily.streakFreeze.frozenLineStrong.${pluralKey(this.streak()?.streak ?? 0)}`);
   protected readonly isProtected = computed(() => isStreakProtected(this.streak(), this.linked()));
 }

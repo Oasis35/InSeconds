@@ -16,7 +16,7 @@
            style="border:1px solid rgb(var(--rgb-accent-2) / 0.45);background:rgb(var(--rgb-accent-2) / 0.06);color:var(--text-hi)">
         <span class="inline-flex align-[-0.16em]" style="color:var(--color-accent-2)"><app-streak-icon name="snowflake" /></span>
         {{ 'daily.streakFreeze.frozenLineBefore' | translate }}
-        <strong class="font-semibold" style="color:var(--color-accent-3)">{{ 'daily.streakFreeze.frozenLineStrong' | translate: { streak: streak()?.streak } }}</strong>
+        <strong class="font-semibold" style="color:var(--color-accent-3)">{{ frozenLineKey() | translate: { streak: streak()?.streak } }}</strong>
         {{ 'daily.streakFreeze.frozenLineAfter' | translate }}
       </div>
     }

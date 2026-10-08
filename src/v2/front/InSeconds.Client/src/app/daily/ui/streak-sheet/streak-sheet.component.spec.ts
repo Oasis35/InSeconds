@@ -68,4 +68,10 @@ describe('StreakSheetComponent', () => {
     buttons()[1].click();
     expect(close).toHaveBeenLastCalledWith('close');
   });
+
+  it('titre au singulier pour une série de 1 jour, au pluriel au-delà', () => {
+    expect(render({ linked: false, streak: { ...ACTIVE, streak: 1 } }).el.textContent).toContain('daily.streakFreeze.sheet.streakTitle.one');
+    TestBed.resetTestingModule();
+    expect(render({ linked: false }).el.textContent).toContain('daily.streakFreeze.sheet.streakTitle.other');
+  });
 });
