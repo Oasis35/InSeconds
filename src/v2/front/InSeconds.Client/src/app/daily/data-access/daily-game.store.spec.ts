@@ -267,7 +267,7 @@ describe('DailyGameStore', () => {
       expect(store.screen()).toBe('done');
       expect(store.canShare()).toBe(true);
       expect(api.calls).toContain('stats');
-      expect(api.calls.filter(c => c === 'today').length).toBe(2);
+      expect(api.calls.filter(c => c === 'today')).toHaveLength(2);
     });
 
     it('un indice attend le palier envoyé, puis s\'affiche', async () => {

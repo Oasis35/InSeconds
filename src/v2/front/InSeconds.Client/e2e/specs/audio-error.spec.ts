@@ -40,7 +40,8 @@ test.describe('Échec de lecture audio', () => {
     // requêtes, et surtout pas de boucle. Une boucle (l'ancien bug E4) ferait grimper le compteur ; il reste figé.
     const afterFirstFailure = requestCount;
     expect(afterFirstFailure).toBeLessThanOrEqual(2);
-    await page.waitForTimeout(1500);
+    // Réseau au repos (aucune requête pendant 500 ms) : une boucle de requêtes ne le laisserait jamais au repos.
+    await page.waitForLoadState('networkidle');
     expect(requestCount).toBe(afterFirstFailure);
   });
 

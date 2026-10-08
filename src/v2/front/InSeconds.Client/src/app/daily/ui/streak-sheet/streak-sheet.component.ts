@@ -38,9 +38,7 @@ export class StreakSheetComponent {
   private readonly ref = inject<DialogRef<StreakSheetResult>>(DialogRef);
 
   protected readonly streak = computed(() => this.data.streak);
-  protected readonly variant: StreakSheetVariant = !this.data.linked
-    ? 'guest'
-    : isStreakProtected(this.data.streak, this.data.linked) ? 'protected' : 'linked';
+  protected readonly variant: StreakSheetVariant = variantOf(this.data);
 
   /** Stock déjà au plafond : aucun nouveau gel ne peut être gagné pour l'instant. */
   protected readonly atMax = isFreezeStockFull(this.data.streak);
@@ -76,4 +74,10 @@ export class StreakSheetComponent {
   protected finish(result: StreakSheetResult): void {
     this.ref.close(result);
   }
+}
+
+/** Invité, série protégée par un gel, ou compte connecté. */
+function variantOf(data: StreakSheetData): StreakSheetVariant {
+  if (!data.linked) return 'guest';
+  return isStreakProtected(data.streak, data.linked) ? 'protected' : 'linked';
 }

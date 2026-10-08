@@ -37,7 +37,8 @@ test.describe('Le son ne démarre que sur un clic', () => {
     await game.goto();
     await game.waitForWelcome();
     await simulateTabFocus(page);
-    await page.waitForTimeout(500);
+    // La relecture de l'état du jour est faite (réseau au repos) : si elle devait lancer la manche, l'extrait serait déjà demandé.
+    await page.waitForLoadState('networkidle');
     expect(audioRequests()).toBe(0);
     await expect(round.timer).toHaveCount(0);
 
@@ -56,7 +57,8 @@ test.describe('Le son ne démarre que sur un clic', () => {
     const audioRequests = await countAudioRequests(page);
     await game.waitForResumePrompt();
     await simulateTabFocus(page);
-    await page.waitForTimeout(500);
+    // La relecture de l'état du jour est faite (réseau au repos) : si elle devait lancer la manche, l'extrait serait déjà demandé.
+    await page.waitForLoadState('networkidle');
     expect(audioRequests()).toBe(0);
     await expect(round.timer).toHaveCount(0);
 
@@ -75,7 +77,7 @@ test.describe('Le son ne démarre que sur un clic', () => {
 
     // La révélation rejoue le morceau répondu ; le morceau suivant n'est pas démarré tant qu'on n'a pas cliqué.
     await expect(page.getByText('Piste 1 / 5')).toBeVisible();
-    await page.waitForTimeout(500);
+    await page.waitForLoadState('networkidle');
     await expect(page.getByText('Piste 2 / 5')).toHaveCount(0);
 
     await round.goNext();
