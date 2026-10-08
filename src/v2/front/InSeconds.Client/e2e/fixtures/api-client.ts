@@ -11,25 +11,38 @@ const ADMIN_HEADERS = {
   'Content-Type': 'application/json',
 };
 
-/** Répond (réponse vide, palier 1 s) à chaque morceau de la session, dans l'ordre. */
-function submitEmptyAnswers(
-  session: { sessionId: string; tracks: { id: number }[] },
-  headers: Record<string, string>,
-): Promise<void> {
-  return inSequence(session.tracks, async (track) => {
-    const submitRes = await fetch(`${BASE}/api/sessions/${session.sessionId}/answers`, {
+/** Une partie démarrée : son identifiant, et les positions des morceaux qu'il reste à répondre. */
+interface StartedGame {
+  sessionId: number;
+  remaining: number[];
+}
+
+/** Répond (réponse vide, palier 1 s) à chaque morceau restant de la partie, dans l'ordre. */
+function submitEmptyAnswers(game: StartedGame, headers: Record<string, string>): Promise<void> {
+  return inSequence(game.remaining, async (position) => {
+    const submitRes = await fetch(`${BASE}/api/daily/sessions/${game.sessionId}/answers`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({
-        dailyChallengeTrackId: track.id,
-        listenedDurationSeconds: 1,
-        wasExtended: false,
-        artistAnswer: null,
-        titleAnswer: null,
-      }),
+      body: JSON.stringify({ position, listenedSeconds: 1, wasExtended: false, artist: null, title: null }),
     });
     if (!submitRes.ok) throw new Error(`submitAnswer failed: ${submitRes.status}`);
   });
+}
+
+/** Démarre (ou reprend) la partie du joueur identifié par ce cookie. */
+async function startGame(headers: Record<string, string>): Promise<StartedGame> {
+  const res = await fetch(`${BASE}/api/daily/sessions`, { method: 'POST', headers });
+  if (!res.ok) throw new Error(`startSession failed: ${res.status}`);
+  const session = (await res.json()) as { sessionId: number; tracks: unknown[]; nextPosition: number };
+  const remaining = Array.from({ length: session.tracks.length - session.nextPosition + 1 }, (_, i) => session.nextPosition + i);
+  return { sessionId: session.sessionId, remaining };
+}
+
+/** Crée un invité (cookie posé par `POST /api/players/guest`) : l'en-tête `Cookie` à rejouer. */
+async function createGuestCookie(): Promise<string> {
+  const res = await fetch(`${BASE}/api/players/guest`, { method: 'POST' });
+  if (!res.ok) throw new Error(`createGuest failed: ${res.status}`);
+  return res.headers.getSetCookie().map(c => c.split(';')[0]).join('; ');
 }
 
 /** Les liens que l'API envoie par email (adresse publique + chemin du front + jeton). */
@@ -40,14 +53,16 @@ export class ApiTestClient {
   /** Dernier lien lu par adresse : un nouveau lien est attendu tant qu'il n'a pas changé (chaque jeton est neuf). */
   private readonly lastLinks = new Map<string, string>();
 
-  // Vide les tables des modules et les emails capturés (hôte de test v2 : POST, sans authentification).
+  // Remise à zéro entre deux tests. Comme en v1, les parties et les joueurs partent mais le pool et le défi du jour restent (re-semés) :
+  // `emptyPool` vide tout (aucun défi possible), `deleteChallenge` ne retire que le défi du jour (le pool, lui, reste).
   async reset(options: { deleteChallenge?: boolean; emptyPool?: boolean } = {}): Promise<void> {
-    const params = new URLSearchParams();
-    if (options.deleteChallenge) params.set('deleteChallenge', 'true');
-    if (options.emptyPool) params.set('emptyPool', 'true');
-    const query = params.size > 0 ? `?${params}` : '';
-    const res = await fetch(`${BASE}/api/e2e/reset${query}`, { method: 'POST' });
+    const emptyOnly = options.emptyPool === true;
+    const res = await fetch(`${BASE}/api/e2e/${emptyOnly ? 'reset' : 'reseed'}`, { method: 'POST', headers: ADMIN_HEADERS });
     if (!res.ok) throw new Error(`E2E reset failed: ${res.status}`);
+    if (options.deleteChallenge && !emptyOnly) {
+      const deleted = await fetch(`${BASE}/api/e2e/delete-challenge`, { method: 'POST' });
+      if (!deleted.ok) throw new Error(`E2E delete-challenge failed: ${deleted.status}`);
+    }
     this.lastLinks.clear();
   }
 
@@ -90,22 +105,20 @@ export class ApiTestClient {
     return found!;
   }
 
+  /** Génère le défi du jour tout de suite (sans Hangfire). */
   async generateToday(): Promise<void> {
-    const res = await fetch(`${BASE}/api/admin/generate-today`, {
-      method: 'POST',
-      headers: ADMIN_HEADERS,
-    });
-    if (!res.ok && res.status !== 409) throw new Error(`generate-today failed: ${res.status}`);
+    const res = await fetch(`${BASE}/api/e2e/generate-today`, { method: 'POST' });
+    if (!res.ok && res.status !== 422) throw new Error(`generate-today failed: ${res.status}`);
   }
 
   /**
-   * Pose directement l'état de série d'un joueur (Testing-only) — pour tester les états du
-   * gel de série sans simuler des jours de jeu. `lastPlayedDaysAgo` : 1 = hier.
+   * Pose directement l'état de série d'un joueur (hôte de test) : les états du gel de série se testent sans simuler des jours de jeu.
+   * `lastPlayedDaysAgo` : 1 = hier.
    */
   async setStreak(playerId: string, state: { streak: number; lastPlayedDaysAgo: number | null; freezes: number }): Promise<void> {
     const res = await fetch(`${BASE}/api/e2e/set-streak`, {
       method: 'POST',
-      headers: ADMIN_HEADERS,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ playerId, ...state }),
     });
     if (!res.ok) throw new Error(`set-streak failed: ${res.status}`);
@@ -114,61 +127,32 @@ export class ApiTestClient {
   /** Complète la partie du joueur identifié par son cookie (extrait depuis la page Playwright). */
   async completeSessionAs(cookieHeader: string): Promise<void> {
     const headers = { 'Content-Type': 'application/json', Cookie: cookieHeader };
-
-    const startRes = await fetch(`${BASE}/api/sessions`, { method: 'POST', headers });
-    if (!startRes.ok) throw new Error(`startSession failed: ${startRes.status}`);
-    const session = await startRes.json();
-
-    await submitEmptyAnswers(session, headers);
+    await submitEmptyAnswers(await startGame(headers), headers);
   }
 
-  /** `GET /api/stats/today` sans cookie (visiteur qui n'a pas joué). */
+  /** `GET /api/daily/stats/today` sans cookie (visiteur qui n'a pas joué). */
   async getTodayStatsAnonymously(): Promise<{ totalPlayers: number; tracks: unknown[] }> {
-    const res = await fetch(`${BASE}/api/stats/today`);
+    const res = await fetch(`${BASE}/api/daily/stats/today`);
     if (!res.ok) throw new Error(`stats/today failed: ${res.status}`);
     return res.json();
   }
 
-  /**
-   * Fait jouer une partie complète (réponses vides → 0 pt) à un nouvel invité : le cookie
-   * posé par `POST /api/sessions` est réutilisé pour les réponses.
-   */
+  /** Fait jouer une partie complète (réponses vides → 0 pt) à un nouvel invité. */
   async completeSessionAsNewGuest(): Promise<void> {
-    const startRes = await fetch(`${BASE}/api/sessions`, { method: 'POST' });
-    if (!startRes.ok) throw new Error(`startSession failed: ${startRes.status}`);
-    const cookieHeader = startRes.headers.getSetCookie().map(c => c.split(';')[0]).join('; ');
-    const session = await startRes.json();
-    const headers = { 'Content-Type': 'application/json', Cookie: cookieHeader };
-
-    await submitEmptyAnswers(session, headers);
+    const headers = { 'Content-Type': 'application/json', Cookie: await createGuestCookie() };
+    await submitEmptyAnswers(await startGame(headers), headers);
   }
 
   /** Abandonne la partie du joueur identifié par son cookie. */
   async abandonSessionAs(cookieHeader: string): Promise<void> {
     const headers = { 'Content-Type': 'application/json', Cookie: cookieHeader };
+    const game = await startGame(headers);
 
-    const startRes = await fetch(`${BASE}/api/sessions`, { method: 'POST', headers });
-    if (!startRes.ok) throw new Error(`startSession failed: ${startRes.status}`);
-    const session = await startRes.json();
+    // Une réponse d'abord : la partie est bien en cours, avec de quoi la reprendre.
+    await submitEmptyAnswers({ sessionId: game.sessionId, remaining: game.remaining.slice(0, 1) }, headers);
 
-    // Soumettre une réponse d'abord (abandon nécessite une session Pending active)
-    const track = session.tracks[0];
-    await fetch(`${BASE}/api/sessions/${session.sessionId}/answers`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        dailyChallengeTrackId: track.id,
-        listenedDurationSeconds: 1,
-        wasExtended: false,
-        artistAnswer: null,
-        titleAnswer: null,
-      }),
-    });
-
-    const abandonRes = await fetch(`${BASE}/api/sessions/${session.sessionId}/abandon`, {
-      method: 'PUT',
-      headers,
-    });
+    const abandonRes = await fetch(`${BASE}/api/daily/sessions/${game.sessionId}/abandon`, { method: 'POST', headers });
     if (!abandonRes.ok) throw new Error(`abandon failed: ${abandonRes.status}`);
   }
+
 }

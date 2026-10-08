@@ -1,5 +1,5 @@
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
-import { Howl } from 'howler';
+import { Howl, Howler } from 'howler';
 import { AudioStatus } from '../domain/track-round';
 import { AudioPort } from './audio.port';
 
@@ -18,6 +18,9 @@ interface Segment {
   readonly from: number;
   readonly until: number;
 }
+
+/** Les méthodes de déverrouillage de Howler 2.2.4 (version figée), absentes de ses types. */
+type HowlerUnlock = typeof Howler & { autoUnlock?: boolean; _unlockAudio?: () => void; _autoResume?: () => void };
 
 /** Howler ne garde son objet de segments que s'il n'est pas vide au chargement : on y met un segment sans effet. */
 const PLACEHOLDER_SEGMENT: [number, number] = [0, 0];
@@ -95,6 +98,25 @@ export class HowlerAudioPort extends AudioPort {
     // pendant le chargement, la demande est gardée : tout l'extrait se jouera (start borne à sa durée)
     if (state === 'loading') this.pendingUntil = Number.MAX_SAFE_INTEGER;
     else if (state === 'ready' || state === 'playing' || state === 'finished') this.start(0, this.duration());
+  }
+
+  /**
+   * Howler ne crée son contexte audio qu'au premier extrait, et ne le déverrouille qu'au geste
+   * suivant ; sur iPhone (fréquence de 48 kHz), il le recrée même à ce moment-là. Après les appels
+   * réseau du démarrage d'une partie, le clic est passé : le premier morceau attendrait en silence
+   * le prochain toucher. On fait donc tout ici, dans le clic, avant le premier extrait : création du
+   * contexte, déverrouillage de Howler (qui ne se refera plus), puis relance du contexte, que Howler
+   * note « en marche » pour jouer sans attendre.
+   */
+  unlock(): void {
+    try {
+      const howler = Howler as HowlerUnlock;
+      howler.volume(); // crée le contexte audio s'il n'existe pas encore
+      if (howler.autoUnlock) howler._unlockAudio?.();
+      howler._autoResume?.();
+    } catch {
+      // sans Web Audio, Howler se rabat sur un élément audio : rien à déverrouiller ici
+    }
   }
 
   stop(): void {

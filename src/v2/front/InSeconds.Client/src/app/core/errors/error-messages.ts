@@ -22,6 +22,17 @@ export const ERROR_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   'catalogue.track_in_today_challenge': 'errors.catalogue.track_in_today_challenge',
   'catalogue.track_in_use': 'errors.catalogue.track_in_use',
 
+  // Daily
+  'daily.abandoned': 'errors.daily.abandoned',
+  'daily.already_answered': 'errors.daily.already_answered',
+  'daily.already_played': 'errors.daily.already_played',
+  'daily.hint_locked': 'errors.daily.hint_locked',
+  'daily.listened_duration_below_verified_minimum': 'errors.daily.listened_duration_below_verified_minimum',
+  'daily.no_challenge': 'errors.daily.no_challenge',
+  'daily.session_not_found': 'errors.daily.session_not_found',
+  'daily.track_lock_not_released': 'errors.daily.track_lock_not_released',
+  'daily.track_not_found': 'errors.daily.track_not_found',
+
   // Players
   'players.email_taken': 'errors.players.email_taken',
   'players.guest_forbidden': 'errors.players.guest_forbidden',

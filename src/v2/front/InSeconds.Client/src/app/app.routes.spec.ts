@@ -60,18 +60,16 @@ describe('routes', () => {
     expect(await landOn('/profile/confirm-email?token=t%2B1')).toBe('/account/confirm-email?token=t%2B1');
   });
 
-  it('affiche la page d\'attente des domaines pas encore construits', async () => {
-    for (const url of ['/daily', '/privacy']) {
-      const page = await harness.navigateByUrl(url);
-      expect(harness.routeNativeElement?.textContent, url).toContain('shell.comingSoon.title');
-      expect(page).toBeTruthy();
-    }
+  it('affiche la page de confidentialité et mentions légales', async () => {
+    await harness.navigateByUrl('/privacy');
+
+    expect(harness.routeNativeElement?.tagName.toLowerCase()).toBe('app-privacy-page');
+    expect(harness.routeNativeElement?.textContent).toContain('privacy.title');
   });
 
   it('affiche les écrans du compte (connexion, vérification, confirmation d\'email)', async () => {
     for (const url of ['/account/login', '/account/login/verify?token=t', '/account/confirm-email?token=t']) {
       await harness.navigateByUrl(url);
-      expect(harness.routeNativeElement?.textContent, url).not.toContain('shell.comingSoon.title');
       expect(harness.routeNativeElement?.querySelector('app-auth-page'), url).not.toBeNull();
     }
   });

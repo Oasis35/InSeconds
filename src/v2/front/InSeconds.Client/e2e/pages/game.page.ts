@@ -42,8 +42,8 @@ export class GamePage {
     this.resumeButton          = page.getByRole('button', { name: 'Reprendre' });
     this.abandonButton         = page.getByRole('button', { name: 'Abandonner', exact: true }).first();
     // Même libellé que le bouton d'ouverture (header en partie) : on cible la confirmation dans son
-    // conteneur — panneau de confirmation en cours de partie, encart de l'écran de reprise sinon.
-    this.abandonConfirmButton  = page.locator('app-confirm-sheet, app-resume-screen')
+    // conteneur — panneau de confirmation (CDK) en cours de partie, encart de l'écran de reprise sinon.
+    this.abandonConfirmButton  = page.locator('app-confirm-dialog, app-resume-screen')
       .getByRole('button', { name: 'Abandonner', exact: true });
     this.leaveConfirmButton    = page.getByRole('button', { name: 'Quitter quand même' });
     this.leaveCancelButton     = page.getByRole('button', { name: 'Continuer à jouer' });

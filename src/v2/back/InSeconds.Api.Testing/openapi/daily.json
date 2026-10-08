@@ -1,0 +1,1741 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "InSeconds · Daily",
+    "version": "v2"
+  },
+  "paths": {
+    "/api/admin/daily/challenges/{date}/stats/recompute": {
+      "post": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "recomputeDayStats",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecomputeDayStatsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/daily/challenges/generate-today": {
+      "post": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "generateToday",
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobExecutionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/daily/settings": {
+      "get": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "getDailySettings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailySettingsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/daily/today": {
+      "get": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "getToday",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodayResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/daily/sessions/{id}/listening": {
+      "patch": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "updateListening",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateListening"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/daily/sessions/{id}/hints": {
+      "post": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "requestHint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestHint"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HintResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/daily/sessions/{id}/abandon": {
+      "post": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "abandonSession",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/daily/sessions": {
+      "post": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "startSession",
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartSessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/daily/sessions/{id}/answers": {
+      "post": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "submitAnswer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitAnswer"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmitAnswerResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/daily/stats/today": {
+      "get": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "getTodayStats",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodayStatsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/daily/weekly-recap": {
+      "get": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "getWeeklyRecap",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeeklyRecapResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CurrentTrackState": {
+        "required": [
+          "position",
+          "listenedSeconds",
+          "hintLevel",
+          "hintFacts"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "listenedSeconds": {
+            "type": "number",
+            "format": "double"
+          },
+          "hintLevel": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hintFacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HintFactResponse"
+            }
+          }
+        }
+      },
+      "DailySettingsResponse": {
+        "required": [
+          "guessTimerSeconds",
+          "tracksPerChallenge",
+          "allowedDurationsSeconds",
+          "durationScores",
+          "hints",
+          "streakFreezeEveryDays",
+          "streakFreezeMax"
+        ],
+        "type": "object",
+        "properties": {
+          "guessTimerSeconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tracksPerChallenge": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "allowedDurationsSeconds": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          "durationScores": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DurationScoreResponse"
+            }
+          },
+          "hints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HintLevelResponse"
+            }
+          },
+          "streakFreezeEveryDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "streakFreezeMax": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "DayPlayer": {
+        "required": [
+          "playerId",
+          "status",
+          "score"
+        ],
+        "type": "object",
+        "properties": {
+          "playerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string"
+          },
+          "score": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "DayStatsPayload": {
+        "required": [
+          "version",
+          "date",
+          "challengeId",
+          "allowedDurationsSeconds",
+          "durationScores",
+          "maxPossibleScore",
+          "playerCount",
+          "pendingCount",
+          "abandonedCount",
+          "expiredCount",
+          "scoreMin",
+          "scoreMax",
+          "scoreAvg",
+          "scoreMedian",
+          "scoreDistribution",
+          "tracks",
+          "players"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "challengeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "allowedDurationsSeconds": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          "durationScores": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DurationScore"
+            }
+          },
+          "maxPossibleScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "playerCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pendingCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "abandonedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expiredCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "scoreMin": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "scoreMax": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "scoreAvg": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "scoreMedian": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "scoreDistribution": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScoreBucket"
+            }
+          },
+          "tracks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DayTrackStats"
+            }
+          },
+          "players": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DayPlayer"
+            }
+          }
+        }
+      },
+      "DayTrackStats": {
+        "required": [
+          "position",
+          "trackId",
+          "totalAnswers",
+          "artistCorrectRate",
+          "titleCorrectRate",
+          "extendedRate",
+          "avgListenedSeconds",
+          "guessTimeDistribution",
+          "notFoundCount"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "trackId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalAnswers": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "artistCorrectRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "titleCorrectRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "extendedRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "avgListenedSeconds": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "guessTimeDistribution": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DurationBucket"
+            }
+          },
+          "notFoundCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "DurationBucket": {
+        "required": [
+          "seconds",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "seconds": {
+            "type": "number",
+            "format": "double"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "DurationScore": {
+        "required": [
+          "seconds",
+          "score"
+        ],
+        "type": "object",
+        "properties": {
+          "seconds": {
+            "type": "number",
+            "format": "double"
+          },
+          "score": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "DurationScoreResponse": {
+        "required": [
+          "seconds",
+          "score"
+        ],
+        "type": "object",
+        "properties": {
+          "seconds": {
+            "type": "number",
+            "format": "double"
+          },
+          "score": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "GuessBucketResponse": {
+        "required": [
+          "durationSeconds",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "durationSeconds": {
+            "type": "number",
+            "format": "double"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "HintFactResponse": {
+        "required": [
+          "kind",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "value": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "HintLevelResponse": {
+        "required": [
+          "level",
+          "unlockSeconds",
+          "kind",
+          "penaltyPercent"
+        ],
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unlockSeconds": {
+            "type": "number",
+            "format": "double"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "penaltyPercent": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "HintResponse": {
+        "required": [
+          "facts"
+        ],
+        "type": "object",
+        "properties": {
+          "facts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HintFactResponse"
+            }
+          }
+        }
+      },
+      "HttpValidationProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "JobExecutionResponse": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        }
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "RecomputeDayStatsResponse": {
+        "required": [
+          "date",
+          "computedAt",
+          "stats"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "computedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/DayStatsPayload"
+          }
+        }
+      },
+      "RequestHint": {
+        "required": [
+          "position",
+          "level"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "level": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ResumedAnswer": {
+        "required": [
+          "position",
+          "artistCorrect",
+          "titleCorrect",
+          "score",
+          "listenedSeconds",
+          "hintLevel",
+          "correctArtist",
+          "correctTitle",
+          "deezerTrackId",
+          "coverUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "artistCorrect": {
+            "type": "boolean"
+          },
+          "titleCorrect": {
+            "type": "boolean"
+          },
+          "score": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "listenedSeconds": {
+            "type": "number",
+            "format": "double"
+          },
+          "hintLevel": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "correctArtist": {
+            "type": "string"
+          },
+          "correctTitle": {
+            "type": "string"
+          },
+          "deezerTrackId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "coverUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ScoreBucket": {
+        "required": [
+          "minScore",
+          "maxScore",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "minScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ScoreBucketResponse": {
+        "required": [
+          "minScore",
+          "maxScore",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "minScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "StartSessionResponse": {
+        "required": [
+          "sessionId",
+          "tracks",
+          "streak",
+          "isResuming",
+          "nextPosition",
+          "completedAnswers",
+          "currentTrack"
+        ],
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tracks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrackSlot"
+            }
+          },
+          "streak": {
+            "$ref": "#/components/schemas/StreakResponse"
+          },
+          "isResuming": {
+            "type": "boolean"
+          },
+          "nextPosition": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completedAnswers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResumedAnswer"
+            }
+          },
+          "currentTrack": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CurrentTrackState"
+              }
+            ]
+          }
+        }
+      },
+      "StreakResponse": {
+        "required": [
+          "status",
+          "streak",
+          "freezes",
+          "maxFreezes",
+          "freezeEveryDays",
+          "nextFreezeInDays",
+          "missedDays",
+          "lostStreak",
+          "lastPlayedDate"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "streak": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "freezes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxFreezes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "freezeEveryDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nextFreezeInDays": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "missedDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lostStreak": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "lastPlayedDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        }
+      },
+      "SubmitAnswer": {
+        "required": [
+          "position",
+          "listenedSeconds",
+          "wasExtended"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "listenedSeconds": {
+            "type": "number",
+            "format": "double"
+          },
+          "wasExtended": {
+            "type": "boolean"
+          },
+          "artist": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "SubmitAnswerResponse": {
+        "required": [
+          "artistCorrect",
+          "titleCorrect",
+          "score",
+          "correctArtist",
+          "correctTitle",
+          "deezerTrackId",
+          "coverUrl",
+          "listenedSeconds",
+          "averageSecondsWhenCorrect",
+          "failureRatePercent",
+          "guessTimeDistribution",
+          "notFoundCount",
+          "hintLevelUsed",
+          "hintPenaltyPercentApplied",
+          "completed"
+        ],
+        "type": "object",
+        "properties": {
+          "artistCorrect": {
+            "type": "boolean"
+          },
+          "titleCorrect": {
+            "type": "boolean"
+          },
+          "score": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "correctArtist": {
+            "type": "string"
+          },
+          "correctTitle": {
+            "type": "string"
+          },
+          "deezerTrackId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "coverUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "listenedSeconds": {
+            "type": "number",
+            "format": "double"
+          },
+          "averageSecondsWhenCorrect": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "failureRatePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "guessTimeDistribution": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuessBucketResponse"
+            }
+          },
+          "notFoundCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hintLevelUsed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hintPenaltyPercentApplied": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completed": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TodayResponse": {
+        "required": [
+          "state",
+          "tracksCount",
+          "completedCount",
+          "streak"
+        ],
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string"
+          },
+          "tracksCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "streak": {
+            "$ref": "#/components/schemas/StreakResponse"
+          }
+        }
+      },
+      "TodayStatsResponse": {
+        "required": [
+          "yourScore",
+          "medianScore",
+          "totalPlayers",
+          "currentStreak",
+          "tracks",
+          "freezesUsed",
+          "freezeMilestone",
+          "minScore",
+          "maxScore",
+          "maxPossibleScore",
+          "scoreDistribution",
+          "betterThanPercent"
+        ],
+        "type": "object",
+        "properties": {
+          "yourScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "medianScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPlayers": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "currentStreak": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tracks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrackStatResponse"
+            }
+          },
+          "freezesUsed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "freezeMilestone": {
+            "type": "boolean"
+          },
+          "minScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "maxScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "maxPossibleScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "scoreDistribution": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScoreBucketResponse"
+            }
+          },
+          "betterThanPercent": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "TrackSlot": {
+        "required": [
+          "position",
+          "previewUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "previewUrl": {
+            "type": "string"
+          }
+        }
+      },
+      "TrackStatResponse": {
+        "required": [
+          "position",
+          "artist",
+          "title",
+          "deezerTrackId",
+          "coverUrl",
+          "failureRatePercent",
+          "averageSecondsWhenCorrect",
+          "artistCorrect",
+          "titleCorrect",
+          "listenedSeconds",
+          "score",
+          "guessTimeDistribution",
+          "notFoundCount"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "artist": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "deezerTrackId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "coverUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "failureRatePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "averageSecondsWhenCorrect": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "artistCorrect": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "titleCorrect": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "listenedSeconds": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "score": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "guessTimeDistribution": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuessBucketResponse"
+            }
+          },
+          "notFoundCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "UpdateListening": {
+        "required": [
+          "position",
+          "listenedSeconds"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "listenedSeconds": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "WeeklyRecapResponse": {
+        "required": [
+          "status",
+          "from",
+          "to",
+          "minAnswers",
+          "mostFound",
+          "mostMissed"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          },
+          "minAnswers": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "mostFound": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WeeklyTrackResponse"
+              }
+            ]
+          },
+          "mostMissed": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WeeklyTrackResponse"
+              }
+            ]
+          }
+        }
+      },
+      "WeeklyTrackResponse": {
+        "required": [
+          "artist",
+          "title",
+          "successRatePercent",
+          "answers"
+        ],
+        "type": "object",
+        "properties": {
+          "artist": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "successRatePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "answers": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.RecomputeDayStatsEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.GenerateDailyChallengeEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.GetDailySettingsEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.GetTodayEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.UpdateListeningEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.RequestHintEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.AbandonSessionEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.StartSessionEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.SubmitAnswerEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.GetTodayStatsEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.GetWeeklyRecapEndpoint"
+    }
+  ]
+}

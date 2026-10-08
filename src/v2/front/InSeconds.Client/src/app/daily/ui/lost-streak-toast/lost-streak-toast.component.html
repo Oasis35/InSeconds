@@ -1,0 +1,26 @@
+<div class="fixed left-1/2 z-20 w-full px-4" style="bottom:18px;transform:translateX(-50%);max-width:402px">
+  <div data-testid="lost-streak-toast" data-anim class="relative overflow-hidden flex items-center gap-3 min-h-14 px-3.5 py-3 rounded-xl"
+       style="background:rgb(var(--rgb-panel) / 0.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-left:3px solid var(--color-accent-3);animation:gel-toast .45s cubic-bezier(.2,.8,.2,1) .3s both">
+    <span data-anim class="inline-block text-lg" style="color:var(--color-accent);animation:gel-shake .5s ease-in-out .85s 1"><app-streak-icon name="heart-crack" /></span>
+    <p class="flex-1 text-xs leading-snug" style="color:var(--text-body)">
+      <strong class="font-semibold">
+        {{ 'daily.streakFreeze.lostToast.titleBefore' | translate }}
+        <s style="color:var(--text-muted)">{{ 'daily.streakFreeze.lostToast.titleStrike' | translate: { streak: lostStreak() } }}</s>
+        {{ 'daily.streakFreeze.lostToast.titleAfter' | translate }}
+      </strong>
+      <span style="color:var(--text-muted)">
+        {{ 'daily.streakFreeze.lostToast.hintBefore' | translate }}
+        <span class="inline-flex align-[-0.16em]" style="color:var(--color-accent-2)"><app-streak-icon name="snowflake" /></span>
+        {{ 'daily.streakFreeze.lostToast.hintAfter' | translate }}
+      </span>
+    </p>
+    <a routerLink="/account/login" data-testid="signup-cta"
+       class="flex-shrink-0 flex flex-col items-center justify-center gap-px px-3 py-[5px] rounded-xl leading-tight"
+       style="min-height:44px;border:1.5px solid rgb(var(--rgb-accent-2) / 0.7);color:var(--color-accent-2)">
+      <span class="font-bold uppercase whitespace-nowrap" style="font-family:var(--font-display);font-size:10px;letter-spacing:.06em">{{ 'daily.streakFreeze.ctaLine1' | translate }}</span>
+      <span class="font-bold uppercase whitespace-nowrap" style="font-family:var(--font-display);font-size:10px;letter-spacing:.06em">{{ 'daily.streakFreeze.ctaLine2' | translate }}</span>
+    </a>
+    <button type="button" (click)="dismissed.emit()" [attr.aria-label]="'daily.streakFreeze.dismiss' | translate"
+            class="flex-shrink-0 w-6 h-6 text-sm leading-none" style="color:var(--text-muted)">✕</button>
+  </div>
+</div>

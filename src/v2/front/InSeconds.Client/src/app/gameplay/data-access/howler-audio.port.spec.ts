@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { Howler } from 'howler';
 import { AudioStatus } from '../domain/track-round';
 import { HowlerAudioPort } from './howler-audio.port';
 import { makeToneUrl } from './testing/wav';
@@ -276,6 +277,23 @@ describe('HowlerAudioPort', () => {
     } finally {
       Reflect.deleteProperty(navigator, 'audioSession');
     }
+  });
+
+  it('déverrouille le son dans le clic : contexte audio créé et en marche, plus de déverrouillage au premier extrait', async () => {
+    port.unlock();
+    const howler = Howler as typeof Howler & { autoUnlock?: boolean; state?: string };
+    expect(Howler.ctx).toBeTruthy();
+    // Howler ne déverrouillera plus au premier extrait (sur iPhone, il y recréerait son contexte, hors du geste).
+    expect(howler.autoUnlock).toBe(false);
+    for (let i = 0; i < 100 && howler.state !== 'running'; i++) await sleep(10);
+    expect(howler.state).toBe('running');
+
+    // Un second appel est sans effet, et le son joue ensuite sans attendre de geste.
+    port.unlock();
+    await loaded();
+    const start = performance.now();
+    port.playUntil(0.5);
+    await until('finished', start);
   });
 
   afterEach(() => port.stop());

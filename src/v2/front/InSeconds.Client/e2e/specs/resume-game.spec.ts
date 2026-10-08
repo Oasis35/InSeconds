@@ -16,7 +16,7 @@ test.describe('Reprise de partie', () => {
     await game.clickStart();
     // Laisser le timer tourner jusqu'à 3s (auto-play 0.5s + prolongations) → updateListening s'envoie
     const listeningPatch = page.waitForResponse(
-      r => /\/api\/sessions\/\d+\/listening$/.test(r.url()) && r.request().method() === 'PATCH'
+      r => /\/api\/daily\/sessions\/\d+\/listening$/.test(r.url()) && r.request().method() === 'PATCH'
     );
     await round.chooseDuration(3);
     // Attendre que le PATCH /listening soit parti ET persisté avant de recharger

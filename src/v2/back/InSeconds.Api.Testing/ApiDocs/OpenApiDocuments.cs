@@ -8,19 +8,22 @@ namespace InSeconds.Api.Testing.ApiDocs;
 /// Documents OpenAPI de l'hôte de test (§ 6.1 du plan v2 : un client NSwag par module, généré depuis ces
 /// documents). Servis seulement ici, jamais par l'API de prod (S9). Un document par module, filtré sur
 /// le préfixe de ses routes ; <c>/openapi/players.json</c> pour le module Players, <c>/openapi/catalogue.json</c> pour
-/// Catalogue. Les documents sauvegardés pour le front sont <c>openapi/players.json</c> et <c>openapi/catalogue.json</c>
+/// Catalogue, <c>/openapi/daily.json</c> pour Daily. Les documents sauvegardés pour le front sont <c>openapi/players.json</c>, <c>openapi/catalogue.json</c> et <c>openapi/daily.json</c>
 /// (cf. CLAUDE.md du back).
 /// </summary>
 public static class OpenApiDocuments
 {
     public const string Players = "players";
     public const string Catalogue = "catalogue";
+    public const string Daily = "daily";
 
     public static IServiceCollection AddOpenApiDocuments(this IServiceCollection services)
     {
         AddModuleDocument(services, Players, tag: "Players", "api/players");
         // Deux préfixes : la recherche publique, et les routes admin du pool.
         AddModuleDocument(services, Catalogue, tag: "Catalogue", "api/catalogue", "api/admin/catalogue");
+        // Le jeu du jour (E5) et ses routes admin (défi du jour, stats, récap hebdo : F1/F2).
+        AddModuleDocument(services, Daily, tag: "Daily", "api/daily", "api/admin/daily");
         return services;
     }
 
@@ -78,6 +81,13 @@ public static class OpenApiDocuments
                 {
                     var isProblemDetails = context.JsonPropertyInfo?.DeclaringType is { } owner && typeof(ProblemDetails).IsAssignableFrom(owner);
                     schema.Type = type.HasFlag(JsonSchemaType.Null) && !isProblemDetails ? JsonSchemaType.Integer | JsonSchemaType.Null : JsonSchemaType.Integer;
+                    schema.Pattern = null;
+                }
+
+                // Même chose pour un décimal (durées en secondes, moyennes) : un nombre, jamais « nombre ou texte ».
+                if (schema.Type is { } number && number.HasFlag(JsonSchemaType.Number))
+                {
+                    schema.Type = number.HasFlag(JsonSchemaType.Null) ? JsonSchemaType.Number | JsonSchemaType.Null : JsonSchemaType.Number;
                     schema.Pattern = null;
                 }
 

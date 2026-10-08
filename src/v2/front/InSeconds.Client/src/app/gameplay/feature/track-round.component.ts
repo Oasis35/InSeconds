@@ -39,7 +39,7 @@ import { RoundPlayerComponent } from '../ui/round-player.component';
               (request)="hintRequested.emit($event)" />
 
             <app-answer-input [query]="search.query()" [suggestions]="search.visibleSuggestions()" [highlighted]="search.highlighted()"
-              (queryChange)="onQueryChange($event)" (pick)="search.select($event)" (pickHighlighted)="search.selectHighlighted()"
+              (queryChange)="onQueryChange($event)" (pick)="search.select($event)" (enter)="onEnter($event)"
               (clear)="onClear()" (move)="search.moveHighlight($event)" (highlight)="search.highlight($event)"
               (dismiss)="search.close()" (focused)="search.openList()" (blurred)="search.close()" />
 
@@ -141,6 +141,11 @@ export class TrackRoundComponent {
   protected onQueryChange(query: string): void {
     this.search.setQuery(query);
     this.round.cancelConfirm();
+  }
+
+  /** Entrée dans le champ : une proposition en surbrillance est choisie (et le formulaire ne part pas), sinon la saisie se valide. */
+  protected onEnter(event: KeyboardEvent): void {
+    if (this.search.selectHighlighted()) event.preventDefault();
   }
 
   protected onClear(): void {
