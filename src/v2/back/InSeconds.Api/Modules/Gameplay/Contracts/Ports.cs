@@ -83,6 +83,9 @@ public interface IHintProvider
     /// <summary>Le niveau d'indice auquel cet élément est révélé.</summary>
     int Level { get; }
 
+    /// <summary>Ce que ce niveau révèle : le mode l'annonce au front (étiquette du bouton « Indice année », « Indice artiste »).</summary>
+    HintKind Kind { get; }
+
     HintFact Reveal(HintSubject subject);
 }
 

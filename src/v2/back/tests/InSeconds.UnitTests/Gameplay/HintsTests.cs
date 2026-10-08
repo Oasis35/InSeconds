@@ -110,6 +110,8 @@ public class HintsTests
     {
         public int Level => 3;
 
+        public HintKind Kind => HintKind.Year;
+
         public HintFact Reveal(HintSubject subject) => new(HintKind.Year, "années 2010");
     }
 

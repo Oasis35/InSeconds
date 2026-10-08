@@ -19,6 +19,7 @@ public static class PlayersModule
         services.AddScoped<IPlayerStore, EfPlayerStore>();
         services.AddScoped<IPlayerQueries, EfPlayerQueries>();
         services.AddScoped<IPlayerSessions, EfPlayerSessions>();
+        services.AddScoped<IPlayerDirectory, EfPlayerDirectory>();
         services.AddScoped<AccountSignIn>();
         services.AddSingleton<IEmailComposer<MagicLinkEmail>, MagicLinkEmailComposer>();
         services.AddSingleton<IEmailComposer<ConfirmEmailChangeEmail>, ConfirmEmailChangeEmailComposer>();

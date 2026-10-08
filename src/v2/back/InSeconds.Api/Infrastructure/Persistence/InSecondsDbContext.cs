@@ -18,6 +18,9 @@ public sealed class InSecondsDbContext(DbContextOptions<InSecondsDbContext> opti
     /// <summary>Clés Data Protection (chiffrement du cookie), lues et écrites par Data Protection lui-même.</summary>
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
+    private static bool IsReferencedModule(Type configuration) =>
+        configuration.Namespace is { } ns && (ns.Contains(".Modules.Players.", StringComparison.Ordinal) || ns.Contains(".Modules.Catalogue.", StringComparison.Ordinal));
+
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder) =>
         configurationBuilder.Conventions.Add(_ => new CitextOnlyInExtensionsSchemaConvention());
 
@@ -28,7 +31,11 @@ public sealed class InSecondsDbContext(DbContextOptions<InSecondsDbContext> opti
         // Tables de l'outbox de Wolverine dans le modèle EF : la donnée et les messages à envoyer
         // partent dans la même transaction, et les migrations EF créent ces tables (constat A1, § 12 ter).
         modelBuilder.MapWolverineEnvelopeStorage(DbSchemas.Messaging);
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(InSecondsDbContext).Assembly);
+        var assembly = typeof(InSecondsDbContext).Assembly;
+        // Les modules dont d'autres référencent les entités par leur nom de type (clés étrangères de Daily vers Players et Catalogue, que Daily ne
+        // peut pas importer) d'abord : EF ne trouve une entité par son nom que si elle est déjà dans le modèle, sinon il en crée une autre à la place.
+        modelBuilder.ApplyConfigurationsFromAssembly(assembly, type => IsReferencedModule(type));
+        modelBuilder.ApplyConfigurationsFromAssembly(assembly, type => !IsReferencedModule(type));
     }
 }
 
