@@ -86,8 +86,10 @@ public static class CloseChallengeDayHandler
 }
 
 /// <summary>
-/// Tâche <c>daily-close-day</c> (§ 5.4 bis du plan v2, `5 0 * * *`) : fige les statistiques de l'avant-veille, et de **tout jour plus ancien resté sans
-/// photo** (la tâche n'a pas tourné un soir, ou le jour précède l'import de l'historique). Un jour qui échoue n'empêche pas les suivants : la tâche échoue à la fin (`admin.close_day_failed`), les autres jours sont figés.
+/// Tâche <c>daily-close-day</c> (§ 5.4 bis du plan v2, `5 0 * * *`) : expire d'abord les parties restées en cours sur un défi plus vieux que la
+/// veille (<see cref="ExpireStaleSessions"/>, revue de E4), puis fige les statistiques de l'avant-veille, et de **tout jour plus ancien resté sans
+/// photo** (la tâche n'a pas tourné un soir, ou le jour précède l'import de l'historique). Une étape ou un jour qui échoue n'empêche pas la suite :
+/// la tâche échoue à la fin (`admin.close_day_failed`), le reste est fait.
 /// </summary>
 public sealed class DailyCloseDayJob(IMessageBus bus, IGameCalendar calendar, IDailyStatsQueries stats, ILogger<DailyCloseDayJob> logger) : IScheduledJob
 {
@@ -98,9 +100,23 @@ public sealed class DailyCloseDayJob(IMessageBus bus, IGameCalendar calendar, ID
     [AutomaticRetry(Attempts = 3, DelaysInSeconds = [600])]
     public async Task<object?> RunAsync(CancellationToken cancellationToken)
     {
-        var days = await stats.ListUnfrozenChallengesAsync(CloseChallengeDayHandler.LastClosableDay(calendar), cancellationToken);
         var closed = new List<string>();
         var failed = new List<string>();
+
+        // Les parties abandonnées sans clic (le joueur n'est jamais revenu) : expirées sans attendre son retour. La photo les compte déjà en
+        // « expirées » ; l'état en base les rejoint.
+        var expired = 0;
+        try
+        {
+            expired = await bus.InvokeAsync<int>(new ExpireStaleSessions(), cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            failed.Add("expire");
+            DailyLog.ExpireStaleSessionsFailed(logger, ex);
+        }
+
+        var days = await stats.ListUnfrozenChallengesAsync(CloseChallengeDayHandler.LastClosableDay(calendar), cancellationToken);
         foreach (var day in days)
         {
             var label = day.Date.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
@@ -121,7 +137,7 @@ public sealed class DailyCloseDayJob(IMessageBus bus, IGameCalendar calendar, ID
         // La tâche échoue **après** avoir figé ce qu'elle pouvait : le jour fautif reste visible dans /jobs et se retente (Hangfire, puis le soir suivant).
         return failed.Count == 0
             // Un dictionnaire : Hangfire n'écrit pas les propriétés à zéro d'un objet.
-            ? new Dictionary<string, object?> { ["closed"] = closed.Count, ["days"] = closed }
+            ? new Dictionary<string, object?> { ["expired"] = expired, ["closed"] = closed.Count, ["days"] = closed }
             : throw new JobFailedException(DailyAdminErrorCodes.CloseDayFailed);
     }
 }

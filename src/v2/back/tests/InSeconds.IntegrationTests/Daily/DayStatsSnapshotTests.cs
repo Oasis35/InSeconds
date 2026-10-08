@@ -214,6 +214,29 @@ public class DayStatsSnapshotTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Tache_ExpireLesPartiesEnCoursDesDefisPlusVieuxQueLaVeille_PasCellesDeLaVeille()
+    {
+        // Carol est restée en cours sur l'avant-veille ; Dan est en cours sur la veille, qu'il peut encore finir (piège 18).
+        var (alice, _, carol) = await SeedClosedDayAsync(Closable);
+        await _game.App.AddChallengeAsync(Today.AddDays(-1), 6, 7, 8, 9, 10);
+        var dan = await _game.NewPlayerAsync();
+        await _game.AddSessionAsync(dan.Id, Today.AddDays(-1), 0, (1m, true, true, false, 850));
+
+        var report = await RunJobAsync();
+
+        Assert.Equal(1, report["expired"]);
+        Assert.Equal(1L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM daily.sessions WHERE player_id = '{carol}' AND status = 3 AND ended_at IS NOT NULL"));
+        Assert.Equal(1L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM daily.sessions WHERE player_id = '{dan.Id}' AND status = 0 AND ended_at IS NULL"));
+        Assert.Equal(1L, await _game.Api.ScalarAsync<long>($"SELECT count(*) FROM daily.sessions WHERE player_id = '{alice}' AND status = 1"));
+        // La photo, faite après, compte Carol en « expirée » comme avant.
+        var stored = DayStatsJson.Read((await _game.Api.ScalarAsync<string>("SELECT payload::text FROM daily.challenge_day_stats"))!)!;
+        Assert.Equal((0, 1), (stored.PendingCount, stored.ExpiredCount));
+
+        var second = await RunJobAsync();
+        Assert.Equal(0, second["expired"]);
+    }
+
+    [Fact]
     public async Task Tache_RattrapeLesJoursPlusAnciensRestesSansPhoto_DuPlusAncienAuPlusRecent()
     {
         foreach (var offset in new[] { -3, -4, -6 })

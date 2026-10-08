@@ -379,7 +379,7 @@ Clément veut des tâches de type cron, qu'il pilote lui-même, **avec des solut
 | `catalogue-refresh` | `0 23 * * *` | previews et rang Deezer des morceaux éligibles au défi du lendemain |
 | `daily-generate-challenge` | `0 0 * * *` | génère le défi du jour (retry toutes les 10 min, 144 essais : la journée) |
 | `daily-generate-challenge-admin` | jamais (en pause) | ce que lance le bouton « Générer le défi du jour » : sans réessai, défi marqué « admin » (ajoutée en E1) |
-| `daily-close-day` | `5 0 * * *` | fige les stats de J-2 (la veille reste en calcul direct) |
+| `daily-close-day` | `5 0 * * *` | expire les parties restées en cours sur un défi plus vieux que la veille (E4), puis fige les stats de J-2 (la veille reste en calcul direct) |
 | `players-purge-expired-tokens` | `30 3 * * *` | supprime les jetons expirés (connexion et changement d'email) |
 
 Sur le staging, `catalogue-refresh` est en `Cron.Never()` (même IP que la prod, donc même quota Deezer, piège 16).

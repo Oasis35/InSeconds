@@ -90,6 +90,12 @@ internal static partial class DailyLog
     [LoggerMessage(EventId = 1308, Level = LogLevel.Error, Message = "Impossible de figer les statistiques du {Day}.")]
     public static partial void CloseDayFailed(ILogger logger, Exception exception, string day);
 
+    [LoggerMessage(EventId = 1309, Level = LogLevel.Information, Message = "{Count} partie(s) en cours d'un défi d'avant le {Before} expirée(s).")]
+    public static partial void StaleSessionsExpired(ILogger logger, int count, DateOnly before);
+
+    [LoggerMessage(EventId = 1310, Level = LogLevel.Error, Message = "Impossible d'expirer les parties en cours des défis passés.")]
+    public static partial void ExpireStaleSessionsFailed(ILogger logger, Exception exception);
+
     // Une erreur, comme le pool insuffisant : un réglage qui promet un indice que rien ne révèle doit alerter.
     [LoggerMessage(EventId = 1305, Level = LogLevel.Error,
         Message = "Daily:HintUnlockDurationsSeconds propose {Configured} niveaux d'indice, les fournisseurs en révèlent {Available} : les niveaux en trop sont ignorés.")]
