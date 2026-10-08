@@ -8,6 +8,7 @@ name: Copy prod DB to staging
 #      (deploy/vps/copy-prod-db-to-staging.sh) ;
 #   2. import v1 → v2 et vérifications, une seule transaction (deploy/migration-v2/run-import.sh) ;
 #   3. seconde anonymisation, sur les tables v2 (S8).
+#   4. clé Data Protection neuve (S16), puis statistiques figées des jours terminés (E4, --freeze-day-stats).
 # Un workflow manuel n'est listé que s'il existe sur main : celui-ci y est (version v1, copie
 # seule), c'est la version de la branche choisie au lancement qui s'exécute.
 # La prod n'est lue qu'en pg_dump, jamais modifiée. Les migrations v2 du staging doivent être à jour

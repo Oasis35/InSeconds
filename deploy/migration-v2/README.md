@@ -19,7 +19,7 @@ L'import se construit **module par module** : chaque PR d'import ajoute sa parti
 |---|---|---|
 | Players | B4 | joueurs (suppression comprise), comptes, un jeton v1 haché par joueur (`legacy_tokens`), jetons envoyés par email encore valables, clés Data Protection |
 | Catalogue | C2 | morceaux (identifiants conservés, extrait, désactivation), séquence des identifiants remise à niveau |
-| Daily | E4 | défis, sessions, réponses, séries, stats figées |
+| Daily | E4 | défis et leurs morceaux, parties (verrou joint sur le même défi), réponses, séries ; vérifications des scores, des séries et du cooldown. Les stats figées se calculent après, par `--freeze-day-stats` |
 | Complet | G1 | contrôle de forme de la source, garde `opened_at` / `--force` |
 
 Les messages ne contiennent que des nombres et des identifiants, jamais d'email ni de pseudo (S13).
@@ -53,6 +53,22 @@ dotnet InSeconds.Api.dll --rotate-data-protection-key      # même configuration
 La commande (`RotateDataProtectionKeyCommand`, sur le modèle de `--migrate-only`) ne démarre ni serveur ni tâche : elle crée une clé active tout de suite, valable 90 jours, chiffrée par le certificat `DataProtection:CertificatePath` (exigé en prod et en staging). Les clés de la v1 restent en place pour relire les cookies v1 jusqu'à leur remplacement. À relancer après **chaque** import, qui vide d'abord `infra.data_protection_keys`. À reprendre dans la procédure de bascule (G2).
 
 Sur le staging, `import-to-staging.sh` la lance **après** la seconde anonymisation, qui vide les clés : avant, elle effacerait la clé neuve. Les clés de la v1 y sont déjà retirées par la première anonymisation, donc ce pas répète la procédure de bascule et vérifie la commande avec le vrai certificat, sans remplacer de clé en clair. L'image de l'API staging doit venir d'un déploiement de la PR B4 ou postérieur.
+
+## Parties en cours, à l'import (E4)
+
+Une partie en cours dont les réponses ne vont pas de 1 à N sans trou (la v1 n'imposait l'ordre des morceaux que si le verrou était posé), ou qui n'a plus de morceau à jouer, ne pourrait plus continuer en v2 : elle est reprise **expirée**, réponses gardées. Un verrou de morceau qui ne porte pas sur le morceau en cours est écarté. L'import le dit (`Parties en cours aux réponses non contiguës, reprises en « expirées » : N`, `Verrous de morceau écartés … : N`) ; en prod, un nombre inattendu se regarde avant la bascule. Le reste (statut, verrou d'une partie finie, scores, séries) est repris tel quel et relu par `20-verify.sql`.
+
+## Statistiques figées de l'historique, après l'import (E4)
+
+L'import ne calcule rien : la tâche `daily-close-day` n'attendrait que minuit pour figer l'historique. Juste après l'import (**et après celui des réglages**, G1 : la photo fige les paliers et le barème des réglages), avant d'ouvrir la v2 :
+
+```bash
+dotnet InSeconds.Api.dll --freeze-day-stats      # même configuration que l'API : base
+```
+
+La commande (`FreezeDayStatsCommand`) fige tout jour terminé (J-2 et avant) resté sans photo, du plus ancien au plus récent, par la règle de la tâche. Ni serveur ni tâche ne démarrent. Un jour qui échoue n'empêche pas les suivants ; le code de sortie est 1 s'il y en a eu. Rejouable : un jour déjà figé n'est pas refait. La veille et le jour même restent calculés en direct (une partie peut encore s'y finir après minuit).
+
+Sur le staging, `import-to-staging.sh` la lance après la clé Data Protection neuve ; comme elle, elle exige une image de l'API staging venue d'un déploiement de la PR E4 ou postérieur.
 
 ## Rejouer, revenir en arrière
 

@@ -50,7 +50,8 @@ public sealed class ImportDatabase : IAsyncLifetime
     {
         var name = $"import_{Guid.NewGuid():N}";
         await ExecuteAsync(_container.GetConnectionString(), $"CREATE DATABASE {name}");
-        var connectionString = new NpgsqlConnectionStringBuilder(_container.GetConnectionString()) { Database = name }.ConnectionString;
+        // Sans réserve de connexions : une base par test, et chaque réserve garderait ses connexions ouvertes (le serveur en refuse plus de cent).
+        var connectionString = new NpgsqlConnectionStringBuilder(_container.GetConnectionString()) { Database = name, Pooling = false }.ConnectionString;
 
         await ExecuteAsync(connectionString, _v1Schema);
         Assert.Equal(0, await MigrateOnlyCommand.RunAsync([$"--ConnectionStrings:DefaultConnection={connectionString}"]));
@@ -68,6 +69,18 @@ public sealed class ImportDatabase : IAsyncLifetime
         ]);
         // Pas de code de sortie : la commande ne s'est pas terminée normalement.
         return new ImportResult(result.ExitCode ?? -1, result.Stdout + result.Stderr);
+    }
+
+    /// <summary>Même enchaînement que run-import.sh, avec un écart glissé entre l'import et la vérification : la vérification doit le refuser.</summary>
+    public static async Task<PostgresException> ImportWithTamperingAsync(string connectionString, string tamperingSql)
+    {
+        var directory = Path.Combine(RepositoryRoot, "deploy", "migration-v2");
+        var script = string.Join("\n",
+            File.ReadAllText(Path.Combine(directory, "00-import-state.sql")),
+            File.ReadAllText(Path.Combine(directory, "10-import.sql")),
+            tamperingSql,
+            File.ReadAllText(Path.Combine(directory, "20-verify.sql")));
+        return await Assert.ThrowsAsync<PostgresException>(() => ExecuteAsync(connectionString, $"BEGIN;\n{script}\nCOMMIT;"));
     }
 
     public static async Task ExecuteAsync(string connectionString, string sql)

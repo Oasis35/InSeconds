@@ -91,4 +91,17 @@ if ! timeout 180 docker compose -f docker-compose.staging.yml --env-file .env.st
   exit 1
 fi
 
+# Statistiques figées des jours terminés (E4) : l'import ne calcule rien, et la tâche daily-close-day attendrait minuit
+# pour figer l'historique. Même mécanique que la clé ci-dessus : un conteneur jetable de l'image de l'API staging (qui
+# lit les réglages en base), sans serveur ni tâche. Avec une image antérieure à E4, le drapeau serait ignoré et l'API
+# démarrerait : d'où le délai et la suppression du conteneur.
+echo "Statistiques figées de l'historique..."
+freeze_container=inseconds-staging.freeze-stats
+if ! timeout 600 docker compose -f docker-compose.staging.yml --env-file .env.staging \
+    run --rm -T --name "$freeze_container" api --freeze-day-stats < /dev/null; then
+  docker rm -f "$freeze_container" > /dev/null 2>&1 || true
+  echo "ERREUR : les statistiques de l'historique n'ont pas été figées (jour en échec, ou image de l'API staging d'avant E4 ?)." >&2
+  exit 1
+fi
+
 echo "Import terminé."

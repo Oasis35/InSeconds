@@ -7,6 +7,9 @@ if (MigrateOnlyCommand.IsRequested(args))
 if (RotateDataProtectionKeyCommand.IsRequested(args))
     return await RotateDataProtectionKeyCommand.RunAsync(args);
 
+if (FreezeDayStatsCommand.IsRequested(args))
+    return await FreezeDayStatsCommand.RunAsync(args);
+
 var builder = WebApplication.CreateBuilder(args);
 builder.AddInSecondsApi(args);
 

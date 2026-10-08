@@ -131,3 +131,156 @@ SELECT pg_temp.expect('morceaux désactivés', 0, (
 SELECT pg_temp.expect('séquence des identifiants de morceaux', 1, (
     SELECT CASE WHEN (SELECT CASE WHEN is_called THEN last_value + 10 ELSE last_value END FROM catalogue.tracks_hilo)
                     > COALESCE((SELECT max(id) FROM catalogue.tracks), 0) THEN 1 ELSE 0 END));
+
+-- ============================================================================================
+-- Daily (PR E4)
+-- ============================================================================================
+
+-- Nombre de lignes. Les séries : un joueur en a une s'il a une série, une date ou un gel.
+SELECT pg_temp.expect('défis',
+    (SELECT count(*) FROM public."DailyChallenges"), (SELECT count(*) FROM daily.challenges));
+SELECT pg_temp.expect('morceaux des défis',
+    (SELECT count(*) FROM public."DailyChallengeTracks"), (SELECT count(*) FROM daily.challenge_tracks));
+SELECT pg_temp.expect('parties',
+    (SELECT count(*) FROM public."GameSessions"), (SELECT count(*) FROM daily.sessions));
+SELECT pg_temp.expect('réponses',
+    (SELECT count(*) FROM public."GameSessionAnswers"), (SELECT count(*) FROM daily.answers));
+SELECT pg_temp.expect('séries',
+    (SELECT count(*) FROM public."Players" WHERE "CurrentStreak" <> 0 OR "LastPlayedDate" IS NOT NULL OR "StreakFreezes" <> 0),
+    (SELECT count(*) FROM daily.streaks));
+
+-- Défis : identifiant, date et graine à l'identique, origine inconnue.
+SELECT pg_temp.expect('défis repris à l''identique', 0, (
+    SELECT count(*) FROM public."DailyChallenges" c
+    LEFT JOIN daily.challenges v ON v.id = c."Id"
+    WHERE v.id IS NULL OR v.date IS DISTINCT FROM c."Date" OR v.seed IS DISTINCT FROM c."Seed" OR v.origin IS NOT NULL));
+
+-- Morceaux des défis : même morceau à la même position dans le même défi. La colonne abandonnée (DeezerRankSnapshot) valait
+-- la position partout : sinon elle portait une information qu'on perdrait.
+SELECT pg_temp.expect('morceaux des défis repris à l''identique', 0, (
+    SELECT count(*) FROM public."DailyChallengeTracks" t
+    LEFT JOIN daily.challenge_tracks v ON v.challenge_id = t."DailyChallengeId" AND v.position = t."Position"
+    WHERE v.challenge_id IS NULL OR v.track_id IS DISTINCT FROM t."TrackId"));
+SELECT pg_temp.expect('rang Deezer figé = position (colonne abandonnée)', 0, (
+    SELECT count(*) FROM public."DailyChallengeTracks" WHERE "DeezerRankSnapshot" <> "Position"));
+
+-- Parties : tout à l'identique, sauf le statut d'une partie en cours qui ne se reprendrait pas (réponses non contiguës, ou aucun
+-- morceau à jouer), reprise « expirée » ; et le verrou, gardé seulement s'il porte sur le morceau en cours d'une partie qui reste
+-- en cours, ou sur un morceau du défi d'une partie qui n'est plus en cours. Recalculé ici sur les réponses de la v2.
+SELECT pg_temp.expect('parties reprises à l''identique', 0, (
+    WITH answered AS (
+        SELECT session_id, count(*) AS n, max(position) AS last_position FROM daily.answers GROUP BY session_id),
+    expected AS (
+        SELECT s."Id" AS id, s."PlayerId", s."DailyChallengeId", s."Status", s."CreatedAt", s."CompletedAt", s."AbandonedAt",
+               s."TotalScore", s."TotalDurationSeconds", s."CurrentTrackMinListenedSeconds", s."CurrentTrackHintLevelUsed",
+               s."FreezesUsed", s."FreezeEarned",
+               COALESCE(a.n, 0) AS n, COALESCE(a.last_position, 0) AS last_position,
+               (SELECT count(*) FROM daily.challenge_tracks t WHERE t.challenge_id = s."DailyChallengeId") AS tracks,
+               lk."Position" AS lock_position
+        FROM public."GameSessions" s
+        LEFT JOIN answered a ON a.session_id = s."Id"
+        LEFT JOIN public."DailyChallengeTracks" lk ON lk."Id" = s."CurrentTrackId" AND lk."DailyChallengeId" = s."DailyChallengeId"),
+    resolved AS (
+        SELECT e.*,
+               e."Status" = 0 AND NOT (e.last_position = e.n AND e.n < e.tracks) AS expire,
+               CASE WHEN e.lock_position IS NOT NULL
+                         AND (e."Status" <> 0 OR (NOT (e."Status" = 0 AND NOT (e.last_position = e.n AND e.n < e.tracks)) AND e.lock_position = e.n + 1))
+                    THEN e.lock_position END AS kept_position
+        FROM expected e)
+    SELECT count(*) FROM resolved r
+    LEFT JOIN daily.sessions v ON v.id = r.id
+    WHERE v.id IS NULL
+       OR v.player_id IS DISTINCT FROM r."PlayerId"
+       OR v.challenge_id IS DISTINCT FROM r."DailyChallengeId"
+       OR v.status::int IS DISTINCT FROM CASE WHEN r.expire THEN 3 ELSE r."Status" END
+       OR v.started_at IS DISTINCT FROM r."CreatedAt"
+       OR v.ended_at IS DISTINCT FROM COALESCE(r."CompletedAt", r."AbandonedAt")
+       OR v.total_score IS DISTINCT FROM r."TotalScore"
+       OR v.total_listened_seconds IS DISTINCT FROM r."TotalDurationSeconds"
+       OR v.current_position::int IS DISTINCT FROM r.kept_position
+       OR v.current_listened_seconds IS DISTINCT FROM CASE WHEN r.kept_position IS NOT NULL THEN r."CurrentTrackMinListenedSeconds" END
+       OR v.current_hint_level::int IS DISTINCT FROM CASE WHEN r.kept_position IS NOT NULL THEN r."CurrentTrackHintLevelUsed" ELSE 0 END
+       OR v.freezes_used::int IS DISTINCT FROM r."FreezesUsed"
+       OR v.freeze_earned IS DISTINCT FROM r."FreezeEarned"));
+
+-- Parties en cours : chacune se reprend (réponses de 1 à N sans trou, un morceau à jouer) et son verrou, s'il y en a un, est celui du
+-- morceau en cours.
+SELECT pg_temp.expect('parties en cours reprenables, verrou sur le morceau en cours', 0, (
+    SELECT count(*) FROM daily.sessions s
+    LEFT JOIN (SELECT session_id, count(*) AS n, max(position) AS last_position FROM daily.answers GROUP BY session_id) a ON a.session_id = s.id
+    WHERE s.status = 0
+      AND (COALESCE(a.last_position, 0) <> COALESCE(a.n, 0)
+           OR COALESCE(a.n, 0) >= (SELECT count(*) FROM daily.challenge_tracks t WHERE t.challenge_id = s.challenge_id)
+           OR (s.current_position IS NOT NULL AND s.current_position <> COALESCE(a.n, 0) + 1))));
+
+-- Réponses : chacune retrouvée à la position de son morceau, tous les champs à l'identique, l'heure inconnue.
+SELECT pg_temp.expect('réponses reprises à l''identique', 0, (
+    SELECT count(*) FROM public."GameSessionAnswers" a
+    JOIN public."DailyChallengeTracks" ct ON ct."Id" = a."DailyChallengeTrackId"
+    LEFT JOIN daily.answers v ON v.session_id = a."GameSessionId" AND v.position = ct."Position"
+    WHERE v.session_id IS NULL
+       OR v.listened_seconds IS DISTINCT FROM a."ListenedDurationSeconds"
+       OR v.was_extended IS DISTINCT FROM a."WasExtended"
+       OR v.hint_level::int IS DISTINCT FROM a."HintLevelUsed"
+       OR v.artist_answer IS DISTINCT FROM a."ArtistAnswer"
+       OR v.title_answer IS DISTINCT FROM a."TitleAnswer"
+       OR v.artist_correct IS DISTINCT FROM a."ArtistCorrect"
+       OR v.title_correct IS DISTINCT FROM a."TitleCorrect"
+       OR v.score IS DISTINCT FROM a."Score"
+       OR v.answered_at IS NOT NULL));
+
+-- Intégrité : une réponse porte sur un morceau du défi de sa partie.
+SELECT pg_temp.expect('réponses sur un morceau du défi de leur partie', 0, (
+    SELECT count(*) FROM daily.answers a
+    JOIN daily.sessions s ON s.id = a.session_id
+    LEFT JOIN daily.challenge_tracks t ON t.challenge_id = s.challenge_id AND t.position = a.position
+    WHERE t.challenge_id IS NULL));
+
+-- Scores : la somme par défi et par joueur est celle de la v1, et chaque partie terminée vaut la somme de ses réponses.
+SELECT pg_temp.expect('scores par défi', 0, (
+    SELECT count(*) FROM (SELECT "DailyChallengeId" AS id, sum("TotalScore") AS total FROM public."GameSessions" GROUP BY 1) o
+    FULL JOIN (SELECT challenge_id AS id, sum(total_score) AS total FROM daily.sessions GROUP BY 1) v ON v.id = o.id
+    WHERE o.id IS NULL OR v.id IS NULL OR o.total IS DISTINCT FROM v.total));
+SELECT pg_temp.expect('scores par joueur', 0, (
+    SELECT count(*) FROM (SELECT "PlayerId" AS id, sum("TotalScore") AS total FROM public."GameSessions" GROUP BY 1) o
+    FULL JOIN (SELECT player_id AS id, sum(total_score) AS total FROM daily.sessions GROUP BY 1) v ON v.id = o.id
+    WHERE o.id IS NULL OR v.id IS NULL OR o.total IS DISTINCT FROM v.total));
+SELECT pg_temp.expect('score d''une partie terminée = somme de ses réponses', 0, (
+    SELECT count(*) FROM daily.sessions s
+    WHERE s.status = 1 AND s.total_score <> COALESCE((SELECT sum(a.score) FROM daily.answers a WHERE a.session_id = s.id), 0)));
+
+-- Séries : pour chaque joueur, les trois valeurs brutes à l'identique (pas de ligne = rien à reprendre).
+SELECT pg_temp.expect('séries reprises à l''identique', 0, (
+    SELECT count(*) FROM public."Players" p
+    LEFT JOIN daily.streaks v ON v.player_id = p."Id"
+    WHERE COALESCE(v.current_streak, 0) <> p."CurrentStreak"
+       OR v.last_played_date IS DISTINCT FROM p."LastPlayedDate"
+       OR COALESCE(v.freezes, 0) <> p."StreakFreezes"));
+
+-- Cooldown : la dernière date et le nombre d'utilisations des morceaux, que la v2 recalcule depuis les défis, sont ceux que la v1
+-- stockait (§ 8.3 : tout écart bloque l'import).
+DO $$
+DECLARE
+    ids text;
+BEGIN
+    SELECT string_agg(t."Id"::text, ', ' ORDER BY t."Id") INTO ids FROM public."Tracks" t
+    LEFT JOIN (SELECT ct.track_id, max(c.date) AS last_used, count(*) AS uses
+               FROM daily.challenge_tracks ct JOIN daily.challenges c ON c.id = ct.challenge_id GROUP BY ct.track_id) u ON u.track_id = t."Id"
+    WHERE t."LastUsedDate" IS DISTINCT FROM u.last_used OR t."UsageCount" <> COALESCE(u.uses, 0);
+    IF ids IS NOT NULL THEN
+        RAISE EXCEPTION 'Vérification « cooldown : dernière date et nombre d''utilisations recalculés » : écart sur les morceaux : %', ids;
+    END IF;
+END $$;
+SELECT pg_temp.expect('cooldown : dernière date et nombre d''utilisations recalculés', 0, (
+    SELECT count(*) FROM public."Tracks" t
+    LEFT JOIN (SELECT ct.track_id, max(c.date) AS last_used, count(*) AS uses
+               FROM daily.challenge_tracks ct JOIN daily.challenges c ON c.id = ct.challenge_id GROUP BY ct.track_id) u ON u.track_id = t."Id"
+    WHERE t."LastUsedDate" IS DISTINCT FROM u.last_used OR t."UsageCount" <> COALESCE(u.uses, 0)));
+
+-- Séquences : le prochain lot d'identifiants commence au-delà du plus grand identifiant repris.
+SELECT pg_temp.expect('séquence des identifiants de défis', 1, (
+    SELECT CASE WHEN (SELECT CASE WHEN is_called THEN last_value + 10 ELSE last_value END FROM daily.challenges_hilo)
+                    > COALESCE((SELECT max(id) FROM daily.challenges), 0) THEN 1 ELSE 0 END));
+SELECT pg_temp.expect('séquence des identifiants de parties', 1, (
+    SELECT CASE WHEN (SELECT CASE WHEN is_called THEN last_value + 10 ELSE last_value END FROM daily.sessions_hilo)
+                    > COALESCE((SELECT max(id) FROM daily.sessions), 0) THEN 1 ELSE 0 END));
