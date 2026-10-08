@@ -186,6 +186,7 @@ public class CatalogueImportTests(ImportDatabase database)
                 VALUES (1, 1, 1, false, 0, true, true, 850);
             INSERT INTO daily.streaks (player_id, current_streak, freezes)
                 VALUES ('11111111-1111-1111-1111-111111111111', 1, 0);
+            INSERT INTO daily.challenge_day_stats (challenge_id, computed_at, version, payload) VALUES (1, now(), 1, '{}');
             """);
 
         var second = await database.RunImportAsync(cs);
@@ -194,6 +195,7 @@ public class CatalogueImportTests(ImportDatabase database)
         Assert.Equal(0L, await Count(cs, "daily.sessions"));
         Assert.Equal(0L, await Count(cs, "daily.answers"));
         Assert.Equal(0L, await Count(cs, "daily.streaks"));
+        Assert.Equal(0L, await Count(cs, "daily.challenge_day_stats"));
         Assert.Equal(0L, await Count(cs, "players.players"));
         Assert.Equal(2L, await Count(cs, "catalogue.tracks"));
     }

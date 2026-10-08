@@ -9,36 +9,6 @@ using Wolverine.Http;
 
 namespace InSeconds.Api.Modules.Daily.Application;
 
-/// <summary>Codes d'erreur du défi du jour (§ 5.6 du plan v2). Ne jamais renommer un code publié.</summary>
-public static class DailyErrorCodes
-{
-    /// <summary>Pas assez de morceaux jouables hors cooldown : renvoyé par la tâche, lu par <c>GET /api/admin/jobs/{id}</c>.</summary>
-    public const string PoolInsufficient = "admin.pool_insufficient";
-
-    /// <summary>Pas de défi aujourd'hui et le pool ne permet pas d'en générer un.</summary>
-    public const string NoChallenge = "daily.no_challenge";
-
-    public const string AlreadyPlayed = "daily.already_played";
-
-    /// <summary>Le joueur a abandonné (bouton) ou laissé expirer la partie du jour : il ne la rejoue pas.</summary>
-    public const string Abandoned = "daily.abandoned";
-
-    public const string SessionNotFound = "daily.session_not_found";
-
-    public const string TrackNotFound = "daily.track_not_found";
-
-    /// <summary>Piège 35 : le morceau en cours n'a pas reçu sa réponse, le verrou ne se déplace pas.</summary>
-    public const string TrackLockNotReleased = "daily.track_lock_not_released";
-
-    /// <summary>L'indice n'est pas encore débloqué : la durée écoutée n'a pas atteint son seuil.</summary>
-    public const string HintLocked = "daily.hint_locked";
-
-    public const string AlreadyAnswered = "daily.already_answered";
-
-    /// <summary>Le palier annoncé est inférieur à la durée que le serveur a vu écouter sur ce morceau (anti-triche).</summary>
-    public const string ListenedBelowMinimum = "daily.listened_duration_below_verified_minimum";
-}
-
 /// <summary>
 /// Génère le défi d'un jour. Une seule logique pour les trois chemins (§ 5.4 bis du plan v2) : la tâche de minuit, le
 /// secours à la volée quand un joueur arrive sans défi (E2), et le bouton de l'admin. Ne fait rien si le défi existe.
@@ -145,7 +115,7 @@ public sealed class GenerateDailyChallengeJob(IMessageBus bus, IGameCalendar cal
     {
         var result = await bus.InvokeAsync<GenerateChallengeResult>(new GenerateDailyChallenge(calendar.Today, origin), ct);
         return result.Outcome == GenerationOutcome.PoolInsufficient
-            ? throw new JobFailedException(DailyErrorCodes.PoolInsufficient)
+            ? throw new JobFailedException(DailyAdminErrorCodes.PoolInsufficient)
             : result.ToReport();
     }
 }

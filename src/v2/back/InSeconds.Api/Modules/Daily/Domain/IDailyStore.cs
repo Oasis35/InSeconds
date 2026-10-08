@@ -56,4 +56,15 @@ public interface IDailyStore
     Task<DailyStreak?> FindStreakAsync(Guid playerId, CancellationToken ct);
 
     void Add(DailyStreak streak);
+
+    /// <summary>
+    /// Réserve la photo figée de ce défi jusqu'à la fin de la transaction : la tâche de minuit et un recalcul de l'admin qui se croisent se suivent, au
+    /// lieu d'insérer deux fois la même ligne.
+    /// </summary>
+    Task LockDayStatsAsync(int challengeId, CancellationToken ct);
+
+    /// <summary>La photo figée de ce défi, suivie pour être remplacée ; rien si le jour n'est pas figé.</summary>
+    Task<DayStatsSnapshot?> FindDayStatsAsync(int challengeId, CancellationToken ct);
+
+    void Add(DayStatsSnapshot snapshot);
 }

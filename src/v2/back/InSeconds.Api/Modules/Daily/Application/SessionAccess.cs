@@ -33,16 +33,23 @@ internal static class SessionAccess
         return challenge is null ? null : new PlayableSession(session, challenge);
     }
 
+    /// <summary>Le plus ancien défi qu'une partie en cours peut encore jouer : la veille, qu'on peut finir après minuit (piège 18).</summary>
+    public static DateOnly OldestPlayableDay(DateOnly today) => today.AddDays(-1);
+
     /// <summary>
     /// La partie est inconnue, n'est plus en cours, ou ce morceau n'est pas celui qu'on peut jouer maintenant (piège 35). <paramref name="position"/>
-    /// vide : on ne vise aucun morceau (abandon).
+    /// vide : on ne vise aucun morceau (abandon). Une partie restée en cours sur un défi plus ancien que la veille est **expirée** : la photo figée de
+    /// ce jour (J-2, E3) ne doit plus bouger. Elle répond comme une partie expirée (<c>daily.abandoned</c>), l'expiration paresseuse la marquera au
+    /// prochain démarrage.
     /// </summary>
-    public static ProblemDetails Check(PlayableSession? loaded, int? position)
+    public static ProblemDetails Check(PlayableSession? loaded, int? position, DateOnly today)
     {
         if (loaded is null)
             return DailyProblems.SessionNotFound();
         if (loaded.Session.Status != SessionStatus.Pending)
             return DailyProblems.NotPending(loaded.Session.Status);
+        if (loaded.Challenge.Date < OldestPlayableDay(today))
+            return DailyProblems.NotPending(SessionStatus.Expired);
         if (position is { } p && DailyProblems.ForTurn(loaded.Session.TurnOf(p, loaded.Challenge.Tracks.Count)) is { } problem)
             return problem;
 

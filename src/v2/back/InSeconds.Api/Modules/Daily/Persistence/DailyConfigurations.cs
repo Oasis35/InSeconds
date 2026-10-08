@@ -81,6 +81,17 @@ internal sealed class SessionAnswerConfiguration : IEntityTypeConfiguration<Sess
     }
 }
 
+internal sealed class DayStatsSnapshotConfiguration : IEntityTypeConfiguration<DayStatsSnapshot>
+{
+    public void Configure(EntityTypeBuilder<DayStatsSnapshot> builder)
+    {
+        builder.ToTable("challenge_day_stats", DbSchemas.Daily);
+        builder.HasKey(s => s.ChallengeId);
+        builder.Property(s => s.Payload).HasColumnType("jsonb");
+        builder.HasOne<DailyChallenge>().WithMany().HasForeignKey(s => s.ChallengeId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
 internal sealed class DailyStreakConfiguration : IEntityTypeConfiguration<DailyStreak>
 {
     public void Configure(EntityTypeBuilder<DailyStreak> builder)

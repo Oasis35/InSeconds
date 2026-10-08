@@ -50,6 +50,42 @@ internal sealed class GameApi : IAsyncDisposable
     public async Task<int> TrackAtAsync(DateOnly day, int position) =>
         (await App.TracksOfAsync(day))[position - 1];
 
+    /// <summary>L'identifiant du défi de ce jour.</summary>
+    public async Task<int> ChallengeIdAsync(DateOnly day) =>
+        await Api.ScalarAsync<int>($"SELECT id FROM daily.challenges WHERE date = '{day:yyyy-MM-dd}'");
+
+    /// <summary>
+    /// Une partie posée directement en base sur le défi de ce jour (les statistiques d'un jour passé n'ont pas besoin de la jouer) : ses réponses aux
+    /// positions 1, 2… et son score. <paramref name="status"/> : 0 en cours, 1 terminée, 2 abandonnée, 3 expirée.
+    /// </summary>
+    public async Task<int> AddSessionAsync(
+        Guid playerId, DateOnly day, short status, params (decimal Seconds, bool Artist, bool Title, bool Extended, int Score)[] answers)
+    {
+        var id = await Api.ScalarAsync<int>("SELECT nextval('daily.sessions_hilo')::int");
+        var challenge = await ChallengeIdAsync(day);
+        var total = answers.Sum(x => x.Score);
+        var seconds = answers.Sum(x => x.Seconds);
+        await Api.ExecuteAsync(
+            $"""
+            INSERT INTO daily.sessions (id, player_id, challenge_id, status, started_at, total_score, total_listened_seconds)
+            VALUES ({id}, '{playerId}', {challenge}, {status}, now(), {total}, {seconds.ToString(System.Globalization.CultureInfo.InvariantCulture)})
+            """);
+        for (var i = 0; i < answers.Length; i++)
+        {
+            var x = answers[i];
+            await Api.ExecuteAsync(
+                $"""
+                INSERT INTO daily.answers (session_id, position, listened_seconds, was_extended, hint_level, artist_correct, title_correct, score)
+                VALUES ({id}, {i + 1}, {x.Seconds.ToString(System.Globalization.CultureInfo.InvariantCulture)}, {x.Extended}, 0, {x.Artist}, {x.Title}, {x.Score})
+                """);
+        }
+
+        return id;
+    }
+
+    /// <summary>Le joueur est supprimé (suppression logique) : il disparaît de toutes les statistiques.</summary>
+    public Task DeletePlayerAsync(Guid playerId) => Api.ExecuteAsync($"UPDATE players.players SET deleted_at = now() WHERE id = '{playerId}'");
+
     public Task SetStreakAsync(Guid playerId, int streak, DateOnly? lastPlayed, int freezes) =>
         Api.ExecuteAsync(
             $"""

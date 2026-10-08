@@ -1,4 +1,5 @@
 using FluentValidation;
+using InSeconds.Api.Infrastructure.Time;
 using InSeconds.Api.Modules.Catalogue.Contracts;
 using InSeconds.Api.Modules.Daily.Domain;
 using InSeconds.Api.Modules.Gameplay.Contracts;
@@ -29,7 +30,8 @@ public static class UpdateListeningEndpoint
     public static Task<PlayableSession?> LoadAsync(int id, ICurrentPlayer current, IDailyStore store, CancellationToken ct) =>
         SessionAccess.LoadAsync(id, current, store, ct);
 
-    public static ProblemDetails Validate(UpdateListening request, PlayableSession? loaded) => SessionAccess.Check(loaded, request.Position);
+    public static ProblemDetails Validate(UpdateListening request, PlayableSession? loaded, IGameCalendar calendar) =>
+        SessionAccess.Check(loaded, request.Position, calendar.Today);
 
     /// <summary>
     /// <c>PATCH /api/daily/sessions/{id}/listening</c> : note le palier écouté sur le morceau en cours. C'est ce qui pose le **plancher
@@ -90,9 +92,9 @@ public static class RequestHintEndpoint
         return new HintAttempt(loaded, loaded.Session.RoundOfCurrentTrack(policy).RevealHint(request.Level, policy));
     }
 
-    public static ProblemDetails Validate(RequestHint request, HintAttempt? attempt)
+    public static ProblemDetails Validate(RequestHint request, HintAttempt? attempt, IGameCalendar calendar)
     {
-        var problem = SessionAccess.Check(attempt?.Loaded, request.Position);
+        var problem = SessionAccess.Check(attempt?.Loaded, request.Position, calendar.Today);
         if (!ReferenceEquals(problem, WolverineContinue.NoProblems))
             return problem;
 
@@ -141,7 +143,7 @@ public static class AbandonSessionEndpoint
     public static Task<PlayableSession?> LoadAsync(int id, ICurrentPlayer current, IDailyStore store, CancellationToken ct) =>
         SessionAccess.LoadAsync(id, current, store, ct);
 
-    public static ProblemDetails Validate(PlayableSession? loaded) => SessionAccess.Check(loaded, position: null);
+    public static ProblemDetails Validate(PlayableSession? loaded, IGameCalendar calendar) => SessionAccess.Check(loaded, position: null, calendar.Today);
 
     /// <summary>
     /// <c>POST /api/daily/sessions/{id}/abandon</c> : le clic explicite sur « Abandonner ». La partie est perdue pour la journée (elle ne se
