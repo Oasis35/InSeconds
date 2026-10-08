@@ -344,9 +344,11 @@ export const DailyGameStore = signalStore(
         if (outcome.kind === 'ok') {
           patchState(store, { sessionId: outcome.session.sessionId });
           await abandon();
-        } else {
-          patchState(store, { abandonLoading: false });
+          return;
         }
+        patchState(store, { abandonLoading: false });
+        // Partie finie ou abandonnée dans un autre onglet entre-temps : on montre « déjà joué ».
+        if (outcome.kind === 'already_played') enterAlreadyPlayed(outcome.abandoned);
       },
 
       /**

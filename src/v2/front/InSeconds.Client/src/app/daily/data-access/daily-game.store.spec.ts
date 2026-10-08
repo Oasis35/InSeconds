@@ -309,6 +309,19 @@ describe('DailyGameStore', () => {
       expect(store.screen()).toBe('already_played');
       expect(store.abandoned()).toBe(true);
     });
+
+    it('la partie finie entre-temps dans un autre onglet mène à « déjà joué »', async () => {
+      api.today = TODAY({ state: 'resumable', completedCount: 1 });
+      await store.init();
+      api.start = { kind: 'already_played', abandoned: false };
+
+      await store.abandonFromResume();
+
+      expect(api.calls).not.toContain('abandon 11');
+      expect(store.screen()).toBe('already_played');
+      expect(store.abandoned()).toBe(false);
+      expect(store.abandonLoading()).toBe(false);
+    });
   });
 
   describe('retour de l\'onglet au premier plan (plusieurs onglets)', () => {
