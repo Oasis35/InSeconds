@@ -496,6 +496,29 @@ public class DailyImportTests(ImportDatabase database)
         Assert.Equal(computedAt, await ImportDatabase.ScalarAsync<DateTime>(cs, "SELECT computed_at FROM daily.challenge_day_stats WHERE challenge_id = 1"));
     }
 
+    [Fact]
+    public async Task FigerLesStatistiques_UnJourEnEchec_LesSuivantsFiges_CodeDeSortie1()
+    {
+        var cs = await database.CreateDatabaseAsync();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var days = new[] { today.AddDays(-12), today.AddDays(-11) };
+        for (var i = 0; i < days.Length; i++)
+        {
+            await V1Data.InsertTracksAsync(cs, new V1Track(i + 1, 201 + i) { LastUsedDate = days[i], UsageCount = 1 });
+            await V1DailyData.InsertChallengesAsync(cs, new V1Challenge(i + 1, days[i]));
+            await V1DailyData.InsertChallengeTracksAsync(cs, new V1ChallengeTrack(100 + i, i + 1, i + 1, 1));
+        }
+        Assert.Equal(0, (await database.RunImportAsync(cs)).ExitCode);
+        // La photo du plus ancien jour est refusée par la base : la commande passe au suivant, puis échoue à la fin.
+        await ImportDatabase.ExecuteAsync(cs, "ALTER TABLE daily.challenge_day_stats ADD CONSTRAINT ck_test_refuse CHECK (challenge_id <> 1)");
+
+        var exitCode = await FreezeDayStatsCommand.RunAsync([$"--ConnectionStrings:DefaultConnection={cs}"], TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, exitCode);
+        Assert.Equal(1L, await Count(cs, "daily.challenge_day_stats"));
+        Assert.Equal(1L, await Count(cs, "daily.challenge_day_stats WHERE challenge_id = 2"));
+    }
+
     /// <summary>Un défi de trois morceaux (position 1, 2 et 3, voir les constantes), tirés ce jour-là pour la première fois.</summary>
     private static async Task SeedChallengeAsync(string cs)
     {
