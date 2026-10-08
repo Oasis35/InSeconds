@@ -161,22 +161,6 @@ SELECT pg_temp.expect('morceaux des défis repris à l''identique', 0, (
     LEFT JOIN daily.challenge_tracks v ON v.challenge_id = t."DailyChallengeId" AND v.position = t."Position"
     WHERE v.challenge_id IS NULL OR v.track_id IS DISTINCT FROM t."TrackId"));
 
--- Rang Deezer figé (DeezerRankSnapshot) : abandonné. La v1 ne le lisait nulle part ; elle y écrit la position depuis la mi-septembre
--- 2026, mais les défis plus anciens portent une autre valeur (la prod en a 210 lignes au 8 octobre). Un écart ne bloque pas l'import
--- : il est compté, avec les défis concernés.
-DO $$
-DECLARE
-    gaps bigint;
-    challenges text;
-BEGIN
-    SELECT count(*), string_agg(DISTINCT "DailyChallengeId"::text, ', ') INTO gaps, challenges
-    FROM public."DailyChallengeTracks" WHERE "DeezerRankSnapshot" <> "Position";
-    RAISE NOTICE 'Morceaux de défi dont le rang Deezer figé diffère de la position, abandonné (non bloquant) : %', gaps;
-    IF challenges IS NOT NULL THEN
-        RAISE NOTICE 'Rang Deezer figé abandonné, défis : %', challenges;
-    END IF;
-END $$;
-
 -- Parties : tout à l'identique, sauf le statut d'une partie en cours qui ne se reprendrait pas (réponses non contiguës, ou aucun
 -- morceau à jouer, ou défi plus vieux que la veille), reprise « expirée » ; et le verrou, gardé seulement s'il porte sur le morceau en cours d'une partie qui reste
 -- en cours, ou sur un morceau du défi d'une partie qui n'est plus en cours. Recalculé ici sur les réponses de la v2.

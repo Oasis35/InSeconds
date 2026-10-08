@@ -341,23 +341,6 @@ public class DailyImportTests(ImportDatabase database)
     }
 
     [Fact]
-    public async Task RangDeezerFigeDifferentDeLaPosition_ImportPasse_EcartCompte()
-    {
-        // La colonne abandonnée ne servait à rien en v1 ; les défis anciens y portent une autre valeur que la position (la prod en a) :
-        // l'import continue et compte l'écart, avec les défis concernés.
-        var cs = await database.CreateDatabaseAsync();
-        await SeedChallengeAsync(cs);
-        await ImportDatabase.ExecuteAsync(cs, """UPDATE public."DailyChallengeTracks" SET "DeezerRankSnapshot" = 42 WHERE "Id" = 10""");
-
-        var result = await database.RunImportAsync(cs);
-
-        Assert.Equal(0, result.ExitCode);
-        Assert.Contains("rang Deezer figé diffère de la position, abandonné (non bloquant) : 1", result.Output, StringComparison.Ordinal);
-        Assert.Contains("Rang Deezer figé abandonné, défis : ", result.Output, StringComparison.Ordinal);
-        Assert.Equal(1L, await Count(cs, "daily.challenges"));
-    }
-
-    [Fact]
     public async Task ReponseSurUnMorceauDUnAutreDefi_ImportRefuse_PartieNommee()
     {
         var cs = await database.CreateDatabaseAsync();
