@@ -60,6 +60,12 @@ public sealed class EfDailyStore(InSecondsDbContext db) : IDailyStore
             .ExecuteUpdateAsync(set => set.SetProperty(s => s.Status, SessionStatus.Expired).SetProperty(s => s.EndedAt, now), ct);
     }
 
+    // Même UPDATE conditionnel que l'expiration d'un joueur : une partie terminée au même moment n'est jamais repassée en « expirée ».
+    public Task<int> ExpireAllStaleSessionsAsync(DateOnly before, DateTimeOffset now, CancellationToken ct) =>
+        db.Set<DailySession>()
+            .Where(s => s.Status == SessionStatus.Pending && db.Set<DailyChallenge>().Any(c => c.Id == s.ChallengeId && c.Date < before))
+            .ExecuteUpdateAsync(set => set.SetProperty(s => s.Status, SessionStatus.Expired).SetProperty(s => s.EndedAt, now), ct);
+
     public Task<DailySession?> FindSessionAsync(Guid playerId, int challengeId, CancellationToken ct) =>
         db.Set<DailySession>().Include(s => s.Answers).FirstOrDefaultAsync(s => s.PlayerId == playerId && s.ChallengeId == challengeId, ct);
 

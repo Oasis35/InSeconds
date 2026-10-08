@@ -82,9 +82,12 @@ public class CatalogueImportTests(ImportDatabase database)
     public async Task MorceauDejaUtilise_Importe_SansReprendreSonUsage()
     {
         // LastUsedDate et UsageCount se recalculent depuis les défis (§ 8.3) : la table v2 n'a pas ces colonnes,
-        // et un morceau déjà utilisé en v1 s'importe sans erreur. Leur vérification vient avec Daily (E4).
+        // et un morceau déjà utilisé en v1 s'importe sans erreur. Leur vérification contre les défis est celle de Daily (E4) :
+        // le morceau a donc le défi qui le justifie.
         var cs = await database.CreateDatabaseAsync();
-        await V1Data.InsertTracksAsync(cs, new V1Track(1, 1) { LastUsedDate = new DateOnly(2026, 9, 29), UsageCount = 4 });
+        await V1Data.InsertTracksAsync(cs, new V1Track(1, 1) { LastUsedDate = new DateOnly(2026, 9, 29), UsageCount = 1 });
+        await V1DailyData.InsertChallengesAsync(cs, new V1Challenge(1, new DateOnly(2026, 9, 29)));
+        await V1DailyData.InsertChallengeTracksAsync(cs, new V1ChallengeTrack(1, 1, 1, 1));
 
         var result = await database.RunImportAsync(cs);
 
@@ -237,23 +240,10 @@ public class CatalogueImportTests(ImportDatabase database)
             new V1Track(2, 2) { HasPreview = false, ReleaseYear = 0 },
             new V1Track(3, 3) { IsDisabled = true, HasPreview = false, UpdatedAt = Edited });
 
-        var error = await ImportWithTamperingAsync(cs, tampering);
+        var error = await ImportDatabase.ImportWithTamperingAsync(cs, tampering);
 
         Assert.Contains(expectedCheck, error.MessageText, StringComparison.Ordinal);
         Assert.Equal(0L, await Count(cs, "catalogue.tracks"));
-    }
-
-    /// <summary>Même enchaînement que run-import.sh, avec un écart glissé entre l'import et la vérification.</summary>
-    private static async Task<Npgsql.PostgresException> ImportWithTamperingAsync(string connectionString, string tamperingSql)
-    {
-        var directory = Path.Combine(ImportDatabase.RepositoryRoot, "deploy", "migration-v2");
-        var script = string.Join("\n",
-            File.ReadAllText(Path.Combine(directory, "00-import-state.sql")),
-            File.ReadAllText(Path.Combine(directory, "10-import.sql")),
-            tamperingSql,
-            File.ReadAllText(Path.Combine(directory, "20-verify.sql")));
-        return await Assert.ThrowsAsync<Npgsql.PostgresException>(
-            () => ImportDatabase.ExecuteAsync(connectionString, $"BEGIN;\n{script}\nCOMMIT;"));
     }
 
     private static Task<long> Count(string cs, string fromWhere) =>

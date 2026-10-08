@@ -33,6 +33,12 @@ public interface IDailyStore
     /// </summary>
     Task ExpireStaleSessionsAsync(Guid playerId, DateOnly today, DateTimeOffset now, CancellationToken ct);
 
+    /// <summary>
+    /// Passe en <see cref="SessionStatus.Expired"/> les parties **de tous les joueurs** restées en cours sur un défi d'un jour avant
+    /// <paramref name="before"/> (la tâche de nuit), et rend leur nombre.
+    /// </summary>
+    Task<int> ExpireAllStaleSessionsAsync(DateOnly before, DateTimeOffset now, CancellationToken ct);
+
     /// <summary>La partie de ce joueur sur ce défi, avec ses réponses, suivie pour être modifiée.</summary>
     Task<DailySession?> FindSessionAsync(Guid playerId, int challengeId, CancellationToken ct);
 

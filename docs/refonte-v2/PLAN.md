@@ -379,7 +379,7 @@ Clément veut des tâches de type cron, qu'il pilote lui-même, **avec des solut
 | `catalogue-refresh` | `0 23 * * *` | previews et rang Deezer des morceaux éligibles au défi du lendemain |
 | `daily-generate-challenge` | `0 0 * * *` | génère le défi du jour (retry toutes les 10 min, 144 essais : la journée) |
 | `daily-generate-challenge-admin` | jamais (en pause) | ce que lance le bouton « Générer le défi du jour » : sans réessai, défi marqué « admin » (ajoutée en E1) |
-| `daily-close-day` | `5 0 * * *` | fige les stats de J-2 (la veille reste en calcul direct) |
+| `daily-close-day` | `5 0 * * *` | expire les parties restées en cours sur un défi plus vieux que la veille (E4), puis fige les stats de J-2 (la veille reste en calcul direct) |
 | `players-purge-expired-tokens` | `30 3 * * *` | supprime les jetons expirés (connexion et changement d'email) |
 
 Sur le staging, `catalogue-refresh` est en `Cron.Never()` (même IP que la prod, donc même quota Deezer, piège 16).
@@ -647,18 +647,18 @@ Dans chaque domaine :
 | `Tracks.LastUsedDate`, `UsageCount` | (calculé) | **vérifiés** contre le calcul depuis `challenge_tracks`, puis abandonnés |
 | `DailyChallenges` | `daily.challenges` | repris, `origin = null` |
 | `DailyChallengeTracks` | `daily.challenge_tracks` | repris ; `DeezerRankSnapshot` abandonné après vérification qu'il vaut la position partout |
-| `GameSessions` | `daily.sessions` | repris ; `started_at = CreatedAt` ; `ended_at = COALESCE(CompletedAt, AbandonedAt)` ; `CurrentTrackId` (un `DailyChallengeTrack.Id`) → `current_position` par jointure ; `CurrentTrackMinListenedSeconds` → `current_listened_seconds` |
+| `GameSessions` | `daily.sessions` | repris ; `started_at = CreatedAt` ; `ended_at = COALESCE(CompletedAt, AbandonedAt)` ; `CurrentTrackId` (un `DailyChallengeTrack.Id`) → `current_position` par jointure ; `CurrentTrackMinListenedSeconds` → `current_listened_seconds`. **Deux normalisations (décidées en E4, comptées dans la sortie de l'import) :** une partie **en cours** dont les réponses ne vont pas de 1 à N sans trou (la v1 n'imposait l'ordre que si le verrou était posé), ou qui n'a plus de morceau à jouer, est reprise **expirée** (réponses gardées, `ended_at` = heure de l'import, comme une expiration en v2) : en v2 le morceau en cours est le premier sans réponse (piège 35). Une partie en cours d'un défi plus vieux que la veille est reprise expirée aussi (la v2 refuse de la jouer). Le verrou n'est gardé que s'il porte sur le morceau en cours (partie en cours) ou sur un morceau du défi (partie finie, abandonnée ou expirée) : ailleurs la v2 l'ignorerait |
 | `GameSessionAnswers` | `daily.answers` | repris ; `DailyChallengeTrackId` → `position` par jointure ; `answered_at = null` |
 | `MagicLinkTokens`, `EmailChangeTokens` | `players.auth_tokens` | seuls les jetons non consommés et non expirés (en pratique aucun, vu la coupure) ; `TokenHash` v1 est un texte hexadécimal, converti en `bytea` par `decode(…, 'hex')` |
 | `Settings` | `infra.settings` | clés préfixées, valeurs converties en `jsonb` (§ 4.6) ; toute clé inconnue fait échouer l'import |
 | `DataProtectionKeys` | `infra.data_protection_keys` | **copiées obligatoirement** : sans elles, aucun cookie ne se déchiffre |
-| (rien) | `daily.challenge_day_stats` | calculées pour tous les jours passés juste après l'import |
+| (rien) | `daily.challenge_day_stats` | calculées pour tous les jours passés juste après l'import, par la commande `--freeze-day-stats` (les paliers et le barème figés sont ceux des réglages importés : à lancer après l'import complet) |
 
 ### 8.3 Ce qui est abandonné, et pourquoi c'est sans perte
 
 | Donnée | Pourquoi |
 |---|---|
-| `Tracks.LastUsedDate`, `UsageCount` | recalculables depuis les défis ; tout écart bloque l'import. (La route de création à la main, qui ne mettait pas ces colonnes à jour, n'a jamais eu d'écran : aucun écart attendu. S'il y en a un, l'import s'arrête et on regarde.) |
+| `Tracks.LastUsedDate`, `UsageCount` | recalculables depuis les défis ; un écart est **listé** dans la sortie de l'import, sans le bloquer (décision du 08/10, revue de E4 : la v2 ne lit que les défis). (La route de création à la main, qui ne mettait pas ces colonnes à jour, n'a jamais eu d'écran : aucun écart attendu.) |
 | `DailyChallengeTracks.DeezerRankSnapshot` | vaut la position partout (vérifié) |
 | `DailyChallengeTracks.Id`, `GameSessionAnswers.Id` | remplacés par les clés `(challenge_id, position)` et `(session_id, position)` ; aucune référence extérieure |
 | jetons de connexion expirés ou consommés | inutilisables |
@@ -676,7 +676,7 @@ deploy/migration-v2/
 ├── 20-verify.sql           contrôles, lève une exception au moindre écart (annule l'import)
 ├── 90-import-done.sql      note l'import réussi (B4)
 ├── import-to-staging.sh    staging : import puis seconde anonymisation (B4)
-├── 30-stats.sql            (ou commande de l'API) calcul des stats figées de l'historique
+├── (commande de l'API)     `--freeze-day-stats` : calcul des stats figées de l'historique (E4)
 └── README.md               mode d'emploi, retour arrière
 ```
 
@@ -685,7 +685,7 @@ Tout se passe dans la même base, sans dump ni restauration :
 1. **À l'avance, sans coupure :** l'API v2 lancée avec `--migrate-only`, un point d'entrée qui applique les migrations **sans démarrer** ni Hangfire, ni Wolverine, ni le serveur HTTP (testé en CI). Elle crée les schémas v2, les tables, l'extension `citext` (dans un schéma `extensions`, pas dans `public`, pour que la copie prod → staging de `public` ne la touche pas), puis s'arrête. Les tables de Wolverine (`messaging`) et de Hangfire (`jobs`) ne sont pas créées à ce moment : elles le sont au premier démarrage de l'API v2 (décision A2, § 4.6). La v1 continue de tourner : elle ne voit rien de tout ça.
 2. **Le jour J, v1 arrêtée :** `10-import.sql` dans une seule transaction. Il vide les tables v2 (le script est rejouable autant de fois que nécessaire), copie les données depuis `public.*`, puis remet les séquences à niveau (`setval` au plus grand identifiant importé). **Garde-fou :** une fois la v2 ouverte aux joueurs, un marqueur `infra.import_state` bloque toute nouvelle exécution (sinon on effacerait les parties jouées en v2), sauf option `--force` explicite.
 3. `20-verify.sql` : au moindre écart, **arrêt** (§ 8.5).
-4. Calcul des stats figées de tous les jours passés.
+4. Calcul des stats figées de tous les jours passés : `dotnet InSeconds.Api.dll --freeze-day-stats` (même règle que la tâche `daily-close-day`, sans serveur ni tâche ; rejouable).
 5. **Les tables v1 de `public` sont gardées quelques semaines,** puis supprimées après une sauvegarde archivée (étape 12).
 
 **Extrait représentatif de l'import :**
@@ -720,8 +720,8 @@ Le format exact du texte haché (Guid en minuscules avec tirets) est fixé une f
 | Séries | `current_streak`, `last_played_date` et `freezes` identiques pour chaque joueur |
 | Comptes | chaque email et chaque pseudo retrouvés, `is_admin` identique |
 | Jetons | pour chaque joueur, `sha256(AuthToken)` présent dans `legacy_tokens` |
-| Parties en cours | chaque session `Pending` a sa position en cours correcte (ou `null` si aucun verrou) |
-| Cooldown | dernière date et nombre d'utilisations recalculés = `LastUsedDate` / `UsageCount` d'origine |
+| Parties en cours | chaque session `Pending` se reprend (réponses de 1 à N sans trou, un morceau à jouer) et sa position en cours est celle du morceau en cours (ou `null` si aucun verrou) ; le statut, le verrou et tous les autres champs de chaque partie sont relus contre la v1 |
+| Cooldown (non bloquant) | dernière date et nombre d'utilisations recalculés comparés à `LastUsedDate` / `UsageCount` d'origine : les morceaux en écart sont listés, l'import continue |
 | Forme de la source | les colonnes lues dans `public` existent avec le type attendu (`information_schema`), pour détecter une migration v1 arrivée pendant le chantier |
 | Colonne morte | `DeezerRankSnapshot = Position` sur toutes les lignes |
 | Intégrité | aucune réponse orpheline, aucune position hors du défi, aucun doublon `(player_id, challenge_id)` |
@@ -742,6 +742,7 @@ Le format exact du texte haché (Guid en minuscules avec tirets) est fixé une f
   - jeton de connexion en cours ;
   - settings aux valeurs non par défaut.
   - pseudos en doublon de casse, joueur supprimé sans date, session `Pending` d'un jour passé avec verrou ;
+  - partie en cours aux réponses non contiguës (reprise expirée), verrou posé sur un autre morceau que le morceau en cours (écarté), réponses rangées par position et non par identifiant v1, rang Deezer figé différent de la position, cooldown qui diffère du calcul, valeur hors des limites des colonnes v2 ;
   - relance de l'import après ouverture : refusée sans `--force`.
 - **Test de bout en bout :** un cookie émis par la v1 (mêmes clés et paramètres Data Protection) est accepté par la v2 après import, donne le même joueur et est remplacé par le nouveau cookie standard. **Le même cookie v1 présenté par deux navigateurs** donne deux appareils du même joueur, sans déconnexion.
 
@@ -811,7 +812,7 @@ Les étapes 4 à 8 peuvent se découper en plusieurs PR chacune (back, puis fron
   2. **anonymise d'abord les tables v1** avec le script existant (emails, `IsAdmin`, `AuthToken` régénérés, jetons et clés Data Protection supprimés) : les secrets de prod n'atteignent jamais les tables v2 du staging ;
   3. lance `run-import.sh` dans `inseconds_staging` ;
   4. repasse une anonymisation sur les tables v2, par sécurité (emails → `player-<id>@example.invalid` sauf `STAGING_KEEP_EMAIL`, `is_admin = false` sauf ce compte, `device_sessions`, `legacy_tokens`, `auth_tokens` et clés Data Protection vidés, file de messages `messaging` vidée) ;
-  5. crée une clé Data Protection neuve (`--rotate-data-protection-key`, S16) puis redémarre l'API staging.
+  5. crée une clé Data Protection neuve (`--rotate-data-protection-key`, S16), puis fige les statistiques de l'historique (`--freeze-day-stats`, E4), puis redémarre l'API staging.
 - **Chaque exécution est une répétition de la bascule** avec de vraies données. On la relance à chaque changement du modèle ou de l'import.
 - **Recette manuelle :**
   - partie complète et reprise d'une partie en cours ;
@@ -834,7 +835,7 @@ Les étapes 4 à 8 peuvent se découper en plusieurs PR chacune (back, puis fron
 | Étape | Action | Durée indicative |
 |---|---|---|
 | 1 | Arrêt de l'API v1. Le front v1 affiche « Service indisponible » et se reconnectera seul. | immédiat |
-| 2 | Workflow d'import en prod : import depuis `public`, vérification, clé Data Protection neuve (`--rotate-data-protection-key`, S16). **Au moindre écart : arrêt et redémarrage de la v1, sans aucun impact.** | quelques minutes |
+| 2 | Workflow d'import en prod : import depuis `public`, vérification, clé Data Protection neuve (`--rotate-data-protection-key`, S16), statistiques figées de l'historique (`--freeze-day-stats`). **Au moindre écart : arrêt et redémarrage de la v1, sans aucun impact.** | quelques minutes |
 | 3 | Déploiement de la v2 (API et front), même base ; Caddy envoie les mêmes adresses vers les nouveaux conteneurs ; vérification de santé du script de déploiement. | quelques minutes |
 | 4 | Contrôles rapides : connexion avec un cookie existant, reprise d'une partie en cours, partie complète, admin, email de connexion. | 10 min |
 | 5 | Surveillance Grafana (erreurs, 4xx inhabituels, jobs de la nuit suivante). | la journée et la nuit |
@@ -942,7 +943,7 @@ Deuxième relecture, en comparant le plan au code v1 (`env/staging`). Les points
 | R1 | Tous les appareils d'un compte v1 partagent le même `AuthToken` : une seule `device_session` importée par joueur, effacée à la première conversion, aurait déconnecté les autres appareils. | haute | ✓ table `legacy_tokens`, une `device_session` par conversion, hash valable jusqu'à J+90, test « même cookie sur deux navigateurs » (§ 4.2, 5.5, 8.6). | 4 |
 | R2 | Série et gels mis à jour par l'outbox alors que le récap les relit tout de suite : toasts manquants ou faux, risque de double gel. | haute | ✓ mise à jour dans la transaction de la complétion ; gel offert dans celle de la conversion (§ 5.2, 5.4). | 4, 7 |
 | R3 | Stats de la veille figées à 0 h 05 alors qu'une partie de la veille peut encore se terminer. | haute | ✓ photo figée à J-2, veille en calcul direct (§ 5.4, 5.4 bis). | 7 |
-| R4 | Un défi créé à la main ne met pas à jour le cooldown en v1 : la vérification de l'import aurait bloqué. | haute | ✓ sans objet : la création à la main n'a jamais eu d'écran (confirmé par Clément le 30/09) ; route abandonnée en v2, vérification du cooldown gardée stricte (§ 5.6, 8.3). | 9 |
+| R4 | Un défi créé à la main ne met pas à jour le cooldown en v1 : la vérification de l'import aurait bloqué. | haute | ✓ sans objet : la création à la main n'a jamais eu d'écran (confirmé par Clément le 30/09) ; route abandonnée en v2 ; la vérification du cooldown, d'abord stricte, ne fait plus que lister les écarts depuis le 08/10 (revue de E4, § 8.3). | 9 |
 | R5 | Pseudos uniques en respectant la casse en v1, `citext UNIQUE` en v2 : « Bob » et « bob » feraient échouer l'import. | haute | ✓ aucun doublon en prod (vérifié à la main par Clément le 30/09) ; le contrôle reste dans `20-verify.sql` au cas où un doublon apparaîtrait d'ici la bascule. Ajouter aussi des contraintes CHECK sur les longueurs (pseudo 3 à 20). | 9 |
 | R6 | Retrait de `generate-today` et `refresh-previews` : l'admin perdait son compte rendu, les E2E cassaient ; `PoolInsufficient` vu comme un succès par Hangfire. | moyenne | ✓ boutons gardés, lancés par Hangfire avec suivi de l'exécution ; exception sur pool insuffisant, essais suffisants (§ 5.4 bis, 5.6). | 3, 7 |
 | R7 | `GET /players/me` ne crée plus d'invité : `BrowserIdComponent` et la spec `streak-freeze` en dépendent. | moyenne | ✓ `POST /players/guest` d'abord (§ 5.6) ; BrowserId et les chips « toi » ajoutés à `admin/` (§ 6.5). | 4, 8 |

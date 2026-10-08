@@ -11,7 +11,7 @@ namespace Internal.Generated.WolverineHandlers
 
         public override System.Type[] HandlerTypes()
         {
-            return new System.Type[] { typeof(InSeconds.Api.Modules.Catalogue.Application.RefreshPreviewsHandler), typeof(InSeconds.Api.Modules.Daily.Application.CloseChallengeDayHandler), typeof(InSeconds.Api.Modules.Daily.Application.GenerateDailyChallengeHandler), typeof(InSeconds.Api.Modules.Players.Application.PurgeExpiredAuthTokensHandler), typeof(InSeconds.Api.Modules.Players.Application.SendEmailChangeConfirmationHandler), typeof(InSeconds.Api.Modules.Players.Application.SendMagicLinkEmailHandler) };
+            return new System.Type[] { typeof(InSeconds.Api.Modules.Catalogue.Application.RefreshPreviewsHandler), typeof(InSeconds.Api.Modules.Daily.Application.CloseChallengeDayHandler), typeof(InSeconds.Api.Modules.Daily.Application.ExpireStaleSessionsHandler), typeof(InSeconds.Api.Modules.Daily.Application.GenerateDailyChallengeHandler), typeof(InSeconds.Api.Modules.Players.Application.PurgeExpiredAuthTokensHandler), typeof(InSeconds.Api.Modules.Players.Application.SendEmailChangeConfirmationHandler), typeof(InSeconds.Api.Modules.Players.Application.SendMagicLinkEmailHandler) };
         }
 
 
@@ -35,6 +35,7 @@ namespace Internal.Generated.WolverineHandlers
         [global::System.Runtime.CompilerServices.ModuleInitializer]
         [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::Internal.Generated.WolverineHandlers.GeneratedHandlerRegistry))]
         [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::Internal.Generated.WolverineHandlers.CloseChallengeDayHandler449103371))]
+        [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::Internal.Generated.WolverineHandlers.ExpireStaleSessionsHandler1191599091))]
         [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::Internal.Generated.WolverineHandlers.GenerateDailyChallengeHandler851644429))]
         [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::Internal.Generated.WolverineHandlers.PurgeExpiredAuthTokensHandler748445643))]
         [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::Internal.Generated.WolverineHandlers.RefreshPreviewsHandler1793660932))]
@@ -42,6 +43,7 @@ namespace Internal.Generated.WolverineHandlers
         [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::Internal.Generated.WolverineHandlers.SendMagicLinkEmailHandler21389592))]
         [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::InSeconds.Api.Modules.Catalogue.Application.RefreshPreviewsHandler))]
         [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::InSeconds.Api.Modules.Daily.Application.CloseChallengeDayHandler))]
+        [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::InSeconds.Api.Modules.Daily.Application.ExpireStaleSessionsHandler))]
         [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::InSeconds.Api.Modules.Daily.Application.GenerateDailyChallengeHandler))]
         [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::InSeconds.Api.Modules.Players.Application.PurgeExpiredAuthTokensHandler))]
         [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::InSeconds.Api.Modules.Players.Application.SendEmailChangeConfirmationHandler))]
@@ -52,6 +54,9 @@ namespace Internal.Generated.WolverineHandlers
         [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::InSeconds.Api.Modules.Daily.Application.CloseChallengeDay))]
         [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::Wolverine.Runtime.Routing.MessageRouter<InSeconds.Api.Modules.Daily.Application.CloseChallengeDay>))]
         [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::Wolverine.Runtime.Routing.EmptyMessageRouter<InSeconds.Api.Modules.Daily.Application.CloseChallengeDay>))]
+        [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::InSeconds.Api.Modules.Daily.Application.ExpireStaleSessions))]
+        [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::Wolverine.Runtime.Routing.MessageRouter<InSeconds.Api.Modules.Daily.Application.ExpireStaleSessions>))]
+        [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::Wolverine.Runtime.Routing.EmptyMessageRouter<InSeconds.Api.Modules.Daily.Application.ExpireStaleSessions>))]
         [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::InSeconds.Api.Modules.Daily.Application.GenerateDailyChallenge))]
         [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::Wolverine.Runtime.Routing.MessageRouter<InSeconds.Api.Modules.Daily.Application.GenerateDailyChallenge>))]
         [global::System.Diagnostics.CodeAnalysis.DynamicDependency(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All, typeof(global::Wolverine.Runtime.Routing.EmptyMessageRouter<InSeconds.Api.Modules.Daily.Application.GenerateDailyChallenge>))]
