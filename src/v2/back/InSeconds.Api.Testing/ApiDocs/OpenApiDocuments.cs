@@ -22,8 +22,9 @@ public static class OpenApiDocuments
         AddModuleDocument(services, Players, tag: "Players", "api/players");
         // Deux préfixes : la recherche publique, et les routes admin du pool.
         AddModuleDocument(services, Catalogue, tag: "Catalogue", "api/catalogue", "api/admin/catalogue");
-        // Le jeu du jour (E5) et ses routes admin (défi du jour, stats, récap hebdo : F1/F2).
-        AddModuleDocument(services, Daily, tag: "Daily", "api/daily", "api/admin/daily");
+        // Le jeu du jour (E5) et ses routes admin (défi du jour, stats, récap hebdo, tableau de bord, historique, cooldown : E3, F1). La liste
+        // des joueurs inscrits (`api/admin/players`) est servie par Daily : seul Daily lit à la fois les comptes (contrat de Players) et les séries.
+        AddModuleDocument(services, Daily, tag: "Daily", "api/daily", "api/admin/daily", "api/admin/players");
         return services;
     }
 
