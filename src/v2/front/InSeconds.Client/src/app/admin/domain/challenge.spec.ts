@@ -9,8 +9,9 @@ const player = (overrides: Partial<ChallengePlayer> = {}): ChallengePlayer =>
 describe('challenge (domaine)', () => {
   it('lit le mois d\'un jour et le met en forme', () => {
     expect(monthOf('2026-10-05')).toBe('2026-10');
-    expect(formatMonth('2026-10')).toBe('Octobre 2026');
-    expect(formatMonth('2026-01')).toBe('Janvier 2026');
+    expect(formatMonth('2026-10', 'fr')).toBe('Octobre 2026');
+    expect(formatMonth('2026-01', 'fr')).toBe('Janvier 2026');
+    expect(formatMonth('2026-10', 'en')).toBe('October 2026');
   });
 
   it('liste les mois des défis, du plus récent au plus ancien, sans doublon', () => {

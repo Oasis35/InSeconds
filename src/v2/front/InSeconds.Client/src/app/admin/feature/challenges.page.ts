@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { errorMessageKey } from '../../core/errors/error-messages';
+import { LanguageService } from '../../core/i18n/language.service';
 import { SessionStore } from '../../core/session/session.store';
 import { ErrorMessageComponent } from '../../ui/error-message/error-message.component';
 import { ModalService } from '../../ui/modal/modal.service';
@@ -100,8 +101,9 @@ export class ChallengesPage implements OnInit {
   protected readonly store = inject(ChallengesStore);
   private readonly session = inject(SessionStore);
   private readonly modal = inject(ModalService);
+  private readonly language = inject(LanguageService);
 
-  protected readonly monthLabel = computed(() => formatMonth(this.store.month()));
+  protected readonly monthLabel = computed(() => formatMonth(this.store.month(), this.language.current()));
   protected readonly youId = computed(() => this.session.player()?.id ?? null);
   protected readonly recomputeErrorKeys = computed(() =>
     Object.fromEntries(Object.entries(this.store.recomputeErrors()).map(([day, error]) => [day, recomputeErrorKey(error.code)])),

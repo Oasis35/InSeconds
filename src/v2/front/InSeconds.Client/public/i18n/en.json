@@ -319,7 +319,7 @@
       "addError": "Error",
       "addTrack": "Add"
     },
-    "deployedAt": "Deployed {{ date }}",
+    "deployedAt": "Deployed {{ date }} at {{ time }}",
     "dashboard": {
       "loading": "Loading stats...",
       "today": "Today",

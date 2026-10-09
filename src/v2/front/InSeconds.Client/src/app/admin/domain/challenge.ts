@@ -59,11 +59,6 @@ export interface ChallengeHistoryEntry {
   readonly tracks: readonly ChallengeHistoryTrack[];
 }
 
-const MONTH_NAMES = [
-  'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
-];
-
 const SHORT_ID_LENGTH = 8;
 const KNOWN_STATUSES: ReadonlySet<string> = new Set(['Completed', 'Pending', 'Abandoned', 'Expired']);
 
@@ -72,10 +67,11 @@ export function monthOf(day: string): string {
   return day.slice(0, 7);
 }
 
-/** `2026-10` → `Octobre 2026`. */
-export function formatMonth(month: string): string {
-  const [year, number] = month.split('-');
-  return `${MONTH_NAMES[Number(number) - 1] ?? number} ${year}`;
+/** `2026-10` → `Octobre 2026` (`fr`), `October 2026` (`en`) : dans la langue de l'admin, avec une majuscule. */
+export function formatMonth(month: string, locale: string): string {
+  const label = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' })
+    .format(new Date(`${month}-01T12:00:00Z`));
+  return label.charAt(0).toLocaleUpperCase(locale) + label.slice(1);
 }
 
 /** Les mois qui ont au moins un défi, du plus récent au plus ancien, sans doublon. */

@@ -36,7 +36,7 @@ import { DecorBackgroundComponent } from '../../ui/decor-background/decor-backgr
         <!-- Heure du déploiement (piège 25) : seulement pour un admin connecté, et quand le build la connaît. -->
         @if (deployedAt && session.isAdmin()) {
           <p class="text-xs" style="color:var(--text-muted)" data-testid="deployed-at">
-            {{ 'admin.deployedAt' | translate: { date: (deployedAt | date: 'dd/MM/yyyy à HH:mm') } }}
+            {{ 'admin.deployedAt' | translate: { date: (deployedAt | date: 'dd/MM/yyyy'), time: (deployedAt | date: 'HH:mm') } }}
           </p>
         }
         <app-browser-id />
