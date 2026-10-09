@@ -31,7 +31,7 @@ public static class ListRegisteredPlayersEndpoint
     {
         var accounts = await players.ListAccountsAsync(ct);
         var ids = accounts.Select(a => a.PlayerId).ToList();
-        var games = await stats.GetCompletedCountsByPlayerAsync(ct);
+        var games = await stats.GetCompletedCountsByPlayerAsync(ids, ct);
         var streaks = await stats.GetStreaksAsync(ids, ct);
         var today = calendar.Today;
 

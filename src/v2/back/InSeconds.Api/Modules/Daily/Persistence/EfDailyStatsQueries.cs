@@ -138,12 +138,19 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
                select new { Date = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.Date, x => x.Count, ct);
 
-    public async Task<IReadOnlyDictionary<Guid, int>> GetCompletedCountsByPlayerAsync(CancellationToken ct) =>
-        await db.Set<DailySession>().AsNoTracking()
-            .Where(s => s.Status == SessionStatus.Completed)
+    public async Task<IReadOnlyDictionary<Guid, int>> GetCompletedCountsByPlayerAsync(IReadOnlyCollection<Guid> playerIds, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(playerIds);
+        if (playerIds.Count == 0)
+            return new Dictionary<Guid, int>();
+
+        var ids = playerIds.Distinct().ToList();
+        return await db.Set<DailySession>().AsNoTracking()
+            .Where(s => s.Status == SessionStatus.Completed && ids.Contains(s.PlayerId))
             .GroupBy(s => s.PlayerId)
             .Select(g => new { PlayerId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.PlayerId, x => x.Count, ct);
+    }
 
     public async Task<IReadOnlyDictionary<Guid, StreakRow>> GetStreaksAsync(IReadOnlyCollection<Guid> playerIds, CancellationToken ct)
     {
