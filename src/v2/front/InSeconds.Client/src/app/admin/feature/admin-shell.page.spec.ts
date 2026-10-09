@@ -8,6 +8,7 @@ import {
   FakePlayersApi, fakePlayersApi, linkedPlayer, providePlayersApiFake,
 } from '../../account/data-access/testing/fake-players-api';
 import { SessionStore, SessionPlayer } from '../../core/session/session.store';
+import { AdminCounts } from '../data-access/admin-counts';
 import { AdminShellPage } from './admin-shell.page';
 import { ADMIN_ROUTES } from './admin.routes';
 
@@ -87,14 +88,32 @@ describe('AdminShellPage', () => {
     expect(child.compareDocumentPosition(logout) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('affiche un onglet à venir sous la barre des onglets, qui reste en place', async () => {
-    const { harness, element } = await open(admin, '/admin/joueurs', true);
-    await harness.fixture.whenStable();
+  it('montre le libellé nu de Pool, Défis et Joueurs avant leur première ouverture', async () => {
+    const { element } = await open(admin, '/admin/catalogue');
+
+    const labels = Array.from(element.querySelectorAll('nav a')).map(a => a.textContent?.trim());
+    expect(labels).toEqual([
+      'admin.tabs.dashboard', 'admin.tabs.challengesPlain', 'admin.tabs.poolPlain', 'admin.tabs.playersPlain', 'admin.tabs.actions',
+    ]);
+  });
+
+  it('montre l\'effectif d\'un onglet dès qu\'il a chargé ses données', async () => {
+    const { harness, element } = await open(admin, '/admin/catalogue');
+    const counts = TestBed.inject(AdminCounts);
+
+    counts.setPool(55);
+    counts.setChallenges(30);
+    counts.setPlayers(12);
     harness.detectChanges();
 
-    expect(element.querySelector('[data-testid="admin-tab-coming-soon"]')).not.toBeNull();
-    expect(element.querySelectorAll('nav a')).toHaveLength(5);
-    expect(element.querySelector('nav a[aria-current="page"]')?.getAttribute('href')).toBe('/admin/joueurs');
+    const labels = Array.from(element.querySelectorAll('nav a')).map(a => a.textContent?.trim());
+    expect(labels).toEqual(['admin.tabs.dashboard', 'admin.tabs.challenges', 'admin.tabs.pool', 'admin.tabs.players', 'admin.tabs.actions']);
+  });
+
+  it('ne montre pas l\'heure de déploiement quand le build ne la connaît pas', async () => {
+    const { element } = await open(admin, '/admin/catalogue');
+
+    expect(element.querySelector('[data-testid="deployed-at"]')).toBeNull();
   });
 
   it('ne montre rien d\'une décision tant que l\'identité n\'est pas lue', async () => {

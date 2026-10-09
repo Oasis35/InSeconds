@@ -168,23 +168,17 @@ export class AdminPage {
   }
 
   async apiDeleteTodayChallenge(): Promise<void> {
-    const res = await fetch(`${BASE}/api/e2e/reset?deleteChallenge=true`, {
-      method: 'DELETE',
-      headers: { Authorization: 'Bearer admin-token' },
-    });
+    const res = await fetch(`${BASE}/api/e2e/delete-challenge`, { method: 'POST' });
     if (!res.ok) throw new Error(`apiDeleteTodayChallenge failed: ${res.status}`);
   }
 
-  // GET /api/settings lit IOptions<AppSettings> figé au boot (pas de live-reload générique) —
-  // seuls DailyChallengeGenerator/GetTracksHandler relisent la table Settings à chaud.
-  // Pour vérifier la persistance, on repasse par le pool (dont les dates de déblocage sont
-  // calculées avec la valeur fraîche de TrackCooldownDays).
+  // Les réglages sont relus à chaud (R13) : pour vérifier que le nouveau cooldown s'applique, on repasse par le pool, dont
+  // les dates de déblocage sont calculées avec la valeur courante. La route exige le cookie admin : on passe par la requête
+  // de la page, qui partage le cookie du navigateur (login() l'a posé).
   async apiGetPoolUnlockDate(deezerTrackId: number): Promise<string | null | undefined> {
-    const res = await fetch(`${BASE}/api/admin/tracks`, {
-      headers: { Authorization: 'Bearer admin-token' },
-    });
-    if (!res.ok) throw new Error(`get tracks failed: ${res.status}`);
-    const body = await res.json() as { available: { deezerTrackId: number; unlockDate: string | null }[] };
-    return body.available.find(t => t.deezerTrackId === deezerTrackId)?.unlockDate;
+    const res = await this.page.request.get(`${BASE}/api/admin/catalogue/tracks`);
+    if (!res.ok()) throw new Error(`get tracks failed: ${res.status()}`);
+    const tracks = await res.json() as { deezerTrackId: number; unlockDate: string | null }[];
+    return tracks.find(t => t.deezerTrackId === deezerTrackId)?.unlockDate;
   }
 }

@@ -2,6 +2,7 @@ using System.Text.Json;
 using Hangfire;
 using Hangfire.States;
 using InSeconds.Api.Infrastructure.Errors;
+using Microsoft.AspNetCore.Mvc;
 using Wolverine.Http;
 
 namespace InSeconds.Api.Infrastructure.Jobs;
@@ -17,7 +18,10 @@ public sealed record JobStatusResponse(string Id, string State, JsonElement? Res
 
 public static class GetJobStatusEndpoint
 {
-    [WolverineGet("/api/admin/jobs/{id}")]
+    /// <summary><c>GET /api/admin/jobs/{id}</c> : l'état d'une exécution, 404 <c>common.not_found</c> si l'identifiant est inconnu.</summary>
+    [WolverineGet("/api/admin/jobs/{id}", OperationId = "getJobStatus")]
+    [ProducesResponseType<JobStatusResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public static IResult Get(string id, JobStorage storage)
     {
         // Les identifiants de Hangfire.PostgreSql sont des entiers : tout le reste est inconnu.

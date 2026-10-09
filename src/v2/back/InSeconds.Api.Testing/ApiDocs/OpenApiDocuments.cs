@@ -8,7 +8,7 @@ namespace InSeconds.Api.Testing.ApiDocs;
 /// Documents OpenAPI de l'hôte de test (§ 6.1 du plan v2 : un client NSwag par module, généré depuis ces
 /// documents). Servis seulement ici, jamais par l'API de prod (S9). Un document par module, filtré sur
 /// le préfixe de ses routes ; <c>/openapi/players.json</c> pour le module Players, <c>/openapi/catalogue.json</c> pour
-/// Catalogue, <c>/openapi/daily.json</c> pour Daily. Les documents sauvegardés pour le front sont <c>openapi/players.json</c>, <c>openapi/catalogue.json</c> et <c>openapi/daily.json</c>
+/// Catalogue, <c>/openapi/daily.json</c> pour Daily, <c>/openapi/admin.json</c> pour le suivi des tâches. Les documents sauvegardés pour le front sont <c>openapi/players.json</c>, <c>openapi/catalogue.json</c>, <c>openapi/daily.json</c> et <c>openapi/admin.json</c>
 /// (cf. CLAUDE.md du back).
 /// </summary>
 public static class OpenApiDocuments
@@ -16,6 +16,7 @@ public static class OpenApiDocuments
     public const string Players = "players";
     public const string Catalogue = "catalogue";
     public const string Daily = "daily";
+    public const string Admin = "admin";
 
     public static IServiceCollection AddOpenApiDocuments(this IServiceCollection services)
     {
@@ -25,6 +26,8 @@ public static class OpenApiDocuments
         // Le jeu du jour (E5) et ses routes admin (défi du jour, stats, récap hebdo, tableau de bord, historique, cooldown : E3, F1). La liste
         // des joueurs inscrits (`api/admin/players`) est servie par Daily : seul Daily lit à la fois les comptes (contrat de Players) et les séries.
         AddModuleDocument(services, Daily, tag: "Daily", "api/daily", "api/admin/daily", "api/admin/players");
+        // Le suivi d'une tâche lancée par un bouton de l'admin (F2) : l'infrastructure, pas un module.
+        AddModuleDocument(services, Admin, tag: "Admin", "api/admin/jobs");
         return services;
     }
 

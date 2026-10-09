@@ -7,6 +7,7 @@ import {
   StatusFilter, clampPage, filterTracks, nextSort, pageOf, poolDaysRemaining, runwayTone, sortTracks, totalPages,
 } from '../domain/pool-filters';
 import { PoolTrack, isUsed } from '../domain/pool-track';
+import { AdminCounts } from './admin-counts';
 import { CatalogueApi } from './catalogue.api';
 
 /** Ce qu'une désactivation refusée a dit : le morceau est dans le défi du jour, ou autre chose a échoué. */
@@ -71,7 +72,7 @@ export const PoolStore = signalStore(
     runwayTone: computed(() => runwayTone(runwayDays())),
     hasMultiplePages: computed(() => pages() > 1),
   })),
-  withMethods((store, api = inject(CatalogueApi)) => {
+  withMethods((store, api = inject(CatalogueApi), counts = inject(AdminCounts)) => {
     const resetPage = () => patchState(store, { requestedPage: 0 });
     const setFilter = (change: Partial<PoolFilters>) => {
       patchState(store, { filters: { ...store.filters(), ...change }, requestedPage: 0 });
@@ -87,6 +88,7 @@ export const PoolStore = signalStore(
         const tracks = await api.listTracks();
         if (mine !== latestLoad) return;
         const known = new Set(tracks.map(t => t.id));
+        counts.setPool(tracks.length);
         patchState(
           store,
           { tracks, selectedIds: store.selectedIds().filter(id => known.has(id)) },

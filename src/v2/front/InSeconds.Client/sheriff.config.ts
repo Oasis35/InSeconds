@@ -31,7 +31,8 @@ const DOMAIN_DEPENDENCIES: Record<(typeof DOMAINS)[number], string[]> = {
   daily: ['domain:gameplay', 'domain:account'],
   runs: ['domain:gameplay'],
   account: [],
-  admin: ['domain:account'],
+  // L'admin réutilise l'histogramme « en combien de temps les autres ont trouvé » de la manche (avec les chiffres au-dessus des barres).
+  admin: ['domain:account', 'domain:gameplay'],
   home: [],
 };
 

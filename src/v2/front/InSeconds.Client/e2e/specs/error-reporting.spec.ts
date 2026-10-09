@@ -12,7 +12,7 @@ test.describe("Remontée d'erreurs", () => {
   });
 
   test("affiche le code d'erreur et remonte l'échec à l'API", async ({ page }) => {
-    await page.route('**/api/sessions/today', (route) =>
+    await page.route('**/api/daily/today', (route) =>
       route.fulfill({
         status: 500,
         contentType: 'application/problem+json',

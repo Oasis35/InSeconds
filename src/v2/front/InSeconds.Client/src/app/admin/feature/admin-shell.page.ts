@@ -1,10 +1,13 @@
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { BrowserIdComponent } from '../../account/feature/browser-id.component';
 import { ProfileStore } from '../../account/data-access/profile.store';
 import { SessionStore } from '../../core/session/session.store';
-import { ADMIN_TABS } from './admin-tabs';
+import { AdminCounts } from '../data-access/admin-counts';
+import { DEPLOYED_AT } from '../../core/shell/deployed-at';
+import { ADMIN_TABS, AdminTab } from './admin-tabs';
 import { DecorBackgroundComponent } from '../../ui/decor-background/decor-background.component';
 
 /**
@@ -18,7 +21,7 @@ import { DecorBackgroundComponent } from '../../ui/decor-background/decor-backgr
  */
 @Component({
   selector: 'app-admin-shell-page',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, TranslatePipe, BrowserIdComponent, DecorBackgroundComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, TranslatePipe, DatePipe, BrowserIdComponent, DecorBackgroundComponent],
   providers: [ProfileStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -30,6 +33,12 @@ import { DecorBackgroundComponent } from '../../ui/decor-background/decor-backgr
       <div class="relative w-full flex flex-col items-center gap-6">
       <div class="flex flex-col items-center gap-1">
         <h1 class="text-2xl font-bold tracking-tight" style="color:var(--text-hi)">{{ 'admin.title' | translate }}</h1>
+        <!-- Heure du déploiement (piège 25) : seulement pour un admin connecté, et quand le build la connaît. -->
+        @if (deployedAt && session.isAdmin()) {
+          <p class="text-xs" style="color:var(--text-muted)" data-testid="deployed-at">
+            {{ 'admin.deployedAt' | translate: { date: (deployedAt | date: 'dd/MM/yyyy à HH:mm') } }}
+          </p>
+        }
         <app-browser-id />
       </div>
 
@@ -48,18 +57,19 @@ import { DecorBackgroundComponent } from '../../ui/decor-background/decor-backgr
           </section>
         } @else {
           <!-- Onglets = routes enfants ; replaceUrl : pas une entrée d'historique par clic d'onglet.
-               Ceux qui n'ont pas encore leur module (F2) mènent à une page d'attente. -->
+               Pool, Défis et Joueurs montrent leur effectif une fois chargés (pas avant la première ouverture). -->
           <nav class="flex gap-1 p-1 rounded-lg w-full max-w-2xl" style="background:var(--bg-surface)"
             [attr.aria-label]="'admin.title' | translate">
             @for (tab of tabs; track tab.path) {
               <a [routerLink]="['/admin', tab.path]" routerLinkActive="is-active" ariaCurrentWhenActive="page" [replaceUrl]="true"
                 class="admin-tab flex-1 min-w-0 truncate text-center py-2 px-1 rounded-md text-xs sm:text-sm font-medium transition-colors">
-                {{ tab.label | translate }}
+                {{ labelOf(tab).key | translate: labelOf(tab).params }}
               </a>
             }
           </nav>
-          <!-- Le contenu de l'onglet dans un bloc : sinon <router-outlet> compte comme un élément du flex et double l'écart. -->
-          <div class="w-full min-w-0"><router-outlet /></div>
+          <!-- Le contenu de l'onglet dans un bloc : sinon <router-outlet> compte comme un élément du flex et double l'écart.
+               Le tableau des joueurs (7 colonnes) a besoin de plus de largeur que les autres onglets. -->
+          <div class="w-full min-w-0 flex justify-center"><router-outlet /></div>
           <div class="pt-2">
             <button type="button" (click)="profile.logout()" [disabled]="profile.logoutStatus() === 'pending'"
               class="text-xs transition-colors" style="color:var(--text-faint)">
@@ -81,4 +91,13 @@ export class AdminShellPage {
   protected readonly tabs = ADMIN_TABS;
   protected readonly session = inject(SessionStore);
   protected readonly profile = inject(ProfileStore);
+  private readonly counts = inject(AdminCounts);
+  /** Heure du déploiement (piège 25), vide quand le build ne la connaît pas. */
+  protected readonly deployedAt = DEPLOYED_AT;
+
+  /** Le libellé d'un onglet : avec son effectif une fois chargé (Pool, Défis, Joueurs), nu avant. */
+  protected labelOf(tab: AdminTab): { key: string; params: { count: number } | undefined } {
+    const count = tab.counted ? this.counts[tab.counted.source]() : null;
+    return tab.counted && count !== null ? { key: tab.counted.label, params: { count } } : { key: tab.label, params: undefined };
+  }
 }

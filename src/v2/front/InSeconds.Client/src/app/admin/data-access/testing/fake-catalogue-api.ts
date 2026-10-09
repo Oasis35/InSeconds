@@ -25,6 +25,7 @@ function defaults() {
     renameTrack: vi.fn<(id: number, artist: string, title: string) => Promise<void>>(() => Promise.resolve()),
     setTrackDisabled: vi.fn<(id: number, isDisabled: boolean) => Promise<void>>(() => Promise.resolve()),
     deleteTrack: vi.fn<(id: number) => Promise<void>>(() => Promise.resolve()),
+    refreshPreviews: vi.fn<() => Promise<string>>(() => Promise.resolve('1')),
     searchDeezer: vi.fn<(query: string) => Promise<DeezerResult[]>>(() => Promise.resolve([])),
     findPreviewUrl: vi.fn<(track: Pick<PoolTrack, 'artist' | 'title' | 'deezerTrackId'>) => Promise<string | null>>(
       () => Promise.resolve(null),

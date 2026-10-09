@@ -33,6 +33,11 @@ export class CatalogueApi {
     await firstValueFrom(this.client.deleteTrack(id));
   }
 
+  /** Lance le contrôle des extraits (tâche Hangfire `catalogue-refresh`) ; rend l'identifiant de l'exécution à suivre. */
+  async refreshPreviews(): Promise<string> {
+    return (await firstValueFrom(this.client.refreshPreviews())).id;
+  }
+
   /** Recherche chez Deezer, titres bruts (ce qui deviendra le titre du morceau). */
   async searchDeezer(query: string): Promise<DeezerResult[]> {
     return (await firstValueFrom(this.client.searchDeezer(query))).map(toDeezerResult);
