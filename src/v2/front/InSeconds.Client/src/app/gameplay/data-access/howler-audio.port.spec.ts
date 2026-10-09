@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { Howler } from 'howler';
+import { Howl, Howler } from 'howler';
 import { AudioStatus } from '../domain/track-round';
 import { HowlerAudioPort } from './howler-audio.port';
 import { makeToneUrl } from './testing/wav';
@@ -89,7 +89,25 @@ describe('HowlerAudioPort', () => {
     expect(port.position()).toBe(0.9);
   });
 
-  it('prolonger après un palier joué reprend là où il s\'était arrêté (« écouter plus »)', async () => {
+  it('prolonger pendant la lecture ne relance pas le son : le même son continue jusqu\'au nouveau palier', async () => {
+    await loaded();
+    const play = vi.spyOn(Howl.prototype, 'play');
+    const stop = vi.spyOn(Howl.prototype, 'stop');
+    port.playUntil(0.4);
+    await sleep(150);
+    port.playUntil(0.9);
+    port.playUntil(1.2);
+    await sleep(100);
+
+    // un seul son lancé, jamais arrêté avant la fin : pas d'à-coup à chaque palier
+    expect(play).toHaveBeenCalledTimes(1);
+    expect(stop).not.toHaveBeenCalled();
+    expect(port.state()).toBe('playing');
+    await until('finished');
+    expect(port.position()).toBe(1.2);
+  });
+
+  it('prolonger après un palier joué relit depuis le début jusqu\'au nouveau palier (« écouter plus », comme en v1)', async () => {
     await loaded();
     port.playUntil(0.4);
     await until('finished');
@@ -98,11 +116,12 @@ describe('HowlerAudioPort', () => {
     const start = performance.now();
     port.playUntil(0.9);
     expect(port.state()).toBe('playing');
+    expect(port.position()).toBe(0);
     const elapsed = await until('finished', start);
 
-    // 0,5 s de plus, pas 0,9 s depuis le début
-    expect(elapsed).toBeGreaterThanOrEqual(470);
-    expect(elapsed).toBeLessThan(1500);
+    // 0,9 s depuis le début, pas seulement les 0,5 s ajoutées
+    expect(elapsed).toBeGreaterThanOrEqual(860);
+    expect(elapsed).toBeLessThan(2000);
     expect(port.position()).toBe(0.9);
   });
 
