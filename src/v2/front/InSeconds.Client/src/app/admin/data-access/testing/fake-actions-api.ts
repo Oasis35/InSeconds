@@ -3,7 +3,6 @@ import { ActionsApi } from '../actions.api';
 
 function defaults() {
   return {
-    generateToday: vi.fn<() => Promise<string>>(() => Promise.resolve('job-1')),
     getCooldownDays: vi.fn<() => Promise<number>>(() => Promise.resolve(30)),
     updateCooldownDays: vi.fn<(days: number) => Promise<number>>(days => Promise.resolve(days)),
   } satisfies Record<keyof ActionsApi, unknown>;

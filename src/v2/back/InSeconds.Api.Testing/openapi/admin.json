@@ -5,39 +5,22 @@
     "version": "v2"
   },
   "paths": {
-    "/api/admin/jobs/{id}": {
+    "/api/admin/jobs/last-runs": {
       "get": {
         "tags": [
           "Admin"
         ],
-        "operationId": "getJobStatus",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "operationId": "getJobLastRuns",
         "responses": {
           "200": {
             "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/JobStatusResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JobLastRun"
+                  }
                 }
               }
             }
@@ -48,12 +31,15 @@
   },
   "components": {
     "schemas": {
-      "JobStatusResponse": {
+      "JobLastRun": {
         "required": [
           "id",
           "state",
+          "at",
           "result",
-          "errorCode"
+          "errorCode",
+          "retryAt",
+          "nextRunAt"
         ],
         "type": "object",
         "properties": {
@@ -61,7 +47,17 @@
             "type": "string"
           },
           "state": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "at": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           },
           "result": {
             "oneOf": [
@@ -78,48 +74,29 @@
               "null",
               "string"
             ]
+          },
+          "retryAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "nextRunAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
-      "JsonElement": {},
-      "ProblemDetails": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "title": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "status": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "detail": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "instance": {
-            "type": [
-              "null",
-              "string"
-            ]
-          }
-        }
-      }
+      "JsonElement": {}
     }
   },
   "tags": [
     {
-      "name": "InSeconds.Api.Infrastructure.Jobs.GetJobStatusEndpoint"
+      "name": "InSeconds.Api.Infrastructure.Jobs.GetJobLastRunsEndpoint"
     }
   ]
 }

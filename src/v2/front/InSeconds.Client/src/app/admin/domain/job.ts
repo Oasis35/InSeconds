@@ -1,32 +1,32 @@
-/** État d'une exécution de tâche, tel que `GET /api/admin/jobs/{id}` le rend (§ 5.4 bis du plan v2). */
+/** État du dernier passage d'une tâche, tel que `GET /api/admin/jobs/last-runs` le rend (§ 5.4 bis du plan v2). */
 export type JobState = 'queued' | 'processing' | 'succeeded' | 'failed' | 'retry_scheduled' | 'deleted';
 
+/** La tâche de minuit qui génère le défi du jour. */
+export const GENERATE_CHALLENGE_JOB = 'daily-generate-challenge';
+
+/** La tâche de 23 h qui recontrôle les extraits Deezer. */
+export const REFRESH_PREVIEWS_JOB = 'catalogue-refresh';
+
 /**
- * Où en est une exécution lancée par un bouton de l'admin.
- * `result` : le compte rendu de la tâche si elle a réussi (`{ checked, updated, failed }`, `{ created, … }`) ;
+ * Le dernier passage d'une tâche planifiée, affiché en témoin dans l'onglet Actions. Les instants sont des textes ISO.
+ * `state` vide : jamais lancée, ou dernier passage de plus de 7 jours (Hangfire n'en garde pas plus).
+ * `result` : le compte rendu si elle a réussi (`{ created, … }`, `{ checked, updated, failed }`) ;
  * `errorCode` : le code d'erreur si elle a échoué (`admin.pool_insufficient`), jamais un message.
  */
-export interface JobStatus {
+export interface JobLastRun {
   readonly id: string;
-  readonly state: JobState;
+  readonly state: JobState | null;
+  readonly at: string | null;
   readonly result: Readonly<Record<string, unknown>> | null;
   readonly errorCode: string | null;
-}
-
-/** Délai entre deux lectures de l'état d'une exécution (§ 5.4 bis : toutes les 2 secondes). */
-export const JOB_POLL_INTERVAL_MS = 2000;
-
-/**
- * L'écran n'a plus rien à attendre : réussie, échouée, supprimée, ou en attente d'un nouvel essai
- * (un réessai peut venir bien plus tard, l'écran le dit au lieu d'attendre).
- */
-export function isSettled(state: JobState): boolean {
-  return state !== 'queued' && state !== 'processing';
+  readonly retryAt: string | null;
+  readonly nextRunAt: string | null;
 }
 
 const STATES: readonly JobState[] = ['queued', 'processing', 'succeeded', 'failed', 'retry_scheduled', 'deleted'];
 
-/** Un état inconnu de l'API (une version plus récente) est traité comme « en cours » : on relit. */
-export function toJobState(value: string): JobState {
+/** Pas d'état : rien à montrer. Un état inconnu de l'API (une version plus récente) est traité comme « en cours ». */
+export function toJobState(value: string | null | undefined): JobState | null {
+  if (value === undefined || value === null) return null;
   return STATES.find(state => state === value) ?? 'processing';
 }

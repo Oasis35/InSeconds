@@ -4,8 +4,8 @@ using System.Text.Json.Nodes;
 namespace InSeconds.IntegrationTests.Testing;
 
 /// <summary>
-/// Document OpenAPI des routes admin transverses (F2, § 6.1 du plan v2) : le suivi d'une tâche lancée par un bouton de l'admin
-/// (<c>GET /api/admin/jobs/{id}</c>). Servi par l'hôte de test seulement, pour générer le client NSwag du front de l'admin.
+/// Document OpenAPI des routes admin transverses (F2, § 6.1 du plan v2) : le dernier passage des tâches planifiées, témoins de
+/// l'onglet Actions (<c>GET /api/admin/jobs/last-runs</c>). Servi par l'hôte de test seulement, pour générer le client NSwag du front de l'admin.
 /// </summary>
 public class AdminOpenApiTests(PostgresFixture postgres) : IAsyncLifetime
 {
@@ -23,21 +23,21 @@ public class AdminOpenApiTests(PostgresFixture postgres) : IAsyncLifetime
         var document = await ReadDocumentAsync();
 
         var operation = Assert.Single(document["paths"]!.AsObject().SelectMany(path => path.Value!.AsObject().Select(op => (Path: path.Key, Method: op.Key, Id: op.Value!["operationId"]!.GetValue<string>()))));
-        Assert.Equal(("/api/admin/jobs/{id}", "get", "getJobStatus"), operation);
+        Assert.Equal(("/api/admin/jobs/last-runs", "get", "getJobLastRuns"), operation);
     }
 
     [Fact]
-    public async Task La_reponse_et_les_erreurs_sont_typees()
+    public async Task La_reponse_est_typee()
     {
         var document = await ReadDocumentAsync();
-        var schemas = document["components"]!["schemas"]!.AsObject().Select(s => s.Key).ToHashSet();
-        var responses = document["paths"]!["/api/admin/jobs/{id}"]!["get"]!["responses"]!.AsObject();
+        var schemas = document["components"]!["schemas"]!.AsObject();
+        var responses = document["paths"]!["/api/admin/jobs/last-runs"]!["get"]!["responses"]!.AsObject();
 
-        Assert.Contains("JobStatusResponse", schemas);
-        Assert.Contains("ProblemDetails", schemas);
-        Assert.Equal(["200", "404"], responses.Select(r => r.Key).Order(StringComparer.Ordinal));
-        Assert.Equal("#/components/schemas/JobStatusResponse", responses["200"]!["content"]!.AsObject().Single().Value!["schema"]!["$ref"]!.GetValue<string>());
-        Assert.Equal("#/components/schemas/ProblemDetails", responses["404"]!["content"]!.AsObject().Single().Value!["schema"]!["$ref"]!.GetValue<string>());
+        Assert.Equal(["200"], responses.Select(r => r.Key));
+        var schema = responses["200"]!["content"]!.AsObject().Single().Value!["schema"]!;
+        Assert.Equal("array", schema["type"]!.GetValue<string>());
+        Assert.Equal("#/components/schemas/JobLastRun", schema["items"]!["$ref"]!.GetValue<string>());
+        Assert.True(schemas.ContainsKey("JobLastRun"));
     }
 
     [Fact]

@@ -32,7 +32,7 @@ public static class DailyErrorCodes
 /// </summary>
 public static class DailyAdminErrorCodes
 {
-    /// <summary>Pas assez de morceaux jouables hors cooldown : renvoyé par la tâche, lu par <c>GET /api/admin/jobs/{id}</c>.</summary>
+    /// <summary>Pas assez de morceaux jouables hors cooldown : renvoyé par la tâche, lu par <c>GET /api/admin/jobs/last-runs</c>.</summary>
     public const string PoolInsufficient = "admin.pool_insufficient";
 
     /// <summary>Une date qui n'est pas au format aaaa-mm-jj.</summary>

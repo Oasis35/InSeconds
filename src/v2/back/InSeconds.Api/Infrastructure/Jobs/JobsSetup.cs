@@ -13,6 +13,13 @@ public static class JobsSetup
 {
     public const string DashboardPath = "/jobs";
 
+    /// <summary>
+    /// Durée pendant laquelle Hangfire garde le détail d'une exécution terminée (état, compte rendu, erreur), lu par
+    /// <c>GET /api/admin/jobs/last-runs</c> et par <c>/jobs</c>. Le défaut de Hangfire est de 24 h : un week-end sans
+    /// regarder l'admin effacerait le témoin.
+    /// </summary>
+    public static readonly TimeSpan ExecutionRetention = TimeSpan.FromDays(7);
+
     private static readonly Lock FilterLock = new();
 
     public static IServiceCollection AddInSecondsJobs(
@@ -37,12 +44,12 @@ public static class JobsSetup
                 {
                     SchemaName = DbSchemas.Jobs,
                     PrepareSchemaIfNecessary = true,
-                    // LISTEN/NOTIFY : une tâche lancée depuis l'admin démarre tout de suite, sans attendre la scrutation.
+                    // LISTEN/NOTIFY : une tâche lancée depuis /jobs démarre tout de suite, sans attendre la scrutation.
                     EnableLongPolling = true,
-                }));
+                })
+            .WithJobExpirationTimeout(ExecutionRetention));
 
         services.AddHostedService<RecurringJobsRegistrar>();
-        services.AddSingleton<IJobTrigger, HangfireJobTrigger>();
 
         // Le serveur (qui exécute les tâches) ne tourne pas dans les tests d'intégration : ils appellent
         // les tâches directement (Jobs:Server:Enabled=false).

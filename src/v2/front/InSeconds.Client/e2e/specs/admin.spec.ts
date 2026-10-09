@@ -304,26 +304,18 @@ test.describe('Admin — actions', () => {
     await api.reseed();
   });
 
-  test('génère le défi du jour', async ({ page, api }) => {
-    const admin = new AdminPage(page);
-    // Supprime le défi du jour pour pouvoir le régénérer
-    await admin.apiDeleteTodayChallenge();
-    await admin.goto();
-    await admin.login();
-    await admin.clickTab('Actions');
-
-    await admin.generateButton().click();
-    await expect(page.getByText('Défi généré avec succès')).toBeVisible({ timeout: 10000 });
-  });
-
-  test('affiche "déjà généré" si le défi existe', async ({ page }) => {
+  test('affiche le dernier passage des tâches planifiées, sans bouton pour les lancer', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
     await admin.clickTab('Actions');
 
-    await admin.generateButton().click();
-    await expect(page.getByText('déjà généré')).toBeVisible({ timeout: 5000 });
+    // Les tâches sont en pause dans l'hôte de test : aucune n'a tourné.
+    await expect(admin.challengeWitness()).toContainText('Défi du jour');
+    await expect(admin.challengeWitness()).toContainText('Aucun passage ces 7 derniers jours.');
+    await expect(admin.previewsWitness()).toContainText('Aucun passage ces 7 derniers jours.');
+    await expect(page.getByRole('button', { name: /Générer le défi du jour|Re-vérifier les previews/ })).toHaveCount(0);
+    await expect(page.getByTestId('jobs-dashboard-link')).toBeVisible();
   });
 
   test('édite le cooldown de réutilisation et persiste en base', async ({ page }) => {

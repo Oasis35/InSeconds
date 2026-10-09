@@ -1,17 +1,16 @@
-import { isSettled, toJobState } from './job';
+import { toJobState } from './job';
 
-describe('état d\'une exécution', () => {
-  it('attend tant que la tâche est en file ou en cours', () => {
-    expect(isSettled('queued')).toBe(false);
-    expect(isSettled('processing')).toBe(false);
+describe('état du dernier passage', () => {
+  it('lit les états connus', () => {
+    for (const state of ['queued', 'processing', 'succeeded', 'failed', 'retry_scheduled', 'deleted'] as const) expect(toJobState(state)).toBe(state);
   });
 
-  it('arrête d\'attendre une tâche réussie, échouée, supprimée ou en attente d\'un réessai', () => {
-    for (const state of ['succeeded', 'failed', 'deleted', 'retry_scheduled'] as const) expect(isSettled(state)).toBe(true);
+  it('pas d\'état : aucun passage à montrer', () => {
+    expect(toJobState(undefined)).toBeNull();
+    expect(toJobState(null)).toBeNull();
   });
 
   it('un état inconnu est traité comme « en cours »', () => {
-    expect(toJobState('succeeded')).toBe('succeeded');
     expect(toJobState('nouvel_etat')).toBe('processing');
   });
 });

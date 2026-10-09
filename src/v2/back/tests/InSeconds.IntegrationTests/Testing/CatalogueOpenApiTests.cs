@@ -24,7 +24,7 @@ public class CatalogueOpenApiTests(PostgresFixture postgres) : IAsyncLifetime
 
         Assert.Equal(
             [
-                "addTrack", "deleteTrack", "listTracks", "refreshPreviews", "renameTrack", "searchDeezer", "searchTracks",
+                "addTrack", "deleteTrack", "listTracks", "renameTrack", "searchDeezer", "searchTracks",
                 "setTrackDisabled", "updateTrack",
             ],
             OperationIds(document).Order(StringComparer.Ordinal));
@@ -47,7 +47,6 @@ public class CatalogueOpenApiTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal("/api/admin/catalogue/tracks/{id}/disabled", PathOf(document, "setTrackDisabled"));
         Assert.Equal("delete", MethodOf(document, "deleteTrack"));
         Assert.Equal("/api/admin/catalogue/deezer-search", PathOf(document, "searchDeezer"));
-        Assert.Equal("/api/admin/catalogue/refresh-previews", PathOf(document, "refreshPreviews"));
     }
 
     [Fact]
@@ -59,16 +58,14 @@ public class CatalogueOpenApiTests(PostgresFixture postgres) : IAsyncLifetime
         foreach (var name in new[]
                  {
                      "AddTrack", "RenameTrack", "UpdateTrack", "SetTrackDisabled", "TrackSummary", "TrackListItem", "TrackDisabledResponse",
-                     "TrackSuggestion", "DeezerTrackResult", "JobExecutionResponse", "ProblemDetails",
+                     "TrackSuggestion", "DeezerTrackResult", "ProblemDetails",
                  })
             Assert.Contains(name, schemas);
 
         Assert.Equal("#/components/schemas/TrackSummary", ResponseSchemaRef(document, "addTrack", "200"));
-        Assert.Equal("#/components/schemas/JobExecutionResponse", ResponseSchemaRef(document, "refreshPreviews", "202"));
         Assert.Equal("array", Operation(document, "listTracks")["responses"]!["200"]!["content"]!["application/json"]!["schema"]!["type"]!.GetValue<string>());
-        // Une 204 n'a pas de corps ; le bouton répond 202 seulement (pas de 200 fantôme).
+        // Une 204 n'a pas de corps.
         Assert.Null(Operation(document, "deleteTrack")["responses"]!["204"]!["content"]);
-        Assert.Equal(["202"], Codes(document, "refreshPreviews"));
     }
 
     [Fact]

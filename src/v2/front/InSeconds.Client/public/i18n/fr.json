@@ -363,17 +363,7 @@
     },
     "actions": {
       "challengeOfDay": "Défi du jour",
-      "generating": "Génération...",
-      "generate": "Générer le défi du jour",
-      "generated": "Défi généré avec succès.",
-      "alreadyGenerated": "Le défi du jour est déjà généré.",
-      "poolInsufficient": "Pool insuffisant : ajoutez des morceaux avec preview.",
-      "generateError": "Erreur lors de la génération.",
       "previews": "Previews Deezer",
-      "refreshPreviews": "Re-vérifier les previews",
-      "refreshingPreviews": "Vérification en cours (peut prendre ~1 min)...",
-      "refreshPreviewsSuccess": "{{ checked }} vérifié(s), {{ updated }} corrigé(s), {{ failed }} échec(s) Deezer.",
-      "refreshPreviewsError": "Erreur lors de la vérification des previews.",
       "trackCooldown": "Cooldown de réutilisation des morceaux",
       "saveCooldown": "Enregistrer",
       "cooldownSaved": "Cooldown mis à jour.",
@@ -403,14 +393,24 @@
         "download": "Télécharger",
         "downloadAll": "Tout télécharger"
       },
-      "generateQueued": "En attente de lancement...",
-      "generateRetry": "La génération a échoué : un nouvel essai est prévu automatiquement.",
-      "refreshQueued": "En attente de lancement...",
       "cooldownInvalid": "Entre un nombre entier de jours, de {{ min }} à {{ max }}.",
       "jobs": {
         "title": "Tâches planifiées",
-        "hint": "Génération du défi, contrôle des extraits, sauvegardes : le tableau de bord montre ce qui tourne, ce qui a échoué et permet de relancer une tâche.",
+        "hint": "Pour lancer une tâche à la main (générer le défi du jour, re-vérifier les previews…) : « Déclencher maintenant » dans le tableau de bord. Il montre aussi ce qui tourne et ce qui a échoué, et garde le détail des exécutions 7 jours.",
         "link": "Ouvrir le tableau de bord des tâches"
+      },
+      "witness": {
+        "never": "Aucun passage ces 7 derniers jours.",
+        "running": "En cours depuis le {{ date }} à {{ time }}.",
+        "failed": "Échec le {{ date }} à {{ time }}.",
+        "challengeCreated": "Généré le {{ date }} à {{ time }}.",
+        "challengeAlready": "Déjà en place, vérifié le {{ date }} à {{ time }}.",
+        "poolInsufficient": "Pool insuffisant : dernier essai le {{ date }} à {{ time }}. Ajoutez des morceaux avec preview.",
+        "previewsReport": "Contrôlé le {{ date }} à {{ time }} : {{ checked }} vérifié(s), {{ updated }} corrigé(s), {{ failed }} échec(s) Deezer.",
+        "previewsChecked": "Contrôlé le {{ date }} à {{ time }}.",
+        "retry": "Nouvel essai le {{ date }} à {{ time }}.",
+        "next": "Prochain passage le {{ date }} à {{ time }}.",
+        "loadError": "Impossible de lire le dernier passage des tâches."
       }
     },
     "challenges": {

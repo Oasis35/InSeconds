@@ -293,7 +293,6 @@ Chaque module expose un seul point d'entrée : `AddDaily(services)` et `MapDaily
 | `IDailyStatsQueries`, `IAdminPlayersQueries`… | chaque module | EF, projections directes | requêtes dans `Endpoint.cs` |
 | `IPreviewProvider` → `PreviewLookup` (`Found` / `Missing` / `Unavailable`) | Catalogue | Deezer + décorateur de cache | `CachedDeezerClient` concret, `null` ambigu |
 | `ITrackUsage` (usage des morceaux : dernier jour, nombre, fin du cooldown, présence dans le défi du jour), `ITrackDirectory` (lecture des morceaux : noms, titre affiché, pochette, année) | Catalogue/Contracts | `ITrackUsage` : Daily (E), « aucun usage » d'ici là ; `ITrackDirectory` : EF | lecture directe du cooldown et des morceaux par les autres modules |
-| `IJobTrigger` | `InSeconds.Api/Infrastructure/Jobs` | Hangfire (`TriggerJob`) | lancement d'une tâche par un bouton de l'admin (C1) |
 | `ITrackSearch` | Catalogue | Deezer (+ cache pour la recherche publique) | idem |
 | `ITrackMetadataSource` | Catalogue | Deezer | `GetTrackInfoAsync` |
 | `IAnswerMatcher` | Gameplay | `FuzzyAnswerMatcher` (Levenshtein, accents, parenthèses) | `TextNormalizer` |
@@ -368,7 +367,7 @@ Clément veut des tâches de type cron, qu'il pilote lui-même, **avec des solut
 - `[DisableConcurrentExecution]` sur chaque tâche : une tâche ne tourne jamais deux fois en même temps.
 - Nombre d'essais et délai réglés par tâche (`[AutomaticRetry]`), par exemple la génération du défi réessaie toutes les 10 min, avec assez d'essais pour couvrir la journée (le défaut de Hangfire s'arrête à 10). Un pool insuffisant **lève une exception**, sinon Hangfire le compterait comme un succès et ne réessaierait pas. Pas de réessai Wolverine en plus, pour ne pas multiplier les tentatives.
 - Traces OpenTelemetry autour de chaque exécution, comme pour le reste de l'API.
-- **Fait en A2 :** chaque tâche implémente `IScheduledJob` et se déclare par `AddScheduledJob<T>(id, cron)` ; au démarrage, les tâches qui ne sont plus déclarées sont retirées. Un échec métier lève `JobFailedException(code)`, dont le code est rendu par `GET /api/admin/jobs/{id}` (toute autre exception devient `common.unexpected`, sans message). Deux workers seulement (`Jobs:Server:WorkerCount`) : peu de tâches, et chaque worker garde une connexion ouverte. Le tableau de bord exige aussi le jeton antiforgery sur ses actions.
+- **Fait en A2 :** chaque tâche implémente `IScheduledJob` et se déclare par `AddScheduledJob<T>(id, cron)` ; au démarrage, les tâches qui ne sont plus déclarées sont retirées. Un échec métier lève `JobFailedException(code)`, dont le code est rendu par le suivi des tâches (`GET /api/admin/jobs/last-runs` depuis F2) (toute autre exception devient `common.unexpected`, sans message). Deux workers seulement (`Jobs:Server:WorkerCount`) : peu de tâches, et chaque worker garde une connexion ouverte. Le tableau de bord exige aussi le jeton antiforgery sur ses actions.
 
 **Ce que Clément peut faire dans le tableau de bord :** voir toutes les tâches, leur cron, leur prochaine et leur dernière exécution ; **lancer maintenant** ; consulter l'historique (réussites, échecs avec la pile d'erreur) ; relancer une exécution échouée. **Changer un horaire ou mettre en pause** se fait par la configuration, le temps d'un déploiement, car le tableau de bord de base ne le propose pas (la pause depuis le tableau de bord est une [demande ouverte](https://github.com/HangfireIO/Hangfire/issues/2289)). C'est un choix assumé : ces changements sont rares, et ils restent tracés dans Git.
 
@@ -378,7 +377,6 @@ Clément veut des tâches de type cron, qu'il pilote lui-même, **avec des solut
 |---|---|---|
 | `catalogue-refresh` | `0 23 * * *` | previews et rang Deezer des morceaux éligibles au défi du lendemain |
 | `daily-generate-challenge` | `0 0 * * *` | génère le défi du jour (retry toutes les 10 min, 144 essais : la journée) |
-| `daily-generate-challenge-admin` | jamais (en pause) | ce que lance le bouton « Générer le défi du jour » : sans réessai, défi marqué « admin » (ajoutée en E1) |
 | `daily-close-day` | `5 0 * * *` | expire les parties restées en cours sur un défi plus vieux que la veille (E4), puis fige les stats de J-2 (la veille reste en calcul direct) |
 | `players-purge-expired-tokens` | `30 3 * * *` | supprime les jetons expirés (connexion et changement d'email) |
 
@@ -388,17 +386,17 @@ Sur le staging, `catalogue-refresh` est en `Cron.Never()` (même IP que la prod,
 
 **Ce que ça remplace :**
 - `GenerateDailyChallengeService`, `RefreshPreviewStatusService` et `DailySchedule`. Le piège 19 disparaît : Hangfire compare à l'horloge murale.
-- Les boutons « Re-vérifier les previews » et « Générer le défi du jour » **restent** dans l'admin et **passent par Hangfire** (choix de Clément le 30/09), pour que chaque lancement apparaisse dans l'historique de `/jobs` :
-  - le bouton appelle `POST …/generate-today` ou `…/refresh-previews`, qui déclenche la tâche récurrente correspondante (`RecurringJob.TriggerJob`) et renvoie `202` avec l'identifiant de l'exécution ;
-  - l'écran interroge `GET /api/admin/jobs/{id}` (toutes les 2 s) jusqu'à la fin : état (en file, en cours, réussi, en échec, réessai prévu) et **compte rendu**, c'est-à-dire la valeur renvoyée par la tâche (`{checked, updated, failed}`, défi créé ou déjà présent) que Hangfire conserve ; en échec, le code d'erreur (`pool_insufficient`) ;
-  - un second clic pendant une exécution ne relance rien (`[DisableConcurrentExecution]`) : l'écran suit l'exécution en cours ;
+- Les boutons « Re-vérifier les previews » et « Générer le défi du jour » de la v1. D'abord gardés et lancés par Hangfire (30/09), ils sont **retirés en F2** (décision de Clément le 09/10) : le tableau de bord `/jobs` permet déjà de lancer une tâche (« Déclencher maintenant »), et des boutons maison obligeaient à suivre une exécution depuis l'écran (suivi qui survivait à la sortie de l'onglet, bouton réactivé alors que la tâche tournait encore). L'onglet Actions montre à la place un **témoin** par tâche, en lecture seule :
+  - `GET /api/admin/jobs/last-runs` rend, pour chaque tâche récurrente, son dernier passage : état (en file, en cours, réussi, en échec, réessai prévu), date et heure, **compte rendu** (la valeur renvoyée par la tâche : `{checked, updated, failed}`, défi créé ou déjà présent), code d'erreur en échec (`pool_insufficient`), heure du prochain essai et du prochain passage prévu ;
+  - témoin « Défi du jour » : « Défi généré le JJ/MM/AA à HH:MM », « déjà présent », ou avertissement « pool insuffisant » ; témoin « Previews » : « N vérifiés, N corrigés » (avertissement si des vérifications ont échoué) ;
+  - Hangfire garde le détail d'une exécution **7 jours** (`JobsSetup.ExecutionRetention`, `WithJobExpirationTimeout`) : au-delà, le témoin dit « Aucun passage ces 7 derniers jours » (durée à allonger si besoin) ;
   - le code reste écrit une seule fois, dans la commande Wolverine appelée par la tâche.
-- **E2E :** le serveur Hangfire tourne aussi en Testing pour ces deux boutons, avec toutes les tâches récurrentes en `Cron.Never()` et un intervalle de scrutation court ; les fixtures qui ont juste besoin d'un défi appellent `/api/e2e/generate-today`, synchrone.
+- **E2E :** les tâches récurrentes sont en `Cron.Never()` ; les fixtures qui ont besoin d'un défi appellent `/api/e2e/generate-today`, synchrone (défi marqué « admin »).
 - Tout le code maison envisagé plus tôt (tables `scheduled_jobs`/`job_runs`, planificateur, onglet admin) : **abandonné**.
 
 **Alternative écartée pour l'instant, TickerQ :** bibliothèque récente, avec un tableau de bord qui permet aussi de modifier le cron et de mettre en pause, et un stockage EF Core. Plus complète sur le papier, mais beaucoup plus jeune que Hangfire, donc plus risquée à maintenir. À reconsidérer si changer les horaires par la configuration devient gênant.
 
-**Environnements de test :** en intégration, le serveur Hangfire ne tourne pas : les tests appellent les tâches directement (plus un test du suivi d'exécution par `GET /api/admin/jobs/{id}`). En E2E, il tourne avec les tâches récurrentes en pause, uniquement pour les deux boutons admin ; les autres besoins passent par `/api/e2e/*`. En développement local, il tourne normalement.
+**Environnements de test :** en intégration, le serveur Hangfire ne tourne pas : les tests appellent les tâches directement (plus un test de `GET /api/admin/jobs/last-runs` avec le serveur actif). En E2E, les tâches récurrentes sont en pause ; les besoins des tests passent par `/api/e2e/*`. En développement local, il tourne normalement.
 
 **Tests :**
 - chaque tâche appelée directement en intégration ;
@@ -453,14 +451,14 @@ Le préfixe change, pas l'adresse. Toutes les erreurs sont en `ProblemDetails` a
 | (nouveau) | `POST /api/admin/daily/challenges/{date}/stats/recompute` |
 | `GET /api/admin/challenges` | `GET /api/admin/daily/challenges` |
 | `POST /api/admin/challenges` (création à la main) | **abandonnée** : aucun écran ne l'appelle (seulement le client généré et des tests d'intégration), confirmé par Clément le 30/09 |
-| `POST /api/admin/generate-today` | `POST /api/admin/daily/challenges/generate-today` : déclenche la tâche Hangfire, `202` + identifiant d'exécution |
+| `POST /api/admin/generate-today` | **retirée en F2** : la tâche se lance depuis `/jobs`, l'onglet Actions montre son dernier passage |
 | `GET /api/admin/weekly-recap` | `GET /api/admin/daily/weekly-recap` |
 | `PUT /api/admin/settings/track-cooldown-days` | `PUT /api/admin/daily/settings/track-cooldown-days` (de 1 à 3650 jours, pris en compte tout de suite, F1) |
 | (nouveau) | `GET /api/admin/daily/settings` : le cooldown en vigueur (F1 ; la v1 le lisait dans les réglages publics) |
 | `/api/admin/tracks` (liste, ajout, renommage, actualisation, désactivation, suppression) | `/api/admin/catalogue/tracks…` (mêmes opérations) |
 | recherche Deezer admin | `GET /api/admin/catalogue/deezer-search` |
-| `POST /api/admin/refresh-previews` | `POST /api/admin/catalogue/refresh-previews` : déclenche la tâche Hangfire, `202` + identifiant d'exécution |
-| (nouveau) | `GET /api/admin/jobs/{id}` : état et compte rendu d'une exécution |
+| `POST /api/admin/refresh-previews` | **retirée en F2** : même chose |
+| (nouveau) | `GET /api/admin/jobs/last-runs` : dernier passage de chaque tâche (état, date, compte rendu, prochain passage), F2 |
 | (nouveau) | `/jobs` : tableau de bord Hangfire (HTML), réservé aux admins |
 | `GET /api/admin/players` | `GET /api/admin/players` (servie par Daily, qui lit les comptes par le contrat de Players : série effective et parties jouées, F1) |
 | `GET /api/admin/players/{id}/history` | `GET /api/admin/daily/players/{id}/history` |
@@ -945,7 +943,7 @@ Deuxième relecture, en comparant le plan au code v1 (`env/staging`). Les points
 | R3 | Stats de la veille figées à 0 h 05 alors qu'une partie de la veille peut encore se terminer. | haute | ✓ photo figée à J-2, veille en calcul direct (§ 5.4, 5.4 bis). | 7 |
 | R4 | Un défi créé à la main ne met pas à jour le cooldown en v1 : la vérification de l'import aurait bloqué. | haute | ✓ sans objet : la création à la main n'a jamais eu d'écran (confirmé par Clément le 30/09) ; route abandonnée en v2 ; la vérification du cooldown, d'abord stricte, ne fait plus que lister les écarts depuis le 08/10 (revue de E4, § 8.3). | 9 |
 | R5 | Pseudos uniques en respectant la casse en v1, `citext UNIQUE` en v2 : « Bob » et « bob » feraient échouer l'import. | haute | ✓ aucun doublon en prod (vérifié à la main par Clément le 30/09) ; le contrôle reste dans `20-verify.sql` au cas où un doublon apparaîtrait d'ici la bascule. Ajouter aussi des contraintes CHECK sur les longueurs (pseudo 3 à 20). | 9 |
-| R6 | Retrait de `generate-today` et `refresh-previews` : l'admin perdait son compte rendu, les E2E cassaient ; `PoolInsufficient` vu comme un succès par Hangfire. | moyenne | ✓ boutons gardés, lancés par Hangfire avec suivi de l'exécution ; exception sur pool insuffisant, essais suffisants (§ 5.4 bis, 5.6). | 3, 7 |
+| R6 | Retrait de `generate-today` et `refresh-previews` : l'admin perdait son compte rendu, les E2E cassaient ; `PoolInsufficient` vu comme un succès par Hangfire. | moyenne | ✓ compte rendu gardé : témoin du dernier passage dans l'onglet Actions (boutons retirés en F2, lancement depuis `/jobs`) ; exception sur pool insuffisant, essais suffisants (§ 5.4 bis, 5.6). | 3, 7 |
 | R7 | `GET /players/me` ne crée plus d'invité : `BrowserIdComponent` et la spec `streak-freeze` en dépendent. | moyenne | ✓ `POST /players/guest` d'abord (§ 5.6) ; BrowserId et les chips « toi » ajoutés à `admin/` (§ 6.5). | 4, 8 |
 | R8 | Joueurs supprimés : en v1, un filtre EF les exclut partout ; en v2, Daily ne peut pas naviguer vers Players. | moyenne | les requêtes de stats de Daily joignent `players.players` (lecture seule, dans `Persistence`) sur `deleted_at IS NULL` ; test « un joueur supprimé disparaît des stats et de la répartition ». | 7 |
 | R9 | Contenu de la photo figée incomplet, pseudo et titre figés = valeurs périmées après renommage. | moyenne | ✓ contenu v1 complet, paliers du jour stockés, pseudo et titre joints à la lecture (§ 5.4). | 7 |

@@ -363,17 +363,7 @@
     },
     "actions": {
       "challengeOfDay": "Today's challenge",
-      "generating": "Generating...",
-      "generate": "Generate today's challenge",
-      "generated": "Challenge generated successfully.",
-      "alreadyGenerated": "Today's challenge is already generated.",
-      "poolInsufficient": "Pool insufficient: add tracks with a preview.",
-      "generateError": "Error during generation.",
       "previews": "Deezer previews",
-      "refreshPreviews": "Re-check previews",
-      "refreshingPreviews": "Checking (may take ~1 min)...",
-      "refreshPreviewsSuccess": "{{ checked }} checked, {{ updated }} fixed, {{ failed }} Deezer failure(s).",
-      "refreshPreviewsError": "Error while checking previews.",
       "trackCooldown": "Track reuse cooldown",
       "saveCooldown": "Save",
       "cooldownSaved": "Cooldown updated.",
@@ -403,14 +393,24 @@
         "download": "Download",
         "downloadAll": "Download all"
       },
-      "generateQueued": "Waiting to start...",
-      "generateRetry": "Generation failed: a new attempt is scheduled automatically.",
-      "refreshQueued": "Waiting to start...",
       "cooldownInvalid": "Enter a whole number of days, from {{ min }} to {{ max }}.",
       "jobs": {
         "title": "Scheduled tasks",
-        "hint": "Challenge generation, preview checks, backups: the dashboard shows what is running, what failed, and lets you rerun a task.",
+        "hint": "To run a task by hand (generate today's challenge, recheck the previews…): \"Trigger now\" in the dashboard. It also shows what is running and what failed, and keeps run details for 7 days.",
         "link": "Open the tasks dashboard"
+      },
+      "witness": {
+        "never": "No run in the last 7 days.",
+        "running": "Running since {{ date }} at {{ time }}.",
+        "failed": "Failed on {{ date }} at {{ time }}.",
+        "challengeCreated": "Generated on {{ date }} at {{ time }}.",
+        "challengeAlready": "Already there, checked on {{ date }} at {{ time }}.",
+        "poolInsufficient": "Pool too small: last attempt on {{ date }} at {{ time }}. Add tracks with a preview.",
+        "previewsReport": "Checked on {{ date }} at {{ time }}: {{ checked }} checked, {{ updated }} fixed, {{ failed }} Deezer failure(s).",
+        "previewsChecked": "Checked on {{ date }} at {{ time }}.",
+        "retry": "Next attempt on {{ date }} at {{ time }}.",
+        "next": "Next run on {{ date }} at {{ time }}.",
+        "loadError": "Could not read the tasks' last runs."
       }
     },
     "challenges": {

@@ -127,9 +127,13 @@ export class AdminPage {
     return this.page.getByRole('button', { name: 'Enregistrer' });
   }
 
-  // Actions
-  generateButton(): Locator {
-    return this.page.getByRole('button', { name: /Générer le défi du jour/ });
+  // Actions : témoins du dernier passage des tâches planifiées
+  challengeWitness(): Locator {
+    return this.page.getByTestId('challenge-witness');
+  }
+
+  previewsWitness(): Locator {
+    return this.page.getByTestId('previews-witness');
   }
 
   // Défis — bouton créer
@@ -165,11 +169,6 @@ export class AdminPage {
       headers: { Authorization: 'Bearer admin-token', 'Content-Type': 'application/json' },
     });
     if (!res.ok) throw new Error(`reseed failed: ${res.status}`);
-  }
-
-  async apiDeleteTodayChallenge(): Promise<void> {
-    const res = await fetch(`${BASE}/api/e2e/delete-challenge`, { method: 'POST' });
-    if (!res.ok) throw new Error(`apiDeleteTodayChallenge failed: ${res.status}`);
   }
 
   // Les réglages sont relus à chaud (R13) : pour vérifier que le nouveau cooldown s'applique, on repasse par le pool, dont

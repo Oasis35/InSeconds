@@ -1,4 +1,3 @@
-using Hangfire;
 using InSeconds.Api.Infrastructure.Jobs;
 using InSeconds.Api.Modules.Catalogue.Contracts;
 using InSeconds.Api.Modules.Daily.Application;
@@ -31,8 +30,6 @@ public static class DailyModule
         // AddCatalogue, appelé avant). ITrackUsage est résolu par le conteneur dans le code généré (service location).
         services.Replace(ServiceDescriptor.Scoped<ITrackUsage, EfTrackUsage>());
         services.AddScheduledJob<GenerateDailyChallengeJob>(GenerateDailyChallengeJob.Id, GenerateDailyChallengeJob.DefaultCron);
-        // Le bouton de l'admin : une tâche en pause, sans réessai (cf. GenerateDailyChallengeAdminJob).
-        services.AddScheduledJob<GenerateDailyChallengeAdminJob>(GenerateDailyChallengeAdminJob.Id, Cron.Never());
         // Fige les statistiques de l'avant-veille (§ 5.4 bis). Tourne aussi en staging : elle n'appelle pas Deezer.
         services.AddScheduledJob<DailyCloseDayJob>(DailyCloseDayJob.Id, DailyCloseDayJob.DefaultCron);
         services.AddScoped<IStreakGrants, DailyStreakGrants>();

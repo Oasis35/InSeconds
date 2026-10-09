@@ -5,7 +5,6 @@ import { ActionsApi } from './actions.api';
 
 describe('ActionsApi', () => {
   const client = {
-    generateToday: vi.fn(() => of({ id: '42' })),
     getAdminDailySettings: vi.fn(() => of({ trackCooldownDays: 30 })),
     updateTrackCooldown: vi.fn((body: { trackCooldownDays: number }) => of({ trackCooldownDays: body.trackCooldownDays })),
   };
@@ -14,10 +13,6 @@ describe('ActionsApi', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({ providers: [{ provide: DailyClient, useValue: client }] });
     api = TestBed.inject(ActionsApi);
-  });
-
-  it('rend l\'identifiant de l\'exécution de la génération', async () => {
-    expect(await api.generateToday()).toBe('42');
   });
 
   it('lit et enregistre le délai', async () => {

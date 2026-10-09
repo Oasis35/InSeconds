@@ -1,40 +1,31 @@
 import { TestBed } from '@angular/core/testing';
-import { JobState, JobStatus } from '../domain/job';
+import { JobLastRun } from '../domain/job';
 import { ActionsStore, RESULT_VISIBLE_MS } from './actions.store';
 import { JOBS_DASHBOARD_URL } from './admin-api.providers';
-import { JobRunner } from './job-runner';
 import { fakeActionsApi, FakeActionsApi, provideActionsApiFake } from './testing/fake-actions-api';
-import { fakeCatalogueApi, problem, provideCatalogueApiFake } from './testing/fake-catalogue-api';
+import { problem } from './testing/fake-catalogue-api';
+import { fakeJobsApi, FakeJobsApi, provideJobsApiFake } from './testing/fake-jobs-api';
 
-function job(state: JobState, result: Record<string, unknown> | null = null, errorCode: string | null = null): JobStatus {
-  return { id: 'job-1', state, result, errorCode };
-}
+const GENERATED: JobLastRun = {
+  id: 'daily-generate-challenge', state: 'succeeded', at: '2026-10-09T00:00:03Z', result: { created: true },
+  errorCode: null, retryAt: null, nextRunAt: '2026-10-10T00:00:00Z',
+};
 
 describe('ActionsStore', () => {
   let api: FakeActionsApi;
-  let runner: { follow: ReturnType<typeof vi.fn> };
-  let catalogue: ReturnType<typeof fakeCatalogueApi>;
+  let jobs: FakeJobsApi;
 
-  function create(overrides: Partial<FakeActionsApi> = {}) {
+  function create(overrides: Partial<FakeActionsApi> = {}, jobOverrides: Partial<FakeJobsApi> = {}) {
     api = fakeActionsApi(overrides);
-    catalogue = fakeCatalogueApi();
+    jobs = fakeJobsApi(jobOverrides);
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [
-        ActionsStore,
-        provideActionsApiFake(api),
-        provideCatalogueApiFake(catalogue),
-        { provide: JobRunner, useValue: runner },
-        { provide: JOBS_DASHBOARD_URL, useValue: '/jobs' },
-      ],
+      providers: [ActionsStore, provideActionsApiFake(api), provideJobsApiFake(jobs), { provide: JOBS_DASHBOARD_URL, useValue: '/jobs' }],
     });
     return TestBed.inject(ActionsStore);
   }
 
-  beforeEach(() => {
-    vi.useFakeTimers();
-    runner = { follow: vi.fn(async () => job('succeeded', { created: true })) };
-  });
+  beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
   it('expose l\'adresse du tableau de bord des tâches', () => {
@@ -52,101 +43,23 @@ describe('ActionsStore', () => {
     expect(failing.error()?.code).toBe('common.unexpected');
   });
 
-  describe('génération', () => {
-    it('suit l\'exécution (en file, en cours) puis rend l\'issue, effacée au bout de 3 s', async () => {
-      const phases: string[] = [];
-      let store!: InstanceType<typeof ActionsStore>;
-      runner.follow.mockImplementation(async (_id: string, onUpdate: (s: JobStatus) => void) => {
-        onUpdate(job('queued'));
-        phases.push(store.generatePhase());
-        onUpdate(job('processing'));
-        phases.push(store.generatePhase());
-        return job('succeeded', { created: true });
-      });
-      store = create();
-      await store.generateToday();
-      expect(phases).toEqual(['queued', 'running']);
-      expect(store.generatePhase()).toBe('idle');
-      expect(store.generateOutcome()).toBe('created');
-      vi.advanceTimersByTime(RESULT_VISIBLE_MS);
-      expect(store.generateOutcome()).toBeNull();
+  describe('derniers passages des tâches', () => {
+    it('lus à l\'ouverture, avec le délai', async () => {
+      const store = create({}, { getLastRuns: vi.fn(() => Promise.resolve([GENERATED])) });
+      expect(store.lastRuns()).toBeNull();
+      await store.load();
+      expect(store.lastRuns()).toEqual([GENERATED]);
+      expect(store.lastRunsFailed()).toBe(false);
+      expect(store.cooldownDays()).toBe(30);
     });
 
-    it('« déjà généré », pool insuffisant, erreur générique, réessai prévu', async () => {
-      const store = create();
-      runner.follow.mockResolvedValueOnce(job('succeeded', { created: false }));
-      await store.generateToday();
-      expect(store.generateOutcome()).toBe('already');
-
-      runner.follow.mockResolvedValueOnce(job('failed', null, 'admin.pool_insufficient'));
-      await store.generateToday();
-      expect(store.generateOutcome()).toBe('pool_insufficient');
-
-      runner.follow.mockResolvedValueOnce(job('failed', null, 'common.unexpected'));
-      await store.generateToday();
-      expect(store.generateOutcome()).toBe('error');
-
-      runner.follow.mockResolvedValueOnce(job('retry_scheduled'));
-      await store.generateToday();
-      expect(store.generateOutcome()).toBe('retry');
-      vi.advanceTimersByTime(RESULT_VISIBLE_MS);
-      expect(store.generateOutcome()).toBe('retry');
-    });
-
-    it('une erreur de lancement donne l\'erreur générique', async () => {
-      const store = create({ generateToday: vi.fn(() => Promise.reject(problem(500, 'common.unexpected'))) });
-      await store.generateToday();
-      expect(store.generateOutcome()).toBe('error');
-      expect(store.generatePhase()).toBe('idle');
-    });
-
-    it('un second clic pendant l\'exécution ne relance rien', async () => {
-      let finish!: (status: JobStatus) => void;
-      runner.follow.mockImplementation(() => new Promise<JobStatus>(resolve => { finish = resolve; }));
-      const store = create();
-      const first = store.generateToday();
-      await vi.advanceTimersByTimeAsync(0);
-      await store.generateToday();
-      expect(api.generateToday).toHaveBeenCalledTimes(1);
-      finish(job('succeeded', { created: true }));
-      await first;
-    });
-  });
-
-  describe('contrôle des extraits', () => {
-    it('rend le compte rendu, effacé au bout de 3 s', async () => {
-      runner.follow.mockResolvedValue(job('succeeded', { checked: 200, updated: 3, failed: 1 }));
-      const store = create();
-      await store.refreshPreviews();
-      expect(catalogue.refreshPreviews).toHaveBeenCalledTimes(1);
-      expect(store.refreshResult()).toEqual({ kind: 'report', report: { checked: 200, updated: 3, failed: 1 } });
-      vi.advanceTimersByTime(RESULT_VISIBLE_MS);
-      expect(store.refreshResult()).toBeNull();
-    });
-
-    it('échec de la tâche ou de la lecture : erreur', async () => {
-      runner.follow.mockResolvedValue(job('failed', null, 'common.unexpected'));
-      const store = create();
-      await store.refreshPreviews();
-      expect(store.refreshResult()).toEqual({ kind: 'error' });
-
-      runner.follow.mockRejectedValue(problem(500, 'common.unexpected'));
-      await store.refreshPreviews();
-      expect(store.refreshResult()).toEqual({ kind: 'error' });
-      expect(store.refreshPhase()).toBe('idle');
-    });
-
-    it('reste « en cours » tant que la tâche n\'est pas terminée, sans relancer', async () => {
-      let finish!: (status: JobStatus) => void;
-      runner.follow.mockImplementation(() => new Promise<JobStatus>(resolve => { finish = resolve; }));
-      const store = create();
-      const run = store.refreshPreviews();
-      await vi.advanceTimersByTimeAsync(0);
-      expect(store.refreshPhase()).toBe('queued');
-      await store.refreshPreviews();
-      expect(catalogue.refreshPreviews).toHaveBeenCalledTimes(1);
-      finish(job('succeeded', { checked: 1, updated: 0, failed: 0 }));
-      await run;
+    it('lecture en échec : signalée, sans toucher au délai', async () => {
+      const store = create({}, { getLastRuns: vi.fn(() => Promise.reject(problem(500, 'common.unexpected'))) });
+      await store.load();
+      expect(store.lastRunsFailed()).toBe(true);
+      expect(store.lastRuns()).toBeNull();
+      expect(store.cooldownDays()).toBe(30);
+      expect(store.error()).toBeNull();
     });
   });
 

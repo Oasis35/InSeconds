@@ -10,11 +10,6 @@ import { DailyClient } from '../../api/daily/api.generated';
 export class ActionsApi {
   private readonly client = inject(DailyClient);
 
-  /** Lance la génération du défi du jour (tâche Hangfire) ; rend l'identifiant de l'exécution à suivre. */
-  async generateToday(): Promise<string> {
-    return (await firstValueFrom(this.client.generateToday())).id;
-  }
-
   /** Délai de réutilisation des morceaux, en jours. */
   async getCooldownDays(): Promise<number> {
     return (await firstValueFrom(this.client.getAdminDailySettings())).trackCooldownDays;
