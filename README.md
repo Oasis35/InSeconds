@@ -117,6 +117,8 @@ GitHub Actions workflow on every push and every PR to `main`:
 
 Stale runs are cancelled automatically.
 
+A second workflow, **Backup prod DB** (`db-backup.yml`), backs up the production database every night at 3am UTC or on demand: it runs `deploy/infra/backup.sh` on the VPS, which sends the encrypted dump to Cloudflare R2 (how-to in `deploy/infra/README.md`).
+
 ## Testing
 
 ### Unit tests (backend)
