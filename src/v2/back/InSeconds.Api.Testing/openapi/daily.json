@@ -5,6 +5,219 @@
     "version": "v2"
   },
   "paths": {
+    "/api/admin/daily/challenges/stats": {
+      "get": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "getChallengeStats",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminChallengeStatsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/daily/challenges": {
+      "get": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "listChallenges",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AdminChallenge"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/daily/dashboard": {
+      "get": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "getDashboard",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/players": {
+      "get": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "listRegisteredPlayers",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminPlayersResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/daily/players/{playerId}/history": {
+      "get": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "getPlayerHistory",
+        "parameters": [
+          {
+            "name": "playerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminPlayerHistoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/daily/settings": {
+      "get": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "getAdminDailySettings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDailySettingsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/daily/settings/track-cooldown-days": {
+      "put": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "updateTrackCooldown",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTrackCooldown"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDailySettingsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/daily/challenges/{date}/stats/recompute": {
       "post": {
         "tags": [
@@ -22,6 +235,16 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecomputeDayStatsResponse"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -48,16 +271,6 @@
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RecomputeDayStatsResponse"
                 }
               }
             }
@@ -153,6 +366,19 @@
           "required": true
         },
         "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -179,19 +405,6 @@
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "204": {
-            "description": "No Content"
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
                 }
               }
             }
@@ -227,6 +440,26 @@
           "required": true
         },
         "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HintResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -253,26 +486,6 @@
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HintResponse"
                 }
               }
             }
@@ -298,6 +511,19 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -327,19 +553,6 @@
                 }
               }
             }
-          },
-          "204": {
-            "description": "No Content"
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           }
         }
       }
@@ -351,6 +564,26 @@
         ],
         "operationId": "startSession",
         "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartSessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -373,26 +606,6 @@
           },
           "503": {
             "description": "Service Unavailable",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StartSessionResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -432,6 +645,16 @@
           "required": true
         },
         "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmitAnswerResponse"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -468,16 +691,6 @@
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SubmitAnswerResponse"
                 }
               }
             }
@@ -528,22 +741,22 @@
           }
         ],
         "responses": {
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/WeeklyRecapResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -554,6 +767,381 @@
   },
   "components": {
     "schemas": {
+      "AdminChallenge": {
+        "required": [
+          "id",
+          "date",
+          "tracks"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "tracks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminChallengeTrack"
+            }
+          }
+        }
+      },
+      "AdminChallengePlayer": {
+        "required": [
+          "playerId",
+          "status",
+          "score",
+          "pseudo"
+        ],
+        "type": "object",
+        "properties": {
+          "playerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string"
+          },
+          "score": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pseudo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "AdminChallengeStats": {
+        "required": [
+          "id",
+          "date",
+          "playerCount",
+          "pendingCount",
+          "abandonedCount",
+          "expiredCount",
+          "scoreMin",
+          "scoreMax",
+          "scoreAvg",
+          "scoreMedian",
+          "tracks",
+          "players",
+          "computedAt",
+          "canRecompute"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "playerCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pendingCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "abandonedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expiredCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "scoreMin": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "scoreMax": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "scoreAvg": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "scoreMedian": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "tracks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminChallengeTrackStats"
+            }
+          },
+          "players": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminChallengePlayer"
+            }
+          },
+          "computedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "canRecompute": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AdminChallengeStatsResponse": {
+        "required": [
+          "challenges"
+        ],
+        "type": "object",
+        "properties": {
+          "challenges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminChallengeStats"
+            }
+          }
+        }
+      },
+      "AdminChallengeTrack": {
+        "required": [
+          "position",
+          "artist",
+          "title",
+          "deezerTrackId"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "artist": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "deezerTrackId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "AdminChallengeTrackStats": {
+        "required": [
+          "position",
+          "artist",
+          "title",
+          "totalAnswers",
+          "artistCorrectRate",
+          "titleCorrectRate",
+          "extendedRate",
+          "avgListenedSeconds",
+          "guessTimeDistribution",
+          "notFoundCount"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "artist": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "totalAnswers": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "artistCorrectRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "titleCorrectRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "extendedRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "avgListenedSeconds": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "guessTimeDistribution": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DurationBucket"
+            }
+          },
+          "notFoundCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AdminDailySettingsResponse": {
+        "required": [
+          "trackCooldownDays"
+        ],
+        "type": "object",
+        "properties": {
+          "trackCooldownDays": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AdminPlayer": {
+        "required": [
+          "id",
+          "pseudo",
+          "email",
+          "createdAt",
+          "lastSeenAt",
+          "gamesPlayed",
+          "isAdmin",
+          "currentStreak",
+          "streakFreezes",
+          "streakProtected"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "pseudo": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastSeenAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "gamesPlayed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isAdmin": {
+            "type": "boolean"
+          },
+          "currentStreak": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "streakFreezes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "streakProtected": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AdminPlayerGame": {
+        "required": [
+          "date",
+          "status",
+          "score",
+          "freezesUsed",
+          "freezeEarned"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "type": "string"
+          },
+          "score": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "freezesUsed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "freezeEarned": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AdminPlayerHistoryResponse": {
+        "required": [
+          "games"
+        ],
+        "type": "object",
+        "properties": {
+          "games": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminPlayerGame"
+            }
+          }
+        }
+      },
+      "AdminPlayersResponse": {
+        "required": [
+          "players"
+        ],
+        "type": "object",
+        "properties": {
+          "players": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminPlayer"
+            }
+          }
+        }
+      },
       "CurrentTrackState": {
         "required": [
           "position",
@@ -580,6 +1168,23 @@
             "items": {
               "$ref": "#/components/schemas/HintFactResponse"
             }
+          }
+        }
+      },
+      "DailyActivityResponse": {
+        "required": [
+          "date",
+          "playerCount"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "playerCount": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -629,6 +1234,93 @@
           "streakFreezeMax": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "DashboardResponse": {
+        "required": [
+          "dailyActivity",
+          "playerBreakdown",
+          "availableDates",
+          "selectedDayKpis"
+        ],
+        "type": "object",
+        "properties": {
+          "dailyActivity": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DailyActivityResponse"
+            }
+          },
+          "playerBreakdown": {
+            "$ref": "#/components/schemas/PlayerBreakdownResponse"
+          },
+          "availableDates": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          "selectedDayKpis": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DayKpisResponse"
+              }
+            ]
+          }
+        }
+      },
+      "DayKpisResponse": {
+        "required": [
+          "date",
+          "completedCount",
+          "abandonedCount",
+          "expiredCount",
+          "pendingCount",
+          "totalSessions",
+          "completionRate",
+          "medianScore"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "completedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "abandonedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expiredCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pendingCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalSessions": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completionRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "medianScore": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
           }
         }
       },
@@ -1001,6 +1693,33 @@
         "properties": {
           "id": {
             "type": "string"
+          }
+        }
+      },
+      "PlayerBreakdownResponse": {
+        "required": [
+          "totalGuests",
+          "totalRegistered",
+          "activeLast7Days",
+          "activeLast30Days"
+        ],
+        "type": "object",
+        "properties": {
+          "totalGuests": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalRegistered": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "activeLast7Days": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "activeLast30Days": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -1628,6 +2347,18 @@
           }
         }
       },
+      "UpdateTrackCooldown": {
+        "required": [
+          "trackCooldownDays"
+        ],
+        "type": "object",
+        "properties": {
+          "trackCooldownDays": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "WeeklyRecapResponse": {
         "required": [
           "status",
@@ -1704,6 +2435,27 @@
     }
   },
   "tags": [
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.GetChallengeStatsEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.ListChallengesEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.GetDashboardEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.ListRegisteredPlayersEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.GetPlayerHistoryEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.GetAdminDailySettingsEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.UpdateTrackCooldownEndpoint"
+    },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.RecomputeDayStatsEndpoint"
     },

@@ -106,6 +106,66 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
             .Select(c => new UnfrozenChallenge(c.Id, c.Date))
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<RecentChallenge>> ListRecentChallengesAsync(int take, CancellationToken ct) =>
+        await (from c in db.Set<DailyChallenge>().AsNoTracking()
+               join s in db.Set<DayStatsSnapshot>().AsNoTracking() on c.Id equals s.ChallengeId into snapshots
+               from snapshot in snapshots.DefaultIfEmpty()
+               orderby c.Date descending
+               select new RecentChallenge(c.Id, c.Date, snapshot == null ? null : snapshot.Payload, snapshot == null ? null : snapshot.ComputedAt))
+            .Take(take)
+            .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<ChallengeListRow>> ListChallengesAsync(CancellationToken ct)
+    {
+        var rows = await db.Set<DailyChallenge>().AsNoTracking()
+            .OrderByDescending(c => c.Date)
+            .Select(c => new { c.Id, c.Date, Tracks = c.Tracks.OrderBy(t => t.Position).Select(t => new ChallengeTrackRef(t.Position, t.TrackId)).ToList() })
+            .ToListAsync(ct);
+        return rows.Select(r => new ChallengeListRow(r.Id, r.Date, r.Tracks)).ToList();
+    }
+
+    public async Task<IReadOnlyList<DateOnly>> ListChallengeDatesAsync(CancellationToken ct) =>
+        await db.Set<DailyChallenge>().AsNoTracking().OrderByDescending(c => c.Date).Select(c => c.Date).ToListAsync(ct);
+
+    public async Task<int?> FindChallengeIdAsync(DateOnly day, CancellationToken ct) =>
+        await db.Set<DailyChallenge>().AsNoTracking().Where(c => c.Date == day).Select(c => (int?)c.Id).FirstOrDefaultAsync(ct);
+
+    public async Task<IReadOnlyDictionary<DateOnly, int>> GetCompletedCountsByDayAsync(DateOnly since, CancellationToken ct) =>
+        await (from s in LiveData.Sessions(db)
+               join c in db.Set<DailyChallenge>().AsNoTracking() on s.ChallengeId equals c.Id
+               where c.Date >= since && s.Status == SessionStatus.Completed
+               group s by c.Date into g
+               select new { Date = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Date, x => x.Count, ct);
+
+    public async Task<IReadOnlyDictionary<Guid, int>> GetCompletedCountsByPlayerAsync(CancellationToken ct) =>
+        await db.Set<DailySession>().AsNoTracking()
+            .Where(s => s.Status == SessionStatus.Completed)
+            .GroupBy(s => s.PlayerId)
+            .Select(g => new { PlayerId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.PlayerId, x => x.Count, ct);
+
+    public async Task<IReadOnlyDictionary<Guid, StreakRow>> GetStreaksAsync(IReadOnlyCollection<Guid> playerIds, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(playerIds);
+        if (playerIds.Count == 0)
+            return new Dictionary<Guid, StreakRow>();
+
+        var ids = playerIds.Distinct().ToList();
+        return await db.Set<DailyStreak>().AsNoTracking()
+            .Where(s => ids.Contains(s.PlayerId))
+            .Select(s => new { s.PlayerId, Row = new StreakRow(s.CurrentStreak, s.LastPlayedDate, s.Freezes) })
+            .ToDictionaryAsync(x => x.PlayerId, x => x.Row, ct);
+    }
+
+    public async Task<IReadOnlyList<PlayerHistoryRow>> GetPlayerHistoryAsync(Guid playerId, DateOnly since, CancellationToken ct) =>
+        await (from s in db.Set<DailySession>().AsNoTracking()
+               join c in db.Set<DailyChallenge>().AsNoTracking() on s.ChallengeId equals c.Id
+               where s.PlayerId == playerId && c.Date >= since
+               orderby c.Date descending
+               select new PlayerHistoryRow(c.Date, s.Status, s.TotalScore, s.FreezesUsed, s.FreezeEarned))
+            .ToListAsync(ct);
+
     public async Task<IReadOnlyList<TrackTally>> GetTrackTalliesAsync(DateOnly fromDay, DateOnly toDay, CancellationToken ct)
     {
         var sessions = LiveData.Sessions(db);

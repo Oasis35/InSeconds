@@ -49,6 +49,9 @@ public static class WolverineSetup
         // L'usage des morceaux est fourni par Daily (E) : sans cela, le code généré construirait NoTrackUsage en dur et
         // Daily devrait régénérer le code de Catalogue pour le remplacer.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Api.Modules.Catalogue.Contracts.ITrackUsage>();
+        // L'écriture d'un réglage recharge la source de configuration : son rechargeur est interne à l'infrastructure, le code généré ne peut pas le
+        // construire. Utilisé par le réglage du cooldown de l'admin (F1).
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Api.Infrastructure.Settings.SettingsStore>();
         // Compilation à l'exécution en développement et en test seulement (Wolverine 6 ne l'embarque plus).
         opts.UseRuntimeCompilation();
     }

@@ -455,13 +455,14 @@ Le préfixe change, pas l'adresse. Toutes les erreurs sont en `ProblemDetails` a
 | `POST /api/admin/challenges` (création à la main) | **abandonnée** : aucun écran ne l'appelle (seulement le client généré et des tests d'intégration), confirmé par Clément le 30/09 |
 | `POST /api/admin/generate-today` | `POST /api/admin/daily/challenges/generate-today` : déclenche la tâche Hangfire, `202` + identifiant d'exécution |
 | `GET /api/admin/weekly-recap` | `GET /api/admin/daily/weekly-recap` |
-| `PUT /api/admin/settings/track-cooldown-days` | `PUT /api/admin/daily/settings/track-cooldown-days` |
+| `PUT /api/admin/settings/track-cooldown-days` | `PUT /api/admin/daily/settings/track-cooldown-days` (de 1 à 3650 jours, pris en compte tout de suite, F1) |
+| (nouveau) | `GET /api/admin/daily/settings` : le cooldown en vigueur (F1 ; la v1 le lisait dans les réglages publics) |
 | `/api/admin/tracks` (liste, ajout, renommage, actualisation, désactivation, suppression) | `/api/admin/catalogue/tracks…` (mêmes opérations) |
 | recherche Deezer admin | `GET /api/admin/catalogue/deezer-search` |
 | `POST /api/admin/refresh-previews` | `POST /api/admin/catalogue/refresh-previews` : déclenche la tâche Hangfire, `202` + identifiant d'exécution |
 | (nouveau) | `GET /api/admin/jobs/{id}` : état et compte rendu d'une exécution |
 | (nouveau) | `/jobs` : tableau de bord Hangfire (HTML), réservé aux admins |
-| `GET /api/admin/players` | `GET /api/admin/players` |
+| `GET /api/admin/players` | `GET /api/admin/players` (servie par Daily, qui lit les comptes par le contrat de Players : série effective et parties jouées, F1) |
 | `GET /api/admin/players/{id}/history` | `GET /api/admin/daily/players/{id}/history` |
 | `POST /api/client-errors` | inchangé |
 | `/health`, `/health/ready` | inchangés (mêmes champs, le front les lit) |

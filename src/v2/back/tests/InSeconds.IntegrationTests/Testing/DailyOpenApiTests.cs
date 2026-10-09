@@ -24,13 +24,33 @@ public class DailyOpenApiTests(PostgresFixture postgres) : IAsyncLifetime
 
         Assert.Equal(
             [
-                "abandonSession", "generateToday", "getDailySettings", "getToday", "getTodayStats", "getWeeklyRecap", "recomputeDayStats",
-                "requestHint", "startSession", "submitAnswer", "updateListening",
+                "abandonSession", "generateToday", "getAdminDailySettings", "getChallengeStats", "getDailySettings", "getDashboard", "getPlayerHistory",
+                "getToday", "getTodayStats", "getWeeklyRecap", "listChallenges", "listRegisteredPlayers", "recomputeDayStats", "requestHint",
+                "startSession", "submitAnswer", "updateListening", "updateTrackCooldown",
             ],
             OperationIds(document).Order(StringComparer.Ordinal));
-        // Rien d'autre que le module : ni Players, ni Catalogue, ni /api/e2e.
+        // Rien d'autre que le module : ni Players, ni Catalogue, ni /api/e2e. La liste des joueurs inscrits (api/admin/players) est servie par Daily.
         Assert.All(document["paths"]!.AsObject().Select(p => p.Key), path =>
-            Assert.True(path.StartsWith("/api/daily", StringComparison.Ordinal) || path.StartsWith("/api/admin/daily", StringComparison.Ordinal), path));
+            Assert.True(
+                path.StartsWith("/api/daily", StringComparison.Ordinal) || path.StartsWith("/api/admin/daily", StringComparison.Ordinal) || path == "/api/admin/players",
+                path));
+    }
+
+    [Fact]
+    public async Task Les_routes_admin_de_F1_sont_celles_du_plan()
+    {
+        var document = await ReadDocumentAsync();
+
+        Assert.Equal(("get", "/api/admin/daily/dashboard"), (MethodOf(document, "getDashboard"), PathOf(document, "getDashboard")));
+        Assert.Equal(("get", "/api/admin/daily/challenges/stats"), (MethodOf(document, "getChallengeStats"), PathOf(document, "getChallengeStats")));
+        Assert.Equal(("get", "/api/admin/daily/challenges"), (MethodOf(document, "listChallenges"), PathOf(document, "listChallenges")));
+        Assert.Equal(("get", "/api/admin/players"), (MethodOf(document, "listRegisteredPlayers"), PathOf(document, "listRegisteredPlayers")));
+        Assert.Equal(("get", "/api/admin/daily/players/{playerId}/history"), (MethodOf(document, "getPlayerHistory"), PathOf(document, "getPlayerHistory")));
+        Assert.Equal(("get", "/api/admin/daily/settings"), (MethodOf(document, "getAdminDailySettings"), PathOf(document, "getAdminDailySettings")));
+        Assert.Equal(("put", "/api/admin/daily/settings/track-cooldown-days"), (MethodOf(document, "updateTrackCooldown"), PathOf(document, "updateTrackCooldown")));
+        // L'historique d'un joueur inconnu : 404 documenté, avec son ProblemDetails.
+        Assert.Equal("#/components/schemas/ProblemDetails", ResponseSchemaRef(document, "getPlayerHistory", "404"));
+        Assert.Contains("400", Codes(document, "getDashboard"));
     }
 
     [Fact]
