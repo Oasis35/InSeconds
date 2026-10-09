@@ -32,10 +32,10 @@ public class StaticCodegenTests(PostgresFixture postgres) : IAsyncLifetime
     public async Task EndpointWolverine_RepondAvecLeCodeGenere()
     {
         var response = await _api.CreateClient(TestUser.Admin)
-            .GetAsync("/api/admin/jobs/999", TestContext.Current.CancellationToken);
+            .GetAsync("/api/admin/jobs/last-runs", TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
     }
 
     private sealed class HostingEnvironmentStub(string name) : IHostEnvironment
