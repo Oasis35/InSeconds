@@ -117,6 +117,8 @@ Workflow GitHub Actions sur chaque push et chaque PR vers `main` :
 
 Les runs obsolètes sont annulés automatiquement.
 
+Un second workflow, **Backup prod DB** (`db-backup.yml`), sauvegarde la base de prod chaque nuit à 3 h UTC ou à la demande : il lance `deploy/infra/backup.sh` sur le VPS, qui envoie le dump chiffré vers Cloudflare R2 (mode d'emploi dans `deploy/infra/README.md`).
+
 ## Tests
 
 ### Tests unitaires (backend)

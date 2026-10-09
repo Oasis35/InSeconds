@@ -1,0 +1,44 @@
+name: Backup prod DB
+
+# Sauvegarde de la base de prod : chaque nuit à 3 h UTC, ou à la main (onglet Actions →
+# "Backup prod DB" → Run workflow). Le job se connecte en SSH au VPS et y lance
+# deploy/infra/backup.sh : le dump reste sur le VPS puis part chiffré vers R2, il ne transite
+# jamais par GitHub (le dépôt est public, les journaux de ce job aussi : le script n'y écrit
+# que des noms de fichiers et des tailles). Mode d'emploi : deploy/infra/README.md § Sauvegardes.
+#
+# Un échec envoie le mail habituel de GitHub Actions. Un job planifié peut être retardé ou sauté
+# par GitHub en cas de forte charge : healthchecks.io (HEALTHCHECK_URL) prévient si une nuit
+# passe sans sauvegarde.
+on:
+  schedule:
+    - cron: '0 3 * * *' # à l'écart des tâches de l'API (23 h, minuit)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    name: Dump + R2
+    runs-on: ubuntu-latest
+    concurrency:
+      group: backup-vps
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Configure SSH
+        uses: ./.github/actions/vps-ssh
+        with:
+          private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          host: ${{ secrets.VPS_HOST }}
+          host-key: ${{ secrets.VPS_SSH_HOST_KEY }}
+
+      - name: Backup
+        # Le script part de ce checkout (bash -s) : il n'a pas besoin d'être à jour sur le VPS.
+        # Ses réglages et secrets restent dans deploy/infra/.env sur le VPS.
+        run: |
+          ssh -i ~/.ssh/id_ed25519 "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            'BACKUP_ENV_FILE="$HOME/apps/InSeconds/deploy/infra/.env" bash -s -- backup' \
+            < deploy/infra/backup.sh
