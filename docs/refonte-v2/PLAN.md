@@ -544,7 +544,7 @@ Dans chaque domaine :
     - CORS du CDN des extraits vérifié le 02/10/2026 (`cdnt-preview.dzcdn.net` renvoie `Access-Control-Allow-Origin: *`, environ 480 Ko par extrait) : les extraits sont chargés directement depuis Deezer, sans passer par l'API ; une fois l'extrait chargé, l'expiration de sa signature (piège 14) n'a plus d'effet ;
     - iPhone en mode silencieux : Web Audio y est muet par défaut, poser `navigator.audioSession.type = "playback"` quand c'est disponible ;
     - mémoire : un extrait décodé pèse environ 10 Mo, ne décoder que le morceau en cours et le suivant ;
-    - « écouter plus » relance la lecture depuis la position atteinte avec le nouveau palier ;
+    - « écouter plus » pendant la lecture repousse l'arrêt au nouveau palier sans couper le son ; arrêté à un palier, il relit depuis le début jusqu'au nouveau palier (comportement de la v1) ;
     - Howler évolue peu (dernière version vers 2023) : version figée, tickets iOS ouverts vérifiés avant de coder ;
     - comportements v1 gardés et testés au niveau de l'`AudioPort` et de la manche : état `error` distinct de `idle` (piège 33), prolongation pendant le chargement et relecture sans effacer `wasExtended` (piège 40), autoplay une seule fois par morceau (piège 44) ;
   - `AnswerSearchPort` (autocomplete, debounce 300 ms).
