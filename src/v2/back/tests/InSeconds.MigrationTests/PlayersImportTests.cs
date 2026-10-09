@@ -204,7 +204,7 @@ public class PlayersImportTests(ImportDatabase database)
 
         var files = System.Text.RegularExpressions.Regex.Matches(runImport, @"\$dir/([\w-]+\.sql)").Select(m => m.Groups[1].Value);
 
-        Assert.Equal(["00-import-state.sql", "10-import.sql", "20-verify.sql", "90-import-done.sql"], files);
+        Assert.Equal(["00-import-state.sql", "05-check-source.sql", "10-import.sql", "20-verify.sql", "90-import-done.sql"], files);
         Assert.Contains("--single-transaction", runImport, StringComparison.Ordinal);
         Assert.Contains("ON_ERROR_STOP=1", runImport, StringComparison.Ordinal);
     }

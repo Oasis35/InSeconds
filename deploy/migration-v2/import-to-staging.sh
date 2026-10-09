@@ -104,4 +104,8 @@ if ! timeout 600 docker compose -f docker-compose.staging.yml --env-file .env.st
   exit 1
 fi
 
+# Contrôle des photos (G1) : chaque jour terminé a la sienne, aux compteurs de la v1 (public), avec les paliers importés.
+echo "Vérification des statistiques figées..."
+pg psql --no-psqlrc --quiet -v ON_ERROR_STOP=1 -f /import/30-verify-day-stats.sql < /dev/null
+
 echo "Import terminé."
