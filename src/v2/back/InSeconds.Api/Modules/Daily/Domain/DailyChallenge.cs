@@ -9,7 +9,7 @@ public enum ChallengeOrigin : short
     /// <summary>Le secours : un joueur arrive alors que la tâche de minuit n'a rien généré.</summary>
     OnTheFly = 2,
 
-    /// <summary>Le bouton « Générer le défi du jour » de l'admin.</summary>
+    /// <summary>Généré par <c>/api/e2e/generate-today</c> (hôte de test). Le bouton de l'admin qui l'utilisait a été retiré en F2 ; la valeur reste (stockée).</summary>
     Admin = 3,
 }
 

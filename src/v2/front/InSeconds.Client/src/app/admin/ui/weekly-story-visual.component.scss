@@ -1,0 +1,240 @@
+// Gabarits 1080×1920 des stories Instagram. Placement calé sur le Fond 4 (public/stories/fond-4.webp) :
+// lignes horizontales de la grille à y ≈ 192 / 370 / 955, axe central x = 540, bas (> 955) quasi noir
+// → stickers Instagram. Haut (< 190) et bas (> 1720) recouverts par l'UI Instagram : rien d'utile.
+// Contraintes html2canvas(-pro) : pas de background-clip:text, filter, backdrop-filter ni 3D CSS.
+
+
+:host {
+  display: block;
+  position: relative;
+  width: 1080px;
+  height: 1920px;
+  overflow: hidden;
+  color: var(--text-hi);
+  font-family: var(--font-display);
+  // Fond 4 ; si le fichier manque : dégradé violet de .da-bg + grille plate cyan (sans 3D).
+  background-color: var(--bg-page);
+  background-image:
+    url('/stories/fond-4.webp'),
+    linear-gradient(rgb(var(--rgb-accent-2) / 0.18) 2px, transparent 2px),
+    linear-gradient(90deg, rgb(var(--rgb-accent-2) / 0.18) 2px, transparent 2px),
+    radial-gradient(circle at 50% -8%, rgb(var(--rgb-violet) / 0.25), transparent 55%);
+  background-size: cover, 180px 180px, 180px 180px, cover;
+  background-position: center, center top, center top, center;
+  background-repeat: no-repeat, repeat, repeat, no-repeat;
+}
+
+// Voile derrière le titre : efface la ligne de grille y = 370 sous le texte sans éteindre le reste.
+.veil {
+  position: absolute;
+  left: 0;
+  top: 150px;
+  width: 1080px;
+  height: 320px;
+  background: linear-gradient(180deg,
+    rgb(var(--rgb-bg) / 0) 0,
+    rgb(var(--rgb-bg) / 0.85) 70px,
+    rgb(var(--rgb-bg) / 0.85) 200px,
+    rgb(var(--rgb-bg) / 0) 320px);
+}
+
+.head {
+  position: absolute;
+  top: 196px;
+  left: 72px;
+  right: 72px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+// Légendes en Inter, le reste en Poppins (--font-display, cf. .story).
+.period, .rate-prefix, .caption, .guide {
+  font-family: var(--font-body);
+}
+
+.logo {
+  font-weight: 700;
+  font-size: 36px;
+  letter-spacing: 2px;
+}
+
+.logo-accent {
+  color: var(--text-accent);
+}
+
+.period {
+  font-size: 30px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.title {
+  position: absolute;
+  top: 262px;
+  left: 110px;
+  right: 110px;
+  text-align: center;
+  font-weight: 800;
+  font-size: 64px;
+  line-height: 1.1;
+}
+
+.title-long {
+  font-size: 52px;
+}
+
+.pill-row {
+  position: absolute;
+  top: 448px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.pill {
+  white-space: nowrap;
+  padding: 16px 44px;
+  border-radius: 999px;
+  background: var(--gradient-primary);
+  color: var(--text-on-primary);
+  font-weight: 700;
+  font-size: 36px;
+  letter-spacing: 3px;
+  box-shadow: var(--glow-primary);
+}
+
+.pill-reverse {
+  background: linear-gradient(270deg, rgb(var(--rgb-accent-3)), rgb(var(--rgb-accent)));
+}
+
+// Vignette (note de musique, pas de pochette Deezer) posée sur la ligne de grille y = 955 ; elle masque l'axe central.
+.cover {
+  position: absolute;
+  top: 552px;
+  left: 340px;
+  width: 400px;
+  height: 400px;
+  border-radius: 28px;
+  overflow: hidden;
+  border: 3px solid var(--color-accent-2);
+  box-shadow: 0 0 40px rgb(var(--rgb-accent) / 0.55), 0 0 90px rgb(var(--rgb-accent-3) / 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gradient-primary);
+}
+
+.body {
+  position: absolute;
+  top: 985px;
+  left: 70px;
+  right: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.artist {
+  font-weight: 800;
+  font-size: 64px;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  &.len-m { font-size: 50px; }
+  &.len-l { font-size: 40px; }
+}
+
+.song {
+  margin-top: 6px;
+  font-weight: 600;
+  font-size: 44px;
+  line-height: 1.2;
+  color: var(--text-light);
+  max-height: 2.4em; // 2 lignes max
+  overflow: hidden;
+
+  &.len-m { font-size: 36px; }
+  &.len-l { font-size: 30px; }
+}
+
+.rate {
+  margin-top: 14px;
+  font-weight: 800;
+  font-size: 160px;
+  line-height: 1;
+  color: var(--color-accent-3);
+  text-shadow: 0 0 28px rgb(var(--rgb-accent-3) / 0.55), 0 0 70px rgb(var(--rgb-accent) / 0.35);
+}
+
+.rate-prefix {
+  margin-right: 24px;
+  font-weight: 600;
+  font-size: 44px;
+  color: var(--text-light);
+  text-shadow: none;
+}
+
+.caption {
+  margin-top: 10px;
+  font-size: 30px;
+  color: var(--text-muted);
+}
+
+// Repères (masquables) : où poser le sticker Instagram, dans la zone noire du bas.
+.guide {
+  position: absolute;
+  left: 160px;
+  width: 760px;
+  border: 3px dashed rgb(var(--rgb-text) / 0.25);
+  border-radius: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 30px;
+  color: rgb(var(--rgb-text) / 0.35);
+}
+
+.guide-music {
+  top: 1380px;
+  height: 220px;
+}
+
+.guide-poll {
+  top: 1360px;
+  height: 260px;
+}
+
+.guide-sub {
+  font-size: 26px;
+}
+
+.cta {
+  position: absolute;
+  top: 1640px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  font-weight: 700;
+  font-size: 34px;
+}
+
+// Repère du sticker « lien » Instagram (l'adresse du site n'est pas écrite dans l'image).
+.guide-link {
+  padding: 12px 28px;
+  border: 3px dashed rgb(var(--rgb-text) / 0.25);
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 28px;
+  color: rgb(var(--rgb-text) / 0.35);
+}

@@ -55,6 +55,8 @@ services:
       dockerfile: Dockerfile.prod
       args:
         BUILD_CONFIGURATION: staging
+        # Heure du déploiement affichée en admin (piège 25) : exportée par deploy/vps/deploy.sh ; vide hors déploiement.
+        BUILD_TIME: ${BUILD_TIME:-}
     container_name: inseconds-staging.front
     restart: unless-stopped
     depends_on:

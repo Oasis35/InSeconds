@@ -6,7 +6,7 @@ namespace InSeconds.Api.Infrastructure.Jobs;
 /// Une tâche planifiée : une classe d'une ligne qui appelle une commande Wolverine
 /// (<c>bus.InvokeAsync(new GenerateDailyChallenge(), ct)</c>). La logique reste dans le module ;
 /// Hangfire ne décide que du moment (§ 5.4 bis du plan v2). La valeur renvoyée est le compte rendu
-/// de l'exécution, conservé par Hangfire et lu par <c>GET /api/admin/jobs/{id}</c>.
+/// de l'exécution, conservé par Hangfire et lu par <c>GET /api/admin/jobs/last-runs</c>.
 /// Poser <c>[DisableConcurrentExecution]</c> et <c>[AutomaticRetry]</c> sur chaque tâche.
 /// </summary>
 public interface IScheduledJob
@@ -16,7 +16,7 @@ public interface IScheduledJob
 
 /// <summary>
 /// Échec métier attendu d'une tâche (ex. <c>daily.pool_insufficient</c>). Le message est le code
-/// d'erreur, renvoyé tel quel par <c>GET /api/admin/jobs/{id}</c> ; toute autre exception y apparaît
+/// d'erreur, renvoyé tel quel par <c>GET /api/admin/jobs/last-runs</c> ; toute autre exception y apparaît
 /// comme <c>common.unexpected</c>, sans détail.
 /// </summary>
 public sealed class JobFailedException(string code) : Exception(code)

@@ -257,6 +257,18 @@ public class E2eHostTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/admin/me", Ct)).StatusCode);
     }
 
+    [Fact]
+    public async Task Throw_LeveUneExceptionNonGeree_500AvecUnCodeDErreurLisible()
+    {
+        var response = await _host.CreateClient().GetAsync("/api/e2e/throw", Ct);
+
+        // Le gestionnaire d'erreurs de l'API rend un ProblemDetails avec le traceId (32 caractères hexadécimaux) : le code d'erreur de l'écran d'erreur.
+        Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<Microsoft.AspNetCore.Mvc.ProblemDetails>(Ct);
+        Assert.Matches("^[0-9a-f]{32}$", problem!.Extensions["traceId"]?.ToString());
+        Assert.DoesNotContain("e2e/throw", problem.Detail ?? "", StringComparison.Ordinal);
+    }
+
     private async Task<HttpClient> LoggedAdminAsync()
     {
         var client = _host.CreateClient();

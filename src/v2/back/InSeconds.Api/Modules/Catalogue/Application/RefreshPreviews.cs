@@ -14,12 +14,11 @@ namespace InSeconds.Api.Modules.Catalogue.Application;
 
 /// <summary>
 /// Recontrôle l'extrait (et met à jour le rang) des morceaux que le défi de demain pourrait tirer. Lancé par la
-/// tâche <c>catalogue-refresh</c> chaque nuit, et par le bouton « Re-vérifier les previews » de l'admin :
-/// la logique n'est écrite qu'ici (§ 5.4 bis du plan v2).
+/// tâche <c>catalogue-refresh</c> chaque nuit, ou à la main depuis <c>/jobs</c> (§ 5.4 bis du plan v2).
 /// </summary>
 public sealed record RefreshPreviews;
 
-/// <summary>Compte rendu de l'exécution, conservé par Hangfire et lu par <c>GET /api/admin/jobs/{id}</c>.</summary>
+/// <summary>Compte rendu de l'exécution, conservé par Hangfire et lu par <c>GET /api/admin/jobs/last-runs</c>.</summary>
 /// <param name="Checked">Morceaux contrôlés.</param>
 /// <param name="Updated">Morceaux dont l'état de l'extrait a changé.</param>
 /// <param name="Failed">Morceaux dont Deezer n'a pas répondu (quota, panne) : leur état est inchangé.</param>
@@ -118,23 +117,10 @@ public sealed class RefreshPreviewsJob(IMessageBus bus) : IScheduledJob
     public const string DefaultCron = "0 23 * * *";
 
     // Le contrôle dure plusieurs minutes pour un grand pool (lots espacés) : jamais deux à la fois. Le délai d'attente du
-    // verrou dépasse la durée d'un contrôle : la tâche de 23 h lancée pendant un contrôle manuel attend qu'il finisse au
-    // lieu d'échouer puis de repartir dix minutes plus tard.
+    // verrou dépasse la durée d'un contrôle : la tâche de 23 h lancée pendant un contrôle manuel (depuis /jobs) attend
+    // qu'il finisse au lieu d'échouer puis de repartir dix minutes plus tard.
     [DisableConcurrentExecution(timeoutInSeconds: 600)]
     [AutomaticRetry(Attempts = 2, DelaysInSeconds = [600])]
     public async Task<object?> RunAsync(CancellationToken cancellationToken) =>
         (await bus.InvokeAsync<PreviewRefreshResult>(new RefreshPreviews(), cancellationToken)).ToReport();
-}
-
-public static class RefreshPreviewsEndpoint
-{
-    /// <summary>
-    /// <c>POST /api/admin/catalogue/refresh-previews</c> : le bouton « Re-vérifier les previews ». Déclenche la tâche
-    /// <c>catalogue-refresh</c> (chaque lancement apparaît dans l'historique de <c>/jobs</c>) et répond 202 avec
-    /// l'identifiant de l'exécution, que l'écran suit par <c>GET /api/admin/jobs/{id}</c>. Si une exécution est déjà
-    /// en cours ou en file, on la suit au lieu d'en lancer une autre.
-    /// </summary>
-    [WolverinePost("/api/admin/catalogue/refresh-previews", OperationId = "refreshPreviews")]
-    public static async Task<JobExecutionResponse> Post(IJobTrigger trigger, CancellationToken ct) =>
-        new(await trigger.TriggerAsync(RefreshPreviewsJob.Id, ct));
 }

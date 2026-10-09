@@ -4,9 +4,8 @@ import { GamePage } from '../pages/game.page';
 import { BlindRoundPage } from '../pages/blind-round.page';
 import { linkAccount } from '../pages/login.page';
 
-// Réactivé en C3 (le pool) : les tests qui dépendent des onglets de F2 (dashboard, défis, actions,
-// joueurs) ou du jeu (E5) sont en `test.fixme`, à réactiver par la PR qui livre la fonctionnalité
-// (titres inchangés : la parité avec la v1 les compare).
+// Réactivé en C3 (le pool), puis en F2 (dashboard, défis, joueurs, actions) : plus aucun `test.fixme`. Titres inchangés
+// (la parité avec la v1 les compare), corps adaptés aux routes de la v2.
 
 test.describe('Admin — login', () => {
   test('visiteur non connecté : /admin invite à se connecter', async ({ page }) => {
@@ -27,7 +26,7 @@ test.describe('Admin — login', () => {
     await expect(admin.accessDeniedMessage).toBeVisible();
   });
 
-  test.fixme('se connecte et affiche le dashboard directement', async ({ page }) => {
+  test('se connecte et affiche le dashboard directement', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
@@ -305,29 +304,21 @@ test.describe('Admin — actions', () => {
     await api.reseed();
   });
 
-  test.fixme('génère le défi du jour', async ({ page, api }) => {
-    const admin = new AdminPage(page);
-    // Supprime le défi du jour pour pouvoir le régénérer
-    await admin.apiDeleteTodayChallenge();
-    await admin.goto();
-    await admin.login();
-    await admin.clickTab('Actions');
-
-    await admin.generateButton().click();
-    await expect(page.getByText('Défi généré avec succès')).toBeVisible({ timeout: 10000 });
-  });
-
-  test.fixme('affiche "déjà généré" si le défi existe', async ({ page }) => {
+  test('affiche le dernier passage des tâches planifiées, sans bouton pour les lancer', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
     await admin.clickTab('Actions');
 
-    await admin.generateButton().click();
-    await expect(page.getByText('déjà généré')).toBeVisible({ timeout: 5000 });
+    // Les tâches sont en pause dans l'hôte de test : aucune n'a tourné.
+    await expect(admin.challengeWitness()).toContainText('Défi du jour');
+    await expect(admin.challengeWitness()).toContainText('Aucun passage ces 7 derniers jours.');
+    await expect(admin.previewsWitness()).toContainText('Aucun passage ces 7 derniers jours.');
+    await expect(page.getByRole('button', { name: /Générer le défi du jour|Re-vérifier les previews/ })).toHaveCount(0);
+    await expect(page.getByTestId('jobs-dashboard-link')).toBeVisible();
   });
 
-  test.fixme('édite le cooldown de réutilisation et persiste en base', async ({ page }) => {
+  test('édite le cooldown de réutilisation et persiste en base', async ({ page }) => {
     const adminPage = new AdminPage(page);
     await adminPage.goto();
     await adminPage.login();
@@ -351,25 +342,19 @@ test.describe('Admin — défis', () => {
     await api.reseed();
   });
 
-  test.fixme('liste les défis existants', async ({ page }) => {
+  test('liste les défis existants', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    // Le seed crée 3 défis (J-2, J-1, aujourd'hui) — mais en début de mois, J-2 et/ou J-1
-    // peuvent tomber dans le mois précédent. On compte donc dynamiquement combien tombent
-    // dans le mois UTC courant plutôt que de coder en dur "3".
+    // Écart avec la v1 : le seed v2 écrit un défi par jour où un morceau a servi (J-2, J-1, aujourd'hui, mais aussi J-5,
+    // J-15, J-30…, cf. CatalogueSeed). Combien tombent dans le mois UTC courant dépend du jour : on les compte depuis l'API.
     await page.getByRole('link', { name: /^Défis/ }).click();
     const now = new Date();
     const monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
     const currentMonth = `${monthNames[now.getUTCMonth()]} ${now.getUTCFullYear()}`;
     await expect(page.getByText(currentMonth)).toBeVisible();
-    const seededDates = [0, 1, 2].map(daysAgo => {
-      const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - daysAgo));
-      return d;
-    });
-    const expectedCount = seededDates.filter(
-      d => d.getUTCMonth() === now.getUTCMonth() && d.getUTCFullYear() === now.getUTCFullYear()
-    ).length;
+    const monthPrefix = now.toISOString().slice(0, 7);
+    const expectedCount = (await admin.apiGetChallengeDates()).filter(d => d.startsWith(monthPrefix)).length;
     const rows = page.locator('ul > li > p.font-mono');
     await expect(rows).toHaveCount(expectedCount);
   });
@@ -380,7 +365,7 @@ test.describe('Admin — chargement paresseux par onglet', () => {
     await api.reseed();
   });
 
-  test.fixme('ne charge les données d\'un onglet qu\'à son ouverture', async ({ page }) => {
+  test('ne charge les données d\'un onglet qu\'à son ouverture', async ({ page }) => {
     const admin = new AdminPage(page);
     const adminCalls: string[] = [];
     page.on('request', req => {
@@ -392,24 +377,24 @@ test.describe('Admin — chargement paresseux par onglet', () => {
     await admin.login();
 
     // Dashboard = onglet d'atterrissage → ses stats se chargent...
-    await expect.poll(() => adminCalls.some(u => u.includes('/api/admin/stats'))).toBe(true);
-    // ...mais pas le pool, ni les stats par défi (endpoint scindé), ni l'historique
-    expect(adminCalls.some(u => u.endsWith('/api/admin/tracks'))).toBe(false);
-    expect(adminCalls.some(u => u.includes('/api/admin/challenge-stats'))).toBe(false);
-    expect(adminCalls.some(u => /\/api\/admin\/challenges(\?|$)/.test(u))).toBe(false);
+    await expect.poll(() => adminCalls.some(u => u.includes('/api/admin/daily/dashboard'))).toBe(true);
+    // ...mais pas le pool, ni les stats par défi (route à part), ni l'historique
+    expect(adminCalls.some(u => u.endsWith('/api/admin/catalogue/tracks'))).toBe(false);
+    expect(adminCalls.some(u => u.includes('/api/admin/daily/challenges/stats'))).toBe(false);
+    expect(adminCalls.some(u => /\/api\/admin\/daily\/challenges(\?|$)/.test(u))).toBe(false);
 
-    // Ouvrir Pool → GET /api/admin/tracks (une seule fois), toujours rien pour Défis
+    // Ouvrir Pool → GET /api/admin/catalogue/tracks, toujours rien pour Défis
     await admin.clickTab('Pool');
-    await expect.poll(() => adminCalls.some(u => u.endsWith('/api/admin/tracks'))).toBe(true);
-    expect(adminCalls.some(u => u.includes('/api/admin/challenge-stats'))).toBe(false);
+    await expect.poll(() => adminCalls.some(u => u.endsWith('/api/admin/catalogue/tracks'))).toBe(true);
+    expect(adminCalls.some(u => u.includes('/api/admin/daily/challenges/stats'))).toBe(false);
 
     // Ouvrir Défis → challenge-stats + challenges
     await admin.clickTab('Défis');
-    await expect.poll(() => adminCalls.some(u => u.includes('/api/admin/challenge-stats'))).toBe(true);
-    await expect.poll(() => adminCalls.some(u => /\/api\/admin\/challenges(\?|$)/.test(u))).toBe(true);
+    await expect.poll(() => adminCalls.some(u => u.includes('/api/admin/daily/challenges/stats'))).toBe(true);
+    await expect.poll(() => adminCalls.some(u => /\/api\/admin\/daily\/challenges(\?|$)/.test(u))).toBe(true);
   });
 
-  test.fixme('le compteur des onglets Pool / Défis n\'apparaît qu\'après leur première ouverture', async ({ page }) => {
+  test('le compteur des onglets Pool / Défis n\'apparaît qu\'après leur première ouverture', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
@@ -472,7 +457,7 @@ test.describe('Admin — indicateur joueurs / ID navigateur', () => {
     expect(clipText.slice(0, 8)).toBe(shortId);
   });
 
-  test.fixme('le joueur qui vient de jouer apparaît en surbrillance "toi" dans Stats par défi', async ({ page, api }) => {
+  test('le joueur qui vient de jouer apparaît en surbrillance "toi" dans Stats par défi', async ({ page, api }) => {
     await api.reset();
     await page.clock.install({ time: Date.now() });
 
@@ -491,7 +476,10 @@ test.describe('Admin — indicateur joueurs / ID navigateur', () => {
     const todayRow = admin.challengeRow(today);
     const youChip = todayRow.getByRole('button', { name: /toi/ });
     await expect(youChip).toBeVisible();
-    await expect(youChip).toContainText(browserShortId!);
+    // Écart avec la v1 : login-as-admin fait de l'invité qui vient de jouer le compte AdminE2E (comme un premier lien
+    // magique), le chip montre donc son pseudo ; l'identifiant complet reste dans l'infobulle.
+    await expect(youChip).toContainText('AdminE2E');
+    await expect(youChip).toHaveAttribute('title', new RegExp(`^${browserShortId}`));
 
     // Clic gauche = surbrillance croisée : le chip reçoit un anneau (box-shadow non nul).
     await youChip.click();
@@ -506,7 +494,7 @@ test.describe('Admin — indicateur joueurs / ID navigateur', () => {
     expect(clipText.slice(0, 8)).toBe(browserShortId);
   });
 
-  test.fixme('l\'icône d\'un morceau ouvre la pop-up histogramme (avec les chiffres)', async ({ page, api }) => {
+  test('l\'icône d\'un morceau ouvre la pop-up histogramme (avec les chiffres)', async ({ page, api }) => {
     await api.reset();
     await page.clock.install({ time: Date.now() });
 
@@ -540,28 +528,15 @@ test.describe('Admin — joueurs', () => {
     await api.reset();
   });
 
-  test.fixme('liste les comptes inscrits et déplie l\'historique d\'un joueur', async ({ page, api }) => {
+  test('liste les comptes inscrits et déplie l\'historique d\'un joueur', async ({ page, api }) => {
     await page.clock.install({ time: Date.now() });
 
-    // Compte lié (magic link) qui termine le défi du jour.
+    // Compte lié (magic link) qui termine le défi du jour. `linkAccount` attend l'avatar de l'en-tête : la connexion est finie
+    // côté serveur avant que la navigation de playFullGame n'annule la requête de vérification en vol.
     const email = 'joueurs-tab@e2e.test';
-    await page.goto('/login');
-    await page.getByPlaceholder('ton@email.com').fill(email);
-    await page.getByRole('button', { name: 'Recevoir le lien' }).click();
-    await expect(page.getByText('Lien envoyé.')).toBeVisible();
-    const parsed = new URL(await api.getLastMagicLinkUrl(email));
-    await page.goto(parsed.pathname + parsed.search);
-    await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
-    await page.getByPlaceholder('Ton pseudo').fill('JoueurTab');
-    await page.getByRole('button', { name: 'Valider' }).click();
+    await linkAccount(page, api, email, 'JoueurTab');
+    await new GamePage(page).playFullGame(new BlindRoundPage(page));
 
-    // Attendre la fin de la connexion (redirection vers l'accueil) : sans ça, la navigation
-    // de playFullGame annule la requête de vérification en vol et le compte reste invité.
-    const game = new GamePage(page);
-    await game.waitForWelcome();
-    await game.playFullGame(new BlindRoundPage(page));
-
-    // login-as-admin promeut le compte courant : il apparaît donc lui-même dans la liste.
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
@@ -569,7 +544,10 @@ test.describe('Admin — joueurs', () => {
 
     const row = page.getByTestId('registered-player').filter({ hasText: 'JoueurTab' });
     await expect(row).toContainText(email);
-    await expect(row).toContainText('Admin');
+    // Écart avec la v1 : login-as-admin n'a plus à promouvoir le compte du navigateur (déjà lié), il connecte le compte
+    // AdminE2E, qui apparaît aussi dans la liste ; le badge « Admin » est donc sur lui, pas sur JoueurTab.
+    await expect(row.getByText('Admin', { exact: true })).toBeHidden();
+    await expect(page.getByTestId('registered-player').filter({ hasText: 'AdminE2E' }).getByText('Admin', { exact: true })).toBeVisible();
 
     await row.getByRole('button', { name: /JoueurTab/ }).click();
     const history = page.getByTestId('player-history');

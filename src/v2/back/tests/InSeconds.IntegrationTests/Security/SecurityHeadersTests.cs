@@ -16,7 +16,7 @@ public partial class SecurityHeadersTests(PostgresFixture postgres) : IAsyncLife
     [Theory]
     [InlineData("/health", HttpStatusCode.OK)]
     [InlineData("/api/nothing-here", HttpStatusCode.NotFound)]
-    [InlineData("/api/admin/jobs/1", HttpStatusCode.Unauthorized)]
+    [InlineData("/api/admin/jobs/last-runs", HttpStatusCode.Unauthorized)]
     public async Task Api_EnTetesPresents(string path, HttpStatusCode expected)
     {
         var response = await _api.CreateClient().GetAsync(path, TestContext.Current.CancellationToken);

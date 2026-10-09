@@ -8,7 +8,15 @@ COPY . .
 
 # production (défaut) ou staging : choisit le fichier environment*.ts via angular.json.
 ARG BUILD_CONFIGURATION=production
-RUN npm run build -- --configuration "$BUILD_CONFIGURATION"
+# Heure du déploiement affichée en admin (piège 25) : posée par le déploiement (deploy.sh exporte BUILD_TIME à chaque
+# déploiement). Un argument de build qui change invalide le cache de cette étape : sans lui, un déploiement qui ne touche pas au
+# front réutiliserait le build en cache et l'heure resterait figée sur le dernier déploiement qui a modifié le front.
+ARG BUILD_TIME=
+RUN if [ -n "$BUILD_TIME" ]; then \
+      npm run build -- --configuration "$BUILD_CONFIGURATION" --define "BUILD_TIME='$BUILD_TIME'"; \
+    else \
+      npm run build -- --configuration "$BUILD_CONFIGURATION"; \
+    fi
 
 FROM nginxinc/nginx-unprivileged:alpine AS runtime
 COPY --from=build /app/dist/InSeconds.Client/browser /usr/share/nginx/html

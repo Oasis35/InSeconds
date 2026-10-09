@@ -24,7 +24,7 @@ public class DailyOpenApiTests(PostgresFixture postgres) : IAsyncLifetime
 
         Assert.Equal(
             [
-                "abandonSession", "generateToday", "getAdminDailySettings", "getChallengeStats", "getDailySettings", "getDashboard", "getPlayerHistory",
+                "abandonSession", "getAdminDailySettings", "getChallengeStats", "getDailySettings", "getDashboard", "getPlayerHistory",
                 "getToday", "getTodayStats", "getWeeklyRecap", "listChallenges", "listRegisteredPlayers", "recomputeDayStats", "requestHint",
                 "startSession", "submitAnswer", "updateListening", "updateTrackCooldown",
             ],

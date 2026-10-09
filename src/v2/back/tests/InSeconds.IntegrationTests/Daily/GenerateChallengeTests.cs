@@ -324,23 +324,6 @@ public class GenerateChallengeTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task TacheDuBouton_MarqueLeDefiAdmin_EtLeveLaMemeException()
-    {
-        await _app.AddPlayableTracksAsync(2);
-        using (var scope = _app.Api.Services.CreateScope())
-        {
-            var failure = await Assert.ThrowsAsync<JobFailedException>(() => scope.ServiceProvider.GetRequiredService<GenerateDailyChallengeAdminJob>().RunAsync(Ct));
-            Assert.Equal("admin.pool_insufficient", failure.Code);
-        }
-
-        await _app.AddPlayableTracksAsync(40, firstId: 3);
-        using (var scope = _app.Api.Services.CreateScope())
-            await scope.ServiceProvider.GetRequiredService<GenerateDailyChallengeAdminJob>().RunAsync(Ct);
-
-        Assert.Equal((short)ChallengeOrigin.Admin, await _app.OriginOfAsync(Today));
-    }
-
-    [Fact]
     public void TacheDeMinuit_ReessaieToutesLes10Minutes_AssezDeFoisPourCouvrirLaJournee()
     {
         var retry = typeof(GenerateDailyChallengeJob).GetMethod(nameof(GenerateDailyChallengeJob.RunAsync))!
@@ -349,15 +332,6 @@ public class GenerateChallengeTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal([600], retry.DelaysInSeconds);
         // Le défaut de Hangfire s'arrête à 10 essais, soit 1 h 40 : un pool vide ce soir-là laisserait la journée sans défi.
         Assert.True(retry.Attempts * 10 >= 24 * 60, $"{retry.Attempts} essais ne couvrent pas la journée.");
-    }
-
-    [Fact]
-    public void TacheDuBouton_NeReessaiePas_L_AdminVoitTout_deSuiteLeResultat()
-    {
-        var retry = typeof(GenerateDailyChallengeAdminJob).GetMethod(nameof(GenerateDailyChallengeAdminJob.RunAsync))!
-            .GetCustomAttributes(typeof(AutomaticRetryAttribute), inherit: false).Cast<AutomaticRetryAttribute>().Single();
-
-        Assert.Equal(0, retry.Attempts);
     }
 
     /// <summary>Un sélecteur qui prend son temps, pour qu'une seconde génération démarre pendant que la première tire.</summary>

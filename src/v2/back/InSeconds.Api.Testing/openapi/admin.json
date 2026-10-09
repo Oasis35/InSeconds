@@ -1,0 +1,102 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "InSeconds · Admin",
+    "version": "v2"
+  },
+  "paths": {
+    "/api/admin/jobs/last-runs": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "getJobLastRuns",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JobLastRun"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "JobLastRun": {
+        "required": [
+          "id",
+          "state",
+          "at",
+          "result",
+          "errorCode",
+          "retryAt",
+          "nextRunAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "state": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "at": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "result": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JsonElement"
+              }
+            ]
+          },
+          "errorCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "retryAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "nextRunAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "JsonElement": {}
+    }
+  },
+  "tags": [
+    {
+      "name": "InSeconds.Api.Infrastructure.Jobs.GetJobLastRunsEndpoint"
+    }
+  ]
+}

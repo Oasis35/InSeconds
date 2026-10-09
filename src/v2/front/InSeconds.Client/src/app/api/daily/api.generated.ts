@@ -30,7 +30,393 @@ export class DailyClient {
     /**
      * @return OK
      */
-    recomputeDayStats(date: string): Observable<RecomputeDayStatsResponse> {
+    getChallengeStats(): Observable<AdminChallengeStatsResponse> {
+        let url_ = this.baseUrl + "/api/admin/daily/challenges/stats";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetChallengeStats(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetChallengeStats(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AdminChallengeStatsResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AdminChallengeStatsResponse>;
+        }));
+    }
+
+    protected processGetChallengeStats(response: HttpResponseBase): Observable<AdminChallengeStatsResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AdminChallengeStatsResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    listChallenges(): Observable<AdminChallenge[]> {
+        let url_ = this.baseUrl + "/api/admin/daily/challenges";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListChallenges(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListChallenges(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AdminChallenge[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AdminChallenge[]>;
+        }));
+    }
+
+    protected processListChallenges(response: HttpResponseBase): Observable<AdminChallenge[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AdminChallenge[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param date (optional) 
+     * @return OK
+     */
+    getDashboard(date: string | undefined): Observable<DashboardResponse> {
+        let url_ = this.baseUrl + "/api/admin/daily/dashboard?";
+        if (date === null)
+            throw new globalThis.Error("The parameter 'date' cannot be null.");
+        else if (date !== undefined)
+            url_ += "date=" + encodeURIComponent("" + date) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetDashboard(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetDashboard(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<DashboardResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<DashboardResponse>;
+        }));
+    }
+
+    protected processGetDashboard(response: HttpResponseBase): Observable<DashboardResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as DashboardResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    listRegisteredPlayers(): Observable<AdminPlayersResponse> {
+        let url_ = this.baseUrl + "/api/admin/players";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListRegisteredPlayers(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListRegisteredPlayers(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AdminPlayersResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AdminPlayersResponse>;
+        }));
+    }
+
+    protected processListRegisteredPlayers(response: HttpResponseBase): Observable<AdminPlayersResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AdminPlayersResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getPlayerHistory(playerId: string): Observable<AdminPlayerHistoryResponse> {
+        let url_ = this.baseUrl + "/api/admin/daily/players/{playerId}/history";
+        if (playerId === undefined || playerId === null)
+            throw new globalThis.Error("The parameter 'playerId' must be defined.");
+        url_ = url_.replace("{playerId}", encodeURIComponent("" + playerId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetPlayerHistory(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetPlayerHistory(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AdminPlayerHistoryResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AdminPlayerHistoryResponse>;
+        }));
+    }
+
+    protected processGetPlayerHistory(response: HttpResponseBase): Observable<AdminPlayerHistoryResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AdminPlayerHistoryResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getAdminDailySettings(): Observable<AdminDailySettingsResponse> {
+        let url_ = this.baseUrl + "/api/admin/daily/settings";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetAdminDailySettings(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetAdminDailySettings(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AdminDailySettingsResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AdminDailySettingsResponse>;
+        }));
+    }
+
+    protected processGetAdminDailySettings(response: HttpResponseBase): Observable<AdminDailySettingsResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AdminDailySettingsResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateTrackCooldown(body: UpdateTrackCooldown): Observable<AdminDailySettingsResponse> {
+        let url_ = this.baseUrl + "/api/admin/daily/settings/track-cooldown-days";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateTrackCooldown(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateTrackCooldown(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AdminDailySettingsResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AdminDailySettingsResponse>;
+        }));
+    }
+
+    protected processUpdateTrackCooldown(response: HttpResponseBase): Observable<AdminDailySettingsResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AdminDailySettingsResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as HttpValidationProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    recomputeDayStats(date: string): Observable<AdminChallengeStats> {
         let url_ = this.baseUrl + "/api/admin/daily/challenges/{date}/stats/recompute";
         if (date === undefined || date === null)
             throw new globalThis.Error("The parameter 'date' must be defined.");
@@ -52,14 +438,14 @@ export class DailyClient {
                 try {
                     return this.processRecomputeDayStats(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<RecomputeDayStatsResponse>;
+                    return _observableThrow(e) as any as Observable<AdminChallengeStats>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<RecomputeDayStatsResponse>;
+                return _observableThrow(response_) as any as Observable<AdminChallengeStats>;
         }));
     }
 
-    protected processRecomputeDayStats(response: HttpResponseBase): Observable<RecomputeDayStatsResponse> {
+    protected processRecomputeDayStats(response: HttpResponseBase): Observable<AdminChallengeStats> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -69,7 +455,7 @@ export class DailyClient {
         if (status === 200) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RecomputeDayStatsResponse;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AdminChallengeStats;
             return _observableOf(result200);
             }));
         } else if (status === 400) {
@@ -89,56 +475,6 @@ export class DailyClient {
             let result409: any = null;
             result409 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
             return throwException("Conflict", status, _responseText, _headers, result409);
-            }));
-        } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
-        }
-        return _observableOf(null as any);
-    }
-
-    /**
-     * @return Accepted
-     */
-    generateToday(): Observable<JobExecutionResponse> {
-        let url_ = this.baseUrl + "/api/admin/daily/challenges/generate-today";
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
-            headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
-        };
-
-        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGenerateToday(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGenerateToday(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<JobExecutionResponse>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<JobExecutionResponse>;
-        }));
-    }
-
-    protected processGenerateToday(response: HttpResponseBase): Observable<JobExecutionResponse> {
-        const status = response.status;
-        const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
-
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 202) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result202: any = null;
-            result202 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as JobExecutionResponse;
-            return _observableOf(result202);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -753,11 +1089,127 @@ export class DailyClient {
     }
 }
 
+export interface AdminChallenge {
+    id: number;
+    date: Date;
+    tracks: AdminChallengeTrack[];
+
+    [key: string]: any;
+}
+
+export interface AdminChallengePlayer {
+    playerId: string;
+    status: string;
+    score: number;
+    pseudo: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface AdminChallengeStats {
+    id: number;
+    date: Date;
+    playerCount: number;
+    pendingCount: number;
+    abandonedCount: number;
+    expiredCount: number;
+    scoreMin: number | undefined;
+    scoreMax: number | undefined;
+    scoreAvg: number | undefined;
+    scoreMedian: number | undefined;
+    tracks: AdminChallengeTrackStats[];
+    players: AdminChallengePlayer[];
+    computedAt: Date | undefined;
+    canRecompute: boolean;
+
+    [key: string]: any;
+}
+
+export interface AdminChallengeStatsResponse {
+    challenges: AdminChallengeStats[];
+
+    [key: string]: any;
+}
+
+export interface AdminChallengeTrack {
+    position: number;
+    artist: string;
+    title: string;
+    deezerTrackId: number;
+
+    [key: string]: any;
+}
+
+export interface AdminChallengeTrackStats {
+    position: number;
+    artist: string;
+    title: string;
+    totalAnswers: number;
+    artistCorrectRate: number;
+    titleCorrectRate: number;
+    extendedRate: number;
+    avgListenedSeconds: number | undefined;
+    guessTimeDistribution: DurationBucket[];
+    notFoundCount: number;
+
+    [key: string]: any;
+}
+
+export interface AdminDailySettingsResponse {
+    trackCooldownDays: number;
+
+    [key: string]: any;
+}
+
+export interface AdminPlayer {
+    id: string;
+    pseudo: string;
+    email: string;
+    createdAt: Date;
+    lastSeenAt: Date | undefined;
+    gamesPlayed: number;
+    isAdmin: boolean;
+    currentStreak: number;
+    streakFreezes: number;
+    streakProtected: boolean;
+
+    [key: string]: any;
+}
+
+export interface AdminPlayerGame {
+    date: Date;
+    status: string;
+    score: number | undefined;
+    freezesUsed: number;
+    freezeEarned: boolean;
+
+    [key: string]: any;
+}
+
+export interface AdminPlayerHistoryResponse {
+    games: AdminPlayerGame[];
+
+    [key: string]: any;
+}
+
+export interface AdminPlayersResponse {
+    players: AdminPlayer[];
+
+    [key: string]: any;
+}
+
 export interface CurrentTrackState {
     position: number;
     listenedSeconds: number;
     hintLevel: number;
     hintFacts: HintFactResponse[];
+
+    [key: string]: any;
+}
+
+export interface DailyActivityResponse {
+    date: Date;
+    playerCount: number;
 
     [key: string]: any;
 }
@@ -774,46 +1226,24 @@ export interface DailySettingsResponse {
     [key: string]: any;
 }
 
-export interface DayPlayer {
-    playerId: string;
-    status: string;
-    score: number;
+export interface DashboardResponse {
+    dailyActivity: DailyActivityResponse[];
+    playerBreakdown: PlayerBreakdownResponse;
+    availableDates: Date[];
+    selectedDayKpis: DayKpisResponse | undefined;
 
     [key: string]: any;
 }
 
-export interface DayStatsPayload {
-    version: number;
+export interface DayKpisResponse {
     date: Date;
-    challengeId: number;
-    allowedDurationsSeconds: number[];
-    durationScores: DurationScore[];
-    maxPossibleScore: number;
-    playerCount: number;
-    pendingCount: number;
+    completedCount: number;
     abandonedCount: number;
     expiredCount: number;
-    scoreMin: number | undefined;
-    scoreMax: number | undefined;
-    scoreAvg: number | undefined;
-    scoreMedian: number | undefined;
-    scoreDistribution: ScoreBucket[];
-    tracks: DayTrackStats[];
-    players: DayPlayer[];
-
-    [key: string]: any;
-}
-
-export interface DayTrackStats {
-    position: number;
-    trackId: number;
-    totalAnswers: number;
-    artistCorrectRate: number;
-    titleCorrectRate: number;
-    extendedRate: number;
-    avgListenedSeconds: number | undefined;
-    guessTimeDistribution: DurationBucket[];
-    notFoundCount: number;
+    pendingCount: number;
+    totalSessions: number;
+    completionRate: number;
+    medianScore: number | undefined;
 
     [key: string]: any;
 }
@@ -821,13 +1251,6 @@ export interface DayTrackStats {
 export interface DurationBucket {
     seconds: number;
     count: number;
-
-    [key: string]: any;
-}
-
-export interface DurationScore {
-    seconds: number;
-    score: number;
 
     [key: string]: any;
 }
@@ -879,8 +1302,11 @@ export interface HttpValidationProblemDetails {
     [key: string]: any;
 }
 
-export interface JobExecutionResponse {
-    id: string;
+export interface PlayerBreakdownResponse {
+    totalGuests: number;
+    totalRegistered: number;
+    activeLast7Days: number;
+    activeLast30Days: number;
 
     [key: string]: any;
 }
@@ -891,14 +1317,6 @@ export interface ProblemDetails {
     status?: number;
     detail?: string | undefined;
     instance?: string | undefined;
-
-    [key: string]: any;
-}
-
-export interface RecomputeDayStatsResponse {
-    date: Date;
-    computedAt: Date;
-    stats: DayStatsPayload;
 
     [key: string]: any;
 }
@@ -921,14 +1339,6 @@ export interface ResumedAnswer {
     correctTitle: string;
     deezerTrackId: number;
     coverUrl: string | undefined;
-
-    [key: string]: any;
-}
-
-export interface ScoreBucket {
-    minScore: number;
-    maxScore: number;
-    count: number;
 
     [key: string]: any;
 }
@@ -1051,6 +1461,12 @@ export interface TrackStatResponse {
 export interface UpdateListening {
     position: number;
     listenedSeconds: number;
+
+    [key: string]: any;
+}
+
+export interface UpdateTrackCooldown {
+    trackCooldownDays: number;
 
     [key: string]: any;
 }

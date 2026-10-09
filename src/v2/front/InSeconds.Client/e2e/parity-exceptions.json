@@ -1,8 +1,12 @@
 {
-  "onlyInV1": {},
+  "onlyInV1": {
+    "admin.spec.ts › Admin — actions › génère le défi du jour": "F2 : les boutons de lancement de l'onglet Actions sont remplacés par des témoins du dernier passage des tâches ; les lancer à la main se fait dans le tableau de bord /jobs (Hangfire)",
+    "admin.spec.ts › Admin — actions › affiche \"déjà généré\" si le défi existe": "F2 : les boutons de lancement de l'onglet Actions sont remplacés par des témoins du dernier passage des tâches ; les lancer à la main se fait dans le tableau de bord /jobs (Hangfire)"
+  },
   "onlyInV2": {
     "sound-on-click.spec.ts › Le son ne démarre que sur un clic › l'arrivée sur la page n'envoie aucun son ; « Commencer » lance la manche": "E5 : le lecteur Howler ne démarre que sur un geste du joueur (la v1 jouait par un élément audio, qui échouait en erreur)",
     "sound-on-click.spec.ts › Le son ne démarre que sur un clic › après un rechargement, la partie reprise ne se relance pas toute seule : « Reprendre » lance la manche": "E5 : idem, pour la reprise après rechargement",
-    "sound-on-click.spec.ts › Le son ne démarre que sur un clic › le morceau suivant ne part que sur « Piste suivante »": "E5 : idem, pour le morceau suivant"
+    "sound-on-click.spec.ts › Le son ne démarre que sur un clic › le morceau suivant ne part que sur « Piste suivante »": "E5 : idem, pour le morceau suivant",
+    "admin.spec.ts › Admin — actions › affiche le dernier passage des tâches planifiées, sans bouton pour les lancer": "F2 : témoins du dernier passage des tâches, à la place des boutons de la v1"
   }
 }

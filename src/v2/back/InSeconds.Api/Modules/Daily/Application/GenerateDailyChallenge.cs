@@ -5,13 +5,13 @@ using InSeconds.Api.Modules.Catalogue.Contracts;
 using InSeconds.Api.Modules.Daily.Domain;
 using Microsoft.Extensions.Options;
 using Wolverine;
-using Wolverine.Http;
 
 namespace InSeconds.Api.Modules.Daily.Application;
 
 /// <summary>
-/// Génère le défi d'un jour. Une seule logique pour les trois chemins (§ 5.4 bis du plan v2) : la tâche de minuit, le
-/// secours à la volée quand un joueur arrive sans défi (E2), et le bouton de l'admin. Ne fait rien si le défi existe.
+/// Génère le défi d'un jour. Une seule logique pour les deux chemins (§ 5.4 bis du plan v2) : la tâche de minuit (lancée
+/// aussi à la main depuis <c>/jobs</c>) et le secours à la volée quand un joueur arrive sans défi (E2). Ne fait rien si le
+/// défi existe.
 /// </summary>
 /// <param name="Day">Le jour de jeu du défi.</param>
 /// <param name="Origin">Qui le génère : enregistré avec le défi.</param>
@@ -36,7 +36,7 @@ public enum GenerationOutcome
 public sealed record GenerateChallengeResult(
     GenerationOutcome Outcome, DateOnly Day, int? ChallengeId, int TrackCount, int EligibleCount, int Requested)
 {
-    /// <summary>Le compte rendu d'une tâche (Hangfire le garde, <c>GET /api/admin/jobs/{id}</c> le rend).</summary>
+    /// <summary>Le compte rendu d'une tâche (Hangfire le garde, <c>GET /api/admin/jobs/last-runs</c> le rend).</summary>
     public Dictionary<string, object?> ToReport() => new()
     {
         ["created"] = Outcome == GenerationOutcome.Created,
@@ -107,45 +107,14 @@ public sealed class GenerateDailyChallengeJob(IMessageBus bus, IGameCalendar cal
     // Le verrou de génération (en base) protège aussi d'une exécution simultanée ; celui-ci évite d'en empiler deux.
     [DisableConcurrentExecution(timeoutInSeconds: 60)]
     [AutomaticRetry(Attempts = RetryAttempts, DelaysInSeconds = [600])]
-    public async Task<object?> RunAsync(CancellationToken cancellationToken) =>
-        await GenerateTodayAsync(bus, calendar, ChallengeOrigin.Nightly, cancellationToken);
-
-    internal static async Task<object?> GenerateTodayAsync(
-        IMessageBus bus, IGameCalendar calendar, ChallengeOrigin origin, CancellationToken ct)
+    public async Task<object?> RunAsync(CancellationToken cancellationToken)
     {
-        var result = await bus.InvokeAsync<GenerateChallengeResult>(new GenerateDailyChallenge(calendar.Today, origin), ct);
+        var result = await bus.InvokeAsync<GenerateChallengeResult>(
+            new GenerateDailyChallenge(calendar.Today, ChallengeOrigin.Nightly), cancellationToken);
         return result.Outcome == GenerationOutcome.PoolInsufficient
             ? throw new JobFailedException(DailyAdminErrorCodes.PoolInsufficient)
             : result.ToReport();
     }
-}
-
-/// <summary>
-/// Tâche <c>daily-generate-challenge-admin</c> : ce que lance le bouton « Générer le défi du jour » de l'admin. Elle n'a pas
-/// de cron (en pause) et **ne réessaie pas** : l'admin voit tout de suite le résultat (ou le code d'erreur) et décide ;
-/// elle apparaît dans l'historique de <c>/jobs</c> comme tout lancement. Le défi est marqué « admin ».
-/// </summary>
-public sealed class GenerateDailyChallengeAdminJob(IMessageBus bus, IGameCalendar calendar) : IScheduledJob
-{
-    public const string Id = "daily-generate-challenge-admin";
-
-    [DisableConcurrentExecution(timeoutInSeconds: 60)]
-    [AutomaticRetry(Attempts = 0)]
-    public async Task<object?> RunAsync(CancellationToken cancellationToken) =>
-        await GenerateDailyChallengeJob.GenerateTodayAsync(bus, calendar, ChallengeOrigin.Admin, cancellationToken);
-}
-
-public static class GenerateDailyChallengeEndpoint
-{
-    /// <summary>
-    /// <c>POST /api/admin/daily/challenges/generate-today</c> : le bouton « Générer le défi du jour ». Déclenche la tâche
-    /// (chaque lancement apparaît dans l'historique de <c>/jobs</c>) et répond 202 avec l'exécution à suivre par
-    /// <c>GET /api/admin/jobs/{id}</c> : son compte rendu dit si le défi a été créé ou existait déjà, son code d'erreur
-    /// <c>admin.pool_insufficient</c> si le pool ne suffit pas.
-    /// </summary>
-    [WolverinePost("/api/admin/daily/challenges/generate-today", OperationId = "generateToday")]
-    public static async Task<JobExecutionResponse> Post(IJobTrigger trigger, CancellationToken ct) =>
-        new(await trigger.TriggerAsync(GenerateDailyChallengeAdminJob.Id, ct));
 }
 
 internal static partial class DailyLog

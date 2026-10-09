@@ -278,26 +278,6 @@
         }
       }
     },
-    "/api/admin/daily/challenges/generate-today": {
-      "post": {
-        "tags": [
-          "Daily"
-        ],
-        "operationId": "generateToday",
-        "responses": {
-          "202": {
-            "description": "Accepted",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/JobExecutionResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/daily/settings": {
       "get": {
         "tags": [
@@ -1475,17 +1455,6 @@
           }
         }
       },
-      "JobExecutionResponse": {
-        "required": [
-          "id"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          }
-        }
-      },
       "PlayerBreakdownResponse": {
         "required": [
           "totalGuests",
@@ -2205,9 +2174,6 @@
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.RecomputeDayStatsEndpoint"
-    },
-    {
-      "name": "InSeconds.Api.Modules.Daily.Application.GenerateDailyChallengeEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.GetDailySettingsEndpoint"

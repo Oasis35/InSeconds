@@ -10,15 +10,13 @@ public class ScheduledJobsTests(PostgresFixture postgres)
 {
     /// <summary>
     /// Les tâches récurrentes de l'API et leur cron par défaut (tableau du § 5.4 bis du plan v2).
-    /// Chaque module ajoute ici les siennes. `daily-generate-challenge-admin` est la tâche du
-    /// bouton « Générer le défi du jour » : en pause, sans réessai.
+    /// Chaque module ajoute ici les siennes.
     /// </summary>
     private static readonly Dictionary<string, string> ExpectedJobs = new()
     {
         ["catalogue-refresh"] = "0 23 * * *",
         ["daily-close-day"] = "5 0 * * *",
         ["daily-generate-challenge"] = "0 0 * * *",
-        ["daily-generate-challenge-admin"] = Cron.Never(),
         ["players-purge-expired-tokens"] = "30 3 * * *",
     };
 

@@ -111,6 +111,13 @@ public static class E2EEndpoints
         e2e.MapGet("/last-email", (string to, CapturingEmailSender emails) =>
             emails.LastTo(to) is { } email ? Results.Ok(email) : Results.NotFound());
 
+        // Lève une exception non gérée : le gestionnaire d'erreurs de l'API doit répondre 500 avec un code d'erreur (traceId) lisible
+        // (E2E `error-reporting`, comme `GET /api/e2e/throw` de la v1).
+        e2e.MapGet("/throw", () =>
+        {
+            throw new InvalidOperationException("Exception de test (e2e/throw)");
+        });
+
         return routes;
     }
 

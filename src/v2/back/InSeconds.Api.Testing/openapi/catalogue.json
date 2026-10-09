@@ -350,26 +350,6 @@
         }
       }
     },
-    "/api/admin/catalogue/refresh-previews": {
-      "post": {
-        "tags": [
-          "Catalogue"
-        ],
-        "operationId": "refreshPreviews",
-        "responses": {
-          "202": {
-            "description": "Accepted",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/JobExecutionResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/catalogue/search": {
       "get": {
         "tags": [
@@ -587,17 +567,6 @@
                 "type": "string"
               }
             }
-          }
-        }
-      },
-      "JobExecutionResponse": {
-        "required": [
-          "id"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
           }
         }
       },
@@ -868,9 +837,6 @@
     },
     {
       "name": "InSeconds.Api.Modules.Catalogue.Application.UpdateTrackEndpoint"
-    },
-    {
-      "name": "InSeconds.Api.Modules.Catalogue.Application.RefreshPreviewsEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Catalogue.Application.SearchTracksEndpoint"

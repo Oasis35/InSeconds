@@ -25,8 +25,8 @@ describe('ADMIN_ROUTES', () => {
     return TestBed.inject(Router).url;
   }
 
-  it('mène /admin au catalogue', async () => {
-    expect(await landOn('/admin')).toBe('/admin/catalogue');
+  it('mène /admin au tableau de bord, comme en v1', async () => {
+    expect(await landOn('/admin')).toBe('/admin/dashboard');
   });
 
   it('redirige l\'ancienne adresse /admin?tab=pool vers le catalogue', async () => {
@@ -42,11 +42,12 @@ describe('ADMIN_ROUTES', () => {
     expect(await landOn('/admin?tab=pool&page=2')).toBe('/admin/catalogue?page=2');
   });
 
-  it.each(['dashboard', 'defis', 'joueurs', 'actions'])('envoie ?tab=%s vers l\'onglet de ce nom (page d\'attente jusqu\'en F2)', async tab => {
+  it.each(['dashboard', 'defis', 'joueurs', 'actions'])('envoie ?tab=%s vers l\'onglet de ce nom', async tab => {
     expect(await landOn(`/admin?tab=${tab}`)).toBe(`/admin/${tab}`);
   });
 
-  it('un onglet inconnu mène au catalogue', async () => {
-    expect(await landOn('/admin?tab=nimporte-quoi')).toBe('/admin/catalogue');
+  it('un onglet inconnu mène au tableau de bord', async () => {
+    expect(await landOn('/admin?tab=nimporte-quoi')).toBe('/admin/dashboard');
+    expect(await landOn('/admin/nimporte-quoi')).toBe('/admin/dashboard');
   });
 });
