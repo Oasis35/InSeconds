@@ -454,7 +454,7 @@ public class DailyImportTests(ImportDatabase database)
     }
 
     [Fact]
-    public async Task Verification_ScoreDUnePartieTerminee_DifferentDeSesReponses_ImportRefuse()
+    public async Task Verification_ScoreDUnePartieTerminee_DifferentDeSesReponses_ImportRefuse_EtNommeLaPartie()
     {
         // Même cas que dans la v1 corrompue : le total de la partie ne vaut plus la somme de ses réponses.
         var cs = await database.CreateDatabaseAsync();
@@ -468,6 +468,9 @@ public class DailyImportTests(ImportDatabase database)
 
         Assert.NotEqual(0, result.ExitCode);
         Assert.Contains("score d'une partie terminée = somme de ses réponses", result.Output, StringComparison.Ordinal);
+        // Le message nomme la partie, son total et ses réponses : de quoi enquêter sans accès à la base.
+        Assert.Contains("Parties : 1 du ", result.Output, StringComparison.Ordinal);
+        Assert.Contains("(total 999, 1 réponse(s) : 1=850)", result.Output, StringComparison.Ordinal);
         Assert.Equal(0L, await Count(cs, "daily.sessions"));
     }
 
