@@ -240,7 +240,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RecomputeDayStatsResponse"
+                  "$ref": "#/components/schemas/AdminChallengeStats"
                 }
               }
             }
@@ -1324,199 +1324,6 @@
           }
         }
       },
-      "DayPlayer": {
-        "required": [
-          "playerId",
-          "status",
-          "score"
-        ],
-        "type": "object",
-        "properties": {
-          "playerId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "status": {
-            "type": "string"
-          },
-          "score": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
-      "DayStatsPayload": {
-        "required": [
-          "version",
-          "date",
-          "challengeId",
-          "allowedDurationsSeconds",
-          "durationScores",
-          "maxPossibleScore",
-          "playerCount",
-          "pendingCount",
-          "abandonedCount",
-          "expiredCount",
-          "scoreMin",
-          "scoreMax",
-          "scoreAvg",
-          "scoreMedian",
-          "scoreDistribution",
-          "tracks",
-          "players"
-        ],
-        "type": "object",
-        "properties": {
-          "version": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "date": {
-            "type": "string",
-            "format": "date"
-          },
-          "challengeId": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "allowedDurationsSeconds": {
-            "type": "array",
-            "items": {
-              "type": "number",
-              "format": "double"
-            }
-          },
-          "durationScores": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DurationScore"
-            }
-          },
-          "maxPossibleScore": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "playerCount": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pendingCount": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "abandonedCount": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "expiredCount": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "scoreMin": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "scoreMax": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "scoreAvg": {
-            "type": [
-              "null",
-              "number"
-            ],
-            "format": "double"
-          },
-          "scoreMedian": {
-            "type": [
-              "null",
-              "number"
-            ],
-            "format": "double"
-          },
-          "scoreDistribution": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ScoreBucket"
-            }
-          },
-          "tracks": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DayTrackStats"
-            }
-          },
-          "players": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DayPlayer"
-            }
-          }
-        }
-      },
-      "DayTrackStats": {
-        "required": [
-          "position",
-          "trackId",
-          "totalAnswers",
-          "artistCorrectRate",
-          "titleCorrectRate",
-          "extendedRate",
-          "avgListenedSeconds",
-          "guessTimeDistribution",
-          "notFoundCount"
-        ],
-        "type": "object",
-        "properties": {
-          "position": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "trackId": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "totalAnswers": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "artistCorrectRate": {
-            "type": "number",
-            "format": "double"
-          },
-          "titleCorrectRate": {
-            "type": "number",
-            "format": "double"
-          },
-          "extendedRate": {
-            "type": "number",
-            "format": "double"
-          },
-          "avgListenedSeconds": {
-            "type": [
-              "null",
-              "number"
-            ],
-            "format": "double"
-          },
-          "guessTimeDistribution": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DurationBucket"
-            }
-          },
-          "notFoundCount": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
       "DurationBucket": {
         "required": [
           "seconds",
@@ -1529,23 +1336,6 @@
             "format": "double"
           },
           "count": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
-      "DurationScore": {
-        "required": [
-          "seconds",
-          "score"
-        ],
-        "type": "object",
-        "properties": {
-          "seconds": {
-            "type": "number",
-            "format": "double"
-          },
-          "score": {
             "type": "integer",
             "format": "int32"
           }
@@ -1756,27 +1546,6 @@
           }
         }
       },
-      "RecomputeDayStatsResponse": {
-        "required": [
-          "date",
-          "computedAt",
-          "stats"
-        ],
-        "type": "object",
-        "properties": {
-          "date": {
-            "type": "string",
-            "format": "date"
-          },
-          "computedAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "stats": {
-            "$ref": "#/components/schemas/DayStatsPayload"
-          }
-        }
-      },
       "RequestHint": {
         "required": [
           "position",
@@ -1846,28 +1615,6 @@
               "null",
               "string"
             ]
-          }
-        }
-      },
-      "ScoreBucket": {
-        "required": [
-          "minScore",
-          "maxScore",
-          "count"
-        ],
-        "type": "object",
-        "properties": {
-          "minScore": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "maxScore": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "count": {
-            "type": "integer",
-            "format": "int32"
           }
         }
       },
