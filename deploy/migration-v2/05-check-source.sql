@@ -25,24 +25,24 @@ SELECT t.table_name, split_part(c.spec, ':', 1), COALESCE(ty.data_type, rtrim(sp
        c.spec LIKE '%?'
 FROM (VALUES
     ('__EFMigrationsHistory', 'MigrationId:varchar ProductVersion:varchar'),
-    ('Players', 'Id:uuid IsGuest:bool Pseudo:varchar? Email:varchar? AuthToken:uuid CreatedAt:ts LastSeenAt:ts?
-                 IsDeleted:bool DeletedAt:ts? CurrentStreak:int LastPlayedDate:date? IsAdmin:bool StreakFreezes:int'),
+    ('Players', 'Id:uuid IsGuest:bool Pseudo:varchar? Email:varchar? AuthToken:uuid CreatedAt:ts LastSeenAt:ts?' ||
+                 ' IsDeleted:bool DeletedAt:ts? CurrentStreak:int LastPlayedDate:date? IsAdmin:bool StreakFreezes:int'),
     ('MagicLinkTokens', 'Id:int Email:varchar TokenHash:varchar ExpiresAt:ts ConsumedAt:ts? CreatedAt:ts'),
-    ('EmailChangeTokens', 'Id:int PlayerId:uuid NewEmail:varchar TokenHash:varchar ExpiresAt:ts ConsumedAt:ts?
-                           CreatedAt:ts'),
+    ('EmailChangeTokens', 'Id:int PlayerId:uuid NewEmail:varchar TokenHash:varchar ExpiresAt:ts ConsumedAt:ts?' ||
+                           ' CreatedAt:ts'),
     ('DataProtectionKeys', 'Id:int FriendlyName:text? Xml:text?'),
     ('Settings', 'Id:int Key:varchar Value:varchar Description:varchar? UpdatedAt:ts'),
-    ('Tracks', 'Id:int DeezerTrackId:bigint Artist:varchar Title:varchar CreatedAt:ts UpdatedAt:ts? CoverHash:varchar?
-                HasPreview:bool LastUsedDate:date? UsageCount:int ReleaseYear:int? IsDisabled:bool'),
+    ('Tracks', 'Id:int DeezerTrackId:bigint Artist:varchar Title:varchar CreatedAt:ts UpdatedAt:ts? CoverHash:varchar?' ||
+                ' HasPreview:bool LastUsedDate:date? UsageCount:int ReleaseYear:int? IsDisabled:bool'),
     ('DailyChallenges', 'Id:int Date:date Seed:int'),
     ('DailyChallengeTracks', 'Id:int DailyChallengeId:int TrackId:int DeezerRankSnapshot:int Position:int'),
-    ('GameSessions', 'Id:int PlayerId:uuid DailyChallengeId:int TotalScore:int TotalDurationSeconds:numeric
-                      CreatedAt:ts AbandonedAt:ts? CompletedAt:ts? Status:int CurrentTrackId:int?
-                      CurrentTrackMinListenedSeconds:numeric? CurrentTrackHintLevelUsed:int FreezeEarned:bool
-                      FreezesUsed:int'),
-    ('GameSessionAnswers', 'Id:int GameSessionId:int DailyChallengeTrackId:int ListenedDurationSeconds:numeric
-                            WasExtended:bool ArtistAnswer:varchar? TitleAnswer:varchar? ArtistCorrect:bool
-                            TitleCorrect:bool Score:int HintLevelUsed:int')
+    ('GameSessions', 'Id:int PlayerId:uuid DailyChallengeId:int TotalScore:int TotalDurationSeconds:numeric' ||
+                      ' CreatedAt:ts AbandonedAt:ts? CompletedAt:ts? Status:int CurrentTrackId:int?' ||
+                      ' CurrentTrackMinListenedSeconds:numeric? CurrentTrackHintLevelUsed:int FreezeEarned:bool' ||
+                      ' FreezesUsed:int'),
+    ('GameSessionAnswers', 'Id:int GameSessionId:int DailyChallengeTrackId:int ListenedDurationSeconds:numeric' ||
+                            ' WasExtended:bool ArtistAnswer:varchar? TitleAnswer:varchar? ArtistCorrect:bool' ||
+                            ' TitleCorrect:bool Score:int HintLevelUsed:int')
 ) AS t(table_name, columns)
 CROSS JOIN LATERAL regexp_split_to_table(trim(t.columns), '\s+') AS c(spec)
 LEFT JOIN (VALUES
