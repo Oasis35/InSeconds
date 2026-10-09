@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { Day, DayActivity, activityBarHeightPx, formatDayShort } from '../domain/dashboard';
+import { DayActivity, activityBarHeightPx, formatDayShort } from '../domain/dashboard';
 
 /** Activité des 30 derniers jours : une barre par jour, un clic sélectionne le jour. */
 @Component({
@@ -21,7 +21,7 @@ import { Day, DayActivity, activityBarHeightPx, formatDayShort } from '../domain
       } @else {
         <div class="flex items-end gap-px h-16">
           @for (item of activity(); track item.day) {
-            <button type="button" (click)="select.emit(item.day)"
+            <button type="button" (click)="daySelected.emit(item.day)"
               class="flex-1 flex flex-col items-center group relative"
               data-testid="dashboard-activity-bar"
               [attr.title]="item.day + ' : ' + item.playerCount + ' ' + ((item.playerCount > 1 ? 'admin.dashboard.players' : 'admin.dashboard.player') | translate)">
@@ -42,13 +42,13 @@ import { Day, DayActivity, activityBarHeightPx, formatDayShort } from '../domain
 })
 export class DashboardActivityComponent {
   readonly activity = input.required<readonly DayActivity[]>();
-  readonly selectedDay = input.required<Day | null>();
+  readonly selectedDay = input.required<string | null>();
   readonly total = input.required<number>();
   readonly peak = input.required<number>();
   /** Langue d'affichage des dates (`fr`, `en`). */
   readonly locale = input.required<string>();
 
-  readonly select = output<Day>();
+  readonly daySelected = output<string>();
 
   protected readonly firstLabel = computed(() => this.label(this.activity().at(0)?.day));
   protected readonly lastLabel = computed(() => this.label(this.activity().at(-1)?.day));
@@ -62,7 +62,7 @@ export class DashboardActivityComponent {
     return item.playerCount === 0 ? 'var(--bg-inactive)' : 'var(--bg-primary-dk)';
   }
 
-  private label(day: Day | undefined): string {
+  private label(day: string | undefined): string {
     return day ? formatDayShort(day, this.locale()) : '';
   }
 }

@@ -79,7 +79,7 @@ export function clampCustomTitle(text: string): string {
 
 /** `aaaa-mm-jj` (UTC), `daysAgo` jours avant `now`. */
 export function utcDay(now: Date, daysAgo = 0): string {
-  const day = new Date(now.getTime());
+  const day = new Date(now);
   day.setUTCDate(day.getUTCDate() - daysAgo);
   return day.toISOString().slice(0, 10);
 }

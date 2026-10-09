@@ -1,5 +1,5 @@
 import { Provider } from '@angular/core';
-import { Dashboard, Day } from '../../domain/dashboard';
+import { Dashboard } from '../../domain/dashboard';
 import { DashboardApi } from '../dashboard.api';
 
 export function dashboard(overrides: Partial<Dashboard> = {}): Dashboard {
@@ -20,7 +20,7 @@ export function dashboard(overrides: Partial<Dashboard> = {}): Dashboard {
 
 function defaults() {
   return {
-    getDashboard: vi.fn<(day?: Day) => Promise<Dashboard>>(() => Promise.resolve(dashboard())),
+    getDashboard: vi.fn<(day?: string) => Promise<Dashboard>>(() => Promise.resolve(dashboard())),
   } satisfies Record<keyof DashboardApi, unknown>;
 }
 

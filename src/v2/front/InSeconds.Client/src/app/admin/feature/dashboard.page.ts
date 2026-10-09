@@ -44,7 +44,7 @@ import { DashboardPlayersComponent } from '../ui/dashboard-players.component';
           [total]="store.totalPlayers()"
           [peak]="store.maxDailyPlayers()"
           [locale]="locale()"
-          (select)="store.selectDay($event)" />
+          (daySelected)="store.selectDay($event)" />
         <app-dashboard-players [players]="dashboard.players" />
       } @else if (store.isPending()) {
         <div class="rounded-xl p-5 flex items-center justify-center h-24" style="background:var(--bg-surface)">

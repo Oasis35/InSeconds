@@ -13,11 +13,10 @@ export class JobRunner {
 
   /** `onUpdate` reçoit chaque état lu (« en file », « en cours »…). Une erreur de lecture est relancée. */
   async follow(id: string, onUpdate?: (status: JobStatus) => void): Promise<JobStatus> {
-    for (;;) {
-      const status = await this.jobs.getStatus(id);
-      onUpdate?.(status);
-      if (isSettled(status.state)) return status;
-      await new Promise<void>(resolve => setTimeout(resolve, JOB_POLL_INTERVAL_MS));
-    }
+    const status = await this.jobs.getStatus(id);
+    onUpdate?.(status);
+    if (isSettled(status.state)) return status;
+    await new Promise<void>(resolve => setTimeout(resolve, JOB_POLL_INTERVAL_MS));
+    return this.follow(id, onUpdate);
   }
 }

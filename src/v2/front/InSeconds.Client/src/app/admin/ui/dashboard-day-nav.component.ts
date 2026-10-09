@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { Day, formatDayLong } from '../domain/dashboard';
+import { formatDayLong } from '../domain/dashboard';
 
 /** Sélecteur de jour du tableau de bord : jour précédent / suivant autour du jour affiché. */
 @Component({
@@ -31,7 +31,7 @@ import { Day, formatDayLong } from '../domain/dashboard';
   `,
 })
 export class DashboardDayNavComponent {
-  readonly day = input.required<Day | null>();
+  readonly day = input.required<string | null>();
   /** Langue d'affichage du jour (`fr`, `en`). */
   readonly locale = input.required<string>();
   readonly isToday = input(false);

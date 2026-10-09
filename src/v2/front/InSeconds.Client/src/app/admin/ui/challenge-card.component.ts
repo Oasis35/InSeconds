@@ -17,7 +17,7 @@ import { ChallengeTrackStatsComponent } from './challenge-track-stats.component'
   template: `
     @let c = challenge();
     <div class="py-3" style="border-top:1px solid var(--border-medium)">
-      <button type="button" (click)="toggle.emit()" [attr.aria-expanded]="expanded()"
+      <button type="button" (click)="toggled.emit()" [attr.aria-expanded]="expanded()"
         class="w-full flex items-center justify-between gap-2 text-left">
         <div class="flex items-center gap-3">
           <span class="font-mono text-sm" style="color:var(--text-hi)">{{ c.date }}</span>
@@ -41,7 +41,7 @@ import { ChallengeTrackStatsComponent } from './challenge-track-stats.component'
       @if (c.players.length > 0) {
         <app-challenge-player-chips
           [players]="c.players" [youId]="youId()" [highlightedId]="highlightedId()" [copiedId]="copiedId()"
-          (select)="selectPlayer.emit($event)" (copy)="copyPlayer.emit($event)" />
+          (playerSelected)="selectPlayer.emit($event)" (playerCopied)="copyPlayer.emit($event)" />
       }
 
       @if (expanded()) {
@@ -94,7 +94,7 @@ export class ChallengeCardComponent {
   /** Clé i18n de l'erreur du dernier recalcul, s'il a échoué. */
   readonly recomputeErrorKey = input<string | null>(null);
 
-  readonly toggle = output<void>();
+  readonly toggled = output<void>();
   readonly selectPlayer = output<string>();
   readonly copyPlayer = output<string>();
   readonly showChart = output<ChallengeTrackStats>();

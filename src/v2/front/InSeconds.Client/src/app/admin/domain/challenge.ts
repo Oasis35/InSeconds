@@ -65,7 +65,7 @@ const MONTH_NAMES = [
 ];
 
 const SHORT_ID_LENGTH = 8;
-const KNOWN_STATUSES = ['Completed', 'Pending', 'Abandoned', 'Expired'];
+const KNOWN_STATUSES: ReadonlySet<string> = new Set(['Completed', 'Pending', 'Abandoned', 'Expired']);
 
 /** Le mois (`aaaa-mm`) d'un jour `aaaa-mm-jj`. */
 export function monthOf(day: string): string {
@@ -121,7 +121,7 @@ export function unfinishedCount(challenge: ChallengeStats): number {
 }
 
 export function statusLabelKey(status: string): string | null {
-  return KNOWN_STATUSES.includes(status) ? `admin.players.status.${status}` : null;
+  return KNOWN_STATUSES.has(status) ? `admin.players.status.${status}` : null;
 }
 
 /** Couleur du point de statut devant un chip dont la partie n'est pas terminée. */

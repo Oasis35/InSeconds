@@ -3,14 +3,14 @@ import { patchState, signalStore, withComputed, withMethods, withState } from '@
 import { toAppError } from '../../core/errors/app-error';
 import { setError, setFulfilled, setPending, withRequestStatus } from '../../core/store/with-request-status';
 import {
-  Dashboard, Day, canGoToNextDay, canGoToPreviousDay, maxDailyPlayers, shiftDay, todayUtc, totalPlayers,
+  Dashboard, canGoToNextDay, canGoToPreviousDay, maxDailyPlayers, shiftDay, todayUtc, totalPlayers,
 } from '../domain/dashboard';
 import { DashboardApi } from './dashboard.api';
 
 interface DashboardState {
   dashboard: Dashboard | null;
   /** Le jour affiché : celui qu'on a demandé, sinon celui que l'API a rendu, sinon aujourd'hui. */
-  selectedDay: Day | null;
+  selectedDay: string | null;
 }
 
 /**
@@ -31,7 +31,7 @@ export const DashboardStore = signalStore(
     /** Numéro de la lecture la plus récente : une réponse plus ancienne, arrivée après elle, n'écrit rien. */
     let latestLoad = 0;
 
-    async function load(day?: Day): Promise<void> {
+    async function load(day?: string): Promise<void> {
       const mine = ++latestLoad;
       patchState(store, setPending());
       try {
@@ -48,7 +48,7 @@ export const DashboardStore = signalStore(
     return {
       load,
 
-      async selectDay(day: Day): Promise<void> {
+      async selectDay(day: string): Promise<void> {
         if (day === store.selectedDay()) return;
         await load(day);
       },

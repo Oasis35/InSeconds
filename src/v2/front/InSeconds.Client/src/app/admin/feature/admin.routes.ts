@@ -9,9 +9,15 @@ import { DEFAULT_TAB, LEGACY_TAB_NAMES } from './admin-tabs';
  */
 const defaultTab: RedirectFunction = ({ queryParams }) => {
   const { tab, ...others } = queryParams;
-  const target = tab === 'pool' ? 'catalogue' : typeof tab === 'string' && LEGACY_TAB_NAMES.has(tab) ? tab : DEFAULT_TAB;
-  return inject(Router).createUrlTree(['/admin', target], { queryParams: others });
+  return inject(Router).createUrlTree(['/admin', legacyTabTarget(tab)], { queryParams: others });
 };
+
+/** L'onglet où mène un ancien `?tab=` : le catalogue pour `pool`, l'onglet du même nom s'il existe, sinon l'onglet d'arrivée. */
+function legacyTabTarget(tab: unknown): string {
+  if (tab === 'pool') return 'catalogue';
+  if (typeof tab === 'string' && LEGACY_TAB_NAMES.has(tab)) return tab;
+  return DEFAULT_TAB;
+}
 
 /** L'ancienne adresse `/admin/pool` mène au catalogue, page de la grille comprise. */
 const poolToCatalogue: RedirectFunction = ({ queryParams, fragment }) =>

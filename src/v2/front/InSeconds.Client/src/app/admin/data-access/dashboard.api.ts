@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { DailyActivityResponse, DailyClient, DashboardResponse, DayKpisResponse } from '../../api/daily/api.generated';
-import { Dashboard, Day, DayActivity, DayKpis } from '../domain/dashboard';
+import { Dashboard, DayActivity, DayKpis } from '../domain/dashboard';
 
 /**
  * Adaptateur du tableau de bord de l'admin (module Daily) : seule porte d'entrée vers le client
@@ -12,7 +12,7 @@ export class DashboardApi {
   private readonly client = inject(DailyClient);
 
   /** Le tableau de bord ; sans `day`, celui d'aujourd'hui. */
-  async getDashboard(day?: Day): Promise<Dashboard> {
+  async getDashboard(day?: string): Promise<Dashboard> {
     return toDashboard(await firstValueFrom(this.client.getDashboard(day)));
   }
 }
@@ -49,6 +49,6 @@ function toKpis(kpis: DayKpisResponse): DayKpis {
 }
 
 /** Le client annonce un `Date`, le JSON livre un jour en texte (`2026-10-05`) : on garde le jour, sans fuseau. */
-function toDay(value: Date | string): Day {
+function toDay(value: Date | string): string {
   return (typeof value === 'string' ? value : value.toISOString()).slice(0, 10);
 }

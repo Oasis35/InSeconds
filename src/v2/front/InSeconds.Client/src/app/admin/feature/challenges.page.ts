@@ -69,7 +69,7 @@ function recomputeErrorKey(code: string): string {
                   [copiedId]="store.copiedPlayerId()"
                   [recomputing]="store.recomputingDays().includes(c.date)"
                   [recomputeErrorKey]="recomputeErrorKeys()[c.date] ?? null"
-                  (toggle)="store.toggleExpanded(c.id)"
+                  (toggled)="store.toggleExpanded(c.id)"
                   (selectPlayer)="store.toggleHighlight($event)"
                   (copyPlayer)="store.copyPlayerId($event)"
                   (showChart)="openChart($event)"

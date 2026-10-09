@@ -28,7 +28,7 @@ describe('ChallengeCardComponent', () => {
   it('émet toggle au clic sur l\'en-tête', () => {
     render();
     const toggle = vi.fn();
-    fixture.componentInstance.toggle.subscribe(toggle);
+    fixture.componentInstance.toggled.subscribe(toggle);
 
     element().querySelector('button')!.click();
 

@@ -19,7 +19,7 @@ import { ChallengePlayer, chipColors, playerLabel, statusDotColor, statusLabelKe
         @let col = colors(p.playerId);
         @let key = statusKey(p.status);
         <button type="button"
-          (click)="select.emit(p.playerId)"
+          (click)="playerSelected.emit(p.playerId)"
           (contextmenu)="onContextMenu($event, p.playerId)"
           [attr.title]="p.playerId + ' — ' + (key ? (key | translate) : p.status) + (p.status === 'Completed' ? ' — ' + p.score + ' pts' : '')"
           class="text-[10px] font-mono px-1.5 py-0.5 rounded border transition-all inline-flex items-center gap-1"
@@ -49,8 +49,8 @@ export class ChallengePlayerChipsComponent {
   readonly highlightedId = input<string | null>(null);
   /** Le joueur dont l'identifiant vient d'être copié. */
   readonly copiedId = input<string | null>(null);
-  readonly select = output<string>();
-  readonly copy = output<string>();
+  readonly playerSelected = output<string>();
+  readonly playerCopied = output<string>();
 
   protected readonly colors = chipColors;
   protected readonly label = playerLabel;
@@ -65,6 +65,6 @@ export class ChallengePlayerChipsComponent {
   /** Le clic droit copie l'identifiant complet (le clic gauche sert à la surbrillance). */
   protected onContextMenu(event: MouseEvent, playerId: string): void {
     event.preventDefault();
-    this.copy.emit(playerId);
+    this.playerCopied.emit(playerId);
   }
 }

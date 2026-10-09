@@ -152,11 +152,12 @@ export class WeeklyStoryComponent {
       // Les visuels n'existent qu'une fois le récap affiché : rendu synchrone avant la capture.
       this.changeDetector.detectChanges();
       await this.renderer.prepare();
-      const images: StoryImage[] = [];
-      for (const element of this.visuals()) {
+      // Une capture après l'autre (chacune clone la page) : la suivante attend la précédente.
+      const images = await this.visuals().reduce<Promise<StoryImage[]>>(async (previous, element) => {
+        const done = await previous;
         const kind = element.dataset['story'] as StoryKind;
-        images.push({ kind, dataUrl: await this.renderer.capture(element), fileName: storyFileName(kind, recap.to) });
-      }
+        return [...done, { kind, dataUrl: await this.renderer.capture(element), fileName: storyFileName(kind, recap.to) }];
+      }, Promise.resolve([]));
       this.store.setImages(images);
     } catch {
       this.store.failRendering();
