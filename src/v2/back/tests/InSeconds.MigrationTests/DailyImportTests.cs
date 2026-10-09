@@ -548,7 +548,7 @@ public class DailyImportTests(ImportDatabase database)
         await V1DailyData.InsertChallengesAsync(cs, new V1Challenge(1, oldDay));
         await V1DailyData.InsertChallengeTracksAsync(cs, new V1ChallengeTrack(100, 1, 1, 1));
         Assert.Equal(0, (await database.RunImportAsync(cs)).ExitCode);
-        await ImportDatabase.ExecuteAsync(cs, """INSERT INTO infra.settings (key, value, updated_at) VALUES ('Daily:HintUnlockDurationsSeconds', '[10, 5]', now())""");
+        await ImportDatabase.ExecuteAsync(cs, """UPDATE infra.settings SET value = '[10, 5]' WHERE key = 'Daily:HintUnlockDurationsSeconds'""");
 
         var exitCode = await FreezeDayStatsCommand.RunAsync([$"--ConnectionStrings:DefaultConnection={cs}"], TestContext.Current.CancellationToken);
 

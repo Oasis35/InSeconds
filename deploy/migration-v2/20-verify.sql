@@ -287,3 +287,38 @@ SELECT pg_temp.expect('séquence des identifiants de défis', 1, (
 SELECT pg_temp.expect('séquence des identifiants de parties', 1, (
     SELECT CASE WHEN (SELECT CASE WHEN is_called THEN last_value + 10 ELSE last_value END FROM daily.sessions_hilo)
                     > COALESCE((SELECT max(id) FROM daily.sessions), 0) THEN 1 ELSE 0 END));
+
+-- ============================================================================================
+-- Réglages (PR G1)
+-- ============================================================================================
+
+-- Nombre de lignes : chaque réglage de la v1 a sa ligne en v2 (la correspondance import_setting_map vient de 10-import.sql).
+SELECT pg_temp.expect('réglages',
+    (SELECT count(*) FROM public."Settings"),
+    (SELECT count(*) FROM infra.settings v JOIN import_setting_map m ON m.v2_key = v.key));
+
+-- Valeurs : relues depuis le JSON de la v2 (comme le fait le binder de l'API : un nombre, une liste, un objet), comparées
+-- aux éléments du texte de la v1, un à un et dans l'ordre. Les décimaux sont comparés en valeur (0.50 = 0.5).
+SELECT pg_temp.expect('réglages repris à l''identique', 0, (
+    SELECT count(*) FROM public."Settings" s
+    JOIN import_setting_map m ON m.v1_key = s."Key"
+    LEFT JOIN infra.settings v ON v.key = m.v2_key
+    WHERE v.key IS NULL
+       OR v.description IS DISTINCT FROM s."Description"
+       OR v.updated_at IS DISTINCT FROM s."UpdatedAt"
+       OR NOT CASE m.kind
+           WHEN 'int' THEN jsonb_typeof(v.value) = 'number' AND (v.value #>> '{}')::numeric = trim(s."Value")::numeric
+           WHEN 'text' THEN jsonb_typeof(v.value) = 'string' AND (v.value #>> '{}') = s."Value"
+           WHEN 'decimals' THEN jsonb_typeof(v.value) = 'array'
+               AND ARRAY(SELECT e::numeric FROM jsonb_array_elements_text(v.value) WITH ORDINALITY AS j(e, o) ORDER BY o)
+                 = ARRAY(SELECT item::numeric FROM pg_temp.v1_setting_items(s."Value") ORDER BY ord)
+           WHEN 'duration_scores' THEN jsonb_typeof(v.value) = 'array'
+               AND ARRAY(SELECT ((e ->> 'seconds')::numeric, (e ->> 'score')::int)
+                         FROM jsonb_array_elements(v.value) WITH ORDINALITY AS j(e, o) ORDER BY o)
+                 = ARRAY(SELECT (split_part(item, ':', 1)::numeric, split_part(item, ':', 2)::int)
+                         FROM pg_temp.v1_setting_items(s."Value") ORDER BY ord)
+           WHEN 'int_map' THEN jsonb_typeof(v.value) = 'object'
+               AND ARRAY(SELECT (k::int, e::int) FROM jsonb_each_text(v.value) AS j(k, e) ORDER BY 1)
+                 = ARRAY(SELECT (split_part(item, ':', 1)::int, split_part(item, ':', 2)::int)
+                         FROM pg_temp.v1_setting_items(s."Value") ORDER BY 1)
+       END));

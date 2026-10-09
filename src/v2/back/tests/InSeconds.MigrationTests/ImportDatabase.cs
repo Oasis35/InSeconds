@@ -58,14 +58,21 @@ public sealed class ImportDatabase : IAsyncLifetime
         return connectionString;
     }
 
-    /// <summary>Lance le vrai <c>run-import.sh</c>, dans le conteneur (POSIX sh et psql de l'image Alpine).</summary>
-    public async Task<ImportResult> RunImportAsync(string connectionString)
+    /// <summary>Lance le vrai <c>run-import.sh</c>, dans le conteneur (POSIX sh et psql de l'image Alpine), avec ses options (<c>--force</c>).</summary>
+    public Task<ImportResult> RunImportAsync(string connectionString, params string[] options) =>
+        RunInContainerAsync(connectionString, $"sh {ImportDirectory}/run-import.sh {string.Join(' ', options)}");
+
+    /// <summary>Lance un script SQL du dossier par psql, dans le conteneur, comme le mode d'emploi (<c>mark-opened.sql</c>, <c>30-verify-day-stats.sql</c>).</summary>
+    public Task<ImportResult> RunSqlFileAsync(string connectionString, string fileName) =>
+        RunInContainerAsync(connectionString, $"psql --no-psqlrc --quiet -v ON_ERROR_STOP=1 -f {ImportDirectory}/{fileName}");
+
+    private async Task<ImportResult> RunInContainerAsync(string connectionString, string command)
     {
         var database = new NpgsqlConnectionStringBuilder(connectionString).Database;
         var result = await _container.ExecAsync(
         [
             "sh", "-c",
-            $"PGHOST=localhost PGUSER={PostgreSqlBuilder.DefaultUsername} PGPASSWORD={PostgreSqlBuilder.DefaultPassword} PGDATABASE={database} sh {ImportDirectory}/run-import.sh",
+            $"PGHOST=localhost PGUSER={PostgreSqlBuilder.DefaultUsername} PGPASSWORD={PostgreSqlBuilder.DefaultPassword} PGDATABASE={database} {command}",
         ]);
         // Pas de code de sortie : la commande ne s'est pas terminée normalement.
         return new ImportResult(result.ExitCode ?? -1, result.Stdout + result.Stderr);
@@ -77,6 +84,7 @@ public sealed class ImportDatabase : IAsyncLifetime
         var directory = Path.Combine(RepositoryRoot, "deploy", "migration-v2");
         var script = string.Join("\n",
             File.ReadAllText(Path.Combine(directory, "00-import-state.sql")),
+            File.ReadAllText(Path.Combine(directory, "05-check-source.sql")),
             File.ReadAllText(Path.Combine(directory, "10-import.sql")),
             tamperingSql,
             File.ReadAllText(Path.Combine(directory, "20-verify.sql")));

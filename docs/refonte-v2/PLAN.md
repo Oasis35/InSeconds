@@ -670,10 +670,13 @@ Tout est versionné dans `deploy/migration-v2/` :
 ```
 deploy/migration-v2/
 ├── run-import.sh           enchaîne les étapes, une seule transaction, s'arrête à la première erreur
-├── 00-import-state.sql     crée infra.import_state (B4)
-├── 10-import.sql           vide les tables v2, puis INSERT … SELECT depuis public.*
+├── 00-import-state.sql     crée infra.import_state (B4) ; garde opened_at, contournable par --force (G1)
+├── 05-check-source.sql     forme de la source : colonnes de public, types, nullabilité (G1)
+├── 10-import.sql           vide les tables v2, puis INSERT … SELECT depuis public.* (réglages compris, G1)
 ├── 20-verify.sql           contrôles, lève une exception au moindre écart (annule l'import)
 ├── 90-import-done.sql      note l'import réussi (B4)
+├── 30-verify-day-stats.sql après --freeze-day-stats : photos de l'historique conformes à la v1 (G1)
+├── mark-opened.sql         à la bascule : note l'ouverture de la v2 (opened_at), qui arme la garde (G1)
 ├── import-to-staging.sh    staging : import puis seconde anonymisation (B4)
 ├── (commande de l'API)     `--freeze-day-stats` : calcul des stats figées de l'historique (E4)
 └── README.md               mode d'emploi, retour arrière
@@ -684,7 +687,7 @@ Tout se passe dans la même base, sans dump ni restauration :
 1. **À l'avance, sans coupure :** l'API v2 lancée avec `--migrate-only`, un point d'entrée qui applique les migrations **sans démarrer** ni Hangfire, ni Wolverine, ni le serveur HTTP (testé en CI). Elle crée les schémas v2, les tables, l'extension `citext` (dans un schéma `extensions`, pas dans `public`, pour que la copie prod → staging de `public` ne la touche pas), puis s'arrête. Les tables de Wolverine (`messaging`) et de Hangfire (`jobs`) ne sont pas créées à ce moment : elles le sont au premier démarrage de l'API v2 (décision A2, § 4.6). La v1 continue de tourner : elle ne voit rien de tout ça.
 2. **Le jour J, v1 arrêtée :** `10-import.sql` dans une seule transaction. Il vide les tables v2 (le script est rejouable autant de fois que nécessaire), copie les données depuis `public.*`, puis remet les séquences à niveau (`setval` au plus grand identifiant importé). **Garde-fou :** une fois la v2 ouverte aux joueurs, un marqueur `infra.import_state` bloque toute nouvelle exécution (sinon on effacerait les parties jouées en v2), sauf option `--force` explicite.
 3. `20-verify.sql` : au moindre écart, **arrêt** (§ 8.5).
-4. Calcul des stats figées de tous les jours passés : `dotnet InSeconds.Api.dll --freeze-day-stats` (même règle que la tâche `daily-close-day`, sans serveur ni tâche ; rejouable).
+4. Calcul des stats figées de tous les jours passés : `dotnet InSeconds.Api.dll --freeze-day-stats` (même règle que la tâche `daily-close-day`, sans serveur ni tâche ; rejouable), puis `30-verify-day-stats.sql` (chaque jour terminé a sa photo, aux compteurs de la v1). Au moment de rouvrir le site sur la v2 : `mark-opened.sql` (G1).
 5. **Les tables v1 de `public` sont gardées quelques semaines,** puis supprimées après une sauvegarde archivée (étape 12).
 
 **Extrait représentatif de l'import :**
@@ -723,7 +726,8 @@ Le format exact du texte haché (Guid en minuscules avec tirets) est fixé une f
 | Cooldown (non bloquant) | dernière date et nombre d'utilisations recalculés comparés à `LastUsedDate` / `UsageCount` d'origine : les morceaux en écart sont listés, l'import continue |
 | Forme de la source | les colonnes lues dans `public` existent avec le type attendu (`information_schema`), pour détecter une migration v1 arrivée pendant le chantier |
 | Intégrité | aucune réponse orpheline, aucune position hors du défi, aucun doublon `(player_id, challenge_id)` |
-| Settings | toutes les clés v1 connues et converties ; valeurs relues par l'API v2 identiques aux valeurs v1 |
+| Settings | toutes les clés v1 connues et converties ; valeurs relues par l'API v2 identiques aux valeurs v1 ; une valeur que la v1 aurait ignorée (illisible) arrête l'import (G1) |
+| Statistiques figées (après `--freeze-day-stats`, `30-verify-day-stats.sql`) | une photo par jour J-2 et avant ; parties terminées, abandonnées, expirées et scores extrêmes recomptés sur la v1 ; paliers figés = réglages importés (G1) |
 
 ### 8.6 Tests de l'import
 

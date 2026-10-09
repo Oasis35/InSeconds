@@ -307,3 +307,125 @@ WHERE "CurrentStreak" <> 0 OR "LastPlayedDate" IS NOT NULL OR "StreakFreezes" <>
 -- identifiant repris, sans quoi la première partie ou le premier défi créés en v2 prendraient celui d'une ligne de la v1.
 SELECT setval('daily.challenges_hilo', COALESCE(max(id), 0) + 1, false) FROM daily.challenges;
 SELECT setval('daily.sessions_hilo', COALESCE(max(id), 0) + 1, false) FROM daily.sessions;
+
+-- ============================================================================================
+-- Réglages (PR G1) : public."Settings" → infra.settings (§ 4.6 et 8.2 du plan v2). Clés préfixées par le
+-- module qui les lit, valeurs converties du texte de la v1 (CSV, « palier:score ») en JSON. Toutes les lignes
+-- de la v1 sont reprises, valeurs par défaut comprises, avec leur description et leur date. Toute clé
+-- inconnue, et toute valeur que la conversion ne saurait pas relire, arrête l'import (la v1 ignorait sans
+-- bruit une entrée illisible ; la v2 refuserait de démarrer ou retomberait sur ses valeurs par défaut).
+-- Les réglages propres à la v2 (Catalogue:Refresh…) ne sont pas touchés.
+-- ============================================================================================
+
+-- La correspondance : clé v1, clé v2, forme de la valeur. Lue aussi par 20-verify.sql (même transaction).
+--   int             : entier ("20")                         → 20
+--   text            : texte tel quel                         → "https://…"
+--   decimals        : liste CSV ("0.50,1,1.5")              → [0.5, 1, 1.5]
+--   duration_scores : "palier:score" en CSV ("0.50:1000,…") → [{"seconds": 0.5, "score": 1000}, …]
+--                     (une liste d'objets : le binder .NET ne lit pas un dictionnaire à clé décimale)
+--   int_map         : "niveau:pourcentage" en CSV ("1:30")  → {"1": 30, …}
+CREATE TEMP TABLE import_setting_map (
+    v1_key text PRIMARY KEY,
+    v2_key text NOT NULL UNIQUE,
+    kind   text NOT NULL CHECK (kind IN ('int', 'text', 'decimals', 'duration_scores', 'int_map'))
+) ON COMMIT DROP;
+
+INSERT INTO import_setting_map (v1_key, v2_key, kind) VALUES
+    ('GuessTimerSeconds',          'Daily:GuessTimerSeconds',          'int'),
+    ('AllowedDurationsSeconds',    'Daily:AllowedDurationsSeconds',    'decimals'),
+    ('TracksPerChallenge',         'Daily:TracksPerChallenge',         'int'),
+    ('DurationScores',             'Daily:DurationScores',             'duration_scores'),
+    ('CoverUrlTemplate',           'Catalogue:CoverUrlTemplate',       'text'),
+    ('TrackCooldownDays',          'Daily:TrackCooldownDays',          'int'),
+    ('HintUnlockDurationsSeconds', 'Daily:HintUnlockDurationsSeconds', 'decimals'),
+    ('HintPenaltyPercent',         'Daily:HintPenaltyPercent',         'int_map'),
+    ('StreakFreezeEveryDays',      'Daily:StreakFreezeEveryDays',      'int'),
+    ('StreakFreezeMax',            'Daily:StreakFreezeMax',            'int'),
+    ('StreakLostNudgeMinDays',     'Daily:StreakLostNudgeMinDays',     'int');
+
+-- Les éléments d'une liste CSV de la v1, dans l'ordre, sans les blancs ni les éléments vides (comme le
+-- découpage de la v1 : Split(',', RemoveEmptyEntries) puis Trim).
+CREATE FUNCTION pg_temp.v1_setting_items(raw text) RETURNS TABLE (item text, ord bigint)
+LANGUAGE sql IMMUTABLE AS $$
+    SELECT i, o FROM unnest(string_to_array(regexp_replace(raw, '\s', '', 'g'), ',')) WITH ORDINALITY AS u(i, o)
+    WHERE i <> ''
+$$;
+
+-- La valeur de la v1 est-elle relisible, sans perte, sous sa forme ? (Avant toute conversion : un cast qui
+-- échoue ne dirait pas quel réglage est en cause.)
+CREATE FUNCTION pg_temp.v1_setting_is_valid(kind text, raw text) RETURNS boolean
+LANGUAGE sql IMMUTABLE AS $$
+    SELECT CASE
+        WHEN kind = 'int' THEN raw ~ '^ *-?[0-9]{1,9} *$'
+        WHEN kind = 'text' THEN true
+        -- Une liste vide : la v1 retombait sur ses valeurs par défaut, sans le dire.
+        WHEN NOT EXISTS (SELECT 1 FROM pg_temp.v1_setting_items(raw)) THEN false
+        WHEN kind = 'decimals' THEN
+            NOT EXISTS (SELECT 1 FROM pg_temp.v1_setting_items(raw) WHERE item !~ '^[0-9]{1,6}(\.[0-9]{1,6})?$')
+        WHEN kind = 'duration_scores' THEN
+            CASE WHEN EXISTS (SELECT 1 FROM pg_temp.v1_setting_items(raw)
+                              WHERE item !~ '^[0-9]{1,6}(\.[0-9]{1,6})?:-?[0-9]{1,9}$') THEN false
+                 -- Deux fois le même palier : la v1 gardait le dernier, sans le dire.
+                 ELSE (SELECT count(DISTINCT split_part(item, ':', 1)::numeric) = count(*) FROM pg_temp.v1_setting_items(raw)) END
+        WHEN kind = 'int_map' THEN
+            CASE WHEN EXISTS (SELECT 1 FROM pg_temp.v1_setting_items(raw)
+                              WHERE item !~ '^-?[0-9]{1,9}:-?[0-9]{1,9}$') THEN false
+                 ELSE (SELECT count(DISTINCT split_part(item, ':', 1)::int) = count(*) FROM pg_temp.v1_setting_items(raw)) END
+        ELSE false
+    END
+$$;
+
+-- La conversion. Les décimaux perdent leurs zéros inutiles (0.50 → 0.5) : même valeur, comme l'écrit l'admin v2.
+CREATE FUNCTION pg_temp.v1_setting_to_json(kind text, raw text) RETURNS jsonb
+LANGUAGE sql IMMUTABLE AS $$
+    SELECT CASE kind
+        WHEN 'int' THEN to_jsonb(trim(raw)::int)
+        WHEN 'text' THEN to_jsonb(raw)
+        WHEN 'decimals' THEN
+            (SELECT jsonb_agg(trim_scale(item::numeric) ORDER BY ord) FROM pg_temp.v1_setting_items(raw))
+        WHEN 'duration_scores' THEN
+            (SELECT jsonb_agg(jsonb_build_object('seconds', trim_scale(split_part(item, ':', 1)::numeric),
+                                                 'score', split_part(item, ':', 2)::int) ORDER BY ord)
+             FROM pg_temp.v1_setting_items(raw))
+        WHEN 'int_map' THEN
+            (SELECT jsonb_object_agg(split_part(item, ':', 1)::int::text, split_part(item, ':', 2)::int)
+             FROM pg_temp.v1_setting_items(raw))
+    END
+$$;
+
+-- Pré-contrôles : les clés et les valeurs en cause sont nommées (des noms de réglages, rien de personnel).
+DO $$
+DECLARE
+    keys text;
+BEGIN
+    SELECT string_agg(s."Key", ', ' ORDER BY s."Key") INTO keys
+    FROM public."Settings" s LEFT JOIN import_setting_map m ON m.v1_key = s."Key"
+    WHERE m.v1_key IS NULL;
+    IF keys IS NOT NULL THEN
+        RAISE EXCEPTION 'Réglages v1 inconnus de l''import (à ajouter à import_setting_map, ou à retirer de la v1) : %', keys;
+    END IF;
+
+    SELECT string_agg(s."Key", ', ' ORDER BY s."Key") INTO keys
+    FROM public."Settings" s JOIN import_setting_map m ON m.v1_key = s."Key"
+    WHERE NOT pg_temp.v1_setting_is_valid(m.kind, s."Value");
+    IF keys IS NOT NULL THEN
+        RAISE EXCEPTION 'Réglages v1 dont la valeur ne se convertit pas sans perte (format attendu : voir import_setting_map) : %', keys;
+    END IF;
+END $$;
+
+-- Rejouable : les clés que l'import gère sont remplacées par la valeur de la v1 (un réglage changé en v2 sur
+-- le staging repart de celui de la prod), les autres restent.
+DELETE FROM infra.settings WHERE key IN (SELECT v2_key FROM import_setting_map);
+
+INSERT INTO infra.settings (key, value, description, updated_at)
+SELECT m.v2_key, pg_temp.v1_setting_to_json(m.kind, s."Value"), s."Description", s."UpdatedAt"
+FROM public."Settings" s
+JOIN import_setting_map m ON m.v1_key = s."Key";
+
+DO $$
+DECLARE
+    n bigint;
+BEGIN
+    SELECT count(*) INTO n FROM public."Settings";
+    RAISE NOTICE 'Réglages repris : %', n;
+END $$;
