@@ -354,21 +354,15 @@ test.describe('Admin — défis', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    // Le seed crée 3 défis (J-2, J-1, aujourd'hui) — mais en début de mois, J-2 et/ou J-1
-    // peuvent tomber dans le mois précédent. On compte donc dynamiquement combien tombent
-    // dans le mois UTC courant plutôt que de coder en dur "3".
+    // Écart avec la v1 : le seed v2 écrit un défi par jour où un morceau a servi (J-2, J-1, aujourd'hui, mais aussi J-5,
+    // J-15, J-30…, cf. CatalogueSeed). Combien tombent dans le mois UTC courant dépend du jour : on les compte depuis l'API.
     await page.getByRole('link', { name: /^Défis/ }).click();
     const now = new Date();
     const monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
     const currentMonth = `${monthNames[now.getUTCMonth()]} ${now.getUTCFullYear()}`;
     await expect(page.getByText(currentMonth)).toBeVisible();
-    const seededDates = [0, 1, 2].map(daysAgo => {
-      const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - daysAgo));
-      return d;
-    });
-    const expectedCount = seededDates.filter(
-      d => d.getUTCMonth() === now.getUTCMonth() && d.getUTCFullYear() === now.getUTCFullYear()
-    ).length;
+    const monthPrefix = now.toISOString().slice(0, 7);
+    const expectedCount = (await admin.apiGetChallengeDates()).filter(d => d.startsWith(monthPrefix)).length;
     const rows = page.locator('ul > li > p.font-mono');
     await expect(rows).toHaveCount(expectedCount);
   });
@@ -490,7 +484,10 @@ test.describe('Admin — indicateur joueurs / ID navigateur', () => {
     const todayRow = admin.challengeRow(today);
     const youChip = todayRow.getByRole('button', { name: /toi/ });
     await expect(youChip).toBeVisible();
-    await expect(youChip).toContainText(browserShortId!);
+    // Écart avec la v1 : login-as-admin fait de l'invité qui vient de jouer le compte AdminE2E (comme un premier lien
+    // magique), le chip montre donc son pseudo ; l'identifiant complet reste dans l'infobulle.
+    await expect(youChip).toContainText('AdminE2E');
+    await expect(youChip).toHaveAttribute('title', new RegExp(`^${browserShortId}`));
 
     // Clic gauche = surbrillance croisée : le chip reçoit un anneau (box-shadow non nul).
     await youChip.click();

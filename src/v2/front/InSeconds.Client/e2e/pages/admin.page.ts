@@ -175,6 +175,14 @@ export class AdminPage {
   // Les réglages sont relus à chaud (R13) : pour vérifier que le nouveau cooldown s'applique, on repasse par le pool, dont
   // les dates de déblocage sont calculées avec la valeur courante. La route exige le cookie admin : on passe par la requête
   // de la page, qui partage le cookie du navigateur (login() l'a posé).
+  /** Les dates (aaaa-mm-jj) de tous les défis en base, par la route de l'historique (cookie admin de la page). */
+  async apiGetChallengeDates(): Promise<string[]> {
+    const res = await this.page.request.get(`${BASE}/api/admin/daily/challenges`);
+    if (!res.ok()) throw new Error(`get challenges failed: ${res.status()}`);
+    const challenges = await res.json() as { date: string }[];
+    return challenges.map(c => c.date);
+  }
+
   async apiGetPoolUnlockDate(deezerTrackId: number): Promise<string | null | undefined> {
     const res = await this.page.request.get(`${BASE}/api/admin/catalogue/tracks`);
     if (!res.ok()) throw new Error(`get tracks failed: ${res.status()}`);
