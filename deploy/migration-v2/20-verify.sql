@@ -250,9 +250,30 @@ SELECT pg_temp.expect('scores par joueur', 0, (
     SELECT count(*) FROM (SELECT "PlayerId" AS id, sum("TotalScore") AS total FROM public."GameSessions" GROUP BY 1) o
     FULL JOIN (SELECT player_id AS id, sum(total_score) AS total FROM daily.sessions GROUP BY 1) v ON v.id = o.id
     WHERE o.id IS NULL OR v.id IS NULL OR o.total IS DISTINCT FROM v.total));
-SELECT pg_temp.expect('score d''une partie terminée = somme de ses réponses', 0, (
-    SELECT count(*) FROM daily.sessions s
-    WHERE s.status = 1 AND s.total_score <> COALESCE((SELECT sum(a.score) FROM daily.answers a WHERE a.session_id = s.id), 0)));
+
+-- Partie terminée = somme de ses réponses. Bloquant ; en cas d'écart, le message donne chaque partie (identifiant v1, date du défi,
+-- total, nombre de réponses, scores des réponses par position) pour décider ensuite quoi en faire (copie du 09/10 : 4 parties en prod).
+DO $$
+DECLARE
+    gaps bigint;
+    detail text;
+BEGIN
+    SELECT count(*), string_agg(format('%s du %s (total %s, %s réponse(s) : %s)', g.id, g.date, g.total_score, g.answers_count,
+                                       COALESCE(g.answers_scores, '-')), ' ; ' ORDER BY g.id)
+    INTO gaps, detail
+    FROM (SELECT s.id, c.date, s.total_score,
+                 (SELECT count(*) FROM daily.answers a WHERE a.session_id = s.id) AS answers_count,
+                 (SELECT COALESCE(sum(a.score), 0) FROM daily.answers a WHERE a.session_id = s.id) AS answers_sum,
+                 (SELECT string_agg(a.position || '=' || a.score, ' ' ORDER BY a.position) FROM daily.answers a
+                  WHERE a.session_id = s.id) AS answers_scores
+          FROM daily.sessions s JOIN daily.challenges c ON c.id = s.challenge_id
+          WHERE s.status = 1) g
+    WHERE g.total_score <> g.answers_sum;
+    IF gaps > 0 THEN
+        RAISE EXCEPTION 'Vérification « score d''une partie terminée = somme de ses réponses » : 0 attendu(s), % trouvé(s). Parties : %',
+            gaps, detail;
+    END IF;
+END $$;
 
 -- Séries : pour chaque joueur, les trois valeurs brutes à l'identique (pas de ligne = rien à reprendre).
 SELECT pg_temp.expect('séries reprises à l''identique', 0, (
