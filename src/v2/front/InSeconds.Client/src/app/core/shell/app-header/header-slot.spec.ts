@@ -1,56 +1,31 @@
-import { Component, TemplateRef, viewChild } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
-import { provideTranslateService } from '@ngx-translate/core';
-import { AppHeaderComponent } from './app-header.component';
 import { HeaderSlot } from './header-slot';
 
-@Component({
-  imports: [AppHeaderComponent],
-  template: `
-    <ng-template #pill><button data-testid="slot-content">série 4</button></ng-template>
-    <ng-template #other><span>autre page</span></ng-template>
-    <app-header />`,
-})
-class Host {
-  readonly pill = viewChild.required<TemplateRef<unknown>>('pill');
-  readonly other = viewChild.required<TemplateRef<unknown>>('other');
-}
-
 describe('HeaderSlot', () => {
-  function render() {
-    TestBed.configureTestingModule({ providers: [provideRouter([]), provideTranslateService({ fallbackLang: 'fr' })] });
-    const fixture = TestBed.createComponent(Host);
-    fixture.detectChanges();
-    return { fixture, host: fixture.componentInstance, slot: TestBed.inject(HeaderSlot), element: fixture.nativeElement as HTMLElement };
-  }
-
-  it("l'emplacement de gauche de l'en-tête est vide tant qu'aucune page ne le remplit", () => {
-    const { element } = render();
-
-    expect(element.querySelector('[data-testid="header-streak"]')?.textContent?.trim()).toBe('');
+  it("l'en-tête global est affiché tant qu'aucune page n'a le sien", () => {
+    expect(TestBed.inject(HeaderSlot).takenOver()).toBe(false);
   });
 
-  it('affiche le gabarit de la page à la place de la série, et le retire quand la page part', () => {
-    const { fixture, host, slot, element } = render();
+  it('une page prend la place en arrivant et la rend en partant', () => {
+    const slot = TestBed.inject(HeaderSlot);
+    const page = {};
 
-    slot.show(host.pill());
-    fixture.detectChanges();
-    expect(element.querySelector('[data-testid="header-streak"] [data-testid="slot-content"]')?.textContent).toBe('série 4');
+    slot.takeOver(page);
+    expect(slot.takenOver()).toBe(true);
 
-    slot.clear(host.pill());
-    fixture.detectChanges();
-    expect(element.querySelector('[data-testid="slot-content"]')).toBeNull();
+    slot.release(page);
+    expect(slot.takenOver()).toBe(false);
   });
 
-  it("une page qui part ne retire pas le gabarit qu'une autre page a posé entre-temps", () => {
-    const { fixture, host, slot, element } = render();
+  it("une page qui part ne rend pas la place qu'une autre page a prise entre-temps", () => {
+    const slot = TestBed.inject(HeaderSlot);
+    const leaving = {};
+    const arriving = {};
 
-    slot.show(host.pill());
-    slot.show(host.other());
-    slot.clear(host.pill());
-    fixture.detectChanges();
+    slot.takeOver(leaving);
+    slot.takeOver(arriving);
+    slot.release(leaving);
 
-    expect(element.querySelector('[data-testid="header-streak"]')?.textContent).toContain('autre page');
+    expect(slot.takenOver()).toBe(true);
   });
 });

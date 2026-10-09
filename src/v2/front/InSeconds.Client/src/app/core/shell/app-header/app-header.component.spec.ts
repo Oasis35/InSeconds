@@ -3,72 +3,33 @@ import { provideRouter } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
 import { SessionStore } from '../../session/session.store';
 import { AppHeaderComponent } from './app-header.component';
+import { HeaderSlot } from './header-slot';
 
 describe('AppHeaderComponent', () => {
   function render() {
     TestBed.configureTestingModule({ providers: [provideRouter([]), provideTranslateService({ fallbackLang: 'fr' })] });
     const fixture = TestBed.createComponent(AppHeaderComponent);
+    TestBed.inject(SessionStore).markLoaded();
     fixture.detectChanges();
-    const session = TestBed.inject(SessionStore);
-    session.markLoaded();
-    fixture.detectChanges();
-    return { fixture, element: fixture.nativeElement as HTMLElement, session };
+    return { fixture, slot: TestBed.inject(HeaderSlot), element: fixture.nativeElement as HTMLElement };
   }
 
-  it('n’affiche ni avatar ni lien tant que l’identité n’est pas lue (pas de clignotement pour un compte connecté)', () => {
-    TestBed.configureTestingModule({ providers: [provideRouter([]), provideTranslateService({ fallbackLang: 'fr' })] });
-    const fixture = TestBed.createComponent(AppHeaderComponent);
-    fixture.detectChanges();
-    const element = fixture.nativeElement as HTMLElement;
-
-    expect(element.querySelector('a')).toBeNull();
-
-    const session = TestBed.inject(SessionStore);
-    session.signedIn({ id: 'p1', pseudo: 'Alice', email: 'a@example.com', isGuest: false, isAdmin: false });
-    session.markLoaded();
-    fixture.detectChanges();
-    expect(element.querySelector('a[href="/account/profile"]')).not.toBeNull();
-  });
-
-  it('propose la connexion à un visiteur et laisse l\'emplacement de la série vide', () => {
+  it('affiche le lien de compte en haut à droite', () => {
     const { element } = render();
 
     expect(element.querySelector('a[href="/account/login"]')).not.toBeNull();
-    expect(element.querySelector('a[href="/account/profile"]')).toBeNull();
-    expect(element.querySelector('[data-testid="header-streak"]')?.textContent?.trim()).toBe('');
   });
 
-  it('propose la connexion à un invité', () => {
-    const { fixture, element, session } = render();
+  it("s'efface tant qu'une page affiche son propre en-tête, et revient quand elle part", () => {
+    const { fixture, slot, element } = render();
+    const page = {};
 
-    session.signedIn({ id: 'p1', pseudo: null, email: null, isGuest: true, isAdmin: false });
+    slot.takeOver(page);
     fixture.detectChanges();
+    expect(element.querySelector('app-account-link')).toBeNull();
 
-    expect(element.querySelector('a[href="/account/login"]')).not.toBeNull();
-    expect(element.querySelector('a[href="/account/profile"]')).toBeNull();
-  });
-
-  it('montre l\'initiale du pseudo d\'un compte, avec un lien vers le profil', () => {
-    const { fixture, element, session } = render();
-
-    session.signedIn({ id: 'p1', pseudo: 'élodie', email: 'e@example.com', isGuest: false, isAdmin: false });
+    slot.release(page);
     fixture.detectChanges();
-
-    const avatar = element.querySelector<HTMLAnchorElement>('a[href="/account/profile"]')!;
-    expect(avatar.textContent?.trim()).toBe('é');
-    expect(avatar.title).toBe('élodie');
-    expect(element.querySelector('a[href="/account/login"]')).toBeNull();
-  });
-
-  it('repasse sur la connexion à la déconnexion', () => {
-    const { fixture, element, session } = render();
-    session.signedIn({ id: 'p1', pseudo: 'Alice', email: 'a@example.com', isGuest: false, isAdmin: false });
-    fixture.detectChanges();
-
-    session.signedOut();
-    fixture.detectChanges();
-
-    expect(element.querySelector('a[href="/account/profile"]')).toBeNull();
     expect(element.querySelector('a[href="/account/login"]')).not.toBeNull();
   });
 });

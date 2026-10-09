@@ -1,21 +1,22 @@
-import { Injectable, TemplateRef, signal } from '@angular/core';
+import { Injectable, computed, signal } from '@angular/core';
 
 /**
- * L'emplacement de gauche de l'en-tête (`<app-header>`), que la page courante remplit : la gélule de série (et gels) du jeu du jour, ou le score
- * en cours de partie. L'en-tête est posé une fois pour toute l'app, et `core` ne connaît aucun domaine : la page lui donne son gabarit, rendu à
- * sa place, et le retire en partant.
+ * Dit à l'en-tête global (`<app-header>`) qu'une page affiche son propre en-tête : le jeu du jour pose la gélule de série et le lien de compte
+ * (`<app-account-link>`) dans son bandeau IN//SECONDS, et l'en-tête global s'efface tant qu'elle est affichée. `core` ne connaît aucun domaine :
+ * la page prend la place en arrivant et la rend en partant.
  */
 @Injectable({ providedIn: 'root' })
 export class HeaderSlot {
-  private readonly _left = signal<TemplateRef<unknown> | null>(null);
-  readonly left = this._left.asReadonly();
+  private readonly owners = signal<readonly object[]>([]);
+  /** Vrai tant qu'une page affiche son propre en-tête. */
+  readonly takenOver = computed(() => this.owners().length > 0);
 
-  show(template: TemplateRef<unknown>): void {
-    this._left.set(template);
+  takeOver(owner: object): void {
+    if (!this.owners().includes(owner)) this.owners.update(owners => [...owners, owner]);
   }
 
-  /** Retire le gabarit s'il est toujours celui de l'appelant (une autre page a pu en poser un autre entre-temps). */
-  clear(template: TemplateRef<unknown>): void {
-    if (this._left() === template) this._left.set(null);
+  /** Ne rend que la place de l'appelant (une autre page a pu la prendre entre-temps). */
+  release(owner: object): void {
+    this.owners.update(owners => owners.filter(o => o !== owner));
   }
 }

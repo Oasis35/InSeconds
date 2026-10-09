@@ -109,7 +109,7 @@ test.describe('Connexion par lien magique', () => {
 
     // Le clic sur l'avatar du header ouvre l'écran Profil (plus de déconnexion
     // directe) — il faut confirmer explicitement via son bouton "Se déconnecter".
-    await page.locator('app-header').getByTitle('CarlE2E').click();
+    await page.locator('app-account-link').getByTitle('CarlE2E').click();
     await expect(page).toHaveURL(/\/profile$/);
     await page.getByRole('button', { name: 'Se déconnecter', exact: true }).click();
     await expect(page.getByText('Se déconnecter ?')).toBeVisible();
@@ -117,6 +117,6 @@ test.describe('Connexion par lien magique', () => {
     await page.getByRole('button', { name: 'Se déconnecter', exact: true }).last().click();
 
     // Revenu à l'état guest : l'en-tête propose de se connecter (l'écran d'accueil du jeu arrive avec Daily).
-    await expect(page.locator('app-header').getByRole('link', { name: 'Se connecter' })).toBeVisible();
+    await expect(page.locator('app-account-link').getByRole('link', { name: 'Se connecter' })).toBeVisible();
   });
 });

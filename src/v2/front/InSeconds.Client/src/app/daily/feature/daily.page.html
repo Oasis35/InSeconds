@@ -1,21 +1,22 @@
-<!-- Emplacement de gauche de l'en-tête global : la gélule de série, ou le score en cours de partie. -->
-<ng-template #headerLeft>
-  @if (store.screen() === 'playing') {
-    <span class="text-base font-extrabold tabular-nums" style="font-family:var(--font-display);color:var(--text-hi)">
-      {{ store.totalScore() }} <span style="color:var(--text-faint);font-weight:400;font-size:0.625rem">{{ 'daily.common.points' | translate }}</span>
-    </span>
-  } @else if (store.screen() !== 'loading') {
-    <app-streak-pill [streak]="store.pillStreak()" [linked]="store.linked()" [pulse]="store.toasts().gelEarned" (open)="openStreakSheet()" />
-  }
-</ng-template>
-
 <div class="da-bg min-h-dvh flex flex-col relative" style="color:var(--text-body)">
   <app-decor-background />
 
   <main class="relative flex-1 flex flex-col p-5 w-full max-w-lg mx-auto overflow-x-clip">
 
-    <header class="pt-12 pb-6">
-      <app-daily-brand />
+    <header class="pt-3 pb-6">
+      <app-daily-brand>
+        <!-- La gélule de série, ou le score en cours de partie. -->
+        <div brandLeft>
+          @if (store.screen() === 'playing') {
+            <span class="pl-2 text-base font-extrabold tabular-nums whitespace-nowrap" style="font-family:var(--font-display);color:var(--text-hi)">
+              {{ store.totalScore() }} <span style="color:var(--text-faint);font-weight:400;font-size:0.625rem">{{ 'daily.common.points' | translate }}</span>
+            </span>
+          } @else if (store.screen() !== 'loading') {
+            <app-streak-pill [streak]="store.pillStreak()" [linked]="store.linked()" [pulse]="store.toasts().gelEarned" (open)="openStreakSheet()" />
+          }
+        </div>
+        <app-account-link brandRight compact />
+      </app-daily-brand>
       @if (store.screen() === 'playing') {
         <app-daily-progress [currentIndex]="store.currentIndex()" [trackCount]="store.trackCount()" (abandon)="confirmAbandon()" />
       }

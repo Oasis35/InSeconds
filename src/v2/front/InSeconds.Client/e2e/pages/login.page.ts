@@ -10,11 +10,11 @@ export function pathOf(url: string): string {
 }
 
 /**
- * Attend que le compte `pseudo` soit connecté dans ce navigateur : l'en-tête affiche son avatar (titre = pseudo).
+ * Attend que le compte `pseudo` soit connecté dans ce navigateur : le lien de compte (en-tête, ou bandeau du jeu du jour) affiche son avatar (titre = pseudo).
  * Remplace l'attente de l'écran d'accueil du jeu de la v1 (le jeu arrive avec le module Daily).
  */
 export async function expectSignedIn(page: Page, pseudo: string): Promise<void> {
-  await expect(page.locator('app-header').getByTitle(pseudo)).toBeVisible();
+  await expect(page.locator('app-account-link').getByTitle(pseudo)).toBeVisible();
 }
 
 /**
