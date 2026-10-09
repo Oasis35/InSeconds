@@ -37,11 +37,15 @@ public class DayStatsSnapshotTests(PostgresFixture postgres) : IAsyncLifetime
         return (alice.Id, bob.Id, carol.Id);
     }
 
-    private async Task<RecomputeDayStatsResponse> RecomputeAsync(DateOnly day)
+    /// <summary>Recalcule le jour : la carte rendue à l'admin, et la photo enregistrée en base.</summary>
+    private async Task<(AdminChallengeStats Card, DayStatsPayload Stats)> RecomputeAsync(DateOnly day)
     {
         var response = await _game.App.Admin().PostAsync($"/api/admin/daily/challenges/{day:yyyy-MM-dd}/stats/recompute", null, Ct);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        return (await response.Content.ReadFromJsonAsync<RecomputeDayStatsResponse>(Ct))!;
+        var card = (await response.Content.ReadFromJsonAsync<AdminChallengeStats>(Ct))!;
+        var challenge = await _game.ChallengeIdAsync(day);
+        var json = await _game.Api.ScalarAsync<string>($"SELECT payload::text FROM daily.challenge_day_stats WHERE challenge_id = {challenge}");
+        return (card, DayStatsJson.Read(json!)!);
     }
 
     // --- le recalcul de l'admin ---
@@ -54,7 +58,7 @@ public class DayStatsSnapshotTests(PostgresFixture postgres) : IAsyncLifetime
         var result = await RecomputeAsync(Closable);
 
         var stats = result.Stats;
-        Assert.Equal(Closable, result.Date);
+        Assert.Equal(Closable, stats.Date);
         // Deux parties terminées, une partie « en cours » d'un jour passé : jamais revenue, donc expirée.
         Assert.Equal((2, 0, 0, 1), (stats.PlayerCount, stats.PendingCount, stats.AbandonedCount, stats.ExpiredCount));
         Assert.Equal((2200, 4250), (stats.ScoreMin, stats.ScoreMax));
@@ -72,6 +76,27 @@ public class DayStatsSnapshotTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(2, first.GuessTimeDistribution.Single(b => b.Seconds == 1m).Count);
         // Bob a prolongé l'écoute sur les quatre autres.
         Assert.Equal(50.0, stats.Tracks[1].ExtendedRate);
+    }
+
+    [Fact]
+    public async Task Recalcul_RendLaCarteCommeLaListe_AvecNomsEtPseudos()
+    {
+        var (alice, bob, carol) = await SeedClosedDayAsync(Closable);
+
+        var (card, _) = await RecomputeAsync(Closable);
+
+        // Même forme que GET /api/admin/daily/challenges/stats : l'écran remplace la carte sans recharger la liste.
+        Assert.Equal((Closable, 2, 1, true), (card.Date, card.PlayerCount, card.ExpiredCount, card.CanRecompute));
+        Assert.Equal(_game.Time.GetUtcNow(), card.ComputedAt);
+        Assert.Equal(5, card.Tracks.Count);
+        Assert.All(card.Tracks, t => Assert.False(string.IsNullOrEmpty(t.Artist)));
+        Assert.All(card.Tracks, t => Assert.False(string.IsNullOrEmpty(t.Title)));
+        Assert.Equal(
+            [(alice, "Alice"), (bob, "Bob"), (carol, (string?)null)],
+            card.Players.Select(p => (p.PlayerId, p.Pseudo)));
+
+        var list = await _game.App.Admin().GetFromJsonAsync<AdminChallengeStatsResponse>("/api/admin/daily/challenges/stats", Ct);
+        Assert.Equivalent(list!.Challenges.Single(c => c.Date == Closable), card);
     }
 
     [Fact]
@@ -106,7 +131,7 @@ public class DayStatsSnapshotTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal([new DurationScore(1, 500), new DurationScore(2, 200)], second.Stats.DurationScores);
         Assert.Equal(2500, second.Stats.MaxPossibleScore);
         Assert.Equal(1L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM daily.challenge_day_stats"));
-        Assert.Equal(_game.Time.GetUtcNow(), second.ComputedAt);
+        Assert.Equal(_game.Time.GetUtcNow(), second.Card.ComputedAt);
     }
 
     [Fact]

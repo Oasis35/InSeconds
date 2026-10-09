@@ -5,6 +5,7 @@ using InSeconds.Api.Modules.Daily.Application;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,16 +23,18 @@ namespace Internal.Generated.WolverineHandlers
         private readonly InSeconds.Api.Modules.Daily.Application.DailyRules _dailyRules;
         private readonly Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _serviceScopeFactory;
         private readonly Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Daily.Application.CloseChallengeDay> _loggerOfCloseChallengeDay;
+        private readonly Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> _optionsMonitorOfCatalogueOptions;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
         private readonly Wolverine.Runtime.IWolverineRuntime _wolverineRuntime;
 
-        public POST_api_admin_daily_challenges_date_stats_recompute(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, InSeconds.Api.Infrastructure.Time.IGameCalendar gameCalendar, InSeconds.Api.Modules.Daily.Application.DailyRules dailyRules, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Daily.Application.CloseChallengeDay> loggerOfCloseChallengeDay, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
+        public POST_api_admin_daily_challenges_date_stats_recompute(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, InSeconds.Api.Infrastructure.Time.IGameCalendar gameCalendar, InSeconds.Api.Modules.Daily.Application.DailyRules dailyRules, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Daily.Application.CloseChallengeDay> loggerOfCloseChallengeDay, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> optionsMonitorOfCatalogueOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
         {
             _wolverineHttpOptions = wolverineHttpOptions;
             _gameCalendar = gameCalendar;
             _dailyRules = dailyRules;
             _serviceScopeFactory = serviceScopeFactory;
             _loggerOfCloseChallengeDay = loggerOfCloseChallengeDay;
+            _optionsMonitorOfCatalogueOptions = optionsMonitorOfCatalogueOptions;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
             _wolverineRuntime = wolverineRuntime;
         }
@@ -45,6 +48,8 @@ namespace Internal.Generated.WolverineHandlers
             Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Wolverine.Runtime.ScopedMessageContextHolder>(serviceScope.ServiceProvider).Context = messageContext;
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var inSecondsDbContext = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>(serviceScope.ServiceProvider);
+            var efPlayerDirectory = new InSeconds.Api.Modules.Players.Persistence.EfPlayerDirectory(inSecondsDbContext);
+            var efTrackDirectory = new InSeconds.Api.Modules.Catalogue.Persistence.EfTrackDirectory(inSecondsDbContext, _optionsMonitorOfCatalogueOptions);
             var efDailyStatsQueries = new InSeconds.Api.Modules.Daily.Persistence.EfDailyStatsQueries(inSecondsDbContext);
             var efDailyStore = new InSeconds.Api.Modules.Daily.Persistence.EfDailyStore(inSecondsDbContext);
             System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Daily.Application.RecomputeDayStatsEndpoint");
@@ -79,7 +84,7 @@ namespace Internal.Generated.WolverineHandlers
 
                 
                 // The actual HTTP request handler execution
-                var recomputeDayStatsResponse_response = await InSeconds.Api.Modules.Daily.Application.RecomputeDayStatsEndpoint.Post(date, dailyChallenge, efDailyStore, efDailyStatsQueries, _dailyRules, _gameCalendar, _loggerOfCloseChallengeDay, httpContext.RequestAborted).ConfigureAwait(false);
+                var adminChallengeStats_response = await InSeconds.Api.Modules.Daily.Application.RecomputeDayStatsEndpoint.Post(date, dailyChallenge, efDailyStore, efDailyStatsQueries, efTrackDirectory, efPlayerDirectory, _dailyRules, _gameCalendar, _loggerOfCloseChallengeDay, httpContext.RequestAborted).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware
@@ -88,7 +93,7 @@ namespace Internal.Generated.WolverineHandlers
                 // Commit the EF Core transaction and flush outgoing messages before writing the response (GH-2917)
                 await efCoreEnvelopeTransaction.CommitAsync(httpContext.RequestAborted).ConfigureAwait(false);
                 // Writing the response body to JSON because this was the first 'return variable' in the method signature
-                await WriteJsonAsync(httpContext, recomputeDayStatsResponse_response, 404);
+                await WriteJsonAsync(httpContext, adminChallengeStats_response, 404);
             }
 
             catch (System.Exception)

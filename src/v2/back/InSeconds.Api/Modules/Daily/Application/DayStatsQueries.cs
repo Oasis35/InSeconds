@@ -64,8 +64,8 @@ public interface IDailyStatsQueries
     /// <summary>Parties **terminées** par jour de défi, depuis <paramref name="since"/> (les jours sans partie sont absents).</summary>
     Task<IReadOnlyDictionary<DateOnly, int>> GetCompletedCountsByDayAsync(DateOnly since, CancellationToken ct);
 
-    /// <summary>Parties terminées par joueur (tous les joueurs qui en ont au moins une).</summary>
-    Task<IReadOnlyDictionary<Guid, int>> GetCompletedCountsByPlayerAsync(CancellationToken ct);
+    /// <summary>Parties terminées de ces joueurs ; un joueur sans partie terminée est absent.</summary>
+    Task<IReadOnlyDictionary<Guid, int>> GetCompletedCountsByPlayerAsync(IReadOnlyCollection<Guid> playerIds, CancellationToken ct);
 
     /// <summary>La série stockée de ces joueurs ; un joueur sans ligne n'a pas de série.</summary>
     Task<IReadOnlyDictionary<Guid, StreakRow>> GetStreaksAsync(IReadOnlyCollection<Guid> playerIds, CancellationToken ct);

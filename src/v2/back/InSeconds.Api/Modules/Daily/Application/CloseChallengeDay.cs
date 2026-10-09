@@ -3,7 +3,9 @@ using Hangfire;
 using InSeconds.Api.Infrastructure.Errors;
 using InSeconds.Api.Infrastructure.Jobs;
 using InSeconds.Api.Infrastructure.Time;
+using InSeconds.Api.Modules.Catalogue.Contracts;
 using InSeconds.Api.Modules.Daily.Domain;
+using InSeconds.Api.Modules.Players.Contracts;
 using Microsoft.AspNetCore.Mvc;
 using Wolverine;
 using Wolverine.Http;
@@ -142,9 +144,6 @@ public sealed class DailyCloseDayJob(IMessageBus bus, IGameCalendar calendar, ID
     }
 }
 
-/// <summary>La photo d'un jour, telle qu'elle vient d'être (re)calculée.</summary>
-public sealed record RecomputeDayStatsResponse(DateOnly Date, DateTimeOffset ComputedAt, DayStatsPayload Stats);
-
 public static class RecomputeDayStatsEndpoint
 {
     public static async Task<DailyChallenge?> LoadAsync(string date, IDailyStore store, CancellationToken ct) =>
@@ -166,17 +165,21 @@ public static class RecomputeDayStatsEndpoint
     /// <summary>
     /// <c>POST /api/admin/daily/challenges/{date}/stats/recompute</c> : refait la photo figée d'un jour terminé (J-2 et avant), par exemple après la
     /// correction d'une donnée. 400 date invalide, 404 pas de défi ce jour-là, 409 <c>admin.day_not_over</c> pour la veille et le jour même.
+    /// Rend la carte du défi sous la même forme que <c>GET /api/admin/daily/challenges/stats</c> (artiste, titre et pseudo joints) : l'écran
+    /// remplace la carte recalculée sans recharger la liste.
     /// </summary>
     [WolverinePost("/api/admin/daily/challenges/{date}/stats/recompute", OperationId = "recomputeDayStats")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public static async Task<RecomputeDayStatsResponse> Post(
+    public static async Task<AdminChallengeStats> Post(
         string date,
         // Chargé par LoadAsync : pas le corps de la requête (ce POST n'en a pas).
         [NotBody] DailyChallenge challenge,
         IDailyStore store,
         IDailyStatsQueries stats,
+        ITrackDirectory tracks,
+        IPlayerDirectory players,
         // Un service concret : sans [NotBody], Wolverine le prendrait pour le corps de la requête (400 sans message).
         [NotBody] DailyRules rules,
         IGameCalendar calendar,
@@ -184,6 +187,9 @@ public static class RecomputeDayStatsEndpoint
         CancellationToken ct)
     {
         var result = await CloseChallengeDayHandler.CloseAsync(challenge, store, stats, rules, calendar, logger, ct);
-        return new RecomputeDayStatsResponse(result.Day, result.ComputedAt!.Value, result.Payload!);
+        var payload = result.Payload!;
+        var trackInfos = await tracks.GetAsync(payload.Tracks.Select(t => t.TrackId).Distinct().ToList(), ct);
+        var pseudos = await players.GetPseudosAsync(payload.Players.Select(p => p.PlayerId).Distinct().ToList(), ct);
+        return GetChallengeStatsEndpoint.ToResponse(payload, result.ComputedAt, canRecompute: true, trackInfos, pseudos);
     }
 }
