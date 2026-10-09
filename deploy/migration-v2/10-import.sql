@@ -327,21 +327,21 @@ SELECT setval('daily.sessions_hilo', COALESCE(max(id), 0) + 1, false) FROM daily
 CREATE TEMP TABLE import_setting_map (
     v1_key text PRIMARY KEY,
     v2_key text NOT NULL UNIQUE,
-    kind   text NOT NULL CHECK (kind IN ('int', 'text', 'decimals', 'duration_scores', 'int_map'))
+    kind   text NOT NULL
 ) ON COMMIT DROP;
 
-INSERT INTO import_setting_map (v1_key, v2_key, kind) VALUES
-    ('GuessTimerSeconds',          'Daily:GuessTimerSeconds',          'int'),
-    ('AllowedDurationsSeconds',    'Daily:AllowedDurationsSeconds',    'decimals'),
-    ('TracksPerChallenge',         'Daily:TracksPerChallenge',         'int'),
-    ('DurationScores',             'Daily:DurationScores',             'duration_scores'),
-    ('CoverUrlTemplate',           'Catalogue:CoverUrlTemplate',       'text'),
-    ('TrackCooldownDays',          'Daily:TrackCooldownDays',          'int'),
-    ('HintUnlockDurationsSeconds', 'Daily:HintUnlockDurationsSeconds', 'decimals'),
-    ('HintPenaltyPercent',         'Daily:HintPenaltyPercent',         'int_map'),
-    ('StreakFreezeEveryDays',      'Daily:StreakFreezeEveryDays',      'int'),
-    ('StreakFreezeMax',            'Daily:StreakFreezeMax',            'int'),
-    ('StreakLostNudgeMinDays',     'Daily:StreakLostNudgeMinDays',     'int');
+-- Groupées par forme ; toutes en Daily: sauf la pochette, au Catalogue.
+INSERT INTO import_setting_map (v1_key, v2_key, kind)
+SELECT k, CASE WHEN k = 'CoverUrlTemplate' THEN 'Catalogue:' ELSE 'Daily:' END || k, g.kind
+FROM (VALUES
+    ('int', ARRAY['GuessTimerSeconds', 'TracksPerChallenge', 'TrackCooldownDays',
+                  'StreakFreezeEveryDays', 'StreakFreezeMax', 'StreakLostNudgeMinDays']),
+    ('text', ARRAY['CoverUrlTemplate']),
+    ('decimals', ARRAY['AllowedDurationsSeconds', 'HintUnlockDurationsSeconds']),
+    ('duration_scores', ARRAY['DurationScores']),
+    ('int_map', ARRAY['HintPenaltyPercent'])
+) AS g(kind, keys)
+CROSS JOIN LATERAL unnest(g.keys) AS k;
 
 -- Les éléments d'une liste CSV de la v1, dans l'ordre, sans les blancs ni les éléments vides (comme le
 -- découpage de la v1 : Split(',', RemoveEmptyEntries) puis Trim).
@@ -351,45 +351,34 @@ LANGUAGE sql IMMUTABLE AS $$
     WHERE i <> ''
 $$;
 
--- La valeur de la v1 est-elle relisible, sans perte, sous sa forme ? (Avant toute conversion : un cast qui
--- échoue ne dirait pas quel réglage est en cause.)
-CREATE FUNCTION pg_temp.v1_setting_is_valid(kind text, raw text) RETURNS boolean
-LANGUAGE sql IMMUTABLE AS $$
-    SELECT CASE
-        WHEN kind = 'int' THEN raw ~ '^ *-?[0-9]{1,9} *$'
-        WHEN kind = 'text' THEN true
-        -- Une liste vide : la v1 retombait sur ses valeurs par défaut, sans le dire.
-        WHEN NOT EXISTS (SELECT 1 FROM pg_temp.v1_setting_items(raw)) THEN false
-        WHEN kind = 'decimals' THEN
-            NOT EXISTS (SELECT 1 FROM pg_temp.v1_setting_items(raw) WHERE item !~ '^[0-9]{1,6}(\.[0-9]{1,6})?$')
-        WHEN kind = 'duration_scores' THEN
-            CASE WHEN EXISTS (SELECT 1 FROM pg_temp.v1_setting_items(raw)
-                              WHERE item !~ '^[0-9]{1,6}(\.[0-9]{1,6})?:-?[0-9]{1,9}$') THEN false
-                 -- Deux fois le même palier : la v1 gardait le dernier, sans le dire.
-                 ELSE (SELECT count(DISTINCT split_part(item, ':', 1)::numeric) = count(*) FROM pg_temp.v1_setting_items(raw)) END
-        WHEN kind = 'int_map' THEN
-            CASE WHEN EXISTS (SELECT 1 FROM pg_temp.v1_setting_items(raw)
-                              WHERE item !~ '^-?[0-9]{1,9}:-?[0-9]{1,9}$') THEN false
-                 ELSE (SELECT count(DISTINCT split_part(item, ':', 1)::int) = count(*) FROM pg_temp.v1_setting_items(raw)) END
-        ELSE false
-    END
-$$;
-
--- La conversion. Les décimaux perdent leurs zéros inutiles (0.50 → 0.5) : même valeur, comme l'écrit l'admin v2.
+-- La conversion, ou NULL si la valeur de la v1 ne se relit pas sans perte sous sa forme (ou si la forme est
+-- inconnue). Tout est contrôlé avant le moindre cast : une erreur de cast ne dirait pas quel réglage est en
+-- cause. Les décimaux perdent leurs zéros inutiles (0.50 → 0.5) : même valeur, comme l'écrit l'admin v2.
 CREATE FUNCTION pg_temp.v1_setting_to_json(kind text, raw text) RETURNS jsonb
 LANGUAGE sql IMMUTABLE AS $$
-    SELECT CASE kind
-        WHEN 'int' THEN to_jsonb(trim(raw)::int)
-        WHEN 'text' THEN to_jsonb(raw)
-        WHEN 'decimals' THEN
-            (SELECT jsonb_agg(trim_scale(item::numeric) ORDER BY ord) FROM pg_temp.v1_setting_items(raw))
-        WHEN 'duration_scores' THEN
-            (SELECT jsonb_agg(jsonb_build_object('seconds', trim_scale(split_part(item, ':', 1)::numeric),
-                                                 'score', split_part(item, ':', 2)::int) ORDER BY ord)
-             FROM pg_temp.v1_setting_items(raw))
-        WHEN 'int_map' THEN
-            (SELECT jsonb_object_agg(split_part(item, ':', 1)::int::text, split_part(item, ':', 2)::int)
-             FROM pg_temp.v1_setting_items(raw))
+    SELECT CASE
+        WHEN kind = 'int' THEN
+            CASE WHEN raw ~ '^ *-?[0-9]{1,9} *$' THEN to_jsonb(trim(raw)::int) END
+        WHEN kind = 'text' THEN to_jsonb(raw)
+        -- Une liste vide : la v1 retombait sur ses valeurs par défaut, sans le dire.
+        WHEN NOT EXISTS (SELECT 1 FROM pg_temp.v1_setting_items(raw)) THEN NULL
+        WHEN kind = 'decimals' THEN
+            CASE WHEN NOT EXISTS (SELECT 1 FROM pg_temp.v1_setting_items(raw) WHERE item !~ '^[0-9]{1,6}(\.[0-9]{1,6})?$')
+                 THEN (SELECT jsonb_agg(trim_scale(item::numeric) ORDER BY ord) FROM pg_temp.v1_setting_items(raw)) END
+        WHEN kind = 'duration_scores' THEN
+            CASE WHEN EXISTS (SELECT 1 FROM pg_temp.v1_setting_items(raw)
+                              WHERE item !~ '^[0-9]{1,6}(\.[0-9]{1,6})?:-?[0-9]{1,9}$') THEN NULL
+                 -- Deux fois le même palier : la v1 gardait le dernier, sans le dire.
+                 WHEN (SELECT count(DISTINCT split_part(item, ':', 1)::numeric) <> count(*) FROM pg_temp.v1_setting_items(raw)) THEN NULL
+                 ELSE (SELECT jsonb_agg(jsonb_build_object('seconds', trim_scale(split_part(item, ':', 1)::numeric),
+                                                           'score', split_part(item, ':', 2)::int) ORDER BY ord)
+                       FROM pg_temp.v1_setting_items(raw)) END
+        WHEN kind = 'int_map' THEN
+            CASE WHEN EXISTS (SELECT 1 FROM pg_temp.v1_setting_items(raw)
+                              WHERE item !~ '^-?[0-9]{1,9}:-?[0-9]{1,9}$') THEN NULL
+                 WHEN (SELECT count(DISTINCT split_part(item, ':', 1)::int) <> count(*) FROM pg_temp.v1_setting_items(raw)) THEN NULL
+                 ELSE (SELECT jsonb_object_agg(split_part(item, ':', 1)::int::text, split_part(item, ':', 2)::int)
+                       FROM pg_temp.v1_setting_items(raw)) END
     END
 $$;
 
@@ -407,7 +396,7 @@ BEGIN
 
     SELECT string_agg(s."Key", ', ' ORDER BY s."Key") INTO keys
     FROM public."Settings" s JOIN import_setting_map m ON m.v1_key = s."Key"
-    WHERE NOT pg_temp.v1_setting_is_valid(m.kind, s."Value");
+    WHERE pg_temp.v1_setting_to_json(m.kind, s."Value") IS NULL;
     IF keys IS NOT NULL THEN
         RAISE EXCEPTION 'Réglages v1 dont la valeur ne se convertit pas sans perte (format attendu : voir import_setting_map) : %', keys;
     END IF;

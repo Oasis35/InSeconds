@@ -18,98 +18,39 @@ CREATE TEMP TABLE import_expected_source (
     PRIMARY KEY (table_name, column_name)
 ) ON COMMIT DROP;
 
-INSERT INTO import_expected_source (table_name, column_name, data_type, nullable) VALUES
-    ('__EFMigrationsHistory', 'MigrationId', 'character varying', false),
-    ('__EFMigrationsHistory', 'ProductVersion', 'character varying', false),
-
-    ('Players', 'Id', 'uuid', false),
-    ('Players', 'IsGuest', 'boolean', false),
-    ('Players', 'Pseudo', 'character varying', true),
-    ('Players', 'Email', 'character varying', true),
-    ('Players', 'AuthToken', 'uuid', false),
-    ('Players', 'CreatedAt', 'timestamp with time zone', false),
-    ('Players', 'LastSeenAt', 'timestamp with time zone', true),
-    ('Players', 'IsDeleted', 'boolean', false),
-    ('Players', 'DeletedAt', 'timestamp with time zone', true),
-    ('Players', 'CurrentStreak', 'integer', false),
-    ('Players', 'LastPlayedDate', 'date', true),
-    ('Players', 'IsAdmin', 'boolean', false),
-    ('Players', 'StreakFreezes', 'integer', false),
-
-    ('MagicLinkTokens', 'Id', 'integer', false),
-    ('MagicLinkTokens', 'Email', 'character varying', false),
-    ('MagicLinkTokens', 'TokenHash', 'character varying', false),
-    ('MagicLinkTokens', 'ExpiresAt', 'timestamp with time zone', false),
-    ('MagicLinkTokens', 'ConsumedAt', 'timestamp with time zone', true),
-    ('MagicLinkTokens', 'CreatedAt', 'timestamp with time zone', false),
-
-    ('EmailChangeTokens', 'Id', 'integer', false),
-    ('EmailChangeTokens', 'PlayerId', 'uuid', false),
-    ('EmailChangeTokens', 'NewEmail', 'character varying', false),
-    ('EmailChangeTokens', 'TokenHash', 'character varying', false),
-    ('EmailChangeTokens', 'ExpiresAt', 'timestamp with time zone', false),
-    ('EmailChangeTokens', 'ConsumedAt', 'timestamp with time zone', true),
-    ('EmailChangeTokens', 'CreatedAt', 'timestamp with time zone', false),
-
-    ('DataProtectionKeys', 'Id', 'integer', false),
-    ('DataProtectionKeys', 'FriendlyName', 'text', true),
-    ('DataProtectionKeys', 'Xml', 'text', true),
-
-    ('Settings', 'Id', 'integer', false),
-    ('Settings', 'Key', 'character varying', false),
-    ('Settings', 'Value', 'character varying', false),
-    ('Settings', 'Description', 'character varying', true),
-    ('Settings', 'UpdatedAt', 'timestamp with time zone', false),
-
-    ('Tracks', 'Id', 'integer', false),
-    ('Tracks', 'DeezerTrackId', 'bigint', false),
-    ('Tracks', 'Artist', 'character varying', false),
-    ('Tracks', 'Title', 'character varying', false),
-    ('Tracks', 'CreatedAt', 'timestamp with time zone', false),
-    ('Tracks', 'UpdatedAt', 'timestamp with time zone', true),
-    ('Tracks', 'CoverHash', 'character varying', true),
-    ('Tracks', 'HasPreview', 'boolean', false),
-    ('Tracks', 'LastUsedDate', 'date', true),
-    ('Tracks', 'UsageCount', 'integer', false),
-    ('Tracks', 'ReleaseYear', 'integer', true),
-    ('Tracks', 'IsDisabled', 'boolean', false),
-
-    ('DailyChallenges', 'Id', 'integer', false),
-    ('DailyChallenges', 'Date', 'date', false),
-    ('DailyChallenges', 'Seed', 'integer', false),
-
-    ('DailyChallengeTracks', 'Id', 'integer', false),
-    ('DailyChallengeTracks', 'DailyChallengeId', 'integer', false),
-    ('DailyChallengeTracks', 'TrackId', 'integer', false),
-    ('DailyChallengeTracks', 'DeezerRankSnapshot', 'integer', false),
-    ('DailyChallengeTracks', 'Position', 'integer', false),
-
-    ('GameSessions', 'Id', 'integer', false),
-    ('GameSessions', 'PlayerId', 'uuid', false),
-    ('GameSessions', 'DailyChallengeId', 'integer', false),
-    ('GameSessions', 'TotalScore', 'integer', false),
-    ('GameSessions', 'TotalDurationSeconds', 'numeric', false),
-    ('GameSessions', 'CreatedAt', 'timestamp with time zone', false),
-    ('GameSessions', 'AbandonedAt', 'timestamp with time zone', true),
-    ('GameSessions', 'CompletedAt', 'timestamp with time zone', true),
-    ('GameSessions', 'Status', 'integer', false),
-    ('GameSessions', 'CurrentTrackId', 'integer', true),
-    ('GameSessions', 'CurrentTrackMinListenedSeconds', 'numeric', true),
-    ('GameSessions', 'CurrentTrackHintLevelUsed', 'integer', false),
-    ('GameSessions', 'FreezeEarned', 'boolean', false),
-    ('GameSessions', 'FreezesUsed', 'integer', false),
-
-    ('GameSessionAnswers', 'Id', 'integer', false),
-    ('GameSessionAnswers', 'GameSessionId', 'integer', false),
-    ('GameSessionAnswers', 'DailyChallengeTrackId', 'integer', false),
-    ('GameSessionAnswers', 'ListenedDurationSeconds', 'numeric', false),
-    ('GameSessionAnswers', 'WasExtended', 'boolean', false),
-    ('GameSessionAnswers', 'ArtistAnswer', 'character varying', true),
-    ('GameSessionAnswers', 'TitleAnswer', 'character varying', true),
-    ('GameSessionAnswers', 'ArtistCorrect', 'boolean', false),
-    ('GameSessionAnswers', 'TitleCorrect', 'boolean', false),
-    ('GameSessionAnswers', 'Score', 'integer', false),
-    ('GameSessionAnswers', 'HintLevelUsed', 'integer', false);
+-- Une ligne par table : « Colonne:type », un « ? » après le type si la colonne accepte NULL. Les types sont
+-- ceux d'information_schema, abrégés pour les plus longs (varchar, ts, int, bool).
+INSERT INTO import_expected_source (table_name, column_name, data_type, nullable)
+SELECT t.table_name, split_part(c.spec, ':', 1), COALESCE(ty.data_type, rtrim(split_part(c.spec, ':', 2), '?')),
+       c.spec LIKE '%?'
+FROM (VALUES
+    ('__EFMigrationsHistory', 'MigrationId:varchar ProductVersion:varchar'),
+    ('Players', 'Id:uuid IsGuest:bool Pseudo:varchar? Email:varchar? AuthToken:uuid CreatedAt:ts LastSeenAt:ts?
+                 IsDeleted:bool DeletedAt:ts? CurrentStreak:int LastPlayedDate:date? IsAdmin:bool StreakFreezes:int'),
+    ('MagicLinkTokens', 'Id:int Email:varchar TokenHash:varchar ExpiresAt:ts ConsumedAt:ts? CreatedAt:ts'),
+    ('EmailChangeTokens', 'Id:int PlayerId:uuid NewEmail:varchar TokenHash:varchar ExpiresAt:ts ConsumedAt:ts?
+                           CreatedAt:ts'),
+    ('DataProtectionKeys', 'Id:int FriendlyName:text? Xml:text?'),
+    ('Settings', 'Id:int Key:varchar Value:varchar Description:varchar? UpdatedAt:ts'),
+    ('Tracks', 'Id:int DeezerTrackId:bigint Artist:varchar Title:varchar CreatedAt:ts UpdatedAt:ts? CoverHash:varchar?
+                HasPreview:bool LastUsedDate:date? UsageCount:int ReleaseYear:int? IsDisabled:bool'),
+    ('DailyChallenges', 'Id:int Date:date Seed:int'),
+    ('DailyChallengeTracks', 'Id:int DailyChallengeId:int TrackId:int DeezerRankSnapshot:int Position:int'),
+    ('GameSessions', 'Id:int PlayerId:uuid DailyChallengeId:int TotalScore:int TotalDurationSeconds:numeric
+                      CreatedAt:ts AbandonedAt:ts? CompletedAt:ts? Status:int CurrentTrackId:int?
+                      CurrentTrackMinListenedSeconds:numeric? CurrentTrackHintLevelUsed:int FreezeEarned:bool
+                      FreezesUsed:int'),
+    ('GameSessionAnswers', 'Id:int GameSessionId:int DailyChallengeTrackId:int ListenedDurationSeconds:numeric
+                            WasExtended:bool ArtistAnswer:varchar? TitleAnswer:varchar? ArtistCorrect:bool
+                            TitleCorrect:bool Score:int HintLevelUsed:int')
+) AS t(table_name, columns)
+CROSS JOIN LATERAL regexp_split_to_table(trim(t.columns), '\s+') AS c(spec)
+LEFT JOIN (VALUES
+    ('varchar', 'character varying'),
+    ('ts', 'timestamp with time zone'),
+    ('int', 'integer'),
+    ('bool', 'boolean')
+) AS ty(short, data_type) ON ty.short = rtrim(split_part(c.spec, ':', 2), '?');
 
 DO $$
 DECLARE
