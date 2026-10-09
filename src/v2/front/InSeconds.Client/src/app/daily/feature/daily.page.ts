@@ -1,12 +1,13 @@
 import { DialogRef } from '@angular/cdk/dialog';
 import {
-  ChangeDetectionStrategy, Component, DestroyRef, OnInit, TemplateRef, afterNextRender, effect, inject, signal, untracked, viewChild,
+  ChangeDetectionStrategy, Component, DestroyRef, OnInit, effect, inject, signal, untracked,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { SessionStore } from '../../core/session/session.store';
 import { ErrorReportingService } from '../../core/errors/error-reporting.service';
 import { LanguageService } from '../../core/i18n/language.service';
+import { AccountLinkComponent } from '../../core/shell/app-header/account-link.component';
 import { HeaderSlot } from '../../core/shell/app-header/header-slot';
 import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { TrackRoundComponent } from '../../gameplay/feature/track-round.component';
@@ -36,8 +37,8 @@ import { WelcomeScreenComponent } from '../ui/welcome-screen/welcome-screen.comp
 
 /**
  * La page du jeu du jour (`/daily`) : elle affiche l'écran que le `DailyGameStore` indique, et branche ce qui est propre au navigateur :
- * la gélule de série dans l'en-tête, les fenêtres (abandon, sortie de partie, panneau de série), le retour de l'onglet au premier plan, la
- * fermeture de l'onglet, le partage. Les stores `DailyGameStore` et `TrackRoundStore` sont ceux de cette page.
+ * la gélule de série et le lien de compte dans le bandeau, les fenêtres (abandon, sortie de partie, panneau de série), le retour de l'onglet
+ * au premier plan, la fermeture de l'onglet, le partage. Les stores `DailyGameStore` et `TrackRoundStore` sont ceux de cette page.
  */
 @Component({
   selector: 'app-daily-page',
@@ -45,7 +46,7 @@ import { WelcomeScreenComponent } from '../ui/welcome-screen/welcome-screen.comp
     TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, DailyBrandComponent, DailyProgressComponent, DailyFooterComponent,
     WelcomeScreenComponent, ResumeScreenComponent, StatusScreenComponent, AlreadyPlayedScreenComponent, FinalRecapScreenComponent,
     StreakPillComponent, GuestStreakToastComponent, LostStreakToastComponent, GelUsedToastComponent, GelEarnedToastComponent,
-    DeezerBadgeComponent, ScoreCountComponent,
+    DeezerBadgeComponent, ScoreCountComponent, AccountLinkComponent,
   ],
   providers: [DailyGameStore, TrackRoundStore, DailyShare],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -68,7 +69,6 @@ export class DailyPage implements OnInit {
   private readonly dailyShare = inject(DailyShare);
   private readonly destroyRef = inject(DestroyRef);
 
-  private readonly headerLeft = viewChild<TemplateRef<unknown>>('headerLeft');
   private leaveDialog: DialogRef<boolean, ConfirmDialogComponent> | null = null;
 
   protected readonly shareCopied = this.dailyShare.copied;
@@ -78,15 +78,9 @@ export class DailyPage implements OnInit {
   protected readonly isEnglish = () => this.language.current() === 'en';
 
   constructor() {
-    // L'emplacement de gauche de l'en-tête est à cette page tant qu'elle est affichée.
-    afterNextRender(() => {
-      const template = this.headerLeft();
-      if (template) this.headerSlot.show(template);
-    });
-    this.destroyRef.onDestroy(() => {
-      const template = this.headerLeft();
-      if (template) this.headerSlot.clear(template);
-    });
+    // La page a son propre en-tête (gélule de série et lien de compte dans le bandeau) : l'en-tête global s'efface tant qu'elle est affichée.
+    this.headerSlot.takeOver(this);
+    this.destroyRef.onDestroy(() => this.headerSlot.release(this));
 
     // Si la partie quitte « playing » pendant qu'une confirmation de sortie est ouverte (dernière réponse qui se résout, partie finie
     // ailleurs), il n'y a plus de partie à protéger : la navigation continue.

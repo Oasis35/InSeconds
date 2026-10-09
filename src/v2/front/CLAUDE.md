@@ -63,7 +63,7 @@ src/v2/front/InSeconds.Client/
     │   ├── storage/           # StoragePort (localStorage sans exception)
     │   ├── version/           # VersionService (SwUpdate)
     │   ├── health/            # HealthService (sonde /health)
-    │   └── shell/             # en-tête (avatar), overlay « Service indisponible », avis d'ancienne adresse, bandeau de mise à jour, emplacement de gauche (`HeaderSlot`), page de confidentialité, pages d'attente de l'admin et 404
+    │   └── shell/             # en-tête (lien de compte `<app-account-link>` : avatar ou « Se connecter »), `HeaderSlot` (une page qui a son propre en-tête efface l'en-tête global), overlay « Service indisponible », avis d'ancienne adresse, bandeau de mise à jour, page de confidentialité, pages d'attente de l'admin et 404
     └── ui/                    # kit de la DA, purement visuel
         ├── button/            # <button appButton variant="primary|secondary|danger|ghost">
         ├── modal/             # ModalService (CDK Dialog) : open, openSheet, confirm ; <app-modal-frame>
@@ -187,7 +187,7 @@ Règles :
 - **Statistiques du jour** (`stats/today`) lues en entrant sur un écran de fin ; un échec les met à `null` et l'écran s'affiche sans (piège 41). **Série** relue après la dernière réponse. **Toast « série perdue »** d'un invité : une fois par série perdue (`StoragePort`).
 - **Identité** : `begin()` crée l'invité (`SessionLoader.ensureGuest`, `POST /api/players/guest`) avant `POST /api/daily/sessions`, qui exige un cookie ; la lecture de l'état (`GET /api/daily/today`) ne crée rien.
 
-**`DailyPage`** : le gabarit `#headerLeft` est donné à `HeaderSlot` (la gélule de série, ou le score en partie) ; abandonner et quitter la partie passent par `ModalService` (`confirm`, `openSheet`) ; le panneau de série par `openSheet(StreakSheetComponent)` ; `beforeunload` et la garde de sortie protègent une partie en cours (une confirmation ouverte se ferme d'elle-même si la partie finit entre-temps) ; le badge « À écouter sur Deezer » est projeté dans `[roundBadge]`, au-dessus du score de l'en-tête (`z-40`).
+**`DailyPage`** : la page a son propre en-tête, comme en v1 : la gélule de série (ou le score en partie) et le lien de compte (`<app-account-link compact>`) sont projetés dans le bandeau IN//SECONDS (`daily-brand`, `[brandLeft]` / `[brandRight]`, grille à trois colonnes : le titre reste centré et se décale plutôt que d'être recouvert, titre resserré sous 360 px) ; elle prend `HeaderSlot` à sa création pour effacer l'en-tête global (posé au-dessus du bandeau, il affichait la gélule et l'avatar hors de la barre, signalé sur le staging le 09/10). En mode `compact`, un invité voit une silhouette libellée « Se connecter » au lieu du texte, qui ne tient pas à côté du titre sur un téléphone de 320 px ; abandonner et quitter la partie passent par `ModalService` (`confirm`, `openSheet`) ; le panneau de série par `openSheet(StreakSheetComponent)` ; `beforeunload` et la garde de sortie protègent une partie en cours (une confirmation ouverte se ferme d'elle-même si la partie finit entre-temps) ; le badge « À écouter sur Deezer » est projeté dans `[roundBadge]`, au-dessus du score de l'en-tête (`z-40`).
 
 ## Domaine admin
 

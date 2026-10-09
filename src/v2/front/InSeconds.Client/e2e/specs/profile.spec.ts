@@ -13,7 +13,7 @@ test.describe('Profil', () => {
     await linkAccount(page, api, EMAIL_A, 'AvatarUserE2E');
 
     // Le profil porte aussi des éléments avec le même texte — scoper au header.
-    await page.locator('app-header').getByTitle('AvatarUserE2E').click();
+    await page.locator('app-account-link').getByTitle('AvatarUserE2E').click();
     await expect(page).toHaveURL(/\/profile$/);
   });
 
