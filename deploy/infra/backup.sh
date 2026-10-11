@@ -101,12 +101,15 @@ prepare_rclone_env() {
   rclone_env_ready=true
 }
 
-rclone_mount_mode=ro # fetch seul monte le dossier des dumps en écriture
-rclone_run() { # rclone_run <args...> : le dossier des dumps est monté sur /backups
+# Les dumps passent par l'entrée / la sortie standard (rcat, cat), jamais par un dossier monté :
+# un montage dépend des droits et du mappage d'utilisateurs de Docker sur l'hôte (sur le VPS,
+# rclone ne voyait pas le fichier monté).
+rclone_run() { # rclone_run <args...> : sans entrée standard
+  rclone_in "$@" < /dev/null
+}
+rclone_in() { # rclone_in <args...> : lit l'entrée standard (rcat)
   prepare_rclone_env
-  # --user : les fichiers téléchargés (fetch) appartiennent à l'utilisateur du VPS, pas à root,
-  # sinon la rotation locale ne pourrait plus les supprimer.
-  docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -v "$BACKUP_DIR:/backups:$rclone_mount_mode" \
+  docker run --rm -i \
     -e RCLONE_CONFIG_R2_TYPE -e RCLONE_CONFIG_R2_PROVIDER -e RCLONE_CONFIG_R2_NO_CHECK_BUCKET \
     -e RCLONE_CONFIG_R2_ACCESS_KEY_ID -e RCLONE_CONFIG_R2_SECRET_ACCESS_KEY -e RCLONE_CONFIG_R2_ENDPOINT \
     -e RCLONE_CONFIG_R2CRYPT_TYPE -e RCLONE_CONFIG_R2CRYPT_REMOTE -e RCLONE_CONFIG_R2CRYPT_PASSWORD \
@@ -117,14 +120,14 @@ rclone_run() { # rclone_run <args...> : le dossier des dumps est monté sur /bac
 upload_to_r2() { # upload_to_r2 <nom du dump>
   local name="$1" month
   log "Envoi chiffré vers R2 (daily/$name)..."
-  rclone_run copyto "/backups/$name" "r2crypt:daily/$name"
+  rclone_in rcat -q "r2crypt:daily/$name" < "$BACKUP_DIR/$name"
   # Une sauvegarde mensuelle : la première du mois est aussi copiée dans monthly/.
   month=${name#inseconds-}
   month=${month:0:7}
   # (lsf échoue tant que monthly/ n'existe pas sur un stockage local ; sur R2, liste vide.)
   if [[ -z "$(rclone_run lsf r2crypt:monthly/ --include "inseconds-$month-*" 2> /dev/null || true)" ]]; then
     log "Première sauvegarde du mois : copie dans monthly/."
-    rclone_run copyto "/backups/$name" "r2crypt:monthly/$name"
+    rclone_in rcat -q "r2crypt:monthly/$name" < "$BACKUP_DIR/$name"
   fi
   log "Rotation R2 : daily/ > $REMOTE_DAILY_KEEP_DAYS j, monthly/ > $REMOTE_MONTHLY_KEEP_DAYS j supprimés."
   rclone_run delete r2crypt:daily/ --min-age "${REMOTE_DAILY_KEEP_DAYS}d"
@@ -258,10 +261,12 @@ fetch() { # fetch <daily/… ou monthly/…> : copie déchiffrée dans BACKUP_DI
   r2_configured || fail "R2 non configuré dans $ENV_FILE."
   mkdir -p "$BACKUP_DIR"
   chmod 700 "$BACKUP_DIR"
-  rclone_mount_mode=rw
-  rclone_run copyto "r2crypt:$path" "/backups/$(basename "$path")"
-  verify_dump "$BACKUP_DIR/$(basename "$path")"
-  log "Téléchargé : $BACKUP_DIR/$(basename "$path") (à tester avec ./backup.sh restore-test <fichier>)."
+  local file
+  file="$BACKUP_DIR/$(basename "$path")"
+  ( umask 077; rclone_run cat "r2crypt:$path" > "$file.part" ) || { rm -f "$file.part"; fail "téléchargement impossible : $path"; }
+  mv "$file.part" "$file"
+  verify_dump "$file"
+  log "Téléchargé : $file (à tester avec ./backup.sh restore-test <fichier>)."
 }
 
 case "${1:-backup}" in
