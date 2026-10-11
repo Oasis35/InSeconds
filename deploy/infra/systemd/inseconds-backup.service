@@ -1,0 +1,15 @@
+# Sauvegarde de la base de prod (deploy/infra/backup.sh), lancée par inseconds-backup.timer.
+# Installation et suivi : deploy/infra/README.md § Sauvegardes.
+# Le script est lu dans le checkout de prod, remis à jour à chaque déploiement.
+[Unit]
+Description=Sauvegarde de la base InSeconds (dump + R2)
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+User=debian
+Group=debian
+ExecStart=/home/debian/apps/InSeconds/deploy/infra/backup.sh
+# Un dump coincé ne doit pas bloquer la sauvegarde du lendemain.
+TimeoutStartSec=1h

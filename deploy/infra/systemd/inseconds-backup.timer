@@ -1,0 +1,11 @@
+# Chaque nuit à 3 h UTC, à l'écart des tâches de l'API (23 h, minuit).
+# Persistent=true : une sauvegarde ratée (VPS éteint) est lancée au redémarrage.
+[Unit]
+Description=Sauvegarde nocturne de la base InSeconds
+
+[Timer]
+OnCalendar=*-*-* 03:00:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target
