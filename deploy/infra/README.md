@@ -57,7 +57,131 @@ Le conteneur Postgres continue de tourner pour les autres projets. Pour redéplo
 recréer la base/user (commandes ci-dessus) puis relancer le stack applicatif — les migrations
 EF Core (`db.Database.Migrate()` au boot de l'API) recréent le schéma automatiquement.
 
-## Backup
+## Sauvegardes
 
-À mettre en place (cf. étape 7 du plan de migration VPS) : dump quotidien externalisé hors
-VPS, pas seulement local (le VPS est un single point of failure).
+`backup.sh` sauvegarde la base de prod `inseconds` en entier (tous les schémas : les tables v1
+de `public` comme ceux de la v2). Le staging n'est pas sauvegardé : il se reconstruit depuis la
+prod (`deploy/vps/copy-prod-db-to-staging.sh`).
+
+Une sauvegarde :
+
+1. `pg_dump -Fc` dans un conteneur `postgres:17-alpine` jetable (même version majeure que
+   `shared-postgres`), avec le compte `inseconds` ;
+2. vérifie le fichier (`pg_restore --list` lisible et au moins une table avec données) ;
+3. le garde dans `~/backups/postgres/` (dossier `700`) et supprime les fichiers de plus de 7 jours ;
+4. si R2 est configuré, l'envoie **chiffré** (rclone crypt, conteneur `rclone/rclone`) dans
+   `daily/` du bucket `inseconds-backups`, plus une copie dans `monthly/` pour la première du
+   mois ; supprime sur R2 les quotidiennes de plus de 30 jours et les mensuelles de plus de 365 ;
+5. envoie à Grafana Cloud une ligne de log « Sauvegarde OK » (ou « Sauvegarde en échec »), avec
+   la configuration OTLP de l'API (cf. [Surveillance](#surveillance-alerte-grafana)).
+
+### Quand elle tourne
+
+- **Chaque nuit à 3 h UTC** par le timer systemd `inseconds-backup.timer` du VPS
+  (`systemd/inseconds-backup.service` + `.timer`). `Persistent=true` : si le VPS était éteint à
+  3 h, la sauvegarde part à son redémarrage. Le service lance le script du checkout de prod
+  (`~/apps/InSeconds/deploy/infra/backup.sh`), remis à jour à chaque déploiement.
+- **À la main**, quand on veut, sur le VPS :
+
+  ```bash
+  sudo systemctl start inseconds-backup        # comme la nuit (journal dans journalctl)
+  cd ~/apps/InSeconds/deploy/infra && ./backup.sh   # ou directement, sortie à l'écran
+  ```
+
+  À faire avant toute opération risquée sur la base (import, bascule, suppression de tables).
+
+Suivi : `systemctl list-timers inseconds-backup` (prochain passage),
+`journalctl -u inseconds-backup -n 50` (sortie des derniers passages).
+
+### Mise en place (une fois, sur le VPS)
+
+Ajouter à `deploy/infra/.env` (cf. `.env.example`) :
+
+```bash
+# Clé R2 « inseconds-backups-vps » (Object Read & Write sur le seul bucket) : dans KeePass
+R2_ACCESS_KEY_ID=...
+R2_SECRET_ACCESS_KEY=...
+# Adresse « S3 API » de la page du bucket, SANS /inseconds-backups à la fin
+R2_ENDPOINT=https://<id-compte>.eu.r2.cloudflarestorage.com
+# Phrase de passe du chiffrement : la générer, puis la ranger dans KeePass
+BACKUP_ENCRYPTION_PASSWORD=...
+```
+
+Le signal vers Grafana n'a rien à configurer ici : le script lit `OTEL_EXPORTER_OTLP_ENDPOINT` et
+`OTEL_EXPORTER_OTLP_HEADERS` dans `~/apps/InSeconds/.env.prod` (ceux de l'API). Pour les surcharger,
+les mettre dans `deploy/infra/.env`.
+
+Pour générer la phrase de passe : `openssl rand -base64 32`. **Sans elle, les sauvegardes de R2
+sont illisibles** : elle doit être dans KeePass, pas seulement sur le VPS (un VPS perdu
+l'emporterait avec lui).
+
+Puis lancer une première sauvegarde et un test de restauration :
+
+```bash
+cd ~/apps/InSeconds/deploy/infra
+chmod 600 .env
+./backup.sh
+./backup.sh list-remote
+./backup.sh restore-test
+```
+
+Puis installer le timer :
+
+```bash
+sudo cp ~/apps/InSeconds/deploy/infra/systemd/inseconds-backup.{service,timer} /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now inseconds-backup.timer
+systemctl list-timers inseconds-backup   # prochain passage : 3 h UTC
+```
+
+Les fichiers sont **copiés** (pas des liens) : après une modification de l'un d'eux dans le
+dépôt, refaire le `cp` et le `daemon-reload`. Le service tourne sous l'utilisateur `debian`, qui
+doit pouvoir lancer `docker` (comme pour le déploiement).
+
+Sans les variables R2, `backup.sh` fait seulement la sauvegarde locale. Les renseigner à moitié
+est une erreur (le script s'arrête).
+
+### Surveillance (alerte Grafana)
+
+Chaque passage envoie à Grafana Cloud un log du service `inseconds-backup` : « Sauvegarde OK »
+(avec le nom du dump, sa taille et `backup.offsite` = envoyé sur R2 ou non) ou « Sauvegarde en
+échec ». Une alerte prévient si **aucun « Sauvegarde OK » n'est arrivé en 26 h**, ce qui couvre
+l'échec, le VPS éteint et le timer arrêté. À créer une fois dans Grafana
+(*Alerting → Alert rules → New alert rule*) :
+
+- source de données : la source Loki des logs (`grafanacloud-…-logs`) ;
+- requête (*Code*) :
+
+  ```logql
+  sum(count_over_time({service_name="inseconds-backup"} |= "Sauvegarde OK" [26h]))
+  ```
+
+- condition : *IS BELOW* `1` ;
+- *Configure no data and error handling* → *Alert state if no data* : **Alerting** (sans aucun
+  log, la requête ne renvoie rien, ce qui doit aussi déclencher l'alerte) ;
+- évaluation toutes les heures (*pending period* `0s`), point de contact : le mail du compte.
+
+Pour vérifier que le signal arrive : lancer `./backup.sh`, puis dans *Explore* (source Loki)
+`{service_name="inseconds-backup"}`. Un message « Signal Grafana impossible. » dans la sortie du
+script veut dire que l'envoi a échoué (la sauvegarde, elle, n'est pas affectée).
+
+### Restaurer
+
+`./backup.sh restore-test [fichier]` restaure un dump (le plus récent par défaut) dans une base
+jetable `inseconds_restore_test`, affiche le nombre de lignes par table, puis la supprime. La base
+de prod n'est jamais touchée. À refaire de temps en temps : une sauvegarde jamais restaurée ne
+prouve rien.
+
+Pour reprendre une sauvegarde de R2 (VPS perdu, ou besoin d'une date plus ancienne) :
+
+```bash
+./backup.sh list-remote
+./backup.sh fetch monthly/inseconds-2026-10-01T030000Z.dump   # déchiffrée dans ~/backups/postgres/
+./backup.sh restore-test ~/backups/postgres/inseconds-2026-10-01T030000Z.dump
+```
+
+Sur un VPS neuf, il suffit de Docker, du dépôt et d'un `deploy/infra/.env` contenant les
+variables R2 et la phrase de passe (depuis KeePass).
+
+Remplacer réellement la base de prod est une opération manuelle, API arrêtée, avec la commande
+de CLAUDE.md racine § « Restaurer un dump PostgreSQL » (`pg_restore --clean --if-exists`).
