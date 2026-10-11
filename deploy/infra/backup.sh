@@ -27,9 +27,9 @@ NETWORK=shared-postgres
 RESTORE_TEST_DB=inseconds_restore_test
 
 read_env_file() { # read_env_file <fichier> <clé> : valeur, sans `source` (pas d'exécution)
-  local value=""
-  if [[ -f "$1" ]]; then
-    value=$(grep -E "^$2=" "$1" | tail -n1 | cut -d= -f2-) || true
+  local file="$1" key="$2" value=""
+  if [[ -f "$file" ]]; then
+    value=$(grep -E "^$key=" "$file" | tail -n1 | cut -d= -f2-) || true
   fi
   value=${value%\"}; value=${value#\"} # guillemets facultatifs d'un fichier .env docker compose
   printf '%s' "$value"
@@ -51,9 +51,9 @@ REMOTE_MONTHLY_KEEP_DAYS=$(read_env BACKUP_REMOTE_MONTHLY_KEEP_DAYS 365)
 # Signal vers Grafana : configuration OTLP de deploy/infra/.env, sinon celle de l'API (.env.prod).
 OTEL_ENV_FILE="${BACKUP_OTEL_ENV_FILE:-$SCRIPT_DIR/../../.env.prod}"
 read_otel() {
-  local value
-  value=$(read_env "$1")
-  printf '%s' "${value:-$(read_env_file "$OTEL_ENV_FILE" "$1")}"
+  local key="$1" value
+  value=$(read_env "$key")
+  printf '%s' "${value:-$(read_env_file "$OTEL_ENV_FILE" "$key")}"
 }
 OTLP_ENDPOINT=$(read_otel OTEL_EXPORTER_OTLP_ENDPOINT)
 R2_BUCKET=$(read_env R2_BUCKET inseconds-backups)
