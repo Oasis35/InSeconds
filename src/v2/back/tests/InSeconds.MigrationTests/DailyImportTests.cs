@@ -475,6 +475,24 @@ public class DailyImportTests(ImportDatabase database)
     }
 
     [Fact]
+    public async Task Verification_PartieTermineeSansAucuneReponse_TotalV1Garde_EtListee()
+    {
+        // Les parties du joueur dev créées en prod par le seed de test de la v1 : terminées, total 2550, aucune réponse.
+        var cs = await database.CreateDatabaseAsync();
+        var player = V1Player.Guest();
+        await V1Data.InsertAsync(cs, player);
+        await SeedChallengeAsync(cs);
+        await V1DailyData.InsertSessionsAsync(cs, new V1Session(1, player.Id, ChallengeId) { Status = 1, CreatedAt = Started, CompletedAt = Finished, TotalScore = 2550, TotalDurationSeconds = 1.5m });
+
+        var result = await database.RunImportAsync(cs);
+
+        Assert.True(result.ExitCode == 0, result.Output);
+        Assert.Contains("Parties terminées sans aucune réponse, total v1 gardé (non bloquant) : 1", result.Output, StringComparison.Ordinal);
+        Assert.Contains("Parties terminées sans réponse : 1 du ", result.Output, StringComparison.Ordinal);
+        Assert.Equal(2550, await ImportDatabase.ScalarAsync<int>(cs, "SELECT total_score FROM daily.sessions WHERE id = 1"));
+    }
+
+    [Fact]
     public async Task FigerLesStatistiques_ApresImport_ChaqueJourTermineAUnePhoto_PasLaVeilleNiLeJour()
     {
         var cs = await database.CreateDatabaseAsync();
