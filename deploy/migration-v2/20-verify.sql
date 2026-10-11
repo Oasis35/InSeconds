@@ -252,23 +252,39 @@ SELECT pg_temp.expect('scores par joueur', 0, (
     WHERE o.id IS NULL OR v.id IS NULL OR o.total IS DISTINCT FROM v.total));
 
 -- Partie terminée = somme de ses réponses. Bloquant ; en cas d'écart, le message donne chaque partie (identifiant v1, date du défi,
--- total, nombre de réponses, scores des réponses par position) pour décider ensuite quoi en faire (copie du 09/10 : 4 parties en prod).
+-- total, nombre de réponses, scores des réponses par position).
+-- Exception : une partie terminée SANS AUCUNE réponse garde son total v1 et est seulement listée (11/10). Ce sont
+-- les parties du joueur dev créées par le seed de test de la v1 (total 2550, aucune réponse : SeedData.cs), passées en prod en juin
+-- (parties 44 à 47, copie du 09/10). Les contrôles par partie, par défi et par joueur gardent leur total, comme les photos des jours.
 DO $$
 DECLARE
     gaps bigint;
     detail text;
+    empty_count bigint;
+    empty_ids text;
 BEGIN
+    CREATE TEMP TABLE import_completed_scores ON COMMIT DROP AS
+    SELECT s.id, c.date, s.total_score,
+           (SELECT count(*) FROM daily.answers a WHERE a.session_id = s.id) AS answers_count,
+           (SELECT COALESCE(sum(a.score), 0) FROM daily.answers a WHERE a.session_id = s.id) AS answers_sum,
+           (SELECT string_agg(a.position || '=' || a.score, ' ' ORDER BY a.position) FROM daily.answers a
+            WHERE a.session_id = s.id) AS answers_scores
+    FROM daily.sessions s JOIN daily.challenges c ON c.id = s.challenge_id
+    WHERE s.status = 1;
+
+    SELECT count(*), string_agg(format('%s du %s (total %s)', g.id, g.date, g.total_score), ', ' ORDER BY g.id)
+    INTO empty_count, empty_ids
+    FROM import_completed_scores g WHERE g.answers_count = 0 AND g.total_score <> 0;
+    RAISE NOTICE 'Parties terminées sans aucune réponse, total v1 gardé (non bloquant) : %', empty_count;
+    IF empty_ids IS NOT NULL THEN
+        RAISE NOTICE 'Parties terminées sans réponse : %', empty_ids;
+    END IF;
+
     SELECT count(*), string_agg(format('%s du %s (total %s, %s réponse(s) : %s)', g.id, g.date, g.total_score, g.answers_count,
-                                       COALESCE(g.answers_scores, '-')), ' ; ' ORDER BY g.id)
+                                       g.answers_scores), ' ; ' ORDER BY g.id)
     INTO gaps, detail
-    FROM (SELECT s.id, c.date, s.total_score,
-                 (SELECT count(*) FROM daily.answers a WHERE a.session_id = s.id) AS answers_count,
-                 (SELECT COALESCE(sum(a.score), 0) FROM daily.answers a WHERE a.session_id = s.id) AS answers_sum,
-                 (SELECT string_agg(a.position || '=' || a.score, ' ' ORDER BY a.position) FROM daily.answers a
-                  WHERE a.session_id = s.id) AS answers_scores
-          FROM daily.sessions s JOIN daily.challenges c ON c.id = s.challenge_id
-          WHERE s.status = 1) g
-    WHERE g.total_score <> g.answers_sum;
+    FROM import_completed_scores g
+    WHERE g.answers_count > 0 AND g.total_score <> g.answers_sum;
     IF gaps > 0 THEN
         RAISE EXCEPTION 'Vérification « score d''une partie terminée = somme de ses réponses » : 0 attendu(s), % trouvé(s). Parties : %',
             gaps, detail;
