@@ -653,6 +653,23 @@
       "abandon": "Give up",
       "loading": "Loading the challenge…",
       "points": "pts"
+    },
+    "thanks": {
+      "titleBefore": "Thanks for keeping ",
+      "titleAfter": " alive!",
+      "feedbackBefore": "Thank you for all your feedback, your shares and the ",
+      "games": "more than {{ count }} games",
+      "feedbackAfter": " played.",
+      "feedbackNoCount": "Thank you for all your feedback, your shares and every game played.",
+      "regulars": "It really warms my heart to see players coming back again and again.",
+      "nextBefore": "The adventure isn't over: a ",
+      "newMode": "new game mode",
+      "nextAfter": " is in the works 🫢",
+      "challenge": "Challenge a friend",
+      "continue": "Continue",
+      "challengeText": "I play InSeconds, one blind test a day. Can you beat me?\n{{ url }}",
+      "copied": "Link copied, just paste it",
+      "copyFailed": "Couldn't copy to the clipboard."
     }
   },
   "privacy": {
