@@ -653,6 +653,23 @@
       "abandon": "Abandonner",
       "loading": "Chargement du défi…",
       "points": "pts"
+    },
+    "thanks": {
+      "titleBefore": "Merci de faire vivre ",
+      "titleAfter": " !",
+      "feedbackBefore": "Merci pour tous vos retours, vos partages et les ",
+      "games": "plus de {{ count }} parties",
+      "feedbackAfter": " jouées.",
+      "feedbackNoCount": "Merci pour tous vos retours, vos partages et toutes les parties jouées.",
+      "regulars": "Ça fait vraiment chaud au cœur de voir des joueurs revenir régulièrement.",
+      "nextBefore": "L'aventure n'est pas finie : un ",
+      "newMode": "nouveau mode de jeu",
+      "nextAfter": " est en cours de préparation 🫢",
+      "challenge": "Défie un ami",
+      "continue": "Continuer",
+      "challengeText": "Je joue à InSeconds, un blind test par jour. Tu fais mieux que moi ?\n{{ url }}",
+      "copied": "Lien copié, tu n'as plus qu'à le coller",
+      "copyFailed": "Impossible de copier dans le presse-papier."
     }
   },
   "privacy": {

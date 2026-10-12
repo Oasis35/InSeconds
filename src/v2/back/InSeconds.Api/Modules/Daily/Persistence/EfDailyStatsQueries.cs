@@ -51,6 +51,9 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
         return new PlayerSessionRow(session.Status, session.TotalScore, session.FreezesUsed, session.FreezeEarned, answers);
     }
 
+    public Task<int> CountCompletedSessionsAsync(CancellationToken ct) =>
+        LiveData.Sessions(db).CountAsync(s => s.Status == SessionStatus.Completed, ct);
+
     public async Task<IReadOnlyList<DaySessionRow>> GetSessionsAsync(int challengeId, CancellationToken ct) =>
         await LiveData.Sessions(db)
             .Where(s => s.ChallengeId == challengeId)

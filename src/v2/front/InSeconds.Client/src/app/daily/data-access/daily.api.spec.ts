@@ -17,7 +17,7 @@ describe('DailyApi', () => {
 
   beforeEach(() => {
     client = {
-      getToday: vi.fn(), startSession: vi.fn(), submitAnswer: vi.fn(), requestHint: vi.fn(), getTodayStats: vi.fn(),
+      getToday: vi.fn(), startSession: vi.fn(), submitAnswer: vi.fn(), requestHint: vi.fn(), getTodayStats: vi.fn(), getGamesPlayed: vi.fn(),
     };
     TestBed.configureTestingModule({ providers: [{ provide: DailyClient, useValue: client }] });
     api = TestBed.inject(DailyApi);
@@ -148,5 +148,11 @@ describe('DailyApi', () => {
 
     expect(stats).toMatchObject({ yourScore: null, minScore: null, betterThanPercent: null, freezeMilestone: true, medianScore: 1200 });
     expect(stats.scoreDistribution).toEqual([{ minScore: 0, maxScore: 500, count: 2 }]);
+  });
+
+  it('le nombre de parties terminées', async () => {
+    client['getGamesPlayed'].mockReturnValue(of({ completedGames: 2559 }));
+
+    expect(await api.gamesPlayed()).toBe(2559);
   });
 });

@@ -15,9 +15,11 @@ import { TrackRoundComponent } from '../../gameplay/feature/track-round.componen
 import { RoundSubmission } from '../../gameplay/domain/track-round';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../ui/modal/confirm-dialog.component';
 import { ModalService } from '../../ui/modal/modal.service';
+import { ToastService } from '../../ui/toast/toast.service';
 import { DecorBackgroundComponent } from '../../ui/decor-background/decor-background.component';
 import { DailyGameStore } from '../data-access/daily-game.store';
 import { DailyShare } from '../data-access/daily-share';
+import { ThanksNotice } from '../data-access/thanks-notice';
 import { AlreadyPlayedScreenComponent } from '../ui/already-played-screen/already-played-screen.component';
 import { DailyBrandComponent } from '../ui/daily-brand/daily-brand.component';
 import { DailyFooterComponent } from '../ui/daily-footer/daily-footer.component';
@@ -34,8 +36,15 @@ import { countUp } from '../ui/score-count/count-up';
 import { StatusScreenComponent } from '../ui/status-screen/status-screen.component';
 import { StreakPillComponent } from '../ui/streak-pill/streak-pill.component';
 import { StreakSheetComponent, StreakSheetData, StreakSheetResult } from '../ui/streak-sheet/streak-sheet.component';
+import { ThanksDialogComponent, ThanksDialogData } from '../ui/thanks-dialog/thanks-dialog.component';
 import { WelcomeScreenComponent } from '../ui/welcome-screen/welcome-screen.component';
 import { reloadMomentFor } from './reload-moment';
+
+/** Le message de remerciement s'ouvre après la montée du score final (1 s) sur le récap, un peu plus tôt sur « déjà joué ». */
+const THANKS_DELAY_AFTER_GAME_MS = 1500;
+const THANKS_DELAY_MS = 800;
+
+type ThanksScreen = 'done' | 'already_played';
 
 /**
  * La page du jeu du jour (`/daily`) : elle affiche l'écran que le `DailyGameStore` indique, et branche ce qui est propre au navigateur :
@@ -50,7 +59,7 @@ import { reloadMomentFor } from './reload-moment';
     StreakPillComponent, GuestStreakToastComponent, LostStreakToastComponent, GelUsedToastComponent, GelEarnedToastComponent,
     DeezerBadgeComponent, ScoreCountComponent, AccountLinkComponent,
   ],
-  providers: [DailyGameStore, TrackRoundStore, DailyShare],
+  providers: [DailyGameStore, TrackRoundStore, DailyShare, ThanksNotice],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './daily.page.html',
   host: {
@@ -69,9 +78,14 @@ export class DailyPage implements OnInit {
   private readonly router = inject(Router);
   private readonly headerSlot = inject(HeaderSlot);
   private readonly dailyShare = inject(DailyShare);
+  private readonly thanks = inject(ThanksNotice);
+  private readonly toasts = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
 
   private leaveDialog: DialogRef<boolean, ConfirmDialogComponent> | null = null;
+  /** Le message de remerciement est en attente d'ouverture ou ouvert : jamais deux fois sur la même page. */
+  private thanksOffered = false;
+  private destroyed = false;
 
   protected readonly shareCopied = this.dailyShare.copied;
   protected readonly shareFailed = this.dailyShare.failed;
@@ -82,7 +96,10 @@ export class DailyPage implements OnInit {
   constructor() {
     // La page a son propre en-tête (gélule de série et lien de compte dans le bandeau) : l'en-tête global s'efface tant qu'elle est affichée.
     this.headerSlot.takeOver(this);
-    this.destroyRef.onDestroy(() => this.headerSlot.release(this));
+    this.destroyRef.onDestroy(() => {
+      this.headerSlot.release(this);
+      this.destroyed = true;
+    });
 
     // Une nouvelle version du site ne recharge jamais la page en pleine manche (cf. `reloadMomentFor`).
     inject(VersionService).allowReload(() => reloadMomentFor(this.store.screen()), this.destroyRef);
@@ -99,6 +116,12 @@ export class DailyPage implements OnInit {
       const total = untracked(() => this.store.totalScore());
       this.displayedTotal.set(0);
       countUp(total, v => this.displayedTotal.set(v), 1000);
+    });
+
+    // Le message de remerciement, une fois par navigateur : après une partie (récap ou « déjà joué »), jamais en pleine manche.
+    effect(() => {
+      const screen = this.store.screen();
+      if (screen === 'done' || screen === 'already_played') untracked(() => void this.offerThanks(screen));
     });
   }
 
@@ -160,6 +183,27 @@ export class DailyPage implements OnInit {
 
   protected toggleLanguage(): void {
     this.language.use(this.language.current() === 'fr' ? 'en' : 'fr');
+  }
+
+  private async offerThanks(screen: ThanksScreen): Promise<void> {
+    if (this.thanksOffered || !this.thanks.isDue()) return;
+    this.thanksOffered = true;
+    const delayMs = screen === 'done' ? THANKS_DELAY_AFTER_GAME_MS : THANKS_DELAY_MS;
+    const [games] = await Promise.all([this.thanks.gamesPlayed(), new Promise(resolve => setTimeout(resolve, delayMs))]);
+    // Le joueur a quitté l'écran entre-temps (nouvelle partie, autre page) : le message attendra la prochaine fin de partie.
+    if (this.destroyed || this.store.screen() !== screen) {
+      this.thanksOffered = false;
+      return;
+    }
+    this.thanks.markSeen();
+    const data: ThanksDialogData = { games, lang: this.language.current(), challenge: () => void this.challengeFriend() };
+    this.modal.open<void, ThanksDialogData, ThanksDialogComponent>(ThanksDialogComponent, { data, maxWidth: '25rem' });
+  }
+
+  private async challengeFriend(): Promise<void> {
+    const outcome = await this.thanks.challengeFriend();
+    if (outcome === 'copied') this.toasts.show('daily.thanks.copied', { tone: 'success' });
+    else if (outcome === 'failed') this.toasts.show('daily.thanks.copyFailed', { tone: 'error' });
   }
 
   /** Copie le résumé de la partie : un `✅/❌` par morceau, le score et le lien. */

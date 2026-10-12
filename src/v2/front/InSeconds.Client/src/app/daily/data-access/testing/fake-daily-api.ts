@@ -50,6 +50,7 @@ export class FakeDailyApi {
   settings: DailySettings | Error = SETTINGS;
   start: StartOutcome | Error = { kind: 'ok', session: SESSION() };
   stats: DayStats | Error = STATS();
+  gamesPlayed: number | Error = 2559;
   /** La réponse du serveur à chaque réponse envoyée ; `Error` pour un échec. */
   answer: (answer: AnswerToSend) => AnsweredTrack | Error = a => ANSWERED(a.position);
   hintFacts: readonly { kind: string; value: string | null }[] = [{ kind: 'year', value: '2013' }];
@@ -94,13 +95,18 @@ export class FakeDailyApi {
     return Promise.resolve();
   }
 
+  gamesPlayedCall(): Promise<number> {
+    this.calls.push('gamesPlayed');
+    return this.result(this.gamesPlayed);
+  }
+
   statsCall(): Promise<DayStats> {
     this.calls.push('stats');
     return this.result(this.stats);
   }
 }
 
-/** Branche le faux sous le vrai nom des méthodes de `DailyApi` (`today`, `settings`, `start`, `stats` sont des champs de données du faux). */
+/** Branche le faux sous le vrai nom des méthodes de `DailyApi` (`today`, `settings`, `start`, `stats`, `gamesPlayed` sont des champs de données du faux). */
 export function provideFakeDailyApi(fake: FakeDailyApi): Provider {
   return {
     provide: DailyApi,
@@ -113,6 +119,7 @@ export function provideFakeDailyApi(fake: FakeDailyApi): Provider {
       submitAnswer: (s: number, a: AnswerToSend) => fake.submitAnswer(s, a),
       abandon: (s: number) => fake.abandon(s),
       stats: () => fake.statsCall(),
+      gamesPlayed: () => fake.gamesPlayedCall(),
     } satisfies Partial<Record<keyof DailyApi, unknown>>,
   };
 }
