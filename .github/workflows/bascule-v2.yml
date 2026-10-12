@@ -1,0 +1,34 @@
+name: Bascule v2
+
+# Remplaçant minimal : GitHub ne propose un workflow manuel que si son fichier existe sur la branche
+# par défaut. La vraie version vit sur `env/staging` (répétition) puis arrive ici avec le merge de la v2.
+# Lancer depuis `env/staging` (« Use workflow from ») : c'est alors le fichier de cette branche qui s'exécute.
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Cible de la bascule"
+        type: choice
+        options: [staging, prod]
+        default: staging
+      confirm:
+        description: "Retape la cible pour confirmer"
+        required: true
+        type: string
+      simulate_failure:
+        description: "Staging seulement : simule un échec après l'import pour répéter le retour arrière"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  bascule:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refuser depuis cette branche
+        run: |
+          echo "::error::Ce workflow est un remplaçant minimal. Relance-le depuis env/staging (Use workflow from)."
+          exit 1
