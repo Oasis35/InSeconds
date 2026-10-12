@@ -1,7 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { Howl, Howler } from 'howler';
+import { ClientErrorReport, ErrorReportingService } from '../../core/errors/error-reporting.service';
 import { AudioStatus } from '../domain/track-round';
-import { HowlerAudioPort } from './howler-audio.port';
+import { HTML5_FALLBACK_MESSAGE, HowlerAudioPort } from './howler-audio.port';
 import { makeToneUrl } from './testing/wav';
 
 /**
@@ -16,9 +17,14 @@ describe('HowlerAudioPort', () => {
 
   /** Les états traversés, dans l'ordre (sans doublon consécutif). */
   let history: AudioStatus[];
+  /** Ce que le lecteur a remonté à `/api/client-errors`. */
+  let reports: ClientErrorReport[];
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [HowlerAudioPort] });
+    reports = [];
+    TestBed.configureTestingModule({
+      providers: [HowlerAudioPort, { provide: ErrorReportingService, useValue: { report: (r: ClientErrorReport) => reports.push(r) } }],
+    });
     port = TestBed.inject(HowlerAudioPort);
     tone = makeToneUrl(1.5);
     history = [];
@@ -220,6 +226,34 @@ describe('HowlerAudioPort', () => {
     port.replay(1);
     port.playFull();
     expect(port.state()).toBe('error');
+  });
+
+  it('un extrait chargé en Web Audio ne remonte rien', async () => {
+    await loaded();
+    expect(reports).toEqual([]);
+  });
+
+  it('le repli de Howler sur un élément audio est remonté, et l\'extrait se joue quand même (G5)', async () => {
+    // Téléchargement en échec réseau : Howler passe par `xhr.onerror` et se rabat sur `<audio>`.
+    const send = XMLHttpRequest.prototype.send;
+    XMLHttpRequest.prototype.send = function () {
+      throw new Error('réseau coupé');
+    };
+    try {
+      port.load(tone);
+      await until('ready');
+    } finally {
+      XMLHttpRequest.prototype.send = send;
+    }
+
+    expect(reports).toHaveLength(1);
+    expect(reports[0].source).toBe('js');
+    expect(reports[0].message).toContain(HTML5_FALLBACK_MESSAGE);
+    expect(reports[0].message).not.toContain('blob:');
+
+    port.playUntil(0.3);
+    await until('finished');
+    expect(port.position()).toBe(0.3);
   });
 
   it('stop coupe le son et revient au repos, sans réveil tardif', async () => {

@@ -1,5 +1,6 @@
-import { DestroyRef, Injectable, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, Injector, inject, signal } from '@angular/core';
 import { Howl, Howler } from 'howler';
+import { ErrorReportingService } from '../../core/errors/error-reporting.service';
 import { AudioStatus } from '../domain/track-round';
 import { AudioPort } from './audio.port';
 
@@ -34,6 +35,9 @@ type HowlInternals = Howl & { _webAudio?: boolean; _soundById?: (id: number) => 
 /** Howler ne garde son objet de segments que s'il n'est pas vide au chargement : on y met un segment sans effet. */
 const PLACEHOLDER_SEGMENT: [number, number] = [0, 0];
 
+/** Début du message remonté quand Howler se rabat sur `<audio>` : c'est lui qu'on cherche dans Grafana. */
+export const HTML5_FALLBACK_MESSAGE = 'AudioFallback: extrait joué par un élément <audio> au lieu de Web Audio';
+
 /**
  * L'`AudioPort` sur **Howler.js en mode Web Audio** (décision du 01/10/2026). L'extrait est
  * téléchargé puis décodé en mémoire (le CDN de Deezer autorise CORS, vérifié le 02/10/2026), et
@@ -50,6 +54,10 @@ const PLACEHOLDER_SEGMENT: [number, number] = [0, 0];
  * - iPhone en mode silencieux : Web Audio y est muet par défaut, la session audio passe en
  *   `playback` quand le navigateur le permet (ticket Howler goldfire/howler.js#1767).
  * - Un seul extrait en cours et le suivant restent décodés ; les autres sont libérés.
+ * - Si le téléchargement de l'extrait échoue (erreur réseau), Howler se rabat seul sur un élément
+ *   `<audio>` : le son marche, mais les paliers sont cadencés par `setTimeout` (précision de la v1).
+ *   Ce repli est remonté à `/api/client-errors` (G5, #233) pour savoir s'il arrive vraiment, sans
+ *   rien changer au jeu.
  */
 @Injectable()
 export class HowlerAudioPort extends AudioPort {
@@ -66,6 +74,8 @@ export class HowlerAudioPort extends AudioPort {
   /** Invalide les rappels d'un segment ou d'un chargement périmé. */
   private token = 0;
   private frame: number | null = null;
+  /** Résolu au premier repli seulement : le lecteur n'impose pas `HttpClient` à ses tests. */
+  private readonly injector = inject(Injector);
 
   constructor() {
     super();
@@ -151,6 +161,9 @@ export class HowlerAudioPort extends AudioPort {
     const howl = new Howl({ src: [url], format: ['mp3'], html5: false, preload: true, sprite: sprites });
     const entry: Entry = { howl, sprites, loaded: false };
     this.entries.set(url, entry);
+    howl.once('load', () => {
+      if ((howl as HowlInternals)._webAudio === false) this.reportHtml5Fallback();
+    });
     // Un extrait qui échoue (même préchargé) ne reste pas en mémoire : le prochain chargement le télécharge de nouveau.
     howl.once('loaderror', () => {
       if (this.entries.get(url) !== entry) return;
@@ -348,6 +361,17 @@ export class HowlerAudioPort extends AudioPort {
   private dispose(): void {
     this.silence();
     this.releaseExcept([]);
+  }
+
+  /**
+   * Remonte le repli de Howler sur un élément `<audio>` (une fois par page : l'envoi est dédupliqué
+   * par message). Jamais l'adresse de l'extrait, seulement si le navigateur a Web Audio.
+   */
+  private reportHtml5Fallback(): void {
+    this.injector.get(ErrorReportingService).report({
+      source: 'js',
+      message: `${HTML5_FALLBACK_MESSAGE} (Web Audio ${Howler.usingWebAudio ? 'disponible' : 'indisponible'})`,
+    });
   }
 
   /** `navigator.audioSession` n'existe que sur les navigateurs récents (Safari 17+) : sans effet ailleurs. */
