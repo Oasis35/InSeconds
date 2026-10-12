@@ -71,7 +71,8 @@ new_stack() { docker compose -f "$new_compose" --env-file "$env_file" "$@"; }
 old_stack() { docker compose -f "$old_compose" --env-file "$env_file" "$@"; }
 
 read_env() { # read_env <clé>
-  grep -E "^$1=" "$env_file" | tail -n1 | cut -d= -f2-
+  local key="$1"
+  grep -E "^$key=" "$env_file" | tail -n1 | cut -d= -f2-
 }
 
 db_password=$(read_env "$db_password_key")
