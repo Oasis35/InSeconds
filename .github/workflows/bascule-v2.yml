@@ -1,0 +1,107 @@
+name: Bascule v2
+
+# Lancement manuel uniquement (onglet Actions → "Bascule v2" → Run workflow). Refonte v2, PR G2 : fait passer un
+# environnement de la v1 à la v2 (PLAN § 10.2). Tout est dans deploy/vps/switch-to-v2.sh, exécuté sur le VPS :
+# préparation sans arrêt, arrêt de l'API actuelle, import et vérifications, démarrage de la v2 (mêmes noms de
+# conteneurs, Caddy ne change pas), santé, puis ouverture. Au moindre écart avant l'ouverture : retour arrière.
+#
+#   - target = staging : la répétition. À lancer depuis env/staging. Copie d'abord la base de prod (comme « Copy prod DB
+#     to staging »), puis enchaîne les mêmes étapes que la prod, avec l'anonymisation en plus. « Rejouer la bascule
+#     sans intervention » (jalon J5) = deux exécutions consécutives de ce workflow, sans rien toucher entre les deux.
+#     « Répéter le retour arrière » = cocher simulate_failure.
+#   - target = prod : la vraie bascule. À lancer depuis main, une fois env/staging mergé dans main. Jamais avant la
+#     répétition, jamais entre 22 h 30 et 1 h UTC (tâches de 23 h et de minuit).
+#
+# Un workflow manuel n'est listé que s'il existe sur la branche par défaut : tant que env/staging n'est pas mergé dans
+# main, main porte un remplaçant minimal (même nom, mêmes paramètres) qui refuse de s'exécuter ; la version de la branche
+# choisie au lancement (env/staging) est celle qui s'exécute.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Environnement à basculer'
+        type: choice
+        options:
+          - staging
+          - prod
+        default: staging
+      confirm:
+        description: 'Tape le nom de l''environnement (staging ou prod) pour confirmer. staging : la base du staging est entièrement remplacée ; prod : le site est interrompu quelques minutes'
+        required: true
+      simulate_failure:
+        description: 'Staging seulement : fait échouer la bascule juste après l''import, pour répéter le retour arrière'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  bascule:
+    name: Bascule v2 (${{ inputs.target }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    # Même groupe que le déploiement de l'environnement : pas de bascule pendant un déploiement, ni l'inverse.
+    concurrency:
+      group: ${{ inputs.target == 'prod' && 'deploy-vps' || 'deploy-vps-staging' }}
+      cancel-in-progress: false
+    steps:
+      - name: Contrôle des paramètres
+        env:
+          TARGET: ${{ inputs.target }}
+          CONFIRM: ${{ inputs.confirm }}
+          SIMULATE: ${{ inputs.simulate_failure }}
+          REF: ${{ github.ref }}
+        run: |
+          if [ "$CONFIRM" != "$TARGET" ]; then
+            echo "::error::Confirmation incorrecte : tape « $TARGET »."
+            exit 1
+          fi
+          if [ "$TARGET" = "prod" ] && [ "$REF" != "refs/heads/main" ]; then
+            echo "::error::La bascule de la prod se lance depuis main (« Use workflow from »), pas depuis $REF."
+            exit 1
+          fi
+          if [ "$TARGET" = "staging" ] && [ "$REF" != "refs/heads/env/staging" ]; then
+            echo "::error::La répétition sur le staging se lance depuis env/staging (« Use workflow from »), pas depuis $REF."
+            exit 1
+          fi
+          if [ "$TARGET" = "prod" ] && [ "$SIMULATE" = "true" ]; then
+            echo "::error::simulate_failure n'est permis que sur le staging."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Configure SSH
+        uses: ./.github/actions/vps-ssh
+        with:
+          private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          host: ${{ secrets.VPS_HOST }}
+          host-key: ${{ secrets.VPS_SSH_HOST_KEY }}
+
+      - name: Copy prod DB to staging (répétition)
+        if: inputs.target == 'staging'
+        # La copie fraîche de la prod rend la répétition représentative. Le script part de ce checkout (bash -s).
+        run: |
+          ssh -i ~/.ssh/id_ed25519 "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" 'bash -s' \
+            < deploy/vps/copy-prod-db-to-staging.sh
+
+      - name: Bascule v2 (${{ inputs.target }})
+        env:
+          TARGET: ${{ inputs.target }}
+          SIMULATE: ${{ inputs.simulate_failure }}
+        run: |
+          echo "Bascule $TARGET au commit ${{ github.sha }}"
+          if [ "$TARGET" = "prod" ]; then dir='~/apps/InSeconds'; else dir='~/apps/InSeconds-staging'; fi
+          if [ "$SIMULATE" = "true" ]; then simulate='after-import'; else simulate=''; fi
+          # -o ServerAlive… : la connexion reste ouverte pendant les longues étapes sans sortie (construction, import).
+          ssh -o ServerAliveInterval=30 -i ~/.ssh/id_ed25519 "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" "
+            set -e
+            cd $dir
+            previous=\$(git rev-parse HEAD)
+            git fetch origin
+            git checkout --force --detach ${{ github.sha }}
+            chmod +x deploy/vps/*.sh
+            PREVIOUS_SHA=\$previous SIMULATE_FAILURE='$simulate' ./deploy/vps/switch-to-v2.sh $TARGET
+          "

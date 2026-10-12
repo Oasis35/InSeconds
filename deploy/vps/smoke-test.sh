@@ -18,12 +18,23 @@ ko() { echo "FAIL $1" >&2; fail=1; }
 # reset de la base).
 for path in /api/e2e/reset /api/auth/dev-login; do
   code=$(curl -s -o /dev/null -w '%{http_code}' "$api$path")
-  if [[ "$code" == "404" ]]; then
-    ok "$path absent (404)"
+  # 410 : /api/auth/… est une ancienne route de la v1 (LegacyRoutes), donc "absente" aussi ; l'hôte de test, lui, y
+  # répondrait 405 en GET.
+  if [[ "$code" == "404" || "$code" == "410" ]]; then
+    ok "$path absent ($code)"
   else
     ko "$path répond HTTP $code au lieu de 404 : hôte de test déployé ? (S9)"
   fi
 done
+
+# G2 : les routes de la v1 répondent 410 common.new_version (un onglet resté ouvert sur l'ancien front
+# se voit proposer de recharger). Sondée en GET : la route /api/settings n'existe plus en v2.
+code=$(curl -s -o /dev/null -w '%{http_code}' "$api/api/settings")
+if [[ "$code" == "410" ]]; then
+  ok "/api/settings (route de la v1) répond 410"
+else
+  ko "/api/settings répond HTTP $code au lieu de 410 : routes de la v1 non gérées ? (G2)"
+fi
 
 # S15 : en-têtes posés par l'API (InSeconds.Infrastructure/Http/SecurityHeaders.cs).
 headers=$(curl -s -D - -o /dev/null "$api/health" | tr -d '\r')
