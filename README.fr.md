@@ -27,7 +27,7 @@
 - Partage de score en format emoji Wordle (copie dans le presse-papier)
 - Disponible en français et en anglais — détecté automatiquement depuis le navigateur, changeable à tout moment depuis le pied de page (choix sauvegardé en localStorage)
 - Page confidentialité et mentions légales sur `/privacy` (alias `/confidentialite`)
-- Installable sur l'écran d'accueil (PWA), avec un bandeau quand une nouvelle version est disponible
+- Installable sur l'écran d'accueil (PWA), mise à jour automatiquement à un moment sûr (jamais en pleine manche)
 - Liste des appareils connectés à ton compte, déconnexion d'un appareil ou de tous les autres
 
 ## Démarrage rapide

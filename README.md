@@ -27,7 +27,7 @@
 - Share your score in Wordle-style emoji format via the clipboard
 - Available in French and English — auto-detected from the browser, switchable anytime from the footer (choice saved in localStorage)
 - Privacy policy and legal notice at `/privacy` (also `/confidentialite`)
-- Installable on the home screen (PWA), with a banner when a new version is available
+- Installable on the home screen (PWA), updated automatically at a safe moment (never in the middle of a round)
 - List of the devices signed in to your account, sign out one device or all the others
 
 ## Quick start
