@@ -1,5 +1,5 @@
 import { DOCUMENT } from '@angular/common';
-import { EnvironmentProviders, inject, provideEnvironmentInitializer } from '@angular/core';
+import { EnvironmentProviders, Injectable, inject, provideEnvironmentInitializer } from '@angular/core';
 import { ErrorReportingService } from './error-reporting.service';
 
 /**
@@ -11,12 +11,14 @@ import { ErrorReportingService } from './error-reporting.service';
  * n'a pas le format de l'API, et passerait sans cookie joueur.
  * Jamais de query string ni de fragment : l'adresse bloquée (`blockedURI`) peut en porter (jeton).
  */
+@Injectable({ providedIn: 'root' })
 export class CspViolationReporter {
-  constructor(
-    private readonly document: Document,
-    private readonly reporting: ErrorReportingService,
-  ) {
-    document.addEventListener('securitypolicyviolation', (event) => this.onViolation(event as SecurityPolicyViolationEvent));
+  private readonly document = inject(DOCUMENT);
+  private readonly reporting = inject(ErrorReportingService);
+
+  /** Commence à écouter les violations du document ; appelé une fois au démarrage. */
+  start(): void {
+    this.document.addEventListener('securitypolicyviolation', (event) => this.onViolation(event as SecurityPolicyViolationEvent));
   }
 
   private onViolation(event: SecurityPolicyViolationEvent): void {
@@ -42,6 +44,6 @@ function stripQuery(uri: string): string {
 
 export function provideCspViolationReporting(): EnvironmentProviders {
   return provideEnvironmentInitializer(() => {
-    new CspViolationReporter(inject(DOCUMENT), inject(ErrorReportingService));
+    inject(CspViolationReporter).start();
   });
 }

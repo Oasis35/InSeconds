@@ -1,8 +1,8 @@
+import { DOCUMENT } from '@angular/common';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { CspViolationReporter, describeViolation } from './csp-violation-reporter';
-import { ErrorReportingService } from './error-reporting.service';
 import { environment } from '../../../environments/environment';
 
 const base = { effectiveDirective: 'script-src-elem', blockedURI: 'https://evil.test/a.js', disposition: 'enforce', sourceFile: '', lineNumber: 0 } as const;
@@ -27,9 +27,9 @@ describe('describeViolation', () => {
 
 describe('CspViolationReporter', () => {
   it('remonte une violation du document avec la source csp', () => {
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
     const doc = document.implementation.createHTMLDocument('t');
-    new CspViolationReporter(doc, TestBed.inject(ErrorReportingService));
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), { provide: DOCUMENT, useValue: doc }] });
+    TestBed.inject(CspViolationReporter).start();
     const httpMock = TestBed.inject(HttpTestingController);
 
     const event = new Event('securitypolicyviolation');
