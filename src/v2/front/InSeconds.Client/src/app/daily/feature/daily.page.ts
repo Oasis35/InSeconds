@@ -5,6 +5,7 @@ import {
 import { Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { SessionStore } from '../../core/session/session.store';
+import { VersionService } from '../../core/version/version.service';
 import { ErrorReportingService } from '../../core/errors/error-reporting.service';
 import { LanguageService } from '../../core/i18n/language.service';
 import { AccountLinkComponent } from '../../core/shell/app-header/account-link.component';
@@ -34,6 +35,7 @@ import { StatusScreenComponent } from '../ui/status-screen/status-screen.compone
 import { StreakPillComponent } from '../ui/streak-pill/streak-pill.component';
 import { StreakSheetComponent, StreakSheetData, StreakSheetResult } from '../ui/streak-sheet/streak-sheet.component';
 import { WelcomeScreenComponent } from '../ui/welcome-screen/welcome-screen.component';
+import { reloadMomentFor } from './reload-moment';
 
 /**
  * La page du jeu du jour (`/daily`) : elle affiche l'écran que le `DailyGameStore` indique, et branche ce qui est propre au navigateur :
@@ -81,6 +83,9 @@ export class DailyPage implements OnInit {
     // La page a son propre en-tête (gélule de série et lien de compte dans le bandeau) : l'en-tête global s'efface tant qu'elle est affichée.
     this.headerSlot.takeOver(this);
     this.destroyRef.onDestroy(() => this.headerSlot.release(this));
+
+    // Une nouvelle version du site ne recharge jamais la page en pleine manche (cf. `reloadMomentFor`).
+    inject(VersionService).allowReload(() => reloadMomentFor(this.store.screen()), this.destroyRef);
 
     // Si la partie quitte « playing » pendant qu'une confirmation de sortie est ouverte (dernière réponse qui se résout, partie finie
     // ailleurs), il n'y a plus de partie à protéger : la navigation continue.
