@@ -7,6 +7,7 @@ import {
   StatusFilter, clampPage, filterTracks, nextSort, pageOf, poolDaysRemaining, runwayTone, sortTracks, totalPages,
 } from '../domain/pool-filters';
 import { PoolTrack, isUsed } from '../domain/pool-track';
+import { ActionsApi } from './actions.api';
 import { AdminCounts } from './admin-counts';
 import { CatalogueApi } from './catalogue.api';
 
@@ -32,6 +33,8 @@ interface PoolState {
   /** Morceaux dont la désactivation est en cours d'envoi (bouton désactivé le temps de la requête). */
   togglingIds: readonly number[];
   toggleError: ToggleError | null;
+  /** Réglage `Daily:TracksPerChallenge`, pour l'autonomie ; la valeur par défaut tant qu'il n'est pas lu. */
+  tracksPerChallenge: number;
 }
 
 /**
@@ -44,8 +47,9 @@ export const PoolStore = signalStore(
   withRequestStatus(),
   withState<PoolState>({
     tracks: [], filters: NO_FILTERS, sort: null, requestedPage: 0, selectedIds: [], togglingIds: [], toggleError: null,
+    tracksPerChallenge: DEFAULT_TRACKS_PER_CHALLENGE,
   }),
-  withComputed(({ tracks, filters, sort, requestedPage, selectedIds }) => {
+  withComputed(({ tracks, filters, sort, requestedPage, selectedIds, tracksPerChallenge }) => {
     const filtered = computed(() => filterTracks(tracks(), filters()));
     const sorted = computed(() => sortTracks(filtered(), sort()));
     const pages = computed(() => totalPages(filtered().length));
@@ -58,7 +62,7 @@ export const PoolStore = signalStore(
       availableCount: computed(() => tracks().filter(t => !isUsed(t)).length),
       usedCount: computed(() => tracks().filter(isUsed).length),
       disabledCount: computed(() => tracks().filter(t => t.isDisabled).length),
-      runwayDays: computed(() => poolDaysRemaining(tracks(), DEFAULT_TRACKS_PER_CHALLENGE)),
+      runwayDays: computed(() => poolDaysRemaining(tracks(), tracksPerChallenge())),
       /** Identifiant Deezer → vrai si le morceau est disponible, faux s'il a déjà servi : le badge « déjà en pool ». */
       existingDeezerIds: computed(() => new Map(tracks().map(t => [t.deezerTrackId, !isUsed(t)] as const))),
       /** Un morceau utilisé ne se supprime pas (409) : le bouton « Supprimer (N) » le sait d'avance. */
@@ -72,7 +76,7 @@ export const PoolStore = signalStore(
     runwayTone: computed(() => runwayTone(runwayDays())),
     hasMultiplePages: computed(() => pages() > 1),
   })),
-  withMethods((store, api = inject(CatalogueApi), counts = inject(AdminCounts)) => {
+  withMethods((store, api = inject(CatalogueApi), counts = inject(AdminCounts), settings = inject(ActionsApi)) => {
     const resetPage = () => patchState(store, { requestedPage: 0 });
     const setFilter = (change: Partial<PoolFilters>) => {
       patchState(store, { filters: { ...store.filters(), ...change }, requestedPage: 0 });
@@ -81,9 +85,22 @@ export const PoolStore = signalStore(
     /** Numéro de la lecture la plus récente : une réponse plus ancienne, arrivée après elle, n'écrit rien. */
     let latestLoad = 0;
 
+    /** Le réglage n'est lu qu'une fois ; un échec garde la valeur par défaut sans bloquer le pool. */
+    let tracksPerChallengeRead = false;
+    async function loadTracksPerChallenge(): Promise<void> {
+      if (tracksPerChallengeRead) return;
+      tracksPerChallengeRead = true;
+      try {
+        patchState(store, { tracksPerChallenge: await settings.getTracksPerChallenge() });
+      } catch {
+        tracksPerChallengeRead = false;
+      }
+    }
+
     async function load(): Promise<void> {
       const mine = ++latestLoad;
       patchState(store, setPending());
+      const settingRead = loadTracksPerChallenge();
       try {
         const tracks = await api.listTracks();
         if (mine !== latestLoad) return;
@@ -98,6 +115,7 @@ export const PoolStore = signalStore(
         const appError = await toAppError(error);
         if (mine === latestLoad) patchState(store, setError(appError));
       }
+      await settingRead;
     }
 
     /** Supprime un morceau ; déjà supprimé (une première tentative a abouti avant l'échec d'un autre) : rien à refaire. */

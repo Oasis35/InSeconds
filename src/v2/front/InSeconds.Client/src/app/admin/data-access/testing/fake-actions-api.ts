@@ -4,6 +4,7 @@ import { ActionsApi } from '../actions.api';
 function defaults() {
   return {
     getCooldownDays: vi.fn<() => Promise<number>>(() => Promise.resolve(30)),
+    getTracksPerChallenge: vi.fn<() => Promise<number>>(() => Promise.resolve(5)),
     updateCooldownDays: vi.fn<(days: number) => Promise<number>>(days => Promise.resolve(days)),
   } satisfies Record<keyof ActionsApi, unknown>;
 }

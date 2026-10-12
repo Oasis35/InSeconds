@@ -6,6 +6,7 @@ import { ActionsApi } from './actions.api';
 describe('ActionsApi', () => {
   const client = {
     getAdminDailySettings: vi.fn(() => of({ trackCooldownDays: 30 })),
+    getDailySettings: vi.fn(() => of({ tracksPerChallenge: 7 })),
     updateTrackCooldown: vi.fn((body: { trackCooldownDays: number }) => of({ trackCooldownDays: body.trackCooldownDays })),
   };
   let api: ActionsApi;
@@ -19,5 +20,9 @@ describe('ActionsApi', () => {
     expect(await api.getCooldownDays()).toBe(30);
     expect(await api.updateCooldownDays(45)).toBe(45);
     expect(client.updateTrackCooldown).toHaveBeenCalledWith({ trackCooldownDays: 45 });
+  });
+
+  it('lit le nombre de morceaux par défi', async () => {
+    expect(await api.getTracksPerChallenge()).toBe(7);
   });
 });

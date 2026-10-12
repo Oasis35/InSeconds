@@ -13,6 +13,7 @@ import { CataloguePage } from './catalogue.page';
 import { EditTrackDialog } from './edit-track.dialog';
 import { DeleteTrackDialog } from './delete-track.dialog';
 import { PreviewTrackDialog } from './preview-track.dialog';
+import { fakeActionsApi, provideActionsApiFake } from '../data-access/testing/fake-actions-api';
 
 class FakeAudio implements PreviewAudio {
   paused = true; currentTime = 0; duration = 30; onended = null;
@@ -37,6 +38,7 @@ describe('CataloguePage', () => {
       providers: [
         provideTranslateService(),
         provideCatalogueApiFake(api),
+        provideActionsApiFake(fakeActionsApi()),
         { provide: ModalService, useValue: modal },
         { provide: Router, useValue: router },
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(options.query ?? {}) } } },

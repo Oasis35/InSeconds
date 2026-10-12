@@ -5,6 +5,7 @@ import { PoolStore } from '../data-access/pool.store';
 import { FakeCatalogueApi, fakeCatalogueApi, poolTrack, problem, provideCatalogueApiFake } from '../data-access/testing/fake-catalogue-api';
 import { PoolTrack } from '../domain/pool-track';
 import { EditTrackDialog } from './edit-track.dialog';
+import { fakeActionsApi, provideActionsApiFake } from '../data-access/testing/fake-actions-api';
 
 function type(input: HTMLInputElement, value: string): void {
   input.value = value;
@@ -21,7 +22,7 @@ describe('EditTrackDialog', () => {
     dialog = { close: vi.fn() };
     TestBed.configureTestingModule({
       providers: [
-        provideTranslateService(), PoolStore, provideCatalogueApiFake(api),
+        provideTranslateService(), PoolStore, provideCatalogueApiFake(api), provideActionsApiFake(fakeActionsApi()),
         { provide: DIALOG_DATA, useValue: data },
         { provide: DialogRef, useValue: dialog },
       ],

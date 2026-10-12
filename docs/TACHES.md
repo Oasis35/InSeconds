@@ -9,7 +9,7 @@
 - [ ] **CSP bloquante** (G3b, #300) — une semaine sans violation en prod en `report-only`, puis `CSP_MODE=enforce`
 - [ ] **Nettoyage après la bascule** — I1 (sauvegarde archivée, tables v1 de `public`, routes en 410), I2 (code et jobs CI v1, `src/v2` → `src`, exclusion de duplication SonarCloud `src/front/**, src/back/**`), I3 (`legacy_tokens`, middleware de transition, anciennes clés Data Protection)
 - [ ] **Profil : cartes Série / Parties jouées / Gels** (#283)
-- [ ] **Petites dettes du front v2** — clés i18n de l'admin reprises de la v1 qui ne servent plus ; formats de date numériques qui ne suivent pas la langue ; `aria-label` des boutons ‹ › du tableau de bord ; autonomie du pool calculée sur 5 morceaux par défi codés en dur (`DEFAULT_TRACKS_PER_CHALLENGE`) au lieu du réglage `Daily:TracksPerChallenge`
+- [ ] **Petites dettes du front v2** — clés i18n de l'admin reprises de la v1 qui ne servent plus ; formats de date numériques qui ne suivent pas la langue ; `aria-label` des boutons ‹ › du tableau de bord
 
 ## Mode entraînement (anciens défis)
 
