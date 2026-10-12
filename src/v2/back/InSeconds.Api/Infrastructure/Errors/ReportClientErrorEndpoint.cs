@@ -7,7 +7,8 @@ namespace InSeconds.Api.Infrastructure.Errors;
 
 /// <summary>
 /// Erreur remontée par le front (<c>ErrorReportingService</c>), même contrat qu'en v1 : <c>Source</c> =
-/// <c>js</c> (exception JavaScript non gérée) ou <c>http</c> (appel API en échec réseau ou 5xx).
+/// <c>js</c> (exception JavaScript non gérée), <c>http</c> (appel API en échec réseau ou 5xx) ou
+/// <c>csp</c> (violation de la Content-Security-Policy du front, G3).
 /// <c>RelatedTraceId</c> = code d'erreur renvoyé par l'API dans le ProblemDetails, quand il existe,
 /// pour relier les deux côtés.
 /// </summary>
@@ -22,7 +23,7 @@ public sealed record ClientErrorReport(
 /// <summary>Endpoint public : bornes strictes, pour qu'un client ne puisse pas écrire des journaux géants.</summary>
 public sealed class ClientErrorReportValidator : AbstractValidator<ClientErrorReport>
 {
-    public static readonly string[] AllowedSources = ["js", "http"];
+    public static readonly string[] AllowedSources = ["js", "http", "csp"];
 
     public ClientErrorReportValidator()
     {

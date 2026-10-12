@@ -55,6 +55,9 @@ services:
       dockerfile: Dockerfile.prod
       args:
         BUILD_CONFIGURATION: staging
+        # CSP du front (G3) : en observation tant qu'une semaine sans violation n'est pas passée ; CSP_MODE: enforce la rend bloquante.
+        CSP_MODE: report-only
+        CSP_API_ORIGIN: https://api-dev.inseconds.cc
         # Heure du déploiement affichée en admin (piège 25) : exportée par deploy/vps/deploy.sh ; vide hors déploiement.
         BUILD_TIME: ${BUILD_TIME:-}
     container_name: inseconds-staging.front

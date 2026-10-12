@@ -2,7 +2,7 @@ import { HttpBackend, HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { environment } from '../../../environments/environment';
 
-export type ClientErrorSource = 'js' | 'http';
+export type ClientErrorSource = 'js' | 'http' | 'csp';
 
 export interface ClientErrorReport {
   source: ClientErrorSource;

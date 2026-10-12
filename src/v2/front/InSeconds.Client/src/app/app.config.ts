@@ -12,6 +12,7 @@ import { provideAccount } from './account/feature/provide-account';
 import { provideAdmin } from './admin/feature/provide-admin';
 import { provideDaily } from './daily/feature/provide-daily';
 import { routes } from './app.routes';
+import { provideCspViolationReporting } from './core/errors/csp-violation-reporter';
 import { GlobalErrorHandler } from './core/errors/global-error-handler';
 import { credentialsInterceptor } from './core/http/credentials.interceptor';
 import { httpErrorReportingInterceptor } from './core/http/http-error-reporting.interceptor';
@@ -22,6 +23,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     { provide: ErrorHandler, useClass: GlobalErrorHandler },
+    provideCspViolationReporting(),
     provideZonelessChangeDetection(),
     provideRouter(routes, withInMemoryScrolling({ scrollPositionRestoration: 'top' })),
     provideHttpClient(

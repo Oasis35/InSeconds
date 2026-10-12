@@ -1,0 +1,12 @@
+# Content-Security-Policy du front (G3, S14). Modèle : Dockerfile.prod remplace les trois jetons
+# (nom de l'en-tête, origine de l'API, politique) et installe le résultat à côté de security-headers.conf.
+#   CSP_HEADER_NAME : Content-Security-Policy-Report-Only (observation) ou Content-Security-Policy (bloquant)
+#   CSP_API_ORIGIN  : origine de l'API de l'environnement (https://api.inseconds.cc, https://api-dev.inseconds.cc)
+# Origines autorisées, et pourquoi :
+#   - API : fetch/XHR (connect-src) ;
+#   - *.dzcdn.net : extraits audio (Howler les charge par XMLHttpRequest, donc connect-src, et media-src pour
+#     le repli HTML5), pochettes (img-src) ;
+#   - Google Fonts : feuille de style (style-src) et polices (font-src) ;
+#   - blob: pour l'audio décodé et data: pour les images en ligne (stories de l'admin) ;
+#   - style-src 'unsafe-inline' : Angular écrit les styles de ses composants en ligne. Aucun script en ligne.
+add_header __CSP_HEADER_NAME__ "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.dzcdn.net; media-src 'self' blob: https://*.dzcdn.net; connect-src 'self' __CSP_API_ORIGIN__ https://*.dzcdn.net; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;

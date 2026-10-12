@@ -18,9 +18,23 @@ RUN if [ -n "$BUILD_TIME" ]; then \
       npm run build -- --configuration "$BUILD_CONFIGURATION"; \
     fi
 
+# Content-Security-Policy (G3) : en observation (Report-Only) par défaut ; CSP_MODE=enforce la rend bloquante.
+# CSP_API_ORIGIN : origine de l'API de l'environnement (le staging passe https://api-dev.inseconds.cc).
+ARG CSP_MODE=report-only
+ARG CSP_API_ORIGIN=https://api.inseconds.cc
+RUN case "$CSP_MODE" in \
+      report-only) header=Content-Security-Policy-Report-Only ;; \
+      enforce) header=Content-Security-Policy ;; \
+      *) echo "CSP_MODE doit valoir report-only ou enforce (reçu : $CSP_MODE)" >&2; exit 1 ;; \
+    esac \
+ && sed -e "s|__CSP_HEADER_NAME__|$header|" \
+        -e "s|__CSP_API_ORIGIN__|$CSP_API_ORIGIN|" \
+        nginx/csp.conf.template > /tmp/csp.conf
+
 FROM nginxinc/nginx-unprivileged:alpine AS runtime
 COPY --from=build /app/dist/InSeconds.Client/browser /usr/share/nginx/html
 COPY nginx/nginx.conf /etc/nginx/conf.d/default.conf
 COPY nginx/security-headers.conf /etc/nginx/snippets/security-headers.conf
+COPY --from=build /tmp/csp.conf /etc/nginx/snippets/csp.conf
 
 EXPOSE 8080

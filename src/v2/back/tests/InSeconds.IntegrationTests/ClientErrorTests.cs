@@ -50,6 +50,21 @@ public class ClientErrorTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
 
+    [Fact]
+    public async Task ViolationDeCsp_204()
+    {
+        await using var api = new ApiFactory(_connectionString);
+
+        var response = await PostAsync(api.CreateClient(), new
+        {
+            source = "csp",
+            message = "CSP (report) script-src-elem bloque https://x.test/a.js",
+            url = "/daily",
+        });
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
+
     [Theory]
     [InlineData("autre", "message")]
     [InlineData("js", "")]
