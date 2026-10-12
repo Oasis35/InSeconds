@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
+import { SwUpdate } from '@angular/service-worker';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { provideTranslateService } from '@ngx-translate/core';
 import { PlayersApi } from './account/data-access/players.api';
@@ -15,6 +16,8 @@ describe('routes', () => {
       providers: [
         provideRouter(routes),
         provideTranslateService(),
+        // Service worker absent (comme en dev) : les pages déclarent quand recharger, rien n'est surveillé.
+        { provide: SwUpdate, useValue: { isEnabled: false } },
         { provide: PlayersApi, useValue: { getMe: async () => linkedPlayer, listDevices: async () => [] } },
       ],
     });

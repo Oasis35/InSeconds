@@ -582,7 +582,7 @@ Dans chaque domaine :
 - **Avis « l'adresse a changé »** (`from=legacy`, redirection `code.run` de nginx) repris tel quel.
 - **Erreurs :** une seule table traduit un code en clé i18n (`errors.daily.already_played`). Les codes inconnus tombent sur un message générique avec le `traceId`. La remontée vers `/api/client-errors` est gardée.
 - **i18n :** ngx-translate, clés rangées par domaine, test CI de synchronisation entre `fr.json` et `en.json`.
-- **Nouvelle version :** gérée par le service worker d'Angular (`SwUpdate`, événement `VERSION_READY`), c'est-à-dire la solution existante plutôt qu'une comparaison maison avec `/health`. Au retour au premier plan, l'app vérifie s'il existe une nouvelle version et propose de recharger. Le code `common.new_version` renvoyé par les anciennes routes déclenche la même proposition.
+- **Nouvelle version :** gérée par le service worker d'Angular (`SwUpdate`, événement `VERSION_READY`), c'est-à-dire la solution existante plutôt qu'une comparaison maison avec `/health`. Au démarrage et au retour au premier plan, l'app vérifie s'il existe une nouvelle version et l'applique toute seule (rechargement de la page) au premier moment sûr : tout de suite quand rien n'est en cours, au passage en arrière-plan sur le récap, jamais en pleine manche ni avec une fenêtre ouverte (seulement au prochain changement de page). Le bandeau « Recharger / Plus tard » reste en secours (service worker cassé, code `common.new_version` renvoyé par les anciennes routes, garde-fou anti-boucle).
 - **PWA** (`@angular/service-worker`), pour l'installation sur l'écran d'accueil :
   - l'index et les traductions restent revalidés (piège 20) ;
   - la mise à jour passe par la détection de version ;
@@ -844,7 +844,7 @@ Les étapes 4 à 8 peuvent se découper en plusieurs PR chacune (back, puis fron
 
 **Réalisé par le workflow « Bascule v2 »** (G2, `deploy/vps/switch-to-v2.sh`, détail dans `deploy/migration-v2/README.md`) : les étapes 1 à 3 ci-dessus, plus la clé Data Protection neuve, le gel de l'historique et le marqueur qui fait déployer la v2 par `main`.
 
-**Onglets restés ouverts :** pendant quelques semaines, les anciennes routes (`/api/sessions…`, `/api/stats/today`…) renvoient `410` avec le code `common.new_version`. L'ancien front l'affiche comme une erreur avec rechargement, et le nouveau front propose de recharger dès que `SwUpdate` détecte une nouvelle version (§ 6.6).
+**Onglets restés ouverts :** pendant quelques semaines, les anciennes routes (`/api/sessions…`, `/api/stats/today`…) renvoient `410` avec le code `common.new_version`. L'ancien front l'affiche comme une erreur avec rechargement, et le nouveau front se recharge tout seul au premier moment sûr dès que `SwUpdate` détecte une nouvelle version (§ 6.6).
 
 ### 10.3 Retour arrière
 
