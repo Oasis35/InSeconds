@@ -99,7 +99,8 @@ InSeconds/
 │   └── front/
 │       └── InSeconds.Client/  # Angular app
 ├── docker-compose.yml         # Dev: database + API
-├── docker-compose.prod.yml    # Prod: API + front (VPS)
+├── docker-compose.prod.yml    # Prod: API + front (VPS, v1 until the v2 switch)
+├── docker-compose.prod-v2.yml # Prod after the v2 switch (workflow "Bascule v2")
 └── README.md / README.fr.md
 ```
 

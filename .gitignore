@@ -190,3 +190,4 @@ $RECYCLE.BIN/
 # Claude Code / outils locaux
 # ---------------------------------------------------------------
 .claude/
+.bascule-v2-done

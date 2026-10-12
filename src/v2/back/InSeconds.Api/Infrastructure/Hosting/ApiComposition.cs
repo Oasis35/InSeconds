@@ -76,6 +76,7 @@ public static class ApiComposition
         app.UseRateLimiter();
         app.MapInSecondsHealth();
         app.MapInSecondsEndpoints();
+        app.MapLegacyRoutes();
         app.MapInSecondsJobsDashboard();
         return app;
     }
