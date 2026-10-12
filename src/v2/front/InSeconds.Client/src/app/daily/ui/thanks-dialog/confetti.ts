@@ -2,6 +2,8 @@
 const COLORS = ['#F0857A', '#00E5FF', '#A855F7', '#FF8A00', '#E8ECF4'];
 const PIECES = 90;
 const DURATION_MS = 2600;
+/** Tirages par confetti (position, vitesses, taille, angle, rotation, couleur). */
+const DRAWS = 7;
 
 /**
  * Une courte pluie de confettis par-dessus tout l'écran (fenêtre comprise), sur un `<canvas>` ajouté au `body` puis retiré. Rien si le
@@ -27,16 +29,22 @@ export function launchConfetti(document: Document): () => void {
   const ratio = window.devicePixelRatio || 1;
   const width = (canvas.width = window.innerWidth * ratio);
   const height = (canvas.height = window.innerHeight * ratio);
-  const pieces = Array.from({ length: PIECES }, () => ({
-    x: width / 2 + (Math.random() - 0.5) * width * 0.3,
-    y: height * 0.3,
-    vx: (Math.random() - 0.5) * 14 * ratio,
-    vy: (-Math.random() * 12 - 4) * ratio,
-    size: (5 + Math.random() * 6) * ratio,
-    angle: Math.random() * 6,
-    spin: (Math.random() - 0.5) * 0.3,
-    color: COLORS[Math.floor(Math.random() * COLORS.length)],
-  }));
+  // Des valeurs dans [0, 1) tirées d'un coup par `crypto.getRandomValues` (sans enjeu de sécurité ici, mais `Math.random` est signalé
+  // par Sonar, règle S2245).
+  const draws = Array.from(window.crypto.getRandomValues(new Uint32Array(PIECES * DRAWS)), v => v / 2 ** 32);
+  const pieces = Array.from({ length: PIECES }, (_, i) => {
+    const [x, vx, vy, size, angle, spin, color] = draws.slice(i * DRAWS, (i + 1) * DRAWS);
+    return {
+      x: width / 2 + (x - 0.5) * width * 0.3,
+      y: height * 0.3,
+      vx: (vx - 0.5) * 14 * ratio,
+      vy: (-vy * 12 - 4) * ratio,
+      size: (5 + size * 6) * ratio,
+      angle: angle * 6,
+      spin: (spin - 0.5) * 0.3,
+      color: COLORS[Math.floor(color * COLORS.length)],
+    };
+  });
 
   let frame = 0;
   const stop = () => {
