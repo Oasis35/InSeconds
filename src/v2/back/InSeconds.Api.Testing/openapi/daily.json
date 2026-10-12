@@ -298,6 +298,26 @@
         }
       }
     },
+    "/api/daily/stats/games-played": {
+      "get": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "getGamesPlayed",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GamesPlayedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/daily/today": {
       "get": {
         "tags": [
@@ -1338,6 +1358,18 @@
           }
         }
       },
+      "GamesPlayedResponse": {
+        "required": [
+          "completedGames"
+        ],
+        "type": "object",
+        "properties": {
+          "completedGames": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "GuessBucketResponse": {
         "required": [
           "durationSeconds",
@@ -2174,6 +2206,9 @@
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.RecomputeDayStatsEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.GetGamesPlayedEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.GetDailySettingsEndpoint"
