@@ -45,12 +45,17 @@ public partial class SecurityTests(PostgresFixture postgres) : IAsyncLifetime
     public void LesRoutesDeTestNeSontPasDansLApi() =>
         Assert.DoesNotContain(AllRoutes(), r => r.Path.StartsWith("/api/e2e", StringComparison.OrdinalIgnoreCase));
 
+    // Les anciennes routes de la v1 répondent 410 à tout le monde (LegacyRoutes) : pas des routes admin de la v2.
     private List<(string Method, string Path)> AdminRoutes() =>
         AllRoutes()
+            .Where(r => !IsLegacyRoute(r.Path))
             .Where(r => r.Path.StartsWith("/api/admin", StringComparison.OrdinalIgnoreCase)
                         || r.Path.Equals("/jobs", StringComparison.OrdinalIgnoreCase)
                         || r.Path.StartsWith("/jobs/", StringComparison.OrdinalIgnoreCase))
             .ToList();
+
+    private static bool IsLegacyRoute(string path) =>
+        InSeconds.Api.Infrastructure.Errors.LegacyRoutes.Patterns.Any(p => ToPath(p) == path);
 
     private List<(string Method, string Path)> AllRoutes()
     {

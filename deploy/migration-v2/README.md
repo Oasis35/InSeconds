@@ -45,6 +45,8 @@ docker run --rm --network shared-postgres -v "$PWD/deploy/migration-v2:/import:r
 
 **Staging** : workflow manuel « Copy prod DB to staging », lancé depuis la branche `env/staging` (« Use workflow from »). Il copie `public` depuis la prod, anonymise les tables v1, lance l'import, puis anonymise les tables v2. Le workflow n'est listé que parce qu'il existe sur `main` (version v1, copie seule) ; c'est la version de la branche choisie qui s'exécute.
 
+**Bascule (G2)** : workflow manuel « Bascule v2 » (`.github/workflows/bascule-v2.yml`, `target` = `staging` ou `prod`), qui enchaîne tout ce qui suit autour de l'import et revient en arrière au moindre écart. Voir « La bascule (G2) » plus bas.
+
 ## L'import complet, dans l'ordre (G1)
 
 Ce que la bascule (G2) et le staging enchaînent, v1 arrêtée et API v2 pas encore démarrée :
@@ -105,3 +107,19 @@ Sur le staging, `import-to-staging.sh` la lance après la clé Data Protection n
 ## Tests
 
 `src/v2/back/tests/InSeconds.MigrationTests` : une base de forme v1 générée depuis le code v1 (`dotnet ef migrations script`, variable `INSECONDS_V1_SCHEMA_SQL` en CI, généré par les tests eux-mêmes sinon), les migrations v2, des cas limites, puis le vrai `run-import.sh` exécuté dans le conteneur PostgreSQL. Test de bout en bout : un cookie émis par la v1 est accepté par la v2 après import, même joueur, deux navigateurs donnent deux appareils. `CompleteImportTests` (G1) : forme de la source, garde et `--force`, `mark-opened.sql`, réglages (valeurs par défaut et modifiées, relues par le vrai binder de l'API v2, clé inconnue, valeur illisible, chaque contrôle de `20-verify.sql`), import complet d'un bloc (import, photos, `30-verify-day-stats.sql`) et ses contrôles.
+
+## La bascule (G2)
+
+Workflow « Bascule v2 » → `deploy/vps/switch-to-v2.sh <prod|staging>`, sur le VPS, depuis le checkout positionné sur le commit à basculer. Les étapes 3 à 5 de « L'import complet » y sont enchaînées :
+
+1. **Préparation, sans arrêt de service** : certificat Data Protection présent et son mot de passe dans le `.env` ; la v2 n'est pas déjà ouverte (`opened_at` vide, sinon arrêt avant tout) ; image v2 construite ; `--migrate-only` (crée les schémas v2, sans effet sur la v1).
+2. **Arrêt de l'API actuelle** (`inseconds.api`). Le front v1 reste servi et affiche « Service indisponible ».
+3. **Données** : `run-import.sh`, clé Data Protection neuve, `--freeze-day-stats`, `30-verify-day-stats.sql`. Sur le staging, `import-to-staging.sh` fait les mêmes pas, avec l'anonymisation de la copie de prod en plus.
+4. **Démarrage de la v2** : les conteneurs de la v1 sont retirés (leurs images restent), puis `deploy.sh` démarre la v2 sous les mêmes noms (`inseconds.api`, `inseconds.front` : Caddy ne change pas) et vérifie la santé de l'API et du front et le test de fumée, dont `GET /api/settings` en `410 common.new_version`.
+5. **Ouverture (prod)** : `mark-opened.sql`, puis le marqueur `.bascule-v2-done` à la racine du checkout : à partir de là, `deploy.sh prod` déploie la v2 (`docker-compose.prod-v2.yml`) à chaque push sur `main`, au lieu de la v1.
+
+**Retour arrière** : tout échec avant l'étape 5 arrête la v2 et redémarre la v1 (`docker compose -f docker-compose.prod.yml up -d --no-build`). Les tables v1 de `public` ne sont jamais modifiées par la v2 : la v1 reprend là où elle s'était arrêtée. Après l'étape 5, plus de retour arrière automatique (des parties ont pu être jouées en v2) ; le script refuse aussi de rejouer l'import sur une v2 ouverte. Sur le staging, la v2 est déjà déployée : le retour arrière redéploie le commit précédent (`PREVIOUS_SHA`).
+
+**Répéter** : `target = staging`, depuis `env/staging`. Le workflow copie d'abord la base de prod (comme « Copy prod DB to staging »). `simulate_failure` fait échouer la bascule juste après l'import pour répéter le retour arrière. Le jalon J5 demande deux exécutions consécutives sans intervention à la main. Le workflow n'est listé que s'il existe sur `main` (remplaçant minimal tant que `env/staging` n'y est pas mergé).
+
+**Avant la prod** (à la main, Clément) : `DATA_PROTECTION_CERTIFICATE_PASSWORD` dans `.env.prod` ; certificat lisible par l'uid 1654 ; `docker-compose.prod-v2.yml` attend aussi `OTEL_*` et `BREVO_API_KEY`, déjà là. Créneau hors 22 h 30 – 1 h UTC. Le workflow se lance depuis `main`, après le merge d'`env/staging`.

@@ -842,6 +842,8 @@ Les étapes 4 à 8 peuvent se découper en plusieurs PR chacune (back, puis fron
 | 4 | Contrôles rapides : connexion avec un cookie existant, reprise d'une partie en cours, partie complète, admin, email de connexion. | 10 min |
 | 5 | Surveillance Grafana (erreurs, 4xx inhabituels, jobs de la nuit suivante). | la journée et la nuit |
 
+**Réalisé par le workflow « Bascule v2 »** (G2, `deploy/vps/switch-to-v2.sh`, détail dans `deploy/migration-v2/README.md`) : les étapes 1 à 3 ci-dessus, plus la clé Data Protection neuve, le gel de l'historique et le marqueur qui fait déployer la v2 par `main`.
+
 **Onglets restés ouverts :** pendant quelques semaines, les anciennes routes (`/api/sessions…`, `/api/stats/today`…) renvoient `410` avec le code `common.new_version`. L'ancien front l'affiche comme une erreur avec rechargement, et le nouveau front propose de recharger dès que `SwUpdate` détecte une nouvelle version (§ 6.6).
 
 ### 10.3 Retour arrière

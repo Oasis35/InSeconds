@@ -368,12 +368,22 @@ Laissé aux PR suivantes : `user_agent_label` reste vide (calculé avec la liste
 - **Tests** : `MigrationTests/CompleteImportTests` (forme de la source : base v1 actuelle acceptée, cinq migrations simulées refusées ; garde, `--force`, option inconnue, `mark-opened.sql` ; réglages par défaut et modifiés relus par la vraie source de configuration de l'API, clé inconnue, sept valeurs illisibles, une falsification par contrôle ; import complet d'un bloc avec photos vérifiées, jour sans photo, photo falsifiée).
 - **Reste pour « Terminé quand »** : lancer « Copy prod DB to staging » depuis `env/staging` une fois la PR mergée et déployée, et vérifier qu'il passe sans écart.
 
+**Fait en G2 :** workflow « Bascule v2 » (`.github/workflows/bascule-v2.yml`, `target` staging ou prod, confirmation par saisie), `deploy/vps/switch-to-v2.sh`, `docker-compose.prod-v2.yml`, routes de la v1 en 410. Détail : `deploy/migration-v2/README.md` § « La bascule (G2) ». Décisions :
+- **Même script pour le staging et la prod** (la répétition exerce le vrai chemin). Étapes : préparation sans arrêt de service (certificat, la v2 n'est pas déjà ouverte, image, `--migrate-only`), arrêt de l'API actuelle, import + clé Data Protection neuve + historique figé et vérifié, remplacement des conteneurs par `deploy.sh` (santé + test de fumée), ouverture (`mark-opened.sql`).
+- **Retour arrière** tant que la v2 n'est pas déclarée ouverte : prod = v1 relancée depuis `docker-compose.prod.yml` (`--no-build`, images conservées ; la v2 est dans un projet Compose distinct, `inseconds-v2`, pour que les deux piles ne se voient jamais) ; staging = redéploiement du commit précédent (la v2 y est déjà en place). `simulate_failure` répète ce chemin sur le staging. Après l'ouverture, aucun retour arrière automatique, et le script refuse de rejouer l'import sur une v2 ouverte.
+- **Déploiement automatique de `main` désactivé pour la v2 jusqu'à la bascule** : `deploy.sh prod` reste en v1 tant que le marqueur `.bascule-v2-done` (posé à la fin de la bascule, ignoré par git) n'existe pas ; ensuite il déploie `docker-compose.prod-v2.yml`. Sans cela, le premier push sur `main` après la bascule aurait remis la v1 par-dessus la v2.
+- **CSP (G3)** : `docker-compose.prod-v2.yml` passe `CSP_MODE` au front (`${CSP_MODE:-Report-Only}`, variable de `.env.prod`) ; mettre `enforce` pour la bascule une fois G3 mergée et la semaine sans violation passée. Le nom de la variable est celui annoncé par G3 (#298) : à recouper à son merge.
+- **Anciennes routes en `410 common.new_version`** (`LegacyRoutes`), sondées par le test de fumée de chaque déploiement v2.
+- **Limites** : le chemin de retour arrière de la prod (relance de la v1) ne peut pas être répété sur le staging, où l'ancienne pile est déjà une v2 ; il repose sur `docker compose up --no-build` des images v1 conservées. Une connexion SSH coupée en plein script interromprait la bascule (retour arrière non garanti dans ce cas) : le workflow garde la connexion ouverte (`ServerAliveInterval`). Le workflow ne vérifie pas que la CI est verte sur le commit : à contrôler avant la prod.
+- **Reste pour « Terminé quand »** : lancer le workflow sur le staging (le workflow n'est listé qu'une fois présent sur `main`, d'où le remplaçant minimal).
+
 **Recette sur le staging** (§ 10.1 du plan détaillé) : copies prod fraîches, partie complète, reprise, série, gels, profil, appareils, admin, emails redirigés, iPhone et Android, installation PWA. **J5 : deux répétitions consécutives de la bascule sans intervention manuelle.**
 
 **Actions de Clément avant la mise en prod :**
 - ~~certificat Data Protection de prod~~ fait le 30/09 (`~/apps/InSeconds/secrets/dataprotection.pfx`), mot de passe à mettre dans `.env.prod` au moment de la bascule ;
 - ~~`cloudflare-only.sh` appliqué (S17)~~ fait le 30/09 ; Cloudflare Access sur `api.inseconds.cc/jobs` (S3) ;
 - contrôles healthchecks.io pour les quatre tâches Hangfire ;
+- `DATA_PROTECTION_CERTIFICATE_PASSWORD` dans `.env.prod` (le workflow de bascule s'arrête sans) ;
 - choix du créneau (hors 22 h 30 – 1 h UTC).
 
 ---
