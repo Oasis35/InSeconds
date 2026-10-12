@@ -31,8 +31,8 @@ export interface PoolSort {
 export const POOL_PAGE_SIZE = 15;
 
 /**
- * Nombre de morceaux par défi quand le réglage n'est pas connu du front. La valeur de production
- * vient des réglages de l'API (module Daily) : elle remplacera cette constante.
+ * Nombre de morceaux par défi tant que le réglage `Daily:TracksPerChallenge` n'est pas lu (ou si sa
+ * lecture échoue) : la valeur réelle vient des réglages de l'API.
  */
 export const DEFAULT_TRACKS_PER_CHALLENGE = 5;
 

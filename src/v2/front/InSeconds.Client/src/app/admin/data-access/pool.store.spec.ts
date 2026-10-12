@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { PoolTrack } from '../domain/pool-track';
 import { PoolStore } from './pool.store';
+import { FakeActionsApi, fakeActionsApi, provideActionsApiFake } from './testing/fake-actions-api';
 import { FakeCatalogueApi, fakeCatalogueApi, poolTrack, problem, provideCatalogueApiFake } from './testing/fake-catalogue-api';
 
 describe('PoolStore', () => {
@@ -10,11 +11,17 @@ describe('PoolStore', () => {
   const beatles = poolTrack({ id: 4, deezerTrackId: 14, artist: 'The Beatles', title: 'Come Together', preview: 'missing' });
 
   let api: FakeCatalogueApi;
+  let settings: FakeActionsApi;
   let store: InstanceType<typeof PoolStore>;
 
-  async function setup(tracks: PoolTrack[] = [eminem, coldplay, sabrina, beatles], overrides: Partial<FakeCatalogueApi> = {}) {
+  async function setup(
+    tracks: PoolTrack[] = [eminem, coldplay, sabrina, beatles],
+    overrides: Partial<FakeCatalogueApi> = {},
+    settingsOverrides: Partial<FakeActionsApi> = {},
+  ) {
     api = fakeCatalogueApi({ listTracks: vi.fn(async () => tracks), ...overrides });
-    TestBed.configureTestingModule({ providers: [PoolStore, provideCatalogueApiFake(api)] });
+    settings = fakeActionsApi(settingsOverrides);
+    TestBed.configureTestingModule({ providers: [PoolStore, provideCatalogueApiFake(api), provideActionsApiFake(settings)] });
     store = TestBed.inject(PoolStore);
     await store.load();
   }
@@ -58,6 +65,27 @@ describe('PoolStore', () => {
 
       expect(store.runwayDays()).toBe(2);
       expect(store.runwayTone()).toBe('low');
+    });
+
+    it('lit le nombre de morceaux par défi dans les réglages, une seule fois', async () => {
+      const tracks = Array.from({ length: 12 }, (_, i) => poolTrack({ id: i + 1, deezerTrackId: i + 100 }));
+      await setup(tracks, {}, { getTracksPerChallenge: vi.fn(async () => 3) });
+      await store.load();
+
+      expect(store.runwayDays()).toBe(4);
+      expect(settings.getTracksPerChallenge).toHaveBeenCalledTimes(1);
+    });
+
+    it('garde 5 morceaux par défi si le réglage ne se lit pas, et le relit au chargement suivant', async () => {
+      const tracks = Array.from({ length: 12 }, (_, i) => poolTrack({ id: i + 1, deezerTrackId: i + 100 }));
+      await setup(tracks, {}, { getTracksPerChallenge: vi.fn(async () => Promise.reject(problem(500, 'common.unexpected'))) });
+
+      expect(store.isFulfilled()).toBe(true);
+      expect(store.runwayDays()).toBe(2);
+
+      settings.getTracksPerChallenge.mockResolvedValueOnce(4);
+      await store.load();
+      expect(store.runwayDays()).toBe(3);
     });
   });
 
