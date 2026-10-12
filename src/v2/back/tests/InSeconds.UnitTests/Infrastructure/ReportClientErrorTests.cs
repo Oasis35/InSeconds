@@ -18,6 +18,10 @@ public class ReportClientErrorTests
         Assert.True(_validator.Validate(report).IsValid);
     }
 
+    [Fact]
+    public void Validation_ViolationDeCsp_Accepte() =>
+        Assert.True(_validator.Validate(new ClientErrorReport("csp", "CSP script-src-elem bloque https://x.test/a.js", null, "/daily", null, null)).IsValid);
+
     [Theory]
     [InlineData("autre", "message")]
     [InlineData("js", "")]

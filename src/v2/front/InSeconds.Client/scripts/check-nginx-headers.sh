@@ -126,6 +126,37 @@ if [[ -n "$js_file" && "$(header "/$js_file" x-frame-options)" != "DENY" ]]; the
   fail=1
 fi
 
+# G3 : Content-Security-Policy. Image construite sans argument : en observation (Report-Only), origine de l'API
+# de prod. Posée sur chaque location, jamais sous les deux noms à la fois, sans script en ligne autorisé.
+for path in / /i18n/fr.json /ngsw.json; do
+  report_only=$(header "$path" content-security-policy-report-only)
+  enforced=$(header "$path" content-security-policy)
+  if [[ -z "$report_only" || -n "$enforced" ]]; then
+    echo "FAIL $path: attendu Content-Security-Policy-Report-Only seul (report-only='$report_only', enforce='$enforced')"
+    fail=1
+  fi
+done
+if [[ -n "$js_file" ]]; then
+  csp=$(header "/$js_file" content-security-policy-report-only)
+  for fragment in "script-src 'self';" "connect-src 'self' https://api.inseconds.cc https://*.dzcdn.net;" "object-src 'none'" "frame-ancestors 'none'"; do
+    if [[ "$csp" != *"$fragment"* ]]; then
+      echo "FAIL /$js_file: la CSP ne contient pas \"$fragment\" ($csp)"
+      fail=1
+    fi
+  done
+fi
+# Aucun script en ligne dans l'index (sinon la CSP, bloquante, casserait l'app) : balises <script> avec src, pas
+# de gestionnaire onload= (la mise en ligne du CSS critique d'Angular en pose un).
+index=$(curl -sS "$BASE/")
+if grep -oE '<script[^>]*>' <<<"$index" | grep -vq 'src='; then
+  echo "FAIL /: script en ligne dans index.html"
+  fail=1
+fi
+if grep -qE ' on(load|click|error)=' <<<"$index"; then
+  echo "FAIL /: gestionnaire d'événement en ligne dans index.html"
+  fail=1
+fi
+
 # robots.txt / sitemap.xml servis tels quels, pas l'index.html du fallback SPA.
 check_content_type "/robots.txt" "text/plain"
 check_content_type "/sitemap.xml" "text/xml|application/xml"

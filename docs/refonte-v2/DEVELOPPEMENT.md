@@ -356,7 +356,7 @@ Laissé aux PR suivantes : `user_agent_label` reste vide (calculé avec la liste
 |---|---|---|
 | **G1** Import complet | import complet rejoué d'un bloc, contrôle de forme de la source, garde `import_state`/`--force`, stats figées de l'historique | import staging complet sans écart |
 | **G2** Workflow « Bascule v2 » | `workflow_dispatch` : arrêt v1, import, vérification, clé Data Protection neuve (`--rotate-data-protection-key`, B4), démarrage v2 (mêmes noms de conteneurs), santé, et arrêt + redémarrage v1 au moindre écart ; anciennes routes en `410 common.new_version` ; déploiement auto sur `main` désactivé pour la v2 jusqu'à la bascule | testé sur le staging |
-| **G3** CSP | CSP en `Report-Only` sur le staging, violations vers `/api/client-errors`, puis bloquante | une semaine sans violation sur le staging |
+| **G3** CSP (fait : en-tête `Report-Only` sur le staging, violations remontées en `source: csp`, bloquante par `CSP_MODE: enforce`) | CSP en `Report-Only` sur le staging, violations vers `/api/client-errors`, puis bloquante | une semaine sans violation sur le staging |
 | **G4** Documentation | CLAUDE.md v2 (racine et sous-dossiers), README FR/EN, `docs/*`, pièges à jour | relue |
 
 **Fait en G1 :** import complet dans `deploy/migration-v2/` : `05-check-source.sql` (forme de la source), garde dans `00-import-state.sql` et `run-import.sh --force`, `mark-opened.sql`, réglages dans `10-import.sql` / `20-verify.sql`, `30-verify-day-stats.sql` (photos de l'historique), lancé par `import-to-staging.sh`. Aucune migration, aucune route, aucun code de l'API. Détail : `deploy/migration-v2/README.md`, `src/v2/back/CLAUDE.md` (« Import v1 → v2 »). Décisions :
