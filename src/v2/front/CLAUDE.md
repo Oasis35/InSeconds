@@ -1,8 +1,8 @@
 # CLAUDE.md — front v2 (refonte)
 
-Front de la v2 d'InSeconds, en construction à côté de la v1 (`src/front/`), qui reste en service jusqu'à la bascule. Plan de référence : [`docs/refonte-v2/PLAN.md`](../../../docs/refonte-v2/PLAN.md) (§ 6 pour le front) et [`docs/refonte-v2/DEVELOPPEMENT.md`](../../../docs/refonte-v2/DEVELOPPEMENT.md). Ce fichier décrit ce qui existe **déjà** dans le code ; il grossit à chaque PR.
+Front de la v2 d'InSeconds, la version de référence (servie sur le staging), à côté de la v1 (`src/front/`), qui reste en prod jusqu'à la bascule. Vue d'ensemble, conventions et pièges : [`CLAUDE.md`](../../../CLAUDE.md) racine ; plan : [`docs/refonte-v2/PLAN.md`](../../../docs/refonte-v2/PLAN.md) (§ 6 pour le front) et [`docs/refonte-v2/DEVELOPPEMENT.md`](../../../docs/refonte-v2/DEVELOPPEMENT.md). Ce fichier détaille le code tel qu'il est ; toute PR qui change le front le met à jour.
 
-État : **PR F2, front de l'admin (jalon J4)** (après E5 : le jeu du jour ; A4 : socle, A5 : E2E copiés et image nginx, A6 : staging, B5 : compte, C3 : pool admin, D2 : manche). Les domaines `account` (connexion, profil, appareils, confirmation d'email), `admin` (coquille et onglet Pool), `gameplay` (la manche d'un morceau) et `daily` (le jeu du jour : accueil, reprise, manche, récap, « déjà joué », série et gels) existent ; `/privacy` est la page de confidentialité et mentions légales. L'admin a ses cinq onglets (tableau de bord, défis, pool, joueurs, actions).
+État : **complet depuis F2, front de l'admin (jalon J4)** ; G3 a ajouté la CSP (`report-only`, #300 pour la rendre bloquante). Historique (après E5 : le jeu du jour ; A4 : socle, A5 : E2E copiés et image nginx, A6 : staging, B5 : compte, C3 : pool admin, D2 : manche). Les domaines `account` (connexion, profil, appareils, confirmation d'email), `admin` (coquille et onglet Pool), `gameplay` (la manche d'un morceau) et `daily` (le jeu du jour : accueil, reprise, manche, récap, « déjà joué », série et gels) existent ; `/privacy` est la page de confidentialité et mentions légales. L'admin a ses cinq onglets (tableau de bord, défis, pool, joueurs, actions).
 
 ## Commandes
 
@@ -214,4 +214,4 @@ Une grande partie de la v2 reprend du code de la v1 (styles, remontée d'erreurs
 
 ## Conventions
 
-Mêmes que la v1 (cf. CLAUDE.md racine) : couleurs par `var(--…)`, un composant = `.ts` (+ `.html` s'il est long), `OnPush`, écouteurs globaux dans `host: {}`, état exposé en lecture seule, traductions dans chaque composant qui affiche du texte. En plus : modales **uniquement** par `ModalService` (plus de modale maison ; `injector` pour qu'une fenêtre retrouve les stores de sa page), boutons par `appButton`.
+Cf. CLAUDE.md racine § Architecture front : couleurs par `var(--…)`, un composant = `.ts` (+ `.html` s'il est long), `OnPush`, écouteurs globaux dans `host: {}`, état exposé en lecture seule, traductions dans chaque composant qui affiche du texte. En plus : modales **uniquement** par `ModalService` (plus de modale maison ; `injector` pour qu'une fenêtre retrouve les stores de sa page), boutons par `appButton`.

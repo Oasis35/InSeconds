@@ -25,6 +25,15 @@ déclarent en `external: true` pour le rejoindre.
 Aucun port n'est publié sur l'hôte : Postgres n'est joignable que depuis les conteneurs
 connectés au réseau `shared-postgres`.
 
+### Contenu de la base `inseconds`
+
+Une seule base pour la v1 et la v2 : les tables v1 vivent dans `public` (jusqu'à leur
+suppression, PR I1) ; la v2 y ajoute un schéma par module (`players`, `catalogue`, `daily`),
+plus `infra` (réglages, clés Data Protection), `messaging` (outbox Wolverine), `jobs`
+(Hangfire) et `extensions` (`citext`). Les migrations de l'API créent ces schémas : rien à
+faire à la main (détail : `CLAUDE.md` racine § Modèle de données). L'utilisateur `inseconds`
+étant propriétaire de la base, il peut les créer.
+
 ## Ajouter un futur projet
 
 Le script d'init ne tourne qu'au premier boot, donc pour un nouveau projet ajouté après coup,
@@ -55,7 +64,7 @@ docker exec -it shared-postgres psql -U postgres -c "DROP USER <projet>;"
 
 Le conteneur Postgres continue de tourner pour les autres projets. Pour redéployer ensuite,
 recréer la base/user (commandes ci-dessus) puis relancer le stack applicatif — les migrations
-EF Core (`db.Database.Migrate()` au boot de l'API) recréent le schéma automatiquement.
+EF Core (appliquées au démarrage de l'API) recréent les schémas automatiquement.
 
 ## Sauvegardes
 

@@ -4,27 +4,31 @@
 
 ## Pitch
 
-InSeconds est un **blind test musical quotidien**. La lecture démarre automatiquement au premier palier (0,5 s) et le joueur prolonge l'écoute s'il le souhaite (paliers : 0.5, 1, 1.5, 2, 3, 5, 10) avant de tenter artiste + titre. Moins il écoute, plus il marque. Même défi pour tout le monde, chaque jour, à minuit UTC. Mode guest disponible (joue sans s'inscrire).
+InSeconds est un **blind test musical quotidien**. La lecture démarre au palier le plus court (0,5 s) et le joueur prolonge l'écoute s'il le souhaite (paliers : 0.5, 1, 1.5, 2, 3, 5, 10) avant de tenter artiste + titre. Moins il écoute, plus il marque. Même défi pour tout le monde, chaque jour, à minuit UTC. Mode invité disponible (joue sans s'inscrire).
 
-## Stack actuelle
+## Stack (v2)
 
 | Couche | Tech |
 |--------|------|
-| Backend | .NET 10, Wolverine (messaging), FluentValidation, EF Core 10 |
-| Base de données | PostgreSQL (conteneur partagé sur le VPS en prod, image Docker en dev) |
-| Frontend | Angular 22 (standalone + signals), TypeScript, Tailwind CSS v4, SCSS |
-| Musique | API Deezer (intégrée — recherche + preview + extraction `CoverHash`) |
-| Infra dev | Docker Compose, `dotnet watch` (back), `ng serve` (front) |
-| CI | GitHub Actions (build back + front + check migrations EF + tests unitaires back et front + tests d'intégration Testcontainers + E2E Playwright + contrôle des headers nginx de l'image de prod), déploiement VPS auto sur push `main`, Dependabot |
-| Observabilité | OpenTelemetry (logs, traces, métriques) → Grafana Cloud, erreurs front relayées par l'API — cf. `CLAUDE.md` § Observabilité |
-| Déploiement | VPS OVH (Debian) — front + API + Postgres en Docker derrière Caddy (reverse proxy, HTTPS auto), CI/CD GitHub Actions sur push `main` |
+| Backend | .NET 10, monolithe modulaire (Players, Catalogue, Gameplay, Daily), Wolverine (endpoints HTTP, transactions, outbox), FluentValidation, EF Core 10, Hangfire (tâches planifiées) |
+| Base de données | PostgreSQL 17, un schéma par module (conteneur partagé sur le VPS en prod, image Docker en dev) |
+| Frontend | Angular 22 (standalone, zoneless, signals), NgRx SignalStore, Tailwind CSS v4, Howler.js (son), PWA (service worker) |
+| Musique | API Deezer (recherche, extraits de 30 s, pochettes), client découpé en ports avec cache |
+| Tests | xUnit v3 + Testcontainers, tests d'architecture (NetArchTest), Vitest en mode navigateur, Sheriff (frontières du front), Playwright |
+| CI | GitHub Actions (jobs v1 et v2 jusqu'à la suppression de la v1, check agrégateur « CI OK »), Dependabot, SonarCloud |
+| Observabilité | OpenTelemetry (logs, traces, métriques) → Grafana Cloud, erreurs front relayées par l'API |
+| Déploiement | VPS OVH (Debian) — front + API + Postgres en Docker derrière Caddy et Cloudflare, déploiement par la CI |
 
 ## Architecture en deux mots
 
-- **Backend** : Vertical Slice Architecture — chaque feature vit dans son propre dossier `Features/<Aggregate>/<UseCase>/` (Endpoint + Command/Query + Handler + Validator). Pas de couche service partagée fourre-tout. Wolverine route les messages aux handlers par convention.
-- **Frontend** : Angular 22 standalone (pas de NgModules) avec signals pour l'état. Tailwind utility-first par-dessus SCSS pour les overrides locaux.
-- **Modèle de données** : 10 tables (`Players`, `Tracks`, `DailyChallenges`, `DailyChallengeTracks`, `GameSessions`, `GameSessionAnswers`, `Settings`, `MagicLinkTokens`, `EmailChangeTokens`, `DataProtectionKeys`). Détail dans le [`CLAUDE.md`](../CLAUDE.md) racine.
-- **Gameplay anti-triche** : scoring serveur seulement, contrainte unique `(PlayerId, DailyChallengeId)` qui garantit 1 partie/jour/joueur, durée d'écoute = choix discret (pas une mesure → pas de tentative de manipulation client).
+- **Backend** : une API découpée en **modules** (`Players`, `Catalogue`, `Gameplay`, `Daily`) qui ne se parlent que par leurs `Contracts`, règle vérifiée par des tests d'architecture. Endpoints Wolverine.Http, une transaction par requête, messages durables dans une outbox PostgreSQL, tâches de nuit dans Hangfire.
+- **Frontend** : domaines calqués sur les modules (`account`, `gameplay`, `daily`, `admin`), chacun en quatre couches (`domain`, `data-access`, `feature`, `ui`), frontières vérifiées par Sheriff ; un client NSwag par module.
+- **Modèle de données** : schémas `players`, `catalogue`, `daily`, plus `infra`, `messaging` et `jobs`. Détail dans le [`CLAUDE.md`](../CLAUDE.md) racine.
+- **Anti-triche** : score calculé uniquement par le serveur, une partie par joueur et par défi, plancher d'écoute et niveau d'indice tenus par le serveur, rien qui identifie un morceau avant la réponse.
+
+## v2 et v1
+
+La v2 (`src/v2/`) est la version de référence ; elle sert le staging et remplacera la v1 en prod à la bascule (phase H). La v1 (`src/back`, `src/front`) reste dans le dépôt jusqu'à la PR I2. Où en est le chantier : ticket GitHub #205.
 
 ## Où trouver quoi
 
@@ -33,29 +37,37 @@ Chaque information n'est écrite qu'à un seul endroit, pour éviter que des cop
 | Besoin | Document |
 |--------|----------|
 | Installer et lancer le projet | [`README.fr.md`](../README.fr.md) |
-| Conventions, pièges connus, état de ce qui est livré, déploiement | [`CLAUDE.md`](../CLAUDE.md) racine |
-| Détail backend (slices, entités, services `Common/`) | [`src/back/InSeconds.Api/CLAUDE.md`](../src/back/InSeconds.Api/CLAUDE.md), [`src/back/InSeconds.Deezer/CLAUDE.md`](../src/back/InSeconds.Deezer/CLAUDE.md) |
-| Détail frontend (jeu, admin) | [`features/game/CLAUDE.md`](../src/front/InSeconds.Client/src/app/features/game/CLAUDE.md), [`features/admin/CLAUDE.md`](../src/front/InSeconds.Client/src/app/features/admin/CLAUDE.md) |
+| Conventions, modèle de données, pièges connus, déploiement | [`CLAUDE.md`](../CLAUDE.md) racine |
+| Détail backend v2 (modules, routes, tâches, authentification, import) | [`src/v2/back/CLAUDE.md`](../src/v2/back/CLAUDE.md) |
+| Détail frontend v2 (domaines, stores, lecteur, E2E) | [`src/v2/front/CLAUDE.md`](../src/v2/front/CLAUDE.md) |
 | Règles de jeu (scoring, anti-triche, série, indices) | [`GAMEPLAY_RULES_FR.md`](GAMEPLAY_RULES_FR.md) |
 | Ce qui reste à faire | [`TACHES.md`](TACHES.md) |
-| Refonte v2 en cours (plan, découpage en PR) | [`refonte-v2/PLAN.md`](refonte-v2/PLAN.md), [`refonte-v2/DEVELOPPEMENT.md`](refonte-v2/DEVELOPPEMENT.md), ticket GitHub #205 |
+| Plan de la v2, décisions, découpage en PR | [`refonte-v2/PLAN.md`](refonte-v2/PLAN.md), [`refonte-v2/DEVELOPPEMENT.md`](refonte-v2/DEVELOPPEMENT.md) |
+| Import v1 → v2 et bascule | [`deploy/migration-v2/README.md`](../deploy/migration-v2/README.md) |
+| Postgres partagé, sauvegardes | [`deploy/infra/README.md`](../deploy/infra/README.md) |
+| Détail de la v1 (jusqu'à I2) | `src/back/InSeconds.Api/CLAUDE.md`, `src/back/InSeconds.Deezer/CLAUDE.md`, `src/front/…/features/game/CLAUDE.md`, `src/front/…/features/admin/CLAUDE.md` |
 
 `BACKEND_STRUCTURE_FR.md` et `FRONTEND_STRUCTURE_FR.md` ne sont plus que des renvois vers ces fichiers.
 
 ## Quick start technique
 
 ```bash
-# Cloner, créer .env (DB_PASSWORD) puis démarrer le stack backend (DB + API hot-reload)
+# Base PostgreSQL locale (créer .env avec DB_PASSWORD la première fois)
 cp .env.example .env
-docker compose up -d
+docker compose up -d database
 
-# Lancer le frontend
-cd src/front/InSeconds.Client
-npm install   # première fois seulement
+# API v2 (hôte de test : faux Deezer et faux email, http://localhost:5175)
+cd src/v2/back
+ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=inseconds;Username=inseconds;Password=<DB_PASSWORD>" \
+  dotnet run --project InSeconds.Api.Testing
+
+# Front v2 (http://localhost:5176)
+cd src/v2/front/InSeconds.Client
+npm ci
 npm start
 ```
 
-Puis ouvrir `http://localhost:5173`. Voir le [README](../README.fr.md) pour les détails.
+Voir le [README](../README.fr.md) pour les détails.
 
 ---
 

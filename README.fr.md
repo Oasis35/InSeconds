@@ -13,7 +13,7 @@
 ## Comment ça marche
 
 - Chaque jour à minuit UTC, un nouveau set de morceaux est sélectionné automatiquement (uniquement des morceaux avec une preview Deezer active, hors cooldown de réutilisation configurable) ; si la génération de minuit a raté, le défi est régénéré automatiquement à l'arrivée du premier joueur (sélection déterministe : même défi pour tout le monde)
-- La disponibilité des previews est re-vérifiée chaque nuit auprès de Deezer (appels par lots, respectueux du rate-limit) ; les admins peuvent aussi relancer la vérification à la demande depuis la page admin
+- La disponibilité des previews est re-vérifiée chaque nuit auprès de Deezer (appels par lots, respectueux du rate-limit) ; les admins peuvent aussi la relancer à la demande depuis le tableau de bord des tâches planifiées (`/jobs`)
 - La lecture démarre automatiquement au palier le plus court (0,5 s) ; tu prolonges palier par palier (1, 1.5, 2, 3, 5, 10 s) avec « écouter plus » avant de tenter artiste + titre
 - Prolongations "écouter plus" libres et illimitées par morceau (jusqu'au dernier palier) — le score dépend toujours du palier final écouté, sans malus
 - Un bouton « Passer (0 pts) » (avec confirmation) permet de passer au morceau suivant sans répondre
@@ -26,156 +26,132 @@
 - Après la partie, tu vois où tu te situes : un égaliseur des scores du jour avec le plus bas, la médiane et le plus haut, et la part des joueurs que tu bats (à partir de 5 joueurs)
 - Partage de score en format emoji Wordle (copie dans le presse-papier)
 - Disponible en français et en anglais — détecté automatiquement depuis le navigateur, changeable à tout moment depuis le pied de page (choix sauvegardé en localStorage)
-- Page politique de confidentialité sur `/confidentialite` (alias `/privacy`)
+- Page confidentialité et mentions légales sur `/privacy` (alias `/confidentialite`)
+- Installable sur l'écran d'accueil (PWA), avec un bandeau quand une nouvelle version est disponible
+- Liste des appareils connectés à ton compte, déconnexion d'un appareil ou de tous les autres
 
 ## Démarrage rapide
 
+> Le dépôt contient deux versions : la **v2** (`src/v2/`, la référence, servie sur le staging) et la v1 (`src/back`, `src/front`), encore en prod jusqu'à la bascule puis supprimée. Ce qui suit concerne la v2. Pour la v1 : `git show b38825d:README.fr.md`.
+
 ### Prérequis
 
-- Docker Desktop (pour les conteneurs base de données + API)
-- Node.js 22+ et npm
-- Angular CLI 22+ (`npm install -g @angular/cli`)
-- .NET 10 SDK (uniquement si tu veux lancer l'API hors Docker)
+- Docker (base PostgreSQL de dev, et tests d'intégration)
+- .NET 10 SDK
+- Node.js ≥ 22.22 et npm
 
-### Lancer le backend
+### Lancer la base et l'API
 
 ```bash
 cp .env.example .env   # uniquement la première fois, puis renseigner DB_PASSWORD
-docker compose up -d
+docker compose up -d database
+
+cd src/v2/back
+ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=inseconds;Username=inseconds;Password=<DB_PASSWORD>" \
+  dotnet run --project InSeconds.Api.Testing
 ```
 
-Ça démarre :
-
-- `inseconds.database` — PostgreSQL sur `localhost:5432`
-- `inseconds.api` — API .NET 10 sur `http://localhost:5171` avec hot-reload `dotnet watch`
-
-Les migrations EF Core sont appliquées automatiquement au démarrage.
+`InSeconds.Api.Testing` est l'API avec un faux Deezer, un faux envoi d'email et les routes `/api/e2e/*` (jamais dans l'image de prod) ; `InSeconds.Api` est l'API réelle. Les migrations sont appliquées au démarrage.
 
 ### Lancer le frontend
 
 ```bash
-cd src/front/InSeconds.Client
-npm install   # uniquement la première fois
+cd src/v2/front/InSeconds.Client
+npm ci        # uniquement la première fois
 npm start
 ```
 
-Ouvre `http://localhost:5173`.
+Ouvre `http://localhost:5176`.
 
 ### URLs utiles
 
 | URL | Usage |
 |-----|-------|
-| `http://localhost:5173` | Frontend (serveur de dev Angular) |
-| `http://localhost:5171/health` | Liveness de l'API (l'app répond aux requêtes) — renvoie aussi la date de build (`build`) pour identifier la version déployée |
-| `http://localhost:5171/health/ready` | Readiness de l'API (base de données joignable) |
-| `http://localhost:5171/openapi/v1.json` | Spec OpenAPI (utilisée par NSwag pour la génération du client TS) |
+| `http://localhost:5176` | Frontend (serveur de dev Angular, relaie `/api` vers l'API) |
+| `http://localhost:5175/health` | Liveness de l'API — renvoie aussi la date de build (`build`) |
+| `http://localhost:5175/health/ready` | Readiness de l'API (base de données joignable) |
+| `http://localhost:5175/jobs` | Tableau de bord Hangfire des tâches planifiées (compte admin) |
 
 ## Stack
 
 | Couche | Tech |
 |--------|------|
-| Backend | .NET 10, Wolverine (messaging), FluentValidation, EF Core 10 |
-| Base de données | PostgreSQL (Docker en dev, conteneur Postgres partagé sur le VPS en prod) |
-| Frontend | Angular 22 (standalone + signals), TypeScript, Tailwind CSS v4, SCSS |
-| Musique | API Deezer (recherche, previews 30s, pochettes) |
-| Infra dev | Docker Compose, `dotnet watch` (backend), `ng serve` (frontend) |
+| Backend | .NET 10, monolithe modulaire (Players, Catalogue, Gameplay, Daily), Wolverine (endpoints HTTP, transactions, outbox), FluentValidation, EF Core 10, Hangfire |
+| Base de données | PostgreSQL 17, un schéma par module (Docker en dev, conteneur Postgres partagé sur le VPS en prod) |
+| Frontend | Angular 22 (standalone, zoneless, signals), NgRx SignalStore, Tailwind CSS v4, Howler.js, PWA |
+| Musique | API Deezer (recherche, extraits de 30 s, pochettes) |
+| Tests | xUnit v3 + Testcontainers, NetArchTest, Vitest (mode navigateur), Sheriff, Playwright |
 | Observabilité | OpenTelemetry (logs, traces, métriques en OTLP) → Grafana Cloud ; erreurs front relayées par l'API ; code d'erreur affiché au joueur |
-| Déploiement | VPS OVH (Debian), Docker Compose derrière Caddy (reverse proxy, HTTPS auto), CI/CD GitHub Actions |
+| Déploiement | VPS OVH (Debian), Docker Compose derrière Caddy et Cloudflare, CI/CD GitHub Actions |
 
 ## Structure du dépôt
 
 ```
 InSeconds/
-├── deploy/                    # Stacks VPS partagées (infra Postgres, reverse proxy Caddy)
-├── docs/                      # Notes d'architecture (FR)
-├── scripts/                   # run-e2e.ps1 (lancement E2E local)
+├── deploy/                    # VPS : Postgres partagé, Caddy, scripts de déploiement, import v1 → v2
+├── docs/                      # Documentation (FR) : point d'entrée, règles du jeu, tâches, plan v2
+├── scripts/                   # Contrôle de parité des E2E v1/v2, lancement E2E v1
 ├── src/
-│   ├── back/
-│   │   ├── InSeconds.slnx              # Solution .NET (format .slnx)
-│   │   ├── InSeconds.Api/              # Web API (vertical slice)
-│   │   ├── InSeconds.Deezer/           # Client Deezer (projet séparé, cache + résilience)
-│   │   ├── InSeconds.Api.UnitTests/    # Tests unitaires xUnit (pas de BD)
-│   │   └── InSeconds.Api.IntegrationTests/ # Tests d'intégration xUnit (Testcontainers)
-│   └── front/
-│       └── InSeconds.Client/  # Application Angular
-├── docker-compose.yml         # Dev : base + API
-├── docker-compose.prod.yml    # Prod : API + front (VPS, v1 jusqu'à la bascule v2)
-├── docker-compose.prod-v2.yml # Prod après la bascule v2 (workflow « Bascule v2 »)
+│   ├── v2/
+│   │   ├── back/              # InSeconds.slnx : Api (modules), Infrastructure, Deezer, Api.Testing, tests/
+│   │   └── front/InSeconds.Client/  # Application Angular (domaines account, gameplay, daily, admin)
+│   ├── back/                  # v1 (jusqu'à la suppression de la v1)
+│   └── front/                 # v1 (jusqu'à la suppression de la v1)
+├── docker-compose.yml         # Dev : base (+ API v1)
+├── docker-compose.staging.yml # Staging (v2)
+├── docker-compose.prod.yml    # Prod v1 jusqu'à la bascule
+├── docker-compose.prod-v2.yml # Prod après la bascule (workflow « Bascule v2 »)
 └── README.md / README.fr.md
 ```
 
 ## Intégration continue
 
-Workflow GitHub Actions sur chaque push et chaque PR vers `main` :
+Workflow GitHub Actions sur chaque push (toutes branches) et chaque PR vers `main`. Jobs v2 :
 
-- **Backend** — build Release + `dotnet ef migrations has-pending-model-changes`
-- **Tests unitaires** — `dotnet test` sur `InSeconds.Api.UnitTests` (xUnit, pas de BD requise)
-- **Frontend** — `npm ci` + build production
-- **Tests unitaires frontend** — `ng test --watch=false` (Vitest dans un vrai Chromium, ~420 tests)
-- **Tests d'intégration** — `dotnet test` sur `InSeconds.Api.IntegrationTests` (Testcontainers crée un conteneur PostgreSQL réel, pas de YAML supplémentaire)
-- **E2E** — tests Playwright (Chromium) contre un vrai backend en mode `Testing` avec un service PostgreSQL — s'exécute après tous les jobs précédents
-- **Smoke test headers de cache nginx** — construit et lance la vraie image Docker de prod (`Dockerfile.prod`), vérifie les headers `Cache-Control` et le `Content-Type` de `robots.txt`/`sitemap.xml` via `curl` (`src/front/InSeconds.Client/scripts/check-nginx-cache-headers.sh`) — seul job qui teste réellement `nginx.conf`
+- **back-v2** — build, tests unitaires, d'architecture et d'intégration (Testcontainers), migrations à jour, codegen Wolverine à jour, image Docker sans l'hôte de test
+- **front-v2** — build de prod, tests Vitest, frontières Sheriff, clients NSwag à jour
+- **e2e-v2** — Playwright contre l'hôte de test
+- **nginx-headers-v2** — construit l'image nginx du front et vérifie en-têtes de cache et de sécurité, types MIME et redirection de l'ancienne adresse
+- **e2e-parity** — les E2E v1 et v2 portent les mêmes titres (écarts justifiés)
 
-Les runs obsolètes sont annulés automatiquement.
+Les jobs v1 tournent aussi tant que la v1 existe. Le check **« CI OK »** les agrège (c'est lui qu'exige la protection des branches). Les runs obsolètes sont annulés automatiquement. Détail : [`CLAUDE.md`](CLAUDE.md) § CI.
 
 ## Tests
 
-### Tests unitaires (backend)
+### Backend
 
 ```bash
-cd src/back
-dotnet test InSeconds.Api.UnitTests
+cd src/v2/back
+dotnet test --solution InSeconds.slnx   # unitaires + architecture + intégration (Docker requis)
 ```
 
-Couvre `ScoreCalculator`, `TextNormalizer`, `SettingsService` et autres services Common, les entités `Player`/`GameSession` (série, gels, anti-triche) le client Deezer et l'observabilité (middleware `PlayerId`, validator des erreurs front, aucune réponse saisie dans les logs). Pas de base de données nécessaire (logique pure).
+Quatre projets dans `tests/` : unitaires (règles du domaine, sans base), architecture (frontières des modules, NetArchTest), intégration (Testcontainers + Respawn : un vrai PostgreSQL, l'API en mémoire) et migrations.
 
-### Tests unitaires (frontend)
+### Frontend
 
 ```bash
-cd src/front/InSeconds.Client
-npx ng test --watch=false
+cd src/v2/front/InSeconds.Client
+npx ng test --watch=false   # Vitest dans un vrai Chromium
+npm run lint:arch           # frontières des domaines (Sheriff)
 ```
 
-**~420 tests** répartis sur 46 fichiers de spec (Vitest, mode navigateur via Playwright — lancer `npx playwright install chromium` une fois), couvrant `App`, `GameService`, `SettingsService`, `LanguageService`, `GameFooterComponent` (toggle langue), `AdminHttpService`, `AdminStatsService`, `AdminPoolService` (autonomie du pool), `BlindRoundComponent` (navigation clavier de l'autocomplete), `GuessTimeChartComponent` + `TrackResultsListComponent` (histogramme + pop-up), `ChallengesTabComponent` (chips d'identité joueur + pop-up histogramme), `ClipboardService`, `PlayerSessionService`, `BrowserIdComponent`, les services extraits du round de jeu (recherche, soumission, indices), le gel de série (panneau, cases de gels, gélule du header), ainsi que les parcours connexion/profil/changement d'email et la remontée d'erreurs (gestionnaire global, intercepteur HTTP, code d'erreur affiché). Utilise `HttpTestingController` — pas de vraies requêtes HTTP.
-
-### Tests d'intégration (backend)
+### E2E (Playwright)
 
 ```bash
-cd src/back
-dotnet test InSeconds.Api.IntegrationTests
+cd src/v2/front/InSeconds.Client
+E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=<DB_PASSWORD>" npm run e2e
 ```
 
-Nécessite Docker (Testcontainers démarre un vrai conteneur PostgreSQL). **~209 tests** couvrant la télémétrie (`TelemetryTests` : 500 ProblemDetails avec code d'erreur, CORS conservé, `POST /api/client-errors`, aucune trace avec cookie ou `Authorization`), `GetTodaySession` (lecture seule, ne crée ni joueur ni session), `StartSession`, `SubmitAnswer`, `AbandonSession`, `Stats/Today`, `AdminStats` (Dashboard : KPIs, activité, répartition joueurs) + `ChallengeStats` (`GET /api/admin/challenge-stats`, endpoint « Stats par défi » scindé du Dashboard — dont la liste des joueurs par défi), `Players` (`GET /api/players/me`), `PlayerSoftDelete`, `SessionEdgeCases` (expiry paresseuse, streak — dont défi de la veille terminé après minuit UTC, submit sur session abandonnée, UpdateListening anti-triche), `ChallengeGeneration`, `LazyChallengeGeneration` (régénération du défi à la volée), `Admin/Tracks` (dont la désactivation d'un morceau : exclu de la génération, verrou du défi du jour), `Admin/Challenges`, `Admin/RefreshPreviews`, `RequestHint` (déblocage/pénalité indice), `DeezerSearch` (nettoyage + déduplication de l'autocomplete public), connexion par lien magique, changement de pseudo et d'email, gel de série (`StreakFreeze`), histogramme des temps de réponse sur les réponses soumises + sur `Stats/Today` + `ChallengeStats` TrackStat (score + histogramme par morceau), nettoyage des titres sur tous les écrans d'affichage (réponse soumise, reprise, stats "déjà joué", stats admin), `HealthCheck`.
-
-### Tests E2E (Playwright)
-
-```bash
-# Une commande — reset Docker, démarre le backend en mode Testing, lance tous les tests
-powershell -File scripts/run-e2e.ps1
-```
-
-Ou si le backend tourne déjà en mode Testing :
-
-```bash
-cd src/front/InSeconds.Client
-npm run e2e        # headless
-npm run e2e:ui     # UI interactive Playwright
-```
-
-**~97 tests** répartis sur 23 fichiers de spec — ~69 tests jeu (égaliseur de la répartition des scores, code d'erreur affiché + remontée de l'erreur, gel de série, bouton Passer, happy path, déjà joué, parcours connexion/profil/changement d'email, nudges de connexion, abandon, reprise, sync multi-onglets, pas de défi + renaissance automatique du défi supprimé, partage + échec de copie presse-papier, scoring, histogramme des temps de réponse (écran de révélation + pop-up de la liste récap/déjà joué), paliers bloqués à la reprise anti-triche, confirmation de sortie, bouton ✕ d'effacement, nettoyage/déduplication + navigation clavier de l'autocomplete, overlay "Service indisponible", toggle langue + page confidentialité) + 28 tests admin (login, tableau pool avec filtres, morceau utilisé sélectionnable mais non supprimable, désactivation/réactivation d'un morceau utilisé (verrou du défi du jour), renommage d'un morceau (défi du jour compris), onglet Joueurs avec historique dépliable, ajout de morceau via le panneau de recherche intégré, suppression morceau, générer défi, reset sessions, liste défis, affichage/copie de l'ID navigateur, surbrillance "toi" sur le chip joueur, pop-up histogramme par morceau, chargement paresseux par onglet — appels réseau différés + compteur d'onglet différé).
-
-Le backend tourne en `ASPNETCORE_ENVIRONMENT=Testing` qui active :
-- `FakeDeezerHandler` — retourne un `test-audio.mp3` local ; les IDs >= 9_000_000_000 retournent une preview vide (5 morceaux seed : The Beatles, Pink Floyd, Bob Dylan, Led Zeppelin, Fleetwood Mac) pour tester le filtre "Preview manquante"/l'indicateur rouge et le bouton général "Re-vérifier les previews"
-- `PurgeSeedData` + `SeedData` à chaque démarrage (55 morceaux au total)
-- Endpoint `DELETE /api/e2e/reset` pour l'isolation entre tests
+`playwright.config.ts` démarre l'hôte de test (port 5177) et `ng serve` (port 5178). **110 tests** répartis sur 26 fichiers, repris de la v1 avec les mêmes titres (contrôle de parité) : jeu, connexion, profil, série et gels, admin…
 
 ## Documentation
 
 - [`docs/COMMENCE_ICI_FR.md`](docs/COMMENCE_ICI_FR.md) — point d'entrée : pitch, stack, où trouver quoi
+- [`CLAUDE.md`](CLAUDE.md) — conventions, modèle de données, déploiement, pièges connus (à lire avant de contribuer)
+- Architecture : [`src/v2/back/CLAUDE.md`](src/v2/back/CLAUDE.md) (backend), [`src/v2/front/CLAUDE.md`](src/v2/front/CLAUDE.md) (frontend)
+- [`docs/GAMEPLAY_RULES_FR.md`](docs/GAMEPLAY_RULES_FR.md) — règles de jeu (scoring, prolongation, anti-triche, série) — ce qui est réellement appliqué vs juste configuré
 - [`docs/TACHES.md`](docs/TACHES.md) — ce qui reste à faire
-- Architecture : [`src/back/InSeconds.Api/CLAUDE.md`](src/back/InSeconds.Api/CLAUDE.md) (backend), [`features/game/CLAUDE.md`](src/front/InSeconds.Client/src/app/features/game/CLAUDE.md) et [`features/admin/CLAUDE.md`](src/front/InSeconds.Client/src/app/features/admin/CLAUDE.md) (frontend)
-- [`docs/GAMEPLAY_RULES_FR.md`](docs/GAMEPLAY_RULES_FR.md) — règles de jeu (scoring, prolongation, anti-triche, streak) — ce qui est réellement appliqué vs juste configuré
-- [`CLAUDE.md`](CLAUDE.md) — conventions et pièges du repo (à lire avant de contribuer)
+- [`docs/refonte-v2/`](docs/refonte-v2/) — plan et suivi de la v2
 
 ## Licence
 
