@@ -26,7 +26,7 @@ public sealed class DeviceSession
     /// <summary>Libellé grossier de l'appareil (« Chrome · Android »), pour la liste des appareils du profil.</summary>
     public string? UserAgentLabel { get; private set; }
 
-    /// <param name="userAgentLabel">Libellé calculé à l'ouverture (<see cref="DeviceLabel"/>), jamais l'en-tête brut.</param>
+    /// <param name="userAgentLabel">Libellé calculé à l'ouverture (<c>DeviceLabel</c>), jamais l'en-tête brut.</param>
     public static DeviceSession Open(Guid playerId, DateTimeOffset now, string? userAgentLabel = null) =>
         new() { PlayerId = playerId, CreatedAt = now, LastSeenAt = now, UserAgentLabel = userAgentLabel };
 

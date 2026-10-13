@@ -30,7 +30,7 @@ test.describe("Remontée d'erreurs", () => {
     await expect(page.getByTestId('error-code')).toContainText(traceId);
 
     const body = (await report).postDataJSON();
-    expect(body).toMatchObject({ source: 'http', httpStatus: 500, relatedTraceId: traceId });
+    expect(body).toMatchObject({ source: 'http', httpStatus: 500, relatedTraceId: traceId, online: true });
   });
 
   test("une vraie exception serveur renvoie un code d'erreur lisible", async ({ request }) => {

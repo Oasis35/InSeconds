@@ -1,9 +1,10 @@
-namespace InSeconds.Api.Modules.Players.Domain;
+namespace InSeconds.Infrastructure.Http;
 
 /// <summary>
-/// Libellé grossier d'un appareil pour la liste du profil (§ 4.2 du plan v2) : navigateur et système,
-/// tirés du <c>User-Agent</c> à l'ouverture de la session. L'en-tête brut n'est jamais stocké, ni
-/// l'adresse IP. Sans langue (« Chrome · Android ») : le front l'affiche tel quel en français comme
+/// Libellé grossier d'un appareil, tiré du <c>User-Agent</c> : navigateur et système (« Chrome · Android »).
+/// Utilisé pour la liste des appareils du profil (§ 4.2 du plan v2, calculé à l'ouverture de la session)
+/// et dans le journal des erreurs front (<c>POST /api/client-errors</c>). L'en-tête brut n'est jamais
+/// stocké ni journalisé, ni l'adresse IP. Sans langue : le front l'affiche tel quel en français comme
 /// en anglais. Rien de reconnu : pas de libellé.
 /// </summary>
 public static class DeviceLabel

@@ -65,6 +65,33 @@ public class ClientErrorTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
 
+    [Fact]
+    public async Task VersionEnLigneEtAppareil_Journalises_SansLeUserAgentBrut()
+    {
+        const string userAgent = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36";
+        var logs = new CapturingLoggerProvider();
+        await using var api = new ApiFactory(_connectionString, services => services.AddSingleton<ILoggerProvider>(logs));
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/client-errors")
+        {
+            Content = JsonContent.Create(new
+            {
+                source = "http",
+                message = "GET /api/daily/today → échec réseau",
+                httpStatus = 0,
+                appVersion = "2026-10-13T10:00:00Z",
+                online = false,
+            }),
+        };
+        request.Headers.TryAddWithoutValidation("User-Agent", userAgent);
+        var response = await api.CreateClient().SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        var entry = Assert.Single(logs.Entries, e => e.Contains("Erreur front", StringComparison.Ordinal));
+        Assert.Contains("version 2026-10-13T10:00:00Z, en ligne False, appareil Chrome · Android", entry);
+        Assert.DoesNotContain("Pixel 8", entry);
+    }
+
     [Theory]
     [InlineData("autre", "message")]
     [InlineData("js", "")]

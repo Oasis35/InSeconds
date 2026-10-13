@@ -15,7 +15,10 @@ describe('ErrorReportingService', () => {
     httpMock = TestBed.inject(HttpTestingController);
   });
 
-  afterEach(() => httpMock.verify());
+  afterEach(() => {
+    httpMock.verify();
+    vi.restoreAllMocks();
+  });
 
   it('envoie une exception JS avec son message, sa stack et le cookie joueur', () => {
     const error = new TypeError('x is undefined');
@@ -29,6 +32,17 @@ describe('ErrorReportingService', () => {
     expect(req.request.body.message).toBe('TypeError: x is undefined');
     expect(req.request.body.stack).toBe(error.stack);
     req.flush(null, { status: 204, statusText: 'No Content' });
+  });
+
+  it('ajoute la version du front et l\'état de la connexion', () => {
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+
+    service.report({ source: 'http', message: 'GET /api/daily/today → échec réseau', httpStatus: 0 });
+
+    const body = httpMock.expectOne(endpoint).request.body;
+    expect(body.online).toBe(false);
+    // Hors image Docker (tests, ng serve), pas de date de build : rien d'inventé.
+    expect(body.appVersion).toBeNull();
   });
 
   it('accepte une erreur qui n\'est pas une Error', () => {

@@ -49,7 +49,7 @@ namespace Internal.Generated.WolverineHandlers
             System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Infrastructure.Errors.ReportClientErrorEndpoint");
             
             // The actual HTTP request handler execution
-            var result = InSeconds.Api.Infrastructure.Errors.ReportClientErrorEndpoint.Post(report, _loggerForMessage);
+            var result = InSeconds.Api.Infrastructure.Errors.ReportClientErrorEndpoint.Post(report, httpContext.Request, _loggerForMessage);
 
             await result.ExecuteAsync(httpContext).ConfigureAwait(false);
         }

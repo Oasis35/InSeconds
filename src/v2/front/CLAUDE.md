@@ -97,7 +97,7 @@ Sheriff ne vérifie que les fichiers atteignables depuis `src/main.ts` (routes c
 
 - L'API v2 renvoie un `ProblemDetails` avec `code` (stable, `module.raison`) et `traceId`. `toAppError()` le convertit en `AppError { code, status, traceId }` (erreur `HttpClient`, `ApiException` ou `ProblemDetails` levés par un client NSwag, corps JSON ou Blob ; `common.network` sans réponse, `common.unexpected` sans code lisible).
 - `ERROR_MESSAGE_KEYS` (`core/errors/error-messages.ts`) est **la seule table** qui traduit un code en clé i18n. Un code inconnu → `errors.common.unknown`, affiché avec le `traceId` (`<app-error-message>`). Un module ajoute ses codes dans cette table et leurs traductions ; `translations.spec.ts` vérifie que chaque clé existe en FR et en EN.
-- Remontée des erreurs vers `POST /api/client-errors` reprise de la v1 (`ErrorReportingService`, `GlobalErrorHandler`, intercepteur des 5xx et échecs réseau, jamais de query string). Endpoint du back v2 depuis A6 (même contrat, cf. `src/v2/back/CLAUDE.md`).
+- Remontée des erreurs vers `POST /api/client-errors` reprise de la v1 (`ErrorReportingService`, `GlobalErrorHandler`, intercepteur des 5xx et échecs réseau, jamais de query string). Chaque envoi ajoute `appVersion` (`DEPLOYED_AT`, `null` hors image Docker) et `online` (`navigator.onLine`) ; l'appareil est déduit par l'API du `User-Agent`. Endpoint du back v2 depuis A6 (même contrat, cf. `src/v2/back/CLAUDE.md`).
 
 ## Stores
 

@@ -389,6 +389,8 @@ Laissé aux PR suivantes : `user_agent_label` reste vide (calculé avec la liste
 - dès qu'on touche le champ de réponse, Safari zoome (texte du champ en 14 px, sous les 16 px qui déclenchent le zoom) et garde ce zoom : page coupée à droite jusqu'à la fin de la partie. La v1 a le même champ (`text-sm`). Correctif à faire : champs à 16 px sur écran tactile ;
 - après la révélation, « Piste suivante » coupe l'extrait complet et lance aussitôt le premier palier du morceau suivant (comportement de la v1) : précision demandée au testeur.
 
+**Journaux, relevé le 13/10 (PR #308)** en analysant des erreurs de la prod v1 : la v2 envoyait à Grafana le texte de chaque requête SQL en prod (réglage v1 oublié), EF Core journalisait en `Error` les conflits déjà transformés en 409 (pseudo pris au même instant), et une erreur du front ne disait ni la version du front, ni si le navigateur était en ligne, ni l'appareil. Corrigé : `Microsoft.EntityFrameworkCore.Database.Command` en `Warning` (Production, Staging), `SaveChangesFailed`/`CommandError` en `Warning` (`DatabaseServiceCollectionExtensions.Configure`), `appVersion`/`online` envoyés par `ErrorReportingService`, appareil déduit par l'API avec `DeviceLabel` (déplacé de `Players/Domain` vers `InSeconds.Infrastructure/Http`, puisqu'il sert maintenant à deux endroits ; l'infrastructure de l'API ne dépend plus du domaine Players pour lui). Page confidentialité mise à jour.
+
 **Actions de Clément avant la mise en prod :**
 - ~~certificat Data Protection de prod~~ fait le 30/09 (`~/apps/InSeconds/secrets/dataprotection.pfx`), mot de passe à mettre dans `.env.prod` au moment de la bascule ;
 - ~~`cloudflare-only.sh` appliqué (S17)~~ fait le 30/09 ; Cloudflare Access sur `api.inseconds.cc/jobs` (S3) ;
