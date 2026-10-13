@@ -1,6 +1,6 @@
-using InSeconds.Api.Modules.Players.Domain;
+using InSeconds.Infrastructure.Http;
 
-namespace InSeconds.UnitTests.Players;
+namespace InSeconds.UnitTests.Infrastructure;
 
 public class DeviceLabelTests
 {

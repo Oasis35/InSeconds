@@ -462,7 +462,7 @@ Le préfixe change, pas l'adresse. Toutes les erreurs sont en `ProblemDetails` a
 | (nouveau) | `/jobs` : tableau de bord Hangfire (HTML), réservé aux admins |
 | `GET /api/admin/players` | `GET /api/admin/players` (servie par Daily, qui lit les comptes par le contrat de Players : série effective et parties jouées, F1) |
 | `GET /api/admin/players/{id}/history` | `GET /api/admin/daily/players/{id}/history` |
-| `POST /api/client-errors` | inchangé |
+| `POST /api/client-errors` | même route, mêmes champs, plus `appVersion` (date de build du front) et `online` (`navigator.onLine`), facultatifs ; l'appareil est déduit du `User-Agent` par l'API (13/10) |
 | `/health`, `/health/ready` | inchangés (mêmes champs, le front les lit) |
 | `/api/e2e/*`, `/api/auth/dev-login` | mêmes chemins, servis uniquement par `InSeconds.Api.Testing` |
 
@@ -476,6 +476,7 @@ Le préfixe change, pas l'adresse. Toutes les erreurs sont en `ProblemDetails` a
 - `PlayerActionLog` garde **les mêmes noms d'événements et de champs** : les tableaux de bord Grafana existants continuent de fonctionner, et les identifiants étant conservés, les anciennes traces restent rattachables.
 - Nouvelles traces : messages Wolverine (outbox), tâches Hangfire, import.
 - Règle inchangée : jamais d'email, de pseudo, de réponse saisie, de cookie ni d'`Authorization` dans la télémétrie.
+- Ajouté le 13/10, après l'analyse d'erreurs de la prod v1 : les erreurs du front portent la version du front, l'état de la connexion et un libellé grossier de l'appareil (`DeviceLabel`, le même que la liste des appareils du profil, déplacé dans `InSeconds.Infrastructure/Http`) ; l'en-tête `User-Agent` brut n'est jamais journalisé. Logs SQL d'EF Core coupés en prod et staging comme en v1, écritures refusées par la base journalisées en `Warning` (la panne réelle reste en `Error` via le gestionnaire global).
 
 ### 5.8 Tests du back
 
