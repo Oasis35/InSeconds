@@ -6,7 +6,6 @@
 
 - [ ] **Bascule en prod** (H, #234) — avant : `DATA_PROTECTION_CERTIFICATE_PASSWORD` dans `.env.prod`, Cloudflare Access sur `api.inseconds.cc/jobs`, créneau hors 22 h 30 – 1 h UTC (cf. `refonte-v2/DEVELOPPEMENT.md` § 9)
 - [ ] **Job CI `deploy` après la bascule** — il n'attend aujourd'hui que les jobs de test v1 alors qu'il déploiera la v2 : lui faire attendre « CI OK » (ou les jobs v2), au plus tard avec la bascule
-- [ ] **Lecteur v2 : reprendre le lecteur audio de la v1 à la place de Howler** (#309, décision du 13/10/2026 après la recette sur iPhone) ; la remontée `AudioFallback` de Howler part avec lui
 - [ ] **CSP bloquante** (G3b, #300) — une semaine sans violation en prod en `report-only`, puis `CSP_MODE=enforce`
 - [ ] **Nettoyage après la bascule** — I1 (sauvegarde archivée, tables v1 de `public`, routes en 410), I2 (code et jobs CI v1, `src/v2` → `src`, exclusion de duplication SonarCloud `src/front/**, src/back/**`), I3 (`legacy_tokens`, middleware de transition, anciennes clés Data Protection)
 - [ ] **Profil : cartes Série / Parties jouées / Gels** (#283)

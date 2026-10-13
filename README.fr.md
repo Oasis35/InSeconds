@@ -78,7 +78,7 @@ Ouvre `http://localhost:5176`.
 |--------|------|
 | Backend | .NET 10, monolithe modulaire (Players, Catalogue, Gameplay, Daily), Wolverine (endpoints HTTP, transactions, outbox), FluentValidation, EF Core 10, Hangfire |
 | Base de données | PostgreSQL 17, un schéma par module (Docker en dev, conteneur Postgres partagé sur le VPS en prod) |
-| Frontend | Angular 22 (standalone, zoneless, signals), NgRx SignalStore, Tailwind CSS v4, Howler.js, PWA |
+| Frontend | Angular 22 (standalone, zoneless, signals), NgRx SignalStore, Tailwind CSS v4, élément audio HTML, PWA |
 | Musique | API Deezer (recherche, extraits de 30 s, pochettes) |
 | Tests | xUnit v3 + Testcontainers, NetArchTest, Vitest (mode navigateur), Sheriff, Playwright |
 | Observabilité | OpenTelemetry (logs, traces, métriques en OTLP) → Grafana Cloud ; erreurs front relayées par l'API ; code d'erreur affiché au joueur |

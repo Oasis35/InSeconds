@@ -4,11 +4,12 @@
     "admin.spec.ts › Admin — actions › affiche \"déjà généré\" si le défi existe": "F2 : les boutons de lancement de l'onglet Actions sont remplacés par des témoins du dernier passage des tâches ; les lancer à la main se fait dans le tableau de bord /jobs (Hangfire)"
   },
   "onlyInV2": {
-    "sound-on-click.spec.ts › Le son ne démarre que sur un clic › l'arrivée sur la page n'envoie aucun son ; « Commencer » lance la manche": "E5 : le lecteur Howler ne démarre que sur un geste du joueur (la v1 jouait par un élément audio, qui échouait en erreur)",
+    "sound-on-click.spec.ts › Le son ne démarre que sur un clic › l'arrivée sur la page n'envoie aucun son ; « Commencer » lance la manche": "E5 : le lecteur ne démarre que sur un geste du joueur (« Commencer », « Reprendre », « Piste suivante »), déverrouillé dans le clic ; la v1 lançait le son sans ce contrôle",
     "sound-on-click.spec.ts › Le son ne démarre que sur un clic › après un rechargement, la partie reprise ne se relance pas toute seule : « Reprendre » lance la manche": "E5 : idem, pour la reprise après rechargement",
     "sound-on-click.spec.ts › Le son ne démarre que sur un clic › le morceau suivant ne part que sur « Piste suivante »": "E5 : idem, pour le morceau suivant",
     "admin.spec.ts › Admin — actions › affiche le dernier passage des tâches planifiées, sans bouton pour les lancer": "F2 : témoins du dernier passage des tâches, à la place des boutons de la v1",
     "thanks-notice.spec.ts › Message de remerciement (v2) › s'ouvre après la partie, invite un ami, puis ne revient plus": "Message de remerciement du lancement de la v2, une fois par navigateur (absent de la v1)",
-    "thanks-notice.spec.ts › Message de remerciement (v2) › s'ouvre aussi sur « déjà joué », se ferme par « Continuer »": "Message de remerciement du lancement de la v2, une fois par navigateur (absent de la v1)"
+    "thanks-notice.spec.ts › Message de remerciement (v2) › s'ouvre aussi sur « déjà joué », se ferme par « Continuer »": "Message de remerciement du lancement de la v2, une fois par navigateur (absent de la v1)",
+    "mobile-input-zoom.spec.ts › Champ de réponse sur téléphone › le champ de réponse est en 16 px au moins, sans débordement de la page": "Recette iPhone du 13/10 (#309) : Safari zoomait sur le champ de réponse en 14 px ; la v1 a le même défaut, corrigé en v2 seulement (v1 gelée)"
   }
 }

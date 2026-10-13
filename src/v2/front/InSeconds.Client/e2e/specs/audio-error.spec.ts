@@ -36,7 +36,7 @@ test.describe('Échec de lecture audio', () => {
     // Le formulaire de réponse ne doit pas être affiché tant que la lecture n'a pas repris.
     await expect(round.answerInput).not.toBeVisible();
 
-    // Howler tente d'abord de télécharger l'extrait, puis se rabat une seule fois sur un élément <audio> (limite connue du lecteur) : au plus deux
+    // Le navigateur peut redemander l'extrait une fois (requête de plage) : au plus deux
     // requêtes, et surtout pas de boucle. Une boucle (l'ancien bug E4) ferait grimper le compteur ; il reste figé.
     const afterFirstFailure = requestCount;
     expect(afterFirstFailure).toBeLessThanOrEqual(2);

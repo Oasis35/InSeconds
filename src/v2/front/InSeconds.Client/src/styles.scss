@@ -243,3 +243,16 @@ h1, h2, h3, .font-display {
 .app-input[aria-invalid='true'] {
   border-color: var(--text-error);
 }
+
+/* iPhone : Safari zoome sur un champ dont le texte fait moins de 16 px quand on le touche, et garde ce
+   zoom ensuite (page coupée à droite jusqu'à la fin de la partie, signalé sur le staging le 13/10/2026).
+   Sur un écran tactile, tous les champs passent donc à 16 px, sans toucher au zoom de la page
+   (`maximum-scale` empêcherait aussi le joueur de zoomer). Hors couche : passe devant `text-sm`. */
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea,
+  .app-input {
+    font-size: 1rem;
+  }
+}

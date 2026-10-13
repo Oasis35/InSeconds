@@ -108,7 +108,7 @@ describe('TrackRoundStore', () => {
     it('suit le lecteur qui ne repart pas (extrait déjà joué jusqu\'au bout) : jamais bloquée « en lecture »', () => {
       listenedTo(1);
       expect(store.phase()).toBe('listened');
-      store.listenMore(); // le faux lecteur reste `finished`, comme Howler quand l'extrait est fini
+      store.listenMore(); // le faux lecteur reste `finished`, comme le vrai lecteur quand l'extrait est fini
       expect(audio.calls.at(-1)).toBe('playUntil 2');
       expect(store.phase()).toBe('listened');
     });

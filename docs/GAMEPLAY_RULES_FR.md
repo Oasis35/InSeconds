@@ -33,7 +33,7 @@ Moins on écoute, plus on marque. Le score de base est un **lookup exact** du pa
 
 ## Prolongation « écouter plus »
 
-- Après avoir écouté un palier, le joueur peut prolonger l'écoute jusqu'au palier suivant, **autant de fois qu'il veut**, jusqu'au dernier palier configuré (manche `gameplay/domain/track-round.ts`, lecteur `HowlerAudioPort`). **[Front]**
+- Après avoir écouté un palier, le joueur peut prolonger l'écoute jusqu'au palier suivant, **autant de fois qu'il veut**, jusqu'au dernier palier configuré (manche `gameplay/domain/track-round.ts`, lecteur `HtmlAudioPort`). **[Front]**
 - **Comportement dual selon que l'audio joue encore ou non** :
   - Si l'audio est **en cours de lecture**, la prolongation continue sans coupure — pas de replay de l'intro, l'arrêt est simplement repoussé au nouveau palier.
   - Si l'audio **n'est pas en cours de lecture** (palier précédent déjà terminé), la prolongation **relit le morceau depuis le début** jusqu'au nouveau palier.

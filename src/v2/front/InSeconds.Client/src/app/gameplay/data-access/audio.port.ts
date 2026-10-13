@@ -2,9 +2,8 @@ import { Signal } from '@angular/core';
 import { AudioStatus } from '../domain/track-round';
 
 /**
- * Le lecteur d'extraits de la manche (§ 6.3 du plan v2). Le son est décodé en mémoire et le
- * navigateur s'arrête lui-même au palier : aucune minuterie ne coupe le son, donc rien ne peut le
- * couper trop tôt ou trop tard (pièges 44 et 46 de la v1).
+ * Le lecteur d'extraits de la manche (§ 6.3 du plan v2). L'arrêt au palier se cale sur le son
+ * réellement joué, jamais sur l'heure de l'appel (pièges 44 et 46) : implémenté par `HtmlAudioPort`.
  *
  * États : `idle` (rien de chargé) → `loading` → `ready` (chargé, pas encore joué) → `playing` →
  * `finished` (le palier demandé est joué). Un échec de chargement ou de lecture est `error`, jamais
@@ -16,8 +15,8 @@ export abstract class AudioPort {
   abstract readonly position: Signal<number>;
 
   /**
-   * Charge l'extrait et libère les autres. `nextUrl` est chargé en arrière-plan : on ne garde en
-   * mémoire que le morceau en cours et le suivant (un extrait décodé pèse environ 10 Mo).
+   * Charge l'extrait. `nextUrl` est annoncé au navigateur, qui peut le précharger pendant qu'on joue
+   * le morceau en cours.
    */
   abstract load(url: string, nextUrl?: string | null): void;
 
@@ -34,13 +33,13 @@ export abstract class AudioPort {
   /** Joue tout l'extrait, depuis le début (après la révélation). */
   abstract playFull(): void;
 
-  /** Coupe le son et revient au repos ; garde l'extrait en mémoire. */
+  /** Coupe le son et revient au repos. */
   abstract stop(): void;
 
   /**
    * Déverrouille le son du navigateur. À appeler **dans le gestionnaire du clic** du joueur, avant
-   * toute attente (réseau…) : un son lancé plus tard, hors du geste, resterait muet sur iPhone
-   * jusqu'au geste suivant. Sans effet si le son est déjà déverrouillé.
+   * toute attente (réseau…) : sur iPhone, un son lancé plus tard, hors du geste, serait refusé.
+   * Sans effet si le son est déjà déverrouillé.
    */
   abstract unlock(): void;
 }

@@ -2,8 +2,8 @@ import { Page, Locator, expect } from '@playwright/test';
 import { inSequence } from '../fixtures/sequence';
 
 // Paliers par défaut exposés par les settings (cf. AppSettings.AllowedDurationsSeconds).
-// La lecture démarre automatiquement au premier (0.5s) — il n'y a plus de bouton de choix initial. Howler joue chaque palier comme un segment
-// décodé en mémoire : le navigateur s'arrête lui-même au palier, seul l'événement de fin passe par un setTimeout, que l'horloge simulée avance.
+// La lecture démarre automatiquement au premier (0.5s) — il n'y a plus de bouton de choix initial. Le lecteur s'arrête quand la
+// position réelle de l'extrait atteint le palier (le son joue en temps réel) ; son chrono de secours passe par setTimeout, que l'horloge simulée avance.
 const ALLOWED_DURATIONS = [0.5, 1, 1.5, 2, 3, 5, 10];
 
 export class BlindRoundPage {
@@ -43,14 +43,14 @@ export class BlindRoundPage {
   }
 
   /**
-   * Attend que le palier `seconds` soit joué en entier. Le son se charge en vrai (un extrait décodé en mémoire), puis part : le chrono quitte
-   * « … ». Le navigateur joue le segment, dont seul l'événement de fin dépend d'un setTimeout : on fait avancer l'horloge simulée une fois la
-   * lecture partie, puis on attend « Ns / Ns » (palier joué).
+   * Attend que le palier `seconds` soit joué en entier. Le son se charge en vrai, puis part : le chrono quitte « … ». Le lecteur
+   * s'arrête quand la position réelle de l'extrait atteint le palier : le son joue en temps réel, l'horloge simulée n'y change rien
+   * (on l'avance quand même pour les minuteries de l'écran). L'attente couvre donc le palier entier, plus la marge habituelle.
    */
   private async playStep(seconds: number): Promise<void> {
     await expect(this.timer).toHaveText(new RegExp(String.raw`s / ${seconds}s\s*$`));
     await this.page.clock.fastForward(seconds * 1000 + 200);
-    await expect(this.timer).toHaveText(`${seconds}s / ${seconds}s`);
+    await expect(this.timer).toHaveText(`${seconds}s / ${seconds}s`, { timeout: seconds * 1000 + 10_000 });
   }
 
   /** La lecture démarre automatiquement au premier palier autorisé (0.5s) : on la laisse aller au bout. */
