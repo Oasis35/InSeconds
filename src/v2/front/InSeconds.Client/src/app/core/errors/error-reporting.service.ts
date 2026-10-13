@@ -1,6 +1,7 @@
 import { HttpBackend, HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { environment } from '../../../environments/environment';
+import { DEPLOYED_AT } from '../shell/deployed-at';
 
 export type ClientErrorSource = 'js' | 'http' | 'csp';
 
@@ -13,6 +14,12 @@ export interface ClientErrorReport {
   relatedTraceId?: string | null;
 }
 
+/** Ce qui part réellement vers l'API : le rapport, plus le contexte ajouté par le service. */
+interface ClientErrorPayload extends ClientErrorReport {
+  appVersion: string | null;
+  online: boolean | null;
+}
+
 /**
  * Remonte les erreurs front vers l'API (`POST /api/client-errors`), qui les logue avec l'identité
  * du joueur : elles rejoignent sa chronologie dans l'outil d'observabilité. Repris de la v1.
@@ -22,6 +29,9 @@ export interface ClientErrorReport {
  * - Plafonné et dédupliqué par chargement de page, bornes alignées sur le validator back.
  * - Jamais de query string (jeton de lien magique, recherche tapée) : chemin seul.
  * - Un échec d'envoi est avalé : signaler une erreur ne doit jamais en créer une autre.
+ * - Contexte ajouté à chaque envoi : version du front (`DEPLOYED_AT`, date de build, pour repérer un
+ *   onglet resté sur une ancienne version) et `navigator.onLine` (coupure chez le joueur ou panne chez
+ *   nous). L'appareil (« Safari · iPhone ») est déduit par l'API de l'en-tête `User-Agent`.
  */
 @Injectable({ providedIn: 'root' })
 export class ErrorReportingService {
@@ -43,13 +53,15 @@ export class ErrorReportingService {
     if (this.alreadySent.has(key) || this.alreadySent.size >= ErrorReportingService.MAX_REPORTS_PER_PAGE) return;
     this.alreadySent.add(key);
 
-    const body: ClientErrorReport = {
+    const body: ClientErrorPayload = {
       source: report.source,
       message: truncate(report.message, 1000) || 'Erreur sans message',
       stack: truncate(report.stack, 8000),
       url: truncate(stripQuery(report.url ?? currentPath()), 500),
       httpStatus: report.httpStatus ?? null,
       relatedTraceId: truncate(report.relatedTraceId, 64),
+      appVersion: truncate(DEPLOYED_AT, 40),
+      online: isOnline(),
     };
 
     this.http
@@ -77,6 +89,10 @@ function stripQuery(url: string | null): string | null {
   if (!url) return url;
   const cut = url.search(/[?#]/);
   return cut === -1 ? url : url.slice(0, cut);
+}
+
+function isOnline(): boolean | null {
+  return typeof navigator === 'undefined' ? null : navigator.onLine;
 }
 
 function currentPath(): string | null {

@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using InSeconds.Api.Modules.Players.Contracts;
-using InSeconds.Api.Modules.Players.Domain;
+using InSeconds.Infrastructure.Http;
 using Microsoft.AspNetCore.DataProtection;
 
 namespace InSeconds.Api.Infrastructure.Auth;
