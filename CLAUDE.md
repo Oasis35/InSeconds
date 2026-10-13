@@ -130,7 +130,7 @@ Angular 22 standalone, **zoneless** (la détection de changement ne part que des
 - Un composant = un dossier avec `.ts` (+ `.html` s'il est long), `ChangeDetectionStrategy.OnPush`, écouteurs globaux dans `host: {}`, `TranslatePipe` dans chaque composant qui affiche du texte.
 - État exposé en lecture seule, modifié par les méthodes du store ; un nom d'état ne doit pas être celui d'une méthode du même store.
 - Modales **uniquement** par `ModalService` (avec `injector: inject(Injector)` pour retrouver les stores de la page), boutons par `appButton`.
-- Mobile first : toute proposition d'écran se pense d'abord pour un téléphone.
+- Mobile first : toute proposition d'écran se pense d'abord pour un téléphone. Champs de saisie à 16 px au moins sur écran tactile (sinon Safari sur iPhone zoome au toucher et garde le zoom ; règle `@media (pointer: coarse)` de `styles.scss`).
 
 ## Modèle de données (v2)
 

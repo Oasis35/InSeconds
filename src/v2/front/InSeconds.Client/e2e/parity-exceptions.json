@@ -9,6 +9,7 @@
     "sound-on-click.spec.ts › Le son ne démarre que sur un clic › le morceau suivant ne part que sur « Piste suivante »": "E5 : idem, pour le morceau suivant",
     "admin.spec.ts › Admin — actions › affiche le dernier passage des tâches planifiées, sans bouton pour les lancer": "F2 : témoins du dernier passage des tâches, à la place des boutons de la v1",
     "thanks-notice.spec.ts › Message de remerciement (v2) › s'ouvre après la partie, invite un ami, puis ne revient plus": "Message de remerciement du lancement de la v2, une fois par navigateur (absent de la v1)",
-    "thanks-notice.spec.ts › Message de remerciement (v2) › s'ouvre aussi sur « déjà joué », se ferme par « Continuer »": "Message de remerciement du lancement de la v2, une fois par navigateur (absent de la v1)"
+    "thanks-notice.spec.ts › Message de remerciement (v2) › s'ouvre aussi sur « déjà joué », se ferme par « Continuer »": "Message de remerciement du lancement de la v2, une fois par navigateur (absent de la v1)",
+    "mobile-input-zoom.spec.ts › Champ de réponse sur téléphone › le champ de réponse est en 16 px au moins, sans débordement de la page": "Recette iPhone du 13/10 (#309) : Safari zoomait sur le champ de réponse en 14 px ; la v1 a le même défaut, corrigé en v2 seulement (v1 gelée)"
   }
 }
