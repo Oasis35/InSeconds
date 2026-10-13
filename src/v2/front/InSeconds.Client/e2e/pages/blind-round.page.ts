@@ -44,13 +44,13 @@ export class BlindRoundPage {
 
   /**
    * Attend que le palier `seconds` soit joué en entier. Le son se charge en vrai, puis part : le chrono quitte « … ». Le lecteur
-   * s'arrête sur la position réelle de l'extrait, son chrono de secours sur setTimeout : on fait avancer l'horloge simulée une fois la
-   * lecture partie, puis on attend « Ns / Ns » (palier joué).
+   * s'arrête quand la position réelle de l'extrait atteint le palier : le son joue en temps réel, l'horloge simulée n'y change rien
+   * (on l'avance quand même pour les minuteries de l'écran). L'attente couvre donc le palier entier, plus la marge habituelle.
    */
   private async playStep(seconds: number): Promise<void> {
     await expect(this.timer).toHaveText(new RegExp(String.raw`s / ${seconds}s\s*$`));
     await this.page.clock.fastForward(seconds * 1000 + 200);
-    await expect(this.timer).toHaveText(`${seconds}s / ${seconds}s`);
+    await expect(this.timer).toHaveText(`${seconds}s / ${seconds}s`, { timeout: seconds * 1000 + 10_000 });
   }
 
   /** La lecture démarre automatiquement au premier palier autorisé (0.5s) : on la laisse aller au bout. */
