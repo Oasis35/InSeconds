@@ -1,6 +1,6 @@
 /**
  * Un son de test : une note de `seconds` secondes (WAV mono 8 kHz), servie par une adresse `blob:`
- * que Howler télécharge et décode comme un vrai extrait. Aucun fichier à servir ni réseau.
+ * que le lecteur joue comme un vrai extrait. Aucun fichier à servir ni réseau.
  */
 export function makeToneUrl(seconds: number): string {
   const sampleRate = 8000;

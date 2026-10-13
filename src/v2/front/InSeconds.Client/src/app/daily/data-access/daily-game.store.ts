@@ -64,7 +64,7 @@ const initialState: DailyState = {
  *
  * **Le son ne démarre que sur un clic du joueur** : `begin()` (« Commencer », « Reprendre ») et `nextTrack()` (« Piste suivante ») lancent la
  * manche ; jamais l'arrivée sur la route, un `effect` ni le retour de l'onglet au premier plan. Les navigateurs ne jouent un son qu'après un
- * geste, et Howler attend alors en silence, sans erreur.
+ * geste : un son lancé hors d'un clic serait refusé (iPhone).
  */
 export const DailyGameStore = signalStore(
   withState<DailyState>(initialState),

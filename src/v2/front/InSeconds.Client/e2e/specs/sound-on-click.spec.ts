@@ -3,8 +3,7 @@ import { test, expect } from '../fixtures/test';
 import { GamePage } from '../pages/game.page';
 import { BlindRoundPage } from '../pages/blind-round.page';
 
-// Les navigateurs ne jouent un son qu'après un geste du joueur ; sans geste, Howler attend en silence, sans erreur (l'écran afficherait
-// « lecture en cours » sans rien entendre). Le premier morceau part donc du clic « Commencer » ou « Reprendre » : jamais à l'arrivée sur
+// Les navigateurs ne jouent un son qu'après un geste du joueur ; sans geste, la lecture est refusée (sur iPhone surtout). Le premier morceau part donc du clic « Commencer » ou « Reprendre » : jamais à l'arrivée sur
 // la page, ni au retour de l'onglet au premier plan. Les extraits se chargent dès que la manche démarre : leur requête est le signe
 // que la manche a démarré.
 async function countAudioRequests(page: Page): Promise<() => number> {
