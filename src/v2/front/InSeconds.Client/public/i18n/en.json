@@ -72,7 +72,8 @@
     },
     "header": {
       "login": "Log in",
-      "profile": "My profile"
+      "profile": "My profile",
+      "avatarTitle": "My profile — {{ pseudo }}"
     }
   },
   "ui": {

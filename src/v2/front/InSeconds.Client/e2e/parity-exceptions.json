@@ -17,6 +17,7 @@
     "admin.spec.ts › Admin — recalcul des stats (v2) › refuse le recalcul d'un jour encore ouvert (admin.day_not_over)": "E3 / F2, G6f (#317) : idem, refus pour la veille et le jour même",
     "legacy-urls.spec.ts › Anciennes adresses (v2) › redirige les anciennes adresses vers les routes v2 en gardant la query string": "§ 6.6 du plan, G6f (#317) : les routes v2 vivent sous /daily et /account, la v1 n'a pas d'anciennes adresses à rediriger",
     "legacy-urls.spec.ts › Anciennes adresses (v2) › /profile mène au profil d'un compte connecté, query string comprise": "§ 6.6 du plan, G6f (#317) : idem, pour /profile (réservé aux comptes)",
-    "legacy-urls.spec.ts › Anciennes adresses (v2) › l'avis from=legacy s'affiche une fois, puis le paramètre disparaît de l'adresse": "R18, G6f (#317) : avis de l'ancienne adresse, présent en v1 mais sans E2E (testé ici de bout en bout)"
+    "legacy-urls.spec.ts › Anciennes adresses (v2) › l'avis from=legacy s'affiche une fois, puis le paramètre disparaît de l'adresse": "R18, G6f (#317) : avis de l'ancienne adresse, présent en v1 mais sans E2E (testé ici de bout en bout)",
+    "profile.spec.ts › Profil › le lien de compte du header disparaît pendant la manche (v2)": "G6g (#318) : choix de Clément du 14/10 (option mixte) : lien de compte masqué en pleine manche, comme l'avatar en v1, qui n'avait pas d'E2E dessus ; la silhouette « Se connecter » de l'invité reste hors manche"
   }
 }

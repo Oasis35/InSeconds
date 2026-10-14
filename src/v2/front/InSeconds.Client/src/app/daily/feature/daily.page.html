@@ -15,7 +15,10 @@
             <app-streak-pill [streak]="store.pillStreak()" [linked]="store.linked()" [pulse]="store.toasts().gelEarned" (open)="openStreakSheet()" />
           }
         </div>
-        <app-account-link brandRight compact />
+        <!-- Le lien de compte n'apparaît pas en pleine manche (comme en v1) : un toucher par erreur ouvrirait la confirmation de sortie. -->
+        @if (store.screen() !== 'playing') {
+          <app-account-link brandRight compact />
+        }
       </app-daily-brand>
       @if (store.screen() === 'playing') {
         <app-daily-progress [currentIndex]="store.currentIndex()" [trackCount]="store.trackCount()" (abandon)="confirmAbandon()" />

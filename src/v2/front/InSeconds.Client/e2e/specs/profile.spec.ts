@@ -1,4 +1,5 @@
 import { test, expect } from '../fixtures/test';
+import { GamePage } from '../pages/game.page';
 import { linkAccount } from '../pages/login.page';
 
 const EMAIL_A = 'profile-a@e2e.test';
@@ -15,6 +16,20 @@ test.describe('Profil', () => {
     // Le profil porte aussi des éléments avec le même texte — scoper au header.
     await page.locator('app-account-link').getByTitle('AvatarUserE2E').click();
     await expect(page).toHaveURL(/\/profile$/);
+  });
+
+  test('le lien de compte du header disparaît pendant la manche (v2)', async ({ page, api }) => {
+    await linkAccount(page, api, EMAIL_A, 'MancheUserE2E');
+    const game = new GamePage(page);
+    const avatar = page.locator('app-account-link').getByTitle('Mon profil — MancheUserE2E');
+
+    await game.openWithFakeClock();
+    await expect(avatar).toBeVisible();
+
+    // En pleine manche, un toucher par erreur ouvrirait la confirmation de sortie : ni avatar ni silhouette (#318).
+    await game.clickStart();
+    await expect(page.getByText('Piste 1 / 5')).toBeVisible();
+    await expect(page.locator('app-account-link a')).toHaveCount(0);
   });
 
   test('change de pseudo avec succès', async ({ page, api }) => {
