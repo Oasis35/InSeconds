@@ -26,9 +26,14 @@ internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
     /// <summary>Index unique de l'adresse, reconnu de la même façon.</summary>
     public const string EmailIndex = "ix_accounts_email";
 
+    /// <summary>Contrainte sur la longueur du pseudo (3 à 20 caractères).</summary>
+    public const string PseudoLengthCheck = "ck_accounts_pseudo_length";
+
     public void Configure(EntityTypeBuilder<Account> builder)
     {
-        builder.ToTable("accounts", DbSchemas.Players);
+        // Longueur du pseudo bornée par la base aussi (R5), comme le validateur (VerifyMagicLinkValidator.PseudoPattern).
+        builder.ToTable("accounts", DbSchemas.Players, table => table.HasCheckConstraint(
+            PseudoLengthCheck, "char_length(pseudo::text) BETWEEN 3 AND 20"));
         builder.HasKey(a => a.PlayerId);
         builder.HasOne<Player>().WithOne().HasForeignKey<Account>(a => a.PlayerId);
         // citext : unicité insensible à la casse garantie par la base (« Bob » et « bob » sont le même pseudo).

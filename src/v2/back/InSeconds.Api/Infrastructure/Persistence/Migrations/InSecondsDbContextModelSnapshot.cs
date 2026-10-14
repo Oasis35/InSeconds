@@ -17,7 +17,7 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.12")
+                .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63)
                 .HasAnnotation("WolverineEnabled", "true");
 
@@ -414,7 +414,10 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_accounts_pseudo");
 
-                    b.ToTable("accounts", "players");
+                    b.ToTable("accounts", "players", t =>
+                        {
+                            t.HasCheckConstraint("ck_accounts_pseudo_length", "char_length(pseudo::text) BETWEEN 3 AND 20");
+                        });
                 });
 
             modelBuilder.Entity("InSeconds.Api.Modules.Players.Domain.AuthToken", b =>

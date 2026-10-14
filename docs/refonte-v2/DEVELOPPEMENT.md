@@ -407,7 +407,7 @@ Laissé aux PR suivantes : `user_agent_label` reste vide (calculé avec la liste
 | **G6b** #313 | « Réessayer » déverrouille le son dans le clic (iPhone) | avant H |
 | **G6c** #314 | message du journal des réponses compatible avec les tableaux Grafana | avant H |
 | **G6d** #315 | surveillance des tâches Hangfire (Grafana proposé) | avant H |
-| **G6e** #316 | CHECK de longueur du pseudo (R5), réglages hors bornes refusés par l'import, file d'erreurs de `messaging` vidée sur le staging | avant H |
+| **G6e** #316 | CHECK de longueur du pseudo (R5), réglages hors bornes refusés par l'import, file d'erreurs de `messaging` vidée sur le staging (`staging-anonymize.sql`) : fait | avant H |
 | **G6f** #317 | E2E prévus et manquants : appareils, recalcul des stats, anciennes adresses, `from=legacy` | avant H |
 | **G6g** #318 | front : codes `admin.*` dans la table d'erreurs, `localStorage` hors du store, repli presse-papier de l'ID navigateur, nouvelle version sur simple query string, lien de compte pendant la manche (à trancher) | souhaitable avant H |
 | #319 | back : tests d'architecture des règles « vérifiées en CI », révocation après commit, réglages de cadence relus à chaud, pénalité d'indice dans la photo, tests `PiegeNN_`, commentaires | avant ou juste après H |
