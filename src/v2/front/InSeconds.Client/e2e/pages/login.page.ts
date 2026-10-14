@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { Browser, Page } from '@playwright/test';
 import { expect } from '../fixtures/test';
 import { ApiTestClient } from '../fixtures/api-client';
 
@@ -40,5 +40,34 @@ export async function linkAccount(page: Page, api: ApiTestClient, email: string,
   // annulerait sinon la requête de vérification (avec pseudo) encore en vol, laissant le
   // compte jamais réellement créé avec son email — bug constaté (VerifyMagicLinkCommand
   // annulé en CI/local, "email déjà pris" jamais détecté côté second compte).
+  await expectSignedIn(page, pseudo);
+}
+
+/**
+ * Un second appareil : un nouveau contexte de navigateur (aucun cookie partagé), en français comme le fixture `page`.
+ * À fermer par l'appelant (`page.context().close()`).
+ */
+export async function openOtherDevice(browser: Browser): Promise<Page> {
+  const context = await browser.newContext();
+  await context.addInitScript(() => {
+    try {
+      localStorage.setItem('lang', 'fr');
+    } catch {
+      // localStorage indisponible — ignore
+    }
+  });
+  return context.newPage();
+}
+
+/** Reconnexion d'un compte existant par lien magique (pas d'étape pseudo) : un nouvel appareil pour ce compte. */
+export async function signInAgain(page: Page, api: ApiTestClient, email: string, pseudo: string): Promise<void> {
+  await page.goto('/login');
+  await page.getByPlaceholder('ton@email.com').fill(email);
+  await page.getByRole('button', { name: 'Recevoir le lien' }).click();
+  await expect(page.getByText('Lien envoyé.')).toBeVisible();
+
+  const linkUrl = await api.getLastMagicLinkUrl(email);
+  await page.goto(pathOf(linkUrl));
+  await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
   await expectSignedIn(page, pseudo);
 }

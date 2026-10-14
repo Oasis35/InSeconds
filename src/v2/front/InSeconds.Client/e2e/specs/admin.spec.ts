@@ -360,6 +360,64 @@ test.describe('Admin — défis', () => {
   });
 });
 
+// Recalcul des chiffres figés d'un défi (v2 seulement, E3/F2) : permis à partir de J-2, refusé pour la veille et le jour même.
+test.describe('Admin — recalcul des stats (v2)', () => {
+  const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
+
+  test.beforeEach(async ({ api }) => {
+    await api.reseed();
+  });
+
+  test('recalcule les stats d\'un défi fini et affiche la date du calcul', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    const day = daysAgo(2);
+    await admin.openChallengesAt(day);
+
+    const row = admin.challengeRow(day);
+    await row.locator('button').first().click(); // déplie la carte
+    const recompute = page.waitForResponse(r => r.url().endsWith(`/challenges/${day}/stats/recompute`));
+    await admin.recomputeButton(row).click();
+    expect((await recompute).status()).toBe(200);
+
+    // Le seed fige peut-être déjà ce jour : c'est la date du calcul, aujourd'hui (heure locale du navigateur), qui compte.
+    const now = new Date();
+    const today = [now.getDate(), now.getMonth() + 1].map(n => String(n).padStart(2, '0')).join('/') + `/${now.getFullYear()}`;
+    await expect(row.getByTestId('challenge-computed-at')).toContainText(`Chiffres figés le ${today}`);
+    await expect(row.getByRole('alert')).toHaveCount(0);
+  });
+
+  test('refuse le recalcul d\'un jour encore ouvert (admin.day_not_over)', async ({ page }) => {
+    const admin = new AdminPage(page);
+    const yesterday = daysAgo(1);
+    // La veille n'a pas le bouton (une partie peut encore s'y finir) : on le fait apparaître en retouchant la liste
+    // reçue, pour vérifier que l'API refuse quand même et que l'écran le dit.
+    await page.route('**/api/admin/daily/challenges/stats', async route => {
+      const response = await route.fetch();
+      const body = await response.json() as { challenges: { date: string; canRecompute: boolean }[] };
+      for (const c of body.challenges) {
+        if (c.date.startsWith(yesterday)) c.canRecompute = true;
+      }
+      await route.fulfill({ response, json: body });
+    });
+    await admin.goto();
+    await admin.login();
+    await admin.openChallengesAt(yesterday);
+
+    const row = admin.challengeRow(yesterday);
+    await row.locator('button').first().click();
+    const recompute = page.waitForResponse(r => r.url().endsWith(`/challenges/${yesterday}/stats/recompute`));
+    await admin.recomputeButton(row).click();
+    const response = await recompute;
+    expect(response.status()).toBe(409);
+    expect((await response.json() as { code: string }).code).toBe('admin.day_not_over');
+
+    await expect(row.getByRole('alert')).toHaveText("Ce jour n'est pas encore fini : les stats seront figées demain.");
+    await expect(row.getByTestId('challenge-computed-at')).toHaveCount(0);
+  });
+});
+
 test.describe('Admin — chargement paresseux par onglet', () => {
   test.beforeEach(async ({ api }) => {
     await api.reseed();

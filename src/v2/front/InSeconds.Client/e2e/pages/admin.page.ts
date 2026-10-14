@@ -162,6 +162,19 @@ export class AdminPage {
     return this.page.locator('div.py-3').filter({ has: this.page.getByText(dateIso, { exact: true }) });
   }
 
+  /** Ouvre l'onglet Défis sur le mois du jour `dateIso` (aaaa-mm-jj, UTC), qui peut être le mois précédent (J-2 un 1er du mois). */
+  async openChallengesAt(dateIso: string): Promise<void> {
+    await this.page.getByRole('link', { name: /^Défis/ }).click();
+    await this.challengeRow(new Date().toISOString().slice(0, 10)).waitFor({ state: 'visible' });
+    if (dateIso.slice(0, 7) !== new Date().toISOString().slice(0, 7)) {
+      await this.page.getByRole('button', { name: 'Mois précédent' }).click();
+    }
+  }
+
+  recomputeButton(row: Locator): Locator {
+    return row.getByRole('button', { name: 'Recalculer les stats' });
+  }
+
   // Helpers API directs (évite de passer par l'UI pour le setup)
   async apiReseed(): Promise<void> {
     const res = await fetch(`${BASE}/api/e2e/reseed`, {
