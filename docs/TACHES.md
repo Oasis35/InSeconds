@@ -1,11 +1,13 @@
 # InSeconds — Reste à faire
 
-> Mis à jour le 2026-10-12 (PR G4). Ce fichier ne liste que ce qui reste à faire : l'historique de ce qui est livré vit dans git et les PR, et l'état courant dans [`CLAUDE.md`](../CLAUDE.md) (§ Ce que fait l'application). Une tâche terminée est retirée d'ici, pas cochée. Les tâches sont écrites pour la v2 ; le suivi de la refonte elle-même est dans le ticket #205 et ses sous-tickets.
+> Mis à jour le 2026-10-14 (relecture de cohérence de la v2). Ce fichier ne liste que ce qui reste à faire : l'historique de ce qui est livré vit dans git et les PR, et l'état courant dans [`CLAUDE.md`](../CLAUDE.md) (§ Ce que fait l'application). Une tâche terminée est retirée d'ici, pas cochée. Les tâches sont écrites pour la v2 ; le suivi de la refonte elle-même est dans le ticket #205 et ses sous-tickets.
 
 ## Refonte v2 : jusqu'au bout
 
 - [ ] **Bascule en prod** (H, #234) — avant : `DATA_PROTECTION_CERTIFICATE_PASSWORD` dans `.env.prod`, Cloudflare Access sur `api.inseconds.cc/jobs`, créneau hors 22 h 30 – 1 h UTC (cf. `refonte-v2/DEVELOPPEMENT.md` § 9)
-- [ ] **Job CI `deploy` après la bascule** — il n'attend aujourd'hui que les jobs de test v1 alors qu'il déploiera la v2 : lui faire attendre « CI OK » (ou les jobs v2), au plus tard avec la bascule
+- [ ] **Corrections de la relecture du 13/10, avant la bascule** (`audit/relecture-v2-coherence-2026-10-13.md`) — G6a #312 (copie prod → staging limitée à `public`, job CI `deploy` derrière « CI OK », Dependabot, commentaires CSP), G6b #313 (« Réessayer » déverrouille le son sur iPhone), G6c #314 (journaux compatibles avec les tableaux Grafana), G6d #315 (surveillance des tâches Hangfire), G6e #316 (données : CHECK du pseudo, réglages hors bornes, files en erreur), G6f #317 (E2E manquants)
+- [ ] **Petites corrections après la bascule** — front #318, back #319
+- [ ] **Sauvegarde de la base juste avant la bascule** et timer `inseconds-backup` installé (cf. #234)
 - [ ] **CSP bloquante** (G3b, #300) — une semaine sans violation en prod en `report-only`, puis `CSP_MODE=enforce`
 - [ ] **Nettoyage après la bascule** — I1 (sauvegarde archivée, tables v1 de `public`, routes en 410), I2 (code et jobs CI v1, `src/v2` → `src`, exclusion de duplication SonarCloud `src/front/**, src/back/**`), I3 (`legacy_tokens`, middleware de transition, anciennes clés Data Protection)
 - [ ] **Profil : cartes Série / Parties jouées / Gels** (#283)

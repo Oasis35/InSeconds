@@ -110,7 +110,7 @@ Sur le staging, `import-to-staging.sh` la lance après la clé Data Protection n
 
 ## La bascule (G2)
 
-Workflow « Bascule v2 » → `deploy/vps/switch-to-v2.sh <prod|staging>`, sur le VPS, depuis le checkout positionné sur le commit à basculer. Les étapes 3 à 5 de « L'import complet » y sont enchaînées :
+Workflow « Bascule v2 » → `deploy/vps/switch-to-v2.sh <prod|staging>`, sur le VPS, depuis le checkout positionné sur le commit à basculer. Les étapes 1 à 5 de « L'import complet » y sont enchaînées :
 
 1. **Préparation, sans arrêt de service** : certificat Data Protection présent et son mot de passe dans le `.env` ; la v2 n'est pas déjà ouverte (`opened_at` vide, sinon arrêt avant tout) ; image v2 construite ; `--migrate-only` (crée les schémas v2, sans effet sur la v1).
 2. **Arrêt de l'API actuelle** (`inseconds.api`). Le front v1 reste servi et affiche « Service indisponible ».
