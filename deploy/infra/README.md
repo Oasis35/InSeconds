@@ -81,9 +81,7 @@ Une sauvegarde :
 4. si R2 est configuré, l'envoie **chiffré** (rclone crypt, conteneur `rclone/rclone`) dans
    `daily/` du bucket `inseconds-backups`, plus une copie dans `monthly/` pour la première du
    mois ; supprime sur R2 les quotidiennes de plus de 30 jours et les mensuelles de plus de 365 ;
-5. envoie à Grafana Cloud une ligne de log « Sauvegarde OK » (ou « Sauvegarde en échec »), avec
-   la configuration OTLP de l'API (cf. [Surveillance](#surveillance-alerte-grafana)) ;
-6. envoie un signal à healthchecks.io (contrôle `inseconds-backup`, `/fail` en cas d'échec), avec la
+5. envoie un signal à healthchecks.io (contrôle `inseconds-backup`, `/fail` en cas d'échec), avec la
    clé de ping de l'API (cf. [healthchecks.io](#surveillance-healthchecksio)).
 
 ### Quand elle tourne
@@ -118,9 +116,8 @@ R2_ENDPOINT=https://<id-compte>.eu.r2.cloudflarestorage.com
 BACKUP_ENCRYPTION_PASSWORD=...
 ```
 
-Les signaux vers Grafana et healthchecks.io n'ont rien à configurer ici : le script lit
-`OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS` et `HEALTHCHECKS_PING_KEY` dans
-`~/apps/InSeconds/.env.prod` (ceux de l'API). Pour les surcharger, les mettre dans `deploy/infra/.env`.
+Le signal vers healthchecks.io n'a rien à configurer ici : le script lit `HEALTHCHECKS_PING_KEY` dans
+`~/apps/InSeconds/.env.prod` (celle de l'API). Pour la surcharger, la mettre dans `deploy/infra/.env`.
 
 Pour générer la phrase de passe : `openssl rand -base64 32`. **Sans elle, les sauvegardes de R2
 sont illisibles** : elle doit être dans KeePass, pas seulement sur le VPS (un VPS perdu
@@ -152,35 +149,12 @@ doit pouvoir lancer `docker` (comme pour le déploiement).
 Sans les variables R2, `backup.sh` fait seulement la sauvegarde locale. Les renseigner à moitié
 est une erreur (le script s'arrête).
 
-### Surveillance (alerte Grafana)
-
-Chaque passage envoie à Grafana Cloud un log du service `inseconds-backup` : « Sauvegarde OK »
-(avec le nom du dump, sa taille et `backup.offsite` = envoyé sur R2 ou non) ou « Sauvegarde en
-échec ». Une alerte prévient si **aucun « Sauvegarde OK » n'est arrivé en 26 h**, ce qui couvre
-l'échec, le VPS éteint et le timer arrêté. À créer une fois dans Grafana
-(*Alerting → Alert rules → New alert rule*) :
-
-- source de données : la source Loki des logs (`grafanacloud-…-logs`) ;
-- requête (*Code*) :
-
-  ```logql
-  sum(count_over_time({service_name="inseconds-backup"} |= "Sauvegarde OK" [26h]))
-  ```
-
-- condition : *IS BELOW* `1` ;
-- *Configure no data and error handling* → *Alert state if no data* : **Alerting** (sans aucun
-  log, la requête ne renvoie rien, ce qui doit aussi déclencher l'alerte) ;
-- évaluation toutes les heures (*pending period* `0s`), point de contact : le mail du compte.
-
-Pour vérifier que le signal arrive : lancer `./backup.sh`, puis dans *Explore* (source Loki)
-`{service_name="inseconds-backup"}`. Un message « Signal Grafana impossible. » dans la sortie du
-script veut dire que l'envoi a échoué (la sauvegarde, elle, n'est pas affectée).
-
 ### Surveillance (healthchecks.io)
 
-Choisi le 14/10/2026 pour les tâches planifiées de l'API v2 (#315) : un service fait pour ça, hors du
-VPS, réglé en quelques clics. La sauvegarde envoie le même signal, pour tout voir au même endroit ;
-l'alerte Grafana ci-dessus peut rester en plus ou être supprimée.
+Choisi le 14/10/2026 (#315) pour la sauvegarde et les tâches planifiées de l'API v2 : un service fait
+pour ça, hors du VPS, réglé en quelques clics. Il remplace l'alerte Grafana « aucun Sauvegarde OK en
+26 h » d'avant (le script n'envoie plus rien à Grafana) : un échec, un VPS éteint ou un timer arrêté
+se voient tous comme un signal manquant ou un `/fail`.
 
 **Qui envoie quoi.** Après chaque passage, un `POST` vers
 `https://hc-ping.com/<clé de ping>/<contrôle>` en cas de réussite, `…/<contrôle>/fail` en cas
