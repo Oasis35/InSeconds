@@ -35,11 +35,22 @@ if [[ -z "$keep_email" ]]; then
 fi
 
 dump=$(mktemp)
-trap 'rm -f "$dump"' EXIT
+restore_list=$(mktemp)
+trap 'rm -f "$dump" "$restore_list"' EXIT
 
-echo "Dump de la base de prod..."
+echo "Dump de la base de prod (tables v1 du schéma public seulement)..."
+# -n public (PLAN § 10.1) : dès que la prod a ses schémas v2 (--migrate-only la veille de la bascule, puis la v2
+# elle-même), un dump complet écraserait ceux du staging et y amènerait comptes, appareils et clés Data Protection
+# de la prod, non anonymisés si l'import échouait avant la seconde anonymisation. Les schémas v2 du staging sont
+# remplis ensuite par l'import, depuis ces tables v1 anonymisées.
 docker run --rm --network shared-postgres -e PGPASSWORD="$prod_pw" "$PG_IMAGE" \
-  pg_dump -h shared-postgres -U inseconds -d inseconds -Fc --no-owner --no-privileges > "$dump"
+  pg_dump -h shared-postgres -U inseconds -d inseconds -n public -Fc --no-owner --no-privileges > "$dump"
+
+# Avec -n public, le dump contient le schéma public lui-même : --clean ferait DROP SCHEMA public, refusé dès que le
+# staging y garde un objet absent de la prod, après avoir déjà supprimé les tables (copie à moitié faite). Le schéma
+# et son commentaire sont retirés de la liste restaurée : seuls les objets de public sont remplacés, comme avant -n.
+docker run --rm -i "$PG_IMAGE" pg_restore -l < "$dump" \
+  | grep -v -E ' SCHEMA - public | COMMENT - SCHEMA public ' > "$restore_list"
 
 # L'API staging est arrêtée pendant la restauration : --clean supprime les tables qu'elle
 # utilise, et ses jobs de fond pourraient écrire entre la restauration et l'anonymisation.
@@ -53,13 +64,13 @@ restart_api() {
     docker start inseconds-staging.api > /dev/null
   fi
 }
-trap 'restart_api; rm -f "$dump"' EXIT
+trap 'restart_api; rm -f "$dump" "$restore_list"' EXIT
 
 echo "Restauration dans inseconds_staging..."
 # --exit-on-error : un échec partiel laisserait une base à moitié copiée, pas encore anonymisée.
-docker run --rm -i --network shared-postgres -e PGPASSWORD="$staging_pw" "$PG_IMAGE" \
+docker run --rm -i --network shared-postgres -e PGPASSWORD="$staging_pw" -v "$restore_list:/tmp/restore.list:ro" "$PG_IMAGE" \
   pg_restore -h shared-postgres -U inseconds_staging -d inseconds_staging \
-  --no-owner --no-privileges --clean --if-exists --exit-on-error < "$dump"
+  --no-owner --no-privileges --clean --if-exists --exit-on-error -L /tmp/restore.list < "$dump"
 
 echo "Anonymisation..."
 # Script psql lu sur stdin (et non via -c) : c'est la seule forme où psql substitue :'keep'.

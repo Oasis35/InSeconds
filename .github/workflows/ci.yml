@@ -583,8 +583,10 @@ jobs:
   deploy:
     name: Deploy to VPS
     runs-on: ubuntu-latest
-    needs: [back, unit-tests, front, unit-tests-front, nginx-headers, integration-tests, e2e]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # Attend « CI OK », comme deploy-staging (même raison pour always(), cf. plus bas) : après la bascule, ce job
+    # déploie la v2, qui doit passer ses propres tests (G6a, #312). Avant, il n'attendait que les jobs v1.
+    needs: [ci-ok]
+    if: ${{ always() && needs.ci-ok.result == 'success' && github.ref == 'refs/heads/main' && github.event_name == 'push' }}
     # M17 (revue du 25/09) : groupe de concurrency dédié, distinct de celui du workflow
     # (${{ github.workflow }}-${{ github.ref }}, cf. en-tête du fichier). Sans ça, un déploiement
     # en cours pouvait être annulé en plein milieu (cancel-in-progress du groupe workflow) par un
