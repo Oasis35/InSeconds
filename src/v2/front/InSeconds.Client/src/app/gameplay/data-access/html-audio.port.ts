@@ -131,12 +131,23 @@ export class HtmlAudioPort extends AudioPort {
   /**
    * Sur iPhone, un élément audio ne joue hors d'un geste du joueur qu'après avoir joué une fois
    * dans un geste. La manche ne démarre qu'après les appels réseau de « Commencer » : on fait donc
-   * jouer un court silence à l'élément partagé ici, dans le clic, une seule fois.
+   * jouer l'élément partagé ici, dans le clic, jusqu'à ce qu'un essai passe. Un refus se retente au
+   * clic suivant (« Piste suivante », « Réessayer »), même avec un extrait chargé (#313) :
+   * - rien de chargé, ou un extrait en échec (« Réessayer » le rechargera) : un silence de 10 ms ;
+   * - un extrait chargé ou en cours de chargement : l'élément le joue en muet puis revient où il
+   *   était, sans couper l'extrait ni sa demande de lecture en attente ;
+   * - un extrait en lecture : l'élément joue déjà, il est déverrouillé.
    */
   unlock(): void {
     const audio = this.audio;
-    if (!audio || this.unlocked || this.currentUrl !== null) return;
+    if (!audio || this.unlocked) return;
+    const state = this._state();
     this.unlocked = true;
+    if (state === 'playing') return;
+    if (this.currentUrl !== null && state !== 'error') {
+      this.unlockLoaded(audio);
+      return;
+    }
     const token = ++this.loadToken;
     audio.oncanplay = null;
     audio.onerror = null;
@@ -147,6 +158,27 @@ export class HtmlAudioPort extends AudioPort {
       },
       (err: unknown) => {
         // Refusé (pas dans un geste) : on réessaiera au prochain clic. Interrompu par le chargement d'un extrait : c'est fait.
+        if (!isAbort(err)) this.unlocked = false;
+      },
+    );
+  }
+
+  /** Déverrouille sur l'extrait chargé : lecture muette aussitôt arrêtée, à la position d'avant. */
+  private unlockLoaded(audio: HTMLAudioElement): void {
+    const playToken = this.playToken;
+    const loadToken = this.loadToken;
+    const time = audio.currentTime;
+    audio.muted = true;
+    audio.play().then(
+      () => {
+        audio.muted = false;
+        // Une vraie lecture a pris la suite (demande gardée pendant le chargement) : on la laisse.
+        if (this.playToken !== playToken || this.loadToken !== loadToken) return;
+        audio.pause();
+        audio.currentTime = time;
+      },
+      (err: unknown) => {
+        audio.muted = false;
         if (!isAbort(err)) this.unlocked = false;
       },
     );
@@ -187,6 +219,7 @@ export class HtmlAudioPort extends AudioPort {
       if (this.playToken === token && this._state() === 'playing') this.finish(token);
     };
 
+    audio.muted = false; // un déverrouillage muet encore en cours ne doit pas couper le son du palier
     if (audio.currentTime !== 0) audio.currentTime = 0;
     this._position.set(0);
     this._state.set('playing');

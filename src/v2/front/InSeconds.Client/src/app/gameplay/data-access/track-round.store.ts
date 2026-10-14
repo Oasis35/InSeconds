@@ -105,9 +105,12 @@ export function withTrackRound() {
         /**
          * « Réessayer » après un échec de lecture : recharge l'extrait et repart au palier choisi. Si
          * le mode sait redemander l'adresse (`refreshPreviewUrl`), l'extrait est rechargé depuis une
-         * adresse fraîche (piège 14) ; sinon depuis la même.
+         * adresse fraîche (piège 14) ; sinon depuis la même. Le son est d'abord déverrouillé, dans le
+         * clic : la relance part après l'appel réseau, hors du geste (iPhone, #313).
          */
         retryPlayback(): void {
+          if (store.round()?.phase !== 'audio-error') return;
+          audio.unlock();
           const changed = apply(retryPlayback);
           if (!changed) return;
           const refresh = refreshPreviewUrl;
