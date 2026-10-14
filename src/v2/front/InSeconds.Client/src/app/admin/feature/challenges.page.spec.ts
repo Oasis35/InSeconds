@@ -222,7 +222,7 @@ describe('ChallengesPage', () => {
       recomputeButton(ctx.row('2026-10-04'))!.click();
       await ctx.settle();
 
-      expect(ctx.row('2026-10-04').querySelector('[role="alert"]')?.textContent).toContain('admin.challenges.recomputeNotOver');
+      expect(ctx.row('2026-10-04').querySelector('[role="alert"]')?.textContent).toContain('errors.admin.day_not_over');
     });
   });
 });

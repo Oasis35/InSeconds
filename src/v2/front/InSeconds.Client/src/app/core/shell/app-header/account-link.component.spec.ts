@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { provideTranslateService } from '@ngx-translate/core';
+import { TranslateService, provideTranslateService } from '@ngx-translate/core';
 import { SessionStore } from '../../session/session.store';
 import { AccountLinkComponent } from './account-link.component';
 
@@ -49,13 +49,16 @@ describe('AccountLinkComponent', () => {
 
   it('montre l\'initiale du pseudo d\'un compte, avec un lien vers le profil', () => {
     const { fixture, element, session } = render();
+    const translate = TestBed.inject(TranslateService);
+    translate.setTranslation('fr', { shell: { header: { avatarTitle: 'Mon profil — {{ pseudo }}' } } });
+    translate.use('fr');
 
     session.signedIn({ id: 'p1', pseudo: 'élodie', email: 'e@example.com', isGuest: false, isAdmin: false });
     fixture.detectChanges();
 
     const avatar = element.querySelector<HTMLAnchorElement>('a[href="/account/profile"]')!;
     expect(avatar.textContent?.trim()).toBe('é');
-    expect(avatar.title).toBe('élodie');
+    expect(avatar.title).toBe('Mon profil — élodie');
     expect(element.querySelector('a[href="/account/login"]')).toBeNull();
   });
 

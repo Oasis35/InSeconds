@@ -17,7 +17,7 @@ import { SessionStore } from '../../session/session.store';
       <!-- Identité pas encore lue : ni avatar ni « Se connecter » (sinon un compte connecté voit un instant le lien). -->
     } @else if (session.isLinked()) {
       <a routerLink="/account/profile" class="app-avatar" [class.app-avatar--compact]="compact()"
-         [attr.title]="pseudo()" [attr.aria-label]="'shell.header.profile' | translate">
+         [attr.title]="'shell.header.avatarTitle' | translate: { pseudo: pseudo() }" [attr.aria-label]="'shell.header.profile' | translate">
         {{ initial() }}
       </a>
     } @else if (compact()) {

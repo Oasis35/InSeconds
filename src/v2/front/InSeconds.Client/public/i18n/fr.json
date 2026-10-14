@@ -17,6 +17,12 @@
       "unexpected": "Une erreur inattendue s'est produite. Réessaie dans un instant.",
       "unknown": "Une erreur s'est produite. Si elle se répète, transmets-nous le code ci-dessous."
     },
+    "admin": {
+      "day_not_over": "Ce jour n'est pas encore fini : les stats seront figées demain.",
+      "invalid_date": "Date invalide : le format attendu est aaaa-mm-jj.",
+      "invalid_period": "Période invalide : la date de début doit précéder celle de fin, sur un an au plus.",
+      "pool_insufficient": "Pool insuffisant : ajoutez des morceaux avec preview."
+    },
     "players": {
       "email_taken": "Cette adresse est déjà utilisée par un autre compte.",
       "guest_forbidden": "Cette action est réservée aux comptes connectés.",
@@ -66,7 +72,8 @@
     },
     "header": {
       "login": "Se connecter",
-      "profile": "Mon profil"
+      "profile": "Mon profil",
+      "avatarTitle": "Mon profil — {{ pseudo }}"
     }
   },
   "ui": {
@@ -424,7 +431,6 @@
       "computedAt": "Chiffres figés le {{ date }}",
       "recompute": "Recalculer les stats",
       "recomputing": "Recalcul en cours…",
-      "recomputeNotOver": "Ce jour n'est pas encore fini : les stats seront figées demain.",
       "recomputeNotFound": "Aucun défi pour ce jour.",
       "recomputeError": "Le recalcul a échoué."
     },

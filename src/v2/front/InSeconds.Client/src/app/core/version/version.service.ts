@@ -29,12 +29,18 @@ const MOMENT_ORDER: readonly ReloadMoment[] = ['now', 'background', 'navigation'
 const RELOAD_LOOP_WINDOW_MS = 60_000;
 const LAST_AUTO_RELOAD_KEY = 'inseconds.version.autoReloadAt';
 
+/** Le chemin d'une adresse, sans query string ni fragment. */
+function pathOf(url: string): string {
+  return url.split(/[?#]/, 1)[0];
+}
+
 /**
  * Détection et application d'une nouvelle version du front, par le service worker d'Angular (§ 6.6 du plan v2)
  * plutôt qu'une comparaison maison avec `/health` :
  * - `VERSION_READY` : la nouvelle version est téléchargée ; elle est mise en attente et appliquée en rechargeant la page au
  *   premier moment sûr (bonne pratique web.dev / Angular : jamais sous les doigts du joueur) : tout de suite si la page l'accepte
- *   (`allowReload`), sinon quand l'onglet passe en arrière-plan ou au prochain changement de page. Jamais avec une fenêtre ouverte ;
+ *   (`allowReload`), sinon quand l'onglet passe en arrière-plan ou au prochain changement de page (de chemin : une navigation
+ *   qui ne change que la query string ne compte pas). Jamais avec une fenêtre ouverte ;
  * - au démarrage et au retour de l'onglet au premier plan : on vérifie s'il en existe une. Au démarrage, sans cet appel, le
  *   service worker attendait qu'il n'y ait plus de requête en cours pour vérifier (environ 25 s mesurées) ;
  * - état irrécupérable du service worker, ou code `common.new_version` renvoyé par l'API (anciennes routes) :
@@ -89,8 +95,20 @@ export class VersionService {
         else if (this.moment() !== 'navigation') this.applyIfSafe();
       });
 
+    // Un changement de page, pas une navigation qui ne touche que la query string ou le fragment (`?page=` du pool admin, filtre
+    // en cours de saisie) : celle-là ne quitte rien, recharger couperait la saisie.
+    let lastPath: string | null = null;
     inject(Router).events
-      .pipe(filter(event => event instanceof NavigationEnd), takeUntilDestroyed(destroyRef))
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        map(event => pathOf(event.urlAfterRedirects)),
+        filter(path => {
+          const changed = path !== lastPath;
+          lastPath = path;
+          return changed;
+        }),
+        takeUntilDestroyed(destroyRef),
+      )
       .subscribe(() => this.applyIfSafe());
 
     effect(() => {

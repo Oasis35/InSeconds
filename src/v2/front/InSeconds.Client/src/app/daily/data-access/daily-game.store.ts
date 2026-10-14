@@ -2,19 +2,15 @@ import { computed, effect, inject, untracked } from '@angular/core';
 import { patchState, signalStore, withComputed, withHooks, withMethods, withState } from '@ngrx/signals';
 import { SessionLoader } from '../../account/data-access/session-loader';
 import { SessionStore } from '../../core/session/session.store';
-import { StoragePort } from '../../core/storage/storage.port';
 import { RoundConfig, RoundSubmission } from '../../gameplay/domain/track-round';
 import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { AnsweredTrack, DailySettings, DailyToday, DayStats, ResumedTrack, StartedSession, TrackSlot } from '../domain/daily';
 import { DailyScreen, PeekContext, isRecapScreen, refocusContext, screenAfterToday } from '../domain/daily-screen';
 import { formatCountdown, secondsUntilMidnightUtc } from '../domain/countdown';
 import { toRoundResult } from '../domain/round-result';
-import { EMPTY_STREAK, Streak, dateKey, pluralKey } from '../domain/streak';
+import { EMPTY_STREAK, Streak, pluralKey } from '../domain/streak';
 import { recapToasts } from '../domain/toasts';
 import { DailyApi } from './daily.api';
-
-/** Toast invité « série perdue » : une seule fois par série perdue (clé = date du dernier défi joué). */
-const LOST_STREAK_SEEN_KEY = 'inseconds.lostStreakNudgeSeen';
 
 interface DailyState {
   screen: DailyScreen;
@@ -112,7 +108,7 @@ export const DailyGameStore = signalStore(
       showLostToast: computed(() => !session.isLinked() && store.screen() === 'welcome' && store.lostStreak() !== null),
     };
   }),
-  withMethods((store, api = inject(DailyApi), round = inject(TrackRoundStore), sessionLoader = inject(SessionLoader), storage = inject(StoragePort)) => {
+  withMethods((store, api = inject(DailyApi), round = inject(TrackRoundStore), sessionLoader = inject(SessionLoader)) => {
     let countdownTimer: ReturnType<typeof setInterval> | null = null;
     let statsRequest = 0;
     /** Les écoutes envoyées au serveur se suivent : une demande d'indice attend la dernière (sinon le serveur refuse, 409). */
@@ -148,15 +144,6 @@ export const DailyGameStore = signalStore(
       } catch {
         // la gélule garde la série qu'elle connaît
       }
-    };
-
-    /** La série perdue d'un invité s'annonce une seule fois (mémoire du navigateur). */
-    const checkLostStreak = (streak: Streak) => {
-      const key = dateKey(streak.lastPlayedDate);
-      if (streak.lostStreak === null || key === null) return;
-      if (storage.get(LOST_STREAK_SEEN_KEY) === key) return;
-      storage.set(LOST_STREAK_SEEN_KEY, key);
-      patchState(store, { lostStreak: streak.lostStreak });
     };
 
     const enterAlreadyPlayed = (abandoned: boolean) => {
@@ -225,7 +212,6 @@ export const DailyGameStore = signalStore(
       }
 
       patchState(store, { today, streak: today.streak });
-      if (context === 'initial') checkLostStreak(today.streak);
       const change = screenAfterToday(store.screen(), context, today.state);
       if (change.abandoned !== null) {
         // Partie finie ailleurs : la manche en cours (son compris) s'arrête.
@@ -408,6 +394,8 @@ export const DailyGameStore = signalStore(
 
       dismissStreakToast: () => patchState(store, { streakToastDismissed: true }),
       dismissGelToast: () => patchState(store, { gelToastDismissed: true }),
+      /** Le toast invité « série perdue » ; la page décide s'il est dû (une seule fois par série perdue, `LostStreakNotice`). */
+      announceLostStreak: (lostStreak: number) => patchState(store, { lostStreak }),
       dismissLostToast: () => patchState(store, { lostStreak: null }),
 
       /** Libère la minuterie du compte à rebours. */

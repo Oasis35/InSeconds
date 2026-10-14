@@ -19,6 +19,7 @@ import { ToastService } from '../../ui/toast/toast.service';
 import { DecorBackgroundComponent } from '../../ui/decor-background/decor-background.component';
 import { DailyGameStore } from '../data-access/daily-game.store';
 import { DailyShare } from '../data-access/daily-share';
+import { LostStreakNotice } from '../data-access/lost-streak-notice';
 import { ThanksNotice } from '../data-access/thanks-notice';
 import { AlreadyPlayedScreenComponent } from '../ui/already-played-screen/already-played-screen.component';
 import { DailyBrandComponent } from '../ui/daily-brand/daily-brand.component';
@@ -59,7 +60,7 @@ type ThanksScreen = 'done' | 'already_played';
     StreakPillComponent, GuestStreakToastComponent, LostStreakToastComponent, GelUsedToastComponent, GelEarnedToastComponent,
     DeezerBadgeComponent, ScoreCountComponent, AccountLinkComponent,
   ],
-  providers: [DailyGameStore, TrackRoundStore, DailyShare, ThanksNotice],
+  providers: [DailyGameStore, TrackRoundStore, DailyShare, ThanksNotice, LostStreakNotice],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './daily.page.html',
   host: {
@@ -79,6 +80,7 @@ export class DailyPage implements OnInit {
   private readonly headerSlot = inject(HeaderSlot);
   private readonly dailyShare = inject(DailyShare);
   private readonly thanks = inject(ThanksNotice);
+  private readonly lostStreakNotice = inject(LostStreakNotice);
   private readonly toasts = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -126,7 +128,15 @@ export class DailyPage implements OnInit {
   }
 
   ngOnInit(): void {
-    void this.store.init();
+    void this.init();
+  }
+
+  /** Premier chargement, ou « Réessayer » de l'écran d'erreur : l'état du jour, puis le toast invité « série perdue » s'il est dû. */
+  protected async init(): Promise<void> {
+    await this.store.init();
+    const streak = this.store.today()?.streak;
+    const lost = streak ? this.lostStreakNotice.take(streak) : null;
+    if (lost !== null) this.store.announceLostStreak(lost);
   }
 
   protected onVisibilityChange(): void {

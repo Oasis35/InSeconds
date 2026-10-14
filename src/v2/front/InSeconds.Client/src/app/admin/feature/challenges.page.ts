@@ -12,13 +12,14 @@ import { ChallengeHistoryComponent } from '../ui/challenge-history.component';
 import { ChallengeMonthNavComponent } from '../ui/challenge-month-nav.component';
 import { TrackChartDialog } from './track-chart.dialog';
 
-const DAY_NOT_OVER = 'admin.day_not_over';
 const NOT_FOUND = 'common.not_found';
 const CHART_DIALOG_MAX_WIDTH = '22.5rem';
 
-/** La clé i18n qui dit pourquoi un recalcul a échoué (le jour n'est pas fini, plus de défi, ou autre chose). */
+/**
+ * La clé i18n qui dit pourquoi un recalcul a échoué : la table commune (`admin.day_not_over`, jour pas fini…), sauf un 404, qui
+ * veut dire ici « plus de défi ce jour-là ».
+ */
 function recomputeErrorKey(code: string): string {
-  if (code === DAY_NOT_OVER) return 'admin.challenges.recomputeNotOver';
   if (code === NOT_FOUND) return 'admin.challenges.recomputeNotFound';
   return errorMessageKey(code);
 }

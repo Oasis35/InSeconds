@@ -161,6 +161,10 @@ fi
 check_content_type "/robots.txt" "text/plain"
 check_content_type "/sitemap.xml" "text/xml|application/xml"
 
+# L'extrait du faux Deezer des E2E (e2e/public/test-audio.mp3) n'est copié que par la configuration e2e : l'image de prod ne
+# l'a pas, l'adresse tombe sur l'index.html du fallback SPA.
+check_content_type "/test-audio.mp3" "text/html"
+
 # Ancienne adresse du front (code.run) : 301 vers inseconds.cc, chemin et query gardés, from=legacy
 # ajouté pour l'avis « l'adresse a changé » (repris de la v1).
 LEGACY_HOST="p01--front--b5cnx77tvxgb.code.run"

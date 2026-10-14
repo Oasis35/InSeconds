@@ -75,7 +75,7 @@ describe('ActionsStore', () => {
     });
 
     it('échec : erreur, valeur inchangée', async () => {
-      const store = create({ updateCooldownDays: vi.fn(() => Promise.reject(problem(400, 'common.validation'))) });
+      const store = create({ updateCooldownDays: vi.fn(() => Promise.reject(problem(400, 'common.bad_request'))) });
       await store.saveCooldown(0);
       expect(store.cooldownSave()).toBe('error');
       expect(store.cooldownDays()).toBeNull();
