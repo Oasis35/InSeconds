@@ -168,8 +168,14 @@ d'échec (alerte immédiate). Le contrôle est créé au premier signal (`?creat
 | `players-purge-expired-tokens` | API v2, tâche Hangfire | 3 h 30 |
 | `inseconds-backup` | `backup.sh` (timer systemd) | 3 h 00 |
 
-Un lancement depuis `/jobs` (« Déclencher maintenant ») envoie aussi son signal. Le staging n'envoie
-rien (pas de clé dans `.env.staging`) : il ne doit jamais toucher aux contrôles de la prod.
+Un lancement depuis `/jobs` (« Déclencher maintenant ») envoie aussi son signal.
+
+**Staging.** Il a son propre projet healthchecks.io, « [Dev]InSeconds », avec sa propre clé de ping dans
+`~/apps/InSeconds-staging/.env.staging` (`HEALTHCHECKS_PING_KEY`, cf. `.env.staging.example`). Les contrôles y portent
+les mêmes noms, mais une clé ne touche que les contrôles de son projet : le staging ne peut pas fausser ceux de la prod,
+à condition de ne **jamais** y mettre la clé de prod. Il sert à vérifier les signaux avant la mise en prod ; pas d'alerte
+Signal sur ce projet (redéploiements fréquents, `catalogue-refresh` en pause). Pas de sauvegarde en staging, donc pas de
+contrôle `inseconds-backup`.
 
 **Mise en place (une fois) :**
 
