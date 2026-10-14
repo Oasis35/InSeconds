@@ -409,9 +409,9 @@ Laissé aux PR suivantes : `user_agent_label` reste vide (calculé avec la liste
 | **G6d** #315 | surveillance des tâches Hangfire (Grafana proposé) | avant H |
 | **G6e** #316 | CHECK de longueur du pseudo (R5), réglages hors bornes refusés par l'import, file d'erreurs de `messaging` vidée sur le staging (`staging-anonymize.sql`) : fait | avant H |
 | **G6f** #317 | E2E prévus et manquants : appareils, recalcul des stats, anciennes adresses, `from=legacy` (`devices.spec.ts`, `legacy-urls.spec.ts`, « Admin — recalcul des stats (v2) » d'`admin.spec.ts`) : fait | avant H |
-| **G6g** #318 | front : codes `admin.*` dans la table d'erreurs, `localStorage` hors du store, repli presse-papier de l'ID navigateur, nouvelle version sur simple query string, lien de compte pendant la manche (à trancher) | souhaitable avant H |
+| **G6g** #318 | front : codes `admin.*` dans la table d'erreurs, `localStorage` hors du store, repli presse-papier de l'ID navigateur, nouvelle version sur simple query string, lien de compte masqué pendant la manche (option « mixte » choisie le 14/10), `test-audio.mp3` hors de l'image de prod | souhaitable avant H |
 | #319 | back : tests d'architecture des règles « vérifiées en CI », révocation après commit, réglages de cadence relus à chaud, pénalité d'indice dans la photo, tests `PiegeNN_`, commentaires | avant ou juste après H |
-| #283 | cartes Série, Parties jouées et Gels du profil (régression visible) | à trancher : avant H ou départ sans |
+| #283 | cartes Série, Parties jouées et Gels du profil (régression visible) | après H (décision de Clément du 14/10 : la v2 part sans) |
 
 Choix actés à cette occasion (sans code) : un seul `DailyGameStore` ; pas de type `Result<T, Error>` (erreurs par les étapes Wolverine) ; une migration EF par phase plutôt qu'une seule ; `DailySessionCompleted` créé avec son premier consommateur ; le rate limiting posé par endpoint.
 
