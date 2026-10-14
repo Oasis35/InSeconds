@@ -82,7 +82,9 @@ Une sauvegarde :
    `daily/` du bucket `inseconds-backups`, plus une copie dans `monthly/` pour la première du
    mois ; supprime sur R2 les quotidiennes de plus de 30 jours et les mensuelles de plus de 365 ;
 5. envoie à Grafana Cloud une ligne de log « Sauvegarde OK » (ou « Sauvegarde en échec »), avec
-   la configuration OTLP de l'API (cf. [Surveillance](#surveillance-alerte-grafana)).
+   la configuration OTLP de l'API (cf. [Surveillance](#surveillance-alerte-grafana)) ;
+6. envoie un signal à healthchecks.io (contrôle `inseconds-backup`, `/fail` en cas d'échec), avec la
+   clé de ping de l'API (cf. [healthchecks.io](#surveillance-healthchecksio)).
 
 ### Quand elle tourne
 
@@ -116,9 +118,9 @@ R2_ENDPOINT=https://<id-compte>.eu.r2.cloudflarestorage.com
 BACKUP_ENCRYPTION_PASSWORD=...
 ```
 
-Le signal vers Grafana n'a rien à configurer ici : le script lit `OTEL_EXPORTER_OTLP_ENDPOINT` et
-`OTEL_EXPORTER_OTLP_HEADERS` dans `~/apps/InSeconds/.env.prod` (ceux de l'API). Pour les surcharger,
-les mettre dans `deploy/infra/.env`.
+Les signaux vers Grafana et healthchecks.io n'ont rien à configurer ici : le script lit
+`OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS` et `HEALTHCHECKS_PING_KEY` dans
+`~/apps/InSeconds/.env.prod` (ceux de l'API). Pour les surcharger, les mettre dans `deploy/infra/.env`.
 
 Pour générer la phrase de passe : `openssl rand -base64 32`. **Sans elle, les sauvegardes de R2
 sont illisibles** : elle doit être dans KeePass, pas seulement sur le VPS (un VPS perdu
@@ -173,6 +175,45 @@ l'échec, le VPS éteint et le timer arrêté. À créer une fois dans Grafana
 Pour vérifier que le signal arrive : lancer `./backup.sh`, puis dans *Explore* (source Loki)
 `{service_name="inseconds-backup"}`. Un message « Signal Grafana impossible. » dans la sortie du
 script veut dire que l'envoi a échoué (la sauvegarde, elle, n'est pas affectée).
+
+### Surveillance (healthchecks.io)
+
+Choisi le 14/10/2026 pour les tâches planifiées de l'API v2 (#315) : un service fait pour ça, hors du
+VPS, réglé en quelques clics. La sauvegarde envoie le même signal, pour tout voir au même endroit ;
+l'alerte Grafana ci-dessus peut rester en plus ou être supprimée.
+
+**Qui envoie quoi.** Après chaque passage, un `POST` vers
+`https://hc-ping.com/<clé de ping>/<contrôle>` en cas de réussite, `…/<contrôle>/fail` en cas
+d'échec (alerte immédiate). Le contrôle est créé au premier signal (`?create=1`) :
+
+| Contrôle | Envoyé par | Heure (UTC) |
+|---|---|---|
+| `daily-generate-challenge` | API v2, tâche Hangfire | 0 h 00 (un nouvel essai toutes les 10 min si le pool manque : chaque essai raté envoie `/fail`) |
+| `daily-close-day` | API v2, tâche Hangfire | 0 h 05 |
+| `catalogue-refresh` | API v2, tâche Hangfire | 23 h 00 |
+| `players-purge-expired-tokens` | API v2, tâche Hangfire | 3 h 30 |
+| `inseconds-backup` | `backup.sh` (timer systemd) | 3 h 00 |
+
+Un lancement depuis `/jobs` (« Déclencher maintenant ») envoie aussi son signal. Le staging n'envoie
+rien (pas de clé dans `.env.staging`) : il ne doit jamais toucher aux contrôles de la prod.
+
+**Mise en place (une fois) :**
+
+1. Créer un compte sur healthchecks.io (offre gratuite : 20 contrôles), puis un projet `InSeconds`.
+2. *Settings* du projet → *Ping key* → *Create*. La copier dans `~/apps/InSeconds/.env.prod`
+   (`HEALTHCHECKS_PING_KEY=…`, cf. `.env.prod.example`) et dans KeePass.
+3. Redéployer l'API (ou attendre le prochain déploiement), puis lancer `./backup.sh` : le contrôle
+   `inseconds-backup` apparaît. Les tâches apparaissent à leur premier passage (ou en les lançant
+   depuis `/jobs`).
+4. Pour chaque contrôle créé : les réglages par défaut (*Period* 1 jour, *Grace* 1 heure) conviennent,
+   toutes ces tâches tournant une fois par jour. Pour une heure d'alerte plus juste, passer le
+   contrôle en *Cron* avec l'heure du tableau (fuseau `UTC`).
+5. *Integrations* : l'email du compte est branché par défaut (Telegram possible aussi).
+
+La clé de ping est secrète (elle permet d'envoyer des signaux) : l'API ne la journalise jamais, et
+`backup.sh` la passe à `curl` par l'entrée standard (absente de `ps`). Un healthchecks.io injoignable
+ne fait jamais échouer une tâche : l'API écrit « Signal healthchecks.io de la tâche … impossible » en
+avertissement, `backup.sh` « Signal healthchecks.io impossible. ».
 
 ### Restaurer
 

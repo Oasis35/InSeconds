@@ -3,7 +3,8 @@
 # Mode d'emploi complet : deploy/infra/README.md § Sauvegardes.
 #
 #   ./backup.sh                       sauvegarde : dump, vérification, rotation locale,
-#                                     envoi chiffré vers R2 et signal à Grafana si configurés
+#                                     envoi chiffré vers R2, signaux à Grafana et healthchecks.io
+#                                     si configurés
 #   ./backup.sh list-remote           liste les sauvegardes présentes sur R2
 #   ./backup.sh fetch <nom>           télécharge et déchiffre une sauvegarde de R2 dans BACKUP_DIR
 #                                     (ex. : ./backup.sh fetch monthly/inseconds-2026-10-01T030000Z.dump)
@@ -13,6 +14,7 @@
 # Réglages : deploy/infra/.env (non commité, cf. .env.example). Seul INSECONDS_DB_PASSWORD est
 # obligatoire ; sans les clés R2, la sauvegarde reste sur le VPS. Le signal vers Grafana reprend la
 # configuration OTLP de l'API (OTEL_EXPORTER_OTLP_* de ../../.env.prod) ; sans elle, aucun signal.
+# Le signal vers healthchecks.io reprend de même HEALTHCHECKS_PING_KEY ; sans elle, aucun signal.
 # Lancé chaque nuit par le timer systemd deploy/infra/systemd/inseconds-backup.timer, ou à la main.
 set -euo pipefail
 
@@ -56,6 +58,9 @@ read_otel() {
   printf '%s' "${value:-$(read_env_file "$OTEL_ENV_FILE" "$key")}"
 }
 OTLP_ENDPOINT=$(read_otel OTEL_EXPORTER_OTLP_ENDPOINT)
+HEALTHCHECKS_PING_KEY=$(read_otel HEALTHCHECKS_PING_KEY)
+HEALTHCHECKS_URL=$(read_otel HEALTHCHECKS_URL)
+HEALTHCHECKS_URL=${HEALTHCHECKS_URL:-https://hc-ping.com}
 R2_BUCKET=$(read_env R2_BUCKET inseconds-backups)
 
 # Les secrets passent aux conteneurs par variable d'environnement (`-e NOM`, sans valeur sur la
@@ -174,6 +179,20 @@ JSON
     || log "Signal Grafana impossible."
 }
 
+# ---------- signal vers healthchecks.io ----------
+
+# Même principe que les tâches de l'API (#315) : contrôle « inseconds-backup », créé au premier signal.
+# healthchecks.io prévient (email) dès un échec, ou si aucun succès n'arrive à l'heure prévue. Jamais bloquant.
+hc_signal() { # hc_signal <ok|fail>
+  [[ -n "$HEALTHCHECKS_PING_KEY" ]] || return 0
+  local suffix=""
+  if [[ "$1" == fail ]]; then suffix="/fail"; fi
+  # L'adresse contient la clé : passée à curl par un fichier de config sur l'entrée standard, absente de `ps`.
+  printf 'url = "%s/%s/inseconds-backup%s?create=1"\n' "${HEALTHCHECKS_URL%/}" "$HEALTHCHECKS_PING_KEY" "$suffix" \
+    | curl -fsS -m 10 --retry 3 -o /dev/null -X POST -K - \
+    || log "Signal healthchecks.io impossible."
+}
+
 # ---------- vérification d'un dump ----------
 
 verify_dump() { # verify_dump <fichier> : lisible par pg_restore et contient des données
@@ -202,7 +221,7 @@ backup() {
   # Globale : le trap EXIT s'exécute hors de la fonction, quand ses variables locales n'existent plus.
   tmp_dump="$BACKUP_DIR/.$name.part"
   # Signal d'échec à toute sortie en erreur (le signal de succès est envoyé explicitement à la fin).
-  trap 'status=$?; rm -f "$tmp_dump"; if (( status != 0 )); then otel_signal ERROR "Sauvegarde en échec"; fi' EXIT
+  trap 'status=$?; rm -f "$tmp_dump"; if (( status != 0 )); then otel_signal ERROR "Sauvegarde en échec"; hc_signal fail; fi' EXIT
 
   log "Dump de la base $DB_NAME (tous schémas)..."
   ( umask 077; pg pg_dump -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -Fc > "$tmp_dump" )
@@ -221,6 +240,7 @@ backup() {
   fi
 
   otel_signal INFO "Sauvegarde OK" "$name" "$(stat -c %s "$BACKUP_DIR/$name")"
+  hc_signal ok
   log "Sauvegarde terminée."
 }
 

@@ -394,7 +394,7 @@ Laissé aux PR suivantes : `user_agent_label` reste vide (calculé avec la liste
 **Actions de Clément avant la mise en prod :**
 - ~~certificat Data Protection de prod~~ fait le 30/09 (`~/apps/InSeconds/secrets/dataprotection.pfx`), mot de passe à mettre dans `.env.prod` au moment de la bascule ;
 - ~~`cloudflare-only.sh` appliqué (S17)~~ fait le 30/09 ; Cloudflare Access sur `api.inseconds.cc/jobs` (S3) ;
-- surveillance des quatre tâches Hangfire : healthchecks.io d'abord prévu, Grafana proposé pour s'aligner sur les sauvegardes (#315, à trancher) ;
+- surveillance des quatre tâches Hangfire et de la sauvegarde par healthchecks.io (#315, choisi le 14/10) : créer le compte et la clé de ping, la mettre dans `.env.prod` (`HEALTHCHECKS_PING_KEY`), cf. `deploy/infra/README.md` § Surveillance (healthchecks.io) ;
 - timer des sauvegardes installé sur le VPS, une sauvegarde vérifiée, et une sauvegarde lancée juste avant la bascule (PLAN § 12) ;
 - `DATA_PROTECTION_CERTIFICATE_PASSWORD` dans `.env.prod` (le workflow de bascule s'arrête sans) ;
 - choix du créneau (hors 22 h 30 – 1 h UTC).
