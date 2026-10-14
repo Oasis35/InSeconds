@@ -408,7 +408,7 @@ Laissé aux PR suivantes : `user_agent_label` reste vide (calculé avec la liste
 | **G6c** #314 | message du journal des réponses compatible avec les tableaux Grafana | avant H |
 | **G6d** #315 | surveillance des tâches Hangfire (Grafana proposé) | avant H |
 | **G6e** #316 | CHECK de longueur du pseudo (R5), réglages hors bornes refusés par l'import, file d'erreurs de `messaging` vidée sur le staging (`staging-anonymize.sql`) : fait | avant H |
-| **G6f** #317 | E2E prévus et manquants : appareils, recalcul des stats, anciennes adresses, `from=legacy` | avant H |
+| **G6f** #317 | E2E prévus et manquants : appareils, recalcul des stats, anciennes adresses, `from=legacy` (`devices.spec.ts`, `legacy-urls.spec.ts`, « Admin — recalcul des stats (v2) » d'`admin.spec.ts`) : fait | avant H |
 | **G6g** #318 | front : codes `admin.*` dans la table d'erreurs, `localStorage` hors du store, repli presse-papier de l'ID navigateur, nouvelle version sur simple query string, lien de compte pendant la manche (à trancher) | souhaitable avant H |
 | #319 | back : tests d'architecture des règles « vérifiées en CI », révocation après commit, réglages de cadence relus à chaud, pénalité d'indice dans la photo, tests `PiegeNN_`, commentaires | avant ou juste après H |
 | #283 | cartes Série, Parties jouées et Gels du profil (régression visible) | à trancher : avant H ou départ sans |

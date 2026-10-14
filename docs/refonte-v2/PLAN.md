@@ -604,7 +604,7 @@ Dans chaque domaine :
 - **Sheriff en CI.**
 - **Playwright :**
   - les **~97 E2E existants** doivent passer sur la v2 avec les mêmes scénarios ; seuls les sélecteurs et les URL qui changent sont adaptés, dans une PR dédiée et relue ;
-  - nouveaux E2E : appareils connectés, recalcul des stats, redirections des anciennes adresses (query string gardée), avis `from=legacy` ;
+  - nouveaux E2E : appareils connectés, recalcul des stats, redirections des anciennes adresses (query string gardée), avis `from=legacy` (écrits en G6f, #317 : `devices.spec.ts`, `legacy-urls.spec.ts`, « Admin — recalcul des stats (v2) » d'`admin.spec.ts`) ;
   - `serviceWorkers: 'block'` dans la config Playwright ;
   - un check CI compare la liste des E2E v1 et v2 (§ 12 ter, E8).
 - **Un piège, un test** (front) : 20, 21, 25, 28, 30, 32, 33, 40, 41, 42, 44 repris avec leurs tests actuels ou un équivalent.

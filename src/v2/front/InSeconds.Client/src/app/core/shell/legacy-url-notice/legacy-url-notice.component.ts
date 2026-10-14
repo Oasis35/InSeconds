@@ -13,6 +13,9 @@ import { ModalFrameComponent } from '../../../ui/modal/modal-frame.component';
   selector: 'app-legacy-url-notice',
   imports: [TranslatePipe, ButtonComponent, ModalFrameComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // En bloc : resté inline autour du cadre de la fenêtre, Chromium le donnait au-dessus de « J'ai compris » dans
+  // `elementsFromPoint`, et Playwright refusait le clic (E2E legacy-urls, #317).
+  host: { class: 'block' },
   templateUrl: './legacy-url-notice.component.html',
 })
 export class LegacyUrlNoticeComponent {
