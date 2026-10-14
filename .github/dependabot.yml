@@ -5,6 +5,10 @@ updates:
     schedule:
       interval: "monthly"
     open-pull-requests-limit: 5
+    ignore:
+      # v1 gelée jusqu'à sa suppression (I2) : plus de montée de version majeure (G6a, #312).
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       nuget-minor-patch:
         patterns:
@@ -20,6 +24,10 @@ updates:
     schedule:
       interval: "monthly"
     open-pull-requests-limit: 5
+    ignore:
+      # v1 gelée jusqu'à sa suppression (I2) : plus de montée de version majeure (G6a, #312).
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       angular:
         # Les paquets @angular/* doivent toujours bouger ensemble (peer deps

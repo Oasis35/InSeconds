@@ -50,8 +50,8 @@ services:
         # Heure du déploiement affichée en admin (piège 25) : exportée par deploy/vps/deploy.sh ; vide hors déploiement.
         BUILD_TIME: ${BUILD_TIME:-}
         # Content-Security-Policy du front (G3), posée à la construction de l'image : report-only (défaut, les violations
-        # sont seulement remontées) ou enforce (bloquante). À passer en enforce dans .env.prod au moment de la bascule,
-        # une fois la semaine sans violation du staging passée. L'origine de l'API est celle de la prod (défaut du Dockerfile).
+        # sont seulement remontées) ou enforce (bloquante). Reste en report-only à la bascule : passer en enforce dans
+        # .env.prod une semaine sans violation en prod APRÈS la mise en prod (#300). L'origine de l'API est celle de la prod (défaut du Dockerfile).
         CSP_MODE: ${CSP_MODE:-report-only}
     container_name: inseconds.front
     restart: unless-stopped
