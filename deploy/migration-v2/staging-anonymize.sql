@@ -8,10 +8,8 @@ UPDATE players.accounts
    SET email = 'player-' || player_id || '@example.invalid',
        is_admin = false
  WHERE lower(email::text) <> lower(:'keep');
-DELETE FROM players.auth_tokens;
-DELETE FROM players.device_sessions;
-DELETE FROM players.legacy_tokens;
-DELETE FROM infra.data_protection_keys;
+-- TRUNCATE plutôt que DELETE sans WHERE : même effet ici (aucune table ne les référence), et l'intention « tout vider » est explicite.
+TRUNCATE players.auth_tokens, players.device_sessions, players.legacy_tokens, infra.data_protection_keys;
 
 -- File de messages de Wolverine : les messages à traiter, à envoyer, et ceux en erreur (« dead letters »), qui
 -- gardent le corps du message (une adresse email pour un lien de connexion). Ces tables n'existent qu'une fois
@@ -22,7 +20,7 @@ DECLARE
 BEGIN
     FOREACH t IN ARRAY ARRAY['wolverine_incoming_envelopes', 'wolverine_outgoing_envelopes', 'wolverine_dead_letters'] LOOP
         IF to_regclass('messaging.' || t) IS NOT NULL THEN
-            EXECUTE format('DELETE FROM messaging.%I', t);
+            EXECUTE format('TRUNCATE messaging.%I', t);
         END IF;
     END LOOP;
 END $$;
