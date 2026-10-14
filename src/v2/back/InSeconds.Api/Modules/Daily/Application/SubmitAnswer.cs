@@ -114,8 +114,8 @@ public static class SubmitAnswerEndpoint
 
         var completed = session.Answer(outcome, score, request.WasExtended, request.Artist, request.Title, challenge.Tracks.Count, calendar.Now);
         DailyLog.AnswerSubmitted(
-            logger, session.PlayerId, session.Id, request.Position, outcome.ListenedSeconds, outcome.ArtistCorrect, outcome.TitleCorrect,
-            outcome.HintLevelUsed, score, info.Artist, info.DisplayTitle);
+            logger, session.PlayerId, session.Id, info.Id, outcome.ListenedSeconds, outcome.ArtistCorrect, outcome.TitleCorrect,
+            outcome.HintLevelUsed, score, request.Position, info.Artist, info.DisplayTitle);
 
         if (completed)
         {

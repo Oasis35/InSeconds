@@ -62,19 +62,22 @@ internal static partial class DailyLog
     public static partial void SessionResumed(ILogger logger, int sessionId, Guid playerId, int answeredCount);
 
     // Jamais la réponse saisie : seulement le résultat, plus le morceau attendu (donnée publique du défi) pour lire les stats par morceau.
+    // Texte de la v1 à l'identique (#314) : les tableaux Grafana (Jeu, « Par morceau ») le lisent par expression régulière,
+    // « morceau {id}) : palier … » puis « — morceau n°{position} : {artiste} / {titre} ». {TrackId} (le morceau du catalogue)
+    // remplace le DailyChallengeTrackId de la v1, qui n'existe plus. Figé par DailyLogTests.
     [LoggerMessage(EventId = 1002, Level = LogLevel.Information,
-        Message = "Réponse de {PlayerId} (partie {SessionId}, morceau n°{TrackPosition}) : palier {ListenedSeconds}s, artiste {ArtistCorrect}, titre {TitleCorrect}, indice {HintLevel}, score {Score} — {TrackArtist} / {TrackTitle}")]
+        Message = "Réponse de {PlayerId} (partie {SessionId}, morceau {TrackId}) : palier {ListenedSeconds}s, artiste {ArtistCorrect}, titre {TitleCorrect}, indice {HintLevel}, score {Score} — morceau n°{TrackPosition} : {TrackArtist} / {TrackTitle}")]
     public static partial void AnswerSubmitted(
-        ILogger logger, Guid playerId, int sessionId, int trackPosition, decimal listenedSeconds, bool artistCorrect, bool titleCorrect,
-        int hintLevel, int score, string trackArtist, string trackTitle);
+        ILogger logger, Guid playerId, int sessionId, int trackId, decimal listenedSeconds, bool artistCorrect, bool titleCorrect,
+        int hintLevel, int score, int trackPosition, string trackArtist, string trackTitle);
 
     [LoggerMessage(EventId = 1003, Level = LogLevel.Information,
         Message = "Partie {SessionId} terminée par {PlayerId} : score {TotalScore}")]
     public static partial void SessionCompleted(ILogger logger, int sessionId, Guid playerId, int totalScore);
 
     [LoggerMessage(EventId = 1004, Level = LogLevel.Information,
-        Message = "Indice niveau {Level} demandé par {PlayerId} (partie {SessionId}, morceau n°{TrackPosition})")]
-    public static partial void HintRequested(ILogger logger, int level, Guid playerId, int sessionId, int trackPosition);
+        Message = "Indice niveau {Level} demandé par {PlayerId} (partie {SessionId}, morceau {TrackId}, n°{TrackPosition})")]
+    public static partial void HintRequested(ILogger logger, int level, Guid playerId, int sessionId, int trackId, int trackPosition);
 
     [LoggerMessage(EventId = 1005, Level = LogLevel.Information,
         Message = "Partie {SessionId} abandonnée par {PlayerId}")]

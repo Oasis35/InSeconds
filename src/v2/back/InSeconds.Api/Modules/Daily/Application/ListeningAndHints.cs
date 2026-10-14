@@ -133,7 +133,7 @@ public static class RequestHintEndpoint
             .Select(f => new HintFactResponse(HintLevelInfo.KindNameOf(f.Kind), f.Value))
             .ToList();
 
-        DailyLog.HintRequested(logger, request.Level, session.PlayerId, session.Id, request.Position);
+        DailyLog.HintRequested(logger, request.Level, session.PlayerId, session.Id, trackId, request.Position);
         return new HintResponse(facts);
     }
 }
