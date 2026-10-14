@@ -401,7 +401,7 @@ Depuis A6, `docker-compose.staging.yml` (racine du dépôt) construit cette API 
 1. vérifie le certificat Data Protection (`secrets/dataprotection.pfx` à la racine du checkout du VPS, monté en lecture seule sur `/run/secrets/dataprotection.pfx`) : présent, et lisible par l'utilisateur de l'image (`app`, uid/gid **1654**) ;
 2. applique les migrations dans un conteneur jetable (`--migrate-only`), **avant** de remplacer les conteneurs ;
 3. redémarre l'API (Wolverine et Hangfire créent leurs schémas à ce moment) et le front ;
-4. lance `deploy/vps/smoke-test.sh` sur `https://api-dev.inseconds.cc` : `/api/e2e/reset` et `/api/auth/dev-login` en 404 (S9, sondés en GET : présents, ils répondraient 405 sans rien exécuter), en-têtes de sécurité (S15), `/jobs` en 401/403 ou derrière Cloudflare Access (S3).
+4. lance `deploy/vps/smoke-test.sh` sur `https://api-dev.inseconds.cc` : `/api/e2e/reset` en 404 (S9, sondé en GET : présent, il répondrait 405 sans rien exécuter ; `/api/auth/dev-login` n'est pas sondé, `LegacyRoutes` y répondrait 410 en GET même avec l'hôte de test, et le contrôle de l'image en CI le couvre), en-têtes de sécurité (S15), `/jobs` en 401/403 ou derrière Cloudflare Access (S3).
 
 **Certificat Data Protection** : monté dès A6, lu par l'API depuis B1 (`ProtectKeysWithCertificate`, PLAN S16, cf. « Authentification »), sous les clés `DataProtection:CertificatePath` (`/run/secrets/dataprotection.pfx`) et `DataProtection:CertificatePassword` (`DATA_PROTECTION_CERTIFICATE_PASSWORD` de `.env.staging`, obligatoire : compose refuse de démarrer sans).
 
