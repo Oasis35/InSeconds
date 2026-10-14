@@ -388,7 +388,9 @@ describe('HtmlAudioPort', () => {
       expect(play).toHaveBeenCalledTimes(2);
     });
 
-    it('ne touche pas à un extrait déjà chargé', async () => {
+    it('déjà déverrouillé, ne touche pas à un extrait chargé', async () => {
+      port.unlock();
+      await sleep(50);
       await loaded();
       const play = vi.spyOn(element, 'play');
 
@@ -397,6 +399,85 @@ describe('HtmlAudioPort', () => {
       expect(play).not.toHaveBeenCalled();
       expect(element.src).toBe(tone);
       expect(port.state()).toBe('ready');
+    });
+
+    it('un refus se retente sur l\'extrait chargé, en muet, sans le couper (#313)', async () => {
+      vi.spyOn(element, 'play').mockRejectedValueOnce(new DOMException('refusé', 'NotAllowedError'));
+      port.unlock();
+      await sleep(20);
+      await loaded();
+      const play = vi.spyOn(element, 'play');
+      play.mockClear();
+
+      port.unlock();
+      expect(element.muted).toBe(true);
+      expect(play).toHaveBeenCalledTimes(1);
+      await sleep(100);
+
+      expect(element.src).toBe(tone);
+      expect(element.paused).toBe(true);
+      expect(element.muted).toBe(false);
+      expect(element.currentTime).toBe(0);
+      expect(port.state()).toBe('ready');
+
+      // l'extrait joue ensuite normalement, avec le son
+      port.playUntil(0.3);
+      await until('finished');
+      expect(port.position()).toBe(0.3);
+      expect(element.muted).toBe(false);
+    });
+
+    it('pendant le chargement, la lecture demandée part quand même, avec le son', async () => {
+      vi.spyOn(element, 'play').mockRejectedValueOnce(new DOMException('refusé', 'NotAllowedError'));
+      port.unlock();
+      await sleep(20);
+      port.load(tone);
+      port.playUntil(0.3);
+
+      port.unlock();
+
+      await until('finished');
+      expect(port.position()).toBe(0.3);
+      expect(element.muted).toBe(false);
+    });
+
+    it('un extrait en échec : le silence est rejoué, « Réessayer » rechargera l\'extrait', async () => {
+      vi.spyOn(element, 'play').mockRejectedValueOnce(new DOMException('refusé', 'NotAllowedError'));
+      port.unlock();
+      await sleep(20);
+      await loaded();
+      vi.spyOn(element, 'play').mockRejectedValueOnce(new DOMException('refusé', 'NotAllowedError'));
+      port.playUntil(0.3);
+      await until('error');
+      const play = vi.spyOn(element, 'play');
+      play.mockClear();
+
+      port.unlock();
+
+      expect(play).toHaveBeenCalledTimes(1);
+      expect(element.src).toMatch(/^blob:/);
+      expect(port.state()).toBe('error');
+      port.load(tone);
+      port.playUntil(0.3);
+      await until('finished');
+      expect(port.position()).toBe(0.3);
+    });
+
+    it('un refus encore une fois se retente au clic suivant, même avec un extrait chargé', async () => {
+      vi.spyOn(element, 'play').mockRejectedValueOnce(new DOMException('refusé', 'NotAllowedError'));
+      port.unlock();
+      await sleep(20);
+      await loaded();
+      const play = vi.spyOn(element, 'play');
+      play.mockClear();
+      play.mockRejectedValueOnce(new DOMException('refusé', 'NotAllowedError'));
+
+      port.unlock();
+      await sleep(20);
+      expect(element.muted).toBe(false);
+      port.unlock();
+
+      expect(play).toHaveBeenCalledTimes(2);
     });
   });
 });

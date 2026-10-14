@@ -187,7 +187,7 @@ describe('TrackRoundStore', () => {
 
       store.retryPlayback();
 
-      expect(audio.calls).toEqual([`load ${URL} next ${NEXT}`, 'playUntil 1']);
+      expect(audio.calls).toEqual(['unlock', `load ${URL} next ${NEXT}`, 'playUntil 1']);
       expect(store.phase()).toBe('loading');
       expect(store.wasExtended()).toBe(true);
     });
@@ -199,9 +199,11 @@ describe('TrackRoundStore', () => {
       audio.calls.length = 0;
 
       store.retryPlayback();
+      // le son est déverrouillé dans le clic, avant l'appel réseau (#313)
+      expect(audio.calls).toEqual(['unlock']);
       expect(store.phase()).toBe('loading');
 
-      await vi.waitFor(() => expect(audio.calls).toEqual(['load https://cdn.example/frais.mp3', 'playUntil 0.5']));
+      await vi.waitFor(() => expect(audio.calls).toEqual(['unlock', 'load https://cdn.example/frais.mp3', 'playUntil 0.5']));
       expect(refresh).toHaveBeenCalledTimes(1);
     });
 
@@ -210,7 +212,7 @@ describe('TrackRoundStore', () => {
       emit('error');
       audio.calls.length = 0;
       store.retryPlayback();
-      await vi.waitFor(() => expect(audio.calls).toEqual([`load ${URL}`, 'playUntil 0.5']));
+      await vi.waitFor(() => expect(audio.calls).toEqual(['unlock', `load ${URL}`, 'playUntil 0.5']));
 
       let resolve!: (url: string) => void;
       store.start({ ...CONFIG, refreshPreviewUrl: () => new Promise<string>(r => (resolve = r)) });
@@ -221,6 +223,16 @@ describe('TrackRoundStore', () => {
       resolve('https://cdn.example/frais.mp3');
       await Promise.resolve();
       await Promise.resolve();
+      expect(audio.calls).toEqual([]);
+    });
+
+    it('« Réessayer » ne fait rien hors d\'un échec de lecture, pas même déverrouiller', () => {
+      store.start(CONFIG);
+      emit('ready');
+      audio.calls.length = 0;
+
+      store.retryPlayback();
+
       expect(audio.calls).toEqual([]);
     });
 
