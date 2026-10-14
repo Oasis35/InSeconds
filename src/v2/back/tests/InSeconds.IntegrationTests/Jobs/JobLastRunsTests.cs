@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -18,6 +19,7 @@ namespace InSeconds.IntegrationTests.Jobs;
 public class JobLastRunsTests(JobLastRunsTests.AppFixture fixture) : IClassFixture<JobLastRunsTests.AppFixture>
 {
     private const string Route = "/api/admin/jobs/last-runs";
+    private const string HeartbeatKey = "cle-de-test";
 
     /// <summary>
     /// **Une seule API pour toute la classe** : Hangfire garde en cache, pour tout le processus, les attributs d'une tâche (dont
@@ -28,6 +30,9 @@ public class JobLastRunsTests(JobLastRunsTests.AppFixture fixture) : IClassFixtu
     {
         public ApiFactory Api { get; private set; } = null!;
 
+        /// <summary>Signaux healthchecks.io envoyés par le serveur Hangfire (#315), à la place du vrai service.</summary>
+        public RecordingHandler Heartbeats { get; } = new();
+
         public async ValueTask InitializeAsync()
         {
             Api = new ApiFactory(await postgres.CreateDatabaseAsync(),
@@ -37,8 +42,16 @@ public class JobLastRunsTests(JobLastRunsTests.AppFixture fixture) : IClassFixtu
                     .AddScheduledJob<FailingJob>("test-failing", Cron.Never())
                     .AddScheduledJob<CrashingJob>("test-crashing", Cron.Never())
                     .AddScheduledJob<RetryingJob>("test-retrying", Cron.Never())
-                    .AddScheduledJob<SucceedingJob>("test-nightly", "0 4 * * *"),
-                settings: new Dictionary<string, string> { ["Jobs:Server:Enabled"] = "true" });
+                    .AddScheduledJob<SucceedingJob>("test-nightly", "0 4 * * *")
+                    .AddScheduledJob<SucceedingJob>("test-heartbeat-ok", Cron.Never())
+                    .AddScheduledJob<FailingJob>("test-heartbeat-fail", Cron.Never())
+                    .AddHttpClient<JobHeartbeat>().ConfigurePrimaryHttpMessageHandler(() => Heartbeats),
+                settings: new Dictionary<string, string>
+                {
+                    ["Jobs:Server:Enabled"] = "true",
+                    ["Healthchecks:PingKey"] = HeartbeatKey,
+                    ["Healthchecks:BaseUrl"] = "http://healthchecks.test",
+                });
             _ = Api.Server;
         }
 
@@ -142,6 +155,28 @@ public class JobLastRunsTests(JobLastRunsTests.AppFixture fixture) : IClassFixtu
         Assert.InRange(run.RetryAt!.Value - run.At!.Value, TimeSpan.FromMinutes(59), TimeSpan.FromMinutes(61));
     }
 
+    [Fact]
+    public async Task PassageReussi_SignalDeReussiteAHealthchecks()
+    {
+        Trigger("test-heartbeat-ok");
+
+        await WaitUntilAsync("test-heartbeat-ok", "succeeded");
+
+        Assert.Contains($"http://healthchecks.test/{HeartbeatKey}/test-heartbeat-ok?create=1", fixture.Heartbeats.Urls);
+        Assert.DoesNotContain(fixture.Heartbeats.Urls, url => url.Contains("/test-heartbeat-ok/fail"));
+    }
+
+    [Fact]
+    public async Task PassageEnEchec_SignalFailAHealthchecks()
+    {
+        Trigger("test-heartbeat-fail");
+
+        await WaitUntilAsync("test-heartbeat-fail", "failed");
+
+        Assert.Contains($"http://healthchecks.test/{HeartbeatKey}/test-heartbeat-fail/fail?create=1", fixture.Heartbeats.Urls);
+        Assert.DoesNotContain($"http://healthchecks.test/{HeartbeatKey}/test-heartbeat-fail?create=1", fixture.Heartbeats.Urls);
+    }
+
     private void Trigger(string id) => Api.Services.GetRequiredService<IRecurringJobManagerV2>().TriggerJob(id);
 
     private async Task<JobLastRun[]> GetAsync() =>
@@ -180,4 +215,18 @@ public class JobLastRunsTests(JobLastRunsTests.AppFixture fixture) : IClassFixtu
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
+
+    /// <summary>Répond 200 et garde l'adresse de chaque requête.</summary>
+    public sealed class RecordingHandler : HttpMessageHandler
+    {
+        private readonly ConcurrentQueue<string> _urls = new();
+
+        public IReadOnlyCollection<string> Urls => _urls;
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            _urls.Enqueue(request.RequestUri!.ToString());
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
+        }
+    }
 }

@@ -1,4 +1,5 @@
 using Hangfire;
+using Hangfire.Common;
 using Hangfire.PostgreSql;
 using InSeconds.Api.Infrastructure.Auth;
 using InSeconds.Api.Infrastructure.Persistence;
@@ -19,6 +20,9 @@ public static class JobsSetup
     /// regarder l'admin effacerait le témoin.
     /// </summary>
     public static readonly TimeSpan ExecutionRetention = TimeSpan.FromDays(7);
+
+    /// <summary>Délai d'un signal healthchecks.io : il retient la fin de la tâche, il reste donc court.</summary>
+    public static readonly TimeSpan HeartbeatTimeout = TimeSpan.FromSeconds(10);
 
     private static readonly Lock FilterLock = new();
 
@@ -51,13 +55,23 @@ public static class JobsSetup
 
         services.AddHostedService<RecurringJobsRegistrar>();
 
+        services.AddOptions<HealthchecksOptions>().BindConfiguration(HealthchecksOptions.Section);
+        services.AddHttpClient<JobHeartbeat>(client => client.Timeout = HeartbeatTimeout);
+        services.AddSingleton<JobHeartbeatFilter>();
+
         // Le serveur (qui exécute les tâches) ne tourne pas dans les tests d'intégration : ils appellent
         // les tâches directement (Jobs:Server:Enabled=false).
         if (configuration.GetValue("Jobs:Server:Enabled", defaultValue: true))
             // Quelques tâches par jour : deux exécutions en parallèle suffisent (défaut de Hangfire :
             // jusqu'à 20, chacune avec sa connexion à la base).
-            services.AddHangfireServer(options =>
-                options.WorkerCount = configuration.GetValue("Jobs:Server:WorkerCount", defaultValue: 2));
+            services.AddHangfireServer((provider, options) =>
+            {
+                options.WorkerCount = configuration.GetValue("Jobs:Server:WorkerCount", defaultValue: 2);
+                // Filtres globaux et attributs des tâches, plus le signal healthchecks.io (#315), propre à ce serveur.
+                options.FilterProvider = new JobFilterProviderCollection(
+                    JobFilterProviders.Providers,
+                    new JobFilterCollection { provider.GetRequiredService<JobHeartbeatFilter>() });
+            });
 
         return services;
     }

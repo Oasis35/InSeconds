@@ -382,7 +382,7 @@ Clément veut des tâches de type cron, qu'il pilote lui-même, **avec des solut
 
 Sur le staging, `catalogue-refresh` est en `Cron.Never()` (même IP que la prod, donc même quota Deezer, piège 16).
 
-**Surveillance :** Hangfire n'alerte pas. Prévu d'abord : un ping healthchecks.io par exécution réussie. Mais les sauvegardes ont finalement choisi Grafana (pas de compte en plus, décision de Clément) ; proposition alignée : un log de réussite fixe par tâche et une alerte Grafana sur son absence. **Rien n'est codé au 13/10, choix et code suivis par #315, avant H.** Les sauvegardes restent un timer systemd, puisqu'elles tournent en dehors de l'API.
+**Surveillance :** Hangfire n'alerte pas. **healthchecks.io** (décision de Clément le 14/10, #315 ; Grafana écarté : trop pénible à régler) : après chaque passage d'une tâche récurrente, `JobHeartbeatFilter` (posé sur le serveur Hangfire) envoie `POST https://hc-ping.com/<clé>/<id de la tâche>` en cas de réussite, `…/fail` en cas d'échec ; le contrôle est créé au premier signal. healthchecks.io prévient par email si un signal manque à l'heure prévue ou dès un échec. Clé `Healthchecks:PingKey` (`HEALTHCHECKS_PING_KEY` de `.env.prod`), vide = aucun signal (dev, tests) ; le staging a sa propre clé, d'un projet séparé « [Dev]InSeconds », pour vérifier les signaux avant la prod. La sauvegarde (timer systemd, hors de l'API) envoie le même signal (`inseconds-backup`) ; son ancien log et son alerte Grafana sont retirés. Mise en place : `deploy/infra/README.md` § Surveillance (healthchecks.io).
 
 **Ce que ça remplace :**
 - `GenerateDailyChallengeService`, `RefreshPreviewStatusService` et `DailySchedule`. Le piège 19 disparaît : Hangfire compare à l'horloge murale.

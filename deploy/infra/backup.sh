@@ -3,7 +3,7 @@
 # Mode d'emploi complet : deploy/infra/README.md § Sauvegardes.
 #
 #   ./backup.sh                       sauvegarde : dump, vérification, rotation locale,
-#                                     envoi chiffré vers R2 et signal à Grafana si configurés
+#                                     envoi chiffré vers R2 et signal à healthchecks.io si configurés
 #   ./backup.sh list-remote           liste les sauvegardes présentes sur R2
 #   ./backup.sh fetch <nom>           télécharge et déchiffre une sauvegarde de R2 dans BACKUP_DIR
 #                                     (ex. : ./backup.sh fetch monthly/inseconds-2026-10-01T030000Z.dump)
@@ -11,8 +11,8 @@
 #                                     jetable, affiche ce qu'elle contient, puis la supprime
 #
 # Réglages : deploy/infra/.env (non commité, cf. .env.example). Seul INSECONDS_DB_PASSWORD est
-# obligatoire ; sans les clés R2, la sauvegarde reste sur le VPS. Le signal vers Grafana reprend la
-# configuration OTLP de l'API (OTEL_EXPORTER_OTLP_* de ../../.env.prod) ; sans elle, aucun signal.
+# obligatoire ; sans les clés R2, la sauvegarde reste sur le VPS. Le signal vers healthchecks.io reprend
+# la clé de ping de l'API (HEALTHCHECKS_PING_KEY de ../../.env.prod) ; sans elle, aucun signal.
 # Lancé chaque nuit par le timer systemd deploy/infra/systemd/inseconds-backup.timer, ou à la main.
 set -euo pipefail
 
@@ -48,14 +48,16 @@ BACKUP_DIR=$(read_env BACKUP_DIR "$HOME/backups/postgres")
 LOCAL_KEEP_DAYS=$(read_env BACKUP_LOCAL_KEEP_DAYS 7)
 REMOTE_DAILY_KEEP_DAYS=$(read_env BACKUP_REMOTE_DAILY_KEEP_DAYS 30)
 REMOTE_MONTHLY_KEEP_DAYS=$(read_env BACKUP_REMOTE_MONTHLY_KEEP_DAYS 365)
-# Signal vers Grafana : configuration OTLP de deploy/infra/.env, sinon celle de l'API (.env.prod).
-OTEL_ENV_FILE="${BACKUP_OTEL_ENV_FILE:-$SCRIPT_DIR/../../.env.prod}"
-read_otel() {
+# Signal vers healthchecks.io : clé de deploy/infra/.env, sinon celle de l'API (.env.prod).
+API_ENV_FILE="${BACKUP_API_ENV_FILE:-$SCRIPT_DIR/../../.env.prod}"
+read_api_env() {
   local key="$1" value
   value=$(read_env "$key")
-  printf '%s' "${value:-$(read_env_file "$OTEL_ENV_FILE" "$key")}"
+  printf '%s' "${value:-$(read_env_file "$API_ENV_FILE" "$key")}"
 }
-OTLP_ENDPOINT=$(read_otel OTEL_EXPORTER_OTLP_ENDPOINT)
+HEALTHCHECKS_PING_KEY=$(read_api_env HEALTHCHECKS_PING_KEY)
+HEALTHCHECKS_URL=$(read_api_env HEALTHCHECKS_URL)
+HEALTHCHECKS_URL=${HEALTHCHECKS_URL:-https://hc-ping.com}
 R2_BUCKET=$(read_env R2_BUCKET inseconds-backups)
 
 # Les secrets passent aux conteneurs par variable d'environnement (`-e NOM`, sans valeur sur la
@@ -134,44 +136,19 @@ upload_to_r2() { # upload_to_r2 <nom du dump>
   rclone_run delete r2crypt:monthly/ --min-age "${REMOTE_MONTHLY_KEEP_DAYS}d"
 }
 
-# ---------- signal vers Grafana (log OpenTelemetry), surveillé par une alerte ----------
+# ---------- signal vers healthchecks.io ----------
 
-# Une ligne de log OTLP (JSON) par sauvegarde : « Sauvegarde OK » ou « Sauvegarde en échec », service
-# inseconds-backup. L'alerte Grafana (README § Sauvegardes) prévient si aucun « Sauvegarde OK »
-# n'arrive en 26 h : échec, VPS éteint ou timer arrêté. Jamais bloquant.
-otel_signal() { # otel_signal <INFO|ERROR> <message> [nom du dump] [taille en octets]
-  [[ -n "$OTLP_ENDPOINT" ]] || return 0
-  local severity="$1" message="$2" name="${3:-}" size="${4:-0}" number=9 headers pair key value
-  if [[ "$severity" == ERROR ]]; then number=17; fi
-  # En-têtes : OTEL_EXPORTER_OTLP_HEADERS = « clé=valeur,… », valeurs encodées en URL (%20…).
-  # Passés à curl par un fichier de config sur l'entrée standard : absents de `ps`.
-  headers=$(read_otel OTEL_EXPORTER_OTLP_HEADERS)
-  local config=""
-  IFS=',' read -ra pairs <<< "$headers"
-  for pair in "${pairs[@]}"; do
-    [[ "$pair" == *=* ]] || continue
-    key=${pair%%=*}
-    value=$(printf '%s' "${pair#*=}" | sed 's/%\([0-9A-Fa-f][0-9A-Fa-f]\)/\\x\1/g')
-    value=$(printf '%b' "$value") # %20 → espace, etc.
-    value=${value//\\/\\\\}
-    config+="header = \"$key: ${value//\"/\\\"}\""$'\n'
-  done
-  local body
-  body=$(cat << JSON
-{"resourceLogs":[{"resource":{"attributes":[
-  {"key":"service.name","value":{"stringValue":"inseconds-backup"}}]},
- "scopeLogs":[{"scope":{"name":"backup.sh"},"logRecords":[{
-  "timeUnixNano":"$(date -u +%s%N)","severityNumber":$number,"severityText":"$severity",
-  "body":{"stringValue":"$message"},
-  "attributes":[
-   {"key":"backup.file","value":{"stringValue":"$name"}},
-   {"key":"backup.size_bytes","value":{"intValue":"$size"}},
-   {"key":"backup.offsite","value":{"boolValue":${use_r2:-false}}}]}]}]}]}
-JSON
-)
-  printf '%s' "$config" | curl -fsS -m 10 --retry 3 -o /dev/null -K - \
-    -H 'Content-Type: application/json' --data "$body" "${OTLP_ENDPOINT%/}/v1/logs" \
-    || log "Signal Grafana impossible."
+# Comme les tâches de l'API (#315) : contrôle « inseconds-backup », créé au premier signal. healthchecks.io
+# prévient (email) dès un échec, ou si aucun succès n'arrive à l'heure prévue (échec, VPS éteint, timer
+# arrêté). Jamais bloquant.
+hc_signal() { # hc_signal <ok|fail>
+  local outcome="$1" suffix=""
+  [[ -n "$HEALTHCHECKS_PING_KEY" ]] || return 0
+  if [[ "$outcome" == fail ]]; then suffix="/fail"; fi
+  # L'adresse contient la clé : passée à curl par un fichier de config sur l'entrée standard, absente de `ps`.
+  printf 'url = "%s/%s/inseconds-backup%s?create=1"\n' "${HEALTHCHECKS_URL%/}" "$HEALTHCHECKS_PING_KEY" "$suffix" \
+    | curl -fsS -m 10 --retry 3 -o /dev/null -X POST -K - \
+    || log "Signal healthchecks.io impossible."
 }
 
 # ---------- vérification d'un dump ----------
@@ -188,8 +165,7 @@ verify_dump() { # verify_dump <fichier> : lisible par pg_restore et contient des
 
 backup() {
   [[ -n "$PGPASSWORD" ]] || fail "INSECONDS_DB_PASSWORD manquant dans $ENV_FILE."
-  # Globale : lue par otel_signal, y compris depuis le trap EXIT.
-  use_r2=false
+  local use_r2=false
   if r2_configured; then use_r2=true; fi
 
   mkdir -p "$BACKUP_DIR"
@@ -202,7 +178,7 @@ backup() {
   # Globale : le trap EXIT s'exécute hors de la fonction, quand ses variables locales n'existent plus.
   tmp_dump="$BACKUP_DIR/.$name.part"
   # Signal d'échec à toute sortie en erreur (le signal de succès est envoyé explicitement à la fin).
-  trap 'status=$?; rm -f "$tmp_dump"; if (( status != 0 )); then otel_signal ERROR "Sauvegarde en échec"; fi' EXIT
+  trap 'status=$?; rm -f "$tmp_dump"; if (( status != 0 )); then hc_signal fail; fi' EXIT
 
   log "Dump de la base $DB_NAME (tous schémas)..."
   ( umask 077; pg pg_dump -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -Fc > "$tmp_dump" )
@@ -220,7 +196,7 @@ backup() {
     log "R2 non configuré : la sauvegarde reste sur le VPS (cf. README § Sauvegardes)."
   fi
 
-  otel_signal INFO "Sauvegarde OK" "$name" "$(stat -c %s "$BACKUP_DIR/$name")"
+  hc_signal ok
   log "Sauvegarde terminée."
 }
 

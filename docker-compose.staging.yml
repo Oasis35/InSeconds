@@ -33,6 +33,9 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
       OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS:-}
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      # Signal healthchecks.io après chaque tâche planifiée (#315), vers le projet « [Dev]InSeconds » (sa propre clé :
+      # jamais celle de la prod). Vide = aucun signal.
+      Healthchecks__PingKey: ${HEALTHCHECKS_PING_KEY:-}
     volumes:
       # Hors du dépôt, à la racine du checkout (~/apps/InSeconds-staging/secrets/), lisible par
       # l'utilisateur de l'image (uid/gid 1654), cf. .env.staging.example. deploy.sh vérifie sa
