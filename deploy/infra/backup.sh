@@ -142,9 +142,9 @@ upload_to_r2() { # upload_to_r2 <nom du dump>
 # prévient (email) dès un échec, ou si aucun succès n'arrive à l'heure prévue (échec, VPS éteint, timer
 # arrêté). Jamais bloquant.
 hc_signal() { # hc_signal <ok|fail>
+  local outcome="$1" suffix=""
   [[ -n "$HEALTHCHECKS_PING_KEY" ]] || return 0
-  local suffix=""
-  if [[ "$1" == fail ]]; then suffix="/fail"; fi
+  if [[ "$outcome" == fail ]]; then suffix="/fail"; fi
   # L'adresse contient la clé : passée à curl par un fichier de config sur l'entrée standard, absente de `ps`.
   printf 'url = "%s/%s/inseconds-backup%s?create=1"\n' "${HEALTHCHECKS_URL%/}" "$HEALTHCHECKS_PING_KEY" "$suffix" \
     | curl -fsS -m 10 --retry 3 -o /dev/null -X POST -K - \
