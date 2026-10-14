@@ -72,8 +72,8 @@ Une sauvegarde :
 4. si R2 est configuré, l'envoie **chiffré** (rclone crypt, conteneur `rclone/rclone`) dans
    `daily/` du bucket `inseconds-backups`, plus une copie dans `monthly/` pour la première du
    mois ; supprime sur R2 les quotidiennes de plus de 30 jours et les mensuelles de plus de 365 ;
-5. envoie à Grafana Cloud une ligne de log « Sauvegarde OK » (ou « Sauvegarde en échec »), avec
-   la configuration OTLP de l'API (cf. [Surveillance](#surveillance-alerte-grafana)).
+5. envoie un signal à healthchecks.io (contrôle `inseconds-backup`, `/fail` en cas d'échec), avec la
+   clé de ping de l'API (cf. [healthchecks.io](#surveillance-healthchecksio)).
 
 ### Quand elle tourne
 
@@ -107,9 +107,8 @@ R2_ENDPOINT=https://<id-compte>.eu.r2.cloudflarestorage.com
 BACKUP_ENCRYPTION_PASSWORD=...
 ```
 
-Le signal vers Grafana n'a rien à configurer ici : le script lit `OTEL_EXPORTER_OTLP_ENDPOINT` et
-`OTEL_EXPORTER_OTLP_HEADERS` dans `~/apps/InSeconds/.env.prod` (ceux de l'API). Pour les surcharger,
-les mettre dans `deploy/infra/.env`.
+Le signal vers healthchecks.io n'a rien à configurer ici : le script lit `HEALTHCHECKS_PING_KEY` dans
+`~/apps/InSeconds/.env.prod` (celle de l'API). Pour la surcharger, la mettre dans `deploy/infra/.env`.
 
 Pour générer la phrase de passe : `openssl rand -base64 32`. **Sans elle, les sauvegardes de R2
 sont illisibles** : elle doit être dans KeePass, pas seulement sur le VPS (un VPS perdu
@@ -141,29 +140,51 @@ doit pouvoir lancer `docker` (comme pour le déploiement).
 Sans les variables R2, `backup.sh` fait seulement la sauvegarde locale. Les renseigner à moitié
 est une erreur (le script s'arrête).
 
-### Surveillance (alerte Grafana)
+### Surveillance (healthchecks.io)
 
-Chaque passage envoie à Grafana Cloud un log du service `inseconds-backup` : « Sauvegarde OK »
-(avec le nom du dump, sa taille et `backup.offsite` = envoyé sur R2 ou non) ou « Sauvegarde en
-échec ». Une alerte prévient si **aucun « Sauvegarde OK » n'est arrivé en 26 h**, ce qui couvre
-l'échec, le VPS éteint et le timer arrêté. À créer une fois dans Grafana
-(*Alerting → Alert rules → New alert rule*) :
+Choisi le 14/10/2026 (#315) pour la sauvegarde et les tâches planifiées de l'API v2 : un service fait
+pour ça, hors du VPS, réglé en quelques clics. Il remplace l'alerte Grafana « aucun Sauvegarde OK en
+26 h » d'avant (le script n'envoie plus rien à Grafana) : un échec, un VPS éteint ou un timer arrêté
+se voient tous comme un signal manquant ou un `/fail`.
 
-- source de données : la source Loki des logs (`grafanacloud-…-logs`) ;
-- requête (*Code*) :
+**Qui envoie quoi.** Après chaque passage, un `POST` vers
+`https://hc-ping.com/<clé de ping>/<contrôle>` en cas de réussite, `…/<contrôle>/fail` en cas
+d'échec (alerte immédiate). Le contrôle est créé au premier signal (`?create=1`) :
 
-  ```logql
-  sum(count_over_time({service_name="inseconds-backup"} |= "Sauvegarde OK" [26h]))
-  ```
+| Contrôle | Envoyé par | Heure (UTC) |
+|---|---|---|
+| `daily-generate-challenge` | API v2, tâche Hangfire | 0 h 00 (un nouvel essai toutes les 10 min si le pool manque : chaque essai raté envoie `/fail`) |
+| `daily-close-day` | API v2, tâche Hangfire | 0 h 05 |
+| `catalogue-refresh` | API v2, tâche Hangfire | 23 h 00 |
+| `players-purge-expired-tokens` | API v2, tâche Hangfire | 3 h 30 |
+| `inseconds-backup` | `backup.sh` (timer systemd) | 3 h 00 |
 
-- condition : *IS BELOW* `1` ;
-- *Configure no data and error handling* → *Alert state if no data* : **Alerting** (sans aucun
-  log, la requête ne renvoie rien, ce qui doit aussi déclencher l'alerte) ;
-- évaluation toutes les heures (*pending period* `0s`), point de contact : le mail du compte.
+Un lancement depuis `/jobs` (« Déclencher maintenant ») envoie aussi son signal.
 
-Pour vérifier que le signal arrive : lancer `./backup.sh`, puis dans *Explore* (source Loki)
-`{service_name="inseconds-backup"}`. Un message « Signal Grafana impossible. » dans la sortie du
-script veut dire que l'envoi a échoué (la sauvegarde, elle, n'est pas affectée).
+**Staging.** Il a son propre projet healthchecks.io, « [Dev]InSeconds », avec sa propre clé de ping dans
+`~/apps/InSeconds-staging/.env.staging` (`HEALTHCHECKS_PING_KEY`, cf. `.env.staging.example`). Les contrôles y portent
+les mêmes noms, mais une clé ne touche que les contrôles de son projet : le staging ne peut pas fausser ceux de la prod,
+à condition de ne **jamais** y mettre la clé de prod. Il sert à vérifier les signaux avant la mise en prod ; pas d'alerte
+Signal sur ce projet (redéploiements fréquents, `catalogue-refresh` en pause). Pas de sauvegarde en staging, donc pas de
+contrôle `inseconds-backup`.
+
+**Mise en place (une fois) :**
+
+1. Créer un compte sur healthchecks.io (offre gratuite : 20 contrôles), puis un projet `InSeconds`.
+2. *Settings* du projet → *Ping key* → *Create*. La copier dans `~/apps/InSeconds/.env.prod`
+   (`HEALTHCHECKS_PING_KEY=…`, cf. `.env.prod.example`) et dans KeePass.
+3. Redéployer l'API (ou attendre le prochain déploiement), puis lancer `./backup.sh` : le contrôle
+   `inseconds-backup` apparaît. Les tâches apparaissent à leur premier passage (ou en les lançant
+   depuis `/jobs`).
+4. Pour chaque contrôle créé : les réglages par défaut (*Period* 1 jour, *Grace* 1 heure) conviennent,
+   toutes ces tâches tournant une fois par jour. Pour une heure d'alerte plus juste, passer le
+   contrôle en *Cron* avec l'heure du tableau (fuseau `UTC`).
+5. *Integrations* : l'email du compte est branché par défaut (Telegram possible aussi).
+
+La clé de ping est secrète (elle permet d'envoyer des signaux) : l'API ne la journalise jamais, et
+`backup.sh` la passe à `curl` par l'entrée standard (absente de `ps`). Un healthchecks.io injoignable
+ne fait jamais échouer une tâche : l'API écrit « Signal healthchecks.io de la tâche … impossible » en
+avertissement, `backup.sh` « Signal healthchecks.io impossible. ».
 
 ### Restaurer
 
