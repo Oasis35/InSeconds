@@ -1,7 +1,7 @@
 # InSeconds v2 : plan détaillé de la refonte complète
 
 - **Date :** 30/09/2026
-- **Statut :** plan de travail. **Aucun code n'est écrit, et rien ne démarre sans le go explicite de Clément.**
+- **Statut :** plan de référence de la v2, tenu à jour au fil des PR (go donné le 30/09, chaque étape attend toujours le go de Clément). Avancement : ticket #205 et ses sous-tickets. Relecture de cohérence code / plan du 13/10 : écarts corrigés ici ou suivis par les tickets #312 à #319 (§ 13).
 - **Ce document regroupe tout :** le modèle de données, le back, le front, le mode Runs, le plan de développement, la reprise des données et la bascule. Il remplace, comme référence, les documents du 29/09 (`plan-refonte-complete`, `refonte-back`, `refonte-back-solid`, `refonte-modele-donnees-et-front`, `refonte-front`), qui restent disponibles pour l'historique de la réflexion.
 - **Base :** code de `env/staging` au 30/09/2026, fil « Refonte globale du back », fil « Nouveau mode de jeu » (Runs), fil « Store Angular pertinent ? ».
 
@@ -150,7 +150,7 @@ Le jeu est un ensemble de **modes** branchés sur des **noyaux** communs. C'est 
 - **Un schéma PostgreSQL par module** et un seul `DbContext`. Les clés étrangères entre schémas restent déclarées en base.
 - **snake_case** via `EFCore.NamingConventions`.
 - **Extension `citext`** pour l'email et le pseudo : l'unicité insensible à la casse est garantie par la base.
-- **Une seule migration EF initiale,** au lieu des 47 d'aujourd'hui.
+- **Un historique de migrations EF neuf,** au lieu des 47 d'aujourd'hui : une migration par phase (7 au 13/10, de `InitialCreate` à `DailyDayStats`). L'idée d'une migration unique est abandonnée (relecture du 13/10) : le gain est nul et le staging les a déjà appliquées.
 - **Pas de navigation EF entre modules :** seulement des identifiants (`player_id`, `track_id`).
 - **On ne stocke que ce qui ne se déduit pas,** sauf pour une photo volontairement figée (`challenge_day_stats`).
 - **Identifiants conservés à l'import.** `uuid` pour les joueurs, `int` identity ailleurs ; un `uuid` public pour ce qui se partagera (runs, plus tard).
@@ -277,7 +277,7 @@ Chaque module expose un seul point d'entrée : `AddDaily(services)` et `MapDaily
 - **Transactions automatiques** (`AutoApplyTransactions`) : les handlers n'appellent jamais `SaveChangesAsync`.
 - **Outbox PostgreSQL :** un message enregistré dans la même transaction que la donnée est envoyé ensuite avec des retries. Concrètement :
   - emails (`SendMagicLinkEmail`, `SendEmailChangeConfirmation`) : une panne Brevo ne perd plus un lien ;
-  - événements entre modules, quand un léger décalage est sans effet visible : `PlayerDeleted` → chaque module, `DailySessionCompleted` → usages futurs (Runs, stats).
+  - événements entre modules, quand un léger décalage est sans effet visible : `PlayerDeleted` → chaque module, `DailySessionCompleted` → usages futurs (Runs, stats). Comme `PlayerLinked` (B2), un événement n'est créé qu'avec son premier consommateur : aucun des deux n'existe au 13/10.
   - **pas pour la série ni les gels** (relecture du 30/09) : le récap de fin de partie les relit juste après la dernière réponse. La série et les gels sont donc mis à jour **dans la même transaction** que la complétion (même module Daily), et le gel offert à la conversion est accordé dans la transaction de la conversion, par un contrat de Daily (`IStreakGrants`).
 - **Tâches planifiées confiées à Hangfire** (§ 5.4 bis), qui déclenche des commandes Wolverine, à la place de `DailySchedule` et des `BackgroundService`.
 - **FluentValidation** branchée dans le pipeline Wolverine.Http, avec des erreurs en `ProblemDetails`.
@@ -308,7 +308,7 @@ Chaque module expose un seul point d'entrée : `AddDaily(services)` et `MapDaily
 - une interface par besoin, jamais par fournisseur ;
 - des contrats de retour explicites plutôt que `null` ;
 - des décorateurs plutôt que des `if (IsEnvironment(...))` : chaque environnement choisit ses implémentations à un seul endroit ;
-- les handlers renvoient un résultat métier (`Result<T, Error>`), jamais `IResult` ;
+- les erreurs métier sortent par les étapes Wolverine.Http (`LoadAsync`/`Validate`/`Before` qui renvoient un `ProblemDetails` avec son `code`, via `ApiProblem.Of`), le `Post` ne renvoie que le cas nominal ; pas de type `Result<T, Error>` (convention adoptée en A2, actée à la relecture du 13/10) et pas d'`IResult` (le dernier, `client-errors`, est suivi par #319) ;
 - un `GET` n'écrit aucune donnée métier. Deux exceptions techniques, assumées : la conversion d'un cookie v1 et la mise à jour de `last_seen_at` (§ 5.5).
 
 **Concession EF :** les entités ont un constructeur privé sans paramètre et des `private set`. C'est ce qu'EF exige pour matérialiser un objet, et ça n'expose rien.
@@ -343,7 +343,7 @@ Chaque module expose un seul point d'entrée : `AddDaily(services)` et `MapDaily
   - calcule le score par `IDailyScoringPolicy` ;
   - construit sa `HintPolicy` à partir de ses réglages et vérifie au démarrage qu'elle ne propose pas plus de niveaux que le plus haut `IHintProvider` (sinon, un niveau accepté et pénalisé ne révélerait rien) ; le niveau d'indice relu de la session est borné à cette politique (revue de D1) ;
   - se termine seule quand elle a atteint le nombre **réel** de morceaux du défi (piège 38) ;
-  - met à jour la série et les gels dans la même transaction, puis émet `DailySessionCompleted`.
+  - met à jour la série et les gels dans la même transaction (`DailySessionCompleted` sera émis quand un module en aura besoin, § 5.2).
 - `DailyStreak` : appelé directement par la complétion (pas par un message), avec les règles actuelles (jours manqués sur la date du défi, piège 18 ; gels ; plafond) ; la vue de série effective est calculée à la lecture.
 - `DailyChallenge` + `ChallengeGenerator` (`ITrackSelector`, graine = `DayNumber`) ; génération à la volée si le job de minuit a raté.
 - `ChallengeDayStats` : photo figée d'un jour **terminé pour de bon**, c'est-à-dire J-2 : une partie de la veille peut encore se finir après minuit (piège 18), donc la veille et le jour même restent calculés en direct. Contenu : tout ce que renvoient aujourd'hui `stats/today` et `challenge-stats` (médiane, min, max, moyenne, répartition ; compteurs terminées, en cours, abandonnées, expirées ; par morceau : réponses, taux artiste, taux titre, taux de prolongation, taux d'échec, moyenne d'écoute, histogramme, « pas trouvé » ; liste des joueurs avec statut et score), **plus les paliers et barèmes utilisés ce jour-là**. Le pseudo et le titre ne sont pas figés : ils sont joints à la lecture, pour suivre un renommage. Les joueurs supprimés sont exclus (voir § 12 ter). Calculée par `CloseChallengeDay`, recalculable par l'admin.
@@ -382,7 +382,7 @@ Clément veut des tâches de type cron, qu'il pilote lui-même, **avec des solut
 
 Sur le staging, `catalogue-refresh` est en `Cron.Never()` (même IP que la prod, donc même quota Deezer, piège 16).
 
-**Surveillance :** Hangfire n'alerte pas. Chaque exécution réussie envoie donc un ping à healthchecks.io, comme prévu pour les sauvegardes (décision du 28/09). Les sauvegardes restent un timer systemd, puisqu'elles tournent en dehors de l'API.
+**Surveillance :** Hangfire n'alerte pas. Prévu d'abord : un ping healthchecks.io par exécution réussie. Mais les sauvegardes ont finalement choisi Grafana (pas de compte en plus, décision de Clément) ; proposition alignée : un log de réussite fixe par tâche et une alerte Grafana sur son absence. **Rien n'est codé au 13/10, choix et code suivis par #315, avant H.** Les sauvegardes restent un timer systemd, puisqu'elles tournent en dehors de l'API.
 
 **Ce que ça remplace :**
 - `GenerateDailyChallengeService`, `RefreshPreviewStatusService` et `DailySchedule`. Le piège 19 disparaît : Hangfire compare à l'horloge murale.
@@ -415,11 +415,11 @@ Sur le staging, `catalogue-refresh` est en `Cron.Never()` (même IP que la prod,
   - **une erreur de base ne déconnecte jamais** (piège 37) : si `OnValidatePrincipal` ou le middleware de transition n'arrivent pas à lire la base, la requête échoue en 500 ; seul un cookie réellement invalide ou révoqué est rejeté. Test dédié.
 - **Policy `Admin`** posée sur tout le groupe `/api/admin` : un endpoint admin ne peut plus être oublié.
 - **Plus de contournement `Bearer admin-token` en Testing :** `InSeconds.Api.Testing` fournit un endpoint de connexion admin de test.
-- **Création d'invité par une commande explicite** (`POST /api/players/guest`), jamais par un `GET`. Le démarrage d'une partie la déclenche si besoin.
+- **Création d'invité par une commande explicite** (`POST /api/players/guest`), jamais par un `GET`. Le front l'appelle avant de démarrer une partie ; `POST /api/daily/sessions` exige une identité (401 sinon).
 - **Déconnexion :** révoque l'appareil courant. « Déconnecter les autres appareils » révoque tous les autres.
 - **Cookie :** `SameSite=Lax` et `Secure` en prod et en staging, `Strict` sans `Secure` en Testing (inchangé).
 - **Anti-CSRF :** `OriginValidator` gardé sur la vérification du magic link (`TrustedOrigins` en v2 : `Cors:AllowedOrigins` plus `Auth:TrustedOrigins` pour les fronts locaux servis par le proxy d'`ng serve`, décidé en B2).
-- **Rate limiting :** mêmes politiques qu'aujourd'hui, déclarées une fois par groupe de routes, désactivées en Testing par configuration et non par condition dans le code. Le piège 27 (`KnownIPNetworks`) est conservé.
+- **Rate limiting :** mêmes politiques qu'aujourd'hui, posées sur chaque endpoint (`[EnableRateLimiting]`, un test par politique), désactivées en Testing par configuration et non par condition dans le code. Le piège 27 (`KnownIPNetworks`) est conservé.
 
 ### 5.6 Routes de l'API
 
@@ -462,13 +462,14 @@ Le préfixe change, pas l'adresse. Toutes les erreurs sont en `ProblemDetails` a
 | (nouveau) | `/jobs` : tableau de bord Hangfire (HTML), réservé aux admins |
 | `GET /api/admin/players` | `GET /api/admin/players` (servie par Daily, qui lit les comptes par le contrat de Players : série effective et parties jouées, F1) |
 | `GET /api/admin/players/{id}/history` | `GET /api/admin/daily/players/{id}/history` |
+| (nouveau) | `GET /api/daily/stats/games-played` : nombre de parties jouées, public, pour le message de remerciement du lancement (#306) |
 | `POST /api/client-errors` | même route, mêmes champs, plus `appVersion` (date de build du front) et `online` (`navigator.onLine`), facultatifs ; l'appareil est déduit du `User-Agent` par l'API (13/10) |
 | `/health`, `/health/ready` | inchangés (mêmes champs, le front les lit) |
 | `/api/e2e/*`, `/api/auth/dev-login` | mêmes chemins, servis uniquement par `InSeconds.Api.Testing` |
 
 **Écarts de Catalogue avec la v1 (C1)** : ajouter un identifiant Deezer déjà dans le pool répond **409 `catalogue.duplicate_deezer_id`** (la v1 renvoyait le morceau existant) ; un identifiant inconnu de Deezer : **422 `catalogue.not_found_on_deezer`** ; Deezer en panne ou quota dépassé : **503 `catalogue.deezer_unavailable`** ; la suppression répond **204** ; la liste du pool est **plate**, l'usage (`usageCount`, `lastUsedDate`, `unlockDate`, `inTodayChallenge`) étant joint à chaque morceau (la v1 renvoyait `{ available, used }`) ; la recherche, publique ou admin, vide au-delà de 100 caractères comme en dessous de 2 ; la recherche admin répond **503 `catalogue.deezer_unavailable`** quand Deezer est en panne (la v1 renvoyait une liste vide, indiscernable de « aucun résultat »), la recherche publique reste vide.
 
-**Codes d'erreur** (contrat publié dans OpenAPI), par exemple : `daily.no_challenge`, `daily.already_played`, `daily.abandoned` (partie abandonnée ou expirée, ajouté en E2 ; aussi une partie en cours sur un défi plus vieux que la veille, E3), `daily.session_not_found`, `daily.track_not_found`, `daily.track_lock_not_released`, `daily.hint_locked`, `daily.already_answered`, `daily.listened_duration_below_verified_minimum` (ajoutés en E2), `admin.day_not_over` (recalcul des stats d'un jour qui peut encore recevoir une fin de partie, ajouté en E3), `admin.invalid_date` et `admin.invalid_period` (récap hebdo, E3), `players.email_taken`, `players.pseudo_taken`, `players.same_email`, `players.invalid_or_expired_token`, `players.guest_forbidden`, `catalogue.track_in_use`, `catalogue.track_in_today_challenge`, `catalogue.duplicate_deezer_id`, `catalogue.not_found_on_deezer`, `catalogue.deezer_unavailable`, `admin.pool_insufficient`, `admin.challenge_exists`, `common.validation`, `common.rate_limited`, `common.new_version`.
+**Codes d'erreur** (contrat publié dans OpenAPI), par exemple : `daily.no_challenge`, `daily.already_played`, `daily.abandoned` (partie abandonnée ou expirée, ajouté en E2 ; aussi une partie en cours sur un défi plus vieux que la veille, E3), `daily.session_not_found`, `daily.track_not_found`, `daily.track_lock_not_released`, `daily.hint_locked`, `daily.already_answered`, `daily.listened_duration_below_verified_minimum` (ajoutés en E2), `admin.day_not_over` (recalcul des stats d'un jour qui peut encore recevoir une fin de partie, ajouté en E3), `admin.invalid_date` et `admin.invalid_period` (récap hebdo, E3), `players.email_taken`, `players.pseudo_taken`, `players.same_email`, `players.invalid_or_expired_token`, `players.guest_forbidden`, `catalogue.track_in_use`, `catalogue.track_in_today_challenge`, `catalogue.duplicate_deezer_id`, `catalogue.not_found_on_deezer`, `catalogue.deezer_unavailable`, `admin.close_day_failed`, `common.bad_request`, `common.too_many_requests`, `common.new_version`. Codes de tâche (rendus par `GET /api/admin/jobs/last-runs`, pas par une route) : `admin.pool_insufficient`, `common.unexpected`. Retirés avec leur route : `admin.challenge_exists`.
 
 ### 5.7 Observabilité
 
@@ -499,7 +500,7 @@ Une organisation **par domaine** calquée sur les modules du back, avec quatre c
 ```
 src/v2/front/InSeconds.Client/src/app/
 ├── core/          session et auth, erreurs par code, langue, détection de nouvelle version,
-│                  ports transverses (ClockPort, StoragePort)
+│                  ports transverses (StoragePort)
 ├── ui/            kit de la DA : bouton, modale (CDK Dialog), panneau bas, toast, badge,
 │                  graphiques ; purement visuel, gère focus, Échap et ARIA
 ├── api/           clients NSwag, un par module (DailyClient, PlayersClient, CatalogueClient,
@@ -524,15 +525,15 @@ Dans chaque domaine :
 ### 6.2 Stores : NgRx SignalStore
 
 - Un `signalStore(...)` par sujet (partie du jour, série, manche, pool admin…), fourni au niveau de la route qui l'utilise.
-- `withState`, `withComputed`, `withMethods`, `rxMethod` pour les appels API.
+- `withState`, `withComputed`, `withMethods` ; appels API en `async`/`await` (pas de `rxMethod`, choix fait en B5).
 - **Morceaux partagés** (`signalStoreFeature`) :
   - `withRequestStatus` dans `core` (chargement, erreur avec code) ;
   - `withTrackRound` dans `gameplay`, qui enveloppe la machine à états d'une manche, pour Daily et Runs ;
-  - `withEntities` pour les listes de l'admin (catalogue, joueurs).
+  - (prévu, non retenu : `withEntities` pour les listes de l'admin ; les listes sont de simples tableaux.)
 - **Les machines à états restent en TypeScript pur dans `domain/`.** Le store les enveloppe : son état est celui de la machine, ses méthodes sont les transitions.
 - **État protégé** (option par défaut de SignalStore) : on ne le modifie que par les méthodes du store.
 - **Les effets visuels ne vivent pas dans les stores :** count-up du score, toasts, `localStorage`. Ils passent par des composants ou un service d'effets.
-- Redux DevTools en dev uniquement (`@angular-architects/ngrx-toolkit`).
+- Redux DevTools (`@angular-architects/ngrx-toolkit`) : prévu, non installé.
 - **Dependabot :** `@ngrx/signals` rejoint le groupe `angular` (versions alignées, piège 15).
 
 ### 6.3 `gameplay`, la manche partagée
@@ -550,7 +551,7 @@ Dans chaque domaine :
     - comportements v1 gardés et testés au niveau de l'`AudioPort` et de la manche : état `error` distinct de `idle` (piège 33), prolongation pendant le chargement et relecture sans effacer `wasExtended` (piège 40), autoplay une seule fois par morceau (piège 44) ;
   - `AnswerSearchPort` (autocomplete, debounce 300 ms).
 - **`ui/`** : lecteur (barre, repères de paliers), saisie avec autocomplete et navigation clavier, bouton effacer, carte de révélation, histogramme (`GuessTimeChart`), liste de résultats en accordéon.
-- **Ce qui varie selon le mode est injecté :**
+- **Ce qui varie selon le mode est fourni par le mode** (dans la configuration de la manche passée à `start()`, pas par l'injection de dépendances) :
   - `ListenPolicy` : paliers prolongeables pour Daily, durée fixe pour Runs ;
   - `HintPolicy` : indices proposés et moment où ils se débloquent ;
   - un emplacement de projection pour les actions du mode (« Indice », « Passer », bonus).
@@ -561,7 +562,7 @@ Dans chaque domaine :
   - machine à états de la partie (`welcome`, `resume_prompt`, `playing`, `done`, `already_played`, `no_challenge`, `error`) ;
   - règles d'affichage de la série et des gels (mode de la gélule, pluriels, dates UTC) ;
   - construction du texte de partage.
-- **data-access :** `DailyGameStore`, `DailyStreakStore`, `DailyStatsStore`, adaptateur `DailyApi`.
+- **data-access :** `DailyGameStore` (partie, série, stats du jour et compte à rebours : un seul store, choix fait en E5 et acté à la relecture du 13/10, les trois sujets changeant ensemble à chaque étape de la partie), adaptateur `DailyApi`. Le `localStorage` (série perdue déjà signalée) sort du store : #318.
 - **feature :**
   - pages : accueil, reprise, partie, récap, « déjà joué » ;
   - garde de sortie en cours de partie, synchronisation multi-onglets, soumission avec réessais (piège 32) ;
@@ -574,7 +575,7 @@ Dans chaque domaine :
   - `/login` et `/login/verify` avec le bouton « Confirmer » explicite (piège 21) et l'avertissement « déjà connecté » (piège 30) ;
   - profil : pseudo, email, série, **appareils connectés** et « déconnecter les autres appareils » ;
   - `/account/confirm-email`.
-- **admin :** routes enfants `/admin/catalogue`, `/admin/daily` (dashboard, défis avec bouton « recalculer les stats », stories), `/admin/players`, un lien vers le tableau de bord Hangfire (tâches planifiées, § 5.4 bis), les boutons « Générer le défi du jour » et « Re-vérifier les previews » (lancés par Hangfire, l'écran suit l'exécution et affiche le compte rendu), l'ID du navigateur (`BrowserId`, qui crée l'invité par `POST /api/players/guest`) et les chips « toi » de l'onglet Défis, l'heure de déploiement (piège 25), plus tard `/admin/runs`. La garde admin repose sur `isAdmin` de `GET /api/players/me` (C3 ; l'API revérifie chaque requête). Mise en page : celle de la v1 (titre centré, barre d'onglets pleine largeur, déconnexion en bas), recopiée après C3. Accès : pas de lien dans l'interface, on tape `/admin` ; sur le staging, seul le compte `STAGING_KEEP_EMAIL` est admin (§ 10, anonymisation).
+- **admin :** un onglet = une route enfant, comme les onglets de la v1 : `/admin/dashboard`, `/admin/defis` (stats par défi, bouton « recalculer les stats »), `/admin/catalogue` (pool), `/admin/joueurs`, `/admin/actions` (témoins du dernier passage des tâches, cooldown, stories ; plus de boutons « Générer le défi du jour » ni « Re-vérifier les previews » depuis F2, § 5.4 bis), un lien vers le tableau de bord Hangfire (tâches planifiées, § 5.4 bis), l'ID du navigateur (`BrowserId`, qui crée l'invité par `POST /api/players/guest`) et les chips « toi » de l'onglet Défis, l'heure de déploiement (piège 25), plus tard `/admin/runs`. La garde admin repose sur `isAdmin` de `GET /api/players/me` (C3 ; l'API revérifie chaque requête). Mise en page : celle de la v1 (titre centré, barre d'onglets pleine largeur, déconnexion en bas), recopiée après C3. Accès : le cadenas du pied de page, visible des seuls admins (comme en v1), ou `/admin` tapé ; sur le staging, seul le compte `STAGING_KEEP_EMAIL` est admin (§ 10, anonymisation).
 
 ### 6.6 Transverse
 
@@ -729,6 +730,7 @@ Le format exact du texte haché (Guid en minuscules avec tirets) est fixé une f
 | Forme de la source | les colonnes lues dans `public` existent avec le type attendu (`information_schema`), pour détecter une migration v1 arrivée pendant le chantier |
 | Intégrité | aucune réponse orpheline, aucune position hors du défi, aucun doublon `(player_id, challenge_id)` |
 | Settings | toutes les clés v1 connues et converties ; valeurs relues par l'API v2 identiques aux valeurs v1 ; une valeur que la v1 aurait ignorée (illisible) arrête l'import (G1) |
+| Exception (11/10) | une partie terminée **sans aucune réponse** garde son total v1 et est seulement listée (parties 44 à 47 de la prod, seed de test de la v1) |
 | Statistiques figées (après `--freeze-day-stats`, `30-verify-day-stats.sql`) | une photo par jour J-2 et avant ; parties terminées, abandonnées, expirées et scores extrêmes recomptés sur la v1 ; paliers figés = réglages importés (G1) |
 
 ### 8.6 Tests de l'import
@@ -791,7 +793,7 @@ Le découpage en PR, l'ordre et les jalons sont dans [DEVELOPPEMENT.md](DEVELOPP
 | 6 | Gameplay | `TrackRound`, `FuzzyAnswerMatcher`, indices, `ISeededShuffle` ; front `gameplay/` (machine à états, `AudioPort`, saisie, révélation) | tests unitaires des pièges audio et de correction verts |
 | 7 | Daily | défi, génération (nocturne, à la volée, admin), sessions, réponses, indices, abandon, reprise, série et gels, stats du jour, tâches Hangfire `daily-generate-challenge` et `daily-close-day`, stats figées et recalcul, stories hebdo ; front `daily/` | **tous les E2E du jeu verts sur la v2** |
 | 8 | Admin | dashboard, défis, joueurs et historique, settings, lien vers le tableau de bord des tâches | **tous les E2E admin verts** |
-| 9 | Import | `deploy/migration-v2/`, `InSeconds.MigrationTests`, workflow « Import v1 → staging v2 » | test de bout en bout du cookie vert, import staging sans écart |
+| 9 | Import | `deploy/migration-v2/`, `InSeconds.MigrationTests`, workflow « Copy prod DB to staging » lancé depuis `env/staging` (B4) | test de bout en bout du cookie vert, import staging sans écart |
 | 10 | Recette sur le staging | imports répétés sur des copies prod fraîches, tests sur téléphone (iOS, Android), PWA, emails redirigés | 2 répétitions consécutives sans intervention manuelle |
 | 11 | Bascule | § 10.2 | prod en v2, contrôles verts |
 | 12 | Nettoyage | suppression de `src/back`, `src/front`, des jobs v1 et des tables v1 de `public` (après sauvegarde archivée) ; déplacement de `src/v2` à la racine de `src` ; doc | CI verte, doc à jour |
@@ -811,7 +813,7 @@ Les étapes 4 à 8 peuvent se découper en plusieurs PR chacune (back, puis fron
 
 ### 10.1 Staging
 
-- **Workflow manuel « Import v1 → staging v2 »** (`workflow_dispatch`, confirmation par saisie de `staging`) :
+- **Workflow manuel « Copy prod DB to staging », lancé depuis `env/staging`** (`workflow_dispatch`, confirmation par saisie de `staging` ; un workflow à part « Import v1 → staging v2 » était prévu, B4 a préféré prolonger l'existant) :
   1. copie les tables prod v1 dans `public` de `inseconds_staging` (le workflow « Copy prod DB to staging » existant, limité au schéma `public` pour ne pas toucher aux schémas v2) ;
   2. **anonymise d'abord les tables v1** avec le script existant (emails, `IsAdmin`, `AuthToken` régénérés, jetons et clés Data Protection supprimés) : les secrets de prod n'atteignent jamais les tables v2 du staging ;
   3. lance `run-import.sh` dans `inseconds_staging` ;
@@ -920,7 +922,7 @@ Relecture du plan sous l'angle des failles. Chaque point devient une exigence de
 | S14 | **Pas de `Content-Security-Policy` sur le front** (connu, cf. CLAUDE.md). | CSP d'abord en `Report-Only` sur le staging (origines de l'API, `*.dzcdn.net` pour les previews et pochettes, en `connect-src` aussi tant que Howler chargeait les extraits par XHR, retiré avec #309, Google Fonts si utilisé), remontée des violations vers `/api/client-errors`, puis CSP bloquante après la mise en prod (décision du 12/10 : une CSP mal calibrée casserait le jeu, on observe d'abord le trafic réel en Report-Only). | 2, 10 |
 | S15 | **Aucun en-tête de sécurité sur l'API** (nginx ne sert que le front). | en-têtes posés par l'API : `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Strict-Transport-Security` ; CSP `default-src 'none'` sur l'API, CSP stricte sur `/jobs` (scripts de `/jobs` seulement, styles en ligne permis pour Hangfire) — fait en A3. | 1 |
 | S16 | **Clés Data Protection en clair en base :** avec la base ou une sauvegarde, on peut fabriquer un cookie valide pour n'importe quel joueur. | **Décidé le 30/09 :** `ProtectKeysWithCertificate`. Le certificat `.pfx` (auto-signé, 10 ans) est généré par Clément sur le VPS, rangé hors du dépôt (`~/apps/InSeconds/secrets/`) et monté en lecture seule dans l'API (`/run/secrets/dataprotection.pfx`) ; lisible par le seul utilisateur de l'image (uid/gid 1654) en plus de son propriétaire : `chgrp 1654` et `chmod 640` (décidé en A6 : en `600` avec `debian` pour propriétaire, l'API, qui tourne en uid 1654, ne pourrait pas le lire) ; son mot de passe est dans `.env.prod` (`DATA_PROTECTION_CERTIFICATE_PASSWORD`, même nom que dans `.env.staging`). Le staging a son propre certificat. `UnprotectKeysWithAnyCertificate` permet d'en changer. **Clé neuve à la bascule (décidé en B4) :** l'import copie les clés de la v1, en clair ; sans clé neuve, la plus récente deviendrait la clé par défaut de la v2. La commande `--rotate-data-protection-key` (`IKeyManager.CreateNewKey`, chiffrée par le certificat) est lancée juste après chaque import, avant le démarrage de l'API. Les anciennes clés en clair sont supprimées 90 jours après la bascule (tous les cookies ont été réémis). **Le certificat et son mot de passe sont sauvegardés hors de la base et hors de la sauvegarde R2** (gestionnaire de mots de passe) : les perdre ferait perdre leur identité aux invités. | 1 |
-| S17 | ✓ **Fait le 30/09** par Clément : `cloudflare-only.sh apply` puis `install` (service au démarrage + timer quotidien), site vérifié. Reste à mettre à jour le CLAUDE.md (§ Durcissement serveur) et `docs/TACHES` dans la première PR. | — | avant 3 |
+| S17 | ✓ **Fait le 30/09** par Clément : `cloudflare-only.sh apply` puis `install` (service au démarrage + timer quotidien), site vérifié. CLAUDE.md (§ Durcissement serveur) et `docs/TACHES` mis à jour. | — | avant 3 |
 | S18 | **Les droits en base :** l'API utilise un utilisateur qui possède tout. | à la bascule, rien ne change ; ensuite, un utilisateur de migration distinct de l'utilisateur de l'API (sans `DROP` ni `CREATE` en fonctionnement normal). À évaluer, c'est un confort plus qu'une urgence. | après 12 |
 
 ### Ce qui est déjà solide et reste inchangé
@@ -950,7 +952,7 @@ Deuxième relecture, en comparant le plan au code v1 (`env/staging`). Les points
 | R2 | Série et gels mis à jour par l'outbox alors que le récap les relit tout de suite : toasts manquants ou faux, risque de double gel. | haute | ✓ mise à jour dans la transaction de la complétion ; gel offert dans celle de la conversion (§ 5.2, 5.4). | 4, 7 |
 | R3 | Stats de la veille figées à 0 h 05 alors qu'une partie de la veille peut encore se terminer. | haute | ✓ photo figée à J-2, veille en calcul direct (§ 5.4, 5.4 bis). | 7 |
 | R4 | Un défi créé à la main ne met pas à jour le cooldown en v1 : la vérification de l'import aurait bloqué. | haute | ✓ sans objet : la création à la main n'a jamais eu d'écran (confirmé par Clément le 30/09) ; route abandonnée en v2 ; la vérification du cooldown, d'abord stricte, ne fait plus que lister les écarts depuis le 08/10 (revue de E4, § 8.3). | 9 |
-| R5 | Pseudos uniques en respectant la casse en v1, `citext UNIQUE` en v2 : « Bob » et « bob » feraient échouer l'import. | haute | ✓ aucun doublon en prod (vérifié à la main par Clément le 30/09) ; le contrôle reste dans `20-verify.sql` au cas où un doublon apparaîtrait d'ici la bascule. Ajouter aussi des contraintes CHECK sur les longueurs (pseudo 3 à 20). | 9 |
+| R5 | Pseudos uniques en respectant la casse en v1, `citext UNIQUE` en v2 : « Bob » et « bob » feraient échouer l'import. | haute | ✓ aucun doublon en prod (vérifié à la main par Clément le 30/09) ; le contrôle reste dans `20-verify.sql` au cas où un doublon apparaîtrait d'ici la bascule. Ajouter aussi des contraintes CHECK sur les longueurs (pseudo 3 à 20) : **pas fait, suivi par #316 (avant H)**. | 9 |
 | R6 | Retrait de `generate-today` et `refresh-previews` : l'admin perdait son compte rendu, les E2E cassaient ; `PoolInsufficient` vu comme un succès par Hangfire. | moyenne | ✓ compte rendu gardé : témoin du dernier passage dans l'onglet Actions (boutons retirés en F2, lancement depuis `/jobs`) ; exception sur pool insuffisant, essais suffisants (§ 5.4 bis, 5.6). | 3, 7 |
 | R7 | `GET /players/me` ne crée plus d'invité : `BrowserIdComponent` et la spec `streak-freeze` en dépendent. | moyenne | ✓ `POST /players/guest` d'abord (§ 5.6) ; BrowserId et les chips « toi » ajoutés à `admin/` (§ 6.5). | 4, 8 |
 | R8 | Joueurs supprimés : en v1, un filtre EF les exclut partout ; en v2, Daily ne peut pas naviguer vers Players. | moyenne | les requêtes de stats de Daily joignent `players.players` (lecture seule, dans `Persistence`) sur `deleted_at IS NULL` ; test « un joueur supprimé disparaît des stats et de la répartition ». | 7 |
@@ -972,7 +974,7 @@ Deuxième relecture, en comparant le plan au code v1 (`env/staging`). Les points
 | # | Constat | Gravité | Traitement | Étape |
 |---|---|---|---|---|
 | A1 | Transactions automatiques et outbox derrière des stores : rien ne garantit que le store et l'outbox partagent la transaction. | moyenne | test d'intégration dès l'étape 1 (un message n'est envoyé que si la donnée est enregistrée, et inversement) ; `MapWolverineEnvelopeStorage` ; le schéma `messaging` créé par Wolverine au démarrage (les migrations EF ne peuvent pas le créer, constaté en A2). Fait en A2 : `OutboxTests`. | 1 |
-| A2 | Les clés étrangères entre schémas contredisent la règle « pas de dépendance hors `Contracts` ». | moyenne | exception écrite pour `Persistence` : les FK entre modules sont déclarées en SQL dans la migration, `ON DELETE RESTRICT`, sans navigation EF. | 1 |
+| A2 | Les clés étrangères entre schémas contredisent la règle « pas de dépendance hors `Contracts` ». | moyenne | exception écrite pour `Persistence` : les FK entre modules sont déclarées par EF sur le nom du type (`HasOne<…>()`, `InSecondsDbContext`), `ON DELETE RESTRICT`, sans navigation EF. | 1 |
 | A3 | Contradictions internes (outbox et série, `last_seen_at`, « un GET n'écrit jamais », date de build au lieu de `SwUpdate`). | faible | ✓ corrigées. | — |
 | A4 | Hangfire : `RequireAuthorization` ne suffit pas, le filtre local par défaut reste actif. | faible | `DashboardOptions.Authorization = []` en plus de la policy, couvert par le test 401/403 de S3. | 1 |
 
@@ -1008,3 +1010,4 @@ Deuxième relecture, en comparant le plan au code v1 (`env/staging`). Les points
 9. ~~Gel de la v1~~ : décidé le 30/09, correctifs urgents seulement. **Reste l'estimation**, à poser au démarrage.
 10. **Cooldown dynamique selon la taille du stock** (idée du 07/10, **après la mise en prod**, ticket #275) : le cooldown du défi est un nombre de jours fixe (30) ; avec 5 morceaux par jour, un pool de moins de 155 morceaux jouables ne peut plus produire de défi. Piste recommandée : le réglage devient un **plafond**, le cooldown effectif étant le plus petit de ce réglage et d'une valeur déduite du pool (par exemple jouables ÷ morceaux par défi ÷ 2) ; à étudier avec la variante « pourcentage du pool » (qui supprime la date de déblocage du pool admin). À régler en même temps : l'écart d'un jour hérité de la v1 entre « déblocage » affiché et premier jour tirable (cf. « Fait en E1 » dans DEVELOPPEMENT.md). Rien ne change avant la bascule : la v2 reprend le comportement de la v1.
 11. **Préchauffer les extraits du défi du jour** (décidé le 07/10 à la relecture de E2, ticket #279) : le démarrage d'une partie demande à Deezer l'adresse de l'extrait de chacun des 5 morceaux, **dans la transaction du joueur**. Cache vide (minuit, tout le monde arrive) et Deezer lent ou en panne : chaque démarrage garde une connexion à la base jusqu'à 15 s, et les connexions peuvent s'épuiser. Piste retenue : une **tâche Hangfire périodique** (`daily-warm-previews`, même mécanique que `catalogue-refresh`) qui met les extraits du défi du jour dans le cache d'`IPreviewProvider`, aussi lancée juste après la génération du défi. La période se déduit de la durée de validité réelle des adresses signées de Deezer (`exp`), moins la marge d'1 h du cache (piège 14). Non retenu : lire les extraits avant d'ouvrir la transaction (plus propre, mais hors du mécanisme de transaction automatique de Wolverine). À faire après la mise en staging de E2, avec de vrais chiffres.
+12. **Relecture de cohérence code / plan du 13/10** (`audit/relecture-v2-coherence-2026-10-13.md`, dossier du projet) : les écarts de doc sont corrigés dans ce plan ; le reste est suivi par des tickets. Avant H : #312 (copie staging limitée à `public`, déploiement prod derrière « CI OK »), #313 (« Réessayer » et déverrouillage du son sur iPhone), #314 (journaux compatibles avec les tableaux Grafana), #315 (surveillance des tâches), #316 (longueur du pseudo, réglages hors bornes), #317 (E2E manquants), et la décision sur #283 (cartes du profil). Souhaitables, non bloquants : #318 (front), #319 (back). Restent à trancher par Clément : le lien de compte affiché pendant la manche (#318) et #283 avant ou après H.

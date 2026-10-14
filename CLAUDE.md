@@ -76,7 +76,7 @@ Chaque module a ses couches `Domain/` (entités aux invariants encapsulés, port
 - **Rien dans le schéma `public`** (tables v1 jusqu'à I1) ; chaque entité déclare son schéma ; noms en snake_case.
 - **Jamais `DateTime.UtcNow`/`Now`/`Today`** dans `InSeconds.Api` : `TimeProvider` ou `IGameCalendar` (`ClockUsageTests`).
 - **Pas de repository générique** : chaque module a ses ports nommés par l'intention (`IPlayerStore`, `IDailyStore`, `ICatalogueQueries`…).
-- **Endpoints en Wolverine.Http**, en étapes `LoadAsync` / `Validate` / `Post`, validation FluentValidation, **jamais de `SaveChangesAsync` dans un handler** (transaction Wolverine, outbox dans le schéma `messaging`). Toute route `/api/admin*` reçoit la policy Admin automatiquement.
+- **Endpoints en Wolverine.Http**, en étapes `LoadAsync` / `Validate` / `Post`, validation FluentValidation, **jamais de `SaveChangesAsync` dans un handler** (pas encore vérifié par un test d'architecture, #319 ; transaction Wolverine, outbox dans le schéma `messaging`). Toute route `/api/admin*` reçoit la policy Admin automatiquement.
 - **Code Wolverine généré commité** (`Internal/Generated`, codegen statique en prod et staging) : après tout ajout ou changement de handler, `rm -rf InSeconds.Api/Internal/Generated && dotnet run --project InSeconds.Api -- codegen write`. Le job CI `back-v2` échoue s'il est périmé, et l'API refuse de démarrer en staging.
 - **Erreurs** : ProblemDetails avec `code` stable (`module.raison`, ex. `daily.already_played`) et `traceId`. **Ne jamais renommer un code publié** (le front les traduit).
 - **Pièges audio, sécurité, Deezer** : un piège = un test nommé (cf. [Pièges connus](#pièges-connus)).
@@ -108,7 +108,7 @@ L'API refuse de démarrer si les réglages du jeu sont incohérents (`DailyOptio
 | `catalogue-refresh` | `0 23 * * *` (jamais en staging : même IP que la prod, piège 16) | recontrôle l'extrait et le rang Deezer des morceaux tirables demain |
 | `daily-generate-challenge` | `0 0 * * *` | génère le défi du jour ; pool insuffisant : réessai toutes les 10 min pendant 24 h |
 | `daily-close-day` | `5 0 * * *` | expire les parties restées en cours, fige les statistiques de J-2 et avant |
-| `players-purge-expired-tokens` | `30 3 * * *` | supprime les jetons de connexion expirés |
+| `players-purge-expired-tokens` | `30 3 * * *` | supprime les jetons expirés (lien de connexion et changement d'email) |
 
 Tableau de bord `/jobs` (admin seulement, à protéger aussi par Cloudflare Access avant la mise en prod) : c'est là qu'on lance une tâche à la main. L'onglet Actions de l'admin n'affiche que le dernier passage de chaque tâche (`GET /api/admin/jobs/last-runs`).
 

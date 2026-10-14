@@ -12,7 +12,7 @@
 
 - **N morceaux par jour** (`Daily:TracksPerChallenge`, défaut **5**), même défi pour tout le monde, généré à minuit UTC (tâche `daily-generate-challenge`, ou à la volée par le premier joueur si elle a raté ; même tirage dans les deux cas). Un défi déjà généré garde son nombre de morceaux si le réglage change. **[Back]**
 - Une seule partie par joueur et par défi — contrainte unique `(player_id, challenge_id)` de `daily.sessions`. Une partie terminée, abandonnée (bouton) ou expirée (laissée en cours sur un défi passé) ne peut pas être rejouée (409 `daily.already_played` / `daily.abandoned`). Une partie en cours se reprend le jour même. **[Back]**
-- La veille reste jouable après minuit dans un onglet resté ouvert (ses réponses sont acceptées) ; au-delà, une partie en cours est refusée (409 `daily.abandoned`) et la tâche `daily-close-day` (0 h 05 UTC) l'expire. **[Back]**
+- La veille reste jouable après minuit dans un onglet resté ouvert (ses réponses sont acceptées tant que le joueur n'a pas démarré le défi du jour) ; au-delà, une partie en cours est refusée (409 `daily.abandoned`) et la tâche `daily-close-day` (0 h 05 UTC) l'expire. **[Back]**
 - Pour chaque morceau : la lecture démarre au premier palier (0,5 s) — le son ne part qu'après un clic du joueur (« Commencer », « Reprendre », « Piste suivante »), condition des navigateurs mobiles —, le joueur prolonge s'il le veut (« écouter plus »), saisit artiste + titre (ou passe si pas de preview), score calculé côté serveur. L'écoute automatique n'a lieu qu'une fois par morceau. **[Front]**
 
 ## Paliers d'écoute et barème de points
