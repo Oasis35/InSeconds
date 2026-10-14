@@ -54,7 +54,7 @@
       }
 
       @case ('error') {
-        <app-status-screen titleKey="daily.error.title" bodyKey="daily.error.body" [errorCode]="errorReporting.lastErrorCode()" (retry)="store.init()" />
+        <app-status-screen titleKey="daily.error.title" bodyKey="daily.error.body" [errorCode]="errorReporting.lastErrorCode()" (retry)="init()" />
       }
 
       @case ('already_played') {

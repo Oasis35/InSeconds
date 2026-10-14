@@ -562,7 +562,7 @@ Dans chaque domaine :
   - machine à états de la partie (`welcome`, `resume_prompt`, `playing`, `done`, `already_played`, `no_challenge`, `error`) ;
   - règles d'affichage de la série et des gels (mode de la gélule, pluriels, dates UTC) ;
   - construction du texte de partage.
-- **data-access :** `DailyGameStore` (partie, série, stats du jour et compte à rebours : un seul store, choix fait en E5 et acté à la relecture du 13/10, les trois sujets changeant ensemble à chaque étape de la partie), adaptateur `DailyApi`. Le `localStorage` (série perdue déjà signalée) sort du store : #318.
+- **data-access :** `DailyGameStore` (partie, série, stats du jour et compte à rebours : un seul store, choix fait en E5 et acté à la relecture du 13/10, les trois sujets changeant ensemble à chaque étape de la partie), adaptateur `DailyApi`. Le `localStorage` (série perdue déjà signalée) est hors du store : `LostStreakNotice`, consulté par la page (#318).
 - **feature :**
   - pages : accueil, reprise, partie, récap, « déjà joué » ;
   - garde de sortie en cours de partie, synchronisation multi-onglets, soumission avec réessais (piège 32) ;

@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideTranslateService } from '@ngx-translate/core';
+import { ClipboardService } from '../../core/clipboard/clipboard.service';
 import { SessionStore } from '../../core/session/session.store';
 import { FakePlayersApi, fakePlayersApi, linkedPlayer, providePlayersApiFake } from '../data-access/testing/fake-players-api';
 import { query, settle, text } from '../testing/dom';
@@ -8,9 +9,11 @@ import { BrowserIdComponent } from './browser-id.component';
 describe('BrowserIdComponent', () => {
   let api: FakePlayersApi;
 
-  function render(overrides: Parameters<typeof fakePlayersApi>[0] = {}) {
+  function render(overrides: Parameters<typeof fakePlayersApi>[0] = {}, copy = vi.fn(async () => true)) {
     api = fakePlayersApi(overrides);
-    TestBed.configureTestingModule({ providers: [provideTranslateService(), providePlayersApiFake(api)] });
+    TestBed.configureTestingModule({
+      providers: [provideTranslateService(), providePlayersApiFake(api), { provide: ClipboardService, useValue: { copy } }],
+    });
     const fixture = TestBed.createComponent(BrowserIdComponent);
     fixture.detectChanges();
     return fixture;
@@ -33,22 +36,20 @@ describe('BrowserIdComponent', () => {
     expect(query(fixture, '[data-testid="browser-id"]')?.textContent).toBe('aaaaaaaa');
   });
 
-  it('copie l\'identifiant complet puis l\'indique', async () => {
-    const writeText = vi.fn(async () => undefined);
-    vi.spyOn(navigator.clipboard, 'writeText').mockImplementation(writeText);
-    const fixture = render({ getMe: vi.fn(async () => linkedPlayer) });
+  it('copie l\'identifiant complet par le service de copie (et son repli) puis l\'indique', async () => {
+    const copy = vi.fn(async () => true);
+    const fixture = render({ getMe: vi.fn(async () => linkedPlayer) }, copy);
     await settle(fixture);
 
     query<HTMLButtonElement>(fixture, 'button')!.click();
     await settle(fixture);
 
-    expect(writeText).toHaveBeenCalledWith('p1');
+    expect(copy).toHaveBeenCalledWith('p1');
     expect(text(fixture)).toContain('account.browserId.copied');
   });
 
-  it('n\'indique pas « copié » quand le presse-papiers refuse', async () => {
-    vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new DOMException('refusé', 'NotAllowedError'));
-    const fixture = render({ getMe: vi.fn(async () => linkedPlayer) });
+  it('n\'indique pas « copié » quand la copie échoue, repli compris', async () => {
+    const fixture = render({ getMe: vi.fn(async () => linkedPlayer) }, vi.fn(async () => false));
     await settle(fixture);
 
     query<HTMLButtonElement>(fixture, 'button')!.click();

@@ -17,6 +17,12 @@
       "unexpected": "Something unexpected happened. Try again in a moment.",
       "unknown": "Something went wrong. If it keeps happening, send us the code below."
     },
+    "admin": {
+      "day_not_over": "This day isn't over yet: the stats will be frozen tomorrow.",
+      "invalid_date": "Invalid date: the expected format is yyyy-mm-dd.",
+      "invalid_period": "Invalid period: the start date must come before the end date, one year at most.",
+      "pool_insufficient": "Pool too small: add tracks with a preview."
+    },
     "players": {
       "email_taken": "This address is already used by another account.",
       "guest_forbidden": "This action is only available to signed-in accounts.",
@@ -424,7 +430,6 @@
       "computedAt": "Figures frozen on {{ date }}",
       "recompute": "Recompute stats",
       "recomputing": "Recomputing…",
-      "recomputeNotOver": "This day isn't over yet: the stats will be frozen tomorrow.",
       "recomputeNotFound": "No challenge for this day.",
       "recomputeError": "The recompute failed."
     },

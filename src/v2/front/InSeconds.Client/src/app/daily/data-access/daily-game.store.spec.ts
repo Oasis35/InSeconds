@@ -1,7 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { SessionLoader } from '../../account/data-access/session-loader';
 import { SessionStore } from '../../core/session/session.store';
-import { MemoryStoragePort, StoragePort } from '../../core/storage/storage.port';
 import { FakeAudioPort, provideFakeAudio } from '../../gameplay/data-access/testing/fake-audio.port';
 import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { RoundSubmission } from '../../gameplay/domain/track-round';
@@ -14,7 +13,6 @@ const flush = () => new Promise<void>(resolve => setTimeout(resolve, 0));
 describe('DailyGameStore', () => {
   let api: FakeDailyApi;
   let audio: FakeAudioPort;
-  let storage: MemoryStoragePort;
   let guestCreated: number;
   let store: InstanceType<typeof DailyGameStore>;
   let round: InstanceType<typeof TrackRoundStore>;
@@ -22,13 +20,11 @@ describe('DailyGameStore', () => {
   beforeEach(() => {
     api = new FakeDailyApi();
     audio = new FakeAudioPort();
-    storage = new MemoryStoragePort();
     guestCreated = 0;
     TestBed.configureTestingModule({
       providers: [
         provideFakeDailyApi(api),
         provideFakeAudio(audio),
-        { provide: StoragePort, useValue: storage },
         { provide: SessionLoader, useValue: { ensureGuest: async () => { guestCreated++; } } },
         TrackRoundStore,
         DailyGameStore,
@@ -385,18 +381,18 @@ describe('DailyGameStore', () => {
   describe('série et toasts', () => {
     const lost: Streak = { ...EMPTY_STREAK, lostStreak: 9, lastPlayedDate: '2026-10-01' };
 
-    it('un invité apprend sa série perdue une seule fois par série perdue', async () => {
+    it("un invité voit le toast « série perdue » annoncé par la page, sur l'accueil, jusqu'à sa fermeture", async () => {
       api.today = TODAY({ streak: lost });
       await store.init();
+      // Le store ne décide pas seul : la page lui annonce la série (une seule fois par série perdue, `LostStreakNotice`).
+      expect(store.showLostToast()).toBe(false);
+
+      store.announceLostStreak(9);
       expect(store.showLostToast()).toBe(true);
       expect(store.lostStreak()).toBe(9);
 
       store.dismissLostToast();
       expect(store.showLostToast()).toBe(false);
-
-      // Même série perdue au chargement suivant : déjà annoncée, elle ne revient pas.
-      await store.init();
-      expect(store.lostStreak()).toBeNull();
     });
 
     it("un compte ne voit jamais le toast « série perdue »", async () => {
@@ -404,6 +400,7 @@ describe('DailyGameStore', () => {
       api.today = TODAY({ streak: lost });
 
       await store.init();
+      store.announceLostStreak(9);
 
       expect(store.showLostToast()).toBe(false);
     });

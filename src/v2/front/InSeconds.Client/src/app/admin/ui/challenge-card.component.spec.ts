@@ -54,7 +54,7 @@ describe('ChallengeCardComponent', () => {
   it('propose le recalcul sur un défi qui le permet, avec l\'état « en cours » et l\'erreur', () => {
     render({
       challenge: challengeStats({ canRecompute: true, computedAt: '2026-10-06T00:05:00Z' }),
-      expanded: true, recomputeErrorKey: 'admin.challenges.recomputeNotOver',
+      expanded: true, recomputeErrorKey: 'errors.admin.day_not_over',
     });
     const recompute = vi.fn();
     fixture.componentInstance.recompute.subscribe(recompute);
@@ -63,7 +63,7 @@ describe('ChallengeCardComponent', () => {
     button.click();
 
     expect(recompute).toHaveBeenCalledWith('2026-10-05');
-    expect(element().querySelector('[role="alert"]')?.textContent).toContain('admin.challenges.recomputeNotOver');
+    expect(element().querySelector('[role="alert"]')?.textContent).toContain('errors.admin.day_not_over');
 
     fixture.componentRef.setInput('recomputing', true);
     fixture.detectChanges();

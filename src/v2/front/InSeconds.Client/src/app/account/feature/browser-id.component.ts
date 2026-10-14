@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { ClipboardService } from '../../core/clipboard/clipboard.service';
 import { SessionStore } from '../../core/session/session.store';
 import { SessionLoader } from '../data-access/session-loader';
 import { BrowserIdViewComponent } from '../ui/browser-id-view.component';
@@ -23,6 +24,7 @@ const COPIED_MESSAGE_MS = 2000;
 export class BrowserIdComponent {
   protected readonly session = inject(SessionStore);
   protected readonly copied = signal(false);
+  private readonly clipboard = inject(ClipboardService);
   private timer: ReturnType<typeof setTimeout> | undefined;
 
   constructor() {
@@ -31,12 +33,9 @@ export class BrowserIdComponent {
   }
 
   protected async copy(id: string): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(id);
-    } catch {
-      // Presse-papiers refusé (focus, permission) : l'identifiant complet reste lisible dans l'infobulle.
-      return;
-    }
+    // `ClipboardService` retombe sur la copie par textarea quand `writeText` refuse (focus, permission : piège 45). Si les deux
+    // échouent, l'identifiant complet reste lisible dans l'infobulle.
+    if (!(await this.clipboard.copy(id))) return;
     this.copied.set(true);
     clearTimeout(this.timer);
     this.timer = setTimeout(() => this.copied.set(false), COPIED_MESSAGE_MS);

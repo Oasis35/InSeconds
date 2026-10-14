@@ -101,6 +101,22 @@
               "extractLicenses": false,
               "sourceMap": true,
               "serviceWorker": false,
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "public"
+                },
+                {
+                  "glob": "safety-worker.js",
+                  "input": "node_modules/@angular/service-worker",
+                  "output": "/"
+                },
+                {
+                  "glob": "test-audio.mp3",
+                  "input": "e2e/public",
+                  "output": "/"
+                }
+              ],
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",

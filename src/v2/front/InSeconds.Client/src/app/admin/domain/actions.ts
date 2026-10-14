@@ -4,7 +4,10 @@ import { JobLastRun } from './job';
 export const COOLDOWN_MIN_DAYS = 1;
 export const COOLDOWN_MAX_DAYS = 3650;
 
-/** Code d'erreur de la tâche de génération quand le pool n'a pas assez de morceaux avec extrait (elle réessaie toutes les 10 minutes). */
+/**
+ * Code d'erreur de la tâche de génération quand le pool n'a pas assez de morceaux avec extrait (elle réessaie toutes les 10 minutes).
+ * Son message générique est dans la table commune (`ERROR_MESSAGE_KEYS`) ; le témoin le reconnaît pour afficher le sien, daté.
+ */
 export const POOL_INSUFFICIENT_CODE = 'admin.pool_insufficient';
 
 /** Un délai valide : un entier de 1 à 3650 jours. */

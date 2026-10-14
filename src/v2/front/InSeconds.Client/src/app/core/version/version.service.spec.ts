@@ -125,6 +125,20 @@ describe('VersionService', () => {
     expect(reload).toHaveBeenCalledTimes(1);
   });
 
+  it('ne recharge pas sur une navigation qui ne change que la query string (filtre ou page du pool admin)', () => {
+    create();
+    routerEvents.next(new NavigationEnd(1, '/admin/catalogue', '/admin/catalogue'));
+    versionUpdates.next(READY);
+    TestBed.tick();
+
+    routerEvents.next(new NavigationEnd(2, '/admin/catalogue?page=2', '/admin/catalogue?page=2'));
+    routerEvents.next(new NavigationEnd(3, '/admin/catalogue?page=3#haut', '/admin/catalogue?page=3#haut'));
+    expect(reload).not.toHaveBeenCalled();
+
+    routerEvents.next(new NavigationEnd(4, '/admin/defis', '/admin/defis'));
+    expect(reload).toHaveBeenCalledTimes(1);
+  });
+
   it('ne recharge rien au changement de page sans nouvelle version', () => {
     create();
 
