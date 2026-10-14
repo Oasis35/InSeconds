@@ -256,6 +256,55 @@ public class CompleteImportTests(ImportDatabase database)
     }
 
     [Theory]
+    [InlineData("TrackCooldownDays", "-1", "TrackCooldownDays (0 à 3650)")]
+    [InlineData("TrackCooldownDays", "3651", "TrackCooldownDays (0 à 3650)")]
+    [InlineData("TracksPerChallenge", "0", "TracksPerChallenge (1 à …)")]
+    [InlineData("StreakFreezeEveryDays", "-1", "StreakFreezeEveryDays (0 à …)")]
+    [InlineData("StreakFreezeMax", "-2", "StreakFreezeMax (0 à …)")]
+    [InlineData("StreakLostNudgeMinDays", "-1", "StreakLostNudgeMinDays (0 à …)")]
+    public async Task Reglages_HorsBornes_ImportRefuse_CleEtBornesNommees(string key, string value, string expected)
+    {
+        // La v2 retomberait sans bruit sur sa valeur par défaut (cooldown, morceaux par défi) ou refuserait de démarrer (gels) :
+        // la règle de G1, « une valeur que la v2 ignorerait arrête l'import ».
+        var cs = await database.CreateDatabaseAsync();
+        await SetV1(cs, key, value);
+
+        var result = await database.RunImportAsync(cs);
+
+        Assert.NotEqual(0, result.ExitCode);
+        Assert.Contains($"Réglages v1 hors des bornes que la v2 accepte (elle les ignorerait) : {expected}", result.Output, StringComparison.Ordinal);
+        Assert.Equal(0L, await Count(cs, "infra.settings"));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(3650)]
+    public async Task Reglages_CooldownAuxBornes_RepriseEtAppliquee(int days)
+    {
+        // Les bornes de l'import sont celles de DailyOptions.EffectiveTrackCooldownDays : une valeur acceptée est appliquée, pas remplacée.
+        var cs = await database.CreateDatabaseAsync();
+        await SetV1(cs, "TrackCooldownDays", days.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+        var result = await database.RunImportAsync(cs);
+
+        Assert.True(result.ExitCode == 0, result.Output);
+        Assert.Equal(days, ReadOptions(cs).Daily.EffectiveTrackCooldownDays);
+    }
+
+    [Fact]
+    public async Task Reglages_BornesDeLImport_CellesDeLaV2()
+    {
+        // Juste au-delà des bornes, la v2 ignore la valeur ou refuse de démarrer : c'est ce que l'import refuse.
+        Assert.Equal(DailyOptions.DefaultTrackCooldownDays, new DailyOptions { TrackCooldownDays = -1 }.EffectiveTrackCooldownDays);
+        Assert.Equal(DailyOptions.DefaultTrackCooldownDays, new DailyOptions { TrackCooldownDays = 3651 }.EffectiveTrackCooldownDays);
+        Assert.Equal(DailyOptions.DefaultTracksPerChallenge, new DailyOptions { TracksPerChallenge = 0 }.EffectiveTracksPerChallenge);
+        Assert.NotEmpty(DailyOptionsChecks.Problems(new DailyOptions { StreakFreezeEveryDays = -1 }, maxHintLevel: 2));
+        Assert.NotEmpty(DailyOptionsChecks.Problems(new DailyOptions { StreakFreezeMax = -1 }, maxHintLevel: 2));
+        Assert.NotEmpty(DailyOptionsChecks.Problems(new DailyOptions { StreakLostNudgeMinDays = -1 }, maxHintLevel: 2));
+        Assert.Empty(DailyOptionsChecks.Problems(new DailyOptions { StreakFreezeEveryDays = 0, StreakFreezeMax = 0, StreakLostNudgeMinDays = 0 }, maxHintLevel: 2));
+    }
+
+    [Theory]
     [InlineData("DELETE FROM infra.settings WHERE key = 'Daily:StreakFreezeMax';", "Vérification « réglages »")]
     [InlineData("UPDATE infra.settings SET value = '31' WHERE key = 'Daily:TrackCooldownDays';", "réglages repris à l'identique")]
     [InlineData("UPDATE infra.settings SET value = '\"30\"' WHERE key = 'Daily:TrackCooldownDays';", "réglages repris à l'identique")]

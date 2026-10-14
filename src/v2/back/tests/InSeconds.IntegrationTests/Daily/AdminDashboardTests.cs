@@ -74,7 +74,7 @@ public class AdminDashboardTests(PostgresFixture postgres) : IAsyncLifetime
     public async Task ChiffresDuJour_ParDefautAujourdhui_TerminesAbandonsExpiresEnCours()
     {
         await _game.App.AddChallengeAsync(Today, 1, 2, 3, 4, 5);
-        var players = new[] { await _game.NewPlayerAsync("A"), await _game.NewPlayerAsync("B"), await _game.NewPlayerAsync("C"), await _game.NewPlayerAsync("D") };
+        var players = new[] { await _game.NewPlayerAsync("Anna"), await _game.NewPlayerAsync("Bert"), await _game.NewPlayerAsync("Cleo"), await _game.NewPlayerAsync("Dora") };
         await _game.AddSessionAsync(players[0].Id, Today, 1, (1m, true, true, false, 1000));
         await _game.AddSessionAsync(players[1].Id, Today, 2, (1m, true, true, false, 500));
         await _game.AddSessionAsync(players[2].Id, Today, 3, (1m, true, true, false, 500));

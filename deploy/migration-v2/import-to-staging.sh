@@ -45,35 +45,10 @@ trap cleanup EXIT
 echo "Import v1 → v2 (import et vérifications, une seule transaction)..."
 pg sh /import/run-import.sh < /dev/null
 
-# Seconde anonymisation, sur les tables v2 (S8) : la première, faite sur public avant l'import,
-# suffit en principe ; celle-ci garantit qu'aucune donnée de prod ne reste, même si l'import évolue.
+# Seconde anonymisation, sur les tables v2 (S8) : comptes, jetons, appareils, clés, et la file de messages
+# de Wolverine, messages en erreur compris (staging-anonymize.sql, testé par MigrationTests).
 echo "Anonymisation des tables v2..."
-pg psql --no-psqlrc -v ON_ERROR_STOP=1 -v keep="$keep_email" <<'SQL'
-BEGIN;
-UPDATE players.accounts
-   SET email = 'player-' || player_id || '@example.invalid',
-       is_admin = false
- WHERE lower(email::text) <> lower(:'keep');
-DELETE FROM players.auth_tokens;
-DELETE FROM players.device_sessions;
-DELETE FROM players.legacy_tokens;
-DELETE FROM infra.data_protection_keys;
--- File de messages de Wolverine : ses tables n'existent qu'une fois l'API démarrée au moins une fois.
-DO $$
-BEGIN
-    IF to_regclass('messaging.wolverine_incoming_envelopes') IS NOT NULL THEN
-        DELETE FROM messaging.wolverine_incoming_envelopes;
-    END IF;
-    IF to_regclass('messaging.wolverine_outgoing_envelopes') IS NOT NULL THEN
-        DELETE FROM messaging.wolverine_outgoing_envelopes;
-    END IF;
-END $$;
-COMMIT;
-SELECT count(*) AS comptes,
-       count(*) FILTER (WHERE email::text NOT LIKE '%@example.invalid') AS emails_conserves,
-       count(*) FILTER (WHERE is_admin) AS admins
-  FROM players.accounts;
-SQL
+pg psql --no-psqlrc -v ON_ERROR_STOP=1 -v keep="$keep_email" -f /import/staging-anonymize.sql < /dev/null
 
 # Clé Data Protection neuve (S16). Sur le staging, la première anonymisation a déjà retiré les clés de la v1
 # et la seconde vide encore la table : ce pas ne remplace donc pas une clé en clair, il répète la procédure de

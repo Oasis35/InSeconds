@@ -152,6 +152,56 @@ public class PlayersImportTests(ImportDatabase database)
         Assert.Equal(0L, await Count(cs, "players.players"));
     }
 
+    [Theory]
+    [InlineData("Al")]
+    [InlineData("")]
+    public async Task PseudoTropCourt_ImportRefuse_JoueurNomme_JamaisLePseudo(string pseudo)
+    {
+        // La v1 bornait le pseudo par son validateur et la colonne à 20 caractères, pas la base à 3 : la v2 le borne aussi
+        // par une contrainte (R5), qui citerait la ligne refusée, pseudo compris. L'import le refuse avant, sans le pseudo (S13).
+        var cs = await database.CreateDatabaseAsync();
+        var shortPseudo = V1Player.Account("court@example.com", pseudo);
+        await V1Data.InsertAsync(cs, shortPseudo, V1Player.Account("normal@example.com", "Normal"), V1Player.Guest());
+
+        var result = await database.RunImportAsync(cs);
+
+        Assert.NotEqual(0, result.ExitCode);
+        Assert.Contains($"Pseudos de moins de 3 ou de plus de 20 caractères à régler avant l'import, joueurs : {shortPseudo.Id}", result.Output, StringComparison.Ordinal);
+        Assert.DoesNotContain("ck_accounts_pseudo_length", result.Output, StringComparison.Ordinal);
+        Assert.Equal(0L, await Count(cs, "players.players"));
+    }
+
+    [Fact]
+    public async Task PseudosAuxBornes_Repris()
+    {
+        var cs = await database.CreateDatabaseAsync();
+        await V1Data.InsertAsync(cs,
+            V1Player.Account("trois@example.com", "Ali"),
+            V1Player.Account("vingt@example.com", new string('é', 20)));
+
+        var result = await database.RunImportAsync(cs);
+
+        Assert.True(result.ExitCode == 0, result.Output);
+        Assert.Equal(2L, await Count(cs, "players.accounts"));
+    }
+
+    [Theory]
+    [InlineData("ab")]
+    [InlineData("abcdefghijklmnopqrstu")]
+    public async Task ContrainteDeLaBase_RefuseUnPseudoHorsBornes(string pseudo)
+    {
+        // Ce que le validateur garantit, la base le garantit aussi (PLAN R5) : une écriture SQL directe ne passe pas.
+        var cs = await database.CreateDatabaseAsync();
+        await V1Data.InsertAsync(cs, V1Player.Account("compte@example.com", "Compte"));
+        Assert.Equal(0, (await database.RunImportAsync(cs)).ExitCode);
+
+        var error = await Assert.ThrowsAsync<Npgsql.PostgresException>(() =>
+            ImportDatabase.ExecuteAsync(cs, $"UPDATE players.accounts SET pseudo = '{pseudo}'"));
+
+        Assert.Equal(Npgsql.PostgresErrorCodes.CheckViolation, error.SqlState);
+        Assert.Equal("ck_accounts_pseudo_length", error.ConstraintName);
+    }
+
     [Fact]
     public async Task Verification_DetecteUnEcart_EtAnnuleTout()
     {

@@ -62,9 +62,13 @@ public sealed class ImportDatabase : IAsyncLifetime
     public Task<ImportResult> RunImportAsync(string connectionString, params string[] options) =>
         RunInContainerAsync(connectionString, $"sh {ImportDirectory}/run-import.sh {string.Join(' ', options)}");
 
-    /// <summary>Lance un script SQL du dossier par psql, dans le conteneur, comme le mode d'emploi (<c>mark-opened.sql</c>, <c>30-verify-day-stats.sql</c>).</summary>
-    public Task<ImportResult> RunSqlFileAsync(string connectionString, string fileName) =>
-        RunInContainerAsync(connectionString, $"psql --no-psqlrc --quiet -v ON_ERROR_STOP=1 -f {ImportDirectory}/{fileName}");
+    /// <summary>
+    /// Lance un script SQL du dossier par psql, dans le conteneur, comme le mode d'emploi (<c>mark-opened.sql</c>, <c>30-verify-day-stats.sql</c>),
+    /// avec ses variables psql (<c>keep=adresse</c> pour <c>staging-anonymize.sql</c> ; valeurs sans espace ni apostrophe).
+    /// </summary>
+    public Task<ImportResult> RunSqlFileAsync(string connectionString, string fileName, params string[] variables) =>
+        RunInContainerAsync(connectionString,
+            $"psql --no-psqlrc --quiet -v ON_ERROR_STOP=1 {string.Concat(variables.Select(v => $"-v '{v}' "))}-f {ImportDirectory}/{fileName}");
 
     private async Task<ImportResult> RunInContainerAsync(string connectionString, string command)
     {

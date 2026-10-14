@@ -37,6 +37,15 @@ BEGIN
         RAISE EXCEPTION 'Adresses email en doublon de casse à régler avant l''import, joueurs : %', ids;
     END IF;
 
+    -- Pseudo de 3 à 20 caractères, comme le validateur (CHECK ck_accounts_pseudo_length) : la contrainte arrêterait
+    -- l'import en citant la ligne refusée, pseudo compris ; ici, seuls les joueurs sont nommés.
+    SELECT string_agg("Id"::text, ', ' ORDER BY "Id") INTO ids
+    FROM public."Players"
+    WHERE NOT "IsGuest" AND char_length("Pseudo") NOT BETWEEN 3 AND 20;
+    IF ids IS NOT NULL THEN
+        RAISE EXCEPTION 'Pseudos de moins de 3 ou de plus de 20 caractères à régler avant l''import, joueurs : %', ids;
+    END IF;
+
     -- Un compte v2 a toujours une adresse.
     SELECT string_agg("Id"::text, ', ' ORDER BY "Id") INTO ids
     FROM public."Players" WHERE NOT "IsGuest" AND "Email" IS NULL;
@@ -343,6 +352,21 @@ FROM (VALUES
 ) AS g(kind, keys)
 CROSS JOIN LATERAL unnest(g.keys) AS k;
 
+-- Les bornes des entiers que la v2 accepte (DailyOptions) : hors bornes, elle retomberait sans bruit sur sa valeur par
+-- défaut (cooldown, morceaux par défi) ou refuserait de démarrer (gels, DailyOptionsChecks). Bornes incluses, NULL : aucune.
+CREATE TEMP TABLE import_setting_bounds (
+    v1_key    text PRIMARY KEY REFERENCES import_setting_map (v1_key),
+    min_value int,
+    max_value int
+) ON COMMIT DROP;
+
+INSERT INTO import_setting_bounds (v1_key, min_value, max_value) VALUES
+    ('TrackCooldownDays', 0, 3650),
+    ('TracksPerChallenge', 1, NULL),
+    ('StreakFreezeEveryDays', 0, NULL),
+    ('StreakFreezeMax', 0, NULL),
+    ('StreakLostNudgeMinDays', 0, NULL);
+
 -- Les éléments d'une liste CSV de la v1, dans l'ordre, sans les blancs ni les éléments vides (comme le
 -- découpage de la v1 : Split(',', RemoveEmptyEntries) puis Trim).
 CREATE FUNCTION pg_temp.v1_setting_items(raw text) RETURNS TABLE (item text, ord bigint)
@@ -399,6 +423,16 @@ BEGIN
     WHERE pg_temp.v1_setting_to_json(m.kind, s."Value") IS NULL;
     IF keys IS NOT NULL THEN
         RAISE EXCEPTION 'Réglages v1 dont la valeur ne se convertit pas sans perte (format attendu : voir import_setting_map) : %', keys;
+    END IF;
+
+    SELECT string_agg(s."Key" || ' (' || COALESCE(b.min_value::text, '…') || ' à ' || COALESCE(b.max_value::text, '…') || ')',
+                      ', ' ORDER BY s."Key") INTO keys
+    FROM public."Settings" s
+    JOIN import_setting_map m ON m.v1_key = s."Key"
+    JOIN import_setting_bounds b ON b.v1_key = s."Key"
+    WHERE (pg_temp.v1_setting_to_json(m.kind, s."Value"))::int NOT BETWEEN COALESCE(b.min_value, -2147483648) AND COALESCE(b.max_value, 2147483647);
+    IF keys IS NOT NULL THEN
+        RAISE EXCEPTION 'Réglages v1 hors des bornes que la v2 accepte (elle les ignorerait) : %', keys;
     END IF;
 END $$;
 
