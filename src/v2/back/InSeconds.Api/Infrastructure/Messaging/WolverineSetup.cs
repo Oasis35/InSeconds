@@ -52,7 +52,8 @@ public static class WolverineSetup
         // L'écriture d'un réglage recharge la source de configuration : son rechargeur est interne à l'infrastructure, le code généré ne peut pas le
         // construire. Utilisé par le réglage du cooldown de l'admin (F1).
         opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Api.Infrastructure.Settings.SettingsStore>();
-        // Compilation à l'exécution en développement et en test seulement (Wolverine 6 ne l'embarque plus).
+        // Compilateur à l'exécution (Wolverine 6 ne l'embarque plus), branché partout : il ne sert qu'en mode
+        // Dynamic (développement, test). En prod et en staging (Static), le code de Internal/Generated est lu tel quel.
         opts.UseRuntimeCompilation();
     }
 

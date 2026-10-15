@@ -1,7 +1,6 @@
 using InSeconds.Api.Infrastructure.Errors;
 using InSeconds.UnitTests.Support;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Logging;
 
 namespace InSeconds.UnitTests.Infrastructure;
@@ -43,9 +42,8 @@ public class ReportClientErrorTests
     [Fact]
     public void Remontee_JournaliseEnErreur_AvecLIdentifiantDeLaV1()
     {
-        var result = ReportClientErrorEndpoint.Post(Report(), Request(), _logger);
+        ReportClientErrorEndpoint.Post(Report(), Request(), _logger);
 
-        Assert.IsType<NoContent>(result);
         var entry = Assert.Single(_logger.Entries);
         Assert.Equal(LogLevel.Error, entry.Level);
         Assert.Equal(1100, entry.EventId.Id);

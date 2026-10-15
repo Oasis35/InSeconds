@@ -49,9 +49,10 @@ namespace Internal.Generated.WolverineHandlers
             System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Infrastructure.Errors.ReportClientErrorEndpoint");
             
             // The actual HTTP request handler execution
-            var result = InSeconds.Api.Infrastructure.Errors.ReportClientErrorEndpoint.Post(report, httpContext.Request, _loggerForMessage);
+            InSeconds.Api.Infrastructure.Errors.ReportClientErrorEndpoint.Post(report, httpContext.Request, _loggerForMessage);
 
-            await result.ExecuteAsync(httpContext).ConfigureAwait(false);
+            // Wolverine automatically sets the status code to 204 for empty responses
+            if (httpContext.Response is { HasStarted: false, StatusCode: 200 }) httpContext.Response.StatusCode = 204;
         }
 
     }

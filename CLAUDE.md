@@ -72,11 +72,11 @@ Chaque module a ses couches `Domain/` (entités aux invariants encapsulés, port
 
 ### Règles dures (vérifiées en CI)
 
-- **Un module n'utilise des autres que leur dossier `Contracts/`** ; `Gameplay` ne connaît aucun mode ; `Catalogue` et `Gameplay` ne connaissent pas `Daily`. Tests d'architecture (`tests/InSeconds.ArchitectureTests`, NetArchTest). Pas de navigation EF entre modules : des identifiants, et des clés étrangères déclarées par le nom du type.
+- **Un module n'utilise des autres que leur dossier `Contracts/`** ; `Gameplay` ne connaît aucun mode ; `Catalogue` et `Gameplay` ne connaissent pas `Daily` ; un noyau ne voit d'un mode que ses `Contracts` (Players → `Daily.Contracts.IStreakGrants`). Tests d'architecture (`tests/InSeconds.ArchitectureTests`, NetArchTest). Pas de navigation EF entre modules : des identifiants, et des clés étrangères déclarées par le nom du type.
 - **Rien dans le schéma `public`** (tables v1 jusqu'à I1) ; chaque entité déclare son schéma ; noms en snake_case.
 - **Jamais `DateTime.UtcNow`/`Now`/`Today`** dans `InSeconds.Api` : `TimeProvider` ou `IGameCalendar` (`ClockUsageTests`).
 - **Pas de repository générique** : chaque module a ses ports nommés par l'intention (`IPlayerStore`, `IDailyStore`, `ICatalogueQueries`…).
-- **Endpoints en Wolverine.Http**, en étapes `LoadAsync` / `Validate` / `Post`, validation FluentValidation, **jamais de `SaveChangesAsync` dans un handler** (pas encore vérifié par un test d'architecture, #319 ; transaction Wolverine, outbox dans le schéma `messaging`). Toute route `/api/admin*` reçoit la policy Admin automatiquement.
+- **Endpoints en Wolverine.Http**, en étapes `LoadAsync` / `Validate` / `Post`, validation FluentValidation, **jamais de `SaveChangesAsync` dans un handler** (transaction Wolverine, outbox dans le schéma `messaging` ; exceptions écrites : `SettingsStore.SetAsync`, la reprise des cookies v1, `--freeze-day-stats`) et **jamais d'`IResult`** (`[EmptyResponse]` pour un 204), vérifiés par `HandlerRulesTests`. Toute route `/api/admin*` reçoit la policy Admin automatiquement.
 - **Code Wolverine généré commité** (`Internal/Generated`, codegen statique en prod et staging) : après tout ajout ou changement de handler, `rm -rf InSeconds.Api/Internal/Generated && dotnet run --project InSeconds.Api -- codegen write`. Le job CI `back-v2` échoue s'il est périmé, et l'API refuse de démarrer en staging.
 - **Erreurs** : ProblemDetails avec `code` stable (`module.raison`, ex. `daily.already_played`) et `traceId`. **Ne jamais renommer un code publié** (le front les traduit).
 - **Pièges audio, sécurité, Deezer** : un piège = un test nommé (cf. [Pièges connus](#pièges-connus)).

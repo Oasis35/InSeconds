@@ -121,7 +121,7 @@ public class PlaySessionTests(PostgresFixture postgres) : IAsyncLifetime
     // --- le verrou du morceau (piège 35) ---
 
     [Fact]
-    public async Task Verrou_UnAutreMorceauQueLeMorceauEnCours_409()
+    public async Task Piege35_Verrou_UnAutreMorceauQueLeMorceauEnCours_409()
     {
         await _alice.ListenAsync(_session, 1, 5);
 

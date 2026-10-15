@@ -10,8 +10,9 @@ public static class DbSchemas
     public const string Infra = "infra";
 
     /// <summary>
-    /// Extensions PostgreSQL (<c>citext</c>). Hors de <c>public</c> pour que la copie prod → staging,
-    /// limitée à <c>public</c>, ne les touche pas.
+    /// Extensions PostgreSQL (<c>citext</c>). Hors de <c>public</c> : la copie prod → staging ne copie que
+    /// <c>public</c> (<c>pg_dump -n public</c> de <c>copy-prod-db-to-staging.sh</c>) et la remplace, les
+    /// extensions dont dépendent les colonnes v2 du staging n'y sont donc jamais touchées.
     /// </summary>
     public const string Extensions = "extensions";
 

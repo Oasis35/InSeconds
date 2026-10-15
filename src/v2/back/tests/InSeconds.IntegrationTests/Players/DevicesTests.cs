@@ -56,7 +56,7 @@ public class DevicesTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Deconnexion_RevoqueCetAppareil_PasLesAutres()
+    public async Task Piege39_Deconnexion_RevoqueCetAppareil_PasLesAutres()
     {
         var first = await _app.SignInDeviceAsync("piege39@example.com", "Piege39");
         var second = await _app.SignInDeviceAsync("piege39@example.com");

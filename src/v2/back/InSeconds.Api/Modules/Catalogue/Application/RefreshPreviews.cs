@@ -45,7 +45,7 @@ public static class RefreshPreviewsHandler
         ITrackMetadataSource deezer,
         IGameCalendar calendar,
         TimeProvider time,
-        IOptions<RefreshOptions> options,
+        IOptionsMonitor<RefreshOptions> options,
         ILogger<RefreshPreviews> logger,
         CancellationToken ct)
     {
@@ -60,14 +60,16 @@ public static class RefreshPreviewsHandler
             return new PreviewRefreshResult(0, 0, 0);
         }
 
-        var batchSize = Math.Max(1, options.Value.BatchSize);
+        // Relu à chaque contrôle (réglage en base, relu à chaud), une seule fois : la cadence ne change pas en cours de route.
+        var settings = options.CurrentValue;
+        var batchSize = Math.Max(1, settings.BatchSize);
         var updated = 0;
         var failed = 0;
 
         for (var offset = 0; offset < candidates.Count; offset += batchSize)
         {
             if (offset > 0)
-                await Task.Delay(options.Value.BatchDelay, time, ct);
+                await Task.Delay(settings.BatchDelay, time, ct);
 
             var batch = candidates.Skip(offset).Take(batchSize).ToList();
             var lookups = await Task.WhenAll(batch.Select(t => deezer.GetTrackAsync(t.DeezerTrackId, ct)));
