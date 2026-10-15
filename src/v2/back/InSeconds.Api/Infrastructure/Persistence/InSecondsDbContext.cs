@@ -28,8 +28,9 @@ public sealed class InSecondsDbContext(DbContextOptions<InSecondsDbContext> opti
     {
         // citext sert aux emails et aux pseudos (comparaison insensible à la casse).
         modelBuilder.HasPostgresExtension(DbSchemas.Extensions, "citext");
-        // Tables de l'outbox de Wolverine dans le modèle EF : la donnée et les messages à envoyer
-        // partent dans la même transaction, et les migrations EF créent ces tables (constat A1, § 12 ter).
+        // Tables de l'outbox de Wolverine déclarées au modèle EF : la donnée et les messages à envoyer partent dans
+        // la même transaction (constat A1, § 12 ter). Elles sont créées par Wolverine au démarrage, pas par les
+        // migrations EF, qui les excluent (la migration MapWolverineEnvelopeStorage est vide exprès).
         modelBuilder.MapWolverineEnvelopeStorage(DbSchemas.Messaging);
         var assembly = typeof(InSecondsDbContext).Assembly;
         // Les modules dont d'autres référencent les entités par leur nom de type (clés étrangères de Daily vers Players et Catalogue, que Daily ne

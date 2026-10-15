@@ -143,7 +143,7 @@ TRUNCATE daily.challenge_day_stats, daily.answers, daily.sessions, daily.challen
 
 -- HasPreview vaut 1 (disponible) ou 2 (absent) : l'état « inconnu » n'existe pas en v1. Le rang Deezer et
 -- la date du dernier contrôle sont inconnus : la tâche catalogue-refresh les remplit la nuit suivante (en
--- staging, où elle ne tourne pas, au bouton « Re-vérifier les previews »).
+-- staging, où elle ne tourne pas seule, en la lançant depuis le tableau de bord /jobs).
 -- Année inférieure à 1 (Deezer renvoie parfois « 0000-00-00 », que la v1 enregistrait en 0) : NULL, comme le
 -- client Deezer de la v2, pour que l'indice « année » n'affiche jamais 0.
 -- Désactivé sans date en v1 : la dernière modification, à défaut maintenant (la date de la désactivation

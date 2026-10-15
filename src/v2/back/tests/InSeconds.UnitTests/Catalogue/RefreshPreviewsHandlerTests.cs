@@ -27,9 +27,11 @@ public class RefreshPreviewsHandlerTests
     private readonly FakeDeezer _deezer;
 
     private Task<PreviewRefreshResult> RunAsync(int batchSize = 10, double delaySeconds = 0) =>
+        RunAsync(new MutableMonitor(new RefreshOptions { BatchSize = batchSize, BatchDelay = TimeSpan.FromSeconds(delaySeconds) }));
+
+    private Task<PreviewRefreshResult> RunAsync(IOptionsMonitor<RefreshOptions> options) =>
         RefreshPreviewsHandler.Handle(
-            new RefreshPreviews(), _store, _usage, _deezer, new FixedCalendar(Now), _time,
-            Options.Create(new RefreshOptions { BatchSize = batchSize, BatchDelay = TimeSpan.FromSeconds(delaySeconds) }),
+            new RefreshPreviews(), _store, _usage, _deezer, new FixedCalendar(Now), _time, options,
             NullLogger<RefreshPreviews>.Instance, Ct);
 
     [Fact]
@@ -157,6 +159,20 @@ public class RefreshPreviewsHandlerTests
     }
 
     [Fact]
+    public async Task LaCadence_EstRelueAChaqueControle_SansRedemarrage()
+    {
+        for (var i = 1; i <= 4; i++)
+            _store.Add(i, PreviewStatus.Available);
+        var options = new MutableMonitor(new RefreshOptions { BatchSize = 2, BatchDelay = TimeSpan.Zero });
+
+        await RunAsync(options);
+        options.Value = new RefreshOptions { BatchSize = 4, BatchDelay = TimeSpan.Zero };
+        await RunAsync(options);
+
+        Assert.Equal([2, 2, 4], _store.SavedBatchSizes);
+    }
+
+    [Fact]
     public async Task MorceauSupprimePendantLeControle_PasEnregistre_PasCompteCommeMisAJour()
     {
         for (var i = 1; i <= 3; i++)
@@ -178,7 +194,7 @@ public class RefreshPreviewsHandlerTests
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => RefreshPreviewsHandler.Handle(
             new RefreshPreviews(), _store, _usage, _deezer, new FixedCalendar(Now), _time,
-            Options.Create(new RefreshOptions()), NullLogger<RefreshPreviews>.Instance, cts.Token));
+            new MutableMonitor(new RefreshOptions()), NullLogger<RefreshPreviews>.Instance, cts.Token));
     }
 
     private static async Task WaitUntilAsync(Func<bool> condition)
@@ -299,5 +315,17 @@ public class RefreshPreviewsHandlerTests
             return Task.FromResult(_replies.GetValueOrDefault(deezerTrackId)
                 ?? new TrackMetadataLookup.Found(new DeezerTrack(deezerTrackId, "A", "T", "https://p.mp3", null, null, null)));
         }
+    }
+
+    /// <summary>Un réglage relu à chaud : <see cref="Value"/> se change entre deux contrôles, comme une ligne de <c>infra.settings</c>.</summary>
+    private sealed class MutableMonitor(RefreshOptions value) : IOptionsMonitor<RefreshOptions>
+    {
+        public RefreshOptions Value { get; set; } = value;
+
+        public RefreshOptions CurrentValue => Value;
+
+        public RefreshOptions Get(string? name) => Value;
+
+        public IDisposable? OnChange(Action<RefreshOptions, string?> listener) => null;
     }
 }

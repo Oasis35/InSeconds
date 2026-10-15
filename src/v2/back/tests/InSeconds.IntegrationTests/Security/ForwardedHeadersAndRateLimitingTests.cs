@@ -52,7 +52,7 @@ public sealed class ForwardedHeadersAndRateLimitingTests : IAsyncLifetime
     public async ValueTask DisposeAsync() => await _app.DisposeAsync();
 
     [Fact]
-    public async Task DerriereCloudflareEtCaddy_IpDuJoueur()
+    public async Task Piege27_DerriereCloudflareEtCaddy_IpDuJoueur()
     {
         Assert.Equal("203.0.113.7", await GetIpAsync(Caddy, "203.0.113.7, " + CloudflareEdge));
     }

@@ -114,7 +114,7 @@ public class CookieValidationTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ErreurDeBase_500_SansDeconnecterNiCreerDInvite()
+    public async Task Piege37_ErreurDeBase_500_SansDeconnecterNiCreerDInvite()
     {
         // Piège 37 : une base indisponible ne doit jamais passer pour un cookie invalide.
         await using var api = new ApiFactory(_api.ConnectionString, services =>

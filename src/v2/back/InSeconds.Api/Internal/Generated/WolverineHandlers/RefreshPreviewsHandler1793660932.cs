@@ -15,15 +15,15 @@ namespace Internal.Generated.WolverineHandlers
         private readonly InSeconds.Api.Infrastructure.Time.IGameCalendar _gameCalendar;
         private readonly Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _serviceScopeFactory;
         private readonly Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Catalogue.Application.RefreshPreviews> _loggerForMessage;
-        private readonly Microsoft.Extensions.Options.IOptions<InSeconds.Api.Modules.Catalogue.Application.RefreshOptions> _optionsOfRefreshOptions;
+        private readonly Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.RefreshOptions> _optionsMonitorOfRefreshOptions;
         private readonly System.TimeProvider _timeProvider;
 
-        public RefreshPreviewsHandler1793660932(InSeconds.Api.Infrastructure.Time.IGameCalendar gameCalendar, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Catalogue.Application.RefreshPreviews> loggerForMessage, Microsoft.Extensions.Options.IOptions<InSeconds.Api.Modules.Catalogue.Application.RefreshOptions> optionsOfRefreshOptions, System.TimeProvider timeProvider)
+        public RefreshPreviewsHandler1793660932(InSeconds.Api.Infrastructure.Time.IGameCalendar gameCalendar, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Catalogue.Application.RefreshPreviews> loggerForMessage, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.RefreshOptions> optionsMonitorOfRefreshOptions, System.TimeProvider timeProvider)
         {
             _gameCalendar = gameCalendar;
             _serviceScopeFactory = serviceScopeFactory;
             _loggerForMessage = loggerForMessage;
-            _optionsOfRefreshOptions = optionsOfRefreshOptions;
+            _optionsMonitorOfRefreshOptions = optionsMonitorOfRefreshOptions;
             _timeProvider = timeProvider;
         }
 
@@ -47,7 +47,7 @@ namespace Internal.Generated.WolverineHandlers
             System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Catalogue.Application.RefreshPreviewsHandler");
             
             // The actual message execution
-            var outgoing1 = await InSeconds.Api.Modules.Catalogue.Application.RefreshPreviewsHandler.Handle(refreshPreviews, efCatalogueStore, trackUsage, trackMetadataSource, _gameCalendar, _timeProvider, _optionsOfRefreshOptions, _loggerForMessage, cancellation).ConfigureAwait(false);
+            var outgoing1 = await InSeconds.Api.Modules.Catalogue.Application.RefreshPreviewsHandler.Handle(refreshPreviews, efCatalogueStore, trackUsage, trackMetadataSource, _gameCalendar, _timeProvider, _optionsMonitorOfRefreshOptions, _loggerForMessage, cancellation).ConfigureAwait(false);
 
             
             // Outgoing, cascaded message

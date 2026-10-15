@@ -39,7 +39,7 @@ public class DeezerCacheTests
     }
 
     [Fact]
-    public async Task Extrait_SignatureValableLongtemps_TtlBorneParLaSignatureMoinsLaMarge()
+    public async Task Piege14_Extrait_SignatureValableLongtemps_TtlBorneParLaSignatureMoinsLaMarge()
     {
         // Expire dans 20 h : cache jusqu'à 19 h (1 h de marge pour la lecture réelle côté joueur).
         var provider = new CachedPreviewProvider(new ScriptedPreviews(new PreviewLookup.Found(Signed(Now.AddHours(20)))), _recording, _time);
@@ -63,7 +63,7 @@ public class DeezerCacheTests
     [InlineData(30)] // moins que la marge d'1 h
     [InlineData(60)] // juste la marge : durée nulle
     [InlineData(-60)] // déjà expirée
-    public async Task Extrait_SignatureProcheDeLExpirationOuExpiree_JamaisMisEnCache(int minutesLeft)
+    public async Task Piege14_Extrait_SignatureProcheDeLExpirationOuExpiree_JamaisMisEnCache(int minutesLeft)
     {
         var inner = new ScriptedPreviews(new PreviewLookup.Found(Signed(Now.AddMinutes(minutesLeft))));
         var provider = new CachedPreviewProvider(inner, _recording, _time);

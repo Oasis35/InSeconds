@@ -108,6 +108,8 @@ public sealed record DayTrackStats(
 /// La photo d'un jour (§ 5.4 du plan v2) : tout ce que montrent « stats par défi » et la répartition des scores, **plus les paliers et le barème en
 /// vigueur au calcul** (deux jours après pour la tâche, le moment du recalcul pour l'admin) : changer un réglage ensuite ne réécrit pas la photo.
 /// L'histogramme garde aussi tout palier réellement écouté qui n'est plus dans le réglage. Les joueurs supprimés en sont exclus.
+/// La pénalité d'indice (<c>Daily:HintPenaltyPercent</c>) n'en fait pas partie : rien n'y est calculé avec elle, les scores lus sont ceux
+/// enregistrés à chaque réponse, pénalité déjà appliquée (#319).
 /// </summary>
 /// <param name="PlayerCount">Parties terminées.</param>
 /// <param name="PendingCount">Parties en cours : toujours 0 pour un jour passé, repliées sur <paramref name="ExpiredCount"/> (le joueur n'est jamais revenu).</param>

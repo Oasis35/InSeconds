@@ -132,7 +132,9 @@ Le jeu est un ensemble de **modes** branchés sur des **noyaux** communs. C'est 
   - `Gameplay` ne dépend que de `Catalogue/Contracts` ;
   - un module n'utilise d'un autre module que son dossier `Contracts/` ;
   - `Domain/` ne référence ni EF Core, ni ASP.NET Core, ni `DateTime.UtcNow` ;
-  - rien dans `InSeconds.Api` ne référence `InSeconds.Api.Testing`.
+  - rien dans `InSeconds.Api` ne référence `InSeconds.Api.Testing` ;
+  - un noyau ne voit d'un mode que ses `Contracts/` (Players → `Daily.Contracts.IStreakGrants`) ;
+  - aucun `SaveChanges` hors du code généré par Wolverine, sauf les exceptions écrites (`SettingsStore.SetAsync`, reprise des cookies v1, `--freeze-day-stats`), et aucune route Wolverine qui renvoie un `IResult` (`HandlerRulesTests`, #319).
 - **Front** (Sheriff) :
   - `daily` et `runs` ne s'importent jamais mutuellement ;
   - `gameplay` ne connaît aucun mode ;
@@ -308,7 +310,7 @@ Chaque module expose un seul point d'entrée : `AddDaily(services)` et `MapDaily
 - une interface par besoin, jamais par fournisseur ;
 - des contrats de retour explicites plutôt que `null` ;
 - des décorateurs plutôt que des `if (IsEnvironment(...))` : chaque environnement choisit ses implémentations à un seul endroit ;
-- les erreurs métier sortent par les étapes Wolverine.Http (`LoadAsync`/`Validate`/`Before` qui renvoient un `ProblemDetails` avec son `code`, via `ApiProblem.Of`), le `Post` ne renvoie que le cas nominal ; pas de type `Result<T, Error>` (convention adoptée en A2, actée à la relecture du 13/10) et pas d'`IResult` (le dernier, `client-errors`, est suivi par #319) ;
+- les erreurs métier sortent par les étapes Wolverine.Http (`LoadAsync`/`Validate`/`Before` qui renvoient un `ProblemDetails` avec son `code`, via `ApiProblem.Of`), le `Post` ne renvoie que le cas nominal ; pas de type `Result<T, Error>` (convention adoptée en A2, actée à la relecture du 13/10) et pas d'`IResult` (`client-errors`, le dernier, passé en `[EmptyResponse]` par #319 ; vérifié par `HandlerRulesTests`) ;
 - un `GET` n'écrit aucune donnée métier. Deux exceptions techniques, assumées : la conversion d'un cookie v1 et la mise à jour de `last_seen_at` (§ 5.5).
 
 **Concession EF :** les entités ont un constructeur privé sans paramètre et des `private set`. C'est ce qu'EF exige pour matérialiser un objet, et ça n'expose rien.
@@ -346,7 +348,7 @@ Chaque module expose un seul point d'entrée : `AddDaily(services)` et `MapDaily
   - met à jour la série et les gels dans la même transaction (`DailySessionCompleted` sera émis quand un module en aura besoin, § 5.2).
 - `DailyStreak` : appelé directement par la complétion (pas par un message), avec les règles actuelles (jours manqués sur la date du défi, piège 18 ; gels ; plafond) ; la vue de série effective est calculée à la lecture.
 - `DailyChallenge` + `ChallengeGenerator` (`ITrackSelector`, graine = `DayNumber`) ; génération à la volée si le job de minuit a raté.
-- `ChallengeDayStats` : photo figée d'un jour **terminé pour de bon**, c'est-à-dire J-2 : une partie de la veille peut encore se finir après minuit (piège 18), donc la veille et le jour même restent calculés en direct. Contenu : tout ce que renvoient aujourd'hui `stats/today` et `challenge-stats` (médiane, min, max, moyenne, répartition ; compteurs terminées, en cours, abandonnées, expirées ; par morceau : réponses, taux artiste, taux titre, taux de prolongation, taux d'échec, moyenne d'écoute, histogramme, « pas trouvé » ; liste des joueurs avec statut et score), **plus les paliers et barèmes utilisés ce jour-là**. Le pseudo et le titre ne sont pas figés : ils sont joints à la lecture, pour suivre un renommage. Les joueurs supprimés sont exclus (voir § 12 ter). Calculée par `CloseChallengeDay`, recalculable par l'admin.
+- `ChallengeDayStats` : photo figée d'un jour **terminé pour de bon**, c'est-à-dire J-2 : une partie de la veille peut encore se finir après minuit (piège 18), donc la veille et le jour même restent calculés en direct. Contenu : tout ce que renvoient aujourd'hui `stats/today` et `challenge-stats` (médiane, min, max, moyenne, répartition ; compteurs terminées, en cours, abandonnées, expirées ; par morceau : réponses, taux artiste, taux titre, taux de prolongation, taux d'échec, moyenne d'écoute, histogramme, « pas trouvé » ; liste des joueurs avec statut et score), **plus les paliers et barèmes utilisés ce jour-là** (paliers d'écoute et barème des paliers ; pas la pénalité d'indice : la photo ne calcule rien avec elle, les scores sont ceux enregistrés à chaque réponse, pénalité comprise, #319). Le pseudo et le titre ne sont pas figés : ils sont joints à la lecture, pour suivre un renommage. Les joueurs supprimés sont exclus (voir § 12 ter). Calculée par `CloseChallengeDay`, recalculable par l'admin.
 - Stories hebdo : même logique qu'aujourd'hui, lue sur les données du module.
 
 **Runs :** voir § 7.
@@ -487,7 +489,7 @@ Le préfixe change, pas l'adresse. Toutes les erreurs sont en `ProblemDetails` a
 | Intégration | Testcontainers + `WebApplicationFactory`, un dossier par module ; les scénarios des ~210 tests actuels réécrits sur les nouvelles routes et les codes d'erreur ; Respawn sur les nouveaux schémas |
 | Architecture | règles du § 3.3 |
 | Import | voir § 8.6 |
-| Pièges | chaque piège du CLAUDE.md qui touche le back garde **un test nommé** (18, 19, 27, 30, 31, 35, 37, 38, 39…) |
+| Pièges | chaque piège du CLAUDE.md qui touche le back garde **un test nommé** `PiegeNN_…` (14, 16, 18, 21, 22, 27, 30, 31, 35, 37, 38, 39 ; le 19 ne s'applique plus, les tâches nocturnes passent par Hangfire) |
 
 ---
 

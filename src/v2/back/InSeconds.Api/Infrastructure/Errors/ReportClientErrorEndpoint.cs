@@ -57,7 +57,8 @@ public static class ReportClientErrorEndpoint
     [WolverinePost("/api/client-errors")]
     [EnableRateLimiting(RateLimitPolicies.ClientErrorReport)]
     [ExcludeFromDescription]
-    public static IResult Post(ClientErrorReport report, HttpRequest request, ILogger<ClientErrorReport> logger)
+    [EmptyResponse]
+    public static void Post(ClientErrorReport report, HttpRequest request, ILogger<ClientErrorReport> logger)
     {
         // Tous les champs viennent du navigateur : retours à la ligne neutralisés, pour qu'un client ne
         // puisse pas écrire de fausses lignes dans les journaux texte. Jamais de query string ni de
@@ -72,8 +73,6 @@ public static class ReportClientErrorEndpoint
             report.Online,
             DeviceLabel.From(request.Headers.UserAgent),
             ToSingleLine(report.Stack, StackLineSeparator));
-
-        return Results.NoContent();
     }
 
     internal static string? ToSingleLine(string? value, char separator) =>
