@@ -1,4 +1,5 @@
-import { DestroyRef, Injectable, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, Injector, inject, signal } from '@angular/core';
+import { ErrorReportingService } from '../../core/errors/error-reporting.service';
 import { AudioStatus } from '../domain/track-round';
 import { AudioPort } from './audio.port';
 
@@ -11,6 +12,35 @@ const MIN_RECHECK_MS = 20;
 /** 10 ms de silence (WAV mono 8 kHz), joués dans le clic pour déverrouiller l'élément sur iPhone. */
 const SILENCE_WAV_BASE64 =
   'UklGRnQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YVAAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==';
+
+/** Délai entre l'ordre de lecture et le premier son au-delà duquel le palier est remonté (diagnostic iPhone). */
+const SLOW_START_REPORT_MS = 1500;
+
+/** Début du message remonté pour un palier lent à démarrer ou coupé en route : c'est lui qu'on cherche dans Grafana. */
+export const AUDIO_STALL_MESSAGE = 'AudioStall';
+
+/** Le déroulé réel d'un palier : quand le son est parti, combien de fois il s'est arrêté en route. */
+interface PlaybackTimings {
+  startedAt: number;
+  firstSoundAt: number | null;
+  waitingSince: number | null;
+  stalls: number;
+  stallMs: number;
+}
+
+/**
+ * Le message d'un palier lent à démarrer (plus de 1,5 s avant le premier son) ou coupé en route
+ * (`waiting` après le début du son) ; `null` si le palier s'est bien passé. Durées arrondies à
+ * 100 ms : deux paliers semblables donnent le même message (dédupliqué par la remontée).
+ */
+export function describeStall(untilSeconds: number, timings: PlaybackTimings, endedAt: number): string | null {
+  const startMs = (timings.firstSoundAt ?? endedAt) - timings.startedAt;
+  if (timings.stalls === 0 && startMs <= SLOW_START_REPORT_MS) return null;
+  const round = (ms: number) => Math.round(ms / 100) * 100;
+  const plural = timings.stalls > 1 ? 's' : '';
+  const cuts = timings.stalls === 0 ? 'aucune coupure' : `${timings.stalls} coupure${plural} (${round(timings.stallMs)} ms)`;
+  return `${AUDIO_STALL_MESSAGE}: palier ${untilSeconds} s, premier son après ${round(startMs)} ms, ${cuts}`;
+}
 
 /** `play()` rejeté parce qu'interrompu par notre propre `pause()` ou un changement de source : pas une panne. */
 function isAbort(err: unknown): boolean {
@@ -62,6 +92,10 @@ export class HtmlAudioPort extends AudioPort {
   private preloadLink: HTMLLinkElement | null = null;
   private silenceUrl: string | null = null;
   private unlocked = false;
+  /** Le déroulé du palier en cours, pour le diagnostic des sons lents ou coupés sur iPhone. */
+  private timings: PlaybackTimings | null = null;
+  /** Résolu au premier envoi seulement : le lecteur n'impose pas `HttpClient` à ses tests. */
+  private readonly injector = inject(Injector);
 
   constructor() {
     super();
@@ -207,13 +241,18 @@ export class HtmlAudioPort extends AudioPort {
       audio.onwaiting = null;
     } else {
       audio.onplaying = () => {
-        if (this.playToken === token) this.scheduleStop(token);
+        if (this.playToken !== token) return;
+        this.endStall();
+        this.scheduleStop(token);
       };
       // Son bloqué en cours de route (réseau) : le chrono est suspendu, `playing` le reprogrammera.
       audio.onwaiting = () => {
-        if (this.playToken === token) this.clearStopTimer();
+        if (this.playToken !== token) return;
+        this.clearStopTimer();
+        if (this.timings?.firstSoundAt != null) this.timings.waitingSince ??= performance.now();
       };
     }
+    this.timings = full ? null : { startedAt: performance.now(), firstSoundAt: null, waitingSince: null, stalls: 0, stallMs: 0 };
     // Fin de l'extrait : le palier (ou l'extrait entier) est joué.
     audio.onended = () => {
       if (this.playToken === token && this._state() === 'playing') this.finish(token);
@@ -235,6 +274,7 @@ export class HtmlAudioPort extends AudioPort {
   private finish(token: number): void {
     const audio = this.audio;
     if (this.playToken !== token || !audio) return;
+    this.reportStall();
     this.halt();
     const duration = Number.isFinite(audio.duration) ? audio.duration : audio.currentTime;
     this._position.set(audio.ended || this.until === Number.POSITIVE_INFINITY ? Math.min(this.until, duration) : this.until);
@@ -276,6 +316,7 @@ export class HtmlAudioPort extends AudioPort {
     const tick = () => {
       if (this.playToken !== token || this._state() !== 'playing') return;
       const audio = this.audio!;
+      if (this.timings?.firstSoundAt === null && audio.currentTime > 0) this.timings.firstSoundAt = performance.now();
       this._position.set(Math.min(audio.currentTime, this.until));
       if (this.until !== Number.POSITIVE_INFINITY && this.reachedUntil()) {
         this.finish(token);
@@ -300,6 +341,28 @@ export class HtmlAudioPort extends AudioPort {
     audio.onwaiting = null;
     audio.onended = null;
     audio.pause();
+  }
+
+  /** Le son repart après un `waiting` : la coupure est comptée. */
+  private endStall(): void {
+    const timings = this.timings;
+    if (timings?.waitingSince == null) return;
+    timings.stalls++;
+    timings.stallMs += performance.now() - timings.waitingSince;
+    timings.waitingSince = null;
+  }
+
+  /**
+   * Remonte un palier lent à démarrer ou coupé en route (diagnostic de la recette iPhone, sans rien
+   * changer au jeu) : jamais l'adresse de l'extrait. L'appareil est déduit par l'API.
+   */
+  private reportStall(): void {
+    this.endStall(); // une coupure encore en cours à la fin du palier compte aussi
+    const timings = this.timings;
+    this.timings = null;
+    if (!timings) return;
+    const message = describeStall(this.until, timings, performance.now());
+    if (message) this.injector.get(ErrorReportingService).report({ source: 'js', message });
   }
 
   private clearStopTimer(): void {
