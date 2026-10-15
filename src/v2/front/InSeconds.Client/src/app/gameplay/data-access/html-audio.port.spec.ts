@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { AudioStatus } from '../domain/track-round';
-import { HtmlAudioPort } from './html-audio.port';
+import { ErrorReportingService } from '../../core/errors/error-reporting.service';
+import { HtmlAudioPort, describeStall } from './html-audio.port';
 import { makeToneUrl } from './testing/wav';
 
 /**
@@ -15,9 +16,13 @@ describe('HtmlAudioPort', () => {
 
   /** Les états traversés, dans l'ordre (sans doublon consécutif). */
   let history: AudioStatus[];
+  let report: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [HtmlAudioPort] });
+    report = vi.fn();
+    TestBed.configureTestingModule({
+      providers: [HtmlAudioPort, { provide: ErrorReportingService, useValue: { report } }],
+    });
     port = TestBed.inject(HtmlAudioPort);
     element = (port as unknown as { audio: HTMLAudioElement }).audio;
     tone = makeToneUrl(1.5);
@@ -318,6 +323,81 @@ describe('HtmlAudioPort', () => {
       await until('finished', performance.now(), 5000);
 
       expect(element.currentTime).toBeGreaterThanOrEqual(0.19);
+    });
+  });
+
+  describe('son lent ou coupé, remonté pour le diagnostic', () => {
+    const timings = (over: Partial<Parameters<typeof describeStall>[1]> = {}) =>
+      ({ startedAt: 0, firstSoundAt: 300, waitingSince: null, stalls: 0, stallMs: 0, ...over });
+
+    it('rien à dire sur un palier qui démarre vite, sans coupure', () => {
+      expect(describeStall(1, timings(), 1300)).toBeNull();
+    });
+
+    it('décrit un démarrage lent', () => {
+      expect(describeStall(1.5, timings({ firstSoundAt: 2140 }), 3000))
+        .toBe('AudioStall: palier 1.5 s, premier son après 2100 ms, aucune coupure');
+    });
+
+    it('décrit les coupures en route', () => {
+      expect(describeStall(5, timings({ stalls: 1, stallMs: 870 }), 6000))
+        .toBe('AudioStall: palier 5 s, premier son après 300 ms, 1 coupure (900 ms)');
+      expect(describeStall(5, timings({ stalls: 3, stallMs: 2420 }), 8000))
+        .toBe('AudioStall: palier 5 s, premier son après 300 ms, 3 coupures (2400 ms)');
+    });
+
+    it('un son qui ne sort jamais compte jusqu\'à la fin du palier', () => {
+      expect(describeStall(1, timings({ firstSoundAt: null }), 2000))
+        .toBe('AudioStall: palier 1 s, premier son après 2000 ms, aucune coupure');
+    });
+
+    it('un palier joué normalement ne remonte rien', async () => {
+      await loaded();
+      port.playUntil(0.2);
+      await until('finished');
+
+      expect(report).not.toHaveBeenCalled();
+    });
+
+    it('un son qui tarde à sortir est remonté', async () => {
+      await loaded();
+      const realPlay = element.play.bind(element);
+      vi.spyOn(element, 'play').mockImplementation(
+        () => new Promise<void>((resolve, reject) => setTimeout(() => realPlay().then(resolve, reject), 1700)),
+      );
+
+      port.playUntil(0.2);
+      await until('finished', performance.now(), 5000);
+
+      expect(report).toHaveBeenCalledOnce();
+      expect(report.mock.calls[0][0]).toEqual({
+        source: 'js',
+        message: expect.stringMatching(/^AudioStall: palier 0.2 s, premier son après \d+ ms, aucune coupure$/),
+      });
+    });
+
+    it('une coupure en pleine lecture est comptée', async () => {
+      await loaded();
+      port.playUntil(0.6);
+      await until('playing');
+      while (port.position() === 0) await sleep(4); // le premier son est noté par la boucle de lecture
+
+      element.dispatchEvent(new Event('waiting'));
+      await sleep(150);
+      element.dispatchEvent(new Event('playing'));
+      await until('finished');
+
+      expect(report).toHaveBeenCalledOnce();
+      expect(report.mock.calls[0][0].message).toMatch(/, 1 coupure \(\d+ ms\)$/);
+    });
+
+    it('une lecture arrêtée avant la fin ne remonte rien', async () => {
+      await loaded();
+      port.playUntil(1);
+      await until('playing');
+      port.stop();
+
+      expect(report).not.toHaveBeenCalled();
     });
   });
 
