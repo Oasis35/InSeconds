@@ -37,7 +37,8 @@ export function describeStall(untilSeconds: number, timings: PlaybackTimings, en
   const startMs = (timings.firstSoundAt ?? endedAt) - timings.startedAt;
   if (timings.stalls === 0 && startMs <= SLOW_START_REPORT_MS) return null;
   const round = (ms: number) => Math.round(ms / 100) * 100;
-  const cuts = timings.stalls === 0 ? 'aucune coupure' : `${timings.stalls} coupure${timings.stalls > 1 ? 's' : ''} (${round(timings.stallMs)} ms)`;
+  const plural = timings.stalls > 1 ? 's' : '';
+  const cuts = timings.stalls === 0 ? 'aucune coupure' : `${timings.stalls} coupure${plural} (${round(timings.stallMs)} ms)`;
   return `${AUDIO_STALL_MESSAGE}: palier ${untilSeconds} s, premier son après ${round(startMs)} ms, ${cuts}`;
 }
 
@@ -315,7 +316,7 @@ export class HtmlAudioPort extends AudioPort {
     const tick = () => {
       if (this.playToken !== token || this._state() !== 'playing') return;
       const audio = this.audio!;
-      if (this.timings && this.timings.firstSoundAt === null && audio.currentTime > 0) this.timings.firstSoundAt = performance.now();
+      if (this.timings?.firstSoundAt === null && audio.currentTime > 0) this.timings.firstSoundAt = performance.now();
       this._position.set(Math.min(audio.currentTime, this.until));
       if (this.until !== Number.POSITIVE_INFINITY && this.reachedUntil()) {
         this.finish(token);
