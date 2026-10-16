@@ -26,13 +26,14 @@ describe('DailyApi', () => {
   afterEach(() => vi.useRealTimers());
 
   it("lit la série en types du domaine : date en texte, `undefined` devient `null`", async () => {
-    const today = { state: 'resumable', tracksCount: 5, completedCount: 2, streak: STREAK } as unknown as TodayResponse;
+    const today = { state: 'resumable', tracksCount: 5, completedCount: 2, streak: STREAK, completedGames: 48 } as unknown as TodayResponse;
     client['getToday'].mockReturnValue(of(today));
 
     const result = await api.today();
 
     expect(result.state).toBe('resumable');
     expect(result.completedCount).toBe(2);
+    expect(result.completedGames).toBe(48);
     expect(result.streak).toEqual({
       status: 'protected', streak: 12, freezes: 1, maxFreezes: 2, freezeEveryDays: 7, nextFreezeInDays: 3, missedDays: 1,
       lostStreak: null, lastPlayedDate: '2026-10-06',

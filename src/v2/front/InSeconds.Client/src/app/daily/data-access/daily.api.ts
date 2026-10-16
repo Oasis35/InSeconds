@@ -123,6 +123,7 @@ function toToday(today: TodayResponse): DailyToday {
     tracksCount: today.tracksCount,
     completedCount: today.completedCount,
     streak: toStreak(today.streak),
+    completedGames: today.completedGames,
   };
 }
 

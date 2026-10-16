@@ -582,6 +582,10 @@
           "one": "Série de {{ streak }} jour",
           "other": "Série de {{ streak }} jours"
         },
+        "gamesPlayed": {
+          "one": "{{ n }} partie",
+          "other": "{{ n }} parties"
+        },
         "stockLabel": "Tes gels · {{ count }} / {{ max }}",
         "nextFreeze": "Prochain gel à {{ next }} jours",
         "full": "Stock plein : impossible de gagner plus de gels pour l’instant.",
@@ -636,19 +640,7 @@
       },
       "ctaLine1": "Créer un compte /",
       "ctaLine2": "Se connecter",
-      "dismiss": "Fermer",
-      "profile": {
-        "label": "Gels",
-        "full": "{{ max }} gels · stock plein",
-        "stock": {
-          "one": "{{ n }} gel · prochain dans {{ days }}",
-          "other": "{{ n }} gels · prochain dans {{ days }}"
-        },
-        "days": {
-          "one": "{{ n }} jour",
-          "other": "{{ n }} jours"
-        }
-      }
+      "dismiss": "Fermer"
     },
     "round": {
       "points": "pts",

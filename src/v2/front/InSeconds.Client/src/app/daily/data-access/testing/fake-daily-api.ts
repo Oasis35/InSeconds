@@ -16,7 +16,7 @@ export const SETTINGS: DailySettings = {
 };
 
 export const TODAY = (over: Partial<DailyToday> = {}): DailyToday => ({
-  state: 'can_start', tracksCount: 3, completedCount: 0, streak: EMPTY_STREAK, ...over,
+  state: 'can_start', tracksCount: 3, completedCount: 0, streak: EMPTY_STREAK, completedGames: 0, ...over,
 });
 
 export const SESSION = (over: Partial<StartedSession> = {}): StartedSession => ({

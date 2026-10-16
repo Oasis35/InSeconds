@@ -9,7 +9,7 @@ const ACTIVE: Streak = { ...EMPTY_STREAK, streak: 12, freezes: 1, maxFreezes: 2,
 describe('StreakSheetComponent', () => {
   function render(overrides: Partial<StreakSheetData> = {}) {
     const close = vi.fn();
-    const data: StreakSheetData = { streak: ACTIVE, linked: true, lang: 'fr', ...overrides };
+    const data: StreakSheetData = { streak: ACTIVE, linked: true, gamesPlayed: 112, lang: 'fr', ...overrides };
     TestBed.configureTestingModule({
       providers: [
         provideTranslateService(),
@@ -46,6 +46,28 @@ describe('StreakSheetComponent', () => {
     expect((el.querySelector('div[style*="gradient-ice"]') as HTMLElement).style.width).toBe('71%');
     buttons()[0].click();
     expect(close).toHaveBeenCalledWith('close');
+  });
+
+  it('linked : parties jouées à côté du titre de la série, au pluriel', () => {
+    const games = render().el.querySelector('[data-testid="streak-sheet-games"]');
+    expect(games?.textContent).toContain('daily.streakFreeze.sheet.gamesPlayed.other');
+  });
+
+  it('linked : « 1 partie » au singulier', () => {
+    const games = render({ gamesPlayed: 1 }).el.querySelector('[data-testid="streak-sheet-games"]');
+    expect(games?.textContent).toContain('daily.streakFreeze.sheet.gamesPlayed.one');
+  });
+
+  it("parties jouées inconnues (état du jour pas encore lu) : rien n'est affiché", () => {
+    expect(render({ gamesPlayed: null }).el.querySelector('[data-testid="streak-sheet-games"]')).toBeNull();
+  });
+
+  it("aucune partie terminée : rien n'est affiché", () => {
+    expect(render({ gamesPlayed: 0 }).el.querySelector('[data-testid="streak-sheet-games"]')).toBeNull();
+  });
+
+  it('guest : pas de parties jouées', () => {
+    expect(render({ linked: false }).el.querySelector('[data-testid="streak-sheet-games"]')).toBeNull();
   });
 
   it('stock au plafond : pas de barre de progression', () => {

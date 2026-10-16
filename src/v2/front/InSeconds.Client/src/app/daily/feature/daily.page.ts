@@ -179,7 +179,9 @@ export class DailyPage implements OnInit {
   }
 
   protected openStreakSheet(): void {
-    const data: StreakSheetData = { streak: this.store.sheetStreak(), linked: this.store.linked(), lang: this.language.current() };
+    const data: StreakSheetData = {
+      streak: this.store.sheetStreak(), linked: this.store.linked(), gamesPlayed: this.store.sheetGamesPlayed(), lang: this.language.current(),
+    };
     const dialog = this.modal.openSheet<StreakSheetResult, StreakSheetData, StreakSheetComponent>(StreakSheetComponent, { data });
     dialog.closed.subscribe(result => {
       if (result === 'playNow') this.store.playNow();
