@@ -208,18 +208,21 @@ h1, h2, h3, .font-display {
   padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
 }
 
+/* Sans !important : chaque sélecteur est au moins aussi spécifique que celui qu'il remplace (le conteneur de modale :
+   .app-modal-panel > .cdk-dialog-container), et .no-anim vient après le mouvement réduit pour l'emporter (E2E). */
+@media (prefers-reduced-motion: reduce) {
+  .app-modal-panel > .cdk-dialog-container,
+  .app-sheet-panel > .cdk-dialog-container,
+  .toast-enter,
+  .screen-enter {
+    animation: gel-fade 0.2s ease both;
+  }
+}
+
 .no-anim .cdk-dialog-container,
 .no-anim .toast-enter,
 .no-anim .screen-enter {
-  animation: none !important;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cdk-dialog-container,
-  .toast-enter,
-  .screen-enter {
-    animation: gel-fade 0.2s ease both !important;
-  }
+  animation: none;
 }
 
 /* Champ de saisie de la DA (connexion, profil, réponse de la manche) : posé en classe plutôt qu'en style répété dans chaque template. */
