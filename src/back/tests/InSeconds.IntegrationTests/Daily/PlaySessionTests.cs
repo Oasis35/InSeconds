@@ -423,11 +423,13 @@ public class PlaySessionTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Reponse_NeStockeQueCeQueLeJoueurATape_EtJamaisDansLeJournal()
+    public async Task Reponse_NeStockeJamaisLeTexteTapeParLeJoueur()
     {
         await _alice.AnswerAsync(_session, 1, 1, "Mon Artiste Secret", "Mon Titre Secret");
 
-        Assert.Equal("Mon Artiste Secret", await _game.Api.ScalarAsync<string>("SELECT artist_answer FROM daily.answers"));
+        // Minimisation RGPD : le verdict est gardé, le texte saisi nulle part (ligne entière lue en texte).
+        Assert.Equal(1L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM daily.answers"));
+        Assert.Equal(0L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM daily.answers a WHERE a::text LIKE '%Secret%'"));
         Assert.NotNull(await _game.Api.ScalarAsync<DateTime?>("SELECT answered_at FROM daily.answers"));
     }
 
