@@ -14,7 +14,7 @@ docker compose up -d
 ```
 
 Le réseau Docker `caddy-net` est créé par ce stack (`name: caddy-net`, pas `external`). Les
-stacks applicatifs (ex. `docker-compose.prod.yml` d'InSeconds) le déclarent en
+stacks applicatifs (ex. `docker-compose.prod-v2.yml` d'InSeconds) le déclarent en
 `external: true` pour le rejoindre — Caddy route alors vers eux par nom de conteneur
 (`inseconds.front`, `inseconds.api`), sans qu'aucun port applicatif ne soit publié sur l'hôte.
 

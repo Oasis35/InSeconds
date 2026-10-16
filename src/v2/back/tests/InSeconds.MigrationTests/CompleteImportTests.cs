@@ -23,8 +23,8 @@ public class CompleteImportTests(ImportDatabase database)
     [Fact]
     public async Task FormeDeLaSource_SchemaGenereDepuisLeCodeV1_Acceptee()
     {
-        // Le schéma de la base de test vient du code v1 actuel (dotnet ef migrations script) : une migration v1 ajoutée
-        // sans mettre à jour 05-check-source.sql fait échouer ce test, avant le staging.
+        // Le schéma de la base de test (v1-schema.sql) a été généré depuis le code v1 avant sa suppression (I2) : la forme
+        // que 05-check-source.sql attend doit l'accepter.
         var cs = await database.CreateDatabaseAsync();
 
         var result = await database.RunImportAsync(cs);

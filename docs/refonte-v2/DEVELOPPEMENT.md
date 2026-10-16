@@ -448,6 +448,12 @@ Le retour arrière reste possible tant que personne n'a joué en v2 (§ 10.3 du 
 - **Retirés** : le workflow « Bascule v2 », `deploy/vps/switch-to-v2.sh` et `import-to-staging.sh` (la répétition recopiait `public` avec l'ancienne copie ; la bascule est faite et ne peut plus être rejouée une fois les tables supprimées). Les scripts d'import et `MigrationTests` restent jusqu'à I2.
 - **Reste (Clément, sur le VPS)** : une fois la PR déployée, `./deploy/vps/drop-v1-tables.sh staging` dans `~/apps/InSeconds-staging` ; puis, après le J+1 et le merge vers `main`, `./deploy/vps/drop-v1-tables.sh prod` dans `~/apps/InSeconds`. Le J+1 (vider l'`AuthToken` v1) devient sans objet une fois les tables supprimées.
 
+**Fait en I2, première partie (#236, PR vers `env/staging` le 16/10/2026, en parallèle de I1, empilée sur sa PR #343) :**
+- **Code v1 supprimé** : `src/back`, `src/front`, `scripts/` (contrôle de parité des E2E, lanceur E2E v1), `e2e/parity-exceptions.json` et `e2e/disabled-specs.json` (vide depuis F2) du front v2, `docker-compose.prod.yml`, service `api` v1 du `docker-compose.yml` de dev, branche v1 de `deploy/vps/deploy.sh` et son marqueur `.bascule-v2-done`, entrées Dependabot v1.
+- **CI** : jobs v1, `e2e-parity` et filtre de chemins (`changes`) retirés : les quatre jobs v2 tournent à chaque run, « CI OK » n'agrège plus qu'eux.
+- **Schéma v1 des tests d'import figé** dans `src/v2/back/tests/InSeconds.MigrationTests/v1-schema.sql` (généré par `dotnet ef migrations script` sur `src/back` juste avant sa suppression, copié à côté des tests) : `ImportDatabase` ne génère plus rien, l'étape CI qui le générait est retirée. Les tests d'import et `DropV1TablesTests` (I1) en ont besoin tant que les tables v1 existent en prod.
+- **Découpage** : le déplacement de `src/v2` dans `src` renomme tous les fichiers que la PR I1 modifie ; il vient dans une seconde PR, après le merge de I1, avec le retrait des scripts d'import et le retour du flux Git normal (PR vers `main`).
+
 ---
 
 ## 12. Suivi

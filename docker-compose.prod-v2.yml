@@ -1,11 +1,8 @@
-# Prod en v2 (refonte v2, PR G2), depuis la bascule du 16/10/2026 (workflow « Bascule v2 », retiré en I1, #235) :
-# deploy/vps/deploy.sh le déploie à chaque push sur main (marqueur .bascule-v2-done). Avant la bascule, la prod était
-# servie par docker-compose.prod.yml (v1).
+# Prod (v2 depuis la bascule du 16/10/2026), déployée par deploy/vps/deploy.sh à chaque push sur main.
 #
-# Projet Compose distinct de la v1 (`inseconds`) : les conteneurs de la v1 ne sont jamais vus comme ceux de la v2, ce qui
-# permet le retour arrière (redémarrer la v1 depuis docker-compose.prod.yml). Mêmes noms de conteneurs que la v1
-# (inseconds.api, inseconds.front) : Caddy ne change pas. Même base `inseconds` : la v2 vit dans ses propres schémas, les
-# tables v1 de `public` restent intactes (suppression en I1).
+# Projet Compose `inseconds-v2`, créé à la bascule à côté de celui de la v1 (`inseconds`, retiré en I2) pour permettre
+# le retour arrière ; mêmes noms de conteneurs que la v1 (inseconds.api, inseconds.front) : Caddy ne change pas. Base
+# `inseconds`, un schéma par module.
 # Variables dans .env.prod (non commité, cf. .env.prod.example).
 name: inseconds-v2
 

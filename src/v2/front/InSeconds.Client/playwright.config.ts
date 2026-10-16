@@ -1,16 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
-import disabledSpecs from './e2e/disabled-specs.json';
 
-// E2E copiés de la v1 (PR A5), désactivés tant que la fonctionnalité n'existe pas en v2 :
-// e2e/disabled-specs.json liste chaque spec avec la PR qui le réactive (liste vide au jalon J4).
-// Réactiver un spec = retirer sa ligne. E2E_INCLUDE_DISABLED=1 les remet dans la liste : c'est ce
-// que fait le check CI de parité v1/v2 (scripts/check-e2e-parity.mjs, E8).
-const disabled = process.env['E2E_INCLUDE_DISABLED'] ? [] : Object.keys(disabledSpecs);
 const e2eDbConnection = process.env['E2E_DB_CONNECTION'];
 
 export default defineConfig({
   testDir: './e2e',
-  testIgnore: disabled.map((spec) => `**/specs/${spec}`),
   timeout: process.env['CI'] ? 60_000 : 30_000,
   expect: { timeout: 10_000 },
   fullyParallel: false,

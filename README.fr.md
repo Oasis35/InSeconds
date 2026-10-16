@@ -32,7 +32,7 @@
 
 ## Démarrage rapide
 
-> Le code de référence est dans `src/v2/` (en prod depuis le 16/10/2026 et sur le staging). `src/back` et `src/front` sont du code mort de l'ancienne version, à supprimer.
+> Le code est dans `src/v2/` (en prod depuis le 16/10/2026 et sur le staging). L'ancienne version a été supprimée après la bascule.
 
 ### Prérequis
 
@@ -90,31 +90,26 @@ Ouvre `http://localhost:5176`.
 InSeconds/
 ├── deploy/                    # VPS : Postgres partagé, Caddy, scripts de déploiement, import v1 → v2
 ├── docs/                      # Documentation (FR) : point d'entrée, règles du jeu, tâches, plan v2
-├── scripts/                   # Contrôle de parité des E2E (ancienne version, supprimé avec elle)
 ├── src/
-│   ├── v2/
-│   │   ├── back/              # InSeconds.slnx : Api (modules), Infrastructure, Deezer, Api.Testing, tests/
-│   │   └── front/InSeconds.Client/  # Application Angular (domaines account, gameplay, daily, admin)
-│   ├── back/                  # ancienne version (à supprimer)
-│   └── front/                 # ancienne version (à supprimer)
+│   └── v2/
+│       ├── back/              # InSeconds.slnx : Api (modules), Infrastructure, Deezer, Api.Testing, tests/
+│       └── front/InSeconds.Client/  # Application Angular (domaines account, gameplay, daily, admin)
 ├── docker-compose.yml         # Dev : base
 ├── docker-compose.staging.yml # Staging (v2)
-├── docker-compose.prod.yml    # Ancienne prod, plus utilisée (à supprimer)
 ├── docker-compose.prod-v2.yml # Prod (v2, depuis la bascule du 16/10/2026)
 └── README.md / README.fr.md
 ```
 
 ## Intégration continue
 
-Workflow GitHub Actions sur chaque push (toutes branches) et chaque PR vers `main`. Jobs v2 :
+Workflow GitHub Actions sur chaque push (toutes branches) et chaque PR vers `main` :
 
-- **back-v2** — build, tests unitaires, d'architecture et d'intégration (Testcontainers), migrations à jour, codegen Wolverine à jour, image Docker sans l'hôte de test
-- **front-v2** — build de prod, tests Vitest, frontières Sheriff, clients NSwag à jour
-- **e2e-v2** — Playwright contre l'hôte de test
-- **nginx-headers-v2** — construit l'image nginx du front et vérifie en-têtes de cache et de sécurité, types MIME et redirection de l'ancienne adresse
-- **e2e-parity** — compare les titres des E2E à ceux de l'ancienne version (supprimé avec elle)
+- **back** — build, tests unitaires, d'architecture et d'intégration (Testcontainers), migrations à jour, codegen Wolverine à jour, image Docker sans l'hôte de test
+- **front** — build de prod, tests Vitest, frontières Sheriff, clients NSwag à jour
+- **e2e** — Playwright contre l'hôte de test
+- **nginx-headers** — construit l'image nginx du front et vérifie en-têtes de cache et de sécurité, types MIME et redirection de l'ancienne adresse
 
-Les jobs de l'ancienne version tournent tant qu'elle existe. Le check **« CI OK »** les agrège (c'est lui qu'exige la protection des branches). Les runs obsolètes sont annulés automatiquement. Détail : [`CLAUDE.md`](CLAUDE.md) § CI.
+Le check **« CI OK »** les agrège (c'est lui qu'exige la protection des branches). Les runs obsolètes sont annulés automatiquement. Détail : [`CLAUDE.md`](CLAUDE.md) § CI.
 
 ## Tests
 
@@ -142,7 +137,7 @@ cd src/v2/front/InSeconds.Client
 E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=<DB_PASSWORD>" npm run e2e
 ```
 
-`playwright.config.ts` démarre l'hôte de test (port 5177) et `ng serve` (port 5178). **110 tests** répartis sur 26 fichiers, jeu, connexion, profil, série et gels, admin…
+`playwright.config.ts` démarre l'hôte de test (port 5177) et `ng serve` (port 5178). **120 tests** répartis sur 30 fichiers, jeu, connexion, profil, série et gels, admin…
 
 ## Documentation
 
