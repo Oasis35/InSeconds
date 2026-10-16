@@ -12,9 +12,15 @@ const DEEZER_UNAVAILABLE = 'catalogue.deezer_unavailable';
 type PreviewStatus = 'loading' | 'ready' | 'error';
 
 /**
- * Écouter l'extrait d'un morceau du pool. Le pool ne garde pas l'adresse de l'extrait (signée, elle
- * expire) : la fenêtre la redemande à Deezer. La lecture démarre d'elle-même, et **s'arrête à la
- * fermeture** : une réponse de Deezer qui arrive après la fermeture (ou après la réouverture sur un
+ * Le morceau à écouter : un morceau du pool (l'extrait est redemandé à Deezer) ou un résultat de la
+ * recherche Deezer, qui apporte son extrait tout juste reçu (`previewUrl`, rien à redemander).
+ */
+export type PreviewTrackData = Pick<PoolTrack, 'deezerTrackId' | 'artist' | 'title'> & { readonly previewUrl?: string | null };
+
+/**
+ * Écouter l'extrait d'un morceau du pool ou d'un résultat de la recherche Deezer. Le pool ne garde pas
+ * l'adresse de l'extrait (signée, elle expire) : pour un morceau du pool, la fenêtre la redemande à
+ * Deezer. La lecture démarre d'elle-même, et **s'arrête à la fermeture** : une réponse de Deezer qui arrive après la fermeture (ou après la réouverture sur un
  * autre morceau) ne relance pas l'audio (piège 42).
  */
 @Component({
@@ -62,7 +68,7 @@ type PreviewStatus = 'loading' | 'ready' | 'error';
   `,
 })
 export class PreviewTrackDialog implements OnInit {
-  protected readonly track = inject<PoolTrack>(DIALOG_DATA);
+  protected readonly track = inject<PreviewTrackData>(DIALOG_DATA);
   protected readonly player = inject(AudioPreviewPlayer);
   private readonly api = inject(CatalogueApi);
 
@@ -73,7 +79,7 @@ export class PreviewTrackDialog implements OnInit {
   private closed = false;
 
   constructor() {
-    // Un seul son à la fois : l'extrait que le panneau de recherche jouait s'arrête.
+    // Un seul son à la fois : un extrait qui jouait encore s'arrête.
     this.player.stop();
     inject(DestroyRef).onDestroy(() => {
       this.closed = true;
@@ -92,7 +98,7 @@ export class PreviewTrackDialog implements OnInit {
   private async load(): Promise<void> {
     let url: string | null;
     try {
-      url = await this.api.findPreviewUrl(this.track);
+      url = this.track.previewUrl !== undefined ? this.track.previewUrl : await this.api.findPreviewUrl(this.track);
     } catch (error) {
       const { code } = await toAppError(error);
       if (this.closed) return;

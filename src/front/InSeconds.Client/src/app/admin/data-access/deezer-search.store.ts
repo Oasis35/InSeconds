@@ -38,7 +38,7 @@ interface DeezerSearchState {
  */
 export const DeezerSearchStore = signalStore(
   withState<DeezerSearchState>({
-    open: false, query: '', results: [], searching: false, searchError: null, linked: false, addStatuses: {}, addErrors: {},
+    open: false, query: '', results: [], searching: false, searchError: null, linked: true, addStatuses: {}, addErrors: {},
   }),
   withMethods((store, api = inject(CatalogueApi), pool = inject(PoolStore), destroyRef = inject(DestroyRef)) => {
     const resetTimers = new Map<number, ReturnType<typeof setTimeout>>();

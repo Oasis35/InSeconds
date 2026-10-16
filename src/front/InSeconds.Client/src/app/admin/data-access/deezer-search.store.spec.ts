@@ -122,10 +122,11 @@ describe('DeezerSearchStore', () => {
     it('lie et délie les recherches', () => {
       setup();
 
-      store.toggleLinked();
       expect(store.linked()).toBe(true);
       store.toggleLinked();
       expect(store.linked()).toBe(false);
+      store.toggleLinked();
+      expect(store.linked()).toBe(true);
     });
   });
 

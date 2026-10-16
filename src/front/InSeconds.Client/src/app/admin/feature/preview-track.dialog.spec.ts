@@ -19,7 +19,7 @@ describe('PreviewTrackDialog', () => {
   let audios: FakeAudio[];
   let api: FakeCatalogueApi;
 
-  function open(overrides: Partial<FakeCatalogueApi> = {}) {
+  function open(overrides: Partial<FakeCatalogueApi> = {}, data: unknown = track) {
     audios = [];
     api = fakeCatalogueApi(overrides);
     TestBed.configureTestingModule({
@@ -28,7 +28,7 @@ describe('PreviewTrackDialog', () => {
         AudioPreviewPlayer,
         provideCatalogueApiFake(api),
         { provide: PREVIEW_AUDIO_FACTORY, useValue: () => audios[audios.push(new FakeAudio()) - 1] },
-        { provide: DIALOG_DATA, useValue: track },
+        { provide: DIALOG_DATA, useValue: data },
         { provide: DialogRef, useValue: { close: vi.fn() } },
       ],
     });
@@ -50,6 +50,27 @@ describe('PreviewTrackDialog', () => {
     expect(player.url()).toBe('https://preview/77.mp3');
     expect(player.playing()).toBe(true);
     expect(element.textContent).toContain('⏸');
+  });
+
+  it('lit tout de suite l\'extrait d\'un résultat de la recherche Deezer, sans le redemander', async () => {
+    const result = { deezerTrackId: 42, artist: 'Daft Punk', title: 'Veridis Quo', previewUrl: 'https://preview/42.mp3' };
+    const { fixture, element, player } = open({}, result);
+    await flush();
+    fixture.detectChanges();
+
+    expect(api.findPreviewUrl).not.toHaveBeenCalled();
+    expect(player.url()).toBe('https://preview/42.mp3');
+    expect(player.playing()).toBe(true);
+    expect(element.textContent).toContain('Daft Punk');
+  });
+
+  it('dit qu\'il n\'y a pas d\'extrait pour un résultat Deezer qui n\'en a pas', async () => {
+    const { fixture, element } = open({}, { deezerTrackId: 42, artist: 'Daft Punk', title: 'Veridis Quo', previewUrl: null });
+    await flush();
+    fixture.detectChanges();
+
+    expect(api.findPreviewUrl).not.toHaveBeenCalled();
+    expect(element.textContent).toContain('admin.previewModal.error');
   });
 
   it('affiche l\'artiste et le titre', () => {
@@ -126,7 +147,7 @@ describe('PreviewTrackDialog', () => {
     expect(player.playing()).toBe(false);
   });
 
-  it('coupe l\'extrait que le panneau de recherche jouait', async () => {
+  it('coupe l\'extrait qui jouait encore', async () => {
     audios = [];
     api = fakeCatalogueApi({ findPreviewUrl: vi.fn(async () => 'https://preview/77.mp3') });
     TestBed.configureTestingModule({
