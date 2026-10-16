@@ -15,7 +15,7 @@ ko() { echo "FAIL $1" >&2; fail=1; }
 
 # S9 : routes de l'hôte de test (InSeconds.Api.Testing) absentes. Sondées en GET alors qu'elles n'existent
 # qu'en POST : présentes, elles répondraient 405 sans rien exécuter (jamais de vrai reset de la base ni de
-# connexion). Le contrôle de l'image en CI (job back-v2) les couvre aussi.
+# connexion). Le contrôle de l'image en CI (job back) les couvre aussi.
 for route in /api/e2e/reset /api/auth/dev-login; do
   code=$(curl -s -o /dev/null -w '%{http_code}' "$api$route")
   if [[ "$code" == "404" ]]; then

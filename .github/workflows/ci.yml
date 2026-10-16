@@ -16,8 +16,8 @@ concurrency:
 jobs:
   # Tous les jobs tournent à chaque run (le code v1 et son filtre de chemins sont retirés en I2, #236).
   # Le job « CI OK » en fin de fichier les agrège : c'est le seul check exigé par le ruleset.
-  front-v2:
-    name: Frontend v2 (build, Vitest, Sheriff)
+  front:
+    name: Frontend (build, Vitest, Sheriff)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -49,9 +49,9 @@ jobs:
         run: npx --no-install ng test --watch=false
 
   # Image de prod du front : Cache-Control, en-têtes de sécurité, CSP, plus la PWA (ngsw.json et worker sans
-  # cache, aucun dataGroups). En parallèle de front-v2, qui vérifie déjà le build.
-  nginx-headers-v2:
-    name: Frontend v2 (nginx headers smoke test)
+  # cache, aucun dataGroups). En parallèle de front, qui vérifie déjà le build.
+  nginx-headers:
+    name: Frontend (nginx headers smoke test)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -63,8 +63,8 @@ jobs:
 
   # E2E contre l'hôte de test de l'API (InSeconds.Api.Testing, port 5175) et le front servi par
   # ng serve (port 5176, proxy /api).
-  e2e-v2:
-    name: E2E v2 (Playwright)
+  e2e:
+    name: E2E (Playwright)
     runs-on: ubuntu-latest
 
     services:
@@ -99,7 +99,7 @@ jobs:
       # (origines de confiance, limites de débit…), cf. piège 9.
       - name: Start test host
         working-directory: src/v2/back/InSeconds.Api.Testing
-        run: dotnet run --no-build --no-launch-profile --configuration Debug --urls http://localhost:5175 > /tmp/backend-v2.log 2>&1 &
+        run: dotnet run --no-build --no-launch-profile --configuration Debug --urls http://localhost:5175 > /tmp/backend.log 2>&1 &
         env:
           ASPNETCORE_ENVIRONMENT: Testing
           ConnectionStrings__DefaultConnection: >-
@@ -118,7 +118,7 @@ jobs:
 
       - name: Start Angular dev server
         working-directory: src/v2/front/InSeconds.Client
-        run: npx --no-install ng serve --configuration e2e-ci --port 5176 > /tmp/angular-v2.log 2>&1 &
+        run: npx --no-install ng serve --configuration e2e-ci --port 5176 > /tmp/angular.log 2>&1 &
 
       - name: Install Playwright browsers
         working-directory: src/v2/front/InSeconds.Client
@@ -141,20 +141,20 @@ jobs:
         if: failure()
         run: |
           echo "=== Backend logs ==="
-          cat /tmp/backend-v2.log || true
+          cat /tmp/backend.log || true
           echo "=== Angular logs ==="
-          cat /tmp/angular-v2.log || true
+          cat /tmp/angular.log || true
 
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report-v2
+          name: playwright-report
           path: src/v2/front/InSeconds.Client/playwright-report/
           retention-days: 7
 
-  back-v2:
-    name: Backend v2 (build, migrations, tests, image)
+  back:
+    name: Backend (build, migrations, tests, image)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -200,8 +200,8 @@ jobs:
       # S9 : l'hôte de test (routes /api/e2e, faux email) ne doit jamais atteindre l'image de prod.
       - name: Build prod image and check it has no test host
         run: |
-          docker build -f InSeconds.Api/Dockerfile -t inseconds-api-v2:ci .
-          files=$(docker run --rm --entrypoint ls inseconds-api-v2:ci /app)
+          docker build -f InSeconds.Api/Dockerfile -t inseconds-api:ci .
+          files=$(docker run --rm --entrypoint ls inseconds-api:ci /app)
           echo "$files" | grep -q '^InSeconds.Api.dll$' || { echo "::error::InSeconds.Api.dll absent de l'image"; exit 1; }
           if echo "$files" | grep -q 'InSeconds.Api.Testing'; then
             echo "::error::InSeconds.Api.Testing présent dans l'image de prod (S9)."
@@ -215,10 +215,10 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     needs:
-      - front-v2
-      - nginx-headers-v2
-      - back-v2
-      - e2e-v2
+      - front
+      - nginx-headers
+      - back
+      - e2e
     steps:
       - name: Check job results
         env:

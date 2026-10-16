@@ -104,10 +104,10 @@ InSeconds/
 
 GitHub Actions workflow on every push (all branches) and every PR to `main`:
 
-- **back-v2** — build, unit, architecture and integration tests (Testcontainers), migrations up to date, Wolverine codegen up to date, Docker image without the test host
-- **front-v2** — production build, Vitest tests, Sheriff boundaries, NSwag clients up to date
-- **e2e-v2** — Playwright against the test host
-- **nginx-headers-v2** — builds the frontend nginx image and checks cache and security headers, MIME types and the old-address redirect
+- **back** — build, unit, architecture and integration tests (Testcontainers), migrations up to date, Wolverine codegen up to date, Docker image without the test host
+- **front** — production build, Vitest tests, Sheriff boundaries, NSwag clients up to date
+- **e2e** — Playwright against the test host
+- **nginx-headers** — builds the frontend nginx image and checks cache and security headers, MIME types and the old-address redirect
 
 The **"CI OK"** check aggregates them (it is the one branch protection requires). Stale runs are cancelled automatically. Details: [`CLAUDE.md`](CLAUDE.md) § CI.
 

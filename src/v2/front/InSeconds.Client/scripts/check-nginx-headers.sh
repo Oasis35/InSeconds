@@ -8,8 +8,8 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-IMAGE_TAG="inseconds-front-v2-nginx-headers-check"
-CONTAINER_NAME="inseconds-front-v2-nginx-headers-check"
+IMAGE_TAG="inseconds-front-nginx-headers-check"
+CONTAINER_NAME="inseconds-front-nginx-headers-check"
 PORT="${NGINX_HEADERS_CHECK_PORT:-8098}"
 BASE="http://localhost:$PORT"
 NO_CACHE="no-cache"

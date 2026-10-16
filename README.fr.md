@@ -104,10 +104,10 @@ InSeconds/
 
 Workflow GitHub Actions sur chaque push (toutes branches) et chaque PR vers `main` :
 
-- **back-v2** — build, tests unitaires, d'architecture et d'intégration (Testcontainers), migrations à jour, codegen Wolverine à jour, image Docker sans l'hôte de test
-- **front-v2** — build de prod, tests Vitest, frontières Sheriff, clients NSwag à jour
-- **e2e-v2** — Playwright contre l'hôte de test
-- **nginx-headers-v2** — construit l'image nginx du front et vérifie en-têtes de cache et de sécurité, types MIME et redirection de l'ancienne adresse
+- **back** — build, tests unitaires, d'architecture et d'intégration (Testcontainers), migrations à jour, codegen Wolverine à jour, image Docker sans l'hôte de test
+- **front** — build de prod, tests Vitest, frontières Sheriff, clients NSwag à jour
+- **e2e** — Playwright contre l'hôte de test
+- **nginx-headers** — construit l'image nginx du front et vérifie en-têtes de cache et de sécurité, types MIME et redirection de l'ancienne adresse
 
 Le check **« CI OK »** les agrège (c'est lui qu'exige la protection des branches). Les runs obsolètes sont annulés automatiquement. Détail : [`CLAUDE.md`](CLAUDE.md) § CI.
 
