@@ -17,7 +17,6 @@ import { provideCspViolationReporting } from './core/errors/csp-violation-report
 import { GlobalErrorHandler } from './core/errors/global-error-handler';
 import { credentialsInterceptor } from './core/http/credentials.interceptor';
 import { httpErrorReportingInterceptor } from './core/http/http-error-reporting.interceptor';
-import { newVersionInterceptor } from './core/http/new-version.interceptor';
 import { LanguageService } from './core/i18n/language.service';
 
 export const appConfig: ApplicationConfig = {
@@ -30,7 +29,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes, withInMemoryScrolling({ scrollPositionRestoration: 'top' })),
     provideHttpClient(
       withFetch(),
-      withInterceptors([credentialsInterceptor, newVersionInterceptor, httpErrorReportingInterceptor]),
+      withInterceptors([credentialsInterceptor, httpErrorReportingInterceptor]),
     ),
     provideTranslateService({
       loader: provideTranslateHttpLoader({ prefix: 'i18n/', suffix: '.json' }),

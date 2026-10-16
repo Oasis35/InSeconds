@@ -15,9 +15,6 @@ public static class ErrorCodes
     public const string Conflict = "common.conflict";
     public const string TooManyRequests = "common.too_many_requests";
 
-    /// <summary>Route de la v1, retirée à la bascule : le front propose de recharger la page (§ 10.2 du plan v2).</summary>
-    public const string NewVersion = "common.new_version";
-
     /// <summary>Code par défaut d'une réponse d'erreur qui n'en porte pas déjà un.</summary>
     public static string ForStatus(int statusCode) => statusCode switch
     {

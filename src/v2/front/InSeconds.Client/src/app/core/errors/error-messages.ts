@@ -9,7 +9,6 @@ export const ERROR_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   'common.conflict': 'errors.common.conflict',
   'common.forbidden': 'errors.common.forbidden',
   'common.network': 'errors.common.network',
-  'common.new_version': 'errors.common.new_version',
   'common.not_found': 'errors.common.not_found',
   'common.too_many_requests': 'errors.common.too_many_requests',
   'common.unauthorized': 'errors.common.unauthorized',

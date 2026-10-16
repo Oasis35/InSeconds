@@ -10,7 +10,6 @@
       "conflict": "Cette action n'est plus possible dans l'état actuel.",
       "forbidden": "Tu n'as pas accès à cette page.",
       "network": "Impossible de joindre le serveur. Vérifie ta connexion et réessaie.",
-      "new_version": "Une nouvelle version d'InSeconds est disponible. Recharge la page pour continuer.",
       "not_found": "Ce que tu cherches n'existe pas ou plus.",
       "too_many_requests": "Trop de demandes d'un coup. Patiente un peu avant de réessayer.",
       "unauthorized": "Connecte-toi pour continuer.",

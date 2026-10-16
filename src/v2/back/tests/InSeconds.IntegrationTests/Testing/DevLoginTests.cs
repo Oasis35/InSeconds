@@ -40,8 +40,7 @@ public class DevLoginTests(PostgresFixture postgres) : IAsyncLifetime
 
         var response = await api.CreateClient().PostAsJsonAsync(DevLoginEndpoints.Route, new DevLoginRequest("dev@example.com", "Dev"), Ct);
 
-        // 404 ou 410 : l'ancienne route de la v1 répond 410 (common.new_version), la route de test n'existe pas.
-        Assert.Contains(response.StatusCode, new[] { HttpStatusCode.NotFound, HttpStatusCode.Gone });
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
