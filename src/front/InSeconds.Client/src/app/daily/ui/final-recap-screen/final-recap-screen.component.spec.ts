@@ -6,7 +6,7 @@ import { FinalRecapScreenComponent } from './final-recap-screen.component';
 const answered = (over: Partial<AnsweredTrack> = {}): AnsweredTrack => ({
   position: 1, artistCorrect: true, titleCorrect: true, score: 1000, listenedSeconds: 0.5, hintLevel: 0,
   correctArtist: 'Eminem', correctTitle: 'Lose Yourself', deezerTrackId: 42, coverUrl: null,
-  averageSecondsWhenCorrect: 0.5, failureRatePercent: 0, distribution: [], notFoundCount: 0,
+  averageSecondsWhenCorrect: 0.5, distribution: [], notFoundCount: 0,
   ...over,
 });
 
@@ -15,7 +15,7 @@ const stats = (): DayStats => ({
   minScore: 1000, maxScore: 1000, maxPossibleScore: 5000, scoreDistribution: [], betterThanPercent: null,
   tracks: [{
     position: 1, artist: 'Eminem', title: 'Lose Yourself', deezerTrackId: 42, coverUrl: 'http://x/c.jpg',
-    failureRatePercent: 12, averageSecondsWhenCorrect: 0.9, artistCorrect: true, titleCorrect: true,
+    averageSecondsWhenCorrect: 0.9, artistCorrect: true, titleCorrect: true,
     listenedSeconds: 0.5, score: 1000, distribution: [{ durationSeconds: 0.5, count: 2 }], notFoundCount: 1,
   }],
 });

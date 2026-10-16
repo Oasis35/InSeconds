@@ -33,7 +33,7 @@ export const SESSION = (over: Partial<StartedSession> = {}): StartedSession => (
 export const ANSWERED = (position: number, over: Partial<AnsweredTrack> = {}): AnsweredTrack => ({
   position, artistCorrect: true, titleCorrect: true, score: 850, listenedSeconds: 1, hintLevel: 0,
   correctArtist: `Artiste ${position}`, correctTitle: `Titre ${position}`, deezerTrackId: 100 + position, coverUrl: `https://cdn.example/c${position}.jpg`,
-  averageSecondsWhenCorrect: 1.5, failureRatePercent: 20, distribution: [{ durationSeconds: 1, count: 4 }], notFoundCount: 1, ...over,
+  averageSecondsWhenCorrect: 1.5, distribution: [{ durationSeconds: 1, count: 4 }], notFoundCount: 1, ...over,
 });
 
 export const STATS = (over: Partial<DayStats> = {}): DayStats => ({
