@@ -33,6 +33,16 @@ export function toGameStatus(value: string): PlayerGameStatus {
   return (STATUSES as readonly string[]).includes(value) ? (value as PlayerGameStatus) : 'Expired';
 }
 
+/**
+ * L'email tel que l'onglet Joueurs le montre avant un clic (minimisation, RGPD) : la première lettre,
+ * puis le domaine (`c•••@gmail.com`). Sans `@` exploitable : tout masqué.
+ */
+export function maskEmail(email: string): string {
+  const at = email.lastIndexOf('@');
+  if (at <= 0 || at === email.length - 1) return '•••';
+  return `${email[0]}•••${email.slice(at)}`;
+}
+
 /** Filtre texte sur le pseudo ou l'email, sans tenir compte de la casse ni des espaces autour. */
 export function filterPlayers(players: readonly RegisteredPlayer[], text: string): readonly RegisteredPlayer[] {
   const query = text.trim().toLowerCase();
