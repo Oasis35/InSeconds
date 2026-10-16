@@ -5,7 +5,7 @@ import { HeaderSlot } from './header-slot';
 /**
  * En-tête global de l'app : le lien de compte (`<app-account-link>` : avatar ou « Se connecter ») en haut à droite, posé en superposition :
  * il ne décale aucun écran. Effacé sur une page qui a son propre en-tête (`HeaderSlot` : le jeu du jour, qui pose le lien de compte dans son
- * bandeau, et l'admin, qui n'en affiche pas).
+ * bandeau, l'admin et le profil, qui n'en affichent pas).
  */
 @Component({
   selector: 'app-header',

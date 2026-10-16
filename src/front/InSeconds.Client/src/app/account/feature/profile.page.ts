@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { FormField, FormRoot, form, validate } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AppError } from '../../core/errors/app-error';
+import { HeaderSlot } from '../../core/shell/app-header/header-slot';
 import { errorMessageKey } from '../../core/errors/error-messages';
 import { LanguageService } from '../../core/i18n/language.service';
 import { SessionStore } from '../../core/session/session.store';
@@ -26,6 +27,7 @@ function errorOf(status: ActionStatus): AppError | null {
  * `/account/profile` : pseudo, changement d'email (confirmé par un lien envoyé à la nouvelle
  * adresse), appareils connectés, déconnexion. Réservé aux comptes (garde de la route). La série et
  * les parties jouées s'y ajoutent avec le module Daily.
+ * Pas d'avatar en haut à droite (il mènerait à cette page) : le profil prend `HeaderSlot`, l'en-tête global s'efface.
  */
 @Component({
   selector: 'app-profile-page',
@@ -46,6 +48,12 @@ export class ProfilePage implements OnInit {
   private readonly toast = inject(ToastService);
   private readonly translate = inject(TranslateService);
   private readonly router = inject(Router);
+
+  constructor() {
+    const headerSlot = inject(HeaderSlot);
+    headerSlot.takeOver(this);
+    inject(DestroyRef).onDestroy(() => headerSlot.release(this));
+  }
 
   /** Champ pseudo : mêmes règles que le back, sur la valeur sans espaces autour. */
   protected readonly pseudoForm = form(signal({ pseudo: this.session.player()?.pseudo ?? '' }), path => {
