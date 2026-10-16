@@ -6,7 +6,7 @@
 
 InSeconds est un **blind test musical quotidien**. La lecture démarre au palier le plus court (0,5 s) et le joueur prolonge l'écoute s'il le souhaite (paliers : 0.5, 1, 1.5, 2, 3, 5, 10) avant de tenter artiste + titre. Moins il écoute, plus il marque. Même défi pour tout le monde, chaque jour, à minuit UTC. Mode invité disponible (joue sans s'inscrire).
 
-## Stack (v2)
+## Stack
 
 | Couche | Tech |
 |--------|------|
@@ -28,7 +28,7 @@ InSeconds est un **blind test musical quotidien**. La lecture démarre au palier
 
 ## État du dépôt
 
-Le code de référence est dans `src/v2/` : il sert la prod depuis le 16/10/2026 et le staging. L'ancienne version (`src/back`, `src/front`) est supprimée depuis la PR I2 (historique git). Où en est le chantier : ticket GitHub #205.
+Le code est dans `src/` (la v2 de la refonte, en prod depuis le 16/10/2026). L'ancienne version et l'import v1 → v2 sont supprimés depuis I2 (historique git). Où en est le chantier : ticket GitHub #205.
 
 ## Où trouver quoi
 
@@ -38,12 +38,12 @@ Chaque information n'est écrite qu'à un seul endroit, pour éviter que des cop
 |--------|----------|
 | Installer et lancer le projet | [`README.fr.md`](../README.fr.md) |
 | Conventions, modèle de données, pièges connus, déploiement | [`CLAUDE.md`](../CLAUDE.md) racine |
-| Détail backend v2 (modules, routes, tâches, authentification, import) | [`src/v2/back/CLAUDE.md`](../src/v2/back/CLAUDE.md) |
-| Détail frontend v2 (domaines, stores, lecteur, E2E) | [`src/v2/front/CLAUDE.md`](../src/v2/front/CLAUDE.md) |
+| Détail backend (modules, routes, tâches, authentification) | [`src/back/CLAUDE.md`](../src/back/CLAUDE.md) |
+| Détail frontend (domaines, stores, lecteur, E2E) | [`src/front/CLAUDE.md`](../src/front/CLAUDE.md) |
 | Règles de jeu (scoring, anti-triche, série, indices) | [`GAMEPLAY_RULES_FR.md`](GAMEPLAY_RULES_FR.md) |
 | Ce qui reste à faire | [`TACHES.md`](TACHES.md) |
 | Plan de la v2, décisions, découpage en PR | [`refonte-v2/PLAN.md`](refonte-v2/PLAN.md), [`refonte-v2/DEVELOPPEMENT.md`](refonte-v2/DEVELOPPEMENT.md) |
-| Import v1 → v2, bascule (faite), suppression des tables v1 | [`deploy/migration-v2/README.md`](../deploy/migration-v2/README.md) |
+| Suppression des tables v1, copie prod → staging | [`CLAUDE.md`](../CLAUDE.md) § Déploiement VPS |
 | Postgres partagé, sauvegardes | [`deploy/infra/README.md`](../deploy/infra/README.md) |
 
 `BACKEND_STRUCTURE_FR.md` et `FRONTEND_STRUCTURE_FR.md` ne sont plus que des renvois vers ces fichiers.
@@ -55,13 +55,13 @@ Chaque information n'est écrite qu'à un seul endroit, pour éviter que des cop
 cp .env.example .env
 docker compose up -d database
 
-# API v2 (hôte de test : faux Deezer et faux email, http://localhost:5175)
-cd src/v2/back
+# API (hôte de test : faux Deezer et faux email, http://localhost:5175)
+cd src/back
 ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=inseconds;Username=inseconds;Password=<DB_PASSWORD>" \
   dotnet run --project InSeconds.Api.Testing
 
-# Front v2 (http://localhost:5176)
-cd src/v2/front/InSeconds.Client
+# Front (http://localhost:5176)
+cd src/front/InSeconds.Client
 npm ci
 npm start
 ```

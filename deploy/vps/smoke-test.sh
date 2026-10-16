@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test de fumée de l'API v2 après déploiement (PLAN § 12 bis), lancé par deploy.sh sur le staging
+# Test de fumée de l'API après déploiement (PLAN § 12 bis), lancé par deploy.sh sur le staging
 # (la prod l'aura à la bascule) : routes de test absentes (S9), en-têtes de sécurité présents
 # (S15), tableau de bord /jobs protégé (S3). Interroge l'adresse publique : toute la chaîne
 # Cloudflare → Caddy → API est vérifiée.

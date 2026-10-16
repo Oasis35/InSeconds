@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: src/v2/front/InSeconds.Client
+        working-directory: src/front/InSeconds.Client
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -31,7 +31,7 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: src/v2/front/InSeconds.Client/package-lock.json
+          cache-dependency-path: src/front/InSeconds.Client/package-lock.json
 
       - name: Install (clean)
         run: npm ci --ignore-scripts
@@ -58,7 +58,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Build image and verify headers
-        working-directory: src/v2/front/InSeconds.Client
+        working-directory: src/front/InSeconds.Client
         run: bash scripts/check-nginx-headers.sh
 
   # E2E contre l'hôte de test de l'API (InSeconds.Api.Testing, port 5175) et le front servi par
@@ -89,16 +89,16 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          global-json-file: src/v2/back/global.json
+          global-json-file: src/back/global.json
 
       - name: Build test host (Debug)
-        working-directory: src/v2/back
+        working-directory: src/back
         run: dotnet build InSeconds.Api.Testing/InSeconds.Api.Testing.csproj --configuration Debug
 
       # --no-launch-profile : sans lui, launchSettings.json impose l'environnement Development
       # (origines de confiance, limites de débit…), cf. piège 9.
       - name: Start test host
-        working-directory: src/v2/back/InSeconds.Api.Testing
+        working-directory: src/back/InSeconds.Api.Testing
         run: dotnet run --no-build --no-launch-profile --configuration Debug --urls http://localhost:5175 > /tmp/backend.log 2>&1 &
         env:
           ASPNETCORE_ENVIRONMENT: Testing
@@ -110,18 +110,18 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: src/v2/front/InSeconds.Client/package-lock.json
+          cache-dependency-path: src/front/InSeconds.Client/package-lock.json
 
       - name: Install npm dependencies
-        working-directory: src/v2/front/InSeconds.Client
+        working-directory: src/front/InSeconds.Client
         run: npm ci --ignore-scripts
 
       - name: Start Angular dev server
-        working-directory: src/v2/front/InSeconds.Client
+        working-directory: src/front/InSeconds.Client
         run: npx --no-install ng serve --configuration e2e-ci --port 5176 > /tmp/angular.log 2>&1 &
 
       - name: Install Playwright browsers
-        working-directory: src/v2/front/InSeconds.Client
+        working-directory: src/front/InSeconds.Client
         run: npx --no-install playwright install --with-deps chromium
 
       # --retry-connrefused : sans réponse au bout du délai, l'étape échoue (une boucle `curl && break` laisse passer).
@@ -132,7 +132,7 @@ jobs:
         run: curl -sf -o /dev/null --retry 120 --retry-delay 3 --retry-connrefused --retry-all-errors http://localhost:5176
 
       - name: Run E2E tests
-        working-directory: src/v2/front/InSeconds.Client
+        working-directory: src/front/InSeconds.Client
         run: npx --no-install playwright test
         env:
           CI: 'true'
@@ -150,7 +150,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report
-          path: src/v2/front/InSeconds.Client/playwright-report/
+          path: src/front/InSeconds.Client/playwright-report/
           retention-days: 7
 
   back:
@@ -158,7 +158,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: src/v2/back
+        working-directory: src/back
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -166,7 +166,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          global-json-file: src/v2/back/global.json
+          global-json-file: src/back/global.json
 
       - name: Restore
         run: dotnet restore InSeconds.slnx
@@ -178,7 +178,7 @@ jobs:
         run: dotnet tool install --global dotnet-ef --version 10.0.12
 
       - name: Verify EF model has no pending migrations
-        working-directory: src/v2/back/InSeconds.Api
+        working-directory: src/back/InSeconds.Api
         run: dotnet ef migrations has-pending-model-changes --no-build --configuration Release
 
       # En staging et en prod, Wolverine charge le code commité dans Internal/Generated au lieu de
@@ -193,7 +193,7 @@ jobs:
             exit 1
           fi
 
-      # Unitaires, architecture, intégration et import (Testcontainers : Docker est fourni par ubuntu-latest).
+      # Unitaires, architecture, intégration et scripts SQL du VPS (Testcontainers : Docker est fourni par ubuntu-latest).
       - name: Test
         run: dotnet test --solution InSeconds.slnx --configuration Release --no-build
 
