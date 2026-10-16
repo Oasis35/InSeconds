@@ -3,8 +3,8 @@ using Microsoft.Extensions.Time.Testing;
 namespace InSeconds.MigrationTests;
 
 /// <summary>
-/// Seconde anonymisation du staging (<c>staging-anonymize.sql</c>, S8 et § 10.1 du plan v2), lancée par <c>import-to-staging.sh</c>
-/// après l'import : aucune adresse ni aucun rôle admin de la prod ne reste, sauf ceux de l'adresse gardée, et la file de Wolverine est vidée,
+/// Anonymisation du staging (<c>staging-anonymize.sql</c>, S8 et § 10.1 du plan v2), lancée par <c>copy-prod-db-to-staging.sh</c>
+/// après la copie des schémas v2 de la prod (I1, #235) : aucune adresse ni aucun rôle admin de la prod ne reste, sauf ceux de l'adresse gardée, et la file de Wolverine est vidée,
 /// messages en erreur compris (ils gardent le corps du message, une adresse pour un lien de connexion).
 /// </summary>
 public class StagingAnonymizeTests(ImportDatabase database)
@@ -56,12 +56,17 @@ public class StagingAnonymizeTests(ImportDatabase database)
     }
 
     [Fact]
-    public async Task ImportToStaging_LanceLeScript()
+    public async Task CopieProdVersStaging_LanceLeScript_EnvoyeParLeWorkflow()
     {
-        var script = await File.ReadAllTextAsync(
-            Path.Combine(ImportDatabase.RepositoryRoot, "deploy", "migration-v2", "import-to-staging.sh"), TestContext.Current.CancellationToken);
+        var ct = TestContext.Current.CancellationToken;
+        var copy = await File.ReadAllTextAsync(Path.Combine(ImportDatabase.RepositoryRoot, "deploy", "vps", "copy-prod-db-to-staging.sh"), ct);
+        var workflow = await File.ReadAllTextAsync(Path.Combine(ImportDatabase.RepositoryRoot, ".github", "workflows", "staging-db-copy.yml"), ct);
 
-        Assert.Contains("-v keep=\"$keep_email\" -f /import/staging-anonymize.sql", script, StringComparison.Ordinal);
+        Assert.Contains("-v keep=\"$keep_email\" < \"$ANONYMIZE_SQL\"", copy, StringComparison.Ordinal);
+        // Les clés Data Protection de la prod ne sont jamais copiées.
+        Assert.Contains("-T infra.data_protection_keys", copy, StringComparison.Ordinal);
+        Assert.Contains("< deploy/migration-v2/staging-anonymize.sql", workflow, StringComparison.Ordinal);
+        Assert.Contains("STAGING_ANONYMIZE_SQL=$HOME/inseconds-staging-anonymize.sql bash -s", workflow, StringComparison.Ordinal);
     }
 
     private static Task<long> Count(string cs, string fromWhere) =>
