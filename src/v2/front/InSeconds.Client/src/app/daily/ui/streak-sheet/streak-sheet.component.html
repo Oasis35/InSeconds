@@ -3,9 +3,16 @@
 
   @switch (variant) {
     @case ('linked') {
-      <p class="m-0 flex items-center gap-2 text-lg font-bold" style="font-family:var(--font-display);color:var(--text-hi)">
-        <span style="color:var(--color-accent-3)"><app-streak-icon name="flame" /></span>
-        <span>{{ streakTitleKey | translate: { streak: streak().streak } }}</span>
+      <p class="m-0 flex flex-wrap items-center gap-x-2 text-lg font-bold" style="font-family:var(--font-display);color:var(--text-hi)">
+        <span class="flex items-center gap-2">
+          <span style="color:var(--color-accent-3)"><app-streak-icon name="flame" /></span>
+          <span>{{ streakTitleKey | translate: { streak: streak().streak } }}</span>
+        </span>
+        @if (gamesPlayed) {
+          <span data-testid="streak-sheet-games" class="text-[13px] font-normal" style="font-family:var(--font-body);color:var(--text-muted)">
+            · {{ gamesPlayedKey | translate: { n: gamesPlayed } }}
+          </span>
+        }
       </p>
       <div class="flex items-center justify-between gap-3">
         <p class="m-0 font-semibold uppercase" style="font-family:var(--font-display);font-size:10px;letter-spacing:.12em;color:var(--text-muted)">

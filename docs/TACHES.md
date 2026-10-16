@@ -8,7 +8,6 @@
 - [ ] **Recette iPhone : page zoomée et son qui coupe** (#233 fermé, recette validée le 16/10) — lire les messages `Viewport:` et `AudioStall:` dans Grafana (`/api/client-errors`), corriger si besoin, puis retirer ces deux diagnostics (`src/v2/front/CLAUDE.md` § Erreurs)
 - [ ] **CSP bloquante** (G3b, #300) — une semaine sans violation en prod en `report-only` (depuis le 16/10, premier contrôle dès le 23/10), puis `CSP_MODE=enforce`
 - [ ] **Nettoyage après la bascule** — I1 (#235 : une fois la PR I1 déployée, lancer `deploy/vps/drop-v1-tables.sh staging` puis, après le J+1, `deploy/vps/drop-v1-tables.sh prod`, qui archive d'abord une sauvegarde sur R2), I2 (dont les scripts d'import `deploy/migration-v2/`, à part `staging-anonymize.sql` et `drop-v1-tables.sql` à garder ailleurs, et leurs tests `MigrationTests` ; code et jobs CI v1, `src/v2` → `src`, exclusion de duplication SonarCloud `src/front/**, src/back/**`), I3 (`legacy_tokens`, middleware de transition, anciennes clés Data Protection)
-- [ ] **Profil : cartes Série / Parties jouées / Gels** (#283) — à faire maintenant que la bascule est faite (décision du 14/10 : la v2 part sans)
 - [ ] **Petites dettes du front v2** — clés i18n de l'admin qui ne servent plus ; formats de date numériques qui ne suivent pas la langue ; `aria-label` des boutons ‹ › du tableau de bord
 
 ## Mode entraînement (anciens défis)

@@ -1468,6 +1468,7 @@ export interface TodayResponse {
     tracksCount: number;
     completedCount: number;
     streak: StreakResponse;
+    completedGames: number;
 
     [key: string]: any;
 }

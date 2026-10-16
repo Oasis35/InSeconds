@@ -581,6 +581,10 @@
           "one": "{{ streak }}-day streak",
           "other": "{{ streak }}-day streak"
         },
+        "gamesPlayed": {
+          "one": "{{ n }} game",
+          "other": "{{ n }} games"
+        },
         "stockLabel": "Your freezes · {{ count }} / {{ max }}",
         "nextFreeze": "Next freeze at {{ next }} days",
         "full": "Full stock: you can't earn more freezes for now.",
@@ -635,19 +639,7 @@
       },
       "ctaLine1": "Create an account /",
       "ctaLine2": "Log in",
-      "dismiss": "Close",
-      "profile": {
-        "label": "Freezes",
-        "full": "{{ max }} freezes · stock full",
-        "stock": {
-          "one": "{{ n }} freeze · next in {{ days }}",
-          "other": "{{ n }} freezes · next in {{ days }}"
-        },
-        "days": {
-          "one": "{{ n }} day",
-          "other": "{{ n }} days"
-        }
-      }
+      "dismiss": "Close"
     },
     "round": {
       "points": "pts",
