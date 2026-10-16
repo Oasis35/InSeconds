@@ -212,7 +212,7 @@ Règles : les fenêtres du pool s'ouvrent avec **`injector: inject(Injector)`** 
 
 ## SonarCloud
 
-Une grande partie de la v2 reprend du code de la v1 (styles, remontée d'erreurs, composants de la coquille), ce que Sonar comptait comme de la duplication sur le nouveau code. L'exclusion posée dans l'UI SonarCloud (Administration → Analysis Scope → Duplication Exclusions : `src/front/**, src/back/**`) ne sert plus depuis la suppression de la v1 (I2, #236) : **à retirer dans l'UI** (Clément).
+Une grande partie de la v2 reprend du code de la v1 (styles, remontée d'erreurs, composants de la coquille), ce que Sonar comptait comme de la duplication sur le nouveau code. L'exclusion posée dans l'UI SonarCloud (Administration → Analysis Scope → Duplication Exclusions : `src/front/**, src/back/**`) a été retirée de l'UI le 16/10/2026, avec la suppression de la v1 (I2, #236).
 
 ## Conventions
 
