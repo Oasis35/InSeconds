@@ -32,8 +32,6 @@
 
 ## Quick start
 
-> The code lives in `src/v2/` (in production since 2026-10-16 and on staging). The previous version was removed after the switchover.
-
 ### Prerequisites
 
 - Docker (dev PostgreSQL database, and integration tests)
@@ -46,7 +44,7 @@
 cp .env.example .env   # first time only, then fill in DB_PASSWORD
 docker compose up -d database
 
-cd src/v2/back
+cd src/back
 ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=inseconds;Username=inseconds;Password=<DB_PASSWORD>" \
   dotnet run --project InSeconds.Api.Testing
 ```
@@ -56,7 +54,7 @@ ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=insecond
 ### Run the frontend
 
 ```bash
-cd src/v2/front/InSeconds.Client
+cd src/front/InSeconds.Client
 npm ci        # first time only
 npm start
 ```
@@ -88,15 +86,14 @@ Open `http://localhost:5176`.
 
 ```
 InSeconds/
-├── deploy/                    # VPS: shared Postgres, Caddy, deploy scripts, v1 → v2 import
-├── docs/                      # Documentation (FR): entry point, game rules, tasks, v2 plan
+├── deploy/                    # VPS: shared Postgres, Caddy, deploy scripts
+├── docs/                      # Documentation (FR): entry point, game rules, tasks, rewrite plan
 ├── src/
-│   └── v2/
-│       ├── back/              # InSeconds.slnx: Api (modules), Infrastructure, Deezer, Api.Testing, tests/
-│       └── front/InSeconds.Client/  # Angular app (account, gameplay, daily, admin domains)
+│   ├── back/                  # InSeconds.slnx: Api (modules), Infrastructure, Deezer, Api.Testing, tests/
+│   └── front/InSeconds.Client/  # Angular app (account, gameplay, daily, admin domains)
 ├── docker-compose.yml         # Dev: database
-├── docker-compose.staging.yml # Staging (v2)
-├── docker-compose.prod-v2.yml # Production (v2, since the 2026-10-16 switchover)
+├── docker-compose.staging.yml # Staging
+├── docker-compose.prod.yml    # Production
 └── README.md / README.fr.md
 ```
 
@@ -116,16 +113,16 @@ The **"CI OK"** check aggregates them (it is the one branch protection requires)
 ### Backend
 
 ```bash
-cd src/v2/back
+cd src/back
 dotnet test --solution InSeconds.slnx   # unit + architecture + integration (Docker required)
 ```
 
-Four projects in `tests/`: unit (domain rules, no database), architecture (module boundaries, NetArchTest), integration (Testcontainers + Respawn: a real PostgreSQL, the API in memory) and migrations.
+Four projects in `tests/`: unit (domain rules, no database), architecture (module boundaries, NetArchTest), integration (Testcontainers + Respawn: a real PostgreSQL, the API in memory) and the SQL scripts run by hand on the VPS (`deploy/vps`).
 
 ### Frontend
 
 ```bash
-cd src/v2/front/InSeconds.Client
+cd src/front/InSeconds.Client
 npx ng test --watch=false   # Vitest in a real Chromium
 npm run lint:arch           # domain boundaries (Sheriff)
 ```
@@ -133,7 +130,7 @@ npm run lint:arch           # domain boundaries (Sheriff)
 ### E2E (Playwright)
 
 ```bash
-cd src/v2/front/InSeconds.Client
+cd src/front/InSeconds.Client
 E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=<DB_PASSWORD>" npm run e2e
 ```
 
@@ -145,7 +142,7 @@ The detailed docs are in French.
 
 - [`docs/COMMENCE_ICI_FR.md`](docs/COMMENCE_ICI_FR.md) — entry point: pitch, stack, where to find what
 - [`CLAUDE.md`](CLAUDE.md) — conventions, data model, deployment, known pitfalls (read before contributing)
-- Architecture: [`src/v2/back/CLAUDE.md`](src/v2/back/CLAUDE.md) (backend), [`src/v2/front/CLAUDE.md`](src/v2/front/CLAUDE.md) (frontend)
+- Architecture: [`src/back/CLAUDE.md`](src/back/CLAUDE.md) (backend), [`src/front/CLAUDE.md`](src/front/CLAUDE.md) (frontend)
 - [`docs/GAMEPLAY_RULES_FR.md`](docs/GAMEPLAY_RULES_FR.md) — game rules (scoring, extensions, anti-cheat, streak) — what is actually enforced vs merely configured
 - [`docs/TACHES.md`](docs/TACHES.md) — what is left to do
 - [`docs/refonte-v2/`](docs/refonte-v2/) — v2 plan and tracking

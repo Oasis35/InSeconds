@@ -140,4 +140,4 @@ Tous relus à chaud (`IOptionsMonitor`), sans redémarrage. L'API refuse de dém
 | `Daily:HintUnlockDurationsSeconds` | `[5,10]` | ✅ Back (déblocage côté serveur) + Front (affichage des boutons) |
 | `Daily:HintPenaltyPercent` | `{"1":30,"2":60}` | ✅ Back (pénalité appliquée au score) |
 
-Mécanisme de chargement : [`CLAUDE.md`](../CLAUDE.md) (§ Réglages) et [`src/v2/back/CLAUDE.md`](../src/v2/back/CLAUDE.md) (§ Réglages).
+Mécanisme de chargement : [`CLAUDE.md`](../CLAUDE.md) (§ Réglages) et [`src/back/CLAUDE.md`](../src/back/CLAUDE.md) (§ Réglages).

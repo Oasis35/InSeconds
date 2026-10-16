@@ -32,8 +32,6 @@
 
 ## Démarrage rapide
 
-> Le code est dans `src/v2/` (en prod depuis le 16/10/2026 et sur le staging). L'ancienne version a été supprimée après la bascule.
-
 ### Prérequis
 
 - Docker (base PostgreSQL de dev, et tests d'intégration)
@@ -46,7 +44,7 @@
 cp .env.example .env   # uniquement la première fois, puis renseigner DB_PASSWORD
 docker compose up -d database
 
-cd src/v2/back
+cd src/back
 ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=inseconds;Username=inseconds;Password=<DB_PASSWORD>" \
   dotnet run --project InSeconds.Api.Testing
 ```
@@ -56,7 +54,7 @@ ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=insecond
 ### Lancer le frontend
 
 ```bash
-cd src/v2/front/InSeconds.Client
+cd src/front/InSeconds.Client
 npm ci        # uniquement la première fois
 npm start
 ```
@@ -88,15 +86,14 @@ Ouvre `http://localhost:5176`.
 
 ```
 InSeconds/
-├── deploy/                    # VPS : Postgres partagé, Caddy, scripts de déploiement, import v1 → v2
-├── docs/                      # Documentation (FR) : point d'entrée, règles du jeu, tâches, plan v2
+├── deploy/                    # VPS : Postgres partagé, Caddy, scripts de déploiement
+├── docs/                      # Documentation (FR) : point d'entrée, règles du jeu, tâches, plan de la refonte
 ├── src/
-│   └── v2/
-│       ├── back/              # InSeconds.slnx : Api (modules), Infrastructure, Deezer, Api.Testing, tests/
-│       └── front/InSeconds.Client/  # Application Angular (domaines account, gameplay, daily, admin)
+│   ├── back/                  # InSeconds.slnx : Api (modules), Infrastructure, Deezer, Api.Testing, tests/
+│   └── front/InSeconds.Client/  # Application Angular (domaines account, gameplay, daily, admin)
 ├── docker-compose.yml         # Dev : base
-├── docker-compose.staging.yml # Staging (v2)
-├── docker-compose.prod-v2.yml # Prod (v2, depuis la bascule du 16/10/2026)
+├── docker-compose.staging.yml # Staging
+├── docker-compose.prod.yml    # Prod
 └── README.md / README.fr.md
 ```
 
@@ -116,16 +113,16 @@ Le check **« CI OK »** les agrège (c'est lui qu'exige la protection des branc
 ### Backend
 
 ```bash
-cd src/v2/back
+cd src/back
 dotnet test --solution InSeconds.slnx   # unitaires + architecture + intégration (Docker requis)
 ```
 
-Quatre projets dans `tests/` : unitaires (règles du domaine, sans base), architecture (frontières des modules, NetArchTest), intégration (Testcontainers + Respawn : un vrai PostgreSQL, l'API en mémoire) et migrations.
+Quatre projets dans `tests/` : unitaires (règles du domaine, sans base), architecture (frontières des modules, NetArchTest), intégration (Testcontainers + Respawn : un vrai PostgreSQL, l'API en mémoire) et les scripts SQL lancés à la main sur le VPS (`deploy/vps`).
 
 ### Frontend
 
 ```bash
-cd src/v2/front/InSeconds.Client
+cd src/front/InSeconds.Client
 npx ng test --watch=false   # Vitest dans un vrai Chromium
 npm run lint:arch           # frontières des domaines (Sheriff)
 ```
@@ -133,7 +130,7 @@ npm run lint:arch           # frontières des domaines (Sheriff)
 ### E2E (Playwright)
 
 ```bash
-cd src/v2/front/InSeconds.Client
+cd src/front/InSeconds.Client
 E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=<DB_PASSWORD>" npm run e2e
 ```
 
@@ -143,7 +140,7 @@ E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inse
 
 - [`docs/COMMENCE_ICI_FR.md`](docs/COMMENCE_ICI_FR.md) — point d'entrée : pitch, stack, où trouver quoi
 - [`CLAUDE.md`](CLAUDE.md) — conventions, modèle de données, déploiement, pièges connus (à lire avant de contribuer)
-- Architecture : [`src/v2/back/CLAUDE.md`](src/v2/back/CLAUDE.md) (backend), [`src/v2/front/CLAUDE.md`](src/v2/front/CLAUDE.md) (frontend)
+- Architecture : [`src/back/CLAUDE.md`](src/back/CLAUDE.md) (backend), [`src/front/CLAUDE.md`](src/front/CLAUDE.md) (frontend)
 - [`docs/GAMEPLAY_RULES_FR.md`](docs/GAMEPLAY_RULES_FR.md) — règles de jeu (scoring, prolongation, anti-triche, série) — ce qui est réellement appliqué vs juste configuré
 - [`docs/TACHES.md`](docs/TACHES.md) — ce qui reste à faire
 - [`docs/refonte-v2/`](docs/refonte-v2/) — plan et suivi de la v2

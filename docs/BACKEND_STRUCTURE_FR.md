@@ -5,6 +5,6 @@
 La référence est tenue à jour à côté du code :
 
 - [`CLAUDE.md`](../CLAUDE.md) (racine) — modules et règles de dépendance, réglages, tâches planifiées, modèle de données, pièges connus.
-- [`src/v2/back/CLAUDE.md`](../src/v2/back/CLAUDE.md) — chaque module (Players, Catalogue, Gameplay, Daily), ses routes et ses tests, l'authentification, le client Deezer, l'hôte de test, l'import v1 → v2.
+- [`src/back/CLAUDE.md`](../src/back/CLAUDE.md) — chaque module (Players, Catalogue, Gameplay, Daily), ses routes et ses tests, l'authentification, le client Deezer, l'hôte de test, les scripts SQL du VPS.
 - [`GAMEPLAY_RULES_FR.md`](GAMEPLAY_RULES_FR.md) — règles produit (scoring, anti-triche, série, indices).
 

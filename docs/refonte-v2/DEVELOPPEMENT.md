@@ -454,6 +454,12 @@ Le retour arrière reste possible tant que personne n'a joué en v2 (§ 10.3 du 
 - **Schéma v1 des tests d'import figé** dans `src/v2/back/tests/InSeconds.MigrationTests/v1-schema.sql` (généré par `dotnet ef migrations script` sur `src/back` juste avant sa suppression, copié à côté des tests) : `ImportDatabase` ne génère plus rien, l'étape CI qui le générait est retirée. Les tests d'import et `DropV1TablesTests` (I1) en ont besoin tant que les tables v1 existent en prod.
 - **Découpage** : le déplacement de `src/v2` dans `src` renomme tous les fichiers que la PR I1 modifie ; il vient dans une seconde PR, après le merge de I1, avec le retrait des scripts d'import et le retour du flux Git normal (PR vers `main`).
 
+**Fait en I2, seconde partie (#236, PR vers `env/staging` le 16/10/2026, après le merge de I1 #343 et de la première partie #344) :**
+- **`src/v2` déplacé dans `src`** (`src/back`, `src/front`) : chemins mis à jour dans la CI, les compose, Dependabot, nginx, les tests et toute la doc. Les chemins relatifs entre back et front (NSwag, Playwright) ne changent pas.
+- **Import v1 → v2 retiré** (`deploy/migration-v2/` : scripts, `run-import.sh`, README de la bascule) avec ses tests (`PlayersImportTests`, `CatalogueImportTests`, `DailyImportTests`, `CompleteImportTests`, `LegacyCookieEndToEndTests`, fixture `ImportDatabase`). La reprise des cookies v1 reste couverte par `IntegrationTests/Players/LegacyCookieTests` jusqu'à I3. Gardés et déplacés dans `deploy/vps/` : `drop-v1-tables.sql` et `staging-anonymize.sql`, testés sans l'import (fixture `ScriptDatabase` : tables v1 de `v1-schema.sql`, migrations, `infra.import_state` posé à la main).
+- **« v2 » retiré des noms** (demande de Clément) : jobs CI, groupes Dependabot (étiquette `dependencies`), `docker-compose.prod-v2.yml` → `docker-compose.prod.yml` et projet Compose `inseconds-v2` → `inseconds` (`deploy.sh` retire une fois les conteneurs et images de l'ancien projet, mêmes noms de conteneurs), paquet npm, classe de test, titres de la doc. Gardés : l'étiquette et le dossier `refonte-v2` (historique), l'identifiant du message de remerciement (`v2-launch`, déjà lu par les navigateurs), les noms de tests qui opposent cookie v1 et cookie v2.
+- **Flux Git** : PR vers `env/staging`, puis `env/staging` → `main` (règle normale, plus « tant que la v1 existe »).
+
 ---
 
 ## 12. Suivi

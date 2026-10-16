@@ -18,7 +18,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 
 case "$target" in
   prod)
-    compose_file=docker-compose.prod-v2.yml
+    compose_file=docker-compose.prod.yml
     env_file=.env.prod
     api_url=https://api.inseconds.cc/health
     front_url=https://inseconds.cc
@@ -62,6 +62,17 @@ fi
 # créés au démarrage de l'API).
 echo "Application des migrations ($target)..."
 compose run --rm -T api --migrate-only
+# Projet Compose renommé de inseconds-v2 en inseconds (I2) : ses conteneurs portent les mêmes noms, `up` buterait
+# dessus. Retirés une seule fois, juste avant de démarrer les nouveaux (quelques secondes d'arrêt).
+if [[ "$target" == prod ]]; then
+  old=$(docker ps -aq --filter label=com.docker.compose.project=inseconds-v2)
+  if [[ -n "$old" ]]; then
+    echo "Retrait des conteneurs de l'ancien projet Compose inseconds-v2..."
+    docker rm -f $old
+  fi
+  # Ses images (nommées d'après le projet) ne sont plus utilisées, et `image prune` ne retire que les images sans tag.
+  docker image rm inseconds-v2-api inseconds-v2-front 2>/dev/null || true
+fi
 compose up -d
 
 # Ne retire que les images "dangling" (non taguées) — jamais -a, qui supprimerait aussi les

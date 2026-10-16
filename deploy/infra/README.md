@@ -19,7 +19,7 @@ s'exécutent **qu'une seule fois** (volume Postgres vide) — un `docker compose
 rejoue pas.
 
 Le réseau Docker `shared-postgres` est créé par ce stack (déclaré `name: shared-postgres`,
-pas `external`). Les stacks applicatifs (ex. `docker-compose.prod-v2.yml` d'InSeconds) le
+pas `external`). Les stacks applicatifs (ex. `docker-compose.prod.yml` d'InSeconds) le
 déclarent en `external: true` pour le rejoindre.
 
 Aucun port n'est publié sur l'hôte : Postgres n'est joignable que depuis les conteneurs

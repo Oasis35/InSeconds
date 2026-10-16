@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# Copie les données v2 de la prod (base inseconds) dans la base du staging (inseconds_staging), puis les anonymise.
+# Copie les données de la prod (base inseconds) dans la base du staging (inseconds_staging), puis les anonymise.
 # Lancé par le workflow manuel .github/workflows/staging-db-copy.yml : script envoyé par SSH sur le VPS via
 # `bash -s`, donc indépendant du contenu du checkout staging, avec STAGING_ANONYMIZE_SQL qui pointe sur le
 # staging-anonymize.sql du même commit. Ne touche jamais la base de prod autrement qu'en lecture (pg_dump).
 #
-# Depuis la mise en prod de la v2 (16/10/2026, PR I1 #235) : la prod écrit dans les schémas v2, la copie les prend
+# Depuis la mise en prod de la v2 (16/10/2026, PR I1 #235) : la prod écrit dans les schémas des modules, la copie les prend
 # directement (players, catalogue, daily, infra). Avant, elle copiait les tables v1 de public et refaisait l'import.
 # Ni public (tables v1, supprimées en I1), ni messaging (file de Wolverine), ni jobs (Hangfire) : le staging garde
 # les siens. Ni infra.data_protection_keys : les clés de la prod ne quittent jamais la prod.
 #
 # Étapes, API staging arrêtée du début à la fin :
-#   1. pg_dump des schémas v2 de la prod ;
-#   2. suppression des schémas v2 du staging (infra : ses tables sauf data_protection_keys), puis restauration ;
+#   1. pg_dump des schémas des modules de la prod ;
+#   2. suppression des schémas des modules du staging (infra : ses tables sauf data_protection_keys), puis restauration ;
 #   3. migrations du staging (--migrate-only, image de l'API staging) : la copie a la structure de la prod,
 #      env/staging peut avoir des migrations d'avance ;
 #   4. anonymisation (staging-anonymize.sql, testé par MigrationTests) : emails remplacés par
@@ -73,7 +73,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "Dump des schémas v2 de la prod (${SCHEMAS[*]}, sans les clés Data Protection)..."
+echo "Dump des schémas des modules de la prod (${SCHEMAS[*]}, sans les clés Data Protection)..."
 schema_args=()
 for schema in "${SCHEMAS[@]}"; do schema_args+=(-n "$schema"); done
 pg_prod pg_dump -h shared-postgres -U inseconds -d inseconds "${schema_args[@]}" \
@@ -82,7 +82,7 @@ pg_prod pg_dump -h shared-postgres -U inseconds -d inseconds "${schema_args[@]}"
 # Le schéma infra reste au staging (il y garde data_protection_keys) : sa création est retirée de la liste restaurée.
 pg_prod pg_restore -l < "$dump" | grep -v -E ' SCHEMA - infra( |$)| COMMENT - SCHEMA infra( |$)' > "$restore_list"
 
-echo "Suppression des schémas v2 du staging..."
+echo "Suppression des schémas des modules du staging..."
 pg_staging psql --no-psqlrc --quiet -v ON_ERROR_STOP=1 <<'SQL'
 BEGIN;
 DROP SCHEMA IF EXISTS daily, catalogue, players CASCADE;
