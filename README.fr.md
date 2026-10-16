@@ -32,7 +32,7 @@
 
 ## Démarrage rapide
 
-> Le dépôt contient deux versions : la **v2** (`src/v2/`, la référence, servie sur le staging) et la v1 (`src/back`, `src/front`), encore en prod jusqu'à la bascule puis supprimée. Ce qui suit concerne la v2. Pour la v1 : `git show b38825d:README.fr.md`.
+> Le code de référence est dans `src/v2/` (en prod depuis le 16/10/2026 et sur le staging). `src/back` et `src/front` sont du code mort de l'ancienne version, à supprimer.
 
 ### Prérequis
 
@@ -90,17 +90,17 @@ Ouvre `http://localhost:5176`.
 InSeconds/
 ├── deploy/                    # VPS : Postgres partagé, Caddy, scripts de déploiement, import v1 → v2
 ├── docs/                      # Documentation (FR) : point d'entrée, règles du jeu, tâches, plan v2
-├── scripts/                   # Contrôle de parité des E2E v1/v2, lancement E2E v1
+├── scripts/                   # Contrôle de parité des E2E (ancienne version, supprimé avec elle)
 ├── src/
 │   ├── v2/
 │   │   ├── back/              # InSeconds.slnx : Api (modules), Infrastructure, Deezer, Api.Testing, tests/
 │   │   └── front/InSeconds.Client/  # Application Angular (domaines account, gameplay, daily, admin)
-│   ├── back/                  # v1 (jusqu'à la suppression de la v1)
-│   └── front/                 # v1 (jusqu'à la suppression de la v1)
-├── docker-compose.yml         # Dev : base (+ API v1)
+│   ├── back/                  # ancienne version (à supprimer)
+│   └── front/                 # ancienne version (à supprimer)
+├── docker-compose.yml         # Dev : base
 ├── docker-compose.staging.yml # Staging (v2)
-├── docker-compose.prod.yml    # Prod v1 jusqu'à la bascule
-├── docker-compose.prod-v2.yml # Prod après la bascule (workflow « Bascule v2 »)
+├── docker-compose.prod.yml    # Ancienne prod, plus utilisée (à supprimer)
+├── docker-compose.prod-v2.yml # Prod v2 (workflow « Bascule v2 »)
 └── README.md / README.fr.md
 ```
 
@@ -112,9 +112,9 @@ Workflow GitHub Actions sur chaque push (toutes branches) et chaque PR vers `mai
 - **front-v2** — build de prod, tests Vitest, frontières Sheriff, clients NSwag à jour
 - **e2e-v2** — Playwright contre l'hôte de test
 - **nginx-headers-v2** — construit l'image nginx du front et vérifie en-têtes de cache et de sécurité, types MIME et redirection de l'ancienne adresse
-- **e2e-parity** — les E2E v1 et v2 portent les mêmes titres (écarts justifiés)
+- **e2e-parity** — compare les titres des E2E à ceux de l'ancienne version (supprimé avec elle)
 
-Les jobs v1 tournent aussi tant que la v1 existe. Le check **« CI OK »** les agrège (c'est lui qu'exige la protection des branches). Les runs obsolètes sont annulés automatiquement. Détail : [`CLAUDE.md`](CLAUDE.md) § CI.
+Les jobs de l'ancienne version tournent tant qu'elle existe. Le check **« CI OK »** les agrège (c'est lui qu'exige la protection des branches). Les runs obsolètes sont annulés automatiquement. Détail : [`CLAUDE.md`](CLAUDE.md) § CI.
 
 ## Tests
 
@@ -142,7 +142,7 @@ cd src/v2/front/InSeconds.Client
 E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=<DB_PASSWORD>" npm run e2e
 ```
 
-`playwright.config.ts` démarre l'hôte de test (port 5177) et `ng serve` (port 5178). **110 tests** répartis sur 26 fichiers, repris de la v1 avec les mêmes titres (contrôle de parité) : jeu, connexion, profil, série et gels, admin…
+`playwright.config.ts` démarre l'hôte de test (port 5177) et `ng serve` (port 5178). **110 tests** répartis sur 26 fichiers, jeu, connexion, profil, série et gels, admin…
 
 ## Documentation
 

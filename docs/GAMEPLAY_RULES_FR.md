@@ -6,7 +6,7 @@
 >
 > Pour chaque règle, la mention **[Back]** / **[Front]** indique où elle est réellement appliquée (utile pour savoir si modifier un réglage en base suffit, ou s'il faut aussi toucher au code).
 >
-> **2026-10-12 (PR G4)** : références mises à jour pour la v2 (réglages `Daily:*` de `infra.settings`, modules `Daily` et `Gameplay`, routes `/api/daily/…`). Les règles sont celles de la v1, reprises à l'identique, sauf mention contraire.
+> **2026-10-12 (PR G4)** : références mises à jour pour la v2 (réglages `Daily:*` de `infra.settings`, modules `Daily` et `Gameplay`, routes `/api/daily/…`). Les règles du jeu n'ont pas changé depuis l'ancienne version, sauf mention contraire.
 
 ## Déroulé d'une partie
 
@@ -29,7 +29,7 @@ Paliers configurables (`Daily:AllowedDurationsSeconds`), score par palier (`Dail
 | 5 s | 250 |
 | 10 s | 100 |
 
-Moins on écoute, plus on marque. Le score de base est un **lookup exact** du palier réellement écouté — pas d'interpolation entre paliers. **[Back]**, calcul dans `DurationScoringPolicy` (`Modules/Daily/Domain/DailyScoring.cs`, barème de la v1 repris tel quel, arrondis compris).
+Moins on écoute, plus on marque. Le score de base est un **lookup exact** du palier réellement écouté — pas d'interpolation entre paliers. **[Back]**, calcul dans `DurationScoringPolicy` (`Modules/Daily/Domain/DailyScoring.cs`, barème inchangé, arrondis compris).
 
 ## Prolongation « écouter plus »
 
@@ -40,7 +40,7 @@ Moins on écoute, plus on marque. Le score de base est un **lookup exact** du pa
 - **Aucun malus de score** : le score ne dépend que du **palier finalement écouté** — qu'il ait été atteint directement au premier choix ou via une ou plusieurs prolongations, le calcul est strictement identique (le barème ne lit pas `wasExtended`). **[Back]**
   - Raisonnement produit : le barème par palier (ci-dessus) est déjà dégressif — écouter plus longtemps rapporte déjà moins de points. Ajouter un malus *en plus* du barème pénalisait deux fois un joueur parti prudent sur un petit palier (ex. 0,5s) qui doit ensuite prolonger : il finissait avec **moins de points qu'un joueur ayant choisi le palier final directement**, pour un temps d'écoute identique — ce qui décourageait exactement la stratégie qu'on veut encourager (tenter petit, sécuriser si besoin).
 - `was_extended` (`daily.answers`) reste enregistré (à des fins de stats admin uniquement, voir plus bas), mais n'a aucun effet sur le calcul du score. La relecture (↺) après la réponse ne l'efface pas.
-- Il n'y a pas de nombre maximal de prolongations (l'ancien réglage `MaxExtensionsPerAnswer`, jamais appliqué, a été supprimé en v1).
+- Il n'y a pas de nombre maximal de prolongations (l'ancien réglage `MaxExtensionsPerAnswer`, jamais appliqué, a été supprimé).
 
 ## Scoring partiel
 
