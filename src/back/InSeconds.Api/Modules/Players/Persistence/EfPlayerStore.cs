@@ -74,4 +74,35 @@ public sealed class EfPlayerStore(InSecondsDbContext db) : IPlayerStore
     // Exécuté tout de suite, dans la transaction ouverte par Wolverine s'il y en a une.
     public Task<int> DeleteExpiredTokensAsync(DateTimeOffset now, CancellationToken ct) =>
         db.Set<AuthToken>().Where(t => t.ExpiresAt <= now).ExecuteDeleteAsync(ct);
+
+    // Exécuté tout de suite, dans la transaction ouverte par Wolverine s'il y en a une.
+    public Task<int> DeleteStaleDeviceSessionsAsync(DateTimeOffset cutoff, CancellationToken ct) =>
+        db.Set<DeviceSession>().Where(s => s.LastSeenAt < cutoff || s.RevokedAt < cutoff).ExecuteDeleteAsync(ct);
+
+    public async Task<IReadOnlyList<Guid>> ListInactiveAccountsAsync(DateTimeOffset cutoff, CancellationToken ct) =>
+        await InactiveAccounts(cutoff).OrderBy(id => id).ToListAsync(ct);
+
+    public Task<bool> IsAccountInactiveAsync(Guid playerId, DateTimeOffset cutoff, CancellationToken ct) =>
+        InactiveAccounts(cutoff).AnyAsync(id => id == playerId, ct);
+
+    private IQueryable<Guid> InactiveAccounts(DateTimeOffset cutoff) =>
+        from account in db.Set<Account>().AsNoTracking()
+        join player in db.Set<Player>() on account.PlayerId equals player.Id
+        where !account.IsAdmin && (player.LastSeenAt ?? player.CreatedAt) < cutoff
+        select player.Id;
+
+    public async Task<IReadOnlyList<int>> ListDeviceSessionIdsAsync(Guid playerId, CancellationToken ct) =>
+        await db.Set<DeviceSession>().Where(s => s.PlayerId == playerId).Select(s => s.Id).ToListAsync(ct);
+
+    // Exécuté tout de suite, dans la transaction de l'appelant. Les jetons de connexion ne portent que l'adresse : ceux de son email
+    // partent aussi, avant la suppression du compte qui la donne.
+    public async Task EraseAsync(Guid playerId, CancellationToken ct)
+    {
+        var email = await db.Set<Account>().Where(a => a.PlayerId == playerId).Select(a => a.Email).FirstOrDefaultAsync(ct);
+        await db.Set<AuthToken>().Where(t => t.PlayerId == playerId || (email != null && t.Email == email)).ExecuteDeleteAsync(ct);
+        await db.Set<LegacyToken>().Where(t => t.PlayerId == playerId).ExecuteDeleteAsync(ct);
+        await db.Set<DeviceSession>().Where(s => s.PlayerId == playerId).ExecuteDeleteAsync(ct);
+        await db.Set<Account>().Where(a => a.PlayerId == playerId).ExecuteDeleteAsync(ct);
+        await db.Set<Player>().Where(p => p.Id == playerId).ExecuteDeleteAsync(ct);
+    }
 }

@@ -24,8 +24,8 @@ public class OpenApiTests(PostgresFixture postgres) : IAsyncLifetime
 
         Assert.Equal(
             [
-                "confirmEmailChange", "createGuest", "getMe", "listDevices", "logout", "requestEmailChange",
-                "requestMagicLink", "revokeDevice", "revokeOtherDevices", "updatePseudo", "verifyMagicLink",
+                "confirmEmailChange", "createGuest", "deleteMyAccount", "exportMyData", "getMe", "listDevices", "logout",
+                "requestEmailChange", "requestMagicLink", "revokeDevice", "revokeOtherDevices", "updatePseudo", "verifyMagicLink",
             ],
             OperationIds(document).Order(StringComparer.Ordinal));
         // Rien d'autre que le module : ni /api/e2e, ni /api/admin, ni dev-login.
@@ -42,7 +42,7 @@ public class OpenApiTests(PostgresFixture postgres) : IAsyncLifetime
                  {
                      "RequestMagicLink", "VerifyMagicLink", "VerifyMagicLinkResponse", "PlayerMeResponse", "GuestResponse",
                      "UpdatePseudo", "PseudoResponse", "RequestEmailChange", "ConfirmEmailChange", "EmailChangedResponse",
-                     "DeviceResponse", "RevokedDevicesResponse", "ProblemDetails",
+                     "DeviceResponse", "RevokedDevicesResponse", "ProblemDetails", "DeleteMyAccount", "PlayerDataExport",
                  })
             Assert.Contains(name, schemas);
 
@@ -53,6 +53,8 @@ public class OpenApiTests(PostgresFixture postgres) : IAsyncLifetime
         // « pseudo » est facultatif dans la requête (seconde étape de la connexion), un entier reste un entier.
         Assert.DoesNotContain("pseudo", document["components"]!["schemas"]!["VerifyMagicLink"]!["required"]!.AsArray().Select(r => r!.GetValue<string>()));
         Assert.Equal("integer", document["components"]!["schemas"]!["DeviceResponse"]!["properties"]!["id"]!["type"]!.GetValue<string>());
+        Assert.Equal("#/components/schemas/PlayerDataExport", ResponseSchemaRef(document, "exportMyData", "200"));
+        Assert.Equal("#/components/schemas/DeleteMyAccount", Operation(document, "deleteMyAccount")["requestBody"]!["content"]!["application/json"]!["schema"]!["$ref"]!.GetValue<string>());
     }
 
     [Fact]

@@ -503,6 +503,92 @@
           }
         }
       }
+    },
+    "/api/players/me/export": {
+      "get": {
+        "tags": [
+          "Players"
+        ],
+        "operationId": "exportMyData",
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerDataExport"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/players/me/delete": {
+      "post": {
+        "tags": [
+          "Players"
+        ],
+        "operationId": "deleteMyAccount",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteMyAccount"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -766,6 +852,265 @@
             "type": "boolean"
           }
         }
+      },
+      "AccountExport": {
+        "required": [
+          "email",
+          "pseudo",
+          "linkedAt",
+          "isAdmin"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "pseudo": {
+            "type": "string"
+          },
+          "linkedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "isAdmin": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DeleteMyAccount": {
+        "required": [
+          "pseudo"
+        ],
+        "type": "object",
+        "properties": {
+          "pseudo": {
+            "type": "string"
+          }
+        }
+      },
+      "DeviceExport": {
+        "required": [
+          "label",
+          "createdAt",
+          "lastSeenAt",
+          "revokedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastSeenAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revokedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "GameExport": {
+        "required": [
+          "date",
+          "status",
+          "startedAt",
+          "endedAt",
+          "totalScore",
+          "tracks"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "type": "string"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "totalScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tracks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GameTrackExport"
+            }
+          }
+        }
+      },
+      "GameTrackExport": {
+        "required": [
+          "position",
+          "artist",
+          "title",
+          "listenedSeconds",
+          "hintLevel",
+          "artistFound",
+          "titleFound",
+          "score",
+          "answeredAt"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "artist": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "listenedSeconds": {
+            "type": "number",
+            "format": "double"
+          },
+          "hintLevel": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "artistFound": {
+            "type": "boolean"
+          },
+          "titleFound": {
+            "type": "boolean"
+          },
+          "score": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "answeredAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "PlayerDataExport": {
+        "required": [
+          "exportedAt",
+          "playerId",
+          "createdAt",
+          "lastSeenAt",
+          "account",
+          "devices",
+          "streak",
+          "games"
+        ],
+        "type": "object",
+        "properties": {
+          "exportedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "playerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastSeenAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "account": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AccountExport"
+              }
+            ]
+          },
+          "devices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeviceExport"
+            }
+          },
+          "streak": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/StreakExport"
+              }
+            ]
+          },
+          "games": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GameExport"
+            }
+          }
+        }
+      },
+      "StreakExport": {
+        "required": [
+          "currentStreak",
+          "lastPlayedDate",
+          "freezes"
+        ],
+        "type": "object",
+        "properties": {
+          "currentStreak": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lastPlayedDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "freezes": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
       }
     }
   },
@@ -787,6 +1132,12 @@
     },
     {
       "name": "InSeconds.Api.Modules.Players.Application.GetMeEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Players.Application.ExportMyDataEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Players.Application.DeleteMyAccountEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Players.Application.UpdatePseudoEndpoint"

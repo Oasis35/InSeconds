@@ -21,9 +21,11 @@ public static class PlayersModule
         services.AddScoped<IPlayerSessions, EfPlayerSessions>();
         services.AddScoped<IPlayerDirectory, EfPlayerDirectory>();
         services.AddScoped<AccountSignIn>();
+        services.AddScoped<AccountErasure>();
+        services.AddScoped<PlayerDataExporter>();
         services.AddSingleton<IEmailComposer<MagicLinkEmail>, MagicLinkEmailComposer>();
         services.AddSingleton<IEmailComposer<ConfirmEmailChangeEmail>, ConfirmEmailChangeEmailComposer>();
-        services.AddScheduledJob<PurgeExpiredAuthTokensJob>(PurgeExpiredAuthTokensJob.Id, PurgeExpiredAuthTokensJob.DefaultCron);
+        services.AddScheduledJob<PlayersPurgeJob>(PlayersPurgeJob.Id, PlayersPurgeJob.DefaultCron);
         services.AddExceptionHandler<AccountConflictExceptionHandler>();
         return services;
     }

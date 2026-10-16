@@ -45,11 +45,11 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "InSeconds.Api.Modules.Players.Application.PurgeExpiredAuthTokensHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Players.Application.PurgeExpiredAuthTokensHandler");
+                System.Diagnostics.Activity.Current?.SetTag("message.handler", "InSeconds.Api.Modules.Players.Application.PlayersPurgeHandler");
+                System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Players.Application.PlayersPurgeHandler");
                 
                 // The actual message execution
-                var outgoing1 = await InSeconds.Api.Modules.Players.Application.PurgeExpiredAuthTokensHandler.Handle(purgeExpiredAuthTokens, efPlayerStore, _timeProvider, cancellation).ConfigureAwait(false);
+                var outgoing1 = await InSeconds.Api.Modules.Players.Application.PlayersPurgeHandler.Handle(purgeExpiredAuthTokens, efPlayerStore, _timeProvider, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message
