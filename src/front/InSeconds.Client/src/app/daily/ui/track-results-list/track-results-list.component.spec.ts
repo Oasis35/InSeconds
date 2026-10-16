@@ -12,7 +12,6 @@ const row = (over: Partial<TrackResultRow> = {}): TrackResultRow => ({
   titleCorrect: true,
   listenedSeconds: 1,
   averageSecondsWhenCorrect: 1.2,
-  failureRatePercent: 10,
   score: 850,
   deezerTrackId: 42,
   distribution: [{ durationSeconds: 1, count: 3 }],

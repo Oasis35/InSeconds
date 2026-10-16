@@ -16,7 +16,6 @@ export interface TrackResultRow {
   titleCorrect: boolean | null;
   listenedSeconds: number | null;
   averageSecondsWhenCorrect: number | null;
-  failureRatePercent: number;
   /** `null` → pas de colonne score. */
   score: number | null;
   deezerTrackId: number;

@@ -526,7 +526,6 @@
       "showTracks": "Show tracks",
       "hideTracks": "Hide",
       "coverAlt": "Cover",
-      "failedPercent": "{{ percent }}% failed",
       "averageSeconds": "avg. {{ seconds }}s"
     },
     "share": {

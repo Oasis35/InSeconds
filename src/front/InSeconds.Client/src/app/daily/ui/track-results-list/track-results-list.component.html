@@ -31,7 +31,6 @@
           @if (r.averageSecondsWhenCorrect !== null) {
             <span>{{ 'daily.alreadyPlayed.averageSeconds' | translate: { seconds: r.averageSecondsWhenCorrect.toFixed(1) } }}</span>
           }
-          <span>· {{ 'daily.alreadyPlayed.failedPercent' | translate: { percent: r.failureRatePercent.toFixed(0) } }}</span>
         </div>
       </div>
 

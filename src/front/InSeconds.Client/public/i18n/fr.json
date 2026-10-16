@@ -526,7 +526,6 @@
       "showTracks": "Voir les morceaux",
       "hideTracks": "Masquer",
       "coverAlt": "Pochette",
-      "failedPercent": "{{ percent }}% ont échoué",
       "averageSeconds": "moy. {{ seconds }}s"
     },
     "share": {

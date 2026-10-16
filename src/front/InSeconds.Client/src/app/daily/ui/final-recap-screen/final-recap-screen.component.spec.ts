@@ -66,13 +66,12 @@ describe('FinalRecapScreenComponent', () => {
 
   it('recapRows() se passe des stats quand la réponse porte son histogramme', () => {
     const { fixture } = render({
-      results: [answered({ distribution: [{ durationSeconds: 1, count: 5 }], notFoundCount: 2, failureRatePercent: 7 })],
+      results: [answered({ distribution: [{ durationSeconds: 1, count: 5 }], notFoundCount: 2})],
       stats: stats(),
     });
     const row = fixture.componentInstance['recapRows']()[0];
     expect(row.distribution).toEqual([{ durationSeconds: 1, count: 5 }]);
     expect(row.notFoundCount).toBe(2);
-    expect(row.failureRatePercent).toBe(7);
   });
 
   it('recapRows() complète une réponse relue à la reprise avec les stats, par position', () => {
@@ -80,7 +79,6 @@ describe('FinalRecapScreenComponent', () => {
     const row = fixture.componentInstance['recapRows']()[0];
     expect(row.distribution).toEqual([{ durationSeconds: 0.5, count: 2 }]);
     expect(row.notFoundCount).toBe(1);
-    expect(row.failureRatePercent).toBe(12);
     expect(row.averageSecondsWhenCorrect).toBe(0.9);
     expect(row.coverUrl).toBe('http://x/c.jpg');
   });
