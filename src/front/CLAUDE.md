@@ -150,6 +150,8 @@ Après tout changement d'endpoint d'un module : régénérer le document côté 
 - `feature/` : pages `login`, `verify`, `confirm-email`, `profile`, routes `ACCOUNT_ROUTES` (chargées à la demande, chaque page fournit ses stores), `linkedAccountGuard` (compte requis, attend la lecture de l'identité), `provideAccount()` (branché dans `app.config.ts` : adresse de l'API et lecture de l'identité au démarrage, sans bloquer l'affichage), `BrowserIdComponent` (copie par `ClipboardService`, avec son repli, piège 45) ;
 - `ui/` : `auth-page` (cadre des écrans d'authentification), `device-list`, `browser-id-view`.
 
+Droits RGPD (back et client NSwag prêts, boutons du profil à venir après validation de la maquette) : le client des joueurs a `exportMyData` (`GET /api/players/me/export`, JSON en pièce jointe : un simple lien suffit, le cookie part avec) et `deleteMyAccount` (`POST /api/players/me/delete`, `{ pseudo }` retapé, 400 `players.pseudo_mismatch`, puis cookie retiré : le navigateur redevient celui d'un visiteur). Prévu : « Télécharger mes données » et « Supprimer mon compte » dans le profil, la suppression par une fenêtre `ModalService` qui liste ce qui sera effacé et demande de retaper son pseudo (choix de Clément du 16/10).
+
 Règles : le lien magique et le lien de changement d'email ne se consomment **jamais** à l'ouverture de la page (piège 21), seulement au clic sur « Confirmer » ; un navigateur déjà connecté est prévenu avant de confirmer le lien d'une autre adresse (piège 30). Les aides de test (`**/testing/**`, faux `PlayersApi`, `dom.ts`) sont exclues du build de l'app.
 
 ## Domaine gameplay

@@ -460,6 +460,12 @@ Le retour arrière reste possible tant que personne n'a joué en v2 (§ 10.3 du 
 - **« v2 » retiré des noms** (demande de Clément) : jobs CI, groupes Dependabot (étiquette `dependencies`), `docker-compose.prod-v2.yml` → `docker-compose.prod.yml` et projet Compose `inseconds-v2` → `inseconds` (`deploy.sh` retire une fois les conteneurs et images de l'ancien projet, mêmes noms de conteneurs), paquet npm, classe de test, titres de la doc. Gardés : l'étiquette et le dossier `refonte-v2` (historique), l'identifiant du message de remerciement (`v2-launch`, déjà lu par les navigateurs), les noms de tests qui opposent cookie v1 et cookie v2.
 - **Flux Git** : PR vers `env/staging`, puis `env/staging` → `main` (règle normale, plus « tant que la v1 existe »).
 
+**Passe RGPD après la mise en prod (PR #351 vers `env/staging`, 16/10/2026, hors étapes de la refonte) :** constat dans `audit/rgpd-admin-2026-10-16.md` (dossier partagé du projet).
+- **Minimisation** : `Cache-Control: no-store` sur toute l'API ; email masqué dans l'admin (affiché au clic) ; pseudos anonymisés au staging ; texte tapé par le joueur plus stocké (migration `DropTypedAnswers`).
+- **Droits du joueur** : `GET /api/players/me/export` (copie JSON de toutes ses données) et `POST /api/players/me/delete` (pseudo retapé), même effacement (`AccountErasure`, contrat `Daily.Contracts.IPlayerGameData`) que la purge et que les commandes de secours `--export-player` / `--delete-player`. Un compte effacé l'est pour de bon (plus de `deleted_at`). Piège 48 : toute table avec `player_id` doit être effacée (`PlayerDataTests`).
+- **Durées de conservation** dans `players-purge-expired-tokens` (même identifiant) : appareils sans visite depuis 91 jours, comptes inactifs depuis 3 ans (jamais un admin, sans email de prévenance), une transaction par étape.
+- **Reste** : boutons du profil (maquette à valider par Clément), textes de la page confidentialité (avec #349).
+
 ---
 
 ## 12. Suivi

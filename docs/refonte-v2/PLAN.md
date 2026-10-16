@@ -162,7 +162,7 @@ Le jeu est un ensemble de **modes** branchés sur des **noyaux** communs. C'est 
 
 | Table | Colonnes | Contraintes et remarques |
 |---|---|---|
-| `players` | `id uuid PK`, `created_at timestamptz`, `last_seen_at timestamptz null`, `deleted_at timestamptz null` | un invité est un joueur **sans** ligne `accounts` : plus de `is_guest` ni de contrainte « invité ⇔ pas de pseudo » |
+| `players` | `id uuid PK`, `created_at timestamptz`, `last_seen_at timestamptz null`, `deleted_at timestamptz null` | un invité est un joueur **sans** ligne `accounts` : plus de `is_guest` ni de contrainte « invité ⇔ pas de pseudo ». Depuis la passe RGPD (PR #351), `deleted_at` n'est plus posé : un compte effacé est supprimé pour de bon (`AccountErasure`) |
 | `accounts` | `player_id uuid PK FK players`, `email citext UNIQUE`, `pseudo citext UNIQUE`, `is_admin bool default false`, `linked_at timestamptz null` | `linked_at` est `null` pour les comptes repris (date inconnue) |
 | `device_sessions` | `id int PK`, `player_id uuid FK`, `created_at`, `last_seen_at`, `revoked_at null`, `user_agent_label text null` | une ligne par appareil connecté ; le cookie standard porte l'`id` et la validation vérifie `revoked_at` ; index sur `player_id` |
 | `legacy_tokens` | `player_id uuid PK FK`, `token_hash bytea UNIQUE` | provisoire : SHA-256 du jeton v1, pour reprendre les cookies v1 (§ 5.5). Plusieurs appareils peuvent présenter le même jeton, chacun obtient sa `device_session`. Table supprimée au retrait de la transition (J+90) |
@@ -380,7 +380,7 @@ Clément veut des tâches de type cron, qu'il pilote lui-même, **avec des solut
 | `catalogue-refresh` | `0 23 * * *` | previews et rang Deezer des morceaux éligibles au défi du lendemain |
 | `daily-generate-challenge` | `0 0 * * *` | génère le défi du jour (retry toutes les 10 min, 144 essais : la journée) |
 | `daily-close-day` | `5 0 * * *` | expire les parties restées en cours sur un défi plus vieux que la veille (E4), puis fige les stats de J-2 (la veille reste en calcul direct) |
-| `players-purge-expired-tokens` | `30 3 * * *` | supprime les jetons expirés (connexion et changement d'email) |
+| `players-purge-expired-tokens` | `30 3 * * *` | durées de conservation (RGPD) : jetons expirés, appareils sans visite depuis 91 jours, comptes inactifs depuis 3 ans (jamais un admin), une transaction par étape |
 
 Sur le staging, `catalogue-refresh` est en `Cron.Never()` (même IP que la prod, donc même quota Deezer, piège 16).
 

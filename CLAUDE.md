@@ -100,7 +100,7 @@ L'API refuse de démarrer si les réglages du jeu sont incohérents (`DailyOptio
 | `catalogue-refresh` | `0 23 * * *` (jamais en staging : même IP que la prod, piège 16) | recontrôle l'extrait et le rang Deezer des morceaux tirables demain |
 | `daily-generate-challenge` | `0 0 * * *` | génère le défi du jour ; pool insuffisant : réessai toutes les 10 min pendant 24 h |
 | `daily-close-day` | `5 0 * * *` | expire les parties restées en cours, fige les statistiques de J-2 et avant |
-| `players-purge-expired-tokens` | `30 3 * * *` | supprime les jetons expirés (lien de connexion et changement d'email) |
+| `players-purge-expired-tokens` | `30 3 * * *` | durées de conservation (RGPD) : jetons expirés, appareils sans visite depuis 91 jours, comptes inactifs depuis 3 ans (jamais un admin) ; une transaction par étape |
 
 En staging, les trois autres tâches tournent **30 min après la prod** (0 h 30, 0 h 35 et 4 h UTC, `appsettings.Staging.json`), pour que les deux instances du VPS ne travaillent jamais en même temps sur le même Postgres ; entre minuit et 0 h 30, le défi du staging est généré à la volée au premier « Commencer ». Les horaires attendus du projet healthchecks.io « [Dev]InSeconds » suivent ce décalage.
 
@@ -132,7 +132,7 @@ Même base PostgreSQL que la v1 (`inseconds` en prod, `inseconds_staging` en sta
 
 | Schéma | Tables |
 |---|---|
-| `players` | `players` (un invité = un joueur sans compte, suppression logique `deleted_at`), `accounts` (`email` et `pseudo` en `citext` uniques, `is_admin`), `device_sessions` (un appareil connecté, révocable), `legacy_tokens` (reprise des cookies v1, supprimée en I3), `auth_tokens` (lien de connexion et changement d'email, hachés) |
+| `players` | `players` (un invité = un joueur sans compte ; un compte effacé disparaît pour de bon, `deleted_at` n'est plus posé), `accounts` (`email` et `pseudo` en `citext` uniques, `is_admin`), `device_sessions` (un appareil connecté, révocable), `legacy_tokens` (reprise des cookies v1, supprimée en I3), `auth_tokens` (lien de connexion et changement d'email, hachés) |
 | `catalogue` | `tracks` (`deezer_track_id` unique, `cover_hash` seul, `release_year`, `deezer_rank`, `preview_status` 0 inconnu / 1 disponible / 2 absent, `disabled_at`) |
 | `daily` | `challenges` (`date` unique, `seed`, `origin`), `challenge_tracks` (PK `(challenge_id, position)`), `sessions` (unique `(player_id, challenge_id)`, `status` 0 en cours / 1 terminée / 2 abandonnée / 3 expirée, verrou du morceau en cours), `answers` (PK `(session_id, position)`), `streaks`, `challenge_day_stats` (photo figée d'un jour terminé, `payload jsonb`) |
 | `infra` | `settings`, `data_protection_keys` (chiffrées par certificat), `__ef_migrations_history`, `import_state` (import v1 → v2) |
@@ -266,7 +266,15 @@ docker run --rm --network shared-postgres -e PGPASSWORD="$infra_pw" postgres:17-
   psql -h shared-postgres -U inseconds -d inseconds \
   -c "UPDATE players.accounts SET is_admin = true WHERE email = 'quelqu-un@example.com';"
 # Ancien schéma v1 (avant la bascule du 16/10/2026, inutile maintenant) : UPDATE "Players" SET "IsAdmin" = true WHERE "Email" = '…';
+
+# Droits RGPD d'un joueur qui ne peut plus se connecter (sinon : boutons « Télécharger mes données » et
+# « Supprimer mon compte » du profil). Lancé depuis le PC : le JSON arrive directement chez soi, rien n'est
+# écrit sur le VPS (--rm). Code de sortie 2 si aucun compte n'a cette adresse.
+ssh vpsovh "cd ~/apps/InSeconds && docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm -T api --export-player quelqu-un@example.com" > export.json
+ssh vpsovh "cd ~/apps/InSeconds && docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm -T api --delete-player quelqu-un@example.com"
 ```
+
+Marche à suivre pour une demande reçue par email : **répondre uniquement à l'adresse du compte**, jamais à une autre (c'est ce qui vérifie l'identité ; pour une suppression, confirmer d'abord par un email à cette adresse). Envoyer `export.json` en pièce jointe depuis sa boîte, sans passer par Brevo, supprimer le fichier local, puis le mail envoyé au bout d'un mois environ. La suppression efface le compte, les appareils, les jetons, la série et les parties (même code que le bouton du profil, cf. `src/back/CLAUDE.md` § Module Players, « Droits du joueur »). Les sauvegardes déjà faites gardent la donnée jusqu'à leur expiration (30 jours, 12 mois pour les mensuelles).
 
 ## Conventions Git
 
@@ -381,13 +389,14 @@ Les numéros sont stables : le code, les tests et les autres CLAUDE.md y font r�
 45. **Copie presse-papier intermittente** — `navigator.clipboard.writeText` peut rejeter même dans un vrai clic (« Document is not focused ») : repli sur une copie par textarea + `execCommand('copy')`, rejet remonté sans jamais le texte copié (`core/clipboard/ClipboardService`). E2E `share-button.spec.ts`.
 46. **Faux événement `playing` de Safari** — sur iPhone, `playing` part dès l'appel à `play()` alors que le son ne démarre que bien plus tard (relecture ↺ surtout) : un chrono fixe coupait le palier avant presque tout son. Le chrono ne coupe jamais à l'aveugle : à l'échéance, il relit `currentTime` et se reprogramme si le palier n'est pas atteint, et rien ne coupe pendant un `seeking` (Safari renvoie l'ancienne position juste après `currentTime = 0`). `HtmlAudioPort`, tests `html-audio.port.spec.ts` (démarrage lent, faux `playing`). Rétabli en v2 avec #309.
 47. **Conditions de l'API Deezer** — usage **strictement non commercial** (ni revenu, ni publicité, ni partenaire), extraits de 30 s seulement, **aucun audio ni aucune image Deezer stockés** (ni dans un cache persistant du navigateur, service worker compris : `ngsw-config.json` n'a aucun `dataGroups`, ni dans une image générée comme les stories) ; seules les métadonnées artiste/titre et le hash de pochette sont gardés. La page `/privacy` mentionne l'usage privé et les CDN Deezer qui voient l'IP du joueur. Synthèse : `audit/conditions-api-deezer-2026-10-02.md` (dossier partagé du projet).
+48. **Effacement d'un joueur complet** — `AccountErasure` (bouton du profil, purge des comptes inactifs, `--delete-player`) supprime d'abord ses données de jeu (contrat `Daily.Contracts.IPlayerGameData`), puis tout ce que Players garde de lui, ligne `players.players` comprise : une table qui référence un joueur et que l'effacement oublie bloquerait la suppression (clé étrangère) ou garderait ses données. **Toute nouvelle table avec une colonne `player_id` doit y être ajoutée.** Les jetons de connexion ne portent que l'adresse : ceux de son email partent aussi. Tests : `Players/PlayerDataTests` (lit toutes les colonnes `player_id` dans `information_schema`), `PlayersPurgeTests`, `PlayerDataCommandTests`.
 
 ## Ce que fait l'application
 
 Vue fonctionnelle ; le détail technique de chaque point est dans `src/back/CLAUDE.md` et `src/front/CLAUDE.md`, les règles du jeu dans [`docs/GAMEPLAY_RULES_FR.md`](docs/GAMEPLAY_RULES_FR.md).
 
 - **Jeu du jour** (`/daily`) : accueil, reprise d'une partie en cours, manche (écoute par paliers, « écouter plus », indices année puis artiste masqué, autocomplétion Deezer, « Passer (0 pts) »), révélation avec l'histogramme « en combien de temps les autres ont trouvé », récap final, écran « déjà joué » avec compte à rebours, égaliseur de la répartition des scores du jour, partage du score (emoji, presse-papier). Le son ne démarre que sur un clic (iPhone). Confirmation avant de quitter une partie en cours, synchronisation entre onglets.
-- **Identité** : invité créé au premier « Commencer » (la lecture de l'état du jour ne crée rien) ; compte optionnel par lien magique (inscription ouverte, pas de mot de passe), pseudo, changement d'email confirmé à la nouvelle adresse, liste des appareils connectés, déconnexion d'un appareil ou de tous les autres. Les cookies v1 sont repris à la première visite (une session d'appareil par conversion).
+- **Identité** : invité créé au premier « Commencer » (la lecture de l'état du jour ne crée rien) ; compte optionnel par lien magique (inscription ouverte, pas de mot de passe), pseudo, changement d'email confirmé à la nouvelle adresse, liste des appareils connectés, déconnexion d'un appareil ou de tous les autres. Droits RGPD (back fait, boutons du profil à venir) : copie de toutes ses données en JSON (`GET /api/players/me/export`) et suppression du compte, pseudo retapé (`POST /api/players/me/delete`) ; commandes de secours `--export-player` / `--delete-player` sur le VPS. Durées de conservation appliquées chaque nuit : appareils sans visite depuis 91 jours, comptes inactifs depuis 3 ans. Les cookies v1 sont repris à la première visite (une session d'appareil par conversion).
 - **Série et gels** : série sur la date du défi, gels pour les comptes (1 offert à la création, +1 tous les 7 jours, 2 au plus), série protégée ou perdue, gélule et panneau de détail, toasts de fin de partie.
 - **Admin** (`/admin`, rôle `is_admin`) : tableau de bord, défis (stats par défi, chips joueur « toi », histogrammes, recalcul d'une photo figée), pool (recherche et ajout Deezer, écoute, renommage à tout moment, désactivation, suppression d'un morceau jamais utilisé, autonomie du pool), joueurs (comptes, série, historique de 30 jours), actions (témoins des tâches planifiées, cooldown, stories Instagram hebdomadaires), lien vers `/jobs`, heure de déploiement.
 - **Transverse** : FR/EN (détection puis choix dans le pied de page), PWA installable, nouvelle version appliquée d'elle-même à un moment sûr (jamais pendant une manche, une saisie ou une fenêtre ouverte ; bandeau « Nouvelle version disponible » seulement en secours), overlay « Service indisponible » (sonde `/health`), code d'erreur affiché au joueur (le `traceId`), page `/privacy`, avis « l'adresse a changé » pour l'ancienne URL `code.run`, CSP du front (en `report-only` jusqu'à une semaine sans violation en prod, puis bloquante : #300).
@@ -404,6 +413,7 @@ Vue fonctionnelle ; le détail technique de chaque point est dans `src/back/CLAU
 ## Décisions d'architecture notables
 
 - **Pas de leaderboard permanent** — stats globales seulement ; les comptes servent à garder série et historique, le jeu reste 100 % jouable en invité.
+- **Droits RGPD en libre-service** — copie des données et suppression du compte depuis le profil (identité prouvée par la connexion, rien par email ni par Brevo), même code que la purge des comptes inactifs et que les commandes de secours. Un compte supprimé l'est pour de bon (pas de `deleted_at`) : un joueur supprimé n'apparaissait de toute façon plus dans les stats. Durées de conservation dans la tâche de purge existante plutôt qu'une tâche de plus (même module, même heure, une transaction par étape).
 - **Pas de mot de passe** — lien magique uniquement. La logique « trouver le compte par l'email, sinon le créer sur l'invité du navigateur » (`AccountSignIn`) est indépendante du moyen de vérification : un futur Google OAuth n'aura qu'à l'appeler.
 - **Monolithe modulaire, pas de microservices** — une API, une base, des modules séparés par leurs contrats, vérifiés par les tests d'architecture.
 - **Wolverine** pour les endpoints, les transactions et l'outbox (PostgreSQL, pas de RabbitMQ) ; **Hangfire** pour les tâches planifiées (tableau de bord `/jobs`).

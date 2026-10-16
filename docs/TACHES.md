@@ -34,7 +34,7 @@
 - [ ] **Bruit des erreurs de validation** — Wolverine peut loguer en `Error` (avec stack) chaque échec FluentValidation alors que l'API répond un 400 normal : à vérifier sur la v2 (validation par Wolverine.Http) avant de créer les alertes « erreurs »
 - [ ] (optionnel) Collecteur Grafana Alloy sur le VPS pour remonter aussi les logs Caddy/nginx
 - [ ] **Sauvegardes de la base : mise en service sur le VPS** — `deploy/infra/backup.sh` + timer systemd (nuit 3 h UTC) sont prêts et les clés R2 sont dans `deploy/infra/.env` (2026-10-11) ; reste à lancer `./backup.sh` puis `./backup.sh restore-test`, installer le timer, créer l'alerte Grafana « aucune sauvegarde en 26 h » (cf. `deploy/infra/README.md` § Sauvegardes)
-- [ ] **Tâche récurrente de nettoyage des invités jamais joués** — tâche Hangfire nocturne (comme `players-purge-expired-tokens`) qui supprime logiquement les invités sans aucune partie au-delà d'un seuil (ex : 30 jours). Attention : la règle croise Players et Daily, qui ne se lisent que par leurs contrats
+- [ ] **Tâche récurrente de nettoyage des invités jamais joués** — tâche Hangfire nocturne (ou une étape de plus de `players-purge-expired-tokens`, qui supprime déjà leurs appareils au bout de 91 jours) qui supprime les invités sans aucune partie au-delà d'un seuil (ex : 30 jours). Attention : la règle croise Players et Daily, qui ne se lisent que par leurs contrats
 - [ ] Cache Redis en remplacement de `DeezerCache` (utile seulement en multi-instances ou pour survivre aux redémarrages)
 
 ## Mobile
@@ -49,7 +49,7 @@
 - [ ] Soft 404 : les URLs inexistantes renvoient 200 (fallback SPA), la page 404 n'est rendue que côté Angular
 - [ ] Charte graphique / `@theme` Tailwind (palette déjà centralisée en variables CSS `:root`)
 - [ ] Audit accessibilité WCAG 2.1 AA
-- [ ] RGPD : anonymisation à la suppression d'un joueur (pas juste `deleted_at`)
+- [x] RGPD : effacement complet d'un joueur (plus de `deleted_at`), copie de ses données, durées de conservation dans la tâche nocturne (PR #351 ; boutons du profil à venir)
 - [ ] CGU minimales (les mentions légales sont sur `/privacy`)
 
 ## Décisions définitives (ne pas réimplémenter)
