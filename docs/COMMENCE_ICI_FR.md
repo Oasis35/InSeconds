@@ -28,7 +28,7 @@ InSeconds est un **blind test musical quotidien**. La lecture démarre au palier
 
 ## État du dépôt
 
-Le code de référence est dans `src/v2/` : il sert la prod depuis le 16/10/2026 et le staging. `src/back` et `src/front` sont du code mort, supprimé à la PR I2. Où en est le chantier : ticket GitHub #205.
+Le code de référence est dans `src/v2/` : il sert la prod depuis le 16/10/2026 et le staging. L'ancienne version (`src/back`, `src/front`) est supprimée depuis la PR I2 (historique git). Où en est le chantier : ticket GitHub #205.
 
 ## Où trouver quoi
 
