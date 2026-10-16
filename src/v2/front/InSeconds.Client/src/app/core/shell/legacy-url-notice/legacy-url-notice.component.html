@@ -1,0 +1,14 @@
+<app-modal-frame [title]="'shell.legacyUrl.title' | translate">
+  <div class="space-y-4 text-center">
+    <p class="text-5xl" aria-hidden="true">🔖</p>
+    <p style="color:var(--text-light)">{{ 'shell.legacyUrl.body' | translate }}</p>
+    <p class="text-lg font-bold tracking-wide" style="font-family:var(--font-display);color:var(--text-accent)">
+      inseconds.cc
+    </p>
+  </div>
+  <div modalActions class="pt-5">
+    <button appButton type="button" [block]="true" (click)="ref.close()">
+      {{ 'shell.legacyUrl.cta' | translate }}
+    </button>
+  </div>
+</app-modal-frame>

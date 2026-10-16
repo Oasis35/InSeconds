@@ -1,0 +1,10 @@
+@if (visible()) {
+  <div
+    data-testid="env-banner"
+    class="sticky top-0 z-[1000] w-full px-4 py-1.5 text-center text-sm pointer-events-none select-none"
+    [style.background]="'var(--color-warn)'"
+    [style.color]="'var(--bg-page)'"
+  >
+    <strong>DEV</strong> — {{ 'envBanner.label' | translate }}
+  </div>
+}

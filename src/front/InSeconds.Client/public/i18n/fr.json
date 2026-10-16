@@ -270,6 +270,9 @@
     "body": "L'application revient dans un instant. Cette page se rafraîchira toute seule dès que le service sera de retour.",
     "reconnecting": "Reconnexion en cours…"
   },
+  "envBanner": {
+    "label": "environnement de développement"
+  },
   "legacyUrl": {
     "title": "L'adresse a changé",
     "body": "InSeconds a maintenant sa propre adresse. Tu as été redirigé automatiquement — pense à mettre à jour ton favori.",

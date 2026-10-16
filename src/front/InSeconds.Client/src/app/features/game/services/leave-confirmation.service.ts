@@ -2,13 +2,14 @@ import { Injectable, signal } from '@angular/core';
 
 /**
  * État de la modale de confirmation de sortie en cours de partie (cf. `unsavedGameGuard`).
- * Le `HostListener('window:beforeunload')` et l'`effect()` de résolution automatique restent
- * dans `GameComponent` (Angular n'attache les décorateurs de composant qu'à des composants),
+ * L'écoute de `window:beforeunload` (`host` du composant) et l'`effect()` de résolution
+ * automatique restent dans `GameComponent` (liés au composant et à l'état de la partie),
  * ce service ne porte que la machine à états de la modale + la Promise en attente.
  */
 @Injectable()
 export class LeaveConfirmationService {
-  readonly showLeaveConfirm = signal(false);
+  private readonly _showLeaveConfirm = signal(false);
+  readonly showLeaveConfirm = this._showLeaveConfirm.asReadonly();
   private leaveResolve: ((ok: boolean) => void) | null = null;
 
   get hasPending(): boolean {
@@ -20,14 +21,14 @@ export class LeaveConfirmationService {
     // Une confirmation déjà en attente (navigation ré-entrante) : on la résout
     // avant d'en ouvrir une nouvelle pour ne pas laisser de Promise orpheline.
     this.resolve(false);
-    this.showLeaveConfirm.set(true);
+    this._showLeaveConfirm.set(true);
     return new Promise<boolean>(resolve => {
       this.leaveResolve = resolve;
     });
   }
 
   resolve(ok: boolean): void {
-    this.showLeaveConfirm.set(false);
+    this._showLeaveConfirm.set(false);
     const resolve = this.leaveResolve;
     this.leaveResolve = null;
     resolve?.(ok);

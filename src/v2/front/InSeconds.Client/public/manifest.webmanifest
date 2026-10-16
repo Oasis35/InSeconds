@@ -1,0 +1,17 @@
+{
+  "name": "InSeconds — Blind test musical du jour",
+  "short_name": "InSeconds",
+  "description": "Écoute quelques secondes et devine l'artiste et le titre. Moins tu écoutes, plus tu scores.",
+  "lang": "fr",
+  "start_url": "/daily",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0a0612",
+  "theme_color": "#0a0612",
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

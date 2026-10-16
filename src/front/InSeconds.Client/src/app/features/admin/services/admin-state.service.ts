@@ -1,64 +1,69 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
+import { filter, map, startWith, tap } from 'rxjs';
 import { AdminTab } from '../admin.models';
-
-const VALID_TABS: ReadonlySet<AdminTab> = new Set<AdminTab>(['dashboard', 'pool', 'defis', 'joueurs', 'actions']);
-
-function isAdminTab(value: string | null): value is AdminTab {
-  return VALID_TABS.has(value as AdminTab);
-}
 
 @Injectable()
 export class AdminStateService {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
-  readonly selectedDay = signal<string>(new Date().toISOString().slice(0, 10));
-  readonly poolSearchQuery = signal('');
-  readonly poolReloadTrigger = signal(0);
-  readonly challengesReloadTrigger = signal(0);
-
-  /**
-   * Onglet affiché. Piloté ici (et non dans AdminComponent) pour que les rxResource d'AdminApiService
-   * puissent charger paresseusement. Initialisé depuis le paramètre d'URL `?tab=` (F5 conserve l'onglet).
-   */
-  readonly activeTab = signal<AdminTab>(this.readTabFromUrl());
+  private readonly _selectedDay = signal<string>(new Date().toISOString().slice(0, 10));
+  readonly selectedDay = this._selectedDay.asReadonly();
+  private readonly _poolSearchQuery = signal('');
+  readonly poolSearchQuery = this._poolSearchQuery.asReadonly();
+  private readonly _poolReloadTrigger = signal(0);
+  readonly poolReloadTrigger = this._poolReloadTrigger.asReadonly();
+  private readonly _challengesReloadTrigger = signal(0);
+  readonly challengesReloadTrigger = this._challengesReloadTrigger.asReadonly();
 
   /**
    * Onglets déjà ouverts au moins une fois pendant la session admin courante.
    * 'dashboard' est inclus d'office (onglet d'atterrissage). Un onglet reste "visité"
    * une fois ouvert → ses données sont chargées une seule fois puis mises en cache par le rxResource.
-   * L'onglet restauré depuis l'URL au chargement (F5 sur un autre onglet que dashboard) est lui aussi marqué visité.
+   * L'onglet ouvert au chargement (F5 sur /admin/pool) est lui aussi marqué visité.
+   * Alimenté à chaque navigation (et non dérivé de `activeTab`) : un onglet traversé sans que
+   * personne ne lise ce signal entre-temps doit quand même compter comme visité.
    */
-  private readonly visitedTabs = signal<ReadonlySet<AdminTab>>(new Set<AdminTab>(['dashboard', this.activeTab()]));
+  private readonly _visitedTabs = signal<ReadonlySet<AdminTab>>(new Set<AdminTab>(['dashboard']));
 
-  private readTabFromUrl(): AdminTab {
-    const tab = this.route.snapshot.queryParamMap.get('tab');
-    return isAdminTab(tab) ? tab : 'dashboard';
+  /**
+   * Onglet affiché, dérivé de la route enfant active (`/admin/pool` → 'pool', cf. admin.routes.ts).
+   * Porté ici (et non dans AdminComponent) pour que les rxResource d'AdminApiService puissent
+   * charger paresseusement.
+   */
+  readonly activeTab = toSignal(
+    this.router.events.pipe(
+      filter(e => e instanceof NavigationEnd),
+      map(() => this.readTabFromRoute()),
+      startWith(this.readTabFromRoute()),
+      tap(tab => this._visitedTabs.update(visited => new Set(visited).add(tab))),
+    ),
+    { requireSync: true },
+  );
+
+  private readTabFromRoute(): AdminTab {
+    return (this.route.snapshot.firstChild?.data['tab'] as AdminTab | undefined) ?? 'dashboard';
   }
 
   hasVisited(tab: AdminTab): boolean {
-    return this.visitedTabs().has(tab);
+    return this._visitedTabs().has(tab);
   }
 
-  setActiveTab(tab: AdminTab): void {
-    this.activeTab.set(tab);
-    if (!this.visitedTabs().has(tab)) {
-      this.visitedTabs.update(s => new Set(s).add(tab));
-    }
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { tab },
-      queryParamsHandling: 'merge',
-      replaceUrl: true,
-    });
+  setSelectedDay(day: string): void {
+    this._selectedDay.set(day);
+  }
+
+  setPoolSearchQuery(q: string): void {
+    this._poolSearchQuery.set(q);
   }
 
   reloadPool(): void {
-    this.poolReloadTrigger.update(v => v + 1);
+    this._poolReloadTrigger.update(v => v + 1);
   }
 
   reloadChallenges(): void {
-    this.challengesReloadTrigger.update(v => v + 1);
+    this._challengesReloadTrigger.update(v => v + 1);
   }
 }

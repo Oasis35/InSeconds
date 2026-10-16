@@ -1,0 +1,18 @@
+<div class="flex flex-shrink-0" [style.gap.px]="dims().gap">
+  @for (cell of cells(); track $index) {
+    <span class="relative flex items-center justify-center box-border"
+          [style.width.px]="dims().box" [style.height.px]="dims().box" [style.border-radius.px]="dims().radius"
+          style="border:1.5px dashed rgb(var(--rgb-accent-2) / 0.6);background:rgb(var(--rgb-accent-2) / 0.04)"
+          [attr.data-testid]="cell.full ? 'freeze-cell-full' : 'freeze-cell-empty'">
+      @if (cell.full) {
+        <span class="absolute flex items-center justify-center box-border"
+              style="inset:-1.5px;background:var(--gradient-ice);box-shadow:var(--glow-ice);color:rgb(var(--rgb-bg) / 0.82)"
+              [style.border-radius.px]="dims().radius"
+              [attr.data-anim]="cell.animated ? '' : null"
+              [style.animation]="cell.animated ? 'gel-fill .5s cubic-bezier(.2,.8,.2,1) 1.3s both' : null">
+          <app-streak-icon name="snowflake" [size]="(dims().icon * 1.15) + 'px'" />
+        </span>
+      }
+    </span>
+  }
+</div>

@@ -1,5 +1,6 @@
-import { Component, input, signal, HostListener, ChangeDetectionStrategy } from '@angular/core';
+import { Component, input, signal, ChangeDetectionStrategy } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
+import { ModalComponent } from '../modal/modal.component';
 import { DurationBucketDto } from '../../core/models/game.models';
 import { DeezerBadgeComponent } from '../deezer-badge.component';
 import { GuessTimeChartComponent } from '../guess-time-chart/guess-time-chart.component';
@@ -31,7 +32,7 @@ export interface TrackResultRow {
  */
 @Component({
   selector: 'app-track-results-list',
-  imports: [TranslatePipe, DeezerBadgeComponent, GuessTimeChartComponent],
+  imports: [ModalComponent, TranslatePipe, DeezerBadgeComponent, GuessTimeChartComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './track-results-list.component.html',
 })
@@ -51,10 +52,5 @@ export class TrackResultsListComponent {
 
   protected closeChart(): void {
     this.openChart.set(null);
-  }
-
-  @HostListener('document:keydown.escape')
-  protected onEscape(): void {
-    this.closeChart();
   }
 }

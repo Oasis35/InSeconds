@@ -43,6 +43,8 @@ export class AdminApiService {
   });
   readonly poolTracks = computed(() => this.poolTracksResource.value() ?? { available: [], used: [] });
   readonly poolTracksLoading = computed(() => this.poolTracksResource.isLoading());
+  /** Vrai dès que le pool a été chargé une fois (il reste affiché pendant un rechargement). */
+  readonly poolTracksLoaded = computed(() => this.poolTracksResource.hasValue());
 
   // Dashboard uniquement (KPIs, activité 30j, répartition joueurs). La partie lourde
   // « Stats par défi » a son propre endpoint/resource, chargé à l'ouverture de l'onglet Défis.
@@ -84,6 +86,9 @@ export class AdminApiService {
   checkAuth(): void { this.http.checkAuth(); }
 
   logout(): Promise<void> { return this.http.logout(); }
+
+  setSelectedDay(day: string): void { this.state.setSelectedDay(day); }
+  setPoolSearchQuery(q: string): void { this.state.setPoolSearchQuery(q); }
 
   reloadPool(): void { this.state.reloadPool(); }
 

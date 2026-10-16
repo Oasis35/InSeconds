@@ -31,7 +31,13 @@ export class ErrorReportingService {
   private readonly alreadySent = new Set<string>();
 
   /** Code d'erreur (traceId) de la dernière réponse 5xx de l'API, affiché au joueur. */
-  readonly lastErrorCode = signal<string | null>(null);
+  private readonly _lastErrorCode = signal<string | null>(null);
+  readonly lastErrorCode = this._lastErrorCode.asReadonly();
+
+  /** Mémorise le code d'erreur (traceId) d'une réponse 5xx, pour l'écran d'erreur. */
+  setLastErrorCode(traceId: string): void {
+    this._lastErrorCode.set(traceId);
+  }
 
   report(report: ClientErrorReport): void {
     const key = `${report.source}|${report.message}`;

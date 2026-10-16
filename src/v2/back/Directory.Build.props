@@ -1,0 +1,14 @@
+<Project>
+  <!-- Réglages communs à tous les projets de la v2. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <!-- Les versions de Directory.Packages.props s'imposent aussi aux dépendances transitives
+         (ex. Newtonsoft.Json, tiré en 11.0.1 vulnérable par Hangfire). -->
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+</Project>

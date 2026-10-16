@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/*.user
+**/Dockerfile
+**/.dockerignore
+**/.git/
+**/.gitignore
+tests/
+InSeconds.Api.Testing/

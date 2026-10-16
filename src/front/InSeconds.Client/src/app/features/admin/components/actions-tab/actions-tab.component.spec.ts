@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
@@ -9,16 +10,21 @@ import { SettingsService } from '../../../../core/services/settings.service';
 describe('ActionsTabComponent', () => {
   let component: ActionsTabComponent;
   let actions: AdminActionsService;
-  let apiStub: { updateTrackCooldownDays: jasmine.Spy };
-  let settingsStub: { trackCooldownDays: ReturnType<typeof signal<number>>; load: jasmine.Spy };
+  let apiStub: {
+    updateTrackCooldownDays: Mock;
+  };
+  let settingsStub: {
+    trackCooldownDays: ReturnType<typeof signal<number>>;
+    load: Mock;
+  };
 
   beforeEach(() => {
     apiStub = {
-      updateTrackCooldownDays: jasmine.createSpy('updateTrackCooldownDays'),
+      updateTrackCooldownDays: vi.fn().mockName('updateTrackCooldownDays'),
     };
     settingsStub = {
       trackCooldownDays: signal(30),
-      load: jasmine.createSpy('load').and.returnValue(of(undefined)),
+      load: vi.fn().mockName('load').mockReturnValue(of(undefined)),
     };
 
     TestBed.configureTestingModule({
@@ -39,7 +45,7 @@ describe('ActionsTabComponent', () => {
 
   describe('updateTrackCooldownDays()', () => {
     it('calls the API and sets success status', () => {
-      apiStub.updateTrackCooldownDays.and.returnValue(of({ trackCooldownDays: 45 }));
+      apiStub.updateTrackCooldownDays.mockReturnValue(of({ trackCooldownDays: 45 }));
 
       actions.updateTrackCooldownDays(45);
 
@@ -49,7 +55,7 @@ describe('ActionsTabComponent', () => {
     });
 
     it('sets error status on failure', () => {
-      apiStub.updateTrackCooldownDays.and.returnValue(throwError(() => new Error('boom')));
+      apiStub.updateTrackCooldownDays.mockReturnValue(throwError(() => new Error('boom')));
 
       actions.updateTrackCooldownDays(0);
 

@@ -29,17 +29,17 @@ describe('AlreadyPlayedScreenComponent', () => {
     const stats = {
       yourScore: 700, medianScore: 700, totalPlayers: 1, currentStreak: 1,
       tracks: [{
-        position: 1, artist: 'Eminem', title: 'Lose Yourself', deezerTrackId: 42,
-        coverUrl: 'http://x/c.jpg', failureRatePercent: 0, averageSecondsWhenCorrect: 0.5,
-        artistCorrect: true, titleCorrect: true, listenedDurationSeconds: 0.5, score: 1000,
-        guessTimeDistribution: [{ durationSeconds: 0.5, count: 1 }], notFoundCount: 0,
-      }],
+          position: 1, artist: 'Eminem', title: 'Lose Yourself', deezerTrackId: 42,
+          coverUrl: 'http://x/c.jpg', failureRatePercent: 0, averageSecondsWhenCorrect: 0.5,
+          artistCorrect: true, titleCorrect: true, listenedDurationSeconds: 0.5, score: 1000,
+          guessTimeDistribution: [{ durationSeconds: 0.5, count: 1 }], notFoundCount: 0,
+        }],
     } as unknown as TodayStatsResponse;
     fixture.componentRef.setInput('stats', stats);
 
     const rows = component['playedRows']();
-    expect(rows).toHaveSize(1);
-    expect(rows[0]).toEqual(jasmine.objectContaining({
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toEqual(expect.objectContaining({
       position: 1, artist: 'Eminem', title: 'Lose Yourself', score: 1000,
       artistCorrect: true, titleCorrect: true, listenedDurationSeconds: 0.5, notFoundCount: 0,
     }));
@@ -50,11 +50,11 @@ describe('AlreadyPlayedScreenComponent', () => {
     const stats = {
       yourScore: undefined, medianScore: 0, totalPlayers: 0, currentStreak: 0,
       tracks: [{
-        position: 1, artist: 'A', title: 'B', deezerTrackId: 1, coverUrl: undefined,
-        failureRatePercent: 0, averageSecondsWhenCorrect: undefined,
-        artistCorrect: undefined, titleCorrect: undefined, listenedDurationSeconds: undefined,
-        score: undefined, guessTimeDistribution: [], notFoundCount: 0,
-      }],
+          position: 1, artist: 'A', title: 'B', deezerTrackId: 1, coverUrl: undefined,
+          failureRatePercent: 0, averageSecondsWhenCorrect: undefined,
+          artistCorrect: undefined, titleCorrect: undefined, listenedDurationSeconds: undefined,
+          score: undefined, guessTimeDistribution: [], notFoundCount: 0,
+        }],
     } as unknown as TodayStatsResponse;
     fixture.componentRef.setInput('stats', stats);
 

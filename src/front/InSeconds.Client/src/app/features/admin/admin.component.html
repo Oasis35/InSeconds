@@ -13,59 +13,50 @@
     <app-admin-login />
   } @else {
 
-    <!-- Onglets -->
+    <!-- Onglets = routes enfants (/admin/pool…, cf. admin.routes.ts) ; replaceUrl : pas une entrée
+         d'historique par clic d'onglet (le bouton « précédent » ne navigue pas onglet par onglet). -->
     <div class="flex gap-1 p-1 rounded-lg w-full max-w-2xl" style="background:var(--bg-surface)">
-      <button (click)="state.setActiveTab('dashboard')"
-        class="flex-1 py-2 rounded-md text-sm font-medium transition-colors"
+      <a routerLink="dashboard" replaceUrl [attr.aria-current]="state.activeTab() === 'dashboard' ? 'page' : null"
+        class="text-center flex-1 py-2 rounded-md text-sm font-medium transition-colors"
         [style.background]="state.activeTab() === 'dashboard' ? 'var(--bg-inactive)' : null"
         [style.color]="state.activeTab() === 'dashboard' ? 'var(--text-hi)' : 'var(--text-muted)'">
         {{ 'admin.tabs.dashboard' | translate }}
-      </button>
-      <button (click)="state.setActiveTab('defis')"
-        class="flex-1 py-2 rounded-md text-sm font-medium transition-colors"
+      </a>
+      <a routerLink="defis" replaceUrl [attr.aria-current]="state.activeTab() === 'defis' ? 'page' : null"
+        class="text-center flex-1 py-2 rounded-md text-sm font-medium transition-colors"
         [style.background]="state.activeTab() === 'defis' ? 'var(--bg-inactive)' : null"
         [style.color]="state.activeTab() === 'defis' ? 'var(--text-hi)' : 'var(--text-muted)'">
         {{ state.hasVisited('defis')
           ? ('admin.tabs.challenges' | translate: { count: stats.challenges().length })
           : ('admin.tabs.challengesPlain' | translate) }}
-      </button>
-      <button (click)="state.setActiveTab('pool')"
-        class="flex-1 py-2 rounded-md text-sm font-medium transition-colors"
+      </a>
+      <a routerLink="pool" replaceUrl [attr.aria-current]="state.activeTab() === 'pool' ? 'page' : null"
+        class="text-center flex-1 py-2 rounded-md text-sm font-medium transition-colors"
         [style.background]="state.activeTab() === 'pool' ? 'var(--bg-inactive)' : null"
         [style.color]="state.activeTab() === 'pool' ? 'var(--text-hi)' : 'var(--text-muted)'">
         {{ state.hasVisited('pool')
           ? ('admin.tabs.pool' | translate: { count: pool.poolTracks().available.length + pool.poolTracks().used.length })
           : ('admin.tabs.poolPlain' | translate) }}
-      </button>
-      <button (click)="state.setActiveTab('joueurs')"
-        class="flex-1 py-2 rounded-md text-sm font-medium transition-colors"
+      </a>
+      <a routerLink="joueurs" replaceUrl [attr.aria-current]="state.activeTab() === 'joueurs' ? 'page' : null"
+        class="text-center flex-1 py-2 rounded-md text-sm font-medium transition-colors"
         [style.background]="state.activeTab() === 'joueurs' ? 'var(--bg-inactive)' : null"
         [style.color]="state.activeTab() === 'joueurs' ? 'var(--text-hi)' : 'var(--text-muted)'">
         {{ state.hasVisited('joueurs')
           ? ('admin.tabs.players' | translate: { count: api.registeredPlayers().length })
           : ('admin.tabs.playersPlain' | translate) }}
-      </button>
-      <button (click)="state.setActiveTab('actions')"
-        class="flex-1 py-2 rounded-md text-sm font-medium transition-colors"
+      </a>
+      <a routerLink="actions" replaceUrl [attr.aria-current]="state.activeTab() === 'actions' ? 'page' : null"
+        class="text-center flex-1 py-2 rounded-md text-sm font-medium transition-colors"
         [style.background]="state.activeTab() === 'actions' ? 'var(--bg-inactive)' : null"
         [style.color]="state.activeTab() === 'actions' ? 'var(--text-hi)' : 'var(--text-muted)'">
         {{ 'admin.tabs.actions' | translate }}
-      </button>
+      </a>
     </div>
 
     <!-- L'onglet Joueurs (7 colonnes) a besoin de plus de largeur que les autres. -->
     <div class="w-full" [class]="state.activeTab() === 'joueurs' ? 'max-w-4xl' : 'max-w-2xl'">
-      @if (state.activeTab() === 'dashboard') {
-        <app-dashboard-tab />
-      } @else if (state.activeTab() === 'pool') {
-        <app-pool-tab />
-      } @else if (state.activeTab() === 'defis') {
-        <app-challenges-tab />
-      } @else if (state.activeTab() === 'joueurs') {
-        <app-players-tab />
-      } @else if (state.activeTab() === 'actions') {
-        <app-actions-tab />
-      }
+      <router-outlet />
     </div>
 
     <!-- Déconnexion -->

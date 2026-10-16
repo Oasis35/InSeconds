@@ -1,0 +1,87 @@
+import { test, expect } from '../fixtures/test';
+import { GamePage } from '../pages/game.page';
+import { BlindRoundPage } from '../pages/blind-round.page';
+
+test.describe('Déjà joué — état already_played', () => {
+  test('affiche le countdown et le score après avoir rejoué', async ({ page, api }) => {
+    await api.reset();
+    await page.clock.install({ time: Date.now() });
+
+    const game = new GamePage(page);
+    // Partie complète puis rechargement (même cookie → 409 → écran already_played).
+    await game.completeGameThenReload(new BlindRoundPage(page));
+
+    await expect(game.alreadyPlayedHeading).toBeVisible();
+    await expect(game.countdown).toBeVisible();
+    await expect(page.getByText('Ton score')).toBeVisible();
+  });
+
+  test('affiche le bouton partager sur l\'écran déjà joué', async ({ page, api }) => {
+    await api.reset();
+    await page.clock.install({ time: Date.now() });
+
+    const game = new GamePage(page);
+    await game.completeGameThenReload(new BlindRoundPage(page));
+    await expect(game.alreadyPlayedHeading).toBeVisible();
+
+    await expect(game.shareButton).toBeVisible();
+    await game.shareButton.click();
+    await expect(game.shareCopiedButton).toBeVisible();
+
+    const clipText = await page.evaluate(() => navigator.clipboard.readText());
+    expect(clipText).toContain('InSeconds 🎵');
+    expect(clipText).toContain('pts');
+    expect(clipText).toMatch(/[✅❌]/); // contient des emojis résultat
+  });
+
+  test('la liste des morceaux ouvre la pop-up histogramme au clic sur un score', async ({ page, api }) => {
+    await api.reset();
+    await page.clock.install({ time: Date.now() });
+
+    const game = new GamePage(page);
+    await game.completeGameThenReload(new BlindRoundPage(page));
+    await expect(game.alreadyPlayedHeading).toBeVisible();
+
+    // Déplier la liste — mêmes lignes que le récap (chips ✓/✗, score cliquable)
+    await game.showTracksButton.click();
+    await expect(game.trackChip).toBeVisible();
+    await expect(game.trackScoreButtons.first()).toBeVisible();
+
+    // Clic sur un score → pop-up histogramme
+    await game.trackScoreButtons.first().click();
+    await expect(game.guessTimeChart).toBeVisible();
+
+    // Échap ferme la pop-up
+    await page.keyboard.press('Escape');
+    await expect(game.guessTimeChart).toBeHidden();
+  });
+
+  test('affiche le message abandon quand la session est abandonnée', async ({ page, api }) => {
+    await api.reset();
+    await page.clock.install({ time: Date.now() });
+
+    const game = new GamePage(page);
+    const round = new BlindRoundPage(page);
+
+    // Démarrer une partie, jouer 1 morceau
+    await game.goto();
+    await game.waitForWelcome();
+    await game.clickStart();
+    await round.chooseDuration(1);
+    await round.waitForAnswerInput();
+    await round.submitEmpty();
+    // Ne pas aller à la piste suivante, abandonner en cours de partie
+
+    // Cliquer Abandonner (lien dans le header pendant la partie)
+    await game.abandonButton.click();
+    await game.abandonConfirmButton.click();
+
+    // Écran abandon
+    await expect(game.abandonedHeading).toBeVisible();
+    await expect(game.countdown).toBeVisible();
+
+    // Recharger → toujours l'écran abandon
+    await game.goto();
+    await expect(game.abandonedHeading).toBeVisible();
+  });
+});

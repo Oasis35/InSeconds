@@ -17,7 +17,7 @@ describe('BrowserIdComponent', () => {
       providers: [
         {
           provide: PlayerSessionService,
-          useValue: { playerId: signal<string | null>(fakeId), ensureCreated: () => {} },
+          useValue: { playerId: signal<string | null>(fakeId), ensureCreated: () => { } },
         },
       ],
     });
@@ -32,25 +32,25 @@ describe('BrowserIdComponent', () => {
   });
 
   it('should start with copied=false', () => {
-    expect(component['copied']()).toBeFalse();
+    expect(component['copied']()).toBe(false);
   });
 
   it('should set copied=true after a successful copy', async () => {
-    spyOn(clipboard, 'copy').and.returnValue(Promise.resolve(true));
+    vi.spyOn(clipboard, 'copy').mockResolvedValue(true);
 
     component['copy'](fakeId);
     await Promise.resolve();
 
     expect(clipboard.copy).toHaveBeenCalledWith(fakeId);
-    expect(component['copied']()).toBeTrue();
+    expect(component['copied']()).toBe(true);
   });
 
   it('should not set copied=true when the copy fails', async () => {
-    spyOn(clipboard, 'copy').and.returnValue(Promise.resolve(false));
+    vi.spyOn(clipboard, 'copy').mockResolvedValue(false);
 
     component['copy'](fakeId);
     await Promise.resolve();
 
-    expect(component['copied']()).toBeFalse();
+    expect(component['copied']()).toBe(false);
   });
 });

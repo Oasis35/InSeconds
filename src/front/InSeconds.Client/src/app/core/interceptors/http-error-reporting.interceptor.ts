@@ -17,7 +17,7 @@ export const httpErrorReportingInterceptor: HttpInterceptorFn = (req, next) => {
     catchError((error: unknown) => {
       if (error instanceof HttpErrorResponse && shouldReport(req.url, error.status)) {
         void extractTraceId(error.error).then(traceId => {
-          if (traceId) reporting.lastErrorCode.set(traceId);
+          if (traceId) reporting.setLastErrorCode(traceId);
           reporting.report({
             source: 'http',
             message: `${req.method} ${pathOf(req.url)} → ${error.status || 'échec réseau'}`,

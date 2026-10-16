@@ -37,7 +37,7 @@ describe('WelcomeScreenComponent', () => {
   });
 
   it('emits startGame on demand', () => {
-    const spy = jasmine.createSpy('startGame');
+    const spy = vi.fn().mockName('startGame');
     component.startGame.subscribe(spy);
 
     component.startGame.emit();
@@ -54,24 +54,24 @@ describe('WelcomeScreenComponent', () => {
     it('is true for a linked account whose streak is protected by a freeze', () => {
       playerSessionStub.isLinked.set(true);
       fixture.componentRef.setInput('streak', protectedStreak);
-      expect(component['isProtected']()).toBeTrue();
+      expect(component['isProtected']()).toBe(true);
     });
 
     it('is false for a guest', () => {
       fixture.componentRef.setInput('streak', protectedStreak);
-      expect(component['isProtected']()).toBeFalse();
+      expect(component['isProtected']()).toBe(false);
     });
 
     it('is false for an active streak', () => {
       playerSessionStub.isLinked.set(true);
       fixture.componentRef.setInput('streak', { ...protectedStreak, status: 'active', missedDays: 0 });
-      expect(component['isProtected']()).toBeFalse();
+      expect(component['isProtected']()).toBe(false);
     });
   });
 
   it('reflects PlayerSessionService.isLinked() for guest vs linked', () => {
-    expect(component['playerSession'].isLinked()).toBeFalse();
+    expect(component['playerSession'].isLinked()).toBe(false);
     playerSessionStub.isLinked.set(true);
-    expect(component['playerSession'].isLinked()).toBeTrue();
+    expect(component['playerSession'].isLinked()).toBe(true);
   });
 });

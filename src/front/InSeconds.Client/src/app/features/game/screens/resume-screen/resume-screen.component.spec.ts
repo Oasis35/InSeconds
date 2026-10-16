@@ -8,7 +8,9 @@ import { PlayerSessionService } from '../../../../core/services/player-session.s
 describe('ResumeScreenComponent', () => {
   let fixture: ComponentFixture<ResumeScreenComponent>;
   let component: ResumeScreenComponent;
-  let playerSessionStub: { isLinked: ReturnType<typeof signal<boolean>> };
+  let playerSessionStub: {
+    isLinked: ReturnType<typeof signal<boolean>>;
+  };
 
   beforeEach(() => {
     playerSessionStub = { isLinked: signal(false) };
@@ -28,12 +30,12 @@ describe('ResumeScreenComponent', () => {
   });
 
   it('defaults showAbandonConfirm to false', () => {
-    expect(component['showAbandonConfirm']()).toBeFalse();
+    expect(component['showAbandonConfirm']()).toBe(false);
   });
 
   it('emits resumeGame and abandon on demand', () => {
-    const resumeSpy = jasmine.createSpy('resumeGame');
-    const abandonSpy = jasmine.createSpy('abandon');
+    const resumeSpy = vi.fn().mockName('resumeGame');
+    const abandonSpy = vi.fn().mockName('abandon');
     component.resumeGame.subscribe(resumeSpy);
     component.abandon.subscribe(abandonSpy);
 
@@ -45,9 +47,9 @@ describe('ResumeScreenComponent', () => {
   });
 
   it('reflects PlayerSessionService.isLinked() for the guest login CTA', () => {
-    expect(component['playerSession'].isLinked()).toBeFalse();
+    expect(component['playerSession'].isLinked()).toBe(false);
     playerSessionStub.isLinked.set(true);
-    expect(component['playerSession'].isLinked()).toBeTrue();
+    expect(component['playerSession'].isLinked()).toBe(true);
   });
 
   // Sans traductions chargées, le TranslatePipe rend la clé brute : on vérifie la clé choisie.

@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
@@ -11,17 +12,24 @@ import { PlayerSessionService } from '../../../core/services/player-session.serv
 // TranslateService complet). Signals/méthodes protégés exercés directement, sans rendu.
 describe('RequestLoginComponent', () => {
   let component: RequestLoginComponent;
-  let apiClient: { apiAuthMagicLinkRequest: jasmine.Spy; apiAuthDevLogin: jasmine.Spy };
-  let playerSession: { load: jasmine.Spy };
-  let router: { navigateByUrl: jasmine.Spy };
+  let apiClient: {
+    apiAuthMagicLinkRequest: Mock;
+    apiAuthDevLogin: Mock;
+  };
+  let playerSession: {
+    load: Mock;
+  };
+  let router: {
+    navigateByUrl: Mock;
+  };
 
   beforeEach(() => {
     apiClient = {
-      apiAuthMagicLinkRequest: jasmine.createSpy('apiAuthMagicLinkRequest'),
-      apiAuthDevLogin: jasmine.createSpy('apiAuthDevLogin'),
+      apiAuthMagicLinkRequest: vi.fn().mockName('apiAuthMagicLinkRequest'),
+      apiAuthDevLogin: vi.fn().mockName('apiAuthDevLogin'),
     };
-    playerSession = { load: jasmine.createSpy('load').and.returnValue(of(void 0)) };
-    router = { navigateByUrl: jasmine.createSpy('navigateByUrl') };
+    playerSession = { load: vi.fn().mockName('load').mockReturnValue(of(void 0)) };
+    router = { navigateByUrl: vi.fn().mockName('navigateByUrl') };
 
     TestBed.configureTestingModule({
       providers: [
@@ -36,7 +44,7 @@ describe('RequestLoginComponent', () => {
 
   describe('submit()', () => {
     it('should mark the email invalid without calling the API', () => {
-      component['email'] = 'pas-un-email';
+      component['loginForm'].email().value.set('pas-un-email');
       component.submit();
 
       expect(component['status']()).toBe('invalid');
@@ -44,9 +52,9 @@ describe('RequestLoginComponent', () => {
     });
 
     it('should call the request endpoint and show the generic message on success', () => {
-      apiClient.apiAuthMagicLinkRequest.and.returnValue(of({ message: 'ok' }));
+      apiClient.apiAuthMagicLinkRequest.mockReturnValue(of({ message: 'ok' }));
 
-      component['email'] = 'test@example.com';
+      component['loginForm'].email().value.set('test@example.com');
       component.submit();
 
       expect(apiClient.apiAuthMagicLinkRequest).toHaveBeenCalledWith({ email: 'test@example.com' });
@@ -54,9 +62,9 @@ describe('RequestLoginComponent', () => {
     });
 
     it('should show the same generic message even on a network error', () => {
-      apiClient.apiAuthMagicLinkRequest.and.returnValue(throwError(() => new Error('network error')));
+      apiClient.apiAuthMagicLinkRequest.mockReturnValue(throwError(() => new Error('network error')));
 
-      component['email'] = 'test@example.com';
+      component['loginForm'].email().value.set('test@example.com');
       component.submit();
 
       expect(component['status']()).toBe('sent');
@@ -65,7 +73,7 @@ describe('RequestLoginComponent', () => {
 
   describe('devLogin()', () => {
     it('should call dev-login then reload the session and navigate home', () => {
-      apiClient.apiAuthDevLogin.and.returnValue(of(void 0));
+      apiClient.apiAuthDevLogin.mockReturnValue(of(void 0));
 
       component.devLogin('user1@dev.local');
 
@@ -75,7 +83,7 @@ describe('RequestLoginComponent', () => {
     });
 
     it('should set an error status on failure', () => {
-      apiClient.apiAuthDevLogin.and.returnValue(throwError(() => new Error('not found')));
+      apiClient.apiAuthDevLogin.mockReturnValue(throwError(() => new Error('not found')));
 
       component.devLogin('user1@dev.local');
 

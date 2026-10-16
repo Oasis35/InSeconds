@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { signal, computed } from '@angular/core';
 import { Observable, Subject, of, throwError } from 'rxjs';
@@ -15,14 +16,16 @@ function makeAdminApiStub() {
   return {
     poolTracks: computed(() => poolTracks()),
     poolTracksLoading: computed(() => false),
+    poolTracksLoaded: computed(() => true),
     poolSearchResults: computed(() => []),
     poolSearchLoading: computed(() => false),
     poolSearchQuery,
-    addTrack: jasmine.createSpy('addTrack').and.returnValue(of(void 0)),
-    reloadPool: jasmine.createSpy('reloadPool'),
-    renameTrack: jasmine.createSpy('renameTrack').and.returnValue(of({})),
-    setTrackDisabled: jasmine.createSpy('setTrackDisabled').and.returnValue(of({})),
-    searchDeezer: jasmine.createSpy('searchDeezer').and.returnValue(of([])),
+    setPoolSearchQuery: (q: string) => poolSearchQuery.set(q),
+    addTrack: vi.fn().mockName('addTrack').mockReturnValue(of(void 0)),
+    reloadPool: vi.fn().mockName('reloadPool'),
+    renameTrack: vi.fn().mockName('renameTrack').mockReturnValue(of({})),
+    setTrackDisabled: vi.fn().mockName('setTrackDisabled').mockReturnValue(of({})),
+    searchDeezer: vi.fn().mockName('searchDeezer').mockReturnValue(of([])),
     _setPoolTracks: (v: PoolTracksResponse) => poolTracks.set(v),
   };
 }
@@ -31,7 +34,12 @@ function makeDeezerTrackInfo(deezerTrackId: number): DeezerTrackInfo {
   return { artist: `A${deezerTrackId}`, title: `T${deezerTrackId}`, previewUrl: null, deezerTrackId };
 }
 
-function makePoolTrack(id: number, hasPreview: boolean, extra: Partial<{ lastUsedDate: string | null; usageCount: number; isDisabled: boolean; inTodayChallenge: boolean }> = {}) {
+function makePoolTrack(id: number, hasPreview: boolean, extra: Partial<{
+  lastUsedDate: string | null;
+  usageCount: number;
+  isDisabled: boolean;
+  inTodayChallenge: boolean;
+}> = {}) {
   return { id, artist: `A${id}`, title: `T${id}`, deezerTrackId: id, hasPreview, usageCount: 0, ...extra };
 }
 
@@ -39,11 +47,14 @@ describe('AdminPoolService', () => {
   let service: AdminPoolService;
   let apiStub: ReturnType<typeof makeAdminApiStub>;
 
-  let audioPreviewStub: { stop: jasmine.Spy; toggle: jasmine.Spy };
+  let audioPreviewStub: {
+    stop: Mock;
+    toggle: Mock;
+  };
 
   beforeEach(() => {
     apiStub = makeAdminApiStub();
-    audioPreviewStub = { stop: jasmine.createSpy('stop'), toggle: jasmine.createSpy('toggle') };
+    audioPreviewStub = { stop: vi.fn().mockName('stop'), toggle: vi.fn().mockName('toggle') };
 
     TestBed.configureTestingModule({
       providers: [
@@ -119,9 +130,40 @@ describe('AdminPoolService', () => {
     });
 
     it('resets allTracksPage on change', () => {
-      service.allTracksPage.set(2);
+      service['_allTracksPage'].set(2);
       service.setPoolFilterLastUsedFrom('2026-01-01');
       expect(service.allTracksPage()).toBe(0);
+    });
+  });
+
+  // La page de la grille est reprise de l'adresse au F5 (?page=, cf. PoolTabComponent).
+  describe('pagination', () => {
+    beforeEach(() => {
+      // 40 morceaux, 15 par page → 3 pages.
+      apiStub._setPoolTracks({ available: Array.from({ length: 40 }, (_, i) => makePoolTrack(i + 1, true)), used: [] });
+    });
+
+    it('setPage() va à la page demandée', () => {
+      service.setPage(2);
+      expect(service.allTracksPage()).toBe(2);
+      expect(service.pagedAllTracks()).toHaveLength(10);
+    });
+
+    it('borne une page trop grande (reprise de l\'adresse) à la dernière page', () => {
+      service.setPage(9);
+      expect(service.allTracksPage()).toBe(2);
+    });
+
+    it('previousPage() repart de la page affichée, pas de la page demandée', () => {
+      service.setPage(9);
+      service.previousPage();
+      expect(service.allTracksPage()).toBe(1);
+    });
+
+    it('nextPage() ne dépasse pas la dernière page', () => {
+      service.setPage(2);
+      service.nextPage();
+      expect(service.allTracksPage()).toBe(2);
     });
   });
 
@@ -179,7 +221,10 @@ describe('AdminPoolService', () => {
     // Régression : avant le fix, un texte combinant artiste + titre ("Nicki Minaj Starships",
     // propagé par "Recherches liées" depuis la recherche Deezer) ne matchait ni l'artiste
     // seul ni le titre seul et faisait disparaître le morceau du tableau.
-    const cases: [string, number[]][] = [
+    const cases: [
+      string,
+      number[]
+    ][] = [
       ['nicki minaj', [1]],
       ['starships', [1]],
       ['Nicki Minaj Starships', [1]],
@@ -200,27 +245,27 @@ describe('AdminPoolService', () => {
 
     it('garde l\'état de preview d\'un morceau utilisé', () => {
       const used = service.allTracks().find(t => t.id === 2);
-      expect(used?.hasPreview).toBeFalse();
+      expect(used?.hasPreview).toBe(false);
     });
 
     it('selectionHasUsedTrack détecte un morceau utilisé dans la sélection', () => {
       service.toggleSelection(1);
-      expect(service.selectionHasUsedTrack()).toBeFalse();
+      expect(service.selectionHasUsedTrack()).toBe(false);
       service.toggleSelection(2);
-      expect(service.selectionHasUsedTrack()).toBeTrue();
+      expect(service.selectionHasUsedTrack()).toBe(true);
     });
 
     it('openDeleteModal(null) ne s\'ouvre pas si la sélection contient un morceau utilisé', () => {
       service.toggleSelection(1);
       service.toggleSelection(2);
       service.openDeleteModal(null);
-      expect(service.deleteModalOpen()).toBeFalse();
+      expect(service.deleteModalOpen()).toBe(false);
     });
 
     it('openDeleteModal(null) s\'ouvre avec les seuls morceaux disponibles sélectionnés', () => {
       service.toggleSelection(1);
       service.openDeleteModal(null);
-      expect(service.deleteModalOpen()).toBeTrue();
+      expect(service.deleteModalOpen()).toBe(true);
       expect(service.deleteModalTracks().map(t => t.id)).toEqual([1]);
     });
   });
@@ -231,13 +276,13 @@ describe('AdminPoolService', () => {
     it('pré-remplit les champs et désactive « Enregistrer » tant que rien ne change', () => {
       service.openEditModal(track);
       expect(service.editArtist()).toBe('Etienne Daho');
-      expect(service.editSaveDisabled()).toBeTrue();
+      expect(service.editSaveDisabled()).toBe(true);
 
-      service.editArtist.set('Étienne Daho');
-      expect(service.editSaveDisabled()).toBeFalse();
+      service.editForm.artist().value.set('Étienne Daho');
+      expect(service.editSaveDisabled()).toBe(false);
 
-      service.editTitle.set('   ');
-      expect(service.editSaveDisabled()).toBeTrue();
+      service.editForm.title().value.set('   ');
+      expect(service.editSaveDisabled()).toBe(true);
     });
 
     it('s\'ouvre aussi pour un morceau du défi du jour', () => {
@@ -247,7 +292,7 @@ describe('AdminPoolService', () => {
 
     it('envoie les valeurs nettoyées, ferme la modale et recharge le pool', () => {
       service.openEditModal(track);
-      service.editArtist.set('  Étienne Daho ');
+      service.editForm.artist().value.set('  Étienne Daho ');
       service.confirmEdit();
 
       expect(apiStub.renameTrack).toHaveBeenCalledWith(5, 'Étienne Daho', 'Tombe pour la France');
@@ -256,9 +301,9 @@ describe('AdminPoolService', () => {
     });
 
     it('passe en erreur sur un échec et garde la modale ouverte', () => {
-      apiStub.renameTrack.and.returnValue(throwError(() => ({ status: 500 })));
+      apiStub.renameTrack.mockReturnValue(throwError(() => ({ status: 500 })));
       service.openEditModal(track);
-      service.editTitle.set('Tombé pour la France');
+      service.editForm.title().value.set('Tombé pour la France');
       service.confirmEdit();
 
       expect(service.editStatus()).toBe('error');
@@ -267,7 +312,11 @@ describe('AdminPoolService', () => {
   });
 
   describe('existingDeezerTrackIds', () => {
-    const cases: [string, PoolTracksResponse, boolean | undefined][] = [
+    const cases: [
+      string,
+      PoolTracksResponse,
+      boolean | undefined
+    ][] = [
       ['available track', { available: [makePoolTrack(101, true)], used: [] }, true],
       ['used track', { available: [], used: [makePoolTrack(101, true)] }, false],
       ['id absent from the pool', { available: [makePoolTrack(101, true)], used: [] }, undefined],
@@ -281,14 +330,14 @@ describe('AdminPoolService', () => {
   });
 
   describe('addTrackFromPanel (état par ligne)', () => {
-    afterEach(() => jasmine.clock().uninstall());
+    afterEach(() => vi.useRealTimers());
 
     it('should report idle for a track never added', () => {
       expect(service.addTrackStatus(101)).toBe('idle');
     });
 
     it('should report loading only for the row being added', () => {
-      apiStub.addTrack.and.returnValue(new Subject<void>()); // ne résout jamais
+      apiStub.addTrack.mockReturnValue(new Subject<void>()); // ne résout jamais
 
       service.addTrackFromPanel(makeDeezerTrackInfo(101));
 
@@ -299,7 +348,7 @@ describe('AdminPoolService', () => {
     it('should not let a concurrent add on another row clobber the first row\'s state', () => {
       const subjectA = new Subject<void>();
       const subjectB = new Subject<void>();
-      apiStub.addTrack.and.callFake((id: number) => (id === 101 ? subjectA : subjectB) as unknown as Observable<void>);
+      apiStub.addTrack.mockImplementation((id: number) => (id === 101 ? subjectA : subjectB) as unknown as Observable<void>);
 
       service.addTrackFromPanel(makeDeezerTrackInfo(101)); // reste en 'loading'
       service.addTrackFromPanel(makeDeezerTrackInfo(102));
@@ -311,50 +360,50 @@ describe('AdminPoolService', () => {
     });
 
     it('should set error only for the failing row and reset it after its own timer', () => {
-      jasmine.clock().install();
-      apiStub.addTrack.and.returnValue(throwError(() => new Error('boom')));
+      vi.useFakeTimers();
+      apiStub.addTrack.mockReturnValue(throwError(() => new Error('boom')));
 
       service.addTrackFromPanel(makeDeezerTrackInfo(101));
       expect(service.addTrackStatus(101)).toBe('error');
 
-      jasmine.clock().tick(2999);
+      vi.advanceTimersByTime(2999);
       expect(service.addTrackStatus(101)).toBe('error');
 
-      jasmine.clock().tick(1);
+      vi.advanceTimersByTime(1);
       expect(service.addTrackStatus(101)).toBe('idle');
     });
 
     it('should reset a successful row to idle after its own timer, independently of other rows', () => {
-      jasmine.clock().install();
-      apiStub.addTrack.and.returnValue(of(void 0));
+      vi.useFakeTimers();
+      apiStub.addTrack.mockReturnValue(of(void 0));
 
       service.addTrackFromPanel(makeDeezerTrackInfo(101));
       expect(service.addTrackStatus(101)).toBe('success');
 
-      jasmine.clock().tick(1999);
+      vi.advanceTimersByTime(1999);
       expect(service.addTrackStatus(101)).toBe('success');
 
-      jasmine.clock().tick(1);
+      vi.advanceTimersByTime(1);
       expect(service.addTrackStatus(101)).toBe('idle');
     });
 
     it('should cancel all pending reset timers and clear every row status on toggleAddPanel close', () => {
-      jasmine.clock().install();
-      apiStub.addTrack.and.returnValue(of(void 0));
+      vi.useFakeTimers();
+      apiStub.addTrack.mockReturnValue(of(void 0));
 
-      service.addPanelOpen.set(true);
+      service['_addPanelOpen'].set(true);
       service.addTrackFromPanel(makeDeezerTrackInfo(101));
       expect(service.addTrackStatus(101)).toBe('success');
 
       service.toggleAddPanel(); // ferme le panneau avant l'expiration du timer 2s
       expect(service.addTrackStatus(101)).toBe('idle');
 
-      jasmine.clock().tick(2000); // ne doit pas re-déclencher quoi que ce soit
+      vi.advanceTimersByTime(2000); // ne doit pas re-déclencher quoi que ce soit
       expect(service.addTrackStatus(101)).toBe('idle');
     });
   });
   describe('désactivation des morceaux', () => {
-    afterEach(() => jasmine.clock().uninstall());
+    afterEach(() => vi.useRealTimers());
 
     it('should exclude disabled tracks from the pool runway', () => {
       apiStub._setPoolTracks({
@@ -393,15 +442,19 @@ describe('AdminPoolService', () => {
     it('should disable an enabled track, then reload the pool', () => {
       service.toggleDisabled(makePoolTrack(5, true));
 
-      expect(apiStub.setTrackDisabled).toHaveBeenCalledOnceWith(5, true);
+      expect(apiStub.setTrackDisabled).toHaveBeenCalledTimes(1);
+
+      expect(apiStub.setTrackDisabled).toHaveBeenCalledWith(5, true);
       expect(apiStub.reloadPool).toHaveBeenCalled();
-      expect(service.togglingDisabledIds().has(5)).toBeFalse();
+      expect(service.togglingDisabledIds().has(5)).toBe(false);
     });
 
     it('should re-enable a disabled track, even from today\'s challenge', () => {
       service.toggleDisabled(makePoolTrack(5, true, { isDisabled: true, inTodayChallenge: true }));
 
-      expect(apiStub.setTrackDisabled).toHaveBeenCalledOnceWith(5, false);
+      expect(apiStub.setTrackDisabled).toHaveBeenCalledTimes(1);
+
+      expect(apiStub.setTrackDisabled).toHaveBeenCalledWith(5, false);
     });
 
     it('should not call the API to disable a track of today\'s challenge', () => {
@@ -412,78 +465,100 @@ describe('AdminPoolService', () => {
 
     it('should ignore a second click while the request is pending', () => {
       const pending = new Subject<object>();
-      apiStub.setTrackDisabled.and.returnValue(pending);
+      apiStub.setTrackDisabled.mockReturnValue(pending);
 
       service.toggleDisabled(makePoolTrack(5, true));
       service.toggleDisabled(makePoolTrack(5, true));
 
       expect(apiStub.setTrackDisabled).toHaveBeenCalledTimes(1);
-      expect(service.togglingDisabledIds().has(5)).toBeTrue();
+      expect(service.togglingDisabledIds().has(5)).toBe(true);
     });
 
     it('should show the "in today" error on 409, then clear it after 4s', () => {
-      jasmine.clock().install();
-      apiStub.setTrackDisabled.and.returnValue(throwError(() => ({ status: 409 })));
+      vi.useFakeTimers();
+      apiStub.setTrackDisabled.mockReturnValue(throwError(() => ({ status: 409 })));
 
       service.toggleDisabled(makePoolTrack(5, true));
 
       expect(service.toggleDisabledError()).toBe('inToday');
       expect(apiStub.reloadPool).not.toHaveBeenCalled();
-      jasmine.clock().tick(4000);
+      vi.advanceTimersByTime(4000);
       expect(service.toggleDisabledError()).toBeNull();
     });
 
     it('should show a generic error on other failures', () => {
-      apiStub.setTrackDisabled.and.returnValue(throwError(() => ({ status: 500 })));
+      apiStub.setTrackDisabled.mockReturnValue(throwError(() => ({ status: 500 })));
 
       service.toggleDisabled(makePoolTrack(5, true));
 
       expect(service.toggleDisabledError()).toBe('error');
-      expect(service.togglingDisabledIds().has(5)).toBeFalse();
+      expect(service.togglingDisabledIds().has(5)).toBe(false);
     });
   });
 
-  // M14 (revue du 25/09) : la recherche Deezer de la modale écoute passait par
-  // takeUntilDestroyed(this.destroyRef), qui n'est détruit qu'avec le service (scopé à
-  // AdminComponent) — pas à la fermeture de la modale. Une réponse tardive après fermeture,
-  // ou après réouverture sur un autre morceau, appelait quand même audioPreview.toggle(...) et
-  // écrasait l'état affiché.
+  // M14 (revue du 25/09) : une réponse Deezer tardive après fermeture de la modale écoute, ou
+  // après réouverture sur un autre morceau, appelait quand même audioPreview.toggle(...) et
+  // écrasait l'état affiché. La recherche passe désormais par une resource, qui annule la
+  // requête précédente dès que le morceau change ou que la modale se ferme.
   describe('modale écoute (openPreviewModal/closePreviewModal)', () => {
+    const flushMicrotasks = () => new Promise(resolve => setTimeout(resolve));
+
     it('should not call audioPreview.toggle for a search that resolves after the modal was closed', () => {
-      const pending = new Subject<{ deezerTrackId: number; previewUrl: string | null }[]>();
-      apiStub.searchDeezer.and.returnValue(pending);
+      const pending = new Subject<{
+        deezerTrackId: number;
+        previewUrl: string | null;
+      }[]>();
+      apiStub.searchDeezer.mockReturnValue(pending);
 
       service.openPreviewModal(makePoolTrack(5, true) as any);
+      TestBed.tick();
       service.closePreviewModal();
+      TestBed.tick();
       pending.next([{ deezerTrackId: 5, previewUrl: 'https://example.com/5.mp3' }]);
+      TestBed.tick();
 
       expect(audioPreviewStub.toggle).not.toHaveBeenCalled();
       expect(service.previewModalUrl()).toBeNull();
     });
 
-    it('should cancel the previous pending search when opening a different track', () => {
-      const firstSearch = new Subject<{ deezerTrackId: number; previewUrl: string | null }[]>();
-      apiStub.searchDeezer.and.returnValue(firstSearch);
+    it('should cancel the previous pending search when opening a different track', async () => {
+      const firstSearch = new Subject<{
+        deezerTrackId: number;
+        previewUrl: string | null;
+      }[]>();
+      apiStub.searchDeezer.mockReturnValue(firstSearch);
 
       const trackA = makePoolTrack(5, true) as any;
       const trackB = makePoolTrack(6, true) as any;
       service.openPreviewModal(trackA);
+      TestBed.tick();
 
-      const secondSearch = new Subject<{ deezerTrackId: number; previewUrl: string | null }[]>();
-      apiStub.searchDeezer.and.returnValue(secondSearch);
+      const secondSearch = new Subject<{
+        deezerTrackId: number;
+        previewUrl: string | null;
+      }[]>();
+      apiStub.searchDeezer.mockReturnValue(secondSearch);
       service.openPreviewModal(trackB);
+      TestBed.tick();
+      // La resource s'abonne au flux de recherche après une micro-tâche : sans cette attente,
+      // la réponse émise juste après (Subject sans rejeu) partirait avant l'abonnement.
+      await flushMicrotasks();
 
       // La réponse tardive du premier morceau ne doit plus rien pouvoir modifier.
       firstSearch.next([{ deezerTrackId: 5, previewUrl: 'https://example.com/5.mp3' }]);
+      TestBed.tick();
 
       expect(service.previewModalTrack()).toBe(trackB);
       expect(service.previewModalUrl()).toBeNull();
       expect(audioPreviewStub.toggle).not.toHaveBeenCalled();
 
       secondSearch.next([{ deezerTrackId: 6, previewUrl: 'https://example.com/6.mp3' }]);
+      await flushMicrotasks(); // la resource passe à « resolved » dans une micro-tâche
+      TestBed.tick();
 
       expect(service.previewModalUrl()).toBe('https://example.com/6.mp3');
-      expect(audioPreviewStub.toggle).toHaveBeenCalledOnceWith('https://example.com/6.mp3');
+      expect(audioPreviewStub.toggle).toHaveBeenCalledTimes(1);
+      expect(audioPreviewStub.toggle).toHaveBeenCalledWith('https://example.com/6.mp3');
     });
   });
 });

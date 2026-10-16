@@ -36,8 +36,7 @@
     "@ngx-translate/http-loader": "^18.0.0",
     "html2canvas-pro": "^2.4.5",
     "rxjs": "~7.8.0",
-    "tslib": "^2.3.0",
-    "zone.js": "~0.16.3"
+    "tslib": "^2.3.0"
   },
   "devDependencies": {
     "@angular/build": "^22.2.0",
@@ -45,17 +44,13 @@
     "@angular/compiler-cli": "^22.2.0",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4.3.3",
-    "@types/jasmine": "~6.0.0",
+    "@vitest/browser-playwright": "~5.0.2",
     "istanbul-lib-instrument": "^6.0.3",
-    "jasmine-core": "~6.3.0",
-    "karma": "~6.4.0",
-    "karma-chrome-launcher": "~3.2.0",
-    "karma-coverage": "~2.2.0",
-    "karma-jasmine": "~5.1.0",
-    "karma-jasmine-html-reporter": "~2.3.0",
     "nswag": "^14.7.1",
+    "playwright": "~1.63.0",
     "postcss": "^8.5.28",
     "tailwindcss": "^4.3.1",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "~5.0.2"
   }
 }

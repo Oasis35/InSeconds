@@ -11,15 +11,23 @@ import { ApiClient, StreakDto } from '../../api/api.generated';
 export class PlayerSessionService {
   private readonly api = inject(ApiClient);
 
-  readonly playerId = signal<string | null>(null);
-  readonly isGuest = signal(true);
-  readonly email = signal<string | null>(null);
-  readonly pseudo = signal<string | null>(null);
-  readonly currentStreak = signal(0);
+  private readonly _playerId = signal<string | null>(null);
+  readonly playerId = this._playerId.asReadonly();
+  private readonly _isGuest = signal(true);
+  readonly isGuest = this._isGuest.asReadonly();
+  private readonly _email = signal<string | null>(null);
+  readonly email = this._email.asReadonly();
+  private readonly _pseudo = signal<string | null>(null);
+  readonly pseudo = this._pseudo.asReadonly();
+  private readonly _currentStreak = signal(0);
+  readonly currentStreak = this._currentStreak.asReadonly();
   /** Détail série + gels (rangée « Gels » du profil). */
-  readonly streak = signal<StreakDto | null>(null);
-  readonly gamesPlayed = signal(0);
-  readonly isAdmin = signal(false);
+  private readonly _streak = signal<StreakDto | null>(null);
+  readonly streak = this._streak.asReadonly();
+  private readonly _gamesPlayed = signal(0);
+  readonly gamesPlayed = this._gamesPlayed.asReadonly();
+  private readonly _isAdmin = signal(false);
+  readonly isAdmin = this._isAdmin.asReadonly();
 
   readonly isLinked = computed(() => !this.isGuest());
 
@@ -29,14 +37,14 @@ export class PlayerSessionService {
     // se verrait poser un cookie authToken avant même de cliquer "Commencer à jouer".
     return this.api.apiPlayersMe(true).pipe(
       tap(res => {
-        this.playerId.set(res.playerId === '00000000-0000-0000-0000-000000000000' ? null : res.playerId);
-        this.isGuest.set(res.isGuest);
-        this.email.set(res.email ?? null);
-        this.pseudo.set(res.pseudo ?? null);
-        this.currentStreak.set(res.currentStreak);
-        this.streak.set(res.streak ?? null);
-        this.gamesPlayed.set(res.gamesPlayed);
-        this.isAdmin.set(res.isAdmin);
+        this._playerId.set(res.playerId === '00000000-0000-0000-0000-000000000000' ? null : res.playerId);
+        this._isGuest.set(res.isGuest);
+        this._email.set(res.email ?? null);
+        this._pseudo.set(res.pseudo ?? null);
+        this._currentStreak.set(res.currentStreak);
+        this._streak.set(res.streak ?? null);
+        this._gamesPlayed.set(res.gamesPlayed);
+        this._isAdmin.set(res.isAdmin);
       }),
       map(() => void 0),
       // L'app doit démarrer même si /api/players/me échoue : reste en état guest par défaut.
@@ -54,7 +62,7 @@ export class PlayerSessionService {
   /** Change le pseudo du joueur connecté (écran Profil). Met à jour le signal local en cas de succès. */
   updatePseudo(pseudo: string): Observable<string> {
     return this.api.apiPlayersMePseudo({ pseudo }).pipe(
-      tap(res => this.pseudo.set(res.pseudo)),
+      tap(res => this._pseudo.set(res.pseudo)),
       map(res => res.pseudo)
     );
   }
@@ -85,10 +93,10 @@ export class PlayerSessionService {
     if (this.playerId()) return;
     this.api.apiPlayersMe(false).pipe(
       tap(res => {
-        this.playerId.set(res.playerId);
-        this.isGuest.set(res.isGuest);
-        this.email.set(res.email ?? null);
-        this.pseudo.set(res.pseudo ?? null);
+        this._playerId.set(res.playerId);
+        this._isGuest.set(res.isGuest);
+        this._email.set(res.email ?? null);
+        this._pseudo.set(res.pseudo ?? null);
       }),
       catchError(() => of(void 0))
     ).subscribe();

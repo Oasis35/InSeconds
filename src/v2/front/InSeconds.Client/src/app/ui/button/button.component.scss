@@ -1,0 +1,75 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid transparent;
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 120ms ease, opacity 120ms ease, box-shadow 120ms ease;
+}
+
+:host:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+:host:focus-visible {
+  outline: 2px solid var(--color-accent-2);
+  outline-offset: 2px;
+}
+
+:host:disabled,
+:host[aria-disabled='true'] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+:host(.app-button--primary) {
+  background: var(--gradient-primary);
+  color: var(--text-on-primary);
+}
+
+:host(.app-button--primary:hover:not(:disabled)) {
+  box-shadow: var(--glow-primary);
+}
+
+:host(.app-button--secondary) {
+  background: var(--bg-surface);
+  color: var(--text-hi);
+  border-color: var(--border-strong);
+}
+
+:host(.app-button--danger) {
+  background: var(--bg-danger);
+  color: var(--text-on-primary);
+}
+
+:host(.app-button--ghost) {
+  background: transparent;
+  color: var(--text-muted);
+  text-transform: none;
+  letter-spacing: normal;
+  font-family: var(--font-body);
+  font-weight: 600;
+}
+
+:host(.app-button--ghost:hover:not(:disabled)) {
+  color: var(--text-hi);
+}
+
+:host(.app-button--sm) {
+  padding: 0.5rem 0.875rem;
+  font-size: 0.75rem;
+}
+
+:host(.app-button--block) {
+  display: flex;
+  width: 100%;
+}

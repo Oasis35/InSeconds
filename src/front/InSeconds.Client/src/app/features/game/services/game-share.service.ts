@@ -11,8 +11,10 @@ export class GameShareService {
   private readonly clipboard = inject(ClipboardService);
   private readonly translate = inject(TranslateService);
 
-  readonly copied = signal(false);
-  readonly failed = signal(false);
+  private readonly _copied = signal(false);
+  readonly copied = this._copied.asReadonly();
+  private readonly _failed = signal(false);
+  readonly failed = this._failed.asReadonly();
 
   shareResults(results: readonly RoundResult[], totalScore: number): void {
     const lines = results.map(r => {
@@ -53,11 +55,11 @@ export class GameShareService {
   private copyText(text: string): void {
     this.clipboard.copy(text).then(ok => {
       if (ok) {
-        this.copied.set(true);
-        setTimeout(() => this.copied.set(false), 2000);
+        this._copied.set(true);
+        setTimeout(() => this._copied.set(false), 2000);
       } else {
-        this.failed.set(true);
-        setTimeout(() => this.failed.set(false), 3000);
+        this._failed.set(true);
+        setTimeout(() => this._failed.set(false), 3000);
       }
     });
   }

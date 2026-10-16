@@ -1,0 +1,6 @@
+node_modules
+dist
+.angular
+.vitest
+test-results
+playwright-report

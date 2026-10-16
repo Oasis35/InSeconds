@@ -1,10 +1,12 @@
 import { Component, ChangeDetectionStrategy, computed, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormField, FormRoot, form, validate } from '@angular/forms/signals';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { DecorBackgroundComponent } from '../../../shared/decor-background/decor-background.component';
 import { ApiClient } from '../../../api/api.generated';
 import { PlayerSessionService } from '../../../core/services/player-session.service';
+
+const PSEUDO_PATTERN = /^[\p{L}\p{N} _.-]{3,20}$/u;
 
 type VerifyState = 'idle' | 'confirming' | 'needsPseudo' | 'pseudoTaken' | 'invalidPseudo' | 'error' | 'missingToken';
 
@@ -13,7 +15,7 @@ type VerifyState = 'idle' | 'confirming' | 'needsPseudo' | 'pseudoTaken' | 'inva
 // le vrai clic humain) — un bouton "Confirmer" explicite déclenche l'appel.
 @Component({
   selector: 'app-verify-login',
-  imports: [FormsModule, RouterLink, TranslatePipe, DecorBackgroundComponent],
+  imports: [FormField, FormRoot, RouterLink, TranslatePipe, DecorBackgroundComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './verify-login.component.html',
 })
@@ -26,7 +28,10 @@ export class VerifyLoginComponent {
   private readonly token = this.route.snapshot.queryParamMap.get('token');
 
   protected readonly state = signal<VerifyState>(this.token ? 'idle' : 'missingToken');
-  protected pseudo = '';
+  /** Choix du pseudo : mêmes caractères autorisés que le back (allowlist), sans espaces autour. */
+  protected readonly pseudoForm = form(signal({ pseudo: '' }), p => {
+    validate(p.pseudo, ({ value }) => (PSEUDO_PATTERN.test(value().trim()) ? null : { kind: 'pseudo' }));
+  });
 
   // Navigateur déjà connecté à un compte : on prévient avant de confirmer. Un lien envoyé à
   // une autre adresse connecte à un autre compte (le compte actuel n'est jamais modifié, cf.
@@ -42,12 +47,11 @@ export class VerifyLoginComponent {
 
   submitPseudo(): void {
     if (!this.token) return;
-    const trimmed = this.pseudo.trim();
-    if (!/^[\p{L}\p{N} _.-]{3,20}$/u.test(trimmed)) {
+    if (this.pseudoForm.pseudo().invalid()) {
       this.state.set('invalidPseudo');
       return;
     }
-    this.verify(trimmed);
+    this.verify(this.pseudoForm.pseudo().value().trim());
   }
 
   private verify(pseudo: string | undefined): void {

@@ -1,0 +1,72 @@
+# Prod en v2 (refonte v2, PR G2). Utilisé UNIQUEMENT après la bascule : le workflow manuel « Bascule v2 »
+# (.github/workflows/bascule-v2.yml → deploy/vps/switch-to-v2.sh) l'allume après l'import des données ; ensuite,
+# deploy/vps/deploy.sh le déploie à chaque push sur main (marqueur .bascule-v2-done). Avant la bascule, la prod est
+# servie par docker-compose.prod.yml (v1) et ce fichier ne sert à rien.
+#
+# Projet Compose distinct de la v1 (`inseconds`) : les conteneurs de la v1 ne sont jamais vus comme ceux de la v2, ce qui
+# permet le retour arrière (redémarrer la v1 depuis docker-compose.prod.yml). Mêmes noms de conteneurs que la v1
+# (inseconds.api, inseconds.front) : Caddy ne change pas. Même base `inseconds` : la v2 vit dans ses propres schémas, les
+# tables v1 de `public` restent intactes (suppression en I1).
+# Variables dans .env.prod (non commité, cf. .env.prod.example).
+name: inseconds-v2
+
+services:
+  api:
+    build:
+      context: ./src/v2/back
+      dockerfile: InSeconds.Api/Dockerfile
+    container_name: inseconds.api
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Host=shared-postgres;Port=5432;Database=inseconds;Username=inseconds;Password=${INSECONDS_DB_PASSWORD}"
+      Brevo__ApiKey: ${BREVO_API_KEY}
+      # Certificat qui chiffre les clés Data Protection (PLAN S16), chargé par l'API au démarrage.
+      DataProtection__CertificatePath: /run/secrets/dataprotection.pfx
+      DataProtection__CertificatePassword: ${DATA_PROTECTION_CERTIFICATE_PASSWORD:?à renseigner dans .env.prod (mot de passe de secrets/dataprotection.pfx)}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS:-}
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      # Signal healthchecks.io après chaque tâche planifiée (#315). Vide = aucun signal.
+      Healthchecks__PingKey: ${HEALTHCHECKS_PING_KEY:-}
+    volumes:
+      # Hors du dépôt, à la racine du checkout (~/apps/InSeconds/secrets/), lisible par l'utilisateur de l'image
+      # (uid/gid 1654), cf. .env.prod.example. deploy.sh vérifie sa présence et sa lecture avant de remplacer les conteneurs.
+      - type: bind
+        source: ./secrets/dataprotection.pfx
+        target: /run/secrets/dataprotection.pfx
+        read_only: true
+        bind:
+          create_host_path: false
+    networks:
+      - shared-postgres
+      - internal
+      - caddy-net
+
+  front:
+    build:
+      context: ./src/v2/front/InSeconds.Client
+      dockerfile: Dockerfile.prod
+      args:
+        BUILD_CONFIGURATION: production
+        # Heure du déploiement affichée en admin (piège 25) : exportée par deploy/vps/deploy.sh ; vide hors déploiement.
+        BUILD_TIME: ${BUILD_TIME:-}
+        # Content-Security-Policy du front (G3), posée à la construction de l'image : report-only (défaut, les violations
+        # sont seulement remontées) ou enforce (bloquante). Reste en report-only à la bascule : passer en enforce dans
+        # .env.prod une semaine sans violation en prod APRÈS la mise en prod (#300). L'origine de l'API est celle de la prod (défaut du Dockerfile).
+        CSP_MODE: ${CSP_MODE:-report-only}
+    container_name: inseconds.front
+    restart: unless-stopped
+    depends_on:
+      - api
+    networks:
+      - internal
+      - caddy-net
+
+networks:
+  shared-postgres:
+    external: true
+  caddy-net:
+    external: true
+  internal:
+    driver: bridge

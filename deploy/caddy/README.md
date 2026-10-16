@@ -97,7 +97,7 @@ Vérifier après coup que l'API voit bien la vraie IP (pas celle de Cloudflare) 
 observant `docker logs inseconds.api` sur une requête de test, ou toute route qui logue l'IP
 source.
 
-## Ports 80/443 réservés à Cloudflare (`cloudflare-only.sh`, optionnel)
+## Ports 80/443 réservés à Cloudflare (`cloudflare-only.sh`, en place depuis le 2026-09-30)
 
 UFW ouvre 80/443 au monde entier : quelqu'un qui connaît l'IP du VPS peut joindre Caddy en
 direct, sans le WAF ni l'anti-DDoS de Cloudflare. `cloudflare-only.sh` n'accepte ces deux ports

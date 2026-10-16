@@ -1,0 +1,8 @@
+User-agent: *
+Disallow: /admin
+Disallow: /account
+Disallow: /login
+Disallow: /profile
+Disallow: /jobs
+
+Sitemap: https://inseconds.cc/sitemap.xml

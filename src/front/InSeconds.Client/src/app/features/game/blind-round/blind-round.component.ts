@@ -149,12 +149,29 @@ export class BlindRoundComponent implements OnDestroy {
   clearSearch(event: MouseEvent): void {
     event.preventDefault();
     this.search.clearAll();
-    this.submission.pendingConfirm.set(null);
+    this.submission.setPendingConfirm(null);
   }
 
   onQueryChange(q: string): void {
     this.search.onQueryChange(q);
-    this.submission.pendingConfirm.set(null);
+    this.submission.setPendingConfirm(null);
+  }
+
+  protected openSuggestions(): void {
+    this.search.openSuggestions();
+  }
+
+  protected highlightSuggestion(index: number): void {
+    this.search.highlight(index);
+  }
+
+  protected cancelConfirm(): void {
+    this.submission.setPendingConfirm(null);
+  }
+
+  /** Bouton « Passer (0 pts) » : demande confirmation avant d'envoyer une réponse vide. */
+  protected askSkip(): void {
+    this.submission.setPendingConfirm('skip');
   }
 
   onBlur(): void {
@@ -209,12 +226,12 @@ export class BlindRoundComponent implements OnDestroy {
   }
 
   submit(): void {
-    this.submission.pendingConfirm.set(null);
+    this.submission.setPendingConfirm(null);
     const answer = this.search.resolveAnswer();
 
     // Confirmation inline si champ vide
     if (!answer.artist && !answer.title) {
-      this.submission.pendingConfirm.set('empty');
+      this.submission.setPendingConfirm('empty');
       return;
     }
 
@@ -224,12 +241,12 @@ export class BlindRoundComponent implements OnDestroy {
   /** Valide la confirmation inline en attente (« réponse vide » ou « Passer »). */
   protected confirmPending(): void {
     const kind = this.submission.pendingConfirm();
-    this.submission.pendingConfirm.set(null);
+    this.submission.setPendingConfirm(null);
     this.doSubmit(kind === 'skip' ? { artist: null, title: null } : this.search.resolveAnswer());
   }
 
   private doSubmit(answer: { artist: string | null; title: string | null }): void {
-    this.submission.isSubmitting.set(true);
+    this.submission.startSubmitting();
     this.emitAnswer({
       listenedDurationSeconds: this.chosenDuration(),
       wasExtended: this.audio.extended(),
@@ -246,8 +263,7 @@ export class BlindRoundComponent implements OnDestroy {
   /** Renvoie la dernière réponse après un échec d'envoi (`submitFailed`) — cf. piège E5 CLAUDE.md. */
   protected retry(): void {
     if (!this.lastSubmission) return;
-    this.submission.isSubmitting.set(true);
-    this.submission.submitFailed.set(false);
+    this.submission.startSubmitting();
     this.answered.emit({ trackId: this.track().id, ...this.lastSubmission });
   }
 

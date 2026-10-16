@@ -9,8 +9,7 @@ describe('ScoreDistributionChartComponent', () => {
   let component: ScoreDistributionChartComponent;
 
   /** 10 tranches de 500 pts sur 0–5000, comptes donnés. */
-  const buckets = (counts: number[]) =>
-    counts.map((count, i) => ({ minScore: i * 500, maxScore: i === 9 ? 5000 : i * 500 + 499, count }));
+  const buckets = (counts: number[]) => counts.map((count, i) => ({ minScore: i * 500, maxScore: i === 9 ? 5000 : i * 500 + 499, count }));
 
   const stats = (overrides: Partial<TodayStatsResponse> = {}): TodayStatsResponse => ({
     yourScore: 3150, medianScore: 2450, totalPlayers: 47, currentStreak: 1, tracks: [],
@@ -21,8 +20,7 @@ describe('ScoreDistributionChartComponent', () => {
     ...overrides,
   }) as TodayStatsResponse;
 
-  const litCells = (column: number) =>
-    component['chart']()!.cells.filter(c => c.key.startsWith(`${column}-`) && c.lit);
+  const litCells = (column: number) => component['chart']()!.cells.filter(c => c.key.startsWith(`${column}-`) && c.lit);
 
   beforeEach(() => {
     TestBed.configureTestingModule({ imports: [ScoreDistributionChartComponent] });
@@ -38,31 +36,31 @@ describe('ScoreDistributionChartComponent', () => {
   it('draws 6 cells per bucket and fills the tallest column entirely', () => {
     fixture.componentRef.setInput('stats', stats());
     const chart = component['chart']()!;
-    expect(chart.cells).toHaveSize(10 * 6);
-    expect(litCells(4)).toHaveSize(6);          // 12 = max
-    expect(litCells(1)).toHaveSize(1);          // 1/12 → au moins une case
+    expect(chart.cells).toHaveLength(10 * 6);
+    expect(litCells(4)).toHaveLength(6); // 12 = max
+    expect(litCells(1)).toHaveLength(1); // 1/12 → au moins une case
     expect(litCells(0).length).toBeLessThan(6);
   });
 
   it('keeps an empty bucket entirely unlit', () => {
     fixture.componentRef.setInput('stats', stats({ scoreDistribution: buckets([0, 3, 0, 0, 0, 0, 0, 0, 0, 0]) }));
-    expect(litCells(0)).toHaveSize(0);
+    expect(litCells(0)).toHaveLength(0);
   });
 
   it("highlights the player's bucket in orange and the others in violet", () => {
     fixture.componentRef.setInput('stats', stats());
-    expect(litCells(6).every(c => c.fill === 'var(--color-accent-3)')).toBeTrue(); // 3150 → 3000–3499
-    expect(litCells(4).every(c => c.fill === 'var(--color-violet)')).toBeTrue();
+    expect(litCells(6).every(c => c.fill === 'var(--color-accent-3)')).toBe(true); // 3150 → 3000–3499
+    expect(litCells(4).every(c => c.fill === 'var(--color-violet)')).toBe(true);
   });
 
   it('highlights nothing when the player has no score', () => {
     fixture.componentRef.setInput('stats', stats({ yourScore: undefined }));
-    expect(component['chart']()!.cells.some(c => c.fill === 'var(--color-accent-3)')).toBeFalse();
+    expect(component['chart']()!.cells.some(c => c.fill === 'var(--color-accent-3)')).toBe(false);
   });
 
   it('puts a score above the last bound in the last column', () => {
     fixture.componentRef.setInput('stats', stats({ yourScore: 6000 }));
-    expect(litCells(9).every(c => c.fill === 'var(--color-accent-3)')).toBeTrue();
+    expect(litCells(9).every(c => c.fill === 'var(--color-accent-3)')).toBe(true);
   });
 
   it('places the median tick at its real position and the lowest/highest labels on the edges', () => {

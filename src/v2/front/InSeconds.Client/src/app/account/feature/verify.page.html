@@ -1,0 +1,68 @@
+<app-auth-page [heading]="(view() === 'pseudo' ? 'account.verify.pseudoTitle' : 'account.verify.title') | translate">
+  @switch (view()) {
+    @case ('missing-token') {
+      <p class="text-sm" style="color:var(--text-muted)">{{ 'account.verify.missingToken' | translate }}</p>
+      <a routerLink="/account/login" class="inline-block text-sm" style="color:var(--text-accent)">{{ 'account.verify.backToLogin' | translate }}</a>
+    }
+
+    @case ('invalid-link') {
+      <app-error-message messageKey="errors.players.invalid_or_expired_token" [traceId]="store.error()?.traceId ?? null" />
+      <a routerLink="/account/login" class="inline-block text-sm" style="color:var(--text-accent)">{{ 'account.verify.backToLogin' | translate }}</a>
+    }
+
+    @case ('pseudo') {
+      @if (connectedEmail(); as email) {
+        <p class="rounded-xl px-4 py-3 text-sm leading-relaxed"
+          style="background:var(--bg-warn);color:var(--text-body);border:1px solid var(--color-warn)">
+          {{ 'account.verify.newAccountNotice' | translate: { email: email } }}
+        </p>
+      }
+      <form [formRoot]="pseudoForm" (submit)="submitPseudo()" class="space-y-3" novalidate>
+        <label for="login-pseudo" class="sr-only">{{ 'account.verify.pseudoLabel' | translate }}</label>
+        <input
+          id="login-pseudo"
+          class="app-input text-center"
+          autocomplete="off"
+          [formField]="pseudoForm.pseudo"
+          [placeholder]="'account.verify.pseudoPlaceholder' | translate"
+          aria-describedby="login-pseudo-help"
+          [attr.aria-invalid]="pseudoInvalid() || pseudoTaken() ? 'true' : null"
+          (input)="editPseudo()"
+        />
+        <output id="login-pseudo-help" class="block">
+          @if (pseudoInvalid()) {
+            <p class="text-xs" style="color:var(--text-error)">{{ 'account.verify.invalidPseudo' | translate }}</p>
+          } @else if (pseudoTaken()) {
+            <p class="text-xs" style="color:var(--text-error)">{{ 'errors.players.pseudo_taken' | translate }}</p>
+          } @else {
+            <p class="text-xs" style="color:var(--text-faint)">{{ 'account.verify.pseudoHint' | translate }}</p>
+          }
+        </output>
+        @if (store.error(); as error) {
+          @if (step().kind === 'failed') {
+            <app-error-message [messageKey]="failureKey()" [traceId]="error.traceId" />
+          }
+        }
+        <button appButton type="submit" [block]="true" [disabled]="step().kind === 'confirming'">
+          {{ 'account.verify.pseudoSubmit' | translate }}
+        </button>
+      </form>
+    }
+
+    @case ('confirm') {
+      <p class="text-sm leading-relaxed" style="color:var(--text-muted)">{{ 'account.verify.subtitle' | translate }}</p>
+      @if (connectedEmail(); as email) {
+        <p class="rounded-xl px-4 py-3 text-sm leading-relaxed"
+          style="background:var(--bg-warn);color:var(--text-body);border:1px solid var(--color-warn)">
+          {{ 'account.verify.alreadyConnected' | translate: { email: email } }}
+        </p>
+      }
+      @if (store.error(); as error) {
+        <app-error-message [messageKey]="failureKey()" [traceId]="error.traceId" />
+      }
+      <button appButton type="button" [block]="true" [disabled]="step().kind === 'confirming'" (click)="confirm()">
+        {{ (step().kind === 'confirming' ? 'account.verify.confirming' : 'account.verify.confirm') | translate }}
+      </button>
+    }
+  }
+</app-auth-page>

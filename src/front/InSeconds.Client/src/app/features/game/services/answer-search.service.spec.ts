@@ -104,7 +104,7 @@ describe('AnswerSearchService', () => {
   it('reset clears the answer fields but leaves showSuggestions untouched', () => {
     service.onQueryChange('dedup-test');
     service.selectSuggestion(SUGGESTIONS[0]);
-    service.showSuggestions.set(true);
+    service.openSuggestions();
 
     service.reset();
 
@@ -150,7 +150,7 @@ describe('AnswerSearchService', () => {
     });
 
     it('does nothing when the dropdown is closed', () => {
-      service.showSuggestions.set(false);
+      service['_showSuggestions'].set(false);
       press('ArrowDown');
       expect(service.highlightedIndex()).toBe(-1);
     });

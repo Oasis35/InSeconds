@@ -14,52 +14,57 @@ export class HintService {
   private readonly gameService = inject(GameFacadeService);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly hint1Revealed = signal(false);
-  readonly hint2Revealed = signal(false);
-  readonly hintYear = signal<number | null>(null);
-  readonly hintArtistMasked = signal<string | null>(null);
-  readonly hintRequestPending = signal(false);
+  private readonly _hint1Revealed = signal(false);
+  readonly hint1Revealed = this._hint1Revealed.asReadonly();
+  private readonly _hint2Revealed = signal(false);
+  readonly hint2Revealed = this._hint2Revealed.asReadonly();
+  private readonly _hintYear = signal<number | null>(null);
+  readonly hintYear = this._hintYear.asReadonly();
+  private readonly _hintArtistMasked = signal<string | null>(null);
+  readonly hintArtistMasked = this._hintArtistMasked.asReadonly();
+  private readonly _hintRequestPending = signal(false);
+  readonly hintRequestPending = this._hintRequestPending.asReadonly();
 
   useHint1(sessionId: number, trackId: number): void {
     if (this.hintRequestPending() || this.hint1Revealed()) return;
-    this.hintRequestPending.set(true);
+    this._hintRequestPending.set(true);
     this.gameService.requestHint(sessionId, trackId, 1)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: r => {
-          this.hintYear.set(r.year ?? null);
-          this.hint1Revealed.set(true);
-          this.hintRequestPending.set(false);
+          this._hintYear.set(r.year ?? null);
+          this._hint1Revealed.set(true);
+          this._hintRequestPending.set(false);
         },
-        error: () => this.hintRequestPending.set(false),
+        error: () => this._hintRequestPending.set(false),
       });
   }
 
   useHint2(sessionId: number, trackId: number): void {
     if (this.hintRequestPending() || this.hint2Revealed()) return;
-    this.hintRequestPending.set(true);
+    this._hintRequestPending.set(true);
     this.gameService.requestHint(sessionId, trackId, 2)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: r => {
           // Cumulatif : le niveau 2 renvoie aussi l'année, que le niveau 1 ait été
           // révélé séparément avant ou non.
-          this.hintYear.set(r.year ?? null);
-          this.hintArtistMasked.set(r.artistMasked ?? null);
-          this.hint1Revealed.set(true);
-          this.hint2Revealed.set(true);
-          this.hintRequestPending.set(false);
+          this._hintYear.set(r.year ?? null);
+          this._hintArtistMasked.set(r.artistMasked ?? null);
+          this._hint1Revealed.set(true);
+          this._hint2Revealed.set(true);
+          this._hintRequestPending.set(false);
         },
-        error: () => this.hintRequestPending.set(false),
+        error: () => this._hintRequestPending.set(false),
       });
   }
 
   /** Réinitialisation à chaque changement de morceau — appelé depuis `BlindRoundComponent.next()`. */
   reset(): void {
-    this.hint1Revealed.set(false);
-    this.hint2Revealed.set(false);
-    this.hintYear.set(null);
-    this.hintArtistMasked.set(null);
-    this.hintRequestPending.set(false);
+    this._hint1Revealed.set(false);
+    this._hint2Revealed.set(false);
+    this._hintYear.set(null);
+    this._hintArtistMasked.set(null);
+    this._hintRequestPending.set(false);
   }
 }

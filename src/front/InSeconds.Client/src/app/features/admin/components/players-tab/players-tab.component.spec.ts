@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
@@ -11,13 +12,14 @@ const PLAYERS: RegisteredPlayerDto[] = [
 ];
 
 // Même approche que challenges-tab.component.spec.ts : pas de fixture, méthodes/signals
-// protégés exercés en bracket-notation (pas besoin de TranslateService).
+// protégés exercés en bracket-notation (pas besoin de TranslateService). L'historique passe
+// par une resource : TestBed.tick() après chaque dépliage la laisse charger.
 describe('PlayersTabComponent', () => {
   let component: PlayersTabComponent;
-  let getPlayerHistory: jasmine.Spy;
+  let getPlayerHistory: Mock;
 
   beforeEach(() => {
-    getPlayerHistory = jasmine.createSpy('getPlayerHistory').and.returnValue(of({
+    getPlayerHistory = vi.fn().mockName('getPlayerHistory').mockReturnValue(of({
       games: [{ date: '2026-09-24', status: 'Completed', score: 3200, freezesUsed: 0, freezeEarned: false }],
     }));
     TestBed.configureTestingModule({
@@ -29,7 +31,7 @@ describe('PlayersTabComponent', () => {
   });
 
   it('affiche tous les joueurs sans filtre', () => {
-    expect(component['filteredPlayers']()).toHaveSize(2);
+    expect(component['filteredPlayers']()).toHaveLength(2);
   });
 
   it('filtre par pseudo ou email, sans tenir compte de la casse', () => {
@@ -42,24 +44,30 @@ describe('PlayersTabComponent', () => {
 
   it('toggle recharge l\'historique à chaque dépliage', () => {
     component['toggle']('a');
+    TestBed.tick();
     expect(component['expandedId']()).toBe('a');
     expect(component['historyOf']('a')).toEqual([
       { date: '2026-09-24', status: 'Completed', score: 3200, freezesUsed: 0, freezeEarned: false },
     ]);
 
     component['toggle']('a'); // repli
+    TestBed.tick();
     expect(component['expandedId']()).toBeNull();
-    getPlayerHistory.and.returnValue(of({ games: [] }));
+    getPlayerHistory.mockReturnValue(of({ games: [] }));
     component['toggle']('a'); // re-dépliage : une partie a pu être jouée entre-temps
+    TestBed.tick();
     expect(getPlayerHistory).toHaveBeenCalledTimes(2);
     expect(component['historyOf']('a')).toEqual([]);
   });
 
   it('garde l\'historique affiché si un rechargement échoue', () => {
     component['toggle']('a');
+    TestBed.tick();
     component['toggle']('a');
-    getPlayerHistory.and.returnValue(throwError(() => new Error('500')));
+    TestBed.tick();
+    getPlayerHistory.mockReturnValue(throwError(() => new Error('500')));
     component['toggle']('a');
+    TestBed.tick();
     expect(component['historyOf']('a')).toEqual([
       { date: '2026-09-24', status: 'Completed', score: 3200, freezesUsed: 0, freezeEarned: false },
     ]);
@@ -67,19 +75,24 @@ describe('PlayersTabComponent', () => {
 
   it('une seule ligne dépliée à la fois', () => {
     component['toggle']('a');
+    TestBed.tick();
     component['toggle']('b');
+    TestBed.tick();
     expect(component['expandedId']()).toBe('b');
     expect(getPlayerHistory).toHaveBeenCalledWith('b');
   });
 
   it('retente le chargement après une erreur', () => {
-    getPlayerHistory.and.returnValue(throwError(() => new Error('500')));
+    getPlayerHistory.mockReturnValue(throwError(() => new Error('500')));
     component['toggle']('a');
+    TestBed.tick();
     expect(component['historyOf']('a')).toBe('error');
 
     component['toggle']('a');
-    getPlayerHistory.and.returnValue(of({ games: [] }));
+    TestBed.tick();
+    getPlayerHistory.mockReturnValue(of({ games: [] }));
     component['toggle']('a');
+    TestBed.tick();
     expect(component['historyOf']('a')).toEqual([]);
     expect(getPlayerHistory).toHaveBeenCalledTimes(2);
   });

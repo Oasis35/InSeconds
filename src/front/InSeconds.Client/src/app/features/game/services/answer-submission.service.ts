@@ -16,34 +16,50 @@ export type PendingConfirm = 'empty' | 'skip' | null;
 
 @Injectable()
 export class AnswerSubmissionService {
-  readonly result = signal<SubmitAnswerResponse | null>(null);
+  private readonly _result = signal<SubmitAnswerResponse | null>(null);
+  readonly result = this._result.asReadonly();
   /** Confirmation inline en attente : réponse vide envoyée (`empty`) ou bouton « Passer » (`skip`). */
-  readonly pendingConfirm = signal<PendingConfirm>(null);
-  readonly isSubmitting = signal(false);
-  readonly displayedScore = signal(0);
+  private readonly _pendingConfirm = signal<PendingConfirm>(null);
+  readonly pendingConfirm = this._pendingConfirm.asReadonly();
+  private readonly _isSubmitting = signal(false);
+  readonly isSubmitting = this._isSubmitting.asReadonly();
+  private readonly _displayedScore = signal(0);
+  readonly displayedScore = this._displayedScore.asReadonly();
   /** La soumission (avec ses tentatives automatiques) a définitivement échoué — bloque la progression. */
-  readonly submitFailed = signal(false);
+  private readonly _submitFailed = signal(false);
+  readonly submitFailed = this._submitFailed.asReadonly();
 
   setResult(r: SubmitAnswerResponse): void {
-    this.isSubmitting.set(false);
-    this.submitFailed.set(false);
-    this.result.set(r);
-    this.displayedScore.set(0);
-    countUp(r.score, v => this.displayedScore.set(v));
+    this._isSubmitting.set(false);
+    this._submitFailed.set(false);
+    this._result.set(r);
+    this._displayedScore.set(0);
+    countUp(r.score, v => this._displayedScore.set(v));
+  }
+
+  /** Ouvre la confirmation inline (réponse vide ou « Passer »), ou la referme avec `null`. */
+  setPendingConfirm(kind: PendingConfirm): void {
+    this._pendingConfirm.set(kind);
+  }
+
+  /** Envoi (ou renvoi) de la réponse en cours. */
+  startSubmitting(): void {
+    this._isSubmitting.set(true);
+    this._submitFailed.set(false);
   }
 
   /** La soumission a échoué après les tentatives automatiques — le joueur peut réessayer. */
   setError(): void {
-    this.isSubmitting.set(false);
-    this.submitFailed.set(true);
+    this._isSubmitting.set(false);
+    this._submitFailed.set(true);
   }
 
   /** Réinitialisation à chaque changement de morceau — appelé depuis `BlindRoundComponent.next()`. */
   reset(): void {
-    this.result.set(null);
-    this.pendingConfirm.set(null);
-    this.displayedScore.set(0);
-    this.isSubmitting.set(false);
-    this.submitFailed.set(false);
+    this._result.set(null);
+    this._pendingConfirm.set(null);
+    this._displayedScore.set(0);
+    this._isSubmitting.set(false);
+    this._submitFailed.set(false);
   }
 }

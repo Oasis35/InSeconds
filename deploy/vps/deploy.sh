@@ -14,9 +14,25 @@
 set -euo pipefail
 
 target="${1:-prod}"
+cd "$(dirname "${BASH_SOURCE[0]}")/../.."
+
+# La prod reste en v1 jusqu'à la bascule (workflow « Bascule v2 », deploy/vps/switch-to-v2.sh) : tant que le
+# marqueur .bascule-v2-done n'existe pas, un push sur main redéploie la v1 (docker-compose.prod.yml), jamais
+# la v2 sans import. La bascule pose le marqueur une fois la v2 ouverte aux joueurs ; ensuite, les déploiements
+# de main sont ceux de la v2. INSECONDS_V2=1 force ce mode (posé par la bascule elle-même, avant le marqueur).
+# Le staging est en v2 depuis A6.
+v2=false
+if [[ "$target" == "staging" || "${INSECONDS_V2:-}" == "1" || -f .bascule-v2-done ]]; then
+  v2=true
+fi
+
 case "$target" in
   prod)
-    compose_file=docker-compose.prod.yml
+    if [[ "$v2" == "true" ]]; then
+      compose_file=docker-compose.prod-v2.yml
+    else
+      compose_file=docker-compose.prod.yml
+    fi
     env_file=.env.prod
     api_url=https://api.inseconds.cc/health
     front_url=https://inseconds.cc
@@ -36,14 +52,36 @@ case "$target" in
     ;;
 esac
 
-cd "$(dirname "${BASH_SOURCE[0]}")/../.."
-
 compose() { docker compose -f "$compose_file" --env-file "$env_file" "$@"; }
 
 export BUILD_TIME
 BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-compose up -d --build
+if [[ "$v2" == "true" ]]; then
+  # v2 : le staging (PR A6) et la prod après la bascule. Tout est vérifié avant de remplacer les conteneurs : en cas d'échec,
+  # la version en place continue de tourner.
+  #
+  # Certificat Data Protection (PLAN S16), chargé par l'API au démarrage : absent ou illisible, elle
+  # ne démarrerait pas. Contrôlé ici d'abord, avant que Docker ne crée un dossier vide à la place
+  # d'un fichier absent, puis dans le conteneur.
+  cert=secrets/dataprotection.pfx
+  if [[ ! -f "$cert" ]]; then
+    echo "ERREUR : $cert absent du checkout (cf. $env_file.example)." >&2
+    exit 1
+  fi
+  compose build
+  if ! compose run --rm -T --entrypoint sh api -c "test -f /run/secrets/dataprotection.pfx && test -r /run/secrets/dataprotection.pfx"; then
+    echo "ERREUR : $cert illisible par l'utilisateur de l'image de l'API (uid/gid 1654), cf. $env_file.example." >&2
+    exit 1
+  fi
+  # --migrate-only ne démarre ni le serveur HTTP, ni Wolverine, ni Hangfire (leurs schémas sont
+  # créés au démarrage de l'API).
+  echo "Application des migrations ($target)..."
+  compose run --rm -T api --migrate-only
+  compose up -d
+else
+  compose up -d --build
+fi
 
 # Ne retire que les images "dangling" (non taguées) — jamais -a, qui supprimerait aussi les
 # images d'autres projets partageant ce VPS (cf. CLAUDE.md racine § Architecture — plusieurs
@@ -82,6 +120,10 @@ if [[ "$(docker inspect -f '{{.State.Running}}' "$(compose ps -q front)")" != "t
   echo "ERREUR : le conteneur front ($target) ne tourne pas après déploiement." >&2
   compose logs --tail=80 front >&2 || true
   exit 1
+fi
+
+if [[ "$v2" == "true" ]]; then
+  bash deploy/vps/smoke-test.sh "${api_url%/health}"
 fi
 
 echo "Déploiement $target vérifié OK (API + front répondent)."

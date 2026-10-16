@@ -197,7 +197,7 @@
               autocomplete="off"
               (ngModelChange)="onQueryChange($event)"
               (blur)="onBlur()"
-              (focus)="showSuggestions.set(true)"
+              (focus)="openSuggestions()"
               (keydown)="onSearchKeydown($event)"
               class="w-full pl-4 py-3.5 rounded-xl text-sm transition"
               [style.paddingRight]="searchQuery ? '2.5rem' : '1rem'"
@@ -221,7 +221,7 @@
                 @for (s of suggestions(); track s.artist + s.title; let i = $index) {
                   <li
                     (mousedown)="selectSuggestion(s)"
-                    (mouseenter)="highlightedIndex.set(i)"
+                    (mouseenter)="highlightSuggestion(i)"
                     class="px-4 py-3 cursor-pointer text-sm transition hover:bg-white/[0.03]"
                     [style.background]="i === highlightedIndex() ? 'rgb(var(--rgb-accent-2) / 0.15)' : null"
                     style="border-bottom:1px solid rgba(255,255,255,0.04)">
@@ -253,7 +253,7 @@
               <div class="flex gap-2">
                 <button
                   type="button"
-                  (click)="pendingConfirm.set(null)"
+                  (click)="cancelConfirm()"
                   class="flex-1 py-2.5 rounded-lg text-sm font-semibold transition touch-manipulation"
                   style="background:var(--bg-inactive);color:var(--text-hover);border:1px solid var(--border-subtle)">
                   {{ 'blindRound.cancel' | translate }}
@@ -278,7 +278,7 @@
             @if (track().previewUrl) {
               <button
                 type="button"
-                (click)="pendingConfirm.set('skip')"
+                (click)="askSkip()"
                 [disabled]="isSubmitting()"
                 class="w-full py-3.5 rounded-lg text-sm font-bold tracking-wide uppercase transition active:scale-95 touch-manipulation disabled:opacity-60"
                 style="font-family:var(--font-display);letter-spacing:0.06em;border:1.5px solid rgb(var(--rgb-accent-2) / 0.7);background:transparent;color:var(--color-accent-2)">

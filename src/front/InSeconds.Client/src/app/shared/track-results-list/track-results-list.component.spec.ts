@@ -32,8 +32,8 @@ describe('TrackResultsListComponent', () => {
   });
 
   it('hasChart() is true only when the row has a non-empty distribution', () => {
-    expect(component['hasChart'](baseRow())).toBeTrue();
-    expect(component['hasChart'](baseRow({ guessTimeDistribution: [] }))).toBeFalse();
+    expect(component['hasChart'](baseRow())).toBe(true);
+    expect(component['hasChart'](baseRow({ guessTimeDistribution: [] }))).toBe(false);
   });
 
   it('openChartFor() opens the popup only when the row has a chart', () => {
@@ -46,14 +46,11 @@ describe('TrackResultsListComponent', () => {
     expect(component['openChart']()).toBeNull();
   });
 
-  it('closeChart() and onEscape() clear the open popup', () => {
+  // Échap et le fond cliquable passent par ModalComponent, qui appelle closeChart().
+  it('closeChart() clears the open popup', () => {
     component['openChartFor'](baseRow());
     expect(component['openChart']()).not.toBeNull();
 
-    component['onEscape']();
-    expect(component['openChart']()).toBeNull();
-
-    component['openChartFor'](baseRow());
     component['closeChart']();
     expect(component['openChart']()).toBeNull();
   });

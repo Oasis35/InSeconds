@@ -1,4 +1,4 @@
-import { Component, input, output, inject, computed, ChangeDetectionStrategy, HostListener } from '@angular/core';
+import { Component, input, output, inject, computed, ChangeDetectionStrategy } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { StreakDto } from '../../core/models/game.models';
 import { isFreezeStockFull, isStreakProtected, pluralKey, toUtcDate } from '../../core/models/streak';
@@ -23,6 +23,7 @@ interface FriezeDay {
   selector: 'app-streak-sheet',
   imports: [TranslatePipe, StreakIconComponent, FreezeCellsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '(document:keydown.escape)': 'closed.emit()' },
   templateUrl: './streak-sheet.component.html',
 })
 export class StreakSheetComponent {
@@ -72,9 +73,4 @@ export class StreakSheetComponent {
     days.push({ kind: 'today', label: '' });
     return days;
   });
-
-  @HostListener('document:keydown.escape')
-  protected onEscape(): void {
-    this.closed.emit();
-  }
 }

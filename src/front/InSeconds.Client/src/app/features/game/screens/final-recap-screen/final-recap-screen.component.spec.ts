@@ -34,8 +34,8 @@ describe('FinalRecapScreenComponent', () => {
 
   it('recapRows() derives from results() even without stats (histogramme vide)', () => {
     const rows = component['recapRows']();
-    expect(rows).toHaveSize(1);
-    expect(rows[0]).toEqual(jasmine.objectContaining({
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toEqual(expect.objectContaining({
       position: 1, artist: 'Eminem', title: 'Lose Yourself', score: 1000, notFoundCount: 0,
     }));
     expect(rows[0].guessTimeDistribution).toEqual([]);
@@ -45,11 +45,11 @@ describe('FinalRecapScreenComponent', () => {
     const stats = {
       yourScore: 1000, medianScore: 1000, totalPlayers: 1, currentStreak: 1,
       tracks: [{
-        position: 1, artist: 'Eminem', title: 'Lose Yourself', deezerTrackId: 42, coverUrl: undefined,
-        failureRatePercent: 0, averageSecondsWhenCorrect: 0.5,
-        artistCorrect: true, titleCorrect: true, listenedDurationSeconds: 0.5, score: 1000,
-        guessTimeDistribution: [{ durationSeconds: 0.5, count: 2 }], notFoundCount: 1,
-      }],
+          position: 1, artist: 'Eminem', title: 'Lose Yourself', deezerTrackId: 42, coverUrl: undefined,
+          failureRatePercent: 0, averageSecondsWhenCorrect: 0.5,
+          artistCorrect: true, titleCorrect: true, listenedDurationSeconds: 0.5, score: 1000,
+          guessTimeDistribution: [{ durationSeconds: 0.5, count: 2 }], notFoundCount: 1,
+        }],
     } as unknown as TodayStatsResponse;
     fixture.componentRef.setInput('stats', stats);
 

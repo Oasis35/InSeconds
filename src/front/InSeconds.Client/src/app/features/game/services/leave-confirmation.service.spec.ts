@@ -10,41 +10,41 @@ describe('LeaveConfirmationService', () => {
   });
 
   it('defaults to hidden with no pending confirmation', () => {
-    expect(service.showLeaveConfirm()).toBeFalse();
-    expect(service.hasPending).toBeFalse();
+    expect(service.showLeaveConfirm()).toBe(false);
+    expect(service.hasPending).toBe(false);
   });
 
   it('request() shows the modal and resolves the returned promise on confirm()', async () => {
     const pending = service.request();
-    expect(service.showLeaveConfirm()).toBeTrue();
-    expect(service.hasPending).toBeTrue();
+    expect(service.showLeaveConfirm()).toBe(true);
+    expect(service.hasPending).toBe(true);
 
     service.confirm();
 
-    expect(await pending).toBeTrue();
-    expect(service.showLeaveConfirm()).toBeFalse();
-    expect(service.hasPending).toBeFalse();
+    expect(await pending).toBe(true);
+    expect(service.showLeaveConfirm()).toBe(false);
+    expect(service.hasPending).toBe(false);
   });
 
   it('request() resolves false on cancel()', async () => {
     const pending = service.request();
     service.cancel();
-    expect(await pending).toBeFalse();
+    expect(await pending).toBe(false);
   });
 
   it('a re-entrant request() resolves the previous pending promise with false', async () => {
     const first = service.request();
     const second = service.request();
 
-    expect(await first).toBeFalse();
+    expect(await first).toBe(false);
 
     service.confirm();
-    expect(await second).toBeTrue();
+    expect(await second).toBe(true);
   });
 
   it('resolve(ok) settles the pending promise directly', async () => {
     const pending = service.request();
     service.resolve(true);
-    expect(await pending).toBeTrue();
+    expect(await pending).toBe(true);
   });
 });

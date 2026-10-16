@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router } from '@angular/router';
 import { signal } from '@angular/core';
@@ -9,22 +10,30 @@ import { PlayerSessionService } from '../../../core/services/player-session.serv
 // ApiClient (NSwag) est mocké directement (responseType:"blob" + FileReader rend un
 // test via HttpTestingController inutilement complexe pour la logique testée ici).
 describe('VerifyLoginComponent', () => {
-  let apiClient: { apiAuthMagicLinkVerify: jasmine.Spy };
-  let playerSession: { load: jasmine.Spy; isLinked: ReturnType<typeof signal<boolean>>; email: ReturnType<typeof signal<string | null>> };
-  let router: { navigateByUrl: jasmine.Spy };
+  let apiClient: {
+    apiAuthMagicLinkVerify: Mock;
+  };
+  let playerSession: {
+    load: Mock;
+    isLinked: ReturnType<typeof signal<boolean>>;
+    email: ReturnType<typeof signal<string | null>>;
+  };
+  let router: {
+    navigateByUrl: Mock;
+  };
 
   function apiError(status: number): ApiException {
     return new ApiException('error', status, '', {}, null);
   }
 
   function setup(token: string | null, connectedEmail: string | null = null): VerifyLoginComponent {
-    apiClient = { apiAuthMagicLinkVerify: jasmine.createSpy('apiAuthMagicLinkVerify') };
+    apiClient = { apiAuthMagicLinkVerify: vi.fn().mockName('apiAuthMagicLinkVerify') };
     playerSession = {
-      load: jasmine.createSpy('load').and.returnValue(of(void 0)),
+      load: vi.fn().mockName('load').mockReturnValue(of(void 0)),
       isLinked: signal(connectedEmail !== null),
       email: signal(connectedEmail),
     };
-    router = { navigateByUrl: jasmine.createSpy('navigateByUrl') };
+    router = { navigateByUrl: vi.fn().mockName('navigateByUrl') };
 
     TestBed.configureTestingModule({
       providers: [
@@ -66,7 +75,7 @@ describe('VerifyLoginComponent', () => {
   describe('confirm()', () => {
     it('should call verify, then load the session and navigate home on success', () => {
       const component = setup('abc123');
-      apiClient.apiAuthMagicLinkVerify.and.returnValue(of({ needsPseudo: false }));
+      apiClient.apiAuthMagicLinkVerify.mockReturnValue(of({ needsPseudo: false }));
 
       component.confirm();
 
@@ -77,7 +86,7 @@ describe('VerifyLoginComponent', () => {
 
     it('should switch to needsPseudo when the server asks for one', () => {
       const component = setup('abc123');
-      apiClient.apiAuthMagicLinkVerify.and.returnValue(of({ needsPseudo: true }));
+      apiClient.apiAuthMagicLinkVerify.mockReturnValue(of({ needsPseudo: true }));
 
       component.confirm();
 
@@ -86,7 +95,7 @@ describe('VerifyLoginComponent', () => {
 
     it('should set error state on 400/403', () => {
       const component = setup('abc123');
-      apiClient.apiAuthMagicLinkVerify.and.returnValue(throwError(() => apiError(400)));
+      apiClient.apiAuthMagicLinkVerify.mockReturnValue(throwError(() => apiError(400)));
 
       component.confirm();
 
@@ -97,7 +106,7 @@ describe('VerifyLoginComponent', () => {
   describe('submitPseudo()', () => {
     it('should reject a pseudo with forbidden characters', () => {
       const component = setup('abc123');
-      component['pseudo'] = '<script>';
+      component['pseudoForm'].pseudo().value.set('<script>');
       component.submitPseudo();
 
       expect(component['state']()).toBe('invalidPseudo');
@@ -106,9 +115,9 @@ describe('VerifyLoginComponent', () => {
 
     it('should call verify with the pseudo and navigate home on success', () => {
       const component = setup('abc123');
-      apiClient.apiAuthMagicLinkVerify.and.returnValue(of({ needsPseudo: false }));
+      apiClient.apiAuthMagicLinkVerify.mockReturnValue(of({ needsPseudo: false }));
 
-      component['pseudo'] = 'Alice';
+      component['pseudoForm'].pseudo().value.set('Alice');
       component.submitPseudo();
 
       expect(apiClient.apiAuthMagicLinkVerify).toHaveBeenCalledWith({ token: 'abc123', pseudo: 'Alice' });
@@ -117,9 +126,9 @@ describe('VerifyLoginComponent', () => {
 
     it('should set pseudoTaken state on 409', () => {
       const component = setup('abc123');
-      apiClient.apiAuthMagicLinkVerify.and.returnValue(throwError(() => apiError(409)));
+      apiClient.apiAuthMagicLinkVerify.mockReturnValue(throwError(() => apiError(409)));
 
-      component['pseudo'] = 'Alice';
+      component['pseudoForm'].pseudo().value.set('Alice');
       component.submitPseudo();
 
       expect(component['state']()).toBe('pseudoTaken');

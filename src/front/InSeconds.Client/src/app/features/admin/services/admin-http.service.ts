@@ -15,12 +15,13 @@ export class AdminHttpService {
   private readonly playerSession = inject(PlayerSessionService);
   readonly base = `${environment.apiUrl}/api/admin`;
 
-  readonly authenticated = signal(false);
+  private readonly _authenticated = signal(false);
+  readonly authenticated = this._authenticated.asReadonly();
 
   checkAuth(): void {
     lastValueFrom(this.http.get(`${this.base}/me`))
-      .then(() => this.authenticated.set(true))
-      .catch(() => this.authenticated.set(false));
+      .then(() => this._authenticated.set(true))
+      .catch(() => this._authenticated.set(false));
   }
 
   // L'accès admin est désormais un rôle sur le compte joueur (Player.IsAdmin) : se
@@ -31,7 +32,7 @@ export class AdminHttpService {
   logout(): Promise<void> {
     return lastValueFrom(this.playerSession.logout())
       .then(() => lastValueFrom(this.playerSession.load()))
-      .then(() => { this.authenticated.set(false); });
+      .then(() => { this._authenticated.set(false); });
   }
 
   generateToday() { return this.http.post(`${this.base}/generate-today`, {}); }

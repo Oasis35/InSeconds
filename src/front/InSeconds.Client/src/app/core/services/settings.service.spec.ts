@@ -162,12 +162,12 @@ describe('SettingsService', () => {
       req.flush('Server error', { status: 500, statusText: 'Internal Server Error' });
 
       expect(error).toBeNull();
-      expect(completed).toBeTrue();
+      expect(completed).toBe(true);
     });
 
     it('should not update signals when load fails', () => {
       const originalDurations = service.allowedDurations();
-      service.load().subscribe({ error: () => {} });
+      service.load().subscribe({ error: () => { } });
 
       const req = httpMock.expectOne(settingsUrl);
       req.flush('error', { status: 500, statusText: 'Server Error' });

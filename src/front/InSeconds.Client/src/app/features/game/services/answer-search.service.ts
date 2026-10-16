@@ -18,16 +18,19 @@ export class AnswerSearchService {
   artistAnswer = '';
   titleAnswer = '';
 
-  readonly suggestions = signal<DeezerSuggestion[]>([]);
-  readonly showSuggestions = signal(false);
-  readonly highlightedIndex = signal(-1);
+  private readonly _suggestions = signal<DeezerSuggestion[]>([]);
+  readonly suggestions = this._suggestions.asReadonly();
+  private readonly _showSuggestions = signal(false);
+  readonly showSuggestions = this._showSuggestions.asReadonly();
+  private readonly _highlightedIndex = signal(-1);
+  readonly highlightedIndex = this._highlightedIndex.asReadonly();
 
   private readonly query$ = new Subject<string>();
 
   constructor() {
     this.deezerSearch.search(this.query$).pipe(takeUntilDestroyed()).subscribe(s => {
-      this.suggestions.set(s);
-      this.highlightedIndex.set(-1);
+      this._suggestions.set(s);
+      this._highlightedIndex.set(-1);
     });
   }
 
@@ -35,11 +38,20 @@ export class AnswerSearchService {
     this.artistAnswer = '';
     this.titleAnswer = '';
     this.query$.next(q);
-    this.showSuggestions.set(true);
+    this._showSuggestions.set(true);
+  }
+
+  openSuggestions(): void {
+    this._showSuggestions.set(true);
+  }
+
+  /** Survol souris d'une suggestion : resynchronise la surbrillance clavier. */
+  highlight(index: number): void {
+    this._highlightedIndex.set(index);
   }
 
   onBlur(): void {
-    setTimeout(() => this.showSuggestions.set(false), 150);
+    setTimeout(() => this._showSuggestions.set(false), 150);
   }
 
   onSearchKeydown(event: KeyboardEvent): void {
@@ -61,8 +73,8 @@ export class AnswerSearchService {
         }
         break;
       case 'Escape':
-        this.showSuggestions.set(false);
-        this.highlightedIndex.set(-1);
+        this._showSuggestions.set(false);
+        this._highlightedIndex.set(-1);
         break;
     }
   }
@@ -72,19 +84,19 @@ export class AnswerSearchService {
     const current = this.highlightedIndex();
 
     if (current === -1) {
-      this.highlightedIndex.set(delta > 0 ? 0 : count - 1);
+      this._highlightedIndex.set(delta > 0 ? 0 : count - 1);
       return;
     }
 
-    this.highlightedIndex.set((current + delta + count) % count);
+    this._highlightedIndex.set((current + delta + count) % count);
   }
 
   selectSuggestion(s: DeezerSuggestion): void {
     this.artistAnswer = s.artist;
     this.titleAnswer = s.title;
     this.searchQuery = `${s.artist} - ${s.title}`;
-    this.showSuggestions.set(false);
-    this.highlightedIndex.set(-1);
+    this._showSuggestions.set(false);
+    this._highlightedIndex.set(-1);
   }
 
   /** Bouton ✕ — vide aussi la dropdown (contrairement à `reset()`, appelé à chaque nouveau morceau). */
@@ -92,9 +104,9 @@ export class AnswerSearchService {
     this.searchQuery = '';
     this.artistAnswer = '';
     this.titleAnswer = '';
-    this.suggestions.set([]);
-    this.showSuggestions.set(false);
-    this.highlightedIndex.set(-1);
+    this._suggestions.set([]);
+    this._showSuggestions.set(false);
+    this._highlightedIndex.set(-1);
   }
 
   /**
@@ -119,7 +131,7 @@ export class AnswerSearchService {
     this.artistAnswer = '';
     this.titleAnswer = '';
     this.searchQuery = '';
-    this.suggestions.set([]);
-    this.highlightedIndex.set(-1);
+    this._suggestions.set([]);
+    this._highlightedIndex.set(-1);
   }
 }

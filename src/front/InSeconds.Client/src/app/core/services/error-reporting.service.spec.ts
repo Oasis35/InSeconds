@@ -24,7 +24,7 @@ describe('ErrorReportingService', () => {
 
     const req = httpMock.expectOne(endpoint);
     expect(req.request.method).toBe('POST');
-    expect(req.request.withCredentials).toBeTrue();
+    expect(req.request.withCredentials).toBe(true);
     expect(req.request.body.source).toBe('js');
     expect(req.request.body.message).toBe('TypeError: x is undefined');
     expect(req.request.body.stack).toBe(error.stack);
@@ -47,15 +47,15 @@ describe('ErrorReportingService', () => {
     service.report({ source: 'js', message: 'm'.repeat(2000), stack: 's'.repeat(9000) });
 
     const body = httpMock.expectOne(endpoint).request.body;
-    expect(body.message).toHaveSize(1000);
-    expect(body.stack).toHaveSize(8000);
+    expect(body.message).toHaveLength(1000);
+    expect(body.stack).toHaveLength(8000);
   });
 
   it('n\'envoie pas deux fois la même erreur', () => {
     service.report({ source: 'js', message: 'boom' });
     service.report({ source: 'js', message: 'boom' });
 
-    expect(httpMock.match(endpoint)).toHaveSize(1);
+    expect(httpMock.match(endpoint)).toHaveLength(1);
   });
 
   it('plafonne le nombre d\'envois par page', () => {
@@ -63,7 +63,7 @@ describe('ErrorReportingService', () => {
       service.report({ source: 'js', message: `boom ${i}` });
     }
 
-    expect(httpMock.match(endpoint)).toHaveSize(ErrorReportingService.MAX_REPORTS_PER_PAGE);
+    expect(httpMock.match(endpoint)).toHaveLength(ErrorReportingService.MAX_REPORTS_PER_PAGE);
   });
 
   it('avale un échec d\'envoi sans lever d\'erreur', () => {

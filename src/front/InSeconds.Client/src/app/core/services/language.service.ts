@@ -11,7 +11,8 @@ const STORAGE_KEY = 'lang';
 export class LanguageService {
   private readonly translate = inject(TranslateService);
 
-  readonly current = signal<Lang>(DEFAULT_LANG);
+  private readonly _current = signal<Lang>(DEFAULT_LANG);
+  readonly current = this._current.asReadonly();
 
   /** Appelé au boot (provideAppInitializer) : détermine et applique la langue. */
   init(): void {
@@ -22,7 +23,7 @@ export class LanguageService {
 
   use(lang: Lang): void {
     this.translate.use(lang);
-    this.current.set(lang);
+    this._current.set(lang);
     try {
       localStorage.setItem(STORAGE_KEY, lang);
     } catch {
