@@ -10,6 +10,8 @@ export interface DailyToday {
   /** Morceaux déjà répondus, quand la partie est à reprendre. */
   readonly completedCount: number;
   readonly streak: Streak;
+  /** Parties terminées par le joueur, tous jours confondus (0 pour un invité : seul le panneau de série d'un compte l'affiche). */
+  readonly completedGames: number;
 }
 
 /** Un niveau d'indice : quand il se débloque, ce qu'il révèle (`year`, `artistMasked`) et son coût en pourcentage du score. */

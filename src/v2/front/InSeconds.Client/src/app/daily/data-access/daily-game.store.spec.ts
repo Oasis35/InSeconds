@@ -266,6 +266,22 @@ describe('DailyGameStore', () => {
       expect(api.calls.filter(c => c === 'today')).toHaveLength(2);
     });
 
+    it('le panneau de série lit les parties jouées avec la série : rien avant, puis relues après la dernière réponse', async () => {
+      expect(store.sheetGamesPlayed()).toBeNull();
+      api.today = TODAY({ completedGames: 4 });
+      await startGame();
+      expect(store.sheetGamesPlayed()).toBe(4);
+
+      api.today = TODAY({ state: 'already_played', completedGames: 5 });
+      for (const position of [1, 2, 3]) {
+        await store.submit(submissionOf(position));
+        store.nextTrack();
+      }
+      await flush();
+
+      expect(store.sheetGamesPlayed()).toBe(5);
+    });
+
     it('un indice attend le palier envoyé, puis s\'affiche', async () => {
       await startGame();
       TestBed.tick();

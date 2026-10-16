@@ -1873,7 +1873,8 @@
           "state",
           "tracksCount",
           "completedCount",
-          "streak"
+          "streak",
+          "completedGames"
         ],
         "type": "object",
         "properties": {
@@ -1890,6 +1891,10 @@
           },
           "streak": {
             "$ref": "#/components/schemas/StreakResponse"
+          },
+          "completedGames": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },

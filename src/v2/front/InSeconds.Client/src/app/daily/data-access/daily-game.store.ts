@@ -83,6 +83,8 @@ export const DailyGameStore = signalStore(
       /** Série vue par la gélule et le panneau : neutre tant que le serveur n'a pas répondu. */
       pillStreak: computed(() => store.streak()),
       sheetStreak: computed(() => store.streak() ?? EMPTY_STREAK),
+      /** Parties terminées du joueur, pour le panneau de série d'un compte : relues avec la série (`GET /api/daily/today`), vides avant. */
+      sheetGamesPlayed: computed(() => store.today()?.completedGames ?? null),
       /** Ce que la carte de révélation montre du morceau en cours, une fois la réponse du serveur reçue. */
       roundResult: computed(() => {
         const answered = store.results().find(r => r.position === store.position());
