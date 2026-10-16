@@ -8,4 +8,3 @@ La référence est tenue à jour à côté du code :
 - [`src/v2/back/CLAUDE.md`](../src/v2/back/CLAUDE.md) — chaque module (Players, Catalogue, Gameplay, Daily), ses routes et ses tests, l'authentification, le client Deezer, l'hôte de test, l'import v1 → v2.
 - [`GAMEPLAY_RULES_FR.md`](GAMEPLAY_RULES_FR.md) — règles produit (scoring, anti-triche, série, indices).
 
-Jusqu'à la suppression de la v1 (PR I2) : [`src/back/InSeconds.Api/CLAUDE.md`](../src/back/InSeconds.Api/CLAUDE.md) et [`src/back/InSeconds.Deezer/CLAUDE.md`](../src/back/InSeconds.Deezer/CLAUDE.md) décrivent le back v1.

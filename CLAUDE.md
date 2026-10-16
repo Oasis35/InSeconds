@@ -8,14 +8,13 @@ InSeconds = blind test musical quotidien. N morceaux par jour (`Daily:TracksPerC
 
 Stack : .NET 10 / Wolverine / EF Core / PostgreSQL 17 / Hangfire côté back (monolithe modulaire), Angular 22 zoneless / NgRx SignalStore / Tailwind v4 / élément audio HTML côté front (PWA). **Hébergé sur un VPS OVH** (Debian 13, Gravelines) : front + API + PostgreSQL en conteneurs Docker derrière Caddy et Cloudflare, détail dans [Déploiement VPS](#déploiement-vps). Domaine public : `https://inseconds.cc` (API : `https://api.inseconds.cc`). **La page de rebond GitHub Pages (`oasis35.github.io/InSeconds`) a été retirée**, ne pas la recréer.
 
-## v2 et v1 : où en est le dépôt
+## État du dépôt
 
-Le code de référence est la **v2** (refonte complète, `src/v2/`), décrite par ce fichier et ses deux compagnons : [`src/v2/back/CLAUDE.md`](src/v2/back/CLAUDE.md) et [`src/v2/front/CLAUDE.md`](src/v2/front/CLAUDE.md). Plans et décisions : [`docs/refonte-v2/PLAN.md`](docs/refonte-v2/PLAN.md) (le « quoi ») et [`docs/refonte-v2/DEVELOPPEMENT.md`](docs/refonte-v2/DEVELOPPEMENT.md) (le découpage en PR, les décisions prises PR par PR). Avancement : ticket GitHub #205 et ses sous-tickets (étiquette `refonte-v2`).
+Le code de référence est la **v2** (`src/v2/`), en production, décrite par ce fichier et ses deux compagnons : [`src/v2/back/CLAUDE.md`](src/v2/back/CLAUDE.md) et [`src/v2/front/CLAUDE.md`](src/v2/front/CLAUDE.md). Plans et décisions : [`docs/refonte-v2/PLAN.md`](docs/refonte-v2/PLAN.md) (le « quoi ») et [`docs/refonte-v2/DEVELOPPEMENT.md`](docs/refonte-v2/DEVELOPPEMENT.md) (le découpage en PR, les décisions prises PR par PR). Avancement : ticket GitHub #205 et ses sous-tickets (étiquette `refonte-v2`).
 
 - **Staging** (`dev.inseconds.cc`) : sert la v2 depuis la PR A6.
-- **Prod** (`inseconds.cc`) : sert la **v1** (`src/back`, `src/front`) jusqu'à la bascule (phase H, workflow « Bascule v2 », cf. [Bascule v1 → v2](#bascule-v1--v2)). Ensuite, les push sur `main` déploient la v2.
-- **La v1 reste dans le dépôt jusqu'à la PR I2** (#236), qui supprime `src/back`, `src/front` et les jobs CI v1, puis déplace `src/v2` dans `src`. D'ici là, ses détails sont dans ses propres fichiers : [`src/back/InSeconds.Api/CLAUDE.md`](src/back/InSeconds.Api/CLAUDE.md), [`src/back/InSeconds.Deezer/CLAUDE.md`](src/back/InSeconds.Deezer/CLAUDE.md), [`features/game/CLAUDE.md`](src/front/InSeconds.Client/src/app/features/game/CLAUDE.md), [`features/admin/CLAUDE.md`](src/front/InSeconds.Client/src/app/features/admin/CLAUDE.md). La version de ce fichier qui décrivait la v1 en entier (conventions vertical slice, modèle à 10 tables, liste « Déjà implémenté ») est dans l'historique git : `git show b38825d:CLAUDE.md`.
-- **v1 gelée** : seulement des correctifs urgents, en PR **directement vers `main`** ; après chaque correctif, merger `main` dans `env/staging`. Un correctif v1 qui ajoute un E2E le recopie dans `src/v2/front/InSeconds.Client/e2e` (contrôle de parité, cf. CI).
+- **Prod** (`inseconds.cc`) : sert la **v2** depuis la bascule du **16/10/2026** (phase H, workflow « Bascule v2 », cf. [Bascule v1 → v2](#bascule-v1--v2)). Les push sur `main` déploient la v2.
+- **Code mort à supprimer** : `src/back`, `src/front` (l'ancienne version, plus servie) et les jobs CI qui s'y rapportent disparaissent à la PR I2 (#236), puis `src/v2` est déplacé dans `src`. Ne rien y ajouter ni corriger ; leur documentation vit dans leurs propres dossiers et part avec eux.
 - **PR de la v2** : vers `env/staging`, étiquette `refonte-v2`, description qui commence par `Closes #<ticket de l'étape>` puis `Part of #205`. La base n'étant pas `main`, GitHub ne ferme pas le ticket : le fermer à la main au merge.
 - Branches `main` et `env/staging` protégées (ruleset GitHub : PR obligatoire, pas de force-push ni de suppression, check « CI OK » exigé).
 
@@ -27,7 +26,6 @@ Le code de référence est la **v2** (refonte complète, `src/v2/`), décrite pa
 | Front v2 (`ng serve`) | **5176** |
 | API v2 de test des E2E en local / front des E2E en local | **5177** / **5178** (5175 / 5176 en CI) |
 | PostgreSQL | **5432** |
-| API v1 / front v1 (jusqu'à I2) | 5171 / 5173 |
 
 Tous les ports InSeconds en `51xx` par convention (4200 est pris par d'autres projets). Si tu modifies un port, propage partout : `launchSettings.json`, `angular.json`, `proxy*.conf.json`, `playwright.config.ts`, `Auth:TrustedOrigins` de l'hôte de test, READMEs.
 
@@ -35,23 +33,23 @@ Tous les ports InSeconds en `51xx` par convention (4200 est pris par d'autres pr
 
 ```
 InSeconds/
-├── docker-compose.yml              # dev local : PostgreSQL (+ l'API v1 jusqu'à I2)
+├── docker-compose.yml              # dev local : PostgreSQL
 ├── docker-compose.staging.yml      # staging (v2)
-├── docker-compose.prod.yml         # prod v1, jusqu'à la bascule
-├── docker-compose.prod-v2.yml      # prod v2, après la bascule (mêmes noms de conteneurs)
+├── docker-compose.prod.yml         # ancienne prod, plus utilisée (supprimée en I2)
+├── docker-compose.prod-v2.yml      # prod v2, depuis la bascule du 16/10/2026 (mêmes noms de conteneurs)
 ├── deploy/
 │   ├── infra/                      # Postgres partagé du VPS, sauvegardes
 │   ├── caddy/                      # reverse proxy partagé
 │   ├── migration-v2/               # import v1 → v2 (scripts SQL, run-import.sh, README de la bascule)
 │   └── vps/                        # deploy.sh, smoke-test.sh, switch-to-v2.sh, copie prod → staging
 ├── docs/                           # COMMENCE_ICI (sommaire), GAMEPLAY_RULES (spec produit), TACHES, refonte-v2/
-├── scripts/                        # check-e2e-parity.mjs, run-e2e.ps1 (v1)
+├── scripts/                        # check-e2e-parity.mjs, run-e2e.ps1 (liés à l'ancienne version, supprimés en I2)
 ├── src/
 │   ├── v2/
 │   │   ├── back/                   # InSeconds.slnx : Api (modules), Infrastructure, Deezer, Api.Testing, tests/
 │   │   └── front/InSeconds.Client/ # app Angular v2
-│   ├── back/                       # v1, supprimé en I2
-│   └── front/                      # v1, supprimé en I2
+│   ├── back/                       # ancienne version, supprimée en I2
+│   └── front/                      # ancienne version, supprimée en I2
 └── README.md / README.fr.md
 ```
 
@@ -176,7 +174,7 @@ npm run generate-api         # clients NSwag, depuis les documents OpenAPI sauve
 E2E_DB_CONNECTION="Host=localhost;…;Database=inseconds_e2e;…" npm run e2e   # Playwright : démarre l'hôte de test (:5177) et ng serve (:5178)
 ```
 
-Détail des options de l'API (`--migrate-only`, `--rotate-data-protection-key`, `--freeze-day-stats`) : `src/v2/back/CLAUDE.md` § Démarrage. Les commandes de la v1 : `git show b38825d:CLAUDE.md` (§ Commandes courantes).
+Détail des options de l'API (`--migrate-only`, `--rotate-data-protection-key`, `--freeze-day-stats`) : `src/v2/back/CLAUDE.md` § Démarrage.
 
 ## Déploiement VPS
 
@@ -195,7 +193,7 @@ Un seul VPS pensé pour héberger **plusieurs projets perso** à terme (pas seul
 
 1. **`deploy/infra/`** — Postgres 17 **partagé**, une base + un utilisateur par projet (pas de conteneur DB dédié par projet). Réseau Docker `shared-postgres` (créé ici, `external: true` ailleurs). Aucun port publié sur l'hôte — joignable uniquement depuis les conteneurs du réseau. `init/01-inseconds.sh` crée la base `inseconds` au tout premier démarrage (les scripts `docker-entrypoint-initdb.d/*.sh` ne rejouent jamais sur un volume déjà initialisé — ajouter un futur projet = `CREATE DATABASE`/`CREATE USER` manuel, cf. `deploy/infra/README.md`).
 2. **`deploy/caddy/`** — reverse proxy **partagé**, HTTPS automatique, un seul point d'entrée public (80/443) pour tout le VPS. Réseau `caddy-net` (même pattern que `shared-postgres`). Image Caddy **custom** (`Dockerfile`, build `xcaddy` + modules `caddy-dns/cloudflare` + `WeidiDeng/caddy-cloudflare-ip`, cf. piège 34) : le certificat Let's Encrypt est validé par **challenge DNS-01** (Caddy crée un TXT temporaire via l'API Cloudflare) plutôt que HTTP-01 — ça permet de garder le **proxy Cloudflare actif (nuage orange)** sur les domaines, donc l'IP réelle du VPS n'est **jamais exposée publiquement dans le DNS** (`dig`/`nslookup` public ne renvoie que les IP Cloudflare). Nécessite `CF_API_TOKEN` scopé en écriture DNS sur la zone uniquement (pas le token de compte global). Conteneur Caddy tourne en **utilisateur non-root** (`uid 1000`, `CAP_NET_BIND_SERVICE` posée sur le binaire via `setcap` pour bind 80/443 sans root — corrige un finding Sonar "Security Rating", cf. `deploy/caddy/Dockerfile`). Le `Caddyfile` déclare en tête un bloc d'options globales (`servers { trusted_proxies cloudflare {...} }`, cf. piège 34) puis route par domaine (`{$FRONT_DOMAIN}`/`{$API_DOMAIN}`, valeurs réelles dans `deploy/caddy/.env`, non commité) vers `inseconds.front:8080`/`inseconds.api:8080` par nom de conteneur.
-3. **`docker-compose.prod.yml`** (v1, jusqu'à la bascule) puis **`docker-compose.prod-v2.yml`** (v2, projet Compose `inseconds-v2`, mêmes noms de conteneurs `inseconds.api`/`inseconds.front`) à la racine du repo, InSeconds uniquement — juste `api` + `front`, rejoint `shared-postgres` et `caddy-net` en réseaux externes. **Aucun port publié sur l'hôte** (Caddy est l'unique point d'entrée). Variables dans `.env.prod` (non commité, cf. `.env.prod.example`) : `INSECONDS_DB_PASSWORD` (doit être identique à celui de `deploy/infra/.env`), `BREVO_API_KEY`, optionnellement `OTEL_EXPORTER_OTLP_ENDPOINT`/`OTEL_EXPORTER_OTLP_HEADERS` (export OpenTelemetry vers Grafana Cloud — vides = aucun export), et pour la v2 `DATA_PROTECTION_CERTIFICATE_PASSWORD` (certificat `secrets/dataprotection.pfx` du checkout, lisible par l'uid/gid 1654 de l'image ; la bascule s'arrête sans) et `CSP_MODE` (`report-only` par défaut, `enforce` ensuite, #300).
+3. **`docker-compose.prod.yml`** (v1, jusqu'à la bascule du 16/10/2026) puis **`docker-compose.prod-v2.yml`** (v2, projet Compose `inseconds-v2`, mêmes noms de conteneurs `inseconds.api`/`inseconds.front`) à la racine du repo, InSeconds uniquement — juste `api` + `front`, rejoint `shared-postgres` et `caddy-net` en réseaux externes. **Aucun port publié sur l'hôte** (Caddy est l'unique point d'entrée). Variables dans `.env.prod` (non commité, cf. `.env.prod.example`) : `INSECONDS_DB_PASSWORD` (doit être identique à celui de `deploy/infra/.env`), `BREVO_API_KEY`, optionnellement `OTEL_EXPORTER_OTLP_ENDPOINT`/`OTEL_EXPORTER_OTLP_HEADERS` (export OpenTelemetry vers Grafana Cloud — vides = aucun export), et pour la v2 `DATA_PROTECTION_CERTIFICATE_PASSWORD` (certificat `secrets/dataprotection.pfx` du checkout, lisible par l'uid/gid 1654 de l'image ; la bascule s'arrête sans) et `CSP_MODE` (`report-only` par défaut, `enforce` ensuite, #300).
 
 **Ajouter un futur projet** = créer sa base (`deploy/infra`), ajouter un bloc domaine dans `deploy/caddy/Caddyfile` (+ `caddy reload`), et son propre `docker-compose.prod.yml` rejoignant les deux réseaux externes — **aucun redéploiement d'InSeconds n'est déclenché**, chaque stack ne touche que ses propres conteneurs.
 
@@ -218,6 +216,8 @@ Deuxième instance d'InSeconds sur le même VPS, pour tester une branche avant `
 ### Bascule v1 → v2
 
 Workflow manuel **« Bascule v2 »** (`.github/workflows/bascule-v2.yml`, `workflow_dispatch`, `target` = `staging` ou `prod`, confirmation par saisie), qui exécute `deploy/vps/switch-to-v2.sh` sur le VPS : préparation sans arrêt (certificat Data Protection, image, migrations v2), arrêt de l'API actuelle, import des données (`deploy/migration-v2/`), clé Data Protection neuve, historique figé, remplacement des conteneurs par la v2 sous les mêmes noms (`docker-compose.prod-v2.yml`, projet Compose `inseconds-v2` ; Caddy inchangé), santé, puis ouverture (`mark-opened.sql`). Au moindre écart avant l'ouverture, retour arrière : la v1 repart (`docker-compose.prod.yml`), ses tables n'ayant jamais été modifiées. Les anciennes routes de la v1 répondent `410 common.new_version`. **`deploy.sh prod` reste en v1 tant que le marqueur `.bascule-v2-done` (racine du checkout, hors git) n'existe pas** ; la bascule le pose à la fin, et les push sur `main` déploient alors la v2. Se lance depuis `env/staging` pour la répétition (copie fraîche de la prod, `simulate_failure` pour répéter le retour arrière) et depuis `main` pour la prod, jamais entre 22 h 30 et 1 h UTC. GitHub ne liste un workflow manuel que s'il existe sur la branche par défaut : `main` porte un remplaçant minimal de `bascule-v2.yml` (PR #302), la vraie version vit sur `env/staging` (choisir cette branche dans « Use workflow from » pour la répétition). Répétée avec succès sur le staging le 2026-10-12 (retour arrière simulé + deux passages réels, jalon J5). Détail : `deploy/migration-v2/README.md` § « La bascule », `docs/refonte-v2/DEVELOPPEMENT.md` § G2 et § 9 (actions à faire avant la bascule en prod).
+
+**Faite en prod le 16/10/2026** (run « Bascule v2 » #5, vert à 07:43 UTC, environ 1 min 30). La première tentative s'est arrêtée en préparation, avant l'arrêt de la v1 : `secrets/dataprotection.pfx` n'était pas lisible par l'uid/gid 1654 de l'image (`sudo chgrp 1654 … && sudo chmod 640 …`, cf. `.env.prod.example`) ; la seconde est passée. Reste après la bascule : première nuit (tâches de 23 h, 0 h, 0 h 05 sur healthchecks.io), puis J+1 : vider l'`AuthToken` v1 (`UPDATE "Players" SET "AuthToken" = gen_random_uuid();`). Suivi : #234.
 
 ### Sauvegardes de la base
 
@@ -269,7 +269,7 @@ infra_pw=$(grep '^INSECONDS_DB_PASSWORD=' deploy/infra/.env | cut -d= -f2-)
 docker run --rm --network shared-postgres -e PGPASSWORD="$infra_pw" postgres:17-alpine \
   psql -h shared-postgres -U inseconds -d inseconds \
   -c "UPDATE players.accounts SET is_admin = true WHERE email = 'quelqu-un@example.com';"
-# Avant la bascule (prod en v1) : UPDATE "Players" SET "IsAdmin" = true WHERE "Email" = '…';
+# Ancien schéma v1 (avant la bascule du 16/10/2026, inutile maintenant) : UPDATE "Players" SET "IsAdmin" = true WHERE "Email" = '…';
 ```
 
 ## Conventions Git
@@ -277,7 +277,7 @@ docker run --rm --network shared-postgres -e PGPASSWORD="$infra_pw" postgres:17-
 - **Pas de `Co-Authored-By: Claude` dans les commits**, jamais
 - **Author ET committer de CHAQUE commit doivent être l'utilisateur, jamais Claude** — l'identité git par défaut de cet environnement (`user.name`/`user.email`, ex. `Claude <noreply@anthropic.com>`) ne doit **jamais** apparaître dans l'historique, ni comme author ni comme committer, aucune exception. `git commit --author="<nom> <email>"` seul est **insuffisant** : ça ne fixe que l'author, le committer retombe silencieusement sur `user.name`/`user.email` de la config git locale (ne jamais modifier cette config globale, cf. règles de sécurité git). Poser explicitement les deux avant chaque commit, ex. `GIT_AUTHOR_NAME="..." GIT_AUTHOR_EMAIL="..." GIT_COMMITTER_NAME="..." GIT_COMMITTER_EMAIL="..." git commit -m "..."` (variables d'environnement locales à la commande, pas de `git config`). Vérifier après coup avec `git log --format='%an <%ae> | %cn <%ce>' -1`. Si des commits déjà poussés ont un committer incorrect, les corriger (`git filter-branch --env-filter ...` sur la plage concernée, jamais `rebase -i`) puis `git push --force-with-lease` sur la branche de travail (jamais sur `main`).
 - Préférer commits atomiques, messages clairs (FR ou EN, peu importe)
-- Branche de travail : `feat/<sujet>` (ex: `feat/redis-cache`), jamais de commit direct sur `main` ni `env/staging`. Cible des PR : `env/staging` pour la v2 jusqu'à la bascule (puis `main`, flux normal rétabli en I2), `main` pour un correctif urgent de la v1 (cf. [v2 et v1](#v2-et-v1--où-en-est-le-dépôt)). Une demande de suivi = un commit de plus sur la même branche
+- Branche de travail : `feat/<sujet>` (ex: `feat/redis-cache`), jamais de commit direct sur `main` ni `env/staging`. Cible des PR : `env/staging` pour la v2 tant que la v1 n'est pas supprimée (puis `main`, flux normal rétabli en I2) ; `env/staging` est relié à `main` depuis la PR #332 du 16/10/2026, `main` pour un correctif urgent de la v1 (cf. [v2 et v1](#v2-et-v1--où-en-est-le-dépôt)). Une demande de suivi = un commit de plus sur la même branche
 
 ## CI / GitHub Actions
 
@@ -299,7 +299,7 @@ Le fichier `sonar-project.properties` racine est conservé uniquement comme docu
 - **Job `nginx-headers-v2`** : construit et sert l'image nginx du front v2, vérifie `Cache-Control` (bundles immuables, `no-cache` pour l'index, les traductions et les fichiers du service worker), les en-têtes de sécurité, la CSP et le `Content-Type` de `robots.txt`/`sitemap.xml` (`scripts/check-nginx-headers.sh`). Seul job à tester la config nginx (piège 20).
 - **Job `e2e-parity`** : compare les listes `playwright test --list` des fronts v1 et v2 (`scripts/check-e2e-parity.mjs`) ; un écart doit être justifié dans `e2e/parity-exceptions.json`. Disparaît en I2.
 
-**Jobs v1** (jusqu'à I2) : `back`, `unit-tests`, `front`, `unit-tests-front`, `integration-tests`, `e2e`, `nginx-headers` — mêmes rôles, sur `src/back` et `src/front` (détail : `git show b38825d:CLAUDE.md`).
+**Jobs de l'ancienne version** (`back`, `unit-tests`, `front`, `unit-tests-front`, `integration-tests`, `e2e`, `nginx-headers`) : ils testent le code mort `src/back` et `src/front` et disparaissent avec lui en I2.
 
 - **Job `changes`** : `dorny/paths-filter`, sorties `v2` (lance `back-v2`, `front-v2`, `e2e-v2` et `nginx-headers-v2`, tous ensemble) et `e2e` (lance `e2e-parity`). Push sur une branche de travail : comparaison avec `env/staging` (merge-base, donc tous les changements de la branche) ; push sur `main`/`env/staging` : avec le commit d'avant le push ; PR : avec la branche cible.
 - **Job `CI OK`** (`ci-ok`, `if: always()`) : agrège tous les jobs, échoue si l'un a échoué ou a été annulé, un job sauté compte comme réussi. **Tout nouveau job doit être ajouté à ses `needs`.**
@@ -327,7 +327,7 @@ Runners Ubuntu, jobs en parallèle (les E2E après les builds). Setup .NET via `
 - **nuget** : même logique (`nuget-minor-patch` groupé, majeures individuelles). `directory: "/src/back"` (corrigé le 2026-09-27, relevé par la revue de code du 2026-09-25, M18 — pointait sur `/`, la racine du repo, où il n'y a aucun `.csproj`/`.sln*` : Dependabot n'y trouvait donc jamais de dépendance NuGet à surveiller, le groupe `nuget-minor-patch` ne produisait silencieusement aucune PR).
 - **github-actions** : ajouté (pas groupé, peu de mises à jour attendues) — tient à jour les versions des actions (`actions/checkout`, etc.), complète le durcissement CI du piège Sonar `S8543`/`S6505` (versions non épinglées, cf. plus haut).
 
-**v1 gelée** : les entrées `nuget /src/back` et `npm /src/front/InSeconds.Client` ignorent les montées de version majeure (`ignore` sur `version-update:semver-major`, G6a #312), jusqu'à la suppression de la v1 (I2).
+**Code mort** : les entrées `nuget /src/back` et `npm /src/front/InSeconds.Client` ignorent les montées de version majeure (G6a #312) et sont supprimées avec lui en I2.
 
 **Refonte v2** : la v2 a ses propres entrées `nuget`/`npm` (`src/v2/back`, `src/v2/front/InSeconds.Client`, `target-branch: env/staging`, étiquette `refonte-v2`, mêmes groupes que la v1, `@ngrx/signals` dans le groupe `angular-v2`).
 
@@ -344,7 +344,7 @@ Runners Ubuntu, jobs en parallèle (les E2E après les builds). Setup .NET via `
 
 Les numéros sont stables : le code, les tests et les autres CLAUDE.md y font référence. Un piège que la v2 a fait disparaître garde sa ligne, marquée **Retiré**, avec la raison. Le récit complet de chaque incident (dates, symptômes, correctif v1) est dans l'historique : `git show b38825d:CLAUDE.md`. Un piège qui concerne le code garde **un test nommé** (règle de la refonte).
 
-1. **Helper Visual Studio dans le conteneur API (v1 seulement, disparaît en I2)** — lancé par le `.dcproj`, VS injecte `DistrolessHelper` comme PID 1 et l'API v1 ne démarre pas : `docker compose down && docker compose up -d`. La v2 ne tourne pas dans le compose de dev.
+1. **Retiré (v2)** — helper Visual Studio dans le conteneur de l'ancienne API : la v2 ne tourne pas dans le compose de dev.
 2. **Healthcheck PostgreSQL** — `pg_isready` dans le conteneur (`docker-compose.yml`, `deploy/infra`).
 3. **Retiré (v2)** — le polling de fichiers pour le hot-reload dans le conteneur Windows ne concerne que l'API v1 dans `docker-compose.yml`.
 4. **Retiré (v2)** — CORS à mettre à jour quand le port du front change : en dev et en E2E, le front v2 passe par le proxy d'`ng serve` (même origine, aucune origine CORS). Les origines de confiance des fronts locaux sont dans `Auth:TrustedOrigins` de l'hôte de test (piège 22).
@@ -406,7 +406,7 @@ Vue fonctionnelle ; le détail technique de chaque point est dans `src/v2/back/C
 
 ## À venir
 
-- **Bascule en prod** (phase H, #234) puis le nettoyage (I1 : tables v1 et routes en 410 ; I2 : code v1, jobs CI v1, `src/v2` → `src`, exclusion de duplication Sonar ; I3 : `legacy_tokens` et middleware de transition). Actions de Clément avant la bascule : `docs/refonte-v2/DEVELOPPEMENT.md` § 9.
+- **Après la bascule du 16/10/2026** (phase H, #234 : reste la première nuit et le J+1, vider l'`AuthToken` v1) : le nettoyage (I1 : tables v1 et routes en 410 ; I2 : code v1, jobs CI v1, `src/v2` → `src`, exclusion de duplication Sonar ; I3 : `legacy_tokens` et middleware de transition). Détail : `docs/refonte-v2/DEVELOPPEMENT.md` § 9.
 - **CSP bloquante** après la mise en prod (#300).
 - **Mode Runs** (après la v2) : l'architecture lui réserve un module et un domaine, rien n'est créé avant.
 - Le reste : [`docs/TACHES.md`](docs/TACHES.md).
