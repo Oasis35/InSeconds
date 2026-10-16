@@ -61,6 +61,17 @@ cd ~/apps/InSeconds && ./deploy/vps/drop-v1-tables.sh prod
 
 Le script demande de retaper le nom de la cible. En prod, il lance d'abord `deploy/infra/backup.sh archive` (sauvegarde complète envoyée dans `archive/` sur R2, jamais supprimée par la rotation, cf. `deploy/infra/README.md` § Sauvegarde archivée) et ne supprime rien si l'archive échoue. Puis `drop-v1-tables.sql` : garde `opened_at`, refus si `public` contient une table que l'import ne connaît pas, suppression des onze tables v1 (ordre des clés étrangères, sans `CASCADE`), rejouable. L'API n'est pas arrêtée : la v2 ne lit jamais `public`. Tests : `MigrationTests/DropV1TablesTests`.
 
+## Suppression des tables v1 (I1)
+
+Sur le VPS, depuis le checkout de la cible, une fois la v2 ouverte :
+
+```bash
+cd ~/apps/InSeconds-staging && ./deploy/vps/drop-v1-tables.sh staging
+cd ~/apps/InSeconds && ./deploy/vps/drop-v1-tables.sh prod
+```
+
+Le script demande de retaper le nom de la cible. En prod, il lance d'abord `deploy/infra/backup.sh archive` (sauvegarde complète envoyée dans `archive/` sur R2, jamais supprimée par la rotation, cf. `deploy/infra/README.md` § Sauvegarde archivée) et ne supprime rien si l'archive échoue. Puis `drop-v1-tables.sql` : garde `opened_at`, refus si `public` contient une table que l'import ne connaît pas, suppression des onze tables v1 (ordre des clés étrangères, sans `CASCADE`), rejouable. L'API n'est pas arrêtée : la v2 ne lit jamais `public`. Tests : `MigrationTests/DropV1TablesTests`.
+
 ## L'import complet, dans l'ordre (G1)
 
 Ce que la bascule (G2) et le staging enchaînent, v1 arrêtée et API v2 pas encore démarrée :
