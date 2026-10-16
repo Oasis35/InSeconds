@@ -2,7 +2,7 @@
 
 30/09/2026. Ce plan découpe le chantier en PR, dans l'ordre. Le « quoi » (modèle, architecture, règles, import, sécurité) est dans [PLAN.md](PLAN.md). Ici, on ne répète que ce qui sert à ordonner le travail.
 
-**Go donné le 30/09 pour A1 (PR #204).** Chaque étape suivante attend le go de Clément.
+**Go donné le 30/09 pour A1 (PR #204).** Chaque étape suivante attendait le go de Clément. **La v2 est en production depuis le 16/10/2026** (phase H faite) ; reste la phase I, le nettoyage.
 
 ---
 
@@ -427,6 +427,8 @@ Choix actés à cette occasion (sans code) : un seul `DailyGameStore` ; pas de t
 
 Le retour arrière reste possible tant que personne n'a joué en v2 (§ 10.3 du plan détaillé).
 
+**Faite le 16/10/2026** (run « Bascule v2 » #5, vert à 07:43 UTC ; première tentative arrêtée en préparation par les droits du `.pfx`, la v1 n'a pas été touchée). Reste la première nuit, puis le J+1 (#234). Les droits de `secrets/dataprotection.pfx` (lisible par l'uid/gid 1654) sont à vérifier avant tout nouveau déploiement de la v2 sur un autre hôte.
+
 ---
 
 ## 11. Phase I : après la mise en prod
@@ -438,6 +440,13 @@ Le retour arrière reste possible tant que personne n'a joué en v2 (§ 10.3 du 
 | Dans la foulée | **I2** : suppression de `src/back`, `src/front` et des jobs CI v1 ; déplacement de `src/v2` dans `src` ; chemins CI, Docker, Dependabot et Sonar mis à jour, dont le retrait de l'exclusion de duplication SonarCloud `src/front/**, src/back/**` (posée dans l'UI pour la PR A4, #244) ; flux Git normal rétabli |
 | J+90 | **I3** : retrait du middleware de transition et de `legacy_tokens` ; suppression des anciennes clés Data Protection non chiffrées |
 | Ensuite | mode Runs, dans son fil |
+
+**Fait en I1 (#235, PR vers `env/staging` le 16/10/2026, avancée par Clément : rien ne part en prod avant quelques jours) :**
+- **Routes v1 en `410` retirées** (`LegacyRoutes`, `ErrorCodes.NewVersion`, `new-version.interceptor` du front et sa traduction) : elles répondent 404. Le test de fumée sonde à la place `/api/auth/dev-login` en GET (404 attendu ; présent, 405 sans rien exécuter), ce que les 410 empêchaient.
+- **Copie prod → staging des schémas v2** (`deploy/vps/copy-prod-db-to-staging.sh`, préalable noté sur #235) : depuis la bascule, la prod écrit dans les schémas v2 ; l'ancienne copie (tables v1 de `public` puis import) donnait un staging figé au 16/10 et casserait une fois les tables v1 supprimées. Schémas `players`, `catalogue`, `daily`, `infra` (sans `data_protection_keys`) supprimés au staging puis restaurés, migrations du staging, `staging-anonymize.sql`, clé Data Protection neuve. Répétée en local sur deux bases (copie, migrations, démarrage de l'API sur la copie).
+- **Suppression des tables v1** : `deploy/migration-v2/drop-v1-tables.sql` (garde `opened_at`, refus sur une table inconnue de `public`, sans `CASCADE`, rejouable ; `DropV1TablesTests`) lancé par `deploy/vps/drop-v1-tables.sh <staging|prod>`, **à la main** : en prod, après `deploy/infra/backup.sh archive` (nouvelle sous-commande : sauvegarde envoyée dans `archive/` sur R2, jamais supprimée par la rotation), rien n'est supprimé si l'archive échoue.
+- **Retirés** : le workflow « Bascule v2 », `deploy/vps/switch-to-v2.sh` et `import-to-staging.sh` (la répétition recopiait `public` avec l'ancienne copie ; la bascule est faite et ne peut plus être rejouée une fois les tables supprimées). Les scripts d'import et `MigrationTests` restent jusqu'à I2.
+- **Reste (Clément, sur le VPS)** : une fois la PR déployée, `./deploy/vps/drop-v1-tables.sh staging` dans `~/apps/InSeconds-staging` ; puis, après le J+1 et le merge vers `main`, `./deploy/vps/drop-v1-tables.sh prod` dans `~/apps/InSeconds`. Le J+1 (vider l'`AuthToken` v1) devient sans objet une fois les tables supprimées.
 
 ---
 

@@ -13,26 +13,17 @@ fail=0
 ok() { echo "OK   $1"; }
 ko() { echo "FAIL $1" >&2; fail=1; }
 
-# S9 : routes de l'hôte de test (InSeconds.Api.Testing) absentes. /api/e2e/reset est sondée en GET alors
-# qu'elle n'existe qu'en POST : présente, elle répondrait 405 sans rien exécuter (jamais de vrai reset de la
-# base). /api/auth/dev-login n'est pas sondée : /api/auth/… est une ancienne route de la v1 (LegacyRoutes),
-# qui répond 410 en GET même si l'hôte de test était déployé, et un POST l'exécuterait. Le contrôle de
-# l'image en CI (job back-v2) couvre les deux.
-code=$(curl -s -o /dev/null -w '%{http_code}' "$api/api/e2e/reset")
-if [[ "$code" == "404" ]]; then
-  ok "/api/e2e/reset absent (404)"
-else
-  ko "/api/e2e/reset répond HTTP $code au lieu de 404 : hôte de test déployé ? (S9)"
-fi
-
-# G2 : les routes de la v1 répondent 410 common.new_version (un onglet resté ouvert sur l'ancien front
-# se voit proposer de recharger). Sondée en GET : la route /api/settings n'existe plus en v2.
-code=$(curl -s -o /dev/null -w '%{http_code}' "$api/api/settings")
-if [[ "$code" == "410" ]]; then
-  ok "/api/settings (route de la v1) répond 410"
-else
-  ko "/api/settings répond HTTP $code au lieu de 410 : routes de la v1 non gérées ? (G2)"
-fi
+# S9 : routes de l'hôte de test (InSeconds.Api.Testing) absentes. Sondées en GET alors qu'elles n'existent
+# qu'en POST : présentes, elles répondraient 405 sans rien exécuter (jamais de vrai reset de la base ni de
+# connexion). Le contrôle de l'image en CI (job back-v2) les couvre aussi.
+for route in /api/e2e/reset /api/auth/dev-login; do
+  code=$(curl -s -o /dev/null -w '%{http_code}' "$api$route")
+  if [[ "$code" == "404" ]]; then
+    ok "$route absent (404)"
+  else
+    ko "$route répond HTTP $code au lieu de 404 : hôte de test déployé ? (S9)"
+  fi
+done
 
 # S15 : en-têtes posés par l'API (InSeconds.Infrastructure/Http/SecurityHeaders.cs).
 headers=$(curl -s -D - -o /dev/null "$api/health" | tr -d '\r')

@@ -1,7 +1,7 @@
 # InSeconds v2 : plan détaillé de la refonte complète
 
 - **Date :** 30/09/2026
-- **Statut :** plan de référence de la v2, tenu à jour au fil des PR (go donné le 30/09, chaque étape attend toujours le go de Clément). Avancement : ticket #205 et ses sous-tickets. Relecture de cohérence code / plan du 13/10 : écarts corrigés ici ou suivis par les tickets #312 à #319 (§ 13).
+- **Statut :** plan de référence de la v2, **en production depuis le 16/10/2026** (bascule faite, § 10.2), tenu à jour au fil des PR (go donné le 30/09, chaque étape attend toujours le go de Clément). Avancement : ticket #205 et ses sous-tickets. Relecture de cohérence code / plan du 13/10 : écarts corrigés ici ou suivis par les tickets #312 à #319 (§ 13).
 - **Ce document regroupe tout :** le modèle de données, le back, le front, le mode Runs, le plan de développement, la reprise des données et la bascule. Il remplace, comme référence, les documents du 29/09 (`plan-refonte-complete`, `refonte-back`, `refonte-back-solid`, `refonte-modele-donnees-et-front`, `refonte-front`), qui restent disponibles pour l'historique de la réflexion.
 - **Base :** code de `env/staging` au 30/09/2026, fil « Refonte globale du back », fil « Nouveau mode de jeu » (Runs), fil « Store Angular pertinent ? ».
 
@@ -849,6 +849,8 @@ Les étapes 4 à 8 peuvent se découper en plusieurs PR chacune (back, puis fron
 | 5 | Surveillance Grafana (erreurs, 4xx inhabituels, jobs de la nuit suivante). | la journée et la nuit |
 
 **Réalisé par le workflow « Bascule v2 »** (G2, `deploy/vps/switch-to-v2.sh`, détail dans `deploy/migration-v2/README.md`) : les étapes 1 à 3 ci-dessus, plus la clé Data Protection neuve, le gel de l'historique et le marqueur qui fait déployer la v2 par `main`.
+
+**Réalisée le 16/10/2026** : workflow « Bascule v2 » (run #5, `target = prod`, depuis `main`), vert à 07:43 UTC en environ 1 min 30. La première tentative s'est arrêtée en préparation, avant l'arrêt de la v1 (`secrets/dataprotection.pfx` illisible par l'uid/gid 1654 de l'image, corrigé par `chgrp` + `chmod 640` sur le VPS, cf. `.env.prod.example`) ; la seconde est passée. Contrôles rapides faits (cookie existant conservé, admin, email de connexion ; pas de partie en cours à reprendre ce jour-là). Reste : la première nuit, puis au J+1 l'`AuthToken` v1 vidé (S7). Suivi : #234.
 
 **Onglets restés ouverts :** pendant quelques semaines, les anciennes routes (`/api/sessions…`, `/api/stats/today`…) renvoient `410` avec le code `common.new_version`. L'ancien front l'affiche comme une erreur avec rechargement, et le nouveau front se recharge tout seul au premier moment sûr dès que `SwUpdate` détecte une nouvelle version (§ 6.6).
 

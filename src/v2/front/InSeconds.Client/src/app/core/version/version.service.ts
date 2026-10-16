@@ -43,8 +43,7 @@ function pathOf(url: string): string {
  *   qui ne change que la query string ne compte pas). Jamais avec une fenêtre ouverte ;
  * - au démarrage et au retour de l'onglet au premier plan : on vérifie s'il en existe une. Au démarrage, sans cet appel, le
  *   service worker attendait qu'il n'y ait plus de requête en cours pour vérifier (environ 25 s mesurées) ;
- * - état irrécupérable du service worker, ou code `common.new_version` renvoyé par l'API (anciennes routes) :
- *   `markUpdateAvailable()`, même mise en attente, plus le bandeau « Recharger / Plus tard » en secours ;
+ * - état irrécupérable du service worker : `markUpdateAvailable()`, même mise en attente, plus le bandeau « Recharger / Plus tard » en secours ;
  * - garde-fou : un second rechargement automatique moins d'une minute après le précédent (déploiement cassé) n'a pas lieu,
  *   le bandeau s'affiche à la place.
  * Service worker désactivé (dev, tests, navigateur sans support) : rien n'est surveillé.

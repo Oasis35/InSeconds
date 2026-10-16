@@ -16,7 +16,7 @@ set -euo pipefail
 target="${1:-prod}"
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 
-# La prod reste en v1 jusqu'à la bascule (workflow « Bascule v2 », deploy/vps/switch-to-v2.sh) : tant que le
+# La prod restait en v1 jusqu'à la bascule (16/10/2026 ; workflow « Bascule v2 » retiré en I1, #235) : tant que le
 # marqueur .bascule-v2-done n'existe pas, un push sur main redéploie la v1 (docker-compose.prod.yml), jamais
 # la v2 sans import. La bascule pose le marqueur une fois la v2 ouverte aux joueurs ; ensuite, les déploiements
 # de main sont ceux de la v2. INSECONDS_V2=1 force ce mode (posé par la bascule elle-même, avant le marqueur).

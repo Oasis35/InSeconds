@@ -4,6 +4,9 @@
 #
 #   ./backup.sh                       sauvegarde : dump, vérification, rotation locale,
 #                                     envoi chiffré vers R2 et signal à healthchecks.io si configurés
+#   ./backup.sh archive               sauvegarde gardée sans limite de durée : dump, vérification, envoi
+#                                     chiffré dans archive/ sur R2 (R2 obligatoire), jamais supprimée
+#                                     par la rotation (ex. : avant la suppression des tables v1, #235)
 #   ./backup.sh list-remote           liste les sauvegardes présentes sur R2
 #   ./backup.sh fetch <nom>           télécharge et déchiffre une sauvegarde de R2 dans BACKUP_DIR
 #                                     (ex. : ./backup.sh fetch monthly/inseconds-2026-10-01T030000Z.dump)
@@ -163,15 +166,27 @@ verify_dump() { # verify_dump <fichier> : lisible par pg_restore et contient des
 
 # ---------- commandes ----------
 
-backup() {
+prepare_backup_dir() { # dossier local et verrou partagés par backup et archive
   [[ -n "$PGPASSWORD" ]] || fail "INSECONDS_DB_PASSWORD manquant dans $ENV_FILE."
-  local use_r2=false
-  if r2_configured; then use_r2=true; fi
-
   mkdir -p "$BACKUP_DIR"
   chmod 700 "$BACKUP_DIR"
   exec 9> "$BACKUP_DIR/.lock"
   flock -n 9 || fail "une sauvegarde est déjà en cours."
+}
+
+dump_database() { # dump_database <nom> : dump vérifié dans BACKUP_DIR, écrit d'abord dans $tmp_dump
+  local name="$1"
+  log "Dump de la base $DB_NAME (tous schémas)..."
+  ( umask 077; pg pg_dump -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -Fc > "$tmp_dump" )
+  verify_dump "$tmp_dump"
+  mv "$tmp_dump" "$BACKUP_DIR/$name"
+  log "Sauvegarde locale : $BACKUP_DIR/$name"
+}
+
+backup() {
+  local use_r2=false
+  if r2_configured; then use_r2=true; fi
+  prepare_backup_dir
 
   local name
   name="inseconds-$(date -u +%Y-%m-%dT%H%M%SZ).dump"
@@ -180,11 +195,7 @@ backup() {
   # Signal d'échec à toute sortie en erreur (le signal de succès est envoyé explicitement à la fin).
   trap 'status=$?; rm -f "$tmp_dump"; if (( status != 0 )); then hc_signal fail; fi' EXIT
 
-  log "Dump de la base $DB_NAME (tous schémas)..."
-  ( umask 077; pg pg_dump -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -Fc > "$tmp_dump" )
-  verify_dump "$tmp_dump"
-  mv "$tmp_dump" "$BACKUP_DIR/$name"
-  log "Sauvegarde locale : $BACKUP_DIR/$name"
+  dump_database "$name"
 
   log "Rotation locale : dumps de plus de $LOCAL_KEEP_DAYS j supprimés."
   find "$BACKUP_DIR" -maxdepth 1 -name 'inseconds-*.dump' ! -name "$name" \
@@ -198,6 +209,22 @@ backup() {
 
   hc_signal ok
   log "Sauvegarde terminée."
+}
+
+archive() { # sauvegarde gardée sans limite de durée sur R2 (archive/), hors de toute rotation
+  r2_configured || fail "R2 non configuré dans $ENV_FILE : une archive doit quitter le VPS."
+  prepare_backup_dir
+
+  local name
+  name="inseconds-$(date -u +%Y-%m-%dT%H%M%SZ).dump"
+  tmp_dump="$BACKUP_DIR/.$name.part"
+  trap 'rm -f "$tmp_dump"' EXIT
+
+  dump_database "$name"
+  log "Envoi chiffré vers R2 (archive/$name)..."
+  rclone_in rcat -q "r2crypt:archive/$name" < "$BACKUP_DIR/$name"
+  [[ -n "$(rclone_run lsf r2crypt:archive/ --include "$name")" ]] || fail "archive/$name absente de R2 après l'envoi."
+  log "Archive terminée : archive/$name (jamais supprimée par la rotation)."
 }
 
 restore_test() { # restore_test [fichier] : restauration complète dans une base jetable
@@ -228,12 +255,14 @@ list_remote() {
   r2_configured || fail "R2 non configuré dans $ENV_FILE."
   log "daily/ :"; rclone_run lsl r2crypt:daily/
   log "monthly/ :"; rclone_run lsl r2crypt:monthly/
+  # (lsl échoue tant qu'archive/ n'existe pas sur un stockage local ; sur R2, liste vide.)
+  log "archive/ :"; rclone_run lsl r2crypt:archive/ 2> /dev/null || true
 }
 
-fetch() { # fetch <daily/… ou monthly/…> : copie déchiffrée dans BACKUP_DIR
+fetch() { # fetch <daily/…, monthly/… ou archive/…> : copie déchiffrée dans BACKUP_DIR
   local path="${1:-}"
-  [[ "$path" =~ ^(daily|monthly)/inseconds-[0-9TZ-]+\.dump$ ]] \
-    || fail "attendu : daily/<nom>.dump ou monthly/<nom>.dump (cf. ./backup.sh list-remote)."
+  [[ "$path" =~ ^(daily|monthly|archive)/inseconds-[0-9TZ-]+\.dump$ ]] \
+    || fail "attendu : daily/<nom>.dump, monthly/<nom>.dump ou archive/<nom>.dump (cf. ./backup.sh list-remote)."
   r2_configured || fail "R2 non configuré dans $ENV_FILE."
   mkdir -p "$BACKUP_DIR"
   chmod 700 "$BACKUP_DIR"
@@ -247,8 +276,9 @@ fetch() { # fetch <daily/… ou monthly/…> : copie déchiffrée dans BACKUP_DI
 
 case "${1:-backup}" in
   backup) backup ;;
+  archive) archive ;;
   list-remote) list_remote ;;
   fetch) fetch "${2:-}" ;;
   restore-test) restore_test "${2:-}" ;;
-  *) fail "commande inconnue : $1 (attendu : backup, list-remote, fetch ou restore-test)" ;;
+  *) fail "commande inconnue : $1 (attendu : backup, archive, list-remote, fetch ou restore-test)" ;;
 esac

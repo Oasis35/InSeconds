@@ -15,8 +15,6 @@ export interface AppError {
 export const NETWORK_ERROR_CODE = 'common.network';
 /** Réponse d'erreur sans `code` lisible (proxy, page HTML, bug). */
 export const UNEXPECTED_ERROR_CODE = 'common.unexpected';
-/** Renvoyé par les anciennes routes après la bascule : une nouvelle version du front existe. */
-export const NEW_VERSION_ERROR_CODE = 'common.new_version';
 
 interface ProblemDetailsFields {
   code?: unknown;

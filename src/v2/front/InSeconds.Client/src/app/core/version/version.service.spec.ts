@@ -268,12 +268,4 @@ describe('VersionService', () => {
     expect(checkForUpdate).not.toHaveBeenCalled();
     expect(reload).not.toHaveBeenCalled();
   });
-
-  it('reste utilisable par le code new_version même sans service worker', () => {
-    const service = create(false);
-
-    service.markUpdateAvailable();
-
-    expect(service.updateAvailable()).toBe(true);
-  });
 });
