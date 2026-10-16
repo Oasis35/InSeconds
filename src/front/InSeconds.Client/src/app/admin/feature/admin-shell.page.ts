@@ -9,13 +9,14 @@ import { AdminCounts } from '../data-access/admin-counts';
 import { DEPLOYED_AT } from '../../core/shell/deployed-at';
 import { HeaderSlot } from '../../core/shell/app-header/header-slot';
 import { ADMIN_TABS, AdminTab } from './admin-tabs';
+import { ButtonComponent } from '../../ui/button/button.component';
 import { DecorBackgroundComponent } from '../../ui/decor-background/decor-background.component';
 
 /**
  * Coquille de l'admin (`/admin/**`) : l'accès, puis les onglets. L'admin n'est pas un mécanisme
  * séparé : c'est un rôle sur le compte du joueur (le même cookie, la même connexion par lien
  * magique). Trois états, que l'API revérifie de toute façon à chaque requête :
- * - pas de compte connecté : invitation à se connecter ;
+ * - pas de compte connecté : invitation à se connecter (texte centré, bouton orange de la DA) ;
  * - compte sans le rôle : accès refusé ;
  * - admin : la barre des onglets, l'onglet ouvert, puis la déconnexion.
  * L'identifiant du navigateur est affiché dans tous les cas (repérer ses propres parties).
@@ -23,7 +24,7 @@ import { DecorBackgroundComponent } from '../../ui/decor-background/decor-backgr
  */
 @Component({
   selector: 'app-admin-shell-page',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, TranslatePipe, DatePipe, BrowserIdComponent, DecorBackgroundComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, TranslatePipe, DatePipe, BrowserIdComponent, DecorBackgroundComponent, ButtonComponent],
   providers: [ProfileStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -45,16 +46,16 @@ import { DecorBackgroundComponent } from '../../ui/decor-background/decor-backgr
 
       @if (session.loaded()) {
         @if (!session.isLinked()) {
-          <section class="w-full max-w-2xl flex flex-col gap-3" data-testid="admin-gate">
+          <section class="w-full max-w-2xl flex flex-col items-center gap-3 text-center" data-testid="admin-gate">
             <h2 class="text-lg font-semibold" style="color:var(--text-hi)">{{ 'admin.notLoggedIn' | translate }}</h2>
             <p class="text-sm" style="color:var(--text-muted)">{{ 'admin.notLoggedInBody' | translate }}</p>
-            <a routerLink="/account/login" class="text-sm underline" style="color:var(--text-indigo)">{{ 'admin.goToLogin' | translate }}</a>
+            <a appButton routerLink="/account/login" class="mt-2">{{ 'admin.goToLogin' | translate }}</a>
           </section>
         } @else if (!session.isAdmin()) {
-          <section class="w-full max-w-2xl flex flex-col gap-3" data-testid="admin-gate">
+          <section class="w-full max-w-2xl flex flex-col items-center gap-3 text-center" data-testid="admin-gate">
             <h2 class="text-lg font-semibold" style="color:var(--text-hi)">{{ 'admin.accessDenied' | translate }}</h2>
             <p class="text-sm" style="color:var(--text-muted)">{{ 'admin.accessDeniedBody' | translate }}</p>
-            <a routerLink="/daily" class="text-sm underline" style="color:var(--text-indigo)">{{ 'admin.backToGame' | translate }}</a>
+            <a appButton routerLink="/daily" class="mt-2">{{ 'admin.backToGame' | translate }}</a>
           </section>
         } @else {
           <!-- Onglets = routes enfants ; replaceUrl : pas une entrée d'historique par clic d'onglet.

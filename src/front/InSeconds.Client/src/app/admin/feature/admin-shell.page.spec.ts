@@ -54,7 +54,7 @@ describe('AdminShellPage', () => {
     const { element } = await open(null);
 
     expect(text(element)).toContain('admin.notLoggedIn');
-    expect(element.querySelector('[data-testid="admin-gate"] a[href="/account/login"]')).not.toBeNull();
+    expect(element.querySelector('[data-testid="admin-gate"] a[href="/account/login"]')?.classList).toContain('app-button--primary');
     expect(element.querySelector('#child')).toBeNull();
   });
 
