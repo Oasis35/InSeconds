@@ -8,6 +8,7 @@ import {
   FakePlayersApi, fakePlayersApi, linkedPlayer, providePlayersApiFake,
 } from '../../account/data-access/testing/fake-players-api';
 import { SessionStore, SessionPlayer } from '../../core/session/session.store';
+import { HeaderSlot } from '../../core/shell/app-header/header-slot';
 import { AdminCounts } from '../data-access/admin-counts';
 import { AdminShellPage } from './admin-shell.page';
 import { ADMIN_ROUTES } from './admin.routes';
@@ -39,11 +40,21 @@ describe('AdminShellPage', () => {
 
   const text = (element: HTMLElement) => (element.textContent ?? '').replace(/\s+/g, ' ');
 
+  it("efface l'en-tête global (pas d'avatar en haut à droite) et le rend en partant", async () => {
+    const { harness } = await open(admin);
+    const slot = TestBed.inject(HeaderSlot);
+
+    expect(slot.takenOver()).toBe(true);
+
+    harness.fixture.destroy();
+    expect(slot.takenOver()).toBe(false);
+  });
+
   it('invite un visiteur à se connecter', async () => {
     const { element } = await open(null);
 
     expect(text(element)).toContain('admin.notLoggedIn');
-    expect(element.querySelector('[data-testid="admin-gate"] a[href="/account/login"]')).not.toBeNull();
+    expect(element.querySelector('[data-testid="admin-gate"] a[href="/account/login"]')?.classList).toContain('app-button--primary');
     expect(element.querySelector('#child')).toBeNull();
   });
 

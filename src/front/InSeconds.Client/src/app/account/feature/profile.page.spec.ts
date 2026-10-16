@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
 import { SessionStore } from '../../core/session/session.store';
+import { HeaderSlot } from '../../core/shell/app-header/header-slot';
 import { ModalService } from '../../ui/modal/modal.service';
 import { ToastService } from '../../ui/toast/toast.service';
 import { FakePlayersApi, device, fakePlayersApi, linkedPlayer, problem, providePlayersApiFake } from '../data-access/testing/fake-players-api';
@@ -44,6 +45,16 @@ describe('ProfilePage', () => {
   const emailSave = (f: Fixture) => query<HTMLButtonElement>(f, 'form:nth-of-type(2) button[type="submit"]')!;
   const buttonLabelled = (f: Fixture, key: string) =>
     [...(f.nativeElement as HTMLElement).querySelectorAll('button')].find(b => b.textContent?.includes(key))!;
+
+  it("efface l'en-tête global (pas d'avatar en haut à droite) et le rend en partant", async () => {
+    const fixture = await render();
+    const slot = TestBed.inject(HeaderSlot);
+
+    expect(slot.takenOver()).toBe(true);
+
+    fixture.destroy();
+    expect(slot.takenOver()).toBe(false);
+  });
 
   it('affiche le pseudo et l\'adresse du compte', async () => {
     const fixture = await render();
@@ -272,16 +283,10 @@ describe('ProfilePage', () => {
     });
   });
 
-  describe('identifiant navigateur', () => {
-    it('est réservé aux admins', async () => {
-      expect(query(await render(), 'app-browser-id')).toBeNull();
-    });
+  it("n'affiche pas l'identifiant navigateur, même à un admin (il est dans l'admin)", async () => {
+    const admin = { ...linkedPlayer, isAdmin: true };
+    const fixture = await render({ getMe: vi.fn(async () => admin) }, admin);
 
-    it('s\'affiche pour un admin', async () => {
-      const admin = { ...linkedPlayer, isAdmin: true };
-      const fixture = await render({ getMe: vi.fn(async () => admin) }, admin);
-
-      expect(query(fixture, 'app-browser-id')).not.toBeNull();
-    });
+    expect(query(fixture, 'app-browser-id')).toBeNull();
   });
 });

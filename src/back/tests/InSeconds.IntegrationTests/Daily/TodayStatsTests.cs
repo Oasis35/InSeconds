@@ -97,12 +97,12 @@ public class TodayStatsTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(($"Artiste {firstTrack}", $"Titre {firstTrack}", 1000L + firstTrack), (first.Artist, first.Title, first.DeezerTrackId));
         Assert.Contains("abcdef0123456789", first.CoverUrl, StringComparison.Ordinal);
         // Les autres : un à 1 s, un à 2 s, personne n'a raté ; moyenne 1,5 s.
-        Assert.Equal((0d, 1.5, 0), (first.FailureRatePercent, first.AverageSecondsWhenCorrect, first.NotFoundCount));
+        Assert.Equal((1.5, 0), (first.AverageSecondsWhenCorrect, first.NotFoundCount));
         Assert.Equal([0, 1, 0, 1, 0, 0, 0], first.GuessTimeDistribution.Select(b => b.Count));
         // Sa propre réponse.
         Assert.Equal((true, true, 1m, 850), (first.ArtistCorrect, first.TitleCorrect, first.ListenedSeconds, first.Score));
-        // Le deuxième morceau : un trouvé, un raté, 50 % d'échec.
-        Assert.Equal((50d, 1), (stats.Tracks[1].FailureRatePercent, stats.Tracks[1].NotFoundCount));
+        // Le deuxième morceau : un trouvé, un raté.
+        Assert.Equal(1, stats.Tracks[1].NotFoundCount);
     }
 
     [Fact]

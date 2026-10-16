@@ -152,7 +152,6 @@ function toAnswered(position: number, r: SubmitAnswerResponse): AnsweredTrack {
     deezerTrackId: r.deezerTrackId,
     coverUrl: r.coverUrl ?? null,
     averageSecondsWhenCorrect: r.averageSecondsWhenCorrect ?? null,
-    failureRatePercent: r.failureRatePercent,
     distribution: toBuckets(r.guessTimeDistribution),
     notFoundCount: r.notFoundCount,
   };
@@ -172,7 +171,6 @@ function toResumed(a: ResumedAnswer): AnsweredTrack {
     coverUrl: a.coverUrl ?? null,
     // La reprise ne redonne pas les chiffres des autres joueurs : le récap les lit dans les statistiques du jour.
     averageSecondsWhenCorrect: null,
-    failureRatePercent: null,
     distribution: [],
     notFoundCount: 0,
   };
@@ -209,7 +207,6 @@ function toStats(s: TodayStatsResponse): DayStats {
       title: t.title,
       deezerTrackId: t.deezerTrackId,
       coverUrl: t.coverUrl ?? null,
-      failureRatePercent: t.failureRatePercent,
       averageSecondsWhenCorrect: t.averageSecondsWhenCorrect ?? null,
       artistCorrect: t.artistCorrect ?? null,
       titleCorrect: t.titleCorrect ?? null,

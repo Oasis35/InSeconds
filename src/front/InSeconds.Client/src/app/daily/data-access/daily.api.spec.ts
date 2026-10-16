@@ -81,7 +81,7 @@ describe('DailyApi', () => {
   describe('submitAnswer', () => {
     const response = {
       artistCorrect: true, titleCorrect: true, score: 850, correctArtist: 'A', correctTitle: 'T', deezerTrackId: 5, coverUrl: 'c',
-      listenedSeconds: 1, averageSecondsWhenCorrect: undefined, failureRatePercent: 10, guessTimeDistribution: [{ durationSeconds: 1, count: 2 }],
+      listenedSeconds: 1, averageSecondsWhenCorrect: undefined, guessTimeDistribution: [{ durationSeconds: 1, count: 2 }],
       notFoundCount: 3, hintLevelUsed: 0, hintPenaltyPercentApplied: 0, completed: false,
     } as SubmitAnswerResponse;
     const answer = { position: 2, listenedSeconds: 1, wasExtended: false, artist: null, title: 'T' };

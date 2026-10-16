@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { FormField, FormRoot, form, validate } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AppError } from '../../core/errors/app-error';
+import { HeaderSlot } from '../../core/shell/app-header/header-slot';
 import { errorMessageKey } from '../../core/errors/error-messages';
 import { LanguageService } from '../../core/i18n/language.service';
 import { SessionStore } from '../../core/session/session.store';
@@ -16,7 +17,6 @@ import { ActionStatus, ProfileStore } from '../data-access/profile.store';
 import { isPlausibleEmail, normalizeEmail, sameEmail } from '../domain/email';
 import { normalizePseudo, pseudoIssue } from '../domain/pseudo';
 import { DeviceListComponent } from '../ui/device-list.component';
-import { BrowserIdComponent } from './browser-id.component';
 
 function errorOf(status: ActionStatus): AppError | null {
   return typeof status === 'object' ? status.error : null;
@@ -26,12 +26,13 @@ function errorOf(status: ActionStatus): AppError | null {
  * `/account/profile` : pseudo, changement d'email (confirmé par un lien envoyé à la nouvelle
  * adresse), appareils connectés, déconnexion. Réservé aux comptes (garde de la route). La série et
  * les parties jouées s'y ajoutent avec le module Daily.
+ * Pas d'avatar en haut à droite (il mènerait à cette page) : le profil prend `HeaderSlot`, l'en-tête global s'efface.
  */
 @Component({
   selector: 'app-profile-page',
   imports: [
     FormField, FormRoot, RouterLink, TranslatePipe, ButtonComponent, DecorBackgroundComponent, ErrorMessageComponent,
-    DeviceListComponent, BrowserIdComponent,
+    DeviceListComponent,
   ],
   providers: [ProfileStore, DevicesStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -46,6 +47,12 @@ export class ProfilePage implements OnInit {
   private readonly toast = inject(ToastService);
   private readonly translate = inject(TranslateService);
   private readonly router = inject(Router);
+
+  constructor() {
+    const headerSlot = inject(HeaderSlot);
+    headerSlot.takeOver(this);
+    inject(DestroyRef).onDestroy(() => headerSlot.release(this));
+  }
 
   /** Champ pseudo : mêmes règles que le back, sur la valeur sans espaces autour. */
   protected readonly pseudoForm = form(signal({ pseudo: this.session.player()?.pseudo ?? '' }), path => {

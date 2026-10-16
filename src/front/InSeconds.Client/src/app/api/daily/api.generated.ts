@@ -1453,7 +1453,6 @@ export interface SubmitAnswerResponse {
     coverUrl: string | undefined;
     listenedSeconds: number;
     averageSecondsWhenCorrect: number | undefined;
-    failureRatePercent: number;
     guessTimeDistribution: GuessBucketResponse[];
     notFoundCount: number;
     hintLevelUsed: number;
@@ -1503,7 +1502,6 @@ export interface TrackStatResponse {
     title: string;
     deezerTrackId: number;
     coverUrl: string | undefined;
-    failureRatePercent: number;
     averageSecondsWhenCorrect: number | undefined;
     artistCorrect: boolean | undefined;
     titleCorrect: boolean | undefined;

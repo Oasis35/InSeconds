@@ -62,7 +62,7 @@ src/front/InSeconds.Client/
     │   ├── storage/           # StoragePort (localStorage sans exception)
     │   ├── version/           # VersionService (SwUpdate)
     │   ├── health/            # HealthService (sonde /health)
-    │   └── shell/             # en-tête (lien de compte `<app-account-link>` : avatar ou « Se connecter »), `HeaderSlot` (une page qui a son propre en-tête efface l'en-tête global), overlay « Service indisponible », avis d'ancienne adresse, bandeau de mise à jour, page de confidentialité et 404
+    │   └── shell/             # en-tête (lien de compte `<app-account-link>` : avatar ou « Se connecter »), `HeaderSlot` (une page qui a son propre en-tête, ou qui n'en veut pas comme l'admin et le profil, efface l'en-tête global), overlay « Service indisponible », avis d'ancienne adresse, bandeau de mise à jour, page de confidentialité et 404
     └── ui/                    # kit de la DA, purement visuel
         ├── button/            # <button appButton variant="primary|secondary|danger|ghost">
         ├── modal/             # ModalService (CDK Dialog) : open, openSheet, confirm ; <app-modal-frame>

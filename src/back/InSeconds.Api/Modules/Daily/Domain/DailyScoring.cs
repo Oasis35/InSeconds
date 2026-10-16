@@ -53,7 +53,7 @@ public sealed class DurationScoringPolicy : IDailyScoringPolicy
 
 /// <summary>
 /// Les statistiques d'un morceau, ce que la révélation montre juste après la réponse (v1 : <c>SubmitAnswerHandler.BuildAnswerStats</c>) :
-/// la moyenne d'écoute de ceux qui l'ont trouvé, le taux d'échec, et « en combien de temps les autres ont trouvé ».
+/// la moyenne d'écoute de ceux qui l'ont trouvé, le nombre de ceux qui ne l'ont pas trouvé, et « en combien de temps les autres ont trouvé ».
 /// </summary>
 public static class TrackAnswerStats
 {
@@ -62,7 +62,6 @@ public static class TrackAnswerStats
         ArgumentNullException.ThrowIfNull(prior);
         ArgumentNullException.ThrowIfNull(outcome);
         var found = outcome.FoundAny;
-        var total = prior.Total + 1;
         var foundCount = prior.FoundCount + (found ? 1 : 0);
         var foundSum = prior.FoundSeconds + (found ? outcome.ListenedSeconds : 0);
         var notFound = prior.NotFoundCount + (found ? 0 : 1);
@@ -78,7 +77,6 @@ public static class TrackAnswerStats
 
         return new AnswerStats(
             foundCount == 0 ? null : (double)(foundSum / foundCount),
-            Math.Round((double)notFound / total * 100, 1),
             distribution,
             notFound);
     }
@@ -100,4 +98,4 @@ public sealed record PriorAnswerStats(
 public sealed record DurationBucket(decimal Seconds, int Count);
 
 public sealed record AnswerStats(
-    double? AverageSecondsWhenFound, double FailureRatePercent, IReadOnlyList<DurationBucket> GuessTimeDistribution, int NotFoundCount);
+    double? AverageSecondsWhenFound, IReadOnlyList<DurationBucket> GuessTimeDistribution, int NotFoundCount);

@@ -84,9 +84,5 @@
       </button>
       <a routerLink="/" class="py-2 text-center text-sm" style="color:var(--text-faint)">{{ 'account.profile.backToGame' | translate }}</a>
     </div>
-
-    @if (session.isAdmin()) {
-      <app-browser-id />
-    }
   </div>
 </main>

@@ -19,7 +19,6 @@ public sealed record TrackStatResponse(
     string Title,
     long DeezerTrackId,
     string? CoverUrl,
-    double FailureRatePercent,
     double? AverageSecondsWhenCorrect,
     bool? ArtistCorrect,
     bool? TitleCorrect,
@@ -141,7 +140,6 @@ public static class GetTodayStatsEndpoint
                 .ToList();
             return new TrackStatResponse(
                 t.Position, info.Artist, info.DisplayTitle, info.DeezerTrackId, info.CoverUrl,
-                a.Total == 0 ? 0 : Math.Round((1.0 - (double)a.Found / a.Total) * 100, 1),
                 a.Found == 0 ? null : Math.Round((double)(a.FoundListenedSum / a.Found), 1),
                 mine?.ArtistCorrect, mine?.TitleCorrect, mine?.ListenedSeconds, mine?.Score,
                 distribution, a.NotFound);

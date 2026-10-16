@@ -45,7 +45,6 @@ export class FinalRecapScreenComponent {
         titleCorrect: r.titleCorrect,
         listenedSeconds: r.listenedSeconds,
         averageSecondsWhenCorrect: own ? r.averageSecondsWhenCorrect : (stat?.averageSecondsWhenCorrect ?? r.averageSecondsWhenCorrect),
-        failureRatePercent: own ? (r.failureRatePercent ?? 0) : (stat?.failureRatePercent ?? r.failureRatePercent ?? 0),
         score: r.score,
         deezerTrackId: r.deezerTrackId,
         distribution: own ? r.distribution : (stat?.distribution ?? []),

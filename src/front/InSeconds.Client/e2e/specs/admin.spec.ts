@@ -12,7 +12,7 @@ test.describe('Admin — login', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await expect(admin.notLoggedInMessage).toBeVisible();
-    // L'en-tête de l'app propose aussi « Se connecter » : on vise le lien de l'écran d'accès.
+    // On vise le lien de l'écran d'accès (l'admin n'affiche pas l'en-tête global).
     await expect(page.getByTestId('admin-gate').getByRole('link', { name: /Se connecter/ })).toBeVisible();
   });
 
