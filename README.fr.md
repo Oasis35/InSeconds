@@ -32,7 +32,7 @@
 
 ## Démarrage rapide
 
-> Le dépôt contient deux versions : la **v2** (`src/v2/`, la référence, servie sur le staging) et la v1 (`src/back`, `src/front`), encore en prod jusqu'à la bascule puis supprimée. Ce qui suit concerne la v2. Pour la v1 : `git show b38825d:README.fr.md`.
+> Le dépôt contient deux versions : la **v2** (`src/v2/`, la référence, en prod depuis le 16/10/2026 et sur le staging) et la v1 (`src/back`, `src/front`), qui n'est plus servie et sera supprimée. Ce qui suit concerne la v2. Pour la v1 : `git show b38825d:README.fr.md`.
 
 ### Prérequis
 
@@ -99,8 +99,8 @@ InSeconds/
 │   └── front/                 # v1 (jusqu'à la suppression de la v1)
 ├── docker-compose.yml         # Dev : base (+ API v1)
 ├── docker-compose.staging.yml # Staging (v2)
-├── docker-compose.prod.yml    # Prod v1 jusqu'à la bascule
-├── docker-compose.prod-v2.yml # Prod après la bascule (workflow « Bascule v2 »)
+├── docker-compose.prod.yml    # Prod v1, plus utilisé depuis la bascule du 16/10/2026
+├── docker-compose.prod-v2.yml # Prod v2 (workflow « Bascule v2 »)
 └── README.md / README.fr.md
 ```
 

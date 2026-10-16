@@ -4,13 +4,13 @@
 
 ## Refonte v2 : jusqu'au bout
 
-- [ ] **Bascule en prod** (H, #234) — avant : `DATA_PROTECTION_CERTIFICATE_PASSWORD` dans `.env.prod`, Cloudflare Access sur `api.inseconds.cc/jobs`, créneau hors 22 h 30 – 1 h UTC (cf. `refonte-v2/DEVELOPPEMENT.md` § 9)
-- [ ] **Corrections de la relecture du 13/10, avant la bascule** (`audit/relecture-v2-coherence-2026-10-13.md`) — G6a #312 (copie prod → staging limitée à `public`, job CI `deploy` derrière « CI OK », Dependabot, commentaires CSP), G6b #313 (« Réessayer » déverrouille le son sur iPhone), G6c #314 (journaux compatibles avec les tableaux Grafana), G6d #315 (surveillance des tâches Hangfire)
-- [ ] **Recette iPhone : page zoomée et son qui coupe** (#233) — lire les messages `Viewport:` et `AudioStall:` dans Grafana (`/api/client-errors`), corriger, puis retirer ces deux diagnostics (`src/v2/front/CLAUDE.md` § Erreurs)
-- [ ] **Sauvegarde de la base juste avant la bascule** et timer `inseconds-backup` installé (cf. #234)
-- [ ] **CSP bloquante** (G3b, #300) — une semaine sans violation en prod en `report-only`, puis `CSP_MODE=enforce`
+- [x] **Bascule en prod** (H, #234) — faite le 16/10/2026 (run « Bascule v2 » #5, 07:43 UTC) ; reste la première nuit (tâches de 23 h, 0 h, 0 h 05 sur healthchecks.io) et, au J+1, vider l'`AuthToken` v1
+- [x] **Corrections de la relecture du 13/10, avant la bascule** (`audit/relecture-v2-coherence-2026-10-13.md`) — G6a #312 (copie prod → staging limitée à `public`, job CI `deploy` derrière « CI OK », Dependabot, commentaires CSP), G6b #313 (« Réessayer » déverrouille le son sur iPhone), G6c #314 (journaux compatibles avec les tableaux Grafana), G6d #315 (surveillance des tâches Hangfire)
+- [ ] **Recette iPhone : page zoomée et son qui coupe** (#233 fermé, recette validée le 16/10) — lire les messages `Viewport:` et `AudioStall:` dans Grafana (`/api/client-errors`), corriger si besoin, puis retirer ces deux diagnostics (`src/v2/front/CLAUDE.md` § Erreurs)
+- [x] **Sauvegarde de la base juste avant la bascule** et timer `inseconds-backup` installé (cf. #234)
+- [ ] **CSP bloquante** (G3b, #300) — une semaine sans violation en prod en `report-only` (depuis le 16/10, premier contrôle dès le 23/10), puis `CSP_MODE=enforce`
 - [ ] **Nettoyage après la bascule** — I1 (sauvegarde archivée, tables v1 de `public`, routes en 410), I2 (code et jobs CI v1, `src/v2` → `src`, exclusion de duplication SonarCloud `src/front/**, src/back/**`), I3 (`legacy_tokens`, middleware de transition, anciennes clés Data Protection)
-- [ ] **Profil : cartes Série / Parties jouées / Gels** (#283) — après la bascule (décision du 14/10 : la v2 part sans)
+- [ ] **Profil : cartes Série / Parties jouées / Gels** (#283) — à faire maintenant que la bascule est faite (décision du 14/10 : la v2 part sans)
 - [ ] **Petites dettes du front v2** — clés i18n de l'admin reprises de la v1 qui ne servent plus ; formats de date numériques qui ne suivent pas la langue ; `aria-label` des boutons ‹ › du tableau de bord
 
 ## Mode entraînement (anciens défis)

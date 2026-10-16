@@ -32,7 +32,7 @@
 
 ## Quick start
 
-> The repository holds two versions: **v2** (`src/v2/`, the reference, served on staging) and v1 (`src/back`, `src/front`), still in production until the switchover, then removed. What follows is about v2. For v1: `git show b38825d:README.md`.
+> The repository holds two versions: **v2** (`src/v2/`, the reference, in production since 2026-10-16 and on staging) and v1 (`src/back`, `src/front`), no longer served and to be removed. What follows is about v2. For v1: `git show b38825d:README.md`.
 
 ### Prerequisites
 
@@ -99,7 +99,7 @@ InSeconds/
 │   └── front/                 # v1 (until v1 is removed)
 ├── docker-compose.yml         # Dev: database (+ v1 API)
 ├── docker-compose.staging.yml # Staging (v2)
-├── docker-compose.prod.yml    # v1 production until the switchover
+├── docker-compose.prod.yml    # v1 production, unused since the 2026-10-16 switchover
 ├── docker-compose.prod-v2.yml # Production after the switchover ("Bascule v2" workflow)
 └── README.md / README.fr.md
 ```
