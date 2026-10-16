@@ -9,7 +9,7 @@
 - [ ] **CSP bloquante** (G3b, #300) — une semaine sans violation en prod en `report-only` (depuis le 16/10, premier contrôle dès le 23/10), puis `CSP_MODE=enforce`
 - [ ] **Nettoyage après la bascule** — I1 (sauvegarde archivée, tables v1 de `public`, routes en 410), I2 (code et jobs CI v1, `src/v2` → `src`, exclusion de duplication SonarCloud `src/front/**, src/back/**`), I3 (`legacy_tokens`, middleware de transition, anciennes clés Data Protection)
 - [ ] **Profil : cartes Série / Parties jouées / Gels** (#283) — à faire maintenant que la bascule est faite (décision du 14/10 : la v2 part sans)
-- [ ] **Petites dettes du front v2** — clés i18n de l'admin reprises de la v1 qui ne servent plus ; formats de date numériques qui ne suivent pas la langue ; `aria-label` des boutons ‹ › du tableau de bord
+- [ ] **Petites dettes du front v2** — clés i18n de l'admin qui ne servent plus ; formats de date numériques qui ne suivent pas la langue ; `aria-label` des boutons ‹ › du tableau de bord
 
 ## Mode entraînement (anciens défis)
 
@@ -32,7 +32,7 @@
 ## Infra & exploitation
 
 - [ ] **Grafana Cloud : alertes et tableau de bord** — l'export OpenTelemetry est en place (logs, traces, métriques, cf. `CLAUDE.md` § Ce que fait l'application) ; reste à configurer côté Grafana : alerte mail sur les logs `Error` (API + erreurs front), sonde externe de `https://api.inseconds.cc/health` (Synthetic Monitoring, prévient même si le VPS est à terre), tableau de bord simple (requêtes, temps de réponse, taux d'erreurs, mémoire)
-- [ ] **Bruit des erreurs de validation** — en v1, Wolverine loguait en `Error` (avec stack) chaque échec FluentValidation alors que l'API répondait un 400 normal : à revérifier sur la v2 (validation par Wolverine.Http) avant de créer les alertes « erreurs »
+- [ ] **Bruit des erreurs de validation** — Wolverine peut loguer en `Error` (avec stack) chaque échec FluentValidation alors que l'API répond un 400 normal : à vérifier sur la v2 (validation par Wolverine.Http) avant de créer les alertes « erreurs »
 - [ ] (optionnel) Collecteur Grafana Alloy sur le VPS pour remonter aussi les logs Caddy/nginx
 - [ ] **Sauvegardes de la base : mise en service sur le VPS** — `deploy/infra/backup.sh` + timer systemd (nuit 3 h UTC) sont prêts et les clés R2 sont dans `deploy/infra/.env` (2026-10-11) ; reste à lancer `./backup.sh` puis `./backup.sh restore-test`, installer le timer, créer l'alerte Grafana « aucune sauvegarde en 26 h » (cf. `deploy/infra/README.md` § Sauvegardes)
 - [ ] **Tâche récurrente de nettoyage des invités jamais joués** — tâche Hangfire nocturne (comme `players-purge-expired-tokens`) qui supprime logiquement les invités sans aucune partie au-delà d'un seuil (ex : 30 jours). Attention : la règle croise Players et Daily, qui ne se lisent que par leurs contrats
@@ -42,7 +42,7 @@
 
 - [ ] Tests sur vrai appareil iOS (Safari + Chrome iOS)
 - [ ] Tests sur vrai appareil Android (Chrome)
-- [ ] Vérifier l'audio en mode silencieux iOS (avec le lecteur v1 repris en v2, #309)
+- [ ] Vérifier l'audio en mode silencieux iOS (lecteur audio de #309)
 - [ ] Installation de la PWA sur l'écran d'accueil (iOS et Android)
 
 ## Polish & conformité

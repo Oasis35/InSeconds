@@ -8,14 +8,13 @@ InSeconds = blind test musical quotidien. N morceaux par jour (`Daily:TracksPerC
 
 Stack : .NET 10 / Wolverine / EF Core / PostgreSQL 17 / Hangfire côté back (monolithe modulaire), Angular 22 zoneless / NgRx SignalStore / Tailwind v4 / élément audio HTML côté front (PWA). **Hébergé sur un VPS OVH** (Debian 13, Gravelines) : front + API + PostgreSQL en conteneurs Docker derrière Caddy et Cloudflare, détail dans [Déploiement VPS](#déploiement-vps). Domaine public : `https://inseconds.cc` (API : `https://api.inseconds.cc`). **La page de rebond GitHub Pages (`oasis35.github.io/InSeconds`) a été retirée**, ne pas la recréer.
 
-## v2 et v1 : où en est le dépôt
+## État du dépôt
 
-Le code de référence est la **v2** (refonte complète, `src/v2/`), décrite par ce fichier et ses deux compagnons : [`src/v2/back/CLAUDE.md`](src/v2/back/CLAUDE.md) et [`src/v2/front/CLAUDE.md`](src/v2/front/CLAUDE.md). Plans et décisions : [`docs/refonte-v2/PLAN.md`](docs/refonte-v2/PLAN.md) (le « quoi ») et [`docs/refonte-v2/DEVELOPPEMENT.md`](docs/refonte-v2/DEVELOPPEMENT.md) (le découpage en PR, les décisions prises PR par PR). Avancement : ticket GitHub #205 et ses sous-tickets (étiquette `refonte-v2`).
+Le code de référence est la **v2** (`src/v2/`), en production, décrite par ce fichier et ses deux compagnons : [`src/v2/back/CLAUDE.md`](src/v2/back/CLAUDE.md) et [`src/v2/front/CLAUDE.md`](src/v2/front/CLAUDE.md). Plans et décisions : [`docs/refonte-v2/PLAN.md`](docs/refonte-v2/PLAN.md) (le « quoi ») et [`docs/refonte-v2/DEVELOPPEMENT.md`](docs/refonte-v2/DEVELOPPEMENT.md) (le découpage en PR, les décisions prises PR par PR). Avancement : ticket GitHub #205 et ses sous-tickets (étiquette `refonte-v2`).
 
 - **Staging** (`dev.inseconds.cc`) : sert la v2 depuis la PR A6.
 - **Prod** (`inseconds.cc`) : sert la **v2** depuis la bascule du **16/10/2026** (phase H, workflow « Bascule v2 », cf. [Bascule v1 → v2](#bascule-v1--v2)). Les push sur `main` déploient la v2.
-- **La v1 reste dans le dépôt jusqu'à la PR I2** (#236), qui supprime `src/back`, `src/front` et les jobs CI v1, puis déplace `src/v2` dans `src`. D'ici là, ses détails sont dans ses propres fichiers : [`src/back/InSeconds.Api/CLAUDE.md`](src/back/InSeconds.Api/CLAUDE.md), [`src/back/InSeconds.Deezer/CLAUDE.md`](src/back/InSeconds.Deezer/CLAUDE.md), [`features/game/CLAUDE.md`](src/front/InSeconds.Client/src/app/features/game/CLAUDE.md), [`features/admin/CLAUDE.md`](src/front/InSeconds.Client/src/app/features/admin/CLAUDE.md). La version de ce fichier qui décrivait la v1 en entier (conventions vertical slice, modèle à 10 tables, liste « Déjà implémenté ») est dans l'historique git : `git show b38825d:CLAUDE.md`.
-- **v1 gelée** : seulement des correctifs urgents, en PR **directement vers `main`** ; après chaque correctif, merger `main` dans `env/staging`. Un correctif v1 qui ajoute un E2E le recopie dans `src/v2/front/InSeconds.Client/e2e` (contrôle de parité, cf. CI).
+- **Code mort à supprimer** : `src/back`, `src/front` (l'ancienne version, plus servie) et les jobs CI qui s'y rapportent disparaissent à la PR I2 (#236), puis `src/v2` est déplacé dans `src`. Ne rien y ajouter ni corriger ; leur documentation vit dans leurs propres dossiers et part avec eux.
 - **PR de la v2** : vers `env/staging`, étiquette `refonte-v2`, description qui commence par `Closes #<ticket de l'étape>` puis `Part of #205`. La base n'étant pas `main`, GitHub ne ferme pas le ticket : le fermer à la main au merge.
 - Branches `main` et `env/staging` protégées (ruleset GitHub : PR obligatoire, pas de force-push ni de suppression, check « CI OK » exigé).
 
@@ -27,7 +26,6 @@ Le code de référence est la **v2** (refonte complète, `src/v2/`), décrite pa
 | Front v2 (`ng serve`) | **5176** |
 | API v2 de test des E2E en local / front des E2E en local | **5177** / **5178** (5175 / 5176 en CI) |
 | PostgreSQL | **5432** |
-| API v1 / front v1 (jusqu'à I2) | 5171 / 5173 |
 
 Tous les ports InSeconds en `51xx` par convention (4200 est pris par d'autres projets). Si tu modifies un port, propage partout : `launchSettings.json`, `angular.json`, `proxy*.conf.json`, `playwright.config.ts`, `Auth:TrustedOrigins` de l'hôte de test, READMEs.
 
@@ -35,9 +33,9 @@ Tous les ports InSeconds en `51xx` par convention (4200 est pris par d'autres pr
 
 ```
 InSeconds/
-├── docker-compose.yml              # dev local : PostgreSQL (+ l'API v1 jusqu'à I2)
+├── docker-compose.yml              # dev local : PostgreSQL
 ├── docker-compose.staging.yml      # staging (v2)
-├── docker-compose.prod.yml         # prod v1, plus utilisé depuis la bascule (supprimé en I2)
+├── docker-compose.prod.yml         # ancienne prod, plus utilisée (supprimée en I2)
 ├── docker-compose.prod-v2.yml      # prod v2, depuis la bascule du 16/10/2026 (mêmes noms de conteneurs)
 ├── deploy/
 │   ├── infra/                      # Postgres partagé du VPS, sauvegardes
@@ -45,13 +43,13 @@ InSeconds/
 │   ├── migration-v2/               # import v1 → v2 (scripts SQL, run-import.sh, README de la bascule)
 │   └── vps/                        # deploy.sh, smoke-test.sh, switch-to-v2.sh, copie prod → staging
 ├── docs/                           # COMMENCE_ICI (sommaire), GAMEPLAY_RULES (spec produit), TACHES, refonte-v2/
-├── scripts/                        # check-e2e-parity.mjs, run-e2e.ps1 (v1)
+├── scripts/                        # check-e2e-parity.mjs, run-e2e.ps1 (liés à l'ancienne version, supprimés en I2)
 ├── src/
 │   ├── v2/
 │   │   ├── back/                   # InSeconds.slnx : Api (modules), Infrastructure, Deezer, Api.Testing, tests/
 │   │   └── front/InSeconds.Client/ # app Angular v2
-│   ├── back/                       # v1, supprimé en I2
-│   └── front/                      # v1, supprimé en I2
+│   ├── back/                       # ancienne version, supprimée en I2
+│   └── front/                      # ancienne version, supprimée en I2
 └── README.md / README.fr.md
 ```
 
@@ -176,7 +174,7 @@ npm run generate-api         # clients NSwag, depuis les documents OpenAPI sauve
 E2E_DB_CONNECTION="Host=localhost;…;Database=inseconds_e2e;…" npm run e2e   # Playwright : démarre l'hôte de test (:5177) et ng serve (:5178)
 ```
 
-Détail des options de l'API (`--migrate-only`, `--rotate-data-protection-key`, `--freeze-day-stats`) : `src/v2/back/CLAUDE.md` § Démarrage. Les commandes de la v1 : `git show b38825d:CLAUDE.md` (§ Commandes courantes).
+Détail des options de l'API (`--migrate-only`, `--rotate-data-protection-key`, `--freeze-day-stats`) : `src/v2/back/CLAUDE.md` § Démarrage.
 
 ## Déploiement VPS
 
@@ -301,7 +299,7 @@ Le fichier `sonar-project.properties` racine est conservé uniquement comme docu
 - **Job `nginx-headers-v2`** : construit et sert l'image nginx du front v2, vérifie `Cache-Control` (bundles immuables, `no-cache` pour l'index, les traductions et les fichiers du service worker), les en-têtes de sécurité, la CSP et le `Content-Type` de `robots.txt`/`sitemap.xml` (`scripts/check-nginx-headers.sh`). Seul job à tester la config nginx (piège 20).
 - **Job `e2e-parity`** : compare les listes `playwright test --list` des fronts v1 et v2 (`scripts/check-e2e-parity.mjs`) ; un écart doit être justifié dans `e2e/parity-exceptions.json`. Disparaît en I2.
 
-**Jobs v1** (jusqu'à I2) : `back`, `unit-tests`, `front`, `unit-tests-front`, `integration-tests`, `e2e`, `nginx-headers` — mêmes rôles, sur `src/back` et `src/front` (détail : `git show b38825d:CLAUDE.md`).
+**Jobs de l'ancienne version** (`back`, `unit-tests`, `front`, `unit-tests-front`, `integration-tests`, `e2e`, `nginx-headers`) : ils testent le code mort `src/back` et `src/front` et disparaissent avec lui en I2.
 
 - **Job `changes`** : `dorny/paths-filter`, sorties `v2` (lance `back-v2`, `front-v2`, `e2e-v2` et `nginx-headers-v2`, tous ensemble) et `e2e` (lance `e2e-parity`). Push sur une branche de travail : comparaison avec `env/staging` (merge-base, donc tous les changements de la branche) ; push sur `main`/`env/staging` : avec le commit d'avant le push ; PR : avec la branche cible.
 - **Job `CI OK`** (`ci-ok`, `if: always()`) : agrège tous les jobs, échoue si l'un a échoué ou a été annulé, un job sauté compte comme réussi. **Tout nouveau job doit être ajouté à ses `needs`.**
@@ -329,7 +327,7 @@ Runners Ubuntu, jobs en parallèle (les E2E après les builds). Setup .NET via `
 - **nuget** : même logique (`nuget-minor-patch` groupé, majeures individuelles). `directory: "/src/back"` (corrigé le 2026-09-27, relevé par la revue de code du 2026-09-25, M18 — pointait sur `/`, la racine du repo, où il n'y a aucun `.csproj`/`.sln*` : Dependabot n'y trouvait donc jamais de dépendance NuGet à surveiller, le groupe `nuget-minor-patch` ne produisait silencieusement aucune PR).
 - **github-actions** : ajouté (pas groupé, peu de mises à jour attendues) — tient à jour les versions des actions (`actions/checkout`, etc.), complète le durcissement CI du piège Sonar `S8543`/`S6505` (versions non épinglées, cf. plus haut).
 
-**v1 gelée** : les entrées `nuget /src/back` et `npm /src/front/InSeconds.Client` ignorent les montées de version majeure (`ignore` sur `version-update:semver-major`, G6a #312), jusqu'à la suppression de la v1 (I2).
+**Code mort** : les entrées `nuget /src/back` et `npm /src/front/InSeconds.Client` ignorent les montées de version majeure (G6a #312) et sont supprimées avec lui en I2.
 
 **Refonte v2** : la v2 a ses propres entrées `nuget`/`npm` (`src/v2/back`, `src/v2/front/InSeconds.Client`, `target-branch: env/staging`, étiquette `refonte-v2`, mêmes groupes que la v1, `@ngrx/signals` dans le groupe `angular-v2`).
 
@@ -346,7 +344,7 @@ Runners Ubuntu, jobs en parallèle (les E2E après les builds). Setup .NET via `
 
 Les numéros sont stables : le code, les tests et les autres CLAUDE.md y font référence. Un piège que la v2 a fait disparaître garde sa ligne, marquée **Retiré**, avec la raison. Le récit complet de chaque incident (dates, symptômes, correctif v1) est dans l'historique : `git show b38825d:CLAUDE.md`. Un piège qui concerne le code garde **un test nommé** (règle de la refonte).
 
-1. **Helper Visual Studio dans le conteneur API (v1 seulement, disparaît en I2)** — lancé par le `.dcproj`, VS injecte `DistrolessHelper` comme PID 1 et l'API v1 ne démarre pas : `docker compose down && docker compose up -d`. La v2 ne tourne pas dans le compose de dev.
+1. **Retiré (v2)** — helper Visual Studio dans le conteneur de l'ancienne API : la v2 ne tourne pas dans le compose de dev.
 2. **Healthcheck PostgreSQL** — `pg_isready` dans le conteneur (`docker-compose.yml`, `deploy/infra`).
 3. **Retiré (v2)** — le polling de fichiers pour le hot-reload dans le conteneur Windows ne concerne que l'API v1 dans `docker-compose.yml`.
 4. **Retiré (v2)** — CORS à mettre à jour quand le port du front change : en dev et en E2E, le front v2 passe par le proxy d'`ng serve` (même origine, aucune origine CORS). Les origines de confiance des fronts locaux sont dans `Auth:TrustedOrigins` de l'hôte de test (piège 22).

@@ -15,7 +15,7 @@ InSeconds est un **blind test musical quotidien**. La lecture démarre au palier
 | Frontend | Angular 22 (standalone, zoneless, signals), NgRx SignalStore, Tailwind CSS v4, élément audio HTML (son), PWA (service worker) |
 | Musique | API Deezer (recherche, extraits de 30 s, pochettes), client découpé en ports avec cache |
 | Tests | xUnit v3 + Testcontainers, tests d'architecture (NetArchTest), Vitest en mode navigateur, Sheriff (frontières du front), Playwright |
-| CI | GitHub Actions (jobs v1 et v2 jusqu'à la suppression de la v1, check agrégateur « CI OK »), Dependabot, SonarCloud |
+| CI | GitHub Actions (check agrégateur « CI OK »), Dependabot, SonarCloud |
 | Observabilité | OpenTelemetry (logs, traces, métriques) → Grafana Cloud, erreurs front relayées par l'API |
 | Déploiement | VPS OVH (Debian) — front + API + Postgres en Docker derrière Caddy et Cloudflare, déploiement par la CI |
 
@@ -26,9 +26,9 @@ InSeconds est un **blind test musical quotidien**. La lecture démarre au palier
 - **Modèle de données** : schémas `players`, `catalogue`, `daily`, plus `infra`, `messaging` et `jobs`. Détail dans le [`CLAUDE.md`](../CLAUDE.md) racine.
 - **Anti-triche** : score calculé uniquement par le serveur, une partie par joueur et par défi, plancher d'écoute et niveau d'indice tenus par le serveur, rien qui identifie un morceau avant la réponse.
 
-## v2 et v1
+## État du dépôt
 
-La v2 (`src/v2/`) est la version de référence ; elle sert le staging et remplacera la v1 en prod à la bascule (phase H). La v1 (`src/back`, `src/front`) reste dans le dépôt jusqu'à la PR I2. Où en est le chantier : ticket GitHub #205.
+Le code de référence est dans `src/v2/` : il sert la prod depuis le 16/10/2026 et le staging. `src/back` et `src/front` sont du code mort, supprimé à la PR I2. Où en est le chantier : ticket GitHub #205.
 
 ## Où trouver quoi
 
@@ -45,7 +45,6 @@ Chaque information n'est écrite qu'à un seul endroit, pour éviter que des cop
 | Plan de la v2, décisions, découpage en PR | [`refonte-v2/PLAN.md`](refonte-v2/PLAN.md), [`refonte-v2/DEVELOPPEMENT.md`](refonte-v2/DEVELOPPEMENT.md) |
 | Import v1 → v2 et bascule | [`deploy/migration-v2/README.md`](../deploy/migration-v2/README.md) |
 | Postgres partagé, sauvegardes | [`deploy/infra/README.md`](../deploy/infra/README.md) |
-| Détail de la v1 (jusqu'à I2) | `src/back/InSeconds.Api/CLAUDE.md`, `src/back/InSeconds.Deezer/CLAUDE.md`, `src/front/…/features/game/CLAUDE.md`, `src/front/…/features/admin/CLAUDE.md` |
 
 `BACKEND_STRUCTURE_FR.md` et `FRONTEND_STRUCTURE_FR.md` ne sont plus que des renvois vers ces fichiers.
 

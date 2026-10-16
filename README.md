@@ -32,7 +32,7 @@
 
 ## Quick start
 
-> The repository holds two versions: **v2** (`src/v2/`, the reference, in production since 2026-10-16 and on staging) and v1 (`src/back`, `src/front`), no longer served and to be removed. What follows is about v2. For v1: `git show b38825d:README.md`.
+> The reference code lives in `src/v2/` (in production since 2026-10-16 and on staging). `src/back` and `src/front` are dead code from the previous version, to be removed.
 
 ### Prerequisites
 
@@ -90,16 +90,16 @@ Open `http://localhost:5176`.
 InSeconds/
 ├── deploy/                    # VPS: shared Postgres, Caddy, deploy scripts, v1 → v2 import
 ├── docs/                      # Documentation (FR): entry point, game rules, tasks, v2 plan
-├── scripts/                   # v1/v2 E2E parity check, v1 E2E runner
+├── scripts/                   # E2E parity check (previous version, removed with it)
 ├── src/
 │   ├── v2/
 │   │   ├── back/              # InSeconds.slnx: Api (modules), Infrastructure, Deezer, Api.Testing, tests/
 │   │   └── front/InSeconds.Client/  # Angular app (account, gameplay, daily, admin domains)
-│   ├── back/                  # v1 (until v1 is removed)
-│   └── front/                 # v1 (until v1 is removed)
-├── docker-compose.yml         # Dev: database (+ v1 API)
+│   ├── back/                  # previous version (to be removed)
+│   └── front/                 # previous version (to be removed)
+├── docker-compose.yml         # Dev: database
 ├── docker-compose.staging.yml # Staging (v2)
-├── docker-compose.prod.yml    # v1 production, unused since the 2026-10-16 switchover
+├── docker-compose.prod.yml    # previous production, unused (to be removed)
 ├── docker-compose.prod-v2.yml # Production after the switchover ("Bascule v2" workflow)
 └── README.md / README.fr.md
 ```
@@ -112,9 +112,9 @@ GitHub Actions workflow on every push (all branches) and every PR to `main`. v2 
 - **front-v2** — production build, Vitest tests, Sheriff boundaries, NSwag clients up to date
 - **e2e-v2** — Playwright against the test host
 - **nginx-headers-v2** — builds the frontend nginx image and checks cache and security headers, MIME types and the old-address redirect
-- **e2e-parity** — v1 and v2 E2E tests carry the same titles (differences justified)
+- **e2e-parity** — checks the E2E test titles against the previous version (removed with it)
 
-v1 jobs still run while v1 exists. The **"CI OK"** check aggregates them (it is the one branch protection requires). Stale runs are cancelled automatically. Details: [`CLAUDE.md`](CLAUDE.md) § CI.
+Jobs for the previous version run until it is removed. The **"CI OK"** check aggregates them (it is the one branch protection requires). Stale runs are cancelled automatically. Details: [`CLAUDE.md`](CLAUDE.md) § CI.
 
 ## Testing
 
@@ -142,7 +142,7 @@ cd src/v2/front/InSeconds.Client
 E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=<DB_PASSWORD>" npm run e2e
 ```
 
-`playwright.config.ts` starts the test host (port 5177) and `ng serve` (port 5178). **110 tests** across 26 files, carried over from v1 with the same titles (parity check): game, login, profile, streak and freezes, admin…
+`playwright.config.ts` starts the test host (port 5177) and `ng serve` (port 5178). **110 tests** across 26 files, game, login, profile, streak and freezes, admin…
 
 ## Documentation
 
