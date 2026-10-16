@@ -16,7 +16,7 @@ public class TrackAnswerStatsTests
     {
         var stats = TrackAnswerStats.Build(PriorAnswerStats.None, new RoundOutcome(true, false, 2, 0), Steps);
 
-        Assert.Equal((2d, 0d, 0), (stats.AverageSecondsWhenFound, stats.FailureRatePercent, stats.NotFoundCount));
+        Assert.Equal((2d, 0), (stats.AverageSecondsWhenFound, stats.NotFoundCount));
         Assert.Equal([0, 0, 0, 1, 0, 0, 0], stats.GuessTimeDistribution.Select(b => b.Count));
     }
 
@@ -26,7 +26,7 @@ public class TrackAnswerStatsTests
         var stats = TrackAnswerStats.Build(PriorAnswerStats.None, new RoundOutcome(false, false, 1, 0), Steps);
 
         Assert.Null(stats.AverageSecondsWhenFound);
-        Assert.Equal((100d, 1), (stats.FailureRatePercent, stats.NotFoundCount));
+        Assert.Equal(1, stats.NotFoundCount);
         Assert.All(stats.GuessTimeDistribution, b => Assert.Equal(0, b.Count));
     }
 
@@ -39,19 +39,8 @@ public class TrackAnswerStatsTests
         var stats = TrackAnswerStats.Build(prior, new RoundOutcome(true, true, 1, 0), Steps);
 
         Assert.Equal(6d / 4, stats.AverageSecondsWhenFound);
-        Assert.Equal((20d, 1), (stats.FailureRatePercent, stats.NotFoundCount));
+        Assert.Equal(1, stats.NotFoundCount);
         Assert.Equal([0, 3, 0, 0, 1, 0, 0], stats.GuessTimeDistribution.Select(b => b.Count));
-    }
-
-    [Fact]
-    public void TauxDEchec_ArrondiAUneDecimale()
-    {
-        // 1 échec sur 3 réponses : 33,3 %.
-        var stats = TrackAnswerStats.Build(Prior(found: 1, foundSeconds: 1, notFound: 0, (1m, 1)), new RoundOutcome(false, false, 1, 0), Steps);
-        Assert.Equal(50d, stats.FailureRatePercent);
-
-        var third = TrackAnswerStats.Build(Prior(found: 2, foundSeconds: 2, notFound: 0, (1m, 2)), new RoundOutcome(false, false, 1, 0), Steps);
-        Assert.Equal(33.3, third.FailureRatePercent);
     }
 
     [Fact]
