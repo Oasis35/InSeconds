@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Tests de l'import v1 → v2 (deploy/migration-v2, § 8.6 du plan v2) : base de forme v1 générée
-       depuis le code v1 (dotnet ef migrations script), import lancé par le vrai run-import.sh dans
+  <!-- Tests de l'import v1 → v2 (deploy/migration-v2, § 8.6 du plan v2) : base de forme v1 créée par
+       v1-schema.sql (généré depuis le code v1 avant sa suppression, I2), import lancé par le vrai run-import.sh dans
        le conteneur PostgreSQL, puis vérification du résultat et de la reprise des cookies v1. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -20,6 +20,10 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="v1-schema.sql" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

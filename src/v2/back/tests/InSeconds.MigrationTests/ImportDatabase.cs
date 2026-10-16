@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using InSeconds.Api.Infrastructure.Hosting;
 using Npgsql;
 using Testcontainers.PostgreSql;
@@ -10,14 +9,11 @@ namespace InSeconds.MigrationTests;
 /// <summary>
 /// Un conteneur PostgreSQL (même version majeure que la prod) avec les scripts de
 /// <c>deploy/migration-v2</c> copiés dans <c>/import</c>, et une base neuve par test : schéma v1
-/// (script généré depuis le code v1, jamais une copie figée qui dériverait), puis migrations v2
-/// (<c>--migrate-only</c>, comme à la bascule).
+/// (<c>v1-schema.sql</c>, généré depuis le code v1 juste avant sa suppression en I2 : la v1 ne change plus),
+/// puis migrations v2 (<c>--migrate-only</c>, comme à la bascule).
 /// </summary>
 public sealed class ImportDatabase : IAsyncLifetime
 {
-    /// <summary>Script SQL du schéma v1 déjà généré (CI) ; sans lui, il est généré au démarrage des tests.</summary>
-    public const string V1SchemaVariable = "INSECONDS_V1_SCHEMA_SQL";
-
     private const string ImportDirectory = "/import";
 
     private readonly PostgreSqlContainer _container;
@@ -112,44 +108,9 @@ public sealed class ImportDatabase : IAsyncLifetime
         return value is null or DBNull ? default : (T)value;
     }
 
-    private static async Task<string> LoadV1SchemaAsync()
-    {
-        if (Environment.GetEnvironmentVariable(V1SchemaVariable) is { Length: > 0 } path)
-            return await File.ReadAllTextAsync(path);
-
-        // Le projet v1 n'est pas restauré par la solution v2 : sans restauration, dotnet ef ne lit pas ses métadonnées.
-        var v1Project = Path.Combine(RepositoryRoot, "src", "back", "InSeconds.Api", "InSeconds.Api.csproj");
-        var output = Path.Combine(Path.GetTempPath(), $"inseconds-v1-schema-{Guid.NewGuid():N}.sql");
-        await RunDotnetAsync(["restore", v1Project]);
-        await RunDotnetAsync(["ef", "migrations", "script", "--project", v1Project, "--output", output]);
-
-        try
-        {
-            return await File.ReadAllTextAsync(output);
-        }
-        finally
-        {
-            File.Delete(output);
-        }
-    }
-
-    /// <summary>Une commande dotnet sur le code v1 (son global.json, depuis src/back).</summary>
-    private static async Task RunDotnetAsync(string[] arguments)
-    {
-        var start = new ProcessStartInfo("dotnet", arguments)
-        {
-            WorkingDirectory = Path.Combine(RepositoryRoot, "src", "back"),
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
-        using var process = Process.Start(start)!;
-        var stdout = process.StandardOutput.ReadToEndAsync();
-        var stderr = process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync();
-        if (process.ExitCode != 0)
-            throw new InvalidOperationException(
-                $"Génération du schéma v1 en échec (dotnet {string.Join(' ', arguments)}) :{Environment.NewLine}{await stdout}{await stderr}");
-    }
+    /// <summary>Le schéma v1, copié à côté des tests (<c>v1-schema.sql</c>).</summary>
+    private static Task<string> LoadV1SchemaAsync() =>
+        File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "v1-schema.sql"));
 
     private static string FindRepositoryRoot()
     {
