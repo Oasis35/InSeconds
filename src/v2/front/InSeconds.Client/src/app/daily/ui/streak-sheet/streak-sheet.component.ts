@@ -11,6 +11,8 @@ export type StreakSheetVariant = 'linked' | 'protected' | 'guest';
 export interface StreakSheetData {
   streak: Streak;
   linked: boolean;
+  /** Parties terminées du compte, à côté du titre de la série ; rien d'affiché à 0 ou tant que l'état du jour n'est pas lu (vide). */
+  gamesPlayed: number | null;
   lang: string;
 }
 
@@ -49,6 +51,9 @@ export class StreakSheetComponent {
   /** « Série de 1 jour » / « Série de 12 jours ». */
   protected readonly streakTitleKey = `daily.streakFreeze.sheet.streakTitle.${pluralKey(this.data.streak.streak)}`;
   protected readonly missedKey = pluralKey(this.data.streak.missedDays);
+  protected readonly gamesPlayed = this.data.gamesPlayed;
+  /** « 1 partie » / « 112 parties ». */
+  protected readonly gamesPlayedKey = `daily.streakFreeze.sheet.gamesPlayed.${pluralKey(this.data.gamesPlayed ?? 0)}`;
 
   /** Progression vers le prochain gel, en % (0 juste après un gain). */
   protected readonly progressPercent = (() => {
