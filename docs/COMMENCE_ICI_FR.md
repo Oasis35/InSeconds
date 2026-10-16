@@ -43,7 +43,7 @@ Chaque information n'est écrite qu'à un seul endroit, pour éviter que des cop
 | Règles de jeu (scoring, anti-triche, série, indices) | [`GAMEPLAY_RULES_FR.md`](GAMEPLAY_RULES_FR.md) |
 | Ce qui reste à faire | [`TACHES.md`](TACHES.md) |
 | Plan de la v2, décisions, découpage en PR | [`refonte-v2/PLAN.md`](refonte-v2/PLAN.md), [`refonte-v2/DEVELOPPEMENT.md`](refonte-v2/DEVELOPPEMENT.md) |
-| Import v1 → v2 et bascule | [`deploy/migration-v2/README.md`](../deploy/migration-v2/README.md) |
+| Import v1 → v2, bascule (faite), suppression des tables v1 | [`deploy/migration-v2/README.md`](../deploy/migration-v2/README.md) |
 | Postgres partagé, sauvegardes | [`deploy/infra/README.md`](../deploy/infra/README.md) |
 
 `BACKEND_STRUCTURE_FR.md` et `FRONTEND_STRUCTURE_FR.md` ne sont plus que des renvois vers ces fichiers.

@@ -100,7 +100,7 @@ InSeconds/
 ├── docker-compose.yml         # Dev : base
 ├── docker-compose.staging.yml # Staging (v2)
 ├── docker-compose.prod.yml    # Ancienne prod, plus utilisée (à supprimer)
-├── docker-compose.prod-v2.yml # Prod v2 (workflow « Bascule v2 »)
+├── docker-compose.prod-v2.yml # Prod (v2, depuis la bascule du 16/10/2026)
 └── README.md / README.fr.md
 ```
 

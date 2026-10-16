@@ -1,6 +1,8 @@
 # Import v1 → v2
 
-Reprise des données de la v1 (schéma `public`) dans les schémas v2, § 8 de [`docs/refonte-v2/PLAN.md`](../../docs/refonte-v2/PLAN.md). Le même script sert au staging (répétitions) et à la prod (bascule).
+Reprise des données de la v1 (schéma `public`) dans les schémas v2, § 8 de [`docs/refonte-v2/PLAN.md`](../../docs/refonte-v2/PLAN.md). Le même script a servi au staging (répétitions) et à la prod (bascule).
+
+> **Après la bascule (16/10/2026) et la PR I1 (#235)** : l'import a servi, la v2 est ouverte en prod (`opened_at` posé, un nouvel import est refusé). Le workflow « Bascule v2 », `deploy/vps/switch-to-v2.sh` et `import-to-staging.sh` sont retirés ; « Copy prod DB to staging » copie désormais les schémas v2 de la prod, sans import (`deploy/vps/copy-prod-db-to-staging.sh`). Les tables v1 de `public` se suppriment par `deploy/vps/drop-v1-tables.sh` (cf. « Suppression des tables v1 »), après quoi l'import ne peut plus tourner. Les scripts d'import et leurs tests partent en I2 (#236). Les sections « Staging » et « La bascule » ci-dessous décrivent ce qui a été fait.
 
 ## Contenu
 
@@ -14,8 +16,8 @@ Reprise des données de la v1 (schéma `public`) dans les schémas v2, § 8 de [
 | `90-import-done.sql` | note l'import réussi (`imported_at`) |
 | `30-verify-day-stats.sql` | **après** `--freeze-day-stats` (pas dans `run-import.sh`) : chaque jour terminé a sa photo, aux compteurs de la v1, avec les paliers importés (G1) |
 | `mark-opened.sql` | à la bascule : note l'ouverture de la v2 aux joueurs (`opened_at`), qui arme la garde (G1) |
-| `staging-anonymize.sql` | staging seulement, lancé par `import-to-staging.sh` après l'import (`-v keep=<STAGING_KEEP_EMAIL>`) : seconde anonymisation des tables v2 (S8) : adresses et rôle admin (sauf l'adresse gardée), jetons, appareils, `legacy_tokens`, clés Data Protection, et la file de Wolverine dans `messaging` (messages à traiter, à envoyer **et en erreur**, qui gardent le corps du message) |
-| `import-to-staging.sh` | sur le VPS : arrête l'API staging, lance l'import, seconde anonymisation des tables v2 (`staging-anonymize.sql`), crée une clé Data Protection neuve, fige les statistiques de l'historique et les vérifie, relance l'API |
+| `staging-anonymize.sql` | staging seulement, lancé par `deploy/vps/copy-prod-db-to-staging.sh` après la copie des schémas v2 de la prod (`-v keep=<STAGING_KEEP_EMAIL>`, avant I1 : par `import-to-staging.sh` après l'import) : anonymisation des tables v2 (S8) : adresses et rôle admin (sauf l'adresse gardée), jetons, appareils, `legacy_tokens`, clés Data Protection, et la file de Wolverine dans `messaging` (messages à traiter, à envoyer **et en erreur**, qui gardent le corps du message) |
+| `drop-v1-tables.sql` | I1 (#235), lancé par `deploy/vps/drop-v1-tables.sh` : supprime les tables v1 de `public`, une seule transaction ; refusé tant que la v2 n'est pas notée ouverte (`opened_at`) ou si `public` contient une table inconnue |
 
 L'import se construit **module par module** : chaque PR d'import ajoute sa partie à `10-import.sql` et `20-verify.sql`, et ses tests à `src/v2/back/tests/InSeconds.MigrationTests`.
 
@@ -47,6 +49,17 @@ docker run --rm --network shared-postgres -v "$PWD/deploy/migration-v2:/import:r
 **Staging** : workflow manuel « Copy prod DB to staging », lancé depuis la branche `env/staging` (« Use workflow from »). Il copie `public` depuis la prod, anonymise les tables v1, lance l'import, puis anonymise les tables v2. Le workflow n'est listé que parce qu'il existe sur `main` (version v1, copie seule) ; c'est la version de la branche choisie qui s'exécute.
 
 **Bascule (G2)** : workflow manuel « Bascule v2 » (`.github/workflows/bascule-v2.yml`, `target` = `staging` ou `prod`), qui enchaîne tout ce qui suit autour de l'import et revient en arrière au moindre écart. Voir « La bascule (G2) » plus bas.
+
+## Suppression des tables v1 (I1)
+
+Sur le VPS, depuis le checkout de la cible, une fois la v2 ouverte :
+
+```bash
+cd ~/apps/InSeconds-staging && ./deploy/vps/drop-v1-tables.sh staging
+cd ~/apps/InSeconds && ./deploy/vps/drop-v1-tables.sh prod
+```
+
+Le script demande de retaper le nom de la cible. En prod, il lance d'abord `deploy/infra/backup.sh archive` (sauvegarde complète envoyée dans `archive/` sur R2, jamais supprimée par la rotation, cf. `deploy/infra/README.md` § Sauvegarde archivée) et ne supprime rien si l'archive échoue. Puis `drop-v1-tables.sql` : garde `opened_at`, refus si `public` contient une table que l'import ne connaît pas, suppression des onze tables v1 (ordre des clés étrangères, sans `CASCADE`), rejouable. L'API n'est pas arrêtée : la v2 ne lit jamais `public`. Tests : `MigrationTests/DropV1TablesTests`.
 
 ## L'import complet, dans l'ordre (G1)
 

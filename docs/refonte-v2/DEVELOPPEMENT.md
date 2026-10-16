@@ -441,6 +441,13 @@ Le retour arrière reste possible tant que personne n'a joué en v2 (§ 10.3 du 
 | J+90 | **I3** : retrait du middleware de transition et de `legacy_tokens` ; suppression des anciennes clés Data Protection non chiffrées |
 | Ensuite | mode Runs, dans son fil |
 
+**Fait en I1 (#235, PR vers `env/staging` le 16/10/2026, avancée par Clément : rien ne part en prod avant quelques jours) :**
+- **Routes v1 en `410` retirées** (`LegacyRoutes`, `ErrorCodes.NewVersion`, `new-version.interceptor` du front et sa traduction) : elles répondent 404. Le test de fumée sonde à la place `/api/auth/dev-login` en GET (404 attendu ; présent, 405 sans rien exécuter), ce que les 410 empêchaient.
+- **Copie prod → staging des schémas v2** (`deploy/vps/copy-prod-db-to-staging.sh`, préalable noté sur #235) : depuis la bascule, la prod écrit dans les schémas v2 ; l'ancienne copie (tables v1 de `public` puis import) donnait un staging figé au 16/10 et casserait une fois les tables v1 supprimées. Schémas `players`, `catalogue`, `daily`, `infra` (sans `data_protection_keys`) supprimés au staging puis restaurés, migrations du staging, `staging-anonymize.sql`, clé Data Protection neuve. Répétée en local sur deux bases (copie, migrations, démarrage de l'API sur la copie).
+- **Suppression des tables v1** : `deploy/migration-v2/drop-v1-tables.sql` (garde `opened_at`, refus sur une table inconnue de `public`, sans `CASCADE`, rejouable ; `DropV1TablesTests`) lancé par `deploy/vps/drop-v1-tables.sh <staging|prod>`, **à la main** : en prod, après `deploy/infra/backup.sh archive` (nouvelle sous-commande : sauvegarde envoyée dans `archive/` sur R2, jamais supprimée par la rotation), rien n'est supprimé si l'archive échoue.
+- **Retirés** : le workflow « Bascule v2 », `deploy/vps/switch-to-v2.sh` et `import-to-staging.sh` (la répétition recopiait `public` avec l'ancienne copie ; la bascule est faite et ne peut plus être rejouée une fois les tables supprimées). Les scripts d'import et `MigrationTests` restent jusqu'à I2.
+- **Reste (Clément, sur le VPS)** : une fois la PR déployée, `./deploy/vps/drop-v1-tables.sh staging` dans `~/apps/InSeconds-staging` ; puis, après le J+1 et le merge vers `main`, `./deploy/vps/drop-v1-tables.sh prod` dans `~/apps/InSeconds`. Le J+1 (vider l'`AuthToken` v1) devient sans objet une fois les tables supprimées.
+
 ---
 
 ## 12. Suivi

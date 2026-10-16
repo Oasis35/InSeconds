@@ -100,7 +100,7 @@ InSeconds/
 ├── docker-compose.yml         # Dev: database
 ├── docker-compose.staging.yml # Staging (v2)
 ├── docker-compose.prod.yml    # previous production, unused (to be removed)
-├── docker-compose.prod-v2.yml # Production after the switchover ("Bascule v2" workflow)
+├── docker-compose.prod-v2.yml # Production (v2, since the 2026-10-16 switchover)
 └── README.md / README.fr.md
 ```
 
