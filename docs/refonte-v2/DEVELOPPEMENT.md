@@ -2,7 +2,7 @@
 
 30/09/2026. Ce plan découpe le chantier en PR, dans l'ordre. Le « quoi » (modèle, architecture, règles, import, sécurité) est dans [PLAN.md](PLAN.md). Ici, on ne répète que ce qui sert à ordonner le travail.
 
-**Go donné le 30/09 pour A1 (PR #204).** Chaque étape suivante attend le go de Clément.
+**Go donné le 30/09 pour A1 (PR #204).** Chaque étape suivante attendait le go de Clément. **La v2 est en production depuis le 16/10/2026** (phase H faite) ; reste la phase I, le nettoyage.
 
 ---
 
@@ -426,6 +426,8 @@ Choix actés à cette occasion (sans code) : un seul `DailyGameStore` ; pas de t
 | Première nuit | surveillance des tâches de 23 h, 0 h et 0 h 05, et de Grafana |
 
 Le retour arrière reste possible tant que personne n'a joué en v2 (§ 10.3 du plan détaillé).
+
+**Faite le 16/10/2026** (run « Bascule v2 » #5, vert à 07:43 UTC ; première tentative arrêtée en préparation par les droits du `.pfx`, la v1 n'a pas été touchée). Reste la première nuit, puis le J+1 (#234). Les droits de `secrets/dataprotection.pfx` (lisible par l'uid/gid 1654) sont à vérifier avant tout nouveau déploiement de la v2 sur un autre hôte.
 
 ---
 
