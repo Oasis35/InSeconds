@@ -15,7 +15,23 @@ public class SecurityHeadersTests
         Assert.Equal("DENY", context.Response.Headers.XFrameOptions);
         Assert.Equal("no-referrer", context.Response.Headers["Referrer-Policy"]);
         Assert.Equal("max-age=31536000", context.Response.Headers.StrictTransportSecurity);
+        Assert.Equal("no-store", context.Response.Headers.CacheControl);
     }
+
+    [Fact]
+    public void Api_GardeLeCacheControlPoseParLaRoute()
+    {
+        var context = new DefaultHttpContext();
+        context.Response.Headers.CacheControl = "no-cache, no-store";
+
+        SecurityHeaders.Apply(context.Response.Headers, isDashboard: false);
+
+        Assert.Equal("no-cache, no-store", context.Response.Headers.CacheControl);
+    }
+
+    [Fact]
+    public void TableauDeBord_PasDeNoStore() =>
+        Assert.True(string.IsNullOrEmpty(Apply("/jobs/js18250.js").Response.Headers.CacheControl));
 
     [Theory]
     [InlineData("/jobs")]
