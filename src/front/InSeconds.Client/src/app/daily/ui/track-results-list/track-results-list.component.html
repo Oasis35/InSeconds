@@ -11,6 +11,9 @@
       }
 
       <div class="flex-1 min-w-0 text-left space-y-1 py-0.5">
+        <p class="text-sm font-medium truncate" style="color:var(--text-body)">
+          {{ r.artist }} — {{ r.title }}
+        </p>
         @if (r.artistCorrect !== null) {
           <div class="flex gap-2.5 text-xs font-bold">
             <span [style.color]="r.artistCorrect ? 'var(--color-success)' : 'var(--color-fail)'">
@@ -21,9 +24,6 @@
             </span>
           </div>
         }
-        <p class="text-sm font-medium truncate" style="color:var(--text-body)">
-          {{ r.artist }} — {{ r.title }}
-        </p>
         <div class="flex gap-2.5 text-xs" style="color:var(--text-hover)">
           @if (r.listenedSeconds !== null) {
             <span>{{ r.listenedSeconds }}s</span>

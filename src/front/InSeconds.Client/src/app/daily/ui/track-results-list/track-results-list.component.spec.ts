@@ -48,6 +48,11 @@ describe('TrackResultsListComponent', () => {
     expect(text).toContain('1s');
   });
 
+  it("affiche « Artiste — Titre » avant les chips ✓/✗", () => {
+    const text = render([row()]).textContent!.replace(/\s+/g, ' ');
+    expect(text.indexOf('Eminem — Lose Yourself')).toBeLessThan(text.indexOf('✓'));
+  });
+
   it('masque chips et durée sans réponse du joueur', () => {
     const text = render([row({ artistCorrect: null, titleCorrect: null, listenedSeconds: null, score: null })]).textContent!;
     expect(text).not.toContain('✓');
