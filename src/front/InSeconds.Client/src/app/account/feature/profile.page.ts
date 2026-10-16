@@ -17,7 +17,6 @@ import { ActionStatus, ProfileStore } from '../data-access/profile.store';
 import { isPlausibleEmail, normalizeEmail, sameEmail } from '../domain/email';
 import { normalizePseudo, pseudoIssue } from '../domain/pseudo';
 import { DeviceListComponent } from '../ui/device-list.component';
-import { BrowserIdComponent } from './browser-id.component';
 
 function errorOf(status: ActionStatus): AppError | null {
   return typeof status === 'object' ? status.error : null;
@@ -33,7 +32,7 @@ function errorOf(status: ActionStatus): AppError | null {
   selector: 'app-profile-page',
   imports: [
     FormField, FormRoot, RouterLink, TranslatePipe, ButtonComponent, DecorBackgroundComponent, ErrorMessageComponent,
-    DeviceListComponent, BrowserIdComponent,
+    DeviceListComponent,
   ],
   providers: [ProfileStore, DevicesStore],
   changeDetection: ChangeDetectionStrategy.OnPush,

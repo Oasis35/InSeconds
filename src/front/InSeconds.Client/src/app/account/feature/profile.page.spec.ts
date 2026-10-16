@@ -283,16 +283,10 @@ describe('ProfilePage', () => {
     });
   });
 
-  describe('identifiant navigateur', () => {
-    it('est réservé aux admins', async () => {
-      expect(query(await render(), 'app-browser-id')).toBeNull();
-    });
+  it("n'affiche pas l'identifiant navigateur, même à un admin (il est dans l'admin)", async () => {
+    const admin = { ...linkedPlayer, isAdmin: true };
+    const fixture = await render({ getMe: vi.fn(async () => admin) }, admin);
 
-    it('s\'affiche pour un admin', async () => {
-      const admin = { ...linkedPlayer, isAdmin: true };
-      const fixture = await render({ getMe: vi.fn(async () => admin) }, admin);
-
-      expect(query(fixture, 'app-browser-id')).not.toBeNull();
-    });
+    expect(query(fixture, 'app-browser-id')).toBeNull();
   });
 });
