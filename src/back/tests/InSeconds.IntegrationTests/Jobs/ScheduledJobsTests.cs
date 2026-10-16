@@ -64,19 +64,21 @@ public class ScheduledJobsTests(PostgresFixture postgres)
     }
 
     [Fact]
-    public async Task EnStaging_CatalogueRefreshEstEnPause_CronNever_MemeIpQueLaProdDoncMemeQuotaDeezer()
+    public async Task EnStaging_CatalogueRefreshEnPause_AutresTachesDecaleesDe30MinSurLaProd()
     {
-        // Piège 16 : le staging partage l'IP de la prod, donc le quota Deezer. Les autres tâches gardent leur cron.
+        // Piège 16 : le staging partage l'IP de la prod, donc le quota Deezer. Les autres tâches tournent 30 min après
+        // celles de la prod (même VPS, même base PostgreSQL : jamais en même temps), dans le même ordre.
         await using var staging = new ApiFactory(await postgres.CreateDatabaseAsync(), environment: Environments.Staging,
             settings: TestCertificate.StagingSettings());
 
         var jobs = RecurringJobs(staging).ToDictionary(job => job.Id);
 
         Assert.Equal(Cron.Never(), jobs["catalogue-refresh"].Cron);
-        Assert.Equal("30 3 * * *", jobs["players-purge-expired-tokens"].Cron);
-        // La génération du défi n'appelle pas Deezer : elle tourne aussi sur le staging, qui sert la v2.
-        Assert.Equal("0 0 * * *", jobs["daily-generate-challenge"].Cron);
-        Assert.Equal("5 0 * * *", jobs["daily-close-day"].Cron);
+        Assert.Equal("0 4 * * *", jobs["players-purge-expired-tokens"].Cron);
+        // La génération du défi n'appelle pas Deezer : elle tourne aussi sur le staging. Entre minuit et 0 h 30, le premier
+        // « Commencer » génère le défi à la volée.
+        Assert.Equal("30 0 * * *", jobs["daily-generate-challenge"].Cron);
+        Assert.Equal("35 0 * * *", jobs["daily-close-day"].Cron);
     }
 
     [Fact]
