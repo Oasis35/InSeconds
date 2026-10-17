@@ -465,7 +465,7 @@ Le retour arrière reste possible tant que personne n'a joué en v2 (§ 10.3 du 
 - **Droits du joueur** : `GET /api/players/me/export` (copie JSON de toutes ses données) et `POST /api/players/me/delete` (pseudo retapé), même effacement (`AccountErasure`, contrat `Daily.Contracts.IPlayerGameData`) que la purge et que les commandes de secours `--export-player` / `--delete-player`. Un compte effacé l'est pour de bon (plus de `deleted_at`). Piège 48 : toute table avec `player_id` doit être effacée (`PlayerDataTests`).
 - **Durées de conservation** dans `players-purge-expired-tokens` (même identifiant) : appareils sans visite depuis 91 jours, comptes inactifs depuis 3 ans (jamais un admin, sans email de prévenance), une transaction par étape.
 - **Profil** (maquettes validées par Clément le 17/10) : « ← Retour au jeu » en haut, liste des appareils repliée (une ligne : leur nombre, cet appareil et combien d'autres ; « Déconnecter les autres appareils » reste visible), « Se déconnecter » juste après, puis « Tes données » : « Télécharger mes données » (direct, sans fenêtre) et le lien « Supprimer mon compte » (fenêtre, pseudo retapé).
-- **Reste** : textes de la page confidentialité (avec #349).
+- **Page confidentialité** (après #349 et #352) : « Durée de conservation » donne les durées appliquées (comptes inactifs depuis 3 ans, appareils 91 jours après leur dernière visite, invités jamais effacés mais anonymes une fois leurs appareils supprimés) et « Vos droits » renvoie à la section « Tes données » du profil ; l'email reste le recours de qui ne peut plus se connecter.
 
 ---
 
