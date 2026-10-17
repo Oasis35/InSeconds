@@ -26,6 +26,7 @@
       "email_taken": "Cette adresse est déjà utilisée par un autre compte.",
       "guest_forbidden": "Cette action est réservée aux comptes connectés.",
       "invalid_or_expired_token": "Ce lien est invalide ou a expiré.",
+      "pseudo_mismatch": "Ce n'est pas ton pseudo.",
       "pseudo_taken": "Ce pseudo est déjà pris.",
       "same_email": "C'est déjà ton adresse actuelle."
     },
@@ -191,6 +192,22 @@
         "cancel": "Annuler",
         "error": "La déconnexion a échoué. Réessaie."
       },
+      "data": {
+        "title": "Tes données",
+        "export": "Télécharger mes données",
+        "exporting": "Préparation…",
+        "exportError": "Le téléchargement de tes données a échoué. Réessaie."
+      },
+      "delete": {
+        "action": "Supprimer mon compte",
+        "title": "Supprimer ton compte ?",
+        "body": "Ton email, ton pseudo, ta série, tes gels et toutes tes parties seront effacés pour de bon, et tous tes appareils déconnectés. Impossible de revenir en arrière.",
+        "label": "Retape ton pseudo {{ pseudo }} pour confirmer",
+        "confirm": "Supprimer",
+        "deleting": "Suppression…",
+        "cancel": "Annuler",
+        "done": "Ton compte est supprimé."
+      },
       "backToGame": "Retour au jeu"
     },
     "devices": {
@@ -209,7 +226,12 @@
       "revoked": "Appareil déconnecté.",
       "revokedOthers": "Les autres appareils sont déconnectés.",
       "cancel": "Annuler",
-      "loadError": "Impossible de charger tes appareils."
+      "loadError": "Impossible de charger tes appareils.",
+      "summary": {
+        "alone": "{{ current }}",
+        "one": "{{ current }} et 1 autre",
+        "many": "{{ current }} et {{ count }} autres"
+      }
     },
     "browserId": {
       "label": "Ton identifiant navigateur :",
@@ -445,6 +467,8 @@
       "noMatch": "Aucun joueur ne correspond à ce filtre.",
       "colPseudo": "Pseudo",
       "colEmail": "Email",
+      "emailReveal": "Afficher l'email",
+      "emailHide": "Masquer l'email",
       "colLastSeen": "Dernière visite",
       "colCreated": "Inscrit le",
       "colGames": "Parties",
@@ -674,7 +698,7 @@
   },
   "privacy": {
     "title": "Confidentialité & mentions légales",
-    "updated": "Dernière mise à jour : 16 octobre 2026",
+    "updated": "Dernière mise à jour : 17 octobre 2026",
     "intro": "InSeconds est un jeu de blind test musical gratuit, accessible à l'adresse https://inseconds.cc. Il reste intégralement jouable en mode invité, sans compte ni inscription ; la création d'un compte, par email uniquement, est optionnelle et sert à retrouver votre progression sur un autre appareil. Cette page réunit les mentions légales du site, conformément à l'article 6-III de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique (LCEN), et sa politique de confidentialité, conformément au Règlement général sur la protection des données (RGPD, Règlement UE 2016/679) et à la loi Informatique et Libertés.",
     "legalIdentity": {
       "title": "Mentions légales : éditeur et hébergement",
@@ -694,7 +718,7 @@
     },
     "retention": {
       "title": "Durée de conservation",
-      "body": "Les données de jeu (réponses, scores, série de victoires) sont conservées tant que votre identifiant ou votre compte existe en base, afin d'alimenter votre historique et les statistiques globales anonymes présentées aux joueurs. À ce jour, aucune suppression automatique n'est appliquée : un identifiant invité dont le cookie a expiré, ou un compte qui n'est plus utilisé, reste en base avec ses parties jusqu'à une demande de suppression. Une durée de conservation automatique sera indiquée ici dès qu'elle sera en place.\nPour un joueur invité, ces données ne sont jamais croisées avec une identité réelle : seul un identifiant technique aléatoire vous relie à vos parties.\nSi vous créez un compte, votre historique est associé à votre adresse email : c'est ce qui permet de le retrouver sur un autre appareil. Ces données sont supprimées sur simple demande (voir « Vos droits »).\nLa liste de vos appareils connectés, y compris ceux que vous avez déconnectés, est conservée aussi longtemps que votre identifiant ou votre compte ; un appareil déconnecté ne peut plus jamais être réutilisé.\nLes journaux techniques (voir « Données collectées ») sont conservés 14 jours au maximum, puis supprimés automatiquement.\nLe lien de connexion et le lien de confirmation d'un changement d'email ne sont valables que 15 minutes et ne peuvent être utilisés qu'une seule fois ; passé ce délai ou après utilisation, ils deviennent définitivement invalides, et ils sont effacés de la base chaque nuit une fois expirés.\nPour reprendre sans vous déconnecter les joueurs de l'ancienne version du jeu, une empreinte cryptographique de leur ancien cookie est conservée provisoirement ; elle sera supprimée au plus tard 90 jours après la mise en service de la nouvelle version (16 octobre 2026).\nSauvegardes : la base de données est sauvegardée chaque nuit. Les copies sont chiffrées et conservées 7 jours sur le serveur, 30 jours pour les copies quotidiennes et 12 mois pour une copie mensuelle hors du serveur (voir « Destinataires »). Des données supprimées de la base peuvent donc subsister dans ces copies jusqu'à leur expiration ; elles n'en sont jamais restaurées, sauf incident grave."
+      "body": "Les données de jeu (réponses, scores, série de victoires) sont conservées tant que votre identifiant ou votre compte existe en base, afin d'alimenter votre historique et les statistiques globales anonymes présentées aux joueurs. Un compte sans aucune visite depuis 3 ans est supprimé automatiquement, avec son historique, sa série et ses appareils (durée recommandée par la CNIL), sans email de prévenance. Un joueur invité n'est pas supprimé : une fois ses appareils effacés (voir ci-dessous), plus rien ne permet de le retrouver, et ses parties ne servent plus qu'aux statistiques anonymes.\nPour un joueur invité, ces données ne sont jamais croisées avec une identité réelle : seul un identifiant technique aléatoire vous relie à vos parties.\nSi vous créez un compte, votre historique est associé à votre adresse email : c'est ce qui permet de le retrouver sur un autre appareil. Vous pouvez les supprimer vous-même depuis votre profil, ou sur simple demande (voir « Vos droits »).\nUn appareil connecté (y compris un appareil déconnecté) est supprimé automatiquement 91 jours après sa dernière visite, soit un jour après l'expiration de son cookie ; un appareil déconnecté ne peut plus jamais être réutilisé.\nLes journaux techniques (voir « Données collectées ») sont conservés 14 jours au maximum, puis supprimés automatiquement.\nLe lien de connexion et le lien de confirmation d'un changement d'email ne sont valables que 15 minutes et ne peuvent être utilisés qu'une seule fois ; passé ce délai ou après utilisation, ils deviennent définitivement invalides, et ils sont effacés de la base chaque nuit une fois expirés.\nPour reprendre sans vous déconnecter les joueurs de l'ancienne version du jeu, une empreinte cryptographique de leur ancien cookie est conservée provisoirement ; elle sera supprimée au plus tard 90 jours après la mise en service de la nouvelle version (16 octobre 2026).\nSauvegardes : la base de données est sauvegardée chaque nuit. Les copies sont chiffrées et conservées 7 jours sur le serveur, 30 jours pour les copies quotidiennes et 12 mois pour une copie mensuelle hors du serveur (voir « Destinataires »). Des données supprimées de la base peuvent donc subsister dans ces copies jusqu'à leur expiration ; elles n'en sont jamais restaurées, sauf incident grave."
     },
     "thirdParties": {
       "title": "Destinataires, hébergement et transferts hors UE",
@@ -710,7 +734,7 @@
     },
     "rights": {
       "title": "Vos droits",
-      "body": "Conformément aux articles 15 à 21 du RGPD, vous disposez d'un droit d'accès, de rectification, d'effacement, de limitation du traitement, d'opposition et de portabilité sur les données associées à votre identifiant ou à votre compte (email, pseudo, historique de parties, série en cours). Si vous avez créé un compte, vous pouvez modifier vous-même votre pseudo et votre adresse email, et consulter ou déconnecter vos appareils, depuis votre profil ; vous pouvez également retirer votre consentement à tout moment, sans que cela affecte la licéité des traitements effectués avant ce retrait.\nLes autres demandes (accès, copie de vos données, suppression) se font par email à l'adresse ci-dessous : il n'existe pas encore de bouton pour cela dans l'application. L'éditeur les traite à la main, dans un délai d'un mois au plus (article 12 du RGPD). Une suppression efface votre historique de parties, votre série en cours, vos appareils et, le cas échéant, votre email et votre pseudo.\nVous disposez également du droit d'introduire une réclamation auprès de la CNIL (www.cnil.fr), l'autorité de contrôle compétente en France.",
+      "body": "Conformément aux articles 15 à 21 du RGPD, vous disposez d'un droit d'accès, de rectification, d'effacement, de limitation du traitement, d'opposition et de portabilité sur les données associées à votre identifiant ou à votre compte (email, pseudo, historique de parties, série en cours). Si vous avez créé un compte, vous pouvez modifier vous-même votre pseudo et votre adresse email, et consulter ou déconnecter vos appareils, depuis votre profil ; vous pouvez également retirer votre consentement à tout moment, sans que cela affecte la licéité des traitements effectués avant ce retrait.\nDepuis votre profil, la section « Tes données » vous permet de télécharger une copie de toutes les données associées à votre compte (fichier JSON : compte, appareils, série et parties) et de supprimer votre compte, en retapant votre pseudo pour confirmer. La suppression est immédiate et définitive : elle efface votre historique de parties, votre série en cours, vos appareils, votre email et votre pseudo. Si vous ne pouvez plus vous connecter, ou pour toute autre demande, écrivez à l'adresse ci-dessous : l'éditeur y répond dans un délai d'un mois au plus (article 12 du RGPD), uniquement à l'adresse email du compte concerné.\nVous disposez également du droit d'introduire une réclamation auprès de la CNIL (www.cnil.fr), l'autorité de contrôle compétente en France.",
       "contact": "Pour exercer ces droits, ou pour toute question :",
       "contactLabel": "✉️ contact@inseconds.cc"
     },

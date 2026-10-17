@@ -79,6 +79,27 @@ export class PlayersApi {
   async revokeOtherDevices(): Promise<number> {
     return (await firstValueFrom(this.client.revokeOtherDevices())).revoked;
   }
+
+  /**
+   * La copie de toutes ses données (RGPD) : le JSON de l'API, remis en forme, et le nom du fichier
+   * que le serveur propose (`inseconds-donnees-aaaa-mm-jj.json`).
+   */
+  async exportMyData(): Promise<DataExportFile> {
+    const data = await firstValueFrom(this.client.exportMyData());
+    // Les dates restent du texte (le client généré ne les convertit pas) : le jour de l'export en est le début.
+    const day = String(data.exportedAt).slice(0, 10);
+    return { fileName: `inseconds-donnees-${day}.json`, json: JSON.stringify(data, null, 2) };
+  }
+
+  /** Supprime son compte pour de bon ; le pseudo retapé confirme (`players.pseudo_mismatch` sinon). */
+  async deleteMyAccount(pseudo: string): Promise<void> {
+    await firstValueFrom(this.client.deleteMyAccount({ pseudo }));
+  }
+}
+
+export interface DataExportFile {
+  readonly fileName: string;
+  readonly json: string;
 }
 
 function toDevice(device: DeviceResponse): Device {

@@ -1,4 +1,4 @@
-import { RegisteredPlayer, filterPlayers, toGameStatus } from './registered-player';
+import { RegisteredPlayer, filterPlayers, maskEmail, toGameStatus } from './registered-player';
 
 function player(overrides: Partial<RegisteredPlayer>): RegisteredPlayer {
   return {
@@ -28,5 +28,13 @@ describe('registered-player', () => {
   it('ramène un statut inconnu à « Expired »', () => {
     expect(toGameStatus('Completed')).toBe('Completed');
     expect(toGameStatus('Autre')).toBe('Expired');
+  });
+
+  it('masque l\'email en gardant la première lettre et le domaine', () => {
+    expect(maskEmail('clement.rageau@gmail.com')).toBe('c•••@gmail.com');
+    expect(maskEmail('a@b.fr')).toBe('a•••@b.fr');
+    expect(maskEmail('sans-arobase')).toBe('•••');
+    expect(maskEmail('@domaine.fr')).toBe('•••');
+    expect(maskEmail('fin@')).toBe('•••');
   });
 });

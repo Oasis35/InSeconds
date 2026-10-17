@@ -174,7 +174,7 @@ d'échec (alerte immédiate). Le contrôle est créé au premier signal (`?creat
 | `daily-generate-challenge` | API v2, tâche Hangfire | 0 h 00 (un nouvel essai toutes les 10 min si le pool manque : chaque essai raté envoie `/fail`) |
 | `daily-close-day` | API v2, tâche Hangfire | 0 h 05 |
 | `catalogue-refresh` | API v2, tâche Hangfire | 23 h 00 |
-| `players-purge-expired-tokens` | API v2, tâche Hangfire | 3 h 30 |
+| `players-purge-expired-tokens` | API v2, tâche Hangfire (jetons, appareils, comptes inactifs) | 3 h 30 |
 | `inseconds-backup` | `backup.sh` (timer systemd) | 3 h 00 |
 
 Un lancement depuis `/jobs` (« Déclencher maintenant ») envoie aussi son signal.

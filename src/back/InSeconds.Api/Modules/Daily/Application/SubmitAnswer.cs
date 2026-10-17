@@ -111,7 +111,7 @@ public static class SubmitAnswerEndpoint
         // Les autres joueurs, avant celui-ci : la révélation montre « en combien de temps ils ont trouvé ».
         var prior = await queries.GetPriorAnswerStatsAsync(challenge.Id, request.Position, ct);
 
-        var completed = session.Answer(outcome, score, request.WasExtended, request.Artist, request.Title, challenge.Tracks.Count, calendar.Now);
+        var completed = session.Answer(outcome, score, request.WasExtended, challenge.Tracks.Count, calendar.Now);
         DailyLog.AnswerSubmitted(
             logger, session.PlayerId, session.Id, info.Id, outcome.ListenedSeconds, outcome.ArtistCorrect, outcome.TitleCorrect,
             outcome.HintLevelUsed, score, request.Position, info.Artist, info.DisplayTitle);

@@ -26,6 +26,7 @@
       "email_taken": "This address is already used by another account.",
       "guest_forbidden": "This action is only available to signed-in accounts.",
       "invalid_or_expired_token": "This link is invalid or has expired.",
+      "pseudo_mismatch": "That's not your pseudo.",
       "pseudo_taken": "This pseudo is already taken.",
       "same_email": "That's already your current address."
     },
@@ -191,6 +192,22 @@
         "cancel": "Cancel",
         "error": "Logout failed. Try again."
       },
+      "data": {
+        "title": "Your data",
+        "export": "Download my data",
+        "exporting": "Preparing…",
+        "exportError": "Downloading your data failed. Try again."
+      },
+      "delete": {
+        "action": "Delete my account",
+        "title": "Delete your account?",
+        "body": "Your email, pseudo, streak, freezes and all your games will be permanently erased, and all your devices signed out. This can't be undone.",
+        "label": "Type your pseudo {{ pseudo }} to confirm",
+        "confirm": "Delete",
+        "deleting": "Deleting…",
+        "cancel": "Cancel",
+        "done": "Your account has been deleted."
+      },
       "backToGame": "Back to game"
     },
     "devices": {
@@ -209,7 +226,12 @@
       "revoked": "Device signed out.",
       "revokedOthers": "Other devices are signed out.",
       "cancel": "Cancel",
-      "loadError": "Couldn't load your devices."
+      "loadError": "Couldn't load your devices.",
+      "summary": {
+        "alone": "{{ current }}",
+        "one": "{{ current }} and 1 other",
+        "many": "{{ current }} and {{ count }} others"
+      }
     },
     "browserId": {
       "label": "Your browser ID:",
@@ -445,6 +467,8 @@
       "noMatch": "No player matches this filter.",
       "colPseudo": "Username",
       "colEmail": "Email",
+      "emailReveal": "Show email",
+      "emailHide": "Hide email",
       "colLastSeen": "Last visit",
       "colCreated": "Signed up",
       "colGames": "Games",
@@ -674,7 +698,7 @@
   },
   "privacy": {
     "title": "Privacy & legal notice",
-    "updated": "Last updated: October 16, 2026",
+    "updated": "Last updated: October 17, 2026",
     "intro": "InSeconds is a free music blind test game, available at https://inseconds.cc. It remains fully playable as a guest, without any account or registration; creating an account, using only an email address, is optional and lets you find your progress again on another device. This page brings together the site's legal notice, in accordance with Article 6-III of French law n° 2004-575 of June 21, 2004 for confidence in the digital economy (LCEN), and its privacy policy, in accordance with the General Data Protection Regulation (GDPR, Regulation EU 2016/679).",
     "legalIdentity": {
       "title": "Legal notice: publisher and host",
@@ -694,7 +718,7 @@
     },
     "retention": {
       "title": "Data retention",
-      "body": "Game data (answers, scores, win streak) is kept for as long as your identifier or account exists in the database, to feed your history and the anonymous global statistics shown to players. At this time, no automatic deletion is applied: a guest identifier whose cookie has expired, or an account that is no longer used, stays in the database with its games until a deletion request. An automatic retention period will be stated here as soon as it is in place.\nFor a guest player, this data is never linked to a real identity: only a random technical identifier connects you to your games.\nIf you create an account, your history is linked to your email address: that is precisely what lets you find it again on another device. This data is deleted upon simple request (see \"Your rights\").\nThe list of your connected devices, including those you have logged out, is kept for as long as your identifier or account; a logged-out device can never be used again.\nTechnical logs (see \"Data collected\") are kept for 14 days at most, then deleted automatically.\nThe login link and the link confirming an email change are valid for only 15 minutes and can be used only once; after that time, or once used, they become permanently invalid, and expired links are erased from the database every night.\nTo carry over players from the previous version of the game without logging them out, a cryptographic fingerprint of their old cookie is kept temporarily; it will be deleted no later than 90 days after the new version went live (October 16, 2026).\nBackups: the database is backed up every night. Copies are encrypted and kept for 7 days on the server, and off the server for 30 days (daily copies) and 12 months (one monthly copy) (see \"Recipients\"). Data deleted from the database may therefore remain in these copies until they expire; it is never restored from them, except after a serious incident."
+      "body": "Game data (answers, scores, win streak) is kept for as long as your identifier or account exists in the database, to feed your history and the anonymous global statistics shown to players. An account with no visit for 3 years is deleted automatically, along with its history, streak and devices (the period recommended by the CNIL), without a warning email. A guest player is not deleted: once their devices are erased (see below), nothing can link them to their games any more, which then only feed the anonymous statistics.\nFor a guest player, this data is never linked to a real identity: only a random technical identifier connects you to your games.\nIf you create an account, your history is linked to your email address: that is precisely what lets you find it again on another device. You can delete it yourself from your profile, or upon simple request (see \"Your rights\").\nA connected device (including a logged-out one) is deleted automatically 91 days after its last visit, one day after its cookie expires; a logged-out device can never be used again.\nTechnical logs (see \"Data collected\") are kept for 14 days at most, then deleted automatically.\nThe login link and the link confirming an email change are valid for only 15 minutes and can be used only once; after that time, or once used, they become permanently invalid, and expired links are erased from the database every night.\nTo carry over players from the previous version of the game without logging them out, a cryptographic fingerprint of their old cookie is kept temporarily; it will be deleted no later than 90 days after the new version went live (October 16, 2026).\nBackups: the database is backed up every night. Copies are encrypted and kept for 7 days on the server, and off the server for 30 days (daily copies) and 12 months (one monthly copy) (see \"Recipients\"). Data deleted from the database may therefore remain in these copies until they expire; it is never restored from them, except after a serious incident."
     },
     "thirdParties": {
       "title": "Recipients, hosting and transfers outside the EU",
@@ -710,7 +734,7 @@
     },
     "rights": {
       "title": "Your rights",
-      "body": "In accordance with Articles 15 to 21 of the GDPR, you have the right to access, rectify, erase, restrict the processing of, object to the processing of, and port the data associated with your identifier or account (email, pseudo, game history, current streak). If you created an account, you can change your pseudo and email address yourself, and view or log out your devices, from your profile; you may also withdraw your consent at any time, without affecting the lawfulness of processing carried out before that withdrawal.\nOther requests (access, a copy of your data, deletion) are made by email to the address below: there is no button for this in the app yet. The publisher handles them manually, within one month at most (Article 12 GDPR). A deletion erases your game history, your current streak, your devices and, where applicable, your email and pseudo.\nYou also have the right to lodge a complaint with a supervisory authority (in France, the CNIL: www.cnil.fr).",
+      "body": "In accordance with Articles 15 to 21 of the GDPR, you have the right to access, rectify, erase, restrict the processing of, object to the processing of, and port the data associated with your identifier or account (email, pseudo, game history, current streak). If you created an account, you can change your pseudo and email address yourself, and view or log out your devices, from your profile; you may also withdraw your consent at any time, without affecting the lawfulness of processing carried out before that withdrawal.\nFrom your profile, the \"Your data\" section lets you download a copy of all the data linked to your account (a JSON file: account, devices, streak and games) and delete your account, by retyping your pseudo to confirm. Deletion is immediate and permanent: it erases your game history, your current streak, your devices, your email and your pseudo. If you can no longer log in, or for any other request, write to the address below: the publisher replies within one month at most (Article 12 GDPR), only to the email address of the account concerned.\nYou also have the right to lodge a complaint with a supervisory authority (in France, the CNIL: www.cnil.fr).",
       "contact": "To exercise these rights, or for any question:",
       "contactLabel": "✉️ contact@inseconds.cc"
     },

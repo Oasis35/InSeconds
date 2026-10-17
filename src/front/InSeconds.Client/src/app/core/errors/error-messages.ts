@@ -42,6 +42,7 @@ export const ERROR_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   'players.email_taken': 'errors.players.email_taken',
   'players.guest_forbidden': 'errors.players.guest_forbidden',
   'players.invalid_or_expired_token': 'errors.players.invalid_or_expired_token',
+  'players.pseudo_mismatch': 'errors.players.pseudo_mismatch',
   'players.pseudo_taken': 'errors.players.pseudo_taken',
   'players.same_email': 'errors.players.same_email',
 };

@@ -1,4 +1,4 @@
-import { normalizePseudo, pseudoIssue } from './pseudo';
+import { normalizePseudo, pseudoIssue, samePseudo } from './pseudo';
 
 describe('pseudoIssue', () => {
   it.each(['Clément', 'Alice_E2E', 'a.b-c d', 'abc', 'x'.repeat(20), '  Bob  '])('accepte « %s »', pseudo => {
@@ -25,5 +25,15 @@ describe('pseudoIssue', () => {
 
   it('normalise en retirant les espaces autour', () => {
     expect(normalizePseudo('  Bob ')).toBe('Bob');
+  });
+});
+
+describe('samePseudo', () => {
+  it.each([['Alice', 'Alice'], ['  alice ', 'Alice'], ['ALICE', 'Alice']])('accepte « %s » pour %s (espaces et casse ignorés)', (typed, pseudo) => {
+    expect(samePseudo(typed, pseudo)).toBe(true);
+  });
+
+  it.each([['Alic', 'Alice'], ['', 'Alice'], ['Alice', null]])('refuse « %s » pour %s', (typed, pseudo) => {
+    expect(samePseudo(typed, pseudo)).toBe(false);
   });
 });

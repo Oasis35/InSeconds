@@ -10,6 +10,9 @@ if (RotateDataProtectionKeyCommand.IsRequested(args))
 if (FreezeDayStatsCommand.IsRequested(args))
     return await FreezeDayStatsCommand.RunAsync(args);
 
+if (PlayerDataCommand.IsRequested(args))
+    return await PlayerDataCommand.RunAsync(args);
+
 var builder = WebApplication.CreateBuilder(args);
 builder.AddInSecondsApi(args);
 

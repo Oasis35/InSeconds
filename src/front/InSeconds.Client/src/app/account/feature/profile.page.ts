@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, Injector, OnInit, computed, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { FormField, FormRoot, form, validate } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { FileDownload } from '../../core/download/file-download';
 import { AppError } from '../../core/errors/app-error';
 import { HeaderSlot } from '../../core/shell/app-header/header-slot';
 import { errorMessageKey } from '../../core/errors/error-messages';
@@ -17,6 +19,13 @@ import { ActionStatus, ProfileStore } from '../data-access/profile.store';
 import { isPlausibleEmail, normalizeEmail, sameEmail } from '../domain/email';
 import { normalizePseudo, pseudoIssue } from '../domain/pseudo';
 import { DeviceListComponent } from '../ui/device-list.component';
+import { DeleteAccountDialog } from './delete-account.dialog';
+
+/** Forme de la ligne des appareils repliés selon le nombre des autres. */
+function summaryKey(others: number): 'alone' | 'one' | 'many' {
+  if (others === 0) return 'alone';
+  return others === 1 ? 'one' : 'many';
+}
 
 function errorOf(status: ActionStatus): AppError | null {
   return typeof status === 'object' ? status.error : null;
@@ -24,8 +33,8 @@ function errorOf(status: ActionStatus): AppError | null {
 
 /**
  * `/account/profile` : pseudo, changement d'email (confirmé par un lien envoyé à la nouvelle
- * adresse), appareils connectés, déconnexion. Réservé aux comptes (garde de la route). La série et
- * les parties jouées s'y ajoutent avec le module Daily.
+ * adresse), appareils connectés (liste repliée), déconnexion, puis « Tes données » : copie de ses
+ * données en JSON et suppression du compte (RGPD). Réservé aux comptes (garde de la route).
  * Pas d'avatar en haut à droite (il mènerait à cette page) : le profil prend `HeaderSlot`, l'en-tête global s'efface.
  */
 @Component({
@@ -47,6 +56,18 @@ export class ProfilePage implements OnInit {
   private readonly toast = inject(ToastService);
   private readonly translate = inject(TranslateService);
   private readonly router = inject(Router);
+  private readonly injector = inject(Injector);
+  private readonly download = inject(FileDownload);
+
+  /** La liste des appareils, repliée à chaque visite. */
+  protected readonly devicesOpen = signal(false);
+  /** Ligne de la liste repliée : cet appareil et le nombre des autres. */
+  protected readonly devicesSummary = computed(() => {
+    if (!this.devices.isFulfilled()) return null;
+    const label = this.devices.devices().find(device => device.isCurrent)?.label ?? null;
+    const count = this.devices.others().length;
+    return { key: `account.devices.summary.${summaryKey(count)}`, label, count };
+  });
 
   constructor() {
     const headerSlot = inject(HeaderSlot);
@@ -68,6 +89,7 @@ export class ProfilePage implements OnInit {
   protected readonly pseudoError = computed(() => errorOf(this.profile.pseudoStatus()));
   protected readonly emailError = computed(() => errorOf(this.profile.emailStatus()));
   protected readonly logoutError = computed(() => errorOf(this.profile.logoutStatus()));
+  protected readonly exportError = computed(() => errorOf(this.profile.exportStatus()));
   protected readonly devicesActionError = computed(() => errorOf(this.devices.action()));
   protected readonly devicesActionKey = computed(() => errorMessageKey(this.devicesActionError()?.code));
 
@@ -150,5 +172,22 @@ export class ProfilePage implements OnInit {
       tone: 'danger',
     });
     if (confirmed && (await this.devices.revokeOthers())) this.toast.show('account.devices.revokedOthers', { tone: 'success' });
+  }
+
+  protected toggleDevices(): void {
+    this.devicesOpen.update(open => !open);
+  }
+
+  /** Télécharge la copie de ses données, directement, sans fenêtre. */
+  protected async downloadData(): Promise<void> {
+    const file = await this.profile.exportData();
+    if (file) this.download.saveText(file.fileName, file.json);
+  }
+
+  protected async deleteAccount(): Promise<void> {
+    const ref = this.modal.open<boolean, unknown, DeleteAccountDialog>(DeleteAccountDialog, { injector: this.injector });
+    if ((await firstValueFrom(ref.closed)) !== true) return;
+    await this.router.navigateByUrl('/');
+    this.toast.show('account.profile.delete.done', { tone: 'success' });
   }
 }

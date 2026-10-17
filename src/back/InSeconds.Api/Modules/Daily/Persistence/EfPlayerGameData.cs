@@ -1,0 +1,53 @@
+using InSeconds.Api.Infrastructure.Persistence;
+using InSeconds.Api.Modules.Catalogue.Contracts;
+using InSeconds.Api.Modules.Daily.Contracts;
+using InSeconds.Api.Modules.Daily.Domain;
+using Microsoft.EntityFrameworkCore;
+
+namespace InSeconds.Api.Modules.Daily.Persistence;
+
+public sealed class EfPlayerGameData(InSecondsDbContext db, ITrackDirectory tracks) : IPlayerGameData
+{
+    public async Task<PlayerGameExport> ExportAsync(Guid playerId, CancellationToken ct)
+    {
+        var streak = await db.Set<DailyStreak>().AsNoTracking()
+            .Where(s => s.PlayerId == playerId)
+            .Select(s => new StreakExport(s.CurrentStreak, s.LastPlayedDate, s.Freezes))
+            .FirstOrDefaultAsync(ct);
+
+        var sessions = await (
+                from session in db.Set<DailySession>().AsNoTracking().Include(s => s.Answers)
+                join challenge in db.Set<DailyChallenge>().Include(c => c.Tracks) on session.ChallengeId equals challenge.Id
+                where session.PlayerId == playerId
+                orderby challenge.Date
+                select new { Session = session, Challenge = challenge })
+            .ToListAsync(ct);
+
+        // Le morceau de chaque réponse : artiste et titre, lus par le contrat de Catalogue (un morceau supprimé depuis reste sans nom).
+        var trackIds = sessions.SelectMany(s => s.Challenge.Tracks.Select(t => t.TrackId)).Distinct().ToList();
+        var catalogue = trackIds.Count == 0 ? new Dictionary<int, TrackInfo>() : await tracks.GetAsync(trackIds, ct);
+
+        var games = sessions.Select(row =>
+        {
+            var trackAt = row.Challenge.Tracks.ToDictionary(t => t.Position, t => t.TrackId);
+            var answers = row.Session.Answers.OrderBy(a => a.Position).Select(a =>
+            {
+                var track = trackAt.TryGetValue(a.Position, out var id) ? catalogue.GetValueOrDefault(id) : null;
+                return new GameTrackExport(
+                    a.Position, track?.Artist, track?.DisplayTitle, a.ListenedSeconds, a.HintLevel, a.ArtistCorrect, a.TitleCorrect, a.Score, a.AnsweredAt);
+            }).ToList();
+            return new GameExport(
+                row.Challenge.Date, row.Session.Status.ToString(), row.Session.StartedAt, row.Session.EndedAt, row.Session.TotalScore, answers);
+        }).ToList();
+
+        return new PlayerGameExport(streak, games);
+    }
+
+    // Exécuté tout de suite, dans la transaction de l'appelant. Les réponses partent avec leur partie (clé étrangère en cascade).
+    public async Task<int> DeleteAsync(Guid playerId, CancellationToken ct)
+    {
+        var games = await db.Set<DailySession>().Where(s => s.PlayerId == playerId).ExecuteDeleteAsync(ct);
+        await db.Set<DailyStreak>().Where(s => s.PlayerId == playerId).ExecuteDeleteAsync(ct);
+        return games;
+    }
+}
