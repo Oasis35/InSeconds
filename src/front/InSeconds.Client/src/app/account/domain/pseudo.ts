@@ -24,5 +24,5 @@ export function pseudoIssue(raw: string): PseudoIssue | null {
 
 /** Le pseudo retapé pour confirmer une suppression : comme le back, sans espaces autour ni casse. */
 export function samePseudo(typed: string, pseudo: string | null | undefined): boolean {
-  return pseudo != null && normalizePseudo(typed).toUpperCase() === pseudo.toUpperCase();
+  return normalizePseudo(typed).toUpperCase() === pseudo?.toUpperCase();
 }

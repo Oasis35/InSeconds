@@ -21,6 +21,12 @@ import { DeviceListComponent } from '../ui/device-list.component';
 import { BrowserIdComponent } from './browser-id.component';
 import { DeleteAccountDialog } from './delete-account.dialog';
 
+/** Forme de la ligne des appareils repliés selon le nombre des autres. */
+function summaryKey(others: number): 'alone' | 'one' | 'many' {
+  if (others === 0) return 'alone';
+  return others === 1 ? 'one' : 'many';
+}
+
 function errorOf(status: ActionStatus): AppError | null {
   return typeof status === 'object' ? status.error : null;
 }
@@ -59,8 +65,7 @@ export class ProfilePage implements OnInit {
     if (!this.devices.isFulfilled()) return null;
     const label = this.devices.devices().find(device => device.isCurrent)?.label ?? null;
     const count = this.devices.others().length;
-    const key = count === 0 ? 'alone' : count === 1 ? 'one' : 'many';
-    return { key: `account.devices.summary.${key}`, label, count };
+    return { key: `account.devices.summary.${summaryKey(count)}`, label, count };
   });
 
   /** Champ pseudo : mêmes règles que le back, sur la valeur sans espaces autour. */
