@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { patchState, signalStore, withMethods, withState } from '@ngrx/signals';
 import { AppError, toAppError } from '../../core/errors/app-error';
-import { VerifyStep, afterFailure, afterVerified, confirming, initialVerifyStep } from '../domain/verify-flow';
+import { VerifyStep, afterFailure, afterVerified, chooseNewAccount, confirming, initialVerifyStep } from '../domain/verify-flow';
 import { normalizePseudo } from '../domain/pseudo';
 import { PlayersApi } from './players.api';
 import { SessionLoader } from './session-loader';
@@ -23,13 +23,10 @@ export const VerifyStore = signalStore(
     async function verify(token: string, pseudo: string | undefined): Promise<void> {
       patchState(store, { step: confirming, error: null });
       try {
-        const { needsPseudo } = await api.verifyMagicLink(token, pseudo);
-        if (needsPseudo) {
-          patchState(store, { step: afterVerified(true) });
-          return;
-        }
-        await loader.reload();
-        patchState(store, { step: afterVerified(false) });
+        const verification = await api.verifyMagicLink(token, pseudo);
+        // Sans compte, rien n'a changé côté serveur : l'identité n'est relue qu'après une vraie connexion.
+        if (!verification.needsPseudo) await loader.reload();
+        patchState(store, { step: afterVerified(verification) });
       } catch (error) {
         const appError = await toAppError(error);
         patchState(store, { step: afterFailure(appError.code, pseudo !== undefined), error: appError });
@@ -42,6 +39,10 @@ export const VerifyStore = signalStore(
         patchState(store, { step: initialVerifyStep(token), error: null });
       },
       confirm: (token: string): Promise<void> => verify(token, undefined),
+      /** « Créer mon compte » : rien n'est envoyé, le jeton servira avec le pseudo. */
+      createAccount(): void {
+        patchState(store, { step: chooseNewAccount(store.step()) });
+      },
       submitPseudo: (token: string, pseudo: string): Promise<void> => verify(token, normalizePseudo(pseudo)),
     };
   }),

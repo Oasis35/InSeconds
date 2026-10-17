@@ -21,6 +21,12 @@ describe('VerifyPage', () => {
 
   const confirmButton = (fixture: ReturnType<typeof render>) => query<HTMLButtonElement>(fixture, 'button[type="button"]')!;
   const pseudoInput = (fixture: ReturnType<typeof render>) => query<HTMLInputElement>(fixture, '#login-pseudo')!;
+  /** L'API répond qu'aucun compte n'a l'adresse du lien. */
+  const newAddress = () => ({ verifyMagicLink: vi.fn(async (_token: string, pseudo?: string) => ({ needsPseudo: pseudo === undefined, email: pseudo === undefined ? 'nouvelle@example.com' : null })) });
+  async function createAccount(fixture: ReturnType<typeof render>): Promise<void> {
+    query<HTMLButtonElement>(fixture, '[data-testid="create-account"]')!.click();
+    await settle(fixture);
+  }
 
   it('signale un lien incomplet, sans bouton de confirmation', () => {
     const fixture = render(null);
@@ -49,14 +55,15 @@ describe('VerifyPage', () => {
   });
 
   it('demande le pseudo à la première connexion, puis crée le compte', async () => {
-    const fixture = render('jeton', { verifyMagicLink: vi.fn(async () => ({ needsPseudo: true })) });
+    const fixture = render('jeton', newAddress());
     confirmButton(fixture).click();
     await settle(fixture);
+    await createAccount(fixture);
 
     expect(text(fixture)).toContain('account.verify.pseudoTitle');
     expect(navigate).not.toHaveBeenCalled();
 
-    api.verifyMagicLink.mockResolvedValue({ needsPseudo: false });
+    api.verifyMagicLink.mockResolvedValue({ needsPseudo: false, email: null });
     type(pseudoInput(fixture), ' AliceE2E ');
     query<HTMLButtonElement>(fixture, 'button[type="submit"]')!.click();
     await settle(fixture);
@@ -65,10 +72,56 @@ describe('VerifyPage', () => {
     expect(navigate).toHaveBeenCalledWith('/');
   });
 
+  describe('adresse sans compte : étape « Nouveau compte »', () => {
+    it('montre l\'adresse du lien avant de créer quoi que ce soit', async () => {
+      const fixture = render('jeton', newAddress());
+      confirmButton(fixture).click();
+      await settle(fixture);
+
+      expect(text(fixture)).toContain('account.verify.newAccountTitle');
+      expect(query(fixture, '[data-testid="new-account-notice"]')?.textContent).toContain('nouvelle@example.com');
+      expect(pseudoInput(fixture)).toBeNull();
+      expect(api.verifyMagicLink).toHaveBeenCalledTimes(1);
+    });
+
+    it('« J\'ai déjà un compte » ramène à la connexion sans appeler l\'API', async () => {
+      const fixture = render('jeton', newAddress());
+      confirmButton(fixture).click();
+      await settle(fixture);
+
+      const link = query<HTMLAnchorElement>(fixture, 'a[href="/account/login?hint=existing"]');
+
+      expect(link?.textContent).toContain('account.verify.alreadyHaveAccount');
+      expect(api.verifyMagicLink).toHaveBeenCalledTimes(1);
+    });
+
+    it('« Créer mon compte » demande le pseudo', async () => {
+      const fixture = render('jeton', newAddress());
+      confirmButton(fixture).click();
+      await settle(fixture);
+
+      await createAccount(fixture);
+
+      expect(text(fixture)).toContain('account.verify.pseudoTitle');
+      expect(pseudoInput(fixture)).not.toBeNull();
+      expect(api.verifyMagicLink).toHaveBeenCalledTimes(1);
+    });
+
+    it('rassure un invité : ses parties passent au nouveau compte', async () => {
+      const fixture = render('jeton', newAddress());
+      TestBed.inject(SessionStore).signedIn({ ...linkedPlayer, isGuest: true, email: null, pseudo: null });
+      confirmButton(fixture).click();
+      await settle(fixture);
+
+      expect(text(fixture)).toContain('account.verify.guestKept');
+    });
+  });
+
   it('refuse un pseudo hors règles sans appeler l\'API', async () => {
-    const fixture = render('jeton', { verifyMagicLink: vi.fn(async () => ({ needsPseudo: true })) });
+    const fixture = render('jeton', newAddress());
     confirmButton(fixture).click();
     await settle(fixture);
+    await createAccount(fixture);
 
     type(pseudoInput(fixture), 'ab');
     query<HTMLButtonElement>(fixture, 'button[type="submit"]')!.click();
@@ -79,9 +132,10 @@ describe('VerifyPage', () => {
   });
 
   it('reste sur le pseudo, avec son message, quand il est déjà pris', async () => {
-    const fixture = render('jeton', { verifyMagicLink: vi.fn(async () => ({ needsPseudo: true })) });
+    const fixture = render('jeton', newAddress());
     confirmButton(fixture).click();
     await settle(fixture);
+    await createAccount(fixture);
 
     api.verifyMagicLink.mockRejectedValue(problem(409, 'players.pseudo_taken'));
     type(pseudoInput(fixture), 'Alice');
@@ -94,9 +148,10 @@ describe('VerifyPage', () => {
   });
 
   it('efface le message sur le pseudo dès que le joueur retape', async () => {
-    const fixture = render('jeton', { verifyMagicLink: vi.fn(async () => ({ needsPseudo: true })) });
+    const fixture = render('jeton', newAddress());
     confirmButton(fixture).click();
     await settle(fixture);
+    await createAccount(fixture);
     type(pseudoInput(fixture), 'ab');
     query<HTMLButtonElement>(fixture, 'button[type="submit"]')!.click();
     await settle(fixture);
@@ -110,9 +165,10 @@ describe('VerifyPage', () => {
   });
 
   it('garde le joueur à l’étape du pseudo (saisie conservée) après une panne réseau', async () => {
-    const fixture = render('jeton', { verifyMagicLink: vi.fn(async () => ({ needsPseudo: true })) });
+    const fixture = render('jeton', newAddress());
     confirmButton(fixture).click();
     await settle(fixture);
+    await createAccount(fixture);
 
     api.verifyMagicLink.mockRejectedValue({ isApiException: true, status: 0, response: '' });
     type(pseudoInput(fixture), 'Alice');
@@ -154,8 +210,8 @@ describe('VerifyPage', () => {
       expect(text(fixture)).toContain('account.verify.alreadyConnected');
     });
 
-    it('rappelle à l\'étape du pseudo que le compte actuel ne sera pas modifié', async () => {
-      const fixture = render('jeton', { verifyMagicLink: vi.fn(async () => ({ needsPseudo: true })) });
+    it('rappelle à l\'étape « Nouveau compte » que le compte actuel ne sera pas modifié', async () => {
+      const fixture = render('jeton', newAddress());
       TestBed.inject(SessionStore).signedIn(linkedPlayer);
       confirmButton(fixture).click();
       await settle(fixture);

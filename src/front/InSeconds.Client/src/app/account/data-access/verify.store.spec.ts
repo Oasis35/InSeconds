@@ -47,14 +47,25 @@ describe('VerifyStore', () => {
     expect(store.step()).toEqual({ kind: 'done' });
   });
 
-  it('demande le pseudo à la première connexion, sans relire l\'identité', async () => {
-    setup({ verifyMagicLink: vi.fn(async () => ({ needsPseudo: true })) });
+  it('annonce un nouveau compte avec l\'adresse du lien, sans relire l\'identité', async () => {
+    setup({ verifyMagicLink: vi.fn(async () => ({ needsPseudo: true, email: 'nouvelle@example.com' })) });
     store.open('jeton');
 
     await store.confirm('jeton');
 
-    expect(store.step()).toEqual({ kind: 'needs-pseudo', problem: 'none' });
+    expect(store.step()).toEqual({ kind: 'new-account', email: 'nouvelle@example.com' });
     expect(loader.reload).not.toHaveBeenCalled();
+  });
+
+  it('« Créer mon compte » passe au pseudo sans rien envoyer', async () => {
+    setup({ verifyMagicLink: vi.fn(async () => ({ needsPseudo: true, email: 'nouvelle@example.com' })) });
+    store.open('jeton');
+    await store.confirm('jeton');
+
+    store.createAccount();
+
+    expect(store.step()).toEqual({ kind: 'needs-pseudo', problem: 'none' });
+    expect(api.verifyMagicLink).toHaveBeenCalledTimes(1);
   });
 
   it('crée le compte avec le pseudo choisi, sans espaces autour', async () => {

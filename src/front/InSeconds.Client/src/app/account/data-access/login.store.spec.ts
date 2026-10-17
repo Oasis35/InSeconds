@@ -22,6 +22,39 @@ describe('LoginStore', () => {
     expect(api.requestMagicLink).toHaveBeenCalledWith('alice@example.com');
     expect(store.isFulfilled()).toBe(true);
     expect(store.error()).toBeNull();
+    expect(store.sentTo()).toBe('alice@example.com');
+    expect(store.sentAt()).not.toBeNull();
+    expect(store.resent()).toBe(false);
+  });
+
+  it('renvoie le lien à la même adresse', async () => {
+    setup();
+    await store.requestLink('alice@example.com');
+
+    await store.resend();
+
+    expect(api.requestMagicLink).toHaveBeenCalledTimes(2);
+    expect(api.requestMagicLink).toHaveBeenLastCalledWith('alice@example.com');
+    expect(store.resent()).toBe(true);
+  });
+
+  it('ne renvoie rien sans premier envoi', async () => {
+    setup();
+
+    await store.resend();
+
+    expect(api.requestMagicLink).not.toHaveBeenCalled();
+  });
+
+  it('garde l\'adresse affichée si le renvoi échoue', async () => {
+    setup();
+    await store.requestLink('alice@example.com');
+    api.requestMagicLink.mockRejectedValue(problem(429, 'common.too_many_requests'));
+
+    await store.resend();
+
+    expect(store.sentTo()).toBe('alice@example.com');
+    expect(store.error()?.code).toBe('common.too_many_requests');
   });
 
   it('garde le code d\'erreur de la limite de débit (429)', async () => {

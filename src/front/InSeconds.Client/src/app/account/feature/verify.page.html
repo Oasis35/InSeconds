@@ -1,4 +1,4 @@
-<app-auth-page [heading]="(view() === 'pseudo' ? 'account.verify.pseudoTitle' : 'account.verify.title') | translate">
+<app-auth-page [heading]="headingKey() | translate">
   @switch (view()) {
     @case ('missing-token') {
       <p class="text-sm" style="color:var(--text-muted)">{{ 'account.verify.missingToken' | translate }}</p>
@@ -10,13 +10,30 @@
       <a routerLink="/account/login" class="inline-block text-sm" style="color:var(--text-accent)">{{ 'account.verify.backToLogin' | translate }}</a>
     }
 
+    @case ('new-account') {
+      <div class="rounded-xl px-4 py-3 text-sm leading-relaxed space-y-2" data-testid="new-account-notice"
+        style="background:var(--bg-warn);color:var(--text-body);border:1px solid var(--color-warn)">
+        @if (newAccountEmail(); as email) {
+          <p>{{ 'account.verify.noAccountFor' | translate }}</p>
+          <p class="break-words text-base font-semibold" style="color:var(--text-hi)">{{ email }}</p>
+        } @else {
+          <p>{{ 'account.verify.noAccount' | translate }}</p>
+        }
+        @if (connectedEmail(); as email) {
+          <p>{{ 'account.verify.newAccountNotice' | translate: { email: email } }}</p>
+        } @else if (isGuest()) {
+          <p>{{ 'account.verify.guestKept' | translate }}</p>
+        }
+      </div>
+      <div class="space-y-3">
+        <button appButton type="button" [block]="true" data-testid="create-account" (click)="createAccount()">{{ 'account.verify.createAccount' | translate }}</button>
+        <a appButton variant="secondary" [block]="true" routerLink="/account/login" [queryParams]="{ hint: existingAccountHint }">
+          {{ 'account.verify.alreadyHaveAccount' | translate }}
+        </a>
+      </div>
+    }
+
     @case ('pseudo') {
-      @if (connectedEmail(); as email) {
-        <p class="rounded-xl px-4 py-3 text-sm leading-relaxed"
-          style="background:var(--bg-warn);color:var(--text-body);border:1px solid var(--color-warn)">
-          {{ 'account.verify.newAccountNotice' | translate: { email: email } }}
-        </p>
-      }
       <form [formRoot]="pseudoForm" (submit)="submitPseudo()" class="space-y-3" novalidate>
         <label for="login-pseudo" class="sr-only">{{ 'account.verify.pseudoLabel' | translate }}</label>
         <input

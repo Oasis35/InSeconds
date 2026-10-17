@@ -32,7 +32,7 @@ public static class DevLoginEndpoints
             if (plan.PseudoTaken)
                 return Problem(PlayersProblems.PseudoTaken());
             if (plan.NeedsPseudo)
-                return Results.Ok(new VerifyMagicLinkResponse(NeedsPseudo: true));
+                return Results.Ok(new VerifyMagicLinkResponse(NeedsPseudo: true, Email: plan.Email));
 
             // Hors de Wolverine : pas de transaction automatique. Le gel offert à la création du compte prend un verrou, qui en exige une.
             await using var transaction = await db.Database.BeginTransactionAsync(ct);

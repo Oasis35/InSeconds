@@ -1,5 +1,5 @@
 import {
-  BAD_REQUEST_CODE, INVALID_LINK_CODE, PSEUDO_TAKEN_CODE, afterFailure, afterVerified, confirming, initialVerifyStep,
+  BAD_REQUEST_CODE, INVALID_LINK_CODE, PSEUDO_TAKEN_CODE, afterFailure, afterVerified, chooseNewAccount, confirming, initialVerifyStep,
 } from './verify-flow';
 
 describe('verify-flow', () => {
@@ -9,10 +9,16 @@ describe('verify-flow', () => {
     expect(initialVerifyStep('abc')).toEqual({ kind: 'idle' });
   });
 
-  it('demande le pseudo à la première connexion, termine sinon', () => {
-    expect(afterVerified(true)).toEqual({ kind: 'needs-pseudo', problem: 'none' });
-    expect(afterVerified(false)).toEqual({ kind: 'done' });
+  it('annonce un nouveau compte à la première connexion, termine sinon', () => {
+    expect(afterVerified({ needsPseudo: true, email: 'a@b.fr' })).toEqual({ kind: 'new-account', email: 'a@b.fr' });
+    expect(afterVerified({ needsPseudo: false, email: null })).toEqual({ kind: 'done' });
     expect(confirming).toEqual({ kind: 'confirming' });
+  });
+
+  it('« Créer mon compte » mène au pseudo, seulement depuis « nouveau compte »', () => {
+    expect(chooseNewAccount({ kind: 'new-account', email: 'a@b.fr' })).toEqual({ kind: 'needs-pseudo', problem: 'none' });
+    expect(chooseNewAccount({ kind: 'idle' })).toEqual({ kind: 'idle' });
+    expect(chooseNewAccount({ kind: 'done' })).toEqual({ kind: 'done' });
   });
 
   it('un lien refusé est définitivement invalide', () => {

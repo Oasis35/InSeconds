@@ -5,11 +5,22 @@
  */
 export type PseudoProblem = 'none' | 'taken' | 'invalid';
 
+/** Réponse de la vérification : `email` n'est donné que s'il faut créer le compte (`needsPseudo`). */
+export interface MagicLinkVerification {
+  readonly needsPseudo: boolean;
+  readonly email: string | null;
+}
+
 export type VerifyStep =
   | { readonly kind: 'missing-token' }
   | { readonly kind: 'idle' }
   | { readonly kind: 'confirming' }
-  /** Première connexion de cette adresse : il faut choisir un pseudo pour créer le compte. */
+  /**
+   * Aucun compte pour l'adresse du lien : le joueur choisit de le créer ou de revenir à la
+   * connexion (« J'ai déjà un compte », faute de frappe ou autre adresse). Le jeton n'est pas consommé.
+   */
+  | { readonly kind: 'new-account'; readonly email: string | null }
+  /** Le joueur a choisi de créer le compte : il lui faut un pseudo. */
   | { readonly kind: 'needs-pseudo'; readonly problem: PseudoProblem }
   /** Lien refusé (invalide, expiré, déjà utilisé). */
   | { readonly kind: 'invalid-link' }
@@ -28,8 +39,13 @@ export function initialVerifyStep(token: string | null): VerifyStep {
 
 export const confirming: VerifyStep = { kind: 'confirming' };
 
-export function afterVerified(needsPseudo: boolean): VerifyStep {
-  return needsPseudo ? { kind: 'needs-pseudo', problem: 'none' } : { kind: 'done' };
+export function afterVerified({ needsPseudo, email }: MagicLinkVerification): VerifyStep {
+  return needsPseudo ? { kind: 'new-account', email } : { kind: 'done' };
+}
+
+/** « Créer mon compte » : passe au choix du pseudo (seulement depuis « nouveau compte »). */
+export function chooseNewAccount(step: VerifyStep): VerifyStep {
+  return step.kind === 'new-account' ? { kind: 'needs-pseudo', problem: 'none' } : step;
 }
 
 /**

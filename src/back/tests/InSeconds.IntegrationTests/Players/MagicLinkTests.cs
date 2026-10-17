@@ -86,13 +86,14 @@ public class MagicLinkTests(PostgresFixture postgres) : IAsyncLifetime
 
         // Première étape : pas de compte pour cette adresse, le pseudo est demandé, le jeton reste valable.
         var step1 = await MagicLinkApi.VerifyAsync(browser, token);
-        Assert.True((await step1.Content.ReadFromJsonAsync<VerifyMagicLinkResponse>(Ct))!.NeedsPseudo);
+        // L'adresse revient avec, pour que le joueur voie à quelle adresse il crée un compte (faute de frappe).
+        Assert.Equal(new VerifyMagicLinkResponse(NeedsPseudo: true, "nouvelle@example.com"), await step1.Content.ReadFromJsonAsync<VerifyMagicLinkResponse>(Ct));
         Assert.Equal(0L, await _app.Api.ScalarAsync<long>("SELECT count(*) FROM players.auth_tokens WHERE consumed_at IS NOT NULL"));
 
         var step2 = await MagicLinkApi.VerifyAsync(browser, token, "Nouvelle");
 
         Assert.Equal(HttpStatusCode.OK, step2.StatusCode);
-        Assert.False((await step2.Content.ReadFromJsonAsync<VerifyMagicLinkResponse>(Ct))!.NeedsPseudo);
+        Assert.Equal(new VerifyMagicLinkResponse(NeedsPseudo: false), await step2.Content.ReadFromJsonAsync<VerifyMagicLinkResponse>(Ct));
         var me = await MagicLinkApi.MeAsync(browser);
         Assert.Equal(new PlayerMeResponse(guestId, IsGuest: false, "nouvelle@example.com", "Nouvelle", IsAdmin: false), me);
         Assert.Equal([guestId], _app.Grants.Granted);

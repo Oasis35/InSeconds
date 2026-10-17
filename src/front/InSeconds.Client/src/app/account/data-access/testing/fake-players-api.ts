@@ -1,6 +1,7 @@
 import { Provider } from '@angular/core';
 import { SessionPlayer } from '../../../core/session/session.store';
 import { Device } from '../../domain/device';
+import { MagicLinkVerification } from '../../domain/verify-flow';
 import { DataExportFile, PlayersApi } from '../players.api';
 
 /** Erreur telle que la lève le client NSwag quand l'API répond par un `ProblemDetails` (cf. `toAppError`). */
@@ -21,8 +22,8 @@ function defaults() {
     getMe: vi.fn<() => Promise<SessionPlayer | null>>(() => Promise.resolve(null)),
     createGuest: vi.fn<() => Promise<string>>(() => Promise.resolve('guest-1')),
     requestMagicLink: vi.fn<(email: string) => Promise<void>>(() => Promise.resolve()),
-    verifyMagicLink: vi.fn<(token: string, pseudo?: string) => Promise<{ needsPseudo: boolean }>>(
-      () => Promise.resolve({ needsPseudo: false }),
+    verifyMagicLink: vi.fn<(token: string, pseudo?: string) => Promise<MagicLinkVerification>>(
+      () => Promise.resolve({ needsPseudo: false, email: null }),
     ),
     logout: vi.fn<() => Promise<void>>(() => Promise.resolve()),
     updatePseudo: vi.fn<(pseudo: string) => Promise<string>>(pseudo => Promise.resolve(pseudo)),
