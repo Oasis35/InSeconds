@@ -28,9 +28,8 @@ services:
       # Certificat qui chiffre les clés Data Protection (PLAN S16), chargé par l'API au démarrage.
       DataProtection__CertificatePath: /run/secrets/dataprotection.pfx
       DataProtection__CertificatePassword: ${DATA_PROTECTION_CERTIFICATE_PASSWORD:?à renseigner dans .env.staging (mot de passe de secrets/dataprotection.pfx)}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
-      OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS:-}
-      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      # Aucune variable OTEL_* : le staging n'envoie rien à Grafana, réservé à la prod (choix de Clément,
+      # 17/10/2026). Sans OTEL_EXPORTER_OTLP_ENDPOINT, l'API n'exporte rien.
       # Signal healthchecks.io après chaque tâche planifiée (#315), vers le projet « [Dev]InSeconds » (sa propre clé :
       # jamais celle de la prod). Vide = aucun signal.
       Healthchecks__PingKey: ${HEALTHCHECKS_PING_KEY:-}
