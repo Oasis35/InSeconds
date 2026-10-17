@@ -116,7 +116,12 @@ test.describe('Connexion par lien magique', () => {
     // Même libellé que le bouton du profil : la confirmation du panneau est rendue après lui.
     await page.getByRole('button', { name: 'Se déconnecter', exact: true }).last().click();
 
-    // Revenu à l'état guest : l'en-tête propose de se connecter (l'écran d'accueil du jeu arrive avec Daily).
-    await expect(page.locator('app-account-link').getByRole('link', { name: 'Se connecter' })).toBeVisible();
+    // Revenu à l'état guest : la silhouette du bandeau du jeu mène à la page de connexion.
+    const loginLink = page.locator('app-account-link').getByRole('link', { name: 'Se connecter' });
+    await expect(loginLink).toBeVisible();
+    await loginLink.click();
+    await expect(page).toHaveURL(/\/account\/login$/);
+    // La page de connexion n'a plus de lien de compte en haut à droite (il y renvoyait sur elle-même).
+    await expect(page.locator('app-account-link')).toHaveCount(0);
   });
 });

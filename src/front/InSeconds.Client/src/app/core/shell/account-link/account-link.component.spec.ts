@@ -74,12 +74,15 @@ describe('AccountLinkComponent', () => {
     expect(element.querySelector('a[href="/account/login"]')).not.toBeNull();
   });
 
-  it('réduit l\'avatar dans un bandeau (compact)', () => {
-    const { fixture, element, session } = render();
-    session.signedIn({ id: 'p1', pseudo: 'Alice', email: 'a@example.com', isGuest: false, isAdmin: false });
-    fixture.componentRef.setInput('compact', true);
+  it('montre une silhouette libellée « Se connecter » à un invité', () => {
+    const { fixture, element } = render();
+    const translate = TestBed.inject(TranslateService);
+    translate.setTranslation('fr', { shell: { header: { login: 'Se connecter' } } });
+    translate.use('fr');
     fixture.detectChanges();
 
-    expect(element.querySelector('a[href="/account/profile"]')?.classList).toContain('app-avatar--compact');
+    const link = element.querySelector<HTMLAnchorElement>('a[href="/account/login"]')!;
+    expect(link.getAttribute('aria-label')).toBe('Se connecter');
+    expect(link.querySelector('svg')).not.toBeNull();
   });
 });

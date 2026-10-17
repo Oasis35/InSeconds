@@ -3,7 +3,6 @@ import { RouterOutlet } from '@angular/router';
 
 import { environment } from '../environments/environment';
 import { HealthService } from './core/health/health.service';
-import { AppHeaderComponent } from './core/shell/app-header/app-header.component';
 import { consumeLegacyUrlFlag } from './core/shell/legacy-url';
 import { LegacyUrlNoticeComponent } from './core/shell/legacy-url-notice/legacy-url-notice.component';
 import { ServiceDownComponent } from './core/shell/service-down/service-down.component';
@@ -23,7 +22,7 @@ interface E2EFlags {
 @Component({
   selector: 'app-root',
   imports: [
-    RouterOutlet, AppHeaderComponent, EnvBannerComponent, ToastHostComponent, UpdatePromptComponent, ServiceDownComponent,
+    RouterOutlet, EnvBannerComponent, ToastHostComponent, UpdatePromptComponent, ServiceDownComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './app.html',
