@@ -279,7 +279,7 @@ jobs:
     # sauter le déploiement alors que « CI OK » était vert (B2, B3, #262 n'ont pas été déployés quand
     # le filtre de chemins de la v1 sautait des jobs). Le résultat de « CI OK » est donc testé explicitement.
     needs: [ci-ok]
-    # Branche de déploiement du staging, protégée : on y arrive par PR. Cf. CLAUDE.md racine § Staging.
+    # Branche de déploiement du staging, protégée : on y arrive par PR. Cf. docs/exploitation/deploiement.md § Staging.
     if: ${{ always() && needs.ci-ok.result == 'success' && github.ref == 'refs/heads/env/staging' && github.event_name == 'push' }}
     # Groupe distinct de deploy-vps (prod) : GitHub ne garde qu'un seul job en attente par
     # groupe et annule le précédent — un groupe commun pourrait faire sauter un déploiement

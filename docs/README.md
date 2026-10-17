@@ -28,7 +28,7 @@ InSeconds est un **blind test musical quotidien**. La lecture démarre au palier
 
 ## État du dépôt
 
-Le code est dans `src/` (la v2 de la refonte, en prod depuis le 16/10/2026). L'ancienne version et l'import v1 → v2 sont supprimés depuis I2 (historique git). Où en est le chantier : ticket GitHub #205.
+Le code est dans `src/`, en prod depuis la refonte du 16/10/2026 ([historique](historique/refonte-2026/)).
 
 ## Où trouver quoi
 
@@ -37,16 +37,26 @@ Chaque information n'est écrite qu'à un seul endroit, pour éviter que des cop
 | Besoin | Document |
 |--------|----------|
 | Installer et lancer le projet | [`README.fr.md`](../README.fr.md) |
-| Conventions, modèle de données, pièges connus, déploiement | [`CLAUDE.md`](../CLAUDE.md) racine |
+| Conventions, modèle de données, pièges connus | [`CLAUDE.md`](../CLAUDE.md) racine |
 | Détail backend (modules, routes, tâches, authentification) | [`src/back/CLAUDE.md`](../src/back/CLAUDE.md) |
 | Détail frontend (domaines, stores, lecteur, E2E) | [`src/front/CLAUDE.md`](../src/front/CLAUDE.md) |
-| Règles de jeu (scoring, anti-triche, série, indices) | [`GAMEPLAY_RULES_FR.md`](GAMEPLAY_RULES_FR.md) |
-| Ce qui reste à faire | [`TACHES.md`](TACHES.md) |
-| Plan de la v2, décisions, découpage en PR | [`refonte-v2/PLAN.md`](refonte-v2/PLAN.md), [`refonte-v2/DEVELOPPEMENT.md`](refonte-v2/DEVELOPPEMENT.md) |
-| Suppression des tables v1, copie prod → staging | [`CLAUDE.md`](../CLAUDE.md) § Déploiement VPS |
-| Postgres partagé, sauvegardes | [`deploy/infra/README.md`](../deploy/infra/README.md) |
-
-`BACKEND_STRUCTURE_FR.md` et `FRONTEND_STRUCTURE_FR.md` ne sont plus que des renvois vers ces fichiers.
+| Règles de jeu (scoring, anti-triche, série, indices) | [`regles-du-jeu.md`](regles-du-jeu.md) |
+| Ce qui reste à faire | [`taches.md`](taches.md) |
+| **Architecture** | |
+| Décisions déjà prises, et pourquoi | [`architecture/decisions.md`](architecture/decisions.md) |
+| Frontières entre modules (`Contracts/`) | [`architecture/contrats-entre-modules.md`](architecture/contrats-entre-modules.md) |
+| **Exploitation** | |
+| VPS, stacks, staging, sauvegardes, commandes utiles | [`exploitation/deploiement.md`](exploitation/deploiement.md) |
+| CI, SonarCloud, Dependabot | [`exploitation/ci.md`](exploitation/ci.md) |
+| Accès SSH de secours | [`exploitation/acces-secours-ssh.md`](exploitation/acces-secours-ssh.md) |
+| Postgres partagé, sauvegardes (mode d'emploi) | [`deploy/infra/README.md`](../deploy/infra/README.md) |
+| Caddy, filtre Cloudflare | [`deploy/caddy/README.md`](../deploy/caddy/README.md) |
+| Tableaux de bord Grafana | [`deploy/grafana/README.md`](../deploy/grafana/README.md) |
+| **Conformité** | |
+| Conditions de l'API Deezer | [`conformite/conditions-api-deezer.md`](conformite/conditions-api-deezer.md) |
+| RGPD : ce qui est en place | [`conformite/rgpd.md`](conformite/rgpd.md) |
+| **Historique** | |
+| Refonte de 2026 (plan, découpage en PR, bascule) | [`historique/refonte-2026/`](historique/refonte-2026/) |
 
 ## Quick start technique
 
@@ -70,4 +80,4 @@ Voir le [README](../README.fr.md) pour les détails.
 
 ---
 
-**Pour démarrer une nouvelle feature, lire [CLAUDE.md](../CLAUDE.md) puis [`TACHES.md`](TACHES.md).**
+**Pour démarrer une nouvelle fonctionnalité, lire [CLAUDE.md](../CLAUDE.md), [`architecture/decisions.md`](architecture/decisions.md) puis [`taches.md`](taches.md).**

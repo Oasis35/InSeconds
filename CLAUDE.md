@@ -179,7 +179,7 @@ VPS OVH (Debian 13, Gravelines, 2 vCores, 4 Go, 40 Go) partagé avec de futurs p
 - **Prod** : push sur `main` → « CI OK » → job `deploy` → `deploy/vps/deploy.sh` (certificat Data Protection vérifié, migrations par `--migrate-only` avant de remplacer les conteneurs, test de fumée, santé). La CI ne touche **jamais** `deploy/infra` ni `deploy/caddy` (déploiement manuel).
 - **Staging** (`dev.inseconds.cc` / `api-dev.inseconds.cc`) : push sur `env/staging` → `deploy-staging`. `ASPNETCORE_ENVIRONMENT=Staging`, jamais `Development` ni `Testing` (l'API est publique). Base copiée de la prod et anonymisée (workflow « Copy prod DB to staging ») ; **tous les emails redirigés** vers `EmailRedirect:To`, l'API refuse de démarrer sans. `catalogue-refresh` n'y tourne pas (piège 16).
 - **Sauvegardes** : `deploy/infra/backup.sh` chaque nuit à 3 h UTC (timer systemd du VPS, hors de l'API), chiffrées vers Cloudflare R2, surveillées par healthchecks.io.
-- **Promouvoir un admin** : SQL manuel uniquement (piège 5, commande dans `deploiement.md` § Commandes utiles VPS).
+- **Promouvoir un admin** : SQL manuel uniquement (piège 5, commande dans [`deploiement.md`](docs/exploitation/deploiement.md#commandes-utiles-vps)).
 - **Accès SSH** : clé (`ssh vpsovh`) et mot de passe de secours, cf. [`docs/exploitation/acces-secours-ssh.md`](docs/exploitation/acces-secours-ssh.md).
 
 ## Conventions Git

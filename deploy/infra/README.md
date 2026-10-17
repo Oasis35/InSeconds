@@ -46,8 +46,8 @@ docker exec -it shared-postgres psql -U postgres -c "CREATE DATABASE <projet> OW
 
 ### Base du staging InSeconds
 
-Même principe pour l'environnement de staging (`docker-compose.staging.yml`, cf. CLAUDE.md
-racine § Staging) — mot de passe à reporter dans `~/apps/InSeconds-staging/.env.staging`
+Même principe pour l'environnement de staging (`docker-compose.staging.yml`, cf.
+`docs/exploitation/deploiement.md` § Staging) — mot de passe à reporter dans `~/apps/InSeconds-staging/.env.staging`
 (`INSECONDS_STAGING_DB_PASSWORD`) :
 
 ```bash
@@ -223,4 +223,4 @@ Sur un VPS neuf, il suffit de Docker, du dépôt et d'un `deploy/infra/.env` con
 variables R2 et la phrase de passe (depuis KeePass).
 
 Remplacer réellement la base de prod est une opération manuelle, API arrêtée, avec la commande
-de CLAUDE.md racine § « Restaurer un dump PostgreSQL » (`pg_restore --clean --if-exists`).
+de `docs/exploitation/deploiement.md` § « Restaurer un dump PostgreSQL » (`pg_restore --clean --if-exists`).

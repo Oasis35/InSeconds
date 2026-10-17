@@ -33,7 +33,7 @@ Appliquées chaque nuit par `players-purge-expired-tokens` :
 
 ## Staging
 
-Copie de la prod anonymisée (`deploy/vps/staging-anonymize.sql`) : emails et pseudos remplacés, rôle admin retiré sauf `STAGING_KEEP_EMAIL`, emails sortants redirigés (cf. `CLAUDE.md` § Staging).
+Copie de la prod anonymisée (`deploy/vps/staging-anonymize.sql`) : emails et pseudos remplacés, rôle admin retiré sauf `STAGING_KEEP_EMAIL`, emails sortants redirigés (cf. [`exploitation/deploiement.md`](../exploitation/deploiement.md#staging-devinsecondscc--api-devinsecondscc)).
 
 ## Reste ouvert
 

@@ -9,7 +9,7 @@
 #
 # M17 (revue du 25/09) : extrait de la commande SSH inline pour (a) garder la commande SSH
 # minimale — préalable à une restriction future de la clé de déploiement via `command=` dans
-# authorized_keys (cf. CLAUDE.md racine § Déploiement VPS), et (b) ajouter le nettoyage des
+# authorized_keys (cf. docs/exploitation/deploiement.md § CI/CD), et (b) ajouter le nettoyage des
 # images Docker + la vérification de santé post-déploiement, absents jusqu'ici.
 set -euo pipefail
 

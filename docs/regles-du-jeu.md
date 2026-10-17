@@ -1,6 +1,6 @@
 # Règles de jeu (scoring, anti-triche, streak)
 
-> Référence unique des règles produit du blind test. Avant, ces règles étaient éparpillées entre `COMMENCE_ICI_FR.md` (rappel rapide), `BACKEND_STRUCTURE_FR.md` (formule `ScoreCalculator`) et les pièges du [`CLAUDE.md`](../CLAUDE.md) — ce qui a d'ailleurs causé une ambiguïté réelle lors d'un audit de code (le comportement exact de la prolongation "écouter plus" n'était tranché nulle part). Ce document est la source de vérité produit ; si le code diverge, c'est le code qui a raison, mais ce doc doit alors être corrigé.
+> Référence unique des règles produit du blind test. Avant, ces règles étaient éparpillées entre le sommaire de `docs/` (rappel rapide), l'ancienne doc d'architecture du back (formule `ScoreCalculator`) et les pièges du [`CLAUDE.md`](../CLAUDE.md) — ce qui a d'ailleurs causé une ambiguïté réelle lors d'un audit de code (le comportement exact de la prolongation "écouter plus" n'était tranché nulle part). Ce document est la source de vérité produit ; si le code diverge, c'est le code qui a raison, mais ce doc doit alors être corrigé.
 >
 > **2026-07-17** : la prolongation "écouter plus" a été repensée — plus de malus de score, plus de limite au nombre de prolongations. Voir la section dédiée ci-dessous pour le raisonnement.
 >
