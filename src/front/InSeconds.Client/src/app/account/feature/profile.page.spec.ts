@@ -4,7 +4,6 @@ import { FileDownload } from '../../core/download/file-download';
 import { Router, provideRouter } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
 import { SessionStore } from '../../core/session/session.store';
-import { HeaderSlot } from '../../core/shell/app-header/header-slot';
 import { ModalService } from '../../ui/modal/modal.service';
 import { ToastService } from '../../ui/toast/toast.service';
 import { FakePlayersApi, device, fakePlayersApi, linkedPlayer, problem, providePlayersApiFake } from '../data-access/testing/fake-players-api';
@@ -59,16 +58,6 @@ describe('ProfilePage', () => {
     devicesToggle(f).click();
     await settle(f);
   }
-
-  it("efface l'en-tête global (pas d'avatar en haut à droite) et le rend en partant", async () => {
-    const fixture = await render();
-    const slot = TestBed.inject(HeaderSlot);
-
-    expect(slot.takenOver()).toBe(true);
-
-    fixture.destroy();
-    expect(slot.takenOver()).toBe(false);
-  });
 
   it('affiche le pseudo et l\'adresse du compte', async () => {
     const fixture = await render();

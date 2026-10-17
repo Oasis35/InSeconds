@@ -17,7 +17,7 @@
         </div>
         <!-- Le lien de compte n'apparaît pas en pleine manche (comme en v1) : un toucher par erreur ouvrirait la confirmation de sortie. -->
         @if (store.screen() !== 'playing') {
-          <app-account-link brandRight compact />
+          <app-account-link brandRight />
         }
       </app-daily-brand>
       @if (store.screen() === 'playing') {

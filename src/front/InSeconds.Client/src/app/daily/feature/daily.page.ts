@@ -8,8 +8,7 @@ import { SessionStore } from '../../core/session/session.store';
 import { VersionService } from '../../core/version/version.service';
 import { ErrorReportingService } from '../../core/errors/error-reporting.service';
 import { LanguageService } from '../../core/i18n/language.service';
-import { AccountLinkComponent } from '../../core/shell/app-header/account-link.component';
-import { HeaderSlot } from '../../core/shell/app-header/header-slot';
+import { AccountLinkComponent } from '../../core/shell/account-link/account-link.component';
 import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { TrackRoundComponent } from '../../gameplay/feature/track-round.component';
 import { RoundSubmission } from '../../gameplay/domain/track-round';
@@ -77,7 +76,6 @@ export class DailyPage implements OnInit {
   private readonly modal = inject(ModalService);
   private readonly translate = inject(TranslateService);
   private readonly router = inject(Router);
-  private readonly headerSlot = inject(HeaderSlot);
   private readonly dailyShare = inject(DailyShare);
   private readonly thanks = inject(ThanksNotice);
   private readonly lostStreakNotice = inject(LostStreakNotice);
@@ -96,10 +94,7 @@ export class DailyPage implements OnInit {
   protected readonly isEnglish = () => this.language.current() === 'en';
 
   constructor() {
-    // La page a son propre en-tête (gélule de série et lien de compte dans le bandeau) : l'en-tête global s'efface tant qu'elle est affichée.
-    this.headerSlot.takeOver(this);
     this.destroyRef.onDestroy(() => {
-      this.headerSlot.release(this);
       this.destroyed = true;
     });
 

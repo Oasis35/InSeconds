@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { BrowserIdComponent } from '../../account/feature/browser-id.component';
@@ -7,7 +7,6 @@ import { ProfileStore } from '../../account/data-access/profile.store';
 import { SessionStore } from '../../core/session/session.store';
 import { AdminCounts } from '../data-access/admin-counts';
 import { DEPLOYED_AT } from '../../core/shell/deployed-at';
-import { HeaderSlot } from '../../core/shell/app-header/header-slot';
 import { ADMIN_TABS, AdminTab } from './admin-tabs';
 import { ButtonComponent } from '../../ui/button/button.component';
 import { DecorBackgroundComponent } from '../../ui/decor-background/decor-background.component';
@@ -20,7 +19,6 @@ import { DecorBackgroundComponent } from '../../ui/decor-background/decor-backgr
  * - compte sans le rôle : accès refusé ;
  * - admin : la barre des onglets, l'onglet ouvert, puis la déconnexion.
  * L'identifiant du navigateur est affiché dans tous les cas (repérer ses propres parties).
- * Pas d'avatar en haut à droite : l'admin prend `HeaderSlot`, l'en-tête global s'efface (la déconnexion est en bas de page).
  */
 @Component({
   selector: 'app-admin-shell-page',
@@ -96,13 +94,6 @@ export class AdminShellPage {
   private readonly counts = inject(AdminCounts);
   /** Heure du déploiement (piège 25), vide quand le build ne la connaît pas. */
   protected readonly deployedAt = DEPLOYED_AT;
-
-  constructor() {
-    // Pas de lien de compte en haut à droite dans l'admin : l'en-tête global s'efface tant qu'elle est affichée.
-    const headerSlot = inject(HeaderSlot);
-    headerSlot.takeOver(this);
-    inject(DestroyRef).onDestroy(() => headerSlot.release(this));
-  }
 
   /** Le libellé d'un onglet : avec son effectif une fois chargé (Pool, Défis, Joueurs), nu avant. */
   protected labelOf(tab: AdminTab): { key: string; params: { count: number } | undefined } {
