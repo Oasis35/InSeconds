@@ -107,7 +107,7 @@ Workflow GitHub Actions sur chaque push (toutes branches) et chaque PR vers `mai
 - **e2e** — Playwright contre l'hôte de test
 - **nginx-headers** — construit l'image nginx du front et vérifie en-têtes de cache et de sécurité, types MIME et redirection de l'ancienne adresse
 
-Le check **« CI OK »** les agrège (c'est lui qu'exige la protection des branches). Les runs obsolètes sont annulés automatiquement. Détail : [`CLAUDE.md`](CLAUDE.md) § CI.
+Le check **« CI OK »** les agrège (c'est lui qu'exige la protection des branches). Les runs obsolètes sont annulés automatiquement. Détail : [`docs/exploitation/ci.md`](docs/exploitation/ci.md).
 
 ## Tests
 
@@ -139,12 +139,14 @@ E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inse
 
 ## Documentation
 
-- [`docs/COMMENCE_ICI_FR.md`](docs/COMMENCE_ICI_FR.md) — point d'entrée : pitch, stack, où trouver quoi
-- [`CLAUDE.md`](CLAUDE.md) — conventions, modèle de données, déploiement, pièges connus (à lire avant de contribuer)
-- Architecture : [`src/back/CLAUDE.md`](src/back/CLAUDE.md) (backend), [`src/front/CLAUDE.md`](src/front/CLAUDE.md) (frontend)
-- [`docs/GAMEPLAY_RULES_FR.md`](docs/GAMEPLAY_RULES_FR.md) — règles de jeu (scoring, prolongation, anti-triche, série) — ce qui est réellement appliqué vs juste configuré
-- [`docs/TACHES.md`](docs/TACHES.md) — ce qui reste à faire
-- [`docs/refonte-v2/`](docs/refonte-v2/) — plan et suivi de la v2
+- [`docs/README.md`](docs/README.md) — point d'entrée : pitch, stack, où trouver quoi
+- [`CLAUDE.md`](CLAUDE.md) — conventions, modèle de données, pièges connus (à lire avant de contribuer)
+- Architecture : [`src/back/CLAUDE.md`](src/back/CLAUDE.md) (backend), [`src/front/CLAUDE.md`](src/front/CLAUDE.md) (frontend), [`docs/architecture/`](docs/architecture/) (décisions, frontières entre modules)
+- [`docs/regles-du-jeu.md`](docs/regles-du-jeu.md) — règles de jeu (scoring, prolongation, anti-triche, série) — ce qui est réellement appliqué vs juste configuré
+- [`docs/exploitation/`](docs/exploitation/) — déploiement sur le VPS, CI, accès de secours
+- [`docs/conformite/`](docs/conformite/) — conditions de l'API Deezer, RGPD
+- [`docs/taches.md`](docs/taches.md) — ce qui reste à faire
+- [`docs/historique/`](docs/historique/) — la refonte de 2026
 
 ## Licence
 

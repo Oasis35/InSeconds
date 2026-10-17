@@ -107,7 +107,7 @@ GitHub Actions workflow on every push (all branches) and every PR to `main`:
 - **e2e** — Playwright against the test host
 - **nginx-headers** — builds the frontend nginx image and checks cache and security headers, MIME types and the old-address redirect
 
-The **"CI OK"** check aggregates them (it is the one branch protection requires). Stale runs are cancelled automatically. Details: [`CLAUDE.md`](CLAUDE.md) § CI.
+The **"CI OK"** check aggregates them (it is the one branch protection requires). Stale runs are cancelled automatically. Details: [`docs/exploitation/ci.md`](docs/exploitation/ci.md).
 
 ## Testing
 
@@ -141,12 +141,14 @@ E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inse
 
 The detailed docs are in French.
 
-- [`docs/COMMENCE_ICI_FR.md`](docs/COMMENCE_ICI_FR.md) — entry point: pitch, stack, where to find what
-- [`CLAUDE.md`](CLAUDE.md) — conventions, data model, deployment, known pitfalls (read before contributing)
-- Architecture: [`src/back/CLAUDE.md`](src/back/CLAUDE.md) (backend), [`src/front/CLAUDE.md`](src/front/CLAUDE.md) (frontend)
-- [`docs/GAMEPLAY_RULES_FR.md`](docs/GAMEPLAY_RULES_FR.md) — game rules (scoring, extensions, anti-cheat, streak) — what is actually enforced vs merely configured
-- [`docs/TACHES.md`](docs/TACHES.md) — what is left to do
-- [`docs/refonte-v2/`](docs/refonte-v2/) — v2 plan and tracking
+- [`docs/README.md`](docs/README.md) — entry point: pitch, stack, where to find what
+- [`CLAUDE.md`](CLAUDE.md) — conventions, data model, known pitfalls (read before contributing)
+- Architecture: [`src/back/CLAUDE.md`](src/back/CLAUDE.md) (backend), [`src/front/CLAUDE.md`](src/front/CLAUDE.md) (frontend), [`docs/architecture/`](docs/architecture/) (decisions, module boundaries)
+- [`docs/regles-du-jeu.md`](docs/regles-du-jeu.md) — game rules (scoring, extensions, anti-cheat, streak) — what is actually enforced vs merely configured
+- [`docs/exploitation/`](docs/exploitation/) — VPS deployment, CI, emergency access
+- [`docs/conformite/`](docs/conformite/) — Deezer API terms, GDPR
+- [`docs/taches.md`](docs/taches.md) — what is left to do
+- [`docs/historique/`](docs/historique/) — the 2026 rewrite
 
 ## License
 
