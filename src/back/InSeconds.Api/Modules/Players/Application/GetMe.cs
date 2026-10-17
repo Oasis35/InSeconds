@@ -14,6 +14,9 @@ public interface IPlayerQueries
 
     /// <summary>Ses appareils encore connectés, le plus récemment vu d'abord.</summary>
     Task<IReadOnlyList<DeviceResponse>> ListDevicesAsync(Guid playerId, int? currentDeviceSessionId, CancellationToken ct);
+
+    /// <summary>Ce que Players garde de ce joueur, pour la copie de ses données ; rien s'il n'existe pas ou a été supprimé.</summary>
+    Task<PlayerRecordExport?> ExportAsync(Guid playerId, CancellationToken ct);
 }
 
 public static class GetMeEndpoint

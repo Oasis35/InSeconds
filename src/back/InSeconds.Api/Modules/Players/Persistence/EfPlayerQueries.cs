@@ -26,4 +26,29 @@ public sealed class EfPlayerQueries(InSecondsDbContext db) : IPlayerQueries
             .OrderByDescending(s => s.LastSeenAt)
             .Select(s => new DeviceResponse(s.Id, s.UserAgentLabel, s.CreatedAt, s.LastSeenAt, s.Id == currentDeviceSessionId))
             .ToListAsync(ct);
+
+    public async Task<PlayerRecordExport?> ExportAsync(Guid playerId, CancellationToken ct)
+    {
+        var player = await (
+                from p in db.Set<Player>().AsNoTracking()
+                where p.Id == playerId && p.DeletedAt == null
+                join a in db.Set<Account>() on p.Id equals a.PlayerId into accounts
+                from account in accounts.DefaultIfEmpty()
+                select new
+                {
+                    p.CreatedAt,
+                    p.LastSeenAt,
+                    Account = account == null ? null : new AccountExport(account.Email, account.Pseudo, account.LinkedAt, account.IsAdmin),
+                })
+            .FirstOrDefaultAsync(ct);
+        if (player is null)
+            return null;
+
+        var devices = await db.Set<DeviceSession>().AsNoTracking()
+            .Where(s => s.PlayerId == playerId)
+            .OrderBy(s => s.CreatedAt)
+            .Select(s => new DeviceExport(s.UserAgentLabel, s.CreatedAt, s.LastSeenAt, s.RevokedAt))
+            .ToListAsync(ct);
+        return new PlayerRecordExport(player.CreatedAt, player.LastSeenAt, player.Account, devices);
+    }
 }

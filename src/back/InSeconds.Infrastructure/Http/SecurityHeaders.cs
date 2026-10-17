@@ -8,7 +8,9 @@ namespace InSeconds.Infrastructure.Http;
 /// sa CSP n'autorise rien. Seul le tableau de bord Hangfire (<see cref="DashboardPath"/>) sert du
 /// HTML ; ses scripts et feuilles de style viennent de <c>/jobs</c> lui-même, aucun script en ligne
 /// (vérifié sur Hangfire 1.8.25), mais des attributs <c>style</c> : d'où <c>'unsafe-inline'</c> pour
-/// les styles uniquement.
+/// les styles uniquement. Les réponses de l'API portent des données personnelles (profil, appareils,
+/// liste des comptes de l'admin avec leurs adresses) : <c>Cache-Control: no-store</c>, pour qu'aucun
+/// cache (navigateur, proxy) ne les garde sur disque, sauf si la route a posé son propre en-tête.
 /// </summary>
 public static class SecurityHeaders
 {
@@ -47,5 +49,8 @@ public static class SecurityHeaders
         headers.ContentSecurityPolicy = isDashboard
             ? DashboardContentSecurityPolicy
             : ApiContentSecurityPolicy;
+        // Le tableau de bord garde le cache de ses scripts et feuilles de style (posé par Hangfire).
+        if (!isDashboard && string.IsNullOrEmpty(headers.CacheControl))
+            headers.CacheControl = "no-store";
     }
 }

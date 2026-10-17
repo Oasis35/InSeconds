@@ -27,6 +27,16 @@ public partial class SecurityHeadersTests(PostgresFixture postgres) : IAsyncLife
         AssertHeader(response, "X-Frame-Options", "DENY");
         AssertHeader(response, "Referrer-Policy", "no-referrer");
         AssertHeader(response, "Strict-Transport-Security", "max-age=31536000");
+        Assert.True(response.Headers.CacheControl?.NoStore, "Cache-Control: no-store absent");
+    }
+
+    [Fact]
+    public async Task Admin_ListeDesComptes_JamaisGardeeEnCache()
+    {
+        var response = await _api.CreateClient(TestUser.Admin).GetAsync("/api/admin/players", TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(response.Headers.CacheControl?.NoStore, "Cache-Control: no-store absent");
     }
 
     [Fact]

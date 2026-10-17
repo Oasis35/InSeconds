@@ -11,7 +11,7 @@ describe('PlayersApi', () => {
     client = {
       getMe: vi.fn(), createGuest: vi.fn(), requestMagicLink: vi.fn(), verifyMagicLink: vi.fn(), logout: vi.fn(),
       updatePseudo: vi.fn(), requestEmailChange: vi.fn(), confirmEmailChange: vi.fn(), listDevices: vi.fn(),
-      revokeDevice: vi.fn(), revokeOtherDevices: vi.fn(),
+      revokeDevice: vi.fn(), revokeOtherDevices: vi.fn(), exportMyData: vi.fn(), deleteMyAccount: vi.fn(),
     } as unknown as typeof client;
     TestBed.configureTestingModule({ providers: [{ provide: PlayersClient, useValue: client }] });
     api = TestBed.inject(PlayersApi);
@@ -117,5 +117,25 @@ describe('PlayersApi', () => {
     expect(client.revokeDevice).toHaveBeenCalledWith(7);
 
     expect(await api.revokeOtherDevices()).toBe(3);
+  });
+
+  it('rend la copie des données remise en forme, sous le nom de fichier du jour de l\'export', async () => {
+    // Le client annonce des dates mais le JSON livre du texte.
+    const data = { exportedAt: '2026-10-17T04:00:00Z', playerId: 'p1', devices: [], games: [] };
+    client.exportMyData.mockReturnValue(of(data));
+
+    const file = await api.exportMyData();
+
+    expect(file.fileName).toBe('inseconds-donnees-2026-10-17.json');
+    expect(JSON.parse(file.json)).toEqual(data);
+    expect(file.json).toContain('\n  "playerId"');
+  });
+
+  it('supprime le compte avec le pseudo retapé', async () => {
+    client.deleteMyAccount.mockReturnValue(of(undefined));
+
+    await api.deleteMyAccount('Alice');
+
+    expect(client.deleteMyAccount).toHaveBeenCalledWith({ pseudo: 'Alice' });
   });
 });

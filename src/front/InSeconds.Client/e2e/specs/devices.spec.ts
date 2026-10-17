@@ -12,6 +12,12 @@ function deviceRows(page: Page) {
   return page.getByTestId('device-list').getByRole('listitem');
 }
 
+/** La liste est repliée à chaque visite du profil (choix de Clément du 17/10) : un toucher la déplie. */
+async function openDeviceList(page: Page): Promise<void> {
+  await page.getByTestId('devices-toggle').click();
+  await expect(page.getByTestId('device-list')).toBeVisible();
+}
+
 function confirmDialogButton(page: Page, name: string) {
   return page.locator('app-confirm-dialog').getByRole('button', { name, exact: true });
 }
@@ -33,6 +39,9 @@ test.describe('Appareils connectés (v2)', () => {
     await signInAgain(other, api, EMAIL, PSEUDO);
 
     await page.goto('/profile');
+    await expect(page.getByTestId('devices-summary')).toHaveText(/et 1 autre/);
+    await expect(page.getByTestId('device-list')).toBeHidden();
+    await openDeviceList(page);
     await expect(deviceRows(page)).toHaveCount(2);
     await expect(deviceRows(page).filter({ hasText: 'Cet appareil' })).toHaveCount(1);
 
@@ -48,6 +57,7 @@ test.describe('Appareils connectés (v2)', () => {
     // L'autre appareil est refusé dès sa requête suivante ; celui-ci reste connecté.
     await expectSignedOut(other);
     await page.reload();
+    await openDeviceList(page);
     await expect(deviceRows(page)).toHaveCount(1);
 
     await other.context().close();
@@ -59,18 +69,20 @@ test.describe('Appareils connectés (v2)', () => {
     await signInAgain(other, api, EMAIL, PSEUDO);
 
     // Depuis le second appareil cette fois : c'est le premier qui doit être déconnecté.
+    // Le bouton se voit sans déplier la liste.
     await other.goto('/profile');
-    await expect(deviceRows(other)).toHaveCount(2);
     await other.getByRole('button', { name: 'Déconnecter les autres appareils' }).click();
     await expect(other.getByRole('heading', { name: 'Déconnecter les autres appareils ?' })).toBeVisible();
     await confirmDialogButton(other, 'Déconnecter les autres appareils').click();
 
     await expect(other.getByText('Les autres appareils sont déconnectés.')).toBeVisible();
+    await openDeviceList(other);
     await expect(deviceRows(other)).toHaveCount(1);
     await expect(deviceRows(other)).toContainText('Cet appareil');
 
     await expectSignedOut(page);
     await other.reload();
+    await openDeviceList(other);
     await expect(deviceRows(other)).toHaveCount(1);
 
     await other.context().close();

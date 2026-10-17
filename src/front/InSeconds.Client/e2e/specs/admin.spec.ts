@@ -601,6 +601,10 @@ test.describe('Admin — joueurs', () => {
     await admin.clickTab('Joueurs');
 
     const row = page.getByTestId('registered-player').filter({ hasText: 'JoueurTab' });
+    // L'email est masqué jusqu'au clic (RGPD).
+    await expect(row).toContainText('j•••@e2e.test');
+    await expect(row).not.toContainText(email);
+    await row.getByTestId('player-email').click();
     await expect(row).toContainText(email);
     // Écart avec la v1 : login-as-admin n'a plus à promouvoir le compte du navigateur (déjà lié), il connecte le compte
     // AdminE2E, qui apparaît aussi dans la liste ; le badge « Admin » est donc sur lui, pas sur JoueurTab.

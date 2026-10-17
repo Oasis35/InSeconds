@@ -37,8 +37,8 @@ public class DailySessionTests
     public void TurnOf_ApresDeuxReponses()
     {
         var session = NewSession();
-        session.Answer(Found(), 850, false, null, null, 5, Now);
-        session.Answer(Found(), 850, false, null, null, 5, Now);
+        session.Answer(Found(), 850, false, 5, Now);
+        session.Answer(Found(), 850, false, 5, Now);
 
         Assert.Equal(
             [TrackTurn.AlreadyAnswered, TrackTurn.AlreadyAnswered, TrackTurn.Current, TrackTurn.NotYet, TrackTurn.NotYet],
@@ -69,7 +69,7 @@ public class DailySessionTests
     {
         var session = NewSession();
         session.KeepRound(TrackRound.Resume(10, 2));
-        session.Answer(Found(10, 2), 40, false, null, null, 5, Now);
+        session.Answer(Found(10, 2), 40, false, 5, Now);
         // Le verrou est libéré par la réponse : le morceau 2 ne reprend ni l'écoute ni l'indice du morceau 1.
         Assert.Equal(TrackRound.Start, session.RoundOfCurrentTrack(Hints));
     }
@@ -95,12 +95,12 @@ public class DailySessionTests
         var session = NewSession();
         session.KeepRound(TrackRound.Resume(2, 0));
 
-        var completed = session.Answer(Found(2), 550, wasExtended: true, "Daft Punk", "Around", 5, Now);
+        var completed = session.Answer(Found(2), 550, wasExtended: true, 5, Now);
 
         Assert.False(completed);
         var answer = Assert.Single(session.Answers);
-        Assert.Equal(((short)1, 2m, true, "Daft Punk", "Around", 550, (DateTimeOffset?)Now),
-            (answer.Position, answer.ListenedSeconds, answer.WasExtended, answer.ArtistAnswer, answer.TitleAnswer, answer.Score, answer.AnsweredAt));
+        Assert.Equal(((short)1, 2m, true, 550, (DateTimeOffset?)Now),
+            (answer.Position, answer.ListenedSeconds, answer.WasExtended, answer.Score, answer.AnsweredAt));
         Assert.Equal((550, 2m, 2), (session.TotalScore, session.TotalListenedSeconds, session.NextPosition));
         Assert.Null(session.CurrentPosition);
         Assert.Null(session.CurrentListenedSeconds);
@@ -112,7 +112,7 @@ public class DailySessionTests
     {
         var session = NewSession();
 
-        session.Answer(new RoundOutcome(true, false, 5, 1), 125, false, null, null, 5, Now);
+        session.Answer(new RoundOutcome(true, false, 5, 1), 125, false, 5, Now);
 
         var answer = Assert.Single(session.Answers);
         Assert.Equal((true, false, (short)1), (answer.ArtistCorrect, answer.TitleCorrect, answer.HintLevel));
@@ -123,9 +123,9 @@ public class DailySessionTests
     {
         var session = NewSession();
         for (var i = 0; i < 4; i++)
-            Assert.False(session.Answer(Found(), 850, false, null, null, trackCount: 5, Now));
+            Assert.False(session.Answer(Found(), 850, false, trackCount: 5, Now));
 
-        var completed = session.Answer(Found(), 850, false, null, null, trackCount: 5, Now.AddMinutes(3));
+        var completed = session.Answer(Found(), 850, false, trackCount: 5, Now.AddMinutes(3));
 
         Assert.True(completed);
         Assert.Equal((SessionStatus.Completed, Now.AddMinutes(3), 4250), (session.Status, session.EndedAt, session.TotalScore));
@@ -135,10 +135,10 @@ public class DailySessionTests
     public void Answer_SeTermineSurLeNombreReelDeMorceaux_PasSurCinq()
     {
         var session = NewSession();
-        session.Answer(Found(), 850, false, null, null, trackCount: 3, Now);
-        session.Answer(Found(), 850, false, null, null, trackCount: 3, Now);
+        session.Answer(Found(), 850, false, trackCount: 3, Now);
+        session.Answer(Found(), 850, false, trackCount: 3, Now);
 
-        Assert.True(session.Answer(Found(), 850, false, null, null, trackCount: 3, Now));
+        Assert.True(session.Answer(Found(), 850, false, trackCount: 3, Now));
     }
 
     // --- les fins de partie ---

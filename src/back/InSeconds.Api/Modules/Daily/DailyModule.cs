@@ -33,6 +33,8 @@ public static class DailyModule
         // Fige les statistiques de l'avant-veille (§ 5.4 bis). Tourne aussi en staging : elle n'appelle pas Deezer.
         services.AddScheduledJob<DailyCloseDayJob>(DailyCloseDayJob.Id, DailyCloseDayJob.DefaultCron);
         services.AddScoped<IStreakGrants, DailyStreakGrants>();
+        // La copie et l'effacement des données de jeu d'un joueur (ses droits RGPD), pour Players.
+        services.AddScoped<IPlayerGameData, EfPlayerGameData>();
         return services;
     }
 }

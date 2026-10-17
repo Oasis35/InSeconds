@@ -1,13 +1,15 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { RegisteredPlayer } from '../domain/registered-player';
+import { RegisteredPlayer, maskEmail } from '../domain/registered-player';
 import { PlayerIconComponent } from './player-icon.component';
 
 /**
  * Une ligne du tableau des comptes inscrits. Le bouton chevron sur le pseudo déplie ou replie
  * l'historique (rendu par le tableau, sous cette ligne). Les instants s'affichent en heure locale
  * du navigateur : « JJ/MM/AA à HH:MM » pour la dernière visite, « JJ/MM/AAAA » pour l'inscription.
+ * L'email est masqué (`c•••@gmail.com`) tant qu'on ne clique pas dessus (minimisation, RGPD) ;
+ * le filtre de la page cherche quand même dans l'adresse complète.
  */
 @Component({
   selector: 'tr[appPlayerRow]',
@@ -37,7 +39,16 @@ import { PlayerIconComponent } from './player-icon.component';
           style="color:var(--color-violet);background:rgb(var(--rgb-violet) / 0.15)">{{ 'admin.players.adminBadge' | translate }}</span>
       }
     </td>
-    <td class="px-3 py-2.5" style="color:var(--text-body)">{{ player().email ?? '—' }}</td>
+    <td class="px-3 py-2.5" style="color:var(--text-body)">
+      @if (player().email; as email) {
+        <button type="button" data-testid="player-email" (click)="emailRevealed.set(!emailRevealed())"
+          [attr.aria-pressed]="emailRevealed()"
+          [title]="(emailRevealed() ? 'admin.players.emailHide' : 'admin.players.emailReveal') | translate"
+          class="text-left cursor-pointer hover:underline min-h-6">{{ emailRevealed() ? email : mask(email) }}</button>
+      } @else {
+        —
+      }
+    </td>
     <td class="px-3 py-2.5 text-right tabular-nums" style="color:var(--text-body)">{{ player().gamesPlayed }}</td>
     <td class="px-3 py-2.5 text-right tabular-nums whitespace-nowrap"
       [title]="player().streakProtected ? ('admin.players.streakProtected' | translate) : ''"
@@ -66,4 +77,6 @@ export class PlayerRowComponent {
   readonly player = input.required<RegisteredPlayer>();
   readonly expanded = input(false);
   readonly toggled = output();
+  protected readonly emailRevealed = signal(false);
+  protected readonly mask = maskEmail;
 }

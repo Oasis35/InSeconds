@@ -32,7 +32,8 @@ describe('PlayersPage', () => {
     const { rows } = await render();
     expect(api.list).toHaveBeenCalledTimes(1);
     expect(rows()).toHaveLength(2);
-    expect(rows()[0].textContent).toContain('alice@example.com');
+    expect(rows()[0].textContent).toContain('a•••@example.com');
+    expect(rows()[0].textContent).not.toContain('alice@example.com');
     expect(rows()[0].textContent).toContain('admin.players.adminBadge');
     expect(rows()[1].textContent).toContain('admin.players.neverSeen');
   });
@@ -45,6 +46,22 @@ describe('PlayersPage', () => {
   it('affiche l\'erreur de chargement', async () => {
     const { element } = await render({ api: { list: vi.fn(() => Promise.reject(problem(500, 'common.unexpected'))) } });
     expect(element.querySelector('[role="alert"]')).not.toBeNull();
+  });
+
+  it('affiche l\'email complet au clic, puis le masque de nouveau', async () => {
+    const { settle, rows } = await render();
+    const email = rows()[1].querySelector('[data-testid="player-email"]') as HTMLButtonElement;
+    expect(email.textContent?.trim()).toBe('b•••@test.fr');
+
+    email.click();
+    await settle();
+    expect(email.textContent?.trim()).toBe('bob@test.fr');
+    expect(email.getAttribute('aria-pressed')).toBe('true');
+    expect(rows()[0].textContent).not.toContain('alice@example.com');
+
+    email.click();
+    await settle();
+    expect(email.textContent?.trim()).toBe('b•••@test.fr');
   });
 
   it('filtre par pseudo ou email', async () => {

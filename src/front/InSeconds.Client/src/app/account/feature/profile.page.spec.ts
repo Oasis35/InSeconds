@@ -1,4 +1,6 @@
 import { TestBed } from '@angular/core/testing';
+import { Subject } from 'rxjs';
+import { FileDownload } from '../../core/download/file-download';
 import { Router, provideRouter } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
 import { SessionStore } from '../../core/session/session.store';
@@ -15,18 +17,25 @@ describe('ProfilePage', () => {
 
   let api: FakePlayersApi;
   let confirm: ReturnType<typeof vi.fn>;
+  let open: ReturnType<typeof vi.fn>;
+  let dialogClosed: Subject<boolean | undefined>;
+  let saveText: ReturnType<typeof vi.fn>;
   let navigate: ReturnType<typeof vi.spyOn>;
   let toast: ReturnType<typeof vi.spyOn>;
 
   async function render(overrides: Parameters<typeof fakePlayersApi>[0] = {}, player = linkedPlayer) {
     api = fakePlayersApi({ listDevices: vi.fn(async () => [current, other]), ...overrides });
     confirm = vi.fn(async () => true);
+    dialogClosed = new Subject<boolean | undefined>();
+    open = vi.fn(() => ({ closed: dialogClosed }));
+    saveText = vi.fn();
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
         provideTranslateService(),
         providePlayersApiFake(api),
-        { provide: ModalService, useValue: { confirm } },
+        { provide: ModalService, useValue: { confirm, open } },
+        { provide: FileDownload, useValue: { saveText } },
       ],
     });
     TestBed.inject(SessionStore).signedIn(player);
@@ -45,6 +54,11 @@ describe('ProfilePage', () => {
   const emailSave = (f: Fixture) => query<HTMLButtonElement>(f, 'form:nth-of-type(2) button[type="submit"]')!;
   const buttonLabelled = (f: Fixture, key: string) =>
     [...(f.nativeElement as HTMLElement).querySelectorAll('button')].find(b => b.textContent?.includes(key))!;
+  const devicesToggle = (f: Fixture) => query<HTMLButtonElement>(f, '[data-testid="devices-toggle"]')!;
+  async function openDevices(f: Fixture) {
+    devicesToggle(f).click();
+    await settle(f);
+  }
 
   it("efface l'en-tête global (pas d'avatar en haut à droite) et le rend en partant", async () => {
     const fixture = await render();
@@ -157,16 +171,42 @@ describe('ProfilePage', () => {
   });
 
   describe('appareils', () => {
-    it('liste les appareils connectés', async () => {
+    it('replie la liste à l\'arrivée : le nombre, cet appareil et les autres sur une ligne', async () => {
       const fixture = await render();
 
       expect(api.listDevices).toHaveBeenCalledTimes(1);
+      expect(devicesToggle(fixture).getAttribute('aria-expanded')).toBe('false');
+      expect(query(fixture, '[data-testid="device-list"]')).toBeNull();
+      expect(text(fixture)).toContain('account.devices.title · 2');
+      expect(query(fixture, '[data-testid="devices-summary"]')?.textContent).toContain('account.devices.summary.one');
+      // Le bouton « déconnecter les autres » reste visible sans déplier la liste.
+      expect(buttonLabelled(fixture, 'account.devices.revokeOthers')).toBeDefined();
+    });
+
+    it('déplie et replie la liste au toucher', async () => {
+      const fixture = await render();
+
+      await openDevices(fixture);
+      expect(devicesToggle(fixture).getAttribute('aria-expanded')).toBe('true');
       expect(query(fixture, '[data-testid="device-1"]')).not.toBeNull();
       expect(query(fixture, '[data-testid="device-2"]')).not.toBeNull();
+
+      await openDevices(fixture);
+      expect(query(fixture, '[data-testid="device-list"]')).toBeNull();
+    });
+
+    it.each([
+      [[device({ id: 1, isCurrent: true })], 'account.devices.summary.alone'],
+      [[device({ id: 1, isCurrent: true }), device({ id: 2 }), device({ id: 3 })], 'account.devices.summary.many'],
+    ])('résume la liste repliée selon le nombre d\'autres appareils (%#)', async (devices, key) => {
+      const fixture = await render({ listDevices: vi.fn(async () => devices) });
+
+      expect(query(fixture, '[data-testid="devices-summary"]')?.textContent).toContain(key);
     });
 
     it('déconnecte un autre appareil après confirmation', async () => {
       const fixture = await render();
+      await openDevices(fixture);
 
       query<HTMLButtonElement>(fixture, '[data-testid="device-2"] button')!.click();
       await settle(fixture);
@@ -180,6 +220,7 @@ describe('ProfilePage', () => {
     it('ne fait rien si la confirmation est refusée', async () => {
       const fixture = await render();
       confirm.mockResolvedValue(false);
+      await openDevices(fixture);
 
       query<HTMLButtonElement>(fixture, '[data-testid="device-2"] button')!.click();
       await settle(fixture);
@@ -190,6 +231,7 @@ describe('ProfilePage', () => {
 
     it('déconnecter l\'appareil courant revient à l\'accueil, session vidée', async () => {
       const fixture = await render();
+      await openDevices(fixture);
 
       query<HTMLButtonElement>(fixture, '[data-testid="device-1"] button')!.click();
       await settle(fixture);
@@ -204,6 +246,7 @@ describe('ProfilePage', () => {
 
       buttonLabelled(fixture, 'account.devices.revokeOthers').click();
       await settle(fixture);
+      await openDevices(fixture);
 
       expect(api.revokeOtherDevices).toHaveBeenCalledTimes(1);
       expect(query(fixture, '[data-testid="device-2"]')).toBeNull();
@@ -232,6 +275,7 @@ describe('ProfilePage', () => {
 
     it('affiche l\'erreur quand la déconnexion d\'un appareil échoue', async () => {
       const fixture = await render({ revokeDevice: vi.fn(async () => Promise.reject(problem(404, 'common.not_found'))) });
+      await openDevices(fixture);
 
       query<HTMLButtonElement>(fixture, '[data-testid="device-2"] button')!.click();
       await settle(fixture);
@@ -280,6 +324,81 @@ describe('ProfilePage', () => {
       expect(navigate).not.toHaveBeenCalled();
       expect(text(fixture)).toContain('account.profile.logout.error');
       expect(TestBed.inject(SessionStore).isLinked()).toBe(true);
+    });
+  });
+
+  describe('retour au jeu', () => {
+    it('est en haut de la page, avant le titre', async () => {
+      const fixture = await render();
+      const back = query<HTMLAnchorElement>(fixture, '[data-testid="back-to-game"]')!;
+
+      expect(back.getAttribute('href')).toBe('/');
+      expect(back.compareDocumentPosition(query(fixture, 'h1')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+  });
+
+  describe('tes données', () => {
+    it('viennent après la déconnexion, la suppression en dernier', async () => {
+      const fixture = await render();
+      const logout = buttonLabelled(fixture, 'account.profile.logout.action');
+      const download = buttonLabelled(fixture, 'account.profile.data.export');
+      const remove = query(fixture, '[data-testid="delete-account"]')!;
+
+      expect(logout.compareDocumentPosition(download) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(download.compareDocumentPosition(remove) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('téléchargent la copie de ses données directement, sans fenêtre', async () => {
+      const fixture = await render({
+        exportMyData: vi.fn(async () => ({ fileName: 'inseconds-donnees-2026-10-17.json', json: '{"playerId":"p1"}' })),
+      });
+
+      buttonLabelled(fixture, 'account.profile.data.export').click();
+      await settle(fixture);
+
+      expect(api.exportMyData).toHaveBeenCalledTimes(1);
+      expect(saveText).toHaveBeenCalledWith('inseconds-donnees-2026-10-17.json', '{"playerId":"p1"}');
+      expect(open).not.toHaveBeenCalled();
+      expect(confirm).not.toHaveBeenCalled();
+    });
+
+    it('affichent l\'erreur quand le téléchargement échoue', async () => {
+      const fixture = await render({ exportMyData: vi.fn(async () => Promise.reject(problem(500, 'common.unexpected'))) });
+
+      buttonLabelled(fixture, 'account.profile.data.export').click();
+      await settle(fixture);
+
+      expect(saveText).not.toHaveBeenCalled();
+      expect(text(fixture)).toContain('account.profile.data.exportError');
+    });
+
+    it('la suppression ouvre la fenêtre, puis revient à l\'accueil avec un message une fois le compte supprimé', async () => {
+      const fixture = await render();
+
+      query<HTMLButtonElement>(fixture, '[data-testid="delete-account"]')!.click();
+      await settle(fixture);
+      expect(open).toHaveBeenCalledTimes(1);
+      expect(navigate).not.toHaveBeenCalled();
+
+      dialogClosed.next(true);
+      dialogClosed.complete();
+      await settle(fixture);
+
+      expect(navigate).toHaveBeenCalledWith('/');
+      expect(toast).toHaveBeenCalledWith('account.profile.delete.done', { tone: 'success' });
+    });
+
+    it('rien ne se passe si la fenêtre est fermée sans supprimer', async () => {
+      const fixture = await render();
+
+      query<HTMLButtonElement>(fixture, '[data-testid="delete-account"]')!.click();
+      await settle(fixture);
+      dialogClosed.next(undefined);
+      dialogClosed.complete();
+      await settle(fixture);
+
+      expect(navigate).not.toHaveBeenCalled();
+      expect(toast).not.toHaveBeenCalled();
     });
   });
 

@@ -460,6 +460,13 @@ Le retour arrière reste possible tant que personne n'a joué en v2 (§ 10.3 du 
 - **« v2 » retiré des noms** (demande de Clément) : jobs CI, groupes Dependabot (étiquette `dependencies`), `docker-compose.prod-v2.yml` → `docker-compose.prod.yml` et projet Compose `inseconds-v2` → `inseconds` (`deploy.sh` retire une fois les conteneurs et images de l'ancien projet, mêmes noms de conteneurs), paquet npm, classe de test, titres de la doc. Gardés : l'étiquette et le dossier `refonte-v2` (historique), l'identifiant du message de remerciement (`v2-launch`, déjà lu par les navigateurs), les noms de tests qui opposent cookie v1 et cookie v2.
 - **Flux Git** : PR vers `env/staging`, puis `env/staging` → `main` (règle normale, plus « tant que la v1 existe »).
 
+**Passe RGPD après la mise en prod (PR #351 vers `env/staging`, 16/10/2026, hors étapes de la refonte) :** constat dans `audit/rgpd-admin-2026-10-16.md` (dossier partagé du projet).
+- **Minimisation** : `Cache-Control: no-store` sur toute l'API ; email masqué dans l'admin (affiché au clic) ; pseudos anonymisés au staging ; texte tapé par le joueur plus stocké (migration `DropTypedAnswers`).
+- **Droits du joueur** : `GET /api/players/me/export` (copie JSON de toutes ses données) et `POST /api/players/me/delete` (pseudo retapé), même effacement (`AccountErasure`, contrat `Daily.Contracts.IPlayerGameData`) que la purge et que les commandes de secours `--export-player` / `--delete-player`. Un compte effacé l'est pour de bon (plus de `deleted_at`). Piège 48 : toute table avec `player_id` doit être effacée (`PlayerDataTests`).
+- **Durées de conservation** dans `players-purge-expired-tokens` (même identifiant) : appareils sans visite depuis 91 jours, comptes inactifs depuis 3 ans (jamais un admin, sans email de prévenance), une transaction par étape.
+- **Profil** (maquettes validées par Clément le 17/10) : « ← Retour au jeu » en haut, liste des appareils repliée (une ligne : leur nombre, cet appareil et combien d'autres ; « Déconnecter les autres appareils » reste visible), « Se déconnecter » juste après, puis « Tes données » : « Télécharger mes données » (direct, sans fenêtre) et le lien « Supprimer mon compte » (fenêtre, pseudo retapé).
+- **Page confidentialité** (après #349 et #352) : « Durée de conservation » donne les durées appliquées (comptes inactifs depuis 3 ans, appareils 91 jours après leur dernière visite, invités jamais effacés mais anonymes une fois leurs appareils supprimés) et « Vos droits » renvoie à la section « Tes données » du profil ; l'email reste le recours de qui ne peut plus se connecter.
+
 ---
 
 ## 12. Suivi

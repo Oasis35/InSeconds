@@ -56,6 +56,30 @@ public interface IPlayerStore
 
     /// <summary>Supprime les jetons expirés, quel que soit leur usage ; renvoie leur nombre.</summary>
     Task<int> DeleteExpiredTokensAsync(DateTimeOffset now, CancellationToken ct);
+
+    /// <summary>
+    /// Supprime les appareils qui ne peuvent plus servir : sans visite depuis <paramref name="cutoff"/> (leur cookie a expiré), ou
+    /// révoqués avant. Renvoie leur nombre.
+    /// </summary>
+    Task<int> DeleteStaleDeviceSessionsAsync(DateTimeOffset cutoff, CancellationToken ct);
+
+    /// <summary>
+    /// Les joueurs dont le compte n'a eu aucune visite depuis <paramref name="cutoff"/> (date de création, à défaut de visite connue),
+    /// admins exceptés.
+    /// </summary>
+    Task<IReadOnlyList<Guid>> ListInactiveAccountsAsync(DateTimeOffset cutoff, CancellationToken ct);
+
+    /// <summary>Ce compte existe et n'a eu aucune visite depuis <paramref name="cutoff"/>, comme dans <see cref="ListInactiveAccountsAsync"/>.</summary>
+    Task<bool> IsAccountInactiveAsync(Guid playerId, DateTimeOffset cutoff, CancellationToken ct);
+
+    /// <summary>Les identifiants de tous ses appareils, révoqués compris : à retirer du cache de validation.</summary>
+    Task<IReadOnlyList<int>> ListDeviceSessionIdsAsync(Guid playerId, CancellationToken ct);
+
+    /// <summary>
+    /// Supprime le joueur et tout ce que Players garde de lui : compte (email, pseudo), appareils, jetons (y compris les liens de connexion
+    /// émis pour son adresse), jeton v1. Ses données de jeu doivent être supprimées avant (elles le référencent).
+    /// </summary>
+    Task EraseAsync(Guid playerId, CancellationToken ct);
 }
 
 /// <summary>Le compte trouvé pour une adresse, et l'état de son joueur.</summary>

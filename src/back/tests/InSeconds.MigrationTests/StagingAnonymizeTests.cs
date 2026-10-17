@@ -3,7 +3,7 @@ namespace InSeconds.MigrationTests;
 /// <summary>
 /// Anonymisation du staging (<c>deploy/vps/staging-anonymize.sql</c>, S8 et § 10.1 du plan v2), lancée par <c>copy-prod-db-to-staging.sh</c>
 /// après la copie des schémas v2 de la prod (I1, #235) : aucune adresse ni aucun rôle admin de la prod ne reste, sauf ceux de l'adresse
-/// gardée, et la file de Wolverine est vidée, messages en erreur compris (ils gardent le corps du message, une adresse pour un lien de connexion).
+/// gardée, les pseudos sont remplacés, et la file de Wolverine est vidée, messages en erreur compris (ils gardent le corps du message, une adresse pour un lien de connexion).
 /// </summary>
 public class StagingAnonymizeTests(ScriptDatabase database)
 {
@@ -35,8 +35,10 @@ public class StagingAnonymizeTests(ScriptDatabase database)
 
         Assert.True(result.ExitCode == 0, result.Output);
         // L'adresse gardée (STAGING_KEEP_EMAIL, sans tenir compte de la casse) garde aussi son rôle admin : celui qui teste le staging.
-        Assert.Equal(1L, await Count(cs, $"players.accounts WHERE player_id = '{kept}' AND email = 'Garde@example.com' AND is_admin"));
-        Assert.Equal(1L, await Count(cs, $"players.accounts WHERE player_id = '{other}' AND email = 'player-{other}@example.invalid' AND NOT is_admin"));
+        Assert.Equal(1L, await Count(cs, $"players.accounts WHERE player_id = '{kept}' AND email = 'Garde@example.com' AND pseudo = 'Garde' AND is_admin"));
+        var pseudo = "joueur-" + other.ToString("N")[..12];
+        Assert.Equal(1L, await Count(cs, $"players.accounts WHERE player_id = '{other}' AND email = 'player-{other}@example.invalid' AND pseudo = '{pseudo}' AND NOT is_admin"));
+        Assert.Equal(0L, await Count(cs, "players.accounts WHERE pseudo = 'Joueur'"));
         foreach (var table in new[] { "players.auth_tokens", "players.device_sessions", "players.legacy_tokens", "infra.data_protection_keys" })
             Assert.Equal(0L, await Count(cs, table));
         foreach (var queue in Queues)

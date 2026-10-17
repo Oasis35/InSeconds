@@ -1,7 +1,7 @@
 import { Provider } from '@angular/core';
 import { SessionPlayer } from '../../../core/session/session.store';
 import { Device } from '../../domain/device';
-import { PlayersApi } from '../players.api';
+import { DataExportFile, PlayersApi } from '../players.api';
 
 /** Erreur telle que la lève le client NSwag quand l'API répond par un `ProblemDetails` (cf. `toAppError`). */
 export function problem(status: number, code: string, traceId = '0123456789abcdef0123456789abcdef') {
@@ -31,6 +31,10 @@ function defaults() {
     listDevices: vi.fn<() => Promise<Device[]>>(() => Promise.resolve([])),
     revokeDevice: vi.fn<(id: number) => Promise<void>>(() => Promise.resolve()),
     revokeOtherDevices: vi.fn<() => Promise<number>>(() => Promise.resolve(0)),
+    exportMyData: vi.fn<() => Promise<DataExportFile>>(
+      () => Promise.resolve({ fileName: 'inseconds-donnees-2026-10-17.json', json: '{}' }),
+    ),
+    deleteMyAccount: vi.fn<(pseudo: string) => Promise<void>>(() => Promise.resolve()),
   } satisfies Record<keyof PlayersApi, unknown>;
 }
 

@@ -338,10 +338,6 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("answered_at");
 
-                    b.Property<string>("ArtistAnswer")
-                        .HasColumnType("text")
-                        .HasColumnName("artist_answer");
-
                     b.Property<bool>("ArtistCorrect")
                         .HasColumnType("boolean")
                         .HasColumnName("artist_correct");
@@ -358,10 +354,6 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                     b.Property<int>("Score")
                         .HasColumnType("integer")
                         .HasColumnName("score");
-
-                    b.Property<string>("TitleAnswer")
-                        .HasColumnType("text")
-                        .HasColumnName("title_answer");
 
                     b.Property<bool>("TitleCorrect")
                         .HasColumnType("boolean")

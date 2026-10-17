@@ -125,13 +125,16 @@ public sealed class DailySession
         CurrentHintLevel = (short)round.HintLevel;
     }
 
-    /// <summary>Note la réponse au morceau en cours, libère le verrou, et termine la partie si c'était le dernier morceau.</summary>
+    /// <summary>
+    /// Note la réponse au morceau en cours, libère le verrou, et termine la partie si c'était le dernier morceau. Le verdict seul est
+    /// gardé, jamais le texte tapé par le joueur (minimisation RGPD : rien ne le relisait, colonnes retirées le 16/10/2026).
+    /// </summary>
     /// <returns>Vrai si cette réponse termine la partie.</returns>
     public bool Answer(
-        RoundOutcome outcome, int score, bool wasExtended, string? artistAnswer, string? titleAnswer, int trackCount, DateTimeOffset now)
+        RoundOutcome outcome, int score, bool wasExtended, int trackCount, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(outcome);
-        _answers.Add(new SessionAnswer(Id, (short)NextPosition, outcome, score, wasExtended, artistAnswer, titleAnswer, now));
+        _answers.Add(new SessionAnswer(Id, (short)NextPosition, outcome, score, wasExtended, now));
         TotalScore += score;
         TotalListenedSeconds += outcome.ListenedSeconds;
         ReleaseLock();
@@ -179,15 +182,13 @@ public sealed class SessionAnswer
     }
 
     internal SessionAnswer(
-        int sessionId, short position, RoundOutcome outcome, int score, bool wasExtended, string? artistAnswer, string? titleAnswer, DateTimeOffset answeredAt)
+        int sessionId, short position, RoundOutcome outcome, int score, bool wasExtended, DateTimeOffset answeredAt)
     {
         SessionId = sessionId;
         Position = position;
         ListenedSeconds = outcome.ListenedSeconds;
         WasExtended = wasExtended;
         HintLevel = (short)outcome.HintLevelUsed;
-        ArtistAnswer = artistAnswer;
-        TitleAnswer = titleAnswer;
         ArtistCorrect = outcome.ArtistCorrect;
         TitleCorrect = outcome.TitleCorrect;
         Score = score;
@@ -203,10 +204,6 @@ public sealed class SessionAnswer
     public bool WasExtended { get; private set; }
 
     public short HintLevel { get; private set; }
-
-    public string? ArtistAnswer { get; private set; }
-
-    public string? TitleAnswer { get; private set; }
 
     public bool ArtistCorrect { get; private set; }
 

@@ -129,4 +129,46 @@ describe('ProfileStore', () => {
       expect(store.logoutStatus()).toMatchObject({ error: { code: 'common.unexpected' } });
     });
   });
+
+  describe('copie des données', () => {
+    it('rend le fichier à enregistrer', async () => {
+      setup();
+
+      const pending = store.exportData();
+      expect(store.exportStatus()).toBe('pending');
+
+      expect(await pending).toEqual({ fileName: 'inseconds-donnees-2026-10-17.json', json: '{}' });
+      expect(store.exportStatus()).toBe('done');
+    });
+
+    it('rend null et garde l\'erreur quand la copie échoue', async () => {
+      setup({ exportMyData: vi.fn(async () => Promise.reject(problem(500, 'common.unexpected'))) });
+
+      expect(await store.exportData()).toBeNull();
+      expect(store.exportStatus()).toMatchObject({ error: { code: 'common.unexpected' } });
+    });
+  });
+
+  describe('suppression du compte', () => {
+    it('supprime le compte avec le pseudo sans espaces et vide la session', async () => {
+      setup();
+
+      expect(await store.deleteAccount('  alice ')).toBe(true);
+
+      expect(api.deleteMyAccount).toHaveBeenCalledWith('alice');
+      expect(session.player()).toBeNull();
+      expect(store.deleteStatus()).toBe('done');
+    });
+
+    it('garde la session et l\'erreur quand le pseudo est refusé, effacée par clearDelete', async () => {
+      setup({ deleteMyAccount: vi.fn(async () => Promise.reject(problem(400, 'players.pseudo_mismatch'))) });
+
+      expect(await store.deleteAccount('Bob')).toBe(false);
+      expect(session.isLinked()).toBe(true);
+      expect(store.deleteStatus()).toMatchObject({ error: { code: 'players.pseudo_mismatch' } });
+
+      store.clearDelete();
+      expect(store.deleteStatus()).toBe('idle');
+    });
+  });
 });

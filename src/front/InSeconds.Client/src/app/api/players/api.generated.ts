@@ -735,6 +735,135 @@ export class PlayersClient {
         }
         return _observableOf(null as any);
     }
+
+    /**
+     * @return OK
+     */
+    exportMyData(): Observable<PlayerDataExport> {
+        let url_ = this.baseUrl + "/api/players/me/export";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processExportMyData(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processExportMyData(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PlayerDataExport>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PlayerDataExport>;
+        }));
+    }
+
+    protected processExportMyData(response: HttpResponseBase): Observable<PlayerDataExport> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PlayerDataExport;
+            return _observableOf(result200);
+            }));
+        } else if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("No Content", status, _responseText, _headers);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return No Content
+     */
+    deleteMyAccount(body: DeleteMyAccount): Observable<void> {
+        let url_ = this.baseUrl + "/api/players/me/delete";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDeleteMyAccount(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDeleteMyAccount(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDeleteMyAccount(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as HttpValidationProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            result401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Unauthorized", status, _responseText, _headers, result401);
+            }));
+        } else if (status === 403) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Forbidden", status, _responseText, _headers, result403);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
 }
 
 export interface ConfirmEmailChange {
@@ -835,6 +964,76 @@ export interface VerifyMagicLink {
 
 export interface VerifyMagicLinkResponse {
     needsPseudo: boolean;
+
+    [key: string]: any;
+}
+
+export interface AccountExport {
+    email: string;
+    pseudo: string;
+    linkedAt: Date | undefined;
+    isAdmin: boolean;
+
+    [key: string]: any;
+}
+
+export interface DeleteMyAccount {
+    pseudo: string;
+
+    [key: string]: any;
+}
+
+export interface DeviceExport {
+    label: string | undefined;
+    createdAt: Date;
+    lastSeenAt: Date;
+    revokedAt: Date | undefined;
+
+    [key: string]: any;
+}
+
+export interface GameExport {
+    date: Date;
+    status: string;
+    startedAt: Date;
+    endedAt: Date | undefined;
+    totalScore: number;
+    tracks: GameTrackExport[];
+
+    [key: string]: any;
+}
+
+export interface GameTrackExport {
+    position: number;
+    artist: string | undefined;
+    title: string | undefined;
+    listenedSeconds: number;
+    hintLevel: number;
+    artistFound: boolean;
+    titleFound: boolean;
+    score: number;
+    answeredAt: Date | undefined;
+
+    [key: string]: any;
+}
+
+export interface PlayerDataExport {
+    exportedAt: Date;
+    playerId: string;
+    createdAt: Date;
+    lastSeenAt: Date | undefined;
+    account: AccountExport | undefined;
+    devices: DeviceExport[];
+    streak: StreakExport | undefined;
+    games: GameExport[];
+
+    [key: string]: any;
+}
+
+export interface StreakExport {
+    currentStreak: number;
+    lastPlayedDate: Date | undefined;
+    freezes: number;
 
     [key: string]: any;
 }
