@@ -1,120 +1,33 @@
 using InSeconds.Deezer;
 using InSeconds.UnitTests.Support;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Time.Testing;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace InSeconds.UnitTests.Deezer;
 
 /// <summary>
-/// Les décorateurs de cache : TTL des extraits borné par la signature de l'URL (piège 14), une taille posée sur
-/// chaque entrée (piège 24), jamais le cache d'une preview absente ni d'une recherche vide.
+/// Le cache des recherches publiques : une taille posée sur chaque entrée (piège 24), jamais le cache d'une recherche
+/// vide ni d'un Deezer indisponible. Les extraits n'ont pas de cache (piège 14 : adresses signées pour 15 min).
 /// </summary>
 public class DeezerCacheTests
 {
-    private static readonly DateTimeOffset Now = new(2026, 10, 5, 12, 0, 0, TimeSpan.Zero);
-
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    private readonly FakeTimeProvider _time = new(Now);
     private readonly RecordingMemoryCache _recording = new();
 
     // ---------- Extraits ----------
 
     [Fact]
-    public async Task Extrait_SansSignature_MisEnCachePour24h_UneSeuleRequete()
+    public void Piege14_Extrait_SansCache_LePortEstLeClientBrut()
     {
-        var inner = new ScriptedPreviews(new PreviewLookup.Found("https://fake-preview.mp3"));
-        var provider = new CachedPreviewProvider(inner, _recording, _time);
+        // Deezer signe ses adresses d'extrait pour 15 min : un cache servirait des adresses presque expirées. Chaque
+        // demande d'extrait doit repartir chez Deezer.
+        var services = new ServiceCollection().AddLogging();
+        services.AddDeezer(new ConfigurationBuilder().Build());
+        using var provider = services.BuildServiceProvider();
 
-        var first = await provider.GetPreviewAsync(123, Ct);
-        var second = await provider.GetPreviewAsync(123, Ct);
-
-        Assert.Equal(first, second);
-        Assert.Equal(1, inner.Calls);
-        var entry = Assert.Single(_recording.Entries);
-        Assert.Equal(TimeSpan.FromHours(24), entry.Ttl);
-        Assert.Equal(1, entry.Size);
-        // Les recherches publiques, qu'un script peut multiplier, partent avant les extraits du défi.
-        Assert.Equal(CacheItemPriority.High, entry.Priority);
-    }
-
-    [Fact]
-    public async Task Piege14_Extrait_SignatureValableLongtemps_TtlBorneParLaSignatureMoinsLaMarge()
-    {
-        // Expire dans 20 h : cache jusqu'à 19 h (1 h de marge pour la lecture réelle côté joueur).
-        var provider = new CachedPreviewProvider(new ScriptedPreviews(new PreviewLookup.Found(Signed(Now.AddHours(20)))), _recording, _time);
-
-        await provider.GetPreviewAsync(123, Ct);
-
-        Assert.Equal(TimeSpan.FromHours(19), Assert.Single(_recording.Entries).Ttl);
-    }
-
-    [Fact]
-    public async Task Extrait_SignatureAuDela24h_TtlPlafonneA24h()
-    {
-        var provider = new CachedPreviewProvider(new ScriptedPreviews(new PreviewLookup.Found(Signed(Now.AddDays(5)))), _recording, _time);
-
-        await provider.GetPreviewAsync(123, Ct);
-
-        Assert.Equal(TimeSpan.FromHours(24), Assert.Single(_recording.Entries).Ttl);
-    }
-
-    [Theory]
-    [InlineData(30)] // moins que la marge d'1 h
-    [InlineData(60)] // juste la marge : durée nulle
-    [InlineData(-60)] // déjà expirée
-    public async Task Piege14_Extrait_SignatureProcheDeLExpirationOuExpiree_JamaisMisEnCache(int minutesLeft)
-    {
-        var inner = new ScriptedPreviews(new PreviewLookup.Found(Signed(Now.AddMinutes(minutesLeft))));
-        var provider = new CachedPreviewProvider(inner, _recording, _time);
-
-        var first = await provider.GetPreviewAsync(123, Ct);
-        await provider.GetPreviewAsync(123, Ct);
-
-        Assert.IsType<PreviewLookup.Found>(first);
-        Assert.Empty(_recording.Entries);
-        Assert.Equal(2, inner.Calls);
-    }
-
-    [Fact]
-    public async Task Extrait_LeTempsEstCeluiDuTimeProvider()
-    {
-        var provider = new CachedPreviewProvider(new ScriptedPreviews(new PreviewLookup.Found(Signed(Now.AddHours(10)))), _recording, _time);
-        _time.Advance(TimeSpan.FromHours(9.5));
-
-        await provider.GetPreviewAsync(123, Ct);
-
-        // Il ne reste que 30 min avant l'expiration : sous la marge, pas de cache.
-        Assert.Empty(_recording.Entries);
-    }
-
-    [Theory]
-    [MemberData(nameof(NotCacheable))]
-    public async Task Extrait_AbsentOuIndisponible_JamaisMisEnCache(PreviewLookup lookup)
-    {
-        var inner = new ScriptedPreviews(lookup);
-        var provider = new CachedPreviewProvider(inner, _recording, _time);
-
-        await provider.GetPreviewAsync(123, Ct);
-        await provider.GetPreviewAsync(123, Ct);
-
-        Assert.Empty(_recording.Entries);
-        Assert.Equal(2, inner.Calls);
-    }
-
-    public static TheoryData<PreviewLookup> NotCacheable() => new() { new PreviewLookup.Missing(), new PreviewLookup.Unavailable() };
-
-    [Fact]
-    public async Task Extrait_UneEntreeParMorceau()
-    {
-        var inner = new ScriptedPreviews(new PreviewLookup.Found("https://fake-preview.mp3"));
-        var provider = new CachedPreviewProvider(inner, _recording, _time);
-
-        await provider.GetPreviewAsync(1, Ct);
-        await provider.GetPreviewAsync(2, Ct);
-
-        Assert.Equal(2, inner.Calls);
-        Assert.Equal(2, _recording.Entries.Count);
+        Assert.IsType<DeezerClient>(provider.GetRequiredService<IPreviewProvider>());
     }
 
     // ---------- Recherches ----------
@@ -177,17 +90,14 @@ public class DeezerCacheTests
     // ---------- Taille : une SizeLimit exige un Size sur chaque entrée (piège 24) ----------
 
     [Fact]
-    public async Task CacheBorne_LesDecorateursPosentUneTaille_SansExceptionALExecution()
+    public async Task CacheBorne_LeDecorateurPoseUneTaille_SansExceptionALExecution()
     {
         using var cache = new DeezerCache();
-        var provider = new CachedPreviewProvider(new ScriptedPreviews(new PreviewLookup.Found("https://fake-preview.mp3")), cache.Memory, _time);
         var search = new CachedTrackSearch(new ScriptedSearch([Track(1)]), cache.Memory);
 
         // Sans Size, MemoryCache.Set lèverait « Cache entry must specify a value for Size ».
-        await provider.GetPreviewAsync(123, Ct);
         await search.SearchAsync("daft punk", 20, Ct);
 
-        Assert.True(cache.Memory.TryGetValue("deezer:preview:123", out _));
         Assert.True(cache.Memory.TryGetValue("deezer:search:20:daft punk", out _));
     }
 
@@ -195,29 +105,15 @@ public class DeezerCacheTests
     public async Task CacheDedie_BorneEnNombreDEntrees_EtSeVide()
     {
         using var cache = new DeezerCache();
-        var provider = new CachedPreviewProvider(new ScriptedPreviews(new PreviewLookup.Found("https://fake-preview.mp3")), cache.Memory, _time);
-        await provider.GetPreviewAsync(123, Ct);
+        var search = new CachedTrackSearch(new ScriptedSearch([Track(1)]), cache.Memory);
+        await search.SearchAsync("daft punk", 20, Ct);
 
         cache.Clear();
 
-        Assert.False(cache.Memory.TryGetValue("deezer:preview:123", out _));
+        Assert.False(cache.Memory.TryGetValue("deezer:search:20:daft punk", out _));
     }
-
-    private static string Signed(DateTimeOffset expiry) =>
-        $"https://cdnt-preview.dzcdn.net/api/1/x.mp3?hdnea=exp={expiry.ToUnixTimeSeconds()}~acl=/x.mp3*~hmac=abc";
 
     private static DeezerTrack Track(long id) => new(id, "Daft Punk", "One More Time", "https://p.mp3", null, 2000, 1);
-
-    private sealed class ScriptedPreviews(PreviewLookup lookup) : IPreviewProvider
-    {
-        public int Calls { get; private set; }
-
-        public Task<PreviewLookup> GetPreviewAsync(long deezerTrackId, CancellationToken ct)
-        {
-            Calls++;
-            return Task.FromResult(lookup);
-        }
-    }
 
     private sealed class ScriptedSearch(SearchLookup lookup) : ITrackSearch
     {

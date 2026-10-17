@@ -68,7 +68,8 @@ function isAbort(err: unknown): boolean {
  * - Le suivant est seulement annoncé au navigateur (`<link rel="preload" as="audio">`), une fois
  *   le courant prêt, comme en v1 : rien n'est décodé en mémoire.
  * - L'extrait est lu en flux : une adresse dont la signature expire en cours de route (piège 14)
- *   donne `error`, et « Réessayer » en redemande une fraîche (`refreshPreviewUrl`).
+ *   donne `error` ; la manche en redemande une fraîche d'elle-même une fois, puis par « Réessayer »
+ *   (`refreshPreviewUrl`).
  */
 @Injectable()
 export class HtmlAudioPort extends AudioPort {

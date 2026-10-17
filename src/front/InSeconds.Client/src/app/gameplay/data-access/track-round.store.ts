@@ -47,6 +47,8 @@ export function withTrackRound() {
       let nextPreviewUrl: string | null = null;
       /** Le mode qui sait redemander une adresse d'extrait (signature expirée), pour « Réessayer ». */
       let refreshPreviewUrl: RoundConfig['refreshPreviewUrl'];
+      /** La relance automatique après un échec de lecture a déjà eu lieu pour ce morceau. */
+      let autoRetried = false;
 
       const set = (round: TrackRound | null) => patchState(store, { round });
       /** Applique une transition ; rend la manche avant et après si elle a changé. */
@@ -62,6 +64,25 @@ export function withTrackRound() {
         audio.load(round.previewUrl!, nextPreviewUrl);
         audio.playUntil(round.chosenSeconds);
       };
+      /** Recharge l'extrait après un échec de lecture, depuis une adresse fraîche si le mode sait la redemander. */
+      const reload = () => {
+        const changed = apply(retryPlayback);
+        if (!changed) return;
+        const refresh = refreshPreviewUrl;
+        if (!refresh) {
+          launch(changed.after);
+          return;
+        }
+        const trackId = changed.after.trackId;
+        void refresh().catch(() => null).then(url => {
+          const round = store.round();
+          // le joueur est passé à autre chose entre-temps (passé le morceau, morceau suivant)
+          if (round?.trackId !== trackId || round.phase !== 'loading') return;
+          const fresh = url ? replacePreviewUrl(round, url) : round;
+          set(fresh);
+          launch(fresh);
+        });
+      };
       /** La réponse part : on rend ce que le mode doit envoyer. */
       const submissionOf = (changed: { after: TrackRound } | null): RoundSubmission | null =>
         changed?.after.phase === 'submitting' ? changed.after.submission : null;
@@ -72,6 +93,7 @@ export function withTrackRound() {
           audio.stop();
           nextPreviewUrl = nextUrl;
           refreshPreviewUrl = config.refreshPreviewUrl;
+          autoRetried = false;
           const created = createRound(config);
           const started = beginListening(created);
           set(started);
@@ -111,22 +133,20 @@ export function withTrackRound() {
         retryPlayback(): void {
           if (store.round()?.phase !== 'audio-error') return;
           audio.unlock();
-          const changed = apply(retryPlayback);
-          if (!changed) return;
-          const refresh = refreshPreviewUrl;
-          if (!refresh) {
-            launch(changed.after);
-            return;
-          }
-          const trackId = changed.after.trackId;
-          void refresh().catch(() => null).then(url => {
-            const round = store.round();
-            // le joueur est passé à autre chose entre-temps (passé le morceau, morceau suivant)
-            if (round?.trackId !== trackId || round.phase !== 'loading') return;
-            const fresh = url ? replacePreviewUrl(round, url) : round;
-            set(fresh);
-            launch(fresh);
-          });
+          reload();
+        },
+
+        /**
+         * Premier échec de lecture d'un morceau : si le mode sait redemander l'adresse, la manche la
+         * redemande d'elle-même et relance, sans rien montrer. Deezer signe ses adresses pour 15 min
+         * (piège 14) : un joueur qui a pris son temps tombe sur une adresse expirée. Une seule fois par
+         * morceau ; un second échec affiche « Réessayer » (jamais de boucle, piège 33). Appelé par le
+         * lecteur (`withHooks`), pas par la page.
+         */
+        recoverFromAudioError(): void {
+          if (autoRetried || !refreshPreviewUrl || store.round()?.phase !== 'audio-error') return;
+          autoRetried = true;
+          reload();
         },
 
         askSkip: (): void => {
@@ -176,12 +196,16 @@ export function withTrackRound() {
         const audio = inject(AudioPort);
         // Le store disparu, plus personne n'écoute : le son s'arrête.
         inject(DestroyRef).onDestroy(() => audio.stop());
-        // Le lecteur parle, la manche suit (chargement, lecture, palier joué, erreur).
+        // Le lecteur parle, la manche suit (chargement, lecture, palier joué, erreur). Un premier
+        // échec de lecture relance une fois depuis une adresse fraîche (piège 14).
         effect(() => {
           const state = audio.state();
           untracked(() => {
             const round = store.round();
-            if (round) patchState(store, { round: onAudio(round, state) });
+            if (!round) return;
+            const next = onAudio(round, state);
+            patchState(store, { round: next });
+            if (next.phase === 'audio-error' && round.phase !== 'audio-error') store.recoverFromAudioError();
           });
         });
       },

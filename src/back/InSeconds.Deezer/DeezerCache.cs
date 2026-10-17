@@ -6,7 +6,7 @@ namespace InSeconds.Deezer;
 /// Le cache mémoire de Deezer : une instance dédiée, bornée en nombre d'entrées (conteneur à mémoire
 /// contrainte, piège 24), pas l'<see cref="IMemoryCache"/> partagé de l'application. Dès qu'une
 /// <see cref="MemoryCacheOptions.SizeLimit"/> est posée, chaque entrée doit déclarer sa taille
-/// (<c>Size</c>), sinon <c>Set</c> lève une exception à l'exécution : les décorateurs posent <c>Size = 1</c>.
+/// (<c>Size</c>), sinon <c>Set</c> lève une exception à l'exécution : le décorateur pose <c>Size = 1</c>.
 /// </summary>
 public sealed class DeezerCache : IDisposable
 {

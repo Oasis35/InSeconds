@@ -13,7 +13,7 @@ InSeconds est un **blind test musical quotidien**. La lecture démarre au palier
 | Backend | .NET 10, monolithe modulaire (Players, Catalogue, Gameplay, Daily), Wolverine (endpoints HTTP, transactions, outbox), FluentValidation, EF Core 10, Hangfire (tâches planifiées) |
 | Base de données | PostgreSQL 17, un schéma par module (conteneur partagé sur le VPS en prod, image Docker en dev) |
 | Frontend | Angular 22 (standalone, zoneless, signals), NgRx SignalStore, Tailwind CSS v4, élément audio HTML (son), PWA (service worker) |
-| Musique | API Deezer (recherche, extraits de 30 s, pochettes), client découpé en ports avec cache |
+| Musique | API Deezer (recherche, extraits de 30 s, pochettes), client découpé en ports, recherche publique en cache |
 | Tests | xUnit v3 + Testcontainers, tests d'architecture (NetArchTest), Vitest en mode navigateur, Sheriff (frontières du front), Playwright |
 | CI | GitHub Actions (check agrégateur « CI OK »), Dependabot, SonarCloud |
 | Observabilité | OpenTelemetry (logs, traces, métriques) → Grafana Cloud, erreurs front relayées par l'API |
