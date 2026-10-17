@@ -88,7 +88,8 @@ public class GenerateChallengeTests(PostgresFixture postgres) : IAsyncLifetime
     [Fact]
     public async Task Cooldown_LesMorceauxDesTrenteDerniersJoursNeSontPasTires()
     {
-        await _app.AddPlayableTracksAsync(15);
+        // 200 morceaux jouables : 75 % du pool, 5 morceaux par défi, soit 30 jours de cooldown.
+        await _app.AddPlayableTracksAsync(200);
         // 5 morceaux hier, 5 il y a 30 jours (limite, la v1 les exclut encore), 5 il y a 31 jours (de nouveau tirables).
         await _app.AddChallengeAsync(Today.AddDays(-1), 1, 2, 3, 4, 5);
         await _app.AddChallengeAsync(Today.AddDays(-30), 6, 7, 8, 9, 10);
@@ -96,29 +97,45 @@ public class GenerateChallengeTests(PostgresFixture postgres) : IAsyncLifetime
 
         var result = await _app.GenerateAsync();
 
-        // Seuls 11 à 15 restent : exactement les 5 nécessaires, dans un ordre mélangé.
+        // Seuls les 10 morceaux d'hier et d'il y a 30 jours sont exclus.
         Assert.Equal(GenerationOutcome.Created, result.Outcome);
-        Assert.Equal(5, result.EligibleCount);
-        Assert.Equal([11, 12, 13, 14, 15], (await _app.TracksOfAsync(Today)).Order());
+        Assert.Equal(190, result.EligibleCount);
+        Assert.DoesNotContain(await _app.TracksOfAsync(Today), id => id <= 10);
+    }
+
+    [Fact]
+    public async Task Cooldown_SuitLaTailleDuPool()
+    {
+        // 20 morceaux jouables : 3 jours de cooldown, les 5 morceaux d'il y a 5 jours sont tirables.
+        await _app.AddPlayableTracksAsync(20);
+        await _app.AddChallengeAsync(Today.AddDays(-5), 1, 2, 3, 4, 5);
+        Assert.Equal(20, (await _app.GenerateAsync()).EligibleCount);
+
+        // 20 morceaux de plus : 6 jours, ils sont de nouveau exclus.
+        await _app.Api.ExecuteAsync($"DELETE FROM daily.challenges WHERE date = '{Today:yyyy-MM-dd}'");
+        await _app.AddPlayableTracksAsync(20, firstId: 21);
+
+        Assert.Equal(35, (await _app.GenerateAsync()).EligibleCount);
     }
 
     [Fact]
     public async Task Cooldown_ReglableParLesReglages_ReluAChaud()
     {
-        await _app.AddPlayableTracksAsync(10);
+        await _app.AddPlayableTracksAsync(40);
         await _app.AddChallengeAsync(Today.AddDays(-5), 1, 2, 3, 4, 5);
 
-        // 30 jours : les 5 morceaux de l'autre défi sont exclus, il en reste 5.
-        Assert.Equal(5, (await _app.GenerateAsync(Today)).EligibleCount);
+        // 75 % de 40 morceaux, 5 par défi : 6 jours, les 5 morceaux de l'autre défi sont exclus.
+        Assert.Equal(35, (await _app.GenerateAsync(Today)).EligibleCount);
 
-        // Un cooldown de 2 jours libère les 5 morceaux d'il y a 5 jours (réglage lu à chaud, pour le lendemain) ; ceux tirés
+        // 25 % : 2 jours, qui libèrent les 5 morceaux d'il y a 5 jours (réglage lu à chaud, pour le lendemain) ; ceux tirés
         // aujourd'hui restent exclus.
-        await _app.Api.ExecuteAsync("""INSERT INTO infra.settings (key, value, description, updated_at) VALUES ('Daily:TrackCooldownDays', '2', '', now())""");
+        await _app.Api.ExecuteAsync("""INSERT INTO infra.settings (key, value, description, updated_at) VALUES ('Daily:TrackCooldownPoolPercent', '25', '', now())""");
         _app.Api.Services.GetRequiredService<ISettingsReloader>().Reload();
         var later = await _app.GenerateAsync(Today.AddDays(1));
 
-        Assert.Equal(5, later.EligibleCount);
-        Assert.Equal([1, 2, 3, 4, 5], (await _app.TracksOfAsync(Today.AddDays(1))).Order());
+        Assert.Equal(35, later.EligibleCount);
+        var today = await _app.TracksOfAsync(Today);
+        Assert.DoesNotContain(await _app.TracksOfAsync(Today.AddDays(1)), today.Contains);
     }
 
     [Fact]
@@ -200,18 +217,18 @@ public class GenerateChallengeTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task CooldownAberrant_NeFaitPasEchouerLesDatesNiNeDesactiveLeCooldown()
+    public async Task PartDuPoolAberranteEcriteAChaud_RetombeSurLeDefaut_LeCooldownResteActif()
     {
-        await _app.DisposeAsync();
-        _app = DailyApi.Create(await postgres.CreateDatabaseAsync(), new Dictionary<string, string> { ["Daily:TrackCooldownDays"] = "99999999" });
-        _ = _app.Api.Server;
-        await _app.AddPlayableTracksAsync(10);
+        // L'API refuse de démarrer sur une part hors limites (DailyOptionsStartupCheck) ; écrite à chaud, elle est ignorée.
+        await _app.AddPlayableTracksAsync(40);
         await _app.AddChallengeAsync(Today.AddDays(-1), 1, 2, 3, 4, 5);
+        await _app.Api.ExecuteAsync("""INSERT INTO infra.settings (key, value, description, updated_at) VALUES ('Daily:TrackCooldownPoolPercent', '99999999', '', now())""");
+        _app.Api.Services.GetRequiredService<ISettingsReloader>().Reload();
 
         var result = await _app.GenerateAsync();
 
-        // Retombé sur 30 jours : les 5 morceaux d'hier restent exclus, il en reste exactement 5.
-        Assert.Equal((GenerationOutcome.Created, 5), (result.Outcome, result.EligibleCount));
+        // Retombé sur 75 % (6 jours) : les 5 morceaux d'hier restent exclus.
+        Assert.Equal((GenerationOutcome.Created, 35), (result.Outcome, result.EligibleCount));
     }
 
     [Fact]

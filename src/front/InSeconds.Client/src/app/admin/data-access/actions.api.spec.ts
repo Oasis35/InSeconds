@@ -5,9 +5,9 @@ import { ActionsApi } from './actions.api';
 
 describe('ActionsApi', () => {
   const client = {
-    getAdminDailySettings: vi.fn(() => of({ trackCooldownDays: 30 })),
-    getDailySettings: vi.fn(() => of({ tracksPerChallenge: 7 })),
-    updateTrackCooldown: vi.fn((body: { trackCooldownDays: number }) => of({ trackCooldownDays: body.trackCooldownDays })),
+    getAdminDailySettings: vi.fn(() => of({ trackCooldownPoolPercent: 75, trackCooldownDays: 120, playableTrackCount: 800 })),
+    updateTrackCooldownPoolPercent: vi.fn((body: { trackCooldownPoolPercent: number }) =>
+      of({ trackCooldownPoolPercent: body.trackCooldownPoolPercent, trackCooldownDays: 80, playableTrackCount: 800 })),
   };
   let api: ActionsApi;
 
@@ -16,13 +16,12 @@ describe('ActionsApi', () => {
     api = TestBed.inject(ActionsApi);
   });
 
-  it('lit et enregistre le délai', async () => {
-    expect(await api.getCooldownDays()).toBe(30);
-    expect(await api.updateCooldownDays(45)).toBe(45);
-    expect(client.updateTrackCooldown).toHaveBeenCalledWith({ trackCooldownDays: 45 });
+  it('lit le cooldown en vigueur', async () => {
+    expect(await api.getCooldown()).toEqual({ poolPercent: 75, days: 120, playableCount: 800 });
   });
 
-  it('lit le nombre de morceaux par défi', async () => {
-    expect(await api.getTracksPerChallenge()).toBe(7);
+  it('enregistre la part du pool et rend le cooldown qui en résulte', async () => {
+    expect(await api.updateCooldownPercent(50)).toEqual({ poolPercent: 50, days: 80, playableCount: 800 });
+    expect(client.updateTrackCooldownPoolPercent).toHaveBeenCalledWith({ trackCooldownPoolPercent: 50 });
   });
 });

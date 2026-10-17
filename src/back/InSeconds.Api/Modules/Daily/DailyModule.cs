@@ -26,6 +26,8 @@ public static class DailyModule
         // Les règles du jeu lues à chaud dans les réglages (paliers, barème, indices, gels), et le contrôle de leur cohérence au démarrage.
         services.AddSingleton<DailyRules>();
         services.AddHostedService<DailyOptionsStartupCheck>();
+        // Le cooldown des morceaux, déduit de la taille du pool à chaque appel (#275).
+        services.AddScoped<TrackCooldownPolicy>();
         // L'usage réel des morceaux, calculé sur les défis : remplace « aucun usage » de Catalogue (enregistré par
         // AddCatalogue, appelé avant). ITrackUsage est résolu par le conteneur dans le code généré (service location).
         services.Replace(ServiceDescriptor.Scoped<ITrackUsage, EfTrackUsage>());

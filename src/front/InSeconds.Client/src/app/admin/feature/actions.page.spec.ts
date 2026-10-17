@@ -41,11 +41,18 @@ describe('ActionsPage', () => {
     return { fixture, element, button, settle, witness };
   }
 
-  it('lit le délai à l\'ouverture et le met dans le champ', async () => {
-    const { element } = await render({ getCooldownDays: vi.fn(() => Promise.resolve(45)) });
-    const input = element.querySelector('#track-cooldown-days-input') as HTMLInputElement;
-    expect(input.value).toBe('45');
-    expect(element.querySelector('label[for="track-cooldown-days-input"]')?.textContent).toContain('admin.actions.trackCooldown');
+  it('lit le cooldown à l\'ouverture : la part dans le champ, les jours appliqués aujourd\'hui en dessous', async () => {
+    const { element, witness } = await render({ getCooldown: vi.fn(() => Promise.resolve({ poolPercent: 60, days: 96, playableCount: 800 })) });
+    const input = element.querySelector('#track-cooldown-percent-input') as HTMLInputElement;
+    expect(input.value).toBe('60');
+    expect(element.querySelector('label[for="track-cooldown-percent-input"]')?.textContent).toContain('admin.actions.cooldownPercent');
+    expect(witness('cooldown-applied')).toContain('admin.actions.cooldownAppliedDays');
+    expect(element.querySelector('[role="alert"]')).toBeNull();
+  });
+
+  it('sous le seuil de 14 jours : avertit qu\'il faut ajouter des morceaux', async () => {
+    const { element } = await render({ getCooldown: vi.fn(() => Promise.resolve({ poolPercent: 75, days: 13, playableCount: 90 })) });
+    expect(element.querySelector('[role="alert"]')?.textContent).toContain('admin.actions.cooldownBelowAlert');
   });
 
   it('témoins du dernier passage des deux tâches, sans bouton pour les lancer', async () => {
@@ -84,29 +91,30 @@ describe('ActionsPage', () => {
 
     expect(witness('challenge-witness')).toContain('admin.actions.witness.loadError');
     expect(witness('previews-witness')).toContain('admin.actions.witness.loadError');
-    expect((element.querySelector('#track-cooldown-days-input') as HTMLInputElement).value).toBe('30');
+    expect((element.querySelector('#track-cooldown-percent-input') as HTMLInputElement).value).toBe('75');
   });
 
-  it('enregistre le délai saisi', async () => {
-    const { element, button, settle } = await render();
-    const input = element.querySelector('#track-cooldown-days-input') as HTMLInputElement;
+  it('enregistre la part saisie, et affiche le cooldown qui en résulte', async () => {
+    const { element, button, settle, witness } = await render();
+    const input = element.querySelector('#track-cooldown-percent-input') as HTMLInputElement;
     input.value = '45';
     input.dispatchEvent(new Event('input'));
     await settle();
     button('admin.actions.saveCooldown').click();
     await settle();
-    expect(api.updateCooldownDays).toHaveBeenCalledWith(45);
+    expect(api.updateCooldownPercent).toHaveBeenCalledWith(45);
     expect(element.textContent).toContain('admin.actions.cooldownSaved');
+    expect(witness('cooldown-applied')).toContain('admin.actions.cooldownAppliedDays');
   });
 
-  it('refuse un délai hors bornes', async () => {
+  it('refuse une part hors bornes', async () => {
     const { element, button, settle } = await render();
-    const input = element.querySelector('#track-cooldown-days-input') as HTMLInputElement;
-    input.value = '5000';
+    const input = element.querySelector('#track-cooldown-percent-input') as HTMLInputElement;
+    input.value = '95';
     input.dispatchEvent(new Event('input'));
     await settle();
     expect(button('admin.actions.saveCooldown').disabled).toBe(true);
-    expect(api.updateCooldownDays).not.toHaveBeenCalled();
+    expect(api.updateCooldownPercent).not.toHaveBeenCalled();
   });
 
   it('lien vers le tableau de bord des tâches, dans un nouvel onglet', async () => {

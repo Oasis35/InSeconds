@@ -24,15 +24,23 @@ public sealed class DailyOptions
     public int EffectiveTracksPerChallenge => TracksPerChallenge >= 1 ? TracksPerChallenge : DefaultTracksPerChallenge;
 
     /// <summary>
-    /// Jours pendant lesquels un morceau déjà tiré ne peut pas l'être de nouveau. Un morceau tiré le jour J est
-    /// de nouveau tirable à partir de J + cooldown + 1 (règle de la v1, <c>LastUsedDate &lt; jour - cooldown</c>).
+    /// La part du pool jouable en cooldown, en pourcentage (#275) : le cooldown en jours s'en déduit à chaque tirage
+    /// (<see cref="Domain.TrackCooldown.Days"/>), il suit donc la taille du pool. Modifiable dans l'onglet Actions de l'admin.
     /// </summary>
-    public int TrackCooldownDays { get; set; } = DefaultTrackCooldownDays;
+    public int TrackCooldownPoolPercent { get; set; } = DefaultTrackCooldownPoolPercent;
 
-    public const int DefaultTrackCooldownDays = 30;
+    public const int DefaultTrackCooldownPoolPercent = 75;
 
-    /// <summary>Un cooldown négatif ou démesuré (une faute de saisie) retombe sur la valeur par défaut : il ne désactive pas le cooldown et ne fait pas échouer les dates.</summary>
-    public int EffectiveTrackCooldownDays => TrackCooldownDays is >= 0 and <= 3650 ? TrackCooldownDays : DefaultTrackCooldownDays;
+    /// <summary>Bornes de la part du pool en cooldown : au-delà de 90 %, le tirage deviendrait trop étroit (et à 100 %, impossible).</summary>
+    public const int MinTrackCooldownPoolPercent = 10;
+
+    public const int MaxTrackCooldownPoolPercent = 90;
+
+    public static bool IsValidTrackCooldownPoolPercent(int percent) => percent is >= MinTrackCooldownPoolPercent and <= MaxTrackCooldownPoolPercent;
+
+    /// <summary>Une part hors bornes (une faute de saisie en base) retombe sur la valeur par défaut, comme pour le tirage.</summary>
+    public int EffectiveTrackCooldownPoolPercent =>
+        IsValidTrackCooldownPoolPercent(TrackCooldownPoolPercent) ? TrackCooldownPoolPercent : DefaultTrackCooldownPoolPercent;
 
     /// <summary>Secondes laissées au joueur pour saisir sa réponse (lues par le front).</summary>
     public int GuessTimerSeconds { get; set; } = DefaultGuessTimerSeconds;

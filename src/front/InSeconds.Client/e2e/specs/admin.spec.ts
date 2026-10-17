@@ -238,7 +238,9 @@ test.describe('Admin — pool', () => {
 
     // Colonnes (après réordonnancement) : 0=sélection, 1=Actions, 2=Artiste, 3=Titre,
     // 4=Preview, 5=Statut, 6=Dernière utilisation, 7=Date de déblocage, 8=Nb. utilisations.
-    // Queen (index 16 du seed) a été mise en cooldown récent (-5j, defaut 30j) : dates non vides.
+    // Le pool des E2E a 50 morceaux jouables : 75 % du pool, 5 par défi, soit 7 jours de cooldown, sous le seuil d'alerte.
+    await expect(page.getByTestId('pool-cooldown')).toHaveText('cooldown 7 j');
+    // Queen (index 16 du seed) a été mise en cooldown récent (-5j, 7 j de cooldown) : dates non vides.
     await admin.poolSearchInput().fill('Queen');
     const queenRow = admin.poolRow('Queen');
     await expect(queenRow.getByRole('cell').nth(6)).not.toHaveText('');
@@ -324,14 +326,20 @@ test.describe('Admin — actions', () => {
     await adminPage.login();
     await adminPage.clickTab('Actions');
 
-    // Queen (LastUsedDate = today-5j) a une date de déblocage lue en base au chargement du pool
+    // La part du pool en cooldown (#275). Queen (LastUsedDate = today-5j) a une date de déblocage lue en base au chargement du pool
     // (pas via /api/settings, figé au boot) — sert de preuve que le nouveau cooldown est bien pris
     // en compte, cohérent avec "effectif au prochain calcul", pas de redémarrage requis.
     const before = await adminPage.apiGetPoolUnlockDate(5055001); // Queen — Bohemian Rhapsody
 
+    // 75 % de 50 morceaux jouables, 5 par défi : 7 jours, sous le seuil de 14 jours.
+    await expect(adminPage.trackCooldownInput()).toHaveValue('75');
+    await expect(page.getByText('Appliqué aujourd\'hui : 7 jours · 50 morceaux jouables')).toBeVisible();
+    await expect(page.getByRole('alert').filter({ hasText: 'Sous le seuil de 14 jours' })).toBeVisible();
+
     await adminPage.trackCooldownInput().fill('45');
     await adminPage.saveCooldownButton().click();
     await expect(page.getByText('Cooldown mis à jour.')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('Appliqué aujourd\'hui : 4 jours · 50 morceaux jouables')).toBeVisible();
 
     await expect.poll(() => adminPage.apiGetPoolUnlockDate(5055001)).not.toBe(before);
   });

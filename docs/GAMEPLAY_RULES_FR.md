@@ -133,7 +133,7 @@ Tous relus à chaud (`IOptionsMonitor`), sans redémarrage. L'API refuse de dém
 | `Daily:TracksPerChallenge` | `5` | ✅ Back (génération des défis à venir ; la fin de partie compte les morceaux réels du défi) |
 | `Daily:AllowedDurationsSeconds` | `[0.5,1,1.5,2,3,5,10]` | ✅ Back (scoring, histogrammes) + Front (paliers proposés) |
 | `Daily:DurationScores` | voir table ci-dessus | ✅ Back (scoring) |
-| `Daily:TrackCooldownDays` | `30` (40 en prod) | ✅ Back (délai avant qu'un morceau déjà joué redevienne tirable, modifiable dans l'onglet Actions admin) |
+| `Daily:TrackCooldownPoolPercent` | `75` (de 10 à 90) | ✅ Back (part du pool jouable en cooldown, modifiable dans l'onglet Actions admin ; le délai avant qu'un morceau déjà joué redevienne tirable s'en déduit : ⌊ jouables × part ÷ morceaux par défi ⌋ jours, recalculé à chaque tirage, #275) |
 | `Daily:StreakFreezeEveryDays` / `StreakFreezeMax` / `StreakLostNudgeMinDays` | `7` / `2` / `2` | ✅ Back (gel de série, cf. § Streak) |
 | `Catalogue:CoverUrlTemplate` | URL Deezer | ✅ Back (reconstruction des pochettes depuis leur hash) |
 | `Daily:GuessTimerSeconds` | `20` | ❌ Non appliqué — aucun timer réel en jeu aujourd'hui |
