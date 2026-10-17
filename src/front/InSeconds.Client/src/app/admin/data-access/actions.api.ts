@@ -1,6 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { DailyClient } from '../../api/daily/api.generated';
+import { AdminDailySettingsResponse, DailyClient } from '../../api/daily/api.generated';
+import { CooldownSettings } from '../domain/actions';
+
+function toCooldown(response: AdminDailySettingsResponse): CooldownSettings {
+  return { poolPercent: response.trackCooldownPoolPercent, days: response.trackCooldownDays, playableCount: response.playableTrackCount };
+}
 
 /**
  * Adaptateur des actions de l'admin sur le jeu du jour (`api/daily`) : seule porte d'entrée vers le
@@ -10,18 +15,13 @@ import { DailyClient } from '../../api/daily/api.generated';
 export class ActionsApi {
   private readonly client = inject(DailyClient);
 
-  /** Délai de réutilisation des morceaux, en jours. */
-  async getCooldownDays(): Promise<number> {
-    return (await firstValueFrom(this.client.getAdminDailySettings())).trackCooldownDays;
+  /** Le cooldown des morceaux en vigueur : la part du pool réglée, et les jours qu'elle donne sur le pool d'aujourd'hui. */
+  async getCooldown(): Promise<CooldownSettings> {
+    return toCooldown(await firstValueFrom(this.client.getAdminDailySettings()));
   }
 
-  /** Nombre de morceaux d'un défi (réglage `Daily:TracksPerChallenge`, lu sur la route publique des réglages du jeu). */
-  async getTracksPerChallenge(): Promise<number> {
-    return (await firstValueFrom(this.client.getDailySettings())).tracksPerChallenge;
-  }
-
-  /** Enregistre le délai ; rend la valeur retenue par l'API. */
-  async updateCooldownDays(trackCooldownDays: number): Promise<number> {
-    return (await firstValueFrom(this.client.updateTrackCooldown({ trackCooldownDays }))).trackCooldownDays;
+  /** Enregistre la part du pool en cooldown ; rend le cooldown qui en résulte. */
+  async updateCooldownPercent(trackCooldownPoolPercent: number): Promise<CooldownSettings> {
+    return toCooldown(await firstValueFrom(this.client.updateTrackCooldownPoolPercent({ trackCooldownPoolPercent })));
   }
 }

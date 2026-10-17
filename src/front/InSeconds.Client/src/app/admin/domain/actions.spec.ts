@@ -1,5 +1,5 @@
 import { JobLastRun, JobState } from './job';
-import { challengeWitness, isValidCooldownDays, previewsWitness, toRefreshReport } from './actions';
+import { challengeWitness, cooldownTone, isValidCooldownPercent, previewsWitness, toRefreshReport } from './actions';
 
 const AT = '2026-10-09T00:00:03Z';
 const RETRY_AT = '2026-10-09T00:10:03Z';
@@ -12,9 +12,15 @@ function run(state: JobState | null, result: Record<string, unknown> | null = nu
 }
 
 describe('actions (domaine)', () => {
-  it('valide le délai : entier de 1 à 3650', () => {
-    expect([1, 30, 3650].every(isValidCooldownDays)).toBe(true);
-    expect([0, 3651, 1.5, null, undefined, NaN].some(isValidCooldownDays)).toBe(false);
+  it('valide la part du pool en cooldown : entier de 10 à 90', () => {
+    expect([10, 75, 90].every(isValidCooldownPercent)).toBe(true);
+    expect([9, 91, 0, 50.5, null, undefined, NaN].some(isValidCooldownPercent)).toBe(false);
+  });
+
+  it('colore le cooldown : rouge sous 7 jours, orange sous le seuil de 14, vert au-delà', () => {
+    expect([0, 6].map(cooldownTone)).toEqual(['low', 'low']);
+    expect([7, 13].map(cooldownTone)).toEqual(['medium', 'medium']);
+    expect([14, 120].map(cooldownTone)).toEqual(['high', 'high']);
   });
 
   describe('témoin du défi du jour', () => {

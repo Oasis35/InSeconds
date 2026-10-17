@@ -33,7 +33,7 @@ import { WeeklyStoryComponent } from './weekly-story.component';
       @if (loadError(); as error) {
         <app-error-message [messageKey]="error.key" [traceId]="error.traceId" />
       }
-      <app-action-cooldown [days]="store.cooldownDays()" [status]="store.cooldownSave()" (saveDays)="store.saveCooldown($event)" />
+      <app-action-cooldown [cooldown]="store.cooldown()" [status]="store.cooldownSave()" (savePercent)="store.saveCooldown($event)" />
       <div style="border-top:1px solid var(--border-medium)"></div>
       <app-weekly-story />
     </section>

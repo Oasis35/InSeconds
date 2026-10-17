@@ -1,11 +1,15 @@
 import { Provider } from '@angular/core';
+import { CooldownSettings } from '../../domain/actions';
 import { ActionsApi } from '../actions.api';
+
+/** Le cooldown du faux : 75 % de 200 morceaux jouables, soit 30 jours. */
+export const FAKE_COOLDOWN: CooldownSettings = { poolPercent: 75, days: 30, playableCount: 200 };
 
 function defaults() {
   return {
-    getCooldownDays: vi.fn<() => Promise<number>>(() => Promise.resolve(30)),
-    getTracksPerChallenge: vi.fn<() => Promise<number>>(() => Promise.resolve(5)),
-    updateCooldownDays: vi.fn<(days: number) => Promise<number>>(days => Promise.resolve(days)),
+    getCooldown: vi.fn<() => Promise<CooldownSettings>>(() => Promise.resolve(FAKE_COOLDOWN)),
+    updateCooldownPercent: vi.fn<(percent: number) => Promise<CooldownSettings>>(percent =>
+      Promise.resolve({ poolPercent: percent, days: Math.floor((200 * percent) / 100 / 5), playableCount: 200 })),
   } satisfies Record<keyof ActionsApi, unknown>;
 }
 

@@ -179,6 +179,25 @@ public class DailyScoringAndRulesTests
         Assert.Equal(4, problems.Count);
     }
 
+    [Theory]
+    [InlineData(9)]
+    [InlineData(91)]
+    [InlineData(0)]
+    public void Controle_PartDuPoolEnCooldownHorsLimites_UnProbleme(int percent)
+    {
+        var problem = Assert.Single(DailyOptionsChecks.Problems(new DailyOptions { TrackCooldownPoolPercent = percent }, 2));
+
+        Assert.Contains("Daily:TrackCooldownPoolPercent", problem, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(10, 10)]
+    [InlineData(90, 90)]
+    [InlineData(91, 75)]
+    [InlineData(-1, 75)]
+    public void PartDuPoolEnCooldown_HorsLimites_RetombeSurLeDefaut(int configured, int effective) =>
+        Assert.Equal(effective, new DailyOptions { TrackCooldownPoolPercent = configured }.EffectiveTrackCooldownPoolPercent);
+
     // --- les règles lues à chaud ---
 
     [Fact]

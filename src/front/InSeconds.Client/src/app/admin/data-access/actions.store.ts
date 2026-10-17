@@ -2,6 +2,7 @@ import { inject } from '@angular/core';
 import { patchState, signalStore, withHooks, withMethods, withProps, withState } from '@ngrx/signals';
 import { toAppError } from '../../core/errors/app-error';
 import { setError, setFulfilled, setPending, withRequestStatus } from '../../core/store/with-request-status';
+import { CooldownSettings } from '../domain/actions';
 import { JobLastRun } from '../domain/job';
 import { ActionsApi } from './actions.api';
 import { JOBS_DASHBOARD_URL } from './admin-api.providers';
@@ -17,19 +18,19 @@ interface ActionsState {
   lastRuns: JobLastRun[] | null;
   /** La lecture des derniers passages a échoué : les témoins le disent, le reste de l'onglet fonctionne. */
   lastRunsFailed: boolean;
-  /** Délai de réutilisation lu à l'ouverture (ou renvoyé par l'API après un enregistrement). */
-  cooldownDays: number | null;
+  /** Le cooldown des morceaux lu à l'ouverture (ou renvoyé par l'API après un enregistrement). */
+  cooldown: CooldownSettings | null;
   cooldownSave: SaveStatus;
 }
 
 /**
  * L'onglet Actions : les témoins du dernier passage des tâches planifiées (génération du défi du jour, contrôle des
- * extraits ; les lancer à la main se fait dans le tableau de bord `/jobs`) et le délai de réutilisation des morceaux.
- * `requestStatus` est celui de la lecture du délai à l'ouverture.
+ * extraits ; les lancer à la main se fait dans le tableau de bord `/jobs`) et le cooldown des morceaux (la part du pool
+ * bloquée). `requestStatus` est celui de la lecture du cooldown à l'ouverture.
  */
 export const ActionsStore = signalStore(
   withRequestStatus(),
-  withState<ActionsState>({ lastRuns: null, lastRunsFailed: false, cooldownDays: null, cooldownSave: 'idle' }),
+  withState<ActionsState>({ lastRuns: null, lastRunsFailed: false, cooldown: null, cooldownSave: 'idle' }),
   withProps(() => ({ jobsDashboardUrl: inject(JOBS_DASHBOARD_URL) })),
   withMethods((store, api = inject(ActionsApi), jobs = inject(JobsApi)) => {
     let cooldownTimer: ReturnType<typeof setTimeout> | undefined;
@@ -37,7 +38,7 @@ export const ActionsStore = signalStore(
     const loadCooldown = async () => {
       patchState(store, setPending());
       try {
-        patchState(store, { cooldownDays: await api.getCooldownDays() }, setFulfilled());
+        patchState(store, { cooldown: await api.getCooldown() }, setFulfilled());
       } catch (e) {
         patchState(store, setError(await toAppError(e)));
       }
@@ -52,17 +53,18 @@ export const ActionsStore = signalStore(
     };
 
     return {
-      /** Lit le délai de réutilisation courant et le dernier passage des tâches, en parallèle. */
+      /** Lit le cooldown courant et le dernier passage des tâches, en parallèle. */
       async load(): Promise<void> {
         await Promise.all([loadCooldown(), loadLastRuns()]);
       },
 
-      async saveCooldown(days: number): Promise<void> {
+      /** Enregistre la part du pool en cooldown ; le cooldown affiché devient celui que l'API en a déduit. */
+      async saveCooldown(poolPercent: number): Promise<void> {
         if (store.cooldownSave() === 'saving') return;
         clearTimeout(cooldownTimer);
         patchState(store, { cooldownSave: 'saving' });
         try {
-          patchState(store, { cooldownDays: await api.updateCooldownDays(days), cooldownSave: 'saved' });
+          patchState(store, { cooldown: await api.updateCooldownPercent(poolPercent), cooldownSave: 'saved' });
         } catch {
           patchState(store, { cooldownSave: 'error' });
         }

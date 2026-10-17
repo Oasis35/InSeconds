@@ -259,8 +259,8 @@
       "players": "Players ({{ count }})"
     },
     "pool": {
-      "runwayDay": "day of challenges left",
-      "runwayDays": "days of challenges left",
+      "cooldown": "cooldown {{ days }} d",
+      "cooldownHint": "A drawn track can be drawn again after this delay, computed from the pool size (setting in Actions).",
       "selected": "{{ count }} selected",
       "deselectAll": "Deselect all",
       "delete": "Delete ({{ count }})",
@@ -421,7 +421,11 @@
         "download": "Download",
         "downloadAll": "Download all"
       },
-      "cooldownInvalid": "Enter a whole number of days, from {{ min }} to {{ max }}.",
+      "cooldownInvalid": "Enter a whole percentage, from {{ min }} to {{ max }}.",
+      "cooldownPercent": "Share of the pool in cooldown",
+      "cooldownAppliedDay": "Applied today: {{ days }} day · {{ count }} playable tracks",
+      "cooldownAppliedDays": "Applied today: {{ days }} days · {{ count }} playable tracks",
+      "cooldownBelowAlert": "Below the {{ days }}-day threshold: add tracks.",
       "jobs": {
         "title": "Scheduled tasks",
         "hint": "To run a task by hand (generate today's challenge, recheck the previews…): \"Trigger now\" in the dashboard. It also shows what is running and what failed, and keeps run details for 7 days.",

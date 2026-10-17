@@ -85,7 +85,7 @@ export class AdminPage {
 
   // Actions — cooldown
   trackCooldownInput(): Locator {
-    return this.page.getByLabel('Cooldown de réutilisation des morceaux');
+    return this.page.getByLabel('Part du pool en cooldown');
   }
 
   saveCooldownButton(): Locator {

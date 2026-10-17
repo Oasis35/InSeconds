@@ -2,9 +2,10 @@ import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
 import { AppError, toAppError } from '../../core/errors/app-error';
 import { setError, setFulfilled, setPending, withRequestStatus } from '../../core/store/with-request-status';
+import { cooldownTone } from '../domain/actions';
 import {
-  DEFAULT_TRACKS_PER_CHALLENGE, NO_FILTERS, PoolFilters, PoolSort, PreviewFilter, SortColumn,
-  StatusFilter, clampPage, filterTracks, nextSort, pageOf, poolDaysRemaining, runwayTone, sortTracks, totalPages,
+  NO_FILTERS, PoolFilters, PoolSort, PreviewFilter, SortColumn,
+  StatusFilter, clampPage, filterTracks, nextSort, pageOf, sortTracks, totalPages,
 } from '../domain/pool-filters';
 import { PoolTrack, isUsed } from '../domain/pool-track';
 import { ActionsApi } from './actions.api';
@@ -33,8 +34,11 @@ interface PoolState {
   /** Morceaux dont la désactivation est en cours d'envoi (bouton désactivé le temps de la requête). */
   togglingIds: readonly number[];
   toggleError: ToggleError | null;
-  /** Réglage `Daily:TracksPerChallenge`, pour l'autonomie ; la valeur par défaut tant qu'il n'est pas lu. */
-  tracksPerChallenge: number;
+  /**
+   * Le cooldown appliqué aujourd'hui, en jours (#275) : il suit la taille du pool, il est donc relu avec la liste ;
+   * `null` tant qu'il n'est pas lu, ou si sa lecture a échoué (la barre ne l'affiche pas).
+   */
+  cooldownDays: number | null;
 }
 
 /**
@@ -47,9 +51,9 @@ export const PoolStore = signalStore(
   withRequestStatus(),
   withState<PoolState>({
     tracks: [], filters: NO_FILTERS, sort: null, requestedPage: 0, selectedIds: [], togglingIds: [], toggleError: null,
-    tracksPerChallenge: DEFAULT_TRACKS_PER_CHALLENGE,
+    cooldownDays: null,
   }),
-  withComputed(({ tracks, filters, sort, requestedPage, selectedIds, tracksPerChallenge }) => {
+  withComputed(({ tracks, filters, sort, requestedPage, selectedIds }) => {
     const filtered = computed(() => filterTracks(tracks(), filters()));
     const sorted = computed(() => sortTracks(filtered(), sort()));
     const pages = computed(() => totalPages(filtered().length));
@@ -62,7 +66,6 @@ export const PoolStore = signalStore(
       availableCount: computed(() => tracks().filter(t => !isUsed(t)).length),
       usedCount: computed(() => tracks().filter(isUsed).length),
       disabledCount: computed(() => tracks().filter(t => t.isDisabled).length),
-      runwayDays: computed(() => poolDaysRemaining(tracks(), tracksPerChallenge())),
       /** Identifiant Deezer → vrai si le morceau est disponible, faux s'il a déjà servi : le badge « déjà en pool ». */
       existingDeezerIds: computed(() => new Map(tracks().map(t => [t.deezerTrackId, !isUsed(t)] as const))),
       /** Un morceau utilisé ne se supprime pas (409) : le bouton « Supprimer (N) » le sait d'avance. */
@@ -72,8 +75,11 @@ export const PoolStore = signalStore(
       }),
     };
   }),
-  withComputed(({ pages, runwayDays }) => ({
-    runwayTone: computed(() => runwayTone(runwayDays())),
+  withComputed(({ pages, cooldownDays }) => ({
+    cooldownTone: computed(() => {
+      const days = cooldownDays();
+      return days === null ? null : cooldownTone(days);
+    }),
     hasMultiplePages: computed(() => pages() > 1),
   })),
   withMethods((store, api = inject(CatalogueApi), counts = inject(AdminCounts), settings = inject(ActionsApi)) => {
@@ -85,22 +91,20 @@ export const PoolStore = signalStore(
     /** Numéro de la lecture la plus récente : une réponse plus ancienne, arrivée après elle, n'écrit rien. */
     let latestLoad = 0;
 
-    /** Le réglage n'est lu qu'une fois ; un échec garde la valeur par défaut sans bloquer le pool. */
-    let tracksPerChallengeRead = false;
-    async function loadTracksPerChallenge(): Promise<void> {
-      if (tracksPerChallengeRead) return;
-      tracksPerChallengeRead = true;
+    /** Le cooldown suit le pool (ajout, désactivation) : relu à chaque lecture de la liste ; un échec ne bloque pas le pool. */
+    async function loadCooldown(mine: number): Promise<void> {
       try {
-        patchState(store, { tracksPerChallenge: await settings.getTracksPerChallenge() });
+        const { days } = await settings.getCooldown();
+        if (mine === latestLoad) patchState(store, { cooldownDays: days });
       } catch {
-        tracksPerChallengeRead = false;
+        if (mine === latestLoad) patchState(store, { cooldownDays: null });
       }
     }
 
     async function load(): Promise<void> {
       const mine = ++latestLoad;
       patchState(store, setPending());
-      const settingRead = loadTracksPerChallenge();
+      const settingRead = loadCooldown(mine);
       try {
         const tracks = await api.listTracks();
         if (mine !== latestLoad) return;

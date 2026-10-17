@@ -4,7 +4,8 @@ namespace InSeconds.Api.Modules.Catalogue.Contracts;
 /// Ce qu'un morceau doit à l'usage qu'en fait le jeu : la dernière apparition dans un défi, le nombre
 /// d'apparitions, le jour où il redevient tirable, et sa présence dans le défi du jour.
 /// </summary>
-/// <param name="UnlockDate">Fin du cooldown (<c>LastUsedDate</c> + <c>Daily:TrackCooldownDays</c>), vide s'il n'a jamais servi.</param>
+/// <param name="UnlockDate">Premier jour où il redevient tirable (<c>LastUsedDate</c> + cooldown + 1, le cooldown se déduisant de la taille du
+/// pool), vide s'il n'a jamais servi.</param>
 public sealed record TrackUsage(DateOnly? LastUsedDate, int UsageCount, DateOnly? UnlockDate, bool InTodayChallenge)
 {
     /// <summary>Jamais utilisé.</summary>

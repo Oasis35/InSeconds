@@ -59,33 +59,32 @@ describe('PoolStore', () => {
       expect(store.tracks()).toEqual([]);
     });
 
-    it('calcule l\'autonomie : morceaux tirables ÷ morceaux par défi', async () => {
-      const tracks = Array.from({ length: 12 }, (_, i) => poolTrack({ id: i + 1, deezerTrackId: i + 100 }));
-      await setup(tracks);
+    it('lit le cooldown appliqué avec la liste, et le colore', async () => {
+      await setup([eminem], {}, { getCooldown: vi.fn(async () => ({ poolPercent: 75, days: 10, playableCount: 70 })) });
 
-      expect(store.runwayDays()).toBe(2);
-      expect(store.runwayTone()).toBe('low');
+      expect(store.cooldownDays()).toBe(10);
+      expect(store.cooldownTone()).toBe('medium');
     });
 
-    it('lit le nombre de morceaux par défi dans les réglages, une seule fois', async () => {
-      const tracks = Array.from({ length: 12 }, (_, i) => poolTrack({ id: i + 1, deezerTrackId: i + 100 }));
-      await setup(tracks, {}, { getTracksPerChallenge: vi.fn(async () => 3) });
+    it('relit le cooldown à chaque chargement : il suit la taille du pool', async () => {
+      await setup([eminem]);
+      expect(store.cooldownDays()).toBe(30);
+      expect(store.cooldownTone()).toBe('high');
+
+      settings.getCooldown.mockResolvedValueOnce({ poolPercent: 75, days: 3, playableCount: 20 });
       await store.load();
 
-      expect(store.runwayDays()).toBe(4);
-      expect(settings.getTracksPerChallenge).toHaveBeenCalledTimes(1);
+      expect(store.cooldownDays()).toBe(3);
+      expect(store.cooldownTone()).toBe('low');
+      expect(settings.getCooldown).toHaveBeenCalledTimes(2);
     });
 
-    it('garde 5 morceaux par défi si le réglage ne se lit pas, et le relit au chargement suivant', async () => {
-      const tracks = Array.from({ length: 12 }, (_, i) => poolTrack({ id: i + 1, deezerTrackId: i + 100 }));
-      await setup(tracks, {}, { getTracksPerChallenge: vi.fn(async () => Promise.reject(problem(500, 'common.unexpected'))) });
+    it('cooldown illisible : le pool s\'affiche quand même, sans cooldown', async () => {
+      await setup([eminem], {}, { getCooldown: vi.fn(async () => Promise.reject(problem(500, 'common.unexpected'))) });
 
       expect(store.isFulfilled()).toBe(true);
-      expect(store.runwayDays()).toBe(2);
-
-      settings.getTracksPerChallenge.mockResolvedValueOnce(4);
-      await store.load();
-      expect(store.runwayDays()).toBe(3);
+      expect(store.cooldownDays()).toBeNull();
+      expect(store.cooldownTone()).toBeNull();
     });
   });
 

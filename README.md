@@ -12,7 +12,7 @@
 
 ## How it works
 
-- Each day at midnight UTC, a new set of tracks is automatically selected (only tracks with an active Deezer preview, outside a configurable reuse cooldown); if the midnight job fails, the challenge is regenerated automatically when the first player arrives (deterministic selection: same challenge for everyone)
+- Each day at midnight UTC, a new set of tracks is automatically selected (only tracks with an active Deezer preview, outside a reuse cooldown that follows the pool size: a configurable share of the playable pool stays blocked); if the midnight job fails, the challenge is regenerated automatically when the first player arrives (deterministic selection: same challenge for everyone)
 - Preview availability is re-checked nightly against Deezer (rate-limit aware, batched calls); admins can also re-run it on demand from the scheduled-jobs dashboard (`/jobs`)
 - Playback starts automatically at the shortest step (0.5s); extend step by step (1, 1.5, 2, 3, 5, 10s) with "listen more" before attempting artist + title
 - Free, unlimited "listen more" extensions per track (up to the last duration tier) — scoring is always based on the final tier listened, no penalty for extending

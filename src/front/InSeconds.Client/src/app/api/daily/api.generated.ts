@@ -356,66 +356,6 @@ export class DailyClient {
     /**
      * @return OK
      */
-    updateTrackCooldown(body: UpdateTrackCooldown): Observable<AdminDailySettingsResponse> {
-        let url_ = this.baseUrl + "/api/admin/daily/settings/track-cooldown-days";
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(body);
-
-        let options_ : any = {
-            body: content_,
-            observe: "response",
-            responseType: "blob",
-            headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
-        };
-
-        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processUpdateTrackCooldown(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processUpdateTrackCooldown(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<AdminDailySettingsResponse>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<AdminDailySettingsResponse>;
-        }));
-    }
-
-    protected processUpdateTrackCooldown(response: HttpResponseBase): Observable<AdminDailySettingsResponse> {
-        const status = response.status;
-        const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
-
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AdminDailySettingsResponse;
-            return _observableOf(result200);
-            }));
-        } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as HttpValidationProblemDetails;
-            return throwException("Bad Request", status, _responseText, _headers, result400);
-            }));
-        } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
-        }
-        return _observableOf(null as any);
-    }
-
-    /**
-     * @return OK
-     */
     recomputeDayStats(date: string): Observable<AdminChallengeStats> {
         let url_ = this.baseUrl + "/api/admin/daily/challenges/{date}/stats/recompute";
         if (date === undefined || date === null)
@@ -1137,6 +1077,66 @@ export class DailyClient {
         }
         return _observableOf(null as any);
     }
+
+    /**
+     * @return OK
+     */
+    updateTrackCooldownPoolPercent(body: UpdateTrackCooldownPoolPercent): Observable<AdminDailySettingsResponse> {
+        let url_ = this.baseUrl + "/api/admin/daily/settings/track-cooldown-pool-percent";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateTrackCooldownPoolPercent(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateTrackCooldownPoolPercent(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AdminDailySettingsResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AdminDailySettingsResponse>;
+        }));
+    }
+
+    protected processUpdateTrackCooldownPoolPercent(response: HttpResponseBase): Observable<AdminDailySettingsResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AdminDailySettingsResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as HttpValidationProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
 }
 
 export interface AdminChallenge {
@@ -1207,6 +1207,8 @@ export interface AdminChallengeTrackStats {
 
 export interface AdminDailySettingsResponse {
     trackCooldownDays: number;
+    trackCooldownPoolPercent: number;
+    playableTrackCount: number;
 
     [key: string]: any;
 }
@@ -1520,12 +1522,6 @@ export interface UpdateListening {
     [key: string]: any;
 }
 
-export interface UpdateTrackCooldown {
-    trackCooldownDays: number;
-
-    [key: string]: any;
-}
-
 export interface WeeklyRecapResponse {
     status: string;
     from: Date;
@@ -1542,6 +1538,12 @@ export interface WeeklyTrackResponse {
     title: string;
     successRatePercent: number;
     answers: number;
+
+    [key: string]: any;
+}
+
+export interface UpdateTrackCooldownPoolPercent {
+    trackCooldownPoolPercent: number;
 
     [key: string]: any;
 }

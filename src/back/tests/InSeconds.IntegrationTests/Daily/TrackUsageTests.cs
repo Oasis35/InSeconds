@@ -19,7 +19,8 @@ public class TrackUsageTests(PostgresFixture postgres) : IAsyncLifetime
     {
         _app = DailyApi.Create(await postgres.CreateDatabaseAsync());
         _ = _app.Api.Server;
-        await _app.AddPlayableTracksAsync(12);
+        // 200 morceaux jouables : 75 % du pool, 5 morceaux par défi, soit 30 jours de cooldown.
+        await _app.AddPlayableTracksAsync(200);
     }
 
     public ValueTask DisposeAsync() => _app.DisposeAsync();
@@ -35,16 +36,17 @@ public class TrackUsageTests(PostgresFixture postgres) : IAsyncLifetime
     [Fact]
     public async Task Usage_DernierJour_Nombre_FinDuCooldown_EtDefiDuJour()
     {
+        // La date de déblocage est le premier jour où le morceau est de nouveau tirable : dernier usage + 30 jours + 1.
         await _app.AddChallengeAsync(Today.AddDays(-40), 1, 2);
         await _app.AddChallengeAsync(Today.AddDays(-10), 1, 3);
         await _app.AddChallengeAsync(Today, 4, 5);
 
         var usage = await GetAsync(1, 2, 3, 4, 6);
 
-        Assert.Equal(new TrackUsage(Today.AddDays(-10), 2, Today.AddDays(20), false), usage[1]);
-        Assert.Equal(new TrackUsage(Today.AddDays(-40), 1, Today.AddDays(-10), false), usage[2]);
-        Assert.Equal(new TrackUsage(Today.AddDays(-10), 1, Today.AddDays(20), false), usage[3]);
-        Assert.Equal(new TrackUsage(Today, 1, Today.AddDays(30), true), usage[4]);
+        Assert.Equal(new TrackUsage(Today.AddDays(-10), 2, Today.AddDays(21), false), usage[1]);
+        Assert.Equal(new TrackUsage(Today.AddDays(-40), 1, Today.AddDays(-9), false), usage[2]);
+        Assert.Equal(new TrackUsage(Today.AddDays(-10), 1, Today.AddDays(21), false), usage[3]);
+        Assert.Equal(new TrackUsage(Today, 1, Today.AddDays(31), true), usage[4]);
         Assert.False(usage.ContainsKey(6));
         Assert.True(usage[4].IsUsed);
     }
@@ -53,10 +55,11 @@ public class TrackUsageTests(PostgresFixture postgres) : IAsyncLifetime
     public async Task FinDuCooldown_SuitLeReglageLuAChaud()
     {
         await _app.AddChallengeAsync(Today.AddDays(-10), 1);
-        await _app.Api.ExecuteAsync("""INSERT INTO infra.settings (key, value, description, updated_at) VALUES ('Daily:TrackCooldownDays', '7', '', now())""");
+        await _app.Api.ExecuteAsync("""INSERT INTO infra.settings (key, value, description, updated_at) VALUES ('Daily:TrackCooldownPoolPercent', '10', '', now())""");
         _app.Api.Services.GetRequiredService<InSeconds.Api.Infrastructure.Settings.ISettingsReloader>().Reload();
 
-        Assert.Equal(Today.AddDays(-3), (await GetAsync(1))[1].UnlockDate);
+        // 10 % de 200 morceaux, 5 par défi : 4 jours.
+        Assert.Equal(Today.AddDays(-5), (await GetAsync(1))[1].UnlockDate);
     }
 
     [Fact]
@@ -93,7 +96,7 @@ public class TrackUsageTests(PostgresFixture postgres) : IAsyncLifetime
         var inCooldown = await InCooldownAsync(Today.AddDays(1));
 
         Assert.Equal([1, 2], inCooldown.Order());
-        // Dans 31 jours, les morceaux du défi d'aujourd'hui sont tirables : 1 et 2 sortent.
+        // Dans 31 jours (la date de déblocage du pool), les morceaux du défi d'aujourd'hui sont tirables : 1 et 2 sortent.
         Assert.Empty(await InCooldownAsync(Today.AddDays(31)));
     }
 
@@ -106,7 +109,7 @@ public class TrackUsageTests(PostgresFixture postgres) : IAsyncLifetime
         var list = (await _app.Admin().GetFromJsonAsync<List<TrackListItem>>("/api/admin/catalogue/tracks", Ct))!;
 
         var first = list.Single(t => t.Id == 1);
-        Assert.Equal((Today.AddDays(-2), 1, Today.AddDays(28), false), (first.LastUsedDate!.Value, first.UsageCount, first.UnlockDate!.Value, first.InTodayChallenge));
+        Assert.Equal((Today.AddDays(-2), 1, Today.AddDays(29), false), (first.LastUsedDate!.Value, first.UsageCount, first.UnlockDate!.Value, first.InTodayChallenge));
         Assert.True(list.Single(t => t.Id == 2).InTodayChallenge);
         Assert.Equal(0, list.Single(t => t.Id == 3).UsageCount);
     }

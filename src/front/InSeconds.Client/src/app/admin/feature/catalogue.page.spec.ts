@@ -69,6 +69,14 @@ describe('CataloguePage', () => {
     expect(element.querySelectorAll('tbody tr')).toHaveLength(3);
   });
 
+  it('montre dans la barre le cooldown appliqué aujourd\'hui, en vert au-delà du seuil d\'alerte', async () => {
+    const { element } = await render();
+
+    const cooldown = element.querySelector('[data-testid="pool-cooldown"]') as HTMLElement;
+    expect(cooldown.textContent).toContain('admin.pool.cooldown');
+    expect(cooldown.style.color).toBe('var(--color-success)');
+  });
+
   it('affiche l\'erreur de chargement avec son code', async () => {
     const { element } = await render({ api: { listTracks: vi.fn(async () => Promise.reject(problem(500, 'common.unexpected', 'trace-1'))) } });
 
