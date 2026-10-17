@@ -60,9 +60,6 @@ const DIALOG_MAX_WIDTH = '26rem';
           [existing]="pool.existingDeezerIds()"
           [addStatuses]="search.addStatuses()"
           [addErrorKeys]="addErrorKeys()"
-          [previewingUrl]="player.url()"
-          [playing]="player.playing()"
-          [progress]="player.progress()"
           (queryChange)="onSearchQuery($event)"
           (toggleLink)="toggleLink()"
           (preview)="previewResult($event)"
@@ -115,7 +112,7 @@ const DIALOG_MAX_WIDTH = '26rem';
 export class CataloguePage {
   protected readonly pool = inject(PoolStore);
   protected readonly search = inject(DeezerSearchStore);
-  protected readonly player = inject(AudioPreviewPlayer);
+  private readonly player = inject(AudioPreviewPlayer);
   protected readonly errorMessageKey = errorMessageKey;
   private readonly modal = inject(ModalService);
   private readonly injector = inject(Injector);
@@ -187,11 +184,12 @@ export class CataloguePage {
     if (this.search.linked()) this.search.setQuery(this.pool.filters().text);
   }
 
-  protected previewResult(result: DeezerResult): void {
-    this.player.toggle(result.previewUrl);
-  }
-
   // --- fenêtres ---
+
+  /** Un résultat Deezer s'écoute dans la même fenêtre qu'un morceau du pool, avec l'extrait déjà reçu. */
+  protected previewResult(result: DeezerResult): void {
+    this.modal.open(PreviewTrackDialog, { data: result, maxWidth: DIALOG_MAX_WIDTH, injector: this.injector });
+  }
 
   protected listen(track: PoolTrack): void {
     this.modal.open(PreviewTrackDialog, { data: track, maxWidth: DIALOG_MAX_WIDTH, injector: this.injector });

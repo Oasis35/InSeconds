@@ -1795,7 +1795,6 @@
           "coverUrl",
           "listenedSeconds",
           "averageSecondsWhenCorrect",
-          "failureRatePercent",
           "guessTimeDistribution",
           "notFoundCount",
           "hintLevelUsed",
@@ -1839,10 +1838,6 @@
               "null",
               "number"
             ],
-            "format": "double"
-          },
-          "failureRatePercent": {
-            "type": "number",
             "format": "double"
           },
           "guessTimeDistribution": {
@@ -2003,7 +1998,6 @@
           "title",
           "deezerTrackId",
           "coverUrl",
-          "failureRatePercent",
           "averageSecondsWhenCorrect",
           "artistCorrect",
           "titleCorrect",
@@ -2033,10 +2027,6 @@
               "null",
               "string"
             ]
-          },
-          "failureRatePercent": {
-            "type": "number",
-            "format": "double"
           },
           "averageSecondsWhenCorrect": {
             "type": [

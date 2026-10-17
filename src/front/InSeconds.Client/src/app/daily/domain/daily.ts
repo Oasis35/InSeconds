@@ -59,7 +59,6 @@ export interface AnsweredTrack {
   /** La pochette n'arrive qu'avec la réponse (piège 31, piège 47 : jamais gardée hors de la mémoire de la page). */
   readonly coverUrl: string | null;
   readonly averageSecondsWhenCorrect: number | null;
-  readonly failureRatePercent: number | null;
   readonly distribution: readonly GuessBucket[];
   readonly notFoundCount: number;
 }
@@ -99,7 +98,6 @@ export interface TrackStat {
   readonly title: string;
   readonly deezerTrackId: number;
   readonly coverUrl: string | null;
-  readonly failureRatePercent: number;
   readonly averageSecondsWhenCorrect: number | null;
   /** Ce que le joueur en a fait ; vide s'il n'a pas de partie terminée. */
   readonly artistCorrect: boolean | null;

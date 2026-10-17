@@ -5,7 +5,7 @@ import { AlreadyPlayedScreenComponent } from './already-played-screen.component'
 
 const track = (over: Partial<TrackStat> = {}): TrackStat => ({
   position: 1, artist: 'Eminem', title: 'Lose Yourself', deezerTrackId: 42, coverUrl: 'http://x/c.jpg',
-  failureRatePercent: 0, averageSecondsWhenCorrect: 0.5, artistCorrect: true, titleCorrect: true,
+  averageSecondsWhenCorrect: 0.5, artistCorrect: true, titleCorrect: true,
   listenedSeconds: 0.5, score: 1000, distribution: [{ durationSeconds: 0.5, count: 1 }], notFoundCount: 0,
   ...over,
 });

@@ -12,7 +12,6 @@ const row = (over: Partial<TrackResultRow> = {}): TrackResultRow => ({
   titleCorrect: true,
   listenedSeconds: 1,
   averageSecondsWhenCorrect: 1.2,
-  failureRatePercent: 10,
   score: 850,
   deezerTrackId: 42,
   distribution: [{ durationSeconds: 1, count: 3 }],
@@ -47,6 +46,11 @@ describe('TrackResultsListComponent', () => {
     expect(text).toContain('✓');
     expect(text).toContain('+850');
     expect(text).toContain('1s');
+  });
+
+  it("affiche « Artiste — Titre » avant les chips ✓/✗", () => {
+    const text = render([row()]).textContent!.replace(/\s+/g, ' ');
+    expect(text.indexOf('Eminem — Lose Yourself')).toBeLessThan(text.indexOf('✓'));
   });
 
   it('masque chips et durée sans réponse du joueur', () => {

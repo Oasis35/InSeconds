@@ -35,7 +35,6 @@ export class AlreadyPlayedScreenComponent {
       titleCorrect: t.titleCorrect,
       listenedSeconds: t.listenedSeconds,
       averageSecondsWhenCorrect: t.averageSecondsWhenCorrect,
-      failureRatePercent: t.failureRatePercent,
       score: t.score,
       deezerTrackId: t.deezerTrackId,
       distribution: t.distribution,

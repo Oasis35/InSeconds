@@ -62,7 +62,6 @@ public class PlaySessionTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Contains("cdn-images", answer.CoverUrl, StringComparison.Ordinal);
         // Un autre joueur a trouvé à 2 s, celui-ci (artiste seul) à 1 s : deux trouvés, aucun échec, moyenne 1,5 s.
         Assert.Equal(1.5, answer.AverageSecondsWhenCorrect);
-        Assert.Equal(0, answer.FailureRatePercent);
         Assert.Equal(0, answer.NotFoundCount);
         Assert.Equal([0.5m, 1m, 1.5m, 2m, 3m, 5m, 10m], answer.GuessTimeDistribution.Select(b => b.DurationSeconds));
         Assert.Equal([0, 1, 0, 1, 0, 0, 0], answer.GuessTimeDistribution.Select(b => b.Count));
@@ -73,7 +72,7 @@ public class PlaySessionTests(PostgresFixture postgres) : IAsyncLifetime
     {
         var answer = await ReadAnswerAsync(await _alice.AnswerAsync(_session, 1, 1, "Zzzz", "Yyyy"));
 
-        Assert.Equal((0, 100d, 1), (answer.Score, answer.FailureRatePercent, answer.NotFoundCount));
+        Assert.Equal((0, 1), (answer.Score, answer.NotFoundCount));
         Assert.Null(answer.AverageSecondsWhenCorrect);
     }
 

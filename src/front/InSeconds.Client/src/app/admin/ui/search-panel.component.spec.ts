@@ -75,19 +75,29 @@ describe('SearchPanelComponent', () => {
   describe('ajout', () => {
     it.each([
       ['loading', '…', true],
-      ['success', 'admin.addPanel.added', false],
-      ['error', 'admin.addPanel.addError', false],
-    ] as const)('ligne en état %s', (status, label, disabled) => {
+      ['success', '✓', false],
+      ['error', '!', false],
+    ] as const)('ligne en état %s', (status, symbol, disabled) => {
       const { add } = render({ results: [result()], addStatuses: { 42: status } });
 
-      expect(add().textContent?.trim()).toBe(label);
+      expect(add().textContent?.trim()).toBe(symbol);
       expect(add().disabled).toBe(disabled);
     });
 
-    it('propose « Ajouter » par défaut', () => {
+    it.each([
+      ['success', 'admin.addPanel.added'],
+      ['error', 'admin.addPanel.addError'],
+    ] as const)('nomme le bouton d\'après son état %s (le symbole seul ne dit rien)', (status, label) => {
+      const { add } = render({ results: [result()], addStatuses: { 42: status } });
+
+      expect(add().getAttribute('aria-label')).toBe(label);
+    });
+
+    it('propose « + » par défaut, nommé « Ajouter »', () => {
       const { add } = render({ results: [result()] });
 
-      expect(add().textContent?.trim()).toBe('admin.addPanel.addTrack');
+      expect(add().textContent?.trim()).toBe('+');
+      expect(add().getAttribute('aria-label')).toBe('admin.addPanel.addTrack');
     });
 
     it('porte la raison d\'un échec sur le bouton, pour cette ligne seulement', () => {
@@ -106,23 +116,12 @@ describe('SearchPanelComponent', () => {
       expect(play().disabled).toBe(true);
     });
 
-    it('montre ⏸ et la barre seulement sur l\'extrait en cours de lecture', () => {
-      const { element } = render({
-        results: [result(), result({ deezerTrackId: 43, previewUrl: 'https://preview/43.mp3' })],
-        previewingUrl: 'https://preview/42.mp3', playing: true, progress: 40,
-      });
-
-      const [first, second] = Array.from(element.querySelectorAll('li'));
-      expect(first.querySelector('button')?.textContent?.trim()).toBe('⏸');
-      expect(first.querySelector<HTMLElement>('[style*="width"]')?.style.width).toBe('40%');
-      expect(second.querySelector('button')?.textContent?.trim()).toBe('▶');
-      expect(second.querySelector('[style*="width"]')).toBeNull();
-    });
-
-    it('revient à ▶ quand l\'extrait est en pause', () => {
-      const { play } = render({ results: [result()], previewingUrl: 'https://preview/42.mp3', playing: false });
+    it('montre toujours ▶, sans barre : l\'écoute se fait dans sa fenêtre', () => {
+      const { element, play } = render({ results: [result()] });
 
       expect(play().textContent?.trim()).toBe('▶');
+      expect(play().getAttribute('aria-label')).toBe('admin.previewModal.title');
+      expect(element.querySelector('[role="progressbar"]')).toBeNull();
     });
   });
 

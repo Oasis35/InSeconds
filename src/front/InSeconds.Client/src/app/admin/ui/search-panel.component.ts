@@ -6,8 +6,8 @@ type AddStatus = 'loading' | 'success' | 'error';
 
 /**
  * Le panneau de recherche et d'ajout, posé au-dessus du tableau du pool (jamais en fenêtre : le
- * tableau reste visible, pour repérer un doublon). Chaque résultat s'écoute et s'ajoute en un
- * clic ; un résultat déjà dans le pool porte un avertissement qui ne bloque pas l'ajout.
+ * tableau reste visible, pour repérer un doublon). Chaque résultat s'écoute (▶ ouvre la fenêtre
+ * d'écoute) et s'ajoute en un clic (+) ; un résultat déjà dans le pool porte un avertissement qui ne bloque pas l'ajout.
  */
 @Component({
   selector: 'app-search-panel',
@@ -44,10 +44,9 @@ type AddStatus = 'loading' | 'success' | 'error';
           @for (track of results(); track track.deezerTrackId) {
             <li class="flex items-center gap-3 px-4 py-2.5" style="border-bottom:1px solid var(--border-medium)">
               <button type="button" (click)="preview.emit(track)" [disabled]="!track.previewUrl"
+                [attr.aria-label]="'admin.previewModal.title' | translate"
                 class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors text-sm disabled:opacity-30"
-                style="background:var(--bg-primary-dk);color:var(--text-on-primary)">
-                {{ isPreviewing(track) && playing() ? '⏸' : '▶' }}
-              </button>
+                style="background:var(--bg-primary-dk);color:var(--text-on-primary)">▶</button>
               <div class="flex-1 min-w-0 flex flex-col gap-0.5">
                 <span class="text-sm truncate" style="color:var(--text-light)">{{ track.artist }} — {{ track.title }}</span>
                 @if (existing().has(track.deezerTrackId)) {
@@ -55,22 +54,17 @@ type AddStatus = 'loading' | 'success' | 'error';
                     ⚠ {{ (existing().get(track.deezerTrackId) ? 'admin.addPanel.alreadyInPool' : 'admin.addPanel.alreadyUsed') | translate }}
                   </span>
                 }
-                @if (isPreviewing(track)) {
-                  <div class="w-full rounded-full h-1 mt-0.5" style="background:var(--bg-surface-2)" role="progressbar" [attr.aria-valuenow]="progress()" aria-valuemin="0" aria-valuemax="100">
-                    <div class="h-1 rounded-full transition-all" style="background:var(--text-indigo)" [style.width.%]="progress()"></div>
-                  </div>
-                }
               </div>
               @let status = statusOf(track);
               <button type="button" (click)="add.emit(track)" [disabled]="status === 'loading'"
-                [title]="errorTitle(track) | translate"
-                class="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors shrink-0 disabled:opacity-50"
+                [title]="errorTitle(track) | translate" [attr.aria-label]="addLabel(status) | translate"
+                class="w-8 h-8 rounded-lg flex items-center justify-center text-lg font-semibold transition-colors shrink-0 disabled:opacity-50"
                 style="background:var(--bg-primary-dk);color:var(--text-on-primary)">
                 @switch (status) {
                   @case ('loading') { … }
-                  @case ('success') { {{ 'admin.addPanel.added' | translate }} }
-                  @case ('error') { {{ 'admin.addPanel.addError' | translate }} }
-                  @default { {{ 'admin.addPanel.addTrack' | translate }} }
+                  @case ('success') { ✓ }
+                  @case ('error') { ! }
+                  @default { + }
                 }
               </button>
             </li>
@@ -92,22 +86,23 @@ export class SearchPanelComponent {
   readonly addStatuses = input<Readonly<Record<number, AddStatus>>>({});
   /** Clé de traduction de la raison de l'échec d'ajout de chaque ligne (infobulle du bouton). */
   readonly addErrorKeys = input<Readonly<Record<number, string>>>({});
-  /** L'extrait chargé dans le lecteur, sa lecture en cours et son avancement (0 à 100). */
-  readonly previewingUrl = input<string | null>(null);
-  readonly playing = input(false);
-  readonly progress = input(0);
 
   readonly queryChange = output<string>();
   readonly toggleLink = output();
   readonly preview = output<DeezerResult>();
   readonly add = output<DeezerResult>();
 
-  protected isPreviewing(track: DeezerResult): boolean {
-    return track.previewUrl !== null && this.previewingUrl() === track.previewUrl;
-  }
-
   protected statusOf(track: DeezerResult): AddStatus | 'idle' {
     return this.addStatuses()[track.deezerTrackId] ?? 'idle';
+  }
+
+  /** Le bouton n'affiche qu'un symbole (+, ✓, !) : son nom accessible dit l'action ou le résultat. */
+  protected addLabel(status: AddStatus | 'idle'): string {
+    switch (status) {
+      case 'success': return 'admin.addPanel.added';
+      case 'error': return 'admin.addPanel.addError';
+      default: return 'admin.addPanel.addTrack';
+    }
   }
 
   protected errorTitle(track: DeezerResult): string {

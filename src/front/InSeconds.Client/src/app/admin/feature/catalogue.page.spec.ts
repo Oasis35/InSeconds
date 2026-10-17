@@ -112,18 +112,15 @@ describe('CataloguePage', () => {
   });
 
   describe('recherche et filtre liés', () => {
-    it('restent indépendants par défaut', async () => {
-      const { pool, search } = await render();
+    it('sont liés par défaut', async () => {
+      const { search } = await render();
 
-      pool.setText('eminem');
-      expect(search.query()).toBe('');
+      expect(search.linked()).toBe(true);
     });
 
     it('liés, taper dans le filtre du tableau remplit la recherche Deezer, et inversement', async () => {
       const { element, click, pool, search, detect } = await render();
       click(b => b.textContent?.includes('admin.pool.add') ?? false);
-      await detect();
-      click(b => b.textContent?.includes('admin.addPanel.unlinked') ?? false);
       await detect();
       const filter = element.querySelector<HTMLInputElement>('#pool-filter-text')!;
       const query = element.querySelector<HTMLInputElement>('app-search-panel input')!;
@@ -141,7 +138,6 @@ describe('CataloguePage', () => {
       const { element, click, search, detect } = await render();
       click(b => b.textContent?.includes('admin.pool.add') ?? false);
       await detect();
-      click(b => b.textContent?.includes('admin.addPanel.unlinked') ?? false);
       click(b => b.textContent?.includes('admin.pool.close') ?? false);
       await detect();
 
@@ -154,11 +150,29 @@ describe('CataloguePage', () => {
       expect(search.query()).toBe('nicki minaj');
     });
 
-    it('en se liant, la recherche reprend le texte déjà tapé dans le filtre', async () => {
-      const { pool, search, click, detect } = await render();
-      pool.setText('queen');
+    it('indépendants, rien ne se propage', async () => {
+      const { element, click, pool, search, detect } = await render();
       click(b => b.textContent?.includes('admin.pool.add') ?? false);
       await detect();
+      click(b => b.textContent?.includes('admin.addPanel.linked') ?? false);
+      await detect();
+
+      const filter = element.querySelector<HTMLInputElement>('#pool-filter-text')!;
+      filter.value = 'eminem';
+      filter.dispatchEvent(new Event('input'));
+
+      expect(search.linked()).toBe(false);
+      expect(pool.filters().text).toBe('eminem');
+      expect(search.query()).toBe('');
+    });
+
+    it('en se liant, la recherche reprend le texte déjà tapé dans le filtre', async () => {
+      const { pool, search, click, detect } = await render();
+      click(b => b.textContent?.includes('admin.pool.add') ?? false);
+      await detect();
+      click(b => b.textContent?.includes('admin.addPanel.linked') ?? false);
+      await detect();
+      pool.setText('queen');
 
       click(b => b.textContent?.includes('admin.addPanel.unlinked') ?? false);
 
@@ -204,7 +218,7 @@ describe('CataloguePage', () => {
       await new Promise<void>(resolve => setTimeout(resolve, 400));
       await detect();
 
-      click(b => b.textContent?.trim() === 'admin.addPanel.addTrack');
+      click(b => b.getAttribute('aria-label') === 'admin.addPanel.addTrack');
       await new Promise<void>(resolve => setTimeout(resolve, 0));
       await detect();
 
@@ -233,6 +247,24 @@ describe('CataloguePage', () => {
       // Les fenêtres retrouvent les stores de la page : leur injecteur est celui de la page.
       const store = fixture.debugElement.injector.get(PoolStore);
       for (const [, options] of modal.open.mock.calls) expect(options.injector.get(PoolStore)).toBe(store);
+    });
+
+    it('le ▶ d\'un résultat Deezer ouvre la fenêtre d\'écoute avec ce résultat, sans rien jouer dans le panneau', async () => {
+      const { click, search, player, detect } = await render({
+        api: { searchDeezer: vi.fn(async () => [deezerResult()]) },
+      });
+      click(b => b.textContent?.includes('admin.pool.add') ?? false);
+      search.setQuery('E2E Track');
+      await new Promise<void>(resolve => setTimeout(resolve, 400));
+      await detect();
+
+      click(b => b.closest('app-search-panel') !== null && b.textContent?.trim() === '▶');
+
+      const [[dialog, options]] = modal.open.mock.calls;
+      expect(dialog).toBe(PreviewTrackDialog);
+      expect(options.data).toEqual(deezerResult());
+      expect(options.injector.get(AudioPreviewPlayer)).toBe(player);
+      expect(player.url()).toBeNull();
     });
 
     it('supprime la sélection par la barre d\'outils', async () => {
