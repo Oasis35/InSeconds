@@ -3,6 +3,7 @@ import { firstValueFrom } from 'rxjs';
 import { ApiException, DeviceResponse, PlayerMeResponse, PlayersClient } from '../../api/players/api.generated';
 import { SessionPlayer } from '../../core/session/session.store';
 import { Device } from '../domain/device';
+import { MagicLinkVerification } from '../domain/verify-flow';
 
 /** Statut de `GET /api/players/me` quand le navigateur n'a aucune identité : NSwag le lève comme une erreur. */
 const NO_CONTENT = 204;
@@ -43,10 +44,13 @@ export class PlayersApi {
     await firstValueFrom(this.client.requestMagicLink({ email }));
   }
 
-  /** Confirme un lien de connexion ; `needsPseudo` : première connexion de cette adresse, le pseudo manque. */
-  async verifyMagicLink(token: string, pseudo?: string): Promise<{ readonly needsPseudo: boolean }> {
-    const { needsPseudo } = await firstValueFrom(this.client.verifyMagicLink({ token, pseudo }));
-    return { needsPseudo };
+  /**
+   * Confirme un lien de connexion ; `needsPseudo` : première connexion de cette adresse, le pseudo
+   * manque, et `email` est alors l'adresse du lien (affichée pour qu'une faute de frappe se voie).
+   */
+  async verifyMagicLink(token: string, pseudo?: string): Promise<MagicLinkVerification> {
+    const { needsPseudo, email } = await firstValueFrom(this.client.verifyMagicLink({ token, pseudo }));
+    return { needsPseudo, email: email ?? null };
   }
 
   async logout(): Promise<void> {

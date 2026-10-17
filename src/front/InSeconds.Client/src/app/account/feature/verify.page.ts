@@ -9,12 +9,15 @@ import { ErrorMessageComponent } from '../../ui/error-message/error-message.comp
 import { VerifyStore } from '../data-access/verify.store';
 import { pseudoIssue } from '../domain/pseudo';
 import { AuthPageComponent } from '../ui/auth-page.component';
+import { EXISTING_ACCOUNT_HINT } from './login.page';
 
 /**
  * `/account/login/verify?token=…` : confirmation de la connexion. Ne consomme jamais le jeton à
  * l'ouverture (piège 21 : les scanners d'emails pré-visitent les liens) : un clic sur « Confirmer »
  * le fait. Un navigateur déjà connecté est prévenu (piège 30) : le lien d'une autre adresse ouvre un
- * autre compte, sans toucher à celui-ci.
+ * autre compte, sans toucher à celui-ci. Une adresse sans compte passe d'abord par l'étape « Nouveau
+ * compte » (l'adresse affichée, « Créer mon compte » ou « J'ai déjà un compte ») avant le pseudo :
+ * une faute de frappe ou une autre adresse ne crée pas de compte sans que le joueur le voie.
  */
 @Component({
   selector: 'app-verify-page',
@@ -41,14 +44,27 @@ export class VerifyPage {
 
   /** Adresse du compte déjà ouvert dans ce navigateur, s'il y en a un. */
   protected readonly connectedEmail = computed(() => (this.session.isLinked() ? this.session.player()?.email ?? null : null));
+  /** Ce navigateur joue en invité : ses parties passeront au nouveau compte. */
+  protected readonly isGuest = computed(() => this.session.player()?.isGuest === true);
+  /** Adresse du lien, à l'étape « Nouveau compte ». */
+  protected readonly newAccountEmail = computed(() => {
+    const step = this.step();
+    return step.kind === 'new-account' ? step.email : null;
+  });
+  protected readonly existingAccountHint = EXISTING_ACCOUNT_HINT;
   protected readonly step = this.store.step;
   /** Une fois à l'étape du pseudo, l'écran y reste pendant l'envoi (sinon il repasserait un instant sur « Confirmer »). */
   private readonly inPseudoStep = signal(false);
-  protected readonly view = computed<'missing-token' | 'invalid-link' | 'pseudo' | 'confirm'>(() => {
+  protected readonly view = computed<'missing-token' | 'invalid-link' | 'new-account' | 'pseudo' | 'confirm'>(() => {
     const kind = this.step().kind;
-    if (kind === 'missing-token' || kind === 'invalid-link') return kind;
+    if (kind === 'missing-token' || kind === 'invalid-link' || kind === 'new-account') return kind;
     // Un échec réseau à l'étape du pseudo y laisse le joueur (saisie conservée) au lieu de le ramener à « Confirmer ».
     return kind === 'needs-pseudo' || ((kind === 'confirming' || kind === 'failed') && this.inPseudoStep()) ? 'pseudo' : 'confirm';
+  });
+  protected readonly headingKey = computed(() => {
+    const view = this.view();
+    if (view === 'pseudo') return 'account.verify.pseudoTitle';
+    return view === 'new-account' ? 'account.verify.newAccountTitle' : 'account.verify.title';
   });
   protected readonly pseudoProblem = computed(() => {
     const step = this.step();
@@ -64,6 +80,10 @@ export class VerifyPage {
     if (!this.token) return;
     await this.store.confirm(this.token);
     await this.leaveIfDone();
+  }
+
+  protected createAccount(): void {
+    this.store.createAccount();
   }
 
   protected editPseudo(): void {

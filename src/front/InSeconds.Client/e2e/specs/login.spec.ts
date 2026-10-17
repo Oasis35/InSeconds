@@ -7,7 +7,8 @@ async function requestMagicLink(page: import('@playwright/test').Page, email: st
   await page.goto('/login');
   await page.getByPlaceholder('ton@email.com').fill(email);
   await page.getByRole('button', { name: 'Recevoir le lien' }).click();
-  await expect(page.getByText('Lien envoyé.')).toBeVisible();
+  await expect(page.getByText('On a envoyé un lien à')).toBeVisible();
+  await expect(page.getByTestId('sent-to')).toHaveText(email);
 }
 
 test.describe('Connexion par lien magique', () => {
@@ -23,12 +24,40 @@ test.describe('Connexion par lien magique', () => {
 
     await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
 
-    // Première connexion pour cet email -> pas encore de compte -> choix du pseudo
+    // Première connexion pour cet email -> pas encore de compte -> « Nouveau compte », puis choix du pseudo
+    await expect(page.getByRole('heading', { name: 'Nouveau compte' })).toBeVisible();
+    await expect(page.getByText(TEST_EMAIL)).toBeVisible();
+    await page.getByRole('button', { name: 'Créer mon compte' }).click();
     await expect(page.getByRole('heading', { name: 'Choisis ton pseudo' })).toBeVisible();
     await page.getByPlaceholder('Ton pseudo').fill('AliceE2E');
     await page.getByRole('button', { name: 'Valider' }).click();
 
     await expectSignedIn(page, 'AliceE2E');
+  });
+
+  test('propose de corriger un domaine mal tapé, sans rien envoyer', async ({ page }) => {
+    await page.goto('/login');
+    await page.getByPlaceholder('ton@email.com').fill('testeur@gmial.com');
+    await page.getByRole('button', { name: 'Tu voulais dire testeur@gmail.com ?' }).click();
+
+    await expect(page.getByPlaceholder('ton@email.com')).toHaveValue('testeur@gmail.com');
+    await expect(page.getByText('Tu voulais dire')).toHaveCount(0);
+  });
+
+  test('adresse sans compte : « J\'ai déjà un compte » revient à la connexion sans créer de compte', async ({ page, api }) => {
+    await requestMagicLink(page, TEST_EMAIL);
+    const linkPath = pathOf(await api.getLastMagicLinkUrl(TEST_EMAIL));
+    await page.goto(linkPath);
+    await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
+
+    await page.getByRole('link', { name: 'J\'ai déjà un compte' }).click();
+
+    await expect(page).toHaveURL(/\/account\/login\?hint=existing$/);
+    await expect(page.getByText('Saisis l\'adresse de ton compte')).toBeVisible();
+    // Rien n'a été créé ni consommé : le même lien propose encore de créer le compte.
+    await page.goto(linkPath);
+    await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Nouveau compte' })).toBeVisible();
   });
 
   test('lien invalide affiche une erreur avec un retour vers /login', async ({ page }) => {
@@ -46,6 +75,7 @@ test.describe('Connexion par lien magique', () => {
     let linkUrl = await api.getLastMagicLinkUrl(TEST_EMAIL);
     await page.goto(pathOf(linkUrl));
     await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
+    await page.getByRole('button', { name: 'Créer mon compte' }).click();
     await page.getByPlaceholder('Ton pseudo').fill('BobE2E');
     await page.getByRole('button', { name: 'Valider' }).click();
     await expectSignedIn(page, 'BobE2E');
@@ -85,6 +115,7 @@ test.describe('Connexion par lien magique', () => {
 
     await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
     await expect(page.getByText(`Ton compte actuel (${TEST_EMAIL}) ne sera pas modifié.`)).toBeVisible();
+    await page.getByRole('button', { name: 'Créer mon compte' }).click();
     await page.getByPlaceholder('Ton pseudo').fill('AutreE2E');
     await page.getByRole('button', { name: 'Valider' }).click();
 
@@ -102,6 +133,7 @@ test.describe('Connexion par lien magique', () => {
     const linkUrl = await api.getLastMagicLinkUrl(TEST_EMAIL);
     await page.goto(pathOf(linkUrl));
     await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
+    await page.getByRole('button', { name: 'Créer mon compte' }).click();
     await page.getByPlaceholder('Ton pseudo').fill('CarlE2E');
     await page.getByRole('button', { name: 'Valider' }).click();
 

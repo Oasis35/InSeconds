@@ -964,6 +964,7 @@ export interface VerifyMagicLink {
 
 export interface VerifyMagicLinkResponse {
     needsPseudo: boolean;
+    email?: string | undefined;
 
     [key: string]: any;
 }

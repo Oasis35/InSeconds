@@ -850,6 +850,12 @@
         "properties": {
           "needsPseudo": {
             "type": "boolean"
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

@@ -59,12 +59,13 @@ describe('PlayersApi', () => {
   });
 
   it('confirme un lien de connexion, avec ou sans pseudo', async () => {
-    client.verifyMagicLink.mockReturnValue(of({ needsPseudo: true }));
+    client.verifyMagicLink.mockReturnValue(of({ needsPseudo: true, email: 'nouvelle@example.com' }));
 
-    expect(await api.verifyMagicLink('jeton')).toEqual({ needsPseudo: true });
+    expect(await api.verifyMagicLink('jeton')).toEqual({ needsPseudo: true, email: 'nouvelle@example.com' });
     expect(client.verifyMagicLink).toHaveBeenLastCalledWith({ token: 'jeton', pseudo: undefined });
 
-    await api.verifyMagicLink('jeton', 'Alice');
+    client.verifyMagicLink.mockReturnValue(of({ needsPseudo: false }));
+    expect(await api.verifyMagicLink('jeton', 'Alice')).toEqual({ needsPseudo: false, email: null });
     expect(client.verifyMagicLink).toHaveBeenLastCalledWith({ token: 'jeton', pseudo: 'Alice' });
   });
 

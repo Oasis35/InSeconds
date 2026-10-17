@@ -28,11 +28,13 @@ export async function linkAccount(page: Page, api: ApiTestClient, email: string,
   // Le clic ne fait que déclencher la requête HTTP asynchrone — attendre la confirmation
   // affichée avant d'interroger le backend, sinon on peut arriver avant que l'email soit
   // réellement capturé.
-  await expect(page.getByText('Lien envoyé.')).toBeVisible();
+  await expect(page.getByText('On a envoyé un lien à')).toBeVisible();
 
   const linkUrl = await api.getLastMagicLinkUrl(email);
   await page.goto(pathOf(linkUrl));
   await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
+  // Adresse sans compte : l'étape « Nouveau compte » précède le pseudo.
+  await page.getByRole('button', { name: 'Créer mon compte' }).click();
   await page.getByPlaceholder('Ton pseudo').fill(pseudo);
   await page.getByRole('button', { name: 'Valider' }).click();
   // Attendre que la connexion/conversion de compte soit réellement terminée côté serveur
@@ -64,7 +66,7 @@ export async function signInAgain(page: Page, api: ApiTestClient, email: string,
   await page.goto('/login');
   await page.getByPlaceholder('ton@email.com').fill(email);
   await page.getByRole('button', { name: 'Recevoir le lien' }).click();
-  await expect(page.getByText('Lien envoyé.')).toBeVisible();
+  await expect(page.getByText('On a envoyé un lien à')).toBeVisible();
 
   const linkUrl = await api.getLastMagicLinkUrl(email);
   await page.goto(pathOf(linkUrl));

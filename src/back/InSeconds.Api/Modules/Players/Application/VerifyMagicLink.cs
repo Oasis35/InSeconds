@@ -13,7 +13,12 @@ public sealed record VerifyMagicLink(string Token, string? Pseudo);
 /// Pas encore de compte pour cette adresse : renvoyer le même jeton avec un pseudo. Le jeton n'est pas
 /// consommé.
 /// </param>
-public sealed record VerifyMagicLinkResponse(bool NeedsPseudo);
+/// <param name="Email">
+/// L'adresse du lien, seulement quand il faut créer le compte : le front l'affiche (« aucun compte
+/// n'existe pour … ») pour qu'une faute de frappe se voie. Pas une énumération : seul le détenteur du
+/// jeton, donc de la boîte mail, la reçoit.
+/// </param>
+public sealed record VerifyMagicLinkResponse(bool NeedsPseudo, string? Email = null);
 
 public sealed class VerifyMagicLinkValidator : AbstractValidator<VerifyMagicLink>
 {
@@ -76,7 +81,7 @@ public static class VerifyMagicLinkEndpoint
     {
         var plan = attempt.Plan!;
         if (plan.NeedsPseudo)
-            return new VerifyMagicLinkResponse(NeedsPseudo: true);
+            return new VerifyMagicLinkResponse(NeedsPseudo: true, Email: plan.Email);
 
         attempt.Token!.Consume(time.GetUtcNow());
         var result = await accountSignIn.ExecuteAsync(plan, ct);
