@@ -22,6 +22,7 @@ namespace Internal.Generated.WolverineHandlers
     {
         private readonly Wolverine.Http.WolverineHttpOptions _wolverineHttpOptions;
         private readonly InSeconds.Api.Infrastructure.Time.IGameCalendar _gameCalendar;
+        private readonly InSeconds.Api.Modules.Daily.Application.DailyMetrics _dailyMetrics;
         private readonly InSeconds.Api.Modules.Daily.Application.DailyRules _dailyRules;
         private readonly InSeconds.Api.Modules.Daily.Domain.ITrackSelector _trackSelector;
         private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor;
@@ -33,10 +34,11 @@ namespace Internal.Generated.WolverineHandlers
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
         private readonly Wolverine.Runtime.IWolverineRuntime _wolverineRuntime;
 
-        public POST_api_daily_sessions(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, InSeconds.Api.Infrastructure.Time.IGameCalendar gameCalendar, InSeconds.Api.Modules.Daily.Application.DailyRules dailyRules, InSeconds.Api.Modules.Daily.Domain.ITrackSelector trackSelector, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Daily.Application.GenerateDailyChallenge> loggerOfGenerateDailyChallenge, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Daily.Application.StartSessionResponse> loggerOfStartSessionResponse, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> optionsMonitorOfCatalogueOptions, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Daily.Application.DailyOptions> optionsMonitorOfDailyOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
+        public POST_api_daily_sessions(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, InSeconds.Api.Infrastructure.Time.IGameCalendar gameCalendar, InSeconds.Api.Modules.Daily.Application.DailyMetrics dailyMetrics, InSeconds.Api.Modules.Daily.Application.DailyRules dailyRules, InSeconds.Api.Modules.Daily.Domain.ITrackSelector trackSelector, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Daily.Application.GenerateDailyChallenge> loggerOfGenerateDailyChallenge, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Daily.Application.StartSessionResponse> loggerOfStartSessionResponse, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> optionsMonitorOfCatalogueOptions, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Daily.Application.DailyOptions> optionsMonitorOfDailyOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
         {
             _wolverineHttpOptions = wolverineHttpOptions;
             _gameCalendar = gameCalendar;
+            _dailyMetrics = dailyMetrics;
             _dailyRules = dailyRules;
             _trackSelector = trackSelector;
             _httpContextAccessor = httpContextAccessor;
@@ -92,7 +94,7 @@ namespace Internal.Generated.WolverineHandlers
 
                 
                 // The actual HTTP request handler execution
-                var startSessionResponse_response = await InSeconds.Api.Modules.Daily.Application.StartSessionEndpoint.Post(startContext, efDailyStore, efTrackDirectory, deezerTrackPreviews, efPlayerDirectory, _dailyRules, _gameCalendar, _loggerOfStartSessionResponse, httpContext.RequestAborted).ConfigureAwait(false);
+                var startSessionResponse_response = await InSeconds.Api.Modules.Daily.Application.StartSessionEndpoint.Post(startContext, efDailyStore, efTrackDirectory, deezerTrackPreviews, efPlayerDirectory, _dailyRules, _gameCalendar, _dailyMetrics, _loggerOfStartSessionResponse, httpContext.RequestAborted).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

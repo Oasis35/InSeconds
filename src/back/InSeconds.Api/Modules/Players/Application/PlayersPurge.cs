@@ -49,12 +49,14 @@ public static class PlayersPurgeHandler
         new(await store.ListInactiveAccountsAsync(time.GetUtcNow() - PlayerRetention.InactiveAccount, ct));
 
     public static async Task<bool> Handle(
-        EraseInactiveAccount command, IPlayerStore store, AccountErasure erasure, TimeProvider time, ILogger<EraseInactiveAccount> logger, CancellationToken ct)
+        EraseInactiveAccount command, IPlayerStore store, AccountErasure erasure, TimeProvider time, PlayersMetrics metrics,
+        ILogger<EraseInactiveAccount> logger, CancellationToken ct)
     {
         if (!await store.IsAccountInactiveAsync(command.PlayerId, time.GetUtcNow() - PlayerRetention.InactiveAccount, ct))
             return false;
         var erased = await erasure.EraseAsync(command.PlayerId, ct);
         PlayersLog.AccountErased(logger, command.PlayerId, "inactive", erased.Games, erased.Devices);
+        metrics.AccountErased("inactive");
         return true;
     }
 }

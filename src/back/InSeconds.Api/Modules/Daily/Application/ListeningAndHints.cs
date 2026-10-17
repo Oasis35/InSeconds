@@ -120,6 +120,7 @@ public static class RequestHintEndpoint
         HintAttempt attempt,
         ITrackDirectory directory,
         DailyRules rules,
+        DailyMetrics metrics,
         ILogger<HintResponse> logger,
         CancellationToken ct)
     {
@@ -134,6 +135,7 @@ public static class RequestHintEndpoint
             .ToList();
 
         DailyLog.HintRequested(logger, request.Level, session.PlayerId, session.Id, trackId, request.Position);
+        metrics.HintRequested(request.Level);
         return new HintResponse(facts);
     }
 }
@@ -155,9 +157,10 @@ public static class AbandonSessionEndpoint
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     [EmptyResponse]
-    public static void Post([NotBody] PlayableSession loaded, TimeProvider time, ILogger<PlayableSession> logger)
+    public static void Post([NotBody] PlayableSession loaded, TimeProvider time, [NotBody] DailyMetrics metrics, ILogger<PlayableSession> logger)
     {
         loaded.Session.Abandon(time.GetUtcNow());
         DailyLog.SessionAbandoned(logger, loaded.Session.Id, loaded.Session.PlayerId);
+        metrics.SessionAbandoned();
     }
 }

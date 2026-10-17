@@ -42,7 +42,8 @@ public static class ObservabilityExtensions
             .WithMetrics(metrics => metrics
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
-                .AddRuntimeInstrumentation());
+                .AddRuntimeInstrumentation()
+                .AddMeter(TelemetrySources.Meters));
 
         builder.Logging.AddOpenTelemetry(options =>
         {

@@ -1,6 +1,8 @@
+using System.Diagnostics.Metrics;
 using InSeconds.Api.Infrastructure.Jobs;
 using InSeconds.Api.Modules.Players.Application;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.Metrics.Testing;
 
 namespace InSeconds.IntegrationTests.Players;
 
@@ -72,10 +74,13 @@ public class PlayersPurgeTests(PostgresFixture postgres) : IAsyncLifetime
         await PlayerDataSeed.AddGameAsync(_api, inactive);
         await PlayerDataSeed.AddGameAsync(_api, guest);
         await _api.ExecuteAsync($"INSERT INTO daily.streaks (player_id, current_streak, freezes) VALUES ('{inactive}', 0, 1)");
+        using var erased = new MetricCollector<long>(
+            _api.Services.GetRequiredService<IMeterFactory>(), PlayersMetrics.MeterName, PlayersMetrics.AccountsErasedName);
 
         var report = await RunAsync();
 
         Assert.Equal(2, report["accounts"]);
+        Assert.Equal(["inactive", "inactive"], erased.GetMeasurementSnapshot().Select(m => (string?)m.Tags["reason"]));
         Assert.Equal(
             new[] { admin, recent, guest }.Order().ToArray(),
             (await _api.ScalarAsync<Guid[]>("SELECT array_agg(id) FROM players.players"))!.Order().ToArray());

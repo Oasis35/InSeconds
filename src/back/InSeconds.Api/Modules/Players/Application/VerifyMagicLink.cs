@@ -70,6 +70,7 @@ public static class VerifyMagicLinkEndpoint
         MagicLinkAttempt attempt,
         AccountSignIn accountSignIn,
         TimeProvider time,
+        PlayersMetrics metrics,
         ILogger<VerifyMagicLink> logger,
         CancellationToken ct)
     {
@@ -80,6 +81,7 @@ public static class VerifyMagicLinkEndpoint
         attempt.Token!.Consume(time.GetUtcNow());
         var result = await accountSignIn.ExecuteAsync(plan, ct);
         PlayersLog.SignedIn(logger, result.PlayerId, result.Outcome);
+        metrics.SignedIn(result.Outcome);
         return new VerifyMagicLinkResponse(NeedsPseudo: false);
     }
 }

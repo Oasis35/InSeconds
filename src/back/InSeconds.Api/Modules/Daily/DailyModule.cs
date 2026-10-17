@@ -26,6 +26,8 @@ public static class DailyModule
         // Les règles du jeu lues à chaud dans les réglages (paliers, barème, indices, gels), et le contrôle de leur cohérence au démarrage.
         services.AddSingleton<DailyRules>();
         services.AddHostedService<DailyOptionsStartupCheck>();
+        // Compteurs des parties et des réponses, exportés en OpenTelemetry (tableau Grafana « Activité »).
+        services.AddSingleton<DailyMetrics>();
         // Le cooldown des morceaux, déduit de la taille du pool à chaque appel (#275).
         services.AddScoped<TrackCooldownPolicy>();
         // L'usage réel des morceaux, calculé sur les défis : remplace « aucun usage » de Catalogue (enregistré par

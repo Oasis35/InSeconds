@@ -13,11 +13,12 @@ public sealed record ExpireStaleSessions;
 public static class ExpireStaleSessionsHandler
 {
     public static async Task<int> Handle(
-        ExpireStaleSessions command, IDailyStore store, IGameCalendar calendar, ILogger<ExpireStaleSessions> logger, CancellationToken ct)
+        ExpireStaleSessions command, IDailyStore store, IGameCalendar calendar, DailyMetrics metrics, ILogger<ExpireStaleSessions> logger, CancellationToken ct)
     {
         var before = SessionAccess.OldestPlayableDay(calendar.Today);
         var count = await store.ExpireAllStaleSessionsAsync(before, calendar.Now, ct);
         DailyLog.StaleSessionsExpired(logger, count, before);
+        metrics.SessionsExpired(count);
         return count;
     }
 }
