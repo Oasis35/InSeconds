@@ -4,7 +4,7 @@ import { AppError, toAppError } from '../../core/errors/app-error';
 import { SessionStore } from '../../core/session/session.store';
 import { isPlausibleEmail, normalizeEmail, sameEmail } from '../domain/email';
 import { normalizePseudo, pseudoIssue } from '../domain/pseudo';
-import { PlayersApi } from './players.api';
+import { DataExportFile, PlayersApi } from './players.api';
 
 /** Avancement d'une action du profil : au repos, en cours, réussie, ou en échec avec son code d'erreur. */
 export type ActionStatus = 'idle' | 'pending' | 'done' | { readonly error: AppError };
@@ -13,17 +13,23 @@ interface ProfileState {
   pseudoStatus: ActionStatus;
   emailStatus: ActionStatus;
   logoutStatus: ActionStatus;
+  exportStatus: ActionStatus;
+  deleteStatus: ActionStatus;
 }
 
 /**
- * Actions du profil : pseudo, demande de changement d'email, déconnexion. Chaque action a son
+ * Actions du profil : pseudo, demande de changement d'email, déconnexion, copie des données et
+ * suppression du compte (RGPD). Chaque action a son
  * propre avancement ; l'écran remet l'avancement au repos (`clear…`) quand le joueur retape.
  */
 export const ProfileStore = signalStore(
-  withState<ProfileState>({ pseudoStatus: 'idle', emailStatus: 'idle', logoutStatus: 'idle' }),
+  withState<ProfileState>({
+    pseudoStatus: 'idle', emailStatus: 'idle', logoutStatus: 'idle', exportStatus: 'idle', deleteStatus: 'idle',
+  }),
   withMethods((store, api = inject(PlayersApi), session = inject(SessionStore)) => ({
     clearPseudo: (): void => patchState(store, { pseudoStatus: 'idle' }),
     clearEmailChange: (): void => patchState(store, { emailStatus: 'idle' }),
+    clearDelete: (): void => patchState(store, { deleteStatus: 'idle' }),
 
     async savePseudo(raw: string): Promise<void> {
       const player = session.player();
@@ -64,6 +70,33 @@ export const ProfileStore = signalStore(
         return true;
       } catch (error) {
         patchState(store, { logoutStatus: { error: await toAppError(error) } });
+        return false;
+      }
+    },
+
+    /** La copie de ses données, prête à enregistrer ; `null` si elle a échoué (l'erreur est dans `exportStatus`). */
+    async exportData(): Promise<DataExportFile | null> {
+      patchState(store, { exportStatus: 'pending' });
+      try {
+        const file = await api.exportMyData();
+        patchState(store, { exportStatus: 'done' });
+        return file;
+      } catch (error) {
+        patchState(store, { exportStatus: { error: await toAppError(error) } });
+        return null;
+      }
+    },
+
+    /** Supprime le compte, pseudo retapé ; `true` si c'est fait (la session est alors vidée, comme une déconnexion). */
+    async deleteAccount(pseudo: string): Promise<boolean> {
+      patchState(store, { deleteStatus: 'pending' });
+      try {
+        await api.deleteMyAccount(pseudo.trim());
+        session.signedOut();
+        patchState(store, { deleteStatus: 'done' });
+        return true;
+      } catch (error) {
+        patchState(store, { deleteStatus: { error: await toAppError(error) } });
         return false;
       }
     },

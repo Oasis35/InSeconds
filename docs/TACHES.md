@@ -49,7 +49,7 @@
 - [ ] Soft 404 : les URLs inexistantes renvoient 200 (fallback SPA), la page 404 n'est rendue que côté Angular
 - [ ] Charte graphique / `@theme` Tailwind (palette déjà centralisée en variables CSS `:root`)
 - [ ] Audit accessibilité WCAG 2.1 AA
-- [x] RGPD : effacement complet d'un joueur (plus de `deleted_at`), copie de ses données, durées de conservation dans la tâche nocturne (PR #351 ; boutons du profil à venir)
+- [x] RGPD : effacement complet d'un joueur (plus de `deleted_at`), copie de ses données, durées de conservation dans la tâche nocturne (PR #351, boutons « Tes données » du profil)
 - [ ] CGU minimales (les mentions légales sont sur `/privacy`)
 
 ## Décisions définitives (ne pas réimplémenter)

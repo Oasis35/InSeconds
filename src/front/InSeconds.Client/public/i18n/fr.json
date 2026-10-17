@@ -26,6 +26,7 @@
       "email_taken": "Cette adresse est déjà utilisée par un autre compte.",
       "guest_forbidden": "Cette action est réservée aux comptes connectés.",
       "invalid_or_expired_token": "Ce lien est invalide ou a expiré.",
+      "pseudo_mismatch": "Ce n'est pas ton pseudo.",
       "pseudo_taken": "Ce pseudo est déjà pris.",
       "same_email": "C'est déjà ton adresse actuelle."
     },
@@ -191,6 +192,22 @@
         "cancel": "Annuler",
         "error": "La déconnexion a échoué. Réessaie."
       },
+      "data": {
+        "title": "Tes données",
+        "export": "Télécharger mes données",
+        "exporting": "Préparation…",
+        "exportError": "Le téléchargement de tes données a échoué. Réessaie."
+      },
+      "delete": {
+        "action": "Supprimer mon compte",
+        "title": "Supprimer ton compte ?",
+        "body": "Ton email, ton pseudo, ta série, tes gels et toutes tes parties seront effacés pour de bon, et tous tes appareils déconnectés. Impossible de revenir en arrière.",
+        "label": "Retape ton pseudo {{ pseudo }} pour confirmer",
+        "confirm": "Supprimer",
+        "deleting": "Suppression…",
+        "cancel": "Annuler",
+        "done": "Ton compte est supprimé."
+      },
       "backToGame": "Retour au jeu"
     },
     "devices": {
@@ -209,7 +226,12 @@
       "revoked": "Appareil déconnecté.",
       "revokedOthers": "Les autres appareils sont déconnectés.",
       "cancel": "Annuler",
-      "loadError": "Impossible de charger tes appareils."
+      "loadError": "Impossible de charger tes appareils.",
+      "summary": {
+        "alone": "{{ current }}",
+        "one": "{{ current }} et 1 autre",
+        "many": "{{ current }} et {{ count }} autres"
+      }
     },
     "browserId": {
       "label": "Ton identifiant navigateur :",

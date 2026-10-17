@@ -26,6 +26,7 @@
       "email_taken": "This address is already used by another account.",
       "guest_forbidden": "This action is only available to signed-in accounts.",
       "invalid_or_expired_token": "This link is invalid or has expired.",
+      "pseudo_mismatch": "That's not your pseudo.",
       "pseudo_taken": "This pseudo is already taken.",
       "same_email": "That's already your current address."
     },
@@ -191,6 +192,22 @@
         "cancel": "Cancel",
         "error": "Logout failed. Try again."
       },
+      "data": {
+        "title": "Your data",
+        "export": "Download my data",
+        "exporting": "Preparing…",
+        "exportError": "Downloading your data failed. Try again."
+      },
+      "delete": {
+        "action": "Delete my account",
+        "title": "Delete your account?",
+        "body": "Your email, pseudo, streak, freezes and all your games will be permanently erased, and all your devices signed out. This can't be undone.",
+        "label": "Type your pseudo {{ pseudo }} to confirm",
+        "confirm": "Delete",
+        "deleting": "Deleting…",
+        "cancel": "Cancel",
+        "done": "Your account has been deleted."
+      },
       "backToGame": "Back to game"
     },
     "devices": {
@@ -209,7 +226,12 @@
       "revoked": "Device signed out.",
       "revokedOthers": "Other devices are signed out.",
       "cancel": "Cancel",
-      "loadError": "Couldn't load your devices."
+      "loadError": "Couldn't load your devices.",
+      "summary": {
+        "alone": "{{ current }}",
+        "one": "{{ current }} and 1 other",
+        "many": "{{ current }} and {{ count }} others"
+      }
     },
     "browserId": {
       "label": "Your browser ID:",

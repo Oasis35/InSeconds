@@ -29,7 +29,7 @@
 - Page confidentialité et mentions légales sur `/privacy` (alias `/confidentialite`)
 - Installable sur l'écran d'accueil (PWA), mise à jour automatiquement à un moment sûr (jamais en pleine manche)
 - Liste des appareils connectés à ton compte, déconnexion d'un appareil ou de tous les autres
-- Tes données (RGPD) : copie de toutes tes données en JSON et suppression définitive de ton compte (boutons du profil à venir, l'API est prête) ; appareils sans visite depuis 91 jours et comptes inactifs depuis 3 ans supprimés automatiquement chaque nuit ; ce que tu tapes en réponse n'est jamais stocké
+- Tes données (RGPD) : copie de toutes tes données en JSON et suppression définitive de ton compte (section « Tes données » du profil) ; appareils sans visite depuis 91 jours et comptes inactifs depuis 3 ans supprimés automatiquement chaque nuit ; ce que tu tapes en réponse n'est jamais stocké
 
 ## Démarrage rapide
 

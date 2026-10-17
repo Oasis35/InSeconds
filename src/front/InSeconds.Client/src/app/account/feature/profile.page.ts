@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Injector, OnInit, computed, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { FormField, FormRoot, form, validate } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { FileDownload } from '../../core/download/file-download';
 import { AppError } from '../../core/errors/app-error';
 import { errorMessageKey } from '../../core/errors/error-messages';
 import { LanguageService } from '../../core/i18n/language.service';
@@ -17,6 +19,7 @@ import { isPlausibleEmail, normalizeEmail, sameEmail } from '../domain/email';
 import { normalizePseudo, pseudoIssue } from '../domain/pseudo';
 import { DeviceListComponent } from '../ui/device-list.component';
 import { BrowserIdComponent } from './browser-id.component';
+import { DeleteAccountDialog } from './delete-account.dialog';
 
 function errorOf(status: ActionStatus): AppError | null {
   return typeof status === 'object' ? status.error : null;
@@ -24,8 +27,8 @@ function errorOf(status: ActionStatus): AppError | null {
 
 /**
  * `/account/profile` : pseudo, changement d'email (confirmé par un lien envoyé à la nouvelle
- * adresse), appareils connectés, déconnexion. Réservé aux comptes (garde de la route). La série et
- * les parties jouées s'y ajoutent avec le module Daily.
+ * adresse), appareils connectés (liste repliée), déconnexion, puis « Tes données » : copie de ses
+ * données en JSON et suppression du compte (RGPD). Réservé aux comptes (garde de la route).
  */
 @Component({
   selector: 'app-profile-page',
@@ -46,6 +49,19 @@ export class ProfilePage implements OnInit {
   private readonly toast = inject(ToastService);
   private readonly translate = inject(TranslateService);
   private readonly router = inject(Router);
+  private readonly injector = inject(Injector);
+  private readonly download = inject(FileDownload);
+
+  /** La liste des appareils, repliée à chaque visite. */
+  protected readonly devicesOpen = signal(false);
+  /** Ligne de la liste repliée : cet appareil et le nombre des autres. */
+  protected readonly devicesSummary = computed(() => {
+    if (!this.devices.isFulfilled()) return null;
+    const label = this.devices.devices().find(device => device.isCurrent)?.label ?? null;
+    const count = this.devices.others().length;
+    const key = count === 0 ? 'alone' : count === 1 ? 'one' : 'many';
+    return { key: `account.devices.summary.${key}`, label, count };
+  });
 
   /** Champ pseudo : mêmes règles que le back, sur la valeur sans espaces autour. */
   protected readonly pseudoForm = form(signal({ pseudo: this.session.player()?.pseudo ?? '' }), path => {
@@ -61,6 +77,7 @@ export class ProfilePage implements OnInit {
   protected readonly pseudoError = computed(() => errorOf(this.profile.pseudoStatus()));
   protected readonly emailError = computed(() => errorOf(this.profile.emailStatus()));
   protected readonly logoutError = computed(() => errorOf(this.profile.logoutStatus()));
+  protected readonly exportError = computed(() => errorOf(this.profile.exportStatus()));
   protected readonly devicesActionError = computed(() => errorOf(this.devices.action()));
   protected readonly devicesActionKey = computed(() => errorMessageKey(this.devicesActionError()?.code));
 
@@ -143,5 +160,22 @@ export class ProfilePage implements OnInit {
       tone: 'danger',
     });
     if (confirmed && (await this.devices.revokeOthers())) this.toast.show('account.devices.revokedOthers', { tone: 'success' });
+  }
+
+  protected toggleDevices(): void {
+    this.devicesOpen.update(open => !open);
+  }
+
+  /** Télécharge la copie de ses données, directement, sans fenêtre. */
+  protected async downloadData(): Promise<void> {
+    const file = await this.profile.exportData();
+    if (file) this.download.saveText(file.fileName, file.json);
+  }
+
+  protected async deleteAccount(): Promise<void> {
+    const ref = this.modal.open<boolean, unknown, DeleteAccountDialog>(DeleteAccountDialog, { injector: this.injector });
+    if ((await firstValueFrom(ref.closed)) !== true) return;
+    await this.router.navigateByUrl('/');
+    this.toast.show('account.profile.delete.done', { tone: 'success' });
   }
 }

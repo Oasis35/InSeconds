@@ -21,3 +21,8 @@ export function pseudoIssue(raw: string): PseudoIssue | null {
   if (pseudo.length > PSEUDO_MAX_LENGTH) return 'tooLong';
   return PSEUDO_PATTERN.test(pseudo) ? null : 'invalid';
 }
+
+/** Le pseudo retapé pour confirmer une suppression : comme le back, sans espaces autour ni casse. */
+export function samePseudo(typed: string, pseudo: string | null | undefined): boolean {
+  return pseudo != null && normalizePseudo(typed).toUpperCase() === pseudo.toUpperCase();
+}

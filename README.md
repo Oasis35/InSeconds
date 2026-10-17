@@ -29,7 +29,7 @@
 - Privacy policy and legal notice at `/privacy` (also `/confidentialite`)
 - Installable on the home screen (PWA), updated automatically at a safe moment (never in the middle of a round)
 - List of the devices signed in to your account, sign out one device or all the others
-- Your data (GDPR): download a JSON copy of all your data and permanently delete your account (profile buttons coming, the API is ready); devices unseen for 91 days and accounts inactive for 3 years are deleted automatically every night; what you type as an answer is never stored
+- Your data (GDPR): download a JSON copy of all your data and permanently delete your account ("Your data" section of the profile); devices unseen for 91 days and accounts inactive for 3 years are deleted automatically every night; what you type as an answer is never stored
 
 ## Quick start
 
