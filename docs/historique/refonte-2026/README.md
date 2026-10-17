@@ -10,6 +10,12 @@ Chantier terminé : ces documents sont **figés** et ne décrivent plus forcéme
 - **Reste** : I3 (#237, vers le 14/01/2027) : retrait de `legacy_tokens`, du middleware de reprise des cookies v1 et des anciennes clés Data Protection non chiffrées.
 - **Suivi** : ticket parent #205 et ses sous-tickets (étiquette `refonte-v2`).
 
+## La bascule du 16/10/2026
+
+Workflow manuel « Bascule v2 » (`bascule-v2.yml`, retiré en I1 avec `deploy/vps/switch-to-v2.sh` ; l'import `deploy/migration-v2/` est retiré en I2, tout reste dans l'historique git). Il préparait sans arrêt (certificat Data Protection, image, migrations), arrêtait l'API v1, importait les données, créait une clé Data Protection neuve, figeait l'historique des statistiques, remplaçait les conteneurs par la v2 sous les mêmes noms (Caddy inchangé), vérifiait la santé puis ouvrait le jeu. Au moindre écart avant l'ouverture, la v1 repartait, ses tables n'ayant jamais été modifiées. Répétée sur le staging le 12/10 (retour arrière simulé et deux passages réels, jalon J5).
+
+En prod : run #5, vert à 07:43 UTC, environ 1 min 30. La première tentative s'est arrêtée en préparation, avant l'arrêt de la v1 : `secrets/dataprotection.pfx` n'était pas lisible par l'uid/gid 1654 de l'image (`sudo chgrp 1654 … && sudo chmod 640 …`, cf. `.env.prod.example`). Après la bascule, les routes de la v1 ont répondu `410 common.new_version` jusqu'à I1. Suivi : #234.
+
 ## Les documents
 
 | Fichier | Contenu |
