@@ -22,6 +22,7 @@ namespace Internal.Generated.WolverineHandlers
     {
         private readonly Wolverine.Http.WolverineHttpOptions _wolverineHttpOptions;
         private readonly InSeconds.Api.Infrastructure.Time.IGameCalendar _gameCalendar;
+        private readonly InSeconds.Api.Modules.Daily.Application.DailyMetrics _dailyMetrics;
         private readonly InSeconds.Api.Modules.Daily.Application.DailyRules _dailyRules;
         private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor;
         private readonly Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _serviceScopeFactory;
@@ -31,10 +32,11 @@ namespace Internal.Generated.WolverineHandlers
         private readonly Wolverine.Http.FluentValidation.IProblemDetailSource<InSeconds.Api.Modules.Daily.Application.RequestHint> _problemDetailSourceOfRequestHint;
         private readonly Wolverine.Runtime.IWolverineRuntime _wolverineRuntime;
 
-        public POST_api_daily_sessions_id_hints(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, InSeconds.Api.Infrastructure.Time.IGameCalendar gameCalendar, InSeconds.Api.Modules.Daily.Application.DailyRules dailyRules, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Daily.Application.HintResponse> loggerOfHintResponse, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> optionsMonitorOfCatalogueOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Wolverine.Http.FluentValidation.IProblemDetailSource<InSeconds.Api.Modules.Daily.Application.RequestHint> problemDetailSourceOfRequestHint, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
+        public POST_api_daily_sessions_id_hints(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, InSeconds.Api.Infrastructure.Time.IGameCalendar gameCalendar, InSeconds.Api.Modules.Daily.Application.DailyMetrics dailyMetrics, InSeconds.Api.Modules.Daily.Application.DailyRules dailyRules, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Daily.Application.HintResponse> loggerOfHintResponse, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> optionsMonitorOfCatalogueOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Wolverine.Http.FluentValidation.IProblemDetailSource<InSeconds.Api.Modules.Daily.Application.RequestHint> problemDetailSourceOfRequestHint, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
         {
             _wolverineHttpOptions = wolverineHttpOptions;
             _gameCalendar = gameCalendar;
+            _dailyMetrics = dailyMetrics;
             _dailyRules = dailyRules;
             _httpContextAccessor = httpContextAccessor;
             _serviceScopeFactory = serviceScopeFactory;
@@ -112,7 +114,7 @@ namespace Internal.Generated.WolverineHandlers
 
                 
                 // The actual HTTP request handler execution
-                var hintResponse_response = await InSeconds.Api.Modules.Daily.Application.RequestHintEndpoint.Post(request, hintAttempt, efTrackDirectory, _dailyRules, _loggerOfHintResponse, httpContext.RequestAborted).ConfigureAwait(false);
+                var hintResponse_response = await InSeconds.Api.Modules.Daily.Application.RequestHintEndpoint.Post(request, hintAttempt, efTrackDirectory, _dailyRules, _dailyMetrics, _loggerOfHintResponse, httpContext.RequestAborted).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

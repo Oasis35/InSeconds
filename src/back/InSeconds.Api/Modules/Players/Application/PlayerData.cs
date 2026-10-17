@@ -121,10 +121,12 @@ public static class DeleteMyAccountEndpoint
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [EmptyResponse]
     public static async Task Post(
-        DeleteMyAccount request, Account account, AccountErasure erasure, IPlayerSignIn signIn, ILogger<DeleteMyAccount> logger, CancellationToken ct)
+        DeleteMyAccount request, Account account, AccountErasure erasure, IPlayerSignIn signIn, PlayersMetrics metrics, ILogger<DeleteMyAccount> logger,
+        CancellationToken ct)
     {
         var erased = await erasure.EraseAsync(account.PlayerId, ct);
         PlayersLog.AccountErased(logger, account.PlayerId, "request", erased.Games, erased.Devices);
+        metrics.AccountErased("request");
         await signIn.SignOutAsync();
     }
 }

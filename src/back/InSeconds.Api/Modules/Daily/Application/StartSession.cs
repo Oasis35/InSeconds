@@ -107,6 +107,7 @@ public static class StartSessionEndpoint
         IPlayerDirectory players,
         [NotBody] DailyRules rules,
         IGameCalendar calendar,
+        [NotBody] DailyMetrics metrics,
         ILogger<StartSessionResponse> logger,
         CancellationToken ct)
     {
@@ -132,6 +133,7 @@ public static class StartSessionEndpoint
         if (!resuming)
         {
             DailyLog.SessionStarted(logger, session.Id, playerId, challenge.Id);
+            metrics.SessionStarted();
             return new StartSessionResponse(session.Id, slots, StreakResponse.From(view), false, 1, [], null);
         }
 

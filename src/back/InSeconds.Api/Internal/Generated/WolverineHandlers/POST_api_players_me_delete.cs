@@ -2,6 +2,7 @@
 #pragma warning disable
 using FluentValidation;
 using InSeconds.Api.Infrastructure.Auth;
+using InSeconds.Api.Modules.Players.Application;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +24,7 @@ namespace Internal.Generated.WolverineHandlers
         private readonly Wolverine.Http.WolverineHttpOptions _wolverineHttpOptions;
         private readonly FluentValidation.IValidator<InSeconds.Api.Modules.Players.Application.DeleteMyAccount> _validatorOfDeleteMyAccount;
         private readonly InSeconds.Api.Infrastructure.Auth.IDeviceSessionValidationCache _deviceSessionValidationCache;
+        private readonly InSeconds.Api.Modules.Players.Application.PlayersMetrics _playersMetrics;
         private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor1;
         private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor2;
         private readonly Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _serviceScopeFactory;
@@ -32,11 +34,12 @@ namespace Internal.Generated.WolverineHandlers
         private readonly Wolverine.Http.FluentValidation.IProblemDetailSource<InSeconds.Api.Modules.Players.Application.DeleteMyAccount> _problemDetailSourceOfDeleteMyAccount;
         private readonly Wolverine.Runtime.IWolverineRuntime _wolverineRuntime;
 
-        public POST_api_players_me_delete(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, FluentValidation.IValidator<InSeconds.Api.Modules.Players.Application.DeleteMyAccount> validatorOfDeleteMyAccount, InSeconds.Api.Infrastructure.Auth.IDeviceSessionValidationCache deviceSessionValidationCache, Microsoft.AspNetCore.Http.IHttpContextAccessor __httpContextAccessor1, Microsoft.AspNetCore.Http.IHttpContextAccessor __httpContextAccessor2, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Players.Application.DeleteMyAccount> loggerForMessage, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> optionsMonitorOfCatalogueOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Wolverine.Http.FluentValidation.IProblemDetailSource<InSeconds.Api.Modules.Players.Application.DeleteMyAccount> problemDetailSourceOfDeleteMyAccount, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
+        public POST_api_players_me_delete(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, FluentValidation.IValidator<InSeconds.Api.Modules.Players.Application.DeleteMyAccount> validatorOfDeleteMyAccount, InSeconds.Api.Infrastructure.Auth.IDeviceSessionValidationCache deviceSessionValidationCache, InSeconds.Api.Modules.Players.Application.PlayersMetrics playersMetrics, Microsoft.AspNetCore.Http.IHttpContextAccessor __httpContextAccessor1, Microsoft.AspNetCore.Http.IHttpContextAccessor __httpContextAccessor2, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Players.Application.DeleteMyAccount> loggerForMessage, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> optionsMonitorOfCatalogueOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Wolverine.Http.FluentValidation.IProblemDetailSource<InSeconds.Api.Modules.Players.Application.DeleteMyAccount> problemDetailSourceOfDeleteMyAccount, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
         {
             _wolverineHttpOptions = wolverineHttpOptions;
             _validatorOfDeleteMyAccount = validatorOfDeleteMyAccount;
             _deviceSessionValidationCache = deviceSessionValidationCache;
+            _playersMetrics = playersMetrics;
             _httpContextAccessor1 = __httpContextAccessor1;
             _httpContextAccessor2 = __httpContextAccessor2;
             _serviceScopeFactory = serviceScopeFactory;
@@ -102,7 +105,7 @@ namespace Internal.Generated.WolverineHandlers
 
                 
                 // The actual HTTP request handler execution
-                await InSeconds.Api.Modules.Players.Application.DeleteMyAccountEndpoint.Post(request, account, accountErasure, playerSignIn, _loggerForMessage, httpContext.RequestAborted).ConfigureAwait(false);
+                await InSeconds.Api.Modules.Players.Application.DeleteMyAccountEndpoint.Post(request, account, accountErasure, playerSignIn, _playersMetrics, _loggerForMessage, httpContext.RequestAborted).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

@@ -23,6 +23,7 @@ namespace Internal.Generated.WolverineHandlers
     {
         private readonly Wolverine.Http.WolverineHttpOptions _wolverineHttpOptions;
         private readonly InSeconds.Api.Infrastructure.Time.IGameCalendar _gameCalendar;
+        private readonly InSeconds.Api.Modules.Daily.Application.DailyMetrics _dailyMetrics;
         private readonly InSeconds.Api.Modules.Daily.Application.DailyRules _dailyRules;
         private readonly InSeconds.Api.Modules.Gameplay.Contracts.IAnswerMatcher _answerMatcher;
         private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor;
@@ -33,10 +34,11 @@ namespace Internal.Generated.WolverineHandlers
         private readonly Wolverine.Http.FluentValidation.IProblemDetailSource<InSeconds.Api.Modules.Daily.Application.SubmitAnswer> _problemDetailSourceOfSubmitAnswer;
         private readonly Wolverine.Runtime.IWolverineRuntime _wolverineRuntime;
 
-        public POST_api_daily_sessions_id_answers(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, InSeconds.Api.Infrastructure.Time.IGameCalendar gameCalendar, InSeconds.Api.Modules.Daily.Application.DailyRules dailyRules, InSeconds.Api.Modules.Gameplay.Contracts.IAnswerMatcher answerMatcher, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Daily.Application.SubmitAnswerResponse> loggerOfSubmitAnswerResponse, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> optionsMonitorOfCatalogueOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Wolverine.Http.FluentValidation.IProblemDetailSource<InSeconds.Api.Modules.Daily.Application.SubmitAnswer> problemDetailSourceOfSubmitAnswer, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
+        public POST_api_daily_sessions_id_answers(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, InSeconds.Api.Infrastructure.Time.IGameCalendar gameCalendar, InSeconds.Api.Modules.Daily.Application.DailyMetrics dailyMetrics, InSeconds.Api.Modules.Daily.Application.DailyRules dailyRules, InSeconds.Api.Modules.Gameplay.Contracts.IAnswerMatcher answerMatcher, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Daily.Application.SubmitAnswerResponse> loggerOfSubmitAnswerResponse, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> optionsMonitorOfCatalogueOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Wolverine.Http.FluentValidation.IProblemDetailSource<InSeconds.Api.Modules.Daily.Application.SubmitAnswer> problemDetailSourceOfSubmitAnswer, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
         {
             _wolverineHttpOptions = wolverineHttpOptions;
             _gameCalendar = gameCalendar;
+            _dailyMetrics = dailyMetrics;
             _dailyRules = dailyRules;
             _answerMatcher = answerMatcher;
             _httpContextAccessor = httpContextAccessor;
@@ -117,7 +119,7 @@ namespace Internal.Generated.WolverineHandlers
 
                 
                 // The actual HTTP request handler execution
-                var submitAnswerResponse_response = await InSeconds.Api.Modules.Daily.Application.SubmitAnswerEndpoint.Post(request, answerAttempt, efDailyStore, efDailyQueries, efPlayerDirectory, _dailyRules, _answerMatcher, _gameCalendar, _loggerOfSubmitAnswerResponse, httpContext.RequestAborted).ConfigureAwait(false);
+                var submitAnswerResponse_response = await InSeconds.Api.Modules.Daily.Application.SubmitAnswerEndpoint.Post(request, answerAttempt, efDailyStore, efDailyQueries, efPlayerDirectory, _dailyRules, _answerMatcher, _gameCalendar, _dailyMetrics, _loggerOfSubmitAnswerResponse, httpContext.RequestAborted).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

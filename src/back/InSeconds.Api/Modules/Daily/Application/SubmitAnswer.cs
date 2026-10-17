@@ -98,6 +98,7 @@ public static class SubmitAnswerEndpoint
         DailyRules rules,
         IAnswerMatcher matcher,
         IGameCalendar calendar,
+        DailyMetrics metrics,
         ILogger<SubmitAnswerResponse> logger,
         CancellationToken ct)
     {
@@ -115,11 +116,13 @@ public static class SubmitAnswerEndpoint
         DailyLog.AnswerSubmitted(
             logger, session.PlayerId, session.Id, info.Id, outcome.ListenedSeconds, outcome.ArtistCorrect, outcome.TitleCorrect,
             outcome.HintLevelUsed, score, request.Position, info.Artist, info.DisplayTitle);
+        metrics.AnswerSubmitted(outcome);
 
         if (completed)
         {
             await CompleteAsync(session, challenge, store, players, rules, ct);
             DailyLog.SessionCompleted(logger, session.Id, session.PlayerId, session.TotalScore);
+            metrics.SessionCompleted(session.TotalScore);
         }
 
         var stats = TrackAnswerStats.Build(prior, outcome, rules.AllowedDurations);
