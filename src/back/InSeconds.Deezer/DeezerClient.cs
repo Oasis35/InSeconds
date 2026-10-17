@@ -7,8 +7,8 @@ namespace InSeconds.Deezer;
 
 /// <summary>
 /// Client HTTP de l'API Deezer, qui implémente les trois ports. C'est l'état réel chez Deezer : le cache
-/// (<see cref="CachedPreviewProvider"/>, <see cref="CachedTrackSearch"/>) est un décorateur, utilisé là où
-/// l'état exact n'est pas nécessaire. Le <see cref="HttpClient"/> arrive configuré (adresse de base,
+/// des recherches publiques (<see cref="CachedTrackSearch"/>) est un décorateur, utilisé là où l'état exact
+/// n'est pas nécessaire. Les extraits n'ont pas de cache : leurs adresses sont signées pour 15 min (piège 14). Le <see cref="HttpClient"/> arrive configuré (adresse de base,
 /// résilience), cf. <see cref="DeezerServiceCollectionExtensions"/>.
 /// </summary>
 /// <remarks>

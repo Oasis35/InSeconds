@@ -14,7 +14,7 @@ test.describe('Échec de lecture audio', () => {
     await api.reset();
   });
 
-  test("bloque une seule tentative, sans boucle de requêtes, et masque la saisie", async ({ page }) => {
+  test("bloque après une seule relance automatique, sans boucle de requêtes, et masque la saisie", async ({ page }) => {
     let requestCount = 0;
     await page.route('**/test-audio.mp3', async (route) => {
       requestCount++;
@@ -36,13 +36,41 @@ test.describe('Échec de lecture audio', () => {
     // Le formulaire de réponse ne doit pas être affiché tant que la lecture n'a pas repris.
     await expect(round.answerInput).not.toBeVisible();
 
-    // Le navigateur peut redemander l'extrait une fois (requête de plage) : au plus deux
-    // requêtes, et surtout pas de boucle. Une boucle (l'ancien bug E4) ferait grimper le compteur ; il reste figé.
+    // Deux tentatives (la lecture, puis la relance automatique depuis une adresse fraîche, piège 14),
+    // chacune pouvant redemander l'extrait une fois (requête de plage) : au plus quatre requêtes, et
+    // surtout pas de boucle. Une boucle (l'ancien bug E4) ferait grimper le compteur ; il reste figé.
     const afterFirstFailure = requestCount;
-    expect(afterFirstFailure).toBeLessThanOrEqual(2);
+    expect(afterFirstFailure).toBeLessThanOrEqual(4);
     // Réseau au repos (aucune requête pendant 500 ms) : une boucle de requêtes ne le laisserait jamais au repos.
     await page.waitForLoadState('networkidle');
     expect(requestCount).toBe(afterFirstFailure);
+  });
+
+  test('un premier échec (adresse expirée) se rattrape seul, sans afficher « Réessayer »', async ({ page }) => {
+    let failures = 0;
+    await page.route('**/test-audio.mp3', async (route) => {
+      // Seul le premier chargement échoue, comme une adresse Deezer expirée au bout de 15 min (piège 14).
+      if (failures === 0) {
+        failures++;
+        await route.abort('failed');
+      } else {
+        await route.continue();
+      }
+    });
+
+    const game = new GamePage(page);
+    const round = new BlindRoundPage(page);
+
+    await game.goto();
+    await game.waitForWelcome();
+    await game.clickStart();
+
+    // La lecture part sur la relance (le chrono passe de « … » au palier), sans message d'erreur.
+    await expect(round.timer).toHaveText(/s \/ 0\.5s\s*$/);
+    expect(failures).toBe(1);
+    await expect(game.retryButton).not.toBeVisible();
+    await round.submitEmpty();
+    await round.goNext();
   });
 
   test("« Réessayer » relance la lecture et permet de terminer le morceau normalement", async ({ page }) => {

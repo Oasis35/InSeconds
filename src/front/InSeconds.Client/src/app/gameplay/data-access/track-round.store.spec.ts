@@ -192,10 +192,59 @@ describe('TrackRoundStore', () => {
       expect(store.wasExtended()).toBe(true);
     });
 
+    /** Premier échec, relance automatique depuis une adresse fraîche, puis second échec : « Réessayer » s'affiche. */
+    async function failTwice(fresh: string | null): Promise<void> {
+      audio.calls.length = 0;
+      emit('error');
+      await vi.waitFor(() => expect(audio.calls).toEqual([`load ${fresh ?? URL}`, 'playUntil 0.5']));
+      emit('error');
+      expect(store.phase()).toBe('audio-error');
+    }
+
+    it('un premier échec relance seul, une fois, depuis une adresse fraîche, sans rien montrer (piège 14)', async () => {
+      const refresh = vi.fn(() => Promise.resolve('https://cdn.example/frais.mp3'));
+      store.start({ ...CONFIG, refreshPreviewUrl: refresh });
+      store.listenMore();
+      audio.calls.length = 0;
+
+      emit('error');
+      // pas de « Réessayer » : la manche recharge déjà
+      expect(store.phase()).toBe('loading');
+      expect(store.showsInput()).toBe(true);
+      await vi.waitFor(() => expect(audio.calls).toEqual(['load https://cdn.example/frais.mp3', 'playUntil 1']));
+      expect(refresh).toHaveBeenCalledTimes(1);
+      // hors d'un clic : pas de déverrouillage, le son l'a été au clic qui a lancé le morceau
+      expect(audio.calls).not.toContain('unlock');
+    });
+
+    it('un second échec affiche « Réessayer », sans nouvelle relance seule (piège 33)', async () => {
+      const refresh = vi.fn(() => Promise.resolve('https://cdn.example/frais.mp3'));
+      store.start({ ...CONFIG, refreshPreviewUrl: refresh });
+      await failTwice('https://cdn.example/frais.mp3');
+      audio.calls.length = 0;
+
+      emit('idle');
+      await Promise.resolve();
+      expect(store.phase()).toBe('audio-error');
+      expect(audio.calls).toEqual([]);
+      expect(refresh).toHaveBeenCalledTimes(1);
+    });
+
+    it('la relance seule vaut pour chaque morceau', async () => {
+      const refresh = vi.fn(() => Promise.resolve('https://cdn.example/frais.mp3'));
+      store.start({ ...CONFIG, refreshPreviewUrl: refresh });
+      await failTwice('https://cdn.example/frais.mp3');
+
+      store.start({ ...CONFIG, trackId: 8, refreshPreviewUrl: refresh });
+      emit('error');
+      expect(store.phase()).toBe('loading');
+      await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2));
+    });
+
     it('« Réessayer » recharge depuis une adresse fraîche quand le mode sait la redemander (piège 14)', async () => {
       const refresh = vi.fn(() => Promise.resolve('https://cdn.example/frais.mp3'));
       store.start({ ...CONFIG, refreshPreviewUrl: refresh });
-      emit('error');
+      await failTwice('https://cdn.example/frais.mp3');
       audio.calls.length = 0;
 
       store.retryPlayback();
@@ -203,13 +252,14 @@ describe('TrackRoundStore', () => {
       expect(audio.calls).toEqual(['unlock']);
       expect(store.phase()).toBe('loading');
 
+      // même adresse fraîche : rechargée telle quelle
       await vi.waitFor(() => expect(audio.calls).toEqual(['unlock', 'load https://cdn.example/frais.mp3', 'playUntil 0.5']));
-      expect(refresh).toHaveBeenCalledTimes(1);
+      expect(refresh).toHaveBeenCalledTimes(2);
     });
 
     it('« Réessayer » garde l\'adresse quand la redemande échoue, et ne relance rien si la manche est finie entre-temps', async () => {
       store.start({ ...CONFIG, refreshPreviewUrl: () => Promise.reject(new Error('réseau')) });
-      emit('error');
+      await failTwice(null);
       audio.calls.length = 0;
       store.retryPlayback();
       await vi.waitFor(() => expect(audio.calls).toEqual(['unlock', `load ${URL}`, 'playUntil 0.5']));
@@ -217,7 +267,6 @@ describe('TrackRoundStore', () => {
       let resolve!: (url: string) => void;
       store.start({ ...CONFIG, refreshPreviewUrl: () => new Promise<string>(r => (resolve = r)) });
       emit('error');
-      store.retryPlayback();
       store.reset();
       audio.calls.length = 0;
       resolve('https://cdn.example/frais.mp3');

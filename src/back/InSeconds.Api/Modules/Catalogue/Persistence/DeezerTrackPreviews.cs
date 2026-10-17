@@ -3,7 +3,10 @@ using InSeconds.Deezer;
 
 namespace InSeconds.Api.Modules.Catalogue.Persistence;
 
-/// <summary>L'extrait vient de <see cref="IPreviewProvider"/> (client Deezer et son cache, dont la durée est bornée par la signature de l'adresse).</summary>
+/// <summary>
+/// L'extrait vient de <see cref="IPreviewProvider"/>, sans cache : Deezer signe ses adresses pour 15 min (piège 14), chaque appel en
+/// demande une fraîche.
+/// </summary>
 public sealed class DeezerTrackPreviews(IPreviewProvider previews) : ITrackPreviews
 {
     public async Task<IReadOnlyDictionary<int, string>> GetUrlsAsync(IReadOnlyCollection<TrackInfo> tracks, CancellationToken ct)

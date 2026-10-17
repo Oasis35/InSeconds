@@ -19,11 +19,10 @@ public sealed class DeezerOptions
 public static class DeezerServiceCollectionExtensions
 {
     /// <summary>
-    /// Enregistre le client Deezer et ses trois ports. <see cref="IPreviewProvider"/> est le décorateur à
-    /// cache (l'extrait suffit au jeu) ; <see cref="ITrackSearch"/> et <see cref="ITrackMetadataSource"/>
-    /// sont le client brut, l'état réel chez Deezer ; la recherche publique demande
-    /// <see cref="CachedTrackSearch"/>. Ce sont des fabriques : l'API déclare ces types à Wolverine
-    /// (<see cref="ServiceLocationTypes"/>).
+    /// Enregistre le client Deezer et ses trois ports, tous le client brut, l'état réel chez Deezer.
+    /// <see cref="IPreviewProvider"/> n'a pas de cache : Deezer signe ses adresses d'extrait pour 15 min
+    /// seulement (piège 14). La recherche publique demande <see cref="CachedTrackSearch"/>. Ce sont des
+    /// fabriques : l'API déclare ces types à Wolverine (<see cref="ServiceLocationTypes"/>).
     /// </summary>
     public static IServiceCollection AddDeezer(this IServiceCollection services, IConfiguration configuration)
     {
@@ -45,8 +44,7 @@ public static class DeezerServiceCollectionExtensions
 
         services.AddTransient<ITrackMetadataSource>(sp => sp.GetRequiredService<DeezerClient>());
         services.AddTransient<ITrackSearch>(sp => sp.GetRequiredService<DeezerClient>());
-        services.AddTransient<IPreviewProvider>(sp => new CachedPreviewProvider(
-            sp.GetRequiredService<DeezerClient>(), sp.GetRequiredService<DeezerCache>().Memory, sp.GetRequiredService<TimeProvider>()));
+        services.AddTransient<IPreviewProvider>(sp => sp.GetRequiredService<DeezerClient>());
         services.AddTransient(sp => new CachedTrackSearch(
             sp.GetRequiredService<DeezerClient>(), sp.GetRequiredService<DeezerCache>().Memory));
         return services;
@@ -54,7 +52,7 @@ public static class DeezerServiceCollectionExtensions
 
     /// <summary>
     /// Les types que le code Wolverine généré doit demander au conteneur : enregistrés par fabrique (client
-    /// HTTP typé, décorateurs), il ne peut pas les construire lui-même.
+    /// HTTP typé, décorateur), il ne peut pas les construire lui-même.
     /// </summary>
     public static IReadOnlyList<Type> ServiceLocationTypes { get; } =
         [typeof(IPreviewProvider), typeof(ITrackSearch), typeof(ITrackMetadataSource), typeof(CachedTrackSearch)];

@@ -45,9 +45,9 @@ Art. IV :
 - Le mot « data » : les comptes et les statistiques de jeu sont des données liées au service. Elles ne sont ni vendues ni exploitées ; ne jamais les monétiser.
 - Le contenu ne doit pas être « associated, directly or indirectly with any trademark, brand name, or logo » : lu comme visant les marques commerciales (sponsoring, partenaires). Ne jamais associer de marque tierce au jeu.
 
-### 5. Cache des URL d'extrait côté serveur : conforme
+### 5. URL d'extrait côté serveur : conforme
 
-On ne met en cache que l'URL (un texte), jamais l'audio, et le cache est borné par l'expiration de la signature (piège 14). La FAQ autorise le stockage des métadonnées :
+Les URL d'extrait ne sont plus mises en cache (retiré le 17/10/2026 : signées pour 15 min, le cache ne gardait rien, piège 14) ; l'audio ne l'a jamais été. La FAQ autorise le stockage des métadonnées :
 > « Is it possible to store artist and track names locally without stocking the audio? Yes, it is possible. »
 
 ## Écarts relevés le 02/10/2026, tous corrigés

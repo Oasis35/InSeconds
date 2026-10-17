@@ -62,9 +62,10 @@ export interface RoundConfig {
   readonly hintLevel?: number;
   readonly hintFacts?: readonly HintFact[];
   /**
-   * Redonne une adresse d'extrait fraîche avant « Réessayer » : la signature des extraits Deezer
-   * expire (piège 14), recharger la même adresse retomberait en erreur. Sans elle, la même adresse
-   * est rechargée ; `null` ou un échec la gardent aussi.
+   * Redonne une adresse d'extrait fraîche après un échec de lecture : la signature des extraits
+   * Deezer expire au bout de 15 min (piège 14), recharger la même adresse retomberait en erreur. Avec
+   * elle, le premier échec d'un morceau se relance seul ; sans elle, rien ne se relance seul et
+   * « Réessayer » recharge la même adresse ; `null` ou un échec la gardent aussi.
    */
   readonly refreshPreviewUrl?: () => Promise<string | null>;
 }
