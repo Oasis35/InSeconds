@@ -31,12 +31,6 @@ export interface PoolSort {
 export const POOL_PAGE_SIZE = 15;
 
 /**
- * Nombre de morceaux par défi tant que le réglage `Daily:TracksPerChallenge` n'est pas lu (ou si sa
- * lecture échoue) : la valeur réelle vient des réglages de l'API.
- */
-export const DEFAULT_TRACKS_PER_CHALLENGE = 5;
-
-/**
  * Le texte est cherché dans l'artiste, dans le titre, et dans « artiste titre » : une recherche
  * collée (« nicki minaj starships », piège 28) ne se trouve ni dans l'un ni dans l'autre pris à
  * part, et faisait disparaître un morceau pourtant bien présent dans le pool.
@@ -136,21 +130,4 @@ export function clampPage(page: number, count: number, pageSize = POOL_PAGE_SIZE
 
 export function pageOf<T>(items: readonly T[], page: number, pageSize = POOL_PAGE_SIZE): T[] {
   return items.slice(page * pageSize, (page + 1) * pageSize);
-}
-
-/**
- * Autonomie du pool : morceaux jamais utilisés, avec un extrait (ou pas encore contrôlé) et non
- * désactivés, ce que le tirage peut encore proposer, divisés par le nombre de morceaux d'un défi.
- */
-export function poolDaysRemaining(tracks: readonly PoolTrack[], tracksPerChallenge: number): number {
-  const drawable = tracks.filter(t => !isUsed(t) && t.preview !== 'missing' && !t.isDisabled).length;
-  return Math.floor(drawable / Math.max(1, tracksPerChallenge));
-}
-
-export type RunwayTone = 'low' | 'medium' | 'high';
-
-export function runwayTone(days: number): RunwayTone {
-  if (days < 3) return 'low';
-  if (days < 7) return 'medium';
-  return 'high';
 }

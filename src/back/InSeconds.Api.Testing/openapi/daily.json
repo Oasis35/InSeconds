@@ -178,46 +178,6 @@
         }
       }
     },
-    "/api/admin/daily/settings/track-cooldown-days": {
-      "put": {
-        "tags": [
-          "Daily"
-        ],
-        "operationId": "updateTrackCooldown",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateTrackCooldown"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminDailySettingsResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/admin/daily/challenges/{date}/stats/recompute": {
       "post": {
         "tags": [
@@ -763,6 +723,46 @@
           }
         }
       }
+    },
+    "/api/admin/daily/settings/track-cooldown-pool-percent": {
+      "put": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "updateTrackCooldownPoolPercent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTrackCooldownPoolPercent"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDailySettingsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1015,11 +1015,21 @@
       },
       "AdminDailySettingsResponse": {
         "required": [
-          "trackCooldownDays"
+          "trackCooldownPoolPercent",
+          "trackCooldownDays",
+          "playableTrackCount"
         ],
         "type": "object",
         "properties": {
           "trackCooldownDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "trackCooldownPoolPercent": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "playableTrackCount": {
             "type": "integer",
             "format": "int32"
           }
@@ -2090,18 +2100,6 @@
           }
         }
       },
-      "UpdateTrackCooldown": {
-        "required": [
-          "trackCooldownDays"
-        ],
-        "type": "object",
-        "properties": {
-          "trackCooldownDays": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
       "WeeklyRecapResponse": {
         "required": [
           "status",
@@ -2174,6 +2172,18 @@
             "format": "int32"
           }
         }
+      },
+      "UpdateTrackCooldownPoolPercent": {
+        "required": [
+          "trackCooldownPoolPercent"
+        ],
+        "type": "object",
+        "properties": {
+          "trackCooldownPoolPercent": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
       }
     }
   },
@@ -2197,7 +2207,7 @@
       "name": "InSeconds.Api.Modules.Daily.Application.GetAdminDailySettingsEndpoint"
     },
     {
-      "name": "InSeconds.Api.Modules.Daily.Application.UpdateTrackCooldownEndpoint"
+      "name": "InSeconds.Api.Modules.Daily.Application.UpdateTrackCooldownPoolPercentEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.RecomputeDayStatsEndpoint"

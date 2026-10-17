@@ -4,21 +4,21 @@ using InSeconds.Api.Modules.Catalogue.Contracts;
 using InSeconds.Api.Modules.Daily.Application;
 using InSeconds.Api.Modules.Daily.Domain;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace InSeconds.Api.Modules.Daily.Persistence;
 
 /// <summary>
 /// L'usage des morceaux par le jeu, **calculé** sur <c>challenge_tracks</c> et <c>challenges.date</c> (§ 4.4 du plan v2) :
-/// rien n'est stocké sur le morceau, donc rien à garder cohérent. Remplace <c>NoTrackUsage</c> de Catalogue.
+/// rien n'est stocké sur le morceau, donc rien à garder cohérent. Remplace <c>NoTrackUsage</c> de Catalogue. Le cooldown se déduit de la
+/// taille du pool à chaque appel (<see cref="TrackCooldownPolicy"/>, #275).
 /// </summary>
-public sealed class EfTrackUsage(InSecondsDbContext db, IOptionsMonitor<DailyOptions> options, IGameCalendar calendar) : ITrackUsage
+public sealed class EfTrackUsage(InSecondsDbContext db, TrackCooldownPolicy cooldown, IGameCalendar calendar) : ITrackUsage
 {
     public async Task<IReadOnlyDictionary<int, TrackUsage>> GetAsync(IReadOnlyCollection<int> trackIds, CancellationToken ct)
     {
         var ids = trackIds.Distinct().ToArray();
         var today = calendar.Today;
-        var cooldown = options.CurrentValue.EffectiveTrackCooldownDays;
+        var cooldownDays = (await cooldown.CurrentAsync(ct)).Days;
 
         var rows = await Appearances()
             .Where(a => ids.Contains(a.TrackId))
@@ -26,15 +26,14 @@ public sealed class EfTrackUsage(InSecondsDbContext db, IOptionsMonitor<DailyOpt
             .Select(g => new { TrackId = g.Key, Last = g.Max(a => a.Date), Count = g.Count(), InToday = g.Any(a => a.Date == today) })
             .ToListAsync(ct);
 
-        return rows.ToDictionary(r => r.TrackId, r => new TrackUsage(r.Last, r.Count, r.Last.AddDays(cooldown), r.InToday));
+        return rows.ToDictionary(r => r.TrackId, r => new TrackUsage(r.Last, r.Count, TrackCooldown.UnlockDate(r.Last, cooldownDays), r.InToday));
     }
 
     public async Task<IReadOnlySet<int>> GetTracksInCooldownAsync(DateOnly day, CancellationToken ct)
     {
-        // Règle de la v1 (`LastUsedDate < jour - cooldown` pour être tirable) : tiré à une date >= jour - cooldown, un
-        // morceau reste exclu. Il redevient donc tirable le lendemain du jour affiché comme `UnlockDate` (dernier usage +
-        // cooldown), un écart d'un jour que la v1 avait déjà : les deux sont gardés tels quels.
-        var from = day.AddDays(-options.CurrentValue.EffectiveTrackCooldownDays);
+        // Règle de la v1 (`LastUsedDate < jour - cooldown` pour être tirable) : tiré à une date >= jour - cooldown, un morceau reste exclu.
+        // `UnlockDate` est donc le lendemain de dernier usage + cooldown (#275 : la v1 affichait un jour trop tôt).
+        var from = TrackCooldown.ExcludedFrom(day, (await cooldown.CurrentAsync(ct)).Days);
         var ids = await Appearances()
             .Where(a => a.Date >= from)
             .Select(a => a.TrackId)

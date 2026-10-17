@@ -259,8 +259,8 @@
       "players": "Joueurs ({{ count }})"
     },
     "pool": {
-      "runwayDay": "jour de défis restant",
-      "runwayDays": "jours de défis restants",
+      "cooldown": "cooldown {{ days }} j",
+      "cooldownHint": "Un morceau tiré redevient tirable après ce délai, calculé sur la taille du pool (réglage dans Actions).",
       "selected": "{{ count }} sélectionné(s)",
       "deselectAll": "Tout déselectionner",
       "delete": "Supprimer ({{ count }})",
@@ -421,7 +421,11 @@
         "download": "Télécharger",
         "downloadAll": "Tout télécharger"
       },
-      "cooldownInvalid": "Entre un nombre entier de jours, de {{ min }} à {{ max }}.",
+      "cooldownInvalid": "Entre un pourcentage entier, de {{ min }} à {{ max }}.",
+      "cooldownPercent": "Part du pool en cooldown",
+      "cooldownAppliedDay": "Appliqué aujourd'hui : {{ days }} jour · {{ count }} morceaux jouables",
+      "cooldownAppliedDays": "Appliqué aujourd'hui : {{ days }} jours · {{ count }} morceaux jouables",
+      "cooldownBelowAlert": "Sous le seuil de {{ days }} jours : ajoute des morceaux.",
       "jobs": {
         "title": "Tâches planifiées",
         "hint": "Pour lancer une tâche à la main (générer le défi du jour, re-vérifier les previews…) : « Déclencher maintenant » dans le tableau de bord. Il montre aussi ce qui tourne et ce qui a échoué, et garde le détail des exécutions 7 jours.",

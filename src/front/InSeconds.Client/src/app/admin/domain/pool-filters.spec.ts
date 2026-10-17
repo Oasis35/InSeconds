@@ -1,6 +1,6 @@
 import {
-  NO_FILTERS, PoolFilters, clampPage, filterTracks, hasActiveFilters, nextSort, pageOf, poolDaysRemaining,
-  runwayTone, sortTracks, totalPages,
+  NO_FILTERS, PoolFilters, clampPage, filterTracks, hasActiveFilters, nextSort, pageOf,
+  sortTracks, totalPages,
 } from './pool-filters';
 import { PoolTrack, isValidTrackName, trackLabel } from './pool-track';
 
@@ -141,34 +141,6 @@ describe('pagination', () => {
     const items = Array.from({ length: 20 }, (_, i) => i);
     expect(pageOf(items, 0)).toHaveLength(15);
     expect(pageOf(items, 1)).toEqual([15, 16, 17, 18, 19]);
-  });
-});
-
-describe('autonomie du pool', () => {
-  it('ne compte que les morceaux jamais utilisés, utilisables et non désactivés', () => {
-    const tracks = [
-      track({ id: 1 }),
-      track({ id: 2, preview: 'unknown' }),
-      track({ id: 3, preview: 'missing' }),
-      track({ id: 4, isDisabled: true }),
-      track({ id: 5, usageCount: 2 }),
-      track({ id: 6 }),
-      track({ id: 7 }),
-    ];
-    // 1, 2, 6 et 7 : quatre morceaux, par défis de trois → un jour.
-    expect(poolDaysRemaining(tracks, 3)).toBe(1);
-    expect(poolDaysRemaining(tracks, 2)).toBe(2);
-  });
-
-  it('ne divise jamais par zéro', () => {
-    expect(poolDaysRemaining([track()], 0)).toBe(1);
-  });
-
-  it('classe l\'autonomie : moins de 3 jours bas, moins de 7 moyen', () => {
-    expect(runwayTone(2)).toBe('low');
-    expect(runwayTone(3)).toBe('medium');
-    expect(runwayTone(6)).toBe('medium');
-    expect(runwayTone(7)).toBe('high');
   });
 });
 

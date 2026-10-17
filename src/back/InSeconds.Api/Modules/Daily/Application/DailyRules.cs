@@ -130,6 +130,12 @@ public static class DailyOptionsChecks
             problems.Add("Daily:DurationScores : chaque palier doit être positif, avec des points qui ne le sont pas moins.");
         if (options.HintPenaltyPercent is { } penalties && penalties.Any(p => p.Key < 1 || p.Value is < 0 or > 100))
             problems.Add("Daily:HintPenaltyPercent : un niveau à partir de 1, un pourcentage de 0 à 100.");
+        if (!DailyOptions.IsValidTrackCooldownPoolPercent(options.TrackCooldownPoolPercent))
+        {
+            problems.Add(
+                $"Daily:TrackCooldownPoolPercent : de {DailyOptions.MinTrackCooldownPoolPercent} à {DailyOptions.MaxTrackCooldownPoolPercent} % du pool en cooldown.");
+        }
+
         if (options.StreakFreezeEveryDays < 0 || options.StreakFreezeMax < 0 || options.StreakLostNudgeMinDays < 0)
             problems.Add("Daily:StreakFreeze* et StreakLostNudgeMinDays ne peuvent pas être négatifs.");
         return problems;

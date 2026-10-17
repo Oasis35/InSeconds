@@ -1,16 +1,16 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { RunwayTone } from '../domain/pool-filters';
+import { CooldownTone } from '../domain/actions';
 
-const RUNWAY_COLOR: Record<RunwayTone, string> = {
+const COOLDOWN_COLOR: Record<CooldownTone, string> = {
   low: 'var(--color-fail)',
   medium: 'var(--bg-warn)',
   high: 'var(--color-success)',
 };
 
 /**
- * Barre d'outils du pool : le décompte (disponibles, utilisés, désactivés, autonomie en jours de
- * défis) ou, quand des morceaux sont sélectionnés, leur nombre et la suppression groupée ; et le
+ * Barre d'outils du pool : le décompte (disponibles, utilisés, désactivés, cooldown appliqué aujourd'hui, coloré
+ * selon le seuil d'alerte) ou, quand des morceaux sont sélectionnés, leur nombre et la suppression groupée ; et le
  * bouton qui ouvre ou ferme le panneau d'ajout.
  */
 @Component({
@@ -37,7 +37,9 @@ const RUNWAY_COLOR: Record<RunwayTone, string> = {
         <span class="text-xs" style="color:var(--text-muted)">
           {{ 'admin.pool.availableUsed' | translate: { available: availableCount(), used: usedCount() } }}
           @if (disabledCount() > 0) { · {{ 'admin.pool.disabledCount' | translate: { count: disabledCount() } }} }
-          · <span [style.color]="runwayColor()">{{ runwayDays() }} {{ (runwayDays() > 1 ? 'admin.pool.runwayDays' : 'admin.pool.runwayDay') | translate }}</span>
+          @if (cooldownDays() !== null) {
+            · <span data-testid="pool-cooldown" [style.color]="cooldownColor()" [title]="'admin.pool.cooldownHint' | translate">{{ 'admin.pool.cooldown' | translate: { days: cooldownDays() } }}</span>
+          }
         </span>
       }
       <button type="button" (click)="toggleAdd.emit()"
@@ -54,13 +56,17 @@ export class PoolToolbarComponent {
   readonly availableCount = input.required<number>();
   readonly usedCount = input.required<number>();
   readonly disabledCount = input.required<number>();
-  readonly runwayDays = input.required<number>();
-  readonly runwayTone = input.required<RunwayTone>();
+  /** Le cooldown appliqué aujourd'hui, en jours ; `null` s'il n'est pas lu (rien n'est affiché). */
+  readonly cooldownDays = input.required<number | null>();
+  readonly cooldownTone = input.required<CooldownTone | null>();
   readonly addPanelOpen = input.required<boolean>();
 
   readonly deselectAll = output();
   readonly deleteSelection = output();
   readonly toggleAdd = output();
 
-  protected readonly runwayColor = computed(() => RUNWAY_COLOR[this.runwayTone()]);
+  protected readonly cooldownColor = computed(() => {
+    const tone = this.cooldownTone();
+    return tone === null ? null : COOLDOWN_COLOR[tone];
+  });
 }

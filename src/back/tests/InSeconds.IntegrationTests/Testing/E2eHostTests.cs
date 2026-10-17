@@ -53,38 +53,40 @@ public class E2eHostTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal((today.AddDays(-2), 1, false), (daft.LastUsedDate!.Value, daft.UsageCount, daft.InTodayChallenge));
         Assert.Equal(today.AddDays(-1), Of(tracks, "Rihanna").LastUsedDate);
         var adele = Of(tracks, "Adele");
-        Assert.Equal((7, today.AddDays(-90), today.AddDays(-60)), (adele.UsageCount, adele.LastUsedDate!.Value, adele.UnlockDate!.Value));
+        // 50 morceaux jouables : 75 % du pool, 5 par défi, soit 7 jours de cooldown (date de déblocage : dernier usage + 8 jours).
+        Assert.Equal((7, today.AddDays(-90), today.AddDays(-82)), (adele.UsageCount, adele.LastUsedDate!.Value, adele.UnlockDate!.Value));
         var nirvana = tracks.Single(t => t.DeezerTrackId == 13791930);
-        Assert.Equal((3, today), (nirvana.UsageCount, nirvana.UnlockDate!.Value));
+        Assert.Equal((3, today.AddDays(-22)), (nirvana.UsageCount, nirvana.UnlockDate!.Value));
         var michael = Of(tracks, "Michael Jackson");
         Assert.Equal((0, null, null, false), (michael.UsageCount, michael.LastUsedDate, michael.UnlockDate, michael.InTodayChallenge));
-        Assert.Equal(today.AddDays(25), Of(tracks, "Queen").UnlockDate);
+        Assert.Equal(today.AddDays(3), Of(tracks, "Queen").UnlockDate);
         Assert.Equal(5, tracks.Count(t => t.InTodayChallenge));
     }
 
     [Fact]
-    public async Task Cooldown_ListeLesMorceauxTiresDepuisMoinsDeTrenteJours_RegleDeLaV1()
+    public async Task Cooldown_ListeLesMorceauxTiresDepuisMoinsDeSeptJours_SelonLaTailleDuPool()
     {
         var admin = await SeededAdminAsync();
         var tracks = await ListAsync(admin);
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         using var scope = _host.Services.CreateScope();
         var usage = scope.ServiceProvider.GetRequiredService<ITrackUsage>();
-        var nirvana = tracks.Single(t => t.DeezerTrackId == 13791930).Id;
+        var queen = Of(tracks, "Queen").Id;
 
         var inCooldown = await usage.GetTracksInCooldownAsync(today, Ct);
 
-        // Les 15 des défis, Queen (-5 j), Ed Sheeran (-15 j) et Nirvana (-30 j : la v1 ne le tire qu'à partir de -31 j, le
-        // lendemain du « déblocage » affiché) ; ni Adele (-90 j), ni Michael Jackson (jamais utilisé).
-        Assert.Equal(18, inCooldown.Count);
+        // 50 morceaux jouables : 7 jours. Les 15 des défis et Queen (-5 j) ; ni Ed Sheeran (-15 j), ni Nirvana (-30 j), ni Adele
+        // (-90 j), ni Michael Jackson (jamais utilisé).
+        Assert.Equal(16, inCooldown.Count);
         Assert.Contains(Of(tracks, "Eminem").Id, inCooldown);
-        Assert.Contains(Of(tracks, "Queen").Id, inCooldown);
-        Assert.Contains(Of(tracks, "Ed Sheeran").Id, inCooldown);
-        Assert.Contains(nirvana, inCooldown);
-        Assert.DoesNotContain(nirvana, await usage.GetTracksInCooldownAsync(today.AddDays(1), Ct));
+        Assert.Contains(queen, inCooldown);
+        Assert.DoesNotContain(Of(tracks, "Ed Sheeran").Id, inCooldown);
+        Assert.DoesNotContain(tracks.Single(t => t.DeezerTrackId == 13791930).Id, inCooldown);
         Assert.DoesNotContain(Of(tracks, "Adele").Id, inCooldown);
         Assert.DoesNotContain(Of(tracks, "Michael Jackson").Id, inCooldown);
-        Assert.DoesNotContain(Of(tracks, "Ed Sheeran").Id, await usage.GetTracksInCooldownAsync(today.AddDays(16), Ct));
+        // Queen redevient tirable à sa date de déblocage (dans 3 jours), pas avant.
+        Assert.Contains(queen, await usage.GetTracksInCooldownAsync(today.AddDays(2), Ct));
+        Assert.DoesNotContain(queen, await usage.GetTracksInCooldownAsync(today.AddDays(3), Ct));
     }
 
     [Fact]
