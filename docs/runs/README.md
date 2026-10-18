@@ -18,7 +18,7 @@ Noms : **« Run »** dans les tickets GitHub (étiquette `run`), **`Runs`** dans
 ## Où suivre
 
 - Epic : [#368](https://github.com/Oasis35/InSeconds/issues/368) ; proto 1 : [#360](https://github.com/Oasis35/InSeconds/issues/360), un sous-ticket par PR (cf. [`plan.md`](plan.md#découpage-du-proto-1-en-pr)).
-- Maquettes interactives : artifact Design « Platines » sur claude.ai (privé, lien dans #360). Les images de [`maquettes/`](maquettes/) en sont la copie figée au 17/10/2026.
+- Maquettes interactives : artifact Design « Platines » sur claude.ai (privé, lien dans #360). Les images de [`maquettes/`](maquettes/) en sont la copie figée au 18/10/2026.
 
 ## Règles qui tiennent pour tout le mode
 

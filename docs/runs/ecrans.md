@@ -62,6 +62,18 @@ Après Valider ou Passer, **on reste dans l'écran de la manche** : le lecteur e
 - La pastille du morceau prend sa couleur, le score de l'en-tête se met à jour.
 - **« MORCEAU SUIVANT »** juste sous la carte. Ce clic lance le son du morceau suivant (geste du joueur, obligatoire sur iPhone). Après le 5e morceau, il mène à la fin de manche (libellé à fixer au code).
 
+## 2b. Le morceau sans extrait
+
+![Morceau sans extrait](maquettes/morceau-neutralise.png)
+
+Quand Deezer n'a plus d'extrait pour le morceau en cours, le serveur le neutralise ([`regles.md`](regles.md#la-jauge)). On reste dans l'écran de la manche ; à la place du lecteur et de la saisie :
+- une carte « **Morceau retiré de la manche** » : « L'extrait n'est plus disponible chez Deezer. Ce morceau ne compte pas : l'objectif de la manche passe à 266 pts. » Rien ne révèle le morceau ;
+- dans le bloc objectif, l'ancien objectif barré à côté du nouveau (« 200 / ~~333~~ 266 pts »), le repère de la jauge recalculé ;
+- la pastille du morceau hachurée (ne compte pas) ;
+- « MORCEAU SUIVANT » dessous, comme après une réponse.
+
+À ne pas confondre avec l'extrait illisible (réseau, lien expiré) : là, on garde « Réessayer / Passer (0 pts) » du Daily.
+
 ## 3. La fin de manche
 
 ![Fin de manche](maquettes/fin-de-manche.png)
@@ -101,3 +113,17 @@ Même mise en page dans les deux cas :
 - **Seule la carte Platines est ajoutée** : rien d'autre ne change sur ces deux écrans (Clément, 17/10).
 - Carte sous le contenu existant (en bas de l'accueil, sous le bloc du score sur « déjà joué ») : disque doré, « Platines », badge « ACCÈS ANTICIPÉ », « Vise le disque d'or. », chevron. Un clic ouvre `/runs`.
 - Visible seulement pour un compte qui a l'accès, jamais pendant une manche.
+
+## 7. Le lien reçu
+
+![Lien reçu](maquettes/lien-recu.png)
+
+Ce que voit un ami qui ouvre `inseconds.cc/runs/<code>` sans avoir encore joué cette playlist, invité compris, avec ou sans accès à Platines :
+- le logo seul en haut (ni série, ni compte : l'écran doit marcher pour un invité tout neuf) ;
+- le disque d'or, le surtitre « PLAYLIST DE CLÉMENT » (pseudo de l'auteur, « Invité » à défaut), le titre « Clément te lance une playlist » ;
+- « 20 morceaux, les mêmes pour tout le monde. Tu verras vos scores à la fin de ta partie. » : la comparaison n'est visible qu'après avoir joué (réponse à `runs.comparison_locked`) ;
+- trois règles : 4 manches de 5 morceaux de plus en plus durs, 10 s d'écoute pour trouver l'artiste et le titre, l'objectif de chaque manche à remplir ;
+- **« JOUER »**, qui crée l'invité si besoin et lance la partie (le son démarre à ce clic) ;
+- « Sans compte · une seule partie par playlist ».
+
+Partie déjà commencée sur ce lien : l'écran de reprise du Daily. Partie finie : la comparaison (§ 5).

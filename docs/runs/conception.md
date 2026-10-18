@@ -156,7 +156,7 @@ runs/
 - Traductions `runs.*` FR/EN (disques compris), mobile first, saisie à 16 px, modales par `ModalService`, boutons par `appButton`.
 
 ### 5.2 Les étapes d'une partie
-`welcome` (premier morceau : le clic lance le son) → par morceau : `playing` / `answering` (lecteur et saisie de `gameplay`) → `revealed` (carte de réponse à la place du lecteur et de la saisie, « Morceau suivant ») → après le 5e morceau : `round-summary` (fin de manche) → manche suivante, ou `finished` (écran de fin). Reprise : la partie revient à l'étape de son état serveur. La phase `revealed` de `withTrackRound` existe déjà ; c'est l'écran qui change par rapport au Daily.
+`link` (lien reçu, [`ecrans.md`](ecrans.md#7-le-lien-reçu) § 7) ou `welcome` (premier morceau : le clic lance le son) → par morceau : `playing` / `answering` (lecteur et saisie de `gameplay`) → `revealed` (carte de réponse à la place du lecteur et de la saisie, « Morceau suivant »), ou `neutralized` (carte « Morceau retiré de la manche », [`ecrans.md`](ecrans.md#2b-le-morceau-sans-extrait) § 2b, même bouton) → après le 5e morceau : `round-summary` (fin de manche) → manche suivante, ou `finished` (écran de fin). Reprise : la partie revient à l'étape de son état serveur. La phase `revealed` de `withTrackRound` existe déjà ; c'est l'écran qui change par rapport au Daily.
 
 ### 5.3 Composants du Daily à rendre communs
 Un mode n'importe jamais l'autre : ce que les maquettes reprennent du Daily et qui vit aujourd'hui dans `daily/ui` **descend dans `gameplay/ui`** (le Daily l'importe de là, sans changement visible), dans la PR du front (P4) :
@@ -202,7 +202,7 @@ L'interrupteur « Platines » de l'onglet Joueurs lit `GET /api/admin/runs/acces
 - Unitaires back : `RunSession` (verrou, jauge, fin sur le nombre réel de morceaux, arrondis, neutralisation), `RankBandSelector` (tranches, pool trop petit), `ArtistTitleScoring`, `DiscLadder`, génération du code.
 - Intégration (Testcontainers, base neuve par classe) : parcours gagné, perdu, abandonné ; défi d'ami une seule fois ; accès refusé ; partie d'un autre → 404 ; aucun morceau ni extrait d'un morceau futur avant réponse (piège 31) ; réglage changé en cours de partie sans effet ; réglage incohérent à chaud ; double démarrage simultané ; suppression du compte de l'auteur ; export contenant les parties Runs ; suppression et actualisation d'un morceau joué seulement en run → 409 ; `GET /api/runs/me` sans identité ; limites de débit ; comparaison à plusieurs joueurs, verrouillée avant la fin.
 - Architecture : règles du § 6.
-- Front (Vitest) : domaine `run.ts`, store, chaque écran des maquettes (manche, réponse, fin de manche, fin de run victoire et défaite, comparaison), carte de l'accueil visible ou non, composants descendus dans `gameplay/ui` (le Daily inchangé).
+- Front (Vitest) : domaine `run.ts`, store, chaque écran des maquettes (lien reçu, manche, réponse, morceau sans extrait, fin de manche, fin de run victoire et défaite, comparaison), carte de l'accueil visible ou non, composants descendus dans `gameplay/ui` (le Daily inchangé).
 - E2E Playwright : partie gagnée, partie perdue, carte de l'accueil absente sans accès (P4) ; lien d'un ami dans deux navigateurs et comparaison (P5).
 - Observabilité : `RunsMetrics` (parties, réponses, disques), logs sans texte saisi ; tableau Grafana « Activité » complété.
 
