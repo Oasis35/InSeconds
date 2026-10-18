@@ -122,7 +122,7 @@ Ce que voit un ami qui ouvre `inseconds.cc/runs/<code>` sans avoir encore joué 
 - le logo seul en haut (ni série, ni compte : l'écran doit marcher pour un invité tout neuf) ;
 - le disque d'or, le surtitre « PLAYLIST DE CLÉMENT » (pseudo de l'auteur, « Invité » à défaut), le titre « Clément te lance une playlist » ;
 - « Tous ceux qui jouent cette playlist ont les 20 mêmes morceaux, dans le même ordre. Tu verras vos scores à la fin de ta partie. » : la comparaison n'est visible qu'après avoir joué (réponse à `runs.comparison_locked`) ;
-- trois règles : 4 manches de 5 morceaux de plus en plus durs, 10 s d'écoute pour trouver l'artiste et le titre, l'objectif de chaque manche à remplir ;
+- trois règles courtes : « 4 manches, de plus en plus dures », « 10s pour trouver l'artiste et le titre », « passe les 4 manches et deviens **disque d'or** » (petit disque doré en pastille) ;
 - **« JOUER »**, qui crée l'invité si besoin et lance la partie (le son démarre à ce clic) ;
 
 Partie déjà commencée sur ce lien : l'écran de reprise du Daily. Partie finie : la comparaison (§ 5).
