@@ -67,7 +67,7 @@ Après Valider ou Passer, **on reste dans l'écran de la manche** : le lecteur e
 ![Morceau sans extrait](maquettes/morceau-neutralise.png)
 
 Quand Deezer n'a plus d'extrait pour le morceau en cours, le serveur le neutralise ([`regles.md`](regles.md#la-jauge)). On reste dans l'écran de la manche ; à la place du lecteur et de la saisie :
-- une carte « **Morceau retiré de la manche** » : « L'extrait n'est plus disponible chez Deezer. Ce morceau ne compte pas : l'objectif de la manche passe à 266 pts. » Rien ne révèle le morceau ;
+- une carte « **Morceau retiré de la manche** » : « Impossible de récupérer l'extrait. Le morceau a été retiré de la playlist et l'objectif abaissé à 266 pts. » Le texte reste générique sur la cause, et rien ne révèle le morceau ;
 - dans le bloc objectif, l'ancien objectif barré à côté du nouveau (« 200 / ~~333~~ 266 pts »), le repère de la jauge recalculé ;
 - la pastille du morceau hachurée (ne compte pas) ;
 - « MORCEAU SUIVANT » dessous, comme après une réponse.
