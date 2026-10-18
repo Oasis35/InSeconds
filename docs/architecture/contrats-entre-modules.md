@@ -73,7 +73,7 @@ Partager un noyau ne veut pas dire lire ses tables. Runs utilisera Players et Ca
 
 - **Le joueur** : `ICurrentPlayer` pour savoir qui joue, `IPlayerDirectory` pour afficher un pseudo, sans jamais voir l'email, les appareils ni le rôle admin.
 - **Les morceaux** : `ITrackDirectory`, qui expose rang Deezer, année et état de l'extrait. Le jour où Catalogue ajoute les genres, Runs les reçoit par le contrat ; Daily ne voit rien changer.
-- **L'effacement d'un compte** : aujourd'hui Players appelle `Daily.Contracts.IPlayerGameData`. Avec un second mode, l'appel direct à chaque mode ne tient plus : Players exposera un point d'extension dans ses propres `Contracts` (une interface que chaque mode implémente, appelée dans la même transaction), ou publiera un événement si un décalage est acceptable.
+- **L'effacement d'un compte** : aujourd'hui Players appelle `Daily.Contracts.IPlayerGameData`. Avec un second mode, l'appel direct à chaque mode ne tient plus : Players exposera `IPlayerDataContributor` dans ses propres `Contracts`, une interface que chaque mode implémente, appelée dans la même transaction (décidé le 17/10/2026, cf. [`../runs/conception.md`](../runs/conception.md) § 6, qui fait de même pour l'usage des morceaux).
 
 Si Runs lisait directement les entités de Players ou de Catalogue, une évolution faite pour Runs dans ces noyaux pourrait casser Daily, et inversement.
 

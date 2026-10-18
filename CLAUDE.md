@@ -277,7 +277,7 @@ Vue fonctionnelle ; le détail technique de chaque point est dans `src/back/CLAU
 
 - **Fin de la refonte** : suppression des tables v1 en prod (`deploy/vps/drop-v1-tables.sh prod`, #235), puis I3 (#237, vers le 14/01/2027) : `legacy_tokens` et middleware de reprise des cookies v1. Détail : [`docs/historique/refonte-2026/`](docs/historique/refonte-2026/).
 - **CSP bloquante** (#300).
-- **Mode Runs** : l'architecture lui réserve un module et un domaine, rien n'est créé avant.
+- **Mode Runs** (nom affiché provisoire « Platines », « Run » dans les tickets, epic #368) : conçu le 17/10/2026, pas encore codé. Règles, écrans de référence, conception et découpage en PR : [`docs/runs/`](docs/runs/README.md). L'architecture lui réserve un module et un domaine, rien n'est créé avant.
 - Le reste : [`docs/taches.md`](docs/taches.md).
 
 ## Décisions d'architecture
