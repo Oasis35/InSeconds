@@ -36,4 +36,4 @@ Les choix déjà faits, avec leur raison, pour ne pas les rediscuter ni les réi
 
 ## Mode Runs (à venir)
 
-L'architecture lui réserve un module et un domaine front ; **rien n'est créé avant sa construction** (ni schéma, ni table vide, ni code). Il s'adapte à l'architecture, pas l'inverse. Base de travail : [`historique/refonte-2026/PLAN.md`](../historique/refonte-2026/PLAN.md) § 7.
+L'architecture lui réserve un module et un domaine front ; **rien n'est créé avant sa construction** (ni schéma, ni table vide, ni code). Il s'adapte à l'architecture, pas l'inverse. Conçu le 17/10/2026 (nom affiché provisoire « Platines ») : règles, écrans, conception et plan dans [`runs/`](../runs/README.md).
