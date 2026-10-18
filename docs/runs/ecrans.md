@@ -16,6 +16,25 @@ Format : téléphone, 390 × 844. Les textes des maquettes sont ceux à reprendr
 | Liste des morceaux | lignes de `track-results-list` (écran « déjà joué ») | sans le clic qui ouvre le graphique, sans la ligne de statistiques |
 | Lien Deezer | « ▶ Écouter sur Deezer » du Daily | aucune |
 
+## Écrans du Daily repris tels quels, sans maquette
+
+Clément, 18/10 : un écran qui existe déjà au Daily ne se redessine pas, il se reprend tel quel. Seuls les textes changent (un run n'a ni série ni limite de jour). Les composants qui vivent dans `daily/ui` descendent dans `gameplay/ui` pour que Runs puisse les utiliser (cf. [`conception.md`](conception.md) § 5.3).
+
+| Situation | Écran du Daily | Textes à adapter en run |
+|---|---|---|
+| Reprise d'une partie en cours | `resume-screen` (« Partie en pause », « X / Y pistes déjà écoutées », Reprendre / Abandonner, confirmation d'abandon sur place) | le compte porte sur les 20 morceaux ; avertissement d'abandon sans la série : « Ton score s'arrête ici, cette playlist ne se rejoue pas. » ; pas de « Ne plus perdre mes parties » (l'accès demande déjà un compte, l'ami invité le garde) |
+| « Abandonner » pendant une manche | `ModalService.confirm` de `daily.page` (« Abandonner la partie ? ») | corps : « Ton score s'arrête ici, cette playlist ne se rejoue pas. » |
+| Quitter la page pendant une partie | `leave-game.guard` + `ConfirmDialog` (« Partie en cours », « Quitter quand même » / « Continuer à jouer ») | corps : la partie se reprend plus tard, sans limite de jour |
+| Extrait illisible (réseau, CDN) | phase `audio-error` de `round-player` (« Réessayer » / « Passer (0 pts) ») | aucun |
+| Réponse non envoyée | encart `submit-error` de `track-round` | aucun |
+| Erreur avec code | `status-screen`, écran `error` (« Une erreur est survenue » + code d'erreur) | corps : « Impossible de charger la playlist. » |
+| Pool trop petit (`runs.no_challenge`) | `status-screen`, écran `no_challenge` | texte à écrire, par exemple « Pas assez de morceaux pour une playlist, reviens plus tard. » |
+| Service indisponible | overlay `core/shell/service-down` | aucun, commun à toute l'app |
+
+Sans écran du tout :
+- **Accès refusé** (`runs.access_denied` sur `/runs`) : retour au Daily.
+- **Lien d'une playlist déjà jouée** (`runs.already_played`) : directement la comparaison (§ 5). À confirmer par Clément.
+
 ## 1. La manche
 
 ![Manche en cours](maquettes/manche.png)

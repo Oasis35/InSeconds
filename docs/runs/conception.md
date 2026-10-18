@@ -94,7 +94,7 @@ Runs possède ses autorisations (`runs.access`), **Players n'est pas modifié**.
 
 ### 3.5 Ce que les réponses doivent porter (dicté par les écrans)
 - **État d'une partie** (démarrage, reprise, `GET /api/runs/sessions/{id}`) : manche en cours et nombre de manches, position dans la manche, score total, score et objectif de la manche, résultat de chaque morceau déjà joué de la manche (trouvé, à moitié, raté, neutralisé) pour les pastilles, adresse de l'extrait du morceau en cours. Rien sur les morceaux à venir.
-- **Réponse à `answers`** (écran de réponse) : artiste, titre, hash de pochette et lien Deezer du morceau, artiste juste, titre juste, points du morceau, nouveau score de la manche et score total ; si la manche se termine, son bilan (débloquée ou non, les 5 morceaux révélés avec leurs points) ; si le run se termine, le résultat de fin ; sinon l'adresse de l'extrait du morceau suivant.
+- **Réponse à `answers`** (écran de réponse) : artiste, titre, hash de pochette et lien Deezer du morceau, artiste juste, titre juste, points du morceau, nouveau score de la manche et score total ; si le morceau a été neutralisé, rien sur le morceau mais le nouvel objectif de la manche ; si la manche se termine, son bilan (débloquée ou non, les 5 morceaux révélés avec leurs points) ; si le run se termine, le résultat de fin ; sinon l'adresse de l'extrait du morceau suivant.
 - **Résultat de fin** (écran de fin) : disque (clé), score final, nombre de morceaux trouvés sur le total, résultat de chaque morceau (les 20 carrés), score et objectif de chaque manche (`null` pour une manche non jouée), record (« nouveau record » ou valeur du record), code du défi pour le partage.
 - **Comparaison** : pseudo de l'auteur, nombre de joueurs, une ligne par partie terminée (pseudo ou « Invité », disque, score de chaque manche ou `null`, total, `isMe`), triée par total.
 
@@ -162,7 +162,10 @@ runs/
 Un mode n'importe jamais l'autre : ce que les maquettes reprennent du Daily et qui vit aujourd'hui dans `daily/ui` **descend dans `gameplay/ui`** (le Daily l'importe de là, sans changement visible), dans la PR du front (P4) :
 - la ligne de `track-results-list` (pochette, ✓/✗ Artiste et Titre, « Artiste - Titre », points, lien Deezer), avec le clic vers le graphique et la ligne de statistiques en option ;
 - le badge « Écouter sur Deezer » (`deezer-badge`) ;
-- le style du lien « Abandonner » de `daily-progress` (un bouton discret, repris tel quel s'il ne vaut pas un composant).
+- le style du lien « Abandonner » de `daily-progress` (un bouton discret, repris tel quel s'il ne vaut pas un composant) ;
+- l'écran de reprise (`resume-screen`) et l'écran d'état (`status-screen`, erreur et pas de défi), avec leurs textes passés en entrée : le Daily garde les siens (série), Runs donne les siens ([`ecrans.md`](ecrans.md#écrans-du-daily-repris-tels-quels-sans-maquette)).
+
+Les confirmations d'abandon et de sortie (`ModalService.confirm`, `leave-game.guard`) sont déjà communes : Runs les appelle avec ses propres textes.
 
 ### 5.4 Entrée sur l'accueil
 - La carte appartient au domaine `runs` ; la page du Daily n'importe pas `runs`. Elle expose un emplacement que remplit un jeton multiple de `core` (`HOME_MODE_ENTRIES`), fourni par `provideRuns()`. Le domaine `home` réservé dans Sheriff est retiré tant que `/` reste le Daily.
