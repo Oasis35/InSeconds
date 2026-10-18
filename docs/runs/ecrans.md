@@ -61,18 +61,17 @@ Après Valider ou Passer, **on reste dans l'écran de la manche** : le lecteur e
 Même mise en page dans les deux cas :
 - **Carte du disque**, horizontale : le disque dessiné à gauche (or, argent, bronze, cire, rayé) ; à droite, le nom du disque (« Disque d'or ! »), un badge « Nouveau record » ou « Record : 2 617 », le score final en grand, puis **« 16 / 20 morceaux trouvés »** et 20 petits carrés groupés par manche (vert = trouvé ; une manche non jouée en carrés vides).
 - **4 cases** « Manche N » avec « score / objectif » ; l'objectif manqué en ambre ; **✕** pour une manche non jouée.
-- **Bloc « Lance ce défi à tes potes »** : « Ils jouent exactement le même défi que toi : les mêmes 20 morceaux, dans le même ordre. À la fin, vous comparez tous vos scores, manche par manche. » et le bouton **« Partager le défi »**.
+- **Bloc « Lance cette playlist à tes potes »** : « Ils jouent exactement la même playlist que toi : les mêmes 20 morceaux, dans le même ordre. À la fin, vous comparez tous vos scores, manche par manche. » et le bouton **« Partager la playlist »**.
 - **« Nouvelle partie »** dessous (un ami sans accès voit à la place une invitation à jouer au Daily).
 - Pas de « Voir les morceaux » : la liste a été vue à chaque fin de manche.
 
-## 5. La comparaison d'un défi
+## 5. La comparaison d'une playlist
 
 ![Comparaison](maquettes/comparaison.png)
 
-- Surtitre **« DÉFI DE CLÉMENT »** (pseudo de l'auteur, sans le code du lien), titre **« 4 joueurs de cette playlist »**.
+- Surtitre **« PLAYLIST DE CLÉMENT »** (pseudo de l'auteur, sans le code du lien), titre **« 4 joueurs de cette playlist »**.
 - Tableau : Joueur (pseudo et disque dessous), M1 à M4, Total ; trié par total. **« Toi »** surligné en orange ; **✕** pour une manche non jouée ; « Invité » pour un joueur sans compte.
-- **« Partager le défi »** en bas.
-- Question ouverte : « playlist » ou « défi » dans le titre (le reste de l'écran dit « défi »).
+- **« Partager la playlist »** en bas.
 
 ## 6. L'entrée sur l'accueil
 

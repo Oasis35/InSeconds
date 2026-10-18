@@ -2,12 +2,14 @@
 
 Règles validées par Clément le 17/10/2026. Les écrans qui les montrent : [`ecrans.md`](ecrans.md). Leur traduction technique : [`conception.md`](conception.md). Les seuils et la difficulté seront réglés après les parties de test (tout est réglable à chaud, cf. [Réglages](#réglages)).
 
-## Le défi
+## La playlist
 
-- Un défi = **4 manches de 5 morceaux** (20 morceaux), tirés et enregistrés **à la création du défi**, sans doublon, dans **tout le catalogue jouable**, morceaux du Daily compris.
+À l'écran, un défi s'appelle une **playlist** (Clément, 18/10) ; le code garde `challenge`.
+
+- Une playlist = **4 manches de 5 morceaux** (20 morceaux), tirés et enregistrés **à la création de la playlist**, sans doublon, dans **tout le catalogue jouable**, morceaux du Daily compris.
 - **Difficulté croissante** : le catalogue est trié par rang Deezer et coupé en 4 tranches, une par manche (manche 1 = les morceaux les plus connus). Un morceau sans rang va dans la tranche la moins connue.
-- Les règles (manches, seuils, multiplicateurs…) sont **figées dans le défi** à sa création : un réglage changé ensuite ne touche pas un défi existant, ni la partie d'un ami qui le relève plus tard.
-- **Runs illimités** : un joueur autorisé lance autant de runs qu'il veut. Chaque run est un nouveau défi.
+- Les règles (manches, seuils, multiplicateurs…) sont **figées dans la playlist** à sa création : un réglage changé ensuite ne touche pas une playlist existante, ni la partie d'un ami qui le relève plus tard.
+- **Runs illimités** : un joueur autorisé lance autant de runs qu'il veut. Chaque run est une nouvelle playlist.
 
 ## Un morceau
 
@@ -22,7 +24,7 @@ Règles validées par Clément le 17/10/2026. Les écrans qui les montrent : [`e
 
 - **Points d'un morceau = (50 si l'artiste est juste + 50 si le titre est juste) × multiplicateur de la manche**, arrondi au plus proche sur le total du morceau. Artiste et titre sont corrigés séparément, avec la même tolérance qu'au Daily.
 - Multiplicateur, le même pour toute une manche : **×1 ; ×1,33 ; ×1,67 ; ×2**. Le joueur ne le voit pas à l'écran : il le voit dans les points gagnés.
-- Maximum par manche : 500, 665, 835, 1 000, soit **3 000** pour un défi.
+- Maximum par manche : 500, 665, 835, 1 000, soit **3 000** pour une playlist.
 - Un morceau est **trouvé** quand l'artiste et le titre sont justes (c'est ce que compte « 16 / 20 morceaux trouvés » à la fin).
 
 ## La jauge
@@ -53,18 +55,18 @@ La suite de l'échelle est prévue pour quand un run aura plus de 4 manches : pl
 - **Abandon** : possible à tout moment pendant une manche (lien « Abandonner », comme au Daily). Une partie abandonnée est finie.
 - **Interruption** : une partie en cours se reprend au morceau en cours (même verrou anti-triche que le Daily).
 
-## Le défi partagé
+## La playlist partagée
 
-- Chaque run a un lien : **`inseconds.cc/runs/K7Q2M9`** (code de 6 caractères sans caractère ambigu, saisie insensible à la casse). Il se partage depuis l'écran de fin (« Partager le défi »).
+- Chaque run a un lien : **`inseconds.cc/runs/K7Q2M9`** (code de 6 caractères sans caractère ambigu, saisie insensible à la casse). Il se partage depuis l'écran de fin (« Partager la playlist »).
 - Tous ceux qui ouvrent le lien jouent **les mêmes 20 morceaux, dans le même ordre**, **une seule fois** chacun, sans compte obligatoire (un invité est créé comme au Daily).
-- Les 20 morceaux sont tirés dès le départ : un ami peut aller plus loin que l'auteur du défi si celui-ci a perdu avant la fin.
-- **Comparaison** : après avoir fini sa partie, chacun voit toutes les parties terminées sur ce défi, manche par manche, avec le pseudo de chacun (« Invité » pour un invité), son disque et son total. **Ce n'est pas un classement général** : seuls ceux qui ont le lien la voient, et la page de confidentialité le dit.
+- Les 20 morceaux sont tirés dès le départ : un ami peut aller plus loin que l'auteur de la playlist si celui-ci a perdu avant la fin.
+- **Comparaison** : après avoir fini sa partie, chacun voit toutes les parties terminées sur cette playlist, manche par manche, avec le pseudo de chacun (« Invité » pour un invité), son disque et son total. **Ce n'est pas un classement général** : seuls ceux qui ont le lien la voient, et la page de confidentialité le dit.
 
 ## L'accès pendant le proto
 
 - **Sur invitation** : Platines n'est ouvert qu'aux comptes que Clément autorise, par un interrupteur dans l'onglet Joueurs de l'admin. Les admins ont l'accès d'office. Un invité sans compte n'y a pas accès. L'interrupteur est distinct du rôle admin (qui reste posé en SQL seulement).
 - Sans accès, rien ne change pour le joueur : pas de carte Platines sur l'accueil, et l'adresse `/runs` renvoie vers le Daily.
-- **Lien reçu** : un ami sans accès qui ouvre le lien d'un défi peut jouer **ce défi-là seulement**, invité compris. À la fin, il ne voit pas « Nouvelle partie » mais une invitation à jouer au Daily.
+- **Lien reçu** : un ami sans accès qui ouvre le lien d'une playlist peut jouer **cette playlist-là seulement**, invité compris. À la fin, il ne voit pas « Nouvelle partie » mais une invitation à jouer au Daily.
 - Retirer l'accès n'interrompt pas une partie en cours ; cela empêche seulement d'en lancer une nouvelle.
 
 ## Réglages

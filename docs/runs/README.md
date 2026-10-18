@@ -2,15 +2,15 @@
 
 > **État au 17/10/2026 : conçu, pas encore codé.** Les règles, les écrans et la conception sont validés pour le proto 1 ; le code commence quand Clément le décide. Rien de ce dossier n'existe encore dans `src/`.
 
-Un run, c'est une suite de **4 manches de 5 morceaux**, de plus en plus difficiles. À chaque manche, il faut remplir une jauge de points pour débloquer la suivante. À la fin, on gagne un **disque** (rayé, cire, bronze, argent, or) selon les manches passées, et on peut envoyer le même défi à ses amis pour comparer les scores.
+Un run, c'est une suite de **4 manches de 5 morceaux**, de plus en plus difficiles. À chaque manche, il faut remplir une jauge de points pour débloquer la suivante. À la fin, on gagne un **disque** (rayé, cire, bronze, argent, or) selon les manches passées, et on peut envoyer la même playlist à ses amis pour comparer les scores.
 
-Noms : **« Run »** dans les tickets GitHub (étiquette `run`), **`Runs`** dans le code (module back, schéma, routes, réglages, domaine front), **« Platines »** à l'écran (nom provisoire, il ne vit que dans les traductions : le changer ne touche que les textes).
+Noms : **« Run »** dans les tickets GitHub (étiquette `run`), **`Runs`** dans le code (module back, schéma, routes, réglages, domaine front), **« Platines »** à l'écran (nom provisoire, il ne vit que dans les traductions : le changer ne touche que les textes). Un défi (`challenge` dans le code) s'appelle une **playlist** à l'écran (Clément, 18/10).
 
 ## Les documents
 
 | Document | Contenu |
 |---|---|
-| [`regles.md`](regles.md) | Les règles du proto 1 : manches, points, jauge, disques, défi partagé, accès |
+| [`regles.md`](regles.md) | Les règles du proto 1 : manches, points, jauge, disques, playlist partagée, accès |
 | [`ecrans.md`](ecrans.md) | Les écrans, qui font référence : maquettes à intégrer telles quelles, avec le design système existant |
 | [`conception.md`](conception.md) | La conception technique : module `Runs`, données, routes, codes d'erreur, front, ce qui change dans Players et Catalogue |
 | [`plan.md`](plan.md) | La feuille de route (proto 1, proto 2, plus tard), le découpage en PR, les idées de bonus, l'historique des décisions |

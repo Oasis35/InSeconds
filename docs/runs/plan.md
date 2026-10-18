@@ -9,7 +9,7 @@ La feuille de route décidée le 17/10/2026 peut encore changer.
 1. **Étape 0, règles et maquettes** : faite le 17/10/2026 (ce dossier).
 2. **Proto 1, la boucle sans bonus** ([#360](https://github.com/Oasis35/InSeconds/issues/360)) :
    - 4 manches de 5 morceaux, écoute fixe de 10 s, jauge par manche, réponse après chaque morceau ;
-   - disques, record perso, défi partagé par lien avec comparaison ;
+   - disques, record perso, playlist partagée par lien avec comparaison ;
    - ouvert sur invitation seulement, entrée par une carte sur l'accueil.
 
    Le code prévoit la place des bonus sans en livrer aucun. Le but est de savoir si c'est amusant et de régler les seuils et la difficulté.
@@ -101,7 +101,7 @@ Pour le prototype des bonus : une douzaine de bonus communs, sans rareté ni dé
   - écoute fixe de 10 s, pool commun avec le Daily ;
   - points = (50 + 50) × difficulté, runs illimités ;
   - nom affiché « Platines », paliers en disques inventés ;
-  - accès sur invitation, défi partagé par lien avec comparaison et sans classement ;
+  - accès sur invitation, playlist partagée par lien avec comparaison et sans classement ;
   - morceau sans extrait neutralisé, partie à l'honneur sans chrono ;
   - entrée par une carte sur l'accueil (option A).
 - **17/10/2026, revue indépendante du plan** (hors dépôt). Elle a apporté :

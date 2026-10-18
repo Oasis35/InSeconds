@@ -214,4 +214,5 @@ L'interrupteur « Platines » de l'onglet Joueurs lit `GET /api/admin/runs/acces
 8. Temps de réponse : aucun chrono, partie à l'honneur, réécoute libre (Clément, 17/10). Un chrono `Runs:AnswerSeconds` ne sera ajouté que si les parties de test montrent des abus ; limiter les réécoutes reste un bonus ou un malus possible du proto 2.
 9. Entrée sur l'accueil : la carte seulement (option A), rien d'autre ne change sur l'accueil ni sur « déjà joué » (Clément, 17/10).
 10. Les maquettes de [`ecrans.md`](ecrans.md) font référence, dont la réponse après chaque morceau dans l'écran de manche (Clément, 17/10).
-11. Questions ouvertes : « playlist » ou « défi » dans le titre de la comparaison ; remettre ou non une ligne « X % ont échoué » sous chaque morceau de la fin de manche (elle demanderait des statistiques par morceau sur les runs, absentes du proto 1).
+11. À l'écran, le défi s'appelle une **playlist** partout (titres, boutons, comparaison) ; le code et cette conception gardent `challenge` / « défi » (Clément, 18/10).
+12. Question ouverte : remettre ou non une ligne « X % ont échoué » sous chaque morceau de la fin de manche (elle demanderait des statistiques par morceau sur les runs, absentes du proto 1).
