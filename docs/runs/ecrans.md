@@ -124,6 +124,5 @@ Ce que voit un ami qui ouvre `inseconds.cc/runs/<code>` sans avoir encore joué 
 - « 20 morceaux, les mêmes pour tout le monde. Tu verras vos scores à la fin de ta partie. » : la comparaison n'est visible qu'après avoir joué (réponse à `runs.comparison_locked`) ;
 - trois règles : 4 manches de 5 morceaux de plus en plus durs, 10 s d'écoute pour trouver l'artiste et le titre, l'objectif de chaque manche à remplir ;
 - **« JOUER »**, qui crée l'invité si besoin et lance la partie (le son démarre à ce clic) ;
-- « Sans compte · une seule partie par playlist ».
 
 Partie déjà commencée sur ce lien : l'écran de reprise du Daily. Partie finie : la comparaison (§ 5).
