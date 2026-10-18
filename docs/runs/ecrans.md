@@ -121,7 +121,7 @@ Même mise en page dans les deux cas :
 Ce que voit un ami qui ouvre `inseconds.cc/runs/<code>` sans avoir encore joué cette playlist, invité compris, avec ou sans accès à Platines :
 - le logo seul en haut (ni série, ni compte : l'écran doit marcher pour un invité tout neuf) ;
 - le disque d'or, le surtitre « PLAYLIST DE CLÉMENT » (pseudo de l'auteur, « Invité » à défaut), le titre « Clément te lance une playlist » ;
-- « 20 morceaux, les mêmes pour tout le monde. Tu verras vos scores à la fin de ta partie. » : la comparaison n'est visible qu'après avoir joué (réponse à `runs.comparison_locked`) ;
+- « Tous ceux qui jouent cette playlist ont les 20 mêmes morceaux, dans le même ordre. Tu verras vos scores à la fin de ta partie. » : la comparaison n'est visible qu'après avoir joué (réponse à `runs.comparison_locked`) ;
 - trois règles : 4 manches de 5 morceaux de plus en plus durs, 10 s d'écoute pour trouver l'artiste et le titre, l'objectif de chaque manche à remplir ;
 - **« JOUER »**, qui crée l'invité si besoin et lance la partie (le son démarre à ce clic) ;
 
