@@ -7,3 +7,5 @@
 **/.dockerignore
 **/.git/
 **/.gitignore
+tests/
+InSeconds.Api.Testing/

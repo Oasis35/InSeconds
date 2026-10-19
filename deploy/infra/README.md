@@ -27,8 +27,8 @@ connectés au réseau `shared-postgres`.
 
 ### Contenu de la base `inseconds`
 
-Une seule base pour la v1 et la v2 : les tables v1 vivent dans `public` (jusqu'à leur
-suppression, PR I1) ; la v2 y ajoute un schéma par module (`players`, `catalogue`, `daily`),
+Une seule base pour la v1 et la v2 : les tables v1 vivent dans `public` jusqu'à leur
+suppression (PR I1, `deploy/vps/drop-v1-tables.sh`, après une sauvegarde archivée) ; la v2 y ajoute un schéma par module (`players`, `catalogue`, `daily`),
 plus `infra` (réglages, clés Data Protection), `messaging` (outbox Wolverine), `jobs`
 (Hangfire) et `extensions` (`citext`). Les migrations de l'API créent ces schémas : rien à
 faire à la main (détail : `CLAUDE.md` racine § Modèle de données). L'utilisateur `inseconds`
@@ -46,8 +46,8 @@ docker exec -it shared-postgres psql -U postgres -c "CREATE DATABASE <projet> OW
 
 ### Base du staging InSeconds
 
-Même principe pour l'environnement de staging (`docker-compose.staging.yml`, cf. CLAUDE.md
-racine § Staging) — mot de passe à reporter dans `~/apps/InSeconds-staging/.env.staging`
+Même principe pour l'environnement de staging (`docker-compose.staging.yml`, cf.
+`docs/exploitation/deploiement.md` § Staging) — mot de passe à reporter dans `~/apps/InSeconds-staging/.env.staging`
 (`INSECONDS_STAGING_DB_PASSWORD`) :
 
 ```bash
@@ -98,6 +98,15 @@ Une sauvegarde :
   ```
 
   À faire avant toute opération risquée sur la base (import, bascule, suppression de tables).
+
+### Sauvegarde archivée
+
+`./backup.sh archive` fait la même sauvegarde (dump, vérification, copie locale), puis l'envoie
+chiffrée dans `archive/` sur R2, **qu'aucune rotation ne supprime**. R2 est obligatoire : sans lui,
+la commande échoue. Pas de signal healthchecks.io (ce n'est pas la sauvegarde de la nuit). Lancée
+par `deploy/vps/drop-v1-tables.sh prod` avant de supprimer les tables v1 (#235) ; à relancer à la
+main avant toute suppression définitive de données. Une archive se supprime à la main, jamais par
+le script.
 
 Suivi : `systemctl list-timers inseconds-backup` (prochain passage),
 `journalctl -u inseconds-backup -n 50` (sortie des derniers passages).
@@ -165,7 +174,7 @@ d'échec (alerte immédiate). Le contrôle est créé au premier signal (`?creat
 | `daily-generate-challenge` | API v2, tâche Hangfire | 0 h 00 (un nouvel essai toutes les 10 min si le pool manque : chaque essai raté envoie `/fail`) |
 | `daily-close-day` | API v2, tâche Hangfire | 0 h 05 |
 | `catalogue-refresh` | API v2, tâche Hangfire | 23 h 00 |
-| `players-purge-expired-tokens` | API v2, tâche Hangfire | 3 h 30 |
+| `players-purge-expired-tokens` | API v2, tâche Hangfire (jetons, appareils, comptes inactifs) | 3 h 30 |
 | `inseconds-backup` | `backup.sh` (timer systemd) | 3 h 00 |
 
 Un lancement depuis `/jobs` (« Déclencher maintenant ») envoie aussi son signal.
@@ -206,7 +215,7 @@ Pour reprendre une sauvegarde de R2 (VPS perdu, ou besoin d'une date plus ancien
 
 ```bash
 ./backup.sh list-remote
-./backup.sh fetch monthly/inseconds-2026-10-01T030000Z.dump   # déchiffrée dans ~/backups/postgres/
+./backup.sh fetch monthly/inseconds-2026-10-01T030000Z.dump   # déchiffrée dans ~/backups/postgres/ (ou archive/…)
 ./backup.sh restore-test ~/backups/postgres/inseconds-2026-10-01T030000Z.dump
 ```
 
@@ -214,4 +223,4 @@ Sur un VPS neuf, il suffit de Docker, du dépôt et d'un `deploy/infra/.env` con
 variables R2 et la phrase de passe (depuis KeePass).
 
 Remplacer réellement la base de prod est une opération manuelle, API arrêtée, avec la commande
-de CLAUDE.md racine § « Restaurer un dump PostgreSQL » (`pg_restore --clean --if-exists`).
+de `docs/exploitation/deploiement.md` § « Restaurer un dump PostgreSQL » (`pg_restore --clean --if-exists`).

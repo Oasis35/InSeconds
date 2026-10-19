@@ -1,33 +1,47 @@
-import { ApplicationConfig, ErrorHandler, provideBrowserGlobalErrorListeners, provideZonelessChangeDetection, provideAppInitializer, inject } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import {
+  ApplicationConfig, ErrorHandler, inject, isDevMode, provideAppInitializer, provideBrowserGlobalErrorListeners,
+  provideZonelessChangeDetection,
+} from '@angular/core';
+import { provideRouter, withInMemoryScrolling } from '@angular/router';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
-import { playerAuthInterceptor } from './core/interceptors/player-auth.interceptor';
-import { httpErrorReportingInterceptor } from './core/interceptors/http-error-reporting.interceptor';
-import { GlobalErrorHandler } from './core/error-handling/global-error-handler';
-import { ApiClient, API_BASE_URL } from './api/api.generated';
-import { environment } from '../environments/environment';
+import { provideServiceWorker } from '@angular/service-worker';
 import { provideTranslateService } from '@ngx-translate/core';
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 
+import { provideAccount } from './account/feature/provide-account';
+import { provideAdmin } from './admin/feature/provide-admin';
+import { provideDaily } from './daily/feature/provide-daily';
 import { routes } from './app.routes';
-import { SettingsService } from './core/services/settings.service';
-import { LanguageService } from './core/services/language.service';
-import { PlayerSessionService } from './core/services/player-session.service';
+import { provideViewportReporting } from './core/diagnostics/viewport-reporter';
+import { provideCspViolationReporting } from './core/errors/csp-violation-reporter';
+import { GlobalErrorHandler } from './core/errors/global-error-handler';
+import { credentialsInterceptor } from './core/http/credentials.interceptor';
+import { httpErrorReportingInterceptor } from './core/http/http-error-reporting.interceptor';
+import { LanguageService } from './core/i18n/language.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     { provide: ErrorHandler, useClass: GlobalErrorHandler },
+    provideCspViolationReporting(),
+    provideViewportReporting(),
     provideZonelessChangeDetection(),
-    provideRouter(routes),
-    provideHttpClient(withFetch(), withInterceptors([playerAuthInterceptor, httpErrorReportingInterceptor])),
-    { provide: API_BASE_URL, useValue: environment.apiUrl },
-    ApiClient,
+    provideRouter(routes, withInMemoryScrolling({ scrollPositionRestoration: 'top' })),
+    provideHttpClient(
+      withFetch(),
+      withInterceptors([credentialsInterceptor, httpErrorReportingInterceptor]),
+    ),
     provideTranslateService({
       loader: provideTranslateHttpLoader({ prefix: 'i18n/', suffix: '.json' }),
     }),
     provideAppInitializer(() => inject(LanguageService).init()),
-    provideAppInitializer(() => inject(SettingsService).load()),
-    provideAppInitializer(() => inject(PlayerSessionService).load()),
+    provideAccount(),
+    provideAdmin(),
+    provideDaily(),
+    // Désactivé en dev (`ng serve`) : un service worker y servirait d'anciens fichiers.
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: !isDevMode(),
+      registrationStrategy: 'registerWhenStable:30000',
+    }),
   ],
 };

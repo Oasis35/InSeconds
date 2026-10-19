@@ -66,7 +66,7 @@ appsettings.*.local.json
 appsettings.Development.json
 # Hôte de test v2 : aucun secret (la base passe par ConnectionStrings__DefaultConnection), commité pour qu'un clone neuf
 # vérifie un lien magique en local (origine du front de confiance, adresse publique).
-!src/v2/back/InSeconds.Api.Testing/appsettings.Development.json
+!src/back/InSeconds.Api.Testing/appsettings.Development.json
 secrets.json
 # Certificats Data Protection du VPS (~/apps/InSeconds*/secrets/)
 secrets/
@@ -76,7 +76,7 @@ secrets/
 # ---------------------------------------------------------------
 **/Internal/Generated/
 # v2 : code généré commité (mode statique en prod), la CI vérifie qu'il est à jour.
-!src/v2/back/InSeconds.Api/Internal/Generated/
+!src/back/InSeconds.Api/Internal/Generated/
 
 # ---------------------------------------------------------------
 # IDE — Visual Studio
@@ -193,4 +193,3 @@ $RECYCLE.BIN/
 # Claude Code / outils locaux
 # ---------------------------------------------------------------
 .claude/
-.bascule-v2-done

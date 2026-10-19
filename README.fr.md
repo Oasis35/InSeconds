@@ -12,7 +12,7 @@
 
 ## Comment ça marche
 
-- Chaque jour à minuit UTC, un nouveau set de morceaux est sélectionné automatiquement (uniquement des morceaux avec une preview Deezer active, hors cooldown de réutilisation configurable) ; si la génération de minuit a raté, le défi est régénéré automatiquement à l'arrivée du premier joueur (sélection déterministe : même défi pour tout le monde)
+- Chaque jour à minuit UTC, un nouveau set de morceaux est sélectionné automatiquement (uniquement des morceaux avec une preview Deezer active, hors cooldown de réutilisation, qui suit la taille du pool : une part réglable du pool jouable reste bloquée) ; si la génération de minuit a raté, le défi est régénéré automatiquement à l'arrivée du premier joueur (sélection déterministe : même défi pour tout le monde)
 - La disponibilité des previews est re-vérifiée chaque nuit auprès de Deezer (appels par lots, respectueux du rate-limit) ; les admins peuvent aussi la relancer à la demande depuis le tableau de bord des tâches planifiées (`/jobs`)
 - La lecture démarre automatiquement au palier le plus court (0,5 s) ; tu prolonges palier par palier (1, 1.5, 2, 3, 5, 10 s) avec « écouter plus » avant de tenter artiste + titre
 - Prolongations "écouter plus" libres et illimitées par morceau (jusqu'au dernier palier) — le score dépend toujours du palier final écouté, sans malus
@@ -29,10 +29,9 @@
 - Page confidentialité et mentions légales sur `/privacy` (alias `/confidentialite`)
 - Installable sur l'écran d'accueil (PWA), mise à jour automatiquement à un moment sûr (jamais en pleine manche)
 - Liste des appareils connectés à ton compte, déconnexion d'un appareil ou de tous les autres
+- Tes données (RGPD) : copie de toutes tes données en JSON et suppression définitive de ton compte (section « Tes données » du profil) ; appareils sans visite depuis 91 jours et comptes inactifs depuis 3 ans supprimés automatiquement chaque nuit ; ce que tu tapes en réponse n'est jamais stocké
 
 ## Démarrage rapide
-
-> Le code de référence est dans `src/v2/` (en prod depuis le 16/10/2026 et sur le staging). `src/back` et `src/front` sont du code mort de l'ancienne version, à supprimer.
 
 ### Prérequis
 
@@ -46,7 +45,7 @@
 cp .env.example .env   # uniquement la première fois, puis renseigner DB_PASSWORD
 docker compose up -d database
 
-cd src/v2/back
+cd src/back
 ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=inseconds;Username=inseconds;Password=<DB_PASSWORD>" \
   dotnet run --project InSeconds.Api.Testing
 ```
@@ -56,7 +55,7 @@ ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=insecond
 ### Lancer le frontend
 
 ```bash
-cd src/v2/front/InSeconds.Client
+cd src/front/InSeconds.Client
 npm ci        # uniquement la première fois
 npm start
 ```
@@ -88,49 +87,43 @@ Ouvre `http://localhost:5176`.
 
 ```
 InSeconds/
-├── deploy/                    # VPS : Postgres partagé, Caddy, scripts de déploiement, import v1 → v2
-├── docs/                      # Documentation (FR) : point d'entrée, règles du jeu, tâches, plan v2
-├── scripts/                   # Contrôle de parité des E2E (ancienne version, supprimé avec elle)
+├── deploy/                    # VPS : Postgres partagé, Caddy, scripts de déploiement
+├── docs/                      # Documentation (FR) : point d'entrée, règles du jeu, tâches, plan de la refonte
 ├── src/
-│   ├── v2/
-│   │   ├── back/              # InSeconds.slnx : Api (modules), Infrastructure, Deezer, Api.Testing, tests/
-│   │   └── front/InSeconds.Client/  # Application Angular (domaines account, gameplay, daily, admin)
-│   ├── back/                  # ancienne version (à supprimer)
-│   └── front/                 # ancienne version (à supprimer)
+│   ├── back/                  # InSeconds.slnx : Api (modules), Infrastructure, Deezer, Api.Testing, tests/
+│   └── front/InSeconds.Client/  # Application Angular (domaines account, gameplay, daily, admin)
 ├── docker-compose.yml         # Dev : base
-├── docker-compose.staging.yml # Staging (v2)
-├── docker-compose.prod.yml    # Ancienne prod, plus utilisée (à supprimer)
-├── docker-compose.prod-v2.yml # Prod v2 (workflow « Bascule v2 »)
+├── docker-compose.staging.yml # Staging
+├── docker-compose.prod.yml    # Prod
 └── README.md / README.fr.md
 ```
 
 ## Intégration continue
 
-Workflow GitHub Actions sur chaque push (toutes branches) et chaque PR vers `main`. Jobs v2 :
+Workflow GitHub Actions sur chaque push (toutes branches) et chaque PR vers `main` :
 
-- **back-v2** — build, tests unitaires, d'architecture et d'intégration (Testcontainers), migrations à jour, codegen Wolverine à jour, image Docker sans l'hôte de test
-- **front-v2** — build de prod, tests Vitest, frontières Sheriff, clients NSwag à jour
-- **e2e-v2** — Playwright contre l'hôte de test
-- **nginx-headers-v2** — construit l'image nginx du front et vérifie en-têtes de cache et de sécurité, types MIME et redirection de l'ancienne adresse
-- **e2e-parity** — compare les titres des E2E à ceux de l'ancienne version (supprimé avec elle)
+- **back** — build, tests unitaires, d'architecture et d'intégration (Testcontainers), migrations à jour, codegen Wolverine à jour, image Docker sans l'hôte de test
+- **front** — build de prod, tests Vitest, frontières Sheriff, clients NSwag à jour
+- **e2e** — Playwright contre l'hôte de test
+- **nginx-headers** — construit l'image nginx du front et vérifie en-têtes de cache et de sécurité, types MIME et redirection de l'ancienne adresse
 
-Les jobs de l'ancienne version tournent tant qu'elle existe. Le check **« CI OK »** les agrège (c'est lui qu'exige la protection des branches). Les runs obsolètes sont annulés automatiquement. Détail : [`CLAUDE.md`](CLAUDE.md) § CI.
+Le check **« CI OK »** les agrège (c'est lui qu'exige la protection des branches). Les runs obsolètes sont annulés automatiquement. Détail : [`docs/exploitation/ci.md`](docs/exploitation/ci.md).
 
 ## Tests
 
 ### Backend
 
 ```bash
-cd src/v2/back
+cd src/back
 dotnet test --solution InSeconds.slnx   # unitaires + architecture + intégration (Docker requis)
 ```
 
-Quatre projets dans `tests/` : unitaires (règles du domaine, sans base), architecture (frontières des modules, NetArchTest), intégration (Testcontainers + Respawn : un vrai PostgreSQL, l'API en mémoire) et migrations.
+Quatre projets dans `tests/` : unitaires (règles du domaine, sans base), architecture (frontières des modules, NetArchTest), intégration (Testcontainers + Respawn : un vrai PostgreSQL, l'API en mémoire) et les scripts SQL lancés à la main sur le VPS (`deploy/vps`).
 
 ### Frontend
 
 ```bash
-cd src/v2/front/InSeconds.Client
+cd src/front/InSeconds.Client
 npx ng test --watch=false   # Vitest dans un vrai Chromium
 npm run lint:arch           # frontières des domaines (Sheriff)
 ```
@@ -138,20 +131,22 @@ npm run lint:arch           # frontières des domaines (Sheriff)
 ### E2E (Playwright)
 
 ```bash
-cd src/v2/front/InSeconds.Client
+cd src/front/InSeconds.Client
 E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=<DB_PASSWORD>" npm run e2e
 ```
 
-`playwright.config.ts` démarre l'hôte de test (port 5177) et `ng serve` (port 5178). **110 tests** répartis sur 26 fichiers, jeu, connexion, profil, série et gels, admin…
+`playwright.config.ts` démarre l'hôte de test (port 5177) et `ng serve` (port 5178). **120 tests** répartis sur 30 fichiers, jeu, connexion, profil, série et gels, admin…
 
 ## Documentation
 
-- [`docs/COMMENCE_ICI_FR.md`](docs/COMMENCE_ICI_FR.md) — point d'entrée : pitch, stack, où trouver quoi
-- [`CLAUDE.md`](CLAUDE.md) — conventions, modèle de données, déploiement, pièges connus (à lire avant de contribuer)
-- Architecture : [`src/v2/back/CLAUDE.md`](src/v2/back/CLAUDE.md) (backend), [`src/v2/front/CLAUDE.md`](src/v2/front/CLAUDE.md) (frontend)
-- [`docs/GAMEPLAY_RULES_FR.md`](docs/GAMEPLAY_RULES_FR.md) — règles de jeu (scoring, prolongation, anti-triche, série) — ce qui est réellement appliqué vs juste configuré
-- [`docs/TACHES.md`](docs/TACHES.md) — ce qui reste à faire
-- [`docs/refonte-v2/`](docs/refonte-v2/) — plan et suivi de la v2
+- [`docs/README.md`](docs/README.md) — point d'entrée : pitch, stack, où trouver quoi
+- [`CLAUDE.md`](CLAUDE.md) — conventions, modèle de données, pièges connus (à lire avant de contribuer)
+- Architecture : [`src/back/CLAUDE.md`](src/back/CLAUDE.md) (backend), [`src/front/CLAUDE.md`](src/front/CLAUDE.md) (frontend), [`docs/architecture/`](docs/architecture/) (décisions, frontières entre modules)
+- [`docs/regles-du-jeu.md`](docs/regles-du-jeu.md) — règles de jeu (scoring, prolongation, anti-triche, série) — ce qui est réellement appliqué vs juste configuré
+- [`docs/exploitation/`](docs/exploitation/) — déploiement sur le VPS, CI, accès de secours
+- [`docs/conformite/`](docs/conformite/) — conditions de l'API Deezer, RGPD
+- [`docs/taches.md`](docs/taches.md) — ce qui reste à faire
+- [`docs/historique/`](docs/historique/) — la refonte de 2026
 
 ## Licence
 

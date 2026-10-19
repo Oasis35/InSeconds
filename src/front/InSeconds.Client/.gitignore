@@ -42,4 +42,8 @@ testem.log
 Thumbs.db
 
 # Generated at build time — never commit
-src/app/core/build-info.ts
+/.vitest
+
+# Playwright — artefacts de run (résultats, rapports, traces)
+/test-results
+/playwright-report

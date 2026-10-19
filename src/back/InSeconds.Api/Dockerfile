@@ -1,24 +1,31 @@
-# Dev image — hot reload via `dotnet watch`.
-# Le code source est monté en volume (voir docker-compose), bin/obj masqués
-# par des volumes anonymes pour éviter les conflits binaires Windows/Linux.
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS dev
-
+# Image de prod de l'API. Contexte de build : src/back.
+# Seuls InSeconds.Api, InSeconds.Deezer et InSeconds.Infrastructure sont copiés : l'hôte de test (InSeconds.Api.Testing,
+# routes /api/e2e, faux email) ne peut pas s'y retrouver (S9). La CI le vérifie sur l'image construite.
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-# Restore en couche dédiée pour profiter du cache Docker au build initial.
-COPY global.json ./
+COPY global.json Directory.Build.props Directory.Packages.props ./
 COPY InSeconds.Api/InSeconds.Api.csproj InSeconds.Api/
 COPY InSeconds.Deezer/InSeconds.Deezer.csproj InSeconds.Deezer/
+COPY InSeconds.Infrastructure/InSeconds.Infrastructure.csproj InSeconds.Infrastructure/
 RUN dotnet restore InSeconds.Api/InSeconds.Api.csproj
 
-# Polling nécessaire : les events de fichiers ne traversent pas
-# fiablement un bind mount Windows -> conteneur Linux.
-ENV DOTNET_USE_POLLING_FILE_WATCHER=1
-ENV ASPNETCORE_URLS=http://+:8080
+COPY InSeconds.Api/ InSeconds.Api/
+COPY InSeconds.Deezer/ InSeconds.Deezer/
+COPY InSeconds.Infrastructure/ InSeconds.Infrastructure/
+RUN dotnet publish InSeconds.Api/InSeconds.Api.csproj \
+    --configuration Release \
+    --output /app/publish \
+    --no-restore
 
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+
+COPY --from=build /app/publish .
+
+ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 
-ENTRYPOINT ["dotnet", "watch", "run", \
-    "--project", "InSeconds.Api/InSeconds.Api.csproj", \
-    "--non-interactive", \
-    "--urls", "http://+:8080"]
+USER app
+
+ENTRYPOINT ["dotnet", "InSeconds.Api.dll"]

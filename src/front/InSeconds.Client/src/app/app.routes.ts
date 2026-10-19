@@ -1,67 +1,38 @@
-import { Routes } from '@angular/router';
-import { unsavedGameGuard } from './core/guards/unsaved-game.guard';
+import { inject } from '@angular/core';
+import { RedirectFunction, Router, Routes } from '@angular/router';
+
+/**
+ * Redirection qui garde la query string et le fragment : un lien magique
+ * (`/login/verify?token=…`) ou l'avis d'ancienne adresse (`?from=legacy`) survivent au passage
+ * vers les routes v2 (§ 6.6 du plan v2).
+ */
+export function redirectKeepingQuery(target: string): RedirectFunction {
+  return ({ queryParams, fragment }) =>
+    inject(Router).createUrlTree([target], { queryParams, fragment: fragment ?? undefined });
+}
 
 export const routes: Routes = [
-  {
-    path: '',
-    loadComponent: () =>
-      import('./features/game/game.component').then(m => m.GameComponent),
-    canDeactivate: [unsavedGameGuard],
-  },
-  {
-    path: 'blindtest',
-    redirectTo: '',
-    pathMatch: 'full',
-  },
-  {
-    path: 'privacy',
-    loadComponent: () =>
-      import('./features/privacy/privacy.component').then(m => m.PrivacyComponent),
-  },
-  {
-    path: 'confidentialite',
-    redirectTo: 'privacy',
-    pathMatch: 'full',
-  },
-  {
-    path: 'mentions-legales',
-    redirectTo: 'privacy',
-    pathMatch: 'full',
-  },
-  {
-    path: 'legal-notice',
-    redirectTo: 'privacy',
-    pathMatch: 'full',
-  },
-  {
-    path: 'login',
-    loadComponent: () =>
-      import('./features/login/request/request-login.component').then(m => m.RequestLoginComponent),
-  },
-  {
-    path: 'login/verify',
-    loadComponent: () =>
-      import('./features/login/verify/verify-login.component').then(m => m.VerifyLoginComponent),
-  },
-  {
-    path: 'profile',
-    loadComponent: () =>
-      import('./features/profile/profile.component').then(m => m.ProfileComponent),
-  },
-  {
-    path: 'profile/confirm-email',
-    loadComponent: () =>
-      import('./features/profile/confirm-email/confirm-email.component').then(m => m.ConfirmEmailComponent),
-  },
-  {
-    path: 'admin',
-    loadComponent: () =>
-      import('./features/admin/admin.component').then(m => m.AdminComponent),
-    loadChildren: () => import('./features/admin/admin.routes').then(m => m.adminRoutes),
-  },
+  // Tant que le mode Runs n'est pas public, l'accueil est le défi du jour.
+  { path: '', pathMatch: 'full', redirectTo: redirectKeepingQuery('/daily') },
+
+  // Anciennes adresses de la v1 : tous les liens existants (partages, favoris, emails) restent valables.
+  { path: 'blindtest', pathMatch: 'full', redirectTo: redirectKeepingQuery('/daily') },
+  { path: 'login', pathMatch: 'full', redirectTo: redirectKeepingQuery('/account/login') },
+  { path: 'login/verify', pathMatch: 'full', redirectTo: redirectKeepingQuery('/account/login/verify') },
+  { path: 'profile', pathMatch: 'full', redirectTo: redirectKeepingQuery('/account/profile') },
+  { path: 'profile/confirm-email', pathMatch: 'full', redirectTo: redirectKeepingQuery('/account/confirm-email') },
+  { path: 'confidentialite', pathMatch: 'full', redirectTo: redirectKeepingQuery('/privacy') },
+  { path: 'mentions-legales', pathMatch: 'full', redirectTo: redirectKeepingQuery('/privacy') },
+  { path: 'legal-notice', pathMatch: 'full', redirectTo: redirectKeepingQuery('/privacy') },
+
+  // Domaines : chacun remplace sa page d'attente par ses routes (chargées à la demande, avec leurs stores).
+  { path: 'daily', loadChildren: () => import('./daily/feature/daily.routes').then(m => m.DAILY_ROUTES) },
+  { path: 'account', loadChildren: () => import('./account/feature/account.routes').then(m => m.ACCOUNT_ROUTES) },
+  { path: 'admin', loadChildren: () => import('./admin/feature/admin.routes').then(m => m.ADMIN_ROUTES) },
+  { path: 'privacy', loadComponent: () => import('./core/shell/privacy/privacy.page').then(m => m.PrivacyPage) },
+
   {
     path: '**',
-    loadComponent: () =>
-      import('./features/not-found/not-found.component').then(m => m.NotFoundComponent),
+    loadComponent: () => import('./core/shell/not-found/not-found.page').then(m => m.NotFoundPage),
   },
 ];

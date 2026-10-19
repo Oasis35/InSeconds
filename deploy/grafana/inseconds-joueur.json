@@ -1,0 +1,235 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_LOGS",
+      "label": "Logs (Loki)",
+      "type": "datasource",
+      "pluginId": "loki",
+      "pluginName": "Loki"
+    }
+  ],
+  "title": "InSeconds — Un joueur",
+  "uid": "inseconds-joueur",
+  "tags": [
+    "inseconds"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Actions",
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOGS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOGS}"
+          },
+          "expr": "sum(count_over_time({service_name=\"inseconds-api\"} | PlayerId=~\"(?i)${player}.*\" | PlayerId!=\"\" |~ \"démarrée par|reprise par|Réponse de|terminée par|Indice niveau|abandonnée par|Connexion par magic link|Compte effacé\" [$__range])) or vector(0)",
+          "legendFormat": "",
+          "queryType": "instant"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 5
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Erreurs vues par ce joueur",
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOGS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOGS}"
+          },
+          "expr": "sum(count_over_time({service_name=\"inseconds-api\"} | PlayerId=~\"(?i)${player}.*\" | PlayerId!=\"\" | detected_level=\"error\" [$__range])) or vector(0)",
+          "legendFormat": "",
+          "queryType": "instant"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "description": "Erreurs de l'API pendant ses requêtes et erreurs remontées par son navigateur.",
+      "id": 2,
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 5
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Activité par minute",
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOGS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOGS}"
+          },
+          "expr": "sum(count_over_time({service_name=\"inseconds-api\"} | PlayerId=~\"(?i)${player}.*\" | PlayerId!=\"\" |~ \"démarrée par|reprise par|Réponse de|terminée par|Indice niveau|abandonnée par|Connexion par magic link|Compte effacé\" [1m]))",
+          "legendFormat": "actions",
+          "queryType": "range"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOGS}"
+          },
+          "expr": "sum(count_over_time({service_name=\"inseconds-api\"} | PlayerId=~\"(?i)${player}.*\" | PlayerId!=\"\" | detected_level=\"error\" [1m]))",
+          "legendFormat": "erreurs",
+          "queryType": "range"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60,
+            "lineWidth": 1,
+            "stacking": {
+              "mode": "none"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 3,
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 5
+      }
+    },
+    {
+      "type": "logs",
+      "title": "Tout ce qui concerne le joueur (actions, erreurs, warnings)",
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOGS}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOGS}"
+          },
+          "expr": "{service_name=\"inseconds-api\"} | PlayerId=~\"(?i)${player}.*\" | PlayerId!=\"\" != \"Utilizing service location\"",
+          "legendFormat": "",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "enableLogDetails": true,
+        "dedupStrategy": "none"
+      },
+      "description": "Filtré sur le scope PlayerId posé sur chaque requête identifiée, pas sur le texte : les erreurs et les 500 du joueur y sont aussi. Déplier une ligne pour le traceId.",
+      "id": 4,
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 24,
+        "h": 22
+      }
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "player",
+        "label": "PlayerId (début suffit ; vide = tous)",
+        "type": "textbox",
+        "query": "",
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "hide": 0
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  }
+}

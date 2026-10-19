@@ -1,6 +1,5 @@
 import { test, expect } from '../fixtures/test';
-import { GamePage } from '../pages/game.page';
-import { linkAccount } from '../pages/login.page';
+import { expectSignedIn, linkAccount, pathOf } from '../pages/login.page';
 
 const TEST_EMAIL = 'testeur@e2e.test';
 
@@ -8,14 +7,8 @@ async function requestMagicLink(page: import('@playwright/test').Page, email: st
   await page.goto('/login');
   await page.getByPlaceholder('ton@email.com').fill(email);
   await page.getByRole('button', { name: 'Recevoir le lien' }).click();
-  await expect(page.getByText('Lien envoyé.')).toBeVisible();
-}
-
-// L'URL du lien magique est générée avec App:PublicUrl (fixe, ne suit pas forcément le
-// port réel du front local vs CI) — on ne navigue que sur le chemin+query, jamais l'origine.
-function pathOf(url: string): string {
-  const parsed = new URL(url);
-  return parsed.pathname + parsed.search;
+  await expect(page.getByText('On a envoyé un lien à')).toBeVisible();
+  await expect(page.getByTestId('sent-to')).toHaveText(email);
 }
 
 test.describe('Connexion par lien magique', () => {
@@ -31,14 +24,40 @@ test.describe('Connexion par lien magique', () => {
 
     await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
 
-    // Première connexion pour cet email -> pas encore de compte -> choix du pseudo
+    // Première connexion pour cet email -> pas encore de compte -> « Nouveau compte », puis choix du pseudo
+    await expect(page.getByRole('heading', { name: 'Nouveau compte' })).toBeVisible();
+    await expect(page.getByText(TEST_EMAIL)).toBeVisible();
+    await page.getByRole('button', { name: 'Créer mon compte' }).click();
     await expect(page.getByRole('heading', { name: 'Choisis ton pseudo' })).toBeVisible();
     await page.getByPlaceholder('Ton pseudo').fill('AliceE2E');
     await page.getByRole('button', { name: 'Valider' }).click();
 
-    const game = new GamePage(page);
-    await game.waitForWelcome();
-    await expect(page.locator('app-game-header').getByTitle('AliceE2E')).toBeVisible();
+    await expectSignedIn(page, 'AliceE2E');
+  });
+
+  test('propose de corriger un domaine mal tapé, sans rien envoyer', async ({ page }) => {
+    await page.goto('/login');
+    await page.getByPlaceholder('ton@email.com').fill('testeur@gmial.com');
+    await page.getByRole('button', { name: 'Tu voulais dire testeur@gmail.com ?' }).click();
+
+    await expect(page.getByPlaceholder('ton@email.com')).toHaveValue('testeur@gmail.com');
+    await expect(page.getByText('Tu voulais dire')).toHaveCount(0);
+  });
+
+  test('adresse sans compte : « J\'ai déjà un compte » revient à la connexion sans créer de compte', async ({ page, api }) => {
+    await requestMagicLink(page, TEST_EMAIL);
+    const linkPath = pathOf(await api.getLastMagicLinkUrl(TEST_EMAIL));
+    await page.goto(linkPath);
+    await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
+
+    await page.getByRole('link', { name: 'J\'ai déjà un compte' }).click();
+
+    await expect(page).toHaveURL(/\/account\/login\?hint=existing$/);
+    await expect(page.getByText('Saisis l\'adresse de ton compte')).toBeVisible();
+    // Rien n'a été créé ni consommé : le même lien propose encore de créer le compte.
+    await page.goto(linkPath);
+    await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Nouveau compte' })).toBeVisible();
   });
 
   test('lien invalide affiche une erreur avec un retour vers /login', async ({ page }) => {
@@ -56,10 +75,10 @@ test.describe('Connexion par lien magique', () => {
     let linkUrl = await api.getLastMagicLinkUrl(TEST_EMAIL);
     await page.goto(pathOf(linkUrl));
     await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
+    await page.getByRole('button', { name: 'Créer mon compte' }).click();
     await page.getByPlaceholder('Ton pseudo').fill('BobE2E');
     await page.getByRole('button', { name: 'Valider' }).click();
-    const gameA = new GamePage(page);
-    await gameA.waitForWelcome();
+    await expectSignedIn(page, 'BobE2E');
 
     // Appareil B : nouveau contexte Playwright, aucun cookie partagé avec A. Ce contexte
     // ne passe pas par le fixture `page` (cf. e2e/fixtures/test.ts) qui force lang=fr —
@@ -80,9 +99,7 @@ test.describe('Connexion par lien magique', () => {
     await pageB.getByRole('button', { name: 'Confirmer', exact: true }).click();
 
     // Compte déjà lié -> pas de nouveau prompt pseudo, résolution directe.
-    const gameB = new GamePage(pageB);
-    await gameB.waitForWelcome();
-    await expect(pageB.locator('app-game-header').getByTitle('BobE2E')).toBeVisible();
+    await expectSignedIn(pageB, 'BobE2E');
 
     await contextB.close();
   });
@@ -98,19 +115,17 @@ test.describe('Connexion par lien magique', () => {
 
     await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
     await expect(page.getByText(`Ton compte actuel (${TEST_EMAIL}) ne sera pas modifié.`)).toBeVisible();
+    await page.getByRole('button', { name: 'Créer mon compte' }).click();
     await page.getByPlaceholder('Ton pseudo').fill('AutreE2E');
     await page.getByRole('button', { name: 'Valider' }).click();
 
-    const game = new GamePage(page);
-    await game.waitForWelcome();
-    await expect(page.locator('app-game-header').getByTitle('AutreE2E')).toBeVisible();
+    await expectSignedIn(page, 'AutreE2E');
 
     // Le premier compte est intact : se reconnecter avec sa propre adresse le retrouve, pseudo compris.
     await requestMagicLink(page, TEST_EMAIL);
     await page.goto(pathOf(await api.getLastMagicLinkUrl(TEST_EMAIL)));
     await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
-    await game.waitForWelcome();
-    await expect(page.locator('app-game-header').getByTitle('ProprioE2E')).toBeVisible();
+    await expectSignedIn(page, 'ProprioE2E');
   });
 
   test('déconnexion depuis le profil revient à l\'état guest', async ({ page, api }) => {
@@ -118,22 +133,27 @@ test.describe('Connexion par lien magique', () => {
     const linkUrl = await api.getLastMagicLinkUrl(TEST_EMAIL);
     await page.goto(pathOf(linkUrl));
     await page.getByRole('button', { name: 'Confirmer', exact: true }).click();
+    await page.getByRole('button', { name: 'Créer mon compte' }).click();
     await page.getByPlaceholder('Ton pseudo').fill('CarlE2E');
     await page.getByRole('button', { name: 'Valider' }).click();
 
-    const game = new GamePage(page);
-    await game.waitForWelcome();
+    await expectSignedIn(page, 'CarlE2E');
 
     // Le clic sur l'avatar du header ouvre l'écran Profil (plus de déconnexion
     // directe) — il faut confirmer explicitement via son bouton "Se déconnecter".
-    await page.locator('app-game-header').getByTitle('CarlE2E').click();
+    await page.locator('app-account-link').getByTitle('CarlE2E').click();
     await expect(page).toHaveURL(/\/profile$/);
     await page.getByRole('button', { name: 'Se déconnecter', exact: true }).click();
     await expect(page.getByText('Se déconnecter ?')).toBeVisible();
     // Même libellé que le bouton du profil : la confirmation du panneau est rendue après lui.
     await page.getByRole('button', { name: 'Se déconnecter', exact: true }).last().click();
 
-    await game.waitForWelcome();
-    await expect(page.getByRole('link', { name: 'Se connecter / Créer un compte' })).toBeVisible();
+    // Revenu à l'état guest : la silhouette du bandeau du jeu mène à la page de connexion.
+    const loginLink = page.locator('app-account-link').getByRole('link', { name: 'Se connecter' });
+    await expect(loginLink).toBeVisible();
+    await loginLink.click();
+    await expect(page).toHaveURL(/\/account\/login$/);
+    // La page de connexion n'a plus de lien de compte en haut à droite (il y renvoyait sur elle-même).
+    await expect(page.locator('app-account-link')).toHaveCount(0);
   });
 });

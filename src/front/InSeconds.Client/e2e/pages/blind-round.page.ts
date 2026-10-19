@@ -1,7 +1,9 @@
 import { Page, Locator, expect } from '@playwright/test';
+import { inSequence } from '../fixtures/sequence';
 
 // Paliers par défaut exposés par les settings (cf. AppSettings.AllowedDurationsSeconds).
-// La lecture démarre automatiquement au premier (0.5s) — il n'y a plus de bouton de choix initial.
+// La lecture démarre automatiquement au premier (0.5s) — il n'y a plus de bouton de choix initial. Le lecteur s'arrête quand la
+// position réelle de l'extrait atteint le palier (le son joue en temps réel) ; son chrono de secours passe par setTimeout, que l'horloge simulée avance.
 const ALLOWED_DURATIONS = [0.5, 1, 1.5, 2, 3, 5, 10];
 
 export class BlindRoundPage {
@@ -15,6 +17,8 @@ export class BlindRoundPage {
   readonly guessTimeChart: Locator;
   readonly guessTimeBars: Locator;
   readonly guessTimeHighlighted: Locator;
+  /** Le chrono du lecteur : « … » pendant le chargement, « 0.0s / 0.5s » en lecture, « 0.5s / 0.5s » une fois le palier joué. */
+  readonly timer: Locator;
 
   constructor(readonly page: Page) {
     this.answerInput         = page.getByPlaceholder('Artiste — Titre');
@@ -30,6 +34,7 @@ export class BlindRoundPage {
     this.guessTimeChart       = page.getByTestId('guess-time-chart');
     this.guessTimeBars        = this.guessTimeChart.locator('[data-bucket]');
     this.guessTimeHighlighted = this.guessTimeChart.locator('[data-highlight="true"]');
+    this.timer                = page.getByTestId('round-timer');
   }
 
   /** Bouton « ↺ Xs » (rejoue le palier courant en entier) — visible une fois le palier terminé. */
@@ -38,36 +43,33 @@ export class BlindRoundPage {
   }
 
   /**
-   * La lecture démarre automatiquement au premier palier autorisé (0.5s).
-   * Fait avancer l'horloge pour laisser ce premier segment se terminer.
+   * Attend que le palier `seconds` soit joué en entier. Le son se charge en vrai, puis part : le chrono quitte « … ». Le lecteur
+   * s'arrête quand la position réelle de l'extrait atteint le palier : le son joue en temps réel, l'horloge simulée n'y change rien
+   * (on l'avance quand même pour les minuteries de l'écran). L'attente couvre donc le palier entier, plus la marge habituelle.
    */
+  private async playStep(seconds: number): Promise<void> {
+    await expect(this.timer).toHaveText(new RegExp(String.raw`s / ${seconds}s\s*$`));
+    await this.page.clock.fastForward(seconds * 1000 + 200);
+    await expect(this.timer).toHaveText(`${seconds}s / ${seconds}s`, { timeout: seconds * 1000 + 10_000 });
+  }
+
+  /** La lecture démarre automatiquement au premier palier autorisé (0.5s) : on la laisse aller au bout. */
   async waitForAutoStart(): Promise<void> {
-    await this.page.waitForTimeout(300);
-    await this.page.clock.fastForward(ALLOWED_DURATIONS[0] * 1000 + 200);
+    await this.playStep(ALLOWED_DURATIONS[0]);
   }
 
   /**
-   * Prolonge l'écoute jusqu'au palier `targetSeconds` en cliquant « écouter plus »
-   * palier par palier (chaînage, comme le ferait un joueur).
-   *
-   * Chaque clic est fait une fois le palier précédent *terminé* (état 'finished'),
-   * jamais pendant la lecture : AudioPlayerService.extend() a un comportement dual
-   * (cf. audio-player.service.ts) — en 'playing' il calcule le temps restant à partir
-   * de audio.currentTime (horloge *réelle* du média, non simulée par page.clock), ce
-   * qui désynchronise la fake clock sous charge (E2E réel avec vraie lecture audio).
-   * En 'finished', il relit depuis 0 et programme l'arrêt via setTimeout — entièrement
-   * piloté par la fake clock, donc déterministe.
+   * Prolonge l'écoute jusqu'au palier `targetSeconds` en cliquant « écouter plus » palier par palier, chaque clic une fois le palier
+   * précédent joué (comme le ferait un joueur).
    */
   async listenUpTo(targetSeconds: number): Promise<void> {
     const targetIdx = ALLOWED_DURATIONS.indexOf(targetSeconds);
     if (targetIdx < 0) throw new Error(`Palier inconnu : ${targetSeconds}`);
 
-    for (let i = 1; i <= targetIdx; i++) {
-      // Palier précédent déjà en 'finished' à ce stade (auto-start ou itération précédente).
+    await inSequence(ALLOWED_DURATIONS.slice(1, targetIdx + 1), async (duration) => {
       await this.listenMoreButton.click();
-      await this.page.waitForTimeout(300);
-      await this.page.clock.fastForward(ALLOWED_DURATIONS[i] * 1000 + 200);
-    }
+      await this.playStep(duration);
+    });
   }
 
   /**
@@ -102,7 +104,7 @@ export class BlindRoundPage {
     // Déclenche le debounce 300ms de DeezerAutocompleteService (RxJS, soumis à la fake clock) ;
     // la requête HTTP réelle qui suit revient en temps réel.
     await this.page.clock.fastForward(350);
-    const suggestions = this.page.getByRole('listitem');
+    const suggestions = this.page.getByRole('option');
     await expect(suggestions).toHaveCount(2);
     return suggestions;
   }

@@ -23,7 +23,7 @@ test.describe('Confirmation de sortie en cours de partie (guard CanDeactivate)',
     await game.leaveCancelButton.click();
     await expect(game.leaveConfirmButton).not.toBeVisible();
     await expect(page.getByText('Piste 1 / 5')).toBeVisible();
-    expect(new URL(page.url()).pathname).toBe('/');
+    expect(new URL(page.url()).pathname).toBe('/daily');
   });
 
   test('confirmer la sortie navigue hors de la partie', async ({ page }) => {

@@ -3,5 +3,5 @@ export const environment = {
   name: 'e2e',
   production: false,
   apiUrl: '',
-  appUrl: 'http://localhost:5174',
+  appUrl: 'http://localhost:5178',
 };

@@ -1,0 +1,67 @@
+<app-auth-page [heading]="heading() | translate">
+  @if (store.sentTo(); as email) {
+    <div class="space-y-3">
+      <p class="text-sm" style="color:var(--text-muted)">{{ 'account.login.sentTo' | translate }}</p>
+      <output class="block break-words rounded-xl px-4 py-3 text-base font-semibold" data-testid="sent-to"
+        style="color:var(--text-hi);border:1px solid var(--border-subtle)">{{ email }}</output>
+      <p class="text-sm leading-relaxed" style="color:var(--text-muted)">{{ 'account.login.sentHint' | translate }}</p>
+    </div>
+
+    @if (store.error(); as error) {
+      <app-error-message [messageKey]="errorKey()!" [traceId]="error.traceId" />
+    } @else if (store.resent()) {
+      <p class="text-xs" style="color:var(--text-faint)">{{ 'account.login.resent' | translate }}</p>
+    }
+
+    <button appButton variant="secondary" type="button" [block]="true" data-testid="resend-link"
+      [disabled]="resendIn() > 0 || store.isPending()" (click)="resend()">
+      @if (store.isPending()) {
+        {{ 'account.login.sending' | translate }}
+      } @else if (resendIn() > 0) {
+        {{ 'account.login.resendIn' | translate: { seconds: resendIn() } }}
+      } @else {
+        {{ 'account.login.resend' | translate }}
+      }
+    </button>
+  } @else {
+    <p class="text-sm leading-relaxed" style="color:var(--text-muted)">
+      {{ (existingAccountHint ? 'account.login.existingAccountHint' : 'account.login.subtitle') | translate }}
+    </p>
+
+    <form [formRoot]="loginForm" (submit)="submit()" class="space-y-3" novalidate>
+      <label for="login-email" class="sr-only">{{ 'account.login.emailLabel' | translate }}</label>
+      <input
+        id="login-email"
+        class="app-input text-center"
+        type="email"
+        autocomplete="email"
+        [formField]="loginForm.email"
+        [placeholder]="'account.login.emailPlaceholder' | translate"
+        [attr.aria-invalid]="showInvalid() ? 'true' : null"
+        aria-describedby="login-email-suggestion"
+      />
+
+      <output id="login-email-suggestion" class="block">
+        @if (suggestion(); as suggested) {
+          <button type="button" class="text-sm underline-offset-2 hover:underline" style="color:var(--text-accent)"
+            data-testid="email-suggestion" (click)="applySuggestion()">
+            {{ 'account.login.suggestion' | translate: { email: suggested } }}
+          </button>
+        }
+      </output>
+
+      @if (showInvalid()) {
+        <p class="text-xs" style="color:var(--text-error)">{{ 'account.login.invalidEmail' | translate }}</p>
+      }
+      @if (store.error(); as error) {
+        <app-error-message [messageKey]="errorKey()!" [traceId]="error.traceId" />
+      }
+
+      <button appButton type="submit" [block]="true" [disabled]="store.isPending()">
+        {{ (store.isPending() ? 'account.login.sending' : 'account.login.submit') | translate }}
+      </button>
+    </form>
+  }
+
+  <a routerLink="/" class="inline-block text-sm" style="color:var(--text-faint)">{{ 'account.login.backToGame' | translate }}</a>
+</app-auth-page>

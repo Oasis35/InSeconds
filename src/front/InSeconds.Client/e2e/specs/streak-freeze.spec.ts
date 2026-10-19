@@ -13,6 +13,8 @@ import { ApiTestClient } from '../fixtures/api-client';
 
 /** Résout (ou crée, pour un invité) le Player du navigateur et renvoie son ID. */
 async function currentPlayerId(page: Page): Promise<string> {
+  // Pas d'identité sans jeu : on la crée (POST, jamais un GET) si besoin, comme le fait le démarrage d'une partie.
+  await page.request.post('/api/players/guest');
   const res = await page.request.get('/api/players/me');
   const body = (await res.json()) as { playerId: string };
   return body.playerId;
@@ -49,6 +51,8 @@ test.describe('Gel de série — compte connecté', () => {
     await expect(sheet(page)).toHaveAttribute('data-variant', 'linked');
     await expect(sheet(page).getByText('Série de 12 jours')).toBeVisible();
     await expect(sheet(page).getByText('Tes gels · 2 / 2')).toBeVisible();
+    // Aucune partie terminée sur ce compte (série posée par l'API de test) : pas de compteur à côté du titre.
+    await expect(sheet(page).getByTestId('streak-sheet-games')).toHaveCount(0);
     // Stock déjà au plafond : aucun nouveau gel à venir, plus de bloc « Prochain gel ».
     await expect(sheet(page).getByText('Stock plein', { exact: false })).toBeVisible();
     await expect(sheet(page).getByText('Prochain gel', { exact: false })).not.toBeVisible();
@@ -116,6 +120,11 @@ test.describe('Gel de série — compte connecté', () => {
     await expect(page.getByTestId('gel-earned-toast')).toContainText('+1 gel');
     await expect(page.getByTestId('gel-earned-toast')).toContainText('7 jours de série');
     await expect(pill(page)).toContainText('7');
+
+    // Le panneau donne aussi les parties terminées du compte, à côté de la série (#283).
+    await pill(page).click();
+    await expect(sheet(page).getByText('Série de 7 jours')).toBeVisible();
+    await expect(sheet(page).getByTestId('streak-sheet-games')).toHaveText('· 1 partie');
   });
 });
 

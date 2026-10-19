@@ -39,7 +39,7 @@ test.describe('Autocomplete Deezer — navigation clavier', () => {
   test('Échap ferme la dropdown sans modifier le champ', async ({ page }) => {
     await pressKeys('ArrowDown', 'Escape');
 
-    await expect(page.getByRole('listitem')).toHaveCount(0);
+    await expect(page.getByRole('option')).toHaveCount(0);
     await expect(round.answerInput).toHaveValue('dedup-test');
   });
 });

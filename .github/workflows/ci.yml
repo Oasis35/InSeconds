@@ -14,162 +14,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Refonte v2 (PR A5, PLAN § 9.1) : les jobs v2 ne tournent que si `src/v2/**` change, pour qu'un
-  # run sans changement v2 (correctif v1, Dependabot v1) prenne le même temps qu'avant. Tout changement
-  # v2 lance tous les jobs v2 (back et front) : ils tournent en parallèle des jobs v1, plus longs
-  # (E2E v1), donc sans allonger le run. Les jobs v1 tournent toujours. Le job « CI OK » en fin de
-  # fichier agrège tout : c'est le seul check à exiger dans le ruleset (un job sauté y compte comme
-  # réussi, E9).
-  changes:
-    name: Changed paths
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read # pull_request : liste des fichiers modifiés lue par l'API
-    outputs:
-      v2: ${{ steps.filter.outputs.v2 }}
-      e2e: ${{ steps.filter.outputs.e2e }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      # Base de comparaison :
-      # - push sur une branche de travail : env/staging (merge-base), donc TOUS les changements de
-      #   la branche. Comparer au commit d'avant le push perdait les changements d'un run annulé
-      #   par un push suivant (cancel-in-progress) : un job v2 pouvait ne jamais tourner sur la PR.
-      #   Une branche v1 (partie de main) n'a aucun fichier v2 depuis la merge-base : rien ne tourne.
-      # - push sur main ou env/staging : base = la branche → commit d'avant le push (le merge de la
-      #   PR), chaque PR ayant déjà été testée en entier sur sa branche.
-      # - pull_request : base ignorée, comparaison avec la branche cible de la PR.
-      - name: Filter
-        id: filter
-        # Action tierce : épinglée sur le SHA du commit (Sonar S7637), Dependabot le met à jour.
-        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
-        with:
-          base: ${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/env/staging') && github.ref || 'env/staging' }}
-          # e2e : parité v1/v2 (E8), aussi relancée quand un correctif v1 modifie ses E2E.
-          filters: |
-            v2:
-              - 'src/v2/**'
-              - '.github/workflows/ci.yml'
-              # Import v1 → v2 (B4) : ses scripts, et le schéma v1 qu'il lit (InSeconds.MigrationTests).
-              - 'deploy/migration-v2/**'
-              - 'src/back/InSeconds.Api/Infrastructure/Persistence/Migrations/**'
-            e2e:
-              - 'src/front/InSeconds.Client/e2e/**'
-              - 'src/front/InSeconds.Client/playwright.config.ts'
-              - 'src/v2/front/InSeconds.Client/e2e/**'
-              - 'src/v2/front/InSeconds.Client/playwright.config.ts'
-              - 'scripts/check-e2e-parity.mjs'
-              - '.github/workflows/ci.yml'
-
-  back:
-    name: Backend (build + EF migrations check)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v6
-        with:
-          global-json-file: src/back/global.json
-
-      - name: Restore
-        working-directory: src/back
-        run: dotnet restore InSeconds.slnx
-
-      - name: Build (Release)
-        working-directory: src/back
-        run: dotnet build InSeconds.slnx --configuration Release --no-restore
-
-      - name: Install dotnet-ef
-        run: dotnet tool install --global dotnet-ef
-
-      - name: Verify EF model has no pending migrations
-        working-directory: src/back/InSeconds.Api
-        run: dotnet ef migrations has-pending-model-changes --no-build --configuration Release
-
-  unit-tests:
-    name: Backend (unit tests)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v6
-        with:
-          global-json-file: src/back/global.json
-
-      - name: Restore
-        working-directory: src/back
-        run: dotnet restore InSeconds.slnx
-
-      - name: Test
-        working-directory: src/back
-        run: dotnet test InSeconds.Api.UnitTests --no-restore --logger "console;verbosity=normal"
-
+  # Tous les jobs tournent à chaque run (le code v1 et son filtre de chemins sont retirés en I2, #236).
+  # Le job « CI OK » en fin de fichier les agrège : c'est le seul check exigé par le ruleset.
   front:
-    name: Frontend (build)
+    name: Frontend (build, Vitest, Sheriff)
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: src/front/InSeconds.Client/package-lock.json
-
-      - name: Install (clean)
-        working-directory: src/front/InSeconds.Client
-        run: npm ci --ignore-scripts
-
-      - name: Build (production)
-        working-directory: src/front/InSeconds.Client
-        run: npm run build
-
-  unit-tests-front:
-    name: Frontend (unit tests)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: src/front/InSeconds.Client/package-lock.json
-
-      - name: Install (clean)
-        working-directory: src/front/InSeconds.Client
-        run: npm ci --ignore-scripts
-
-      - name: Generate build-info
-        working-directory: src/front/InSeconds.Client
-        run: node scripts/generate-build-info.mjs
-
-      - name: Install Playwright browsers
-        working-directory: src/front/InSeconds.Client
-        run: npx --no-install playwright install --with-deps chromium
-
-      - name: Run unit tests
-        working-directory: src/front/InSeconds.Client
-        run: npx --no-install ng test --watch=false
-
-  front-v2:
-    name: Frontend v2 (build, Vitest, Sheriff)
-    runs-on: ubuntu-latest
-    needs: [changes]
-    if: needs.changes.outputs.v2 == 'true'
     defaults:
       run:
-        working-directory: src/v2/front/InSeconds.Client
+        working-directory: src/front/InSeconds.Client
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -179,7 +31,7 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: src/v2/front/InSeconds.Client/package-lock.json
+          cache-dependency-path: src/front/InSeconds.Client/package-lock.json
 
       - name: Install (clean)
         run: npm ci --ignore-scripts
@@ -196,72 +48,24 @@ jobs:
       - name: Run unit tests
         run: npx --no-install ng test --watch=false
 
+  # Image de prod du front : Cache-Control, en-têtes de sécurité, CSP, plus la PWA (ngsw.json et worker sans
+  # cache, aucun dataGroups). En parallèle de front, qui vérifie déjà le build.
   nginx-headers:
-    name: Frontend (nginx cache headers smoke test)
+    name: Frontend (nginx headers smoke test)
     runs-on: ubuntu-latest
-    needs: [front]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Build image and verify Cache-Control headers
-        working-directory: src/front/InSeconds.Client
-        run: bash scripts/check-nginx-cache-headers.sh
-
-  # Image de prod du front v2 : mêmes vérifications qu'en v1, plus la PWA (ngsw.json et worker sans
-  # cache, aucun dataGroups). En parallèle de front-v2, qui vérifie déjà le build.
-  nginx-headers-v2:
-    name: Frontend v2 (nginx headers smoke test)
-    runs-on: ubuntu-latest
-    needs: [changes]
-    if: needs.changes.outputs.v2 == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
       - name: Build image and verify headers
-        working-directory: src/v2/front/InSeconds.Client
+        working-directory: src/front/InSeconds.Client
         run: bash scripts/check-nginx-headers.sh
 
-  # E8 : les E2E copiés en v2 ne divergent pas de ceux de la v1 (listes `playwright test --list`).
-  e2e-parity:
-    name: E2E v1/v2 parity
+  # E2E contre l'hôte de test de l'API (InSeconds.Api.Testing, port 5175) et le front servi par
+  # ng serve (port 5176, proxy /api).
+  e2e:
+    name: E2E (Playwright)
     runs-on: ubuntu-latest
-    needs: [changes]
-    if: needs.changes.outputs.e2e == 'true'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: |
-            src/front/InSeconds.Client/package-lock.json
-            src/v2/front/InSeconds.Client/package-lock.json
-
-      - name: Install v1 (clean)
-        working-directory: src/front/InSeconds.Client
-        run: npm ci --ignore-scripts
-
-      - name: Install v2 (clean)
-        working-directory: src/v2/front/InSeconds.Client
-        run: npm ci --ignore-scripts
-
-      - name: Compare E2E lists
-        run: node scripts/check-e2e-parity.mjs
-
-  # E2E v2 (J2, B5) : les specs réactivés (e2e/disabled-specs.json) contre l'hôte de test de l'API v2
-  # (InSeconds.Api.Testing, port 5175) et le front v2 servi par ng serve (port 5176, proxy /api).
-  # Même principe que le job `e2e` de la v1 ; la liste des specs actifs grandit à chaque PR qui en
-  # réactive, jusqu'au jalon J4 (liste vide).
-  e2e-v2:
-    name: E2E v2 (Playwright)
-    runs-on: ubuntu-latest
-    needs: [changes]
-    if: needs.changes.outputs.v2 == 'true'
 
     services:
       postgres:
@@ -285,140 +89,21 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          global-json-file: src/v2/back/global.json
+          global-json-file: src/back/global.json
 
       - name: Build test host (Debug)
-        working-directory: src/v2/back
+        working-directory: src/back
         run: dotnet build InSeconds.Api.Testing/InSeconds.Api.Testing.csproj --configuration Debug
 
       # --no-launch-profile : sans lui, launchSettings.json impose l'environnement Development
-      # (origines de confiance, limites de débit…), cf. piège 9 de la v1.
+      # (origines de confiance, limites de débit…), cf. piège 9.
       - name: Start test host
-        working-directory: src/v2/back/InSeconds.Api.Testing
-        run: dotnet run --no-build --no-launch-profile --configuration Debug --urls http://localhost:5175 > /tmp/backend-v2.log 2>&1 &
+        working-directory: src/back/InSeconds.Api.Testing
+        run: dotnet run --no-build --no-launch-profile --configuration Debug --urls http://localhost:5175 > /tmp/backend.log 2>&1 &
         env:
           ASPNETCORE_ENVIRONMENT: Testing
           ConnectionStrings__DefaultConnection: >-
             Host=localhost;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=inseconds_e2e
-
-      - name: Setup Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: src/v2/front/InSeconds.Client/package-lock.json
-
-      - name: Install npm dependencies
-        working-directory: src/v2/front/InSeconds.Client
-        run: npm ci --ignore-scripts
-
-      - name: Start Angular dev server
-        working-directory: src/v2/front/InSeconds.Client
-        run: npx --no-install ng serve --configuration e2e-ci --port 5176 > /tmp/angular-v2.log 2>&1 &
-
-      - name: Install Playwright browsers
-        working-directory: src/v2/front/InSeconds.Client
-        run: npx --no-install playwright install --with-deps chromium
-
-      # --retry-connrefused : sans réponse au bout du délai, l'étape échoue (une boucle `curl && break` laisse passer).
-      - name: Wait for backend
-        run: curl -sf --retry 60 --retry-delay 3 --retry-connrefused --retry-all-errors http://localhost:5175/health
-
-      - name: Wait for frontend
-        run: curl -sf -o /dev/null --retry 120 --retry-delay 3 --retry-connrefused --retry-all-errors http://localhost:5176
-
-      - name: Run E2E tests
-        working-directory: src/v2/front/InSeconds.Client
-        run: npx --no-install playwright test
-        env:
-          CI: 'true'
-
-      - name: Diagnostics (on failure)
-        if: failure()
-        run: |
-          echo "=== Backend logs ==="
-          cat /tmp/backend-v2.log || true
-          echo "=== Angular logs ==="
-          cat /tmp/angular-v2.log || true
-
-      - name: Upload Playwright report
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: playwright-report-v2
-          path: src/v2/front/InSeconds.Client/playwright-report/
-          retention-days: 7
-
-  integration-tests:
-    name: Backend (integration tests)
-    runs-on: ubuntu-latest
-    needs: [back]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v6
-        with:
-          global-json-file: src/back/global.json
-
-      - name: Restore
-        working-directory: src/back
-        run: dotnet restore InSeconds.slnx
-
-      - name: Build (Debug)
-        working-directory: src/back
-        run: dotnet build InSeconds.slnx --configuration Debug --no-restore
-
-      - name: Run integration tests
-        working-directory: src/back
-        run: dotnet test InSeconds.Api.IntegrationTests --no-build --configuration Debug --logger "console;verbosity=normal"
-
-  e2e:
-    name: E2E tests (Playwright)
-    runs-on: ubuntu-latest
-    needs: [back, unit-tests, unit-tests-front, front]
-
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: inseconds
-          POSTGRES_PASSWORD: inseconds_e2e
-          POSTGRES_DB: inseconds_e2e
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U inseconds -d inseconds_e2e"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v6
-        with:
-          global-json-file: src/back/global.json
-
-      - name: Restore .NET
-        working-directory: src/back
-        run: dotnet restore InSeconds.slnx
-
-      - name: Build .NET (Debug)
-        working-directory: src/back
-        run: dotnet build InSeconds.slnx --configuration Debug --no-restore
-
-      - name: Start backend
-        working-directory: src/back/InSeconds.Api
-        run: dotnet run --no-build --no-launch-profile --configuration Debug --urls http://localhost:5171 > /tmp/backend.log 2>&1 &
-        env:
-          ASPNETCORE_ENVIRONMENT: Testing
-          ConnectionStrings__DefaultConnection: >-
-            Host=localhost;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=inseconds_e2e
-          E2E_FRONT_PORT: '5173'
 
       - name: Setup Node
         uses: actions/setup-node@v7
@@ -431,33 +116,20 @@ jobs:
         working-directory: src/front/InSeconds.Client
         run: npm ci --ignore-scripts
 
-      - name: Generate build-info
-        working-directory: src/front/InSeconds.Client
-        run: node scripts/generate-build-info.mjs
-
       - name: Start Angular dev server
         working-directory: src/front/InSeconds.Client
-        run: npx --no-install ng serve --configuration e2e-ci --port 5173 > /tmp/angular.log 2>&1 &
+        run: npx --no-install ng serve --configuration e2e-ci --port 5176 > /tmp/angular.log 2>&1 &
 
       - name: Install Playwright browsers
         working-directory: src/front/InSeconds.Client
         run: npx --no-install playwright install --with-deps chromium
 
+      # --retry-connrefused : sans réponse au bout du délai, l'étape échoue (une boucle `curl && break` laisse passer).
       - name: Wait for backend
-        run: |
-          for i in $(seq 1 60); do
-            curl -sf http://localhost:5171/api/settings && break
-            echo "Waiting for backend ($i/60)..."
-            sleep 3
-          done
+        run: curl -sf --retry 60 --retry-delay 3 --retry-connrefused --retry-all-errors http://localhost:5175/health
 
       - name: Wait for frontend
-        run: |
-          for i in $(seq 1 120); do
-            curl -sf http://localhost:5173 && break
-            echo "Waiting for frontend ($i/120)..."
-            sleep 3
-          done
+        run: curl -sf -o /dev/null --retry 120 --retry-delay 3 --retry-connrefused --retry-all-errors http://localhost:5176
 
       - name: Run E2E tests
         working-directory: src/front/InSeconds.Client
@@ -481,14 +153,12 @@ jobs:
           path: src/front/InSeconds.Client/playwright-report/
           retention-days: 7
 
-  back-v2:
-    name: Backend v2 (build, migrations, tests, image)
+  back:
+    name: Backend (build, migrations, tests, image)
     runs-on: ubuntu-latest
-    needs: [changes]
-    if: needs.changes.outputs.v2 == 'true'
     defaults:
       run:
-        working-directory: src/v2/back
+        working-directory: src/back
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -496,7 +166,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          global-json-file: src/v2/back/global.json
+          global-json-file: src/back/global.json
 
       - name: Restore
         run: dotnet restore InSeconds.slnx
@@ -508,7 +178,7 @@ jobs:
         run: dotnet tool install --global dotnet-ef --version 10.0.12
 
       - name: Verify EF model has no pending migrations
-        working-directory: src/v2/back/InSeconds.Api
+        working-directory: src/back/InSeconds.Api
         run: dotnet ef migrations has-pending-model-changes --no-build --configuration Release
 
       # En staging et en prod, Wolverine charge le code commité dans Internal/Generated au lieu de
@@ -523,24 +193,15 @@ jobs:
             exit 1
           fi
 
-      # Base de forme v1 des tests d'import (InSeconds.MigrationTests, § 8.6 du plan v2) : générée depuis
-      # le code v1 à chaque run, jamais une copie figée qui dériverait.
-      - name: Generate v1 schema for import tests
-        working-directory: src/back
-        run: |
-          dotnet restore InSeconds.Api/InSeconds.Api.csproj
-          dotnet ef migrations script --project InSeconds.Api --output "$RUNNER_TEMP/v1-schema.sql"
-          echo "INSECONDS_V1_SCHEMA_SQL=$RUNNER_TEMP/v1-schema.sql" >> "$GITHUB_ENV"
-
-      # Unitaires, architecture, intégration et import (Testcontainers : Docker est fourni par ubuntu-latest).
+      # Unitaires, architecture, intégration et scripts SQL du VPS (Testcontainers : Docker est fourni par ubuntu-latest).
       - name: Test
         run: dotnet test --solution InSeconds.slnx --configuration Release --no-build
 
       # S9 : l'hôte de test (routes /api/e2e, faux email) ne doit jamais atteindre l'image de prod.
       - name: Build prod image and check it has no test host
         run: |
-          docker build -f InSeconds.Api/Dockerfile -t inseconds-api-v2:ci .
-          files=$(docker run --rm --entrypoint ls inseconds-api-v2:ci /app)
+          docker build -f InSeconds.Api/Dockerfile -t inseconds-api:ci .
+          files=$(docker run --rm --entrypoint ls inseconds-api:ci /app)
           echo "$files" | grep -q '^InSeconds.Api.dll$' || { echo "::error::InSeconds.Api.dll absent de l'image"; exit 1; }
           if echo "$files" | grep -q 'InSeconds.Api.Testing'; then
             echo "::error::InSeconds.Api.Testing présent dans l'image de prod (S9)."
@@ -548,26 +209,16 @@ jobs:
           fi
 
   # Seul check exigé par le ruleset « Branches protégées » : échoue si un job a échoué ou a été
-  # annulé ; un job sauté par le filtre de chemins compte comme réussi. Tout nouveau job doit être
-  # ajouté à `needs`, sinon il ne bloque pas le merge.
+  # annulé. Tout nouveau job doit être ajouté à `needs`, sinon il ne bloque pas le merge.
   ci-ok:
     name: CI OK
     runs-on: ubuntu-latest
     if: always()
     needs:
-      - changes
-      - back
-      - unit-tests
       - front
-      - unit-tests-front
       - nginx-headers
-      - integration-tests
+      - back
       - e2e
-      - front-v2
-      - nginx-headers-v2
-      - back-v2
-      - e2e-v2
-      - e2e-parity
     steps:
       - name: Check job results
         env:
@@ -583,8 +234,7 @@ jobs:
   deploy:
     name: Deploy to VPS
     runs-on: ubuntu-latest
-    # Attend « CI OK », comme deploy-staging (même raison pour always(), cf. plus bas) : après la bascule, ce job
-    # déploie la v2, qui doit passer ses propres tests (G6a, #312). Avant, il n'attendait que les jobs v1.
+    # Attend « CI OK », comme deploy-staging (même raison pour always(), cf. plus bas, G6a, #312).
     needs: [ci-ok]
     if: ${{ always() && needs.ci-ok.result == 'success' && github.ref == 'refs/heads/main' && github.event_name == 'push' }}
     # M17 (revue du 25/09) : groupe de concurrency dédié, distinct de celui du workflow
@@ -624,14 +274,12 @@ jobs:
   deploy-staging:
     name: Deploy to staging (dev.inseconds.cc)
     runs-on: ubuntu-latest
-    # Staging en v2 depuis A6 : attend « CI OK », qui agrège les jobs v1 et v2 (un job sauté par
-    # le filtre de chemins compte comme réussi). `always()` est indispensable : sans lui, le `if`
-    # porte un `success()` implicite qui remonte toute la chaîne des `needs`, « CI OK » compris,
-    # et un seul job sauté en amont (ex. « E2E v1/v2 parity » quand aucun E2E n'a changé) faisait
-    # sauter le déploiement alors que « CI OK » était vert (B2, B3, #262 n'ont pas été déployés).
-    # Le résultat de « CI OK » est donc testé explicitement.
+    # Attend « CI OK ». `always()` est indispensable : sans lui, le `if` porte un `success()` implicite
+    # qui remonte toute la chaîne des `needs`, « CI OK » compris, et un seul job sauté en amont faisait
+    # sauter le déploiement alors que « CI OK » était vert (B2, B3, #262 n'ont pas été déployés quand
+    # le filtre de chemins de la v1 sautait des jobs). Le résultat de « CI OK » est donc testé explicitement.
     needs: [ci-ok]
-    # Branche de déploiement du staging, protégée : on y arrive par PR. Cf. CLAUDE.md racine § Staging.
+    # Branche de déploiement du staging, protégée : on y arrive par PR. Cf. docs/exploitation/deploiement.md § Staging.
     if: ${{ always() && needs.ci-ok.result == 'success' && github.ref == 'refs/heads/env/staging' && github.event_name == 'push' }}
     # Groupe distinct de deploy-vps (prod) : GitHub ne garde qu'un seul job en attente par
     # groupe et annule le précédent — un groupe commun pourrait faire sauter un déploiement

@@ -12,6 +12,8 @@ test.describe('Scoring par palier', () => {
   });
 
   test('palier court (0.5s) donne plus de points que palier long (10s)', async ({ page }) => {
+    // Les paliers jusqu'à 10 s se jouent en temps réel (le lecteur s'arrête sur la position de l'extrait) : environ 25 s d'écoute.
+    test.slow();
     const game = new GamePage(page);
     const round = new BlindRoundPage(page);
     await game.startWithFakeClock();

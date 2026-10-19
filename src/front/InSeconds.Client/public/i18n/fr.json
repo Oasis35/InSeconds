@@ -1,286 +1,259 @@
 {
   "common": {
-    "points": "pts",
-    "retry": "Réessayer",
-    "abandon": "Abandonner",
-    "loading": "Chargement du défi…"
+    "close": "Fermer",
+    "retry": "Réessayer"
   },
-  "header": {
-    "track": "Piste {{ current }} / {{ total }}"
-  },
-  "welcome": {
-    "title": "Blind Test du jour",
-    "subtitle": "{{ count }} morceaux · écoute & devine",
-    "tagline": "Moins tu écoutes, plus tu scores",
-    "start": "Commencer",
-    "loginCta": "Se connecter / Créer un compte",
-    "loginHint": "Pour garder ta série sur tous tes appareils.",
-    "loggedInAs": "Connecté comme {{ pseudo }}"
-  },
-  "resume": {
-    "title": "Partie en pause",
-    "progress": "{{ done }} / {{ total }} pistes déjà écoutées.",
-    "question": "Tu reprends où tu t'es arrêté ?",
-    "resume": "Reprendre",
-    "loginCta": "Ne plus perdre mes parties",
-    "warningTitle": "Tu vas perdre ta progression",
-    "warningBody": "Cette partie ne pourra pas être reprise. Ta série sera remise à zéro.",
-    "warningBodyLinked": "Cette partie ne pourra pas être reprise. Ta série s'arrêtera, sauf si un gel la protège.",
-    "confirmAbandon": "Abandonner",
-    "cancelAbandon": "Annuler"
-  },
-  "abandonSheet": {
-    "title": "Abandonner la partie ?",
-    "body": "Ta progression sera perdue et ta série remise à zéro.",
-    "bodyLinked": "Ta progression sera perdue et ta série s'arrêtera, sauf si un gel la protège.",
-    "confirm": "Abandonner",
-    "cancel": "Annuler"
-  },
-  "leaveSheet": {
-    "title": "Partie en cours",
-    "body": "Ta partie n'est pas terminée.\nTu pourras la reprendre demain, mais le défi sera perdu si tu ne la termines pas aujourd'hui.",
-    "confirm": "Quitter quand même",
-    "cancel": "Continuer à jouer"
-  },
-  "streakToast": {
-    "body": {
-      "one": "Série de {{ streak }} jour.",
-      "other": "Série de {{ streak }} jours."
+  "errors": {
+    "code": "Code d'erreur :",
+    "common": {
+      "bad_request": "La demande n'est pas valide.",
+      "conflict": "Cette action n'est plus possible dans l'état actuel.",
+      "forbidden": "Tu n'as pas accès à cette page.",
+      "network": "Impossible de joindre le serveur. Vérifie ta connexion et réessaie.",
+      "not_found": "Ce que tu cherches n'existe pas ou plus.",
+      "too_many_requests": "Trop de demandes d'un coup. Patiente un peu avant de réessayer.",
+      "unauthorized": "Connecte-toi pour continuer.",
+      "unexpected": "Une erreur inattendue s'est produite. Réessaie dans un instant.",
+      "unknown": "Une erreur s'est produite. Si elle se répète, transmets-nous le code ci-dessous."
     },
-    "hint": "Crée un compte pour ne pas la perdre.",
-    "cta": "Créer",
-    "dismiss": "Fermer"
-  },
-  "noChallenge": {
-    "title": "Pas de défi aujourd'hui",
-    "body": "Reviens un peu plus tard,\nle prochain défi arrive."
-  },
-  "error": {
-    "title": "Une erreur est survenue",
-    "body": "Impossible de charger le défi du jour.",
-    "code": "Code d'erreur :"
-  },
-  "alreadyPlayed": {
-    "abandonedTitle": "Partie abandonnée",
-    "abandonedBody": "Reviens demain pour un nouveau défi.",
-    "nextChallengeIn": "Prochain défi dans",
-    "yourScore": "Ton score",
-    "showTracks": "Voir les morceaux",
-    "hideTracks": "Masquer",
-    "coverAlt": "Pochette",
-    "failedPercent": "{{ percent }}% ont échoué",
-    "averageSeconds": "moy. {{ seconds }}s"
-  },
-  "share": {
-    "button": "Partager mon score",
-    "copied": "Copié !",
-    "failed": "Impossible de copier dans le presse-papier.",
-    "title": "InSeconds 🎵 {{ date }}",
-    "score": "🏆 {{ score }} pts"
-  },
-  "done": {
-    "finalScore": "Score final",
-    "artist": "Artiste",
-    "title": "Titre",
-    "comeBack": "Reviens demain pour un nouveau défi."
-  },
-  "scoreChart": {
-    "median": "médiane",
-    "lowest": "plus bas",
-    "highest": "plus haut",
-    "betterThanPrefix": "Tu fais mieux que",
-    "betterThanSuffix": "des joueurs",
-    "ariaLabel": "Répartition des scores du jour : plus bas {{ lowest }}, médiane {{ median }}, plus haut {{ highest }}"
-  },
-  "trackList": {
-    "guessTimeTitle": "Temps d'écoute des autres joueurs",
-    "showChart": "Voir la répartition des temps",
-    "close": "Fermer"
-  },
-  "deezerBadge": {
-    "ariaLabel": "À écouter sur Deezer"
-  },
-  "footer": {
-    "admin": "Admin",
-    "privacy": "Confidentialité & mentions légales",
-    "contact": "Nous contacter",
-    "language": "Switch to English"
-  },
-  "profile": {
-    "title": "Ton profil",
-    "pseudoPlaceholder": "Ton pseudo",
-    "save": "Changer",
-    "saving": "…",
-    "saved": "OK",
-    "pseudoHint": "3 à 20 caractères. Visible par les autres joueurs.",
-    "pseudoTooShort": "Trois caractères minimum.",
-    "pseudoTaken": "Ce pseudo est déjà pris.",
-    "pseudoSaved": "Pseudo mis à jour.",
-    "pseudoError": "Une erreur est survenue, réessaie.",
-    "streakLabel": "Série",
-    "gamesPlayedLabel": "Parties jouées",
-    "logout": "Se déconnecter",
-    "logoutConfirmTitle": "Se déconnecter ?",
-    "logoutConfirmBody": "Tu pourras revenir avec un nouveau lien envoyé à {{ email }}.",
-    "logoutConfirmAction": "Se déconnecter",
-    "logoutCancel": "Annuler",
-    "logoutError": "La déconnexion a échoué. Réessaie.",
-    "backToGame": "Retour au jeu",
-    "email": {
-      "placeholder": "ton@email.com",
-      "change": "Envoyer",
-      "sending": "…",
-      "sent": "OK",
-      "hint": "Confirme le changement via l'email envoyé à la nouvelle adresse.",
-      "sentHint": "Vérifie ta boîte mail à {{ email }} pour confirmer.",
-      "invalid": "Adresse email invalide.",
-      "sameEmail": "C'est déjà ton adresse actuelle.",
-      "taken": "Cette adresse est déjà utilisée par un autre compte.",
-      "error": "Une erreur est survenue, réessaie."
+    "admin": {
+      "day_not_over": "Ce jour n'est pas encore fini : les stats seront figées demain.",
+      "invalid_date": "Date invalide : le format attendu est aaaa-mm-jj.",
+      "invalid_period": "Période invalide : la date de début doit précéder celle de fin, sur un an au plus.",
+      "pool_insufficient": "Pool insuffisant : ajoutez des morceaux avec preview."
+    },
+    "players": {
+      "email_taken": "Cette adresse est déjà utilisée par un autre compte.",
+      "guest_forbidden": "Cette action est réservée aux comptes connectés.",
+      "invalid_or_expired_token": "Ce lien est invalide ou a expiré.",
+      "pseudo_mismatch": "Ce n'est pas ton pseudo.",
+      "pseudo_taken": "Ce pseudo est déjà pris.",
+      "same_email": "C'est déjà ton adresse actuelle."
+    },
+    "catalogue": {
+      "duplicate_deezer_id": "Ce morceau est déjà dans le pool.",
+      "not_found_on_deezer": "Ce morceau est introuvable chez Deezer.",
+      "deezer_unavailable": "Deezer est indisponible pour le moment, réessaie dans un instant.",
+      "track_in_use": "Ce morceau a déjà servi dans un défi : il ne peut pas être supprimé (désactive-le).",
+      "track_in_today_challenge": "Ce morceau est dans le défi du jour : désactivable à partir de demain."
+    },
+    "daily": {
+      "no_challenge": "Il n'y a pas de défi aujourd'hui.",
+      "already_played": "Tu as déjà joué le défi d'aujourd'hui.",
+      "abandoned": "Tu as abandonné le défi d'aujourd'hui.",
+      "session_not_found": "Cette partie n'existe plus.",
+      "track_not_found": "Ce morceau n'existe pas dans le défi du jour.",
+      "track_lock_not_released": "Réponds d'abord au morceau en cours.",
+      "hint_locked": "Cet indice n'est pas encore débloqué.",
+      "already_answered": "Tu as déjà répondu à ce morceau.",
+      "listened_duration_below_verified_minimum": "Le palier annoncé est plus court que ce que tu as écouté."
     }
   },
-  "confirmEmail": {
-    "title": "Confirmer le changement d'email",
-    "subtitle": "Clique pour confirmer ta nouvelle adresse email.",
-    "confirm": "Confirmer",
-    "confirming": "Confirmation...",
-    "success": "Adresse confirmée : {{ email }}",
-    "invalidOrExpired": "Ce lien est invalide ou a expiré.",
-    "emailTaken": "Cette adresse est désormais utilisée par un autre compte.",
-    "missingToken": "Lien de confirmation incomplet.",
-    "genericError": "Une erreur est survenue, réessaie.",
-    "backToProfile": "← Retour au profil"
+  "shell": {
+    "legacyUrl": {
+      "title": "L'adresse a changé",
+      "body": "InSeconds a maintenant sa propre adresse. Tu as été redirigé automatiquement — pense à mettre à jour ton favori.",
+      "cta": "J'ai compris"
+    },
+    "notFound": {
+      "title": "Page introuvable",
+      "body": "Cette page n'existe pas ou a été déplacée.",
+      "cta": "Retour au jeu"
+    },
+    "serviceDown": {
+      "title": "Service indisponible",
+      "body": "L'application revient dans un instant. Cette page se rafraîchira toute seule dès que le service sera de retour.",
+      "reconnecting": "Reconnexion en cours…"
+    },
+    "update": {
+      "body": "Une nouvelle version d'InSeconds est disponible.",
+      "reload": "Recharger",
+      "later": "Plus tard"
+    },
+    "header": {
+      "login": "Se connecter",
+      "profile": "Mon profil",
+      "avatarTitle": "Mon profil — {{ pseudo }}"
+    }
   },
-  "login": {
-    "request": {
+  "ui": {
+    "envBanner": {
+      "label": "environnement de développement"
+    }
+  },
+  "gameplay": {
+    "round": {
+      "noPreview": "Aperçu non disponible pour ce morceau.",
+      "skip": "Passer (0 pts)",
+      "replay": "↺ {{ seconds }}s",
+      "listenUpTo": "Écouter jusqu'à {{ seconds }}s",
+      "stepsUpTo": "Tu peux écouter jusqu'à {{ seconds }}s si besoin",
+      "playbackError": "Impossible de lire l'aperçu. Réessaie, ou passe ce morceau.",
+      "retry": "Réessayer"
+    },
+    "answer": {
+      "placeholder": "Artiste — Titre",
+      "clear": "Effacer",
+      "validate": "Valider",
+      "emptyConfirm": "Tu n'as rien saisi. Valider quand même ?",
+      "cancel": "Annuler",
+      "submitAnyway": "Valider quand même",
+      "skipConfirm": "Passer ce morceau ? Tu marqueras 0 points",
+      "skipAnyway": "Passer",
+      "submitFailed": "Ta réponse n'a pas pu être enregistrée. Vérifie ta connexion et réessaie.",
+      "retry": "Réessayer"
+    },
+    "hint": {
+      "costWarning": "Chaque indice révélé impacte les points du tour",
+      "tooltip": "Indice — coûte des points",
+      "button": "Indice {{ level }}",
+      "ask": {
+        "year": "Indice année",
+        "artist": "Indice artiste"
+      },
+      "kind": {
+        "year": "Année",
+        "artist": "Artiste",
+        "other": "Indice"
+      }
+    },
+    "reveal": {
+      "coverAlt": "Pochette",
+      "artist": "Artiste",
+      "title": "Titre",
+      "correctAnswer": "Bonne réponse"
+    }
+  },
+  "account": {
+    "login": {
       "title": "Connexion",
       "subtitle": "Reçois un lien magique par e-mail pour garder ta série et tes scores sur tous tes appareils.",
+      "emailLabel": "Adresse e-mail",
       "emailPlaceholder": "ton@email.com",
+      "suggestion": "Tu voulais dire {{ email }} ?",
       "submit": "Recevoir le lien",
       "sending": "Envoi…",
-      "sent": "Lien envoyé. Ouvre l'e-mail depuis cet appareil pour te connecter.",
+      "sentTitle": "Vérifie ta boîte mail",
+      "sentTo": "On a envoyé un lien à",
+      "sentHint": "Ouvre-le depuis cet appareil pour te connecter. Pense à regarder dans les spams.",
+      "resend": "Renvoyer le lien",
+      "resendIn": "Renvoyer le lien ({{ seconds }} s)",
+      "resent": "Lien renvoyé.",
       "invalidEmail": "Adresse e-mail invalide.",
       "backToGame": "Retour au jeu",
-      "devTitle": "Connexion rapide (dev)",
-      "devError": "Échec de la connexion rapide. Réessaie."
+      "existingAccountHint": "Saisis l'adresse de ton compte pour recevoir un lien de connexion."
     },
     "verify": {
       "title": "Vérification",
       "subtitle": "Confirme la connexion pour associer cet appareil à ton compte.",
-      "alreadyConnected": "Tu es déjà connecté avec {{email}}. Si ce lien a été envoyé à une autre adresse, confirmer te connectera à un autre compte. Ne confirme jamais un lien que quelqu'un d'autre t'a envoyé.",
-      "newAccountNotice": "Ce lien correspond à une nouvelle adresse : un nouveau compte va être créé. Ton compte actuel ({{email}}) ne sera pas modifié.",
+      "alreadyConnected": "Tu es déjà connecté avec {{ email }}. Si ce lien a été envoyé à une autre adresse, confirmer te connectera à un autre compte. Ne confirme jamais un lien que quelqu'un d'autre t'a envoyé.",
+      "newAccountTitle": "Nouveau compte",
+      "noAccountFor": "Aucun compte n'existe pour",
+      "noAccount": "Aucun compte n'existe pour cette adresse.",
+      "guestKept": "Tes parties jouées sur cet appareil seront gardées dans ce nouveau compte.",
+      "newAccountNotice": "Ton compte actuel ({{ email }}) ne sera pas modifié.",
+      "createAccount": "Créer mon compte",
+      "alreadyHaveAccount": "J'ai déjà un compte",
       "confirm": "Confirmer",
-      "confirming": "Connexion...",
+      "confirming": "Connexion…",
       "pseudoTitle": "Choisis ton pseudo",
+      "pseudoLabel": "Pseudo",
       "pseudoPlaceholder": "Ton pseudo",
       "pseudoHint": "3 à 20 caractères. Visible par les autres joueurs.",
       "pseudoSubmit": "Valider",
-      "pseudoTaken": "Ce pseudo est déjà pris.",
       "invalidPseudo": "Pseudo invalide (3 à 20 caractères autorisés).",
-      "invalidOrExpired": "Ce lien est invalide ou a expiré.",
       "missingToken": "Lien de connexion incomplet.",
-      "genericError": "Une erreur est survenue, réessaie.",
       "backToLogin": "Retour à la connexion"
+    },
+    "confirmEmail": {
+      "title": "Confirmer le changement d'email",
+      "subtitle": "Clique pour confirmer ta nouvelle adresse email.",
+      "confirm": "Confirmer",
+      "confirming": "Confirmation…",
+      "success": "Adresse confirmée : {{ email }}",
+      "missingToken": "Lien de confirmation incomplet.",
+      "backToProfile": "← Retour au profil"
+    },
+    "profile": {
+      "title": "Ton profil",
+      "pseudo": {
+        "label": "Pseudo",
+        "placeholder": "Ton pseudo",
+        "save": "Changer",
+        "saving": "…",
+        "saved": "OK",
+        "hint": "3 à 20 caractères. Visible par les autres joueurs.",
+        "tooShort": "Trois caractères minimum.",
+        "tooLong": "Vingt caractères maximum.",
+        "invalid": "Lettres, chiffres, espace, _, . ou - seulement.",
+        "success": "Pseudo mis à jour."
+      },
+      "email": {
+        "label": "Adresse e-mail",
+        "placeholder": "ton@email.com",
+        "change": "Envoyer",
+        "sending": "…",
+        "sent": "OK",
+        "hint": "Confirme le changement via l'email envoyé à la nouvelle adresse.",
+        "sentHint": "Vérifie ta boîte mail à {{ email }} pour confirmer.",
+        "invalid": "Adresse email invalide."
+      },
+      "logout": {
+        "action": "Se déconnecter",
+        "confirmTitle": "Se déconnecter ?",
+        "confirmBody": "Tu pourras revenir avec un nouveau lien envoyé à {{ email }}.",
+        "cancel": "Annuler",
+        "error": "La déconnexion a échoué. Réessaie."
+      },
+      "data": {
+        "title": "Tes données",
+        "export": "Télécharger mes données",
+        "exporting": "Préparation…",
+        "exportError": "Le téléchargement de tes données a échoué. Réessaie."
+      },
+      "delete": {
+        "action": "Supprimer mon compte",
+        "title": "Supprimer ton compte ?",
+        "body": "Ton email, ton pseudo, ta série, tes gels et toutes tes parties seront effacés pour de bon, et tous tes appareils déconnectés. Impossible de revenir en arrière.",
+        "label": "Retape ton pseudo {{ pseudo }} pour confirmer",
+        "confirm": "Supprimer",
+        "deleting": "Suppression…",
+        "cancel": "Annuler",
+        "done": "Ton compte est supprimé."
+      },
+      "backToGame": "Retour au jeu"
+    },
+    "devices": {
+      "title": "Appareils connectés",
+      "intro": "Les appareils sur lesquels tu es connecté à ce compte.",
+      "current": "Cet appareil",
+      "unknownDevice": "Appareil inconnu",
+      "lastSeen": "Vu {{ date }}",
+      "revoke": "Déconnecter",
+      "revokeConfirmTitle": "Déconnecter cet appareil ?",
+      "revokeConfirmBody": "Il devra se reconnecter avec un nouveau lien.",
+      "revokeCurrentConfirmBody": "Tu seras déconnecté de ce navigateur.",
+      "revokeOthers": "Déconnecter les autres appareils",
+      "revokeOthersConfirmTitle": "Déconnecter les autres appareils ?",
+      "revokeOthersConfirmBody": "Tous les autres appareils devront se reconnecter avec un nouveau lien.",
+      "revoked": "Appareil déconnecté.",
+      "revokedOthers": "Les autres appareils sont déconnectés.",
+      "cancel": "Annuler",
+      "loadError": "Impossible de charger tes appareils.",
+      "summary": {
+        "alone": "{{ current }}",
+        "one": "{{ current }} et 1 autre",
+        "many": "{{ current }} et {{ count }} autres"
+      }
+    },
+    "browserId": {
+      "label": "Ton identifiant navigateur :",
+      "copy": "Copier",
+      "copied": "Copié !"
     }
-  },
-  "privacy": {
-    "title": "Confidentialité & mentions légales",
-    "updated": "Dernière mise à jour : 24 septembre 2026",
-    "intro": "InSeconds est un jeu de blind test musical gratuit, accessible à l'adresse https://inseconds.cc. Il reste intégralement jouable en mode invité, sans compte ni inscription ; la création d'un compte, par email uniquement, est optionnelle et sert à retrouver votre progression sur un autre appareil. Cette page réunit les mentions légales du site, conformément à l'article 6-III de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique (LCEN), et sa politique de confidentialité, conformément au Règlement général sur la protection des données (RGPD, Règlement UE 2016/679) et à la loi Informatique et Libertés.",
-    "legalIdentity": {
-      "title": "Mentions légales : éditeur et hébergement",
-      "body": "InSeconds est édité par une personne physique établie en France, agissant à titre non professionnel : c'est un projet personnel, développé sur le temps libre de son éditeur, sans activité commerciale (jeu gratuit, sans publicité, sans vente).\nConformément à l'article 6-III de la LCEN, un éditeur non professionnel peut préserver son anonymat vis-à-vis du public, à la condition d'avoir communiqué son identité et ses coordonnées à son hébergeur, ce qui est le cas ici : cette identité reste connue de l'hébergeur et communicable aux autorités judiciaires sur demande. Aucun directeur de publication n'est désigné : cette obligation, issue de la loi du 29 juillet 1982, ne s'applique qu'aux personnes morales.\nHébergeur : OVH SAS, 2 rue Kellermann, 59100 Roubaix, France, RCS Lille Métropole n° 424 761 419.\nNom de domaine : inseconds.cc.\nLe code source, les textes et le design du site InSeconds sont la propriété de l'éditeur et protégés par le droit d'auteur ; toute reproduction sans autorisation est interdite (à l'exception des extraits musicaux Deezer, cf. « Mentions légales : contenus musicaux » ci-dessous).\nPour toute question, le seul moyen de contact est l'adresse email indiquée en bas de cette page."
-    },
-    "controller": {
-      "title": "Responsable du traitement",
-      "body": "Le responsable du traitement au sens du RGPD est l'éditeur du site InSeconds identifié ci-dessus, joignable à l'adresse de contact indiquée en bas de cette page.\nAucun délégué à la protection des données (DPO) n'est désigné : au vu du volume et de la nature des données traitées (aucune donnée sensible, aucun profilage), cette désignation n'est pas requise par le RGPD. L'éditeur reste votre point de contact unique pour toute question relative à vos données."
-    },
-    "data": {
-      "title": "Données collectées, finalités et base légale",
-      "body": "Aucune donnée n'est exigée pour jouer : le mode invité ne demande ni nom, ni email, ni inscription.\nSelon votre usage, l'application traite les catégories de données suivantes :\n· identifiant technique pseudonyme : généré aléatoirement et stocké dans un cookie, il permet de reconnaître votre navigateur d'une visite à l'autre (reprise de partie, limitation à une partie par jour, série de victoires). Finalité : fourniture du jeu. Base légale : exécution du service demandé (article 6.1.b du RGPD) ;\n· email et pseudo, uniquement si vous créez un compte : un compte optionnel, activé par un lien de connexion envoyé par email (sans mot de passe), permet de retrouver votre historique et votre série sur n'importe quel appareil ; le pseudo est un nom d'affichage que vous choisissez librement. Finalité : gestion du compte et connexion multi-appareils. Base légale : votre consentement (article 6.1.a du RGPD), vous restez libre de jouer en invité sans jamais fournir ces informations ;\n· données de partie : réponses saisies, durées d'écoute choisies, scores et dates de jeu. Finalité : faire fonctionner le jeu et calculer des statistiques globales anonymes (score médian, taux de réussite par morceau). Base légale : exécution du service demandé (article 6.1.b) ;\n· adresse IP : traitée techniquement à chaque requête, comme pour tout site web, à des fins de sécurité (limitation du nombre de tentatives de connexion pour prévenir les abus). Finalité : sécurité du service. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· journaux techniques : à chaque requête, l'application enregistre l'identifiant technique pseudonyme décrit ci-dessus, la page ou l'action concernée, sa durée, son résultat, le type de navigateur et, en cas de bug, le message d'erreur et sa pile d'appels. Ces journaux ne contiennent jamais votre email, votre pseudo, vos réponses saisies ni votre cookie. Finalité : détecter et corriger les bugs, surveiller le bon fonctionnement du service. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· langue préférée : stockée localement dans votre navigateur, elle ne quitte jamais votre appareil et n'est jamais transmise à nos serveurs."
-    },
-    "cookie": {
-      "title": "Cookie",
-      "body": "Un unique cookie technique (« authToken ») est déposé, que vous jouiez en invité ou avec un compte. Il contient votre identifiant sous forme chiffrée et sert exclusivement au fonctionnement du jeu (reconnaissance de votre navigateur, reprise de partie). Sa durée de vie est de 90 jours à compter de votre dernière visite.\nSi vous créez un compte, vous connecter depuis un autre appareil (via le lien reçu par email) dépose un nouveau cookie propre à cet appareil, associé au même compte : chaque appareil conserve ainsi son propre cookie.\nCe cookie est strictement nécessaire à la fourniture du service : conformément à l'article 82 de la loi Informatique et Libertés et aux lignes directrices de la CNIL, il est exempté de consentement préalable et ne nécessite donc pas de bannière de recueil de consentement.\nAucun cookie publicitaire, aucun traceur ni outil de mesure d'audience n'est utilisé à ce jour. Si un outil d'analytics devait être ajouté à l'avenir, cette page serait mise à jour en conséquence (nom de l'outil, finalité) et, si cet outil n'est pas exempté de consentement par la CNIL, un bandeau de consentement serait mis en place avant toute activation."
-    },
-    "retention": {
-      "title": "Durée de conservation",
-      "body": "Les données de jeu (réponses, scores, série de victoires) sont conservées pendant la durée de vie de votre identifiant ou de votre compte, afin d'alimenter votre historique et les statistiques globales anonymes présentées aux joueurs.\nPour un joueur invité, ces données ne sont jamais croisées avec une identité réelle : seul un identifiant technique aléatoire vous relie à vos parties.\nSi vous créez un compte, votre historique est associé à votre adresse email : c'est ce qui permet de le retrouver sur un autre appareil. Ces données sont supprimées définitivement à la suppression de votre compte ou sur simple demande (voir « Vos droits »).\nLes journaux techniques (voir « Données collectées ») sont conservés 14 jours au maximum, puis supprimés automatiquement.\nLe lien de connexion envoyé par email n'est valable que 15 minutes et ne peut être utilisé qu'une seule fois ; passé ce délai ou après utilisation, il devient définitivement invalide."
-    },
-    "thirdParties": {
-      "title": "Destinataires, hébergement et transferts hors UE",
-      "body": "Vos données ne sont ni vendues, ni cédées, ni transmises à des tiers à des fins commerciales ou publicitaires. Elles ne sont partagées qu'avec les prestataires techniques strictement nécessaires au fonctionnement du service :\n· hébergement : l'application, son code et sa base de données sont hébergés sur un serveur privé (VPS) d'OVH SAS (identifiée ci-dessus), dans un centre de données situé à Gravelines (France) ;\n· réseau et nom de domaine : le nom de domaine inseconds.cc transite par le réseau de Cloudflare, Inc. (États-Unis), qui agit comme relais technique (protection anti-DDoS, résolution DNS) sans accès au contenu de vos parties ;\n· envoi des emails de connexion : si vous créez un compte, l'email contenant votre lien de connexion est envoyé via l'API de Brevo (Sendinblue SAS, France, données hébergées dans l'Union européenne) ; seule votre adresse email lui est transmise, dans le seul but de vous faire parvenir ce message ;\n· journaux techniques : les journaux décrits plus haut sont stockés chez Grafana Labs, dans la région européenne de son service Grafana Cloud, pour être consultés par l'éditeur en cas de bug ;\n· extraits musicaux et pochettes : fournis par Deezer (Deezer S.A., France). La recherche de morceaux passe par notre serveur, mais votre navigateur charge les extraits et les pochettes directement depuis les serveurs de Deezer, qui reçoivent donc votre adresse IP, comme pour toute ressource chargée par une page web. Aucune autre information vous concernant (compte, pseudo, email, parties) n'est transmise à Deezer (voir « Mentions légales : contenus musicaux » ci-dessous).\nTransferts hors Union européenne : Cloudflare et Grafana Labs, basés aux États-Unis, sont susceptibles de traiter des données hors de l'UE. Ces transferts sont encadrés par les clauses contractuelles types de la Commission européenne, intégrées à leurs accords de traitement des données (DPA) respectifs, ainsi que par leur adhésion au cadre de protection des données UE-États-Unis (EU-U.S. Data Privacy Framework), deux mécanismes reconnus par la Commission européenne comme offrant des garanties de protection équivalentes à celles du RGPD."
-    },
-    "deezer": {
-      "title": "Mentions légales : contenus musicaux (API Deezer)",
-      "body": "Les extraits musicaux (30 secondes), les pochettes d'albums ainsi que les métadonnées (artiste, titre) sont fournis par l'API Deezer et utilisés dans le respect de ses conditions d'utilisation (Deezer API Terms of Use), dans un cadre strictement non commercial : InSeconds est gratuit, sans publicité et ne génère aucun revenu.\nCes contenus demeurent la propriété exclusive de Deezer et de leurs ayants droit respectifs (artistes, producteurs, labels). Ils sont diffusés à titre d'illustration dans le cadre du jeu, sans possibilité de téléchargement, et chaque morceau renvoie vers sa page officielle Deezer pour une écoute intégrale.\nConformément aux conditions d'utilisation de Deezer, l'écoute des extraits est réservée à un usage strictement privé, dans le cadre familial.\nDeezer est une marque déposée de Deezer S.A. InSeconds est un projet indépendant, non affilié à Deezer et non approuvé par Deezer."
-    },
-    "security": {
-      "title": "Sécurité des données",
-      "body": "InSeconds met en œuvre des mesures techniques raisonnables pour protéger vos données :\n· toutes les communications entre votre navigateur et nos serveurs sont chiffrées (HTTPS) ;\n· le cookie d'identification est chiffré et marqué HttpOnly (inaccessible à un script exécuté dans la page, y compris en cas de faille XSS) ;\n· la connexion par email ne repose sur aucun mot de passe : seul un lien à usage unique, valable 15 minutes, est utilisé, et seule son empreinte cryptographique est conservée en base, jamais le lien en clair ;\n· les tentatives de connexion et de création de compte sont limitées en nombre par adresse IP, pour prévenir les abus automatisés ;\n· l'espace d'administration n'est accessible qu'aux comptes auxquels ce rôle a été attribué manuellement par l'éditeur : il utilise la même connexion par lien email que les joueurs, sans mot de passe supplémentaire, et aucune fonctionnalité de l'application ne permet d'obtenir ce rôle.\nAucune mesure de sécurité n'offre de garantie absolue ; en cas d'incident de sécurité affectant vos données, nous nous engageons à en informer la CNIL et, si nécessaire, les personnes concernées, conformément aux articles 33 et 34 du RGPD."
-    },
-    "rights": {
-      "title": "Vos droits",
-      "body": "Conformément aux articles 15 à 21 du RGPD, vous disposez d'un droit d'accès, de rectification, d'effacement, de limitation du traitement, d'opposition et de portabilité sur les données associées à votre identifiant ou à votre compte (email, pseudo, historique de parties, série en cours). Si vous avez créé un compte, vous pouvez également retirer votre consentement à tout moment, sans que cela affecte la licéité des traitements effectués avant ce retrait.\nLa suppression efface définitivement votre historique de parties, votre série en cours et, le cas échéant, votre email et votre pseudo.\nVous disposez également du droit d'introduire une réclamation auprès de la CNIL (www.cnil.fr), l'autorité de contrôle compétente en France.",
-      "contact": "Pour exercer ces droits, ou pour toute question :",
-      "contactLabel": "✉️ contact@inseconds.cc"
-    },
-    "back": "Retour au jeu"
-  },
-  "blindRound": {
-    "noPreview": "Aperçu non disponible pour ce morceau.",
-    "skip": "Passer (0 pts)",
-    "replay": "↺ {{ seconds }}s",
-    "listenUpTo": "Écouter jusqu'à {{ seconds }}s",
-    "stepsUpTo": "Tu peux écouter jusqu'à {{ seconds }}s si besoin",
-    "placeholder": "Artiste — Titre",
-    "emptyConfirm": "Tu n'as rien saisi. Valider quand même ?",
-    "cancel": "Annuler",
-    "submitAnyway": "Valider quand même",
-    "skipConfirm": "Passer ce morceau ? Tu marqueras 0 points",
-    "skipAnyway": "Passer",
-    "validate": "Valider",
-    "coverAlt": "Pochette",
-    "artist": "Artiste",
-    "title": "Titre",
-    "correctAnswer": "Bonne réponse",
-    "points": "pts",
-    "submitFailed": "Ta réponse n'a pas pu être enregistrée. Vérifie ta connexion et réessaie.",
-    "retry": "Réessayer",
-    "playbackError": "Impossible de lire l'aperçu. Réessaie, ou passe ce morceau.",
-    "seeResult": "Voir le résultat",
-    "nextTrack": "Piste suivante →"
-  },
-  "hint": {
-    "costWarning": "Chaque indice révélé impacte les points du tour",
-    "tooltip": "Indice — coûte des points",
-    "level1": "Indice année",
-    "level2": "Indice artiste",
-    "yearLabel": "Année",
-    "artistLabel": "Artiste",
-    "usedLabel": "Indice utilisé (-{{ percent }}%)"
-  },
-  "notFound": {
-    "title": "Page introuvable",
-    "body": "Cette page n'existe pas ou a été déplacée.",
-    "back": "Retour au jeu"
-  },
-  "serviceDown": {
-    "title": "Service indisponible",
-    "body": "L'application revient dans un instant. Cette page se rafraîchira toute seule dès que le service sera de retour.",
-    "reconnecting": "Reconnexion en cours…"
-  },
-  "envBanner": {
-    "label": "environnement de développement"
-  },
-  "legacyUrl": {
-    "title": "L'adresse a changé",
-    "body": "InSeconds a maintenant sa propre adresse. Tu as été redirigé automatiquement — pense à mettre à jour ton favori.",
-    "cta": "J'ai compris"
   },
   "admin": {
     "title": "Admin",
-    "deployedAt": "Déployé le {{ date }}",
     "notLoggedIn": "Connecte-toi d'abord",
     "notLoggedInBody": "L'accès admin nécessite un compte connecté.",
     "goToLogin": "Se connecter",
@@ -288,65 +261,19 @@
     "accessDeniedBody": "Ce compte n'a pas les droits admin.",
     "backToGame": "Retour au jeu",
     "logout": "Se déconnecter",
-    "browserId": {
-      "label": "Ton identifiant navigateur :",
-      "copy": "Copier",
-      "copied": "Copié !"
-    },
     "tabs": {
       "dashboard": "Dashboard",
-      "pool": "Pool ({{ count }})",
-      "poolPlain": "Pool",
-      "challenges": "Défis ({{ count }})",
       "challengesPlain": "Défis",
-      "players": "Joueurs ({{ count }})",
+      "poolPlain": "Pool",
       "playersPlain": "Joueurs",
-      "actions": "Actions"
-    },
-    "dashboard": {
-      "loading": "Chargement des stats...",
-      "today": "Aujourd'hui",
-      "noChallengeForDay": "Aucun défi pour ce jour.",
-      "kpiCompleted": "Complétés",
-      "players": "joueurs",
-      "player": "joueur",
-      "kpiUnfinished": "Non terminés",
-      "unfinishedBreakdown": "{{abandoned}} abandon · {{expired}} inachevé",
-      "kpiCompletion": "Complétion",
-      "sessions": "sessions",
-      "session": "session",
-      "noneComplete": "aucune complète",
-      "kpiMedian": "Score médian",
-      "points": "pts",
-      "activity30d": "Activité — 30 jours",
-      "total": "Total",
-      "peak": "Pic",
-      "perDay": "/j",
-      "noCompletedInPeriod": "Aucune partie complétée sur cette période.",
-      "playersTitle": "Joueurs",
-      "guests": "Guests",
-      "registered": "Inscrits",
-      "active7d": "Actifs 7j",
-      "active30d": "Actifs 30j",
-      "statsPerChallenge": "Stats par défi",
-      "noChallenge": "Aucun défi.",
-      "noChallengeThisMonth": "Aucun défi ce mois.",
-      "abandon": "abandon",
-      "abandons": "abandons",
-      "median": "Médiane",
-      "min": "Min",
-      "avg": "Moy.",
-      "max": "Max",
-      "artist": "Artiste",
-      "title": "Titre",
-      "avgListen": "Écoute moy.",
-      "extended": "Prolongé",
-      "you": "toi",
-      "copied": "Copié !"
+      "actions": "Actions",
+      "pool": "Pool ({{ count }})",
+      "challenges": "Défis ({{ count }})",
+      "players": "Joueurs ({{ count }})"
     },
     "pool": {
-      "runwayDay": "jour de défis restant",
-      "runwayDays": "jours de défis restants",
+      "cooldown": "cooldown {{ days }} j",
+      "cooldownHint": "Un morceau tiré redevient tirable après ce délai, calculé sur la taille du pool (réglage dans Actions).",
       "selected": "{{ count }} sélectionné(s)",
       "deselectAll": "Tout déselectionner",
       "delete": "Supprimer ({{ count }})",
@@ -391,19 +318,93 @@
       "disableInTodayError": "Ce morceau est dans le défi du jour : désactivable à partir de demain.",
       "disableError": "La modification a échoué, réessaie."
     },
+    "deleteModal": {
+      "title": "Confirmer la suppression",
+      "single": "Supprimer {{ track }} du pool ?",
+      "multiple": "Supprimer {{ count }} morceaux du pool ?",
+      "error": "Erreur lors de la suppression.",
+      "cancel": "Annuler",
+      "delete": "Supprimer",
+      "deleting": "Suppression..."
+    },
+    "editModal": {
+      "title": "Modifier le morceau",
+      "artist": "Artiste",
+      "titleField": "Titre",
+      "hint": "Sert de bonne réponse dès l'enregistrement, défi du jour compris. Les réponses déjà données ne sont pas recalculées.",
+      "todayWarning": "Ce morceau est dans le défi du jour : les joueurs qui n'ont pas encore répondu seront corrigés avec le nouveau nom.",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "saving": "Enregistrement...",
+      "error": "Erreur lors de l'enregistrement.",
+      "close": "Fermer"
+    },
+    "previewModal": {
+      "title": "Écouter l'extrait",
+      "loading": "Récupération de l'extrait...",
+      "error": "Aucun extrait disponible pour ce morceau.",
+      "playing": "Lecture en cours...",
+      "preview30s": "Preview 30s",
+      "unavailable": "Deezer est indisponible : aucun extrait pour le moment.",
+      "close": "Fermer"
+    },
+    "addPanel": {
+      "title": "Ajouter un morceau",
+      "searchPlaceholder": "Rechercher sur Deezer...",
+      "searching": "Recherche...",
+      "alreadyInPool": "Déjà en pool (disponible)",
+      "alreadyUsed": "Déjà utilisé dans un défi passé",
+      "linked": "Recherches liées",
+      "unlinked": "Recherches indépendantes",
+      "added": "Ajouté",
+      "addError": "Erreur",
+      "addTrack": "Ajouter"
+    },
+    "deployedAt": "Déployé le {{ date }} à {{ time }}",
+    "dashboard": {
+      "loading": "Chargement des stats...",
+      "today": "Aujourd'hui",
+      "noChallengeForDay": "Aucun défi pour ce jour.",
+      "kpiCompleted": "Complétés",
+      "players": "joueurs",
+      "player": "joueur",
+      "kpiUnfinished": "Non terminés",
+      "unfinishedBreakdown": "{{abandoned}} abandon · {{expired}} inachevé",
+      "kpiCompletion": "Complétion",
+      "sessions": "sessions",
+      "session": "session",
+      "noneComplete": "aucune complète",
+      "kpiMedian": "Score médian",
+      "points": "pts",
+      "activity30d": "Activité — 30 jours",
+      "total": "Total",
+      "peak": "Pic",
+      "perDay": "/j",
+      "noCompletedInPeriod": "Aucune partie complétée sur cette période.",
+      "playersTitle": "Joueurs",
+      "guests": "Guests",
+      "registered": "Inscrits",
+      "active7d": "Actifs 7j",
+      "active30d": "Actifs 30j",
+      "statsPerChallenge": "Stats par défi",
+      "noChallenge": "Aucun défi.",
+      "noChallengeThisMonth": "Aucun défi ce mois.",
+      "abandon": "abandon",
+      "abandons": "abandons",
+      "median": "Médiane",
+      "min": "Min",
+      "avg": "Moy.",
+      "max": "Max",
+      "artist": "Artiste",
+      "title": "Titre",
+      "avgListen": "Écoute moy.",
+      "extended": "Prolongé",
+      "you": "toi",
+      "copied": "Copié !"
+    },
     "actions": {
       "challengeOfDay": "Défi du jour",
-      "generating": "Génération...",
-      "generate": "Générer le défi du jour",
-      "generated": "Défi généré avec succès.",
-      "alreadyGenerated": "Le défi du jour est déjà généré.",
-      "poolInsufficient": "Pool insuffisant : ajoutez des morceaux avec preview.",
-      "generateError": "Erreur lors de la génération.",
       "previews": "Previews Deezer",
-      "refreshPreviews": "Re-vérifier les previews",
-      "refreshingPreviews": "Vérification en cours (peut prendre ~1 min)...",
-      "refreshPreviewsSuccess": "{{ checked }} vérifié(s), {{ updated }} corrigé(s), {{ failed }} échec(s) Deezer.",
-      "refreshPreviewsError": "Erreur lors de la vérification des previews.",
       "trackCooldown": "Cooldown de réutilisation des morceaux",
       "saveCooldown": "Enregistrer",
       "cooldownSaved": "Cooldown mis à jour.",
@@ -418,7 +419,11 @@
         "from": "Du",
         "to": "Au",
         "titleLabel": "Titre",
-        "titleModes": { "thisWeek": "Cette semaine", "lastWeek": "La semaine dernière", "custom": "Texte libre" },
+        "titleModes": {
+          "thisWeek": "Cette semaine",
+          "lastWeek": "La semaine dernière",
+          "custom": "Texte libre"
+        },
         "customTitlePlaceholder": "Titre affiché en haut des stories",
         "invalidPeriod": "La date de début doit précéder la date de fin.",
         "insufficient": "Pas assez de réponses cette semaine (au moins {{ min }} par morceau).",
@@ -428,12 +433,44 @@
         "missed": "Le plus raté",
         "download": "Télécharger",
         "downloadAll": "Tout télécharger"
+      },
+      "cooldownInvalid": "Entre un pourcentage entier, de {{ min }} à {{ max }}.",
+      "cooldownPercent": "Part du pool en cooldown",
+      "cooldownAppliedDay": "Appliqué aujourd'hui : {{ days }} jour · {{ count }} morceaux jouables",
+      "cooldownAppliedDays": "Appliqué aujourd'hui : {{ days }} jours · {{ count }} morceaux jouables",
+      "cooldownBelowAlert": "Sous le seuil de {{ days }} jours : ajoute des morceaux.",
+      "jobs": {
+        "title": "Tâches planifiées",
+        "hint": "Pour lancer une tâche à la main (générer le défi du jour, re-vérifier les previews…) : « Déclencher maintenant » dans le tableau de bord. Il montre aussi ce qui tourne et ce qui a échoué, et garde le détail des exécutions 7 jours.",
+        "link": "Ouvrir le tableau de bord des tâches"
+      },
+      "witness": {
+        "never": "Aucun passage ces 7 derniers jours.",
+        "running": "En cours depuis le {{ date }} à {{ time }}.",
+        "failed": "Échec le {{ date }} à {{ time }}.",
+        "challengeCreated": "Généré le {{ date }} à {{ time }}.",
+        "challengeAlready": "Déjà en place, vérifié le {{ date }} à {{ time }}.",
+        "poolInsufficient": "Pool insuffisant : dernier essai le {{ date }} à {{ time }}. Ajoutez des morceaux avec preview.",
+        "previewsReport": "Contrôlé le {{ date }} à {{ time }} : {{ checked }} vérifié(s), {{ updated }} corrigé(s), {{ failed }} échec(s) Deezer.",
+        "previewsChecked": "Contrôlé le {{ date }} à {{ time }}.",
+        "retry": "Nouvel essai le {{ date }} à {{ time }}.",
+        "next": "Prochain passage le {{ date }} à {{ time }}.",
+        "loadError": "Impossible de lire le dernier passage des tâches."
       }
     },
     "challenges": {
       "history": "Historique",
       "noChallenge": "Aucun défi enregistré.",
-      "noChallengeThisMonth": "Aucun défi ce mois."
+      "noChallengeThisMonth": "Aucun défi ce mois.",
+      "previousMonth": "Mois précédent",
+      "nextMonth": "Mois suivant",
+      "showChart": "Voir la répartition des temps",
+      "guessTimeTitle": "Temps d'écoute des autres joueurs",
+      "computedAt": "Chiffres figés le {{ date }}",
+      "recompute": "Recalculer les stats",
+      "recomputing": "Recalcul en cours…",
+      "recomputeNotFound": "Aucun défi pour ce jour.",
+      "recomputeError": "Le recalcul a échoué."
     },
     "players": {
       "title": "Comptes inscrits ({{ count }})",
@@ -443,6 +480,8 @@
       "noMatch": "Aucun joueur ne correspond à ce filtre.",
       "colPseudo": "Pseudo",
       "colEmail": "Email",
+      "emailReveal": "Afficher l'email",
+      "emailHide": "Masquer l'email",
       "colLastSeen": "Dernière visite",
       "colCreated": "Inscrit le",
       "colGames": "Parties",
@@ -464,126 +503,254 @@
         "Expired": "Inachevée"
       },
       "lastSeenAt": "{{date}} à {{time}}"
-    },
-    "deleteModal": {
-      "title": "Confirmer la suppression",
-      "single": "Supprimer {{ track }} du pool ?",
-      "multiple": "Supprimer {{ count }} morceaux du pool ?",
-      "error": "Erreur lors de la suppression.",
-      "cancel": "Annuler",
-      "delete": "Supprimer",
-      "deleting": "Suppression..."
-    },
-    "editModal": {
-      "title": "Modifier le morceau",
-      "artist": "Artiste",
-      "titleField": "Titre",
-      "hint": "Sert de bonne réponse dès l'enregistrement, défi du jour compris. Les réponses déjà données ne sont pas recalculées.",
-      "todayWarning": "Ce morceau est dans le défi du jour : les joueurs qui n'ont pas encore répondu seront corrigés avec le nouveau nom.",
-      "error": "Erreur lors de l'enregistrement.",
-      "cancel": "Annuler",
-      "save": "Enregistrer",
-      "saving": "Enregistrement...",
-      "close": "Fermer"
-    },
-    "previewModal": {
-      "title": "Écouter l'extrait",
-      "loading": "Récupération de l'extrait...",
-      "error": "Aucun extrait disponible pour ce morceau.",
-      "close": "Fermer",
-      "playing": "Lecture en cours...",
-      "preview30s": "Preview 30s"
-    },
-    "addPanel": {
-      "title": "Ajouter un morceau",
-      "searchPlaceholder": "Rechercher sur Deezer...",
-      "searching": "Recherche...",
-      "alreadyInPool": "Déjà en pool (disponible)",
-      "alreadyUsed": "Déjà utilisé dans un défi passé",
-      "linked": "Recherches liées",
-      "unlinked": "Recherches indépendantes",
-      "added": "Ajouté",
-      "addError": "Erreur",
-      "addTrack": "Ajouter"
     }
   },
-  "streakFreeze": {
-    "pillLabel": "Série de {{ streak }} jours, voir le détail",
-    "pillProtectedLabel": "Série protégée",
-    "avatarTitle": "Mon profil — {{ pseudo }}",
-    "avatarLabel": "Mon profil",
-    "welcomeBack": "Bon retour !",
-    "frozenLineBefore": "Tes",
-    "frozenLineStrong": "{{ streak }} jours de série",
-    "frozenLineAfter": "au chaud grâce à un gel. Joue pour continuer !",
-    "sheet": {
-      "streakTitle": "Série de {{ streak }} jours",
-      "stockLabel": "Tes gels · {{ count }} / {{ max }}",
-      "nextFreeze": "Prochain gel à {{ next }} jours",
-      "full": "Stock plein : impossible de gagner plus de gels pour l’instant.",
-      "remaining": {
-        "one": "encore {{ n }} jour",
-        "other": "encore {{ n }} jours"
-      },
-      "rule": "Tous les {{ every }} jours de série, tu gagnes 1 gel ({{ max }} max). Si tu manques un jour, il s’utilise tout seul : ta série ne monte pas, mais elle ne s’arrête pas.",
-      "close": "Fermer",
-      "protectedTitle": "Série protégée",
-      "freezeDay": "gel",
-      "today": "aujourd’hui",
-      "protectedBody": {
-        "one": "Tu as manqué hier, ta série de {{ streak }} jours tient toujours.",
-        "other": "Tu as manqué {{ missed }} jours, ta série de {{ streak }} jours tient toujours."
-      },
-      "protectedUse": {
-        "one": "1 gel sera utilisé quand tu termineras le défi d’aujourd’hui.",
-        "other": "{{ missed }} gels seront utilisés quand tu termineras le défi d’aujourd’hui."
-      },
-      "playNow": "Jouer maintenant",
-      "later": "Plus tard",
-      "guestBody": "Joue chaque jour pour la faire grimper. Un jour sans partie, et elle repart de zéro.",
-      "guestFreeze": "Avec un compte, des gels protègent ta série les jours où tu ne joues pas.",
-      "signup": "Créer un compte"
+  "daily": {
+    "header": {
+      "track": "Piste {{ current }} / {{ total }}"
     },
-    "usedToast": {
-      "title": {
-        "one": "1 gel a sauvé ta série !",
-        "other": "{{ n }} gels ont sauvé ta série !"
-      },
+    "welcome": {
+      "title": "Blind Test du jour",
+      "subtitle": "{{ count }} morceaux · écoute & devine",
+      "tagline": "Moins tu écoutes, plus tu scores",
+      "start": "Commencer",
+      "loginCta": "Se connecter / Créer un compte",
+      "loginHint": "Pour garder ta série sur tous tes appareils.",
+      "loggedInAs": "Connecté comme {{ pseudo }}"
+    },
+    "resume": {
+      "title": "Partie en pause",
+      "progress": "{{ done }} / {{ total }} pistes déjà écoutées.",
+      "question": "Tu reprends où tu t'es arrêté ?",
+      "resume": "Reprendre",
+      "loginCta": "Ne plus perdre mes parties",
+      "warningTitle": "Tu vas perdre ta progression",
+      "warningBody": "Cette partie ne pourra pas être reprise. Ta série sera remise à zéro.",
+      "warningBodyLinked": "Cette partie ne pourra pas être reprise. Ta série s'arrêtera, sauf si un gel la protège.",
+      "confirmAbandon": "Abandonner",
+      "cancelAbandon": "Annuler"
+    },
+    "abandonSheet": {
+      "title": "Abandonner la partie ?",
+      "body": "Ta progression sera perdue et ta série remise à zéro.",
+      "bodyLinked": "Ta progression sera perdue et ta série s'arrêtera, sauf si un gel la protège.",
+      "confirm": "Abandonner",
+      "cancel": "Annuler"
+    },
+    "leaveSheet": {
+      "title": "Partie en cours",
+      "body": "Ta partie n'est pas terminée.\nTu pourras la reprendre demain, mais le défi sera perdu si tu ne la termines pas aujourd'hui.",
+      "confirm": "Quitter quand même",
+      "cancel": "Continuer à jouer"
+    },
+    "streakToast": {
       "body": {
-        "one": "Tu as manqué hier, ta série de {{ streak }} jours continue.",
-        "other": "Tu as manqué {{ n }} jours, ta série de {{ streak }} jours continue."
-      }
-    },
-    "earnedToast": {
-      "titleHighlight": "+1 gel",
-      "titleRest": "gagné !",
-      "body": "{{ streak }} jours de série. Il protégera ta série si tu manques un jour."
-    },
-    "lostToast": {
-      "titleBefore": "Ta série de",
-      "titleStrike": "{{ streak }} jours",
-      "titleAfter": "s’est arrêtée.",
-      "hintBefore": "Avec un compte, un gel",
-      "hintAfter": "l’aurait sauvée. Le premier est offert."
-    },
-    "guestMissToast": {
-      "title": "Tu aurais gagné un gel !",
-      "body": "Crée un compte pour protéger tes {{ streak }} jours."
-    },
-    "ctaLine1": "Créer un compte /",
-    "ctaLine2": "Se connecter",
-    "dismiss": "Fermer",
-    "profile": {
-      "label": "Gels",
-      "full": "{{ max }} gels · stock plein",
-      "stock": {
-        "one": "{{ n }} gel · prochain dans {{ days }}",
-        "other": "{{ n }} gels · prochain dans {{ days }}"
+        "one": "Série de {{ streak }} jour.",
+        "other": "Série de {{ streak }} jours."
       },
-      "days": {
-        "one": "{{ n }} jour",
-        "other": "{{ n }} jours"
-      }
+      "hint": "Crée un compte pour ne pas la perdre.",
+      "dismiss": "Fermer"
+    },
+    "noChallenge": {
+      "title": "Pas de défi aujourd'hui",
+      "body": "Reviens un peu plus tard,\nle prochain défi arrive."
+    },
+    "error": {
+      "title": "Une erreur est survenue",
+      "body": "Impossible de charger le défi du jour."
+    },
+    "alreadyPlayed": {
+      "abandonedTitle": "Partie abandonnée",
+      "abandonedBody": "Reviens demain pour un nouveau défi.",
+      "nextChallengeIn": "Prochain défi dans",
+      "yourScore": "Ton score",
+      "showTracks": "Voir les morceaux",
+      "hideTracks": "Masquer",
+      "coverAlt": "Pochette",
+      "averageSeconds": "moy. {{ seconds }}s"
+    },
+    "share": {
+      "button": "Partager mon score",
+      "copied": "Copié !",
+      "failed": "Impossible de copier dans le presse-papier.",
+      "title": "InSeconds 🎵 {{ date }}",
+      "score": "🏆 {{ score }} pts"
+    },
+    "done": {
+      "finalScore": "Score final",
+      "artist": "Artiste",
+      "title": "Titre",
+      "comeBack": "Reviens demain pour un nouveau défi."
+    },
+    "scoreChart": {
+      "median": "médiane",
+      "lowest": "plus bas",
+      "highest": "plus haut",
+      "betterThanPrefix": "Tu fais mieux que",
+      "betterThanSuffix": "des joueurs",
+      "ariaLabel": "Répartition des scores du jour : plus bas {{ lowest }}, médiane {{ median }}, plus haut {{ highest }}"
+    },
+    "trackList": {
+      "guessTimeTitle": "Temps d'écoute des autres joueurs",
+      "showChart": "Voir la répartition des temps"
+    },
+    "deezerBadge": {
+      "ariaLabel": "À écouter sur Deezer"
+    },
+    "footer": {
+      "admin": "Admin",
+      "privacy": "Confidentialité & mentions légales",
+      "contact": "Nous contacter",
+      "language": "Switch to English"
+    },
+    "streakFreeze": {
+      "pillLabel": {
+        "one": "Série de {{ streak }} jour, voir le détail",
+        "other": "Série de {{ streak }} jours, voir le détail"
+      },
+      "pillProtectedLabel": "Série protégée",
+      "welcomeBack": "Bon retour !",
+      "frozenLineBefore": "Tes",
+      "frozenLineStrong": {
+        "one": "{{ streak }} jour de série",
+        "other": "{{ streak }} jours de série"
+      },
+      "frozenLineAfter": "au chaud grâce à un gel. Joue pour continuer !",
+      "sheet": {
+        "streakTitle": {
+          "one": "Série de {{ streak }} jour",
+          "other": "Série de {{ streak }} jours"
+        },
+        "gamesPlayed": {
+          "one": "{{ n }} partie",
+          "other": "{{ n }} parties"
+        },
+        "stockLabel": "Tes gels · {{ count }} / {{ max }}",
+        "nextFreeze": "Prochain gel à {{ next }} jours",
+        "full": "Stock plein : impossible de gagner plus de gels pour l’instant.",
+        "remaining": {
+          "one": "encore {{ n }} jour",
+          "other": "encore {{ n }} jours"
+        },
+        "rule": "Tous les {{ every }} jours de série, tu gagnes 1 gel ({{ max }} max). Si tu manques un jour, il s’utilise tout seul : ta série ne monte pas, mais elle ne s’arrête pas.",
+        "close": "Fermer",
+        "protectedTitle": "Série protégée",
+        "freezeDay": "gel",
+        "today": "aujourd’hui",
+        "protectedBody": {
+          "one": "Tu as manqué hier, ta série de {{ streak }} jours tient toujours.",
+          "other": "Tu as manqué {{ missed }} jours, ta série de {{ streak }} jours tient toujours."
+        },
+        "protectedUse": {
+          "one": "1 gel sera utilisé quand tu termineras le défi d’aujourd’hui.",
+          "other": "{{ missed }} gels seront utilisés quand tu termineras le défi d’aujourd’hui."
+        },
+        "playNow": "Jouer maintenant",
+        "later": "Plus tard",
+        "guestBody": "Joue chaque jour pour la faire grimper. Un jour sans partie, et elle repart de zéro.",
+        "guestFreeze": "Avec un compte, des gels protègent ta série les jours où tu ne joues pas.",
+        "signup": "Créer un compte"
+      },
+      "usedToast": {
+        "title": {
+          "one": "1 gel a sauvé ta série !",
+          "other": "{{ n }} gels ont sauvé ta série !"
+        },
+        "body": {
+          "one": "Tu as manqué hier, ta série de {{ streak }} jours continue.",
+          "other": "Tu as manqué {{ n }} jours, ta série de {{ streak }} jours continue."
+        }
+      },
+      "earnedToast": {
+        "titleHighlight": "+1 gel",
+        "titleRest": "gagné !",
+        "body": "{{ streak }} jours de série. Il protégera ta série si tu manques un jour."
+      },
+      "lostToast": {
+        "titleBefore": "Ta série de",
+        "titleStrike": "{{ streak }} jours",
+        "titleAfter": "s’est arrêtée.",
+        "hintBefore": "Avec un compte, un gel",
+        "hintAfter": "l’aurait sauvée. Le premier est offert."
+      },
+      "guestMissToast": {
+        "title": "Tu aurais gagné un gel !",
+        "body": "Crée un compte pour protéger tes {{ streak }} jours."
+      },
+      "ctaLine1": "Créer un compte /",
+      "ctaLine2": "Se connecter",
+      "dismiss": "Fermer"
+    },
+    "round": {
+      "points": "pts",
+      "nextTrack": "Piste suivante →",
+      "seeResult": "Voir le résultat"
+    },
+    "common": {
+      "abandon": "Abandonner",
+      "loading": "Chargement du défi…",
+      "points": "pts"
+    },
+    "thanks": {
+      "titleBefore": "Merci de faire vivre ",
+      "titleAfter": " !",
+      "feedbackBefore": "Merci pour tous vos retours, vos partages et les ",
+      "games": "plus de {{ count }} parties",
+      "feedbackAfter": " jouées.",
+      "feedbackNoCount": "Merci pour tous vos retours, vos partages et toutes les parties jouées.",
+      "regulars": "Ça fait vraiment chaud au cœur de voir des joueurs revenir régulièrement.",
+      "nextBefore": "L'aventure n'est pas finie : un ",
+      "newMode": "nouveau mode de jeu",
+      "nextAfter": " est en cours de préparation 🫢",
+      "challenge": "Défie un ami",
+      "continue": "Continuer",
+      "challengeText": "Je joue à InSeconds, un blind test par jour. Tu fais mieux que moi ?\n{{ url }}",
+      "copied": "Lien copié, tu n'as plus qu'à le coller",
+      "copyFailed": "Impossible de copier dans le presse-papier."
     }
+  },
+  "privacy": {
+    "title": "Confidentialité & mentions légales",
+    "updated": "Dernière mise à jour : 17 octobre 2026",
+    "intro": "InSeconds est un jeu de blind test musical gratuit, accessible à l'adresse https://inseconds.cc. Il reste intégralement jouable en mode invité, sans compte ni inscription ; la création d'un compte, par email uniquement, est optionnelle et sert à retrouver votre progression sur un autre appareil. Cette page réunit les mentions légales du site, conformément à l'article 6-III de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique (LCEN), et sa politique de confidentialité, conformément au Règlement général sur la protection des données (RGPD, Règlement UE 2016/679) et à la loi Informatique et Libertés.",
+    "legalIdentity": {
+      "title": "Mentions légales : éditeur et hébergement",
+      "body": "InSeconds est édité par une personne physique établie en France, agissant à titre non professionnel : c'est un projet personnel, développé sur le temps libre de son éditeur, sans activité commerciale (jeu gratuit, sans publicité, sans vente).\nConformément à l'article 6-III de la LCEN, un éditeur non professionnel peut préserver son anonymat vis-à-vis du public, à la condition d'avoir communiqué son identité et ses coordonnées à son hébergeur, ce qui est le cas ici : cette identité reste connue de l'hébergeur et communicable aux autorités judiciaires sur demande. Aucun directeur de publication n'est désigné : cette obligation, issue de la loi du 29 juillet 1982, ne s'applique qu'aux personnes morales.\nHébergeur : OVH SAS, 2 rue Kellermann, 59100 Roubaix, France, RCS Lille Métropole n° 424 761 419.\nNom de domaine : inseconds.cc.\nLe code source, les textes et le design du site InSeconds sont la propriété de l'éditeur et protégés par le droit d'auteur ; toute reproduction sans autorisation est interdite (à l'exception des extraits musicaux Deezer, cf. « Mentions légales : contenus musicaux » ci-dessous).\nPour toute question, le seul moyen de contact est l'adresse email indiquée en bas de cette page."
+    },
+    "controller": {
+      "title": "Responsable du traitement",
+      "body": "Le responsable du traitement au sens du RGPD est l'éditeur du site InSeconds identifié ci-dessus, joignable à l'adresse de contact indiquée en bas de cette page.\nAucun délégué à la protection des données (DPO) n'est désigné : au vu du volume et de la nature des données traitées (aucune donnée sensible, aucun profilage), cette désignation n'est pas requise par le RGPD. L'éditeur reste votre point de contact unique pour toute question relative à vos données."
+    },
+    "data": {
+      "title": "Données collectées, finalités et base légale",
+      "body": "Aucune donnée n'est exigée pour jouer : le mode invité ne demande ni nom, ni email, ni inscription.\nSelon votre usage, l'application traite les catégories de données suivantes :\n· identifiant technique pseudonyme : généré aléatoirement et stocké dans un cookie, il permet de reconnaître votre navigateur d'une visite à l'autre (reprise de partie, limitation à une partie par jour, série de victoires). Finalité : fourniture du jeu. Base légale : exécution du service demandé (article 6.1.b du RGPD) ;\n· appareils connectés : pour chaque navigateur où vous jouez, l'application garde la date de première connexion, la date de dernière visite et un libellé grossier du navigateur et de l'appareil (par exemple « Safari · iPhone », jamais l'en-tête technique complet). Avec un compte, la liste de vos appareils s'affiche dans votre profil, où vous pouvez déconnecter chacun d'eux. Finalité : sécurité du compte et connexion multi-appareils. Base légale : exécution du service demandé (article 6.1.b) ;\n· email et pseudo, uniquement si vous créez un compte : un compte optionnel, activé par un lien de connexion envoyé par email (sans mot de passe), permet de retrouver votre historique et votre série sur n'importe quel appareil ; le pseudo est un nom d'affichage que vous choisissez librement. Finalité : gestion du compte et connexion multi-appareils. Base légale : votre consentement (article 6.1.a du RGPD), vous restez libre de jouer en invité sans jamais fournir ces informations ;\n· données de partie : le résultat de chaque réponse (artiste et titre trouvés ou non, sans le texte que vous tapez, qui n'est jamais conservé), durées d'écoute choisies, scores et dates de jeu. Finalité : faire fonctionner le jeu et calculer des statistiques globales anonymes (score médian, taux de réussite par morceau). Base légale : exécution du service demandé (article 6.1.b). Avec un compte, l'éditeur peut consulter dans l'espace d'administration votre pseudo, votre adresse email, votre série et l'historique de vos parties des 30 derniers jours, uniquement pour faire fonctionner le service et répondre à vos demandes ;\n· adresse IP : traitée techniquement à chaque requête, comme pour tout site web, à des fins de sécurité (limitation du nombre de tentatives de connexion pour prévenir les abus). Finalité : sécurité du service. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· journaux techniques : à chaque requête, l'application enregistre l'identifiant technique pseudonyme décrit ci-dessus, la page ou l'action concernée, sa durée, son résultat, le type de navigateur et d'appareil (par exemple « Safari · iPhone ») et, en cas de bug, le message d'erreur, sa pile d'appels, la version de l'application et l'état de la connexion (en ligne ou non). Ces journaux ne contiennent jamais votre email, votre pseudo, vos réponses saisies ni votre cookie. Finalité : détecter et corriger les bugs, surveiller le bon fonctionnement du service. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· préférences locales : votre langue préférée et le souvenir des messages d'information déjà affichés sont stockés localement dans votre navigateur ; ils ne quittent jamais votre appareil et ne sont jamais transmis à nos serveurs."
+    },
+    "cookie": {
+      "title": "Cookie",
+      "body": "Un unique cookie technique (« __Host-inseconds ») est déposé, que vous jouiez en invité ou avec un compte. Il contient, sous forme chiffrée, l'identifiant de votre appareil et sert exclusivement au fonctionnement du jeu (reconnaissance de votre navigateur, reprise de partie). Sa durée de vie est de 90 jours à compter de votre dernière visite.\nSi vous créez un compte, vous connecter depuis un autre appareil (via le lien reçu par email) dépose un nouveau cookie propre à cet appareil, associé au même compte : chaque appareil conserve ainsi son propre cookie, et se déconnecter sur l'un ne déconnecte pas les autres.\nLe cookie de l'ancienne version du jeu (« authToken ») est remplacé automatiquement par ce cookie lors de votre première visite, puis supprimé de votre navigateur.\nCe cookie est strictement nécessaire à la fourniture du service : conformément à l'article 82 de la loi Informatique et Libertés et aux lignes directrices de la CNIL, il est exempté de consentement préalable et ne nécessite donc pas de bannière de recueil de consentement.\nAucun cookie publicitaire, aucun traceur ni outil de mesure d'audience n'est utilisé à ce jour. Si un outil d'analytics devait être ajouté à l'avenir, cette page serait mise à jour en conséquence (nom de l'outil, finalité) et, si cet outil n'est pas exempté de consentement par la CNIL, un bandeau de consentement serait mis en place avant toute activation."
+    },
+    "retention": {
+      "title": "Durée de conservation",
+      "body": "Les données de jeu (réponses, scores, série de victoires) sont conservées tant que votre identifiant ou votre compte existe en base, afin d'alimenter votre historique et les statistiques globales anonymes présentées aux joueurs. Un compte sans aucune visite depuis 3 ans est supprimé automatiquement, avec son historique, sa série et ses appareils (durée recommandée par la CNIL), sans email de prévenance. Un joueur invité n'est pas supprimé : une fois ses appareils effacés (voir ci-dessous), plus rien ne permet de le retrouver, et ses parties ne servent plus qu'aux statistiques anonymes.\nPour un joueur invité, ces données ne sont jamais croisées avec une identité réelle : seul un identifiant technique aléatoire vous relie à vos parties.\nSi vous créez un compte, votre historique est associé à votre adresse email : c'est ce qui permet de le retrouver sur un autre appareil. Vous pouvez les supprimer vous-même depuis votre profil, ou sur simple demande (voir « Vos droits »).\nUn appareil connecté (y compris un appareil déconnecté) est supprimé automatiquement 91 jours après sa dernière visite, soit un jour après l'expiration de son cookie ; un appareil déconnecté ne peut plus jamais être réutilisé.\nLes journaux techniques (voir « Données collectées ») sont conservés 14 jours au maximum, puis supprimés automatiquement.\nLe lien de connexion et le lien de confirmation d'un changement d'email ne sont valables que 15 minutes et ne peuvent être utilisés qu'une seule fois ; passé ce délai ou après utilisation, ils deviennent définitivement invalides, et ils sont effacés de la base chaque nuit une fois expirés.\nPour reprendre sans vous déconnecter les joueurs de l'ancienne version du jeu, une empreinte cryptographique de leur ancien cookie est conservée provisoirement ; elle sera supprimée au plus tard 90 jours après la mise en service de la nouvelle version (16 octobre 2026).\nSauvegardes : la base de données est sauvegardée chaque nuit. Les copies sont chiffrées et conservées 7 jours sur le serveur, 30 jours pour les copies quotidiennes et 12 mois pour une copie mensuelle hors du serveur (voir « Destinataires »). Des données supprimées de la base peuvent donc subsister dans ces copies jusqu'à leur expiration ; elles n'en sont jamais restaurées, sauf incident grave."
+    },
+    "thirdParties": {
+      "title": "Destinataires, hébergement et transferts hors UE",
+      "body": "Vos données ne sont ni vendues, ni cédées, ni transmises à des tiers à des fins commerciales ou publicitaires. Elles ne sont partagées qu'avec les prestataires techniques strictement nécessaires au fonctionnement du service :\n· hébergement : l'application, son code et sa base de données sont hébergés sur un serveur privé (VPS) d'OVH SAS (identifiée ci-dessus), dans un centre de données situé à Gravelines (France) ;\n· réseau et nom de domaine : le nom de domaine inseconds.cc transite par le réseau de Cloudflare, Inc. (États-Unis), qui agit comme relais technique (résolution DNS, protection anti-DDoS et contre les abus) : vos échanges avec le site le traversent, mais Cloudflare ne les exploite pas pour son propre compte ;\n· sauvegardes : les copies de sauvegarde de la base de données sont chiffrées sur notre serveur avant d'être envoyées dans le service de stockage R2 de Cloudflare, Inc., dans sa juridiction européenne (données stockées dans l'Union européenne) ; Cloudflare n'a pas la clé de chiffrement et ne peut pas les lire ;\n· envoi des emails : si vous créez un compte, l'email contenant votre lien de connexion (ou le lien de confirmation d'un changement d'adresse) est envoyé via l'API de Brevo (Sendinblue SAS, France, données hébergées dans l'Union européenne) ; seule votre adresse email lui est transmise, dans le seul but de vous faire parvenir ce message ;\n· journaux techniques : les journaux décrits plus haut sont stockés chez Grafana Labs, dans la région européenne de son service Grafana Cloud, pour être consultés par l'éditeur en cas de bug ;\n· surveillance des tâches automatiques : le service healthchecks.io reçoit un simple signal à la fin de chaque tâche nocturne (génération du défi, sauvegarde…) et prévient l'éditeur si l'une d'elles échoue ; aucune donnée vous concernant ne lui est transmise ;\n· extraits musicaux et pochettes : fournis par Deezer (Deezer S.A., France). La recherche de morceaux passe par notre serveur, mais votre navigateur charge les extraits et les pochettes directement depuis les serveurs de Deezer, qui reçoivent donc votre adresse IP, comme pour toute ressource chargée par une page web. Aucune autre information vous concernant (compte, pseudo, email, parties) n'est transmise à Deezer (voir « Mentions légales : contenus musicaux » ci-dessous).\nTransferts hors Union européenne : Cloudflare et Grafana Labs, basés aux États-Unis, sont susceptibles de traiter des données hors de l'UE. Ces transferts sont encadrés par les clauses contractuelles types de la Commission européenne, intégrées à leurs accords de traitement des données (DPA) respectifs, ainsi que par leur adhésion au cadre de protection des données UE-États-Unis (EU-U.S. Data Privacy Framework), deux mécanismes reconnus par la Commission européenne comme offrant des garanties de protection équivalentes à celles du RGPD."
+    },
+    "deezer": {
+      "title": "Mentions légales : contenus musicaux (API Deezer)",
+      "body": "Les extraits musicaux (30 secondes), les pochettes d'albums ainsi que les métadonnées (artiste, titre) sont fournis par l'API Deezer et utilisés dans le respect de ses conditions d'utilisation (Deezer API Terms of Use), dans un cadre strictement non commercial : InSeconds est gratuit, sans publicité et ne génère aucun revenu.\nCes contenus demeurent la propriété exclusive de Deezer et de leurs ayants droit respectifs (artistes, producteurs, labels). Ils sont diffusés à titre d'illustration dans le cadre du jeu, sans possibilité de téléchargement, et chaque morceau renvoie vers sa page officielle Deezer pour une écoute intégrale.\nConformément aux conditions d'utilisation de Deezer, l'écoute des extraits est réservée à un usage strictement privé, dans le cadre familial.\nDeezer est une marque déposée de Deezer S.A. InSeconds est un projet indépendant, non affilié à Deezer et non approuvé par Deezer."
+    },
+    "security": {
+      "title": "Sécurité des données",
+      "body": "InSeconds met en œuvre des mesures techniques raisonnables pour protéger vos données :\n· toutes les communications entre votre navigateur et nos serveurs sont chiffrées (HTTPS) ;\n· le cookie d'identification est chiffré et marqué HttpOnly (inaccessible à un script exécuté dans la page, y compris en cas de faille XSS) ;\n· la connexion par email ne repose sur aucun mot de passe : seul un lien à usage unique, valable 15 minutes, est utilisé, et seule son empreinte cryptographique est conservée en base, jamais le lien en clair ;\n· les tentatives de connexion et de création de compte sont limitées en nombre par adresse IP, pour prévenir les abus automatisés ;\n· un changement d'adresse email n'est pris en compte qu'après confirmation par un lien envoyé à la nouvelle adresse ;\n· chaque appareil connecté à votre compte peut être déconnecté depuis votre profil, individuellement ou tous à la fois, par exemple en cas de perte d'un téléphone ;\n· les sauvegardes de la base sont chiffrées avant de quitter le serveur ;\n· l'espace d'administration n'est accessible qu'aux comptes auxquels ce rôle a été attribué manuellement par l'éditeur : il utilise la même connexion par lien email que les joueurs, sans mot de passe supplémentaire, et aucune fonctionnalité de l'application ne permet d'obtenir ce rôle.\nAucune mesure de sécurité n'offre de garantie absolue ; en cas d'incident de sécurité affectant vos données, nous nous engageons à en informer la CNIL et, si nécessaire, les personnes concernées, conformément aux articles 33 et 34 du RGPD."
+    },
+    "rights": {
+      "title": "Vos droits",
+      "body": "Conformément aux articles 15 à 21 du RGPD, vous disposez d'un droit d'accès, de rectification, d'effacement, de limitation du traitement, d'opposition et de portabilité sur les données associées à votre identifiant ou à votre compte (email, pseudo, historique de parties, série en cours). Si vous avez créé un compte, vous pouvez modifier vous-même votre pseudo et votre adresse email, et consulter ou déconnecter vos appareils, depuis votre profil ; vous pouvez également retirer votre consentement à tout moment, sans que cela affecte la licéité des traitements effectués avant ce retrait.\nDepuis votre profil, la section « Tes données » vous permet de télécharger une copie de toutes les données associées à votre compte (fichier JSON : compte, appareils, série et parties) et de supprimer votre compte, en retapant votre pseudo pour confirmer. La suppression est immédiate et définitive : elle efface votre historique de parties, votre série en cours, vos appareils, votre email et votre pseudo. Si vous ne pouvez plus vous connecter, ou pour toute autre demande, écrivez à l'adresse ci-dessous : l'éditeur y répond dans un délai d'un mois au plus (article 12 du RGPD), uniquement à l'adresse email du compte concerné.\nVous disposez également du droit d'introduire une réclamation auprès de la CNIL (www.cnil.fr), l'autorité de contrôle compétente en France.",
+      "contact": "Pour exercer ces droits, ou pour toute question :",
+      "contactLabel": "✉️ contact@inseconds.cc"
+    },
+    "back": "Retour au jeu"
   }
 }

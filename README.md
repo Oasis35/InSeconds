@@ -12,7 +12,7 @@
 
 ## How it works
 
-- Each day at midnight UTC, a new set of tracks is automatically selected (only tracks with an active Deezer preview, outside a configurable reuse cooldown); if the midnight job fails, the challenge is regenerated automatically when the first player arrives (deterministic selection: same challenge for everyone)
+- Each day at midnight UTC, a new set of tracks is automatically selected (only tracks with an active Deezer preview, outside a reuse cooldown that follows the pool size: a configurable share of the playable pool stays blocked); if the midnight job fails, the challenge is regenerated automatically when the first player arrives (deterministic selection: same challenge for everyone)
 - Preview availability is re-checked nightly against Deezer (rate-limit aware, batched calls); admins can also re-run it on demand from the scheduled-jobs dashboard (`/jobs`)
 - Playback starts automatically at the shortest step (0.5s); extend step by step (1, 1.5, 2, 3, 5, 10s) with "listen more" before attempting artist + title
 - Free, unlimited "listen more" extensions per track (up to the last duration tier) — scoring is always based on the final tier listened, no penalty for extending
@@ -29,10 +29,9 @@
 - Privacy policy and legal notice at `/privacy` (also `/confidentialite`)
 - Installable on the home screen (PWA), updated automatically at a safe moment (never in the middle of a round)
 - List of the devices signed in to your account, sign out one device or all the others
+- Your data (GDPR): download a JSON copy of all your data and permanently delete your account ("Your data" section of the profile); devices unseen for 91 days and accounts inactive for 3 years are deleted automatically every night; what you type as an answer is never stored
 
 ## Quick start
-
-> The reference code lives in `src/v2/` (in production since 2026-10-16 and on staging). `src/back` and `src/front` are dead code from the previous version, to be removed.
 
 ### Prerequisites
 
@@ -46,7 +45,7 @@
 cp .env.example .env   # first time only, then fill in DB_PASSWORD
 docker compose up -d database
 
-cd src/v2/back
+cd src/back
 ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=inseconds;Username=inseconds;Password=<DB_PASSWORD>" \
   dotnet run --project InSeconds.Api.Testing
 ```
@@ -56,7 +55,7 @@ ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=insecond
 ### Run the frontend
 
 ```bash
-cd src/v2/front/InSeconds.Client
+cd src/front/InSeconds.Client
 npm ci        # first time only
 npm start
 ```
@@ -88,49 +87,43 @@ Open `http://localhost:5176`.
 
 ```
 InSeconds/
-├── deploy/                    # VPS: shared Postgres, Caddy, deploy scripts, v1 → v2 import
-├── docs/                      # Documentation (FR): entry point, game rules, tasks, v2 plan
-├── scripts/                   # E2E parity check (previous version, removed with it)
+├── deploy/                    # VPS: shared Postgres, Caddy, deploy scripts
+├── docs/                      # Documentation (FR): entry point, game rules, tasks, rewrite plan
 ├── src/
-│   ├── v2/
-│   │   ├── back/              # InSeconds.slnx: Api (modules), Infrastructure, Deezer, Api.Testing, tests/
-│   │   └── front/InSeconds.Client/  # Angular app (account, gameplay, daily, admin domains)
-│   ├── back/                  # previous version (to be removed)
-│   └── front/                 # previous version (to be removed)
+│   ├── back/                  # InSeconds.slnx: Api (modules), Infrastructure, Deezer, Api.Testing, tests/
+│   └── front/InSeconds.Client/  # Angular app (account, gameplay, daily, admin domains)
 ├── docker-compose.yml         # Dev: database
-├── docker-compose.staging.yml # Staging (v2)
-├── docker-compose.prod.yml    # previous production, unused (to be removed)
-├── docker-compose.prod-v2.yml # Production after the switchover ("Bascule v2" workflow)
+├── docker-compose.staging.yml # Staging
+├── docker-compose.prod.yml    # Production
 └── README.md / README.fr.md
 ```
 
 ## Continuous integration
 
-GitHub Actions workflow on every push (all branches) and every PR to `main`. v2 jobs:
+GitHub Actions workflow on every push (all branches) and every PR to `main`:
 
-- **back-v2** — build, unit, architecture and integration tests (Testcontainers), migrations up to date, Wolverine codegen up to date, Docker image without the test host
-- **front-v2** — production build, Vitest tests, Sheriff boundaries, NSwag clients up to date
-- **e2e-v2** — Playwright against the test host
-- **nginx-headers-v2** — builds the frontend nginx image and checks cache and security headers, MIME types and the old-address redirect
-- **e2e-parity** — checks the E2E test titles against the previous version (removed with it)
+- **back** — build, unit, architecture and integration tests (Testcontainers), migrations up to date, Wolverine codegen up to date, Docker image without the test host
+- **front** — production build, Vitest tests, Sheriff boundaries, NSwag clients up to date
+- **e2e** — Playwright against the test host
+- **nginx-headers** — builds the frontend nginx image and checks cache and security headers, MIME types and the old-address redirect
 
-Jobs for the previous version run until it is removed. The **"CI OK"** check aggregates them (it is the one branch protection requires). Stale runs are cancelled automatically. Details: [`CLAUDE.md`](CLAUDE.md) § CI.
+The **"CI OK"** check aggregates them (it is the one branch protection requires). Stale runs are cancelled automatically. Details: [`docs/exploitation/ci.md`](docs/exploitation/ci.md).
 
 ## Testing
 
 ### Backend
 
 ```bash
-cd src/v2/back
+cd src/back
 dotnet test --solution InSeconds.slnx   # unit + architecture + integration (Docker required)
 ```
 
-Four projects in `tests/`: unit (domain rules, no database), architecture (module boundaries, NetArchTest), integration (Testcontainers + Respawn: a real PostgreSQL, the API in memory) and migrations.
+Four projects in `tests/`: unit (domain rules, no database), architecture (module boundaries, NetArchTest), integration (Testcontainers + Respawn: a real PostgreSQL, the API in memory) and the SQL scripts run by hand on the VPS (`deploy/vps`).
 
 ### Frontend
 
 ```bash
-cd src/v2/front/InSeconds.Client
+cd src/front/InSeconds.Client
 npx ng test --watch=false   # Vitest in a real Chromium
 npm run lint:arch           # domain boundaries (Sheriff)
 ```
@@ -138,22 +131,24 @@ npm run lint:arch           # domain boundaries (Sheriff)
 ### E2E (Playwright)
 
 ```bash
-cd src/v2/front/InSeconds.Client
+cd src/front/InSeconds.Client
 E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=<DB_PASSWORD>" npm run e2e
 ```
 
-`playwright.config.ts` starts the test host (port 5177) and `ng serve` (port 5178). **110 tests** across 26 files, game, login, profile, streak and freezes, admin…
+`playwright.config.ts` starts the test host (port 5177) and `ng serve` (port 5178). **120 tests** across 30 files, game, login, profile, streak and freezes, admin…
 
 ## Documentation
 
 The detailed docs are in French.
 
-- [`docs/COMMENCE_ICI_FR.md`](docs/COMMENCE_ICI_FR.md) — entry point: pitch, stack, where to find what
-- [`CLAUDE.md`](CLAUDE.md) — conventions, data model, deployment, known pitfalls (read before contributing)
-- Architecture: [`src/v2/back/CLAUDE.md`](src/v2/back/CLAUDE.md) (backend), [`src/v2/front/CLAUDE.md`](src/v2/front/CLAUDE.md) (frontend)
-- [`docs/GAMEPLAY_RULES_FR.md`](docs/GAMEPLAY_RULES_FR.md) — game rules (scoring, extensions, anti-cheat, streak) — what is actually enforced vs merely configured
-- [`docs/TACHES.md`](docs/TACHES.md) — what is left to do
-- [`docs/refonte-v2/`](docs/refonte-v2/) — v2 plan and tracking
+- [`docs/README.md`](docs/README.md) — entry point: pitch, stack, where to find what
+- [`CLAUDE.md`](CLAUDE.md) — conventions, data model, known pitfalls (read before contributing)
+- Architecture: [`src/back/CLAUDE.md`](src/back/CLAUDE.md) (backend), [`src/front/CLAUDE.md`](src/front/CLAUDE.md) (frontend), [`docs/architecture/`](docs/architecture/) (decisions, module boundaries)
+- [`docs/regles-du-jeu.md`](docs/regles-du-jeu.md) — game rules (scoring, extensions, anti-cheat, streak) — what is actually enforced vs merely configured
+- [`docs/exploitation/`](docs/exploitation/) — VPS deployment, CI, emergency access
+- [`docs/conformite/`](docs/conformite/) — Deezer API terms, GDPR
+- [`docs/taches.md`](docs/taches.md) — what is left to do
+- [`docs/historique/`](docs/historique/) — the 2026 rewrite
 
 ## License
 

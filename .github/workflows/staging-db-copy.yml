@@ -2,17 +2,13 @@ name: Copy prod DB to staging
 
 # Lancement manuel uniquement (onglet Actions → "Copy prod DB to staging" → Run workflow).
 #
-# Refonte v2 (PR B4) : le staging sert la v2. Lancé depuis env/staging (« Use workflow from »), ce
-# workflow fait l'import v1 → staging v2, comme à la bascule (§ 8 du plan v2) :
-#   1. copie de la base de prod (public) dans celle du staging, puis anonymisation des tables v1
-#      (deploy/vps/copy-prod-db-to-staging.sh) ;
-#   2. import v1 → v2 et vérifications, une seule transaction (deploy/migration-v2/run-import.sh) ;
-#   3. seconde anonymisation, sur les tables v2 (S8).
-#   4. clé Data Protection neuve (S16), puis statistiques figées des jours terminés (E4, --freeze-day-stats).
-# Un workflow manuel n'est listé que s'il existe sur main : celui-ci y est (version v1, copie
-# seule), c'est la version de la branche choisie au lancement qui s'exécute.
-# La prod n'est lue qu'en pg_dump, jamais modifiée. Les migrations v2 du staging doivent être à jour
-# (elles le sont après chaque déploiement d'env/staging).
+# Copie les données de la prod (schémas players, catalogue, daily, infra) dans la base du staging, puis les
+# anonymise (deploy/vps/copy-prod-db-to-staging.sh, avec deploy/vps/staging-anonymize.sql de ce commit).
+# Depuis la PR I1 (#235) : plus d'import v1 → v2 ici (avant, ce workflow copiait les tables v1 de public puis
+# refaisait l'import, scripts retirés en I2, cf. l'historique git).
+# Un workflow manuel n'est listé que s'il existe sur main ; c'est la version de la branche choisie au lancement
+# qui s'exécute. La prod n'est lue qu'en pg_dump, jamais modifiée. L'image de l'API staging doit être déployée :
+# la copie l'utilise pour les migrations et la clé Data Protection neuve.
 on:
   workflow_dispatch:
     inputs:
@@ -25,7 +21,7 @@ permissions:
 
 jobs:
   copy:
-    name: Copy + anonymize + import v2
+    name: Copy + anonymize
     runs-on: ubuntu-latest
     if: inputs.confirm == 'staging'
     # Même groupe que le déploiement staging : pas de copie pendant un rebuild du staging
@@ -44,21 +40,20 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           host-key: ${{ secrets.VPS_SSH_HOST_KEY }}
 
-      - name: Copy prod DB to staging
-        # Le script part de ce checkout (bash -s) : pas besoin qu'il soit déjà présent sur le VPS.
-        run: |
-          ssh -i ~/.ssh/id_ed25519 "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" 'bash -s' \
-            < deploy/vps/copy-prod-db-to-staging.sh
-
-      - name: Send import scripts
-        # Ceux de ce commit, pas ceux du checkout du staging. Supprimés par import-to-staging.sh.
-        run: |
-          tar -C deploy -cz migration-v2 \
-            | ssh -i ~/.ssh/id_ed25519 "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
-                'rm -rf ~/inseconds-migration-v2 && mkdir -p ~/inseconds-migration-v2 && tar -xz -C ~/inseconds-migration-v2 --strip-components=1'
-
-      - name: Import v1 → v2, verify, anonymize v2 tables
+      - name: Send anonymization script
+        # Celui de ce commit, pas celui du checkout du staging.
         run: |
           ssh -i ~/.ssh/id_ed25519 "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
-            'IMPORT_DIR=$HOME/inseconds-migration-v2 bash -s' \
-            < deploy/migration-v2/import-to-staging.sh
+            'cat > ~/inseconds-staging-anonymize.sql' < deploy/vps/staging-anonymize.sql
+
+      - name: Copy prod DB to staging, anonymize
+        # Le script part de ce checkout (bash -s) : pas besoin qu'il soit déjà présent sur le VPS.
+        run: |
+          ssh -i ~/.ssh/id_ed25519 "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            'STAGING_ANONYMIZE_SQL=$HOME/inseconds-staging-anonymize.sql bash -s' \
+            < deploy/vps/copy-prod-db-to-staging.sh
+
+      - name: Remove anonymization script
+        if: always()
+        run: |
+          ssh -i ~/.ssh/id_ed25519 "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" 'rm -f ~/inseconds-staging-anonymize.sql'

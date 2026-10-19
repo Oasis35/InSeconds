@@ -1,0 +1,128 @@
+<main class="da-bg relative min-h-dvh flex flex-col items-center p-6 pt-20 screen-enter">
+  <app-decor-background />
+
+  <div class="relative flex w-full max-w-sm flex-col gap-6 py-8">
+    <a routerLink="/" class="-mb-2 self-start py-1 text-sm hover:underline" style="color:var(--text-muted)" data-testid="back-to-game">
+      ← {{ 'account.profile.backToGame' | translate }}
+    </a>
+
+    <h1 class="text-center text-2xl font-bold" style="font-family:var(--font-display);color:var(--text-hi)">
+      {{ 'account.profile.title' | translate }}
+    </h1>
+
+    <!-- Pseudo -->
+    <form [formRoot]="pseudoForm" (submit)="savePseudo()" novalidate>
+      <div class="flex gap-2">
+        <label for="profile-pseudo" class="sr-only">{{ 'account.profile.pseudo.label' | translate }}</label>
+        <input
+          id="profile-pseudo"
+          class="app-input min-w-0 flex-1"
+          autocomplete="off"
+          [formField]="pseudoForm.pseudo"
+          aria-describedby="profile-pseudo-help"
+          [placeholder]="'account.profile.pseudo.placeholder' | translate"
+          (input)="profile.clearPseudo()"
+        />
+        <button appButton type="submit" size="sm" [disabled]="pseudoSaveDisabled()">
+          {{ (profile.pseudoStatus() === 'pending' ? 'account.profile.pseudo.saving' : profile.pseudoStatus() === 'done' ? 'account.profile.pseudo.saved' : 'account.profile.pseudo.save') | translate }}
+        </button>
+      </div>
+      <output class="mt-2 block text-xs" id="profile-pseudo-help" [style.color]="pseudoHint().isError ? 'var(--text-error)' : 'var(--text-muted)'">
+        {{ pseudoHint().key | translate }}
+      </output>
+    </form>
+
+    <!-- Email -->
+    <form [formRoot]="emailForm" (submit)="saveEmail()" novalidate>
+      <div class="flex gap-2">
+        <label for="profile-email" class="sr-only">{{ 'account.profile.email.label' | translate }}</label>
+        <input
+          id="profile-email"
+          class="app-input min-w-0 flex-1"
+          type="email"
+          autocomplete="off"
+          [formField]="emailForm.email"
+          aria-describedby="profile-email-help"
+          [placeholder]="'account.profile.email.placeholder' | translate"
+          (input)="profile.clearEmailChange()"
+        />
+        <button appButton type="submit" size="sm" [disabled]="emailSaveDisabled()">
+          {{ (profile.emailStatus() === 'pending' ? 'account.profile.email.sending' : profile.emailStatus() === 'done' ? 'account.profile.email.sent' : 'account.profile.email.change') | translate }}
+        </button>
+      </div>
+      <output class="mt-2 block text-xs" id="profile-email-help" [style.color]="emailHint().isError ? 'var(--text-error)' : 'var(--text-muted)'">
+        {{ emailHint().key | translate: { email: emailForm.email().value().trim() } }}
+      </output>
+    </form>
+
+    <!-- Appareils : la liste est repliée, le bouton « déconnecter les autres » reste visible -->
+    <section class="flex flex-col gap-3">
+      <h2 class="m-0">
+        <button type="button" class="flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-left"
+          style="background:var(--bg-surface);border:1px solid var(--border-medium)" data-testid="devices-toggle"
+          aria-controls="devices-panel" [attr.aria-expanded]="devicesOpen()" (click)="toggleDevices()">
+          <span class="min-w-0">
+            <span class="block text-sm font-bold uppercase tracking-widest" style="font-family:var(--font-display);color:var(--text-muted)">
+              {{ 'account.devices.title' | translate }}@if (devices.isFulfilled()) { · {{ devices.devices().length }}}
+            </span>
+            @if (devicesSummary(); as summary) {
+              <span class="mt-1 block truncate text-xs font-normal normal-case tracking-normal" style="color:var(--text-body)" data-testid="devices-summary">
+                {{ summary.key | translate: { current: summary.label ?? ('account.devices.unknownDevice' | translate), count: summary.count } }}
+              </span>
+            }
+          </span>
+          <svg class="shrink-0 transition-transform" [class.rotate-180]="devicesOpen()" width="16" height="16" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
+            style="color:var(--text-muted)">
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </button>
+      </h2>
+
+      @if (devices.error()) {
+        <p class="text-xs" style="color:var(--text-error)">{{ 'account.devices.loadError' | translate }}</p>
+      }
+      @if (devicesOpen()) {
+        <div id="devices-panel" class="flex flex-col gap-3">
+          <p class="text-xs" style="color:var(--text-faint)">{{ 'account.devices.intro' | translate }}</p>
+          <app-device-list [devices]="devices.devices()" [locale]="locale()" [busyId]="devices.busyId()" (revoke)="revoke($event)" />
+        </div>
+      }
+      @if (devicesActionError(); as error) {
+        <app-error-message [messageKey]="devicesActionKey()" [traceId]="error.traceId" />
+      }
+      @if (devices.others().length > 0) {
+        <button appButton type="button" variant="secondary" size="sm" [disabled]="devices.action() === 'pending'" (click)="revokeOthers()">
+          {{ 'account.devices.revokeOthers' | translate }}
+        </button>
+      }
+    </section>
+
+    <!-- Déconnexion -->
+    <div class="flex flex-col gap-2.5">
+      @if (logoutError(); as error) {
+        <app-error-message [messageKey]="'account.profile.logout.error'" [traceId]="error.traceId" />
+      }
+      <button appButton type="button" variant="danger" [block]="true" (click)="logout()">
+        {{ 'account.profile.logout.action' | translate }}
+      </button>
+    </div>
+
+    <!-- Tes données (RGPD) -->
+    <section class="flex flex-col gap-3" aria-labelledby="data-title">
+      <h2 id="data-title" class="text-sm font-bold uppercase tracking-widest" style="font-family:var(--font-display);color:var(--text-muted)">
+        {{ 'account.profile.data.title' | translate }}
+      </h2>
+      @if (exportError(); as error) {
+        <app-error-message [messageKey]="'account.profile.data.exportError'" [traceId]="error.traceId" />
+      }
+      <button appButton type="button" variant="secondary" size="sm" [disabled]="profile.exportStatus() === 'pending'" (click)="downloadData()">
+        {{ (profile.exportStatus() === 'pending' ? 'account.profile.data.exporting' : 'account.profile.data.export') | translate }}
+      </button>
+      <button type="button" class="self-center py-2 text-sm underline" style="color:var(--text-error)" data-testid="delete-account"
+        (click)="deleteAccount()">
+        {{ 'account.profile.delete.action' | translate }}
+      </button>
+    </section>
+  </div>
+</main>

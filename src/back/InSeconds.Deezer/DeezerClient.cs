@@ -5,163 +5,154 @@ using Microsoft.Extensions.Logging;
 
 namespace InSeconds.Deezer;
 
-public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger)
+/// <summary>
+/// Client HTTP de l'API Deezer, qui implémente les trois ports. C'est l'état réel chez Deezer : le cache
+/// des recherches publiques (<see cref="CachedTrackSearch"/>) est un décorateur, utilisé là où l'état exact
+/// n'est pas nécessaire. Les extraits n'ont pas de cache : leurs adresses sont signées pour 15 min (piège 14). Le <see cref="HttpClient"/> arrive configuré (adresse de base,
+/// résilience), cf. <see cref="DeezerServiceCollectionExtensions"/>.
+/// </summary>
+/// <remarks>
+/// Deezer renvoie ses erreurs (quota, service occupé, morceau supprimé) en HTTP 200 avec un payload
+/// <c>{"error":{"code":…}}</c> : il contourne la résilience HTTP et se désérialiserait en champs vides
+/// (piège 16). Le code 800 (« no data ») est une réponse déterminée, tout autre code (4 quota, 700 occupé,
+/// ou un code futur) est « indisponible ».
+/// </remarks>
+public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger) : IPreviewProvider, ITrackSearch, ITrackMetadataSource
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-    };
+    private const int NoDataErrorCode = 800;
 
-    // Codes d'erreur Deezer traités comme une absence de preview déterminée (pas un échec de requête) :
-    // 800 = "no data", le track n'existe plus sur Deezer. Ajouter un nouveau code ici n'exige de
-    // toucher à aucune branche conditionnelle (ProbePreviewAsync reste inchangé).
-    private static readonly HashSet<int> DefinitiveNoDataErrorCodes = [800];
+    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
-    public async Task<string?> GetPreviewUrlAsync(long deezerTrackId, CancellationToken ct = default)
+    public async Task<PreviewLookup> GetPreviewAsync(long deezerTrackId, CancellationToken ct = default)
     {
-        var probe = await ProbePreviewAsync(deezerTrackId, ct);
-        return probe.PreviewUrl;
+        var fetched = await FetchTrackAsync(deezerTrackId, ct);
+        if (fetched.Outcome == FetchOutcome.Unavailable)
+            return new PreviewLookup.Unavailable();
+
+        if (!string.IsNullOrEmpty(fetched.Track?.Preview))
+            return new PreviewLookup.Found(fetched.Track.Preview);
+
+        if (fetched.Outcome == FetchOutcome.Ok)
+            DeezerLog.NoPreview(logger, deezerTrackId);
+        return new PreviewLookup.Missing();
     }
 
-    /// <summary>
-    /// Comme <see cref="GetPreviewUrlAsync"/>, mais distingue l'échec de requête
-    /// (Succeeded = false : erreur HTTP ou payload d'erreur Deezer — quota renvoyé en 200)
-    /// de la vraie absence de preview (Succeeded = true, PreviewUrl vide).
-    /// </summary>
-    public async Task<DeezerPreviewProbe> ProbePreviewAsync(long deezerTrackId, CancellationToken ct = default)
+    public async Task<TrackMetadataLookup> GetTrackAsync(long deezerTrackId, CancellationToken ct = default)
     {
-        try
-        {
-            var response = await http.GetFromJsonAsync<DeezerTrackResponse>(
-                $"/track/{deezerTrackId}", JsonOptions, ct);
+        var fetched = await FetchTrackAsync(deezerTrackId, ct);
+        if (fetched.Outcome == FetchOutcome.Unavailable)
+            return new TrackMetadataLookup.Unavailable();
 
-            if (response?.Error is not null)
-            {
-                logger.LogWarning(
-                    "Deezer a renvoyé une erreur pour le track {DeezerTrackId} : code {Code} ({Message}).",
-                    deezerTrackId, response.Error.Code, response.Error.Message);
-
-                // Réponse déterminée (pas de preview) pour les codes connus de "no data" ;
-                // tout autre code (quota=4, service busy=700, ou un futur code inconnu) → échec de requête.
-                return DefinitiveNoDataErrorCodes.Contains(response.Error.Code)
-                    ? new DeezerPreviewProbe(true, "")
-                    : new DeezerPreviewProbe(false, null);
-            }
-
-            if (string.IsNullOrEmpty(response?.Preview))
-                logger.LogWarning("Deezer n'a renvoyé aucune preview pour le track {DeezerTrackId}.", deezerTrackId);
-
-            return new DeezerPreviewProbe(true, response?.Preview);
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Échec de récupération de la preview Deezer pour le track {DeezerTrackId}.", deezerTrackId);
-            return new DeezerPreviewProbe(false, null);
-        }
+        // L'identifiant est celui demandé, pas le champ « id » de la réponse : c'est sur lui que le pool vérifie
+        // les doublons, et une réponse sans « id » donnerait 0 (v1 : l'identifiant demandé était enregistré).
+        return fetched.Track is { } track && ToDeezerTrack(track) is { } found
+            ? new TrackMetadataLookup.Found(found with { DeezerTrackId = deezerTrackId })
+            : new TrackMetadataLookup.NotFound();
     }
 
-    /// <summary>
-    /// Comme <see cref="ProbePreviewAsync"/>, distingue l'échec de requête (Succeeded = false :
-    /// erreur HTTP, ou payload d'erreur Deezer autre que "no data" — quota/busy renvoyés en 200)
-    /// de la vraie absence du track (Succeeded = true, Info = null).
-    /// </summary>
-    public async Task<DeezerTrackInfoProbe> GetTrackInfoAsync(long deezerTrackId, CancellationToken ct = default)
-    {
-        try
-        {
-            var response = await http.GetFromJsonAsync<DeezerTrackResponse>(
-                $"/track/{deezerTrackId}", JsonOptions, ct);
-
-            if (response?.Error is not null)
-            {
-                logger.LogWarning(
-                    "Deezer a renvoyé une erreur pour le track {DeezerTrackId} : code {Code} ({Message}).",
-                    deezerTrackId, response.Error.Code, response.Error.Message);
-
-                // Réponse déterminée (track introuvable) pour les codes connus de "no data" ;
-                // tout autre code (quota=4, service busy=700, ou un futur code inconnu) → échec de requête.
-                return DefinitiveNoDataErrorCodes.Contains(response.Error.Code)
-                    ? new DeezerTrackInfoProbe(true, null)
-                    : new DeezerTrackInfoProbe(false, null);
-            }
-
-            var info = response is { Title: not null, Artist.Name: not null }
-                ? new DeezerTrackInfo(response.Artist.Name, response.Title, response.Preview, response.Id, ExtractCoverHash(response.Album?.CoverMedium), ExtractReleaseYear(response.ReleaseDate))
-                : null;
-
-            return new DeezerTrackInfoProbe(true, info);
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Échec de récupération des infos Deezer pour le track {DeezerTrackId}.", deezerTrackId);
-            return new DeezerTrackInfoProbe(false, null);
-        }
-    }
-
-    public async Task<IReadOnlyList<DeezerTrackInfo>> SearchTracksAsync(string query, CancellationToken ct = default, int limit = 10)
+    public async Task<SearchLookup> SearchAsync(string query, int limit, CancellationToken ct = default)
     {
         try
         {
             var response = await http.GetFromJsonAsync<DeezerSearchResponse>(
                 $"/search?q={Uri.EscapeDataString(query)}&limit={limit}", JsonOptions, ct);
 
-            if (response?.Error is not null)
+            if (response?.Error is { } error)
             {
-                // Jamais le texte de la requête (saisie en cours de l'autocomplete public,
-                // potentiellement la réponse) — seulement sa longueur (M2, revue du 25/09).
-                logger.LogWarning(
-                    "Deezer a renvoyé une erreur pour une recherche ({QueryLength} caractères) : code {Code} ({Message}).",
-                    query.Length, response.Error.Code, response.Error.Message);
-                return [];
+                DeezerLog.SearchError(logger, query.Length, error.Code, error.Message);
+                return new SearchLookup.Unavailable();
             }
 
-            return response?.Data?
-                .Where(t => t.Title is not null && t.Artist?.Name is not null)
-                .Select(t => new DeezerTrackInfo(t.Artist!.Name!, t.Title!, t.Preview, t.Id, ExtractCoverHash(t.Album?.CoverMedium), ExtractReleaseYear(t.ReleaseDate)))
-                .ToList() ?? [];
+            // Un résultat sans identifiant ne pourrait pas être ajouté au pool : écarté.
+            return new SearchLookup.Found(response?.Data?
+                .Where(t => t.Id > 0)
+                .Select(ToDeezerTrack)
+                .OfType<DeezerTrack>()
+                .ToList() ?? []);
         }
-        catch (OperationCanceledException)
+        // Seule l'annulation demandée par l'appelant est relancée : le délai d'attente interne d'un HttpClient lève aussi
+        // une OperationCanceledException, qui est un échec de Deezer comme un autre.
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             throw;
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Échec de la recherche Deezer pour une requête ({QueryLength} caractères).", query.Length);
-            return [];
+            DeezerLog.SearchRequestFailed(logger, ex, query.Length);
+            return new SearchLookup.Unavailable();
         }
     }
 
-    // Parse l'année depuis le champ Deezer "release_date" (format "yyyy-MM-dd"). Retourne null
-    // si absent ou dans un format inattendu — jamais d'exception, cohérent avec le reste du
-    // client (dégradation silencieuse, tolérant aux variations de l'API Deezer).
+    private async Task<TrackFetch> FetchTrackAsync(long deezerTrackId, CancellationToken ct)
+    {
+        try
+        {
+            var response = await http.GetFromJsonAsync<DeezerTrackResponse>($"/track/{deezerTrackId}", JsonOptions, ct);
+
+            if (response?.Error is { } error)
+            {
+                DeezerLog.TrackError(logger, deezerTrackId, error.Code, error.Message);
+                return error.Code == NoDataErrorCode
+                    ? new TrackFetch(FetchOutcome.NoData, null)
+                    : new TrackFetch(FetchOutcome.Unavailable, null);
+            }
+
+            return new TrackFetch(FetchOutcome.Ok, response);
+        }
+        // Seule l'annulation demandée par l'appelant est relancée : le délai d'attente interne d'un HttpClient lève aussi
+        // une OperationCanceledException, qui est un échec de Deezer comme un autre.
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            DeezerLog.TrackRequestFailed(logger, ex, deezerTrackId);
+            return new TrackFetch(FetchOutcome.Unavailable, null);
+        }
+    }
+
+    /// <summary>Un morceau sans titre ou sans artiste (ou aux noms blancs) est inexploitable : comme s'il n'existait pas.</summary>
+    private static DeezerTrack? ToDeezerTrack(DeezerTrackResponse track) =>
+        track is { Title: { } title, Artist.Name: { } artist } && !string.IsNullOrWhiteSpace(title) && !string.IsNullOrWhiteSpace(artist)
+            ? new DeezerTrack(track.Id, track.Artist.Name, track.Title, track.Preview, ExtractCoverHash(track.Album?.CoverMedium), ExtractReleaseYear(track.ReleaseDate), track.Rank)
+            : null;
+
+    // Année du champ Deezer « release_date » (« yyyy-MM-dd »), vide s'il est absent ou d'un autre format.
     private static int? ExtractReleaseYear(string? releaseDate)
     {
         if (string.IsNullOrEmpty(releaseDate))
             return null;
 
         var yearPart = releaseDate.Length >= 4 ? releaseDate[..4] : releaseDate;
-        return int.TryParse(yearPart, out var year) ? year : null;
+        // Deezer met « 0000-00-00 » quand la date est inconnue : une année avant 1 n'en est pas une.
+        return int.TryParse(yearPart, out var year) && year >= 1 ? year : null;
     }
 
-    // Extrait le hash depuis "https://cdn-images.dzcdn.net/images/cover/{hash}/250x250-000000-80-0-0.jpg"
+    // Extrait le hash de « https://cdn-images.dzcdn.net/images/cover/{hash}/250x250-000000-80-0-0.jpg ».
     private static string? ExtractCoverHash(string? coverUrl)
     {
-        if (coverUrl is null) return null;
+        if (coverUrl is null)
+            return null;
+
         const string marker = "/images/cover/";
         var start = coverUrl.IndexOf(marker, StringComparison.Ordinal);
-        if (start < 0) return null;
+        if (start < 0)
+            return null;
+
         start += marker.Length;
         var end = coverUrl.IndexOf('/', start);
         return end > start ? coverUrl[start..end] : null;
     }
+
+    private enum FetchOutcome
+    {
+        Ok,
+        NoData,
+        Unavailable,
+    }
+
+    private sealed record TrackFetch(FetchOutcome Outcome, DeezerTrackResponse? Track);
 
     private sealed class DeezerTrackResponse
     {
@@ -173,6 +164,9 @@ public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger)
 
         [JsonPropertyName("preview")]
         public string? Preview { get; set; }
+
+        [JsonPropertyName("rank")]
+        public int? Rank { get; set; }
 
         [JsonPropertyName("artist")]
         public DeezerArtist? Artist { get; set; }
@@ -196,7 +190,6 @@ public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger)
         public DeezerError? Error { get; set; }
     }
 
-    // Deezer renvoie ses erreurs (quota, track supprimé…) en HTTP 200 avec ce payload.
     private sealed class DeezerError
     {
         [JsonPropertyName("code")]
@@ -218,11 +211,3 @@ public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger)
         public string? CoverMedium { get; set; }
     }
 }
-
-public sealed record DeezerTrackInfo(string Artist, string Title, string? PreviewUrl, long DeezerTrackId, string? CoverHash, int? ReleaseYear = null);
-
-/// <summary>Résultat d'un sondage de preview : Succeeded = false signifie « état Deezer inconnu », pas « pas de preview ».</summary>
-public sealed record DeezerPreviewProbe(bool Succeeded, string? PreviewUrl);
-
-/// <summary>Résultat d'un sondage de track : Succeeded = false signifie « état Deezer inconnu », pas « track introuvable ».</summary>
-public sealed record DeezerTrackInfoProbe(bool Succeeded, DeezerTrackInfo? Info);

@@ -2,6 +2,7 @@ export const environment = {
   // Nom de l'environnement : 'staging' affiche le bandeau DEV (EnvBannerComponent).
   name: 'development',
   production: false,
-  apiUrl: 'http://localhost:5171',
-  appUrl: 'http://localhost:5173',
+  // Vide en dev : les appels passent par le proxy d'`ng serve` (proxy.conf.json → API v2 :5175).
+  apiUrl: '',
+  appUrl: 'http://localhost:5176',
 };

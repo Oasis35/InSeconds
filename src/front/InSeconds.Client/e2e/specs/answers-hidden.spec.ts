@@ -24,7 +24,7 @@ test.describe('Réponses du jour cachées avant de jouer', () => {
     await game.openWithFakeClock();
 
     const startResponse = page.waitForResponse(r =>
-      r.url().endsWith('/api/sessions') && r.request().method() === 'POST');
+      r.url().endsWith('/api/daily/sessions') && r.request().method() === 'POST');
     await game.clickStart();
     expect(await (await startResponse).text()).not.toContain('deezerTrackId');
 
@@ -33,7 +33,7 @@ test.describe('Réponses du jour cachées avant de jouer', () => {
     await round.submitEmpty();
 
     // Écran de révélation : le lien « À écouter sur Deezer » pointe sur le morceau.
-    await expect(page.locator('app-blind-round a[href*="deezer.com/track/"]')).toHaveAttribute(
+    await expect(page.locator('app-deezer-badge a[href*="deezer.com/track/"]')).toHaveAttribute(
       'href', /deezer\.com\/track\/\d+$/);
   });
 

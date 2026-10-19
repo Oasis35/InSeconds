@@ -1,4 +1,5 @@
 import { Page, Locator } from '@playwright/test';
+import { times } from '../fixtures/sequence';
 import { BlindRoundPage } from './blind-round.page';
 
 export class GamePage {
@@ -41,8 +42,8 @@ export class GamePage {
     this.resumeButton          = page.getByRole('button', { name: 'Reprendre' });
     this.abandonButton         = page.getByRole('button', { name: 'Abandonner', exact: true }).first();
     // Même libellé que le bouton d'ouverture (header en partie) : on cible la confirmation dans son
-    // conteneur — panneau de confirmation en cours de partie, encart de l'écran de reprise sinon.
-    this.abandonConfirmButton  = page.locator('app-confirm-sheet, app-resume-screen')
+    // conteneur — panneau de confirmation (CDK) en cours de partie, encart de l'écran de reprise sinon.
+    this.abandonConfirmButton  = page.locator('app-confirm-dialog, app-resume-screen')
       .getByRole('button', { name: 'Abandonner', exact: true });
     this.leaveConfirmButton    = page.getByRole('button', { name: 'Quitter quand même' });
     this.leaveCancelButton     = page.getByRole('button', { name: 'Continuer à jouer' });
@@ -60,9 +61,7 @@ export class GamePage {
     await this.goto();
     await this.waitForWelcome();
     await this.clickStart();
-    for (let i = 0; i < 5; i++) {
-      await round.playRound(1);
-    }
+    await times(5, () => round.playRound(1));
     await this.waitForDone();
   }
 
@@ -94,9 +93,7 @@ export class GamePage {
 
   /** Joue les `remaining` morceaux restants (réponses vides) jusqu'à l'écran de récap. */
   async finishGame(round: BlindRoundPage, remaining: number): Promise<void> {
-    for (let i = 0; i < remaining; i++) {
-      await round.playRound(1);
-    }
+    await times(remaining, () => round.playRound(1));
     await this.waitForDone();
   }
 

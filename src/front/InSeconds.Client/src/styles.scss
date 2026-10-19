@@ -74,6 +74,8 @@
 
 body {
   font-family: var(--font-body);
+  background: var(--bg-page);
+  color: var(--text-body);
 }
 
 h1, h2, h3, .font-display {
@@ -143,7 +145,7 @@ h1, h2, h3, .font-display {
 
 /* ── Décor DA "IN//SECONDS" — fond + grille perspective + scanlines ──────
    Appliqués sur toutes les pages (jeu, admin, privacy, 404, service-down).
-   Voir shared/decor-background/ pour le composant qui rend la grille+scanlines. */
+   Voir ui/decor-background/ pour le composant qui rend la grille+scanlines. */
 
 .da-bg {
   background: radial-gradient(circle at 50% -8%, rgb(var(--rgb-violet) / 0.12), transparent 55%), var(--bg-page);
@@ -177,4 +179,83 @@ h1, h2, h3, .font-display {
   opacity: 0.03;
   background-image: repeating-linear-gradient(0deg, #fff 0 1px, transparent 1px 3px);
   animation: inseconds-scan 1s linear infinite;
+}
+
+/* ── Modales et panneaux bas (CDK Dialog, cf. ui/modal/modal.service.ts) ── */
+
+.app-modal-backdrop {
+  background: var(--overlay-dark);
+}
+
+.app-modal-panel > .cdk-dialog-container,
+.app-sheet-panel > .cdk-dialog-container {
+  display: block;
+  padding: 1.5rem;
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border-medium);
+  color: var(--text-body);
+  outline: none;
+  animation: slide-up 0.2s ease-out both;
+}
+
+.app-modal-panel > .cdk-dialog-container {
+  border-radius: 1rem;
+}
+
+.app-sheet-panel > .cdk-dialog-container {
+  border-radius: 1rem 1rem 0 0;
+  border-bottom: none;
+  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+}
+
+/* Sans !important : chaque sélecteur est au moins aussi spécifique que celui qu'il remplace (le conteneur de modale :
+   .app-modal-panel > .cdk-dialog-container), et .no-anim vient après le mouvement réduit pour l'emporter (E2E). */
+@media (prefers-reduced-motion: reduce) {
+  .app-modal-panel > .cdk-dialog-container,
+  .app-sheet-panel > .cdk-dialog-container,
+  .toast-enter,
+  .screen-enter {
+    animation: gel-fade 0.2s ease both;
+  }
+}
+
+.no-anim .cdk-dialog-container,
+.no-anim .toast-enter,
+.no-anim .screen-enter {
+  animation: none;
+}
+
+/* Champ de saisie de la DA (connexion, profil, réponse de la manche) : posé en classe plutôt qu'en style répété dans chaque template. */
+.app-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-inactive);
+  color: var(--text-body);
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.app-input:focus-visible {
+  border-color: var(--color-accent-2);
+  box-shadow: var(--glow-accent-2);
+}
+
+.app-input[aria-invalid='true'] {
+  border-color: var(--text-error);
+}
+
+/* iPhone : Safari zoome sur un champ dont le texte fait moins de 16 px quand on le touche, et garde ce
+   zoom ensuite (page coupée à droite jusqu'à la fin de la partie, signalé sur le staging le 13/10/2026).
+   Sur un écran tactile, tous les champs passent donc à 16 px, sans toucher au zoom de la page
+   (`maximum-scale` empêcherait aussi le joueur de zoomer). Hors couche : passe devant `text-sm`. */
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea,
+  .app-input {
+    font-size: 1rem;
+  }
 }
