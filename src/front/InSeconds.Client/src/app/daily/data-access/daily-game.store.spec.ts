@@ -240,6 +240,47 @@ describe('DailyGameStore', () => {
       expect(store.totalScore()).toBe(0);
     });
 
+    it('un extrait illisible redemande seul une adresse fraîche en reprenant la partie (piège 14)', async () => {
+      await startGame();
+      api.start = { kind: 'ok', session: SESSION({ isResuming: true, tracks: [1, 2, 3].map(position => ({ position, previewUrl: `https://cdn.example/${position}-frais.mp3` })) }) };
+      audio.calls.length = 0;
+
+      audio.emit('error');
+      TestBed.tick();
+      await flush();
+
+      expect(api.calls.filter(c => c === 'start')).toHaveLength(2);
+      expect(audio.calls).toContain('load https://cdn.example/1-frais.mp3 next https://cdn.example/2.mp3');
+      expect(round.phase()).toBe('loading');
+    });
+
+    it('un morceau dont Deezer a retiré l\'extrait en cours de journée passe en « aperçu non disponible », sans relancer l\'adresse morte', async () => {
+      await startGame();
+      api.start = { kind: 'ok', session: SESSION({ isResuming: true, tracks: [{ position: 1, previewUrl: '' }, { position: 2, previewUrl: 'https://cdn.example/2.mp3' }] }) };
+      audio.calls.length = 0;
+
+      audio.emit('error');
+      TestBed.tick();
+      await flush();
+
+      expect(round.phase()).toBe('no-preview');
+      expect(audio.calls.some(c => c.startsWith('load'))).toBe(false);
+      expect(round.skipUnplayable()).toMatchObject({ trackId: 1, artist: null, title: null });
+    });
+
+    it('une partie qui ne se reprend plus pendant la redemande garde l\'adresse (échec, pas « plus d\'extrait »)', async () => {
+      await startGame();
+      api.start = { kind: 'already_played', abandoned: false };
+      audio.calls.length = 0;
+
+      audio.emit('error');
+      TestBed.tick();
+      await flush();
+
+      expect(audio.calls).toContain('load https://cdn.example/1.mp3 next https://cdn.example/2.mp3');
+      expect(round.phase()).toBe('loading');
+    });
+
     it('« Piste suivante » lance le morceau suivant, en arrière-plan celui d\'après', async () => {
       await startGame();
       await store.submit(submissionOf(1));

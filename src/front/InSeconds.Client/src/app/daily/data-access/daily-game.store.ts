@@ -154,10 +154,14 @@ export const DailyGameStore = signalStore(
       if (!abandoned) void loadStats();
     };
 
-    /** Redemande l'extrait d'un morceau à une adresse fraîche (la signature Deezer expire, piège 14) : la reprise de la partie en donne de neuves. */
+    /**
+     * Redemande l'extrait d'un morceau à une adresse fraîche (la signature Deezer expire, piège 14) : la reprise de la partie en donne
+     * de neuves. `null` : Deezer n'a plus d'extrait pour ce morceau (retiré en cours de journée). Une partie qui ne se reprend plus
+     * (finie ailleurs) est un échec : la manche garde son adresse.
+     */
     const refreshPreview = async (position: number): Promise<string | null> => {
       const outcome = await api.start();
-      if (outcome.kind !== 'ok') return null;
+      if (outcome.kind !== 'ok') throw new Error(`daily.refresh_preview: ${outcome.kind}`);
       patchState(store, { tracks: outcome.session.tracks });
       return outcome.session.tracks.find(t => t.position === position)?.previewUrl || null;
     };

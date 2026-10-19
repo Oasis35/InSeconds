@@ -19,6 +19,47 @@ const SLOW_START_REPORT_MS = 1500;
 /** Début du message remonté pour un palier lent à démarrer ou coupé en route : c'est lui qu'on cherche dans Grafana. */
 export const AUDIO_STALL_MESSAGE = 'AudioStall';
 
+/** Début du message remonté pour un extrait illisible (retiré par Deezer, signature expirée, réseau) : c'est lui qu'on cherche dans Grafana. */
+export const AUDIO_ERROR_MESSAGE = 'AudioError';
+
+const MEDIA_ERROR_NAMES: Readonly<Record<number, string>> = {
+  1: 'MEDIA_ERR_ABORTED',
+  2: 'MEDIA_ERR_NETWORK',
+  3: 'MEDIA_ERR_DECODE',
+  4: 'MEDIA_ERR_SRC_NOT_SUPPORTED',
+};
+
+/**
+ * Le message d'un échec de lecture : l'étape (chargement de l'extrait ou démarrage du son) et ce que
+ * le navigateur en dit (code `MediaError` ou nom de l'exception de `play()`). Jamais l'adresse de
+ * l'extrait ni le texte libre du navigateur (il peut la citer).
+ */
+export function describeAudioError(stage: 'chargement' | 'lecture', cause: unknown): string {
+  let reason = 'inconnue';
+  if (cause instanceof MediaError) reason = MEDIA_ERROR_NAMES[cause.code] ?? `code ${cause.code}`;
+  else if (cause instanceof Error) reason = cause.name;
+  return `${AUDIO_ERROR_MESSAGE}: ${stage}, ${reason}`;
+}
+
+/**
+ * Ce que le CDN répond pour un extrait que l'élément audio n'a pas pu charger : `, HTTP 403
+ * (text/html)`, ou `, HTTP injoignable (TypeError)` si la requête n'aboutit pas (réseau, CORS,
+ * bloqueur). L'élément audio ne donne jamais le statut HTTP : sans lui, un refus du CDN et un
+ * fichier illisible se ressemblent (`MEDIA_ERR_SRC_NOT_SUPPORTED`). Un seul octet est demandé ;
+ * rien pour une adresse qui n'est pas `http(s)` (tests). Jamais l'adresse dans le résultat.
+ */
+export async function probePreview(url: string, fetchFn: typeof fetch = (input, init) => fetch(input, init)): Promise<string> {
+  if (!/^https?:/.test(url)) return '';
+  try {
+    const response = await fetchFn(url, { headers: { Range: 'bytes=0-0' }, cache: 'no-store', credentials: 'omit' });
+    void response.body?.cancel().catch(() => undefined);
+    const type = response.headers.get('content-type')?.split(';')[0].trim() || 'sans type';
+    return `, HTTP ${response.status} (${type})`;
+  } catch (err) {
+    return `, HTTP injoignable (${err instanceof Error ? err.name : 'inconnue'})`;
+  }
+}
+
 /** Le déroulé réel d'un palier : quand le son est parti, combien de fois il s'est arrêté en route. */
 interface PlaybackTimings {
   startedAt: number;
@@ -132,6 +173,8 @@ export class HtmlAudioPort extends AudioPort {
       if (this.loadToken !== token || this._state() === 'idle') return;
       this.halt();
       this._state.set('error');
+      const message = describeAudioError('chargement', audio.error);
+      void probePreview(url).then(http => this.report(message + http));
     };
     audio.src = url;
     audio.load();
@@ -267,6 +310,7 @@ export class HtmlAudioPort extends AudioPort {
       if (this.playToken !== token || isAbort(err)) return;
       this.halt();
       this._state.set(full ? 'finished' : 'error');
+      if (!full) this.report(describeAudioError('lecture', err));
     });
     this.watch(token);
   }
@@ -363,7 +407,12 @@ export class HtmlAudioPort extends AudioPort {
     this.timings = null;
     if (!timings) return;
     const message = describeStall(this.until, timings, performance.now());
-    if (message) this.injector.get(ErrorReportingService).report({ source: 'js', message });
+    if (message) this.report(message);
+  }
+
+  /** Remonte un diagnostic du lecteur vers l'API (l'appareil est déduit par l'API). */
+  private report(message: string): void {
+    this.injector.get(ErrorReportingService).report({ source: 'js', message });
   }
 
   private clearStopTimer(): void {
