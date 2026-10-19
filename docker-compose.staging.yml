@@ -55,8 +55,8 @@ services:
       dockerfile: Dockerfile.prod
       args:
         BUILD_CONFIGURATION: staging
-        # CSP du front (G3) : bloquante, comme en prod (#300) ; report-only l'observe sans rien bloquer.
-        CSP_MODE: enforce
+        # CSP du front (G3) : en observation, comme en prod (report-only, rien n'est bloqué) ; enforce la rend bloquante (#300).
+        CSP_MODE: report-only
         CSP_API_ORIGIN: https://api-dev.inseconds.cc
         # Heure du déploiement affichée en admin (piège 25) : exportée par deploy/vps/deploy.sh ; vide hors déploiement.
         BUILD_TIME: ${BUILD_TIME:-}

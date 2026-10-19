@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { AudioStatus } from '../domain/track-round';
 import { ErrorReportingService } from '../../core/errors/error-reporting.service';
-import { HtmlAudioPort, describeAudioError, describeStall } from './html-audio.port';
+import { HtmlAudioPort, describeAudioError, describeStall, probePreview } from './html-audio.port';
 import { makeToneUrl } from './testing/wav';
 
 /**
@@ -216,6 +216,7 @@ describe('HtmlAudioPort', () => {
   it('un extrait illisible est remonté avec le code du navigateur, sans son adresse', async () => {
     port.load('blob:http://localhost/introuvable');
     await until('error');
+    await vi.waitFor(() => expect(report).toHaveBeenCalled());
 
     expect(report).toHaveBeenCalledOnce();
     const sent = report.mock.calls[0][0];
@@ -445,6 +446,33 @@ describe('HtmlAudioPort', () => {
 
       expect(port.state()).toBe('finished');
       expect(report).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('probePreview', () => {
+    const url = 'https://cdnt-preview.dzcdn.net/api/1/extrait.mp3?hdnea=exp=1~hmac=secret';
+
+    it('donne le statut HTTP et le type du CDN, sans l\'adresse, en ne demandant qu\'un octet', async () => {
+      const fetchFn = vi.fn(async () => new Response('<html>refus</html>', { status: 403, headers: { 'content-type': 'text/html; charset=utf-8' } }));
+
+      const result = await probePreview(url, fetchFn);
+
+      expect(result).toBe(', HTTP 403 (text/html)');
+      expect(result).not.toContain('hdnea');
+      expect(fetchFn).toHaveBeenCalledWith(url, expect.objectContaining({ headers: { Range: 'bytes=0-0' }, credentials: 'omit' }));
+    });
+
+    it('signale une requête qui n\'aboutit pas (réseau, CORS, bloqueur)', async () => {
+      const fetchFn = vi.fn(async () => { throw new TypeError('Failed to fetch ' + url); });
+
+      expect(await probePreview(url, fetchFn)).toBe(', HTTP injoignable (TypeError)');
+    });
+
+    it('ne sonde rien pour une adresse qui n\'est pas http(s)', async () => {
+      const fetchFn = vi.fn();
+
+      expect(await probePreview('blob:http://localhost/x', fetchFn)).toBe('');
+      expect(fetchFn).not.toHaveBeenCalled();
     });
   });
 

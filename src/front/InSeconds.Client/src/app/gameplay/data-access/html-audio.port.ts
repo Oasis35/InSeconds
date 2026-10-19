@@ -41,6 +41,25 @@ export function describeAudioError(stage: 'chargement' | 'lecture', cause: unkno
   return `${AUDIO_ERROR_MESSAGE}: ${stage}, ${reason}`;
 }
 
+/**
+ * Ce que le CDN répond pour un extrait que l'élément audio n'a pas pu charger : `, HTTP 403
+ * (text/html)`, ou `, HTTP injoignable (TypeError)` si la requête n'aboutit pas (réseau, CORS,
+ * bloqueur). L'élément audio ne donne jamais le statut HTTP : sans lui, un refus du CDN et un
+ * fichier illisible se ressemblent (`MEDIA_ERR_SRC_NOT_SUPPORTED`). Un seul octet est demandé ;
+ * rien pour une adresse qui n'est pas `http(s)` (tests). Jamais l'adresse dans le résultat.
+ */
+export async function probePreview(url: string, fetchFn: typeof fetch = (input, init) => fetch(input, init)): Promise<string> {
+  if (!/^https?:/.test(url)) return '';
+  try {
+    const response = await fetchFn(url, { headers: { Range: 'bytes=0-0' }, cache: 'no-store', credentials: 'omit' });
+    void response.body?.cancel().catch(() => undefined);
+    const type = response.headers.get('content-type')?.split(';')[0].trim() || 'sans type';
+    return `, HTTP ${response.status} (${type})`;
+  } catch (err) {
+    return `, HTTP injoignable (${err instanceof Error ? err.name : 'inconnue'})`;
+  }
+}
+
 /** Le déroulé réel d'un palier : quand le son est parti, combien de fois il s'est arrêté en route. */
 interface PlaybackTimings {
   startedAt: number;
@@ -154,7 +173,8 @@ export class HtmlAudioPort extends AudioPort {
       if (this.loadToken !== token || this._state() === 'idle') return;
       this.halt();
       this._state.set('error');
-      this.report(describeAudioError('chargement', audio.error));
+      const message = describeAudioError('chargement', audio.error);
+      void probePreview(url).then(http => this.report(message + http));
     };
     audio.src = url;
     audio.load();
