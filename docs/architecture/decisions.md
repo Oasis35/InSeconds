@@ -1,6 +1,6 @@
 # Décisions d'architecture et de produit
 
-Les choix déjà faits, avec leur raison, pour ne pas les rediscuter ni les réimplémenter par erreur. Une nouvelle décision s'ajoute ici avec sa date ; le récit de la refonte de 2026 est dans [`historique/refonte-2026/`](../historique/refonte-2026/).
+Les choix déjà faits, avec leur raison, pour ne pas les rediscuter ni les réimplémenter par erreur. Une nouvelle décision s'ajoute ici avec sa date ; l'histoire du projet est dans [`historique/`](../historique/).
 
 ## Produit
 
@@ -21,12 +21,19 @@ Les choix déjà faits, avec leur raison, pour ne pas les rediscuter ni les réi
 - **Stats d'un jour terminé figées** (J-2), recalculables à la main depuis l'admin ; la veille et le jour même calculés en direct.
 - **Autocomplétion Deezer par l'API** (`GET /api/catalogue/search`) : l'API Deezer refuse les appels CORS du navigateur.
 - **Sauvegarde de la base hors de l'API** (timer systemd du VPS) : elle doit tourner même quand l'application est en panne. Surveillance des tâches et de la sauvegarde par healthchecks.io (14/10/2026, Grafana jugé trop pénible à régler).
+- **`/jobs` sans Cloudflare Access** (prod le 14/10/2026, staging le 19/10/2026) : la policy Admin de l'API suffit (401 anonyme, 403 joueur). Au staging, Access ne protège que le front (`dev.inseconds.cc`) ; jamais `api-dev` (les appels du front ne suivent pas la redirection de connexion).
+
+## Exploitation
+
+- **Livraison en deux temps** : PR vers `env/staging`, validée sur `dev.inseconds.cc`, puis PR `env/staging` → `main` en **merge commit** (jamais squash : les anciens squash donnaient des conflits au merge suivant). Un correctif urgent peut viser `main`, qui est ensuite remergée dans `env/staging`.
+- **Grafana Cloud pour la prod seulement** (17/10/2026) : le staging n'envoie aucune télémétrie ; trois tableaux (Exploitation, Un joueur, Activité) dans [`deploy/grafana/`](../../deploy/grafana/README.md).
+- **Emails par Brevo** (expéditeur `compte@inseconds.cc`, suivi des clics désactivé), Resend abandonné.
 
 ## Front
 
 - **NgRx SignalStore** (30/09/2026) ; NgRx Store classique écarté.
 - **Domaines calqués sur les modules du back**, frontières vérifiées par Sheriff.
-- **Son sur un simple élément audio HTML** : Howler.js essayé pendant la refonte puis retiré après la recette sur iPhone (#309).
+- **Son sur un simple élément audio HTML** : Howler.js essayé puis retiré après la recette sur iPhone (#309).
 
 ## Principes
 

@@ -27,8 +27,6 @@ namespace Internal.Generated.WolverineHandlers
             _wolverineRuntime = wolverineRuntime;
         }
 
-
-
         public override async System.Threading.Tasks.Task Handle(Microsoft.AspNetCore.Http.HttpContext httpContext)
         {
             var messageContext = new Wolverine.Runtime.MessageContext(_wolverineRuntime);
@@ -46,7 +44,6 @@ namespace Internal.Generated.WolverineHandlers
                 return;
             }
 
-
             System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Players.Application.RequestMagicLinkEndpoint");
             
             // The actual HTTP request handler execution
@@ -61,13 +58,10 @@ namespace Internal.Generated.WolverineHandlers
             
             // Have to flush outgoing messages just in case Marten did nothing because of https://github.com/JasperFx/wolverine/issues/536
             await messageContext.FlushOutgoingMessagesAsync().ConfigureAwait(false);
-
         }
-
     }
 
     // END: POST_api_players_auth_magic_link
     
     
 }
-

@@ -1,6 +1,6 @@
 # RGPD : ce qui est en place
 
-État au 17/10/2026, après la passe RGPD du 16/10/2026 (PR #351, #349, #352). Le texte public est la page `/privacy` (traductions `privacy.*` de `public/i18n/fr.json` et `en.json`) : toute évolution du traitement des données doit y être reportée.
+État au 19/10/2026, après la passe RGPD du 16/10/2026 (PR #351, #349, #352). Le texte public est la page `/privacy` (traductions `privacy.*` de `public/i18n/fr.json` et `en.json`) : toute évolution du traitement des données doit y être reportée.
 
 ## Accès aux données
 
@@ -35,7 +35,8 @@ Appliquées chaque nuit par `players-purge-expired-tokens` :
 
 Copie de la prod anonymisée (`deploy/vps/staging-anonymize.sql`) : emails et pseudos remplacés, rôle admin retiré sauf `STAGING_KEEP_EMAIL`, emails sortants redirigés (cf. [`exploitation/deploiement.md`](../exploitation/deploiement.md#staging-devinsecondscc--api-devinsecondscc)).
 
+Le texte saisi déjà stocké a été supprimé par migration ; `VACUUM FULL daily.answers` a récupéré sa place en prod le 19/10/2026.
+
 ## Reste ouvert
 
 - **Pas de trace des actions de l'admin** (qui a consulté ou modifié quoi). Un seul admin aujourd'hui : à reconsidérer s'il y en a un deuxième.
-- Après la mise en prod de #351 : `VACUUM FULL daily.answers` facultatif (récupère la place du texte saisi supprimé).

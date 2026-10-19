@@ -27,7 +27,7 @@ La feuille de route décidée le 17/10/2026 peut encore changer.
    - fantôme : le parcours de l'ami affiché pendant la partie ;
    - mode infini, avec les disques au-delà de l'or.
 
-Chaque étape a un ticket parent et quelques PR vers `env/staging`, comme la refonte. Les traductions, les E2E et la doc arrivent dès le proto 1.
+Chaque étape a un ticket parent et quelques PR vers `env/staging`. Les traductions, les E2E et la doc arrivent dès le proto 1.
 
 ## Découpage du proto 1 en PR
 

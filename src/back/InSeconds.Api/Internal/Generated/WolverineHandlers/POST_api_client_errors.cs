@@ -27,8 +27,6 @@ namespace Internal.Generated.WolverineHandlers
             _problemDetailSourceOfClientErrorReport = problemDetailSourceOfClientErrorReport;
         }
 
-
-
         public override async System.Threading.Tasks.Task Handle(Microsoft.AspNetCore.Http.HttpContext httpContext)
         {
             // Reading the request body via JSON deserialization
@@ -45,7 +43,6 @@ namespace Internal.Generated.WolverineHandlers
                 return;
             }
 
-
             System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Infrastructure.Errors.ReportClientErrorEndpoint");
             
             // The actual HTTP request handler execution
@@ -54,11 +51,9 @@ namespace Internal.Generated.WolverineHandlers
             // Wolverine automatically sets the status code to 204 for empty responses
             if (httpContext.Response is { HasStarted: false, StatusCode: 200 }) httpContext.Response.StatusCode = 204;
         }
-
     }
 
     // END: POST_api_client_errors
     
     
 }
-

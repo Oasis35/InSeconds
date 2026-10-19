@@ -21,9 +21,17 @@ stacks applicatifs (ex. `docker-compose.prod.yml` d'InSeconds) le déclarent en
 Ports 80/443 : seuls ports publiés sur l'hôte pour **tout le VPS** — Caddy est le point d'entrée
 public unique, tous les autres services restent internes au réseau Docker.
 
+Domaines servis par le `Caddyfile` : la prod (`{$FRONT_DOMAIN}` → `inseconds.front`,
+`{$API_DOMAIN}` → `inseconds.api`, valeurs dans `.env`) et le staging, écrit en dur
+(`dev.inseconds.cc` → `inseconds-staging.front`, `api-dev.inseconds.cc` → `inseconds-staging.api`,
+cf. `docs/exploitation/deploiement.md` § Staging). Jamais déployé par la CI : après un
+`git pull` / `git reset --hard` qui modifie le `Caddyfile`, faire `docker restart caddy`, un
+`caddy reload` relirait l'ancien fichier (piège 26 du `CLAUDE.md` racine).
+
 ## Ajouter un futur projet
 
-Ajouter un bloc au `Caddyfile` (un domaine → un conteneur), recharger sans downtime :
+Ajouter un bloc au `Caddyfile` (un domaine → un conteneur), recharger sans downtime (fichier
+édité sur place ; après un `git pull`, `docker restart caddy`, cf. ci-dessus) :
 
 ```
 mon-autre-projet.example.com {
@@ -38,19 +46,13 @@ docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
 Le nouveau projet doit rejoindre `caddy-net` en réseau externe dans son propre
 `docker-compose.prod.yml`, comme InSeconds.
 
-## Bascule DNS (terminée le 2026-09-11)
+## Domaines
 
-`FRONT_DOMAIN`/`API_DOMAIN` ont d'abord pointé vers des sous-domaines de test
-(`vps.inseconds.cc` / `vps-api.inseconds.cc`) pour valider tout le mécanisme (HTTPS, routage)
-sans toucher au DNS de production. Un point clé
-découvert à cette occasion : le challenge **DNS-01 fonctionne indépendamment de la cible DNS
-actuelle du domaine** (il ne fait que créer un enregistrement TXT via l'API Cloudflare) — les
-certificats pour les **vrais** domaines (`inseconds.cc`, `www.inseconds.cc`, `api.inseconds.cc`)
-ont donc pu être obtenus **avant** la bascule DNS elle-même, réduisant le downtime à quasi zéro
-au moment du switch. `.env` porte maintenant les domaines définitifs (`FRONT_DOMAIN=inseconds.cc,
-www.inseconds.cc`, `API_DOMAIN=api.inseconds.cc`) — le front Angular avait déjà son `apiUrl` de
-prod figé sur `https://api.inseconds.cc` au build, donc **aucun rebuild n'a été nécessaire**,
-seul le DNS a changé de cible.
+`.env` porte les domaines de la prod (`FRONT_DOMAIN=inseconds.cc, www.inseconds.cc`,
+`API_DOMAIN=api.inseconds.cc`) ; le front a l'adresse de l'API figée au build
+(`https://api.inseconds.cc`). Le challenge **DNS-01 ne dépend pas de la cible DNS actuelle du
+domaine** (il crée seulement un enregistrement TXT via l'API Cloudflare) : le certificat d'un
+nouveau domaine s'obtient avant même de le faire pointer vers le VPS.
 
 ## Challenge DNS Cloudflare (IP du VPS jamais exposée)
 
