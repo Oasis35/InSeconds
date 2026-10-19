@@ -23,10 +23,18 @@ test.describe('Réponses du jour cachées avant de jouer', () => {
     const round = new BlindRoundPage(page);
     await game.openWithFakeClock();
 
-    const startResponse = page.waitForResponse(r =>
-      r.url().endsWith('/api/daily/sessions') && r.request().method() === 'POST');
+    // Corps lu au passage par page.route : avec waitForResponse, Chromium peut l'avoir déjà libéré
+    // quand on le lit (« Response body is not available… navigated away from », test instable).
+    let startBody: string | undefined;
+    await page.route('**/api/daily/sessions', async route => {
+      if (route.request().method() !== 'POST') return route.continue();
+      const response = await route.fetch();
+      startBody = await response.text();
+      await route.fulfill({ response, body: startBody });
+    });
     await game.clickStart();
-    expect(await (await startResponse).text()).not.toContain('deezerTrackId');
+    await expect.poll(() => startBody).toBeDefined();
+    expect(startBody).not.toContain('deezerTrackId');
 
     await round.chooseDuration(1);
     await round.waitForAnswerInput();
