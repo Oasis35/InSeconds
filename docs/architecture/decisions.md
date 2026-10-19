@@ -21,7 +21,7 @@ Les choix déjà faits, avec leur raison, pour ne pas les rediscuter ni les réi
 - **Stats d'un jour terminé figées** (J-2), recalculables à la main depuis l'admin ; la veille et le jour même calculés en direct.
 - **Autocomplétion Deezer par l'API** (`GET /api/catalogue/search`) : l'API Deezer refuse les appels CORS du navigateur.
 - **Sauvegarde de la base hors de l'API** (timer systemd du VPS) : elle doit tourner même quand l'application est en panne. Surveillance des tâches et de la sauvegarde par healthchecks.io (14/10/2026, Grafana jugé trop pénible à régler).
-- **`/jobs` sans Cloudflare Access en prod** (14/10/2026) : la policy Admin le protège. Au staging, Access protège le front (`dev.inseconds.cc`) ; côté API, il ne doit couvrir que `api-dev.inseconds.cc/jobs`, jamais tout `api-dev` (les appels du front ne suivent pas la redirection de connexion).
+- **`/jobs` sans Cloudflare Access** (prod le 14/10/2026, staging le 19/10/2026) : la policy Admin de l'API suffit (401 anonyme, 403 joueur). Au staging, Access ne protège que le front (`dev.inseconds.cc`) ; jamais `api-dev` (les appels du front ne suivent pas la redirection de connexion).
 
 ## Exploitation
 

@@ -6,7 +6,7 @@
 
 - [ ] **Recette iPhone : page zoomée et son qui coupe** (#233 fermé, recette validée le 16/10) — lire les messages `Viewport:` et `AudioStall:` dans Grafana (`/api/client-errors`), corriger si besoin, puis retirer ces deux diagnostics (`src/front/CLAUDE.md` § Erreurs)
 - [ ] **CSP bloquante** (G3b, #300) — déjà `enforce` sur le staging (17/10) ; en prod, une semaine sans violation en `report-only` (depuis le 16/10, premier contrôle dès le 23/10), puis `CSP_MODE=enforce`
-- [ ] **Retirer l'outillage de suppression des tables v1** — les tables v1 sont supprimées partout (staging le 16/10, prod le 19/10/2026, #235 fermé) : `deploy/vps/drop-v1-tables.sh`/`.sql`, `DropV1TablesTests` et `v1-schema.sql` n'ont plus d'usage. `ScriptDatabase` (`InSeconds.MigrationTests`) part aujourd'hui du schéma v1 pour toutes ses bases : le faire partir des seules migrations avant de supprimer le fichier, puis retirer son exclusion SonarCloud (`**/v1-schema.sql`, cf. [`exploitation/ci.md`](exploitation/ci.md)). Sur le checkout de prod, supprimer l'ancien `docker-compose.prod-v2.yml` non suivi s'il traîne
+- [ ] **Restes de la v1 hors du dépôt** — retirer l'exclusion `**/v1-schema.sql` de l'UI SonarCloud (Source File Exclusions : le fichier est supprimé) ; sur le checkout de prod, supprimer l'ancien `docker-compose.prod-v2.yml` non suivi s'il traîne
 - [ ] **Fin de la transition des cookies v1** (I3, #237, vers le 14/01/2027, J+90) — `legacy_tokens`, `LegacyCookieTransitionMiddleware`, anciennes clés Data Protection non chiffrées
 - [ ] **Petites dettes du front** — clés i18n de l'admin qui ne servent plus ; formats de date numériques qui ne suivent pas la langue ; `aria-label` des boutons ‹ › du tableau de bord
 
@@ -31,7 +31,6 @@
 ## Infra & exploitation
 
 - [ ] **Grafana Cloud : alertes** — l'export OpenTelemetry (prod seulement) et les trois tableaux de [`deploy/grafana/`](../deploy/grafana/README.md) sont en place ; reste à configurer côté Grafana : alerte mail sur les logs `Error` (API + erreurs front), sonde externe de `https://api.inseconds.cc/health` (Synthetic Monitoring, prévient même si le VPS est à terre)
-- [ ] **Cloudflare Access sur `api-dev.inseconds.cc/jobs`** (seulement ce chemin, jamais tout `api-dev`) — à poser s'il ne l'est pas encore ; rien en prod (décision du 14/10/2026, cf. [`architecture/decisions.md`](architecture/decisions.md))
 - [ ] **Bruit des erreurs de validation** — Wolverine peut loguer en `Error` (avec stack) chaque échec FluentValidation alors que l'API répond un 400 normal : à vérifier (validation par Wolverine.Http) avant de créer les alertes « erreurs »
 - [ ] (optionnel) Collecteur Grafana Alloy sur le VPS pour remonter aussi les logs Caddy/nginx
 - [ ] **Tâche récurrente de nettoyage des invités jamais joués** — tâche Hangfire nocturne (ou une étape de plus de `players-purge-expired-tokens`, qui supprime déjà leurs appareils au bout de 91 jours) qui supprime les invités sans aucune partie au-delà d'un seuil (ex : 30 jours). Attention : la règle croise Players et Daily, qui ne se lisent que par leurs contrats

@@ -12,7 +12,7 @@ Stack : .NET 10 / Wolverine / EF Core / PostgreSQL 17 / Hangfire côté back (mo
 
 Le code est dans `src/`, décrit par ce fichier et ses deux compagnons : [`src/back/CLAUDE.md`](src/back/CLAUDE.md) et [`src/front/CLAUDE.md`](src/front/CLAUDE.md). Il est en production depuis la refonte du 16/10/2026 (monolithe modulaire, cf. [`docs/historique/refonte-2026/`](docs/historique/refonte-2026/)) ; les mots « v1 » (l'ancienne version, supprimée) et « v2 » ne survivent que dans l'historique, les migrations et la reprise des cookies v1. Sommaire de la doc : [`docs/README.md`](docs/README.md).
 
-- **Staging** (`dev.inseconds.cc`) et **prod** (`inseconds.cc`) servent le même code, `env/staging` n'ayant d'avance que les PR pas encore promues (dernier merge `env/staging` → `main` : #370, le 19/10/2026). Les tables v1 sont supprimées partout (staging le 16/10, prod le 19/10, #235) ; `deploy/vps/drop-v1-tables.sh`, `DropV1TablesTests` et le schéma v1 figé (`src/back/tests/InSeconds.MigrationTests/v1-schema.sql`, base de départ des tests des scripts SQL) restent jusqu'à leur nettoyage ([`docs/taches.md`](docs/taches.md)).
+- **Staging** (`dev.inseconds.cc`) et **prod** (`inseconds.cc`) servent le même code, `env/staging` n'ayant d'avance que les PR pas encore promues (dernier merge `env/staging` → `main` : #370, le 19/10/2026). Les tables v1 sont supprimées partout (staging le 16/10, prod le 19/10, #235) ; le script qui les a supprimées et ses tests ont été retirés ensuite (historique git).
 - **PR** : vers `env/staging` (testée au staging), puis `env/staging` → `main` pour la prod, en merge commit (jamais squash : il crée des conflits au merge suivant). Un correctif urgent peut viser `main`, remergée ensuite dans `env/staging`.
 - Branches `main` et `env/staging` protégées (ruleset GitHub : PR obligatoire, pas de force-push ni de suppression, check « CI OK » exigé).
 
@@ -38,7 +38,7 @@ InSeconds/
 │   ├── infra/                      # Postgres partagé du VPS, sauvegardes
 │   ├── caddy/                      # reverse proxy partagé
 │   ├── grafana/                    # tableaux de bord Grafana Cloud (JSON à importer)
-│   └── vps/                        # deploy.sh, smoke-test.sh, copie prod → staging (+ staging-anonymize.sql), suppression des tables v1 (drop-v1-tables.sh/.sql)
+│   └── vps/                        # deploy.sh, smoke-test.sh, copie prod → staging (+ staging-anonymize.sql)
 ├── docs/                           # README (sommaire), règles du jeu, tâches, architecture/, exploitation/, conformite/, historique/
 ├── src/
 │   ├── back/                       # InSeconds.slnx : Api (modules), Infrastructure, Deezer, Api.Testing, tests/
@@ -103,7 +103,7 @@ L'API refuse de démarrer si les réglages du jeu sont incohérents (`DailyOptio
 
 En staging, les trois autres tâches tournent **30 min après la prod** (0 h 30, 0 h 35 et 4 h UTC, `appsettings.Staging.json`), pour que les deux instances du VPS ne travaillent jamais en même temps sur le même Postgres ; entre minuit et 0 h 30, le défi du staging est généré à la volée au premier « Commencer ». Les horaires attendus du projet healthchecks.io « [Dev]InSeconds » suivent ce décalage.
 
-Tableau de bord `/jobs` (admin seulement ; pas de Cloudflare Access en prod, décision du 14/10/2026) : c'est là qu'on lance une tâche à la main. L'onglet Actions de l'admin n'affiche que le dernier passage de chaque tâche (`GET /api/admin/jobs/last-runs`).
+Tableau de bord `/jobs` (admin seulement ; pas de Cloudflare Access, ni en prod ni au staging : la policy Admin suffit) : c'est là qu'on lance une tâche à la main. L'onglet Actions de l'admin n'affiche que le dernier passage de chaque tâche (`GET /api/admin/jobs/last-runs`).
 
 ## Architecture front
 
@@ -127,7 +127,7 @@ Angular 22 standalone, **zoneless** (la détection de changement ne part que des
 
 ## Modèle de données
 
-Même base PostgreSQL que la v1 (`inseconds` en prod, `inseconds_staging` en staging), avec un schéma par module. Les tables v1 de `public` ont été supprimées par `deploy/vps/drop-v1-tables.sh <staging|prod>` (I1, #235 : staging le 16/10, prod le 19/10/2026, après la sauvegarde archivée `archive/inseconds-2026-10-19T094004Z.dump` sur R2).
+Même base PostgreSQL que la v1 (`inseconds` en prod, `inseconds_staging` en staging), avec un schéma par module. Les tables v1 de `public` ont été supprimées (I1, #235 : staging le 16/10, prod le 19/10/2026, après la sauvegarde archivée `archive/inseconds-2026-10-19T094004Z.dump` sur R2 ; script `drop-v1-tables.sh` retiré depuis, historique git).
 
 | Schéma | Tables |
 |---|---|
