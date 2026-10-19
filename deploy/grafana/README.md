@@ -8,7 +8,7 @@ Tableaux de Grafana Cloud (stack UE), **pour la prod seulement** : le staging n'
 | `inseconds-joueur.json` | tout ce qui concerne un joueur (actions, erreurs, warnings), filtré sur l'attribut `PlayerId` et non sur le texte | logs |
 | `inseconds-activite.json` | parties démarrées, terminées, abandonnées, expirées ; score ; connexions et comptes créés ou effacés ; paliers, indices, artiste et titre trouvés | métriques métier de l'API |
 
-Ils remplacent depuis le 17/10/2026 les cinq tableaux de la v1 (`InSeconds`, `Le jeu`, `Actions joueurs en direct`, `Erreurs et warnings`, `Santé technique`) : les supprimer dans Grafana après l'import. Le détail par morceau n'est plus dans Grafana : l'admin le donne, calculé sur la base.
+Ce sont les seuls tableaux : `InSeconds`, `Le jeu`, `Actions joueurs en direct`, `Erreurs et warnings` et `Santé technique`, s'ils traînent encore dans Grafana, sont à supprimer. Le détail par morceau n'est plus dans Grafana : l'admin le donne, calculé sur la base.
 
 **Ce qui casse un panneau sans erreur** :
 - « Activité » lit les compteurs de `DailyMetrics` et `PlayersMetrics` (`inseconds_daily_sessions_total`, `inseconds_daily_answers_total`, `inseconds_daily_session_score_bucket`, `inseconds_players_sign_ins_total`, `inseconds_players_accounts_erased_total`) : renommer une métrique ou une étiquette le vide. Ces compteurs n'existent que depuis leur déploiement : rien avant.

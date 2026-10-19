@@ -31,9 +31,7 @@ Un schéma par module de l'API (`players`, `catalogue`, `daily`),
 plus `infra` (réglages, clés Data Protection), `messaging` (outbox Wolverine), `jobs`
 (Hangfire) et `extensions` (`citext`). Les migrations de l'API créent ces schémas : rien à
 faire à la main (détail : `CLAUDE.md` racine § Modèle de données). L'utilisateur `inseconds`
-étant propriétaire de la base, il peut les créer. `public` est vide : les tables de l'ancienne
-version y ont été supprimées (staging le 16/10/2026, prod le 19/10/2026, après une sauvegarde
-archivée ; script `drop-v1-tables.sh` retiré depuis, historique git).
+étant propriétaire de la base, il peut les créer. `public` est vide.
 
 ## Ajouter un futur projet
 
@@ -103,9 +101,7 @@ Une sauvegarde :
 
 `./backup.sh archive` fait la même sauvegarde (dump, vérification, copie locale), puis l'envoie
 chiffrée dans `archive/` sur R2, **qu'aucune rotation ne supprime**. R2 est obligatoire : sans lui,
-la commande échoue. Pas de signal healthchecks.io (ce n'est pas la sauvegarde de la nuit). Lancée
-avant la suppression des tables v1 (#235 ; archive `archive/inseconds-2026-10-19T094004Z.dump` du
-19/10/2026) ; à relancer à la main avant toute suppression définitive de données. Une archive se supprime à la main, jamais par
+la commande échoue. Pas de signal healthchecks.io (ce n'est pas la sauvegarde de la nuit). À lancer à la main avant toute suppression définitive de données. Une archive se supprime à la main, jamais par
 le script.
 
 Suivi : `systemctl list-timers inseconds-backup` (prochain passage),

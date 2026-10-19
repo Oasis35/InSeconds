@@ -46,19 +46,13 @@ docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
 Le nouveau projet doit rejoindre `caddy-net` en réseau externe dans son propre
 `docker-compose.prod.yml`, comme InSeconds.
 
-## Bascule DNS (terminée le 2026-09-11)
+## Domaines
 
-`FRONT_DOMAIN`/`API_DOMAIN` ont d'abord pointé vers des sous-domaines de test
-(`vps.inseconds.cc` / `vps-api.inseconds.cc`) pour valider tout le mécanisme (HTTPS, routage)
-sans toucher au DNS de production. Un point clé
-découvert à cette occasion : le challenge **DNS-01 fonctionne indépendamment de la cible DNS
-actuelle du domaine** (il ne fait que créer un enregistrement TXT via l'API Cloudflare) — les
-certificats pour les **vrais** domaines (`inseconds.cc`, `www.inseconds.cc`, `api.inseconds.cc`)
-ont donc pu être obtenus **avant** la bascule DNS elle-même, réduisant le downtime à quasi zéro
-au moment du switch. `.env` porte maintenant les domaines définitifs (`FRONT_DOMAIN=inseconds.cc,
-www.inseconds.cc`, `API_DOMAIN=api.inseconds.cc`) — le front Angular avait déjà son `apiUrl` de
-prod figé sur `https://api.inseconds.cc` au build, donc **aucun rebuild n'a été nécessaire**,
-seul le DNS a changé de cible.
+`.env` porte les domaines de la prod (`FRONT_DOMAIN=inseconds.cc, www.inseconds.cc`,
+`API_DOMAIN=api.inseconds.cc`) ; le front a l'adresse de l'API figée au build
+(`https://api.inseconds.cc`). Le challenge **DNS-01 ne dépend pas de la cible DNS actuelle du
+domaine** (il crée seulement un enregistrement TXT via l'API Cloudflare) : le certificat d'un
+nouveau domaine s'obtient avant même de le faire pointer vers le VPS.
 
 ## Challenge DNS Cloudflare (IP du VPS jamais exposée)
 

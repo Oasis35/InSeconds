@@ -1,6 +1,6 @@
 # Les contrats entre modules (`Contracts/`)
 
-Écrit le 05/10/2026, mis à jour le 17/10/2026 (code de `env/staging` après la mise en prod). Règle résumée dans le [`CLAUDE.md`](../../CLAUDE.md#règles-dures-vérifiées-en-ci) ; contexte dans [`historique/refonte-2026/PLAN.md`](../historique/refonte-2026/PLAN.md) § 3.3, § 5.1 et § 5.3.
+Écrit le 05/10/2026, mis à jour le 17/10/2026. Règle résumée dans le [`CLAUDE.md`](../../CLAUDE.md#règles-dures-vérifiées-en-ci) ; contexte dans [`historique/refonte-2026/PLAN.md`](../historique/refonte-2026/PLAN.md) § 3.3, § 5.1 et § 5.3.
 
 ## 1. L'idée en une phrase
 
@@ -79,9 +79,9 @@ Si Runs lisait directement les entités de Players ou de Catalogue, une évoluti
 
 ## 6. Ce qu'on perdrait sans `Contracts/`
 
-- **Aucune frontière vérifiable.** Tout le monde pourrait injecter `IPlayerStore`, charger un `Player` et le modifier : retour à la v1, où l'`ApplicationDbContext` était injecté partout.
+- **Aucune frontière vérifiable.** Tout le monde pourrait injecter `IPlayerStore`, charger un `Player` et le modifier, comme un `DbContext` injecté partout.
 - **Des modules soudés.** Renommer une colonne de Players obligerait à corriger Daily et Runs ; l'indépendance des modes ne tiendrait qu'à la discipline.
-- **Des invariants contournables.** Piège 30 : en v1, un compte connecté pouvait être converti par erreur parce que n'importe quel code touchait `Player`. Seul Players modifie un `Player`, par ses méthodes métier ; les autres demandent par contrat.
+- **Des invariants contournables.** Piège 30 : un compte connecté a déjà été converti par erreur parce que n'importe quel code touchait `Player`. Seul Players modifie un `Player`, par ses méthodes métier ; les autres demandent par contrat.
 
 ## 7. Garder les contrats légers
 
