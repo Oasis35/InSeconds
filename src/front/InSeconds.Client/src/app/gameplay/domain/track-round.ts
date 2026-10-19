@@ -65,7 +65,9 @@ export interface RoundConfig {
    * Redonne une adresse d'extrait fraîche après un échec de lecture : la signature des extraits
    * Deezer expire au bout de 15 min (piège 14), recharger la même adresse retomberait en erreur. Avec
    * elle, le premier échec d'un morceau se relance seul ; sans elle, rien ne se relance seul et
-   * « Réessayer » recharge la même adresse ; `null` ou un échec la gardent aussi.
+   * « Réessayer » recharge la même adresse. Un échec (réseau, partie finie ailleurs) garde l'adresse ;
+   * `null` dit que le morceau n'a plus d'extrait (retiré par Deezer en cours de journée) : la manche
+   * passe en « aperçu non disponible » au lieu de relancer une adresse morte.
    */
   readonly refreshPreviewUrl?: () => Promise<string | null>;
 }
@@ -174,6 +176,14 @@ export function listenMore(round: TrackRound): TrackRound {
 export function retryPlayback(round: TrackRound): TrackRound {
   if (round.phase !== 'audio-error') return round;
   return { ...round, phase: 'loading', autoStarted: true, chosenSeconds: round.chosenSeconds || round.steps[0] };
+}
+
+/**
+ * Le mode dit que le morceau n'a plus d'extrait (« Réessayer ») : plus rien à relancer, le joueur
+ * passe le morceau comme un morceau sans extrait. Pendant le rechargement seulement.
+ */
+export function previewWithdrawn(round: TrackRound): TrackRound {
+  return round.phase === 'loading' ? { ...round, previewUrl: null, phase: 'no-preview' } : round;
 }
 
 /** La phase de la manche pour chaque état du lecteur ; `idle` ne change rien. */

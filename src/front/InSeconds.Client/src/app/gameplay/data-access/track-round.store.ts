@@ -2,7 +2,7 @@ import { DestroyRef, computed, effect, inject, untracked } from '@angular/core';
 import { patchState, signalStore, signalStoreFeature, withComputed, withHooks, withMethods, withState } from '@ngrx/signals';
 import {
   HintFact, RoundAnswer, RoundConfig, RoundSubmission, TrackRound, applyHints, askSkip, availableHintLevels, beginListening,
-  cancelConfirm, confirmPending, createRound, listenMore, maxStep, nextStep, onAudio, replacePreviewUrl, retryPlayback, retrySubmission, reveal,
+  cancelConfirm, confirmPending, createRound, listenMore, maxStep, nextStep, onAudio, previewWithdrawn, replacePreviewUrl, retryPlayback, retrySubmission, reveal,
   showsInput, skipUnplayable, submissionFailed, submitAnswer,
 } from '../domain/track-round';
 import { AudioPort } from './audio.port';
@@ -74,10 +74,16 @@ export function withTrackRound() {
           return;
         }
         const trackId = changed.after.trackId;
-        void refresh().catch(() => null).then(url => {
+        // `undefined` : la redemande a échoué, l'adresse est gardée ; `null` : plus d'extrait du tout.
+        void refresh().catch(() => undefined).then(url => {
           const round = store.round();
           // le joueur est passé à autre chose entre-temps (passé le morceau, morceau suivant)
           if (round?.trackId !== trackId || round.phase !== 'loading') return;
+          if (url === null) {
+            audio.stop();
+            set(previewWithdrawn(round));
+            return;
+          }
           const fresh = url ? replacePreviewUrl(round, url) : round;
           set(fresh);
           launch(fresh);
