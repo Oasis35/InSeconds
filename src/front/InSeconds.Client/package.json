@@ -39,7 +39,7 @@
     "@ngx-translate/core": "18.0.0",
     "@ngx-translate/http-loader": "18.0.0",
     "@zootools/email-spell-checker": "1.12.0",
-    "html2canvas-pro": "2.4.5",
+    "html2canvas-pro": "2.5.2",
     "rxjs": "~7.8.2",
     "tslib": "^2.3.0"
   },
@@ -47,16 +47,16 @@
     "@angular/build": "22.2.3",
     "@angular/cli": "22.2.3",
     "@angular/compiler-cli": "22.2.3",
-    "@playwright/test": "1.63.0",
+    "@playwright/test": "1.64.1",
     "@softarc/sheriff-core": "0.20.0",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "26.6.5",
-    "@vitest/browser-playwright": "5.0.2",
+    "@vitest/browser-playwright": "5.0.5",
     "nswag": "14.7.1",
-    "playwright": "1.63.0",
-    "postcss": "^8.5.28",
+    "playwright": "1.64.1",
+    "postcss": "^8.5.30",
     "tailwindcss": "4.3.3",
     "typescript": "~6.0.3",
-    "vitest": "5.0.2"
+    "vitest": "5.0.5"
   }
 }
