@@ -5,7 +5,6 @@
 ## En cours
 
 - [ ] **Recette iPhone : page zoomée et son qui coupe** (#233 fermé, recette validée le 16/10) — lire les messages `Viewport:` et `AudioStall:` dans Grafana (`/api/client-errors`), corriger si besoin, puis retirer ces deux diagnostics (`src/front/CLAUDE.md` § Erreurs)
-- [ ] **CSP bloquante** (#300) — déjà `enforce` sur le staging (17/10) ; en prod, une semaine sans violation en `report-only` (depuis le 16/10, premier contrôle dès le 23/10), puis `CSP_MODE=enforce`
 - [ ] **Nettoyage hors du dépôt** — retirer l'exclusion `**/v1-schema.sql` de l'UI SonarCloud (Source File Exclusions : ce fichier n'existe plus) ; sur le checkout de prod, supprimer `docker-compose.prod-v2.yml` (non suivi) s'il traîne
 - [ ] **Fin de la reprise des anciens cookies** (#237, vers le 14/01/2027) — `legacy_tokens`, `LegacyCookieTransitionMiddleware`, anciennes clés Data Protection non chiffrées
 - [ ] **Petites dettes du front** — clés i18n de l'admin qui ne servent plus ; formats de date numériques qui ne suivent pas la langue ; `aria-label` des boutons ‹ › du tableau de bord
