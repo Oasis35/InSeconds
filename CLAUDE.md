@@ -12,8 +12,8 @@ Stack : .NET 10 / Wolverine / EF Core / PostgreSQL 17 / Hangfire côté back (mo
 
 Le code est dans `src/`, décrit par ce fichier et ses deux compagnons : [`src/back/CLAUDE.md`](src/back/CLAUDE.md) et [`src/front/CLAUDE.md`](src/front/CLAUDE.md). Il est en production depuis la refonte du 16/10/2026 (monolithe modulaire, cf. [`docs/historique/refonte-2026/`](docs/historique/refonte-2026/)) ; les mots « v1 » (l'ancienne version, supprimée) et « v2 » ne survivent que dans l'historique, les migrations et la reprise des cookies v1. Sommaire de la doc : [`docs/README.md`](docs/README.md).
 
-- **Staging** (`dev.inseconds.cc`) et **prod** (`inseconds.cc`) servent le même code ; les tables v1 restent dans `public` jusqu'à leur suppression en prod (#235). Le schéma v1, dont `DropV1TablesTests` a besoin tant qu'elles existent, est figé dans `src/back/tests/InSeconds.MigrationTests/v1-schema.sql`.
-- **PR** : vers `env/staging` (testée au staging), puis `env/staging` → `main` pour la prod, en merge commit.
+- **Staging** (`dev.inseconds.cc`) et **prod** (`inseconds.cc`) servent le même code, `env/staging` n'ayant d'avance que les PR pas encore promues (dernier merge `env/staging` → `main` : #370, le 19/10/2026). Les tables v1 sont supprimées partout (staging le 16/10, prod le 19/10, #235) ; `deploy/vps/drop-v1-tables.sh`, `DropV1TablesTests` et le schéma v1 figé (`src/back/tests/InSeconds.MigrationTests/v1-schema.sql`, base de départ des tests des scripts SQL) restent jusqu'à leur nettoyage ([`docs/taches.md`](docs/taches.md)).
+- **PR** : vers `env/staging` (testée au staging), puis `env/staging` → `main` pour la prod, en merge commit (jamais squash : il crée des conflits au merge suivant). Un correctif urgent peut viser `main`, remergée ensuite dans `env/staging`.
 - Branches `main` et `env/staging` protégées (ruleset GitHub : PR obligatoire, pas de force-push ni de suppression, check « CI OK » exigé).
 
 ## Ports (ATTENTION — non standards)
@@ -64,7 +64,7 @@ Chaque module a ses couches `Domain/` (entités aux invariants encapsulés, port
 ### Règles dures (vérifiées en CI)
 
 - **Un module n'utilise des autres que leur dossier `Contracts/`** ; `Gameplay` ne connaît aucun mode ; `Catalogue` et `Gameplay` ne connaissent pas `Daily` ; un noyau ne voit d'un mode que ses `Contracts` (Players → `Daily.Contracts.IStreakGrants`). Tests d'architecture (`tests/InSeconds.ArchitectureTests`, NetArchTest). Pas de navigation EF entre modules : des identifiants, et des clés étrangères déclarées par le nom du type.
-- **Rien dans le schéma `public`** (tables v1 jusqu'à I1) ; chaque entité déclare son schéma ; noms en snake_case.
+- **Rien dans le schéma `public`** (vide depuis la suppression des tables v1) ; chaque entité déclare son schéma ; noms en snake_case.
 - **Jamais `DateTime.UtcNow`/`Now`/`Today`** dans `InSeconds.Api` : `TimeProvider` ou `IGameCalendar` (`ClockUsageTests`).
 - **Pas de repository générique** : chaque module a ses ports nommés par l'intention (`IPlayerStore`, `IDailyStore`, `ICatalogueQueries`…).
 - **Endpoints en Wolverine.Http**, en étapes `LoadAsync` / `Validate` / `Post`, validation FluentValidation, **jamais de `SaveChangesAsync` dans un handler** (transaction Wolverine, outbox dans le schéma `messaging` ; exceptions écrites : `SettingsStore.SetAsync`, la reprise des cookies v1, `--freeze-day-stats`) et **jamais d'`IResult`** (`[EmptyResponse]` pour un 204), vérifiés par `HandlerRulesTests`. Toute route `/api/admin*` reçoit la policy Admin automatiquement.
@@ -103,7 +103,7 @@ L'API refuse de démarrer si les réglages du jeu sont incohérents (`DailyOptio
 
 En staging, les trois autres tâches tournent **30 min après la prod** (0 h 30, 0 h 35 et 4 h UTC, `appsettings.Staging.json`), pour que les deux instances du VPS ne travaillent jamais en même temps sur le même Postgres ; entre minuit et 0 h 30, le défi du staging est généré à la volée au premier « Commencer ». Les horaires attendus du projet healthchecks.io « [Dev]InSeconds » suivent ce décalage.
 
-Tableau de bord `/jobs` (admin seulement, à protéger aussi par Cloudflare Access avant la mise en prod) : c'est là qu'on lance une tâche à la main. L'onglet Actions de l'admin n'affiche que le dernier passage de chaque tâche (`GET /api/admin/jobs/last-runs`).
+Tableau de bord `/jobs` (admin seulement ; pas de Cloudflare Access en prod, décision du 14/10/2026) : c'est là qu'on lance une tâche à la main. L'onglet Actions de l'admin n'affiche que le dernier passage de chaque tâche (`GET /api/admin/jobs/last-runs`).
 
 ## Architecture front
 
@@ -127,7 +127,7 @@ Angular 22 standalone, **zoneless** (la détection de changement ne part que des
 
 ## Modèle de données
 
-Même base PostgreSQL que la v1 (`inseconds` en prod, `inseconds_staging` en staging), avec un schéma par module. Les tables v1 restent dans `public` jusqu'à leur suppression par `deploy/vps/drop-v1-tables.sh <staging|prod>` (I1, #235 ; en prod, après une sauvegarde archivée par `backup.sh archive`), lancé à la main sur le VPS.
+Même base PostgreSQL que la v1 (`inseconds` en prod, `inseconds_staging` en staging), avec un schéma par module. Les tables v1 de `public` ont été supprimées par `deploy/vps/drop-v1-tables.sh <staging|prod>` (I1, #235 : staging le 16/10, prod le 19/10/2026, après la sauvegarde archivée `archive/inseconds-2026-10-19T094004Z.dump` sur R2).
 
 | Schéma | Tables |
 |---|---|
@@ -269,14 +269,15 @@ Vue fonctionnelle ; le détail technique de chaque point est dans `src/back/CLAU
 - **Identité** : invité créé au premier « Commencer » (la lecture de l'état du jour ne crée rien) ; compte optionnel par lien magique (inscription ouverte, pas de mot de passe ; correction proposée d'un domaine mal tapé, adresse rappelée après l'envoi avec « Renvoyer le lien », étape « Nouveau compte » avec l'adresse et « J'ai déjà un compte » avant de créer un compte, sans jamais dire à la saisie si une adresse a un compte), pseudo, changement d'email confirmé à la nouvelle adresse, liste des appareils connectés (repliée dans le profil), déconnexion d'un appareil ou de tous les autres. Droits RGPD, section « Tes données » du profil : « Télécharger mes données » (copie de toutes ses données en JSON, `GET /api/players/me/export`) et « Supprimer mon compte » (fenêtre où l'on retape son pseudo, `POST /api/players/me/delete`) ; commandes de secours `--export-player` / `--delete-player` sur le VPS. Durées de conservation appliquées chaque nuit : appareils sans visite depuis 91 jours, comptes inactifs depuis 3 ans. Les cookies v1 sont repris à la première visite (une session d'appareil par conversion).
 - **Série et gels** : série sur la date du défi, gels pour les comptes (1 offert à la création, +1 tous les 7 jours, 2 au plus), série protégée ou perdue, gélule et panneau de détail, toasts de fin de partie.
 - **Admin** (`/admin`, rôle `is_admin`) : tableau de bord, défis (stats par défi, chips joueur « toi », histogrammes, recalcul d'une photo figée), pool (recherche et ajout Deezer, écoute, renommage à tout moment, désactivation, suppression d'un morceau jamais utilisé, cooldown appliqué coloré selon le seuil de 14 jours), joueurs (comptes, série, historique de 30 jours), actions (témoins des tâches planifiées, part du pool en cooldown et jours appliqués, stories Instagram hebdomadaires), lien vers `/jobs`, heure de déploiement.
-- **Transverse** : FR/EN (détection puis choix dans le pied de page), PWA installable, nouvelle version appliquée d'elle-même à un moment sûr (jamais pendant une manche, une saisie ou une fenêtre ouverte ; bandeau « Nouvelle version disponible » seulement en secours), overlay « Service indisponible » (sonde `/health`), code d'erreur affiché au joueur (le `traceId`), page `/privacy`, avis « l'adresse a changé » pour l'ancienne URL `code.run`, CSP du front (en `report-only` jusqu'à une semaine sans violation en prod, puis bloquante : #300).
+- **Transverse** : FR/EN (détection puis choix dans le pied de page), PWA installable, nouvelle version appliquée d'elle-même à un moment sûr (jamais pendant une manche, une saisie ou une fenêtre ouverte ; bandeau « Nouvelle version disponible » seulement en secours), overlay « Service indisponible » (sonde `/health`), code d'erreur affiché au joueur (le `traceId`), page `/privacy`, avis « l'adresse a changé » pour l'ancienne URL `code.run`, CSP du front (bloquante au staging depuis le 17/10, en `report-only` en prod jusqu'à une semaine sans violation, puis bloquante : #300).
 - **Observabilité** : OpenTelemetry (logs, traces, métriques) exporté en OTLP vers Grafana Cloud si `OTEL_EXPORTER_OTLP_ENDPOINT` est défini, **en prod seulement** (le staging ne transmet aucune variable `OTEL_*`) ; compteurs métier des parties, réponses, connexions et comptes effacés (`DailyMetrics`, `PlayersMetrics`) pour le tableau « Activité », trois tableaux dans `deploy/grafana/` (Exploitation, Un joueur, Activité) ; tag `inseconds.player_id` et scope `PlayerId` sur chaque requête identifiée, pour suivre le parcours d'un joueur. **Jamais d'email, de pseudo, de réponse saisie, de cookie ni d'`Authorization` dans la télémétrie** (testé). Logs SQL d'EF Core coupés en prod et staging (`Database.Command` en `Warning`) ; une écriture refusée par la base est journalisée en `Warning`, la panne réelle en `Error` par le gestionnaire global. Une erreur remontée par le front porte la version du front, l'état de la connexion et l'appareil (« Safari · iPhone », jamais le `User-Agent` brut).
 - **Ancienne API** : les routes de la v1 ont répondu `410 common.new_version` après la bascule ; retirées en I1 (#235), elles répondent 404.
 
 ## À venir
 
-- **Fin de la refonte** : suppression des tables v1 en prod (`deploy/vps/drop-v1-tables.sh prod`, #235), puis I3 (#237, vers le 14/01/2027) : `legacy_tokens` et middleware de reprise des cookies v1. Détail : [`docs/historique/refonte-2026/`](docs/historique/refonte-2026/).
-- **CSP bloquante** (#300).
+- **Fin de la refonte** : I3 (#237, vers le 14/01/2027) : `legacy_tokens`, middleware de reprise des cookies v1 et anciennes clés Data Protection. Détail : [`docs/historique/refonte-2026/`](docs/historique/refonte-2026/).
+- **CSP bloquante en prod** (#300, premier contrôle des violations dès le 23/10/2026).
+- **Recette iPhone** : lire les diagnostics `Viewport:` et `AudioStall:` remontés par le front, puis les retirer (`src/front/CLAUDE.md` § Erreurs).
 - **Mode Runs** (nom affiché provisoire « Platines », « Run » dans les tickets, epic #368) : conçu le 17/10/2026, pas encore codé. Règles, écrans de référence, conception et découpage en PR : [`docs/runs/`](docs/runs/README.md). L'architecture lui réserve un module et un domaine, rien n'est créé avant.
 - Le reste : [`docs/taches.md`](docs/taches.md).
 

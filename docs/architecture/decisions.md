@@ -21,6 +21,13 @@ Les choix déjà faits, avec leur raison, pour ne pas les rediscuter ni les réi
 - **Stats d'un jour terminé figées** (J-2), recalculables à la main depuis l'admin ; la veille et le jour même calculés en direct.
 - **Autocomplétion Deezer par l'API** (`GET /api/catalogue/search`) : l'API Deezer refuse les appels CORS du navigateur.
 - **Sauvegarde de la base hors de l'API** (timer systemd du VPS) : elle doit tourner même quand l'application est en panne. Surveillance des tâches et de la sauvegarde par healthchecks.io (14/10/2026, Grafana jugé trop pénible à régler).
+- **`/jobs` sans Cloudflare Access en prod** (14/10/2026) : la policy Admin le protège. Au staging, Access protège le front (`dev.inseconds.cc`) ; côté API, il ne doit couvrir que `api-dev.inseconds.cc/jobs`, jamais tout `api-dev` (les appels du front ne suivent pas la redirection de connexion).
+
+## Exploitation
+
+- **Livraison en deux temps** (rétablie après la mise en prod du 16/10/2026) : PR vers `env/staging`, validée sur `dev.inseconds.cc`, puis PR `env/staging` → `main` en **merge commit** (jamais squash : les anciens squash donnaient des conflits au merge suivant). Un correctif urgent peut viser `main`, qui est ensuite remergée dans `env/staging`.
+- **Grafana Cloud pour la prod seulement** (17/10/2026) : le staging n'envoie aucune télémétrie ; trois tableaux (Exploitation, Un joueur, Activité) dans [`deploy/grafana/`](../../deploy/grafana/README.md).
+- **Emails par Brevo** (expéditeur `compte@inseconds.cc`, suivi des clics désactivé), Resend abandonné.
 
 ## Front
 

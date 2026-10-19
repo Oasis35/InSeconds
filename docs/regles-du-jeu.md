@@ -6,7 +6,7 @@
 >
 > Pour chaque règle, la mention **[Back]** / **[Front]** indique où elle est réellement appliquée (utile pour savoir si modifier un réglage en base suffit, ou s'il faut aussi toucher au code).
 >
-> **2026-10-12 (PR G4)** : références mises à jour pour la v2 (réglages `Daily:*` de `infra.settings`, modules `Daily` et `Gameplay`, routes `/api/daily/…`). Les règles du jeu n'ont pas changé depuis l'ancienne version, sauf mention contraire.
+> **2026-10-12 (PR G4)** : références au code (réglages `Daily:*` de `infra.settings`, modules `Daily` et `Gameplay`, routes `/api/daily/…`) alignées sur l'application actuelle, en prod depuis la refonte du 16/10/2026. Les règles du jeu n'ont pas changé à la refonte, sauf mention contraire.
 
 ## Déroulé d'une partie
 
@@ -98,7 +98,7 @@ Seuls les morceaux dont l'extrait est **disponible** (`preview_status` = 1, jama
 - **Rien qui identifie le morceau avant la réponse** — ni artiste, ni titre, ni année, ni identifiant Deezer au démarrage de la partie ; pochette et lien Deezer n'arrivent qu'avec la réponse. **[Back]**
 - **Anti-rejeu** : contrainte unique `(player_id, challenge_id)` — impossible de rejouer un défi déjà terminé, abandonné ou expiré en re-soumettant une requête ; une seule réponse par morceau (clé `(session_id, position)`). **[Back]**
 - **Verrou du morceau en cours** : le morceau en cours est le premier sans réponse, un autre morceau ne peut pas prendre le verrou (409 `daily.track_lock_not_released`). **[Back]**
-- **Plancher d'écoute** : `PATCH /api/daily/sessions/{id}/listening` enregistre, dès que le palier écouté change (démarrage et chaque « écouter plus »), la durée maximale déjà écoutée (`daily.sessions.current_listened_seconds`, jamais réduite). Une réponse qui annonce un palier plus court est **refusée** (400 `daily.listened_duration_below_verified_minimum`, nouveau en v2 : la v1 se contentait de masquer les paliers), et à la reprise après un rechargement les paliers plus courts ne sont pas proposés. **[Back + Front]**
+- **Plancher d'écoute** : `PATCH /api/daily/sessions/{id}/listening` enregistre, dès que le palier écouté change (démarrage et chaque « écouter plus »), la durée maximale déjà écoutée (`daily.sessions.current_listened_seconds`, jamais réduite). Une réponse qui annonce un palier plus court est **refusée** (400 `daily.listened_duration_below_verified_minimum`, depuis la refonte de 2026 : l'ancienne version se contentait de masquer les paliers), et à la reprise après un rechargement les paliers plus courts ne sont pas proposés. **[Back + Front]**
 - **Durée validée serveur** : un palier qui n'est pas dans `Daily:AllowedDurationsSeconds` (sauf `0` pour un morceau sans extrait) est refusé par la validation de la réponse (400). **[Back]**
 
 ## Timer de saisie

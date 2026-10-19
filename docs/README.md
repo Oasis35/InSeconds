@@ -28,7 +28,7 @@ InSeconds est un **blind test musical quotidien**. La lecture démarre au palier
 
 ## État du dépôt
 
-Le code est dans `src/`, en prod depuis la refonte du 16/10/2026 ([historique](historique/refonte-2026/)).
+Le code est dans `src/`, en prod depuis la refonte du 16/10/2026 ([historique](historique/refonte-2026/)) ; le staging (`dev.inseconds.cc`) reçoit d'abord chaque PR (`env/staging`), la prod suit par un merge vers `main`. Prochaines étapes : CSP bloquante en prod (#300), fin de la reprise des cookies v1 (#237), puis le mode Run ([`runs/`](runs/README.md)). Le détail est dans [`taches.md`](taches.md).
 
 ## Où trouver quoi
 

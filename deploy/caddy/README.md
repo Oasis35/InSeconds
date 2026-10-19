@@ -21,9 +21,17 @@ stacks applicatifs (ex. `docker-compose.prod.yml` d'InSeconds) le déclarent en
 Ports 80/443 : seuls ports publiés sur l'hôte pour **tout le VPS** — Caddy est le point d'entrée
 public unique, tous les autres services restent internes au réseau Docker.
 
+Domaines servis par le `Caddyfile` : la prod (`{$FRONT_DOMAIN}` → `inseconds.front`,
+`{$API_DOMAIN}` → `inseconds.api`, valeurs dans `.env`) et le staging, écrit en dur
+(`dev.inseconds.cc` → `inseconds-staging.front`, `api-dev.inseconds.cc` → `inseconds-staging.api`,
+cf. `docs/exploitation/deploiement.md` § Staging). Jamais déployé par la CI : après un
+`git pull` / `git reset --hard` qui modifie le `Caddyfile`, faire `docker restart caddy`, un
+`caddy reload` relirait l'ancien fichier (piège 26 du `CLAUDE.md` racine).
+
 ## Ajouter un futur projet
 
-Ajouter un bloc au `Caddyfile` (un domaine → un conteneur), recharger sans downtime :
+Ajouter un bloc au `Caddyfile` (un domaine → un conteneur), recharger sans downtime (fichier
+édité sur place ; après un `git pull`, `docker restart caddy`, cf. ci-dessus) :
 
 ```
 mon-autre-projet.example.com {
