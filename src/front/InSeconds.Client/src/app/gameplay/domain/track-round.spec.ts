@@ -1,6 +1,6 @@
 import {
   RoundConfig, TrackRound, applyHints, askSkip, availableHintLevels, beginListening, cancelConfirm, confirmPending,
-  createRound, isAnswering, listenMore, maxStep, nextStep, onAudio, replacePreviewUrl, retryPlayback, retrySubmission, reveal, showsInput,
+  createRound, isAnswering, listenMore, maxStep, nextStep, onAudio, previewWithdrawn, replacePreviewUrl, retryPlayback, retrySubmission, reveal, showsInput,
   skipUnplayable, submissionFailed, submitAnswer, unlockedHintLevel,
 } from './track-round';
 
@@ -174,6 +174,18 @@ describe('replacePreviewUrl', () => {
     const failed = onAudio(started(), 'error');
     expect(replacePreviewUrl(failed, 'https://cdn/frais.mp3')).toBe(failed);
     expect(replacePreviewUrl(reloading, '')).toBe(reloading);
+  });
+});
+
+describe('previewWithdrawn', () => {
+  it('passe le rechargement en « aperçu non disponible », sans adresse, et rien ailleurs', () => {
+    const reloading = retryPlayback(onAudio(started(), 'error'));
+    const withdrawn = previewWithdrawn(reloading);
+    expect(withdrawn.phase).toBe('no-preview');
+    expect(withdrawn.previewUrl).toBeNull();
+    expect(skipUnplayable(withdrawn).phase).toBe('submitting');
+    const failed = onAudio(started(), 'error');
+    expect(previewWithdrawn(failed)).toBe(failed);
   });
 });
 

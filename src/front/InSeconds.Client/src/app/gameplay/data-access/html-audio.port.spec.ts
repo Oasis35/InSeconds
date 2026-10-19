@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { AudioStatus } from '../domain/track-round';
 import { ErrorReportingService } from '../../core/errors/error-reporting.service';
-import { HtmlAudioPort, describeStall } from './html-audio.port';
+import { HtmlAudioPort, describeAudioError, describeStall } from './html-audio.port';
 import { makeToneUrl } from './testing/wav';
 
 /**
@@ -213,6 +213,17 @@ describe('HtmlAudioPort', () => {
     expect(history).not.toContain('ready');
   });
 
+  it('un extrait illisible est remonté avec le code du navigateur, sans son adresse', async () => {
+    port.load('blob:http://localhost/introuvable');
+    await until('error');
+
+    expect(report).toHaveBeenCalledOnce();
+    const sent = report.mock.calls[0][0];
+    expect(sent.source).toBe('js');
+    expect(sent.message).toMatch(/^AudioError: chargement, MEDIA_ERR_/);
+    expect(JSON.stringify(sent)).not.toContain('introuvable');
+  });
+
   it('une erreur n\'empêche pas de réessayer : le même extrait se recharge', async () => {
     port.load('blob:http://localhost/introuvable');
     await until('error');
@@ -410,6 +421,7 @@ describe('HtmlAudioPort', () => {
 
       await until('error');
       expect(history).not.toContain('idle');
+      expect(report).toHaveBeenCalledWith({ source: 'js', message: 'AudioError: lecture, NotAllowedError' });
     });
 
     it('une lecture interrompue par notre propre pause (AbortError) n\'est pas une erreur', async () => {
@@ -432,6 +444,16 @@ describe('HtmlAudioPort', () => {
       await sleep(50);
 
       expect(port.state()).toBe('finished');
+      expect(report).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('describeAudioError', () => {
+    it('nomme le code MediaError, ou l\'exception de play()', () => {
+      const mediaError = Object.create(MediaError.prototype, { code: { value: 4 } }) as MediaError;
+      expect(describeAudioError('chargement', mediaError)).toBe('AudioError: chargement, MEDIA_ERR_SRC_NOT_SUPPORTED');
+      expect(describeAudioError('lecture', new DOMException('refusé', 'NotAllowedError'))).toBe('AudioError: lecture, NotAllowedError');
+      expect(describeAudioError('chargement', null)).toBe('AudioError: chargement, inconnue');
     });
   });
 

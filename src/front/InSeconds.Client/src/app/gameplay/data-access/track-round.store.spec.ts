@@ -275,6 +275,21 @@ describe('TrackRoundStore', () => {
       expect(audio.calls).toEqual([]);
     });
 
+    it('un morceau qui n\'a plus d\'extrait (redemande à `null`) passe en « aperçu non disponible », sans recharger l\'adresse morte', async () => {
+      const refresh = vi.fn(() => Promise.resolve<string | null>(null));
+      store.start({ ...CONFIG, refreshPreviewUrl: refresh });
+      store.listenMore();
+      audio.calls.length = 0;
+
+      emit('error');
+      await vi.waitFor(() => expect(store.phase()).toBe('no-preview'));
+
+      expect(audio.calls).toEqual(['stop']);
+      expect(store.showsInput()).toBe(false);
+      // le joueur passe le morceau sans confirmation, avec le palier déjà annoncé
+      expect(store.skipUnplayable()).toMatchObject({ listenedSeconds: 1, wasExtended: true, artist: null, title: null });
+    });
+
     it('« Réessayer » ne fait rien hors d\'un échec de lecture, pas même déverrouiller', () => {
       store.start(CONFIG);
       emit('ready');
