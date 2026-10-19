@@ -29,7 +29,11 @@ RUN case "$CSP_MODE" in \
     esac \
  && sed -e "s|__CSP_HEADER_NAME__|$header|" \
         -e "s|__CSP_API_ORIGIN__|$CSP_API_ORIGIN|" \
-        nginx/csp.conf.template > /tmp/csp.conf
+        nginx/csp.conf.template > /tmp/csp.conf \
+ && printf '\n// CSP %s\n' "$(sha256sum /tmp/csp.conf | cut -c1-16)" >> dist/InSeconds.Client/browser/ngsw-worker.js
+# Un service worker garde la CSP reçue à son installation, et le navigateur ne le réinstalle que si
+# son script change : la ligne ajoutée ci-dessus change le script avec la CSP, sinon un worker installé
+# sous une ancienne CSP continuerait de l'appliquer à ses requêtes (504 sur les extraits Deezer, 19/10/2026).
 
 FROM nginxinc/nginx-unprivileged:alpine AS runtime
 COPY --from=build /app/dist/InSeconds.Client/browser /usr/share/nginx/html

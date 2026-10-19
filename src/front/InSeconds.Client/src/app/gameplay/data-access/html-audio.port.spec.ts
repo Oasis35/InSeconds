@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { AudioStatus } from '../domain/track-round';
 import { ErrorReportingService } from '../../core/errors/error-reporting.service';
-import { HtmlAudioPort, describeAudioError, describeStall, probePreview } from './html-audio.port';
+import { HtmlAudioPort, bypassServiceWorker, describeAudioError, describeStall, probePreview } from './html-audio.port';
 import { makeToneUrl } from './testing/wav';
 
 /**
@@ -459,7 +459,7 @@ describe('HtmlAudioPort', () => {
 
       expect(result).toBe(', HTTP 403 (text/html)');
       expect(result).not.toContain('hdnea');
-      expect(fetchFn).toHaveBeenCalledWith(url, expect.objectContaining({ headers: { Range: 'bytes=0-0' }, credentials: 'omit' }));
+      expect(fetchFn).toHaveBeenCalledWith(`${url}&ngsw-bypass=1`, expect.objectContaining({ headers: { Range: 'bytes=0-0' }, credentials: 'omit' }));
     });
 
     it('signale une requête qui n\'aboutit pas (réseau, CORS, bloqueur)', async () => {
@@ -473,6 +473,18 @@ describe('HtmlAudioPort', () => {
 
       expect(await probePreview('blob:http://localhost/x', fetchFn)).toBe('');
       expect(fetchFn).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('bypassServiceWorker', () => {
+    it('demande au service worker de laisser l\'extrait au navigateur, signature intacte', () => {
+      const signed = 'https://cdnt-preview.dzcdn.net/api/1/extrait.mp3?hdnea=exp=1~hmac=secret';
+      expect(bypassServiceWorker(signed)).toBe(`${signed}&ngsw-bypass=1`);
+      expect(bypassServiceWorker('https://cdn.example/1.mp3')).toBe('https://cdn.example/1.mp3?ngsw-bypass=1');
+    });
+
+    it('laisse telles quelles les adresses qui ne sont pas http(s)', () => {
+      expect(bypassServiceWorker('blob:http://localhost/x')).toBe('blob:http://localhost/x');
     });
   });
 

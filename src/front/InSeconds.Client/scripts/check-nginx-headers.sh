@@ -97,6 +97,13 @@ for path in /ngsw.json /ngsw-worker.js /safety-worker.js /manifest.webmanifest; 
 done
 check_content_type "/ngsw.json" "application/json"
 check_content_type "/ngsw-worker.js" "application/javascript|text/javascript"
+# Le worker porte l'empreinte de sa CSP (Dockerfile.prod) : il se réinstalle quand elle change.
+if curl -sS "$BASE/ngsw-worker.js" | tail -n 1 | grep -Eq '^// CSP [0-9a-f]{16}$'; then
+  echo "OK   /ngsw-worker.js -> empreinte de la CSP"
+else
+  echo "FAIL /ngsw-worker.js: empreinte de la CSP absente"
+  fail=1
+fi
 
 # Hashé : cache long et immuable.
 if [[ -n "$js_file" ]]; then

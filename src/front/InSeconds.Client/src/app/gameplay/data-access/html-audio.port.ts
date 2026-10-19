@@ -42,6 +42,18 @@ export function describeAudioError(stage: 'chargement' | 'lecture', cause: unkno
 }
 
 /**
+ * L'adresse d'un extrait, marquée pour que le service worker Angular la laisse au navigateur
+ * (`ngsw-bypass`, que Deezer ignore sans casser la signature). Sinon le worker la redemande
+ * lui-même, sous la CSP qu'il a reçue à son installation : un worker installé quand la CSP
+ * bloquante n'autorisait pas le CDN en `connect-src` répondait 504 à chaque extrait, et le reste
+ * tant que son script ne change pas. Rien pour une adresse qui n'est pas `http(s)` (`blob:`).
+ */
+export function bypassServiceWorker(url: string): string {
+  if (!/^https?:/.test(url)) return url;
+  return `${url}${url.includes('?') ? '&' : '?'}ngsw-bypass=1`;
+}
+
+/**
  * Ce que le CDN répond pour un extrait que l'élément audio n'a pas pu charger : `, HTTP 403
  * (text/html)`, ou `, HTTP injoignable (TypeError)` si la requête n'aboutit pas (réseau, CORS,
  * bloqueur). L'élément audio ne donne jamais le statut HTTP : sans lui, un refus du CDN et un
@@ -51,7 +63,7 @@ export function describeAudioError(stage: 'chargement' | 'lecture', cause: unkno
 export async function probePreview(url: string, fetchFn: typeof fetch = (input, init) => fetch(input, init)): Promise<string> {
   if (!/^https?:/.test(url)) return '';
   try {
-    const response = await fetchFn(url, { headers: { Range: 'bytes=0-0' }, cache: 'no-store', credentials: 'omit' });
+    const response = await fetchFn(bypassServiceWorker(url), { headers: { Range: 'bytes=0-0' }, cache: 'no-store', credentials: 'omit' });
     void response.body?.cancel().catch(() => undefined);
     const type = response.headers.get('content-type')?.split(';')[0].trim() || 'sans type';
     return `, HTTP ${response.status} (${type})`;
@@ -176,7 +188,7 @@ export class HtmlAudioPort extends AudioPort {
       const message = describeAudioError('chargement', audio.error);
       void probePreview(url).then(http => this.report(message + http));
     };
-    audio.src = url;
+    audio.src = bypassServiceWorker(url);
     audio.load();
   }
 
@@ -430,7 +442,7 @@ export class HtmlAudioPort extends AudioPort {
     const link = document.createElement('link');
     link.rel = 'preload';
     link.as = 'audio';
-    link.href = url;
+    link.href = bypassServiceWorker(url);
     document.head.appendChild(link);
     this.preloadLink = link;
   }
