@@ -21,8 +21,6 @@ namespace Internal.Generated.WolverineHandlers
             _dailyRules = dailyRules;
         }
 
-
-
         public override async System.Threading.Tasks.Task Handle(Microsoft.AspNetCore.Http.HttpContext httpContext)
         {
             System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Daily.Application.GetDailySettingsEndpoint");
@@ -33,11 +31,9 @@ namespace Internal.Generated.WolverineHandlers
             // Writing the response body to JSON because this was the first 'return variable' in the method signature
             await WriteJsonAsync(httpContext, dailySettingsResponse_response, 404);
         }
-
     }
 
     // END: GET_api_daily_settings
     
     
 }
-

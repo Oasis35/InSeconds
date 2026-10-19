@@ -27,8 +27,6 @@ namespace Internal.Generated.WolverineHandlers
             _wolverineRuntime = wolverineRuntime;
         }
 
-
-
         public override async System.Threading.Tasks.Task Handle(Microsoft.AspNetCore.Http.HttpContext httpContext)
         {
             var messageContext = new Wolverine.Runtime.MessageContext(_wolverineRuntime);
@@ -47,7 +45,6 @@ namespace Internal.Generated.WolverineHandlers
                 return;
             }
 
-
             
             // The actual HTTP request handler execution
             var deezerTrackResultIReadOnlyList_response = InSeconds.Api.Modules.Catalogue.Application.AdminDeezerSearchEndpoint.Get(searchLookup, _optionsMonitorOfCatalogueOptions);
@@ -55,11 +52,9 @@ namespace Internal.Generated.WolverineHandlers
             // Writing the response body to JSON because this was the first 'return variable' in the method signature
             await WriteJsonAsync(httpContext, deezerTrackResultIReadOnlyList_response, 404);
         }
-
     }
 
     // END: GET_api_admin_catalogue_deezer_search
     
     
 }
-
