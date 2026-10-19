@@ -4,7 +4,7 @@
 
 Un run, c'est une suite de **4 manches de 5 morceaux**, de plus en plus difficiles. À chaque manche, il faut remplir une jauge de points pour débloquer la suivante. À la fin, on gagne un **disque** (rayé, cire, bronze, argent, or) selon les manches passées, et on peut envoyer la même playlist à ses amis pour comparer les scores.
 
-Noms : **« Run »** dans les tickets GitHub (étiquette `run`), **`Runs`** dans le code (module back, schéma, routes, réglages, domaine front), **« Platines »** à l'écran (nom provisoire, il ne vit que dans les traductions : le changer ne touche que les textes). Un défi (`challenge` dans le code) s'appelle une **playlist** à l'écran (Clément, 18/10).
+Noms : **« Run »** dans les tickets GitHub (étiquette `Mode Run`), **`Runs`** dans le code (module back, schéma, routes, réglages, domaine front), **« Platines »** à l'écran (nom provisoire, il ne vit que dans les traductions : le changer ne touche que les textes). Un défi (`challenge` dans le code) s'appelle une **playlist** à l'écran (Clément, 18/10).
 
 ## Les documents
 

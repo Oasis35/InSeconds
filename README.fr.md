@@ -37,7 +37,7 @@
 
 - Docker (base PostgreSQL de dev, et tests d'intégration)
 - .NET 10 SDK
-- Node.js ≥ 22.22 et npm
+- Node.js ≥ 22.22.3 (exigé par Angular CLI 22.2) et npm
 
 ### Lancer la base et l'API
 
@@ -87,8 +87,8 @@ Ouvre `http://localhost:5176`.
 
 ```
 InSeconds/
-├── deploy/                    # VPS : Postgres partagé, Caddy, scripts de déploiement
-├── docs/                      # Documentation (FR) : point d'entrée, règles du jeu, tâches, plan de la refonte
+├── deploy/                    # VPS : Postgres partagé et sauvegardes, Caddy, scripts de déploiement, tableaux Grafana
+├── docs/                      # Documentation (FR) : point d'entrée, règles du jeu, tâches, architecture, exploitation, conformité, mode Run, historique
 ├── src/
 │   ├── back/                  # InSeconds.slnx : Api (modules), Infrastructure, Deezer, Api.Testing, tests/
 │   └── front/InSeconds.Client/  # Application Angular (domaines account, gameplay, daily, admin)
@@ -109,6 +109,8 @@ Workflow GitHub Actions sur chaque push (toutes branches) et chaque PR vers `mai
 
 Le check **« CI OK »** les agrège (c'est lui qu'exige la protection des branches). Les runs obsolètes sont annulés automatiquement. Détail : [`docs/exploitation/ci.md`](docs/exploitation/ci.md).
 
+Livraison : les PR visent `env/staging`, déployée sur le staging une fois « CI OK » passé ; après test, `env/staging` est mergée dans `main` (merge commit), qui déploie la prod de la même façon. Détail : [`docs/exploitation/deploiement.md`](docs/exploitation/deploiement.md).
+
 ## Tests
 
 ### Backend
@@ -118,7 +120,7 @@ cd src/back
 dotnet test --solution InSeconds.slnx   # unitaires + architecture + intégration (Docker requis)
 ```
 
-Quatre projets dans `tests/` : unitaires (règles du domaine, sans base), architecture (frontières des modules, NetArchTest), intégration (Testcontainers + Respawn : un vrai PostgreSQL, l'API en mémoire) et les scripts SQL lancés à la main sur le VPS (`deploy/vps`).
+Quatre projets dans `tests/` : unitaires (règles du domaine, sans base), architecture (frontières des modules, NetArchTest), intégration (Testcontainers : un vrai PostgreSQL avec une base neuve par classe de tests, l'API en mémoire) et les scripts SQL lancés à la main sur le VPS (`deploy/vps`).
 
 ### Frontend
 
@@ -135,7 +137,7 @@ cd src/front/InSeconds.Client
 E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=<DB_PASSWORD>" npm run e2e
 ```
 
-`playwright.config.ts` démarre l'hôte de test (port 5177) et `ng serve` (port 5178). **120 tests** répartis sur 30 fichiers, jeu, connexion, profil, série et gels, admin…
+`playwright.config.ts` démarre l'hôte de test (port 5177) et `ng serve` (port 5178). **126 tests** répartis sur 31 fichiers : jeu, connexion, profil, appareils, tes données, série et gels, admin…
 
 ## Documentation
 
@@ -143,8 +145,9 @@ E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inse
 - [`CLAUDE.md`](CLAUDE.md) — conventions, modèle de données, pièges connus (à lire avant de contribuer)
 - Architecture : [`src/back/CLAUDE.md`](src/back/CLAUDE.md) (backend), [`src/front/CLAUDE.md`](src/front/CLAUDE.md) (frontend), [`docs/architecture/`](docs/architecture/) (décisions, frontières entre modules)
 - [`docs/regles-du-jeu.md`](docs/regles-du-jeu.md) — règles de jeu (scoring, prolongation, anti-triche, série) — ce qui est réellement appliqué vs juste configuré
-- [`docs/exploitation/`](docs/exploitation/) — déploiement sur le VPS, CI, accès de secours
+- [`docs/exploitation/`](docs/exploitation/) — déploiement sur le VPS, staging, sauvegardes, CI, accès de secours
 - [`docs/conformite/`](docs/conformite/) — conditions de l'API Deezer, RGPD
+- [`docs/runs/`](docs/runs/README.md) — le futur mode Run (conçu, pas encore codé)
 - [`docs/taches.md`](docs/taches.md) — ce qui reste à faire
 - [`docs/historique/`](docs/historique/) — la refonte de 2026
 

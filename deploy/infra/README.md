@@ -27,12 +27,11 @@ connectés au réseau `shared-postgres`.
 
 ### Contenu de la base `inseconds`
 
-Une seule base pour la v1 et la v2 : les tables v1 vivent dans `public` jusqu'à leur
-suppression (PR I1, `deploy/vps/drop-v1-tables.sh`, après une sauvegarde archivée) ; la v2 y ajoute un schéma par module (`players`, `catalogue`, `daily`),
+Un schéma par module de l'API (`players`, `catalogue`, `daily`),
 plus `infra` (réglages, clés Data Protection), `messaging` (outbox Wolverine), `jobs`
 (Hangfire) et `extensions` (`citext`). Les migrations de l'API créent ces schémas : rien à
 faire à la main (détail : `CLAUDE.md` racine § Modèle de données). L'utilisateur `inseconds`
-étant propriétaire de la base, il peut les créer.
+étant propriétaire de la base, il peut les créer. `public` est vide.
 
 ## Ajouter un futur projet
 
@@ -68,8 +67,7 @@ EF Core (appliquées au démarrage de l'API) recréent les schémas automatiquem
 
 ## Sauvegardes
 
-`backup.sh` sauvegarde la base de prod `inseconds` en entier (tous les schémas : les tables v1
-de `public` comme ceux de la v2). Le staging n'est pas sauvegardé : il se reconstruit depuis la
+`backup.sh` sauvegarde la base de prod `inseconds` en entier (tous les schémas). Le staging n'est pas sauvegardé : il se reconstruit depuis la
 prod (`deploy/vps/copy-prod-db-to-staging.sh`).
 
 Une sauvegarde :
@@ -97,15 +95,13 @@ Une sauvegarde :
   cd ~/apps/InSeconds/deploy/infra && ./backup.sh   # ou directement, sortie à l'écran
   ```
 
-  À faire avant toute opération risquée sur la base (import, bascule, suppression de tables).
+  À faire avant toute opération risquée sur la base (restauration, suppression de tables).
 
 ### Sauvegarde archivée
 
 `./backup.sh archive` fait la même sauvegarde (dump, vérification, copie locale), puis l'envoie
 chiffrée dans `archive/` sur R2, **qu'aucune rotation ne supprime**. R2 est obligatoire : sans lui,
-la commande échoue. Pas de signal healthchecks.io (ce n'est pas la sauvegarde de la nuit). Lancée
-par `deploy/vps/drop-v1-tables.sh prod` avant de supprimer les tables v1 (#235) ; à relancer à la
-main avant toute suppression définitive de données. Une archive se supprime à la main, jamais par
+la commande échoue. Pas de signal healthchecks.io (ce n'est pas la sauvegarde de la nuit). À lancer à la main avant toute suppression définitive de données. Une archive se supprime à la main, jamais par
 le script.
 
 Suivi : `systemctl list-timers inseconds-backup` (prochain passage),
@@ -160,7 +156,7 @@ est une erreur (le script s'arrête).
 
 ### Surveillance (healthchecks.io)
 
-Choisi le 14/10/2026 (#315) pour la sauvegarde et les tâches planifiées de l'API v2 : un service fait
+Choisi le 14/10/2026 (#315) pour la sauvegarde et les tâches planifiées de l'API : un service fait
 pour ça, hors du VPS, réglé en quelques clics. Il remplace l'alerte Grafana « aucun Sauvegarde OK en
 26 h » d'avant (le script n'envoie plus rien à Grafana) : un échec, un VPS éteint ou un timer arrêté
 se voient tous comme un signal manquant ou un `/fail`.
@@ -171,10 +167,10 @@ d'échec (alerte immédiate). Le contrôle est créé au premier signal (`?creat
 
 | Contrôle | Envoyé par | Heure (UTC) |
 |---|---|---|
-| `daily-generate-challenge` | API v2, tâche Hangfire | 0 h 00 (un nouvel essai toutes les 10 min si le pool manque : chaque essai raté envoie `/fail`) |
-| `daily-close-day` | API v2, tâche Hangfire | 0 h 05 |
-| `catalogue-refresh` | API v2, tâche Hangfire | 23 h 00 |
-| `players-purge-expired-tokens` | API v2, tâche Hangfire (jetons, appareils, comptes inactifs) | 3 h 30 |
+| `daily-generate-challenge` | API, tâche Hangfire | 0 h 00 (un nouvel essai toutes les 10 min si le pool manque : chaque essai raté envoie `/fail`) |
+| `daily-close-day` | API, tâche Hangfire | 0 h 05 |
+| `catalogue-refresh` | API, tâche Hangfire | 23 h 00 |
+| `players-purge-expired-tokens` | API, tâche Hangfire (jetons, appareils, comptes inactifs) | 3 h 30 |
 | `inseconds-backup` | `backup.sh` (timer systemd) | 3 h 00 |
 
 Un lancement depuis `/jobs` (« Déclencher maintenant ») envoie aussi son signal.
@@ -182,7 +178,7 @@ Un lancement depuis `/jobs` (« Déclencher maintenant ») envoie aussi son sign
 **Staging.** Il a son propre projet healthchecks.io, « [Dev]InSeconds », avec sa propre clé de ping dans
 `~/apps/InSeconds-staging/.env.staging` (`HEALTHCHECKS_PING_KEY`, cf. `.env.staging.example`). Les contrôles y portent
 les mêmes noms, mais une clé ne touche que les contrôles de son projet : le staging ne peut pas fausser ceux de la prod,
-à condition de ne **jamais** y mettre la clé de prod. Il sert à vérifier les signaux avant la mise en prod ; pas d'alerte
+à condition de ne **jamais** y mettre la clé de prod. Il sert à vérifier les signaux avant une mise en prod ; pas d'alerte
 Signal sur ce projet (redéploiements fréquents, `catalogue-refresh` en pause). Pas de sauvegarde en staging, donc pas de
 contrôle `inseconds-backup`.
 

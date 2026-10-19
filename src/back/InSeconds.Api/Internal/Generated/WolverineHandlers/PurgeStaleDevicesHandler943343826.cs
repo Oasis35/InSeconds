@@ -21,8 +21,6 @@ namespace Internal.Generated.WolverineHandlers
             _timeProvider = timeProvider;
         }
 
-
-
         public override async System.Threading.Tasks.Task HandleAsync(Wolverine.Runtime.MessageContext context, System.Threading.CancellationToken cancellation)
         {
             await using var serviceScope = _serviceScopeFactory.CreateAsyncScope();
@@ -59,22 +57,20 @@ namespace Internal.Generated.WolverineHandlers
                 // Added by EF Core Transaction Middleware
                 var result_of_SaveChangesAsync = await inSecondsDbContext.SaveChangesAsync(cancellation).ConfigureAwait(false);
 
-                // Commit the EF Core transaction and flush outgoing messages before writing the response (GH-2917)
-                await efCoreEnvelopeTransaction.CommitAsync(cancellation).ConfigureAwait(false);
+                // Commit the EF Core transaction before writing the response (GH-2917). The outbox flush follows in its own frame (GH-4742)
+                await efCoreEnvelopeTransaction.CommitAsync(cancellation, flushOutgoingMessages: false).ConfigureAwait(false);
+                // GH-2917/GH-4742: flush the outbox after the commit and before the response is written
+                await Wolverine.EntityFrameworkCore.EfCoreOutboxFlushing.FlushOutgoingMessagesAsync(context).ConfigureAwait(false);
             }
-
             catch (System.Exception)
             {
                 await efCoreEnvelopeTransaction.RollbackAsync().ConfigureAwait(false);
                 throw;
             }
-
         }
-
     }
 
     // END: PurgeStaleDevicesHandler943343826
     
     
 }
-

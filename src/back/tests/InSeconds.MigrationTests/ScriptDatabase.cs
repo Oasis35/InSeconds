@@ -8,15 +8,13 @@ namespace InSeconds.MigrationTests;
 
 /// <summary>
 /// Un conteneur PostgreSQL (même version majeure que la prod) avec les scripts SQL de <c>deploy/vps</c> copiés dans
-/// <c>/scripts</c>, et une base neuve par test : schéma v1 (<c>v1-schema.sql</c>, figé avant la suppression du code v1,
-/// tant que ses tables existent en prod) puis migrations (<c>--migrate-only</c>, comme au déploiement).
+/// <c>/scripts</c>, et une base neuve par test, migrée comme au déploiement (<c>--migrate-only</c>).
 /// </summary>
 public sealed class ScriptDatabase : IAsyncLifetime
 {
     private const string ScriptDirectory = "/scripts";
 
     private readonly PostgreSqlContainer _container;
-    private string _v1Schema = null!;
 
     public ScriptDatabase()
     {
@@ -31,16 +29,11 @@ public sealed class ScriptDatabase : IAsyncLifetime
 
     public static string RepositoryRoot { get; } = FindRepositoryRoot();
 
-    public async ValueTask InitializeAsync()
-    {
-        var schemaTask = File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "v1-schema.sql"));
-        await _container.StartAsync();
-        _v1Schema = await schemaTask;
-    }
+    public async ValueTask InitializeAsync() => await _container.StartAsync();
 
     public async ValueTask DisposeAsync() => await _container.DisposeAsync();
 
-    /// <summary>Une base avec les tables v1 (vides) dans <c>public</c> et les schémas des modules migrés, comme la prod avant I1.</summary>
+    /// <summary>Une base neuve avec les schémas des modules migrés.</summary>
     public async Task<string> CreateDatabaseAsync()
     {
         var name = $"scripts_{Guid.NewGuid():N}";
@@ -48,20 +41,9 @@ public sealed class ScriptDatabase : IAsyncLifetime
         // Sans réserve de connexions : une base par test, et chaque réserve garderait ses connexions ouvertes (le serveur en refuse plus de cent).
         var connectionString = new NpgsqlConnectionStringBuilder(_container.GetConnectionString()) { Database = name, Pooling = false }.ConnectionString;
 
-        await ExecuteAsync(connectionString, _v1Schema);
         Assert.Equal(0, await MigrateOnlyCommand.RunAsync([$"--ConnectionStrings:DefaultConnection={connectionString}"]));
         return connectionString;
     }
-
-    /// <summary>
-    /// <c>infra.import_state</c> tel que la bascule du 16/10/2026 l'a laissé en prod (table créée par l'import v1 → v2, hors migrations),
-    /// avec ou sans date d'ouverture.
-    /// </summary>
-    public static Task AddImportStateAsync(string connectionString, bool opened) =>
-        ExecuteAsync(connectionString, $"""
-            CREATE TABLE infra.import_state (id smallint PRIMARY KEY CHECK (id = 1), imported_at timestamptz NOT NULL, opened_at timestamptz);
-            INSERT INTO infra.import_state VALUES (1, now(), {(opened ? "now()" : "NULL")});
-            """);
 
     /// <summary>Un joueur, avec un compte si <paramref name="email"/> est donné (pseudo de 3 à 20 caractères).</summary>
     public static async Task<Guid> InsertPlayerAsync(string connectionString, string? email = null, string? pseudo = null, bool isAdmin = false)
@@ -109,9 +91,9 @@ public sealed class ScriptDatabase : IAsyncLifetime
     private static string FindRepositoryRoot()
     {
         for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
-            if (File.Exists(Path.Combine(dir.FullName, "deploy", "vps", "drop-v1-tables.sql")))
+            if (File.Exists(Path.Combine(dir.FullName, "deploy", "vps", "staging-anonymize.sql")))
                 return dir.FullName;
-        throw new InvalidOperationException("Racine du dépôt introuvable (deploy/vps/drop-v1-tables.sql).");
+        throw new InvalidOperationException("Racine du dépôt introuvable (deploy/vps/staging-anonymize.sql).");
     }
 }
 

@@ -35,8 +35,6 @@ namespace Internal.Generated.WolverineHandlers
             _wolverineRuntime = wolverineRuntime;
         }
 
-
-
         public override async System.Threading.Tasks.Task Handle(Microsoft.AspNetCore.Http.HttpContext httpContext)
         {
             var messageContext = new Wolverine.Runtime.MessageContext(_wolverineRuntime);
@@ -62,7 +60,6 @@ namespace Internal.Generated.WolverineHandlers
                 return;
             }
 
-
             System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Daily.Application.UpdateTrackCooldownPoolPercentEndpoint");
             
             // The actual HTTP request handler execution
@@ -71,11 +68,9 @@ namespace Internal.Generated.WolverineHandlers
             // Writing the response body to JSON because this was the first 'return variable' in the method signature
             await WriteJsonAsync(httpContext, adminDailySettingsResponse_response, 404);
         }
-
     }
 
     // END: PUT_api_admin_daily_settings_track_cooldown_pool_percent
     
     
 }
-

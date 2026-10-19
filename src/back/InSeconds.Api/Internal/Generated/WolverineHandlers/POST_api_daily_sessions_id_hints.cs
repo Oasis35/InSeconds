@@ -47,8 +47,6 @@ namespace Internal.Generated.WolverineHandlers
             _wolverineRuntime = wolverineRuntime;
         }
 
-
-
         public override async System.Threading.Tasks.Task Handle(Microsoft.AspNetCore.Http.HttpContext httpContext)
         {
             var messageContext = new Wolverine.Runtime.MessageContext(_wolverineRuntime);
@@ -74,7 +72,6 @@ namespace Internal.Generated.WolverineHandlers
                 return;
             }
 
-
             System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Daily.Application.RequestHintEndpoint");
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
@@ -93,9 +90,7 @@ namespace Internal.Generated.WolverineHandlers
 
                 if (id_rawValue != null && int.TryParse(id_rawValue, System.Globalization.CultureInfo.InvariantCulture, out id))
                 {
-
                 }
-
                 else
                 {
                     httpContext.Response.StatusCode = 404;
@@ -111,7 +106,6 @@ namespace Internal.Generated.WolverineHandlers
                     return;
                 }
 
-
                 
                 // The actual HTTP request handler execution
                 var hintResponse_response = await InSeconds.Api.Modules.Daily.Application.RequestHintEndpoint.Post(request, hintAttempt, efTrackDirectory, _dailyRules, _dailyMetrics, _loggerOfHintResponse, httpContext.RequestAborted).ConfigureAwait(false);
@@ -120,24 +114,22 @@ namespace Internal.Generated.WolverineHandlers
                 // Added by EF Core Transaction Middleware
                 var result_of_SaveChangesAsync = await inSecondsDbContext.SaveChangesAsync(httpContext.RequestAborted).ConfigureAwait(false);
 
-                // Commit the EF Core transaction and flush outgoing messages before writing the response (GH-2917)
-                await efCoreEnvelopeTransaction.CommitAsync(httpContext.RequestAborted).ConfigureAwait(false);
+                // Commit the EF Core transaction before writing the response (GH-2917). The outbox flush follows in its own frame (GH-4742)
+                await efCoreEnvelopeTransaction.CommitAsync(httpContext.RequestAborted, flushOutgoingMessages: false).ConfigureAwait(false);
+                // GH-2917/GH-4742: flush the outbox after the commit and before the response is written
+                await Wolverine.EntityFrameworkCore.EfCoreOutboxFlushing.FlushOutgoingMessagesAsync(messageContext).ConfigureAwait(false);
                 // Writing the response body to JSON because this was the first 'return variable' in the method signature
                 await WriteJsonAsync(httpContext, hintResponse_response, 404);
             }
-
             catch (System.Exception)
             {
                 await efCoreEnvelopeTransaction.RollbackAsync().ConfigureAwait(false);
                 throw;
             }
-
         }
-
     }
 
     // END: POST_api_daily_sessions_id_hints
     
     
 }
-
