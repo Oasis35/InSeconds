@@ -57,7 +57,9 @@ test.describe('Admin — pool', () => {
     await expect(page.getByRole('columnheader', { name: 'Artiste' })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Titre' })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Preview' })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: 'Statut' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Joué par' })).toBeVisible();
+    // Le pool général est celui de tous les modes : aucune colonne propre au Daily.
+    await expect(page.getByRole('columnheader', { name: /Dernière utilisation/ })).toHaveCount(0);
   });
 
   test('filtre par texte sur artiste', async ({ page }) => {
@@ -81,14 +83,36 @@ test.describe('Admin — pool', () => {
     await expect(page.getByRole('cell', { name: 'Manquante' })).toHaveCount(5);
   });
 
-  test('filtre statut "Disponible" masque les morceaux utilisés', async ({ page }) => {
+  test('vue Daily : le filtre statut "Disponible" masque les morceaux utilisés', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
     await page.getByRole('link', { name: /^Pool/ }).click();
+    await admin.poolView('Daily').click();
     await admin.poolFilterStatus().selectOption('available');
     await expect(page.getByRole('cell', { name: 'Utilisé' })).not.toBeVisible();
     await expect(page.getByRole('cell', { name: 'Disponible' }).first()).toBeVisible();
+  });
+
+  test('pool général : « Joué par » ne garde que les morceaux d\'un mode, ou aucun', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('link', { name: /^Pool/ }).click();
+
+    // Coldplay est dans un défi du seed, Michael Jackson n'a jamais été joué. Le texte cherché restreint la grille
+    // (paginée par 15) au morceau regardé : le filtre « Joué par » s'y combine.
+    await admin.poolFilterPlayedBy().selectOption({ label: 'Joué par Daily' });
+    await admin.poolSearchInput().fill('Coldplay');
+    await expect(admin.poolRow('Coldplay')).toBeVisible();
+    await expect(admin.poolRow('Coldplay').getByTestId('usage-badge')).toHaveText('Daily');
+    await admin.poolSearchInput().fill('Michael Jackson');
+    await expect(admin.poolRow('Michael Jackson')).not.toBeVisible();
+
+    await admin.poolFilterPlayedBy().selectOption({ label: 'Joué par : aucun mode' });
+    await expect(admin.poolRow('Michael Jackson')).toBeVisible();
+    await admin.poolSearchInput().fill('Coldplay');
+    await expect(admin.poolRow('Coldplay')).not.toBeVisible();
   });
 
   test('ajoute un morceau via le panneau de recherche', async ({ page }) => {
@@ -226,37 +250,39 @@ test.describe('Admin — pool', () => {
     await api.reseed();
   });
 
-  test('affiche les colonnes cooldown avec les bonnes valeurs', async ({ page }) => {
+  test('vue Daily : affiche les colonnes cooldown avec les bonnes valeurs', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
     await page.getByRole('link', { name: /^Pool/ }).click();
+    await admin.poolView('Daily').click();
 
     await expect(admin.poolColumnHeader('Dernière utilisation')).toBeVisible();
     await expect(admin.poolColumnHeader('Date de déblocage')).toBeVisible();
     await expect(admin.poolColumnHeader('Nb. utilisations')).toBeVisible();
 
-    // Colonnes (après réordonnancement) : 0=sélection, 1=Actions, 2=Artiste, 3=Titre,
-    // 4=Preview, 5=Statut, 6=Dernière utilisation, 7=Date de déblocage, 8=Nb. utilisations.
+    // Colonnes de la vue Daily (en lecture seule, sans case à cocher) : 0=Actions, 1=Artiste, 2=Titre,
+    // 3=Preview, 4=Statut, 5=Dernière utilisation, 6=Date de déblocage, 7=Nb. utilisations.
     // Le pool des E2E a 50 morceaux jouables : 75 % du pool, 5 par défi, soit 7 jours de cooldown, sous le seuil d'alerte.
     await expect(page.getByTestId('pool-cooldown')).toHaveText('cooldown 7 j');
     // Queen (index 16 du seed) a été mise en cooldown récent (-5j, 7 j de cooldown) : dates non vides.
     await admin.poolSearchInput().fill('Queen');
     const queenRow = admin.poolRow('Queen');
+    await expect(queenRow.getByRole('cell').nth(5)).not.toHaveText('');
     await expect(queenRow.getByRole('cell').nth(6)).not.toHaveText('');
-    await expect(queenRow.getByRole('cell').nth(7)).not.toHaveText('');
 
     // Michael Jackson (index 15) n'a jamais été utilisé : date de déblocage vide.
     await admin.poolSearchInput().fill('Michael Jackson');
     const mjRow = admin.poolRow('Michael Jackson');
-    await expect(mjRow.getByRole('cell').nth(7)).toHaveText('');
+    await expect(mjRow.getByRole('cell').nth(6)).toHaveText('');
   });
 
-  test('filtre par plage de dates sur la dernière utilisation', async ({ page }) => {
+  test('vue Daily : filtre par plage de dates sur la dernière utilisation', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
     await page.getByRole('link', { name: /^Pool/ }).click();
+    await admin.poolView('Daily').click();
 
     // Ed Sheeran (index 20, -15j) tombe dans la plage ; Queen (-5j) et Adele (-90j) en dehors.
     const today = new Date();
@@ -270,17 +296,18 @@ test.describe('Admin — pool', () => {
     await expect(page.getByRole('cell', { name: 'Adele', exact: true })).not.toBeVisible();
   });
 
-  test('trie par nombre d\'utilisations', async ({ page }) => {
+  test('vue Daily : trie par nombre d\'utilisations', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
     await page.getByRole('link', { name: /^Pool/ }).click();
+    await admin.poolView('Daily').click();
 
     // Adele (index 19) a le UsageCount le plus élevé du seed (7) — tri desc doit la faire remonter.
     await admin.poolColumnHeader('Nb. utilisations').click();
     await admin.poolColumnHeader('Nb. utilisations').click(); // 2e clic → desc
-    // Colonne Artiste = cell index 2 (0=sélection, 1=Actions, 2=Artiste).
-    await expect(page.getByRole('row').nth(1).getByRole('cell').nth(2)).toHaveText('Adele');
+    // Colonne Artiste = cell index 1 de la vue Daily (0=Actions, 1=Artiste).
+    await expect(page.getByRole('row').nth(1).getByRole('cell').nth(1)).toHaveText('Adele');
   });
 
   test('le bouton ▶ ouvre la modale d\'écoute de l\'extrait', async ({ page }) => {

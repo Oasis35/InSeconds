@@ -38,6 +38,9 @@ public sealed record TrackUsage(DateOnly? LastUsedDate, int UsageCount, DateOnly
 /// </summary>
 public interface ITrackUsage
 {
+    /// <summary>Le nom du mode (<c>daily</c>), stable : l'admin en fait une pastille et un onglet.</summary>
+    string Mode { get; }
+
     /// <summary>L'usage de ces morceaux ; un morceau absent du résultat n'a jamais servi (<see cref="TrackUsage.None"/>).</summary>
     Task<IReadOnlyDictionary<int, TrackUsage>> GetAsync(IReadOnlyCollection<int> trackIds, CancellationToken ct);
 }
@@ -51,4 +54,10 @@ public interface ITrackUsage
 public interface ITrackPoolUsage
 {
     Task<IReadOnlyDictionary<int, TrackUsage>> GetAsync(IReadOnlyCollection<int> trackIds, CancellationToken ct);
+
+    /// <summary>L'usage de ces morceaux **mode par mode** (pour l'admin) : seuls les modes qui ont quelque chose à dire d'un morceau y figurent.</summary>
+    Task<IReadOnlyDictionary<int, IReadOnlyList<ModeUsage>>> GetByModeAsync(IReadOnlyCollection<int> trackIds, CancellationToken ct);
 }
+
+/// <summary>Ce qu'un mode dit de l'usage d'un morceau.</summary>
+public sealed record ModeUsage(string Mode, TrackUsage Usage);

@@ -164,7 +164,7 @@ describe('DeezerSearchStore', () => {
       const added = { id: 5, deezerTrackId: 42, artist: 'E2E Artist', title: 'E2E Track' };
       setup();
       api.listTracks.mockResolvedValueOnce([{
-        ...added, preview: 'available', isDisabled: false, lastUsedDate: null, usageCount: 0, unlockDate: null, inTodayChallenge: false,
+        ...added, preview: 'available', isDisabled: false, isUsed: false, usages: [], inTodayChallenge: false,
       }]);
 
       await store.add(42);

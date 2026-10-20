@@ -81,6 +81,17 @@ public class TrackPoolUsageTests
     }
 
     [Fact]
+    public async Task ParMode_ChaqueModeGardeSonNom_EtSeulsLesModesConcernesFigurent()
+    {
+        var byMode = await new TrackPoolUsage([new FakeMode("daily") { [1] = DailyUsage() }, new FakeMode("autre") { [1] = RunsOnly, [2] = RunsOnly }]).GetByModeAsync([1, 2, 3], Ct);
+
+        Assert.Equal(["daily", "autre"], byMode[1].Select(m => m.Mode));
+        Assert.Equal(["autre"], byMode[2].Select(m => m.Mode));
+        Assert.DoesNotContain(3, byMode.Keys);
+        Assert.Equal(DailyUsage(), byMode[1][0].Usage);
+    }
+
+    [Fact]
     public void Jamais_UtiliseNEstPasUtilise() => Assert.False(TrackUsage.None.IsUsed);
 
     [Fact]
@@ -100,9 +111,11 @@ public class TrackPoolUsageTests
     }
 
     /// <summary>Un mode de jeu : répond ce qu'on lui a dit, et note ce qu'on lui a demandé.</summary>
-    private sealed class FakeMode : ITrackUsage
+    private sealed class FakeMode(string mode = "daily") : ITrackUsage
     {
         private readonly Dictionary<int, TrackUsage> _usages = [];
+
+        public string Mode => mode;
 
         public List<int[]> Asked { get; } = [];
 

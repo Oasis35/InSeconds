@@ -316,7 +316,20 @@
       "enableTitle": "Remettre ce morceau dans le tirage des prochains défis",
       "disableTodayTitle": "Morceau du défi du jour : désactivable à partir de demain",
       "disableInTodayError": "Ce morceau est dans le défi du jour : désactivable à partir de demain.",
-      "disableError": "La modification a échoué, réessaie."
+      "disableError": "La modification a échoué, réessaie.",
+      "totalCount": "{{ count }} morceau(x)",
+      "missingPreviewCount": "{{ count }} sans extrait",
+      "colUsage": "Joué par",
+      "neverPlayed": "Jamais joué",
+      "allPlayedBy": "Joué par : tous",
+      "playedByNone": "Joué par : aucun mode",
+      "playedBy": "Joué par {{ mode }}",
+      "openInPoolTitle": "Ouvrir dans le Pool (pour agir sur ce morceau)",
+      "views": {
+        "label": "Vue du pool",
+        "pool": "Pool",
+        "daily": "Daily"
+      }
     },
     "deleteModal": {
       "title": "Confirmer la suppression",

@@ -1,25 +1,30 @@
-import { PoolTrack, isUsed } from './pool-track';
+import { PoolTrack, isUsed, isUsedByMode, usageOf } from './pool-track';
+import { POOL_VIEW } from './pool-views';
 
 export type StatusFilter = 'all' | 'available' | 'used' | 'disabled';
 export type PreviewFilter = 'all' | 'ok' | 'missing';
+
+/** « Joué par » : tous (`''`), aucun mode (`none`), ou un mode précis (son identifiant). */
+export const PLAYED_BY_NONE = 'none';
 
 export interface PoolFilters {
   readonly text: string;
   readonly status: StatusFilter;
   readonly preview: PreviewFilter;
-  /** Bornes (incluses) sur le dernier jour d'utilisation, `yyyy-MM-dd` ; vide = pas de borne. */
+  readonly playedBy: string;
+  /** Bornes (incluses) sur le dernier jour d'utilisation par le mode de la vue, `yyyy-MM-dd` ; vide = pas de borne. */
   readonly lastUsedFrom: string;
   readonly lastUsedTo: string;
 }
 
-export const NO_FILTERS: PoolFilters = { text: '', status: 'all', preview: 'all', lastUsedFrom: '', lastUsedTo: '' };
+export const NO_FILTERS: PoolFilters = { text: '', status: 'all', preview: 'all', playedBy: '', lastUsedFrom: '', lastUsedTo: '' };
 
 export function hasActiveFilters(filters: PoolFilters): boolean {
-  return filters.text !== '' || filters.status !== 'all' || filters.preview !== 'all'
+  return filters.text !== '' || filters.status !== 'all' || filters.preview !== 'all' || filters.playedBy !== ''
     || filters.lastUsedFrom !== '' || filters.lastUsedTo !== '';
 }
 
-export type SortColumn = 'artist' | 'title' | 'preview' | 'status' | 'lastUsedDate' | 'unlockDate' | 'usageCount';
+export type SortColumn = 'artist' | 'title' | 'preview' | 'status' | 'usage' | 'lastUsedDate' | 'unlockDate' | 'usageCount';
 export type SortDirection = 'asc' | 'desc';
 
 export interface PoolSort {
@@ -29,6 +34,14 @@ export interface PoolSort {
 
 /** Nombre de morceaux affichés par page du tableau. */
 export const POOL_PAGE_SIZE = 15;
+
+/**
+ * Le morceau a servi, vu de la vue : dans la vue générale, un mode au moins l'a joué ; dans la vue d'un mode,
+ * ce mode-là seulement.
+ */
+export function isUsedIn(track: PoolTrack, view: string): boolean {
+  return view === POOL_VIEW ? isUsed(track) : isUsedByMode(track, view);
+}
 
 /**
  * Le texte est cherché dans l'artiste, dans le titre, et dans « artiste titre » : une recherche
@@ -42,13 +55,19 @@ function matchesText(track: PoolTrack, text: string): boolean {
   return artist.includes(text) || title.includes(text) || `${artist} ${title}`.includes(text);
 }
 
-function matchesStatus(track: PoolTrack, status: StatusFilter): boolean {
+function matchesStatus(track: PoolTrack, status: StatusFilter, view: string): boolean {
   switch (status) {
-    case 'available': return !isUsed(track);
-    case 'used': return isUsed(track);
+    case 'available': return !isUsedIn(track, view);
+    case 'used': return isUsedIn(track, view);
     case 'disabled': return track.isDisabled;
     default: return true;
   }
+}
+
+function matchesPlayedBy(track: PoolTrack, playedBy: string): boolean {
+  if (playedBy === '') return true;
+  if (playedBy === PLAYED_BY_NONE) return !isUsed(track);
+  return isUsedByMode(track, playedBy);
 }
 
 function matchesPreview(track: PoolTrack, preview: PreviewFilter): boolean {
@@ -57,54 +76,58 @@ function matchesPreview(track: PoolTrack, preview: PreviewFilter): boolean {
   return true;
 }
 
-function matchesLastUsed(track: PoolTrack, from: string, to: string): boolean {
-  if (from && (!track.lastUsedDate || track.lastUsedDate < from)) return false;
-  if (to && (!track.lastUsedDate || track.lastUsedDate > to)) return false;
+function matchesLastUsed(track: PoolTrack, view: string, from: string, to: string): boolean {
+  const last = usageOf(track, view)?.lastUsedDate ?? null;
+  if (from && (!last || last < from)) return false;
+  if (to && (!last || last > to)) return false;
   return true;
 }
 
-export function filterTracks(tracks: readonly PoolTrack[], filters: PoolFilters): PoolTrack[] {
+export function filterTracks(tracks: readonly PoolTrack[], filters: PoolFilters, view: string = POOL_VIEW): PoolTrack[] {
   const text = filters.text.toLowerCase().trim();
   return tracks.filter(track =>
     matchesText(track, text)
-    && matchesStatus(track, filters.status)
+    && matchesStatus(track, filters.status, view)
+    && matchesPlayedBy(track, filters.playedBy)
     && matchesPreview(track, filters.preview)
-    && matchesLastUsed(track, filters.lastUsedFrom, filters.lastUsedTo));
+    && matchesLastUsed(track, view, filters.lastUsedFrom, filters.lastUsedTo));
 }
 
 /** Ordre du tri par extrait : manquant, pas encore contrôlé, disponible. */
 const PREVIEW_ORDER: Readonly<Record<PoolTrack['preview'], number>> = { missing: 0, unknown: 1, available: 2 };
 
-function sortValue(track: PoolTrack, column: SortColumn): string | number | null {
+function sortValue(track: PoolTrack, column: SortColumn, view: string): string | number | null {
+  const usage = usageOf(track, view);
   switch (column) {
     case 'artist': return track.artist.toLowerCase();
     case 'title': return track.title.toLowerCase();
     case 'preview': return PREVIEW_ORDER[track.preview];
-    case 'status': return isUsed(track) ? 0 : 1;
-    case 'lastUsedDate': return track.lastUsedDate;
-    case 'unlockDate': return track.unlockDate;
-    case 'usageCount': return track.usageCount;
+    case 'status': return isUsedIn(track, view) ? 0 : 1;
+    case 'usage': return track.usages.length;
+    case 'lastUsedDate': return usage?.lastUsedDate ?? null;
+    case 'unlockDate': return usage?.unlockDate ?? null;
+    case 'usageCount': return usage?.usageCount ?? null;
   }
 }
 
 /**
- * Trie sans modifier la liste reçue. Sans tri choisi, l'ordre est celui de la v1 : les morceaux
- * disponibles d'abord, puis ceux qui ont déjà servi, chaque groupe dans l'ordre reçu (artiste puis
- * titre, côté API). Avec un tri, les morceaux désactivés vont **toujours** en fin de liste, une
- * valeur vide (jamais utilisé) vient en dernier dans les deux sens, et le tri est stable : l'ordre
- * ci-dessus départage les égalités.
+ * Trie sans modifier la liste reçue. Sans tri choisi, les morceaux disponibles viennent d'abord, puis ceux qui ont
+ * déjà servi (pour la vue : tous modes confondus dans le pool, ce mode seul dans sa vue), chaque groupe dans l'ordre
+ * reçu (artiste puis titre, côté API). Avec un tri, les morceaux désactivés vont **toujours** en fin de liste, une
+ * valeur vide (jamais utilisé) vient en dernier dans les deux sens, et le tri est stable : l'ordre ci-dessus
+ * départage les égalités.
  */
-export function sortTracks(tracks: readonly PoolTrack[], sort: PoolSort | null): PoolTrack[] {
+export function sortTracks(tracks: readonly PoolTrack[], sort: PoolSort | null, view: string = POOL_VIEW): PoolTrack[] {
   const direction = sort?.direction === 'desc' ? -1 : 1;
   const byDisabled = (a: PoolTrack, b: PoolTrack) => Number(a.isDisabled) - Number(b.isDisabled);
-  const byUsed = (a: PoolTrack, b: PoolTrack) => Number(isUsed(a)) - Number(isUsed(b));
+  const byUsed = (a: PoolTrack, b: PoolTrack) => Number(isUsedIn(a, view)) - Number(isUsedIn(b, view));
   const ordered = [...tracks].sort((a, b) => byDisabled(a, b) || byUsed(a, b));
   if (!sort) return ordered;
   return ordered.sort((a, b) => {
     const disabledOrder = byDisabled(a, b);
     if (disabledOrder !== 0) return disabledOrder;
-    const va = sortValue(a, sort.column);
-    const vb = sortValue(b, sort.column);
+    const va = sortValue(a, sort.column, view);
+    const vb = sortValue(b, sort.column, view);
     if (va === null && vb === null) return 0;
     if (va === null) return 1;
     if (vb === null) return -1;

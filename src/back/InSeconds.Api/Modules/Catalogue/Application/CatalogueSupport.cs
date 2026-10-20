@@ -67,13 +67,18 @@ public sealed class RefreshOptions
 public sealed record TrackSummary(
     int Id, long DeezerTrackId, string Artist, string Title, string? CoverUrl, int? ReleaseYear, int? Rank, string PreviewStatus, bool IsDisabled);
 
-/// <summary>Une ligne du pool admin : le morceau et ce que le jeu en a fait.</summary>
+/// <summary>Une ligne du pool admin : le morceau et ce que chaque mode de jeu en a fait.</summary>
 /// <param name="PreviewStatus"><c>unknown</c>, <c>available</c> ou <c>missing</c>.</param>
-/// <param name="InTodayChallenge">Morceau du défi du jour : non désactivable avant demain, le renommer est permis (avertissement côté front).</param>
+/// <param name="IsUsed">Un mode au moins l'a joué (ou le déclare utilisé) : ni suppression ni actualisation (409 <c>catalogue.track_in_use</c>).</param>
+/// <param name="Usages">Un élément par mode qui a quelque chose à dire du morceau, dans l'ordre d'enregistrement des modes.</param>
 public sealed record TrackListItem(
     int Id, long DeezerTrackId, string Artist, string Title, string? CoverUrl, int? ReleaseYear, int? Rank,
-    string PreviewStatus, DateTimeOffset? PreviewCheckedAt, bool IsDisabled,
-    DateOnly? LastUsedDate, int UsageCount, DateOnly? UnlockDate, bool InTodayChallenge);
+    string PreviewStatus, DateTimeOffset? PreviewCheckedAt, bool IsDisabled, bool IsUsed, IReadOnlyList<TrackModeUsage> Usages);
+
+/// <summary>L'usage d'un morceau par un mode.</summary>
+/// <param name="Mode">Nom stable du mode (<c>daily</c>).</param>
+/// <param name="InTodayChallenge">Morceau du défi du jour : non désactivable avant demain, le renommer est permis (avertissement côté front).</param>
+public sealed record TrackModeUsage(string Mode, int UsageCount, DateOnly? LastUsedDate, DateOnly? UnlockDate, bool InTodayChallenge);
 
 internal static class TrackMapping
 {
