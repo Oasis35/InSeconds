@@ -22,7 +22,7 @@ public sealed record TrackRefreshPlan(Track? Track, bool InUse, bool IdTaken, Tr
 public static class UpdateTrackEndpoint
 {
     public static async Task<TrackRefreshPlan> LoadAsync(
-        int id, UpdateTrack request, ICatalogueStore store, ITrackUsage usage, ITrackMetadataSource deezer, CancellationToken ct)
+        int id, UpdateTrack request, ICatalogueStore store, ITrackPoolUsage usage, ITrackMetadataSource deezer, CancellationToken ct)
     {
         var track = await store.FindAsync(id, ct);
         if (track is null)

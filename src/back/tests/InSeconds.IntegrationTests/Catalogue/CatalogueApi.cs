@@ -11,28 +11,18 @@ using Microsoft.Extensions.Time.Testing;
 namespace InSeconds.IntegrationTests.Catalogue;
 
 /// <summary>
-/// L'usage des morceaux d'un test : Daily n'existe pas encore (E), un test lui fait dire ce que le jeu en a fait
-/// (déjà utilisé, dans le défi du jour, en cooldown).
+/// L'usage des morceaux par un mode, pour un test : le test lui fait dire ce que le mode en a fait (déjà utilisé, dans le défi du jour).
+/// <see cref="CatalogueApi"/> en enregistre deux, comme deux modes de jeu : Catalogue en réunit les réponses.
 /// </summary>
 internal sealed class TestTrackUsage : ITrackUsage
 {
     private readonly Dictionary<int, TrackUsage> _usages = [];
-
-    public HashSet<int> Cooldown { get; } = [];
-
-    public List<DateOnly> AskedDays { get; } = [];
 
     public void Set(int trackId, TrackUsage usage) => _usages[trackId] = usage;
 
     public Task<IReadOnlyDictionary<int, TrackUsage>> GetAsync(IReadOnlyCollection<int> trackIds, CancellationToken ct) =>
         Task.FromResult<IReadOnlyDictionary<int, TrackUsage>>(
             trackIds.Where(_usages.ContainsKey).ToDictionary(id => id, id => _usages[id]));
-
-    public Task<IReadOnlySet<int>> GetTracksInCooldownAsync(DateOnly day, CancellationToken ct)
-    {
-        AskedDays.Add(day);
-        return Task.FromResult<IReadOnlySet<int>>(Cooldown);
-    }
 }
 
 /// <summary>Outils des tests Catalogue : l'API avec le faux Deezer, un usage des morceaux simulé et une horloge simulée.</summary>
@@ -40,16 +30,21 @@ internal sealed class CatalogueApi : IAsyncDisposable
 {
     public static readonly DateTimeOffset Start = new(2026, 10, 5, 12, 0, 0, TimeSpan.Zero);
 
-    private CatalogueApi(ApiFactory api, TestTrackUsage usage, FakeTimeProvider time)
+    private CatalogueApi(ApiFactory api, TestTrackUsage usage, TestTrackUsage otherMode, FakeTimeProvider time)
     {
         Api = api;
         Usage = usage;
+        OtherMode = otherMode;
         Time = time;
     }
 
     public ApiFactory Api { get; }
 
+    /// <summary>L'usage par le premier mode (le Daily, dans l'esprit des tests).</summary>
     public TestTrackUsage Usage { get; }
+
+    /// <summary>L'usage par un second mode, qui n'a ni cooldown ni défi du jour (Runs) : il peut seulement déclarer un morceau utilisé.</summary>
+    public TestTrackUsage OtherMode { get; }
 
     public FakeTimeProvider Time { get; }
 
@@ -58,6 +53,7 @@ internal sealed class CatalogueApi : IAsyncDisposable
     public static CatalogueApi Create(string connectionString, IReadOnlyDictionary<string, string>? settings = null)
     {
         var usage = new TestTrackUsage();
+        var otherMode = new TestTrackUsage();
         var time = new FakeTimeProvider(Start);
         var merged = new Dictionary<string, string>
         {
@@ -71,9 +67,11 @@ internal sealed class CatalogueApi : IAsyncDisposable
         {
             services.AddSingleton<TimeProvider>(time);
             services.RemoveAll<ITrackUsage>();
+            // Deux modes : jamais de remplacement, chaque mode ajoute son usage et Catalogue les réunit.
             services.AddSingleton<ITrackUsage>(usage);
+            services.AddSingleton<ITrackUsage>(otherMode);
         }, merged);
-        return new CatalogueApi(api, usage, time);
+        return new CatalogueApi(api, usage, otherMode, time);
     }
 
     public HttpClient Admin() => Api.CreateClient(TestUser.Admin);

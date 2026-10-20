@@ -49,9 +49,14 @@ public static class WolverineSetup
         opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Deezer.ITrackSearch>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Deezer.ITrackMetadataSource>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Deezer.CachedTrackSearch>();
-        // L'usage des morceaux est fourni par Daily (E) : sans cela, le code généré construirait NoTrackUsage en dur et
-        // Daily devrait régénérer le code de Catalogue pour le remplacer.
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Api.Modules.Catalogue.Contracts.ITrackUsage>();
+        // L'usage des morceaux est fourni par chaque mode (plusieurs ITrackUsage enregistrés) et réuni par Catalogue : le code généré ne peut pas
+        // construire cette réunion lui-même, il la demande au conteneur ; le tirage du Daily demande de même son propre port.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Api.Modules.Catalogue.Contracts.ITrackPoolUsage>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Api.Modules.Daily.Application.IDailyTrackUsage>();
+        // L'export et l'effacement d'un joueur appellent tous les contributeurs enregistrés (un par mode) : le code généré ne les énumère pas, il
+        // demande ces deux services au conteneur (et un test peut y ajouter un contributeur).
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Api.Modules.Players.Application.PlayerDataExporter>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Api.Modules.Players.Application.AccountErasure>();
         // L'écriture d'un réglage recharge la source de configuration : son rechargeur est interne à l'infrastructure, le code généré ne peut pas le
         // construire. Utilisé par le réglage du cooldown de l'admin (F1).
         opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Api.Infrastructure.Settings.SettingsStore>();

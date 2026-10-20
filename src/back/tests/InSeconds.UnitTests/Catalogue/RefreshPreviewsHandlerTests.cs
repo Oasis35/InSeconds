@@ -1,6 +1,4 @@
-using InSeconds.Api.Infrastructure.Time;
 using InSeconds.Api.Modules.Catalogue.Application;
-using InSeconds.Api.Modules.Catalogue.Contracts;
 using InSeconds.Api.Modules.Catalogue.Domain;
 using InSeconds.Deezer;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -11,7 +9,7 @@ namespace InSeconds.UnitTests.Catalogue;
 
 /// <summary>
 /// Le contrôle des extraits (commande <c>RefreshPreviews</c>, appelée par la tâche <c>catalogue-refresh</c> et par
-/// le bouton de l'admin), sans base : le store, l'usage et Deezer sont des faux, l'horloge est simulée.
+/// le bouton de l'admin), sans base : le store et Deezer sont des faux, l'horloge est simulée.
 /// </summary>
 public class RefreshPreviewsHandlerTests
 {
@@ -23,7 +21,6 @@ public class RefreshPreviewsHandlerTests
 
     public RefreshPreviewsHandlerTests() => _deezer = new FakeDeezer(_time);
     private readonly FakeStore _store = new();
-    private readonly FakeUsage _usage = new();
     private readonly FakeDeezer _deezer;
 
     private Task<PreviewRefreshResult> RunAsync(int batchSize = 10, double delaySeconds = 0) =>
@@ -31,8 +28,7 @@ public class RefreshPreviewsHandlerTests
 
     private Task<PreviewRefreshResult> RunAsync(IOptionsMonitor<RefreshOptions> options) =>
         RefreshPreviewsHandler.Handle(
-            new RefreshPreviews(), _store, _usage, _deezer, new FixedCalendar(Now), _time, options,
-            NullLogger<RefreshPreviews>.Instance, Ct);
+            new RefreshPreviews(), _store, _deezer, _time, options, NullLogger<RefreshPreviews>.Instance, Ct);
 
     [Fact]
     public async Task AucunMorceau_RienAVerifier()
@@ -107,18 +103,17 @@ public class RefreshPreviewsHandlerTests
     }
 
     [Fact]
-    public async Task LesMorceauxEnCooldownDeDemain_SontExcluesDuControle()
+    public async Task TousLesMorceauxSontControles_SaufLesDesactives_LeCooldownNExcluPlusRien()
     {
+        // Un mode (un run) peut tirer n'importe quel morceau, ceux du cooldown du Daily compris : le contrôle ne connaît plus le cooldown.
         _store.Add(1, PreviewStatus.Available);
         _store.Add(2, PreviewStatus.Available);
-        _usage.Cooldown.Add(2);
+        _store.Add(3, PreviewStatus.Available).Disable(Now);
 
         var result = await RunAsync();
 
-        Assert.Equal(1, result.Checked);
-        Assert.Equal(DateOnly.FromDateTime(Now.UtcDateTime).AddDays(1), _usage.AskedDay);
-        Assert.Equal([2], _store.ExcludedIds);
-        Assert.Equal([1L], _deezer.Requested);
+        Assert.Equal(2, result.Checked);
+        Assert.Equal([1L, 2L], _deezer.Requested.Order());
     }
 
     [Fact]
@@ -193,8 +188,7 @@ public class RefreshPreviewsHandlerTests
         _deezer.ThrowOnCancel = true;
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => RefreshPreviewsHandler.Handle(
-            new RefreshPreviews(), _store, _usage, _deezer, new FixedCalendar(Now), _time,
-            new MutableMonitor(new RefreshOptions()), NullLogger<RefreshPreviews>.Instance, cts.Token));
+            new RefreshPreviews(), _store, _deezer, _time, new MutableMonitor(new RefreshOptions()), NullLogger<RefreshPreviews>.Instance, cts.Token));
     }
 
     private static async Task WaitUntilAsync(Func<bool> condition)
@@ -207,20 +201,9 @@ public class RefreshPreviewsHandlerTests
         }
     }
 
-    private sealed class FixedCalendar(DateTimeOffset now) : IGameCalendar
-    {
-        public DateTimeOffset Now => now;
-
-        public DateOnly Today => DateOnly.FromDateTime(now.UtcDateTime);
-
-        public DateTimeOffset StartOf(DateOnly day) => new(day.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
-    }
-
     private sealed class FakeStore : ICatalogueStore
     {
         private readonly List<Track> _tracks = [];
-
-        public IReadOnlyCollection<int> ExcludedIds { get; private set; } = [];
 
         public List<int> SavedBatchSizes { get; } = [];
 
@@ -236,11 +219,8 @@ public class RefreshPreviewsHandlerTests
             return track;
         }
 
-        public Task<IReadOnlyList<Track>> ListRefreshCandidatesAsync(IReadOnlyCollection<int> excludedTrackIds, CancellationToken ct)
-        {
-            ExcludedIds = excludedTrackIds;
-            return Task.FromResult<IReadOnlyList<Track>>([.. _tracks.Where(t => !excludedTrackIds.Contains(t.Id) && !t.IsDisabled)]);
-        }
+        public Task<IReadOnlyList<Track>> ListRefreshCandidatesAsync(CancellationToken ct) =>
+            Task.FromResult<IReadOnlyList<Track>>([.. _tracks.Where(t => !t.IsDisabled)]);
 
         public Task<IReadOnlySet<int>> SaveRefreshedAsync(IReadOnlyCollection<Track> tracks, CancellationToken ct)
         {
@@ -255,22 +235,6 @@ public class RefreshPreviewsHandlerTests
         public Task<Track?> FindAsync(int id, CancellationToken ct) => throw new NotSupportedException();
 
         public Task<bool> DeezerIdTakenAsync(long deezerTrackId, int? exceptTrackId, CancellationToken ct) => throw new NotSupportedException();
-    }
-
-    private sealed class FakeUsage : ITrackUsage
-    {
-        public HashSet<int> Cooldown { get; } = [];
-
-        public DateOnly? AskedDay { get; private set; }
-
-        public Task<IReadOnlyDictionary<int, TrackUsage>> GetAsync(IReadOnlyCollection<int> trackIds, CancellationToken ct) =>
-            throw new NotSupportedException();
-
-        public Task<IReadOnlySet<int>> GetTracksInCooldownAsync(DateOnly day, CancellationToken ct)
-        {
-            AskedDay = day;
-            return Task.FromResult<IReadOnlySet<int>>(Cooldown);
-        }
     }
 
     private sealed class FakeDeezer(FakeTimeProvider time) : ITrackMetadataSource

@@ -178,12 +178,12 @@ L'interrupteur « Platines » de l'onglet Joueurs lit `GET /api/admin/runs/acces
 
 ## 6. Ce qui touche l'existant : Players et Catalogue ne doivent plus connaître que Daily
 
-**Players (effacement et export).** Aujourd'hui Players appelle directement `Daily.Contracts.IPlayerGameData`.
+**Players (effacement et export).** *Fait en P1 :* Players appelait directement `Daily.Contracts.IPlayerGameData`.
 - `Players.Contracts.IPlayerDataContributor` (`Module`, `ExportAsync`, `DeleteAsync`) : Players reçoit `IEnumerable<IPlayerDataContributor>` et les appelle tous dans sa transaction. Daily l'implémente en P1, Runs en P2.
 - L'export change de forme : une section par mode (`daily` : série et parties ; `runs` : parties, défis créés, accès) au lieu des champs `streak` / `games` à la racine. Le profil télécharge le fichier tel quel ; `--export-player` suit.
 - `IStreakGrants` reste propre à Daily (seul Daily a des gels) : exception nommée dans le test d'architecture.
 
-**Catalogue (usage des morceaux).** Aujourd'hui `ITrackUsage` est fourni une seule fois, par Daily (`services.Replace`), et ne compte que les défis du jour : un morceau joué seulement en run serait supprimable (erreur 500 par la clé étrangère) ou remplaçable par une autre chanson.
+**Catalogue (usage des morceaux).** *Fait en P1 :* `ITrackUsage` était fourni une seule fois, par Daily (`services.Replace`), et ne compte que les défis du jour : un morceau joué seulement en run serait supprimable (erreur 500 par la clé étrangère) ou remplaçable par une autre chanson.
 - Chaque mode **ajoute** son implémentation (`IEnumerable<ITrackUsage>`, plus de `Replace`) ; Catalogue les agrège : un morceau est « utilisé » si un seul mode le dit. Le cooldown, la date de dernier usage et « dans le défi du jour » restent ceux du Daily (Runs répond « aucun »), seul `IsUsed` combine les deux.
 
 **Rang Deezer.** `TrackInfo` (contrat Catalogue) expose `DeezerRank`.

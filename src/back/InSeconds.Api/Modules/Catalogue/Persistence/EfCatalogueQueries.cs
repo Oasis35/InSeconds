@@ -32,12 +32,12 @@ public sealed class EfTrackDirectory(InSecondsDbContext db, IOptionsMonitor<Cata
         var ids = trackIds.ToArray();
         var tracks = await db.Set<Track>().AsNoTracking()
             .Where(t => ids.Contains(t.Id))
-            .Select(t => new { t.Id, t.DeezerTrackId, t.Artist, t.Title, t.CoverHash, t.ReleaseYear })
+            .Select(t => new { t.Id, t.DeezerTrackId, t.Artist, t.Title, t.CoverHash, t.ReleaseYear, t.DeezerRank })
             .ToListAsync(ct);
 
         var catalogue = options.CurrentValue;
         return tracks.ToDictionary(
             t => t.Id,
-            t => new TrackInfo(t.Id, t.DeezerTrackId, t.Artist, t.Title, TrackTitles.CleanDisplayTitle(t.Title), catalogue.CoverUrl(t.CoverHash), t.ReleaseYear));
+            t => new TrackInfo(t.Id, t.DeezerTrackId, t.Artist, t.Title, TrackTitles.CleanDisplayTitle(t.Title), catalogue.CoverUrl(t.CoverHash), t.ReleaseYear, t.DeezerRank));
     }
 }

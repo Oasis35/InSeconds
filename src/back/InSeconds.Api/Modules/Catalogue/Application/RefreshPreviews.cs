@@ -1,6 +1,5 @@
 using Hangfire;
 using InSeconds.Api.Infrastructure.Jobs;
-using InSeconds.Api.Infrastructure.Time;
 using InSeconds.Api.Modules.Catalogue.Contracts;
 using InSeconds.Api.Modules.Catalogue.Domain;
 using InSeconds.Deezer;
@@ -13,8 +12,9 @@ using Wolverine.Http;
 namespace InSeconds.Api.Modules.Catalogue.Application;
 
 /// <summary>
-/// Recontrôle l'extrait (et met à jour le rang) des morceaux que le défi de demain pourrait tirer. Lancé par la
-/// tâche <c>catalogue-refresh</c> chaque nuit, ou à la main depuis <c>/jobs</c> (§ 5.4 bis du plan v2).
+/// Recontrôle l'extrait (et met à jour le rang) de **tout le pool jouable**, cooldown compris : un mode peut tirer n'importe quel morceau
+/// (un run), pas seulement ceux que le défi de demain tirerait. Lancé par la tâche <c>catalogue-refresh</c> chaque nuit, ou à la main depuis
+/// <c>/jobs</c> (§ 5.4 bis du plan v2).
 /// </summary>
 public sealed record RefreshPreviews;
 
@@ -41,19 +41,15 @@ public static class RefreshPreviewsHandler
     public static async Task<PreviewRefreshResult> Handle(
         RefreshPreviews command,
         ICatalogueStore store,
-        ITrackUsage usage,
         ITrackMetadataSource deezer,
-        IGameCalendar calendar,
         TimeProvider time,
         IOptionsMonitor<RefreshOptions> options,
         ILogger<RefreshPreviews> logger,
         CancellationToken ct)
     {
-        // Mêmes morceaux que le tirage de demain (la tâche tourne à 23 h, la veille de la génération) : un morceau
-        // utilisé redevient tirable une fois son cooldown écoulé, son extrait doit être revérifié avant. Ceux
-        // encore en cooldown, ou désactivés, ne seront pas tirés : inutile de les vérifier.
-        var inCooldown = await usage.GetTracksInCooldownAsync(calendar.Today.AddDays(1), ct);
-        var candidates = await store.ListRefreshCandidatesAsync([.. inCooldown], ct);
+        // Tout le pool, sauf les morceaux désactivés (jamais tirés par personne) : le cooldown n'exclut plus rien, car il n'est qu'une règle du
+        // Daily. Un run tire n'importe quel morceau ; le rang et l'extrait doivent être à jour partout.
+        var candidates = await store.ListRefreshCandidatesAsync(ct);
         if (candidates.Count == 0)
         {
             CatalogueLog.NothingToRefresh(logger);

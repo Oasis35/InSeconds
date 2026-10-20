@@ -9,7 +9,7 @@ public sealed record TrackDeletion(Track? Track, bool InUse);
 
 public static class DeleteTrackEndpoint
 {
-    public static async Task<TrackDeletion> LoadAsync(int id, ICatalogueStore store, ITrackUsage usage, CancellationToken ct)
+    public static async Task<TrackDeletion> LoadAsync(int id, ICatalogueStore store, ITrackPoolUsage usage, CancellationToken ct)
     {
         var track = await store.FindAsync(id, ct);
         if (track is null)
@@ -28,7 +28,7 @@ public static class DeleteTrackEndpoint
 
     /// <summary>
     /// <c>DELETE /api/admin/catalogue/tracks/{id}</c> : supprime un morceau du pool, 204. Interdit s'il a déjà
-    /// servi dans un défi (409 <c>catalogue.track_in_use</c>) : la désactivation est l'alternative.
+    /// servi dans un défi de n'importe quel mode (409 <c>catalogue.track_in_use</c>) : la désactivation est l'alternative.
     /// </summary>
     [WolverineDelete("/api/admin/catalogue/tracks/{id}", OperationId = "deleteTrack")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]

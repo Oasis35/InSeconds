@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using InSeconds.Api.Modules.Catalogue.Application;
 using InSeconds.Api.Modules.Catalogue.Contracts;
+using InSeconds.Api.Modules.Daily.Application;
 using Microsoft.Extensions.DependencyInjection;
 using static InSeconds.IntegrationTests.Daily.DailyApi;
 
@@ -123,6 +124,6 @@ public class TrackUsageTests(PostgresFixture postgres) : IAsyncLifetime
     private async Task<IReadOnlySet<int>> InCooldownAsync(DateOnly day)
     {
         using var scope = _app.Api.Services.CreateScope();
-        return await scope.ServiceProvider.GetRequiredService<ITrackUsage>().GetTracksInCooldownAsync(day, Ct);
+        return await scope.ServiceProvider.GetRequiredService<IDailyTrackUsage>().GetTracksInCooldownAsync(day, Ct);
     }
 }

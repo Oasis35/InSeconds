@@ -8,7 +8,7 @@ namespace InSeconds.IntegrationTests.Catalogue;
 
 /// <summary>
 /// La tâche <c>catalogue-refresh</c>, appelée directement (§ 5.4 bis du plan v2) : elle recontrôle l'extrait et le
-/// rang des morceaux que le défi de demain pourrait tirer. Mêmes scénarios que la v1 (<c>RefreshPreviewsTests</c>),
+/// rang de **tout le pool jouable** (les morceaux en cooldown et ceux qu'un mode a déjà joués compris). Mêmes scénarios que la v1 (<c>RefreshPreviewsTests</c>),
 /// plus l'état « inconnu » du piège 16 : un Deezer qui ne répond pas ne change jamais l'état d'un morceau.
 /// </summary>
 public class RefreshPreviewsTests(PostgresFixture postgres) : IAsyncLifetime
@@ -118,22 +118,25 @@ public class RefreshPreviewsTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task MorceauEnCooldownDeDemain_NEstPasVerifie_LeJourDemandeEstDemain()
+    public async Task TousLesMorceauxJouables_SontVerifies_CeuxQuiOntServiCompris()
     {
-        var checkedTrack = await _app.AddAsync(1001);
-        var cooling = await _app.AddAsync(1002);
-        await _app.Api.ExecuteAsync($"UPDATE catalogue.tracks SET preview_status = 2 WHERE id IN ({checkedTrack.Id}, {cooling.Id})");
-        _app.Usage.Cooldown.Add(cooling.Id);
+        // Un mode (un run) peut tirer n'importe quel morceau : le contrôle ne saute plus ceux que le Daily garde en cooldown, ni ceux qu'un
+        // autre mode a déjà joués. Environ 75 % du pool l'était avant, et son rang et son extrait vieillissaient.
+        var fresh = await _app.AddAsync(1001);
+        var servedByDaily = await _app.AddAsync(1002);
+        var servedByOtherMode = await _app.AddAsync(1003);
+        await _app.Api.ExecuteAsync($"UPDATE catalogue.tracks SET preview_status = 2 WHERE id IN ({fresh.Id}, {servedByDaily.Id}, {servedByOtherMode.Id})");
+        _app.Usage.Set(servedByDaily.Id, new TrackUsage(new DateOnly(2026, 10, 3), 1, new DateOnly(2026, 11, 3), InTodayChallenge: false));
+        _app.OtherMode.Set(servedByOtherMode.Id, TrackUsage.None with { UsedByMode = true });
         _app.Deezer.Reset();
 
         var result = await RunAsync();
 
-        Assert.Equal(new PreviewRefreshResult(1, 1, 0), result);
-        // La tâche tourne à 23 h, la veille de la génération : ce sont les morceaux tirables demain.
-        Assert.Equal([new DateOnly(2026, 10, 6)], _app.Usage.AskedDays);
-        Assert.Equal(["/track/1001"], _app.Deezer.Requests);
-        Assert.Equal(1, await _app.PreviewStatusOfAsync(checkedTrack.Id));
-        Assert.Equal(2, await _app.PreviewStatusOfAsync(cooling.Id));
+        Assert.Equal(new PreviewRefreshResult(3, 3, 0), result);
+        Assert.Equal(["/track/1001", "/track/1002", "/track/1003"], _app.Deezer.Requests.Order());
+        Assert.Equal(1, await _app.PreviewStatusOfAsync(fresh.Id));
+        Assert.Equal(1, await _app.PreviewStatusOfAsync(servedByDaily.Id));
+        Assert.Equal(1, await _app.PreviewStatusOfAsync(servedByOtherMode.Id));
     }
 
     [Fact]

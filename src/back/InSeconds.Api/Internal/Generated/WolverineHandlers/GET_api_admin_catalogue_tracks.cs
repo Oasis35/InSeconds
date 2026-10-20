@@ -39,7 +39,7 @@ namespace Internal.Generated.WolverineHandlers
             var inSecondsDbContext = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>(serviceScope.ServiceProvider);
             var efCatalogueQueries = new InSeconds.Api.Modules.Catalogue.Persistence.EfCatalogueQueries(inSecondsDbContext);
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
-            var trackUsage = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Modules.Catalogue.Contracts.ITrackUsage>(serviceScope.ServiceProvider);
+            var trackPoolUsage = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Modules.Catalogue.Contracts.ITrackPoolUsage>(serviceScope.ServiceProvider);
             System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Catalogue.Application.GetTracksEndpoint");
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
@@ -55,7 +55,7 @@ namespace Internal.Generated.WolverineHandlers
             {
                 
                 // The actual HTTP request handler execution
-                var trackListItemIReadOnlyList_response = await InSeconds.Api.Modules.Catalogue.Application.GetTracksEndpoint.Get(efCatalogueQueries, trackUsage, _optionsMonitorOfCatalogueOptions, httpContext.RequestAborted).ConfigureAwait(false);
+                var trackListItemIReadOnlyList_response = await InSeconds.Api.Modules.Catalogue.Application.GetTracksEndpoint.Get(efCatalogueQueries, trackPoolUsage, _optionsMonitorOfCatalogueOptions, httpContext.RequestAborted).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

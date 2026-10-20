@@ -51,7 +51,7 @@ public class ModuleDependencyTests
 
     /// <summary>
     /// Gameplay est de la logique pure (§ 3.3 du plan v2) : il ne dépend que de <c>Catalogue/Contracts</c> et n'a
-    /// besoin ni de l'accès aux données, ni du web, ni de l'infrastructure de l'API. Daily s'appuiera dessus.
+    /// besoin ni de l'accès aux données, ni du web, ni de l'infrastructure de l'API, et ne connaît aucun mode (les modes s'appuient dessus).
     /// </summary>
     [Fact]
     public void Gameplay_NeDependQueDeCatalogueContracts_EtResteSansAccesAuxDonneesNiAuWeb()
@@ -62,10 +62,12 @@ public class ModuleDependencyTests
 
         var result = gameplay
             .ShouldNot().HaveDependencyOnAny(
+            [
                 "Microsoft.EntityFrameworkCore", "Microsoft.AspNetCore", "Npgsql", "Wolverine", "Hangfire",
                 "InSeconds.Api.Infrastructure", "InSeconds.Infrastructure", "InSeconds.Deezer",
-                $"{ModulesNamespace}.Players", $"{ModulesNamespace}.Daily",
-                $"{ModulesNamespace}.Catalogue.Domain", $"{ModulesNamespace}.Catalogue.Application", $"{ModulesNamespace}.Catalogue.Persistence")
+                $"{ModulesNamespace}.Players", .. ModuleRules.Modes.Select(ModuleRules.Namespace),
+                $"{ModulesNamespace}.Catalogue.Domain", $"{ModulesNamespace}.Catalogue.Application", $"{ModulesNamespace}.Catalogue.Persistence",
+            ])
             .GetResult();
 
         Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
@@ -87,20 +89,44 @@ public class ModuleDependencyTests
     }
 
     /// <summary>
-    /// Daily s'appuie sur Catalogue (les morceaux, leur usage) et sur Gameplay (tirage, manche) : jamais l'inverse. L'usage des
-    /// morceaux est un contrat de Catalogue que Daily remplit, sans que Catalogue connaisse Daily.
+    /// Un mode (Daily, plus tard Runs) s'appuie sur Catalogue (les morceaux, leur usage) et sur Gameplay (tirage, manche) : jamais l'inverse. L'usage
+    /// des morceaux est un contrat de Catalogue que chaque mode remplit (<c>ITrackUsage</c>, ajouté, jamais remplacé), sans que Catalogue connaisse un mode.
     /// </summary>
     [Fact]
-    public void CatalogueEtGameplay_NeConnaissentPasDaily()
+    public void CatalogueEtGameplay_NeConnaissentAucunMode()
     {
         foreach (var core in new[] { "Catalogue", "Gameplay" })
         {
             var result = Types.InAssembly(Api)
                 .That().ResideInNamespace($"{ModulesNamespace}.{core}")
-                .ShouldNot().HaveDependencyOnAny($"{ModulesNamespace}.Daily")
+                .ShouldNot().HaveDependencyOnAny([.. ModuleRules.Modes.Select(ModuleRules.Namespace)])
                 .GetResult();
 
             Assert.True(result.IsSuccessful, $"{core} : {string.Join(", ", result.FailingTypeNames ?? [])}");
+        }
+    }
+
+    /// <summary>
+    /// Deux modes ne se voient jamais, pas même par leurs <c>Contracts</c> : ce qu'ils ont en commun passe par un noyau (Players, Catalogue) ou par
+    /// Gameplay. Sans cela, ajouter un mode pourrait casser un autre. (Avec le seul Daily, la règle n'a encore rien à vérifier.)
+    /// </summary>
+    [Fact]
+    public void UnMode_NeVoitAucunAutreMode()
+    {
+        Assert.All(ModuleRules.Modes, mode => Assert.Contains(mode, Modules()));
+
+        foreach (var mode in ModuleRules.Modes)
+        {
+            var others = ModuleRules.Modes.Where(other => other != mode).Select(ModuleRules.Namespace).ToArray();
+            if (others.Length == 0)
+                continue;
+
+            var result = Types.InAssembly(Api)
+                .That().ResideInNamespace(ModuleRules.Namespace(mode))
+                .ShouldNot().HaveDependencyOnAny(others)
+                .GetResult();
+
+            Assert.True(result.IsSuccessful, $"{mode} voit un autre mode : {string.Join(", ", result.FailingTypeNames ?? [])}");
         }
     }
 

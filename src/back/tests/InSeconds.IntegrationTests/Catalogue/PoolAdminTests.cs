@@ -411,6 +411,47 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Single(await _app.ListAsync());
     }
 
+    // ---------- Un morceau joué par un autre mode ----------
+
+    [Fact]
+    public async Task Suppression_MorceauJoueSeulementParUnAutreMode_409_TrackInUse_LeMorceauReste()
+    {
+        var track = await _app.AddAsync(1001);
+        // Rien pour le premier mode, mais un second déclare le morceau utilisé (ses parties le référencent : la clé étrangère le garderait).
+        _app.OtherMode.Set(track.Id, TrackUsage.None with { UsedByMode = true });
+
+        await AssertProblemAsync(await _app.Admin().DeleteAsync($"{Tracks}/{track.Id}", Ct), HttpStatusCode.Conflict, CatalogueErrorCodes.TrackInUse);
+
+        Assert.Single(await _app.ListAsync());
+    }
+
+    [Fact]
+    public async Task Actualisation_MorceauJoueSeulementParUnAutreMode_409_TrackInUse_RienNeChange()
+    {
+        var track = await _app.AddAsync(FakeDeezerHandler.NoPreviewFrom + 1);
+        _app.OtherMode.Set(track.Id, TrackUsage.None with { UsedByMode = true });
+
+        var response = await _app.Admin().PutAsJsonAsync($"{Tracks}/{track.Id}", new UpdateTrack(2002), Ct);
+
+        await AssertProblemAsync(response, HttpStatusCode.Conflict, CatalogueErrorCodes.TrackInUse);
+        Assert.Equal(FakeDeezerHandler.NoPreviewFrom + 1, Assert.Single(await _app.ListAsync()).DeezerTrackId);
+    }
+
+    [Fact]
+    public async Task MorceauJoueParUnAutreMode_SeRenomme_SeDesactive_EtGardeLesDatesDuPremierMode()
+    {
+        var track = await _app.AddAsync(1001);
+        _app.Usage.Set(track.Id, new TrackUsage(new DateOnly(2026, 9, 20), 2, new DateOnly(2026, 10, 20), InTodayChallenge: false));
+        _app.OtherMode.Set(track.Id, TrackUsage.None with { UsedByMode = true });
+
+        // La liste réunit les deux modes : les dates et le nombre d'usages restent ceux du premier (le second répond « aucun »).
+        var listed = Assert.Single(await _app.ListAsync());
+        Assert.Equal((new DateOnly(2026, 9, 20), 2, new DateOnly(2026, 10, 20), false), (listed.LastUsedDate, listed.UsageCount, listed.UnlockDate, listed.InTodayChallenge));
+        // Seules la suppression et l'actualisation sont interdites à un morceau utilisé : renommer et désactiver restent permis.
+        Assert.Equal(HttpStatusCode.OK, (await _app.Admin().PatchAsJsonAsync($"{Tracks}/{track.Id}", new RenameTrack("Nouvel artiste", "Nouveau titre"), Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await _app.Admin().PutAsJsonAsync($"{Tracks}/{track.Id}/disabled", new SetTrackDisabled(true), Ct)).StatusCode);
+    }
+
     [Fact]
     public async Task Suppression_MorceauInconnu_404() =>
         await AssertProblemAsync(await _app.Admin().DeleteAsync($"{Tracks}/99999", Ct), HttpStatusCode.NotFound, "common.not_found");

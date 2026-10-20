@@ -3,7 +3,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,34 +18,28 @@ namespace Internal.Generated.WolverineHandlers
         private readonly Wolverine.Http.WolverineHttpOptions _wolverineHttpOptions;
         private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor;
         private readonly Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _serviceScopeFactory;
-        private readonly Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> _optionsMonitorOfCatalogueOptions;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
-        private readonly System.TimeProvider _timeProvider;
         private readonly Wolverine.Runtime.IWolverineRuntime _wolverineRuntime;
 
-        public GET_api_players_me_export(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> optionsMonitorOfCatalogueOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
+        public GET_api_players_me_export(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
         {
             _wolverineHttpOptions = wolverineHttpOptions;
             _httpContextAccessor = httpContextAccessor;
             _serviceScopeFactory = serviceScopeFactory;
-            _optionsMonitorOfCatalogueOptions = optionsMonitorOfCatalogueOptions;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
-            _timeProvider = timeProvider;
             _wolverineRuntime = wolverineRuntime;
         }
 
         public override async System.Threading.Tasks.Task Handle(Microsoft.AspNetCore.Http.HttpContext httpContext)
         {
+            var claimsCurrentPlayer = new InSeconds.Api.Infrastructure.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
             var messageContext = new Wolverine.Runtime.MessageContext(_wolverineRuntime);
             await using var serviceScope = _serviceScopeFactory.CreateAsyncScope();
             Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Wolverine.Runtime.ScopedMessageContextHolder>(serviceScope.ServiceProvider).Context = messageContext;
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
+            var playerDataExporter = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Modules.Players.Application.PlayerDataExporter>(serviceScope.ServiceProvider);
+            // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var inSecondsDbContext = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>(serviceScope.ServiceProvider);
-            var efTrackDirectory = new InSeconds.Api.Modules.Catalogue.Persistence.EfTrackDirectory(inSecondsDbContext, _optionsMonitorOfCatalogueOptions);
-            var efPlayerGameData = new InSeconds.Api.Modules.Daily.Persistence.EfPlayerGameData(inSecondsDbContext, efTrackDirectory);
-            var efPlayerQueries = new InSeconds.Api.Modules.Players.Persistence.EfPlayerQueries(inSecondsDbContext);
-            var playerDataExporter = new InSeconds.Api.Modules.Players.Application.PlayerDataExporter(efPlayerQueries, efPlayerGameData, _timeProvider);
-            var claimsCurrentPlayer = new InSeconds.Api.Infrastructure.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
             System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Players.Application.ExportMyDataEndpoint");
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction

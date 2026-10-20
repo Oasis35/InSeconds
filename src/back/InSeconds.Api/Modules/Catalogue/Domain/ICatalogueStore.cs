@@ -18,11 +18,11 @@ public interface ICatalogueStore
     Task<bool> DeezerIdTakenAsync(long deezerTrackId, int? exceptTrackId, CancellationToken ct);
 
     /// <summary>
-    /// Les morceaux dont l'extrait est à recontrôler : non désactivés, hors <paramref name="excludedTrackIds"/>
-    /// (ceux qui ne seront pas tirables). Renvoyés **détachés** : le contrôle dure plusieurs minutes, rien ne doit
-    /// rester suivi ni sous transaction pendant ce temps.
+    /// Les morceaux dont l'extrait est à recontrôler : tout le pool, sauf les morceaux désactivés (le cooldown n'en exclut plus aucun :
+    /// un mode peut tirer n'importe quel morceau). Renvoyés **détachés** : le contrôle dure plusieurs minutes, rien ne doit rester suivi
+    /// ni sous transaction pendant ce temps.
     /// </summary>
-    Task<IReadOnlyList<Track>> ListRefreshCandidatesAsync(IReadOnlyCollection<int> excludedTrackIds, CancellationToken ct);
+    Task<IReadOnlyList<Track>> ListRefreshCandidatesAsync(CancellationToken ct);
 
     /// <summary>
     /// Enregistre tout de suite (sa propre requête, pas la transaction d'un handler) l'état de l'extrait et le rang de
