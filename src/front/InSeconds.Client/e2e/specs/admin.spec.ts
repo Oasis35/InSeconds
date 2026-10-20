@@ -413,13 +413,22 @@ test.describe('Admin — recalcul des stats (v2)', () => {
     await admin.login();
     await admin.openChallengesAt(yesterday);
 
+    // Réponse lue au passage par page.route, comme dans answers-hidden : avec waitForResponse, Chromium peut avoir
+    // libéré le corps quand on le lit (« Response body is not available… navigated away from », test instable).
+    let recompute: { status: number; body: string } | undefined;
+    await page.route(`**/challenges/${yesterday}/stats/recompute`, async route => {
+      const response = await route.fetch();
+      const body = await response.text();
+      recompute = { status: response.status(), body };
+      await route.fulfill({ response, body });
+    });
+
     const row = admin.challengeRow(yesterday);
     await row.locator('button').first().click();
-    const recompute = page.waitForResponse(r => r.url().endsWith(`/challenges/${yesterday}/stats/recompute`));
     await admin.recomputeButton(row).click();
-    const response = await recompute;
-    expect(response.status()).toBe(409);
-    expect((await response.json() as { code: string }).code).toBe('admin.day_not_over');
+    await expect.poll(() => recompute).toBeDefined();
+    expect(recompute?.status).toBe(409);
+    expect((JSON.parse(recompute?.body ?? '{}') as { code?: string }).code).toBe('admin.day_not_over');
 
     await expect(row.getByRole('alert')).toHaveText("Ce jour n'est pas encore fini : les stats seront figées demain.");
     await expect(row.getByTestId('challenge-computed-at')).toHaveCount(0);
