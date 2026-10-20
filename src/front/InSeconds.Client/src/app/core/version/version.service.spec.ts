@@ -4,7 +4,7 @@ import { Dialog } from '@angular/cdk/dialog';
 import { NavigationEnd, Router } from '@angular/router';
 import { SwUpdate, VersionEvent } from '@angular/service-worker';
 import { Subject } from 'rxjs';
-import { PAGE_RELOAD, ReloadMoment, VersionService } from './version.service';
+import { PAGE_RELOAD, ReloadMoment, SERVICE_WORKER_CONTAINER, VersionService } from './version.service';
 
 describe('VersionService', () => {
   const READY: VersionEvent = { type: 'VERSION_READY', currentVersion: { hash: 'a' }, latestVersion: { hash: 'b' } };
@@ -16,6 +16,8 @@ describe('VersionService', () => {
   let checkForUpdate: ReturnType<typeof vi.fn>;
   let reload: ReturnType<typeof vi.fn>;
   let visibility: DocumentVisibilityState;
+  let workers: EventTarget & { controller: object | null; getRegistration: ReturnType<typeof vi.fn> };
+  let updateWorker: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     sessionStorage.clear();
@@ -28,19 +30,25 @@ describe('VersionService', () => {
     sessionStorage.clear();
   });
 
-  function create(isEnabled = true): VersionService {
+  function create(isEnabled = true, controlled = true): VersionService {
     versionUpdates = new Subject();
     unrecoverable = new Subject();
     routerEvents = new Subject();
     dialog = { afterOpened: new Subject(), afterAllClosed: new Subject(), openDialogs: [] };
     checkForUpdate = vi.fn().mockResolvedValue(false);
     reload = vi.fn();
+    updateWorker = vi.fn().mockResolvedValue(undefined);
+    workers = Object.assign(new EventTarget(), {
+      controller: controlled ? {} : null,
+      getRegistration: vi.fn().mockResolvedValue({ update: updateWorker }),
+    });
     TestBed.configureTestingModule({
       providers: [
         { provide: SwUpdate, useValue: { isEnabled, versionUpdates, unrecoverable, checkForUpdate } },
         { provide: PAGE_RELOAD, useValue: reload },
         { provide: Router, useValue: { events: routerEvents } },
         { provide: Dialog, useValue: dialog },
+        { provide: SERVICE_WORKER_CONTAINER, useValue: workers },
       ],
     });
     return TestBed.inject(VersionService);
@@ -238,6 +246,49 @@ describe('VersionService', () => {
     expect(checkForUpdate).toHaveBeenCalled();
   });
 
+  it('recharge au moment sûr quand un nouveau service worker remplace l\'ancien (piège 49)', () => {
+    const service = create();
+    const game = signal<ReloadMoment>('navigation');
+    page(service, () => game());
+
+    workers.dispatchEvent(new Event('controllerchange'));
+    TestBed.tick();
+    expect(reload).not.toHaveBeenCalled();
+
+    game.set('now');
+    TestBed.tick();
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(service.updateAvailable()).toBe(false);
+  });
+
+  it('ne recharge pas quand le premier service worker prend la main (première visite)', () => {
+    const service = create(true, false);
+    page(service, () => 'now');
+
+    workers.dispatchEvent(new Event('controllerchange'));
+    TestBed.tick();
+
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  it('demande la mise à jour du service worker dès le démarrage et au retour au premier plan', async () => {
+    create();
+    await vi.waitFor(() => expect(updateWorker).toHaveBeenCalledTimes(1));
+
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.waitFor(() => expect(updateWorker).toHaveBeenCalledTimes(2));
+  });
+
+  it('avale un échec de la mise à jour du service worker', async () => {
+    create();
+    workers.getRegistration.mockRejectedValue(new Error('offline'));
+
+    document.dispatchEvent(new Event('visibilitychange'));
+    await Promise.resolve();
+
+    expect(reload).not.toHaveBeenCalled();
+  });
+
   it('recharge depuis le bandeau à la demande', () => {
     const service = create();
 
@@ -266,6 +317,7 @@ describe('VersionService', () => {
 
     expect(service.updateAvailable()).toBe(false);
     expect(checkForUpdate).not.toHaveBeenCalled();
+    expect(workers.getRegistration).not.toHaveBeenCalled();
     expect(reload).not.toHaveBeenCalled();
   });
 });
