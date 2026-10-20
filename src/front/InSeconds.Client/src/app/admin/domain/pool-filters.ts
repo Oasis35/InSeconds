@@ -12,19 +12,23 @@ export interface PoolFilters {
   readonly status: StatusFilter;
   readonly preview: PreviewFilter;
   readonly playedBy: string;
+  /** Un genre (son nom exact), `''` pour tous. */
+  readonly genre: string;
   /** Bornes (incluses) sur le dernier jour d'utilisation par le mode de la vue, `yyyy-MM-dd` ; vide = pas de borne. */
   readonly lastUsedFrom: string;
   readonly lastUsedTo: string;
 }
 
-export const NO_FILTERS: PoolFilters = { text: '', status: 'all', preview: 'all', playedBy: '', lastUsedFrom: '', lastUsedTo: '' };
+export const NO_FILTERS: PoolFilters = {
+  text: '', status: 'all', preview: 'all', playedBy: '', genre: '', lastUsedFrom: '', lastUsedTo: '',
+};
 
 export function hasActiveFilters(filters: PoolFilters): boolean {
   return filters.text !== '' || filters.status !== 'all' || filters.preview !== 'all' || filters.playedBy !== ''
-    || filters.lastUsedFrom !== '' || filters.lastUsedTo !== '';
+    || filters.genre !== '' || filters.lastUsedFrom !== '' || filters.lastUsedTo !== '';
 }
 
-export type SortColumn = 'artist' | 'title' | 'preview' | 'status' | 'usage' | 'lastUsedDate' | 'unlockDate' | 'usageCount';
+export type SortColumn = 'artist' | 'title' | 'genre' | 'preview' | 'status' | 'usage' | 'lastUsedDate' | 'unlockDate' | 'usageCount';
 export type SortDirection = 'asc' | 'desc';
 
 export interface PoolSort {
@@ -70,6 +74,10 @@ function matchesPlayedBy(track: PoolTrack, playedBy: string): boolean {
   return isUsedByMode(track, playedBy);
 }
 
+function matchesGenre(track: PoolTrack, genre: string): boolean {
+  return genre === '' || track.genres.includes(genre);
+}
+
 function matchesPreview(track: PoolTrack, preview: PreviewFilter): boolean {
   if (preview === 'ok') return track.preview === 'available';
   if (preview === 'missing') return track.preview === 'missing';
@@ -89,6 +97,7 @@ export function filterTracks(tracks: readonly PoolTrack[], filters: PoolFilters,
     matchesText(track, text)
     && matchesStatus(track, filters.status, view)
     && matchesPlayedBy(track, filters.playedBy)
+    && matchesGenre(track, filters.genre)
     && matchesPreview(track, filters.preview)
     && matchesLastUsed(track, view, filters.lastUsedFrom, filters.lastUsedTo));
 }
@@ -101,6 +110,7 @@ function sortValue(track: PoolTrack, column: SortColumn, view: string): string |
   switch (column) {
     case 'artist': return track.artist.toLowerCase();
     case 'title': return track.title.toLowerCase();
+    case 'genre': return track.genres.length === 0 ? null : track.genres.join(', ').toLowerCase();
     case 'preview': return PREVIEW_ORDER[track.preview];
     case 'status': return isUsedIn(track, view) ? 0 : 1;
     case 'usage': return track.usages.length;

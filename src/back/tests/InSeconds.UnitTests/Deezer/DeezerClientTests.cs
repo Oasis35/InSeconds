@@ -41,6 +41,64 @@ public class DeezerClientTests
     public async Task Preview_ErreurDeezerEnHttp200_Indisponible_PasAbsente(string body) =>
         Assert.IsType<PreviewLookup.Unavailable>(await Create(Ok(body)).GetPreviewAsync(123, Ct));
 
+    [Fact]
+    public async Task Morceau_LitLAlbum_OuRienSiLaReponseNEnDonnePas()
+    {
+        var withAlbum = await Create(Ok("""{"id":1,"title":"T","artist":{"name":"A"},"album":{"id":302127,"cover_medium":null}}""")).GetTrackAsync(1, Ct);
+        var withoutAlbum = await Create(Ok("""{"id":2,"title":"T","artist":{"name":"A"},"album":{"cover_medium":null}}""")).GetTrackAsync(2, Ct);
+
+        Assert.Equal(302127, Assert.IsType<TrackMetadataLookup.Found>(withAlbum).Track.AlbumId);
+        Assert.Null(Assert.IsType<TrackMetadataLookup.Found>(withoutAlbum).Track.AlbumId);
+    }
+
+    // ---------- Album (IAlbumSource) : les genres ----------
+
+    [Fact]
+    public async Task Album_LitLesGenres_DansLOrdreDeDeezer_EtEcarteCeuxSansNom()
+    {
+        var handler = Ok("""
+            {"id":302127,"title":"Discovery","genres":{"data":[
+              {"id":113,"name":"Dance","type":"genre"},
+              {"id":132,"name":" Pop ","type":"genre"},
+              {"id":5,"name":"  ","type":"genre"},
+              {"id":0,"name":"Sans identifiant","type":"genre"}
+            ]}}
+            """);
+
+        var lookup = await Create(handler).GetAlbumAsync(302127, Ct);
+
+        Assert.Equal("/album/302127", handler.LastRequest!.RequestUri!.PathAndQuery);
+        Assert.Equal([new DeezerGenre(113, "Dance"), new DeezerGenre(132, "Pop")], Assert.IsType<AlbumLookup.Found>(lookup).Genres);
+    }
+
+    [Theory]
+    [InlineData("""{"id":1,"title":"A","genres":{"data":[]}}""")]
+    [InlineData("""{"id":1,"title":"A"}""")]
+    public async Task Album_SansGenre_EstTrouveAvecUneListeVide(string body) =>
+        Assert.Empty(Assert.IsType<AlbumLookup.Found>(await Create(Ok(body)).GetAlbumAsync(1, Ct)).Genres);
+
+    [Fact]
+    public async Task Album_ErreurNoData800_AlbumSupprime_NonTrouve() =>
+        Assert.IsType<AlbumLookup.NotFound>(await Create(Ok(NoData)).GetAlbumAsync(1, Ct));
+
+    [Theory]
+    [InlineData(Quota)]
+    [InlineData(Busy)]
+    [InlineData("""{"error":{"type":"Exception","message":"?","code":9999}}""")]
+    public async Task Album_ErreurDeezerEnHttp200_Indisponible_PasUnAlbumSansGenre(string body) =>
+        Assert.IsType<AlbumLookup.Unavailable>(await Create(Ok(body)).GetAlbumAsync(1, Ct));
+
+    [Theory]
+    [InlineData(HttpStatusCode.NotFound)]
+    [InlineData(HttpStatusCode.InternalServerError)]
+    [InlineData(HttpStatusCode.TooManyRequests)]
+    public async Task Album_ErreurHttp_Indisponible(HttpStatusCode status) =>
+        Assert.IsType<AlbumLookup.Unavailable>(await Create(new StubHttpHandler((_, _) => Task.FromResult(new HttpResponseMessage(status)))).GetAlbumAsync(1, Ct));
+
+    [Fact]
+    public async Task Album_CorpsQuiNEstPasDuJson_Indisponible() =>
+        Assert.IsType<AlbumLookup.Unavailable>(await Create(Ok("<html>oups</html>")).GetAlbumAsync(1, Ct));
+
     [Theory]
     [InlineData(HttpStatusCode.NotFound)]
     [InlineData(HttpStatusCode.InternalServerError)]

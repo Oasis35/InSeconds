@@ -8,7 +8,7 @@ import { AudioPreviewPlayer } from '../data-access/audio-preview.player';
 import { DeezerSearchStore } from '../data-access/deezer-search.store';
 import { PoolStore } from '../data-access/pool.store';
 import { DeezerResult, PoolTrack } from '../domain/pool-track';
-import { POOL_VIEW } from '../domain/pool-views';
+import { MODE_VIEWS, POOL_VIEW } from '../domain/pool-views';
 import { PoolFilterBarComponent } from '../ui/pool-filter-bar.component';
 import { PoolTableComponent } from '../ui/pool-table.component';
 import { PoolToolbarComponent } from '../ui/pool-toolbar.component';
@@ -24,7 +24,9 @@ const DIALOG_MAX_WIDTH = '26rem';
 /**
  * `/admin/catalogue` : le pool de morceaux, commun à tous les modes. Un sélecteur donne le pool général (tableau
  * filtrable, triable et paginé, panneau de recherche Deezer pour ajouter, fenêtres d'écoute, de renommage et de
- * suppression) ou la vue d'un mode, en lecture seule (écouter, retrouver le morceau dans le pool). La page de la
+ * suppression) ou la vue d'un mode, en lecture seule (écouter, retrouver le morceau dans le pool). La vue (`?view=daily`,
+ * absente pour le pool général) et la page de la grille (`?page=3`, à partir de 1) vivent dans l'adresse : un
+ * rechargement ou un lien partagé rouvre la même vue et la même page. La page de la
  * grille vit dans l'adresse (`?page=3`, à partir de 1) : un rechargement rouvre la même page.
  */
 @Component({
@@ -77,9 +79,11 @@ const DIALOG_MAX_WIDTH = '26rem';
       <app-pool-filter-bar
         [filters]="pool.filters()"
         [view]="pool.view()"
+        [genres]="pool.genres()"
         (textChange)="onFilterText($event)"
         (previewChange)="pool.setPreview($event)"
         (playedByChange)="pool.setPlayedBy($event)"
+        (genreChange)="pool.setGenre($event)"
         (statusChange)="pool.setStatus($event)"
         (lastUsedFromChange)="pool.setLastUsedFrom($event)"
         (lastUsedToChange)="pool.setLastUsedTo($event)"
@@ -141,19 +145,22 @@ export class CataloguePage {
   ));
 
   constructor() {
-    // La page de la grille vit dans l'adresse (`?page=3`, numérotée à partir de 1) : un rechargement
-    // ou un lien partagé rouvre la même page.
+    // La vue (`?view=`) puis la page de la grille (`?page=3`, numérotée à partir de 1) vivent dans l'adresse : un
+    // rechargement ou un lien partagé rouvre la même vue et la même page. La vue d'abord : en changer remet la page à zéro.
+    const view = this.route.snapshot.queryParamMap.get('view');
+    if (MODE_VIEWS.some(mode => mode.id === view)) this.pool.setView(view as string);
     const page = Number(this.route.snapshot.queryParamMap.get('page'));
     if (Number.isInteger(page) && page >= 1) this.pool.goToPage(page - 1);
 
-    // Page → adresse, seulement une fois le pool chargé (avant, la grille n'a qu'une page et celle de
-    // l'adresse serait effacée). `replaceUrl` : « précédent » ne revient pas page par page.
+    // Vue et page → adresse, seulement une fois le pool chargé (avant, la grille n'a qu'une page et celle de
+    // l'adresse serait effacée). `replaceUrl` : « précédent » ne revient pas page par page, ni vue par vue.
     effect(() => {
       if (!this.pool.isFulfilled()) return;
       const current = this.pool.page() + 1;
+      const view = this.pool.view();
       untracked(() => void this.router.navigate([], {
         relativeTo: this.route,
-        queryParams: { page: current > 1 ? current : null },
+        queryParams: { page: current > 1 ? current : null, view: view === POOL_VIEW ? null : view },
         queryParamsHandling: 'merge',
         replaceUrl: true,
       }));

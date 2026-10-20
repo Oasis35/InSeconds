@@ -200,6 +200,95 @@ public class TrackTests
         Assert.Null(track.UpdatedAt);
     }
 
+    // ---------- Album et genres ----------
+
+    private static Track OnAlbum(long? albumId) =>
+        Track.Create(new TrackMetadata(1, "A", "T", null, null, null, PreviewStatus.Available, albumId), T0);
+
+    [Fact]
+    public void Creation_GardeLAlbum_SansGenreTantQuIlsNeSontPasLus()
+    {
+        var track = OnAlbum(302127);
+
+        Assert.Equal(302127, track.AlbumId);
+        Assert.Null(track.GenresCheckedAt);
+        Assert.Empty(track.Genres);
+    }
+
+    [Fact]
+    public void LesGenresLus_SontPoses_AvecLaDate_SansDoublon()
+    {
+        var track = OnAlbum(1);
+        var pop = new Genre(132, "Pop");
+
+        track.RecordGenres([pop, new Genre(132, "Pop"), new Genre(113, "Dance")], T1);
+
+        Assert.Equal([132L, 113L], track.Genres.Select(g => g.Id));
+        Assert.Equal(T1, track.GenresCheckedAt);
+    }
+
+    [Fact]
+    public void UnAlbumSansGenre_EstQuandMemeNoteCommeLu()
+    {
+        var track = OnAlbum(1);
+
+        track.RecordGenres([], T1);
+
+        Assert.Empty(track.Genres);
+        Assert.Equal(T1, track.GenresCheckedAt);
+    }
+
+    [Fact]
+    public void RelireLeMemeAlbum_GardeLesGenres()
+    {
+        var track = OnAlbum(1);
+        track.RecordGenres([new Genre(132, "Pop")], T1);
+
+        track.RecordAlbum(1);
+        track.RecordAlbum(null);
+
+        Assert.Single(track.Genres);
+        Assert.Equal(T1, track.GenresCheckedAt);
+    }
+
+    [Fact]
+    public void UnAutreAlbum_EffaceLesGenresDeLAncien_EtLesRemetALire()
+    {
+        var track = OnAlbum(1);
+        track.RecordGenres([new Genre(132, "Pop")], T1);
+
+        track.RecordAlbum(2);
+
+        Assert.Equal(2, track.AlbumId);
+        Assert.Empty(track.Genres);
+        Assert.Null(track.GenresCheckedAt);
+    }
+
+    [Fact]
+    public void ActualiserUnMorceau_QuiChangeDAlbum_EffaceLesGenres()
+    {
+        var track = OnAlbum(1);
+        track.RecordGenres([new Genre(132, "Pop")], T1);
+
+        track.ReplaceDeezerSource(new TrackMetadata(456, "Justice", "D.A.N.C.E.", null, null, null, PreviewStatus.Available, AlbumId: 9), T1);
+
+        Assert.Equal(9, track.AlbumId);
+        Assert.Empty(track.Genres);
+        Assert.Null(track.GenresCheckedAt);
+    }
+
+    [Fact]
+    public void ActualiserUnMorceau_DuMemeAlbum_GardeLesGenres()
+    {
+        var track = OnAlbum(1);
+        track.RecordGenres([new Genre(132, "Pop")], T1);
+
+        track.ReplaceDeezerSource(new TrackMetadata(456, "Justice", "D.A.N.C.E.", null, null, null, PreviewStatus.Available, AlbumId: 1), T1);
+
+        Assert.Single(track.Genres);
+        Assert.Equal(T1, track.GenresCheckedAt);
+    }
+
     // ---------- Actualisation ----------
 
     [Fact]

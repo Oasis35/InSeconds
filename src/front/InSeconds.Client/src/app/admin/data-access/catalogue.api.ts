@@ -60,6 +60,7 @@ function toPoolTrack(item: TrackListItem): PoolTrack {
     isDisabled: item.isDisabled,
     isUsed: item.isUsed,
     usages: item.usages.map(toModeUsage),
+    genres: item.genres,
     inTodayChallenge: item.usages.some(usage => usage.inTodayChallenge),
   };
 }

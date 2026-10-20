@@ -320,6 +320,8 @@
       "totalCount": "{{ count }} track(s)",
       "missingPreviewCount": "{{ count }} without preview",
       "colUsage": "Played by",
+      "colGenre": "Genre",
+      "allGenres": "All genres",
       "neverPlayed": "Never played",
       "allPlayedBy": "Played by: all",
       "playedByNone": "Played by: no mode",

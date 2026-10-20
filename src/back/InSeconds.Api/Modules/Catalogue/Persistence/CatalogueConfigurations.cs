@@ -27,5 +27,39 @@ internal sealed class TrackConfiguration : IEntityTypeConfiguration<Track>
         builder.Property(t => t.Title).IsRequired();
         // preview_status : 0 inconnu, 1 disponible, 2 absent.
         builder.Property(t => t.PreviewStatus).HasConversion<short>();
+        // album_id : l'album chez Deezer (les genres se lisent sur lui) ; genres_checked_at : vide tant que ses genres n'ont pas été lus.
+        builder.Property(t => t.AlbumId);
+        builder.Property(t => t.GenresCheckedAt);
+        // Les genres du morceau (ceux de son album) : table de jonction track_genres, supprimée avec le morceau ou le genre.
+        builder.HasMany(t => t.Genres).WithMany().UsingEntity<Dictionary<string, object>>(
+            TrackGenresTable,
+            right => right.HasOne<Genre>().WithMany().HasForeignKey(GenreIdColumn).OnDelete(DeleteBehavior.Cascade),
+            left => left.HasOne<Track>().WithMany().HasForeignKey(TrackIdColumn).OnDelete(DeleteBehavior.Cascade),
+            join =>
+            {
+                join.ToTable(TrackGenresTable, DbSchemas.Catalogue);
+                join.HasKey(TrackIdColumn, GenreIdColumn);
+                // Les genres d'un morceau se lisent par son identifiant : la clé commence par lui. Les morceaux d'un genre, par l'index suivant.
+                join.HasIndex(GenreIdColumn);
+            });
+    }
+
+    /// <summary>Table de jonction morceau ↔ genre, écrite aussi à la main par le contrôle nocturne (<c>EfCatalogueStore.SaveAlbumGenresAsync</c>).</summary>
+    public const string TrackGenresTable = "track_genres";
+
+    public const string TrackIdColumn = "track_id";
+
+    public const string GenreIdColumn = "genre_id";
+}
+
+internal sealed class GenreConfiguration : IEntityTypeConfiguration<Genre>
+{
+    public void Configure(EntityTypeBuilder<Genre> builder)
+    {
+        builder.ToTable("genres", DbSchemas.Catalogue);
+        builder.HasKey(g => g.Id);
+        // L'identifiant est celui de Deezer : jamais généré par la base.
+        builder.Property(g => g.Id).ValueGeneratedNever();
+        builder.Property(g => g.Name).IsRequired();
     }
 }

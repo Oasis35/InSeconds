@@ -189,3 +189,28 @@ describe('vues par mode', () => {
     expect(hasActiveFilters(filters({ playedBy: 'daily' }))).toBe(true);
   });
 });
+
+describe('genres', () => {
+  const pop = track({ id: 1, artist: 'Dua Lipa', genres: ['Pop'] });
+  const hiphop = track({ id: 2, artist: 'Eminem', genres: ['Dance', 'Rap/Hip Hop'] });
+  const none = track({ id: 3, artist: 'Inconnu' });
+
+  it('filtre sur un genre exact, parmi ceux de l\'album', () => {
+    expect(filterTracks([pop, hiphop, none], filters({ genre: 'Pop' })).map(t => t.id)).toEqual([1]);
+    expect(filterTracks([pop, hiphop, none], filters({ genre: 'Dance' })).map(t => t.id)).toEqual([2]);
+    expect(filterTracks([pop, hiphop, none], filters({ genre: '' }))).toHaveLength(3);
+  });
+
+  it('un morceau sans genre lu n\'apparaît sous aucun genre', () => {
+    expect(filterTracks([none], filters({ genre: 'Pop' }))).toEqual([]);
+  });
+
+  it('a un filtre actif dès qu\'un genre est choisi', () => {
+    expect(hasActiveFilters(filters({ genre: 'Pop' }))).toBe(true);
+  });
+
+  it('trie par genre, les morceaux sans genre en dernier', () => {
+    expect(sortTracks([none, hiphop, pop], { column: 'genre', direction: 'asc' }).map(t => t.id)).toEqual([2, 1, 3]);
+    expect(sortTracks([none, hiphop, pop], { column: 'genre', direction: 'desc' }).map(t => t.id)).toEqual([1, 2, 3]);
+  });
+});

@@ -42,6 +42,7 @@ public static class RefreshPreviewsHandler
         RefreshPreviews command,
         ICatalogueStore store,
         ITrackMetadataSource deezer,
+        IAlbumSource albums,
         TimeProvider time,
         IOptionsMonitor<RefreshOptions> options,
         ILogger<RefreshPreviews> logger,
@@ -93,6 +94,8 @@ public static class RefreshPreviewsHandler
                             changed.Add(batch[i].Id);
                         if (found.Track.Rank is { } rank)
                             batch[i].RecordRank(rank, now);
+                        // L'album vient dans la même réponse : aucun appel de plus. Les genres se lisent ensuite, album par album.
+                        batch[i].RecordAlbum(found.Track.AlbumId);
                         touched.Add(batch[i]);
                         break;
                 }
@@ -104,7 +107,54 @@ public static class RefreshPreviewsHandler
         }
 
         CatalogueLog.RefreshCompleted(logger, candidates.Count, updated, failed);
+        await RefreshGenresAsync(candidates, store, albums, time, settings, logger, ct);
         return new PreviewRefreshResult(candidates.Count, updated, failed);
+    }
+
+    /// <summary>
+    /// Rattrape les genres : **un appel par album** (pas par morceau) pour les albums dont les genres n'ont jamais été lus, lots espacés comme
+    /// ceux des morceaux (quota Deezer, piège 16). Une réponse indisponible ne change rien (l'album sera repris au prochain contrôle) ;
+    /// un album supprimé chez Deezer (800) n'a pas de genre et n'est plus redemandé. Les genres de l'album vont à tous ses morceaux du pool.
+    /// </summary>
+    private static async Task RefreshGenresAsync(
+        IReadOnlyList<Track> candidates, ICatalogueStore store, IAlbumSource albums, TimeProvider time, RefreshOptions settings,
+        ILogger logger, CancellationToken ct)
+    {
+        var pending = candidates
+            .Where(t => t.AlbumId is not null && t.GenresCheckedAt is null)
+            .Select(t => t.AlbumId!.Value)
+            .Distinct()
+            .ToList();
+        if (pending.Count == 0)
+            return;
+
+        var batchSize = Math.Max(1, settings.BatchSize);
+        var failed = 0;
+        for (var offset = 0; offset < pending.Count; offset += batchSize)
+        {
+            // Le contrôle des morceaux vient de finir : la première série d'albums attend aussi, la cadence reste celle du réglage.
+            await Task.Delay(settings.BatchDelay, time, ct);
+
+            var batch = pending.Skip(offset).Take(batchSize).ToList();
+            var lookups = await Task.WhenAll(batch.Select(id => albums.GetAlbumAsync(id, ct)));
+            for (var i = 0; i < batch.Count; i++)
+            {
+                switch (lookups[i])
+                {
+                    case AlbumLookup.Found found:
+                        await store.SaveAlbumGenresAsync(batch[i], [.. found.Genres.Select(g => new GenreRef(g.Id, g.Name))], time.GetUtcNow(), ct);
+                        break;
+                    case AlbumLookup.NotFound:
+                        await store.SaveAlbumGenresAsync(batch[i], [], time.GetUtcNow(), ct);
+                        break;
+                    default:
+                        failed++;
+                        break;
+                }
+            }
+        }
+
+        CatalogueLog.GenresRefreshed(logger, pending.Count, failed);
     }
 }
 

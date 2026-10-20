@@ -39,6 +39,8 @@ public sealed class FakeDeezerState
 /// <item><description>un morceau d'identifiant ≥ <see cref="NoPreviewFrom"/> n'a pas d'extrait ;</description></item>
 /// <item><description>un identifiant ≥ <see cref="NotFoundFrom"/> (et en dessous) : Deezer ne le connaît pas (erreur 800 en HTTP 200) ;</description></item>
 /// <item><description>un identifiant ≥ <see cref="QuotaFrom"/> (et en dessous) : quota dépassé (erreur 4 en HTTP 200, piège 16) ;</description></item>
+/// <item><description>l'album d'un morceau est <see cref="AlbumIdOf"/> et ses genres (<c>/album/{id}</c>) se déduisent de son identifiant
+/// (<see cref="GenresOf"/>) : aucun, Pop, Rap/Hip Hop et Dance, ou Rock ; les erreurs d'un album se simulent par <see cref="FakeDeezerState.Intercept"/> ;</description></item>
 /// <item><description>la recherche répond un seul morceau, ou, pour une requête contenant <c>dedup-test</c>,
 /// trois variantes parenthésées du même morceau et un morceau distinct.</description></item>
 /// </list>
@@ -65,6 +67,9 @@ public sealed class FakeDeezerHandler(FakeDeezerState state) : HttpMessageHandle
         if (path.StartsWith("/track/", StringComparison.OrdinalIgnoreCase) && long.TryParse(path["/track/".Length..], out var id))
             return TrackResponse(id);
 
+        if (path.StartsWith("/album/", StringComparison.OrdinalIgnoreCase) && long.TryParse(path["/album/".Length..], out var albumId))
+            return Json(AlbumJson(albumId));
+
         if (path.StartsWith("/search", StringComparison.OrdinalIgnoreCase))
             return Json(request.RequestUri!.Query.Contains("dedup-test", StringComparison.OrdinalIgnoreCase) ? DedupSearch : DefaultSearch);
 
@@ -82,6 +87,32 @@ public sealed class FakeDeezerHandler(FakeDeezerState state) : HttpMessageHandle
         return Json(TrackJson(id, PreviewUrl));
     }
 
+    /// <summary>L'album du faux morceau : dix albums se partagent les morceaux, de 1 à 10.</summary>
+    public static long AlbumIdOf(long trackId) => trackId % 10 + 1;
+
+    /// <summary>
+    /// Les genres du faux album, déduits de son identifiant : un multiple de 4 n'en a aucun, 1 modulo 4 est « Pop », 2 modulo 4 est
+    /// « Rap/Hip Hop » et « Dance », 3 modulo 4 est « Rock ».
+    /// </summary>
+    public static IReadOnlyList<(long Id, string Name)> GenresOf(long albumId) => (albumId % 4) switch
+    {
+        1 => [(132, "Pop")],
+        2 => [(116, "Rap/Hip Hop"), (113, "Dance")],
+        3 => [(152, "Rock")],
+        _ => [],
+    };
+
+    private static string AlbumJson(long albumId)
+    {
+        if (albumId >= NotFoundFrom)
+            return """{"error":{"type":"DataException","message":"no data","code":800}}""";
+        if (albumId >= QuotaFrom)
+            return """{"error":{"type":"Exception","message":"Quota limit exceeded","code":4}}""";
+
+        var genres = string.Join(",", GenresOf(albumId).Select(g => $$"""{ "id": {{g.Id}}, "name": "{{g.Name}}", "type": "genre" }"""));
+        return $$"""{ "id": {{albumId}}, "title": "E2E Album {{albumId}}", "genres": { "data": [ {{genres}} ] } }""";
+    }
+
     private static string TrackJson(long id, string preview) => $$"""
         {
           "id": {{id}},
@@ -89,7 +120,7 @@ public sealed class FakeDeezerHandler(FakeDeezerState state) : HttpMessageHandle
           "preview": "{{preview}}",
           "rank": {{500_000 + id % 1000}},
           "artist": { "id": 1, "name": "E2E Artist" },
-          "album": { "id": 1, "cover_medium": "https://cdn-images.dzcdn.net/images/cover/e2ecover{{id}}/250x250-000000-80-0-0.jpg" },
+          "album": { "id": {{AlbumIdOf(id)}}, "cover_medium": "https://cdn-images.dzcdn.net/images/cover/e2ecover{{id}}/250x250-000000-80-0-0.jpg" },
           "release_date": "2015-06-01"
         }
         """;

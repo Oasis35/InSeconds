@@ -27,7 +27,8 @@ public static class GetTracksEndpoint
                     row.Id, row.DeezerTrackId, row.Artist, row.Title, catalogue.CoverUrl(row.CoverHash), row.ReleaseYear, row.DeezerRank,
                     TrackMapping.Name(row.PreviewStatus), row.PreviewCheckedAt, row.IsDisabled,
                     perMode.Any(m => m.Usage.IsUsed),
-                    [.. perMode.Select(m => new TrackModeUsage(m.Mode, m.Usage.UsageCount, m.Usage.LastUsedDate, m.Usage.UnlockDate, m.Usage.InTodayChallenge))]);
+                    [.. perMode.Select(m => new TrackModeUsage(m.Mode, m.Usage.UsageCount, m.Usage.LastUsedDate, m.Usage.UnlockDate, m.Usage.InTodayChallenge))],
+                    row.Genres);
             }),
         ];
     }

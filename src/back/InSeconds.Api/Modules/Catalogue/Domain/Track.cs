@@ -3,8 +3,9 @@ namespace InSeconds.Api.Modules.Catalogue.Domain;
 /// <summary>Les informations d'un morceau chez Deezer, au moment de l'ajout ou de l'actualisation.</summary>
 /// <param name="CoverHash">Hash de la pochette seulement : l'adresse se reconstruit avec <c>Catalogue:CoverUrlTemplate</c>.</param>
 /// <param name="Preview">L'état de l'extrait lu dans la même réponse : <see cref="PreviewStatus.Available"/> ou <see cref="PreviewStatus.Missing"/>.</param>
+/// <param name="AlbumId">L'album chez Deezer, lu dans la même réponse : c'est lui qui porte les genres du morceau.</param>
 public sealed record TrackMetadata(
-    long DeezerTrackId, string Artist, string Title, string? CoverHash, short? ReleaseYear, int? Rank, PreviewStatus Preview);
+    long DeezerTrackId, string Artist, string Title, string? CoverHash, short? ReleaseYear, int? Rank, PreviewStatus Preview, long? AlbumId = null);
 
 /// <summary>
 /// Un morceau du pool (§ 4.3 du plan v2) : ce que le jeu fait écouter, avec son extrait, son année, son rang
@@ -14,6 +15,8 @@ public sealed record TrackMetadata(
 /// </summary>
 public sealed class Track
 {
+    private readonly List<Genre> _genres = [];
+
     private Track()
     {
     }
@@ -35,6 +38,18 @@ public sealed class Track
     public int? DeezerRank { get; private set; }
 
     public DateTimeOffset? RankUpdatedAt { get; private set; }
+
+    /// <summary>L'album chez Deezer : les genres se lisent sur lui (un appel par album, pas par morceau).</summary>
+    public long? AlbumId { get; private set; }
+
+    /// <summary>
+    /// Quand les genres de l'album ont été lus chez Deezer, **même s'il n'en a aucun** (album supprimé, ou sans genre) : vide, ils ne sont
+    /// pas encore connus et le contrôle nocturne les rattrape ; renseigné, ils ne sont plus redemandés.
+    /// </summary>
+    public DateTimeOffset? GenresCheckedAt { get; private set; }
+
+    /// <summary>Les genres de l'album du morceau, vides tant qu'ils n'ont pas été lus ou si l'album n'en a pas.</summary>
+    public IReadOnlyCollection<Genre> Genres => _genres;
 
     public PreviewStatus PreviewStatus { get; private set; }
 
@@ -119,6 +134,27 @@ public sealed class Track
     }
 
     /// <summary>
+    /// Note l'album lu chez Deezer. Un autre album que celui connu efface les genres (ils étaient ceux de l'ancien) et les remet à lire.
+    /// </summary>
+    public void RecordAlbum(long? albumId)
+    {
+        if (albumId is null || albumId == AlbumId)
+            return;
+
+        AlbumId = albumId;
+        GenresCheckedAt = null;
+        _genres.Clear();
+    }
+
+    /// <summary>Les genres de l'album, tels que Deezer vient de les donner (aucun si l'album n'en a pas) : remplace les précédents.</summary>
+    public void RecordGenres(IEnumerable<Genre> genres, DateTimeOffset now)
+    {
+        _genres.Clear();
+        _genres.AddRange(genres.DistinctBy(g => g.Id));
+        GenresCheckedAt = now;
+    }
+
+    /// <summary>
     /// Actualise un morceau sans extrait : remplace tout ce qui vient de Deezer (identifiant, noms, pochette,
     /// année, rang, extrait). Interdit pour un morceau déjà utilisé : la règle est dans l'endpoint (usage).
     /// </summary>
@@ -140,6 +176,14 @@ public sealed class Track
 
         DeezerRank = metadata.Rank;
         RankUpdatedAt = metadata.Rank is null ? null : now;
+
+        // Un morceau remplacé par un autre (actualisation) peut changer d'album : les genres de l'ancien ne valent plus.
+        if (metadata.AlbumId != AlbumId)
+        {
+            AlbumId = metadata.AlbumId;
+            GenresCheckedAt = null;
+            _genres.Clear();
+        }
     }
 
     private static string RequireText(string value, string name) =>

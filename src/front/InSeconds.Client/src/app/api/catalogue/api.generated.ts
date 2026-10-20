@@ -655,6 +655,7 @@ export interface TrackListItem {
     isDisabled: boolean;
     isUsed: boolean;
     usages: TrackModeUsage[];
+    genres: string[];
 
     [key: string]: any;
 }

@@ -14,7 +14,8 @@ public sealed class EfCatalogueQueries(InSecondsDbContext db) : ICatalogueQuerie
             .OrderBy(t => t.Artist).ThenBy(t => t.Title).ThenBy(t => t.Id)
             .Select(t => new TrackRow(
                 t.Id, t.DeezerTrackId, t.Artist, t.Title, t.CoverHash, t.ReleaseYear, t.DeezerRank,
-                t.PreviewStatus, t.PreviewCheckedAt, t.DisabledAt != null))
+                t.PreviewStatus, t.PreviewCheckedAt, t.DisabledAt != null,
+                t.Genres.OrderBy(g => g.Name).Select(g => g.Name).ToList()))
             .ToListAsync(ct);
 }
 
@@ -32,12 +33,16 @@ public sealed class EfTrackDirectory(InSecondsDbContext db, IOptionsMonitor<Cata
         var ids = trackIds.ToArray();
         var tracks = await db.Set<Track>().AsNoTracking()
             .Where(t => ids.Contains(t.Id))
-            .Select(t => new { t.Id, t.DeezerTrackId, t.Artist, t.Title, t.CoverHash, t.ReleaseYear, t.DeezerRank })
+            .Select(t => new
+            {
+                t.Id, t.DeezerTrackId, t.Artist, t.Title, t.CoverHash, t.ReleaseYear, t.DeezerRank,
+                Genres = t.Genres.OrderBy(g => g.Name).Select(g => g.Name).ToList(),
+            })
             .ToListAsync(ct);
 
         var catalogue = options.CurrentValue;
         return tracks.ToDictionary(
             t => t.Id,
-            t => new TrackInfo(t.Id, t.DeezerTrackId, t.Artist, t.Title, TrackTitles.CleanDisplayTitle(t.Title), catalogue.CoverUrl(t.CoverHash), t.ReleaseYear, t.DeezerRank));
+            t => new TrackInfo(t.Id, t.DeezerTrackId, t.Artist, t.Title, TrackTitles.CleanDisplayTitle(t.Title), catalogue.CoverUrl(t.CoverHash), t.ReleaseYear, t.DeezerRank, t.Genres));
     }
 }

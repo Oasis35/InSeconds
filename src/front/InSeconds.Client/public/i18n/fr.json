@@ -320,6 +320,8 @@
       "totalCount": "{{ count }} morceau(x)",
       "missingPreviewCount": "{{ count }} sans extrait",
       "colUsage": "Joué par",
+      "colGenre": "Genre",
+      "allGenres": "Tous les genres",
       "neverPlayed": "Jamais joué",
       "allPlayedBy": "Joué par : tous",
       "playedByNone": "Joué par : aucun mode",

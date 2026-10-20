@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 namespace InSeconds.Deezer;
 
 /// <summary>
-/// Client HTTP de l'API Deezer, qui implémente les trois ports. C'est l'état réel chez Deezer : le cache
+/// Client HTTP de l'API Deezer, qui implémente les quatre ports. C'est l'état réel chez Deezer : le cache
 /// des recherches publiques (<see cref="CachedTrackSearch"/>) est un décorateur, utilisé là où l'état exact
 /// n'est pas nécessaire. Les extraits n'ont pas de cache : leurs adresses sont signées pour 15 min (piège 14). Le <see cref="HttpClient"/> arrive configuré (adresse de base,
 /// résilience), cf. <see cref="DeezerServiceCollectionExtensions"/>.
@@ -17,7 +17,7 @@ namespace InSeconds.Deezer;
 /// (piège 16). Le code 800 (« no data ») est une réponse déterminée, tout autre code (4 quota, 700 occupé,
 /// ou un code futur) est « indisponible ».
 /// </remarks>
-public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger) : IPreviewProvider, ITrackSearch, ITrackMetadataSource
+public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger) : IPreviewProvider, ITrackSearch, ITrackMetadataSource, IAlbumSource
 {
     private const int NoDataErrorCode = 800;
 
@@ -48,6 +48,37 @@ public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger) 
         return fetched.Track is { } track && ToDeezerTrack(track) is { } found
             ? new TrackMetadataLookup.Found(found with { DeezerTrackId = deezerTrackId })
             : new TrackMetadataLookup.NotFound();
+    }
+
+    public async Task<AlbumLookup> GetAlbumAsync(long albumId, CancellationToken ct = default)
+    {
+        try
+        {
+            var response = await http.GetFromJsonAsync<DeezerAlbumResponse>($"/album/{albumId}", JsonOptions, ct);
+
+            if (response?.Error is { } error)
+            {
+                DeezerLog.AlbumError(logger, albumId, error.Code, error.Message);
+                return error.Code == NoDataErrorCode ? new AlbumLookup.NotFound() : new AlbumLookup.Unavailable();
+            }
+
+            // Un genre sans nom ne dirait rien à l'admin : écarté.
+            return new AlbumLookup.Found(response?.Genres?.Data?
+                .Where(g => g.Id > 0 && !string.IsNullOrWhiteSpace(g.Name))
+                .Select(g => new DeezerGenre(g.Id, g.Name!.Trim()))
+                .ToList() ?? []);
+        }
+        // Seule l'annulation demandée par l'appelant est relancée : le délai d'attente interne d'un HttpClient lève aussi
+        // une OperationCanceledException, qui est un échec de Deezer comme un autre.
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            DeezerLog.AlbumRequestFailed(logger, ex, albumId);
+            return new AlbumLookup.Unavailable();
+        }
     }
 
     public async Task<SearchLookup> SearchAsync(string query, int limit, CancellationToken ct = default)
@@ -115,7 +146,7 @@ public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger) 
     /// <summary>Un morceau sans titre ou sans artiste (ou aux noms blancs) est inexploitable : comme s'il n'existait pas.</summary>
     private static DeezerTrack? ToDeezerTrack(DeezerTrackResponse track) =>
         track is { Title: { } title, Artist.Name: { } artist } && !string.IsNullOrWhiteSpace(title) && !string.IsNullOrWhiteSpace(artist)
-            ? new DeezerTrack(track.Id, track.Artist.Name, track.Title, track.Preview, ExtractCoverHash(track.Album?.CoverMedium), ExtractReleaseYear(track.ReleaseDate), track.Rank)
+            ? new DeezerTrack(track.Id, track.Artist.Name, track.Title, track.Preview, ExtractCoverHash(track.Album?.CoverMedium), ExtractReleaseYear(track.ReleaseDate), track.Rank, track.Album is { Id: > 0 } album ? album.Id : null)
             : null;
 
     // Année du champ Deezer « release_date » (« yyyy-MM-dd »), vide s'il est absent ou d'un autre format.
@@ -205,8 +236,35 @@ public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger) 
         public string? Name { get; set; }
     }
 
+    private sealed class DeezerAlbumResponse
+    {
+        [JsonPropertyName("genres")]
+        public DeezerGenres? Genres { get; set; }
+
+        [JsonPropertyName("error")]
+        public DeezerError? Error { get; set; }
+    }
+
+    private sealed class DeezerGenres
+    {
+        [JsonPropertyName("data")]
+        public List<DeezerGenreResponse>? Data { get; set; }
+    }
+
+    private sealed class DeezerGenreResponse
+    {
+        [JsonPropertyName("id")]
+        public long Id { get; set; }
+
+        [JsonPropertyName("name")]
+        public string? Name { get; set; }
+    }
+
     private sealed class DeezerAlbum
     {
+        [JsonPropertyName("id")]
+        public long Id { get; set; }
+
         [JsonPropertyName("cover_medium")]
         public string? CoverMedium { get; set; }
     }

@@ -397,6 +397,24 @@ describe('PoolStore', () => {
       expect(store.filtered().map(t => t.id)).toEqual([1]);
     });
 
+    it('liste les genres du pool, sans doublon, par ordre alphabétique', async () => {
+      await setup([
+        poolTrack({ id: 1, genres: ['Rap/Hip Hop', 'Dance'] }),
+        poolTrack({ id: 2, genres: ['Pop', 'Dance'] }),
+        poolTrack({ id: 3 }),
+      ]);
+
+      expect(store.genres()).toEqual(['Dance', 'Pop', 'Rap/Hip Hop']);
+    });
+
+    it('filtre par genre', async () => {
+      await setup([poolTrack({ id: 1, genres: ['Pop'] }), poolTrack({ id: 2, genres: ['Rock'] }), poolTrack({ id: 3 })]);
+
+      store.setGenre('Rock');
+
+      expect(store.filtered().map(t => t.id)).toEqual([2]);
+    });
+
     it('compte les morceaux sans extrait', async () => {
       await setup();
 

@@ -121,6 +121,30 @@ describe('CataloguePage', () => {
     expect(element.textContent).not.toContain('admin.pool.empty');
   });
 
+  describe('vue du pool dans l\'adresse', () => {
+    it('reprend ?view=daily au chargement, et ignore une vue inconnue', async () => {
+      const daily = await render({ query: { view: 'daily' } });
+      expect(daily.pool.view()).toBe('daily');
+      TestBed.resetTestingModule();
+
+      const unknown = await render({ query: { view: 'nimportequoi' } });
+      expect(unknown.pool.view()).toBe('pool');
+    });
+
+    it('écrit la vue dans l\'adresse une fois le pool chargé, et l\'efface pour le pool général', async () => {
+      const { pool, detect } = await render({ query: { view: 'daily' } });
+      await detect();
+      expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({
+        queryParams: { page: null, view: 'daily' }, replaceUrl: true,
+      }));
+
+      pool.setView('pool');
+      await detect();
+
+      expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({ queryParams: { page: null, view: null } }));
+    });
+  });
+
   describe('page de la grille dans l\'adresse', () => {
     const many = Array.from({ length: 40 }, (_, i) => poolTrack({ id: i + 1, deezerTrackId: i + 100, artist: `Artiste ${i}` }));
 
@@ -135,11 +159,11 @@ describe('CataloguePage', () => {
       await detect();
 
       expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({
-        queryParams: { page: 2 }, queryParamsHandling: 'merge', replaceUrl: true,
+        queryParams: { page: 2, view: null }, queryParamsHandling: 'merge', replaceUrl: true,
       }));
       pool.previousPage();
       await detect();
-      expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({ queryParams: { page: null } }));
+      expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({ queryParams: { page: null, view: null } }));
     });
 
     it('ignore une page invalide de l\'adresse', async () => {

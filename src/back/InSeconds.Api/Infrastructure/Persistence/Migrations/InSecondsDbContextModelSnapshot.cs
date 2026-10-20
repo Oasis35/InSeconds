@@ -62,6 +62,23 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                     b.ToTable("settings", "infra");
                 });
 
+            modelBuilder.Entity("InSeconds.Api.Modules.Catalogue.Domain.Genre", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_genres");
+
+                    b.ToTable("genres", "catalogue");
+                });
+
             modelBuilder.Entity("InSeconds.Api.Modules.Catalogue.Domain.Track", b =>
                 {
                     b.Property<int>("Id")
@@ -70,6 +87,10 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasColumnName("id");
 
                     NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<int>("Id"), "tracks_hilo", "catalogue");
+
+                    b.Property<long?>("AlbumId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("album_id");
 
                     b.Property<string>("Artist")
                         .IsRequired()
@@ -95,6 +116,10 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset?>("DisabledAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("disabled_at");
+
+                    b.Property<DateTimeOffset?>("GenresCheckedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("genres_checked_at");
 
                     b.Property<DateTimeOffset?>("PreviewCheckedAt")
                         .HasColumnType("timestamp with time zone")
@@ -671,6 +696,25 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("track_genres", b =>
+                {
+                    b.Property<int>("track_id")
+                        .HasColumnType("integer")
+                        .HasColumnName("track_id");
+
+                    b.Property<long>("genre_id")
+                        .HasColumnType("bigint")
+                        .HasColumnName("genre_id");
+
+                    b.HasKey("track_id", "genre_id")
+                        .HasName("pk_track_genres");
+
+                    b.HasIndex("genre_id")
+                        .HasDatabaseName("ix_track_genres_genre_id");
+
+                    b.ToTable("track_genres", "catalogue");
+                });
+
             modelBuilder.Entity("InSeconds.Api.Modules.Daily.Domain.ChallengeTrack", b =>
                 {
                     b.HasOne("InSeconds.Api.Modules.Daily.Domain.DailyChallenge", null)
@@ -771,6 +815,23 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_legacy_tokens_player_player_id");
+                });
+
+            modelBuilder.Entity("track_genres", b =>
+                {
+                    b.HasOne("InSeconds.Api.Modules.Catalogue.Domain.Genre", null)
+                        .WithMany()
+                        .HasForeignKey("genre_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_track_genres_genres_genre_id");
+
+                    b.HasOne("InSeconds.Api.Modules.Catalogue.Domain.Track", null)
+                        .WithMany()
+                        .HasForeignKey("track_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_track_genres_tracks_track_id");
                 });
 
             modelBuilder.Entity("InSeconds.Api.Modules.Daily.Domain.DailyChallenge", b =>
