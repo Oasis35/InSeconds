@@ -2,24 +2,19 @@ import { TestBed } from '@angular/core/testing';
 import { provideTranslateService } from '@ngx-translate/core';
 import { PoolSort } from '../domain/pool-filters';
 import { PoolTrack } from '../domain/pool-track';
+import { poolTrack as track } from '../domain/testing/pool-track.fixture';
 import { PoolTableComponent } from './pool-table.component';
-
-function track(overrides: Partial<PoolTrack> = {}): PoolTrack {
-  return {
-    id: 1, deezerTrackId: 1000, artist: 'Artiste', title: 'Titre', preview: 'available', isDisabled: false,
-    lastUsedDate: null, usageCount: 0, unlockDate: null, inTodayChallenge: false, ...overrides,
-  };
-}
 
 describe('PoolTableComponent', () => {
   function render(tracks: PoolTrack[], inputs: Partial<{
     selectedIds: number[]; togglingIds: number[]; sort: PoolSort | null; loading: boolean; totalCount: number;
-    page: number; pages: number; filteredCount: number;
+    page: number; pages: number; filteredCount: number; view: string;
   }> = {}) {
     TestBed.configureTestingModule({ providers: [provideTranslateService()] });
     const fixture = TestBed.createComponent(PoolTableComponent);
     const set = (name: string, value: unknown) => fixture.componentRef.setInput(name, value);
     set('tracks', tracks);
+    set('view', inputs.view ?? 'pool');
     set('selectedIds', inputs.selectedIds ?? []);
     set('togglingIds', inputs.togglingIds ?? []);
     set('sort', inputs.sort ?? null);
@@ -42,7 +37,7 @@ describe('PoolTableComponent', () => {
 
       expect(button(row(), '🗑')).toBeDefined();
       expect(button(row(), 'admin.pool.disable')).toBeUndefined();
-      expect(row().textContent).toContain('admin.pool.available');
+      expect(row().textContent).toContain('admin.pool.neverPlayed');
     });
 
     it('un morceau utilisé se désactive à la place de la suppression', () => {
@@ -50,7 +45,18 @@ describe('PoolTableComponent', () => {
 
       expect(button(row(), '🗑')).toBeUndefined();
       expect(button(row(), 'admin.pool.disable')?.disabled).toBe(false);
-      expect(row().textContent).toContain('admin.pool.used');
+      expect(row().querySelector('[data-testid="usage-badge"]')?.textContent).toContain('admin.pool.views.daily');
+    });
+
+    it('un morceau joué seulement par un autre mode est utilisé : désactivation, pastille de ce mode, pas de suppression', () => {
+      const { row, button } = render([track({
+        usedByMode: true,
+        usages: [{ mode: 'autre', usageCount: 0, lastUsedDate: null, unlockDate: null, inTodayChallenge: false }],
+      })]);
+
+      expect(button(row(), '🗑')).toBeUndefined();
+      expect(button(row(), 'admin.pool.disable')?.disabled).toBe(false);
+      expect(row().querySelector('[data-testid="usage-badge"]')?.textContent).toContain('autre');
     });
 
     it('un morceau du défi du jour ne se désactive pas (bouton grisé)', () => {
@@ -100,23 +106,46 @@ describe('PoolTableComponent', () => {
   });
 
   describe('colonnes', () => {
-    it('garde l\'ordre : sélection, actions, artiste, titre, extrait, statut, usage', () => {
-      const { row } = render([track({ lastUsedDate: '2026-10-05', unlockDate: '2026-11-04', usageCount: 3 })]);
+    it('pool général : sélection, actions, artiste, titre, extrait, usage (aucune date)', () => {
+      const { row, element } = render([track({ lastUsedDate: '2026-10-05', unlockDate: '2026-11-04', usageCount: 3 })]);
 
       const cells = Array.from(row().querySelectorAll('td')).map(td => td.textContent?.trim());
       expect(cells[2]).toBe('Artiste');
       expect(cells[3]).toBe('Titre');
-      expect(cells[6]).toBe('2026-10-05');
-      expect(cells[7]).toBe('2026-11-04');
-      expect(cells[8]).toBe('3');
+      expect(cells).toHaveLength(6);
+      expect(element.textContent).not.toContain('2026-10-05');
     });
 
-    it('laisse vides les dates d\'un morceau jamais utilisé', () => {
-      const { row } = render([track()]);
+    it('vue d\'un mode : ce que le mode en dit, sans case à cocher ni suppression', () => {
+      const { row, button } = render([track({ lastUsedDate: '2026-10-05', unlockDate: '2026-11-04', usageCount: 3 })], { view: 'daily' });
 
       const cells = Array.from(row().querySelectorAll('td')).map(td => td.textContent?.trim());
+      expect(cells[1]).toBe('Artiste');
+      expect(cells[5]).toBe('2026-10-05');
+      expect(cells[6]).toBe('2026-11-04');
+      expect(cells[7]).toBe('3');
+      expect(row().querySelector('input[type="checkbox"]')).toBeNull();
+      expect(button(row(), '✎')).toBeUndefined();
+      expect(button(row(), '🗑')).toBeUndefined();
+    });
+
+    it('vue d\'un mode : dates vides et « disponible » pour un morceau que ce mode n\'a pas joué', () => {
+      const { row } = render([track()], { view: 'daily' });
+
+      const cells = Array.from(row().querySelectorAll('td')).map(td => td.textContent?.trim());
+      expect(cells[4]).toContain('admin.pool.available');
+      expect(cells[5]).toBe('');
       expect(cells[6]).toBe('');
-      expect(cells[7]).toBe('');
+    });
+
+    it('vue d\'un mode : « ↗ » demande à ouvrir le morceau dans le pool', () => {
+      const { component, row, button } = render([track({ id: 7 })], { view: 'daily' });
+      const open = vi.fn();
+      component.openInPool.subscribe(open);
+
+      button(row(), '↗')!.click();
+
+      expect(open).toHaveBeenCalledWith(expect.objectContaining({ id: 7 }));
     });
 
     it('montre l\'état de l\'extrait, rien tant qu\'il n\'a pas été contrôlé', () => {
@@ -127,7 +156,7 @@ describe('PoolTableComponent', () => {
     });
 
     it('émet la colonne triée et indique le sens', () => {
-      const { component, element } = render([track()], { sort: { column: 'usageCount', direction: 'desc' } });
+      const { component, element } = render([track()], { view: 'daily', sort: { column: 'usageCount', direction: 'desc' } });
       const sorted = vi.fn();
       component.sortBy.subscribe(sorted);
 

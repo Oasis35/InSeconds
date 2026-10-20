@@ -8,12 +8,25 @@ public sealed class TrackPoolUsage(IEnumerable<ITrackUsage> modes) : ITrackPoolU
     public async Task<IReadOnlyDictionary<int, TrackUsage>> GetAsync(IReadOnlyCollection<int> trackIds, CancellationToken ct)
     {
         var merged = new Dictionary<int, TrackUsage>();
+        foreach (var (id, perMode) in await GetByModeAsync(trackIds, ct))
+            merged[id] = perMode.Skip(1).Aggregate(perMode[0].Usage, (all, next) => all.CombinedWith(next.Usage));
+
+        return merged;
+    }
+
+    public async Task<IReadOnlyDictionary<int, IReadOnlyList<ModeUsage>>> GetByModeAsync(IReadOnlyCollection<int> trackIds, CancellationToken ct)
+    {
+        var byTrack = new Dictionary<int, List<ModeUsage>>();
         foreach (var mode in modes)
         {
             foreach (var (id, usage) in await mode.GetAsync(trackIds, ct))
-                merged[id] = merged.TryGetValue(id, out var known) ? known.CombinedWith(usage) : usage;
+            {
+                if (!byTrack.TryGetValue(id, out var list))
+                    byTrack[id] = list = [];
+                list.Add(new ModeUsage(mode.Mode, usage));
+            }
         }
 
-        return merged;
+        return byTrack.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<ModeUsage>)pair.Value);
     }
 }

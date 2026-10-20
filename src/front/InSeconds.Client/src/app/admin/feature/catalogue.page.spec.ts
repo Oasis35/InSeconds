@@ -69,12 +69,42 @@ describe('CataloguePage', () => {
     expect(element.querySelectorAll('tbody tr')).toHaveLength(3);
   });
 
-  it('montre dans la barre le cooldown appliqué aujourd\'hui, en vert au-delà du seuil d\'alerte', async () => {
-    const { element } = await render();
+  it('montre dans la barre de la vue Daily le cooldown appliqué aujourd\'hui, en vert au-delà du seuil d\'alerte', async () => {
+    const { element, click, detect } = await render();
+    expect(element.querySelector('[data-testid="pool-cooldown"]')).toBeNull();
+
+    click(b => b.textContent?.includes('admin.pool.views.daily') ?? false);
+    await detect();
 
     const cooldown = element.querySelector('[data-testid="pool-cooldown"]') as HTMLElement;
     expect(cooldown.textContent).toContain('admin.pool.cooldown');
     expect(cooldown.style.color).toBe('var(--color-success)');
+  });
+
+  it('le sélecteur de vue donne le pool général puis la vue Daily, en lecture seule', async () => {
+    const { element, click, detect, pool } = await render();
+    expect(pool.view()).toBe('pool');
+    expect(element.querySelector('input[type="checkbox"]')).not.toBeNull();
+    expect(Array.from(element.querySelectorAll('button')).some(b => b.textContent?.includes('admin.pool.add'))).toBe(true);
+
+    click(b => b.textContent?.includes('admin.pool.views.daily') ?? false);
+    await detect();
+
+    expect(pool.view()).toBe('daily');
+    expect(element.querySelector('input[type="checkbox"]')).toBeNull();
+    expect(Array.from(element.querySelectorAll('button')).some(b => b.textContent?.includes('admin.pool.add'))).toBe(false);
+  });
+
+  it('« ↗ » d\'une ligne de la vue Daily rouvre le pool sur ce morceau', async () => {
+    const { element, click, detect, pool } = await render();
+    click(b => b.textContent?.includes('admin.pool.views.daily') ?? false);
+    await detect();
+
+    (element.querySelector('tbody tr button[title="admin.pool.openInPoolTitle"]') as HTMLButtonElement).click();
+    await detect();
+
+    expect(pool.view()).toBe('pool');
+    expect(pool.filters().text).not.toBe('');
   });
 
   it('affiche l\'erreur de chargement avec son code', async () => {

@@ -8,9 +8,11 @@ import { AudioPreviewPlayer } from '../data-access/audio-preview.player';
 import { DeezerSearchStore } from '../data-access/deezer-search.store';
 import { PoolStore } from '../data-access/pool.store';
 import { DeezerResult, PoolTrack } from '../domain/pool-track';
+import { POOL_VIEW } from '../domain/pool-views';
 import { PoolFilterBarComponent } from '../ui/pool-filter-bar.component';
 import { PoolTableComponent } from '../ui/pool-table.component';
 import { PoolToolbarComponent } from '../ui/pool-toolbar.component';
+import { PoolViewSelectorComponent } from '../ui/pool-view-selector.component';
 import { SearchPanelComponent } from '../ui/search-panel.component';
 import { DeleteTrackDialog } from './delete-track.dialog';
 import { EditTrackDialog } from './edit-track.dialog';
@@ -20,15 +22,16 @@ const TOGGLE_ERROR_VISIBLE_MS = 4000;
 const DIALOG_MAX_WIDTH = '26rem';
 
 /**
- * `/admin/catalogue` : le pool de morceaux. Tableau filtrable, triable et paginé, panneau de
- * recherche Deezer pour ajouter, fenêtres d'écoute, de renommage et de suppression. La page de la
+ * `/admin/catalogue` : le pool de morceaux, commun à tous les modes. Un sélecteur donne le pool général (tableau
+ * filtrable, triable et paginé, panneau de recherche Deezer pour ajouter, fenêtres d'écoute, de renommage et de
+ * suppression) ou la vue d'un mode, en lecture seule (écouter, retrouver le morceau dans le pool). La page de la
  * grille vit dans l'adresse (`?page=3`, à partir de 1) : un rechargement rouvre la même page.
  */
 @Component({
   selector: 'app-catalogue-page',
   imports: [
     TranslatePipe, ErrorMessageComponent, PoolToolbarComponent, PoolFilterBarComponent, PoolTableComponent,
-    SearchPanelComponent,
+    SearchPanelComponent, PoolViewSelectorComponent,
   ],
   providers: [PoolStore, DeezerSearchStore, AudioPreviewPlayer],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,12 +40,17 @@ const DIALOG_MAX_WIDTH = '26rem';
   host: { class: 'flex w-full min-w-0 justify-center' },
   template: `
     <div class="flex flex-col gap-4 w-full max-w-2xl">
+      <app-pool-view-selector [view]="pool.view()" (viewChange)="setView($event)" />
+
       <app-pool-toolbar
+        [view]="pool.view()"
         [selectedCount]="pool.selectedIds().length"
         [selectionHasUsedTrack]="pool.selectionHasUsedTrack()"
+        [totalCount]="pool.tracks().length"
         [availableCount]="pool.availableCount()"
         [usedCount]="pool.usedCount()"
         [disabledCount]="pool.disabledCount()"
+        [missingPreviewCount]="pool.missingPreviewCount()"
         [cooldownDays]="pool.cooldownDays()"
         [cooldownTone]="pool.cooldownTone()"
         [addPanelOpen]="search.open()"
@@ -50,7 +58,7 @@ const DIALOG_MAX_WIDTH = '26rem';
         (deleteSelection)="deleteSelection()"
         (toggleAdd)="togglePanel()" />
 
-      @if (search.open()) {
+      @if (isPool() && search.open()) {
         <app-search-panel
           [query]="search.query()"
           [results]="search.results()"
@@ -68,8 +76,10 @@ const DIALOG_MAX_WIDTH = '26rem';
 
       <app-pool-filter-bar
         [filters]="pool.filters()"
+        [view]="pool.view()"
         (textChange)="onFilterText($event)"
         (previewChange)="pool.setPreview($event)"
+        (playedByChange)="pool.setPlayedBy($event)"
         (statusChange)="pool.setStatus($event)"
         (lastUsedFromChange)="pool.setLastUsedFrom($event)"
         (lastUsedToChange)="pool.setLastUsedTo($event)"
@@ -89,6 +99,7 @@ const DIALOG_MAX_WIDTH = '26rem';
       @if (!pool.error() || pool.tracks().length > 0) {
       <app-pool-table
         [tracks]="pool.pageTracks()"
+        [view]="pool.view()"
         [selectedIds]="pool.selectedIds()"
         [togglingIds]="pool.togglingIds()"
         [sort]="pool.sort()"
@@ -101,6 +112,7 @@ const DIALOG_MAX_WIDTH = '26rem';
         (toggleSelection)="pool.toggleSelection($event)"
         (listen)="listen($event)"
         (edit)="edit($event)"
+        (openInPool)="pool.openInPool($event)"
         (toggleDisabled)="pool.toggleDisabled($event)"
         (delete)="deleteTracks([$event])"
         (previousPage)="pool.previousPage()"
@@ -114,6 +126,7 @@ export class CataloguePage {
   protected readonly search = inject(DeezerSearchStore);
   private readonly player = inject(AudioPreviewPlayer);
   protected readonly errorMessageKey = errorMessageKey;
+  protected readonly isPool = computed(() => this.pool.view() === POOL_VIEW);
   private readonly modal = inject(ModalService);
   private readonly injector = inject(Injector);
   private readonly route = inject(ActivatedRoute);
@@ -157,6 +170,12 @@ export class CataloguePage {
   }
 
   // --- panneau de recherche : liaison avec le filtre du tableau ---
+
+  /** Change de vue ; le panneau d'ajout (propre au pool général) se ferme et son lecteur s'arrête. */
+  protected setView(view: string): void {
+    if (view !== POOL_VIEW && this.search.open()) this.togglePanel();
+    this.pool.setView(view);
+  }
 
   protected togglePanel(): void {
     this.search.toggleOpen();

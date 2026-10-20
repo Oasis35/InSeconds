@@ -1,13 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { PoolFilters, PreviewFilter, StatusFilter, hasActiveFilters } from '../domain/pool-filters';
+import { PLAYED_BY_NONE, PoolFilters, PreviewFilter, StatusFilter, hasActiveFilters } from '../domain/pool-filters';
+import { MODE_VIEWS, POOL_VIEW } from '../domain/pool-views';
 
 const FIELD_STYLE = 'background:var(--bg-surface);color:var(--text-light)';
 
 /**
- * Filtres du tableau : texte (artiste, titre, ou les deux collés), état de l'extrait, statut,
- * plage de dernière utilisation. Chaque champ a son libellé (masqué à l'écran, lu par les lecteurs
- * d'écran).
+ * Filtres du tableau : texte (artiste, titre, ou les deux collés), état de l'extrait et, selon la vue, le statut. Dans
+ * la vue générale : « Joué par » (tous, aucun mode, ou un mode) et les désactivés. Dans la vue d'un mode : disponible
+ * ou utilisé par ce mode, et la plage de dernière utilisation. Chaque champ a son libellé (masqué à l'écran, lu par les
+ * lecteurs d'écran).
  */
 @Component({
   selector: 'app-pool-filter-bar',
@@ -30,26 +32,42 @@ const FIELD_STYLE = 'background:var(--bg-surface);color:var(--text-light)';
         <option value="missing">{{ 'admin.pool.previewMissing' | translate }}</option>
       </select>
 
+      @if (isPool()) {
+        <label for="pool-filter-played-by" class="sr-only">{{ 'admin.pool.allPlayedBy' | translate }}</label>
+        <select id="pool-filter-played-by" [value]="filters().playedBy" (change)="playedByChange.emit($any($event.target).value)"
+          class="text-sm rounded-lg px-3 py-1.5 outline-none cursor-pointer" [style]="fieldStyle">
+          <option value="">{{ 'admin.pool.allPlayedBy' | translate }}</option>
+          <option [value]="noMode">{{ 'admin.pool.playedByNone' | translate }}</option>
+          @for (mode of modes; track mode.id) {
+            <option [value]="mode.id">{{ 'admin.pool.playedBy' | translate: { mode: (mode.labelKey | translate) } }}</option>
+          }
+        </select>
+      }
+
       <label for="pool-filter-status" class="sr-only">{{ 'admin.pool.allStatuses' | translate }}</label>
       <select id="pool-filter-status" [value]="filters().status" (change)="statusChange.emit($any($event.target).value)"
         class="text-sm rounded-lg px-3 py-1.5 outline-none cursor-pointer" [style]="fieldStyle">
         <option value="all">{{ 'admin.pool.allStatuses' | translate }}</option>
-        <option value="available">{{ 'admin.pool.available' | translate }}</option>
-        <option value="used">{{ 'admin.pool.used' | translate }}</option>
+        @if (!isPool()) {
+          <option value="available">{{ 'admin.pool.available' | translate }}</option>
+          <option value="used">{{ 'admin.pool.used' | translate }}</option>
+        }
         <option value="disabled">{{ 'admin.pool.disabledFilter' | translate }}</option>
       </select>
 
-      <label for="pool-filter-lastused-from" class="sr-only">{{ 'admin.pool.lastUsedFrom' | translate }}</label>
-      <input id="pool-filter-lastused-from" type="date" [value]="filters().lastUsedFrom"
-        (change)="lastUsedFromChange.emit($any($event.target).value)"
-        [title]="'admin.pool.lastUsedFrom' | translate"
-        class="text-sm rounded-lg px-3 py-1.5 outline-none" [style]="fieldStyle" />
+      @if (!isPool()) {
+        <label for="pool-filter-lastused-from" class="sr-only">{{ 'admin.pool.lastUsedFrom' | translate }}</label>
+        <input id="pool-filter-lastused-from" type="date" [value]="filters().lastUsedFrom"
+          (change)="lastUsedFromChange.emit($any($event.target).value)"
+          [title]="'admin.pool.lastUsedFrom' | translate"
+          class="text-sm rounded-lg px-3 py-1.5 outline-none" [style]="fieldStyle" />
 
-      <label for="pool-filter-lastused-to" class="sr-only">{{ 'admin.pool.lastUsedTo' | translate }}</label>
-      <input id="pool-filter-lastused-to" type="date" [value]="filters().lastUsedTo"
-        (change)="lastUsedToChange.emit($any($event.target).value)"
-        [title]="'admin.pool.lastUsedTo' | translate"
-        class="text-sm rounded-lg px-3 py-1.5 outline-none" [style]="fieldStyle" />
+        <label for="pool-filter-lastused-to" class="sr-only">{{ 'admin.pool.lastUsedTo' | translate }}</label>
+        <input id="pool-filter-lastused-to" type="date" [value]="filters().lastUsedTo"
+          (change)="lastUsedToChange.emit($any($event.target).value)"
+          [title]="'admin.pool.lastUsedTo' | translate"
+          class="text-sm rounded-lg px-3 py-1.5 outline-none" [style]="fieldStyle" />
+      }
 
       @if (active()) {
         <button type="button" (click)="resetFilters.emit()" class="text-xs transition-colors px-1" style="color:var(--text-muted)">
@@ -61,14 +79,20 @@ const FIELD_STYLE = 'background:var(--bg-surface);color:var(--text-light)';
 })
 export class PoolFilterBarComponent {
   readonly filters = input.required<PoolFilters>();
+  /** La vue affichée : `pool`, ou l'identifiant d'un mode. */
+  readonly view = input<string>(POOL_VIEW);
 
   readonly textChange = output<string>();
   readonly previewChange = output<PreviewFilter>();
+  readonly playedByChange = output<string>();
   readonly statusChange = output<StatusFilter>();
   readonly lastUsedFromChange = output<string>();
   readonly lastUsedToChange = output<string>();
   readonly resetFilters = output();
 
   protected readonly fieldStyle = FIELD_STYLE;
+  protected readonly modes = MODE_VIEWS;
+  protected readonly noMode = PLAYED_BY_NONE;
+  protected readonly isPool = computed(() => this.view() === POOL_VIEW);
   protected readonly active = computed(() => hasActiveFilters(this.filters()));
 }

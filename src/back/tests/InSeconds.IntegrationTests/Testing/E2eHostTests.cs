@@ -49,19 +49,19 @@ public class E2eHostTests(PostgresFixture postgres) : IAsyncLifetime
         var tracks = await ListAsync(admin);
 
         var eminem = Of(tracks, "Eminem");
-        Assert.Equal((today, 1, true), (eminem.LastUsedDate!.Value, eminem.UsageCount, eminem.InTodayChallenge));
+        Assert.Equal((today, 1, true), (eminem.Daily().LastUsedDate!.Value, eminem.Daily().UsageCount, eminem.Daily().InTodayChallenge));
         var daft = Of(tracks, "Daft Punk");
-        Assert.Equal((today.AddDays(-2), 1, false), (daft.LastUsedDate!.Value, daft.UsageCount, daft.InTodayChallenge));
-        Assert.Equal(today.AddDays(-1), Of(tracks, "Rihanna").LastUsedDate);
+        Assert.Equal((today.AddDays(-2), 1, false), (daft.Daily().LastUsedDate!.Value, daft.Daily().UsageCount, daft.Daily().InTodayChallenge));
+        Assert.Equal(today.AddDays(-1), Of(tracks, "Rihanna").Daily().LastUsedDate);
         var adele = Of(tracks, "Adele");
         // 50 morceaux jouables : 75 % du pool, 5 par défi, soit 7 jours de cooldown (date de déblocage : dernier usage + 8 jours).
-        Assert.Equal((7, today.AddDays(-90), today.AddDays(-82)), (adele.UsageCount, adele.LastUsedDate!.Value, adele.UnlockDate!.Value));
+        Assert.Equal((7, today.AddDays(-90), today.AddDays(-82)), (adele.Daily().UsageCount, adele.Daily().LastUsedDate!.Value, adele.Daily().UnlockDate!.Value));
         var nirvana = tracks.Single(t => t.DeezerTrackId == 13791930);
-        Assert.Equal((3, today.AddDays(-22)), (nirvana.UsageCount, nirvana.UnlockDate!.Value));
+        Assert.Equal((3, today.AddDays(-22)), (nirvana.Daily().UsageCount, nirvana.Daily().UnlockDate!.Value));
         var michael = Of(tracks, "Michael Jackson");
-        Assert.Equal((0, null, null, false), (michael.UsageCount, michael.LastUsedDate, michael.UnlockDate, michael.InTodayChallenge));
-        Assert.Equal(today.AddDays(3), Of(tracks, "Queen").UnlockDate);
-        Assert.Equal(5, tracks.Count(t => t.InTodayChallenge));
+        Assert.Equal((0, null, null, false), (michael.Daily().UsageCount, michael.Daily().LastUsedDate, michael.Daily().UnlockDate, michael.Daily().InTodayChallenge));
+        Assert.Equal(today.AddDays(3), Of(tracks, "Queen").Daily().UnlockDate);
+        Assert.Equal(5, tracks.Count(t => t.Daily().InTodayChallenge));
     }
 
     [Fact]
@@ -141,7 +141,7 @@ public class E2eHostTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(55, (await second.Content.ReadFromJsonAsync<SeedResponse>(Ct))!.Added);
         var tracks = await ListAsync(await LoggedAdminAsync());
         Assert.Equal(55, tracks.Count);
-        Assert.Equal(5, tracks.Count(t => t.InTodayChallenge));
+        Assert.Equal(5, tracks.Count(t => t.Daily().InTodayChallenge));
     }
 
     [Fact]
@@ -162,7 +162,7 @@ public class E2eHostTests(PostgresFixture postgres) : IAsyncLifetime
         var before = await ListAsync(admin);
         var todayDate = DateOnly.FromDateTime(DateTime.UtcNow);
         // Tirés ces 30 derniers jours, avant aujourd'hui : le défi d'aujourd'hui n'en reprend aucun.
-        var cooling = before.Where(t => t.LastUsedDate is { } d && d < todayDate && d >= todayDate.AddDays(-30)).Select(t => t.Id).ToHashSet();
+        var cooling = before.Where(t => t.Daily().LastUsedDate is { } d && d < todayDate && d >= todayDate.AddDays(-30)).Select(t => t.Id).ToHashSet();
         using (var scope = _host.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>();
@@ -172,11 +172,11 @@ public class E2eHostTests(PostgresFixture postgres) : IAsyncLifetime
         var response = await admin.PostAsync("/api/e2e/generate-today", null, Ct);
 
         Assert.Equal(new GenerateTodayResponse(true, 5), await response.Content.ReadFromJsonAsync<GenerateTodayResponse>(Ct));
-        var today = (await ListAsync(admin)).Where(t => t.InTodayChallenge).ToList();
+        var today = (await ListAsync(admin)).Where(t => t.Daily().InTodayChallenge).ToList();
         Assert.Equal(5, today.Count);
         Assert.Equal(13, cooling.Count);
         Assert.Empty(today.Select(t => t.Id).Intersect(cooling));
-        Assert.All(today, t => Assert.Equal(todayDate, t.LastUsedDate));
+        Assert.All(today, t => Assert.Equal(todayDate, t.Daily().LastUsedDate));
     }
 
     [Fact]

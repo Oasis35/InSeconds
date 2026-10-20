@@ -14,6 +14,8 @@ namespace InSeconds.Api.Modules.Daily.Persistence;
 /// </summary>
 public sealed class EfTrackUsage(InSecondsDbContext db, TrackCooldownPolicy cooldown, IGameCalendar calendar) : IDailyTrackUsage
 {
+    public string Mode => "daily";
+
     public async Task<IReadOnlyDictionary<int, TrackUsage>> GetAsync(IReadOnlyCollection<int> trackIds, CancellationToken ct)
     {
         var ids = trackIds.Distinct().ToArray();

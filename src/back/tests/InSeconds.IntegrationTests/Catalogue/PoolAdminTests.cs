@@ -146,10 +146,10 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(["available", "available", "missing"], pool.Select(t => t.PreviewStatus));
         Assert.All(pool, t =>
         {
-            Assert.Equal(0, t.UsageCount);
-            Assert.Null(t.LastUsedDate);
-            Assert.Null(t.UnlockDate);
-            Assert.False(t.InTodayChallenge);
+            Assert.Equal(0, t.Daily().UsageCount);
+            Assert.Null(t.Daily().LastUsedDate);
+            Assert.Null(t.Daily().UnlockDate);
+            Assert.False(t.Daily().InTodayChallenge);
             Assert.False(t.IsDisabled);
             Assert.NotNull(t.PreviewCheckedAt);
             Assert.Equal(2015, t.ReleaseYear);
@@ -167,11 +167,11 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
 
         var pool = (await _app.ListAsync()).ToDictionary(t => t.Id);
 
-        Assert.Equal(2, pool[used.Id].UsageCount);
-        Assert.Equal(new DateOnly(2026, 9, 20), pool[used.Id].LastUsedDate);
-        Assert.Equal(new DateOnly(2026, 10, 20), pool[used.Id].UnlockDate);
-        Assert.False(pool[used.Id].InTodayChallenge);
-        Assert.True(pool[today.Id].InTodayChallenge);
+        Assert.Equal(2, pool[used.Id].Daily().UsageCount);
+        Assert.Equal(new DateOnly(2026, 9, 20), pool[used.Id].Daily().LastUsedDate);
+        Assert.Equal(new DateOnly(2026, 10, 20), pool[used.Id].Daily().UnlockDate);
+        Assert.False(pool[used.Id].Daily().InTodayChallenge);
+        Assert.True(pool[today.Id].Daily().InTodayChallenge);
         Assert.Equal(3, pool.Count);
     }
 
@@ -206,7 +206,7 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
         // Le ticket C1 : « renommer un morceau du défi du jour en cours ». Plus de catalogue.track_locked (PR v1 #246).
         var track = await _app.AddAsync(1001);
         _app.Usage.Set(track.Id, new TrackUsage(new DateOnly(2026, 10, 5), 1, new DateOnly(2026, 11, 4), InTodayChallenge: true));
-        Assert.True(Assert.Single(await _app.ListAsync()).InTodayChallenge);
+        Assert.True(Assert.Single(await _app.ListAsync()).Daily().InTodayChallenge);
 
         var response = await _app.Admin().PatchAsJsonAsync($"{Tracks}/{track.Id}", new RenameTrack("Artiste corrigé", "Titre corrigé"), Ct);
 
@@ -214,7 +214,7 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
         var listed = Assert.Single(await _app.ListAsync());
         Assert.Equal("Artiste corrigé", listed.Artist);
         Assert.Equal("Titre corrigé", listed.Title);
-        Assert.True(listed.InTodayChallenge);
+        Assert.True(listed.Daily().InTodayChallenge);
         Assert.Equal(0L, await _app.Api.ScalarAsync<long>(
             "SELECT count(*) FROM catalogue.tracks WHERE artist = 'E2E Artist' OR title LIKE 'E2E Track%'"));
         // Pas de code de verrou publié.
@@ -446,10 +446,31 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
 
         // La liste réunit les deux modes : les dates et le nombre d'usages restent ceux du premier (le second répond « aucun »).
         var listed = Assert.Single(await _app.ListAsync());
-        Assert.Equal((new DateOnly(2026, 9, 20), 2, new DateOnly(2026, 10, 20), false), (listed.LastUsedDate, listed.UsageCount, listed.UnlockDate, listed.InTodayChallenge));
+        Assert.Equal((new DateOnly(2026, 9, 20), 2, new DateOnly(2026, 10, 20), false), (listed.Daily().LastUsedDate, listed.Daily().UsageCount, listed.Daily().UnlockDate, listed.Daily().InTodayChallenge));
         // Seules la suppression et l'actualisation sont interdites à un morceau utilisé : renommer et désactiver restent permis.
         Assert.Equal(HttpStatusCode.OK, (await _app.Admin().PatchAsJsonAsync($"{Tracks}/{track.Id}", new RenameTrack("Nouvel artiste", "Nouveau titre"), Ct)).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await _app.Admin().PutAsJsonAsync($"{Tracks}/{track.Id}/disabled", new SetTrackDisabled(true), Ct)).StatusCode);
+    }
+
+    [Fact]
+    public async Task Liste_DonneLUsageModeParMode_EtIsUsedVientDuBack()
+    {
+        var daily = await _app.AddAsync(1001);
+        var other = await _app.AddAsync(1002);
+        var free = await _app.AddAsync(1003);
+        _app.Usage.Set(daily.Id, new TrackUsage(new DateOnly(2026, 9, 20), 2, new DateOnly(2026, 10, 20), InTodayChallenge: false));
+        // Joué seulement par l'autre mode : aucune apparition au Daily, mais utilisé quand même.
+        _app.OtherMode.Set(other.Id, TrackUsage.None with { UsedByMode = true });
+
+        var pool = (await _app.ListAsync()).ToDictionary(t => t.Id);
+
+        Assert.True(pool[daily.Id].IsUsed);
+        Assert.Equal(["daily"], pool[daily.Id].Usages.Select(u => u.Mode));
+        Assert.True(pool[other.Id].IsUsed);
+        Assert.Equal(["autre"], pool[other.Id].Usages.Select(u => u.Mode));
+        Assert.Equal(0, pool[other.Id].UsageOf("autre").UsageCount);
+        Assert.False(pool[free.Id].IsUsed);
+        Assert.Empty(pool[free.Id].Usages);
     }
 
     [Fact]

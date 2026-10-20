@@ -14,9 +14,11 @@ namespace InSeconds.IntegrationTests.Catalogue;
 /// L'usage des morceaux par un mode, pour un test : le test lui fait dire ce que le mode en a fait (déjà utilisé, dans le défi du jour).
 /// <see cref="CatalogueApi"/> en enregistre deux, comme deux modes de jeu : Catalogue en réunit les réponses.
 /// </summary>
-internal sealed class TestTrackUsage : ITrackUsage
+internal sealed class TestTrackUsage(string mode) : ITrackUsage
 {
     private readonly Dictionary<int, TrackUsage> _usages = [];
+
+    public string Mode => mode;
 
     public void Set(int trackId, TrackUsage usage) => _usages[trackId] = usage;
 
@@ -52,8 +54,8 @@ internal sealed class CatalogueApi : IAsyncDisposable
 
     public static CatalogueApi Create(string connectionString, IReadOnlyDictionary<string, string>? settings = null)
     {
-        var usage = new TestTrackUsage();
-        var otherMode = new TestTrackUsage();
+        var usage = new TestTrackUsage("daily");
+        var otherMode = new TestTrackUsage("autre");
         var time = new FakeTimeProvider(Start);
         var merged = new Dictionary<string, string>
         {

@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { PoolTrack } from '../domain/pool-track';
+import { NO_FILTERS } from '../domain/pool-filters';
+import { PoolTrack, usageOf } from '../domain/pool-track';
 import { PoolStore } from './pool.store';
 import { FakeActionsApi, fakeActionsApi, provideActionsApiFake } from './testing/fake-actions-api';
 import { FakeCatalogueApi, fakeCatalogueApi, poolTrack, problem, provideCatalogueApiFake } from './testing/fake-catalogue-api';
@@ -117,11 +118,12 @@ describe('PoolStore', () => {
 
     it('trie, et change de sens au second clic sur la même colonne', async () => {
       await setup();
+      store.setView('daily');
 
       store.sortBy('usageCount');
       store.sortBy('usageCount');
 
-      expect(store.pageTracks()[0].usageCount).toBe(1);
+      expect(usageOf(store.pageTracks()[0], 'daily')?.usageCount).toBe(1);
       expect(store.sort()).toEqual({ column: 'usageCount', direction: 'desc' });
     });
 
@@ -332,6 +334,73 @@ describe('PoolStore', () => {
       store.toggleSelection(3);
 
       expect(store.selectedTracks().map(t => t.id)).toEqual([3, 4]);
+    });
+  });
+
+  describe('vues par mode', () => {
+    // Joué seulement par un autre mode : aucune apparition au Daily, mais utilisé quand même.
+    const otherModeOnly = poolTrack({
+      id: 5, deezerTrackId: 15, artist: 'Autre', title: 'Seulement ailleurs', usedByMode: true,
+      usages: [{ mode: 'autre', usageCount: 0, lastUsedDate: null, unlockDate: null, inTodayChallenge: false }],
+    });
+
+    it('démarre sur le pool général, dont le compte ne dépend d\x27aucun mode', async () => {
+      await setup([eminem, sabrina, otherModeOnly]);
+
+      expect(store.view()).toBe('pool');
+      expect(store.usedCount()).toBe(2);
+      expect(store.availableCount()).toBe(1);
+    });
+
+    it('un morceau joué par un autre mode est utilisé dans le pool, mais disponible dans la vue Daily', async () => {
+      await setup([eminem, sabrina, otherModeOnly]);
+
+      store.setView('daily');
+
+      expect(store.usedCount()).toBe(1);
+      expect(store.availableCount()).toBe(2);
+    });
+
+    it('« Joué par » filtre sur un mode ou sur aucun', async () => {
+      await setup([eminem, sabrina, otherModeOnly]);
+
+      store.setPlayedBy('daily');
+      expect(store.filtered().map(t => t.id)).toEqual([1]);
+      store.setPlayedBy('none');
+      expect(store.filtered().map(t => t.id)).toEqual([3]);
+      store.setPlayedBy('');
+      expect(store.filtered()).toHaveLength(3);
+    });
+
+    it('changer de vue garde le texte cherché, remet les autres filtres, le tri, la page et la sélection à zéro', async () => {
+      await setup();
+      store.setText('eminem');
+      store.setPreview('ok');
+      store.sortBy('artist');
+      store.toggleSelection(1);
+
+      store.setView('daily');
+
+      expect(store.filters()).toEqual({ ...NO_FILTERS, text: 'eminem' });
+      expect(store.sort()).toBeNull();
+      expect(store.selectedIds()).toEqual([]);
+    });
+
+    it('« ouvrir dans le Pool » revient au pool avec le morceau cherché', async () => {
+      await setup();
+      store.setView('daily');
+
+      store.openInPool(eminem);
+
+      expect(store.view()).toBe('pool');
+      expect(store.filters().text).toBe('Eminem Lose Yourself');
+      expect(store.filtered().map(t => t.id)).toEqual([1]);
+    });
+
+    it('compte les morceaux sans extrait', async () => {
+      await setup();
+
+      expect(store.missingPreviewCount()).toBe(1);
     });
   });
 });

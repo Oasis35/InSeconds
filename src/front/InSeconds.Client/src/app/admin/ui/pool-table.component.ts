@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { PoolSort, SortColumn } from '../domain/pool-filters';
-import { PoolTrack, isUsed, trackLabel } from '../domain/pool-track';
+import { PoolSort, SortColumn, isUsedIn } from '../domain/pool-filters';
+import { ModeUsage, PoolTrack, trackLabel, usageOf } from '../domain/pool-track';
+import { POOL_VIEW, modeView } from '../domain/pool-views';
 
 interface Column {
   readonly column: SortColumn;
@@ -9,10 +10,21 @@ interface Column {
   readonly widthClass?: string;
 }
 
-const COLUMNS: readonly Column[] = [
+const ARTIST_TITLE_PREVIEW: readonly Column[] = [
   { column: 'artist', labelKey: 'admin.pool.colArtist' },
   { column: 'title', labelKey: 'admin.pool.colTitle' },
   { column: 'preview', labelKey: 'admin.pool.colPreview', widthClass: 'w-28' },
+];
+
+/** Le pool général : le morceau et les modes qui l'ont joué (pastilles). */
+const POOL_COLUMNS: readonly Column[] = [
+  ...ARTIST_TITLE_PREVIEW,
+  { column: 'usage', labelKey: 'admin.pool.colUsage' },
+];
+
+/** La vue d'un mode : ce que ce mode en a fait (dernier jour, déblocage, apparitions). */
+const MODE_COLUMNS: readonly Column[] = [
+  ...ARTIST_TITLE_PREVIEW,
   { column: 'status', labelKey: 'admin.pool.colStatus', widthClass: 'w-24' },
   { column: 'lastUsedDate', labelKey: 'admin.pool.colLastUsed', widthClass: 'w-28' },
   { column: 'unlockDate', labelKey: 'admin.pool.colUnlockDate', widthClass: 'w-28' },
@@ -20,9 +32,10 @@ const COLUMNS: readonly Column[] = [
 ];
 
 /**
- * Le tableau du pool et sa pagination. Toutes les colonnes sont triables. Sur une ligne : écouter
- * (▶), corriger les noms (✎, toujours possible, défi du jour compris), puis supprimer (🗑) pour un
- * morceau jamais utilisé, ou désactiver / réactiver pour un morceau déjà utilisé ou désactivé.
+ * Le tableau du pool et sa pagination. Toutes les colonnes sont triables. Dans la vue générale, sur une ligne : écouter
+ * (▶), corriger les noms (✎, toujours possible, défi du jour compris), puis supprimer (🗑) pour un morceau qu'aucun mode n'a
+ * joué, ou désactiver / réactiver pour un morceau déjà joué ou désactivé. Dans la vue d'un mode (lecture seule) : écouter,
+ * et « ↗ » pour retrouver le morceau dans le pool, où l'on agit dessus.
  */
 @Component({
   selector: 'app-pool-table',
@@ -40,9 +53,11 @@ const COLUMNS: readonly Column[] = [
           <table class="w-full text-sm">
             <thead>
               <tr class="text-left text-xs uppercase tracking-wide" style="border-bottom:1px solid var(--border-medium);color:var(--text-muted)">
-                <th class="pl-4 pr-2 py-2.5 w-8"></th>
-                <th class="px-3 py-2.5 w-40">{{ 'admin.pool.colActions' | translate }}</th>
-                @for (col of columns; track col.column) {
+                @if (isPool()) {
+                  <th class="pl-4 pr-2 py-2.5 w-8"></th>
+                }
+                <th class="px-3 py-2.5" [class.pl-4]="!isPool()" [class.w-40]="isPool()">{{ 'admin.pool.colActions' | translate }}</th>
+                @for (col of columns(); track col.column) {
                   <th class="p-0" [class]="col.widthClass ?? ''" [attr.aria-sort]="ariaSort(col.column)">
                     <button type="button" (click)="sortBy.emit(col.column)"
                       class="w-full px-3 py-2.5 cursor-pointer select-none bg-transparent border-0 text-inherit uppercase tracking-wide inline-flex items-center gap-1">
@@ -57,37 +72,44 @@ const COLUMNS: readonly Column[] = [
             </thead>
             <tbody>
               @for (t of tracks(); track t.id) {
-                @let used = isUsed(t);
                 <tr class="transition-colors" style="border-bottom:1px solid var(--border-subtle)"
-                  [style.background]="selectedIds().includes(t.id) ? 'rgb(var(--rgb-violet) / 0.08)' : null">
-                  <td class="pl-4 pr-2 py-2.5">
-                    <input type="checkbox" [checked]="selectedIds().includes(t.id)" (change)="toggleSelection.emit(t.id)"
-                      [attr.aria-label]="label(t)" class="w-4 h-4 cursor-pointer" />
-                  </td>
-                  <td class="px-3 py-2.5">
+                  [style.background]="isPool() && selectedIds().includes(t.id) ? 'rgb(var(--rgb-violet) / 0.08)' : null">
+                  @if (isPool()) {
+                    <td class="pl-4 pr-2 py-2.5">
+                      <input type="checkbox" [checked]="selectedIds().includes(t.id)" (change)="toggleSelection.emit(t.id)"
+                        [attr.aria-label]="label(t)" class="w-4 h-4 cursor-pointer" />
+                    </td>
+                  }
+                  <td class="px-3 py-2.5" [class.pl-4]="!isPool()">
                     <div class="flex items-center gap-2">
                       <button type="button" (click)="listen.emit(t)" class="text-xs px-2 py-1 rounded transition-colors"
                         style="color:var(--text-indigo);border:1px solid rgb(var(--rgb-violet) / 0.3)"
                         [title]="'admin.pool.listenTitle' | translate">▶</button>
-                      <button type="button" (click)="edit.emit(t)" class="text-xs px-2 py-1 rounded transition-colors"
-                        style="color:var(--text-muted);border:1px solid var(--border-strong)"
-                        [title]="'admin.pool.editTitle' | translate">✎</button>
-                      <!-- Le title est porté par un span : un bouton désactivé n'affiche pas son tooltip partout. -->
-                      @if (used || t.isDisabled) {
-                        @let lockedToday = !t.isDisabled && t.inTodayChallenge;
-                        <span [title]="(lockedToday ? 'admin.pool.disableTodayTitle' : (t.isDisabled ? 'admin.pool.enableTitle' : 'admin.pool.disableTitle')) | translate">
-                          <button type="button" (click)="toggleDisabled.emit(t)" [disabled]="lockedToday || togglingIds().includes(t.id)"
-                            class="text-xs px-2 py-1 rounded transition-colors whitespace-nowrap disabled:opacity-30 disabled:cursor-not-allowed"
-                            [style.color]="t.isDisabled ? 'var(--color-success)' : 'var(--text-muted)'"
-                            style="border:1px solid var(--border-strong)">
-                            {{ (t.isDisabled ? 'admin.pool.enable' : 'admin.pool.disable') | translate }}
-                          </button>
-                        </span>
+                      @if (isPool()) {
+                        <button type="button" (click)="edit.emit(t)" class="text-xs px-2 py-1 rounded transition-colors"
+                          style="color:var(--text-muted);border:1px solid var(--border-strong)"
+                          [title]="'admin.pool.editTitle' | translate">✎</button>
+                        <!-- Le title est porté par un span : un bouton désactivé n'affiche pas son tooltip partout. -->
+                        @if (t.isUsed || t.isDisabled) {
+                          @let lockedToday = !t.isDisabled && t.inTodayChallenge;
+                          <span [title]="(lockedToday ? 'admin.pool.disableTodayTitle' : (t.isDisabled ? 'admin.pool.enableTitle' : 'admin.pool.disableTitle')) | translate">
+                            <button type="button" (click)="toggleDisabled.emit(t)" [disabled]="lockedToday || togglingIds().includes(t.id)"
+                              class="text-xs px-2 py-1 rounded transition-colors whitespace-nowrap disabled:opacity-30 disabled:cursor-not-allowed"
+                              [style.color]="t.isDisabled ? 'var(--color-success)' : 'var(--text-muted)'"
+                              style="border:1px solid var(--border-strong)">
+                              {{ (t.isDisabled ? 'admin.pool.enable' : 'admin.pool.disable') | translate }}
+                            </button>
+                          </span>
+                        } @else {
+                          <span [title]="'admin.pool.deleteTitle' | translate">
+                            <button type="button" (click)="delete.emit(t)" class="text-xs px-2 py-1 rounded transition-colors"
+                              style="color:var(--text-muted);border:1px solid var(--border-strong)">🗑</button>
+                          </span>
+                        }
                       } @else {
-                        <span [title]="'admin.pool.deleteTitle' | translate">
-                          <button type="button" (click)="delete.emit(t)" class="text-xs px-2 py-1 rounded transition-colors"
-                            style="color:var(--text-muted);border:1px solid var(--border-strong)">🗑</button>
-                        </span>
+                        <button type="button" (click)="openInPool.emit(t)" class="text-xs px-2 py-1 rounded transition-colors"
+                          style="color:var(--text-muted);border:1px solid var(--border-strong)"
+                          [title]="'admin.pool.openInPoolTitle' | translate" [attr.aria-label]="'admin.pool.openInPoolTitle' | translate">↗</button>
                       }
                     </div>
                   </td>
@@ -104,18 +126,36 @@ const COLUMNS: readonly Column[] = [
                       </span>
                     }
                   </td>
-                  <td class="px-3 py-2.5">
-                    @if (t.isDisabled) {
-                      <span class="text-xs px-2 py-0.5 rounded-full whitespace-nowrap" style="color:var(--color-fail);background:var(--bg-inactive)">{{ 'admin.pool.disabled' | translate }}</span>
-                    } @else if (used) {
-                      <span class="text-xs px-2 py-0.5 rounded-full" style="color:var(--text-muted);background:var(--bg-inactive)">{{ 'admin.pool.used' | translate }}</span>
-                    } @else {
-                      <span class="text-xs px-2 py-0.5 rounded-full" style="color:var(--text-indigo);background:rgb(var(--rgb-violet) / 0.12)">{{ 'admin.pool.available' | translate }}</span>
-                    }
-                  </td>
-                  <td class="px-3 py-2.5" style="color:var(--text-muted)">{{ t.lastUsedDate ?? '' }}</td>
-                  <td class="px-3 py-2.5" style="color:var(--text-muted)">{{ t.unlockDate ?? '' }}</td>
-                  <td class="px-3 py-2.5" style="color:var(--text-muted)">{{ t.usageCount }}</td>
+                  @if (isPool()) {
+                    <td class="px-3 py-2.5">
+                      <div class="flex flex-wrap items-center gap-1" data-testid="usage-badges">
+                        @if (t.isDisabled) {
+                          <span class="text-xs px-2 py-0.5 rounded-full whitespace-nowrap" style="color:var(--color-fail);background:var(--bg-inactive)">{{ 'admin.pool.disabled' | translate }}</span>
+                        }
+                        @for (usage of t.usages; track usage.mode) {
+                          <span class="text-xs px-2 py-0.5 rounded-full whitespace-nowrap" data-testid="usage-badge"
+                            style="color:var(--text-indigo);background:rgb(var(--rgb-violet) / 0.12)">{{ modeLabelKey(usage) | translate }}</span>
+                        }
+                        @if (!t.isUsed && !t.isDisabled) {
+                          <span class="text-xs" style="color:var(--text-muted)">{{ 'admin.pool.neverPlayed' | translate }}</span>
+                        }
+                      </div>
+                    </td>
+                  } @else {
+                    @let usage = usageIn(t);
+                    <td class="px-3 py-2.5">
+                      @if (t.isDisabled) {
+                        <span class="text-xs px-2 py-0.5 rounded-full whitespace-nowrap" style="color:var(--color-fail);background:var(--bg-inactive)">{{ 'admin.pool.disabled' | translate }}</span>
+                      } @else if (isUsedHere(t)) {
+                        <span class="text-xs px-2 py-0.5 rounded-full" style="color:var(--text-muted);background:var(--bg-inactive)">{{ 'admin.pool.used' | translate }}</span>
+                      } @else {
+                        <span class="text-xs px-2 py-0.5 rounded-full" style="color:var(--text-indigo);background:rgb(var(--rgb-violet) / 0.12)">{{ 'admin.pool.available' | translate }}</span>
+                      }
+                    </td>
+                    <td class="px-3 py-2.5" style="color:var(--text-muted)">{{ usage?.lastUsedDate ?? '' }}</td>
+                    <td class="px-3 py-2.5" style="color:var(--text-muted)">{{ usage?.unlockDate ?? '' }}</td>
+                    <td class="px-3 py-2.5" style="color:var(--text-muted)">{{ usage?.usageCount ?? 0 }}</td>
+                  }
                 </tr>
               }
             </tbody>
@@ -147,6 +187,8 @@ const COLUMNS: readonly Column[] = [
 export class PoolTableComponent {
   /** Les morceaux de la page affichée, déjà filtrés et triés. */
   readonly tracks = input.required<readonly PoolTrack[]>();
+  /** La vue affichée : `pool` (le catalogue, avec ses actions) ou l'identifiant d'un mode (lecture seule). */
+  readonly view = input<string>(POOL_VIEW);
   readonly selectedIds = input.required<readonly number[]>();
   readonly togglingIds = input.required<readonly number[]>();
   readonly sort = input.required<PoolSort | null>();
@@ -164,12 +206,27 @@ export class PoolTableComponent {
   readonly edit = output<PoolTrack>();
   readonly toggleDisabled = output<PoolTrack>();
   readonly delete = output<PoolTrack>();
+  readonly openInPool = output<PoolTrack>();
   readonly previousPage = output();
   readonly nextPage = output();
 
-  protected readonly columns = COLUMNS;
-  protected readonly isUsed = isUsed;
+  protected readonly isPool = computed(() => this.view() === POOL_VIEW);
+  protected readonly columns = computed(() => (this.isPool() ? POOL_COLUMNS : MODE_COLUMNS));
   protected readonly label = trackLabel;
+
+  /** Ce que le mode de la vue dit du morceau. */
+  protected usageIn(track: PoolTrack): ModeUsage | null {
+    return usageOf(track, this.view());
+  }
+
+  protected isUsedHere(track: PoolTrack): boolean {
+    return isUsedIn(track, this.view());
+  }
+
+  /** Le libellé d'un mode : celui du registre, sinon son nom tel que le back le donne. */
+  protected modeLabelKey(usage: ModeUsage): string {
+    return modeView(usage.mode)?.labelKey ?? usage.mode;
+  }
 
   protected ariaSort(column: SortColumn): 'ascending' | 'descending' | 'none' {
     const sort = this.sort();

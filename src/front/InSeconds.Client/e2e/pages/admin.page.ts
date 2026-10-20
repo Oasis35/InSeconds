@@ -63,6 +63,15 @@ export class AdminPage {
     return this.page.locator('select').filter({ hasText: 'Tous les statuts' });
   }
 
+  poolFilterPlayedBy(): Locator {
+    return this.page.locator('select').filter({ hasText: 'Joué par : tous' });
+  }
+
+  /** Le sélecteur de vue du pool (Pool, Daily) : « Pool » est le pool général, les autres sont les vues d'un mode. */
+  poolView(name: string): Locator {
+    return this.page.getByRole('tab', { name, exact: true });
+  }
+
   addButton(): Locator {
     return this.page.getByRole('button', { name: '+ Ajouter' });
   }
