@@ -1,10 +1,10 @@
 name: CI
 
+# Push seulement : une PR (vers env/staging ou main) affiche le run du push sur son commit de tête, qui suffit au
+# ruleset. Un déclencheur pull_request refaisait le même run une seconde fois.
 on:
   push:
     branches: ['**']
-  pull_request:
-    branches: [main]
 
 permissions:
   contents: read
@@ -14,11 +14,39 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Tous les jobs tournent à chaque run (le code v1 et son filtre de chemins sont retirés en I2, #236).
-  # Le job « CI OK » en fin de fichier les agrège : c'est le seul check exigé par le ruleset.
+  # Une branche qui ne change que de la doc (*.md, docs/) par rapport à env/staging saute les jobs de build et de
+  # tests. Toujours tout sur main et env/staging (déploiement). La comparaison porte sur toute la branche, pas sur
+  # le dernier push : un run annulé (cancel-in-progress) ne laisse jamais du code non testé derrière un commit de doc.
+  # Le job « CI OK » en fin de fichier agrège tous les jobs : c'est le seul check exigé par le ruleset.
+  changes:
+    name: Changed files
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Code changed since env/staging?
+        id: diff
+        run: |
+          code=true
+          if [ "$GITHUB_REF" != refs/heads/main ] && [ "$GITHUB_REF" != refs/heads/env/staging ] \
+            && base=$(git merge-base origin/env/staging HEAD) \
+            && ! git diff --name-only "$base" HEAD | grep -qvE '(\.md$|^docs/)'; then
+            code=false
+          fi
+          echo "code=$code" | tee -a "$GITHUB_OUTPUT"
+
   front:
     name: Frontend (build, Vitest, Sheriff)
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: src/front/InSeconds.Client
@@ -42,8 +70,25 @@ jobs:
       - name: Build (production, service worker included)
         run: npm run build
 
+      # Navigateurs en cache (clé : version de Playwright) ; les paquets système, eux, s'installent à chaque fois.
+      - name: Playwright version
+        id: playwright
+        run: echo "version=$(node -p "require('./node_modules/playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
       - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx --no-install playwright install --with-deps chromium
+
+      - name: Install Playwright system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx --no-install playwright install-deps chromium
 
       - name: Run unit tests
         run: npx --no-install ng test --watch=false
@@ -53,6 +98,9 @@ jobs:
   nginx-headers:
     name: Frontend (nginx headers smoke test)
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -62,10 +110,18 @@ jobs:
         run: bash scripts/check-nginx-headers.sh
 
   # E2E contre l'hôte de test de l'API (InSeconds.Api.Testing, port 5175) et le front servi par
-  # ng serve (port 5176, proxy /api).
+  # ng serve (port 5176, proxy /api). Découpés en 4 jobs, les specs réparties selon leur durée
+  # (scripts/e2e-shard.mjs) : chacun a sa base, son hôte de test et son ng serve, comme le job unique d'avant.
   e2e:
-    name: E2E (Playwright)
+    name: E2E (Playwright ${{ matrix.shard }}/4)
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
 
     services:
       postgres:
@@ -120,9 +176,27 @@ jobs:
         working-directory: src/front/InSeconds.Client
         run: npx --no-install ng serve --configuration e2e-ci --port 5176 > /tmp/angular.log 2>&1 &
 
+      - name: Playwright version
+        id: playwright
+        working-directory: src/front/InSeconds.Client
+        run: echo "version=$(node -p "require('./node_modules/playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
       - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         working-directory: src/front/InSeconds.Client
         run: npx --no-install playwright install --with-deps chromium
+
+      - name: Install Playwright system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        working-directory: src/front/InSeconds.Client
+        run: npx --no-install playwright install-deps chromium
 
       # --retry-connrefused : sans réponse au bout du délai, l'étape échoue (une boucle `curl && break` laisse passer).
       - name: Wait for backend
@@ -133,7 +207,7 @@ jobs:
 
       - name: Run E2E tests
         working-directory: src/front/InSeconds.Client
-        run: npx --no-install playwright test
+        run: npx --no-install playwright test $(node scripts/e2e-shard.mjs ${{ matrix.shard }} 4)
         env:
           CI: 'true'
 
@@ -149,13 +223,16 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.shard }}
           path: src/front/InSeconds.Client/playwright-report/
           retention-days: 7
 
   back:
-    name: Backend (build, migrations, tests, image)
+    name: Backend (build, tests)
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: src/back
@@ -173,6 +250,37 @@ jobs:
 
       - name: Build (Release)
         run: dotnet build InSeconds.slnx --configuration Release --no-restore
+
+      # Unitaires, architecture, intégration et scripts SQL du VPS (Testcontainers : Docker est fourni par ubuntu-latest).
+      # Délai : la suite prend quelques minutes ; un test bloqué ne retient plus le job jusqu'à la limite de 6 h.
+      - name: Test
+        timeout-minutes: 20
+        run: dotnet test --solution InSeconds.slnx --configuration Release --no-build
+
+  # Les vérifications du back qui ne sont pas des tests, en parallèle du job back : migrations, code Wolverine, image de prod.
+  back-checks:
+    name: Backend (migrations, Wolverine code, prod image)
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: src/back
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: src/back/global.json
+
+      - name: Restore
+        run: dotnet restore InSeconds.slnx
+
+      - name: Build (Release)
+        run: dotnet build InSeconds.Api/InSeconds.Api.csproj --configuration Release --no-restore
 
       - name: Install dotnet-ef
         run: dotnet tool install --global dotnet-ef --version 10.0.12
@@ -193,10 +301,6 @@ jobs:
             exit 1
           fi
 
-      # Unitaires, architecture, intégration et scripts SQL du VPS (Testcontainers : Docker est fourni par ubuntu-latest).
-      - name: Test
-        run: dotnet test --solution InSeconds.slnx --configuration Release --no-build
-
       # S9 : l'hôte de test (routes /api/e2e, faux email) ne doit jamais atteindre l'image de prod.
       - name: Build prod image and check it has no test host
         run: |
@@ -209,15 +313,19 @@ jobs:
           fi
 
   # Seul check exigé par le ruleset « Branches protégées » : échoue si un job a échoué ou a été
-  # annulé. Tout nouveau job doit être ajouté à `needs`, sinon il ne bloque pas le merge.
+  # annulé (un job sauté, sur une branche qui ne change que de la doc, compte comme réussi).
+  # Tout nouveau job doit être ajouté à `needs`, sinon il ne bloque pas le merge.
   ci-ok:
     name: CI OK
     runs-on: ubuntu-latest
     if: always()
+    timeout-minutes: 5
     needs:
+      - changes
       - front
       - nginx-headers
       - back
+      - back-checks
       - e2e
     steps:
       - name: Check job results
