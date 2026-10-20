@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using InSeconds.Api.Modules.Catalogue.Application;
 using InSeconds.Api.Modules.Catalogue.Contracts;
+using InSeconds.Api.Modules.Daily.Application;
 using InSeconds.Api.Modules.Players.Application;
 using InSeconds.Api.Testing.E2E;
 using Microsoft.EntityFrameworkCore;
@@ -70,7 +71,7 @@ public class E2eHostTests(PostgresFixture postgres) : IAsyncLifetime
         var tracks = await ListAsync(admin);
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         using var scope = _host.Services.CreateScope();
-        var usage = scope.ServiceProvider.GetRequiredService<ITrackUsage>();
+        var usage = scope.ServiceProvider.GetRequiredService<IDailyTrackUsage>();
         var queen = Of(tracks, "Queen").Id;
 
         var inCooldown = await usage.GetTracksInCooldownAsync(today, Ct);
@@ -116,7 +117,7 @@ public class E2eHostTests(PostgresFixture postgres) : IAsyncLifetime
         var admin = await SeededAdminAsync();
         var ids = (await ListAsync(admin)).Select(t => t.Id).ToList();
         using var scope = _host.Services.CreateScope();
-        var usage = scope.ServiceProvider.GetRequiredService<ITrackUsage>();
+        var usage = scope.ServiceProvider.GetRequiredService<IDailyTrackUsage>();
         Assert.NotEmpty(await usage.GetAsync(ids, Ct));
 
         await admin.PostAsync("/api/e2e/reset", null, Ct);

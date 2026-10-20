@@ -54,7 +54,7 @@ public static class GenerateDailyChallengeHandler
         GenerateDailyChallenge command,
         IDailyStore store,
         ITrackDirectory tracks,
-        ITrackUsage usage,
+        IDailyTrackUsage usage,
         ITrackSelector selector,
         IOptionsMonitor<DailyOptions> options,
         ILogger<GenerateDailyChallenge> logger,

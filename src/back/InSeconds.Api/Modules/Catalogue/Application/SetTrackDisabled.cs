@@ -15,7 +15,7 @@ public sealed record DisableAttempt(Track? Track, bool InTodayChallenge);
 public static class SetTrackDisabledEndpoint
 {
     public static async Task<DisableAttempt> LoadAsync(
-        int id, SetTrackDisabled request, ICatalogueStore store, ITrackUsage usage, CancellationToken ct)
+        int id, SetTrackDisabled request, ICatalogueStore store, ITrackPoolUsage usage, CancellationToken ct)
     {
         var track = await store.FindAsync(id, ct);
         if (track is null || !request.IsDisabled || track.IsDisabled)

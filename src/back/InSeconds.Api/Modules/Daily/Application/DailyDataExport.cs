@@ -1,20 +1,10 @@
-namespace InSeconds.Api.Modules.Daily.Contracts;
+namespace InSeconds.Api.Modules.Daily.Application;
 
 /// <summary>
-/// Les données de jeu d'un joueur, pour ses droits (RGPD) : la copie de ses données (accès, portabilité) et leur effacement. Appelé par
-/// Players, dans sa propre transaction : la suppression du joueur suit celle de ses données de jeu, qui la référencent.
+/// La section « daily » de la copie des données d'un joueur (RGPD) : sa série et toutes ses parties, la plus ancienne d'abord.
 /// </summary>
-public interface IPlayerGameData
-{
-    /// <summary>Sa série et toutes ses parties, la plus ancienne d'abord ; vide s'il n'a jamais joué.</summary>
-    Task<PlayerGameExport> ExportAsync(Guid playerId, CancellationToken ct);
-
-    /// <summary>Supprime ses parties (réponses comprises) et sa série ; rend le nombre de parties supprimées.</summary>
-    Task<int> DeleteAsync(Guid playerId, CancellationToken ct);
-}
-
 /// <param name="Streak">Rien s'il n'a jamais terminé de partie ni reçu de gel.</param>
-public sealed record PlayerGameExport(StreakExport? Streak, IReadOnlyList<GameExport> Games);
+public sealed record DailyDataExport(StreakExport? Streak, IReadOnlyList<GameExport> Games);
 
 /// <param name="LastPlayedDate">Date du dernier défi terminé (jour UTC).</param>
 public sealed record StreakExport(int CurrentStreak, DateOnly? LastPlayedDate, int Freezes);

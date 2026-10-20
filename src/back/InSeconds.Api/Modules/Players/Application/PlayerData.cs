@@ -1,6 +1,5 @@
 using FluentValidation;
 using InSeconds.Api.Infrastructure.Auth;
-using InSeconds.Api.Modules.Daily.Contracts;
 using InSeconds.Api.Modules.Players.Contracts;
 using InSeconds.Api.Modules.Players.Domain;
 using Microsoft.AspNetCore.Authorization;
@@ -21,7 +20,8 @@ public sealed record PlayerRecordExport(DateTimeOffset CreatedAt, DateTimeOffset
 
 /// <summary>
 /// La copie de toutes les données d'un joueur (droit d'accès et portabilité, RGPD art. 15 et 20) : le téléchargement du profil et la
-/// commande de secours <c>--export-player</c> rendent ce même document.
+/// commande de secours <c>--export-player</c> rendent ce même document. <paramref name="Modules"/> a une section par mode de jeu
+/// (<c>daily</c> : série et parties), fournie par son <see cref="IPlayerDataContributor"/> : Players n'en connaît aucun.
 /// </summary>
 public sealed record PlayerDataExport(
     DateTimeOffset ExportedAt,
@@ -30,8 +30,7 @@ public sealed record PlayerDataExport(
     DateTimeOffset? LastSeenAt,
     AccountExport? Account,
     IReadOnlyList<DeviceExport> Devices,
-    StreakExport? Streak,
-    IReadOnlyList<GameExport> Games);
+    IReadOnlyDictionary<string, object> Modules);
 
 public sealed record DeleteMyAccount(string Pseudo);
 
@@ -40,36 +39,41 @@ public sealed class DeleteMyAccountValidator : AbstractValidator<DeleteMyAccount
     public DeleteMyAccountValidator() => RuleFor(x => x.Pseudo).NotEmpty().MaximumLength(50);
 }
 
-/// <summary>La copie des données d'un joueur, assemblée depuis Players et Daily (par son contrat).</summary>
-public sealed class PlayerDataExporter(IPlayerQueries queries, IPlayerGameData games, TimeProvider time)
+/// <summary>La copie des données d'un joueur, assemblée depuis Players et depuis chaque mode (par son <see cref="IPlayerDataContributor"/>).</summary>
+public sealed class PlayerDataExporter(IPlayerQueries queries, IEnumerable<IPlayerDataContributor> contributors, TimeProvider time)
 {
     /// <summary>Rien si le joueur n'existe pas ou a été supprimé.</summary>
     public async Task<PlayerDataExport?> ExportAsync(Guid playerId, CancellationToken ct)
     {
         if (await queries.ExportAsync(playerId, ct) is not { } player)
             return null;
-        var game = await games.ExportAsync(playerId, ct);
-        return new PlayerDataExport(
-            time.GetUtcNow(), playerId, player.CreatedAt, player.LastSeenAt, player.Account, player.Devices, game.Streak, game.Games);
+        // Une section par mode, dans l'ordre d'enregistrement ; un nom en double ferait perdre des données : refusé plutôt que masqué.
+        var modules = new Dictionary<string, object>(StringComparer.Ordinal);
+        foreach (var contributor in contributors)
+            modules.Add(contributor.Module, await contributor.ExportAsync(playerId, ct));
+        return new PlayerDataExport(time.GetUtcNow(), playerId, player.CreatedAt, player.LastSeenAt, player.Account, player.Devices, modules);
     }
 }
 
-/// <param name="Games">Parties supprimées.</param>
+/// <param name="Games">Parties supprimées, tous modes confondus.</param>
 /// <param name="Devices">Appareils supprimés, révoqués compris.</param>
 public sealed record ErasedPlayer(int Games, int Devices);
 
 /// <summary>
-/// L'effacement d'un joueur (droit à l'effacement, RGPD art. 17) : ses données de jeu (Daily, par son contrat), puis tout ce que Players
+/// L'effacement d'un joueur (droit à l'effacement, RGPD art. 17) : ses données de jeu (chaque mode, par son <see cref="IPlayerDataContributor"/>), puis tout ce que Players
 /// garde de lui, ligne du joueur comprise. Rien ne reste qui le concerne, sauf son score dans les photos figées des jours passés, sans
 /// rien qui y mène. Partagé par le bouton du profil, la purge des comptes inactifs et la commande de secours <c>--delete-player</c> ; dans
 /// la transaction de l'appelant (celle de Wolverine pour une route ou une tâche).
 /// </summary>
-public sealed class AccountErasure(IPlayerStore store, IPlayerGameData games, IDeviceSessionValidationCache validationCache)
+public sealed class AccountErasure(IPlayerStore store, IEnumerable<IPlayerDataContributor> contributors, IDeviceSessionValidationCache validationCache)
 {
     public async Task<ErasedPlayer> EraseAsync(Guid playerId, CancellationToken ct)
     {
         var devices = await store.ListDeviceSessionIdsAsync(playerId, ct);
-        var erasedGames = await games.DeleteAsync(playerId, ct);
+        // Les données de chaque mode d'abord : elles référencent le joueur (clé étrangère), sa ligne ne part qu'ensuite.
+        var erasedGames = 0;
+        foreach (var contributor in contributors)
+            erasedGames += await contributor.DeleteAsync(playerId, ct);
         await store.EraseAsync(playerId, ct);
         // Ses cookies sont refusés dès la requête suivante (la session n'existe plus), pas au bout de la minute du cache.
         foreach (var id in devices)

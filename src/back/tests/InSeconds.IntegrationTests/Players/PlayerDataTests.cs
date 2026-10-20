@@ -1,5 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
+using InSeconds.Api.Modules.Daily.Application;
 using InSeconds.Api.Modules.Players.Application;
 using Microsoft.AspNetCore.Mvc;
 
@@ -43,9 +45,12 @@ public class PlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(new AccountExport("alice@example.com", "Alice", export.Account!.LinkedAt, IsAdmin: false), export.Account);
         Assert.NotNull(export.Account.LinkedAt);
         Assert.Equal("Safari · iPhone", Assert.Single(export.Devices).Label);
-        Assert.Equal(1, export.Streak!.Freezes);
+        // Une section par mode : le Daily seul aujourd'hui, sa série et ses parties.
+        Assert.Equal(["daily"], export.Modules.Keys);
+        var daily = ExportReading.Daily(export);
+        Assert.Equal(1, daily.Streak!.Freezes);
 
-        var game = Assert.Single(export.Games);
+        var game = Assert.Single(daily.Games);
         Assert.Equal(PlayerDataSeed.Day, game.Date);
         Assert.Equal("Completed", game.Status);
         Assert.Equal(1850, game.TotalScore);
@@ -72,7 +77,7 @@ public class PlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
         var export = (await alice.Client.GetFromJsonAsync<PlayerDataExport>("/api/players/me/export", Ct))!;
 
         Assert.Equal("seule@example.com", export.Account!.Email);
-        Assert.Empty(export.Games);
+        Assert.Empty(ExportReading.Daily(export).Games);
         Assert.Single(export.Devices);
     }
 
@@ -86,8 +91,10 @@ public class PlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
 
         Assert.Null(export.Account);
         Assert.Single(export.Devices);
-        Assert.Null(export.Streak);
-        Assert.Empty(export.Games);
+        // Une section vide reste une section : rien de joué, mais le mode figure dans la copie.
+        var daily = ExportReading.Daily(export);
+        Assert.Null(daily.Streak);
+        Assert.Empty(daily.Games);
     }
 
     [Fact]
@@ -175,6 +182,15 @@ public class PlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Ct))!.Extensions["code"]?.ToString();
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
+}
+
+/// <summary>Lit une section de la copie des données, relue d'un JSON : chaque mode y a la sienne, de la forme qu'il choisit.</summary>
+internal static class ExportReading
+{
+    public static T Section<T>(PlayerDataExport export, string module) =>
+        ((JsonElement)export.Modules[module]).Deserialize<T>(JsonSerializerOptions.Web)!;
+
+    public static DailyDataExport Daily(PlayerDataExport export) => Section<DailyDataExport>(export, "daily");
 }
 
 /// <summary>Un défi passé de deux morceaux (« Artiste 1 » / « Titre 1 », « Artiste 2 » / « Titre 2 »), et une partie terminée dessus.</summary>

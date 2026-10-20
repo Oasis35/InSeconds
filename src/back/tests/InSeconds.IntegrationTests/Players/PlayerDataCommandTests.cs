@@ -42,7 +42,7 @@ public class PlayerDataCommandTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(_playerId, export.PlayerId);
         Assert.Equal("Secours", export.Account!.Pseudo);
         Assert.Equal("Chrome · Android", Assert.Single(export.Devices).Label);
-        Assert.Equal(2, Assert.Single(export.Games).Tracks.Count);
+        Assert.Equal(2, Assert.Single(ExportReading.Daily(export).Games).Tracks.Count);
         Assert.Equal(1L, await _api.ScalarAsync<long>("SELECT count(*) FROM players.accounts"));
     }
 

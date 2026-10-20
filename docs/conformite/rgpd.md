@@ -15,8 +15,8 @@ Jamais d'email, de pseudo, de réponse saisie, de cookie ni d'`Authorization` (t
 
 ## Droits du joueur
 
-- **Copie** : `GET /api/players/me/export` (JSON : compte, appareils, série, parties), bouton « Tes données » du profil.
-- **Effacement** : `POST /api/players/me/delete` (pseudo retapé pour confirmer), effacement réel (`AccountErasure`, contrat `Daily.Contracts.IPlayerGameData`).
+- **Copie** : `GET /api/players/me/export` (JSON : compte, appareils, puis une section par mode de jeu sous `modules` : `modules.daily` pour la série et les parties), bouton « Tes données » du profil.
+- **Effacement** : `POST /api/players/me/delete` (pseudo retapé pour confirmer), effacement réel (`AccountErasure`, qui appelle l'`IPlayerDataContributor` de chaque mode de jeu dans la même transaction).
 - **Sans connexion possible** : commandes de secours sur le VPS `--export-player` / `--delete-player` (cf. `src/back/CLAUDE.md` § Démarrage), réponse sous un mois, uniquement à l'adresse du compte.
 
 ## Durées de conservation

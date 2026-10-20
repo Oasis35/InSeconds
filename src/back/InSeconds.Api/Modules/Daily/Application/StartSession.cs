@@ -53,7 +53,7 @@ public static class StartSessionEndpoint
         ICurrentPlayer current,
         IDailyStore store,
         ITrackDirectory tracks,
-        ITrackUsage usage,
+        IDailyTrackUsage usage,
         ITrackSelector selector,
         IOptionsMonitor<DailyOptions> options,
         IGameCalendar calendar,

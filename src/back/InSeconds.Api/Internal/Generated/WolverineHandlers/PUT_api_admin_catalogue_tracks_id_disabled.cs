@@ -38,7 +38,7 @@ namespace Internal.Generated.WolverineHandlers
             var inSecondsDbContext = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>(serviceScope.ServiceProvider);
             var efCatalogueStore = new InSeconds.Api.Modules.Catalogue.Persistence.EfCatalogueStore(inSecondsDbContext);
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
-            var trackUsage = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Modules.Catalogue.Contracts.ITrackUsage>(serviceScope.ServiceProvider);
+            var trackPoolUsage = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Modules.Catalogue.Contracts.ITrackPoolUsage>(serviceScope.ServiceProvider);
             System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Catalogue.Application.SetTrackDisabledEndpoint");
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
@@ -67,7 +67,7 @@ namespace Internal.Generated.WolverineHandlers
                     return;
                 }
 
-                var disableAttempt = await InSeconds.Api.Modules.Catalogue.Application.SetTrackDisabledEndpoint.LoadAsync(id, request, efCatalogueStore, trackUsage, httpContext.RequestAborted).ConfigureAwait(false);
+                var disableAttempt = await InSeconds.Api.Modules.Catalogue.Application.SetTrackDisabledEndpoint.LoadAsync(id, request, efCatalogueStore, trackPoolUsage, httpContext.RequestAborted).ConfigureAwait(false);
                 var problemDetails1 = InSeconds.Api.Modules.Catalogue.Application.SetTrackDisabledEndpoint.Validate(disableAttempt);
                 // Evaluate whether the processing should stop if there are any problems
                 if (!(ReferenceEquals(problemDetails1, Wolverine.Http.WolverineContinue.NoProblems)))

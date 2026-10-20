@@ -38,7 +38,7 @@ namespace Internal.Generated.WolverineHandlers
             var efTrackDirectory = new InSeconds.Api.Modules.Catalogue.Persistence.EfTrackDirectory(inSecondsDbContext, _optionsMonitorOfCatalogueOptions);
             var efDailyStore = new InSeconds.Api.Modules.Daily.Persistence.EfDailyStore(inSecondsDbContext);
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
-            var trackUsage = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Modules.Catalogue.Contracts.ITrackUsage>(serviceScope.ServiceProvider);
+            var dailyTrackUsage = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Modules.Daily.Application.IDailyTrackUsage>(serviceScope.ServiceProvider);
             // The actual message body
             var generateDailyChallenge = (InSeconds.Api.Modules.Daily.Application.GenerateDailyChallenge)context.Envelope.Message;
 
@@ -58,7 +58,7 @@ namespace Internal.Generated.WolverineHandlers
                 System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Daily.Application.GenerateDailyChallengeHandler");
                 
                 // The actual message execution
-                var outgoing1 = await InSeconds.Api.Modules.Daily.Application.GenerateDailyChallengeHandler.Handle(generateDailyChallenge, efDailyStore, efTrackDirectory, trackUsage, _trackSelector, _optionsMonitorOfDailyOptions, _loggerForMessage, cancellation).ConfigureAwait(false);
+                var outgoing1 = await InSeconds.Api.Modules.Daily.Application.GenerateDailyChallengeHandler.Handle(generateDailyChallenge, efDailyStore, efTrackDirectory, dailyTrackUsage, _trackSelector, _optionsMonitorOfDailyOptions, _loggerForMessage, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

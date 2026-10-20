@@ -17,15 +17,12 @@ public sealed class EfCatalogueStore(InSecondsDbContext db) : ICatalogueStore
     public Task<bool> DeezerIdTakenAsync(long deezerTrackId, int? exceptTrackId, CancellationToken ct) =>
         db.Set<Track>().AnyAsync(t => t.DeezerTrackId == deezerTrackId && t.Id != exceptTrackId, ct);
 
-    public async Task<IReadOnlyList<Track>> ListRefreshCandidatesAsync(IReadOnlyCollection<int> excludedTrackIds, CancellationToken ct)
-    {
-        var excluded = excludedTrackIds.ToArray();
-        return await db.Set<Track>()
-            .Where(t => t.DisabledAt == null && !excluded.Contains(t.Id))
+    public async Task<IReadOnlyList<Track>> ListRefreshCandidatesAsync(CancellationToken ct) =>
+        await db.Set<Track>()
+            .Where(t => t.DisabledAt == null)
             .OrderBy(t => t.Id)
             .AsNoTracking()
             .ToListAsync(ct);
-    }
 
     // Une requête par morceau (ExecuteUpdate, validée tout de suite) : pas de transaction ouverte pendant les pauses du
     // contrôle, et une ligne supprimée entre-temps (0 ligne touchée) ne fait perdre aucun autre résultat.

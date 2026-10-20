@@ -1,14 +1,23 @@
 using InSeconds.Api.Infrastructure.Persistence;
 using InSeconds.Api.Modules.Catalogue.Contracts;
-using InSeconds.Api.Modules.Daily.Contracts;
+using InSeconds.Api.Modules.Daily.Application;
 using InSeconds.Api.Modules.Daily.Domain;
+using InSeconds.Api.Modules.Players.Contracts;
 using Microsoft.EntityFrameworkCore;
 
 namespace InSeconds.Api.Modules.Daily.Persistence;
 
-public sealed class EfPlayerGameData(InSecondsDbContext db, ITrackDirectory tracks) : IPlayerGameData
+/// <summary>
+/// Le Daily comme contributeur aux droits d'un joueur (RGPD) : sa section « daily » de la copie de ses données, et l'effacement de sa série et de
+/// ses parties. Appelé par Players dans sa propre transaction.
+/// </summary>
+public sealed class DailyPlayerData(InSecondsDbContext db, ITrackDirectory tracks) : IPlayerDataContributor
 {
-    public async Task<PlayerGameExport> ExportAsync(Guid playerId, CancellationToken ct)
+    public const string ModuleName = "daily";
+
+    public string Module => ModuleName;
+
+    public async Task<object> ExportAsync(Guid playerId, CancellationToken ct)
     {
         var streak = await db.Set<DailyStreak>().AsNoTracking()
             .Where(s => s.PlayerId == playerId)
@@ -40,7 +49,7 @@ public sealed class EfPlayerGameData(InSecondsDbContext db, ITrackDirectory trac
                 row.Challenge.Date, row.Session.Status.ToString(), row.Session.StartedAt, row.Session.EndedAt, row.Session.TotalScore, answers);
         }).ToList();
 
-        return new PlayerGameExport(streak, games);
+        return new DailyDataExport(streak, games);
     }
 
     // Exécuté tout de suite, dans la transaction de l'appelant. Les réponses partent avec leur partie (clé étrangère en cascade).

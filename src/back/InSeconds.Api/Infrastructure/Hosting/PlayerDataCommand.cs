@@ -5,8 +5,6 @@ using InSeconds.Api.Infrastructure.Settings;
 using InSeconds.Api.Modules.Catalogue.Application;
 using InSeconds.Api.Modules.Catalogue.Contracts;
 using InSeconds.Api.Modules.Catalogue.Persistence;
-using InSeconds.Api.Modules.Daily.Contracts;
-using InSeconds.Api.Modules.Daily.Persistence;
 using InSeconds.Api.Modules.Players.Application;
 using InSeconds.Api.Modules.Players.Domain;
 using InSeconds.Api.Modules.Players.Persistence;
@@ -49,7 +47,7 @@ public static class PlayerDataCommand
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection manquante.");
 
-        // La base, les réglages (modèle d'adresse des pochettes) et ce que les deux modules exposent pour les droits d'un joueur : ni
+        // La base, les réglages (modèle d'adresse des pochettes) et ce que chaque mode contribue aux droits d'un joueur : ni
         // serveur, ni Wolverine, ni Hangfire. Le cache de validation des cookies vit dans le processus de l'API, pas ici : un appareil
         // supprimé y est refusé au plus une minute plus tard.
         builder.AddDatabaseSettings(connectionString);
@@ -57,7 +55,8 @@ public static class PlayerDataCommand
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddOptions<CatalogueOptions>().BindConfiguration(CatalogueOptions.Section);
         builder.Services.AddScoped<ITrackDirectory, EfTrackDirectory>();
-        builder.Services.AddScoped<IPlayerGameData, EfPlayerGameData>();
+        // Les contributeurs des modes, enregistrés comme dans l'API (une seule liste, ApiComposition).
+        builder.Services.AddPlayerDataContributors();
         builder.Services.AddScoped<IPlayerStore, EfPlayerStore>();
         builder.Services.AddScoped<IPlayerQueries, EfPlayerQueries>();
         builder.Services.AddSingleton<IDeviceSessionValidationCache, NoValidationCache>();
@@ -93,7 +92,7 @@ public static class PlayerDataCommand
             var writer = output ?? Console.Out;
             await writer.WriteLineAsync(JsonSerializer.Serialize(export, Json).AsMemory(), cancellationToken);
             await writer.FlushAsync(cancellationToken);
-            logger.LogInformation("Joueur {PlayerId} exporté : {Games} partie(s), {Devices} appareil(s)", account.PlayerId, export.Games.Count, export.Devices.Count);
+            logger.LogInformation("Joueur {PlayerId} exporté : {Modules} mode(s), {Devices} appareil(s)", account.PlayerId, export.Modules.Count, export.Devices.Count);
             return 0;
         }
 
