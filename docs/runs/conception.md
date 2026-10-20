@@ -188,6 +188,8 @@ L'interrupteur « Platines » de l'onglet Joueurs lit `GET /api/admin/runs/acces
 
 **Rang Deezer.** `TrackInfo` (contrat Catalogue) expose `DeezerRank`.
 
+**Pool admin (P1b).** Le pool est commun à tous les modes, l'onglet ne montre que le catalogue : compteur neutre, `isUsed` (calculé par le back, jamais déduit côté front d'un compteur propre à un mode), pastilles par mode ayant joué le morceau. Un sélecteur horizontal défilant (Pool · Daily · Run) donne la vue de chaque mode, en lecture, lue dans `usages[]` de la même réponse ; un mode se déclare dans l'admin par une entrée de registre, donc ajouter Runs ne change pas le Pool. `ITrackUsage` porte le nom de son mode, Catalogue garde le détail par mode en plus de l'agrégat.
+
 **Contrôle nocturne.** `catalogue-refresh` contrôle tout le pool jouable, plus seulement les morceaux hors cooldown : un run tire n'importe quel morceau. Environ 800 morceaux en lots de 10 toutes les 1,5 s, soit 2 min, dans le quota Deezer (piège 16).
 
 **Tests d'architecture.** Les règles écrites pour « Daily » (`UnNoyau_NeVoitDUnModeQueSesContracts`, `CatalogueEtGameplay_NeConnaissentPasDaily`, la liste interdite de Gameplay) deviennent « un mode » (Daily et Runs) ; plus `DailyEtRuns_NeSeVoientPas`.
