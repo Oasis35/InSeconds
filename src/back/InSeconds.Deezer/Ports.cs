@@ -5,7 +5,7 @@ namespace InSeconds.Deezer;
 /// difficulté du mode Runs ; <see cref="PreviewUrl"/> est vide quand Deezer n'a pas d'extrait.
 /// </summary>
 public sealed record DeezerTrack(
-    long DeezerTrackId, string Artist, string Title, string? PreviewUrl, string? CoverHash, int? ReleaseYear, int? Rank, long? AlbumId = null);
+    long DeezerTrackId, string Artist, string Title, string? PreviewUrl, string? CoverHash, int? ReleaseYear, int? Rank, long? AlbumId);
 
 /// <summary>Un genre musical de Deezer (identifiant et nom). Un album peut en avoir plusieurs, ou aucun.</summary>
 public sealed record DeezerGenre(long Id, string Name);

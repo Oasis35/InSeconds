@@ -62,8 +62,16 @@ public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger) 
                 return error.Code == NoDataErrorCode ? new AlbumLookup.NotFound() : new AlbumLookup.Unavailable();
             }
 
+            // Une réponse sans champ « genres » (corps vide, réponse tronquée) ne dit rien de l'album : indisponible, il sera
+            // redemandé. Seule une liste présente, même vide, permet de conclure (et de ne plus le redemander).
+            if (response?.Genres is not { } genres)
+            {
+                DeezerLog.AlbumWithoutGenres(logger, albumId);
+                return new AlbumLookup.Unavailable();
+            }
+
             // Un genre sans nom ne dirait rien à l'admin : écarté.
-            return new AlbumLookup.Found(response?.Genres?.Data?
+            return new AlbumLookup.Found(genres.Data?
                 .Where(g => g.Id > 0 && !string.IsNullOrWhiteSpace(g.Name))
                 .Select(g => new DeezerGenre(g.Id, g.Name!.Trim()))
                 .ToList() ?? []);

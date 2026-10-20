@@ -6,7 +6,7 @@ namespace InSeconds.UnitTests.Catalogue;
 /// <summary>Nettoyage et déduplication de l'autocomplétion publique (v1 : <c>SearchEndpoint.CleanAndDeduplicate</c>).</summary>
 public class SearchSuggestionsTests
 {
-    private static DeezerTrack Track(string artist, string title, long id = 1) => new(id, artist, title, "p", null, null, null);
+    private static DeezerTrack Track(string artist, string title, long id = 1) => new(id, artist, title, "p", null, null, null, null);
 
     [Fact]
     public void LesVariantesParenthesees_FusionnentEnUneSeuleSuggestionNettoyee()

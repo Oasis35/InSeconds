@@ -35,4 +35,8 @@ internal static partial class DeezerLog
     [LoggerMessage(EventId = 1216, Level = LogLevel.Warning,
         Message = "Échec de la requête Deezer pour l'album {AlbumId}.")]
     public static partial void AlbumRequestFailed(ILogger logger, Exception exception, long albumId);
+
+    [LoggerMessage(EventId = 1217, Level = LogLevel.Warning,
+        Message = "Réponse Deezer sans genres pour l'album {AlbumId} : considérée comme indisponible.")]
+    public static partial void AlbumWithoutGenres(ILogger logger, long albumId);
 }

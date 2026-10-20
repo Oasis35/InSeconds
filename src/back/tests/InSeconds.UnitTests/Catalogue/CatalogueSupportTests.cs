@@ -34,9 +34,9 @@ public class CatalogueSupportTests
     [Fact]
     public void Metadonnees_ExtraitVide_EtatAbsent_ExtraitPresent_EtatDisponible()
     {
-        var withPreview = TrackMapping.ToMetadata(new DeezerTrack(1, "A", "T", "https://p.mp3", "h", 2001, 5));
-        var without = TrackMapping.ToMetadata(new DeezerTrack(2, "A", "T", "", null, null, null));
-        var missing = TrackMapping.ToMetadata(new DeezerTrack(3, "A", "T", null, null, null, null));
+        var withPreview = TrackMapping.ToMetadata(new DeezerTrack(1, "A", "T", "https://p.mp3", "h", 2001, 5, null));
+        var without = TrackMapping.ToMetadata(new DeezerTrack(2, "A", "T", "", null, null, null, null));
+        var missing = TrackMapping.ToMetadata(new DeezerTrack(3, "A", "T", null, null, null, null, null));
 
         Assert.Equal(PreviewStatus.Available, withPreview.Preview);
         Assert.Equal((short)2001, withPreview.ReleaseYear);
@@ -49,7 +49,7 @@ public class CatalogueSupportTests
     [InlineData(-5)]
     [InlineData(40_000)]
     public void Metadonnees_AnneeAbsurde_Ignoree_PlutotQueDeFairePlanterLAjout(int year) =>
-        Assert.Null(TrackMapping.ToMetadata(new DeezerTrack(1, "A", "T", "p", null, year, null)).ReleaseYear);
+        Assert.Null(TrackMapping.ToMetadata(new DeezerTrack(1, "A", "T", "p", null, year, null, null)).ReleaseYear);
 
     [Theory]
     [InlineData(PreviewStatus.Unknown, "unknown")]

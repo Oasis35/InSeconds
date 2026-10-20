@@ -71,11 +71,16 @@ public class DeezerClientTests
         Assert.Equal([new DeezerGenre(113, "Dance"), new DeezerGenre(132, "Pop")], Assert.IsType<AlbumLookup.Found>(lookup).Genres);
     }
 
+    [Fact]
+    public async Task Album_SansGenre_EstTrouveAvecUneListeVide() =>
+        Assert.Empty(Assert.IsType<AlbumLookup.Found>(await Create(Ok("""{"id":1,"title":"A","genres":{"data":[]}}""")).GetAlbumAsync(1, Ct)).Genres);
+
+    // Sans le champ « genres », la réponse ne dit rien de l'album : il ne doit pas être noté « sans genre » pour toujours.
     [Theory]
-    [InlineData("""{"id":1,"title":"A","genres":{"data":[]}}""")]
     [InlineData("""{"id":1,"title":"A"}""")]
-    public async Task Album_SansGenre_EstTrouveAvecUneListeVide(string body) =>
-        Assert.Empty(Assert.IsType<AlbumLookup.Found>(await Create(Ok(body)).GetAlbumAsync(1, Ct)).Genres);
+    [InlineData("null")]
+    public async Task Album_ReponseSansChampGenres_Indisponible_PasUnAlbumSansGenre(string body) =>
+        Assert.IsType<AlbumLookup.Unavailable>(await Create(Ok(body)).GetAlbumAsync(1, Ct));
 
     [Fact]
     public async Task Album_ErreurNoData800_AlbumSupprime_NonTrouve() =>
@@ -122,7 +127,7 @@ public class DeezerClientTests
             """)).GetTrackAsync(123, Ct);
 
         var found = Assert.IsType<TrackMetadataLookup.Found>(lookup);
-        Assert.Equal(new DeezerTrack(123, "Daft Punk", "One More Time", "https://p.mp3", "abc123def", 2000, 884273), found.Track);
+        Assert.Equal(new DeezerTrack(123, "Daft Punk", "One More Time", "https://p.mp3", "abc123def", 2000, 884273, null), found.Track);
     }
 
     [Theory]
@@ -181,7 +186,7 @@ public class DeezerClientTests
             """)).SearchAsync("a", 10, Ct);
 
         var track = Assert.Single(Assert.IsType<SearchLookup.Found>(results).Tracks);
-        Assert.Equal(new DeezerTrack(1, "A", "T", "p", null, 2001, 10), track);
+        Assert.Equal(new DeezerTrack(1, "A", "T", "p", null, 2001, 10, null), track);
     }
 
     [Theory]

@@ -86,7 +86,8 @@ public static class CatalogueSeed
             return 0;
 
         var now = time.GetUtcNow();
-        // Trois genres, répartis sur les morceaux : un sur quatre n'en a aucun (lu chez Deezer, mais album sans genre).
+        // L'album et les genres de chaque morceau sont ceux que le faux Deezer répond (FakeDeezerHandler.AlbumIdOf et GenresOf) : un contrôle
+        // nocturne lancé sur ce pool ne change rien. Les albums sans genre (un sur quatre) sont notés comme lus.
         // Un genre déjà là (les morceaux supprimés un à un par l'admin n'emportent pas les genres) est repris, pas recréé.
         var known = await db.Set<Genre>().ToDictionaryAsync(g => g.Id, ct);
         Genre GenreOf(long id, string name)
@@ -99,17 +100,15 @@ public static class CatalogueSeed
             return genre;
         }
 
-        var pop = GenreOf(132, "Pop");
-        var rap = GenreOf(116, "Rap/Hip Hop");
-        var rock = GenreOf(152, "Rock");
         var tracks = new List<Track>(Tracks.Count);
         for (var i = 0; i < Tracks.Count; i++)
         {
             var t = Tracks[i];
             var preview = t.DeezerTrackId < FakeDeezerHandler.NoPreviewFrom ? PreviewStatus.Available : PreviewStatus.Missing;
+            var albumId = FakeDeezerHandler.AlbumIdOf(t.DeezerTrackId);
             var track = Track.Create(
-                new TrackMetadata(t.DeezerTrackId, t.Artist, t.Title, t.CoverHash, ReleaseYear: (short)(1990 + i % 30), Rank: 500_000 + i, preview, AlbumId: 100 + i), now);
-            track.RecordGenres((i % 4) switch { 1 => [pop], 2 => [rap, pop], 3 => [rock], _ => [] }, now);
+                new TrackMetadata(t.DeezerTrackId, t.Artist, t.Title, t.CoverHash, ReleaseYear: (short)(1990 + i % 30), Rank: 500_000 + i, preview, albumId), now);
+            track.RecordGenres([.. FakeDeezerHandler.GenresOf(albumId).Select(g => GenreOf(g.Id, g.Name))], now);
             tracks.Add(track);
         }
 

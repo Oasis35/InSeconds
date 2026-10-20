@@ -120,7 +120,7 @@ public sealed record TrackRow(
     int Id, long DeezerTrackId, string Artist, string Title, string? CoverHash, short? ReleaseYear, int? DeezerRank,
     PreviewStatus PreviewStatus, DateTimeOffset? PreviewCheckedAt, bool IsDisabled, IReadOnlyList<string> Genres);
 
-/// <summary>Journal du module. EventId 12xx (Deezer : 1210 à 1214).</summary>
+/// <summary>Journal du module. EventId 12xx (Deezer : 1210 à 1217).</summary>
 internal static partial class CatalogueLog
 {
     [LoggerMessage(EventId = 1200, Level = LogLevel.Information,

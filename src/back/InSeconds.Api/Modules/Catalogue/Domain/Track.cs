@@ -5,7 +5,7 @@ namespace InSeconds.Api.Modules.Catalogue.Domain;
 /// <param name="Preview">L'état de l'extrait lu dans la même réponse : <see cref="PreviewStatus.Available"/> ou <see cref="PreviewStatus.Missing"/>.</param>
 /// <param name="AlbumId">L'album chez Deezer, lu dans la même réponse : c'est lui qui porte les genres du morceau.</param>
 public sealed record TrackMetadata(
-    long DeezerTrackId, string Artist, string Title, string? CoverHash, short? ReleaseYear, int? Rank, PreviewStatus Preview, long? AlbumId = null);
+    long DeezerTrackId, string Artist, string Title, string? CoverHash, short? ReleaseYear, int? Rank, PreviewStatus Preview, long? AlbumId);
 
 /// <summary>
 /// Un morceau du pool (§ 4.3 du plan v2) : ce que le jeu fait écouter, avec son extrait, son année, son rang

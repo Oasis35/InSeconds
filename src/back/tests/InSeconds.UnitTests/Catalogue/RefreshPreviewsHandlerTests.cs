@@ -47,7 +47,7 @@ public class RefreshPreviewsHandlerTests
     public async Task FlagCorrompu_EstRepare_EtLeRangMisAJour()
     {
         var track = _store.Add(1, PreviewStatus.Missing);
-        _deezer.Reply(1, new TrackMetadataLookup.Found(new DeezerTrack(1, "A", "T", "https://p.mp3", null, 2000, 321_000)));
+        _deezer.Reply(1, new TrackMetadataLookup.Found(new DeezerTrack(1, "A", "T", "https://p.mp3", null, 2000, 321_000, null)));
 
         var result = await RunAsync();
 
@@ -77,7 +77,7 @@ public class RefreshPreviewsHandlerTests
         await RunAsync();
 
         Assert.Equal([7L, 8L], _albums.Requested.Order());
-        Assert.Equal([(7L, new[] { "Pop", "Rap/Hip Hop" }), (8L, new[] { "Rock" })], _store.SavedAlbums.Select(a => (a.AlbumId, a.Genres)).Order().ToArray());
+        Assert.Equal([(7L, "Pop|Rap/Hip Hop"), (8L, "Rock")], _store.SavedAlbums.Order().ToArray());
     }
 
     [Fact]
@@ -114,7 +114,7 @@ public class RefreshPreviewsHandlerTests
 
         await RunAsync();
 
-        Assert.Equal([(7L, Array.Empty<string>())], _store.SavedAlbums.Select(a => (a.AlbumId, a.Genres)).ToArray());
+        Assert.Equal([(7L, "")], _store.SavedAlbums);
     }
 
     [Fact]
@@ -175,7 +175,7 @@ public class RefreshPreviewsHandlerTests
     public async Task ExtraitDisparuChezDeezer_MarqueAbsent()
     {
         var track = _store.Add(1, PreviewStatus.Available);
-        _deezer.Reply(1, new TrackMetadataLookup.Found(new DeezerTrack(1, "A", "T", "", null, null, null)));
+        _deezer.Reply(1, new TrackMetadataLookup.Found(new DeezerTrack(1, "A", "T", "", null, null, null, null)));
 
         var result = await RunAsync();
 
@@ -217,7 +217,7 @@ public class RefreshPreviewsHandlerTests
     public async Task EtatInchange_PasCompteCommeMisAJour()
     {
         _store.Add(1, PreviewStatus.Available);
-        _deezer.Reply(1, new TrackMetadataLookup.Found(new DeezerTrack(1, "A", "T", "https://p.mp3", null, null, null)));
+        _deezer.Reply(1, new TrackMetadataLookup.Found(new DeezerTrack(1, "A", "T", "https://p.mp3", null, null, null, null)));
 
         Assert.Equal(new PreviewRefreshResult(1, 0, 0), await RunAsync());
     }
@@ -327,7 +327,8 @@ public class RefreshPreviewsHandlerTests
 
         public List<int> SavedBatchSizes { get; } = [];
 
-        public List<(long AlbumId, string[] Genres)> SavedAlbums { get; } = [];
+        // Les genres d'un album en un seul texte (« Pop|Rock ») : un tuple compare un tableau par référence, pas par contenu.
+        public List<(long AlbumId, string Genres)> SavedAlbums { get; } = [];
 
         public List<long> SavedAlbumIdsOfTracks { get; } = [];
 
@@ -353,7 +354,7 @@ public class RefreshPreviewsHandlerTests
 
         public Task SaveAlbumGenresAsync(long albumId, IReadOnlyCollection<GenreRef> genres, DateTimeOffset now, CancellationToken ct)
         {
-            SavedAlbums.Add((albumId, [.. genres.Select(g => g.Name)]));
+            SavedAlbums.Add((albumId, string.Join("|", genres.Select(g => g.Name))));
             return Task.CompletedTask;
         }
 
@@ -413,7 +414,7 @@ public class RefreshPreviewsHandlerTests
                 _stamps.Add((deezerTrackId, time.GetUtcNow()));
             }
             return Task.FromResult(_replies.GetValueOrDefault(deezerTrackId)
-                ?? new TrackMetadataLookup.Found(new DeezerTrack(deezerTrackId, "A", "T", "https://p.mp3", null, null, null)));
+                ?? new TrackMetadataLookup.Found(new DeezerTrack(deezerTrackId, "A", "T", "https://p.mp3", null, null, null, null)));
         }
     }
 

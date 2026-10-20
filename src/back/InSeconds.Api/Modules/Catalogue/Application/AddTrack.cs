@@ -16,7 +16,7 @@ public sealed class AddTrackValidator : AbstractValidator<AddTrack>
 
 /// <summary>Ce que l'ajout a trouvé : un doublon (sans appeler Deezer), ou la réponse de Deezer.</summary>
 /// <param name="Album">Les genres de l'album du morceau, lus tout de suite (un appel de plus) : absents, le contrôle nocturne les rattrape.</param>
-public sealed record TrackToAdd(bool Duplicate, TrackMetadataLookup? Lookup, AlbumLookup? Album = null);
+public sealed record TrackToAdd(bool Duplicate, TrackMetadataLookup? Lookup, AlbumLookup? Album);
 
 public static class AddTrackEndpoint
 {
@@ -24,7 +24,7 @@ public static class AddTrackEndpoint
         AddTrack request, ICatalogueStore store, ITrackMetadataSource deezer, IAlbumSource albums, CancellationToken ct)
     {
         if (await store.DeezerIdTakenAsync(request.DeezerTrackId, null, ct))
-            return new TrackToAdd(true, null);
+            return new TrackToAdd(true, null, null);
 
         var lookup = await deezer.GetTrackAsync(request.DeezerTrackId, ct);
         // Le genre se lit sur l'album : un second appel, seulement si le morceau est trouvé et qu'il a un album. Une réponse Deezer

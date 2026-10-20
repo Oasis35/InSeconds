@@ -9,7 +9,7 @@ public class TrackTests
     private static readonly DateTimeOffset T1 = T0.AddHours(1);
 
     private static Track NewTrack(PreviewStatus preview = PreviewStatus.Available, int? rank = 400_000) =>
-        Track.Create(new TrackMetadata(123, "Daft Punk", "One More Time", "abc123", 2000, rank, preview), T0);
+        Track.Create(new TrackMetadata(123, "Daft Punk", "One More Time", "abc123", 2000, rank, preview, null), T0);
 
     // ---------- Création ----------
 
@@ -56,7 +56,7 @@ public class TrackTests
     [InlineData("Artiste", "  ")]
     public void Creation_NomVide_Refusee(string artist, string title) =>
         Assert.Throws<ArgumentException>(() =>
-            Track.Create(new TrackMetadata(1, artist, title, null, null, null, PreviewStatus.Available), T0));
+            Track.Create(new TrackMetadata(1, artist, title, null, null, null, PreviewStatus.Available, null), T0));
 
     // ---------- Extrait : l'état ne change que sur une réponse de Deezer (piège 16) ----------
 
@@ -113,7 +113,7 @@ public class TrackTests
     [Fact]
     public void Controle_DepuisInconnu_EstUnChangement()
     {
-        var track = Track.Create(new TrackMetadata(1, "A", "T", null, null, null, PreviewStatus.Unknown), T0);
+        var track = Track.Create(new TrackMetadata(1, "A", "T", null, null, null, PreviewStatus.Unknown, null), T0);
 
         Assert.Null(track.PreviewCheckedAt);
         Assert.True(track.RecordPreviewCheck(PreviewCheck.Missing, T1));
@@ -296,7 +296,7 @@ public class TrackTests
     {
         var track = NewTrack(PreviewStatus.Missing, rank: 1);
 
-        track.ReplaceDeezerSource(new TrackMetadata(456, "Justice", "D.A.N.C.E.", "zzz", 2007, 250_000, PreviewStatus.Available), T1);
+        track.ReplaceDeezerSource(new TrackMetadata(456, "Justice", "D.A.N.C.E.", "zzz", 2007, 250_000, PreviewStatus.Available, null), T1);
 
         Assert.Equal(456, track.DeezerTrackId);
         Assert.Equal("Justice", track.Artist);
