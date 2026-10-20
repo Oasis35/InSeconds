@@ -40,7 +40,7 @@ L'implémentation de l'interface reste dans la partie privée du module (souvent
 | `ITrackUsage` | Catalogue | `EfTrackUsage` **dans Daily**, puis un par mode ajouté | Catalogue (`ITrackPoolUsage` : agrège tous les modes, suppression d'un morceau jamais utilisé) |
 | `TrackRound`, `RoundOutcome`, ports d'indice et de correction | Gameplay | Gameplay | Daily |
 | `IStreakGrants` | Daily | `DailyStreakGrants` | Players, à la création d'un compte (`AccountSignIn`) |
-| `IPlayerDataContributor` | Players | `DailyPlayerData` **dans Daily**, puis un par mode ajouté | Players (export et effacement d'un compte, section `modules.<mode>`), commandes `--export-player` / `--delete-player` |
+| `IPlayerDataContributor` | Players | `DailyPlayerData` **dans Daily**, puis un par mode ajouté, enregistrés en un seul endroit (`ApiComposition.AddPlayerDataContributors`, partagé par l'API et les commandes de secours) | Players (export et effacement d'un compte, section `modules.<mode>`), commandes `--export-player` / `--delete-player` |
 
 Exemple : `IPlayerSessions.GetStatusAsync` renvoie un `DeviceSessionStatus(IsActive, IsAdmin, LastSeenAt)`. L'authentification n'a pas besoin de savoir qu'il existe une table `players.device_sessions`, une colonne `revoked_at` ou une suppression du joueur : elle reçoit juste « actif ou pas ». Si Players change ses tables, l'authentification ne bouge pas.
 

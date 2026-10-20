@@ -5,9 +5,7 @@ using InSeconds.Api.Infrastructure.Settings;
 using InSeconds.Api.Modules.Catalogue.Application;
 using InSeconds.Api.Modules.Catalogue.Contracts;
 using InSeconds.Api.Modules.Catalogue.Persistence;
-using InSeconds.Api.Modules.Daily.Persistence;
 using InSeconds.Api.Modules.Players.Application;
-using InSeconds.Api.Modules.Players.Contracts;
 using InSeconds.Api.Modules.Players.Domain;
 using InSeconds.Api.Modules.Players.Persistence;
 
@@ -57,8 +55,8 @@ public static class PlayerDataCommand
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddOptions<CatalogueOptions>().BindConfiguration(CatalogueOptions.Section);
         builder.Services.AddScoped<ITrackDirectory, EfTrackDirectory>();
-        // Un contributeur par mode : le Daily seul aujourd'hui, chaque mode ajouté plus tard s'enregistre ici aussi.
-        builder.Services.AddScoped<IPlayerDataContributor, DailyPlayerData>();
+        // Les contributeurs des modes, enregistrés comme dans l'API (une seule liste, ApiComposition).
+        builder.Services.AddPlayerDataContributors();
         builder.Services.AddScoped<IPlayerStore, EfPlayerStore>();
         builder.Services.AddScoped<IPlayerQueries, EfPlayerQueries>();
         builder.Services.AddSingleton<IDeviceSessionValidationCache, NoValidationCache>();

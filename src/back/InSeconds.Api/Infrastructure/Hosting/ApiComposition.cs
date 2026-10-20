@@ -59,8 +59,17 @@ public static class ApiComposition
         builder.Services.AddCatalogue();
         builder.Services.AddGameplay();
         builder.Services.AddDaily();
+        builder.Services.AddPlayerDataContributors();
         return builder;
     }
+
+    /// <summary>
+    /// Ce que chaque mode de jeu contribue aux droits d'un joueur (RGPD) : une ligne par mode. Seul endroit où ils s'enregistrent, partagé
+    /// par l'API et par les commandes de secours <c>--export-player</c> / <c>--delete-player</c> : un mode ajouté ici est dans les deux, un
+    /// mode oublié n'est dans aucun (et <c>PlayerDataTests</c> le voit).
+    /// </summary>
+    public static IServiceCollection AddPlayerDataContributors(this IServiceCollection services) =>
+        services.AddDailyPlayerData();
 
     public static WebApplication UseInSecondsApi(this WebApplication app)
     {

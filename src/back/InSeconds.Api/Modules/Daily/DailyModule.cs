@@ -39,8 +39,13 @@ public static class DailyModule
         // Fige les statistiques de l'avant-veille (§ 5.4 bis). Tourne aussi en staging : elle n'appelle pas Deezer.
         services.AddScheduledJob<DailyCloseDayJob>(DailyCloseDayJob.Id, DailyCloseDayJob.DefaultCron);
         services.AddScoped<IStreakGrants, DailyStreakGrants>();
-        // La copie et l'effacement des données de jeu d'un joueur (ses droits RGPD) : Daily est un contributeur de Players, comme le sera Runs.
-        services.AddScoped<IPlayerDataContributor, DailyPlayerData>();
         return services;
     }
+
+    /// <summary>
+    /// La copie et l'effacement des données de jeu d'un joueur (ses droits RGPD) : Daily est un contributeur de Players. Enregistré par
+    /// <c>ApiComposition.AddPlayerDataContributors</c>, partagé par l'API et la commande de secours, jamais par <see cref="AddDaily"/>.
+    /// </summary>
+    public static IServiceCollection AddDailyPlayerData(this IServiceCollection services) =>
+        services.AddScoped<IPlayerDataContributor, DailyPlayerData>();
 }
