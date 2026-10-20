@@ -1,6 +1,5 @@
 import { Provider } from '@angular/core';
 import { DeezerResult, PoolTrack } from '../../domain/pool-track';
-import { poolTrack } from '../../domain/testing/pool-track.fixture';
 import { CatalogueApi } from '../catalogue.api';
 
 /** Erreur telle que la lève le client NSwag quand l'API répond par un `ProblemDetails` (cf. `toAppError`). */
@@ -9,7 +8,7 @@ export function problem(status: number, code: string, traceId = '0123456789abcde
 }
 
 /** Un morceau du pool pour les tests (cf. `PoolTrackFixture`). */
-export { poolTrack };
+export { poolTrack } from '../../domain/testing/pool-track.fixture';
 
 export function deezerResult(overrides: Partial<DeezerResult> = {}): DeezerResult {
   return { deezerTrackId: 42, artist: 'E2E Artist', title: 'E2E Track', previewUrl: 'https://preview/42.mp3', ...overrides };
