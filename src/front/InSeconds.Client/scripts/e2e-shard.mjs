@@ -58,7 +58,7 @@ const specs = readdirSync(SPECS)
 
 const jobs = Array.from({ length: total }, () => ({ load: 0, files: [] }));
 for (const file of specs) {
-  const lightest = jobs.reduce((min, job) => (job.load < min.load ? job : min));
+  const lightest = jobs.reduce((min, job) => (job.load < min.load ? job : min), jobs[0]);
   lightest.load += weightOf(file);
   lightest.files.push(`e2e/specs/${file}`);
 }
