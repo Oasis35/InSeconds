@@ -11,6 +11,7 @@ public static class CatalogueErrorCodes
     public const string TrackInUse = "catalogue.track_in_use";
     public const string TrackInTodayChallenge = "catalogue.track_in_today_challenge";
     public const string DuplicateDeezerId = "catalogue.duplicate_deezer_id";
+    public const string ConcurrentAdd = "catalogue.concurrent_add";
     public const string NotFoundOnDeezer = "catalogue.not_found_on_deezer";
     public const string DeezerUnavailable = "catalogue.deezer_unavailable";
 }
@@ -25,6 +26,9 @@ internal static class CatalogueProblems
 
     public static ProblemDetails TrackInTodayChallenge() =>
         ApiProblem.Of(StatusCodes.Status409Conflict, CatalogueErrorCodes.TrackInTodayChallenge, "Ce morceau est dans le défi du jour : désactivable à partir de demain.");
+
+    public static ProblemDetails ConcurrentAdd() =>
+        ApiProblem.Of(StatusCodes.Status409Conflict, CatalogueErrorCodes.ConcurrentAdd, "Un autre ajout écrit les mêmes genres : réessaie.");
 
     public static ProblemDetails DuplicateDeezerId() =>
         ApiProblem.Of(StatusCodes.Status409Conflict, CatalogueErrorCodes.DuplicateDeezerId, "Un morceau du pool a déjà cet identifiant Deezer.");
@@ -71,9 +75,11 @@ public sealed record TrackSummary(
 /// <param name="PreviewStatus"><c>unknown</c>, <c>available</c> ou <c>missing</c>.</param>
 /// <param name="IsUsed">Un mode au moins l'a joué (ou le déclare utilisé) : ni suppression ni actualisation (409 <c>catalogue.track_in_use</c>).</param>
 /// <param name="Usages">Un élément par mode qui a quelque chose à dire du morceau, dans l'ordre d'enregistrement des modes.</param>
+/// <param name="Genres">Les genres de l'album du morceau (noms), vides tant qu'ils ne sont pas lus ou si l'album n'en a pas.</param>
 public sealed record TrackListItem(
     int Id, long DeezerTrackId, string Artist, string Title, string? CoverUrl, int? ReleaseYear, int? Rank,
-    string PreviewStatus, DateTimeOffset? PreviewCheckedAt, bool IsDisabled, bool IsUsed, IReadOnlyList<TrackModeUsage> Usages);
+    string PreviewStatus, DateTimeOffset? PreviewCheckedAt, bool IsDisabled, bool IsUsed, IReadOnlyList<TrackModeUsage> Usages,
+    IReadOnlyList<string> Genres);
 
 /// <summary>L'usage d'un morceau par un mode.</summary>
 /// <param name="Mode">Nom stable du mode (<c>daily</c>).</param>
@@ -96,7 +102,7 @@ internal static class TrackMapping
     /// <summary>L'état de l'extrait et l'identité d'un morceau lus chez Deezer, tels que le pool les garde.</summary>
     public static TrackMetadata ToMetadata(InSeconds.Deezer.DeezerTrack track) => new(
         track.DeezerTrackId, track.Artist, track.Title, track.CoverHash, ToYear(track.ReleaseYear), track.Rank,
-        string.IsNullOrEmpty(track.PreviewUrl) ? PreviewStatus.Missing : PreviewStatus.Available);
+        string.IsNullOrEmpty(track.PreviewUrl) ? PreviewStatus.Missing : PreviewStatus.Available, track.AlbumId);
 
     // La colonne est un smallint : une année absurde est ignorée plutôt que de faire échouer l'ajout.
     private static short? ToYear(int? year) => year is >= 1 and <= short.MaxValue ? (short)year.Value : null;
@@ -112,14 +118,18 @@ public interface ICatalogueQueries
 /// <summary>Un morceau tel que la base le lit, avant d'y joindre son usage.</summary>
 public sealed record TrackRow(
     int Id, long DeezerTrackId, string Artist, string Title, string? CoverHash, short? ReleaseYear, int? DeezerRank,
-    PreviewStatus PreviewStatus, DateTimeOffset? PreviewCheckedAt, bool IsDisabled);
+    PreviewStatus PreviewStatus, DateTimeOffset? PreviewCheckedAt, bool IsDisabled, IReadOnlyList<string> Genres);
 
-/// <summary>Journal du module. EventId 12xx (Deezer : 1210 à 1214).</summary>
+/// <summary>Journal du module. EventId 12xx (Deezer : 1210 à 1217).</summary>
 internal static partial class CatalogueLog
 {
     [LoggerMessage(EventId = 1200, Level = LogLevel.Information,
         Message = "Contrôle des previews : aucun morceau à vérifier.")]
     public static partial void NothingToRefresh(ILogger logger);
+
+    [LoggerMessage(EventId = 1202, Level = LogLevel.Information,
+        Message = "Genres des albums : {Albums} album(s) lu(s), {Failed} échec(s) Deezer (rattrapés à la prochaine exécution).")]
+    public static partial void GenresRefreshed(ILogger logger, int albums, int failed);
 
     [LoggerMessage(EventId = 1201, Level = LogLevel.Information,
         Message = "Contrôle des previews terminé : {CheckedCount} morceaux vérifiés, {Updated} état(s) de preview changé(s), {Failed} échec(s) Deezer (états conservés).")]

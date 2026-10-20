@@ -63,6 +63,10 @@ export class AdminPage {
     return this.page.locator('select').filter({ hasText: 'Tous les statuts' });
   }
 
+  poolFilterGenre(): Locator {
+    return this.page.locator('select').filter({ hasText: 'Tous les genres' });
+  }
+
   poolFilterPlayedBy(): Locator {
     return this.page.locator('select').filter({ hasText: 'Joué par : tous' });
   }

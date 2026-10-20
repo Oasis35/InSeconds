@@ -9,7 +9,7 @@ public class TrackTests
     private static readonly DateTimeOffset T1 = T0.AddHours(1);
 
     private static Track NewTrack(PreviewStatus preview = PreviewStatus.Available, int? rank = 400_000) =>
-        Track.Create(new TrackMetadata(123, "Daft Punk", "One More Time", "abc123", 2000, rank, preview), T0);
+        Track.Create(new TrackMetadata(123, "Daft Punk", "One More Time", "abc123", 2000, rank, preview, null), T0);
 
     // ---------- Création ----------
 
@@ -56,7 +56,7 @@ public class TrackTests
     [InlineData("Artiste", "  ")]
     public void Creation_NomVide_Refusee(string artist, string title) =>
         Assert.Throws<ArgumentException>(() =>
-            Track.Create(new TrackMetadata(1, artist, title, null, null, null, PreviewStatus.Available), T0));
+            Track.Create(new TrackMetadata(1, artist, title, null, null, null, PreviewStatus.Available, null), T0));
 
     // ---------- Extrait : l'état ne change que sur une réponse de Deezer (piège 16) ----------
 
@@ -113,7 +113,7 @@ public class TrackTests
     [Fact]
     public void Controle_DepuisInconnu_EstUnChangement()
     {
-        var track = Track.Create(new TrackMetadata(1, "A", "T", null, null, null, PreviewStatus.Unknown), T0);
+        var track = Track.Create(new TrackMetadata(1, "A", "T", null, null, null, PreviewStatus.Unknown, null), T0);
 
         Assert.Null(track.PreviewCheckedAt);
         Assert.True(track.RecordPreviewCheck(PreviewCheck.Missing, T1));
@@ -200,6 +200,95 @@ public class TrackTests
         Assert.Null(track.UpdatedAt);
     }
 
+    // ---------- Album et genres ----------
+
+    private static Track OnAlbum(long? albumId) =>
+        Track.Create(new TrackMetadata(1, "A", "T", null, null, null, PreviewStatus.Available, albumId), T0);
+
+    [Fact]
+    public void Creation_GardeLAlbum_SansGenreTantQuIlsNeSontPasLus()
+    {
+        var track = OnAlbum(302127);
+
+        Assert.Equal(302127, track.AlbumId);
+        Assert.Null(track.GenresCheckedAt);
+        Assert.Empty(track.Genres);
+    }
+
+    [Fact]
+    public void LesGenresLus_SontPoses_AvecLaDate_SansDoublon()
+    {
+        var track = OnAlbum(1);
+        var pop = new Genre(132, "Pop");
+
+        track.RecordGenres([pop, new Genre(132, "Pop"), new Genre(113, "Dance")], T1);
+
+        Assert.Equal([132L, 113L], track.Genres.Select(g => g.Id));
+        Assert.Equal(T1, track.GenresCheckedAt);
+    }
+
+    [Fact]
+    public void UnAlbumSansGenre_EstQuandMemeNoteCommeLu()
+    {
+        var track = OnAlbum(1);
+
+        track.RecordGenres([], T1);
+
+        Assert.Empty(track.Genres);
+        Assert.Equal(T1, track.GenresCheckedAt);
+    }
+
+    [Fact]
+    public void RelireLeMemeAlbum_GardeLesGenres()
+    {
+        var track = OnAlbum(1);
+        track.RecordGenres([new Genre(132, "Pop")], T1);
+
+        track.RecordAlbum(1);
+        track.RecordAlbum(null);
+
+        Assert.Single(track.Genres);
+        Assert.Equal(T1, track.GenresCheckedAt);
+    }
+
+    [Fact]
+    public void UnAutreAlbum_EffaceLesGenresDeLAncien_EtLesRemetALire()
+    {
+        var track = OnAlbum(1);
+        track.RecordGenres([new Genre(132, "Pop")], T1);
+
+        track.RecordAlbum(2);
+
+        Assert.Equal(2, track.AlbumId);
+        Assert.Empty(track.Genres);
+        Assert.Null(track.GenresCheckedAt);
+    }
+
+    [Fact]
+    public void ActualiserUnMorceau_QuiChangeDAlbum_EffaceLesGenres()
+    {
+        var track = OnAlbum(1);
+        track.RecordGenres([new Genre(132, "Pop")], T1);
+
+        track.ReplaceDeezerSource(new TrackMetadata(456, "Justice", "D.A.N.C.E.", null, null, null, PreviewStatus.Available, AlbumId: 9), T1);
+
+        Assert.Equal(9, track.AlbumId);
+        Assert.Empty(track.Genres);
+        Assert.Null(track.GenresCheckedAt);
+    }
+
+    [Fact]
+    public void ActualiserUnMorceau_DuMemeAlbum_GardeLesGenres()
+    {
+        var track = OnAlbum(1);
+        track.RecordGenres([new Genre(132, "Pop")], T1);
+
+        track.ReplaceDeezerSource(new TrackMetadata(456, "Justice", "D.A.N.C.E.", null, null, null, PreviewStatus.Available, AlbumId: 1), T1);
+
+        Assert.Single(track.Genres);
+        Assert.Equal(T1, track.GenresCheckedAt);
+    }
+
     // ---------- Actualisation ----------
 
     [Fact]
@@ -207,7 +296,7 @@ public class TrackTests
     {
         var track = NewTrack(PreviewStatus.Missing, rank: 1);
 
-        track.ReplaceDeezerSource(new TrackMetadata(456, "Justice", "D.A.N.C.E.", "zzz", 2007, 250_000, PreviewStatus.Available), T1);
+        track.ReplaceDeezerSource(new TrackMetadata(456, "Justice", "D.A.N.C.E.", "zzz", 2007, 250_000, PreviewStatus.Available, null), T1);
 
         Assert.Equal(456, track.DeezerTrackId);
         Assert.Equal("Justice", track.Artist);

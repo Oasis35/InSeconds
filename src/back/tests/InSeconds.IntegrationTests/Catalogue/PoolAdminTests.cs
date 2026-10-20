@@ -281,6 +281,53 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Actualisation_VersUnAutreAlbum_RemplaceLesGenresDeLAncien()
+    {
+        // NoPreviewFrom + 1 est sur l'album 2 du faux Deezer (Rap/Hip Hop, Dance), 2002 sur l'album 3 (Rock).
+        var track = await _app.AddAsync(FakeDeezerHandler.NoPreviewFrom + 1);
+        Assert.Equal(["Dance", "Rap/Hip Hop"], Assert.Single(await _app.ListAsync()).Genres);
+
+        var response = await _app.Admin().PutAsJsonAsync($"{Tracks}/{track.Id}", new UpdateTrack(2002), Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(["Rock"], Assert.Single(await _app.ListAsync()).Genres);
+        Assert.Equal(1L, await _app.Api.ScalarAsync<long>($"SELECT count(*) FROM catalogue.track_genres WHERE track_id = {track.Id}"));
+        Assert.Equal(1L, await _app.Api.ScalarAsync<long>($"SELECT count(*) FROM catalogue.tracks WHERE id = {track.Id} AND album_id = 3 AND genres_checked_at IS NOT NULL"));
+    }
+
+    [Fact]
+    public async Task Actualisation_NouvelAlbumIndisponible_RetireQuandMemeLesGenresDeLAncien()
+    {
+        var track = await _app.AddAsync(FakeDeezerHandler.NoPreviewFrom + 1);
+        _app.Deezer.Intercept = (request, _) => Task.FromResult<HttpResponseMessage?>(
+            request.RequestUri!.AbsolutePath.StartsWith("/album/", StringComparison.Ordinal)
+                ? new HttpResponseMessage(HttpStatusCode.InternalServerError)
+                : null);
+
+        var response = await _app.Admin().PutAsJsonAsync($"{Tracks}/{track.Id}", new UpdateTrack(2002), Ct);
+
+        // Le morceau est actualisé, sans genre : le contrôle nocturne lira le nouvel album.
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Empty(Assert.Single(await _app.ListAsync()).Genres);
+        Assert.Equal(0L, await _app.Api.ScalarAsync<long>($"SELECT count(*) FROM catalogue.track_genres WHERE track_id = {track.Id}"));
+        Assert.Equal(1L, await _app.Api.ScalarAsync<long>($"SELECT count(*) FROM catalogue.tracks WHERE id = {track.Id} AND album_id = 3 AND genres_checked_at IS NULL"));
+    }
+
+    [Fact]
+    public async Task Actualisation_MemeAlbum_GardeSesGenres_SansRelireLAlbum()
+    {
+        // 1001 et 1011 sont sur l'album 2 du faux Deezer.
+        var track = await _app.AddAsync(1001);
+        _app.Deezer.Reset();
+
+        var response = await _app.Admin().PutAsJsonAsync($"{Tracks}/{track.Id}", new UpdateTrack(1011), Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(["Dance", "Rap/Hip Hop"], Assert.Single(await _app.ListAsync()).Genres);
+        Assert.DoesNotContain(_app.Deezer.Requests, r => r.StartsWith("/album/"));
+    }
+
+    [Fact]
     public async Task Actualisation_MorceauDejaUtilise_409_TrackInUse()
     {
         var track = await _app.AddAsync(FakeDeezerHandler.NoPreviewFrom + 1);
@@ -473,6 +520,73 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Empty(pool[free.Id].Usages);
     }
 
+    // ---------- Genres de l'album ----------
+
+    [Fact]
+    public async Task Ajout_LitLesGenresDeLAlbum_EtLeurIdentifiantEstCeluiDeDeezer()
+    {
+        var added = await _app.AddAsync(1001);
+
+        var listed = Assert.Single(await _app.ListAsync());
+
+        Assert.Equal(added.Id, listed.Id);
+        Assert.Equal(["Dance", "Rap/Hip Hop"], listed.Genres);
+        Assert.Equal(2L, await _app.Api.ScalarAsync<long>("SELECT count(*) FROM catalogue.genres WHERE id IN (113, 116)"));
+        Assert.Equal(2L, await _app.Api.ScalarAsync<long>($"SELECT count(*) FROM catalogue.track_genres WHERE track_id = {added.Id}"));
+        Assert.Equal(1L, await _app.Api.ScalarAsync<long>($"SELECT count(*) FROM catalogue.tracks WHERE id = {added.Id} AND album_id = 2 AND genres_checked_at IS NOT NULL"));
+        // Un appel pour le morceau, un pour son album.
+        Assert.Equal(["/album/2", "/track/1001"], _app.Deezer.Requests.Where(r => r.StartsWith("/album/") || r.StartsWith("/track/")).Order());
+    }
+
+    [Fact]
+    public async Task Ajout_DeuxMorceauxDeLaMemeAlbum_PartagentLaLigneDuGenre()
+    {
+        // 1001 et 1011 sont sur l'album 2 du faux Deezer.
+        await _app.AddAsync(1001);
+        await _app.AddAsync(1011);
+
+        var pool = await _app.ListAsync();
+
+        Assert.All(pool, t => Assert.Equal(["Dance", "Rap/Hip Hop"], t.Genres));
+        Assert.Equal(2L, await _app.Api.ScalarAsync<long>("SELECT count(*) FROM catalogue.genres"));
+        Assert.Equal(4L, await _app.Api.ScalarAsync<long>("SELECT count(*) FROM catalogue.track_genres"));
+    }
+
+    [Fact]
+    public async Task Ajout_AlbumSansGenre_EstNoteCommeLu_SansGenre()
+    {
+        // 1003 est sur l'album 4 du faux Deezer, qui n'a aucun genre.
+        var added = await _app.AddAsync(1003);
+
+        Assert.Empty(Assert.Single(await _app.ListAsync()).Genres);
+        Assert.Equal(1L, await _app.Api.ScalarAsync<long>($"SELECT count(*) FROM catalogue.tracks WHERE id = {added.Id} AND genres_checked_at IS NOT NULL"));
+    }
+
+    [Fact]
+    public async Task Ajout_AlbumIndisponible_AjouteQuandMemeLeMorceau_LesGenresSerontRattrapes()
+    {
+        _app.Deezer.Intercept = (request, _) => Task.FromResult<HttpResponseMessage?>(
+            request.RequestUri!.AbsolutePath.StartsWith("/album/", StringComparison.Ordinal)
+                ? new HttpResponseMessage(System.Net.HttpStatusCode.InternalServerError)
+                : null);
+
+        var added = await _app.AddAsync(1001);
+
+        Assert.Empty(Assert.Single(await _app.ListAsync()).Genres);
+        Assert.Equal(1L, await _app.Api.ScalarAsync<long>($"SELECT count(*) FROM catalogue.tracks WHERE id = {added.Id} AND album_id = 2 AND genres_checked_at IS NULL"));
+    }
+
+    [Fact]
+    public async Task SupprimerUnMorceau_EmporteSesLiensAuxGenres_PasLesGenres()
+    {
+        var added = await _app.AddAsync(1001);
+
+        Assert.Equal(HttpStatusCode.NoContent, (await _app.Admin().DeleteAsync($"{Tracks}/{added.Id}", Ct)).StatusCode);
+
+        Assert.Equal(0L, await _app.Api.ScalarAsync<long>("SELECT count(*) FROM catalogue.track_genres"));
+        Assert.Equal(2L, await _app.Api.ScalarAsync<long>("SELECT count(*) FROM catalogue.genres"));
+    }
+
     [Fact]
     public async Task Suppression_MorceauInconnu_404() =>
         await AssertProblemAsync(await _app.Admin().DeleteAsync($"{Tracks}/99999", Ct), HttpStatusCode.NotFound, "common.not_found");
@@ -600,9 +714,12 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
         var found = await directory.GetAsync([track.Id, 99999], Ct);
 
         var info = Assert.Single(found).Value;
-        Assert.Equal(new TrackInfo(
-            track.Id, 1001, "Daft Punk", "One More Time (Radio Edit)", "One More Time",
-            "https://cdn-images.dzcdn.net/images/cover/e2ecover1001/250x250-000000-80-0-0.jpg", 2015, 500001), info);
+        Assert.Equal(
+            (track.Id, 1001L, "Daft Punk", "One More Time (Radio Edit)", "One More Time",
+                "https://cdn-images.dzcdn.net/images/cover/e2ecover1001/250x250-000000-80-0-0.jpg", (int?)2015, (int?)500001),
+            (info.Id, info.DeezerTrackId, info.Artist, info.Title, info.DisplayTitle, info.CoverUrl, info.ReleaseYear, info.DeezerRank));
+        // L'album 2 du faux Deezer (1001 % 10 + 1) : « Rap/Hip Hop » et « Dance », par ordre alphabétique.
+        Assert.Equal(["Dance", "Rap/Hip Hop"], info.Genres);
     }
 
     [Fact]

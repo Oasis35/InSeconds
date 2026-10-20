@@ -5,7 +5,10 @@ namespace InSeconds.Deezer;
 /// difficulté du mode Runs ; <see cref="PreviewUrl"/> est vide quand Deezer n'a pas d'extrait.
 /// </summary>
 public sealed record DeezerTrack(
-    long DeezerTrackId, string Artist, string Title, string? PreviewUrl, string? CoverHash, int? ReleaseYear, int? Rank);
+    long DeezerTrackId, string Artist, string Title, string? PreviewUrl, string? CoverHash, int? ReleaseYear, int? Rank, long? AlbumId);
+
+/// <summary>Un genre musical de Deezer (identifiant et nom). Un album peut en avoir plusieurs, ou aucun.</summary>
+public sealed record DeezerGenre(long Id, string Name);
 
 /// <summary>
 /// Résultat de la recherche d'un extrait. Trois cas distincts, jamais un <c>null</c> ambigu : « Deezer n'a pas
@@ -72,8 +75,30 @@ public interface ITrackSearch
     Task<SearchLookup> SearchAsync(string query, int limit, CancellationToken ct = default);
 }
 
-/// <summary>Les informations d'un morceau (artiste, titre, pochette, année, rang, extrait) : l'état réel chez Deezer.</summary>
+/// <summary>Les informations d'un morceau (artiste, titre, pochette, année, rang, extrait, album) : l'état réel chez Deezer.</summary>
 public interface ITrackMetadataSource
 {
     Task<TrackMetadataLookup> GetTrackAsync(long deezerTrackId, CancellationToken ct = default);
+}
+
+/// <summary>Résultat de la lecture d'un album chez Deezer, avec les mêmes trois cas que <see cref="PreviewLookup"/>.</summary>
+public abstract record AlbumLookup
+{
+    private AlbumLookup()
+    {
+    }
+
+    /// <summary>Les genres de l'album, dans l'ordre de Deezer (liste vide si l'album n'en a aucun).</summary>
+    public sealed record Found(IReadOnlyList<DeezerGenre> Genres) : AlbumLookup;
+
+    /// <summary>Réponse déterminée : cet album n'existe pas (ou plus) chez Deezer.</summary>
+    public sealed record NotFound : AlbumLookup;
+
+    public sealed record Unavailable : AlbumLookup;
+}
+
+/// <summary>Les genres d'un album : le morceau n'en a pas chez Deezer, c'est l'album qui les porte.</summary>
+public interface IAlbumSource
+{
+    Task<AlbumLookup> GetAlbumAsync(long albumId, CancellationToken ct = default);
 }

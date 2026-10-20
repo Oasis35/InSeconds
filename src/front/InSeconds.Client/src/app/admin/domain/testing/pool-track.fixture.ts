@@ -21,6 +21,6 @@ export function poolTrack(overrides: PoolTrackFixture = {}): PoolTrack {
   const usages = own.usages ?? daily;
   return {
     id: 1, deezerTrackId: 1000, artist: 'Artiste', title: 'Titre', preview: 'available', isDisabled: false,
-    isUsed: usages.length > 0 || (usedByMode ?? false), usages, inTodayChallenge: inToday, ...own,
+    isUsed: usages.length > 0 || (usedByMode ?? false), usages, genres: [], inTodayChallenge: inToday, ...own,
   };
 }

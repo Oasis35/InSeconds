@@ -21,6 +21,7 @@ export const ERROR_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   'admin.pool_insufficient': 'errors.admin.pool_insufficient',
 
   // Catalogue
+  'catalogue.concurrent_add': 'errors.catalogue.concurrent_add',
   'catalogue.deezer_unavailable': 'errors.catalogue.deezer_unavailable',
   'catalogue.duplicate_deezer_id': 'errors.catalogue.duplicate_deezer_id',
   'catalogue.not_found_on_deezer': 'errors.catalogue.not_found_on_deezer',

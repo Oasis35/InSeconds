@@ -24,6 +24,8 @@ export interface PoolTrack {
   readonly isDisabled: boolean;
   readonly isUsed: boolean;
   readonly usages: readonly ModeUsage[];
+  /** Les genres de l'album du morceau (noms, par ordre alphabétique) : vides tant qu'ils ne sont pas lus chez Deezer. */
+  readonly genres: readonly string[];
   /** Dans le défi du jour d'un mode : peut être renommé (avec un avertissement) mais pas désactivé. */
   readonly inTodayChallenge: boolean;
 }

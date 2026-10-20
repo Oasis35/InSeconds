@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { PoolSort, SortColumn, isUsedIn } from '../domain/pool-filters';
+import { PoolSort, SortColumn } from '../domain/pool-filters';
 import { ModeUsage, PoolTrack, trackLabel, usageOf } from '../domain/pool-track';
 import { POOL_VIEW, modeView } from '../domain/pool-views';
 
@@ -10,22 +10,20 @@ interface Column {
   readonly widthClass?: string;
 }
 
-const ARTIST_TITLE_PREVIEW: readonly Column[] = [
+/** Le pool général : le morceau, son genre, son extrait, son statut et les modes qui l'ont joué (pastilles). */
+const POOL_COLUMNS: readonly Column[] = [
   { column: 'artist', labelKey: 'admin.pool.colArtist' },
   { column: 'title', labelKey: 'admin.pool.colTitle' },
+  { column: 'genre', labelKey: 'admin.pool.colGenre' },
   { column: 'preview', labelKey: 'admin.pool.colPreview', widthClass: 'w-28' },
-];
-
-/** Le pool général : le morceau et les modes qui l'ont joué (pastilles). */
-const POOL_COLUMNS: readonly Column[] = [
-  ...ARTIST_TITLE_PREVIEW,
+  { column: 'status', labelKey: 'admin.pool.colStatus', widthClass: 'w-24' },
   { column: 'usage', labelKey: 'admin.pool.colUsage' },
 ];
 
-/** La vue d'un mode : ce que ce mode en a fait (dernier jour, déblocage, apparitions). */
+/** La vue d'un mode : le morceau et ce que ce mode en a fait (dernier jour, déblocage, apparitions), sans extrait ni statut. */
 const MODE_COLUMNS: readonly Column[] = [
-  ...ARTIST_TITLE_PREVIEW,
-  { column: 'status', labelKey: 'admin.pool.colStatus', widthClass: 'w-24' },
+  { column: 'artist', labelKey: 'admin.pool.colArtist' },
+  { column: 'title', labelKey: 'admin.pool.colTitle' },
   { column: 'lastUsedDate', labelKey: 'admin.pool.colLastUsed', widthClass: 'w-28' },
   { column: 'unlockDate', labelKey: 'admin.pool.colUnlockDate', widthClass: 'w-28' },
   { column: 'usageCount', labelKey: 'admin.pool.colUsageCount', widthClass: 'w-20' },
@@ -115,43 +113,42 @@ const MODE_COLUMNS: readonly Column[] = [
                   </td>
                   <td class="px-3 py-2.5 font-medium max-w-[130px] truncate" [class.opacity-50]="t.isDisabled" style="color:var(--text-hi)">{{ t.artist }}</td>
                   <td class="px-3 py-2.5 max-w-[150px] truncate" [class.opacity-50]="t.isDisabled" style="color:var(--text-muted)">{{ t.title }}</td>
-                  <td class="px-3 py-2.5">
-                    @if (t.preview === 'available') {
-                      <span class="inline-flex items-center gap-1 text-xs font-medium" style="color:var(--color-success)">
-                        <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background:var(--color-success)"></span> {{ 'admin.pool.ok' | translate }}
-                      </span>
-                    } @else if (t.preview === 'missing') {
-                      <span class="inline-flex items-center gap-1 text-xs font-medium" style="color:var(--color-fail)">
-                        <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background:var(--color-fail)"></span> {{ 'admin.pool.previewMissing' | translate }}
-                      </span>
-                    }
-                  </td>
                   @if (isPool()) {
+                    <td class="px-3 py-2.5 max-w-[140px] truncate" [class.opacity-50]="t.isDisabled" style="color:var(--text-muted)"
+                      [title]="t.genres.join(', ')" data-testid="genres">{{ t.genres.join(', ') }}</td>
+                    <td class="px-3 py-2.5">
+                      @if (t.preview === 'available') {
+                        <span class="inline-flex items-center gap-1 text-xs font-medium" style="color:var(--color-success)">
+                          <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background:var(--color-success)"></span> {{ 'admin.pool.ok' | translate }}
+                        </span>
+                      } @else if (t.preview === 'missing') {
+                        <span class="inline-flex items-center gap-1 text-xs font-medium" style="color:var(--color-fail)">
+                          <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background:var(--color-fail)"></span> {{ 'admin.pool.previewMissing' | translate }}
+                        </span>
+                      }
+                    </td>
+                    <td class="px-3 py-2.5">
+                      @if (t.isDisabled) {
+                        <span class="text-xs px-2 py-0.5 rounded-full whitespace-nowrap" style="color:var(--color-fail);background:var(--bg-inactive)">{{ 'admin.pool.disabled' | translate }}</span>
+                      } @else if (t.isUsed) {
+                        <span class="text-xs px-2 py-0.5 rounded-full" style="color:var(--text-muted);background:var(--bg-inactive)">{{ 'admin.pool.used' | translate }}</span>
+                      } @else {
+                        <span class="text-xs px-2 py-0.5 rounded-full" style="color:var(--text-indigo);background:rgb(var(--rgb-violet) / 0.12)">{{ 'admin.pool.available' | translate }}</span>
+                      }
+                    </td>
                     <td class="px-3 py-2.5">
                       <div class="flex flex-wrap items-center gap-1" data-testid="usage-badges">
-                        @if (t.isDisabled) {
-                          <span class="text-xs px-2 py-0.5 rounded-full whitespace-nowrap" style="color:var(--color-fail);background:var(--bg-inactive)">{{ 'admin.pool.disabled' | translate }}</span>
-                        }
                         @for (usage of t.usages; track usage.mode) {
                           <span class="text-xs px-2 py-0.5 rounded-full whitespace-nowrap" data-testid="usage-badge"
                             style="color:var(--text-indigo);background:rgb(var(--rgb-violet) / 0.12)">{{ modeLabelKey(usage) | translate }}</span>
                         }
-                        @if (!t.isUsed && !t.isDisabled) {
+                        @if (!t.isUsed) {
                           <span class="text-xs" style="color:var(--text-muted)">{{ 'admin.pool.neverPlayed' | translate }}</span>
                         }
                       </div>
                     </td>
                   } @else {
                     @let usage = usageIn(t);
-                    <td class="px-3 py-2.5">
-                      @if (t.isDisabled) {
-                        <span class="text-xs px-2 py-0.5 rounded-full whitespace-nowrap" style="color:var(--color-fail);background:var(--bg-inactive)">{{ 'admin.pool.disabled' | translate }}</span>
-                      } @else if (isUsedHere(t)) {
-                        <span class="text-xs px-2 py-0.5 rounded-full" style="color:var(--text-muted);background:var(--bg-inactive)">{{ 'admin.pool.used' | translate }}</span>
-                      } @else {
-                        <span class="text-xs px-2 py-0.5 rounded-full" style="color:var(--text-indigo);background:rgb(var(--rgb-violet) / 0.12)">{{ 'admin.pool.available' | translate }}</span>
-                      }
-                    </td>
                     <td class="px-3 py-2.5" style="color:var(--text-muted)">{{ usage?.lastUsedDate ?? '' }}</td>
                     <td class="px-3 py-2.5" style="color:var(--text-muted)">{{ usage?.unlockDate ?? '' }}</td>
                     <td class="px-3 py-2.5" style="color:var(--text-muted)">{{ usage?.usageCount ?? 0 }}</td>
@@ -217,10 +214,6 @@ export class PoolTableComponent {
   /** Ce que le mode de la vue dit du morceau. */
   protected usageIn(track: PoolTrack): ModeUsage | null {
     return usageOf(track, this.view());
-  }
-
-  protected isUsedHere(track: PoolTrack): boolean {
-    return isUsedIn(track, this.view());
   }
 
   /** Le libellé d'un mode : celui du registre, sinon son nom tel que le back le donne. */

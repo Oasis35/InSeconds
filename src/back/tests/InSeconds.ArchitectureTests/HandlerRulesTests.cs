@@ -27,6 +27,9 @@ public class HandlerRulesTests
         "InSeconds.Api.Infrastructure.Settings.SettingsStore.SetAsync",
         // Reprise d'un cookie v1 par le middleware de transition, hors handler : l'appareil ouvert va dans le cookie.
         "InSeconds.Api.Modules.Players.Persistence.EfPlayerSessions.OpenFromLegacyTokenAsync",
+        // Contrôle nocturne des genres (catalogue-refresh, NonTransactional : plusieurs minutes de lots espacés) : un album à la fois, son
+        // propre enregistrement, jamais une transaction ouverte pendant les pauses.
+        "InSeconds.Api.Modules.Catalogue.Persistence.EfCatalogueStore.SaveAlbumGenresAsync",
         // Commande en ligne --freeze-day-stats : ni serveur ni Wolverine, une transaction par jour.
         "InSeconds.Api.Infrastructure.Hosting.FreezeDayStatsCommand.CloseOneAsync",
     ];

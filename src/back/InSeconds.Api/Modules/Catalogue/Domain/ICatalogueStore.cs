@@ -1,5 +1,8 @@
 namespace InSeconds.Api.Modules.Catalogue.Domain;
 
+/// <summary>Un genre tel que Deezer le donne : son identifiant (celui de Deezer) et son nom.</summary>
+public sealed record GenreRef(long Id, string Name);
+
 /// <summary>
 /// Écritures du module Catalogue, et les lectures qui les précèdent. Rien n'est enregistré ici : dans un
 /// handler Wolverine, la transaction est appliquée par Wolverine (<c>AutoApplyTransactions</c>).
@@ -14,6 +17,9 @@ public interface ICatalogueStore
     /// <summary>Le morceau, suivi pour être modifié.</summary>
     Task<Track?> FindAsync(int id, CancellationToken ct);
 
+    /// <summary>Le morceau avec ses genres, suivi pour être modifié : ce qu'il faut pour remplacer ses genres.</summary>
+    Task<Track?> FindWithGenresAsync(int id, CancellationToken ct);
+
     /// <summary>Cet identifiant Deezer est déjà celui d'un morceau (hors <paramref name="exceptTrackId"/>).</summary>
     Task<bool> DeezerIdTakenAsync(long deezerTrackId, int? exceptTrackId, CancellationToken ct);
 
@@ -25,8 +31,21 @@ public interface ICatalogueStore
     Task<IReadOnlyList<Track>> ListRefreshCandidatesAsync(CancellationToken ct);
 
     /// <summary>
-    /// Enregistre tout de suite (sa propre requête, pas la transaction d'un handler) l'état de l'extrait et le rang de
-    /// ces morceaux. Un morceau supprimé entre-temps est ignoré. Renvoie les identifiants réellement enregistrés.
+    /// Les genres de ces références, prêts à être posés sur un morceau suivi : un genre déjà là est repris (son nom remis à jour s'il a
+    /// changé), les autres sont ajoutés et enregistrés avec la transaction du handler.
+    /// </summary>
+    Task<IReadOnlyList<Genre>> EnsureGenresAsync(IReadOnlyCollection<GenreRef> genres, CancellationToken ct);
+
+    /// <summary>
+    /// Enregistre tout de suite (son propre <c>SaveChanges</c>, pas la transaction d'un handler) les genres d'un album pour **tous** les morceaux du pool qui
+    /// en font partie, et note qu'ils ont été lus (liste vide : l'album n'en a pas, ou n'existe plus : ils ne seront pas redemandés).
+    /// </summary>
+    Task SaveAlbumGenresAsync(long albumId, IReadOnlyCollection<GenreRef> genres, DateTimeOffset now, CancellationToken ct);
+
+    /// <summary>
+    /// Enregistre tout de suite (sa propre requête, pas la transaction d'un handler) l'état de l'extrait, le rang et l'album de
+    /// ces morceaux. Un morceau supprimé entre-temps est ignoré. Un morceau dont les genres sont à relire (il a changé d'album) perd
+    /// ceux de l'ancien. Renvoie les identifiants réellement enregistrés.
     /// </summary>
     Task<IReadOnlySet<int>> SaveRefreshedAsync(IReadOnlyCollection<Track> tracks, CancellationToken ct);
 }

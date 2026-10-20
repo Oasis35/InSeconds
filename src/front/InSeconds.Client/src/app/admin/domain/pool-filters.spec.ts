@@ -27,9 +27,10 @@ describe('filterTracks', () => {
     expect(filterTracks(all, filters({ text: '  Nicki Minaj Starships ' }))).toEqual([nicki]);
   });
 
-  it('distingue disponible, utilisé et désactivé', () => {
+  it('distingue disponible, utilisé et désactivé, comme la colonne Statut (désactivé d\'abord)', () => {
     expect(filterTracks(all, filters({ status: 'available' }))).toEqual([nicki]);
-    expect(filterTracks(all, filters({ status: 'used' }))).toEqual([eminem, queen]);
+    // Queen a servi mais est désactivé : la colonne dit « Désactivé », il n'est donc pas listé parmi les utilisés.
+    expect(filterTracks(all, filters({ status: 'used' }))).toEqual([eminem]);
     expect(filterTracks(all, filters({ status: 'disabled' }))).toEqual([queen]);
   });
 
@@ -45,7 +46,8 @@ describe('filterTracks', () => {
   });
 
   it('combine les filtres', () => {
-    expect(filterTracks(all, filters({ status: 'used', preview: 'ok', text: 'queen' }))).toEqual([queen]);
+    expect(filterTracks(all, filters({ status: 'used', preview: 'ok', text: 'eminem' }))).toEqual([eminem]);
+    expect(filterTracks(all, filters({ status: 'disabled', preview: 'ok', text: 'queen' }))).toEqual([queen]);
     expect(filterTracks(all, filters({ status: 'available', text: 'queen' }))).toEqual([]);
   });
 
@@ -187,5 +189,30 @@ describe('vues par mode', () => {
 
   it('a des filtres actifs dès que « joué par » est choisi', () => {
     expect(hasActiveFilters(filters({ playedBy: 'daily' }))).toBe(true);
+  });
+});
+
+describe('genres', () => {
+  const pop = track({ id: 1, artist: 'Dua Lipa', genres: ['Pop'] });
+  const hiphop = track({ id: 2, artist: 'Eminem', genres: ['Dance', 'Rap/Hip Hop'] });
+  const none = track({ id: 3, artist: 'Inconnu' });
+
+  it('filtre sur un genre exact, parmi ceux de l\'album', () => {
+    expect(filterTracks([pop, hiphop, none], filters({ genre: 'Pop' })).map(t => t.id)).toEqual([1]);
+    expect(filterTracks([pop, hiphop, none], filters({ genre: 'Dance' })).map(t => t.id)).toEqual([2]);
+    expect(filterTracks([pop, hiphop, none], filters({ genre: '' }))).toHaveLength(3);
+  });
+
+  it('un morceau sans genre lu n\'apparaît sous aucun genre', () => {
+    expect(filterTracks([none], filters({ genre: 'Pop' }))).toEqual([]);
+  });
+
+  it('a un filtre actif dès qu\'un genre est choisi', () => {
+    expect(hasActiveFilters(filters({ genre: 'Pop' }))).toBe(true);
+  });
+
+  it('trie par genre, les morceaux sans genre en dernier', () => {
+    expect(sortTracks([none, hiphop, pop], { column: 'genre', direction: 'asc' }).map(t => t.id)).toEqual([2, 1, 3]);
+    expect(sortTracks([none, hiphop, pop], { column: 'genre', direction: 'desc' }).map(t => t.id)).toEqual([1, 2, 3]);
   });
 });

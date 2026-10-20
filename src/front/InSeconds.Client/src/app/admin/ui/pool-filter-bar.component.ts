@@ -6,10 +6,10 @@ import { MODE_VIEWS, POOL_VIEW } from '../domain/pool-views';
 const FIELD_STYLE = 'background:var(--bg-surface);color:var(--text-light)';
 
 /**
- * Filtres du tableau : texte (artiste, titre, ou les deux collés), état de l'extrait et, selon la vue, le statut. Dans
- * la vue générale : « Joué par » (tous, aucun mode, ou un mode) et les désactivés. Dans la vue d'un mode : disponible
- * ou utilisé par ce mode, et la plage de dernière utilisation. Chaque champ a son libellé (masqué à l'écran, lu par les
- * lecteurs d'écran).
+ * Filtres du tableau, un par colonne affichée : le texte (artiste, titre, ou les deux collés) dans les deux vues. Dans la vue
+ * générale : le genre, l'état de l'extrait, le statut (disponible, utilisé, désactivé, comme la colonne Statut) et « Joué par »
+ * (tous, aucun mode, ou un mode). Dans la vue d'un mode, qui n'a ni Preview ni Statut : la plage de dernière utilisation.
+ * Chaque champ a son libellé (masqué à l'écran, lu par les lecteurs d'écran).
  */
 @Component({
   selector: 'app-pool-filter-bar',
@@ -24,15 +24,33 @@ const FIELD_STYLE = 'background:var(--bg-surface);color:var(--text-light)';
         class="flex-1 min-w-36 text-sm rounded-lg px-3 py-1.5 outline-none"
         style="background:var(--bg-surface);color:var(--text-hi)" />
 
-      <label for="pool-filter-preview" class="sr-only">{{ 'admin.pool.allPreviews' | translate }}</label>
-      <select id="pool-filter-preview" [value]="filters().preview" (change)="previewChange.emit($any($event.target).value)"
-        class="text-sm rounded-lg px-3 py-1.5 outline-none cursor-pointer" [style]="fieldStyle">
-        <option value="all">{{ 'admin.pool.allPreviews' | translate }}</option>
-        <option value="ok">{{ 'admin.pool.previewOk' | translate }}</option>
-        <option value="missing">{{ 'admin.pool.previewMissing' | translate }}</option>
-      </select>
-
       @if (isPool()) {
+        <label for="pool-filter-genre" class="sr-only">{{ 'admin.pool.allGenres' | translate }}</label>
+        <select id="pool-filter-genre" [value]="filters().genre" (change)="genreChange.emit($any($event.target).value)"
+          class="text-sm rounded-lg px-3 py-1.5 outline-none cursor-pointer" [style]="fieldStyle">
+          <option value="">{{ 'admin.pool.allGenres' | translate }}</option>
+          @for (genre of genres(); track genre) {
+            <option [value]="genre">{{ genre }}</option>
+          }
+        </select>
+
+        <label for="pool-filter-preview" class="sr-only">{{ 'admin.pool.allPreviews' | translate }}</label>
+        <select id="pool-filter-preview" [value]="filters().preview" (change)="previewChange.emit($any($event.target).value)"
+          class="text-sm rounded-lg px-3 py-1.5 outline-none cursor-pointer" [style]="fieldStyle">
+          <option value="all">{{ 'admin.pool.allPreviews' | translate }}</option>
+          <option value="ok">{{ 'admin.pool.previewOk' | translate }}</option>
+          <option value="missing">{{ 'admin.pool.previewMissing' | translate }}</option>
+        </select>
+
+        <label for="pool-filter-status" class="sr-only">{{ 'admin.pool.allStatuses' | translate }}</label>
+        <select id="pool-filter-status" [value]="filters().status" (change)="statusChange.emit($any($event.target).value)"
+          class="text-sm rounded-lg px-3 py-1.5 outline-none cursor-pointer" [style]="fieldStyle">
+          <option value="all">{{ 'admin.pool.allStatuses' | translate }}</option>
+          <option value="available">{{ 'admin.pool.available' | translate }}</option>
+          <option value="used">{{ 'admin.pool.used' | translate }}</option>
+          <option value="disabled">{{ 'admin.pool.disabledFilter' | translate }}</option>
+        </select>
+
         <label for="pool-filter-played-by" class="sr-only">{{ 'admin.pool.allPlayedBy' | translate }}</label>
         <select id="pool-filter-played-by" [value]="filters().playedBy" (change)="playedByChange.emit($any($event.target).value)"
           class="text-sm rounded-lg px-3 py-1.5 outline-none cursor-pointer" [style]="fieldStyle">
@@ -43,17 +61,6 @@ const FIELD_STYLE = 'background:var(--bg-surface);color:var(--text-light)';
           }
         </select>
       }
-
-      <label for="pool-filter-status" class="sr-only">{{ 'admin.pool.allStatuses' | translate }}</label>
-      <select id="pool-filter-status" [value]="filters().status" (change)="statusChange.emit($any($event.target).value)"
-        class="text-sm rounded-lg px-3 py-1.5 outline-none cursor-pointer" [style]="fieldStyle">
-        <option value="all">{{ 'admin.pool.allStatuses' | translate }}</option>
-        @if (!isPool()) {
-          <option value="available">{{ 'admin.pool.available' | translate }}</option>
-          <option value="used">{{ 'admin.pool.used' | translate }}</option>
-        }
-        <option value="disabled">{{ 'admin.pool.disabledFilter' | translate }}</option>
-      </select>
 
       @if (!isPool()) {
         <label for="pool-filter-lastused-from" class="sr-only">{{ 'admin.pool.lastUsedFrom' | translate }}</label>
@@ -81,10 +88,13 @@ export class PoolFilterBarComponent {
   readonly filters = input.required<PoolFilters>();
   /** La vue affichée : `pool`, ou l'identifiant d'un mode. */
   readonly view = input<string>(POOL_VIEW);
+  /** Les genres que le pool contient, de quoi proposer le filtre « Genre ». */
+  readonly genres = input<readonly string[]>([]);
 
   readonly textChange = output<string>();
   readonly previewChange = output<PreviewFilter>();
   readonly playedByChange = output<string>();
+  readonly genreChange = output<string>();
   readonly statusChange = output<StatusFilter>();
   readonly lastUsedFromChange = output<string>();
   readonly lastUsedToChange = output<string>();

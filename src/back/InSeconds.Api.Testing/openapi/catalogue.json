@@ -658,7 +658,8 @@
           "previewCheckedAt",
           "isDisabled",
           "isUsed",
-          "usages"
+          "usages",
+          "genres"
         ],
         "type": "object",
         "properties": {
@@ -716,6 +717,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TrackModeUsage"
+            }
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
             }
           }
         }

@@ -32,6 +32,8 @@ namespace Internal.Generated.WolverineHandlers
             var inSecondsDbContext = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>(serviceScope.ServiceProvider);
             var efCatalogueStore = new InSeconds.Api.Modules.Catalogue.Persistence.EfCatalogueStore(inSecondsDbContext);
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
+            var albumSource = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Deezer.IAlbumSource>(serviceScope.ServiceProvider);
+            // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var trackMetadataSource = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Deezer.ITrackMetadataSource>(serviceScope.ServiceProvider);
             // The actual message body
             var refreshPreviews = (InSeconds.Api.Modules.Catalogue.Application.RefreshPreviews)context.Envelope.Message;
@@ -40,7 +42,7 @@ namespace Internal.Generated.WolverineHandlers
             System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Catalogue.Application.RefreshPreviewsHandler");
             
             // The actual message execution
-            var outgoing1 = await InSeconds.Api.Modules.Catalogue.Application.RefreshPreviewsHandler.Handle(refreshPreviews, efCatalogueStore, trackMetadataSource, _timeProvider, _optionsMonitorOfRefreshOptions, _loggerForMessage, cancellation).ConfigureAwait(false);
+            var outgoing1 = await InSeconds.Api.Modules.Catalogue.Application.RefreshPreviewsHandler.Handle(refreshPreviews, efCatalogueStore, trackMetadataSource, albumSource, _timeProvider, _optionsMonitorOfRefreshOptions, _loggerForMessage, cancellation).ConfigureAwait(false);
 
             
             // Outgoing, cascaded message

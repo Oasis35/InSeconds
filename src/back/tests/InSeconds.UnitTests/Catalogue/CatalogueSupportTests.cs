@@ -34,9 +34,9 @@ public class CatalogueSupportTests
     [Fact]
     public void Metadonnees_ExtraitVide_EtatAbsent_ExtraitPresent_EtatDisponible()
     {
-        var withPreview = TrackMapping.ToMetadata(new DeezerTrack(1, "A", "T", "https://p.mp3", "h", 2001, 5));
-        var without = TrackMapping.ToMetadata(new DeezerTrack(2, "A", "T", "", null, null, null));
-        var missing = TrackMapping.ToMetadata(new DeezerTrack(3, "A", "T", null, null, null, null));
+        var withPreview = TrackMapping.ToMetadata(new DeezerTrack(1, "A", "T", "https://p.mp3", "h", 2001, 5, null));
+        var without = TrackMapping.ToMetadata(new DeezerTrack(2, "A", "T", "", null, null, null, null));
+        var missing = TrackMapping.ToMetadata(new DeezerTrack(3, "A", "T", null, null, null, null, null));
 
         Assert.Equal(PreviewStatus.Available, withPreview.Preview);
         Assert.Equal((short)2001, withPreview.ReleaseYear);
@@ -49,7 +49,7 @@ public class CatalogueSupportTests
     [InlineData(-5)]
     [InlineData(40_000)]
     public void Metadonnees_AnneeAbsurde_Ignoree_PlutotQueDeFairePlanterLAjout(int year) =>
-        Assert.Null(TrackMapping.ToMetadata(new DeezerTrack(1, "A", "T", "p", null, year, null)).ReleaseYear);
+        Assert.Null(TrackMapping.ToMetadata(new DeezerTrack(1, "A", "T", "p", null, year, null, null)).ReleaseYear);
 
     [Theory]
     [InlineData(PreviewStatus.Unknown, "unknown")]
@@ -65,6 +65,15 @@ public class CatalogueSupportTests
         Assert.Equal(CatalogueErrorCodes.DuplicateDeezerId, Code(UniqueViolation(TrackConfiguration.DeezerIdIndex)));
 
     [Fact]
+    public void DeuxAjoutsQuiEcriventLeMemeGenreNeuf_ConflitADeReessayer()
+    {
+        var problem = TrackConflictExceptionHandler.ProblemFor(UniqueViolation(GenreConfiguration.PrimaryKey));
+
+        Assert.Equal(CatalogueErrorCodes.ConcurrentAdd, problem?.Extensions["code"]?.ToString());
+        Assert.Equal(409, problem?.Status);
+    }
+
+    [Fact]
     public void AutreIndexUnique_PasPourCeGestionnaire() =>
         Assert.Null(TrackConflictExceptionHandler.ProblemFor(UniqueViolation("ix_accounts_pseudo")));
 
@@ -78,6 +87,7 @@ public class CatalogueSupportTests
         Assert.Equal("catalogue.track_in_use", CatalogueErrorCodes.TrackInUse);
         Assert.Equal("catalogue.track_in_today_challenge", CatalogueErrorCodes.TrackInTodayChallenge);
         Assert.Equal("catalogue.duplicate_deezer_id", CatalogueErrorCodes.DuplicateDeezerId);
+        Assert.Equal("catalogue.concurrent_add", CatalogueErrorCodes.ConcurrentAdd);
         Assert.Equal("catalogue.not_found_on_deezer", CatalogueErrorCodes.NotFoundOnDeezer);
         Assert.Equal("catalogue.deezer_unavailable", CatalogueErrorCodes.DeezerUnavailable);
     }

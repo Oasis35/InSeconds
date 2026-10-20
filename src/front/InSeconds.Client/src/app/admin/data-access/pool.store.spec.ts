@@ -33,7 +33,8 @@ describe('PoolStore', () => {
 
       expect(store.isFulfilled()).toBe(true);
       expect(store.tracks()).toHaveLength(4);
-      expect(store.availableCount()).toBe(2);
+      // Un désactivé ne compte ni parmi les disponibles ni parmi les utilisés : les trois compteurs font le total, comme la colonne Statut.
+      expect(store.availableCount()).toBe(1);
       expect(store.usedCount()).toBe(2);
       expect(store.disabledCount()).toBe(1);
     });
@@ -395,6 +396,24 @@ describe('PoolStore', () => {
       expect(store.view()).toBe('pool');
       expect(store.filters().text).toBe('Eminem Lose Yourself');
       expect(store.filtered().map(t => t.id)).toEqual([1]);
+    });
+
+    it('liste les genres du pool, sans doublon, par ordre alphabétique', async () => {
+      await setup([
+        poolTrack({ id: 1, genres: ['Rap/Hip Hop', 'Dance'] }),
+        poolTrack({ id: 2, genres: ['Pop', 'Dance'] }),
+        poolTrack({ id: 3 }),
+      ]);
+
+      expect(store.genres()).toEqual(['Dance', 'Pop', 'Rap/Hip Hop']);
+    });
+
+    it('filtre par genre', async () => {
+      await setup([poolTrack({ id: 1, genres: ['Pop'] }), poolTrack({ id: 2, genres: ['Rock'] }), poolTrack({ id: 3 })]);
+
+      store.setGenre('Rock');
+
+      expect(store.filtered().map(t => t.id)).toEqual([2]);
     });
 
     it('compte les morceaux sans extrait', async () => {

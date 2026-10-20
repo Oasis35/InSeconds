@@ -57,6 +57,7 @@ test.describe('Admin — pool', () => {
     await expect(page.getByRole('columnheader', { name: 'Artiste' })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Titre' })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Preview' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Statut' })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Joué par' })).toBeVisible();
     // Le pool général est celui de tous les modes : aucune colonne propre au Daily.
     await expect(page.getByRole('columnheader', { name: /Dernière utilisation/ })).toHaveCount(0);
@@ -83,15 +84,60 @@ test.describe('Admin — pool', () => {
     await expect(page.getByRole('cell', { name: 'Manquante' })).toHaveCount(5);
   });
 
-  test('vue Daily : le filtre statut "Disponible" masque les morceaux utilisés', async ({ page }) => {
+  test('pool général : colonne Genre (celui de l\'album) et filtre par genre', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
     await page.getByRole('link', { name: /^Pool/ }).click();
-    await admin.poolView('Daily').click();
+    await expect(page.getByRole('columnheader', { name: 'Genre' })).toBeVisible();
+
+    // Le seed range les morceaux sous les albums du faux Deezer : Pop, Rap/Hip Hop et Dance, Rock, ou aucun genre.
+    await admin.poolFilterGenre().selectOption({ label: 'Rock' });
+
+    await expect(page.getByTestId('genres').first()).toHaveText('Rock');
+    const genres = await page.getByTestId('genres').allTextContents();
+    expect(genres.length).toBeGreaterThan(0);
+    expect(genres.every(genre => genre.includes('Rock'))).toBe(true);
+  });
+
+  test('filtres alignés sur les colonnes : « Disponible » du pool général, vue Daily sans Preview ni Statut', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('link', { name: /^Pool/ }).click();
+
+    // Pool général : « Disponible » écarte les morceaux utilisés (Coldplay est dans un défi du seed), garde les autres.
     await admin.poolFilterStatus().selectOption('available');
-    await expect(page.getByRole('cell', { name: 'Utilisé' })).not.toBeVisible();
-    await expect(page.getByRole('cell', { name: 'Disponible' }).first()).toBeVisible();
+    await admin.poolSearchInput().fill('Coldplay');
+    await expect(admin.poolRow('Coldplay')).not.toBeVisible();
+    await admin.poolSearchInput().fill('Michael Jackson');
+    await expect(admin.poolRow('Michael Jackson')).toBeVisible();
+
+    // Vue Daily : ni colonne ni filtre Preview, Statut ou Genre ; la recherche et les dates de dernière utilisation restent.
+    await admin.poolView('Daily').click();
+    await expect(page.getByRole('columnheader', { name: 'Statut' })).toHaveCount(0);
+    await expect(page.getByRole('columnheader', { name: 'Preview' })).toHaveCount(0);
+    await expect(admin.poolFilterStatus()).toHaveCount(0);
+    await expect(admin.poolFilterPreview()).toHaveCount(0);
+    await expect(admin.poolFilterGenre()).toHaveCount(0);
+    await expect(page.locator('#pool-filter-lastused-from')).toBeVisible();
+  });
+
+  test('la vue du pool est dans l\'adresse : ?view=daily se rouvre au rechargement', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('link', { name: /^Pool/ }).click();
+    await expect(page).not.toHaveURL(/view=/);
+
+    await admin.poolView('Daily').click();
+    await expect(page).toHaveURL(/view=daily/);
+    await page.reload();
+
+    await expect(admin.poolView('Daily')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('columnheader', { name: 'Dernière utilisation' })).toBeVisible();
+    await admin.poolView('Pool').click();
+    await expect(page).not.toHaveURL(/view=/);
   });
 
   test('pool général : « Joué par » ne garde que les morceaux d\'un mode, ou aucun', async ({ page }) => {
@@ -261,20 +307,20 @@ test.describe('Admin — pool', () => {
     await expect(admin.poolColumnHeader('Date de déblocage')).toBeVisible();
     await expect(admin.poolColumnHeader('Nb. utilisations')).toBeVisible();
 
-    // Colonnes de la vue Daily (en lecture seule, sans case à cocher) : 0=Actions, 1=Artiste, 2=Titre,
-    // 3=Preview, 4=Statut, 5=Dernière utilisation, 6=Date de déblocage, 7=Nb. utilisations.
+    // Colonnes de la vue Daily (en lecture seule, sans case à cocher, sans Preview ni Statut) : 0=Actions, 1=Artiste, 2=Titre,
+    // 3=Dernière utilisation, 4=Date de déblocage, 5=Nb. utilisations.
     // Le pool des E2E a 50 morceaux jouables : 75 % du pool, 5 par défi, soit 7 jours de cooldown, sous le seuil d'alerte.
     await expect(page.getByTestId('pool-cooldown')).toHaveText('cooldown 7 j');
     // Queen (index 16 du seed) a été mise en cooldown récent (-5j, 7 j de cooldown) : dates non vides.
     await admin.poolSearchInput().fill('Queen');
     const queenRow = admin.poolRow('Queen');
-    await expect(queenRow.getByRole('cell').nth(5)).not.toHaveText('');
-    await expect(queenRow.getByRole('cell').nth(6)).not.toHaveText('');
+    await expect(queenRow.getByRole('cell').nth(3)).not.toHaveText('');
+    await expect(queenRow.getByRole('cell').nth(4)).not.toHaveText('');
 
     // Michael Jackson (index 15) n'a jamais été utilisé : date de déblocage vide.
     await admin.poolSearchInput().fill('Michael Jackson');
     const mjRow = admin.poolRow('Michael Jackson');
-    await expect(mjRow.getByRole('cell').nth(6)).toHaveText('');
+    await expect(mjRow.getByRole('cell').nth(4)).toHaveText('');
   });
 
   test('vue Daily : filtre par plage de dates sur la dernière utilisation', async ({ page }) => {

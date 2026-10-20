@@ -106,36 +106,45 @@ describe('PoolTableComponent', () => {
   });
 
   describe('colonnes', () => {
-    it('pool général : sélection, actions, artiste, titre, extrait, usage (aucune date)', () => {
+    it('pool général : sélection, actions, artiste, titre, genre, extrait, statut, usage (aucune date)', () => {
       const { row, element } = render([track({ lastUsedDate: '2026-10-05', unlockDate: '2026-11-04', usageCount: 3 })]);
 
       const cells = Array.from(row().querySelectorAll('td')).map(td => td.textContent?.trim());
       expect(cells[2]).toBe('Artiste');
       expect(cells[3]).toBe('Titre');
-      expect(cells).toHaveLength(6);
+      expect(cells).toHaveLength(8);
+      expect(cells[6]).toContain('admin.pool.used');
       expect(element.textContent).not.toContain('2026-10-05');
     });
 
-    it('vue d\'un mode : ce que le mode en dit, sans case à cocher ni suppression', () => {
+    it('pool général : les genres de l\'album, séparés par une virgule, vides tant qu\'ils ne sont pas lus', () => {
+      const { row } = render([track({ genres: ['Dance', 'Rap/Hip Hop'] }), track({ id: 2 })]);
+
+      expect(row(0).querySelector('[data-testid="genres"]')?.textContent?.trim()).toBe('Dance, Rap/Hip Hop');
+      expect(row(1).querySelector('[data-testid="genres"]')?.textContent?.trim()).toBe('');
+    });
+
+    it('vue d\'un mode : ce que le mode en dit, sans extrait, statut, genre, case à cocher ni suppression', () => {
       const { row, button } = render([track({ lastUsedDate: '2026-10-05', unlockDate: '2026-11-04', usageCount: 3 })], { view: 'daily' });
 
       const cells = Array.from(row().querySelectorAll('td')).map(td => td.textContent?.trim());
+      expect(cells).toHaveLength(6);
       expect(cells[1]).toBe('Artiste');
-      expect(cells[5]).toBe('2026-10-05');
-      expect(cells[6]).toBe('2026-11-04');
-      expect(cells[7]).toBe('3');
+      expect(cells[3]).toBe('2026-10-05');
+      expect(cells[4]).toBe('2026-11-04');
+      expect(cells[5]).toBe('3');
       expect(row().querySelector('input[type="checkbox"]')).toBeNull();
       expect(button(row(), '✎')).toBeUndefined();
       expect(button(row(), '🗑')).toBeUndefined();
     });
 
-    it('vue d\'un mode : dates vides et « disponible » pour un morceau que ce mode n\'a pas joué', () => {
+    it('vue d\'un mode : dates vides et zéro apparition pour un morceau que ce mode n\'a pas joué', () => {
       const { row } = render([track()], { view: 'daily' });
 
       const cells = Array.from(row().querySelectorAll('td')).map(td => td.textContent?.trim());
-      expect(cells[4]).toContain('admin.pool.available');
-      expect(cells[5]).toBe('');
-      expect(cells[6]).toBe('');
+      expect(cells[3]).toBe('');
+      expect(cells[4]).toBe('');
+      expect(cells[5]).toBe('0');
     });
 
     it('vue d\'un mode : « ↗ » demande à ouvrir le morceau dans le pool', () => {
@@ -151,8 +160,8 @@ describe('PoolTableComponent', () => {
     it('montre l\'état de l\'extrait, rien tant qu\'il n\'a pas été contrôlé', () => {
       const { row } = render([track({ preview: 'missing' }), track({ id: 2, preview: 'unknown' })]);
 
-      expect(row(0).querySelectorAll('td')[4].textContent).toContain('admin.pool.previewMissing');
-      expect(row(1).querySelectorAll('td')[4].textContent?.trim()).toBe('');
+      expect(row(0).querySelectorAll('td')[5].textContent).toContain('admin.pool.previewMissing');
+      expect(row(1).querySelectorAll('td')[5].textContent?.trim()).toBe('');
     });
 
     it('émet la colonne triée et indique le sens', () => {

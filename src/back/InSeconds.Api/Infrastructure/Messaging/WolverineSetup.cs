@@ -48,6 +48,7 @@ public static class WolverineSetup
         opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Deezer.IPreviewProvider>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Deezer.ITrackSearch>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Deezer.ITrackMetadataSource>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Deezer.IAlbumSource>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Deezer.CachedTrackSearch>();
         // L'usage des morceaux est fourni par chaque mode (plusieurs ITrackUsage enregistrés) et réuni par Catalogue : le code généré ne peut pas
         // construire cette réunion lui-même, il la demande au conteneur ; le tirage du Daily demande de même son propre port.
