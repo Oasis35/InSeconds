@@ -35,7 +35,7 @@ Angular, CDK, NgRx, ngx-translate, Tailwind, Vitest et Sheriff sont épinglés �
 ```
 src/front/InSeconds.Client/
 ├── sheriff.config.ts          # frontières (cf. plus bas)
-├── scripts/check-pure-domain.mjs
+├── scripts/check-pure-domain.mjs, e2e-shard.mjs (répartition des E2E entre les jobs de la CI)
 ├── nswag/{players,catalogue,daily,admin}.nswag.json   # génération des clients NSwag (un fichier par module)
 ├── ngsw-config.json           # service worker : fichiers du front seulement, aucun dataGroups (S10)
 ├── proxy.conf.json            # dev : /api, /health, /jobs → http://localhost:5175
@@ -124,7 +124,7 @@ Sheriff ne vérifie que les fichiers atteignables depuis `src/main.ts` (routes c
 
 ## E2E
 
-**31 specs Playwright, 126 tests** (`e2e/specs/`, page objects dans `e2e/pages/`, fixtures dans `e2e/fixtures/`), joués contre l'hôte de test (`InSeconds.Api.Testing`, faux Deezer, faux email, routes `/api/e2e/*`). Ports : API de test sur **5175** en CI / **5177** en local, front sur **5176** en CI / **5178** en local (configurations `ng serve` `e2e-ci`/`e2e`, `proxy.e2e*.conf.json`, `environment.e2e.ts`). `serviceWorkers: 'block'` dans `playwright.config.ts` (E12). En local, `playwright.config.ts` démarre l'hôte de test (avec `--no-launch-profile`, sinon `launchSettings.json` impose `Development`, piège 9) et `ng serve` ; la base E2E se passe par `E2E_DB_CONNECTION` (chaîne de connexion complète, jamais commitée — Sonar S2068). Le job CI `e2e` les lance tous ; aucune liste de specs désactivés, aucun `test.fixme`.
+**31 specs Playwright, 126 tests** (`e2e/specs/`, page objects dans `e2e/pages/`, fixtures dans `e2e/fixtures/`), joués contre l'hôte de test (`InSeconds.Api.Testing`, faux Deezer, faux email, routes `/api/e2e/*`). Ports : API de test sur **5175** en CI / **5177** en local, front sur **5176** en CI / **5178** en local (configurations `ng serve` `e2e-ci`/`e2e`, `proxy.e2e*.conf.json`, `environment.e2e.ts`). `serviceWorkers: 'block'` dans `playwright.config.ts` (E12). En local, `playwright.config.ts` démarre l'hôte de test (avec `--no-launch-profile`, sinon `launchSettings.json` impose `Development`, piège 9) et `ng serve` ; la base E2E se passe par `E2E_DB_CONNECTION` (chaîne de connexion complète, jamais commitée — Sonar S2068). En CI, 4 jobs `e2e` se partagent les specs : `scripts/e2e-shard.mjs <n> 4` donne celles du job n, réparties selon leur durée (table de poids, une spec nouvelle compte 10 s ; à remettre à jour quand l'écart entre les jobs se creuse). Toutes sont jouées ; aucune liste de specs désactivés, aucun `test.fixme`.
 
 - **Fixtures** : les boucles d'étapes séquentielles des fixtures et page objects passent par `inSequence`/`times` (`e2e/fixtures/sequence.ts`, Sonar S9382 : pas d'`await` dans une boucle).
 - **Données** : `api.reset()` **re-sème le pool** (l'hôte de test vide tout, puis `reseed`), sauf `reset({ emptyPool: true })` (tout vidé : aucun défi possible) et `reset({ deleteChallenge: true })` (le défi du jour seul est retiré, `POST /api/e2e/delete-challenge`). Les parties de l'API se jouent par position (`startGame`, `submitEmptyAnswers`). La fixture `api-client.ts` lit les liens dans le dernier email capturé (`/api/e2e/last-email`) et attend un lien différent du précédent : l'email part de l'outbox, après la réponse 204. `error-reporting.spec.ts` provoque une erreur de l'API par `GET /api/e2e/throw`.
