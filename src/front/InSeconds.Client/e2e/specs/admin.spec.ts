@@ -100,14 +100,18 @@ test.describe('Admin — pool', () => {
     await admin.login();
     await page.getByRole('link', { name: /^Pool/ }).click();
 
-    // Coldplay est dans un défi du seed, Michael Jackson n'a jamais été joué.
+    // Coldplay est dans un défi du seed, Michael Jackson n'a jamais été joué. Le texte cherché restreint la grille
+    // (paginée par 15) au morceau regardé : le filtre « Joué par » s'y combine.
     await admin.poolFilterPlayedBy().selectOption({ label: 'Joué par Daily' });
+    await admin.poolSearchInput().fill('Coldplay');
     await expect(admin.poolRow('Coldplay')).toBeVisible();
-    await expect(admin.poolRow('Michael Jackson')).not.toBeVisible();
     await expect(admin.poolRow('Coldplay').getByTestId('usage-badge')).toHaveText('Daily');
+    await admin.poolSearchInput().fill('Michael Jackson');
+    await expect(admin.poolRow('Michael Jackson')).not.toBeVisible();
 
     await admin.poolFilterPlayedBy().selectOption({ label: 'Joué par : aucun mode' });
     await expect(admin.poolRow('Michael Jackson')).toBeVisible();
+    await admin.poolSearchInput().fill('Coldplay');
     await expect(admin.poolRow('Coldplay')).not.toBeVisible();
   });
 

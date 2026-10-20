@@ -39,9 +39,9 @@ describe('filterTracks', () => {
   });
 
   it('filtre par plage de dernière utilisation, bornes incluses, sans date exclu', () => {
-    expect(filterTracks(all, filters({ lastUsedFrom: '2026-10-02', lastUsedTo: '2026-10-02' }))).toEqual([queen]);
-    expect(filterTracks(all, filters({ lastUsedFrom: '2026-10-03' }))).toEqual([eminem]);
-    expect(filterTracks(all, filters({ lastUsedTo: '2026-10-06' }))).toEqual([queen]);
+    expect(filterTracks(all, filters({ lastUsedFrom: '2026-10-02', lastUsedTo: '2026-10-02' }), 'daily')).toEqual([queen]);
+    expect(filterTracks(all, filters({ lastUsedFrom: '2026-10-03' }), 'daily')).toEqual([eminem]);
+    expect(filterTracks(all, filters({ lastUsedTo: '2026-10-06' }), 'daily')).toEqual([queen]);
   });
 
   it('combine les filtres', () => {
@@ -82,12 +82,12 @@ describe('sortTracks', () => {
   });
 
   it('trie par nombre d\'utilisations', () => {
-    expect(sortTracks([a, b, c], { column: 'usageCount', direction: 'desc' }).map(t => t.id)).toEqual([1, 3, 2]);
+    expect(sortTracks([a, b, c], { column: 'usageCount', direction: 'desc' }, 'daily').map(t => t.id)).toEqual([1, 3, 2]);
   });
 
   it('met toujours les valeurs vides en dernier, quel que soit le sens', () => {
-    expect(sortTracks([a, b, c], { column: 'lastUsedDate', direction: 'asc' }).map(t => t.id)).toEqual([1, 3, 2]);
-    expect(sortTracks([a, b, c], { column: 'lastUsedDate', direction: 'desc' }).map(t => t.id)).toEqual([3, 1, 2]);
+    expect(sortTracks([a, b, c], { column: 'lastUsedDate', direction: 'asc' }, 'daily').map(t => t.id)).toEqual([1, 3, 2]);
+    expect(sortTracks([a, b, c], { column: 'lastUsedDate', direction: 'desc' }, 'daily').map(t => t.id)).toEqual([3, 1, 2]);
   });
 
   it('met toujours les morceaux désactivés en fin de liste', () => {
