@@ -14,7 +14,7 @@ public class MigrateOnlyTests(PostgresFixture postgres)
     [Fact]
     public async Task MigrateOnly_AppliqueLesMigrationsPuisRendLaMain()
     {
-        var connectionString = await postgres.CreateDatabaseAsync();
+        var connectionString = await postgres.CreateEmptyDatabaseAsync();
 
         // Rend la main : aucun serveur HTTP ni service hébergé n'a démarré (sinon l'appel bloquerait).
         var exitCode = await MigrateOnlyCommand.RunAsync(
@@ -32,7 +32,7 @@ public class MigrateOnlyTests(PostgresFixture postgres)
     [Fact]
     public async Task MigrateOnly_RejoueSansEffet()
     {
-        var connectionString = await postgres.CreateDatabaseAsync();
+        var connectionString = await postgres.CreateEmptyDatabaseAsync();
         string[] args = [MigrateOnlyCommand.Flag, $"--ConnectionStrings:DefaultConnection={connectionString}"];
 
         await MigrateOnlyCommand.RunAsync(args, TestContext.Current.CancellationToken);

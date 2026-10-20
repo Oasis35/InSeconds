@@ -10,7 +10,7 @@ public class DatabaseTests(PostgresFixture postgres) : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        _api = new ApiFactory(await postgres.CreateDatabaseAsync());
+        _api = new ApiFactory(await postgres.CreateEmptyDatabaseAsync());
         // Le démarrage de l'API applique les migrations.
         _ = _api.Services;
     }

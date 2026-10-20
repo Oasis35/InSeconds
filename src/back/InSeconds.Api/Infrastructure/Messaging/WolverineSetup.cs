@@ -37,7 +37,10 @@ public static class WolverineSetup
         opts.Policies.UseDurableLocalQueues();
         opts.UseFluentValidation();
 
-        opts.CodeGeneration.TypeLoadMode = UsesStaticCodegen(environment) ? TypeLoadMode.Static : TypeLoadMode.Dynamic;
+        opts.CodeGeneration.TypeLoadMode = TypeLoadModeFor(environment);
+        // En test, rien n'est écrit dans Internal/Generated : seuls les handlers propres aux tests y sont compilés.
+        if (UsesPreBuiltCodeWhenPresent(environment))
+            opts.CodeGeneration.SourceCodeWritingEnabled = false;
         // Choisi au démarrage par une fabrique (Brevo, redirigé en staging, capturé en test) : le code
         // généré le demande au conteneur au lieu de le construire lui-même.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Infrastructure.Email.IEmailSender>();
@@ -52,8 +55,12 @@ public static class WolverineSetup
         // L'écriture d'un réglage recharge la source de configuration : son rechargeur est interne à l'infrastructure, le code généré ne peut pas le
         // construire. Utilisé par le réglage du cooldown de l'admin (F1).
         opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Api.Infrastructure.Settings.SettingsStore>();
-        // Compilateur à l'exécution (Wolverine 6 ne l'embarque plus), branché partout : il ne sert qu'en mode
-        // Dynamic (développement, test). En prod et en staging (Static), le code de Internal/Generated est lu tel quel.
+        // Le gel offert à la création d'un compte : les tests le remplacent (RecordingStreakGrants), et le code commité,
+        // qu'ils relisent, construirait sinon DailyStreakGrants en dur.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Api.Modules.Daily.Contracts.IStreakGrants>();
+        // Compilateur à l'exécution (Wolverine 6 ne l'embarque plus), branché partout : il compile tout en développement
+        // (Dynamic) et, en test (Auto), les seuls handlers absents d'Internal/Generated. En prod et en staging (Static),
+        // le code de Internal/Generated est lu tel quel.
         opts.UseRuntimeCompilation();
     }
 
@@ -63,6 +70,20 @@ public static class WolverineSetup
     /// </summary>
     public static bool UsesStaticCodegen(IHostEnvironment environment) =>
         environment.IsProduction() || environment.IsStaging();
+
+    /// <summary>
+    /// En test (tests d'intégration, hôte des E2E), le code de <c>Internal/Generated</c> est relu quand il existe, et seuls
+    /// les handlers absents (ceux des tests, de l'hôte de test) sont compilés au démarrage : chaque API de test recompilait
+    /// sinon tous les handlers, soit la moitié du temps de calcul de la suite. Le code commité doit donc être à jour
+    /// (vérifié par la CI) : après un changement de handler, le régénérer avant de lancer les tests.
+    /// </summary>
+    public static bool UsesPreBuiltCodeWhenPresent(IHostEnvironment environment) =>
+        environment.IsEnvironment("Testing");
+
+    private static TypeLoadMode TypeLoadModeFor(IHostEnvironment environment) =>
+        UsesStaticCodegen(environment) ? TypeLoadMode.Static
+        : UsesPreBuiltCodeWhenPresent(environment) ? TypeLoadMode.Auto
+        : TypeLoadMode.Dynamic;
 
     public static WebApplication MapInSecondsEndpoints(this WebApplication app)
     {
