@@ -15,6 +15,10 @@ public sealed class EfCatalogueStore(InSecondsDbContext db) : ICatalogueStore
     public Task<Track?> FindAsync(int id, CancellationToken ct) =>
         db.Set<Track>().FirstOrDefaultAsync(t => t.Id == id, ct);
 
+    // Les genres chargés : les remplacer (ou les vider) supprime les lignes de track_genres à l'enregistrement.
+    public Task<Track?> FindWithGenresAsync(int id, CancellationToken ct) =>
+        db.Set<Track>().Include(t => t.Genres).FirstOrDefaultAsync(t => t.Id == id, ct);
+
     public Task<bool> DeezerIdTakenAsync(long deezerTrackId, int? exceptTrackId, CancellationToken ct) =>
         db.Set<Track>().AnyAsync(t => t.DeezerTrackId == deezerTrackId && t.Id != exceptTrackId, ct);
 
@@ -87,6 +91,8 @@ public sealed class EfCatalogueStore(InSecondsDbContext db) : ICatalogueStore
 
     // Une requête par morceau (ExecuteUpdate, validée tout de suite) : pas de transaction ouverte pendant les pauses du
     // contrôle, et une ligne supprimée entre-temps (0 ligne touchée) ne fait perdre aucun autre résultat.
+    // Les morceaux lus sans leurs genres, vider la liste ne supprime rien : un morceau dont les genres sont à relire (il a changé
+    // d'album) perd ici ses lignes de track_genres, celles de l'ancien album, sans attendre que le nouveau soit lu.
     public async Task<IReadOnlySet<int>> SaveRefreshedAsync(IReadOnlyCollection<Track> tracks, CancellationToken ct)
     {
         var saved = new HashSet<int>();
@@ -110,6 +116,12 @@ public sealed class EfCatalogueStore(InSecondsDbContext db) : ICatalogueStore
             if (rows > 0)
                 saved.Add(track.Id);
         }
+
+        var stale = tracks.Where(t => t.GenresCheckedAt is null && saved.Contains(t.Id)).Select(t => t.Id).ToArray();
+        if (stale.Length > 0)
+            await db.Set<Dictionary<string, object>>(TrackConfiguration.TrackGenresTable)
+                .Where(j => stale.Contains(EF.Property<int>(j, TrackConfiguration.TrackIdColumn)))
+                .ExecuteDeleteAsync(ct);
 
         return saved;
     }

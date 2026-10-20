@@ -281,6 +281,53 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Actualisation_VersUnAutreAlbum_RemplaceLesGenresDeLAncien()
+    {
+        // NoPreviewFrom + 1 est sur l'album 2 du faux Deezer (Rap/Hip Hop, Dance), 2002 sur l'album 3 (Rock).
+        var track = await _app.AddAsync(FakeDeezerHandler.NoPreviewFrom + 1);
+        Assert.Equal(["Dance", "Rap/Hip Hop"], Assert.Single(await _app.ListAsync()).Genres);
+
+        var response = await _app.Admin().PutAsJsonAsync($"{Tracks}/{track.Id}", new UpdateTrack(2002), Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(["Rock"], Assert.Single(await _app.ListAsync()).Genres);
+        Assert.Equal(1L, await _app.Api.ScalarAsync<long>($"SELECT count(*) FROM catalogue.track_genres WHERE track_id = {track.Id}"));
+        Assert.Equal(1L, await _app.Api.ScalarAsync<long>($"SELECT count(*) FROM catalogue.tracks WHERE id = {track.Id} AND album_id = 3 AND genres_checked_at IS NOT NULL"));
+    }
+
+    [Fact]
+    public async Task Actualisation_NouvelAlbumIndisponible_RetireQuandMemeLesGenresDeLAncien()
+    {
+        var track = await _app.AddAsync(FakeDeezerHandler.NoPreviewFrom + 1);
+        _app.Deezer.Intercept = (request, _) => Task.FromResult<HttpResponseMessage?>(
+            request.RequestUri!.AbsolutePath.StartsWith("/album/", StringComparison.Ordinal)
+                ? new HttpResponseMessage(HttpStatusCode.InternalServerError)
+                : null);
+
+        var response = await _app.Admin().PutAsJsonAsync($"{Tracks}/{track.Id}", new UpdateTrack(2002), Ct);
+
+        // Le morceau est actualisé, sans genre : le contrôle nocturne lira le nouvel album.
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Empty(Assert.Single(await _app.ListAsync()).Genres);
+        Assert.Equal(0L, await _app.Api.ScalarAsync<long>($"SELECT count(*) FROM catalogue.track_genres WHERE track_id = {track.Id}"));
+        Assert.Equal(1L, await _app.Api.ScalarAsync<long>($"SELECT count(*) FROM catalogue.tracks WHERE id = {track.Id} AND album_id = 3 AND genres_checked_at IS NULL"));
+    }
+
+    [Fact]
+    public async Task Actualisation_MemeAlbum_GardeSesGenres_SansRelireLAlbum()
+    {
+        // 1001 et 1011 sont sur l'album 2 du faux Deezer.
+        var track = await _app.AddAsync(1001);
+        _app.Deezer.Reset();
+
+        var response = await _app.Admin().PutAsJsonAsync($"{Tracks}/{track.Id}", new UpdateTrack(1011), Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(["Dance", "Rap/Hip Hop"], Assert.Single(await _app.ListAsync()).Genres);
+        Assert.DoesNotContain(_app.Deezer.Requests, r => r.StartsWith("/album/"));
+    }
+
+    [Fact]
     public async Task Actualisation_MorceauDejaUtilise_409_TrackInUse()
     {
         var track = await _app.AddAsync(FakeDeezerHandler.NoPreviewFrom + 1);

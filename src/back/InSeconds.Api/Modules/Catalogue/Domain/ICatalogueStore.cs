@@ -17,6 +17,9 @@ public interface ICatalogueStore
     /// <summary>Le morceau, suivi pour être modifié.</summary>
     Task<Track?> FindAsync(int id, CancellationToken ct);
 
+    /// <summary>Le morceau avec ses genres, suivi pour être modifié : ce qu'il faut pour remplacer ses genres.</summary>
+    Task<Track?> FindWithGenresAsync(int id, CancellationToken ct);
+
     /// <summary>Cet identifiant Deezer est déjà celui d'un morceau (hors <paramref name="exceptTrackId"/>).</summary>
     Task<bool> DeezerIdTakenAsync(long deezerTrackId, int? exceptTrackId, CancellationToken ct);
 
@@ -41,7 +44,8 @@ public interface ICatalogueStore
 
     /// <summary>
     /// Enregistre tout de suite (sa propre requête, pas la transaction d'un handler) l'état de l'extrait, le rang et l'album de
-    /// ces morceaux. Un morceau supprimé entre-temps est ignoré. Renvoie les identifiants réellement enregistrés.
+    /// ces morceaux. Un morceau supprimé entre-temps est ignoré. Un morceau dont les genres sont à relire (il a changé d'album) perd
+    /// ceux de l'ancien. Renvoie les identifiants réellement enregistrés.
     /// </summary>
     Task<IReadOnlySet<int>> SaveRefreshedAsync(IReadOnlyCollection<Track> tracks, CancellationToken ct);
 }

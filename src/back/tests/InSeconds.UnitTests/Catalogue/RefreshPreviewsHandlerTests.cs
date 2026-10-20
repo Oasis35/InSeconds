@@ -371,6 +371,8 @@ public class RefreshPreviewsHandlerTests
 
         public Task<Track?> FindAsync(int id, CancellationToken ct) => throw new NotSupportedException();
 
+        public Task<Track?> FindWithGenresAsync(int id, CancellationToken ct) => throw new NotSupportedException();
+
         public Task<bool> DeezerIdTakenAsync(long deezerTrackId, int? exceptTrackId, CancellationToken ct) => throw new NotSupportedException();
     }
 

@@ -300,6 +300,21 @@ public class RefreshPreviewsTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Rattrapage_NouvelAlbumIndisponible_RetireQuandMemeLesGenresDeLAncien()
+    {
+        var track = await _app.AddAsync(1001);
+        await _app.Api.ExecuteAsync($"UPDATE catalogue.tracks SET album_id = 99 WHERE id = {track.Id}");
+        _app.Deezer.Intercept = (request, _) => Task.FromResult<HttpResponseMessage?>(
+            request.RequestUri!.AbsolutePath.StartsWith("/album/", StringComparison.Ordinal) ? JsonOk("""{"error":{"type":"Exception","message":"Quota limit exceeded","code":4}}""") : null);
+
+        await RunAsync();
+
+        // Les genres notés étaient ceux de l'album 99 : ils ne valent plus, même si le nouvel album n'a pas pu être lu (il le sera au prochain contrôle).
+        Assert.Empty(await GenresOfAsync(track.Id));
+        Assert.Equal(1L, await _app.Api.ScalarAsync<long>($"SELECT count(*) FROM catalogue.tracks WHERE id = {track.Id} AND album_id = 2 AND genres_checked_at IS NULL"));
+    }
+
+    [Fact]
     public async Task LaTacheEstDeclareeSousSonIdentifiant_EtSonCronParDefaut()
     {
         await using var scope = _app.Api.Services.CreateAsyncScope();
