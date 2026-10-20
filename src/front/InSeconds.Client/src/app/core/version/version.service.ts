@@ -15,6 +15,14 @@ export const PAGE_RELOAD = new InjectionToken<() => void>('PAGE_RELOAD', {
 });
 
 /**
+ * Le conteneur des service workers du navigateur (`navigator.serviceWorker`), `null` sans support. Jeton séparé pour les tests.
+ */
+export const SERVICE_WORKER_CONTAINER = new InjectionToken<ServiceWorkerContainer | null>('SERVICE_WORKER_CONTAINER', {
+  providedIn: 'root',
+  factory: () => inject(DOCUMENT).defaultView?.navigator.serviceWorker ?? null,
+});
+
+/**
  * Quand une page accepte qu'une nouvelle version s'applique (rechargement de la page), du plus permissif au plus prudent :
  * - `now` : tout de suite, rien n'est en cours (accueil, « déjà joué », confidentialité…) ;
  * - `background` : quand l'onglet passe en arrière-plan ou au prochain changement de page (récap de fin de partie) ;
@@ -43,6 +51,12 @@ function pathOf(url: string): string {
  *   qui ne change que la query string ne compte pas). Jamais avec une fenêtre ouverte ;
  * - au démarrage et au retour de l'onglet au premier plan : on vérifie s'il en existe une. Au démarrage, sans cet appel, le
  *   service worker attendait qu'il n'y ait plus de requête en cours pour vérifier (environ 25 s mesurées) ;
+ * - remplacement du service worker lui-même (son script a changé, par exemple avec la CSP, piège 49) : le navigateur installe
+ *   le nouveau en arrière-plan pendant la visite et la page reste servie par l'ancien jusqu'à `controllerchange`. Ce changement
+ *   est traité comme une nouvelle version (même mise en attente, même moment sûr) : sans rechargement, une partie lancée avant
+ *   restait sur l'ancien worker. La mise à jour du worker est demandée au démarrage et au retour au premier plan
+ *   (`registration.update()`), pour qu'il soit remplacé le plus tôt possible. Le premier worker d'une page (première visite)
+ *   n'est pas un remplacement : rien à recharger ;
  * - état irrécupérable du service worker : `markUpdateAvailable()`, même mise en attente, plus le bandeau « Recharger / Plus tard » en secours ;
  * - garde-fou : un second rechargement automatique moins d'une minute après le précédent (déploiement cassé) n'a pas lieu,
  *   le bandeau s'affiche à la place.
@@ -53,6 +67,7 @@ export class VersionService {
   private readonly swUpdate = inject(SwUpdate);
   private readonly reloadPage = inject(PAGE_RELOAD);
   private readonly document = inject(DOCUMENT);
+  private readonly workers = inject(SERVICE_WORKER_CONTAINER);
 
   private readonly _updateAvailable = signal(false);
   /** Le bandeau « Recharger / Plus tard » est affiché. */
@@ -82,6 +97,16 @@ export class VersionService {
     this.swUpdate.versionUpdates
       .pipe(filter(event => event.type === 'VERSION_READY'), takeUntilDestroyed(destroyRef))
       .subscribe(() => this.pending.set(true));
+
+    if (this.workers) {
+      let controlled = this.workers.controller !== null;
+      fromEvent(this.workers, 'controllerchange')
+        .pipe(takeUntilDestroyed(destroyRef))
+        .subscribe(() => {
+          if (controlled) this.pending.set(true);
+          controlled = true;
+        });
+    }
 
     this.swUpdate.unrecoverable
       .pipe(takeUntilDestroyed(destroyRef))
@@ -171,5 +196,9 @@ export class VersionService {
   private checkForUpdate(): void {
     // Un échec (hors ligne, serveur indisponible) n'est pas une erreur pour le joueur.
     this.swUpdate.checkForUpdate().catch(() => undefined);
+    this.workers
+      ?.getRegistration()
+      .then(registration => registration?.update())
+      .catch(() => undefined);
   }
 }
