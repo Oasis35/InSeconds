@@ -207,7 +207,8 @@ export class AdminPage {
   async apiGetPoolUnlockDate(deezerTrackId: number): Promise<string | null | undefined> {
     const res = await this.page.request.get(`${BASE}/api/admin/catalogue/tracks`);
     if (!res.ok()) throw new Error(`get tracks failed: ${res.status()}`);
-    const tracks = await res.json() as { deezerTrackId: number; unlockDate: string | null }[];
-    return tracks.find(t => t.deezerTrackId === deezerTrackId)?.unlockDate;
+    // Le pool donne l'usage mode par mode : la date de déblocage est celle du Daily (le cooldown est sa règle).
+    const tracks = await res.json() as { deezerTrackId: number; usages: { mode: string; unlockDate: string | null }[] }[];
+    return tracks.find(t => t.deezerTrackId === deezerTrackId)?.usages.find(u => u.mode === 'daily')?.unlockDate;
   }
 }
