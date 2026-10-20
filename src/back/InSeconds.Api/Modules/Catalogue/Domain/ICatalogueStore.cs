@@ -28,13 +28,13 @@ public interface ICatalogueStore
     Task<IReadOnlyList<Track>> ListRefreshCandidatesAsync(CancellationToken ct);
 
     /// <summary>
-    /// Les genres de ces références, prêts à être posés sur un morceau suivi : ils sont écrits tout de suite (un genre déjà là est repris,
-    /// son nom remis à jour s'il a changé), sans jamais échouer si un autre ajout écrit le même genre au même moment.
+    /// Les genres de ces références, prêts à être posés sur un morceau suivi : un genre déjà là est repris (son nom remis à jour s'il a
+    /// changé), les autres sont ajoutés et enregistrés avec la transaction du handler.
     /// </summary>
     Task<IReadOnlyList<Genre>> EnsureGenresAsync(IReadOnlyCollection<GenreRef> genres, CancellationToken ct);
 
     /// <summary>
-    /// Enregistre tout de suite (sa propre transaction, pas celle d'un handler) les genres d'un album pour **tous** les morceaux du pool qui
+    /// Enregistre tout de suite (son propre <c>SaveChanges</c>, pas la transaction d'un handler) les genres d'un album pour **tous** les morceaux du pool qui
     /// en font partie, et note qu'ils ont été lus (liste vide : l'album n'en a pas, ou n'existe plus : ils ne seront pas redemandés).
     /// </summary>
     Task SaveAlbumGenresAsync(long albumId, IReadOnlyCollection<GenreRef> genres, DateTimeOffset now, CancellationToken ct);

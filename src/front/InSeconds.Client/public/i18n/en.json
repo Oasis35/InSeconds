@@ -33,6 +33,7 @@
     "catalogue": {
       "duplicate_deezer_id": "This track is already in the pool.",
       "not_found_on_deezer": "This track could not be found on Deezer.",
+      "concurrent_add": "Another add is writing the same genres right now, try again in a moment.",
       "deezer_unavailable": "Deezer is unavailable right now, try again in a moment.",
       "track_in_use": "This track has already been used in a challenge: it cannot be deleted (disable it instead).",
       "track_in_today_challenge": "This track is in today’s challenge: it can be disabled from tomorrow."

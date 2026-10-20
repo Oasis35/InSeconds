@@ -44,7 +44,7 @@ internal sealed class TrackConfiguration : IEntityTypeConfiguration<Track>
             });
     }
 
-    /// <summary>Table de jonction morceau ↔ genre, écrite aussi à la main par le contrôle nocturne (<c>EfCatalogueStore.SaveAlbumGenresAsync</c>).</summary>
+    /// <summary>Table de jonction morceau ↔ genre.</summary>
     public const string TrackGenresTable = "track_genres";
 
     public const string TrackIdColumn = "track_id";
@@ -54,10 +54,13 @@ internal sealed class TrackConfiguration : IEntityTypeConfiguration<Track>
 
 internal sealed class GenreConfiguration : IEntityTypeConfiguration<Genre>
 {
+    /// <summary>Clé primaire des genres, reconnue dans l'erreur d'unicité par <see cref="TrackConflictExceptionHandler"/> (deux ajouts qui écrivent le même genre neuf).</summary>
+    public const string PrimaryKey = "pk_genres";
+
     public void Configure(EntityTypeBuilder<Genre> builder)
     {
         builder.ToTable("genres", DbSchemas.Catalogue);
-        builder.HasKey(g => g.Id);
+        builder.HasKey(g => g.Id).HasName(PrimaryKey);
         // L'identifiant est celui de Deezer : jamais généré par la base.
         builder.Property(g => g.Id).ValueGeneratedNever();
         builder.Property(g => g.Name).IsRequired();

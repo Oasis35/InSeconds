@@ -11,6 +11,7 @@ public static class CatalogueErrorCodes
     public const string TrackInUse = "catalogue.track_in_use";
     public const string TrackInTodayChallenge = "catalogue.track_in_today_challenge";
     public const string DuplicateDeezerId = "catalogue.duplicate_deezer_id";
+    public const string ConcurrentAdd = "catalogue.concurrent_add";
     public const string NotFoundOnDeezer = "catalogue.not_found_on_deezer";
     public const string DeezerUnavailable = "catalogue.deezer_unavailable";
 }
@@ -25,6 +26,9 @@ internal static class CatalogueProblems
 
     public static ProblemDetails TrackInTodayChallenge() =>
         ApiProblem.Of(StatusCodes.Status409Conflict, CatalogueErrorCodes.TrackInTodayChallenge, "Ce morceau est dans le défi du jour : désactivable à partir de demain.");
+
+    public static ProblemDetails ConcurrentAdd() =>
+        ApiProblem.Of(StatusCodes.Status409Conflict, CatalogueErrorCodes.ConcurrentAdd, "Un autre ajout écrit les mêmes genres : réessaie.");
 
     public static ProblemDetails DuplicateDeezerId() =>
         ApiProblem.Of(StatusCodes.Status409Conflict, CatalogueErrorCodes.DuplicateDeezerId, "Un morceau du pool a déjà cet identifiant Deezer.");

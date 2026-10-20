@@ -1,6 +1,7 @@
 using InSeconds.Api.Infrastructure.Persistence;
 using InSeconds.Api.Modules.Catalogue.Domain;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace InSeconds.Api.Modules.Catalogue.Persistence;
 
@@ -24,47 +25,64 @@ public sealed class EfCatalogueStore(InSecondsDbContext db) : ICatalogueStore
             .AsNoTracking()
             .ToListAsync(ct);
 
-    // Les genres sont écrits en SQL, avec « ON CONFLICT » : deux ajouts simultanés de morceaux qui partagent un genre neuf (ou le contrôle
-    // nocturne en même temps) ne se heurtent jamais sur la clé du genre, le second attend le premier au lieu d'échouer. Les lignes lues
-    // ensuite ne sont que référencées par la jonction du morceau.
+    // Un genre déjà là est repris (son nom suit Deezer), les autres sont ajoutés : enregistrés avec le morceau, par la transaction du handler.
+    // Deux ajouts simultanés qui partagent un genre neuf se heurtent sur sa clé : le second est refusé à l'enregistrement
+    // (TrackConflictExceptionHandler, 409) ; la transaction de Wolverine est alors annulée, une nouvelle tentative n'y serait pas possible.
     public async Task<IReadOnlyList<Genre>> EnsureGenresAsync(IReadOnlyCollection<GenreRef> genres, CancellationToken ct)
     {
         var wanted = genres.DistinctBy(g => g.Id).ToList();
         if (wanted.Count == 0)
             return [];
 
-        foreach (var genre in wanted)
+        var ids = wanted.Select(g => g.Id).ToArray();
+        var known = await db.Set<Genre>().Where(g => ids.Contains(g.Id)).ToDictionaryAsync(g => g.Id, ct);
+
+        var result = new List<Genre>(wanted.Count);
+        foreach (var reference in wanted)
         {
-            await db.Database.ExecuteSqlInterpolatedAsync(
-                $"INSERT INTO catalogue.genres (id, name) VALUES ({genre.Id}, {genre.Name}) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name", ct);
+            if (known.TryGetValue(reference.Id, out var existing))
+            {
+                if (existing.Name != reference.Name)
+                    existing.Rename(reference.Name);
+                result.Add(existing);
+            }
+            else
+            {
+                var created = new Genre(reference.Id, reference.Name);
+                db.Add(created);
+                result.Add(created);
+            }
         }
 
-        var ids = wanted.Select(g => g.Id).ToArray();
-        return await db.Set<Genre>().Where(g => ids.Contains(g.Id)).OrderBy(g => g.Id).ToListAsync(ct);
+        return result;
     }
 
-    // En SQL et dans sa propre transaction : le contrôle nocturne n'est pas transactionnel (NonTransactional) et ne passe jamais par
-    // SaveChanges. Les genres de tous les morceaux de l'album sont remplacés d'un coup, jamais à moitié.
+    // Le contrôle nocturne n'est pas transactionnel (NonTransactional) : cette méthode enregistre elle-même, un album à la fois (c'est l'une
+    // des exceptions de SaveChanges, cf. HandlerRulesTests). Les genres de tous les morceaux de l'album sont remplacés d'un coup, jamais à moitié.
+    // Un ajout simultané peut écrire le même genre neuf avant nous : l'enregistrement est refusé sur sa clé, on recommence une fois (le genre
+    // existe alors). Le contexte est vidé à chaque album : le contrôle en traite des centaines.
     public async Task SaveAlbumGenresAsync(long albumId, IReadOnlyCollection<GenreRef> genres, DateTimeOffset now, CancellationToken ct)
     {
-        await using var transaction = await db.Database.BeginTransactionAsync(ct);
-        foreach (var genre in genres)
+        for (var attempt = 1; ; attempt++)
         {
-            await db.Database.ExecuteSqlInterpolatedAsync(
-                $"INSERT INTO catalogue.genres (id, name) VALUES ({genre.Id}, {genre.Name}) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name", ct);
+            try
+            {
+                var entities = await EnsureGenresAsync(genres, ct);
+                var tracks = await db.Set<Track>().Include(t => t.Genres).Where(t => t.AlbumId == albumId).ToListAsync(ct);
+                foreach (var track in tracks)
+                    track.RecordGenres(entities, now);
+                await db.SaveChangesAsync(ct);
+                return;
+            }
+            catch (DbUpdateException ex) when (attempt == 1 && ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+            {
+                // Recommence : la ligne du genre est maintenant en base.
+            }
+            finally
+            {
+                db.ChangeTracker.Clear();
+            }
         }
-
-        await db.Database.ExecuteSqlInterpolatedAsync(
-            $"DELETE FROM catalogue.track_genres WHERE track_id IN (SELECT id FROM catalogue.tracks WHERE album_id = {albumId})", ct);
-        foreach (var genre in genres)
-        {
-            await db.Database.ExecuteSqlInterpolatedAsync(
-                $"INSERT INTO catalogue.track_genres (track_id, genre_id) SELECT id, {genre.Id} FROM catalogue.tracks WHERE album_id = {albumId}", ct);
-        }
-
-        await db.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE catalogue.tracks SET genres_checked_at = {now} WHERE album_id = {albumId}", ct);
-        await transaction.CommitAsync(ct);
     }
 
     // Une requête par morceau (ExecuteUpdate, validée tout de suite) : pas de transaction ouverte pendant les pauses du

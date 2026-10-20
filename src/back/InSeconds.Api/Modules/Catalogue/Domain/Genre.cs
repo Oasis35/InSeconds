@@ -21,4 +21,7 @@ public sealed class Genre
     public long Id { get; private set; }
 
     public string Name { get; private set; } = null!;
+
+    /// <summary>Le nom que Deezer donne aujourd'hui à ce genre (il peut être corrigé ou traduit).</summary>
+    public void Rename(string name) => Name = name;
 }

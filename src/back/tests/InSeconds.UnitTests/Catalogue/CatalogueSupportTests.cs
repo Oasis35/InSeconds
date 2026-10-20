@@ -65,6 +65,15 @@ public class CatalogueSupportTests
         Assert.Equal(CatalogueErrorCodes.DuplicateDeezerId, Code(UniqueViolation(TrackConfiguration.DeezerIdIndex)));
 
     [Fact]
+    public void DeuxAjoutsQuiEcriventLeMemeGenreNeuf_ConflitADeReessayer()
+    {
+        var problem = TrackConflictExceptionHandler.ProblemFor(UniqueViolation(GenreConfiguration.PrimaryKey));
+
+        Assert.Equal(CatalogueErrorCodes.ConcurrentAdd, problem?.Extensions["code"]?.ToString());
+        Assert.Equal(409, problem?.Status);
+    }
+
+    [Fact]
     public void AutreIndexUnique_PasPourCeGestionnaire() =>
         Assert.Null(TrackConflictExceptionHandler.ProblemFor(UniqueViolation("ix_accounts_pseudo")));
 
@@ -78,6 +87,7 @@ public class CatalogueSupportTests
         Assert.Equal("catalogue.track_in_use", CatalogueErrorCodes.TrackInUse);
         Assert.Equal("catalogue.track_in_today_challenge", CatalogueErrorCodes.TrackInTodayChallenge);
         Assert.Equal("catalogue.duplicate_deezer_id", CatalogueErrorCodes.DuplicateDeezerId);
+        Assert.Equal("catalogue.concurrent_add", CatalogueErrorCodes.ConcurrentAdd);
         Assert.Equal("catalogue.not_found_on_deezer", CatalogueErrorCodes.NotFoundOnDeezer);
         Assert.Equal("catalogue.deezer_unavailable", CatalogueErrorCodes.DeezerUnavailable);
     }
