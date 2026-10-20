@@ -7,7 +7,8 @@ namespace InSeconds.IntegrationTests.Messaging;
 /// <summary>
 /// En staging et en prod, Wolverine charge le code généré au build (dossier Internal/Generated)
 /// au lieu de le compiler au démarrage. Ce test démarre l'API dans ce mode : un endpoint dont le
-/// code généré manquerait échouerait ici.
+/// code généré manquerait échouerait ici. En test, le code généré est relu quand il existe (les autres tests
+/// d'intégration s'en servent donc aussi), et seuls les handlers des tests sont compilés au démarrage.
 /// </summary>
 public class StaticCodegenTests(PostgresFixture postgres) : IAsyncLifetime
 {
@@ -26,6 +27,15 @@ public class StaticCodegenTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.True(WolverineSetup.UsesStaticCodegen(new HostingEnvironmentStub(Environments.Staging)));
         Assert.True(WolverineSetup.UsesStaticCodegen(new HostingEnvironmentStub(Environments.Production)));
         Assert.False(WolverineSetup.UsesStaticCodegen(new HostingEnvironmentStub("Testing")));
+    }
+
+    [Fact]
+    public void Testing_RelitLeCodeGenere_SeulementEnTest()
+    {
+        Assert.True(WolverineSetup.UsesPreBuiltCodeWhenPresent(new HostingEnvironmentStub("Testing")));
+        Assert.False(WolverineSetup.UsesPreBuiltCodeWhenPresent(new HostingEnvironmentStub(Environments.Development)));
+        Assert.False(WolverineSetup.UsesPreBuiltCodeWhenPresent(new HostingEnvironmentStub(Environments.Staging)));
+        Assert.False(WolverineSetup.UsesPreBuiltCodeWhenPresent(new HostingEnvironmentStub(Environments.Production)));
     }
 
     [Fact]
