@@ -59,7 +59,7 @@ InSeconds/
 | `Gameplay` | la mécanique d'un morceau (manche, correction, indices, tirage) : logique pure, ni table ni route | — |
 | `Daily` | le défi du jour, les parties, le score, la série et les gels, les statistiques, l'admin du jeu | `daily` |
 
-Chaque module a ses couches `Domain/` (entités aux invariants encapsulés, ports), `Application/` (endpoints, handlers), `Persistence/` (EF), `Contracts/` (ce que les autres modules ont le droit d'utiliser). Projets autour : `InSeconds.Infrastructure` (email, observabilité, proxies, rate limiting, CORS, en-têtes : ne connaît ni l'API ni les modules), `InSeconds.Deezer` (client Deezer en trois ports, avec cache : ne connaît rien d'autre), `InSeconds.Api.Testing` (hôte de test : faux email, faux Deezer, routes `/api/e2e`, documents OpenAPI ; jamais dans l'image de prod).
+Chaque module a ses couches `Domain/` (entités aux invariants encapsulés, ports), `Application/` (endpoints, handlers), `Persistence/` (EF), `Contracts/` (ce que les autres modules ont le droit d'utiliser). Projets autour : `InSeconds.Infrastructure` (email, observabilité, proxies, rate limiting, CORS, en-têtes : ne connaît ni l'API ni les modules), `InSeconds.Deezer` (client Deezer en quatre ports, avec cache : ne connaît rien d'autre), `InSeconds.Api.Testing` (hôte de test : faux email, faux Deezer, routes `/api/e2e`, documents OpenAPI ; jamais dans l'image de prod).
 
 ### Règles dures (vérifiées en CI)
 

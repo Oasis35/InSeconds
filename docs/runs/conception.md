@@ -214,7 +214,7 @@ L'interrupteur « Platines » de l'onglet Joueurs lit `GET /api/admin/runs/acces
 2. Inversion RGPD (`IPlayerDataContributor`) dès la première PR : validé.
 3. Lien par code court `inseconds.cc/runs/K7Q2M9` : validé (un lien neutre `/d/…` est gardé pour un mode futur qui partagerait aussi des liens).
 4. Tirage par tranches de rang Deezer : validé.
-5. Genre de l'album stocké dès maintenant (P0, PR à part dans Catalogue) : **en attente de Clément**.
+5. Genre de l'album stocké dès maintenant (P0, PR à part dans Catalogue, #361) : validé et fait (Clément, 20/10) ; `TrackInfo.Genres`, aucun mode ne s'en sert encore.
 6. Usage des morceaux déclaré par chaque mode : proposé après la revue, repris dans P1.
 7. Morceau sans extrait au moment de jouer : neutralisé (Clément, 17/10).
 8. Temps de réponse : aucun chrono, partie à l'honneur, réécoute libre (Clément, 17/10). Un chrono `Runs:AnswerSeconds` ne sera ajouté que si les parties de test montrent des abus ; limiter les réécoutes reste un bonus ou un malus possible du proto 2.
