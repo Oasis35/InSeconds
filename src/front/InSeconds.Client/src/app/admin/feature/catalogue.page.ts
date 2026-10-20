@@ -26,8 +26,7 @@ const DIALOG_MAX_WIDTH = '26rem';
  * filtrable, triable et paginé, panneau de recherche Deezer pour ajouter, fenêtres d'écoute, de renommage et de
  * suppression) ou la vue d'un mode, en lecture seule (écouter, retrouver le morceau dans le pool). La vue (`?view=daily`,
  * absente pour le pool général) et la page de la grille (`?page=3`, à partir de 1) vivent dans l'adresse : un
- * rechargement ou un lien partagé rouvre la même vue et la même page. La page de la
- * grille vit dans l'adresse (`?page=3`, à partir de 1) : un rechargement rouvre la même page.
+ * rechargement ou un lien partagé rouvre la même vue et la même page.
  */
 @Component({
   selector: 'app-catalogue-page',

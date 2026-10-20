@@ -59,13 +59,17 @@ function matchesText(track: PoolTrack, text: string): boolean {
   return artist.includes(text) || title.includes(text) || `${artist} ${title}`.includes(text);
 }
 
+/**
+ * Le statut que montre la colonne Statut : désactivé d'abord (quel que soit l'usage), sinon utilisé ou disponible. Le filtre et
+ * les compteurs suivent la même règle : « Disponible » ne liste jamais un morceau que la colonne dit « Désactivé ».
+ */
+export function statusOf(track: PoolTrack, view: string): Exclude<StatusFilter, 'all'> {
+  if (track.isDisabled) return 'disabled';
+  return isUsedIn(track, view) ? 'used' : 'available';
+}
+
 function matchesStatus(track: PoolTrack, status: StatusFilter, view: string): boolean {
-  switch (status) {
-    case 'available': return !isUsedIn(track, view);
-    case 'used': return isUsedIn(track, view);
-    case 'disabled': return track.isDisabled;
-    default: return true;
-  }
+  return status === 'all' || statusOf(track, view) === status;
 }
 
 function matchesPlayedBy(track: PoolTrack, playedBy: string): boolean {

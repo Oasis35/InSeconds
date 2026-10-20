@@ -33,7 +33,8 @@ describe('PoolStore', () => {
 
       expect(store.isFulfilled()).toBe(true);
       expect(store.tracks()).toHaveLength(4);
-      expect(store.availableCount()).toBe(2);
+      // Un désactivé ne compte ni parmi les disponibles ni parmi les utilisés : les trois compteurs font le total, comme la colonne Statut.
+      expect(store.availableCount()).toBe(1);
       expect(store.usedCount()).toBe(2);
       expect(store.disabledCount()).toBe(1);
     });

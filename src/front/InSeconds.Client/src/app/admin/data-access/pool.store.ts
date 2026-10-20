@@ -5,7 +5,7 @@ import { setError, setFulfilled, setPending, withRequestStatus } from '../../cor
 import { cooldownTone } from '../domain/actions';
 import {
   NO_FILTERS, PoolFilters, PoolSort, PreviewFilter, SortColumn,
-  StatusFilter, clampPage, filterTracks, isUsedIn, nextSort, pageOf, sortTracks, totalPages,
+  StatusFilter, clampPage, filterTracks, nextSort, pageOf, sortTracks, statusOf, totalPages,
 } from '../domain/pool-filters';
 import { PoolTrack, isUsed, trackLabel } from '../domain/pool-track';
 import { POOL_VIEW } from '../domain/pool-views';
@@ -67,8 +67,8 @@ export const PoolStore = signalStore(
       page,
       pageTracks: computed(() => pageOf(sorted(), page())),
       /** Disponibles et utilisés, vus de la vue : tous modes confondus dans le pool, ce mode seul dans sa vue. */
-      availableCount: computed(() => tracks().filter(t => !isUsedIn(t, view())).length),
-      usedCount: computed(() => tracks().filter(t => isUsedIn(t, view())).length),
+      availableCount: computed(() => tracks().filter(t => statusOf(t, view()) === 'available').length),
+      usedCount: computed(() => tracks().filter(t => statusOf(t, view()) === 'used').length),
       disabledCount: computed(() => tracks().filter(t => t.isDisabled).length),
       /** Les genres présents dans le pool, par ordre alphabétique : de quoi remplir le filtre « Genre ». */
       genres: computed(() => [...new Set(tracks().flatMap(t => t.genres))].sort((a, b) => a.localeCompare(b))),

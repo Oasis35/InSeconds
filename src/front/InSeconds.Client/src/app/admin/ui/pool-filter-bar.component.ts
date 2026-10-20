@@ -6,10 +6,10 @@ import { MODE_VIEWS, POOL_VIEW } from '../domain/pool-views';
 const FIELD_STYLE = 'background:var(--bg-surface);color:var(--text-light)';
 
 /**
- * Filtres du tableau : texte (artiste, titre, ou les deux collés) et statut (disponible, utilisé, désactivé : tous modes
- * confondus dans la vue générale, par ce mode dans sa vue). Dans la vue générale : l'état de l'extrait et « Joué par » (tous,
- * aucun mode, ou un mode) et le genre. Dans la vue d'un mode : la plage de dernière utilisation. Chaque champ a son libellé (masqué à
- * l'écran, lu par les lecteurs d'écran).
+ * Filtres du tableau, un par colonne affichée : le texte (artiste, titre, ou les deux collés) dans les deux vues. Dans la vue
+ * générale : le genre, l'état de l'extrait, le statut (disponible, utilisé, désactivé, comme la colonne Statut) et « Joué par »
+ * (tous, aucun mode, ou un mode). Dans la vue d'un mode, qui n'a ni Preview ni Statut : la plage de dernière utilisation.
+ * Chaque champ a son libellé (masqué à l'écran, lu par les lecteurs d'écran).
  */
 @Component({
   selector: 'app-pool-filter-bar',
@@ -25,6 +25,15 @@ const FIELD_STYLE = 'background:var(--bg-surface);color:var(--text-light)';
         style="background:var(--bg-surface);color:var(--text-hi)" />
 
       @if (isPool()) {
+        <label for="pool-filter-genre" class="sr-only">{{ 'admin.pool.allGenres' | translate }}</label>
+        <select id="pool-filter-genre" [value]="filters().genre" (change)="genreChange.emit($any($event.target).value)"
+          class="text-sm rounded-lg px-3 py-1.5 outline-none cursor-pointer" [style]="fieldStyle">
+          <option value="">{{ 'admin.pool.allGenres' | translate }}</option>
+          @for (genre of genres(); track genre) {
+            <option [value]="genre">{{ genre }}</option>
+          }
+        </select>
+
         <label for="pool-filter-preview" class="sr-only">{{ 'admin.pool.allPreviews' | translate }}</label>
         <select id="pool-filter-preview" [value]="filters().preview" (change)="previewChange.emit($any($event.target).value)"
           class="text-sm rounded-lg px-3 py-1.5 outline-none cursor-pointer" [style]="fieldStyle">
@@ -33,13 +42,13 @@ const FIELD_STYLE = 'background:var(--bg-surface);color:var(--text-light)';
           <option value="missing">{{ 'admin.pool.previewMissing' | translate }}</option>
         </select>
 
-        <label for="pool-filter-genre" class="sr-only">{{ 'admin.pool.allGenres' | translate }}</label>
-        <select id="pool-filter-genre" [value]="filters().genre" (change)="genreChange.emit($any($event.target).value)"
+        <label for="pool-filter-status" class="sr-only">{{ 'admin.pool.allStatuses' | translate }}</label>
+        <select id="pool-filter-status" [value]="filters().status" (change)="statusChange.emit($any($event.target).value)"
           class="text-sm rounded-lg px-3 py-1.5 outline-none cursor-pointer" [style]="fieldStyle">
-          <option value="">{{ 'admin.pool.allGenres' | translate }}</option>
-          @for (genre of genres(); track genre) {
-            <option [value]="genre">{{ genre }}</option>
-          }
+          <option value="all">{{ 'admin.pool.allStatuses' | translate }}</option>
+          <option value="available">{{ 'admin.pool.available' | translate }}</option>
+          <option value="used">{{ 'admin.pool.used' | translate }}</option>
+          <option value="disabled">{{ 'admin.pool.disabledFilter' | translate }}</option>
         </select>
 
         <label for="pool-filter-played-by" class="sr-only">{{ 'admin.pool.allPlayedBy' | translate }}</label>
@@ -52,15 +61,6 @@ const FIELD_STYLE = 'background:var(--bg-surface);color:var(--text-light)';
           }
         </select>
       }
-
-      <label for="pool-filter-status" class="sr-only">{{ 'admin.pool.allStatuses' | translate }}</label>
-      <select id="pool-filter-status" [value]="filters().status" (change)="statusChange.emit($any($event.target).value)"
-        class="text-sm rounded-lg px-3 py-1.5 outline-none cursor-pointer" [style]="fieldStyle">
-        <option value="all">{{ 'admin.pool.allStatuses' | translate }}</option>
-        <option value="available">{{ 'admin.pool.available' | translate }}</option>
-        <option value="used">{{ 'admin.pool.used' | translate }}</option>
-        <option value="disabled">{{ 'admin.pool.disabledFilter' | translate }}</option>
-      </select>
 
       @if (!isPool()) {
         <label for="pool-filter-lastused-from" class="sr-only">{{ 'admin.pool.lastUsedFrom' | translate }}</label>

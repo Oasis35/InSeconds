@@ -91,7 +91,7 @@ test.describe('Admin — pool', () => {
     await page.getByRole('link', { name: /^Pool/ }).click();
     await expect(page.getByRole('columnheader', { name: 'Genre' })).toBeVisible();
 
-    // Le seed range les morceaux sous trois genres (Pop, Rap/Hip Hop, Rock) ; un sur quatre n'en a aucun.
+    // Le seed range les morceaux sous les albums du faux Deezer : Pop, Rap/Hip Hop et Dance, Rock, ou aucun genre.
     await admin.poolFilterGenre().selectOption({ label: 'Rock' });
 
     await expect(page.getByTestId('genres').first()).toHaveText('Rock');
@@ -100,21 +100,27 @@ test.describe('Admin — pool', () => {
     expect(genres.every(genre => genre.includes('Rock'))).toBe(true);
   });
 
-  test('vue Daily : le filtre statut "Disponible" masque les morceaux utilisés', async ({ page }) => {
+  test('filtres alignés sur les colonnes : « Disponible » du pool général, vue Daily sans Preview ni Statut', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
     await page.getByRole('link', { name: /^Pool/ }).click();
-    await admin.poolView('Daily').click();
-    // La vue Daily n'a ni colonne Preview ni colonne Statut : le filtre seul reste.
-    await expect(page.getByRole('columnheader', { name: 'Statut' })).toHaveCount(0);
-    await expect(page.getByRole('columnheader', { name: 'Preview' })).toHaveCount(0);
+
+    // Pool général : « Disponible » écarte les morceaux utilisés (Coldplay est dans un défi du seed), garde les autres.
     await admin.poolFilterStatus().selectOption('available');
-    // Coldplay est dans un défi du seed, Michael Jackson n'a jamais été joué.
     await admin.poolSearchInput().fill('Coldplay');
     await expect(admin.poolRow('Coldplay')).not.toBeVisible();
     await admin.poolSearchInput().fill('Michael Jackson');
     await expect(admin.poolRow('Michael Jackson')).toBeVisible();
+
+    // Vue Daily : ni colonne ni filtre Preview, Statut ou Genre ; la recherche et les dates de dernière utilisation restent.
+    await admin.poolView('Daily').click();
+    await expect(page.getByRole('columnheader', { name: 'Statut' })).toHaveCount(0);
+    await expect(page.getByRole('columnheader', { name: 'Preview' })).toHaveCount(0);
+    await expect(admin.poolFilterStatus()).toHaveCount(0);
+    await expect(admin.poolFilterPreview()).toHaveCount(0);
+    await expect(admin.poolFilterGenre()).toHaveCount(0);
+    await expect(page.locator('#pool-filter-lastused-from')).toBeVisible();
   });
 
   test('la vue du pool est dans l\'adresse : ?view=daily se rouvre au rechargement', async ({ page }) => {

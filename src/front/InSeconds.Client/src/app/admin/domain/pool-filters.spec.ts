@@ -27,9 +27,10 @@ describe('filterTracks', () => {
     expect(filterTracks(all, filters({ text: '  Nicki Minaj Starships ' }))).toEqual([nicki]);
   });
 
-  it('distingue disponible, utilisé et désactivé', () => {
+  it('distingue disponible, utilisé et désactivé, comme la colonne Statut (désactivé d\'abord)', () => {
     expect(filterTracks(all, filters({ status: 'available' }))).toEqual([nicki]);
-    expect(filterTracks(all, filters({ status: 'used' }))).toEqual([eminem, queen]);
+    // Queen a servi mais est désactivé : la colonne dit « Désactivé », il n'est donc pas listé parmi les utilisés.
+    expect(filterTracks(all, filters({ status: 'used' }))).toEqual([eminem]);
     expect(filterTracks(all, filters({ status: 'disabled' }))).toEqual([queen]);
   });
 
@@ -45,7 +46,8 @@ describe('filterTracks', () => {
   });
 
   it('combine les filtres', () => {
-    expect(filterTracks(all, filters({ status: 'used', preview: 'ok', text: 'queen' }))).toEqual([queen]);
+    expect(filterTracks(all, filters({ status: 'used', preview: 'ok', text: 'eminem' }))).toEqual([eminem]);
+    expect(filterTracks(all, filters({ status: 'disabled', preview: 'ok', text: 'queen' }))).toEqual([queen]);
     expect(filterTracks(all, filters({ status: 'available', text: 'queen' }))).toEqual([]);
   });
 
