@@ -14,7 +14,7 @@ namespace InSeconds.Api.Modules.Catalogue.Application;
 /// <summary>
 /// Recontrôle l'extrait (et met à jour le rang) de **tout le pool jouable**, cooldown compris : un mode peut tirer n'importe quel morceau
 /// (un run), pas seulement ceux que le défi de demain tirerait. Lancé par la tâche <c>catalogue-refresh</c> chaque nuit, ou à la main depuis
-/// <c>/jobs</c> (§ 5.4 bis du plan v2).
+/// <c>/jobs</c>.
 /// </summary>
 public sealed record RefreshPreviews;
 
@@ -108,7 +108,7 @@ public static class RefreshPreviewsHandler
     }
 }
 
-/// <summary>Tâche <c>catalogue-refresh</c> (§ 5.4 bis du plan v2), chaque soir à 23 h UTC, la veille de la génération du défi.</summary>
+/// <summary>Tâche <c>catalogue-refresh</c>, chaque soir à 23 h UTC, la veille de la génération du défi.</summary>
 public sealed class RefreshPreviewsJob(IMessageBus bus) : IScheduledJob
 {
     public const string Id = "catalogue-refresh";

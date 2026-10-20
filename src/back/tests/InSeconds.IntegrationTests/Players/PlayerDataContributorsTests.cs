@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace InSeconds.IntegrationTests.Players;
 
 /// <summary>
-/// Les droits RGPD avec **deux modes de jeu** (P1 du mode Run) : Players ne connaît aucun mode, il appelle chaque
+/// Les droits RGPD avec **deux modes de jeu** : Players ne connaît aucun mode, il appelle chaque
 /// <see cref="IPlayerDataContributor"/> enregistré. Le Daily est le vrai, un second mode (« autre », comme le sera Runs) est un faux qui note ses appels.
 /// </summary>
 public class PlayerDataContributorsTests(PostgresFixture postgres) : IAsyncLifetime

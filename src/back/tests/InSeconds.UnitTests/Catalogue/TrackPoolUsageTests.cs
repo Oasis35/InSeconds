@@ -4,7 +4,7 @@ using InSeconds.Api.Modules.Catalogue.Contracts;
 namespace InSeconds.UnitTests.Catalogue;
 
 /// <summary>
-/// L'usage des morceaux tous modes confondus (P1 du mode Run) : Catalogue réunit l'<see cref="ITrackUsage"/> de chaque mode. Un morceau est « utilisé »
+/// L'usage des morceaux tous modes confondus : Catalogue réunit l'<see cref="ITrackUsage"/> de chaque mode. Un morceau est « utilisé »
 /// dès qu'un seul mode le dit ; les dates et le défi du jour restent ceux du mode qui en a (un mode sans cooldown répond « aucun »).
 /// </summary>
 public class TrackPoolUsageTests

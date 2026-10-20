@@ -11,7 +11,7 @@ internal static class ModuleRules
 {
     public const string ModulesNamespace = "InSeconds.Api.Modules";
 
-    /// <summary>Les modes de jeu. P2 du mode Run y ajoutera <c>Runs</c>.</summary>
+    /// <summary>Les modes de jeu ; un nouveau mode s'ajoute ici.</summary>
     public static readonly string[] Modes = ["Daily"];
 
     /// <summary>Les noyaux : ils ne voient d'un mode que ce que <see cref="NamedExceptions"/> autorise.</summary>

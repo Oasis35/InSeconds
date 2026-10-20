@@ -569,7 +569,7 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
     // ---------- Contrat : lecture des morceaux par les autres modules ----------
 
     [Fact]
-    public async Task ITrackDirectory_TitreAffichableNettoye_PochetteDuGabarit_AnneeEtIdentifiantDeezer()
+    public async Task ITrackDirectory_TitreAffichableNettoye_PochetteDuGabarit_AnneeIdentifiantEtRangDeezer()
     {
         var track = await _app.AddAsync(1001);
         await _app.Admin().PatchAsJsonAsync($"{Tracks}/{track.Id}", new RenameTrack("Daft Punk", "One More Time (Radio Edit)"), Ct);
@@ -581,7 +581,7 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
         var info = Assert.Single(found).Value;
         Assert.Equal(new TrackInfo(
             track.Id, 1001, "Daft Punk", "One More Time (Radio Edit)", "One More Time",
-            "https://cdn-images.dzcdn.net/images/cover/e2ecover1001/250x250-000000-80-0-0.jpg", 2015), info);
+            "https://cdn-images.dzcdn.net/images/cover/e2ecover1001/250x250-000000-80-0-0.jpg", 2015, 500001), info);
     }
 
     [Fact]

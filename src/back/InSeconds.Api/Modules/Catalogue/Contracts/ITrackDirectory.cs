@@ -7,7 +7,7 @@ namespace InSeconds.Api.Modules.Catalogue.Contracts;
 /// <param name="CoverUrl">Adresse de la pochette, reconstruite avec <c>Catalogue:CoverUrlTemplate</c>.</param>
 /// <param name="DeezerRank">Rang (popularité) chez Deezer, vide s'il n'a jamais été lu : la difficulté de Runs en tire ses tranches.</param>
 public sealed record TrackInfo(
-    int Id, long DeezerTrackId, string Artist, string Title, string DisplayTitle, string? CoverUrl, int? ReleaseYear, int? DeezerRank = null);
+    int Id, long DeezerTrackId, string Artist, string Title, string DisplayTitle, string? CoverUrl, int? ReleaseYear, int? DeezerRank);
 
 /// <summary>Lecture des morceaux par les autres modules (§ 5.3 du plan v2).</summary>
 public interface ITrackDirectory

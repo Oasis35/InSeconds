@@ -7,9 +7,9 @@ using static InSeconds.IntegrationTests.Catalogue.CatalogueApi;
 namespace InSeconds.IntegrationTests.Catalogue;
 
 /// <summary>
-/// La tâche <c>catalogue-refresh</c>, appelée directement (§ 5.4 bis du plan v2) : elle recontrôle l'extrait et le
-/// rang de **tout le pool jouable** (les morceaux en cooldown et ceux qu'un mode a déjà joués compris). Mêmes scénarios que la v1 (<c>RefreshPreviewsTests</c>),
-/// plus l'état « inconnu » du piège 16 : un Deezer qui ne répond pas ne change jamais l'état d'un morceau.
+/// La tâche <c>catalogue-refresh</c>, appelée directement : elle recontrôle l'extrait et le
+/// rang de **tout le pool jouable** (les morceaux en cooldown et ceux qu'un mode a déjà joués compris).
+/// Elle couvre aussi l'état « inconnu » du piège 16 : un Deezer qui ne répond pas ne change jamais l'état d'un morceau.
 /// </summary>
 public class RefreshPreviewsTests(PostgresFixture postgres) : IAsyncLifetime
 {
