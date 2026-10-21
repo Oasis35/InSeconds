@@ -5,7 +5,7 @@
 # staging-anonymize.sql du même commit. Ne touche jamais la base de prod autrement qu'en lecture (pg_dump).
 #
 # Depuis la mise en prod de la v2 (16/10/2026, PR I1 #235) : la prod écrit dans les schémas des modules, la copie les prend
-# directement (players, catalogue, daily, infra). Avant, elle copiait les tables v1 de public et refaisait l'import.
+# directement (players, catalogue, daily, runs, infra). Avant, elle copiait les tables v1 de public et refaisait l'import.
 # Ni public (tables v1, supprimées en I1), ni messaging (file de Wolverine), ni jobs (Hangfire) : le staging garde
 # les siens. Ni infra.data_protection_keys : les clés de la prod ne quittent jamais la prod.
 #
@@ -25,7 +25,8 @@ PROD_DIR="${PROD_DIR:-$HOME/apps/InSeconds}"
 STAGING_DIR="${STAGING_DIR:-$HOME/apps/InSeconds-staging}"
 ANONYMIZE_SQL=$(realpath "${STAGING_ANONYMIZE_SQL:?à renseigner : chemin de staging-anonymize.sql}")
 PG_IMAGE=postgres:17-alpine
-SCHEMAS=(players catalogue daily infra)
+# Un schéma absent de la prod (module pas encore déployé) ne gêne pas le dump.
+SCHEMAS=(players catalogue daily runs infra)
 
 read_env() { # read_env <fichier> <clé>
   local file="$1" key="$2"
@@ -85,7 +86,9 @@ pg_prod pg_restore -l < "$dump" | grep -v -E ' SCHEMA - infra( |$)| COMMENT - SC
 echo "Suppression des schémas des modules du staging..."
 pg_staging psql --no-psqlrc --quiet -v ON_ERROR_STOP=1 <<'SQL'
 BEGIN;
-DROP SCHEMA IF EXISTS daily, catalogue, players CASCADE;
+-- Tous les schémas de modules, y compris ceux que la prod n'a pas encore : l'historique des migrations venu de la
+-- prod ne les connaît pas, et --migrate-only les recréerait par-dessus l'ancien (« relation already exists »).
+DROP SCHEMA IF EXISTS runs, daily, catalogue, players CASCADE;
 DO $$
 DECLARE
     t text;
