@@ -18,7 +18,7 @@ describe('RoundPlayerComponent', () => {
   const timer = (element: HTMLElement) => element.querySelector('[data-testid="round-timer"]')?.textContent?.replace(/\s+/g, ' ').trim();
 
   it('affiche le temps écouté pendant la lecture', () => {
-    expect(timer(render().element)).toBe('0.4s / 1s');
+    expect(timer(render().element)).toBe('0,4 s / 1 s');
   });
 
   it('affiche « … » pendant le chargement', () => {
@@ -26,7 +26,7 @@ describe('RoundPlayerComponent', () => {
   });
 
   it('affiche le palier entier une fois joué', () => {
-    expect(timer(render({ phase: 'listened' }).element)).toBe('1s / 1s');
+    expect(timer(render({ phase: 'listened' }).element)).toBe('1 s / 1 s');
   });
 
   it('place un repère par palier et remplit la barre jusqu\'au palier joué', () => {
@@ -58,7 +58,7 @@ describe('RoundPlayerComponent', () => {
 
     expect(replay).toHaveBeenCalledOnce();
     expect(more).toHaveBeenCalledOnce();
-    expect(element.querySelectorAll('button')[1].textContent).toContain('▶ 2s');
+    expect(element.querySelectorAll('button')[1].textContent).toContain('▶ 2\u00a0s');
   });
 
   it('au dernier palier, plus de bouton « écouter plus »', () => {

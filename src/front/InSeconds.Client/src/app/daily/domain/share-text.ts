@@ -2,12 +2,11 @@
 export interface ShareTrack {
   readonly artistCorrect: boolean;
   readonly titleCorrect: boolean;
-  readonly listenedSeconds: number;
 }
 
-/** `✅/❌ 1s` par morceau (`✅` trouvé, `❌` raté : lisible sans voir les couleurs). */
-export function shareLines(tracks: readonly ShareTrack[]): string[] {
-  return tracks.map(t => `${t.artistCorrect ? '✅' : '❌'}/${t.titleCorrect ? '✅' : '❌'} ${t.listenedSeconds}s`);
+/** Un `✅` par morceau trouvé (artiste ou titre), un `❌` par morceau raté, sur une seule ligne. */
+export function shareLine(tracks: readonly ShareTrack[]): string {
+  return tracks.map(t => (t.artistCorrect || t.titleCorrect ? '✅' : '❌')).join('');
 }
 
 /** `jj/mm`, dans le fuseau du joueur. */

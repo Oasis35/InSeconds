@@ -5,9 +5,9 @@
 
       @if (r.coverUrl) {
         <img [src]="r.coverUrl" [alt]="'daily.alreadyPlayed.coverAlt' | translate"
-          class="w-12 h-12 rounded-xl object-cover shrink-0" style="opacity:0.9" />
+          class="w-12 h-12 rounded-full object-cover shrink-0" style="opacity:0.9" />
       } @else {
-        <div class="w-12 h-12 rounded-xl shrink-0" style="background:var(--bg-surface-2)"></div>
+        <div class="w-12 h-12 rounded-full shrink-0" style="background:var(--bg-surface-2)"></div>
       }
 
       <div class="flex-1 min-w-0 text-left space-y-1 py-0.5">
@@ -26,10 +26,10 @@
         }
         <div class="flex gap-2.5 text-xs" style="color:var(--text-hover)">
           @if (r.listenedSeconds !== null) {
-            <span>{{ r.listenedSeconds }}s</span>
+            <span>{{ r.listenedSeconds | appSeconds }}</span>
           }
           @if (r.averageSecondsWhenCorrect !== null) {
-            <span>{{ 'daily.alreadyPlayed.averageSeconds' | translate: { seconds: r.averageSecondsWhenCorrect.toFixed(1) } }}</span>
+            <span>{{ 'daily.alreadyPlayed.averageSeconds' | translate: { seconds: (r.averageSecondsWhenCorrect | appSeconds: 1) } }}</span>
           }
         </div>
       </div>

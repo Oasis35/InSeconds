@@ -15,7 +15,7 @@
         }
       </p>
       <div class="flex items-center justify-between gap-3">
-        <p class="m-0 font-semibold uppercase" style="font-family:var(--font-display);font-size:10px;letter-spacing:.12em;color:var(--text-muted)">
+        <p class="m-0 text-xs font-semibold" style="font-family:var(--font-display);color:var(--text-muted)">
           {{ 'daily.streakFreeze.sheet.stockLabel' | translate: { count: streak().freezes, max: streak().maxFreezes } }}
         </p>
         <app-freeze-cells [count]="streak().freezes" [max]="streak().maxFreezes" size="lg" />
@@ -37,7 +37,7 @@
         {{ 'daily.streakFreeze.sheet.rule' | translate: { every: streak().freezeEveryDays, max: streak().maxFreezes } }}
       </p>
       <button type="button" (click)="finish('close')"
-              class="w-full rounded-xl text-xs font-bold uppercase cursor-pointer"
+              class="w-full rounded-(--radius-button) text-xs font-bold uppercase cursor-pointer"
               style="min-height:46px;font-family:var(--font-display);letter-spacing:.06em;border:1px solid rgb(var(--rgb-border) / 0.3);background:rgb(var(--rgb-panel) / 0.6);color:var(--text-hi)">
         {{ 'daily.streakFreeze.sheet.close' | translate }}
       </button>
@@ -81,12 +81,12 @@
       </p>
       <div class="flex flex-col gap-2.5">
         <button type="button" (click)="finish('playNow')"
-                class="w-full rounded-full font-bold uppercase cursor-pointer"
+                class="w-full rounded-(--radius-button) font-bold uppercase cursor-pointer"
                 style="min-height:50px;font-family:var(--font-display);font-size:15px;letter-spacing:.08em;color:var(--text-on-primary);background:var(--gradient-primary);box-shadow:var(--glow-primary)">
           {{ 'daily.streakFreeze.sheet.playNow' | translate }}
         </button>
         <button type="button" (click)="finish('close')"
-                class="w-full rounded-xl text-xs font-bold uppercase cursor-pointer"
+                class="w-full rounded-(--radius-button) text-xs font-bold uppercase cursor-pointer"
                 style="min-height:46px;font-family:var(--font-display);letter-spacing:.06em;border:1px solid rgb(var(--rgb-border) / 0.3);background:rgb(var(--rgb-panel) / 0.6);color:var(--text-hi)">
           {{ 'daily.streakFreeze.sheet.later' | translate }}
         </button>
@@ -105,12 +105,12 @@
       </p>
       <div class="flex flex-col gap-2.5">
         <button type="button" (click)="finish('signup')"
-                class="w-full rounded-full font-bold uppercase cursor-pointer"
+                class="w-full rounded-(--radius-button) font-bold uppercase cursor-pointer"
                 style="min-height:50px;font-family:var(--font-display);font-size:15px;letter-spacing:.08em;color:var(--text-on-primary);background:var(--gradient-primary);box-shadow:var(--glow-primary)">
           {{ 'daily.streakFreeze.sheet.signup' | translate }}
         </button>
         <button type="button" (click)="finish('close')"
-                class="w-full rounded-xl text-xs font-bold uppercase cursor-pointer"
+                class="w-full rounded-(--radius-button) text-xs font-bold uppercase cursor-pointer"
                 style="min-height:46px;font-family:var(--font-display);letter-spacing:.06em;border:1px solid rgb(var(--rgb-border) / 0.3);background:rgb(var(--rgb-panel) / 0.6);color:var(--text-hi)">
           {{ 'daily.streakFreeze.sheet.later' | translate }}
         </button>

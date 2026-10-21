@@ -49,7 +49,7 @@ Moins on écoute, plus on marque. Le score de base est un **lookup exact** du pa
 
 ## Feedback après chaque réponse
 
-- L'écran de révélation d'un morceau affiche un **histogramme « en combien de temps les autres ont trouvé »** : une barre par palier d'écoute (`0.5s … 10s`) = nombre de joueurs ayant trouvé (artiste OU titre) à ce palier, plus une barre « ✗ » finale = nombre de joueurs n'ayant pas trouvé. La colonne du palier écouté par le joueur courant est mise en avant (ou la barre « ✗ » s'il n'a pas trouvé). Purement informatif, n'affecte pas le score. Données : la réponse de `POST /api/daily/sessions/{id}/answers` (réponse courante incluse dans les comptes ; joueurs supprimés exclus). **[Back + Front]**
+- L'écran de révélation d'un morceau affiche un **histogramme « en combien de temps les autres ont trouvé »** : une barre par palier d'écoute (« 0,5 s » … « 10 s ») = nombre de joueurs ayant trouvé (artiste OU titre) à ce palier, plus une barre « ✗ » finale = nombre de joueurs n'ayant pas trouvé. La colonne du palier écouté par le joueur courant est mise en avant (ou la barre « ✗ » s'il n'a pas trouvé). Purement informatif, n'affecte pas le score. Données : la réponse de `POST /api/daily/sessions/{id}/answers` (réponse courante incluse dans les comptes ; joueurs supprimés exclus). **[Back + Front]**
 - Sur le **récap final ET l'écran « déjà joué »**, le même histogramme est accessible en pop-up : cliquer le `+score` d'un morceau l'ouvre (données de `GET /api/daily/stats/today`). Les deux écrans partagent la même liste de morceaux (`track-results-list` du domaine `daily`) : pochette, chips `✓/✗`, durée écoutée, `% ratés`/moyenne, `+score`.
 
 ## Répartition des scores du jour

@@ -21,7 +21,7 @@ import { Device } from '../domain/device';
             <p class="truncate text-sm font-semibold" style="color:var(--text-hi)">
               {{ device.label ?? ('account.devices.unknownDevice' | translate) }}
               @if (device.isCurrent) {
-                <span class="ml-2 rounded-full px-2 py-0.5 text-xs font-bold uppercase"
+                <span class="ml-2 rounded-full px-2 py-0.5 text-xs font-semibold"
                   style="background:rgb(var(--rgb-accent-2) / 0.15);color:var(--color-accent-2)">
                   {{ 'account.devices.current' | translate }}
                 </span>

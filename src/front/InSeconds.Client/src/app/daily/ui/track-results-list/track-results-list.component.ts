@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
+import { SecondsPipe } from '../../../ui/format/seconds.pipe';
 import { ModalService } from '../../../ui/modal/modal.service';
 import { GuessBucket } from '../../domain/daily';
 import { DeezerBadgeComponent } from '../deezer-badge/deezer-badge.component';
@@ -31,7 +32,7 @@ export interface TrackResultRow {
  */
 @Component({
   selector: 'app-track-results-list',
-  imports: [TranslatePipe, DeezerBadgeComponent],
+  imports: [TranslatePipe, DeezerBadgeComponent, SecondsPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './track-results-list.component.html',
 })

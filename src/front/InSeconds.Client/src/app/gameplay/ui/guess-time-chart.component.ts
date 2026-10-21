@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { TranslateService } from '@ngx-translate/core';
+import { formatSeconds } from '../../ui/format/format-seconds';
 import { GuessBucket } from '../domain/round-result';
 
 interface Bar {
@@ -58,7 +60,10 @@ export class GuessTimeChartComponent {
   /** Écrit le nombre de joueurs au-dessus de chaque barre (vue admin). */
   readonly showCounts = input(false);
 
+  private readonly lang = inject(TranslateService).currentLang;
+
   protected readonly bars = computed<Bar[]>(() => {
+    const lang = this.lang() ?? 'fr';
     const distribution = this.distribution();
     const notFound = this.notFoundCount();
     const highlightDuration = this.highlightDuration();
@@ -69,7 +74,7 @@ export class GuessTimeChartComponent {
       const highlighted = highlightDuration !== null && bucket.durationSeconds === highlightDuration;
       return {
         key: `d${bucket.durationSeconds}`,
-        label: `${bucket.durationSeconds}s`,
+        label: formatSeconds(bucket.durationSeconds, lang),
         count: bucket.count,
         highlighted,
         height: height(bucket.count),
