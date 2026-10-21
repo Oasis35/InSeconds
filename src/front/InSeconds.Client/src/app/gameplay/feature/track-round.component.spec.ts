@@ -114,7 +114,7 @@ describe('TrackRoundComponent', () => {
     it('« ↺ » et « ▶ » pilotent le lecteur', () => {
       start();
       emit('playing', 0.2);
-      button('▶ 1s')!.click();
+      button('▶ 1\u00a0s')!.click();
       refresh();
       expect(audio.calls.at(-1)).toBe('playUntil 1');
 

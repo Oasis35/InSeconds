@@ -29,7 +29,7 @@ test.describe('Déjà joué - état already_played', () => {
     await expect(game.shareCopiedButton).toBeVisible();
 
     const clipText = await page.evaluate(() => navigator.clipboard.readText());
-    expect(clipText).toContain('InSeconds 🎵');
+    expect(clipText).toContain('InSeconds · ');
     expect(clipText).toContain('pts');
     expect(clipText).toMatch(/[✅❌]/); // contient des emojis résultat
   });

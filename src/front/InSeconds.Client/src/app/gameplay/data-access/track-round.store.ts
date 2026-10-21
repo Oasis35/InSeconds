@@ -36,6 +36,8 @@ export function withTrackRound() {
       hints: computed<readonly HintFact[]>(() => round()?.hints ?? []),
       /** Ce que révèle chaque niveau, quand le back le dit (libellé des boutons). */
       hintKinds: computed<readonly (string | null)[]>(() => round()?.hintKinds ?? []),
+      /** Ce que coûte chaque niveau, en pourcentage (écrit sur le bouton). */
+      hintPenaltyPercents: computed<readonly (number | null)[]>(() => round()?.hintPenaltyPercents ?? []),
       availableHintLevels: computed(() => { const r = round(); return r ? availableHintLevels(r) : []; }),
       pendingConfirm: computed(() => round()?.confirm ?? null),
       submission: computed(() => round()?.submission ?? null),

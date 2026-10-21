@@ -45,7 +45,7 @@ describe('TrackResultsListComponent', () => {
     expect(text).toContain('Eminem - Lose Yourself');
     expect(text).toContain('✓');
     expect(text).toContain('+850');
-    expect(text).toContain('1s');
+    expect(text).toContain('1 s');
   });
 
   it("affiche « Artiste - Titre » avant les chips ✓/✗", () => {

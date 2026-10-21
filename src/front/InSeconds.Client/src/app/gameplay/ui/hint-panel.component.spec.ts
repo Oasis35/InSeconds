@@ -35,8 +35,9 @@ describe('HintPanelComponent', () => {
     expect(labels).toEqual(['gameplay.hint.ask.year', 'gameplay.hint.ask.artist', 'gameplay.hint.button']);
   });
 
-  it('prévient que chaque indice coûte des points', () => {
-    expect(render({ levels: [1] }).element.textContent).toContain('gameplay.hint.costWarning');
+  it('écrit le coût de chaque niveau sur son bouton, quand le back le donne', () => {
+    const labels = render({ levels: [1, 2], kinds: ['year', 'artistMasked'], penalties: [30] }).buttons().map(b => b.textContent!.replace(/\s+/g, ' ').trim());
+    expect(labels).toEqual(['gameplay.hint.ask.year gameplay.hint.cost', 'gameplay.hint.ask.artist']);
   });
 
   it('les boutons attendent la réponse du back', () => {

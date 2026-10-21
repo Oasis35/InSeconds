@@ -66,7 +66,7 @@ test.describe('Échec de lecture audio', () => {
     await game.clickStart();
 
     // La lecture part sur la relance (le chrono passe de « … » au palier), sans message d'erreur.
-    await expect(round.timer).toHaveText(/s \/ 0\.5s\s*$/);
+    await expect(round.timer).toHaveText(/s \/ 0,5\s?s\s*$/);
     expect(failures).toBe(1);
     await expect(game.retryButton).not.toBeVisible();
     await round.submitEmpty();

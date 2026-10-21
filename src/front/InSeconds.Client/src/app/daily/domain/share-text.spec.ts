@@ -1,12 +1,14 @@
-import { dayLabel, shareLines } from './share-text';
+import { dayLabel, shareLine } from './share-text';
 
-describe('shareLines', () => {
-  it("un ✅ ou ❌ pour l'artiste, un pour le titre, et le palier écouté", () => {
-    expect(shareLines([
-      { artistCorrect: true, titleCorrect: true, listenedSeconds: 0.5 },
-      { artistCorrect: true, titleCorrect: false, listenedSeconds: 3 },
-      { artistCorrect: false, titleCorrect: false, listenedSeconds: 10 },
-    ])).toEqual(['✅/✅ 0.5s', '✅/❌ 3s', '❌/❌ 10s']);
+describe('shareLine', () => {
+  it('un ✅ par morceau trouvé (artiste ou titre), un ❌ par morceau raté, sur une ligne', () => {
+    expect(shareLine([
+      { artistCorrect: true, titleCorrect: true },
+      { artistCorrect: true, titleCorrect: false },
+      { artistCorrect: false, titleCorrect: true },
+      { artistCorrect: false, titleCorrect: false },
+      { artistCorrect: true, titleCorrect: true },
+    ])).toBe('✅✅✅❌✅');
   });
 });
 

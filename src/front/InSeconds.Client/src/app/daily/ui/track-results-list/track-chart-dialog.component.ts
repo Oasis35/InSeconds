@@ -16,7 +16,7 @@ export interface TrackChartDialogData {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-modal-frame [title]="row.artist + ' - ' + row.title">
-      <p class="text-[10px] font-bold tracking-widest uppercase mb-4"
+      <p class="text-xs font-semibold mb-4"
         style="font-family:var(--font-display);color:var(--text-faint)">{{ 'daily.trackList.guessTimeTitle' | translate }}</p>
       <app-guess-time-chart
         [distribution]="row.distribution"

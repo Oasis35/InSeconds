@@ -86,9 +86,9 @@
     "round": {
       "noPreview": "Preview not available for this track.",
       "skip": "Skip (0 pts)",
-      "replay": "↺ {{ seconds }}s",
-      "listenUpTo": "Listen up to {{ seconds }}s",
-      "stepsUpTo": "You can listen up to {{ seconds }}s if you need to",
+      "replay": "↺ {{ seconds }}",
+      "listenUpTo": "Listen up to {{ seconds }}",
+      "stepsUpTo": "You can listen up to {{ seconds }} if you need to",
       "playbackError": "Couldn't play the preview. Try again, or skip this track.",
       "retry": "Retry"
     },
@@ -105,12 +105,12 @@
       "retry": "Retry"
     },
     "hint": {
-      "costWarning": "Every hint revealed costs points this round",
+      "cost": "(−{{ percent }}%)",
       "tooltip": "Hint: costs points",
       "button": "Hint {{ level }}",
       "ask": {
-        "year": "Year hint",
-        "artist": "Artist hint"
+        "year": "Hint: year",
+        "artist": "Hint: artist"
       },
       "kind": {
         "year": "Year",
@@ -128,7 +128,7 @@
   "account": {
     "login": {
       "title": "Log in",
-      "subtitle": "Get a magic link by email to keep your streak and scores on all your devices.",
+      "subtitle": "We'll email you a sign-in link, no password needed. Your streak and scores follow you on every device.",
       "emailLabel": "Email address",
       "emailPlaceholder": "your@email.com",
       "suggestion": "Did you mean {{ email }}?",
@@ -531,8 +531,8 @@
     },
     "welcome": {
       "title": "Today's Blind Test",
-      "subtitle": "{{ count }} tracks · listen & guess",
-      "tagline": "The less you listen, the more you score",
+      "subtitle": "{{ count }} tracks to guess.",
+      "tagline": "Who'll be the fastest?",
       "start": "Start",
       "loginCta": "Log in / Create an account",
       "loginHint": "To keep your streak across all your devices.",
@@ -587,14 +587,14 @@
       "showTracks": "Show tracks",
       "hideTracks": "Hide",
       "coverAlt": "Cover",
-      "averageSeconds": "avg. {{ seconds }}s"
+      "averageSeconds": "avg. {{ seconds }}"
     },
     "share": {
       "button": "Share my score",
       "copied": "Copied!",
       "failed": "Couldn't copy to the clipboard.",
-      "title": "InSeconds 🎵 {{ date }}",
-      "score": "🏆 {{ score }} pts"
+      "title": "InSeconds · {{ date }}",
+      "score": "{{ score }} pts"
     },
     "done": {
       "finalScore": "Final score",

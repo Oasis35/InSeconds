@@ -17,11 +17,13 @@ test.describe('Bouton partager', () => {
     await expect(game.shareCopiedButton).toBeVisible();
 
     const clipText = await page.evaluate(() => navigator.clipboard.readText());
-    expect(clipText).toContain('InSeconds 🎵');
-    expect(clipText).toContain('pts');
-    expect(clipText).toMatch(/https?:\/\//); // contient une URL (appUrl selon l'environnement)
-    expect(clipText).toMatch(/[✅❌]/); // emojis résultat (✅ correct, ❌ raté)
-    expect(clipText).not.toMatch(/[🟩🟨🟥⬜]/); // plus d'emojis couleur durée
+    // « InSeconds · 21/10 », une ligne d'un ✅/❌ par morceau, le score, le lien : ni 🎵, ni 🏆, ni palier écouté.
+    const lines = clipText.split('\n');
+    expect(lines[0]).toMatch(/^InSeconds · \d{2}\/\d{2}$/);
+    expect(lines[1]).toMatch(/^[✅❌]{5}$/);
+    expect(lines[2]).toMatch(/^[\d\s\u202f]+ pts$/);
+    expect(lines[3]).toMatch(/^https?:\/\//);
+    expect(clipText).not.toMatch(/[🎵🏆]/);
   });
 
   test('copie quand même si clipboard.writeText échoue (repli execCommand, #200)', async ({ page }) => {
@@ -42,7 +44,7 @@ test.describe('Bouton partager', () => {
 
     await expect(game.shareCopiedButton).toBeVisible();
     const copied = await page.evaluate(() => (window as unknown as { __realClipboard: Clipboard }).__realClipboard.readText());
-    expect(copied).toContain('InSeconds 🎵');
+    expect(copied).toContain('InSeconds · ');
     expect(copied).toMatch(/[✅❌]/);
   });
 

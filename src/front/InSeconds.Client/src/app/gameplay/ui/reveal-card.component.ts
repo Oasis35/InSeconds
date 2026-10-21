@@ -18,7 +18,7 @@ import { GuessTimeChartComponent } from './guess-time-chart.component';
 
       @if (result().coverUrl; as cover) {
         <img [src]="cover" [alt]="'gameplay.reveal.coverAlt' | translate" class="w-24 h-24 object-cover"
-          style="box-shadow:0 8px 32px rgba(0,0,0,0.6);opacity:0.95;border-radius:34% 66% 60% 40% / 40% 45% 55% 60%" />
+          style="box-shadow:0 8px 32px rgba(0,0,0,0.6);opacity:0.95;border-radius:50%" />
       }
 
       <div class="flex justify-center gap-6">
@@ -31,7 +31,7 @@ import { GuessTimeChartComponent } from './guess-time-chart.component';
       </div>
 
       <div class="space-y-1.5">
-        <p class="text-xs font-bold tracking-widest uppercase" style="font-family:var(--font-display);color:var(--text-faint)">
+        <p class="text-sm font-semibold" style="font-family:var(--font-display);color:var(--text-faint)">
           {{ 'gameplay.reveal.correctAnswer' | translate }}
         </p>
         <p class="text-base font-medium" style="color:var(--text-light)">{{ result().correctArtist }} - {{ result().correctTitle }}</p>

@@ -1,9 +1,7 @@
-import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
 import { CdkDialogContainer, DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ButtonComponent } from '../../../ui/button/button.component';
-import { launchConfetti } from './confetti';
 
 /**
  * Données de la fenêtre : le nombre de parties déjà arrondi (`null` : le message sans chiffre), la langue de son écriture, et ce que fait
@@ -16,7 +14,7 @@ export interface ThanksDialogData {
 }
 
 /**
- * Le message de remerciement du lancement de la v2 (signé Clément), avec une courte pluie de confettis à l'ouverture. Présentationnel :
+ * Le message de remerciement (signé Clément), dans un panneau bas, écrit comme une lettre : aligné à gauche, sans effet. Présentationnel :
  * la page décide quand l'ouvrir (une fois par navigateur, après une partie) et ce que fait « Défie un ami ». « Continuer », la croix, Échap
  * et le fond la ferment.
  */
@@ -41,7 +39,6 @@ export class ThanksDialogComponent {
       container._addAriaLabelledBy(this.titleId);
       destroyRef.onDestroy(() => container._removeAriaLabelledBy(this.titleId));
     }
-    destroyRef.onDestroy(launchConfetti(inject(DOCUMENT)));
   }
 
   protected challenge(): void {

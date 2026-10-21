@@ -25,10 +25,10 @@
       }
       @if (c.median; as m) {
         <line [attr.x1]="m.tickX" [attr.x2]="m.tickX" y1="0" [attr.y2]="axisY + 4"
-              stroke="var(--color-accent-2)" stroke-width="1.5" stroke-dasharray="3 3" />
-        <text [attr.x]="m.labelX" [attr.y]="axisY + 15" text-anchor="middle" style="font-size:9px;fill:var(--color-accent-2)">{{ 'daily.scoreChart.median' | translate }}</text>
+              stroke="var(--color-violet)" stroke-width="1.5" stroke-dasharray="3 3" />
+        <text [attr.x]="m.labelX" [attr.y]="axisY + 15" text-anchor="middle" style="font-size:9px;fill:var(--color-violet)">{{ 'daily.scoreChart.median' | translate }}</text>
         <text [attr.x]="m.labelX" [attr.y]="axisY + 28" text-anchor="middle" data-testid="score-median"
-              style="font-size:12px;font-weight:700;font-family:var(--font-display);fill:var(--color-accent-2)">{{ m.value }}</text>
+              style="font-size:12px;font-weight:700;font-family:var(--font-display);fill:var(--color-violet)">{{ m.value }}</text>
       }
     </svg>
 
