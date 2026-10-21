@@ -63,10 +63,10 @@ internal static partial class DailyLog
 
     // Jamais la réponse saisie : seulement le résultat, plus le morceau attendu (donnée publique du défi) pour lire les stats par morceau.
     // Texte de la v1 à l'identique (#314) : les tableaux Grafana (Jeu, « Par morceau ») le lisent par expression régulière,
-    // « morceau {id}) : palier … » puis « — morceau n°{position} : {artiste} / {titre} ». {TrackId} (le morceau du catalogue)
+    // « morceau {id}) : palier … » puis « - morceau n°{position} : {artiste} / {titre} ». {TrackId} (le morceau du catalogue)
     // remplace le DailyChallengeTrackId de la v1, qui n'existe plus. Figé par DailyLogTests.
     [LoggerMessage(EventId = 1002, Level = LogLevel.Information,
-        Message = "Réponse de {PlayerId} (partie {SessionId}, morceau {TrackId}) : palier {ListenedSeconds}s, artiste {ArtistCorrect}, titre {TitleCorrect}, indice {HintLevel}, score {Score} — morceau n°{TrackPosition} : {TrackArtist} / {TrackTitle}")]
+        Message = "Réponse de {PlayerId} (partie {SessionId}, morceau {TrackId}) : palier {ListenedSeconds}s, artiste {ArtistCorrect}, titre {TitleCorrect}, indice {HintLevel}, score {Score} - morceau n°{TrackPosition} : {TrackArtist} / {TrackTitle}")]
     public static partial void AnswerSubmitted(
         ILogger logger, Guid playerId, int sessionId, int trackId, decimal listenedSeconds, bool artistCorrect, bool titleCorrect,
         int hintLevel, int score, int trackPosition, string trackArtist, string trackTitle);

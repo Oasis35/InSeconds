@@ -32,7 +32,7 @@ public sealed partial class RedirectingEmailSender(IEmailSender inner, IOptions<
     }
 
     internal static string BuildBanner(string label, string originalTo) =>
-        $"""<div style="background:#f59e0b;color:#1a1a1a;font-family:Arial,sans-serif;font-size:14px;padding:12px 16px;text-align:center;"><strong>{WebUtility.HtmlEncode(label)}</strong> — environnement de développement. Destinataire d'origine : {WebUtility.HtmlEncode(originalTo)}</div>""";
+        $"""<div style="background:#f59e0b;color:#1a1a1a;font-family:Arial,sans-serif;font-size:14px;padding:12px 16px;text-align:center;"><strong>{WebUtility.HtmlEncode(label)}</strong> - environnement de développement. Destinataire d'origine : {WebUtility.HtmlEncode(originalTo)}</div>""";
 
     /// <summary>Juste après la balise <c>&lt;body&gt;</c> quand il y en a une, sinon en tête.</summary>
     internal static string InsertBanner(string htmlBody, string banner)

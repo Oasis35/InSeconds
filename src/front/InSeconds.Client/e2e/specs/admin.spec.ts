@@ -7,7 +7,7 @@ import { linkAccount } from '../pages/login.page';
 // Réactivé en C3 (le pool), puis en F2 (dashboard, défis, joueurs, actions) : plus aucun `test.fixme`. Titres inchangés
 // (la parité avec la v1 les compare), corps adaptés aux routes de la v2.
 
-test.describe('Admin — login', () => {
+test.describe('Admin - login', () => {
   test('visiteur non connecté : /admin invite à se connecter', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
@@ -43,7 +43,7 @@ test.describe('Admin — login', () => {
   });
 });
 
-test.describe('Admin — pool', () => {
+test.describe('Admin - pool', () => {
   test.beforeEach(async ({ api }) => {
     await api.reseed();
   });
@@ -170,8 +170,8 @@ test.describe('Admin — pool', () => {
 
     // Cherche dans le panneau (placeholder distinct du filtre pool)
     await admin.addPanelSearchInput().fill('E2E Track');
-    // FakeDeezerHandler retourne "E2E Track" — attendre le résultat (debounce 300ms + réseau)
-    const result = page.getByText('E2E Artist — E2E Track');
+    // FakeDeezerHandler retourne "E2E Track" - attendre le résultat (debounce 300ms + réseau)
+    const result = page.getByText('E2E Artist - E2E Track');
     await expect(result).toBeVisible({ timeout: 10000 });
     await admin.addPanelAddButton().click();
 
@@ -193,7 +193,7 @@ test.describe('Admin — pool', () => {
     // Clique sur la corbeille
     await page.getByRole('button', { name: '🗑' }).first().click();
     await expect(admin.deleteModal()).toBeVisible();
-    await expect(page.getByText('Sabrina Carpenter — Espresso')).toBeVisible();
+    await expect(page.getByText('Sabrina Carpenter - Espresso')).toBeVisible();
 
     await admin.confirmDeleteButton().click();
     await expect(admin.deleteModal()).not.toBeVisible();
@@ -224,7 +224,7 @@ test.describe('Admin — pool', () => {
     await admin.login();
     await page.getByRole('link', { name: /^Pool/ }).click();
 
-    // Coldplay — Yellow fait partie du défi J-2 du seed : pas de corbeille, un bouton « Désactiver » à la place.
+    // Coldplay - Yellow fait partie du défi J-2 du seed : pas de corbeille, un bouton « Désactiver » à la place.
     await admin.poolSearchInput().fill('Coldplay');
     const row = admin.poolRow('Coldplay');
     await expect(row.getByRole('button', { name: '🗑' })).toHaveCount(0);
@@ -349,7 +349,7 @@ test.describe('Admin — pool', () => {
     await page.getByRole('link', { name: /^Pool/ }).click();
     await admin.poolView('Daily').click();
 
-    // Adele (index 19) a le UsageCount le plus élevé du seed (7) — tri desc doit la faire remonter.
+    // Adele (index 19) a le UsageCount le plus élevé du seed (7) - tri desc doit la faire remonter.
     await admin.poolColumnHeader('Nb. utilisations').click();
     await admin.poolColumnHeader('Nb. utilisations').click(); // 2e clic → desc
     // Colonne Artiste = cell index 1 de la vue Daily (0=Actions, 1=Artiste).
@@ -374,7 +374,7 @@ test.describe('Admin — pool', () => {
   });
 });
 
-test.describe('Admin — actions', () => {
+test.describe('Admin - actions', () => {
   test.beforeEach(async ({ api }) => {
     await api.reseed();
   });
@@ -400,9 +400,9 @@ test.describe('Admin — actions', () => {
     await adminPage.clickTab('Actions');
 
     // La part du pool en cooldown (#275). Queen (LastUsedDate = today-5j) a une date de déblocage lue en base au chargement du pool
-    // (pas via /api/settings, figé au boot) — sert de preuve que le nouveau cooldown est bien pris
+    // (pas via /api/settings, figé au boot) - sert de preuve que le nouveau cooldown est bien pris
     // en compte, cohérent avec "effectif au prochain calcul", pas de redémarrage requis.
-    const before = await adminPage.apiGetPoolUnlockDate(5055001); // Queen — Bohemian Rhapsody
+    const before = await adminPage.apiGetPoolUnlockDate(5055001); // Queen - Bohemian Rhapsody
 
     // 75 % de 50 morceaux jouables, 5 par défi : 7 jours, sous le seuil de 14 jours.
     await expect(adminPage.trackCooldownInput()).toHaveValue('75');
@@ -418,7 +418,7 @@ test.describe('Admin — actions', () => {
   });
 });
 
-test.describe('Admin — défis', () => {
+test.describe('Admin - défis', () => {
   test.beforeEach(async ({ api }) => {
     await api.reseed();
   });
@@ -442,7 +442,7 @@ test.describe('Admin — défis', () => {
 });
 
 // Recalcul des chiffres figés d'un défi (v2 seulement, E3/F2) : permis à partir de J-2, refusé pour la veille et le jour même.
-test.describe('Admin — recalcul des stats (v2)', () => {
+test.describe('Admin - recalcul des stats (v2)', () => {
   const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
 
   test.beforeEach(async ({ api }) => {
@@ -508,7 +508,7 @@ test.describe('Admin — recalcul des stats (v2)', () => {
   });
 });
 
-test.describe('Admin — chargement paresseux par onglet', () => {
+test.describe('Admin - chargement paresseux par onglet', () => {
   test.beforeEach(async ({ api }) => {
     await api.reseed();
   });
@@ -586,13 +586,13 @@ test.describe('Admin — chargement paresseux par onglet', () => {
   });
 });
 
-test.describe('Admin — indicateur joueurs / ID navigateur', () => {
+test.describe('Admin - indicateur joueurs / ID navigateur', () => {
   test('affiche l\'ID du navigateur sur l\'écran de connexion et permet de le copier', async ({ page, api }) => {
     await api.reseed();
     const admin = new AdminPage(page);
     await admin.goto();
 
-    // Visible avant même la connexion — le cookie authToken est posé dès le chargement de l'app.
+    // Visible avant même la connexion - le cookie authToken est posé dès le chargement de l'app.
     await expect(admin.browserIdShort()).toBeVisible();
     const shortId = await admin.browserIdShort().textContent();
     expect(shortId).toMatch(/^[0-9a-f]{8}$/);
@@ -671,7 +671,7 @@ test.describe('Admin — indicateur joueurs / ID navigateur', () => {
   });
 });
 
-test.describe('Admin — joueurs', () => {
+test.describe('Admin - joueurs', () => {
   test.beforeEach(async ({ api }) => {
     await api.reset();
   });

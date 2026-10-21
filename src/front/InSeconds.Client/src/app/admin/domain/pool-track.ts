@@ -45,9 +45,9 @@ export function isUsedByMode(track: Pick<PoolTrack, 'usages'>, mode: string): bo
   return usageOf(track, mode) !== null;
 }
 
-/** « Artiste — Titre », la forme sous laquelle un morceau est nommé dans l'admin. */
+/** « Artiste - Titre », la forme sous laquelle un morceau est nommé dans l'admin. */
 export function trackLabel(track: Pick<PoolTrack, 'artist' | 'title'>): string {
-  return `${track.artist} — ${track.title}`;
+  return `${track.artist} - ${track.title}`;
 }
 
 /** Un résultat de la recherche Deezer de l'admin : de quoi écouter l'extrait et ajouter le morceau. */

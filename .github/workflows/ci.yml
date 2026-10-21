@@ -348,7 +348,7 @@ jobs:
     # M17 (revue du 25/09) : groupe de concurrency dédié, distinct de celui du workflow
     # (${{ github.workflow }}-${{ github.ref }}, cf. en-tête du fichier). Sans ça, un déploiement
     # en cours pouvait être annulé en plein milieu (cancel-in-progress du groupe workflow) par un
-    # nouveau push sur main — laissant le VPS avec un `docker compose up --build` interrompu
+    # nouveau push sur main - laissant le VPS avec un `docker compose up --build` interrompu
     # (conteneur à moitié reconstruit). `cancel-in-progress: false` fait attendre un déploiement
     # suivant plutôt que de couper celui en cours ; groupe fixe (pas par ref) car ce job ne
     # tourne de toute façon que sur main.
@@ -390,7 +390,7 @@ jobs:
     # Branche de déploiement du staging, protégée : on y arrive par PR. Cf. docs/exploitation/deploiement.md § Staging.
     if: ${{ always() && needs.ci-ok.result == 'success' && github.ref == 'refs/heads/env/staging' && github.event_name == 'push' }}
     # Groupe distinct de deploy-vps (prod) : GitHub ne garde qu'un seul job en attente par
-    # groupe et annule le précédent — un groupe commun pourrait faire sauter un déploiement
+    # groupe et annule le précédent - un groupe commun pourrait faire sauter un déploiement
     # prod en attente au profit d'un déploiement staging poussé juste après.
     concurrency:
       group: deploy-vps-staging

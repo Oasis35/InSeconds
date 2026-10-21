@@ -18,10 +18,10 @@ describe('SearchPanelComponent', () => {
     return { fixture, component: fixture.componentInstance, element, play: () => buttons()[0], add: () => buttons()[1] };
   }
 
-  it('montre « artiste — titre » pour chaque résultat', () => {
+  it('montre « artiste - titre » pour chaque résultat', () => {
     const { element } = render({ results: [result()] });
 
-    expect(element.querySelector('li')?.textContent).toContain('E2E Artist — E2E Track');
+    expect(element.querySelector('li')?.textContent).toContain('E2E Artist - E2E Track');
   });
 
   it('émet la saisie, la liaison, l\'écoute et l\'ajout', () => {

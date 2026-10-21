@@ -2,13 +2,13 @@
 # Étapes post-checkout du déploiement InSeconds (rebuild + nettoyage images + vérification santé).
 # Appelé par les jobs `deploy` (prod) et `deploy-staging` de .github/workflows/ci.yml, une fois
 # le repo déjà positionné sur le commit à déployer (git fetch/checkout/reset --hard fait avant,
-# côté ci.yml — ce script ne touche jamais à l'état git, seulement à Docker et à la
+# côté ci.yml - ce script ne touche jamais à l'état git, seulement à Docker et à la
 # vérification post-déploiement).
 #
 # Usage : ./deploy/vps/deploy.sh [prod|staging]   (défaut : prod)
 #
 # M17 (revue du 25/09) : extrait de la commande SSH inline pour (a) garder la commande SSH
-# minimale — préalable à une restriction future de la clé de déploiement via `command=` dans
+# minimale - préalable à une restriction future de la clé de déploiement via `command=` dans
 # authorized_keys (cf. docs/exploitation/deploiement.md § CI/CD), et (b) ajouter le nettoyage des
 # images Docker + la vérification de santé post-déploiement, absents jusqu'ici.
 set -euo pipefail
@@ -75,8 +75,8 @@ if [[ "$target" == prod ]]; then
 fi
 compose up -d
 
-# Ne retire que les images "dangling" (non taguées) — jamais -a, qui supprimerait aussi les
-# images d'autres projets partageant ce VPS (cf. CLAUDE.md racine § Architecture — plusieurs
+# Ne retire que les images "dangling" (non taguées) - jamais -a, qui supprimerait aussi les
+# images d'autres projets partageant ce VPS (cf. CLAUDE.md racine § Architecture - plusieurs
 # stacks Compose indépendants sur le même hôte). Le rebuild ci-dessus délaisse le tag
 # `latest` de l'ancienne image sans la supprimer ; sans ce nettoyage régulier, ces images
 # orphelines s'accumulent et finissent par saturer les 40 Go de disque.

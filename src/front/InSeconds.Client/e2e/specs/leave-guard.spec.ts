@@ -11,7 +11,7 @@ test.describe('Confirmation de sortie en cours de partie (guard CanDeactivate)',
     await game.startWithFakeClock();
     await expect(page.getByText('Piste 1 / 5')).toBeVisible();
 
-    // Tenter de quitter via un lien interne du footer (icône Confidentialité — l'icône Admin
+    // Tenter de quitter via un lien interne du footer (icône Confidentialité - l'icône Admin
     // n'est visible que pour un compte IsAdmin=true, cf. game-footer.component.html)
     await page.getByTitle(/Confidentialité/).click();
 

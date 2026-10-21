@@ -34,7 +34,7 @@ import { GuessTimeChartComponent } from './guess-time-chart.component';
         <p class="text-xs font-bold tracking-widest uppercase" style="font-family:var(--font-display);color:var(--text-faint)">
           {{ 'gameplay.reveal.correctAnswer' | translate }}
         </p>
-        <p class="text-base font-medium" style="color:var(--text-light)">{{ result().correctArtist }} — {{ result().correctTitle }}</p>
+        <p class="text-base font-medium" style="color:var(--text-light)">{{ result().correctArtist }} - {{ result().correctTitle }}</p>
       </div>
 
       <ng-content select="[roundScore]" />

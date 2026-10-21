@@ -21,7 +21,7 @@ export default defineConfig({
     serviceWorkers: 'block',
     trace: 'on-first-retry',
     video: 'on-first-retry',
-    // Désactive les animations (ex: count-up du score) — sinon le score final n'est pas
+    // Désactive les animations (ex: count-up du score) - sinon le score final n'est pas
     // lisible sous une horloge figée par page.clock (requestAnimationFrame ne tourne pas).
     reducedMotion: 'reduce',
   },

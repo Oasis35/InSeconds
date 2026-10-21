@@ -24,7 +24,7 @@ import { DayKpis, completionRateColor } from '../domain/dashboard';
         <div class="rounded-xl p-4 flex flex-col gap-1" style="background:var(--bg-surface)">
           <span class="text-xs uppercase tracking-wide" style="color:var(--text-muted)">{{ 'admin.dashboard.kpiCompletion' | translate }}</span>
           @if (kpis.completedCount === 0) {
-            <span class="text-2xl font-bold" style="color:var(--text-sep)">—</span>
+            <span class="text-2xl font-bold" style="color:var(--text-sep)">-</span>
             <span class="text-xs" style="color:var(--text-faint)">{{ kpis.totalSessions }} {{ (kpis.totalSessions > 1 ? 'admin.dashboard.sessions' : 'admin.dashboard.session') | translate }}, {{ 'admin.dashboard.noneComplete' | translate }}</span>
           } @else {
             <span class="text-2xl font-bold" [style.color]="rateColor(kpis.completionRate)">{{ kpis.completionRate | number:'1.0-1' }}%</span>
@@ -36,7 +36,7 @@ import { DayKpis, completionRateColor } from '../domain/dashboard';
           @if (kpis.medianScore !== null) {
             <span class="text-2xl font-bold" style="color:var(--text-indigo)">{{ kpis.medianScore | number:'1.0-0' }}</span>
           } @else {
-            <span class="text-2xl font-bold" style="color:var(--text-sep)">—</span>
+            <span class="text-2xl font-bold" style="color:var(--text-sep)">-</span>
           }
           <span class="text-xs" style="color:var(--text-faint)">{{ 'admin.dashboard.points' | translate }}</span>
         </div>

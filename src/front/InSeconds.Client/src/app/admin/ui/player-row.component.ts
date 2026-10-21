@@ -32,7 +32,7 @@ import { PlayerIconComponent } from './player-icon.component';
           class="transition-transform" [style.transform]="expanded() ? 'rotate(90deg)' : null">
           <path d="M3 1.5 6.5 5 3 8.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
-        {{ player().pseudo ?? '—' }}
+        {{ player().pseudo ?? '-' }}
       </button>
       @if (player().isAdmin) {
         <span class="ml-1.5 text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded-full align-middle"
@@ -46,7 +46,7 @@ import { PlayerIconComponent } from './player-icon.component';
           [title]="(emailRevealed() ? 'admin.players.emailHide' : 'admin.players.emailReveal') | translate"
           class="text-left cursor-pointer hover:underline min-h-6">{{ emailRevealed() ? email : mask(email) }}</button>
       } @else {
-        —
+        -
       }
     </td>
     <td class="px-3 py-2.5 text-right tabular-nums" style="color:var(--text-body)">{{ player().gamesPlayed }}</td>

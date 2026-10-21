@@ -25,7 +25,7 @@ describe('TrackChartDialog', () => {
   it('titre la fenêtre avec le morceau', () => {
     const element = open();
 
-    expect(element.textContent).toContain('2. Eminem — Lose Yourself');
+    expect(element.textContent).toContain('2. Eminem - Lose Yourself');
     expect(element.textContent).toContain('admin.challenges.guessTimeTitle');
   });
 

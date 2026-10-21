@@ -20,7 +20,7 @@ async function getCookieHeader(page: import('@playwright/test').Page): Promise<s
   return cookies.map(c => `${c.name}=${c.value}`).join('; ');
 }
 
-test.describe('Multi-onglets — synchronisation état', () => {
+test.describe('Multi-onglets - synchronisation état', () => {
   test('repasse sur already_played si la partie a été complétée dans un autre onglet', async ({ page, api }) => {
     await api.reset();
     await page.clock.install({ time: Date.now() });
@@ -81,7 +81,7 @@ test.describe('Multi-onglets — synchronisation état', () => {
     }
     await game.waitForDone();
 
-    // Simuler un retour au premier plan — l'écran done ne doit pas changer
+    // Simuler un retour au premier plan - l'écran done ne doit pas changer
     await simulateTabFocus(page);
     await expect(game.finalScoreLabel).toBeVisible();
     await expect(game.alreadyPlayedHeading).not.toBeVisible();

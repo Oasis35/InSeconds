@@ -4,7 +4,7 @@ import { inSequence } from './sequence';
 // CI utilise 5175 (port de l'API v2), local utilise 5177 (évite le conflit avec le dev normal)
 const BASE = process.env['CI'] ? 'http://localhost:5175' : 'http://localhost:5177';
 // L'auth admin est désormais un rôle sur le cookie joueur (Player.IsAdmin, cf. refonte
-// profils admin) — plus d'OriginValidator sur ces routes, donc plus besoin d'Origin ici.
+// profils admin) - plus d'OriginValidator sur ces routes, donc plus besoin d'Origin ici.
 // Bearer admin-token reste le bypass Testing-only posé dans PlayerAuthMiddleware.
 const ADMIN_HEADERS = {
   Authorization: 'Bearer admin-token',

@@ -173,7 +173,7 @@ export const PoolStore = signalStore(
       openInPool(track: PoolTrack): void {
         patchState(store, {
           view: POOL_VIEW, requestedPage: 0, sort: null, selectedIds: [],
-          filters: { ...NO_FILTERS, text: trackLabel(track).replace(' — ', ' ') },
+          filters: { ...NO_FILTERS, text: trackLabel(track).replace(' - ', ' ') },
         });
       },
       sortBy: (column: SortColumn) => patchState(store, { sort: nextSort(store.sort(), column) }),

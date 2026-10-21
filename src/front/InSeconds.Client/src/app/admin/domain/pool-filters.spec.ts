@@ -141,8 +141,8 @@ describe('pagination', () => {
 });
 
 describe('morceau', () => {
-  it('nomme « artiste — titre »', () => {
-    expect(trackLabel({ artist: 'Eminem', title: 'Lose Yourself' })).toBe('Eminem — Lose Yourself');
+  it('nomme « artiste - titre »', () => {
+    expect(trackLabel({ artist: 'Eminem', title: 'Lose Yourself' })).toBe('Eminem - Lose Yourself');
   });
 
   it('exige deux noms non vides dans les limites de l\'API', () => {

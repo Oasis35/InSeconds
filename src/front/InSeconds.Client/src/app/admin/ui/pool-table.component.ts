@@ -164,7 +164,7 @@ const MODE_COLUMNS: readonly Column[] = [
             {{ filteredCount() }}
             @if (filteredCount() !== totalCount()) { / {{ totalCount() }} }
             {{ 'admin.pool.tracksCount' | translate }}
-            @if (pages() > 1) { — {{ 'admin.pool.page' | translate: { current: page() + 1, total: pages() } }} }
+            @if (pages() > 1) { - {{ 'admin.pool.page' | translate: { current: page() + 1, total: pages() } }} }
           </span>
           @if (pages() > 1) {
             <div class="flex items-center gap-1">

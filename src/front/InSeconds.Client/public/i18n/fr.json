@@ -53,7 +53,7 @@
   "shell": {
     "legacyUrl": {
       "title": "L'adresse a changé",
-      "body": "InSeconds a maintenant sa propre adresse. Tu as été redirigé automatiquement — pense à mettre à jour ton favori.",
+      "body": "InSeconds a maintenant sa propre adresse. Tu as été redirigé automatiquement, pense à mettre à jour ton favori.",
       "cta": "J'ai compris"
     },
     "notFound": {
@@ -74,7 +74,7 @@
     "header": {
       "login": "Se connecter",
       "profile": "Mon profil",
-      "avatarTitle": "Mon profil — {{ pseudo }}"
+      "avatarTitle": "Mon profil : {{ pseudo }}"
     }
   },
   "ui": {
@@ -93,7 +93,7 @@
       "retry": "Réessayer"
     },
     "answer": {
-      "placeholder": "Artiste — Titre",
+      "placeholder": "Artiste - Titre",
       "clear": "Effacer",
       "validate": "Valider",
       "emptyConfirm": "Tu n'as rien saisi. Valider quand même ?",
@@ -106,7 +106,7 @@
     },
     "hint": {
       "costWarning": "Chaque indice révélé impacte les points du tour",
-      "tooltip": "Indice — coûte des points",
+      "tooltip": "Indice : coûte des points",
       "button": "Indice {{ level }}",
       "ask": {
         "year": "Indice année",
@@ -393,7 +393,7 @@
       "noneComplete": "aucune complète",
       "kpiMedian": "Score médian",
       "points": "pts",
-      "activity30d": "Activité — 30 jours",
+      "activity30d": "Activité sur 30 jours",
       "total": "Total",
       "peak": "Pic",
       "perDay": "/j",

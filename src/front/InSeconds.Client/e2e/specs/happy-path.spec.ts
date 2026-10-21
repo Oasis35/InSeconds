@@ -2,7 +2,7 @@ import { test, expect } from '../fixtures/test';
 import { GamePage } from '../pages/game.page';
 import { BlindRoundPage } from '../pages/blind-round.page';
 
-test.describe('Happy path — partie complète', () => {
+test.describe('Happy path - partie complète', () => {
   test.beforeEach(async ({ api }) => {
     await api.reset();
   });
@@ -17,7 +17,7 @@ test.describe('Happy path — partie complète', () => {
     await game.waitForWelcome();
     await game.clickStart();
 
-    // 5 morceaux — réponses vides (confirme quand même) pour aller vite
+    // 5 morceaux - réponses vides (confirme quand même) pour aller vite
     for (let i = 0; i < 5; i++) {
       await round.playRound(1);
     }

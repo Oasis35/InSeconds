@@ -3,8 +3,8 @@ import { GamePage } from '../pages/game.page';
 import { BlindRoundPage } from '../pages/blind-round.page';
 
 // Suggestions fournies par le déclencheur `dedup-test` du FakeDeezerHandler :
-// « E2E Artist — E2E Track » puis « Other Artist — Another Track ».
-test.describe('Autocomplete Deezer — navigation clavier', () => {
+// « E2E Artist - E2E Track » puis « Other Artist - Another Track ».
+test.describe('Autocomplete Deezer - navigation clavier', () => {
   let round: BlindRoundPage;
 
   test.beforeEach(async ({ api, page }) => {

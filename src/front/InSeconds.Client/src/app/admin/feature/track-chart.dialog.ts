@@ -18,7 +18,7 @@ export interface TrackChartDialogData {
   imports: [ModalFrameComponent, GuessTimeChartComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-modal-frame [title]="track.position + '. ' + track.artist + ' — ' + track.title">
+    <app-modal-frame [title]="track.position + '. ' + track.artist + ' - ' + track.title">
       <p class="text-[10px] font-bold tracking-widest uppercase mb-4"
         style="font-family:var(--font-display);color:var(--text-faint)">{{ 'admin.challenges.guessTimeTitle' | translate }}</p>
       <app-guess-time-chart [showCounts]="true" [distribution]="distribution" [notFoundCount]="track.notFoundCount" />

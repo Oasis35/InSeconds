@@ -48,7 +48,7 @@ describe('DeleteTrackDialog', () => {
 
     expect(element.textContent).toContain('admin.deleteModal.multiple');
     expect(Array.from(element.querySelectorAll('li')).map(li => li.textContent)).toEqual([
-      'Sabrina Carpenter — Espresso', 'Nicki Minaj — Starships',
+      'Sabrina Carpenter - Espresso', 'Nicki Minaj - Starships',
     ]);
   });
 
