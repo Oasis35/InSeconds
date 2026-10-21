@@ -172,7 +172,7 @@ public class AdminCooldownTests(PostgresFixture postgres) : IAsyncLifetime
     private async Task<TrackUsage> UsageAsync(int trackId)
     {
         using var scope = _game.Api.Services.CreateScope();
-        var usage = await scope.ServiceProvider.GetRequiredService<ITrackUsage>().GetAsync([trackId], Ct);
+        var usage = await scope.ServiceProvider.GetRequiredService<IDailyTrackUsage>().GetAsync([trackId], Ct);
         return usage[trackId];
     }
 

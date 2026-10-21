@@ -130,6 +130,42 @@ public class ModuleDependencyTests
         }
     }
 
+    /// <summary>Daily et Runs ne se voient pas : la règle générale ci-dessus, écrite pour ces deux modes.</summary>
+    [Fact]
+    public void DailyEtRuns_NeSeVoientPas()
+    {
+        foreach (var (mode, other) in new[] { ("Daily", "Runs"), ("Runs", "Daily") })
+        {
+            var result = Types.InAssembly(Api)
+                .That().ResideInNamespace($"{ModulesNamespace}.{mode}")
+                .ShouldNot().HaveDependencyOnAny($"{ModulesNamespace}.{other}")
+                .GetResult();
+
+            Assert.True(result.IsSuccessful, $"{mode} voit {other} : {string.Join(", ", result.FailingTypeNames ?? [])}");
+        }
+    }
+
+    /// <summary>
+    /// Runs, comme Daily, lit les morceaux et les joueurs par les contrats de Catalogue et de Players, la manche par ceux de Gameplay :
+    /// jamais leur domaine, leur persistance ni Deezer.
+    /// </summary>
+    [Fact]
+    public void Runs_NeDependQueDesContratsDesAutresModules_EtPasDeDeezer()
+    {
+        var runs = Types.InAssembly(Api).That().ResideInNamespace($"{ModulesNamespace}.Runs");
+        Assert.NotEmpty(runs.GetTypes());
+
+        var result = runs
+            .ShouldNot().HaveDependencyOnAny(
+                "InSeconds.Deezer", $"{ModulesNamespace}.Daily",
+                $"{ModulesNamespace}.Players.Domain", $"{ModulesNamespace}.Players.Application", $"{ModulesNamespace}.Players.Persistence",
+                $"{ModulesNamespace}.Catalogue.Domain", $"{ModulesNamespace}.Catalogue.Application", $"{ModulesNamespace}.Catalogue.Persistence",
+                $"{ModulesNamespace}.Gameplay.Domain")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
+    }
+
     /// <summary>Daily, comme Gameplay, ne touche ni au web des autres ni à Deezer : il lit les morceaux par le contrat de Catalogue.</summary>
     [Fact]
     public void Daily_NeDependQueDesContratsDeCatalogueEtDeGameplay_EtPasDeDeezer()

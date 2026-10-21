@@ -118,7 +118,7 @@ public class TrackUsageTests(PostgresFixture postgres) : IAsyncLifetime
     private async Task<IReadOnlyDictionary<int, TrackUsage>> GetAsync(params int[] ids)
     {
         using var scope = _app.Api.Services.CreateScope();
-        return await scope.ServiceProvider.GetRequiredService<ITrackUsage>().GetAsync(ids, Ct);
+        return await scope.ServiceProvider.GetRequiredService<IDailyTrackUsage>().GetAsync(ids, Ct);
     }
 
     private async Task<IReadOnlySet<int>> InCooldownAsync(DateOnly day)

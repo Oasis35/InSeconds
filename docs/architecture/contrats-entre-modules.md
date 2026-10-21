@@ -4,7 +4,7 @@
 
 ## 1. L'idée en une phrase
 
-Chaque module (Players, Catalogue, Gameplay, Daily, et plus tard Runs) a une partie privée et une partie publique. La partie publique, c'est son dossier `Contracts/`. Un autre module n'a le droit d'utiliser **que** ce dossier, jamais le reste.
+Chaque module (Players, Catalogue, Gameplay, Daily, Runs) a une partie privée et une partie publique. La partie publique, c'est son dossier `Contracts/`. Un autre module n'a le droit d'utiliser **que** ce dossier, jamais le reste.
 
 ```
 Modules/Players/
@@ -58,9 +58,9 @@ C'est un test qui casse la CI, pas une convention.
 
 Autres garde-fous du même dossier : `Gameplay_NeDependQueDeCatalogueContracts_EtResteSansAccesAuxDonneesNiAuWeb`, `CatalogueEtGameplay_NeConnaissentPasDaily`, `Daily_NeDependQueDesContratsDeCatalogueEtDeGameplay_EtPasDeDeezer`, `LesModulesDesNoyaux_NeDependentPasDeGameplay`, `UnNoyau_NeVoitDUnModeQueSesContracts` (`HandlerRulesTests`), `LeDomaine_NeDependNiDEfCoreNiDAspNetCoreNiDeNpgsql`, `PersistenceTests` (rien dans `public`, tout en snake_case). Côté front, Sheriff (`sheriff.config.ts`) tient le même principe : un mode n'importe que `gameplay` et `account`, jamais un autre mode.
 
-## 5. Quand Runs arrivera
+## 5. Runs
 
-Partager un noyau ne veut pas dire lire ses tables. Runs utilisera Players et Catalogue **par leurs contrats**, comme Daily :
+Partager un noyau ne veut pas dire lire ses tables. Runs utilise Players et Catalogue **par leurs contrats**, comme Daily :
 
 ```
             Daily ───────✕─────── Runs          (un mode ne voit jamais l'autre)

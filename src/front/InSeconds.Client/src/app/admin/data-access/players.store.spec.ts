@@ -105,4 +105,53 @@ describe('AdminPlayersStore', () => {
     expect(store.expandedHistory()).toEqual({ games: [], status: 'idle' });
     expect(store.histories()['a']).toBeUndefined();
   });
+
+  describe('accès au mode Run', () => {
+    it('lit la liste des accès en même temps que les comptes', async () => {
+      const store = create({ listRunAccess: vi.fn(async () => ['b']) });
+      await store.load();
+      expect(api.listRunAccess).toHaveBeenCalledTimes(1);
+      expect(store.runAccess()).toEqual(['b']);
+    });
+
+    it('autorise un compte puis le retire, sans changer l\'état avant la réponse de l\'API', async () => {
+      const store = create();
+      await store.load();
+      const pending = store.setRunAccess('b', true);
+      expect(store.runAccessPending()).toEqual(['b']);
+      expect(store.runAccess()).toEqual([]);
+      await pending;
+      expect(api.setRunAccess).toHaveBeenCalledWith('b', true);
+      expect(store.runAccess()).toEqual(['b']);
+      expect(store.runAccessPending()).toEqual([]);
+
+      await store.setRunAccess('b', false);
+      expect(api.setRunAccess).toHaveBeenLastCalledWith('b', false);
+      expect(store.runAccess()).toEqual([]);
+    });
+
+    it('garde l\'état d\'avant et signale l\'erreur quand l\'API refuse', async () => {
+      const store = create({ setRunAccess: vi.fn(() => Promise.reject(problem(404, 'common.not_found'))) });
+      await store.load();
+      await store.setRunAccess('b', true);
+      expect(store.runAccess()).toEqual([]);
+      expect(store.runAccessError()?.code).toBe('common.not_found');
+      expect(store.runAccessPending()).toEqual([]);
+
+      await store.setRunAccess('b', true);
+      expect(api.setRunAccess).toHaveBeenCalledTimes(2);
+    });
+
+    it('ignore un second clic pendant que le premier attend', async () => {
+      let resolve!: () => void;
+      const store = create({ setRunAccess: vi.fn(() => new Promise<void>(r => { resolve = r; })) });
+      await store.load();
+      const first = store.setRunAccess('b', true);
+      await store.setRunAccess('b', false);
+      resolve();
+      await first;
+      expect(api.setRunAccess).toHaveBeenCalledTimes(1);
+      expect(store.runAccess()).toEqual(['b']);
+    });
+  });
 });

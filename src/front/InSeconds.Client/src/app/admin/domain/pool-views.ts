@@ -13,6 +13,7 @@ export interface ModeView {
  */
 export const MODE_VIEWS: readonly ModeView[] = [
   { id: 'daily', labelKey: 'admin.pool.views.daily' },
+  { id: 'runs', labelKey: 'admin.pool.views.runs' },
 ];
 
 export function modeView(id: string): ModeView | undefined {

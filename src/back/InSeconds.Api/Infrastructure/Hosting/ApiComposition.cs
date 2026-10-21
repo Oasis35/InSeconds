@@ -10,6 +10,7 @@ using InSeconds.Api.Modules.Catalogue;
 using InSeconds.Api.Modules.Daily;
 using InSeconds.Api.Modules.Gameplay;
 using InSeconds.Api.Modules.Players;
+using InSeconds.Api.Modules.Runs;
 using InSeconds.Deezer;
 using InSeconds.Infrastructure.Email;
 using InSeconds.Infrastructure.Http;
@@ -59,6 +60,7 @@ public static class ApiComposition
         builder.Services.AddCatalogue();
         builder.Services.AddGameplay();
         builder.Services.AddDaily();
+        builder.Services.AddRuns();
         builder.Services.AddPlayerDataContributors();
         return builder;
     }
@@ -69,7 +71,7 @@ public static class ApiComposition
     /// mode oublié n'est dans aucun (et <c>PlayerDataTests</c> le voit).
     /// </summary>
     public static IServiceCollection AddPlayerDataContributors(this IServiceCollection services) =>
-        services.AddDailyPlayerData();
+        services.AddDailyPlayerData().AddRunsPlayerData();
 
     public static WebApplication UseInSecondsApi(this WebApplication app)
     {

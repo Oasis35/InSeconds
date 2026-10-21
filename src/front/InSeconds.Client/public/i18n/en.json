@@ -331,7 +331,8 @@
       "views": {
         "label": "Pool view",
         "pool": "Pool",
-        "daily": "Daily"
+        "daily": "Daily",
+        "runs": "Run"
       }
     },
     "deleteModal": {
@@ -500,6 +501,9 @@
       "emailHide": "Hide email",
       "colLastSeen": "Last visit",
       "colCreated": "Signed up",
+      "colRun": "Run",
+      "runAccessToggle": "Allow this account to play Run mode",
+      "runAccessAdmin": "Admins always have access to Run mode",
       "colGames": "Games",
       "adminBadge": "Admin",
       "neverSeen": "Never",

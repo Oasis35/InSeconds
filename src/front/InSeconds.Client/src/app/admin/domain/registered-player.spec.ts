@@ -1,4 +1,4 @@
-import { RegisteredPlayer, filterPlayers, maskEmail, toGameStatus } from './registered-player';
+import { RegisteredPlayer, canPlayRuns, filterPlayers, maskEmail, toGameStatus } from './registered-player';
 
 function player(overrides: Partial<RegisteredPlayer>): RegisteredPlayer {
   return {
@@ -36,5 +36,11 @@ describe('registered-player', () => {
     expect(maskEmail('sans-arobase')).toBe('•••');
     expect(maskEmail('@domaine.fr')).toBe('•••');
     expect(maskEmail('fin@')).toBe('•••');
+  });
+
+  it('un admin joue au mode Run d\'office, les autres seulement s\'ils sont autorisés', () => {
+    expect(canPlayRuns({ id: 'a', isAdmin: true }, [])).toBe(true);
+    expect(canPlayRuns({ id: 'b', isAdmin: false }, [])).toBe(false);
+    expect(canPlayRuns({ id: 'b', isAdmin: false }, ['a', 'b'])).toBe(true);
   });
 });

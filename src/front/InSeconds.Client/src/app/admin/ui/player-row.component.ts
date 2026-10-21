@@ -8,7 +8,7 @@ import { PlayerIconComponent } from './player-icon.component';
  * Une ligne du tableau des comptes inscrits. Le bouton chevron sur le pseudo déplie ou replie
  * l'historique (rendu par le tableau, sous cette ligne). Les instants s'affichent en heure locale
  * du navigateur : « JJ/MM/AA à HH:MM » pour la dernière visite, « JJ/MM/AAAA » pour l'inscription.
- * L'email est masqué (`c•••@gmail.com`) tant qu'on ne clique pas dessus (minimisation, RGPD) ;
+ * Un interrupteur donne l'accès au mode Run (posé d'office pour un admin, non modifiable). L'email est masqué (`c•••@gmail.com`) tant qu'on ne clique pas dessus (minimisation, RGPD) ;
  * le filtre de la page cherche quand même dans l'adresse complète.
  */
 @Component({
@@ -63,6 +63,21 @@ import { PlayerIconComponent } from './player-icon.component';
         <app-player-icon name="snowflake" />{{ player().streakFreezes }}
       </span>
     </td>
+    <td class="px-3 py-2.5 text-center">
+      <!-- Le title est porté par un span : un bouton désactivé n'affiche pas son tooltip partout. -->
+      <span [title]="(player().isAdmin ? 'admin.players.runAccessAdmin' : 'admin.players.runAccessToggle') | translate">
+        <button type="button" role="switch" data-testid="run-access"
+          [attr.aria-checked]="runAccess()"
+          [attr.aria-label]="'admin.players.runAccessToggle' | translate"
+          [disabled]="player().isAdmin || runAccessPending()"
+          (click)="runAccessToggled.emit(!runAccess())"
+          class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+          [style.background]="runAccess() ? 'var(--color-success)' : 'var(--border-strong)'">
+          <span class="inline-block h-4 w-4 rounded-full bg-white transition-transform"
+            [style.transform]="runAccess() ? 'translateX(18px)' : 'translateX(2px)'"></span>
+        </button>
+      </span>
+    </td>
     <td class="px-3 py-2.5 whitespace-nowrap">
       @if (player().lastSeenAt; as lastSeenAt) {
         <span style="color:var(--text-body)">{{ 'admin.players.lastSeenAt' | translate: { date: (lastSeenAt | date:'dd/MM/yy'), time: (lastSeenAt | date:'HH:mm') } }}</span>
@@ -76,7 +91,13 @@ import { PlayerIconComponent } from './player-icon.component';
 export class PlayerRowComponent {
   readonly player = input.required<RegisteredPlayer>();
   readonly expanded = input(false);
+  /** Le compte peut lancer un run (admin d'office, ou autorisé par l'interrupteur). */
+  readonly runAccess = input(false);
+  /** L'API n'a pas encore répondu à un changement d'accès de ce compte. */
+  readonly runAccessPending = input(false);
   readonly toggled = output();
+  /** Le nouvel état demandé de l'interrupteur. */
+  readonly runAccessToggled = output<boolean>();
   protected readonly emailRevealed = signal(false);
   protected readonly mask = maskEmail;
 }

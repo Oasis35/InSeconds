@@ -1,13 +1,17 @@
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { DailyClient } from '../../api/daily/api.generated';
+import { RunsClient } from '../../api/runs/api.generated';
 import { AdminPlayersApi } from './players.api';
 
 describe('AdminPlayersApi', () => {
   const client = { listRegisteredPlayers: vi.fn(), getPlayerHistory: vi.fn() };
+  const runs = { listRunAccess: vi.fn(), grantRunAccess: vi.fn(), revokeRunAccess: vi.fn() };
 
   function create(): AdminPlayersApi {
-    TestBed.configureTestingModule({ providers: [{ provide: DailyClient, useValue: client }] });
+    TestBed.configureTestingModule({
+      providers: [{ provide: DailyClient, useValue: client }, { provide: RunsClient, useValue: runs }],
+    });
     return TestBed.inject(AdminPlayersApi);
   }
 
@@ -36,5 +40,20 @@ describe('AdminPlayersApi', () => {
       { date: '2026-09-24', status: 'Completed', score: 3200, freezesUsed: 1, freezeEarned: true },
       { date: '2026-09-23', status: 'Expired', score: null, freezesUsed: 0, freezeEarned: false },
     ]);
+  });
+
+  it('lit les comptes autorisés au mode Run en une liste d\'identifiants', async () => {
+    runs.listRunAccess.mockReturnValue(of({ entries: [{ playerId: 'a', grantedAt: '2026-10-21T08:00:00+00:00' }, { playerId: 'b', grantedAt: '2026-10-21T09:00:00+00:00' }] }));
+    expect(await create().listRunAccess()).toEqual(['a', 'b']);
+  });
+
+  it('autorise ou retire l\'accès selon le choix', async () => {
+    runs.grantRunAccess.mockReturnValue(of(undefined));
+    runs.revokeRunAccess.mockReturnValue(of(undefined));
+    const api = create();
+    await api.setRunAccess('a', true);
+    expect(runs.grantRunAccess).toHaveBeenCalledWith('a');
+    await api.setRunAccess('a', false);
+    expect(runs.revokeRunAccess).toHaveBeenCalledWith('a');
   });
 });
