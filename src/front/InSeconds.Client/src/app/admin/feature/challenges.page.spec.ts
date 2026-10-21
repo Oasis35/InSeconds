@@ -158,7 +158,7 @@ describe('ChallengesPage', () => {
       row('2026-10-05').querySelector('button')!.click();
       await settle();
 
-      expect(row('2026-10-05').textContent).toContain('1. Eminem — Lose Yourself');
+      expect(row('2026-10-05').textContent).toContain('1. Eminem - Lose Yourself');
       expect(row('2026-10-05').textContent).toContain('75%');
     });
 

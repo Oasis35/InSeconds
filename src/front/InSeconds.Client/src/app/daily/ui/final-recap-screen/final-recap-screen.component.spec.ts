@@ -61,7 +61,7 @@ describe('FinalRecapScreenComponent', () => {
     const toggle = Array.from(element.querySelectorAll<HTMLButtonElement>('button')).find(b => !b.closest('app-share-button'))!;
     toggle.click();
     fixture.detectChanges();
-    expect(element.querySelector('app-track-results-list')!.textContent).toContain('Eminem — Lose Yourself');
+    expect(element.querySelector('app-track-results-list')!.textContent).toContain('Eminem - Lose Yourself');
   });
 
   it('recapRows() se passe des stats quand la réponse porte son histogramme', () => {

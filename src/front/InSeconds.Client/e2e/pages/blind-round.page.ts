@@ -2,7 +2,7 @@ import { Page, Locator, expect } from '@playwright/test';
 import { inSequence } from '../fixtures/sequence';
 
 // Paliers par défaut exposés par les settings (cf. AppSettings.AllowedDurationsSeconds).
-// La lecture démarre automatiquement au premier (0.5s) — il n'y a plus de bouton de choix initial. Le lecteur s'arrête quand la
+// La lecture démarre automatiquement au premier (0.5s) - il n'y a plus de bouton de choix initial. Le lecteur s'arrête quand la
 // position réelle de l'extrait atteint le palier (le son joue en temps réel) ; son chrono de secours passe par setTimeout, que l'horloge simulée avance.
 const ALLOWED_DURATIONS = [0.5, 1, 1.5, 2, 3, 5, 10];
 
@@ -21,7 +21,7 @@ export class BlindRoundPage {
   readonly timer: Locator;
 
   constructor(readonly page: Page) {
-    this.answerInput         = page.getByPlaceholder('Artiste — Titre');
+    this.answerInput         = page.getByPlaceholder('Artiste - Titre');
     this.submitButton        = page.getByRole('button', { name: 'Valider' });
     this.confirmSubmitButton = page.getByRole('button', { name: 'Valider quand même' });
     this.clearSearchButton   = page.getByRole('button', { name: '✕' });
@@ -37,7 +37,7 @@ export class BlindRoundPage {
     this.timer                = page.getByTestId('round-timer');
   }
 
-  /** Bouton « ↺ Xs » (rejoue le palier courant en entier) — visible une fois le palier terminé. */
+  /** Bouton « ↺ Xs » (rejoue le palier courant en entier) - visible une fois le palier terminé. */
   replayButton(seconds: number | string): Locator {
     return this.page.getByRole('button', { name: `↺ ${seconds}s` });
   }

@@ -22,7 +22,7 @@ public sealed class DailyLogTests
         var entry = Assert.Single(logger.Entries);
         Assert.Equal(1002, entry.EventId.Id);
         Assert.Equal(
-            $"Réponse de {PlayerId} (partie 42, morceau 731) : palier 1.5s, artiste True, titre False, indice 1, score 490 — morceau n°3 : Daft Punk / Get Lucky",
+            $"Réponse de {PlayerId} (partie 42, morceau 731) : palier 1.5s, artiste True, titre False, indice 1, score 490 - morceau n°3 : Daft Punk / Get Lucky",
             entry.Message);
     }
 

@@ -12,7 +12,7 @@ import { ChallengeHistoryEntry } from '../domain/challenge';
           <p class="font-mono text-sm mb-1" style="color:var(--text-hi)">{{ c.date }}</p>
           <ul class="flex flex-col gap-0.5">
             @for (t of c.tracks; track t.position) {
-              <li class="text-xs" style="color:var(--text-muted)">{{ t.position }}. {{ t.artist }} — {{ t.title }}</li>
+              <li class="text-xs" style="color:var(--text-muted)">{{ t.position }}. {{ t.artist }} - {{ t.title }}</li>
             }
           </ul>
         </li>

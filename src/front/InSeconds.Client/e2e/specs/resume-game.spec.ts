@@ -21,7 +21,7 @@ test.describe('Reprise de partie', () => {
     await round.chooseDuration(3);
     // Attendre que le PATCH /listening soit parti ET persisté avant de recharger
     await listeningPatch;
-    // Ne pas soumettre — recharger à la place
+    // Ne pas soumettre - recharger à la place
     await game.goto();
     await game.waitForResumePrompt();
     await game.resumeButton.click();

@@ -45,8 +45,8 @@ public class PlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(new AccountExport("alice@example.com", "Alice", export.Account!.LinkedAt, IsAdmin: false), export.Account);
         Assert.NotNull(export.Account.LinkedAt);
         Assert.Equal("Safari · iPhone", Assert.Single(export.Devices).Label);
-        // Une section par mode : le Daily seul aujourd'hui, sa série et ses parties.
-        Assert.Equal(["daily"], export.Modules.Keys);
+        // Une section par mode : Daily (sa série et ses parties) et Runs (vide ici).
+        Assert.Equal(["daily", "runs"], export.Modules.Keys.Order(StringComparer.Ordinal));
         var daily = ExportReading.Daily(export);
         Assert.Equal(1, daily.Streak!.Freezes);
 

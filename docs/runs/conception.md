@@ -104,9 +104,9 @@ Même façon de faire que le reste du projet : `module.raison` en snake_case, un
 
 | Code | HTTP | Quand | Équivalent Daily |
 |---|---|---|---|
-| `runs.access_denied` | 403 | lancer un run sans accès (invité, compte non autorisé) | — |
+| `runs.access_denied` | 403 | lancer un run sans accès (invité, compte non autorisé) | - |
 | `runs.no_challenge` | 503 | le pool jouable n'a pas assez de morceaux pour un défi | `daily.no_challenge` |
-| `runs.challenge_not_found` | 404 | code de lien inconnu | — |
+| `runs.challenge_not_found` | 404 | code de lien inconnu | - |
 | `runs.session_not_found` | 404 | partie inconnue ou d'un autre joueur | `daily.session_not_found` |
 | `runs.already_played` | 409 | ce joueur a déjà fini ce défi, ou agit sur une partie finie | `daily.already_played` |
 | `runs.abandoned` | 409 | partie abandonnée | `daily.abandoned` |

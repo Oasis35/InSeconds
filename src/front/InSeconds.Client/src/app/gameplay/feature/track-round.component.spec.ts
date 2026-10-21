@@ -309,7 +309,7 @@ describe('TrackRoundComponent', () => {
 
       expect(element.querySelector('app-round-player')).toBeNull();
       expect(element.querySelector('form')).toBeNull();
-      expect(element.querySelector('[data-testid="reveal"]')?.textContent).toContain('Daft Punk — Get Lucky');
+      expect(element.querySelector('[data-testid="reveal"]')?.textContent).toContain('Daft Punk - Get Lucky');
       expect(element.querySelector('[roundScore]')?.textContent).toBe('+850 pts');
       expect(button('Piste suivante')).toBeDefined();
       expect(element.querySelector('[data-testid="guess-time-chart"]')).not.toBeNull();

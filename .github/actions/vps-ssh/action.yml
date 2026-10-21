@@ -30,11 +30,11 @@ runs:
         chmod 600 ~/.ssh/id_ed25519
         if [ -n "$SSH_HOST_KEY" ]; then
           # Clé d'hôte épinglée à l'avance (ligne `ssh-keyscan` récupérée une fois puis vérifiée
-          # hors bande — ex. console OVH) : élimine le "trust on first use" du ssh-keyscan à
+          # hors bande - ex. console OVH) : élimine le "trust on first use" du ssh-keyscan à
           # chaque run, vulnérable à un MITM entre le runner GitHub et le VPS. Cf. docs/exploitation/
           # deploiement.md § CI/CD (piège 43).
           printf '%s\n' "$SSH_HOST_KEY" > ~/.ssh/known_hosts
         else
-          echo "::warning::VPS_SSH_HOST_KEY absent — clé d'hôte acceptée en confiance aveugle (ssh-keyscan, TOFU) au lieu d'être épinglée. Voir docs/exploitation/deploiement.md § CI/CD."
+          echo "::warning::VPS_SSH_HOST_KEY absent - clé d'hôte acceptée en confiance aveugle (ssh-keyscan, TOFU) au lieu d'être épinglée. Voir docs/exploitation/deploiement.md § CI/CD."
           ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
         fi

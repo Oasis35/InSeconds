@@ -21,7 +21,7 @@ import { ChallengePlayer, chipColors, playerLabel, statusDotColor, statusLabelKe
         <button type="button"
           (click)="playerSelected.emit(p.playerId)"
           (contextmenu)="onContextMenu($event, p.playerId)"
-          [attr.title]="p.playerId + ' — ' + (key ? (key | translate) : p.status) + (p.status === 'Completed' ? ' — ' + p.score + ' pts' : '')"
+          [attr.title]="p.playerId + ' - ' + (key ? (key | translate) : p.status) + (p.status === 'Completed' ? ' - ' + p.score + ' pts' : '')"
           class="text-[10px] font-mono px-1.5 py-0.5 rounded border transition-all inline-flex items-center gap-1"
           [style.opacity]="isDimmed(p.playerId) ? '0.3' : null"
           [style.background]="mine ? 'var(--bg-primary)' : col.bg"

@@ -2,7 +2,7 @@ import { Page, Locator } from '@playwright/test';
 
 const BASE = process.env['CI'] ? 'http://localhost:5175' : 'http://localhost:5177';
 // L'auth admin est désormais un rôle sur le cookie joueur (Player.IsAdmin, cf. refonte
-// profils admin) — plus d'OriginValidator sur ces routes, donc plus besoin d'Origin ici.
+// profils admin) - plus d'OriginValidator sur ces routes, donc plus besoin d'Origin ici.
 
 export class AdminPage {
   readonly logoutButton: Locator;
@@ -96,7 +96,7 @@ export class AdminPage {
     return this.page.getByRole('row').filter({ has: this.page.getByRole('cell', { name: artist, exact: true }) });
   }
 
-  // Actions — cooldown
+  // Actions - cooldown
   trackCooldownInput(): Locator {
     return this.page.getByLabel('Part du pool en cooldown');
   }
@@ -149,13 +149,13 @@ export class AdminPage {
     return this.page.getByTestId('previews-witness');
   }
 
-  // Défis — bouton créer
+  // Défis - bouton créer
   createChallengeButton(): Locator {
     return this.page.getByRole('button', { name: /Créer le défi|Générer/ }).first();
   }
 
-  // Identifiant du navigateur (BrowserIdComponent) — visible sur l'écran de login et dans le shell.
-  // Span (pas bouton) montrant les 8 premiers caractères du PlayerId (hex, sans tiret) — le
+  // Identifiant du navigateur (BrowserIdComponent) - visible sur l'écran de login et dans le shell.
+  // Span (pas bouton) montrant les 8 premiers caractères du PlayerId (hex, sans tiret) - le
   // filtre de tag distingue ce span des chips joueurs de l'onglet Défis, qui sont des <button>.
   browserIdShort(): Locator {
     return this.page.locator('span.font-mono').filter({ hasText: /^[0-9a-f]{8}$/ });
@@ -165,7 +165,7 @@ export class AdminPage {
     return this.page.getByRole('button', { name: /^Copier$|^Copié !$/ });
   }
 
-  // Chip joueur dans "Stats par défi" (ChallengesTabComponent) — bouton contenant l'ID court.
+  // Chip joueur dans "Stats par défi" (ChallengesTabComponent) - bouton contenant l'ID court.
   playerChip(shortId: string): Locator {
     return this.page.getByRole('button', { name: new RegExp(shortId) });
   }

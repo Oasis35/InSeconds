@@ -12,7 +12,7 @@ import { DayActivity, activityBarHeightPx, formatDayShort } from '../domain/dash
       <div class="flex items-center justify-between">
         <h2 class="text-sm font-semibold uppercase tracking-wide" style="color:var(--text-muted)">{{ 'admin.dashboard.activity30d' | translate }}</h2>
         <p class="text-xs" style="color:var(--text-faint)">
-          {{ 'admin.dashboard.total' | translate }} <span class="font-medium" style="color:var(--text-hi)">{{ total() }}</span> —
+          {{ 'admin.dashboard.total' | translate }} <span class="font-medium" style="color:var(--text-hi)">{{ total() }}</span> -
           {{ 'admin.dashboard.peak' | translate }} <span class="font-medium" style="color:var(--text-hi)">{{ peak() }}</span>{{ 'admin.dashboard.perDay' | translate }}
         </p>
       </div>

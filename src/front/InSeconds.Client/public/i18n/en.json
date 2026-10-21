@@ -53,7 +53,7 @@
   "shell": {
     "legacyUrl": {
       "title": "The address has changed",
-      "body": "InSeconds now has its own address. You were redirected automatically — remember to update your bookmark.",
+      "body": "InSeconds now has its own address. You were redirected automatically, remember to update your bookmark.",
       "cta": "Got it"
     },
     "notFound": {
@@ -74,7 +74,7 @@
     "header": {
       "login": "Log in",
       "profile": "My profile",
-      "avatarTitle": "My profile — {{ pseudo }}"
+      "avatarTitle": "My profile: {{ pseudo }}"
     }
   },
   "ui": {
@@ -93,7 +93,7 @@
       "retry": "Retry"
     },
     "answer": {
-      "placeholder": "Artist — Title",
+      "placeholder": "Artist - Title",
       "clear": "Clear",
       "validate": "Submit",
       "emptyConfirm": "You didn't enter anything. Submit anyway?",
@@ -106,7 +106,7 @@
     },
     "hint": {
       "costWarning": "Every hint revealed costs points this round",
-      "tooltip": "Hint — costs points",
+      "tooltip": "Hint: costs points",
       "button": "Hint {{ level }}",
       "ask": {
         "year": "Year hint",
@@ -331,7 +331,8 @@
       "views": {
         "label": "Pool view",
         "pool": "Pool",
-        "daily": "Daily"
+        "daily": "Daily",
+        "runs": "Run"
       }
     },
     "deleteModal": {
@@ -392,7 +393,7 @@
       "noneComplete": "none complete",
       "kpiMedian": "Median score",
       "points": "pts",
-      "activity30d": "Activity — 30 days",
+      "activity30d": "Activity, last 30 days",
       "total": "Total",
       "peak": "Peak",
       "perDay": "/day",
@@ -500,6 +501,9 @@
       "emailHide": "Hide email",
       "colLastSeen": "Last visit",
       "colCreated": "Signed up",
+      "colRun": "Run",
+      "runAccessToggle": "Allow this account to play Run mode",
+      "runAccessAdmin": "Admins always have access to Run mode",
       "colGames": "Games",
       "adminBadge": "Admin",
       "neverSeen": "Never",

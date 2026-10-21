@@ -1,7 +1,7 @@
 import { test, expect } from '../fixtures/test';
 import { GamePage } from '../pages/game.page';
 
-test.describe('Footer — langue et confidentialité', () => {
+test.describe('Footer - langue et confidentialité', () => {
   test.beforeEach(async ({ api }) => {
     await api.reset();
   });

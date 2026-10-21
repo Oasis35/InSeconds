@@ -9,8 +9,8 @@ using Microsoft.Extensions.DependencyInjection;
 namespace InSeconds.IntegrationTests.Players;
 
 /// <summary>
-/// Les droits RGPD avec **deux modes de jeu** : Players ne connaît aucun mode, il appelle chaque
-/// <see cref="IPlayerDataContributor"/> enregistré. Le Daily est le vrai, un second mode (« autre », comme le sera Runs) est un faux qui note ses appels.
+/// Les droits RGPD avec **plusieurs modes de jeu** : Players ne connaît aucun mode, il appelle chaque
+/// <see cref="IPlayerDataContributor"/> enregistré. Daily et Runs sont les vrais, un troisième mode (« autre ») est un faux qui note ses appels.
 /// </summary>
 public class PlayerDataContributorsTests(PostgresFixture postgres) : IAsyncLifetime
 {
@@ -37,7 +37,7 @@ public class PlayerDataContributorsTests(PostgresFixture postgres) : IAsyncLifet
 
         var export = (await device.Client.GetFromJsonAsync<PlayerDataExport>("/api/players/me/export", Ct))!;
 
-        Assert.Equal(["daily", "autre"], export.Modules.Keys);
+        Assert.Equal(["daily", "runs", "autre"], export.Modules.Keys);
         Assert.Single(ExportReading.Daily(export).Games);
         Assert.Equal(3, ExportReading.Section<OtherSection>(export, "autre").Rounds);
         Assert.Equal([device.PlayerId], _log.Exported);

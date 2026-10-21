@@ -15,17 +15,17 @@
 - Each day at midnight UTC, a new set of tracks is automatically selected (only tracks with an active Deezer preview, outside a reuse cooldown that follows the pool size: a configurable share of the playable pool stays blocked); if the midnight job fails, the challenge is regenerated automatically when the first player arrives (deterministic selection: same challenge for everyone)
 - Preview availability is re-checked nightly against Deezer (rate-limit aware, batched calls), along with the genres of each track's album (one call per album); admins can also re-run it on demand from the scheduled-jobs dashboard (`/jobs`)
 - Playback starts automatically at the shortest step (0.5s); extend step by step (1, 1.5, 2, 3, 5, 10s) with "listen more" before attempting artist + title
-- Free, unlimited "listen more" extensions per track (up to the last duration tier) — scoring is always based on the final tier listened, no penalty for extending
+- Free, unlimited "listen more" extensions per track (up to the last duration tier) - scoring is always based on the final tier listened, no penalty for extending
 - A "Skip (0 pts)" button (with confirmation) moves on to the next track without answering
-- Optional hints (release year, then a masked artist name) unlockable at 5s/10s of listening — costs points, server-authoritative
-- Scoring is entirely server-side — no client-side manipulation possible
+- Optional hints (release year, then a masked artist name) unlockable at 5s/10s of listening - costs points, server-authoritative
+- Scoring is entirely server-side - no client-side manipulation possible
 - On each reveal, see a histogram of how long other players needed to guess that track
 - Guest mode: play without signing up (no leaderboard, only global stats)
-- Optional linked accounts (open signup, passwordless magic-link login) — keeps history/streak across devices; guest play stays fully open regardless
+- Optional linked accounts (open signup, passwordless magic-link login) - keeps history/streak across devices; guest play stays fully open regardless
 - Daily streak shown in the header (details panel on click), with streak freezes for linked accounts (1 free on signup, +1 every 7 days, 2 max, used automatically on a missed day)
 - After playing, see where you stand: an equalizer of today's scores with the lowest, median and highest score, plus the share of players you beat (from 5 players)
 - Share your score in Wordle-style emoji format via the clipboard
-- Available in French and English — auto-detected from the browser, switchable anytime from the footer (choice saved in localStorage)
+- Available in French and English - auto-detected from the browser, switchable anytime from the footer (choice saved in localStorage)
 - Privacy policy and legal notice at `/privacy` (also `/confidentialite`)
 - Installable on the home screen (PWA), updated automatically at a safe moment (never in the middle of a round)
 - List of the devices signed in to your account, sign out one device or all the others
@@ -67,7 +67,7 @@ Open `http://localhost:5176`.
 | URL | Purpose |
 |-----|---------|
 | `http://localhost:5176` | Frontend (Angular dev server, proxies `/api` to the API) |
-| `http://localhost:5175/health` | API liveness — also returns the build date (`build`) |
+| `http://localhost:5175/health` | API liveness - also returns the build date (`build`) |
 | `http://localhost:5175/health/ready` | API readiness (database reachable) |
 | `http://localhost:5175/jobs` | Hangfire dashboard for scheduled jobs (admin account) |
 
@@ -102,10 +102,10 @@ InSeconds/
 
 GitHub Actions workflow on every push (all branches) and every PR to `main`:
 
-- **back** — build, unit, architecture and integration tests (Testcontainers), migrations up to date, Wolverine codegen up to date, Docker image without the test host
-- **front** — production build, Vitest tests, Sheriff boundaries, NSwag clients up to date
-- **e2e** — Playwright against the test host
-- **nginx-headers** — builds the frontend nginx image and checks cache and security headers, MIME types and the old-address redirect
+- **back** - build, unit, architecture and integration tests (Testcontainers), migrations up to date, Wolverine codegen up to date, Docker image without the test host
+- **front** - production build, Vitest tests, Sheriff boundaries, NSwag clients up to date
+- **e2e** - Playwright against the test host
+- **nginx-headers** - builds the frontend nginx image and checks cache and security headers, MIME types and the old-address redirect
 
 The **"CI OK"** check aggregates them (it is the one branch protection requires). Stale runs are cancelled automatically. Details: [`docs/exploitation/ci.md`](docs/exploitation/ci.md).
 
@@ -143,19 +143,19 @@ E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inse
 
 The detailed docs are in French.
 
-- [`docs/README.md`](docs/README.md) — entry point: pitch, stack, where to find what
-- [`CLAUDE.md`](CLAUDE.md) — conventions, data model, known pitfalls (read before contributing)
+- [`docs/README.md`](docs/README.md) - entry point: pitch, stack, where to find what
+- [`CLAUDE.md`](CLAUDE.md) - conventions, data model, known pitfalls (read before contributing)
 - Architecture: [`src/back/CLAUDE.md`](src/back/CLAUDE.md) (backend), [`src/front/CLAUDE.md`](src/front/CLAUDE.md) (frontend), [`docs/architecture/`](docs/architecture/) (decisions, module boundaries)
-- [`docs/regles-du-jeu.md`](docs/regles-du-jeu.md) — game rules (scoring, extensions, anti-cheat, streak) — what is actually enforced vs merely configured
-- [`docs/exploitation/`](docs/exploitation/) — VPS deployment, staging, backups, CI, emergency access
-- [`docs/conformite/`](docs/conformite/) — Deezer API terms, GDPR
-- [`docs/runs/`](docs/runs/README.md) — the upcoming Run mode (designed, not coded yet)
-- [`docs/taches.md`](docs/taches.md) — what is left to do
-- [`docs/historique/`](docs/historique/) — the 2026 rewrite
+- [`docs/regles-du-jeu.md`](docs/regles-du-jeu.md) - game rules (scoring, extensions, anti-cheat, streak) - what is actually enforced vs merely configured
+- [`docs/exploitation/`](docs/exploitation/) - VPS deployment, staging, backups, CI, emergency access
+- [`docs/conformite/`](docs/conformite/) - Deezer API terms, GDPR
+- [`docs/runs/`](docs/runs/README.md) - the Run mode (back-end foundation in place, game and screens to come)
+- [`docs/taches.md`](docs/taches.md) - what is left to do
+- [`docs/historique/`](docs/historique/) - the 2026 rewrite
 
 ## License
 
-[PolyForm Noncommercial 1.0.0](LICENSE) — free to use, modify and distribute for any noncommercial purpose (personal, educational, hobby, research). Commercial use requires a separate agreement with the author.
+[PolyForm Noncommercial 1.0.0](LICENSE) - free to use, modify and distribute for any noncommercial purpose (personal, educational, hobby, research). Commercial use requires a separate agreement with the author.
 
 ## Contact
 

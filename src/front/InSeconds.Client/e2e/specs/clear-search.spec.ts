@@ -2,7 +2,7 @@ import { test, expect } from '../fixtures/test';
 import { GamePage } from '../pages/game.page';
 import { BlindRoundPage } from '../pages/blind-round.page';
 
-test.describe('Bouton ✕ — effacement de la saisie', () => {
+test.describe('Bouton ✕ - effacement de la saisie', () => {
   test.beforeEach(async ({ api }) => {
     await api.reset();
   });

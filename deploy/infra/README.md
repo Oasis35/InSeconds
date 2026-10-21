@@ -1,4 +1,4 @@
-# Infra partagée du VPS — Postgres
+# Infra partagée du VPS - Postgres
 
 Stack **indépendante** du cycle de vie de n'importe quel projet applicatif (InSeconds ou un
 futur projet) : une seule instance Postgres 17, une base + un utilisateur dédiés par projet.
@@ -15,7 +15,7 @@ docker compose up -d
 
 Au tout premier démarrage (volume vide), `init/01-inseconds.sh` crée automatiquement la base
 `inseconds` + l'utilisateur `inseconds`. Ces scripts `docker-entrypoint-initdb.d/*.sh` ne
-s'exécutent **qu'une seule fois** (volume Postgres vide) — un `docker compose restart` ne les
+s'exécutent **qu'une seule fois** (volume Postgres vide) - un `docker compose restart` ne les
 rejoue pas.
 
 Le réseau Docker `shared-postgres` est créé par ce stack (déclaré `name: shared-postgres`,
@@ -46,7 +46,7 @@ docker exec -it shared-postgres psql -U postgres -c "CREATE DATABASE <projet> OW
 ### Base du staging InSeconds
 
 Même principe pour l'environnement de staging (`docker-compose.staging.yml`, cf.
-`docs/exploitation/deploiement.md` § Staging) — mot de passe à reporter dans `~/apps/InSeconds-staging/.env.staging`
+`docs/exploitation/deploiement.md` § Staging) - mot de passe à reporter dans `~/apps/InSeconds-staging/.env.staging`
 (`INSECONDS_STAGING_DB_PASSWORD`) :
 
 ```bash
@@ -62,7 +62,7 @@ docker exec -it shared-postgres psql -U postgres -c "DROP USER <projet>;"
 ```
 
 Le conteneur Postgres continue de tourner pour les autres projets. Pour redéployer ensuite,
-recréer la base/user (commandes ci-dessus) puis relancer le stack applicatif — les migrations
+recréer la base/user (commandes ci-dessus) puis relancer le stack applicatif - les migrations
 EF Core (appliquées au démarrage de l'API) recréent les schémas automatiquement.
 
 ## Sauvegardes

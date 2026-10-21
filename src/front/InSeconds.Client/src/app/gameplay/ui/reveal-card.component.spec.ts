@@ -41,7 +41,7 @@ describe('RevealCardComponent', () => {
 
   it('montre la bonne réponse et la pochette', () => {
     const { element, text } = render();
-    expect(text()).toContain('Daft Punk — Get Lucky');
+    expect(text()).toContain('Daft Punk - Get Lucky');
     expect(element.querySelector('img')?.getAttribute('src')).toBe('https://cdn.example/pochette.jpg');
   });
 

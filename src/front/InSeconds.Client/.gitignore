@@ -41,9 +41,9 @@ testem.log
 .DS_Store
 Thumbs.db
 
-# Generated at build time — never commit
+# Generated at build time - never commit
 /.vitest
 
-# Playwright — artefacts de run (résultats, rapports, traces)
+# Playwright - artefacts de run (résultats, rapports, traces)
 /test-results
 /playwright-report

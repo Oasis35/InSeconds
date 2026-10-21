@@ -112,4 +112,42 @@ describe('PlayersPage', () => {
     await settle();
     expect(element.querySelector('[data-testid="player-history"]')?.textContent).toContain('admin.players.historyError');
   });
+
+  describe('interrupteur du mode Run', () => {
+    const toggleOf = (row: Element) => row.querySelector('[data-testid="run-access"]') as HTMLButtonElement;
+
+    it('montre l\'accès d\'office d\'un admin (non modifiable) et celui, lu une fois, des comptes autorisés', async () => {
+      const carol = registeredPlayer({ id: 'c', pseudo: 'Carol' });
+      const { rows } = await render({ players: [alice, bob, carol], api: { listRunAccess: vi.fn(async () => ['c']) } });
+      expect(api.listRunAccess).toHaveBeenCalledTimes(1);
+      expect(toggleOf(rows()[0]).getAttribute('aria-checked')).toBe('true');
+      expect(toggleOf(rows()[0]).disabled).toBe(true);
+      expect(toggleOf(rows()[1]).getAttribute('aria-checked')).toBe('false');
+      expect(toggleOf(rows()[2]).getAttribute('aria-checked')).toBe('true');
+    });
+
+    it('autorise un compte au clic', async () => {
+      const { settle, rows } = await render();
+      toggleOf(rows()[1]).click();
+      await settle();
+      expect(api.setRunAccess).toHaveBeenCalledWith('b', true);
+      expect(toggleOf(rows()[1]).getAttribute('aria-checked')).toBe('true');
+    });
+
+    it('retire l\'accès au clic sur un interrupteur allumé', async () => {
+      const { settle, rows } = await render({ api: { listRunAccess: vi.fn(async () => ['b']) } });
+      toggleOf(rows()[1]).click();
+      await settle();
+      expect(api.setRunAccess).toHaveBeenCalledWith('b', false);
+      expect(toggleOf(rows()[1]).getAttribute('aria-checked')).toBe('false');
+    });
+
+    it('affiche l\'erreur de l\'API et laisse l\'interrupteur éteint', async () => {
+      const { element, settle, rows } = await render({ api: { setRunAccess: vi.fn(() => Promise.reject(problem(404, 'common.not_found'))) } });
+      toggleOf(rows()[1]).click();
+      await settle();
+      expect(element.querySelector('[data-testid="run-access-error"] [role="alert"]')).not.toBeNull();
+      expect(toggleOf(rows()[1]).getAttribute('aria-checked')).toBe('false');
+    });
+  });
 });

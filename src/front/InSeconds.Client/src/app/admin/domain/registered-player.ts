@@ -50,3 +50,11 @@ export function filterPlayers(players: readonly RegisteredPlayer[], text: string
   return players.filter(p =>
     (p.pseudo ?? '').toLowerCase().includes(query) || (p.email ?? '').toLowerCase().includes(query));
 }
+
+/**
+ * Le compte peut lancer un run : un admin d'office (aucune ligne d'accès), sinon seulement si l'admin l'a autorisé
+ * (`authorizedIds`, la liste de `GET /api/admin/runs/access`).
+ */
+export function canPlayRuns(player: Pick<RegisteredPlayer, 'id' | 'isAdmin'>, authorizedIds: readonly string[]): boolean {
+  return player.isAdmin || authorizedIds.includes(player.id);
+}

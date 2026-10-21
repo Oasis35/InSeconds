@@ -3,7 +3,7 @@ import { expect } from '../fixtures/test';
 import { ApiTestClient } from '../fixtures/api-client';
 
 /** L'URL du lien magique est générée avec App:PublicUrl (fixe, ne suit pas forcément le
- * port réel du front local vs CI) — on ne navigue que sur le chemin+query, jamais l'origine. */
+ * port réel du front local vs CI) - on ne navigue que sur le chemin+query, jamais l'origine. */
 export function pathOf(url: string): string {
   const parsed = new URL(url);
   return parsed.pathname + parsed.search;
@@ -25,7 +25,7 @@ export async function linkAccount(page: Page, api: ApiTestClient, email: string,
   await page.goto('/login');
   await page.getByPlaceholder('ton@email.com').fill(email);
   await page.getByRole('button', { name: 'Recevoir le lien' }).click();
-  // Le clic ne fait que déclencher la requête HTTP asynchrone — attendre la confirmation
+  // Le clic ne fait que déclencher la requête HTTP asynchrone - attendre la confirmation
   // affichée avant d'interroger le backend, sinon on peut arriver avant que l'email soit
   // réellement capturé.
   await expect(page.getByText('On a envoyé un lien à')).toBeVisible();
@@ -40,7 +40,7 @@ export async function linkAccount(page: Page, api: ApiTestClient, email: string,
   // Attendre que la connexion/conversion de compte soit réellement terminée côté serveur
   // avant de rendre la main : un context.close() (cf. tests multi-comptes) juste après
   // annulerait sinon la requête de vérification (avec pseudo) encore en vol, laissant le
-  // compte jamais réellement créé avec son email — bug constaté (VerifyMagicLinkCommand
+  // compte jamais réellement créé avec son email - bug constaté (VerifyMagicLinkCommand
   // annulé en CI/local, "email déjà pris" jamais détecté côté second compte).
   await expectSignedIn(page, pseudo);
 }
@@ -55,7 +55,7 @@ export async function openOtherDevice(browser: Browser): Promise<Page> {
     try {
       localStorage.setItem('lang', 'fr');
     } catch {
-      // localStorage indisponible — ignore
+      // localStorage indisponible - ignore
     }
   });
   return context.newPage();

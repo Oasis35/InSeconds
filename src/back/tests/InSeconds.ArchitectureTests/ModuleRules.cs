@@ -4,7 +4,7 @@ namespace InSeconds.ArchitectureTests;
 
 /// <summary>
 /// Le vocabulaire des règles de dépendance : quels modules sont des **noyaux** (Players, Catalogue : partagés, ils ne connaissent aucun mode)
-/// et lesquels sont des **modes** de jeu (Daily, plus tard Runs : chacun s'appuie sur les noyaux et sur Gameplay, aucun ne voit un autre mode).
+/// et lesquels sont des **modes** de jeu (Daily et Runs : chacun s'appuie sur les noyaux et sur Gameplay, aucun ne voit un autre mode).
 /// Un nouveau mode s'ajoute à <see cref="Modes"/> : toutes les règles le couvrent aussitôt.
 /// </summary>
 internal static class ModuleRules
@@ -12,7 +12,7 @@ internal static class ModuleRules
     public const string ModulesNamespace = "InSeconds.Api.Modules";
 
     /// <summary>Les modes de jeu ; un nouveau mode s'ajoute ici.</summary>
-    public static readonly string[] Modes = ["Daily"];
+    public static readonly string[] Modes = ["Daily", "Runs"];
 
     /// <summary>Les noyaux : ils ne voient d'un mode que ce que <see cref="NamedExceptions"/> autorise.</summary>
     public static readonly string[] Cores = ["Players", "Catalogue"];

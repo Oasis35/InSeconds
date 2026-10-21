@@ -56,7 +56,7 @@ const UNLIT = 'var(--text-sep)';
  * une colonne par tranche de score (`DayStats.scoreDistribution`), la tranche du
  * joueur en orange, un repère médiane et les scores le plus bas / le plus haut sous l'axe,
  * plus la phrase « Tu fais mieux que X % des joueurs » à partir de `MIN_PLAYERS_FOR_PERCENT`.
- * Présentationnel pur — couleurs via les tokens `:root` de `styles.scss`.
+ * Présentationnel pur - couleurs via les tokens `:root` de `styles.scss`.
  */
 @Component({
   selector: 'app-score-distribution-chart',

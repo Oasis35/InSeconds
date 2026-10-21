@@ -18,6 +18,8 @@ function defaults() {
   return {
     list: vi.fn<() => Promise<RegisteredPlayer[]>>(() => Promise.resolve([])),
     history: vi.fn<(playerId: string) => Promise<PlayerGame[]>>(() => Promise.resolve([])),
+    listRunAccess: vi.fn<() => Promise<string[]>>(() => Promise.resolve([])),
+    setRunAccess: vi.fn<(playerId: string, enabled: boolean) => Promise<void>>(() => Promise.resolve()),
   } satisfies Record<keyof AdminPlayersApi, unknown>;
 }
 

@@ -11,7 +11,7 @@ const SIZES: Record<FreezeCellsSize, { box: number; radius: number; icon: number
 
 /**
  * Cases de stock de gels (pleines = dégradé glace, vides = pointillés cyan). `fillLast`
- * anime le remplissage de la dernière case pleine (`gel-fill`) — gel tout juste gagné.
+ * anime le remplissage de la dernière case pleine (`gel-fill`) - gel tout juste gagné.
  */
 @Component({
   selector: 'app-freeze-cells',

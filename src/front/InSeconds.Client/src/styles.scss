@@ -1,6 +1,6 @@
 @use "tailwindcss";
 
-/* ── Palette InSeconds — DA "IN//SECONDS" (terracotta/cyan/violet) ──────── */
+/* ── Palette InSeconds - DA "IN//SECONDS" (terracotta/cyan/violet) ──────── */
 :root {
   /* Canaux RGB bruts (pour rgba() dynamiques) */
   --rgb-bg:       10 6 18;
@@ -63,7 +63,7 @@
   --glow-success: 0 0 12px rgb(var(--rgb-success) / 0.4);
   --glow-ice: 0 0 12px rgb(var(--rgb-accent-2) / 0.35);
 
-  /* Gel de série — seul ajout de la maquette : le dégradé « glace » (froid) opposé
+  /* Gel de série - seul ajout de la maquette : le dégradé « glace » (froid) opposé
      à l'orange de la série (chaud). */
   --gradient-ice: linear-gradient(135deg, #BEFAFF, rgb(var(--rgb-accent-2)) 55%, rgb(var(--rgb-violet)));
 
@@ -82,7 +82,7 @@ h1, h2, h3, .font-display {
   font-family: var(--font-display);
 }
 
-/* Styles globaux InSeconds — ajoute ici ce qui doit s'appliquer partout. */
+/* Styles globaux InSeconds - ajoute ici ce qui doit s'appliquer partout. */
 
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(6px); }
@@ -102,7 +102,7 @@ h1, h2, h3, .font-display {
   animation: slide-up 0.2s ease-out both;
 }
 
-/* ── Gel de série — animations de la maquette ──────────────────────────────
+/* ── Gel de série - animations de la maquette ──────────────────────────────
    Toutes s'arrêtent d'elles-mêmes. Les éléments animés portent [data-anim] :
    simple fondu en mouvement réduit, aucune animation sous E2E (.no-anim posé
    par App quand window.__disableAnimations est vrai). */
@@ -143,7 +143,7 @@ h1, h2, h3, .font-display {
   to   { background-position: 0 3px; }
 }
 
-/* ── Décor DA "IN//SECONDS" — fond + grille perspective + scanlines ──────
+/* ── Décor DA "IN//SECONDS" - fond + grille perspective + scanlines ──────
    Appliqués sur toutes les pages (jeu, admin, privacy, 404, service-down).
    Voir ui/decor-background/ pour le composant qui rend la grille+scanlines. */
 

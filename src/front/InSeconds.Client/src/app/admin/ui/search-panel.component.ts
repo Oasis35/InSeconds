@@ -48,7 +48,7 @@ type AddStatus = 'loading' | 'success' | 'error';
                 class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors text-sm disabled:opacity-30"
                 style="background:var(--bg-primary-dk);color:var(--text-on-primary)">▶</button>
               <div class="flex-1 min-w-0 flex flex-col gap-0.5">
-                <span class="text-sm truncate" style="color:var(--text-light)">{{ track.artist }} — {{ track.title }}</span>
+                <span class="text-sm truncate" style="color:var(--text-light)">{{ track.artist }} - {{ track.title }}</span>
                 @if (existing().has(track.deezerTrackId)) {
                   <span class="text-xs" style="color:var(--color-warn)">
                     ⚠ {{ (existing().get(track.deezerTrackId) ? 'admin.addPanel.alreadyInPool' : 'admin.addPanel.alreadyUsed') | translate }}

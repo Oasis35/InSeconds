@@ -81,7 +81,7 @@ test.describe('Connexion par lien magique', () => {
     await expectSignedIn(page, 'BobE2E');
 
     // Appareil B : nouveau contexte Playwright, aucun cookie partagé avec A. Ce contexte
-    // ne passe pas par le fixture `page` (cf. e2e/fixtures/test.ts) qui force lang=fr —
+    // ne passe pas par le fixture `page` (cf. e2e/fixtures/test.ts) qui force lang=fr -
     // sans ça, la locale par défaut du navigateur (souvent en anglais en CI) ferait
     // échouer les sélecteurs de texte français ci-dessous.
     const contextB = await browser.newContext();
@@ -89,7 +89,7 @@ test.describe('Connexion par lien magique', () => {
       try {
         localStorage.setItem('lang', 'fr');
       } catch {
-        // localStorage indisponible — ignore
+        // localStorage indisponible - ignore
       }
     });
     const pageB = await contextB.newPage();
@@ -140,7 +140,7 @@ test.describe('Connexion par lien magique', () => {
     await expectSignedIn(page, 'CarlE2E');
 
     // Le clic sur l'avatar du header ouvre l'écran Profil (plus de déconnexion
-    // directe) — il faut confirmer explicitement via son bouton "Se déconnecter".
+    // directe) - il faut confirmer explicitement via son bouton "Se déconnecter".
     await page.locator('app-account-link').getByTitle('CarlE2E').click();
     await expect(page).toHaveURL(/\/profile$/);
     await page.getByRole('button', { name: 'Se déconnecter', exact: true }).click();
