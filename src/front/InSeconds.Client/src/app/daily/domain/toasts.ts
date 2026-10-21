@@ -6,7 +6,10 @@ export interface RecapToastInput {
   readonly onRecap: boolean;
   readonly abandoned: boolean;
   readonly gelDismissed: boolean;
-  readonly streakDismissed: boolean;
+  /** Invité : la série affichée quand il a fermé le bandeau « crée un compte » (mémorisée dans le navigateur), `null` s'il ne l'a jamais fermé. */
+  readonly streakDismissedAt: number | null;
+  /** Invité : ses parties terminées, celle du jour comprise ; `null` tant qu'on ne les connaît pas. */
+  readonly gamesPlayed: number | null;
   readonly stats: DayStats | null;
   /** La série à annoncer à un invité. */
   readonly toastStreak: number;
@@ -23,6 +26,20 @@ export interface RecapToasts {
   readonly guestStreak: boolean;
 }
 
+/** L'invité découvre le jeu : le bandeau « crée un compte » le suit pendant ses premières parties. */
+export const GUEST_STREAK_INTRO_GAMES = 3;
+
+/**
+ * Le bandeau « crée un compte » d'un invité : à chaque fin de ses {@link GUEST_STREAK_INTRO_GAMES} premières parties tant qu'il ne l'a pas
+ * fermé, puis seulement aux paliers de gel (« Tu aurais gagné un gel ! »), là où perdre sa série commence à coûter. Fermé à un palier, il
+ * ne revient qu'au suivant. Le bouton de l'accueil reste toujours là.
+ */
+function guestStreakDue(input: RecapToastInput): boolean {
+  if (input.linked || !input.onRecap || input.toastStreak <= 0 || input.gamesPlayed === null) return false;
+  if (input.gamesPlayed <= GUEST_STREAK_INTRO_GAMES) return input.streakDismissedAt === null;
+  return input.stats?.freezeMilestone === true && input.streakDismissedAt !== input.toastStreak;
+}
+
 /** Quels toasts de fin de partie s'affichent. */
 export function recapToasts(input: RecapToastInput): RecapToasts {
   const shown = input.onRecap && !input.abandoned;
@@ -32,6 +49,6 @@ export function recapToasts(input: RecapToastInput): RecapToasts {
     gelEarned,
     gelUsed,
     guestFreezeMiss: !input.linked && input.stats?.freezeMilestone === true,
-    guestStreak: !input.linked && !input.streakDismissed && input.toastStreak > 0 && input.onRecap,
+    guestStreak: guestStreakDue(input),
   };
 }

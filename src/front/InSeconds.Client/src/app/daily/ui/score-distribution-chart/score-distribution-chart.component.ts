@@ -41,8 +41,11 @@ const SEGMENTS = 6;
 const CELL_GAP_X = 3;
 const CELL_GAP_Y = 3;
 export const VIEW_HEIGHT = BARS_HEIGHT + 36;
-/** Distance minimale entre l'étiquette de la médiane et les bords (où sont « plus bas »/« plus haut »). */
-const LABEL_GUARD = 45;
+/**
+ * Distance minimale entre le centre de l'étiquette de la médiane et les bords, où sont « plus bas » et « plus haut » (environ 40 unités
+ * de large chacune) : moins, et « médiane » se pose sur « plus bas » quand la médiane est au plus bas (tous les scores à 0).
+ */
+const LABEL_GUARD = 65;
 
 const MINE = 'var(--color-accent-3)';
 const OTHERS = 'var(--color-violet)';
