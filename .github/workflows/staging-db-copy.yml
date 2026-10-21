@@ -2,7 +2,7 @@ name: Copy prod DB to staging
 
 # Lancement manuel uniquement (onglet Actions → "Copy prod DB to staging" → Run workflow).
 #
-# Copie les données de la prod (schémas players, catalogue, daily, infra) dans la base du staging, puis les
+# Copie les données de la prod (schémas players, catalogue, daily, runs, infra) dans la base du staging, puis les
 # anonymise (deploy/vps/copy-prod-db-to-staging.sh, avec deploy/vps/staging-anonymize.sql de ce commit).
 # Depuis la PR I1 (#235) : plus d'import v1 → v2 ici (avant, ce workflow copiait les tables v1 de public puis
 # refaisait l'import, scripts retirés en I2, cf. l'historique git).
