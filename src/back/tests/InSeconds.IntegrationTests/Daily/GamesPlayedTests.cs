@@ -55,7 +55,7 @@ public class GamesPlayedTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Aujourdhui_PartiesTermineesDuCompte_DeTousLesJours_ZeroPourUnInvite()
+    public async Task Aujourdhui_PartiesTermineesDuJoueur_DeTousLesJours_InviteCompris()
     {
         var twoDaysAgo = Today.AddDays(-2);
         await _game.GenerateAsync(Today.AddDays(-3));
@@ -75,6 +75,6 @@ public class GamesPlayedTests(PostgresFixture postgres) : IAsyncLifetime
 
         Assert.Equal(2, (await alice.TodayAsync()).CompletedGames);
         Assert.Equal(1, (await bob.TodayAsync()).CompletedGames);
-        Assert.Equal(0, (await guest.TodayAsync()).CompletedGames);
+        Assert.Equal(1, (await guest.TodayAsync()).CompletedGames);
     }
 }

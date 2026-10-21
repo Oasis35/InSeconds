@@ -51,7 +51,7 @@ public static class GetDailySettingsEndpoint
 /// <param name="State"><c>no_challenge</c> · <c>can_start</c> · <c>resumable</c> · <c>already_played</c> · <c>abandoned</c>.</param>
 /// <param name="TracksCount">Morceaux du défi (0 sans défi).</param>
 /// <param name="CompletedCount">Morceaux déjà répondus, quand la partie est à reprendre.</param>
-/// <param name="CompletedGames">Parties terminées par le joueur, tous jours confondus (panneau de la série d'un compte ; 0 pour un invité).</param>
+/// <param name="CompletedGames">Parties terminées par le joueur, tous jours confondus (panneau de la série d'un compte, bandeau « crée un compte » d'un invité ; 0 sans joueur).</param>
 public sealed record TodayResponse(string State, int TracksCount, int CompletedCount, StreakResponse Streak, int CompletedGames)
 {
     public const string NoChallenge = "no_challenge";
@@ -79,9 +79,9 @@ public static class GetTodayEndpoint
             ? DailyStreak.Compute(s.CurrentStreak, s.LastPlayedDate, s.Freezes, today, isLinked, rules.Streak)
             : DailyStreak.None(today, isLinked, rules.Streak);
         var streakResponse = StreakResponse.From(streak);
-        // Seul le panneau de la série d'un compte l'affiche : pas de comptage pour un invité.
-        var completedGames = isLinked && current.PlayerId is { } linkedId
-            ? (await stats.GetCompletedCountsByPlayerAsync([linkedId], ct)).GetValueOrDefault(linkedId)
+        // Le panneau de la série d'un compte l'affiche ; pour un invité, il décide du bandeau « crée un compte » (3 premières parties).
+        var completedGames = current.PlayerId is { } countedId
+            ? (await stats.GetCompletedCountsByPlayerAsync([countedId], ct)).GetValueOrDefault(countedId)
             : 0;
 
         if (row is null)

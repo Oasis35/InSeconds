@@ -10,7 +10,7 @@ export interface DailyToday {
   /** Morceaux déjà répondus, quand la partie est à reprendre. */
   readonly completedCount: number;
   readonly streak: Streak;
-  /** Parties terminées par le joueur, tous jours confondus (0 pour un invité : seul le panneau de série d'un compte l'affiche). */
+  /** Parties terminées par le joueur, tous jours confondus (panneau de série d'un compte, bandeau « crée un compte » d'un invité). */
   readonly completedGames: number;
 }
 

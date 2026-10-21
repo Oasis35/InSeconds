@@ -28,7 +28,8 @@ interface DailyState {
   abandonLoading: boolean;
   hintPending: boolean;
   lostStreak: number | null;
-  streakToastDismissed: boolean;
+  /** Invité : la série affichée quand il a fermé le bandeau « crée un compte » (la page la relit du navigateur, `GuestStreakNotice`). */
+  streakToastDismissedAt: number | null;
   gelToastDismissed: boolean;
   stats: DayStats | null;
   secondsLeft: number;
@@ -47,7 +48,7 @@ const initialState: DailyState = {
   abandonLoading: false,
   hintPending: false,
   lostStreak: null,
-  streakToastDismissed: false,
+  streakToastDismissedAt: null,
   gelToastDismissed: false,
   stats: null,
   secondsLeft: 0,
@@ -71,6 +72,13 @@ export const DailyGameStore = signalStore(
     // La série annoncée à un invité : celle des statistiques du jour dès qu'elles sont là (la série de la partie date d'avant la dernière
     // réponse), sinon celle que l'on connaissait.
     const toastStreak = computed(() => store.stats()?.currentStreak ?? store.streak()?.streak ?? 0);
+    // Les parties terminées du joueur, celle du jour comprise : juste après la dernière réponse, l'état du jour relu avant la partie ne la
+    // compte pas encore (il la compte dès qu'il dit « déjà joué »).
+    const gamesPlayed = computed(() => {
+      const today = store.today();
+      if (!today) return null;
+      return today.completedGames + (store.screen() === 'done' && today.state !== 'already_played' ? 1 : 0);
+    });
     return {
       trackCount,
       totalScore,
@@ -101,7 +109,8 @@ export const DailyGameStore = signalStore(
           onRecap: onRecap(),
           abandoned: store.abandoned(),
           gelDismissed: store.gelToastDismissed(),
-          streakDismissed: store.streakToastDismissed(),
+          streakDismissedAt: store.streakToastDismissedAt(),
+          gamesPlayed: gamesPlayed(),
           stats: store.stats(),
           toastStreak: toastStreak(),
         })),
@@ -149,7 +158,7 @@ export const DailyGameStore = signalStore(
     };
 
     const enterAlreadyPlayed = (abandoned: boolean) => {
-      patchState(store, { screen: 'already_played', abandoned, streakToastDismissed: false, gelToastDismissed: false });
+      patchState(store, { screen: 'already_played', abandoned, gelToastDismissed: false });
       startCountdown();
       if (!abandoned) void loadStats();
     };
@@ -386,7 +395,7 @@ export const DailyGameStore = signalStore(
           return;
         }
         resetRound();
-        patchState(store, { screen: 'done', streakToastDismissed: false, gelToastDismissed: false });
+        patchState(store, { screen: 'done', gelToastDismissed: false });
         startCountdown();
         void loadStats();
         void refreshStreak();
@@ -398,7 +407,14 @@ export const DailyGameStore = signalStore(
         reportListening(position, seconds);
       },
 
-      dismissStreakToast: () => patchState(store, { streakToastDismissed: true }),
+      /** Ferme le bandeau « crée un compte » d'un invité et rend la série à mémoriser (la page la garde dans le navigateur). */
+      dismissStreakToast(): number {
+        const streak = store.toastStreak();
+        patchState(store, { streakToastDismissedAt: streak });
+        return streak;
+      },
+      /** La fermeture du bandeau « crée un compte » relue du navigateur par la page. */
+      restoreStreakToastDismissal: (streakDismissedAt: number | null) => patchState(store, { streakToastDismissedAt: streakDismissedAt }),
       dismissGelToast: () => patchState(store, { gelToastDismissed: true }),
       /** Le toast invité « série perdue » ; la page décide s'il est dû (une seule fois par série perdue, `LostStreakNotice`). */
       announceLostStreak: (lostStreak: number) => patchState(store, { lostStreak }),
