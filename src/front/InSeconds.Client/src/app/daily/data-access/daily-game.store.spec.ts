@@ -486,6 +486,36 @@ describe('DailyGameStore', () => {
       expect(store.toastStreak()).toBe(5);
       expect(store.toastStreakKey()).toBe('other');
     });
+
+    it("un invité ne revoit plus sa série non sauvegardée une fois le bandeau fermé, d'une visite à l'autre", async () => {
+      api.today = TODAY({ state: 'already_played', completedGames: 2 });
+      api.stats = STATS({ currentStreak: 2 });
+      await store.init();
+      await flush();
+      expect(store.dismissStreakToast()).toBe(2);
+      expect(store.toasts().guestStreak).toBe(false);
+
+      // Visite suivante : la page rend au store la fermeture gardée dans le navigateur.
+      store.restoreStreakToastDismissal(2);
+      await store.init();
+      await flush();
+      expect(store.toasts().guestStreak).toBe(false);
+    });
+
+    it("compte la partie qui vient de finir avant que l'état du jour ne la compte", async () => {
+      api.today = TODAY({ completedGames: 3 });
+      await startGame();
+      api.today = TODAY({ state: 'already_played', completedGames: 4 });
+      for (const position of [1, 2, 3]) {
+        await store.submit(submissionOf(position));
+        store.nextTrack();
+      }
+      // 4e partie : passé les premières parties, pas de bandeau hors d'un palier de gel, ni avant ni après la relecture de l'état du jour.
+      expect(store.screen()).toBe('done');
+      expect(store.toasts().guestStreak).toBe(false);
+      await flush();
+      expect(store.toasts().guestStreak).toBe(false);
+    });
   });
 
   describe('compte à rebours', () => {

@@ -18,6 +18,7 @@ import { ToastService } from '../../ui/toast/toast.service';
 import { DecorBackgroundComponent } from '../../ui/decor-background/decor-background.component';
 import { DailyGameStore } from '../data-access/daily-game.store';
 import { DailyShare } from '../data-access/daily-share';
+import { GuestStreakNotice } from '../data-access/guest-streak-notice';
 import { LostStreakNotice } from '../data-access/lost-streak-notice';
 import { ThanksNotice } from '../data-access/thanks-notice';
 import { AlreadyPlayedScreenComponent } from '../ui/already-played-screen/already-played-screen.component';
@@ -59,7 +60,7 @@ type ThanksScreen = 'done' | 'already_played';
     StreakPillComponent, GuestStreakToastComponent, LostStreakToastComponent, GelUsedToastComponent, GelEarnedToastComponent,
     DeezerBadgeComponent, ScoreCountComponent, AccountLinkComponent,
   ],
-  providers: [DailyGameStore, TrackRoundStore, DailyShare, ThanksNotice, LostStreakNotice],
+  providers: [DailyGameStore, TrackRoundStore, DailyShare, ThanksNotice, LostStreakNotice, GuestStreakNotice],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './daily.page.html',
   host: {
@@ -79,6 +80,7 @@ export class DailyPage implements OnInit {
   private readonly dailyShare = inject(DailyShare);
   private readonly thanks = inject(ThanksNotice);
   private readonly lostStreakNotice = inject(LostStreakNotice);
+  private readonly guestStreakNotice = inject(GuestStreakNotice);
   private readonly toasts = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -128,10 +130,16 @@ export class DailyPage implements OnInit {
 
   /** Premier chargement, ou « Réessayer » de l'écran d'erreur : l'état du jour, puis le toast invité « série perdue » s'il est dû. */
   protected async init(): Promise<void> {
+    this.store.restoreStreakToastDismissal(this.guestStreakNotice.dismissedAt());
     await this.store.init();
     const streak = this.store.today()?.streak;
     const lost = streak ? this.lostStreakNotice.take(streak) : null;
     if (lost !== null) this.store.announceLostStreak(lost);
+  }
+
+  /** Le bandeau « crée un compte » fermé par un invité ne revient pas d'une visite à l'autre (règles dans `domain/toasts`). */
+  protected dismissGuestStreakToast(): void {
+    this.guestStreakNotice.remember(this.store.dismissStreakToast());
   }
 
   protected onVisibilityChange(): void {

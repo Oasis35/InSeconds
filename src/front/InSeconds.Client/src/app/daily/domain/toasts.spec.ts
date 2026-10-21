@@ -1,5 +1,5 @@
 import { DayStats } from './daily';
-import { RecapToastInput, recapToasts } from './toasts';
+import { GUEST_STREAK_INTRO_GAMES, RecapToastInput, recapToasts } from './toasts';
 
 const STATS = (over: Partial<DayStats> = {}): DayStats => ({
   yourScore: 2000, medianScore: 1500, totalPlayers: 3, currentStreak: 7, tracks: [], freezesUsed: 0, freezeMilestone: false,
@@ -7,7 +7,8 @@ const STATS = (over: Partial<DayStats> = {}): DayStats => ({
 });
 
 const INPUT = (over: Partial<RecapToastInput> = {}): RecapToastInput => ({
-  linked: true, onRecap: true, abandoned: false, gelDismissed: false, streakDismissed: false, stats: STATS(), toastStreak: 7, ...over,
+  linked: true, onRecap: true, abandoned: false, gelDismissed: false, streakDismissedAt: null, gamesPlayed: 2, stats: STATS(), toastStreak: 7,
+  ...over,
 });
 
 describe('recapToasts', () => {
@@ -28,10 +29,36 @@ describe('recapToasts', () => {
     expect(recapToasts(INPUT({ stats, abandoned: true })).gelEarned).toBe(false);
   });
 
-  it("invité : la série non sauvegardée s'affiche tant qu'elle n'est pas fermée", () => {
+  it("invité : la série non sauvegardée s'affiche pendant ses premières parties, tant qu'il ne l'a pas fermée", () => {
     expect(recapToasts(INPUT({ linked: false })).guestStreak).toBe(true);
-    expect(recapToasts(INPUT({ linked: false, streakDismissed: true })).guestStreak).toBe(false);
+    expect(recapToasts(INPUT({ linked: false, gamesPlayed: GUEST_STREAK_INTRO_GAMES })).guestStreak).toBe(true);
+    expect(recapToasts(INPUT({ linked: false, streakDismissedAt: 1 })).guestStreak).toBe(false);
     expect(recapToasts(INPUT({ linked: false, toastStreak: 0 })).guestStreak).toBe(false);
+    expect(recapToasts(INPUT({ linked: false, onRecap: false })).guestStreak).toBe(false);
+  });
+
+  it('invité : rien tant que ses parties terminées ne sont pas connues', () => {
+    expect(recapToasts(INPUT({ linked: false, gamesPlayed: null })).guestStreak).toBe(false);
+  });
+
+  it("invité : après ses premières parties, la série ne s'affiche plus qu'au palier d'un gel", () => {
+    const after = GUEST_STREAK_INTRO_GAMES + 1;
+    expect(recapToasts(INPUT({ linked: false, gamesPlayed: after })).guestStreak).toBe(false);
+    const milestone = recapToasts(INPUT({ linked: false, gamesPlayed: after, stats: STATS({ freezeMilestone: true }) }));
+    expect(milestone.guestStreak).toBe(true);
+    expect(milestone.guestFreezeMiss).toBe(true);
+  });
+
+  it('invité : au palier, une fermeture vaut pour ce palier seulement, même fermé pendant ses premières parties', () => {
+    const milestone = (streakDismissedAt: number | null, toastStreak: number) =>
+      recapToasts(INPUT({ linked: false, gamesPlayed: 20, toastStreak, streakDismissedAt, stats: STATS({ freezeMilestone: true }) })).guestStreak;
+    expect(milestone(2, 7)).toBe(true);
+    expect(milestone(7, 7)).toBe(false);
+    expect(milestone(7, 14)).toBe(true);
+  });
+
+  it('un compte ne voit jamais la série non sauvegardée', () => {
+    expect(recapToasts(INPUT({ linked: true, stats: STATS({ freezeMilestone: true }) })).guestStreak).toBe(false);
   });
 
   it("invité : le palier d'un gel atteint devient « tu aurais gagné un gel », jamais « +1 gel gagné »", () => {

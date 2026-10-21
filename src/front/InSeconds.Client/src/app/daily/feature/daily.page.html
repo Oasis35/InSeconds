@@ -115,7 +115,7 @@
 
   <!-- Toasts de fin de partie et d'accueil (série, gels) -->
   @if (store.toasts().guestStreak) {
-    <app-guest-streak-toast [streak]="store.toastStreak()" [freezeMiss]="store.toasts().guestFreezeMiss" (dismissed)="store.dismissStreakToast()" />
+    <app-guest-streak-toast [streak]="store.toastStreak()" [freezeMiss]="store.toasts().guestFreezeMiss" (dismissed)="dismissGuestStreakToast()" />
   }
   @if (store.showLostToast(); as _) {
     <app-lost-streak-toast [lostStreak]="store.lostStreak() ?? 0" (dismissed)="store.dismissLostToast()" />
