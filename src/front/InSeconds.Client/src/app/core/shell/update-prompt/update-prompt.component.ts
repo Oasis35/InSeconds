@@ -6,8 +6,8 @@ import { VersionService } from '../../version/version.service';
 /**
  * Bandeau « une nouvelle version est disponible » avec un bouton pour recharger. En secours seulement :
  * d'habitude `VersionService` recharge tout seul au premier moment sûr. Il s'affiche quand le service
- * worker est cassé, quand l'API signale une nouvelle version, ou quand le garde-fou anti-boucle bloque
- * un rechargement automatique.
+ * worker est dans un état irrécupérable, ou quand le garde-fou anti-boucle bloque un rechargement
+ * automatique ; chaque affichage est remonté avec sa raison (`UpdatePrompt:`).
  */
 @Component({
   selector: 'app-update-prompt',

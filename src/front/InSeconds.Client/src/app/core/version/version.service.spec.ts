@@ -4,6 +4,7 @@ import { Dialog } from '@angular/cdk/dialog';
 import { NavigationEnd, Router } from '@angular/router';
 import { SwUpdate, VersionEvent } from '@angular/service-worker';
 import { Subject } from 'rxjs';
+import { ErrorReportingService } from '../errors/error-reporting.service';
 import { PAGE_RELOAD, ReloadMoment, SERVICE_WORKER_CONTAINER, VersionService } from './version.service';
 
 describe('VersionService', () => {
@@ -18,6 +19,7 @@ describe('VersionService', () => {
   let visibility: DocumentVisibilityState;
   let workers: EventTarget & { controller: object | null; getRegistration: ReturnType<typeof vi.fn> };
   let updateWorker: ReturnType<typeof vi.fn>;
+  let reportError: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     sessionStorage.clear();
@@ -38,6 +40,7 @@ describe('VersionService', () => {
     checkForUpdate = vi.fn().mockResolvedValue(false);
     reload = vi.fn();
     updateWorker = vi.fn().mockResolvedValue(undefined);
+    reportError = vi.fn();
     workers = Object.assign(new EventTarget(), {
       controller: controlled ? {} : null,
       getRegistration: vi.fn().mockResolvedValue({ update: updateWorker }),
@@ -49,6 +52,7 @@ describe('VersionService', () => {
         { provide: Router, useValue: { events: routerEvents } },
         { provide: Dialog, useValue: dialog },
         { provide: SERVICE_WORKER_CONTAINER, useValue: workers },
+        { provide: ErrorReportingService, useValue: { report: reportError } },
       ],
     });
     return TestBed.inject(VersionService);
@@ -90,6 +94,7 @@ describe('VersionService', () => {
 
     expect(reload).toHaveBeenCalledTimes(1);
     expect(service.updateAvailable()).toBe(false);
+    expect(reportError).not.toHaveBeenCalled();
   });
 
   it('ne recharge jamais en pleine manche, puis dès que la page redevient sûre', () => {
@@ -194,6 +199,7 @@ describe('VersionService', () => {
 
     expect(reload).not.toHaveBeenCalled();
     expect(service.updateAvailable()).toBe(true);
+    expect(reportError).toHaveBeenCalledExactlyOnceWith({ source: 'js', message: 'UpdatePrompt: reload-loop' });
   });
 
   it('retient l\'heure du rechargement automatique', () => {
@@ -215,6 +221,7 @@ describe('VersionService', () => {
     TestBed.tick();
     expect(service.updateAvailable()).toBe(true);
     expect(reload).not.toHaveBeenCalled();
+    expect(reportError).toHaveBeenCalledExactlyOnceWith({ source: 'js', message: 'UpdatePrompt: unrecoverable (cache effacé)' });
 
     moment.set('now');
     TestBed.tick();

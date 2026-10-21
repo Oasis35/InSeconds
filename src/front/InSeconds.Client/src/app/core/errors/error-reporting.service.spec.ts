@@ -80,6 +80,16 @@ describe('ErrorReportingService', () => {
     expect(httpMock.match(endpoint)).toHaveLength(ErrorReportingService.MAX_REPORTS_PER_PAGE);
   });
 
+  it('suit le départ de la page, annulé au retour depuis le cache de navigation', () => {
+    expect(service.isLeavingPage()).toBe(false);
+
+    window.dispatchEvent(new Event('pagehide'));
+    expect(service.isLeavingPage()).toBe(true);
+
+    window.dispatchEvent(new Event('pageshow'));
+    expect(service.isLeavingPage()).toBe(false);
+  });
+
   it('avale un échec d\'envoi sans lever d\'erreur', () => {
     service.report({ source: 'js', message: 'boom' });
 

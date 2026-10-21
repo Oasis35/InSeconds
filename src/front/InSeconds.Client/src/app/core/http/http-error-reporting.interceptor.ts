@@ -8,14 +8,16 @@ import { ErrorReportingService } from '../errors/error-reporting.service';
  * Remonte les appels API en échec réseau (status 0) ou en erreur serveur (5xx), avec le code
  * d'erreur (traceId) du ProblemDetails quand il existe : front et back se retrouvent sur la même
  * trace. Les 4xx sont des réponses métier attendues : ignorées. `/health` est sondé en boucle et
- * peut légitimement échouer pendant un redéploiement : ignoré aussi. L'erreur est re-propagée.
+ * peut légitimement échouer pendant un redéploiement : ignoré aussi, comme un échec réseau survenu
+ * pendant le départ de la page (requête coupée par un rechargement). L'erreur est re-propagée.
  */
 export const httpErrorReportingInterceptor: HttpInterceptorFn = (req, next) => {
   const reporting = inject(ErrorReportingService);
 
   return next(req).pipe(
     catchError((error: unknown) => {
-      if (error instanceof HttpErrorResponse && shouldReport(req.url, error.status)) {
+      const leftPage = error instanceof HttpErrorResponse && error.status === 0 && reporting.isLeavingPage();
+      if (error instanceof HttpErrorResponse && shouldReport(req.url, error.status) && !leftPage) {
         void readProblemDetails(error.error).then(problem => {
           const traceId = typeof problem?.traceId === 'string' ? problem.traceId : null;
           if (traceId) reporting.setLastErrorCode(traceId);

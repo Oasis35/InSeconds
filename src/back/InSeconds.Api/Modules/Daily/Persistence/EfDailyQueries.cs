@@ -43,7 +43,8 @@ public sealed class EfDailyQueries(InSecondsDbContext db) : IDailyQueries
                 Found = g.Count(a => a.ArtistCorrect || a.TitleCorrect),
                 FoundSeconds = g.Where(a => a.ArtistCorrect || a.TitleCorrect).Sum(a => (decimal?)a.ListenedSeconds),
             })
-            .FirstOrDefaultAsync(ct);
+            // Un seul groupe au plus : `Single`, car `First` sans `OrderBy` fait journaliser un avertissement à EF Core.
+            .SingleOrDefaultAsync(ct);
         if (totals is null)
             return PriorAnswerStats.None;
 

@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { AudioStatus } from '../domain/track-round';
 import { ErrorReportingService } from '../../core/errors/error-reporting.service';
-import { HtmlAudioPort, describeAudioError, describeStall, probePreview } from './html-audio.port';
+import { HtmlAudioPort, describeAudioError, describeStall, isSignatureExpired, probePreview } from './html-audio.port';
 import { makeToneUrl } from './testing/wav';
 
 /**
@@ -223,6 +223,14 @@ describe('HtmlAudioPort', () => {
     expect(sent.source).toBe('js');
     expect(sent.message).toMatch(/^AudioError: chargement, MEDIA_ERR_/);
     expect(JSON.stringify(sent)).not.toContain('introuvable');
+  });
+
+  it('l\'échec d\'une adresse à la signature expirée n\'est pas remonté (la manche en redemande une)', async () => {
+    port.load('blob:http://localhost/introuvable?hdnea=exp=1~hmac=secret');
+    await until('error');
+    await sleep(50);
+
+    expect(report).not.toHaveBeenCalled();
   });
 
   it('une erreur n\'empêche pas de réessayer : le même extrait se recharge', async () => {
@@ -473,6 +481,21 @@ describe('HtmlAudioPort', () => {
 
       expect(await probePreview('blob:http://localhost/x', fetchFn)).toBe('');
       expect(fetchFn).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('isSignatureExpired', () => {
+    const now = Date.UTC(2026, 9, 21, 8, 0, 0);
+    const at = (ms: number) => `https://cdnt-preview.dzcdn.net/api/1/extrait.mp3?hdnea=exp=${Math.floor(ms / 1000)}~acl=/api/1/*~hmac=secret`;
+
+    it('reconnaît une signature passée, pas une signature encore valable', () => {
+      expect(isSignatureExpired(at(now - 1000), now)).toBe(true);
+      expect(isSignatureExpired(at(now + 60_000), now)).toBe(false);
+    });
+
+    it('ne tient pas pour expirée une adresse sans signature', () => {
+      expect(isSignatureExpired('https://cdnt-preview.dzcdn.net/api/1/extrait.mp3', now)).toBe(false);
+      expect(isSignatureExpired('blob:http://localhost/x', now)).toBe(false);
     });
   });
 

@@ -52,7 +52,8 @@ public sealed class EfPlayerDirectory(InSecondsDbContext db) : IPlayerDirectory
                                 Active7 = g.Count(x => x.LastSeenAt >= since7),
                                 Active30 = g.Count(x => x.LastSeenAt >= since30),
                             })
-            .FirstOrDefaultAsync(ct);
+            // Un seul groupe au plus : `Single`, car `First` sans `OrderBy` fait journaliser un avertissement à EF Core.
+            .SingleOrDefaultAsync(ct);
 
         return counts is null ? new PlayerBreakdown(0, 0, 0, 0) : new PlayerBreakdown(counts.Guests, counts.Registered, counts.Active7, counts.Active30);
     }
