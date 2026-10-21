@@ -60,6 +60,16 @@ export async function probePreview(url: string, fetchFn: typeof fetch = (input, 
   }
 }
 
+/**
+ * L'adresse porte une signature Deezer déjà expirée (`hdnea=exp=<secondes Unix>`, valable 15 min,
+ * piège 14). Son échec est attendu : la manche en redemande une fraîche d'elle-même, ce n'est pas
+ * une panne à remonter. Une adresse fraîche refusée, elle, l'est.
+ */
+export function isSignatureExpired(url: string, nowMs = Date.now()): boolean {
+  const exp = /[?&~]hdnea=exp=(\d+)/.exec(url)?.[1];
+  return exp !== undefined && Number(exp) * 1000 <= nowMs;
+}
+
 /** Le déroulé réel d'un palier : quand le son est parti, combien de fois il s'est arrêté en route. */
 interface PlaybackTimings {
   startedAt: number;
@@ -110,7 +120,7 @@ function isAbort(err: unknown): boolean {
  *   le courant prêt, comme en v1 : rien n'est décodé en mémoire.
  * - L'extrait est lu en flux : une adresse dont la signature expire en cours de route (piège 14)
  *   donne `error` ; la manche en redemande une fraîche d'elle-même une fois, puis par « Réessayer »
- *   (`refreshPreviewUrl`).
+ *   (`refreshPreviewUrl`). L'échec d'une adresse déjà expirée n'est pas remonté (`isSignatureExpired`).
  */
 @Injectable()
 export class HtmlAudioPort extends AudioPort {
@@ -173,6 +183,7 @@ export class HtmlAudioPort extends AudioPort {
       if (this.loadToken !== token || this._state() === 'idle') return;
       this.halt();
       this._state.set('error');
+      if (isSignatureExpired(url)) return;
       const message = describeAudioError('chargement', audio.error);
       void probePreview(url).then(http => this.report(message + http));
     };

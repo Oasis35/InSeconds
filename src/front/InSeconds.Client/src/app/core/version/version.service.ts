@@ -1,9 +1,10 @@
-import { DestroyRef, Injectable, InjectionToken, computed, effect, inject, signal, DOCUMENT } from '@angular/core';
+import { DestroyRef, Injectable, InjectionToken, Injector, computed, effect, inject, signal, DOCUMENT } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Dialog } from '@angular/cdk/dialog';
 import { NavigationEnd, Router } from '@angular/router';
 import { SwUpdate } from '@angular/service-worker';
 import { filter, fromEvent, map, merge } from 'rxjs';
+import { ErrorReportingService } from '../errors/error-reporting.service';
 
 /** Recharge la page. Jeton séparé pour que les tests n'aient pas à recharger le navigateur. */
 export const PAGE_RELOAD = new InjectionToken<() => void>('PAGE_RELOAD', {
@@ -37,6 +38,9 @@ const MOMENT_ORDER: readonly ReloadMoment[] = ['now', 'background', 'navigation'
 const RELOAD_LOOP_WINDOW_MS = 60_000;
 const LAST_AUTO_RELOAD_KEY = 'inseconds.version.autoReloadAt';
 
+/** Préfixe des lignes remontées quand le bandeau s'affiche, suivi de la raison (`unrecoverable` ou `reload-loop`). */
+export const UPDATE_PROMPT_MESSAGE = 'UpdatePrompt';
+
 /** Le chemin d'une adresse, sans query string ni fragment. */
 function pathOf(url: string): string {
   return url.split(/[?#]/, 1)[0];
@@ -59,7 +63,9 @@ function pathOf(url: string): string {
  *   n'est pas un remplacement : rien à recharger ;
  * - état irrécupérable du service worker : `markUpdateAvailable()`, même mise en attente, plus le bandeau « Recharger / Plus tard » en secours ;
  * - garde-fou : un second rechargement automatique moins d'une minute après le précédent (déploiement cassé) n'a pas lieu,
- *   le bandeau s'affiche à la place.
+ *   le bandeau s'affiche à la place ;
+ * - chaque affichage du bandeau est remonté vers `/api/client-errors` (`UpdatePrompt: unrecoverable …` ou
+ *   `UpdatePrompt: reload-loop`, avec la version du front) : le bandeau ne devrait jamais s'afficher, la ligne dit pourquoi.
  * Service worker désactivé (dev, tests, navigateur sans support) : rien n'est surveillé.
  */
 @Injectable({ providedIn: 'root' })
@@ -68,6 +74,7 @@ export class VersionService {
   private readonly reloadPage = inject(PAGE_RELOAD);
   private readonly document = inject(DOCUMENT);
   private readonly workers = inject(SERVICE_WORKER_CONTAINER);
+  private readonly injector = inject(Injector);
 
   private readonly _updateAvailable = signal(false);
   /** Le bandeau « Recharger / Plus tard » est affiché. */
@@ -110,7 +117,10 @@ export class VersionService {
 
     this.swUpdate.unrecoverable
       .pipe(takeUntilDestroyed(destroyRef))
-      .subscribe(() => this.markUpdateAvailable());
+      .subscribe(event => {
+        this.reportPrompt(`unrecoverable (${event.reason})`);
+        this.markUpdateAvailable();
+      });
 
     fromEvent(this.document, 'visibilitychange')
       .pipe(takeUntilDestroyed(destroyRef))
@@ -168,12 +178,18 @@ export class VersionService {
   private applyIfSafe(): void {
     if (!this.pending() || this.dialogOpen()) return;
     if (this.reloadedRecently()) {
+      if (!this._updateAvailable()) this.reportPrompt('reload-loop');
       this._updateAvailable.set(true);
       return;
     }
     this.rememberAutoReload();
     this.pending.set(false);
     this.reloadPage();
+  }
+
+  /** Le bandeau va s'afficher : on le remonte avec sa raison (la version du front est ajoutée par le service). */
+  private reportPrompt(reason: string): void {
+    this.injector.get(ErrorReportingService).report({ source: 'js', message: `${UPDATE_PROMPT_MESSAGE}: ${reason}` });
   }
 
   private reloadedRecently(): boolean {

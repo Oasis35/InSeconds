@@ -32,6 +32,8 @@ interface ClientErrorPayload extends ClientErrorReport {
  * - Contexte ajouté à chaque envoi : version du front (`DEPLOYED_AT`, date de build, pour repérer un
  *   onglet resté sur une ancienne version) et `navigator.onLine` (coupure chez le joueur ou panne chez
  *   nous). L'appareil (« Safari · iPhone ») est déduit par l'API de l'en-tête `User-Agent`.
+ * - Départ de la page suivi (`pagehide`, annulé par `pageshow` au retour du cache de navigation) : un
+ *   rechargement ou une fermeture coupe les requêtes en cours, qui ne sont pas de vrais échecs réseau.
  */
 @Injectable({ providedIn: 'root' })
 export class ErrorReportingService {
@@ -39,6 +41,18 @@ export class ErrorReportingService {
 
   private readonly http = new HttpClient(inject(HttpBackend));
   private readonly alreadySent = new Set<string>();
+  private leavingPage = false;
+
+  constructor() {
+    if (typeof window === 'undefined') return;
+    window.addEventListener('pagehide', () => (this.leavingPage = true));
+    window.addEventListener('pageshow', () => (this.leavingPage = false));
+  }
+
+  /** Vrai une fois la page en train de partir (rechargement, navigation, fermeture). */
+  isLeavingPage(): boolean {
+    return this.leavingPage;
+  }
 
   /** Code d'erreur (traceId) de la dernière réponse 5xx de l'API, affiché au joueur. */
   private readonly _lastErrorCode = signal<string | null>(null);
