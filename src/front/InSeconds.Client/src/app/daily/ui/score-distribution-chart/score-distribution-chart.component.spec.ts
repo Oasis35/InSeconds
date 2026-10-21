@@ -1,5 +1,5 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { provideTranslateService } from '@ngx-translate/core';
+import { TranslateService, provideTranslateService } from '@ngx-translate/core';
 import { ScoreDistributionChartComponent, MIN_PLAYERS_FOR_PERCENT } from './score-distribution-chart.component';
 import { DayStats } from '../../domain/daily';
 
@@ -79,7 +79,32 @@ describe('ScoreDistributionChartComponent', () => {
     fixture.componentRef.setInput('stats', stats({ medianScore: 100 }));
     const median = component['chart']()!.median!;
     expect(median.tickX).toBeCloseTo(10 + (100 / 5000) * 280, 5);
-    expect(median.labelX).toBe(55);
+    expect(median.labelX).toBe(75);
+  });
+
+  // Tous les scores à 0 : médiane = plus bas, et l'étiquette « médiane » se posait sur « plus bas ».
+  it.each([
+    ['fr', { medianScore: 0, minScore: 0, maxScore: 0 }],
+    ['fr', { medianScore: 5000, minScore: 5000, maxScore: 5000 }],
+    ['en', { medianScore: 0, minScore: 0, maxScore: 0 }],
+  ] as const)('never draws the median label over the lowest/highest labels (%s, %o)', async (lang, over) => {
+    const translate = TestBed.inject(TranslateService);
+    translate.setTranslation(lang, { daily: { scoreChart: lang === 'fr'
+      ? { median: 'médiane', lowest: 'plus bas', highest: 'plus haut' }
+      : { median: 'median', lowest: 'lowest', highest: 'highest' } } });
+    translate.use(lang);
+    fixture.componentRef.setInput('stats', stats(over));
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const labels = [...(fixture.nativeElement as HTMLElement).querySelectorAll<SVGTextElement>('svg text')]
+      .filter(t => /médiane|median|plus bas|lowest|plus haut|highest/.test(t.textContent ?? ''))
+      .map(t => ({ text: t.textContent!.trim(), box: t.getBBox() }));
+    const median = labels.find(l => /médiane|median/.test(l.text))!.box;
+    for (const edge of labels.filter(l => !/médiane|median/.test(l.text)).map(l => l.box)) {
+      const overlaps = median.x < edge.x + edge.width && edge.x < median.x + median.width;
+      expect(overlaps).toBe(false);
+    }
   });
 
   it('hides the markers when nobody has completed the challenge', () => {
