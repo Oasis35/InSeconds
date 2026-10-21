@@ -1,4 +1,4 @@
-# Caddy — reverse proxy partagé du VPS
+# Caddy - reverse proxy partagé du VPS
 
 Stack **indépendante**, sur le même principe que `deploy/infra/` (Postgres partagé) : un seul
 Caddy pour tout le VPS, HTTPS automatique (Let's Encrypt), routage par nom de domaine vers les
@@ -15,10 +15,10 @@ docker compose up -d
 
 Le réseau Docker `caddy-net` est créé par ce stack (`name: caddy-net`, pas `external`). Les
 stacks applicatifs (ex. `docker-compose.prod.yml` d'InSeconds) le déclarent en
-`external: true` pour le rejoindre — Caddy route alors vers eux par nom de conteneur
+`external: true` pour le rejoindre - Caddy route alors vers eux par nom de conteneur
 (`inseconds.front`, `inseconds.api`), sans qu'aucun port applicatif ne soit publié sur l'hôte.
 
-Ports 80/443 : seuls ports publiés sur l'hôte pour **tout le VPS** — Caddy est le point d'entrée
+Ports 80/443 : seuls ports publiés sur l'hôte pour **tout le VPS** - Caddy est le point d'entrée
 public unique, tous les autres services restent internes au réseau Docker.
 
 Domaines servis par le `Caddyfile` : la prod (`{$FRONT_DOMAIN}` → `inseconds.front`,
@@ -59,27 +59,27 @@ nouveau domaine s'obtient avant même de le faire pointer vers le VPS.
 Image Caddy custom (`Dockerfile`, build via `xcaddy` + module `caddy-dns/cloudflare`) : le
 certificat Let's Encrypt est validé par un enregistrement TXT temporaire créé via l'API
 Cloudflare, pas par une requête HTTP entrante sur le VPS. Ça permet de garder le proxy
-Cloudflare **actif** (nuage orange) sur tous les domaines — les enregistrements DNS pointent
+Cloudflare **actif** (nuage orange) sur tous les domaines - les enregistrements DNS pointent
 bien vers l'IP du VPS en interne (champ "Content" visible seulement par le propriétaire du
 compte Cloudflare), mais seule l'IP Cloudflare est visible publiquement (`dig`/`nslookup` depuis
 l'extérieur ne révèle jamais l'IP réelle du VPS).
 
-Nécessite `CF_API_TOKEN` (cf. `.env.example`) — token scopé en écriture DNS sur la zone
+Nécessite `CF_API_TOKEN` (cf. `.env.example`) - token scopé en écriture DNS sur la zone
 `inseconds.cc` uniquement, jamais le token de compte Cloudflare global.
 
 Conteneur Caddy tourne en **utilisateur non-root** (`uid 1000`, capacité Linux
 `CAP_NET_BIND_SERVICE` posée sur le binaire via `setcap` pour bind les ports 80/443 sans être
-root) — corrige un finding SonarCloud "Security Rating on New Code" (B → A) détecté à l'ouverture
+root) - corrige un finding SonarCloud "Security Rating on New Code" (B → A) détecté à l'ouverture
 de la première PR de ce stack. Nécessite de recréer les volumes `caddy_data`/`caddy_config` si
 appliqué après coup sur un déploiement déjà en place (permissions root existantes sur les
-certificats déjà stockés) — sans impact ici car domaines de test, certificats réémis en
+certificats déjà stockés) - sans impact ici car domaines de test, certificats réémis en
 quelques secondes.
 
 ## IP réelle du visiteur (`trusted_proxies cloudflare`)
 
 Sans `trusted_proxies` déclaré, Caddy (≥ 2.5) ne fait confiance à personne pour
-`X-Forwarded-For` et le remplace par l'IP de qui lui parle directement — le serveur Cloudflare
-(edge), jamais le vrai visiteur. Le back (rate limiting par IP — magic link, création de joueur,
+`X-Forwarded-For` et le remplace par l'IP de qui lui parle directement - le serveur Cloudflare
+(edge), jamais le vrai visiteur. Le back (rate limiting par IP - magic link, création de joueur,
 autocomplete Deezer…) recevait donc la même IP pour tous les visiteurs d'un même edge Cloudflare
 (cf. CLAUDE.md racine, pièges 27 et 34).
 
@@ -95,7 +95,7 @@ docker compose build --no-cache caddy
 docker compose up -d
 ```
 
-Vérifier après coup que l'API voit bien la vraie IP (pas celle de Cloudflare) — ex. en
+Vérifier après coup que l'API voit bien la vraie IP (pas celle de Cloudflare) - ex. en
 observant `docker logs inseconds.api` sur une requête de test, ou toute route qui logue l'IP
 source.
 

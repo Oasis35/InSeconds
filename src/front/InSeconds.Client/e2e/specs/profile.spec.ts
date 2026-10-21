@@ -13,7 +13,7 @@ test.describe('Profil', () => {
   test('l\'avatar du header (compte connecté) mène au profil', async ({ page, api }) => {
     await linkAccount(page, api, EMAIL_A, 'AvatarUserE2E');
 
-    // Le profil porte aussi des éléments avec le même texte — scoper au header.
+    // Le profil porte aussi des éléments avec le même texte - scoper au header.
     await page.locator('app-account-link').getByTitle('AvatarUserE2E').click();
     await expect(page).toHaveURL(/\/profile$/);
   });
@@ -21,7 +21,7 @@ test.describe('Profil', () => {
   test('le lien de compte du header disparaît pendant la manche (v2)', async ({ page, api }) => {
     await linkAccount(page, api, EMAIL_A, 'MancheUserE2E');
     const game = new GamePage(page);
-    const avatar = page.locator('app-account-link').getByTitle('Mon profil — MancheUserE2E');
+    const avatar = page.locator('app-account-link').getByTitle('Mon profil : MancheUserE2E');
 
     await game.openWithFakeClock();
     await expect(avatar).toBeVisible();

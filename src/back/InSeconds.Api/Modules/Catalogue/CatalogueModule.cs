@@ -3,7 +3,6 @@ using InSeconds.Api.Modules.Catalogue.Application;
 using InSeconds.Api.Modules.Catalogue.Contracts;
 using InSeconds.Api.Modules.Catalogue.Domain;
 using InSeconds.Api.Modules.Catalogue.Persistence;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace InSeconds.Api.Modules.Catalogue;
 
@@ -23,23 +22,10 @@ public static class CatalogueModule
         services.AddScoped<ICatalogueQueries, EfCatalogueQueries>();
         services.AddScoped<ITrackDirectory, EfTrackDirectory>();
         services.AddScoped<ITrackPreviews, DeezerTrackPreviews>();
-        // Aucun usage tant que Daily n'existe pas (E) : TryAdd, Daily enregistre sa propre implémentation.
-        services.TryAddScoped<ITrackUsage, NoTrackUsage>();
+        // L'usage des morceaux est fourni par chaque mode (ITrackUsage, ajouté, jamais remplacé) ; Catalogue les réunit.
+        services.AddScoped<ITrackPoolUsage, TrackPoolUsage>();
         services.AddScheduledJob<RefreshPreviewsJob>(RefreshPreviewsJob.Id, RefreshPreviewsJob.DefaultCron);
         services.AddExceptionHandler<TrackConflictExceptionHandler>();
         return services;
     }
-}
-
-/// <summary>
-/// En attendant Daily (E) : aucun morceau n'a jamais servi, aucun n'est dans le défi du jour ni en cooldown.
-/// Daily remplace cette classe par la lecture de <c>challenge_tracks</c>, sans changer Catalogue.
-/// </summary>
-public sealed class NoTrackUsage : ITrackUsage
-{
-    public Task<IReadOnlyDictionary<int, TrackUsage>> GetAsync(IReadOnlyCollection<int> trackIds, CancellationToken ct) =>
-        Task.FromResult<IReadOnlyDictionary<int, TrackUsage>>(new Dictionary<int, TrackUsage>());
-
-    public Task<IReadOnlySet<int>> GetTracksInCooldownAsync(DateOnly day, CancellationToken ct) =>
-        Task.FromResult<IReadOnlySet<int>>(new HashSet<int>());
 }

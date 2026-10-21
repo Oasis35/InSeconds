@@ -122,7 +122,7 @@ describe('PlayersApi', () => {
 
   it('rend la copie des données remise en forme, sous le nom de fichier du jour de l\'export', async () => {
     // Le client annonce des dates mais le JSON livre du texte.
-    const data = { exportedAt: '2026-10-17T04:00:00Z', playerId: 'p1', devices: [], games: [] };
+    const data = { exportedAt: '2026-10-17T04:00:00Z', playerId: 'p1', devices: [], modules: { daily: { streak: null, games: [] } } };
     client.exportMyData.mockReturnValue(of(data));
 
     const file = await api.exportMyData();

@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using InSeconds.Api.Modules.Catalogue.Application;
 using InSeconds.Api.Modules.Catalogue.Contracts;
+using InSeconds.Api.Modules.Daily.Application;
 using Microsoft.Extensions.DependencyInjection;
 using static InSeconds.IntegrationTests.Daily.DailyApi;
 
@@ -109,20 +110,20 @@ public class TrackUsageTests(PostgresFixture postgres) : IAsyncLifetime
         var list = (await _app.Admin().GetFromJsonAsync<List<TrackListItem>>("/api/admin/catalogue/tracks", Ct))!;
 
         var first = list.Single(t => t.Id == 1);
-        Assert.Equal((Today.AddDays(-2), 1, Today.AddDays(29), false), (first.LastUsedDate!.Value, first.UsageCount, first.UnlockDate!.Value, first.InTodayChallenge));
-        Assert.True(list.Single(t => t.Id == 2).InTodayChallenge);
-        Assert.Equal(0, list.Single(t => t.Id == 3).UsageCount);
+        Assert.Equal((Today.AddDays(-2), 1, Today.AddDays(29), false), (first.Daily().LastUsedDate!.Value, first.Daily().UsageCount, first.Daily().UnlockDate!.Value, first.Daily().InTodayChallenge));
+        Assert.True(list.Single(t => t.Id == 2).Daily().InTodayChallenge);
+        Assert.Equal(0, list.Single(t => t.Id == 3).Daily().UsageCount);
     }
 
     private async Task<IReadOnlyDictionary<int, TrackUsage>> GetAsync(params int[] ids)
     {
         using var scope = _app.Api.Services.CreateScope();
-        return await scope.ServiceProvider.GetRequiredService<ITrackUsage>().GetAsync(ids, Ct);
+        return await scope.ServiceProvider.GetRequiredService<IDailyTrackUsage>().GetAsync(ids, Ct);
     }
 
     private async Task<IReadOnlySet<int>> InCooldownAsync(DateOnly day)
     {
         using var scope = _app.Api.Services.CreateScope();
-        return await scope.ServiceProvider.GetRequiredService<ITrackUsage>().GetTracksInCooldownAsync(day, Ct);
+        return await scope.ServiceProvider.GetRequiredService<IDailyTrackUsage>().GetTracksInCooldownAsync(day, Ct);
     }
 }

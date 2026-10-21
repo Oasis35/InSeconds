@@ -7,9 +7,9 @@ using static InSeconds.IntegrationTests.Catalogue.CatalogueApi;
 namespace InSeconds.IntegrationTests.Catalogue;
 
 /// <summary>
-/// La tâche <c>catalogue-refresh</c>, appelée directement (§ 5.4 bis du plan v2) : elle recontrôle l'extrait et le
-/// rang des morceaux que le défi de demain pourrait tirer. Mêmes scénarios que la v1 (<c>RefreshPreviewsTests</c>),
-/// plus l'état « inconnu » du piège 16 : un Deezer qui ne répond pas ne change jamais l'état d'un morceau.
+/// La tâche <c>catalogue-refresh</c>, appelée directement : elle recontrôle l'extrait et le
+/// rang de **tout le pool jouable** (les morceaux en cooldown et ceux qu'un mode a déjà joués compris).
+/// Elle couvre aussi l'état « inconnu » du piège 16 : un Deezer qui ne répond pas ne change jamais l'état d'un morceau.
 /// </summary>
 public class RefreshPreviewsTests(PostgresFixture postgres) : IAsyncLifetime
 {
@@ -118,22 +118,25 @@ public class RefreshPreviewsTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task MorceauEnCooldownDeDemain_NEstPasVerifie_LeJourDemandeEstDemain()
+    public async Task TousLesMorceauxJouables_SontVerifies_CeuxQuiOntServiCompris()
     {
-        var checkedTrack = await _app.AddAsync(1001);
-        var cooling = await _app.AddAsync(1002);
-        await _app.Api.ExecuteAsync($"UPDATE catalogue.tracks SET preview_status = 2 WHERE id IN ({checkedTrack.Id}, {cooling.Id})");
-        _app.Usage.Cooldown.Add(cooling.Id);
+        // Un mode (un run) peut tirer n'importe quel morceau : le contrôle ne saute plus ceux que le Daily garde en cooldown, ni ceux qu'un
+        // autre mode a déjà joués. Environ 75 % du pool l'était avant, et son rang et son extrait vieillissaient.
+        var fresh = await _app.AddAsync(1001);
+        var servedByDaily = await _app.AddAsync(1002);
+        var servedByOtherMode = await _app.AddAsync(1003);
+        await _app.Api.ExecuteAsync($"UPDATE catalogue.tracks SET preview_status = 2 WHERE id IN ({fresh.Id}, {servedByDaily.Id}, {servedByOtherMode.Id})");
+        _app.Usage.Set(servedByDaily.Id, new TrackUsage(new DateOnly(2026, 10, 3), 1, new DateOnly(2026, 11, 3), InTodayChallenge: false));
+        _app.OtherMode.Set(servedByOtherMode.Id, TrackUsage.None with { UsedByMode = true });
         _app.Deezer.Reset();
 
         var result = await RunAsync();
 
-        Assert.Equal(new PreviewRefreshResult(1, 1, 0), result);
-        // La tâche tourne à 23 h, la veille de la génération : ce sont les morceaux tirables demain.
-        Assert.Equal([new DateOnly(2026, 10, 6)], _app.Usage.AskedDays);
-        Assert.Equal(["/track/1001"], _app.Deezer.Requests);
-        Assert.Equal(1, await _app.PreviewStatusOfAsync(checkedTrack.Id));
-        Assert.Equal(2, await _app.PreviewStatusOfAsync(cooling.Id));
+        Assert.Equal(new PreviewRefreshResult(3, 3, 0), result);
+        Assert.Equal(["/track/1001", "/track/1002", "/track/1003"], _app.Deezer.Requests.Where(r => r.StartsWith("/track/")).Order());
+        Assert.Equal(1, await _app.PreviewStatusOfAsync(fresh.Id));
+        Assert.Equal(1, await _app.PreviewStatusOfAsync(servedByDaily.Id));
+        Assert.Equal(1, await _app.PreviewStatusOfAsync(servedByOtherMode.Id));
     }
 
     [Fact]
@@ -187,7 +190,128 @@ public class RefreshPreviewsTests(PostgresFixture postgres) : IAsyncLifetime
         var result = await RunAsync();
 
         Assert.Equal(new PreviewRefreshResult(23, 0, 0), result);
-        Assert.Equal(23, _app.Deezer.Requests.Count);
+        Assert.Equal(23, _app.Deezer.Requests.Count(r => r.StartsWith("/track/")));
+    }
+
+    // ---------- Genres de l'album : rattrapage ----------
+
+    /// <summary>Un morceau déjà dans le pool dont les genres n'ont jamais été lus (pool d'avant les genres).</summary>
+    private async Task<TrackSummary> AddWithoutGenresAsync(long deezerTrackId)
+    {
+        var track = await _app.AddAsync(deezerTrackId);
+        await _app.Api.ExecuteAsync($"DELETE FROM catalogue.track_genres WHERE track_id = {track.Id}");
+        await _app.Api.ExecuteAsync($"UPDATE catalogue.tracks SET album_id = NULL, genres_checked_at = NULL WHERE id = {track.Id}");
+        return track;
+    }
+
+    private async Task<string[]> GenresOfAsync(int trackId) =>
+        [.. (await _app.ListAsync()).Single(t => t.Id == trackId).Genres];
+
+    [Fact]
+    public async Task Rattrapage_LitAlbumEtGenres_DesMorceauxQuiNEnOntPas()
+    {
+        var track = await AddWithoutGenresAsync(1001);
+        _app.Deezer.Reset();
+
+        await RunAsync();
+
+        Assert.Equal(["Dance", "Rap/Hip Hop"], await GenresOfAsync(track.Id));
+        Assert.Equal(1L, await _app.Api.ScalarAsync<long>($"SELECT count(*) FROM catalogue.tracks WHERE id = {track.Id} AND album_id = 2 AND genres_checked_at IS NOT NULL"));
+        Assert.Equal(["/album/2", "/track/1001"], _app.Deezer.Requests.Order());
+    }
+
+    [Fact]
+    public async Task Rattrapage_UnAppelParAlbum_MemeAvecPlusieursMorceauxDuMemeAlbum()
+    {
+        var first = await AddWithoutGenresAsync(1001);
+        var second = await AddWithoutGenresAsync(1011);
+        var third = await AddWithoutGenresAsync(1002);
+        _app.Deezer.Reset();
+
+        await RunAsync();
+
+        // 1001 et 1011 partagent l'album 2, 1002 est sur l'album 3 : deux albums lus pour trois morceaux.
+        Assert.Equal(["/album/2", "/album/3"], _app.Deezer.Requests.Where(r => r.StartsWith("/album/")).Order());
+        Assert.Equal(["Dance", "Rap/Hip Hop"], await GenresOfAsync(first.Id));
+        Assert.Equal(["Dance", "Rap/Hip Hop"], await GenresOfAsync(second.Id));
+        Assert.Equal(["Rock"], await GenresOfAsync(third.Id));
+    }
+
+    [Fact]
+    public async Task Rattrapage_GenresDejaLus_NeSontPasRedemandes()
+    {
+        var track = await _app.AddAsync(1001);
+        _app.Deezer.Reset();
+
+        await RunAsync();
+
+        Assert.DoesNotContain(_app.Deezer.Requests, r => r.StartsWith("/album/"));
+        Assert.Equal(["Dance", "Rap/Hip Hop"], await GenresOfAsync(track.Id));
+    }
+
+    [Fact]
+    public async Task Rattrapage_AlbumIndisponible_NeChangeRien_EtLeProchainControleReessaie()
+    {
+        var track = await AddWithoutGenresAsync(1001);
+        _app.Deezer.Intercept = (request, _) => Task.FromResult<HttpResponseMessage?>(
+            request.RequestUri!.AbsolutePath.StartsWith("/album/", StringComparison.Ordinal) ? JsonOk("""{"error":{"type":"Exception","message":"Quota limit exceeded","code":4}}""") : null);
+
+        await RunAsync();
+
+        Assert.Empty(await GenresOfAsync(track.Id));
+        Assert.Equal(1L, await _app.Api.ScalarAsync<long>($"SELECT count(*) FROM catalogue.tracks WHERE id = {track.Id} AND album_id = 2 AND genres_checked_at IS NULL"));
+
+        // Deezer répond de nouveau : le morceau est rattrapé.
+        _app.Deezer.Intercept = null;
+        await RunAsync();
+
+        Assert.Equal(["Dance", "Rap/Hip Hop"], await GenresOfAsync(track.Id));
+    }
+
+    [Fact]
+    public async Task Rattrapage_AlbumSupprime_800_LaisseLeGenreVide_EtNeLeRedemandePlus()
+    {
+        var track = await AddWithoutGenresAsync(1001);
+        _app.Deezer.Intercept = (request, _) => Task.FromResult<HttpResponseMessage?>(
+            request.RequestUri!.AbsolutePath.StartsWith("/album/", StringComparison.Ordinal) ? JsonOk("""{"error":{"type":"DataException","message":"no data","code":800}}""") : null);
+
+        await RunAsync();
+        _app.Deezer.Intercept = null;
+        _app.Deezer.Reset();
+        await RunAsync();
+
+        Assert.Empty(await GenresOfAsync(track.Id));
+        Assert.Equal(1L, await _app.Api.ScalarAsync<long>($"SELECT count(*) FROM catalogue.tracks WHERE id = {track.Id} AND genres_checked_at IS NOT NULL"));
+        Assert.DoesNotContain(_app.Deezer.Requests, r => r.StartsWith("/album/"));
+    }
+
+    [Fact]
+    public async Task Rattrapage_UnMorceauQuiChangeDAlbumChezDeezer_PerdLesGenresDeLAncien()
+    {
+        var track = await _app.AddAsync(1001);
+        await _app.Api.ExecuteAsync($"UPDATE catalogue.tracks SET album_id = 99 WHERE id = {track.Id}");
+        _app.Deezer.Reset();
+
+        await RunAsync();
+
+        // L'album chez Deezer (2) n'est plus celui noté (99) : ses genres sont relus.
+        Assert.Equal(["/album/2", "/track/1001"], _app.Deezer.Requests.Order());
+        Assert.Equal(["Dance", "Rap/Hip Hop"], await GenresOfAsync(track.Id));
+    }
+
+    [Fact]
+    public async Task Rattrapage_NouvelAlbumIndisponible_RetireQuandMemeLesGenresDeLAncien()
+    {
+        var track = await _app.AddAsync(1001);
+        await _app.Api.ExecuteAsync($"UPDATE catalogue.tracks SET album_id = 99 WHERE id = {track.Id}");
+        _app.Deezer.Intercept = (request, _) => Task.FromResult<HttpResponseMessage?>(
+            request.RequestUri!.AbsolutePath.StartsWith("/album/", StringComparison.Ordinal) ? JsonOk("""{"error":{"type":"Exception","message":"Quota limit exceeded","code":4}}""") : null);
+
+        await RunAsync();
+
+        // Les genres notés étaient ceux de l'album 99 : ils ne valent plus, même si le nouvel album n'a pas pu être lu (il le sera au prochain contrôle).
+        Assert.Empty(await GenresOfAsync(track.Id));
+        Assert.Equal(1L, await _app.Api.ScalarAsync<long>($"SELECT count(*) FROM catalogue.tracks WHERE id = {track.Id} AND album_id = 2 AND genres_checked_at IS NULL"));
     }
 
     [Fact]

@@ -4,8 +4,6 @@ import { provideTranslateService } from '@ngx-translate/core';
 import { ThanksDialogComponent, ThanksDialogData } from './thanks-dialog.component';
 
 describe('ThanksDialogComponent', () => {
-  afterEach(() => document.documentElement.classList.remove('no-anim'));
-
   function render(overrides: Partial<ThanksDialogData> = {}) {
     const close = vi.fn();
     const challenge = vi.fn();
@@ -54,18 +52,5 @@ describe('ThanksDialogComponent', () => {
     el.querySelector<HTMLButtonElement>('button[aria-label]')!.click();
     expect(close).toHaveBeenCalledTimes(2);
     expect(challenge).not.toHaveBeenCalled();
-  });
-
-  it('lance les confettis, retirés à la fermeture', () => {
-    const { fixture } = render();
-    expect(document.querySelector('canvas[data-confetti]')).not.toBeNull();
-    fixture.destroy();
-    expect(document.querySelector('canvas[data-confetti]')).toBeNull();
-  });
-
-  it('pas de confettis sous les E2E (classe no-anim)', () => {
-    document.documentElement.classList.add('no-anim');
-    render();
-    expect(document.querySelector('canvas[data-confetti]')).toBeNull();
   });
 });

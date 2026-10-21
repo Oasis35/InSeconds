@@ -41,7 +41,7 @@ describe('RevealCardComponent', () => {
 
   it('montre la bonne réponse et la pochette', () => {
     const { element, text } = render();
-    expect(text()).toContain('Daft Punk — Get Lucky');
+    expect(text()).toContain('Daft Punk - Get Lucky');
     expect(element.querySelector('img')?.getAttribute('src')).toBe('https://cdn.example/pochette.jpg');
   });
 
@@ -74,6 +74,8 @@ describe('RevealCardComponent', () => {
 });
 
 describe('GuessTimeChartComponent', () => {
+  beforeEach(() => TestBed.configureTestingModule({ providers: [provideTranslateService()] }));
+
   function render(inputs: Record<string, unknown>) {
     const fixture = TestBed.createComponent(GuessTimeChartComponent);
     for (const [name, value] of Object.entries(inputs)) fixture.componentRef.setInput(name, value);
@@ -86,7 +88,7 @@ describe('GuessTimeChartComponent', () => {
   it('une barre par palier plus la barre « ✗ »', () => {
     const element = render({ distribution: buckets, notFoundCount: 3 });
     expect(Array.from(element.querySelectorAll('[data-bucket]')).map(bar => bar.getAttribute('data-bucket'))).toEqual(['d0.5', 'd1', 'nf']);
-    expect(element.textContent).toContain('0.5s');
+    expect(element.textContent).toContain('0,5\u00a0s');
     expect(element.textContent).toContain('✗');
   });
 
@@ -99,6 +101,7 @@ describe('GuessTimeChartComponent', () => {
   it('écrit les comptes au-dessus des barres quand on le demande', () => {
     expect(render({ distribution: buckets, showCounts: true }).textContent).toContain('6');
     TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideTranslateService()] });
     expect(render({ distribution: buckets }).textContent).not.toContain('6');
   });
 

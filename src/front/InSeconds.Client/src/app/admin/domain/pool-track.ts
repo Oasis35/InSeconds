@@ -1,10 +1,19 @@
 /** État de l'extrait d'un morceau, tel que le contrôle de Deezer le connaît (`unknown` : jamais contrôlé). */
 export type PreviewState = 'unknown' | 'available' | 'missing';
 
+/** Ce qu'un mode de jeu dit d'un morceau : présent dans `usages` = le mode l'a joué. Les dates sont des jours ISO `yyyy-MM-dd`. */
+export interface ModeUsage {
+  readonly mode: string;
+  readonly usageCount: number;
+  readonly lastUsedDate: string | null;
+  readonly unlockDate: string | null;
+  readonly inTodayChallenge: boolean;
+}
+
 /**
- * Un morceau du pool tel que l'admin le voit. L'usage (dernier jour, nombre d'utilisations, date de
- * déblocage, défi du jour) vient du module Daily : « disponible » ou « utilisé » se déduit de
- * `usageCount`. Les dates sont des jours ISO `yyyy-MM-dd`.
+ * Un morceau du pool tel que l'admin le voit. Le pool est commun à tous les modes : `isUsed` vient du back (un mode
+ * au moins l'a joué), et `usages` donne ce que chaque mode en a fait (le Daily : dernier jour, apparitions, déblocage,
+ * défi du jour).
  */
 export interface PoolTrack {
   readonly id: number;
@@ -13,21 +22,32 @@ export interface PoolTrack {
   readonly title: string;
   readonly preview: PreviewState;
   readonly isDisabled: boolean;
-  readonly lastUsedDate: string | null;
-  readonly usageCount: number;
-  readonly unlockDate: string | null;
-  /** Dans le défi du jour : peut être renommé (avec un avertissement) mais pas désactivé. */
+  readonly isUsed: boolean;
+  readonly usages: readonly ModeUsage[];
+  /** Les genres de l'album du morceau (noms, par ordre alphabétique) : vides tant qu'ils ne sont pas lus chez Deezer. */
+  readonly genres: readonly string[];
+  /** Dans le défi du jour d'un mode : peut être renommé (avec un avertissement) mais pas désactivé. */
   readonly inTodayChallenge: boolean;
 }
 
-/** Un morceau qui a déjà servi dans un défi ne se supprime plus : on le retire du tirage (désactivation). */
-export function isUsed(track: PoolTrack): boolean {
-  return track.usageCount > 0;
+/** Un morceau que l'un des modes a joué ne se supprime plus : on le retire du tirage (désactivation). */
+export function isUsed(track: Pick<PoolTrack, 'isUsed'>): boolean {
+  return track.isUsed;
 }
 
-/** « Artiste — Titre », la forme sous laquelle un morceau est nommé dans l'admin. */
+/** Ce que ce mode dit du morceau, `null` s'il ne l'a pas joué. */
+export function usageOf(track: Pick<PoolTrack, 'usages'>, mode: string): ModeUsage | null {
+  return track.usages.find(usage => usage.mode === mode) ?? null;
+}
+
+/** Ce mode a joué le morceau. */
+export function isUsedByMode(track: Pick<PoolTrack, 'usages'>, mode: string): boolean {
+  return usageOf(track, mode) !== null;
+}
+
+/** « Artiste - Titre », la forme sous laquelle un morceau est nommé dans l'admin. */
 export function trackLabel(track: Pick<PoolTrack, 'artist' | 'title'>): string {
-  return `${track.artist} — ${track.title}`;
+  return `${track.artist} - ${track.title}`;
 }
 
 /** Un résultat de la recherche Deezer de l'admin : de quoi écouter l'extrait et ajouter le morceau. */

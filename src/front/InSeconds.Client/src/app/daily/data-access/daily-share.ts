@@ -2,9 +2,9 @@ import { Injectable, inject, signal } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { ClipboardService } from '../../core/clipboard/clipboard.service';
 import { environment } from '../../../environments/environment';
-import { ShareTrack, dayLabel, shareLines } from '../domain/share-text';
+import { ShareTrack, dayLabel, shareLine } from '../domain/share-text';
 
-/** Le partage du score : le texte `✅/❌` de la partie dans le presse-papier, et l'état du bouton (copié, échec) pour quelques secondes. */
+/** Le partage du score : la date, une ligne de `✅`/`❌`, le score et le lien dans le presse-papier, et l'état du bouton (copié, échec) pour quelques secondes. */
 @Injectable()
 export class DailyShare {
   private readonly clipboard = inject(ClipboardService);
@@ -18,8 +18,8 @@ export class DailyShare {
   async share(tracks: readonly ShareTrack[], score: number): Promise<void> {
     const text = [
       this.translate.instant('daily.share.title', { date: dayLabel(new Date()) }),
-      shareLines(tracks).join('\n'),
-      this.translate.instant('daily.share.score', { score }),
+      shareLine(tracks),
+      this.translate.instant('daily.share.score', { score: new Intl.NumberFormat(this.translate.getCurrentLang() ?? 'fr').format(score) }),
       environment.appUrl,
     ].join('\n');
     const ok = await this.clipboard.copy(text);

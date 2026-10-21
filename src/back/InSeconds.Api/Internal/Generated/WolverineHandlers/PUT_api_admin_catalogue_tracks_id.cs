@@ -47,9 +47,11 @@ namespace Internal.Generated.WolverineHandlers
             var inSecondsDbContext = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>(serviceScope.ServiceProvider);
             var efCatalogueStore = new InSeconds.Api.Modules.Catalogue.Persistence.EfCatalogueStore(inSecondsDbContext);
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
+            var albumSource = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Deezer.IAlbumSource>(serviceScope.ServiceProvider);
+            // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var trackMetadataSource = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Deezer.ITrackMetadataSource>(serviceScope.ServiceProvider);
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
-            var trackUsage = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Modules.Catalogue.Contracts.ITrackUsage>(serviceScope.ServiceProvider);
+            var trackPoolUsage = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Modules.Catalogue.Contracts.ITrackPoolUsage>(serviceScope.ServiceProvider);
             // Reading the request body via JSON deserialization
             var (request, jsonContinue) = await ReadJsonAsync<InSeconds.Api.Modules.Catalogue.Application.UpdateTrack>(httpContext);
             if (jsonContinue == Wolverine.HandlerContinuation.Stop) return;
@@ -89,7 +91,7 @@ namespace Internal.Generated.WolverineHandlers
                     return;
                 }
 
-                var trackRefreshPlan = await InSeconds.Api.Modules.Catalogue.Application.UpdateTrackEndpoint.LoadAsync(id, request, efCatalogueStore, trackUsage, trackMetadataSource, httpContext.RequestAborted).ConfigureAwait(false);
+                var trackRefreshPlan = await InSeconds.Api.Modules.Catalogue.Application.UpdateTrackEndpoint.LoadAsync(id, request, efCatalogueStore, trackPoolUsage, trackMetadataSource, albumSource, httpContext.RequestAborted).ConfigureAwait(false);
                 var problemDetails2 = InSeconds.Api.Modules.Catalogue.Application.UpdateTrackEndpoint.Validate(trackRefreshPlan);
                 // Evaluate whether the processing should stop if there are any problems
                 if (!(ReferenceEquals(problemDetails2, Wolverine.Http.WolverineContinue.NoProblems)))
@@ -100,7 +102,7 @@ namespace Internal.Generated.WolverineHandlers
 
                 
                 // The actual HTTP request handler execution
-                var trackSummary_response = InSeconds.Api.Modules.Catalogue.Application.UpdateTrackEndpoint.Put(request, trackRefreshPlan, _optionsMonitorOfCatalogueOptions, _timeProvider);
+                var trackSummary_response = await InSeconds.Api.Modules.Catalogue.Application.UpdateTrackEndpoint.Put(request, trackRefreshPlan, efCatalogueStore, _optionsMonitorOfCatalogueOptions, _timeProvider, httpContext.RequestAborted).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

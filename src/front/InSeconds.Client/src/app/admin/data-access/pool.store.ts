@@ -5,9 +5,10 @@ import { setError, setFulfilled, setPending, withRequestStatus } from '../../cor
 import { cooldownTone } from '../domain/actions';
 import {
   NO_FILTERS, PoolFilters, PoolSort, PreviewFilter, SortColumn,
-  StatusFilter, clampPage, filterTracks, nextSort, pageOf, sortTracks, totalPages,
+  StatusFilter, clampPage, filterTracks, nextSort, pageOf, sortTracks, statusOf, totalPages,
 } from '../domain/pool-filters';
-import { PoolTrack, isUsed } from '../domain/pool-track';
+import { PoolTrack, isUsed, trackLabel } from '../domain/pool-track';
+import { POOL_VIEW } from '../domain/pool-views';
 import { ActionsApi } from './actions.api';
 import { AdminCounts } from './admin-counts';
 import { CatalogueApi } from './catalogue.api';
@@ -26,6 +27,8 @@ function toToggleError(error: AppError | null): ToggleError | null {
 
 interface PoolState {
   tracks: readonly PoolTrack[];
+  /** La vue affichée : le pool général (`pool`) ou celle d'un mode, en lecture seule (son identifiant). */
+  view: string;
   filters: PoolFilters;
   sort: PoolSort | null;
   /** Page demandée, à partir de 0 ; la page affichée est ramenée dans les bornes (`page`). */
@@ -50,12 +53,12 @@ interface PoolState {
 export const PoolStore = signalStore(
   withRequestStatus(),
   withState<PoolState>({
-    tracks: [], filters: NO_FILTERS, sort: null, requestedPage: 0, selectedIds: [], togglingIds: [], toggleError: null,
+    tracks: [], view: POOL_VIEW, filters: NO_FILTERS, sort: null, requestedPage: 0, selectedIds: [], togglingIds: [], toggleError: null,
     cooldownDays: null,
   }),
-  withComputed(({ tracks, filters, sort, requestedPage, selectedIds }) => {
-    const filtered = computed(() => filterTracks(tracks(), filters()));
-    const sorted = computed(() => sortTracks(filtered(), sort()));
+  withComputed(({ tracks, view, filters, sort, requestedPage, selectedIds }) => {
+    const filtered = computed(() => filterTracks(tracks(), filters(), view()));
+    const sorted = computed(() => sortTracks(filtered(), sort(), view()));
     const pages = computed(() => totalPages(filtered().length));
     const page = computed(() => clampPage(requestedPage(), filtered().length));
     return {
@@ -63,9 +66,13 @@ export const PoolStore = signalStore(
       pages,
       page,
       pageTracks: computed(() => pageOf(sorted(), page())),
-      availableCount: computed(() => tracks().filter(t => !isUsed(t)).length),
-      usedCount: computed(() => tracks().filter(isUsed).length),
+      /** Disponibles et utilisés, vus de la vue : tous modes confondus dans le pool, ce mode seul dans sa vue. */
+      availableCount: computed(() => tracks().filter(t => statusOf(t, view()) === 'available').length),
+      usedCount: computed(() => tracks().filter(t => statusOf(t, view()) === 'used').length),
       disabledCount: computed(() => tracks().filter(t => t.isDisabled).length),
+      /** Les genres présents dans le pool, par ordre alphabétique : de quoi remplir le filtre « Genre ». */
+      genres: computed(() => [...new Set(tracks().flatMap(t => t.genres))].sort((a, b) => a.localeCompare(b))),
+      missingPreviewCount: computed(() => tracks().filter(t => t.preview === 'missing').length),
       /** Identifiant Deezer → vrai si le morceau est disponible, faux s'il a déjà servi : le badge « déjà en pool ». */
       existingDeezerIds: computed(() => new Map(tracks().map(t => [t.deezerTrackId, !isUsed(t)] as const))),
       /** Un morceau utilisé ne se supprime pas (409) : le bouton « Supprimer (N) » le sait d'avance. */
@@ -149,9 +156,26 @@ export const PoolStore = signalStore(
       setText: (text: string) => setFilter({ text }),
       setStatus: (status: StatusFilter) => setFilter({ status }),
       setPreview: (preview: PreviewFilter) => setFilter({ preview }),
+      setPlayedBy: (playedBy: string) => setFilter({ playedBy }),
+      setGenre: (genre: string) => setFilter({ genre }),
       setLastUsedFrom: (lastUsedFrom: string) => setFilter({ lastUsedFrom }),
       setLastUsedTo: (lastUsedTo: string) => setFilter({ lastUsedTo }),
       resetFilters: () => patchState(store, { filters: NO_FILTERS, requestedPage: 0 }),
+      /** Change de vue : les filtres propres à une vue et le tri ne valent plus, le texte cherché reste. */
+      setView(view: string): void {
+        if (view === store.view()) return;
+        patchState(store, {
+          view, requestedPage: 0, sort: null, selectedIds: [],
+          filters: { ...NO_FILTERS, text: store.filters().text },
+        });
+      },
+      /** Depuis la vue d'un mode : retrouve le morceau dans le pool général, où l'on agit dessus. */
+      openInPool(track: PoolTrack): void {
+        patchState(store, {
+          view: POOL_VIEW, requestedPage: 0, sort: null, selectedIds: [],
+          filters: { ...NO_FILTERS, text: trackLabel(track).replace(' - ', ' ') },
+        });
+      },
       sortBy: (column: SortColumn) => patchState(store, { sort: nextSort(store.sort(), column) }),
       previousPage: () => patchState(store, { requestedPage: Math.max(0, store.page() - 1) }),
       nextPage: () => patchState(store, { requestedPage: Math.min(store.pages() - 1, store.page() + 1) }),

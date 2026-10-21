@@ -54,7 +54,7 @@ describe('AnswerInputComponent', () => {
   });
 
   describe('propositions', () => {
-    it('les montre « artiste — titre », la surbrillance marquée', () => {
+    it('les montre « artiste - titre », la surbrillance marquée', () => {
       const { element } = render({ suggestions: [DAFT, MUSE], highlighted: 1 });
       const items = element.querySelectorAll('li');
 

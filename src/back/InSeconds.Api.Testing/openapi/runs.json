@@ -1,0 +1,194 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "InSeconds · Runs",
+    "version": "v2"
+  },
+  "paths": {
+    "/api/admin/runs/access": {
+      "get": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "listRunAccess",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunAccessList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/runs/access/{playerId}": {
+      "put": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "grantRunAccess",
+        "parameters": [
+          {
+            "name": "playerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "revokeRunAccess",
+        "parameters": [
+          {
+            "name": "playerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "RunAccessEntry": {
+        "required": [
+          "playerId",
+          "grantedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "playerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "grantedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RunAccessList": {
+        "required": [
+          "entries"
+        ],
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunAccessEntry"
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "InSeconds.Api.Modules.Runs.Application.ListRunAccessEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Runs.Application.GrantRunAccessEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Runs.Application.RevokeRunAccessEndpoint"
+    }
+  ]
+}

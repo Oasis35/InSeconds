@@ -104,9 +104,9 @@ Même façon de faire que le reste du projet : `module.raison` en snake_case, un
 
 | Code | HTTP | Quand | Équivalent Daily |
 |---|---|---|---|
-| `runs.access_denied` | 403 | lancer un run sans accès (invité, compte non autorisé) | — |
+| `runs.access_denied` | 403 | lancer un run sans accès (invité, compte non autorisé) | - |
 | `runs.no_challenge` | 503 | le pool jouable n'a pas assez de morceaux pour un défi | `daily.no_challenge` |
-| `runs.challenge_not_found` | 404 | code de lien inconnu | — |
+| `runs.challenge_not_found` | 404 | code de lien inconnu | - |
 | `runs.session_not_found` | 404 | partie inconnue ou d'un autre joueur | `daily.session_not_found` |
 | `runs.already_played` | 409 | ce joueur a déjà fini ce défi, ou agit sur une partie finie | `daily.already_played` |
 | `runs.abandoned` | 409 | partie abandonnée | `daily.abandoned` |
@@ -178,15 +178,17 @@ L'interrupteur « Platines » de l'onglet Joueurs lit `GET /api/admin/runs/acces
 
 ## 6. Ce qui touche l'existant : Players et Catalogue ne doivent plus connaître que Daily
 
-**Players (effacement et export).** Aujourd'hui Players appelle directement `Daily.Contracts.IPlayerGameData`.
+**Players (effacement et export).** *Fait en P1 :* Players appelait directement `Daily.Contracts.IPlayerGameData`.
 - `Players.Contracts.IPlayerDataContributor` (`Module`, `ExportAsync`, `DeleteAsync`) : Players reçoit `IEnumerable<IPlayerDataContributor>` et les appelle tous dans sa transaction. Daily l'implémente en P1, Runs en P2.
 - L'export change de forme : une section par mode (`daily` : série et parties ; `runs` : parties, défis créés, accès) au lieu des champs `streak` / `games` à la racine. Le profil télécharge le fichier tel quel ; `--export-player` suit.
 - `IStreakGrants` reste propre à Daily (seul Daily a des gels) : exception nommée dans le test d'architecture.
 
-**Catalogue (usage des morceaux).** Aujourd'hui `ITrackUsage` est fourni une seule fois, par Daily (`services.Replace`), et ne compte que les défis du jour : un morceau joué seulement en run serait supprimable (erreur 500 par la clé étrangère) ou remplaçable par une autre chanson.
+**Catalogue (usage des morceaux).** *Fait en P1 :* `ITrackUsage` était fourni une seule fois, par Daily (`services.Replace`), et ne compte que les défis du jour : un morceau joué seulement en run serait supprimable (erreur 500 par la clé étrangère) ou remplaçable par une autre chanson.
 - Chaque mode **ajoute** son implémentation (`IEnumerable<ITrackUsage>`, plus de `Replace`) ; Catalogue les agrège : un morceau est « utilisé » si un seul mode le dit. Le cooldown, la date de dernier usage et « dans le défi du jour » restent ceux du Daily (Runs répond « aucun »), seul `IsUsed` combine les deux.
 
 **Rang Deezer.** `TrackInfo` (contrat Catalogue) expose `DeezerRank`.
+
+**Pool admin (P1b).** Le pool est commun à tous les modes, l'onglet ne montre que le catalogue : compteur neutre, `isUsed` (calculé par le back, jamais déduit côté front d'un compteur propre à un mode), pastilles par mode ayant joué le morceau. Un sélecteur horizontal défilant (Pool · Daily · Run) donne la vue de chaque mode, en lecture, lue dans `usages[]` de la même réponse ; un mode se déclare dans l'admin par une entrée de registre, donc ajouter Runs ne change pas le Pool. `ITrackUsage` porte le nom de son mode, Catalogue garde le détail par mode en plus de l'agrégat.
 
 **Contrôle nocturne.** `catalogue-refresh` contrôle tout le pool jouable, plus seulement les morceaux hors cooldown : un run tire n'importe quel morceau. Environ 800 morceaux en lots de 10 toutes les 1,5 s, soit 2 min, dans le quota Deezer (piège 16).
 
@@ -212,7 +214,7 @@ L'interrupteur « Platines » de l'onglet Joueurs lit `GET /api/admin/runs/acces
 2. Inversion RGPD (`IPlayerDataContributor`) dès la première PR : validé.
 3. Lien par code court `inseconds.cc/runs/K7Q2M9` : validé (un lien neutre `/d/…` est gardé pour un mode futur qui partagerait aussi des liens).
 4. Tirage par tranches de rang Deezer : validé.
-5. Genre de l'album stocké dès maintenant (P0, PR à part dans Catalogue) : **en attente de Clément**.
+5. Genre de l'album stocké dès maintenant (P0, PR à part dans Catalogue, #361) : validé et fait (Clément, 20/10) ; `TrackInfo.Genres`, aucun mode ne s'en sert encore.
 6. Usage des morceaux déclaré par chaque mode : proposé après la revue, repris dans P1.
 7. Morceau sans extrait au moment de jouer : neutralisé (Clément, 17/10).
 8. Temps de réponse : aucun chrono, partie à l'honneur, réécoute libre (Clément, 17/10). Un chrono `Runs:AnswerSeconds` ne sera ajouté que si les parties de test montrent des abus ; limiter les réécoutes reste un bonus ou un malus possible du proto 2.

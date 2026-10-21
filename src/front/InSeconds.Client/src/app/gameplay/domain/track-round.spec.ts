@@ -230,6 +230,11 @@ describe('indices', () => {
     expect(at(5).hintKinds).toEqual([]);
   });
 
+  it('garde le coût de chaque niveau, quand le back le dit', () => {
+    expect(started({ hints: { unlockSeconds: [5, 10], penaltyPercents: [30, 60] } }).hintPenaltyPercents).toEqual([30, 60]);
+    expect(at(5).hintPenaltyPercents).toEqual([]);
+  });
+
   it('le niveau suivant attend son palier', () => {
     const first = applyHints(at(5), 1, [{ kind: 'year', value: '2013' }]);
     expect(availableHintLevels(first)).toEqual([]);

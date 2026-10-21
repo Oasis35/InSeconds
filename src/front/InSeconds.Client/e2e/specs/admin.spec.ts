@@ -7,7 +7,7 @@ import { linkAccount } from '../pages/login.page';
 // Réactivé en C3 (le pool), puis en F2 (dashboard, défis, joueurs, actions) : plus aucun `test.fixme`. Titres inchangés
 // (la parité avec la v1 les compare), corps adaptés aux routes de la v2.
 
-test.describe('Admin — login', () => {
+test.describe('Admin - login', () => {
   test('visiteur non connecté : /admin invite à se connecter', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
@@ -43,7 +43,7 @@ test.describe('Admin — login', () => {
   });
 });
 
-test.describe('Admin — pool', () => {
+test.describe('Admin - pool', () => {
   test.beforeEach(async ({ api }) => {
     await api.reseed();
   });
@@ -58,6 +58,9 @@ test.describe('Admin — pool', () => {
     await expect(page.getByRole('columnheader', { name: 'Titre' })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Preview' })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Statut' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Joué par' })).toBeVisible();
+    // Le pool général est celui de tous les modes : aucune colonne propre au Daily.
+    await expect(page.getByRole('columnheader', { name: /Dernière utilisation/ })).toHaveCount(0);
   });
 
   test('filtre par texte sur artiste', async ({ page }) => {
@@ -81,14 +84,81 @@ test.describe('Admin — pool', () => {
     await expect(page.getByRole('cell', { name: 'Manquante' })).toHaveCount(5);
   });
 
-  test('filtre statut "Disponible" masque les morceaux utilisés', async ({ page }) => {
+  test('pool général : colonne Genre (celui de l\'album) et filtre par genre', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
     await page.getByRole('link', { name: /^Pool/ }).click();
+    await expect(page.getByRole('columnheader', { name: 'Genre' })).toBeVisible();
+
+    // Le seed range les morceaux sous les albums du faux Deezer : Pop, Rap/Hip Hop et Dance, Rock, ou aucun genre.
+    await admin.poolFilterGenre().selectOption({ label: 'Rock' });
+
+    await expect(page.getByTestId('genres').first()).toHaveText('Rock');
+    const genres = await page.getByTestId('genres').allTextContents();
+    expect(genres.length).toBeGreaterThan(0);
+    expect(genres.every(genre => genre.includes('Rock'))).toBe(true);
+  });
+
+  test('filtres alignés sur les colonnes : « Disponible » du pool général, vue Daily sans Preview ni Statut', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('link', { name: /^Pool/ }).click();
+
+    // Pool général : « Disponible » écarte les morceaux utilisés (Coldplay est dans un défi du seed), garde les autres.
     await admin.poolFilterStatus().selectOption('available');
-    await expect(page.getByRole('cell', { name: 'Utilisé' })).not.toBeVisible();
-    await expect(page.getByRole('cell', { name: 'Disponible' }).first()).toBeVisible();
+    await admin.poolSearchInput().fill('Coldplay');
+    await expect(admin.poolRow('Coldplay')).not.toBeVisible();
+    await admin.poolSearchInput().fill('Michael Jackson');
+    await expect(admin.poolRow('Michael Jackson')).toBeVisible();
+
+    // Vue Daily : ni colonne ni filtre Preview, Statut ou Genre ; la recherche et les dates de dernière utilisation restent.
+    await admin.poolView('Daily').click();
+    await expect(page.getByRole('columnheader', { name: 'Statut' })).toHaveCount(0);
+    await expect(page.getByRole('columnheader', { name: 'Preview' })).toHaveCount(0);
+    await expect(admin.poolFilterStatus()).toHaveCount(0);
+    await expect(admin.poolFilterPreview()).toHaveCount(0);
+    await expect(admin.poolFilterGenre()).toHaveCount(0);
+    await expect(page.locator('#pool-filter-lastused-from')).toBeVisible();
+  });
+
+  test('la vue du pool est dans l\'adresse : ?view=daily se rouvre au rechargement', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('link', { name: /^Pool/ }).click();
+    await expect(page).not.toHaveURL(/view=/);
+
+    await admin.poolView('Daily').click();
+    await expect(page).toHaveURL(/view=daily/);
+    await page.reload();
+
+    await expect(admin.poolView('Daily')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('columnheader', { name: 'Dernière utilisation' })).toBeVisible();
+    await admin.poolView('Pool').click();
+    await expect(page).not.toHaveURL(/view=/);
+  });
+
+  test('pool général : « Joué par » ne garde que les morceaux d\'un mode, ou aucun', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await page.getByRole('link', { name: /^Pool/ }).click();
+
+    // Coldplay est dans un défi du seed, Michael Jackson n'a jamais été joué. Le texte cherché restreint la grille
+    // (paginée par 15) au morceau regardé : le filtre « Joué par » s'y combine.
+    await admin.poolFilterPlayedBy().selectOption({ label: 'Joué par Daily' });
+    await admin.poolSearchInput().fill('Coldplay');
+    await expect(admin.poolRow('Coldplay')).toBeVisible();
+    await expect(admin.poolRow('Coldplay').getByTestId('usage-badge')).toHaveText('Daily');
+    await admin.poolSearchInput().fill('Michael Jackson');
+    await expect(admin.poolRow('Michael Jackson')).not.toBeVisible();
+
+    await admin.poolFilterPlayedBy().selectOption({ label: 'Joué par : aucun mode' });
+    await expect(admin.poolRow('Michael Jackson')).toBeVisible();
+    await admin.poolSearchInput().fill('Coldplay');
+    await expect(admin.poolRow('Coldplay')).not.toBeVisible();
   });
 
   test('ajoute un morceau via le panneau de recherche', async ({ page }) => {
@@ -100,8 +170,8 @@ test.describe('Admin — pool', () => {
 
     // Cherche dans le panneau (placeholder distinct du filtre pool)
     await admin.addPanelSearchInput().fill('E2E Track');
-    // FakeDeezerHandler retourne "E2E Track" — attendre le résultat (debounce 300ms + réseau)
-    const result = page.getByText('E2E Artist — E2E Track');
+    // FakeDeezerHandler retourne "E2E Track" - attendre le résultat (debounce 300ms + réseau)
+    const result = page.getByText('E2E Artist - E2E Track');
     await expect(result).toBeVisible({ timeout: 10000 });
     await admin.addPanelAddButton().click();
 
@@ -123,7 +193,7 @@ test.describe('Admin — pool', () => {
     // Clique sur la corbeille
     await page.getByRole('button', { name: '🗑' }).first().click();
     await expect(admin.deleteModal()).toBeVisible();
-    await expect(page.getByText('Sabrina Carpenter — Espresso')).toBeVisible();
+    await expect(page.getByText('Sabrina Carpenter - Espresso')).toBeVisible();
 
     await admin.confirmDeleteButton().click();
     await expect(admin.deleteModal()).not.toBeVisible();
@@ -154,7 +224,7 @@ test.describe('Admin — pool', () => {
     await admin.login();
     await page.getByRole('link', { name: /^Pool/ }).click();
 
-    // Coldplay — Yellow fait partie du défi J-2 du seed : pas de corbeille, un bouton « Désactiver » à la place.
+    // Coldplay - Yellow fait partie du défi J-2 du seed : pas de corbeille, un bouton « Désactiver » à la place.
     await admin.poolSearchInput().fill('Coldplay');
     const row = admin.poolRow('Coldplay');
     await expect(row.getByRole('button', { name: '🗑' })).toHaveCount(0);
@@ -226,37 +296,39 @@ test.describe('Admin — pool', () => {
     await api.reseed();
   });
 
-  test('affiche les colonnes cooldown avec les bonnes valeurs', async ({ page }) => {
+  test('vue Daily : affiche les colonnes cooldown avec les bonnes valeurs', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
     await page.getByRole('link', { name: /^Pool/ }).click();
+    await admin.poolView('Daily').click();
 
     await expect(admin.poolColumnHeader('Dernière utilisation')).toBeVisible();
     await expect(admin.poolColumnHeader('Date de déblocage')).toBeVisible();
     await expect(admin.poolColumnHeader('Nb. utilisations')).toBeVisible();
 
-    // Colonnes (après réordonnancement) : 0=sélection, 1=Actions, 2=Artiste, 3=Titre,
-    // 4=Preview, 5=Statut, 6=Dernière utilisation, 7=Date de déblocage, 8=Nb. utilisations.
+    // Colonnes de la vue Daily (en lecture seule, sans case à cocher, sans Preview ni Statut) : 0=Actions, 1=Artiste, 2=Titre,
+    // 3=Dernière utilisation, 4=Date de déblocage, 5=Nb. utilisations.
     // Le pool des E2E a 50 morceaux jouables : 75 % du pool, 5 par défi, soit 7 jours de cooldown, sous le seuil d'alerte.
     await expect(page.getByTestId('pool-cooldown')).toHaveText('cooldown 7 j');
     // Queen (index 16 du seed) a été mise en cooldown récent (-5j, 7 j de cooldown) : dates non vides.
     await admin.poolSearchInput().fill('Queen');
     const queenRow = admin.poolRow('Queen');
-    await expect(queenRow.getByRole('cell').nth(6)).not.toHaveText('');
-    await expect(queenRow.getByRole('cell').nth(7)).not.toHaveText('');
+    await expect(queenRow.getByRole('cell').nth(3)).not.toHaveText('');
+    await expect(queenRow.getByRole('cell').nth(4)).not.toHaveText('');
 
     // Michael Jackson (index 15) n'a jamais été utilisé : date de déblocage vide.
     await admin.poolSearchInput().fill('Michael Jackson');
     const mjRow = admin.poolRow('Michael Jackson');
-    await expect(mjRow.getByRole('cell').nth(7)).toHaveText('');
+    await expect(mjRow.getByRole('cell').nth(4)).toHaveText('');
   });
 
-  test('filtre par plage de dates sur la dernière utilisation', async ({ page }) => {
+  test('vue Daily : filtre par plage de dates sur la dernière utilisation', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
     await page.getByRole('link', { name: /^Pool/ }).click();
+    await admin.poolView('Daily').click();
 
     // Ed Sheeran (index 20, -15j) tombe dans la plage ; Queen (-5j) et Adele (-90j) en dehors.
     const today = new Date();
@@ -270,17 +342,18 @@ test.describe('Admin — pool', () => {
     await expect(page.getByRole('cell', { name: 'Adele', exact: true })).not.toBeVisible();
   });
 
-  test('trie par nombre d\'utilisations', async ({ page }) => {
+  test('vue Daily : trie par nombre d\'utilisations', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
     await page.getByRole('link', { name: /^Pool/ }).click();
+    await admin.poolView('Daily').click();
 
-    // Adele (index 19) a le UsageCount le plus élevé du seed (7) — tri desc doit la faire remonter.
+    // Adele (index 19) a le UsageCount le plus élevé du seed (7) - tri desc doit la faire remonter.
     await admin.poolColumnHeader('Nb. utilisations').click();
     await admin.poolColumnHeader('Nb. utilisations').click(); // 2e clic → desc
-    // Colonne Artiste = cell index 2 (0=sélection, 1=Actions, 2=Artiste).
-    await expect(page.getByRole('row').nth(1).getByRole('cell').nth(2)).toHaveText('Adele');
+    // Colonne Artiste = cell index 1 de la vue Daily (0=Actions, 1=Artiste).
+    await expect(page.getByRole('row').nth(1).getByRole('cell').nth(1)).toHaveText('Adele');
   });
 
   test('le bouton ▶ ouvre la modale d\'écoute de l\'extrait', async ({ page }) => {
@@ -301,7 +374,7 @@ test.describe('Admin — pool', () => {
   });
 });
 
-test.describe('Admin — actions', () => {
+test.describe('Admin - actions', () => {
   test.beforeEach(async ({ api }) => {
     await api.reseed();
   });
@@ -327,9 +400,9 @@ test.describe('Admin — actions', () => {
     await adminPage.clickTab('Actions');
 
     // La part du pool en cooldown (#275). Queen (LastUsedDate = today-5j) a une date de déblocage lue en base au chargement du pool
-    // (pas via /api/settings, figé au boot) — sert de preuve que le nouveau cooldown est bien pris
+    // (pas via /api/settings, figé au boot) - sert de preuve que le nouveau cooldown est bien pris
     // en compte, cohérent avec "effectif au prochain calcul", pas de redémarrage requis.
-    const before = await adminPage.apiGetPoolUnlockDate(5055001); // Queen — Bohemian Rhapsody
+    const before = await adminPage.apiGetPoolUnlockDate(5055001); // Queen - Bohemian Rhapsody
 
     // 75 % de 50 morceaux jouables, 5 par défi : 7 jours, sous le seuil de 14 jours.
     await expect(adminPage.trackCooldownInput()).toHaveValue('75');
@@ -345,7 +418,7 @@ test.describe('Admin — actions', () => {
   });
 });
 
-test.describe('Admin — défis', () => {
+test.describe('Admin - défis', () => {
   test.beforeEach(async ({ api }) => {
     await api.reseed();
   });
@@ -369,7 +442,7 @@ test.describe('Admin — défis', () => {
 });
 
 // Recalcul des chiffres figés d'un défi (v2 seulement, E3/F2) : permis à partir de J-2, refusé pour la veille et le jour même.
-test.describe('Admin — recalcul des stats (v2)', () => {
+test.describe('Admin - recalcul des stats (v2)', () => {
   const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
 
   test.beforeEach(async ({ api }) => {
@@ -435,7 +508,7 @@ test.describe('Admin — recalcul des stats (v2)', () => {
   });
 });
 
-test.describe('Admin — chargement paresseux par onglet', () => {
+test.describe('Admin - chargement paresseux par onglet', () => {
   test.beforeEach(async ({ api }) => {
     await api.reseed();
   });
@@ -513,13 +586,13 @@ test.describe('Admin — chargement paresseux par onglet', () => {
   });
 });
 
-test.describe('Admin — indicateur joueurs / ID navigateur', () => {
+test.describe('Admin - indicateur joueurs / ID navigateur', () => {
   test('affiche l\'ID du navigateur sur l\'écran de connexion et permet de le copier', async ({ page, api }) => {
     await api.reseed();
     const admin = new AdminPage(page);
     await admin.goto();
 
-    // Visible avant même la connexion — le cookie authToken est posé dès le chargement de l'app.
+    // Visible avant même la connexion - le cookie authToken est posé dès le chargement de l'app.
     await expect(admin.browserIdShort()).toBeVisible();
     const shortId = await admin.browserIdShort().textContent();
     expect(shortId).toMatch(/^[0-9a-f]{8}$/);
@@ -598,7 +671,7 @@ test.describe('Admin — indicateur joueurs / ID navigateur', () => {
   });
 });
 
-test.describe('Admin — joueurs', () => {
+test.describe('Admin - joueurs', () => {
   test.beforeEach(async ({ api }) => {
     await api.reset();
   });

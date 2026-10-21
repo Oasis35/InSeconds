@@ -1,4 +1,4 @@
-# InSeconds 🎵 — COMMENCE ICI
+# InSeconds 🎵 - COMMENCE ICI
 
 > **Point d'entrée** de la documentation projet. Pour le quick start utilisateur, voir [README.fr.md](../README.fr.md) à la racine. Pour les conventions code et pièges connus, voir [CLAUDE.md](../CLAUDE.md).
 
@@ -17,7 +17,7 @@ InSeconds est un **blind test musical quotidien**. La lecture démarre au palier
 | Tests | xUnit v3 + Testcontainers, tests d'architecture (NetArchTest), Vitest en mode navigateur, Sheriff (frontières du front), Playwright |
 | CI | GitHub Actions (check agrégateur « CI OK »), Dependabot, SonarCloud |
 | Observabilité | OpenTelemetry (logs, traces, métriques) → Grafana Cloud, erreurs front relayées par l'API |
-| Déploiement | VPS OVH (Debian) — front + API + Postgres en Docker derrière Caddy et Cloudflare, déploiement par la CI |
+| Déploiement | VPS OVH (Debian) - front + API + Postgres en Docker derrière Caddy et Cloudflare, déploiement par la CI |
 
 ## Architecture en deux mots
 
@@ -28,7 +28,7 @@ InSeconds est un **blind test musical quotidien**. La lecture démarre au palier
 
 ## État du dépôt
 
-Le code est dans `src/` ; le staging (`dev.inseconds.cc`) reçoit d'abord chaque PR (`env/staging`), la prod suit par un merge vers `main`. Prochaines étapes : CSP bloquante (#300), fin de la reprise des anciens cookies (#237), puis le mode Run ([`runs/`](runs/README.md)). Le détail est dans [`taches.md`](taches.md).
+Le code est dans `src/` ; le staging (`dev.inseconds.cc`) reçoit d'abord chaque PR (`env/staging`), la prod suit par un merge vers `main`. Prochaines étapes : CSP bloquante (#300), fin de la reprise des anciens cookies (#237), puis la suite du mode Run, dont le socle back est posé ([`runs/`](runs/README.md)). Le détail est dans [`taches.md`](taches.md).
 
 ## Où trouver quoi
 

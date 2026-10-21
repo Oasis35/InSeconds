@@ -2,7 +2,7 @@ import { Page, Locator, expect } from '@playwright/test';
 import { inSequence } from '../fixtures/sequence';
 
 // Paliers par défaut exposés par les settings (cf. AppSettings.AllowedDurationsSeconds).
-// La lecture démarre automatiquement au premier (0.5s) — il n'y a plus de bouton de choix initial. Le lecteur s'arrête quand la
+// La lecture démarre automatiquement au premier (0.5s) - il n'y a plus de bouton de choix initial. Le lecteur s'arrête quand la
 // position réelle de l'extrait atteint le palier (le son joue en temps réel) ; son chrono de secours passe par setTimeout, que l'horloge simulée avance.
 const ALLOWED_DURATIONS = [0.5, 1, 1.5, 2, 3, 5, 10];
 
@@ -17,11 +17,11 @@ export class BlindRoundPage {
   readonly guessTimeChart: Locator;
   readonly guessTimeBars: Locator;
   readonly guessTimeHighlighted: Locator;
-  /** Le chrono du lecteur : « … » pendant le chargement, « 0.0s / 0.5s » en lecture, « 0.5s / 0.5s » une fois le palier joué. */
+  /** Le chrono du lecteur : « … » pendant le chargement, « 0,0 s / 0,5 s » en lecture, « 0,5 s / 0,5 s » une fois le palier joué. */
   readonly timer: Locator;
 
   constructor(readonly page: Page) {
-    this.answerInput         = page.getByPlaceholder('Artiste — Titre');
+    this.answerInput         = page.getByPlaceholder('Artiste - Titre');
     this.submitButton        = page.getByRole('button', { name: 'Valider' });
     this.confirmSubmitButton = page.getByRole('button', { name: 'Valider quand même' });
     this.clearSearchButton   = page.getByRole('button', { name: '✕' });
@@ -37,9 +37,9 @@ export class BlindRoundPage {
     this.timer                = page.getByTestId('round-timer');
   }
 
-  /** Bouton « ↺ Xs » (rejoue le palier courant en entier) — visible une fois le palier terminé. */
+  /** Bouton « ↺ X s » (rejoue le palier courant en entier) - visible une fois le palier terminé. */
   replayButton(seconds: number | string): Locator {
-    return this.page.getByRole('button', { name: `↺ ${seconds}s` });
+    return this.page.getByRole('button', { name: new RegExp(`^↺ ${frSeconds(seconds)}$`) });
   }
 
   /**
@@ -48,12 +48,12 @@ export class BlindRoundPage {
    * (on l'avance quand même pour les minuteries de l'écran). L'attente couvre donc le palier entier, plus la marge habituelle.
    */
   private async playStep(seconds: number): Promise<void> {
-    await expect(this.timer).toHaveText(new RegExp(String.raw`s / ${seconds}s\s*$`));
+    await expect(this.timer).toHaveText(new RegExp(String.raw`s / ${frSeconds(seconds)}\s*$`));
     await this.page.clock.fastForward(seconds * 1000 + 200);
-    await expect(this.timer).toHaveText(`${seconds}s / ${seconds}s`, { timeout: seconds * 1000 + 10_000 });
+    await expect(this.timer).toHaveText(new RegExp(String.raw`^\s*${frSeconds(seconds)} / ${frSeconds(seconds)}\s*$`), { timeout: seconds * 1000 + 10_000 });
   }
 
-  /** La lecture démarre automatiquement au premier palier autorisé (0.5s) : on la laisse aller au bout. */
+  /** La lecture démarre automatiquement au premier palier autorisé (0,5 s) : on la laisse aller au bout. */
   async waitForAutoStart(): Promise<void> {
     await this.playStep(ALLOWED_DURATIONS[0]);
   }
@@ -148,4 +148,9 @@ export class BlindRoundPage {
     }
     await this.goNext();
   }
+}
+
+/** Un palier tel que l'écran l'écrit en français, en motif : « 0,5 s » (virgule, espace insécable avant l'unité). */
+function frSeconds(seconds: number | string): string {
+  return String.raw`${String(seconds).replace('.', ',')}\ss`;
 }

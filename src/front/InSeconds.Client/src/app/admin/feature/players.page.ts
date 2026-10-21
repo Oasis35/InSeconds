@@ -3,12 +3,14 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { errorMessageKey } from '../../core/errors/error-messages';
 import { ErrorMessageComponent } from '../../ui/error-message/error-message.component';
 import { AdminPlayersStore } from '../data-access/players.store';
+import { canPlayRuns } from '../domain/registered-player';
 import { PlayerHistoryComponent } from '../ui/player-history.component';
 import { PlayerRowComponent } from '../ui/player-row.component';
 
 /**
  * `/admin/joueurs` : les comptes inscrits, les plus récemment vus d'abord, avec un filtre texte et,
- * sous chaque ligne dépliée (une seule à la fois), l'historique des 30 derniers jours.
+ * sous chaque ligne dépliée (une seule à la fois), l'historique des 30 derniers jours. Une colonne « Run » donne
+ * l'interrupteur d'accès au mode Run (admins d'office).
  * La liste n'est lue qu'à l'ouverture de l'onglet (la page n'existe qu'alors).
  */
 @Component({
@@ -33,6 +35,12 @@ import { PlayerRowComponent } from '../ui/player-row.component';
             style="background:var(--bg-inactive);color:var(--text-hi);border:1px solid var(--border-medium)" />
         </div>
 
+        @if (store.runAccessError(); as accessError) {
+          <div class="px-4 pb-4" data-testid="run-access-error">
+            <app-error-message [messageKey]="messageKey(accessError.code)" [traceId]="accessError.traceId" />
+          </div>
+        }
+
         @if (store.error(); as error) {
           <div class="px-4 pb-4">
             <app-error-message [messageKey]="messageKey(error.code)" [traceId]="error.traceId" />
@@ -53,6 +61,7 @@ import { PlayerRowComponent } from '../ui/player-row.component';
                   <th class="px-3 py-2.5 text-right">{{ 'admin.players.colGames' | translate }}</th>
                   <th class="px-3 py-2.5 text-right">{{ 'admin.players.colStreak' | translate }}</th>
                   <th class="px-3 py-2.5 text-right">{{ 'admin.players.colFreezes' | translate }}</th>
+                  <th class="px-3 py-2.5 text-center">{{ 'admin.players.colRun' | translate }}</th>
                   <th class="px-3 py-2.5 whitespace-nowrap">{{ 'admin.players.colLastSeen' | translate }}</th>
                   <th class="px-4 py-2.5 whitespace-nowrap">{{ 'admin.players.colCreated' | translate }}</th>
                 </tr>
@@ -60,11 +69,13 @@ import { PlayerRowComponent } from '../ui/player-row.component';
               <tbody>
                 @for (player of store.filteredPlayers(); track player.id) {
                   @let expanded = store.expandedId() === player.id;
-                  <tr appPlayerRow [player]="player" [expanded]="expanded" (toggled)="store.toggle(player.id)"></tr>
+                  <tr appPlayerRow [player]="player" [expanded]="expanded" (toggled)="store.toggle(player.id)"
+                    [runAccess]="canPlayRuns(player, store.runAccess())" [runAccessPending]="store.runAccessPending().includes(player.id)"
+                    (runAccessToggled)="store.setRunAccess(player.id, $event)"></tr>
                   @if (expanded && store.expandedHistory(); as history) {
                     <tr data-testid="player-history" [id]="'player-history-' + player.id"
                       style="border-bottom:1px solid var(--border-subtle);background:var(--bg-inactive)">
-                      <td colspan="7" class="px-4 pb-3 pt-1">
+                      <td colspan="8" class="px-4 pb-3 pt-1">
                         <app-player-history [games]="history.games" [status]="history.status" />
                       </td>
                     </tr>
@@ -81,6 +92,7 @@ import { PlayerRowComponent } from '../ui/player-row.component';
 export class PlayersPage {
   protected readonly store = inject(AdminPlayersStore);
   protected readonly messageKey = errorMessageKey;
+  protected readonly canPlayRuns = canPlayRuns;
 
   constructor() {
     void this.store.load();

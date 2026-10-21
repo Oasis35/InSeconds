@@ -114,7 +114,7 @@ describe('TrackRoundComponent', () => {
     it('« ↺ » et « ▶ » pilotent le lecteur', () => {
       start();
       emit('playing', 0.2);
-      button('▶ 1s')!.click();
+      button('▶ 1\u00a0s')!.click();
       refresh();
       expect(audio.calls.at(-1)).toBe('playUntil 1');
 
@@ -309,7 +309,7 @@ describe('TrackRoundComponent', () => {
 
       expect(element.querySelector('app-round-player')).toBeNull();
       expect(element.querySelector('form')).toBeNull();
-      expect(element.querySelector('[data-testid="reveal"]')?.textContent).toContain('Daft Punk — Get Lucky');
+      expect(element.querySelector('[data-testid="reveal"]')?.textContent).toContain('Daft Punk - Get Lucky');
       expect(element.querySelector('[roundScore]')?.textContent).toBe('+850 pts');
       expect(button('Piste suivante')).toBeDefined();
       expect(element.querySelector('[data-testid="guess-time-chart"]')).not.toBeNull();

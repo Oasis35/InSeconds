@@ -993,31 +993,6 @@ export interface DeviceExport {
     [key: string]: any;
 }
 
-export interface GameExport {
-    date: Date;
-    status: string;
-    startedAt: Date;
-    endedAt: Date | undefined;
-    totalScore: number;
-    tracks: GameTrackExport[];
-
-    [key: string]: any;
-}
-
-export interface GameTrackExport {
-    position: number;
-    artist: string | undefined;
-    title: string | undefined;
-    listenedSeconds: number;
-    hintLevel: number;
-    artistFound: boolean;
-    titleFound: boolean;
-    score: number;
-    answeredAt: Date | undefined;
-
-    [key: string]: any;
-}
-
 export interface PlayerDataExport {
     exportedAt: Date;
     playerId: string;
@@ -1025,16 +1000,7 @@ export interface PlayerDataExport {
     lastSeenAt: Date | undefined;
     account: AccountExport | undefined;
     devices: DeviceExport[];
-    streak: StreakExport | undefined;
-    games: GameExport[];
-
-    [key: string]: any;
-}
-
-export interface StreakExport {
-    currentStreak: number;
-    lastPlayedDate: Date | undefined;
-    freezes: number;
+    modules: any;
 
     [key: string]: any;
 }

@@ -41,6 +41,6 @@ Les choix déjà faits, avec leur raison, pour ne pas les rediscuter ni les réi
 - **Une information à un seul endroit** dans la doc : une copie parallèle finit toujours par dériver du code.
 - **Mobile first** : toute proposition d'écran se pense d'abord pour un téléphone.
 
-## Mode Runs (à venir)
+## Mode Runs (en construction)
 
-L'architecture lui réserve un module et un domaine front ; **rien n'est créé avant sa construction** (ni schéma, ni table vide, ni code). Il s'adapte à l'architecture, pas l'inverse. Conçu le 17/10/2026 (nom affiché provisoire « Platines ») : règles, écrans, conception et plan dans [`runs/`](../runs/README.md).
+Le module `Runs` et son schéma existent (socle back : défi, tirage, accès) ; le domaine front n'est créé qu'avec le premier écran du mode. Il s'adapte à l'architecture, pas l'inverse. Conçu le 17/10/2026 (nom affiché provisoire « Platines ») : règles, écrans, conception et plan dans [`runs/`](../runs/README.md).

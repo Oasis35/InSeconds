@@ -88,7 +88,7 @@
             </p>
 
             <button roundNext type="button" (click)="store.nextTrack()"
-              class="w-full py-3.5 rounded-full text-sm font-bold tracking-wide uppercase transition touch-manipulation"
+              class="w-full py-3.5 rounded-(--radius-button) text-sm font-bold tracking-wide uppercase transition touch-manipulation"
               style="font-family:var(--font-display);background:var(--gradient-primary);color:var(--text-on-primary);letter-spacing:0.06em;box-shadow:var(--glow-primary)">
               {{ (store.isLastTrack() ? 'daily.round.seeResult' : 'daily.round.nextTrack') | translate }}
             </button>

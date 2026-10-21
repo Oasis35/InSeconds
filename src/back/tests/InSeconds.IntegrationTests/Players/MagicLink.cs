@@ -28,7 +28,9 @@ internal sealed partial class MagicLinkApi : IAsyncDisposable
     public RecordingStreakGrants Grants { get; private init; } = new();
 
     /// <param name="recordGrants">Vrai (par défaut) : le gel offert à la création d'un compte est seulement enregistré (<see cref="RecordingStreakGrants"/>) ; faux : le vrai (Daily, E2).</param>
-    public static MagicLinkApi Create(string connectionString, IReadOnlyDictionary<string, string>? settings = null, bool recordGrants = true)
+    /// <param name="configureServices">Services en plus ou en remplacement (un second mode de jeu qui contribue aux droits RGPD, par exemple).</param>
+    public static MagicLinkApi Create(
+        string connectionString, IReadOnlyDictionary<string, string>? settings = null, bool recordGrants = true, Action<IServiceCollection>? configureServices = null)
     {
         var grants = new RecordingStreakGrants();
         var api = new ApiFactory(connectionString, services =>
@@ -39,6 +41,8 @@ internal sealed partial class MagicLinkApi : IAsyncDisposable
                 services.RemoveAll<IStreakGrants>();
                 services.AddSingleton<IStreakGrants>(grants);
             }
+
+            configureServices?.Invoke(services);
         }, settings);
         return new MagicLinkApi(api) { Grants = grants };
     }

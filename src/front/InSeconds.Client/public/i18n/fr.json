@@ -33,6 +33,7 @@
     "catalogue": {
       "duplicate_deezer_id": "Ce morceau est déjà dans le pool.",
       "not_found_on_deezer": "Ce morceau est introuvable chez Deezer.",
+      "concurrent_add": "Un autre ajout écrit les mêmes genres au même moment : réessaie dans un instant.",
       "deezer_unavailable": "Deezer est indisponible pour le moment, réessaie dans un instant.",
       "track_in_use": "Ce morceau a déjà servi dans un défi : il ne peut pas être supprimé (désactive-le).",
       "track_in_today_challenge": "Ce morceau est dans le défi du jour : désactivable à partir de demain."
@@ -52,7 +53,7 @@
   "shell": {
     "legacyUrl": {
       "title": "L'adresse a changé",
-      "body": "InSeconds a maintenant sa propre adresse. Tu as été redirigé automatiquement — pense à mettre à jour ton favori.",
+      "body": "InSeconds a maintenant sa propre adresse. Tu as été redirigé automatiquement, pense à mettre à jour ton favori.",
       "cta": "J'ai compris"
     },
     "notFound": {
@@ -73,7 +74,7 @@
     "header": {
       "login": "Se connecter",
       "profile": "Mon profil",
-      "avatarTitle": "Mon profil — {{ pseudo }}"
+      "avatarTitle": "Mon profil : {{ pseudo }}"
     }
   },
   "ui": {
@@ -85,14 +86,14 @@
     "round": {
       "noPreview": "Aperçu non disponible pour ce morceau.",
       "skip": "Passer (0 pts)",
-      "replay": "↺ {{ seconds }}s",
-      "listenUpTo": "Écouter jusqu'à {{ seconds }}s",
-      "stepsUpTo": "Tu peux écouter jusqu'à {{ seconds }}s si besoin",
+      "replay": "↺ {{ seconds }}",
+      "listenUpTo": "Écouter jusqu'à {{ seconds }}",
+      "stepsUpTo": "Tu peux écouter jusqu'à {{ seconds }} si besoin",
       "playbackError": "Impossible de lire l'aperçu. Réessaie, ou passe ce morceau.",
       "retry": "Réessayer"
     },
     "answer": {
-      "placeholder": "Artiste — Titre",
+      "placeholder": "Artiste - Titre",
       "clear": "Effacer",
       "validate": "Valider",
       "emptyConfirm": "Tu n'as rien saisi. Valider quand même ?",
@@ -104,12 +105,12 @@
       "retry": "Réessayer"
     },
     "hint": {
-      "costWarning": "Chaque indice révélé impacte les points du tour",
-      "tooltip": "Indice — coûte des points",
+      "cost": "(−{{ percent }} %)",
+      "tooltip": "Indice : coûte des points",
       "button": "Indice {{ level }}",
       "ask": {
-        "year": "Indice année",
-        "artist": "Indice artiste"
+        "year": "Indice : l'année",
+        "artist": "Indice : l'artiste"
       },
       "kind": {
         "year": "Année",
@@ -127,7 +128,7 @@
   "account": {
     "login": {
       "title": "Connexion",
-      "subtitle": "Reçois un lien magique par e-mail pour garder ta série et tes scores sur tous tes appareils.",
+      "subtitle": "On t'envoie un lien de connexion par e-mail, sans mot de passe. Ta série et tes scores te suivent sur tous tes appareils.",
       "emailLabel": "Adresse e-mail",
       "emailPlaceholder": "ton@email.com",
       "suggestion": "Tu voulais dire {{ email }} ?",
@@ -316,7 +317,23 @@
       "enableTitle": "Remettre ce morceau dans le tirage des prochains défis",
       "disableTodayTitle": "Morceau du défi du jour : désactivable à partir de demain",
       "disableInTodayError": "Ce morceau est dans le défi du jour : désactivable à partir de demain.",
-      "disableError": "La modification a échoué, réessaie."
+      "disableError": "La modification a échoué, réessaie.",
+      "totalCount": "{{ count }} morceau(x)",
+      "missingPreviewCount": "{{ count }} sans extrait",
+      "colUsage": "Joué par",
+      "colGenre": "Genre",
+      "allGenres": "Tous les genres",
+      "neverPlayed": "Jamais joué",
+      "allPlayedBy": "Joué par : tous",
+      "playedByNone": "Joué par : aucun mode",
+      "playedBy": "Joué par {{ mode }}",
+      "openInPoolTitle": "Ouvrir dans le Pool (pour agir sur ce morceau)",
+      "views": {
+        "label": "Vue du pool",
+        "pool": "Pool",
+        "daily": "Daily",
+        "runs": "Run"
+      }
     },
     "deleteModal": {
       "title": "Confirmer la suppression",
@@ -376,7 +393,7 @@
       "noneComplete": "aucune complète",
       "kpiMedian": "Score médian",
       "points": "pts",
-      "activity30d": "Activité — 30 jours",
+      "activity30d": "Activité sur 30 jours",
       "total": "Total",
       "peak": "Pic",
       "perDay": "/j",
@@ -484,6 +501,9 @@
       "emailHide": "Masquer l'email",
       "colLastSeen": "Dernière visite",
       "colCreated": "Inscrit le",
+      "colRun": "Run",
+      "runAccessToggle": "Autoriser ce compte à jouer au mode Run",
+      "runAccessAdmin": "Les admins ont l'accès d'office au mode Run",
       "colGames": "Parties",
       "adminBadge": "Admin",
       "neverSeen": "Jamais",
@@ -511,8 +531,8 @@
     },
     "welcome": {
       "title": "Blind Test du jour",
-      "subtitle": "{{ count }} morceaux · écoute & devine",
-      "tagline": "Moins tu écoutes, plus tu scores",
+      "subtitle": "{{ count }} morceaux à deviner.",
+      "tagline": "Qui sera le plus rapide ?",
       "start": "Commencer",
       "loginCta": "Se connecter / Créer un compte",
       "loginHint": "Pour garder ta série sur tous tes appareils.",
@@ -567,14 +587,14 @@
       "showTracks": "Voir les morceaux",
       "hideTracks": "Masquer",
       "coverAlt": "Pochette",
-      "averageSeconds": "moy. {{ seconds }}s"
+      "averageSeconds": "moy. {{ seconds }}"
     },
     "share": {
       "button": "Partager mon score",
       "copied": "Copié !",
       "failed": "Impossible de copier dans le presse-papier.",
-      "title": "InSeconds 🎵 {{ date }}",
-      "score": "🏆 {{ score }} pts"
+      "title": "InSeconds · {{ date }}",
+      "score": "{{ score }} pts"
     },
     "done": {
       "finalScore": "Score final",

@@ -95,7 +95,7 @@ public static class ReportClientErrorEndpoint
 internal static partial class ClientErrorLog
 {
     [LoggerMessage(EventId = 1100, Level = LogLevel.Error,
-        Message = "Erreur front ({Source}) sur {Url} : {ClientMessage} (HTTP {HttpStatus}, trace liée {RelatedTraceId}, version {AppVersion}, en ligne {Online}, appareil {Device}) — stack : {ClientStack}")]
+        Message = "Erreur front ({Source}) sur {Url} : {ClientMessage} (HTTP {HttpStatus}, trace liée {RelatedTraceId}, version {AppVersion}, en ligne {Online}, appareil {Device}) - stack : {ClientStack}")]
     public static partial void ClientError(ILogger logger, string source, string? url, string clientMessage,
         int? httpStatus, string? relatedTraceId, string? appVersion, bool? online, string? device, string? clientStack);
 }

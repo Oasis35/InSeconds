@@ -42,15 +42,15 @@ describe('TrackResultsListComponent', () => {
 
   it('affiche artiste, titre, chips et score de chaque morceau', () => {
     const text = render([row()]).textContent!.replace(/\s+/g, ' ');
-    expect(text).toContain('Eminem — Lose Yourself');
+    expect(text).toContain('Eminem - Lose Yourself');
     expect(text).toContain('✓');
     expect(text).toContain('+850');
-    expect(text).toContain('1s');
+    expect(text).toContain('1 s');
   });
 
-  it("affiche « Artiste — Titre » avant les chips ✓/✗", () => {
+  it("affiche « Artiste - Titre » avant les chips ✓/✗", () => {
     const text = render([row()]).textContent!.replace(/\s+/g, ' ');
-    expect(text.indexOf('Eminem — Lose Yourself')).toBeLessThan(text.indexOf('✓'));
+    expect(text.indexOf('Eminem - Lose Yourself')).toBeLessThan(text.indexOf('✓'));
   });
 
   it('masque chips et durée sans réponse du joueur', () => {
@@ -74,7 +74,7 @@ describe('TrackResultsListComponent', () => {
     TestBed.tick();
     const dialog = document.querySelector('.cdk-overlay-container');
     expect(dialog!.querySelector('[data-testid="guess-time-chart"]')).not.toBeNull();
-    expect(dialog!.textContent).toContain('Eminem — Lose Yourself');
+    expect(dialog!.textContent).toContain('Eminem - Lose Yourself');
     // Le joueur a trouvé : sa colonne (1 s) est surlignée, pas la barre « ✗ ».
     expect(dialog!.querySelector('[data-bucket="d1"]')!.getAttribute('data-highlight')).toBe('true');
     expect(dialog!.querySelector('[data-bucket="nf"]')!.getAttribute('data-highlight')).toBeNull();

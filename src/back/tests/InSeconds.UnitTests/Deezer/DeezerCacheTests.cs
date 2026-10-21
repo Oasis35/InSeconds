@@ -113,7 +113,7 @@ public class DeezerCacheTests
         Assert.False(cache.Memory.TryGetValue("deezer:search:20:daft punk", out _));
     }
 
-    private static DeezerTrack Track(long id) => new(id, "Daft Punk", "One More Time", "https://p.mp3", null, 2000, 1);
+    private static DeezerTrack Track(long id) => new(id, "Daft Punk", "One More Time", "https://p.mp3", null, 2000, 1, null);
 
     private sealed class ScriptedSearch(SearchLookup lookup) : ITrackSearch
     {

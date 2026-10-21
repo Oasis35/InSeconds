@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { CatalogueClient, DeezerTrackResult, TrackListItem } from '../../api/catalogue/api.generated';
-import { DeezerResult, PoolTrack, PreviewState } from '../domain/pool-track';
+import { CatalogueClient, DeezerTrackResult, TrackListItem, TrackModeUsage } from '../../api/catalogue/api.generated';
+import { DeezerResult, ModeUsage, PoolTrack, PreviewState } from '../domain/pool-track';
 
 /**
  * Adaptateur de l'API du module Catalogue : seule porte d'entrée vers le client généré
@@ -12,7 +12,7 @@ import { DeezerResult, PoolTrack, PreviewState } from '../domain/pool-track';
 export class CatalogueApi {
   private readonly client = inject(CatalogueClient);
 
-  /** Le pool entier, par artiste puis titre, avec l'usage de chaque morceau. */
+  /** Le pool entier, par artiste puis titre, avec ce que chaque mode en a fait. */
   async listTracks(): Promise<PoolTrack[]> {
     return (await firstValueFrom(this.client.listTracks())).map(toPoolTrack);
   }
@@ -58,10 +58,20 @@ function toPoolTrack(item: TrackListItem): PoolTrack {
     title: item.title,
     preview: toPreviewState(item.previewStatus),
     isDisabled: item.isDisabled,
-    lastUsedDate: toDay(item.lastUsedDate),
-    usageCount: item.usageCount,
-    unlockDate: toDay(item.unlockDate),
-    inTodayChallenge: item.inTodayChallenge,
+    isUsed: item.isUsed,
+    usages: item.usages.map(toModeUsage),
+    genres: item.genres,
+    inTodayChallenge: item.usages.some(usage => usage.inTodayChallenge),
+  };
+}
+
+function toModeUsage(usage: TrackModeUsage): ModeUsage {
+  return {
+    mode: usage.mode,
+    usageCount: usage.usageCount,
+    lastUsedDate: toDay(usage.lastUsedDate),
+    unlockDate: toDay(usage.unlockDate),
+    inTodayChallenge: usage.inTodayChallenge,
   };
 }
 

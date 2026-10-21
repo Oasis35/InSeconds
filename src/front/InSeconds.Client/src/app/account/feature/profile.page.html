@@ -62,7 +62,7 @@
           style="background:var(--bg-surface);border:1px solid var(--border-medium)" data-testid="devices-toggle"
           aria-controls="devices-panel" [attr.aria-expanded]="devicesOpen()" (click)="toggleDevices()">
           <span class="min-w-0">
-            <span class="block text-sm font-bold uppercase tracking-widest" style="font-family:var(--font-display);color:var(--text-muted)">
+            <span class="block text-sm font-semibold" style="font-family:var(--font-display);color:var(--text-muted)">
               {{ 'account.devices.title' | translate }}@if (devices.isFulfilled()) { · {{ devices.devices().length }}}
             </span>
             @if (devicesSummary(); as summary) {
@@ -110,7 +110,7 @@
 
     <!-- Tes données (RGPD) -->
     <section class="flex flex-col gap-3" aria-labelledby="data-title">
-      <h2 id="data-title" class="text-sm font-bold uppercase tracking-widest" style="font-family:var(--font-display);color:var(--text-muted)">
+      <h2 id="data-title" class="text-sm font-semibold" style="font-family:var(--font-display);color:var(--text-muted)">
         {{ 'account.profile.data.title' | translate }}
       </h2>
       @if (exportError(); as error) {

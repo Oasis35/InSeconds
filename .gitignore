@@ -1,4 +1,4 @@
-## InSeconds — .gitignore (.NET 10 backend + Angular 19 frontend)
+## InSeconds - .gitignore (.NET 10 backend + Angular 19 frontend)
 
 # ---------------------------------------------------------------
 # Build results
@@ -79,7 +79,7 @@ secrets/
 !src/back/InSeconds.Api/Internal/Generated/
 
 # ---------------------------------------------------------------
-# IDE — Visual Studio
+# IDE - Visual Studio
 # ---------------------------------------------------------------
 .vs/
 *.opensdf
@@ -99,7 +99,7 @@ ipch/
 *.cachefile
 
 # ---------------------------------------------------------------
-# IDE — JetBrains (Rider, ReSharper)
+# IDE - JetBrains (Rider, ReSharper)
 # ---------------------------------------------------------------
 .idea/
 *.DotSettings.user
@@ -107,7 +107,7 @@ _ReSharper*/
 *.[Rr]e[Ss]harper
 
 # ---------------------------------------------------------------
-# IDE — VS Code (garde extensions partagées)
+# IDE - VS Code (garde extensions partagées)
 # ---------------------------------------------------------------
 .vscode/*
 !.vscode/settings.json
@@ -133,7 +133,7 @@ out-tsc/
 .angular/
 .nx/
 
-# NSwag — le fichier généré est commité volontairement (pas de backend en CI)
+# NSwag - le fichier généré est commité volontairement (pas de backend en CI)
 
 # IDE for Angular
 *.launch
@@ -148,7 +148,7 @@ libpeerconnection.log
 testem.log
 typings/
 
-# Playwright — artefacts de run (résultats, rapports, traces)
+# Playwright - artefacts de run (résultats, rapports, traces)
 test-results/
 playwright-report/
 

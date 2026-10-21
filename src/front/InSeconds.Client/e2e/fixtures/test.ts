@@ -28,7 +28,7 @@ export const test = base.extend<E2EFixtures>({
         localStorage.setItem('lang', 'fr');
         localStorage.setItem('inseconds.thanksNoticeSeen', 'v2-launch');
       } catch {
-        // localStorage indisponible — ignore
+        // localStorage indisponible - ignore
       }
     });
     await use(page);

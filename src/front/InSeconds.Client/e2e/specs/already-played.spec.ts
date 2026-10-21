@@ -2,7 +2,7 @@ import { test, expect } from '../fixtures/test';
 import { GamePage } from '../pages/game.page';
 import { BlindRoundPage } from '../pages/blind-round.page';
 
-test.describe('Déjà joué — état already_played', () => {
+test.describe('Déjà joué - état already_played', () => {
   test('affiche le countdown et le score après avoir rejoué', async ({ page, api }) => {
     await api.reset();
     await page.clock.install({ time: Date.now() });
@@ -29,7 +29,7 @@ test.describe('Déjà joué — état already_played', () => {
     await expect(game.shareCopiedButton).toBeVisible();
 
     const clipText = await page.evaluate(() => navigator.clipboard.readText());
-    expect(clipText).toContain('InSeconds 🎵');
+    expect(clipText).toContain('InSeconds · ');
     expect(clipText).toContain('pts');
     expect(clipText).toMatch(/[✅❌]/); // contient des emojis résultat
   });
@@ -42,7 +42,7 @@ test.describe('Déjà joué — état already_played', () => {
     await game.completeGameThenReload(new BlindRoundPage(page));
     await expect(game.alreadyPlayedHeading).toBeVisible();
 
-    // Déplier la liste — mêmes lignes que le récap (chips ✓/✗, score cliquable)
+    // Déplier la liste - mêmes lignes que le récap (chips ✓/✗, score cliquable)
     await game.showTracksButton.click();
     await expect(game.trackChip).toBeVisible();
     await expect(game.trackScoreButtons.first()).toBeVisible();

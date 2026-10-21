@@ -8,7 +8,7 @@ using Wolverine.Http;
 
 namespace InSeconds.Api.Modules.Catalogue.Application;
 
-/// <summary>Le nouvel identifiant Deezer d'un morceau à actualiser (v1 : <c>UpdateTrack</c>).</summary>
+/// <summary>Le nouvel identifiant Deezer d'un morceau à actualiser.</summary>
 public sealed record UpdateTrack(long DeezerTrackId);
 
 public sealed class UpdateTrackValidator : AbstractValidator<UpdateTrack>
@@ -17,25 +17,33 @@ public sealed class UpdateTrackValidator : AbstractValidator<UpdateTrack>
 }
 
 /// <summary>Ce que l'actualisation a trouvé, dans l'ordre où elle le cherche : on n'appelle Deezer que si rien ne l'interdit.</summary>
-public sealed record TrackRefreshPlan(Track? Track, bool InUse, bool IdTaken, TrackMetadataLookup? Lookup);
+/// <param name="Album">Les genres du nouvel album, lus seulement si l'album change (ou si ceux du morceau n'ont jamais été lus) : absents, le contrôle nocturne les rattrape.</param>
+public sealed record TrackRefreshPlan(Track? Track, bool InUse, bool IdTaken, TrackMetadataLookup? Lookup, AlbumLookup? Album);
 
 public static class UpdateTrackEndpoint
 {
     public static async Task<TrackRefreshPlan> LoadAsync(
-        int id, UpdateTrack request, ICatalogueStore store, ITrackUsage usage, ITrackMetadataSource deezer, CancellationToken ct)
+        int id, UpdateTrack request, ICatalogueStore store, ITrackPoolUsage usage, ITrackMetadataSource deezer, IAlbumSource albums,
+        CancellationToken ct)
     {
-        var track = await store.FindAsync(id, ct);
+        // Avec ses genres : s'il change d'album, les remplacer supprime ceux de l'ancien (sinon EF ne verrait aucune ligne à retirer).
+        var track = await store.FindWithGenresAsync(id, ct);
         if (track is null)
-            return new TrackRefreshPlan(null, false, false, null);
+            return new TrackRefreshPlan(null, false, false, null, null);
 
         var usages = await usage.GetAsync([id], ct);
         if (usages.GetValueOrDefault(id, TrackUsage.None).IsUsed)
-            return new TrackRefreshPlan(track, true, false, null);
+            return new TrackRefreshPlan(track, true, false, null, null);
 
         if (track.DeezerTrackId != request.DeezerTrackId && await store.DeezerIdTakenAsync(request.DeezerTrackId, id, ct))
-            return new TrackRefreshPlan(track, false, true, null);
+            return new TrackRefreshPlan(track, false, true, null, null);
 
-        return new TrackRefreshPlan(track, false, false, await deezer.GetTrackAsync(request.DeezerTrackId, ct));
+        var lookup = await deezer.GetTrackAsync(request.DeezerTrackId, ct);
+        // Comme à l'ajout : les genres du nouvel album tout de suite (un appel de plus), seulement s'ils ne sont pas déjà ceux du morceau.
+        var album = lookup is TrackMetadataLookup.Found { Track.AlbumId: { } albumId } && (albumId != track.AlbumId || track.GenresCheckedAt is null)
+            ? await albums.GetAlbumAsync(albumId, ct)
+            : null;
+        return new TrackRefreshPlan(track, false, false, lookup, album);
     }
 
     public static ProblemDetails Validate(TrackRefreshPlan plan) => plan switch
@@ -51,7 +59,7 @@ public static class UpdateTrackEndpoint
     /// <summary>
     /// <c>PUT /api/admin/catalogue/tracks/{id}</c> : actualise un morceau (typiquement sans extrait) depuis
     /// Deezer : remplace l'identifiant Deezer, l'artiste, le titre, la pochette, l'année, le rang et l'état de
-    /// l'extrait. Interdit s'il a déjà servi dans un défi (409 <c>catalogue.track_in_use</c>). Un identifiant
+    /// l'extrait, et les genres s'il change d'album (ceux de l'ancien sont retirés). Interdit s'il a déjà servi dans un défi (409 <c>catalogue.track_in_use</c>). Un identifiant
     /// pris par un autre morceau : 409 <c>catalogue.duplicate_deezer_id</c>.
     /// </summary>
     [WolverinePut("/api/admin/catalogue/tracks/{id}", OperationId = "updateTrack")]
@@ -59,10 +67,25 @@ public static class UpdateTrackEndpoint
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable)]
-    public static TrackSummary Put(UpdateTrack request, TrackRefreshPlan plan, IOptionsMonitor<CatalogueOptions> options, TimeProvider time)
+    public static async Task<TrackSummary> Put(
+        UpdateTrack request, TrackRefreshPlan plan, ICatalogueStore store, IOptionsMonitor<CatalogueOptions> options, TimeProvider time,
+        CancellationToken ct)
     {
         var found = (TrackMetadataLookup.Found)plan.Lookup!;
-        plan.Track!.ReplaceDeezerSource(TrackMapping.ToMetadata(found.Track), time.GetUtcNow());
-        return TrackMapping.ToSummary(plan.Track, options.CurrentValue);
+        var now = time.GetUtcNow();
+        var track = plan.Track!;
+        track.ReplaceDeezerSource(TrackMapping.ToMetadata(found.Track), now);
+        switch (plan.Album)
+        {
+            case AlbumLookup.Found album:
+                track.RecordGenres(await store.EnsureGenresAsync([.. album.Genres.Select(g => new GenreRef(g.Id, g.Name))], ct), now);
+                break;
+            // Album supprimé chez Deezer : sans genre, et inutile de le redemander.
+            case AlbumLookup.NotFound:
+                track.RecordGenres([], now);
+                break;
+        }
+
+        return TrackMapping.ToSummary(track, options.CurrentValue);
     }
 }

@@ -35,9 +35,10 @@ Chaque PR arrive en prod par le merge `env/staging → main`. Aucune ne doit lai
 
 | Étape | Ticket | Contenu | Dépend de |
 |---|---|---|---|
-| **P1** | [#362](https://github.com/Oasis35/InSeconds/issues/362) | Préparer Players et Catalogue (**aucun code Runs**) : `IPlayerDataContributor`, usage des morceaux par plusieurs modes, `TrackInfo.DeezerRank`, contrôle nocturne de tout le pool, tests d'architecture « un mode » | — |
-| P0 (facultatif) | [#361](https://github.com/Oasis35/InSeconds/issues/361) | Genre de l'album dans le catalogue | P1 |
-| **P2** | [#364](https://github.com/Oasis35/InSeconds/issues/364) | Socle Runs (**aucune route de jeu**) : module, schéma et migration, défi et tirage, réglages, accès (`runs.access`, routes admin, interrupteur de l'onglet Joueurs), contributeurs Runs (RGPD, usage) | P1 |
+| **P1** | [#362](https://github.com/Oasis35/InSeconds/issues/362) | Préparer Players et Catalogue (**aucun code Runs**) : `IPlayerDataContributor`, usage des morceaux par plusieurs modes, `TrackInfo.DeezerRank`, contrôle nocturne de tout le pool, tests d'architecture « un mode » | - |
+| **P1b** | [#389](https://github.com/Oasis35/InSeconds/issues/389) | Pool admin général (**aucun code Runs**) : `isUsed` et usage par mode fournis par le back (`usages[]`), onglet Pool sans notion du Daily (compteur neutre, pastilles par mode, filtre « Joué par »), vue Daily dans un sélecteur horizontal | P1 |
+| P0 (facultatif) | [#361](https://github.com/Oasis35/InSeconds/issues/361) | Genre de l'album dans le catalogue | P1, P1b |
+| **P2** | [#364](https://github.com/Oasis35/InSeconds/issues/364) | Socle Runs (**aucune route de jeu**) : module, schéma et migration, défi et tirage, réglages, accès (`runs.access`, routes admin, interrupteur de l'onglet Joueurs), contributeurs Runs (RGPD, usage) | P1, P1b |
 | **P3** | [#363](https://github.com/Oasis35/InSeconds/issues/363) | La partie côté back : routes joueur (accès vérifié dès la première route), réponses portant ce que demandent les écrans ([`conception.md`](conception.md#35-ce-que-les-réponses-doivent-porter-dicté-par-les-écrans) § 3.5), jauge, fin, record, neutralisation, limites de débit, `/privacy` | P2 |
 | **P4** | [#365](https://github.com/Oasis35/InSeconds/issues/365) | La partie côté front, d'après les maquettes : manche, réponse après chaque morceau, fin de manche, fin de run ; composants du Daily descendus dans `gameplay/ui` ; carte de l'accueil ; E2E de la partie | P3 |
 | **P5** | [#366](https://github.com/Oasis35/InSeconds/issues/366) | Le lien et la comparaison (back et front), d'après les maquettes ; E2E du lien d'un ami | P4 |
@@ -54,8 +55,8 @@ Proposition du 17/10/2026, à itérer. Elle n'est pas dans le proto 1.
 |---|---|---|---|
 | **Atouts** | jokers | passifs, toute la partie | 3 |
 | **Coups de pouce** | cartes tarot | usage unique, sur le morceau en cours | 2 |
-| **Choix de la manche** | choix du blind / des packs | s'applique à la manche suivante | — |
-| **Contraintes** | blinds boss | imposées (manche boss) ou acceptées contre une récompense (pactes) | — |
+| **Choix de la manche** | choix du blind / des packs | s'applique à la manche suivante | - |
+| **Contraintes** | blinds boss | imposées (manche boss) ou acceptées contre une récompense (pactes) | - |
 
 - **Gagner un bonus** : en fin de manche, le joueur choisit **1 offre parmi 3**, ou refuse. Dépasser largement la jauge donne des offres plus rares.
 - **Emplacements pleins** : le joueur remplace un bonus ou refuse l'offre. C'est ce qui l'oblige à composer un jeu.
@@ -107,7 +108,7 @@ Pour le prototype des bonus : une douzaine de bonus communs, sans rareté ni dé
 - **17/10/2026, revue indépendante du plan** (hors dépôt). Elle a apporté :
   - les codes d'erreur et les routes alignés sur le Daily, avec son vocabulaire (« défi », « partie ») ;
   - le lien par code court et la comparaison au lieu d'un « classement » ;
-  - l'usage des morceaux déclaré par chaque mode et le contrôle nocturne de tout le pool ;
+  - l'usage des morceaux déclaré par chaque mode et le contrôle nocturne de tout le pool, puis le pool admin général avec une vue par mode (P1b) ;
   - le nouvel ordre des PR.
 - **17/10/2026, maquettes validées** : elles font référence ([`ecrans.md`](ecrans.md)).
   - Après chaque morceau, la réponse s'affiche dans l'écran de manche avec « Morceau suivant ».

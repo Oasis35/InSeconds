@@ -47,6 +47,8 @@ namespace Internal.Generated.WolverineHandlers
             var inSecondsDbContext = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>(serviceScope.ServiceProvider);
             var efCatalogueStore = new InSeconds.Api.Modules.Catalogue.Persistence.EfCatalogueStore(inSecondsDbContext);
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
+            var albumSource = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Deezer.IAlbumSource>(serviceScope.ServiceProvider);
+            // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var trackMetadataSource = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Deezer.ITrackMetadataSource>(serviceScope.ServiceProvider);
             // Reading the request body via JSON deserialization
             var (request, jsonContinue) = await ReadJsonAsync<InSeconds.Api.Modules.Catalogue.Application.AddTrack>(httpContext);
@@ -75,7 +77,7 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                var trackToAdd = await InSeconds.Api.Modules.Catalogue.Application.AddTrackEndpoint.LoadAsync(request, efCatalogueStore, trackMetadataSource, httpContext.RequestAborted).ConfigureAwait(false);
+                var trackToAdd = await InSeconds.Api.Modules.Catalogue.Application.AddTrackEndpoint.LoadAsync(request, efCatalogueStore, trackMetadataSource, albumSource, httpContext.RequestAborted).ConfigureAwait(false);
                 var problemDetails2 = InSeconds.Api.Modules.Catalogue.Application.AddTrackEndpoint.Validate(trackToAdd);
                 // Evaluate whether the processing should stop if there are any problems
                 if (!(ReferenceEquals(problemDetails2, Wolverine.Http.WolverineContinue.NoProblems)))

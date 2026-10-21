@@ -66,7 +66,7 @@ namespace Internal.Generated.WolverineHandlers
             var efDailyStore = new InSeconds.Api.Modules.Daily.Persistence.EfDailyStore(inSecondsDbContext);
             var claimsCurrentPlayer = new InSeconds.Api.Infrastructure.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
-            var trackUsage = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Modules.Catalogue.Contracts.ITrackUsage>(serviceScope.ServiceProvider);
+            var dailyTrackUsage = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Modules.Daily.Application.IDailyTrackUsage>(serviceScope.ServiceProvider);
             System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Daily.Application.StartSessionEndpoint");
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
@@ -80,7 +80,7 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                var startContext = await InSeconds.Api.Modules.Daily.Application.StartSessionEndpoint.LoadAsync(claimsCurrentPlayer, efDailyStore, efTrackDirectory, trackUsage, _trackSelector, _optionsMonitorOfDailyOptions, _gameCalendar, _loggerOfGenerateDailyChallenge, httpContext.RequestAborted).ConfigureAwait(false);
+                var startContext = await InSeconds.Api.Modules.Daily.Application.StartSessionEndpoint.LoadAsync(claimsCurrentPlayer, efDailyStore, efTrackDirectory, dailyTrackUsage, _trackSelector, _optionsMonitorOfDailyOptions, _gameCalendar, _loggerOfGenerateDailyChallenge, httpContext.RequestAborted).ConfigureAwait(false);
                 var problemDetails1 = InSeconds.Api.Modules.Daily.Application.StartSessionEndpoint.Validate(startContext);
                 // Evaluate whether the processing should stop if there are any problems
                 if (!(ReferenceEquals(problemDetails1, Wolverine.Http.WolverineContinue.NoProblems)))

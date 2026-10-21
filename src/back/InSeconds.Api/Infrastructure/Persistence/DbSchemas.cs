@@ -34,5 +34,8 @@ public static class DbSchemas
     /// <summary>Module Daily : défis, parties, séries (§ 4.4 du plan v2).</summary>
     public const string Daily = "daily";
 
+    /// <summary>Module Runs : défis, parties, records et accès du second mode de jeu.</summary>
+    public const string Runs = "runs";
+
     public const string MigrationsHistoryTable = "__ef_migrations_history";
 }

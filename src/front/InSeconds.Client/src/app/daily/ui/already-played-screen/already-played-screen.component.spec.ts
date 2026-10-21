@@ -40,7 +40,7 @@ describe('AlreadyPlayedScreenComponent', () => {
 
   it('n offre pas le partage sans score (partie non terminée)', () => {
     const { element, text } = render({ stats: stats({ yourScore: null }) });
-    expect(text()).toContain('—');
+    expect(text()).toContain('-');
     expect(element.querySelector('app-share-button')).toBeNull();
   });
 
@@ -66,7 +66,7 @@ describe('AlreadyPlayedScreenComponent', () => {
     toggle.click();
     fixture.detectChanges();
     const list = element.querySelector('app-track-results-list')!;
-    expect(list.textContent).toContain('Eminem — Lose Yourself');
+    expect(list.textContent).toContain('Eminem - Lose Yourself');
     expect(list.querySelector('button[aria-label]')!.textContent).toContain('+1000');
   });
 

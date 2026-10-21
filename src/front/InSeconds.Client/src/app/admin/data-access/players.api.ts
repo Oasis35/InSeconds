@@ -1,15 +1,17 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { AdminPlayer, AdminPlayerGame, DailyClient } from '../../api/daily/api.generated';
+import { RunsClient } from '../../api/runs/api.generated';
 import { PlayerGame, RegisteredPlayer, toGameStatus } from '../domain/registered-player';
 
 /**
- * Adaptateur de l'onglet Joueurs : seule porte vers le client généré du jeu du jour pour les routes
- * admin des comptes. Rend des types du domaine ; les erreurs sont celles du client (`toAppError`).
+ * Adaptateur de l'onglet Joueurs : seule porte vers les clients générés pour les routes admin des comptes
+ * (le jeu du jour : liste et historique ; le mode Run : l'accès). Rend des types du domaine ; les erreurs sont celles du client (`toAppError`).
  */
 @Injectable({ providedIn: 'root' })
 export class AdminPlayersApi {
   private readonly client = inject(DailyClient);
+  private readonly runs = inject(RunsClient);
 
   /** Les comptes inscrits, les plus récemment vus d'abord (l'ordre vient de l'API). */
   async list(): Promise<RegisteredPlayer[]> {
@@ -19,6 +21,16 @@ export class AdminPlayersApi {
   /** Les parties des 30 derniers jours ; 404 `common.not_found` si le joueur n'existe plus. */
   async history(playerId: string): Promise<PlayerGame[]> {
     return (await firstValueFrom(this.client.getPlayerHistory(playerId))).games.map(toGame);
+  }
+
+  /** Les comptes autorisés à lancer un run (l'interrupteur de l'admin), en un appel pour tous. Les admins ont l'accès d'office, sans y figurer. */
+  async listRunAccess(): Promise<string[]> {
+    return (await firstValueFrom(this.runs.listRunAccess())).entries.map(entry => entry.playerId);
+  }
+
+  /** Autorise ou retire l'accès au mode Run d'un compte (idempotent) ; 404 `common.not_found` pour un invité ou un joueur inconnu. */
+  async setRunAccess(playerId: string, enabled: boolean): Promise<void> {
+    await firstValueFrom(enabled ? this.runs.grantRunAccess(playerId) : this.runs.revokeRunAccess(playerId));
   }
 }
 

@@ -1,6 +1,5 @@
 using Hangfire;
 using InSeconds.Api.Infrastructure.Jobs;
-using InSeconds.Api.Infrastructure.Time;
 using InSeconds.Api.Modules.Catalogue.Contracts;
 using InSeconds.Api.Modules.Catalogue.Domain;
 using InSeconds.Deezer;
@@ -13,8 +12,9 @@ using Wolverine.Http;
 namespace InSeconds.Api.Modules.Catalogue.Application;
 
 /// <summary>
-/// Recontrôle l'extrait (et met à jour le rang) des morceaux que le défi de demain pourrait tirer. Lancé par la
-/// tâche <c>catalogue-refresh</c> chaque nuit, ou à la main depuis <c>/jobs</c> (§ 5.4 bis du plan v2).
+/// Recontrôle l'extrait (et met à jour le rang) de **tout le pool jouable**, cooldown compris : un mode peut tirer n'importe quel morceau
+/// (un run), pas seulement ceux que le défi de demain tirerait. Lancé par la tâche <c>catalogue-refresh</c> chaque nuit, ou à la main depuis
+/// <c>/jobs</c>.
 /// </summary>
 public sealed record RefreshPreviews;
 
@@ -41,19 +41,16 @@ public static class RefreshPreviewsHandler
     public static async Task<PreviewRefreshResult> Handle(
         RefreshPreviews command,
         ICatalogueStore store,
-        ITrackUsage usage,
         ITrackMetadataSource deezer,
-        IGameCalendar calendar,
+        IAlbumSource albums,
         TimeProvider time,
         IOptionsMonitor<RefreshOptions> options,
         ILogger<RefreshPreviews> logger,
         CancellationToken ct)
     {
-        // Mêmes morceaux que le tirage de demain (la tâche tourne à 23 h, la veille de la génération) : un morceau
-        // utilisé redevient tirable une fois son cooldown écoulé, son extrait doit être revérifié avant. Ceux
-        // encore en cooldown, ou désactivés, ne seront pas tirés : inutile de les vérifier.
-        var inCooldown = await usage.GetTracksInCooldownAsync(calendar.Today.AddDays(1), ct);
-        var candidates = await store.ListRefreshCandidatesAsync([.. inCooldown], ct);
+        // Tout le pool, sauf les morceaux désactivés (jamais tirés par personne) : le cooldown n'exclut plus rien, car il n'est qu'une règle du
+        // Daily. Un run tire n'importe quel morceau ; le rang et l'extrait doivent être à jour partout.
+        var candidates = await store.ListRefreshCandidatesAsync(ct);
         if (candidates.Count == 0)
         {
             CatalogueLog.NothingToRefresh(logger);
@@ -97,6 +94,8 @@ public static class RefreshPreviewsHandler
                             changed.Add(batch[i].Id);
                         if (found.Track.Rank is { } rank)
                             batch[i].RecordRank(rank, now);
+                        // L'album vient dans la même réponse : aucun appel de plus. Les genres se lisent ensuite, album par album.
+                        batch[i].RecordAlbum(found.Track.AlbumId);
                         touched.Add(batch[i]);
                         break;
                 }
@@ -108,11 +107,58 @@ public static class RefreshPreviewsHandler
         }
 
         CatalogueLog.RefreshCompleted(logger, candidates.Count, updated, failed);
+        await RefreshGenresAsync(candidates, store, albums, time, settings, logger, ct);
         return new PreviewRefreshResult(candidates.Count, updated, failed);
+    }
+
+    /// <summary>
+    /// Rattrape les genres : **un appel par album** (pas par morceau) pour les albums dont les genres n'ont jamais été lus, lots espacés comme
+    /// ceux des morceaux (quota Deezer, piège 16). Une réponse indisponible ne change rien (l'album sera repris au prochain contrôle) ;
+    /// un album supprimé chez Deezer (800) n'a pas de genre et n'est plus redemandé. Les genres de l'album vont à tous ses morceaux du pool.
+    /// </summary>
+    private static async Task RefreshGenresAsync(
+        IReadOnlyList<Track> candidates, ICatalogueStore store, IAlbumSource albums, TimeProvider time, RefreshOptions settings,
+        ILogger logger, CancellationToken ct)
+    {
+        var pending = candidates
+            .Where(t => t.AlbumId is not null && t.GenresCheckedAt is null)
+            .Select(t => t.AlbumId!.Value)
+            .Distinct()
+            .ToList();
+        if (pending.Count == 0)
+            return;
+
+        var batchSize = Math.Max(1, settings.BatchSize);
+        var failed = 0;
+        for (var offset = 0; offset < pending.Count; offset += batchSize)
+        {
+            // Le contrôle des morceaux vient de finir : la première série d'albums attend aussi, la cadence reste celle du réglage.
+            await Task.Delay(settings.BatchDelay, time, ct);
+
+            var batch = pending.Skip(offset).Take(batchSize).ToList();
+            var lookups = await Task.WhenAll(batch.Select(id => albums.GetAlbumAsync(id, ct)));
+            for (var i = 0; i < batch.Count; i++)
+            {
+                switch (lookups[i])
+                {
+                    case AlbumLookup.Found found:
+                        await store.SaveAlbumGenresAsync(batch[i], [.. found.Genres.Select(g => new GenreRef(g.Id, g.Name))], time.GetUtcNow(), ct);
+                        break;
+                    case AlbumLookup.NotFound:
+                        await store.SaveAlbumGenresAsync(batch[i], [], time.GetUtcNow(), ct);
+                        break;
+                    default:
+                        failed++;
+                        break;
+                }
+            }
+        }
+
+        CatalogueLog.GenresRefreshed(logger, pending.Count, failed);
     }
 }
 
-/// <summary>Tâche <c>catalogue-refresh</c> (§ 5.4 bis du plan v2), chaque soir à 23 h UTC, la veille de la génération du défi.</summary>
+/// <summary>Tâche <c>catalogue-refresh</c>, chaque soir à 23 h UTC, la veille de la génération du défi.</summary>
 public sealed class RefreshPreviewsJob(IMessageBus bus) : IScheduledJob
 {
     public const string Id = "catalogue-refresh";

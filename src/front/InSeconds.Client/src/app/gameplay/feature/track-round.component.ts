@@ -35,7 +35,7 @@ import { RoundPlayerComponent } from '../ui/round-player.component';
 
         @if (round.showsInput()) {
           <form (submit)="onSubmit($event)" class="space-y-3">
-            <app-hint-panel [levels]="round.availableHintLevels()" [kinds]="round.hintKinds()" [hints]="round.hints()" [pending]="hintPending()"
+            <app-hint-panel [levels]="round.availableHintLevels()" [kinds]="round.hintKinds()" [penalties]="round.hintPenaltyPercents()" [hints]="round.hints()" [pending]="hintPending()"
               (request)="hintRequested.emit($event)" />
 
             <app-answer-input [query]="search.query()" [suggestions]="search.visibleSuggestions()" [highlighted]="search.highlighted()"
@@ -49,7 +49,7 @@ import { RoundPlayerComponent } from '../ui/round-player.component';
               <div class="rounded-xl px-4 py-3 space-y-3" style="background:rgb(var(--rgb-danger) / 0.08);border:1px solid rgb(var(--rgb-danger) / 0.3)">
                 <p role="alert" class="text-sm text-center font-semibold" style="color:var(--text-error)">{{ 'gameplay.answer.submitFailed' | translate }}</p>
                 <button type="button" (click)="retrySubmission()"
-                  class="w-full py-3.5 rounded-full text-sm font-bold tracking-wide uppercase transition touch-manipulation"
+                  class="w-full py-3.5 rounded-(--radius-button) text-sm font-bold tracking-wide uppercase transition touch-manipulation"
                   style="font-family:var(--font-display);letter-spacing:0.06em;background:var(--gradient-primary);color:var(--text-on-primary);box-shadow:var(--glow-primary)">
                   {{ 'gameplay.answer.retry' | translate }}
                 </button>
@@ -61,12 +61,12 @@ import { RoundPlayerComponent } from '../ui/round-player.component';
                 </p>
                 <div class="flex gap-2">
                   <button type="button" (click)="round.cancelConfirm()"
-                    class="flex-1 py-2.5 rounded-lg text-sm font-semibold transition touch-manipulation"
+                    class="flex-1 py-2.5 rounded-(--radius-button) text-sm font-semibold transition touch-manipulation"
                     style="background:var(--bg-inactive);color:var(--text-hover);border:1px solid var(--border-subtle)">
                     {{ 'gameplay.answer.cancel' | translate }}
                   </button>
                   <button type="button" (click)="confirm()"
-                    class="flex-1 py-2.5 rounded-lg text-sm font-bold uppercase transition touch-manipulation"
+                    class="flex-1 py-2.5 rounded-(--radius-button) text-sm font-bold uppercase transition touch-manipulation"
                     style="font-family:var(--font-display);letter-spacing:0.04em;background:var(--gradient-primary);color:var(--text-on-primary)">
                     {{ (kind === 'skip' ? 'gameplay.answer.skipAnyway' : 'gameplay.answer.submitAnyway') | translate }}
                   </button>
@@ -74,13 +74,13 @@ import { RoundPlayerComponent } from '../ui/round-player.component';
               </div>
             } @else {
               <button type="submit" [disabled]="phase === 'submitting'"
-                class="w-full py-3.5 rounded-full text-sm font-bold tracking-wide uppercase transition touch-manipulation disabled:opacity-60"
+                class="w-full py-3.5 rounded-(--radius-button) text-sm font-bold tracking-wide uppercase transition touch-manipulation disabled:opacity-60"
                 style="font-family:var(--font-display);background:var(--gradient-primary);color:var(--text-on-primary);letter-spacing:0.06em;box-shadow:var(--glow-primary)">
                 {{ phase === 'submitting' ? '…' : ('gameplay.answer.validate' | translate) }}
               </button>
               <button type="button" (click)="round.askSkip()" [disabled]="phase === 'submitting'"
-                class="w-full py-3.5 rounded-lg text-sm font-bold tracking-wide uppercase transition active:scale-95 touch-manipulation disabled:opacity-60"
-                style="font-family:var(--font-display);letter-spacing:0.06em;border:1.5px solid rgb(var(--rgb-accent-2) / 0.7);background:transparent;color:var(--color-accent-2)">
+                class="w-full py-3.5 rounded-(--radius-button) text-sm font-bold tracking-wide uppercase transition active:scale-95 touch-manipulation disabled:opacity-60"
+                style="font-family:var(--font-display);letter-spacing:0.06em;border:1.5px solid var(--border-neutral);background:transparent;color:var(--text-hi)">
                 {{ 'gameplay.round.skip' | translate }}
               </button>
             }

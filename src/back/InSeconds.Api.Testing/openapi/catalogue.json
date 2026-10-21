@@ -657,10 +657,9 @@
           "previewStatus",
           "previewCheckedAt",
           "isDisabled",
-          "lastUsedDate",
-          "usageCount",
-          "unlockDate",
-          "inTodayChallenge"
+          "isUsed",
+          "usages",
+          "genres"
         ],
         "type": "object",
         "properties": {
@@ -711,16 +710,46 @@
           "isDisabled": {
             "type": "boolean"
           },
+          "isUsed": {
+            "type": "boolean"
+          },
+          "usages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrackModeUsage"
+            }
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "TrackModeUsage": {
+        "required": [
+          "mode",
+          "usageCount",
+          "lastUsedDate",
+          "unlockDate",
+          "inTodayChallenge"
+        ],
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string"
+          },
+          "usageCount": {
+            "type": "integer",
+            "format": "int32"
+          },
           "lastUsedDate": {
             "type": [
               "null",
               "string"
             ],
             "format": "date"
-          },
-          "usageCount": {
-            "type": "integer",
-            "format": "int32"
           },
           "unlockDate": {
             "type": [

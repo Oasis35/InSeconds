@@ -31,7 +31,7 @@ async function setStreak(
 const pill = (page: Page) => page.getByTestId('streak-pill');
 const sheet = (page: Page) => page.getByTestId('streak-sheet');
 
-test.describe('Gel de série — compte connecté', () => {
+test.describe('Gel de série - compte connecté', () => {
   test.beforeEach(async ({ api }) => {
     await api.reset();
   });
@@ -128,7 +128,7 @@ test.describe('Gel de série — compte connecté', () => {
   });
 });
 
-test.describe('Gel de série — invité', () => {
+test.describe('Gel de série - invité', () => {
   test.beforeEach(async ({ api }) => {
     await api.reset();
   });

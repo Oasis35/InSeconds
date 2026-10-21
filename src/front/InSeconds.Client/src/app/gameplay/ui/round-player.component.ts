@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
+import { SecondsPipe } from '../../ui/format/seconds.pipe';
 import { RoundPhase } from '../domain/track-round';
 
 /**
@@ -11,16 +11,16 @@ import { RoundPhase } from '../domain/track-round';
  */
 @Component({
   selector: 'app-round-player',
-  imports: [DecimalPipe, TranslatePipe],
+  imports: [SecondsPipe, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="p-5 space-y-5" style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:28px 8px 28px 8px">
+    <div class="p-5 space-y-5" style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:var(--radius-card)">
       @switch (phase()) {
         @case ('no-preview') {
           <p class="text-center text-sm" style="color:var(--text-muted)">{{ 'gameplay.round.noPreview' | translate }}</p>
           <div class="flex justify-center">
-            <button type="button" (click)="skip.emit()" class="px-5 py-3 rounded-xl font-bold uppercase text-sm transition active:scale-95 touch-manipulation"
-              style="font-family:var(--font-display);letter-spacing:0.04em;border:1.5px solid rgb(var(--rgb-accent-2) / 0.7);background:transparent;color:var(--color-accent-2)">
+            <button type="button" (click)="skip.emit()" class="px-5 py-3 rounded-(--radius-button) font-bold uppercase text-sm transition active:scale-95 touch-manipulation"
+              style="font-family:var(--font-display);letter-spacing:0.04em;border:1.5px solid var(--border-neutral);background:transparent;color:var(--text-hi)">
               {{ 'gameplay.round.skip' | translate }}
             </button>
           </div>
@@ -29,12 +29,12 @@ import { RoundPhase } from '../domain/track-round';
           <div class="space-y-4 text-center">
             <p role="alert" class="text-sm" style="color:var(--text-error)">{{ 'gameplay.round.playbackError' | translate }}</p>
             <div class="flex justify-center gap-3">
-              <button type="button" (click)="retry.emit()" class="px-5 py-3 rounded-xl font-bold uppercase text-sm transition active:scale-95 touch-manipulation"
+              <button type="button" (click)="retry.emit()" class="px-5 py-3 rounded-(--radius-button) font-bold uppercase text-sm transition active:scale-95 touch-manipulation"
                 style="font-family:var(--font-display);letter-spacing:0.04em;background:var(--gradient-primary);color:var(--text-on-primary)">
                 {{ 'gameplay.round.retry' | translate }}
               </button>
-              <button type="button" (click)="skip.emit()" class="px-5 py-3 rounded-xl font-bold uppercase text-sm transition active:scale-95 touch-manipulation"
-                style="font-family:var(--font-display);letter-spacing:0.04em;border:1.5px solid rgb(var(--rgb-accent-2) / 0.7);background:transparent;color:var(--color-accent-2)">
+              <button type="button" (click)="skip.emit()" class="px-5 py-3 rounded-(--radius-button) font-bold uppercase text-sm transition active:scale-95 touch-manipulation"
+                style="font-family:var(--font-display);letter-spacing:0.04em;border:1.5px solid var(--border-neutral);background:transparent;color:var(--text-hi)">
                 {{ 'gameplay.round.skip' | translate }}
               </button>
             </div>
@@ -48,9 +48,9 @@ import { RoundPhase } from '../domain/track-round';
               @if (phase() === 'loading') {
                 …
               } @else if (playing()) {
-                {{ position() | number: '1.1-1' }}s / {{ chosenSeconds() }}s
+                {{ position() | appSeconds: 1 }} / {{ chosenSeconds() | appSeconds }}
               } @else {
-                {{ chosenSeconds() }}s / {{ chosenSeconds() }}s
+                {{ chosenSeconds() | appSeconds }} / {{ chosenSeconds() | appSeconds }}
               }
             </p>
 
@@ -70,12 +70,12 @@ import { RoundPhase } from '../domain/track-round';
 
             @if (maxStep() > chosenSeconds()) {
               <p class="text-center text-xs font-semibold" style="color:var(--text-faint)">
-                {{ 'gameplay.round.stepsUpTo' | translate: { seconds: maxStep() } }}
+                {{ 'gameplay.round.stepsUpTo' | translate: { seconds: (maxStep() | appSeconds) } }}
               </p>
             }
 
             <div class="flex items-center justify-center gap-4 pt-1">
-              <button type="button" (click)="replay.emit()" [disabled]="locked()" [title]="'gameplay.round.replay' | translate: { seconds: chosenSeconds() }"
+              <button type="button" (click)="replay.emit()" [disabled]="locked()" [title]="'gameplay.round.replay' | translate: { seconds: (chosenSeconds() | appSeconds) }"
                 class="rounded-full transition active:scale-95 touch-manipulation flex items-center justify-center shrink-0 disabled:opacity-40 disabled:grayscale disabled:active:scale-100"
                 style="width:72px;height:72px;background:linear-gradient(145deg,var(--color-accent-3),var(--color-accent));box-shadow:var(--glow-primary);border:none;color:#fff">
                 @if (submitting()) {
@@ -94,10 +94,10 @@ import { RoundPhase } from '../domain/track-round';
               </button>
 
               @if (nextStep(); as next) {
-                <button type="button" (click)="listenMore.emit()" [disabled]="locked()" [title]="'gameplay.round.listenUpTo' | translate: { seconds: next }"
+                <button type="button" (click)="listenMore.emit()" [disabled]="locked()" [title]="'gameplay.round.listenUpTo' | translate: { seconds: (next | appSeconds) }"
                   class="rounded-full transition active:scale-95 touch-manipulation flex items-center justify-center font-extrabold text-sm shrink-0 disabled:opacity-40 disabled:grayscale"
                   style="font-family:var(--font-display);width:52px;height:52px;border:1.5px solid rgb(var(--rgb-accent-2) / 0.7);background:rgb(var(--rgb-accent-2) / 0.1);color:var(--color-accent-2)">
-                  ▶ {{ next }}s
+                  ▶ {{ next | appSeconds }}
                 </button>
               }
             </div>

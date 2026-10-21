@@ -2,7 +2,7 @@ import { Page, Locator } from '@playwright/test';
 
 const BASE = process.env['CI'] ? 'http://localhost:5175' : 'http://localhost:5177';
 // L'auth admin est désormais un rôle sur le cookie joueur (Player.IsAdmin, cf. refonte
-// profils admin) — plus d'OriginValidator sur ces routes, donc plus besoin d'Origin ici.
+// profils admin) - plus d'OriginValidator sur ces routes, donc plus besoin d'Origin ici.
 
 export class AdminPage {
   readonly logoutButton: Locator;
@@ -63,6 +63,19 @@ export class AdminPage {
     return this.page.locator('select').filter({ hasText: 'Tous les statuts' });
   }
 
+  poolFilterGenre(): Locator {
+    return this.page.locator('select').filter({ hasText: 'Tous les genres' });
+  }
+
+  poolFilterPlayedBy(): Locator {
+    return this.page.locator('select').filter({ hasText: 'Joué par : tous' });
+  }
+
+  /** Le sélecteur de vue du pool (Pool, Daily) : « Pool » est le pool général, les autres sont les vues d'un mode. */
+  poolView(name: string): Locator {
+    return this.page.getByRole('tab', { name, exact: true });
+  }
+
   addButton(): Locator {
     return this.page.getByRole('button', { name: '+ Ajouter' });
   }
@@ -83,7 +96,7 @@ export class AdminPage {
     return this.page.getByRole('row').filter({ has: this.page.getByRole('cell', { name: artist, exact: true }) });
   }
 
-  // Actions — cooldown
+  // Actions - cooldown
   trackCooldownInput(): Locator {
     return this.page.getByLabel('Part du pool en cooldown');
   }
@@ -136,13 +149,13 @@ export class AdminPage {
     return this.page.getByTestId('previews-witness');
   }
 
-  // Défis — bouton créer
+  // Défis - bouton créer
   createChallengeButton(): Locator {
     return this.page.getByRole('button', { name: /Créer le défi|Générer/ }).first();
   }
 
-  // Identifiant du navigateur (BrowserIdComponent) — visible sur l'écran de login et dans le shell.
-  // Span (pas bouton) montrant les 8 premiers caractères du PlayerId (hex, sans tiret) — le
+  // Identifiant du navigateur (BrowserIdComponent) - visible sur l'écran de login et dans le shell.
+  // Span (pas bouton) montrant les 8 premiers caractères du PlayerId (hex, sans tiret) - le
   // filtre de tag distingue ce span des chips joueurs de l'onglet Défis, qui sont des <button>.
   browserIdShort(): Locator {
     return this.page.locator('span.font-mono').filter({ hasText: /^[0-9a-f]{8}$/ });
@@ -152,7 +165,7 @@ export class AdminPage {
     return this.page.getByRole('button', { name: /^Copier$|^Copié !$/ });
   }
 
-  // Chip joueur dans "Stats par défi" (ChallengesTabComponent) — bouton contenant l'ID court.
+  // Chip joueur dans "Stats par défi" (ChallengesTabComponent) - bouton contenant l'ID court.
   playerChip(shortId: string): Locator {
     return this.page.getByRole('button', { name: new RegExp(shortId) });
   }
@@ -198,7 +211,8 @@ export class AdminPage {
   async apiGetPoolUnlockDate(deezerTrackId: number): Promise<string | null | undefined> {
     const res = await this.page.request.get(`${BASE}/api/admin/catalogue/tracks`);
     if (!res.ok()) throw new Error(`get tracks failed: ${res.status()}`);
-    const tracks = await res.json() as { deezerTrackId: number; unlockDate: string | null }[];
-    return tracks.find(t => t.deezerTrackId === deezerTrackId)?.unlockDate;
+    // Le pool donne l'usage mode par mode : la date de déblocage est celle du Daily (le cooldown est sa règle).
+    const tracks = await res.json() as { deezerTrackId: number; usages: { mode: string; unlockDate: string | null }[] }[];
+    return tracks.find(t => t.deezerTrackId === deezerTrackId)?.usages.find(u => u.mode === 'daily')?.unlockDate;
   }
 }

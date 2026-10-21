@@ -212,7 +212,7 @@ export class DailyPage implements OnInit {
     }
     this.thanks.markSeen();
     const data: ThanksDialogData = { games, lang: this.language.current(), challenge: () => void this.challengeFriend() };
-    this.modal.open<void, ThanksDialogData, ThanksDialogComponent>(ThanksDialogComponent, { data, maxWidth: '25rem' });
+    this.modal.openSheet<void, ThanksDialogData, ThanksDialogComponent>(ThanksDialogComponent, { data });
   }
 
   private async challengeFriend(): Promise<void> {
@@ -221,15 +221,15 @@ export class DailyPage implements OnInit {
     else if (outcome === 'failed') this.toasts.show('daily.thanks.copyFailed', { tone: 'error' });
   }
 
-  /** Copie le résumé de la partie : un `✅/❌` par morceau, le score et le lien. */
+  /** Copie le résumé de la partie : un `✅` ou `❌` par morceau, le score et le lien. */
   protected share(): void {
     const stats = this.store.stats();
     const done = this.store.screen() === 'done';
     const tracks = done
-      ? this.store.results().map(r => ({ artistCorrect: r.artistCorrect, titleCorrect: r.titleCorrect, listenedSeconds: r.listenedSeconds }))
+      ? this.store.results().map(r => ({ artistCorrect: r.artistCorrect, titleCorrect: r.titleCorrect }))
       : (stats?.tracks ?? [])
           .filter(t => t.listenedSeconds !== null)
-          .map(t => ({ artistCorrect: t.artistCorrect === true, titleCorrect: t.titleCorrect === true, listenedSeconds: t.listenedSeconds ?? 0 }));
+          .map(t => ({ artistCorrect: t.artistCorrect === true, titleCorrect: t.titleCorrect === true }));
     void this.dailyShare.share(tracks, done ? this.store.totalScore() : (stats?.yourScore ?? 0));
   }
 }

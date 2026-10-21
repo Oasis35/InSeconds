@@ -4,7 +4,7 @@ import { GamePage } from '../pages/game.page';
 // La génération paresseuse (secours si la tâche de minuit a raté) a lieu au démarrage d'une partie, pas à la lecture de l'état du jour
 // (GET /api/daily/today ne génère rien) : l'écran « pas de défi » s'affiche, et « Réessayer » tente le démarrage, qui génère le défi si le
 // pool le permet. Il ne subsiste durablement que si le pool est insuffisant (emptyPool).
-test.describe('Pas de défi — état no_challenge', () => {
+test.describe('Pas de défi - état no_challenge', () => {
   test.afterEach(async ({ api }) => {
     // Restaurer pool + défis pour les autres specs
     await api.reseed();

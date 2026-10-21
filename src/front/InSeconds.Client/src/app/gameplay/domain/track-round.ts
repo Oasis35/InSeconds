@@ -39,6 +39,8 @@ export interface HintPolicy {
    * `artistMasked`) : le bouton s'appelle alors « Indice année », « Indice artiste ». Sans lui, « Indice 1 ».
    */
   readonly kinds?: readonly (string | null)[];
+  /** Ce que coûte chaque niveau, en pourcentage du score du morceau (`penaltyPercents[0]` pour le niveau 1), écrit sur le bouton. */
+  readonly penaltyPercents?: readonly (number | null)[];
 }
 
 /** Un indice révélé par le back : l'année, l'artiste masqué… Le front l'affiche, il n'en invente aucun. */
@@ -100,6 +102,8 @@ export interface TrackRound {
   readonly hintUnlockSeconds: readonly number[];
   /** Ce que révèle chaque niveau (`null` : inconnu). */
   readonly hintKinds: readonly (string | null)[];
+  /** Le coût de chaque niveau, en pourcentage (`null` : inconnu). */
+  readonly hintPenaltyPercents: readonly (number | null)[];
   readonly phase: RoundPhase;
   /** Le palier en cours (0 tant que le joueur n'a pas commencé à écouter). */
   readonly chosenSeconds: number;
@@ -128,6 +132,7 @@ export function createRound(config: RoundConfig): TrackRound {
     extendable: config.listen.extendable,
     hintUnlockSeconds: config.hints.unlockSeconds,
     hintKinds: config.hints.kinds ?? [],
+    hintPenaltyPercents: config.hints.penaltyPercents ?? [],
     phase: hasPreview ? 'ready' : 'no-preview',
     chosenSeconds: 0,
     extended: false,

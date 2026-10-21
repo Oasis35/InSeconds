@@ -7,12 +7,8 @@ export function problem(status: number, code: string, traceId = '0123456789abcde
   return { status, code, traceId };
 }
 
-export function poolTrack(overrides: Partial<PoolTrack> = {}): PoolTrack {
-  return {
-    id: 1, deezerTrackId: 1000, artist: 'Artiste', title: 'Titre', preview: 'available', isDisabled: false,
-    lastUsedDate: null, usageCount: 0, unlockDate: null, inTodayChallenge: false, ...overrides,
-  };
-}
+/** Un morceau du pool pour les tests (cf. `PoolTrackFixture`). */
+export { poolTrack } from '../../domain/testing/pool-track.fixture';
 
 export function deezerResult(overrides: Partial<DeezerResult> = {}): DeezerResult {
   return { deezerTrackId: 42, artist: 'E2E Artist', title: 'E2E Track', previewUrl: 'https://preview/42.mp3', ...overrides };

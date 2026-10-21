@@ -4,7 +4,7 @@
 
 ## 1. L'idée en une phrase
 
-Chaque module (Players, Catalogue, Gameplay, Daily, et plus tard Runs) a une partie privée et une partie publique. La partie publique, c'est son dossier `Contracts/`. Un autre module n'a le droit d'utiliser **que** ce dossier, jamais le reste.
+Chaque module (Players, Catalogue, Gameplay, Daily, Runs) a une partie privée et une partie publique. La partie publique, c'est son dossier `Contracts/`. Un autre module n'a le droit d'utiliser **que** ce dossier, jamais le reste.
 
 ```
 Modules/Players/
@@ -37,10 +37,10 @@ L'implémentation de l'interface reste dans la partie privée du module (souvent
 | `IPlayerDirectory` | Players | `EfPlayerDirectory` | Daily (pseudos des stats et de l'admin) |
 | `ITrackDirectory`, `TrackTitles` | Catalogue | `EfCatalogueQueries` | Daily (tirage, stats, récap), commande `--export-player` |
 | `ITrackPreviews` | Catalogue | `DeezerTrackPreviews` | Daily (adresse de l'extrait au démarrage d'une partie) |
-| `ITrackUsage` | Catalogue | `EfTrackUsage` **dans Daily** | Catalogue (cooldown, suppression d'un morceau jamais utilisé), Daily (tirage) |
+| `ITrackUsage` | Catalogue | `EfTrackUsage` **dans Daily**, puis un par mode ajouté | Catalogue (`ITrackPoolUsage` : agrège tous les modes, suppression d'un morceau jamais utilisé) |
 | `TrackRound`, `RoundOutcome`, ports d'indice et de correction | Gameplay | Gameplay | Daily |
 | `IStreakGrants` | Daily | `DailyStreakGrants` | Players, à la création d'un compte (`AccountSignIn`) |
-| `IPlayerGameData` | Daily | `EfPlayerGameData` | Players (export et effacement d'un compte), commandes `--export-player` / `--delete-player` |
+| `IPlayerDataContributor` | Players | `DailyPlayerData` **dans Daily**, puis un par mode ajouté, enregistrés en un seul endroit (`ApiComposition.AddPlayerDataContributors`, partagé par l'API et les commandes de secours) | Players (export et effacement d'un compte, section `modules.<mode>`), commandes `--export-player` / `--delete-player` |
 
 Exemple : `IPlayerSessions.GetStatusAsync` renvoie un `DeviceSessionStatus(IsActive, IsAdmin, LastSeenAt)`. L'authentification n'a pas besoin de savoir qu'il existe une table `players.device_sessions`, une colonne `revoked_at` ou une suppression du joueur : elle reçoit juste « actif ou pas ». Si Players change ses tables, l'authentification ne bouge pas.
 
@@ -58,9 +58,9 @@ C'est un test qui casse la CI, pas une convention.
 
 Autres garde-fous du même dossier : `Gameplay_NeDependQueDeCatalogueContracts_EtResteSansAccesAuxDonneesNiAuWeb`, `CatalogueEtGameplay_NeConnaissentPasDaily`, `Daily_NeDependQueDesContratsDeCatalogueEtDeGameplay_EtPasDeDeezer`, `LesModulesDesNoyaux_NeDependentPasDeGameplay`, `UnNoyau_NeVoitDUnModeQueSesContracts` (`HandlerRulesTests`), `LeDomaine_NeDependNiDEfCoreNiDAspNetCoreNiDeNpgsql`, `PersistenceTests` (rien dans `public`, tout en snake_case). Côté front, Sheriff (`sheriff.config.ts`) tient le même principe : un mode n'importe que `gameplay` et `account`, jamais un autre mode.
 
-## 5. Quand Runs arrivera
+## 5. Runs
 
-Partager un noyau ne veut pas dire lire ses tables. Runs utilisera Players et Catalogue **par leurs contrats**, comme Daily :
+Partager un noyau ne veut pas dire lire ses tables. Runs utilise Players et Catalogue **par leurs contrats**, comme Daily :
 
 ```
             Daily ───────✕─────── Runs          (un mode ne voit jamais l'autre)
@@ -72,8 +72,8 @@ Partager un noyau ne veut pas dire lire ses tables. Runs utilisera Players et Ca
 ```
 
 - **Le joueur** : `ICurrentPlayer` pour savoir qui joue, `IPlayerDirectory` pour afficher un pseudo, sans jamais voir l'email, les appareils ni le rôle admin.
-- **Les morceaux** : `ITrackDirectory`, qui expose rang Deezer, année et état de l'extrait. Le jour où Catalogue ajoute les genres, Runs les reçoit par le contrat ; Daily ne voit rien changer.
-- **L'effacement d'un compte** : aujourd'hui Players appelle `Daily.Contracts.IPlayerGameData`. Avec un second mode, l'appel direct à chaque mode ne tient plus : Players exposera `IPlayerDataContributor` dans ses propres `Contracts`, une interface que chaque mode implémente, appelée dans la même transaction (décidé le 17/10/2026, cf. [`../runs/conception.md`](../runs/conception.md) § 6, qui fait de même pour l'usage des morceaux).
+- **Les morceaux** : `ITrackDirectory`, qui expose rang Deezer, année, état de l'extrait et genres de l'album (`TrackInfo.Genres`). Runs les reçoit par le contrat ; Daily ne s'en sert pas et ne voit rien changer.
+- **L'effacement d'un compte** : Players expose `IPlayerDataContributor` dans ses propres `Contracts`, chaque mode l'implémente, `AccountErasure` et `PlayerDataExporter` les appellent tous dans la même transaction.
 
 Si Runs lisait directement les entités de Players ou de Catalogue, une évolution faite pour Runs dans ces noyaux pourrait casser Daily, et inversement.
 
@@ -93,4 +93,4 @@ Si Runs lisait directement les entités de Players ou de Catalogue, une évoluti
 
 ## 8. Points d'attention
 
-`IStreakGrants` et `IPlayerGameData` sont des contrats de **Daily** appelés par **Players** : un noyau qui connaît un mode. Le test le permet (`UnNoyau_NeVoitDUnModeQueSesContracts`), et c'est sans conséquence tant que Daily est le seul mode. Avec Runs, la bonne forme sera l'inverse : Players expose un point d'extension (création de compte, effacement) dans ses propres `Contracts`, et chaque mode l'implémente.
+`IStreakGrants` reste le seul contrat de **Daily** appelé par **Players** : un noyau qui connaît un mode, exception nommée (`ModuleRules.NamedExceptions`) vérifiée par `UnNoyau_NeVoitAucunMode_SaufLesExceptionsNommees`. Le gel offert à la création d'un compte n'a pas encore de forme inversée.

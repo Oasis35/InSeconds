@@ -38,7 +38,7 @@ const STATUS_COLORS: Record<PlayerGameStatus, string> = {
                   </span>
                 }
               </span>
-              <span class="tabular-nums text-right" style="color:var(--text-hi)">{{ game.score ?? '—' }}</span>
+              <span class="tabular-nums text-right" style="color:var(--text-hi)">{{ game.score ?? '-' }}</span>
             </li>
           }
         </ul>

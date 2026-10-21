@@ -15,14 +15,23 @@ public sealed class AddTrackValidator : AbstractValidator<AddTrack>
 }
 
 /// <summary>Ce que l'ajout a trouvé : un doublon (sans appeler Deezer), ou la réponse de Deezer.</summary>
-public sealed record TrackToAdd(bool Duplicate, TrackMetadataLookup? Lookup);
+/// <param name="Album">Les genres de l'album du morceau, lus tout de suite (un appel de plus) : absents, le contrôle nocturne les rattrape.</param>
+public sealed record TrackToAdd(bool Duplicate, TrackMetadataLookup? Lookup, AlbumLookup? Album);
 
 public static class AddTrackEndpoint
 {
-    public static async Task<TrackToAdd> LoadAsync(AddTrack request, ICatalogueStore store, ITrackMetadataSource deezer, CancellationToken ct) =>
-        await store.DeezerIdTakenAsync(request.DeezerTrackId, null, ct)
-            ? new TrackToAdd(true, null)
-            : new TrackToAdd(false, await deezer.GetTrackAsync(request.DeezerTrackId, ct));
+    public static async Task<TrackToAdd> LoadAsync(
+        AddTrack request, ICatalogueStore store, ITrackMetadataSource deezer, IAlbumSource albums, CancellationToken ct)
+    {
+        if (await store.DeezerIdTakenAsync(request.DeezerTrackId, null, ct))
+            return new TrackToAdd(true, null, null);
+
+        var lookup = await deezer.GetTrackAsync(request.DeezerTrackId, ct);
+        // Le genre se lit sur l'album : un second appel, seulement si le morceau est trouvé et qu'il a un album. Une réponse Deezer
+        // indisponible n'empêche pas l'ajout (le contrôle nocturne rattrape).
+        var album = lookup is TrackMetadataLookup.Found { Track.AlbumId: { } albumId } ? await albums.GetAlbumAsync(albumId, ct) : null;
+        return new TrackToAdd(false, lookup, album);
+    }
 
     public static ProblemDetails Validate(TrackToAdd plan) => plan switch
     {
@@ -46,7 +55,19 @@ public static class AddTrackEndpoint
         AddTrack request, TrackToAdd plan, ICatalogueStore store, IOptionsMonitor<CatalogueOptions> options, TimeProvider time, CancellationToken ct)
     {
         var found = (TrackMetadataLookup.Found)plan.Lookup!;
-        var track = Track.Create(TrackMapping.ToMetadata(found.Track), time.GetUtcNow());
+        var now = time.GetUtcNow();
+        var track = Track.Create(TrackMapping.ToMetadata(found.Track), now);
+        switch (plan.Album)
+        {
+            case AlbumLookup.Found album:
+                track.RecordGenres(await store.EnsureGenresAsync([.. album.Genres.Select(g => new GenreRef(g.Id, g.Name))], ct), now);
+                break;
+            // Album supprimé chez Deezer : sans genre, et inutile de le redemander.
+            case AlbumLookup.NotFound:
+                track.RecordGenres([], now);
+                break;
+        }
+
         await store.AddAsync(track, ct);
         return TrackMapping.ToSummary(track, options.CurrentValue);
     }

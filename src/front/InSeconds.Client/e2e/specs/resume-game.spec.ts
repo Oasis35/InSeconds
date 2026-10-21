@@ -21,7 +21,7 @@ test.describe('Reprise de partie', () => {
     await round.chooseDuration(3);
     // Attendre que le PATCH /listening soit parti ET persisté avant de recharger
     await listeningPatch;
-    // Ne pas soumettre — recharger à la place
+    // Ne pas soumettre - recharger à la place
     await game.goto();
     await game.waitForResumePrompt();
     await game.resumeButton.click();
@@ -30,10 +30,10 @@ test.describe('Reprise de partie', () => {
     // les paliers 0.5, 1, 1.5, 2 (< 3s déjà écoutées) doivent être exclus par l'anti-cheat,
     // donc l'auto-play choisit directement 3s.
     await round.waitForAnswerInput();
-    await expect(page.getByText('3s / 3s')).toBeVisible();
+    await expect(round.timer).toHaveText(/^\s*3\ss \/ 3\ss\s*$/);
     // Le bouton « écouter plus » ne doit proposer que des paliers >= 3s (le suivant est 5s)
-    await expect(round.listenMoreButton).toHaveText(/▶ 5s/);
-    await expect(round.listenMoreButton).toHaveAttribute('title', /jusqu'à 5s/);
+    await expect(round.listenMoreButton).toHaveText(/▶ 5\ss/);
+    await expect(round.listenMoreButton).toHaveAttribute('title', /jusqu'à 5\ss/);
   });
 
   test('affiche l\'écran reprise si la session est en cours', async ({ page, api }) => {

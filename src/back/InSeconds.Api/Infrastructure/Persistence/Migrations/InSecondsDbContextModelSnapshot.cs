@@ -27,10 +27,16 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
             modelBuilder.HasSequence("challenges_hilo", "daily")
                 .IncrementsBy(10);
 
+            modelBuilder.HasSequence("challenges_hilo", "runs")
+                .IncrementsBy(10);
+
             modelBuilder.HasSequence("device_sessions_hilo", "players")
                 .IncrementsBy(10);
 
             modelBuilder.HasSequence("sessions_hilo", "daily")
+                .IncrementsBy(10);
+
+            modelBuilder.HasSequence("sessions_hilo", "runs")
                 .IncrementsBy(10);
 
             modelBuilder.HasSequence("tracks_hilo", "catalogue")
@@ -62,6 +68,23 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                     b.ToTable("settings", "infra");
                 });
 
+            modelBuilder.Entity("InSeconds.Api.Modules.Catalogue.Domain.Genre", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_genres");
+
+                    b.ToTable("genres", "catalogue");
+                });
+
             modelBuilder.Entity("InSeconds.Api.Modules.Catalogue.Domain.Track", b =>
                 {
                     b.Property<int>("Id")
@@ -70,6 +93,10 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasColumnName("id");
 
                     NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<int>("Id"), "tracks_hilo", "catalogue");
+
+                    b.Property<long?>("AlbumId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("album_id");
 
                     b.Property<string>("Artist")
                         .IsRequired()
@@ -95,6 +122,10 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset?>("DisabledAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("disabled_at");
+
+                    b.Property<DateTimeOffset?>("GenresCheckedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("genres_checked_at");
 
                     b.Property<DateTimeOffset?>("PreviewCheckedAt")
                         .HasColumnType("timestamp with time zone")
@@ -554,6 +585,231 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                     b.ToTable("players", "players");
                 });
 
+            modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunAccess", b =>
+                {
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<DateTimeOffset>("GrantedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("granted_at");
+
+                    b.HasKey("PlayerId")
+                        .HasName("pk_access");
+
+                    b.ToTable("access", "runs");
+                });
+
+            modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunAnswer", b =>
+                {
+                    b.Property<int>("SessionId")
+                        .HasColumnType("integer")
+                        .HasColumnName("session_id");
+
+                    b.Property<short>("Position")
+                        .HasColumnType("smallint")
+                        .HasColumnName("position");
+
+                    b.Property<DateTimeOffset>("AnsweredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("answered_at");
+
+                    b.Property<bool>("ArtistCorrect")
+                        .HasColumnType("boolean")
+                        .HasColumnName("artist_correct");
+
+                    b.Property<bool>("Neutralized")
+                        .HasColumnType("boolean")
+                        .HasColumnName("neutralized");
+
+                    b.Property<int>("Points")
+                        .HasColumnType("integer")
+                        .HasColumnName("points");
+
+                    b.Property<bool>("TitleCorrect")
+                        .HasColumnType("boolean")
+                        .HasColumnName("title_correct");
+
+                    b.HasKey("SessionId", "Position")
+                        .HasName("pk_answers1");
+
+                    b.ToTable("answers", "runs");
+                });
+
+            modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunChallenge", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<int>("Id"), "challenges_hilo", "runs");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("char(6)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Rules")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("rules");
+
+                    b.Property<int>("Seed")
+                        .HasColumnType("integer")
+                        .HasColumnName("seed");
+
+                    b.HasKey("Id")
+                        .HasName("pk_challenges1");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_challenges_code");
+
+                    b.HasIndex("CreatedBy")
+                        .HasDatabaseName("ix_challenges_created_by");
+
+                    b.ToTable("challenges", "runs");
+                });
+
+            modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunChallengeTrack", b =>
+                {
+                    b.Property<int>("ChallengeId")
+                        .HasColumnType("integer")
+                        .HasColumnName("challenge_id");
+
+                    b.Property<short>("Position")
+                        .HasColumnType("smallint")
+                        .HasColumnName("position");
+
+                    b.Property<decimal>("Multiplier")
+                        .HasPrecision(3, 2)
+                        .HasColumnType("numeric(3,2)")
+                        .HasColumnName("multiplier");
+
+                    b.Property<short>("Round")
+                        .HasColumnType("smallint")
+                        .HasColumnName("round");
+
+                    b.Property<int>("TrackId")
+                        .HasColumnType("integer")
+                        .HasColumnName("track_id");
+
+                    b.HasKey("ChallengeId", "Position")
+                        .HasName("pk_challenge_tracks1");
+
+                    b.HasIndex("TrackId")
+                        .HasDatabaseName("ix_challenge_tracks_track_id1");
+
+                    b.HasIndex("ChallengeId", "TrackId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_challenge_tracks_challenge_id_track_id1");
+
+                    b.ToTable("challenge_tracks", "runs");
+                });
+
+            modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunRecord", b =>
+                {
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<DateTimeOffset>("AchievedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("achieved_at");
+
+                    b.Property<short>("BestRoundsPassed")
+                        .HasColumnType("smallint")
+                        .HasColumnName("best_rounds_passed");
+
+                    b.Property<int>("BestScore")
+                        .HasColumnType("integer")
+                        .HasColumnName("best_score");
+
+                    b.Property<int>("SessionId")
+                        .HasColumnType("integer")
+                        .HasColumnName("session_id");
+
+                    b.HasKey("PlayerId")
+                        .HasName("pk_records");
+
+                    b.HasIndex("SessionId")
+                        .HasDatabaseName("ix_records_session_id");
+
+                    b.ToTable("records", "runs");
+                });
+
+            modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunSession", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<int>("Id"), "sessions_hilo", "runs");
+
+                    b.Property<int>("ChallengeId")
+                        .HasColumnType("integer")
+                        .HasColumnName("challenge_id");
+
+                    b.Property<decimal?>("CurrentListenedSeconds")
+                        .HasPrecision(4, 2)
+                        .HasColumnType("numeric(4,2)")
+                        .HasColumnName("current_listened_seconds");
+
+                    b.Property<short?>("CurrentPosition")
+                        .HasColumnType("smallint")
+                        .HasColumnName("current_position");
+
+                    b.Property<DateTimeOffset?>("EndedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ended_at");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<short>("RoundsPassed")
+                        .HasColumnType("smallint")
+                        .HasColumnName("rounds_passed");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<short>("Status")
+                        .HasColumnType("smallint")
+                        .HasColumnName("status");
+
+                    b.Property<int>("TotalScore")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_score");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sessions1");
+
+                    b.HasIndex("ChallengeId", "PlayerId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_sessions_challenge_player");
+
+                    b.HasIndex("PlayerId", "Status")
+                        .HasDatabaseName("ix_sessions_player_id_status");
+
+                    b.ToTable("sessions", "runs", t =>
+                        {
+                            t.HasCheckConstraint("ck_sessions_status", "status IN (0, 1, 2, 3)");
+                        });
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
                 {
                     b.Property<int>("Id")
@@ -671,6 +927,25 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("track_genres", b =>
+                {
+                    b.Property<int>("track_id")
+                        .HasColumnType("integer")
+                        .HasColumnName("track_id");
+
+                    b.Property<long>("genre_id")
+                        .HasColumnType("bigint")
+                        .HasColumnName("genre_id");
+
+                    b.HasKey("track_id", "genre_id")
+                        .HasName("pk_track_genres");
+
+                    b.HasIndex("genre_id")
+                        .HasDatabaseName("ix_track_genres_genre_id");
+
+                    b.ToTable("track_genres", "catalogue");
+                });
+
             modelBuilder.Entity("InSeconds.Api.Modules.Daily.Domain.ChallengeTrack", b =>
                 {
                     b.HasOne("InSeconds.Api.Modules.Daily.Domain.DailyChallenge", null)
@@ -773,12 +1048,119 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_legacy_tokens_player_player_id");
                 });
 
+            modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunAccess", b =>
+                {
+                    b.HasOne("InSeconds.Api.Modules.Players.Domain.Player", null)
+                        .WithMany()
+                        .HasForeignKey("PlayerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_access_players_player_id");
+                });
+
+            modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunAnswer", b =>
+                {
+                    b.HasOne("InSeconds.Api.Modules.Runs.Domain.RunSession", null)
+                        .WithMany("Answers")
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_answers_sessions_session_id");
+                });
+
+            modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunChallenge", b =>
+                {
+                    b.HasOne("InSeconds.Api.Modules.Players.Domain.Player", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_challenges_players_created_by");
+                });
+
+            modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunChallengeTrack", b =>
+                {
+                    b.HasOne("InSeconds.Api.Modules.Runs.Domain.RunChallenge", null)
+                        .WithMany("Tracks")
+                        .HasForeignKey("ChallengeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_challenge_tracks_challenges_challenge_id");
+
+                    b.HasOne("InSeconds.Api.Modules.Catalogue.Domain.Track", null)
+                        .WithMany()
+                        .HasForeignKey("TrackId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_challenge_tracks_tracks_track_id");
+                });
+
+            modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunRecord", b =>
+                {
+                    b.HasOne("InSeconds.Api.Modules.Players.Domain.Player", null)
+                        .WithMany()
+                        .HasForeignKey("PlayerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_records_players_player_id");
+
+                    b.HasOne("InSeconds.Api.Modules.Runs.Domain.RunSession", null)
+                        .WithMany()
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_records_run_session_session_id");
+                });
+
+            modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunSession", b =>
+                {
+                    b.HasOne("InSeconds.Api.Modules.Runs.Domain.RunChallenge", null)
+                        .WithMany()
+                        .HasForeignKey("ChallengeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sessions_challenges_challenge_id");
+
+                    b.HasOne("InSeconds.Api.Modules.Players.Domain.Player", null)
+                        .WithMany()
+                        .HasForeignKey("PlayerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sessions_players_player_id");
+                });
+
+            modelBuilder.Entity("track_genres", b =>
+                {
+                    b.HasOne("InSeconds.Api.Modules.Catalogue.Domain.Genre", null)
+                        .WithMany()
+                        .HasForeignKey("genre_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_track_genres_genres_genre_id");
+
+                    b.HasOne("InSeconds.Api.Modules.Catalogue.Domain.Track", null)
+                        .WithMany()
+                        .HasForeignKey("track_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_track_genres_tracks_track_id");
+                });
+
             modelBuilder.Entity("InSeconds.Api.Modules.Daily.Domain.DailyChallenge", b =>
                 {
                     b.Navigation("Tracks");
                 });
 
             modelBuilder.Entity("InSeconds.Api.Modules.Daily.Domain.DailySession", b =>
+                {
+                    b.Navigation("Answers");
+                });
+
+            modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunChallenge", b =>
+                {
+                    b.Navigation("Tracks");
+                });
+
+            modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunSession", b =>
                 {
                     b.Navigation("Answers");
                 });

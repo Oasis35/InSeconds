@@ -3,7 +3,7 @@ import { GamePage } from '../pages/game.page';
 import { BlindRoundPage } from '../pages/blind-round.page';
 
 // E4 (revue de code du 2026-09-25) : un échec de lecture de l'aperçu (URL de preview
-// expirée, autoplay refusé...) ne doit plus relancer `startPlay()` en boucle infinie —
+// expirée, autoplay refusé...) ne doit plus relancer `startPlay()` en boucle infinie -
 // l'effect() d'autoplay ne se redéclenche que sur `audio.isIdle()`, donc l'échec doit
 // basculer vers un état 'error' distinct, jamais 'idle'. Ce spec intercepte la requête
 // réseau réelle vers l'aperçu (`test-audio.mp3`, servi en mode Testing par FakeDeezerHandler,
@@ -66,7 +66,7 @@ test.describe('Échec de lecture audio', () => {
     await game.clickStart();
 
     // La lecture part sur la relance (le chrono passe de « … » au palier), sans message d'erreur.
-    await expect(round.timer).toHaveText(/s \/ 0\.5s\s*$/);
+    await expect(round.timer).toHaveText(/s \/ 0,5\s?s\s*$/);
     expect(failures).toBe(1);
     await expect(game.retryButton).not.toBeVisible();
     await round.submitEmpty();

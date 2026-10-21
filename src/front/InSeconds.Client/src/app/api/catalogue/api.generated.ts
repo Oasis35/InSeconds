@@ -653,8 +653,17 @@ export interface TrackListItem {
     previewStatus: string;
     previewCheckedAt: Date | undefined;
     isDisabled: boolean;
-    lastUsedDate: Date | undefined;
+    isUsed: boolean;
+    usages: TrackModeUsage[];
+    genres: string[];
+
+    [key: string]: any;
+}
+
+export interface TrackModeUsage {
+    mode: string;
     usageCount: number;
+    lastUsedDate: Date | undefined;
     unlockDate: Date | undefined;
     inTodayChallenge: boolean;
 

@@ -27,6 +27,9 @@ public class HandlerRulesTests
         "InSeconds.Api.Infrastructure.Settings.SettingsStore.SetAsync",
         // Reprise d'un cookie v1 par le middleware de transition, hors handler : l'appareil ouvert va dans le cookie.
         "InSeconds.Api.Modules.Players.Persistence.EfPlayerSessions.OpenFromLegacyTokenAsync",
+        // Contrôle nocturne des genres (catalogue-refresh, NonTransactional : plusieurs minutes de lots espacés) : un album à la fois, son
+        // propre enregistrement, jamais une transaction ouverte pendant les pauses.
+        "InSeconds.Api.Modules.Catalogue.Persistence.EfCatalogueStore.SaveAlbumGenresAsync",
         // Commande en ligne --freeze-day-stats : ni serveur ni Wolverine, une transaction par jour.
         "InSeconds.Api.Infrastructure.Hosting.FreezeDayStatsCommand.CloseOneAsync",
     ];
@@ -81,31 +84,29 @@ public class HandlerRulesTests
     }
 
     /// <summary>
-    /// Un noyau (Players, Catalogue) ne voit d'un mode que ses <c>Contracts</c> : Players appelle Daily par
-    /// <c>Daily.Contracts.IStreakGrants</c> (le gel offert à la création d'un compte), jamais par son domaine ou ses handlers.
+    /// Un noyau (Players, Catalogue) ne connaît **aucun mode** (Daily, plus tard Runs), pas même par ses <c>Contracts</c>, à une seule exception
+    /// nommée (<see cref="ModuleRules.NamedExceptions"/> : <c>Daily.Contracts.IStreakGrants</c>, le gel offert à la création d'un compte). Le sens
+    /// normal est l'inverse : un mode implémente un contrat du noyau (<c>IPlayerDataContributor</c> pour les droits RGPD, <c>ITrackUsage</c> pour
+    /// l'usage des morceaux), que le noyau appelle sans savoir quel mode le fournit.
     /// </summary>
     [Fact]
-    public void UnNoyau_NeVoitDUnModeQueSesContracts()
+    public void UnNoyau_NeVoitAucunMode_SaufLesExceptionsNommees()
     {
-        // NetArchTest compare par préfixe : la racine Daily couvrirait Daily.Contracts, ses types sont donc nommés un à un.
-        var root = $"{ModulesNamespace}.Daily";
-        var daily = Api.GetTypes()
-            .Where(t => t.Namespace is not null
-                && (t.Namespace == root || t.Namespace.StartsWith(root + ".", StringComparison.Ordinal))
-                && !t.Namespace.StartsWith($"{root}.Contracts", StringComparison.Ordinal))
-            .Select(t => t.Namespace == root ? t.FullName! : t.Namespace!)
-            .Distinct()
-            .ToArray();
-        Assert.Contains($"{root}.Domain", daily);
-
-        foreach (var core in new[] { "Players", "Catalogue" })
+        foreach (var mode in ModuleRules.Modes)
         {
-            var result = Types.InAssembly(Api)
-                .That().ResideInNamespace($"{ModulesNamespace}.{core}")
-                .ShouldNot().HaveDependencyOnAny(daily)
-                .GetResult();
+            var forbidden = ModuleRules.TypesOf(Api, mode);
+            // Un renommage du dossier d'un mode ne doit pas faire passer la règle à vide.
+            Assert.Contains(forbidden, name => name.StartsWith($"{ModuleRules.Namespace(mode)}.Domain.", StringComparison.Ordinal));
 
-            Assert.True(result.IsSuccessful, $"{core} : {string.Join(", ", result.FailingTypeNames ?? [])}");
+            foreach (var core in ModuleRules.Cores)
+            {
+                var result = Types.InAssembly(Api)
+                    .That().ResideInNamespace(ModuleRules.Namespace(core))
+                    .ShouldNot().HaveDependencyOnAny(forbidden)
+                    .GetResult();
+
+                Assert.True(result.IsSuccessful, $"{core} voit {mode} : {string.Join(", ", result.FailingTypeNames ?? [])}");
+            }
         }
     }
 

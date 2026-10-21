@@ -9,11 +9,13 @@ namespace InSeconds.Api.Modules.Daily.Persistence;
 
 /// <summary>
 /// L'usage des morceaux par le jeu, **calculé** sur <c>challenge_tracks</c> et <c>challenges.date</c> (§ 4.4 du plan v2) :
-/// rien n'est stocké sur le morceau, donc rien à garder cohérent. Remplace <c>NoTrackUsage</c> de Catalogue. Le cooldown se déduit de la
+/// rien n'est stocké sur le morceau, donc rien à garder cohérent. C'est l'usage du Daily, que Catalogue réunit à celui des autres modes. Le cooldown se déduit de la
 /// taille du pool à chaque appel (<see cref="TrackCooldownPolicy"/>, #275).
 /// </summary>
-public sealed class EfTrackUsage(InSecondsDbContext db, TrackCooldownPolicy cooldown, IGameCalendar calendar) : ITrackUsage
+public sealed class EfTrackUsage(InSecondsDbContext db, TrackCooldownPolicy cooldown, IGameCalendar calendar) : IDailyTrackUsage
 {
+    public string Mode => "daily";
+
     public async Task<IReadOnlyDictionary<int, TrackUsage>> GetAsync(IReadOnlyCollection<int> trackIds, CancellationToken ct)
     {
         var ids = trackIds.Distinct().ToArray();

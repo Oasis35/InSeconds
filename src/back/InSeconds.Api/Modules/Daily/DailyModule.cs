@@ -4,7 +4,7 @@ using InSeconds.Api.Modules.Daily.Application;
 using InSeconds.Api.Modules.Daily.Contracts;
 using InSeconds.Api.Modules.Daily.Domain;
 using InSeconds.Api.Modules.Daily.Persistence;
-using Microsoft.Extensions.DependencyInjection.Extensions;
+using InSeconds.Api.Modules.Players.Contracts;
 
 namespace InSeconds.Api.Modules.Daily;
 
@@ -30,15 +30,22 @@ public static class DailyModule
         services.AddSingleton<DailyMetrics>();
         // Le cooldown des morceaux, déduit de la taille du pool à chaque appel (#275).
         services.AddScoped<TrackCooldownPolicy>();
-        // L'usage réel des morceaux, calculé sur les défis : remplace « aucun usage » de Catalogue (enregistré par
-        // AddCatalogue, appelé avant). ITrackUsage est résolu par le conteneur dans le code généré (service location).
-        services.Replace(ServiceDescriptor.Scoped<ITrackUsage, EfTrackUsage>());
+        // L'usage réel des morceaux, calculé sur les défis. **Ajouté, jamais remplacé** : Catalogue réunit l'ITrackUsage de chaque mode
+        // (ITrackPoolUsage). Le tirage du jour injecte IDailyTrackUsage (résolu par le conteneur dans le code généré : service location).
+        services.AddScoped<EfTrackUsage>();
+        services.AddScoped<IDailyTrackUsage>(sp => sp.GetRequiredService<EfTrackUsage>());
+        services.AddScoped<ITrackUsage>(sp => sp.GetRequiredService<EfTrackUsage>());
         services.AddScheduledJob<GenerateDailyChallengeJob>(GenerateDailyChallengeJob.Id, GenerateDailyChallengeJob.DefaultCron);
         // Fige les statistiques de l'avant-veille (§ 5.4 bis). Tourne aussi en staging : elle n'appelle pas Deezer.
         services.AddScheduledJob<DailyCloseDayJob>(DailyCloseDayJob.Id, DailyCloseDayJob.DefaultCron);
         services.AddScoped<IStreakGrants, DailyStreakGrants>();
-        // La copie et l'effacement des données de jeu d'un joueur (ses droits RGPD), pour Players.
-        services.AddScoped<IPlayerGameData, EfPlayerGameData>();
         return services;
     }
+
+    /// <summary>
+    /// La copie et l'effacement des données de jeu d'un joueur (ses droits RGPD) : Daily est un contributeur de Players. Enregistré par
+    /// <c>ApiComposition.AddPlayerDataContributors</c>, partagé par l'API et la commande de secours, jamais par <see cref="AddDaily"/>.
+    /// </summary>
+    public static IServiceCollection AddDailyPlayerData(this IServiceCollection services) =>
+        services.AddScoped<IPlayerDataContributor, DailyPlayerData>();
 }

@@ -9,7 +9,7 @@ Format : téléphone, 390 × 844. Les textes des maquettes sont ceux à reprendr
 | Élément | Composant existant | Différence en run |
 |---|---|---|
 | Lecteur | `RoundPlayerComponent` (`gameplay/ui`) | écoute de 10 s d'un coup : pas de bouton « ▶ Xs » ni d'« écouter plus » |
-| Saisie | champ avec autocomplétion de la manche (`app-track-round`) | placeholder « Artiste - Titre » avec un tiret simple (le Daily garde « — » tant que Clément n'a pas demandé d'aligner) |
+| Saisie | champ avec autocomplétion de la manche (`app-track-round`) | placeholder « Artiste - Titre » avec un tiret simple (le Daily garde « - » tant que Clément n'a pas demandé d'aligner) |
 | Valider, Passer, confirmations en ligne | boutons et confirmations de la manche du Daily | aucune |
 | Lien « Abandonner » | celui de `daily-progress` (12 px, souligné, discret) | placé à gauche de l'en-tête |
 | Forme de la pochette | `reveal-card` (forme organique) | taille 96 px dans la carte de réponse |

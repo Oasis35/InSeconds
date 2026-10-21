@@ -12,7 +12,7 @@ import { ChallengeTrackStats, rateColor } from '../domain/challenge';
     @let t = track();
     <div class="rounded-lg p-3 flex flex-col gap-2" style="background:var(--bg-inactive)">
       <div class="flex items-start justify-between gap-2">
-        <p class="text-xs font-medium" style="color:var(--text-hi)">{{ t.position }}. {{ t.artist }} — {{ t.title }}</p>
+        <p class="text-xs font-medium" style="color:var(--text-hi)">{{ t.position }}. {{ t.artist }} - {{ t.title }}</p>
         <button type="button" (click)="showChart.emit(t)"
           class="shrink-0 -my-0.5 w-6 h-6 flex items-center justify-center rounded-md transition-colors hover:bg-white/[0.06]"
           style="color:var(--text-muted)" [attr.aria-label]="'admin.challenges.showChart' | translate">
@@ -37,7 +37,7 @@ import { ChallengeTrackStats, rateColor } from '../domain/challenge';
         <div class="flex flex-col gap-0.5">
           <span style="color:var(--text-muted)">{{ 'admin.dashboard.avgListen' | translate }}</span>
           <span class="font-medium" style="color:var(--text-light)">
-            @if (t.avgListenedSeconds !== null) { {{ t.avgListenedSeconds }}s } @else { — }
+            @if (t.avgListenedSeconds !== null) { {{ t.avgListenedSeconds }}s } @else { - }
           </span>
         </div>
       </div>

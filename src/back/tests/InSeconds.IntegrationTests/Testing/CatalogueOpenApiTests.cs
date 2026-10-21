@@ -73,7 +73,7 @@ public class CatalogueOpenApiTests(PostgresFixture postgres) : IAsyncLifetime
     {
         var properties = (await ReadDocumentAsync())["components"]!["schemas"]!["TrackListItem"]!["properties"]!;
 
-        Assert.Equal("integer", properties["usageCount"]!["type"]!.GetValue<string>());
+        Assert.Equal("integer", (await ReadDocumentAsync())["components"]!["schemas"]!["TrackModeUsage"]!["properties"]!["usageCount"]!["type"]!.GetValue<string>());
         // L'année et le rang peuvent être absents (morceau repris, jamais contrôlé).
         Assert.Equal(["integer", "null"], properties["releaseYear"]!["type"]!.AsArray().Select(t => t!.GetValue<string>()).Order(StringComparer.Ordinal));
         Assert.Equal(["integer", "null"], properties["rank"]!["type"]!.AsArray().Select(t => t!.GetValue<string>()).Order(StringComparer.Ordinal));

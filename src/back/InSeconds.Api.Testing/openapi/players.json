@@ -511,16 +511,6 @@
         ],
         "operationId": "exportMyData",
         "responses": {
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -533,6 +523,16 @@
           },
           "204": {
             "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -554,6 +554,19 @@
           "required": true
         },
         "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -570,19 +583,6 @@
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "204": {
-            "description": "No Content"
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
                 }
               }
             }
@@ -929,104 +929,6 @@
           }
         }
       },
-      "GameExport": {
-        "required": [
-          "date",
-          "status",
-          "startedAt",
-          "endedAt",
-          "totalScore",
-          "tracks"
-        ],
-        "type": "object",
-        "properties": {
-          "date": {
-            "type": "string",
-            "format": "date"
-          },
-          "status": {
-            "type": "string"
-          },
-          "startedAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "endedAt": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          },
-          "totalScore": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "tracks": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/GameTrackExport"
-            }
-          }
-        }
-      },
-      "GameTrackExport": {
-        "required": [
-          "position",
-          "artist",
-          "title",
-          "listenedSeconds",
-          "hintLevel",
-          "artistFound",
-          "titleFound",
-          "score",
-          "answeredAt"
-        ],
-        "type": "object",
-        "properties": {
-          "position": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "artist": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "title": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "listenedSeconds": {
-            "type": "number",
-            "format": "double"
-          },
-          "hintLevel": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "artistFound": {
-            "type": "boolean"
-          },
-          "titleFound": {
-            "type": "boolean"
-          },
-          "score": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "answeredAt": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          }
-        }
-      },
       "PlayerDataExport": {
         "required": [
           "exportedAt",
@@ -1035,8 +937,7 @@
           "lastSeenAt",
           "account",
           "devices",
-          "streak",
-          "games"
+          "modules"
         ],
         "type": "object",
         "properties": {
@@ -1075,46 +976,8 @@
               "$ref": "#/components/schemas/DeviceExport"
             }
           },
-          "streak": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/StreakExport"
-              }
-            ]
-          },
-          "games": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/GameExport"
-            }
-          }
-        }
-      },
-      "StreakExport": {
-        "required": [
-          "currentStreak",
-          "lastPlayedDate",
-          "freezes"
-        ],
-        "type": "object",
-        "properties": {
-          "currentStreak": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "lastPlayedDate": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date"
-          },
-          "freezes": {
-            "type": "integer",
-            "format": "int32"
+          "modules": {
+            "type": "object"
           }
         }
       }

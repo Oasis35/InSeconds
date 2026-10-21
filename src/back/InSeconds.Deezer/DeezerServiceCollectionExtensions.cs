@@ -19,7 +19,7 @@ public sealed class DeezerOptions
 public static class DeezerServiceCollectionExtensions
 {
     /// <summary>
-    /// Enregistre le client Deezer et ses trois ports, tous le client brut, l'état réel chez Deezer.
+    /// Enregistre le client Deezer et ses quatre ports, tous le client brut, l'état réel chez Deezer.
     /// <see cref="IPreviewProvider"/> n'a pas de cache : Deezer signe ses adresses d'extrait pour 15 min
     /// seulement (piège 14). La recherche publique demande <see cref="CachedTrackSearch"/>. Ce sont des
     /// fabriques : l'API déclare ces types à Wolverine (<see cref="ServiceLocationTypes"/>).
@@ -43,6 +43,7 @@ public static class DeezerServiceCollectionExtensions
         }
 
         services.AddTransient<ITrackMetadataSource>(sp => sp.GetRequiredService<DeezerClient>());
+        services.AddTransient<IAlbumSource>(sp => sp.GetRequiredService<DeezerClient>());
         services.AddTransient<ITrackSearch>(sp => sp.GetRequiredService<DeezerClient>());
         services.AddTransient<IPreviewProvider>(sp => sp.GetRequiredService<DeezerClient>());
         services.AddTransient(sp => new CachedTrackSearch(
@@ -55,7 +56,7 @@ public static class DeezerServiceCollectionExtensions
     /// HTTP typé, décorateur), il ne peut pas les construire lui-même.
     /// </summary>
     public static IReadOnlyList<Type> ServiceLocationTypes { get; } =
-        [typeof(IPreviewProvider), typeof(ITrackSearch), typeof(ITrackMetadataSource), typeof(CachedTrackSearch)];
+        [typeof(IPreviewProvider), typeof(ITrackSearch), typeof(ITrackMetadataSource), typeof(IAlbumSource), typeof(CachedTrackSearch)];
 
     /// <summary>
     /// Remplace le transport HTTP du client Deezer (l'hôte de test y met son faux). Les tests ne parlent

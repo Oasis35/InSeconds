@@ -179,7 +179,7 @@ export const DailyGameStore = signalStore(
       trackId: position,
       previewUrl: store.tracks().find(t => t.position === position)?.previewUrl || null,
       listen: { steps: settings.allowedDurationsSeconds, extendable: true },
-      hints: { unlockSeconds: settings.hints.map(h => h.unlockSeconds), kinds: settings.hints.map(h => h.kind) },
+      hints: { unlockSeconds: settings.hints.map(h => h.unlockSeconds), kinds: settings.hints.map(h => h.kind), penaltyPercents: settings.hints.map(h => h.penaltyPercent) },
       // Reprise : le plancher d'écoute et les indices déjà payés du morceau en cours.
       listenedFloor: resumed && resumed.listenedSeconds > 0 ? resumed.listenedSeconds : null,
       hintLevel: resumed?.hintLevel ?? 0,
