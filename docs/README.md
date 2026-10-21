@@ -1,4 +1,4 @@
-# InSeconds 🎵 — COMMENCE ICI
+# InSeconds 🎵 - COMMENCE ICI
 
 > **Point d'entrée** de la documentation projet. Pour le quick start utilisateur, voir [README.fr.md](../README.fr.md) à la racine. Pour les conventions code et pièges connus, voir [CLAUDE.md](../CLAUDE.md).
 
@@ -17,7 +17,7 @@ InSeconds est un **blind test musical quotidien**. La lecture démarre au palier
 | Tests | xUnit v3 + Testcontainers, tests d'architecture (NetArchTest), Vitest en mode navigateur, Sheriff (frontières du front), Playwright |
 | CI | GitHub Actions (check agrégateur « CI OK »), Dependabot, SonarCloud |
 | Observabilité | OpenTelemetry (logs, traces, métriques) → Grafana Cloud, erreurs front relayées par l'API |
-| Déploiement | VPS OVH (Debian) — front + API + Postgres en Docker derrière Caddy et Cloudflare, déploiement par la CI |
+| Déploiement | VPS OVH (Debian) - front + API + Postgres en Docker derrière Caddy et Cloudflare, déploiement par la CI |
 
 ## Architecture en deux mots
 

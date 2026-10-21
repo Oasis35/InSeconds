@@ -35,7 +35,7 @@ Chaque PR arrive en prod par le merge `env/staging → main`. Aucune ne doit lai
 
 | Étape | Ticket | Contenu | Dépend de |
 |---|---|---|---|
-| **P1** | [#362](https://github.com/Oasis35/InSeconds/issues/362) | Préparer Players et Catalogue (**aucun code Runs**) : `IPlayerDataContributor`, usage des morceaux par plusieurs modes, `TrackInfo.DeezerRank`, contrôle nocturne de tout le pool, tests d'architecture « un mode » | — |
+| **P1** | [#362](https://github.com/Oasis35/InSeconds/issues/362) | Préparer Players et Catalogue (**aucun code Runs**) : `IPlayerDataContributor`, usage des morceaux par plusieurs modes, `TrackInfo.DeezerRank`, contrôle nocturne de tout le pool, tests d'architecture « un mode » | - |
 | **P1b** | [#389](https://github.com/Oasis35/InSeconds/issues/389) | Pool admin général (**aucun code Runs**) : `isUsed` et usage par mode fournis par le back (`usages[]`), onglet Pool sans notion du Daily (compteur neutre, pastilles par mode, filtre « Joué par »), vue Daily dans un sélecteur horizontal | P1 |
 | P0 (facultatif) | [#361](https://github.com/Oasis35/InSeconds/issues/361) | Genre de l'album dans le catalogue | P1, P1b |
 | **P2** | [#364](https://github.com/Oasis35/InSeconds/issues/364) | Socle Runs (**aucune route de jeu**) : module, schéma et migration, défi et tirage, réglages, accès (`runs.access`, routes admin, interrupteur de l'onglet Joueurs), contributeurs Runs (RGPD, usage) | P1, P1b |
@@ -55,8 +55,8 @@ Proposition du 17/10/2026, à itérer. Elle n'est pas dans le proto 1.
 |---|---|---|---|
 | **Atouts** | jokers | passifs, toute la partie | 3 |
 | **Coups de pouce** | cartes tarot | usage unique, sur le morceau en cours | 2 |
-| **Choix de la manche** | choix du blind / des packs | s'applique à la manche suivante | — |
-| **Contraintes** | blinds boss | imposées (manche boss) ou acceptées contre une récompense (pactes) | — |
+| **Choix de la manche** | choix du blind / des packs | s'applique à la manche suivante | - |
+| **Contraintes** | blinds boss | imposées (manche boss) ou acceptées contre une récompense (pactes) | - |
 
 - **Gagner un bonus** : en fin de manche, le joueur choisit **1 offre parmi 3**, ou refuse. Dépasser largement la jauge donne des offres plus rares.
 - **Emplacements pleins** : le joueur remplace un bonus ou refuse l'offre. C'est ce qui l'oblige à composer un jeu.
