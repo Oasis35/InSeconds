@@ -15,6 +15,7 @@ describe('httpErrorReportingInterceptor', () => {
     reporting = {
       report: vi.fn().mockName('ErrorReportingService.report'),
       setLastErrorCode: vi.fn().mockName('ErrorReportingService.setLastErrorCode'),
+      isLeavingPage: vi.fn().mockName('ErrorReportingService.isLeavingPage').mockReturnValue(false),
     } as never;
     TestBed.configureTestingModule({
       providers: [
@@ -53,6 +54,26 @@ describe('httpErrorReportingInterceptor', () => {
     await flushMicrotasks();
 
     expect(reporting.report).toHaveBeenCalledWith(expect.objectContaining({ source: 'http', httpStatus: 0 }));
+  });
+
+  it('ignore un échec réseau pendant le départ de la page (requête coupée par un rechargement)', async () => {
+    reporting.isLeavingPage.mockReturnValue(true);
+    http.get('/api/admin/daily/challenges').subscribe({ error: () => undefined });
+
+    httpMock.expectOne('/api/admin/daily/challenges').error(new ProgressEvent('abort'), { status: 0 });
+    await flushMicrotasks();
+
+    expect(reporting.report).not.toHaveBeenCalled();
+  });
+
+  it('remonte encore un 5xx pendant le départ de la page', async () => {
+    reporting.isLeavingPage.mockReturnValue(true);
+    http.get('/api/daily/today').subscribe({ error: () => undefined });
+
+    httpMock.expectOne('/api/daily/today').flush({ traceId }, { status: 502, statusText: 'Bad Gateway' });
+    await flushMicrotasks();
+
+    expect(reporting.report).toHaveBeenCalledWith(expect.objectContaining({ httpStatus: 502 }));
   });
 
   it('ignore les réponses métier 4xx', async () => {
