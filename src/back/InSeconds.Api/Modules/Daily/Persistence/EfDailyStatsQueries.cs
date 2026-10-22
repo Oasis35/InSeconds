@@ -118,6 +118,14 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
             .Take(take)
             .ToListAsync(ct);
 
+    public async Task<RecentChallenge?> FindChallengeWithSnapshotAsync(DateOnly day, CancellationToken ct) =>
+        await (from c in db.Set<DailyChallenge>().AsNoTracking()
+               join s in db.Set<DayStatsSnapshot>().AsNoTracking() on c.Id equals s.ChallengeId into snapshots
+               from snapshot in snapshots.DefaultIfEmpty()
+               where c.Date == day
+               select new RecentChallenge(c.Id, c.Date, snapshot == null ? null : snapshot.Payload, snapshot == null ? null : snapshot.ComputedAt))
+            .FirstOrDefaultAsync(ct);
+
     public async Task<IReadOnlyList<ChallengeListRow>> ListChallengesAsync(CancellationToken ct)
     {
         var rows = await db.Set<DailyChallenge>().AsNoTracking()

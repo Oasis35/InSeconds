@@ -18,7 +18,14 @@
 	tls {
 		dns cloudflare {env.CF_API_TOKEN}
 	}
-	reverse_proxy inseconds.front:8080
+	# Le plan du site est servi par l'API : il liste les jours publiés, qui changent chaque nuit
+	# (#407). Le sitemap.xml statique du front ne sert plus que si cette route manque.
+	handle /sitemap.xml {
+		reverse_proxy inseconds.api:8080
+	}
+	handle {
+		reverse_proxy inseconds.front:8080
+	}
 }
 
 {$API_DOMAIN} {
@@ -36,7 +43,12 @@ dev.inseconds.cc {
 	tls {
 		dns cloudflare {env.CF_API_TOKEN}
 	}
-	reverse_proxy inseconds-staging.front:8080
+	handle /sitemap.xml {
+		reverse_proxy inseconds-staging.api:8080
+	}
+	handle {
+		reverse_proxy inseconds-staging.front:8080
+	}
 }
 
 api-dev.inseconds.cc {

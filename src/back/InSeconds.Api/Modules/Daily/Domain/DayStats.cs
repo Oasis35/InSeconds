@@ -34,6 +34,12 @@ public static class ScoreDistribution
 {
     public const int BucketCount = 10;
 
+    /// <summary>
+    /// Sous ce nombre de parties terminées, un pourcentage ne dit rien (et trahirait la réponse de chaque joueur) : ni « tu as fait mieux que X % »
+    /// à l'écran « déjà joué », ni statistiques sur la page d'un jour passé. La seule définition du seuil : le front lit ce que le serveur rend.
+    /// </summary>
+    public const int MinPlayersForPercent = 5;
+
     public static IReadOnlyList<ScoreBucket> Build(IReadOnlyCollection<int> scores, int maxPossibleScore)
     {
         ArgumentNullException.ThrowIfNull(scores);
@@ -51,13 +57,14 @@ public static class ScoreDistribution
     }
 
     /// <summary>
-    /// Part (en %, arrondie) des **autres** joueurs dont le score est strictement inférieur à celui-ci. Vide si le joueur n'a pas de score ou joue
-    /// seul : son score fait partie de <paramref name="scores"/>, on le retire une fois du dénominateur.
+    /// Part (en %, arrondie) des **autres** joueurs dont le score est strictement inférieur à celui-ci. Vide si le joueur n'a pas de score, ou
+    /// sous <see cref="MinPlayersForPercent"/> parties terminées : son score fait partie de <paramref name="scores"/>, on le retire une fois du
+    /// dénominateur.
     /// </summary>
     public static int? BetterThanPercent(IReadOnlyCollection<int> scores, int? yourScore)
     {
         ArgumentNullException.ThrowIfNull(scores);
-        if (yourScore is null || scores.Count <= 1)
+        if (yourScore is null || scores.Count < MinPlayersForPercent)
             return null;
 
         var below = scores.Count(s => s < yourScore.Value);

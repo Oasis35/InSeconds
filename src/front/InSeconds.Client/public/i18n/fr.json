@@ -618,6 +618,7 @@
       "ariaLabel": "À écouter sur Deezer"
     },
     "footer": {
+      "archive": "Réponses des jours passés",
       "admin": "Admin",
       "privacy": "Confidentialité & mentions légales",
       "contact": "Nous contacter",
@@ -727,6 +728,36 @@
       "challengeText": "Je joue à InSeconds, un blind test par jour. Tu fais mieux que moi ?\n{{ url }}",
       "copied": "Lien copié, tu n'as plus qu'à le coller",
       "copyFailed": "Impossible de copier dans le presse-papier."
+    },
+    "archive": {
+      "titlePrefix": "Blind test du",
+      "previousDay": "Jour précédent",
+      "nextDay": "Jour suivant",
+      "pickDate": "Choisir un autre jour (affiché : {{ date }})",
+      "mostMissed": "le plus raté",
+      "players": "Joueurs",
+      "you": "Toi",
+      "artistFound": "Artiste trouvé",
+      "titleFound": "Titre trouvé",
+      "artistRight": "Artiste trouvé",
+      "artistWrong": "Artiste raté",
+      "titleRight": "Titre trouvé",
+      "titleWrong": "Titre raté",
+      "calendarTitle": "Choisir un défi",
+      "previousMonth": "Mois précédent",
+      "nextMonth": "Mois suivant",
+      "calendarNote": "Le défi d'un jour arrive ici dès le lendemain.",
+      "yesterdayAnswers": "Les réponses d'hier",
+      "seeYesterday": "Voir les réponses d'hier",
+      "median": "Médiane",
+      "notFoundTitle": "Pas de réponses pour ce jour",
+      "notFoundBody": "Les réponses d'un défi sont publiées dès le lendemain.",
+      "latest": "Voir les réponses d'hier",
+      "playersScores": "Scores des joueurs",
+      "tooFewPlayers": "Pas assez de joueurs ce jour-là pour afficher des statistiques.",
+      "playToday": "Joue le défi d'aujourd'hui",
+      "pageTitle": "Blind test du {{ date }} : {{ artists }}",
+      "pageDescription": "Les réponses du blind test InSeconds du {{ date }} : {{ artists }}. Ce que les joueurs ont trouvé, et en combien de temps."
     }
   },
   "privacy": {

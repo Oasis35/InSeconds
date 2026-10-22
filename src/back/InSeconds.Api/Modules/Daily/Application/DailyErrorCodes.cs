@@ -23,6 +23,12 @@ public static class DailyErrorCodes
 
     public const string AlreadyAnswered = "daily.already_answered";
 
+    /// <summary>
+    /// Les réponses de ce jour ne sont pas publiées : date mal écrite, pas de défi ce jour-là, ou le défi du jour même (on ne publie qu'à partir du
+    /// lendemain).
+    /// </summary>
+    public const string ArchiveNotAvailable = "daily.archive_not_available";
+
     /// <summary>Le palier annoncé est inférieur à la durée que le serveur a vu écouter sur ce morceau (anti-triche).</summary>
     public const string ListenedBelowMinimum = "daily.listened_duration_below_verified_minimum";
 }

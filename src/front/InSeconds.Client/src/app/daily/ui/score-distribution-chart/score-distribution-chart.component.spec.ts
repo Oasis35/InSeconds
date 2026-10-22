@@ -1,6 +1,6 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { TranslateService, provideTranslateService } from '@ngx-translate/core';
-import { ScoreDistributionChartComponent, MIN_PLAYERS_FOR_PERCENT } from './score-distribution-chart.component';
+import { ScoreDistributionChartComponent } from './score-distribution-chart.component';
 import { DayStats } from '../../domain/daily';
 
 // Pas de fixture.detectChanges() (comme guess-time-chart) : le template utilise TranslatePipe.
@@ -118,19 +118,24 @@ describe('ScoreDistributionChartComponent', () => {
     expect(chart.highest).toBeNull();
   });
 
-  it(`shows the percentage from ${MIN_PLAYERS_FOR_PERCENT} players, including 0 %`, () => {
-    fixture.componentRef.setInput('stats', stats({ totalPlayers: MIN_PLAYERS_FOR_PERCENT, betterThanPercent: 0 }));
+  it('shows the percentage the API gives, including 0 %', () => {
+    fixture.componentRef.setInput('stats', stats({ betterThanPercent: 0 }));
     expect(component['betterThanPercent']()).toBe(0);
   });
 
-  it(`hides the percentage under ${MIN_PLAYERS_FOR_PERCENT} players but keeps the chart`, () => {
-    fixture.componentRef.setInput('stats', stats({ totalPlayers: MIN_PLAYERS_FOR_PERCENT - 1, betterThanPercent: 67 }));
+  it('hides the percentage when the API has none (under 5 players, or without score) but keeps the chart', () => {
+    fixture.componentRef.setInput('stats', stats({ totalPlayers: 4, betterThanPercent: null }));
     expect(component['betterThanPercent']()).toBeNull();
     expect(component['chart']()).not.toBeNull();
   });
 
-  it('hides the percentage when the API has none (player alone or without score)', () => {
-    fixture.componentRef.setInput('stats', stats({ betterThanPercent: null }));
-    expect(component['betterThanPercent']()).toBeNull();
+  it('draws a past day from percentages, without any player count', () => {
+    fixture.componentRef.setInput('stats', {
+      yourScore: null, medianScore: 2450, minScore: 350, maxScore: 4650, maxPossibleScore: 5000,
+      scoreDistribution: buckets([4, 2, 9, 11, 26, 19, 15, 6, 4, 4]), betterThanPercent: null,
+    });
+    const chart = component['chart']()!;
+    expect(chart.median?.value).toBe(2450);
+    expect(litCells(4)).toHaveLength(6);
   });
 });

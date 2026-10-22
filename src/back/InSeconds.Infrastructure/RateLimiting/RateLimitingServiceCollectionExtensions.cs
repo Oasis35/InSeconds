@@ -39,6 +39,8 @@ public static class RateLimitingServiceCollectionExtensions
             [RateLimitPolicies.ClientErrorReport] = (20, TimeSpan.FromMinutes(5), PartitionBy.Ip),
             // L'autocomplétion envoie plusieurs requêtes par recherche, parfois derrière un NAT partagé.
             [RateLimitPolicies.CatalogueSearch] = (60, TimeSpan.FromMinutes(5), PartitionBy.Ip),
+            // Large : chaque jour feuilleté fait deux requêtes (les réponses de tous, la partie du joueur), parfois derrière un NAT partagé.
+            [RateLimitPolicies.DailyArchive] = (300, TimeSpan.FromMinutes(5), PartitionBy.Ip),
         };
 
     /// <param name="playerKey">
