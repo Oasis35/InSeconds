@@ -1,0 +1,80 @@
+<div class="da-bg min-h-dvh flex flex-col relative" style="color:var(--text-body)">
+  <app-decor-background />
+
+  <main class="relative flex-1 flex flex-col p-5 w-full max-w-lg mx-auto overflow-x-clip">
+    @switch (store.screen()) {
+      @case ('loading') {
+        <div class="flex-1 flex items-center justify-center">
+          <p class="text-sm animate-pulse" style="color:var(--text-faint)">{{ 'runs.common.loading' | translate }}</p>
+        </div>
+      }
+
+      @case ('welcome') {
+        <app-run-welcome-screen [record]="store.record()" [hasPending]="store.hasPending()" (start)="store.begin()" />
+      }
+
+      @case ('playing') {
+        <div class="screen-enter flex-1 flex flex-col gap-4 pt-2">
+          @if (store.shownRound(); as shown) {
+            <app-run-header [round]="shown.round" [rounds]="store.rounds()" [score]="store.totalScore()" (abandon)="confirmAbandon()" />
+            <app-run-objective [round]="shown" [gain]="store.gain()" />
+            <app-run-pills [pills]="store.pills()" [position]="store.positionInRound()" />
+          }
+
+          @if (store.revealed(); as revealed) {
+            <app-run-answer-card [track]="revealed" (next)="store.nextTrack()" />
+          }
+
+          <!-- La manche reste montée : elle garde l'autocomplétion et rejoue l'extrait en entier après la réponse ; elle ne montre rien de plus. -->
+          <app-track-round (answered)="onAnswered($event)" />
+        </div>
+      }
+
+      <!-- Provisoire : le bilan d'une manche et la fin de partie prennent leur forme définitive avec les maquettes (P4b). -->
+      @case ('round_end') {
+        <div class="screen-enter flex-1 flex flex-col items-center justify-center gap-5 text-center px-4" data-testid="run-round-end">
+          @if (store.summaries()[0]; as summary) {
+            <h2 class="text-xl font-bold" style="font-family:var(--font-display);color:var(--text-hi)">
+              {{ 'runs.roundEnd.title' | translate: { round: summary.round } }}
+            </h2>
+            <p class="text-sm" style="color:var(--text-light)">{{ summary.score }} / {{ summary.objective }} {{ 'runs.objective.points' | translate }}</p>
+          }
+          <button type="button" (click)="store.nextRound()" data-testid="run-next-round"
+            class="w-full max-w-xs py-4 rounded-(--radius-button) text-sm font-bold tracking-wide uppercase transition touch-manipulation"
+            style="font-family:var(--font-display);letter-spacing:0.06em;background:var(--gradient-primary);color:var(--text-on-primary);box-shadow:var(--glow-primary)">
+            {{ 'runs.roundEnd.next' | translate }}
+          </button>
+        </div>
+      }
+
+      @case ('finished') {
+        <div class="screen-enter flex-1 flex flex-col items-center justify-center gap-5 text-center px-4" data-testid="run-finished">
+          @if (store.finish(); as finish) {
+            <h2 class="text-xl font-bold" style="font-family:var(--font-display);color:var(--text-hi)" data-testid="run-disc">{{ finish.disc.key | translate }}</h2>
+            <p class="text-3xl font-extrabold tabular-nums" style="font-family:var(--font-display);color:var(--color-accent)" data-testid="run-final-score">{{ finish.totalScore }}</p>
+            <p class="text-sm" style="color:var(--text-light)">
+              {{ 'runs.finished.found' | translate: { found: finish.foundCount, total: finish.trackCount } }}
+            </p>
+          }
+          <button type="button" (click)="store.playAgain()" data-testid="run-play-again"
+            class="w-full max-w-xs py-4 rounded-(--radius-button) text-sm font-bold tracking-wide uppercase transition touch-manipulation"
+            style="font-family:var(--font-display);letter-spacing:0.06em;background:var(--gradient-primary);color:var(--text-on-primary);box-shadow:var(--glow-primary)">
+            {{ 'runs.finished.newGame' | translate }}
+          </button>
+        </div>
+      }
+
+      @case ('access_denied') {
+        <app-run-status-screen kind="access_denied" />
+      }
+
+      @case ('no_challenge') {
+        <app-run-status-screen kind="no_challenge" (retry)="store.init()" />
+      }
+
+      @case ('error') {
+        <app-run-status-screen kind="error" (retry)="store.init()" />
+      }
+    }
+  </main>
+</div>

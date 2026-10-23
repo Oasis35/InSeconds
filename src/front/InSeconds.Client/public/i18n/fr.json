@@ -814,5 +814,76 @@
       "contactLabel": "✉️ contact@inseconds.cc"
     },
     "back": "Retour au jeu"
+  },
+  "runs": {
+    "common": {
+      "loading": "Chargement…"
+    },
+    "header": {
+      "abandon": "Abandonner",
+      "round": "MANCHE {{ round }} / {{ rounds }}",
+      "score": "Score"
+    },
+    "objective": {
+      "unlock": "Débloquer la manche {{ round }}",
+      "points": "pts"
+    },
+    "pills": {
+      "position": "Morceau {{ position }} sur {{ total }}"
+    },
+    "answer": {
+      "listenOnDeezer": "Écouter sur Deezer",
+      "next": "Morceau suivant"
+    },
+    "welcome": {
+      "badge": "Accès anticipé",
+      "title": "Platines",
+      "tagline": "Vise le disque d’or.",
+      "record": "Ton record : {{ score }} pts",
+      "launch": "Lancer une partie",
+      "resume": "Reprendre la partie"
+    },
+    "status": {
+      "access_denied": {
+        "title": "Accès réservé",
+        "body": "Platines est ouvert sur invitation pour le moment."
+      },
+      "no_challenge": {
+        "title": "Pas de playlist",
+        "body": "Impossible de préparer une playlist pour l’instant.\nRéessaie un peu plus tard."
+      },
+      "error": {
+        "title": "Oups",
+        "body": "Impossible de charger Platines.\nVérifie ta connexion et réessaie."
+      },
+      "backToDaily": "Retour au jeu du jour"
+    },
+    "leave": {
+      "title": "Quitter la partie ?",
+      "body": "Ta partie est gardée : tu pourras la reprendre depuis l’accueil de Platines.",
+      "confirm": "Continuer à jouer",
+      "cancel": "Quitter"
+    },
+    "abandon": {
+      "title": "Abandonner la partie ?",
+      "body": "Cette partie sera perdue et ne comptera pas pour ton record.",
+      "confirm": "Abandonner",
+      "cancel": "Continuer"
+    },
+    "roundEnd": {
+      "title": "Manche {{ round }} terminée",
+      "next": "Manche suivante"
+    },
+    "finished": {
+      "found": "{{ found }} / {{ total }} morceaux trouvés",
+      "newGame": "Nouvelle partie"
+    },
+    "discs": {
+      "scratched": "Disque rayé",
+      "wax": "Disque de cire",
+      "bronze": "Disque de bronze",
+      "silver": "Disque d’argent",
+      "gold": "Disque d’or"
+    }
   }
 }

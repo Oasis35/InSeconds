@@ -29,7 +29,8 @@ const DOMAIN_DEPENDENCIES: Record<(typeof DOMAINS)[number], string[]> = {
   gameplay: [],
   // Daily a besoin d'une identité (le guest se crée avant la première partie) : il lit `SessionLoader` du domaine account.
   daily: ['domain:gameplay', 'domain:account'],
-  runs: ['domain:gameplay'],
+  // Runs lit l'identité du joueur (compte, accès sur invitation) comme Daily, et réutilise la manche de gameplay ; jamais Daily.
+  runs: ['domain:gameplay', 'domain:account'],
   account: [],
   // L'admin réutilise l'histogramme « en combien de temps les autres ont trouvé » de la manche (avec les chiffres au-dessus des barres).
   admin: ['domain:account', 'domain:gameplay'],

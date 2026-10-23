@@ -814,5 +814,76 @@
       "contactLabel": "✉️ contact@inseconds.cc"
     },
     "back": "Back to the game"
+  },
+  "runs": {
+    "common": {
+      "loading": "Loading…"
+    },
+    "header": {
+      "abandon": "Give up",
+      "round": "ROUND {{ round }} / {{ rounds }}",
+      "score": "Score"
+    },
+    "objective": {
+      "unlock": "Unlock round {{ round }}",
+      "points": "pts"
+    },
+    "pills": {
+      "position": "Track {{ position }} of {{ total }}"
+    },
+    "answer": {
+      "listenOnDeezer": "Listen on Deezer",
+      "next": "Next track"
+    },
+    "welcome": {
+      "badge": "Early access",
+      "title": "Platines",
+      "tagline": "Aim for the gold record.",
+      "record": "Your record: {{ score }} pts",
+      "launch": "Start a run",
+      "resume": "Resume the run"
+    },
+    "status": {
+      "access_denied": {
+        "title": "Invitation only",
+        "body": "Platines is invitation-only for now."
+      },
+      "no_challenge": {
+        "title": "No playlist",
+        "body": "A playlist cannot be prepared right now.\nTry again a little later."
+      },
+      "error": {
+        "title": "Oops",
+        "body": "Platines could not be loaded.\nCheck your connection and try again."
+      },
+      "backToDaily": "Back to the daily game"
+    },
+    "leave": {
+      "title": "Leave the run?",
+      "body": "Your run is kept: you can resume it from the Platines home.",
+      "confirm": "Keep playing",
+      "cancel": "Leave"
+    },
+    "abandon": {
+      "title": "Give up this run?",
+      "body": "This run will be lost and will not count for your record.",
+      "confirm": "Give up",
+      "cancel": "Keep playing"
+    },
+    "roundEnd": {
+      "title": "Round {{ round }} finished",
+      "next": "Next round"
+    },
+    "finished": {
+      "found": "{{ found }} / {{ total }} tracks found",
+      "newGame": "New run"
+    },
+    "discs": {
+      "scratched": "Scratched record",
+      "wax": "Wax record",
+      "bronze": "Bronze record",
+      "silver": "Silver record",
+      "gold": "Gold record"
+    }
   }
 }

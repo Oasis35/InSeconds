@@ -3,7 +3,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { AnsweredTrack, DayStats } from '../../domain/daily';
 import { ScoreDistributionChartComponent } from '../score-distribution-chart/score-distribution-chart.component';
 import { ShareButtonComponent } from '../share-button/share-button.component';
-import { TrackResultRow, TrackResultsListComponent } from '../track-results-list/track-results-list.component';
+import { TrackResultRow, TrackResultsListComponent } from '../../../gameplay/ui/track-results-list/track-results-list.component';
 
 /** Récap de fin de partie : score, répartition du jour, compte à rebours, partage et détail des morceaux. */
 @Component({

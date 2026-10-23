@@ -1,0 +1,53 @@
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
+import { RunRound, objectiveBar, objectiveReached } from '../../domain/run';
+
+/**
+ * Le bloc objectif d'une manche : « Débloquer la manche N » avec son cadenas (ouvert une fois l'objectif atteint), le score déjà marqué et
+ * l'objectif en points, et la barre avec un trait à l'objectif. `gain` (« +67 ») s'ajoute après une réponse. Aucun multiplicateur n'est montré.
+ */
+@Component({
+  selector: 'app-run-objective',
+  imports: [TranslatePipe],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <section class="rounded-(--radius-card) px-4 py-3 space-y-2.5" style="background:rgb(var(--rgb-surface) / 0.55);border:1px solid var(--border-subtle)"
+      data-testid="run-objective">
+      <div class="flex items-center justify-between gap-3">
+        <p class="flex items-center gap-2 text-sm font-semibold" style="color:var(--text-hi)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"
+            aria-hidden="true" [style.color]="reached() ? 'var(--color-success)' : 'var(--text-muted)'">
+            <rect x="5" y="11" width="14" height="10" rx="2" />
+            @if (reached()) {
+              <path d="M8 11V7a4 4 0 0 1 7.5-2" />
+            } @else {
+              <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+            }
+          </svg>
+          {{ 'runs.objective.unlock' | translate: { round: round().round + 1 } }}
+        </p>
+        <p class="text-sm tabular-nums whitespace-nowrap" style="color:var(--text-faint)">
+          @if (gain() !== null) {
+            <span class="text-xs font-bold mr-1" style="color:var(--color-success)" data-testid="run-gain">{{ gainText() }}</span>
+          }
+          <span class="font-extrabold" style="color:var(--text-hi)" data-testid="run-score">{{ round().score }}</span>
+          / <span data-testid="run-objective-points">{{ round().objective }}</span> {{ 'runs.objective.points' | translate }}
+        </p>
+      </div>
+      <div class="relative h-2.5 rounded-full overflow-hidden" style="background:var(--bg-inactive)" role="progressbar" [attr.aria-valuemin]="0"
+        [attr.aria-valuemax]="round().objective" [attr.aria-valuenow]="round().score">
+        <div class="absolute inset-y-0 left-0 rounded-full" style="background:var(--gradient-primary)" [style.width.%]="bar().scoreRatio * 100"></div>
+        <div class="absolute inset-y-0 w-0.5" style="background:var(--text-hi)" [style.left.%]="bar().objectiveRatio * 100" data-testid="run-objective-tick"></div>
+      </div>
+    </section>
+  `,
+})
+export class RunObjectiveComponent {
+  readonly round = input.required<RunRound>();
+  /** Les points du morceau qu'on vient de répondre, `null` avant la réponse. */
+  readonly gain = input<number | null>(null);
+
+  protected readonly bar = computed(() => objectiveBar(this.round()));
+  protected readonly reached = computed(() => objectiveReached(this.round()));
+  protected readonly gainText = computed(() => `+${this.gain() ?? 0}`);
+}

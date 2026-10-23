@@ -25,7 +25,7 @@ import { AlreadyPlayedScreenComponent } from '../ui/already-played-screen/alread
 import { DailyBrandComponent } from '../ui/daily-brand/daily-brand.component';
 import { DailyFooterComponent } from '../ui/daily-footer/daily-footer.component';
 import { DailyProgressComponent } from '../ui/daily-progress/daily-progress.component';
-import { DeezerBadgeComponent } from '../ui/deezer-badge/deezer-badge.component';
+import { DeezerBadgeComponent } from '../../gameplay/ui/deezer-badge/deezer-badge.component';
 import { FinalRecapScreenComponent } from '../ui/final-recap-screen/final-recap-screen.component';
 import { GelEarnedToastComponent } from '../ui/gel-earned-toast/gel-earned-toast.component';
 import { GelUsedToastComponent } from '../ui/gel-used-toast/gel-used-toast.component';
