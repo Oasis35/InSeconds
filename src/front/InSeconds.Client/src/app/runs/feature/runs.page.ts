@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, effect, inject } from '@angular/core';
-import { DialogRef } from '@angular/cdk/dialog';
 import { Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ErrorReportingService } from '../../core/errors/error-reporting.service';
@@ -8,7 +7,8 @@ import { VersionService } from '../../core/version/version.service';
 import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { TrackRoundComponent } from '../../gameplay/feature/track-round.component';
 import { RoundSubmission } from '../../gameplay/domain/track-round';
-import { ConfirmDialogComponent, ConfirmDialogData } from '../../ui/modal/confirm-dialog.component';
+import { ConfirmDialogData } from '../../ui/modal/confirm-dialog.component';
+import { LeaveGuard } from '../../gameplay/feature/leave-guard';
 import { ModalService } from '../../ui/modal/modal.service';
 import { DecorBackgroundComponent } from '../../ui/decor-background/decor-background.component';
 import { RunGameStore } from '../data-access/run-game.store';
@@ -43,14 +43,14 @@ export class RunsPage implements OnInit {
   protected readonly errorReporting = inject(ErrorReportingService);
   private readonly modal = inject(ModalService);
   private readonly translate = inject(TranslateService);
-  private leaveDialog: DialogRef<boolean, ConfirmDialogComponent> | null = null;
+  private readonly leaveGuard = new LeaveGuard(inject(ModalService));
 
   constructor() {
     // Une nouvelle version du site ne recharge jamais la page en pleine manche (cf. `reloadMomentFor`).
     inject(VersionService).allowReload(() => reloadMomentFor(this.store.screen()), inject(DestroyRef));
     // Si la partie quitte « playing » pendant qu'une confirmation de sortie est ouverte, il n'y a plus de manche à protéger : la navigation continue.
     effect(() => {
-      if (this.store.screen() !== 'playing' && this.leaveDialog) this.leaveDialog.close(true);
+      if (this.store.screen() !== 'playing') this.leaveGuard.release();
     });
     // Sans accès sur invitation, le mode n'a pas d'écran : retour au jeu du jour, sans laisser `/runs` dans l'historique.
     const router = inject(Router);
@@ -77,14 +77,7 @@ export class RunsPage implements OnInit {
       confirmLabel: this.translate.instant('runs.leave.confirm'),
       cancelLabel: this.translate.instant('runs.leave.cancel'),
     };
-    this.leaveDialog?.close(false);
-    const dialog = this.modal.openSheet<boolean, ConfirmDialogData, ConfirmDialogComponent>(ConfirmDialogComponent, { data });
-    this.leaveDialog = dialog;
-    return new Promise<boolean>(resolve =>
-      dialog.closed.subscribe(result => {
-        if (this.leaveDialog === dialog) this.leaveDialog = null;
-        resolve(result === true);
-      }));
+    return this.leaveGuard.confirm(data);
   }
 
   protected async confirmAbandon(): Promise<void> {
