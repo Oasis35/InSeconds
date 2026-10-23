@@ -21,20 +21,24 @@ const FAINT = 'var(--text-faint)';
 
 /**
  * L'histogramme « en combien de temps les autres ont trouvé » : une barre par palier d'écoute
- * (joueurs qui ont trouvé à ce palier) et une barre « ✗ » pour ceux qui n'ont pas trouvé. La colonne
+ * (joueurs qui ont trouvé à ce palier, en nombre ou en pourcentage : seules les hauteurs relatives comptent) et une barre « ✗ » pour
+ * ceux qui n'ont pas trouvé. La colonne
  * du joueur est surlignée. Purement présentationnel.
  */
 @Component({
   selector: 'app-guess-time-chart',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div data-testid="guess-time-chart" class="mx-auto" style="max-width:210px">
-      <div class="flex items-end gap-1" [style.height.px]="showCounts() ? 48 : 36">
+    <div data-testid="guess-time-chart" class="mx-auto" [style.max-width]="wide() ? null : '210px'">
+      <div class="flex items-end gap-1" [style.height.px]="showCounts() || notFoundCaption() !== null ? 48 : 36">
         @for (bar of bars(); track bar.key) {
           <div class="flex-1 flex flex-col items-center justify-end gap-0.5 h-full"
                [attr.data-bucket]="bar.key" [attr.data-highlight]="bar.highlighted ? 'true' : null">
             @if (showCounts()) {
               <span class="text-[9px] leading-none tabular-nums" [style.color]="bar.labelColor">{{ bar.count }}</span>
+            } @else if (bar.key === 'nf' && notFoundCaption() !== null) {
+              <span class="text-[10px] font-semibold leading-none tabular-nums" data-testid="not-found-caption"
+                    [style.color]="bar.highlighted ? bar.barColor : 'var(--color-fail)'">{{ notFoundCaption() }}</span>
             }
             <div class="rounded-full" style="width:14px" [style.height]="bar.height" [style.background]="bar.barColor"></div>
           </div>
@@ -59,6 +63,10 @@ export class GuessTimeChartComponent {
   readonly highlightNotFound = input(false);
   /** Écrit le nombre de joueurs au-dessus de chaque barre (vue admin). */
   readonly showCounts = input(false);
+  /** Texte au-dessus de la seule barre « ✗ » (la part des joueurs qui n'ont rien trouvé, page d'un jour passé). */
+  readonly notFoundCaption = input<string | null>(null);
+  /** Prend toute la largeur (page d'un jour passé) au lieu de 210 px. */
+  readonly wide = input(false);
 
   private readonly lang = inject(TranslateService).currentLang;
 

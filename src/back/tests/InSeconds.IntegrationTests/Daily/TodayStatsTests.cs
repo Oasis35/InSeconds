@@ -146,7 +146,7 @@ public class TodayStatsTests(PostgresFixture postgres) : IAsyncLifetime
     {
         await _game.GenerateAsync();
         var players = new List<Gamer>();
-        foreach (var seconds in new[] { 0.5m, 1m, 10m })
+        foreach (var seconds in new[] { 0.5m, 1m, 2m, 5m, 10m })
         {
             var gamer = await _game.NewPlayerAsync();
             await gamer.FinishAsync((await gamer.StartAsync()).SessionId, seconds: seconds);
@@ -154,18 +154,25 @@ public class TodayStatsTests(PostgresFixture postgres) : IAsyncLifetime
         }
 
         Assert.Equal(100, (await StatsAsync(players[0].Client)).BetterThanPercent);
-        Assert.Equal(50, (await StatsAsync(players[1].Client)).BetterThanPercent);
-        Assert.Equal(0, (await StatsAsync(players[2].Client)).BetterThanPercent);
+        Assert.Equal(75, (await StatsAsync(players[1].Client)).BetterThanPercent);
+        Assert.Equal(0, (await StatsAsync(players[4].Client)).BetterThanPercent);
     }
 
     [Fact]
-    public async Task SeulSurLeDefi_PasDePourcentage()
+    public async Task MoinsDe5Joueurs_PasDePourcentage()
     {
         await _game.GenerateAsync();
-        var alice = await _game.NewPlayerAsync();
-        await alice.FinishAsync((await alice.StartAsync()).SessionId);
+        var players = new List<Gamer>();
+        foreach (var seconds in new[] { 0.5m, 1m, 2m, 5m })
+        {
+            var gamer = await _game.NewPlayerAsync();
+            await gamer.FinishAsync((await gamer.StartAsync()).SessionId, seconds: seconds);
+            players.Add(gamer);
+        }
 
-        Assert.Null((await StatsAsync(alice.Client)).BetterThanPercent);
+        // Le seuil est appliqué par le serveur : le front affiche ce qu'il reçoit.
+        foreach (var player in players)
+            Assert.Null((await StatsAsync(player.Client)).BetterThanPercent);
     }
 
     [Fact]

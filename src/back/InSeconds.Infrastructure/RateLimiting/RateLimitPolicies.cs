@@ -24,4 +24,7 @@ public static class RateLimitPolicies
 
     /// <summary>Recherche publique de morceaux (quota Deezer partagé par tous les joueurs).</summary>
     public const string CatalogueSearch = "deezer-search-public";
+
+    /// <summary>Réponses des jours passés et plan du site (publics ; la veille est calculée en direct).</summary>
+    public const string DailyArchive = "daily-archive";
 }

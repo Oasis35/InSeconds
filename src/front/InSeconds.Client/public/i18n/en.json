@@ -618,6 +618,7 @@
       "ariaLabel": "Listen on Deezer"
     },
     "footer": {
+      "archive": "Past days' answers",
       "admin": "Admin",
       "privacy": "Privacy & legal notice",
       "contact": "Contact us",
@@ -727,6 +728,36 @@
       "challengeText": "I play InSeconds, one blind test a day. Can you beat me?\n{{ url }}",
       "copied": "Link copied, just paste it",
       "copyFailed": "Couldn't copy to the clipboard."
+    },
+    "archive": {
+      "titlePrefix": "Blind test of",
+      "previousDay": "Previous day",
+      "nextDay": "Next day",
+      "pickDate": "Pick another day (showing: {{ date }})",
+      "mostMissed": "most missed",
+      "players": "Players",
+      "you": "You",
+      "artistFound": "Artist found",
+      "titleFound": "Title found",
+      "artistRight": "Artist found",
+      "artistWrong": "Artist missed",
+      "titleRight": "Title found",
+      "titleWrong": "Title missed",
+      "calendarTitle": "Pick a challenge",
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "calendarNote": "A day's challenge shows up here the next day.",
+      "yesterdayAnswers": "Yesterday's answers",
+      "seeYesterday": "See yesterday's answers",
+      "median": "Median",
+      "notFoundTitle": "No answers for this day",
+      "notFoundBody": "A challenge's answers are published the next day.",
+      "latest": "See yesterday's answers",
+      "playersScores": "Players' scores",
+      "tooFewPlayers": "Not enough players that day to show statistics.",
+      "playToday": "Play today's challenge",
+      "pageTitle": "Blind test of {{ date }}: {{ artists }}",
+      "pageDescription": "The answers to the InSeconds blind test of {{ date }}: {{ artists }}. What players found, and how fast."
     }
   },
   "privacy": {

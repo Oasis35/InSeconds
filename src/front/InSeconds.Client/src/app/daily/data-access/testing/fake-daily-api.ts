@@ -4,6 +4,7 @@ import {
   AnswerToSend, AnsweredTrack, DailySettings, DailyToday, DayStats, StartOutcome, StartedSession,
 } from '../../domain/daily';
 import { EMPTY_STREAK } from '../../domain/streak';
+import { ArchiveDay, ArchiveMe, ArchiveTrack, NOBODY } from '../../domain/archive';
 
 export const SETTINGS: DailySettings = {
   guessTimerSeconds: 20,
@@ -41,6 +42,30 @@ export const STATS = (over: Partial<DayStats> = {}): DayStats => ({
   minScore: 0, maxScore: 3000, maxPossibleScore: 3000, scoreDistribution: [], betterThanPercent: 50, ...over,
 });
 
+export const ARCHIVE_TRACK = (position: number, over: Partial<ArchiveTrack> = {}): ArchiveTrack => ({
+  position, artist: `Artiste ${position}`, title: `Titre ${position}`, releaseYear: 2000 + position, deezerTrackId: 100 + position,
+  coverUrl: `https://cdn.example/c${position}.jpg`, artistFoundPercent: 70, titleFoundPercent: 60,
+  guessSteps: [{ durationSeconds: 0.5, percent: 10 }, { durationSeconds: 1, percent: 40 }, { durationSeconds: 2, percent: 20 }, { durationSeconds: 5, percent: 10 }],
+  notFoundPercent: 10 * position, ...over,
+});
+
+export const ARCHIVE_DAY = (over: Partial<ArchiveDay> = {}): ArchiveDay => ({
+  date: '2026-10-21', previousDate: '2026-10-20', nextDate: null, hasStats: true, medianScore: 2250, minScore: 0, maxScore: 4250,
+  maxPossibleScore: 3000,
+  scoreDistribution: Array.from({ length: 10 }, (_, i) => ({ minScore: i * 300, maxScore: i * 300 + 299, percent: i === 4 ? 40 : 6 })),
+  tracks: [1, 2, 3].map(p => ARCHIVE_TRACK(p)), ...over,
+});
+
+export const ARCHIVE_ME = (over: Partial<ArchiveMe> = {}): ArchiveMe => ({
+  played: true, score: 2150, betterThanPercent: 46,
+  answers: [
+    { position: 1, artistCorrect: true, titleCorrect: true, listenedSeconds: 0.5, score: 1000 },
+    { position: 2, artistCorrect: true, titleCorrect: false, listenedSeconds: 1, score: 850 },
+    { position: 3, artistCorrect: false, titleCorrect: false, listenedSeconds: 5, score: 0 },
+  ],
+  ...over,
+});
+
 /**
  * Un faux jeu du jour pour tester les stores sans réseau : les réponses sont fixées par le test (valeur, ou erreur levée), les appels
  * sont notés dans `calls`.
@@ -51,6 +76,10 @@ export class FakeDailyApi {
   start: StartOutcome | Error = { kind: 'ok', session: SESSION() };
   stats: DayStats | Error = STATS();
   gamesPlayed: number | Error = 2559;
+  archiveDates: string[] | Error = ['2026-10-21', '2026-10-20'];
+  /** Les jours publiés, par date ; une date absente n'est pas publiée (`null`). */
+  archiveDays: Record<string, ArchiveDay | Error> = { '2026-10-21': ARCHIVE_DAY() };
+  archiveMe: ArchiveMe | Error = NOBODY;
   /** La réponse du serveur à chaque réponse envoyée ; `Error` pour un échec. */
   answer: (answer: AnswerToSend) => AnsweredTrack | Error = a => ANSWERED(a.position);
   hintFacts: readonly { kind: string; value: string | null }[] = [{ kind: 'year', value: '2013' }];
@@ -100,6 +129,21 @@ export class FakeDailyApi {
     return this.result(this.gamesPlayed);
   }
 
+  archiveDatesCall(): Promise<string[]> {
+    this.calls.push('archiveDates');
+    return this.result(this.archiveDates);
+  }
+
+  archiveDayCall(date: string): Promise<ArchiveDay | null> {
+    this.calls.push(`archiveDay ${date}`);
+    return this.result(this.archiveDays[date] ?? null);
+  }
+
+  myArchiveDayCall(date: string): Promise<ArchiveMe> {
+    this.calls.push(`myArchiveDay ${date}`);
+    return this.result(this.archiveMe);
+  }
+
   statsCall(): Promise<DayStats> {
     this.calls.push('stats');
     return this.result(this.stats);
@@ -120,6 +164,9 @@ export function provideFakeDailyApi(fake: FakeDailyApi): Provider {
       abandon: (s: number) => fake.abandon(s),
       stats: () => fake.statsCall(),
       gamesPlayed: () => fake.gamesPlayedCall(),
+      archiveDates: () => fake.archiveDatesCall(),
+      archiveDay: (date: string) => fake.archiveDayCall(date),
+      myArchiveDay: (date: string) => fake.myArchiveDayCall(date),
     } satisfies Partial<Record<keyof DailyApi, unknown>>,
   };
 }

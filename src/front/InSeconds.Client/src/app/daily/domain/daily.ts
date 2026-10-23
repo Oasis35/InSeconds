@@ -115,6 +115,21 @@ export interface ScoreBucket {
   readonly count: number;
 }
 
+/**
+ * Ce que l'égaliseur des scores dessine : celui du jour (`DayStats`) ou celui d'un jour passé. Les comptes des tranches ne servent qu'à leurs
+ * hauteurs relatives : un pourcentage convient aussi. `minScore` vide : personne n'a de score.
+ */
+export interface ScoreChartData {
+  readonly yourScore: number | null;
+  readonly medianScore: number | null;
+  readonly minScore: number | null;
+  readonly maxScore: number | null;
+  readonly maxPossibleScore: number;
+  readonly scoreDistribution: readonly ScoreBucket[];
+  /** Le serveur le laisse vide sous 5 joueurs : l'écran l'affiche tel quel. */
+  readonly betterThanPercent: number | null;
+}
+
 /** Les statistiques du jour (`GET /api/daily/stats/today`). `tracks` est vide tant que la partie du joueur n'est pas finie (piège 31). */
 export interface DayStats {
   readonly yourScore: number | null;

@@ -46,25 +46,28 @@ public class DayStatsTests
     [Fact]
     public void MeilleurQue_PartDesAutresJoueursStrictementBattus()
     {
-        // Quatre joueurs, le joueur de 700 en bat deux sur les trois autres : 67 %.
-        Assert.Equal(67, ScoreDistribution.BetterThanPercent([300, 400, 700, 900], 700));
+        // Cinq joueurs, le joueur de 700 en bat trois sur les quatre autres : 75 %.
+        Assert.Equal(75, ScoreDistribution.BetterThanPercent([100, 300, 400, 700, 900], 700));
         // Le plus bas ne bat personne, le plus haut bat tout le monde.
-        Assert.Equal(0, ScoreDistribution.BetterThanPercent([300, 400, 700, 900], 300));
-        Assert.Equal(100, ScoreDistribution.BetterThanPercent([300, 400, 700, 900], 900));
+        Assert.Equal(0, ScoreDistribution.BetterThanPercent([100, 300, 400, 700, 900], 100));
+        Assert.Equal(100, ScoreDistribution.BetterThanPercent([100, 300, 400, 700, 900], 900));
     }
 
     [Fact]
-    public void MeilleurQue_SansScoreOuSeul_Vide()
+    public void MeilleurQue_SansScoreOuSousLeSeuil_Vide()
     {
-        Assert.Null(ScoreDistribution.BetterThanPercent([300, 400], null));
+        Assert.Null(ScoreDistribution.BetterThanPercent([100, 200, 300, 400, 500], null));
+        // Quatre joueurs : sous le seuil de cinq, le pourcentage ne dit rien.
+        Assert.Null(ScoreDistribution.BetterThanPercent([300, 400, 700, 900], 700));
         Assert.Null(ScoreDistribution.BetterThanPercent([300], 300));
         Assert.Null(ScoreDistribution.BetterThanPercent([], 300));
+        Assert.Equal(5, ScoreDistribution.MinPlayersForPercent);
     }
 
     [Fact]
-    public void MeilleurQue_ArrondiAuDessusAMiChemin() =>
-        // 1 battu sur 2 autres = 50 % ; 1 sur 3 = 33 % ; 2 sur 8 = 25 %.
-        Assert.Equal(33, ScoreDistribution.BetterThanPercent([1, 5, 9, 9], 5));
+    public void MeilleurQue_Arrondi() =>
+        // 2 battus sur 6 autres = 33 %.
+        Assert.Equal(33, ScoreDistribution.BetterThanPercent([1, 1, 5, 9, 9, 9, 9], 5));
 
     // --- les médianes de la v1 ---
 
