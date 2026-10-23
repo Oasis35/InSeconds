@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { DIALOG_DATA } from '@angular/cdk/dialog';
 import { TranslatePipe } from '@ngx-translate/core';
-import { GuessTimeChartComponent } from '../../../gameplay/ui/guess-time-chart.component';
+import { GuessTimeChartComponent } from '../guess-time-chart.component';
 import { ModalFrameComponent } from '../../../ui/modal/modal-frame.component';
 import type { TrackResultRow } from './track-results-list.component';
 

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output, signal } f
 import { TranslatePipe } from '@ngx-translate/core';
 import { GuessTimeChartComponent } from '../../../gameplay/ui/guess-time-chart.component';
 import { ArchiveMyAnswer, ArchiveTrack } from '../../domain/archive';
-import { DeezerBadgeComponent } from '../deezer-badge/deezer-badge.component';
+import { DeezerBadgeComponent } from '../../../gameplay/ui/deezer-badge/deezer-badge.component';
 
 /**
  * Un morceau d'un jour passé : pochette numérotée, artiste (« le plus raté » en rouge), titre et année, chacun sur une ligne (tronqués, déplié au

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core
 import { TranslatePipe } from '@ngx-translate/core';
 import { SecondsPipe } from '../../../ui/format/seconds.pipe';
 import { ModalService } from '../../../ui/modal/modal.service';
-import { GuessBucket } from '../../domain/daily';
+import { GuessBucket } from '../../domain/round-result';
 import { DeezerBadgeComponent } from '../deezer-badge/deezer-badge.component';
 import { TrackChartDialogComponent, TrackChartDialogData } from './track-chart-dialog.component';
 

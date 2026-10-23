@@ -22,8 +22,8 @@ Clément, 18/10 : un écran qui existe déjà au Daily ne se redessine pas, il s
 
 | Situation | Écran du Daily | Textes à adapter en run |
 |---|---|---|
-| Reprise d'une partie en cours | `resume-screen` (« Partie en pause », « X / Y pistes déjà écoutées », Reprendre / Abandonner, confirmation d'abandon sur place) | le compte porte sur les 20 morceaux ; avertissement d'abandon sans la série : « Ton score s'arrête ici, cette playlist ne se rejoue pas. » ; pas de « Ne plus perdre mes parties » (l'accès demande déjà un compte, l'ami invité le garde) |
-| « Abandonner » pendant une manche | `ModalService.confirm` de `daily.page` (« Abandonner la partie ? ») | corps : « Ton score s'arrête ici, cette playlist ne se rejoue pas. » |
+| Reprise d'une partie en cours | `resume-screen` (« Partie en pause », « X / Y pistes déjà écoutées », Reprendre / Abandonner, confirmation d'abandon sur place) | le compte porte sur les 20 morceaux ; avertissement d'abandon sans la série : « Cette partie sera perdue et ne comptera pas pour ton record. » ; pas de « Ne plus perdre mes parties » (l'accès demande déjà un compte, l'ami invité le garde) |
+| « Abandonner » pendant une manche | `ModalService.confirm` de `daily.page` (« Abandonner la partie ? ») | corps : « Cette partie sera perdue et ne comptera pas pour ton record. » (Clément, 23/10) |
 | Quitter la page pendant une partie | `leave-game.guard` + `ConfirmDialog` (« Partie en cours », « Quitter quand même » / « Continuer à jouer ») | corps : la partie se reprend plus tard, sans limite de jour |
 | Extrait illisible (réseau, CDN) | phase `audio-error` de `round-player` (« Réessayer » / « Passer (0 pts) ») | aucun |
 | Réponse non envoyée | encart `submit-error` de `track-round` | aucun |
