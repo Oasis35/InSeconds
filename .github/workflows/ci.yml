@@ -9,6 +9,13 @@ on:
 permissions:
   contents: read
 
+# `actions/checkout` fait un `git init` : sans branche par défaut configurée, git écrit dans chaque job un long indice
+# sur le nom « master ». Donné ici à tous les git du run (variables GIT_CONFIG_*), sans toucher à l'action.
+env:
+  GIT_CONFIG_COUNT: 1
+  GIT_CONFIG_KEY_0: init.defaultBranch
+  GIT_CONFIG_VALUE_0: main
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
