@@ -1,7 +1,17 @@
 {
   "common": {
     "close": "Close",
-    "retry": "Try again"
+    "retry": "Try again",
+    "previewModal": {
+      "title": "Play the preview",
+      "loading": "Fetching the preview...",
+      "error": "No preview available for this track.",
+      "playing": "Now playing...",
+      "preview30s": "30s preview",
+      "unavailable": "Deezer is unavailable: no preview for now.",
+      "play": "Play",
+      "pause": "Pause"
+    }
   },
   "errors": {
     "code": "Error code:",
@@ -365,15 +375,6 @@
       "save": "Save",
       "saving": "Saving...",
       "error": "Error while saving.",
-      "close": "Close"
-    },
-    "previewModal": {
-      "title": "Play the preview",
-      "loading": "Fetching the preview...",
-      "error": "No preview available for this track.",
-      "playing": "Now playing...",
-      "preview30s": "30s preview",
-      "unavailable": "Deezer is unavailable: no preview for now.",
       "close": "Close"
     },
     "addPanel": {
@@ -759,7 +760,6 @@
       "nextMonth": "Next month",
       "calendarNote": "A day's challenge shows up here the next day.",
       "yesterdayAnswers": "Yesterday's answers",
-      "seeYesterday": "See yesterday's answers",
       "median": "Median",
       "notFoundTitle": "No answers for this day",
       "notFoundBody": "A challenge's answers are published the next day.",
@@ -768,7 +768,8 @@
       "tooFewPlayers": "Not enough players that day to show statistics.",
       "playToday": "Play today's challenge",
       "pageTitle": "Blind test of {{ date }}: {{ artists }}",
-      "pageDescription": "The answers to the InSeconds blind test of {{ date }}: {{ artists }}. What players found, and how fast."
+      "pageDescription": "The answers to the InSeconds blind test of {{ date }}: {{ artists }}. What players found, and how fast.",
+      "listen": "Play the preview"
     }
   },
   "privacy": {

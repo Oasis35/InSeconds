@@ -1,7 +1,17 @@
 {
   "common": {
     "close": "Fermer",
-    "retry": "Réessayer"
+    "retry": "Réessayer",
+    "previewModal": {
+      "title": "Écouter l'extrait",
+      "loading": "Récupération de l'extrait...",
+      "error": "Aucun extrait disponible pour ce morceau.",
+      "playing": "Lecture en cours...",
+      "preview30s": "Extrait de 30 s",
+      "unavailable": "Deezer est indisponible : aucun extrait pour le moment.",
+      "play": "Écouter",
+      "pause": "Mettre en pause"
+    }
   },
   "errors": {
     "code": "Code d'erreur :",
@@ -365,15 +375,6 @@
       "save": "Enregistrer",
       "saving": "Enregistrement...",
       "error": "Erreur lors de l'enregistrement.",
-      "close": "Fermer"
-    },
-    "previewModal": {
-      "title": "Écouter l'extrait",
-      "loading": "Récupération de l'extrait...",
-      "error": "Aucun extrait disponible pour ce morceau.",
-      "playing": "Lecture en cours...",
-      "preview30s": "Preview 30s",
-      "unavailable": "Deezer est indisponible : aucun extrait pour le moment.",
       "close": "Fermer"
     },
     "addPanel": {
@@ -759,7 +760,6 @@
       "nextMonth": "Mois suivant",
       "calendarNote": "Le défi d'un jour arrive ici dès le lendemain.",
       "yesterdayAnswers": "Les réponses d'hier",
-      "seeYesterday": "Voir les réponses d'hier",
       "median": "Médiane",
       "notFoundTitle": "Pas de réponses pour ce jour",
       "notFoundBody": "Les réponses d'un défi sont publiées dès le lendemain.",
@@ -768,7 +768,8 @@
       "tooFewPlayers": "Pas assez de joueurs ce jour-là pour afficher des statistiques.",
       "playToday": "Joue le défi d'aujourd'hui",
       "pageTitle": "Blind test du {{ date }} : {{ artists }}",
-      "pageDescription": "Les réponses du blind test InSeconds du {{ date }} : {{ artists }}. Ce que les joueurs ont trouvé, et en combien de temps."
+      "pageDescription": "Les réponses du blind test InSeconds du {{ date }} : {{ artists }}. Ce que les joueurs ont trouvé, et en combien de temps.",
+      "listen": "Écouter l'extrait"
     }
   },
   "privacy": {

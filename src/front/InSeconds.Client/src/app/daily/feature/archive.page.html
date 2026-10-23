@@ -61,7 +61,7 @@
           <div class="px-4" style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:var(--radius-card)">
             @for (track of day.tracks; track track.position) {
               <app-archive-track-row [track]="track" [mine]="answerAt(store.me(), track.position)" [mostMissed]="track.position === store.mostMissed()"
-                                     [lang]="language.current()" [style.border-top]="$first ? null : '1px solid var(--border-medium)'" class="block" />
+                                     [lang]="language.current()" (listen)="listen(track)" [style.border-top]="$first ? null : '1px solid var(--border-medium)'" class="block" />
             }
           </div>
 

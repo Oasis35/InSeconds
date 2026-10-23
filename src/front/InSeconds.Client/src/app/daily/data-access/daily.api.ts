@@ -109,6 +109,11 @@ export class DailyApi {
     return toArchiveMe(await firstValueFrom(this.client.getMyArchiveDay(date)));
   }
 
+  /** Une adresse neuve pour l'extrait d'un morceau d'un jour passé (elle expire en 15 min, piège 14) ; `null` si Deezer n'en a pas. */
+  async archivePreviewUrl(date: string, position: number): Promise<string | null> {
+    return (await firstValueFrom(this.client.getArchivePreview(date, position))).previewUrl ?? null;
+  }
+
   /** Toutes les parties terminées, tous jours confondus : le chiffre du message de remerciement. */
   async gamesPlayed(): Promise<number> {
     return (await firstValueFrom(this.client.getGamesPlayed())).completedGames;

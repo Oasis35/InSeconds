@@ -18,6 +18,7 @@ describe('DailyApi', () => {
   beforeEach(() => {
     client = {
       getToday: vi.fn(), startSession: vi.fn(), submitAnswer: vi.fn(), requestHint: vi.fn(), getTodayStats: vi.fn(), getGamesPlayed: vi.fn(),
+      getArchivePreview: vi.fn(),
     };
     TestBed.configureTestingModule({ providers: [{ provide: DailyClient, useValue: client }] });
     api = TestBed.inject(DailyApi);
@@ -155,5 +156,13 @@ describe('DailyApi', () => {
     client['getGamesPlayed'].mockReturnValue(of({ completedGames: 2559 }));
 
     expect(await api.gamesPlayed()).toBe(2559);
+  });
+
+  it("l'extrait d'un jour passé : son adresse, `null` sans extrait", async () => {
+    client['getArchivePreview'].mockReturnValueOnce(of({ previewUrl: 'https://preview/2.mp3' })).mockReturnValueOnce(of({}));
+
+    expect(await api.archivePreviewUrl('2026-10-21', 2)).toBe('https://preview/2.mp3');
+    expect(client['getArchivePreview']).toHaveBeenCalledWith('2026-10-21', 2);
+    expect(await api.archivePreviewUrl('2026-10-21', 3)).toBeNull();
   });
 });

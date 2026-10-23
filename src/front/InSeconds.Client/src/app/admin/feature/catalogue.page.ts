@@ -1,10 +1,12 @@
 import { ChangeDetectionStrategy, Component, Injector, computed, effect, inject, untracked } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
+import { AudioPreviewPlayer } from '../../core/audio-preview/audio-preview.player';
+import { PreviewTrackData, PreviewTrackDialog } from '../../core/audio-preview/preview-track.dialog';
 import { errorMessageKey } from '../../core/errors/error-messages';
 import { ErrorMessageComponent } from '../../ui/error-message/error-message.component';
 import { ModalService } from '../../ui/modal/modal.service';
-import { AudioPreviewPlayer } from '../data-access/audio-preview.player';
+import { CatalogueApi } from '../data-access/catalogue.api';
 import { DeezerSearchStore } from '../data-access/deezer-search.store';
 import { PoolStore } from '../data-access/pool.store';
 import { DeezerResult, PoolTrack } from '../domain/pool-track';
@@ -16,7 +18,6 @@ import { PoolViewSelectorComponent } from '../ui/pool-view-selector.component';
 import { SearchPanelComponent } from '../ui/search-panel.component';
 import { DeleteTrackDialog } from './delete-track.dialog';
 import { EditTrackDialog } from './edit-track.dialog';
-import { PreviewTrackDialog } from './preview-track.dialog';
 
 const TOGGLE_ERROR_VISIBLE_MS = 4000;
 const DIALOG_MAX_WIDTH = '26rem';
@@ -128,6 +129,7 @@ export class CataloguePage {
   protected readonly pool = inject(PoolStore);
   protected readonly search = inject(DeezerSearchStore);
   private readonly player = inject(AudioPreviewPlayer);
+  private readonly catalogue = inject(CatalogueApi);
   protected readonly errorMessageKey = errorMessageKey;
   protected readonly isPool = computed(() => this.pool.view() === POOL_VIEW);
   private readonly modal = inject(ModalService);
@@ -217,7 +219,8 @@ export class CataloguePage {
   }
 
   protected listen(track: PoolTrack): void {
-    this.modal.open(PreviewTrackDialog, { data: track, maxWidth: DIALOG_MAX_WIDTH, injector: this.injector });
+    const data: PreviewTrackData = { artist: track.artist, title: track.title, loadPreviewUrl: () => this.catalogue.findPreviewUrl(track) };
+    this.modal.open(PreviewTrackDialog, { data, maxWidth: DIALOG_MAX_WIDTH, injector: this.injector });
   }
 
   protected edit(track: PoolTrack): void {

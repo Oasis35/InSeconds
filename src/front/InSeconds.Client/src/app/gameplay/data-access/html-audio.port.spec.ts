@@ -6,7 +6,7 @@ import { makeToneUrl } from './testing/wav';
 
 /**
  * Le lecteur sur un élément audio, essayé pour de bon : un vrai Chromium (lancé avec l'autoplay
- * autorisé, `vitest.config.ts`) charge et joue de vrais sons. On mesure le temps qui s'écoule entre
+ * autorisé, `vitest.config.mts`) charge et joue de vrais sons. On mesure le temps qui s'écoule entre
  * le début de la lecture et la fin du palier, et on simule les démarrages lents de l'iPhone.
  */
 describe('HtmlAudioPort', () => {

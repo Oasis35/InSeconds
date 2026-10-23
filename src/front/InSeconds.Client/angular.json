@@ -158,7 +158,7 @@
           "builder": "@angular/build:unit-test",
           "options": {
             "runner": "vitest",
-            "runnerConfig": "vitest.config.ts",
+            "runnerConfig": "vitest.config.mts",
             "tsConfig": "tsconfig.spec.json"
           }
         }

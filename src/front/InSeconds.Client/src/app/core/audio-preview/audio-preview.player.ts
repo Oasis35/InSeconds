@@ -15,8 +15,8 @@ export const PREVIEW_AUDIO_FACTORY = new InjectionToken<(url: string) => Preview
 });
 
 /**
- * Le lecteur des extraits de 30 s de l'admin (écoute d'un résultat de recherche, d'une ligne du
- * pool) : un seul son à la fois. Écouter un autre extrait coupe le premier ; `stop()` libère tout.
+ * Le lecteur des extraits de 30 s de la fenêtre d'écoute (admin, page d'un jour passé), fourni par la
+ * page qui l'ouvre : un seul son à la fois. Écouter un autre extrait coupe le premier ; `stop()` libère tout.
  * Ne garde rien d'un extrait en dehors de la lecture (aucun stockage d'audio, piège 47).
  */
 @Injectable()

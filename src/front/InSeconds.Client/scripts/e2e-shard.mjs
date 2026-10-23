@@ -38,7 +38,7 @@ const WEIGHTS = {
   'clear-search.spec.ts': 3,
   'leave-guard.spec.ts': 3,
   'footer.spec.ts': 3,
-  'archive.spec.ts': 5,
+  'archive.spec.ts': 7,
   'skip-track.spec.ts': 2,
   'no-challenge.spec.ts': 2,
   'mobile-input-zoom.spec.ts': 2,

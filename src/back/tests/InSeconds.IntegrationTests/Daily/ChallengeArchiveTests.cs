@@ -208,6 +208,50 @@ public class ChallengeArchiveTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Extrait_UneAdresseNeuve_JamaisEnCache_AucunJoueurCree()
+    {
+        await SeedDayAsync(Frozen, players: 1);
+        var before = await _game.Api.ScalarAsync<long>("SELECT count(*) FROM players.players");
+
+        var response = await _game.Api.CreateClient().GetAsync($"/api/daily/archive/{Frozen:yyyy-MM-dd}/tracks/2/preview", Ct);
+        var preview = (await response.Content.ReadFromJsonAsync<ArchivePreviewResponse>(Ct))!;
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.StartsWith("http", preview.PreviewUrl);
+        Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
+        Assert.False(response.Headers.Contains("Set-Cookie"));
+        Assert.Equal(before, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM players.players"));
+    }
+
+    [Theory]
+    [InlineData(9_000_000_001L)] // Deezer répond « pas d'extrait »
+    [InlineData(7_000_000_001L)] // Deezer répond « quota dépassé »
+    public async Task Extrait_SansExtraitUtilisable_AdresseVide(long deezerId)
+    {
+        await SeedDayAsync(Yesterday, players: 1);
+        await _game.Api.ExecuteAsync($"UPDATE catalogue.tracks SET deezer_track_id = {deezerId} WHERE id = 3");
+
+        var preview = await _game.Api.CreateClient().GetFromJsonAsync<ArchivePreviewResponse>($"/api/daily/archive/{Yesterday:yyyy-MM-dd}/tracks/3/preview", Ct);
+
+        Assert.Null(preview!.PreviewUrl);
+    }
+
+    [Fact]
+    public async Task Extrait_LeJourMeme_PositionInconnue_404()
+    {
+        await _game.GenerateAsync();
+        await SeedDayAsync(Yesterday, players: 1);
+        var client = _game.Api.CreateClient();
+
+        foreach (var path in new[] { $"{Today:yyyy-MM-dd}/tracks/1", $"{Yesterday:yyyy-MM-dd}/tracks/6", $"{Frozen:yyyy-MM-dd}/tracks/1", "hier/tracks/1" })
+        {
+            var response = await client.GetAsync($"/api/daily/archive/{path}/preview", Ct);
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+            Assert.Contains(DailyErrorCodes.ArchiveNotAvailable, await response.Content.ReadAsStringAsync(Ct), StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
     public async Task PlanDuSite_PagesFixesPuisJoursPublies()
     {
         await _game.App.AddChallengeAsync(Frozen, 1, 2, 3, 4, 5);

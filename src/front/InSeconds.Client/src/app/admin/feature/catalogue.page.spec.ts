@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
 import { ModalService } from '../../ui/modal/modal.service';
-import { AudioPreviewPlayer, PREVIEW_AUDIO_FACTORY, PreviewAudio } from '../data-access/audio-preview.player';
+import { AudioPreviewPlayer, PREVIEW_AUDIO_FACTORY, PreviewAudio } from '../../core/audio-preview/audio-preview.player';
 import { DeezerSearchStore } from '../data-access/deezer-search.store';
 import { PoolStore } from '../data-access/pool.store';
 import {
@@ -12,7 +12,7 @@ import { PoolTrack } from '../domain/pool-track';
 import { CataloguePage } from './catalogue.page';
 import { EditTrackDialog } from './edit-track.dialog';
 import { DeleteTrackDialog } from './delete-track.dialog';
-import { PreviewTrackDialog } from './preview-track.dialog';
+import { PreviewTrackDialog } from '../../core/audio-preview/preview-track.dialog';
 import { fakeActionsApi, provideActionsApiFake } from '../data-access/testing/fake-actions-api';
 
 class FakeAudio implements PreviewAudio {
@@ -306,6 +306,10 @@ describe('CataloguePage', () => {
       expect(remove[0]).toBe(DeleteTrackDialog);
       expect(edit[1].data).toEqual(expect.objectContaining({ id: 2 }));
       expect(remove[1].data).toEqual([expect.objectContaining({ id: 2 })]);
+      // L'extrait d'un morceau du pool est redemandé à Deezer à l'ouverture de la fenêtre.
+      expect(listen[1].data).toEqual(expect.objectContaining({ artist: 'Sabrina Carpenter' }));
+      await listen[1].data.loadPreviewUrl();
+      expect(api.findPreviewUrl).toHaveBeenCalledWith(expect.objectContaining({ id: 2 }));
       // Les fenêtres retrouvent les stores de la page : leur injecteur est celui de la page.
       const store = fixture.debugElement.injector.get(PoolStore);
       for (const [, options] of modal.open.mock.calls) expect(options.injector.get(PoolStore)).toBe(store);

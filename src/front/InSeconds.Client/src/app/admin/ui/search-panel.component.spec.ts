@@ -120,7 +120,7 @@ describe('SearchPanelComponent', () => {
       const { element, play } = render({ results: [result()] });
 
       expect(play().textContent?.trim()).toBe('▶');
-      expect(play().getAttribute('aria-label')).toBe('admin.previewModal.title');
+      expect(play().getAttribute('aria-label')).toBe('common.previewModal.title');
       expect(element.querySelector('[role="progressbar"]')).toBeNull();
     });
   });

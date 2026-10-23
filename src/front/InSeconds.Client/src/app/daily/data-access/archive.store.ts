@@ -53,6 +53,12 @@ export const ArchiveStore = signalStore(
         }
       },
 
+      /** L'extrait du morceau à cette position du jour affiché, demandé à chaque écoute ; `null` sans jour affiché. */
+      previewUrl(position: number): Promise<string | null> {
+        const day = store.day();
+        return day ? api.archivePreviewUrl(day.date, position) : Promise.resolve(null);
+      },
+
       /** Les jours publiés (le calendrier) ; vide si la lecture échoue. */
       async loadDates(): Promise<readonly string[]> {
         if (store.dates() === null) {

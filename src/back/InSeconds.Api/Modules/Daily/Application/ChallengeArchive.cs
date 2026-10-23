@@ -56,6 +56,10 @@ public sealed record ArchiveDayResponse(
     IReadOnlyList<ArchiveScoreBucketResponse> ScoreDistribution,
     IReadOnlyList<ArchiveTrackResponse> Tracks);
 
+/// <summary>L'extrait de 30 s d'un morceau d'un jour passé.</summary>
+/// <param name="PreviewUrl">Adresse signée et périssable (15 min, piège 14) ; vide si Deezer n'a pas d'extrait, ou n'a pas répondu.</param>
+public sealed record ArchivePreviewResponse(string? PreviewUrl);
+
 /// <summary>Les jours publiés, du plus récent (la veille, s'il y a eu un défi) au plus ancien.</summary>
 public sealed record ArchiveIndexResponse(IReadOnlyList<DateOnly> Dates);
 
@@ -232,4 +236,37 @@ public static class GetMyArchiveDayEndpoint
             ScoreDistribution.BetterThanPercent(ChallengeArchive.CompletedScores(day.Stats), own.TotalScore),
             own.Answers.Select(a => new ArchiveMyAnswerResponse(a.Position, a.ArtistCorrect, a.TitleCorrect, a.ListenedSeconds, a.Score)).ToList());
     }
+}
+
+public static class GetArchivePreviewEndpoint
+{
+    /// <summary>Le morceau à cette position du défi de ce jour, vide si le jour n'est pas publié ou n'a pas ce morceau.</summary>
+    public static async Task<TrackInfo?> LoadAsync(
+        string date, int position, IDailyStatsQueries stats, ITrackDirectory directory, IGameCalendar calendar, CancellationToken ct)
+    {
+        if (!ChallengeArchive.TryParse(date, out var day) || day > ChallengeArchive.LastPublishedDay(calendar))
+            return null;
+        if (await stats.FindChallengeIdAsync(day, ct) is not { } challengeId)
+            return null;
+        if ((await stats.GetChallengeTracksAsync(challengeId, ct)).FirstOrDefault(t => t.Position == position) is not { } track)
+            return null;
+        return (await directory.GetAsync([track.TrackId], ct)).GetValueOrDefault(track.TrackId);
+    }
+
+    public static ProblemDetails Validate(TrackInfo? track) =>
+        track is null
+            ? ApiProblem.Of(StatusCodes.Status404NotFound, DailyErrorCodes.ArchiveNotAvailable, "Les réponses de ce jour ne sont pas publiées.")
+            : WolverineContinue.NoProblems;
+
+    /// <summary>
+    /// <c>GET /api/daily/archive/{date}/tracks/{position}/preview</c> : public, l'extrait d'un morceau d'un jour publié, pour le réécouter sur la
+    /// page de ce jour. Une adresse neuve à chaque appel (elle expire en 15 min, la page d'un jour reste en cache bien plus longtemps), jamais mise
+    /// en cache (<c>no-store</c>), sans créer de joueur. 404 <c>daily.archive_not_available</c> pour un jour pas publié (le jour même compris) ou
+    /// une position inconnue.
+    /// </summary>
+    [WolverineGet("/api/daily/archive/{date}/tracks/{position}/preview", OperationId = "getArchivePreview")]
+    [EnableRateLimiting(RateLimitPolicies.DailyArchivePreview)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public static async Task<ArchivePreviewResponse> Get([NotBody] TrackInfo track, ITrackPreviews previews, CancellationToken ct) =>
+        new((await previews.GetUrlsAsync([track], ct)).GetValueOrDefault(track.Id));
 }

@@ -883,6 +883,65 @@
           }
         }
       }
+    },
+    "/api/daily/archive/{date}/tracks/{position}/preview": {
+      "get": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "getArchivePreview",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "position",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArchivePreviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2568,6 +2627,20 @@
             "format": "int32"
           }
         }
+      },
+      "ArchivePreviewResponse": {
+        "required": [
+          "previewUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "previewUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
       }
     }
   },
@@ -2601,6 +2674,9 @@
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.GetMyArchiveDayEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.GetArchivePreviewEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.RecomputeDayStatsEndpoint"

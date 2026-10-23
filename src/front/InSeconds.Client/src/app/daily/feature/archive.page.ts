@@ -4,6 +4,8 @@ import {
 import { Meta, Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { AudioPreviewPlayer } from '../../core/audio-preview/audio-preview.player';
+import { PreviewTrackData, PreviewTrackDialog } from '../../core/audio-preview/preview-track.dialog';
 import { ErrorReportingService } from '../../core/errors/error-reporting.service';
 import { LanguageService } from '../../core/i18n/language.service';
 import { SessionStore } from '../../core/session/session.store';
@@ -12,7 +14,7 @@ import { ButtonComponent } from '../../ui/button/button.component';
 import { DecorBackgroundComponent } from '../../ui/decor-background/decor-background.component';
 import { ModalService } from '../../ui/modal/modal.service';
 import { ArchiveStore } from '../data-access/archive.store';
-import { answerAt, artistsSummary, formatGameDate } from '../domain/archive';
+import { ArchiveTrack, answerAt, artistsSummary, formatGameDate } from '../domain/archive';
 import { ScoreChartData } from '../domain/daily';
 import { EMPTY_STREAK } from '../domain/streak';
 import { ArchiveCalendarData, ArchiveCalendarResult, ArchiveCalendarSheetComponent } from '../ui/archive-calendar-sheet/archive-calendar-sheet.component';
@@ -36,7 +38,7 @@ import { StreakSheetComponent, StreakSheetData, StreakSheetResult } from '../ui/
     TranslatePipe, RouterLink, DecorBackgroundComponent, DailyBrandComponent, DailyFooterComponent, AccountLinkComponent, StreakPillComponent,
     ArchiveDayHeaderComponent, ArchiveTrackRowComponent, ScoreDistributionChartComponent, StatusScreenComponent, ButtonComponent,
   ],
-  providers: [ArchiveStore],
+  providers: [ArchiveStore, AudioPreviewPlayer],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './archive.page.html',
 })
@@ -114,6 +116,12 @@ export class ArchivePage implements OnInit {
     ref.closed.subscribe(date => {
       if (date && date !== day.date) void this.router.navigate(['/daily/archive', date]);
     });
+  }
+
+  /** La fenêtre d'écoute de l'admin, avec une adresse d'extrait neuve à chaque ouverture. */
+  protected listen(track: ArchiveTrack): void {
+    const data: PreviewTrackData = { artist: track.artist, title: track.title, loadPreviewUrl: () => this.store.previewUrl(track.position) };
+    this.modal.open(PreviewTrackDialog, { data, maxWidth: '26rem', injector: this.injector });
   }
 
   protected openStreakSheet(): void {
