@@ -164,7 +164,7 @@ ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=insecond
 (cd InSeconds.Api && dotnet ef migrations add <Nom> --output-dir Infrastructure/Persistence/Migrations)
 rm -rf InSeconds.Api/Internal/Generated && dotnet run --project InSeconds.Api -- codegen write   # après un changement de handler
 
-# Front (depuis src/front/InSeconds.Client ; Node ≥ 22.22.3)
+# Front (depuis src/front/InSeconds.Client ; Node 24)
 npm ci
 npm start                    # :5176, /api /health /jobs relayés vers :5175
 npx ng test --watch=false    # Vitest dans Chromium

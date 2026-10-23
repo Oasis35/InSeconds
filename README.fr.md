@@ -37,7 +37,7 @@
 
 - Docker (base PostgreSQL de dev, et tests d'intégration)
 - .NET 10 SDK
-- Node.js ≥ 22.22.3 (exigé par Angular CLI 22.2) et npm
+- Node.js 24 (24.15 ou plus, exigé par Angular CLI 22.2 et html2canvas-pro) et npm
 
 ### Lancer la base et l'API
 
