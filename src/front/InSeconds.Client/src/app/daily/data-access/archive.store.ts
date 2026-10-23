@@ -54,9 +54,9 @@ export const ArchiveStore = signalStore(
       },
 
       /** L'extrait du morceau à cette position du jour affiché, demandé à chaque écoute ; `null` sans jour affiché. */
-      async previewUrl(position: number): Promise<string | null> {
+      previewUrl(position: number): Promise<string | null> {
         const day = store.day();
-        return day ? api.archivePreviewUrl(day.date, position) : null;
+        return day ? api.archivePreviewUrl(day.date, position) : Promise.resolve(null);
       },
 
       /** Les jours publiés (le calendrier) ; vide si la lecture échoue. */
