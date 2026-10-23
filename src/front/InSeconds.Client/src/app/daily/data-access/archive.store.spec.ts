@@ -55,6 +55,14 @@ describe('ArchiveStore', () => {
     expect(api.calls.filter(c => c === 'archiveDates')).toHaveLength(1);
   });
 
+  it("demande l'extrait d'un morceau du jour affiché", async () => {
+    expect(await store.previewUrl(2)).toBeNull();
+    await store.load('2026-10-21');
+
+    expect(await store.previewUrl(2)).toBe('https://preview/archive.mp3');
+    expect(api.calls).toContain('archivePreview 2026-10-21 2');
+  });
+
   it("ignore une réponse arrivée après qu'on a changé de jour", async () => {
     api.archiveDays['2026-10-20'] = ARCHIVE_DAY({ date: '2026-10-20' });
     const first = store.load('2026-10-21');

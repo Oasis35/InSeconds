@@ -53,4 +53,25 @@ test.describe('Réponses des jours passés', () => {
     await page.getByTestId('archive-play-today').click();
     await expect(page).toHaveURL(/\/daily$/);
   });
+
+  test("un morceau s'écoute dans la fenêtre de l'admin, et son nom se déplie au toucher", async ({ page }) => {
+    await page.goto('/daily/archive');
+    const track = page.getByTestId('archive-track').first();
+    const text = track.getByTestId('archive-track-text');
+
+    await expect(text).toHaveAttribute('aria-expanded', 'false');
+    await text.click();
+    await expect(text).toHaveAttribute('aria-expanded', 'true');
+    await text.click();
+    await expect(text).toHaveAttribute('aria-expanded', 'false');
+
+    // Une adresse d'extrait neuve, demandée à l'ouverture de la fenêtre.
+    const preview = page.waitForResponse(r => /\/api\/daily\/archive\/[\d-]+\/tracks\/1\/preview$/.test(r.url()) && r.ok());
+    await track.getByTestId('archive-listen').click();
+    await preview;
+    await expect(page.getByTestId('preview-toggle')).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('preview-toggle')).toHaveCount(0);
+  });
 });

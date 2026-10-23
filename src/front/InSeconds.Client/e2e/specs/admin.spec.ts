@@ -367,7 +367,7 @@ test.describe('Admin - pool', () => {
     const modal = page.getByRole('dialog').filter({ hasText: 'Écouter l\'extrait' });
     await expect(modal).toBeVisible();
     // FakeDeezerHandler renvoie un extrait → lecteur prêt (bouton lecture/pause).
-    await expect(modal.getByRole('button', { name: /▶|⏸/ })).toBeVisible();
+    await expect(modal.getByTestId('preview-toggle')).toBeVisible();
 
     await modal.getByRole('button', { name: 'Fermer' }).click();
     await expect(modal).not.toBeVisible();

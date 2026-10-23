@@ -41,6 +41,8 @@ public static class RateLimitingServiceCollectionExtensions
             [RateLimitPolicies.CatalogueSearch] = (60, TimeSpan.FromMinutes(5), PartitionBy.Ip),
             // Large : chaque jour feuilleté fait deux requêtes (les réponses de tous, la partie du joueur), parfois derrière un NAT partagé.
             [RateLimitPolicies.DailyArchive] = (300, TimeSpan.FromMinutes(5), PartitionBy.Ip),
+            // Un jour feuilleté a cinq morceaux, qu'on réécoute parfois : jamais gêné, mais pas de quoi vider le quota Deezer.
+            [RateLimitPolicies.DailyArchivePreview] = (40, TimeSpan.FromMinutes(5), PartitionBy.Ip),
         };
 
     /// <param name="playerKey">

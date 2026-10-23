@@ -27,4 +27,7 @@ public static class RateLimitPolicies
 
     /// <summary>Réponses des jours passés et plan du site (publics ; la veille est calculée en direct).</summary>
     public const string DailyArchive = "daily-archive";
+
+    /// <summary>Extrait d'un morceau d'un jour passé (public ; chaque appel interroge Deezer, quota partagé avec les parties).</summary>
+    public const string DailyArchivePreview = "daily-archive-preview";
 }

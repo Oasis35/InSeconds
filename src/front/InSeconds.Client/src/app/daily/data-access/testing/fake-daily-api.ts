@@ -80,6 +80,7 @@ export class FakeDailyApi {
   /** Les jours publiés, par date ; une date absente n'est pas publiée (`null`). */
   archiveDays: Record<string, ArchiveDay | Error> = { '2026-10-21': ARCHIVE_DAY() };
   archiveMe: ArchiveMe | Error = NOBODY;
+  archivePreview: string | null | Error = 'https://preview/archive.mp3';
   /** La réponse du serveur à chaque réponse envoyée ; `Error` pour un échec. */
   answer: (answer: AnswerToSend) => AnsweredTrack | Error = a => ANSWERED(a.position);
   hintFacts: readonly { kind: string; value: string | null }[] = [{ kind: 'year', value: '2013' }];
@@ -144,6 +145,11 @@ export class FakeDailyApi {
     return this.result(this.archiveMe);
   }
 
+  archivePreviewCall(date: string, position: number): Promise<string | null> {
+    this.calls.push(`archivePreview ${date} ${position}`);
+    return this.result(this.archivePreview);
+  }
+
   statsCall(): Promise<DayStats> {
     this.calls.push('stats');
     return this.result(this.stats);
@@ -167,6 +173,7 @@ export function provideFakeDailyApi(fake: FakeDailyApi): Provider {
       archiveDates: () => fake.archiveDatesCall(),
       archiveDay: (date: string) => fake.archiveDayCall(date),
       myArchiveDay: (date: string) => fake.myArchiveDayCall(date),
+      archivePreviewUrl: (date: string, position: number) => fake.archivePreviewCall(date, position),
     } satisfies Partial<Record<keyof DailyApi, unknown>>,
   };
 }

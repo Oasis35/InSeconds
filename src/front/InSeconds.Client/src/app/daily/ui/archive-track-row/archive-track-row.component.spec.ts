@@ -1,3 +1,4 @@
+import { ApplicationRef } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideTranslateService } from '@ngx-translate/core';
 import { ARCHIVE_ME, ARCHIVE_TRACK } from '../../data-access/testing/fake-daily-api';
@@ -54,5 +55,39 @@ describe('ArchiveTrackRowComponent', () => {
     const element = render(bare, ARCHIVE_ME().answers[0]);
     expect(element.querySelector('[data-testid=guess-time-chart]')).toBeNull();
     expect(element.querySelector('[data-testid=archive-mine]')).not.toBeNull();
+  });
+
+  it('artiste et titre sur une ligne, en entier au toucher, de nouveau sur une ligne au suivant', () => {
+    const element = render(ARCHIVE_TRACK(2));
+    const text = element.querySelector<HTMLButtonElement>('[data-testid=archive-track-text]')!;
+    const truncated = () => ['archive-artist', 'archive-title'].map(id => element.querySelector(`[data-testid=${id}]`)!.classList.contains('truncate'));
+
+    // Le texte entier est toujours dans la page (moteurs de recherche), et dans l'info-bulle.
+    expect(element.querySelector('[data-testid=archive-artist]')!.textContent!.trim()).toBe('Artiste 2');
+    expect(text.title).toBe('Artiste 2 · Titre 2');
+    expect(truncated()).toEqual([true, true]);
+    expect(text.getAttribute('aria-expanded')).toBe('false');
+
+    text.click();
+    TestBed.inject(ApplicationRef).tick();
+    expect(truncated()).toEqual([false, false]);
+    expect(text.getAttribute('aria-expanded')).toBe('true');
+
+    text.click();
+    TestBed.inject(ApplicationRef).tick();
+    expect(truncated()).toEqual([true, true]);
+  });
+
+  it("« Écouter l'extrait » demande la fenêtre d'écoute à la page", () => {
+    TestBed.configureTestingModule({ providers: [provideTranslateService()] });
+    const fixture = TestBed.createComponent(ArchiveTrackRowComponent);
+    fixture.componentRef.setInput('track', ARCHIVE_TRACK(2));
+    const listen = vi.fn();
+    fixture.componentInstance.listen.subscribe(listen);
+    fixture.detectChanges();
+
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid=archive-listen]')!.click();
+
+    expect(listen).toHaveBeenCalledOnce();
   });
 });
