@@ -5,7 +5,7 @@ import { ArchiveMyAnswer, ArchiveTrack } from '../../domain/archive';
 import { DeezerBadgeComponent } from '../deezer-badge/deezer-badge.component';
 
 /**
- * Un morceau d'un jour passé : pochette numérotée, artiste (« le plus raté » en rouge), titre et année, badge Deezer ; puis, s'il y a des
+ * Un morceau d'un jour passé : pochette numérotée, artiste (« le plus raté » en rouge), titre et année, badge Deezer carré en haut à droite ; puis, s'il y a des
  * statistiques, « Joueurs » (violet : part des joueurs qui ont trouvé l'artiste, le titre) et, pour un joueur reconnu, « Toi » (orange : ✓ ou ✗
  * comme à la révélation, ses points), et l'histogramme des paliers, sa barre en orange. Sans statistiques, « Toi » seul.
  */
@@ -21,6 +21,9 @@ export class ArchiveTrackRowComponent {
   readonly mine = input<ArchiveMyAnswer | null>(null);
   readonly mostMissed = input(false);
   readonly lang = input<'fr' | 'en'>('fr');
+
+  /** Badge Deezer vertical (logo carré) : ses proportions ne sont pas les mêmes en français et en anglais. */
+  protected readonly badgeSize = computed(() => (this.lang() === 'en' ? { width: '30', height: '42' } : { width: '47', height: '42' }));
 
   protected readonly hasStats = computed(() => this.track().artistFoundPercent !== null);
 

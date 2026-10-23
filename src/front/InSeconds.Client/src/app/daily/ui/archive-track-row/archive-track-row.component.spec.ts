@@ -23,7 +23,9 @@ describe('ArchiveTrackRowComponent', () => {
     expect(element.textContent).toContain('2002');
     expect(players).toContain('74 %');
     expect(players).toContain('69 %');
-    expect(element.querySelector('[data-testid=not-found-caption]')!.textContent!.trim()).toBe('21 %');
+    const values = [...element.querySelectorAll('[data-testid=bar-count]')].map(e => e.textContent!.trim());
+    expect(values.every(v => v.endsWith(' %'))).toBe(true);
+    expect(values.at(-1)).toBe('21 %');
     expect(element.querySelector('[data-testid=most-missed]')).not.toBeNull();
     // Un visiteur : pas de « Toi », aucune barre en orange.
     expect(element.querySelector('[data-testid=archive-mine]')).toBeNull();

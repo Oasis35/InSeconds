@@ -38,10 +38,10 @@ describe('AlreadyPlayedScreenComponent', () => {
     expect(card.textContent).toContain('2250');
   });
 
-  it('sous le seuil de joueurs hier, un simple lien', () => {
+  it('sous le seuil de joueurs hier, les pochettes sans la médiane', () => {
     const few = render({ stats: stats(), yesterday: ARCHIVE_DAY({ hasStats: false, medianScore: null }) }).element;
-    expect(few.querySelector('[data-testid=yesterday-answers] img')).toBeNull();
-    expect(few.querySelector('[data-testid=yesterday-answers]')).not.toBeNull();
+    expect(few.querySelectorAll('[data-testid=yesterday-answers] img')).toHaveLength(3);
+    expect(few.querySelector('[data-testid=yesterday-median]')).toBeNull();
   });
 
   it('sans défi hier, pas d encart', () => {
