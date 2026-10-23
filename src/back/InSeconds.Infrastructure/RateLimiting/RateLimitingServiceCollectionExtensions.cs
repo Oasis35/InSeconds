@@ -41,6 +41,10 @@ public static class RateLimitingServiceCollectionExtensions
             [RateLimitPolicies.CatalogueSearch] = (60, TimeSpan.FromMinutes(5), PartitionBy.Ip),
             // Large : chaque jour feuilleté fait deux requêtes (les réponses de tous, la partie du joueur), parfois derrière un NAT partagé.
             [RateLimitPolicies.DailyArchive] = (300, TimeSpan.FromMinutes(5), PartitionBy.Ip),
+            // Un run dure plusieurs minutes : 20 lancements en 10 minutes ne gênent aucun joueur, et bornent les tirages et les lignes créées.
+            [RateLimitPolicies.RunLaunch] = (20, TimeSpan.FromMinutes(10), PartitionBy.Player),
+            // Un lien s'ouvre une fois par ami : large pour un NAT partagé, trop étroit pour deviner des codes (31⁶ possibles).
+            [RateLimitPolicies.RunLink] = (60, TimeSpan.FromMinutes(5), PartitionBy.Ip),
         };
 
     /// <param name="playerKey">

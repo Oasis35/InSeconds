@@ -16,4 +16,15 @@ public sealed class DeezerTrackPreviews(IPreviewProvider previews) : ITrackPrevi
             .Where(l => l.Lookup is PreviewLookup.Found)
             .ToDictionary(l => l.Id, l => ((PreviewLookup.Found)l.Lookup).Url);
     }
+
+    public async Task<TrackPreview> GetAsync(TrackInfo track, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(track);
+        return await previews.GetPreviewAsync(track.DeezerTrackId, ct) switch
+        {
+            PreviewLookup.Found found => TrackPreview.Available(found.Url),
+            PreviewLookup.Missing => TrackPreview.Missing,
+            _ => TrackPreview.Unavailable,
+        };
+    }
 }

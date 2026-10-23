@@ -1,6 +1,6 @@
 # RGPD : ce qui est en place
 
-État au 19/10/2026, après la passe RGPD du 16/10/2026 (PR #351, #349, #352). Le texte public est la page `/privacy` (traductions `privacy.*` de `public/i18n/fr.json` et `en.json`) : toute évolution du traitement des données doit y être reportée.
+État au 23/10/2026, après la passe RGPD du 16/10/2026 (PR #351, #349, #352) et la partie du mode Run (#363). Le texte public est la page `/privacy` (traductions `privacy.*` de `public/i18n/fr.json` et `en.json`) : toute évolution du traitement des données doit y être reportée.
 
 ## Accès aux données
 
@@ -15,9 +15,16 @@ Jamais d'email, de pseudo, de réponse saisie, de cookie ni d'`Authorization` (t
 
 ## Droits du joueur
 
-- **Copie** : `GET /api/players/me/export` (JSON : compte, appareils, puis une section par mode de jeu sous `modules` : `modules.daily` pour la série et les parties), bouton « Tes données » du profil.
+- **Copie** : `GET /api/players/me/export` (JSON : compte, appareils, puis une section par mode de jeu sous `modules` : `modules.daily` pour la série et les parties, `modules.runs` pour les parties, les playlists créées, le record et l'accès), bouton « Tes données » du profil.
 - **Effacement** : `POST /api/players/me/delete` (pseudo retapé pour confirmer), effacement réel (`AccountErasure`, qui appelle l'`IPlayerDataContributor` de chaque mode de jeu dans la même transaction).
 - **Sans connexion possible** : commandes de secours sur le VPS `--export-player` / `--delete-player` (cf. `src/back/CLAUDE.md` § Démarrage), réponse sous un mois, uniquement à l'adresse du compte.
+
+## Mode Run (Platines)
+
+- **Données gardées** (schéma `runs`) : les parties (statut, manches passées, score, dates), le résultat de chaque morceau (artiste et titre trouvés ou non, points, morceau neutralisé), **jamais le texte saisi** ; le record (meilleur score, meilleur disque) ; les playlists lancées et leur auteur ; l'accès accordé par l'admin.
+- **Visibilité** : une playlist se partage par son lien (code de 6 caractères). Qui l'ouvre voit le pseudo de son auteur (rien pour un invité ou un compte effacé : « Invité » à l'écran) ; la comparaison, à venir (#366), montrera après sa propre partie le pseudo, le disque et le score de chaque joueur de la playlist. Pas de classement public, pas de nombre de joueurs sur le lien. La page `/privacy` le dit (§ Données collectées).
+- **Effacement** : `RunsPlayerData` supprime les parties, les réponses, le record et l'accès du joueur ; les playlists qu'il a lancées restent jouables, `created_by` passe à `null`.
+- **Énumération des liens** : la lecture d'un lien est limitée à 60 requêtes par IP en 5 minutes (`run-link`), pour 31⁶ codes possibles.
 
 ## Durées de conservation
 
@@ -29,6 +36,7 @@ Appliquées chaque nuit par `players-purge-expired-tokens` :
 | Appareil (même déconnecté) | 91 jours après sa dernière visite (un jour après l'expiration du cookie) |
 | Compte sans visite | 3 ans, puis effacé avec son historique (jamais un admin, sans email de prévenance) |
 | Invité | jamais effacé, mais anonyme une fois ses appareils supprimés |
+| Playlist d'un run | sans limite, comme les défis du jour ; sans auteur une fois son compte effacé |
 | Texte tapé par le joueur | jamais stocké (seule la correction est gardée) |
 
 ## Staging
