@@ -3,7 +3,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { RunRound, objectiveBar, objectiveReached } from '../../domain/run';
 
 /**
- * Le bloc objectif d'une manche : « Débloquer la manche N » avec son cadenas (ouvert une fois l'objectif atteint), le score déjà marqué et
+ * Le bloc objectif d'une manche : « Débloquer la manche N » (sur la dernière : « Viser le disque d'or ») avec son cadenas (ouvert une fois l'objectif atteint), le score déjà marqué et
  * l'objectif en points, et la barre avec un trait à l'objectif. `gain` (« +67 ») s'ajoute après une réponse. Aucun multiplicateur n'est montré.
  */
 @Component({
@@ -24,7 +24,11 @@ import { RunRound, objectiveBar, objectiveReached } from '../../domain/run';
               <path d="M8 11V7a4 4 0 0 1 8 0v4" />
             }
           </svg>
-          {{ 'runs.objective.unlock' | translate: { round: round().round + 1 } }}
+          @if (last()) {
+            {{ 'runs.objective.gold' | translate }}
+          } @else {
+            {{ 'runs.objective.unlock' | translate: { round: round().round + 1 } }}
+          }
         </p>
         <p class="text-sm tabular-nums whitespace-nowrap" style="color:var(--text-faint)">
           @if (gain() !== null) {
@@ -44,9 +48,12 @@ import { RunRound, objectiveBar, objectiveReached } from '../../domain/run';
 })
 export class RunObjectiveComponent {
   readonly round = input.required<RunRound>();
+  /** Le nombre de manches de la playlist : la dernière ne débloque rien, elle vise le disque d'or. */
+  readonly rounds = input.required<number>();
   /** Les points du morceau qu'on vient de répondre, `null` avant la réponse. */
   readonly gain = input<number | null>(null);
 
+  protected readonly last = computed(() => this.round().round >= this.rounds());
   protected readonly bar = computed(() => objectiveBar(this.round()));
   protected readonly reached = computed(() => objectiveReached(this.round()));
   protected readonly gainText = computed(() => `+${this.gain() ?? 0}`);

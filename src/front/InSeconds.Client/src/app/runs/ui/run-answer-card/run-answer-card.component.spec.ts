@@ -21,7 +21,13 @@ describe('RunAnswerCardComponent', () => {
     expect(text(element, 'run-answer-artist')).toBe('Daft Punk');
     expect(text(element, 'run-answer-title')).toBe('Harder, Better, Faster, Stronger');
     expect(text(element, 'run-answer-points')).toBe('+67');
-    expect(element.querySelector('[data-testid="run-answer-deezer"]')?.getAttribute('href')).toBe('https://www.deezer.com/track/3135553');
+    expect(element.querySelector('[data-testid="run-answer-deezer"] a')?.getAttribute('href')).toBe('https://www.deezer.com/track/3135553');
+  });
+
+  it('la pochette est ronde, comme celle de la révélation du Daily', () => {
+    const { element } = render(TRACK());
+
+    expect(element.querySelector('img')?.classList).toContain('rounded-full');
   });
 
   it('✓ pour ce qui est trouvé, ✗ pour le reste', () => {

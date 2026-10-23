@@ -9,7 +9,7 @@ import { RunsApi, StartOutcome } from './runs.api';
 
 /**
  * L'écran affiché : le chargement, l'accueil du mode (lancer ou reprendre), la partie, le bilan d'une manche, la fin, et les refus (pas
- * d'accès sur invitation, pas de playlist, erreur).
+ * d'accès sur invitation, que la page traduit en retour au jeu du jour ; pas de playlist ; erreur).
  */
 export type RunScreen = 'loading' | 'welcome' | 'playing' | 'round_end' | 'finished' | 'access_denied' | 'no_challenge' | 'error';
 

@@ -825,6 +825,7 @@
       "score": "Score"
     },
     "objective": {
+      "gold": "Aim for the gold record",
       "unlock": "Unlock round {{ round }}",
       "points": "pts"
     },
@@ -832,7 +833,6 @@
       "position": "Track {{ position }} of {{ total }}"
     },
     "answer": {
-      "listenOnDeezer": "Listen on Deezer",
       "next": "Next track"
     },
     "welcome": {
@@ -844,25 +844,21 @@
       "resume": "Resume the run"
     },
     "status": {
-      "access_denied": {
-        "title": "Invitation only",
-        "body": "Platines is invitation-only for now."
-      },
       "no_challenge": {
         "title": "No playlist",
         "body": "A playlist cannot be prepared right now.\nTry again a little later."
       },
       "error": {
-        "title": "Oops",
-        "body": "Platines could not be loaded.\nCheck your connection and try again."
+        "title": "Something went wrong",
+        "body": "The playlist could not be loaded."
       },
       "backToDaily": "Back to the daily game"
     },
     "leave": {
-      "title": "Leave the run?",
+      "title": "Run in progress",
       "body": "Your run is kept: you can resume it from the Platines home.",
-      "confirm": "Keep playing",
-      "cancel": "Leave"
+      "confirm": "Leave anyway",
+      "cancel": "Keep playing"
     },
     "abandon": {
       "title": "Give up this run?",

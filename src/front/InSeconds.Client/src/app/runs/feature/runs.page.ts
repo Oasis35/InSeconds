@@ -1,6 +1,9 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, effect, inject } from '@angular/core';
 import { DialogRef } from '@angular/cdk/dialog';
+import { Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { ErrorReportingService } from '../../core/errors/error-reporting.service';
+import { LanguageService } from '../../core/i18n/language.service';
 import { VersionService } from '../../core/version/version.service';
 import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { TrackRoundComponent } from '../../gameplay/feature/track-round.component';
@@ -19,7 +22,7 @@ import { reloadMomentFor } from './reload-moment';
 
 /**
  * La page du mode Run (`/runs`) : elle affiche l'écran que le `RunGameStore` indique et branche ce qui est propre au navigateur : les fenêtres
- * (abandon, sortie de partie), la fermeture de l'onglet, la nouvelle version du site. Les stores `RunGameStore` et `TrackRoundStore` sont ceux de
+ * (abandon, sortie de partie), la fermeture de l'onglet, la nouvelle version du site, le renvoi au jeu du jour sans accès sur invitation. Les stores `RunGameStore` et `TrackRoundStore` sont ceux de
  * cette page ; l'adaptateur de l'API et le lecteur sont fournis par la route.
  */
 @Component({
@@ -35,6 +38,9 @@ import { reloadMomentFor } from './reload-moment';
 })
 export class RunsPage implements OnInit {
   protected readonly store = inject(RunGameStore);
+  protected readonly language = inject(LanguageService);
+  /** Le code de la dernière erreur serveur (`traceId`), affiché sur l'écran d'erreur comme au Daily. */
+  protected readonly errorReporting = inject(ErrorReportingService);
   private readonly modal = inject(ModalService);
   private readonly translate = inject(TranslateService);
   private leaveDialog: DialogRef<boolean, ConfirmDialogComponent> | null = null;
@@ -45,6 +51,11 @@ export class RunsPage implements OnInit {
     // Si la partie quitte « playing » pendant qu'une confirmation de sortie est ouverte, il n'y a plus de manche à protéger : la navigation continue.
     effect(() => {
       if (this.store.screen() !== 'playing' && this.leaveDialog) this.leaveDialog.close(true);
+    });
+    // Sans accès sur invitation, le mode n'a pas d'écran : retour au jeu du jour, sans laisser `/runs` dans l'historique.
+    const router = inject(Router);
+    effect(() => {
+      if (this.store.screen() === 'access_denied') void router.navigateByUrl('/daily', { replaceUrl: true });
     });
   }
 
@@ -62,7 +73,7 @@ export class RunsPage implements OnInit {
     const data: ConfirmDialogData = {
       title: this.translate.instant('runs.leave.title'),
       body: this.translate.instant('runs.leave.body'),
-      // Les rôles sont inversés à dessein : « Continuer à jouer » est l'action sûre, mise en avant.
+      // Confirmer (`true`) laisse partir : « Quitter quand même ». « Continuer à jouer » est l'annulation, qui a le focus (comme au Daily).
       confirmLabel: this.translate.instant('runs.leave.confirm'),
       cancelLabel: this.translate.instant('runs.leave.cancel'),
     };

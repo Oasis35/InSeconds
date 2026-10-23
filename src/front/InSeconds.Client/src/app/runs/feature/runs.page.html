@@ -17,12 +17,12 @@
         <div class="screen-enter flex-1 flex flex-col gap-4 pt-2">
           @if (store.shownRound(); as shown) {
             <app-run-header [round]="shown.round" [rounds]="store.rounds()" [score]="store.totalScore()" (abandon)="confirmAbandon()" />
-            <app-run-objective [round]="shown" [gain]="store.gain()" />
+            <app-run-objective [round]="shown" [rounds]="store.rounds()" [gain]="store.gain()" />
             <app-run-pills [pills]="store.pills()" [position]="store.positionInRound()" />
           }
 
           @if (store.revealed(); as revealed) {
-            <app-run-answer-card [track]="revealed" (next)="store.nextTrack()" />
+            <app-run-answer-card [track]="revealed" [lang]="language.current()" (next)="store.nextTrack()" />
           }
 
           <!-- La manche reste montée : elle garde l'autocomplétion et rejoue l'extrait en entier après la réponse ; elle ne montre rien de plus. -->
@@ -64,16 +64,13 @@
         </div>
       }
 
-      @case ('access_denied') {
-        <app-run-status-screen kind="access_denied" />
-      }
-
+      <!-- Sans accès sur invitation : aucun écran, la page renvoie au jeu du jour (cf. le constructeur). -->
       @case ('no_challenge') {
         <app-run-status-screen kind="no_challenge" (retry)="store.init()" />
       }
 
       @case ('error') {
-        <app-run-status-screen kind="error" (retry)="store.init()" />
+        <app-run-status-screen kind="error" [errorCode]="errorReporting.lastErrorCode()" (retry)="store.init()" />
       }
     }
   </main>

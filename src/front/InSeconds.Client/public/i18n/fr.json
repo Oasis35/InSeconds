@@ -825,6 +825,7 @@
       "score": "Score"
     },
     "objective": {
+      "gold": "Viser le disque d’or",
       "unlock": "Débloquer la manche {{ round }}",
       "points": "pts"
     },
@@ -832,7 +833,6 @@
       "position": "Morceau {{ position }} sur {{ total }}"
     },
     "answer": {
-      "listenOnDeezer": "Écouter sur Deezer",
       "next": "Morceau suivant"
     },
     "welcome": {
@@ -844,25 +844,21 @@
       "resume": "Reprendre la partie"
     },
     "status": {
-      "access_denied": {
-        "title": "Accès réservé",
-        "body": "Platines est ouvert sur invitation pour le moment."
-      },
       "no_challenge": {
         "title": "Pas de playlist",
         "body": "Impossible de préparer une playlist pour l’instant.\nRéessaie un peu plus tard."
       },
       "error": {
-        "title": "Oups",
-        "body": "Impossible de charger Platines.\nVérifie ta connexion et réessaie."
+        "title": "Une erreur est survenue",
+        "body": "Impossible de charger la playlist."
       },
       "backToDaily": "Retour au jeu du jour"
     },
     "leave": {
-      "title": "Quitter la partie ?",
+      "title": "Partie en cours",
       "body": "Ta partie est gardée : tu pourras la reprendre depuis l’accueil de Platines.",
-      "confirm": "Continuer à jouer",
-      "cancel": "Quitter"
+      "confirm": "Quitter quand même",
+      "cancel": "Continuer à jouer"
     },
     "abandon": {
       "title": "Abandonner la partie ?",

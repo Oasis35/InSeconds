@@ -100,7 +100,7 @@ describe('RunGameStore', () => {
     });
 
     it.each<[string, StartOutcome, RunScreen]>([
-      ["un refus d'accès au lancement montre l'écran réservé", { kind: 'access_denied' }, 'access_denied'],
+      ["un refus d'accès au lancement passe à l'écran sans accès (la page renvoie au jeu du jour)", { kind: 'access_denied' }, 'access_denied'],
       ['sans playlist possible, le dit', { kind: 'no_challenge' }, 'no_challenge'],
       ["une partie déjà finie ailleurs ramène à l'accueil", { kind: 'already_played', abandoned: false }, 'welcome'],
       ["une erreur de lancement affiche l'erreur", { kind: 'error' }, 'error'],

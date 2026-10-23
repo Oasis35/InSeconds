@@ -1,15 +1,16 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
+import { DeezerBadgeComponent } from '../../../gameplay/ui/deezer-badge/deezer-badge.component';
 import { RunTrack, gainLabel } from '../../domain/run';
 
 /**
- * La réponse après un morceau, à la place du lecteur et de la saisie : la pochette (forme libre) et sa pastille de points, l'artiste et le titre
- * (deux lignes au plus), ✓ ou ✗ pour l'artiste et pour le titre, le lien Deezer, puis « Morceau suivant » (le clic qui lance le son suivant : il
+ * La réponse après un morceau, à la place du lecteur et de la saisie : la pochette (ronde, comme la révélation du Daily) et sa pastille de points, l'artiste et le titre
+ * (deux lignes au plus), ✓ ou ✗ pour l'artiste et pour le titre, le badge officiel Deezer, puis « Morceau suivant » (le clic qui lance le son suivant : il
  * est géré par la page, dans son gestionnaire de clic, pour le déverrouillage du son sur iPhone). Aucun graphique : Run n'en a pas.
  */
 @Component({
   selector: 'app-run-answer-card',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, DeezerBadgeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="space-y-4" data-testid="run-answer">
@@ -17,9 +18,9 @@ import { RunTrack, gainLabel } from '../../domain/run';
         <div class="flex items-start gap-4">
           <div class="relative shrink-0">
             @if (track().coverUrl; as cover) {
-              <img [src]="cover" [alt]="'gameplay.reveal.coverAlt' | translate" class="w-24 h-24 object-cover" style="border-radius:58% 42% 55% 45% / 48% 55% 45% 52%;box-shadow:0 8px 24px rgba(0,0,0,0.5)" />
+              <img [src]="cover" [alt]="'gameplay.reveal.coverAlt' | translate" class="w-24 h-24 object-cover rounded-full" style="box-shadow:0 8px 24px rgba(0,0,0,0.5)" />
             } @else {
-              <div class="w-24 h-24" style="border-radius:58% 42% 55% 45% / 48% 55% 45% 52%;background:var(--gradient-primary);opacity:0.6"></div>
+              <div class="w-24 h-24 rounded-full" style="background:var(--gradient-primary);opacity:0.6"></div>
             }
             <span class="absolute -bottom-1 -right-2 px-2.5 py-1 rounded-full text-sm font-extrabold tabular-nums"
               style="background:var(--color-warn);color:var(--text-on-primary);font-family:var(--font-display)" data-testid="run-answer-points">{{ gain() }}</span>
@@ -41,11 +42,10 @@ import { RunTrack, gainLabel } from '../../domain/run';
             </div>
           </div>
         </div>
-        @if (deezerUrl(); as url) {
-          <a [href]="url" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold"
-            style="border:1px solid var(--border-subtle);color:var(--text-light)" data-testid="run-answer-deezer">
-            <span aria-hidden="true">▶</span> {{ 'runs.answer.listenOnDeezer' | translate }}
-          </a>
+        @if (track().deezerTrackId; as deezerTrackId) {
+          <div data-testid="run-answer-deezer">
+            <app-deezer-badge [deezerTrackId]="deezerTrackId" [lang]="lang()" width="112" height="16" />
+          </div>
         }
       </section>
 
@@ -59,12 +59,10 @@ import { RunTrack, gainLabel } from '../../domain/run';
 })
 export class RunAnswerCardComponent {
   readonly track = input.required<RunTrack>();
+  /** Langue du badge Deezer (le visuel officiel existe en français et en anglais). */
+  readonly lang = input<'fr' | 'en'>('fr');
   /** « Morceau suivant » : la page lance le son suivant dans ce clic. */
   readonly next = output();
 
   protected readonly gain = computed(() => gainLabel(this.track().points));
-  protected readonly deezerUrl = computed(() => {
-    const id = this.track().deezerTrackId;
-    return id === null ? null : `https://www.deezer.com/track/${id}`;
-  });
 }
