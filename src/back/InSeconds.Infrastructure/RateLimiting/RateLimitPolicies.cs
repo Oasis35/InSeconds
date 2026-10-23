@@ -27,4 +27,10 @@ public static class RateLimitPolicies
 
     /// <summary>Réponses des jours passés et plan du site (publics ; la veille est calculée en direct).</summary>
     public const string DailyArchive = "daily-archive";
+
+    /// <summary>Lancement d'un run (une nouvelle playlist tirée à chaque fois) : par joueur.</summary>
+    public const string RunLaunch = "run-launch";
+
+    /// <summary>Lecture du lien d'une playlist (public, sans authentification) : par IP, contre l'énumération des codes.</summary>
+    public const string RunLink = "run-link";
 }

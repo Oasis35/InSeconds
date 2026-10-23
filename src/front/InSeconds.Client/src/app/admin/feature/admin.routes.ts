@@ -1,5 +1,6 @@
 import { inject } from '@angular/core';
 import { RedirectFunction, Router, Routes } from '@angular/router';
+import { provideAdminRunsApi } from '../data-access/admin-runs-api.providers';
 import { AdminShellPage } from './admin-shell.page';
 import { DEFAULT_TAB, LEGACY_TAB_NAMES } from './admin-tabs';
 
@@ -31,6 +32,7 @@ export const ADMIN_ROUTES: Routes = [
   {
     path: '',
     component: AdminShellPage,
+    providers: [provideAdminRunsApi()],
     children: [
       { path: '', pathMatch: 'full', redirectTo: defaultTab },
       { path: 'pool', pathMatch: 'full', redirectTo: poolToCatalogue },

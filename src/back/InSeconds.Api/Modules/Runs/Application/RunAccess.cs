@@ -22,10 +22,21 @@ public sealed record RunAccessEntry(Guid PlayerId, DateTimeOffset GrantedAt);
 
 public sealed record RunAccessList(IReadOnlyList<RunAccessEntry> Entries);
 
+/// <summary>La partie d'un joueur sur un défi, telle que le lien et l'accueil la voient.</summary>
+public sealed record RunSessionEntry(int SessionId, string ChallengeCode, RunSessionStatus Status);
+
 public interface IRunsQueries
 {
     /// <summary>Les comptes autorisés par l'admin (les admins, qui ont l'accès d'office, n'y figurent que s'ils ont aussi une ligne).</summary>
     Task<IReadOnlyList<RunAccessEntry>> ListAccessAsync(CancellationToken ct);
+
+    /// <summary>La partie en cours la plus récente de ce joueur, toutes playlists confondues.</summary>
+    Task<RunSessionEntry?> FindPendingSessionAsync(Guid playerId, CancellationToken ct);
+
+    /// <summary>La partie de ce joueur sur ce défi.</summary>
+    Task<RunSessionEntry?> FindSessionAsync(int challengeId, Guid playerId, CancellationToken ct);
+
+    Task<RunRecord?> FindRecordAsync(Guid playerId, CancellationToken ct);
 }
 
 public static class ListRunAccessEndpoint
