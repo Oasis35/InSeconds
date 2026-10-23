@@ -89,8 +89,14 @@ jobs:
       - name: Install Playwright system dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         timeout-minutes: 6
-        # apt reste parfois bloqué plus de 10 minutes sur le runner (normalement 20 s) : deux tentatives de 2 min 30 au plus.
+        # Le miroir apt du runner reste parfois bloqué sur un téléchargement (plus de 10 minutes, normalement 20 s). apt abandonne un téléchargement
+        # muet au bout de 20 s et le retente ; sinon deux tentatives de 2 min 30 au plus. Les bibliothèques de Chromium sont déjà sur l'image du
+        # runner (apt ne télécharge que des polices et des mises à jour) : un échec ici ne bloque pas le job, un Chromium qui ne démarre pas
+        # fait échouer les tests, bruyamment.
+        continue-on-error: true
         run: |
+          echo 'Acquire::http::Timeout "20";' | sudo tee /etc/apt/apt.conf.d/99ci-timeouts > /dev/null
+          echo 'Acquire::Retries "3";' | sudo tee -a /etc/apt/apt.conf.d/99ci-timeouts > /dev/null
           for attempt in 1 2; do
             timeout -k 10 150 npx --no-install playwright install-deps chromium && exit 0
             echo "Tentative $attempt : échec ou trop longue, on relance."
@@ -206,8 +212,14 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         working-directory: src/front/InSeconds.Client
         timeout-minutes: 6
-        # apt reste parfois bloqué plus de 10 minutes sur le runner (normalement 20 s) : deux tentatives de 2 min 30 au plus.
+        # Le miroir apt du runner reste parfois bloqué sur un téléchargement (plus de 10 minutes, normalement 20 s). apt abandonne un téléchargement
+        # muet au bout de 20 s et le retente ; sinon deux tentatives de 2 min 30 au plus. Les bibliothèques de Chromium sont déjà sur l'image du
+        # runner (apt ne télécharge que des polices et des mises à jour) : un échec ici ne bloque pas le job, un Chromium qui ne démarre pas
+        # fait échouer les tests, bruyamment.
+        continue-on-error: true
         run: |
+          echo 'Acquire::http::Timeout "20";' | sudo tee /etc/apt/apt.conf.d/99ci-timeouts > /dev/null
+          echo 'Acquire::Retries "3";' | sudo tee -a /etc/apt/apt.conf.d/99ci-timeouts > /dev/null
           for attempt in 1 2; do
             timeout -k 10 150 npx --no-install playwright install-deps chromium && exit 0
             echo "Tentative $attempt : échec ou trop longue, on relance."
