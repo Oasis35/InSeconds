@@ -36,38 +36,35 @@ export class FakeRunsApi implements Pick<RunsApi, 'me' | 'launch' | 'join' | 're
   answerResult: RunPlay | Error = PLAY();
   abandonError: Error | null = null;
 
-  async me(): Promise<RunsMe> {
+  me(): Promise<RunsMe> {
     this.calls.push('me');
-    if (this.meResult instanceof Error) throw this.meResult;
-    return this.meResult;
+    return this.meResult instanceof Error ? Promise.reject(this.meResult) : Promise.resolve(this.meResult);
   }
 
-  async launch(): Promise<StartOutcome> {
+  launch(): Promise<StartOutcome> {
     this.calls.push('launch');
-    return this.launchResult;
+    return Promise.resolve(this.launchResult);
   }
 
-  async join(code: string): Promise<StartOutcome> {
+  join(code: string): Promise<StartOutcome> {
     this.calls.push(`join:${code}`);
-    return this.joinResult;
+    return Promise.resolve(this.joinResult);
   }
 
-  async refreshPreview(sessionId: number): Promise<RunPlay> {
+  refreshPreview(sessionId: number): Promise<RunPlay> {
     this.calls.push(`refreshPreview:${sessionId}`);
-    if (this.refreshResult instanceof Error) throw this.refreshResult;
-    return this.refreshResult;
+    return this.refreshResult instanceof Error ? Promise.reject(this.refreshResult) : Promise.resolve(this.refreshResult);
   }
 
-  async submitAnswer(sessionId: number, answer: RunAnswerToSend): Promise<RunPlay> {
+  submitAnswer(sessionId: number, answer: RunAnswerToSend): Promise<RunPlay> {
     this.calls.push(`submitAnswer:${sessionId}`);
     this.answers.push(answer);
-    if (this.answerResult instanceof Error) throw this.answerResult;
-    return this.answerResult;
+    return this.answerResult instanceof Error ? Promise.reject(this.answerResult) : Promise.resolve(this.answerResult);
   }
 
-  async abandon(sessionId: number): Promise<void> {
+  abandon(sessionId: number): Promise<void> {
     this.calls.push(`abandon:${sessionId}`);
-    if (this.abandonError) throw this.abandonError;
+    return this.abandonError ? Promise.reject(this.abandonError) : Promise.resolve();
   }
 }
 

@@ -2,7 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { FakeAudioPort, provideFakeAudio } from '../../gameplay/data-access/testing/fake-audio.port';
 import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { RunRoundSummary } from '../domain/run';
-import { RunGameStore } from './run-game.store';
+import { RunGameStore, RunScreen } from './run-game.store';
+import { StartOutcome } from './runs.api';
 import { CURRENT, FakeRunsApi, ME, PLAY, ROUND, SESSION, TRACK, provideFakeRunsApi } from './testing/fake-runs-api';
 
 describe('RunGameStore', () => {
@@ -98,40 +99,18 @@ describe('RunGameStore', () => {
       expect(store.screen()).toBe('playing');
     });
 
-    it('un refus d\'accès au lancement montre l\'écran réservé', async () => {
-      api.launchResult = { kind: 'access_denied' };
+    it.each<[string, StartOutcome, RunScreen]>([
+      ["un refus d'accès au lancement montre l'écran réservé", { kind: 'access_denied' }, 'access_denied'],
+      ['sans playlist possible, le dit', { kind: 'no_challenge' }, 'no_challenge'],
+      ["une partie déjà finie ailleurs ramène à l'accueil", { kind: 'already_played', abandoned: false }, 'welcome'],
+      ["une erreur de lancement affiche l'erreur", { kind: 'error' }, 'error'],
+    ])('%s', async (_name, outcome, screen) => {
+      api.launchResult = outcome;
       await store.init();
 
       await store.begin();
 
-      expect(store.screen()).toBe('access_denied');
-    });
-
-    it('sans playlist possible, le dit', async () => {
-      api.launchResult = { kind: 'no_challenge' };
-      await store.init();
-
-      await store.begin();
-
-      expect(store.screen()).toBe('no_challenge');
-    });
-
-    it('une partie déjà finie ailleurs ramène à l\'accueil', async () => {
-      api.launchResult = { kind: 'already_played', abandoned: false };
-      await store.init();
-
-      await store.begin();
-
-      expect(store.screen()).toBe('welcome');
-    });
-
-    it('une erreur de lancement affiche l\'erreur', async () => {
-      api.launchResult = { kind: 'error' };
-      await store.init();
-
-      await store.begin();
-
-      expect(store.screen()).toBe('error');
+      expect(store.screen()).toBe(screen);
     });
 
     it('pas d\'indice, pas de « écouter plus » : un seul palier', async () => {
