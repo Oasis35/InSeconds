@@ -16,7 +16,7 @@ npm run lint:arch         # Sheriff + couche domain/ sans Angular
 npm run generate-api      # régénère les clients NSwag (cf. « Clients de l'API »)
 ```
 
-- Node **24** (24.15 ou plus, exigé par Angular CLI 22.2 et `html2canvas-pro`) : la CI et l'image de prod prennent le dernier Node 24.
+- Node **24** (24.15 ou plus, exigé par Angular CLI 22.2 et `html2canvas-pro`) : la CI et l'image de prod prennent le dernier Node 24 (`check-latest` de `setup-node`, `compose build --pull` dans `deploy.sh`), pour recevoir les correctifs de sécurité sans rien changer. Vite est forcé dans `overrides` de `package.json` (`@angular/build` en fige une version vulnérable) : à retirer quand `@angular/build` embarquera Vite 8.3.5 ou plus.
 - Chromium déjà installé ailleurs (environnement sans `playwright install`) : `PLAYWRIGHT_CHROMIUM_PATH=/chemin/vers/chromium npx ng test --watch=false`.
 - Clients de l'API : cf. § Clients de l'API. E2E : cf. § E2E.
 
