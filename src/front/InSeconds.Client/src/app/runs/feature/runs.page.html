@@ -22,7 +22,7 @@
           }
 
           @if (store.revealed(); as revealed) {
-            <app-run-answer-card [track]="revealed" [lang]="language.current()" (next)="store.nextTrack()" />
+            <app-run-answer-card [track]="revealed" [lang]="language.current()" [endsRound]="store.summaries().length > 0" (next)="store.nextTrack()" />
           }
 
           <!-- La manche reste montée : elle garde l'autocomplétion et rejoue l'extrait en entier après la réponse ; elle ne montre rien de plus. -->

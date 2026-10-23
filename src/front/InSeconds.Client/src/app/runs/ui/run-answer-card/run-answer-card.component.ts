@@ -52,7 +52,7 @@ import { RunTrack, gainLabel } from '../../domain/run';
       <button type="button" (click)="next.emit()" data-testid="run-next-track"
         class="w-full py-4 rounded-(--radius-button) text-sm font-bold tracking-wide uppercase transition touch-manipulation"
         style="font-family:var(--font-display);letter-spacing:0.06em;background:var(--gradient-primary);color:var(--text-on-primary);box-shadow:var(--glow-primary)">
-        {{ 'runs.answer.next' | translate }}
+        {{ (endsRound() ? 'runs.answer.endRound' : 'runs.answer.next') | translate }}
       </button>
     </div>
   `,
@@ -61,6 +61,8 @@ export class RunAnswerCardComponent {
   readonly track = input.required<RunTrack>();
   /** Langue du badge Deezer (le visuel officiel existe en français et en anglais). */
   readonly lang = input<'fr' | 'en'>('fr');
+  /** C'était le dernier morceau de la manche : le bouton annonce la fin de la manche. */
+  readonly endsRound = input(false);
   /** « Morceau suivant » : la page lance le son suivant dans ce clic. */
   readonly next = output();
 

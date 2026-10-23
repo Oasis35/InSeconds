@@ -1,4 +1,4 @@
-import { endsRound, gainLabel, isFinished, objectiveBar, objectiveReached, pillOf, trackPills } from './run';
+import { gainLabel, isFinished, objectiveBar, objectiveReached, pillOf, trackPills } from './run';
 
 const played = (artistCorrect: boolean, titleCorrect: boolean, neutralized = false) => ({ neutralized, artistCorrect, titleCorrect });
 
@@ -53,10 +53,5 @@ describe('libellés et états', () => {
     expect(isFinished({ status: 'won' })).toBe(true);
     expect(isFinished({ status: 'lost' })).toBe(true);
     expect(isFinished({ status: 'abandoned' })).toBe(true);
-  });
-
-  it('un bilan de manche dans la réponse dit que la manche se termine', () => {
-    expect(endsRound({ roundSummaries: [] })).toBe(false);
-    expect(endsRound({ roundSummaries: [{ round: 1, passed: true, score: 1, objective: 1, tracks: [], totalScore: 1 }] })).toBe(true);
   });
 });

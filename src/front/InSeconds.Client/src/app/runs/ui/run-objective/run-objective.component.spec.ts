@@ -45,6 +45,19 @@ describe('RunObjectiveComponent', () => {
     expect(label).not.toContain('runs.objective.unlock');
   });
 
+  it('surligne dans la barre la part gagnée sur le dernier morceau, et laisse le reste du score en dégradé', () => {
+    const element = render({ round: 2, score: 267, objective: 333, maxScore: 500 }, 67);
+
+    const gain = element.querySelector('[data-testid="run-objective-gain"]') as HTMLElement;
+    expect(gain.style.left).toBe('40%');
+    expect(gain.style.width).toBe('13.4%');
+    expect((element.querySelector('[role="progressbar"] > div') as HTMLElement).style.width).toBe('40%');
+  });
+
+  it("sans réponse, aucune part n'est surlignée", () => {
+    expect(render({ round: 2, score: 200, objective: 333, maxScore: 500 }).querySelector('[data-testid="run-objective-gain"]')).toBeNull();
+  });
+
   it('après une réponse, montre les points gagnés (« +67 »)', () => {
     const element = render({ round: 2, score: 267, objective: 333, maxScore: 500 }, 67);
 

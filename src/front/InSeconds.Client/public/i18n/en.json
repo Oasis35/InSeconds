@@ -821,7 +821,7 @@
     },
     "header": {
       "abandon": "Give up",
-      "round": "ROUND {{ round }} / {{ rounds }}",
+      "round": "Round {{ round }} / {{ rounds }}",
       "score": "Score"
     },
     "objective": {
@@ -833,7 +833,8 @@
       "position": "Track {{ position }} of {{ total }}"
     },
     "answer": {
-      "next": "Next track"
+      "next": "Next track",
+      "endRound": "End of round"
     },
     "welcome": {
       "badge": "Early access",

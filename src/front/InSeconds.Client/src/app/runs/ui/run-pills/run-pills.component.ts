@@ -17,10 +17,10 @@ const COLORS: Readonly<Record<PillState, string>> = {
   imports: [TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex flex-col items-center gap-2">
-      <div class="flex items-center gap-2" data-testid="run-pills">
+    <div class="flex flex-col items-center gap-2 w-full">
+      <div class="flex items-center justify-center gap-2 w-full" data-testid="run-pills">
         @for (pill of pills(); track $index) {
-          <span class="h-1.5 w-12 rounded-full" [attr.data-state]="pill" [style.background]="color(pill)"
+          <span class="h-1.5 flex-1 max-w-12 rounded-full" [attr.data-state]="pill" [style.background]="color(pill)"
             [style.border]="pill === 'neutralized' ? '1px dashed var(--text-faint)' : null"></span>
         }
       </div>

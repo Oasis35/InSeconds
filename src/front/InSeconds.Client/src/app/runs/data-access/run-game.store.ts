@@ -27,7 +27,6 @@ interface RunState {
   summaries: readonly RunRoundSummary[];
   /** Les morceaux que le serveur vient de neutraliser (extrait introuvable) : l'écran du morceau retiré les montrera. */
   neutralized: readonly RunNeutralized[];
-  abandonLoading: boolean;
 }
 
 const initialState: RunState = {
@@ -39,7 +38,6 @@ const initialState: RunState = {
   revealed: null,
   summaries: [],
   neutralized: [],
-  abandonLoading: false,
 };
 
 /**
@@ -66,8 +64,6 @@ export const RunGameStore = signalStore(
       tracksPerRound,
       totalScore: computed(() => store.session()?.totalScore ?? 0),
       shownTracks,
-      /** Une réponse est affichée (la carte à la place du lecteur et de la saisie). */
-      answered: computed(() => store.revealed() !== null),
       /** Les points gagnés sur le morceau qui vient d'être répondu (« +67 »), vides tant que le joueur n'a pas répondu. */
       gain: computed(() => store.revealed()?.points ?? null),
       /** Les pastilles de la manche affichée : le morceau en cours est en corail tant que le joueur n'a pas répondu. */
@@ -231,14 +227,11 @@ export const RunGameStore = signalStore(
       async abandon(): Promise<void> {
         const sessionId = store.session()?.sessionId;
         if (sessionId === undefined) return;
-        patchState(store, { abandonLoading: true });
         try {
           await api.abandon(sessionId);
           await init();
         } catch {
           // la partie reste en cours : le joueur peut réessayer
-        } finally {
-          patchState(store, { abandonLoading: false });
         }
       },
       /** « Nouvelle partie » depuis la fin : retour à l'accueil du mode, mon record à jour. */

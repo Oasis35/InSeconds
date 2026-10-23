@@ -821,7 +821,7 @@
     },
     "header": {
       "abandon": "Abandonner",
-      "round": "MANCHE {{ round }} / {{ rounds }}",
+      "round": "Manche {{ round }} / {{ rounds }}",
       "score": "Score"
     },
     "objective": {
@@ -833,7 +833,8 @@
       "position": "Morceau {{ position }} sur {{ total }}"
     },
     "answer": {
-      "next": "Morceau suivant"
+      "next": "Morceau suivant",
+      "endRound": "Fin de la manche"
     },
     "welcome": {
       "badge": "Accès anticipé",

@@ -133,7 +133,7 @@ describe('RunGameStore', () => {
       expect(store.totalScore()).toBe(0);
       expect(store.pills()).toEqual(['current', 'todo', 'todo', 'todo', 'todo']);
       expect(store.positionInRound()).toBe(1);
-      expect(store.answered()).toBe(false);
+      expect(store.revealed()).toBeNull();
     });
 
     it('envoie la réponse par la position du morceau, puis révèle : la carte de réponse remplace le lecteur', async () => {
@@ -146,7 +146,7 @@ describe('RunGameStore', () => {
       await send();
 
       expect(api.answers).toEqual([{ position: 1, artist: 'Daft Punk', title: 'One More Time' }]);
-      expect(store.answered()).toBe(true);
+      expect(store.revealed()).not.toBeNull();
       expect(store.revealed()?.points).toBe(100);
       expect(store.gain()).toBe(100);
       expect(store.totalScore()).toBe(100);
@@ -169,7 +169,7 @@ describe('RunGameStore', () => {
 
       expect(audio.calls[0]).toBe('unlock');
       expect(audio.calls).toContain('load https://cdn/preview-2.mp3');
-      expect(store.answered()).toBe(false);
+      expect(store.revealed()).toBeNull();
       expect(store.pills()).toEqual(['found', 'current', 'todo', 'todo', 'todo']);
       expect(store.positionInRound()).toBe(2);
       expect(round.trackId()).toBe(2);
@@ -180,7 +180,7 @@ describe('RunGameStore', () => {
 
       await send();
 
-      expect(store.answered()).toBe(false);
+      expect(store.revealed()).toBeNull();
       expect(round.phase()).toBe('submit-error');
       expect(store.totalScore()).toBe(0);
     });
@@ -257,13 +257,13 @@ describe('RunGameStore', () => {
       await send();
 
       expect(store.screen()).toBe('playing');
-      expect(store.answered()).toBe(true);
+      expect(store.revealed()).not.toBeNull();
 
       store.nextTrack();
 
       expect(store.screen()).toBe('finished');
       expect(store.finish()?.disc.key).toBe('runs.discs.gold');
-      expect(store.answered()).toBe(false);
+      expect(store.revealed()).toBeNull();
     });
 
     it('une manche ratée finit la partie : « Morceau suivant » mène à la fin, pas au bilan', async () => {
@@ -303,7 +303,6 @@ describe('RunGameStore', () => {
 
       expect(api.calls).toContain('abandon:7');
       expect(store.screen()).toBe('welcome');
-      expect(store.abandonLoading()).toBe(false);
       expect(audio.calls.at(-1)).toBe('stop');
     });
 
@@ -313,7 +312,6 @@ describe('RunGameStore', () => {
       await store.abandon();
 
       expect(store.screen()).toBe('playing');
-      expect(store.abandonLoading()).toBe(false);
     });
   });
 

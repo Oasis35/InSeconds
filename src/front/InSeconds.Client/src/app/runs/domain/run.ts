@@ -166,4 +166,3 @@ export const gainLabel = (points: number): string => `+${points}`;
 export const isFinished = (session: Pick<RunSession, 'status'>): boolean => session.status !== 'pending';
 
 /** Le dernier morceau de la manche vient d'être répondu : le bilan de la manche suit. */
-export const endsRound = (play: Pick<RunPlay, 'roundSummaries'>): boolean => play.roundSummaries.length > 0;

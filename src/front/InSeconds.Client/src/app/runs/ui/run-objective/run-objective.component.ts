@@ -40,7 +40,11 @@ import { RunRound, objectiveBar, objectiveReached } from '../../domain/run';
       </div>
       <div class="relative h-2.5 rounded-full overflow-hidden" style="background:var(--bg-inactive)" role="progressbar" [attr.aria-valuemin]="0"
         [attr.aria-valuemax]="round().objective" [attr.aria-valuenow]="round().score">
-        <div class="absolute inset-y-0 left-0 rounded-full" style="background:var(--gradient-primary)" [style.width.%]="bar().scoreRatio * 100"></div>
+        <div class="absolute inset-y-0 left-0 rounded-full" style="background:var(--gradient-primary)" [style.width.%]="baseRatio() * 100"></div>
+        @if (gainRatio() > 0) {
+          <div class="absolute inset-y-0" style="background:var(--color-success)" [style.left.%]="baseRatio() * 100" [style.width.%]="gainRatio() * 100"
+            data-testid="run-objective-gain"></div>
+        }
         <div class="absolute inset-y-0 w-0.5" style="background:var(--text-hi)" [style.left.%]="bar().objectiveRatio * 100" data-testid="run-objective-tick"></div>
       </div>
     </section>
@@ -55,6 +59,13 @@ export class RunObjectiveComponent {
 
   protected readonly last = computed(() => this.round().round >= this.rounds());
   protected readonly bar = computed(() => objectiveBar(this.round()));
+  /** La part du dernier morceau dans la barre (surlignée), et ce qui était déjà gagné avant lui. */
+  protected readonly gainRatio = computed(() => {
+    const max = this.round().maxScore;
+    const gain = this.gain() ?? 0;
+    return max > 0 && gain > 0 ? Math.min(this.bar().scoreRatio, gain / max) : 0;
+  });
+  protected readonly baseRatio = computed(() => this.bar().scoreRatio - this.gainRatio());
   protected readonly reached = computed(() => objectiveReached(this.round()));
   protected readonly gainText = computed(() => `+${this.gain() ?? 0}`);
 }
