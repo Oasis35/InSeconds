@@ -8,8 +8,8 @@ namespace InSeconds.Api.Modules.Runs;
 
 /// <summary>
 /// Module Runs (nom affiché « Platines ») : le second mode de jeu, solo, en manches de difficulté croissante, dont le défi (une playlist) se partage
-/// par un lien. Ce socle pose le module, son schéma <c>runs</c>, le défi et son tirage, les réglages <c>Runs:</c> et l'accès sur invitation ; la partie
-/// vient ensuite. Runs n'utilise des autres modules que leurs <c>Contracts</c> et ne voit jamais Daily.
+/// par un lien : son schéma <c>runs</c>, le défi et son tirage, les réglages <c>Runs:</c>, l'accès sur invitation et la partie (jauge, neutralisation,
+/// fin, record). Runs n'utilise des autres modules que leurs <c>Contracts</c> et ne voit jamais Daily.
 /// </summary>
 public static class RunsModule
 {
@@ -23,6 +23,10 @@ public static class RunsModule
         services.AddScoped<IRunsQueries, EfRunsQueries>();
         services.AddScoped<IRunAccess, EfRunAccess>();
         services.AddScoped<RunChallengePlanner>();
+        services.AddSingleton<IRunScoringPolicy, ArtistTitleScoring>();
+        services.AddScoped<RunPlayer>();
+        // Compteurs des parties et des réponses, exportés en OpenTelemetry (tableau Grafana « Activité »).
+        services.AddSingleton<RunsMetrics>();
         // L'usage des morceaux : **ajouté**, jamais remplacé (Catalogue réunit l'ITrackUsage de chaque mode).
         services.AddScoped<ITrackUsage, RunsTrackUsage>();
         return services;

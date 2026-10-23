@@ -1,5 +1,7 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
+import { ARCHIVE_DAY } from '../../data-access/testing/fake-daily-api';
 import { DayStats, TrackStat } from '../../domain/daily';
 import { AlreadyPlayedScreenComponent } from './already-played-screen.component';
 
@@ -19,7 +21,7 @@ const stats = (over: Partial<DayStats> = {}): DayStats => ({
 
 describe('AlreadyPlayedScreenComponent', () => {
   function render(inputs: Record<string, unknown>) {
-    TestBed.configureTestingModule({ providers: [provideTranslateService()] });
+    TestBed.configureTestingModule({ providers: [provideTranslateService(), provideRouter([])] });
     const fixture = TestBed.createComponent(AlreadyPlayedScreenComponent);
     fixture.componentRef.setInput('countdown', '01:02:03');
     for (const [name, value] of Object.entries(inputs)) fixture.componentRef.setInput(name, value);
@@ -27,6 +29,24 @@ describe('AlreadyPlayedScreenComponent', () => {
     const element = fixture.nativeElement as HTMLElement;
     return { fixture, element, text: () => element.textContent!.replace(/\s+/g, ' ') };
   }
+
+  it("montre l'encart des réponses d'hier sous la carte du score, avec les pochettes et la médiane", () => {
+    const { element } = render({ stats: stats(), yesterday: ARCHIVE_DAY() });
+    const card = element.querySelector<HTMLAnchorElement>('[data-testid=yesterday-answers]')!;
+    expect(card.getAttribute('href')).toBe('/daily/archive/2026-10-21');
+    expect(card.querySelectorAll('img')).toHaveLength(3);
+    expect(card.textContent).toContain('2250');
+  });
+
+  it('sous le seuil de joueurs hier, les pochettes sans la médiane', () => {
+    const few = render({ stats: stats(), yesterday: ARCHIVE_DAY({ hasStats: false, medianScore: null }) }).element;
+    expect(few.querySelectorAll('[data-testid=yesterday-answers] img')).toHaveLength(3);
+    expect(few.querySelector('[data-testid=yesterday-median]')).toBeNull();
+  });
+
+  it('sans défi hier, pas d encart', () => {
+    expect(render({ stats: stats() }).element.querySelector('[data-testid=yesterday-answers]')).toBeNull();
+  });
 
   it('affiche le compte à rebours', () => {
     expect(render({ stats: stats() }).text()).toContain('01:02:03');

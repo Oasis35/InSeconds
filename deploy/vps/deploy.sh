@@ -53,7 +53,9 @@ if [[ ! -f "$cert" ]]; then
   echo "ERREUR : $cert absent du checkout (cf. $env_file.example)." >&2
   exit 1
 fi
-compose build
+# --pull : images de base (node, nginx, .NET) retirées du registre à chaque déploiement, sinon Docker
+# garde celles du premier build et les correctifs de sécurité n'arrivent jamais.
+compose build --pull
 if ! compose run --rm -T --entrypoint sh api -c "test -f /run/secrets/dataprotection.pfx && test -r /run/secrets/dataprotection.pfx"; then
   echo "ERREUR : $cert illisible par l'utilisateur de l'image de l'API (uid/gid 1654), cf. $env_file.example." >&2
   exit 1

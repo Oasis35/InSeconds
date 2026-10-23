@@ -1,0 +1,75 @@
+<div class="da-bg min-h-dvh flex flex-col relative" style="color:var(--text-body)">
+  <app-decor-background />
+
+  <main class="relative flex-1 flex flex-col gap-5 p-5 w-full max-w-lg mx-auto overflow-x-clip">
+
+    <header class="pt-3 flex flex-col gap-4">
+      <app-daily-brand [homeLink]="true">
+        <div brandLeft>
+          @if (pillStreak(); as streak) {
+            @if (streak.streak > 0 || store.played()) {
+              <app-streak-pill [streak]="streak" [linked]="session.isLinked()" (open)="openStreakSheet()" />
+            }
+          }
+        </div>
+        <app-account-link brandRight />
+      </app-daily-brand>
+      @if (store.day(); as day) {
+        <app-archive-day-header [date]="day.date" [previousDate]="day.previousDate" [nextDate]="day.nextDate" [lang]="language.current()"
+                                (pickDate)="openCalendar()" />
+      }
+    </header>
+
+    @switch (store.status()) {
+      @case ('loading') {
+        <div class="flex-1 flex items-center justify-center">
+          <p class="text-sm animate-pulse" style="color:var(--text-faint)">{{ 'daily.common.loading' | translate }}</p>
+        </div>
+      }
+
+      @case ('error') {
+        <app-status-screen titleKey="daily.error.title" bodyKey="daily.error.body" [errorCode]="errorReporting.lastErrorCode()" (retry)="retry()" />
+      }
+
+      @case ('not_found') {
+        <div class="flex-1 flex flex-col items-center justify-center gap-5 text-center px-4" data-testid="archive-not-found">
+          <h1 class="text-xl font-bold" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'daily.archive.notFoundTitle' | translate }}</h1>
+          <p class="text-sm" style="color:var(--text-muted)">{{ 'daily.archive.notFoundBody' | translate }}</p>
+          <a appButton routerLink="/daily/archive" variant="secondary">{{ 'daily.archive.latest' | translate }}</a>
+        </div>
+      }
+
+      @case ('ready') {
+        @if (store.day(); as day) {
+          <section class="flex flex-col gap-3" data-testid="archive-scores">
+            @if (store.played()) {
+              <div class="flex items-baseline justify-between">
+                <span class="text-sm font-semibold" style="font-family:var(--font-display);color:var(--text-muted)">{{ 'daily.alreadyPlayed.yourScore' | translate }}</span>
+                <span class="font-extrabold tabular-nums leading-none" style="font-family:var(--font-display);font-size:1.75rem;color:var(--color-accent-3)"
+                      data-testid="archive-my-score">{{ store.me().score }}</span>
+              </div>
+            } @else if (day.hasStats) {
+              <p class="text-sm font-semibold" style="font-family:var(--font-display);color:var(--text-muted)">{{ 'daily.archive.playersScores' | translate }}</p>
+            }
+            @if (chart(); as c) {
+              <app-score-distribution-chart [stats]="c" />
+            } @else {
+              <p class="text-sm" style="color:var(--text-muted)" data-testid="archive-too-few">{{ 'daily.archive.tooFewPlayers' | translate }}</p>
+            }
+          </section>
+
+          <div class="px-4" style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:var(--radius-card)">
+            @for (track of day.tracks; track track.position) {
+              <app-archive-track-row [track]="track" [mine]="answerAt(store.me(), track.position)" [mostMissed]="track.position === store.mostMissed()"
+                                     [lang]="language.current()" (listen)="listen(track)" [style.border-top]="$first ? null : '1px solid var(--border-medium)'" class="block" />
+            }
+          </div>
+
+          <a appButton routerLink="/daily" [block]="true" data-testid="archive-play-today">{{ 'daily.archive.playToday' | translate }}</a>
+        }
+      }
+    }
+
+  </main>
+  <app-daily-footer class="mt-auto" [isAdmin]="session.isAdmin()" [lang]="language.current()" (toggleLanguage)="toggleLanguage()" />
+</div>

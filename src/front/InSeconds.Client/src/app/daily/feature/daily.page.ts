@@ -1,4 +1,3 @@
-import { DialogRef } from '@angular/cdk/dialog';
 import {
   ChangeDetectionStrategy, Component, DestroyRef, OnInit, effect, inject, signal, untracked,
 } from '@angular/core';
@@ -12,7 +11,8 @@ import { AccountLinkComponent } from '../../core/shell/account-link/account-link
 import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { TrackRoundComponent } from '../../gameplay/feature/track-round.component';
 import { RoundSubmission } from '../../gameplay/domain/track-round';
-import { ConfirmDialogComponent, ConfirmDialogData } from '../../ui/modal/confirm-dialog.component';
+import { ConfirmDialogData } from '../../ui/modal/confirm-dialog.component';
+import { LeaveGuard } from '../../gameplay/feature/leave-guard';
 import { ModalService } from '../../ui/modal/modal.service';
 import { ToastService } from '../../ui/toast/toast.service';
 import { DecorBackgroundComponent } from '../../ui/decor-background/decor-background.component';
@@ -25,7 +25,7 @@ import { AlreadyPlayedScreenComponent } from '../ui/already-played-screen/alread
 import { DailyBrandComponent } from '../ui/daily-brand/daily-brand.component';
 import { DailyFooterComponent } from '../ui/daily-footer/daily-footer.component';
 import { DailyProgressComponent } from '../ui/daily-progress/daily-progress.component';
-import { DeezerBadgeComponent } from '../ui/deezer-badge/deezer-badge.component';
+import { DeezerBadgeComponent } from '../../gameplay/ui/deezer-badge/deezer-badge.component';
 import { FinalRecapScreenComponent } from '../ui/final-recap-screen/final-recap-screen.component';
 import { GelEarnedToastComponent } from '../ui/gel-earned-toast/gel-earned-toast.component';
 import { GelUsedToastComponent } from '../ui/gel-used-toast/gel-used-toast.component';
@@ -84,7 +84,7 @@ export class DailyPage implements OnInit {
   private readonly toasts = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
 
-  private leaveDialog: DialogRef<boolean, ConfirmDialogComponent> | null = null;
+  private readonly leaveGuard = new LeaveGuard(inject(ModalService));
   /** Le message de remerciement est en attente d'ouverture ou ouvert : jamais deux fois sur la même page. */
   private thanksOffered = false;
   private destroyed = false;
@@ -106,7 +106,7 @@ export class DailyPage implements OnInit {
     // Si la partie quitte « playing » pendant qu'une confirmation de sortie est ouverte (dernière réponse qui se résout, partie finie
     // ailleurs), il n'y a plus de partie à protéger : la navigation continue.
     effect(() => {
-      if (this.store.screen() !== 'playing' && this.leaveDialog) this.leaveDialog.close(true);
+      if (this.store.screen() !== 'playing') this.leaveGuard.release();
     });
 
     // Le score final monte de 0 à sa valeur en entrant dans le récap.
@@ -160,14 +160,7 @@ export class DailyPage implements OnInit {
       confirmLabel: this.translate.instant('daily.leaveSheet.confirm'),
       cancelLabel: this.translate.instant('daily.leaveSheet.cancel'),
     };
-    this.leaveDialog?.close(false);
-    const dialog = this.modal.openSheet<boolean, ConfirmDialogData, ConfirmDialogComponent>(ConfirmDialogComponent, { data });
-    this.leaveDialog = dialog;
-    return new Promise<boolean>(resolve =>
-      dialog.closed.subscribe(result => {
-        if (this.leaveDialog === dialog) this.leaveDialog = null;
-        resolve(result === true);
-      }));
+    return this.leaveGuard.confirm(data);
   }
 
   protected async confirmAbandon(): Promise<void> {

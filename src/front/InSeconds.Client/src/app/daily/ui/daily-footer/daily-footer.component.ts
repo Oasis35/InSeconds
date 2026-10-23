@@ -2,7 +2,7 @@ import { Component, ChangeDetectionStrategy, input, output } from '@angular/core
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
-/** Pied de page : admin (rôle admin seulement), confidentialité, contact, bascule de langue (le parent change la langue). */
+/** Pied de page : réponses des jours passés (ouvre la veille), admin (rôle admin seulement), confidentialité, contact, bascule de langue (le parent change la langue). */
 @Component({
   selector: 'app-daily-footer',
   imports: [RouterLink, TranslatePipe],

@@ -21,7 +21,8 @@ const FAINT = 'var(--text-faint)';
 
 /**
  * L'histogramme « en combien de temps les autres ont trouvé » : une barre par palier d'écoute
- * (joueurs qui ont trouvé à ce palier) et une barre « ✗ » pour ceux qui n'ont pas trouvé. La colonne
+ * (joueurs qui ont trouvé à ce palier, en nombre ou en pourcentage : seules les hauteurs relatives comptent) et une barre « ✗ » pour
+ * ceux qui n'ont pas trouvé. La colonne
  * du joueur est surlignée. Purement présentationnel.
  */
 @Component({
@@ -34,7 +35,8 @@ const FAINT = 'var(--text-faint)';
           <div class="flex-1 flex flex-col items-center justify-end gap-0.5 h-full"
                [attr.data-bucket]="bar.key" [attr.data-highlight]="bar.highlighted ? 'true' : null">
             @if (showCounts()) {
-              <span class="text-[9px] leading-none tabular-nums" [style.color]="bar.labelColor">{{ bar.count }}</span>
+              <span class="text-[9px] leading-none tabular-nums whitespace-nowrap" data-testid="bar-count"
+                    [style.color]="bar.labelColor">{{ bar.count }}{{ countSuffix() }}</span>
             }
             <div class="rounded-full" style="width:14px" [style.height]="bar.height" [style.background]="bar.barColor"></div>
           </div>
@@ -57,8 +59,10 @@ export class GuessTimeChartComponent {
   readonly highlightDuration = input<number | null>(null);
   /** Surligne la barre « ✗ » (le joueur n'a pas trouvé). */
   readonly highlightNotFound = input(false);
-  /** Écrit le nombre de joueurs au-dessus de chaque barre (vue admin). */
+  /** Écrit la valeur au-dessus de chaque barre : le nombre de joueurs (vue admin) ou leur part (page d'un jour passé, avec `countSuffix`). */
   readonly showCounts = input(false);
+  /** Unité écrite après chaque valeur (« % » sur la page d'un jour passé). */
+  readonly countSuffix = input('');
 
   private readonly lang = inject(TranslateService).currentLang;
 

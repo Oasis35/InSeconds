@@ -1137,6 +1137,254 @@ export class DailyClient {
         }
         return _observableOf(null as any);
     }
+
+    /**
+     * @return OK
+     */
+    getArchiveIndex(): Observable<ArchiveIndexResponse> {
+        let url_ = this.baseUrl + "/api/daily/archive";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetArchiveIndex(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetArchiveIndex(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ArchiveIndexResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ArchiveIndexResponse>;
+        }));
+    }
+
+    protected processGetArchiveIndex(response: HttpResponseBase): Observable<ArchiveIndexResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ArchiveIndexResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getArchiveDay(date: string): Observable<ArchiveDayResponse> {
+        let url_ = this.baseUrl + "/api/daily/archive/{date}";
+        if (date === undefined || date === null)
+            throw new globalThis.Error("The parameter 'date' must be defined.");
+        url_ = url_.replace("{date}", encodeURIComponent("" + date));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetArchiveDay(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetArchiveDay(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ArchiveDayResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ArchiveDayResponse>;
+        }));
+    }
+
+    protected processGetArchiveDay(response: HttpResponseBase): Observable<ArchiveDayResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ArchiveDayResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getMyArchiveDay(date: string): Observable<ArchiveMeResponse> {
+        let url_ = this.baseUrl + "/api/daily/archive/{date}/me";
+        if (date === undefined || date === null)
+            throw new globalThis.Error("The parameter 'date' must be defined.");
+        url_ = url_.replace("{date}", encodeURIComponent("" + date));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetMyArchiveDay(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetMyArchiveDay(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ArchiveMeResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ArchiveMeResponse>;
+        }));
+    }
+
+    protected processGetMyArchiveDay(response: HttpResponseBase): Observable<ArchiveMeResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ArchiveMeResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getArchivePreview(date: string, position: number): Observable<ArchivePreviewResponse> {
+        let url_ = this.baseUrl + "/api/daily/archive/{date}/tracks/{position}/preview";
+        if (date === undefined || date === null)
+            throw new globalThis.Error("The parameter 'date' must be defined.");
+        url_ = url_.replace("{date}", encodeURIComponent("" + date));
+        if (position === undefined || position === null)
+            throw new globalThis.Error("The parameter 'position' must be defined.");
+        url_ = url_.replace("{position}", encodeURIComponent("" + position));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetArchivePreview(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetArchivePreview(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ArchivePreviewResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ArchivePreviewResponse>;
+        }));
+    }
+
+    protected processGetArchivePreview(response: HttpResponseBase): Observable<ArchivePreviewResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ArchivePreviewResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
 }
 
 export interface AdminChallenge {
@@ -1544,6 +1792,82 @@ export interface WeeklyTrackResponse {
 
 export interface UpdateTrackCooldownPoolPercent {
     trackCooldownPoolPercent: number;
+
+    [key: string]: any;
+}
+
+export interface ArchiveDayResponse {
+    date: Date;
+    previousDate: Date | undefined;
+    nextDate: Date | undefined;
+    hasStats: boolean;
+    medianScore: number | undefined;
+    minScore: number | undefined;
+    maxScore: number | undefined;
+    maxPossibleScore: number;
+    scoreDistribution: ArchiveScoreBucketResponse[];
+    tracks: ArchiveTrackResponse[];
+
+    [key: string]: any;
+}
+
+export interface ArchiveGuessStepResponse {
+    durationSeconds: number;
+    percent: number;
+
+    [key: string]: any;
+}
+
+export interface ArchiveIndexResponse {
+    dates: Date[];
+
+    [key: string]: any;
+}
+
+export interface ArchiveMeResponse {
+    played: boolean;
+    score: number | undefined;
+    betterThanPercent: number | undefined;
+    answers: ArchiveMyAnswerResponse[];
+
+    [key: string]: any;
+}
+
+export interface ArchiveMyAnswerResponse {
+    position: number;
+    artistCorrect: boolean;
+    titleCorrect: boolean;
+    listenedSeconds: number;
+    score: number;
+
+    [key: string]: any;
+}
+
+export interface ArchiveScoreBucketResponse {
+    minScore: number;
+    maxScore: number;
+    percent: number;
+
+    [key: string]: any;
+}
+
+export interface ArchiveTrackResponse {
+    position: number;
+    artist: string;
+    title: string;
+    releaseYear: number | undefined;
+    deezerTrackId: number;
+    coverUrl: string | undefined;
+    artistFoundPercent: number | undefined;
+    titleFoundPercent: number | undefined;
+    guessSteps: ArchiveGuessStepResponse[];
+    notFoundPercent: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface ArchivePreviewResponse {
+    previewUrl: string | undefined;
 
     [key: string]: any;
 }

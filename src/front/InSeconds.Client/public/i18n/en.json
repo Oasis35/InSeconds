@@ -1,7 +1,17 @@
 {
   "common": {
     "close": "Close",
-    "retry": "Try again"
+    "retry": "Try again",
+    "previewModal": {
+      "title": "Play the preview",
+      "loading": "Fetching the preview...",
+      "error": "No preview available for this track.",
+      "playing": "Now playing...",
+      "preview30s": "30s preview",
+      "unavailable": "Deezer is unavailable: no preview for now.",
+      "play": "Play",
+      "pause": "Pause"
+    }
   },
   "errors": {
     "code": "Error code:",
@@ -48,6 +58,17 @@
       "hint_locked": "This hint isn't unlocked yet.",
       "already_answered": "You've already answered this track.",
       "listened_duration_below_verified_minimum": "The announced step is shorter than what you listened to."
+    },
+    "runs": {
+      "access_denied": "Platines is invitation-only for now.",
+      "no_challenge": "Not enough tracks for a playlist, try again later.",
+      "challenge_not_found": "This playlist doesn't exist. Check the link.",
+      "session_not_found": "This game no longer exists.",
+      "already_played": "You've already played this playlist.",
+      "abandoned": "You abandoned this playlist.",
+      "track_not_found": "This track isn't in this playlist.",
+      "track_lock_not_released": "Answer the current track first.",
+      "already_answered": "You've already answered this track."
     }
   },
   "shell": {
@@ -356,15 +377,6 @@
       "error": "Error while saving.",
       "close": "Close"
     },
-    "previewModal": {
-      "title": "Play the preview",
-      "loading": "Fetching the preview...",
-      "error": "No preview available for this track.",
-      "playing": "Now playing...",
-      "preview30s": "30s preview",
-      "unavailable": "Deezer is unavailable: no preview for now.",
-      "close": "Close"
-    },
     "addPanel": {
       "title": "Add a track",
       "searchPlaceholder": "Search on Deezer...",
@@ -618,6 +630,7 @@
       "ariaLabel": "Listen on Deezer"
     },
     "footer": {
+      "archive": "Past days' answers",
       "admin": "Admin",
       "privacy": "Privacy & legal notice",
       "contact": "Contact us",
@@ -727,11 +740,41 @@
       "challengeText": "I play InSeconds, one blind test a day. Can you beat me?\n{{ url }}",
       "copied": "Link copied, just paste it",
       "copyFailed": "Couldn't copy to the clipboard."
+    },
+    "archive": {
+      "titlePrefix": "Blind test of",
+      "previousDay": "Previous day",
+      "nextDay": "Next day",
+      "pickDate": "Pick another day (showing: {{ date }})",
+      "mostMissed": "most missed",
+      "players": "Players",
+      "you": "You",
+      "artistFound": "Artist found",
+      "titleFound": "Title found",
+      "artistRight": "Artist found",
+      "artistWrong": "Artist missed",
+      "titleRight": "Title found",
+      "titleWrong": "Title missed",
+      "calendarTitle": "Pick a challenge",
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "calendarNote": "A day's challenge shows up here the next day.",
+      "yesterdayAnswers": "Yesterday's answers",
+      "median": "Median",
+      "notFoundTitle": "No answers for this day",
+      "notFoundBody": "A challenge's answers are published the next day.",
+      "latest": "See yesterday's answers",
+      "playersScores": "Players' scores",
+      "tooFewPlayers": "Not enough players that day to show statistics.",
+      "playToday": "Play today's challenge",
+      "pageTitle": "Blind test of {{ date }}: {{ artists }}",
+      "pageDescription": "The answers to the InSeconds blind test of {{ date }}: {{ artists }}. What players found, and how fast.",
+      "listen": "Play the preview"
     }
   },
   "privacy": {
     "title": "Privacy & legal notice",
-    "updated": "Last updated: October 17, 2026",
+    "updated": "Last updated: October 23, 2026",
     "intro": "InSeconds is a free music blind test game, available at https://inseconds.cc. It remains fully playable as a guest, without any account or registration; creating an account, using only an email address, is optional and lets you find your progress again on another device. This page brings together the site's legal notice, in accordance with Article 6-III of French law n° 2004-575 of June 21, 2004 for confidence in the digital economy (LCEN), and its privacy policy, in accordance with the General Data Protection Regulation (GDPR, Regulation EU 2016/679).",
     "legalIdentity": {
       "title": "Legal notice: publisher and host",
@@ -743,7 +786,7 @@
     },
     "data": {
       "title": "Data collected, purposes and legal basis",
-      "body": "No data is required to play: guest mode asks for no name, no email, no registration.\nDepending on how you use the app, the following categories of data may be processed:\n· pseudonymous technical identifier: randomly generated and stored in a cookie, used to recognize your browser from one visit to the next (resuming a game, one game per day, win streak). Purpose: providing the game. Legal basis: performance of the requested service (Article 6.1.b GDPR);\n· connected devices: for each browser you play on, the app keeps the date of first login, the date of the last visit and a rough label of the browser and device (for example \"Safari · iPhone\", never the full technical header). With an account, the list of your devices is shown in your profile, where you can log out each one. Purpose: account security and cross-device login. Legal basis: performance of the requested service (Article 6.1.b);\n· email and pseudo, only if you create an account: an optional account, activated via a login link sent by email (no password), lets you find your history and streak again on any device; the pseudo is a display name you choose freely. Purpose: account management and cross-device login. Legal basis: your consent (Article 6.1.a GDPR), you remain free to play as a guest without ever providing this information;\n· game data: the result of each answer (whether the artist and title were found, without the text you type, which is never kept), chosen listening durations, scores and play dates. Purpose: running the game and computing anonymous global statistics (median score, success rate per track). Legal basis: performance of the requested service (Article 6.1.b). With an account, the publisher can view in the administration area your username, email address, streak and the history of your games over the last 30 days, solely to run the service and answer your requests;\n· IP address: technically processed on every request, as with any website, for security purposes (limiting the number of login attempts to prevent abuse). Purpose: service security. Legal basis: the controller's legitimate interest (Article 6.1.f);\n· technical logs: for each request, the application records the pseudonymous technical identifier described above, the page or action involved, its duration, its outcome, the browser and device type (for example \"Safari · iPhone\") and, when a bug occurs, the error message, its stack trace, the app version and the connection status (online or not). These logs never contain your email, your pseudo, your submitted answers or your cookie. Purpose: detecting and fixing bugs, monitoring that the service runs properly. Legal basis: the controller's legitimate interest (Article 6.1.f);\n· local preferences: your preferred language and a record of the information messages already shown are stored locally in your browser; they never leave your device and are never sent to our servers."
+      "body": "No data is required to play: guest mode asks for no name, no email, no registration.\nDepending on how you use the app, the following categories of data may be processed:\n· pseudonymous technical identifier: randomly generated and stored in a cookie, used to recognize your browser from one visit to the next (resuming a game, one game per day, win streak). Purpose: providing the game. Legal basis: performance of the requested service (Article 6.1.b GDPR);\n· connected devices: for each browser you play on, the app keeps the date of first login, the date of the last visit and a rough label of the browser and device (for example \"Safari · iPhone\", never the full technical header). With an account, the list of your devices is shown in your profile, where you can log out each one. Purpose: account security and cross-device login. Legal basis: performance of the requested service (Article 6.1.b);\n· email and pseudo, only if you create an account: an optional account, activated via a login link sent by email (no password), lets you find your history and streak again on any device; the pseudo is a display name you choose freely. Purpose: account management and cross-device login. Legal basis: your consent (Article 6.1.a GDPR), you remain free to play as a guest without ever providing this information;\n· game data: the result of each answer (whether the artist and title were found, without the text you type, which is never kept), chosen listening durations, scores and play dates. Purpose: running the game and computing anonymous global statistics (median score, success rate per track). Legal basis: performance of the requested service (Article 6.1.b). With an account, the publisher can view in the administration area your username, email address, streak and the history of your games over the last 30 days, solely to run the service and answer your requests;\n· Platines mode (invitation only): for each game, the result of each track (whether the artist and title were found, never the text you type), its points, the rounds passed, the score and the dates played; your record (best score and best disc); the playlists you launch and their author; the access the publisher granted you. A playlist is shared through a link: whoever opens it sees its author's pseudo (\"Guest\" without an account) and, once their own game is over, the pseudo (or \"Guest\"), disc and score of everyone who played it. This is not a public leaderboard: only people with the link can see them. If you delete your account, your games are deleted; the playlists you launched stay playable, without an author. Purpose: running this mode and the comparison between people who played the same playlist. Legal basis: performance of the requested service (Article 6.1.b);\n· IP address: technically processed on every request, as with any website, for security purposes (limiting the number of login attempts to prevent abuse). Purpose: service security. Legal basis: the controller's legitimate interest (Article 6.1.f);\n· technical logs: for each request, the application records the pseudonymous technical identifier described above, the page or action involved, its duration, its outcome, the browser and device type (for example \"Safari · iPhone\") and, when a bug occurs, the error message, its stack trace, the app version and the connection status (online or not). These logs never contain your email, your pseudo, your submitted answers or your cookie. Purpose: detecting and fixing bugs, monitoring that the service runs properly. Legal basis: the controller's legitimate interest (Article 6.1.f);\n· local preferences: your preferred language and a record of the information messages already shown are stored locally in your browser; they never leave your device and are never sent to our servers."
     },
     "cookie": {
       "title": "Cookie",
@@ -772,5 +815,73 @@
       "contactLabel": "✉️ contact@inseconds.cc"
     },
     "back": "Back to the game"
+  },
+  "runs": {
+    "common": {
+      "loading": "Loading…"
+    },
+    "header": {
+      "abandon": "Give up",
+      "round": "Round {{ round }} / {{ rounds }}",
+      "score": "Score"
+    },
+    "objective": {
+      "gold": "Aim for the gold record",
+      "unlock": "Unlock round {{ round }}",
+      "points": "pts"
+    },
+    "pills": {
+      "position": "Track {{ position }} of {{ total }}"
+    },
+    "answer": {
+      "next": "Next track",
+      "endRound": "End of round"
+    },
+    "welcome": {
+      "badge": "Early access",
+      "title": "Platines",
+      "tagline": "Aim for the gold record.",
+      "record": "Your record: {{ score }} pts",
+      "launch": "Start a run",
+      "resume": "Resume the run"
+    },
+    "status": {
+      "no_challenge": {
+        "title": "No playlist",
+        "body": "A playlist cannot be prepared right now.\nTry again a little later."
+      },
+      "error": {
+        "title": "Something went wrong",
+        "body": "The playlist could not be loaded."
+      },
+      "backToDaily": "Back to the daily game"
+    },
+    "leave": {
+      "title": "Run in progress",
+      "body": "Your run is kept: you can resume it from the Platines home.",
+      "confirm": "Leave anyway",
+      "cancel": "Keep playing"
+    },
+    "abandon": {
+      "title": "Give up this run?",
+      "body": "This run will be lost and will not count for your record.",
+      "confirm": "Give up",
+      "cancel": "Keep playing"
+    },
+    "roundEnd": {
+      "title": "Round {{ round }} finished",
+      "next": "Next round"
+    },
+    "finished": {
+      "found": "{{ found }} / {{ total }} tracks found",
+      "newGame": "New run"
+    },
+    "discs": {
+      "scratched": "Scratched record",
+      "wax": "Wax record",
+      "bronze": "Bronze record",
+      "silver": "Silver record",
+      "gold": "Gold record"
+    }
   }
 }

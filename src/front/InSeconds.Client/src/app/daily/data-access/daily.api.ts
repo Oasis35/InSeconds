@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom, retry, throwError, timer } from 'rxjs';
 import {
-  DailyClient, DailySettingsResponse, GuessBucketResponse, ResumedAnswer, StartSessionResponse, StreakResponse, SubmitAnswerResponse, TodayResponse,
+  ArchiveDayResponse, ArchiveMeResponse, DailyClient, DailySettingsResponse, GuessBucketResponse, ResumedAnswer, StartSessionResponse, StreakResponse, SubmitAnswerResponse, TodayResponse,
   TodayStatsResponse,
 } from '../../api/daily/api.generated';
 import { toAppError } from '../../core/errors/app-error';
@@ -9,11 +9,14 @@ import {
   AnswerToSend, AnsweredTrack, DailySettings, DailyToday, DayStats, GuessBucket, StartOutcome, StartedSession, TodayState,
 } from '../domain/daily';
 import { Streak } from '../domain/streak';
+import { ArchiveDay, ArchiveMe } from '../domain/archive';
 
 /** Des réponses d'erreur que le jeu connaît : refus du démarrage (la partie est finie, pas de défi). */
 const ALREADY_PLAYED = 'daily.already_played';
 const ABANDONED = 'daily.abandoned';
 const NO_CHALLENGE = 'daily.no_challenge';
+/** Les réponses de ce jour ne sont pas publiées (le jour même, un jour sans défi, une date mal écrite). */
+const ARCHIVE_NOT_AVAILABLE = 'daily.archive_not_available';
 
 /** Combien de fois on renvoie une réponse que le réseau ou le serveur ont fait échouer (piège 32), et l'attente entre deux essais. */
 const SUBMIT_RETRIES = 2;
@@ -83,6 +86,32 @@ export class DailyApi {
 
   async stats(): Promise<DayStats> {
     return toStats(await firstValueFrom(this.client.getTodayStats()));
+  }
+
+  /** Les jours dont les réponses sont publiées, du plus récent (la veille) au plus ancien. */
+  async archiveDates(): Promise<string[]> {
+    const { dates } = await firstValueFrom(this.client.getArchiveIndex());
+    return dates.map(toDateText).filter((d): d is string => d !== null);
+  }
+
+  /** Les réponses d'un jour passé ; `null` s'il n'est pas publié (jamais une erreur). */
+  async archiveDay(date: string): Promise<ArchiveDay | null> {
+    try {
+      return toArchiveDay(await firstValueFrom(this.client.getArchiveDay(date)));
+    } catch (error) {
+      if ((await toAppError(error)).code === ARCHIVE_NOT_AVAILABLE) return null;
+      throw error;
+    }
+  }
+
+  /** Ce que le navigateur courant (compte ou invité) a fait ce jour-là ; ne crée jamais de joueur. */
+  async myArchiveDay(date: string): Promise<ArchiveMe> {
+    return toArchiveMe(await firstValueFrom(this.client.getMyArchiveDay(date)));
+  }
+
+  /** Une adresse neuve pour l'extrait d'un morceau d'un jour passé (elle expire en 15 min, piège 14) ; `null` si Deezer n'en a pas. */
+  async archivePreviewUrl(date: string, position: number): Promise<string | null> {
+    return (await firstValueFrom(this.client.getArchivePreview(date, position))).previewUrl ?? null;
   }
 
   /** Toutes les parties terminées, tous jours confondus : le chiffre du message de remerciement. */
@@ -222,5 +251,42 @@ function toStats(s: TodayStatsResponse): DayStats {
     maxPossibleScore: s.maxPossibleScore,
     scoreDistribution: s.scoreDistribution.map(b => ({ minScore: b.minScore, maxScore: b.maxScore, count: b.count })),
     betterThanPercent: s.betterThanPercent ?? null,
+  };
+}
+
+function toArchiveDay(day: ArchiveDayResponse): ArchiveDay {
+  return {
+    date: toDateText(day.date) ?? '',
+    previousDate: toDateText(day.previousDate),
+    nextDate: toDateText(day.nextDate),
+    hasStats: day.hasStats,
+    medianScore: day.medianScore ?? null,
+    minScore: day.minScore ?? null,
+    maxScore: day.maxScore ?? null,
+    maxPossibleScore: day.maxPossibleScore,
+    scoreDistribution: day.scoreDistribution.map(b => ({ minScore: b.minScore, maxScore: b.maxScore, percent: b.percent })),
+    tracks: day.tracks.map(t => ({
+      position: t.position,
+      artist: t.artist,
+      title: t.title,
+      releaseYear: t.releaseYear ?? null,
+      deezerTrackId: t.deezerTrackId,
+      coverUrl: t.coverUrl ?? null,
+      artistFoundPercent: t.artistFoundPercent ?? null,
+      titleFoundPercent: t.titleFoundPercent ?? null,
+      guessSteps: t.guessSteps.map(s => ({ durationSeconds: s.durationSeconds, percent: s.percent })),
+      notFoundPercent: t.notFoundPercent ?? null,
+    })),
+  };
+}
+
+function toArchiveMe(me: ArchiveMeResponse): ArchiveMe {
+  return {
+    played: me.played,
+    score: me.score ?? null,
+    betterThanPercent: me.betterThanPercent ?? null,
+    answers: me.answers.map(a => ({
+      position: a.position, artistCorrect: a.artistCorrect, titleCorrect: a.titleCorrect, listenedSeconds: a.listenedSeconds, score: a.score,
+    })),
   };
 }

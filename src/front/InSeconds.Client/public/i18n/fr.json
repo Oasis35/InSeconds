@@ -1,7 +1,17 @@
 {
   "common": {
     "close": "Fermer",
-    "retry": "Réessayer"
+    "retry": "Réessayer",
+    "previewModal": {
+      "title": "Écouter l'extrait",
+      "loading": "Récupération de l'extrait...",
+      "error": "Aucun extrait disponible pour ce morceau.",
+      "playing": "Lecture en cours...",
+      "preview30s": "Extrait de 30 s",
+      "unavailable": "Deezer est indisponible : aucun extrait pour le moment.",
+      "play": "Écouter",
+      "pause": "Mettre en pause"
+    }
   },
   "errors": {
     "code": "Code d'erreur :",
@@ -48,6 +58,17 @@
       "hint_locked": "Cet indice n'est pas encore débloqué.",
       "already_answered": "Tu as déjà répondu à ce morceau.",
       "listened_duration_below_verified_minimum": "Le palier annoncé est plus court que ce que tu as écouté."
+    },
+    "runs": {
+      "access_denied": "Platines est ouvert sur invitation pour le moment.",
+      "no_challenge": "Pas assez de morceaux pour une playlist, réessaie plus tard.",
+      "challenge_not_found": "Cette playlist n'existe pas. Vérifie le lien.",
+      "session_not_found": "Cette partie n'existe plus.",
+      "already_played": "Tu as déjà joué cette playlist.",
+      "abandoned": "Tu as abandonné cette playlist.",
+      "track_not_found": "Ce morceau n'existe pas dans cette playlist.",
+      "track_lock_not_released": "Réponds d'abord au morceau en cours.",
+      "already_answered": "Tu as déjà répondu à ce morceau."
     }
   },
   "shell": {
@@ -356,15 +377,6 @@
       "error": "Erreur lors de l'enregistrement.",
       "close": "Fermer"
     },
-    "previewModal": {
-      "title": "Écouter l'extrait",
-      "loading": "Récupération de l'extrait...",
-      "error": "Aucun extrait disponible pour ce morceau.",
-      "playing": "Lecture en cours...",
-      "preview30s": "Preview 30s",
-      "unavailable": "Deezer est indisponible : aucun extrait pour le moment.",
-      "close": "Fermer"
-    },
     "addPanel": {
       "title": "Ajouter un morceau",
       "searchPlaceholder": "Rechercher sur Deezer...",
@@ -618,6 +630,7 @@
       "ariaLabel": "À écouter sur Deezer"
     },
     "footer": {
+      "archive": "Réponses des jours passés",
       "admin": "Admin",
       "privacy": "Confidentialité & mentions légales",
       "contact": "Nous contacter",
@@ -727,11 +740,41 @@
       "challengeText": "Je joue à InSeconds, un blind test par jour. Tu fais mieux que moi ?\n{{ url }}",
       "copied": "Lien copié, tu n'as plus qu'à le coller",
       "copyFailed": "Impossible de copier dans le presse-papier."
+    },
+    "archive": {
+      "titlePrefix": "Blind test du",
+      "previousDay": "Jour précédent",
+      "nextDay": "Jour suivant",
+      "pickDate": "Choisir un autre jour (affiché : {{ date }})",
+      "mostMissed": "le plus raté",
+      "players": "Joueurs",
+      "you": "Toi",
+      "artistFound": "Artiste trouvé",
+      "titleFound": "Titre trouvé",
+      "artistRight": "Artiste trouvé",
+      "artistWrong": "Artiste raté",
+      "titleRight": "Titre trouvé",
+      "titleWrong": "Titre raté",
+      "calendarTitle": "Choisir un défi",
+      "previousMonth": "Mois précédent",
+      "nextMonth": "Mois suivant",
+      "calendarNote": "Le défi d'un jour arrive ici dès le lendemain.",
+      "yesterdayAnswers": "Les réponses d'hier",
+      "median": "Médiane",
+      "notFoundTitle": "Pas de réponses pour ce jour",
+      "notFoundBody": "Les réponses d'un défi sont publiées dès le lendemain.",
+      "latest": "Voir les réponses d'hier",
+      "playersScores": "Scores des joueurs",
+      "tooFewPlayers": "Pas assez de joueurs ce jour-là pour afficher des statistiques.",
+      "playToday": "Joue le défi d'aujourd'hui",
+      "pageTitle": "Blind test du {{ date }} : {{ artists }}",
+      "pageDescription": "Les réponses du blind test InSeconds du {{ date }} : {{ artists }}. Ce que les joueurs ont trouvé, et en combien de temps.",
+      "listen": "Écouter l'extrait"
     }
   },
   "privacy": {
     "title": "Confidentialité & mentions légales",
-    "updated": "Dernière mise à jour : 17 octobre 2026",
+    "updated": "Dernière mise à jour : 23 octobre 2026",
     "intro": "InSeconds est un jeu de blind test musical gratuit, accessible à l'adresse https://inseconds.cc. Il reste intégralement jouable en mode invité, sans compte ni inscription ; la création d'un compte, par email uniquement, est optionnelle et sert à retrouver votre progression sur un autre appareil. Cette page réunit les mentions légales du site, conformément à l'article 6-III de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique (LCEN), et sa politique de confidentialité, conformément au Règlement général sur la protection des données (RGPD, Règlement UE 2016/679) et à la loi Informatique et Libertés.",
     "legalIdentity": {
       "title": "Mentions légales : éditeur et hébergement",
@@ -743,7 +786,7 @@
     },
     "data": {
       "title": "Données collectées, finalités et base légale",
-      "body": "Aucune donnée n'est exigée pour jouer : le mode invité ne demande ni nom, ni email, ni inscription.\nSelon votre usage, l'application traite les catégories de données suivantes :\n· identifiant technique pseudonyme : généré aléatoirement et stocké dans un cookie, il permet de reconnaître votre navigateur d'une visite à l'autre (reprise de partie, limitation à une partie par jour, série de victoires). Finalité : fourniture du jeu. Base légale : exécution du service demandé (article 6.1.b du RGPD) ;\n· appareils connectés : pour chaque navigateur où vous jouez, l'application garde la date de première connexion, la date de dernière visite et un libellé grossier du navigateur et de l'appareil (par exemple « Safari · iPhone », jamais l'en-tête technique complet). Avec un compte, la liste de vos appareils s'affiche dans votre profil, où vous pouvez déconnecter chacun d'eux. Finalité : sécurité du compte et connexion multi-appareils. Base légale : exécution du service demandé (article 6.1.b) ;\n· email et pseudo, uniquement si vous créez un compte : un compte optionnel, activé par un lien de connexion envoyé par email (sans mot de passe), permet de retrouver votre historique et votre série sur n'importe quel appareil ; le pseudo est un nom d'affichage que vous choisissez librement. Finalité : gestion du compte et connexion multi-appareils. Base légale : votre consentement (article 6.1.a du RGPD), vous restez libre de jouer en invité sans jamais fournir ces informations ;\n· données de partie : le résultat de chaque réponse (artiste et titre trouvés ou non, sans le texte que vous tapez, qui n'est jamais conservé), durées d'écoute choisies, scores et dates de jeu. Finalité : faire fonctionner le jeu et calculer des statistiques globales anonymes (score médian, taux de réussite par morceau). Base légale : exécution du service demandé (article 6.1.b). Avec un compte, l'éditeur peut consulter dans l'espace d'administration votre pseudo, votre adresse email, votre série et l'historique de vos parties des 30 derniers jours, uniquement pour faire fonctionner le service et répondre à vos demandes ;\n· adresse IP : traitée techniquement à chaque requête, comme pour tout site web, à des fins de sécurité (limitation du nombre de tentatives de connexion pour prévenir les abus). Finalité : sécurité du service. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· journaux techniques : à chaque requête, l'application enregistre l'identifiant technique pseudonyme décrit ci-dessus, la page ou l'action concernée, sa durée, son résultat, le type de navigateur et d'appareil (par exemple « Safari · iPhone ») et, en cas de bug, le message d'erreur, sa pile d'appels, la version de l'application et l'état de la connexion (en ligne ou non). Ces journaux ne contiennent jamais votre email, votre pseudo, vos réponses saisies ni votre cookie. Finalité : détecter et corriger les bugs, surveiller le bon fonctionnement du service. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· préférences locales : votre langue préférée et le souvenir des messages d'information déjà affichés sont stockés localement dans votre navigateur ; ils ne quittent jamais votre appareil et ne sont jamais transmis à nos serveurs."
+      "body": "Aucune donnée n'est exigée pour jouer : le mode invité ne demande ni nom, ni email, ni inscription.\nSelon votre usage, l'application traite les catégories de données suivantes :\n· identifiant technique pseudonyme : généré aléatoirement et stocké dans un cookie, il permet de reconnaître votre navigateur d'une visite à l'autre (reprise de partie, limitation à une partie par jour, série de victoires). Finalité : fourniture du jeu. Base légale : exécution du service demandé (article 6.1.b du RGPD) ;\n· appareils connectés : pour chaque navigateur où vous jouez, l'application garde la date de première connexion, la date de dernière visite et un libellé grossier du navigateur et de l'appareil (par exemple « Safari · iPhone », jamais l'en-tête technique complet). Avec un compte, la liste de vos appareils s'affiche dans votre profil, où vous pouvez déconnecter chacun d'eux. Finalité : sécurité du compte et connexion multi-appareils. Base légale : exécution du service demandé (article 6.1.b) ;\n· email et pseudo, uniquement si vous créez un compte : un compte optionnel, activé par un lien de connexion envoyé par email (sans mot de passe), permet de retrouver votre historique et votre série sur n'importe quel appareil ; le pseudo est un nom d'affichage que vous choisissez librement. Finalité : gestion du compte et connexion multi-appareils. Base légale : votre consentement (article 6.1.a du RGPD), vous restez libre de jouer en invité sans jamais fournir ces informations ;\n· données de partie : le résultat de chaque réponse (artiste et titre trouvés ou non, sans le texte que vous tapez, qui n'est jamais conservé), durées d'écoute choisies, scores et dates de jeu. Finalité : faire fonctionner le jeu et calculer des statistiques globales anonymes (score médian, taux de réussite par morceau). Base légale : exécution du service demandé (article 6.1.b). Avec un compte, l'éditeur peut consulter dans l'espace d'administration votre pseudo, votre adresse email, votre série et l'historique de vos parties des 30 derniers jours, uniquement pour faire fonctionner le service et répondre à vos demandes ;\n· mode Platines (sur invitation) : pour chaque partie, le résultat de chaque morceau (artiste et titre trouvés ou non, jamais le texte que vous tapez), ses points, les manches passées, le score et les dates de jeu ; votre record (meilleur score et meilleur disque) ; les playlists que vous lancez et leur auteur ; l'autorisation d'accès que l'éditeur vous a donnée. Une playlist se partage par un lien : ceux qui l'ouvrent voient le pseudo de son auteur (« Invité » sans compte) et, une fois leur propre partie finie, le pseudo (ou « Invité »), le disque et le score de chacun de ceux qui l'ont jouée. Ce n'est pas un classement public : seuls ceux qui ont le lien les voient. Si vous supprimez votre compte, vos parties disparaissent ; les playlists que vous avez lancées restent jouables, sans auteur. Finalité : faire fonctionner ce mode et la comparaison entre ceux qui ont joué la même playlist. Base légale : exécution du service demandé (article 6.1.b) ;\n· adresse IP : traitée techniquement à chaque requête, comme pour tout site web, à des fins de sécurité (limitation du nombre de tentatives de connexion pour prévenir les abus). Finalité : sécurité du service. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· journaux techniques : à chaque requête, l'application enregistre l'identifiant technique pseudonyme décrit ci-dessus, la page ou l'action concernée, sa durée, son résultat, le type de navigateur et d'appareil (par exemple « Safari · iPhone ») et, en cas de bug, le message d'erreur, sa pile d'appels, la version de l'application et l'état de la connexion (en ligne ou non). Ces journaux ne contiennent jamais votre email, votre pseudo, vos réponses saisies ni votre cookie. Finalité : détecter et corriger les bugs, surveiller le bon fonctionnement du service. Base légale : intérêt légitime du responsable du traitement (article 6.1.f) ;\n· préférences locales : votre langue préférée et le souvenir des messages d'information déjà affichés sont stockés localement dans votre navigateur ; ils ne quittent jamais votre appareil et ne sont jamais transmis à nos serveurs."
     },
     "cookie": {
       "title": "Cookie",
@@ -772,5 +815,73 @@
       "contactLabel": "✉️ contact@inseconds.cc"
     },
     "back": "Retour au jeu"
+  },
+  "runs": {
+    "common": {
+      "loading": "Chargement…"
+    },
+    "header": {
+      "abandon": "Abandonner",
+      "round": "Manche {{ round }} / {{ rounds }}",
+      "score": "Score"
+    },
+    "objective": {
+      "gold": "Viser le disque d’or",
+      "unlock": "Débloquer la manche {{ round }}",
+      "points": "pts"
+    },
+    "pills": {
+      "position": "Morceau {{ position }} sur {{ total }}"
+    },
+    "answer": {
+      "next": "Morceau suivant",
+      "endRound": "Fin de la manche"
+    },
+    "welcome": {
+      "badge": "Accès anticipé",
+      "title": "Platines",
+      "tagline": "Vise le disque d’or.",
+      "record": "Ton record : {{ score }} pts",
+      "launch": "Lancer une partie",
+      "resume": "Reprendre la partie"
+    },
+    "status": {
+      "no_challenge": {
+        "title": "Pas de playlist",
+        "body": "Impossible de préparer une playlist pour l’instant.\nRéessaie un peu plus tard."
+      },
+      "error": {
+        "title": "Une erreur est survenue",
+        "body": "Impossible de charger la playlist."
+      },
+      "backToDaily": "Retour au jeu du jour"
+    },
+    "leave": {
+      "title": "Partie en cours",
+      "body": "Ta partie est gardée : tu pourras la reprendre depuis l’accueil de Platines.",
+      "confirm": "Quitter quand même",
+      "cancel": "Continuer à jouer"
+    },
+    "abandon": {
+      "title": "Abandonner la partie ?",
+      "body": "Cette partie sera perdue et ne comptera pas pour ton record.",
+      "confirm": "Abandonner",
+      "cancel": "Continuer"
+    },
+    "roundEnd": {
+      "title": "Manche {{ round }} terminée",
+      "next": "Manche suivante"
+    },
+    "finished": {
+      "found": "{{ found }} / {{ total }} morceaux trouvés",
+      "newGame": "Nouvelle partie"
+    },
+    "discs": {
+      "scratched": "Disque rayé",
+      "wax": "Disque de cire",
+      "bronze": "Disque de bronze",
+      "silver": "Disque d’argent",
+      "gold": "Disque d’or"
+    }
   }
 }

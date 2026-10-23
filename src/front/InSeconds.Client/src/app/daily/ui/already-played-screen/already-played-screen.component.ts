@@ -1,19 +1,23 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { DayStats } from '../../domain/daily';
+import { ArchiveDay } from '../../domain/archive';
 import { ScoreDistributionChartComponent } from '../score-distribution-chart/score-distribution-chart.component';
 import { ShareButtonComponent } from '../share-button/share-button.component';
-import { TrackResultRow, TrackResultsListComponent } from '../track-results-list/track-results-list.component';
+import { TrackResultRow, TrackResultsListComponent } from '../../../gameplay/ui/track-results-list/track-results-list.component';
+import { YesterdayAnswersCardComponent } from '../yesterday-answers-card/yesterday-answers-card.component';
 
-/** Écran « déjà joué » : compte à rebours, score, répartition du jour, partage et détail des morceaux. */
+/** Écran « déjà joué » : compte à rebours, score, répartition du jour, partage, détail des morceaux, et l'encart des réponses d'hier. */
 @Component({
   selector: 'app-already-played-screen',
-  imports: [TranslatePipe, ShareButtonComponent, TrackResultsListComponent, ScoreDistributionChartComponent],
+  imports: [TranslatePipe, ShareButtonComponent, TrackResultsListComponent, ScoreDistributionChartComponent, YesterdayAnswersCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './already-played-screen.component.html',
 })
 export class AlreadyPlayedScreenComponent {
   readonly stats = input<DayStats | null>(null);
+  /** Les réponses d'hier (l'encart sous la carte du score) ; rien sans défi hier. */
+  readonly yesterday = input<ArchiveDay | null>(null);
   readonly abandoned = input(false);
   readonly countdown = input.required<string>();
   readonly shareCopied = input(false);

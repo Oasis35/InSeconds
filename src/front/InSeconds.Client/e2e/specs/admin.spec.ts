@@ -367,7 +367,7 @@ test.describe('Admin - pool', () => {
     const modal = page.getByRole('dialog').filter({ hasText: 'Écouter l\'extrait' });
     await expect(modal).toBeVisible();
     // FakeDeezerHandler renvoie un extrait → lecteur prêt (bouton lecture/pause).
-    await expect(modal.getByRole('button', { name: /▶|⏸/ })).toBeVisible();
+    await expect(modal.getByTestId('preview-toggle')).toBeVisible();
 
     await modal.getByRole('button', { name: 'Fermer' }).click();
     await expect(modal).not.toBeVisible();
@@ -708,5 +708,25 @@ test.describe('Admin - joueurs', () => {
     // Re-cliquer replie la ligne.
     await row.getByRole('button', { name: /JoueurTab/ }).click();
     await expect(history).not.toBeVisible();
+  });
+
+  test('ouvre l\'accès au mode Platines d\'un compte, gardé au rechargement', async ({ page, api }) => {
+    await linkAccount(page, api, 'acces-run@e2e.test', 'JoueurRun');
+
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+    await admin.clickTab('Joueurs');
+
+    const toggle = page.getByTestId('registered-player').filter({ hasText: 'JoueurRun' }).getByTestId('run-access');
+    await expect(toggle).toHaveAttribute('aria-checked', 'false');
+    // Le client du mode Run est fourni par les routes de l'admin : la requête part bien vers l'API.
+    const granted = page.waitForResponse(r => /\/api\/admin\/runs\/access\//.test(r.url()) && r.request().method() === 'PUT');
+    await toggle.click();
+    expect((await granted).status()).toBe(204);
+    await expect(toggle).toHaveAttribute('aria-checked', 'true');
+
+    await page.reload();
+    await expect(page.getByTestId('registered-player').filter({ hasText: 'JoueurRun' }).getByTestId('run-access')).toHaveAttribute('aria-checked', 'true');
   });
 });

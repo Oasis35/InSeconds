@@ -63,6 +63,7 @@
       @case ('already_played') {
         <app-already-played-screen
           [stats]="store.stats()"
+          [yesterday]="store.yesterday()"
           [abandoned]="store.abandoned()"
           [countdown]="store.countdown()"
           [shareCopied]="shareCopied()"

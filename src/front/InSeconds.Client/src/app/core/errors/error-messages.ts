@@ -46,6 +46,17 @@ export const ERROR_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   'players.pseudo_mismatch': 'errors.players.pseudo_mismatch',
   'players.pseudo_taken': 'errors.players.pseudo_taken',
   'players.same_email': 'errors.players.same_email',
+
+  // Runs
+  'runs.abandoned': 'errors.runs.abandoned',
+  'runs.access_denied': 'errors.runs.access_denied',
+  'runs.already_answered': 'errors.runs.already_answered',
+  'runs.already_played': 'errors.runs.already_played',
+  'runs.challenge_not_found': 'errors.runs.challenge_not_found',
+  'runs.no_challenge': 'errors.runs.no_challenge',
+  'runs.session_not_found': 'errors.runs.session_not_found',
+  'runs.track_lock_not_released': 'errors.runs.track_lock_not_released',
+  'runs.track_not_found': 'errors.runs.track_not_found',
 };
 
 /** Message affiché pour un code inconnu, toujours avec le `traceId` quand il existe. */

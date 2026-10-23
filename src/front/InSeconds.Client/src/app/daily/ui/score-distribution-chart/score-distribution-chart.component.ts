@@ -1,6 +1,6 @@
 import { Component, computed, input, ChangeDetectionStrategy } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { DayStats } from '../../domain/daily';
+import { ScoreChartData } from '../../domain/daily';
 
 /** Une case de l'égaliseur (une colonne = une tranche de score, empilée en `SEGMENTS` cases). */
 interface EqualizerCell {
@@ -28,9 +28,6 @@ interface ScoreChart {
   highest: ScoreMarker | null;
 }
 
-/** Sous ce nombre de joueurs, la phrase « Tu fais mieux que X % » est masquée (peu parlante). */
-export const MIN_PLAYERS_FOR_PERCENT = 5;
-
 // Géométrie du SVG (viewBox 300 × VIEW_HEIGHT).
 const LEFT = 10;
 const WIDTH = 280;
@@ -52,10 +49,10 @@ const OTHERS = 'var(--color-violet)';
 const UNLIT = 'var(--text-sep)';
 
 /**
- * Égaliseur « répartition des scores du jour » (écrans « Déjà joué » et « Score final ») :
- * une colonne par tranche de score (`DayStats.scoreDistribution`), la tranche du
+ * Égaliseur « répartition des scores » (écrans « Déjà joué », « Score final » et page d'un jour passé) :
+ * une colonne par tranche de score (`scoreDistribution`), la tranche du
  * joueur en orange, un repère médiane et les scores le plus bas / le plus haut sous l'axe,
- * plus la phrase « Tu fais mieux que X % des joueurs » à partir de `MIN_PLAYERS_FOR_PERCENT`.
+ * plus la phrase « Tu fais mieux que X % des joueurs » quand le serveur la donne (5 joueurs au moins, seuil du serveur).
  * Présentationnel pur - couleurs via les tokens `:root` de `styles.scss`.
  */
 @Component({
@@ -65,7 +62,7 @@ const UNLIT = 'var(--text-sep)';
   templateUrl: './score-distribution-chart.component.html',
 })
 export class ScoreDistributionChartComponent {
-  readonly stats = input.required<DayStats>();
+  readonly stats = input.required<ScoreChartData>();
 
   protected readonly viewHeight = VIEW_HEIGHT;
   protected readonly axisY = BARS_HEIGHT + 4;
@@ -104,16 +101,17 @@ export class ScoreDistributionChartComponent {
     });
 
     const xOf = (v: number) => LEFT + (Math.min(Math.max(v, 0), s.maxPossibleScore) / s.maxPossibleScore) * WIDTH;
-    const hasPlayers = s.totalPlayers > 0;
+    const median = s.minScore != null ? s.medianScore : null;
+    const hasPlayers = median != null;
 
     return {
       cells,
       cellWidth: bucketWidth - 2 * CELL_GAP_X,
-      median: hasPlayers
+      median: median != null
         ? {
-            tickX: xOf(s.medianScore),
-            labelX: Math.min(Math.max(xOf(s.medianScore), LEFT + LABEL_GUARD), LEFT + WIDTH - LABEL_GUARD),
-            value: s.medianScore,
+            tickX: xOf(median),
+            labelX: Math.min(Math.max(xOf(median), LEFT + LABEL_GUARD), LEFT + WIDTH - LABEL_GUARD),
+            value: median,
           }
         : null,
       lowest: hasPlayers && s.minScore != null ? { tickX: xOf(s.minScore), labelX: LEFT, value: s.minScore } : null,
@@ -121,9 +119,6 @@ export class ScoreDistributionChartComponent {
     };
   });
 
-  /** % des autres joueurs battus, masqué sous `MIN_PLAYERS_FOR_PERCENT` joueurs. */
-  protected readonly betterThanPercent = computed<number | null>(() => {
-    const s = this.stats();
-    return s.totalPlayers >= MIN_PLAYERS_FOR_PERCENT && s.betterThanPercent != null ? s.betterThanPercent : null;
-  });
+  /** % des autres joueurs battus : vide sous 5 joueurs (le serveur applique le seuil). */
+  protected readonly betterThanPercent = computed<number | null>(() => this.stats().betterThanPercent);
 }

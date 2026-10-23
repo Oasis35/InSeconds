@@ -44,7 +44,7 @@ type AddStatus = 'loading' | 'success' | 'error';
           @for (track of results(); track track.deezerTrackId) {
             <li class="flex items-center gap-3 px-4 py-2.5" style="border-bottom:1px solid var(--border-medium)">
               <button type="button" (click)="preview.emit(track)" [disabled]="!track.previewUrl"
-                [attr.aria-label]="'admin.previewModal.title' | translate"
+                [attr.aria-label]="'common.previewModal.title' | translate"
                 class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors text-sm disabled:opacity-30"
                 style="background:var(--bg-primary-dk);color:var(--text-on-primary)">▶</button>
               <div class="flex-1 min-w-0 flex flex-col gap-0.5">

@@ -37,7 +37,7 @@
 
 - Docker (base PostgreSQL de dev, et tests d'intégration)
 - .NET 10 SDK
-- Node.js ≥ 22.22.3 (exigé par Angular CLI 22.2) et npm
+- Node.js 24 (24.15 ou plus, exigé par Angular CLI 22.2 et html2canvas-pro) et npm
 
 ### Lancer la base et l'API
 
@@ -147,7 +147,7 @@ E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inse
 - [`docs/regles-du-jeu.md`](docs/regles-du-jeu.md) - règles de jeu (scoring, prolongation, anti-triche, série) - ce qui est réellement appliqué vs juste configuré
 - [`docs/exploitation/`](docs/exploitation/) - déploiement sur le VPS, staging, sauvegardes, CI, accès de secours
 - [`docs/conformite/`](docs/conformite/) - conditions de l'API Deezer, RGPD
-- [`docs/runs/`](docs/runs/README.md) - le mode Run (socle back posé, partie et écrans à venir)
+- [`docs/runs/`](docs/runs/README.md) - le mode Run (partie posée côté back, écrans à venir)
 - [`docs/taches.md`](docs/taches.md) - ce qui reste à faire
 - [`docs/historique/`](docs/historique/) - la refonte de 2026
 

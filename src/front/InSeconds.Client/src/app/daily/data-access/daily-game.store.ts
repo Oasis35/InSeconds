@@ -6,7 +6,8 @@ import { RoundConfig, RoundSubmission } from '../../gameplay/domain/track-round'
 import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { AnsweredTrack, DailySettings, DailyToday, DayStats, ResumedTrack, StartedSession, TrackSlot } from '../domain/daily';
 import { DailyScreen, PeekContext, isRecapScreen, refocusContext, screenAfterToday } from '../domain/daily-screen';
-import { formatCountdown, secondsUntilMidnightUtc } from '../domain/countdown';
+import { formatCountdown, secondsUntilMidnightUtc, yesterdayUtc } from '../domain/countdown';
+import { ArchiveDay } from '../domain/archive';
 import { toRoundResult } from '../domain/round-result';
 import { EMPTY_STREAK, Streak, pluralKey } from '../domain/streak';
 import { recapToasts } from '../domain/toasts';
@@ -32,6 +33,8 @@ interface DailyState {
   streakToastDismissedAt: number | null;
   gelToastDismissed: boolean;
   stats: DayStats | null;
+  /** Les réponses d'hier, pour l'encart de « déjà joué » ; vide sans défi hier (ou si la lecture échoue). */
+  yesterday: ArchiveDay | null;
   secondsLeft: number;
 }
 
@@ -51,6 +54,7 @@ const initialState: DailyState = {
   streakToastDismissedAt: null,
   gelToastDismissed: false,
   stats: null,
+  yesterday: null,
   secondsLeft: 0,
 };
 
@@ -148,6 +152,15 @@ export const DailyGameStore = signalStore(
       }
     };
 
+    // L'encart « Les réponses d'hier » : un plus, comme les statistiques ; rien ne s'affiche s'il manque.
+    const loadYesterday = async () => {
+      try {
+        patchState(store, { yesterday: await api.archiveDay(yesterdayUtc(new Date())) });
+      } catch {
+        patchState(store, { yesterday: null });
+      }
+    };
+
     const refreshStreak = async () => {
       try {
         const today = await api.today();
@@ -160,7 +173,10 @@ export const DailyGameStore = signalStore(
     const enterAlreadyPlayed = (abandoned: boolean) => {
       patchState(store, { screen: 'already_played', abandoned, gelToastDismissed: false });
       startCountdown();
-      if (!abandoned) void loadStats();
+      if (!abandoned) {
+        void loadStats();
+        void loadYesterday();
+      }
     };
 
     /**

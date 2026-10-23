@@ -763,6 +763,185 @@
           }
         }
       }
+    },
+    "/api/daily/archive": {
+      "get": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "getArchiveIndex",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArchiveIndexResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/daily/archive/{date}": {
+      "get": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "getArchiveDay",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArchiveDayResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/daily/archive/{date}/me": {
+      "get": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "getMyArchiveDay",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArchiveMeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/daily/archive/{date}/tracks/{position}/preview": {
+      "get": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "getArchivePreview",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "position",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArchivePreviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2184,6 +2363,284 @@
             "format": "int32"
           }
         }
+      },
+      "ArchiveDayResponse": {
+        "required": [
+          "date",
+          "previousDate",
+          "nextDate",
+          "hasStats",
+          "medianScore",
+          "minScore",
+          "maxScore",
+          "maxPossibleScore",
+          "scoreDistribution",
+          "tracks"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "previousDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "nextDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "hasStats": {
+            "type": "boolean"
+          },
+          "medianScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "minScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "maxScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "maxPossibleScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "scoreDistribution": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArchiveScoreBucketResponse"
+            }
+          },
+          "tracks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArchiveTrackResponse"
+            }
+          }
+        }
+      },
+      "ArchiveGuessStepResponse": {
+        "required": [
+          "durationSeconds",
+          "percent"
+        ],
+        "type": "object",
+        "properties": {
+          "durationSeconds": {
+            "type": "number",
+            "format": "double"
+          },
+          "percent": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ArchiveIndexResponse": {
+        "required": [
+          "dates"
+        ],
+        "type": "object",
+        "properties": {
+          "dates": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        }
+      },
+      "ArchiveMeResponse": {
+        "required": [
+          "played",
+          "score",
+          "betterThanPercent",
+          "answers"
+        ],
+        "type": "object",
+        "properties": {
+          "played": {
+            "type": "boolean"
+          },
+          "score": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "betterThanPercent": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "answers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArchiveMyAnswerResponse"
+            }
+          }
+        }
+      },
+      "ArchiveMyAnswerResponse": {
+        "required": [
+          "position",
+          "artistCorrect",
+          "titleCorrect",
+          "listenedSeconds",
+          "score"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "artistCorrect": {
+            "type": "boolean"
+          },
+          "titleCorrect": {
+            "type": "boolean"
+          },
+          "listenedSeconds": {
+            "type": "number",
+            "format": "double"
+          },
+          "score": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ArchiveScoreBucketResponse": {
+        "required": [
+          "minScore",
+          "maxScore",
+          "percent"
+        ],
+        "type": "object",
+        "properties": {
+          "minScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "percent": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ArchiveTrackResponse": {
+        "required": [
+          "position",
+          "artist",
+          "title",
+          "releaseYear",
+          "deezerTrackId",
+          "coverUrl",
+          "artistFoundPercent",
+          "titleFoundPercent",
+          "guessSteps",
+          "notFoundPercent"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "artist": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "releaseYear": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "deezerTrackId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "coverUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "artistFoundPercent": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "titleFoundPercent": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "guessSteps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArchiveGuessStepResponse"
+            }
+          },
+          "notFoundPercent": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ArchivePreviewResponse": {
+        "required": [
+          "previewUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "previewUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
       }
     }
   },
@@ -2208,6 +2665,18 @@
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.UpdateTrackCooldownPoolPercentEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.GetArchiveIndexEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.GetArchiveDayEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.GetMyArchiveDayEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.GetArchivePreviewEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.RecomputeDayStatsEndpoint"

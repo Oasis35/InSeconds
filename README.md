@@ -37,7 +37,7 @@
 
 - Docker (dev PostgreSQL database, and integration tests)
 - .NET 10 SDK
-- Node.js ≥ 22.22.3 (required by Angular CLI 22.2) and npm
+- Node.js 24 (24.15 or later, required by Angular CLI 22.2 and html2canvas-pro) and npm
 
 ### Run the database and the API
 
@@ -149,7 +149,7 @@ The detailed docs are in French.
 - [`docs/regles-du-jeu.md`](docs/regles-du-jeu.md) - game rules (scoring, extensions, anti-cheat, streak) - what is actually enforced vs merely configured
 - [`docs/exploitation/`](docs/exploitation/) - VPS deployment, staging, backups, CI, emergency access
 - [`docs/conformite/`](docs/conformite/) - Deezer API terms, GDPR
-- [`docs/runs/`](docs/runs/README.md) - the Run mode (back-end foundation in place, game and screens to come)
+- [`docs/runs/`](docs/runs/README.md) - the Run mode (back-end game in place, screens to come)
 - [`docs/taches.md`](docs/taches.md) - what is left to do
 - [`docs/historique/`](docs/historique/) - the 2026 rewrite
 

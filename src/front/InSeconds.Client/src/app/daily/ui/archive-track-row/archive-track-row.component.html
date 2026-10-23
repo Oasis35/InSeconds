@@ -1,0 +1,87 @@
+<div class="py-3.5" data-testid="archive-track">
+  <div class="flex gap-3.5 items-center">
+    <div class="relative shrink-0" style="width:56px;height:56px">
+      @if (track().coverUrl) {
+        <img [src]="track().coverUrl" [alt]="'daily.alreadyPlayed.coverAlt' | translate" class="w-14 h-14 rounded-full object-cover" loading="lazy" />
+      } @else {
+        <div class="w-14 h-14 rounded-full" style="background:var(--bg-surface-2)"></div>
+      }
+      <span class="absolute -top-1 -left-1 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold"
+            style="font-family:var(--font-display);background:var(--bg-surface);border:1px solid var(--border-strong);color:var(--text-hi)">{{ track().position }}</span>
+    </div>
+    <div class="flex-1 min-w-0 flex flex-col items-start text-left">
+      <button type="button" class="w-full min-w-0 flex flex-col gap-0.5 text-left" (click)="expanded.set(!expanded())"
+              [attr.aria-expanded]="expanded()" [title]="track().artist + ' · ' + track().title" data-testid="archive-track-text">
+        <span class="w-full flex items-baseline gap-1 text-[15px] font-semibold leading-snug" [class.flex-wrap]="expanded()" style="color:var(--text-hi)">
+          <span class="min-w-0" [class.truncate]="!expanded()" data-testid="archive-artist">{{ track().artist }}</span>
+          @if (mostMissed()) {
+            <span class="shrink-0 text-xs font-semibold ml-1" style="color:var(--color-fail)" data-testid="most-missed">{{ 'daily.archive.mostMissed' | translate }}</span>
+          }
+        </span>
+        <span class="w-full flex items-baseline gap-1 text-sm leading-snug" [class.flex-wrap]="expanded()" style="color:var(--text-light)">
+          <span class="min-w-0" [class.truncate]="!expanded()" data-testid="archive-title">{{ track().title }}</span>
+          @if (track().releaseYear) {
+            <span class="shrink-0" style="color:var(--text-faint)">· {{ track().releaseYear }}</span>
+          }
+        </span>
+      </button>
+      <button type="button" (click)="listen.emit()" data-testid="archive-listen"
+              class="mt-1.5 inline-flex items-center gap-1.5 rounded-(--radius-button) px-2.5 py-1 text-xs font-semibold transition-colors hover:bg-white/[0.04]"
+              style="border:1px solid var(--color-accent-2);color:var(--color-accent-2)">
+        <svg width="9" height="9" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4l14 8-14 8z" fill="currentColor"/></svg>
+        {{ 'daily.archive.listen' | translate }}
+      </button>
+    </div>
+    <app-deezer-badge class="shrink-0 self-start" [deezerTrackId]="track().deezerTrackId" [lang]="lang()" variant="vertical"
+                      [width]="badgeSize().width" [height]="badgeSize().height" />
+  </div>
+
+  @if (hasStats() || mine()) {
+    <div class="mt-3 flex flex-wrap items-start gap-x-7 gap-y-2 text-left">
+      @if (hasStats()) {
+        <div class="flex flex-col gap-1" data-testid="archive-players">
+          <span class="text-[11px] font-semibold" style="color:var(--color-violet)">{{ 'daily.archive.players' | translate }}</span>
+          <span class="flex items-center gap-4">
+            <span class="inline-flex items-center gap-1.5" style="color:var(--text-muted)" [title]="'daily.archive.artistFound' | translate">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+              <span class="sr-only">{{ 'daily.archive.artistFound' | translate }}</span>
+              <b class="text-sm" style="font-family:var(--font-display);color:var(--text-hi)">{{ track().artistFoundPercent }} %</b>
+            </span>
+            <span class="inline-flex items-center gap-1.5" style="color:var(--text-muted)" [title]="'daily.archive.titleFound' | translate">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+              <span class="sr-only">{{ 'daily.archive.titleFound' | translate }}</span>
+              <b class="text-sm" style="font-family:var(--font-display);color:var(--text-hi)">{{ track().titleFoundPercent }} %</b>
+            </span>
+          </span>
+        </div>
+      }
+      @if (mine(); as m) {
+        <div class="flex flex-col gap-1" data-testid="archive-mine">
+          <span class="text-[11px] font-semibold" style="color:var(--color-accent-3)">{{ 'daily.archive.you' | translate }}</span>
+          <span class="flex items-center gap-2.5">
+            <span class="inline-flex items-center gap-1" style="color:var(--text-muted)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+              <b class="text-base leading-none" [style.color]="m.artistCorrect ? 'var(--color-success)' : 'var(--color-fail)'"
+                 [attr.aria-label]="(m.artistCorrect ? 'daily.archive.artistRight' : 'daily.archive.artistWrong') | translate">{{ m.artistCorrect ? '✓' : '✗' }}</b>
+            </span>
+            <span class="inline-flex items-center gap-1" style="color:var(--text-muted)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+              <b class="text-base leading-none" [style.color]="m.titleCorrect ? 'var(--color-success)' : 'var(--color-fail)'"
+                 [attr.aria-label]="(m.titleCorrect ? 'daily.archive.titleRight' : 'daily.archive.titleWrong') | translate">{{ m.titleCorrect ? '✓' : '✗' }}</b>
+            </span>
+            <b class="ml-3 text-sm" style="font-family:var(--font-display)" data-testid="archive-mine-score"
+               [style.color]="m.score > 0 ? 'var(--color-accent-3)' : 'var(--text-faint)'">+{{ m.score }}</b>
+          </span>
+        </div>
+      }
+    </div>
+  }
+
+  @if (hasStats()) {
+    <div class="mt-3">
+      <app-guess-time-chart [distribution]="distribution()" [notFoundCount]="track().notFoundPercent ?? 0"
+        [highlightDuration]="myDuration()" [highlightNotFound]="myMiss()"
+        [showCounts]="true" countSuffix=" %" />
+    </div>
+  }
+</div>
