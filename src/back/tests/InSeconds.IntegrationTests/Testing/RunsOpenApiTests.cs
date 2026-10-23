@@ -4,8 +4,8 @@ using System.Text.Json.Nodes;
 namespace InSeconds.IntegrationTests.Testing;
 
 /// <summary>
-/// Document OpenAPI du module Runs : servi par l'hôte de test seulement, pour générer le client NSwag du front. Préfixes <c>api/runs</c> (les routes
-/// joueur, à venir) et <c>api/admin/runs</c> (l'accès).
+/// Document OpenAPI du module Runs : servi par l'hôte de test seulement, pour générer le client NSwag du front. Préfixes <c>api/runs</c> (la partie)
+/// et <c>api/admin/runs</c> (l'accès).
 /// </summary>
 public class RunsOpenApiTests(PostgresFixture postgres) : IAsyncLifetime
 {
@@ -22,7 +22,12 @@ public class RunsOpenApiTests(PostgresFixture postgres) : IAsyncLifetime
     {
         var document = await ReadDocumentAsync();
 
-        Assert.Equal(["grantRunAccess", "listRunAccess", "revokeRunAccess"], OperationIds(document).Order(StringComparer.Ordinal));
+        Assert.Equal(
+            [
+                "abandonRun", "getRunChallenge", "getRunSession", "getRunsMe", "grantRunAccess", "joinRun", "launchRun", "listRunAccess",
+                "refreshRunPreview", "revokeRunAccess", "submitRunAnswer", "updateRunListening",
+            ],
+            OperationIds(document).Order(StringComparer.Ordinal));
         Assert.All(document["paths"]!.AsObject().Select(p => p.Key), path =>
             Assert.True(path.StartsWith("/api/runs", StringComparison.Ordinal) || path.StartsWith("/api/admin/runs", StringComparison.Ordinal), path));
     }
@@ -46,6 +51,20 @@ public class RunsOpenApiTests(PostgresFixture postgres) : IAsyncLifetime
         }
 
         Assert.Null(Operation(document, "listRunAccess")["responses"]!["404"]);
+    }
+
+    [Fact]
+    public async Task Les_routes_de_la_partie_sans_corps_n_en_declarent_pas()
+    {
+        var document = await ReadDocumentAsync();
+
+        // Le défi, la partie ou le lancement sont chargés par Wolverine : jamais un corps de requête.
+        foreach (var id in new[] { "launchRun", "joinRun", "refreshRunPreview", "abandonRun", "getRunsMe", "getRunChallenge", "getRunSession" })
+            Assert.Null(Operation(document, id)["requestBody"]);
+        Assert.NotNull(Operation(document, "submitRunAnswer")["requestBody"]);
+        Assert.NotNull(Operation(document, "updateRunListening")["requestBody"]);
+        Assert.NotNull(Operation(document, "launchRun")["responses"]!["429"]);
+        Assert.NotNull(Operation(document, "getRunChallenge")["responses"]!["429"]);
     }
 
     [Fact]

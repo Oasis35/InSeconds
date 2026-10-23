@@ -30,4 +30,10 @@ public static class RateLimitPolicies
 
     /// <summary>Extrait d'un morceau d'un jour passé (public ; chaque appel interroge Deezer, quota partagé avec les parties).</summary>
     public const string DailyArchivePreview = "daily-archive-preview";
+
+    /// <summary>Lancement d'un run (une nouvelle playlist tirée à chaque fois) : par joueur.</summary>
+    public const string RunLaunch = "run-launch";
+
+    /// <summary>Lecture du lien d'une playlist (public, sans authentification) : par IP, contre l'énumération des codes.</summary>
+    public const string RunLink = "run-link";
 }

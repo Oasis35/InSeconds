@@ -78,7 +78,7 @@ Runs possède ses autorisations (`runs.access`), **Players n'est pas modifié**.
 | `POST /api/runs/challenges` | lance un run : crée le défi et la partie de son auteur, rend la partie (accès requis ; verrou par joueur) |
 | `GET /api/runs/challenges/{code}` | ce que montre un lien (écran « lien reçu ») : pseudo de l'auteur, état de sa propre partie sur ce défi (pas commencée, en cours, finie). **Aucun morceau** (piège 31) |
 | `POST /api/runs/challenges/{code}/sessions` | relève le défi, ou reprend sa partie en cours dessus (comme `POST /api/daily/sessions`) |
-| `GET /api/runs/sessions/{id}` | l'état d'une partie (reprise, fin de manche, écran de fin) |
+| `GET /api/runs/sessions/{id}` | l'état d'une partie (reprise, fin de manche, écran de fin), en lecture seule : sans extrait, qui arrive avec le démarrage, la reprise, une réponse ou `POST …/preview` |
 | `PATCH /api/runs/sessions/{id}/listening` | note l'écoute du morceau en cours |
 | `POST /api/runs/sessions/{id}/preview` | l'adresse de l'extrait **du morceau en cours seulement** (jamais d'un morceau futur) |
 | `POST /api/runs/sessions/{id}/answers` | répond au morceau en cours (ou le passe) ; révèle le morceau et les points ; une transaction (réponse, manche, fin, record) |
@@ -93,7 +93,7 @@ Runs possède ses autorisations (`runs.access`), **Players n'est pas modifié**.
 - Document OpenAPI `runs` : préfixes `api/runs` et `api/admin/runs`, client NSwag `runs/api.generated.ts`.
 
 ### 3.5 Ce que les réponses doivent porter (dicté par les écrans)
-- **État d'une partie** (démarrage, reprise, `GET /api/runs/sessions/{id}`) : manche en cours et nombre de manches, position dans la manche, score total, score et objectif de la manche, résultat de chaque morceau déjà joué de la manche (trouvé, à moitié, raté, neutralisé) pour les pastilles, adresse de l'extrait du morceau en cours. Rien sur les morceaux à venir.
+- **État d'une partie** (démarrage, reprise, `GET /api/runs/sessions/{id}`) : manche en cours et nombre de manches, position dans la manche, score total, score et objectif de la manche, résultat de chaque morceau déjà joué de la manche (trouvé, à moitié, raté, neutralisé) pour les pastilles ; l'adresse de l'extrait du morceau en cours arrive avec le démarrage, la reprise, une réponse ou `POST …/preview`, jamais avec le `GET`. Rien sur les morceaux à venir.
 - **Réponse à `answers`** (écran de réponse) : artiste, titre, hash de pochette et lien Deezer du morceau, artiste juste, titre juste, points du morceau, nouveau score de la manche et score total ; si le morceau a été neutralisé, rien sur le morceau mais l'objectif de la manche avant et après (l'écran barre l'ancien) ; si la manche se termine, son bilan (débloquée ou non, les 5 morceaux révélés avec leurs points) ; si le run se termine, le résultat de fin ; sinon l'adresse de l'extrait du morceau suivant.
 - **Résultat de fin** (écran de fin) : disque (clé), score final, nombre de morceaux trouvés sur le total, résultat de chaque morceau (les 20 carrés), score et objectif de chaque manche (`null` pour une manche non jouée), record (« nouveau record » ou valeur du record), code du défi pour le partage.
 - **Lien reçu** (`GET /api/runs/challenges/{code}`) : pseudo de l'auteur (« Invité » à défaut) et état de sa propre partie, de quoi choisir entre l'écran du lien, la reprise et la comparaison ; ni nombre de joueurs ni morceau.

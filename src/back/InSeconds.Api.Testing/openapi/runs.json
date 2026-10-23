@@ -110,6 +110,577 @@
           }
         }
       }
+    },
+    "/api/runs/me": {
+      "get": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "getRunsMe",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunsMeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/challenges": {
+      "post": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "launchRun",
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunPlayResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/challenges/{code}": {
+      "get": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "getRunChallenge",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunChallengeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/challenges/{code}/sessions": {
+      "post": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "joinRun",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunPlayResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/sessions/{id}": {
+      "get": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "getRunSession",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunSessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/sessions/{id}/listening": {
+      "patch": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "updateRunListening",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRunListening"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/runs/sessions/{id}/preview": {
+      "post": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "refreshRunPreview",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunPlayResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/sessions/{id}/answers": {
+      "post": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "submitRunAnswer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitRunAnswer"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunPlayResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/sessions/{id}/abandon": {
+      "post": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "abandonRun",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -177,6 +748,588 @@
             }
           }
         }
+      },
+      "RunChallengeResponse": {
+        "required": [
+          "code",
+          "authorPseudo",
+          "trackCount",
+          "rounds",
+          "tracksPerRound",
+          "listenSeconds",
+          "myStatus",
+          "mySessionId"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "authorPseudo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "trackCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rounds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tracksPerRound": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "listenSeconds": {
+            "type": "number",
+            "format": "double"
+          },
+          "myStatus": {
+            "type": "string"
+          },
+          "mySessionId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "RunCurrentTrackResponse": {
+        "required": [
+          "position",
+          "round",
+          "positionInRound",
+          "previewUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "round": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "positionInRound": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "previewUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "RunDiscResponse": {
+        "required": [
+          "key",
+          "stars"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "stars": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "RunFinishResponse": {
+        "required": [
+          "status",
+          "disc",
+          "totalScore",
+          "roundsPassed",
+          "foundCount",
+          "trackCount",
+          "tracks",
+          "rounds",
+          "record",
+          "challengeCode"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "disc": {
+            "$ref": "#/components/schemas/RunDiscResponse"
+          },
+          "totalScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "roundsPassed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "foundCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "trackCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tracks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunTrackResponse"
+            }
+          },
+          "rounds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunRoundScoreResponse"
+            }
+          },
+          "record": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunRecordResponse"
+              }
+            ]
+          },
+          "challengeCode": {
+            "type": "string"
+          }
+        }
+      },
+      "RunNeutralizedResponse": {
+        "required": [
+          "position",
+          "round",
+          "objectiveBefore",
+          "objectiveAfter"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "round": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "objectiveBefore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "objectiveAfter": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "RunPendingResponse": {
+        "required": [
+          "sessionId",
+          "challengeCode"
+        ],
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "challengeCode": {
+            "type": "string"
+          }
+        }
+      },
+      "RunPlayResponse": {
+        "required": [
+          "session",
+          "revealed",
+          "neutralized",
+          "roundSummaries",
+          "current",
+          "isResuming"
+        ],
+        "type": "object",
+        "properties": {
+          "session": {
+            "$ref": "#/components/schemas/RunSessionResponse"
+          },
+          "revealed": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunTrackResponse"
+              }
+            ]
+          },
+          "neutralized": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunNeutralizedResponse"
+            }
+          },
+          "roundSummaries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunRoundSummaryResponse"
+            }
+          },
+          "current": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunCurrentTrackResponse"
+              }
+            ]
+          },
+          "isResuming": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RunRecordResponse": {
+        "required": [
+          "bestScore",
+          "bestRoundsPassed",
+          "isNew"
+        ],
+        "type": "object",
+        "properties": {
+          "bestScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bestRoundsPassed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isNew": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RunRoundResponse": {
+        "required": [
+          "round",
+          "score",
+          "objective",
+          "maxScore"
+        ],
+        "type": "object",
+        "properties": {
+          "round": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "score": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "objective": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxScore": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "RunRoundScoreResponse": {
+        "required": [
+          "round",
+          "score",
+          "objective",
+          "passed"
+        ],
+        "type": "object",
+        "properties": {
+          "round": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "score": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "objective": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "passed": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RunRoundSummaryResponse": {
+        "required": [
+          "round",
+          "passed",
+          "score",
+          "objective",
+          "tracks",
+          "totalScore"
+        ],
+        "type": "object",
+        "properties": {
+          "round": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "score": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "objective": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tracks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunTrackResponse"
+            }
+          },
+          "totalScore": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "RunSessionResponse": {
+        "required": [
+          "sessionId",
+          "challengeCode",
+          "status",
+          "rounds",
+          "tracksPerRound",
+          "listenSeconds",
+          "totalScore",
+          "roundsPassed",
+          "round",
+          "roundTracks",
+          "finish"
+        ],
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "challengeCode": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "rounds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tracksPerRound": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "listenSeconds": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "roundsPassed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "round": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunRoundResponse"
+              }
+            ]
+          },
+          "roundTracks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunTrackResponse"
+            }
+          },
+          "finish": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunFinishResponse"
+              }
+            ]
+          }
+        }
+      },
+      "RunsMeResponse": {
+        "required": [
+          "hasAccess",
+          "record",
+          "pending"
+        ],
+        "type": "object",
+        "properties": {
+          "hasAccess": {
+            "type": "boolean"
+          },
+          "record": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunRecordResponse"
+              }
+            ]
+          },
+          "pending": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunPendingResponse"
+              }
+            ]
+          }
+        }
+      },
+      "RunTrackResponse": {
+        "required": [
+          "position",
+          "round",
+          "neutralized",
+          "artistCorrect",
+          "titleCorrect",
+          "points",
+          "artist",
+          "title",
+          "coverUrl",
+          "deezerTrackId"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "round": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "neutralized": {
+            "type": "boolean"
+          },
+          "artistCorrect": {
+            "type": "boolean"
+          },
+          "titleCorrect": {
+            "type": "boolean"
+          },
+          "points": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "artist": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "coverUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "deezerTrackId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "SubmitRunAnswer": {
+        "required": [
+          "position"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "artist": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "UpdateRunListening": {
+        "required": [
+          "position",
+          "listenedSeconds"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "listenedSeconds": {
+            "type": "number",
+            "format": "double"
+          }
+        }
       }
     }
   },
@@ -189,6 +1342,33 @@
     },
     {
       "name": "InSeconds.Api.Modules.Runs.Application.RevokeRunAccessEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Runs.Application.GetRunsMeEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Runs.Application.LaunchRunEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Runs.Application.GetRunChallengeEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Runs.Application.JoinRunEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Runs.Application.GetRunSessionEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Runs.Application.UpdateRunListeningEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Runs.Application.RefreshRunPreviewEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Runs.Application.SubmitRunAnswerEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Runs.Application.AbandonRunEndpoint"
     }
   ]
 }
