@@ -37,6 +37,9 @@ public static class RateLimitingServiceCollectionExtensions
             [RateLimitPolicies.PlayerCreation] = (30, TimeSpan.FromMinutes(10), PartitionBy.Ip),
             // Le front plafonne déjà ses envois par page.
             [RateLimitPolicies.ClientErrorReport] = (20, TimeSpan.FromMinutes(5), PartitionBy.Ip),
+            // Le navigateur envoie un rapport par violation (report-uri) ou par lot (report-to) : une page qui viole la CSP
+            // à chaque visite en envoie quelques-uns, rien de plus.
+            [RateLimitPolicies.CspReport] = (30, TimeSpan.FromMinutes(5), PartitionBy.Ip),
             // L'autocomplétion envoie plusieurs requêtes par recherche, parfois derrière un NAT partagé.
             [RateLimitPolicies.CatalogueSearch] = (60, TimeSpan.FromMinutes(5), PartitionBy.Ip),
             // Large : chaque jour feuilleté fait deux requêtes (les réponses de tous, la partie du joueur), parfois derrière un NAT partagé.

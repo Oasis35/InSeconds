@@ -49,7 +49,7 @@ src/back/
 │       ├── Persistence/   # InSecondsDbContext, schémas, migrations, migrateur
 │       ├── Settings/      # réglages en base (infra.settings) → IConfiguration
 │       ├── Time/          # IGameCalendar (jour de jeu = jour UTC)
-│       ├── Errors/        # ProblemDetails : code + traceId, rien d'interne sur un 500 ; POST /api/client-errors
+│       ├── Errors/        # ProblemDetails : code + traceId, rien d'interne sur un 500 ; POST /api/client-errors, POST /api/csp-reports
 │       ├── Health/        # /health et /health/ready
 │       ├── Auth/          # cookie standard, validation de l'appareil, reprise des anciens cookies, Data Protection, policy Admin
 │       ├── Messaging/     # Wolverine (HTTP, transactions, outbox)
@@ -399,10 +399,19 @@ Le front génère un client NSwag **par module** à partir d'un document OpenAPI
 
 `Infrastructure/Errors/ReportClientErrorEndpoint.cs`, contrat (`source` `js`/`http`/`csp`, `message`, `stack`, `url`, `httpStatus`, `relatedTraceId`) plus `appVersion` (date de build du front, ≤ 40) et `online` (`navigator.onLine`), facultatifs, appelé par `ErrorReportingService` du front (via `HttpBackend`, hors client généré : `[ExcludeFromDescription]`).
 
-- `source: "csp"` : violation de la Content-Security-Policy du front (`csp-violation-reporter.ts`), journalisée comme les autres ; chercher `csp` dans les journaux Grafana pendant la semaine d'observation du staging.
+- `source: "csp"` : gardée pour un front encore en cache ; les violations de la CSP passent désormais par `POST /api/csp-reports` (ci-dessous).
 - Public, limité par IP (`[EnableRateLimiting(RateLimitPolicies.ClientErrorReport)]`, 20 / 5 min), bornes du validator (message ≤ 1000, pile ≤ 8000, URL ≤ 500, statut 0-599, trace ≤ 64). Réponse 204 (`[EmptyResponse]`, pas d'`IResult`).
 - Journalisé en **Error**, EventId **1100** et message stable (`ClientErrorLog`) complété par `version {AppVersion}, en ligne {Online}, appareil {Device}` : les tableaux de bord existants (filtre « Erreur front ») restent valables. `Device` = `DeviceLabel` du `User-Agent` de la requête (« Safari · iPhone »), **jamais l'en-tête brut**. Retours à la ligne neutralisés (pile aplatie avec `|`), **query string et fragment retirés de l'URL côté serveur** même si un client en envoie. Le `PlayerId` du joueur est posé par `PlayerTelemetryMiddleware` (cf. « Identité du joueur dans la télémétrie »).
 - Tests : `UnitTests/Infrastructure/ReportClientErrorTests` (validation, journal, version/connexion/appareil, rapport sans ces champs), `IntegrationTests/ClientErrorTests` (204, version/connexion/appareil journalisés sans le `User-Agent` brut, 400 ProblemDetails, 429 au 21e rapport ; confidentialité : un cookie, un `Authorization` et un jeton dans l'URL n'apparaissent ni dans les traces ni dans les journaux, test `Traces_NeContiennentNiCookieNiAuthorization`).
+
+
+### Violations de la CSP (`POST /api/csp-reports`)
+
+`Infrastructure/Errors/ReportCspViolationEndpoint.cs` : rapports envoyés par le navigateur lui-même (directives `report-to` et `report-uri` de `nginx/csp.conf.template`), dès le chargement de la page. `CspReportParser` lit les deux formats sans se fier au `Content-Type` : Reporting API (`application/reports+json`, tableau de rapports `type: "csp-violation"`, `body` en camelCase) et ancien `report-uri` (`application/csp-report`, objet `csp-report` en kebab-case ; Safari n'envoie que `violated-directive`, dont on garde le premier mot).
+
+- Public, sans cookie (le navigateur n'en envoie pas : pas de `PlayerId`), limité par IP (`RateLimitPolicies.CspReport`, 30 / 5 min), corps lu jusqu'à 64 Ko (au-delà : ignoré), 10 violations au plus par requête, champs tronqués à 500 caractères, violations d'une extension du navigateur écartées (`chrome-extension:`, `moz-extension:`, `safari-web-extension:`…). Toujours 204 (`[EmptyResponse]`), même pour un rapport illisible : le navigateur ne lit pas la réponse.
+- Journalisé par `ClientErrorLog` (EventId 1100), source `csp`, URL = chemin de la page seul, message `CSP (report|enforce) <directive> bloque <ressource> depuis <fichier>:<ligne>` sans query string : la tuile « Violations CSP » (filtre `Erreur front (csp)`) n'a pas changé.
+- Tests : `UnitTests/Infrastructure/CspReportParserTests`, `IntegrationTests/CspReportTests`.
 
 ## Staging
 
