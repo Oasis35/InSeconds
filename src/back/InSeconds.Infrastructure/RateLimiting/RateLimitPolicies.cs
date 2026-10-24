@@ -22,6 +22,9 @@ public static class RateLimitPolicies
     /// <summary>Erreurs remontées par le front (public, sans authentification).</summary>
     public const string ClientErrorReport = "client-error-report";
 
+    /// <summary>Rapports de violation de la CSP envoyés par le navigateur (public, sans cookie).</summary>
+    public const string CspReport = "csp-report";
+
     /// <summary>Recherche publique de morceaux (quota Deezer partagé par tous les joueurs).</summary>
     public const string CatalogueSearch = "deezer-search-public";
 
