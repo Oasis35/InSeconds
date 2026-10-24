@@ -15,7 +15,7 @@ Jamais d'email, de pseudo, de réponse saisie, de cookie ni d'`Authorization` (t
 
 ## Mesure d'audience
 
-Cloudflare Web Analytics, en injection automatique sur le site `inseconds.cc` (réglage du tableau de bord Cloudflare, rien dans le code) : sans cookie ni identifiant, statistiques agrégées seulement (visites, pages vues, pays, référents, appareils, vitesse). Pas de bandeau de consentement. Décrit dans `/privacy` (« Données collectées », « Cookie », « Destinataires ») ; ses origines sont dans la CSP (`script-src` et `connect-src`, `nginx/csp.conf.template`). Google Analytics a été écarté le 24/10/2026 : il imposerait un bandeau de consentement et enverrait les données chez Google.
+Cloudflare Web Analytics, en injection automatique sur le site `inseconds.cc` (réglage du tableau de bord Cloudflare, rien dans le code) : sans cookie ni identifiant, statistiques agrégées seulement (visites, pages vues, pays, référents, appareils, vitesse). Pas de bandeau de consentement. Décrit dans `/privacy` (« Données collectées », « Cookie », « Destinataires ») ; son script est dans la CSP (`static.cloudflareinsights.com` en `script-src` et `connect-src`, `nginx/csp.conf.template`), ses mesures partent vers le même domaine (`/cdn-cgi/rum`). Google Analytics a été écarté le 24/10/2026 : il imposerait un bandeau de consentement et enverrait les données chez Google.
 
 ## Droits du joueur
 
