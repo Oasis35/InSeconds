@@ -27,8 +27,8 @@ RUN case "$CSP_MODE" in \
       enforce) header=Content-Security-Policy ;; \
       *) echo "CSP_MODE doit valoir report-only ou enforce (reçu : $CSP_MODE)" >&2; exit 1 ;; \
     esac \
- && sed -e "s|__CSP_HEADER_NAME__|$header|" \
-        -e "s|__CSP_API_ORIGIN__|$CSP_API_ORIGIN|" \
+ && sed -e "s|__CSP_HEADER_NAME__|$header|g" \
+        -e "s|__CSP_API_ORIGIN__|$CSP_API_ORIGIN|g" \
         nginx/csp.conf.template > /tmp/csp.conf \
  && printf '\n// CSP %s\n' "$(sha256sum /tmp/csp.conf | cut -c1-16)" >> dist/InSeconds.Client/browser/ngsw-worker.js
 # Un service worker garde la CSP reçue à son installation, et le navigateur ne le réinstalle que si

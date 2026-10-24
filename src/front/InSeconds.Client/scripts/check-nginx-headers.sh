@@ -145,13 +145,21 @@ for path in / /i18n/fr.json /ngsw.json; do
 done
 if [[ -n "$js_file" ]]; then
   csp=$(header "/$js_file" content-security-policy-report-only)
-  for fragment in "script-src 'self' https://static.cloudflareinsights.com;" "connect-src 'self' https://api.inseconds.cc https://*.dzcdn.net https://fonts.googleapis.com https://fonts.gstatic.com https://static.cloudflareinsights.com;" "media-src 'self' blob: https://*.dzcdn.net;" "object-src 'none'" "frame-ancestors 'none'"; do
+  for fragment in "script-src 'self' https://static.cloudflareinsights.com;" "connect-src 'self' https://api.inseconds.cc https://*.dzcdn.net https://fonts.googleapis.com https://fonts.gstatic.com https://static.cloudflareinsights.com;" "media-src 'self' blob: https://*.dzcdn.net;" "object-src 'none'" "frame-ancestors 'none'; report-uri https://api.inseconds.cc/api/csp-reports; report-to csp"; do
     if [[ "$csp" != *"$fragment"* ]]; then
       echo "FAIL /$js_file: la CSP ne contient pas \"$fragment\" ($csp)"
       fail=1
     fi
   done
 fi
+# Rapports de violation envoyés par le navigateur à l'API (report-to) : le groupe « csp » doit être déclaré sur chaque location.
+for path in / /i18n/fr.json /ngsw.json; do
+  endpoints=$(header "$path" reporting-endpoints)
+  if [[ "$endpoints" != 'csp="https://api.inseconds.cc/api/csp-reports"' ]]; then
+    echo "FAIL $path: Reporting-Endpoints attendu csp=\"https://api.inseconds.cc/api/csp-reports\" (reçu '$endpoints')"
+    fail=1
+  fi
+done
 # Aucun script en ligne dans l'index (sinon la CSP, bloquante, casserait l'app) : balises <script> avec src, pas
 # de gestionnaire onload= (la mise en ligne du CSS critique d'Angular en pose un).
 index=$(curl -sS "$BASE/")

@@ -14,4 +14,8 @@
 #     le worker les redemande par fetch, sous sa propre CSP (piège 49) ;
 #   - blob: pour le silence du déverrouillage audio (iPhone) et data: pour les images en ligne (stories de l'admin) ;
 #   - style-src 'unsafe-inline' : Angular écrit les styles de ses composants en ligne. Aucun script en ligne.
-add_header __CSP_HEADER_NAME__ "default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.dzcdn.net; media-src 'self' blob: https://*.dzcdn.net; connect-src 'self' __CSP_API_ORIGIN__ https://*.dzcdn.net https://fonts.googleapis.com https://fonts.gstatic.com https://static.cloudflareinsights.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;
+# Rapports de violation : envoyés par le navigateur lui-même à l'API (POST /api/csp-reports), dès le chargement de la page,
+# avant le démarrage d'Angular. report-to (Reporting API, groupe « csp » déclaré par Reporting-Endpoints) pour Chrome et
+# Edge, report-uri pour Firefox et Safari ; un navigateur qui connaît report-to ignore report-uri.
+add_header Reporting-Endpoints 'csp="__CSP_API_ORIGIN__/api/csp-reports"' always;
+add_header __CSP_HEADER_NAME__ "default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.dzcdn.net; media-src 'self' blob: https://*.dzcdn.net; connect-src 'self' __CSP_API_ORIGIN__ https://*.dzcdn.net https://fonts.googleapis.com https://fonts.gstatic.com https://static.cloudflareinsights.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; report-uri __CSP_API_ORIGIN__/api/csp-reports; report-to csp" always;

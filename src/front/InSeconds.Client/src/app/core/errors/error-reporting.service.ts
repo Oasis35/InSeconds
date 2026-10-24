@@ -3,7 +3,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { DEPLOYED_AT } from '../shell/deployed-at';
 
-export type ClientErrorSource = 'js' | 'http' | 'csp';
+export type ClientErrorSource = 'js' | 'http';
 
 export interface ClientErrorReport {
   source: ClientErrorSource;
