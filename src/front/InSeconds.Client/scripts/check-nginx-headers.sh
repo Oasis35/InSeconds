@@ -145,7 +145,7 @@ for path in / /i18n/fr.json /ngsw.json; do
 done
 if [[ -n "$js_file" ]]; then
   csp=$(header "/$js_file" content-security-policy-report-only)
-  for fragment in "script-src 'self';" "connect-src 'self' https://api.inseconds.cc https://*.dzcdn.net https://fonts.googleapis.com https://fonts.gstatic.com;" "media-src 'self' blob: https://*.dzcdn.net;" "object-src 'none'" "frame-ancestors 'none'"; do
+  for fragment in "script-src 'self' https://static.cloudflareinsights.com;" "connect-src 'self' https://api.inseconds.cc https://*.dzcdn.net https://fonts.googleapis.com https://fonts.gstatic.com https://static.cloudflareinsights.com;" "media-src 'self' blob: https://*.dzcdn.net;" "object-src 'none'" "frame-ancestors 'none'"; do
     if [[ "$csp" != *"$fragment"* ]]; then
       echo "FAIL /$js_file: la CSP ne contient pas \"$fragment\" ($csp)"
       fail=1
