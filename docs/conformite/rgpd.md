@@ -1,6 +1,6 @@
 # RGPD : ce qui est en place
 
-État au 23/10/2026, après la passe RGPD du 16/10/2026 (PR #351, #349, #352) et la partie du mode Run (#363). Le texte public est la page `/privacy` (traductions `privacy.*` de `public/i18n/fr.json` et `en.json`) : toute évolution du traitement des données doit y être reportée.
+État au 24/10/2026, après la passe RGPD du 16/10/2026 (PR #351, #349, #352) et la partie du mode Run (#363). Le texte public est la page `/privacy` (traductions `privacy.*` de `public/i18n/fr.json` et `en.json`) : toute évolution du traitement des données doit y être reportée.
 
 ## Accès aux données
 
@@ -12,6 +12,10 @@
 ## Journaux
 
 Jamais d'email, de pseudo, de réponse saisie, de cookie ni d'`Authorization` (testé) : la recherche Deezer ne journalise que sa longueur (piège 36), les emails que leur sujet, les erreurs du front perdent query string et fragment, l'appareil est un libellé grossier (« Safari · iPhone »). Détail : `CLAUDE.md` § Ce que fait l'application (Observabilité).
+
+## Mesure d'audience
+
+Cloudflare Web Analytics, en injection automatique sur le site `inseconds.cc` (réglage du tableau de bord Cloudflare, rien dans le code) : sans cookie ni identifiant, statistiques agrégées seulement (visites, pages vues, pays, référents, appareils, vitesse). Pas de bandeau de consentement. Décrit dans `/privacy` (« Données collectées », « Cookie », « Destinataires ») ; ses origines sont dans la CSP (`script-src` et `connect-src`, `nginx/csp.conf.template`). Google Analytics a été écarté le 24/10/2026 : il imposerait un bandeau de consentement et enverrait les données chez Google.
 
 ## Droits du joueur
 

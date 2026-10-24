@@ -7,8 +7,11 @@
 #   - *.dzcdn.net : extraits audio, lus par un élément audio (media-src), pochettes (img-src), et un octet
 #     d'un extrait illisible demandé par fetch pour connaître la réponse du CDN (connect-src, diagnostic AudioError) ;
 #   - Google Fonts : feuille de style (style-src) et polices (font-src) ;
-#   - connect-src reprend les origines tierces lues à travers le service worker (extraits, pochettes, Google Fonts) :
+#   - Cloudflare Web Analytics : script injecté par Cloudflare dans index.html (script-src static.cloudflareinsights.com),
+#     qui envoie ses mesures à cloudflareinsights.com (connect-src) ;
+#   - connect-src reprend les origines tierces lues à travers le service worker (extraits, pochettes, Google Fonts,
+#     script de Cloudflare) :
 #     le worker les redemande par fetch, sous sa propre CSP (piège 49) ;
 #   - blob: pour le silence du déverrouillage audio (iPhone) et data: pour les images en ligne (stories de l'admin) ;
 #   - style-src 'unsafe-inline' : Angular écrit les styles de ses composants en ligne. Aucun script en ligne.
-add_header __CSP_HEADER_NAME__ "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.dzcdn.net; media-src 'self' blob: https://*.dzcdn.net; connect-src 'self' __CSP_API_ORIGIN__ https://*.dzcdn.net https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;
+add_header __CSP_HEADER_NAME__ "default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.dzcdn.net; media-src 'self' blob: https://*.dzcdn.net; connect-src 'self' __CSP_API_ORIGIN__ https://*.dzcdn.net https://fonts.googleapis.com https://fonts.gstatic.com https://static.cloudflareinsights.com https://cloudflareinsights.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;
