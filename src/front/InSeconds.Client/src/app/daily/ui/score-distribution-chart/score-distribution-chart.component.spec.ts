@@ -79,7 +79,7 @@ describe('ScoreDistributionChartComponent', () => {
     fixture.componentRef.setInput('stats', stats({ medianScore: 100 }));
     const median = component['chart']()!.median!;
     expect(median.tickX).toBeCloseTo(10 + (100 / 5000) * 280, 5);
-    expect(median.labelX).toBe(85);
+    expect(median.labelX).toBe(105);
   });
 
   // Tous les scores à 0 : médiane = plus bas, et l'étiquette « médiane » se posait sur le score le plus bas.

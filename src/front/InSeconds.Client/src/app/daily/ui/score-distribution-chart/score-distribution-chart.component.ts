@@ -39,10 +39,11 @@ const CELL_GAP_X = 3;
 const CELL_GAP_Y = 3;
 export const VIEW_HEIGHT = BARS_HEIGHT + 22;
 /**
- * Distance minimale entre le centre de l'étiquette « médiane 2250 » (environ 80 unités de large) et les bords, où sont le score le plus
- * bas et le plus haut (environ 30 unités chacun) : moins, et la médiane se pose sur le plus bas quand elle est au plus bas (tous les scores à 0).
+ * Distance minimale entre le centre de l'étiquette « médiane 2250 » (environ 80 unités de large, davantage avec une police de
+ * repli) et les bords, où sont le score le plus bas et le plus haut (environ 30 unités chacun) : moins, et la médiane se pose sur le plus
+ * bas quand elle est au plus bas (tous les scores à 0).
  */
-const LABEL_GUARD = 75;
+const LABEL_GUARD = 95;
 
 const MINE = 'var(--color-accent-3)';
 const OTHERS = 'var(--color-violet)';
