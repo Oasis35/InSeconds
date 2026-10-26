@@ -137,7 +137,7 @@ cd src/front/InSeconds.Client
 E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=<DB_PASSWORD>" npm run e2e
 ```
 
-`playwright.config.ts` démarre l'hôte de test (port 5177) et `ng serve` (port 5178). **126 tests** répartis sur 31 fichiers : jeu, connexion, profil, appareils, tes données, série et gels, admin…
+`playwright.config.ts` démarre l'hôte de test (port 5177) et `ng serve` (port 5178). **139 tests** répartis sur 33 fichiers : jeu, connexion, profil, appareils, tes données, série et gels, mode Run, admin…
 
 ## Documentation
 

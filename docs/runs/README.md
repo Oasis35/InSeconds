@@ -1,6 +1,6 @@
 # Run (Platines) : le nouveau mode de jeu
 
-> **État au 23/10/2026 : back de la partie posé.** Le module `Runs` existe (schéma `runs`, défi et tirage par difficulté, réglages, accès sur invitation et son interrupteur dans l'onglet Joueurs de l'admin) avec ses routes de jeu (lancer, relever un lien, jouer, jauge, neutralisation, fin, record, abandon) ; les écrans et la comparaison restent à faire, dans l'ordre de [`plan.md`](plan.md#découpage-du-proto-1-en-pr). Détail du code : `src/back/CLAUDE.md` § Module Runs.
+> **État au 26/10/2026 : la partie est jouable sur invitation.** Le module `Runs` existe (schéma `runs`, défi et tirage par difficulté, réglages, accès sur invitation et son interrupteur dans l'onglet Joueurs de l'admin) avec ses routes de jeu (lancer, relever un lien, jouer, jauge, neutralisation, fin, record, abandon), les écrans de la partie (route `/runs`, carte Platines sur l'accueil) et leurs E2E (`runs.spec.ts`) ; l'écran du lien d'un ami et la comparaison restent à faire, dans l'ordre de [`plan.md`](plan.md#découpage-du-proto-1-en-pr). Détail du code : `src/back/CLAUDE.md` § Module Runs, `src/front/CLAUDE.md`.
 
 Un run, c'est une suite de **4 manches de 5 morceaux**, de plus en plus difficiles. À chaque manche, il faut remplir une jauge de points pour débloquer la suivante. À la fin, on gagne un **disque** (rayé, cire, bronze, argent, or) selon les manches passées, et on peut envoyer la même playlist à ses amis pour comparer les scores.
 
