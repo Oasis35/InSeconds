@@ -1,9 +1,11 @@
 using InSeconds.Api.Infrastructure.Persistence;
 using InSeconds.Api.Infrastructure.Time;
+using InSeconds.Api.Modules.Catalogue.Domain;
 using InSeconds.Api.Modules.Daily.Application;
 using InSeconds.Api.Modules.Daily.Domain;
 using InSeconds.Api.Modules.Players.Application;
 using InSeconds.Api.Modules.Players.Domain;
+using InSeconds.Api.Modules.Runs.Domain;
 using InSeconds.Api.Testing.Deezer;
 using InSeconds.Api.Testing.Email;
 using InSeconds.Deezer;
@@ -107,6 +109,28 @@ public static class E2EEndpoints
             return Results.Ok();
         });
 
+        // Les morceaux de la dernière playlist de Run tirée, dans l'ordre (le tirage est aléatoire et rien ne les montre avant la réponse,
+        // piège 31) : les E2E du mode Run savent ainsi quoi répondre, et quel morceau priver d'extrait.
+        e2e.MapGet("/runs/latest-tracks", async (InSecondsDbContext db, CancellationToken ct) =>
+        {
+            var challenge = await db.Set<RunChallenge>().AsNoTracking().Include(c => c.Tracks)
+                .OrderByDescending(c => c.Id).FirstOrDefaultAsync(ct);
+            if (challenge is null)
+                return Results.NotFound();
+            var ids = challenge.Tracks.Select(t => t.TrackId).ToList();
+            var tracks = await db.Set<Track>().AsNoTracking().Where(t => ids.Contains(t.Id)).ToDictionaryAsync(t => t.Id, ct);
+            return Results.Ok(new RunTracksResponse(challenge.Code, [.. challenge.Tracks.OrderBy(t => t.Position).Select(t =>
+                new RunTrackEntry(t.Position, t.Round, tracks[t.TrackId].DeezerTrackId, tracks[t.TrackId].Artist, tracks[t.TrackId].Title))]));
+        });
+
+        // Le faux Deezer ne donne plus d'extrait pour ces morceaux (le morceau existe toujours) : un Run les neutralise quand il y arrive.
+        // Remis à zéro par /reset.
+        e2e.MapPost("/deezer/without-preview", (WithoutPreviewRequest request, FakeDeezerState deezer) =>
+        {
+            deezer.WithoutPreview(request.DeezerTrackIds);
+            return Results.Ok();
+        });
+
         // Dernier email envoyé à une adresse (lien de connexion, confirmation de changement d'email).
         e2e.MapGet("/last-email", (string to, CapturingEmailSender emails) =>
             emails.LastTo(to) is { } email ? Results.Ok(email) : Results.NotFound());
@@ -140,3 +164,9 @@ public sealed record SeedResponse(int Added);
 public sealed record SetStreakRequest(Guid PlayerId, int Streak, int? LastPlayedDaysAgo, int Freezes);
 
 public sealed record GenerateTodayResponse(bool Created, int Tracks);
+
+public sealed record RunTrackEntry(int Position, int Round, long DeezerTrackId, string Artist, string Title);
+
+public sealed record RunTracksResponse(string Code, IReadOnlyList<RunTrackEntry> Tracks);
+
+public sealed record WithoutPreviewRequest(IReadOnlyList<long> DeezerTrackIds);

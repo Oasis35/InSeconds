@@ -49,6 +49,15 @@ async function createGuestCookie(): Promise<string> {
 const MAGIC_LINK = /https?:\/\/[^\s"'<>]+\/account\/login\/verify\?token=[\w-]+/;
 const EMAIL_CHANGE_LINK = /https?:\/\/[^\s"'<>]+\/account\/confirm-email\?token=[\w-]+/;
 
+/** Un morceau de la dernière playlist de Run tirée (hôte de test) : de quoi y répondre juste, ou le priver d'extrait. */
+export interface RunTrack {
+  position: number;
+  round: number;
+  deezerTrackId: number;
+  artist: string;
+  title: string;
+}
+
 export class ApiTestClient {
   /** Dernier lien lu par adresse : un nouveau lien est attendu tant qu'il n'a pas changé (chaque jeton est neuf). */
   private readonly lastLinks = new Map<string, string>();
@@ -155,4 +164,30 @@ export class ApiTestClient {
     if (!abandonRes.ok) throw new Error(`abandon failed: ${abandonRes.status}`);
   }
 
+  /** Les 20 morceaux de la dernière playlist de Run tirée, dans l'ordre (le tirage est aléatoire, rien ne les montre avant la réponse). */
+  async latestRunTracks(): Promise<RunTrack[]> {
+    const res = await fetch(`${BASE}/api/e2e/runs/latest-tracks`);
+    if (!res.ok) throw new Error(`runs/latest-tracks failed: ${res.status}`);
+    return ((await res.json()) as { tracks: RunTrack[] }).tracks;
+  }
+
+  /** Le faux Deezer ne donne plus d'extrait pour ces morceaux : un Run les retire de la manche quand il y arrive. */
+  async removePreviews(deezerTrackIds: number[]): Promise<void> {
+    const res = await fetch(`${BASE}/api/e2e/deezer/without-preview`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deezerTrackIds }),
+    });
+    if (!res.ok) throw new Error(`deezer/without-preview failed: ${res.status}`);
+  }
+
+  /** L'admin ouvre le mode Run à ce joueur (interrupteur de l'onglet Joueurs). */
+  async grantRunAccess(playerId: string): Promise<void> {
+    // Le compte admin des tests, connecté hors du navigateur : son cookie ne touche pas celui de la page.
+    const login = await fetch(`${BASE}/api/e2e/login-as-admin`, { method: 'POST' });
+    if (!login.ok) throw new Error(`login-as-admin failed: ${login.status}`);
+    const Cookie = login.headers.getSetCookie().map(c => c.split(';')[0]).join('; ');
+    const res = await fetch(`${BASE}/api/admin/runs/access/${playerId}`, { method: 'PUT', headers: { Cookie } });
+    if (!res.ok) throw new Error(`grantRunAccess failed: ${res.status}`);
+  }
 }

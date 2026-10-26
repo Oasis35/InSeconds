@@ -208,7 +208,7 @@ L'interrupteur « Platines » de l'onglet Joueurs lit `GET /api/admin/runs/acces
 - Intégration (Testcontainers, base neuve par classe) : parcours gagné, perdu, abandonné ; défi d'ami une seule fois ; accès refusé ; partie d'un autre → 404 ; aucun morceau ni extrait d'un morceau futur avant réponse (piège 31) ; réglage changé en cours de partie sans effet ; réglage incohérent à chaud ; double démarrage simultané ; suppression du compte de l'auteur ; export contenant les parties Runs ; suppression et actualisation d'un morceau joué seulement en run → 409 ; `GET /api/runs/me` sans identité ; limites de débit ; comparaison à plusieurs joueurs, verrouillée avant la fin.
 - Architecture : règles du § 6.
 - Front (Vitest) : domaine `run.ts`, store, chaque écran des maquettes (lien reçu, manche, réponse, morceau sans extrait, fin de manche, fin de run victoire et défaite, comparaison), carte de l'accueil visible ou non, composants descendus dans `gameplay/ui` (le Daily inchangé).
-- E2E Playwright : partie gagnée, partie perdue, carte de l'accueil absente sans accès (P4) ; lien d'un ami dans deux navigateurs et comparaison (P5).
+- E2E Playwright (`runs.spec.ts`) : partie gagnée, partie perdue, morceau retiré, reprise, carte de l'accueil absente sans accès et montrée une fois l'accès ouvert (P4) ; lien d'un ami dans deux navigateurs et comparaison (P5).
 - Observabilité : `RunsMetrics` (parties, réponses, disques), logs sans texte saisi ; tableau Grafana « Activité » complété.
 
 ## 9. Décisions
