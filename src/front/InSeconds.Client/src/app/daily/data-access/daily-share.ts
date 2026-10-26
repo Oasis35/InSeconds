@@ -1,13 +1,15 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
-import { ClipboardService } from '../../core/clipboard/clipboard.service';
-import { environment } from '../../../environments/environment';
+import { SHARE_LINK, ShareService } from '../../core/share/share.service';
 import { ShareTrack, dayLabel, shareLine } from '../domain/share-text';
 
-/** Le partage du score : la date, une ligne de `✅`/`❌`, le score et le lien dans le presse-papier, et l'état du bouton (copié, échec) pour quelques secondes. */
+/**
+ * Le partage du score : la date, une ligne de `✅`/`❌`, le score et le lien, par le menu de partage du téléphone ou sinon
+ * dans le presse-papier, et l'état du bouton (copié, échec) pour quelques secondes. Un partage natif ou un menu fermé ne change rien au bouton.
+ */
 @Injectable()
 export class DailyShare {
-  private readonly clipboard = inject(ClipboardService);
+  private readonly sharing = inject(ShareService);
   private readonly translate = inject(TranslateService);
 
   private readonly _copied = signal(false);
@@ -20,11 +22,12 @@ export class DailyShare {
       this.translate.instant('daily.share.title', { date: dayLabel(new Date()) }),
       shareLine(tracks),
       this.translate.instant('daily.share.score', { score: new Intl.NumberFormat(this.translate.getCurrentLang() ?? 'fr').format(score) }),
-      environment.appUrl,
+      SHARE_LINK,
     ].join('\n');
-    const ok = await this.clipboard.copy(text);
-    const flag = ok ? this._copied : this._failed;
+    const outcome = await this.sharing.share(text);
+    if (outcome !== 'copied' && outcome !== 'failed') return;
+    const flag = outcome === 'copied' ? this._copied : this._failed;
     flag.set(true);
-    setTimeout(() => flag.set(false), ok ? 2000 : 3000);
+    setTimeout(() => flag.set(false), outcome === 'copied' ? 2000 : 3000);
   }
 }
