@@ -133,8 +133,7 @@ jobs:
     # Depuis un job en conteneur, le service se joint par son nom (postgres:5432), pas par localhost.
     services:
       postgres:
-        # Miroir ECR de l'image officielle : Docker Hub répond parfois 429 aux runners.
-        image: public.ecr.aws/docker/library/postgres:17
+        image: postgres:17
         env:
           POSTGRES_USER: inseconds
           POSTGRES_PASSWORD: inseconds_e2e
