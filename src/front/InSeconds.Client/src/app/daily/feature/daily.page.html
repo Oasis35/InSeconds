@@ -64,15 +64,20 @@
       }
 
       @case ('already_played') {
-        <app-already-played-screen
-          [stats]="store.stats()"
-          [yesterday]="store.yesterday()"
-          [abandoned]="store.abandoned()"
-          [countdown]="store.countdown()"
-          [shareCopied]="shareCopied()"
-          [shareFailed]="shareFailed()"
-          [lang]="language.current()"
-          (share)="share()" />
+        @if (store.abandoned()) {
+          <app-abandoned-screen [countdown]="store.countdown()" />
+        } @else {
+          <app-day-result-screen
+            [score]="store.stats()?.yourScore ?? null"
+            [rows]="resultRows()"
+            [stats]="store.stats()"
+            [yesterday]="store.yesterday()"
+            [countdown]="store.countdown()"
+            [shareCopied]="shareCopied()"
+            [shareFailed]="shareFailed()"
+            [lang]="language.current()"
+            (share)="share()" />
+        }
         <app-home-mode-entries />
       }
 
@@ -102,14 +107,16 @@
       }
 
       @case ('done') {
-        <app-final-recap-screen
-          [results]="store.results()"
+        <app-day-result-screen
+          [fresh]="true"
+          [score]="displayedTotal()"
+          [rows]="resultRows()"
           [stats]="store.stats()"
-          [displayedScore]="displayedTotal()"
+          [yesterday]="store.yesterday()"
+          [countdown]="store.countdown()"
           [shareCopied]="shareCopied()"
           [shareFailed]="shareFailed()"
           [canShare]="store.canShare()"
-          [countdown]="store.countdown()"
           [lang]="language.current()"
           (share)="share()" />
       }

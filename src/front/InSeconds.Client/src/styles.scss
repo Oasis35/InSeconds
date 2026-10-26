@@ -83,6 +83,9 @@
   /* Typo */
   --font-display: 'Poppins', system-ui, -apple-system, sans-serif;
   --font-body:    'Inter', system-ui, -apple-system, sans-serif;
+  /* Chiffres du résultat du jour : le score en Archivo, le compte à rebours en police d'afficheur. */
+  --font-score:   'Archivo', var(--font-display);
+  --font-clock:   'IBM Plex Mono', ui-monospace, monospace;
 }
 
 body {

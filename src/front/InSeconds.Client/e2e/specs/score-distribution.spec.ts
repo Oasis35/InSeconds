@@ -31,7 +31,7 @@ test.describe('Répartition des scores du jour', () => {
     const game = new GamePage(page);
     await game.completeGameThenReload(new BlindRoundPage(page));
 
-    await expect(game.alreadyPlayedHeading).toBeVisible();
+    await expect(game.alreadyPlayedScreen).toBeVisible();
     await expect(page.getByText('Médiane', { exact: true })).toHaveCount(0);
     await expect(page.getByTestId('score-distribution-chart')).toBeVisible();
     // 5 joueurs à 0 pt : personne n'est strictement en dessous.

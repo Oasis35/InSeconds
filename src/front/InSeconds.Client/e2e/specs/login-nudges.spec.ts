@@ -47,7 +47,7 @@ test.describe('Nudges de connexion (guest)', () => {
     const game = new GamePage(page);
     await game.playFullGame(new BlindRoundPage(page));
 
-    await expect(page.getByText('Score final')).toBeVisible();
+    await expect(game.doneScreen).toBeVisible();
     await expect(page.getByText('Garde ce score')).toHaveCount(0);
   });
 
@@ -58,7 +58,7 @@ test.describe('Nudges de connexion (guest)', () => {
     const game = new GamePage(page);
     await game.completeGameThenReload(new BlindRoundPage(page));
 
-    await expect(game.alreadyPlayedHeading).toBeVisible();
+    await expect(game.alreadyPlayedScreen).toBeVisible();
     await expect(page.getByText('Reviens sur n\'importe quel appareil')).toHaveCount(0);
   });
 

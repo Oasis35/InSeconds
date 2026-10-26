@@ -11,9 +11,9 @@ test.describe('Déjà joué - état already_played', () => {
     // Partie complète puis rechargement (même cookie → 409 → écran already_played).
     await game.completeGameThenReload(new BlindRoundPage(page));
 
-    await expect(game.alreadyPlayedHeading).toBeVisible();
+    await expect(game.alreadyPlayedScreen).toBeVisible();
     await expect(game.countdown).toBeVisible();
-    await expect(page.getByText('Ton score')).toBeVisible();
+    await expect(page.getByText('Ton score du jour')).toBeVisible();
   });
 
   test('affiche le bouton partager sur l\'écran déjà joué', async ({ page, api }) => {
@@ -22,7 +22,7 @@ test.describe('Déjà joué - état already_played', () => {
 
     const game = new GamePage(page);
     await game.completeGameThenReload(new BlindRoundPage(page));
-    await expect(game.alreadyPlayedHeading).toBeVisible();
+    await expect(game.alreadyPlayedScreen).toBeVisible();
 
     await expect(game.shareButton).toBeVisible();
     await game.shareButton.click();
@@ -31,7 +31,7 @@ test.describe('Déjà joué - état already_played', () => {
     const clipText = await page.evaluate(() => navigator.clipboard.readText());
     expect(clipText).toContain('InSeconds · ');
     expect(clipText).toContain('pts');
-    expect(clipText).toMatch(/[✅❌]/); // contient des emojis résultat
+    expect(clipText).toMatch(/✅|🔶|🅾️/u); // contient des emojis résultat
   });
 
   test('la liste des morceaux ouvre la pop-up histogramme au clic sur un score', async ({ page, api }) => {
@@ -40,7 +40,7 @@ test.describe('Déjà joué - état already_played', () => {
 
     const game = new GamePage(page);
     await game.completeGameThenReload(new BlindRoundPage(page));
-    await expect(game.alreadyPlayedHeading).toBeVisible();
+    await expect(game.alreadyPlayedScreen).toBeVisible();
 
     // Déplier la liste - mêmes lignes que le récap (chips ✓/✗, score cliquable)
     await game.showTracksButton.click();

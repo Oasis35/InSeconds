@@ -4,7 +4,7 @@ import { SHARE_LINK, ShareService } from '../../core/share/share.service';
 import { ShareTrack, dayLabel, shareLine } from '../domain/share-text';
 
 /**
- * Le partage du score : la date, une ligne de `✅`/`❌`, le score et le lien, par le menu de partage du téléphone ou sinon
+ * Le partage du score : la date, une ligne de `✅`/`🔶`/`🅾️`, le score et le lien, par le menu de partage du téléphone ou sinon
  * dans le presse-papier, et l'état du bouton (copié, échec) pour quelques secondes. Un partage natif ou un menu fermé ne change rien au bouton.
  */
 @Injectable()

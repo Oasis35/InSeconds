@@ -49,7 +49,7 @@ test.describe('Réponses du jour cachées avant de jouer', () => {
     await page.clock.install({ time: Date.now() });
     const game = new GamePage(page);
     await game.completeGameThenReload(new BlindRoundPage(page));
-    await expect(game.alreadyPlayedHeading).toBeVisible();
+    await expect(game.alreadyPlayedScreen).toBeVisible();
 
     await game.showTracksButton.click();
 

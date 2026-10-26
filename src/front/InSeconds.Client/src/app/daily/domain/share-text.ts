@@ -4,9 +4,15 @@ export interface ShareTrack {
   readonly titleCorrect: boolean;
 }
 
-/** Un `✅` par morceau trouvé (artiste ou titre), un `❌` par morceau raté, sur une seule ligne. */
+/** Par nombre de réponses trouvées sur le morceau (0, 1 ou 2). */
+const SHARE_EMOJIS = ['🅾️', '🔶', '✅'] as const;
+
+/**
+ * Une ligne d'un emoji par morceau : `✅` artiste et titre trouvés, `🔶` l'un des deux seulement, `🅾️` rien. Les trois ont des formes
+ * différentes, pas seulement des couleurs : la ligne reste lisible pour un daltonien.
+ */
 export function shareLine(tracks: readonly ShareTrack[]): string {
-  return tracks.map(t => (t.artistCorrect || t.titleCorrect ? '✅' : '❌')).join('');
+  return tracks.map(t => SHARE_EMOJIS[Number(t.artistCorrect) + Number(t.titleCorrect)]).join('');
 }
 
 /** `jj/mm`, dans le fuseau du joueur. */

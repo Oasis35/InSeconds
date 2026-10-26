@@ -23,8 +23,8 @@ test.describe('Happy path - partie complète', () => {
     }
 
     await game.waitForDone();
-    await expect(game.finalScoreLabel).toBeVisible();
-    await expect(page.getByText('Reviens demain pour un nouveau défi')).toBeVisible();
+    await expect(game.doneScreen).toBeVisible();
+    await expect(game.countdown).toBeVisible();
   });
 
   test('un simple chargement de page ne pose aucun cookie joueur (création paresseuse)', async ({ page }) => {

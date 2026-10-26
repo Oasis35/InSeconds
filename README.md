@@ -23,8 +23,8 @@
 - Guest mode: play without signing up (no leaderboard, only global stats)
 - Optional linked accounts (open signup, passwordless magic-link login) - keeps history/streak across devices; guest play stays fully open regardless
 - Daily streak shown in the header (details panel on click), with streak freezes for linked accounts (1 free on signup, +1 every 7 days, 2 max, used automatically on a missed day)
-- After playing, see where you stand: an equalizer of today's scores with the lowest, median and highest score, plus the share of players you beat (from 5 players)
-- Share your score in Wordle-style emoji format through the phone's share menu (clipboard on a computer)
+- After playing, a single "today's result" screen: your score, the countdown, the share of players you beat and your standout moment (from 5 players), an equalizer of today's scores (lowest, median, highest), your game as bars that unfold the tracks
+- Share your score in Wordle-style emoji format (✅ artist and title, 🔶 one of them, 🅾️ none) through the phone's share menu (clipboard on a computer)
 - Available in French and English - auto-detected from the browser, switchable anytime from the footer (choice saved in localStorage)
 - Privacy policy and legal notice at `/privacy` (also `/confidentialite`)
 - Installable on the home screen (PWA), updated automatically at a safe moment (never in the middle of a round)

@@ -40,7 +40,7 @@ test.describe('Multi-onglets - synchronisation état', () => {
     // Retour sur l'onglet 1 : simuler le focus → peek → already_played
     await simulateTabFocus(page);
 
-    await expect(game1.alreadyPlayedHeading).toBeVisible({ timeout: 5000 });
+    await expect(game1.alreadyPlayedScreen).toBeVisible({ timeout: 5000 });
   });
 
   test('repasse sur already_played si la partie a été abandonnée dans un autre onglet', async ({ page, api }) => {
@@ -83,7 +83,7 @@ test.describe('Multi-onglets - synchronisation état', () => {
 
     // Simuler un retour au premier plan - l'écran done ne doit pas changer
     await simulateTabFocus(page);
-    await expect(game.finalScoreLabel).toBeVisible();
-    await expect(game.alreadyPlayedHeading).not.toBeVisible();
+    await expect(game.doneScreen).toBeVisible();
+    await expect(game.alreadyPlayedScreen).not.toBeVisible();
   });
 });
