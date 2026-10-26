@@ -31,6 +31,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       code: ${{ steps.diff.outputs.code }}
+      playwright: ${{ steps.playwright.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -48,12 +49,22 @@ jobs:
           fi
           echo "code=$code" | tee -a "$GITHUB_OUTPUT"
 
+      # Version exacte de Playwright du lockfile : elle choisit l'image des jobs front et e2e, dont les navigateurs
+      # doivent être ceux du paquet npm (un bump de Dependabot change l'image du même coup).
+      - name: Playwright version
+        id: playwright
+        run: echo "version=$(node -p "require('./src/front/InSeconds.Client/package-lock.json').packages['node_modules/playwright'].version")" | tee -a "$GITHUB_OUTPUT"
+
   front:
     name: Frontend (build, Vitest, Sheriff)
     runs-on: ubuntu-latest
     needs: changes
     if: needs.changes.outputs.code == 'true'
     timeout-minutes: 15
+    # Image officielle de Playwright (MCR, pas Docker Hub) : Chromium, ses bibliothèques et les polices déjà installés,
+    # plus aucun apt ni téléchargement de navigateur (cf. job e2e).
+    container:
+      image: mcr.microsoft.com/playwright:v${{ needs.changes.outputs.playwright }}-noble
     defaults:
       run:
         working-directory: src/front/InSeconds.Client
@@ -78,41 +89,6 @@ jobs:
 
       - name: Build (production, service worker included)
         run: npm run build
-
-      # Navigateurs en cache (clé : version de Playwright) ; les paquets système, eux, s'installent à chaque fois.
-      - name: Playwright version
-        id: playwright
-        run: echo "version=$(node -p "require('./node_modules/playwright/package.json').version")" >> "$GITHUB_OUTPUT"
-
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
-
-      - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx --no-install playwright install --with-deps chromium
-
-      - name: Install Playwright system dependencies
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        timeout-minutes: 6
-        # Le miroir apt du runner reste parfois bloqué sur un téléchargement (plus de 10 minutes, normalement 20 s). apt abandonne un téléchargement
-        # muet au bout de 20 s et le retente ; sinon deux tentatives de 2 min 30 au plus. Les bibliothèques de Chromium sont déjà sur l'image du
-        # runner (apt ne télécharge que des polices et des mises à jour) : un échec ici ne bloque pas le job, un Chromium qui ne démarre pas
-        # fait échouer les tests, bruyamment.
-        continue-on-error: true
-        run: |
-          echo 'Acquire::http::Timeout "20";' | sudo tee /etc/apt/apt.conf.d/99ci-timeouts > /dev/null
-          echo 'Acquire::Retries "3";' | sudo tee -a /etc/apt/apt.conf.d/99ci-timeouts > /dev/null
-          for attempt in 1 2; do
-            timeout -k 10 150 npx --no-install playwright install-deps chromium && exit 0
-            echo "Tentative $attempt : échec ou trop longue, on relance."
-            sudo pkill -9 -f 'apt-get|dpkg' || true
-            sudo dpkg --configure -a || true
-          done
-          exit 1
 
       - name: Run unit tests
         run: npx --no-install ng test --watch=false
@@ -147,15 +123,22 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4]
 
+    # Image officielle de Playwright (MCR), à la version du lockfile : Chromium, ses bibliothèques système et les
+    # polices y sont déjà. Remplace le cache des navigateurs et `playwright install-deps`, qui passait par le miroir apt
+    # d'Azure et y restait parfois bloqué plusieurs minutes. L'image a Node 24, git, curl et les bibliothèques de .NET
+    # (libicu) ; setup-dotnet y installe le SDK. On y tourne en root : Playwright lance Chromium sans bac à sable.
+    container:
+      image: mcr.microsoft.com/playwright:v${{ needs.changes.outputs.playwright }}-noble
+
+    # Depuis un job en conteneur, le service se joint par son nom (postgres:5432), pas par localhost.
     services:
       postgres:
-        image: postgres:17
+        # Miroir ECR de l'image officielle : Docker Hub répond parfois 429 aux runners.
+        image: public.ecr.aws/docker/library/postgres:17
         env:
           POSTGRES_USER: inseconds
           POSTGRES_PASSWORD: inseconds_e2e
           POSTGRES_DB: inseconds_e2e
-        ports:
-          - 5432:5432
         options: >-
           --health-cmd "pg_isready -U inseconds -d inseconds_e2e"
           --health-interval 5s
@@ -183,7 +166,7 @@ jobs:
         env:
           ASPNETCORE_ENVIRONMENT: Testing
           ConnectionStrings__DefaultConnection: >-
-            Host=localhost;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=inseconds_e2e
+            Host=postgres;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=inseconds_e2e
 
       - name: Setup Node
         uses: actions/setup-node@v7
@@ -201,43 +184,6 @@ jobs:
       - name: Start Angular dev server
         working-directory: src/front/InSeconds.Client
         run: npx --no-install ng serve --configuration e2e-ci --port 5176 > /tmp/angular.log 2>&1 &
-
-      - name: Playwright version
-        id: playwright
-        working-directory: src/front/InSeconds.Client
-        run: echo "version=$(node -p "require('./node_modules/playwright/package.json').version")" >> "$GITHUB_OUTPUT"
-
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
-
-      - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        working-directory: src/front/InSeconds.Client
-        run: npx --no-install playwright install --with-deps chromium
-
-      - name: Install Playwright system dependencies
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        working-directory: src/front/InSeconds.Client
-        timeout-minutes: 6
-        # Le miroir apt du runner reste parfois bloqué sur un téléchargement (plus de 10 minutes, normalement 20 s). apt abandonne un téléchargement
-        # muet au bout de 20 s et le retente ; sinon deux tentatives de 2 min 30 au plus. Les bibliothèques de Chromium sont déjà sur l'image du
-        # runner (apt ne télécharge que des polices et des mises à jour) : un échec ici ne bloque pas le job, un Chromium qui ne démarre pas
-        # fait échouer les tests, bruyamment.
-        continue-on-error: true
-        run: |
-          echo 'Acquire::http::Timeout "20";' | sudo tee /etc/apt/apt.conf.d/99ci-timeouts > /dev/null
-          echo 'Acquire::Retries "3";' | sudo tee -a /etc/apt/apt.conf.d/99ci-timeouts > /dev/null
-          for attempt in 1 2; do
-            timeout -k 10 150 npx --no-install playwright install-deps chromium && exit 0
-            echo "Tentative $attempt : échec ou trop longue, on relance."
-            sudo pkill -9 -f 'apt-get|dpkg' || true
-            sudo dpkg --configure -a || true
-          done
-          exit 1
 
       # --retry-connrefused : sans réponse au bout du délai, l'étape échoue (une boucle `curl && break` laisse passer).
       - name: Wait for backend
