@@ -147,7 +147,7 @@ E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inse
 - [`docs/regles-du-jeu.md`](docs/regles-du-jeu.md) - règles de jeu (scoring, prolongation, anti-triche, série) - ce qui est réellement appliqué vs juste configuré
 - [`docs/exploitation/`](docs/exploitation/) - déploiement sur le VPS, staging, sauvegardes, CI, accès de secours
 - [`docs/conformite/`](docs/conformite/) - conditions de l'API Deezer, RGPD
-- [`docs/runs/`](docs/runs/README.md) - le mode Run (partie posée côté back, écrans à venir)
+- [`docs/runs/`](docs/runs/README.md) - le mode Run (partie jouable sur invitation ; lien d'un ami et comparaison à venir)
 - [`docs/taches.md`](docs/taches.md) - ce qui reste à faire
 - [`docs/historique/`](docs/historique/) - la refonte de 2026
 

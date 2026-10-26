@@ -828,7 +828,10 @@
     "objective": {
       "gold": "Aim for the gold record",
       "unlock": "Unlock round {{ round }}",
-      "points": "pts"
+      "points": "pts",
+      "unlocked": "Round {{ round }} unlocked",
+      "goldReached": "Gold record unlocked",
+      "missed": "Target missed"
     },
     "pills": {
       "position": "Track {{ position }} of {{ total }}"
@@ -842,8 +845,7 @@
       "title": "Platines",
       "tagline": "Aim for the gold record.",
       "record": "Your record: {{ score }} pts",
-      "launch": "Start a run",
-      "resume": "Resume the run"
+      "launch": "Start a run"
     },
     "status": {
       "no_challenge": {
@@ -870,11 +872,27 @@
     },
     "roundEnd": {
       "title": "Round {{ round }} finished",
-      "next": "Next round"
+      "next": "Next round",
+      "total": "Total score",
+      "seeResult": "See the result",
+      "withdrawnOne": "1 track removed from the round",
+      "withdrawnMany": "{{ count }} tracks removed from the round"
     },
     "finished": {
       "found": "{{ found }} / {{ total }} tracks found",
-      "newGame": "New run"
+      "newGame": "New run",
+      "won": "{{ disc }}!",
+      "disc": "{{ disc }}",
+      "newRecord": "New record",
+      "record": "Record: {{ score }}",
+      "round": "Round {{ round }}",
+      "notPlayed": "Round not played",
+      "shareTitle": "Send this playlist to your friends",
+      "shareBody": "They play exactly the same playlist as you: the same 20 tracks, in the same order. At the end, you compare all your scores, round by round.",
+      "share": "Share the playlist",
+      "shareCopied": "Link copied!",
+      "shareFailed": "Couldn’t copy",
+      "toDaily": "Play the daily challenge"
     },
     "discs": {
       "scratched": "Scratched record",
@@ -882,6 +900,13 @@
       "bronze": "Bronze record",
       "silver": "Silver record",
       "gold": "Gold record"
+    },
+    "withdrawn": {
+      "title": "Track removed from the round",
+      "body": "We couldn’t get the preview. The track was removed from the playlist and the target lowered to {{ objective }} pts."
+    },
+    "share": {
+      "text": "I’m sending you a playlist on InSeconds: 20 tracks in 4 rounds. Can you beat me?"
     }
   }
 }

@@ -165,4 +165,116 @@ export const gainLabel = (points: number): string => `+${points}`;
 /** La partie est finie (gagnée, perdue ou abandonnée). */
 export const isFinished = (session: Pick<RunSession, 'status'>): boolean => session.status !== 'pending';
 
-/** Le dernier morceau de la manche vient d'être répondu : le bilan de la manche suit. */
+
+/**
+ * Une étape à montrer avant de reprendre la partie, dans l'ordre où le serveur l'a jouée : la réponse au morceau (carte de réponse), un morceau
+ * retiré de la manche (carte « Morceau retiré »), le bilan d'une manche terminée. Chacune porte la manche telle que l'écran la montre à ce
+ * moment-là (bloc objectif, pastilles) : les étapes suivantes ne se voient pas avant leur tour.
+ */
+export type RunStep =
+  | { readonly kind: 'revealed'; readonly track: RunTrack; readonly round: RunRound; readonly tracks: readonly RunTrack[] }
+  | {
+    readonly kind: 'neutralized';
+    readonly position: number;
+    /** L'objectif de la manche avant le retrait du morceau : barré à côté du nouveau. */
+    readonly objectiveBefore: number;
+    readonly round: RunRound;
+    readonly tracks: readonly RunTrack[];
+  }
+  | { readonly kind: 'summary'; readonly summary: RunRoundSummary; readonly round: RunRound };
+
+/** Un morceau retiré, tel que les pastilles le voient (rien ne le révèle). */
+const withdrawnTrack = (item: RunNeutralized): RunTrack => ({
+  position: item.position, round: item.round, neutralized: true, artistCorrect: false, titleCorrect: false, points: 0,
+  artist: null, title: null, coverUrl: null, deezerTrackId: null,
+});
+
+/**
+ * Les étapes qu'une réponse du serveur (lancement, reprise, extrait redemandé, réponse) fait passer au joueur, chacune derrière un clic : le son
+ * ne repart jamais seul. `before` est la manche affichée avant la requête (elle donne le maximum de points de la manche, que le bilan et les
+ * retraits ne portent pas).
+ *
+ * Le serveur enchaîne en une fois ce qu'il peut : la réponse, puis les morceaux suivants qu'il retire faute d'extrait, et le bilan de chaque
+ * manche que cela termine. Le bilan d'une manche suit son dernier morceau ; le maximum d'une manche dont on a retiré un morceau se déduit de
+ * son objectif (l'objectif est une part fixe du maximum).
+ */
+export function playSteps(
+  play: Pick<RunPlay, 'session' | 'revealed' | 'neutralized' | 'roundSummaries'>,
+  before: RunRound | null,
+): RunStep[] {
+  const { session } = play;
+  const summaryOf = (round: number) => play.roundSummaries.find(s => s.round === round);
+  const sessionRound = (round: number) => (session.round?.round === round ? session.round : null);
+  /** Une manche dont on connaît le maximum : celle où la partie en est, ou celle qu'on affichait. */
+  const baseOf = (round: number) => sessionRound(round) ?? (before?.round === round ? before : null);
+  const maxFor = (round: number, objective: number): number => {
+    const base = baseOf(round);
+    if (!base) return 0;
+    return base.objective > 0 ? Math.round((objective * base.maxScore) / base.objective) : base.maxScore;
+  };
+  const scoreOf = (round: number) => summaryOf(round)?.score ?? sessionRound(round)?.score ?? (before?.round === round ? before.score : 0);
+  const playedUpTo = (track: RunTrack): RunTrack[] => {
+    const source = summaryOf(track.round)?.tracks ?? (sessionRound(track.round) ? session.roundTracks : []);
+    const played = source.filter(t => t.round === track.round && t.position <= track.position);
+    return played.some(t => t.position === track.position) ? played : [...played, track];
+  };
+
+  const events = [
+    ...(play.revealed ? [{ track: play.revealed, item: null }] : []),
+    ...play.neutralized.map(item => ({ track: withdrawnTrack(item), item })),
+  ].sort((a, b) => a.track.position - b.track.position);
+
+  const steps: RunStep[] = [];
+  const shown = new Set<number>();
+  events.forEach((event, index) => {
+    const roundNumber = event.track.round;
+    const tracks = playedUpTo(event.track);
+    let round: RunRound;
+    if (event.item) {
+      const objective = event.item.objectiveAfter;
+      round = { round: roundNumber, score: scoreOf(roundNumber), objective, maxScore: maxFor(roundNumber, objective) };
+      steps.push({ kind: 'neutralized', position: event.track.position, objectiveBefore: event.item.objectiveBefore, round, tracks });
+    } else {
+      // La réponse se montre avec l'objectif d'avant les retraits qui la suivent dans la même manche.
+      const objective = play.neutralized.find(n => n.round === roundNumber)?.objectiveBefore
+        ?? summaryOf(roundNumber)?.objective ?? sessionRound(roundNumber)?.objective ?? before?.objective ?? 0;
+      const maxScore = before?.round === roundNumber ? before.maxScore : maxFor(roundNumber, objective);
+      round = { round: roundNumber, score: scoreOf(roundNumber), objective, maxScore };
+      steps.push({ kind: 'revealed', track: event.track, round, tracks });
+    }
+    const summary = summaryOf(roundNumber);
+    if (summary && events[index + 1]?.track.round !== roundNumber) {
+      shown.add(roundNumber);
+      steps.push({ kind: 'summary', summary, round: { round: roundNumber, score: summary.score, objective: summary.objective, maxScore: round.maxScore } });
+    }
+  });
+  // Un bilan sans morceau devant lui (ne devrait pas arriver) : montré quand même, à la fin.
+  for (const summary of play.roundSummaries) {
+    if (!shown.has(summary.round)) {
+      steps.push({ kind: 'summary', summary, round: { round: summary.round, score: summary.score, objective: summary.objective, maxScore: maxFor(summary.round, summary.objective) } });
+    }
+  }
+  return steps;
+}
+
+/** Combien de morceaux de la partie sont déjà joués (l'écran de reprise) : les manches passées, puis ceux de la manche en cours. */
+export const playedCount = (session: Pick<RunSession, 'round' | 'tracksPerRound' | 'roundTracks'>): number =>
+  session.round ? (session.round.round - 1) * session.tracksPerRound + session.roundTracks.length : 0;
+
+/** Un carré de l'écran de fin : morceau trouvé (artiste et titre), joué sans être trouvé, retiré de la manche, ou pas joué. */
+export type FinishSquare = 'found' | 'played' | 'neutralized' | 'unplayed';
+
+/** Les carrés de l'écran de fin, un par morceau de la playlist, groupés par manche ; une manche non jouée n'a que des carrés vides. */
+export function finishSquares(finish: Pick<RunFinish, 'tracks' | 'rounds' | 'trackCount'>): FinishSquare[][] {
+  const roundCount = Math.max(1, finish.rounds.length);
+  const perRound = Math.ceil(finish.trackCount / roundCount);
+  return Array.from({ length: roundCount }, (_, index) => {
+    const played = finish.tracks.filter(t => t.round === index + 1).sort((a, b) => a.position - b.position);
+    return Array.from({ length: perRound }, (_, slot): FinishSquare => {
+      const track = played[slot];
+      if (!track) return 'unplayed';
+      if (track.neutralized) return 'neutralized';
+      return track.artistCorrect && track.titleCorrect ? 'found' : 'played';
+    });
+  });
+}

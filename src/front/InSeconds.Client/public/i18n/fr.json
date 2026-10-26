@@ -828,7 +828,10 @@
     "objective": {
       "gold": "Viser le disque d’or",
       "unlock": "Débloquer la manche {{ round }}",
-      "points": "pts"
+      "points": "pts",
+      "unlocked": "Manche {{ round }} débloquée",
+      "goldReached": "Disque d’or débloqué",
+      "missed": "Objectif manqué"
     },
     "pills": {
       "position": "Morceau {{ position }} sur {{ total }}"
@@ -842,8 +845,7 @@
       "title": "Platines",
       "tagline": "Vise le disque d’or.",
       "record": "Ton record : {{ score }} pts",
-      "launch": "Lancer une partie",
-      "resume": "Reprendre la partie"
+      "launch": "Lancer une partie"
     },
     "status": {
       "no_challenge": {
@@ -870,11 +872,27 @@
     },
     "roundEnd": {
       "title": "Manche {{ round }} terminée",
-      "next": "Manche suivante"
+      "next": "Manche suivante",
+      "total": "Score total",
+      "seeResult": "Voir le résultat",
+      "withdrawnOne": "1 morceau retiré de la manche",
+      "withdrawnMany": "{{ count }} morceaux retirés de la manche"
     },
     "finished": {
       "found": "{{ found }} / {{ total }} morceaux trouvés",
-      "newGame": "Nouvelle partie"
+      "newGame": "Nouvelle partie",
+      "won": "{{ disc }} !",
+      "disc": "{{ disc }}",
+      "newRecord": "Nouveau record",
+      "record": "Record : {{ score }}",
+      "round": "Manche {{ round }}",
+      "notPlayed": "Manche non jouée",
+      "shareTitle": "Lance cette playlist à tes potes",
+      "shareBody": "Ils jouent exactement la même playlist que toi : les mêmes 20 morceaux, dans le même ordre. À la fin, vous comparez tous vos scores, manche par manche.",
+      "share": "Partager la playlist",
+      "shareCopied": "Lien copié !",
+      "shareFailed": "Copie impossible",
+      "toDaily": "Jouer au défi du jour"
     },
     "discs": {
       "scratched": "Disque rayé",
@@ -882,6 +900,13 @@
       "bronze": "Disque de bronze",
       "silver": "Disque d’argent",
       "gold": "Disque d’or"
+    },
+    "withdrawn": {
+      "title": "Morceau retiré de la manche",
+      "body": "Impossible de récupérer l’extrait. Le morceau a été retiré de la playlist et l’objectif abaissé à {{ objective }} pts."
+    },
+    "share": {
+      "text": "Je te lance une playlist sur InSeconds : 20 morceaux en 4 manches. Tu fais mieux que moi ?"
     }
   }
 }

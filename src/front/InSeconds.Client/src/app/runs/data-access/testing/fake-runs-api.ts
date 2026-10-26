@@ -25,11 +25,12 @@ export const PLAY = (overrides: Partial<RunPlay> = {}): RunPlay => ({
 });
 
 /** Un faux adaptateur : chaque réponse se règle par une propriété, chaque appel est noté. */
-export class FakeRunsApi implements Pick<RunsApi, 'me' | 'launch' | 'join' | 'refreshPreview' | 'submitAnswer' | 'abandon'> {
+export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'launch' | 'join' | 'refreshPreview' | 'submitAnswer' | 'abandon'> {
   readonly calls: string[] = [];
   readonly answers: RunAnswerToSend[] = [];
 
   meResult: RunsMe | Error = ME();
+  sessionResult: RunSession | Error = SESSION();
   launchResult: StartOutcome = { kind: 'ok', play: PLAY() };
   joinResult: StartOutcome = { kind: 'ok', play: PLAY({ isResuming: true }) };
   refreshResult: RunPlay | Error = PLAY();
@@ -39,6 +40,11 @@ export class FakeRunsApi implements Pick<RunsApi, 'me' | 'launch' | 'join' | 're
   me(): Promise<RunsMe> {
     this.calls.push('me');
     return this.meResult instanceof Error ? Promise.reject(this.meResult) : Promise.resolve(this.meResult);
+  }
+
+  session(sessionId: number): Promise<RunSession> {
+    this.calls.push(`session:${sessionId}`);
+    return this.sessionResult instanceof Error ? Promise.reject(this.sessionResult) : Promise.resolve(this.sessionResult);
   }
 
   launch(): Promise<StartOutcome> {

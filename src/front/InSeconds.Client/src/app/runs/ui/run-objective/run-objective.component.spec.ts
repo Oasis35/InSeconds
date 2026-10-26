@@ -69,4 +69,55 @@ describe('RunObjectiveComponent', () => {
 
     expect(element.textContent).not.toMatch(/[×x]\s?\d/);
   });
+
+  it('une manche sans maximum connu (tous ses morceaux retirés) n\'a pas de barre', () => {
+    expect(render({ round: 2, score: 0, objective: 0, maxScore: 0 }).querySelector('[role="progressbar"]')).toBeNull();
+  });
+
+  describe('après le retrait d\'un morceau', () => {
+    it("barre l'ancien objectif à côté du nouveau", () => {
+      TestBed.configureTestingModule({ providers: [provideTranslateService()] });
+      const fixture = TestBed.createComponent(RunObjectiveComponent);
+      fixture.componentRef.setInput('round', { round: 2, score: 200, objective: 266, maxScore: 532 });
+      fixture.componentRef.setInput('rounds', 4);
+      fixture.componentRef.setInput('previousObjective', 333);
+      fixture.detectChanges();
+      const element = fixture.nativeElement as HTMLElement;
+
+      expect(text(element, 'run-objective-before')).toBe('333');
+      expect(element.querySelector('[data-testid="run-objective-before"]')?.tagName).toBe('S');
+      expect(text(element, 'run-objective-points')).toBe('266');
+    });
+
+    it("sans retrait, pas d'ancien objectif", () => {
+      expect(render({ round: 2, score: 200, objective: 333, maxScore: 500 }).querySelector('[data-testid="run-objective-before"]')).toBeNull();
+    });
+  });
+
+  describe('au bilan de la manche', () => {
+    function ended(round: RunRound) {
+      TestBed.configureTestingModule({ providers: [provideTranslateService()] });
+      const fixture = TestBed.createComponent(RunObjectiveComponent);
+      fixture.componentRef.setInput('round', round);
+      fixture.componentRef.setInput('rounds', 4);
+      fixture.componentRef.setInput('ended', true);
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    it('objectif atteint : la manche suivante débloquée, le trait au vert', () => {
+      const element = ended({ round: 2, score: 466, objective: 333, maxScore: 665 });
+
+      expect(text(element, 'run-objective-label')).toBe('runs.objective.unlocked');
+      expect((element.querySelector('[data-testid="run-objective-tick"]') as HTMLElement).style.background).toBe('var(--color-success)');
+    });
+
+    it('objectif manqué', () => {
+      expect(text(ended({ round: 3, score: 418, objective: 501, maxScore: 835 }), 'run-objective-label')).toBe('runs.objective.missed');
+    });
+
+    it("dernière manche gagnée : le disque d'or débloqué", () => {
+      expect(text(ended({ round: 4, score: 800, objective: 700, maxScore: 1000 }), 'run-objective-label')).toBe('runs.objective.goldReached');
+    });
+  });
 });

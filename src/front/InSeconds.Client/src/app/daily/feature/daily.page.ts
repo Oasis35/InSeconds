@@ -31,7 +31,8 @@ import { GelEarnedToastComponent } from '../ui/gel-earned-toast/gel-earned-toast
 import { GelUsedToastComponent } from '../ui/gel-used-toast/gel-used-toast.component';
 import { GuestStreakToastComponent } from '../ui/guest-streak-toast/guest-streak-toast.component';
 import { LostStreakToastComponent } from '../ui/lost-streak-toast/lost-streak-toast.component';
-import { ResumeScreenComponent } from '../ui/resume-screen/resume-screen.component';
+import { ResumeScreenComponent } from '../../gameplay/ui/resume-screen/resume-screen.component';
+import { HomeModeEntriesComponent } from '../../core/shell/home-mode-entries/home-mode-entries.component';
 import { ScoreCountComponent } from '../ui/score-count/score-count.component';
 import { countUp } from '../ui/score-count/count-up';
 import { StatusScreenComponent } from '../ui/status-screen/status-screen.component';
@@ -56,7 +57,7 @@ type ThanksScreen = 'done' | 'already_played';
   selector: 'app-daily-page',
   imports: [
     TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, DailyBrandComponent, DailyProgressComponent, DailyFooterComponent,
-    WelcomeScreenComponent, ResumeScreenComponent, StatusScreenComponent, AlreadyPlayedScreenComponent, FinalRecapScreenComponent,
+    WelcomeScreenComponent, ResumeScreenComponent, HomeModeEntriesComponent, StatusScreenComponent, AlreadyPlayedScreenComponent, FinalRecapScreenComponent,
     StreakPillComponent, GuestStreakToastComponent, LostStreakToastComponent, GelUsedToastComponent, GelEarnedToastComponent,
     DeezerBadgeComponent, ScoreCountComponent, AccountLinkComponent,
   ],

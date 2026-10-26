@@ -69,6 +69,13 @@
      à l'orange de la série (chaud). */
   --gradient-ice: linear-gradient(135deg, #BEFAFF, rgb(var(--rgb-accent-2)) 55%, rgb(var(--rgb-violet)));
 
+  /* Disques du mode Run (Platines) */
+  --disc-gold:      rgb(var(--rgb-warning));
+  --disc-silver:    #C3C9D4;
+  --disc-bronze:    #C47A3A;
+  --disc-wax:       #8C3A2B;
+  --disc-scratched: rgb(var(--rgb-text) / 0.3);
+
   /* Formes : tous les boutons en rectangle, toutes les cartes aux mêmes coins réguliers */
   --radius-button: 10px;
   --radius-card:   16px;

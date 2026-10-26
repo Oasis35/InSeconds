@@ -18,7 +18,7 @@ Format : téléphone, 390 × 844. Les textes des maquettes sont ceux à reprendr
 
 ## Écrans du Daily repris tels quels, sans maquette
 
-Clément, 18/10 : un écran qui existe déjà au Daily ne se redessine pas, il se reprend tel quel. Seuls les textes changent (un run n'a ni série ni limite de jour). Les composants qui vivent dans `daily/ui` descendent dans `gameplay/ui` pour que Runs puisse les utiliser (cf. [`conception.md`](conception.md) § 5.3).
+Clément, 18/10 : un écran qui existe déjà au Daily ne se redessine pas, il se reprend tel quel. Seuls les textes changent (un run n'a ni série ni limite de jour). Les composants qui vivaient dans `daily/ui` sont descendus dans `gameplay/ui` pour que Runs puisse les utiliser (cf. [`conception.md`](conception.md) § 5.3) : la liste des morceaux, le badge Deezer, l'écran de reprise.
 
 | Situation | Écran du Daily | Textes à adapter en run |
 |---|---|---|
@@ -41,7 +41,7 @@ Sans écran du tout :
 
 De haut en bas :
 - **En-tête** sur trois colonnes : « Abandonner » à gauche, « MANCHE 2 / 4 » centré, « Score » et le score total du run à droite (accent orange).
-- **Bloc objectif** : cadenas et « Débloquer la manche 3 », « 200 / 333 pts » (score de la manche / objectif), barre de jauge en dégradé avec un trait vertical à l'objectif. Sur la dernière manche, le libellé dit l'objectif du disque d'or (texte à fixer au code).
+- **Bloc objectif** : cadenas et « Débloquer la manche 3 », « 200 / 333 pts » (score de la manche / objectif), barre de jauge en dégradé avec un trait vertical à l'objectif. Sur la dernière manche, le libellé dit « Viser le disque d'or ».
 - **5 pastilles** des morceaux de la manche et « Morceau 3 sur 5 » : vert = trouvé, ambre = à moitié (artiste ou titre), corail = morceau en cours, sombre = à venir. Un morceau raté prend la couleur `--danger` (pas dessiné dans les maquettes, déduit).
 - **Lecteur du Daily** : « 6.2s / 10s », barre cyan, bouton lecture/pause.
 - **Saisie du Daily** : champ « Artiste - Titre » avec propositions, puis VALIDER et PASSER (0 PTS).
@@ -60,7 +60,7 @@ Après Valider ou Passer, **on reste dans l'écran de la manche** : le lecteur e
 - **Carte** aux coins du lecteur (28 / 8 px) : pochette à la forme de la révélation du Daily, **pastille jaune « +67 »** (points du morceau) posée sur le coin de la pochette ; à droite, l'artiste puis le titre, **deux lignes au plus chacun** (coupés au-delà, les noms longs sont fréquents) ; pastilles « ✓ Artiste » (vert) et « ✗ Titre » (rouge) ; dessous, « ▶ Écouter sur Deezer ».
 - **Bloc objectif** : « +67 » en vert devant le nouveau score de la manche, et la part gagnée surlignée dans la barre.
 - La pastille du morceau prend sa couleur, le score de l'en-tête se met à jour.
-- **« MORCEAU SUIVANT »** juste sous la carte. Ce clic lance le son du morceau suivant (geste du joueur, obligatoire sur iPhone). Après le 5e morceau, il mène à la fin de manche (libellé à fixer au code).
+- **« MORCEAU SUIVANT »** juste sous la carte. Ce clic lance le son du morceau suivant (geste du joueur, obligatoire sur iPhone). Après le 5e morceau, il s'appelle « Fin de la manche » et mène au bilan.
 
 ## 2b. Le morceau sans extrait
 
@@ -70,7 +70,9 @@ Quand Deezer n'a plus d'extrait pour le morceau en cours, le serveur le neutrali
 - une carte « **Morceau retiré de la manche** » : « Impossible de récupérer l'extrait. Le morceau a été retiré de la playlist et l'objectif abaissé à 266 pts. » Le texte reste générique sur la cause, et rien ne révèle le morceau ;
 - dans le bloc objectif, l'ancien objectif barré à côté du nouveau (« 200 / ~~333~~ 266 pts »), le repère de la jauge recalculé ;
 - la pastille du morceau hachurée (ne compte pas) ;
-- « MORCEAU SUIVANT » dessous, comme après une réponse.
+- « MORCEAU SUIVANT » dessous, comme après une réponse (« Fin de la manche » si c'était le dernier morceau, qui mène au bilan).
+
+Le retrait peut arriver après une réponse (le serveur passe au morceau suivant et n'en trouve pas l'extrait : la carte de réponse, puis celle du retrait) ou pendant la redemande d'extrait d'un morceau en cours (lecture en échec, adresse expirée : la carte du retrait remplace le lecteur). **Le son ne repart jamais seul** : chaque carte attend le clic du joueur.
 
 À ne pas confondre avec l'extrait illisible (réseau, lien expiré) : là, on garde « Réessayer / Passer (0 pts) » du Daily.
 
@@ -79,8 +81,9 @@ Quand Deezer n'a plus d'extrait pour le morceau en cours, le serveur le neutrali
 ![Fin de manche](maquettes/fin-de-manche.png)
 
 - « MANCHE 2 / 4 » en haut, puis l'icône ✓ et **« Manche 2 terminée »**.
-- **Bloc objectif** : cadenas ouvert et « Manche 3 débloquée » en vert, « 466 / 333 pts », barre et trait à l'objectif (vert quand il est atteint). Manche ratée : l'objectif manqué, et le bouton mène à l'écran de fin.
-- **Les 5 morceaux** dans les lignes de l'écran « déjà joué » du Daily : pochette, ✓/✗ Artiste et Titre, « Artiste - Titre » sur une ligne, points, « ▶ Écouter sur Deezer ».
+- **Bloc objectif** : cadenas ouvert et « Manche 3 débloquée » en vert, « 466 / 333 pts », barre et trait à l'objectif (vert quand il est atteint). Dernière manche gagnée : « Disque d'or débloqué ». Manche ratée : ✕ à la place du ✓ et « Objectif manqué ».
+- **Le bilan s'affiche après chaque manche**, ratée ou dernière comprise : son bouton devient alors « Voir le résultat » et mène à l'écran de fin.
+- **Les 5 morceaux** dans les lignes de l'écran « déjà joué » du Daily : pochette, ✓/✗ Artiste et Titre, « Artiste - Titre » sur une ligne, points, « ▶ Écouter sur Deezer ». Un morceau retiré n'a pas de ligne (rien ne le décrit) : une phrase dessous dit « 1 morceau retiré de la manche ».
 - **Score total** du run, puis **« Manche suivante »** juste dessous.
 
 ## 4. La fin du run
@@ -92,8 +95,8 @@ Quand Deezer n'a plus d'extrait pour le morceau en cours, le serveur le neutrali
 Même mise en page dans les deux cas :
 - **Carte du disque**, horizontale : le disque dessiné à gauche (or, argent, bronze, cire, rayé) ; à droite, le nom du disque (« Disque d'or ! »), un badge « Nouveau record » ou « Record : 2 617 », le score final en grand, puis **« 16 / 20 morceaux trouvés »** et 20 petits carrés groupés par manche (vert = trouvé ; une manche non jouée en carrés vides).
 - **4 cases** « Manche N » avec « score / objectif » ; l'objectif manqué en ambre ; **✕** pour une manche non jouée.
-- **Bloc « Lance cette playlist à tes potes »** : « Ils jouent exactement la même playlist que toi : les mêmes 20 morceaux, dans le même ordre. À la fin, vous comparez tous vos scores, manche par manche. » et le bouton **« Partager la playlist »**.
-- **« Nouvelle partie »** dessous (un ami sans accès voit à la place une invitation à jouer au Daily).
+- **Bloc « Lance cette playlist à tes potes »** : « Ils jouent exactement la même playlist que toi : les mêmes 20 morceaux, dans le même ordre. À la fin, vous comparez tous vos scores, manche par manche. » et le bouton **« Partager la playlist »**, qui copie une phrase et l'adresse de la playlist dans le presse-papier (comme le partage du score au Daily) ; le bouton dit « Lien copié ! » quelques secondes.
+- **« Nouvelle partie »** dessous, en contour neutre : elle lance directement une playlist neuve, le son au même clic (un joueur sans accès voit à la place « Jouer au défi du jour »).
 - Pas de « Voir les morceaux » : la liste a été vue à chaque fin de manche.
 
 ## 5. La comparaison d'une playlist
