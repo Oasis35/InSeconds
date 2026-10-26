@@ -147,29 +147,31 @@ Même forme et même vocabulaire que le Daily : **un défi** = une suite de morc
 ```
 runs/
 ├── domain/       run.ts (jauge, objectif, manche, pastilles, disque : TypeScript pur, testé seul)
-├── data-access/  runs.api.ts (client NSwag runs/api.generated.ts), runs-game.store.ts (SignalStore + withTrackRound)
-├── feature/      runs.page (partie), run-link.page (lien d'un ami), runs.routes.ts, provide-runs.ts, home-entry (carte de l'accueil)
-└── ui/           run-header, objective-gauge, round-pills, answer-card, round-summary, disc-card, round-scores, share-challenge, comparison-table
+├── data-access/  runs.api.ts (client NSwag runs/api.generated.ts), run-game.store.ts (pilote le TrackRoundStore de gameplay), run-share.ts
+├── feature/      runs.page (partie), run-link.page (lien d'un ami, P5), runs.routes.ts, provide-runs.ts, home-entry (carte de l'accueil)
+└── ui/           run-header, run-objective, run-pills, run-answer-card, run-withdrawn-card, run-round-summary, run-finish, run-disc, run-home-card, comparison-table (P5)
 ```
 - Routes **`/runs`** et **`/runs/:code`** : des adresses neutres, qui ne cassent pas les liens partagés si le nom change. `/runs/*` exclu de `robots.txt` et du `sitemap.xml`.
-- Sheriff : `runs` voit `gameplay` et `account` (pour créer l'invité d'un ami), jamais `daily`.
+- Sheriff : `runs` voit `gameplay` (et `account` en P5, pour créer l'invité d'un ami), jamais `daily`.
 - Repris du Daily : confirmation avant de quitter une partie (`canDeactivate`), moment sûr de rechargement après une nouvelle version (`ReloadMoment`, une étape de réponse en est un), synchronisation entre onglets, remontée des erreurs.
 - Traductions `runs.*` FR/EN (disques compris), mobile first, saisie à 16 px, modales par `ModalService`, boutons par `appButton`.
 
 ### 5.2 Les étapes d'une partie
-`link` (lien reçu, [`ecrans.md`](ecrans.md#7-le-lien-reçu) § 7) ou `welcome` (premier morceau : le clic lance le son) → par morceau : `playing` / `answering` (lecteur et saisie de `gameplay`) → `revealed` (carte de réponse à la place du lecteur et de la saisie, « Morceau suivant »), ou `neutralized` (carte « Morceau retiré de la manche », [`ecrans.md`](ecrans.md#2b-le-morceau-sans-extrait) § 2b, même bouton) → après le 5e morceau : `round-summary` (fin de manche) → manche suivante, ou `finished` (écran de fin). Reprise : la partie revient à l'étape de son état serveur. La phase `revealed` de `withTrackRound` existe déjà ; c'est l'écran qui change par rapport au Daily.
+`link` (lien reçu, [`ecrans.md`](ecrans.md#7-le-lien-reçu) § 7, P5), `welcome` (premier morceau : le clic lance le son) ou `resume` (partie en cours) → par morceau : `playing` / `answering` (lecteur et saisie de `gameplay`) → `revealed` (carte de réponse à la place du lecteur et de la saisie, « Morceau suivant »), ou `neutralized` (carte « Morceau retiré de la manche », [`ecrans.md`](ecrans.md#2b-le-morceau-sans-extrait) § 2b, même bouton) → après le 5e morceau : `round_end` (bilan, après chaque manche, ratée ou dernière comprise) → manche suivante, ou `finished` (écran de fin). Reprise : la partie revient au morceau en cours de son état serveur. La phase `revealed` de `withTrackRound` existe déjà ; c'est l'écran qui change par rapport au Daily.
+
+Le serveur enchaîne en une réponse ce qu'il peut (la réponse, les morceaux suivants qu'il retire faute d'extrait, le bilan de chaque manche que cela termine) : le front en tire une **file d'étapes** (`playSteps`, `domain/run.ts`), montrées une à une, chacune derrière un clic. Le son ne part que dans ce clic, jamais à l'arrivée d'une réponse (un morceau retiré pendant la redemande de son extrait attend le clic « Morceau suivant »).
 
 ### 5.3 Composants du Daily à rendre communs
 Un mode n'importe jamais l'autre : ce que les maquettes reprennent du Daily et qui vit aujourd'hui dans `daily/ui` **descend dans `gameplay/ui`** (le Daily l'importe de là, sans changement visible), dans la PR du front (P4) :
 - la ligne de `track-results-list` (pochette, ✓/✗ Artiste et Titre, « Artiste - Titre », points, lien Deezer), avec le clic vers le graphique et la ligne de statistiques en option ;
 - le badge « Écouter sur Deezer » (`deezer-badge`) ;
 - le style du lien « Abandonner » de `daily-progress` (un bouton discret, repris tel quel s'il ne vaut pas un composant) ;
-- l'écran de reprise (`resume-screen`) et l'écran d'état (`status-screen`, erreur et pas de défi), avec leurs textes passés en entrée : le Daily garde les siens (série), Runs donne les siens ([`ecrans.md`](ecrans.md#écrans-du-daily-repris-tels-quels-sans-maquette)).
+- l'écran de reprise (`resume-screen`), avec son avertissement d'abandon et son lien de connexion passés en entrée : le Daily garde les siens (série), Runs donne le sien ([`ecrans.md`](ecrans.md#écrans-du-daily-repris-tels-quels-sans-maquette)). L'écran d'état a sa copie dans Runs (`run-status-screen`, mêmes formes, textes du mode).
 
 Les confirmations d'abandon et de sortie (`ModalService.confirm`, `leave-game.guard`) sont déjà communes : Runs les appelle avec ses propres textes.
 
 ### 5.4 Entrée sur l'accueil
-- La carte appartient au domaine `runs` ; la page du Daily n'importe pas `runs`. Elle expose un emplacement que remplit un jeton multiple de `core` (`HOME_MODE_ENTRIES`), fourni par `provideRuns()`. Le domaine `home` réservé dans Sheriff est retiré tant que `/` reste le Daily.
+- La carte appartient au domaine `runs` ; la page du Daily n'importe pas `runs`. Elle expose un emplacement (`<app-home-mode-entries>` de `core/shell`) que remplit un jeton multiple de `core` (`HOME_MODE_ENTRIES`), fourni par `provideRuns()` : chaque entrée est un composant chargé à la demande (avec le client de l'API du mode, hors du bundle initial). Le domaine `home` réservé dans Sheriff est retiré tant que `/` reste le Daily.
 - Visible seulement si le joueur a un compte **et** l'accès : `GET /api/runs/me` (appelé pour un compte connecté seulement) renvoie `hasAccess`. Invité ou non autorisé : rien affiché, aucune erreur. Jamais pendant une manche.
 - Le « booléen » d'accès = la ligne de `runs.access`, sans mettre une notion de mode dans `players.accounts`.
 

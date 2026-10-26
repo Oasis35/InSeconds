@@ -10,7 +10,8 @@ describe('ResumeScreenComponent', () => {
     const fixture = TestBed.createComponent(ResumeScreenComponent);
     fixture.componentRef.setInput('completedCount', 1);
     fixture.componentRef.setInput('trackCount', 3);
-    fixture.componentRef.setInput('linked', linked);
+    fixture.componentRef.setInput('showLoginCta', !linked);
+    fixture.componentRef.setInput('warningBodyKey', linked ? 'daily.resume.warningBodyLinked' : 'daily.resume.warningBody');
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
     return { fixture, el, buttons: () => Array.from(el.querySelectorAll('button')) };
@@ -48,12 +49,12 @@ describe('ResumeScreenComponent', () => {
     expect(spy).toHaveBeenCalled();
   });
 
-  it('invité : CTA de connexion ; connecté : non', () => {
+  it('propose de se connecter seulement si le mode le demande', () => {
     expect(render(false).el.querySelector('a[href="/account/login"]')).not.toBeNull();
     expect(render(true).el.querySelector('a[href="/account/login"]')).toBeNull();
   });
 
-  it('avertit un invité de la perte de série, un connecté d un possible gel', () => {
+  it("montre l'avertissement d'abandon que le mode donne", () => {
     const guest = render(false);
     guest.buttons()[1].click();
     guest.fixture.detectChanges();

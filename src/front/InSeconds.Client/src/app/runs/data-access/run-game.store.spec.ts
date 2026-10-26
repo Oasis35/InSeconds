@@ -63,13 +63,46 @@ describe('RunGameStore', () => {
       expect(store.screen()).toBe('error');
     });
 
-    it('propose de reprendre une partie en cours', async () => {
+    it("propose de reprendre une partie en cours (l'écran de reprise du Daily), avec les morceaux déjà joués", async () => {
       api.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' }, record: { bestScore: 900, bestRoundsPassed: 2, isNew: false } });
+      api.sessionResult = SESSION({ round: ROUND({ round: 2 }), roundTracks: [TRACK({ position: 6, round: 2 })] });
 
       await store.init();
 
-      expect(store.hasPending()).toBe(true);
+      expect(store.screen()).toBe('resume');
+      expect(api.calls).toEqual(['me', 'session:7']);
+      expect(store.resumeCount()).toBe(6);
+      expect(store.resumeTotal()).toBe(20);
       expect(store.record()?.bestScore).toBe(900);
+      expect(audio.calls).toEqual(['stop']);
+    });
+
+    it("l'accès retiré n'empêche pas de reprendre la partie en cours", async () => {
+      api.meResult = ME({ hasAccess: false, pending: { sessionId: 7, challengeCode: 'ABC234' } });
+
+      await store.init();
+
+      expect(store.screen()).toBe('resume');
+    });
+
+    it('abandonner depuis la reprise ferme la partie en cours et revient à l\'accueil', async () => {
+      api.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
+      await store.init();
+      api.meResult = ME();
+
+      await store.abandon();
+
+      expect(api.calls).toContain('abandon:7');
+      expect(store.screen()).toBe('welcome');
+    });
+
+    it("une erreur de lecture de la partie en cours affiche l'erreur", async () => {
+      api.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
+      api.sessionResult = new Error('réseau');
+
+      await store.init();
+
+      expect(store.screen()).toBe('error');
     });
   });
 
@@ -95,7 +128,7 @@ describe('RunGameStore', () => {
 
       await store.begin();
 
-      expect(api.calls).toEqual(['me', 'join:ABC234']);
+      expect(api.calls).toEqual(['me', 'session:7', 'join:ABC234']);
       expect(store.screen()).toBe('playing');
     });
 
@@ -165,7 +198,7 @@ describe('RunGameStore', () => {
       await send();
       audio.calls.length = 0;
 
-      store.nextTrack();
+      store.next();
 
       expect(audio.calls[0]).toBe('unlock');
       expect(audio.calls).toContain('load https://cdn/preview-2.mp3');
@@ -189,7 +222,8 @@ describe('RunGameStore', () => {
   describe('fin de manche', () => {
     const lastOfRound = () => PLAY({
       session: SESSION({ totalScore: 320, round: ROUND({ round: 2, score: 0, objective: 250, maxScore: 500 }), roundsPassed: 1, roundTracks: [] }),
-      revealed: TRACK({ position: 5, points: 100 }),
+      // Le bilan d'une manche de deux morceaux : le second vient d'être répondu.
+      revealed: TRACK({ position: 2, points: 100 }),
       roundSummaries: [summary()],
       current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3' }),
     });
@@ -213,26 +247,27 @@ describe('RunGameStore', () => {
       await send();
       audio.calls.length = 0;
 
-      store.nextTrack();
+      store.next();
 
       expect(store.screen()).toBe('round_end');
-      expect(store.summaries()[0].round).toBe(1);
+      expect(store.summary()?.round).toBe(1);
+      expect(store.summaryEndsRun()).toBe(false);
       expect(audio.calls.some(c => c.startsWith('load'))).toBe(false);
     });
 
     it('« Manche suivante » lance le premier morceau de la manche débloquée, dans le clic', async () => {
       api.answerResult = lastOfRound();
       await send();
-      store.nextTrack();
+      store.next();
       audio.calls.length = 0;
 
-      store.nextRound();
+      store.next();
 
       expect(audio.calls[0]).toBe('unlock');
       expect(audio.calls).toContain('load https://cdn/preview-6.mp3');
       expect(store.screen()).toBe('playing');
       expect(store.shownRound()?.round).toBe(2);
-      expect(store.summaries()).toEqual([]);
+      expect(store.summary()).toBeNull();
       expect(store.pills()).toEqual(['current', 'todo', 'todo', 'todo', 'todo']);
     });
   });
@@ -247,10 +282,10 @@ describe('RunGameStore', () => {
       await startRun();
     });
 
-    it('la dernière réponse montre d\'abord sa carte ; « Morceau suivant » mène à la fin', async () => {
+    it('la dernière manche gagnée : sa carte, puis son bilan (dont le bouton mène à la fin), puis la fin', async () => {
       api.answerResult = PLAY({
         session: SESSION({ status: 'won', totalScore: 2500, round: null, finish: finish('won') }),
-        revealed: TRACK({ position: 20 }),
+        revealed: TRACK({ position: 20, round: 4 }),
         roundSummaries: [summary({ round: 4 })],
         current: null,
       });
@@ -258,38 +293,69 @@ describe('RunGameStore', () => {
 
       expect(store.screen()).toBe('playing');
       expect(store.revealed()).not.toBeNull();
+      expect(store.nextIsSummary()).toBe(true);
 
-      store.nextTrack();
+      store.next();
+
+      expect(store.screen()).toBe('round_end');
+      expect(store.summary()?.round).toBe(4);
+      expect(store.summaryEndsRun()).toBe(true);
+
+      store.next();
 
       expect(store.screen()).toBe('finished');
       expect(store.finish()?.disc.key).toBe('runs.discs.gold');
       expect(store.revealed()).toBeNull();
     });
 
-    it('une manche ratée finit la partie : « Morceau suivant » mène à la fin, pas au bilan', async () => {
+    it('une manche ratée montre aussi son bilan, dont le bouton mène à la fin', async () => {
       api.answerResult = PLAY({
         session: SESSION({ status: 'lost', round: null, finish: finish('lost') }),
         revealed: TRACK({ position: 5 }),
-        roundSummaries: [summary({ passed: false })],
+        roundSummaries: [summary({ passed: false, score: 150 })],
         current: null,
       });
       await send();
 
-      store.nextTrack();
+      store.next();
+
+      expect(store.screen()).toBe('round_end');
+      expect(store.summary()?.passed).toBe(false);
+      expect(store.summaryEndsRun()).toBe(true);
+
+      store.next();
 
       expect(store.screen()).toBe('finished');
+      expect(audio.calls.filter(c => c.startsWith('load'))).toHaveLength(1);
     });
 
-    it('« Nouvelle partie » revient à l\'accueil, le record relu', async () => {
+    it('« Nouvelle partie » lance une playlist neuve, le premier son dans le clic', async () => {
       api.answerResult = PLAY({ session: SESSION({ status: 'won', round: null, finish: finish('won') }), revealed: TRACK(), current: null });
       await send();
-      store.nextTrack();
-      api.meResult = ME({ record: { bestScore: 2500, bestRoundsPassed: 4, isNew: false } });
+      store.next();
+      audio.calls.length = 0;
+      api.calls.length = 0;
+      api.launchResult = { kind: 'ok', play: PLAY({ current: CURRENT({ previewUrl: 'https://cdn/preview-neuf.mp3' }) }) };
 
-      await store.playAgain();
+      const again = store.playAgain();
+      expect(audio.calls[0]).toBe('unlock');
+      await again;
 
-      expect(store.screen()).toBe('welcome');
-      expect(store.record()?.bestScore).toBe(2500);
+      expect(api.calls).toContain('launch');
+      expect(store.screen()).toBe('playing');
+      expect(audio.calls).toContain('load https://cdn/preview-neuf.mp3');
+    });
+
+    it('« Nouvelle partie » seulement avec l\'accès', async () => {
+      expect(store.canPlayAgain()).toBe(true);
+      api.meResult = ME({ hasAccess: false });
+      api.answerResult = PLAY({ session: SESSION({ status: 'won', round: null, finish: finish('won') }), revealed: TRACK(), current: null });
+      await send();
+
+      store.next();
+      await new Promise<void>(resolve => setTimeout(resolve, 0));
+
+      expect(store.canPlayAgain()).toBe(false);
     });
   });
 
@@ -331,20 +397,100 @@ describe('RunGameStore', () => {
       expect(audio.calls).toContain('load https://cdn/preview-1-frais.mp3');
     });
 
-    it('si le serveur a neutralisé le morceau en route, l\'écran suit la nouvelle situation', async () => {
-      api.refreshResult = PLAY({
-        session: SESSION({ round: ROUND({ objective: 160 }) }),
-        current: CURRENT({ position: 2, positionInRound: 2, previewUrl: 'https://cdn/preview-2.mp3' }),
-        neutralized: [{ position: 1, round: 1, objectiveBefore: 200, objectiveAfter: 160 }],
-      });
-
+    const refreshFails = async () => {
       audio.emit('error');
       TestBed.tick();
       await new Promise<void>(resolve => setTimeout(resolve, 0));
+    };
 
-      expect(round.trackId()).toBe(2);
+    it('si le serveur a retiré le morceau en route, la carte « Morceau retiré » s\'affiche sans relancer de son', async () => {
+      api.refreshResult = PLAY({
+        session: SESSION({ round: ROUND({ objective: 160, maxScore: 400 }), roundTracks: [TRACK({ position: 1, neutralized: true, points: 0 })] }),
+        current: CURRENT({ position: 2, positionInRound: 2, previewUrl: 'https://cdn/preview-2.mp3' }),
+        neutralized: [{ position: 1, round: 1, objectiveBefore: 200, objectiveAfter: 160 }],
+      });
+      audio.calls.length = 0;
+
+      await refreshFails();
+
+      expect(store.screen()).toBe('playing');
+      expect(store.withdrawn()?.objectiveBefore).toBe(200);
       expect(store.shownRound()?.objective).toBe(160);
-      expect(store.neutralized()).toHaveLength(1);
+      expect(store.pills()).toEqual(['neutralized', 'todo', 'todo', 'todo', 'todo']);
+      expect(store.positionInRound()).toBe(1);
+      expect(round.trackId()).toBeNull();
+      expect(audio.calls.some(c => c.startsWith('load'))).toBe(false);
+    });
+
+    it('« Morceau suivant » depuis la carte du retrait lance le morceau suivant dans le clic', async () => {
+      api.refreshResult = PLAY({
+        session: SESSION({ round: ROUND({ objective: 160, maxScore: 400 }) }),
+        current: CURRENT({ position: 2, positionInRound: 2, previewUrl: 'https://cdn/preview-2.mp3' }),
+        neutralized: [{ position: 1, round: 1, objectiveBefore: 200, objectiveAfter: 160 }],
+      });
+      await refreshFails();
+      audio.calls.length = 0;
+
+      store.next();
+
+      expect(audio.calls[0]).toBe('unlock');
+      expect(audio.calls).toContain('load https://cdn/preview-2.mp3');
+      expect(store.withdrawn()).toBeNull();
+      expect(round.trackId()).toBe(2);
+    });
+
+    it('le dernier morceau de la manche retiré : la carte du retrait, puis le bilan, jamais le son suivant tout seul', async () => {
+      api.refreshResult = PLAY({
+        session: SESSION({ roundsPassed: 1, round: ROUND({ round: 2, objective: 333, maxScore: 665 }) }),
+        current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3' }),
+        neutralized: [{ position: 1, round: 1, objectiveBefore: 200, objectiveAfter: 160 }],
+        roundSummaries: [summary({ objective: 160 })],
+      });
+      audio.calls.length = 0;
+      await refreshFails();
+
+      expect(store.withdrawn()).not.toBeNull();
+      expect(store.nextIsSummary()).toBe(true);
+
+      store.next();
+
+      expect(store.screen()).toBe('round_end');
+      expect(audio.calls.some(c => c.startsWith('load'))).toBe(false);
+
+      store.next();
+
+      expect(store.screen()).toBe('playing');
+      expect(audio.calls).toContain('load https://cdn/preview-6.mp3');
+    });
+  });
+
+  describe('morceau retiré après une réponse', () => {
+    beforeEach(async () => {
+      await startRun();
+    });
+
+    it('la carte de réponse, puis celle du retrait, puis le morceau suivant', async () => {
+      api.answerResult = PLAY({
+        session: SESSION({ totalScore: 100, round: ROUND({ score: 100, objective: 160, maxScore: 400 }), roundTracks: [TRACK(), TRACK({ position: 2, neutralized: true, points: 0 })] }),
+        revealed: TRACK(),
+        neutralized: [{ position: 2, round: 1, objectiveBefore: 200, objectiveAfter: 160 }],
+        current: CURRENT({ position: 3, positionInRound: 3, previewUrl: 'https://cdn/preview-3.mp3' }),
+      });
+      await send();
+
+      expect(store.revealed()).not.toBeNull();
+      expect(store.shownRound()?.objective).toBe(200);
+
+      store.next();
+
+      expect(store.withdrawn()?.position).toBe(2);
+      expect(store.shownRound()?.objective).toBe(160);
+      expect(store.pills()).toEqual(['found', 'neutralized', 'todo', 'todo', 'todo']);
+
+      store.next();
+
+      expect(round.trackId()).toBe(3);
+      expect(store.pills()).toEqual(['found', 'neutralized', 'current', 'todo', 'todo']);
     });
   });
 });

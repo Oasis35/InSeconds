@@ -15,7 +15,7 @@ import { SheriffConfig } from '@softarc/sheriff-core';
  * Un module a le droit d'en importer un autre si **chacun** de ses tags autorise au moins un tag
  * de la cible.
  */
-const DOMAINS = ['gameplay', 'daily', 'runs', 'account', 'admin', 'home'] as const;
+const DOMAINS = ['gameplay', 'daily', 'runs', 'account', 'admin'] as const;
 const LAYERS = ['domain', 'data-access', 'feature', 'ui'] as const;
 
 const domainModules = Object.fromEntries(
@@ -34,7 +34,6 @@ const DOMAIN_DEPENDENCIES: Record<(typeof DOMAINS)[number], string[]> = {
   account: [],
   // L'admin réutilise l'histogramme « en combien de temps les autres ont trouvé » de la manche (avec les chiffres au-dessus des barres).
   admin: ['domain:account', 'domain:gameplay'],
-  home: [],
 };
 
 export const config: SheriffConfig = {
