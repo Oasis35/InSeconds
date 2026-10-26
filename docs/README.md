@@ -28,7 +28,7 @@ InSeconds est un **blind test musical quotidien**. La lecture démarre au palier
 
 ## État du dépôt
 
-Le code est dans `src/` ; le staging (`dev.inseconds.cc`) reçoit d'abord chaque PR (`env/staging`), la prod suit par un merge vers `main`. Prochaines étapes : CSP bloquante (#300), fin de la reprise des anciens cookies (#237), puis la suite du mode Run, dont le socle back est posé ([`runs/`](runs/README.md)). Le détail est dans [`taches.md`](taches.md).
+Le code est dans `src/` ; le staging (`dev.inseconds.cc`) reçoit d'abord chaque PR (`env/staging`), la prod suit par un merge vers `main`. Prochaines étapes : CSP bloquante (#300), fin de la reprise des anciens cookies (#237), puis la suite du mode Run, jouable sur invitation ([`runs/`](runs/README.md)). Le détail est dans [`taches.md`](taches.md).
 
 ## Où trouver quoi
 
@@ -42,7 +42,7 @@ Chaque information n'est écrite qu'à un seul endroit, pour éviter que des cop
 | Détail frontend (domaines, stores, lecteur, E2E) | [`src/front/CLAUDE.md`](../src/front/CLAUDE.md) |
 | Règles de jeu (scoring, anti-triche, série, indices) | [`regles-du-jeu.md`](regles-du-jeu.md) |
 | Ce qui reste à faire | [`taches.md`](taches.md) |
-| **Nouveau mode Run (Platines)**, back de la partie posé, écrans à venir | |
+| **Nouveau mode Run (Platines)**, partie jouable sur invitation, lien d'un ami et comparaison à venir | |
 | Sommaire du mode | [`runs/README.md`](runs/README.md) |
 | Règles du proto 1 | [`runs/regles.md`](runs/regles.md) |
 | Écrans (maquettes de référence) | [`runs/ecrans.md`](runs/ecrans.md) |

@@ -11,13 +11,18 @@ import { ConfirmDialogData } from '../../ui/modal/confirm-dialog.component';
 import { LeaveGuard } from '../../gameplay/feature/leave-guard';
 import { ModalService } from '../../ui/modal/modal.service';
 import { DecorBackgroundComponent } from '../../ui/decor-background/decor-background.component';
+import { ResumeScreenComponent } from '../../gameplay/ui/resume-screen/resume-screen.component';
 import { RunGameStore } from '../data-access/run-game.store';
+import { RunShare } from '../data-access/run-share';
 import { RunAnswerCardComponent } from '../ui/run-answer-card/run-answer-card.component';
+import { RunFinishComponent } from '../ui/run-finish/run-finish.component';
 import { RunHeaderComponent } from '../ui/run-header/run-header.component';
 import { RunObjectiveComponent } from '../ui/run-objective/run-objective.component';
 import { RunPillsComponent } from '../ui/run-pills/run-pills.component';
+import { RunRoundSummaryComponent } from '../ui/run-round-summary/run-round-summary.component';
 import { RunStatusScreenComponent } from '../ui/run-status-screen/run-status-screen.component';
 import { RunWelcomeScreenComponent } from '../ui/run-welcome-screen/run-welcome-screen.component';
+import { RunWithdrawnCardComponent } from '../ui/run-withdrawn-card/run-withdrawn-card.component';
 import { reloadMomentFor } from './reload-moment';
 
 /**
@@ -29,15 +34,17 @@ import { reloadMomentFor } from './reload-moment';
   selector: 'app-runs-page',
   imports: [
     TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, RunHeaderComponent, RunObjectiveComponent, RunPillsComponent,
-    RunAnswerCardComponent, RunWelcomeScreenComponent, RunStatusScreenComponent,
+    RunAnswerCardComponent, RunWithdrawnCardComponent, RunRoundSummaryComponent, RunFinishComponent, RunWelcomeScreenComponent,
+    RunStatusScreenComponent, ResumeScreenComponent,
   ],
-  providers: [RunGameStore, TrackRoundStore],
+  providers: [RunGameStore, TrackRoundStore, RunShare],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './runs.page.html',
   host: { '(window:beforeunload)': 'onBeforeUnload($event)' },
 })
 export class RunsPage implements OnInit {
   protected readonly store = inject(RunGameStore);
+  protected readonly share = inject(RunShare);
   protected readonly language = inject(LanguageService);
   /** Le code de la dernière erreur serveur (`traceId`), affiché sur l'écran d'erreur comme au Daily. */
   protected readonly errorReporting = inject(ErrorReportingService);

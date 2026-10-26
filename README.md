@@ -23,8 +23,8 @@
 - Guest mode: play without signing up (no leaderboard, only global stats)
 - Optional linked accounts (open signup, passwordless magic-link login) - keeps history/streak across devices; guest play stays fully open regardless
 - Daily streak shown in the header (details panel on click), with streak freezes for linked accounts (1 free on signup, +1 every 7 days, 2 max, used automatically on a missed day)
-- After playing, see where you stand: an equalizer of today's scores with the lowest, median and highest score, plus the share of players you beat (from 5 players)
-- Share your score in Wordle-style emoji format via the clipboard
+- After playing, a single "today's result" screen: your score with your game as five small bars, the countdown, one line under the score (your standout moment when there is one, otherwise the share of players you beat, from 5 players), an equalizer of today's scores (lowest, median, highest), your tracks folded away
+- Share your score in Wordle-style emoji format (✅ artist and title, 🔶 one of them, 🅾️ none) through the phone's share menu (clipboard on a computer)
 - Available in French and English - auto-detected from the browser, switchable anytime from the footer (choice saved in localStorage)
 - Privacy policy and legal notice at `/privacy` (also `/confidentialite`)
 - Installable on the home screen (PWA), updated automatically at a safe moment (never in the middle of a round)
@@ -137,7 +137,7 @@ cd src/front/InSeconds.Client
 E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=<DB_PASSWORD>" npm run e2e
 ```
 
-`playwright.config.ts` starts the test host (port 5177) and `ng serve` (port 5178). **126 tests** across 31 files: game, login, profile, devices, your data, streak and freezes, admin…
+`playwright.config.ts` starts the test host (port 5177) and `ng serve` (port 5178). **139 tests** across 33 files: game, login, profile, devices, your data, streak and freezes, Run mode, admin…
 
 ## Documentation
 
@@ -149,7 +149,7 @@ The detailed docs are in French.
 - [`docs/regles-du-jeu.md`](docs/regles-du-jeu.md) - game rules (scoring, extensions, anti-cheat, streak) - what is actually enforced vs merely configured
 - [`docs/exploitation/`](docs/exploitation/) - VPS deployment, staging, backups, CI, emergency access
 - [`docs/conformite/`](docs/conformite/) - Deezer API terms, GDPR
-- [`docs/runs/`](docs/runs/README.md) - the Run mode (back-end game in place, screens to come)
+- [`docs/runs/`](docs/runs/README.md) - the Run mode (game playable behind an invitation; friend links and comparison to come)
 - [`docs/taches.md`](docs/taches.md) - what is left to do
 - [`docs/historique/`](docs/historique/) - the 2026 rewrite
 

@@ -33,7 +33,7 @@ interface DailyState {
   streakToastDismissedAt: number | null;
   gelToastDismissed: boolean;
   stats: DayStats | null;
-  /** Les réponses d'hier, pour l'encart de « déjà joué » ; vide sans défi hier (ou si la lecture échoue). */
+  /** Les réponses d'hier, au bas du résultat du jour ; vide sans défi hier (ou si la lecture échoue). */
   yesterday: ArchiveDay | null;
   secondsLeft: number;
 }
@@ -414,6 +414,7 @@ export const DailyGameStore = signalStore(
         patchState(store, { screen: 'done', gelToastDismissed: false });
         startCountdown();
         void loadStats();
+        void loadYesterday();
         void refreshStreak();
       },
 

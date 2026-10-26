@@ -1,5 +1,5 @@
 import {
-  ChangeDetectionStrategy, Component, DestroyRef, OnInit, effect, inject, signal, untracked,
+  ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, signal, untracked,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -21,17 +21,19 @@ import { DailyShare } from '../data-access/daily-share';
 import { GuestStreakNotice } from '../data-access/guest-streak-notice';
 import { LostStreakNotice } from '../data-access/lost-streak-notice';
 import { ThanksNotice } from '../data-access/thanks-notice';
-import { AlreadyPlayedScreenComponent } from '../ui/already-played-screen/already-played-screen.component';
+import { AbandonedScreenComponent } from '../ui/abandoned-screen/abandoned-screen.component';
+import { DayResultScreenComponent } from '../ui/day-result-screen/day-result-screen.component';
+import { rowsFromResults, rowsFromStats } from '../ui/day-result-screen/result-rows';
 import { DailyBrandComponent } from '../ui/daily-brand/daily-brand.component';
 import { DailyFooterComponent } from '../ui/daily-footer/daily-footer.component';
 import { DailyProgressComponent } from '../ui/daily-progress/daily-progress.component';
 import { DeezerBadgeComponent } from '../../gameplay/ui/deezer-badge/deezer-badge.component';
-import { FinalRecapScreenComponent } from '../ui/final-recap-screen/final-recap-screen.component';
 import { GelEarnedToastComponent } from '../ui/gel-earned-toast/gel-earned-toast.component';
 import { GelUsedToastComponent } from '../ui/gel-used-toast/gel-used-toast.component';
 import { GuestStreakToastComponent } from '../ui/guest-streak-toast/guest-streak-toast.component';
 import { LostStreakToastComponent } from '../ui/lost-streak-toast/lost-streak-toast.component';
-import { ResumeScreenComponent } from '../ui/resume-screen/resume-screen.component';
+import { ResumeScreenComponent } from '../../gameplay/ui/resume-screen/resume-screen.component';
+import { HomeModeEntriesComponent } from '../../core/shell/home-mode-entries/home-mode-entries.component';
 import { ScoreCountComponent } from '../ui/score-count/score-count.component';
 import { countUp } from '../ui/score-count/count-up';
 import { StatusScreenComponent } from '../ui/status-screen/status-screen.component';
@@ -41,7 +43,7 @@ import { ThanksDialogComponent, ThanksDialogData } from '../ui/thanks-dialog/tha
 import { WelcomeScreenComponent } from '../ui/welcome-screen/welcome-screen.component';
 import { reloadMomentFor } from './reload-moment';
 
-/** Le message de remerciement s'ouvre après la montée du score final (1 s) sur le récap, un peu plus tôt sur « déjà joué ». */
+/** Le message de remerciement s'ouvre après la montée du score final (1 s) juste après la partie, un peu plus tôt aux visites suivantes. */
 const THANKS_DELAY_AFTER_GAME_MS = 1500;
 const THANKS_DELAY_MS = 800;
 
@@ -56,7 +58,7 @@ type ThanksScreen = 'done' | 'already_played';
   selector: 'app-daily-page',
   imports: [
     TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, DailyBrandComponent, DailyProgressComponent, DailyFooterComponent,
-    WelcomeScreenComponent, ResumeScreenComponent, StatusScreenComponent, AlreadyPlayedScreenComponent, FinalRecapScreenComponent,
+    WelcomeScreenComponent, ResumeScreenComponent, HomeModeEntriesComponent, StatusScreenComponent, AbandonedScreenComponent, DayResultScreenComponent,
     StreakPillComponent, GuestStreakToastComponent, LostStreakToastComponent, GelUsedToastComponent, GelEarnedToastComponent,
     DeezerBadgeComponent, ScoreCountComponent, AccountLinkComponent,
   ],
@@ -91,8 +93,11 @@ export class DailyPage implements OnInit {
 
   protected readonly shareCopied = this.dailyShare.copied;
   protected readonly shareFailed = this.dailyShare.failed;
-  /** Le score final qui monte de 0 à sa valeur (récap). */
+  /** Le score final qui monte de 0 à sa valeur juste après la partie. */
   protected readonly displayedTotal = signal(0);
+  /** Les morceaux du résultat du jour : les réponses de la partie qui vient de finir, sinon celles relues dans les stats. */
+  protected readonly resultRows = computed(() =>
+    this.store.screen() === 'done' ? rowsFromResults(this.store.results(), this.store.stats()) : rowsFromStats(this.store.stats()));
   protected readonly isEnglish = () => this.language.current() === 'en';
 
   constructor() {
@@ -109,7 +114,7 @@ export class DailyPage implements OnInit {
       if (this.store.screen() !== 'playing') this.leaveGuard.release();
     });
 
-    // Le score final monte de 0 à sa valeur en entrant dans le récap.
+    // Le score final monte de 0 à sa valeur juste après la partie.
     effect(() => {
       if (this.store.screen() !== 'done') return;
       const total = untracked(() => this.store.totalScore());
@@ -117,7 +122,7 @@ export class DailyPage implements OnInit {
       countUp(total, v => this.displayedTotal.set(v), 1000);
     });
 
-    // Le message de remerciement, une fois par navigateur : après une partie (récap ou « déjà joué »), jamais en pleine manche.
+    // Le message de remerciement, une fois par navigateur : sur le résultat du jour (juste après la partie ou plus tard), jamais en pleine manche.
     effect(() => {
       const screen = this.store.screen();
       if (screen === 'done' || screen === 'already_played') untracked(() => void this.offerThanks(screen));
@@ -214,7 +219,7 @@ export class DailyPage implements OnInit {
     else if (outcome === 'failed') this.toasts.show('daily.thanks.copyFailed', { tone: 'error' });
   }
 
-  /** Copie le résumé de la partie : un `✅` ou `❌` par morceau, le score et le lien. */
+  /** Partage le résumé de la partie (menu du téléphone, sinon presse-papier) : un `✅`, `🔶` ou `🅾️` par morceau, le score et le lien. */
   protected share(): void {
     const stats = this.store.stats();
     const done = this.store.screen() === 'done';

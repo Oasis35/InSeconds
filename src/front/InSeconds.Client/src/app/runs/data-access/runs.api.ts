@@ -47,6 +47,11 @@ export class RunsApi {
     return toMe(await firstValueFrom(this.client.getRunsMe()));
   }
 
+  /** L'état d'une partie, en lecture seule et sans extrait (l'écran de reprise). */
+  async session(sessionId: number): Promise<RunSession> {
+    return toSession(await firstValueFrom(this.client.getRunSession(sessionId)));
+  }
+
   /** Lance une playlist neuve et la partie de son auteur. */
   launch(): Promise<StartOutcome> {
     return this.start(() => this.client.launchRun());

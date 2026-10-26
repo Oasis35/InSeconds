@@ -4,11 +4,10 @@ import { RunRecord } from '../../domain/run';
 import { RunWelcomeScreenComponent } from './run-welcome-screen.component';
 
 describe('RunWelcomeScreenComponent', () => {
-  function render(inputs: { record?: RunRecord | null; hasPending?: boolean } = {}) {
+  function render(inputs: { record?: RunRecord | null } = {}) {
     TestBed.configureTestingModule({ providers: [provideTranslateService()] });
     const fixture = TestBed.createComponent(RunWelcomeScreenComponent);
     fixture.componentRef.setInput('record', inputs.record ?? null);
-    fixture.componentRef.setInput('hasPending', inputs.hasPending ?? false);
     fixture.detectChanges();
     return { fixture, element: fixture.nativeElement as HTMLElement };
   }
@@ -24,12 +23,6 @@ describe('RunWelcomeScreenComponent', () => {
     const { element } = render({ record: { bestScore: 900, bestRoundsPassed: 2, isNew: false } });
 
     expect(element.querySelector('[data-testid="run-record"]')).not.toBeNull();
-  });
-
-  it('propose de reprendre la partie en cours', () => {
-    const { element } = render({ hasPending: true });
-
-    expect(element.querySelector('[data-testid="run-start"]')?.textContent).toContain('runs.welcome.resume');
   });
 
   it("le bouton lance le mode (c'est le clic qui déverrouille le son)", () => {

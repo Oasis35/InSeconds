@@ -23,8 +23,8 @@
 - Mode guest : joue sans créer de compte (pas de classement, seulement des stats globales)
 - Comptes utilisateurs optionnels (inscription ouverte à tous, connexion sans mot de passe par lien magique) - conserve historique/streak entre appareils ; le jeu guest reste ouvert à tous
 - Série quotidienne affichée dans l'en-tête (panneau de détail au clic), avec des gels de série pour les comptes connectés (1 offert à l'inscription, +1 tous les 7 jours, 2 max, utilisés automatiquement sur un jour manqué)
-- Après la partie, tu vois où tu te situes : un égaliseur des scores du jour avec le plus bas, la médiane et le plus haut, et la part des joueurs que tu bats (à partir de 5 joueurs)
-- Partage de score en format emoji Wordle (copie dans le presse-papier)
+- Après la partie, un seul écran « résultat du jour » : ton score avec ta partie en cinq petites barres, le compte à rebours, une phrase sous le score (ton moment fort s'il y en a un, sinon la part des joueurs que tu bats, à partir de 5 joueurs), un égaliseur des scores du jour (plus bas, médiane, plus haut), tes morceaux repliés
+- Partage de score en format emoji Wordle (✅ artiste et titre, 🔶 l'un des deux, 🅾️ rien ; menu de partage du téléphone, copie dans le presse-papier sur ordinateur)
 - Disponible en français et en anglais - détecté automatiquement depuis le navigateur, changeable à tout moment depuis le pied de page (choix sauvegardé en localStorage)
 - Page confidentialité et mentions légales sur `/privacy` (alias `/confidentialite`)
 - Installable sur l'écran d'accueil (PWA), mise à jour automatiquement à un moment sûr (jamais en pleine manche)
@@ -137,7 +137,7 @@ cd src/front/InSeconds.Client
 E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=<DB_PASSWORD>" npm run e2e
 ```
 
-`playwright.config.ts` démarre l'hôte de test (port 5177) et `ng serve` (port 5178). **126 tests** répartis sur 31 fichiers : jeu, connexion, profil, appareils, tes données, série et gels, admin…
+`playwright.config.ts` démarre l'hôte de test (port 5177) et `ng serve` (port 5178). **139 tests** répartis sur 33 fichiers : jeu, connexion, profil, appareils, tes données, série et gels, mode Run, admin…
 
 ## Documentation
 
@@ -147,7 +147,7 @@ E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inse
 - [`docs/regles-du-jeu.md`](docs/regles-du-jeu.md) - règles de jeu (scoring, prolongation, anti-triche, série) - ce qui est réellement appliqué vs juste configuré
 - [`docs/exploitation/`](docs/exploitation/) - déploiement sur le VPS, staging, sauvegardes, CI, accès de secours
 - [`docs/conformite/`](docs/conformite/) - conditions de l'API Deezer, RGPD
-- [`docs/runs/`](docs/runs/README.md) - le mode Run (partie posée côté back, écrans à venir)
+- [`docs/runs/`](docs/runs/README.md) - le mode Run (partie jouable sur invitation ; lien d'un ami et comparaison à venir)
 - [`docs/taches.md`](docs/taches.md) - ce qui reste à faire
 - [`docs/historique/`](docs/historique/) - la refonte de 2026
 

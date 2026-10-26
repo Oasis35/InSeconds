@@ -3,8 +3,8 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { RunRecord } from '../../domain/run';
 
 /**
- * L'accueil du mode : le nom, « accès anticipé », la promesse, le record du joueur s'il en a un, puis « Lancer une partie » (une playlist neuve) ou
- * « Reprendre la partie » (celle qui était en cours). Le clic sur ce bouton est le geste qui déverrouille le son.
+ * L'accueil du mode : le nom, « accès anticipé », la promesse, le record du joueur s'il en a un, puis « Lancer une partie » (une playlist neuve ; une partie
+ * en cours passe par l'écran de reprise). Le clic sur ce bouton est le geste qui déverrouille le son.
  */
 @Component({
   selector: 'app-run-welcome-screen',
@@ -26,14 +26,12 @@ import { RunRecord } from '../../domain/run';
       <button type="button" (click)="start.emit()" data-testid="run-start"
         class="w-full max-w-xs py-4 rounded-(--radius-button) text-sm font-bold tracking-wide uppercase transition touch-manipulation"
         style="font-family:var(--font-display);letter-spacing:0.06em;background:var(--gradient-primary);color:var(--text-on-primary);box-shadow:var(--glow-primary)">
-        {{ (hasPending() ? 'runs.welcome.resume' : 'runs.welcome.launch') | translate }}
+        {{ 'runs.welcome.launch' | translate }}
       </button>
     </div>
   `,
 })
 export class RunWelcomeScreenComponent {
   readonly record = input<RunRecord | null>(null);
-  /** Une partie est en cours : le bouton la reprend au lieu d'en lancer une autre. */
-  readonly hasPending = input(false);
   readonly start = output();
 }

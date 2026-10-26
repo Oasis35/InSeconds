@@ -11,6 +11,7 @@ import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 import { provideAccount } from './account/feature/provide-account';
 import { provideAdmin } from './admin/feature/provide-admin';
 import { provideDaily } from './daily/feature/provide-daily';
+import { provideRuns } from './runs/feature/provide-runs';
 import { routes } from './app.routes';
 import { provideViewportReporting } from './core/diagnostics/viewport-reporter';
 import { GlobalErrorHandler } from './core/errors/global-error-handler';
@@ -36,6 +37,7 @@ export const appConfig: ApplicationConfig = {
     provideAccount(),
     provideAdmin(),
     provideDaily(),
+    provideRuns(),
     // Désactivé en dev (`ng serve`) : un service worker y servirait d'anciens fichiers.
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),

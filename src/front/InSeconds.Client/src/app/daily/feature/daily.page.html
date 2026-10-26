@@ -40,6 +40,8 @@
           [linked]="store.linked()"
           [pseudo]="session.player()?.pseudo ?? null"
           (startGame)="store.begin()" />
+        <!-- Les autres modes (la carte Platines pour un compte qui y a accès) : rien d'autre ne change sur l'accueil. -->
+        <app-home-mode-entries />
       }
 
       @case ('resume_prompt') {
@@ -47,7 +49,8 @@
           [completedCount]="store.peekCompletedCount()"
           [trackCount]="store.peekTracksCount()"
           [abandonLoading]="store.abandonLoading()"
-          [linked]="store.linked()"
+          [warningBodyKey]="store.linked() ? 'daily.resume.warningBodyLinked' : 'daily.resume.warningBody'"
+          [showLoginCta]="!store.linked()"
           (resumeGame)="store.begin()"
           (abandon)="store.abandonFromResume()" />
       }
@@ -61,15 +64,21 @@
       }
 
       @case ('already_played') {
-        <app-already-played-screen
-          [stats]="store.stats()"
-          [yesterday]="store.yesterday()"
-          [abandoned]="store.abandoned()"
-          [countdown]="store.countdown()"
-          [shareCopied]="shareCopied()"
-          [shareFailed]="shareFailed()"
-          [lang]="language.current()"
-          (share)="share()" />
+        @if (store.abandoned()) {
+          <app-abandoned-screen [countdown]="store.countdown()" />
+        } @else {
+          <app-day-result-screen
+            [score]="store.stats()?.yourScore ?? null"
+            [rows]="resultRows()"
+            [stats]="store.stats()"
+            [yesterday]="store.yesterday()"
+            [countdown]="store.countdown()"
+            [shareCopied]="shareCopied()"
+            [shareFailed]="shareFailed()"
+            [lang]="language.current()"
+            (share)="share()" />
+        }
+        <app-home-mode-entries />
       }
 
       @case ('playing') {
@@ -98,14 +107,16 @@
       }
 
       @case ('done') {
-        <app-final-recap-screen
-          [results]="store.results()"
+        <app-day-result-screen
+          [fresh]="true"
+          [score]="displayedTotal()"
+          [rows]="resultRows()"
           [stats]="store.stats()"
-          [displayedScore]="displayedTotal()"
+          [yesterday]="store.yesterday()"
+          [countdown]="store.countdown()"
           [shareCopied]="shareCopied()"
           [shareFailed]="shareFailed()"
           [canShare]="store.canShare()"
-          [countdown]="store.countdown()"
           [lang]="language.current()"
           (share)="share()" />
       }
