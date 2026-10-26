@@ -66,6 +66,13 @@ describe('DayResultScreenComponent', () => {
     expect(render().byTestId('day-highlight')).toHaveLength(0); // un seul joueur : sous le seuil
   });
 
+  it('une seule phrase sous le score : le moment fort prend la place de « mieux que X % »', () => {
+    const fast = row({ artist: 'Daft Punk', distribution: [{ durationSeconds: 0.5, count: 1 }, { durationSeconds: 3, count: 9 }], notFoundCount: 10 });
+    const { byTestId } = render({ rows: [fast], stats: stats() });
+    expect(byTestId('day-highlight')).toHaveLength(1);
+    expect(byTestId('score-better-than')).toHaveLength(0);
+  });
+
   it('une barre par morceau : verte, rouge ou moitié-moitié', () => {
     const { byTestId } = render({ rows: [
       row({ position: 1 }),
@@ -79,7 +86,7 @@ describe('DayResultScreenComponent', () => {
     expect(bars[2].style.background).toContain('--color-fail');
   });
 
-  it('les barres déplient la liste des morceaux', () => {
+  it('« Tes 5 morceaux » déplie la liste des morceaux', () => {
     const { fixture, element, byTestId } = render();
     const toggle = byTestId('tracks-toggle')[0] as HTMLButtonElement;
     expect(element.querySelector('app-track-results-list')).toBeNull();

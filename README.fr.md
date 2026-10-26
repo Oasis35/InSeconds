@@ -23,7 +23,7 @@
 - Mode guest : joue sans créer de compte (pas de classement, seulement des stats globales)
 - Comptes utilisateurs optionnels (inscription ouverte à tous, connexion sans mot de passe par lien magique) - conserve historique/streak entre appareils ; le jeu guest reste ouvert à tous
 - Série quotidienne affichée dans l'en-tête (panneau de détail au clic), avec des gels de série pour les comptes connectés (1 offert à l'inscription, +1 tous les 7 jours, 2 max, utilisés automatiquement sur un jour manqué)
-- Après la partie, un seul écran « résultat du jour » : ton score, le compte à rebours, la part des joueurs que tu bats et ton moment fort (à partir de 5 joueurs), un égaliseur des scores du jour (plus bas, médiane, plus haut), ta partie en barres qui déplie les morceaux
+- Après la partie, un seul écran « résultat du jour » : ton score avec ta partie en cinq petites barres, le compte à rebours, une phrase sous le score (ton moment fort s'il y en a un, sinon la part des joueurs que tu bats, à partir de 5 joueurs), un égaliseur des scores du jour (plus bas, médiane, plus haut), tes morceaux repliés
 - Partage de score en format emoji Wordle (✅ artiste et titre, 🔶 l'un des deux, 🅾️ rien ; menu de partage du téléphone, copie dans le presse-papier sur ordinateur)
 - Disponible en français et en anglais - détecté automatiquement depuis le navigateur, changeable à tout moment depuis le pied de page (choix sauvegardé en localStorage)
 - Page confidentialité et mentions légales sur `/privacy` (alias `/confidentialite`)
