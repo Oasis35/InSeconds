@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, ViewContainerRef, inject, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, ViewContainerRef, inject, viewChild } from '@angular/core';
 import { HOME_MODE_ENTRIES } from './home-mode-entries';
 
 /**
@@ -10,15 +10,19 @@ import { HOME_MODE_ENTRIES } from './home-mode-entries';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: '<ng-container #slot />',
 })
-export class HomeModeEntriesComponent {
+export class HomeModeEntriesComponent implements OnInit {
   private readonly slot = viewChild.required('slot', { read: ViewContainerRef });
+  private readonly entries = inject(HOME_MODE_ENTRIES);
+  private destroyed = false;
 
   constructor() {
-    let destroyed = false;
-    inject(DestroyRef).onDestroy(() => (destroyed = true));
+    inject(DestroyRef).onDestroy(() => (this.destroyed = true));
+  }
+
+  ngOnInit(): void {
     // Une entrée qui ne se charge pas (réseau) ne casse pas l'accueil : elle n'apparaît simplement pas.
-    void Promise.all(inject(HOME_MODE_ENTRIES).map(entry => entry.load().catch(() => null))).then(components => {
-      if (destroyed) return;
+    void Promise.all(this.entries.map(entry => entry.load().catch(() => null))).then(components => {
+      if (this.destroyed) return;
       for (const component of components) {
         if (component) this.slot().createComponent(component);
       }
