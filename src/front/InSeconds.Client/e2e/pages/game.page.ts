@@ -5,10 +5,10 @@ import { BlindRoundPage } from './blind-round.page';
 export class GamePage {
   readonly startButton: Locator;
   readonly noChallengeHeading: Locator;
-  readonly alreadyPlayedHeading: Locator;
+  readonly alreadyPlayedScreen: Locator;
   readonly abandonedHeading: Locator;
   readonly countdown: Locator;
-  readonly finalScoreLabel: Locator;
+  readonly doneScreen: Locator;
   readonly shareButton: Locator;
   readonly shareCopiedButton: Locator;
   readonly retryButton: Locator;
@@ -22,7 +22,7 @@ export class GamePage {
   readonly leaveCancelButton: Locator;
   // Overlay « Service indisponible » (backend KO)
   readonly serviceDownHeading: Locator;
-  // Liste de morceaux mutualisée (récap + déjà joué) + pop-up histogramme
+  // La partie en barres, qui déplie la liste des morceaux, + pop-up histogramme
   readonly showTracksButton: Locator;
   readonly trackScoreButtons: Locator;
   readonly trackChip: Locator;
@@ -31,10 +31,11 @@ export class GamePage {
   constructor(readonly page: Page) {
     this.startButton           = page.getByRole('button', { name: 'Commencer' });
     this.noChallengeHeading    = page.getByText("Pas de défi aujourd'hui");
-    this.alreadyPlayedHeading  = page.getByRole('heading', { name: 'Prochain défi dans' });
+    // Le même écran « résultat du jour » juste après la partie (data-fresh="true") et aux visites suivantes (data-fresh="false").
+    this.alreadyPlayedScreen   = page.locator('[data-testid="day-result"][data-fresh="false"]');
     this.abandonedHeading      = page.getByText('Partie abandonnée');
     this.countdown             = page.getByText(/^\d{2}:\d{2}:\d{2}$/);
-    this.finalScoreLabel       = page.getByText('Score final');
+    this.doneScreen            = page.locator('[data-testid="day-result"][data-fresh="true"]');
     this.shareButton           = page.getByRole('button', { name: /Partager mon score/i });
     this.shareCopiedButton     = page.getByRole('button', { name: /Copié/i });
     this.retryButton           = page.getByRole('button', { name: 'Réessayer' });
@@ -48,7 +49,7 @@ export class GamePage {
     this.leaveConfirmButton    = page.getByRole('button', { name: 'Quitter quand même' });
     this.leaveCancelButton     = page.getByRole('button', { name: 'Continuer à jouer' });
     this.serviceDownHeading    = page.getByRole('heading', { name: 'Service indisponible' });
-    this.showTracksButton      = page.getByRole('button', { name: /Voir les morceaux/i });
+    this.showTracksButton      = page.getByTestId('tracks-toggle');
     // Le bouton du score porte un aria-label (« Voir la répartition des temps ») qui prime sur le texte « +N ».
     this.trackScoreButtons     = page.locator('app-track-results-list')
       .getByRole('button', { name: /répartition des temps/i });
@@ -110,7 +111,7 @@ export class GamePage {
   }
 
   async waitForDone(): Promise<void> {
-    await this.finalScoreLabel.waitFor({ state: 'visible' });
+    await this.doneScreen.waitFor({ state: 'visible' });
   }
 
   async waitForResumePrompt(): Promise<void> {

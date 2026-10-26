@@ -1,14 +1,14 @@
 import { dayLabel, shareLine } from './share-text';
 
 describe('shareLine', () => {
-  it('un ✅ par morceau trouvé (artiste ou titre), un ❌ par morceau raté, sur une ligne', () => {
+  it('✅ artiste et titre, 🔶 l un des deux, 🅾️ rien, sur une ligne', () => {
     expect(shareLine([
       { artistCorrect: true, titleCorrect: true },
       { artistCorrect: true, titleCorrect: false },
       { artistCorrect: false, titleCorrect: true },
       { artistCorrect: false, titleCorrect: false },
       { artistCorrect: true, titleCorrect: true },
-    ])).toBe('✅✅✅❌✅');
+    ])).toBe('✅🔶🔶🅾️✅');
   });
 });
 

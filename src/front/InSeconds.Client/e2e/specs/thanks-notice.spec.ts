@@ -50,7 +50,7 @@ test.describe('Message de remerciement (v2)', () => {
 
     // Rechargement : écran « déjà joué », le message ne revient pas.
     await game.goto();
-    await expect(game.alreadyPlayedHeading).toBeVisible();
+    await expect(game.alreadyPlayedScreen).toBeVisible();
     await page.clock.runFor(2000);
     await expect(dialog).toBeHidden();
   });
@@ -61,11 +61,11 @@ test.describe('Message de remerciement (v2)', () => {
     // Partie jouée avec le message déjà vu (fixture), puis retour sur la page sans l'avoir jamais vu.
     await page.clock.install({ time: Date.now() });
     await game.completeGameThenReload(new BlindRoundPage(page));
-    await expect(game.alreadyPlayedHeading).toBeVisible();
+    await expect(game.alreadyPlayedScreen).toBeVisible();
     await forgetOnNextLoad(page);
 
     await game.goto();
-    await expect(game.alreadyPlayedHeading).toBeVisible();
+    await expect(game.alreadyPlayedScreen).toBeVisible();
     await page.clock.runFor(1000);
     const dialog = page.getByRole('dialog', { name: /Merci de faire vivre InSeconds/ });
     await expect(dialog).toBeVisible();

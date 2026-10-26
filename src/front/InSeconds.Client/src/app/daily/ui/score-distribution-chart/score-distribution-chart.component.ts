@@ -31,28 +31,29 @@ interface ScoreChart {
 // Géométrie du SVG (viewBox 300 × VIEW_HEIGHT).
 const LEFT = 10;
 const WIDTH = 280;
-// 6 cases de haut (au lieu de 8) : l'écran « Déjà joué » doit tenir sans défilement sur mobile.
-// Hauteur par case inchangée (BARS_HEIGHT / SEGMENTS = 12.5).
-const BARS_HEIGHT = 75;
-const SEGMENTS = 6;
+// Égaliseur compact : 5 cases de 10 de haut, et une seule ligne d'étiquettes sous l'axe, pour que l'écran du résultat du jour
+// tienne sur un téléphone.
+const BARS_HEIGHT = 50;
+const SEGMENTS = 5;
 const CELL_GAP_X = 3;
 const CELL_GAP_Y = 3;
-export const VIEW_HEIGHT = BARS_HEIGHT + 36;
+export const VIEW_HEIGHT = BARS_HEIGHT + 22;
 /**
- * Distance minimale entre le centre de l'étiquette de la médiane et les bords, où sont « plus bas » et « plus haut » (environ 40 unités
- * de large chacune) : moins, et « médiane » se pose sur « plus bas » quand la médiane est au plus bas (tous les scores à 0).
+ * Distance minimale entre le centre de l'étiquette « médiane 2250 » (environ 80 unités de large) et les bords, où sont le score le plus
+ * bas et le plus haut (environ 30 unités chacun) : moins, et la médiane se pose sur le plus bas quand elle est au plus bas (tous les scores à 0).
  */
-const LABEL_GUARD = 65;
+const LABEL_GUARD = 75;
 
 const MINE = 'var(--color-accent-3)';
 const OTHERS = 'var(--color-violet)';
 const UNLIT = 'var(--text-sep)';
 
 /**
- * Égaliseur « répartition des scores » (écrans « Déjà joué », « Score final » et page d'un jour passé) :
+ * Égaliseur « répartition des scores » (écran du résultat du jour et page d'un jour passé) :
  * une colonne par tranche de score (`scoreDistribution`), la tranche du
  * joueur en orange, un repère médiane et les scores le plus bas / le plus haut sous l'axe,
- * plus la phrase « Tu fais mieux que X % des joueurs » quand le serveur la donne (5 joueurs au moins, seuil du serveur).
+ * plus la phrase « Tu fais mieux que X % des joueurs » quand le serveur la donne (5 joueurs au moins, seuil du serveur) et que
+ * l'écran ne l'affiche pas lui-même (`showBetterThan`).
  * Présentationnel pur - couleurs via les tokens `:root` de `styles.scss`.
  */
 @Component({
@@ -63,6 +64,8 @@ const UNLIT = 'var(--text-sep)';
 })
 export class ScoreDistributionChartComponent {
   readonly stats = input.required<ScoreChartData>();
+  /** Faux quand l'écran affiche lui-même « Tu fais mieux que X % » (sous le score du résultat du jour). */
+  readonly showBetterThan = input(true);
 
   protected readonly viewHeight = VIEW_HEIGHT;
   protected readonly axisY = BARS_HEIGHT + 4;

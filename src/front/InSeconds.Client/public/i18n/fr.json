@@ -596,8 +596,6 @@
       "abandonedBody": "Reviens demain pour un nouveau défi.",
       "nextChallengeIn": "Prochain défi dans",
       "yourScore": "Ton score",
-      "showTracks": "Voir les morceaux",
-      "hideTracks": "Masquer",
       "coverAlt": "Pochette",
       "averageSeconds": "moy. {{ seconds }}"
     },
@@ -609,15 +607,23 @@
       "score": "{{ score }} pts"
     },
     "done": {
-      "finalScore": "Score final",
       "artist": "Artiste",
-      "title": "Titre",
-      "comeBack": "Reviens demain pour un nouveau défi."
+      "title": "Titre"
+    },
+    "result": {
+      "yourScore": "Ton score du jour",
+      "nextChallenge": "Prochain défi dans",
+      "fastIn": "en",
+      "fastAfter": " : seuls {{ percent }} % ont fait aussi vite.",
+      "rareBefore": "Tu as trouvé",
+      "rareAfter": ", raté par {{ percent }} % des joueurs.",
+      "dayScores": "Les scores du jour",
+      "yourTracks": "Tes {{ count }} morceaux",
+      "showTracks": "Détail",
+      "hideTracks": "Masquer"
     },
     "scoreChart": {
       "median": "médiane",
-      "lowest": "plus bas",
-      "highest": "plus haut",
       "betterThanPrefix": "Tu fais mieux que",
       "betterThanSuffix": "des joueurs",
       "ariaLabel": "Répartition des scores du jour : plus bas {{ lowest }}, médiane {{ median }}, plus haut {{ highest }}"

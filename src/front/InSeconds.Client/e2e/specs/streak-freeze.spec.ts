@@ -179,7 +179,7 @@ test.describe('Gel de série - invité', () => {
     const game = new GamePage(page);
     await game.completeGameThenReload(new BlindRoundPage(page));
 
-    await expect(game.alreadyPlayedHeading).toBeVisible();
+    await expect(game.alreadyPlayedScreen).toBeVisible();
     await expect(page.getByText('Tu aurais gagné un gel !')).toBeVisible();
   });
 });

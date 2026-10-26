@@ -26,11 +26,11 @@ describe('DailyShare', () => {
     { artistCorrect: false, titleCorrect: false },
   ];
 
-  it('partage la date, la ligne de ✅/❌, le score et le lien marqué utm_source=share', async () => {
+  it('partage la date, la ligne de ✅/🔶/🅾️, le score et le lien marqué utm_source=share', async () => {
     await dailyShare.share(tracks, 1850);
     const lines = (share.mock.calls[0][0] as string).split('\n');
     expect(lines[0]).toMatch(/^InSeconds · \d{2}\/\d{2}$/);
-    expect(lines[1]).toBe('✅❌');
+    expect(lines[1]).toBe('🔶🅾️');
     expect(lines[2]).toMatch(/^1\s850 pts$/);
     expect(lines[3]).toBe(SHARE_LINK);
   });

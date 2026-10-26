@@ -596,8 +596,6 @@
       "abandonedBody": "Come back tomorrow for a new challenge.",
       "nextChallengeIn": "Next challenge in",
       "yourScore": "Your score",
-      "showTracks": "Show tracks",
-      "hideTracks": "Hide",
       "coverAlt": "Cover",
       "averageSeconds": "avg. {{ seconds }}"
     },
@@ -609,15 +607,23 @@
       "score": "{{ score }} pts"
     },
     "done": {
-      "finalScore": "Final score",
       "artist": "Artist",
-      "title": "Title",
-      "comeBack": "Come back tomorrow for a new challenge."
+      "title": "Title"
+    },
+    "result": {
+      "yourScore": "Your score today",
+      "nextChallenge": "Next challenge in",
+      "fastIn": "in",
+      "fastAfter": ": only {{ percent }}% were as fast.",
+      "rareBefore": "You found",
+      "rareAfter": ", missed by {{ percent }}% of players.",
+      "dayScores": "Today's scores",
+      "yourTracks": "Your {{ count }} tracks",
+      "showTracks": "Details",
+      "hideTracks": "Hide"
     },
     "scoreChart": {
       "median": "median",
-      "lowest": "lowest",
-      "highest": "highest",
       "betterThanPrefix": "You beat",
       "betterThanSuffix": "of players",
       "ariaLabel": "Today's score distribution: lowest {{ lowest }}, median {{ median }}, highest {{ highest }}"
