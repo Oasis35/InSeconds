@@ -22,7 +22,7 @@ test.describe('Bouton partager', () => {
     expect(lines[0]).toMatch(/^InSeconds · \d{2}\/\d{2}$/);
     expect(lines[1]).toMatch(/^[✅❌]{5}$/);
     expect(lines[2]).toMatch(/^[\d\s\u202f]+ pts$/);
-    expect(lines[3]).toMatch(/^https?:\/\//);
+    expect(lines[3]).toMatch(/^https?:\/\/[^/]+\/\?utm_source=share$/);
     expect(clipText).not.toMatch(/[🎵🏆]/);
   });
 
@@ -64,6 +64,34 @@ test.describe('Bouton partager', () => {
 
     // Le message d'erreur s'affiche, pas d'état "Copié"
     await expect(page.getByText('Impossible de copier dans le presse-papier.')).toBeVisible();
+    await expect(game.shareCopiedButton).not.toBeVisible();
+  });
+
+  test("ouvre le menu de partage du téléphone sur écran tactile, sans rien copier", async ({ page }) => {
+    // Chromium headless n'a pas navigator.share et son pointeur est fin : on simule un téléphone qui en a un.
+    await page.addInitScript(() => {
+      const shared: ShareData[] = [];
+      (window as unknown as { __shared: ShareData[] }).__shared = shared;
+      Object.defineProperty(navigator, 'share', {
+        value: (data: ShareData) => { shared.push(data); return Promise.resolve(); },
+        configurable: true,
+      });
+      const realMatchMedia = window.matchMedia.bind(window);
+      window.matchMedia = (query: string) =>
+        query === '(pointer: coarse)' ? ({ ...realMatchMedia(query), matches: true, media: query } as MediaQueryList) : realMatchMedia(query);
+    });
+    const game = new GamePage(page);
+    await game.startWithFakeClock();
+    await game.finishGame(new BlindRoundPage(page), 5);
+    await game.shareButton.click();
+
+    const shared = await page.evaluate(() => (window as unknown as { __shared: ShareData[] }).__shared);
+    expect(shared).toHaveLength(1);
+    const lines = (shared[0].text ?? '').split('\n');
+    expect(lines[0]).toMatch(/^InSeconds · \d{2}\/\d{2}$/);
+    expect(lines[1]).toMatch(/^[✅❌]{5}$/);
+    expect(lines[3]).toMatch(/^https?:\/\/[^/]+\/\?utm_source=share$/);
+    // Le menu du téléphone suffit : pas de « Copié ! ».
     await expect(game.shareCopiedButton).not.toBeVisible();
   });
 });

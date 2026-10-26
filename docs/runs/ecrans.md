@@ -95,7 +95,7 @@ Le retrait peut arriver après une réponse (le serveur passe au morceau suivant
 Même mise en page dans les deux cas :
 - **Carte du disque**, horizontale : le disque dessiné à gauche (or, argent, bronze, cire, rayé) ; à droite, le nom du disque (« Disque d'or ! »), un badge « Nouveau record » ou « Record : 2 617 », le score final en grand, puis **« 16 / 20 morceaux trouvés »** et 20 petits carrés groupés par manche (vert = trouvé ; une manche non jouée en carrés vides).
 - **4 cases** « Manche N » avec « score / objectif » ; l'objectif manqué en ambre ; **✕** pour une manche non jouée.
-- **Bloc « Lance cette playlist à tes potes »** : « Ils jouent exactement la même playlist que toi : les mêmes 20 morceaux, dans le même ordre. À la fin, vous comparez tous vos scores, manche par manche. » et le bouton **« Partager la playlist »**, qui copie une phrase et l'adresse de la playlist dans le presse-papier (comme le partage du score au Daily) ; le bouton dit « Lien copié ! » quelques secondes.
+- **Bloc « Lance cette playlist à tes potes »** : « Ils jouent exactement la même playlist que toi : les mêmes 20 morceaux, dans le même ordre. À la fin, vous comparez tous vos scores, manche par manche. » et le bouton **« Partager la playlist »**, qui partage une phrase et l'adresse de la playlist (menu de partage du téléphone, sinon presse-papier, comme le partage du score au Daily) ; après une copie, le bouton dit « Lien copié ! » quelques secondes.
 - **« Nouvelle partie »** dessous, en contour neutre : elle lance directement une playlist neuve, le son au même clic (un joueur sans accès voit à la place « Jouer au défi du jour »).
 - Pas de « Voir les morceaux » : la liste a été vue à chaque fin de manche.
 

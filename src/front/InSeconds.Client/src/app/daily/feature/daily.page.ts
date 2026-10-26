@@ -215,7 +215,7 @@ export class DailyPage implements OnInit {
     else if (outcome === 'failed') this.toasts.show('daily.thanks.copyFailed', { tone: 'error' });
   }
 
-  /** Copie le résumé de la partie : un `✅` ou `❌` par morceau, le score et le lien. */
+  /** Partage le résumé de la partie (menu du téléphone, sinon presse-papier) : un `✅` ou `❌` par morceau, le score et le lien. */
   protected share(): void {
     const stats = this.store.stats();
     const done = this.store.screen() === 'done';
