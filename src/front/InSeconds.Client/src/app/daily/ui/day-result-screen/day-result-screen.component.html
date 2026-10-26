@@ -7,6 +7,14 @@
         <h2 class="text-[13px] font-normal" style="font-family:var(--font-body);color:var(--text-muted)">{{ 'daily.result.yourScore' | translate }}</h2>
         <p class="tabular-nums" data-testid="day-score"
            style="font-family:var(--font-score);font-size:3.1rem;font-weight:900;line-height:0.95;letter-spacing:-0.02em;color:var(--text-hi)">{{ score() ?? '-' }}</p>
+        <!-- La partie en un coup d'œil, comme le texte partagé ; le détail se déplie plus bas -->
+        @if (rows().length) {
+          <span class="flex gap-1 mt-2" aria-hidden="true">
+            @for (r of rows(); track r.position) {
+              <span class="w-4 h-1.5 rounded-full" [style.background]="barOf(r)" data-testid="track-bar"></span>
+            }
+          </span>
+        }
       </div>
       <div class="text-right shrink-0">
         <p class="text-[13px]" style="color:var(--text-muted)">{{ 'daily.result.nextChallenge' | translate }}</p>
@@ -15,25 +23,21 @@
       </div>
     </div>
 
-    @if (betterThanPercent() !== null || highlight()) {
-      <p class="text-sm leading-relaxed" style="color:var(--text-light)">
-        @if (betterThanPercent() !== null) {
-          <span class="block" data-testid="score-better-than">
-            {{ 'daily.scoreChart.betterThanPrefix' | translate }}
-            <b style="color:var(--color-accent-3)">{{ betterThanPercent() }} %</b>
-            {{ 'daily.scoreChart.betterThanSuffix' | translate }}
-          </span>
+    <!-- Une seule phrase : le moment fort quand il y en a un, sinon « mieux que X % » -->
+    @if (highlight(); as h) {
+      <p class="text-sm leading-relaxed" style="color:var(--text-light)" data-testid="day-highlight">
+        @if (h.kind === 'fast') {
+          <b style="color:var(--text-hi)">{{ h.artist }}</b> {{ 'daily.result.fastIn' | translate }}
+          <span style="color:var(--color-accent-2)">{{ h.seconds | appSeconds }}</span>{{ 'daily.result.fastAfter' | translate: { percent: h.percent } }}
+        } @else {
+          {{ 'daily.result.rareBefore' | translate }} <b style="color:var(--text-hi)">{{ h.artist }}</b>{{ 'daily.result.rareAfter' | translate: { percent: h.percent } }}
         }
-        @if (highlight(); as h) {
-          <span class="block" data-testid="day-highlight">
-            @if (h.kind === 'fast') {
-              <b style="color:var(--text-hi)">{{ h.artist }}</b> {{ 'daily.result.fastIn' | translate }}
-              <span style="color:var(--color-accent-2)">{{ h.seconds | appSeconds }}</span>{{ 'daily.result.fastAfter' | translate: { percent: h.percent } }}
-            } @else {
-              {{ 'daily.result.rareBefore' | translate }} <b style="color:var(--text-hi)">{{ h.artist }}</b>{{ 'daily.result.rareAfter' | translate: { percent: h.percent } }}
-            }
-          </span>
-        }
+      </p>
+    } @else if (betterThanPercent() !== null) {
+      <p class="text-sm leading-relaxed" style="color:var(--text-light)" data-testid="score-better-than">
+        {{ 'daily.scoreChart.betterThanPrefix' | translate }}
+        <b style="color:var(--color-accent-3)">{{ betterThanPercent() }} %</b>
+        {{ 'daily.scoreChart.betterThanSuffix' | translate }}
       </p>
     }
   </section>
@@ -46,11 +50,11 @@
     </section>
   }
 
-  <!-- La partie en barres : un toucher déplie les morceaux -->
+  <!-- Les morceaux, repliés -->
   @if (rows().length) {
     <div>
       <button type="button" (click)="showTracks.set(!showTracks())" [attr.aria-expanded]="showTracks()" data-testid="tracks-toggle"
-              class="w-full flex flex-col gap-2 py-3 text-left touch-manipulation"
+              class="w-full py-3 text-left touch-manipulation"
               style="border-top:1px solid var(--border-medium);border-bottom:1px solid var(--border-medium)">
         <span class="w-full flex items-center justify-between text-sm">
           <span class="font-semibold" style="color:var(--text-hi)">{{ 'daily.result.yourTracks' | translate: { count: rows().length } }}</span>
@@ -59,11 +63,6 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"
                  class="transition-transform" [class.rotate-180]="showTracks()"><path d="M6 9l6 6 6-6" /></svg>
           </span>
-        </span>
-        <span class="w-full flex gap-1.5" aria-hidden="true">
-          @for (r of rows(); track r.position) {
-            <span class="flex-1 h-2 rounded-[2px]" [style.background]="barOf(r)" data-testid="track-bar"></span>
-          }
         </span>
       </button>
       @if (showTracks()) {
