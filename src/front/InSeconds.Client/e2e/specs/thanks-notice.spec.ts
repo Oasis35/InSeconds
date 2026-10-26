@@ -46,7 +46,7 @@ test.describe('Message de remerciement (v2)', () => {
     await expect(page.getByText("Lien copié, tu n'as plus qu'à le coller")).toBeVisible();
     const clipText = await page.evaluate(() => navigator.clipboard.readText());
     expect(clipText).toContain('Je joue à InSeconds, un blind test par jour.');
-    expect(clipText).toMatch(/https?:\/\//);
+    expect(clipText).toMatch(/https?:\/\/[^/]+\/\?utm_source=share$/);
 
     // Rechargement : écran « déjà joué », le message ne revient pas.
     await game.goto();

@@ -1,18 +1,13 @@
-import { DOCUMENT } from '@angular/common';
 import { Injectable, inject } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
-import { ClipboardService } from '../../core/clipboard/clipboard.service';
+import { SHARE_LINK, ShareOutcome, ShareService } from '../../core/share/share.service';
 import { StoragePort } from '../../core/storage/storage.port';
-import { environment } from '../../../environments/environment';
 import { roundedGamesPlayed } from '../domain/thanks';
 import { DailyApi } from './daily.api';
 
 /** Clé du stockage local, et la valeur qui dit que ce message-là a été vu (un autre message aura une autre valeur). */
 export const THANKS_SEEN_KEY = 'inseconds.thanksNoticeSeen';
 export const THANKS_NOTICE_ID = 'v2-launch';
-
-/** Issue de « Défie un ami » : partagé par le menu du téléphone, copié, annulé par le joueur, ou rien n'a marché. */
-export type ChallengeOutcome = 'shared' | 'copied' | 'cancelled' | 'failed';
 
 /**
  * Le message de remerciement du lancement de la v2, montré **une seule fois par navigateur** après une partie : vu (fermé ou non),
@@ -22,9 +17,8 @@ export type ChallengeOutcome = 'shared' | 'copied' | 'cancelled' | 'failed';
 export class ThanksNotice {
   private readonly storage = inject(StoragePort);
   private readonly api = inject(DailyApi);
-  private readonly clipboard = inject(ClipboardService);
+  private readonly sharing = inject(ShareService);
   private readonly translate = inject(TranslateService);
-  private readonly document = inject(DOCUMENT);
 
   /** Le message n'a pas encore été montré dans ce navigateur. */
   isDue(): boolean {
@@ -45,19 +39,8 @@ export class ThanksNotice {
     }
   }
 
-  /** Le menu de partage du téléphone s'il existe, sinon le texte copié dans le presse-papier. */
-  async challengeFriend(): Promise<ChallengeOutcome> {
-    const text = this.translate.instant('daily.thanks.challengeText', { url: environment.appUrl });
-    const navigator = this.document.defaultView?.navigator;
-    if (navigator?.share) {
-      try {
-        await navigator.share({ text });
-        return 'shared';
-      } catch (error) {
-        // Le joueur a fermé le menu : rien à copier à sa place.
-        if (error instanceof DOMException && error.name === 'AbortError') return 'cancelled';
-      }
-    }
-    return (await this.clipboard.copy(text)) ? 'copied' : 'failed';
+  /** « Défie un ami » : le menu de partage du téléphone, sinon le texte copié dans le presse-papier (`ShareService`). */
+  challengeFriend(): Promise<ShareOutcome> {
+    return this.sharing.share(this.translate.instant('daily.thanks.challengeText', { url: SHARE_LINK }));
   }
 }

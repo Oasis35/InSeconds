@@ -24,7 +24,7 @@
 - Comptes utilisateurs optionnels (inscription ouverte à tous, connexion sans mot de passe par lien magique) - conserve historique/streak entre appareils ; le jeu guest reste ouvert à tous
 - Série quotidienne affichée dans l'en-tête (panneau de détail au clic), avec des gels de série pour les comptes connectés (1 offert à l'inscription, +1 tous les 7 jours, 2 max, utilisés automatiquement sur un jour manqué)
 - Après la partie, tu vois où tu te situes : un égaliseur des scores du jour avec le plus bas, la médiane et le plus haut, et la part des joueurs que tu bats (à partir de 5 joueurs)
-- Partage de score en format emoji Wordle (copie dans le presse-papier)
+- Partage de score en format emoji Wordle (menu de partage du téléphone, copie dans le presse-papier sur ordinateur)
 - Disponible en français et en anglais - détecté automatiquement depuis le navigateur, changeable à tout moment depuis le pied de page (choix sauvegardé en localStorage)
 - Page confidentialité et mentions légales sur `/privacy` (alias `/confidentialite`)
 - Installable sur l'écran d'accueil (PWA), mise à jour automatiquement à un moment sûr (jamais en pleine manche)

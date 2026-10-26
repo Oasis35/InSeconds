@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { provideTranslateService } from '@ngx-translate/core';
-import { ClipboardService } from '../../core/clipboard/clipboard.service';
+import { TranslateService, provideTranslateService } from '@ngx-translate/core';
+import { SHARE_LINK, ShareService } from '../../core/share/share.service';
 import { MemoryStoragePort, StoragePort } from '../../core/storage/storage.port';
 import { FakeDailyApi, provideFakeDailyApi } from './testing/fake-daily-api';
 import { THANKS_NOTICE_ID, THANKS_SEEN_KEY, ThanksNotice } from './thanks-notice';
@@ -8,31 +8,22 @@ import { THANKS_NOTICE_ID, THANKS_SEEN_KEY, ThanksNotice } from './thanks-notice
 describe('ThanksNotice', () => {
   let storage: MemoryStoragePort;
   let api: FakeDailyApi;
-  let copy: ReturnType<typeof vi.fn>;
+  let share: ReturnType<typeof vi.fn>;
   let notice: ThanksNotice;
-  const realShare = Object.getOwnPropertyDescriptor(navigator, 'share');
 
   beforeEach(() => {
     storage = new MemoryStoragePort();
     api = new FakeDailyApi();
-    copy = vi.fn().mockResolvedValue(true);
+    share = vi.fn().mockResolvedValue('shared');
     TestBed.configureTestingModule({
       providers: [
         ThanksNotice, provideTranslateService(), provideFakeDailyApi(api),
         { provide: StoragePort, useValue: storage },
-        { provide: ClipboardService, useValue: { copy } },
+        { provide: ShareService, useValue: { share } },
       ],
     });
     notice = TestBed.inject(ThanksNotice);
   });
-
-  afterEach(() => {
-    if (realShare) Object.defineProperty(navigator, 'share', realShare);
-    else delete (navigator as { share?: unknown }).share;
-  });
-
-  const setShare = (share: ((data: ShareData) => Promise<void>) | undefined) =>
-    Object.defineProperty(navigator, 'share', { value: share, configurable: true });
 
   it("à montrer tant qu'il n'a pas été vu, plus jamais ensuite", () => {
     expect(notice.isDue()).toBe(true);
@@ -52,26 +43,13 @@ describe('ThanksNotice', () => {
     expect(await notice.gamesPlayed()).toBeNull();
   });
 
-  it('partage par le menu du téléphone quand il existe', async () => {
-    const share = vi.fn().mockResolvedValue(undefined);
-    setShare(share);
+  it("« Défie un ami » partage l'invitation avec le lien marqué utm_source=share, et rend l'issue du partage", async () => {
+    const translate = TestBed.inject(TranslateService);
+    translate.setTranslation('fr', { daily: { thanks: { challengeText: 'Viens jouer {{ url }}' } } });
+    translate.use('fr');
     expect(await notice.challengeFriend()).toBe('shared');
-    expect(share).toHaveBeenCalledWith({ text: 'daily.thanks.challengeText' });
-    expect(copy).not.toHaveBeenCalled();
-  });
-
-  it('menu fermé par le joueur : rien de copié', async () => {
-    setShare(() => Promise.reject(new DOMException('annulé', 'AbortError')));
-    expect(await notice.challengeFriend()).toBe('cancelled');
-    expect(copy).not.toHaveBeenCalled();
-  });
-
-  it('sans menu de partage, ou s\'il échoue, copie le texte', async () => {
-    setShare(undefined);
-    expect(await notice.challengeFriend()).toBe('copied');
-    setShare(() => Promise.reject(new DOMException('refusé', 'NotAllowedError')));
-    copy.mockResolvedValue(false);
+    expect(share).toHaveBeenCalledWith(`Viens jouer ${SHARE_LINK}`);
+    share.mockResolvedValue('failed');
     expect(await notice.challengeFriend()).toBe('failed');
-    expect(copy).toHaveBeenCalledTimes(2);
   });
 });
