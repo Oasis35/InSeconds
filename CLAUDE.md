@@ -114,11 +114,11 @@ Tableau de bord `/jobs` (admin seulement ; pas de Cloudflare Access, ni en prod 
 
 Angular 22 standalone, **zoneless** (la détection de changement ne part que des signals, des événements du template ou d'un `markForCheck()`), NgRx SignalStore, ngx-translate (FR/EN), CDK Dialog, lecteur audio sur un élément `Audio` (#309), service worker (PWA, nouvelle version appliquée à un moment sûr). Tests : Vitest en mode navigateur (Chromium).
 
-- **Domaines** calqués sur les modules du back : `account`, `gameplay` (la manche, partagée par les modes), `daily`, `admin`, plus `core/` (transverse) et `ui/` (kit visuel). Chacun en quatre couches : `domain/` (TypeScript pur), `data-access/` (stores, adaptateurs API), `feature/` (pages routées), `ui/` (présentation).
+- **Domaines** calqués sur les modules du back : `account`, `gameplay` (la manche, partagée par les modes), `daily`, `runs`, `admin`, plus `core/` (transverse) et `ui/` (kit visuel). Chacun en quatre couches : `domain/` (TypeScript pur), `data-access/` (stores, adaptateurs API), `feature/` (pages routées), `ui/` (présentation).
 - **Frontières vérifiées par Sheriff** (`npm run lint:arch`, job CI `front`) : `ui` n'importe que `ui`, `core` n'importe aucun domaine, seul `data-access` importe les clients générés, `gameplay` n'importe aucun mode, `domain/` sans Angular ni RxJS.
 - **Un client NSwag par module** (`src/app/api/<module>/api.generated.ts`, **fichier généré commité**), produit depuis le document OpenAPI sauvegardé par l'hôte de test. Après tout changement d'endpoint : régénérer le document côté back, puis `npm run generate-api`, et commiter les deux.
 - **Erreurs** : `ERROR_MESSAGE_KEYS` (`core/errors/error-messages.ts`) est la seule table code → message ; un code inconnu s'affiche avec son `traceId`. Remontée des erreurs JS, des 5xx et des violations CSP vers `POST /api/client-errors`.
-- Routes : `/` → `/daily` ; `/daily/archive/aaaa-mm-jj` (réponses d'un jour passé, `/daily/archive` ouvre le plus récent) ; `/account/**`, `/admin/**`, `/privacy` ; les anciennes adresses (`/blindtest`, `/login`, `/profile`, `/confidentialite`…) sont redirigées en gardant la query string.
+- Routes : `/` → `/daily` ; `/daily/archive/aaaa-mm-jj` (réponses d'un jour passé, `/daily/archive` ouvre le plus récent) ; `/runs` et `/runs/<code>` (le mode Run, le lien d'un ami) ; `/account/**`, `/admin/**`, `/privacy` ; les anciennes adresses (`/blindtest`, `/login`, `/profile`, `/confidentialite`…) sont redirigées en gardant la query string.
 
 ### Conventions
 
@@ -285,7 +285,7 @@ Vue fonctionnelle ; le détail technique de chaque point est dans `src/back/CLAU
 
 - **Fin de la reprise des anciens cookies** (#237, vers le 14/01/2027) : `legacy_tokens`, `LegacyCookieTransitionMiddleware` et anciennes clés Data Protection non chiffrées.
 - **Recette iPhone** : lire les diagnostics `Viewport:` et `AudioStall:` remontés par le front, puis les retirer (`src/front/CLAUDE.md` § Erreurs).
-- **Mode Runs** (nom affiché provisoire « Platines », « Run » dans les tickets, epic #368) : conçu le 17/10/2026, le socle back est posé (module `Runs`, schéma `runs`, défi et tirage par difficulté, réglages `Runs:`, accès sur invitation avec son interrupteur dans l'onglet Joueurs de l'admin) et les routes de la partie (lancer, relever un lien, jouer, jauge, neutralisation d'un morceau sans extrait, fin, record), puis les écrans de la partie (accueil du mode, reprise, manche, réponse, morceau retiré, bilan de manche, fin, carte Platines sur l'accueil du jeu du jour) et leurs E2E (`runs.spec.ts`), puis le lien d'un ami et la comparaison (`GET /api/runs/challenges/{code}/comparison`, `/runs/<code>`). Règles, écrans de référence, conception et découpage en PR : [`docs/runs/`](docs/runs/README.md).
+- **Mode Runs** (« Platines » à l'écran, « Run » dans les tickets, epic #368) : **le proto 1 est livré (27/10/2026), sur invitation** : module `Runs` (schéma `runs`, défi et tirage par difficulté, réglages `Runs:`, accès avec son interrupteur dans l'onglet Joueurs de l'admin), routes de la partie et de la comparaison, domaine front `runs/` (accueil, reprise, manche, réponse, morceau retiré, bilan, fin, lien d'un ami, comparaison, carte sur l'accueil du jeu du jour), E2E (`runs.spec.ts`). Reste : les parties de test et le réglage des seuils, quelques suites ([`docs/taches.md`](docs/taches.md)), puis le proto 2 (bonus). Règles, écrans de référence, conception et découpage en PR : [`docs/runs/`](docs/runs/README.md).
 - Le reste : [`docs/taches.md`](docs/taches.md).
 
 ## Décisions d'architecture

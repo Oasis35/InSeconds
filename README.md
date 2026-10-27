@@ -30,6 +30,7 @@
 - Installable on the home screen (PWA), updated automatically at a safe moment (never in the middle of a round)
 - List of the devices signed in to your account, sign out one device or all the others
 - Your data (GDPR): download a JSON copy of all your data and permanently delete your account ("Your data" section of the profile); devices unseen for 91 days and accounts inactive for 3 years are deleted automatically every night; what you type as an answer is never stored
+- Run mode (shown as "Platines", invitation-only for now): a second game of 4 rounds of 5 tracks, getting harder, each with a fixed 10 s listen, a points gauge to unlock the next round, and a record disc (scratched to gold); send the same playlist to friends with a link and compare scores once you have played it (`/runs`; rules and screens in [`docs/runs/`](docs/runs/README.md))
 
 ## Quick start
 
@@ -137,7 +138,7 @@ cd src/front/InSeconds.Client
 E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=<DB_PASSWORD>" npm run e2e
 ```
 
-`playwright.config.ts` starts the test host (port 5177) and `ng serve` (port 5178). **139 tests** across 33 files: game, login, profile, devices, your data, streak and freezes, Run mode, admin…
+`playwright.config.ts` starts the test host (port 5177) and `ng serve` (port 5178). **140 tests** across 33 files: game, login, profile, devices, your data, streak and freezes, Run mode, admin…
 
 ## Documentation
 
@@ -149,7 +150,7 @@ The detailed docs are in French.
 - [`docs/regles-du-jeu.md`](docs/regles-du-jeu.md) - game rules (scoring, extensions, anti-cheat, streak) - what is actually enforced vs merely configured
 - [`docs/exploitation/`](docs/exploitation/) - VPS deployment, staging, backups, CI, emergency access
 - [`docs/conformite/`](docs/conformite/) - Deezer API terms, GDPR
-- [`docs/runs/`](docs/runs/README.md) - the Run mode (game playable behind an invitation; friend links and comparison to come)
+- [`docs/runs/`](docs/runs/README.md) - the Run mode (delivered behind an invitation: the game, friend links and comparison)
 - [`docs/taches.md`](docs/taches.md) - what is left to do
 - [`docs/historique/`](docs/historique/) - the 2026 rewrite
 
