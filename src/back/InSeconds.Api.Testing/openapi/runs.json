@@ -1497,6 +1497,9 @@
       "name": "InSeconds.Api.Modules.Runs.Application.RevokeRunAccessEndpoint"
     },
     {
+      "name": "InSeconds.Api.Modules.Runs.Application.GetRunComparisonEndpoint"
+    },
+    {
       "name": "InSeconds.Api.Modules.Runs.Application.GetRunsMeEndpoint"
     },
     {
