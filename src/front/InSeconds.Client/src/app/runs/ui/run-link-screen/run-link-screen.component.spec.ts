@@ -38,11 +38,11 @@ describe('RunLinkScreenComponent', () => {
 
   it('« Jouer » prévient la page, qui lance la partie dans ce clic', () => {
     const { fixture, element } = render();
-    const play = vi.fn();
-    fixture.componentInstance.play.subscribe(play);
+    const start = vi.fn();
+    fixture.componentInstance.start.subscribe(start);
 
     (element.querySelector('[data-testid="run-link-play"]') as HTMLButtonElement).click();
 
-    expect(play).toHaveBeenCalledTimes(1);
+    expect(start).toHaveBeenCalledTimes(1);
   });
 });

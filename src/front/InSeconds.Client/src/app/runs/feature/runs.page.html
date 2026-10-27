@@ -16,7 +16,7 @@
       <!-- Le lien d'un ami : le logo seul, les règles de la playlist et « Jouer » (crée l'invité, lance le premier son dans ce clic). -->
       @case ('link') {
         @if (store.link(); as link) {
-          <app-run-link-screen [link]="link" (play)="store.playLink()" />
+          <app-run-link-screen [link]="link" (start)="store.playLink()" />
         }
       }
 

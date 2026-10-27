@@ -33,7 +33,7 @@ import { RunDiscComponent } from '../run-disc/run-disc.component';
           <span>{{ 'runs.link.goal' | translate: { rounds: link().rounds } }}</span>
         </li>
       </ul>
-      <button type="button" (click)="play.emit()" data-testid="run-link-play"
+      <button type="button" (click)="start.emit()" data-testid="run-link-play"
         class="w-full py-4 rounded-(--radius-button) text-sm font-bold tracking-wide uppercase transition touch-manipulation"
         style="font-family:var(--font-display);letter-spacing:0.06em;background:var(--gradient-primary);color:var(--text-on-primary);box-shadow:var(--glow-primary)">
         {{ 'runs.link.play' | translate }}
@@ -44,5 +44,5 @@ import { RunDiscComponent } from '../run-disc/run-disc.component';
 export class RunLinkScreenComponent {
   readonly link = input.required<RunLink>();
   /** « Jouer » : la page lance la partie et son premier son dans ce clic. */
-  readonly play = output();
+  readonly start = output();
 }
