@@ -80,6 +80,9 @@ import { RunDiscComponent } from '../run-disc/run-disc.component';
           style="font-family:var(--font-display);letter-spacing:0.06em;background:var(--gradient-primary);color:var(--text-on-primary);box-shadow:var(--glow-primary)">
           {{ (shareCopied() ? 'runs.finished.shareCopied' : shareFailed() ? 'runs.finished.shareFailed' : 'runs.finished.share') | translate }}
         </button>
+        <button type="button" (click)="compare.emit()" data-testid="run-compare" class="w-full text-sm underline touch-manipulation" style="color:var(--text-muted)">
+          {{ 'runs.finished.compare' | translate }}
+        </button>
       </section>
 
       @if (canPlayAgain()) {
@@ -106,6 +109,8 @@ export class RunFinishComponent {
   readonly shareFailed = input(false);
   readonly lang = input<'fr' | 'en'>('fr');
   readonly share = output();
+  /** « Voir les autres joueurs » : la comparaison de cette playlist. */
+  readonly compare = output();
   /** « Nouvelle partie » : la page lance la playlist et son premier son dans ce clic. */
   readonly playAgain = output();
 

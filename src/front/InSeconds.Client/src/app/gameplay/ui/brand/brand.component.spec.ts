@@ -1,16 +1,16 @@
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { DailyBrandComponent } from './daily-brand.component';
+import { BrandComponent } from './brand.component';
 
 @Component({
-  imports: [DailyBrandComponent],
-  template: `<app-daily-brand><button brandLeft>série</button><a brandRight>avatar</a></app-daily-brand>`,
+  imports: [BrandComponent],
+  template: `<app-brand><button brandLeft>série</button><a brandRight>avatar</a></app-brand>`,
 })
 class Host {}
 
-describe('DailyBrandComponent', () => {
+describe('BrandComponent', () => {
   it('affiche le titre IN//SECONDS dans un h1', () => {
-    const fixture = TestBed.createComponent(DailyBrandComponent);
+    const fixture = TestBed.createComponent(BrandComponent);
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('h1')?.textContent?.replace(/\s+/g, '')).toBe('IN//SECONDS');
   });

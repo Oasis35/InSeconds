@@ -35,6 +35,17 @@ export class RunPage {
   readonly roundScores: Locator;
   readonly playAgainButton: Locator;
   readonly resumeButton: Locator;
+  readonly linkScreen: Locator;
+  readonly linkTitle: Locator;
+  readonly linkRules: Locator;
+  readonly linkPlayButton: Locator;
+  readonly compareButton: Locator;
+  readonly toDailyLink: Locator;
+  readonly comparison: Locator;
+  readonly comparisonEyebrow: Locator;
+  readonly comparisonTitle: Locator;
+  readonly comparisonRows: Locator;
+  readonly statusScreen: Locator;
 
   constructor(readonly page: Page) {
     this.homeCard            = page.getByTestId('run-home-card');
@@ -62,6 +73,17 @@ export class RunPage {
     this.roundScores         = page.getByTestId('run-round-scores');
     this.playAgainButton     = page.getByTestId('run-play-again');
     this.resumeButton        = page.getByRole('button', { name: 'Reprendre' });
+    this.linkScreen          = page.getByTestId('run-link');
+    this.linkTitle           = page.getByTestId('run-link-title');
+    this.linkRules           = page.getByTestId('run-link-rules');
+    this.linkPlayButton      = page.getByTestId('run-link-play');
+    this.compareButton       = page.getByTestId('run-compare');
+    this.toDailyLink         = page.getByTestId('run-to-daily');
+    this.comparison          = page.getByTestId('run-comparison');
+    this.comparisonEyebrow   = page.getByTestId('run-comparison-eyebrow');
+    this.comparisonTitle     = page.getByTestId('run-comparison-title');
+    this.comparisonRows      = page.locator('[data-testid="run-comparison-table"] tbody tr');
+    this.statusScreen        = page.getByTestId('run-status');
   }
 
   /** Connecte la page comme le compte admin des tests, qui a l'accès d'office (hôte de test, `POST /api/e2e/login-as-admin`). */
@@ -83,6 +105,12 @@ export class RunPage {
     await this.page.clock.install({ time: Date.now() });
     await this.page.goto('/runs');
     await this.welcome.waitFor({ state: 'visible' });
+  }
+
+  /** Ouvre le lien d'une playlist (`/runs/<code>`), horloge simulée comme `open`. */
+  async openLink(code: string): Promise<void> {
+    await this.page.clock.install({ time: Date.now() });
+    await this.page.goto(`/runs/${code}`);
   }
 
   /** `open` puis « Lancer une partie » : le premier morceau part. */
@@ -121,6 +149,16 @@ export class RunPage {
     await this.answer(null);
     await expect(this.answerCard.getByTestId('run-answer-artist-verdict')).toContainText('✗');
     await this.nextTrackButton.click();
+  }
+
+  /** Rate la première manche (5 réponses vides, 0 point, objectif manqué) : son bilan, puis l'écran de fin d'une partie perdue. */
+  async loseFirstRound(): Promise<void> {
+    await inSequence([1, 2, 3, 4], () => this.answerEmpty());
+    await this.answer(null);
+    await this.nextTrackButton.click();
+    await expect(this.roundEndTitle).toHaveText('Manche 1 terminée');
+    await this.nextRoundButton.click();
+    await expect(this.finished).toHaveAttribute('data-status', 'lost');
   }
 
   /** Répond juste à tous les morceaux d'une manche, jusqu'à son bilan. */

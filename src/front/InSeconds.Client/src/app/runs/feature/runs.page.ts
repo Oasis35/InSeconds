@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, effect, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ErrorReportingService } from '../../core/errors/error-reporting.service';
 import { LanguageService } from '../../core/i18n/language.service';
@@ -15,8 +15,10 @@ import { ResumeScreenComponent } from '../../gameplay/ui/resume-screen/resume-sc
 import { RunGameStore } from '../data-access/run-game.store';
 import { RunShare } from '../data-access/run-share';
 import { RunAnswerCardComponent } from '../ui/run-answer-card/run-answer-card.component';
+import { RunComparisonScreenComponent } from '../ui/run-comparison-screen/run-comparison-screen.component';
 import { RunFinishComponent } from '../ui/run-finish/run-finish.component';
 import { RunHeaderComponent } from '../ui/run-header/run-header.component';
+import { RunLinkScreenComponent } from '../ui/run-link-screen/run-link-screen.component';
 import { RunObjectiveComponent } from '../ui/run-objective/run-objective.component';
 import { RunPillsComponent } from '../ui/run-pills/run-pills.component';
 import { RunRoundSummaryComponent } from '../ui/run-round-summary/run-round-summary.component';
@@ -26,7 +28,7 @@ import { RunWithdrawnCardComponent } from '../ui/run-withdrawn-card/run-withdraw
 import { reloadMomentFor } from './reload-moment';
 
 /**
- * La page du mode Run (`/runs`) : elle affiche l'écran que le `RunGameStore` indique et branche ce qui est propre au navigateur : les fenêtres
+ * La page du mode Run (`/runs`, et `/runs/<code>` pour le lien d'un ami) : elle affiche l'écran que le `RunGameStore` indique et branche ce qui est propre au navigateur : les fenêtres
  * (abandon, sortie de partie), la fermeture de l'onglet, la nouvelle version du site, le renvoi au jeu du jour sans accès sur invitation. Les stores `RunGameStore` et `TrackRoundStore` sont ceux de
  * cette page ; l'adaptateur de l'API et le lecteur sont fournis par la route.
  */
@@ -35,7 +37,7 @@ import { reloadMomentFor } from './reload-moment';
   imports: [
     TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, RunHeaderComponent, RunObjectiveComponent, RunPillsComponent,
     RunAnswerCardComponent, RunWithdrawnCardComponent, RunRoundSummaryComponent, RunFinishComponent, RunWelcomeScreenComponent,
-    RunStatusScreenComponent, ResumeScreenComponent,
+    RunStatusScreenComponent, ResumeScreenComponent, RunLinkScreenComponent, RunComparisonScreenComponent,
   ],
   providers: [RunGameStore, TrackRoundStore, RunShare],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -51,6 +53,8 @@ export class RunsPage implements OnInit {
   private readonly modal = inject(ModalService);
   private readonly translate = inject(TranslateService);
   private readonly leaveGuard = new LeaveGuard(inject(ModalService));
+  /** Le code du lien ouvert (`/runs/<code>`), vide sur `/runs`. */
+  private readonly code = inject(ActivatedRoute).snapshot.paramMap.get('code');
 
   constructor() {
     // Une nouvelle version du site ne recharge jamais la page en pleine manche (cf. `reloadMomentFor`).
@@ -67,7 +71,7 @@ export class RunsPage implements OnInit {
   }
 
   ngOnInit(): void {
-    void this.store.init();
+    void this.store.init(this.code);
   }
 
   protected onBeforeUnload(event: BeforeUnloadEvent): void {

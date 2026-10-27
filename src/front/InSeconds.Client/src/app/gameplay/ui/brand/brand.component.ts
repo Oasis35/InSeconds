@@ -7,10 +7,10 @@ import { RouterLink } from '@angular/router';
  * (`homeLink`).
  */
 @Component({
-  selector: 'app-daily-brand',
+  selector: 'app-brand',
   imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  templateUrl: './daily-brand.component.html',
+  templateUrl: './brand.component.html',
   // sticky sur l'hôte : posé sur l'enfant, il resterait borné par la hauteur de l'hôte.
   host: { class: 'sticky top-2 z-10 block' },
   // Titre resserré sous 360 px de large : la gélule, le titre et l'avatar tiennent côte à côte sur un petit téléphone (320 px).
@@ -19,7 +19,7 @@ import { RouterLink } from '@angular/router';
     @media (min-width: 360px) { .brand-title { font-size: 1rem; line-height: 1.5rem; letter-spacing: 0.14em; } }
   `,
 })
-export class DailyBrandComponent {
+export class BrandComponent {
   /** Le logo est un lien vers `/daily` au lieu du titre de la page. */
   readonly homeLink = input(false);
 }

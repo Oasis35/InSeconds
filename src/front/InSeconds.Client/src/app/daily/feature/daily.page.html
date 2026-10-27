@@ -4,7 +4,7 @@
   <main class="relative flex-1 flex flex-col p-5 w-full max-w-lg mx-auto overflow-x-clip">
 
     <header class="pt-3 pb-6">
-      <app-daily-brand>
+      <app-brand>
         <!-- La gélule de série, ou le score en cours de partie. -->
         <div brandLeft>
           @if (store.screen() === 'playing') {
@@ -19,7 +19,7 @@
         @if (store.screen() !== 'playing') {
           <app-account-link brandRight />
         }
-      </app-daily-brand>
+      </app-brand>
       @if (store.screen() === 'playing') {
         <app-daily-progress [currentIndex]="store.currentIndex()" [trackCount]="store.trackCount()" (abandon)="confirmAbandon()" />
       }

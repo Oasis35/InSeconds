@@ -63,6 +63,7 @@
       "access_denied": "Platines is invitation-only for now.",
       "no_challenge": "Not enough tracks for a playlist, try again later.",
       "challenge_not_found": "This playlist doesn't exist. Check the link.",
+      "comparison_locked": "The comparison opens once your game is over.",
       "session_not_found": "This game no longer exists.",
       "already_played": "You've already played this playlist.",
       "abandoned": "You abandoned this playlist.",
@@ -862,6 +863,10 @@
         "title": "Something went wrong",
         "body": "The playlist could not be loaded."
       },
+      "not_found": {
+        "title": "Playlist not found",
+        "body": "This link doesn’t lead to any playlist.\nCheck it with whoever sent it to you."
+      },
       "backToDaily": "Back to the daily game"
     },
     "leave": {
@@ -898,7 +903,26 @@
       "share": "Share the playlist",
       "shareCopied": "Link copied!",
       "shareFailed": "Couldn’t copy",
-      "toDaily": "Play the daily challenge"
+      "toDaily": "Play the daily challenge",
+      "compare": "See the other players"
+    },
+    "link": {
+      "guest": "Guest",
+      "title": "{{ pseudo }} sent you a playlist",
+      "tracks": "{{ tracks }} tracks, the same for all its players: compare your scores at the end",
+      "rounds": "{{ rounds }} rounds, getting harder",
+      "listen": "{{ seconds }} to find the artist and the title",
+      "goal": "Clear all {{ rounds }} rounds and earn the gold disc",
+      "play": "Play"
+    },
+    "comparison": {
+      "eyebrow": "{{ pseudo }}’s playlist",
+      "title": "{{ count }} players on this playlist",
+      "titleOne": "1 player on this playlist",
+      "player": "Player",
+      "roundShort": "R{{ round }}",
+      "total": "Total",
+      "you": "You"
     },
     "discs": {
       "scratched": "Scratched record",

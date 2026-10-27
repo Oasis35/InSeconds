@@ -1,13 +1,15 @@
 import { TestBed } from '@angular/core/testing';
+import { SessionLoader } from '../../account/data-access/session-loader';
 import { FakeAudioPort, provideFakeAudio } from '../../gameplay/data-access/testing/fake-audio.port';
 import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { RunRoundSummary } from '../domain/run';
 import { RunGameStore, RunScreen } from './run-game.store';
 import { StartOutcome } from './runs.api';
-import { CURRENT, FakeRunsApi, ME, PLAY, ROUND, SESSION, TRACK, provideFakeRunsApi } from './testing/fake-runs-api';
+import { COMPARISON, CURRENT, FakeRunsApi, LINK, ME, PLAY, ROUND, SESSION, TRACK, provideFakeRunsApi } from './testing/fake-runs-api';
 
 describe('RunGameStore', () => {
   let api: FakeRunsApi;
+  const ensureGuest = vi.fn<() => Promise<void>>();
   let audio: FakeAudioPort;
   let store: InstanceType<typeof RunGameStore>;
   let round: InstanceType<typeof TrackRoundStore>;
@@ -15,7 +17,11 @@ describe('RunGameStore', () => {
   beforeEach(() => {
     api = new FakeRunsApi();
     audio = new FakeAudioPort();
-    TestBed.configureTestingModule({ providers: [provideFakeRunsApi(api), provideFakeAudio(audio), TrackRoundStore, RunGameStore] });
+    TestBed.configureTestingModule({
+      providers: [provideFakeRunsApi(api), provideFakeAudio(audio), { provide: SessionLoader, useValue: { ensureGuest } }, TrackRoundStore, RunGameStore],
+    });
+    ensureGuest.mockReset();
+    ensureGuest.mockResolvedValue(undefined);
     store = TestBed.inject(RunGameStore);
     round = TestBed.inject(TrackRoundStore);
   });
@@ -491,6 +497,124 @@ describe('RunGameStore', () => {
 
       expect(round.trackId()).toBe(3);
       expect(store.pills()).toEqual(['found', 'neutralized', 'current', 'todo', 'todo']);
+    });
+  });
+
+  describe("le lien d'un ami (/runs/<code>)", () => {
+    it("une playlist pas encore jouée : l'écran du lien, sans rien lancer ni créer d'invité", async () => {
+      api.meResult = ME({ hasAccess: false });
+
+      await store.init('abc234');
+
+      expect(store.screen()).toBe('link');
+      expect(store.link()?.authorPseudo).toBe('Clément');
+      expect(api.calls).toEqual(['me', 'challenge:abc234']);
+      expect(ensureGuest).not.toHaveBeenCalled();
+    });
+
+    it("sans accès sur invitation, le lien reste jouable (pas d'écran réservé)", async () => {
+      api.meResult = ME({ hasAccess: false });
+
+      await store.init('ABC234');
+
+      expect(store.screen()).toBe('link');
+    });
+
+    it("« Jouer » crée l'invité, relève la playlist et lance le premier son dans le clic", async () => {
+      api.meResult = ME({ hasAccess: false });
+      await store.init('ABC234');
+      audio.calls.length = 0;
+
+      await store.playLink();
+
+      expect(ensureGuest).toHaveBeenCalledTimes(1);
+      expect(api.calls.at(-1)).toBe('join:ABC234');
+      expect(store.screen()).toBe('playing');
+      expect(audio.calls[0]).toBe('unlock');
+    });
+
+    it("un invité qu'on n'arrive pas à créer affiche l'erreur", async () => {
+      await store.init('ABC234');
+      ensureGuest.mockRejectedValue(new Error('réseau'));
+
+      await store.playLink();
+
+      expect(store.screen()).toBe('error');
+      expect(api.calls.some(call => call.startsWith('join:'))).toBe(false);
+    });
+
+    it("une partie en cours sur ce lien : l'écran de reprise, qui relève cette playlist", async () => {
+      api.challengeResult = { kind: 'ok', link: LINK({ myStatus: 'pending', mySessionId: 7 }) };
+      api.sessionResult = SESSION({ roundTracks: [TRACK()] });
+
+      await store.init('ABC234');
+
+      expect(store.screen()).toBe('resume');
+      expect(api.calls).toContain('session:7');
+
+      await store.begin();
+
+      expect(api.calls.at(-1)).toBe('join:ABC234');
+    });
+
+    it.each(['won', 'lost', 'abandoned'] as const)("une partie %s sur ce lien : directement la comparaison", async status => {
+      api.challengeResult = { kind: 'ok', link: LINK({ myStatus: status, mySessionId: 7 }) };
+
+      await store.init('ABC234');
+
+      expect(store.screen()).toBe('comparison');
+      expect(store.comparison()).toEqual(COMPARISON());
+      expect(api.calls).toContain('comparison:ABC234');
+    });
+
+    it('une playlist inconnue : le dit, sans réessayer', async () => {
+      api.challengeResult = { kind: 'not_found' };
+
+      await store.init('ZZZZZZ');
+
+      expect(store.screen()).toBe('not_found');
+    });
+
+    it("une erreur du lien ou de la comparaison affiche l'erreur, et « Réessayer » rouvre le même lien", async () => {
+      api.challengeResult = { kind: 'error' };
+      await store.init('ABC234');
+      expect(store.screen()).toBe('error');
+
+      api.challengeResult = { kind: 'ok', link: LINK({ myStatus: 'won', mySessionId: 7 }) };
+      api.comparisonResult = new Error('réseau');
+      await store.init();
+      expect(store.screen()).toBe('error');
+
+      api.comparisonResult = COMPARISON();
+      await store.init();
+      expect(store.screen()).toBe('comparison');
+      expect(api.calls.filter(call => call === 'challenge:ABC234')).toHaveLength(3);
+    });
+
+    it("la partie jouée sur un lien finit par l'écran de fin, puis la comparaison s'ouvre d'un clic", async () => {
+      await store.init('ABC234');
+      api.joinResult = { kind: 'ok', play: PLAY({ session: SESSION({ status: 'lost', round: null, finish: null }), current: null }) };
+      await store.playLink();
+      expect(store.screen()).toBe('finished');
+
+      await store.showComparison();
+
+      expect(store.screen()).toBe('comparison');
+    });
+
+    it("sur /runs, la comparaison d'une partie finie se lit avec le code de la playlist de la fin", async () => {
+      const finish = {
+        status: 'won' as const, disc: { key: 'runs.discs.gold', stars: 0 }, totalScore: 2600, roundsPassed: 4, foundCount: 20, trackCount: 20, tracks: [],
+        rounds: [], record: null, challengeCode: 'XYZ789',
+      };
+      api.launchResult = { kind: 'ok', play: PLAY({ session: SESSION({ status: 'won', round: null, finish }), current: null }) };
+      await store.init();
+      await store.begin();
+
+      await store.showComparison();
+
+      expect(api.calls.at(-1)).toBe('comparison:XYZ789');
+      expect(store.screen()).toBe('comparison');
     });
   });
 });

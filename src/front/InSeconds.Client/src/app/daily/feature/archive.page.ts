@@ -20,7 +20,7 @@ import { EMPTY_STREAK } from '../domain/streak';
 import { ArchiveCalendarData, ArchiveCalendarResult, ArchiveCalendarSheetComponent } from '../ui/archive-calendar-sheet/archive-calendar-sheet.component';
 import { ArchiveDayHeaderComponent } from '../ui/archive-day-header/archive-day-header.component';
 import { ArchiveTrackRowComponent } from '../ui/archive-track-row/archive-track-row.component';
-import { DailyBrandComponent } from '../ui/daily-brand/daily-brand.component';
+import { BrandComponent } from '../../gameplay/ui/brand/brand.component';
 import { DailyFooterComponent } from '../ui/daily-footer/daily-footer.component';
 import { ScoreDistributionChartComponent } from '../ui/score-distribution-chart/score-distribution-chart.component';
 import { StatusScreenComponent } from '../ui/status-screen/status-screen.component';
@@ -35,7 +35,7 @@ import { StreakSheetComponent, StreakSheetData, StreakSheetResult } from '../ui/
 @Component({
   selector: 'app-archive-page',
   imports: [
-    TranslatePipe, RouterLink, DecorBackgroundComponent, DailyBrandComponent, DailyFooterComponent, AccountLinkComponent, StreakPillComponent,
+    TranslatePipe, RouterLink, DecorBackgroundComponent, BrandComponent, DailyFooterComponent, AccountLinkComponent, StreakPillComponent,
     ArchiveDayHeaderComponent, ArchiveTrackRowComponent, ScoreDistributionChartComponent, StatusScreenComponent, ButtonComponent,
   ],
   providers: [ArchiveStore, AudioPreviewPlayer],

@@ -106,6 +106,7 @@ Même mise en page dans les deux cas :
 - Surtitre **« PLAYLIST DE CLÉMENT »** (pseudo de l'auteur, sans le code du lien), titre **« 4 joueurs de cette playlist »**.
 - Tableau : Joueur (pseudo et disque dessous), M1 à M4, Total ; trié par total. **« Toi »** surligné en orange ; **✕** pour une manche non jouée ; « Invité » pour un joueur sans compte.
 - **« Partager la playlist »** en bas.
+- **Accès** : en ouvrant le lien (`/runs/<code>`) d'une playlist déjà jouée, et par « Voir les autres joueurs » (lien discret sous « Partager la playlist » de l'écran de fin). Une partie abandonnée y a accès aussi (la playlist ne se rejoue pas) ; elle n'est pas dans le tableau (seules les parties gagnées ou perdues y figurent). Égalité de total : plus de manches passées, puis la première terminée.
 
 ## 6. L'entrée sur l'accueil
 

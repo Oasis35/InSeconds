@@ -63,6 +63,7 @@
       "access_denied": "Platines est ouvert sur invitation pour le moment.",
       "no_challenge": "Pas assez de morceaux pour une playlist, réessaie plus tard.",
       "challenge_not_found": "Cette playlist n'existe pas. Vérifie le lien.",
+      "comparison_locked": "La comparaison s'ouvre une fois ta partie terminée.",
       "session_not_found": "Cette partie n'existe plus.",
       "already_played": "Tu as déjà joué cette playlist.",
       "abandoned": "Tu as abandonné cette playlist.",
@@ -862,6 +863,10 @@
         "title": "Une erreur est survenue",
         "body": "Impossible de charger la playlist."
       },
+      "not_found": {
+        "title": "Playlist introuvable",
+        "body": "Ce lien ne mène à aucune playlist.\nVérifie-le auprès de la personne qui te l’a envoyé."
+      },
       "backToDaily": "Retour au jeu du jour"
     },
     "leave": {
@@ -898,7 +903,26 @@
       "share": "Partager la playlist",
       "shareCopied": "Lien copié !",
       "shareFailed": "Copie impossible",
-      "toDaily": "Jouer au défi du jour"
+      "toDaily": "Jouer au défi du jour",
+      "compare": "Voir les autres joueurs"
+    },
+    "link": {
+      "guest": "Invité",
+      "title": "{{ pseudo }} te lance une playlist",
+      "tracks": "{{ tracks }} morceaux, les mêmes pour tous ses joueurs : comparez vos scores à la fin",
+      "rounds": "{{ rounds }} manches, de plus en plus dures",
+      "listen": "{{ seconds }} pour trouver l’artiste et le titre",
+      "goal": "Passe les {{ rounds }} manches et deviens disque d’or",
+      "play": "Jouer"
+    },
+    "comparison": {
+      "eyebrow": "Playlist de {{ pseudo }}",
+      "title": "{{ count }} joueurs de cette playlist",
+      "titleOne": "1 joueur de cette playlist",
+      "player": "Joueur",
+      "roundShort": "M{{ round }}",
+      "total": "Total",
+      "you": "Toi"
     },
     "discs": {
       "scratched": "Disque rayé",

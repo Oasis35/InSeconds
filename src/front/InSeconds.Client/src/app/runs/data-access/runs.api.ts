@@ -1,12 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom, retry, throwError, timer } from 'rxjs';
 import {
-  RunCurrentTrackResponse, RunFinishResponse, RunNeutralizedResponse, RunPlayResponse, RunRecordResponse, RunRoundResponse, RunRoundScoreResponse,
+  RunChallengeResponse, RunComparisonResponse, RunCurrentTrackResponse, RunFinishResponse, RunNeutralizedResponse, RunPlayResponse, RunRecordResponse, RunRoundResponse, RunRoundScoreResponse,
   RunRoundSummaryResponse, RunSessionResponse, RunTrackResponse, RunsClient, RunsMeResponse,
 } from '../../api/runs/api.generated';
 import { toAppError } from '../../core/errors/app-error';
 import {
-  RunCurrentTrack, RunFinish, RunNeutralized, RunPlay, RunRecord, RunRound, RunRoundScore, RunRoundSummary, RunSession, RunStatus, RunTrack, RunsMe,
+  RunComparison, RunCurrentTrack, RunFinish, RunLink, RunNeutralized, RunPlay, RunRecord, RunRound, RunRoundScore, RunRoundSummary, RunSession, RunStatus, RunTrack, RunsMe,
 } from '../domain/run';
 
 /** Les refus que le jeu connaît : ils deviennent des issues, pas des erreurs. */
@@ -14,6 +14,7 @@ const ACCESS_DENIED = 'runs.access_denied';
 const NO_CHALLENGE = 'runs.no_challenge';
 const ALREADY_PLAYED = 'runs.already_played';
 const ABANDONED = 'runs.abandoned';
+const CHALLENGE_NOT_FOUND = 'runs.challenge_not_found';
 
 /** Combien de fois on renvoie une réponse que le réseau ou le serveur ont fait échouer (piège 32), et l'attente entre deux essais. */
 const SUBMIT_RETRIES = 2;
@@ -25,6 +26,12 @@ export type StartOutcome =
   | { readonly kind: 'access_denied' }
   | { readonly kind: 'no_challenge' }
   | { readonly kind: 'already_played'; readonly abandoned: boolean }
+  | { readonly kind: 'error' };
+
+/** Ce que le lien d'une playlist a donné : sa description, une playlist inconnue, ou une erreur. */
+export type LinkOutcome =
+  | { readonly kind: 'ok'; readonly link: RunLink }
+  | { readonly kind: 'not_found' }
   | { readonly kind: 'error' };
 
 /** La réponse à un morceau : le texte saisi (vide : passer). */
@@ -50,6 +57,20 @@ export class RunsApi {
   /** L'état d'une partie, en lecture seule et sans extrait (l'écran de reprise). */
   async session(sessionId: number): Promise<RunSession> {
     return toSession(await firstValueFrom(this.client.getRunSession(sessionId)));
+  }
+
+  /** Ce que montre le lien d'une playlist (anonyme permis) : son auteur, ses règles, et la partie de ce joueur dessus. */
+  async challenge(code: string): Promise<LinkOutcome> {
+    try {
+      return { kind: 'ok', link: toLink(await firstValueFrom(this.client.getRunChallenge(code))) };
+    } catch (error) {
+      return (await toAppError(error)).code === CHALLENGE_NOT_FOUND ? { kind: 'not_found' } : { kind: 'error' };
+    }
+  }
+
+  /** Les joueurs de la playlist, après la fin de sa propre partie (409 `runs.comparison_locked` sinon). */
+  async comparison(code: string): Promise<RunComparison> {
+    return toComparison(await firstValueFrom(this.client.getRunComparison(code)));
   }
 
   /** Lance une playlist neuve et la partie de son auteur. */
@@ -106,6 +127,35 @@ function isRetryable(error: unknown): boolean {
 
 function toStatus(status: string): RunStatus {
   return status === 'won' || status === 'lost' || status === 'abandoned' ? status : 'pending';
+}
+
+function toLink(link: RunChallengeResponse): RunLink {
+  return {
+    code: link.code,
+    authorPseudo: link.authorPseudo ?? null,
+    trackCount: link.trackCount,
+    rounds: link.rounds,
+    tracksPerRound: link.tracksPerRound,
+    listenSeconds: link.listenSeconds,
+    myStatus: link.myStatus === 'none' ? 'none' : toStatus(link.myStatus),
+    mySessionId: link.mySessionId ?? null,
+  };
+}
+
+function toComparison(comparison: RunComparisonResponse): RunComparison {
+  return {
+    code: comparison.code,
+    authorPseudo: comparison.authorPseudo ?? null,
+    playerCount: comparison.playerCount,
+    roundCount: comparison.roundCount,
+    rows: comparison.rows.map(row => ({
+      pseudo: row.pseudo ?? null,
+      disc: { key: row.disc.key, stars: row.disc.stars },
+      rounds: row.rounds.map(score => score ?? null),
+      totalScore: row.totalScore,
+      isMe: row.isMe,
+    })),
+  };
 }
 
 function toRecord(record: RunRecordResponse | undefined): RunRecord | null {

@@ -74,6 +74,16 @@ describe('RunFinishComponent', () => {
     expect(again).toHaveBeenCalled();
   });
 
+  it('« Voir les autres joueurs » ouvre la comparaison de la playlist', () => {
+    const { fixture, element } = render(finish());
+    const compare = vi.fn();
+    fixture.componentInstance.compare.subscribe(compare);
+
+    (element.querySelector('[data-testid="run-compare"]') as HTMLButtonElement).click();
+
+    expect(compare).toHaveBeenCalledTimes(1);
+  });
+
   it('sans accès, le jeu du jour à la place de « Nouvelle partie »', () => {
     const { element } = render(finish(), false);
 

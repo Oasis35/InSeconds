@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
-/** Ce que l'écran dit : pas de playlist, ou une erreur. Sans accès sur invitation, il n'y a pas d'écran : la page renvoie au jeu du jour. */
-export type RunStatusKind = 'no_challenge' | 'error';
+/** Ce que l'écran dit : pas de playlist, une playlist inconnue (lien erroné), ou une erreur. Sans accès sur invitation, il n'y a pas d'écran : la page renvoie au jeu du jour. */
+export type RunStatusKind = 'no_challenge' | 'not_found' | 'error';
 
 /** Un refus ou une erreur du mode : un titre, une phrase, le code d'erreur s'il y en a un, « Réessayer » et le retour au jeu du jour. */
 @Component({
@@ -22,11 +22,13 @@ export type RunStatusKind = 'no_challenge' | 'error';
         }
       </div>
       <div class="flex flex-col items-center gap-3">
-        <button type="button" (click)="retry.emit()" data-testid="run-retry"
-          class="px-6 py-3 rounded-(--radius-button) text-sm font-bold uppercase transition-colors"
-          style="font-family:var(--font-display);letter-spacing:0.06em;background:var(--bg-surface);color:var(--text-slate);border:1px solid var(--border-subtle)">
-          {{ 'common.retry' | translate }}
-        </button>
+        @if (kind() !== 'not_found') {
+          <button type="button" (click)="retry.emit()" data-testid="run-retry"
+            class="px-6 py-3 rounded-(--radius-button) text-sm font-bold uppercase transition-colors"
+            style="font-family:var(--font-display);letter-spacing:0.06em;background:var(--bg-surface);color:var(--text-slate);border:1px solid var(--border-subtle)">
+            {{ 'common.retry' | translate }}
+          </button>
+        }
         <a routerLink="/daily" class="text-sm underline" style="color:var(--text-muted)">{{ 'runs.status.backToDaily' | translate }}</a>
       </div>
     </div>

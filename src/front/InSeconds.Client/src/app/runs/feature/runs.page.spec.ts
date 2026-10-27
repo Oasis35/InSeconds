@@ -3,6 +3,7 @@ import { Router, provideRouter } from '@angular/router';
 import { TranslateService, provideTranslateService } from '@ngx-translate/core';
 import { Subject } from 'rxjs';
 import fr from '../../../../public/i18n/fr.json';
+import { SessionLoader } from '../../account/data-access/session-loader';
 import { VersionService } from '../../core/version/version.service';
 import { FakeAudioPort, provideFakeAudio } from '../../gameplay/data-access/testing/fake-audio.port';
 import { ConfirmDialogData } from '../../ui/modal/confirm-dialog.component';
@@ -32,6 +33,7 @@ describe('RunsPage', () => {
       providers: [
         provideTranslateService(), provideRouter([]), provideFakeRunsApi(api), provideFakeAudio(new FakeAudioPort()),
         { provide: ModalService, useValue: modal },
+        { provide: SessionLoader, useValue: { ensureGuest: () => Promise.resolve() } },
         { provide: VersionService, useValue: { allowReload: () => undefined } },
       ],
     });
