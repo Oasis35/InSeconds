@@ -41,6 +41,6 @@ Les choix déjà faits, avec leur raison, pour ne pas les rediscuter ni les réi
 - **Une information à un seul endroit** dans la doc : une copie parallèle finit toujours par dériver du code.
 - **Mobile first** : toute proposition d'écran se pense d'abord pour un téléphone.
 
-## Mode Runs (en construction)
+## Mode Runs (livré, sur invitation)
 
-Le module `Runs` et son schéma existent (socle back : défi, tirage, accès) ; le domaine front n'est créé qu'avec le premier écran du mode. Il s'adapte à l'architecture, pas l'inverse. Conçu le 17/10/2026 (nom affiché provisoire « Platines ») : règles, écrans, conception et plan dans [`runs/`](../runs/README.md).
+Le module `Runs` (schéma `runs`) et le domaine front `runs/` sont livrés (proto 1, 27/10/2026) : un mode s'adapte à l'architecture, pas l'inverse. Un mode n'importe jamais l'autre (Daily et Runs ne se voient pas), Players et Catalogue ne connaissent d'un mode que ses contrats (`IPlayerDataContributor`, `ITrackUsage`), et l'accès est sur invitation (`runs.access`, distinct du rôle admin). Conçu le 17/10/2026 (nom affiché provisoire « Platines ») : règles, écrans, conception et plan dans [`runs/`](../runs/README.md).

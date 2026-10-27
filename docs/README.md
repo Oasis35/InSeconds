@@ -42,7 +42,7 @@ Chaque information n'est écrite qu'à un seul endroit, pour éviter que des cop
 | Détail frontend (domaines, stores, lecteur, E2E) | [`src/front/CLAUDE.md`](../src/front/CLAUDE.md) |
 | Règles de jeu (scoring, anti-triche, série, indices) | [`regles-du-jeu.md`](regles-du-jeu.md) |
 | Ce qui reste à faire | [`taches.md`](taches.md) |
-| **Nouveau mode Run (Platines)**, partie jouable sur invitation, lien d'un ami et comparaison à venir | |
+| **Nouveau mode Run (Platines)**, livré sur invitation : partie, lien d'un ami et comparaison | |
 | Sommaire du mode | [`runs/README.md`](runs/README.md) |
 | Règles du proto 1 | [`runs/regles.md`](runs/regles.md) |
 | Écrans (maquettes de référence) | [`runs/ecrans.md`](runs/ecrans.md) |
