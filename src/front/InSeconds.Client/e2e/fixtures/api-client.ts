@@ -171,6 +171,13 @@ export class ApiTestClient {
     return ((await res.json()) as { tracks: RunTrack[] }).tracks;
   }
 
+  /** Le code (le lien `/runs/<code>`) de la dernière playlist de Run tirée. */
+  async latestRunCode(): Promise<string> {
+    const res = await fetch(`${BASE}/api/e2e/runs/latest-tracks`);
+    if (!res.ok) throw new Error(`runs/latest-tracks failed: ${res.status}`);
+    return ((await res.json()) as { code: string }).code;
+  }
+
   /** Le faux Deezer ne donne plus d'extrait pour ces morceaux : un Run les retire de la manche quand il y arrive. */
   async removePreviews(deezerTrackIds: number[]): Promise<void> {
     const res = await fetch(`${BASE}/api/e2e/deezer/without-preview`, {

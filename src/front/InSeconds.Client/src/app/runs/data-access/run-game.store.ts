@@ -1,21 +1,28 @@
 import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
+import { SessionLoader } from '../../account/data-access/session-loader';
 import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { RoundConfig, RoundSubmission } from '../../gameplay/domain/track-round';
 import {
-  PillState, RunCurrentTrack, RunPlay, RunRound, RunSession, RunStep, RunTrack, RunsMe, isFinished, playSteps, playedCount, trackPills,
+  PillState, RunComparison, RunCurrentTrack, RunLink, RunPlay, RunRound, RunSession, RunStep, RunTrack, RunsMe, isFinished, playSteps, playedCount,
+  trackPills,
 } from '../domain/run';
 import { RunsApi, StartOutcome } from './runs.api';
 
 /**
- * L'écran affiché : le chargement, l'accueil du mode (lancer), la reprise d'une partie en cours, la partie (avec la carte de réponse ou du
- * morceau retiré), le bilan d'une manche, la fin, et les refus (pas d'accès sur invitation, que la page traduit en retour au jeu du jour ; pas de
- * playlist ; erreur).
+ * L'écran affiché : le chargement, l'accueil du mode (lancer), le lien reçu d'un ami, la reprise d'une partie en cours, la partie (avec la carte de
+ * réponse ou du morceau retiré), le bilan d'une manche, la fin, la comparaison des joueurs d'une playlist, et les refus (pas d'accès sur
+ * invitation, que la page traduit en retour au jeu du jour ; pas de playlist ; playlist inconnue ; erreur).
  */
-export type RunScreen = 'loading' | 'welcome' | 'resume' | 'playing' | 'round_end' | 'finished' | 'access_denied' | 'no_challenge' | 'error';
+export type RunScreen =
+  | 'loading' | 'welcome' | 'link' | 'resume' | 'playing' | 'round_end' | 'finished' | 'comparison' | 'access_denied' | 'no_challenge' | 'not_found' | 'error';
 
 interface RunState {
   screen: RunScreen;
+  /** La playlist du lien ouvert (`/runs/<code>`) ; `null` sur `/runs`. */
+  code: string | null;
+  link: RunLink | null;
+  comparison: RunComparison | null;
   me: RunsMe | null;
   session: RunSession | null;
   /** Le morceau à jouer (ou, tant que des étapes restent à montrer, celui que le dernier clic lancera). */
@@ -33,6 +40,9 @@ interface RunState {
 
 const initialState: RunState = {
   screen: 'loading',
+  code: null,
+  link: null,
+  comparison: null,
   me: null,
   session: null,
   current: null,
@@ -97,7 +107,7 @@ export const RunGameStore = signalStore(
       finish: computed(() => store.session()?.finish ?? null),
     };
   }),
-  withMethods((store, api = inject(RunsApi), round = inject(TrackRoundStore)) => {
+  withMethods((store, api = inject(RunsApi), round = inject(TrackRoundStore), sessionLoader = inject(SessionLoader)) => {
     /** Redemande l'extrait d'un morceau à une adresse fraîche (la signature Deezer expire, piège 14). */
     const refreshPreview = async (position: number): Promise<string | null> => {
       const sessionId = store.session()?.sessionId;
@@ -179,13 +189,43 @@ export const RunGameStore = signalStore(
       }
     };
 
-    /** Premier chargement, ou « Réessayer » d'un écran d'erreur : mon accès, mon record, ma partie en cours (l'écran de reprise). */
-    async function init(): Promise<void> {
+    /** L'écran d'un lien d'ami (`/runs/<code>`) : « lien reçu » si la playlist n'est pas jouée, la reprise si elle est en cours, la comparaison si elle est finie. */
+    const openLink = async (code: string): Promise<void> => {
+      const outcome = await api.challenge(code);
+      if (outcome.kind !== 'ok') {
+        patchState(store, { screen: outcome.kind === 'not_found' ? 'not_found' : 'error' });
+        return;
+      }
+      const { link } = outcome;
+      patchState(store, { link });
+      if (link.myStatus === 'none') {
+        patchState(store, { screen: 'link' });
+      } else if (link.myStatus === 'pending' && link.mySessionId !== null) {
+        const pending = await api.session(link.mySessionId);
+        patchState(store, { screen: 'resume', resumeCount: playedCount(pending), resumeTotal: pending.rounds * pending.tracksPerRound });
+      } else {
+        patchState(store, { comparison: await api.comparison(link.code), screen: 'comparison' });
+      }
+    };
+
+    /**
+     * Premier chargement, ou « Réessayer » d'un écran d'erreur : mon accès, mon record, ma partie en cours (l'écran de reprise). Avec le code d'un
+     * lien (`/runs/<code>`), l'écran de ce lien. Sans argument, le code déjà ouvert est gardé (« Réessayer », retour d'un abandon).
+     */
+    async function init(code?: string | null): Promise<void> {
       round.reset();
-      patchState(store, { screen: 'loading', session: null, current: null, steps: [], resumeCount: 0, resumeTotal: 0, abandonLoading: false });
+      const target = code === undefined ? store.code() : code;
+      patchState(store, {
+        screen: 'loading', code: target, link: null, comparison: null, session: null, current: null, steps: [], resumeCount: 0, resumeTotal: 0,
+        abandonLoading: false,
+      });
       try {
         const me = await api.me();
         patchState(store, { me });
+        if (target) {
+          await openLink(target);
+          return;
+        }
         if (!me.hasAccess && !me.pending) {
           patchState(store, { screen: 'access_denied' });
           return;
@@ -211,8 +251,35 @@ export const RunGameStore = signalStore(
       /** « Lancer une partie » ou « Reprendre » (un clic) : une partie neuve sur une playlist neuve, ou celle qui était en cours. */
       async begin(): Promise<void> {
         round.unlockAudio();
-        const pending = store.me()?.pending ?? null;
-        await launch(() => (pending ? api.join(pending.challengeCode) : api.launch()));
+        const code = store.link()?.code ?? store.me()?.pending?.challengeCode ?? null;
+        await launch(() => (code ? api.join(code) : api.launch()));
+      },
+      /**
+       * « Jouer » depuis le lien reçu d'un ami (un clic) : crée l'invité si ce navigateur n'a pas d'identité, relève la playlist et lance le premier
+       * morceau dans ce clic.
+       */
+      async playLink(): Promise<void> {
+        round.unlockAudio();
+        const code = store.link()?.code;
+        if (!code) return;
+        patchState(store, { screen: 'loading' });
+        try {
+          await sessionLoader.ensureGuest();
+        } catch {
+          patchState(store, { screen: 'error' });
+          return;
+        }
+        applyOutcome(await api.join(code));
+      },
+      /** « Voir les autres joueurs » depuis la fin : la comparaison de cette playlist. */
+      async showComparison(): Promise<void> {
+        const code = store.finish()?.challengeCode ?? store.code();
+        if (!code) return;
+        try {
+          patchState(store, { comparison: await api.comparison(code), screen: 'comparison' });
+        } catch {
+          patchState(store, { screen: 'error' });
+        }
       },
       /**
        * La manche rend la réponse à envoyer : le serveur la corrige et marque les points, la manche la révèle. Sur un échec définitif (l'adaptateur a
@@ -241,7 +308,7 @@ export const RunGameStore = signalStore(
       },
       /** Abandonne la partie en cours : le serveur la ferme (elle ne compte pas pour le record), l'écran revient à l'accueil du mode. */
       async abandon(): Promise<void> {
-        const sessionId = store.session()?.sessionId ?? store.me()?.pending?.sessionId;
+        const sessionId = store.session()?.sessionId ?? store.link()?.mySessionId ?? store.me()?.pending?.sessionId;
         if (sessionId === undefined) return;
         patchState(store, { abandonLoading: true });
         try {

@@ -13,6 +13,13 @@
         <app-run-welcome-screen [record]="store.record()" (start)="store.begin()" />
       }
 
+      <!-- Le lien d'un ami : le logo seul, les règles de la playlist et « Jouer » (crée l'invité, lance le premier son dans ce clic). -->
+      @case ('link') {
+        @if (store.link(); as link) {
+          <app-run-link-screen [link]="link" (start)="store.playLink()" />
+        }
+      }
+
       <!-- La reprise du Daily, telle quelle : le compte porte sur les morceaux de la playlist, l'avertissement parle du record. -->
       @case ('resume') {
         <app-resume-screen
@@ -56,13 +63,24 @@
       @case ('finished') {
         @if (store.finish(); as finish) {
           <app-run-finish [finish]="finish" [canPlayAgain]="store.canPlayAgain()" [shareCopied]="share.copied()" [shareFailed]="share.failed()"
-            [lang]="language.current()" (share)="share.share(finish.challengeCode)" (playAgain)="store.playAgain()" />
+            [lang]="language.current()" (share)="share.share(finish.challengeCode)" (compare)="store.showComparison()" (playAgain)="store.playAgain()" />
+        }
+      }
+
+      @case ('comparison') {
+        @if (store.comparison(); as comparison) {
+          <app-run-comparison-screen [comparison]="comparison" [shareCopied]="share.copied()" [shareFailed]="share.failed()"
+            (share)="share.share(comparison.code)" />
         }
       }
 
       <!-- Sans accès sur invitation : aucun écran, la page renvoie au jeu du jour (cf. le constructeur). -->
       @case ('no_challenge') {
         <app-run-status-screen kind="no_challenge" (retry)="store.init()" />
+      }
+
+      @case ('not_found') {
+        <app-run-status-screen kind="not_found" />
       }
 
       @case ('error') {

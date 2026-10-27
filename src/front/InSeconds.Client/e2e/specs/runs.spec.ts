@@ -166,4 +166,65 @@ test.describe('Mode Platines', () => {
     await run.answerRight(tracks[1]);
     await expect(run.totalScore).toHaveText('200');
   });
+
+  test("lien d'un ami : lien reçu, partie sans accès jouée une seule fois, comparaison dans deux navigateurs", async ({ page, api, browser }) => {
+    // Deux parties perdues à jouer : le temps de deux navigateurs.
+    test.slow();
+    const author = new RunPage(page);
+    await author.loginAsAdmin();
+    await author.launch();
+    await author.loseFirstRound();
+    const code = await api.latestRunCode();
+
+    // Un ami, dans son propre navigateur, sans identité ni accès : le lien reçu, ses règles, « Jouer ».
+    const friendContext = await browser.newContext();
+    const friendPage = await friendContext.newPage();
+    await friendPage.addInitScript(() => {
+      (window as { __disableAnimations?: boolean }).__disableAnimations = true;
+      (window as { __disableHealthPolling?: boolean }).__disableHealthPolling = true;
+      localStorage.setItem('lang', 'fr');
+      localStorage.setItem('inseconds.thanksNoticeSeen', 'v2-launch');
+    });
+    const friend = new RunPage(friendPage);
+    await friend.openLink(code);
+    await expect(friend.linkTitle).toHaveText('AdminE2E te lance une playlist');
+    await expect(friend.linkRules).toContainText('20 morceaux, les mêmes pour tous ses joueurs');
+    await expect(friend.linkRules).toContainText('4 manches, de plus en plus dures');
+    await expect(friend.linkRules).toContainText('10 s pour trouver l’artiste et le titre');
+    await expect(friend.answerInput).toHaveCount(0);
+
+    // « Jouer » crée l'invité, relève la playlist du créateur et lance le premier morceau.
+    await friend.linkPlayButton.click();
+    await friend.answerInput.waitFor({ state: 'visible' });
+    await expect(friend.position).toHaveText('Morceau 1 sur 5');
+    await friend.loseFirstRound();
+
+    // Sans accès, pas de « Nouvelle partie » : le jeu du jour à la place.
+    await expect(friend.playAgainButton).toHaveCount(0);
+    await expect(friend.toDailyLink).toBeVisible();
+
+    // La comparaison : les deux joueurs, « Toi » sur sa propre ligne, le pseudo de l'auteur en surtitre.
+    await friend.compareButton.click();
+    await expect(friend.comparisonTitle).toHaveText('2 joueurs de cette playlist');
+    await expect(friend.comparisonEyebrow).toHaveText('Playlist de AdminE2E');
+    await expect(friend.comparisonRows).toHaveCount(2);
+    await expect(friend.comparison.getByTestId('run-comparison-name').filter({ hasText: 'Toi' })).toHaveCount(1);
+    await expect(friend.comparison.getByText('AdminE2E', { exact: true }).first()).toBeVisible();
+    await expect(friend.comparison.getByText('✕')).toHaveCount(6);
+
+    // Une playlist se joue une seule fois : le même lien rouvert mène directement à la comparaison.
+    await friendPage.goto(`/runs/${code}`);
+    await expect(friend.comparisonTitle).toHaveText('2 joueurs de cette playlist');
+    await expect(friend.linkScreen).toHaveCount(0);
+
+    // L'auteur voit l'invité de l'ami dans le même tableau.
+    await page.goto(`/runs/${code}`);
+    await expect(author.comparisonRows).toHaveCount(2);
+    await expect(author.comparison.getByText('Invité', { exact: true })).toBeVisible();
+
+    // Un lien inconnu le dit, sans proposer de réessayer.
+    await friendPage.goto('/runs/ZZZZZZ');
+    await expect(friend.statusScreen).toContainText('Playlist introuvable');
+    await friendContext.close();
+  });
 });
