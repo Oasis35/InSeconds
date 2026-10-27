@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
+import { ShareButtonComponent } from '../../../gameplay/ui/share-button/share-button.component';
 import { RunComparison } from '../../domain/run';
 
 /**
@@ -9,7 +10,7 @@ import { RunComparison } from '../../domain/run';
  */
 @Component({
   selector: 'app-run-comparison-screen',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, ShareButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex-1 flex flex-col' },
   template: `
@@ -23,7 +24,7 @@ import { RunComparison } from '../../domain/run';
         </h1>
       </header>
 
-      <div class="rounded-(--radius-card) overflow-x-auto" style="background:rgb(var(--rgb-surface) / 0.55);border:1px solid var(--border-subtle)">
+      <div class="-mx-5 overflow-x-auto" style="border-top:1px solid var(--border-medium);border-bottom:1px solid var(--border-medium)">
         <table class="w-full text-sm tabular-nums" data-testid="run-comparison-table">
           <thead>
             <tr style="color:var(--text-muted)">
@@ -54,18 +55,15 @@ import { RunComparison } from '../../domain/run';
                     }
                   </td>
                 }
-                <td class="text-right font-extrabold px-3 py-2" style="color:var(--text-hi)" data-testid="run-comparison-total">{{ row.totalScore }}</td>
+                <td class="text-right px-3 py-2" style="font-family:var(--font-score);font-weight:900;color:var(--text-hi)" data-testid="run-comparison-total">{{ row.totalScore }}</td>
               </tr>
             }
           </tbody>
         </table>
       </div>
 
-      <button type="button" (click)="share.emit()" data-testid="run-share"
-        class="w-full py-3.5 rounded-(--radius-button) text-sm font-bold tracking-wide uppercase transition touch-manipulation"
-        style="font-family:var(--font-display);letter-spacing:0.06em;background:var(--gradient-primary);color:var(--text-on-primary);box-shadow:var(--glow-primary)">
-        {{ (shareCopied() ? 'runs.finished.shareCopied' : shareFailed() ? 'runs.finished.shareFailed' : 'runs.finished.share') | translate }}
-      </button>
+      <app-share-button data-testid="run-share" [copied]="shareCopied()" [failed]="shareFailed()" labelKey="runs.finished.share"
+        copiedKey="runs.finished.shareCopied" failedKey="runs.finished.shareFailed" (share)="share.emit()" />
     </div>
   `,
 })

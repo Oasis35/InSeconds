@@ -72,7 +72,7 @@ describe('RunComparisonScreenComponent', () => {
     const share = vi.fn();
     fixture.componentInstance.share.subscribe(share);
 
-    (element.querySelector('[data-testid="run-share"]') as HTMLButtonElement).click();
+    (element.querySelector('[data-testid="run-share"] button') as HTMLButtonElement).click();
 
     expect(share).toHaveBeenCalledTimes(1);
     expect(element.querySelector('[data-testid="run-share"]')?.textContent).toContain('runs.finished.share');

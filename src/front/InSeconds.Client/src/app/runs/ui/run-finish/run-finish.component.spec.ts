@@ -67,7 +67,7 @@ describe('RunFinishComponent', () => {
     fixture.componentInstance.share.subscribe(share);
     fixture.componentInstance.playAgain.subscribe(again);
 
-    (element.querySelector('[data-testid="run-share"]') as HTMLButtonElement).click();
+    (element.querySelector('[data-testid="run-share"] button') as HTMLButtonElement).click();
     (element.querySelector('[data-testid="run-play-again"]') as HTMLButtonElement).click();
 
     expect(share).toHaveBeenCalled();
