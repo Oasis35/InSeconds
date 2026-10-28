@@ -61,7 +61,7 @@ const initialState: DailyState = {
 /**
  * La partie du jour (§ 6.2 du plan v2) : l'écran affiché (`DailyScreen`, les transitions sont dans `domain/daily-screen`), la partie en cours,
  * les morceaux répondus, la série, les statistiques du jour. À fournir à la page (avec `TrackRoundStore`, qu'il pilote) : la route fournit
- * aussi le lecteur (`provideGameplay()`).
+ * aussi l'adaptateur de l'API (`provideDailyApi()`) et le lecteur (`provideGameplay()`).
  *
  * **Le son ne démarre que sur un clic du joueur** : `begin()` (« Commencer », « Reprendre ») et `nextTrack()` (« Piste suivante ») lancent la
  * manche ; jamais l'arrivée sur la route, un `effect` ni le retour de l'onglet au premier plan. Les navigateurs ne jouent un son qu'après un

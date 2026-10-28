@@ -8,7 +8,7 @@ describe('JobsApi', () => {
   let api: JobsApi;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [{ provide: AdminClient, useValue: client }] });
+    TestBed.configureTestingModule({ providers: [JobsApi, { provide: AdminClient, useValue: client }] });
     api = TestBed.inject(JobsApi);
   });
 

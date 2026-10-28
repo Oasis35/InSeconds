@@ -5,6 +5,7 @@ import { JOBS_DASHBOARD_URL } from '../data-access/admin-api.providers';
 import { FakeActionsApi, fakeActionsApi, provideActionsApiFake } from '../data-access/testing/fake-actions-api';
 import { problem } from '../data-access/testing/fake-catalogue-api';
 import { FakeJobsApi, fakeJobsApi, provideJobsApiFake } from '../data-access/testing/fake-jobs-api';
+import { fakeWeeklyStoryApi, provideWeeklyStoryApiFake } from '../data-access/testing/fake-weekly-story-api';
 import { ActionsPage } from './actions.page';
 
 function lastRun(id: string, overrides: Partial<JobLastRun> = {}): JobLastRun {
@@ -26,6 +27,7 @@ describe('ActionsPage', () => {
         provideTranslateService(),
         provideActionsApiFake(api),
         provideJobsApiFake(jobs),
+        provideWeeklyStoryApiFake(fakeWeeklyStoryApi()),
         { provide: JOBS_DASHBOARD_URL, useValue: 'https://api.test/jobs' },
       ],
     });

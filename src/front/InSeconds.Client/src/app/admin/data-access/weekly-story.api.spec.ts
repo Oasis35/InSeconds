@@ -10,7 +10,7 @@ describe('WeeklyStoryApi', () => {
         status: 'ok', from: '2026-09-21', to: '2026-09-27', minAnswers: 3, mostFound: undefined, mostMissed: undefined, ...response,
       } as unknown as WeeklyRecapResponse)),
     };
-    TestBed.configureTestingModule({ providers: [{ provide: DailyClient, useValue: client }] });
+    TestBed.configureTestingModule({ providers: [WeeklyStoryApi, { provide: DailyClient, useValue: client }] });
     return { client, api: TestBed.inject(WeeklyStoryApi) };
   }
 
