@@ -17,7 +17,7 @@ describe('DashboardApi', () => {
 
   function setup(result: DashboardResponse) {
     const client = { getDashboard: vi.fn(() => of(result)) };
-    TestBed.configureTestingModule({ providers: [{ provide: DailyClient, useValue: client }] });
+    TestBed.configureTestingModule({ providers: [DashboardApi, { provide: DailyClient, useValue: client }] });
     return { client, api: TestBed.inject(DashboardApi) };
   }
 

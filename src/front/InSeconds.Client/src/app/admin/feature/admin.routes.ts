@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 import { RedirectFunction, Router, Routes } from '@angular/router';
-import { provideAdminRunsApi } from '../data-access/admin-runs-api.providers';
+import { provideAdminApi } from '../data-access/admin-api.providers';
 import { AdminShellPage } from './admin-shell/admin-shell.page';
 import { DEFAULT_TAB, LEGACY_TAB_NAMES } from './admin-tabs';
 
@@ -27,12 +27,12 @@ const poolToCatalogue: RedirectFunction = ({ queryParams, fragment }) =>
 /** Un onglet inconnu (`/admin/nimporte`) mène à l'onglet d'arrivée. */
 const unknownTab: RedirectFunction = () => inject(Router).createUrlTree(['/admin', DEFAULT_TAB]);
 
-/** Routes du domaine `admin`, chargées à la demande (`/admin/...`). Chaque page fournit ses stores. */
+/** Routes du domaine `admin`, chargées à la demande (`/admin/...`) avec les clients de l'API. Chaque page fournit ses stores. */
 export const ADMIN_ROUTES: Routes = [
   {
     path: '',
     component: AdminShellPage,
-    providers: [provideAdminRunsApi()],
+    providers: [provideAdminApi()],
     children: [
       { path: '', pathMatch: 'full', redirectTo: defaultTab },
       { path: 'pool', pathMatch: 'full', redirectTo: poolToCatalogue },

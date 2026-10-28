@@ -11,7 +11,7 @@ function toCooldown(response: AdminDailySettingsResponse): CooldownSettings {
  * Adaptateur des actions de l'admin sur le jeu du jour (`api/daily`) : seule porte d'entrée vers le
  * client généré. Les erreurs sont celles du client (`toAppError` sait les lire).
  */
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class ActionsApi {
   private readonly client = inject(DailyClient);
 
