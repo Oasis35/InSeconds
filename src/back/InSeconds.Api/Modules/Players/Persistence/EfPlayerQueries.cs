@@ -38,6 +38,7 @@ public sealed class EfPlayerQueries(InSecondsDbContext db) : IPlayerQueries
                 {
                     p.CreatedAt,
                     p.LastSeenAt,
+                    p.AcquisitionSource,
                     Account = account == null ? null : new AccountExport(account.Email, account.Pseudo, account.LinkedAt, account.IsAdmin),
                 })
             .FirstOrDefaultAsync(ct);
@@ -49,6 +50,6 @@ public sealed class EfPlayerQueries(InSecondsDbContext db) : IPlayerQueries
             .OrderBy(s => s.CreatedAt)
             .Select(s => new DeviceExport(s.UserAgentLabel, s.CreatedAt, s.LastSeenAt, s.RevokedAt))
             .ToListAsync(ct);
-        return new PlayerRecordExport(player.CreatedAt, player.LastSeenAt, player.Account, devices);
+        return new PlayerRecordExport(player.CreatedAt, player.LastSeenAt, player.AcquisitionSource, player.Account, devices);
     }
 }

@@ -85,10 +85,11 @@ public class PlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
     public async Task Export_Invite_SansCompte()
     {
         var browser = _app.Browser();
-        (await browser.PostAsync("/api/players/guest", null, Ct)).EnsureSuccessStatusCode();
+        (await browser.PostAsJsonAsync("/api/players/guest", new CreateGuest("instagram"), Ct)).EnsureSuccessStatusCode();
 
         var export = (await browser.GetFromJsonAsync<PlayerDataExport>("/api/players/me/export", Ct))!;
 
+        Assert.Equal("instagram", export.AcquisitionSource);
         Assert.Null(export.Account);
         Assert.Single(export.Devices);
         // Une section vide reste une section : rien de joué, mais le mode figure dans la copie.

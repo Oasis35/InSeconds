@@ -15,6 +15,7 @@ internal sealed class PlayerConfiguration : IEntityTypeConfiguration<Player>
         builder.ToTable("players", DbSchemas.Players);
         builder.HasKey(p => p.Id);
         builder.Property(p => p.Id).ValueGeneratedNever();
+        builder.Property(p => p.AcquisitionSource).HasMaxLength(AcquisitionSource.MaxLength);
     }
 }
 
