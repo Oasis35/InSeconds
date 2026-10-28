@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 
 /**
- * Accès au stockage local du navigateur (port transverse, § 6.1 du plan v2). `localStorage` peut
+ * Accès au stockage local du navigateur (port transverse). `localStorage` peut
  * être indisponible (navigation privée stricte, stockage plein) : ces méthodes ne lèvent jamais.
  * Remplacé par une implémentation en mémoire dans les tests.
  */

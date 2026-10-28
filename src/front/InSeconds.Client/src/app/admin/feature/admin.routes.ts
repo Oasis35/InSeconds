@@ -6,7 +6,7 @@ import { DEFAULT_TAB, LEGACY_TAB_NAMES } from './admin-tabs';
 
 /**
  * `/admin` n'a pas de contenu : il mène à l'onglet d'arrivée (le tableau de bord). Les anciennes adresses
- * `/admin?tab=…` (v1) sont redirigées vers l'onglet demandé, le pool s'appelant désormais `catalogue`.
+ * `/admin?tab=…` sont redirigées vers l'onglet demandé, le pool s'appelant `catalogue`.
  */
 const defaultTab: RedirectFunction = ({ queryParams }) => {
   const { tab, ...others } = queryParams;

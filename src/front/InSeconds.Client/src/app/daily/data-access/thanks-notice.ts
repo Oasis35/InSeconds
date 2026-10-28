@@ -5,12 +5,15 @@ import { StoragePort } from '../../core/storage/storage.port';
 import { roundedGamesPlayed } from '../domain/thanks';
 import { DailyApi } from './daily.api';
 
-/** Clé du stockage local, et la valeur qui dit que ce message-là a été vu (un autre message aura une autre valeur). */
+/**
+ * Clé du stockage local, et la valeur qui dit que ce message-là a été vu (un autre message aura une autre valeur).
+ * `v2-launch` est une clé historique, lue par l'app : la changer remontrerait le message à tous.
+ */
 export const THANKS_SEEN_KEY = 'inseconds.thanksNoticeSeen';
 export const THANKS_NOTICE_ID = 'v2-launch';
 
 /**
- * Le message de remerciement du lancement de la v2, montré **une seule fois par navigateur** après une partie : vu (fermé ou non),
+ * Le message de remerciement, montré **une seule fois par navigateur** après une partie : vu (fermé ou non),
  * il est noté dans le stockage local et ne revient plus. Rend aussi le chiffre du message et partage l'invitation « Défie un ami ».
  */
 @Injectable()

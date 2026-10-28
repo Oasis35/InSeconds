@@ -1,5 +1,5 @@
 /**
- * La manche d'un morceau, en TypeScript pur (§ 6.3 du plan v2) : écouter, saisir, envoyer, voir la
+ * La manche d'un morceau, en TypeScript pur : écouter, saisir, envoyer, voir la
  * réponse. Chaque transition prend la manche et en rend une autre (la même si elle n'a pas lieu
  * d'être). Rien ici ne connaît le mode de jeu, le son ni le réseau : le store l'enveloppe, le mode
  * lui fournit sa politique d'écoute et d'indices et envoie la réponse.
@@ -225,8 +225,8 @@ export function unlockedHintLevel(round: TrackRound): number {
 }
 
 /**
- * Les niveaux qu'on peut demander : tous ceux débloqués au-dessus du niveau déjà révélé, comme en
- * v1 (à 10 s, « Indice année » et « Indice artiste » ensemble ; le niveau 2 révèle aussi l'année).
+ * Les niveaux qu'on peut demander : tous ceux débloqués au-dessus du niveau déjà révélé
+ * (à 10 s, « Indice année » et « Indice artiste » ensemble ; le niveau 2 révèle aussi l'année).
  */
 export function availableHintLevels(round: TrackRound): number[] {
   if (!isAnswering(round)) return [];

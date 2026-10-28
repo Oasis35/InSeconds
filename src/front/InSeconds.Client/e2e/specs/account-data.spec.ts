@@ -8,7 +8,7 @@ import { linkAccount } from '../pages/login.page';
 const EMAIL = 'donnees@e2e.test';
 const PSEUDO = 'DonneesE2E';
 
-test.describe('Tes données (v2)', () => {
+test.describe('Tes données', () => {
   test.beforeEach(async ({ api }) => {
     await api.reset();
   });

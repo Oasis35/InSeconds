@@ -47,7 +47,7 @@ function pathOf(url: string): string {
 }
 
 /**
- * Détection et application d'une nouvelle version du front, par le service worker d'Angular (§ 6.6 du plan v2)
+ * Détection et application d'une nouvelle version du front, par le service worker d'Angular
  * plutôt qu'une comparaison maison avec `/health` :
  * - `VERSION_READY` : la nouvelle version est téléchargée ; elle est mise en attente et appliquée en rechargeant la page au
  *   premier moment sûr (bonne pratique web.dev / Angular : jamais sous les doigts du joueur) : tout de suite si la page l'accepte

@@ -6,7 +6,7 @@ import { ModalFrameComponent } from '../../../ui/modal/modal-frame.component';
 
 /**
  * Avis « l'adresse a changé, pense à mettre à jour ton favori », affiché quand on arrive par
- * l'ancienne adresse du front (cf. `consumeLegacyUrlFlag`). Repris de la v1, ouvert par
+ * l'ancienne adresse du front (cf. `consumeLegacyUrlFlag`). Ouvert par
  * `ModalService` (focus, Échap, fond cliquable et `role="dialog"` fournis par le CDK Dialog).
  */
 @Component({

@@ -217,7 +217,7 @@ describe('indices', () => {
     expect(unlockedHintLevel(at(10))).toBe(2);
   });
 
-  it('tous les niveaux débloqués se proposent ensemble, comme en v1 (le 2 sans passer par le 1)', () => {
+  it('tous les niveaux débloqués se proposent ensemble (le 2 sans passer par le 1)', () => {
     expect(availableHintLevels(at(2))).toEqual([]);
     expect(availableHintLevels(at(5))).toEqual([1]);
     expect(availableHintLevels(at(10))).toEqual([1, 2]);

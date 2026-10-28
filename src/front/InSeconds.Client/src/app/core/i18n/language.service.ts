@@ -9,7 +9,7 @@ export const DEFAULT_LANG: Lang = 'fr';
 const STORAGE_KEY = 'lang';
 
 /**
- * Langue de l'interface (repris de la v1) : choix mémorisé, sinon langue du navigateur, sinon
+ * Langue de l'interface : choix mémorisé, sinon langue du navigateur, sinon
  * français. Appliquée à ngx-translate et à `<html lang>`.
  */
 @Injectable({ providedIn: 'root' })

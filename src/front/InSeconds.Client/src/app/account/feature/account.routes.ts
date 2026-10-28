@@ -7,7 +7,7 @@ import { VerifyPage } from './verify/verify.page';
 
 /**
  * Routes du domaine `account`, chargées à la demande (`/account/...`). Chaque page fournit ses
- * propres stores. Les anciennes adresses de la v1 (`/login`, `/profile`…) sont redirigées par
+ * propres stores. Les anciennes adresses (`/login`, `/profile`…) sont redirigées par
  * `app.routes.ts`, en gardant la query string.
  */
 export const ACCOUNT_ROUTES: Routes = [

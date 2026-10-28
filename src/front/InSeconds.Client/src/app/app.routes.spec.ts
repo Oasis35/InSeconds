@@ -33,7 +33,7 @@ describe('routes', () => {
     expect(await landOn('/')).toBe('/daily');
   });
 
-  // Anciennes adresses v1 : liens partagés, favoris, liens des emails déjà envoyés.
+  // Anciennes adresses : liens partagés, favoris, liens des emails déjà envoyés.
   const legacyRedirects: [string, string][] = [
     ['/blindtest', '/daily'],
     ['/login', '/account/login'],

@@ -439,7 +439,7 @@ test.describe('Admin - défis', () => {
 });
 
 // Recalcul des chiffres figés d'un défi : permis à partir de J-2, refusé pour la veille et le jour même.
-test.describe('Admin - recalcul des stats (v2)', () => {
+test.describe('Admin - recalcul des stats', () => {
   const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
 
   test.beforeEach(async ({ api }) => {

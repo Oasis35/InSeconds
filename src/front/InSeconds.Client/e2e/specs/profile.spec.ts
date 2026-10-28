@@ -18,7 +18,7 @@ test.describe('Profil', () => {
     await expect(page).toHaveURL(/\/profile$/);
   });
 
-  test('le lien de compte du header disparaît pendant la manche (v2)', async ({ page, api }) => {
+  test('le lien de compte du header disparaît pendant la manche', async ({ page, api }) => {
     await linkAccount(page, api, EMAIL_A, 'MancheUserE2E');
     const game = new GamePage(page);
     const avatar = page.locator('app-account-link').getByTitle('Mon profil : MancheUserE2E');

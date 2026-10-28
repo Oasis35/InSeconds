@@ -28,7 +28,7 @@ async function expectSignedOut(page: Page): Promise<void> {
   await expect(page).toHaveURL(/\/account\/login$/);
 }
 
-test.describe('Appareils connectés (v2)', () => {
+test.describe('Appareils connectés', () => {
   test.beforeEach(async ({ api }) => {
     await api.reset();
   });

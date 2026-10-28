@@ -1,5 +1,5 @@
 /**
- * La table unique qui traduit un code d'erreur de l'API en clé i18n (§ 6.6 du plan v2). Un code
+ * La table unique qui traduit un code d'erreur de l'API en clé i18n. Un code
  * absent de la table tombe sur le message générique, accompagné du `traceId`. Chaque module y
  * ajoute ses codes quand il les crée côté back (`daily.already_played` →
  * `errors.daily.already_played`) ; un test vérifie que chaque clé existe en FR et en EN.

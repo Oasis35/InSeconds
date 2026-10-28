@@ -12,12 +12,12 @@ const QUERY = '?utm_source=e2e&x=1';
 const escape = (s: string) => s.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 const endsWith = (path: string) => new RegExp(`${escape(path)}$`);
 
-test.describe('Anciennes adresses (v2)', () => {
+test.describe('Anciennes adresses', () => {
   test.beforeEach(async ({ api }) => {
     await api.reset();
   });
 
-  test('redirige les anciennes adresses vers les routes v2 en gardant la query string', async ({ page }) => {
+  test('redirige les anciennes adresses vers les routes actuelles en gardant la query string', async ({ page }) => {
     const cases: [from: string, to: string][] = [
       [`/${QUERY}`, `/daily${QUERY}`],
       [`/blindtest${QUERY}`, `/daily${QUERY}`],

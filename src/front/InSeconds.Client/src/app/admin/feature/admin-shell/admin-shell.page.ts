@@ -26,8 +26,8 @@ import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-bac
   providers: [ProfileStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <!-- Mise en page de la v1 : titre et identifiant centrés, barre des onglets pleine largeur,
-         déconnexion en bas. Haut de page à 32 px comme en v1. -->
+    <!-- Titre et identifiant centrés, barre des onglets pleine largeur,
+         déconnexion en bas. Haut de page à 32 px. -->
     <main class="da-bg relative min-h-dvh flex flex-col items-center gap-6 px-4 pt-8 pb-10" style="color:var(--text-body)">
       <app-decor-background />
       <div class="relative w-full flex flex-col items-center gap-6">
@@ -87,7 +87,7 @@ import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-bac
   `,
 })
 export class AdminShellPage {
-  /** Ordre et libellés de la v1. */
+  /** Ordre et libellés des onglets. */
   protected readonly tabs = ADMIN_TABS;
   protected readonly session = inject(SessionStore);
   protected readonly profile = inject(ProfileStore);

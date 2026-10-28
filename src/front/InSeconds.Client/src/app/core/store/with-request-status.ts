@@ -3,7 +3,7 @@ import { signalStoreFeature, withComputed, withState } from '@ngrx/signals';
 import { AppError } from '../errors/app-error';
 
 /**
- * État d'une requête, partagé par tous les stores (§ 6.2 du plan v2) : chargement, succès ou
+ * État d'une requête, partagé par tous les stores : chargement, succès ou
  * erreur avec son code. Le store appelle `patchState(store, setPending())` avant l'appel, puis
  * `setFulfilled()` ou `setError(error)`.
  */

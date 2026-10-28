@@ -70,7 +70,7 @@ describe('AdminShellPage', () => {
     expect(text(element)).not.toContain('admin.accessDenied');
   });
 
-  it('montre les cinq onglets dans l\'ordre de la v1, le catalogue actif', async () => {
+  it('montre les cinq onglets dans leur ordre, le catalogue actif', async () => {
     const { element } = await open(admin, '/admin/catalogue');
 
     const links = Array.from(element.querySelectorAll<HTMLAnchorElement>('nav a'));
@@ -80,7 +80,7 @@ describe('AdminShellPage', () => {
       .toEqual(['/admin/catalogue']);
   });
 
-  it('met la déconnexion sous le contenu de l\'onglet, comme en v1', async () => {
+  it('met la déconnexion sous le contenu de l\'onglet', async () => {
     const { element } = await open(admin, '/admin/catalogue');
 
     const child = element.querySelector('#child')!;
