@@ -2,8 +2,8 @@ import { inject } from '@angular/core';
 import { CanActivateFn, Router, Routes } from '@angular/router';
 import { provideGameplay } from '../../gameplay/feature/provide-gameplay';
 import { DailyApi } from '../data-access/daily.api';
-import { ArchivePage } from './archive.page';
-import { DailyPage } from './daily.page';
+import { ArchivePage } from './archive/archive.page';
+import { DailyPage } from './daily/daily.page';
 import { leaveGameGuard } from './leave-game.guard';
 
 /** `/daily/archive` : les réponses du jour publié le plus récent, la veille d'ordinaire ; sans jour publié, le jeu du jour. */

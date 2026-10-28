@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { GuessTimeChartComponent } from '../../../gameplay/ui/guess-time-chart.component';
+import { GuessTimeChartComponent } from '../../../gameplay/ui/guess-time-chart/guess-time-chart.component';
 import { ArchiveMyAnswer, ArchiveTrack } from '../../domain/archive';
 import { DeezerBadgeComponent } from '../../../gameplay/ui/deezer-badge/deezer-badge.component';
 

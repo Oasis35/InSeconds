@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { RedirectFunction, Router, Routes } from '@angular/router';
 import { provideAdminRunsApi } from '../data-access/admin-runs-api.providers';
-import { AdminShellPage } from './admin-shell.page';
+import { AdminShellPage } from './admin-shell/admin-shell.page';
 import { DEFAULT_TAB, LEGACY_TAB_NAMES } from './admin-tabs';
 
 /**
@@ -36,11 +36,11 @@ export const ADMIN_ROUTES: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: defaultTab },
       { path: 'pool', pathMatch: 'full', redirectTo: poolToCatalogue },
-      { path: 'dashboard', loadComponent: () => import('./dashboard.page').then(m => m.DashboardPage) },
-      { path: 'defis', loadComponent: () => import('./challenges.page').then(m => m.ChallengesPage) },
-      { path: 'catalogue', loadComponent: () => import('./catalogue.page').then(m => m.CataloguePage) },
-      { path: 'joueurs', loadComponent: () => import('./players.page').then(m => m.PlayersPage) },
-      { path: 'actions', loadComponent: () => import('./actions.page').then(m => m.ActionsPage) },
+      { path: 'dashboard', loadComponent: () => import('./dashboard/dashboard.page').then(m => m.DashboardPage) },
+      { path: 'defis', loadComponent: () => import('./challenges/challenges.page').then(m => m.ChallengesPage) },
+      { path: 'catalogue', loadComponent: () => import('./pool/catalogue.page').then(m => m.CataloguePage) },
+      { path: 'joueurs', loadComponent: () => import('./players/players.page').then(m => m.PlayersPage) },
+      { path: 'actions', loadComponent: () => import('./actions/actions.page').then(m => m.ActionsPage) },
       { path: '**', redirectTo: unknownTab },
     ],
   },

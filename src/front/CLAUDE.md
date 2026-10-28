@@ -79,6 +79,8 @@ src/front/InSeconds.Client/
 
 Les domaines (`gameplay/`, `daily/`, `runs/`, `account/`, `admin/`) ont chacun quatre couches : `domain/` (TypeScript pur), `data-access/` (stores, adaptateurs API), `feature/` (pages routées), `ui/` (présentation).
 
+Dans `feature/` et `ui/`, **un composant = un dossier** à son nom (`login/login.page.ts`, `run-disc/run-disc.component.ts`), avec son `.html`, son `.scss` et son `.spec.ts` à côté ; une page, une fenêtre (`*.dialog.ts`) ou un composant d'une page ont chacun le leur. Restent à la racine de leur couche les fichiers qui ne sont pas des composants : routes (`*.routes.ts`), `provide-*.ts`, gardes, `reload-moment.ts`. Les aides de test vont dans `testing/` de la couche qui s'en sert (`data-access/testing/` pour les faux adaptateurs, `account/feature/testing/` pour `dom.ts` et `token-page.ts`). L'admin range en plus ses composants par onglet (cf. § Domaine admin).
+
 ## Frontières (Sheriff)
 
 `npm run lint:arch` (job CI `front`) fait échouer la CI si :
@@ -245,6 +247,27 @@ Règles :
 ## Domaine admin
 
 `src/app/admin/`, quatre couches. La coquille et cinq onglets : **tableau de bord**, **défis**, **pool** (`/admin/catalogue`), **joueurs**, **actions** (le domaine `admin` peut importer `account`, pour `BrowserIdComponent`, et `gameplay`, pour l'histogramme des temps).
+Arborescence par onglet (un dossier par composant ; dans `feature/`, le dossier d'un onglet est celui de sa page, ses fenêtres et ses composants dans des sous-dossiers ; l'onglet du pool s'appelle `pool/` dans les deux couches, même si sa page est `CataloguePage` et sa route `/admin/catalogue`) :
+
+```
+admin/
+├── domain/  data-access/        # à plat, un fichier par sujet (testing/ pour les faux adaptateurs)
+├── feature/
+│   ├── admin.routes.ts, admin-tabs.ts, provide-admin.ts
+│   ├── admin-shell/             # AdminShellPage (coquille, barre des onglets)
+│   ├── dashboard/               # DashboardPage
+│   ├── challenges/              # ChallengesPage, track-chart/ (TrackChartDialog)
+│   ├── pool/                    # CataloguePage, edit-track/, delete-track/ (fenêtres)
+│   ├── players/                 # PlayersPage
+│   └── actions/                 # ActionsPage, weekly-story/ (WeeklyStoryComponent)
+└── ui/
+    ├── dashboard/               # dashboard-day-nav, dashboard-kpis, dashboard-activity, dashboard-players
+    ├── challenges/              # challenge-card, challenge-history, challenge-month-nav, challenge-player-chips, challenge-track-stats
+    ├── pool/                    # pool-view-selector, pool-toolbar, pool-filter-bar, pool-table, search-panel
+    ├── players/                 # player-row, player-history, player-icon
+    └── actions/                 # action-cooldown, action-jobs-link, job-witness, weekly-story-visual
+```
+
 - `domain/` (TypeScript pur) : `PoolTrack` (`isUsed` fourni par le back, `usages[]` : ce que chaque mode en dit, et `genres` : ceux de l'album du morceau, lus chez Deezer), `pool-views.ts` (**registre des vues** : `POOL_VIEW` et `MODE_VIEWS`, un mode s'y ajoute et apparaît dans le sélecteur, le filtre « Joué par » et les pastilles sans autre changement du Pool), filtres, **un par colonne affichée** (texte cherché dans l'artiste, le titre **et « artiste titre » collés**, piège 28, dans les deux vues ; pool général : genre, extrait, statut, « Joué par » tous / aucun mode / un mode ; vue d'un mode : plage de dernière utilisation). **Statut** (`statusOf`) : désactivé d'abord, sinon utilisé ou disponible, la même règle pour la colonne, le filtre et les compteurs de la barre (un désactivé n'est jamais « disponible »), tri (**par défaut les disponibles avant les utilisés** ; désactivés toujours en fin ; valeurs vides en dernier ; colonnes de date et de compteur lues dans le mode de la vue), pagination par 15 ; le cooldown (`domain/actions.ts` : bornes de la part du pool, 10 à 90 %, **seuil d'alerte de 14 jours** et `cooldownTone` : rouge sous 7 jours, orange sous 14, vert au-delà, #275) ;
 - `data-access/` : `CatalogueApi` (adaptateur du client, rend des types du domaine ; `findPreviewUrl` redemande l'extrait à Deezer, le pool n'en garde pas l'adresse signée), `PoolStore` (liste, filtres, tri, page, sélection, ajout, renommage, désactivation, suppression : **aucune mutation locale**, la liste est relue après chaque action ; les actions rendent l'erreur à afficher dans leur fenêtre ou `null`), `DeezerSearchStore` (panneau : attente de 300 ms, recherche annulée par la suivante, ajout par ligne, liaison avec le filtre, **active par défaut**) ; `catalogue.providers.ts` donne l'adresse de l'API au client ;
 - `feature/` : `AdminShellPage` (titre et ID navigateur centrés, barre des 5 onglets `ADMIN_TABS` de `admin-tabs.ts`, déconnexion sous le contenu ; accès : visiteur ou invité → « Connecte-toi d'abord » ; compte sans le rôle → « Accès refusé » ; admin → onglets et déconnexion ; l'ID navigateur est affiché dans tous les cas), `CataloguePage` (fournit `PoolStore`, `DeezerSearchStore` et `AudioPreviewPlayer`, câble la liaison filtre ↔ recherche, reprend et écrit `?view=` (la vue : absent pour le pool général, `daily`…, un nom inconnu est ignoré) puis `?page=` - numérotée à partir de 1, `replaceUrl` -, ouvre les fenêtres), la fenêtre d'écoute `PreviewTrackDialog` de `core/audio-preview/` (un morceau du pool, dont l'extrait est redemandé à Deezer par `loadPreviewUrl`, ou un résultat du panneau de recherche, lu avec l'extrait déjà reçu, `previewUrl` : le ▶ d'un résultat ouvre cette fenêtre au lieu de jouer dans le panneau), `EditTrackDialog` (renommer est permis **à tout moment, défi du jour compris**, avec un avertissement dans ce cas), `DeleteTrackDialog`, `ADMIN_ROUTES`, `provideAdmin()` (branché dans `app.config.ts`) ;
@@ -266,4 +289,4 @@ Seul `**/api.generated.ts` est exclu (UI SonarCloud, cf. [`docs/exploitation/ci.
 
 ## Conventions
 
-Cf. CLAUDE.md racine § Architecture front : couleurs par `var(--…)`, un composant = `.ts` (+ `.html` s'il est long), `OnPush`, écouteurs globaux dans `host: {}`, état exposé en lecture seule, traductions dans chaque composant qui affiche du texte. En plus : **champs de saisie à 16 px au moins sur écran tactile** (règle `@media (pointer: coarse)` de `styles.scss`, hors couche donc devant `text-sm` : sous 16 px, Safari sur iPhone zoome au toucher et garde le zoom) ; modales **uniquement** par `ModalService` (plus de modale maison ; `injector` pour qu'une fenêtre retrouve les stores de sa page), boutons par `appButton`. Formes, couleurs, capitales et durées : CLAUDE.md racine § Conventions (identité visuelle) ; jamais de `rounded-full` / `rounded-2xl` sur un bouton (sauf les commandes rondes du lecteur), jamais une durée écrite à la main (`{{ x }}s`) : `appSeconds`.
+Cf. CLAUDE.md racine § Architecture front : couleurs par `var(--…)`, un composant = un dossier avec `.ts` (+ `.html` s'il est long, et son `.spec.ts`, cf. § Structure), `OnPush`, écouteurs globaux dans `host: {}`, état exposé en lecture seule, traductions dans chaque composant qui affiche du texte. En plus : **champs de saisie à 16 px au moins sur écran tactile** (règle `@media (pointer: coarse)` de `styles.scss`, hors couche donc devant `text-sm` : sous 16 px, Safari sur iPhone zoome au toucher et garde le zoom) ; modales **uniquement** par `ModalService` (plus de modale maison ; `injector` pour qu'une fenêtre retrouve les stores de sa page), boutons par `appButton`. Formes, couleurs, capitales et durées : CLAUDE.md racine § Conventions (identité visuelle) ; jamais de `rounded-full` / `rounded-2xl` sur un bouton (sauf les commandes rondes du lecteur), jamais une durée écrite à la main (`{{ x }}s`) : `appSeconds`.
