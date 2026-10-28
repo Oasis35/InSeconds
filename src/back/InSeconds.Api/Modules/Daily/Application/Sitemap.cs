@@ -14,7 +14,7 @@ public static class SitemapEndpoint
     private static readonly XNamespace Ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
 
     /// <summary>Les pages fixes du front, toujours en tête du plan.</summary>
-    private static readonly string[] FixedPages = ["/daily", "/privacy"];
+    private static readonly string[] FixedPages = ["/daily", "/legal", "/privacy"];
 
     /// <summary>Le plan du site pour les moteurs de recherche : les pages fixes, puis un jour passé publié par ligne, du plus récent au plus ancien.</summary>
     public static string Build(AppOptions app, IReadOnlyList<DateOnly> published)

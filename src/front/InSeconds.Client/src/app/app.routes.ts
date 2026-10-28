@@ -22,14 +22,15 @@ export const routes: Routes = [
   { path: 'profile', pathMatch: 'full', redirectTo: redirectKeepingQuery('/account/profile') },
   { path: 'profile/confirm-email', pathMatch: 'full', redirectTo: redirectKeepingQuery('/account/confirm-email') },
   { path: 'confidentialite', pathMatch: 'full', redirectTo: redirectKeepingQuery('/privacy') },
-  { path: 'mentions-legales', pathMatch: 'full', redirectTo: redirectKeepingQuery('/privacy') },
-  { path: 'legal-notice', pathMatch: 'full', redirectTo: redirectKeepingQuery('/privacy') },
+  { path: 'mentions-legales', pathMatch: 'full', redirectTo: redirectKeepingQuery('/legal') },
+  { path: 'legal-notice', pathMatch: 'full', redirectTo: redirectKeepingQuery('/legal') },
 
   // Domaines : chacun remplace sa page d'attente par ses routes (chargées à la demande, avec leurs stores).
   { path: 'daily', loadChildren: () => import('./daily/feature/daily.routes').then(m => m.DAILY_ROUTES) },
   { path: 'runs', loadChildren: () => import('./runs/feature/runs.routes').then(m => m.RUNS_ROUTES) },
   { path: 'account', loadChildren: () => import('./account/feature/account.routes').then(m => m.ACCOUNT_ROUTES) },
   { path: 'admin', loadChildren: () => import('./admin/feature/admin.routes').then(m => m.ADMIN_ROUTES) },
+  { path: 'legal', loadComponent: () => import('./core/shell/legal/legal.page').then(m => m.LegalPage) },
   { path: 'privacy', loadComponent: () => import('./core/shell/privacy/privacy.page').then(m => m.PrivacyPage) },
 
   {

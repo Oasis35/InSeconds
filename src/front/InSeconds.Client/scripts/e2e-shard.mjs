@@ -38,7 +38,7 @@ const WEIGHTS = {
   'legacy-urls.spec.ts': 4,
   'clear-search.spec.ts': 3,
   'leave-guard.spec.ts': 3,
-  'footer.spec.ts': 3,
+  'footer.spec.ts': 4,
   'archive.spec.ts': 7,
   'arrival-source.spec.ts': 6,
   'skip-track.spec.ts': 2,

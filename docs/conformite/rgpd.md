@@ -1,6 +1,6 @@
 # RGPD : ce qui est en place
 
-État au 28/10/2026, après la passe RGPD du 16/10/2026 (PR #351, #349, #352), la partie du mode Run (#363) et la source d'arrivée (#445). Le texte public est la page `/privacy` (traductions `privacy.*` de `public/i18n/fr.json` et `en.json`) : toute évolution du traitement des données doit y être reportée.
+État au 28/10/2026, après la passe RGPD du 16/10/2026 (PR #351, #349, #352), la partie du mode Run (#363) et la source d'arrivée (#445). Le texte public est la page `/privacy` (traductions `privacy.*` de `public/i18n/fr.json` et `en.json`), les mentions légales (éditeur, hébergeur, Deezer) sont sur `/legal` (`legal.*`) : toute évolution du traitement des données doit y être reportée.
 
 ## Accès aux données
 
