@@ -13,7 +13,6 @@ namespace InSeconds.ArchitectureTests;
 /// </summary>
 public class HandlerRulesTests
 {
-    private const string ModulesNamespace = "InSeconds.Api.Modules";
     private static readonly Assembly Api = typeof(Program).Assembly;
 
     /// <summary>

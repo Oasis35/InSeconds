@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using InSeconds.Api.Modules.Catalogue.Application;
-using InSeconds.Api.Modules.Catalogue.Contracts;
 using InSeconds.Api.Modules.Daily.Application;
 using InSeconds.Api.Modules.Players.Application;
 using InSeconds.Api.Testing.E2E;

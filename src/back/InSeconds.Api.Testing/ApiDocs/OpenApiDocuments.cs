@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
 namespace InSeconds.Api.Testing.ApiDocs;

@@ -1,7 +1,6 @@
 using Hangfire;
 using InSeconds.Api.Infrastructure.Jobs;
 using InSeconds.Api.Infrastructure.Settings;
-using InSeconds.Api.Modules.Catalogue.Contracts;
 using InSeconds.Api.Modules.Daily.Application;
 using InSeconds.Api.Modules.Daily.Domain;
 using Microsoft.Extensions.DependencyInjection;

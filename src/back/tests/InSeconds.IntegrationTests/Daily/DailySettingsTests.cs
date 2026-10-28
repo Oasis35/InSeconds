@@ -2,7 +2,6 @@ using System.Net;
 using System.Net.Http.Json;
 using InSeconds.Api.Modules.Daily.Application;
 using Microsoft.Extensions.Options;
-using static InSeconds.IntegrationTests.Daily.DailyApi;
 
 namespace InSeconds.IntegrationTests.Daily;
 
