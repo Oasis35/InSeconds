@@ -122,10 +122,6 @@ h1, h2, h3, .font-display {
    Toutes s'arrêtent d'elles-mêmes. Les éléments animés portent [data-anim] :
    simple fondu en mouvement réduit, aucune animation sous E2E (.no-anim posé
    par App quand window.__disableAnimations est vrai). */
-@keyframes gel-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgb(var(--rgb-accent-2) / 0); }
-  50%      { box-shadow: 0 0 0 5px rgb(var(--rgb-accent-2) / 0.15), 0 0 18px rgb(var(--rgb-accent-2) / 0.55); }
-}
 @keyframes gel-spin   { from { transform: rotate(-180deg) scale(0.6); } to { transform: rotate(0) scale(1); } }
 @keyframes gel-shine  { from { transform: translateX(0); } to { transform: translateX(450%); } }
 @keyframes gel-fill   { from { opacity: 0; transform: scale(0.2); } to { opacity: 1; transform: scale(1); } }

@@ -22,11 +22,11 @@
 - On each reveal, see a histogram of how long other players needed to guess that track
 - Guest mode: play without signing up (no leaderboard, only global stats)
 - Optional linked accounts (open signup, passwordless magic-link login) - keeps history/streak across devices; guest play stays fully open regardless
-- Daily streak shown in the header (details panel on click), with streak freezes for linked accounts (1 free on signup, +1 every 7 days, 2 max, used automatically on a missed day)
+- Daily streak shown under the Start button (details panel on tap), with streak freezes for linked accounts (1 free on signup, +1 every 7 days, 2 max, used automatically on a missed day)
 - After playing, a single "today's result" screen: your score with your game as five small bars, the countdown, one line under the score (your standout moment when there is one, otherwise the share of players you beat, from 5 players), an equalizer of today's scores (lowest, median, highest), your tracks folded away
 - Share your score in Wordle-style emoji format (✅ artist and title, 🔶 one of them, 🅾️ none) through the phone's share menu (clipboard on a computer)
 - Available in French and English - auto-detected from the browser, switchable anytime from the footer (choice saved in localStorage)
-- Privacy policy and legal notice at `/privacy` (also `/confidentialite`)
+- Legal notice at `/legal` (also `/mentions-legales`) and privacy policy at `/privacy` (also `/confidentialite`)
 - Installable on the home screen (PWA), updated automatically at a safe moment (never in the middle of a round)
 - List of the devices signed in to your account, sign out one device or all the others
 - Your data (GDPR): download a JSON copy of all your data and permanently delete your account ("Your data" section of the profile); devices unseen for 91 days and accounts inactive for 3 years are deleted automatically every night; what you type as an answer is never stored

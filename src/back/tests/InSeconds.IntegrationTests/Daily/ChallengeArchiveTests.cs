@@ -266,7 +266,7 @@ public class ChallengeArchiveTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal("application/xml", response.Content.Headers.ContentType?.MediaType);
         var front = _game.Api.Services.GetRequiredService<IOptions<AppOptions>>().Value;
         Assert.Equal(
-            [front.Link("/daily"), front.Link("/privacy"), front.Link($"/daily/archive/{Yesterday:yyyy-MM-dd}"), front.Link($"/daily/archive/{Frozen:yyyy-MM-dd}")],
+            [front.Link("/daily"), front.Link("/legal"), front.Link("/privacy"), front.Link($"/daily/archive/{Yesterday:yyyy-MM-dd}"), front.Link($"/daily/archive/{Frozen:yyyy-MM-dd}")],
             xml.Root!.Elements(ns + "url").Select(u => u.Element(ns + "loc")!.Value));
     }
 }

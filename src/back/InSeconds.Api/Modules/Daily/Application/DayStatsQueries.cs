@@ -70,6 +70,9 @@ public interface IDailyStatsQueries
     /// <summary>Toutes les parties **terminées**, tous jours confondus (les joueurs non supprimés) : le chiffre du message de remerciement.</summary>
     Task<int> CountCompletedSessionsAsync(CancellationToken ct);
 
+    /// <summary>Le meilleur score de ce joueur sur ses parties terminées, tous jours confondus ; vide sans partie terminée.</summary>
+    Task<int?> GetBestScoreAsync(Guid playerId, CancellationToken ct);
+
     /// <summary>Parties terminées de ces joueurs ; un joueur sans partie terminée est absent.</summary>
     Task<IReadOnlyDictionary<Guid, int>> GetCompletedCountsByPlayerAsync(IReadOnlyCollection<Guid> playerIds, CancellationToken ct);
 

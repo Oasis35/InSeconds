@@ -96,7 +96,8 @@
     "header": {
       "login": "Log in",
       "profile": "My profile",
-      "avatarTitle": "My profile: {{ pseudo }}"
+      "avatarTitle": "My profile: {{ pseudo }}",
+      "admin": "Admin"
     }
   },
   "ui": {
@@ -149,7 +150,7 @@
   },
   "account": {
     "login": {
-      "title": "Log in",
+      "title": "Log in or sign up",
       "subtitle": "We'll email you a sign-in link, no password needed. Your streak and scores follow you on every device.",
       "emailLabel": "Email address",
       "emailPlaceholder": "your@email.com",
@@ -543,18 +544,21 @@
       "track": "Track {{ current }} / {{ total }}"
     },
     "welcome": {
-      "title": "Today's Blind Test",
-      "subtitle": "{{ count }} tracks to guess.",
-      "tagline": "Who'll be the fastest?",
+      "title": "Today's blind test",
+      "subtitle": "{{ count }} tracks to guess",
       "start": "Start",
-      "loginCta": "Log in / Create an account",
+      "loginCta": "Create an account",
       "loginHint": "To keep your streak across all your devices.",
-      "loggedInAs": "Logged in as {{ pseudo }}"
+      "record": "Your best",
+      "target": "Score to beat",
+      "archive": "Answers from past days"
     },
     "resume": {
       "title": "Game paused",
-      "progress": "{{ done }} / {{ total }} tracks already played.",
-      "question": "Pick up where you left off?",
+      "progress": {
+        "one": "{{ done }} of {{ total }} tracks already played",
+        "other": "{{ done }} of {{ total }} tracks already played"
+      },
       "resume": "Resume",
       "loginCta": "Don't lose my games",
       "warningTitle": "You'll lose your progress",
@@ -637,10 +641,10 @@
       "ariaLabel": "Listen on Deezer"
     },
     "footer": {
-      "archive": "Past days' answers",
-      "admin": "Admin",
-      "privacy": "Privacy & legal notice",
-      "contact": "Contact us",
+      "legal": "Legal notice",
+      "privacy": "Privacy",
+      "contact": "Contact",
+      "instagram": "InSeconds on Instagram",
       "language": "Passer en français"
     },
     "streakFreeze": {
@@ -649,13 +653,14 @@
         "other": "{{ streak }}-day streak, see details"
       },
       "pillProtectedLabel": "Streak protected",
-      "welcomeBack": "Welcome back!",
-      "frozenLineBefore": "Your",
-      "frozenLineStrong": {
-        "one": "{{ streak }}-day streak",
-        "other": "{{ streak }}-day streak"
+      "pillDays": {
+        "one": "{{ n }} day",
+        "other": "{{ n }} days"
       },
-      "frozenLineAfter": "is kept safe by a freeze. Play to keep it going!",
+      "pillFreezes": {
+        "one": "{{ n }} freeze",
+        "other": "{{ n }} freezes"
+      },
       "sheet": {
         "streakTitle": {
           "one": "{{ streak }}-day streak",
@@ -719,7 +724,11 @@
       },
       "ctaLine1": "Create an account /",
       "ctaLine2": "Log in",
-      "dismiss": "Close"
+      "dismiss": "Close",
+      "protectedLine": {
+        "one": "A freeze protected your streak yesterday.",
+        "other": "{{ n }} freezes protected your streak."
+      }
     },
     "round": {
       "points": "pts",
@@ -779,17 +788,30 @@
       "listen": "Play the preview"
     }
   },
-  "privacy": {
-    "title": "Privacy & legal notice",
-    "updated": "Last updated: October 24, 2026",
-    "intro": "InSeconds is a free music blind test game, available at https://inseconds.cc. It remains fully playable as a guest, without any account or registration; creating an account, using only an email address, is optional and lets you find your progress again on another device. This page brings together the site's legal notice, in accordance with Article 6-III of French law n° 2004-575 of June 21, 2004 for confidence in the digital economy (LCEN), and its privacy policy, in accordance with the General Data Protection Regulation (GDPR, Regulation EU 2016/679).",
-    "legalIdentity": {
-      "title": "Legal notice: publisher and host",
-      "body": "InSeconds is published by an individual based in France, acting on a non-professional basis: it is a personal project, developed in the publisher's free time, with no commercial activity (the game is free, with no advertising and nothing for sale).\nUnder Article 6-III of the LCEN, a non-professional publisher may remain anonymous to the public, provided they have communicated their identity and contact details to their host, which is the case here: this identity remains known to the host and can be disclosed to judicial authorities on request. No publication director has been appointed: this requirement, under the French law of July 29, 1982, only applies to legal entities.\nHost: OVH SAS, 2 rue Kellermann, 59100 Roubaix, France, RCS Lille Métropole n° 424 761 419.\nDomain name: inseconds.cc.\nThe source code, text and design of the InSeconds site are the property of the publisher and protected by copyright; any reproduction without authorization is prohibited (except for Deezer music excerpts, see \"Legal notice: music content\" below).\nFor any question, the only means of contact is the email address given at the bottom of this page."
+  "legal": {
+    "title": "Legal notice",
+    "updated": "Last updated: October 28, 2026",
+    "intro": "InSeconds is a free music blind test game, available at https://inseconds.cc. This page gives the site's legal notice, in accordance with Article 6-III of French law n° 2004-575 of June 21, 2004 for confidence in the digital economy (LCEN). How your data is handled is described on the Privacy page.",
+    "privacyLink": "See the Privacy page",
+    "publisher": {
+      "title": "Publisher and host",
+      "body": "InSeconds is published by an individual based in France, acting on a non-professional basis: it is a personal project, developed in the publisher's free time, with no commercial activity (the game is free, with no advertising and nothing for sale).\nUnder Article 6-III of the LCEN, a non-professional publisher may remain anonymous to the public, provided they have communicated their identity and contact details to their host, which is the case here: this identity remains known to the host and can be disclosed to judicial authorities on request. No publication director has been appointed: this requirement, under the French law of July 29, 1982, only applies to legal entities.\nHost: OVH SAS, 2 rue Kellermann, 59100 Roubaix, France, RCS Lille Métropole n° 424 761 419.\nDomain name: inseconds.cc.\nThe source code, text and design of the InSeconds site are the property of the publisher and protected by copyright; any reproduction without authorization is prohibited (except for Deezer music excerpts, see \"Music content\" below).\nFor any question, the only means of contact is the email address given at the bottom of this page."
     },
+    "music": {
+      "title": "Music content (Deezer API)",
+      "body": "Music excerpts (30 seconds), album covers and metadata (artist, title) are provided by the Deezer API and used in keeping with its terms of use (Deezer API Terms of Use), on a strictly non-commercial basis: InSeconds is free, ad-free and generates no revenue.\nThis content remains the exclusive property of Deezer and its respective rights holders (artists, producers, labels). It is streamed for illustrative purposes within the game, with no download capability, and each track links to its official Deezer page for full listening.\nIn accordance with Deezer's terms of use, listening to the excerpts is limited to strictly private use within a family scope.\nDeezer is a registered trademark of Deezer S.A. InSeconds is an independent project, not affiliated with or endorsed by Deezer."
+    },
+    "contact": "For any question:",
+    "back": "Back to the game"
+  },
+  "privacy": {
+    "title": "Privacy",
+    "updated": "Last updated: October 28, 2026",
+    "intro": "InSeconds is a free music blind test game, available at https://inseconds.cc. It remains fully playable as a guest, without any account or registration; creating an account, using only an email address, is optional and lets you find your progress again on another device. This page describes the site's privacy policy, in accordance with the General Data Protection Regulation (GDPR, Regulation EU 2016/679). The publisher and the host are presented in the legal notice.",
+    "legalLink": "See the legal notice",
     "controller": {
       "title": "Data controller",
-      "body": "The data controller under the GDPR is the publisher of InSeconds identified above, who can be reached at the contact address given at the bottom of this page.\nNo Data Protection Officer (DPO) has been appointed: given the volume and nature of the data processed (no sensitive data, no profiling), this is not required under the GDPR. The publisher remains your single point of contact for any question about your data."
+      "body": "The data controller under the GDPR is the publisher of InSeconds, presented in the legal notice, who can be reached at the contact address given at the bottom of this page.\nNo Data Protection Officer (DPO) has been appointed: given the volume and nature of the data processed (no sensitive data, no profiling), this is not required under the GDPR. The publisher remains your single point of contact for any question about your data."
     },
     "data": {
       "title": "Data collected, purposes and legal basis",
@@ -805,11 +827,7 @@
     },
     "thirdParties": {
       "title": "Recipients, hosting and transfers outside the EU",
-      "body": "Your data is never sold, transferred or shared with third parties for commercial or advertising purposes. It is only shared with the technical providers strictly necessary to run the service:\n· hosting: the application, its code and its database are hosted on a private server (VPS) provided by OVH SAS (identified above), in a data center located in Gravelines (France);\n· network and domain name: the domain name inseconds.cc runs through Cloudflare, Inc.'s network (United States), which acts as a technical relay (DNS resolution, DDoS and abuse protection): your exchanges with the site pass through it, but Cloudflare does not use them for its own purposes; it also produces for the publisher the traffic statistics described in \"Data collected\" (Cloudflare Web Analytics);\n· backups: database backup copies are encrypted on our server before being sent to Cloudflare, Inc.'s R2 storage service, in its European jurisdiction (data stored in the European Union); Cloudflare does not have the encryption key and cannot read them;\n· sending emails: if you create an account, the email containing your login link (or the link confirming an address change) is sent via the Brevo API (Sendinblue SAS, France, data hosted in the European Union); only your email address is shared with them, solely to deliver that message;\n· technical logs: the logs described above are stored by Grafana Labs, in the European region of its Grafana Cloud service, so the publisher can look them up when a bug occurs;\n· monitoring of automated tasks: the healthchecks.io service receives a simple signal at the end of each nightly task (daily challenge generation, backup…) and alerts the publisher if one of them fails; no data about you is sent to it;\n· music excerpts and covers: provided by Deezer (Deezer S.A., France). Track search goes through our server, but your browser loads the excerpts and covers directly from Deezer's servers, which therefore receive your IP address, as with any resource loaded by a web page. No other information about you (account, username, email, games) is sent to Deezer (see \"Legal notice: music content\" below).\nTransfers outside the European Union: Cloudflare and Grafana Labs, based in the United States, may process data outside the EU. These transfers are governed by the European Commission's standard contractual clauses, built into their respective data processing agreements (DPAs), as well as by their adherence to the EU-U.S. Data Privacy Framework, two mechanisms recognized by the European Commission as offering protection safeguards equivalent to the GDPR."
-    },
-    "deezer": {
-      "title": "Legal notice: music content (Deezer API)",
-      "body": "Music excerpts (30 seconds), album covers and metadata (artist, title) are provided by the Deezer API and used in keeping with its terms of use (Deezer API Terms of Use), on a strictly non-commercial basis: InSeconds is free, ad-free and generates no revenue.\nThis content remains the exclusive property of Deezer and its respective rights holders (artists, producers, labels). It is streamed for illustrative purposes within the game, with no download capability, and each track links to its official Deezer page for full listening.\nIn accordance with Deezer's terms of use, listening to the excerpts is limited to strictly private use within a family scope.\nDeezer is a registered trademark of Deezer S.A. InSeconds is an independent project, not affiliated with or endorsed by Deezer."
+      "body": "Your data is never sold, transferred or shared with third parties for commercial or advertising purposes. It is only shared with the technical providers strictly necessary to run the service:\n· hosting: the application, its code and its database are hosted on a private server (VPS) provided by OVH SAS (see the legal notice), in a data center located in Gravelines (France);\n· network and domain name: the domain name inseconds.cc runs through Cloudflare, Inc.'s network (United States), which acts as a technical relay (DNS resolution, DDoS and abuse protection): your exchanges with the site pass through it, but Cloudflare does not use them for its own purposes; it also produces for the publisher the traffic statistics described in \"Data collected\" (Cloudflare Web Analytics);\n· backups: database backup copies are encrypted on our server before being sent to Cloudflare, Inc.'s R2 storage service, in its European jurisdiction (data stored in the European Union); Cloudflare does not have the encryption key and cannot read them;\n· sending emails: if you create an account, the email containing your login link (or the link confirming an address change) is sent via the Brevo API (Sendinblue SAS, France, data hosted in the European Union); only your email address is shared with them, solely to deliver that message;\n· technical logs: the logs described above are stored by Grafana Labs, in the European region of its Grafana Cloud service, so the publisher can look them up when a bug occurs;\n· monitoring of automated tasks: the healthchecks.io service receives a simple signal at the end of each nightly task (daily challenge generation, backup…) and alerts the publisher if one of them fails; no data about you is sent to it;\n· music excerpts and covers: provided by Deezer (Deezer S.A., France). Track search goes through our server, but your browser loads the excerpts and covers directly from Deezer's servers, which therefore receive your IP address, as with any resource loaded by a web page. No other information about you (account, username, email, games) is sent to Deezer (see \"Music content\" in the legal notice).\nTransfers outside the European Union: Cloudflare and Grafana Labs, based in the United States, may process data outside the EU. These transfers are governed by the European Commission's standard contractual clauses, built into their respective data processing agreements (DPAs), as well as by their adherence to the EU-U.S. Data Privacy Framework, two mechanisms recognized by the European Commission as offering protection safeguards equivalent to the GDPR."
     },
     "security": {
       "title": "Data security",

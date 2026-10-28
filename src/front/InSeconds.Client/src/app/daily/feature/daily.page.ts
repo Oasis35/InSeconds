@@ -3,7 +3,6 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { SessionStore } from '../../core/session/session.store';
 import { VersionService } from '../../core/version/version.service';
 import { ErrorReportingService } from '../../core/errors/error-reporting.service';
 import { LanguageService } from '../../core/i18n/language.service';
@@ -37,11 +36,13 @@ import { HomeModeEntriesComponent } from '../../core/shell/home-mode-entries/hom
 import { ScoreCountComponent } from '../ui/score-count/score-count.component';
 import { countUp } from '../ui/score-count/count-up';
 import { StatusScreenComponent } from '../ui/status-screen/status-screen.component';
-import { StreakPillComponent } from '../ui/streak-pill/streak-pill.component';
 import { StreakSheetComponent, StreakSheetData, StreakSheetResult } from '../ui/streak-sheet/streak-sheet.component';
 import { ThanksDialogComponent, ThanksDialogData } from '../ui/thanks-dialog/thanks-dialog.component';
 import { WelcomeScreenComponent } from '../ui/welcome-screen/welcome-screen.component';
 import { reloadMomentFor } from './reload-moment';
+import { StreakPillComponent } from '../ui/streak-pill/streak-pill.component';
+import { formatGameDate } from '../domain/archive';
+import { todayUtc } from '../domain/countdown';
 
 /** Le message de remerciement s'ouvre après la montée du score final (1 s) juste après la partie, un peu plus tôt aux visites suivantes. */
 const THANKS_DELAY_AFTER_GAME_MS = 1500;
@@ -59,8 +60,8 @@ type ThanksScreen = 'done' | 'already_played';
   imports: [
     TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, BrandComponent, DailyProgressComponent, DailyFooterComponent,
     WelcomeScreenComponent, ResumeScreenComponent, HomeModeEntriesComponent, StatusScreenComponent, AbandonedScreenComponent, DayResultScreenComponent,
-    StreakPillComponent, GuestStreakToastComponent, LostStreakToastComponent, GelUsedToastComponent, GelEarnedToastComponent,
-    DeezerBadgeComponent, ScoreCountComponent, AccountLinkComponent,
+    GuestStreakToastComponent, LostStreakToastComponent, GelUsedToastComponent, GelEarnedToastComponent,
+    DeezerBadgeComponent, ScoreCountComponent, AccountLinkComponent, StreakPillComponent,
   ],
   providers: [DailyGameStore, TrackRoundStore, DailyShare, ThanksNotice, LostStreakNotice, GuestStreakNotice],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -72,7 +73,6 @@ type ThanksScreen = 'done' | 'already_played';
 })
 export class DailyPage implements OnInit {
   protected readonly store = inject(DailyGameStore);
-  protected readonly session = inject(SessionStore);
   protected readonly language = inject(LanguageService);
   protected readonly errorReporting = inject(ErrorReportingService);
   private readonly round = inject(TrackRoundStore);
@@ -98,6 +98,8 @@ export class DailyPage implements OnInit {
   /** Les morceaux du résultat du jour : les réponses de la partie qui vient de finir, sinon celles relues dans les stats. */
   protected readonly resultRows = computed(() =>
     this.store.screen() === 'done' ? rowsFromResults(this.store.results(), this.store.stats()) : rowsFromStats(this.store.stats()));
+  /** La date du jour de jeu (UTC) dans la langue, en tête de l'accueil et de la reprise : « mardi 28 octobre ». */
+  protected readonly dateLabel = computed(() => formatGameDate(todayUtc(new Date()), this.language.current(), 'weekday'));
   protected readonly isEnglish = () => this.language.current() === 'en';
 
   constructor() {

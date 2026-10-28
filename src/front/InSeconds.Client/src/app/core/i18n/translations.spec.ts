@@ -7,7 +7,7 @@ import { ERROR_MESSAGE_KEYS, UNKNOWN_ERROR_MESSAGE_KEY } from '../errors/error-m
  * domaine connu, et FR/EN ont exactement les mêmes clés. Un domaine qui ajoute ses traductions
  * s'ajoute à `DOMAINS`.
  */
-const DOMAINS = ['common', 'errors', 'shell', 'ui', 'gameplay', 'daily', 'runs', 'account', 'admin', 'privacy'];
+const DOMAINS = ['common', 'errors', 'shell', 'ui', 'gameplay', 'daily', 'runs', 'account', 'admin', 'legal', 'privacy'];
 
 type Tree = { [key: string]: string | Tree };
 

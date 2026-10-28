@@ -65,4 +65,14 @@ describe('ResumeScreenComponent', () => {
     linked.fixture.detectChanges();
     expect(linked.el.textContent).toContain('daily.resume.warningBodyLinked');
   });
+
+  it('donne la date si le mode la passe, et accorde « morceau » au nombre déjà joué', () => {
+    const { fixture, el } = render();
+    expect(el.textContent).toContain('daily.resume.progress.one');
+    fixture.componentRef.setInput('completedCount', 2);
+    fixture.componentRef.setInput('dateLabel', 'mardi 28 octobre');
+    fixture.detectChanges();
+    expect(el.textContent).toContain('daily.resume.progress.other');
+    expect(el.textContent).toContain('mardi 28 octobre');
+  });
 });

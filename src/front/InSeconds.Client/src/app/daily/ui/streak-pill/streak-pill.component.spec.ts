@@ -9,12 +9,11 @@ const STREAK: Streak = { ...EMPTY_STREAK, streak: 12, freezes: 2, maxFreezes: 2,
 describe('StreakPillComponent', () => {
   @Component({
     imports: [StreakPillComponent],
-    template: `<app-streak-pill [streak]="streak" [linked]="linked" [pulse]="pulse" (open)="opened = opened + 1" />`,
+    template: `<app-streak-pill [streak]="streak" [linked]="linked" (open)="opened = opened + 1" />`,
   })
   class Host {
     streak: Streak | null = STREAK;
     linked = true;
-    pulse = false;
     opened = 0;
   }
 
@@ -27,18 +26,23 @@ describe('StreakPillComponent', () => {
     return { fixture, button, text: () => button.textContent!.replace(/\s+/g, ' ').trim() };
   }
 
-  it('mode on : série et gels, sans animation', () => {
+  it('mode on : série et gels en texte, sans pastille ni lueur', () => {
     const { button, text } = render();
     expect(button.dataset['mode']).toBe('on');
-    expect(text()).toContain('12');
-    expect(text()).toContain('2');
-    expect(button.hasAttribute('data-anim')).toBe(false);
+    // Pluriels de la langue (12 jours, 2 gels) : sans traductions chargées, ce sont les clés qui s'affichent.
+    expect(text()).toContain('daily.streakFreeze.pillDays.other');
+    expect(text()).toContain('daily.streakFreeze.pillFreezes.other');
+    expect(button.querySelectorAll('app-streak-icon')).toHaveLength(2);
+    expect(getComputedStyle(button).boxShadow).toBe('none');
+    expect(button.style.animation).toBe('');
   });
 
-  it('mode lost : aucune série, flèche grise à 0', () => {
-    const { button, text } = render(h => (h.streak = null));
-    expect(button.dataset['mode']).toBe('lost');
-    expect(text()).toBe('0');
+  it('aucune série en cours : rien à afficher', () => {
+    TestBed.configureTestingModule({ providers: [provideTranslateService()] });
+    const fixture = TestBed.createComponent(Host);
+    fixture.componentInstance.streak = null;
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="streak-pill"]')).toBeNull();
   });
 
   it('mode guest : série sans gels', () => {
@@ -47,21 +51,10 @@ describe('StreakPillComponent', () => {
     expect(button.querySelectorAll('app-streak-icon')).toHaveLength(1);
   });
 
-  it('mode protected : pulse permanent', () => {
+  it('mode protected : série et gels restants', () => {
     const { button } = render(h => (h.streak = { ...STREAK, status: 'protected', missedDays: 1 }));
     expect(button.dataset['mode']).toBe('protected');
-    expect(button.style.animation).toContain('gel-pulse');
-  });
-
-  it('pulse demandé : animation en mode on', () => {
-    const { button } = render(h => (h.pulse = true));
-    expect(button.style.animation).toContain('gel-pulse');
-    expect(button.hasAttribute('data-anim')).toBe(true);
-  });
-
-  it('pulse ignoré pour un invité', () => {
-    const { button } = render(h => { h.linked = false; h.pulse = true; });
-    expect(button.hasAttribute('data-anim')).toBe(false);
+    expect(button.querySelectorAll('app-streak-icon')).toHaveLength(2);
   });
 
   it('un clic émet open', () => {

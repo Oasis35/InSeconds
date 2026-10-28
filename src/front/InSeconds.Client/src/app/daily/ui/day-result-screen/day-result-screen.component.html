@@ -67,7 +67,11 @@
   }
 
   @if (score() !== null) {
-    <app-share-button [copied]="shareCopied()" [failed]="shareFailed()" [disabled]="!canShare()" (share)="share.emit()" />
+    <!-- Le partage, puis la série juste dessous, centrée comme sous « Commencer » ; un toucher ouvre le panneau de série. -->
+    <div class="flex flex-col items-center gap-1">
+      <app-share-button class="w-full" [copied]="shareCopied()" [failed]="shareFailed()" [disabled]="!canShare()" (share)="share.emit()" />
+      <app-streak-pill [streak]="streak()" [linked]="linked()" (open)="openStreak.emit()" />
+    </div>
   }
 
   @if (yesterday(); as y) {

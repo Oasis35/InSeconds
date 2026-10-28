@@ -26,7 +26,7 @@ test.describe('Profil', () => {
     await game.openWithFakeClock();
     await expect(avatar).toBeVisible();
 
-    // En pleine manche, un toucher par erreur ouvrirait la confirmation de sortie : ni avatar ni silhouette (#318).
+    // En pleine manche, un toucher par erreur ouvrirait la confirmation de sortie : ni accès de l'en-tête ni « Connexion » (#318).
     await game.clickStart();
     await expect(page.getByText('Piste 1 / 5')).toBeVisible();
     await expect(page.locator('app-account-link a')).toHaveCount(0);

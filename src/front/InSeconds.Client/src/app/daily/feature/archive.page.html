@@ -1,17 +1,11 @@
 <div class="da-bg min-h-dvh flex flex-col relative" style="color:var(--text-body)">
   <app-decor-background />
 
-  <main class="relative flex-1 flex flex-col gap-5 p-5 w-full max-w-lg mx-auto overflow-x-clip">
+  <main class="relative flex-1 flex flex-col gap-5 px-5 pt-2 pb-5 w-full max-w-lg mx-auto overflow-x-clip">
 
-    <header class="pt-3 flex flex-col gap-4">
+    <header class="flex flex-col gap-4">
       <app-brand [homeLink]="true">
-        <div brandLeft>
-          @if (pillStreak(); as streak) {
-            @if (streak.streak > 0 || store.played()) {
-              <app-streak-pill [streak]="streak" [linked]="session.isLinked()" (open)="openStreakSheet()" />
-            }
-          }
-        </div>
+        <!-- Pas de calendrier dans l'en-tête : la page a déjà le sien, sous la barre ‹ date ›. -->
         <app-account-link brandRight />
       </app-brand>
       @if (store.day(); as day) {
@@ -71,5 +65,5 @@
     }
 
   </main>
-  <app-daily-footer class="mt-auto" [isAdmin]="session.isAdmin()" [lang]="language.current()" (toggleLanguage)="toggleLanguage()" />
+  <app-daily-footer class="mt-auto" [lang]="language.current()" (toggleLanguage)="toggleLanguage()" />
 </div>

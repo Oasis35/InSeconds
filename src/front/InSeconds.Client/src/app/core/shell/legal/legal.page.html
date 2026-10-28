@@ -1,0 +1,40 @@
+<div class="da-bg min-h-dvh flex flex-col items-center p-6 relative" style="color:var(--text-body)">
+  <app-decor-background />
+
+  <div class="w-full max-w-2xl py-8 screen-enter">
+    <h1 class="text-3xl font-bold mb-2" style="color:var(--text-hi)">{{ 'legal.title' | translate }}</h1>
+    <p class="text-sm mb-4" style="color:var(--text-muted)">{{ 'legal.updated' | translate }}</p>
+    <p class="mb-2" style="color:var(--text-slate)">{{ 'legal.intro' | translate }}</p>
+    <p class="mb-8">
+      <a routerLink="/privacy" class="underline transition-colors" style="color:var(--text-accent)">{{ 'legal.privacyLink' | translate }}</a>
+    </p>
+
+    <section class="mb-6">
+      <h2 class="text-xl font-semibold mb-2" style="color:var(--text-hi)">{{ 'legal.publisher.title' | translate }}</h2>
+      <p class="whitespace-pre-line" style="color:var(--text-light)">{{ 'legal.publisher.body' | translate }}</p>
+    </section>
+
+    <section class="mb-6">
+      <h2 class="text-xl font-semibold mb-2" style="color:var(--text-hi)">{{ 'legal.music.title' | translate }}</h2>
+      <p class="whitespace-pre-line" style="color:var(--text-light)">{{ 'legal.music.body' | translate }}</p>
+      <p class="mt-2" style="color:var(--text-light)">
+        <a href="https://developers.deezer.com/termsofuse" target="_blank" rel="noopener noreferrer"
+           class="underline transition-colors" style="color:var(--text-accent)">Deezer API Terms of Use</a>
+        ·
+        <a href="https://www.deezer.com" target="_blank" rel="noopener noreferrer"
+           class="underline transition-colors" style="color:var(--text-accent)">deezer.com</a>
+      </p>
+    </section>
+
+    <p class="mb-8" style="color:var(--text-light)">
+      {{ 'legal.contact' | translate }}
+      <a [href]="'mailto:' + contactEmail" class="underline transition-colors" style="color:var(--text-accent)">{{ contactEmail }}</a>
+    </p>
+
+    <a routerLink="/daily"
+      class="inline-block px-6 py-3 rounded-(--radius-button) font-semibold transition-colors"
+      style="background:var(--bg-primary);color:var(--text-on-primary)">
+      {{ 'legal.back' | translate }}
+    </a>
+  </div>
+</div>

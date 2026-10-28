@@ -168,7 +168,7 @@ public static class GetArchiveIndexEndpoint
 {
     /// <summary>
     /// <c>GET /api/daily/archive</c> : public. Les jours dont les réponses sont publiées (jusqu'à la veille), pour le calendrier de la page d'un
-    /// jour et l'icône du pied de page (qui ouvre le plus récent).
+    /// jour et <c>/daily/archive</c> (qui ouvre le plus récent).
     /// </summary>
     [WolverineGet("/api/daily/archive", OperationId = "getArchiveIndex")]
     [EnableRateLimiting(RateLimitPolicies.DailyArchive)]

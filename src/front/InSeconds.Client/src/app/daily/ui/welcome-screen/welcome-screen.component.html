@@ -1,49 +1,59 @@
-<div class="screen-enter relative flex-1 flex flex-col items-center justify-center gap-10 text-center px-2">
-  <div class="relative space-y-4">
-    <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto" aria-hidden="true" style="color:var(--color-accent)">
-      <circle cx="8" cy="18" r="4"></circle><path d="M12 18V2l7 4"></path>
-    </svg>
-    <h2 class="text-3xl font-extrabold tracking-tight" style="font-family:var(--font-display);color:var(--text-hi)">{{ (isProtected() ? 'daily.streakFreeze.welcomeBack' : 'daily.welcome.title') | translate }}</h2>
-    <p class="text-sm leading-relaxed" style="color:var(--text-muted)">
-      {{ 'daily.welcome.subtitle' | translate: { count: trackCount() } }}<br>
-      <strong style="color:var(--color-accent)">{{ 'daily.welcome.tagline' | translate }}</strong>
-    </p>
-  </div>
+<!-- Mobile d'abord : le bloc (date, titre, chiffre à battre, « Commencer », série) est centré dans la hauteur, l'accès aux jours passés reste en bas. -->
+<div class="screen-enter flex-1 flex flex-col text-center">
+  <div class="flex-1 flex flex-col justify-center gap-7 py-3">
+    <div class="flex flex-col items-center">
+      <p class="text-sm first-letter:uppercase" style="color:var(--text-muted)" data-testid="welcome-date">{{ dateLabel() }}</p>
+      <h2 class="mt-1.5 text-3xl font-extrabold leading-tight" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'daily.welcome.title' | translate }}</h2>
+      <p class="mt-2.5 text-[15px]" style="color:var(--text-light)">{{ 'daily.welcome.subtitle' | translate: { count: trackCount() } }}</p>
+      @if (bestScore() !== null) {
+        <!-- Le record du joueur (orange : c'est lui) ; jamais le meilleur score des autres, qui découragerait. -->
+        <p class="mt-4.5 flex items-baseline gap-2 text-sm" style="color:var(--text-muted)" data-testid="welcome-record">
+          {{ 'daily.welcome.record' | translate }}
+          <b class="text-[17px] font-extrabold tabular-nums" style="font-family:var(--font-score);color:var(--color-accent-3)">{{ bestScore() }}</b>
+        </p>
+      } @else if (yesterdayMedian() !== null) {
+        <!-- La médiane d'hier (violet : les autres joueurs), pour qui n'a pas encore de record. -->
+        <p class="mt-4.5 flex items-baseline gap-2 text-sm" style="color:var(--text-muted)" data-testid="welcome-target">
+          {{ 'daily.welcome.target' | translate }}
+          <b class="text-[17px] font-extrabold tabular-nums" style="font-family:var(--font-score);color:var(--text-indigo)">{{ yesterdayMedian() }}</b>
+        </p>
+      }
+    </div>
 
-  <div class="relative w-full max-w-[280px] flex flex-col gap-3.5">
-    @if (isProtected()) {
-      <div data-testid="frozen-line" class="px-3 py-2.5 rounded-xl text-xs leading-normal text-left"
-           style="border:1px solid rgb(var(--rgb-accent-2) / 0.45);background:rgb(var(--rgb-accent-2) / 0.06);color:var(--text-hi)">
-        <span class="inline-flex align-[-0.16em]" style="color:var(--color-accent-2)"><app-streak-icon name="snowflake" /></span>
-        {{ 'daily.streakFreeze.frozenLineBefore' | translate }}
-        <strong class="font-semibold" style="color:var(--color-accent-3)">{{ frozenLineKey() | translate: { streak: streak()?.streak } }}</strong>
-        {{ 'daily.streakFreeze.frozenLineAfter' | translate }}
+    <div class="flex flex-col gap-3">
+      <button
+        (click)="startGame.emit()"
+        class="w-full py-4.5 rounded-(--radius-button) font-bold text-base tracking-wide uppercase transition-all active:scale-95 touch-manipulation"
+        style="font-family:var(--font-display);background:var(--gradient-primary);color:var(--text-on-primary);letter-spacing:0.06em">
+        {{ 'daily.welcome.start' | translate }}
+      </button>
+      <!-- La série sous le bouton qui la fait monter ; un toucher ouvre le panneau de série. -->
+      <div class="flex flex-col items-center">
+        <app-streak-pill [streak]="streak()" [linked]="linked()" (open)="openStreak.emit()" />
+        @if (isProtected()) {
+          <p data-testid="frozen-line" class="flex items-center justify-center gap-1.5 text-[13px] leading-normal" style="color:var(--color-accent-2)">
+            <app-streak-icon name="snowflake" />
+            <span>{{ protectedKey() | translate: { n: streak()?.missedDays } }}</span>
+          </p>
+        }
       </div>
-    }
-    <button
-      (click)="startGame.emit()"
-      class="w-full py-4.5 rounded-(--radius-button) font-bold text-base tracking-wide uppercase transition-all active:scale-95 touch-manipulation"
-      style="font-family:var(--font-display);background:var(--gradient-primary);color:var(--text-on-primary);letter-spacing:0.06em;box-shadow:var(--glow-primary)">
-      {{ 'daily.welcome.start' | translate }}
-    </button>
 
-    @if (!linked()) {
-      @if (!hideLoginCta()) {
+      @if (!linked() && !hideLoginCta()) {
         <a routerLink="/account/login"
-           class="w-full inline-flex items-center justify-center gap-2 rounded-(--radius-button) font-bold text-xs tracking-wide uppercase transition-all active:scale-95 touch-manipulation"
-           style="min-height:44px;font-family:var(--font-display);letter-spacing:0.06em;border:1.5px solid var(--border-neutral);color:var(--text-hi)">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+           class="w-full inline-flex items-center justify-center rounded-(--radius-button) font-bold text-[13px] tracking-wide uppercase transition-all active:scale-95 touch-manipulation"
+           style="min-height:48px;font-family:var(--font-display);letter-spacing:0.06em;border:1.5px solid var(--border-neutral);color:var(--text-hi)">
           {{ 'daily.welcome.loginCta' | translate }}
         </a>
         <p class="text-xs leading-snug" style="color:var(--text-muted)">{{ 'daily.welcome.loginHint' | translate }}</p>
       }
-    } @else {
-      <a routerLink="/account/profile"
-         class="w-full inline-flex items-center justify-center gap-1.5 text-xs"
-         style="min-height:44px;color:var(--text-muted)">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-        {{ 'daily.welcome.loggedInAs' | translate: { pseudo: pseudo() } }}
-      </a>
-    }
+    </div>
   </div>
+
+  <a routerLink="/daily/archive" data-testid="welcome-archive"
+     class="inline-flex items-center justify-center gap-2 text-[13px]" style="min-height:44px;color:var(--text-light)">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+    </svg>
+    {{ 'daily.welcome.archive' | translate }}
+  </a>
 </div>

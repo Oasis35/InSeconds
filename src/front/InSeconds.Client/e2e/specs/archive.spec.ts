@@ -1,5 +1,4 @@
 import { test, expect } from '../fixtures/test';
-import { GamePage } from '../pages/game.page';
 
 /** `aaaa-mm-jj` du jour de jeu (UTC), décalé de `days` jours. */
 const gameDay = (days = 0) => {
@@ -12,12 +11,8 @@ test.describe('Réponses des jours passés', () => {
     await api.reset();
   });
 
-  test("l'icône du pied de page ouvre le dernier jour publié, ses morceaux, et jamais le jour même", async ({ page }) => {
-    const game = new GamePage(page);
-    await game.goto();
-    await game.waitForWelcome();
-
-    await page.getByTestId('footer-archive').click();
+  test('/daily/archive ouvre le dernier jour publié, ses morceaux, et jamais le jour même', async ({ page }) => {
+    await page.goto('/daily/archive');
 
     await expect(page).toHaveURL(/\/daily\/archive\/\d{4}-\d{2}-\d{2}$/);
     const shown = page.url().slice(-10);
@@ -33,6 +28,15 @@ test.describe('Réponses des jours passés', () => {
     // Le jour même n'est pas publié.
     await page.goto(`/daily/archive/${gameDay()}`);
     await expect(page.getByTestId('archive-not-found')).toBeVisible();
+  });
+
+  test("l'accueil y mène par « Réponses des jours passés », en bas de l'écran (plus de calendrier dans l'en-tête)", async ({ page }) => {
+    await page.goto('/daily');
+    await expect(page.getByRole('button', { name: 'Commencer' })).toBeVisible();
+    await expect(page.locator('app-account-link a[href="/daily/archive"]')).toHaveCount(0);
+
+    await page.getByRole('link', { name: 'Réponses des jours passés' }).click();
+    await expect(page).toHaveURL(/\/daily\/archive\/\d{4}-\d{2}-\d{2}$/);
   });
 
   test('les flèches sont de vrais liens et le calendrier ouvre un autre jour', async ({ page }) => {

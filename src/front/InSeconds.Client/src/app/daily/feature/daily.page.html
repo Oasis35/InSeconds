@@ -1,22 +1,16 @@
 <div class="da-bg min-h-dvh flex flex-col relative" style="color:var(--text-body)">
   <app-decor-background />
 
-  <main class="relative flex-1 flex flex-col p-5 w-full max-w-lg mx-auto overflow-x-clip">
+  <main class="relative flex-1 flex flex-col px-5 pt-2 pb-5 w-full max-w-lg mx-auto overflow-x-clip">
 
-    <header class="pt-3 pb-6">
+    <header class="pb-6">
       <app-brand>
-        <!-- La gélule de série, ou le score en cours de partie. -->
-        <div brandLeft>
-          @if (store.screen() === 'playing') {
-            <span class="pl-2 text-base font-extrabold tabular-nums whitespace-nowrap" style="font-family:var(--font-display);color:var(--text-hi)">
-              {{ store.totalScore() }} <span style="color:var(--text-faint);font-weight:400;font-size:0.625rem">{{ 'daily.common.points' | translate }}</span>
-            </span>
-          } @else if (store.screen() !== 'loading') {
-            <app-streak-pill [streak]="store.pillStreak()" [linked]="store.linked()" [pulse]="store.toasts().gelEarned" (open)="openStreakSheet()" />
-          }
-        </div>
-        <!-- Le lien de compte n'apparaît pas en pleine manche (comme en v1) : un toucher par erreur ouvrirait la confirmation de sortie. -->
-        @if (store.screen() !== 'playing') {
+        <!-- En pleine manche, le score à la place des accès du compte : un toucher par erreur ouvrirait la confirmation de sortie. -->
+        @if (store.screen() === 'playing') {
+          <span brandRight class="pr-1 text-base font-extrabold tabular-nums whitespace-nowrap" style="font-family:var(--font-display);color:var(--text-hi)">
+            {{ store.totalScore() }} <span style="color:var(--text-faint);font-weight:400;font-size:0.625rem">{{ 'daily.common.points' | translate }}</span>
+          </span>
+        } @else {
           <app-account-link brandRight />
         }
       </app-brand>
@@ -35,11 +29,14 @@
       @case ('welcome') {
         <app-welcome-screen
           [trackCount]="store.peekTracksCount()"
+          [dateLabel]="dateLabel()"
           [streak]="store.pillStreak()"
+          [bestScore]="store.bestScore()"
+          [yesterdayMedian]="store.yesterdayMedian()"
           [hideLoginCta]="store.showLostToast()"
           [linked]="store.linked()"
-          [pseudo]="session.player()?.pseudo ?? null"
-          (startGame)="store.begin()" />
+          (startGame)="store.begin()"
+          (openStreak)="openStreakSheet()" />
         <!-- Les autres modes (la carte Platines pour un compte qui y a accès) : rien d'autre ne change sur l'accueil. -->
         <app-home-mode-entries />
       }
@@ -48,11 +45,16 @@
         <app-resume-screen
           [completedCount]="store.peekCompletedCount()"
           [trackCount]="store.peekTracksCount()"
+          [dateLabel]="dateLabel()"
           [abandonLoading]="store.abandonLoading()"
           [warningBodyKey]="store.linked() ? 'daily.resume.warningBodyLinked' : 'daily.resume.warningBody'"
           [showLoginCta]="!store.linked()"
           (resumeGame)="store.begin()"
-          (abandon)="store.abandonFromResume()" />
+          (abandon)="store.abandonFromResume()">
+          <div class="flex justify-center">
+            <app-streak-pill [streak]="store.pillStreak()" [linked]="store.linked()" (open)="openStreakSheet()" />
+          </div>
+        </app-resume-screen>
       }
 
       @case ('no_challenge') {
@@ -76,7 +78,10 @@
             [shareCopied]="shareCopied()"
             [shareFailed]="shareFailed()"
             [lang]="language.current()"
-            (share)="share()" />
+            [streak]="store.pillStreak()"
+            [linked]="store.linked()"
+            (share)="share()"
+            (openStreak)="openStreakSheet()" />
         }
         <app-home-mode-entries />
       }
@@ -118,12 +123,15 @@
           [shareFailed]="shareFailed()"
           [canShare]="store.canShare()"
           [lang]="language.current()"
-          (share)="share()" />
+          [streak]="store.pillStreak()"
+          [linked]="store.linked()"
+          (share)="share()"
+          (openStreak)="openStreakSheet()" />
       }
     }
 
   </main>
-  <app-daily-footer class="mt-auto" [isAdmin]="session.isAdmin()" [lang]="language.current()" (toggleLanguage)="toggleLanguage()" />
+  <app-daily-footer class="mt-auto" [lang]="language.current()" (toggleLanguage)="toggleLanguage()" />
 
   <!-- Toasts de fin de partie et d'accueil (série, gels) -->
   @if (store.toasts().guestStreak) {

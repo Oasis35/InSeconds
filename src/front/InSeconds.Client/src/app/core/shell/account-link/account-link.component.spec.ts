@@ -15,13 +15,14 @@ describe('AccountLinkComponent', () => {
     return { fixture, element: fixture.nativeElement as HTMLElement, session };
   }
 
-  it('n’affiche ni avatar ni lien tant que l’identité n’est pas lue (pas de clignotement pour un compte connecté)', () => {
+  it('n’affiche ni initiale ni « Connexion » tant que l’identité n’est pas lue (pas de clignotement pour un compte connecté)', () => {
     TestBed.configureTestingModule({ providers: [provideRouter([]), provideTranslateService({ fallbackLang: 'fr' })] });
     const fixture = TestBed.createComponent(AccountLinkComponent);
     fixture.detectChanges();
     const element = fixture.nativeElement as HTMLElement;
 
-    expect(element.querySelector('a')).toBeNull();
+    expect(element.querySelector('a[href="/account/profile"]')).toBeNull();
+    expect(element.querySelector('a[href="/account/login"]')).toBeNull();
 
     const session = TestBed.inject(SessionStore);
     session.signedIn({ id: 'p1', pseudo: 'Alice', email: 'a@example.com', isGuest: false, isAdmin: false });
@@ -74,15 +75,48 @@ describe('AccountLinkComponent', () => {
     expect(element.querySelector('a[href="/account/login"]')).not.toBeNull();
   });
 
-  it('montre une silhouette libellée « Se connecter » à un invité', () => {
+  it('écrit « Connexion » en toutes lettres pour un invité', () => {
     const { fixture, element } = render();
     const translate = TestBed.inject(TranslateService);
-    translate.setTranslation('fr', { shell: { header: { login: 'Se connecter' } } });
+    translate.setTranslation('fr', { shell: { header: { login: 'Connexion' } } });
     translate.use('fr');
     fixture.detectChanges();
 
-    const link = element.querySelector<HTMLAnchorElement>('a[href="/account/login"]')!;
-    expect(link.getAttribute('aria-label')).toBe('Se connecter');
-    expect(link.querySelector('svg')).not.toBeNull();
+    expect(element.querySelector('a[href="/account/login"]')?.textContent?.trim()).toBe('Connexion');
+  });
+
+  it('« Connexion » est un bouton à contour neutre, comme « Se connecter » sur l’accueil', () => {
+    const { element } = render();
+    const login = element.querySelector<HTMLAnchorElement>('[data-testid="header-login"]')!;
+    const style = getComputedStyle(login);
+    expect(style.borderStyle).toBe('solid');
+    expect(style.textTransform).toBe('uppercase');
+  });
+
+  it('ne montre plus le calendrier des jours passés (lien en bas de l’accueil)', () => {
+    const { element } = render();
+    expect(element.querySelector('a[href="/daily/archive"]')).toBeNull();
+  });
+
+  it('ajoute le cadenas de l\'admin pour un compte admin seulement', () => {
+    const { fixture, element, session } = render();
+
+    session.signedIn({ id: 'p1', pseudo: 'Alice', email: 'a@example.com', isGuest: false, isAdmin: false });
+    fixture.detectChanges();
+    expect(element.querySelector('a[href="/admin"]')).toBeNull();
+
+    session.signedIn({ id: 'p1', pseudo: 'Alice', email: 'a@example.com', isGuest: false, isAdmin: true });
+    fixture.detectChanges();
+    expect(element.querySelector('a[href="/admin"]')).not.toBeNull();
+  });
+
+  it('ne montre aucune lueur ni dégradé', () => {
+    const { fixture, element, session } = render();
+    session.signedIn({ id: 'p1', pseudo: 'Alice', email: 'a@example.com', isGuest: false, isAdmin: true });
+    fixture.detectChanges();
+
+    const avatar = element.querySelector<HTMLElement>('a[href="/account/profile"]')!;
+    expect(getComputedStyle(avatar).boxShadow).toBe('none');
+    expect(getComputedStyle(avatar).backgroundImage).toBe('none');
   });
 });
