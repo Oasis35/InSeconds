@@ -61,7 +61,7 @@ InSeconds/
 | `Daily` | le défi du jour, les parties, le score, la série et les gels, les statistiques, l'admin du jeu | `daily` |
 | `Runs` | le second mode (Run, nom affiché « Platines ») : défis tirés par difficulté, règles figées, accès sur invitation, la partie (jauge, neutralisation, fin, record) ses écrans, le lien d'un ami et la comparaison des joueurs d'une playlist (docs/runs) | `runs` |
 
-Chaque module a ses couches `Domain/` (entités aux invariants encapsulés, ports), `Application/` (endpoints, handlers), `Persistence/` (EF), `Contracts/` (ce que les autres modules ont le droit d'utiliser). Projets autour : `InSeconds.Infrastructure` (email, observabilité, proxies, rate limiting, CORS, en-têtes : ne connaît ni l'API ni les modules), `InSeconds.Deezer` (client Deezer en quatre ports, avec cache : ne connaît rien d'autre), `InSeconds.Api.Testing` (hôte de test : faux email, faux Deezer, routes `/api/e2e`, documents OpenAPI ; jamais dans l'image de prod).
+Chaque module a ses couches `Domain/` (entités aux invariants encapsulés, politiques, et le store : écritures et agrégats suivis), `Application/` (endpoints, handlers, et les ports de lecture : `I…Queries`, projections directes), `Persistence/` (EF), `Contracts/` (ce que les autres modules ont le droit d'utiliser). Projets autour : `InSeconds.Infrastructure` (email, observabilité, proxies, rate limiting, CORS, en-têtes : ne connaît ni l'API ni les modules), `InSeconds.Deezer` (client Deezer en quatre ports, avec cache : ne connaît rien d'autre), `InSeconds.Api.Testing` (hôte de test : faux email, faux Deezer, routes `/api/e2e`, documents OpenAPI ; jamais dans l'image de prod).
 
 ### Règles dures (vérifiées en CI)
 
