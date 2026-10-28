@@ -6,11 +6,6 @@
       <a routerLink="/" class="py-1 text-sm hover:underline" style="color:var(--text-muted)" data-testid="back-to-game">
         ← {{ 'account.profile.backToGame' | translate }}
       </a>
-      @if (session.isAdmin()) {
-        <a routerLink="/admin" class="py-1 text-sm hover:underline" style="color:var(--text-muted)" data-testid="profile-admin">
-          {{ 'account.profile.admin' | translate }}
-        </a>
-      }
     </div>
 
     <h1 class="text-center text-2xl font-bold" style="font-family:var(--font-display);color:var(--text-hi)">

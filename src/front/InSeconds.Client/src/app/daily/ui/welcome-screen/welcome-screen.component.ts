@@ -3,11 +3,12 @@ import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { Streak, isStreakProtected, pluralKey } from '../../domain/streak';
 import { StreakIconComponent } from '../streak-icon/streak-icon.component';
+import { StreakPillComponent } from '../streak-pill/streak-pill.component';
 
-/** Accueil du défi du jour : titre, démarrage, appel à se connecter (invité) ou lien vers le profil (connecté). */
+/** Accueil du défi du jour : titre, démarrage, relevé de série, appel à se connecter (invité) ou lien vers le profil (connecté). */
 @Component({
   selector: 'app-welcome-screen',
-  imports: [TranslatePipe, RouterLink, StreakIconComponent],
+  imports: [TranslatePipe, RouterLink, StreakIconComponent, StreakPillComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './welcome-screen.component.html',
   // L'hôte doit occuper la hauteur restante de <main> (flex-col) pour que le
@@ -23,6 +24,8 @@ export class WelcomeScreenComponent {
   readonly linked = input.required<boolean>();
   readonly pseudo = input<string | null>(null);
   readonly startGame = output<void>();
+  /** Toucher sur le relevé de série : la page ouvre le panneau de série. */
+  readonly openStreak = output<void>();
 
   /** Compte connecté revenant après un jour manqué couvert par un gel. */
   protected readonly frozenLineKey = computed(() => `daily.streakFreeze.frozenLineStrong.${pluralKey(this.streak()?.streak ?? 0)}`);

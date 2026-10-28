@@ -8,7 +8,6 @@ import { AudioPreviewPlayer } from '../../core/audio-preview/audio-preview.playe
 import { PreviewTrackData, PreviewTrackDialog } from '../../core/audio-preview/preview-track.dialog';
 import { ErrorReportingService } from '../../core/errors/error-reporting.service';
 import { LanguageService } from '../../core/i18n/language.service';
-import { SessionStore } from '../../core/session/session.store';
 import { AccountLinkComponent } from '../../core/shell/account-link/account-link.component';
 import { ButtonComponent } from '../../ui/button/button.component';
 import { DecorBackgroundComponent } from '../../ui/decor-background/decor-background.component';
@@ -16,7 +15,6 @@ import { ModalService } from '../../ui/modal/modal.service';
 import { ArchiveStore } from '../data-access/archive.store';
 import { ArchiveTrack, answerAt, artistsSummary, formatGameDate } from '../domain/archive';
 import { ScoreChartData } from '../domain/daily';
-import { EMPTY_STREAK } from '../domain/streak';
 import { ArchiveCalendarData, ArchiveCalendarResult, ArchiveCalendarSheetComponent } from '../ui/archive-calendar-sheet/archive-calendar-sheet.component';
 import { ArchiveDayHeaderComponent } from '../ui/archive-day-header/archive-day-header.component';
 import { ArchiveTrackRowComponent } from '../ui/archive-track-row/archive-track-row.component';
@@ -24,8 +22,6 @@ import { BrandComponent } from '../../gameplay/ui/brand/brand.component';
 import { DailyFooterComponent } from '../ui/daily-footer/daily-footer.component';
 import { ScoreDistributionChartComponent } from '../ui/score-distribution-chart/score-distribution-chart.component';
 import { StatusScreenComponent } from '../ui/status-screen/status-screen.component';
-import { StreakPillComponent } from '../ui/streak-pill/streak-pill.component';
-import { StreakSheetComponent, StreakSheetData, StreakSheetResult } from '../ui/streak-sheet/streak-sheet.component';
 
 /**
  * La page d'un jour passé (`/daily/archive/aaaa-mm-jj`, #407) : les réponses du défi de ce jour-là, ce qu'en ont fait les joueurs (en
@@ -35,7 +31,7 @@ import { StreakSheetComponent, StreakSheetData, StreakSheetResult } from '../ui/
 @Component({
   selector: 'app-archive-page',
   imports: [
-    TranslatePipe, RouterLink, DecorBackgroundComponent, BrandComponent, DailyFooterComponent, AccountLinkComponent, StreakPillComponent,
+    TranslatePipe, RouterLink, DecorBackgroundComponent, BrandComponent, DailyFooterComponent, AccountLinkComponent,
     ArchiveDayHeaderComponent, ArchiveTrackRowComponent, ScoreDistributionChartComponent, StatusScreenComponent, ButtonComponent,
   ],
   providers: [ArchiveStore, AudioPreviewPlayer],
@@ -44,7 +40,6 @@ import { StreakSheetComponent, StreakSheetData, StreakSheetResult } from '../ui/
 })
 export class ArchivePage implements OnInit {
   protected readonly store = inject(ArchiveStore);
-  protected readonly session = inject(SessionStore);
   protected readonly language = inject(LanguageService);
   protected readonly errorReporting = inject(ErrorReportingService);
   private readonly route = inject(ActivatedRoute);
@@ -73,8 +68,6 @@ export class ArchivePage implements OnInit {
     };
   });
 
-  protected readonly pillStreak = computed(() => this.store.today()?.streak ?? null);
-
   constructor() {
     const siteTitle = this.title.getTitle();
     const siteDescription = this.meta.getTag('name="description"')?.content ?? null;
@@ -99,7 +92,6 @@ export class ArchivePage implements OnInit {
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(params => void this.store.load(params.get('date') ?? ''));
-    void this.store.loadToday();
   }
 
   protected retry(): void {
@@ -122,18 +114,6 @@ export class ArchivePage implements OnInit {
   protected listen(track: ArchiveTrack): void {
     const data: PreviewTrackData = { artist: track.artist, title: track.title, loadPreviewUrl: () => this.store.previewUrl(track.position) };
     this.modal.open(PreviewTrackDialog, { data, maxWidth: '26rem', injector: this.injector });
-  }
-
-  protected openStreakSheet(): void {
-    const today = this.store.today();
-    const data: StreakSheetData = {
-      streak: today?.streak ?? EMPTY_STREAK, linked: this.session.isLinked(), gamesPlayed: today?.completedGames ?? null, lang: this.language.current(),
-    };
-    const dialog = this.modal.openSheet<StreakSheetResult, StreakSheetData, StreakSheetComponent>(StreakSheetComponent, { data });
-    dialog.closed.subscribe(result => {
-      if (result === 'playNow') void this.router.navigate(['/daily']);
-      else if (result === 'signup') void this.router.navigate(['/account/login']);
-    });
   }
 
   protected toggleLanguage(): void {

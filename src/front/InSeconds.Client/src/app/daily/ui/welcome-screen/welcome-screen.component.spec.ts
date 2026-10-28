@@ -56,4 +56,19 @@ describe('WelcomeScreenComponent', () => {
     const { el } = render({ linked: true, streak: { ...PROTECTED, status: 'active', missedDays: 0 } });
     expect(el.querySelector('[data-testid="frozen-line"]')).toBeNull();
   });
+
+  it('montre la série sous « Commencer » et émet openStreak au toucher', () => {
+    const { fixture, el } = render({ linked: true, streak: { ...PROTECTED, status: 'active', missedDays: 0 } });
+    const spy = vi.fn();
+    fixture.componentInstance.openStreak.subscribe(spy);
+
+    const pill = el.querySelector<HTMLButtonElement>('[data-testid="streak-pill"]')!;
+    expect(pill).not.toBeNull();
+    pill.click();
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('sans série en cours : pas de relevé de série', () => {
+    expect(render().el.querySelector('[data-testid="streak-pill"]')).toBeNull();
+  });
 });

@@ -96,7 +96,9 @@
     "header": {
       "login": "Log in",
       "profile": "My profile",
-      "avatarTitle": "My profile: {{ pseudo }}"
+      "avatarTitle": "My profile: {{ pseudo }}",
+      "archive": "Past days",
+      "admin": "Admin"
     }
   },
   "ui": {
@@ -244,8 +246,7 @@
         "cancel": "Cancel",
         "done": "Your account has been deleted."
       },
-      "backToGame": "Back to game",
-      "admin": "Admin"
+      "backToGame": "Back to game"
     },
     "devices": {
       "title": "Connected devices",
@@ -650,6 +651,14 @@
         "other": "{{ streak }}-day streak, see details"
       },
       "pillProtectedLabel": "Streak protected",
+      "pillDays": {
+        "one": "{{ n }} day",
+        "other": "{{ n }} days"
+      },
+      "pillFreezes": {
+        "one": "{{ n }} freeze",
+        "other": "{{ n }} freezes"
+      },
       "welcomeBack": "Welcome back!",
       "frozenLineBefore": "Your",
       "frozenLineStrong": {

@@ -5,14 +5,8 @@
 
     <header class="pt-3 flex flex-col gap-4">
       <app-brand [homeLink]="true">
-        <div brandLeft>
-          @if (pillStreak(); as streak) {
-            @if (streak.streak > 0 || store.played()) {
-              <app-streak-pill [streak]="streak" [linked]="session.isLinked()" (open)="openStreakSheet()" />
-            }
-          }
-        </div>
-        <app-account-link brandRight />
+        <!-- Pas de calendrier dans l'en-tête : la page a déjà le sien, sous la barre ‹ date ›. -->
+        <app-account-link brandRight [showArchive]="false" />
       </app-brand>
       @if (store.day(); as day) {
         <app-archive-day-header [date]="day.date" [previousDate]="day.previousDate" [nextDate]="day.nextDate" [lang]="language.current()"
