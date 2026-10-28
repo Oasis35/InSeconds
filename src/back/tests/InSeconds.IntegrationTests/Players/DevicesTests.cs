@@ -5,7 +5,7 @@ using InSeconds.Api.Modules.Players.Application;
 namespace InSeconds.IntegrationTests.Players;
 
 /// <summary>
-/// Déconnexion et appareils (§ 5.5 et 5.6 du plan v2) : chaque révocation ne touche que l'appareil visé
+/// Déconnexion et appareils : chaque révocation ne touche que l'appareil visé
 /// (piège 39), et son cookie est refusé dès la requête suivante.
 /// </summary>
 public class DevicesTests(PostgresFixture postgres) : IAsyncLifetime

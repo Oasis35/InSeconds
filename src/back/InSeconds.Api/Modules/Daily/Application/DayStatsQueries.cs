@@ -24,8 +24,8 @@ public sealed record ChallengeListRow(int Id, DateOnly Date, IReadOnlyList<Chall
 public sealed record PlayerHistoryRow(DateOnly Date, SessionStatus Status, int TotalScore, int FreezesUsed, bool FreezeEarned);
 
 /// <summary>
-/// Lectures des statistiques (§ 5.3 du plan v2), en agrégats. **Les joueurs supprimés en sont toujours exclus** (R8 : Daily ne peut pas naviguer vers
-/// Players, l'implémentation joint la table des joueurs en lecture seule).
+/// Lectures des statistiques, en agrégats. **Les joueurs effacés n'y figurent pas** : l'effacement (<c>AccountErasure</c>) supprime leurs
+/// parties.
 /// </summary>
 public interface IDailyStatsQueries
 {

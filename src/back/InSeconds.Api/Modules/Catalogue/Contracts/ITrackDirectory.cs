@@ -11,7 +11,7 @@ public sealed record TrackInfo(
     int Id, long DeezerTrackId, string Artist, string Title, string DisplayTitle, string? CoverUrl, int? ReleaseYear, int? DeezerRank,
     IReadOnlyList<string> Genres);
 
-/// <summary>Lecture des morceaux par les autres modules (§ 5.3 du plan v2).</summary>
+/// <summary>Lecture des morceaux par les autres modules.</summary>
 public interface ITrackDirectory
 {
     /// <summary>Les morceaux de ces identifiants ; un identifiant inconnu est absent du résultat.</summary>

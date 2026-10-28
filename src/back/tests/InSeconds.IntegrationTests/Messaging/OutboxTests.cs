@@ -8,7 +8,7 @@ using Wolverine.Attributes;
 namespace InSeconds.IntegrationTests.Messaging;
 
 /// <summary>
-/// Constat A1 du § 12 ter : la donnée et les messages qu'un handler publie partent dans la même
+/// La donnée et les messages qu'un handler publie partent dans la même
 /// transaction. Un message n'est envoyé que si la donnée est enregistrée, et inversement.
 /// </summary>
 public class OutboxTests(PostgresFixture postgres) : IAsyncLifetime

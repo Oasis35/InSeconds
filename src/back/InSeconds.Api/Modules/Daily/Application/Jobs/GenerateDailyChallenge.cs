@@ -9,8 +9,8 @@ using Wolverine;
 namespace InSeconds.Api.Modules.Daily.Application;
 
 /// <summary>
-/// Génère le défi d'un jour. Une seule logique pour les deux chemins (§ 5.4 bis du plan v2) : la tâche de minuit (lancée
-/// aussi à la main depuis <c>/jobs</c>) et le secours à la volée quand un joueur arrive sans défi (E2). Ne fait rien si le
+/// Génère le défi d'un jour. Une seule logique pour les deux chemins : la tâche de minuit (lancée
+/// aussi à la main depuis <c>/jobs</c>) et le secours à la volée quand un joueur arrive sans défi. Ne fait rien si le
 /// défi existe.
 /// </summary>
 /// <param name="Day">Le jour de jeu du défi.</param>
@@ -92,7 +92,7 @@ public static class GenerateDailyChallengeHandler
 }
 
 /// <summary>
-/// Tâche <c>daily-generate-challenge</c> (§ 5.4 bis du plan v2) : génère le défi du jour de jeu en cours, chaque nuit à
+/// Tâche <c>daily-generate-challenge</c> : génère le défi du jour de jeu en cours, chaque nuit à
 /// minuit UTC. **Un pool insuffisant lève une exception** : sans elle, Hangfire compterait un succès et ne réessaierait
 /// pas ; la tâche réessaie toutes les 10 minutes pendant la journée (144 essais), jusqu'à ce que le pool soit regarni.
 /// </summary>
@@ -131,7 +131,7 @@ internal static partial class DailyLog
         Message = "Défi du {Day} déjà présent, génération ignorée.")]
     public static partial void ChallengeAlreadyExists(ILogger logger, DateOnly day);
 
-    // Même niveau que la v1 : c'est ce qui doit alerter. La tâche réessaie, le message se répète tant que le pool manque.
+    // Niveau Error : c'est ce qui doit alerter. La tâche réessaie, le message se répète tant que le pool manque.
     [LoggerMessage(EventId = 1302, Level = LogLevel.Error,
         Message = "Pool insuffisant : {Eligible} morceau(x) tirable(s), {Required} requis pour le défi du {Day}.")]
     public static partial void PoolInsufficient(ILogger logger, int eligible, int required, DateOnly day);

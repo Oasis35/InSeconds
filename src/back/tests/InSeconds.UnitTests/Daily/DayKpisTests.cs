@@ -2,7 +2,7 @@ using InSeconds.Api.Modules.Daily.Domain;
 
 namespace InSeconds.UnitTests.Daily;
 
-/// <summary>Les chiffres d'un jour du tableau de bord de l'admin (F1, v1 : <c>GetAdminStats.BuildDailyKpis</c>).</summary>
+/// <summary>Les chiffres d'un jour du tableau de bord de l'admin.</summary>
 public class DayKpisTests
 {
     private static readonly DateOnly Day = new(2026, 10, 3);

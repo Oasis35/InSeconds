@@ -41,7 +41,7 @@ public static class UpdateTrackCooldownPoolPercentEndpoint
 {
     /// <summary>
     /// <c>PUT /api/admin/daily/settings/track-cooldown-pool-percent</c> : change la part du pool en cooldown, et rend le cooldown qui en
-    /// résulte. **Pris en compte tout de suite, sans redémarrage** : l'écriture recharge la source des réglages (R13), et le tirage, l'usage des
+    /// résulte. **Pris en compte tout de suite, sans redémarrage** : l'écriture recharge la source des réglages, et le tirage, l'usage des
     /// morceaux (date de déblocage du pool) et le contrôle nocturne des extraits relisent le réglage à chaque appel. Un défi déjà généré ne
     /// change pas. **Non transactionnelle** : le rechargement relit la base, il doit voir la ligne déjà enregistrée (dans la transaction de
     /// Wolverine, il lirait encore l'ancienne valeur).

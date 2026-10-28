@@ -43,7 +43,7 @@ public static class E2EEndpoints
         e2e.MapPost("/seed-catalogue", async (InSecondsDbContext db, TimeProvider time, CancellationToken ct) =>
             Results.Ok(new SeedResponse(await CatalogueSeed.SeedAsync(db, time, ct))));
 
-        // Remise à zéro complète puis seed du catalogue (le fixture E2E de la v1 l'appelle avec un jeton admin, ignoré ici).
+        // Remise à zéro complète puis seed du catalogue (le fixture E2E envoie un jeton admin, ignoré ici).
         e2e.MapPost("/reseed", async (
             DatabaseResetter resetter, CapturingEmailSender emails, FakeDeezerState deezer, DeezerCache deezerCache,
             InSecondsDbContext db, TimeProvider time, CancellationToken ct) =>
@@ -52,7 +52,7 @@ public static class E2EEndpoints
             return Results.Ok(new SeedResponse(await CatalogueSeed.SeedAsync(db, time, ct)));
         });
 
-        // Génère le défi du jour tout de suite, sans Hangfire (les fixtures qui ont juste besoin d'un défi, § 5.4 bis du plan v2) :
+        // Génère le défi du jour tout de suite, sans Hangfire (les fixtures qui ont juste besoin d'un défi) :
         // 200 avec { created } (false si le défi existait déjà), 422 admin.pool_insufficient si le pool ne suffit pas.
         e2e.MapPost("/generate-today", async (IMessageBus bus, IGameCalendar calendar, CancellationToken ct) =>
         {
@@ -136,7 +136,7 @@ public static class E2EEndpoints
             emails.LastTo(to) is { } email ? Results.Ok(email) : Results.NotFound());
 
         // Lève une exception non gérée : le gestionnaire d'erreurs de l'API doit répondre 500 avec un code d'erreur (traceId) lisible
-        // (E2E `error-reporting`, comme `GET /api/e2e/throw` de la v1).
+        // (E2E `error-reporting`).
         e2e.MapGet("/throw", () =>
         {
             throw new InvalidOperationException("Exception de test (e2e/throw)");

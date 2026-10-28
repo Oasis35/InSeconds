@@ -4,9 +4,6 @@ import { GamePage } from '../pages/game.page';
 import { BlindRoundPage } from '../pages/blind-round.page';
 import { linkAccount } from '../pages/login.page';
 
-// Réactivé en C3 (le pool), puis en F2 (dashboard, défis, joueurs, actions) : plus aucun `test.fixme`. Titres inchangés
-// (la parité avec la v1 les compare), corps adaptés aux routes de la v2.
-
 test.describe('Admin - login', () => {
   test('visiteur non connecté : /admin invite à se connecter', async ({ page }) => {
     const admin = new AdminPage(page);
@@ -18,7 +15,7 @@ test.describe('Admin - login', () => {
 
   test('compte lié mais pas admin : /admin affiche accès refusé', async ({ page, api }) => {
     await api.reset();
-    // Écart avec la v1 : l'accueil du jeu n'existe pas avant E5, la connexion se vérifie par l'avatar de l'en-tête.
+    // La connexion se vérifie par l'avatar de l'en-tête.
     await linkAccount(page, api, 'joueur-normal@e2e.test', 'JoueurE2E');
 
     const admin = new AdminPage(page);
@@ -427,7 +424,7 @@ test.describe('Admin - défis', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    // Écart avec la v1 : le seed v2 écrit un défi par jour où un morceau a servi (J-2, J-1, aujourd'hui, mais aussi J-5,
+    // Le seed écrit un défi par jour où un morceau a servi (J-2, J-1, aujourd'hui, mais aussi J-5,
     // J-15, J-30…, cf. CatalogueSeed). Combien tombent dans le mois UTC courant dépend du jour : on les compte depuis l'API.
     await page.getByRole('link', { name: /^Défis/ }).click();
     const now = new Date();
@@ -441,7 +438,7 @@ test.describe('Admin - défis', () => {
   });
 });
 
-// Recalcul des chiffres figés d'un défi (v2 seulement, E3/F2) : permis à partir de J-2, refusé pour la veille et le jour même.
+// Recalcul des chiffres figés d'un défi : permis à partir de J-2, refusé pour la veille et le jour même.
 test.describe('Admin - recalcul des stats (v2)', () => {
   const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
 
@@ -624,7 +621,7 @@ test.describe('Admin - indicateur joueurs / ID navigateur', () => {
     const todayRow = admin.challengeRow(today);
     const youChip = todayRow.getByRole('button', { name: /toi/ });
     await expect(youChip).toBeVisible();
-    // Écart avec la v1 : login-as-admin fait de l'invité qui vient de jouer le compte AdminE2E (comme un premier lien
+    // login-as-admin fait de l'invité qui vient de jouer le compte AdminE2E (comme un premier lien
     // magique), le chip montre donc son pseudo ; l'identifiant complet reste dans l'infobulle.
     await expect(youChip).toContainText('AdminE2E');
     await expect(youChip).toHaveAttribute('title', new RegExp(`^${browserShortId}`));
@@ -696,7 +693,7 @@ test.describe('Admin - joueurs', () => {
     await expect(row).not.toContainText(email);
     await row.getByTestId('player-email').click();
     await expect(row).toContainText(email);
-    // Écart avec la v1 : login-as-admin n'a plus à promouvoir le compte du navigateur (déjà lié), il connecte le compte
+    // login-as-admin ne promeut pas le compte du navigateur (déjà lié), il connecte le compte
     // AdminE2E, qui apparaît aussi dans la liste ; le badge « Admin » est donc sur lui, pas sur JoueurTab.
     await expect(row.getByText('Admin', { exact: true })).toBeHidden();
     await expect(page.getByTestId('registered-player').filter({ hasText: 'AdminE2E' }).getByText('Admin', { exact: true })).toBeVisible();

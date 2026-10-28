@@ -1,8 +1,8 @@
 namespace InSeconds.IntegrationTests.Testing;
 
 /// <summary>
-/// Document OpenAPI du module Catalogue (C1, § 6.1 du plan v2) : servi par l'hôte de test seulement, pour générer le
-/// client NSwag du front (C3). Deux préfixes : la recherche publique et les routes admin du pool.
+/// Document OpenAPI du module Catalogue : servi par l'hôte de test seulement, pour générer le
+/// client NSwag du front. Deux préfixes : la recherche publique et les routes admin du pool.
 /// </summary>
 public class CatalogueOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(postgres, "catalogue")
 {

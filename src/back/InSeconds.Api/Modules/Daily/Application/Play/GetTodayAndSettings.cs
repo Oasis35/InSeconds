@@ -14,7 +14,7 @@ public sealed record DurationScoreResponse(decimal Seconds, int Score);
 /// </summary>
 public sealed record HintLevelResponse(int Level, decimal UnlockSeconds, string Kind, int PenaltyPercent);
 
-/// <summary>Les réglages publics du défi du jour, lus à chaud (v1 : <c>GET /api/settings</c>).</summary>
+/// <summary>Les réglages publics du défi du jour, lus à chaud.</summary>
 public sealed record DailySettingsResponse(
     int GuessTimerSeconds,
     int TracksPerChallenge,
@@ -46,7 +46,7 @@ public static class GetDailySettingsEndpoint
 }
 
 /// <summary>
-/// Le défi du jour pour le navigateur courant : lecture seule, ne crée ni joueur, ni cookie, ni partie, et ne génère rien (§ 5.6 du plan v2).
+/// Le défi du jour pour le navigateur courant : lecture seule, ne crée ni joueur, ni cookie, ni partie, et ne génère rien.
 /// </summary>
 /// <param name="State"><c>no_challenge</c> · <c>can_start</c> · <c>resumable</c> · <c>already_played</c> · <c>abandoned</c>.</param>
 /// <param name="TracksCount">Morceaux du défi (0 sans défi).</param>

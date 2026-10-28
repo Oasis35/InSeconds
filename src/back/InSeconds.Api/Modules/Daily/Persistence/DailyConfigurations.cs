@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace InSeconds.Api.Modules.Daily.Persistence;
 
-// Tables du schéma daily (§ 4.4 du plan v2). La clé étrangère vers catalogue.tracks est déclarée ici (c'est Daily qui
+// Tables du schéma daily. La clé étrangère vers catalogue.tracks est déclarée ici (c'est Daily qui
 // référence les morceaux), **par le nom du type** : Daily n'utilise de Catalogue que son dossier Contracts.
 
 internal sealed class DailyChallengeConfiguration : IEntityTypeConfiguration<DailyChallenge>

@@ -5,7 +5,7 @@ using static InSeconds.IntegrationTests.Daily.DailyApi;
 
 namespace InSeconds.IntegrationTests.Daily;
 
-/// <summary>Le tableau de bord de l'admin (F1, v1 : <c>GET /api/admin/stats</c>) : activité, joueurs, jours disponibles et chiffres d'un jour.</summary>
+/// <summary>Le tableau de bord de l'admin : activité, joueurs, jours disponibles et chiffres d'un jour.</summary>
 public class AdminDashboardTests(PostgresFixture postgres) : IAsyncLifetime
 {
     private const string Route = "/api/admin/daily/dashboard";

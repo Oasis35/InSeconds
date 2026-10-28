@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace InSeconds.IntegrationTests.Players;
 
 /// <summary>
-/// Connexion par lien magique (§ 5.5 et 5.6 du plan v2) : demande, jeton généré par le handler de
+/// Connexion par lien magique : demande, jeton généré par le handler de
 /// l'outbox (S1), vérification filtrée par usage (S2), origine (piège 22), confirmation explicite
 /// (piège 21), pas de conversion d'un compte lié (piège 30), nouvelle session à chaque connexion (S5).
 /// </summary>

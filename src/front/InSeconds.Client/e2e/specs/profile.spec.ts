@@ -37,8 +37,6 @@ test.describe('Profil', () => {
 
     await page.goto('/profile');
 
-    // La série et les parties jouées s'afficheront ici avec le module Daily (v1 : cartes « Série » et « Parties jouées »).
-
     await page.getByPlaceholder('Ton pseudo').fill('NouveauPseudoE2E');
     await page.getByRole('button', { name: 'Changer' }).click();
 

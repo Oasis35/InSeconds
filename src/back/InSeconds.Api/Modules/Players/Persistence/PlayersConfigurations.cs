@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace InSeconds.Api.Modules.Players.Persistence;
 
-// Tables du schéma players (§ 4.2 du plan v2). Pas de navigation EF : les relations sont déclarées
+// Tables du schéma players. Pas de navigation EF : les relations sont déclarées
 // pour la base (clés étrangères, ordre des insertions), sans propriété de navigation.
 
 internal sealed class PlayerConfiguration : IEntityTypeConfiguration<Player>
@@ -32,7 +32,7 @@ internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
 
     public void Configure(EntityTypeBuilder<Account> builder)
     {
-        // Longueur du pseudo bornée par la base aussi (R5), comme le validateur (VerifyMagicLinkValidator.PseudoPattern).
+        // Longueur du pseudo bornée par la base aussi, comme le validateur (VerifyMagicLinkValidator.PseudoPattern).
         builder.ToTable("accounts", DbSchemas.Players, table => table.HasCheckConstraint(
             PseudoLengthCheck, "char_length(pseudo::text) BETWEEN 3 AND 20"));
         builder.HasKey(a => a.PlayerId);

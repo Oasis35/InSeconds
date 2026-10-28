@@ -18,7 +18,7 @@ export const test = base.extend<E2EFixtures>({
   //    "Service indisponible"). Le spec service-down.spec.ts le réactive explicitement.
   //  - localStorage.lang = 'fr' : force la langue FR (les specs matchent du texte FR en dur),
   //    quelle que soit la locale du navigateur du runner CI.
-  //  - localStorage inseconds.thanksNoticeSeen : le message de remerciement de la v2 compte comme
+  //  - localStorage inseconds.thanksNoticeSeen : le message de remerciement compte comme
   //    déjà vu (il s'ouvrirait par-dessus les écrans de fin de partie). thanks-notice.spec.ts le retire.
   page: async ({ page }, use) => {
     await page.addInitScript(() => {

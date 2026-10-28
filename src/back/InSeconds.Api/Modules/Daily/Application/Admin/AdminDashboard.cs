@@ -14,7 +14,7 @@ public sealed record DailyActivityResponse(DateOnly Date, int PlayerCount);
 /// <summary>Les joueurs non supprimés : invités, comptes, et ceux vus récemment (invités compris).</summary>
 public sealed record PlayerBreakdownResponse(int TotalGuests, int TotalRegistered, int ActiveLast7Days, int ActiveLast30Days);
 
-/// <summary>Les chiffres d'un jour, comme la v1 (<see cref="DayKpis"/>).</summary>
+/// <summary>Les chiffres d'un jour (<see cref="DayKpis"/>).</summary>
 public sealed record DayKpisResponse(
     DateOnly Date, int CompletedCount, int AbandonedCount, int ExpiredCount, int PendingCount, int TotalSessions, double CompletionRate, double? MedianScore);
 
@@ -34,9 +34,9 @@ public static class GetDashboardEndpoint
             : ApiProblem.Of(StatusCodes.Status400BadRequest, DailyAdminErrorCodes.InvalidDate, "La date doit être au format aaaa-mm-jj.");
 
     /// <summary>
-    /// <c>GET /api/admin/daily/dashboard?date=aaaa-mm-jj</c> (v1 : <c>GET /api/admin/stats</c>) : l'activité des 30 derniers jours, les joueurs, les
+    /// <c>GET /api/admin/daily/dashboard?date=aaaa-mm-jj</c> : l'activité des 30 derniers jours, les joueurs, les
     /// jours qui ont un défi et les chiffres du jour demandé (aujourd'hui par défaut). Tout est lu en direct, jamais dans la photo figée : ce sont
-    /// des comptes, pas le détail d'un défi. Les joueurs supprimés n'y figurent pas (R8).
+    /// des comptes, pas le détail d'un défi. Les joueurs effacés n'y figurent pas.
     /// </summary>
     [WolverineGet("/api/admin/daily/dashboard", OperationId = "getDashboard")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]

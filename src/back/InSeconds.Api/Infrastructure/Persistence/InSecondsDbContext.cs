@@ -8,7 +8,7 @@ using Wolverine.EntityFrameworkCore;
 namespace InSeconds.Api.Infrastructure.Persistence;
 
 /// <summary>
-/// Le seul DbContext de la v2. Chaque module y apporte ses configurations
+/// Le seul DbContext de l'API. Chaque module y apporte ses configurations
 /// (<c>IEntityTypeConfiguration</c>), rangées dans son propre schéma.
 /// </summary>
 public sealed class InSecondsDbContext(DbContextOptions<InSecondsDbContext> options) : DbContext(options), IDataProtectionKeyContext
@@ -29,7 +29,7 @@ public sealed class InSecondsDbContext(DbContextOptions<InSecondsDbContext> opti
         // citext sert aux emails et aux pseudos (comparaison insensible à la casse).
         modelBuilder.HasPostgresExtension(DbSchemas.Extensions, "citext");
         // Tables de l'outbox de Wolverine déclarées au modèle EF : la donnée et les messages à envoyer partent dans
-        // la même transaction (constat A1, § 12 ter). Elles sont créées par Wolverine au démarrage, pas par les
+        // la même transaction. Elles sont créées par Wolverine au démarrage, pas par les
         // migrations EF, qui les excluent (la migration MapWolverineEnvelopeStorage est vide exprès).
         modelBuilder.MapWolverineEnvelopeStorage(DbSchemas.Messaging);
         var assembly = typeof(InSecondsDbContext).Assembly;
@@ -43,7 +43,7 @@ public sealed class InSecondsDbContext(DbContextOptions<InSecondsDbContext> opti
 /// <summary>
 /// Npgsql déclare de lui-même l'extension de chaque type utilisé par une colonne (<c>citext</c>), hors
 /// de tout schéma, en plus de celle déclarée dans <c>extensions</c> : un second <c>CREATE EXTENSION</c>,
-/// sans effet mais trompeur (constat B1). Ajoutée après les conventions d'Npgsql, celle-ci le retire.
+/// sans effet mais trompeur. Ajoutée après les conventions d'Npgsql, celle-ci le retire.
 /// </summary>
 internal sealed class CitextOnlyInExtensionsSchemaConvention : IModelFinalizingConvention
 {
@@ -51,7 +51,7 @@ internal sealed class CitextOnlyInExtensionsSchemaConvention : IModelFinalizingC
         modelBuilder.Metadata.RemoveAnnotation("Npgsql:PostgresExtension:citext");
 }
 
-/// <summary>Même forme que la table v1 <c>DataProtectionKeys</c>, copiée telle quelle à l'import (§ 8.2).</summary>
+/// <summary>Table <c>data_protection_keys</c>, sous la forme qu'attend <c>PersistKeysToDbContext</c>.</summary>
 internal sealed class DataProtectionKeyConfiguration : IEntityTypeConfiguration<DataProtectionKey>
 {
     public void Configure(EntityTypeBuilder<DataProtectionKey> builder) =>

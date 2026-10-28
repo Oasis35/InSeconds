@@ -3,7 +3,7 @@ namespace InSeconds.Api.Modules.Players.Auth;
 /// <summary>
 /// Anti-CSRF des routes qui posent un cookie sur un <c>POST</c> (vérification du lien magique,
 /// piège 22) : l'<c>Origin</c>, ou à défaut l'autorité exacte du <c>Referer</c>, doit être une origine
-/// de confiance. Repris de l'<c>OriginValidator</c> v1. Origines de confiance : <c>Cors:AllowedOrigins</c>
+/// de confiance. Origines de confiance : <c>Cors:AllowedOrigins</c>
 /// (prod, staging) plus <c>Auth:TrustedOrigins</c>, pour les fronts servis par le proxy d'<c>ng serve</c>
 /// en développement et en E2E, sans CORS : tous les ports réellement utilisés doivent y être (piège 22).
 /// </summary>

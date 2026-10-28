@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 
 namespace InSeconds.UnitTests.Daily;
 
-/// <summary>Le barème de la v1, repris tel quel, et les règles du défi du jour lues dans les réglages.</summary>
+/// <summary>Le barème et les règles du défi du jour lues dans les réglages.</summary>
 public class DailyScoringAndRulesTests
 {
     private static readonly DailyOptions Defaults = new();
@@ -57,7 +57,7 @@ public class DailyScoringAndRulesTests
     [Fact]
     public void Score_Penalite_ApresLaMoitie_ArrondiAuPairLePlusProche_CommeEnV1()
     {
-        // 425 × 0,7 = 297,5 → 298 (le pair le plus proche), comme Math.Round de la v1.
+        // 425 × 0,7 = 297,5 → 298 (le pair le plus proche, comme Math.Round).
         Assert.Equal(298, Policy().Score(new RoundOutcome(true, false, 1, 1)));
         // 275 × 0,7 = 192,5 → 192.
         Assert.Equal(192, Policy().Score(new RoundOutcome(false, true, 2, 1)));

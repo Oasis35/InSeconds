@@ -6,8 +6,8 @@ using Microsoft.Extensions.Options;
 namespace InSeconds.IntegrationTests.Daily;
 
 /// <summary>
-/// Les réglages publics du défi du jour, relus à chaud (§ 4.6 du plan v2), et le contrôle de leur cohérence au démarrage : une politique d'indices
-/// ne propose jamais plus de niveaux que les fournisseurs d'indices n'en révèlent (revue de D1).
+/// Les réglages publics du défi du jour, relus à chaud, et le contrôle de leur cohérence au démarrage : une politique d'indices
+/// ne propose jamais plus de niveaux que les fournisseurs d'indices n'en révèlent.
 /// </summary>
 public class DailySettingsTests(PostgresFixture postgres) : IAsyncLifetime
 {

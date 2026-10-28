@@ -1,7 +1,7 @@
 namespace InSeconds.Api.Modules.Daily.Domain;
 
 /// <summary>
-/// Les chiffres d'un jour pour le tableau de bord de l'admin (v1 : <c>GetAdminStats.BuildDailyKpis</c>).
+/// Les chiffres d'un jour pour le tableau de bord de l'admin.
 /// </summary>
 /// <param name="AbandonedCount">Clic explicite sur « Abandonner » seulement.</param>
 /// <param name="ExpiredCount">Sortie sans abandon ; pour un jour passé, les parties restées « en cours » y sont repliées.</param>

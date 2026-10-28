@@ -1,7 +1,7 @@
 import { SheriffConfig } from '@softarc/sheriff-core';
 
 /**
- * Frontières du front v2 (§ 3.3 et § 6.1 du plan v2), vérifiées en CI par `npm run lint:arch`.
+ * Frontières du front, vérifiées en CI par `npm run lint:arch`.
  *
  * - `core` : transverse (session, erreurs, langue, version, santé) ; peut utiliser `ui`.
  * - `ui` : kit visuel de la DA, n'importe rien d'autre de l'app.

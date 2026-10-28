@@ -21,7 +21,7 @@ public sealed record AdminPlayersResponse(IReadOnlyList<AdminPlayer> Players);
 public static class ListRegisteredPlayersEndpoint
 {
     /// <summary>
-    /// <c>GET /api/admin/players</c> (v1 : même route) : les comptes inscrits (les invités et les joueurs supprimés n'y figurent pas), les plus
+    /// <c>GET /api/admin/players</c> : les comptes inscrits (les invités et les joueurs supprimés n'y figurent pas), les plus
     /// récemment vus d'abord, jamais vus en dernier. Les comptes viennent de Players, la série et les parties de Daily : la route est dans Daily,
     /// seul des deux modules à pouvoir lire l'autre (par ses contrats). La série est celle d'**aujourd'hui** (<see cref="DailyStreak.Compute"/>).
     /// </summary>
@@ -63,7 +63,7 @@ public sealed record KnownPlayer(bool Exists);
 
 public static class GetPlayerHistoryEndpoint
 {
-    /// <summary>Les jours montrés (v1 : 30, aujourd'hui compris).</summary>
+    /// <summary>Les jours montrés (aujourd'hui compris).</summary>
     public const int HistoryDays = 30;
 
     public static async Task<KnownPlayer> LoadAsync(Guid playerId, IPlayerDirectory players, CancellationToken ct) =>
@@ -73,7 +73,7 @@ public static class GetPlayerHistoryEndpoint
         player.Exists ? WolverineContinue.NoProblems : ApiProblem.Of(StatusCodes.Status404NotFound, ErrorCodes.NotFound, "Joueur introuvable.");
 
     /// <summary>
-    /// <c>GET /api/admin/daily/players/{playerId}/history</c> (v1 : <c>GET /api/admin/players/{id}/history</c>) : les parties des 30 derniers jours,
+    /// <c>GET /api/admin/daily/players/{playerId}/history</c> : les parties des 30 derniers jours,
     /// la plus récente d'abord. Lu à l'ouverture d'une ligne de l'onglet Joueurs. 404 pour un joueur inconnu ou supprimé.
     /// </summary>
     [WolverineGet("/api/admin/daily/players/{playerId}/history", OperationId = "getPlayerHistory")]

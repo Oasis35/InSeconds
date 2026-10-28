@@ -5,8 +5,7 @@ using Respawn;
 namespace InSeconds.Api.Testing.E2E;
 
 /// <summary>
-/// Vide les tables des modules entre deux tests E2E. Ne touche jamais <c>public</c> (tables v1, qui
-/// partagent la base jusqu'à la bascule), ni les schémas techniques (settings, migrations, messages
+/// Vide les tables des modules entre deux tests E2E. Ne touche ni <c>public</c>, ni les schémas techniques (settings, migrations, messages
 /// Wolverine, tâches Hangfire) : la liste des schémas est lue en base à chaque appel, donc un
 /// nouveau module est vidé sans rien changer ici.
 /// </summary>

@@ -24,7 +24,7 @@ public sealed record PreviewRefreshResult(int Checked, int Updated, int Failed)
     /// <summary>
     /// Le compte rendu tel que la tâche le renvoie à Hangfire : un dictionnaire plutôt que le record lui-même, car
     /// Hangfire n'écrit pas les propriétés à zéro ("failed" serait absent d'une exécution sans échec). Les clés sont
-    /// celles du plan (§ 5.4 bis).
+    /// stables : l'onglet Actions de l'admin les lit.
     /// </summary>
     public Dictionary<string, int> ToReport() => new() { ["checked"] = Checked, ["updated"] = Updated, ["failed"] = Failed };
 }

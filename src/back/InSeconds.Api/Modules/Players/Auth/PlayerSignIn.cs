@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 
 namespace InSeconds.Api.Modules.Players.Auth;
 
-/// <summary>Pose ou retire le cookie d'un appareil (création d'invité, reprise d'un cookie v1, connexion, déconnexion).</summary>
+/// <summary>Pose ou retire le cookie d'un appareil (création d'invité, reprise d'un ancien cookie, connexion, déconnexion).</summary>
 public interface IPlayerSignIn
 {
     Task SignInAsync(Guid playerId, int deviceSessionId, bool isAdmin);

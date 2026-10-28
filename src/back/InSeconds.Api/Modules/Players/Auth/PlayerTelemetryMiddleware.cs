@@ -5,10 +5,9 @@ namespace InSeconds.Api.Modules.Players.Auth;
 
 /// <summary>
 /// Rattache chaque requête au joueur identifié (<see cref="ICurrentPlayer"/>) : tag sur la trace et scope
-/// de journalisation, pour retrouver toute la chronologie d'un joueur par son identifiant (§ 5.7 du plan v2,
-/// repris du <c>PlayerTelemetryMiddleware</c> de la v1). Placé après l'authentification et la transition
-/// des cookies v1, avant les endpoints. Jamais d'email, de pseudo, de cookie ni d'<c>Authorization</c> :
-/// l'identifiant technique suffit. Sans joueur identifié, rien n'est ajouté.
+/// de journalisation, pour retrouver toute la chronologie d'un joueur par son identifiant. Placé après
+/// l'authentification et la reprise des anciens cookies, avant les endpoints. Jamais d'email, de pseudo,
+/// de cookie ni d'<c>Authorization</c> : l'identifiant technique suffit. Sans joueur identifié, rien n'est ajouté.
 /// </summary>
 internal sealed class PlayerTelemetryMiddleware(RequestDelegate next, ILogger<PlayerTelemetryMiddleware> logger)
 {

@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace InSeconds.IntegrationTests.Players;
 
-/// <summary>Profil (§ 5.6 du plan v2) : pseudo, changement d'email en deux temps.</summary>
+/// <summary>Profil : pseudo, changement d'email en deux temps.</summary>
 public partial class ProfileTests(PostgresFixture postgres) : IAsyncLifetime
 {
     private MagicLinkApi _app = null!;

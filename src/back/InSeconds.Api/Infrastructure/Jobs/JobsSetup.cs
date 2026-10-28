@@ -8,7 +8,7 @@ namespace InSeconds.Api.Infrastructure.Jobs;
 
 /// <summary>
 /// Hangfire décide quand lancer les tâches (cron), garde l'historique, réessaie et fournit le
-/// tableau de bord <c>/jobs</c> (§ 5.4 bis du plan v2). Stockage PostgreSQL dans le schéma <c>jobs</c>.
+/// tableau de bord <c>/jobs</c>. Stockage PostgreSQL dans le schéma <c>jobs</c>.
 /// </summary>
 public static class JobsSetup
 {
@@ -31,7 +31,7 @@ public static class JobsSetup
     {
         // Les filtres de Hangfire sont une liste **globale** au processus : un filtre ajouté à chaque configuration
         // s'empile quand plusieurs API tournent dans le même processus (les tests d'intégration en créent une par
-        // test), et Hangfire finit par déborder de sa pile en les enchaînant (constat C1). Ajouté une seule fois.
+        // test), et Hangfire finit par déborder de sa pile en les enchaînant. Ajouté une seule fois.
         lock (FilterLock)
         {
             if (!GlobalJobFilters.Filters.Any(filter => filter.Instance is JobTracingFilter))
@@ -81,7 +81,7 @@ public static class JobsSetup
         app.MapHangfireDashboard(DashboardPath, new DashboardOptions
         {
             // Sans cette ligne, le filtre « local uniquement » de Hangfire reste actif en plus de la
-            // policy (constat A4) : c'est la policy Admin seule qui décide.
+            // policy : c'est la policy Admin seule qui décide.
             Authorization = [],
             DashboardTitle = "InSeconds · tâches planifiées",
             DisplayStorageConnectionString = false,

@@ -6,7 +6,7 @@ namespace InSeconds.Api.Modules.Players.Email;
 /// <param name="NewEmail">Adresse à confirmer, rappelée dans l'email.</param>
 public sealed record ConfirmEmailChangeEmail(string ConfirmUrl, string NewEmail);
 
-/// <summary>L'email de confirmation d'un changement d'adresse, sujet et gabarit de la v1 (<c>confirm-email-change.html</c>).</summary>
+/// <summary>L'email de confirmation d'un changement d'adresse, sujet et gabarit (<c>confirm-email-change.html</c>).</summary>
 public sealed class ConfirmEmailChangeEmailComposer : IEmailComposer<ConfirmEmailChangeEmail>
 {
     public const string Subject = "Confirme ta nouvelle adresse email IN//SECONDS";

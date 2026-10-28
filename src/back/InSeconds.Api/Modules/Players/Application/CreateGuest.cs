@@ -21,7 +21,7 @@ public sealed record CreateGuest(string? Source);
 public static class CreateGuestEndpoint
 {
     /// <summary>
-    /// <c>POST /api/players/guest</c> : une identité d'invité pour ce navigateur (§ 5.5 du plan v2),
+    /// <c>POST /api/players/guest</c> : une identité d'invité pour ce navigateur,
     /// par une commande explicite, jamais par un GET. Un navigateur déjà identifié garde son joueur.
     /// Limité par IP, comme toute création de joueur (S11). La source d'arrivée n'est notée qu'à la création (un joueur déjà identifié
     /// garde la sienne) ; le corps est optionnel, une source absente vaut <c>direct</c>.

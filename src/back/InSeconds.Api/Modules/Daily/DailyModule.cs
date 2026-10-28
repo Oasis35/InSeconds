@@ -9,10 +9,10 @@ using InSeconds.Api.Modules.Players.Contracts;
 namespace InSeconds.Api.Modules.Daily;
 
 /// <summary>
-/// Module Daily (§ 3.1 du plan v2) : le défi du jour. E1 : les défis (<c>daily.challenges</c> et <c>daily.challenge_tracks</c>), leur génération
-/// (nocturne, à la volée, bouton de l'admin) et l'usage des morceaux que le cooldown en tire. E2 : les parties (<c>daily.sessions</c> et
-/// <c>daily.answers</c>), le score, la série et les gels (<c>daily.streaks</c>), et le gel offert à la création d'un compte (<see cref="IStreakGrants"/>,
-/// contrat préparé depuis B2).
+/// Module Daily : le défi du jour. Les défis (<c>daily.challenges</c> et <c>daily.challenge_tracks</c>), leur génération
+/// (nocturne, à la volée, bouton de l'admin) et l'usage des morceaux que le cooldown en tire ; les parties (<c>daily.sessions</c> et
+/// <c>daily.answers</c>), le score, la série et les gels (<c>daily.streaks</c>), et le gel offert à la création d'un compte (<see cref="IStreakGrants"/>) ;
+/// les statistiques, la photo figée des jours terminés, les réponses des jours passés et l'admin du jeu.
 /// </summary>
 public static class DailyModule
 {
@@ -36,7 +36,7 @@ public static class DailyModule
         services.AddScoped<IDailyTrackUsage>(sp => sp.GetRequiredService<EfTrackUsage>());
         services.AddScoped<ITrackUsage>(sp => sp.GetRequiredService<EfTrackUsage>());
         services.AddScheduledJob<GenerateDailyChallengeJob>(GenerateDailyChallengeJob.Id, GenerateDailyChallengeJob.DefaultCron);
-        // Fige les statistiques de l'avant-veille (§ 5.4 bis). Tourne aussi en staging : elle n'appelle pas Deezer.
+        // Fige les statistiques de l'avant-veille. Tourne aussi en staging : elle n'appelle pas Deezer.
         services.AddScheduledJob<DailyCloseDayJob>(DailyCloseDayJob.Id, DailyCloseDayJob.DefaultCron);
         services.AddScoped<IStreakGrants, DailyStreakGrants>();
         return services;

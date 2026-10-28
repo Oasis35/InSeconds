@@ -12,7 +12,7 @@ Stack : .NET 10 / Wolverine / EF Core / PostgreSQL 17 / Hangfire côté back (mo
 
 Le code est dans `src/`, décrit par ce fichier et ses deux compagnons : [`src/back/CLAUDE.md`](src/back/CLAUDE.md) et [`src/front/CLAUDE.md`](src/front/CLAUDE.md). Ces documents ne décrivent que l'application telle qu'elle est ; son histoire est dans [`docs/historique/`](docs/historique/). Sommaire de la doc : [`docs/README.md`](docs/README.md).
 
-- **Staging** (`dev.inseconds.cc`) et **prod** (`inseconds.cc`) servent le même code, `env/staging` n'ayant d'avance que les PR pas encore promues (dernier merge `env/staging` → `main` : #370, le 19/10/2026).
+- **Staging** (`dev.inseconds.cc`) et **prod** (`inseconds.cc`) servent le même code, `env/staging` n'ayant d'avance que les PR pas encore promues (dernier merge `env/staging` → `main` : #450, le 28/10/2026).
 - **PR** : vers `env/staging` (testée au staging), puis `env/staging` → `main` pour la prod, en merge commit (jamais squash : il crée des conflits au merge suivant). Un correctif urgent peut viser `main`, remergée ensuite dans `env/staging`.
 - Branches `main` et `env/staging` protégées (ruleset GitHub : PR obligatoire, pas de force-push ni de suppression, check « CI OK » exigé).
 
@@ -49,7 +49,7 @@ InSeconds/
 
 ## Architecture back
 
-> Détail complet (chaque module, routes, tâches, authentification, import, hôte de test) : [`src/back/CLAUDE.md`](src/back/CLAUDE.md). Ci-dessous : les règles qu'il faut avoir en tête avant de toucher au code.
+> Détail complet (chaque module, routes, tâches, authentification, hôte de test) : [`src/back/CLAUDE.md`](src/back/CLAUDE.md). Ci-dessous : les règles qu'il faut avoir en tête avant de toucher au code.
 
 **Monolithe modulaire.** Une seule API (`InSeconds.Api`), découpée en modules dans `Modules/<Module>/` :
 
@@ -300,7 +300,7 @@ Vue fonctionnelle ; le détail technique de chaque point est dans `src/back/CLAU
 
 - **Fin de la reprise des anciens cookies** (#237, vers le 14/01/2027) : `legacy_tokens`, `LegacyCookieTransitionMiddleware` et anciennes clés Data Protection non chiffrées.
 - **Recette iPhone** : lire les diagnostics `Viewport:` et `AudioStall:` remontés par le front, puis les retirer (`src/front/CLAUDE.md` § Erreurs).
-- **Mode Runs** (« Platines » à l'écran, « Run » dans les tickets, epic #368) : **le proto 1 est livré (27/10/2026), sur invitation** : module `Runs` (schéma `runs`, défi et tirage par difficulté, réglages `Runs:`, accès avec son interrupteur dans l'onglet Joueurs de l'admin), routes de la partie et de la comparaison, domaine front `runs/` (accueil, reprise, manche, réponse, morceau retiré, bilan, fin, lien d'un ami, comparaison, carte sur l'accueil du jeu du jour), E2E (`runs.spec.ts`). Reste : les parties de test et le réglage des seuils, quelques suites ([`docs/taches.md`](docs/taches.md)), puis le proto 2 (bonus). Règles, écrans de référence, conception et découpage en PR : [`docs/runs/`](docs/runs/README.md).
+- **Mode Runs** (« Platines » à l'écran, « Run » dans les tickets, epic #368) : **le proto 1 est livré (27/10/2026), sur invitation** : module `Runs` (schéma `runs`, défi et tirage par difficulté, réglages `Runs:`, accès avec son interrupteur dans l'onglet Joueurs de l'admin), routes de la partie et de la comparaison, domaine front `runs/` (accueil, reprise, manche, réponse, morceau retiré, bilan, fin, lien d'un ami, comparaison, carte sur l'accueil du jeu du jour), E2E (`runs.spec.ts`). Reste : les parties de test et le réglage des seuils, quelques suites ([`docs/taches.md`](docs/taches.md)), puis le proto 2 (bonus). Règles, écrans de référence, conception et feuille de route : [`docs/runs/`](docs/runs/README.md).
 - Le reste : [`docs/taches.md`](docs/taches.md).
 
 ## Décisions d'architecture

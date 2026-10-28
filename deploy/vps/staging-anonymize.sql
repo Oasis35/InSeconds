@@ -1,4 +1,4 @@
--- Anonymisation du staging (S8, § 10.1 du plan de la refonte), après la copie des données de la prod.
+-- Anonymisation du staging (S8), après la copie des données de la prod.
 -- Lancé par deploy/vps/copy-prod-db-to-staging.sh : psql -v ON_ERROR_STOP=1 -v keep=<STAGING_KEEP_EMAIL> < staging-anonymize.sql.
 -- Aucune adresse, aucun pseudo ni aucun rôle admin de la prod ne reste, sauf ceux de l'adresse gardée. Jamais en prod.
 BEGIN;

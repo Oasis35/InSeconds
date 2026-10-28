@@ -4,7 +4,7 @@ using InSeconds.Api.Modules.Daily.Domain;
 namespace InSeconds.Api.Modules.Daily.Application;
 
 /// <summary>
-/// Expire les parties de tous les joueurs restées en cours sur un défi plus vieux que la veille (revue de E4) : la v2 refuse déjà de les
+/// Expire les parties de tous les joueurs restées en cours sur un défi plus vieux que la veille : l'API refuse déjà de les
 /// jouer (<see cref="SessionAccess.OldestPlayableDay"/>), et l'état ne dépend plus du retour du joueur (l'expiration au démarrage d'une
 /// partie reste en filet de sécurité). Lancée par la tâche <c>daily-close-day</c>, avant de figer les statistiques. Rend le nombre de parties.
 /// </summary>

@@ -10,7 +10,7 @@ using Wolverine.Postgresql;
 namespace InSeconds.Api.Infrastructure.Messaging;
 
 /// <summary>
-/// Wolverine, moteur applicatif de la v2 (§ 5.2 du plan) : endpoints Wolverine.Http, transactions
+/// Wolverine, moteur applicatif de l'API : endpoints Wolverine.Http, transactions
 /// EF automatiques, outbox PostgreSQL dans le schéma <c>messaging</c>, validation FluentValidation.
 /// </summary>
 public static class WolverineSetup
@@ -59,7 +59,7 @@ public static class WolverineSetup
         opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Api.Modules.Players.Application.PlayerDataExporter>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Api.Modules.Players.Application.AccountErasure>();
         // L'écriture d'un réglage recharge la source de configuration : son rechargeur est interne à l'infrastructure, le code généré ne peut pas le
-        // construire. Utilisé par le réglage du cooldown de l'admin (F1).
+        // construire. Utilisé par le réglage du cooldown de l'admin.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Api.Infrastructure.Settings.SettingsStore>();
         // Le gel offert à la création d'un compte : les tests le remplacent (RecordingStreakGrants), et le code commité,
         // qu'ils relisent, construirait sinon DailyStreakGrants en dur.
@@ -96,7 +96,7 @@ public static class WolverineSetup
         app.MapWolverineEndpoints(opts =>
         {
             opts.UseFluentValidationProblemDetailMiddleware();
-            // Tout /api/admin exige la policy Admin : un endpoint admin ne peut pas être oublié (§ 5.5).
+            // Tout /api/admin exige la policy Admin : un endpoint admin ne peut pas être oublié.
             opts.ConfigureEndpoints(chain =>
             {
                 if (chain.RoutePattern?.RawText?.StartsWith("/api/admin", StringComparison.OrdinalIgnoreCase) == true)

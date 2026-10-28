@@ -7,14 +7,14 @@ using Wolverine.Http;
 namespace InSeconds.Api.Infrastructure.Errors;
 
 /// <summary>
-/// Erreur remontée par le front (<c>ErrorReportingService</c>), même contrat qu'en v1 : <c>Source</c> =
+/// Erreur remontée par le front (<c>ErrorReportingService</c>) : <c>Source</c> =
 /// <c>js</c> (exception JavaScript non gérée), <c>http</c> (appel API en échec réseau ou 5xx) ou
-/// <c>csp</c> (violation de la Content-Security-Policy du front, G3).
+/// <c>csp</c> (violation de la Content-Security-Policy du front).
 /// <c>RelatedTraceId</c> = code d'erreur renvoyé par l'API dans le ProblemDetails, quand il existe,
-/// pour relier les deux côtés. Ajouts de la v2 : <c>AppVersion</c> = date de build du front
+/// pour relier les deux côtés. <c>AppVersion</c> = date de build du front
 /// (<c>DEPLOYED_AT</c>, absente hors image Docker), pour repérer un onglet resté sur une ancienne version ;
 /// <c>Online</c> = <c>navigator.onLine</c> au moment de l'erreur, pour séparer une coupure chez le joueur
-/// d'une panne chez nous. Facultatifs : un front v1 encore en cache peut appeler sans eux.
+/// d'une panne chez nous. Facultatifs : un front plus ancien encore en cache peut appeler sans eux.
 /// </summary>
 public sealed record ClientErrorReport(
     string Source,
@@ -88,9 +88,8 @@ public static class ReportClientErrorEndpoint
 }
 
 /// <summary>
-/// Même identifiant et mêmes champs qu'en v1 (<c>PlayerActionLog.ClientError</c>), plus <c>AppVersion</c>,
-/// <c>Online</c> et <c>Device</c> : les tableaux de bord existants (qui cherchent « Erreur front ») continuent
-/// de fonctionner. L'identité du joueur vient du scope posé par <c>PlayerTelemetryMiddleware</c>.
+/// Identifiant et champs stables, avec <c>AppVersion</c>,
+/// <c>Online</c> et <c>Device</c> : les tableaux de bord (qui cherchent « Erreur front ») les lisent. L'identité du joueur vient du scope posé par <c>PlayerTelemetryMiddleware</c>.
 /// </summary>
 internal static partial class ClientErrorLog
 {

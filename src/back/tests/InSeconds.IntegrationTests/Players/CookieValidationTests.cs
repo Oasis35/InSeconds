@@ -9,8 +9,8 @@ using Microsoft.Extensions.Time.Testing;
 namespace InSeconds.IntegrationTests.Players;
 
 /// <summary>
-/// Validation du cookie à chaque requête (§ 5.5 du plan v2) : appareil vérifié en base et rôle admin
-/// relu, au plus une minute de retard ; dernière visite toutes les 5 minutes (R17) ; une erreur de base
+/// Validation du cookie à chaque requête : appareil vérifié en base et rôle admin
+/// relu, au plus une minute de retard ; dernière visite toutes les 5 minutes ; une erreur de base
 /// ne déconnecte jamais (piège 37). L'horloge est simulée pour franchir la minute.
 /// </summary>
 public class CookieValidationTests(PostgresFixture postgres) : IAsyncLifetime

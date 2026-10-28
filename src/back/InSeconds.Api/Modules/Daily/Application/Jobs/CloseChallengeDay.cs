@@ -23,7 +23,7 @@ public static class DayStatsJson
 }
 
 /// <summary>
-/// Fige les statistiques d'un jour **terminé pour de bon** (§ 5.4 du plan v2) : J-2 et avant. Une partie de la veille peut encore se finir après
+/// Fige les statistiques d'un jour **terminé pour de bon** : J-2 et avant. Une partie de la veille peut encore se finir après
 /// minuit (piège 18), donc la veille et le jour même restent calculés en direct. Idempotent : refait la photo si elle existe déjà.
 /// </summary>
 public sealed record CloseChallengeDay(DateOnly Day);
@@ -88,9 +88,9 @@ public static class CloseChallengeDayHandler
 }
 
 /// <summary>
-/// Tâche <c>daily-close-day</c> (§ 5.4 bis du plan v2, `5 0 * * *`) : expire d'abord les parties restées en cours sur un défi plus vieux que la
-/// veille (<see cref="ExpireStaleSessions"/>, revue de E4), puis fige les statistiques de l'avant-veille, et de **tout jour plus ancien resté sans
-/// photo** (la tâche n'a pas tourné un soir, ou le jour précède l'import de l'historique). Une étape ou un jour qui échoue n'empêche pas la suite :
+/// Tâche <c>daily-close-day</c> (`5 0 * * *`) : expire d'abord les parties restées en cours sur un défi plus vieux que la
+/// veille (<see cref="ExpireStaleSessions"/>), puis fige les statistiques de l'avant-veille, et de **tout jour plus ancien resté sans
+/// photo** (la tâche n'a pas tourné un soir, ou le jour est plus ancien que la tâche). Une étape ou un jour qui échoue n'empêche pas la suite :
 /// la tâche échoue à la fin (`admin.close_day_failed`), le reste est fait.
 /// </summary>
 public sealed class DailyCloseDayJob(IMessageBus bus, IGameCalendar calendar, IDailyStatsQueries stats, ILogger<DailyCloseDayJob> logger) : IScheduledJob

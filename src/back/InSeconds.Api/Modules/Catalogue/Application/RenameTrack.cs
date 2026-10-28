@@ -12,7 +12,7 @@ public sealed class RenameTrackValidator : AbstractValidator<RenameTrack>
 {
     public RenameTrackValidator()
     {
-        // Longueurs de la v1 (TrackConfiguration).
+        // Longueurs des colonnes artist et title.
         RuleFor(x => x.Artist).Must(a => !string.IsNullOrWhiteSpace(a)).MaximumLength(200);
         RuleFor(x => x.Title).Must(t => !string.IsNullOrWhiteSpace(t)).MaximumLength(300);
     }
@@ -27,9 +27,9 @@ public static class RenameTrackEndpoint
 
     /// <summary>
     /// <c>PATCH /api/admin/catalogue/tracks/{id}</c> : corrige l'artiste et le titre, **à tout moment, défi du
-    /// jour compris** (v1 : PR #246, il fallait attendre le lendemain pour corriger une faute). Aucun verrou, pas de
+    /// jour compris** (#246 : une faute se corrige sans attendre le lendemain). Aucun verrou, pas de
     /// code <c>catalogue.track_locked</c> : les réponses déjà enregistrées gardent leur verdict, les suivantes
-    /// sont corrigées avec le nouveau nom, et le nom affiché change pour tout le monde (Daily, E). Le front
+    /// sont corrigées avec le nouveau nom, et le nom affiché change pour tout le monde (Daily, Runs). Le front
     /// avertit dans la modale quand le morceau est dans le défi du jour (<c>inTodayChallenge</c> du pool).
     /// </summary>
     [WolverinePatch("/api/admin/catalogue/tracks/{id}", OperationId = "renameTrack")]

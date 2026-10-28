@@ -7,8 +7,8 @@ namespace InSeconds.Api.Infrastructure.Auth;
 /// <summary>
 /// Clés Data Protection (chiffrement du cookie) en base, dans <c>infra.data_protection_keys</c>, pour
 /// survivre aux redéploiements (piège 17). En prod et en staging, elles sont chiffrées par un
-/// certificat (S16) : la base ou une sauvegarde seules ne suffisent plus à fabriquer un cookie. Même
-/// nom d'application qu'en v1 : les cookies v1 restent lisibles par la transition.
+/// certificat (S16) : la base ou une sauvegarde seules ne suffisent plus à fabriquer un cookie. Le nom
+/// d'application est celui des anciens cookies, qui restent ainsi lisibles par leur reprise.
 /// </summary>
 public static class DataProtectionSetup
 {

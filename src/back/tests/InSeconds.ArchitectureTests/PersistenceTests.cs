@@ -6,8 +6,8 @@ namespace InSeconds.ArchitectureTests;
 public class PersistenceTests
 {
     /// <summary>
-    /// La v2 partage la base de la v1 jusqu'à la bascule : elle ne doit jamais toucher aux tables
-    /// v1, qui sont toutes dans <c>public</c> (§ 12 du plan v2, premier risque).
+    /// Chaque entité déclare son schéma : rien ne vit dans <c>public</c>, qui reste vide (règle dure du
+    /// CLAUDE.md racine).
     /// </summary>
     [Fact]
     public void AucuneEntite_NEstRangeeDansPublic()

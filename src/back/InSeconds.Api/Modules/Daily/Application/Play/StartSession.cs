@@ -47,7 +47,7 @@ public static class StartSessionEndpoint
     /// <summary>
     /// Étape de chargement, dans la transaction ouverte par Wolverine : le démarrage d'un joueur est réservé (deux démarrages simultanés se
     /// suivent), ses parties d'un jour passé expirent, et le défi du jour est généré **à la volée** s'il manque (la tâche de minuit a
-    /// raté : même logique que les autres chemins, § 5.4 bis).
+    /// raté : même logique que les autres chemins, <see cref="GenerateDailyChallenge"/>).
     /// </summary>
     public static async Task<StartContext> LoadAsync(
         ICurrentPlayer current,

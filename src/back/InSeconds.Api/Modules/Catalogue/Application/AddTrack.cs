@@ -43,8 +43,7 @@ public static class AddTrackEndpoint
 
     /// <summary>
     /// <c>POST /api/admin/catalogue/tracks</c> : ajoute au pool un morceau de Deezer, avec son année, son rang
-    /// et l'état de son extrait. Un identifiant déjà dans le pool répond 409 (v1 : l'ajout était alors un
-    /// succès silencieux) ; deux ajouts simultanés du même identifiant : l'index unique refuse le second,
+    /// et l'état de son extrait. Un identifiant déjà dans le pool répond 409 ; deux ajouts simultanés du même identifiant : l'index unique refuse le second,
     /// aussi en 409 (<c>TrackConflictExceptionHandler</c>).
     /// </summary>
     [WolverinePost("/api/admin/catalogue/tracks", OperationId = "addTrack")]

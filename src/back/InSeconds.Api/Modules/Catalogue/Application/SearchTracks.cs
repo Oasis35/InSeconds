@@ -26,7 +26,7 @@ public static class SearchTracksEndpoint
         q is not null && q.Length is >= MinQueryLength and <= MaxQueryLength && !string.IsNullOrWhiteSpace(q);
 
     /// <summary>
-    /// <c>GET /api/catalogue/search?q=</c> : l'autocomplétion du jeu, publique (v1 : <c>/api/deezer/search</c>).
+    /// <c>GET /api/catalogue/search?q=</c> : l'autocomplétion du jeu, publique.
     /// Titres nettoyés et dédupliqués, dix au plus ; une requête trop courte (ou trop longue) donne une liste vide, Deezer indisponible aussi. Limitée par
     /// IP (60 / 5 min) : le quota Deezer est partagé par tous les joueurs, et le cache d'une heure ne protège
     /// pas d'un script qui varie sa requête à chaque appel.

@@ -2,8 +2,8 @@ import { test, expect } from '../fixtures/test';
 import { GamePage } from '../pages/game.page';
 import { BlindRoundPage } from '../pages/blind-round.page';
 
-// E4 (revue de code du 2026-09-25) : un échec de lecture de l'aperçu (URL de preview
-// expirée, autoplay refusé...) ne doit plus relancer `startPlay()` en boucle infinie -
+// Piège 33 : un échec de lecture de l'aperçu (URL de preview
+// expirée, autoplay refusé...) ne doit jamais relancer `startPlay()` en boucle infinie -
 // l'effect() d'autoplay ne se redéclenche que sur `audio.isIdle()`, donc l'échec doit
 // basculer vers un état 'error' distinct, jamais 'idle'. Ce spec intercepte la requête
 // réseau réelle vers l'aperçu (`test-audio.mp3`, servi en mode Testing par FakeDeezerHandler,
@@ -38,7 +38,7 @@ test.describe('Échec de lecture audio', () => {
 
     // Deux tentatives (la lecture, puis la relance automatique depuis une adresse fraîche, piège 14),
     // chacune pouvant redemander l'extrait une fois (requête de plage) : au plus quatre requêtes, et
-    // surtout pas de boucle. Une boucle (l'ancien bug E4) ferait grimper le compteur ; il reste figé.
+    // surtout pas de boucle. Une boucle (piège 33) ferait grimper le compteur ; il reste figé.
     const afterFirstFailure = requestCount;
     expect(afterFirstFailure).toBeLessThanOrEqual(4);
     // Réseau au repos (aucune requête pendant 500 ms) : une boucle de requêtes ne le laisserait jamais au repos.

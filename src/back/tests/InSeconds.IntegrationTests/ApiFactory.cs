@@ -35,7 +35,7 @@ public sealed class ApiFactory(
     {
         builder.UseEnvironment(environment);
         builder.UseSetting("ConnectionStrings:DefaultConnection", connectionString);
-        // Les tests d'intégration appellent les tâches directement : pas de serveur Hangfire (§ 5.4 bis).
+        // Les tests d'intégration appellent les tâches directement : pas de serveur Hangfire.
         builder.UseSetting("Jobs:Server:Enabled", "false");
         // Les politiques restent sur les routes, mais ne limitent rien (RateLimitingTests les active).
         builder.UseSetting("RateLimiting:Enabled", "false");

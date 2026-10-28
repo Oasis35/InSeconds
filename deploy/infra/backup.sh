@@ -6,7 +6,7 @@
 #                                     envoi chiffré vers R2 et signal à healthchecks.io si configurés
 #   ./backup.sh archive               sauvegarde gardée sans limite de durée : dump, vérification, envoi
 #                                     chiffré dans archive/ sur R2 (R2 obligatoire), jamais supprimée
-#                                     par la rotation (ex. : avant la suppression des tables v1, #235)
+#                                     par la rotation (ex. : avant une suppression de données)
 #   ./backup.sh list-remote           liste les sauvegardes présentes sur R2
 #   ./backup.sh fetch <nom>           télécharge et déchiffre une sauvegarde de R2 dans BACKUP_DIR
 #                                     (ex. : ./backup.sh fetch monthly/inseconds-2026-10-01T030000Z.dump)
