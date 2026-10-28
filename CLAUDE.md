@@ -12,7 +12,7 @@ Stack : .NET 10 / Wolverine / EF Core / PostgreSQL 17 / Hangfire côté back (mo
 
 Le code est dans `src/`, décrit par ce fichier et ses deux compagnons : [`src/back/CLAUDE.md`](src/back/CLAUDE.md) et [`src/front/CLAUDE.md`](src/front/CLAUDE.md). Ces documents ne décrivent que l'application telle qu'elle est ; son histoire est dans [`docs/historique/`](docs/historique/). Sommaire de la doc : [`docs/README.md`](docs/README.md).
 
-- **Staging** (`dev.inseconds.cc`) et **prod** (`inseconds.cc`) servent le même code, `env/staging` n'ayant d'avance que les PR pas encore promues (dernier merge `env/staging` → `main` : #450, le 28/10/2026).
+- **Staging** (`dev.inseconds.cc`) et **prod** (`inseconds.cc`) servent le même code, `env/staging` n'ayant d'avance que les PR pas encore promues (dernier merge `env/staging` → `main` : #457, le 28/10/2026).
 - **PR** : vers `env/staging` (testée au staging), puis `env/staging` → `main` pour la prod, en merge commit (jamais squash : il crée des conflits au merge suivant). Un correctif urgent peut viser `main`, remergée ensuite dans `env/staging`.
 - Branches `main` et `env/staging` protégées (ruleset GitHub : PR obligatoire, pas de force-push ni de suppression, check « CI OK » exigé).
 
@@ -124,7 +124,7 @@ Angular 22 standalone, **zoneless** (la détection de changement ne part que des
 ### Conventions
 
 - Couleurs par `var(--…)` (tokens `:root` de `styles.scss`, jamais de hex dans un template), hovers par `hover:` Tailwind.
-- Un composant = un dossier à son nom avec `.ts` (+ `.html` s'il est long) et son `.spec.ts` (pages et fenêtres comprises ; l'admin range en plus les siens par onglet), `ChangeDetectionStrategy.OnPush`, écouteurs globaux dans `host: {}`, `TranslatePipe` dans chaque composant qui affiche du texte.
+- Un composant = un dossier à son nom avec `.ts` (+ `.html` s'il est long), l'admin rangeant en plus les siens par onglet ; tout nouveau composant a son `.spec.ts` (pages et fenêtres comprises, des composants plus anciens n'en ont pas encore), `ChangeDetectionStrategy.OnPush`, écouteurs globaux dans `host: {}`, `TranslatePipe` dans chaque composant qui affiche du texte.
 - État exposé en lecture seule, modifié par les méthodes du store ; un nom d'état ne doit pas être celui d'une méthode du même store.
 - Modales **uniquement** par `ModalService` (avec `injector: inject(Injector)` pour retrouver les stores de la page), boutons par `appButton`.
 - **Identité visuelle** : grille synthwave et fond violet ; boutons en rectangle (`rounded-(--radius-button)`, 10 px, dégradé et capitales gardés pour le bouton principal), cartes aux coins réguliers (`--radius-card`, 16 px), pochettes rondes, accès de l'en-tête en ronds gris à contour neutre (`--border-neutral`), sans fond ni lueur, bouton principal sans lueur sur l'accueil et la reprise. **Une couleur = un sens** : orange (et son dégradé) pour le joueur et ce qu'il fait, cyan pour le son et le temps (plus le gel et la grille), violet pour les autres joueurs (histogrammes, égaliseur, médiane), vert et rouge pour juste ou faux ; une action sans sens propre (« Passer », indices, « Connexion » de l'en-tête, « Créer un compte » de l'accueil (sous le relevé de série, avec sa phrase en dessous), « Abandonner » et « Ne plus perdre mes parties » de la reprise, toasts de série) en contour neutre (`--border-neutral`). Capitales réservées au logo et aux boutons, étiquettes et titres en casse normale. Durées au format de la langue par `appSeconds` / `formatSeconds` (`ui/format/`) : « 0,5 s » en français.
