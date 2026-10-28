@@ -5,7 +5,7 @@ import { SessionStore } from '../../session/session.store';
 
 /**
  * Les accès de l'en-tête, à droite du titre IN//SECONDS : le calendrier des jours passés, le cadenas de l'admin (compte admin seulement),
- * puis l'initiale du compte connecté (mène au profil), ou « Connexion » en toutes lettres pour un invité ou un visiteur. Des ronds gris,
+ * puis l'initiale du compte connecté (mène au profil), ou un bouton « Connexion » (rectangle à contour gris) pour un invité ou un visiteur. Des ronds gris,
  * sans dégradé ni lueur. Ni compte ni cadenas tant que l'identité n'est pas lue.
  */
 @Component({
@@ -49,10 +49,14 @@ import { SessionStore } from '../../session/session.store';
       border-radius: 9999px; border: 1px solid var(--border-neutral); color: var(--text-light); text-decoration: none;
     }
     .header-initial { font-family: var(--font-display); font-size: 0.875rem; font-weight: 700; text-transform: uppercase; }
+    /* Le style du bouton « Se connecter » de l'accueil : contour neutre, capitales en police d'affichage. */
     .header-login {
-      display: flex; align-items: center; min-height: 2.75rem; padding-left: 0.25rem; white-space: nowrap;
-      font-size: 0.875rem; color: var(--text-light); text-decoration: none;
+      display: flex; align-items: center; height: 2.5rem; padding: 0 0.875rem; white-space: nowrap;
+      border-radius: var(--radius-button); border: 1.5px solid var(--border-neutral);
+      font-family: var(--font-display); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--text-hi); text-decoration: none; transition: transform 150ms; touch-action: manipulation;
     }
+    .header-login:active { transform: scale(0.95); }
     .header-round:focus-visible, .header-login:focus-visible { outline: 2px solid var(--color-accent-2); outline-offset: 2px; }
   `,
 })
