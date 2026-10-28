@@ -85,6 +85,14 @@ describe('AccountLinkComponent', () => {
     expect(element.querySelector('a[href="/account/login"]')?.textContent?.trim()).toBe('Connexion');
   });
 
+  it('« Connexion » est un bouton à contour neutre, comme « Se connecter » sur l’accueil', () => {
+    const { element } = render();
+    const login = element.querySelector<HTMLAnchorElement>('[data-testid="header-login"]')!;
+    const style = getComputedStyle(login);
+    expect(style.borderStyle).toBe('solid');
+    expect(style.textTransform).toBe('uppercase');
+  });
+
   it('montre le calendrier des jours passés, sauf quand la page demande de le masquer', () => {
     const { fixture, element } = render();
     expect(element.querySelector('a[href="/daily/archive"]')).not.toBeNull();
