@@ -1718,6 +1718,8 @@ export interface TodayResponse {
     completedCount: number;
     streak: StreakResponse;
     completedGames: number;
+    bestScore: number | undefined;
+    yesterdayMedian: number | undefined;
 
     [key: string]: any;
 }

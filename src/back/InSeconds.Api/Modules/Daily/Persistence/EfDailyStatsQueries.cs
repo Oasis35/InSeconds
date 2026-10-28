@@ -163,6 +163,11 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
             .ToDictionaryAsync(x => x.PlayerId, x => x.Count, ct);
     }
 
+    public async Task<int?> GetBestScoreAsync(Guid playerId, CancellationToken ct) =>
+        await db.Set<DailySession>().AsNoTracking()
+            .Where(s => s.PlayerId == playerId && s.Status == SessionStatus.Completed)
+            .MaxAsync(s => (int?)s.TotalScore, ct);
+
     public async Task<IReadOnlyDictionary<Guid, StreakRow>> GetStreaksAsync(IReadOnlyCollection<Guid> playerIds, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(playerIds);

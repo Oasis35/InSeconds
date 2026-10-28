@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
 import { ARCHIVE_DAY } from '../../data-access/testing/fake-daily-api';
 import { DayStats } from '../../domain/daily';
+import { Streak } from '../../domain/streak';
 import { TrackResultRow } from '../../../gameplay/ui/track-results-list/track-results-list.component';
 import { DayResultScreenComponent } from './day-result-screen.component';
 
@@ -118,5 +119,22 @@ describe('DayResultScreenComponent', () => {
 
   it('marque l écran juste après la partie', () => {
     expect(render({ fresh: true }).byTestId('day-result')[0].getAttribute('data-fresh')).toBe('true');
+  });
+
+  it('la série sous « Partager mon score », qui ouvre le panneau ; rien sans série', () => {
+    const streak: Streak = {
+      status: 'active', streak: 13, freezes: 2, maxFreezes: 2, freezeEveryDays: 7,
+      nextFreezeInDays: 3, missedDays: 0, lostStreak: null, lastPlayedDate: '2026-10-28',
+    };
+    const { fixture, element, byTestId } = render({ streak, linked: true });
+    const opened = vi.fn();
+    fixture.componentInstance.openStreak.subscribe(opened);
+    const pill = byTestId('streak-pill')[0] as HTMLButtonElement;
+    expect(pill.getAttribute('data-mode')).toBe('on');
+    expect(element.querySelector('app-share-button')!.compareDocumentPosition(pill) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    pill.click();
+    expect(opened).toHaveBeenCalledOnce();
+    TestBed.resetTestingModule();
+    expect(render().byTestId('streak-pill')).toHaveLength(0);
   });
 });

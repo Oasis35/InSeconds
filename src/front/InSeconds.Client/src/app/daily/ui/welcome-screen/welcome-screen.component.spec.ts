@@ -35,17 +35,37 @@ describe('WelcomeScreenComponent', () => {
     expect(render({ hideLoginCta: true }).el.querySelector('a[href="/account/login"]')).toBeNull();
   });
 
-  it('connecté : lien vers le profil avec le pseudo, pas de CTA de connexion', () => {
-    const { el, text } = render({ linked: true, pseudo: 'Léa' });
-    expect(el.querySelector('a[href="/account/profile"]')).not.toBeNull();
+  it('connecté : ni « Créer un compte » ni lien vers le profil (le profil est dans l’en-tête)', () => {
+    const { el } = render({ linked: true });
     expect(el.querySelector('a[href="/account/login"]')).toBeNull();
-    expect(text()).toContain('daily.welcome.loggedInAs');
+    expect(el.querySelector('a[href="/account/profile"]')).toBeNull();
   });
 
-  it('connecté avec une série protégée : ligne de gel et titre bon retour', () => {
+  it('connecté avec une série protégée : la ligne du gel sous le relevé, sans titre « bon retour »', () => {
     const { el, text } = render({ linked: true, streak: PROTECTED });
-    expect(el.querySelector('[data-testid="frozen-line"]')).not.toBeNull();
-    expect(text()).toContain('daily.streakFreeze.welcomeBack');
+    expect(el.querySelector('[data-testid="frozen-line"]')?.textContent).toContain('daily.streakFreeze.protectedLine.one');
+    expect(el.querySelector('[data-testid="streak-pill"]')).not.toBeNull();
+    expect(text()).not.toContain('welcomeBack');
+  });
+
+  it('montre la date, le record du joueur plutôt que la médiane d’hier', () => {
+    const { el } = render({ dateLabel: 'mardi 28 octobre', bestScore: 3200, yesterdayMedian: 1500 });
+    expect(el.querySelector('[data-testid="welcome-date"]')?.textContent).toContain('mardi 28 octobre');
+    expect(el.querySelector('[data-testid="welcome-record"]')?.textContent).toContain('3200');
+    expect(el.querySelector('[data-testid="welcome-target"]')).toBeNull();
+  });
+
+  it('sans record : la médiane d’hier en score à battre ; sans l’un ni l’autre : rien', () => {
+    const target = render({ yesterdayMedian: 1500 }).el;
+    expect(target.querySelector('[data-testid="welcome-target"]')?.textContent).toContain('1500');
+    expect(target.querySelector('[data-testid="welcome-record"]')).toBeNull();
+    const none = render().el;
+    expect(none.querySelector('[data-testid="welcome-target"]')).toBeNull();
+    expect(none.querySelector('[data-testid="welcome-record"]')).toBeNull();
+  });
+
+  it('donne l’accès aux réponses des jours passés', () => {
+    expect(render().el.querySelector('[data-testid="welcome-archive"]')?.getAttribute('href')).toBe('/daily/archive');
   });
 
   it('invité avec une série protégée : pas de ligne de gel', () => {
