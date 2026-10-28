@@ -9,7 +9,7 @@ public sealed class EfPlayerQueries(InSecondsDbContext db) : IPlayerQueries
 {
     public Task<PlayerMeResponse?> FindMeAsync(Guid playerId, CancellationToken ct) =>
         (from player in db.Set<Player>().AsNoTracking()
-         where player.Id == playerId && player.DeletedAt == null
+         where player.Id == playerId
          join account in db.Set<Account>() on player.Id equals account.PlayerId into accounts
          from account in accounts.DefaultIfEmpty()
          select new PlayerMeResponse(
@@ -31,7 +31,7 @@ public sealed class EfPlayerQueries(InSecondsDbContext db) : IPlayerQueries
     {
         var player = await (
                 from p in db.Set<Player>().AsNoTracking()
-                where p.Id == playerId && p.DeletedAt == null
+                where p.Id == playerId
                 join a in db.Set<Account>() on p.Id equals a.PlayerId into accounts
                 from account in accounts.DefaultIfEmpty()
                 select new

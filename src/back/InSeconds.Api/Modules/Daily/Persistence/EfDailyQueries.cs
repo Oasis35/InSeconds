@@ -32,8 +32,7 @@ public sealed class EfDailyQueries(InSecondsDbContext db) : IDailyQueries
 
     public async Task<PriorAnswerStats> GetPriorAnswerStatsAsync(int challengeId, int position, CancellationToken ct)
     {
-        // Sans les joueurs supprimés : leurs réponses ne comptent plus dans ce que voient les autres (R8).
-        var answers = LiveData.Answers(db, challengeId, completedOnly: false).Where(a => a.Position == position);
+        var answers = ChallengeAnswers.Of(db, challengeId, completedOnly: false).Where(a => a.Position == position);
 
         var totals = await answers
             .GroupBy(_ => 1)

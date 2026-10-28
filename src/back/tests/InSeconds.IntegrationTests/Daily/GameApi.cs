@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using InSeconds.Api.Infrastructure.Settings;
 using InSeconds.Api.Modules.Daily.Application;
+using InSeconds.Api.Modules.Players.Application;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
 
@@ -83,8 +84,12 @@ internal sealed class GameApi : IAsyncDisposable
         return id;
     }
 
-    /// <summary>Le joueur est supprimé (suppression logique) : il disparaît de toutes les statistiques.</summary>
-    public Task DeletePlayerAsync(Guid playerId) => Api.ExecuteAsync($"UPDATE players.players SET deleted_at = now() WHERE id = '{playerId}'");
+    /// <summary>Le joueur est effacé comme par le bouton du profil (<see cref="AccountErasure"/>) : ses parties partent avec lui.</summary>
+    public async Task ErasePlayerAsync(Guid playerId)
+    {
+        await using var scope = Api.Services.CreateAsyncScope();
+        await scope.ServiceProvider.GetRequiredService<AccountErasure>().EraseAsync(playerId, CancellationToken.None);
+    }
 
     public Task SetStreakAsync(Guid playerId, int streak, DateOnly? lastPlayed, int freezes) =>
         Api.ExecuteAsync(

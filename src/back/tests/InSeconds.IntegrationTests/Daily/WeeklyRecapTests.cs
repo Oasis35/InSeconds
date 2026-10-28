@@ -114,7 +114,7 @@ public class WeeklyRecapTests(PostgresFixture postgres) : IAsyncLifetime
     {
         var players = await PlayersAsync(3);
         await SeedAsync(Today, players);
-        await _game.DeletePlayerAsync(players[2]);
+        await _game.ErasePlayerAsync(players[2]);
 
         // Il ne reste que deux réponses par morceau : en dessous du minimum, plus de story.
         Assert.Equal("insufficient_data", (await ReadAsync()).Status);

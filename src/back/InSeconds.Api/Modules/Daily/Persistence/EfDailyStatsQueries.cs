@@ -5,20 +5,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace InSeconds.Api.Modules.Daily.Persistence;
 
-/// <summary>Les parties et les réponses des joueurs qui existent encore (R8) : ce que toute statistique lit.</summary>
-internal static class LiveData
+/// <summary>
+/// Les réponses d'un défi, que lit toute statistique d'un morceau. Celles d'un joueur effacé n'y sont plus : l'effacement supprime ses
+/// parties (R8, <c>AccountErasure</c>).
+/// </summary>
+internal static class ChallengeAnswers
 {
-    /// <summary>
-    /// Les parties des joueurs non supprimés. Daily ne peut pas utiliser le type des joueurs (règle d'architecture) : la jointure sur
-    /// <c>players.players</c> est écrite en SQL, en lecture seule, et la requête reste composable.
-    /// </summary>
-    public static IQueryable<DailySession> Sessions(InSecondsDbContext db) =>
-        db.Set<DailySession>().FromSql(
-            $"SELECT s.* FROM daily.sessions s JOIN players.players p ON p.id = s.player_id WHERE p.deleted_at IS NULL").AsNoTracking();
-
-    public static IQueryable<SessionAnswer> Answers(InSecondsDbContext db, int challengeId, bool completedOnly)
+    public static IQueryable<SessionAnswer> Of(InSecondsDbContext db, int challengeId, bool completedOnly)
     {
-        var sessions = Sessions(db).Where(s => s.ChallengeId == challengeId && (!completedOnly || s.Status == SessionStatus.Completed));
+        var sessions = db.Set<DailySession>().AsNoTracking()
+            .Where(s => s.ChallengeId == challengeId && (!completedOnly || s.Status == SessionStatus.Completed));
         return db.Set<SessionAnswer>().AsNoTracking().Where(a => sessions.Any(s => s.Id == a.SessionId));
     }
 }
@@ -52,24 +48,24 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
     }
 
     public Task<int> CountCompletedSessionsAsync(CancellationToken ct) =>
-        LiveData.Sessions(db).CountAsync(s => s.Status == SessionStatus.Completed, ct);
+        db.Set<DailySession>().AsNoTracking().CountAsync(s => s.Status == SessionStatus.Completed, ct);
 
     public async Task<IReadOnlyList<DaySessionRow>> GetSessionsAsync(int challengeId, CancellationToken ct) =>
-        await LiveData.Sessions(db)
+        await db.Set<DailySession>().AsNoTracking()
             .Where(s => s.ChallengeId == challengeId)
             .OrderBy(s => s.Id)
             .Select(s => new DaySessionRow(s.PlayerId, s.Status, s.TotalScore))
             .ToListAsync(ct);
 
     public async Task<IReadOnlyList<int>> GetCompletedScoresAsync(int challengeId, CancellationToken ct) =>
-        await LiveData.Sessions(db)
+        await db.Set<DailySession>().AsNoTracking()
             .Where(s => s.ChallengeId == challengeId && s.Status == SessionStatus.Completed)
             .Select(s => s.TotalScore)
             .ToListAsync(ct);
 
     public async Task<IReadOnlyDictionary<int, TrackAggregate>> GetTrackAggregatesAsync(int challengeId, bool completedOnly, CancellationToken ct)
     {
-        var answers = LiveData.Answers(db, challengeId, completedOnly);
+        var answers = ChallengeAnswers.Of(db, challengeId, completedOnly);
 
         var totals = await answers
             .GroupBy(a => a.Position)
@@ -142,7 +138,7 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
         await db.Set<DailyChallenge>().AsNoTracking().Where(c => c.Date == day).Select(c => (int?)c.Id).FirstOrDefaultAsync(ct);
 
     public async Task<IReadOnlyDictionary<DateOnly, int>> GetCompletedCountsByDayAsync(DateOnly since, CancellationToken ct) =>
-        await (from s in LiveData.Sessions(db)
+        await (from s in db.Set<DailySession>().AsNoTracking()
                join c in db.Set<DailyChallenge>().AsNoTracking() on s.ChallengeId equals c.Id
                where c.Date >= since && s.Status == SessionStatus.Completed
                group s by c.Date into g
@@ -191,10 +187,9 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
 
     public async Task<IReadOnlyList<TrackTally>> GetTrackTalliesAsync(DateOnly fromDay, DateOnly toDay, CancellationToken ct)
     {
-        var sessions = LiveData.Sessions(db);
         var rows =
             from a in db.Set<SessionAnswer>().AsNoTracking()
-            join s in sessions on a.SessionId equals s.Id
+            join s in db.Set<DailySession>().AsNoTracking() on a.SessionId equals s.Id
             join c in db.Set<DailyChallenge>().AsNoTracking() on s.ChallengeId equals c.Id
             join t in db.Set<ChallengeTrack>().AsNoTracking() on new { ChallengeId = c.Id, a.Position } equals new { t.ChallengeId, t.Position }
             where c.Date >= fromDay && c.Date <= toDay

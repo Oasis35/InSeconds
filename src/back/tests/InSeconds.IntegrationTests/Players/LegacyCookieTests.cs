@@ -152,18 +152,6 @@ public class LegacyCookieTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task JoueurSupprime_PasDeReprise()
-    {
-        var (playerId, v1Cookie) = await CreateV1PlayerAsync();
-        await _api.ExecuteAsync($"UPDATE players.players SET deleted_at = now() WHERE id = '{playerId}'");
-
-        var response = await GetMeWithCookieAsync(v1Cookie);
-
-        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
-        Assert.Equal(0L, await _api.ScalarAsync<long>("SELECT count(*) FROM players.device_sessions"));
-    }
-
-    [Fact]
     public async Task CookieIllisible_Supprime()
     {
         Start();

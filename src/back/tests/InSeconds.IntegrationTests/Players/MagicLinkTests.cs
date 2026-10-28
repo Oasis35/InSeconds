@@ -270,16 +270,6 @@ public class MagicLinkTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task CompteDUnJoueurSupprime_400()
-    {
-        var playerId = await InsertAccountAsync("parti@example.com", "Parti");
-        await _app.Api.ExecuteAsync($"UPDATE players.players SET deleted_at = now() WHERE id = '{playerId}'");
-        var token = await _app.RequestTokenAsync("parti@example.com");
-
-        await AssertProblemAsync(await MagicLinkApi.VerifyAsync(_app.Browser(), token), HttpStatusCode.BadRequest, PlayersErrorCodes.InvalidOrExpiredToken);
-    }
-
-    [Fact]
     public async Task Piege21_SeulLePostConsommeLeJeton()
     {
         await InsertAccountAsync("scanner@example.com", "Scanner");

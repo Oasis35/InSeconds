@@ -17,11 +17,10 @@ public sealed class EfPlayerStore(InSecondsDbContext db) : IPlayerStore
 
     // email et pseudo sont en citext : comparaisons sans casse, faites par PostgreSQL.
     public Task<AccountLookup?> FindAccountByEmailAsync(string email, CancellationToken ct) =>
-        (from account in db.Set<Account>().AsNoTracking()
-         join player in db.Set<Player>() on account.PlayerId equals player.Id
-         where account.Email == email
-         select new AccountLookup(account.PlayerId, account.IsAdmin, player.DeletedAt != null))
-        .FirstOrDefaultAsync(ct);
+        db.Set<Account>().AsNoTracking()
+            .Where(a => a.Email == email)
+            .Select(a => new AccountLookup(a.PlayerId, a.IsAdmin))
+            .FirstOrDefaultAsync(ct);
 
     public Task<bool> IsPseudoTakenAsync(string pseudo, CancellationToken ct) =>
         db.Set<Account>().AnyAsync(a => a.Pseudo == pseudo, ct);
@@ -51,11 +50,7 @@ public sealed class EfPlayerStore(InSecondsDbContext db) : IPlayerStore
         db.Set<DeviceSession>().FirstOrDefaultAsync(s => s.Id == id, ct);
 
     public Task<Account?> FindAccountAsync(Guid playerId, CancellationToken ct) =>
-        (from account in db.Set<Account>()
-         join player in db.Set<Player>() on account.PlayerId equals player.Id
-         where account.PlayerId == playerId && player.DeletedAt == null
-         select account)
-        .FirstOrDefaultAsync(ct);
+        db.Set<Account>().FirstOrDefaultAsync(a => a.PlayerId == playerId, ct);
 
     public Task<bool> IsPseudoTakenByAnotherAsync(string pseudo, Guid playerId, CancellationToken ct) =>
         db.Set<Account>().AnyAsync(a => a.Pseudo == pseudo && a.PlayerId != playerId, ct);

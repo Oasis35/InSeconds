@@ -49,7 +49,7 @@ public class GamesPlayedTests(PostgresFixture postgres) : IAsyncLifetime
         await deleted.FinishAsync((await deleted.StartAsync()).SessionId);
         var carolSession = (await carol.StartAsync()).SessionId;
         await carol.AnswerCorrectlyAsync(carolSession, 1, 1);
-        await _game.DeletePlayerAsync(deleted.Id);
+        await _game.ErasePlayerAsync(deleted.Id);
 
         Assert.Equal(2, await CompletedGamesAsync());
     }
