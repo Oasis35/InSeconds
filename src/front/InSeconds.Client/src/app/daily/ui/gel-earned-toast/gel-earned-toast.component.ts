@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
+import { ToastFrameComponent } from '../../../ui/toast-frame/toast-frame.component';
 import { FreezeCellsComponent } from '../freeze-cells/freeze-cells.component';
 
 /** Toast d'un compte connecté : « +1 gel gagné ! » (fin de partie), avec le stock et la dernière case qui se remplit. */
 @Component({
   selector: 'app-gel-earned-toast',
-  imports: [TranslatePipe, FreezeCellsComponent],
+  imports: [TranslatePipe, FreezeCellsComponent, ToastFrameComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './gel-earned-toast.component.html',
 })
