@@ -32,8 +32,8 @@ L'implémentation de l'interface reste dans la partie privée du module (souvent
 
 | Contrat | Module propriétaire | Implémenté par | Utilisé par |
 |---|---|---|---|
-| `ICurrentPlayer` | Players | `Infrastructure/Auth` (claims du cookie) | Players, Daily |
-| `IPlayerSessions` | Players | `EfPlayerSessions` | l'authentification par cookie (`Infrastructure/Auth`) |
+| `ICurrentPlayer` | Players | `Players/Auth` (claims du cookie) | Players, Daily |
+| `IPlayerSessions` | Players | `EfPlayerSessions` | l'authentification par cookie (`Players/Auth`) |
 | `IPlayerDirectory` | Players | `EfPlayerDirectory` | Daily (pseudos des stats et de l'admin) |
 | `ITrackDirectory`, `TrackTitles` | Catalogue | `EfCatalogueQueries` | Daily (tirage, stats, récap), commande `--export-player` |
 | `ITrackPreviews` | Catalogue | `DeezerTrackPreviews` | Daily (adresse de l'extrait au démarrage d'une partie) |

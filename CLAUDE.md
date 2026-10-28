@@ -65,7 +65,7 @@ Chaque module a ses couches `Domain/` (entités aux invariants encapsulés, port
 
 ### Règles dures (vérifiées en CI)
 
-- **Un module n'utilise des autres que leur dossier `Contracts/`** ; `Gameplay` ne connaît aucun mode ; `Catalogue` et `Gameplay` ne connaissent aucun mode ; Daily et Runs ne se voient pas ; un noyau ne voit d'un mode que ses `Contracts` (Players → `Daily.Contracts.IStreakGrants`). Tests d'architecture (`tests/InSeconds.ArchitectureTests`, NetArchTest). Pas de navigation EF entre modules : des identifiants, et des clés étrangères déclarées par le nom du type.
+- **Un module n'utilise des autres que leur dossier `Contracts/`** ; `Gameplay` ne connaît aucun mode ; `Catalogue` et `Gameplay` ne connaissent aucun mode ; Daily et Runs ne se voient pas ; un noyau ne voit d'un mode que ses `Contracts` (Players → `Daily.Contracts.IStreakGrants`) ; le dossier `InSeconds.Api/Infrastructure` ne connaît aucun module, sauf la composition et les points d'entrée nommés (`ApiComposition`, `WolverineSetup`, `PlayerDataCommand`, `FreezeDayStatsCommand`), l'authentification du joueur vivant dans `Modules/Players/Auth`. Tests d'architecture (`tests/InSeconds.ArchitectureTests`, NetArchTest). Pas de navigation EF entre modules : des identifiants, et des clés étrangères déclarées par le nom du type.
 - **Rien dans le schéma `public`** (il est vide) ; chaque entité déclare son schéma ; noms en snake_case.
 - **Jamais `DateTime.UtcNow`/`Now`/`Today`** dans `InSeconds.Api` : `TimeProvider` ou `IGameCalendar` (`ClockUsageTests`).
 - **Pas de repository générique** : chaque module a ses ports nommés par l'intention (`IPlayerStore`, `IDailyStore`, `ICatalogueQueries`…).

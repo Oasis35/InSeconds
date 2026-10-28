@@ -51,12 +51,12 @@ src/back/
 │       ├── Time/          # IGameCalendar (jour de jeu = jour UTC)
 │       ├── Errors/        # ProblemDetails : code + traceId, rien d'interne sur un 500 ; POST /api/client-errors, POST /api/csp-reports
 │       ├── Health/        # /health et /health/ready
-│       ├── Auth/          # cookie standard, validation de l'appareil, reprise des anciens cookies, Data Protection, policy Admin
+│       ├── Auth/          # Data Protection, noms de la policy Admin et du rôle admin (le cookie du joueur est dans Modules/Players/Auth)
 │       ├── Messaging/     # Wolverine (HTTP, transactions, outbox)
 │       ├── Jobs/          # Hangfire : tâches planifiées, /jobs, GET /api/admin/jobs/last-runs (témoins de l'admin), signal healthchecks.io
 │       └── Hosting/       # ApiComposition, --migrate-only, --rotate-data-protection-key, --freeze-day-stats, commandes Wolverine
 │   └── Modules/
-│       ├── Players/       # Domain, Application (endpoints), Contracts, Persistence, Email (gabarits), PlayersModule.cs
+│       ├── Players/       # Domain, Application (endpoints), Auth (cookie du joueur, validation de l'appareil, reprise des anciens cookies), Contracts, Persistence, Email (gabarits), PlayersModule.cs
 │       ├── Catalogue/     # Domain, Application (endpoints, tâche), Contracts, Persistence, CatalogueModule.cs
 │       ├── Gameplay/      # Contracts (TrackRound, ports), Domain (correction, indices, tirage), GameplayModule.cs : logique pure, ni table ni route
 │       ├── Runs/          # Domain (défi, règles figées, tirage par tranches de rang, partie, jauge, points, disques, accès), Application (réglages, planificateur, routes de la partie et de l'accès admin), Persistence, RunsModule.cs
@@ -73,7 +73,7 @@ src/back/
     └── InSeconds.MigrationTests/      # scripts SQL du VPS (deploy/vps), base migrée
 ```
 
-Les modules métier vivent dans `InSeconds.Api/Modules/<Module>/` (`Players`, `Catalogue`, `Gameplay`, `Daily`, `Runs`) ; un module n'utilise des autres que leur dossier `Contracts` (vérifié par `ArchitectureTests/ModuleDependencyTests`, qui s'applique dès qu'un module existe).
+Les modules métier vivent dans `InSeconds.Api/Modules/<Module>/` (`Players`, `Catalogue`, `Gameplay`, `Daily`, `Runs`) ; un module n'utilise des autres que leur dossier `Contracts` (vérifié par `ArchitectureTests/ModuleDependencyTests`, qui s'applique dès qu'un module existe). Le dossier `InSeconds.Api/Infrastructure` est transverse et ne connaît aucun module, sauf la composition et les points d'entrée nommés dans `ArchitectureTests/InfrastructureDependencyTests` (`ApiComposition`, `WolverineSetup`, `PlayerDataCommand`, `FreezeDayStatsCommand`) : ce qui est propre à un module vit dans le module.
 
 ## Règles
 
@@ -161,9 +161,9 @@ Projet sans dépendance vers l'API ni les modules (vérifié par `ArchitectureTe
 - Les tâches récurrentes sont en pause dans l'hôte (`Jobs:daily-generate-challenge:Cron` à « jamais » dans `appsettings.Testing.json`) : un E2E qui tournerait à minuit ne doit pas voir apparaître un défi.
 - Tests : `Testing/TestingFactory` (`WebApplicationFactory<TestingProgram>`). **Connexions** : `ApiFactory.DisposeAsync` vide les pools Npgsql (`ClearAllPools`) : chaque API de test (EF, Wolverine, Hangfire) y laisse sinon ses connexions ouvertes, et la suite atteignait les 500 connexions du serveur de test. **Télémétrie** : `Catalogue/SearchTelemetryTests` prouve que le texte d'une recherche n'apparaît dans aucun tag du span serveur (le tag `url.query` est absent ou masqué) ; les requêtes vers Deezer sont masquées par l'instrumentation HttpClient d'OpenTelemetry (non vérifié en test : l'hôte de test remplace le transport HTTP, donc pas de span client).
 
-## Authentification (`Infrastructure/Auth/`)
+## Authentification (`Modules/Players/Auth/`)
 
-Cookie standard d'ASP.NET Core.
+Cookie standard d'ASP.NET Core. L'authentification du joueur appartient au module Players (`InSeconds.Api.Modules.Players.Auth`) : les autres modules n'en voient que `ICurrentPlayer` (`Players/Contracts`). Restent transverses, dans `Infrastructure/Auth/` : `DataProtectionSetup` et les noms `AuthorizationPolicies.Admin` / `Roles.Admin`, que la composition applique aux routes sans connaître Players.
 
 - **Cookie** (`AuthSetup`) : `__Host-inseconds` (`Secure`, `SameSite=Lax`) en prod et en staging, `inseconds` (`SameSite=Strict`, sans `Secure`) en développement et en test ; `HttpOnly`, persistant, 90 jours glissants. 401/403, jamais de redirection (`PlayerCookieEvents`).
 - **Ticket** (`PlayerClaims`) : `player_id` et `device_session_id` seulement. Le rôle admin n'y est ni écrit ni lu : la validation le relit en base et ne l'ajoute qu'au joueur de la requête.
@@ -387,7 +387,7 @@ Un script lancé par un workflow sur le VPS :
 
 ## Identité du joueur dans la télémétrie
 
-`Infrastructure/Auth/PlayerTelemetryMiddleware` (`UsePlayerTelemetry`) : pour chaque requête où `ICurrentPlayer` identifie un joueur, tag **`inseconds.player_id`** sur l'activité de la requête (la trace) et scope de journal **`PlayerId`** pendant le reste du pipeline, de quoi filtrer tout le parcours d'un joueur dans Grafana. Placé dans `UseInSecondsApi` juste après `UseLegacyCookieTransition` (un ancien cookie converti est donc identifié aussi) et avant l'autorisation et les endpoints. Sans joueur identifié, rien n'est ajouté. **Jamais** d'email, de pseudo, de réponse saisie, de cookie ni d'`Authorization` : l'identifiant technique seul. Tests : `UnitTests/Players/PlayerTelemetryMiddlewareTests`, `IntegrationTests/Players/PlayerTelemetryTests` (trace et scopes d'une vraie requête, connectée ou non, aucun email ni pseudo).
+`Modules/Players/Auth/PlayerTelemetryMiddleware` (`UsePlayerTelemetry`) : pour chaque requête où `ICurrentPlayer` identifie un joueur, tag **`inseconds.player_id`** sur l'activité de la requête (la trace) et scope de journal **`PlayerId`** pendant le reste du pipeline, de quoi filtrer tout le parcours d'un joueur dans Grafana. Placé dans `UseInSecondsApi` juste après `UseLegacyCookieTransition` (un ancien cookie converti est donc identifié aussi) et avant l'autorisation et les endpoints. Sans joueur identifié, rien n'est ajouté. **Jamais** d'email, de pseudo, de réponse saisie, de cookie ni d'`Authorization` : l'identifiant technique seul. Tests : `UnitTests/Players/PlayerTelemetryMiddlewareTests`, `IntegrationTests/Players/PlayerTelemetryTests` (trace et scopes d'une vraie requête, connectée ou non, aucun email ni pseudo).
 
 ## Document OpenAPI (hôte de test seulement)
 
