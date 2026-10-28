@@ -115,6 +115,41 @@ export interface RunPlay {
   readonly isResuming: boolean;
 }
 
+/** Ce que montre le lien d'une playlist (écran « lien reçu ») : jamais un morceau (piège 31), ni le nombre de joueurs. */
+export interface RunLink {
+  readonly code: string;
+  /** Le pseudo de son auteur ; `null` pour un invité (« Invité » à l'écran). */
+  readonly authorPseudo: string | null;
+  readonly trackCount: number;
+  readonly rounds: number;
+  readonly tracksPerRound: number;
+  readonly listenSeconds: number;
+  /** La partie de ce joueur sur la playlist : pas jouée, en cours, ou finie. */
+  readonly myStatus: 'none' | RunStatus;
+  readonly mySessionId: number | null;
+}
+
+/** Une partie terminée d'une playlist, dans le tableau de comparaison. */
+export interface RunComparisonRow {
+  /** `null` pour un invité. */
+  readonly pseudo: string | null;
+  readonly disc: RunDisc;
+  /** Le score de chaque manche de la playlist ; `null` pour une manche non jouée (✕). */
+  readonly rounds: readonly (number | null)[];
+  readonly totalScore: number;
+  /** C'est la partie du joueur qui regarde (« Toi »). */
+  readonly isMe: boolean;
+}
+
+/** Les joueurs d'une playlist, triés par total, après la fin de sa propre partie. */
+export interface RunComparison {
+  readonly code: string;
+  readonly authorPseudo: string | null;
+  readonly playerCount: number;
+  readonly roundCount: number;
+  readonly rows: readonly RunComparisonRow[];
+}
+
 export interface RunsMe {
   readonly hasAccess: boolean;
   readonly record: RunRecord | null;

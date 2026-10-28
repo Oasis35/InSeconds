@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { SessionStore } from '../../core/session/session.store';
+import { ARRIVAL_SOURCE_KEY } from './arrival-source.service';
 import { SessionLoader } from './session-loader';
 import { FakePlayersApi, fakePlayersApi, linkedPlayer, providePlayersApiFake } from './testing/fake-players-api';
 
@@ -91,15 +92,26 @@ describe('SessionLoader', () => {
   });
 
   describe('ensureGuest', () => {
+    afterEach(() => sessionStorage.removeItem(ARRIVAL_SOURCE_KEY));
+
     it('crée l\'invité quand le navigateur n\'a aucune identité, puis relit l\'identité', async () => {
       setup();
       api.getMe.mockResolvedValueOnce(null as never).mockResolvedValueOnce({ ...linkedPlayer, isGuest: true } as never);
 
       await loader.ensureGuest();
 
-      expect(api.createGuest).toHaveBeenCalledTimes(1);
+      expect(api.createGuest).toHaveBeenCalledExactlyOnceWith(null);
       expect(api.getMe).toHaveBeenCalledTimes(2);
       expect(session.isKnown()).toBe(true);
+    });
+
+    it('envoie la source d\'arrivée notée dans l\'onglet', async () => {
+      sessionStorage.setItem(ARRIVAL_SOURCE_KEY, 'instagram');
+      setup();
+
+      await loader.ensureGuest();
+
+      expect(api.createGuest).toHaveBeenCalledExactlyOnceWith('instagram');
     });
 
     it('ne crée rien quand une identité existe déjà', async () => {

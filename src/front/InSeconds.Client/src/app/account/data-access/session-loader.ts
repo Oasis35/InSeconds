@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { SessionStore } from '../../core/session/session.store';
+import { ArrivalSourceService } from './arrival-source.service';
 import { PlayersApi } from './players.api';
 
 /**
@@ -13,6 +14,7 @@ import { PlayersApi } from './players.api';
 export class SessionLoader {
   private readonly api = inject(PlayersApi);
   private readonly session = inject(SessionStore);
+  private readonly arrivalSource = inject(ArrivalSourceService);
 
   private loading: Promise<void> | null = null;
   /** Numéro de la dernière lecture lancée : la réponse d'une lecture plus ancienne est ignorée. */
@@ -33,13 +35,13 @@ export class SessionLoader {
   /**
    * Crée l'invité si ce navigateur n'a encore aucune identité (`POST /api/players/guest`, jamais
    * un `GET`), puis relit l'identité. Sert à l'identifiant navigateur de l'admin, qui doit exister
-   * même si la personne ne joue jamais.
+   * même si la personne ne joue jamais. La source d'arrivée de l'onglet part avec la création.
    */
   async ensureGuest(): Promise<void> {
     await this.ensureLoaded();
     if (this.session.isKnown()) return;
     try {
-      await this.api.createGuest();
+      await this.api.createGuest(this.arrivalSource.get());
     } catch {
       return;
     }

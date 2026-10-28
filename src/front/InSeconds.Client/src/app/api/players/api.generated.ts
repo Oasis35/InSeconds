@@ -28,16 +28,21 @@ export class PlayersClient {
     }
 
     /**
+     * @param body (optional) 
      * @return OK
      */
-    createGuest(): Observable<GuestResponse> {
+    createGuest(body: CreateGuest | undefined): Observable<GuestResponse> {
         let url_ = this.baseUrl + "/api/players/guest";
         url_ = url_.replace(/[?&]$/, "");
 
+        const content_ = JSON.stringify(body);
+
         let options_ : any = {
+            body: content_,
             observe: "response",
             responseType: "blob",
             headers: new HttpHeaders({
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             })
         };
@@ -1001,6 +1006,13 @@ export interface PlayerDataExport {
     account: AccountExport | undefined;
     devices: DeviceExport[];
     modules: any;
+    acquisitionSource: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface CreateGuest {
+    source?: string | undefined;
 
     [key: string]: any;
 }

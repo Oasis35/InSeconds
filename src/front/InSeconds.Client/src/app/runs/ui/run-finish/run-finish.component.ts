@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
+import { ShareButtonComponent } from '../../../gameplay/ui/share-button/share-button.component';
 import { RunFinish, finishSquares } from '../../domain/run';
 import { RunDiscComponent } from '../run-disc/run-disc.component';
 
@@ -12,12 +13,12 @@ import { RunDiscComponent } from '../run-disc/run-disc.component';
  */
 @Component({
   selector: 'app-run-finish',
-  imports: [TranslatePipe, RouterLink, RunDiscComponent],
+  imports: [TranslatePipe, RouterLink, RunDiscComponent, ShareButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex-1 flex flex-col' },
   template: `
     <div class="screen-enter flex-1 flex flex-col gap-4 pt-2" data-testid="run-finished" [attr.data-status]="finish().status">
-      <section class="rounded-(--radius-card) p-4 flex items-center gap-4" style="background:rgb(var(--rgb-surface) / 0.55);border:1px solid var(--border-subtle)">
+      <section class="flex items-center gap-4">
         <app-run-disc class="shrink-0" [disc]="finish().disc.key" [size]="88" />
         <div class="min-w-0 flex-1 space-y-1.5">
           <h2 class="text-xl font-bold leading-tight" style="font-family:var(--font-display);color:var(--text-hi)" data-testid="run-disc">
@@ -34,7 +35,8 @@ import { RunDiscComponent } from '../run-disc/run-disc.component';
               }
             </span>
           }
-          <p class="text-4xl font-extrabold tabular-nums leading-none" style="font-family:var(--font-display);color:var(--color-accent-3)" data-testid="run-final-score">
+          <p class="tabular-nums" data-testid="run-final-score"
+            style="font-family:var(--font-score);font-size:3.1rem;font-weight:900;line-height:0.95;letter-spacing:-0.02em;color:var(--text-hi)">
             {{ format(finish().totalScore) }}
           </p>
           <p class="text-sm pt-1" style="color:var(--text-light)" data-testid="run-found">
@@ -72,13 +74,13 @@ import { RunDiscComponent } from '../run-disc/run-disc.component';
         }
       </div>
 
-      <section class="rounded-(--radius-card) p-4 space-y-3" style="background:rgb(var(--rgb-surface) / 0.55);border:1px solid var(--border-subtle)">
-        <h3 class="text-lg font-bold" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'runs.finished.shareTitle' | translate }}</h3>
+      <section class="flex flex-col gap-2.5">
+        <h3 class="text-sm font-semibold" style="font-family:var(--font-body);color:var(--text-hi)">{{ 'runs.finished.shareTitle' | translate }}</h3>
         <p class="text-sm leading-relaxed" style="color:var(--text-light)">{{ 'runs.finished.shareBody' | translate }}</p>
-        <button type="button" (click)="share.emit()" data-testid="run-share"
-          class="w-full py-3.5 rounded-(--radius-button) text-sm font-bold tracking-wide uppercase transition touch-manipulation"
-          style="font-family:var(--font-display);letter-spacing:0.06em;background:var(--gradient-primary);color:var(--text-on-primary);box-shadow:var(--glow-primary)">
-          {{ (shareCopied() ? 'runs.finished.shareCopied' : shareFailed() ? 'runs.finished.shareFailed' : 'runs.finished.share') | translate }}
+        <app-share-button data-testid="run-share" [copied]="shareCopied()" [failed]="shareFailed()" labelKey="runs.finished.share"
+          copiedKey="runs.finished.shareCopied" failedKey="runs.finished.shareFailed" (share)="share.emit()" />
+        <button type="button" (click)="compare.emit()" data-testid="run-compare" class="w-full text-sm underline touch-manipulation" style="color:var(--text-muted)">
+          {{ 'runs.finished.compare' | translate }}
         </button>
       </section>
 
@@ -106,6 +108,8 @@ export class RunFinishComponent {
   readonly shareFailed = input(false);
   readonly lang = input<'fr' | 'en'>('fr');
   readonly share = output();
+  /** « Voir les autres joueurs » : la comparaison de cette playlist. */
+  readonly compare = output();
   /** « Nouvelle partie » : la page lance la playlist et son premier son dans ce clic. */
   readonly playAgain = output();
 

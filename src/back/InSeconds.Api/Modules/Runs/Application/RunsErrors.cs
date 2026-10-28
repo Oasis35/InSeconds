@@ -56,6 +56,10 @@ internal static class RunsProblems
             ? ApiProblem.Of(StatusCodes.Status409Conflict, RunsErrorCodes.Abandoned, "Tu as abandonné cette playlist.")
             : ApiProblem.Of(StatusCodes.Status409Conflict, RunsErrorCodes.AlreadyPlayed, "Tu as déjà joué cette playlist.");
 
+    /// <summary>La comparaison demande d'avoir fini sa propre partie : un ami qui n'a pas joué n'y voit rien.</summary>
+    public static ProblemDetails ComparisonLocked() =>
+        ApiProblem.Of(StatusCodes.Status409Conflict, RunsErrorCodes.ComparisonLocked, "La comparaison s'ouvre une fois ta partie terminée.");
+
     public static ProblemDetails TrackNotFound() =>
         ApiProblem.Of(StatusCodes.Status404NotFound, RunsErrorCodes.TrackNotFound, "Morceau introuvable dans cette playlist.");
 

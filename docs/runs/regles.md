@@ -1,6 +1,6 @@
 # Run (Platines) : règles du proto 1
 
-Règles validées par Clément le 17/10/2026. Les écrans qui les montrent : [`ecrans.md`](ecrans.md). Leur traduction technique : [`conception.md`](conception.md). Les seuils et la difficulté seront réglés après les parties de test (tout est réglable à chaud, cf. [Réglages](#réglages)).
+Règles validées par Clément le 17/10/2026. Les écrans qui les montrent : [`ecrans.md`](ecrans.md). Leur traduction technique : [`conception.md`](conception.md). Les valeurs ci-dessous sont celles livrées avec le proto 1 (les défauts de `Runs:`) ; les seuils et la difficulté seront réglés après les parties de test (tout est réglable à chaud, cf. [Réglages](#réglages)).
 
 ## La playlist
 
@@ -13,7 +13,7 @@ Règles validées par Clément le 17/10/2026. Les écrans qui les montrent : [`e
 
 ## Un morceau
 
-1. Le son démarre **au clic** (iPhone) : « Commencer » pour le premier morceau, « Morceau suivant » pour les autres.
+1. Le son démarre **au clic** (iPhone) : « Lancer une partie » (ou « Jouer » sur le lien d'un ami, « Reprendre » pour une partie en pause) pour le premier morceau, « Morceau suivant » pour les autres.
 2. **Écoute fixe de 10 s**, d'un seul tenant (pas de paliers comme au Daily, pas d'« écouter plus »). La relecture du lecteur du Daily reste possible : pas de limite de réécoute au proto 1.
 3. Le joueur tape **« Artiste - Titre »** dans un seul champ, avec l'autocomplétion Deezer du Daily, puis **Valider**. Valider un champ vide demande une confirmation.
 4. **Passer** donne 0 point, après confirmation.
@@ -60,7 +60,7 @@ La suite de l'échelle est prévue pour quand un run aura plus de 4 manches : pl
 - Chaque run a un lien : **`inseconds.cc/runs/K7Q2M9`** (code de 6 caractères sans caractère ambigu, saisie insensible à la casse). Il se partage depuis l'écran de fin (« Partager la playlist »).
 - Tous ceux qui ouvrent le lien jouent **les mêmes 20 morceaux, dans le même ordre**, **une seule fois** chacun, sans compte obligatoire (un invité est créé comme au Daily).
 - Les 20 morceaux sont tirés dès le départ : un ami peut aller plus loin que l'auteur de la playlist si celui-ci a perdu avant la fin.
-- **Comparaison** : après avoir fini sa partie, chacun voit toutes les parties terminées sur cette playlist, manche par manche, avec le pseudo de chacun (« Invité » pour un invité), son disque et son total. **Ce n'est pas un classement général** : seuls ceux qui ont le lien la voient, et la page de confidentialité le dit.
+- **Comparaison** : après avoir fini sa partie (une partie abandonnée est finie), chacun voit toutes les parties **gagnées ou perdues** sur cette playlist, manche par manche (une manche non jouée est vide), avec le pseudo de chacun (« Invité » pour un invité), son disque et son total, triées par total. Rouvrir le lien d'une playlist déjà jouée mène directement à la comparaison : une playlist se joue une seule fois. **Ce n'est pas un classement général** : seuls ceux qui ont le lien la voient, et la page de confidentialité le dit.
 
 ## L'accès pendant le proto
 

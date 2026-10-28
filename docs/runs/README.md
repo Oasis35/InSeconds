@@ -1,6 +1,6 @@
 # Run (Platines) : le nouveau mode de jeu
 
-> **État au 26/10/2026 : la partie est jouable sur invitation.** Le module `Runs` existe (schéma `runs`, défi et tirage par difficulté, réglages, accès sur invitation et son interrupteur dans l'onglet Joueurs de l'admin) avec ses routes de jeu (lancer, relever un lien, jouer, jauge, neutralisation, fin, record, abandon), les écrans de la partie (route `/runs`, carte Platines sur l'accueil) et leurs E2E (`runs.spec.ts`) ; l'écran du lien d'un ami et la comparaison restent à faire, dans l'ordre de [`plan.md`](plan.md#découpage-du-proto-1-en-pr). Détail du code : `src/back/CLAUDE.md` § Module Runs, `src/front/CLAUDE.md`.
+> **État au 27/10/2026 : le proto 1 est livré, ouvert sur invitation.** Le module back `Runs` (schéma `runs`, défi et tirage par difficulté, réglages `Runs:`, accès sur invitation et son interrupteur dans l'onglet Joueurs de l'admin, la partie : jauge, neutralisation d'un morceau sans extrait, fin, record, abandon, et la comparaison des joueurs d'une playlist), le domaine front `runs/` (accueil du mode, reprise, manche, réponse après chaque morceau, morceau retiré, bilan, fin, lien d'un ami, comparaison, carte Platines sur l'accueil du jeu du jour) et leurs E2E (`runs.spec.ts`). Reste ce qui suit le proto : les parties de test, le réglage des seuils et de la difficulté, puis le proto 2 ([`plan.md`](plan.md)) ; les petites suites sont dans [`../taches.md`](../taches.md). Détail du code : `src/back/CLAUDE.md` § Module Runs, `src/front/CLAUDE.md` § Domaine runs.
 
 Un run, c'est une suite de **4 manches de 5 morceaux**, de plus en plus difficiles. À chaque manche, il faut remplir une jauge de points pour débloquer la suivante. À la fin, on gagne un **disque** (rayé, cire, bronze, argent, or) selon les manches passées, et on peut envoyer la même playlist à ses amis pour comparer les scores.
 
@@ -18,7 +18,7 @@ Noms : **« Run »** dans les tickets GitHub (étiquette `Mode Run`), **`Runs`**
 ## Où suivre
 
 - Epic : [#368](https://github.com/Oasis35/InSeconds/issues/368) ; proto 1 : [#360](https://github.com/Oasis35/InSeconds/issues/360), un sous-ticket par PR (cf. [`plan.md`](plan.md#découpage-du-proto-1-en-pr)).
-- Maquettes interactives : artifact Design « Platines » sur claude.ai (privé, lien dans #360). Les images de [`maquettes/`](maquettes/) en sont la copie figée au 18/10/2026.
+- Maquettes interactives : artifact Design « Platines » sur claude.ai (privé, lien dans #360). Les images de [`maquettes/`](maquettes/) en sont la copie figée au 18/10/2026 : plusieurs écrans ont évolué depuis (fin du run, comparaison…), les écarts sont listés à la fin d'[`ecrans.md`](ecrans.md#écarts-entre-les-maquettes-et-lapp-livrée).
 
 ## Règles qui tiennent pour tout le mode
 

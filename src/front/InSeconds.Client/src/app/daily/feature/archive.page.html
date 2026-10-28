@@ -4,7 +4,7 @@
   <main class="relative flex-1 flex flex-col gap-5 p-5 w-full max-w-lg mx-auto overflow-x-clip">
 
     <header class="pt-3 flex flex-col gap-4">
-      <app-daily-brand [homeLink]="true">
+      <app-brand [homeLink]="true">
         <div brandLeft>
           @if (pillStreak(); as streak) {
             @if (streak.streak > 0 || store.played()) {
@@ -13,7 +13,7 @@
           }
         </div>
         <app-account-link brandRight />
-      </app-daily-brand>
+      </app-brand>
       @if (store.day(); as day) {
         <app-archive-day-header [date]="day.date" [previousDate]="day.previousDate" [nextDate]="day.nextDate" [lang]="language.current()"
                                 (pickDate)="openCalendar()" />

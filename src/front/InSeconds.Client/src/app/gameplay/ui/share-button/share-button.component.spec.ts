@@ -33,4 +33,18 @@ describe('ShareButtonComponent', () => {
     TestBed.resetTestingModule();
     expect((render({ failed: true }).nativeElement as HTMLElement).querySelector('p')).not.toBeNull();
   });
+
+  it('un mode donne ses propres libellés ; ceux du Daily sont les défauts', () => {
+    const daily = render({}).nativeElement as HTMLElement;
+    expect(daily.querySelector('button')!.textContent).toContain('daily.share.button');
+
+    TestBed.resetTestingModule();
+    const runs = render({ labelKey: 'runs.finished.share', copiedKey: 'runs.finished.shareCopied', failedKey: 'runs.finished.shareFailed', failed: true }).nativeElement as HTMLElement;
+    expect(runs.querySelector('button')!.textContent).toContain('runs.finished.share');
+    expect(runs.querySelector('p')!.textContent).toContain('runs.finished.shareFailed');
+
+    TestBed.resetTestingModule();
+    const copied = render({ labelKey: 'runs.finished.share', copiedKey: 'runs.finished.shareCopied', copied: true }).nativeElement as HTMLElement;
+    expect(copied.querySelector('button')!.textContent).toContain('runs.finished.shareCopied');
+  });
 });

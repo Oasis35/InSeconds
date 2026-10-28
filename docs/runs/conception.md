@@ -1,6 +1,6 @@
 # Run (Platines) : conception technique du proto 1
 
-17/10/2026, sur la base d'`env/staging` au commit `629ca5c`, revue après une relecture indépendante du plan et après les maquettes. Règles : [`regles.md`](regles.md). Écrans : [`ecrans.md`](ecrans.md). Ordre des PR : [`plan.md`](plan.md#découpage-du-proto-1-en-pr).
+17/10/2026, sur la base d'`env/staging` au commit `629ca5c`, revue après une relecture indépendante du plan et après les maquettes. **Livré le 27/10/2026** (P0 à P5) : ce document décrit désormais le code tel qu'il est ; les écarts avec les maquettes sont à la fin d'[`ecrans.md`](ecrans.md#écarts-entre-les-maquettes-et-lapp-livrée). Règles : [`regles.md`](regles.md). Écrans : [`ecrans.md`](ecrans.md). Ordre des PR : [`plan.md`](plan.md#découpage-du-proto-1-en-pr).
 
 ## 1. Principe
 
@@ -25,27 +25,25 @@ Nom technique `Runs` partout (module, schéma, routes, clés de réglage, dossie
 | Correction tolérante | `IAnswerMatcher` (`FuzzyAnswerMatcher`) |
 | Tirage | `ISeededShuffle` (`FisherYatesShuffle`), graine tirée par `RandomNumberGenerator`, jamais exposée |
 | Morceaux jouables, noms, pochette | `ITrackDirectory.ListPlayableIdsAsync` / `GetAsync` |
-| Extraits signés | `ITrackPreviews.GetUrlsAsync`, **un morceau à la fois** (§ 3.4) |
+| Extraits signés | `ITrackPreviews.GetAsync`, **un morceau à la fois** : absent, disponible ou indisponible (§ 3.4) |
 | Joueur courant, invité, pseudo | `ICurrentPlayer`, `IPlayerDirectory` (`HasAccountAsync`, `GetPseudosAsync`) ; un ami sans identité passe par `POST /api/players/guest` comme au Daily |
 | Verrou de démarrage | `pg_advisory_xact_lock` par joueur, comme `EfDailyStore.LockPlayerStartAsync` |
 | Front : la manche | `gameplay/` : `withTrackRound` (phases jusqu'à `revealed`), `app-track-round` et ses emplacements `[roundActions]`, `[roundBadge]`, `[roundScore]`, `[roundNext]`, `RoundPlayerComponent`, `AnswerInputComponent`, `RevealCardComponent` (forme de la pochette) ; `ListenPolicy { steps: [10], extendable: false }` |
-| Front : frontières | `sheriff.config.ts` déclare déjà `runs: ['domain:gameplay']` |
+| Front : frontières | `sheriff.config.ts` : `runs: ['domain:gameplay', 'domain:account']` (`account` pour `SessionLoader`, l'invité d'un ami) |
 
 ## 3. Back : le module `Runs`
 
 ```
 Modules/Runs/
-├── RunsModule.cs                 AddRuns() : options, store, politiques, contributeurs, contrôle des réglages
+├── RunsModule.cs                 AddRuns() / AddRunsPlayerData() : options, store, politiques, contributeurs, contrôle des réglages
 ├── Domain/
-│   ├── RunChallenge.cs           le défi : les 20 morceaux tirés, les règles figées
-│   ├── RunSession.cs             la partie d'un joueur sur un défi (verrou, jauge, fin)
-│   ├── RunRules.cs               photo des règles au départ (manches, morceaux par manche, écoute, seuils, multiplicateurs)
-│   ├── DiscLadder.cs             manches passées → disque (une clé de traduction, jamais un texte)
-│   ├── IRunTrackSelector.cs      tirage par difficulté (port)
-│   ├── IRunScoringPolicy.cs      points d'un morceau (port)
-│   └── IRunsStore.cs             écritures (port nommé par l'intention)
-├── Application/                  endpoints Wolverine.Http (LoadAsync / Validate / Post), RunsOptions, RunsErrorCodes, RunsProblems, RunsMetrics, RunsTrackUsage, RunsPlayerData
-└── Persistence/                  EF : configurations, EfRunsStore, EfRunsQueries
+│   ├── RunChallenge.cs, RunChallengeCode.cs   le défi (les 20 morceaux tirés, les règles figées) et son code de 6 caractères
+│   ├── RunSession.cs                          la partie d'un joueur sur un défi (verrou, jauge, fin) + les ports IRunsStore
+│   ├── RunRules.cs, RunGauge.cs               photo des règles au départ ; objectif et score d'une manche
+│   ├── DiscLadder.cs                          manches passées → disque (une clé de traduction, jamais un texte)
+│   └── IRunTrackSelector.cs, IRunScoringPolicy.cs   tirage par difficulté, points d'un morceau (ports)
+├── Application/                  endpoints Wolverine.Http (RunEndpoints, RunComparison, RunAccess : LoadAsync / Validate / Post), RunPlayer (avancer une partie), RunChallengePlanner, RunsOptions, RunsRules, RunsErrorCodes / RunsProblems, RunsResponses, RunsMetrics, RunsDataExport
+└── Persistence/                  EF : RunsConfigurations, EfRunsStore, EfRunsQueries, RunsPlayerData (IPlayerDataContributor), RunsTrackUsage (ITrackUsage)
 ```
 
 ### 3.1 Les agrégats
@@ -54,7 +52,7 @@ Même forme que le Daily (`DailyChallenge` / `DailySession`) :
 - `RunSession.Start(challengeId, playerId, now)`, pour l'auteur comme pour un ami : aucun morceau copié. Reçoit les morceaux et les règles du défi pour décider, comme `DailySession` reçoit le défi du jour.
 - **Morceau en cours = le premier sans réponse** (verrou, piège 35) ; `TurnOf(position, count)` comme le Daily.
 - `RoundOfCurrentTrack()` / `KeepRound(TrackRound)` : la manche Gameplay reconstituée depuis `current_listened_seconds`.
-- `Answer(RoundOutcome, points, now)` : note, libère le verrou ; à la fin d'une manche, compare le score de la manche (points arrondis, `>=`) à l'objectif **figé dans `RunRules`** → manche suivante, défaite ou victoire. Fin sur le nombre **réel** de morceaux du défi (piège 38).
+- `Answer(challenge, outcome, scoring, now)` : note, libère le verrou ; à la fin d'une manche, compare le score de la manche (points arrondis, `>=`) à l'objectif **figé dans `RunRules`** → manche suivante, défaite ou victoire. Fin sur le nombre **réel** de morceaux du défi (piège 38).
 - `Abandon(now)`.
 - Statuts : `Pending`, `Won`, `Lost`, `Abandoned`.
 
@@ -138,7 +136,7 @@ Même forme et même vocabulaire que le Daily : **un défi** = une suite de morc
 - Supprimer un compte efface ses parties et ses réponses ; ses défis restent jouables (`created_by` à `null`).
 - Snake_case, schéma déclaré, rien dans `public`, clés étrangères **par le nom du type**, sans navigation EF entre modules (`PersistenceTests`).
 - Supprimer ou actualiser un morceau qui a servi dans un défi de run est refusé en 409 `catalogue.track_in_use`, grâce à l'usage déclaré par Runs (§ 6).
-- **Morceau sans extrait** : quand Deezer confirme que le morceau en cours n'a plus d'extrait, c'est **le serveur** qui enregistre la réponse comme neutralisée (jamais le client : sinon on « neutraliserait » un morceau difficile) et passe au suivant. Seule une absence définitive neutralise ; une panne ou un quota Deezer (`Unavailable`) laisse le morceau en cours : `ITrackPreviews` doit distinguer les deux cas, ce qu'il ne fait pas aujourd'hui.
+- **Morceau sans extrait** : quand Deezer confirme que le morceau en cours n'a plus d'extrait, c'est **le serveur** qui enregistre la réponse comme neutralisée (jamais le client : sinon on « neutraliserait » un morceau difficile) et passe au suivant. Seule une absence définitive neutralise ; une panne ou un quota Deezer (`Unavailable`) laisse le morceau en cours : `ITrackPreviews.GetAsync` distingue les deux cas (`Available`, `Missing`, `Unavailable`).
 - Migration EF classique, sans reprise de données.
 
 ## 5. Front : le domaine `runs/`
@@ -146,18 +144,20 @@ Même forme et même vocabulaire que le Daily : **un défi** = une suite de morc
 ### 5.1 Organisation
 ```
 runs/
-├── domain/       run.ts (jauge, objectif, manche, pastilles, disque : TypeScript pur, testé seul)
-├── data-access/  runs.api.ts (client NSwag runs/api.generated.ts), run-game.store.ts (pilote le TrackRoundStore de gameplay), run-share.ts
-├── feature/      runs.page (partie), run-link.page (lien d'un ami, P5), runs.routes.ts, provide-runs.ts, home-entry (carte de l'accueil)
-└── ui/           run-header, run-objective, run-pills, run-answer-card, run-withdrawn-card, run-round-summary, run-finish, run-disc, run-home-card, comparison-table (P5)
+├── domain/       run.ts (jauge, objectif, manche, pastilles, étapes, disque, lien, comparaison : TypeScript pur, testé seul)
+├── data-access/  runs.api.ts (client NSwag runs/api.generated.ts), runs.providers.ts, run-game.store.ts (pilote le TrackRoundStore de gameplay), run-share.ts
+├── feature/      runs.page (la partie, le lien d'un ami et la comparaison : /runs et /runs/:code), runs.routes.ts, leave-run.guard.ts, reload-moment.ts, provide-runs.ts, home-entry (carte de l'accueil)
+└── ui/           run-header, run-objective, run-pills, run-answer-card, run-withdrawn-card, run-round-summary, run-finish, run-disc, run-home-card, run-welcome-screen, run-link-screen, run-comparison-screen, run-status-screen
 ```
 - Routes **`/runs`** et **`/runs/:code`** : des adresses neutres, qui ne cassent pas les liens partagés si le nom change. `/runs/*` exclu de `robots.txt` et du `sitemap.xml`.
-- Sheriff : `runs` voit `gameplay` (et `account` en P5, pour créer l'invité d'un ami), jamais `daily`.
-- Repris du Daily : confirmation avant de quitter une partie (`canDeactivate`), moment sûr de rechargement après une nouvelle version (`ReloadMoment`, une étape de réponse en est un), synchronisation entre onglets, remontée des erreurs.
+- Sheriff : `runs` voit `gameplay` et `account` (pour créer l'invité d'un ami), jamais `daily`.
+- Repris du Daily : confirmation avant de quitter une partie (`canDeactivate`), moment sûr de rechargement après une nouvelle version (`ReloadMoment`, une étape de réponse en est un), remontée des erreurs. La synchronisation entre onglets du Daily (relire l'état au retour de l'onglet) n'est pas reprise : cf. [`../taches.md`](../taches.md).
 - Traductions `runs.*` FR/EN (disques compris), mobile first, saisie à 16 px, modales par `ModalService`, boutons par `appButton`.
 
 ### 5.2 Les étapes d'une partie
 `link` (lien reçu, [`ecrans.md`](ecrans.md#7-le-lien-reçu) § 7, P5), `welcome` (premier morceau : le clic lance le son) ou `resume` (partie en cours) → par morceau : `playing` / `answering` (lecteur et saisie de `gameplay`) → `revealed` (carte de réponse à la place du lecteur et de la saisie, « Morceau suivant »), ou `neutralized` (carte « Morceau retiré de la manche », [`ecrans.md`](ecrans.md#2b-le-morceau-sans-extrait) § 2b, même bouton) → après le 5e morceau : `round_end` (bilan, après chaque manche, ratée ou dernière comprise) → manche suivante, ou `finished` (écran de fin). Reprise : la partie revient au morceau en cours de son état serveur. La phase `revealed` de `withTrackRound` existe déjà ; c'est l'écran qui change par rapport au Daily.
+
+Sur `/runs/<code>`, le serveur choisit l'écran d'après la partie du joueur sur cette playlist (`GET /api/runs/challenges/{code}`) : pas jouée → `link`, en cours → `resume`, finie ou abandonnée → `comparison` (une playlist se joue une seule fois). `RunScreen` (`run-game.store.ts`) : `loading`, `welcome`, `link`, `resume`, `playing`, `round_end`, `finished`, `comparison`, `access_denied`, `no_challenge`, `not_found`, `error`.
 
 Le serveur enchaîne en une réponse ce qu'il peut (la réponse, les morceaux suivants qu'il retire faute d'extrait, le bilan de chaque manche que cela termine) : le front en tire une **file d'étapes** (`playSteps`, `domain/run.ts`), montrées une à une, chacune derrière un clic. Le son ne part que dans ce clic, jamais à l'arrivée d'une réponse (un morceau retiré pendant la redemande de son extrait attend le clic « Morceau suivant »).
 
@@ -167,6 +167,8 @@ Un mode n'importe jamais l'autre : ce que les maquettes reprennent du Daily et q
 - le badge « Écouter sur Deezer » (`deezer-badge`) ;
 - le style du lien « Abandonner » de `daily-progress` (un bouton discret, repris tel quel s'il ne vaut pas un composant) ;
 - l'écran de reprise (`resume-screen`), avec son avertissement d'abandon et son lien de connexion passés en entrée : le Daily garde les siens (série), Runs donne le sien ([`ecrans.md`](ecrans.md#écrans-du-daily-repris-tels-quels-sans-maquette)). L'écran d'état a sa copie dans Runs (`run-status-screen`, mêmes formes, textes du mode).
+
+Descendus aussi en P5, pour l'écran du lien d'un ami et ceux de fin : le bandeau IN//SECONDS (`brand`) et le bouton de partage (`share-button`, dont le mode donne les libellés), plus `LeaveGuard` (la confirmation de sortie d'une partie, commune au Daily et au Run).
 
 Les confirmations d'abandon et de sortie (`ModalService.confirm`, `leave-game.guard`) sont déjà communes : Runs les appelle avec ses propres textes.
 
@@ -209,7 +211,7 @@ L'interrupteur « Platines » de l'onglet Joueurs lit `GET /api/admin/runs/acces
 - Architecture : règles du § 6.
 - Front (Vitest) : domaine `run.ts`, store, chaque écran des maquettes (lien reçu, manche, réponse, morceau sans extrait, fin de manche, fin de run victoire et défaite, comparaison), carte de l'accueil visible ou non, composants descendus dans `gameplay/ui` (le Daily inchangé).
 - E2E Playwright (`runs.spec.ts`) : partie gagnée, partie perdue, morceau retiré, reprise, carte de l'accueil absente sans accès et montrée une fois l'accès ouvert (P4) ; lien d'un ami dans deux navigateurs et comparaison (P5).
-- Observabilité : `RunsMetrics` (parties, réponses, disques), logs sans texte saisi ; tableau Grafana « Activité » complété.
+- Observabilité : `RunsMetrics` (parties, réponses, neutralisations, disques), logs sans texte saisi ; les panneaux du tableau Grafana « Activité » pour ces métriques restent à faire ([`../taches.md`](../taches.md)).
 
 ## 9. Décisions
 1. `TrackInfo.DeezerRank` dans le contrat de Catalogue : validé (Clément, 17/10).

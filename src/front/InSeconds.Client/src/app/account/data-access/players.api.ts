@@ -35,9 +35,12 @@ export class PlayersApi {
     };
   }
 
-  /** Crée l'invité de ce navigateur (ou renvoie celui qui existe) et pose son cookie. */
-  async createGuest(): Promise<string> {
-    return (await firstValueFrom(this.client.createGuest())).playerId;
+  /**
+   * Crée l'invité de ce navigateur (ou renvoie celui qui existe) et pose son cookie ; `source` : d'où
+   * il arrive (`arrivalSource`), notée par le serveur à la création seulement.
+   */
+  async createGuest(source: string | null): Promise<string> {
+    return (await firstValueFrom(this.client.createGuest({ source: source ?? undefined }))).playerId;
   }
 
   async requestMagicLink(email: string): Promise<void> {

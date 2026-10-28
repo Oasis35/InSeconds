@@ -30,6 +30,7 @@
 - Installable sur l'écran d'accueil (PWA), mise à jour automatiquement à un moment sûr (jamais en pleine manche)
 - Liste des appareils connectés à ton compte, déconnexion d'un appareil ou de tous les autres
 - Tes données (RGPD) : copie de toutes tes données en JSON et suppression définitive de ton compte (section « Tes données » du profil) ; appareils sans visite depuis 91 jours et comptes inactifs depuis 3 ans supprimés automatiquement chaque nuit ; ce que tu tapes en réponse n'est jamais stocké
+- Mode Run (« Platines » à l'écran, sur invitation pour l'instant) : un second jeu de 4 manches de 5 morceaux, de plus en plus difficiles, à écoute fixe de 10 s, avec une jauge de points pour débloquer la manche suivante et un disque record (du rayé à l'or) ; envoie la même playlist à tes amis par un lien et comparez vos scores une fois la partie jouée (`/runs` ; règles et écrans dans [`docs/runs/`](docs/runs/README.md))
 
 ## Démarrage rapide
 
@@ -137,7 +138,7 @@ cd src/front/InSeconds.Client
 E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inseconds;Password=<DB_PASSWORD>" npm run e2e
 ```
 
-`playwright.config.ts` démarre l'hôte de test (port 5177) et `ng serve` (port 5178). **139 tests** répartis sur 33 fichiers : jeu, connexion, profil, appareils, tes données, série et gels, mode Run, admin…
+`playwright.config.ts` démarre l'hôte de test (port 5177) et `ng serve` (port 5178). **140 tests** répartis sur 33 fichiers : jeu, connexion, profil, appareils, tes données, série et gels, mode Run, admin…
 
 ## Documentation
 
@@ -147,7 +148,7 @@ E2E_DB_CONNECTION="Host=localhost;Port=5432;Database=inseconds_e2e;Username=inse
 - [`docs/regles-du-jeu.md`](docs/regles-du-jeu.md) - règles de jeu (scoring, prolongation, anti-triche, série) - ce qui est réellement appliqué vs juste configuré
 - [`docs/exploitation/`](docs/exploitation/) - déploiement sur le VPS, staging, sauvegardes, CI, accès de secours
 - [`docs/conformite/`](docs/conformite/) - conditions de l'API Deezer, RGPD
-- [`docs/runs/`](docs/runs/README.md) - le mode Run (partie jouable sur invitation ; lien d'un ami et comparaison à venir)
+- [`docs/runs/`](docs/runs/README.md) - le mode Run (livré sur invitation : la partie, le lien d'un ami et la comparaison)
 - [`docs/taches.md`](docs/taches.md) - ce qui reste à faire
 - [`docs/historique/`](docs/historique/) - la refonte de 2026
 

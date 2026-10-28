@@ -23,6 +23,14 @@ describe('RunStatusScreenComponent', () => {
     expect(retry).toHaveBeenCalledTimes(1);
   });
 
+  it('une playlist inconnue le dit, sans proposer de réessayer (le lien ne changera pas)', () => {
+    const { element } = render('not_found');
+
+    expect(element.textContent).toContain('runs.status.not_found.title');
+    expect(element.querySelector('[data-testid="run-retry"]')).toBeNull();
+    expect(element.querySelector('a')?.getAttribute('href')).toBe('/daily');
+  });
+
   it("une erreur montre son code (traceId), à donner au support comme au Daily", () => {
     const { element } = render('error', '00-abc123-01');
 

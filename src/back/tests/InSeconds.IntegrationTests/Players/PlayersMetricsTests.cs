@@ -7,8 +7,8 @@ using Microsoft.Extensions.Diagnostics.Metrics.Testing;
 namespace InSeconds.IntegrationTests.Players;
 
 /// <summary>
-/// Les compteurs OpenTelemetry des joueurs (<see cref="PlayersMetrics"/>), lus par le tableau Grafana « Activité » : connexions par lien
-/// magique et comptes effacés, avec leur issue en étiquette et jamais l'identifiant du joueur.
+/// Les compteurs OpenTelemetry des joueurs (<see cref="PlayersMetrics"/>), lus par le tableau Grafana « Activité » : invités créés par
+/// source d'arrivée, connexions par lien magique et comptes effacés, avec leur issue en étiquette et jamais l'identifiant du joueur.
 /// </summary>
 public class PlayersMetricsTests(PostgresFixture postgres) : IAsyncLifetime
 {
@@ -24,6 +24,23 @@ public class PlayersMetricsTests(PostgresFixture postgres) : IAsyncLifetime
 
     private MetricCollector<long> Collect(string instrument) =>
         new(_app.Api.Services.GetRequiredService<IMeterFactory>(), PlayersMetrics.MeterName, instrument);
+
+    [Fact]
+    public async Task CreationDInvite_ParSourceDArrivee()
+    {
+        using var guests = Collect(PlayersMetrics.GuestsCreatedName);
+        var browser = _app.Browser();
+
+        (await browser.PostAsJsonAsync("/api/players/guest", new CreateGuest("TikTok"), TestContext.Current.CancellationToken))
+            .EnsureSuccessStatusCode();
+        // Navigateur déjà identifié : aucun invité de plus.
+        (await browser.PostAsJsonAsync("/api/players/guest", new CreateGuest("share"), TestContext.Current.CancellationToken))
+            .EnsureSuccessStatusCode();
+        (await _app.Browser().PostAsync("/api/players/guest", null, TestContext.Current.CancellationToken)).EnsureSuccessStatusCode();
+
+        Assert.Equal(["tiktok", "direct"], guests.GetMeasurementSnapshot().Select(m => (string?)m.Tags["source"]));
+        Assert.All(guests.GetMeasurementSnapshot(), m => Assert.Equal(["source"], m.Tags.Keys));
+    }
 
     [Fact]
     public async Task Connexion_CompteCreePuisRetrouve()

@@ -67,11 +67,21 @@ describe('RunFinishComponent', () => {
     fixture.componentInstance.share.subscribe(share);
     fixture.componentInstance.playAgain.subscribe(again);
 
-    (element.querySelector('[data-testid="run-share"]') as HTMLButtonElement).click();
+    (element.querySelector('[data-testid="run-share"] button') as HTMLButtonElement).click();
     (element.querySelector('[data-testid="run-play-again"]') as HTMLButtonElement).click();
 
     expect(share).toHaveBeenCalled();
     expect(again).toHaveBeenCalled();
+  });
+
+  it('« Voir les autres joueurs » ouvre la comparaison de la playlist', () => {
+    const { fixture, element } = render(finish());
+    const compare = vi.fn();
+    fixture.componentInstance.compare.subscribe(compare);
+
+    (element.querySelector('[data-testid="run-compare"]') as HTMLButtonElement).click();
+
+    expect(compare).toHaveBeenCalledTimes(1);
   });
 
   it('sans accès, le jeu du jour à la place de « Nouvelle partie »', () => {

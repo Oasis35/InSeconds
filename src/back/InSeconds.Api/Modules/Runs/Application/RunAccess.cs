@@ -37,6 +37,9 @@ public interface IRunsQueries
     Task<RunSessionEntry?> FindSessionAsync(int challengeId, Guid playerId, CancellationToken ct);
 
     Task<RunRecord?> FindRecordAsync(Guid playerId, CancellationToken ct);
+
+    /// <summary>Les parties terminées (gagnées ou perdues) de ce défi, avec leurs réponses, en lecture seule : la comparaison.</summary>
+    Task<IReadOnlyList<RunSession>> ListFinishedSessionsAsync(int challengeId, CancellationToken ct);
 }
 
 public static class ListRunAccessEndpoint

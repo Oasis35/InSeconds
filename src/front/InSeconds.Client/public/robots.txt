@@ -4,5 +4,6 @@ Disallow: /account
 Disallow: /login
 Disallow: /profile
 Disallow: /jobs
+Disallow: /runs
 
 Sitemap: https://inseconds.cc/sitemap.xml

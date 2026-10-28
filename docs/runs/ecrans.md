@@ -33,7 +33,7 @@ Clément, 18/10 : un écran qui existe déjà au Daily ne se redessine pas, il s
 
 Sans écran du tout :
 - **Accès refusé** (`runs.access_denied` sur `/runs`) : retour au Daily.
-- **Lien d'une playlist déjà jouée** (`runs.already_played`) : directement la comparaison (§ 5). À confirmer par Clément.
+- **Lien d'une playlist déjà jouée** : directement la comparaison (§ 5), livré en P5 ; une playlist en cours mène à l'écran de reprise.
 
 ## 1. La manche
 
@@ -106,6 +106,7 @@ Même mise en page dans les deux cas :
 - Surtitre **« PLAYLIST DE CLÉMENT »** (pseudo de l'auteur, sans le code du lien), titre **« 4 joueurs de cette playlist »**.
 - Tableau : Joueur (pseudo et disque dessous), M1 à M4, Total ; trié par total. **« Toi »** surligné en orange ; **✕** pour une manche non jouée ; « Invité » pour un joueur sans compte.
 - **« Partager la playlist »** en bas.
+- **Accès** : en ouvrant le lien (`/runs/<code>`) d'une playlist déjà jouée, et par « Voir les autres joueurs » (lien discret sous « Partager la playlist » de l'écran de fin). Une partie abandonnée y a accès aussi (la playlist ne se rejoue pas) ; elle n'est pas dans le tableau (seules les parties gagnées ou perdues y figurent). Égalité de total : plus de manches passées, puis la première terminée.
 
 ## 6. L'entrée sur l'accueil
 
@@ -128,3 +129,15 @@ Ce que voit un ami qui ouvre `inseconds.cc/runs/<code>` sans avoir encore joué 
 - **« JOUER »** juste sous le bloc des règles, qui crée l'invité si besoin et lance la partie (le son démarre à ce clic). Ni surtitre ni nombre de joueurs sur cet écran.
 
 Partie déjà commencée sur ce lien : l'écran de reprise du Daily. Partie finie : la comparaison (§ 5).
+
+## Écarts entre les maquettes et l'app livrée
+
+Les images de `maquettes/` sont la copie figée du 18/10/2026 ; l'app a évolué depuis. Ce qui diffère, pour ne pas intégrer une maquette périmée :
+- **Pochettes rondes** (décision UI du 21/10), comme la révélation du Daily, et badge officiel Deezer pour « Écouter sur Deezer » (conditions de l'API, piège 47), au lieu du lien maison.
+- **Bouton après le 5e morceau** : « Fin de la manche » (et non « Morceau suivant ») ; sur le bilan d'une manche qui termine le run (ratée ou dernière), « Voir le résultat » à la place de « Manche suivante ».
+- **« MANCHE 2 / 4 »** : le texte traduit est « Manche 2 / 4 », mis en capitales par la mise en forme (un lecteur d'écran ne l'épelle pas).
+- **Fin du run** : sans grandes cartes, dans le style du résultat du jour (le disque, le record, le score dans la police du score, les cases par manche, le bloc de partage sans cadre) ; bouton de partage commun avec le Daily. Un lien discret **« Voir les autres joueurs »** est ajouté sous « Partager la playlist » (la comparaison n'était sinon atteignable que par le lien).
+- **Comparaison** : le tableau est en pleine largeur, sans carte, filets en haut et en bas comme la liste des morceaux du résultat du jour ; les totaux sont dans la police du score ; sa propre ligne s'appelle « Toi » (et non son pseudo).
+- **Accès refusé** et **lien d'une playlist déjà jouée** : voir plus haut, sans écran ou directement la comparaison.
+
+Les captures réelles qui remplaceraient les maquettes restent à faire (cf. [`../taches.md`](../taches.md)).

@@ -24,7 +24,7 @@ import { ThanksNotice } from '../data-access/thanks-notice';
 import { AbandonedScreenComponent } from '../ui/abandoned-screen/abandoned-screen.component';
 import { DayResultScreenComponent } from '../ui/day-result-screen/day-result-screen.component';
 import { rowsFromResults, rowsFromStats } from '../ui/day-result-screen/result-rows';
-import { DailyBrandComponent } from '../ui/daily-brand/daily-brand.component';
+import { BrandComponent } from '../../gameplay/ui/brand/brand.component';
 import { DailyFooterComponent } from '../ui/daily-footer/daily-footer.component';
 import { DailyProgressComponent } from '../ui/daily-progress/daily-progress.component';
 import { DeezerBadgeComponent } from '../../gameplay/ui/deezer-badge/deezer-badge.component';
@@ -57,7 +57,7 @@ type ThanksScreen = 'done' | 'already_played';
 @Component({
   selector: 'app-daily-page',
   imports: [
-    TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, DailyBrandComponent, DailyProgressComponent, DailyFooterComponent,
+    TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, BrandComponent, DailyProgressComponent, DailyFooterComponent,
     WelcomeScreenComponent, ResumeScreenComponent, HomeModeEntriesComponent, StatusScreenComponent, AbandonedScreenComponent, DayResultScreenComponent,
     StreakPillComponent, GuestStreakToastComponent, LostStreakToastComponent, GelUsedToastComponent, GelEarnedToastComponent,
     DeezerBadgeComponent, ScoreCountComponent, AccountLinkComponent,

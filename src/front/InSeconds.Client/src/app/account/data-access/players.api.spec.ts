@@ -44,10 +44,14 @@ describe('PlayersApi', () => {
     });
   });
 
-  it('crée l\'invité et rend son identifiant', async () => {
+  it('crée l\'invité avec sa source d\'arrivée et rend son identifiant', async () => {
     client.createGuest.mockReturnValue(of({ playerId: 'guest-1' }));
 
-    expect(await api.createGuest()).toBe('guest-1');
+    expect(await api.createGuest('instagram')).toBe('guest-1');
+    await api.createGuest(null);
+
+    expect(client.createGuest).toHaveBeenNthCalledWith(1, { source: 'instagram' });
+    expect(client.createGuest).toHaveBeenNthCalledWith(2, { source: undefined });
   });
 
   it('demande un lien de connexion pour une adresse', async () => {

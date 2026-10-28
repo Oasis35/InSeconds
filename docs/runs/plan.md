@@ -7,7 +7,7 @@ Feuille de route du mode, découpage du proto 1 en PR, idées pour la suite et h
 La feuille de route décidée le 17/10/2026 peut encore changer.
 
 1. **Étape 0, règles et maquettes** : faite le 17/10/2026 (ce dossier).
-2. **Proto 1, la boucle sans bonus** ([#360](https://github.com/Oasis35/InSeconds/issues/360)) :
+2. **Proto 1, la boucle sans bonus** ([#360](https://github.com/Oasis35/InSeconds/issues/360)), **livré le 27/10/2026** (sur invitation) :
    - 4 manches de 5 morceaux, écoute fixe de 10 s, jauge par manche, réponse après chaque morceau ;
    - disques, record perso, playlist partagée par lien avec comparaison ;
    - ouvert sur invitation seulement, entrée par une carte sur l'accueil.
@@ -33,18 +33,19 @@ Chaque étape a un ticket parent et quelques PR vers `env/staging`. Les traducti
 
 Chaque PR arrive en prod par le merge `env/staging → main`. Aucune ne doit laisser une route de jeu ouverte, ni collecter une donnée que `/privacy` ne mentionne pas. Chaque PR met à jour la doc qu'elle touche, ce dossier compris. Les PR sont étiquetées `run`. La description de chaque PR commence par `Closes #<sous-ticket>` puis `Part of #360`. Le sous-ticket se ferme à la main au merge.
 
-| Étape | Ticket | Contenu | Dépend de |
-|---|---|---|---|
-| **P1** | [#362](https://github.com/Oasis35/InSeconds/issues/362) | Préparer Players et Catalogue (**aucun code Runs**) : `IPlayerDataContributor`, usage des morceaux par plusieurs modes, `TrackInfo.DeezerRank`, contrôle nocturne de tout le pool, tests d'architecture « un mode » | - |
-| **P1b** | [#389](https://github.com/Oasis35/InSeconds/issues/389) | Pool admin général (**aucun code Runs**) : `isUsed` et usage par mode fournis par le back (`usages[]`), onglet Pool sans notion du Daily (compteur neutre, pastilles par mode, filtre « Joué par »), vue Daily dans un sélecteur horizontal | P1 |
-| P0 (facultatif) | [#361](https://github.com/Oasis35/InSeconds/issues/361) | Genre de l'album dans le catalogue | P1, P1b |
-| **P2** | [#364](https://github.com/Oasis35/InSeconds/issues/364) | Socle Runs (**aucune route de jeu**) : module, schéma et migration, défi et tirage, réglages, accès (`runs.access`, routes admin, interrupteur de l'onglet Joueurs), contributeurs Runs (RGPD, usage) | P1, P1b |
-| **P3** | [#363](https://github.com/Oasis35/InSeconds/issues/363) | La partie côté back : routes joueur (accès vérifié dès la première route), réponses portant ce que demandent les écrans ([`conception.md`](conception.md#35-ce-que-les-réponses-doivent-porter-dicté-par-les-écrans) § 3.5), jauge, fin, record, neutralisation, limites de débit, `/privacy` | P2 |
-| **P4** | [#365](https://github.com/Oasis35/InSeconds/issues/365) | La partie côté front, d'après les maquettes : manche, réponse après chaque morceau, fin de manche, fin de run ; composants du Daily descendus dans `gameplay/ui` ; carte de l'accueil ; E2E de la partie. **Découpé en trois PR** : P4a (domaine, store, manche et réponse, composants communs), P4b (bilan, fin, morceau neutralisé, reprise, carte de l'accueil ; le bilan de manche s'affiche aussi après une manche ratée et après la manche 4 gagnée, avant l'écran de fin, dont le bouton du bilan devient le chemin ; un morceau neutralisé pendant la redemande d'extrait montre la carte « Morceau retiré » à la place du lecteur, le son ne repartant jamais seul, avec le bilan si c'était le dernier de la manche), P4c (E2E) | P3 |
-| **P5** | [#366](https://github.com/Oasis35/InSeconds/issues/366) | Le lien et la comparaison (back et front), d'après les maquettes ; E2E du lien d'un ami | P4 |
-| **P6** | [#367](https://github.com/Oasis35/InSeconds/issues/367) | Relecture finale de la doc (CLAUDE.md, README FR/EN, ce dossier) après les parties de test | P5 |
+| Étape | Ticket | Contenu | Dépend de | Livré |
+|---|---|---|---|---|
+| **P1** | [#362](https://github.com/Oasis35/InSeconds/issues/362) | Préparer Players et Catalogue (**aucun code Runs**) : `IPlayerDataContributor`, usage des morceaux par plusieurs modes, `TrackInfo.DeezerRank`, contrôle nocturne de tout le pool, tests d'architecture « un mode » | - | PR #388 |
+| **P1b** | [#389](https://github.com/Oasis35/InSeconds/issues/389) | Pool admin général (**aucun code Runs**) : `isUsed` et usage par mode fournis par le back (`usages[]`), onglet Pool sans notion du Daily (compteur neutre, pastilles par mode, filtre « Joué par »), vue Daily dans un sélecteur horizontal | P1 | PR #390 |
+| P0 (facultatif) | [#361](https://github.com/Oasis35/InSeconds/issues/361) | Genre de l'album dans le catalogue | P1, P1b | PR #391 |
+| **P2** | [#364](https://github.com/Oasis35/InSeconds/issues/364) | Socle Runs (**aucune route de jeu**) : module, schéma et migration, défi et tirage, réglages, accès (`runs.access`, routes admin, interrupteur de l'onglet Joueurs), contributeurs Runs (RGPD, usage) | P1, P1b | PR #396 |
+| **P3** | [#363](https://github.com/Oasis35/InSeconds/issues/363) | La partie côté back : routes joueur (accès vérifié dès la première route), réponses portant ce que demandent les écrans ([`conception.md`](conception.md#35-ce-que-les-réponses-doivent-porter-dicté-par-les-écrans) § 3.5), jauge, fin, record, neutralisation, limites de débit, `/privacy` | P2 | PR #427 |
+| **P4** | [#365](https://github.com/Oasis35/InSeconds/issues/365) | La partie côté front, d'après les maquettes : manche, réponse après chaque morceau, fin de manche, fin de run ; composants du Daily descendus dans `gameplay/ui` ; carte de l'accueil ; E2E de la partie. **Découpé en trois PR** : P4a (domaine, store, manche et réponse, composants communs), P4b (bilan, fin, morceau neutralisé, reprise, carte de l'accueil ; le bilan de manche s'affiche aussi après une manche ratée et après la manche 4 gagnée, avant l'écran de fin, dont le bouton du bilan devient le chemin ; un morceau neutralisé pendant la redemande d'extrait montre la carte « Morceau retiré » à la place du lecteur, le son ne repartant jamais seul, avec le bilan si c'était le dernier de la manche), P4c (E2E) | P3 | PR #428, #435, #437 |
+| **P5** | [#366](https://github.com/Oasis35/InSeconds/issues/366) | Le lien et la comparaison (back et front), d'après les maquettes ; E2E du lien d'un ami | P4 | PR #446 |
+| **P6** | [#367](https://github.com/Oasis35/InSeconds/issues/367) | Relecture finale de la doc (CLAUDE.md, README FR/EN, ce dossier) après les parties de test | P5 | cette PR |
+| **P7** | [#448](https://github.com/Oasis35/InSeconds/issues/448) | Les suites du proto 1 (ce que la relecture a trouvé de non fait) : parties de test et réglage des seuils, panneaux Grafana des métriques `runs`, synchronisation entre onglets, captures réelles, deux points à trancher (le lien « Voir les autres joueurs », « X % ont échoué ») | P6 | - |
 
-Après le proto 1, Clément organise des parties de test sur le staging, puis en prod avec quelques comptes. Il règle ensuite les seuils et la difficulté avant le proto 2.
+Le proto 1 est livré. La suite : Clément organise des parties de test sur le staging, puis en prod avec quelques comptes, et règle ensuite les seuils et la difficulté avant le proto 2. Les petites suites du proto 1 (panneaux Grafana, synchronisation entre onglets, captures réelles) sont dans [`../taches.md`](../taches.md).
 
 ## Bonus et contraintes (idées pour le proto 2 et après)
 
