@@ -29,8 +29,9 @@ describe('StreakPillComponent', () => {
   it('mode on : série et gels en texte, sans pastille ni lueur', () => {
     const { button, text } = render();
     expect(button.dataset['mode']).toBe('on');
-    expect(text()).toContain('12');
-    expect(text()).toContain('2');
+    // Pluriels de la langue (12 jours, 2 gels) : sans traductions chargées, ce sont les clés qui s'affichent.
+    expect(text()).toContain('daily.streakFreeze.pillDays.other');
+    expect(text()).toContain('daily.streakFreeze.pillFreezes.other');
     expect(button.querySelectorAll('app-streak-icon')).toHaveLength(2);
     expect(getComputedStyle(button).boxShadow).toBe('none');
     expect(button.style.animation).toBe('');
