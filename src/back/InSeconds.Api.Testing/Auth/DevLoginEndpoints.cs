@@ -27,8 +27,6 @@ public static class DevLoginEndpoints
                 return Problem(ApiProblem.Of(StatusCodes.Status400BadRequest, ErrorCodes.BadRequest, "Adresse ou pseudo invalide."));
 
             var plan = await accountSignIn.PrepareAsync(RequestMagicLinkEndpoint.NormalizeEmail(request.Email), request.Pseudo, ct);
-            if (plan.AccountUnavailable)
-                return Problem(PlayersProblems.InvalidOrExpiredToken());
             if (plan.PseudoTaken)
                 return Problem(PlayersProblems.PseudoTaken());
             if (plan.NeedsPseudo)

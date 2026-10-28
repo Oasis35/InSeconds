@@ -147,7 +147,7 @@ public class AdminChallengesTests(PostgresFixture postgres) : IAsyncLifetime
         var (alice, _, _) = await SeedDayAsync(Closable);
         await RecomputeAsync(Closable);
 
-        await _game.DeletePlayerAsync(alice);
+        await _game.ErasePlayerAsync(alice);
 
         var day = (await StatsAsync()).Single();
 

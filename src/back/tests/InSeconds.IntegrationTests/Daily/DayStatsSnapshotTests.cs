@@ -151,7 +151,7 @@ public class DayStatsSnapshotTests(PostgresFixture postgres) : IAsyncLifetime
     public async Task Photo_ExclutLesJoueursSupprimes()
     {
         var (alice, bob, _) = await SeedClosedDayAsync(Closable);
-        await _game.DeletePlayerAsync(bob);
+        await _game.ErasePlayerAsync(bob);
 
         var stats = (await RecomputeAsync(Closable)).Stats;
 

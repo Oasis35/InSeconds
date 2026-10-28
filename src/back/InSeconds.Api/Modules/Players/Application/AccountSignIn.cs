@@ -26,9 +26,6 @@ public sealed record AccountSignInPlan(
     Guid? GuestToConvert,
     (Guid PlayerId, int DeviceSessionId)? PreviousDeviceSession)
 {
-    /// <summary>Le compte de cette adresse appartient à un joueur supprimé : pas de connexion.</summary>
-    public bool AccountUnavailable => ExistingAccount is { PlayerDeleted: true };
-
     /// <summary>Pas de compte pour cette adresse, et pas encore de pseudo pour le créer.</summary>
     public bool NeedsPseudo => ExistingAccount is null && Pseudo is null;
 }
@@ -70,7 +67,7 @@ public sealed class AccountSignIn(
     /// </summary>
     public async Task<AccountSignInResult> ExecuteAsync(AccountSignInPlan plan, CancellationToken ct)
     {
-        if (plan.AccountUnavailable || plan.NeedsPseudo || plan.PseudoTaken)
+        if (plan.NeedsPseudo || plan.PseudoTaken)
             throw new InvalidOperationException("Connexion impossible : le plan aurait dû être refusé avant.");
 
         var now = time.GetUtcNow();

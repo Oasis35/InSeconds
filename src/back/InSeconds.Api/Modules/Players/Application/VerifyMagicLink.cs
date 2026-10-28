@@ -62,7 +62,7 @@ public static class VerifyMagicLinkEndpoint
 
     public static ProblemDetails Validate(MagicLinkAttempt attempt) => attempt switch
     {
-        { Token: null } or { Plan.AccountUnavailable: true } => PlayersProblems.InvalidOrExpiredToken(),
+        { Token: null } => PlayersProblems.InvalidOrExpiredToken(),
         { Plan.PseudoTaken: true } => PlayersProblems.PseudoTaken(),
         _ => WolverineContinue.NoProblems,
     };

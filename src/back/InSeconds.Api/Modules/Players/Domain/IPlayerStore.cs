@@ -82,5 +82,5 @@ public interface IPlayerStore
     Task EraseAsync(Guid playerId, CancellationToken ct);
 }
 
-/// <summary>Le compte trouvé pour une adresse, et l'état de son joueur.</summary>
-public sealed record AccountLookup(Guid PlayerId, bool IsAdmin, bool PlayerDeleted);
+/// <summary>Le compte trouvé pour une adresse.</summary>
+public sealed record AccountLookup(Guid PlayerId, bool IsAdmin);

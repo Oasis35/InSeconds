@@ -77,7 +77,7 @@ public static class E2EEndpoints
             // Après un reset, le cache de validation (une minute) peut encore croire à l'ancien joueur du cookie : il n'existe plus.
             if (plan.GuestToConvert is { } guest && !await db.Set<Player>().AnyAsync(p => p.Id == guest, ct))
                 plan = plan with { GuestToConvert = null, PreviousDeviceSession = null };
-            if (plan.AccountUnavailable || plan.PseudoTaken)
+            if (plan.PseudoTaken)
                 return Results.Conflict();
 
             // Hors de Wolverine : pas de transaction automatique, et le gel offert à la création du compte prend un verrou qui en exige une.

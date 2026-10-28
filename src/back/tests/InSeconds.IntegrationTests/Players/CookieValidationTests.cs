@@ -74,18 +74,6 @@ public class CookieValidationTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task JoueurSupprime_CookieRejete()
-    {
-        var client = _api.CreateClient();
-        var playerId = await PostGuestAsync(client);
-
-        await _api.ExecuteAsync($"UPDATE players.players SET deleted_at = now() WHERE id = '{playerId}'");
-        _time.Advance(TimeSpan.FromSeconds(61));
-
-        Assert.Equal(HttpStatusCode.NoContent, (await client.GetAsync("/api/players/me", Ct)).StatusCode);
-    }
-
-    [Fact]
     public async Task DerniereVisite_NoteeAuPlusToutesLes5Minutes()
     {
         var client = _api.CreateClient();

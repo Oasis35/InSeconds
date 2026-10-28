@@ -185,7 +185,7 @@ public class TodayStatsTests(PostgresFixture postgres) : IAsyncLifetime
         await gone.FinishAsync((await gone.StartAsync()).SessionId, seconds: 10);
         Assert.Equal(2, (await StatsAsync(alice.Client)).TotalPlayers);
 
-        await _game.DeletePlayerAsync(gone.Id);
+        await _game.ErasePlayerAsync(gone.Id);
 
         var stats = await StatsAsync(alice.Client);
         Assert.Equal((1, 4250, 4250), (stats.TotalPlayers, stats.MinScore, stats.MaxScore));

@@ -46,7 +46,7 @@ public class AdminPlayersTests(PostgresFixture postgres) : IAsyncLifetime
         await _game.NewPlayerAsync();
         var alice = await _game.NewPlayerAsync("Alice");
         var gone = await _game.NewPlayerAsync("Gone");
-        await _game.DeletePlayerAsync(gone.Id);
+        await _game.ErasePlayerAsync(gone.Id);
 
         var players = await ListAsync();
 
@@ -199,7 +199,7 @@ public class AdminPlayersTests(PostgresFixture postgres) : IAsyncLifetime
         await GameAsserts.ProblemAsync(await _game.App.Admin().GetAsync(HistoryRoute(Guid.NewGuid()), Ct), HttpStatusCode.NotFound, "common.not_found");
 
         var gone = await _game.NewPlayerAsync("Gone");
-        await _game.DeletePlayerAsync(gone.Id);
+        await _game.ErasePlayerAsync(gone.Id);
         await GameAsserts.ProblemAsync(await _game.App.Admin().GetAsync(HistoryRoute(gone.Id), Ct), HttpStatusCode.NotFound, "common.not_found");
     }
 
