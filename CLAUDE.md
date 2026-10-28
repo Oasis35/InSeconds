@@ -31,6 +31,7 @@ Tous les ports InSeconds en `51xx` par convention (4200 est pris par d'autres pr
 
 ```
 InSeconds/
+├── .claude/                        # hooks et sous-agents Claude Code (cf. § Hooks et sous-agents)
 ├── docker-compose.yml              # dev local : PostgreSQL
 ├── docker-compose.staging.yml      # staging
 ├── docker-compose.prod.yml         # prod
@@ -194,6 +195,20 @@ VPS OVH (Debian 13, Gravelines, 2 vCores, 4 Go, 40 Go) partagé avec de futurs p
 - **Author ET committer de CHAQUE commit doivent être l'utilisateur, jamais Claude** - l'identité git par défaut de cet environnement (`user.name`/`user.email`, ex. `Claude <noreply@anthropic.com>`) ne doit **jamais** apparaître dans l'historique, ni comme author ni comme committer, aucune exception. `git commit --author="<nom> <email>"` seul est **insuffisant** : ça ne fixe que l'author, le committer retombe silencieusement sur `user.name`/`user.email` de la config git locale (ne jamais modifier cette config globale, cf. règles de sécurité git). Poser explicitement les deux avant chaque commit, ex. `GIT_AUTHOR_NAME="..." GIT_AUTHOR_EMAIL="..." GIT_COMMITTER_NAME="..." GIT_COMMITTER_EMAIL="..." git commit -m "..."` (variables d'environnement locales à la commande, pas de `git config`). Vérifier après coup avec `git log --format='%an <%ae> | %cn <%ce>' -1`. Si des commits déjà poussés ont un committer incorrect, les corriger (`git filter-branch --env-filter ...` sur la plage concernée, jamais `rebase -i`) puis `git push --force-with-lease` sur la branche de travail (jamais sur `main`).
 - Préférer commits atomiques, messages clairs (FR ou EN, peu importe)
 - Branche de travail : `feat/<sujet>` (ex: `feat/redis-cache`), jamais de commit direct sur `main` ni `env/staging`. Cible des PR : `env/staging` (déployée sur le staging pour y être testée), puis une PR `env/staging` → `main` pour la prod ; `main` directement seulement pour un correctif urgent de la prod (cf. [État du dépôt](#état-du-dépôt)). Une demande de suivi = un commit de plus sur la même branche
+
+## Hooks et sous-agents Claude Code
+
+Versionnés dans `.claude/` (le reste de `.claude/`, dont `settings.local.json`, reste local). Les hooks sont des scripts Node sans dépendance (`.claude/hooks/*.mjs`), branchés dans `.claude/settings.json` ; un hook qui plante laisse passer (il ne bloque que sur une règle enfreinte). Tests : `node --test .claude/hooks/tests/hooks.test.mjs` (dépôts git jetables, pas de CI).
+
+| Hook | Quand | Effet |
+|---|---|---|
+| `protected-branches` | avant une commande Bash | refuse un `commit` / `merge` / `revert` / `cherry-pick` / `am` sur `main` ou `env/staging`, et tout `git push` vers l'une d'elles (`origin main`, `HEAD:main`, `--delete`, `--all`, `git push` nu depuis `main`) ; suit un `git checkout -b` fait plus tôt dans la même commande ; un `git pull` reste permis |
+| `commit-identity` | avant une commande Bash | refuse un commit dont l'author ou le committer n'est pas `Clément <clement.rageau@gmail.com>` (variables `GIT_*` de la commande ou d'un `export`, sinon config git ; `--author`, `--amend` compris), ou dont le message (y compris `-F`) a une ligne `Co-Authored-By` ; vérifie aussi le committer de `merge`, `revert`, `pull`, `rebase`, `cherry-pick`, `am` (`--ff-only` suffit pour un pull ou un merge sans commit de fusion) |
+| `lint-before-commit` | avant un `git commit` | sur les fichiers modifiés : `git diff --check` hors Markdown, `dotnet format whitespace` sur les `.cs` touchés (hors code généré et migrations), `npm run lint:arch` si le front est touché ; un outil absent est signalé sans bloquer |
+| `no-em-dash` | avant Write, Edit, MultiEdit, NotebookEdit, un Bash qui écrit (commit, `gh`, redirection, `tee`, `sed -i`) et les outils GitHub | refuse tout tiret cadratin (U+2014) ; le dépôt n'en contient aucun |
+| `grafana-reminder` | après l'édition d'un `.cs` | si un texte de filtre Loki ou un nom de métrique lu par `deploy/grafana/*.json` disparaît du fichier, rappelle de mettre le tableau à jour (ne bloque rien) |
+
+Sous-agents (`.claude/agents/`, en lecture seule, ils rendent des constats sans rien modifier) : `relecteur-pr` (relecture du diff avant de dire qu'une PR est prête : bugs, règles dures, fichiers générés, tests, doc), `gardien-code` (architecture et SOLID : frontières des modules, couches, ports, décisions déjà prises), `gardien-da` (direction artistique : mobile first, une couleur = un sens, rien qui fasse « généré par IA »), `gardien-rgpd` (journaux sans donnée personnelle, effacement et export complets, `/privacy` et `docs/conformite/rgpd.md` à jour). Leur règle de référence reste ce fichier et les docs qu'ils citent : une règle qui change ici change aussi dans l'agent ou le hook concerné.
 
 ## CI et règles de push
 
