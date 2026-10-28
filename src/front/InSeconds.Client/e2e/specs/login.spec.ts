@@ -148,8 +148,8 @@ test.describe('Connexion par lien magique', () => {
     // Même libellé que le bouton du profil : la confirmation du panneau est rendue après lui.
     await page.getByRole('button', { name: 'Se déconnecter', exact: true }).last().click();
 
-    // Revenu à l'état guest : la silhouette du bandeau du jeu mène à la page de connexion.
-    const loginLink = page.locator('app-account-link').getByRole('link', { name: 'Se connecter' });
+    // Revenu à l'état guest : « Connexion », en haut à droite du jeu, mène à la page de connexion.
+    const loginLink = page.locator('app-account-link').getByRole('link', { name: 'Connexion' });
     await expect(loginLink).toBeVisible();
     await loginLink.click();
     await expect(page).toHaveURL(/\/account\/login$/);

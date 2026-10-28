@@ -37,7 +37,6 @@ import { HomeModeEntriesComponent } from '../../core/shell/home-mode-entries/hom
 import { ScoreCountComponent } from '../ui/score-count/score-count.component';
 import { countUp } from '../ui/score-count/count-up';
 import { StatusScreenComponent } from '../ui/status-screen/status-screen.component';
-import { StreakPillComponent } from '../ui/streak-pill/streak-pill.component';
 import { StreakSheetComponent, StreakSheetData, StreakSheetResult } from '../ui/streak-sheet/streak-sheet.component';
 import { ThanksDialogComponent, ThanksDialogData } from '../ui/thanks-dialog/thanks-dialog.component';
 import { WelcomeScreenComponent } from '../ui/welcome-screen/welcome-screen.component';
@@ -59,7 +58,7 @@ type ThanksScreen = 'done' | 'already_played';
   imports: [
     TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, BrandComponent, DailyProgressComponent, DailyFooterComponent,
     WelcomeScreenComponent, ResumeScreenComponent, HomeModeEntriesComponent, StatusScreenComponent, AbandonedScreenComponent, DayResultScreenComponent,
-    StreakPillComponent, GuestStreakToastComponent, LostStreakToastComponent, GelUsedToastComponent, GelEarnedToastComponent,
+    GuestStreakToastComponent, LostStreakToastComponent, GelUsedToastComponent, GelEarnedToastComponent,
     DeezerBadgeComponent, ScoreCountComponent, AccountLinkComponent,
   ],
   providers: [DailyGameStore, TrackRoundStore, DailyShare, ThanksNotice, LostStreakNotice, GuestStreakNotice],

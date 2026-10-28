@@ -4,8 +4,8 @@ import { Streak, pluralKey, streakPillMode } from '../../domain/streak';
 import { StreakIconComponent } from '../streak-icon/streak-icon.component';
 
 /**
- * Gélule de série de l'en-tête (flamme + série, et stock de gels pour un compte connecté). Le parent la
- * positionne ; un clic émet `open` (panneau de série).
+ * Relevé de série sous « Commencer » : flamme et jours de série, puis le stock de gels pour un compte connecté, en texte, sans pastille ni
+ * lueur. Rien quand aucune série n'est en cours. Un toucher émet `open` (panneau de série).
  */
 @Component({
   selector: 'app-streak-pill',
@@ -16,19 +16,11 @@ import { StreakIconComponent } from '../streak-icon/streak-icon.component';
 export class StreakPillComponent {
   readonly streak = input.required<Streak | null>();
   readonly linked = input.required<boolean>();
-  /** Pulse ×3 sur demande (gel gagné), pour la gélule d'un compte connecté. */
-  readonly pulse = input(false);
   readonly open = output<void>();
 
   protected readonly labelKey = computed(() => `daily.streakFreeze.pillLabel.${pluralKey(this.streak()?.streak ?? 0)}`);
+  protected readonly daysKey = computed(() => `daily.streakFreeze.pillDays.${pluralKey(this.streak()?.streak ?? 0)}`);
+  protected readonly freezesKey = computed(() => `daily.streakFreeze.pillFreezes.${pluralKey(this.streak()?.freezes ?? 0)}`);
 
   protected readonly pillMode = computed(() => streakPillMode(this.streak(), this.linked()));
-
-  /** Pulse ×3 : toujours sur « protégée », sur demande (gel gagné) pour la gélule connectée. */
-  protected readonly animation = computed(() => {
-    const mode = this.pillMode();
-    return mode === 'protected' || (mode === 'on' && this.pulse())
-      ? 'gel-pulse .9s ease-in-out .2s 3'
-      : null;
-  });
 }

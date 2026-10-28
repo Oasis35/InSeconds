@@ -26,6 +26,8 @@
       style="font-family:var(--font-display);background:var(--gradient-primary);color:var(--text-on-primary);letter-spacing:0.06em;box-shadow:var(--glow-primary)">
       {{ 'daily.welcome.start' | translate }}
     </button>
+    <!-- La série sous le bouton qui la fait monter (elle n'est plus dans l'en-tête) ; un toucher ouvre le panneau de série. -->
+    <div class="flex justify-center -my-1.5"><app-streak-pill [streak]="streak()" [linked]="linked()" (open)="openStreak.emit()" /></div>
 
     @if (!linked()) {
       @if (!hideLoginCta()) {

@@ -1,7 +1,6 @@
 import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
 import { ArchiveDay, ArchiveMe, NOBODY, isDateText, mostMissedPosition } from '../domain/archive';
-import { DailyToday } from '../domain/daily';
 import { DailyApi } from './daily.api';
 
 export type ArchiveStatus = 'loading' | 'ready' | 'not_found' | 'error';
@@ -16,10 +15,9 @@ interface ArchiveState {
   /** Les jours publiés, pour le calendrier ; lus une fois, à la première ouverture. */
   dates: readonly string[] | null;
   /** L'état du jour, pour la gélule de série de l'en-tête ; vide tant que ce n'est pas lu. */
-  today: DailyToday | null;
 }
 
-const initialState: ArchiveState = { status: 'loading', date: '', day: null, me: NOBODY, dates: null, today: null };
+const initialState: ArchiveState = { status: 'loading', date: '', day: null, me: NOBODY, dates: null };
 
 /**
  * La page d'un jour passé (#407) : les réponses de tous (route publique, mise en cache), puis ce qu'en a fait le joueur reconnu (route à part,
@@ -69,15 +67,6 @@ export const ArchiveStore = signalStore(
           }
         }
         return store.dates() ?? [];
-      },
-
-      /** La série du joueur, pour la gélule de l'en-tête (rien n'est créé). */
-      async loadToday(): Promise<void> {
-        try {
-          patchState(store, { today: await api.today() });
-        } catch {
-          // la page s'affiche sans gélule
-        }
       },
     };
   }),

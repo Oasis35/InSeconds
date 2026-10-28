@@ -6,7 +6,7 @@ import { linkAccount } from '../pages/login.page';
 import { ApiTestClient } from '../fixtures/api-client';
 
 /**
- * Gel de série (maquette InSeconds Game.dc.html) : gélule du header, panneau série/gel,
+ * Gel de série (maquette InSeconds Game.dc.html) : relevé de série sous « Commencer », panneau série/gel,
  * accueil « Bon retour ! », toasts de fin de partie et toast invité « série perdue ».
  * L'état de série est posé via POST /api/e2e/set-streak (Testing-only).
  */
@@ -36,7 +36,7 @@ test.describe('Gel de série - compte connecté', () => {
     await api.reset();
   });
 
-  test('série active, stock plein : la gélule affiche série et gels, le panneau annonce le stock plein (plus de progression)', async ({ page, api }) => {
+  test('série active, stock plein : le relevé affiche série et gels, le panneau annonce le stock plein (plus de progression)', async ({ page, api }) => {
     await linkAccount(page, api, 'freeze-active@e2e.test', 'FreezeActifE2E');
     await setStreak(page, api, { streak: 12, lastPlayedDaysAgo: 1, freezes: 2 });
 
@@ -78,7 +78,7 @@ test.describe('Gel de série - compte connecté', () => {
     await expect(sheet(page).getByText('Stock plein', { exact: false })).not.toBeVisible();
   });
 
-  test('série protégée : « Bon retour ! », gel engagé retiré de la gélule, panneau avec frise, puis toast « 1 gel a sauvé ta série »', async ({ page, api }) => {
+  test('série protégée : « Bon retour ! », gel engagé retiré du relevé, panneau avec frise, puis toast « 1 gel a sauvé ta série »', async ({ page, api }) => {
     await page.clock.install({ time: Date.now() });
     await linkAccount(page, api, 'freeze-protected@e2e.test', 'FreezeProtegeE2E');
     await setStreak(page, api, { streak: 12, lastPlayedDaysAgo: 2, freezes: 2 });
@@ -90,8 +90,8 @@ test.describe('Gel de série - compte connecté', () => {
     await expect(page.getByRole('heading', { name: 'Bon retour !' })).toBeVisible();
     await expect(page.getByTestId('frozen-line')).toContainText('12 jours de série');
     await expect(pill(page)).toHaveAttribute('data-mode', 'protected');
-    // 2 gels en stock, 1 déjà engagé sur le jour manqué : la gélule en affiche 1 (pas 2).
-    await expect(pill(page)).toHaveText(/12\s*1/);
+    // 2 gels en stock, 1 déjà engagé sur le jour manqué : le relevé en affiche 1 (pas 2).
+    await expect(pill(page)).toHaveText(/12 jours\s*·\s*1 gel/);
 
     await pill(page).click();
     await expect(sheet(page)).toHaveAttribute('data-variant', 'protected');
@@ -119,12 +119,8 @@ test.describe('Gel de série - compte connecté', () => {
 
     await expect(page.getByTestId('gel-earned-toast')).toContainText('+1 gel');
     await expect(page.getByTestId('gel-earned-toast')).toContainText('7 jours de série');
-    await expect(pill(page)).toContainText('7');
-
-    // Le panneau donne aussi les parties terminées du compte, à côté de la série (#283).
-    await pill(page).click();
-    await expect(sheet(page).getByText('Série de 7 jours')).toBeVisible();
-    await expect(sheet(page).getByTestId('streak-sheet-games')).toHaveText('· 1 partie');
+    // La série n'est plus dans l'en-tête : l'écran de résultat ne l'affiche pas (seulement l'accueil, sous « Commencer »).
+    await expect(pill(page)).toHaveCount(0);
   });
 });
 
@@ -144,7 +140,8 @@ test.describe('Gel de série - invité', () => {
     const toast = page.getByTestId('lost-streak-toast');
     await expect(toast).toContainText('6 jours');
     await expect(toast).toContainText('Le premier est offert.');
-    await expect(pill(page)).toHaveAttribute('data-mode', 'lost');
+    // Plus de série en cours : pas de relevé sous « Commencer ».
+    await expect(pill(page)).toHaveCount(0);
     await expect(page.getByText('Pour garder ta série sur tous tes appareils.')).toBeHidden();
 
     await toast.getByRole('button', { name: 'Fermer' }).click();

@@ -397,19 +397,4 @@ describe('ProfilePage', () => {
 
     expect(query(fixture, 'app-browser-id')).toBeNull();
   });
-
-  describe('lien admin', () => {
-    it("s'affiche en haut de la page pour un admin", async () => {
-      const admin = { ...linkedPlayer, isAdmin: true };
-      const fixture = await render({ getMe: vi.fn(async () => admin) }, admin);
-
-      expect(query<HTMLAnchorElement>(fixture, '[data-testid="profile-admin"]')?.getAttribute('href')).toBe('/admin');
-    });
-
-    it("ne s'affiche pas pour un joueur", async () => {
-      const fixture = await render();
-
-      expect(query(fixture, '[data-testid="profile-admin"]')).toBeNull();
-    });
-  });
 });

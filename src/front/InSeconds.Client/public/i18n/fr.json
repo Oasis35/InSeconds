@@ -94,9 +94,11 @@
       "later": "Plus tard"
     },
     "header": {
-      "login": "Se connecter",
+      "login": "Connexion",
       "profile": "Mon profil",
-      "avatarTitle": "Mon profil : {{ pseudo }}"
+      "avatarTitle": "Mon profil : {{ pseudo }}",
+      "archive": "Jours passés",
+      "admin": "Admin"
     }
   },
   "ui": {
@@ -244,8 +246,7 @@
         "cancel": "Annuler",
         "done": "Ton compte est supprimé."
       },
-      "backToGame": "Retour au jeu",
-      "admin": "Admin"
+      "backToGame": "Retour au jeu"
     },
     "devices": {
       "title": "Appareils connectés",
@@ -650,6 +651,14 @@
         "other": "Série de {{ streak }} jours, voir le détail"
       },
       "pillProtectedLabel": "Série protégée",
+      "pillDays": {
+        "one": "{{ n }} jour",
+        "other": "{{ n }} jours"
+      },
+      "pillFreezes": {
+        "one": "{{ n }} gel",
+        "other": "{{ n }} gels"
+      },
       "welcomeBack": "Bon retour !",
       "frozenLineBefore": "Tes",
       "frozenLineStrong": {
