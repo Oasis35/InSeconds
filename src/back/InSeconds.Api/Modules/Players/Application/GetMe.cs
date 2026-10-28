@@ -22,7 +22,7 @@ public interface IPlayerQueries
 public static class GetMeEndpoint
 {
     /// <summary>
-    /// <c>GET /api/players/me</c> : lecture seule, 204 sans identité. Ne crée jamais de joueur (R7) :
+    /// <c>GET /api/players/me</c> : lecture seule, 204 sans identité. Ne crée jamais de joueur :
     /// le front appelle d'abord <c>POST /api/players/guest</c> quand il lui en faut un.
     /// </summary>
     [WolverineGet("/api/players/me", OperationId = "getMe")]

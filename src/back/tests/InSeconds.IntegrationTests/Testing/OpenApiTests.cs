@@ -1,7 +1,7 @@
 namespace InSeconds.IntegrationTests.Testing;
 
 /// <summary>
-/// Document OpenAPI du module Players (B5, § 6.1 du plan v2) : servi par l'hôte de test seulement, pour
+/// Document OpenAPI du module Players : servi par l'hôte de test seulement, pour
 /// générer le client NSwag du front. Absent de l'API de prod (S9).
 /// </summary>
 public class OpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(postgres, "players")

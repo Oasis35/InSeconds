@@ -8,12 +8,12 @@ namespace InSeconds.Api.Infrastructure.Hosting;
 /// <c>dotnet InSeconds.Api.dll --rotate-data-protection-key</c> : crée une clé Data Protection neuve,
 /// tout de suite active, puis s'arrête. Rien d'autre ne démarre (comme <c>--migrate-only</c>).
 ///
-/// À lancer <b>juste après chaque import</b> des données v1 (PR B4). L'import copie les clés de la v1,
-/// <b>en clair</b> (la v1 ne les chiffre pas) : sans clé neuve, la plus récente d'entre elles encore
-/// valable (jusqu'à 90 jours) deviendrait la clé par défaut de la v2, et chiffrerait les nouveaux cookies
-/// avec une clé lisible en base, ce que S16 doit éviter. La clé créée ici passe par le chiffrement du
-/// certificat (<see cref="DataProtectionSetup"/>) et devient la clé par défaut ; les clés de la v1 restent
-/// en place, pour relire les cookies v1 jusqu'à leur remplacement.
+/// À lancer <b>juste après chaque copie de base</b> (prod vers staging, <c>copy-prod-db-to-staging.sh</c>) : sans clé
+/// neuve, une clé copiée ou une ancienne clé encore valable (jusqu'à 90 jours), parfois en clair (celles des anciens
+/// cookies ne sont pas chiffrées), deviendrait la clé par défaut et chiffrerait les nouveaux cookies avec une clé
+/// lisible en base, ce que S16 doit éviter. La clé créée ici passe par le chiffrement du certificat
+/// (<see cref="DataProtectionSetup"/>) et devient la clé par défaut ; les anciennes clés restent en place, pour
+/// relire les anciens cookies jusqu'à leur remplacement.
 /// </summary>
 public static class RotateDataProtectionKeyCommand
 {

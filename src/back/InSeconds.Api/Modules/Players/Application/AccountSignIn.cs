@@ -30,13 +30,13 @@ public sealed record AccountSignInPlan(
     public bool NeedsPseudo => ExistingAccount is null && Pseudo is null;
 }
 
-/// <param name="Outcome"><c>Found</c> (compte existant) ou <c>Linked</c> (compte créé), comme le journal v1.</param>
+/// <param name="Outcome"><c>Found</c> (compte existant) ou <c>Linked</c> (compte créé), valeurs lues par les tableaux de bord.</param>
 public sealed record AccountSignInResult(Guid PlayerId, string Outcome);
 
 /// <summary>
 /// La connexion d'une adresse vérifiée, quel que soit le moyen de vérification (lien magique, dev-login
-/// de l'hôte de test, plus tard Google) : la logique d'identité n'existe qu'ici (v1 :
-/// <c>AccountLinkingService</c>). Rien n'est enregistré : la transaction est celle de l'appelant.
+/// de l'hôte de test, plus tard Google) : la logique d'identité n'existe qu'ici.
+/// Rien n'est enregistré : la transaction est celle de l'appelant.
 /// </summary>
 public sealed class AccountSignIn(
     IPlayerStore store,

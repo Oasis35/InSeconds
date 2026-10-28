@@ -6,12 +6,12 @@ using Microsoft.AspNetCore.DataProtection;
 namespace InSeconds.Api.Modules.Players.Auth;
 
 /// <summary>
-/// Reprise des cookies v1 sans déconnecter personne (§ 5.5 du plan v2). Le cookie v1
-/// <c>authToken</c> ne contient que le jeton du joueur, chiffré par Data Protection avec les
-/// paramètres de la v1 (nom d'application <c>InSeconds</c>, purpose <c>InSeconds.Auth.Cookie</c>,
-/// R10) et les mêmes clés (copiées à l'import). Le jeton est haché et cherché dans
-/// <c>legacy_tokens</c> (S6) ; s'il y est, le navigateur reçoit un cookie v2 sur une nouvelle session
-/// d'appareil : en v1, tous les appareils d'un compte partagent le même jeton (R1). Un même jeton
+/// Reprise des anciens cookies sans déconnecter personne. L'ancien cookie
+/// <c>authToken</c> ne contient que le jeton du joueur, chiffré par Data Protection avec ses
+/// paramètres d'origine (nom d'application <c>InSeconds</c>, purpose <c>InSeconds.Auth.Cookie</c>)
+/// et ses clés d'origine (dans <c>infra.data_protection_keys</c>). Le jeton est haché et cherché dans
+/// <c>legacy_tokens</c> (S6) ; s'il y est, le navigateur reçoit un cookie d'appareil sur une nouvelle
+/// session : tous les appareils d'un compte partagent le même ancien jeton. Un même jeton
 /// converti depuis moins d'une minute retrouve sa session au lieu d'en ouvrir une autre
 /// (<see cref="LegacyConversionCache"/>). L'ancien cookie est ensuite supprimé, qu'il ait servi ou non.
 /// </summary>
@@ -20,7 +20,7 @@ internal sealed class LegacyCookieTransitionMiddleware(
 {
     public const string CookieName = "authToken";
 
-    /// <summary>Purpose Data Protection du cookie v1 (<c>CookieAuthService</c> de la v1).</summary>
+    /// <summary>Purpose Data Protection de l'ancien cookie.</summary>
     public const string Purpose = "InSeconds.Auth.Cookie";
 
     private readonly IDataProtector _protector = dataProtection.CreateProtector(Purpose);
@@ -33,7 +33,7 @@ internal sealed class LegacyCookieTransitionMiddleware(
             return;
         }
 
-        // Déjà un cookie v2 valide : il l'emporte, l'ancien ne sert plus.
+        // Déjà un cookie d'appareil valide : il l'emporte, l'ancien ne sert plus.
         if (context.User.Identity?.IsAuthenticated != true && TryReadToken(raw, out var token))
         {
             // Une erreur de base remonte (500) et garde l'ancien cookie : rien n'est perdu (piège 37).
@@ -64,7 +64,7 @@ internal sealed class LegacyCookieTransitionMiddleware(
         }
         catch (Exception ex) when (ex is CryptographicException or FormatException)
         {
-            // Cookie falsifié, ou chiffré par une clé que la v2 n'a pas.
+            // Cookie falsifié, ou chiffré par une clé que l'API n'a pas.
             token = Guid.Empty;
             return false;
         }

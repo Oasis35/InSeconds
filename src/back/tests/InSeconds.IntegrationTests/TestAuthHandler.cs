@@ -11,7 +11,7 @@ namespace InSeconds.IntegrationTests;
 
 /// <summary>
 /// Joueur simulé par deux en-têtes, pour les tests d'autorisation des routes. Les tests du cookie
-/// lui-même (B1) n'envoient pas ces en-têtes : ils passent par le vrai cookie de l'API.
+/// lui-même n'envoient pas ces en-têtes : ils passent par le vrai cookie de l'API.
 /// </summary>
 public sealed record TestUser(Guid PlayerId, bool IsAdmin)
 {

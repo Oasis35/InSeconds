@@ -33,7 +33,7 @@ Clément, 18/10 : un écran qui existe déjà au Daily ne se redessine pas, il s
 
 Sans écran du tout :
 - **Accès refusé** (`runs.access_denied` sur `/runs`) : retour au Daily.
-- **Lien d'une playlist déjà jouée** : directement la comparaison (§ 5), livré en P5 ; une playlist en cours mène à l'écran de reprise.
+- **Lien d'une playlist déjà jouée** : directement la comparaison (§ 5) ; une playlist en cours mène à l'écran de reprise.
 
 ## 1. La manche
 

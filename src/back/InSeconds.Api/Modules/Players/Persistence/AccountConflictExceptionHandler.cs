@@ -8,7 +8,7 @@ namespace InSeconds.Api.Modules.Players.Persistence;
 /// Deux personnes prennent le même pseudo, ou la même adresse, au même moment : les deux passent la
 /// vérification préalable, l'index unique refuse la seconde à l'enregistrement. Réponse 409
 /// <c>players.pseudo_taken</c> ou <c>players.email_taken</c>, comme la vérification préalable, au lieu
-/// d'un 500 (v1 : erreur 23505 interceptée dans les handlers). La transaction est déjà annulée : jeton
+/// d'un 500 (erreur 23505). La transaction est déjà annulée : jeton
 /// non consommé, pas de cookie (la réponse est vidée avant ce gestionnaire).
 /// </summary>
 internal sealed class AccountConflictExceptionHandler(IProblemDetailsService problemDetails)

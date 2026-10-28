@@ -45,7 +45,7 @@ BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
 # Tout est vérifié avant de remplacer les conteneurs : en cas d'échec, la version en place continue de tourner.
 #
-# Certificat Data Protection (PLAN S16), chargé par l'API au démarrage : absent ou illisible, elle
+# Certificat Data Protection (S16), chargé par l'API au démarrage : absent ou illisible, elle
 # ne démarrerait pas. Contrôlé ici d'abord, avant que Docker ne crée un dossier vide à la place
 # d'un fichier absent, puis dans le conteneur.
 cert=secrets/dataprotection.pfx
@@ -64,7 +64,7 @@ fi
 # créés au démarrage de l'API).
 echo "Application des migrations ($target)..."
 compose run --rm -T api --migrate-only
-# Projet Compose renommé de inseconds-v2 en inseconds (I2) : ses conteneurs portent les mêmes noms, `up` buterait
+# Ancien nom du projet Compose (inseconds-v2) : ses conteneurs portent les mêmes noms, `up` buterait
 # dessus. Retirés une seule fois, juste avant de démarrer les nouveaux (quelques secondes d'arrêt).
 if [[ "$target" == prod ]]; then
   old=$(docker ps -aq --filter label=com.docker.compose.project=inseconds-v2)

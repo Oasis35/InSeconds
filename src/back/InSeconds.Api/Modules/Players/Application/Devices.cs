@@ -16,7 +16,7 @@ public sealed record DeviceResponse(int Id, string? Label, DateTimeOffset Create
 public sealed record RevokedDevicesResponse(int Revoked);
 
 /// <summary>
-/// Révocation côté serveur (§ 5.5) : la session est marquée révoquée et retirée du cache de validation,
+/// Révocation côté serveur : la session est marquée révoquée et retirée du cache de validation,
 /// son cookie est refusé dès la requête suivante, sur l'appareil concerné seulement (piège 39).
 /// </summary>
 internal static class DeviceRevocation
@@ -104,8 +104,8 @@ public static class RevokeOtherDevicesEndpoint
 {
     /// <summary>
     /// <c>POST /api/players/me/devices/revoke-others</c> : « déconnecter les autres appareils », tous sauf
-    /// celui de la requête. Les appareils qui ont encore un cookie v1 non converti en font partie : le
-    /// jeton v1 du joueur est supprimé (S6), l'appareil courant a déjà son cookie v2. Limité par joueur (S11).
+    /// celui de la requête. Les appareils qui ont encore un ancien cookie non converti en font partie : l'ancien
+    /// jeton du joueur est supprimé (S6), l'appareil courant a déjà son cookie d'appareil. Limité par joueur (S11).
     /// </summary>
     [Authorize]
     [WolverinePost("/api/players/me/devices/revoke-others", OperationId = "revokeOtherDevices")]

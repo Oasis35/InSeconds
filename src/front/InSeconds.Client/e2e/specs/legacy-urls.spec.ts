@@ -3,7 +3,7 @@ import { inSequence } from '../fixtures/sequence';
 import { GamePage } from '../pages/game.page';
 import { linkAccount } from '../pages/login.page';
 
-// Anciennes adresses de la v1 (v2 seulement, § 6.6 du plan) : les routes v2 vivent sous /daily et /account, les liens
+// Anciennes adresses : les routes vivent sous /daily et /account, les liens
 // déjà partagés, mis en favori ou envoyés par email doivent rester valables, query string comprise.
 
 /** `?…` des adresses testées : un paramètre quelconque, qui doit survivre à la redirection. */

@@ -11,7 +11,7 @@ using Wolverine.Http;
 namespace InSeconds.Api.Infrastructure.Jobs;
 
 /// <summary>
-/// Dernier passage d'une tâche récurrente, affiché en témoin dans l'onglet Actions de l'admin (§ 5.4 bis du plan v2).
+/// Dernier passage d'une tâche récurrente, affiché en témoin dans l'onglet Actions de l'admin.
 /// Lu dans Hangfire, qui garde le détail d'une exécution 7 jours (<see cref="JobsSetup.ExecutionRetention"/>).
 /// </summary>
 /// <param name="Id">Identifiant de la tâche (<c>daily-generate-challenge</c>, <c>catalogue-refresh</c>…).</param>

@@ -3,8 +3,8 @@ using Microsoft.Extensions.Logging;
 namespace InSeconds.Infrastructure.Email;
 
 /// <summary>
-/// Événements d'envoi d'email, avec les mêmes identifiants et les mêmes champs qu'en v1
-/// (<c>PlayerActionLog</c>) : les tableaux de bord existants continuent de fonctionner. Jamais
+/// Événements d'envoi d'email, aux identifiants et aux champs stables : les tableaux de bord
+/// Grafana les lisent. Jamais
 /// l'adresse du destinataire : le sujet et l'identifiant Brevo suffisent.
 /// </summary>
 internal static partial class EmailLog

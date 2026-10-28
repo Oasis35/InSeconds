@@ -22,7 +22,7 @@ public sealed record VerifyMagicLinkResponse(bool NeedsPseudo, string? Email = n
 
 public sealed class VerifyMagicLinkValidator : AbstractValidator<VerifyMagicLink>
 {
-    /// <summary>Liste de caractères permis plutôt que mots interdits, comme en v1 : 3 à 20 caractères.</summary>
+    /// <summary>Liste de caractères permis plutôt que mots interdits : 3 à 20 caractères.</summary>
     public const string PseudoPattern = @"^[\p{L}\p{N} _.-]{3,20}$";
 
     public VerifyMagicLinkValidator()

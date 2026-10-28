@@ -8,7 +8,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace InSeconds.IntegrationTests.Players;
 
-/// <summary><c>POST /api/players/guest</c> et <c>GET /api/players/me</c> (§ 5.5 et 5.6 du plan v2).</summary>
+/// <summary><c>POST /api/players/guest</c> et <c>GET /api/players/me</c>.</summary>
 public class GuestTests(PostgresFixture postgres) : IAsyncLifetime
 {
     private string _connectionString = null!;

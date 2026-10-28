@@ -19,7 +19,7 @@ public enum StreakStatus
 }
 
 /// <summary>
-/// La série effective d'un joueur, vue d'un jour donné (v1 : <c>StreakView</c>). Calculée à la lecture : la série stockée ne se
+/// La série effective d'un joueur, vue d'un jour donné. Calculée à la lecture : la série stockée ne se
 /// recalcule qu'à la complétion d'une partie, et resterait figée sinon.
 /// </summary>
 /// <param name="Freezes">Gels en stock, déduction faite de ceux déjà engagés sur les jours manqués d'une série protégée.</param>
@@ -33,9 +33,9 @@ public sealed record StreakView(
 public sealed record StreakCompletion(int FreezesUsed, bool FreezeEarned);
 
 /// <summary>
-/// La série d'un joueur et son stock de gels (§ 4.4 du plan v2, table <c>streaks</c> : elle n'existe que pour ce mode). Pas de ligne =
+/// La série d'un joueur et son stock de gels (table <c>streaks</c> : elle n'existe que pour ce mode). Pas de ligne =
 /// aucune série. **Toujours calculée sur la date du défi**, jamais sur la date de la complétion (piège 18) : terminer le défi de la
-/// veille après minuit ne casse pas la série. Les règles sont celles de la v1.
+/// veille après minuit ne casse pas la série.
 /// </summary>
 public sealed class DailyStreak
 {
@@ -52,7 +52,7 @@ public sealed class DailyStreak
     /// <summary>Gels en stock : toujours 0 pour un invité.</summary>
     public short Freezes { get; private set; }
 
-    /// <summary>Gel offert à la création d'un compte (v1 : <c>Player.SignupFreezeGift</c>).</summary>
+    /// <summary>Gel offert à la création d'un compte.</summary>
     public const int AccountCreationFreezeGift = 1;
 
     public static DailyStreak Create(Guid playerId) => new() { PlayerId = playerId };
@@ -119,7 +119,7 @@ public sealed class DailyStreak
 
         // Série protégée : les gels qui couvrent les jours manqués ne sont retirés du stock qu'à la complétion, mais ils sont déjà
         // engagés. On montre le stock restant (sinon la gélule afficherait encore le stock plein alors que l'accueil annonce qu'un gel
-        // a servi, bug signalé en v1 le 2026-09-29).
+        // a servi).
         var shownFreezes = status == StreakStatus.Protected ? freezes - missed : freezes;
 
         int? nextFreezeInDays = !isLinked || rules.FreezeEveryDays <= 0

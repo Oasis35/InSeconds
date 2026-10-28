@@ -6,7 +6,7 @@ using static InSeconds.IntegrationTests.Daily.DailyApi;
 namespace InSeconds.IntegrationTests.Daily;
 
 /// <summary>
-/// L'onglet Joueurs de l'admin (F1, v1 : <c>GET /api/admin/players</c> et <c>GET /api/admin/players/{id}/history</c>) : les comptes inscrits avec leur
+/// L'onglet Joueurs de l'admin : les comptes inscrits avec leur
 /// série effective, et l'historique des 30 derniers jours d'un joueur.
 /// </summary>
 public class AdminPlayersTests(PostgresFixture postgres) : IAsyncLifetime

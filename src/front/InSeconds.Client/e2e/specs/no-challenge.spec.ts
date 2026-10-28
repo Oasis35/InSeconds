@@ -26,7 +26,7 @@ test.describe('Pas de défi - état no_challenge', () => {
     const game = new GamePage(page);
     await game.goto();
 
-    // En v2, la lecture de l'état du jour ne génère rien : l'écran « pas de défi » s'affiche, et « Réessayer » tente le démarrage, qui
+    // La lecture de l'état du jour ne génère rien : l'écran « pas de défi » s'affiche, et « Réessayer » tente le démarrage, qui
     // régénère le défi à la volée (le tirage du secours est celui de minuit). Le joueur arrive directement dans la partie.
     await expect(game.noChallengeHeading).toBeVisible();
     await game.retryButton.click();

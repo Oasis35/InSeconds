@@ -1,7 +1,7 @@
 namespace InSeconds.IntegrationTests.Testing;
 
 /// <summary>
-/// Document OpenAPI des routes admin transverses (F2, § 6.1 du plan v2) : le dernier passage des tâches planifiées, témoins de
+/// Document OpenAPI des routes admin transverses : le dernier passage des tâches planifiées, témoins de
 /// l'onglet Actions (<c>GET /api/admin/jobs/last-runs</c>). Servi par l'hôte de test seulement, pour générer le client NSwag du front de l'admin.
 /// </summary>
 public class AdminOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(postgres, "admin")

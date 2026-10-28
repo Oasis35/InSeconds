@@ -4,7 +4,7 @@ using NetArchTest.Rules;
 namespace InSeconds.ArchitectureTests;
 
 /// <summary>
-/// Règles de dépendance du back (§ 3.3 du plan v2). Elles s'appliquent à chaque module dès qu'il
+/// Règles de dépendance du back (« Règles dures » du CLAUDE.md racine). Elles s'appliquent à chaque module dès qu'il
 /// existe dans <c>InSeconds.Api.Modules</c>.
 /// </summary>
 public class ModuleDependencyTests
@@ -50,7 +50,7 @@ public class ModuleDependencyTests
     }
 
     /// <summary>
-    /// Gameplay est de la logique pure (§ 3.3 du plan v2) : il ne dépend que de <c>Catalogue/Contracts</c> et n'a
+    /// Gameplay est de la logique pure : il ne dépend que de <c>Catalogue/Contracts</c> et n'a
     /// besoin ni de l'accès aux données, ni du web, ni de l'infrastructure de l'API, et ne connaît aucun mode (les modes s'appuient dessus).
     /// </summary>
     [Fact]

@@ -2,7 +2,7 @@ namespace InSeconds.Api.Infrastructure.Errors;
 
 /// <summary>
 /// Codes d'erreur stables, renvoyés dans le champ <c>code</c> de chaque <c>ProblemDetails</c>.
-/// Le front traduit un code en message (table unique, § 6.6 du plan v2) : ne jamais renommer un
+/// Le front traduit un code en message (table unique <c>ERROR_MESSAGE_KEYS</c>) : ne jamais renommer un
 /// code existant. Les modules ajoutent les leurs, préfixés par leur nom (<c>daily.already_played</c>).
 /// </summary>
 public static class ErrorCodes

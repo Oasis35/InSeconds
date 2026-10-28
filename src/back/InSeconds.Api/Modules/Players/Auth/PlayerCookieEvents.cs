@@ -38,10 +38,11 @@ internal sealed class PlayerCookieEvents(DeviceSessionValidator validator) : Coo
 }
 
 /// <summary>
-/// Vérifie qu'un cookie désigne toujours un appareil actif (§ 5.5 du plan v2) : appareil existant,
+/// Vérifie qu'un cookie désigne toujours un appareil actif : appareil existant,
 /// non révoqué, joueur non supprimé ; le rôle admin est relu en base. Le résultat est gardé une
 /// minute : une révocation ou un retrait du rôle s'appliquent en moins d'une minute. La dernière
-/// visite (appareil et joueur) est notée au plus toutes les 5 minutes (R17).
+/// visite (appareil et joueur) est notée au plus toutes les 5 minutes : une écriture par requête
+/// chargerait la base pour rien.
 /// </summary>
 internal sealed class DeviceSessionValidator(IPlayerSessions sessions, DeviceSessionStatusCache cache, TimeProvider time)
 {

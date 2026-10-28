@@ -27,9 +27,9 @@ public sealed record TrackStatResponse(
     IReadOnlyList<GuessBucketResponse> GuessTimeDistribution,
     int NotFoundCount);
 
-/// <summary>Les statistiques du jour (v1 : <c>GET /api/stats/today</c>).</summary>
+/// <summary>Les statistiques du jour.</summary>
 /// <param name="YourScore">Le score du joueur, vide s'il n'a pas de partie terminée aujourd'hui.</param>
-/// <param name="MedianScore">Médiane des scores (division entière des deux valeurs centrales, comme la v1).</param>
+/// <param name="MedianScore">Médiane des scores (division entière des deux valeurs centrales).</param>
 /// <param name="TotalPlayers">Parties terminées.</param>
 /// <param name="CurrentStreak">La série effective du joueur (0 si cassée).</param>
 /// <param name="Tracks">**Vide tant que la partie du joueur n'est pas finie** (terminée, abandonnée ou expirée) : sinon cette route publique donnerait les réponses avant de jouer (piège 31).</param>
@@ -54,7 +54,7 @@ public sealed record TodayStatsResponse(
     IReadOnlyList<ScoreBucketResponse> ScoreDistribution,
     int? BetterThanPercent)
 {
-    /// <summary>Pas de défi aujourd'hui : tout à zéro, comme la v1.</summary>
+    /// <summary>Pas de défi aujourd'hui : tout à zéro.</summary>
     public static TodayStatsResponse Empty { get; } = new(null, 0, 0, 0, [], 0, false, null, null, 0, [], null);
 }
 

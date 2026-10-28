@@ -4,7 +4,7 @@ using Microsoft.OpenApi;
 namespace InSeconds.Api.Testing.ApiDocs;
 
 /// <summary>
-/// Documents OpenAPI de l'hôte de test (§ 6.1 du plan v2 : un client NSwag par module, généré depuis ces
+/// Documents OpenAPI de l'hôte de test (un client NSwag par module côté front, généré depuis ces
 /// documents). Servis seulement ici, jamais par l'API de prod (S9). Un document par module, filtré sur
 /// le préfixe de ses routes ; <c>/openapi/players.json</c> pour le module Players, <c>/openapi/catalogue.json</c> pour
 /// Catalogue, <c>/openapi/daily.json</c> pour Daily, <c>/openapi/runs.json</c> pour Runs, <c>/openapi/admin.json</c> pour le suivi des tâches. Les documents sauvegardés pour le front sont <c>openapi/players.json</c>, <c>openapi/catalogue.json</c>, <c>openapi/daily.json</c>, <c>openapi/runs.json</c> et <c>openapi/admin.json</c>
@@ -23,12 +23,12 @@ public static class OpenApiDocuments
         AddModuleDocument(services, Players, tag: "Players", "api/players");
         // Deux préfixes : la recherche publique, et les routes admin du pool.
         AddModuleDocument(services, Catalogue, tag: "Catalogue", "api/catalogue", "api/admin/catalogue");
-        // Le jeu du jour (E5) et ses routes admin (défi du jour, stats, récap hebdo, tableau de bord, historique, cooldown : E3, F1). La liste
+        // Le jeu du jour et ses routes admin (défi du jour, stats, récap hebdo, tableau de bord, historique, cooldown). La liste
         // des joueurs inscrits (`api/admin/players`) est servie par Daily : seul Daily lit à la fois les comptes (contrat de Players) et les séries.
         AddModuleDocument(services, Daily, tag: "Daily", "api/daily", "api/admin/daily", "api/admin/players");
         // Le mode Run : ses routes joueur, et les routes admin de l'accès (l'interrupteur de l'onglet Joueurs).
         AddModuleDocument(services, Runs, tag: "Runs", "api/runs", "api/admin/runs");
-        // Le suivi d'une tâche lancée par un bouton de l'admin (F2) : l'infrastructure, pas un module.
+        // Le suivi d'une tâche lancée par un bouton de l'admin : l'infrastructure, pas un module.
         AddModuleDocument(services, Admin, tag: "Admin", "api/admin/jobs");
         return services;
     }
@@ -80,7 +80,7 @@ public static class OpenApiDocuments
 
             // .NET décrit un entier comme "integer ou string" avec un motif : le client généré doit avoir un nombre
             // (et un entier nullable, comme l'année d'un morceau, reste nullable). Sauf le « status » d'un ProblemDetails,
-            // que le client des joueurs (B5) a déjà généré en nombre : son schéma ne change pas.
+            // que le client des joueurs génère déjà en nombre : son schéma ne change pas.
             options.AddSchemaTransformer((schema, context, _) =>
             {
                 if (schema.Type is { } type && type.HasFlag(JsonSchemaType.Integer))

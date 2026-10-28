@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace InSeconds.Api.Modules.Catalogue.Persistence;
 
-// Table du schéma catalogue (§ 4.3 du plan v2). Pas de navigation EF vers les autres modules : un défi
+// Tables du schéma catalogue. Pas de navigation EF vers les autres modules : un défi
 // référencera un morceau par son identifiant (la clé étrangère est déclarée du côté de Daily).
 
 internal sealed class TrackConfiguration : IEntityTypeConfiguration<Track>

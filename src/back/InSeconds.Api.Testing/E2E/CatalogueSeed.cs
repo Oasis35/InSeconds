@@ -7,10 +7,10 @@ using Microsoft.EntityFrameworkCore;
 namespace InSeconds.Api.Testing.E2E;
 
 /// <summary>
-/// Le pool de test, repris de la v1 (<c>E2ESeedData</c>) : 55 morceaux réels, dans l'ordre exact de la v1 (les
+/// Le pool de test : 55 morceaux réels, dans un ordre fixe (les
 /// index comptent). 0-4 : défi d'avant-hier, 5-9 : défi d'hier, 10-14 : défi du jour, 15-20 : cooldowns variés,
 /// le reste : le pool disponible. Les 5 derniers (identifiants Deezer ≥ <see cref="FakeDeezerHandler.NoPreviewFrom"/>)
-/// n'ont pas d'extrait. L'usage de ces morceaux est celui de la v1, reconstitué par de vrais défis (Daily, E1) :
+/// n'ont pas d'extrait. L'usage de ces morceaux est reconstitué par de vrais défis (Daily) :
 /// le défi d'avant-hier, celui d'hier, celui du jour, et des défis plus anciens pour les cooldowns.
 /// </summary>
 public static class CatalogueSeed
@@ -138,7 +138,7 @@ public static class CatalogueSeed
         return tracks.Count;
     }
 
-    // (jours depuis le dernier usage, nombre d'usages), comme la v1 ; null : jamais utilisé.
+    // (jours depuis le dernier usage, nombre d'usages) ; null : jamais utilisé.
     private static (int DaysAgo, int Count)? Usage(int index) => index switch
     {
         <= 4 => (2, 1),

@@ -6,7 +6,7 @@ namespace InSeconds.IntegrationTests.Daily;
 
 internal static class GameAsserts
 {
-    /// <summary>La réponse est une erreur de ce statut, en ProblemDetails avec ce <c>code</c> stable (§ 5.6 du plan v2).</summary>
+    /// <summary>La réponse est une erreur de ce statut, en ProblemDetails avec ce <c>code</c> stable.</summary>
     public static async Task ProblemAsync(HttpResponseMessage response, HttpStatusCode status, string code)
     {
         Assert.Equal(status, response.StatusCode);

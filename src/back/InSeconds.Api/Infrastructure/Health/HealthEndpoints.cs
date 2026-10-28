@@ -19,7 +19,7 @@ public static class HealthEndpoints
     {
         var build = BuildInfo.BuildUtc;
 
-        // Liveness. Même format qu'en v1 : { status, utc, build }, lu par le badge d'état du front
+        // Liveness. Format stable : { status, utc, build }, lu par le badge d'état du front
         // (on peut ajouter un champ, jamais en retirer). build = date UTC de compilation.
         routes.MapGet("/health", (IGameCalendar calendar) =>
             Results.Ok(new HealthResponse("ok", calendar.Now, build)));

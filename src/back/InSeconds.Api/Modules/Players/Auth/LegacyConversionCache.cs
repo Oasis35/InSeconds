@@ -4,10 +4,10 @@ using Microsoft.Extensions.Caching.Memory;
 namespace InSeconds.Api.Modules.Players.Auth;
 
 /// <summary>
-/// Conversions récentes de cookies v1 : pendant une minute, un même jeton v1 retrouve la session
+/// Conversions récentes d'anciens cookies : pendant une minute, un même ancien jeton retrouve la session
 /// d'appareil qu'il vient d'ouvrir au lieu d'en créer une autre. Au premier chargement, le front
-/// envoie plusieurs requêtes en parallèle avec le même cookie v1 : sans ça, un seul navigateur
-/// obtiendrait plusieurs sessions, et un cookie v1 rejoué en boucle remplirait la table. Deux
+/// envoie plusieurs requêtes en parallèle avec le même ancien cookie : sans ça, un seul navigateur
+/// obtiendrait plusieurs sessions, et un ancien cookie rejoué en boucle remplirait la table. Deux
 /// appareils du même compte convertis dans la même minute partagent leur session (rare, sans danger).
 /// Les conversions d'un même jeton sont faites l'une après l'autre (verrous répartis par jeton).
 /// Même principe que <see cref="DeviceSessionStatusCache"/> : cache à part (piège 24), fraîcheur

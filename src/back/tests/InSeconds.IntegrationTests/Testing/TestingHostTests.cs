@@ -27,7 +27,7 @@ public class TestingHostTests(PostgresFixture postgres) : IAsyncLifetime
     public async Task Reset_VideLesSchemasDesModules_JamaisPublicNiLesTablesTechniques()
     {
         var client = _host.CreateClient();
-        // Démarre l'hôte (migrations), puis simule un module et une table v1.
+        // Démarre l'hôte (migrations), puis simule un module et une table dans public.
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/health", TestContext.Current.CancellationToken)).StatusCode);
         await ExecuteAsync("""
             CREATE SCHEMA module_test; CREATE TABLE module_test.items (id int primary key); INSERT INTO module_test.items VALUES (1);
@@ -94,7 +94,7 @@ public class TestingHostTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(55, (await first.Content.ReadFromJsonAsync<SeedResponse>(TestContext.Current.CancellationToken))!.Added);
         Assert.Equal(0, (await second.Content.ReadFromJsonAsync<SeedResponse>(TestContext.Current.CancellationToken))!.Added);
         Assert.Equal(55, await CountAsync("catalogue.tracks"));
-        // 50 jouables et 5 sans extrait, comme le pool de test de la v1.
+        // 50 jouables et 5 sans extrait (CatalogueSeed).
         Assert.Equal(50, await CountAsync("catalogue.tracks WHERE preview_status = 1"));
         Assert.Equal(5, await CountAsync("catalogue.tracks WHERE preview_status = 2 AND deezer_track_id >= 9000000000"));
 

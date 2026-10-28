@@ -1,7 +1,7 @@
 namespace InSeconds.IntegrationTests.Testing;
 
 /// <summary>
-/// Document OpenAPI du module Daily (E5, § 6.1 du plan v2) : servi par l'hôte de test seulement, pour générer le client NSwag du
+/// Document OpenAPI du module Daily : servi par l'hôte de test seulement, pour générer le client NSwag du
 /// front du jeu. Deux préfixes : les routes du joueur et celles de l'admin (défi du jour, statistiques, récap).
 /// </summary>
 public class DailyOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(postgres, "daily")

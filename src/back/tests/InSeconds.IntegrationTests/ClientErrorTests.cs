@@ -135,7 +135,7 @@ public class ClientErrorTests(PostgresFixture postgres) : IAsyncLifetime
     [Fact]
     public async Task Confidentialite_NiCookieNiAuthorizationNiQueryString_DansLesTracesEtLesJournaux()
     {
-        // Mêmes règles qu'en v1 (TelemetryTests.Traces_NeContiennentNiCookieNiAuthorization), sur la
+        // Jamais de cookie, d'Authorization ni de query string dans la télémétrie, ici sur la
         // route qui recopie dans les journaux ce que le navigateur envoie.
         const string secret = "secret-a-ne-jamais-exporter";
         var logs = new CapturingLoggerProvider();

@@ -26,14 +26,14 @@ public sealed record AdminChallengeStatsResponse(IReadOnlyList<AdminChallengeSta
 
 public static class GetChallengeStatsEndpoint
 {
-    /// <summary>Les défis montrés par « Stats par défi » (v1 : les 30 derniers).</summary>
+    /// <summary>Les défis montrés par « Stats par défi » : les 30 derniers.</summary>
     public const int Count = 30;
 
     /// <summary>
-    /// <c>GET /api/admin/daily/challenges/stats</c> (v1 : <c>GET /api/admin/challenge-stats</c>) : les 30 derniers défis. **Un jour terminé pour de
-    /// bon (J-2 et avant) est lu dans sa photo figée** (E3), la veille et le jour même sont calculés en direct (une partie peut encore s'y
+    /// <c>GET /api/admin/daily/challenges/stats</c> : les 30 derniers défis. **Un jour terminé pour de
+    /// bon (J-2 et avant) est lu dans sa photo figée**, la veille et le jour même sont calculés en direct (une partie peut encore s'y
     /// finir, piège 18) par la même règle. **Le pseudo et le titre ne sont jamais figés** : ils sont joints ici, un renommage ou un changement de
-    /// pseudo se voit donc sans recalcul ; le pseudo d'un joueur supprimé après la photo n'est plus montré (limite de E3), il reste compté
+    /// pseudo se voit donc sans recalcul ; le pseudo d'un joueur supprimé après la photo n'est plus montré (limite connue), il reste compté
     /// jusqu'au prochain recalcul.
     /// </summary>
     [WolverineGet("/api/admin/daily/challenges/stats", OperationId = "getChallengeStats")]
@@ -93,8 +93,8 @@ public sealed record AdminChallenge(int Id, DateOnly Date, IReadOnlyList<AdminCh
 public static class ListChallengesEndpoint
 {
     /// <summary>
-    /// <c>GET /api/admin/daily/challenges</c> (v1 : <c>GET /api/admin/challenges</c>) : l'historique des défis, du plus récent au plus ancien, avec
-    /// leurs morceaux (artiste, titre affiché, identifiant Deezer). Tous les défis, comme en v1 : le front les groupe par mois.
+    /// <c>GET /api/admin/daily/challenges</c> : l'historique des défis, du plus récent au plus ancien, avec
+    /// leurs morceaux (artiste, titre affiché, identifiant Deezer). Tous les défis : le front les groupe par mois.
     /// </summary>
     [WolverineGet("/api/admin/daily/challenges", OperationId = "listChallenges")]
     public static async Task<IReadOnlyList<AdminChallenge>> Get(IDailyStatsQueries stats, ITrackDirectory tracks, CancellationToken ct)

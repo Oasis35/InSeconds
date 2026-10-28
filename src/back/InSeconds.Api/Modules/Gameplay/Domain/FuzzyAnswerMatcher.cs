@@ -6,7 +6,7 @@ using InSeconds.Api.Modules.Gameplay.Contracts;
 namespace InSeconds.Api.Modules.Gameplay.Domain;
 
 /// <summary>
-/// La correction des réponses, reprise de la v1 (§ 5.3 du plan v2, remplace <c>TextNormalizer</c>) : insensible à
+/// La correction des réponses : insensible à
 /// la casse, aux accents, aux parenthèses et crochets (« (feat. X) », « [Radio Edit] »), à la ponctuation et à
 /// quelques mots vides (« the », « le », « feat »…), puis tolérante aux fautes de frappe (distance de Levenshtein).
 /// </summary>

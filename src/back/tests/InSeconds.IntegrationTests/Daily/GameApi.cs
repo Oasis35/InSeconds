@@ -8,7 +8,7 @@ using Microsoft.Extensions.Time.Testing;
 namespace InSeconds.IntegrationTests.Daily;
 
 /// <summary>
-/// Une partie du défi du jour (E2) : l'API avec une horloge simulée, un pool de morceaux jouables, et des joueurs qui jouent par HTTP, comme le front.
+/// Une partie du défi du jour : l'API avec une horloge simulée, un pool de morceaux jouables, et des joueurs qui jouent par HTTP, comme le front.
 /// Les morceaux ont pour nom « Artiste N » et « Titre N » (N = identifiant du morceau) : <see cref="Gamer.AnswerCorrectlyAsync"/> sait les retrouver.
 /// </summary>
 internal sealed class GameApi : IAsyncDisposable

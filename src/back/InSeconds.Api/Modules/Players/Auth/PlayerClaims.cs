@@ -6,7 +6,7 @@ using InSeconds.Api.Modules.Players.Contracts;
 namespace InSeconds.Api.Modules.Players.Auth;
 
 /// <summary>
-/// Contenu du ticket du cookie : le joueur et son appareil, rien d'autre (§ 5.5 du plan v2). Le rôle
+/// Contenu du ticket du cookie : le joueur et son appareil, rien d'autre. Le rôle
 /// admin n'y est ni écrit ni lu : la validation le relit en base à chaque requête et ne l'ajoute
 /// qu'au joueur de la requête.
 /// </summary>
@@ -35,7 +35,7 @@ public static class PlayerClaims
     }
 }
 
-/// <summary>Le joueur de la requête, d'après le cookie validé (ou la transition d'un cookie v1).</summary>
+/// <summary>Le joueur de la requête, d'après le cookie validé (ou la reprise d'un ancien cookie).</summary>
 public sealed class ClaimsCurrentPlayer(IHttpContextAccessor accessor) : ICurrentPlayer
 {
     private ClaimsPrincipal? User =>

@@ -5,7 +5,7 @@ namespace InSeconds.Api.Modules.Players.Email;
 /// <param name="LinkUrl">Page du front qui confirme la connexion, jeton compris.</param>
 public sealed record MagicLinkEmail(string LinkUrl);
 
-/// <summary>L'email du lien de connexion, sujet et gabarit de la v1 (<c>magic-link.html</c>).</summary>
+/// <summary>L'email du lien de connexion, sujet et gabarit (<c>magic-link.html</c>).</summary>
 public sealed class MagicLinkEmailComposer : IEmailComposer<MagicLinkEmail>
 {
     public const string Subject = "Ton lien de connexion IN//SECONDS";

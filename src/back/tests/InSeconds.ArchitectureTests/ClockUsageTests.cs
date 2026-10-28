@@ -4,7 +4,7 @@ namespace InSeconds.ArchitectureTests;
 
 /// <summary>
 /// L'heure passe toujours par <c>TimeProvider</c> ou <c>IGameCalendar</c>, pour que les tests
-/// puissent la fixer (la v1 avait 58 <c>DateTime.UtcNow</c>, dont le bug du piège 18).
+/// puissent la fixer (une heure lue directement a déjà causé le bug du piège 18).
 /// </summary>
 public partial class ClockUsageTests
 {

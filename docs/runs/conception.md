@@ -1,6 +1,6 @@
 # Run (Platines) : conception technique du proto 1
 
-17/10/2026, sur la base d'`env/staging` au commit `629ca5c`, revue après une relecture indépendante du plan et après les maquettes. **Livré le 27/10/2026** (P0 à P5) : ce document décrit désormais le code tel qu'il est ; les écarts avec les maquettes sont à la fin d'[`ecrans.md`](ecrans.md#écarts-entre-les-maquettes-et-lapp-livrée). Règles : [`regles.md`](regles.md). Écrans : [`ecrans.md`](ecrans.md). Ordre des PR : [`plan.md`](plan.md#découpage-du-proto-1-en-pr).
+17/10/2026, sur la base d'`env/staging` au commit `629ca5c`, revue après une relecture indépendante du plan et après les maquettes. **Livré le 27/10/2026** : ce document décrit le code tel qu'il est ; les écarts avec les maquettes sont à la fin d'[`ecrans.md`](ecrans.md#écarts-entre-les-maquettes-et-lapp-livrée). Règles : [`regles.md`](regles.md). Écrans : [`ecrans.md`](ecrans.md). Découpage en PR (historique) : [`runs-proto1-decoupage.md`](../historique/runs-proto1-decoupage.md).
 
 ## 1. Principe
 
@@ -155,20 +155,20 @@ runs/
 - Traductions `runs.*` FR/EN (disques compris), mobile first, saisie à 16 px, modales par `ModalService`, boutons par `appButton`.
 
 ### 5.2 Les étapes d'une partie
-`link` (lien reçu, [`ecrans.md`](ecrans.md#7-le-lien-reçu) § 7, P5), `welcome` (premier morceau : le clic lance le son) ou `resume` (partie en cours) → par morceau : `playing` / `answering` (lecteur et saisie de `gameplay`) → `revealed` (carte de réponse à la place du lecteur et de la saisie, « Morceau suivant »), ou `neutralized` (carte « Morceau retiré de la manche », [`ecrans.md`](ecrans.md#2b-le-morceau-sans-extrait) § 2b, même bouton) → après le 5e morceau : `round_end` (bilan, après chaque manche, ratée ou dernière comprise) → manche suivante, ou `finished` (écran de fin). Reprise : la partie revient au morceau en cours de son état serveur. La phase `revealed` de `withTrackRound` existe déjà ; c'est l'écran qui change par rapport au Daily.
+`link` (lien reçu, [`ecrans.md`](ecrans.md#7-le-lien-reçu) § 7), `welcome` (premier morceau : le clic lance le son) ou `resume` (partie en cours) → par morceau : `playing` / `answering` (lecteur et saisie de `gameplay`) → `revealed` (carte de réponse à la place du lecteur et de la saisie, « Morceau suivant »), ou `neutralized` (carte « Morceau retiré de la manche », [`ecrans.md`](ecrans.md#2b-le-morceau-sans-extrait) § 2b, même bouton) → après le 5e morceau : `round_end` (bilan, après chaque manche, ratée ou dernière comprise) → manche suivante, ou `finished` (écran de fin). Reprise : la partie revient au morceau en cours de son état serveur. La phase `revealed` de `withTrackRound` existe déjà ; c'est l'écran qui change par rapport au Daily.
 
 Sur `/runs/<code>`, le serveur choisit l'écran d'après la partie du joueur sur cette playlist (`GET /api/runs/challenges/{code}`) : pas jouée → `link`, en cours → `resume`, finie ou abandonnée → `comparison` (une playlist se joue une seule fois). `RunScreen` (`run-game.store.ts`) : `loading`, `welcome`, `link`, `resume`, `playing`, `round_end`, `finished`, `comparison`, `access_denied`, `no_challenge`, `not_found`, `error`.
 
 Le serveur enchaîne en une réponse ce qu'il peut (la réponse, les morceaux suivants qu'il retire faute d'extrait, le bilan de chaque manche que cela termine) : le front en tire une **file d'étapes** (`playSteps`, `domain/run.ts`), montrées une à une, chacune derrière un clic. Le son ne part que dans ce clic, jamais à l'arrivée d'une réponse (un morceau retiré pendant la redemande de son extrait attend le clic « Morceau suivant »).
 
 ### 5.3 Composants du Daily à rendre communs
-Un mode n'importe jamais l'autre : ce que les maquettes reprennent du Daily et qui vit aujourd'hui dans `daily/ui` **descend dans `gameplay/ui`** (le Daily l'importe de là, sans changement visible), dans la PR du front (P4) :
+Un mode n'importe jamais l'autre : ce que les maquettes reprennent du Daily **vit dans `gameplay/ui`** (le Daily l'importe de là) :
 - la ligne de `track-results-list` (pochette, ✓/✗ Artiste et Titre, « Artiste - Titre », points, lien Deezer), avec le clic vers le graphique et la ligne de statistiques en option ;
 - le badge « Écouter sur Deezer » (`deezer-badge`) ;
 - le style du lien « Abandonner » de `daily-progress` (un bouton discret, repris tel quel s'il ne vaut pas un composant) ;
 - l'écran de reprise (`resume-screen`), avec son avertissement d'abandon et son lien de connexion passés en entrée : le Daily garde les siens (série), Runs donne le sien ([`ecrans.md`](ecrans.md#écrans-du-daily-repris-tels-quels-sans-maquette)). L'écran d'état a sa copie dans Runs (`run-status-screen`, mêmes formes, textes du mode).
 
-Descendus aussi en P5, pour l'écran du lien d'un ami et ceux de fin : le bandeau IN//SECONDS (`brand`) et le bouton de partage (`share-button`, dont le mode donne les libellés), plus `LeaveGuard` (la confirmation de sortie d'une partie, commune au Daily et au Run).
+Aussi dans `gameplay/ui`, pour l'écran du lien d'un ami et ceux de fin : le bandeau IN//SECONDS (`brand`) et le bouton de partage (`share-button`, dont le mode donne les libellés), plus `LeaveGuard` (la confirmation de sortie d'une partie, commune au Daily et au Run).
 
 Les confirmations d'abandon et de sortie (`ModalService.confirm`, `leave-game.guard`) sont déjà communes : Runs les appelle avec ses propres textes.
 
@@ -180,23 +180,23 @@ Les confirmations d'abandon et de sortie (`ModalService.confirm`, `leave-game.gu
 ### 5.5 Admin
 L'interrupteur « Platines » de l'onglet Joueurs lit `GET /api/admin/runs/access` une fois et appelle `PUT`/`DELETE`.
 
-## 6. Ce qui touche l'existant : Players et Catalogue ne doivent plus connaître que Daily
+## 6. Ce qui touche l'existant : Players et Catalogue ne connaissent aucun mode
 
-**Players (effacement et export).** *Fait en P1 :* Players appelait directement `Daily.Contracts.IPlayerGameData`.
-- `Players.Contracts.IPlayerDataContributor` (`Module`, `ExportAsync`, `DeleteAsync`) : Players reçoit `IEnumerable<IPlayerDataContributor>` et les appelle tous dans sa transaction. Daily l'implémente en P1, Runs en P2.
-- L'export change de forme : une section par mode (`daily` : série et parties ; `runs` : parties, défis créés, accès) au lieu des champs `streak` / `games` à la racine. Le profil télécharge le fichier tel quel ; `--export-player` suit.
+**Players (effacement et export).**
+- `Players.Contracts.IPlayerDataContributor` (`Module`, `ExportAsync`, `DeleteAsync`) : Players reçoit `IEnumerable<IPlayerDataContributor>` et les appelle tous dans sa transaction. Daily et Runs l'implémentent.
+- L'export a une section par mode (`daily` : série et parties ; `runs` : parties, défis créés, accès). Le profil télécharge le fichier tel quel ; `--export-player` suit.
 - `IStreakGrants` reste propre à Daily (seul Daily a des gels) : exception nommée dans le test d'architecture.
 
-**Catalogue (usage des morceaux).** *Fait en P1 :* `ITrackUsage` était fourni une seule fois, par Daily (`services.Replace`), et ne compte que les défis du jour : un morceau joué seulement en run serait supprimable (erreur 500 par la clé étrangère) ou remplaçable par une autre chanson.
-- Chaque mode **ajoute** son implémentation (`IEnumerable<ITrackUsage>`, plus de `Replace`) ; Catalogue les agrège : un morceau est « utilisé » si un seul mode le dit. Le cooldown, la date de dernier usage et « dans le défi du jour » restent ceux du Daily (Runs répond « aucun »), seul `IsUsed` combine les deux.
+**Catalogue (usage des morceaux).** Sans l'usage déclaré par Runs, un morceau joué seulement en run serait supprimable (erreur 500 par la clé étrangère) ou remplaçable par une autre chanson.
+- Chaque mode **ajoute** son implémentation (`IEnumerable<ITrackUsage>`) ; Catalogue les agrège : un morceau est « utilisé » si un seul mode le dit. Le cooldown, la date de dernier usage et « dans le défi du jour » restent ceux du Daily (Runs répond « aucun »), seul `IsUsed` combine les deux.
 
 **Rang Deezer.** `TrackInfo` (contrat Catalogue) expose `DeezerRank`.
 
-**Pool admin (P1b).** Le pool est commun à tous les modes, l'onglet ne montre que le catalogue : compteur neutre, `isUsed` (calculé par le back, jamais déduit côté front d'un compteur propre à un mode), pastilles par mode ayant joué le morceau. Un sélecteur horizontal défilant (Pool · Daily · Run) donne la vue de chaque mode, en lecture, lue dans `usages[]` de la même réponse ; un mode se déclare dans l'admin par une entrée de registre, donc ajouter Runs ne change pas le Pool. `ITrackUsage` porte le nom de son mode, Catalogue garde le détail par mode en plus de l'agrégat.
+**Pool admin.** Le pool est commun à tous les modes, l'onglet ne montre que le catalogue : compteur neutre, `isUsed` (calculé par le back, jamais déduit côté front d'un compteur propre à un mode), pastilles par mode ayant joué le morceau. Un sélecteur horizontal défilant (Pool · Daily · Run) donne la vue de chaque mode, en lecture, lue dans `usages[]` de la même réponse ; un mode se déclare dans l'admin par une entrée de registre, donc ajouter Runs ne change pas le Pool. `ITrackUsage` porte le nom de son mode, Catalogue garde le détail par mode en plus de l'agrégat.
 
-**Contrôle nocturne.** `catalogue-refresh` contrôle tout le pool jouable, plus seulement les morceaux hors cooldown : un run tire n'importe quel morceau. Environ 800 morceaux en lots de 10 toutes les 1,5 s, soit 2 min, dans le quota Deezer (piège 16).
+**Contrôle nocturne.** `catalogue-refresh` contrôle tout le pool jouable, cooldown compris : un run tire n'importe quel morceau. Environ 800 morceaux en lots de 10 toutes les 1,5 s, soit 2 min, dans le quota Deezer (piège 16).
 
-**Tests d'architecture.** Les règles écrites pour « Daily » (`UnNoyau_NeVoitDUnModeQueSesContracts`, `CatalogueEtGameplay_NeConnaissentPasDaily`, la liste interdite de Gameplay) deviennent « un mode » (Daily et Runs) ; plus `DailyEtRuns_NeSeVoientPas`.
+**Tests d'architecture.** Les règles valent pour « un mode » (Daily et Runs) : `UnNoyau_NeVoitDUnModeQueSesContracts`, `CatalogueEtGameplay_NeConnaissentPasDaily`, la liste interdite de Gameplay, et `DailyEtRuns_NeSeVoientPas`.
 
 ## 7. SOLID, point par point
 - **S** : `RunSession` garde la partie ; tirage, points, seuils, disques sont chacun une classe ; les endpoints ne font qu'enchaîner (LoadAsync / Validate / Post).
@@ -210,7 +210,7 @@ L'interrupteur « Platines » de l'onglet Joueurs lit `GET /api/admin/runs/acces
 - Intégration (Testcontainers, base neuve par classe) : parcours gagné, perdu, abandonné ; défi d'ami une seule fois ; accès refusé ; partie d'un autre → 404 ; aucun morceau ni extrait d'un morceau futur avant réponse (piège 31) ; réglage changé en cours de partie sans effet ; réglage incohérent à chaud ; double démarrage simultané ; suppression du compte de l'auteur ; export contenant les parties Runs ; suppression et actualisation d'un morceau joué seulement en run → 409 ; `GET /api/runs/me` sans identité ; limites de débit ; comparaison à plusieurs joueurs, verrouillée avant la fin.
 - Architecture : règles du § 6.
 - Front (Vitest) : domaine `run.ts`, store, chaque écran des maquettes (lien reçu, manche, réponse, morceau sans extrait, fin de manche, fin de run victoire et défaite, comparaison), carte de l'accueil visible ou non, composants descendus dans `gameplay/ui` (le Daily inchangé).
-- E2E Playwright (`runs.spec.ts`) : partie gagnée, partie perdue, morceau retiré, reprise, carte de l'accueil absente sans accès et montrée une fois l'accès ouvert (P4) ; lien d'un ami dans deux navigateurs et comparaison (P5).
+- E2E Playwright (`runs.spec.ts`) : partie gagnée, partie perdue, morceau retiré, reprise, carte de l'accueil absente sans accès et montrée une fois l'accès ouvert ; lien d'un ami dans deux navigateurs et comparaison.
 - Observabilité : `RunsMetrics` (parties, réponses, neutralisations, disques), logs sans texte saisi ; les panneaux du tableau Grafana « Activité » pour ces métriques restent à faire ([`../taches.md`](../taches.md)).
 
 ## 9. Décisions
@@ -218,8 +218,8 @@ L'interrupteur « Platines » de l'onglet Joueurs lit `GET /api/admin/runs/acces
 2. Inversion RGPD (`IPlayerDataContributor`) dès la première PR : validé.
 3. Lien par code court `inseconds.cc/runs/K7Q2M9` : validé (un lien neutre `/d/…` est gardé pour un mode futur qui partagerait aussi des liens).
 4. Tirage par tranches de rang Deezer : validé.
-5. Genre de l'album stocké dès maintenant (P0, PR à part dans Catalogue, #361) : validé et fait (Clément, 20/10) ; `TrackInfo.Genres`, aucun mode ne s'en sert encore.
-6. Usage des morceaux déclaré par chaque mode : proposé après la revue, repris dans P1.
+5. Genre de l'album stocké dès maintenant (#361) : validé et fait (Clément, 20/10) ; `TrackInfo.Genres`, aucun mode ne s'en sert encore.
+6. Usage des morceaux déclaré par chaque mode : proposé après la revue, repris.
 7. Morceau sans extrait au moment de jouer : neutralisé (Clément, 17/10).
 8. Temps de réponse : aucun chrono, partie à l'honneur, réécoute libre (Clément, 17/10). Un chrono `Runs:AnswerSeconds` ne sera ajouté que si les parties de test montrent des abus ; limiter les réécoutes reste un bonus ou un malus possible du proto 2.
 9. Entrée sur l'accueil : la carte seulement (option A), rien d'autre ne change sur l'accueil ni sur « déjà joué » (Clément, 17/10).

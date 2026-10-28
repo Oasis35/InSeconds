@@ -22,7 +22,7 @@ public sealed record WeeklyTrackResponse(string Artist, string Title, double Suc
 public sealed record WeeklyRecapResponse(
     string Status, DateOnly From, DateOnly To, int MinAnswers, WeeklyTrackResponse? MostFound, WeeklyTrackResponse? MostMissed);
 
-/// <summary>Le morceau le plus trouvé et le plus raté d'une période (v1 : <c>GetWeeklyRecap</c>), pour les stories Instagram de l'admin.</summary>
+/// <summary>Le morceau le plus trouvé et le plus raté d'une période, pour les stories Instagram de l'admin.</summary>
 public static class WeeklyRecapRules
 {
     public const int PeriodDays = 7;

@@ -1,6 +1,6 @@
 namespace InSeconds.Api.Modules.Daily.Domain;
 
-/// <summary>Comment un défi a été généré (colonne <c>origin</c>, vide pour l'historique repris de la v1).</summary>
+/// <summary>Comment un défi a été généré (colonne <c>origin</c>, vide pour les plus anciens défis, d'origine inconnue).</summary>
 public enum ChallengeOrigin : short
 {
     /// <summary>La tâche de minuit.</summary>
@@ -9,12 +9,12 @@ public enum ChallengeOrigin : short
     /// <summary>Le secours : un joueur arrive alors que la tâche de minuit n'a rien généré.</summary>
     OnTheFly = 2,
 
-    /// <summary>Généré par <c>/api/e2e/generate-today</c> (hôte de test). Le bouton de l'admin qui l'utilisait a été retiré en F2 ; la valeur reste (stockée).</summary>
+    /// <summary>Généré par <c>/api/e2e/generate-today</c> (hôte de test). La valeur reste : elle est stockée dans des défis existants.</summary>
     Admin = 3,
 }
 
 /// <summary>
-/// Le défi d'un jour (§ 4.4 du plan v2) : les mêmes morceaux, dans le même ordre, pour tous les joueurs. Un jour,
+/// Le défi d'un jour : les mêmes morceaux, dans le même ordre, pour tous les joueurs. Un jour,
 /// un seul défi (index unique sur la date). La graine du tirage est le numéro du jour : le défi se retrouve à
 /// l'identique si on le regénère à partir du même pool.
 /// </summary>
@@ -33,13 +33,13 @@ public sealed class DailyChallenge
 
     public int Seed { get; private set; }
 
-    /// <summary>Vide pour l'historique repris de la v1.</summary>
+    /// <summary>Vide pour les plus anciens défis, d'origine inconnue.</summary>
     public ChallengeOrigin? Origin { get; private set; }
 
     /// <summary>Les morceaux, par position (de 1 à N).</summary>
     public IReadOnlyList<ChallengeTrack> Tracks => _tracks;
 
-    /// <summary>La graine d'un jour : son numéro. Même règle qu'en v1, pour que tout le monde joue le même défi.</summary>
+    /// <summary>La graine d'un jour : son numéro, pour que tout le monde joue le même défi.</summary>
     public static int SeedOf(DateOnly day) => day.DayNumber;
 
     public static DailyChallenge Create(DateOnly date, ChallengeOrigin origin, IReadOnlyList<int> trackIds)

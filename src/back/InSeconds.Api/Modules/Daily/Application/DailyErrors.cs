@@ -4,10 +4,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace InSeconds.Api.Modules.Daily.Application;
 
-/// <summary>Problèmes du défi du jour, en <c>ProblemDetails</c> avec leur code (§ 5.6 du plan v2). Les codes sont dans <see cref="DailyErrorCodes"/>.</summary>
+/// <summary>Problèmes du défi du jour, en <c>ProblemDetails</c> avec leur code. Les codes sont dans <see cref="DailyErrorCodes"/>.</summary>
 internal static class DailyProblems
 {
-    /// <summary>Pas de défi aujourd'hui : le pool ne suffit pas (503, comme la v1).</summary>
+    /// <summary>Pas de défi aujourd'hui : le pool ne suffit pas (503).</summary>
     public static ProblemDetails NoChallenge() =>
         ApiProblem.Of(StatusCodes.Status503ServiceUnavailable, DailyErrorCodes.NoChallenge, "Aucun défi disponible pour aujourd'hui.");
 
@@ -62,9 +62,9 @@ internal static partial class DailyLog
     public static partial void SessionResumed(ILogger logger, int sessionId, Guid playerId, int answeredCount);
 
     // Jamais la réponse saisie : seulement le résultat, plus le morceau attendu (donnée publique du défi) pour lire les stats par morceau.
-    // Texte de la v1 à l'identique (#314) : les tableaux Grafana (Jeu, « Par morceau ») le lisent par expression régulière,
-    // « morceau {id}) : palier … » puis « - morceau n°{position} : {artiste} / {titre} ». {TrackId} (le morceau du catalogue)
-    // remplace le DailyChallengeTrackId de la v1, qui n'existe plus. Figé par DailyLogTests.
+    // Texte figé (#314) : les tableaux Grafana (Jeu, « Par morceau ») le lisent par expression régulière,
+    // « morceau {id}) : palier … » puis « - morceau n°{position} : {artiste} / {titre} ». {TrackId} est le morceau du catalogue.
+    // Figé par DailyLogTests.
     [LoggerMessage(EventId = 1002, Level = LogLevel.Information,
         Message = "Réponse de {PlayerId} (partie {SessionId}, morceau {TrackId}) : palier {ListenedSeconds}s, artiste {ArtistCorrect}, titre {TitleCorrect}, indice {HintLevel}, score {Score} - morceau n°{TrackPosition} : {TrackArtist} / {TrackTitle}")]
     public static partial void AnswerSubmitted(

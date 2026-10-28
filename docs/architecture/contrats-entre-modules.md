@@ -1,6 +1,6 @@
 # Les contrats entre modules (`Contracts/`)
 
-Écrit le 05/10/2026, mis à jour le 17/10/2026. Règle résumée dans le [`CLAUDE.md`](../../CLAUDE.md#règles-dures-vérifiées-en-ci) ; contexte dans [`historique/refonte-2026/PLAN.md`](../historique/refonte-2026/PLAN.md) § 3.3, § 5.1 et § 5.3.
+Écrit le 05/10/2026, mis à jour le 17/10/2026. Règle résumée dans le [`CLAUDE.md`](../../CLAUDE.md#règles-dures-vérifiées-en-ci).
 
 ## 1. L'idée en une phrase
 

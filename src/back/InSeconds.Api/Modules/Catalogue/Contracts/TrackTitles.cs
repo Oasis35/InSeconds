@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace InSeconds.Api.Modules.Catalogue.Contracts;
 
-/// <summary>Le titre d'un morceau tel qu'on le montre au joueur (§ 5.4 du plan v2).</summary>
+/// <summary>Le titre d'un morceau tel qu'on le montre au joueur.</summary>
 public static partial class TrackTitles
 {
     [GeneratedRegex(@"[\(\[].*?[\)\]]")]

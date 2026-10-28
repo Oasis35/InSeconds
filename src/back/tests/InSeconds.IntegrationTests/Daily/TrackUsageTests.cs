@@ -8,7 +8,7 @@ using static InSeconds.IntegrationTests.Daily.DailyApi;
 namespace InSeconds.IntegrationTests.Daily;
 
 /// <summary>
-/// L'usage des morceaux, **calculé** sur les défis (§ 4.4 du plan v2) : dernier jour, nombre d'apparitions, fin du cooldown,
+/// L'usage des morceaux, **calculé** sur les défis : dernier jour, nombre d'apparitions, fin du cooldown,
 /// présence dans le défi du jour, et les morceaux qu'un défi de tel jour ne peut pas tirer. C'est le <c>ITrackUsage</c> que
 /// Catalogue lit pour le pool admin et pour le contrôle nocturne des extraits.
 /// </summary>
@@ -76,7 +76,7 @@ public class TrackUsageTests(PostgresFixture postgres) : IAsyncLifetime
 
     [Theory]
     [InlineData(-29, true)]
-    [InlineData(-30, true)] // limite : la v1 exclut encore un morceau tiré il y a 30 jours (LastUsedDate < jour - cooldown)
+    [InlineData(-30, true)] // limite : un morceau tiré il y a 30 jours est encore exclu (dernier usage < jour - cooldown)
     [InlineData(-31, false)]
     [InlineData(-90, false)]
     public async Task Cooldown_MorceauTireIlYAXJours_EstExcluOuNon(int daysAgo, bool excluded)

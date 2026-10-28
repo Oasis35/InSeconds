@@ -2,7 +2,7 @@ using InSeconds.Api.Modules.Catalogue.Domain;
 
 namespace InSeconds.UnitTests.Catalogue;
 
-/// <summary>Le domaine du morceau : états de l'extrait, désactivation, renommage (§ 5.4 du plan v2).</summary>
+/// <summary>Le domaine du morceau : états de l'extrait, désactivation, renommage.</summary>
 public class TrackTests
 {
     private static readonly DateTimeOffset T0 = new(2026, 10, 5, 10, 0, 0, TimeSpan.Zero);

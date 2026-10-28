@@ -1,6 +1,6 @@
 namespace InSeconds.Api.Modules.Gameplay.Contracts;
 
-/// <summary>Décide si la réponse d'un joueur correspond au nom de référence (§ 5.3 du plan v2).</summary>
+/// <summary>Décide si la réponse d'un joueur correspond au nom de référence.</summary>
 public interface IAnswerMatcher
 {
     /// <summary>Vrai si <paramref name="given"/> (vide ou <c>null</c> : faux) désigne <paramref name="expected"/>.</summary>
@@ -8,7 +8,7 @@ public interface IAnswerMatcher
 }
 
 /// <summary>
-/// Tirage déterministe (§ 5.3 du plan v2) : le même <paramref name="seed"/> sur la même liste donne toujours le
+/// Tirage déterministe : le même <paramref name="seed"/> sur la même liste donne toujours le
 /// même ordre. Le défi du jour s'en sert (graine = numéro du jour) pour que tout le monde joue les mêmes
 /// morceaux, que le défi soit généré à minuit, à la volée ou par l'admin.
 /// </summary>
@@ -75,7 +75,7 @@ public sealed record HintSubject(string Artist, string Title, short? ReleaseYear
 public sealed record HintFact(HintKind Kind, string? Value);
 
 /// <summary>
-/// Ce que révèle un niveau d'indice (§ 5.3 du plan v2). Un nouvel indice (décennie, genre) s'ajoute par une
+/// Ce que révèle un niveau d'indice. Un nouvel indice (décennie, genre) s'ajoute par une
 /// nouvelle implémentation, sans toucher à <see cref="TrackRound"/>.
 /// </summary>
 public interface IHintProvider

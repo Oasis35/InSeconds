@@ -2,7 +2,7 @@ using InSeconds.Api.Modules.Gameplay.Domain;
 
 namespace InSeconds.UnitTests.Gameplay;
 
-/// <summary>La correction des réponses : cas de la v1 repris, plus les limites de la tolérance.</summary>
+/// <summary>La correction des réponses : cas courants, plus les limites de la tolérance.</summary>
 public class FuzzyAnswerMatcherTests
 {
     private readonly FuzzyAnswerMatcher _matcher = new();

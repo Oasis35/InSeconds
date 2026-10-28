@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace InSeconds.Api.Modules.Catalogue.Application;
 
-/// <summary>Codes d'erreur du module Catalogue (§ 5.6 du plan v2). Ne jamais renommer un code publié.</summary>
+/// <summary>Codes d'erreur du module Catalogue. Ne jamais renommer un code publié.</summary>
 public static class CatalogueErrorCodes
 {
     public const string TrackInUse = "catalogue.track_in_use";
@@ -33,7 +33,7 @@ internal static class CatalogueProblems
     public static ProblemDetails DuplicateDeezerId() =>
         ApiProblem.Of(StatusCodes.Status409Conflict, CatalogueErrorCodes.DuplicateDeezerId, "Un morceau du pool a déjà cet identifiant Deezer.");
 
-    /// <summary>Un identifiant que Deezer ne connaît pas : comme en v1, 422 (la requête est bien formée, son contenu inexploitable).</summary>
+    /// <summary>Un identifiant que Deezer ne connaît pas : 422 (la requête est bien formée, son contenu inexploitable).</summary>
     public static ProblemDetails NotFoundOnDeezer() =>
         ApiProblem.Of(StatusCodes.Status422UnprocessableEntity, CatalogueErrorCodes.NotFoundOnDeezer, "Ce morceau est introuvable chez Deezer.");
 
@@ -41,7 +41,7 @@ internal static class CatalogueProblems
         ApiProblem.Of(StatusCodes.Status503ServiceUnavailable, CatalogueErrorCodes.DeezerUnavailable, "Deezer est momentanément indisponible, réessaie.");
 }
 
-/// <summary>Réglages du module, relus à chaud depuis <c>infra.settings</c> (§ 4.6 du plan v2).</summary>
+/// <summary>Réglages du module, relus à chaud depuis <c>infra.settings</c>.</summary>
 public sealed class CatalogueOptions
 {
     public const string Section = "Catalogue";

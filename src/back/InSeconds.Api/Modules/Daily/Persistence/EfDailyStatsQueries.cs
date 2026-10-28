@@ -7,7 +7,7 @@ namespace InSeconds.Api.Modules.Daily.Persistence;
 
 /// <summary>
 /// Les réponses d'un défi, que lit toute statistique d'un morceau. Celles d'un joueur effacé n'y sont plus : l'effacement supprime ses
-/// parties (R8, <c>AccountErasure</c>).
+/// parties (<c>AccountErasure</c>).
 /// </summary>
 internal static class ChallengeAnswers
 {

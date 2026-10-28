@@ -10,9 +10,9 @@ using static InSeconds.IntegrationTests.Daily.DailyApi;
 namespace InSeconds.IntegrationTests.Daily;
 
 /// <summary>
-/// La génération du défi du jour (§ 5.4 bis du plan v2) : le tirage sur le pool jouable hors cooldown, le même défi pour
+/// La génération du défi du jour : le tirage sur le pool jouable hors cooldown, le même défi pour
 /// la même graine, un seul défi par jour même quand deux générations se croisent, et le pool insuffisant. La commande
-/// <c>GenerateDailyChallenge</c> est celle que lancent la tâche de minuit, le secours à la volée (E2) et le bouton de l'admin.
+/// <c>GenerateDailyChallenge</c> est celle que lancent la tâche de minuit, le secours à la volée et le bouton de l'admin.
 /// </summary>
 public class GenerateChallengeTests(PostgresFixture postgres) : IAsyncLifetime
 {
@@ -89,7 +89,7 @@ public class GenerateChallengeTests(PostgresFixture postgres) : IAsyncLifetime
     {
         // 200 morceaux jouables : 75 % du pool, 5 morceaux par défi, soit 30 jours de cooldown.
         await _app.AddPlayableTracksAsync(200);
-        // 5 morceaux hier, 5 il y a 30 jours (limite, la v1 les exclut encore), 5 il y a 31 jours (de nouveau tirables).
+        // 5 morceaux hier, 5 il y a 30 jours (limite, encore exclus), 5 il y a 31 jours (de nouveau tirables).
         await _app.AddChallengeAsync(Today.AddDays(-1), 1, 2, 3, 4, 5);
         await _app.AddChallengeAsync(Today.AddDays(-30), 6, 7, 8, 9, 10);
         await _app.AddChallengeAsync(Today.AddDays(-31), 11, 12, 13, 14, 15);

@@ -5,10 +5,10 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 namespace InSeconds.Api.Modules.Players.Auth;
 
 /// <summary>
-/// Authentification par le cookie standard d'ASP.NET Core (§ 5.5 du plan v2). Le ticket ne porte que
+/// Authentification par le cookie standard d'ASP.NET Core. Le ticket ne porte que
 /// le joueur et son appareil (<see cref="PlayerClaims"/>) ; à chaque requête, l'appareil est vérifié
-/// en base et le rôle admin relu (<see cref="PlayerCookieEvents"/>, cache d'une minute). Les cookies
-/// v1 sont repris par <see cref="LegacyCookieTransitionMiddleware"/>.
+/// en base et le rôle admin relu (<see cref="PlayerCookieEvents"/>, cache d'une minute). Les anciens
+/// cookies sont repris par <see cref="LegacyCookieTransitionMiddleware"/>.
 /// </summary>
 public static class AuthSetup
 {
@@ -63,11 +63,11 @@ public static class AuthSetup
         return services;
     }
 
-    /// <summary>Juste après l'authentification : un cookie v1 devient un cookie v2 avant l'autorisation.</summary>
+    /// <summary>Juste après l'authentification : un ancien cookie devient un cookie d'appareil avant l'autorisation.</summary>
     public static IApplicationBuilder UseLegacyCookieTransition(this IApplicationBuilder app) =>
         app.UseMiddleware<LegacyCookieTransitionMiddleware>();
 
-    /// <summary>Après l'authentification et la transition des cookies v1 : tag de trace et scope de journal du joueur.</summary>
+    /// <summary>Après l'authentification et la reprise des anciens cookies : tag de trace et scope de journal du joueur.</summary>
     public static IApplicationBuilder UsePlayerTelemetry(this IApplicationBuilder app) =>
         app.UseMiddleware<PlayerTelemetryMiddleware>();
 }

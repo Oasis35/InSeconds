@@ -9,7 +9,7 @@ namespace InSeconds.IntegrationTests.Daily;
 
 /// <summary>
 /// Le cooldown des morceaux, **déduit de la taille du pool** (#275) : la part du pool en cooldown (<c>Daily:TrackCooldownPoolPercent</c>),
-/// réglée par l'admin et **relue à chaud** (R13), donne des jours qui suivent le pool jouable. La valeur écrite s'applique tout de suite au
+/// réglée par l'admin et **relue à chaud**, donne des jours qui suivent le pool jouable. La valeur écrite s'applique tout de suite au
 /// tirage et à la date de déblocage du pool, sans redémarrage.
 /// </summary>
 public class AdminCooldownTests(PostgresFixture postgres) : IAsyncLifetime

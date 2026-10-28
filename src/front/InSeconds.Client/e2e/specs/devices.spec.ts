@@ -2,7 +2,7 @@ import { Page } from '@playwright/test';
 import { test, expect } from '../fixtures/test';
 import { linkAccount, openOtherDevice, signInAgain } from '../pages/login.page';
 
-// Appareils connectés (v2 seulement, B3) : chaque connexion par lien magique est un appareil du compte, déconnectable
+// Appareils connectés : chaque connexion par lien magique est un appareil du compte, déconnectable
 // depuis le profil. Deux contextes de navigateur = deux appareils.
 
 const EMAIL = 'appareils@e2e.test';

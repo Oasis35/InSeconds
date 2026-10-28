@@ -1,5 +1,5 @@
 <Project>
-  <!-- Réglages communs à tous les projets de la v2. -->
+  <!-- Réglages communs à tous les projets du back. -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>

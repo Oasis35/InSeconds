@@ -8,7 +8,7 @@ public sealed record TrackMetadata(
     long DeezerTrackId, string Artist, string Title, string? CoverHash, short? ReleaseYear, int? Rank, PreviewStatus Preview, long? AlbumId);
 
 /// <summary>
-/// Un morceau du pool (§ 4.3 du plan v2) : ce que le jeu fait écouter, avec son extrait, son année, son rang
+/// Un morceau du pool : ce que le jeu fait écouter, avec son extrait, son année, son rang
 /// Deezer. Les noms (<see cref="Artist"/>, <see cref="Title"/>) sont la référence de correction des réponses.
 /// Rien ne le lie à un défi : l'usage (dernier jour, nombre d'utilisations) se calcule dans Daily et
 /// s'obtient par <c>ITrackUsage</c>.
