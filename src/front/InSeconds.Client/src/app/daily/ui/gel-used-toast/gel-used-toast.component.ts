@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
+import { ToastFrameComponent } from '../../../ui/toast-frame/toast-frame.component';
 import { pluralKey } from '../../domain/streak';
 import { StreakIconComponent } from '../streak-icon/streak-icon.component';
 
 /** Toast d'un compte connecté : « 1 gel a sauvé ta série » (fin de partie). */
 @Component({
   selector: 'app-gel-used-toast',
-  imports: [TranslatePipe, StreakIconComponent],
+  imports: [TranslatePipe, StreakIconComponent, ToastFrameComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './gel-used-toast.component.html',
 })

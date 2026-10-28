@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
+import { ToastFrameComponent } from '../../../ui/toast-frame/toast-frame.component';
 import { pluralKey } from '../../domain/streak';
 import { StreakIconComponent } from '../streak-icon/streak-icon.component';
 
@@ -10,7 +11,7 @@ import { StreakIconComponent } from '../streak-icon/streak-icon.component';
  */
 @Component({
   selector: 'app-guest-streak-toast',
-  imports: [RouterLink, TranslatePipe, StreakIconComponent],
+  imports: [RouterLink, TranslatePipe, StreakIconComponent, ToastFrameComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './guest-streak-toast.component.html',
 })
