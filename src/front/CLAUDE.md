@@ -41,7 +41,8 @@ src/front/InSeconds.Client/
 ├── proxy.conf.json            # dev : /api, /health, /jobs → http://localhost:5175
 ├── public/
 │   ├── i18n/{fr,en}.json      # clés rangées par domaine (common, errors, shell, ui, puis daily, account…)
-│   ├── manifest.webmanifest + icons/   # installation sur l'écran d'accueil
+│   ├── favicon.svg            # « IN// » du logo (Poppins 800, IN en blanc, // en terracotta) sur le fond du site, comme la photo de profil Instagram
+│   ├── manifest.webmanifest + icons/   # installation sur l'écran d'accueil : mêmes « IN// » en PNG (192, 512, apple-touch 180, maskable 512 avec une marge pour le recadrage d'Android)
 │   └── robots.txt, sitemap.xml         # robots.txt écarte /runs (les liens de playlists ne s'indexent pas) ; sitemap de secours (/daily, /legal, /privacy) : Caddy envoie /sitemap.xml à l'API, qui ajoute les jours publiés
 └── src/app/
     ├── app.ts / app.html      # coquille : bandeau DEV, toasts, bandeau de mise à jour, avis d'ancienne adresse, overlay
