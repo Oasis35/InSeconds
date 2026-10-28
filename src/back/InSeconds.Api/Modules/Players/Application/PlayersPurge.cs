@@ -1,6 +1,6 @@
 using Hangfire;
-using InSeconds.Api.Infrastructure.Auth;
 using InSeconds.Api.Infrastructure.Jobs;
+using InSeconds.Api.Modules.Players.Auth;
 using InSeconds.Api.Modules.Players.Domain;
 using Wolverine;
 

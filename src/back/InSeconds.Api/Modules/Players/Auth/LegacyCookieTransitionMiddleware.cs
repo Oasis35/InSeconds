@@ -3,7 +3,7 @@ using InSeconds.Api.Modules.Players.Contracts;
 using InSeconds.Infrastructure.Http;
 using Microsoft.AspNetCore.DataProtection;
 
-namespace InSeconds.Api.Infrastructure.Auth;
+namespace InSeconds.Api.Modules.Players.Auth;
 
 /// <summary>
 /// Reprise des cookies v1 sans déconnecter personne (§ 5.5 du plan v2). Le cookie v1

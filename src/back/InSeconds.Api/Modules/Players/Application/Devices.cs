@@ -1,4 +1,4 @@
-using InSeconds.Api.Infrastructure.Auth;
+using InSeconds.Api.Modules.Players.Auth;
 using InSeconds.Api.Modules.Players.Contracts;
 using InSeconds.Api.Modules.Players.Domain;
 using InSeconds.Infrastructure.RateLimiting;

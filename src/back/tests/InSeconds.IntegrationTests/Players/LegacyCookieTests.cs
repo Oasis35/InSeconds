@@ -1,9 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Claims;
-using InSeconds.Api.Infrastructure.Auth;
 using InSeconds.Api.Infrastructure.Persistence;
 using InSeconds.Api.Modules.Players.Application;
+using InSeconds.Api.Modules.Players.Auth;
 using InSeconds.Api.Modules.Players.Contracts;
 using InSeconds.Api.Modules.Players.Domain;
 using Microsoft.AspNetCore.DataProtection;

@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using InSeconds.Api.Modules.Players.Contracts;
 
-namespace InSeconds.Api.Infrastructure.Auth;
+namespace InSeconds.Api.Modules.Players.Auth;
 
 /// <summary>
 /// Rattache chaque requête au joueur identifié (<see cref="ICurrentPlayer"/>) : tag sur la trace et scope

@@ -1,18 +1,8 @@
+using InSeconds.Api.Infrastructure.Auth;
 using InSeconds.Api.Modules.Players.Contracts;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
-namespace InSeconds.Api.Infrastructure.Auth;
-
-public static class AuthorizationPolicies
-{
-    /// <summary>Réservé aux comptes admin : tout <c>/api/admin</c> et le tableau de bord <c>/jobs</c>.</summary>
-    public const string Admin = "Admin";
-}
-
-public static class Roles
-{
-    public const string Admin = "admin";
-}
+namespace InSeconds.Api.Modules.Players.Auth;
 
 /// <summary>
 /// Authentification par le cookie standard d'ASP.NET Core (§ 5.5 du plan v2). Le ticket ne porte que

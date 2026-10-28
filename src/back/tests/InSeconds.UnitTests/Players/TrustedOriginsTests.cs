@@ -1,4 +1,4 @@
-using InSeconds.Api.Infrastructure.Auth;
+using InSeconds.Api.Modules.Players.Auth;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 

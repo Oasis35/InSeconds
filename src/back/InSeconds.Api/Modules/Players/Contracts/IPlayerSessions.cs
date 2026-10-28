@@ -1,7 +1,7 @@
 namespace InSeconds.Api.Modules.Players.Contracts;
 
 /// <summary>
-/// Les appareils connectés, vus par l'authentification (<c>Infrastructure/Auth</c>) : validation
+/// Les appareils connectés, vus par l'authentification (<c>Players/Auth</c>) : validation
 /// du cookie, dernière visite, reprise d'un cookie v1 (§ 5.5 du plan v2). Une erreur de base
 /// remonte telle quelle : elle ne doit jamais passer pour un cookie invalide (piège 37).
 /// </summary>

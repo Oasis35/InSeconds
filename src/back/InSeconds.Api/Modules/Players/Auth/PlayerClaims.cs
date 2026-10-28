@@ -1,8 +1,9 @@
 using System.Globalization;
 using System.Security.Claims;
+using InSeconds.Api.Infrastructure.Auth;
 using InSeconds.Api.Modules.Players.Contracts;
 
-namespace InSeconds.Api.Infrastructure.Auth;
+namespace InSeconds.Api.Modules.Players.Auth;
 
 /// <summary>
 /// Contenu du ticket du cookie : le joueur et son appareil, rien d'autre (§ 5.5 du plan v2). Le rôle

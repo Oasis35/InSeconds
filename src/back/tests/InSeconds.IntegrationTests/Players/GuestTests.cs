@@ -1,8 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
-using InSeconds.Api.Infrastructure.Auth;
 using InSeconds.Api.Modules.Players.Application;
+using InSeconds.Api.Modules.Players.Auth;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Hosting;
 

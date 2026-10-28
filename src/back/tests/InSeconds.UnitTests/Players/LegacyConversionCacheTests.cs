@@ -1,4 +1,4 @@
-using InSeconds.Api.Infrastructure.Auth;
+using InSeconds.Api.Modules.Players.Auth;
 using InSeconds.Api.Modules.Players.Contracts;
 using Microsoft.Extensions.Time.Testing;
 

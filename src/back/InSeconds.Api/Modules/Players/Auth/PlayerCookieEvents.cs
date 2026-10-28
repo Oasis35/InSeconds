@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.Caching.Memory;
 
-namespace InSeconds.Api.Infrastructure.Auth;
+namespace InSeconds.Api.Modules.Players.Auth;
 
 /// <summary>Événements du cookie : validation de l'appareil à chaque requête, 401/403 au lieu de redirections.</summary>
 internal sealed class PlayerCookieEvents(DeviceSessionValidator validator) : CookieAuthenticationEvents
