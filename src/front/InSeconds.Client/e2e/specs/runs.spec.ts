@@ -21,10 +21,15 @@ test.describe('Mode Platines', () => {
 
     // Un compte sans accès : l'accès est demandé, la réponse est non.
     const playerId = await run.loginAsPlayer('joueur-runs@e2e.test', 'JoueurRuns');
-    const refused = page.waitForResponse(r => r.url().endsWith('/api/runs/me'));
+    // La page d'avant est d'abord quittée : une réponse qu'elle recevrait encore serait prise par l'attente, et son corps n'est plus lisible
+    // après la navigation (« No data found for resource »). Le corps est lu dès l'arrivée de la réponse.
+    await page.goto('about:blank');
+    const refused = page
+      .waitForResponse(r => r.url().endsWith('/api/runs/me'))
+      .then(async r => (await r.json()) as { hasAccess: boolean });
     await game.goto();
     await game.waitForWelcome();
-    expect(((await (await refused).json()) as { hasAccess: boolean }).hasAccess).toBe(false);
+    expect((await refused).hasAccess).toBe(false);
     await expect(run.homeCard).toHaveCount(0);
 
     // L'adresse du mode ne montre rien : retour au jeu du jour, sans laisser /runs dans l'historique.
