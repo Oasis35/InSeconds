@@ -1,6 +1,6 @@
 # RGPD : ce qui est en place
 
-État au 24/10/2026, après la passe RGPD du 16/10/2026 (PR #351, #349, #352) et la partie du mode Run (#363). Le texte public est la page `/privacy` (traductions `privacy.*` de `public/i18n/fr.json` et `en.json`) : toute évolution du traitement des données doit y être reportée.
+État au 28/10/2026, après la passe RGPD du 16/10/2026 (PR #351, #349, #352), la partie du mode Run (#363) et la source d'arrivée (#445). Le texte public est la page `/privacy` (traductions `privacy.*` de `public/i18n/fr.json` et `en.json`) : toute évolution du traitement des données doit y être reportée.
 
 ## Accès aux données
 
@@ -17,9 +17,11 @@ Jamais d'email, de pseudo, de réponse saisie, de cookie ni d'`Authorization` (t
 
 Cloudflare Web Analytics, en injection automatique sur le site `inseconds.cc` (réglage du tableau de bord Cloudflare, rien dans le code) : sans cookie ni identifiant, statistiques agrégées seulement (visites, pages vues, pays, référents, appareils, vitesse). Pas de bandeau de consentement. Décrit dans `/privacy` (« Données collectées », « Cookie », « Destinataires ») ; son script est dans la CSP (`static.cloudflareinsights.com` en `script-src` et `connect-src`, `nginx/csp.conf.template`), ses mesures partent vers le même domaine (`/cdn-cgi/rum`). Google Analytics a été écarté le 24/10/2026 : il imposerait un bandeau de consentement et enverrait les données chez Google.
 
+**Source d'arrivée d'un invité** (#445) : à l'ouverture, le front lit le `utm_source` du lien, sinon le **domaine seul** du référent (jamais l'adresse complète), le garde le temps de la visite dans `sessionStorage` et l'envoie à la création de l'invité. Le serveur ne garde qu'une valeur au format strict (minuscules, lettres, chiffres, `.` `-` `_`, 40 caractères au plus, `other` sinon, `direct` sans source) dans `players.players.acquisition_source` : rattachée à l'identifiant pseudonyme, dans la copie des données, effacée avec le joueur. Le compteur Grafana (`inseconds_players_guests_created_total`) n'a que la source en étiquette, jamais le joueur. Base légale : intérêt légitime (mesure d'audience), décrite dans `/privacy` (« Données collectées »).
+
 ## Droits du joueur
 
-- **Copie** : `GET /api/players/me/export` (JSON : compte, appareils, puis une section par mode de jeu sous `modules` : `modules.daily` pour la série et les parties, `modules.runs` pour les parties, les playlists créées, le record et l'accès), bouton « Tes données » du profil.
+- **Copie** : `GET /api/players/me/export` (JSON : source d'arrivée, compte, appareils, puis une section par mode de jeu sous `modules` : `modules.daily` pour la série et les parties, `modules.runs` pour les parties, les playlists créées, le record et l'accès), bouton « Tes données » du profil.
 - **Effacement** : `POST /api/players/me/delete` (pseudo retapé pour confirmer), effacement réel (`AccountErasure`, qui appelle l'`IPlayerDataContributor` de chaque mode de jeu dans la même transaction).
 - **Sans connexion possible** : commandes de secours sur le VPS `--export-player` / `--delete-player` (cf. `src/back/CLAUDE.md` § Démarrage), réponse sous un mois, uniquement à l'adresse du compte.
 

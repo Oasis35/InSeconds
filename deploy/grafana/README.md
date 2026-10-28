@@ -6,12 +6,12 @@ Tableaux de Grafana Cloud (stack UE), **pour la prod seulement** : le staging n'
 |---|---|---|
 | `inseconds-exploitation.json` | celui qu'on ouvre en premier : erreurs de l'API (avec la pile en dépliant une ligne), 5xx, erreurs du front (js, http), violations CSP à part, warnings, la nuit (défi, stats figées, extraits, purge), Deezer et emails, temps de réponse, mémoire | logs + métriques |
 | `inseconds-joueur.json` | tout ce qui concerne un joueur (actions, erreurs, warnings), filtré sur l'attribut `PlayerId` et non sur le texte | logs |
-| `inseconds-activite.json` | parties démarrées, terminées, abandonnées, expirées ; score ; connexions et comptes créés ou effacés ; paliers, indices, artiste et titre trouvés | métriques métier de l'API |
+| `inseconds-activite.json` | parties démarrées, terminées, abandonnées, expirées ; score ; nouveaux joueurs par source d'arrivée ; connexions et comptes créés ou effacés ; paliers, indices, artiste et titre trouvés | métriques métier de l'API |
 
 Ce sont les seuls tableaux : `InSeconds`, `Le jeu`, `Actions joueurs en direct`, `Erreurs et warnings` et `Santé technique`, s'ils traînent encore dans Grafana, sont à supprimer. Le détail par morceau n'est plus dans Grafana : l'admin le donne, calculé sur la base.
 
 **Ce qui casse un panneau sans erreur** :
-- « Activité » lit les compteurs de `DailyMetrics` et `PlayersMetrics` (`inseconds_daily_sessions_total`, `inseconds_daily_answers_total`, `inseconds_daily_session_score_bucket`, `inseconds_players_sign_ins_total`, `inseconds_players_accounts_erased_total`) : renommer une métrique ou une étiquette le vide. Ces compteurs n'existent que depuis leur déploiement : rien avant.
+- « Activité » lit les compteurs de `DailyMetrics` et `PlayersMetrics` (`inseconds_daily_sessions_total`, `inseconds_daily_answers_total`, `inseconds_daily_session_score_bucket`, `inseconds_players_guests_created_total`, `inseconds_players_sign_ins_total`, `inseconds_players_accounts_erased_total`) : renommer une métrique ou une étiquette le vide. Ces compteurs n'existent que depuis leur déploiement : rien avant.
 - « Exploitation » et « Un joueur » filtrent sur le texte de certains messages (« Erreur front », « Erreur front (csp) », « Réponse de », « Défi du », « Contrôle des previews »…, écrits dans les classes `*Log` de `src/back`) : changer un de ces textes vide le panneau, mettre le JSON à jour et le réimporter.
 - Les diagnostics temporaires de la recette iPhone (`Viewport:`, `AudioStall`) sont journalisés comme des erreurs du front : ils sont exclus des compteurs et ont leur propre panneau, à retirer avec eux.
 

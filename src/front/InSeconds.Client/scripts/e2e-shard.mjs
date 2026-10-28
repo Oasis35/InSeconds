@@ -40,6 +40,7 @@ const WEIGHTS = {
   'leave-guard.spec.ts': 3,
   'footer.spec.ts': 3,
   'archive.spec.ts': 7,
+  'arrival-source.spec.ts': 6,
   'skip-track.spec.ts': 2,
   'no-challenge.spec.ts': 2,
   'mobile-input-zoom.spec.ts': 2,

@@ -20,6 +20,12 @@ public sealed class Player
 
     public DateTimeOffset? DeletedAt { get; private set; }
 
-    public static Player CreateGuest(Guid id, DateTimeOffset now) =>
-        new() { Id = id, CreatedAt = now, LastSeenAt = now };
+    /// <summary>
+    /// D'où vient le joueur, nettoyée par <see cref="Domain.AcquisitionSource"/> : notée à la création de l'invité, jamais changée
+    /// ensuite. Vide pour un joueur créé par un lien de connexion, ou avant que la source ne soit notée.
+    /// </summary>
+    public string? AcquisitionSource { get; private set; }
+
+    public static Player CreateGuest(Guid id, DateTimeOffset now, string? acquisitionSource = null) =>
+        new() { Id = id, CreatedAt = now, LastSeenAt = now, AcquisitionSource = acquisitionSource };
 }

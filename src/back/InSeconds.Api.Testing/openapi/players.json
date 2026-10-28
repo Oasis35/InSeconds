@@ -32,6 +32,15 @@
               }
             }
           }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGuest"
+              }
+            }
+          }
         }
       }
     },
@@ -935,6 +944,7 @@
           "playerId",
           "createdAt",
           "lastSeenAt",
+          "acquisitionSource",
           "account",
           "devices",
           "modules"
@@ -978,6 +988,23 @@
           },
           "modules": {
             "type": "object"
+          },
+          "acquisitionSource": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "CreateGuest": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       }

@@ -672,13 +672,65 @@
       }
     },
     {
+      "type": "timeseries",
+      "title": "Nouveaux joueurs par source (par jour)",
+      "description": "Invités créés, par source d'arrivée : utm_source du lien (instagram, share…), sinon domaine du site d'où arrive le visiteur, direct sans l'un ni l'autre, other pour une valeur mal formée.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROM}"
+          },
+          "expr": "sum by (source) (increase(inseconds_players_guests_created_total{job=~\".*inseconds-api\"}[1d]))",
+          "legendFormat": "{{source}}",
+          "instant": false,
+          "range": true,
+          "interval": "1d"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60,
+            "lineWidth": 1,
+            "stacking": {
+              "mode": "normal"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 21,
+      "gridPos": {
+        "x": 0,
+        "y": 20,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
       "id": 16,
       "type": "row",
       "title": "Les réponses (période choisie)",
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 20,
+        "y": 29,
         "w": 24,
         "h": 1
       },
@@ -732,7 +784,7 @@
       "id": 17,
       "gridPos": {
         "x": 0,
-        "y": 21,
+        "y": 30,
         "w": 8,
         "h": 9
       }
@@ -784,7 +836,7 @@
       "id": 18,
       "gridPos": {
         "x": 8,
-        "y": 21,
+        "y": 30,
         "w": 8,
         "h": 9
       }
@@ -836,7 +888,7 @@
       "id": 19,
       "gridPos": {
         "x": 16,
-        "y": 21,
+        "y": 30,
         "w": 8,
         "h": 9
       }
@@ -889,7 +941,7 @@
       "id": 20,
       "gridPos": {
         "x": 0,
-        "y": 30,
+        "y": 39,
         "w": 24,
         "h": 9
       }

@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
 using InSeconds.Api.Infrastructure.Auth;
 using InSeconds.Api.Modules.Players.Application;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -38,6 +39,41 @@ public class GuestTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(1L, await api.ScalarAsync<long>($"SELECT count(*) FROM players.players WHERE id = '{guest!.PlayerId}'"));
         Assert.Equal(1L, await api.ScalarAsync<long>($"SELECT count(*) FROM players.device_sessions WHERE player_id = '{guest.PlayerId}'"));
         Assert.Equal(0L, await api.ScalarAsync<long>("SELECT count(*) FROM players.accounts"));
+        // Sans corps (un front d'avant la source d'arrivée) : arrivée directe.
+        Assert.Equal("direct", await SourceAsync(api, guest.PlayerId));
+    }
+
+    [Theory]
+    [InlineData("{\"source\":\"Instagram\"}", "instagram")]
+    [InlineData("{\"source\":\"google.com\"}", "google.com")]
+    [InlineData("{\"source\":\"alice@example.com\"}", "other")]
+    [InlineData("{\"source\":\"une source bien trop longue pour etre gardee telle quelle\"}", "other")]
+    [InlineData("{\"source\":null}", "direct")]
+    [InlineData("{}", "direct")]
+    public async Task CreationDInvite_SourceDArriveeNettoyee(string body, string expected)
+    {
+        await using var api = new ApiFactory(_connectionString);
+
+        var response = await api.CreateClient().PostAsync(
+            "/api/players/guest", new StringContent(body, Encoding.UTF8, "application/json"), Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var guest = (await response.Content.ReadFromJsonAsync<GuestResponse>(Ct))!;
+        Assert.Equal(expected, await SourceAsync(api, guest.PlayerId));
+    }
+
+    [Fact]
+    public async Task NavigateurDejaIdentifie_GardeSaSourceDArrivee()
+    {
+        await using var api = new ApiFactory(_connectionString);
+        var client = api.CreateClient();
+
+        var first = await client.PostAsJsonAsync("/api/players/guest", new CreateGuest("instagram"), Ct);
+        var second = await client.PostAsJsonAsync("/api/players/guest", new CreateGuest("tiktok"), Ct);
+
+        var playerId = (await first.Content.ReadFromJsonAsync<GuestResponse>(Ct))!.PlayerId;
+        Assert.Equal(playerId, (await second.Content.ReadFromJsonAsync<GuestResponse>(Ct))!.PlayerId);
+        Assert.Equal("instagram", await SourceAsync(api, playerId));
     }
 
     [Fact]
@@ -128,6 +164,9 @@ public class GuestTests(PostgresFixture postgres) : IAsyncLifetime
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<GuestResponse>(Ct))!.PlayerId;
     }
+
+    private static Task<string?> SourceAsync(ApiFactory api, Guid playerId) =>
+        api.ScalarAsync<string?>($"SELECT acquisition_source FROM players.players WHERE id = '{playerId}'");
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 }
