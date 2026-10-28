@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
+import { ButtonComponent } from '../../../ui/button/button.component';
 
 /**
  * Un morceau retiré de la manche (le serveur n'a plus trouvé son extrait), à la place du lecteur et de la saisie : une carte qui ne révèle rien
@@ -8,7 +9,7 @@ import { TranslatePipe } from '@ngx-translate/core';
  */
 @Component({
   selector: 'app-run-withdrawn-card',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, ButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="space-y-4" data-testid="run-withdrawn">
@@ -25,9 +26,7 @@ import { TranslatePipe } from '@ngx-translate/core';
         </p>
       </section>
 
-      <button type="button" (click)="next.emit()" data-testid="run-next-track"
-        class="w-full py-4 rounded-(--radius-button) text-sm font-bold tracking-wide uppercase transition touch-manipulation"
-        style="font-family:var(--font-display);letter-spacing:0.06em;background:var(--gradient-primary);color:var(--text-on-primary);box-shadow:var(--glow-primary)">
+      <button appButton type="button" [block]="true" [glow]="true" (click)="next.emit()" data-testid="run-next-track">
         {{ (endsRound() ? 'runs.answer.endRound' : 'runs.answer.next') | translate }}
       </button>
     </div>

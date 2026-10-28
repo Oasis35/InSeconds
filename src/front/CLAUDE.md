@@ -68,7 +68,7 @@ src/front/InSeconds.Client/
     │   ├── health/            # HealthService (sonde /health)
     │   └── shell/             # accès de l'en-tête `<app-account-link>` (ronds gris : cadenas `/admin` pour un admin, initiale du compte ; bouton « Connexion » pour un invité ; affichés seulement dans le bandeau du jeu du jour et des jours passés : plus d'en-tête global depuis le 17/10/2026, choix de Clément), overlay « Service indisponible », avis d'ancienne adresse, bandeau de mise à jour, page de confidentialité et 404, emplacement des entrées des autres modes sur l'accueil (`HOME_MODE_ENTRIES`, `<app-home-mode-entries>`)
     └── ui/                    # kit de la DA, purement visuel
-        ├── button/            # <button appButton variant="primary|secondary|danger|ghost">
+        ├── button/            # <button appButton variant="primary|secondary|neutral|danger|ghost" size="lg|md|sm" [block] [glow]> : seul style de bouton d'action (lg 60 px = bouton principal d'un écran, md 48 px par défaut ; neutral = contour --border-neutral ; glow = lueur permanente en cours de partie)
         ├── modal/             # ModalService (CDK Dialog) : open, openSheet, confirm ; <app-modal-frame>
         ├── toast/             # ToastService + <app-toast-host>
         ├── error-message/     # message + code d'erreur (traceId)

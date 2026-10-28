@@ -1,6 +1,7 @@
 import { Component, computed, input, output, signal, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
+import { ButtonComponent } from '../../../ui/button/button.component';
 
 /**
  * Reprise d'une partie en cours, avec confirmation d'abandon en deux temps : commune aux modes (la date si le mode la donne, « Partie en
@@ -9,7 +10,7 @@ import { TranslatePipe } from '@ngx-translate/core';
  */
 @Component({
   selector: 'app-resume-screen',
-  imports: [TranslatePipe, RouterLink],
+  imports: [TranslatePipe, RouterLink, ButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './resume-screen.component.html',
   host: { class: 'flex-1 flex flex-col' },

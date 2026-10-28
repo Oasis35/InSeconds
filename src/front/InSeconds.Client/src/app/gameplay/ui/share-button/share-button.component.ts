@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
+import { ButtonComponent } from '../../../ui/button/button.component';
 
 /**
  * Le bouton de partage de la fin d'une partie, commun aux modes (un mode n'importe pas l'autre) : « Partager mon score » au Daily, « Partager la
@@ -7,7 +8,7 @@ import { TranslatePipe } from '@ngx-translate/core';
  */
 @Component({
   selector: 'app-share-button',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, ButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './share-button.component.html',
 })

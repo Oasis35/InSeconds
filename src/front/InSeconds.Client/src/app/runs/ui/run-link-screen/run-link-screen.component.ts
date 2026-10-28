@@ -4,6 +4,7 @@ import { BrandComponent } from '../../../gameplay/ui/brand/brand.component';
 import { SecondsPipe } from '../../../ui/format/seconds.pipe';
 import { RunLink } from '../../domain/run';
 import { RunDiscComponent } from '../run-disc/run-disc.component';
+import { ButtonComponent } from '../../../ui/button/button.component';
 
 /**
  * Le lien reçu : ce que voit un ami qui ouvre `/runs/<code>` sans avoir joué cette playlist, invité compris, avec ou sans accès à Platines. Le logo
@@ -13,7 +14,7 @@ import { RunDiscComponent } from '../run-disc/run-disc.component';
  */
 @Component({
   selector: 'app-run-link-screen',
-  imports: [TranslatePipe, SecondsPipe, BrandComponent, RunDiscComponent],
+  imports: [TranslatePipe, SecondsPipe, BrandComponent, RunDiscComponent, ButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex-1 flex flex-col' },
   template: `
@@ -33,9 +34,7 @@ import { RunDiscComponent } from '../run-disc/run-disc.component';
           <span>{{ 'runs.link.goal' | translate: { rounds: link().rounds } }}</span>
         </li>
       </ul>
-      <button type="button" (click)="start.emit()" data-testid="run-link-play"
-        class="w-full py-4 rounded-(--radius-button) text-sm font-bold tracking-wide uppercase transition touch-manipulation"
-        style="font-family:var(--font-display);letter-spacing:0.06em;background:var(--gradient-primary);color:var(--text-on-primary);box-shadow:var(--glow-primary)">
+      <button appButton type="button" size="lg" [block]="true" [glow]="true" (click)="start.emit()" data-testid="run-link-play">
         {{ 'runs.link.play' | translate }}
       </button>
     </div>

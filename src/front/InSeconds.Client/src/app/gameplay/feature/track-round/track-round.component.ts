@@ -8,6 +8,7 @@ import { AnswerInputComponent } from '../../ui/answer-input/answer-input.compone
 import { HintPanelComponent } from '../../ui/hint-panel/hint-panel.component';
 import { RevealCardComponent } from '../../ui/reveal-card/reveal-card.component';
 import { RoundPlayerComponent } from '../../ui/round-player/round-player.component';
+import { ButtonComponent } from '../../../ui/button/button.component';
 
 /**
  * La manche d'un morceau, de l'écoute à la révélation : le lecteur, les indices, la saisie avec son
@@ -20,7 +21,7 @@ import { RoundPlayerComponent } from '../../ui/round-player/round-player.compone
  */
 @Component({
   selector: 'app-track-round',
-  imports: [TranslatePipe, RoundPlayerComponent, HintPanelComponent, AnswerInputComponent, RevealCardComponent],
+  imports: [TranslatePipe, ButtonComponent, RoundPlayerComponent, HintPanelComponent, AnswerInputComponent, RevealCardComponent],
   providers: [AnswerSearchStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -48,9 +49,7 @@ import { RoundPlayerComponent } from '../../ui/round-player/round-player.compone
             @if (phase === 'submit-error') {
               <div class="rounded-xl px-4 py-3 space-y-3" style="background:rgb(var(--rgb-danger) / 0.08);border:1px solid rgb(var(--rgb-danger) / 0.3)">
                 <p role="alert" class="text-sm text-center font-semibold" style="color:var(--text-error)">{{ 'gameplay.answer.submitFailed' | translate }}</p>
-                <button type="button" (click)="retrySubmission()"
-                  class="w-full py-3.5 rounded-(--radius-button) text-sm font-bold tracking-wide uppercase transition touch-manipulation"
-                  style="font-family:var(--font-display);letter-spacing:0.06em;background:var(--gradient-primary);color:var(--text-on-primary);box-shadow:var(--glow-primary)">
+                <button appButton type="button" [block]="true" [glow]="true" (click)="retrySubmission()">
                   {{ 'gameplay.answer.retry' | translate }}
                 </button>
               </div>
@@ -60,27 +59,19 @@ import { RoundPlayerComponent } from '../../ui/round-player/round-player.compone
                   {{ (kind === 'skip' ? 'gameplay.answer.skipConfirm' : 'gameplay.answer.emptyConfirm') | translate }}
                 </p>
                 <div class="flex gap-2">
-                  <button type="button" (click)="round.cancelConfirm()"
-                    class="flex-1 py-2.5 rounded-(--radius-button) text-sm font-semibold transition touch-manipulation"
-                    style="background:var(--bg-inactive);color:var(--text-hover);border:1px solid var(--border-subtle)">
+                  <button appButton type="button" variant="secondary" class="flex-1" (click)="round.cancelConfirm()">
                     {{ 'gameplay.answer.cancel' | translate }}
                   </button>
-                  <button type="button" (click)="confirm()"
-                    class="flex-1 py-2.5 rounded-(--radius-button) text-sm font-bold uppercase transition touch-manipulation"
-                    style="font-family:var(--font-display);letter-spacing:0.04em;background:var(--gradient-primary);color:var(--text-on-primary)">
+                  <button appButton type="button" class="flex-1" (click)="confirm()">
                     {{ (kind === 'skip' ? 'gameplay.answer.skipAnyway' : 'gameplay.answer.submitAnyway') | translate }}
                   </button>
                 </div>
               </div>
             } @else {
-              <button type="submit" [disabled]="phase === 'submitting'"
-                class="w-full py-3.5 rounded-(--radius-button) text-sm font-bold tracking-wide uppercase transition touch-manipulation disabled:opacity-60"
-                style="font-family:var(--font-display);background:var(--gradient-primary);color:var(--text-on-primary);letter-spacing:0.06em;box-shadow:var(--glow-primary)">
+              <button appButton type="submit" [block]="true" [glow]="true" [disabled]="phase === 'submitting'">
                 {{ phase === 'submitting' ? '…' : ('gameplay.answer.validate' | translate) }}
               </button>
-              <button type="button" (click)="round.askSkip()" [disabled]="phase === 'submitting'"
-                class="w-full py-3.5 rounded-(--radius-button) text-sm font-bold tracking-wide uppercase transition active:scale-95 touch-manipulation disabled:opacity-60"
-                style="font-family:var(--font-display);letter-spacing:0.06em;border:1.5px solid var(--border-neutral);background:transparent;color:var(--text-hi)">
+              <button appButton type="button" variant="neutral" [block]="true" [disabled]="phase === 'submitting'" (click)="round.askSkip()">
                 {{ 'gameplay.round.skip' | translate }}
               </button>
             }

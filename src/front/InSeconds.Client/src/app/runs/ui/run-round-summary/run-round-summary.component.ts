@@ -3,6 +3,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { TrackResultRow, TrackResultsListComponent } from '../../../gameplay/ui/track-results-list/track-results-list.component';
 import { RunRound, RunRoundSummary } from '../../domain/run';
 import { RunObjectiveComponent } from '../run-objective/run-objective.component';
+import { ButtonComponent } from '../../../ui/button/button.component';
 
 /**
  * Le bilan d'une manche : « MANCHE 2 / 4 », « Manche 2 terminée » (✓ si elle est débloquée, ✕ sinon), le bloc objectif, les morceaux joués dans
@@ -11,7 +12,7 @@ import { RunObjectiveComponent } from '../run-objective/run-objective.component'
  */
 @Component({
   selector: 'app-run-round-summary',
-  imports: [TranslatePipe, TrackResultsListComponent, RunObjectiveComponent],
+  imports: [TranslatePipe, TrackResultsListComponent, RunObjectiveComponent, ButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex-1 flex flex-col' },
   template: `
@@ -57,9 +58,7 @@ import { RunObjectiveComponent } from '../run-objective/run-objective.component'
         </span>
       </div>
 
-      <button type="button" (click)="next.emit()" data-testid="run-next-round"
-        class="w-full py-4 rounded-(--radius-button) text-sm font-bold tracking-wide uppercase transition touch-manipulation"
-        style="font-family:var(--font-display);letter-spacing:0.06em;background:var(--gradient-primary);color:var(--text-on-primary);box-shadow:var(--glow-primary)">
+      <button appButton type="button" [block]="true" [glow]="true" (click)="next.emit()" data-testid="run-next-round">
         {{ (endsRun() ? 'runs.roundEnd.seeResult' : 'runs.roundEnd.next') | translate }}
       </button>
     </div>
