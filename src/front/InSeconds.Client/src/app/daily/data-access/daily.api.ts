@@ -153,6 +153,8 @@ function toToday(today: TodayResponse): DailyToday {
     completedCount: today.completedCount,
     streak: toStreak(today.streak),
     completedGames: today.completedGames,
+    bestScore: today.bestScore ?? null,
+    yesterdayMedian: today.yesterdayMedian ?? null,
   };
 }
 

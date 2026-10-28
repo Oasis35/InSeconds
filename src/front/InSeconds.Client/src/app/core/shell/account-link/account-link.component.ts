@@ -1,27 +1,18 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { SessionStore } from '../../session/session.store';
 
 /**
- * Les accès de l'en-tête, à droite du titre IN//SECONDS : le calendrier des jours passés, le cadenas de l'admin (compte admin seulement),
- * puis l'initiale du compte connecté (mène au profil), ou un bouton « Connexion » (rectangle à contour gris) pour un invité ou un visiteur. Des ronds gris,
- * sans dégradé ni lueur. Ni compte ni cadenas tant que l'identité n'est pas lue.
+ * Les accès de l'en-tête, à droite du titre IN//SECONDS : le cadenas de l'admin (compte admin seulement), puis l'initiale du compte
+ * connecté (mène au profil), ou un bouton « Connexion » (rectangle à contour gris) pour un invité ou un visiteur. Des ronds gris, sans
+ * dégradé ni lueur (les jours passés sont un lien en bas de l'accueil). Ni compte ni cadenas tant que l'identité n'est pas lue.
  */
 @Component({
   selector: 'app-account-link',
   imports: [RouterLink, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (showArchive()) {
-      <a routerLink="/daily/archive" class="header-round" data-testid="header-archive"
-         [attr.title]="'shell.header.archive' | translate" [attr.aria-label]="'shell.header.archive' | translate">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-             stroke-linejoin="round" aria-hidden="true" style="display:block">
-          <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
-        </svg>
-      </a>
-    }
     @if (!session.loaded()) {
       <!-- Identité pas encore lue : ni initiale ni « Connexion » (sinon un compte connecté voit un instant le lien). -->
     } @else if (session.isLinked()) {
@@ -62,9 +53,6 @@ import { SessionStore } from '../../session/session.store';
 })
 export class AccountLinkComponent {
   protected readonly session = inject(SessionStore);
-
-  /** Le calendrier des jours passés (masqué sur la page des jours passés, qui a déjà le sien). */
-  readonly showArchive = input(true);
 
   protected readonly pseudo = computed(() => this.session.player()?.pseudo ?? '');
   protected readonly initial = computed(() => [...this.pseudo()][0] ?? '?');

@@ -93,12 +93,8 @@ describe('AccountLinkComponent', () => {
     expect(style.textTransform).toBe('uppercase');
   });
 
-  it('montre le calendrier des jours passés, sauf quand la page demande de le masquer', () => {
-    const { fixture, element } = render();
-    expect(element.querySelector('a[href="/daily/archive"]')).not.toBeNull();
-
-    fixture.componentRef.setInput('showArchive', false);
-    fixture.detectChanges();
+  it('ne montre plus le calendrier des jours passés (lien en bas de l’accueil)', () => {
+    const { element } = render();
     expect(element.querySelector('a[href="/daily/archive"]')).toBeNull();
   });
 

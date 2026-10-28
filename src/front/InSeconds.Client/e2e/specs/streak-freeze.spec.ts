@@ -7,7 +7,7 @@ import { ApiTestClient } from '../fixtures/api-client';
 
 /**
  * Gel de série (maquette InSeconds Game.dc.html) : relevé de série sous « Commencer », panneau série/gel,
- * accueil « Bon retour ! », toasts de fin de partie et toast invité « série perdue ».
+ * ligne « Un gel a protégé ta série hier. » sur l'accueil, relevé sous « Partager mon score », toasts de fin de partie et toast invité « série perdue ».
  * L'état de série est posé via POST /api/e2e/set-streak (Testing-only).
  */
 
@@ -78,7 +78,7 @@ test.describe('Gel de série - compte connecté', () => {
     await expect(sheet(page).getByText('Stock plein', { exact: false })).not.toBeVisible();
   });
 
-  test('série protégée : « Bon retour ! », gel engagé retiré du relevé, panneau avec frise, puis toast « 1 gel a sauvé ta série »', async ({ page, api }) => {
+  test('série protégée : ligne du gel sous le relevé, gel engagé retiré du relevé, panneau avec frise, puis toast « 1 gel a sauvé ta série »', async ({ page, api }) => {
     await page.clock.install({ time: Date.now() });
     await linkAccount(page, api, 'freeze-protected@e2e.test', 'FreezeProtegeE2E');
     await setStreak(page, api, { streak: 12, lastPlayedDaysAgo: 2, freezes: 2 });
@@ -87,8 +87,7 @@ test.describe('Gel de série - compte connecté', () => {
     await game.goto();
     await game.waitForWelcome();
 
-    await expect(page.getByRole('heading', { name: 'Bon retour !' })).toBeVisible();
-    await expect(page.getByTestId('frozen-line')).toContainText('12 jours de série');
+    await expect(page.getByTestId('frozen-line')).toHaveText('Un gel a protégé ta série hier.');
     await expect(pill(page)).toHaveAttribute('data-mode', 'protected');
     // 2 gels en stock, 1 déjà engagé sur le jour manqué : le relevé en affiche 1 (pas 2).
     await expect(pill(page)).toHaveText(/12 jours\s*·\s*1 gel/);
@@ -109,7 +108,7 @@ test.describe('Gel de série - compte connecté', () => {
     await expect(page.getByTestId('gel-used-toast')).toContainText('ta série de 13 jours continue');
   });
 
-  test('palier de 7 jours : toast « +1 gel gagné ! »', async ({ page, api }) => {
+  test('palier de 7 jours : toast « +1 gel gagné ! », relevé à jour sous le partage', async ({ page, api }) => {
     await page.clock.install({ time: Date.now() });
     await linkAccount(page, api, 'freeze-earned@e2e.test', 'FreezeGagneE2E');
     await setStreak(page, api, { streak: 6, lastPlayedDaysAgo: 1, freezes: 1 });
@@ -119,8 +118,8 @@ test.describe('Gel de série - compte connecté', () => {
 
     await expect(page.getByTestId('gel-earned-toast')).toContainText('+1 gel');
     await expect(page.getByTestId('gel-earned-toast')).toContainText('7 jours de série');
-    // La série n'est plus dans l'en-tête : l'écran de résultat ne l'affiche pas (seulement l'accueil, sous « Commencer »).
-    await expect(pill(page)).toHaveCount(0);
+    // Le relevé suit le partage sur le résultat du jour, relu après la partie : 7 jours, et le gel gagné.
+    await expect(pill(page)).toHaveText(/7 jours\s*·\s*2 gels/);
   });
 });
 

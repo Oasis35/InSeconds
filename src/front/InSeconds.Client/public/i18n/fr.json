@@ -97,7 +97,6 @@
       "login": "Connexion",
       "profile": "Mon profil",
       "avatarTitle": "Mon profil : {{ pseudo }}",
-      "archive": "Jours passés",
       "admin": "Admin"
     }
   },
@@ -151,7 +150,7 @@
   },
   "account": {
     "login": {
-      "title": "Connexion",
+      "title": "Connexion ou inscription",
       "subtitle": "On t'envoie un lien de connexion par e-mail, sans mot de passe. Ta série et tes scores te suivent sur tous tes appareils.",
       "emailLabel": "Adresse e-mail",
       "emailPlaceholder": "ton@email.com",
@@ -545,18 +544,21 @@
       "track": "Piste {{ current }} / {{ total }}"
     },
     "welcome": {
-      "title": "Blind Test du jour",
-      "subtitle": "{{ count }} morceaux à deviner.",
-      "tagline": "Qui sera le plus rapide ?",
+      "title": "Blind test du jour",
+      "subtitle": "{{ count }} morceaux à deviner",
       "start": "Commencer",
-      "loginCta": "Se connecter / Créer un compte",
+      "loginCta": "Créer un compte",
       "loginHint": "Pour garder ta série sur tous tes appareils.",
-      "loggedInAs": "Connecté comme {{ pseudo }}"
+      "record": "Ton record",
+      "target": "Score à battre",
+      "archive": "Réponses des jours passés"
     },
     "resume": {
       "title": "Partie en pause",
-      "progress": "{{ done }} / {{ total }} pistes déjà écoutées.",
-      "question": "Tu reprends où tu t'es arrêté ?",
+      "progress": {
+        "one": "{{ done }} morceau sur {{ total }} déjà joué",
+        "other": "{{ done }} morceaux sur {{ total }} déjà joués"
+      },
       "resume": "Reprendre",
       "loginCta": "Ne plus perdre mes parties",
       "warningTitle": "Tu vas perdre ta progression",
@@ -659,13 +661,6 @@
         "one": "{{ n }} gel",
         "other": "{{ n }} gels"
       },
-      "welcomeBack": "Bon retour !",
-      "frozenLineBefore": "Tes",
-      "frozenLineStrong": {
-        "one": "{{ streak }} jour de série",
-        "other": "{{ streak }} jours de série"
-      },
-      "frozenLineAfter": "au chaud grâce à un gel. Joue pour continuer !",
       "sheet": {
         "streakTitle": {
           "one": "Série de {{ streak }} jour",
@@ -729,7 +724,11 @@
       },
       "ctaLine1": "Créer un compte /",
       "ctaLine2": "Se connecter",
-      "dismiss": "Fermer"
+      "dismiss": "Fermer",
+      "protectedLine": {
+        "one": "Un gel a protégé ta série hier.",
+        "other": "{{ n }} gels ont protégé ta série."
+      }
     },
     "round": {
       "points": "pts",

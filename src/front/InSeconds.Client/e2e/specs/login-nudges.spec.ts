@@ -10,7 +10,7 @@ test.describe('Nudges de connexion (guest)', () => {
     await game.goto();
     await game.waitForWelcome();
 
-    await expect(page.getByRole('link', { name: 'Se connecter / Créer un compte' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Créer un compte' })).toBeVisible();
   });
 
   test('le CTA de l\'accueil mène à /login', async ({ page, api }) => {
@@ -19,7 +19,7 @@ test.describe('Nudges de connexion (guest)', () => {
     const game = new GamePage(page);
     await game.goto();
     await game.waitForWelcome();
-    await page.getByRole('link', { name: 'Se connecter / Créer un compte' }).click();
+    await page.getByRole('link', { name: 'Créer un compte' }).click();
 
     await expect(page).toHaveURL(/\/login$/);
   });

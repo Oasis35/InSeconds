@@ -29,10 +29,12 @@
       @case ('welcome') {
         <app-welcome-screen
           [trackCount]="store.peekTracksCount()"
+          [dateLabel]="dateLabel()"
           [streak]="store.pillStreak()"
+          [bestScore]="store.bestScore()"
+          [yesterdayMedian]="store.yesterdayMedian()"
           [hideLoginCta]="store.showLostToast()"
           [linked]="store.linked()"
-          [pseudo]="session.player()?.pseudo ?? null"
           (startGame)="store.begin()"
           (openStreak)="openStreakSheet()" />
         <!-- Les autres modes (la carte Platines pour un compte qui y a accès) : rien d'autre ne change sur l'accueil. -->
@@ -43,11 +45,16 @@
         <app-resume-screen
           [completedCount]="store.peekCompletedCount()"
           [trackCount]="store.peekTracksCount()"
+          [dateLabel]="dateLabel()"
           [abandonLoading]="store.abandonLoading()"
           [warningBodyKey]="store.linked() ? 'daily.resume.warningBodyLinked' : 'daily.resume.warningBody'"
           [showLoginCta]="!store.linked()"
           (resumeGame)="store.begin()"
-          (abandon)="store.abandonFromResume()" />
+          (abandon)="store.abandonFromResume()">
+          <div class="flex justify-center">
+            <app-streak-pill [streak]="store.pillStreak()" [linked]="store.linked()" (open)="openStreakSheet()" />
+          </div>
+        </app-resume-screen>
       }
 
       @case ('no_challenge') {
@@ -71,7 +78,10 @@
             [shareCopied]="shareCopied()"
             [shareFailed]="shareFailed()"
             [lang]="language.current()"
-            (share)="share()" />
+            [streak]="store.pillStreak()"
+            [linked]="store.linked()"
+            (share)="share()"
+            (openStreak)="openStreakSheet()" />
         }
         <app-home-mode-entries />
       }
@@ -113,7 +123,10 @@
           [shareFailed]="shareFailed()"
           [canShare]="store.canShare()"
           [lang]="language.current()"
-          (share)="share()" />
+          [streak]="store.pillStreak()"
+          [linked]="store.linked()"
+          (share)="share()"
+          (openStreak)="openStreakSheet()" />
       }
     }
 

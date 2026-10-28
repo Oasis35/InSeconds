@@ -8,15 +8,18 @@ import { TrackResultRow, TrackResultsListComponent } from '../../../gameplay/ui/
 import { ScoreDistributionChartComponent } from '../score-distribution-chart/score-distribution-chart.component';
 import { ShareButtonComponent } from '../../../gameplay/ui/share-button/share-button.component';
 import { YesterdayAnswersCardComponent } from '../yesterday-answers-card/yesterday-answers-card.component';
+import { StreakPillComponent } from '../streak-pill/streak-pill.component';
+import { Streak } from '../../domain/streak';
 
 /**
  * Le résultat du jour, juste après la partie comme à chaque visite suivante, toujours dans le même ordre : le score et le compte à rebours,
- * « mieux que X % » et le moment fort, l'égaliseur des scores du jour, la partie en barres (qui déplie les morceaux), le partage et les
- * réponses d'hier. Seule différence juste après la partie : le score monte (la page le fait défiler) et les toasts de série apparaissent.
+ * « mieux que X % » et le moment fort, l'égaliseur des scores du jour, la partie en barres (qui déplie les morceaux), le partage avec le
+ * relevé de série dessous, et les réponses d'hier. Seule différence juste après la partie : le score monte (la page le fait défiler) et les
+ * toasts de série apparaissent.
  */
 @Component({
   selector: 'app-day-result-screen',
-  imports: [TranslatePipe, SecondsPipe, ShareButtonComponent, TrackResultsListComponent, ScoreDistributionChartComponent, YesterdayAnswersCardComponent],
+  imports: [TranslatePipe, SecondsPipe, ShareButtonComponent, TrackResultsListComponent, ScoreDistributionChartComponent, YesterdayAnswersCardComponent, StreakPillComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './day-result-screen.component.html',
 })
@@ -36,7 +39,11 @@ export class DayResultScreenComponent {
   readonly canShare = input(true);
   /** Langue des badges Deezer et de la date d'hier. */
   readonly lang = input<'fr' | 'en'>('fr');
+  /** La série sous le partage (rien sans série en cours) ; les gels pour un compte. */
+  readonly streak = input<Streak | null>(null);
+  readonly linked = input(false);
   readonly share = output<void>();
+  readonly openStreak = output<void>();
 
   protected readonly showTracks = signal(false);
 

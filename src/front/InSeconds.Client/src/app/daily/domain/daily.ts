@@ -12,6 +12,10 @@ export interface DailyToday {
   readonly streak: Streak;
   /** Parties terminées par le joueur, tous jours confondus (panneau de série d'un compte, bandeau « crée un compte » d'un invité). */
   readonly completedGames: number;
+  /** Le record du joueur : son meilleur score sur une partie terminée, tous jours confondus (vide sans partie terminée). */
+  readonly bestScore: number | null;
+  /** La médiane d'hier, pour qui n'a pas encore de record ; vide sous 5 parties terminées hier, ou pour un joueur qui a un record. */
+  readonly yesterdayMedian: number | null;
 }
 
 /** Un niveau d'indice : quand il se débloque, ce qu'il révèle (`year`, `artistMasked`) et son coût en pourcentage du score. */

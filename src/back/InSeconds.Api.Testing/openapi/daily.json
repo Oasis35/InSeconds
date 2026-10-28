@@ -2058,7 +2058,9 @@
           "tracksCount",
           "completedCount",
           "streak",
-          "completedGames"
+          "completedGames",
+          "bestScore",
+          "yesterdayMedian"
         ],
         "type": "object",
         "properties": {
@@ -2078,6 +2080,20 @@
           },
           "completedGames": {
             "type": "integer",
+            "format": "int32"
+          },
+          "bestScore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "yesterdayMedian": {
+            "type": [
+              "null",
+              "integer"
+            ],
             "format": "int32"
           }
         }

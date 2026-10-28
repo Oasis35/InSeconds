@@ -52,7 +52,13 @@ public static class GetDailySettingsEndpoint
 /// <param name="TracksCount">Morceaux du défi (0 sans défi).</param>
 /// <param name="CompletedCount">Morceaux déjà répondus, quand la partie est à reprendre.</param>
 /// <param name="CompletedGames">Parties terminées par le joueur, tous jours confondus (panneau de la série d'un compte, bandeau « crée un compte » d'un invité ; 0 sans joueur).</param>
-public sealed record TodayResponse(string State, int TracksCount, int CompletedCount, StreakResponse Streak, int CompletedGames)
+/// <param name="BestScore">Le record du joueur : son meilleur score sur une partie terminée, tous jours confondus, invité compris (vide sans partie terminée).</param>
+/// <param name="YesterdayMedian">
+/// Le « score à battre » de l'accueil, pour un joueur qui n'a pas encore de record : la médiane des parties terminées d'hier, comme sur la page
+/// des réponses d'hier. Vide pour un joueur qui a un record, sans défi hier, ou sous <see cref="ScoreDistribution.MinPlayersForPercent"/> parties terminées.
+/// </param>
+public sealed record TodayResponse(
+    string State, int TracksCount, int CompletedCount, StreakResponse Streak, int CompletedGames, int? BestScore, int? YesterdayMedian)
 {
     public const string NoChallenge = "no_challenge";
     public const string CanStart = "can_start";
@@ -84,8 +90,12 @@ public static class GetTodayEndpoint
             ? (await stats.GetCompletedCountsByPlayerAsync([countedId], ct)).GetValueOrDefault(countedId)
             : 0;
 
+        // L'accueil montre le record du joueur, sinon la médiane d'hier : jamais le meilleur score du jour, qui découragerait.
+        int? bestScore = current.PlayerId is { } bestOf && completedGames > 0 ? await stats.GetBestScoreAsync(bestOf, ct) : null;
+        var yesterdayMedian = bestScore is null ? await YesterdayMedianAsync(stats, today, ct) : null;
+
         if (row is null)
-            return new TodayResponse(TodayResponse.NoChallenge, 0, 0, streakResponse, completedGames);
+            return new TodayResponse(TodayResponse.NoChallenge, 0, 0, streakResponse, completedGames, bestScore, yesterdayMedian);
 
         var state = row.SessionStatus switch
         {
@@ -94,6 +104,16 @@ public static class GetTodayEndpoint
             SessionStatus.Completed => TodayResponse.AlreadyPlayed,
             _ => TodayResponse.Abandoned,
         };
-        return new TodayResponse(state, row.TracksCount, row.SessionStatus == SessionStatus.Pending ? row.AnswerCount : 0, streakResponse, completedGames);
+        return new TodayResponse(
+            state, row.TracksCount, row.SessionStatus == SessionStatus.Pending ? row.AnswerCount : 0, streakResponse, completedGames, bestScore, yesterdayMedian);
+    }
+
+    /// <summary>La médiane d'hier, arrondie comme sur la page des réponses d'hier ; vide sous le seuil de joueurs ou sans défi hier.</summary>
+    private static async Task<int?> YesterdayMedianAsync(IDailyStatsQueries stats, DateOnly today, CancellationToken ct)
+    {
+        if (await stats.FindChallengeIdAsync(today.AddDays(-1), ct) is not { } challengeId)
+            return null;
+        var scores = await stats.GetCompletedScoresAsync(challengeId, ct);
+        return scores.Count >= ScoreDistribution.MinPlayersForPercent && Medians.Decimal(scores) is { } median ? (int)Math.Floor(median) : null;
     }
 }

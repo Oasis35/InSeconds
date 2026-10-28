@@ -6,7 +6,7 @@
     <header class="flex flex-col gap-4">
       <app-brand [homeLink]="true">
         <!-- Pas de calendrier dans l'en-tête : la page a déjà le sien, sous la barre ‹ date ›. -->
-        <app-account-link brandRight [showArchive]="false" />
+        <app-account-link brandRight />
       </app-brand>
       @if (store.day(); as day) {
         <app-archive-day-header [date]="day.date" [previousDate]="day.previousDate" [nextDate]="day.nextDate" [lang]="language.current()"

@@ -97,7 +97,6 @@
       "login": "Log in",
       "profile": "My profile",
       "avatarTitle": "My profile: {{ pseudo }}",
-      "archive": "Past days",
       "admin": "Admin"
     }
   },
@@ -151,7 +150,7 @@
   },
   "account": {
     "login": {
-      "title": "Log in",
+      "title": "Log in or sign up",
       "subtitle": "We'll email you a sign-in link, no password needed. Your streak and scores follow you on every device.",
       "emailLabel": "Email address",
       "emailPlaceholder": "your@email.com",
@@ -545,18 +544,21 @@
       "track": "Track {{ current }} / {{ total }}"
     },
     "welcome": {
-      "title": "Today's Blind Test",
-      "subtitle": "{{ count }} tracks to guess.",
-      "tagline": "Who'll be the fastest?",
+      "title": "Today's blind test",
+      "subtitle": "{{ count }} tracks to guess",
       "start": "Start",
-      "loginCta": "Log in / Create an account",
+      "loginCta": "Create an account",
       "loginHint": "To keep your streak across all your devices.",
-      "loggedInAs": "Logged in as {{ pseudo }}"
+      "record": "Your best",
+      "target": "Score to beat",
+      "archive": "Answers from past days"
     },
     "resume": {
       "title": "Game paused",
-      "progress": "{{ done }} / {{ total }} tracks already played.",
-      "question": "Pick up where you left off?",
+      "progress": {
+        "one": "{{ done }} of {{ total }} tracks already played",
+        "other": "{{ done }} of {{ total }} tracks already played"
+      },
       "resume": "Resume",
       "loginCta": "Don't lose my games",
       "warningTitle": "You'll lose your progress",
@@ -659,13 +661,6 @@
         "one": "{{ n }} freeze",
         "other": "{{ n }} freezes"
       },
-      "welcomeBack": "Welcome back!",
-      "frozenLineBefore": "Your",
-      "frozenLineStrong": {
-        "one": "{{ streak }}-day streak",
-        "other": "{{ streak }}-day streak"
-      },
-      "frozenLineAfter": "is kept safe by a freeze. Play to keep it going!",
       "sheet": {
         "streakTitle": {
           "one": "{{ streak }}-day streak",
@@ -729,7 +724,11 @@
       },
       "ctaLine1": "Create an account /",
       "ctaLine2": "Log in",
-      "dismiss": "Close"
+      "dismiss": "Close",
+      "protectedLine": {
+        "one": "A freeze protected your streak yesterday.",
+        "other": "{{ n }} freezes protected your streak."
+      }
     },
     "round": {
       "points": "pts",

@@ -1,32 +1,33 @@
-<div class="screen-enter flex-1 flex flex-col items-center justify-center gap-8 text-center px-4">
+<div class="screen-enter flex-1 flex flex-col justify-center gap-7 text-center py-3">
   @if (!showAbandonConfirm()) {
-    <div class="space-y-3">
-      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto" aria-hidden="true" style="color:var(--text-hi)">
-        <circle cx="12" cy="12" r="10"></circle><line x1="10" y1="15" x2="10" y2="9"></line><line x1="14" y1="15" x2="14" y2="9"></line>
-      </svg>
-      <h2 class="text-2xl font-bold tracking-tight" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'daily.resume.title' | translate }}</h2>
-      <p class="text-sm leading-relaxed" style="color:var(--text-muted)">
-        {{ 'daily.resume.progress' | translate: { done: completedCount(), total: trackCount() } }}<br>
-        {{ 'daily.resume.question' | translate }}
+    <!-- Même mise en page que l'accueil du jeu du jour : la date, le titre, où en est la partie, puis les boutons. -->
+    <div class="flex flex-col items-center">
+      @if (dateLabel()) {
+        <p class="text-sm first-letter:uppercase" style="color:var(--text-muted)">{{ dateLabel() }}</p>
+      }
+      <h2 class="mt-1.5 text-3xl font-extrabold leading-tight" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'daily.resume.title' | translate }}</h2>
+      <p class="mt-2.5 text-[15px]" style="color:var(--text-light)">
+        {{ progressKey() | translate: { done: completedCount(), total: trackCount() } }}
       </p>
     </div>
 
     <div class="w-full flex flex-col gap-3">
       <button (click)="resumeGame.emit()"
-        class="w-full py-4 rounded-(--radius-button) font-bold text-base tracking-wide uppercase transition-all active:scale-95 touch-manipulation"
-        style="font-family:var(--font-display);background:var(--gradient-primary);color:var(--text-on-primary);letter-spacing:0.06em;box-shadow:var(--glow-primary)">
+        class="w-full py-4.5 rounded-(--radius-button) font-bold text-base tracking-wide uppercase transition-all active:scale-95 touch-manipulation"
+        style="font-family:var(--font-display);background:var(--gradient-primary);color:var(--text-on-primary);letter-spacing:0.06em">
         {{ 'daily.resume.resume' | translate }}
       </button>
       <button (click)="showAbandonConfirm.set(true)"
-        class="w-full py-3 rounded-(--radius-button) text-sm font-semibold transition-all active:scale-95"
-        style="background:var(--bg-inactive);color:var(--text-slate);border:1px solid var(--border-subtle)">
+        class="w-full inline-flex items-center justify-center rounded-(--radius-button) font-bold text-[13px] tracking-wide uppercase transition-all active:scale-95 touch-manipulation"
+        style="min-height:48px;font-family:var(--font-display);letter-spacing:0.06em;border:1.5px solid var(--border-neutral);color:var(--text-hi)">
         {{ 'daily.common.abandon' | translate }}
       </button>
+      <!-- Ce que le mode pose sous les boutons (le relevé de série du jeu du jour). -->
+      <ng-content />
       @if (showLoginCta()) {
         <a routerLink="/account/login"
-           class="w-full inline-flex items-center justify-center gap-2 rounded-(--radius-button) font-bold text-xs tracking-wide uppercase transition-all active:scale-95 touch-manipulation"
-           style="min-height:46px;font-family:var(--font-display);letter-spacing:0.06em;border:1.5px solid var(--border-neutral);color:var(--text-hi)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+           class="w-full inline-flex items-center justify-center rounded-(--radius-button) font-bold text-[13px] tracking-wide uppercase transition-all active:scale-95 touch-manipulation"
+           style="min-height:48px;font-family:var(--font-display);letter-spacing:0.06em;border:1.5px solid var(--border-neutral);color:var(--text-hi)">
           {{ 'daily.resume.loginCta' | translate }}
         </a>
       }
