@@ -26,7 +26,7 @@
 - Après la partie, un seul écran « résultat du jour » : ton score avec ta partie en cinq petites barres, le compte à rebours, une phrase sous le score (ton moment fort s'il y en a un, sinon la part des joueurs que tu bats, à partir de 5 joueurs), un égaliseur des scores du jour (plus bas, médiane, plus haut), tes morceaux repliés
 - Partage de score en format emoji Wordle (✅ artiste et titre, 🔶 l'un des deux, 🅾️ rien ; menu de partage du téléphone, copie dans le presse-papier sur ordinateur)
 - Disponible en français et en anglais - détecté automatiquement depuis le navigateur, changeable à tout moment depuis le pied de page (choix sauvegardé en localStorage)
-- Page confidentialité et mentions légales sur `/privacy` (alias `/confidentialite`)
+- Mentions légales sur `/legal` (alias `/mentions-legales`) et confidentialité sur `/privacy` (alias `/confidentialite`)
 - Installable sur l'écran d'accueil (PWA), mise à jour automatiquement à un moment sûr (jamais en pleine manche)
 - Liste des appareils connectés à ton compte, déconnexion d'un appareil ou de tous les autres
 - Tes données (RGPD) : copie de toutes tes données en JSON et suppression définitive de ton compte (section « Tes données » du profil) ; appareils sans visite depuis 91 jours et comptes inactifs depuis 3 ans supprimés automatiquement chaque nuit ; ce que tu tapes en réponse n'est jamais stocké

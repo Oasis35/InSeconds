@@ -41,8 +41,8 @@ describe('routes', () => {
     ['/profile', '/account/profile'],
     ['/profile/confirm-email', '/account/confirm-email'],
     ['/confidentialite', '/privacy'],
-    ['/mentions-legales', '/privacy'],
-    ['/legal-notice', '/privacy'],
+    ['/mentions-legales', '/legal'],
+    ['/legal-notice', '/legal'],
   ];
 
   for (const [from, to] of legacyRedirects) {
@@ -63,11 +63,18 @@ describe('routes', () => {
     expect(await landOn('/profile/confirm-email?token=t%2B1')).toBe('/account/confirm-email?token=t%2B1');
   });
 
-  it('affiche la page de confidentialité et mentions légales', async () => {
+  it('affiche la page de confidentialité', async () => {
     await harness.navigateByUrl('/privacy');
 
     expect(harness.routeNativeElement?.tagName.toLowerCase()).toBe('app-privacy-page');
     expect(harness.routeNativeElement?.textContent).toContain('privacy.title');
+  });
+
+  it('affiche la page des mentions légales', async () => {
+    await harness.navigateByUrl('/legal');
+
+    expect(harness.routeNativeElement?.tagName.toLowerCase()).toBe('app-legal-page');
+    expect(harness.routeNativeElement?.textContent).toContain('legal.title');
   });
 
   it('affiche les écrans du compte (connexion, vérification, confirmation d\'email)', async () => {

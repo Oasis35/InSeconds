@@ -6,7 +6,7 @@ import { ArchivePage } from './archive.page';
 import { DailyPage } from './daily.page';
 import { leaveGameGuard } from './leave-game.guard';
 
-/** `/daily/archive` (l'icône du pied de page) : les réponses du jour publié le plus récent, la veille d'ordinaire ; sans jour publié, le jeu du jour. */
+/** `/daily/archive` : les réponses du jour publié le plus récent, la veille d'ordinaire ; sans jour publié, le jeu du jour. */
 export const latestArchiveGuard: CanActivateFn = async () => {
   const router = inject(Router);
   try {

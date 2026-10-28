@@ -11,9 +11,8 @@ test.describe('Confirmation de sortie en cours de partie (guard CanDeactivate)',
     await game.startWithFakeClock();
     await expect(page.getByText('Piste 1 / 5')).toBeVisible();
 
-    // Tenter de quitter via un lien interne du footer (icône Confidentialité - l'icône Admin
-    // n'est visible que pour un compte IsAdmin=true, cf. game-footer.component.html)
-    await page.getByTitle(/Confidentialité/).click();
+    // Tenter de quitter via un lien interne du footer
+    await page.locator('footer').getByRole('link', { name: 'Confidentialité', exact: true }).click();
 
     // La modale de confirmation s'affiche
     await expect(game.leaveConfirmButton).toBeVisible();
@@ -31,7 +30,7 @@ test.describe('Confirmation de sortie en cours de partie (guard CanDeactivate)',
     await game.startWithFakeClock();
     await expect(page.getByText('Piste 1 / 5')).toBeVisible();
 
-    await page.getByTitle(/Confidentialité/).click();
+    await page.locator('footer').getByRole('link', { name: 'Confidentialité', exact: true }).click();
     await expect(game.leaveConfirmButton).toBeVisible();
 
     // « Quitter quand même » → navigation vers /privacy
@@ -44,7 +43,7 @@ test.describe('Confirmation de sortie en cours de partie (guard CanDeactivate)',
     await game.openWithFakeClock();
 
     // Sur l'écran welcome (pas playing) le guard laisse passer directement
-    await page.getByTitle(/Confidentialité/).click();
+    await page.locator('footer').getByRole('link', { name: 'Confidentialité', exact: true }).click();
     await expect(game.leaveConfirmButton).not.toBeVisible();
     await expect.poll(() => new URL(page.url()).pathname).toBe('/privacy');
   });

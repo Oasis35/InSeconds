@@ -33,7 +33,7 @@ Cette réponse vient d'un membre de la communauté, pas d'un employé de Deezer 
 ### 3. Attribution : conforme
 
 - Le badge officiel « À écouter sur Deezer » et le lien vers la page Deezer de chaque morceau répondent à la demande de mentionner Deezer. Utiliser le badge tel quel, sans le modifier (les conditions intègrent les « Trademark Guidelines », art. II).
-- La page `/privacy` a une section « Mentions légales : contenus musicaux » : contenus fournis par Deezer, site non affilié.
+- La page `/legal` (mentions légales) a une section « Contenus musicaux » : contenus fournis par Deezer, site non affilié.
 
 ### 4. Usage non commercial : conforme, avec une nuance
 

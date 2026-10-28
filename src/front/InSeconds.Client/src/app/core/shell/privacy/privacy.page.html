@@ -4,12 +4,11 @@
   <div class="w-full max-w-2xl py-8 screen-enter">
     <h1 class="text-3xl font-bold mb-2" style="color:var(--text-hi)">{{ 'privacy.title' | translate }}</h1>
     <p class="text-sm mb-4" style="color:var(--text-muted)">{{ 'privacy.updated' | translate }}</p>
-    <p class="mb-8" style="color:var(--text-slate)">{{ 'privacy.intro' | translate }}</p>
+    <p class="mb-2" style="color:var(--text-slate)">{{ 'privacy.intro' | translate }}</p>
+    <p class="mb-8">
+      <a routerLink="/legal" class="underline transition-colors" style="color:var(--text-accent)">{{ 'privacy.legalLink' | translate }}</a>
+    </p>
 
-    <section class="mb-6">
-      <h2 class="text-xl font-semibold mb-2" style="color:var(--text-hi)">{{ 'privacy.legalIdentity.title' | translate }}</h2>
-      <p class="whitespace-pre-line" style="color:var(--text-light)">{{ 'privacy.legalIdentity.body' | translate }}</p>
-    </section>
 
     <section class="mb-6">
       <h2 class="text-xl font-semibold mb-2" style="color:var(--text-hi)">{{ 'privacy.controller.title' | translate }}</h2>
@@ -36,17 +35,6 @@
       <p class="whitespace-pre-line" style="color:var(--text-light)">{{ 'privacy.thirdParties.body' | translate }}</p>
     </section>
 
-    <section class="mb-6">
-      <h2 class="text-xl font-semibold mb-2" style="color:var(--text-hi)">{{ 'privacy.deezer.title' | translate }}</h2>
-      <p class="whitespace-pre-line" style="color:var(--text-light)">{{ 'privacy.deezer.body' | translate }}</p>
-      <p class="mt-2" style="color:var(--text-light)">
-        <a href="https://developers.deezer.com/termsofuse" target="_blank" rel="noopener noreferrer"
-           class="underline transition-colors" style="color:var(--text-accent)">Deezer API Terms of Use</a>
-        ·
-        <a href="https://www.deezer.com" target="_blank" rel="noopener noreferrer"
-           class="underline transition-colors" style="color:var(--text-accent)">deezer.com</a>
-      </p>
-    </section>
 
     <section class="mb-6">
       <h2 class="text-xl font-semibold mb-2" style="color:var(--text-hi)">{{ 'privacy.security.title' | translate }}</h2>

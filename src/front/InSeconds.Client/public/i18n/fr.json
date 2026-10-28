@@ -244,7 +244,8 @@
         "cancel": "Annuler",
         "done": "Ton compte est supprimé."
       },
-      "backToGame": "Retour au jeu"
+      "backToGame": "Retour au jeu",
+      "admin": "Admin"
     },
     "devices": {
       "title": "Appareils connectés",
@@ -637,10 +638,10 @@
       "ariaLabel": "À écouter sur Deezer"
     },
     "footer": {
-      "archive": "Réponses des jours passés",
-      "admin": "Admin",
-      "privacy": "Confidentialité & mentions légales",
-      "contact": "Nous contacter",
+      "legal": "Mentions légales",
+      "privacy": "Confidentialité",
+      "contact": "Contact",
+      "instagram": "InSeconds sur Instagram",
       "language": "Switch to English"
     },
     "streakFreeze": {
@@ -779,17 +780,30 @@
       "listen": "Écouter l'extrait"
     }
   },
-  "privacy": {
-    "title": "Confidentialité & mentions légales",
-    "updated": "Dernière mise à jour : 24 octobre 2026",
-    "intro": "InSeconds est un jeu de blind test musical gratuit, accessible à l'adresse https://inseconds.cc. Il reste intégralement jouable en mode invité, sans compte ni inscription ; la création d'un compte, par email uniquement, est optionnelle et sert à retrouver votre progression sur un autre appareil. Cette page réunit les mentions légales du site, conformément à l'article 6-III de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique (LCEN), et sa politique de confidentialité, conformément au Règlement général sur la protection des données (RGPD, Règlement UE 2016/679) et à la loi Informatique et Libertés.",
-    "legalIdentity": {
-      "title": "Mentions légales : éditeur et hébergement",
-      "body": "InSeconds est édité par une personne physique établie en France, agissant à titre non professionnel : c'est un projet personnel, développé sur le temps libre de son éditeur, sans activité commerciale (jeu gratuit, sans publicité, sans vente).\nConformément à l'article 6-III de la LCEN, un éditeur non professionnel peut préserver son anonymat vis-à-vis du public, à la condition d'avoir communiqué son identité et ses coordonnées à son hébergeur, ce qui est le cas ici : cette identité reste connue de l'hébergeur et communicable aux autorités judiciaires sur demande. Aucun directeur de publication n'est désigné : cette obligation, issue de la loi du 29 juillet 1982, ne s'applique qu'aux personnes morales.\nHébergeur : OVH SAS, 2 rue Kellermann, 59100 Roubaix, France, RCS Lille Métropole n° 424 761 419.\nNom de domaine : inseconds.cc.\nLe code source, les textes et le design du site InSeconds sont la propriété de l'éditeur et protégés par le droit d'auteur ; toute reproduction sans autorisation est interdite (à l'exception des extraits musicaux Deezer, cf. « Mentions légales : contenus musicaux » ci-dessous).\nPour toute question, le seul moyen de contact est l'adresse email indiquée en bas de cette page."
+  "legal": {
+    "title": "Mentions légales",
+    "updated": "Dernière mise à jour : 28 octobre 2026",
+    "intro": "InSeconds est un jeu de blind test musical gratuit, accessible à l'adresse https://inseconds.cc. Cette page donne les mentions légales du site, conformément à l'article 6-III de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique (LCEN). Le traitement de vos données est décrit dans la page Confidentialité.",
+    "privacyLink": "Voir la page Confidentialité",
+    "publisher": {
+      "title": "Éditeur et hébergement",
+      "body": "InSeconds est édité par une personne physique établie en France, agissant à titre non professionnel : c'est un projet personnel, développé sur le temps libre de son éditeur, sans activité commerciale (jeu gratuit, sans publicité, sans vente).\nConformément à l'article 6-III de la LCEN, un éditeur non professionnel peut préserver son anonymat vis-à-vis du public, à la condition d'avoir communiqué son identité et ses coordonnées à son hébergeur, ce qui est le cas ici : cette identité reste connue de l'hébergeur et communicable aux autorités judiciaires sur demande. Aucun directeur de publication n'est désigné : cette obligation, issue de la loi du 29 juillet 1982, ne s'applique qu'aux personnes morales.\nHébergeur : OVH SAS, 2 rue Kellermann, 59100 Roubaix, France, RCS Lille Métropole n° 424 761 419.\nNom de domaine : inseconds.cc.\nLe code source, les textes et le design du site InSeconds sont la propriété de l'éditeur et protégés par le droit d'auteur ; toute reproduction sans autorisation est interdite (à l'exception des extraits musicaux Deezer, cf. « Contenus musicaux » ci-dessous).\nPour toute question, le seul moyen de contact est l'adresse email indiquée en bas de cette page."
     },
+    "music": {
+      "title": "Contenus musicaux (API Deezer)",
+      "body": "Les extraits musicaux (30 secondes), les pochettes d'albums ainsi que les métadonnées (artiste, titre) sont fournis par l'API Deezer et utilisés dans le respect de ses conditions d'utilisation (Deezer API Terms of Use), dans un cadre strictement non commercial : InSeconds est gratuit, sans publicité et ne génère aucun revenu.\nCes contenus demeurent la propriété exclusive de Deezer et de leurs ayants droit respectifs (artistes, producteurs, labels). Ils sont diffusés à titre d'illustration dans le cadre du jeu, sans possibilité de téléchargement, et chaque morceau renvoie vers sa page officielle Deezer pour une écoute intégrale.\nConformément aux conditions d'utilisation de Deezer, l'écoute des extraits est réservée à un usage strictement privé, dans le cadre familial.\nDeezer est une marque déposée de Deezer S.A. InSeconds est un projet indépendant, non affilié à Deezer et non approuvé par Deezer."
+    },
+    "contact": "Pour toute question :",
+    "back": "Retour au jeu"
+  },
+  "privacy": {
+    "title": "Confidentialité",
+    "updated": "Dernière mise à jour : 28 octobre 2026",
+    "intro": "InSeconds est un jeu de blind test musical gratuit, accessible à l'adresse https://inseconds.cc. Il reste intégralement jouable en mode invité, sans compte ni inscription ; la création d'un compte, par email uniquement, est optionnelle et sert à retrouver votre progression sur un autre appareil. Cette page décrit la politique de confidentialité du site, conformément au Règlement général sur la protection des données (RGPD, Règlement UE 2016/679) et à la loi Informatique et Libertés. L'éditeur et l'hébergeur sont présentés dans les mentions légales.",
+    "legalLink": "Voir les mentions légales",
     "controller": {
       "title": "Responsable du traitement",
-      "body": "Le responsable du traitement au sens du RGPD est l'éditeur du site InSeconds identifié ci-dessus, joignable à l'adresse de contact indiquée en bas de cette page.\nAucun délégué à la protection des données (DPO) n'est désigné : au vu du volume et de la nature des données traitées (aucune donnée sensible, aucun profilage), cette désignation n'est pas requise par le RGPD. L'éditeur reste votre point de contact unique pour toute question relative à vos données."
+      "body": "Le responsable du traitement au sens du RGPD est l'éditeur du site InSeconds, présenté dans les mentions légales, joignable à l'adresse de contact indiquée en bas de cette page.\nAucun délégué à la protection des données (DPO) n'est désigné : au vu du volume et de la nature des données traitées (aucune donnée sensible, aucun profilage), cette désignation n'est pas requise par le RGPD. L'éditeur reste votre point de contact unique pour toute question relative à vos données."
     },
     "data": {
       "title": "Données collectées, finalités et base légale",
@@ -805,11 +819,7 @@
     },
     "thirdParties": {
       "title": "Destinataires, hébergement et transferts hors UE",
-      "body": "Vos données ne sont ni vendues, ni cédées, ni transmises à des tiers à des fins commerciales ou publicitaires. Elles ne sont partagées qu'avec les prestataires techniques strictement nécessaires au fonctionnement du service :\n· hébergement : l'application, son code et sa base de données sont hébergés sur un serveur privé (VPS) d'OVH SAS (identifiée ci-dessus), dans un centre de données situé à Gravelines (France) ;\n· réseau et nom de domaine : le nom de domaine inseconds.cc transite par le réseau de Cloudflare, Inc. (États-Unis), qui agit comme relais technique (résolution DNS, protection anti-DDoS et contre les abus) : vos échanges avec le site le traversent, mais Cloudflare ne les exploite pas pour son propre compte ; il produit aussi pour l'éditeur les statistiques de fréquentation décrites dans « Données collectées » (Cloudflare Web Analytics) ;\n· sauvegardes : les copies de sauvegarde de la base de données sont chiffrées sur notre serveur avant d'être envoyées dans le service de stockage R2 de Cloudflare, Inc., dans sa juridiction européenne (données stockées dans l'Union européenne) ; Cloudflare n'a pas la clé de chiffrement et ne peut pas les lire ;\n· envoi des emails : si vous créez un compte, l'email contenant votre lien de connexion (ou le lien de confirmation d'un changement d'adresse) est envoyé via l'API de Brevo (Sendinblue SAS, France, données hébergées dans l'Union européenne) ; seule votre adresse email lui est transmise, dans le seul but de vous faire parvenir ce message ;\n· journaux techniques : les journaux décrits plus haut sont stockés chez Grafana Labs, dans la région européenne de son service Grafana Cloud, pour être consultés par l'éditeur en cas de bug ;\n· surveillance des tâches automatiques : le service healthchecks.io reçoit un simple signal à la fin de chaque tâche nocturne (génération du défi, sauvegarde…) et prévient l'éditeur si l'une d'elles échoue ; aucune donnée vous concernant ne lui est transmise ;\n· extraits musicaux et pochettes : fournis par Deezer (Deezer S.A., France). La recherche de morceaux passe par notre serveur, mais votre navigateur charge les extraits et les pochettes directement depuis les serveurs de Deezer, qui reçoivent donc votre adresse IP, comme pour toute ressource chargée par une page web. Aucune autre information vous concernant (compte, pseudo, email, parties) n'est transmise à Deezer (voir « Mentions légales : contenus musicaux » ci-dessous).\nTransferts hors Union européenne : Cloudflare et Grafana Labs, basés aux États-Unis, sont susceptibles de traiter des données hors de l'UE. Ces transferts sont encadrés par les clauses contractuelles types de la Commission européenne, intégrées à leurs accords de traitement des données (DPA) respectifs, ainsi que par leur adhésion au cadre de protection des données UE-États-Unis (EU-U.S. Data Privacy Framework), deux mécanismes reconnus par la Commission européenne comme offrant des garanties de protection équivalentes à celles du RGPD."
-    },
-    "deezer": {
-      "title": "Mentions légales : contenus musicaux (API Deezer)",
-      "body": "Les extraits musicaux (30 secondes), les pochettes d'albums ainsi que les métadonnées (artiste, titre) sont fournis par l'API Deezer et utilisés dans le respect de ses conditions d'utilisation (Deezer API Terms of Use), dans un cadre strictement non commercial : InSeconds est gratuit, sans publicité et ne génère aucun revenu.\nCes contenus demeurent la propriété exclusive de Deezer et de leurs ayants droit respectifs (artistes, producteurs, labels). Ils sont diffusés à titre d'illustration dans le cadre du jeu, sans possibilité de téléchargement, et chaque morceau renvoie vers sa page officielle Deezer pour une écoute intégrale.\nConformément aux conditions d'utilisation de Deezer, l'écoute des extraits est réservée à un usage strictement privé, dans le cadre familial.\nDeezer est une marque déposée de Deezer S.A. InSeconds est un projet indépendant, non affilié à Deezer et non approuvé par Deezer."
+      "body": "Vos données ne sont ni vendues, ni cédées, ni transmises à des tiers à des fins commerciales ou publicitaires. Elles ne sont partagées qu'avec les prestataires techniques strictement nécessaires au fonctionnement du service :\n· hébergement : l'application, son code et sa base de données sont hébergés sur un serveur privé (VPS) d'OVH SAS (voir les mentions légales), dans un centre de données situé à Gravelines (France) ;\n· réseau et nom de domaine : le nom de domaine inseconds.cc transite par le réseau de Cloudflare, Inc. (États-Unis), qui agit comme relais technique (résolution DNS, protection anti-DDoS et contre les abus) : vos échanges avec le site le traversent, mais Cloudflare ne les exploite pas pour son propre compte ; il produit aussi pour l'éditeur les statistiques de fréquentation décrites dans « Données collectées » (Cloudflare Web Analytics) ;\n· sauvegardes : les copies de sauvegarde de la base de données sont chiffrées sur notre serveur avant d'être envoyées dans le service de stockage R2 de Cloudflare, Inc., dans sa juridiction européenne (données stockées dans l'Union européenne) ; Cloudflare n'a pas la clé de chiffrement et ne peut pas les lire ;\n· envoi des emails : si vous créez un compte, l'email contenant votre lien de connexion (ou le lien de confirmation d'un changement d'adresse) est envoyé via l'API de Brevo (Sendinblue SAS, France, données hébergées dans l'Union européenne) ; seule votre adresse email lui est transmise, dans le seul but de vous faire parvenir ce message ;\n· journaux techniques : les journaux décrits plus haut sont stockés chez Grafana Labs, dans la région européenne de son service Grafana Cloud, pour être consultés par l'éditeur en cas de bug ;\n· surveillance des tâches automatiques : le service healthchecks.io reçoit un simple signal à la fin de chaque tâche nocturne (génération du défi, sauvegarde…) et prévient l'éditeur si l'une d'elles échoue ; aucune donnée vous concernant ne lui est transmise ;\n· extraits musicaux et pochettes : fournis par Deezer (Deezer S.A., France). La recherche de morceaux passe par notre serveur, mais votre navigateur charge les extraits et les pochettes directement depuis les serveurs de Deezer, qui reçoivent donc votre adresse IP, comme pour toute ressource chargée par une page web. Aucune autre information vous concernant (compte, pseudo, email, parties) n'est transmise à Deezer (voir « Contenus musicaux » dans les mentions légales).\nTransferts hors Union européenne : Cloudflare et Grafana Labs, basés aux États-Unis, sont susceptibles de traiter des données hors de l'UE. Ces transferts sont encadrés par les clauses contractuelles types de la Commission européenne, intégrées à leurs accords de traitement des données (DPA) respectifs, ainsi que par leur adhésion au cadre de protection des données UE-États-Unis (EU-U.S. Data Privacy Framework), deux mécanismes reconnus par la Commission européenne comme offrant des garanties de protection équivalentes à celles du RGPD."
     },
     "security": {
       "title": "Sécurité des données",

@@ -4,7 +4,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-background.component';
 import { VersionService } from '../../version/version.service';
 
-/** Confidentialité et mentions légales (repris de la v1) : une seule page, accessible depuis le pied de page du jeu. */
+/** Politique de confidentialité (RGPD), accessible depuis le pied de page du jeu. Les mentions légales ont leur page (`/legal`). */
 @Component({
   selector: 'app-privacy-page',
   imports: [RouterLink, TranslatePipe, DecorBackgroundComponent],
