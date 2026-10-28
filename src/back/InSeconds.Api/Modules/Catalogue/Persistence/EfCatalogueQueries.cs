@@ -35,7 +35,13 @@ public sealed class EfTrackDirectory(InSecondsDbContext db, IOptionsMonitor<Cata
             .Where(t => ids.Contains(t.Id))
             .Select(t => new
             {
-                t.Id, t.DeezerTrackId, t.Artist, t.Title, t.CoverHash, t.ReleaseYear, t.DeezerRank,
+                t.Id,
+                t.DeezerTrackId,
+                t.Artist,
+                t.Title,
+                t.CoverHash,
+                t.ReleaseYear,
+                t.DeezerRank,
                 Genres = t.Genres.OrderBy(g => g.Name).Select(g => g.Name).ToList(),
             })
             .ToListAsync(ct);
