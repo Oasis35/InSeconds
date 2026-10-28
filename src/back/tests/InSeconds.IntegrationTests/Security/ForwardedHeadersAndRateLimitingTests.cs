@@ -4,10 +4,8 @@ using InSeconds.Api.Infrastructure.Errors;
 using InSeconds.Infrastructure.Networking;
 using InSeconds.Infrastructure.RateLimiting;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace InSeconds.IntegrationTests.Security;

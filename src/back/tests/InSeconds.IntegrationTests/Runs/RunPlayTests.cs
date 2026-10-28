@@ -1,7 +1,6 @@
 using System.Net;
 using System.Text.Json;
 using InSeconds.Api.Modules.Runs.Application;
-using InSeconds.Api.Testing.Deezer;
 using InSeconds.IntegrationTests.Daily;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

@@ -1,13 +1,10 @@
 using Hangfire;
 using InSeconds.Api.Infrastructure.Jobs;
-using InSeconds.Api.Modules.Catalogue.Contracts;
 using InSeconds.Api.Modules.Catalogue.Domain;
 using InSeconds.Deezer;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Wolverine;
 using Wolverine.Attributes;
-using Wolverine.Http;
 
 namespace InSeconds.Api.Modules.Catalogue.Application;
 

@@ -311,16 +311,6 @@ public class RefreshPreviewsHandlerTests
             new RefreshPreviews(), _store, _deezer, _albums, _time, new MutableMonitor(new RefreshOptions()), NullLogger<RefreshPreviews>.Instance, cts.Token));
     }
 
-    private static async Task WaitUntilAsync(Func<bool> condition)
-    {
-        var deadline = DateTime.UtcNow.AddSeconds(10);
-        while (!condition())
-        {
-            Assert.True(DateTime.UtcNow < deadline, "Condition jamais atteinte.");
-            await Task.Delay(10, Ct);
-        }
-    }
-
     private sealed class FakeStore : ICatalogueStore
     {
         private readonly List<Track> _tracks = [];

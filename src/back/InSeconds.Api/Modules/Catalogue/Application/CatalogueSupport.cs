@@ -1,6 +1,6 @@
 using InSeconds.Api.Infrastructure.Errors;
-using InSeconds.Api.Modules.Catalogue.Contracts;
 using InSeconds.Api.Modules.Catalogue.Domain;
+using InSeconds.Deezer;
 using Microsoft.AspNetCore.Mvc;
 
 namespace InSeconds.Api.Modules.Catalogue.Application;
@@ -100,9 +100,26 @@ internal static class TrackMapping
         track.ReleaseYear, track.DeezerRank, Name(track.PreviewStatus), track.IsDisabled);
 
     /// <summary>L'état de l'extrait et l'identité d'un morceau lus chez Deezer, tels que le pool les garde.</summary>
-    public static TrackMetadata ToMetadata(InSeconds.Deezer.DeezerTrack track) => new(
+    public static TrackMetadata ToMetadata(DeezerTrack track) => new(
         track.DeezerTrackId, track.Artist, track.Title, track.CoverHash, ToYear(track.ReleaseYear), track.Rank,
         string.IsNullOrEmpty(track.PreviewUrl) ? PreviewStatus.Missing : PreviewStatus.Available, track.AlbumId);
+
+    /// <summary>
+    /// Les genres de l'album lu à l'ajout ou à l'actualisation d'un morceau. Album supprimé chez Deezer : sans genre, et inutile de le
+    /// redemander. Album non lu ou Deezer indisponible : rien ne change, le contrôle nocturne rattrape.
+    /// </summary>
+    public static async Task RecordAlbumGenresAsync(Track track, AlbumLookup? album, ICatalogueStore store, DateTimeOffset now, CancellationToken ct)
+    {
+        switch (album)
+        {
+            case AlbumLookup.Found found:
+                track.RecordGenres(await store.EnsureGenresAsync([.. found.Genres.Select(g => new GenreRef(g.Id, g.Name))], ct), now);
+                break;
+            case AlbumLookup.NotFound:
+                track.RecordGenres([], now);
+                break;
+        }
+    }
 
     // La colonne est un smallint : une année absurde est ignorée plutôt que de faire échouer l'ajout.
     private static short? ToYear(int? year) => year is >= 1 and <= short.MaxValue ? (short)year.Value : null;
