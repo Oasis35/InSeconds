@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { TranslatePipe } from '@ngx-translate/core';
 import { DeezerBadgeComponent } from '../../../gameplay/ui/deezer-badge/deezer-badge.component';
 import { RunTrack, gainLabel } from '../../domain/run';
+import { ButtonComponent } from '../../../ui/button/button.component';
 
 /**
  * La réponse après un morceau, à la place du lecteur et de la saisie : la pochette (ronde, comme la révélation du Daily) et sa pastille de points, l'artiste et le titre
@@ -10,7 +11,7 @@ import { RunTrack, gainLabel } from '../../domain/run';
  */
 @Component({
   selector: 'app-run-answer-card',
-  imports: [TranslatePipe, DeezerBadgeComponent],
+  imports: [TranslatePipe, DeezerBadgeComponent, ButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="space-y-4" data-testid="run-answer">
@@ -49,9 +50,7 @@ import { RunTrack, gainLabel } from '../../domain/run';
         }
       </section>
 
-      <button type="button" (click)="next.emit()" data-testid="run-next-track"
-        class="w-full py-4 rounded-(--radius-button) text-sm font-bold tracking-wide uppercase transition touch-manipulation"
-        style="font-family:var(--font-display);letter-spacing:0.06em;background:var(--gradient-primary);color:var(--text-on-primary);box-shadow:var(--glow-primary)">
+      <button appButton type="button" [block]="true" [glow]="true" (click)="next.emit()" data-testid="run-next-track">
         {{ (endsRound() ? 'runs.answer.endRound' : 'runs.answer.next') | translate }}
       </button>
     </div>

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { TranslatePipe } from '@ngx-translate/core';
 import { SecondsPipe } from '../../../ui/format/seconds.pipe';
 import { RoundPhase } from '../../domain/track-round';
+import { ButtonComponent } from '../../../ui/button/button.component';
 
 /**
  * Le lecteur de la manche : chronomètre, barre de progression avec un repère à chaque palier,
@@ -11,7 +12,7 @@ import { RoundPhase } from '../../domain/track-round';
  */
 @Component({
   selector: 'app-round-player',
-  imports: [SecondsPipe, TranslatePipe],
+  imports: [SecondsPipe, TranslatePipe, ButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="p-5 space-y-5" style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:var(--radius-card)">
@@ -19,8 +20,7 @@ import { RoundPhase } from '../../domain/track-round';
         @case ('no-preview') {
           <p class="text-center text-sm" style="color:var(--text-muted)">{{ 'gameplay.round.noPreview' | translate }}</p>
           <div class="flex justify-center">
-            <button type="button" (click)="skip.emit()" class="px-5 py-3 rounded-(--radius-button) font-bold uppercase text-sm transition active:scale-95 touch-manipulation"
-              style="font-family:var(--font-display);letter-spacing:0.04em;border:1.5px solid var(--border-neutral);background:transparent;color:var(--text-hi)">
+            <button appButton type="button" variant="neutral" (click)="skip.emit()">
               {{ 'gameplay.round.skip' | translate }}
             </button>
           </div>
@@ -28,13 +28,12 @@ import { RoundPhase } from '../../domain/track-round';
         @case ('audio-error') {
           <div class="space-y-4 text-center">
             <p role="alert" class="text-sm" style="color:var(--text-error)">{{ 'gameplay.round.playbackError' | translate }}</p>
-            <div class="flex justify-center gap-3">
-              <button type="button" (click)="retry.emit()" class="px-5 py-3 rounded-(--radius-button) font-bold uppercase text-sm transition active:scale-95 touch-manipulation"
-                style="font-family:var(--font-display);letter-spacing:0.04em;background:var(--gradient-primary);color:var(--text-on-primary)">
+            <!-- L'un sous l'autre, comme « Valider » et « Passer » : côte à côte, « Passer (0 pts) » passe sur deux lignes à 375 px. -->
+            <div class="flex flex-col gap-3">
+              <button appButton type="button" [block]="true" (click)="retry.emit()">
                 {{ 'gameplay.round.retry' | translate }}
               </button>
-              <button type="button" (click)="skip.emit()" class="px-5 py-3 rounded-(--radius-button) font-bold uppercase text-sm transition active:scale-95 touch-manipulation"
-                style="font-family:var(--font-display);letter-spacing:0.04em;border:1.5px solid var(--border-neutral);background:transparent;color:var(--text-hi)">
+              <button appButton type="button" variant="neutral" [block]="true" (click)="skip.emit()">
                 {{ 'gameplay.round.skip' | translate }}
               </button>
             </div>

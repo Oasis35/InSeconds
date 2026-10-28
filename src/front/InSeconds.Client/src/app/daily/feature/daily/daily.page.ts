@@ -15,6 +15,7 @@ import { LeaveGuard } from '../../../gameplay/feature/leave-guard';
 import { ModalService } from '../../../ui/modal/modal.service';
 import { ToastService } from '../../../ui/toast/toast.service';
 import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-background.component';
+import { ButtonComponent } from '../../../ui/button/button.component';
 import { DailyGameStore } from '../../data-access/daily-game.store';
 import { DailyShare } from '../../data-access/daily-share';
 import { GuestStreakNotice } from '../../data-access/guest-streak-notice';
@@ -61,7 +62,7 @@ type ThanksScreen = 'done' | 'already_played';
     TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, BrandComponent, DailyProgressComponent, DailyFooterComponent,
     WelcomeScreenComponent, ResumeScreenComponent, HomeModeEntriesComponent, StatusScreenComponent, AbandonedScreenComponent, DayResultScreenComponent,
     GuestStreakToastComponent, LostStreakToastComponent, GelUsedToastComponent, GelEarnedToastComponent,
-    DeezerBadgeComponent, ScoreCountComponent, AccountLinkComponent, StreakPillComponent,
+    DeezerBadgeComponent, ScoreCountComponent, AccountLinkComponent, StreakPillComponent, ButtonComponent,
   ],
   providers: [DailyGameStore, TrackRoundStore, DailyShare, ThanksNotice, LostStreakNotice, GuestStreakNotice],
   changeDetection: ChangeDetectionStrategy.OnPush,

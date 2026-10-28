@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
+import { ButtonComponent } from '../../../ui/button/button.component';
 
 /** Ce que l'écran dit : pas de playlist, une playlist inconnue (lien erroné), ou une erreur. Sans accès sur invitation, il n'y a pas d'écran : la page renvoie au jeu du jour. */
 export type RunStatusKind = 'no_challenge' | 'not_found' | 'error';
@@ -8,7 +9,7 @@ export type RunStatusKind = 'no_challenge' | 'not_found' | 'error';
 /** Un refus ou une erreur du mode : un titre, une phrase, le code d'erreur s'il y en a un, « Réessayer » et le retour au jeu du jour. */
 @Component({
   selector: 'app-run-status-screen',
-  imports: [TranslatePipe, RouterLink],
+  imports: [TranslatePipe, RouterLink, ButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="screen-enter flex-1 flex flex-col items-center justify-center gap-6 text-center px-4" data-testid="run-status">
@@ -23,9 +24,7 @@ export type RunStatusKind = 'no_challenge' | 'not_found' | 'error';
       </div>
       <div class="flex flex-col items-center gap-3">
         @if (kind() !== 'not_found') {
-          <button type="button" (click)="retry.emit()" data-testid="run-retry"
-            class="px-6 py-3 rounded-(--radius-button) text-sm font-bold uppercase transition-colors"
-            style="font-family:var(--font-display);letter-spacing:0.06em;background:var(--bg-surface);color:var(--text-slate);border:1px solid var(--border-subtle)">
+          <button appButton type="button" variant="secondary" (click)="retry.emit()" data-testid="run-retry">
             {{ 'common.retry' | translate }}
           </button>
         }
