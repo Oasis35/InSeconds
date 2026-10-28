@@ -1,7 +1,7 @@
 using InSeconds.Api.Modules.Players.Contracts;
 using Microsoft.Extensions.Caching.Memory;
 
-namespace InSeconds.Api.Infrastructure.Auth;
+namespace InSeconds.Api.Modules.Players.Auth;
 
 /// <summary>
 /// Conversions récentes de cookies v1 : pendant une minute, un même jeton v1 retrouve la session

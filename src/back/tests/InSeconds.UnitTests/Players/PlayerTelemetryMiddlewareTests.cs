@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using InSeconds.Api.Infrastructure.Auth;
+using InSeconds.Api.Modules.Players.Auth;
 using InSeconds.Api.Modules.Players.Contracts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;

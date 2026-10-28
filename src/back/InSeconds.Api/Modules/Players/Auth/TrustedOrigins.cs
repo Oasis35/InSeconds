@@ -1,4 +1,4 @@
-namespace InSeconds.Api.Infrastructure.Auth;
+namespace InSeconds.Api.Modules.Players.Auth;
 
 /// <summary>
 /// Anti-CSRF des routes qui posent un cookie sur un <c>POST</c> (vérification du lien magique,

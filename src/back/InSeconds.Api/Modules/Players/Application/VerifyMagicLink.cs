@@ -1,5 +1,5 @@
 using FluentValidation;
-using InSeconds.Api.Infrastructure.Auth;
+using InSeconds.Api.Modules.Players.Auth;
 using InSeconds.Api.Modules.Players.Domain;
 using Microsoft.AspNetCore.Mvc;
 using Wolverine.Http;

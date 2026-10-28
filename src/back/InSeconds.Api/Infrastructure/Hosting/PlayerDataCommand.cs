@@ -1,11 +1,11 @@
 using System.Text.Json;
-using InSeconds.Api.Infrastructure.Auth;
 using InSeconds.Api.Infrastructure.Persistence;
 using InSeconds.Api.Infrastructure.Settings;
 using InSeconds.Api.Modules.Catalogue.Application;
 using InSeconds.Api.Modules.Catalogue.Contracts;
 using InSeconds.Api.Modules.Catalogue.Persistence;
 using InSeconds.Api.Modules.Players.Application;
+using InSeconds.Api.Modules.Players.Auth;
 using InSeconds.Api.Modules.Players.Domain;
 using InSeconds.Api.Modules.Players.Persistence;
 
