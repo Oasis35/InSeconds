@@ -97,7 +97,7 @@ interface StepMark {
                   [style.left.%]="mark.left"
                   [class.items-center]="mark.align === 'center'" [class.items-end]="mark.align === 'end'"
                   [style.transform]="shiftOf(mark)"
-                  [style.color]="mark.current ? 'var(--color-accent-2)' : 'var(--text-faint)'">
+                  [style.color]="mark.current ? 'var(--color-accent-2)' : 'var(--text-muted)'">
                   <i class="block" style="width:1.5px" [style.height.px]="mark.current ? 7 : 5"
                     [style.background]="mark.unlocked ? 'var(--color-accent-2)' : 'rgb(var(--rgb-text) / 0.25)'"></i>
                   @if (mark.labelled) {
@@ -121,10 +121,10 @@ interface StepMark {
                   <button type="button" (click)="replay.emit()" [disabled]="locked()" [title]="'gameplay.round.replay' | translate: { seconds: (chosenSeconds() | appSeconds) }"
                     class="relative rounded-full transition active:scale-95 touch-manipulation flex items-center justify-center overflow-hidden disabled:opacity-40 disabled:grayscale disabled:active:scale-100"
                     style="width:72px;height:72px;background:linear-gradient(145deg,var(--color-accent-3),var(--color-accent));border:none;color:var(--text-on-primary)">
-                    <span class="absolute rounded-full pointer-events-none" style="inset:10px;background:radial-gradient(circle, rgb(255 255 255 / 0.16), rgb(0 0 0 / 0.1) 70%)" aria-hidden="true"></span>
+                    <span class="absolute rounded-full pointer-events-none" style="inset:10px;background:radial-gradient(circle, rgb(var(--rgb-text) / 0.16), transparent 70%)" aria-hidden="true"></span>
                     @if (submitting()) {
                       <span data-testid="round-loader" class="relative animate-spin rounded-full"
-                        style="width:26px;height:26px;border:3px solid rgb(255 255 255 / 0.35);border-top-color:var(--text-on-primary)"></span>
+                        style="width:26px;height:26px;border:3px solid rgb(var(--rgb-text) / 0.35);border-top-color:var(--text-on-primary)"></span>
                     } @else if (playing()) {
                       <span class="relative flex gap-1" aria-hidden="true">
                         <span style="width:6px;height:19px;background:var(--text-on-primary);border-radius:2px"></span>

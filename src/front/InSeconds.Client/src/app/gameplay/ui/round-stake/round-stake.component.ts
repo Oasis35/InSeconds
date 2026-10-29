@@ -21,8 +21,11 @@ const DROP_LABEL_MS = 900;
       <span class="stake-drop absolute left-1/2 -top-5 text-xs font-semibold tabular-nums whitespace-nowrap pointer-events-none"
         style="font-family:var(--font-clock);color:var(--text-muted)" aria-hidden="true">−{{ d.amount }}</span>
     }
-    <span data-testid="round-stake" class="tabular-nums" [class.stake-bump]="drops().length > 0"
-      style="font-family:var(--font-score);font-size:1.9rem;font-weight:900;line-height:0.95;letter-spacing:-0.02em;color:var(--text-hi)">{{ shown() }}</span>
+    <!-- Recréé à chaque baisse (identifiant neuf) : deux baisses rapprochées rebondissent deux fois. -->
+    @for (bump of bumps(); track bump) {
+      <span data-testid="round-stake" class="tabular-nums" [class.stake-bump]="bump > 0"
+        style="font-family:var(--font-score);font-size:1.9rem;font-weight:900;line-height:0.95;letter-spacing:-0.02em;color:var(--text-hi)">{{ shown() }}</span>
+    }
     <span class="text-xs mt-1" style="color:var(--text-muted)">{{ 'gameplay.round.stake' | translate }}</span>
   `,
   styles: `
@@ -44,6 +47,8 @@ export class RoundStakeComponent {
   protected readonly shown = signal(0);
   /** La dernière baisse, le temps que « −150 » s'envole (un identifiant neuf relance l'animation). */
   protected readonly drops = signal<readonly { id: number; amount: number }[]>([]);
+  /** Le chiffre, sous un identifiant qui change à chaque baisse (0 : pas de rebond). */
+  protected readonly bumps = signal<readonly number[]>([0]);
 
   constructor() {
     const reduced = motionReduced();
@@ -68,7 +73,9 @@ export class RoundStakeComponent {
           return;
         }
         if (dropTimer !== null) clearTimeout(dropTimer);
-        this.drops.set([{ id: nextId++, amount: from - value }]);
+        const id = ++nextId;
+        this.drops.set([{ id, amount: from - value }]);
+        this.bumps.set([id]);
         dropTimer = setTimeout(() => this.drops.set([]), DROP_LABEL_MS);
         const start = performance.now();
         const step = (now: number) => {

@@ -230,11 +230,6 @@ describe('indices', () => {
     expect(at(5).hintKinds).toEqual([]);
   });
 
-  it('garde le coût de chaque niveau, quand le back le dit', () => {
-    expect(started({ hints: { unlockSeconds: [5, 10], penaltyPercents: [30, 60] } }).hintPenaltyPercents).toEqual([30, 60]);
-    expect(at(5).hintPenaltyPercents).toEqual([]);
-  });
-
   it('le niveau suivant attend son palier', () => {
     const first = applyHints(at(5), 1, [{ kind: 'year', value: '2013' }]);
     expect(availableHintLevels(first)).toEqual([]);
@@ -274,30 +269,19 @@ describe('indices', () => {
 });
 
 describe('points en jeu', () => {
-  const scores = [{ seconds: 0.5, score: 1000 }, { seconds: 1, score: 850 }, { seconds: 2, score: 550 }, { seconds: 5, score: 250 }, { seconds: 10, score: 100 }];
-  const scored = (overrides: Partial<RoundConfig> = {}) =>
-    started({ listen: { steps: [0.5, 1, 2, 5, 10], extendable: true, scores }, hints: { unlockSeconds: [5, 10], penaltyPercents: [30, 60] }, ...overrides });
+  const stake = (seconds: number, hintLevel: number) => seconds * 100 - hintLevel;
 
-  it('vaut le barème du palier en cours', () => {
-    expect(stakeOf(scored())).toBe(1000);
-    expect(stakeOf(listenMore(scored()))).toBe(850);
+  it('appelle le calcul du mode au palier en cours, avec l\'indice pris', () => {
+    const r = started({ listen: { steps: [0.5, 1], extendable: true, stake } });
+    expect(stakeOf(r)).toBe(50);
+    expect(stakeOf(applyHints(listenMore(r), 1, []))).toBe(99);
   });
 
-  it('vaut le premier palier tant que rien n\'est choisi', () => {
-    expect(stakeOf(createRound({ ...CONFIG, listen: { steps: [0.5, 1], extendable: true, scores } }))).toBe(1000);
+  it('prend le premier palier tant que rien n\'est choisi', () => {
+    expect(stakeOf(round({ listen: { steps: [0.5, 1], extendable: true, stake } }))).toBe(50);
   });
 
-  it('retire la pénalité de l\'indice pris, arrondie comme le serveur (au pair)', () => {
-    const at5 = { ...scored(), chosenSeconds: 5 };
-    expect(stakeOf(applyHints(at5, 1, []))).toBe(175);
-    expect(stakeOf(applyHints(at5, 2, []))).toBe(100);
-    // 850 × 0,7 = 595 ; 250 × 0,4 = 100 ; 25 × 0,5 = 12,5 arrondi à 12.
-    expect(stakeOf(applyHints({ ...scored(), chosenSeconds: 1 }, 1, []))).toBe(595);
-    const half = started({ listen: { steps: [1], extendable: false, scores: [{ seconds: 1, score: 25 }] }, hints: { unlockSeconds: [1], penaltyPercents: [50] } });
-    expect(stakeOf(applyHints(half, 1, []))).toBe(12);
-  });
-
-  it('est `null` sans barème (Runs)', () => {
+  it('est `null` quand le mode n\'a pas de points en jeu (Runs)', () => {
     expect(stakeOf(started())).toBeNull();
   });
 });

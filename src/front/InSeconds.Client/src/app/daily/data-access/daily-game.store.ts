@@ -9,6 +9,7 @@ import { DailyScreen, PeekContext, isRecapScreen, refocusContext, screenAfterTod
 import { formatCountdown, secondsUntilMidnightUtc, yesterdayUtc } from '../domain/countdown';
 import { ArchiveDay } from '../domain/archive';
 import { toRoundResult } from '../domain/round-result';
+import { dailyStake } from '../domain/stake';
 import { EMPTY_STREAK, Streak, pluralKey } from '../domain/streak';
 import { recapToasts } from '../domain/toasts';
 import { DailyApi } from './daily.api';
@@ -197,8 +198,8 @@ export const DailyGameStore = signalStore(
     const configOf = (position: number, settings: DailySettings, resumed: ResumedTrack | null): RoundConfig => ({
       trackId: position,
       previewUrl: store.tracks().find(t => t.position === position)?.previewUrl || null,
-      listen: { steps: settings.allowedDurationsSeconds, extendable: true, scores: settings.durationScores },
-      hints: { unlockSeconds: settings.hints.map(h => h.unlockSeconds), kinds: settings.hints.map(h => h.kind), penaltyPercents: settings.hints.map(h => h.penaltyPercent) },
+      listen: { steps: settings.allowedDurationsSeconds, extendable: true, stake: (seconds, hintLevel) => dailyStake(settings, seconds, hintLevel) },
+      hints: { unlockSeconds: settings.hints.map(h => h.unlockSeconds), kinds: settings.hints.map(h => h.kind) },
       // Reprise : le plancher d'écoute et les indices déjà payés du morceau en cours.
       listenedFloor: resumed && resumed.listenedSeconds > 0 ? resumed.listenedSeconds : null,
       hintLevel: resumed?.hintLevel ?? 0,

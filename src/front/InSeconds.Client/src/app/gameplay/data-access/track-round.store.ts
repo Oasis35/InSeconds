@@ -9,6 +9,11 @@ import { Waveform, bassAt } from '../domain/waveform';
 import { AudioPort } from './audio.port';
 import { WaveformPort } from './waveform.port';
 
+/** Le navigateur demande d'économiser les données (Chrome sur Android) : la waveform, de confort, n'est pas calculée. */
+function saveData(): boolean {
+  return (globalThis.navigator as { connection?: { saveData?: boolean } } | undefined)?.connection?.saveData === true;
+}
+
 interface TrackRoundState {
   round: TrackRound | null;
   /** La forme de l'extrait en cours, une fois calculée ; `null` avant, et si le calcul échoue. */
@@ -53,7 +58,7 @@ export function withTrackRound() {
         return envelope && audio.state() === 'playing' ? bassAt(envelope, audio.position()) : 0;
       }),
     })),
-    withMethods((store, audio = inject(AudioPort), waveforms = inject(WaveformPort, { optional: true })) => {
+    withMethods((store, audio = inject(AudioPort), waveforms = inject(WaveformPort)) => {
       /** L'extrait suivant, chargé en arrière-plan : le seul autre son gardé en mémoire. */
       let nextPreviewUrl: string | null = null;
       /** Le morceau dont la forme est demandée (une seule demande par morceau). */
@@ -214,17 +219,20 @@ export function withTrackRound() {
         },
 
         /**
-         * Calcule la forme de l'extrait en cours, une fois par morceau, quand le son est parti : la lecture ne l'attend jamais et ne lui
-         * dispute pas le réseau au démarrage. Appelé par le lecteur (`withHooks`), pas par la page.
+         * Calcule la forme de l'extrait en cours, une fois par morceau, quand le premier palier est joué : la lecture ne l'attend jamais
+         * et ne lui dispute pas le réseau au démarrage. Rien en mode économie de données (l'extrait serait téléchargé deux fois). Un
+         * échec se retente au palier suivant. Appelé par le lecteur (`withHooks`), pas par la page.
          */
         loadWaveform(): void {
           const round = store.round();
-          if (!waveforms || !round?.previewUrl || waveformTrackId === round.trackId) return;
+          if (!round?.previewUrl || waveformTrackId === round.trackId || saveData()) return;
           const trackId = round.trackId;
           waveformTrackId = trackId;
           void waveforms.load(round.previewUrl, maxStep(round)).then(waveform => {
             // le joueur est passé au morceau suivant entre-temps
-            if (waveform && store.round()?.trackId === trackId) patchState(store, { waveform });
+            if (store.round()?.trackId !== trackId) return;
+            if (waveform) patchState(store, { waveform });
+            else waveformTrackId = null;
           });
         },
       };
@@ -244,7 +252,7 @@ export function withTrackRound() {
             const next = onAudio(round, state);
             patchState(store, { round: next });
             if (next.phase === 'audio-error' && round.phase !== 'audio-error') store.recoverFromAudioError();
-            if (state === 'playing') store.loadWaveform();
+            if (state === 'finished') store.loadWaveform();
           });
         });
       },

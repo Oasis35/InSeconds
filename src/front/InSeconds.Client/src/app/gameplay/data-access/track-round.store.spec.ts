@@ -20,7 +20,7 @@ describe('TrackRoundStore', () => {
 
   beforeEach(() => {
     audio = new FakeAudioPort();
-    TestBed.configureTestingModule({ providers: [provideFakeAudio(audio), TrackRoundStore] });
+    TestBed.configureTestingModule({ providers: [provideFakeAudio(audio), provideFakeWaveform(new FakeWaveformPort()), TrackRoundStore] });
     store = TestBed.inject(TrackRoundStore);
   });
 
@@ -415,7 +415,7 @@ describe('TrackRoundStore', () => {
   });
 
   describe('forme de l\'extrait', () => {
-    it('sans calcul de forme (aucun port fourni) : ni forme ni basses, la partie continue', () => {
+    it('tant que la forme n\'est pas là : ni forme ni basses, la partie continue', () => {
       store.start(CONFIG);
       emit('playing', 0.3);
       expect(store.waveform()).toBeNull();
@@ -427,11 +427,11 @@ describe('TrackRoundStore', () => {
       expect(store.stake()).toBeNull();
     });
 
-    it('donne les points en jeu du barème', () => {
-      store.start({ ...CONFIG, listen: { ...CONFIG.listen, scores: [{ seconds: 0.5, score: 1000 }, { seconds: 1, score: 850 }] } });
-      expect(store.stake()).toBe(1000);
+    it('donne les points en jeu du mode', () => {
+      store.start({ ...CONFIG, listen: { ...CONFIG.listen, stake: seconds => seconds * 100 } });
+      expect(store.stake()).toBe(50);
       store.listenMore();
-      expect(store.stake()).toBe(850);
+      expect(store.stake()).toBe(100);
     });
   });
 });
@@ -454,30 +454,43 @@ describe('TrackRoundStore et la forme de l\'extrait', () => {
     TestBed.tick();
   };
 
-  it('ne la demande qu\'une fois le son parti, une seule fois par morceau, sur l\'échelle du dernier palier', () => {
+  it('ne la demande qu\'une fois le premier palier joué, une seule fois par morceau, sur l\'échelle du dernier palier', () => {
     store.start(CONFIG);
     emit('ready');
-    expect(waveforms.calls).toEqual([]);
     emit('playing');
+    expect(waveforms.calls).toEqual([]);
     emit('finished', 0.5);
     store.listenMore();
     emit('playing');
+    emit('finished', 1);
     expect(waveforms.calls).toEqual([`load ${URL} 10`]);
+  });
+
+  it('se redemande au palier suivant après un échec', async () => {
+    store.start(CONFIG);
+    emit('finished', 0.5);
+    await waveforms.resolve(null);
+    store.listenMore();
+    emit('playing');
+    emit('finished', 1);
+    expect(waveforms.calls).toHaveLength(2);
   });
 
   it('suit les basses de la position pendant la lecture, 0 à l\'arrêt', async () => {
     store.start(CONFIG);
-    emit('playing', 1 / 60);
+    emit('finished', 0.5);
     await waveforms.resolve(WAVEFORM);
+    store.listenMore();
+    emit('playing', 1 / 60);
     expect(store.waveform()).toEqual(WAVEFORM);
     expect(store.bass()).toBe(0.4);
-    emit('finished', 0.5);
+    emit('finished', 1);
     expect(store.bass()).toBe(0);
   });
 
   it('oublie une forme arrivée après le passage au morceau suivant', async () => {
     store.start(CONFIG);
-    emit('playing');
+    emit('finished', 0.5);
     store.start({ ...CONFIG, trackId: 8 });
     await waveforms.resolve(WAVEFORM);
     expect(store.waveform()).toBeNull();
@@ -485,7 +498,7 @@ describe('TrackRoundStore et la forme de l\'extrait', () => {
 
   it('reset oublie la forme', async () => {
     store.start(CONFIG);
-    emit('playing');
+    emit('finished', 0.5);
     await waveforms.resolve(WAVEFORM);
     store.reset();
     expect(store.waveform()).toBeNull();
