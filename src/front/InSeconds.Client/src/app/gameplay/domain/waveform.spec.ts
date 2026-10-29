@@ -25,7 +25,7 @@ describe('bassEnvelope', () => {
   it('suit les basses et laisse passer peu des aigus', () => {
     const samples = new Float32Array([...tone(0.5, 60), ...tone(0.5, 3000)]);
     const envelope = bassEnvelope(samples, 8000);
-    expect(envelope.length).toBe(Math.ceil(samples.length / Math.round(8000 / ENVELOPE_FPS)));
+    expect(envelope).toHaveLength(Math.ceil(samples.length / Math.round(8000 / ENVELOPE_FPS)));
     expect(Math.max(...envelope.slice(0, 25))).toBeCloseTo(1, 1);
     // Les aigus arrivent quand la basse s'éteint : l'enveloppe redescend.
     expect(envelope.at(-1)!).toBeLessThan(0.3);

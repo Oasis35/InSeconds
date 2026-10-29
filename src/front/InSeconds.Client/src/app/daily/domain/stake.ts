@@ -6,7 +6,8 @@ import { DailySettings } from './daily';
  * (`DurationScoringPolicy` : au pair le plus proche). Un palier sans barème vaut 0.
  */
 export function dailyStake(settings: Pick<DailySettings, 'durationScores' | 'hints'>, seconds: number, hintLevel: number): number {
-  const base = settings.durationScores.filter(d => d.seconds === seconds).at(-1)?.score ?? 0;
+  // Le dernier barème du palier s'il est en double, comme le serveur.
+  const base = settings.durationScores.reduce((score, d) => (d.seconds === seconds ? d.score : score), 0);
   const penalty = hintLevel > 0 ? (settings.hints.find(h => h.level === hintLevel)?.penaltyPercent ?? 0) : 0;
   return penalty > 0 ? roundHalfEven(base * (1 - penalty / 100)) : base;
 }

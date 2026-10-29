@@ -51,27 +51,33 @@ export class MembraneComponent {
 
   constructor() {
     if (this.reduced) return;
-    const timers = new Set<ReturnType<typeof setTimeout>>();
-    inject(DestroyRef).onDestroy(() => timers.forEach(clearTimeout));
+    inject(DestroyRef).onDestroy(() => this.timers.forEach(clearTimeout));
     let smoothed = 0;
     let lastWave = -Infinity;
-    let nextId = 0;
     effect(() => {
       const level = this.level();
       untracked(() => {
         const now = performance.now();
         if (level > WAVE_THRESHOLD && smoothed <= WAVE_THRESHOLD && now - lastWave > WAVE_GAP_MS) {
           lastWave = now;
-          const id = nextId++;
-          this.waves.update(waves => [...waves, id]);
-          const timer = setTimeout(() => {
-            timers.delete(timer);
-            this.waves.update(waves => waves.filter(w => w !== id));
-          }, WAVE_LIFE_MS);
-          timers.add(timer);
+          this.spawnWave();
         }
         smoothed = smoothed * 0.6 + level * 0.4;
       });
     });
+  }
+
+  private readonly timers = new Set<ReturnType<typeof setTimeout>>();
+  private nextId = 0;
+
+  /** Une onde de plus, retirée à la fin de son animation. */
+  private spawnWave(): void {
+    const id = this.nextId++;
+    this.waves.update(waves => [...waves, id]);
+    const timer = setTimeout(() => {
+      this.timers.delete(timer);
+      this.waves.update(waves => waves.filter(w => w !== id));
+    }, WAVE_LIFE_MS);
+    this.timers.add(timer);
   }
 }

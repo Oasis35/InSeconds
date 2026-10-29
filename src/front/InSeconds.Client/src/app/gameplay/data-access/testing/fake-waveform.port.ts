@@ -5,7 +5,7 @@ import { WaveformPort } from '../waveform.port';
 /** Une fausse forme d'extrait : le test décide quand elle arrive (`resolve`), et ce qu'elle vaut. */
 export class FakeWaveformPort extends WaveformPort {
   readonly calls: string[] = [];
-  private pending: ((waveform: Waveform | null) => void)[] = [];
+  private readonly pending: ((waveform: Waveform | null) => void)[] = [];
 
   load(url: string, seconds: number): Promise<Waveform | null> {
     this.calls.push(`load ${url} ${seconds}`);
