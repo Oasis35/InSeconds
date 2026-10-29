@@ -46,7 +46,7 @@ namespace Internal.Generated.WolverineHandlers
             var efPlayerDirectory = new InSeconds.Api.Modules.Players.Persistence.EfPlayerDirectory(inSecondsDbContext);
             var efDailyStatsQueries = new InSeconds.Api.Modules.Daily.Persistence.EfDailyStatsQueries(inSecondsDbContext);
             var efDailyQueries = new InSeconds.Api.Modules.Daily.Persistence.EfDailyQueries(inSecondsDbContext);
-            var claimsCurrentPlayer = new InSeconds.Api.Infrastructure.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
+            var claimsCurrentPlayer = new InSeconds.Api.Modules.Players.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
             System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Daily.Application.GetTodayEndpoint");
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction

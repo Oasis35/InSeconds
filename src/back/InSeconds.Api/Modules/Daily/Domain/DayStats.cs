@@ -27,7 +27,7 @@ public sealed record TrackAggregate(
 public sealed record ScoreBucket(int MinScore, int MaxScore, int Count);
 
 /// <summary>
-/// L'égaliseur « répartition des scores du jour » (v1 : <c>Common/Stats/ScoreDistribution</c>) : <see cref="BucketCount"/> tranches de même
+/// L'égaliseur « répartition des scores du jour » : <see cref="BucketCount"/> tranches de même
 /// largeur couvrant [0, score maximal possible], comptes à 0 compris.
 /// </summary>
 public static class ScoreDistribution
@@ -75,10 +75,10 @@ public static class ScoreDistribution
     private static int BucketIndex(int score, int width) => Math.Clamp(score / width, 0, BucketCount - 1);
 }
 
-/// <summary>Les médianes de la v1 : celle de « stats du jour » est entière (division entière des deux valeurs centrales), celle de l'admin décimale.</summary>
+/// <summary>Les médianes : celle de « stats du jour » est entière (division entière des deux valeurs centrales), celle de l'admin décimale.</summary>
 public static class Medians
 {
-    /// <summary>Médiane entière : 0 sans joueur (v1 : <c>TodayStatsHandler.ComputeMedian</c>).</summary>
+    /// <summary>Médiane entière : 0 sans joueur.</summary>
     public static int Integer(IReadOnlyCollection<int> values)
     {
         ArgumentNullException.ThrowIfNull(values);
@@ -89,7 +89,7 @@ public static class Medians
         return sorted.Count % 2 == 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
     }
 
-    /// <summary>Médiane décimale, vide sans joueur (v1 : <c>MedianCalculator</c>).</summary>
+    /// <summary>Médiane décimale, vide sans joueur.</summary>
     public static double? Decimal(IReadOnlyCollection<int> values)
     {
         ArgumentNullException.ThrowIfNull(values);
@@ -112,7 +112,7 @@ public sealed record DayTrackStats(
     IReadOnlyList<DurationBucket> GuessTimeDistribution, int NotFoundCount);
 
 /// <summary>
-/// La photo d'un jour (§ 5.4 du plan v2) : tout ce que montrent « stats par défi » et la répartition des scores, **plus les paliers et le barème en
+/// La photo d'un jour : tout ce que montrent « stats par défi » et la répartition des scores, **plus les paliers et le barème en
 /// vigueur au calcul** (deux jours après pour la tâche, le moment du recalcul pour l'admin) : changer un réglage ensuite ne réécrit pas la photo.
 /// L'histogramme garde aussi tout palier réellement écouté qui n'est plus dans le réglage. Les joueurs supprimés en sont exclus.
 /// La pénalité d'indice (<c>Daily:HintPenaltyPercent</c>) n'en fait pas partie : rien n'y est calculé avec elle, les scores lus sont ceux
@@ -144,7 +144,7 @@ public sealed record DayStatsPayload(
     public const int CurrentVersion = 1;
 }
 
-/// <summary>Calcule la photo d'un jour (v1 : <c>GetChallengeStats.BuildChallengeStats</c>, plus la répartition des scores du jour).</summary>
+/// <summary>Calcule la photo d'un jour (« stats par défi » et la répartition des scores du jour).</summary>
 public static class DayStatsCalculator
 {
     /// <param name="isPast">Le jour est révolu : les parties encore « en cours » n'ont jamais été terminées, elles comptent comme expirées.</param>
@@ -210,7 +210,7 @@ public static class DayStatsCalculator
     };
 }
 
-/// <summary>La photo figée d'un jour terminé pour de bon (§ 4.4 du plan v2, table <c>challenge_day_stats</c>) : calculée une fois, relue telle quelle.</summary>
+/// <summary>La photo figée d'un jour terminé pour de bon (table <c>challenge_day_stats</c>) : calculée une fois, relue telle quelle.</summary>
 public sealed class DayStatsSnapshot
 {
     private DayStatsSnapshot()

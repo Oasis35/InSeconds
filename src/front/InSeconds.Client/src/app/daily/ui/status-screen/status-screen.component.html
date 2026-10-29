@@ -8,9 +8,7 @@
       </p>
     }
   </div>
-  <button (click)="retry.emit()"
-    class="px-6 py-3 rounded-(--radius-button) text-sm font-bold uppercase transition-colors"
-    style="font-family:var(--font-display);letter-spacing:0.06em;background:var(--bg-surface);color:var(--text-slate);border:1px solid var(--border-subtle)">
+  <button appButton type="button" variant="secondary" (click)="retry.emit()">
     {{ 'common.retry' | translate }}
   </button>
 </div>

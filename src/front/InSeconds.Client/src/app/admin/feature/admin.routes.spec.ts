@@ -25,7 +25,7 @@ describe('ADMIN_ROUTES', () => {
     return TestBed.inject(Router).url;
   }
 
-  it('mène /admin au tableau de bord, comme en v1', async () => {
+  it('mène /admin au tableau de bord', async () => {
     expect(await landOn('/admin')).toBe('/admin/dashboard');
   });
 

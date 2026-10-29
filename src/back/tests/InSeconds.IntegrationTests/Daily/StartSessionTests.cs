@@ -6,7 +6,7 @@ using static InSeconds.IntegrationTests.Daily.DailyApi;
 namespace InSeconds.IntegrationTests.Daily;
 
 /// <summary>
-/// Démarrer, reprendre et expirer une partie (E2, § 5.6 du plan v2). Le front ne démarre qu'au clic ; la lecture du jour (<c>GET /api/daily/today</c>)
+/// Démarrer, reprendre et expirer une partie. Le front ne démarre qu'au clic ; la lecture du jour (<c>GET /api/daily/today</c>)
 /// ne crée rien et ne génère rien.
 /// </summary>
 public class StartSessionTests(PostgresFixture postgres) : IAsyncLifetime

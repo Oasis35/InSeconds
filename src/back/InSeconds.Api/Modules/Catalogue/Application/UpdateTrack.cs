@@ -75,16 +75,7 @@ public static class UpdateTrackEndpoint
         var now = time.GetUtcNow();
         var track = plan.Track!;
         track.ReplaceDeezerSource(TrackMapping.ToMetadata(found.Track), now);
-        switch (plan.Album)
-        {
-            case AlbumLookup.Found album:
-                track.RecordGenres(await store.EnsureGenresAsync([.. album.Genres.Select(g => new GenreRef(g.Id, g.Name))], ct), now);
-                break;
-            // Album supprimé chez Deezer : sans genre, et inutile de le redemander.
-            case AlbumLookup.NotFound:
-                track.RecordGenres([], now);
-                break;
-        }
+        await TrackMapping.RecordAlbumGenresAsync(track, plan.Album, store, now, ct);
 
         return TrackMapping.ToSummary(track, options.CurrentValue);
     }

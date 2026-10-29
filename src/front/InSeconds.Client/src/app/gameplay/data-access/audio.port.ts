@@ -2,7 +2,7 @@ import { Signal } from '@angular/core';
 import { AudioStatus } from '../domain/track-round';
 
 /**
- * Le lecteur d'extraits de la manche (§ 6.3 du plan v2). L'arrêt au palier se cale sur le son
+ * Le lecteur d'extraits de la manche. L'arrêt au palier se cale sur le son
  * réellement joué, jamais sur l'heure de l'appel (pièges 44 et 46) : implémenté par `HtmlAudioPort`.
  *
  * États : `idle` (rien de chargé) → `loading` → `ready` (chargé, pas encore joué) → `playing` →

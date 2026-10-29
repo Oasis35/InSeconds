@@ -1,7 +1,7 @@
 namespace InSeconds.Api.Modules.Catalogue.Domain;
 
 /// <summary>
-/// Ce que l'on sait de l'extrait audio d'un morceau (§ 4.3 du plan v2). <see cref="Unknown"/> n'existe qu'avant
+/// Ce que l'on sait de l'extrait audio d'un morceau. <see cref="Unknown"/> n'existe qu'avant
 /// le premier contrôle ; ensuite, seul un contrôle qui a obtenu une réponse de Deezer change l'état.
 /// Valeurs stockées en base (<c>preview_status</c>) : ne jamais les changer.
 /// </summary>

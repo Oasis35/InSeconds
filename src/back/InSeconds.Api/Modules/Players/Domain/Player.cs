@@ -1,9 +1,9 @@
 namespace InSeconds.Api.Modules.Players.Domain;
 
 /// <summary>
-/// Un joueur. Invité tant qu'il n'a pas de compte (<see cref="Account"/>) : plus d'indicateur
-/// <c>is_guest</c> (§ 4.2 du plan v2). Jamais supprimé physiquement : <see cref="DeletedAt"/> marque
-/// la suppression, et ses appareils ne sont alors plus acceptés.
+/// Un joueur. Invité tant qu'il n'a pas de compte (<see cref="Account"/>) : aucun indicateur
+/// <c>is_guest</c>. Un joueur effacé disparaît pour de bon, avec ses données de jeu
+/// (<c>AccountErasure</c>) : pas de suppression logique.
 /// </summary>
 public sealed class Player
 {
@@ -15,10 +15,8 @@ public sealed class Player
 
     public DateTimeOffset CreatedAt { get; private set; }
 
-    /// <summary>Dernière visite, notée au plus toutes les 5 minutes par la validation du cookie (R17).</summary>
+    /// <summary>Dernière visite, notée au plus toutes les 5 minutes par la validation du cookie.</summary>
     public DateTimeOffset? LastSeenAt { get; private set; }
-
-    public DateTimeOffset? DeletedAt { get; private set; }
 
     /// <summary>
     /// D'où vient le joueur, nettoyée par <see cref="Domain.AcquisitionSource"/> : notée à la création de l'invité, jamais changée

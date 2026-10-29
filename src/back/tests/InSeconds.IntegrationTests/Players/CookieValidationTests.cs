@@ -9,8 +9,8 @@ using Microsoft.Extensions.Time.Testing;
 namespace InSeconds.IntegrationTests.Players;
 
 /// <summary>
-/// Validation du cookie à chaque requête (§ 5.5 du plan v2) : appareil vérifié en base et rôle admin
-/// relu, au plus une minute de retard ; dernière visite toutes les 5 minutes (R17) ; une erreur de base
+/// Validation du cookie à chaque requête : appareil vérifié en base et rôle admin
+/// relu, au plus une minute de retard ; dernière visite toutes les 5 minutes ; une erreur de base
 /// ne déconnecte jamais (piège 37). L'horloge est simulée pour franchir la minute.
 /// </summary>
 public class CookieValidationTests(PostgresFixture postgres) : IAsyncLifetime
@@ -71,18 +71,6 @@ public class CookieValidationTests(PostgresFixture postgres) : IAsyncLifetime
 
         var admin = await client.GetFromJsonAsync<AdminMeResponse>("/api/admin/me", Ct);
         Assert.Equal(playerId, admin!.PlayerId);
-    }
-
-    [Fact]
-    public async Task JoueurSupprime_CookieRejete()
-    {
-        var client = _api.CreateClient();
-        var playerId = await PostGuestAsync(client);
-
-        await _api.ExecuteAsync($"UPDATE players.players SET deleted_at = now() WHERE id = '{playerId}'");
-        _time.Advance(TimeSpan.FromSeconds(61));
-
-        Assert.Equal(HttpStatusCode.NoContent, (await client.GetAsync("/api/players/me", Ct)).StatusCode);
     }
 
     [Fact]

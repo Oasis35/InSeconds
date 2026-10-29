@@ -1,12 +1,12 @@
 using System.Diagnostics;
-using InSeconds.Api.Infrastructure.Auth;
+using InSeconds.Api.Modules.Players.Auth;
 using InSeconds.Api.Modules.Players.Contracts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
 namespace InSeconds.UnitTests.Players;
 
-/// <summary>Identité du joueur dans la télémétrie : tag de trace et scope de journal (§ 5.7 du plan v2).</summary>
+/// <summary>Identité du joueur dans la télémétrie : tag de trace et scope de journal.</summary>
 public class PlayerTelemetryMiddlewareTests
 {
     private static readonly Guid PlayerId = new("22222222-2222-2222-2222-222222222222");

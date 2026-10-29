@@ -13,11 +13,11 @@ Noms : **« Run »** dans les tickets GitHub (étiquette `Mode Run`), **`Runs`**
 | [`regles.md`](regles.md) | Les règles du proto 1 : manches, points, jauge, disques, playlist partagée, accès |
 | [`ecrans.md`](ecrans.md) | Les écrans, qui font référence : maquettes à intégrer telles quelles, avec le design système existant |
 | [`conception.md`](conception.md) | La conception technique : module `Runs`, données, routes, codes d'erreur, front, ce qui change dans Players et Catalogue |
-| [`plan.md`](plan.md) | La feuille de route (proto 1, proto 2, plus tard), le découpage en PR, les idées de bonus, l'historique des décisions |
+| [`plan.md`](plan.md) | La feuille de route (proto 1, proto 2, plus tard), les idées de bonus, l'historique des décisions |
 
 ## Où suivre
 
-- Epic : [#368](https://github.com/Oasis35/InSeconds/issues/368) ; proto 1 : [#360](https://github.com/Oasis35/InSeconds/issues/360), un sous-ticket par PR (cf. [`plan.md`](plan.md#découpage-du-proto-1-en-pr)).
+- Epic : [#368](https://github.com/Oasis35/InSeconds/issues/368) ; proto 1 : [#360](https://github.com/Oasis35/InSeconds/issues/360), un sous-ticket par PR (cf. [`../historique/runs-proto1-decoupage.md`](../historique/runs-proto1-decoupage.md)).
 - Maquettes interactives : artifact Design « Platines » sur claude.ai (privé, lien dans #360). Les images de [`maquettes/`](maquettes/) en sont la copie figée au 18/10/2026 : plusieurs écrans ont évolué depuis (fin du run, comparaison…), les écarts sont listés à la fin d'[`ecrans.md`](ecrans.md#écarts-entre-les-maquettes-et-lapp-livrée).
 
 ## Règles qui tiennent pour tout le mode

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Client Deezer (§ 5.1 du plan v2) : trois ports par besoin (IPreviewProvider, ITrackSearch,
+  <!-- Client Deezer : trois ports par besoin (IPreviewProvider, ITrackSearch,
        ITrackMetadataSource), leur implémentation HTTP et le cache des recherches.
        Ne connaît ni l'API ni aucun module. -->
   <PropertyGroup>

@@ -24,9 +24,10 @@ const SUBMIT_RETRY_DELAY_MS = 1000;
 
 /**
  * Adaptateur de l'API du module Daily : seule porte d'entrée vers le client généré (`api/daily`). Il rend des types du domaine
- * (dates en texte, `null` plutôt que `undefined`) et des promesses ; les erreurs sont celles du client (`toAppError` sait les lire).
+ * (dates en texte, `null` plutôt que `undefined`) et des promesses ; les erreurs sont celles du client (`toAppError` sait les lire). Fourni par
+ * la route `/daily` (`provideDailyApi`), avec le client qui y lit son adresse.
  */
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class DailyApi {
   private readonly client = inject(DailyClient);
 

@@ -10,7 +10,7 @@ describe('AdminPlayersApi', () => {
 
   function create(): AdminPlayersApi {
     TestBed.configureTestingModule({
-      providers: [{ provide: DailyClient, useValue: client }, { provide: RunsClient, useValue: runs }],
+      providers: [AdminPlayersApi, { provide: DailyClient, useValue: client }, { provide: RunsClient, useValue: runs }],
     });
     return TestBed.inject(AdminPlayersApi);
   }

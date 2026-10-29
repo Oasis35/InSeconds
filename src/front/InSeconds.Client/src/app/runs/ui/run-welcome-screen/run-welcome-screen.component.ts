@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { RunRecord } from '../../domain/run';
+import { ButtonComponent } from '../../../ui/button/button.component';
 
 /**
  * L'accueil du mode : le nom, « accès anticipé », la promesse, le record du joueur s'il en a un, puis « Lancer une partie » (une playlist neuve ; une partie
@@ -8,7 +9,7 @@ import { RunRecord } from '../../domain/run';
  */
 @Component({
   selector: 'app-run-welcome-screen',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, ButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="screen-enter flex-1 flex flex-col items-center justify-center gap-6 text-center px-4" data-testid="run-welcome">
@@ -23,9 +24,7 @@ import { RunRecord } from '../../domain/run';
           </p>
         }
       </div>
-      <button type="button" (click)="start.emit()" data-testid="run-start"
-        class="w-full max-w-xs py-4 rounded-(--radius-button) text-sm font-bold tracking-wide uppercase transition touch-manipulation"
-        style="font-family:var(--font-display);letter-spacing:0.06em;background:var(--gradient-primary);color:var(--text-on-primary);box-shadow:var(--glow-primary)">
+      <button appButton type="button" size="lg" [block]="true" [glow]="true" class="max-w-xs" (click)="start.emit()" data-testid="run-start">
         {{ 'runs.welcome.launch' | translate }}
       </button>
     </div>

@@ -85,7 +85,7 @@ public sealed class DailyRules(IOptionsMonitor<DailyOptions> options, IEnumerabl
         return count;
     }
 
-    // Des seuils incohérents (non croissants) ne doivent pas faire échouer chaque demande d'indice : ceux de la v1 les remplacent.
+    // Des seuils incohérents (non croissants) ne doivent pas faire échouer chaque demande d'indice : ceux par défaut les remplacent.
     private IReadOnlyList<decimal> ValidThresholds(IReadOnlyList<decimal> configured)
     {
         var valid = DailyOptionsChecks.HintThresholdsAreValid(configured);
@@ -143,7 +143,7 @@ public static class DailyOptionsChecks
 }
 
 /// <summary>
-/// Refuse de démarrer avec des réglages incohérents (revue de D1) : mieux vaut une API qui ne démarre pas qu'un indice payé sans rien
+/// Refuse de démarrer avec des réglages incohérents : mieux vaut une API qui ne démarre pas qu'un indice payé sans rien
 /// révéler. Le contrôle ne s'applique qu'au démarrage : un réglage changé ensuite, à chaud, ne fait pas tomber les parties en cours
 /// (<see cref="DailyRules"/> le borne). Lancé après le rechargement des réglages (<c>StartAsync</c> suit tous les <c>StartingAsync</c>).
 /// </summary>

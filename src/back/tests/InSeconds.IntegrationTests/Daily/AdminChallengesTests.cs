@@ -6,7 +6,7 @@ using static InSeconds.IntegrationTests.Daily.DailyApi;
 namespace InSeconds.IntegrationTests.Daily;
 
 /// <summary>
-/// « Stats par défi » et l'historique des défis de l'admin (F1, v1 : <c>GET /api/admin/challenge-stats</c> et <c>GET /api/admin/challenges</c>) :
+/// « Stats par défi » et l'historique des défis de l'admin :
 /// la photo figée pour J-2 et avant, le calcul en direct pour la veille et le jour même, le pseudo et le titre toujours joints à la lecture.
 /// </summary>
 public class AdminChallengesTests(PostgresFixture postgres) : IAsyncLifetime
@@ -147,11 +147,11 @@ public class AdminChallengesTests(PostgresFixture postgres) : IAsyncLifetime
         var (alice, _, _) = await SeedDayAsync(Closable);
         await RecomputeAsync(Closable);
 
-        await _game.DeletePlayerAsync(alice);
+        await _game.ErasePlayerAsync(alice);
 
         var day = (await StatsAsync()).Single();
 
-        // Limite connue de E3 : la photo le garde jusqu'au prochain recalcul, mais son pseudo ne s'affiche plus.
+        // Limite connue : la photo le garde jusqu'au prochain recalcul, mais son pseudo ne s'affiche plus.
         Assert.Equal(2, day.PlayerCount);
         Assert.Null(day.Players.Single(p => p.PlayerId == alice).Pseudo);
 

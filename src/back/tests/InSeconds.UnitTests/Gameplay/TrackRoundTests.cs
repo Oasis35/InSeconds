@@ -3,7 +3,7 @@ using InSeconds.Api.Modules.Gameplay.Domain;
 
 namespace InSeconds.UnitTests.Gameplay;
 
-/// <summary>La manche : plancher d'écoute, indices, réponse. Le piège 35 et les règles d'indices de la v1.</summary>
+/// <summary>La manche : plancher d'écoute, indices, réponse. Le piège 35 et les règles d'indices.</summary>
 public class TrackRoundTests
 {
     private static readonly HintPolicy DefaultPolicy = new([5m, 10m]);
@@ -291,7 +291,7 @@ public class TrackRoundTests
         Assert.Throws<ArgumentNullException>(() => TrackRound.Start.Answer(1m, "a", "b", Daft, null!));
     }
 
-    // --- les règles de la v1 : écouter plus ne coûte rien et ne remet rien à zéro ---
+    // --- écouter plus ne coûte rien et ne remet rien à zéro ---
 
     [Fact]
     public void Parcours_ProlongerLEcouteApresUnIndice_GardeLIndice()

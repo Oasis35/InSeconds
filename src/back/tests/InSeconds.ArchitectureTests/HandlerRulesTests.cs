@@ -7,13 +7,12 @@ using Wolverine.Http;
 namespace InSeconds.ArchitectureTests;
 
 /// <summary>
-/// Règles des handlers annoncées par le CLAUDE.md racine (« Règles dures ») et le § 5.3 du plan v2 : Wolverine
+/// Règles des handlers annoncées par le CLAUDE.md racine (« Règles dures ») : Wolverine
 /// enregistre la transaction (jamais de <c>SaveChangesAsync</c> dans un handler), et une route renvoie un
 /// résultat métier ou un <c>ProblemDetails</c> de ses étapes, jamais un <c>IResult</c>.
 /// </summary>
 public class HandlerRulesTests
 {
-    private const string ModulesNamespace = "InSeconds.Api.Modules";
     private static readonly Assembly Api = typeof(Program).Assembly;
 
     /// <summary>
@@ -25,7 +24,7 @@ public class HandlerRulesTests
         // Écrit puis recharge la configuration : le rechargement doit lire la ligne enregistrée. Appelé par la route
         // du cooldown (Daily, AdminSettings), qui est [NonTransactional] pour cette raison.
         "InSeconds.Api.Infrastructure.Settings.SettingsStore.SetAsync",
-        // Reprise d'un cookie v1 par le middleware de transition, hors handler : l'appareil ouvert va dans le cookie.
+        // Reprise d'un ancien cookie par le middleware de transition, hors handler : l'appareil ouvert va dans le cookie.
         "InSeconds.Api.Modules.Players.Persistence.EfPlayerSessions.OpenFromLegacyTokenAsync",
         // Contrôle nocturne des genres (catalogue-refresh, NonTransactional : plusieurs minutes de lots espacés) : un album à la fois, son
         // propre enregistrement, jamais une transaction ouverte pendant les pauses.

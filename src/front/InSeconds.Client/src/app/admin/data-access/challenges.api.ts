@@ -12,7 +12,7 @@ import {
  * Il rend des types du domaine (jours en texte `aaaa-mm-jj`, valeurs absentes en `null`) ; les erreurs
  * sont celles du client (`toAppError` sait les lire).
  */
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class ChallengesApi {
   private readonly client = inject(DailyClient);
 

@@ -45,7 +45,7 @@ public static class RequestMagicLinkEndpoint
 
 public static class SendMagicLinkEmailHandler
 {
-    /// <summary>Pas de nouveau lien si un autre, non utilisé, est parti il y a moins d'une minute (v1).</summary>
+    /// <summary>Pas de nouveau lien si un autre, non utilisé, est parti il y a moins d'une minute.</summary>
     public static readonly TimeSpan Throttle = TimeSpan.FromSeconds(60);
 
     /// <summary>

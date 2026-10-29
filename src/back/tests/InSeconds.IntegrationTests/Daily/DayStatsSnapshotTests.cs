@@ -9,7 +9,7 @@ using static InSeconds.IntegrationTests.Daily.DailyApi;
 namespace InSeconds.IntegrationTests.Daily;
 
 /// <summary>
-/// La photo figée d'un jour terminé pour de bon (E3, § 5.4 du plan v2) : J-2 et avant. La tâche <c>daily-close-day</c> et le recalcul de l'admin
+/// La photo figée d'un jour terminé pour de bon : J-2 et avant. La tâche <c>daily-close-day</c> et le recalcul de l'admin
 /// écrivent la même photo, une partie de la veille pouvant encore se finir après minuit (piège 18).
 /// </summary>
 public class DayStatsSnapshotTests(PostgresFixture postgres) : IAsyncLifetime
@@ -151,7 +151,7 @@ public class DayStatsSnapshotTests(PostgresFixture postgres) : IAsyncLifetime
     public async Task Photo_ExclutLesJoueursSupprimes()
     {
         var (alice, bob, _) = await SeedClosedDayAsync(Closable);
-        await _game.DeletePlayerAsync(bob);
+        await _game.ErasePlayerAsync(bob);
 
         var stats = (await RecomputeAsync(Closable)).Stats;
 

@@ -20,7 +20,7 @@ describe('DailyApi', () => {
       getToday: vi.fn(), startSession: vi.fn(), submitAnswer: vi.fn(), requestHint: vi.fn(), getTodayStats: vi.fn(), getGamesPlayed: vi.fn(),
       getArchivePreview: vi.fn(),
     };
-    TestBed.configureTestingModule({ providers: [{ provide: DailyClient, useValue: client }] });
+    TestBed.configureTestingModule({ providers: [DailyApi, { provide: DailyClient, useValue: client }] });
     api = TestBed.inject(DailyApi);
   });
 

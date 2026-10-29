@@ -1,10 +1,10 @@
 namespace InSeconds.Api.Modules.Players.Domain;
 
 /// <summary>
-/// Le compte d'un joueur : email vérifié, pseudo, rôle admin (§ 4.2 du plan v2). Créé par la
+/// Le compte d'un joueur : email vérifié, pseudo, rôle admin. Créé par la
 /// connexion par lien magique : conversion de l'invité du navigateur, ou nouveau joueur. Un compte
-/// déjà lié n'est jamais converti (piège 30). <see cref="LinkedAt"/> est vide pour les comptes repris
-/// de la v1, dont la date de création du compte est inconnue. Le rôle admin ne se pose qu'en SQL.
+/// déjà lié n'est jamais converti (piège 30). <see cref="LinkedAt"/> est vide pour les plus anciens
+/// comptes, dont la date de création du compte est inconnue. Le rôle admin ne se pose qu'en SQL.
 /// </summary>
 public sealed class Account
 {

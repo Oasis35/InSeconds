@@ -18,7 +18,7 @@ export interface ModalOptions<D> {
 }
 
 /**
- * Ouvre les fenêtres de l'app avec le CDK Dialog (§ 6.1 du plan v2) : piège du focus, Échap, fond
+ * Ouvre les fenêtres de l'app avec le CDK Dialog : piège du focus, Échap, fond
  * cliquable, retour du focus à l'élément d'origine et `role="dialog"` viennent de la bibliothèque,
  * plus du code maison. Deux présentations :
  * - `open` : modale centrée ;

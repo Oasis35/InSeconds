@@ -66,7 +66,7 @@ namespace Internal.Generated.WolverineHandlers
             var efRunsStore = new InSeconds.Api.Modules.Runs.Persistence.EfRunsStore(inSecondsDbContext);
             var runPlayer = new InSeconds.Api.Modules.Runs.Application.RunPlayer(efTrackDirectory, deezerTrackPreviews, efRunsStore, _runScoringPolicy, _runsRules2, _timeProvider, _runsMetrics, _loggerOfRunPlayer);
             var runChallengePlanner = new InSeconds.Api.Modules.Runs.Application.RunChallengePlanner(efTrackDirectory, _runTrackSelector, efRunsStore, _runsRules1, _timeProvider);
-            var claimsCurrentPlayer = new InSeconds.Api.Infrastructure.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
+            var claimsCurrentPlayer = new InSeconds.Api.Modules.Players.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
             var efRunAccess = new InSeconds.Api.Modules.Runs.Persistence.EfRunAccess(inSecondsDbContext, claimsCurrentPlayer);
             System.Diagnostics.Activity.Current?.SetTag("handler.type", "InSeconds.Api.Modules.Runs.Application.LaunchRunEndpoint");
             

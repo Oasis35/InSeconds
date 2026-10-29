@@ -7,7 +7,7 @@ export const LOST_STREAK_SEEN_KEY = 'inseconds.lostStreakNudgeSeen';
 
 /**
  * Le toast invité « série perdue » ne s'annonce **qu'une fois par série perdue** : la série est repérée par la date du dernier défi
- * joué, notée dans le stockage local dès qu'elle est annoncée. Hors du `DailyGameStore` (§ 6.2 du plan v2 : le `localStorage` ne vit pas
+ * joué, notée dans le stockage local dès qu'elle est annoncée. Hors du `DailyGameStore` (le `localStorage` ne vit pas
  * dans les stores) : la page la consulte après la lecture de l'état du jour, comme `ThanksNotice`.
  */
 @Injectable()

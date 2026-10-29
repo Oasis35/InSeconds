@@ -1,9 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Claims;
-using InSeconds.Api.Infrastructure.Auth;
 using InSeconds.Api.Infrastructure.Persistence;
 using InSeconds.Api.Modules.Players.Application;
+using InSeconds.Api.Modules.Players.Auth;
 using InSeconds.Api.Modules.Players.Contracts;
 using InSeconds.Api.Modules.Players.Domain;
 using Microsoft.AspNetCore.DataProtection;
@@ -14,10 +14,10 @@ using Microsoft.Extensions.Time.Testing;
 namespace InSeconds.IntegrationTests.Players;
 
 /// <summary>
-/// Reprise des cookies v1 (§ 5.5 du plan v2, R1, R10, S6). Le cookie v1 est fabriqué comme en v1 :
+/// Reprise des anciens cookies (S6). L'ancien cookie est fabriqué comme à l'origine :
 /// Data Protection avec le nom d'application <c>InSeconds</c> et le purpose <c>InSeconds.Auth.Cookie</c>,
-/// sur le même trousseau de clés (copié à l'import). Le hash de <c>legacy_tokens</c> est calculé en SQL,
-/// comme à l'import (§ 8.2). L'horloge est simulée pour franchir la minute de réutilisation d'une
+/// sur le même trousseau de clés. Le hash de <c>legacy_tokens</c> est calculé en SQL.
+/// L'horloge est simulée pour franchir la minute de réutilisation d'une
 /// conversion (<c>LegacyConversionCache</c>).
 /// </summary>
 public class LegacyCookieTests(PostgresFixture postgres) : IAsyncLifetime
@@ -51,7 +51,7 @@ public class LegacyCookieTests(PostgresFixture postgres) : IAsyncLifetime
     [Fact]
     public async Task MemeCookieV1_SurDeuxNavigateurs_DeuxAppareilsDuMemeJoueur()
     {
-        // En v1, tous les appareils d'un compte partagent le même jeton (R1) : aucun n'est déconnecté.
+        // Tous les appareils d'un compte partagent le même ancien jeton : aucun n'est déconnecté.
         var (playerId, v1Cookie) = await CreateV1PlayerAsync();
 
         var first = await GetMeWithCookieAsync(v1Cookie);
@@ -70,7 +70,7 @@ public class LegacyCookieTests(PostgresFixture postgres) : IAsyncLifetime
     [Fact]
     public async Task RequetesSimultaneesAvecLeMemeCookieV1_UneSeuleSession()
     {
-        // Au premier chargement, le front envoie plusieurs requêtes en parallèle avec le cookie v1.
+        // Au premier chargement, le front envoie plusieurs requêtes en parallèle avec l'ancien cookie.
         var (playerId, v1Cookie) = await CreateV1PlayerAsync();
 
         var responses = await Task.WhenAll(Enumerable.Range(0, 3).Select(_ => GetMeWithCookieAsync(v1Cookie)));
@@ -85,7 +85,7 @@ public class LegacyCookieTests(PostgresFixture postgres) : IAsyncLifetime
     [Fact]
     public async Task CookieV1Rejoue_DansLaMinute_PasDeNouvelleSession()
     {
-        // Un cookie v1 copié et rejoué en boucle (le navigateur l'efface, un script non) ne remplit pas la table.
+        // Un ancien cookie copié et rejoué en boucle (le navigateur l'efface, un script non) ne remplit pas la table.
         var (playerId, v1Cookie) = await CreateV1PlayerAsync();
 
         for (var i = 0; i < 5; i++)
@@ -100,8 +100,8 @@ public class LegacyCookieTests(PostgresFixture postgres) : IAsyncLifetime
     [Fact]
     public async Task DeconnecterLesAutres_CookieV1PasEncoreConverti_Refuse()
     {
-        // Un appareil (ou un cookie copié) qui n'est pas revenu depuis la bascule est un « autre appareil » :
-        // son cookie v1 ne doit plus ouvrir de session une fois les autres appareils déconnectés (S6).
+        // Un appareil (ou un cookie copié) qui n'est pas encore revenu est un « autre appareil » :
+        // son ancien cookie ne doit plus ouvrir de session une fois les autres appareils déconnectés (S6).
         var (playerId, v1Cookie) = await CreateV1PlayerAsync();
         var converted = await GetMeWithCookieAsync(v1Cookie);
         var v2Cookie = CookieHeaders.Pair(converted, "inseconds");
@@ -110,7 +110,7 @@ public class LegacyCookieTests(PostgresFixture postgres) : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.OK, revoke.StatusCode);
         Assert.Equal(0L, await _api.ScalarAsync<long>($"SELECT count(*) FROM players.legacy_tokens WHERE player_id = '{playerId}'"));
-        // Au-delà de la minute de réutilisation de la conversion : le cookie v1 ne mène plus à rien.
+        // Au-delà de la minute de réutilisation de la conversion : l'ancien cookie ne mène plus à rien.
         _time.Advance(TimeSpan.FromMinutes(1));
         var replayed = await GetMeWithCookieAsync(v1Cookie);
         Assert.Equal(HttpStatusCode.NoContent, replayed.StatusCode);
@@ -148,18 +148,6 @@ public class LegacyCookieTests(PostgresFixture postgres) : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         Assert.True(CookieHeaders.Deletes(response, "authToken"));
-        Assert.Equal(0L, await _api.ScalarAsync<long>("SELECT count(*) FROM players.device_sessions"));
-    }
-
-    [Fact]
-    public async Task JoueurSupprime_PasDeReprise()
-    {
-        var (playerId, v1Cookie) = await CreateV1PlayerAsync();
-        await _api.ExecuteAsync($"UPDATE players.players SET deleted_at = now() WHERE id = '{playerId}'");
-
-        var response = await GetMeWithCookieAsync(v1Cookie);
-
-        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         Assert.Equal(0L, await _api.ScalarAsync<long>("SELECT count(*) FROM players.device_sessions"));
     }
 
@@ -214,7 +202,7 @@ public class LegacyCookieTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(sql, LegacyToken.HashOf(token));
     }
 
-    /// <summary>Un joueur v1 tel qu'après l'import : sa ligne, son jeton haché, et le cookie v1 de son navigateur.</summary>
+    /// <summary>Un joueur qui a encore un ancien cookie : sa ligne, son jeton haché, et l'ancien cookie de son navigateur.</summary>
     private async Task<(Guid PlayerId, string V1Cookie)> CreateV1PlayerAsync()
     {
         Start();
@@ -235,7 +223,7 @@ public class LegacyCookieTests(PostgresFixture postgres) : IAsyncLifetime
         _api.Services.GetDataProtector("démarrage").Protect("x");
     }
 
-    /// <summary>Data Protection configuré comme la v1 (Program.cs v1), sur le trousseau de clés de la base.</summary>
+    /// <summary>Data Protection configuré comme pour les anciens cookies, sur le trousseau de clés de la base.</summary>
     private IDataProtector V1Protector()
     {
         var services = new ServiceCollection();

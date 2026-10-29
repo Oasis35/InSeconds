@@ -7,14 +7,14 @@ namespace InSeconds.Api.Modules.Players.Email;
 /// <summary>Un email prêt à envoyer.</summary>
 public sealed record ComposedEmail(string Subject, string HtmlBody);
 
-/// <summary>Compose un email du module Players à partir de son modèle (§ 5.3 du plan v2), un par email.</summary>
+/// <summary>Compose un email du module Players à partir de son modèle, un par email.</summary>
 public interface IEmailComposer<in TModel>
 {
     ComposedEmail Compose(TModel model);
 }
 
 /// <summary>
-/// Gabarits repris de la v1 (<c>Templates/</c>, embarqués dans la DLL) : <c>_layout.html</c> porte tout
+/// Gabarits (<c>Templates/</c>, embarqués dans la DLL) : <c>_layout.html</c> porte tout
 /// le commun (style, en-tête, carte, pied de page) avec des trous <c>{{SECTION:nom}}</c> ; chaque email
 /// fournit ses sections, délimitées par <c>&lt;!--#nom--&gt;</c>. Puis substitution littérale des
 /// jetons <c>{{CLEF}}</c>. Pas de moteur de gabarits ; fichiers lus une fois puis gardés.

@@ -43,8 +43,7 @@ public static class AddTrackEndpoint
 
     /// <summary>
     /// <c>POST /api/admin/catalogue/tracks</c> : ajoute au pool un morceau de Deezer, avec son année, son rang
-    /// et l'état de son extrait. Un identifiant déjà dans le pool répond 409 (v1 : l'ajout était alors un
-    /// succès silencieux) ; deux ajouts simultanés du même identifiant : l'index unique refuse le second,
+    /// et l'état de son extrait. Un identifiant déjà dans le pool répond 409 ; deux ajouts simultanés du même identifiant : l'index unique refuse le second,
     /// aussi en 409 (<c>TrackConflictExceptionHandler</c>).
     /// </summary>
     [WolverinePost("/api/admin/catalogue/tracks", OperationId = "addTrack")]
@@ -57,16 +56,7 @@ public static class AddTrackEndpoint
         var found = (TrackMetadataLookup.Found)plan.Lookup!;
         var now = time.GetUtcNow();
         var track = Track.Create(TrackMapping.ToMetadata(found.Track), now);
-        switch (plan.Album)
-        {
-            case AlbumLookup.Found album:
-                track.RecordGenres(await store.EnsureGenresAsync([.. album.Genres.Select(g => new GenreRef(g.Id, g.Name))], ct), now);
-                break;
-            // Album supprimé chez Deezer : sans genre, et inutile de le redemander.
-            case AlbumLookup.NotFound:
-                track.RecordGenres([], now);
-                break;
-        }
+        await TrackMapping.RecordAlbumGenresAsync(track, plan.Album, store, now, ct);
 
         await store.AddAsync(track, ct);
         return TrackMapping.ToSummary(track, options.CurrentValue);

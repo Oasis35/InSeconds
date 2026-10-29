@@ -1,5 +1,5 @@
-using InSeconds.Api.Infrastructure.Auth;
 using InSeconds.Api.Modules.Daily.Contracts;
+using InSeconds.Api.Modules.Players.Auth;
 using InSeconds.Api.Modules.Players.Contracts;
 using InSeconds.Api.Modules.Players.Domain;
 using InSeconds.Infrastructure.Http;
@@ -26,20 +26,17 @@ public sealed record AccountSignInPlan(
     Guid? GuestToConvert,
     (Guid PlayerId, int DeviceSessionId)? PreviousDeviceSession)
 {
-    /// <summary>Le compte de cette adresse appartient à un joueur supprimé : pas de connexion.</summary>
-    public bool AccountUnavailable => ExistingAccount is { PlayerDeleted: true };
-
     /// <summary>Pas de compte pour cette adresse, et pas encore de pseudo pour le créer.</summary>
     public bool NeedsPseudo => ExistingAccount is null && Pseudo is null;
 }
 
-/// <param name="Outcome"><c>Found</c> (compte existant) ou <c>Linked</c> (compte créé), comme le journal v1.</param>
+/// <param name="Outcome"><c>Found</c> (compte existant) ou <c>Linked</c> (compte créé), valeurs lues par les tableaux de bord.</param>
 public sealed record AccountSignInResult(Guid PlayerId, string Outcome);
 
 /// <summary>
 /// La connexion d'une adresse vérifiée, quel que soit le moyen de vérification (lien magique, dev-login
-/// de l'hôte de test, plus tard Google) : la logique d'identité n'existe qu'ici (v1 :
-/// <c>AccountLinkingService</c>). Rien n'est enregistré : la transaction est celle de l'appelant.
+/// de l'hôte de test, plus tard Google) : la logique d'identité n'existe qu'ici.
+/// Rien n'est enregistré : la transaction est celle de l'appelant.
 /// </summary>
 public sealed class AccountSignIn(
     IPlayerStore store,
@@ -70,7 +67,7 @@ public sealed class AccountSignIn(
     /// </summary>
     public async Task<AccountSignInResult> ExecuteAsync(AccountSignInPlan plan, CancellationToken ct)
     {
-        if (plan.AccountUnavailable || plan.NeedsPseudo || plan.PseudoTaken)
+        if (plan.NeedsPseudo || plan.PseudoTaken)
             throw new InvalidOperationException("Connexion impossible : le plan aurait dû être refusé avant.");
 
         var now = time.GetUtcNow();

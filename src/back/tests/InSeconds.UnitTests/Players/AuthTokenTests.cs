@@ -18,7 +18,7 @@ public class AuthTokenTests
     [Fact]
     public void Hash_Sha256DuTexteEnUtf8_CommeLaV1()
     {
-        // Vecteur de référence de SHA-256 ; la v1 stockait ces mêmes octets en hexadécimal (R14).
+        // Vecteur de référence de SHA-256.
         Assert.Equal("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
             Convert.ToHexStringLower(AuthTokenSecret.Hash("abc")));
     }

@@ -5,7 +5,7 @@ using static InSeconds.IntegrationTests.Daily.DailyApi;
 
 namespace InSeconds.IntegrationTests.Daily;
 
-/// <summary>Le récap de la semaine pour les stories Instagram de l'admin (E3) : le morceau le plus trouvé et le plus raté d'une période.</summary>
+/// <summary>Le récap de la semaine pour les stories Instagram de l'admin : le morceau le plus trouvé et le plus raté d'une période.</summary>
 public class WeeklyRecapTests(PostgresFixture postgres) : IAsyncLifetime
 {
     private const string Route = "/api/admin/daily/weekly-recap";
@@ -114,7 +114,7 @@ public class WeeklyRecapTests(PostgresFixture postgres) : IAsyncLifetime
     {
         var players = await PlayersAsync(3);
         await SeedAsync(Today, players);
-        await _game.DeletePlayerAsync(players[2]);
+        await _game.ErasePlayerAsync(players[2]);
 
         // Il ne reste que deux réponses par morceau : en dessous du minimum, plus de story.
         Assert.Equal("insufficient_data", (await ReadAsync()).Status);

@@ -8,7 +8,7 @@ import { DeezerResult, ModeUsage, PoolTrack, PreviewState } from '../domain/pool
  * (`api/catalogue`). Il rend des types du domaine et des promesses ; les erreurs sont celles du
  * client (`toAppError` sait les lire).
  */
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class CatalogueApi {
   private readonly client = inject(CatalogueClient);
 

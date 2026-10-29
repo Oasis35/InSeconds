@@ -2,7 +2,7 @@ using InSeconds.Api.Modules.Gameplay.Contracts;
 
 namespace InSeconds.Api.Modules.Daily.Domain;
 
-/// <summary>État d'une partie (colonne <c>status</c>, § 4.4 du plan v2).</summary>
+/// <summary>État d'une partie (colonne <c>status</c>).</summary>
 public enum SessionStatus : short
 {
     /// <summary>En cours : le joueur peut la reprendre.</summary>
@@ -35,7 +35,7 @@ public enum TrackTurn
 }
 
 /// <summary>
-/// La partie d'un joueur sur le défi d'un jour (§ 5.4 du plan v2), anciennement <c>GameSession</c> : une seule par joueur et par défi.
+/// La partie d'un joueur sur le défi d'un jour : une seule par joueur et par défi.
 /// <para>
 /// **Le morceau en cours est toujours le premier sans réponse** : les morceaux se jouent dans l'ordre, et on ne déplace jamais ce
 /// verrou (piège 35). La partie y range ce que sa <see cref="TrackRound"/> garde (durée écoutée, niveau d'indice), sans que
@@ -105,8 +105,8 @@ public sealed class DailySession
     }
 
     /// <summary>
-    /// La manche du morceau en cours, reconstituée de la partie. Le niveau d'indice relu est **borné à la politique** (revue de
-    /// D1) : un réglage qui perdrait un niveau ne laisse pas un niveau inexistant pénaliser le score.
+    /// La manche du morceau en cours, reconstituée de la partie. Le niveau d'indice relu est **borné à la politique** :
+    /// un réglage qui perdrait un niveau ne laisse pas un niveau inexistant pénaliser le score.
     /// </summary>
     public TrackRound RoundOfCurrentTrack(HintPolicy policy)
     {
@@ -174,7 +174,7 @@ public sealed class DailySession
     }
 }
 
-/// <summary>La réponse à un morceau du défi (§ 4.4 du plan v2).</summary>
+/// <summary>La réponse à un morceau du défi.</summary>
 public sealed class SessionAnswer
 {
     private SessionAnswer()
@@ -211,6 +211,6 @@ public sealed class SessionAnswer
 
     public int Score { get; private set; }
 
-    /// <summary>Vide pour l'historique repris de la v1.</summary>
+    /// <summary>Vide pour les plus anciennes réponses, dont l'heure n'était pas enregistrée.</summary>
     public DateTimeOffset? AnsweredAt { get; private set; }
 }

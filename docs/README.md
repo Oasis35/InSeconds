@@ -47,7 +47,7 @@ Chaque information n'est écrite qu'à un seul endroit, pour éviter que des cop
 | Règles du proto 1 | [`runs/regles.md`](runs/regles.md) |
 | Écrans (maquettes de référence) | [`runs/ecrans.md`](runs/ecrans.md) |
 | Conception technique | [`runs/conception.md`](runs/conception.md) |
-| Feuille de route, découpage en PR, idées de bonus | [`runs/plan.md`](runs/plan.md) |
+| Feuille de route, idées de bonus | [`runs/plan.md`](runs/plan.md) |
 | **Architecture** | |
 | Décisions déjà prises, et pourquoi | [`architecture/decisions.md`](architecture/decisions.md) |
 | Frontières entre modules (`Contracts/`) | [`architecture/contrats-entre-modules.md`](architecture/contrats-entre-modules.md) |
@@ -63,6 +63,7 @@ Chaque information n'est écrite qu'à un seul endroit, pour éviter que des cop
 | RGPD : ce qui est en place | [`conformite/rgpd.md`](conformite/rgpd.md) |
 | **Historique** | |
 | Refonte de 2026 (plan, découpage en PR, bascule) | [`historique/refonte-2026/`](historique/refonte-2026/) |
+| Mode Run : découpage du proto 1 en PR | [`historique/runs-proto1-decoupage.md`](historique/runs-proto1-decoupage.md) |
 
 ## Quick start technique
 

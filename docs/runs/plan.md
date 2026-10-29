@@ -1,6 +1,6 @@
 # Run (Platines) : plan
 
-Feuille de route du mode, découpage du proto 1 en PR, idées pour la suite et historique des décisions. Règles : [`regles.md`](regles.md). Écrans : [`ecrans.md`](ecrans.md). Conception : [`conception.md`](conception.md).
+Feuille de route du mode, idées pour la suite et historique des décisions. Le découpage en PR du proto 1, livré, est dans [`../historique/runs-proto1-decoupage.md`](../historique/runs-proto1-decoupage.md). Règles : [`regles.md`](regles.md). Écrans : [`ecrans.md`](ecrans.md). Conception : [`conception.md`](conception.md).
 
 ## Feuille de route
 
@@ -29,23 +29,9 @@ La feuille de route décidée le 17/10/2026 peut encore changer.
 
 Chaque étape a un ticket parent et quelques PR vers `env/staging`. Les traductions, les E2E et la doc arrivent dès le proto 1.
 
-## Découpage du proto 1 en PR
+## Après le proto 1
 
-Chaque PR arrive en prod par le merge `env/staging → main`. Aucune ne doit laisser une route de jeu ouverte, ni collecter une donnée que `/privacy` ne mentionne pas. Chaque PR met à jour la doc qu'elle touche, ce dossier compris. Les PR sont étiquetées `run`. La description de chaque PR commence par `Closes #<sous-ticket>` puis `Part of #360`. Le sous-ticket se ferme à la main au merge.
-
-| Étape | Ticket | Contenu | Dépend de | Livré |
-|---|---|---|---|---|
-| **P1** | [#362](https://github.com/Oasis35/InSeconds/issues/362) | Préparer Players et Catalogue (**aucun code Runs**) : `IPlayerDataContributor`, usage des morceaux par plusieurs modes, `TrackInfo.DeezerRank`, contrôle nocturne de tout le pool, tests d'architecture « un mode » | - | PR #388 |
-| **P1b** | [#389](https://github.com/Oasis35/InSeconds/issues/389) | Pool admin général (**aucun code Runs**) : `isUsed` et usage par mode fournis par le back (`usages[]`), onglet Pool sans notion du Daily (compteur neutre, pastilles par mode, filtre « Joué par »), vue Daily dans un sélecteur horizontal | P1 | PR #390 |
-| P0 (facultatif) | [#361](https://github.com/Oasis35/InSeconds/issues/361) | Genre de l'album dans le catalogue | P1, P1b | PR #391 |
-| **P2** | [#364](https://github.com/Oasis35/InSeconds/issues/364) | Socle Runs (**aucune route de jeu**) : module, schéma et migration, défi et tirage, réglages, accès (`runs.access`, routes admin, interrupteur de l'onglet Joueurs), contributeurs Runs (RGPD, usage) | P1, P1b | PR #396 |
-| **P3** | [#363](https://github.com/Oasis35/InSeconds/issues/363) | La partie côté back : routes joueur (accès vérifié dès la première route), réponses portant ce que demandent les écrans ([`conception.md`](conception.md#35-ce-que-les-réponses-doivent-porter-dicté-par-les-écrans) § 3.5), jauge, fin, record, neutralisation, limites de débit, `/privacy` | P2 | PR #427 |
-| **P4** | [#365](https://github.com/Oasis35/InSeconds/issues/365) | La partie côté front, d'après les maquettes : manche, réponse après chaque morceau, fin de manche, fin de run ; composants du Daily descendus dans `gameplay/ui` ; carte de l'accueil ; E2E de la partie. **Découpé en trois PR** : P4a (domaine, store, manche et réponse, composants communs), P4b (bilan, fin, morceau neutralisé, reprise, carte de l'accueil ; le bilan de manche s'affiche aussi après une manche ratée et après la manche 4 gagnée, avant l'écran de fin, dont le bouton du bilan devient le chemin ; un morceau neutralisé pendant la redemande d'extrait montre la carte « Morceau retiré » à la place du lecteur, le son ne repartant jamais seul, avec le bilan si c'était le dernier de la manche), P4c (E2E) | P3 | PR #428, #435, #437 |
-| **P5** | [#366](https://github.com/Oasis35/InSeconds/issues/366) | Le lien et la comparaison (back et front), d'après les maquettes ; E2E du lien d'un ami | P4 | PR #446 |
-| **P6** | [#367](https://github.com/Oasis35/InSeconds/issues/367) | Relecture finale de la doc (CLAUDE.md, README FR/EN, ce dossier) après les parties de test | P5 | cette PR |
-| **P7** | [#448](https://github.com/Oasis35/InSeconds/issues/448) | Les suites du proto 1 (ce que la relecture a trouvé de non fait) : parties de test et réglage des seuils, panneaux Grafana des métriques `runs`, synchronisation entre onglets, captures réelles, deux points à trancher (le lien « Voir les autres joueurs », « X % ont échoué ») | P6 | - |
-
-Le proto 1 est livré. La suite : Clément organise des parties de test sur le staging, puis en prod avec quelques comptes, et règle ensuite les seuils et la difficulté avant le proto 2. Les petites suites du proto 1 (panneaux Grafana, synchronisation entre onglets, captures réelles) sont dans [`../taches.md`](../taches.md).
+Le proto 1 est livré (son découpage en PR : [`../historique/runs-proto1-decoupage.md`](../historique/runs-proto1-decoupage.md)). La suite : Clément organise des parties de test sur le staging, puis en prod avec quelques comptes, et règle ensuite les seuils et la difficulté avant le proto 2. Les petites suites du proto 1 (panneaux Grafana, synchronisation entre onglets, captures réelles) sont dans [`../taches.md`](../taches.md).
 
 ## Bonus et contraintes (idées pour le proto 2 et après)
 
@@ -93,10 +79,10 @@ Pour le prototype des bonus : une douzaine de bonus communs, sans rareté ni dé
   - Il a retenu un mode solo inspiré de **Balatro** : la difficulté monte tous les 5 morceaux, avec un seuil à atteindre par palier.
   - L'écoute est fixe, les bonus ont des emplacements limités, des thèmes filtrent le tirage.
   - On partage une graine avec un fantôme. Le compte n'est jamais obligatoire.
-- **Refonte de 2026** : elle a été justifiée en partie par ce mode ([`../historique/refonte-2026/PLAN.md`](../historique/refonte-2026/PLAN.md) § 7).
-  - Elle a fixé le module back `Runs` et le domaine front `runs/`. Un mode ne voit jamais l'autre.
-  - Rien de Runs n'est créé avant le mode lui-même.
-  - Le mode passe par `TrackRound` (Gameplay) et ses métadonnées vont dans Catalogue.
+- **Place du mode dans l'architecture** :
+  - le mode a son module back `Runs` et son domaine front `runs/` ; un mode ne voit jamais l'autre ;
+  - rien de Runs n'est créé avant le mode lui-même ;
+  - le mode passe par `TrackRound` (Gameplay) et ses métadonnées vont dans Catalogue.
 - **17/10/2026, décisions de Clément** :
   - fin de partie par seuil de points par manche, rater un morceau ne termine rien ;
   - victoire au bout de 4 manches ;
@@ -109,8 +95,8 @@ Pour le prototype des bonus : une douzaine de bonus communs, sans rareté ni dé
 - **17/10/2026, revue indépendante du plan** (hors dépôt). Elle a apporté :
   - les codes d'erreur et les routes alignés sur le Daily, avec son vocabulaire (« défi », « partie ») ;
   - le lien par code court et la comparaison au lieu d'un « classement » ;
-  - l'usage des morceaux déclaré par chaque mode et le contrôle nocturne de tout le pool, puis le pool admin général avec une vue par mode (P1b) ;
-  - le nouvel ordre des PR.
+  - l'usage des morceaux déclaré par chaque mode et le contrôle nocturne de tout le pool, puis le pool admin général avec une vue par mode ;
+  - un nouvel ordre des PR ([`../historique/runs-proto1-decoupage.md`](../historique/runs-proto1-decoupage.md)).
 - **17/10/2026, maquettes validées** : elles font référence ([`ecrans.md`](ecrans.md)).
   - Après chaque morceau, la réponse s'affiche dans l'écran de manche avec « Morceau suivant ».
   - Le lecteur, la saisie, le lien « Abandonner », la forme de pochette et la liste « déjà joué » sont repris du Daily.

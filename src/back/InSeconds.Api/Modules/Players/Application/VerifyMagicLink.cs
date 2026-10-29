@@ -1,5 +1,5 @@
 using FluentValidation;
-using InSeconds.Api.Infrastructure.Auth;
+using InSeconds.Api.Modules.Players.Auth;
 using InSeconds.Api.Modules.Players.Domain;
 using Microsoft.AspNetCore.Mvc;
 using Wolverine.Http;
@@ -22,7 +22,7 @@ public sealed record VerifyMagicLinkResponse(bool NeedsPseudo, string? Email = n
 
 public sealed class VerifyMagicLinkValidator : AbstractValidator<VerifyMagicLink>
 {
-    /// <summary>Liste de caractères permis plutôt que mots interdits, comme en v1 : 3 à 20 caractères.</summary>
+    /// <summary>Liste de caractères permis plutôt que mots interdits : 3 à 20 caractères.</summary>
     public const string PseudoPattern = @"^[\p{L}\p{N} _.-]{3,20}$";
 
     public VerifyMagicLinkValidator()
@@ -62,7 +62,7 @@ public static class VerifyMagicLinkEndpoint
 
     public static ProblemDetails Validate(MagicLinkAttempt attempt) => attempt switch
     {
-        { Token: null } or { Plan.AccountUnavailable: true } => PlayersProblems.InvalidOrExpiredToken(),
+        { Token: null } => PlayersProblems.InvalidOrExpiredToken(),
         { Plan.PseudoTaken: true } => PlayersProblems.PseudoTaken(),
         _ => WolverineContinue.NoProblems,
     };

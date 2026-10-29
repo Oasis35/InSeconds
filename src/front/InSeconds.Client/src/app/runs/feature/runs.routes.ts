@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 import { provideGameplay } from '../../gameplay/feature/provide-gameplay';
 import { provideRunsApi } from '../data-access/runs.providers';
 import { leaveRunGuard } from './leave-run.guard';
-import { RunsPage } from './runs.page';
+import { RunsPage } from './runs/runs.page';
 
 /**
  * Le mode Run, chargé à la demande avec son lecteur et son client d'API, qui ne sont jamais chargés pour les autres pages. La page fournit ses

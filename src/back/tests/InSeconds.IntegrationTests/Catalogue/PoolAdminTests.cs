@@ -203,7 +203,7 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
     [Fact]
     public async Task Renommage_MorceauDuDefiDuJourEnCours_Reussit_AucunVerrou_LeNouveauNomEstServi()
     {
-        // Le ticket C1 : « renommer un morceau du défi du jour en cours ». Plus de catalogue.track_locked (PR v1 #246).
+        // Renommer un morceau du défi du jour en cours : aucun verrou (#246).
         var track = await _app.AddAsync(1001);
         _app.Usage.Set(track.Id, new TrackUsage(new DateOnly(2026, 10, 5), 1, new DateOnly(2026, 11, 4), InTodayChallenge: true));
         Assert.True(Assert.Single(await _app.ListAsync()).Daily().InTodayChallenge);
@@ -682,7 +682,7 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
     [Fact]
     public async Task Ajout_ReponseDeezerAvecUnAutreIdentifiant_GardeLIdentifiantDemande()
     {
-        // L'identifiant enregistré est celui sur lequel le doublon a été vérifié (comme en v1), pas le champ « id » de la réponse.
+        // L'identifiant enregistré est celui sur lequel le doublon a été vérifié, pas le champ « id » de la réponse.
         _app.Deezer.Intercept = (_, _) => Task.FromResult<HttpResponseMessage?>(new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = new StringContent("{\"id\":4242,\"title\":\"T\",\"preview\":\"p\",\"artist\":{\"name\":\"A\"}}", System.Text.Encoding.UTF8, "application/json"),

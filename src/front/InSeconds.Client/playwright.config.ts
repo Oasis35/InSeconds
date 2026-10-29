@@ -15,9 +15,9 @@ export default defineConfig({
     : 'list',
 
   use: {
-    // Front v2 : 5176 en CI (port par défaut d'ng serve), 5178 en local (évite le conflit avec le dev normal)
+    // Front : 5176 en CI (port par défaut d'ng serve), 5178 en local (évite le conflit avec le dev normal)
     baseURL: process.env['CI'] ? 'http://localhost:5176' : 'http://localhost:5178',
-    // E12 : le service worker de la PWA ne doit jamais servir une page ou intercepter une requête des E2E.
+    // Le service worker de la PWA ne doit jamais servir une page ou intercepter une requête des E2E.
     serviceWorkers: 'block',
     trace: 'on-first-retry',
     video: 'on-first-retry',
@@ -45,7 +45,7 @@ export default defineConfig({
     ? undefined
     : [
         {
-          // Hôte de test de l'API v2 (InSeconds.Api.Testing : /api/e2e/*, faux email, dev-login).
+          // Hôte de test de l'API (InSeconds.Api.Testing : /api/e2e/*, faux email, dev-login).
           // --no-launch-profile : sans lui, launchSettings.json impose l'environnement Development (origines de confiance, limites de débit…).
           command: 'dotnet run --no-launch-profile --project ../../back/InSeconds.Api.Testing/InSeconds.Api.Testing.csproj --urls http://localhost:5177',
           url: 'http://localhost:5177/health',

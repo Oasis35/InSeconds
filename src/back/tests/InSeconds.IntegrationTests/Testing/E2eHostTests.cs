@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using InSeconds.Api.Modules.Catalogue.Application;
-using InSeconds.Api.Modules.Catalogue.Contracts;
 using InSeconds.Api.Modules.Daily.Application;
 using InSeconds.Api.Modules.Players.Application;
 using InSeconds.Api.Testing.E2E;
@@ -36,7 +35,7 @@ public class E2eHostTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Contains("bc49adb87758e0c8c4e508a9c5cce85d", daftPunk.CoverUrl);
         Assert.All(tracks, t => Assert.NotNull(t.ReleaseYear));
         Assert.All(tracks, t => Assert.NotNull(t.Rank));
-        // Insérés dans l'ordre de la v1 : l'identifiant suit l'index du seed.
+        // Insérés dans l'ordre du seed : l'identifiant suit l'index du seed.
         Assert.Equal(CatalogueSeed.Tracks.Select(t => t.DeezerTrackId), tracks.OrderBy(t => t.Id).Select(t => t.DeezerTrackId));
     }
 

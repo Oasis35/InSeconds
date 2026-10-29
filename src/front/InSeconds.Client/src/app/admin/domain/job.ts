@@ -1,4 +1,4 @@
-/** État du dernier passage d'une tâche, tel que `GET /api/admin/jobs/last-runs` le rend (§ 5.4 bis du plan v2). */
+/** État du dernier passage d'une tâche, tel que `GET /api/admin/jobs/last-runs` le rend. */
 export type JobState = 'queued' | 'processing' | 'succeeded' | 'failed' | 'retry_scheduled' | 'deleted';
 
 /** La tâche de minuit qui génère le défi du jour. */

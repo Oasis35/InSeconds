@@ -44,7 +44,7 @@ public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger) 
             return new TrackMetadataLookup.Unavailable();
 
         // L'identifiant est celui demandé, pas le champ « id » de la réponse : c'est sur lui que le pool vérifie
-        // les doublons, et une réponse sans « id » donnerait 0 (v1 : l'identifiant demandé était enregistré).
+        // les doublons, et une réponse sans « id » donnerait 0.
         return fetched.Track is { } track && ToDeezerTrack(track) is { } found
             ? new TrackMetadataLookup.Found(found with { DeezerTrackId = deezerTrackId })
             : new TrackMetadataLookup.NotFound();

@@ -22,7 +22,7 @@ interface ClientErrorPayload extends ClientErrorReport {
 
 /**
  * Remonte les erreurs front vers l'API (`POST /api/client-errors`), qui les logue avec l'identité
- * du joueur : elles rejoignent sa chronologie dans l'outil d'observabilité. Repris de la v1.
+ * du joueur : elles rejoignent sa chronologie dans l'outil d'observabilité.
  *
  * - `HttpBackend` direct : la requête ne repasse pas par les intercepteurs (pas de boucle si
  *   l'envoi lui-même échoue) ; `withCredentials` posé à la main pour garder le cookie.

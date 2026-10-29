@@ -12,7 +12,7 @@ describe('ActionsApi', () => {
   let api: ActionsApi;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [{ provide: DailyClient, useValue: client }] });
+    TestBed.configureTestingModule({ providers: [ActionsApi, { provide: DailyClient, useValue: client }] });
     api = TestBed.inject(ActionsApi);
   });
 

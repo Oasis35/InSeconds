@@ -4,9 +4,8 @@
 # `bash -s`, donc indépendant du contenu du checkout staging, avec STAGING_ANONYMIZE_SQL qui pointe sur le
 # staging-anonymize.sql du même commit. Ne touche jamais la base de prod autrement qu'en lecture (pg_dump).
 #
-# Depuis la mise en prod de la v2 (16/10/2026, PR I1 #235) : la prod écrit dans les schémas des modules, la copie les prend
-# directement (players, catalogue, daily, runs, infra). Avant, elle copiait les tables v1 de public et refaisait l'import.
-# Ni public (tables v1, supprimées en I1), ni messaging (file de Wolverine), ni jobs (Hangfire) : le staging garde
+# La copie prend les schémas des modules (players, catalogue, daily, runs, infra).
+# Ni public (vide), ni messaging (file de Wolverine), ni jobs (Hangfire) : le staging garde
 # les siens. Ni infra.data_protection_keys : les clés de la prod ne quittent jamais la prod.
 #
 # Étapes, API staging arrêtée du début à la fin :
@@ -16,7 +15,7 @@
 #      env/staging peut avoir des migrations d'avance ;
 #   4. anonymisation (staging-anonymize.sql, testé par MigrationTests) : emails remplacés par
 #      player-<id>@example.invalid et rôle admin retiré, sauf STAGING_KEEP_EMAIL (.env.staging) ; jetons,
-#      appareils, jetons v1, clés Data Protection et file de Wolverine vidés ;
+#      appareils, anciens jetons, clés Data Protection et file de Wolverine vidés ;
 #   5. clé Data Protection neuve (--rotate-data-protection-key).
 # Les réglages (infra.settings) et les statistiques figées viennent de la prod, tels quels.
 set -euo pipefail

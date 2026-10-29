@@ -10,6 +10,7 @@ using InSeconds.Api.Modules.Catalogue;
 using InSeconds.Api.Modules.Daily;
 using InSeconds.Api.Modules.Gameplay;
 using InSeconds.Api.Modules.Players;
+using InSeconds.Api.Modules.Players.Auth;
 using InSeconds.Api.Modules.Runs;
 using InSeconds.Deezer;
 using InSeconds.Infrastructure.Email;

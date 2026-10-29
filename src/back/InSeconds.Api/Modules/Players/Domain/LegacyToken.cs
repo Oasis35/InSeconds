@@ -4,10 +4,10 @@ using System.Text;
 namespace InSeconds.Api.Modules.Players.Domain;
 
 /// <summary>
-/// Hash du jeton d'un cookie v1 (<c>authToken</c>), pour reprendre ce cookie sans déconnecter le
-/// joueur (§ 5.5 du plan v2). En v1, tous les appareils d'un compte partagent le même jeton : il
-/// n'est donc pas à usage unique, et chaque appareil qui le présente obtient sa propre session (R1).
-/// Table provisoire, supprimée au retrait de la transition (J+90, PR I3).
+/// Hash du jeton d'un ancien cookie (<c>authToken</c>), pour reprendre ce cookie sans déconnecter le
+/// joueur. Tous les appareils d'un compte partagent le même ancien jeton : il n'est donc pas à usage
+/// unique, et chaque appareil qui le présente obtient sa propre session.
+/// Table provisoire, supprimée avec la reprise des anciens cookies (#237).
 /// </summary>
 public sealed class LegacyToken
 {
@@ -20,8 +20,8 @@ public sealed class LegacyToken
     public byte[] TokenHash { get; private set; } = null!;
 
     /// <summary>
-    /// SHA-256 du jeton v1 écrit en minuscules avec tirets (format « D »), encodé en UTF-8 : le même
-    /// calcul que l'import, <c>sha256(convert_to("AuthToken"::text, 'UTF8'))</c> (§ 8.2). Testé des
+    /// SHA-256 de l'ancien jeton écrit en minuscules avec tirets (format « D »), encodé en UTF-8 : le même
+    /// calcul qu'en SQL, <c>sha256(convert_to("AuthToken"::text, 'UTF8'))</c>. Testé des
     /// deux côtés (<c>LegacyCookieTests</c>).
     /// </summary>
     public static byte[] HashOf(Guid authToken) =>

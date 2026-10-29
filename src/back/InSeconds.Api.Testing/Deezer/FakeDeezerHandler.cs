@@ -45,7 +45,7 @@ public sealed class FakeDeezerState
 
 /// <summary>
 /// Le faux Deezer de l'hôte de test (S9 : jamais dans l'image de prod) : le vrai client Deezer et son cache
-/// tournent sur ce transport truqué. Mêmes conventions qu'en v1 :
+/// tournent sur ce transport truqué. Conventions :
 /// <list type="bullet">
 /// <item><description>un morceau d'identifiant ≥ <see cref="NoPreviewFrom"/> n'a pas d'extrait, ni ceux que le test en a privés
 /// (<see cref="FakeDeezerState.WithoutPreview"/>) ;</description></item>
@@ -63,7 +63,7 @@ public sealed class FakeDeezerHandler(FakeDeezerState state) : HttpMessageHandle
     public const long NotFoundFrom = 8_000_000_000L;
     public const long NoPreviewFrom = 9_000_000_000L;
 
-    // Port du front, comme en v1 (E2E_FRONT_PORT) : l'extrait est le fichier audio de test servi par le front.
+    // Port du front (E2E_FRONT_PORT) : l'extrait est le fichier audio de test servi par le front.
     private static readonly string PreviewUrl =
         $"http://localhost:{Environment.GetEnvironmentVariable("E2E_FRONT_PORT") ?? "5176"}/test-audio.mp3";
 

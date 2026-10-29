@@ -3,7 +3,7 @@ using InSeconds.Api.Modules.Gameplay.Contracts;
 namespace InSeconds.Api.Modules.Daily.Domain;
 
 /// <summary>
-/// Les points d'une réponse (§ 5.3 du plan v2) : le calcul appartient au mode, la manche n'en donne pas. Moins on écoute, plus on
+/// Les points d'une réponse : le calcul appartient au mode, la manche n'en donne pas. Moins on écoute, plus on
 /// gagne ; l'indice coûte un pourcentage.
 /// </summary>
 public interface IDailyScoringPolicy
@@ -18,7 +18,7 @@ public interface IDailyScoringPolicy
 public sealed record DurationScore(decimal Seconds, int Score);
 
 /// <summary>
-/// Le barème de la v1 (<c>ScoreCalculator</c>), repris tel quel : rien si ni l'artiste ni le titre n'est trouvé ; un palier inconnu
+/// Le barème : rien si ni l'artiste ni le titre n'est trouvé ; un palier inconnu
 /// vaut 0 ; artiste et titre = le barème du palier, un seul des deux = la moitié ; puis la pénalité de l'indice sur ce score.
 /// </summary>
 public sealed class DurationScoringPolicy : IDailyScoringPolicy
@@ -41,7 +41,7 @@ public sealed class DurationScoringPolicy : IDailyScoringPolicy
         if (!outcome.FoundAny || !_baseScores.TryGetValue(outcome.ListenedSeconds, out var baseScore))
             return 0;
 
-        // Arrondi de la v1 (au pair le plus proche), pour que les scores restent ceux que les joueurs ont déjà vus.
+        // Arrondi au pair le plus proche (celui de Math.Round), à garder pour que les scores restent comparables d'un jour à l'autre.
         var score = outcome.FoundBoth ? baseScore : (int)Math.Round(baseScore * 0.5);
         var penalty = HintPenaltyPercent(outcome.HintLevelUsed);
         return penalty > 0 ? (int)Math.Round(score * (1 - penalty / 100m)) : score;
@@ -52,7 +52,7 @@ public sealed class DurationScoringPolicy : IDailyScoringPolicy
 }
 
 /// <summary>
-/// Les statistiques d'un morceau, ce que la révélation montre juste après la réponse (v1 : <c>SubmitAnswerHandler.BuildAnswerStats</c>) :
+/// Les statistiques d'un morceau, ce que la révélation montre juste après la réponse :
 /// la moyenne d'écoute de ceux qui l'ont trouvé, le nombre de ceux qui ne l'ont pas trouvé, et « en combien de temps les autres ont trouvé ».
 /// </summary>
 public static class TrackAnswerStats

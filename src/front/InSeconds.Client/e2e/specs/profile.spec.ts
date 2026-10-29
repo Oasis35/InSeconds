@@ -18,7 +18,7 @@ test.describe('Profil', () => {
     await expect(page).toHaveURL(/\/profile$/);
   });
 
-  test('le lien de compte du header disparaît pendant la manche (v2)', async ({ page, api }) => {
+  test('le lien de compte du header disparaît pendant la manche', async ({ page, api }) => {
     await linkAccount(page, api, EMAIL_A, 'MancheUserE2E');
     const game = new GamePage(page);
     const avatar = page.locator('app-account-link').getByTitle('Mon profil : MancheUserE2E');
@@ -36,8 +36,6 @@ test.describe('Profil', () => {
     await linkAccount(page, api, EMAIL_A, 'AncienPseudoE2E');
 
     await page.goto('/profile');
-
-    // La série et les parties jouées s'afficheront ici avec le module Daily (v1 : cartes « Série » et « Parties jouées »).
 
     await page.getByPlaceholder('Ton pseudo').fill('NouveauPseudoE2E');
     await page.getByRole('button', { name: 'Changer' }).click();

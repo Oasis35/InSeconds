@@ -3,7 +3,7 @@ import en from '../../../../public/i18n/en.json';
 import { ERROR_MESSAGE_KEYS, UNKNOWN_ERROR_MESSAGE_KEY } from '../errors/error-messages';
 
 /**
- * Traductions rangées par domaine (§ 6.6 du plan v2) : chaque clé de premier niveau est un
+ * Traductions rangées par domaine : chaque clé de premier niveau est un
  * domaine connu, et FR/EN ont exactement les mêmes clés. Un domaine qui ajoute ses traductions
  * s'ajoute à `DOMAINS`.
  */

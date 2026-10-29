@@ -2,13 +2,13 @@ import { readFile } from 'node:fs/promises';
 import { test, expect } from '../fixtures/test';
 import { linkAccount } from '../pages/login.page';
 
-// Droits RGPD depuis le profil (v2 seulement) : copie de ses données en JSON, suppression du compte par une fenêtre où l'on
+// Droits RGPD depuis le profil : copie de ses données en JSON, suppression du compte par une fenêtre où l'on
 // retape son pseudo.
 
 const EMAIL = 'donnees@e2e.test';
 const PSEUDO = 'DonneesE2E';
 
-test.describe('Tes données (v2)', () => {
+test.describe('Tes données', () => {
   test.beforeEach(async ({ api }) => {
     await api.reset();
   });

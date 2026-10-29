@@ -1,6 +1,6 @@
 # Les contrats entre modules (`Contracts/`)
 
-Écrit le 05/10/2026, mis à jour le 17/10/2026. Règle résumée dans le [`CLAUDE.md`](../../CLAUDE.md#règles-dures-vérifiées-en-ci) ; contexte dans [`historique/refonte-2026/PLAN.md`](../historique/refonte-2026/PLAN.md) § 3.3, § 5.1 et § 5.3.
+Écrit le 05/10/2026, mis à jour le 17/10/2026. Règle résumée dans le [`CLAUDE.md`](../../CLAUDE.md#règles-dures-vérifiées-en-ci).
 
 ## 1. L'idée en une phrase
 
@@ -32,8 +32,8 @@ L'implémentation de l'interface reste dans la partie privée du module (souvent
 
 | Contrat | Module propriétaire | Implémenté par | Utilisé par |
 |---|---|---|---|
-| `ICurrentPlayer` | Players | `Infrastructure/Auth` (claims du cookie) | Players, Daily |
-| `IPlayerSessions` | Players | `EfPlayerSessions` | l'authentification par cookie (`Infrastructure/Auth`) |
+| `ICurrentPlayer` | Players | `Players/Auth` (claims du cookie) | Players, Daily |
+| `IPlayerSessions` | Players | `EfPlayerSessions` | l'authentification par cookie (`Players/Auth`) |
 | `IPlayerDirectory` | Players | `EfPlayerDirectory` | Daily (pseudos des stats et de l'admin) |
 | `ITrackDirectory`, `TrackTitles` | Catalogue | `EfCatalogueQueries` | Daily (tirage, stats, récap), commande `--export-player` |
 | `ITrackPreviews` | Catalogue | `DeezerTrackPreviews` | Daily (adresse de l'extrait au démarrage d'une partie) |

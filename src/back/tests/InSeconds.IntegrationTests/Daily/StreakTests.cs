@@ -6,7 +6,7 @@ using static InSeconds.IntegrationTests.Daily.DailyApi;
 namespace InSeconds.IntegrationTests.Daily;
 
 /// <summary>
-/// La série et les gels (E2, § 5.4 du plan v2), mis à jour **dans la même transaction** que la fin de la partie. Toujours calculés sur la date
+/// La série et les gels, mis à jour **dans la même transaction** que la fin de la partie. Toujours calculés sur la date
 /// du défi, jamais sur le moment de la réponse (piège 18) ; les gels sont réservés aux comptes.
 /// </summary>
 public class StreakTests(PostgresFixture postgres) : IAsyncLifetime

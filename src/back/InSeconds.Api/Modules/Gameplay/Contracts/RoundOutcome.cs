@@ -1,7 +1,7 @@
 namespace InSeconds.Api.Modules.Gameplay.Contracts;
 
 /// <summary>
-/// Ce qu'une réponse a donné, **sans points** (le calcul appartient au mode, § 5.4 du plan v2) : artiste et
+/// Ce qu'une réponse a donné, **sans points** (le calcul appartient au mode) : artiste et
 /// titre sont corrigés séparément (le score partiel en dépend), avec le palier d'écoute annoncé et le niveau
 /// d'indice révélé au moment de répondre.
 /// </summary>

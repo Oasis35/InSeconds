@@ -12,7 +12,7 @@ interface TrackRoundState {
 }
 
 /**
- * La manche d'un morceau (§ 6.2 et § 6.3 du plan v2), à composer dans le store d'un mode, ou à fournir tel quel (`TrackRoundStore`) à côté de lui, ce que `TrackRoundComponent` injecte : l'état est
+ * La manche d'un morceau, à composer dans le store d'un mode, ou à fournir tel quel (`TrackRoundStore`) à côté de lui, ce que `TrackRoundComponent` injecte : l'état est
  * celui de la machine à états de `domain/`, les méthodes en sont les transitions, et le store
  * donne ses ordres au lecteur (`AudioPort`). Il ne connaît ni le mode, ni le réseau :
  * - le mode appelle `start(...)` avec ses paliers et ses indices ;

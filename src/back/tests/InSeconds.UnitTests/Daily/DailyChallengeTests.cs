@@ -38,7 +38,7 @@ public class DailyChallengeTests
     [Fact]
     public void Origines_ValeursStockeesDuPlan()
     {
-        // § 4.4 : 1 nocturne, 2 à la volée, 3 admin (colonne smallint, ne jamais renuméroter).
+        // 1 nocturne, 2 à la volée, 3 admin (colonne smallint, ne jamais renuméroter).
         Assert.Equal([1, 2, 3], new[] { ChallengeOrigin.Nightly, ChallengeOrigin.OnTheFly, ChallengeOrigin.Admin }.Select(o => (int)o));
     }
 }

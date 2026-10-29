@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 namespace InSeconds.IntegrationTests.Players;
 
 /// <summary>
-/// Identité du joueur dans la télémétrie (B5, § 5.7 du plan v2) : tag <c>inseconds.player_id</c> sur la
+/// Identité du joueur dans la télémétrie : tag <c>inseconds.player_id</c> sur la
 /// trace de la requête et scope de journal <c>PlayerId</c>, jamais d'email ni de pseudo.
 /// </summary>
 public class PlayerTelemetryTests(PostgresFixture postgres) : IAsyncLifetime

@@ -1,9 +1,8 @@
 namespace InSeconds.Api.Modules.Players.Domain;
 
 /// <summary>
-/// Jeton à usage unique envoyé par email (§ 4.2 du plan v2), fusion des tables v1
-/// <c>MagicLinkTokens</c> et <c>EmailChangeTokens</c>. Seul son hash est stocké
-/// (<see cref="AuthTokenSecret"/>). Connexion depuis B2, changement d'email en B3 ; toujours
+/// Jeton à usage unique envoyé par email : lien de connexion ou changement d'email.
+/// Seul son hash est stocké (<see cref="AuthTokenSecret"/>). Toujours
 /// cherché par <see cref="Purpose"/> (S2), valable 15 minutes, consommé une seule fois.
 /// </summary>
 public sealed class AuthToken

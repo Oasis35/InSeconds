@@ -11,7 +11,7 @@ public sealed record AccountSummary(Guid PlayerId, string Pseudo, string Email, 
 /// <param name="ActiveLast30Days">Joueurs, invités compris, vus depuis 30 jours.</param>
 public sealed record PlayerBreakdown(int Guests, int Registered, int ActiveLast7Days, int ActiveLast30Days);
 
-/// <summary>Ce que les autres modules ont besoin de savoir d'un joueur (§ 5.3 du plan v2).</summary>
+/// <summary>Ce que les autres modules ont besoin de savoir d'un joueur.</summary>
 public interface IPlayerDirectory
 {
     /// <summary>

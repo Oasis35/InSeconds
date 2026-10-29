@@ -24,7 +24,7 @@ public class HintsTests
     public void YearHint_AnneeInconnue_ValeurNulle() =>
         Assert.Null(new YearHint().Reveal(DaftPunk with { ReleaseYear = null }).Value);
 
-    // --- niveau 2 : l'artiste « pendu » (cas de la v1) ---
+    // --- niveau 2 : l'artiste « pendu » ---
 
     [Theory]
     [InlineData("Muse", "M _ _ _")]

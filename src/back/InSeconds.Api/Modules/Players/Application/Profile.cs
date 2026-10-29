@@ -96,7 +96,7 @@ public static class RequestEmailChangeEndpoint
 
     /// <summary>
     /// <c>POST /api/players/me/email-change</c> : comptes seulement, 204. Le lien part à la nouvelle
-    /// adresse seulement (v1). Limité par joueur (S11), et un lien par minute.
+    /// adresse seulement. Limité par joueur (S11), et un lien par minute.
     /// </summary>
     [Authorize]
     [WolverinePost("/api/players/me/email-change", OperationId = "requestEmailChange")]
@@ -164,14 +164,14 @@ public static class ConfirmEmailChangeEndpoint
     public static ProblemDetails Validate(EmailChangeAttempt attempt) => attempt switch
     {
         { Token: null } or { Account: null } => PlayersProblems.InvalidOrExpiredToken(),
-        // Prise entre la demande et la confirmation : jeton gardé, la demande reste ouverte (v1).
+        // Prise entre la demande et la confirmation : jeton gardé, la demande reste ouverte.
         { EmailTaken: true } => PlayersProblems.EmailTaken(),
         _ => WolverineContinue.NoProblems,
     };
 
     /// <summary>
     /// <c>POST /api/players/email-change/confirm</c> : public, l'autorisation tient au jeton secret à usage
-    /// unique (aucun cookie posé, d'où pas de contrôle d'origine, comme en v1). Bouton « Confirmer »
+    /// unique (aucun cookie posé, d'où pas de contrôle d'origine). Bouton « Confirmer »
     /// explicite côté front (piège 21).
     /// </summary>
     [WolverinePost("/api/players/email-change/confirm", OperationId = "confirmEmailChange")]

@@ -8,7 +8,7 @@ import { ActionsApi } from './actions.api';
 import { JOBS_DASHBOARD_URL } from './admin-api.providers';
 import { JobsApi } from './jobs.api';
 
-/** Les messages de résultat disparaissent au bout de ce délai (comme en v1). */
+/** Les messages de résultat disparaissent au bout de ce délai. */
 export const RESULT_VISIBLE_MS = 3000;
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
