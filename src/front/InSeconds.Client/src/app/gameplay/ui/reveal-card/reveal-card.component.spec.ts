@@ -21,7 +21,6 @@ describe('RevealCardComponent', () => {
     imports: [RevealCardComponent],
     template: `
       <app-reveal-card [result]="result">
-        <span roundBadge>badge</span>
         <span roundScore>+850</span>
         <button roundNext>Suite</button>
       </app-reveal-card>`,
@@ -55,9 +54,8 @@ describe('RevealCardComponent', () => {
     expect(spans[1]).toContain('✗');
   });
 
-  it('place les éléments du mode : badge, points, suite', () => {
+  it('place les éléments du mode : points, suite', () => {
     const { element } = render();
-    expect(element.querySelector('[roundBadge]')?.textContent).toBe('badge');
     expect(element.querySelector('[roundScore]')?.textContent).toBe('+850');
     expect(element.querySelector('[roundNext]')?.textContent).toBe('Suite');
   });

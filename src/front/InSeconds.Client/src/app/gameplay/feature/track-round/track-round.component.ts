@@ -17,7 +17,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
  * réponse quand `answered` part, puis donne le `result` du serveur et appelle `reveal()` du store.
  *
  * Emplacements de projection du mode : `[roundActions]` (ses boutons, au-dessus de « Valider »),
- * `[roundBadge]` (au-dessus de la pochette), `[roundScore]` (ses points) et `[roundNext]` (sa suite).
+ * `[roundScore]` (ses points) et `[roundNext]` (sa suite).
  */
 @Component({
   selector: 'app-track-round',
@@ -81,7 +81,6 @@ import { ButtonComponent } from '../../../ui/button/button.component';
 
         @if (phase === 'revealed' && result(); as revealed) {
           <app-reveal-card [result]="revealed" [bass]="round.bass()">
-            <ng-content select="[roundBadge]" ngProjectAs="[roundBadge]" />
             <ng-content select="[roundScore]" ngProjectAs="[roundScore]" />
             <ng-content select="[roundNext]" ngProjectAs="[roundNext]" />
           </app-reveal-card>

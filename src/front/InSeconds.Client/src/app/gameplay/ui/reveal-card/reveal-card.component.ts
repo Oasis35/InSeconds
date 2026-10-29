@@ -16,8 +16,6 @@ import { MembraneComponent } from '../membrane/membrane.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col items-center gap-3 text-center pt-1" data-testid="reveal">
-      <ng-content select="[roundBadge]" />
-
       @if (result().coverUrl; as cover) {
         <app-membrane [level]="bass()">
           <img [src]="cover" [alt]="'gameplay.reveal.coverAlt' | translate" class="block w-24 h-24 object-cover"

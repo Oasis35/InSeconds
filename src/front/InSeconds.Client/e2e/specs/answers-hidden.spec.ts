@@ -38,10 +38,12 @@ test.describe('Réponses du jour cachées avant de jouer', () => {
 
     await round.chooseDuration(1);
     await round.waitForAnswerInput();
+    const badge = page.getByTestId('round-deezer-badge');
+    await expect(badge).toHaveCount(0);
     await round.submitEmpty();
 
-    // Écran de révélation : le lien « À écouter sur Deezer » pointe sur le morceau.
-    await expect(page.locator('app-deezer-badge a[href*="deezer.com/track/"]')).toHaveAttribute(
+    // Écran de révélation : le lien « À écouter sur Deezer », dans le coin droit de l'en-tête, pointe sur le morceau.
+    await expect(page.getByTestId('brand-right').getByTestId('round-deezer-badge').locator('a[href*="deezer.com/track/"]')).toHaveAttribute(
       'href', /deezer\.com\/track\/\d+$/);
   });
 
