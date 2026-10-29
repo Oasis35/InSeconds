@@ -21,6 +21,7 @@ public sealed record DurationScore(decimal Seconds, int Score);
 /// Le barème : rien si ni l'artiste ni le titre n'est trouvé ; un palier inconnu
 /// vaut 0 ; artiste et titre = le barème du palier, un seul des deux = la moitié ; puis la pénalité de l'indice sur ce score.
 /// </summary>
+/// <remarks>Le front affiche les points en jeu avec la même règle (<c>daily/domain/stake.ts</c>) : un changement de calcul ici s'y reporte.</remarks>
 public sealed class DurationScoringPolicy : IDailyScoringPolicy
 {
     private readonly IReadOnlyDictionary<decimal, int> _baseScores;

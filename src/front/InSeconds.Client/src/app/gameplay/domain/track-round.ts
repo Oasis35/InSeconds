@@ -29,7 +29,15 @@ export interface ListenPolicy {
   readonly steps: readonly number[];
   /** Le joueur peut-il prolonger l'écoute au palier suivant ? */
   readonly extendable: boolean;
+  /**
+   * Les points en jeu à un palier, avec un niveau d'indice déjà pris, si le mode a un barème (Daily) : le lecteur les montre à gauche
+   * de son bouton. Le calcul est celui du mode ; sans lui, le lecteur n'en montre pas (Runs).
+   */
+  readonly stake?: StakePolicy;
 }
+
+/** Les points en jeu au palier `seconds`, le niveau d'indice `hintLevel` déjà pris. */
+export type StakePolicy = (seconds: number, hintLevel: number) => number;
 
 /** Quand chaque niveau d'indice se débloque : `unlockSeconds[0]` pour le niveau 1, etc. Vient des réglages du back. */
 export interface HintPolicy {
@@ -39,8 +47,6 @@ export interface HintPolicy {
    * `artistMasked`) : le bouton s'appelle alors « Indice année », « Indice artiste ». Sans lui, « Indice 1 ».
    */
   readonly kinds?: readonly (string | null)[];
-  /** Ce que coûte chaque niveau, en pourcentage du score du morceau (`penaltyPercents[0]` pour le niveau 1), écrit sur le bouton. */
-  readonly penaltyPercents?: readonly (number | null)[];
 }
 
 /** Un indice révélé par le back : l'année, l'artiste masqué… Le front l'affiche, il n'en invente aucun. */
@@ -99,11 +105,11 @@ export interface TrackRound {
   /** Les paliers proposés, déjà privés de ceux sous le plancher d'écoute. */
   readonly steps: readonly number[];
   readonly extendable: boolean;
+  /** Les points en jeu selon le mode (`null` : le mode n'en a pas). */
+  readonly stake: StakePolicy | null;
   readonly hintUnlockSeconds: readonly number[];
   /** Ce que révèle chaque niveau (`null` : inconnu). */
   readonly hintKinds: readonly (string | null)[];
-  /** Le coût de chaque niveau, en pourcentage (`null` : inconnu). */
-  readonly hintPenaltyPercents: readonly (number | null)[];
   readonly phase: RoundPhase;
   /** Le palier en cours (0 tant que le joueur n'a pas commencé à écouter). */
   readonly chosenSeconds: number;
@@ -130,9 +136,9 @@ export function createRound(config: RoundConfig): TrackRound {
     previewUrl: hasPreview ? config.previewUrl : null,
     steps,
     extendable: config.listen.extendable,
+    stake: config.listen.stake ?? null,
     hintUnlockSeconds: config.hints.unlockSeconds,
     hintKinds: config.hints.kinds ?? [],
-    hintPenaltyPercents: config.hints.penaltyPercents ?? [],
     phase: hasPreview ? 'ready' : 'no-preview',
     chosenSeconds: 0,
     extended: false,
@@ -215,6 +221,11 @@ export function onAudio(round: TrackRound, audio: AudioStatus): TrackRound {
   if (!isAnswering(round)) return round;
   const phase = PHASE_OF_AUDIO[audio];
   return phase === null || phase === round.phase ? round : { ...round, phase };
+}
+
+/** Les points en jeu au palier en cours (le premier tant que rien n'est choisi), indice pris compris ; `null` si le mode n'en a pas. */
+export function stakeOf(round: TrackRound): number | null {
+  return round.stake ? round.stake(round.chosenSeconds || round.steps[0], round.hintLevel) : null;
 }
 
 // --- indices ---

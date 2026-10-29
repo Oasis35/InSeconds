@@ -41,7 +41,7 @@ test.describe('Réponses du jour cachées avant de jouer', () => {
     await round.submitEmpty();
 
     // Écran de révélation : le lien « À écouter sur Deezer » pointe sur le morceau.
-    await expect(page.locator('app-deezer-badge a[href*="deezer.com/track/"]')).toHaveAttribute(
+    await expect(page.getByTestId('reveal').locator('app-deezer-badge a[href*="deezer.com/track/"]')).toHaveAttribute(
       'href', /deezer\.com\/track\/\d+$/);
   });
 

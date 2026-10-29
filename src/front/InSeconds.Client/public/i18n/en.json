@@ -111,7 +111,8 @@
       "skip": "Skip (0 pts)",
       "replay": "↺ {{ seconds }}",
       "listenUpTo": "Listen up to {{ seconds }}",
-      "stepsUpTo": "You can listen up to {{ seconds }} if you need to",
+      "stake": "pts at stake",
+      "waveform": "Clip listened",
       "playbackError": "Couldn't play the preview. Try again, or skip this track.",
       "retry": "Retry"
     },
@@ -128,7 +129,6 @@
       "retry": "Retry"
     },
     "hint": {
-      "cost": "(−{{ percent }}%)",
       "tooltip": "Hint: costs points",
       "button": "Hint {{ level }}",
       "ask": {
@@ -733,12 +733,12 @@
     "round": {
       "points": "pts",
       "nextTrack": "Next track →",
-      "seeResult": "See result"
+      "seeResult": "See result",
+      "total": "Total"
     },
     "common": {
       "abandon": "Give up",
-      "loading": "Loading the challenge…",
-      "points": "pts"
+      "loading": "Loading the challenge…"
     },
     "thanks": {
       "titleBefore": "Thanks for keeping ",

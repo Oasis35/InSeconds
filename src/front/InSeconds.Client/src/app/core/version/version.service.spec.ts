@@ -5,7 +5,7 @@ import { NavigationEnd, Router } from '@angular/router';
 import { SwUpdate, VersionEvent } from '@angular/service-worker';
 import { Subject } from 'rxjs';
 import { ErrorReportingService } from '../errors/error-reporting.service';
-import { PAGE_RELOAD, ReloadMoment, SERVICE_WORKER_CONTAINER, VersionService } from './version.service';
+import { isStaleChunkError, PAGE_RELOAD, ReloadMoment, SERVICE_WORKER_CONTAINER, VersionService } from './version.service';
 
 describe('VersionService', () => {
   const READY: VersionEvent = { type: 'VERSION_READY', currentVersion: { hash: 'a' }, latestVersion: { hash: 'b' } };
@@ -15,6 +15,7 @@ describe('VersionService', () => {
   let routerEvents: Subject<unknown>;
   let dialog: { afterOpened: Subject<unknown>; afterAllClosed: Subject<void>; openDialogs: unknown[] };
   let checkForUpdate: ReturnType<typeof vi.fn>;
+  let activateUpdate: ReturnType<typeof vi.fn>;
   let reload: ReturnType<typeof vi.fn>;
   let visibility: DocumentVisibilityState;
   let workers: EventTarget & { controller: object | null; getRegistration: ReturnType<typeof vi.fn> };
@@ -38,6 +39,7 @@ describe('VersionService', () => {
     routerEvents = new Subject();
     dialog = { afterOpened: new Subject(), afterAllClosed: new Subject(), openDialogs: [] };
     checkForUpdate = vi.fn().mockResolvedValue(false);
+    activateUpdate = vi.fn().mockResolvedValue(true);
     reload = vi.fn();
     updateWorker = vi.fn().mockResolvedValue(undefined);
     reportError = vi.fn();
@@ -47,7 +49,7 @@ describe('VersionService', () => {
     });
     TestBed.configureTestingModule({
       providers: [
-        { provide: SwUpdate, useValue: { isEnabled, versionUpdates, unrecoverable, checkForUpdate } },
+        { provide: SwUpdate, useValue: { isEnabled, versionUpdates, unrecoverable, checkForUpdate, activateUpdate } },
         { provide: PAGE_RELOAD, useValue: reload },
         { provide: Router, useValue: { events: routerEvents } },
         { provide: Dialog, useValue: dialog },
@@ -66,6 +68,11 @@ describe('VersionService', () => {
     return { destroy: () => callbacks.forEach(fn => fn()) };
   }
 
+  /** Laisse l'activation de la version (une promesse) se terminer avant le rechargement. */
+  async function settle(): Promise<void> {
+    await new Promise(resolve => setTimeout(resolve));
+  }
+
   function goToBackground(): void {
     visibility = 'hidden';
     document.dispatchEvent(new Event('visibilitychange'));
@@ -81,7 +88,7 @@ describe('VersionService', () => {
     dialog.afterAllClosed.next();
   }
 
-  it('recharge tout de suite une nouvelle version prête quand la page le permet, sans bandeau', () => {
+  it('recharge tout de suite une nouvelle version prête quand la page le permet, sans bandeau', async () => {
     const service = create();
     page(service, () => 'now');
 
@@ -92,12 +99,14 @@ describe('VersionService', () => {
     versionUpdates.next(READY);
     TestBed.tick();
 
+    await settle();
+
     expect(reload).toHaveBeenCalledTimes(1);
     expect(service.updateAvailable()).toBe(false);
     expect(reportError).not.toHaveBeenCalled();
   });
 
-  it('ne recharge jamais en pleine manche, puis dès que la page redevient sûre', () => {
+  it('ne recharge jamais en pleine manche, puis dès que la page redevient sûre', async () => {
     const service = create();
     const moment = signal<ReloadMoment>('navigation');
     page(service, moment);
@@ -110,10 +119,12 @@ describe('VersionService', () => {
     moment.set('now');
     TestBed.tick();
 
+    await settle();
+
     expect(reload).toHaveBeenCalledTimes(1);
   });
 
-  it('recharge au passage en arrière-plan quand la page l\'accepte (récap)', () => {
+  it('recharge au passage en arrière-plan quand la page l\'accepte (récap)', async () => {
     const service = create();
     page(service, () => 'background');
     versionUpdates.next(READY);
@@ -122,10 +133,12 @@ describe('VersionService', () => {
 
     goToBackground();
 
+    await settle();
+
     expect(reload).toHaveBeenCalledTimes(1);
   });
 
-  it('recharge au prochain changement de page, défaut d\'une page qui ne dit rien', () => {
+  it('recharge au prochain changement de page, défaut d\'une page qui ne dit rien', async () => {
     const service = create();
     versionUpdates.next(READY);
     TestBed.tick();
@@ -135,10 +148,12 @@ describe('VersionService', () => {
 
     routerEvents.next(new NavigationEnd(1, '/admin', '/admin'));
 
+    await settle();
+
     expect(reload).toHaveBeenCalledTimes(1);
   });
 
-  it('ne recharge pas sur une navigation qui ne change que la query string (filtre ou page du pool admin)', () => {
+  it('ne recharge pas sur une navigation qui ne change que la query string (filtre ou page du pool admin)', async () => {
     create();
     routerEvents.next(new NavigationEnd(1, '/admin/catalogue', '/admin/catalogue'));
     versionUpdates.next(READY);
@@ -149,6 +164,7 @@ describe('VersionService', () => {
     expect(reload).not.toHaveBeenCalled();
 
     routerEvents.next(new NavigationEnd(4, '/admin/defis', '/admin/defis'));
+    await settle();
     expect(reload).toHaveBeenCalledTimes(1);
   });
 
@@ -173,7 +189,7 @@ describe('VersionService', () => {
     expect(service.moment()).toBe('navigation');
   });
 
-  it('attend la fermeture d\'une fenêtre ouverte', () => {
+  it('attend la fermeture d\'une fenêtre ouverte', async () => {
     const service = create();
     page(service, () => 'now');
     openDialog();
@@ -185,6 +201,8 @@ describe('VersionService', () => {
 
     closeDialogs();
     TestBed.tick();
+
+    await settle();
 
     expect(reload).toHaveBeenCalledTimes(1);
   });
@@ -212,7 +230,7 @@ describe('VersionService', () => {
     expect(Number(sessionStorage.getItem('inseconds.version.autoReloadAt'))).toBeGreaterThan(0);
   });
 
-  it('affiche le bandeau et recharge au moment sûr quand le service worker est dans un état irrécupérable', () => {
+  it('affiche le bandeau et recharge au moment sûr quand le service worker est dans un état irrécupérable', async () => {
     const service = create();
     const moment = signal<ReloadMoment>('navigation');
     page(service, moment);
@@ -225,6 +243,7 @@ describe('VersionService', () => {
 
     moment.set('now');
     TestBed.tick();
+    await settle();
     expect(reload).toHaveBeenCalledTimes(1);
   });
 
@@ -253,7 +272,7 @@ describe('VersionService', () => {
     expect(checkForUpdate).toHaveBeenCalled();
   });
 
-  it('recharge au moment sûr quand un nouveau service worker remplace l\'ancien (piège 49)', () => {
+  it('recharge au moment sûr quand un nouveau service worker remplace l\'ancien (piège 49)', async () => {
     const service = create();
     const game = signal<ReloadMoment>('navigation');
     page(service, () => game());
@@ -264,6 +283,7 @@ describe('VersionService', () => {
 
     game.set('now');
     TestBed.tick();
+    await settle();
     expect(reload).toHaveBeenCalledTimes(1);
     expect(service.updateAvailable()).toBe(false);
   });
@@ -296,12 +316,47 @@ describe('VersionService', () => {
     expect(reload).not.toHaveBeenCalled();
   });
 
-  it('recharge depuis le bandeau à la demande', () => {
+  it('recharge depuis le bandeau à la demande', async () => {
     const service = create();
 
     service.reload();
 
+    await settle();
+
     expect(reload).toHaveBeenCalledTimes(1);
+  });
+
+  it('active la version prête avant de recharger, et recharge quand même si l\'activation échoue', async () => {
+    const service = create();
+    page(service, () => 'now');
+    activateUpdate.mockRejectedValue(new Error('worker mort'));
+
+    versionUpdates.next(READY);
+    TestBed.tick();
+    await settle();
+
+    expect(activateUpdate).toHaveBeenCalledTimes(1);
+    expect(reload).toHaveBeenCalledTimes(1);
+  });
+
+  it('recharge une fois sur un module introuvable après un déploiement, pas deux fois de suite', async () => {
+    const service = create();
+
+    expect(service.reloadAfterStaleChunk()).toBe(true);
+    await settle();
+    expect(reload).toHaveBeenCalledTimes(1);
+
+    expect(service.reloadAfterStaleChunk()).toBe(false);
+    await settle();
+    expect(reload).toHaveBeenCalledTimes(1);
+  });
+
+  it('reconnaît les messages de module introuvable de Chrome, Firefox et Safari', () => {
+    expect(isStaleChunkError(new TypeError('Failed to fetch dynamically imported module: https://inseconds.cc/chunk-A.js'))).toBe(true);
+    expect(isStaleChunkError(new TypeError('error loading dynamically imported module: https://inseconds.cc/chunk-A.js'))).toBe(true);
+    expect(isStaleChunkError(new TypeError('Importing a module script failed.'))).toBe(true);
+    expect(isStaleChunkError(new Error('boom'))).toBe(false);
+    expect(isStaleChunkError('Failed to fetch dynamically imported module')).toBe(false);
   });
 
   it('laisse le joueur fermer le bandeau', () => {

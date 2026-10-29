@@ -1,7 +1,7 @@
 import {
   RoundConfig, TrackRound, applyHints, askSkip, availableHintLevels, beginListening, cancelConfirm, confirmPending,
   createRound, isAnswering, listenMore, maxStep, nextStep, onAudio, previewWithdrawn, replacePreviewUrl, retryPlayback, retrySubmission, reveal, showsInput,
-  skipUnplayable, submissionFailed, submitAnswer, unlockedHintLevel,
+  skipUnplayable, stakeOf, submissionFailed, submitAnswer, unlockedHintLevel,
 } from './track-round';
 
 const CONFIG: RoundConfig = {
@@ -230,11 +230,6 @@ describe('indices', () => {
     expect(at(5).hintKinds).toEqual([]);
   });
 
-  it('garde le coût de chaque niveau, quand le back le dit', () => {
-    expect(started({ hints: { unlockSeconds: [5, 10], penaltyPercents: [30, 60] } }).hintPenaltyPercents).toEqual([30, 60]);
-    expect(at(5).hintPenaltyPercents).toEqual([]);
-  });
-
   it('le niveau suivant attend son palier', () => {
     const first = applyHints(at(5), 1, [{ kind: 'year', value: '2013' }]);
     expect(availableHintLevels(first)).toEqual([]);
@@ -270,6 +265,24 @@ describe('indices', () => {
 
   it('ne sont plus proposés une fois la réponse envoyée', () => {
     expect(availableHintLevels(submitAnswer(at(10), answer))).toEqual([]);
+  });
+});
+
+describe('points en jeu', () => {
+  const stake = (seconds: number, hintLevel: number) => seconds * 100 - hintLevel;
+
+  it('appelle le calcul du mode au palier en cours, avec l\'indice pris', () => {
+    const r = started({ listen: { steps: [0.5, 1], extendable: true, stake } });
+    expect(stakeOf(r)).toBe(50);
+    expect(stakeOf(applyHints(listenMore(r), 1, []))).toBe(99);
+  });
+
+  it('prend le premier palier tant que rien n\'est choisi', () => {
+    expect(stakeOf(round({ listen: { steps: [0.5, 1], extendable: true, stake } }))).toBe(50);
+  });
+
+  it('est `null` quand le mode n\'a pas de points en jeu (Runs)', () => {
+    expect(stakeOf(started())).toBeNull();
   });
 });
 

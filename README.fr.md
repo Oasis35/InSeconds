@@ -16,6 +16,7 @@
 - La disponibilité des previews est re-vérifiée chaque nuit auprès de Deezer (appels par lots, respectueux du rate-limit), ainsi que les genres de l'album de chaque morceau (un appel par album) ; les admins peuvent aussi la relancer à la demande depuis le tableau de bord des tâches planifiées (`/jobs`)
 - La lecture démarre automatiquement au palier le plus court (0,5 s) ; tu prolonges palier par palier (1, 1.5, 2, 3, 5, 10 s) avec « écouter plus » avant de tenter artiste + titre
 - Prolongations "écouter plus" libres et illimitées par morceau (jusqu'au dernier palier) - le score dépend toujours du palier final écouté, sans malus
+- Le lecteur montre la vraie waveform de l'extrait (calculée dans le navigateur, jamais stockée) et les points en jeu, qui baissent quand tu prolonges ou prends un indice ; le bouton de lecture danse avec les basses
 - Un bouton « Passer (0 pts) » (avec confirmation) permet de passer au morceau suivant sans répondre
 - Indices optionnels (année de sortie, puis nom d'artiste masqué) débloqués à 5s/10s d'écoute - coûte des points, contrôlé côté serveur
 - Le scoring est entièrement côté serveur - impossible de tricher côté client

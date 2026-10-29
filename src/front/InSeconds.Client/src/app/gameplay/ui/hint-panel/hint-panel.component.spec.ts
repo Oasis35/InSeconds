@@ -35,9 +35,9 @@ describe('HintPanelComponent', () => {
     expect(labels).toEqual(['gameplay.hint.ask.year', 'gameplay.hint.ask.artist', 'gameplay.hint.button']);
   });
 
-  it('écrit le coût de chaque niveau sur son bouton, quand le back le donne', () => {
-    const labels = render({ levels: [1, 2], kinds: ['year', 'artistMasked'], penalties: [30] }).buttons().map(b => b.textContent!.replace(/\s+/g, ' ').trim());
-    expect(labels).toEqual(['gameplay.hint.ask.year gameplay.hint.cost', 'gameplay.hint.ask.artist']);
+  it('n\'écrit pas le coût sur le bouton : les points en jeu du lecteur baissent quand l\'indice est pris', () => {
+    const labels = render({ levels: [1], kinds: ['year'] }).buttons().map(b => b.textContent!.replace(/\s+/g, ' ').trim());
+    expect(labels).toEqual(['gameplay.hint.ask.year']);
   });
 
   it('les boutons attendent la réponse du back', () => {

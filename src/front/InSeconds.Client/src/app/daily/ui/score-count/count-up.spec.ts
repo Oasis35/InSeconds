@@ -25,4 +25,12 @@ describe('countUp', () => {
     expect(values.at(-1)).toBe(100);
     expect([...values].sort((a, b) => a - b)).toEqual(values);
   });
+
+  it('peut partir d\'une autre valeur que 0 (le total de la partie)', async () => {
+    const values: number[] = [];
+    countUp(2100, v => values.push(v), 30, 1250);
+    await new Promise(resolve => setTimeout(resolve, 150));
+    expect(values[0]).toBeGreaterThanOrEqual(1250);
+    expect(values.at(-1)).toBe(2100);
+  });
 });
