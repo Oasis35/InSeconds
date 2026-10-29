@@ -4,10 +4,12 @@ import { environment } from '../../../environments/environment';
 import { AnswerSearchPort } from './answer-search.port';
 import { AudioPort } from './audio.port';
 import { CatalogueAnswerSearch } from './catalogue-answer-search';
+import { DecodedWaveform } from './decoded-waveform';
 import { HtmlAudioPort } from './html-audio.port';
+import { WaveformPort } from './waveform.port';
 
 /**
- * Ce que la manche branche dans l'app, par la route du mode : le lecteur (élément audio), l'autocomplete (catalogue), son client généré et
+ * Ce que la manche branche dans l'app, par la route du mode : le lecteur (élément audio), la forme des extraits (son décodé), l'autocomplete (catalogue), son client généré et
  * l'adresse de l'API qu'il lit (vide en dev et en E2E : le proxy d'`ng serve` relaie `/api`). Le client est redonné ici : celui de la racine
  * n'aurait pas d'adresse, qui n'y est pas fournie pour garder ce client hors du bundle initial.
  */
@@ -16,6 +18,7 @@ export function provideGameplayPorts(): EnvironmentProviders {
     { provide: CATALOGUE_API_BASE_URL, useValue: environment.apiUrl },
     CatalogueClient,
     { provide: AudioPort, useClass: HtmlAudioPort },
+    { provide: WaveformPort, useClass: DecodedWaveform },
     { provide: AnswerSearchPort, useClass: CatalogueAnswerSearch },
   ]);
 }

@@ -21,6 +21,8 @@ test.describe('Scoring par palier', () => {
     // Morceau 1 : 0.5s avec bonne réponse → 1000 pts (artiste + titre)
     // Les tracks du seed aujourd'hui : Eminem, Radiohead, Billie Eilish, Kanye West, JAY Z
     await round.chooseDuration(0.5);
+    // Les points en jeu du premier palier, à gauche du bouton du lecteur.
+    await expect(round.stake).toHaveText('1000');
     await round.waitForAnswerInput();
     await round.typeAnswer('Eminem - Lose Yourself');
     await round.submit();
@@ -38,6 +40,8 @@ test.describe('Scoring par palier', () => {
     const score2 = await round.readRoundScore();
 
     expect(score1).toBeGreaterThan(score2);
+    // Le total de la partie se lit sous les points du morceau.
+    await expect(round.roundTotal).toHaveText(String(score1 + score2));
 
     await round.goNext();
     // Finir les 3 morceaux restants (5 morceaux/défi au total)

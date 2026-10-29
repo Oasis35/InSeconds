@@ -7,7 +7,7 @@ import { HintFact } from '../../domain/track-round';
  * Les indices : ce que le back a révélé, puis un bouton par niveau débloqué et pas encore révélé
  * (« Indice année », « Indice artiste » quand le back dit ce que révèle le niveau, sinon « Indice 1 »).
  * Le nombre de boutons vient des réglages (`HintPolicy`) et le contenu des indices du back : le
- * front n'invente aucun niveau. Le coût de chaque niveau est écrit sur son bouton (« Indice : l'année (−30 %) »).
+ * front n'invente aucun niveau. Le coût n'est pas écrit sur le bouton : les points en jeu du lecteur baissent quand l'indice est pris.
  */
 @Component({
   selector: 'app-hint-panel',
@@ -42,9 +42,6 @@ import { HintFact } from '../../domain/track-round';
               <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5.6.61 1.2 1.42 1.41 2.5"></path>
             </svg>
             {{ buttonKey(level) | translate: { level } }}
-            @if (penalty(level); as percent) {
-              {{ 'gameplay.hint.cost' | translate: { percent } }}
-            }
           </button>
         }
       </div>
@@ -56,8 +53,6 @@ export class HintPanelComponent {
   readonly levels = input<readonly number[]>([]);
   /** Ce que révèle chaque niveau (`kinds[0]` pour le niveau 1), quand le back le dit. */
   readonly kinds = input<readonly (string | null)[]>([]);
-  /** Ce que coûte chaque niveau, en pourcentage (`penalties[0]` pour le niveau 1), quand le back le dit. */
-  readonly penalties = input<readonly (number | null)[]>([]);
   /** Ce que le back a révélé. */
   readonly hints = input<readonly HintFact[]>([]);
   /** Une demande est en cours : les boutons attendent. */
@@ -66,5 +61,4 @@ export class HintPanelComponent {
 
   protected readonly labelKey = (fact: HintFact): string => hintLabelKey(fact.kind);
   protected readonly buttonKey = (level: number): string => hintButtonKey(this.kinds()[level - 1]);
-  protected readonly penalty = (level: number): number | null => this.penalties()[level - 1] ?? null;
 }

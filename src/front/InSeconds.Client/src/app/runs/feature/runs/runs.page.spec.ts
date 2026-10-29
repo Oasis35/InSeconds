@@ -6,6 +6,7 @@ import fr from '../../../../../public/i18n/fr.json';
 import { SessionLoader } from '../../../account/data-access/session-loader';
 import { VersionService } from '../../../core/version/version.service';
 import { FakeAudioPort, provideFakeAudio } from '../../../gameplay/data-access/testing/fake-audio.port';
+import { FakeWaveformPort, provideFakeWaveform } from '../../../gameplay/data-access/testing/fake-waveform.port';
 import { ConfirmDialogData } from '../../../ui/modal/confirm-dialog.component';
 import { ModalService } from '../../../ui/modal/modal.service';
 import { RunGameStore } from '../../data-access/run-game.store';
@@ -31,7 +32,7 @@ describe('RunsPage', () => {
     };
     TestBed.configureTestingModule({
       providers: [
-        provideTranslateService(), provideRouter([]), provideFakeRunsApi(api), provideFakeAudio(new FakeAudioPort()),
+        provideTranslateService(), provideRouter([]), provideFakeRunsApi(api), provideFakeAudio(new FakeAudioPort()), provideFakeWaveform(new FakeWaveformPort()),
         { provide: ModalService, useValue: modal },
         { provide: SessionLoader, useValue: { ensureGuest: () => Promise.resolve() } },
         { provide: VersionService, useValue: { allowReload: () => undefined } },
