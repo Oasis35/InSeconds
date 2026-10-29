@@ -6,7 +6,7 @@ using static InSeconds.IntegrationTests.Daily.DailyApi;
 namespace InSeconds.IntegrationTests.Daily;
 
 /// <summary>
-/// Les statistiques du jour (E3, § 5.6 du plan v2) : publiques, mais les morceaux ne se révèlent qu'à un joueur dont la partie est finie (piège 31).
+/// Les statistiques du jour : publiques, mais les morceaux ne se révèlent qu'à un joueur dont la partie est finie (piège 31).
 /// Les joueurs supprimés n'y figurent pas.
 /// </summary>
 public class TodayStatsTests(PostgresFixture postgres) : IAsyncLifetime
@@ -185,7 +185,7 @@ public class TodayStatsTests(PostgresFixture postgres) : IAsyncLifetime
         await gone.FinishAsync((await gone.StartAsync()).SessionId, seconds: 10);
         Assert.Equal(2, (await StatsAsync(alice.Client)).TotalPlayers);
 
-        await _game.DeletePlayerAsync(gone.Id);
+        await _game.ErasePlayerAsync(gone.Id);
 
         var stats = await StatsAsync(alice.Client);
         Assert.Equal((1, 4250, 4250), (stats.TotalPlayers, stats.MinScore, stats.MaxScore));

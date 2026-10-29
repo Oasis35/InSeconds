@@ -67,7 +67,7 @@ public class FisherYatesShuffleTests
     }
 
     // Un défi est déterministe par date : tout changement de l'ordre pour une graine connue donnerait, pour une
-    // même date, d'autres morceaux que ceux déjà annoncés. Cet ordre est celui que produit l'algorithme de la v1
+    // même date, d'autres morceaux que ceux déjà annoncés. Cet ordre est celui que produit l'algorithme d'origine
     // (`Random(seed)`, indices de la fin vers le début) : il doit rester celui-là.
     [Fact]
     public void Shuffle_OrdreEpingle_PourUneGraineConnue()
@@ -80,7 +80,7 @@ public class FisherYatesShuffleTests
     [Fact]
     public void Shuffle_MemeOrdreQueLAlgorithmeDeLaV1()
     {
-        // L'algorithme de la v1, recopié tel quel, sert de référence.
+        // L'algorithme d'origine, recopié tel quel, sert de référence : les défis déjà joués ne doivent pas changer.
         var candidates = Enumerable.Range(0, 37).ToList();
         var rng = new Random(20_000);
         for (var i = candidates.Count - 1; i > 0; i--)

@@ -4,8 +4,8 @@ using InSeconds.Api.Modules.Gameplay.Domain;
 namespace InSeconds.Api.Modules.Gameplay;
 
 /// <summary>
-/// Module Gameplay (§ 3.1 du plan v2) : la mécanique d'un morceau, partagée par les modes (Daily aujourd'hui,
-/// Runs plus tard) : <see cref="TrackRound"/> (écouter, indice, répondre), la correction des réponses, les
+/// Module Gameplay : la mécanique d'un morceau, partagée par les modes (Daily,
+/// Runs) : <see cref="TrackRound"/> (écouter, indice, répondre), la correction des réponses, les
 /// indices, le tirage à graine. Il n'a **ni table, ni route, ni réglage** : de la logique pure, que les modes
 /// appellent par leur <c>Contracts</c>. Ne dépend d'aucun autre module (seul <c>Catalogue/Contracts</c> lui
 /// serait permis), ni de l'accès aux données, ni du web : testé par les règles d'architecture.

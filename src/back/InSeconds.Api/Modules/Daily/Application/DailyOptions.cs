@@ -3,7 +3,7 @@ using InSeconds.Api.Modules.Daily.Domain;
 namespace InSeconds.Api.Modules.Daily.Application;
 
 /// <summary>
-/// Réglages du module, relus à chaud depuis <c>infra.settings</c> (§ 4.6 du plan v2). Les valeurs par défaut sont celles de la v1 :
+/// Réglages du module, relus à chaud depuis <c>infra.settings</c>. Chaque réglage a sa valeur par défaut ici :
 /// aucune ligne en base n'est nécessaire.
 /// <para>
 /// **Les listes et dictionnaires n'ont pas de valeur initiale** : le binder de configuration ajoute les éléments lus à ceux de la

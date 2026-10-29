@@ -4,7 +4,7 @@ using NetArchTest.Rules;
 
 namespace InSeconds.ArchitectureTests;
 
-/// <summary>Dépendances entre projets (§ 3.3 du plan v2).</summary>
+/// <summary>Dépendances entre projets.</summary>
 public class ProjectDependencyTests
 {
     [Fact]
@@ -20,7 +20,7 @@ public class ProjectDependencyTests
 
     [Fact]
     public void Deezer_NeConnaitNiLApiNiLesModulesNiLInfrastructure() =>
-        // § 5.1 du plan v2 : le client Deezer est un adaptateur isolé, sans dépendance entrante vers le reste.
+        // Le client Deezer est un adaptateur isolé, sans dépendance entrante vers le reste.
         Assert.DoesNotContain(typeof(IPreviewProvider).Assembly.GetReferencedAssemblies(),
             a => a.Name!.StartsWith("InSeconds.", StringComparison.Ordinal));
 

@@ -3,7 +3,7 @@ using InSeconds.Deezer;
 
 namespace InSeconds.UnitTests.Catalogue;
 
-/// <summary>Nettoyage et déduplication de l'autocomplétion publique (v1 : <c>SearchEndpoint.CleanAndDeduplicate</c>).</summary>
+/// <summary>Nettoyage et déduplication de l'autocomplétion publique.</summary>
 public class SearchSuggestionsTests
 {
     private static DeezerTrack Track(string artist, string title, long id = 1) => new(id, artist, title, "p", null, null, null, null);

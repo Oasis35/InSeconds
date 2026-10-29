@@ -1,9 +1,9 @@
 namespace InSeconds.Api.Modules.Players.Domain;
 
 /// <summary>
-/// Un appareil connecté (§ 4.2 du plan v2), invité compris. Le cookie porte son identifiant ; la
+/// Un appareil connecté, invité compris. Le cookie porte son identifiant ; la
 /// validation du cookie vérifie qu'il n'est pas révoqué. Chaque appareil a la sienne : déconnecter
-/// un appareil ne touche pas les autres (piège 39, corrigé par la v2).
+/// un appareil ne touche pas les autres (piège 39).
 /// </summary>
 public sealed class DeviceSession
 {
@@ -18,7 +18,7 @@ public sealed class DeviceSession
 
     public DateTimeOffset CreatedAt { get; private set; }
 
-    /// <summary>Dernière visite depuis cet appareil, notée au plus toutes les 5 minutes (R17).</summary>
+    /// <summary>Dernière visite depuis cet appareil, notée au plus toutes les 5 minutes.</summary>
     public DateTimeOffset LastSeenAt { get; private set; }
 
     public DateTimeOffset? RevokedAt { get; private set; }

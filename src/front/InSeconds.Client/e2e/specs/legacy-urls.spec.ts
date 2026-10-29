@@ -3,7 +3,7 @@ import { inSequence } from '../fixtures/sequence';
 import { GamePage } from '../pages/game.page';
 import { linkAccount } from '../pages/login.page';
 
-// Anciennes adresses de la v1 (v2 seulement, § 6.6 du plan) : les routes v2 vivent sous /daily et /account, les liens
+// Anciennes adresses : les routes vivent sous /daily et /account, les liens
 // déjà partagés, mis en favori ou envoyés par email doivent rester valables, query string comprise.
 
 /** `?…` des adresses testées : un paramètre quelconque, qui doit survivre à la redirection. */
@@ -12,12 +12,12 @@ const QUERY = '?utm_source=e2e&x=1';
 const escape = (s: string) => s.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 const endsWith = (path: string) => new RegExp(`${escape(path)}$`);
 
-test.describe('Anciennes adresses (v2)', () => {
+test.describe('Anciennes adresses', () => {
   test.beforeEach(async ({ api }) => {
     await api.reset();
   });
 
-  test('redirige les anciennes adresses vers les routes v2 en gardant la query string', async ({ page }) => {
+  test('redirige les anciennes adresses vers les routes actuelles en gardant la query string', async ({ page }) => {
     const cases: [from: string, to: string][] = [
       [`/${QUERY}`, `/daily${QUERY}`],
       [`/blindtest${QUERY}`, `/daily${QUERY}`],

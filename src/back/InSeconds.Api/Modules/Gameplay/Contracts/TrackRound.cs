@@ -1,8 +1,8 @@
 namespace InSeconds.Api.Modules.Gameplay.Contracts;
 
 /// <summary>
-/// Une manche sur un morceau (§ 5.4 du plan v2) : ce que la mécanique d'un morceau garde, indépendamment
-/// du mode qui l'utilise (Daily aujourd'hui, Runs plus tard). Objet valeur immuable : chaque action rend une
+/// Une manche sur un morceau : ce que la mécanique d'un morceau garde, indépendamment
+/// du mode qui l'utilise (Daily, Runs). Objet valeur immuable : chaque action rend une
 /// nouvelle manche. Le mode la range comme il veut (Daily : position en cours, durée écoutée, niveau d'indice
 /// de la session) et la reconstitue par <see cref="Resume"/>.
 /// <para>

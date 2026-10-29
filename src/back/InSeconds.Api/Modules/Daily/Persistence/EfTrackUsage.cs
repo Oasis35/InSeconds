@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace InSeconds.Api.Modules.Daily.Persistence;
 
 /// <summary>
-/// L'usage des morceaux par le jeu, **calculé** sur <c>challenge_tracks</c> et <c>challenges.date</c> (§ 4.4 du plan v2) :
+/// L'usage des morceaux par le jeu, **calculé** sur <c>challenge_tracks</c> et <c>challenges.date</c> :
 /// rien n'est stocké sur le morceau, donc rien à garder cohérent. C'est l'usage du Daily, que Catalogue réunit à celui des autres modes. Le cooldown se déduit de la
 /// taille du pool à chaque appel (<see cref="TrackCooldownPolicy"/>, #275).
 /// </summary>
@@ -33,8 +33,8 @@ public sealed class EfTrackUsage(InSecondsDbContext db, TrackCooldownPolicy cool
 
     public async Task<IReadOnlySet<int>> GetTracksInCooldownAsync(DateOnly day, CancellationToken ct)
     {
-        // Règle de la v1 (`LastUsedDate < jour - cooldown` pour être tirable) : tiré à une date >= jour - cooldown, un morceau reste exclu.
-        // `UnlockDate` est donc le lendemain de dernier usage + cooldown (#275 : la v1 affichait un jour trop tôt).
+        // Tirable si dernier usage < jour - cooldown : tiré à une date >= jour - cooldown, un morceau reste exclu.
+        // `UnlockDate` est donc le lendemain de dernier usage + cooldown (#275).
         var from = TrackCooldown.ExcludedFrom(day, (await cooldown.CurrentAsync(ct)).Days);
         var ids = await Appearances()
             .Where(a => a.Date >= from)

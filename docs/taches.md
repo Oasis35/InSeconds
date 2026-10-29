@@ -11,7 +11,7 @@
 
 ## Mode Platines (suite du proto 1)
 
-> Le proto 1 est livré sur invitation ([`runs/`](runs/README.md)). Reste, avant le proto 2 (ticket [#448](https://github.com/Oasis35/InSeconds/issues/448), P7) :
+> Le proto 1 est livré sur invitation ([`runs/`](runs/README.md)). Reste, avant le proto 2 (ticket [#448](https://github.com/Oasis35/InSeconds/issues/448)) :
 
 - [ ] **Parties de test et réglage** - Clément joue sur le staging puis en prod avec quelques comptes, règle les seuils (`Runs:ThresholdPercents`, multiplicateurs, écoute) et la difficulté (tranches de rang Deezer) ; si les parties montrent des abus, un chrono `Runs:AnswerSeconds` (cf. `runs/conception.md` § 9)
 - [ ] **Tableau Grafana « Activité »** - ajouter les panneaux des métriques `inseconds.runs.sessions`, `.answers`, `.neutralized`, `.discs` (`RunsMetrics`, déjà émises ; `deploy/grafana/`)

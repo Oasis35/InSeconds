@@ -1,6 +1,6 @@
-using InSeconds.Api.Infrastructure.Auth;
 using InSeconds.Api.Infrastructure.Hosting;
 using InSeconds.Api.Modules.Players.Application;
+using InSeconds.Api.Modules.Players.Auth;
 using InSeconds.Api.Modules.Players.Domain;
 using Wolverine.Http;
 

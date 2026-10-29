@@ -4,9 +4,8 @@ namespace InSeconds.Api.Infrastructure.Hosting;
 
 /// <summary>
 /// <c>dotnet InSeconds.Api.dll --migrate-only</c> : applique les migrations puis s'arrête. Rien
-/// d'autre ne démarre (ni serveur HTTP, ni tâches planifiées, ni traitement de messages) : c'est ce
-/// qui permet de créer les schémas v2 dans la base de prod la veille de la bascule, pendant que la
-/// v1 tourne encore (§ 8.4 du plan v2, constat E3).
+/// d'autre ne démarre (ni serveur HTTP, ni tâches planifiées, ni traitement de messages) : le
+/// déploiement s'en sert pour migrer la base avant de remplacer les conteneurs (<c>deploy/vps/deploy.sh</c>).
 /// </summary>
 public static class MigrateOnlyCommand
 {

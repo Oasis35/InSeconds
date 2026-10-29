@@ -4,7 +4,7 @@ import { AdminClient, JobLastRun as JobLastRunResponse } from '../../api/admin/a
 import { JobLastRun, toJobState } from '../domain/job';
 
 /** Adaptateur des tâches planifiées (`api/admin`) : seule porte d'entrée vers le client généré. */
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class JobsApi {
   private readonly client = inject(AdminClient);
 

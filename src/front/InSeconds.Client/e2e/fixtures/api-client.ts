@@ -1,11 +1,10 @@
 import { expect } from '@playwright/test';
 import { inSequence } from './sequence';
 
-// CI utilise 5175 (port de l'API v2), local utilise 5177 (évite le conflit avec le dev normal)
+// CI utilise 5175 (port de l'API), local utilise 5177 (évite le conflit avec le dev normal)
 const BASE = process.env['CI'] ? 'http://localhost:5175' : 'http://localhost:5177';
-// L'auth admin est désormais un rôle sur le cookie joueur (Player.IsAdmin, cf. refonte
-// profils admin) - plus d'OriginValidator sur ces routes, donc plus besoin d'Origin ici.
-// Bearer admin-token reste le bypass Testing-only posé dans PlayerAuthMiddleware.
+// L'admin est un rôle sur le compte (piège 5) : les routes /api/e2e n'exigent ni Origin ni
+// authentification, et l'hôte de test ignore ce Bearer.
 const ADMIN_HEADERS = {
   Authorization: 'Bearer admin-token',
   'Content-Type': 'application/json',
@@ -62,7 +61,7 @@ export class ApiTestClient {
   /** Dernier lien lu par adresse : un nouveau lien est attendu tant qu'il n'a pas changé (chaque jeton est neuf). */
   private readonly lastLinks = new Map<string, string>();
 
-  // Remise à zéro entre deux tests. Comme en v1, les parties et les joueurs partent mais le pool et le défi du jour restent (re-semés) :
+  // Remise à zéro entre deux tests. Les parties et les joueurs partent mais le pool et le défi du jour restent (re-semés) :
   // `emptyPool` vide tout (aucun défi possible), `deleteChallenge` ne retire que le défi du jour (le pool, lui, reste).
   async reset(options: { deleteChallenge?: boolean; emptyPool?: boolean } = {}): Promise<void> {
     const emptyOnly = options.emptyPool === true;

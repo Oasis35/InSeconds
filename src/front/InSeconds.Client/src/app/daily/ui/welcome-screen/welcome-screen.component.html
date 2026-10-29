@@ -21,10 +21,7 @@
     </div>
 
     <div class="flex flex-col gap-3">
-      <button
-        (click)="startGame.emit()"
-        class="w-full py-4.5 rounded-(--radius-button) font-bold text-base tracking-wide uppercase transition-all active:scale-95 touch-manipulation"
-        style="font-family:var(--font-display);background:var(--gradient-primary);color:var(--text-on-primary);letter-spacing:0.06em">
+      <button appButton type="button" size="lg" [block]="true" (click)="startGame.emit()">
         {{ 'daily.welcome.start' | translate }}
       </button>
       <!-- La série sous le bouton qui la fait monter ; un toucher ouvre le panneau de série. -->
@@ -39,9 +36,7 @@
       </div>
 
       @if (!linked() && !hideLoginCta()) {
-        <a routerLink="/account/login"
-           class="w-full inline-flex items-center justify-center rounded-(--radius-button) font-bold text-[13px] tracking-wide uppercase transition-all active:scale-95 touch-manipulation"
-           style="min-height:48px;font-family:var(--font-display);letter-spacing:0.06em;border:1.5px solid var(--border-neutral);color:var(--text-hi)">
+        <a appButton variant="neutral" [block]="true" routerLink="/account/login">
           {{ 'daily.welcome.loginCta' | translate }}
         </a>
         <p class="text-xs leading-snug" style="color:var(--text-muted)">{{ 'daily.welcome.loginHint' | translate }}</p>

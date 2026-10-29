@@ -370,8 +370,8 @@ jobs:
     runs-on: ubuntu-latest
     # Attend « CI OK ». `always()` est indispensable : sans lui, le `if` porte un `success()` implicite
     # qui remonte toute la chaîne des `needs`, « CI OK » compris, et un seul job sauté en amont faisait
-    # sauter le déploiement alors que « CI OK » était vert (B2, B3, #262 n'ont pas été déployés quand
-    # le filtre de chemins de la v1 sautait des jobs). Le résultat de « CI OK » est donc testé explicitement.
+    # sauter le déploiement alors que « CI OK » était vert (#262 et d'autres n'ont pas été déployés
+    # quand un filtre de chemins sautait des jobs). Le résultat de « CI OK » est donc testé explicitement.
     needs: [ci-ok]
     # Branche de déploiement du staging, protégée : on y arrive par PR. Cf. docs/exploitation/deploiement.md § Staging.
     if: ${{ always() && needs.ci-ok.result == 'success' && github.ref == 'refs/heads/env/staging' && github.event_name == 'push' }}

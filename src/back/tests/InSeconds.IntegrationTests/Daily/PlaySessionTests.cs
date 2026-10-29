@@ -6,7 +6,7 @@ using static InSeconds.IntegrationTests.Daily.DailyApi;
 namespace InSeconds.IntegrationTests.Daily;
 
 /// <summary>
-/// Jouer une partie (E2) : écouter, demander un indice, répondre, abandonner. Le verrou du morceau (piège 35), le plancher d'écoute, le score,
+/// Jouer une partie : écouter, demander un indice, répondre, abandonner. Le verrou du morceau (piège 35), le plancher d'écoute, le score,
 /// l'indice payé, la fin de partie sur le nombre réel de morceaux (piège 38).
 /// </summary>
 public class PlaySessionTests(PostgresFixture postgres) : IAsyncLifetime
@@ -355,7 +355,7 @@ public class PlaySessionTests(PostgresFixture postgres) : IAsyncLifetime
         await GameAsserts.ProblemAsync(await _alice.StartRawAsync(), HttpStatusCode.Conflict, "daily.abandoned");
     }
 
-    // --- le renommage d'un morceau du défi du jour (PR v1 #246) ---
+    // --- le renommage d'un morceau du défi du jour (#246) ---
 
     [Fact]
     public async Task Renommage_LesReponsesDejaDonneesGardentLeurVerdict_LesSuivantesSontCorrigeesAvecLeNouveauNom()

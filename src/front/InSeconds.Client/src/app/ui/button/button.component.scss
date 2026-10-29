@@ -1,23 +1,29 @@
+// Une valeur par propriété, celle du bouton principal de l'accueil : hauteur fixée par taille (`min-height`, bordure comprise),
+// capitales espacées de 0,06 em, enfoncement à 95 % au clic.
 :host {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
+  min-height: 3rem;
+  padding: 0.5rem 1.25rem;
   border-radius: var(--radius-button);
   border: 1px solid transparent;
   font-family: var(--font-display);
   font-size: 0.875rem;
+  line-height: 1.25rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
+  text-align: center;
   text-transform: uppercase;
   text-decoration: none;
   cursor: pointer;
+  touch-action: manipulation;
   transition: transform 120ms ease, opacity 120ms ease, box-shadow 120ms ease;
 }
 
 :host:active:not(:disabled) {
-  transform: scale(0.97);
+  transform: scale(0.95);
 }
 
 :host:focus-visible {
@@ -36,7 +42,8 @@
   color: var(--text-on-primary);
 }
 
-:host(.app-button--primary:hover:not(:disabled)) {
+:host(.app-button--primary:hover:not(:disabled)),
+:host(.app-button--glow) {
   box-shadow: var(--glow-primary);
 }
 
@@ -44,6 +51,13 @@
   background: var(--bg-surface);
   color: var(--text-hi);
   border-color: var(--border-strong);
+}
+
+// Action sans sens propre (Passer, Abandonner, Plus tard…) : contour neutre, sans fond.
+:host(.app-button--neutral) {
+  background: transparent;
+  color: var(--text-hi);
+  border: 1.5px solid var(--border-neutral);
 }
 
 :host(.app-button--danger) {
@@ -65,8 +79,18 @@
 }
 
 :host(.app-button--sm) {
+  min-height: 0;
   padding: 0.5rem 0.875rem;
   font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+// Bouton principal d'un écran (Commencer, Reprendre, Lancer une partie…).
+:host(.app-button--lg) {
+  min-height: 3.75rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  line-height: 1.5rem;
 }
 
 :host(.app-button--block) {

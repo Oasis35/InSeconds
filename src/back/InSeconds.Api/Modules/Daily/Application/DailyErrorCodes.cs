@@ -1,6 +1,6 @@
 namespace InSeconds.Api.Modules.Daily.Application;
 
-/// <summary>Codes d'erreur du défi du jour, côté joueur (préfixe <c>daily.</c>, § 5.6 du plan v2) ; ceux de l'admin sont dans <see cref="DailyAdminErrorCodes"/>. Ne jamais renommer un code publié.</summary>
+/// <summary>Codes d'erreur du défi du jour, côté joueur (préfixe <c>daily.</c>) ; ceux de l'admin sont dans <see cref="DailyAdminErrorCodes"/>. Ne jamais renommer un code publié.</summary>
 public static class DailyErrorCodes
 {
     /// <summary>Pas de défi aujourd'hui et le pool ne permet pas d'en générer un.</summary>
@@ -34,7 +34,7 @@ public static class DailyErrorCodes
 }
 
 /// <summary>
-/// Codes d'erreur des routes et tâches **admin** du défi du jour (préfixe <c>admin.</c>, § 5.6 du plan v2). Ne jamais renommer un code publié.
+/// Codes d'erreur des routes et tâches **admin** du défi du jour (préfixe <c>admin.</c>). Ne jamais renommer un code publié.
 /// </summary>
 public static class DailyAdminErrorCodes
 {

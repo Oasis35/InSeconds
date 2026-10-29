@@ -5,7 +5,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using OpenTelemetry;
-using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -13,7 +12,7 @@ using OpenTelemetry.Trace;
 namespace InSeconds.Infrastructure.Observability;
 
 /// <summary>
-/// Logs, traces et métriques en OpenTelemetry standard (OTLP), comme en v1. L'outil qui reçoit les
+/// Logs, traces et métriques en OpenTelemetry standard (OTLP). L'outil qui reçoit les
 /// données n'est jamais nommé dans le code : il se choisit par les variables
 /// <c>OTEL_EXPORTER_OTLP_*</c>. Sans <c>OTEL_EXPORTER_OTLP_ENDPOINT</c>, rien n'est exporté (dev,
 /// CI, tests), mais l'instrumentation tourne quand même pour que le <c>traceId</c> existe partout.

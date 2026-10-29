@@ -14,7 +14,7 @@ export interface ConfirmDialogData {
 }
 
 /**
- * Confirmation en panneau bas (remplace `ConfirmSheetComponent` de la v1). Le bouton
+ * Confirmation en panneau bas. Le bouton
  * d'annulation, mis en avant, reçoit le focus : Entrée par réflexe ne détruit rien.
  */
 @Component({

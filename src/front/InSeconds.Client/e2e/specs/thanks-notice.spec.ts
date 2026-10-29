@@ -22,7 +22,7 @@ async function forgetOnNextLoad(page: Page): Promise<void> {
   await page.evaluate(() => sessionStorage.setItem('thanks-e2e-forget', '1'));
 }
 
-test.describe('Message de remerciement (v2)', () => {
+test.describe('Message de remerciement', () => {
   test.beforeEach(async ({ api }) => {
     await api.reset();
   });

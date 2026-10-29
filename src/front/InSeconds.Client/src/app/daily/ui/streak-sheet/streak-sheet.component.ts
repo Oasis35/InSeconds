@@ -4,6 +4,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { Streak, isFreezeStockFull, isStreakProtected, pluralKey, toUtcDate } from '../../domain/streak';
 import { StreakIconComponent } from '../streak-icon/streak-icon.component';
 import { FreezeCellsComponent } from '../freeze-cells/freeze-cells.component';
+import { ButtonComponent } from '../../../ui/button/button.component';
 
 export type StreakSheetVariant = 'linked' | 'protected' | 'guest';
 
@@ -31,7 +32,7 @@ interface FriezeDay {
  */
 @Component({
   selector: 'app-streak-sheet',
-  imports: [TranslatePipe, StreakIconComponent, FreezeCellsComponent],
+  imports: [TranslatePipe, StreakIconComponent, FreezeCellsComponent, ButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './streak-sheet.component.html',
 })

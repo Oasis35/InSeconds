@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace InSeconds.Infrastructure.Http;
 
 /// <summary>
-/// CORS de l'API, repris de la v1 : le front appelle l'API sur un autre sous-domaine
+/// CORS de l'API : le front appelle l'API sur un autre sous-domaine
 /// (<c>dev.inseconds.cc</c> → <c>api-dev.inseconds.cc</c> en staging), avec le cookie. Origines
 /// autorisées dans <see cref="AllowedOriginsKey"/>, aucune par défaut : en développement et en E2E,
 /// le front passe par le proxy d'<c>ng serve</c>, donc par la même origine que l'API.

@@ -11,7 +11,7 @@ import { EnvBannerComponent } from './ui/env-banner/env-banner.component';
 import { ModalService } from './ui/modal/modal.service';
 import { ToastHostComponent } from './ui/toast/toast-host.component';
 
-/** Drapeaux posés par les tests E2E (`addInitScript`), repris de la v1. */
+/** Drapeaux posés par les tests E2E (`addInitScript`). */
 interface E2EFlags {
   /** Coupe les animations (sous `page.clock` figée, une animation en cours peut masquer un élément). */
   __disableAnimations?: boolean;

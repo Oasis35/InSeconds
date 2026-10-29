@@ -190,6 +190,10 @@ $RECYCLE.BIN/
 .docker/
 
 # ---------------------------------------------------------------
-# Claude Code / outils locaux
+# Claude Code : hooks, sous-agents et réglages partagés versionnés,
+# le reste (settings.local.json, caches) reste local
 # ---------------------------------------------------------------
-.claude/
+.claude/*
+!.claude/settings.json
+!.claude/hooks/
+!.claude/agents/

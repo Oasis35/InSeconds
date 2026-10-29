@@ -4,6 +4,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { Streak, isStreakProtected, pluralKey } from '../../domain/streak';
 import { StreakIconComponent } from '../streak-icon/streak-icon.component';
 import { StreakPillComponent } from '../streak-pill/streak-pill.component';
+import { ButtonComponent } from '../../../ui/button/button.component';
 
 /**
  * Accueil du défi du jour : la date, le titre, le nombre de morceaux, le chiffre à battre (le record du joueur, sinon la médiane d'hier),
@@ -11,7 +12,7 @@ import { StreakPillComponent } from '../streak-pill/streak-pill.component';
  */
 @Component({
   selector: 'app-welcome-screen',
-  imports: [TranslatePipe, RouterLink, StreakIconComponent, StreakPillComponent],
+  imports: [TranslatePipe, RouterLink, ButtonComponent, StreakIconComponent, StreakPillComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './welcome-screen.component.html',
   // L'hôte doit occuper la hauteur restante de <main> (flex-col) pour que le

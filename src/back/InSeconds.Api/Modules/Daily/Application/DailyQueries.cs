@@ -10,7 +10,7 @@ public sealed record TodayRow(int ChallengeId, int TracksCount, SessionStatus? S
 /// <summary>Les colonnes de la série, pour calculer la série effective sans charger l'entité.</summary>
 public sealed record StreakRow(int CurrentStreak, DateOnly? LastPlayedDate, int Freezes);
 
-/// <summary>Lectures du module Daily, en projections directes (§ 5.3 du plan v2).</summary>
+/// <summary>Lectures du module Daily, en projections directes.</summary>
 public interface IDailyQueries
 {
     /// <summary>Le défi de ce jour et, si un joueur est donné, sa partie et sa série ; rien s'il n'y a pas de défi.</summary>

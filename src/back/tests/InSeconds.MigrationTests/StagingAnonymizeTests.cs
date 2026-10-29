@@ -1,8 +1,8 @@
 namespace InSeconds.MigrationTests;
 
 /// <summary>
-/// Anonymisation du staging (<c>deploy/vps/staging-anonymize.sql</c>, S8 et § 10.1 du plan v2), lancée par <c>copy-prod-db-to-staging.sh</c>
-/// après la copie des schémas v2 de la prod (I1, #235) : aucune adresse ni aucun rôle admin de la prod ne reste, sauf ceux de l'adresse
+/// Anonymisation du staging (<c>deploy/vps/staging-anonymize.sql</c>, S8), lancée par <c>copy-prod-db-to-staging.sh</c>
+/// après la copie des schémas des modules de la prod : aucune adresse ni aucun rôle admin de la prod ne reste, sauf ceux de l'adresse
 /// gardée, les pseudos sont remplacés, et la file de Wolverine est vidée, messages en erreur compris (ils gardent le corps du message, une adresse pour un lien de connexion).
 /// </summary>
 public class StagingAnonymizeTests(ScriptDatabase database)

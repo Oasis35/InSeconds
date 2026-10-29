@@ -4,9 +4,9 @@ using System.Text;
 namespace InSeconds.Api.Modules.Players.Domain;
 
 /// <summary>
-/// Le secret d'un lien envoyé par email, calculé comme en v1 (<c>MagicLinkTokenGenerator</c>) :
+/// Le secret d'un lien envoyé par email, calculé ainsi :
 /// 32 octets aléatoires en base64url, et SHA-256 de ce texte en UTF-8 comme hash. Seul le hash est
-/// stocké ; le v1 le gardait en hexadécimal, l'import le convertit en octets (R14).
+/// stocké, en octets.
 /// </summary>
 public static class AuthTokenSecret
 {

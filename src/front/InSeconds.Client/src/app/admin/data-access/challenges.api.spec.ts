@@ -17,7 +17,7 @@ describe('ChallengesApi', () => {
   }) as unknown as AdminChallengeStats;
 
   function setup(client: Partial<Record<keyof DailyClient, unknown>>) {
-    TestBed.configureTestingModule({ providers: [{ provide: DailyClient, useValue: client }] });
+    TestBed.configureTestingModule({ providers: [ChallengesApi, { provide: DailyClient, useValue: client }] });
     return TestBed.inject(ChallengesApi);
   }
 

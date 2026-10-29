@@ -21,7 +21,7 @@ public sealed class RateLimitingOptions
 public static class RateLimitingServiceCollectionExtensions
 {
     /// <summary>
-    /// Limites par IP réelle (voir <c>TrustedProxyNetworks</c>), les mêmes qu'en v1, ou par joueur pour les
+    /// Limites par IP réelle (voir <c>TrustedProxyNetworks</c>), ou par joueur pour les
     /// routes d'un joueur identifié (S11 : changement d'email, révocation d'appareils).
     /// </summary>
     internal static readonly IReadOnlyDictionary<string, (int PermitLimit, TimeSpan Window, PartitionBy By)> Limits =

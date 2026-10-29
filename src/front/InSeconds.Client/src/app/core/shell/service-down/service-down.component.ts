@@ -4,7 +4,7 @@ import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-bac
 
 /**
  * Overlay plein écran quand l'API ne répond plus (panne ou redéploiement). Bloque l'interaction
- * et disparaît seul dès que `HealthService` voit l'API revenir. Repris de la v1.
+ * et disparaît seul dès que `HealthService` voit l'API revenir.
  */
 @Component({
   selector: 'app-service-down',

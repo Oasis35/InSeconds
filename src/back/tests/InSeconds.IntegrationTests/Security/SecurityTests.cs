@@ -8,7 +8,7 @@ namespace InSeconds.IntegrationTests.Security;
 /// <summary>
 /// Filet de sécurité sur toutes les routes réservées aux admins (<c>/api/admin</c> et <c>/jobs</c>) :
 /// la liste est lue dans l'API elle-même, donc une route ajoutée plus tard est vérifiée sans toucher
-/// à ce fichier. Les tests de sécurité propres à chaque module (S1 à S16) sont dans les dossiers des modules
+/// à ce fichier. Les tests de sécurité propres à chaque module (S1 à S16, définis dans src/back/CLAUDE.md) sont dans les dossiers des modules
 /// (ex. <c>Players/MagicLinkTests</c> pour S1, S2 et S5), nommés par leur numéro.
 /// </summary>
 public partial class SecurityTests(PostgresFixture postgres) : IAsyncLifetime

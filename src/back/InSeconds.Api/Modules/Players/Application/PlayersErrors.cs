@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace InSeconds.Api.Modules.Players.Application;
 
-/// <summary>Codes d'erreur du module Players (§ 5.6 du plan v2). Ne jamais renommer un code publié.</summary>
+/// <summary>Codes d'erreur du module Players. Ne jamais renommer un code publié.</summary>
 public static class PlayersErrorCodes
 {
     public const string InvalidOrExpiredToken = "players.invalid_or_expired_token";
@@ -44,8 +44,8 @@ internal static class PlayersProblems
 }
 
 /// <summary>
-/// Événements du parcours joueur du module, mêmes identifiants et messages qu'en v1
-/// (<c>PlayerActionLog</c>) : les tableaux de bord existants restent valables. Jamais d'email ni de pseudo.
+/// Événements du parcours joueur du module, aux identifiants et aux messages stables :
+/// les tableaux de bord Grafana les lisent. Jamais d'email ni de pseudo.
 /// </summary>
 internal static partial class PlayersLog
 {

@@ -36,9 +36,7 @@
       <p class="m-0 text-[13px] leading-relaxed" style="color:var(--text-muted)">
         {{ 'daily.streakFreeze.sheet.rule' | translate: { every: streak().freezeEveryDays, max: streak().maxFreezes } }}
       </p>
-      <button type="button" (click)="finish('close')"
-              class="w-full rounded-(--radius-button) text-xs font-bold uppercase cursor-pointer"
-              style="min-height:46px;font-family:var(--font-display);letter-spacing:.06em;border:1px solid rgb(var(--rgb-border) / 0.3);background:rgb(var(--rgb-panel) / 0.6);color:var(--text-hi)">
+      <button appButton type="button" variant="neutral" [block]="true" (click)="finish('close')">
         {{ 'daily.streakFreeze.sheet.close' | translate }}
       </button>
     }
@@ -80,14 +78,10 @@
         <strong class="font-semibold" style="color:var(--text-hi)">{{ 'daily.streakFreeze.sheet.protectedUse.' + missedKey | translate: { missed: streak().missedDays } }}</strong>
       </p>
       <div class="flex flex-col gap-2.5">
-        <button type="button" (click)="finish('playNow')"
-                class="w-full rounded-(--radius-button) font-bold uppercase cursor-pointer"
-                style="min-height:50px;font-family:var(--font-display);font-size:15px;letter-spacing:.08em;color:var(--text-on-primary);background:var(--gradient-primary);box-shadow:var(--glow-primary)">
+        <button appButton type="button" [block]="true" [glow]="true" (click)="finish('playNow')">
           {{ 'daily.streakFreeze.sheet.playNow' | translate }}
         </button>
-        <button type="button" (click)="finish('close')"
-                class="w-full rounded-(--radius-button) text-xs font-bold uppercase cursor-pointer"
-                style="min-height:46px;font-family:var(--font-display);letter-spacing:.06em;border:1px solid rgb(var(--rgb-border) / 0.3);background:rgb(var(--rgb-panel) / 0.6);color:var(--text-hi)">
+        <button appButton type="button" variant="neutral" [block]="true" (click)="finish('close')">
           {{ 'daily.streakFreeze.sheet.later' | translate }}
         </button>
       </div>
@@ -104,14 +98,10 @@
         {{ 'daily.streakFreeze.sheet.guestFreeze' | translate }}
       </p>
       <div class="flex flex-col gap-2.5">
-        <button type="button" (click)="finish('signup')"
-                class="w-full rounded-(--radius-button) font-bold uppercase cursor-pointer"
-                style="min-height:50px;font-family:var(--font-display);font-size:15px;letter-spacing:.08em;color:var(--text-on-primary);background:var(--gradient-primary);box-shadow:var(--glow-primary)">
+        <button appButton type="button" [block]="true" [glow]="true" (click)="finish('signup')">
           {{ 'daily.streakFreeze.sheet.signup' | translate }}
         </button>
-        <button type="button" (click)="finish('close')"
-                class="w-full rounded-(--radius-button) text-xs font-bold uppercase cursor-pointer"
-                style="min-height:46px;font-family:var(--font-display);letter-spacing:.06em;border:1px solid rgb(var(--rgb-border) / 0.3);background:rgb(var(--rgb-panel) / 0.6);color:var(--text-hi)">
+        <button appButton type="button" variant="neutral" [block]="true" (click)="finish('close')">
           {{ 'daily.streakFreeze.sheet.later' | translate }}
         </button>
       </div>

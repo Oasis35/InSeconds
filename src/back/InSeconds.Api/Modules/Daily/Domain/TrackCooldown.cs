@@ -2,7 +2,7 @@ namespace InSeconds.Api.Modules.Daily.Domain;
 
 /// <summary>
 /// Le cooldown des morceaux, **déduit de la taille du pool** (#275) : une part du pool jouable reste bloquée, celle des derniers défis.
-/// Un morceau tiré le jour J n'est de nouveau tirable qu'à partir de J + cooldown + 1 (règle de la v1, <c>LastUsedDate &lt; jour − cooldown</c>).
+/// Un morceau tiré le jour J n'est de nouveau tirable qu'à partir de J + cooldown + 1 (dernier usage &lt; jour − cooldown).
 /// Le pool ne bloque donc jamais plus de cette part : le reste est toujours tirable, et un défi se génère tant qu'il reste assez de morceaux.
 /// </summary>
 public static class TrackCooldown

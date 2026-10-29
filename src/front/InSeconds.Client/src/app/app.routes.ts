@@ -4,7 +4,7 @@ import { RedirectFunction, Router, Routes } from '@angular/router';
 /**
  * Redirection qui garde la query string et le fragment : un lien magique
  * (`/login/verify?token=…`) ou l'avis d'ancienne adresse (`?from=legacy`) survivent au passage
- * vers les routes v2 (§ 6.6 du plan v2).
+ * vers les routes actuelles.
  */
 export function redirectKeepingQuery(target: string): RedirectFunction {
   return ({ queryParams, fragment }) =>
@@ -15,7 +15,7 @@ export const routes: Routes = [
   // Tant que le mode Runs n'est pas public, l'accueil est le défi du jour.
   { path: '', pathMatch: 'full', redirectTo: redirectKeepingQuery('/daily') },
 
-  // Anciennes adresses de la v1 : tous les liens existants (partages, favoris, emails) restent valables.
+  // Anciennes adresses : tous les liens existants (partages, favoris, emails) restent valables.
   { path: 'blindtest', pathMatch: 'full', redirectTo: redirectKeepingQuery('/daily') },
   { path: 'login', pathMatch: 'full', redirectTo: redirectKeepingQuery('/account/login') },
   { path: 'login/verify', pathMatch: 'full', redirectTo: redirectKeepingQuery('/account/login/verify') },

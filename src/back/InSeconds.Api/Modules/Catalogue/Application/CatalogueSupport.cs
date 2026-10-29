@@ -1,11 +1,11 @@
 using InSeconds.Api.Infrastructure.Errors;
-using InSeconds.Api.Modules.Catalogue.Contracts;
 using InSeconds.Api.Modules.Catalogue.Domain;
+using InSeconds.Deezer;
 using Microsoft.AspNetCore.Mvc;
 
 namespace InSeconds.Api.Modules.Catalogue.Application;
 
-/// <summary>Codes d'erreur du module Catalogue (§ 5.6 du plan v2). Ne jamais renommer un code publié.</summary>
+/// <summary>Codes d'erreur du module Catalogue. Ne jamais renommer un code publié.</summary>
 public static class CatalogueErrorCodes
 {
     public const string TrackInUse = "catalogue.track_in_use";
@@ -33,7 +33,7 @@ internal static class CatalogueProblems
     public static ProblemDetails DuplicateDeezerId() =>
         ApiProblem.Of(StatusCodes.Status409Conflict, CatalogueErrorCodes.DuplicateDeezerId, "Un morceau du pool a déjà cet identifiant Deezer.");
 
-    /// <summary>Un identifiant que Deezer ne connaît pas : comme en v1, 422 (la requête est bien formée, son contenu inexploitable).</summary>
+    /// <summary>Un identifiant que Deezer ne connaît pas : 422 (la requête est bien formée, son contenu inexploitable).</summary>
     public static ProblemDetails NotFoundOnDeezer() =>
         ApiProblem.Of(StatusCodes.Status422UnprocessableEntity, CatalogueErrorCodes.NotFoundOnDeezer, "Ce morceau est introuvable chez Deezer.");
 
@@ -41,7 +41,7 @@ internal static class CatalogueProblems
         ApiProblem.Of(StatusCodes.Status503ServiceUnavailable, CatalogueErrorCodes.DeezerUnavailable, "Deezer est momentanément indisponible, réessaie.");
 }
 
-/// <summary>Réglages du module, relus à chaud depuis <c>infra.settings</c> (§ 4.6 du plan v2).</summary>
+/// <summary>Réglages du module, relus à chaud depuis <c>infra.settings</c>.</summary>
 public sealed class CatalogueOptions
 {
     public const string Section = "Catalogue";
@@ -100,9 +100,26 @@ internal static class TrackMapping
         track.ReleaseYear, track.DeezerRank, Name(track.PreviewStatus), track.IsDisabled);
 
     /// <summary>L'état de l'extrait et l'identité d'un morceau lus chez Deezer, tels que le pool les garde.</summary>
-    public static TrackMetadata ToMetadata(InSeconds.Deezer.DeezerTrack track) => new(
+    public static TrackMetadata ToMetadata(DeezerTrack track) => new(
         track.DeezerTrackId, track.Artist, track.Title, track.CoverHash, ToYear(track.ReleaseYear), track.Rank,
         string.IsNullOrEmpty(track.PreviewUrl) ? PreviewStatus.Missing : PreviewStatus.Available, track.AlbumId);
+
+    /// <summary>
+    /// Les genres de l'album lu à l'ajout ou à l'actualisation d'un morceau. Album supprimé chez Deezer : sans genre, et inutile de le
+    /// redemander. Album non lu ou Deezer indisponible : rien ne change, le contrôle nocturne rattrape.
+    /// </summary>
+    public static async Task RecordAlbumGenresAsync(Track track, AlbumLookup? album, ICatalogueStore store, DateTimeOffset now, CancellationToken ct)
+    {
+        switch (album)
+        {
+            case AlbumLookup.Found found:
+                track.RecordGenres(await store.EnsureGenresAsync([.. found.Genres.Select(g => new GenreRef(g.Id, g.Name))], ct), now);
+                break;
+            case AlbumLookup.NotFound:
+                track.RecordGenres([], now);
+                break;
+        }
+    }
 
     // La colonne est un smallint : une année absurde est ignorée plutôt que de faire échouer l'ajout.
     private static short? ToYear(int? year) => year is >= 1 and <= short.MaxValue ? (short)year.Value : null;

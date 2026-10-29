@@ -7,7 +7,7 @@ using Microsoft.Extensions.Diagnostics.Metrics.Testing;
 namespace InSeconds.IntegrationTests.Players;
 
 /// <summary>
-/// Tâche <c>players-purge-expired-tokens</c>, appelée directement (§ 5.4 bis du plan v2) : les durées de conservation des données des joueurs
+/// Tâche <c>players-purge-expired-tokens</c>, appelée directement : les durées de conservation des données des joueurs
 /// (<see cref="PlayerRetention"/>).
 /// </summary>
 public class PlayersPurgeTests(PostgresFixture postgres) : IAsyncLifetime

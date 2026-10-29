@@ -11,12 +11,11 @@ public sealed class EfPlayerDirectory(InSecondsDbContext db) : IPlayerDirectory
         db.Set<Account>().AnyAsync(a => a.PlayerId == playerId, ct);
 
     public Task<bool> ExistsAsync(Guid playerId, CancellationToken ct) =>
-        db.Set<Player>().AsNoTracking().AnyAsync(p => p.Id == playerId && p.DeletedAt == null, ct);
+        db.Set<Player>().AsNoTracking().AnyAsync(p => p.Id == playerId, ct);
 
     public async Task<IReadOnlyList<AccountSummary>> ListAccountsAsync(CancellationToken ct) =>
         await (from a in db.Set<Account>().AsNoTracking()
                join p in db.Set<Player>().AsNoTracking() on a.PlayerId equals p.Id
-               where p.DeletedAt == null
                orderby p.LastSeenAt == null, p.LastSeenAt descending, p.CreatedAt descending
                select new AccountSummary(a.PlayerId, a.Pseudo, a.Email, p.CreatedAt, p.LastSeenAt, a.IsAdmin))
             .ToListAsync(ct);
@@ -28,11 +27,9 @@ public sealed class EfPlayerDirectory(InSecondsDbContext db) : IPlayerDirectory
             return new Dictionary<Guid, string>();
 
         var ids = playerIds.Distinct().ToList();
-        return await (from a in db.Set<Account>().AsNoTracking()
-                      join p in db.Set<Player>().AsNoTracking() on a.PlayerId equals p.Id
-                      where p.DeletedAt == null && ids.Contains(a.PlayerId)
-                      select new { a.PlayerId, a.Pseudo })
-            .ToDictionaryAsync(x => x.PlayerId, x => x.Pseudo, ct);
+        return await db.Set<Account>().AsNoTracking()
+            .Where(a => ids.Contains(a.PlayerId))
+            .ToDictionaryAsync(a => a.PlayerId, a => a.Pseudo, ct);
     }
 
     public async Task<PlayerBreakdown> GetBreakdownAsync(DateTimeOffset now, CancellationToken ct)
@@ -41,7 +38,6 @@ public sealed class EfPlayerDirectory(InSecondsDbContext db) : IPlayerDirectory
         var since30 = now.AddDays(-30);
 
         var counts = await (from p in db.Set<Player>().AsNoTracking()
-                            where p.DeletedAt == null
                             join a in db.Set<Account>().AsNoTracking() on p.Id equals a.PlayerId into accounts
                             from account in accounts.DefaultIfEmpty()
                             group new { p.LastSeenAt, HasAccount = account != null } by 1 into g

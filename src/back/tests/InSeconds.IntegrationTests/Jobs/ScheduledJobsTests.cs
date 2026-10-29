@@ -9,7 +9,7 @@ namespace InSeconds.IntegrationTests.Jobs;
 public class ScheduledJobsTests(PostgresFixture postgres)
 {
     /// <summary>
-    /// Les tâches récurrentes de l'API et leur cron par défaut (tableau du § 5.4 bis du plan v2).
+    /// Les tâches récurrentes de l'API et leur cron par défaut (tableau « Tâches planifiées » du CLAUDE.md racine).
     /// Chaque module ajoute ici les siennes.
     /// </summary>
     private static readonly Dictionary<string, string> ExpectedJobs = new()
@@ -85,7 +85,7 @@ public class ScheduledJobsTests(PostgresFixture postgres)
     public async Task PlusieursApiDansLeMemeProcessus_NEmpilentPasLeFiltreDeTrace()
     {
         // Les filtres de Hangfire sont globaux au processus : un par API de test ferait déborder la pile du
-        // serveur de tâches quand beaucoup d'API ont été créées avant (constat C1).
+        // serveur de tâches quand beaucoup d'API ont été créées avant.
         await using var first = new ApiFactory(await postgres.CreateDatabaseAsync());
         await using var second = new ApiFactory(await postgres.CreateDatabaseAsync());
         _ = first.Services;

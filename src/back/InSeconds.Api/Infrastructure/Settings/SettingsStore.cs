@@ -17,7 +17,7 @@ internal sealed class SettingsReloader(DatabaseSettingsConfigurationSource sourc
 
 /// <summary>
 /// Écrit un réglage puis relit la configuration : la nouvelle valeur est visible tout de suite par
-/// les <c>IOptionsMonitor</c>, sans redémarrage (constat R13 de la relecture du plan v2).
+/// les <c>IOptionsMonitor</c>, sans redémarrage.
 /// </summary>
 public sealed class SettingsStore(InSecondsDbContext db, ISettingsReloader reloader, TimeProvider time)
 {

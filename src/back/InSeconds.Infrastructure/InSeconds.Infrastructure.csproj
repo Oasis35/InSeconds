@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Adaptateurs transverses (§ 5.1 du plan v2) : emails, OpenTelemetry, réseau, rate limiting,
+  <!-- Adaptateurs transverses : emails, OpenTelemetry, réseau, rate limiting,
        en-têtes HTTP. Ne connaît aucun module ni l'API. -->
   <PropertyGroup>
     <RootNamespace>InSeconds.Infrastructure</RootNamespace>

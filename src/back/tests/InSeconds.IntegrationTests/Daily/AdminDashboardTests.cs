@@ -5,7 +5,7 @@ using static InSeconds.IntegrationTests.Daily.DailyApi;
 
 namespace InSeconds.IntegrationTests.Daily;
 
-/// <summary>Le tableau de bord de l'admin (F1, v1 : <c>GET /api/admin/stats</c>) : activité, joueurs, jours disponibles et chiffres d'un jour.</summary>
+/// <summary>Le tableau de bord de l'admin : activité, joueurs, jours disponibles et chiffres d'un jour.</summary>
 public class AdminDashboardTests(PostgresFixture postgres) : IAsyncLifetime
 {
     private const string Route = "/api/admin/daily/dashboard";
@@ -127,7 +127,7 @@ public class AdminDashboardTests(PostgresFixture postgres) : IAsyncLifetime
         var bob = await _game.NewPlayerAsync("Bob");
         await _game.AddSessionAsync(alice.Id, Today, 1, (1m, true, true, false, 850));
         await _game.AddSessionAsync(bob.Id, Today, 1, (1m, true, true, false, 850));
-        await _game.DeletePlayerAsync(bob.Id);
+        await _game.ErasePlayerAsync(bob.Id);
 
         var dashboard = await ReadAsync();
 
@@ -150,7 +150,7 @@ public class AdminDashboardTests(PostgresFixture postgres) : IAsyncLifetime
         await SetLastSeenAsync(accountRecent.Id, now.AddDays(-6));
         await SetLastSeenAsync(accountMonth.Id, now.AddDays(-20));
         await SetLastSeenAsync(deleted.Id, now);
-        await _game.DeletePlayerAsync(deleted.Id);
+        await _game.ErasePlayerAsync(deleted.Id);
 
         var breakdown = (await ReadAsync()).PlayerBreakdown;
 

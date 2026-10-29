@@ -24,7 +24,7 @@ public class MigrateOnlyTests(PostgresFixture postgres)
         Assert.Equal(0, exitCode);
         Assert.Equal(MigrationCount, await CountAsync(connectionString, "SELECT count(*) FROM infra.__ef_migrations_history"));
         Assert.Equal(0L, await CountAsync(connectionString, "SELECT count(*) FROM infra.settings"));
-        // Ni Wolverine ni Hangfire n'ont démarré : ils créent leurs schémas au démarrage de l'API (E3).
+        // Ni Wolverine ni Hangfire n'ont démarré : ils créent leurs schémas au démarrage de l'API.
         Assert.Equal(0L, await CountAsync(connectionString,
             "SELECT count(*) FROM information_schema.schemata WHERE schema_name IN ('messaging', 'jobs')"));
     }

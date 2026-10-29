@@ -7,7 +7,7 @@ import { WeeklyRecap, WeeklyTrack } from '../domain/weekly-story';
  * Adaptateur du récap hebdomadaire (`api/daily`) : seule porte d'entrée vers le client généré.
  * Erreurs de l'API : `admin.invalid_date`, `admin.invalid_period` (400), lues par `toAppError`.
  */
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class WeeklyStoryApi {
   private readonly client = inject(DailyClient);
 

@@ -6,7 +6,7 @@ using static InSeconds.IntegrationTests.Daily.DailyApi;
 namespace InSeconds.IntegrationTests.Daily;
 
 /// <summary>
-/// L'onglet Joueurs de l'admin (F1, v1 : <c>GET /api/admin/players</c> et <c>GET /api/admin/players/{id}/history</c>) : les comptes inscrits avec leur
+/// L'onglet Joueurs de l'admin : les comptes inscrits avec leur
 /// série effective, et l'historique des 30 derniers jours d'un joueur.
 /// </summary>
 public class AdminPlayersTests(PostgresFixture postgres) : IAsyncLifetime
@@ -46,7 +46,7 @@ public class AdminPlayersTests(PostgresFixture postgres) : IAsyncLifetime
         await _game.NewPlayerAsync();
         var alice = await _game.NewPlayerAsync("Alice");
         var gone = await _game.NewPlayerAsync("Gone");
-        await _game.DeletePlayerAsync(gone.Id);
+        await _game.ErasePlayerAsync(gone.Id);
 
         var players = await ListAsync();
 
@@ -199,7 +199,7 @@ public class AdminPlayersTests(PostgresFixture postgres) : IAsyncLifetime
         await GameAsserts.ProblemAsync(await _game.App.Admin().GetAsync(HistoryRoute(Guid.NewGuid()), Ct), HttpStatusCode.NotFound, "common.not_found");
 
         var gone = await _game.NewPlayerAsync("Gone");
-        await _game.DeletePlayerAsync(gone.Id);
+        await _game.ErasePlayerAsync(gone.Id);
         await GameAsserts.ProblemAsync(await _game.App.Admin().GetAsync(HistoryRoute(gone.Id), Ct), HttpStatusCode.NotFound, "common.not_found");
     }
 

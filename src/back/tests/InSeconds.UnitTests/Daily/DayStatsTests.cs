@@ -69,7 +69,7 @@ public class DayStatsTests
         // 2 battus sur 6 autres = 33 %.
         Assert.Equal(33, ScoreDistribution.BetterThanPercent([1, 1, 5, 9, 9, 9, 9], 5));
 
-    // --- les médianes de la v1 ---
+    // --- les médianes ---
 
     [Theory]
     [InlineData(new int[0], 0)]

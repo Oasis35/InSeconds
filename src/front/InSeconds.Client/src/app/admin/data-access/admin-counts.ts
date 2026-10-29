@@ -4,7 +4,7 @@ import { SessionStore } from '../../core/session/session.store';
 /**
  * Les effectifs que la barre des onglets de l'admin affiche (« Pool (55) », « Défis (30) », « Joueurs (12) »).
  * Chaque onglet les renseigne quand il a chargé ses données : **avant sa première ouverture le libellé
- * reste nu** (comme en v1, où rien n'est chargé tant que l'onglet n'est pas ouvert). Les pages sont
+ * reste nu** (rien n'est chargé tant que l'onglet n'est pas ouvert). Les pages sont
  * détruites quand on change d'onglet, la coquille reste : d'où un service de la racine. Les effectifs
  * appartiennent au compte connecté : ils sont oubliés dès que le joueur de la session change
  * (déconnexion, autre compte).

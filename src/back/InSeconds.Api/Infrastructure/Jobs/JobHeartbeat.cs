@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 namespace InSeconds.Api.Infrastructure.Jobs;
 
 /// <summary>
-/// Réglages de la surveillance des tâches par healthchecks.io (<c>Healthchecks:*</c>, § 5.4 bis du plan v2, #315).
+/// Réglages de la surveillance des tâches par healthchecks.io (<c>Healthchecks:*</c>, #315).
 /// Sans clé, rien n'est envoyé (dev, tests). Le staging a sa propre clé, celle d'un projet healthchecks.io séparé.
 /// </summary>
 public sealed class HealthchecksOptions

@@ -1,6 +1,6 @@
 using Hangfire;
-using InSeconds.Api.Infrastructure.Auth;
 using InSeconds.Api.Infrastructure.Jobs;
+using InSeconds.Api.Modules.Players.Auth;
 using InSeconds.Api.Modules.Players.Domain;
 using Wolverine;
 
@@ -62,7 +62,7 @@ public static class PlayersPurgeHandler
 }
 
 /// <summary>
-/// Tâche <c>players-purge-expired-tokens</c> (§ 5.4 bis du plan v2), chaque nuit à 3 h 30 UTC : les durées de conservation des données des
+/// Tâche <c>players-purge-expired-tokens</c>, chaque nuit à 3 h 30 UTC : les durées de conservation des données des
 /// joueurs. Trois étapes, chacune dans sa propre transaction (un compte effacé = une transaction) : jetons expirés, appareils qui ne
 /// peuvent plus servir, comptes inactifs depuis 3 ans. Une étape en échec n'empêche pas les suivantes ; la tâche échoue à la fin. Son
 /// identifiant n'a pas changé quand elle a reçu les deux dernières (contrôle healthchecks.io et historique de <c>/jobs</c> gardés).

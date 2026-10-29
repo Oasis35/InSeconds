@@ -8,7 +8,7 @@ using InSeconds.Api.Modules.Players.Persistence;
 namespace InSeconds.Api.Modules.Players;
 
 /// <summary>
-/// Module Players (§ 3.1 du plan v2) : identité, compte, appareils, connexion, rôle admin. Ses endpoints
+/// Module Players : identité, compte, appareils, connexion, rôle admin. Ses endpoints
 /// Wolverine.Http (<c>Application/</c>) sont découverts par Wolverine ; ses tables vivent dans le
 /// schéma <c>players</c>.
 /// </summary>

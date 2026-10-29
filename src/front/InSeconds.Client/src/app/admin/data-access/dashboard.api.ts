@@ -7,7 +7,7 @@ import { Dashboard, DayActivity, DayKpis } from '../domain/dashboard';
  * Adaptateur du tableau de bord de l'admin (module Daily) : seule porte d'entrée vers le client
  * généré. Rend des types du domaine, jours en texte `aaaa-mm-jj`.
  */
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class DashboardApi {
   private readonly client = inject(DailyClient);
 

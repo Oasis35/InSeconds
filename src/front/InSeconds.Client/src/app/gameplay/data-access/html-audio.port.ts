@@ -99,7 +99,7 @@ function isAbort(err: unknown): boolean {
 }
 
 /**
- * L'`AudioPort` sur un **élément audio HTML**, la mécanique du lecteur de la v1, rodée en prod
+ * L'`AudioPort` sur un **élément audio HTML**, rodé en prod
  * (décision du 13/10/2026, #309, après la recette sur iPhone de Howler). Aucune bibliothèque : un
  * seul élément `Audio` (`playsInline`) joue tous les extraits, en flux depuis le CDN de Deezer.
  *
@@ -117,7 +117,7 @@ function isAbort(err: unknown): boolean {
  * - Un échec donne `error`, jamais `idle` (piège 33) ; un échec de la lecture complète (après la
  *   révélation) donne `finished` : il n'y a plus rien à proposer au joueur.
  * - Le suivant est seulement annoncé au navigateur (`<link rel="preload" as="audio">`), une fois
- *   le courant prêt, comme en v1 : rien n'est décodé en mémoire.
+ *   le courant prêt : rien n'est décodé en mémoire.
  * - L'extrait est lu en flux : une adresse dont la signature expire en cours de route (piège 14)
  *   donne `error` ; la manche en redemande une fraîche d'elle-même une fois, puis par « Réessayer »
  *   (`refreshPreviewUrl`). L'échec d'une adresse déjà expirée n'est pas remonté (`isSignatureExpired`).
@@ -196,7 +196,7 @@ export class HtmlAudioPort extends AudioPort {
     if (state === 'loading') {
       this.pendingUntil = Math.max(this.pendingUntil ?? 0, seconds);
     } else if (state === 'ready' || state === 'finished') {
-      // Arrêté à un palier : la lecture repart du début jusqu'au nouveau palier (comme en v1).
+      // Arrêté à un palier : la lecture repart du début jusqu'au nouveau palier.
       this.start(seconds);
     } else if (state === 'playing' && seconds > this.until) {
       // Pendant la lecture : le son continue depuis la position atteinte, seul l'arrêt est repoussé.

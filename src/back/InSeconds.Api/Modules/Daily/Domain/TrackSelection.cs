@@ -11,7 +11,7 @@ public sealed record TrackSelection(IReadOnlyList<int> TrackIds, int EligibleCou
     public bool IsSufficient => EligibleCount >= Requested;
 }
 
-/// <summary>Choisit les morceaux d'un défi (§ 5.3 du plan v2). Un mode de plus peut avoir sa propre règle.</summary>
+/// <summary>Choisit les morceaux d'un défi. Un mode de plus peut avoir sa propre règle.</summary>
 public interface ITrackSelector
 {
     /// <param name="candidates">Les morceaux jouables.</param>
@@ -22,8 +22,8 @@ public interface ITrackSelector
 }
 
 /// <summary>
-/// Le tirage du défi du jour : retire les morceaux en cooldown, puis un Fisher-Yates à graine (<see cref="ISeededShuffle"/>,
-/// même algorithme que la v1). Les candidats sont d'abord triés par identifiant : **le défi ne dépend ni de l'ordre
+/// Le tirage du défi du jour : retire les morceaux en cooldown, puis un Fisher-Yates à graine (<see cref="ISeededShuffle"/>).
+/// Les candidats sont d'abord triés par identifiant : **le défi ne dépend ni de l'ordre
 /// dans lequel la base les rend, ni de leur éventuelle répétition**, seulement du pool et de la graine.
 /// </summary>
 public sealed class CooldownSeededSelector(ISeededShuffle shuffle) : ITrackSelector

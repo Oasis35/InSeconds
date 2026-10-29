@@ -1,7 +1,7 @@
 namespace InSeconds.Api.Infrastructure.Hosting;
 
 /// <summary>
-/// Adresse publique du front (<c>App:PublicUrl</c>, même clé qu'en v1), pour les liens envoyés par
+/// Adresse publique du front (<c>App:PublicUrl</c>), pour les liens envoyés par
 /// email : <c>https://inseconds.cc</c> en prod, <c>https://dev.inseconds.cc</c> en staging, le front
 /// local ailleurs.
 /// </summary>

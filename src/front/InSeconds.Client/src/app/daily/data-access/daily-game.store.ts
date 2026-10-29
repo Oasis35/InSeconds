@@ -59,9 +59,9 @@ const initialState: DailyState = {
 };
 
 /**
- * La partie du jour (§ 6.2 du plan v2) : l'écran affiché (`DailyScreen`, les transitions sont dans `domain/daily-screen`), la partie en cours,
+ * La partie du jour : l'écran affiché (`DailyScreen`, les transitions sont dans `domain/daily-screen`), la partie en cours,
  * les morceaux répondus, la série, les statistiques du jour. À fournir à la page (avec `TrackRoundStore`, qu'il pilote) : la route fournit
- * aussi le lecteur (`provideGameplay()`).
+ * aussi l'adaptateur de l'API (`provideDailyApi()`) et le lecteur (`provideGameplay()`).
  *
  * **Le son ne démarre que sur un clic du joueur** : `begin()` (« Commencer », « Reprendre ») et `nextTrack()` (« Piste suivante ») lancent la
  * manche ; jamais l'arrivée sur la route, un `effect` ni le retour de l'onglet au premier plan. Les navigateurs ne jouent un son qu'après un
@@ -341,7 +341,7 @@ export const DailyGameStore = signalStore(
       abandon,
 
       /**
-       * « Réessayer » sur l'écran « pas de défi ». La lecture de l'état du jour ne génère rien (§ 5.6 du plan v2) : si le défi manque encore, c'est
+       * « Réessayer » sur l'écran « pas de défi ». La lecture de l'état du jour ne génère rien : si le défi manque encore, c'est
        * le démarrage d'une partie qui le génère à la volée (secours de la tâche de minuit). Le joueur arrive donc directement dans la partie ;
        * un pool insuffisant ramène ici.
        */

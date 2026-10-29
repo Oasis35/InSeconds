@@ -4,6 +4,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { ShareButtonComponent } from '../../../gameplay/ui/share-button/share-button.component';
 import { RunFinish, finishSquares } from '../../domain/run';
 import { RunDiscComponent } from '../run-disc/run-disc.component';
+import { ButtonComponent } from '../../../ui/button/button.component';
 
 /**
  * La fin du run, victoire comme défaite : la carte du disque (le disque, son nom, « Nouveau record » ou le record, le score final, « 16 / 20
@@ -13,7 +14,7 @@ import { RunDiscComponent } from '../run-disc/run-disc.component';
  */
 @Component({
   selector: 'app-run-finish',
-  imports: [TranslatePipe, RouterLink, RunDiscComponent, ShareButtonComponent],
+  imports: [TranslatePipe, RouterLink, ButtonComponent, RunDiscComponent, ShareButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex-1 flex flex-col' },
   template: `
@@ -85,15 +86,11 @@ import { RunDiscComponent } from '../run-disc/run-disc.component';
       </section>
 
       @if (canPlayAgain()) {
-        <button type="button" (click)="playAgain.emit()" data-testid="run-play-again"
-          class="w-full py-3.5 rounded-(--radius-button) text-sm font-bold tracking-wide uppercase transition touch-manipulation"
-          style="font-family:var(--font-display);letter-spacing:0.06em;border:1.5px solid var(--border-neutral);color:var(--text-hi)">
+        <button appButton type="button" variant="neutral" [block]="true" (click)="playAgain.emit()" data-testid="run-play-again">
           {{ 'runs.finished.newGame' | translate }}
         </button>
       } @else {
-        <a routerLink="/daily" data-testid="run-to-daily"
-          class="w-full py-3.5 rounded-(--radius-button) text-sm font-bold tracking-wide uppercase text-center transition touch-manipulation"
-          style="font-family:var(--font-display);letter-spacing:0.06em;border:1.5px solid var(--border-neutral);color:var(--text-hi)">
+        <a appButton variant="neutral" [block]="true" routerLink="/daily" data-testid="run-to-daily">
           {{ 'runs.finished.toDaily' | translate }}
         </a>
       }

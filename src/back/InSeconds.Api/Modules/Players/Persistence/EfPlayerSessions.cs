@@ -21,11 +21,10 @@ public sealed class EfPlayerSessions(InSecondsDbContext db) : IPlayerSessions
             {
                 session.RevokedAt,
                 session.LastSeenAt,
-                player.DeletedAt,
                 IsAdmin = db.Set<Account>().Any(a => a.PlayerId == player.Id && a.IsAdmin),
             }).FirstOrDefaultAsync(ct);
 
-        return row is null || row.RevokedAt is not null || row.DeletedAt is not null
+        return row is null || row.RevokedAt is not null
             ? DeviceSessionStatus.Inactive
             : new DeviceSessionStatus(IsActive: true, row.IsAdmin, row.LastSeenAt);
     }
@@ -46,7 +45,7 @@ public sealed class EfPlayerSessions(InSecondsDbContext db) : IPlayerSessions
         var owner = await (
             from token in db.Set<LegacyToken>().AsNoTracking()
             join player in db.Set<Player>() on token.PlayerId equals player.Id
-            where token.TokenHash == hash && player.DeletedAt == null
+            where token.TokenHash == hash
             select new
             {
                 player.Id,

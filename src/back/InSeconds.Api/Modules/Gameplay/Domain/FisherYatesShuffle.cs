@@ -3,7 +3,7 @@ using InSeconds.Api.Modules.Gameplay.Contracts;
 namespace InSeconds.Api.Modules.Gameplay.Domain;
 
 /// <summary>
-/// Mélange de Fisher-Yates à graine, le tirage du défi du jour de la v1 mis derrière un port : distribution
+/// Mélange de Fisher-Yates à graine, le tirage du défi du jour derrière un port : distribution
 /// uniforme (aucun biais de position) et même graine, même ordre. C'est la suite de <see cref="Random"/> pour une
 /// graine donnée qui fixe l'ordre, et .NET ne la garantit pas d'une version majeure à l'autre (en pratique, elle
 /// n'a pas changé depuis .NET Core). Un test épingle un ordre connu : si une montée de version de .NET le casse,

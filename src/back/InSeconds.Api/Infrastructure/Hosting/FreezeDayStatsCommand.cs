@@ -13,10 +13,10 @@ namespace InSeconds.Api.Infrastructure.Hosting;
 /// <c>dotnet InSeconds.Api.dll --freeze-day-stats</c> : fige les statistiques de tous les jours terminés (J-2 et avant) qui n'ont pas
 /// encore leur photo, puis s'arrête. Rien d'autre ne démarre (comme <c>--migrate-only</c>).
 ///
-/// À lancer <b>juste après chaque import</b> des données v1 (PR E4) : l'import ne calcule rien, et la tâche <c>daily-close-day</c>
-/// attendrait minuit pour figer l'historique. C'est la même règle que la tâche (<see cref="CloseChallengeDayHandler"/>, du plus ancien
-/// au plus récent), avec les réglages de la base : à lancer **après** l'import des réglages (les paliers et le barème en vigueur sont
-/// ceux qu'elle fige, § 5.4 du plan v2). Rejouable : un jour déjà figé n'est pas refait (un recalcul passe par la route de l'admin).
+/// À lancer quand des jours terminés n'ont pas leur photo (historique chargé sans elle) : la tâche <c>daily-close-day</c>
+/// attendrait minuit pour les figer. C'est la même règle que la tâche (<see cref="CloseChallengeDayHandler"/>, du plus ancien
+/// au plus récent), avec les réglages de la base : à lancer **après** avoir posé les réglages (les paliers et le barème en vigueur sont
+/// ceux qu'elle fige). Rejouable : un jour déjà figé n'est pas refait (un recalcul passe par la route de l'admin).
 /// </summary>
 public static class FreezeDayStatsCommand
 {

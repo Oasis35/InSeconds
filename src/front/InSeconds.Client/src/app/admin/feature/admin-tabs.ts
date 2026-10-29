@@ -9,7 +9,7 @@ export interface AdminTab {
   readonly counted?: { readonly label: string; readonly source: TabCount };
 }
 
-/** Les onglets de l'admin, dans l'ordre de la v1. */
+/** Les onglets de l'admin, dans leur ordre d'affichage. */
 export const ADMIN_TABS: readonly AdminTab[] = [
   { path: 'dashboard', label: 'admin.tabs.dashboard' },
   { path: 'defis', label: 'admin.tabs.challengesPlain', counted: { label: 'admin.tabs.challenges', source: 'challenges' } },
@@ -18,8 +18,8 @@ export const ADMIN_TABS: readonly AdminTab[] = [
   { path: 'actions', label: 'admin.tabs.actions' },
 ];
 
-/** L'onglet d'arrivée sur `/admin`, comme en v1. */
+/** L'onglet d'arrivée sur `/admin`. */
 export const DEFAULT_TAB = 'dashboard';
 
-/** Les valeurs de l'ancien `?tab=` de la v1 qui ont gardé leur nom (le pool s'appelle désormais `catalogue`). */
+/** Les valeurs des anciennes adresses `?tab=` qui ont gardé leur nom (le pool s'appelle `catalogue`). */
 export const LEGACY_TAB_NAMES: ReadonlySet<string> = new Set(['dashboard', 'defis', 'joueurs', 'actions']);

@@ -61,7 +61,7 @@ namespace Internal.Generated.WolverineHandlers
             var efDailyQueries = new InSeconds.Api.Modules.Daily.Persistence.EfDailyQueries(inSecondsDbContext);
             var efTrackDirectory = new InSeconds.Api.Modules.Catalogue.Persistence.EfTrackDirectory(inSecondsDbContext, _optionsMonitorOfCatalogueOptions);
             var efDailyStore = new InSeconds.Api.Modules.Daily.Persistence.EfDailyStore(inSecondsDbContext);
-            var claimsCurrentPlayer = new InSeconds.Api.Infrastructure.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
+            var claimsCurrentPlayer = new InSeconds.Api.Modules.Players.Auth.ClaimsCurrentPlayer(_httpContextAccessor);
             var submitAnswerValidator = new InSeconds.Api.Modules.Daily.Application.SubmitAnswerValidator(_dailyRules);
             // Reading the request body via JSON deserialization
             var (request, jsonContinue) = await ReadJsonAsync<InSeconds.Api.Modules.Daily.Application.SubmitAnswer>(httpContext);

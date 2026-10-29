@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace InSeconds.IntegrationTests.Players;
 
 /// <summary>
-/// Connexion par lien magique (§ 5.5 et 5.6 du plan v2) : demande, jeton généré par le handler de
+/// Connexion par lien magique : demande, jeton généré par le handler de
 /// l'outbox (S1), vérification filtrée par usage (S2), origine (piège 22), confirmation explicite
 /// (piège 21), pas de conversion d'un compte lié (piège 30), nouvelle session à chaque connexion (S5).
 /// </summary>
@@ -267,16 +267,6 @@ public class MagicLinkTests(PostgresFixture postgres) : IAsyncLifetime
         var token = await _app.RequestTokenAsync("pseudo@example.com");
 
         Assert.Equal(HttpStatusCode.BadRequest, (await MagicLinkApi.VerifyAsync(_app.Browser(), token, "<b>")).StatusCode);
-    }
-
-    [Fact]
-    public async Task CompteDUnJoueurSupprime_400()
-    {
-        var playerId = await InsertAccountAsync("parti@example.com", "Parti");
-        await _app.Api.ExecuteAsync($"UPDATE players.players SET deleted_at = now() WHERE id = '{playerId}'");
-        var token = await _app.RequestTokenAsync("parti@example.com");
-
-        await AssertProblemAsync(await MagicLinkApi.VerifyAsync(_app.Browser(), token), HttpStatusCode.BadRequest, PlayersErrorCodes.InvalidOrExpiredToken);
     }
 
     [Fact]

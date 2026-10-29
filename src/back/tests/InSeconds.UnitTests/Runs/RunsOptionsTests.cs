@@ -1,5 +1,4 @@
 using InSeconds.Api.Modules.Runs.Application;
-using InSeconds.Api.Modules.Runs.Domain;
 using InSeconds.UnitTests.Support;
 using Microsoft.Extensions.Options;
 

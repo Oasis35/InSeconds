@@ -1,8 +1,7 @@
 import { Page, Locator } from '@playwright/test';
 
 const BASE = process.env['CI'] ? 'http://localhost:5175' : 'http://localhost:5177';
-// L'auth admin est désormais un rôle sur le cookie joueur (Player.IsAdmin, cf. refonte
-// profils admin) - plus d'OriginValidator sur ces routes, donc plus besoin d'Origin ici.
+// L'admin est un rôle sur le compte (piège 5), relu à chaque requête : aucun en-tête Origin n'est exigé ici.
 
 export class AdminPage {
   readonly logoutButton: Locator;
@@ -197,7 +196,7 @@ export class AdminPage {
     if (!res.ok) throw new Error(`reseed failed: ${res.status}`);
   }
 
-  // Les réglages sont relus à chaud (R13) : pour vérifier que le nouveau cooldown s'applique, on repasse par le pool, dont
+  // Les réglages sont relus à chaud : pour vérifier que le nouveau cooldown s'applique, on repasse par le pool, dont
   // les dates de déblocage sont calculées avec la valeur courante. La route exige le cookie admin : on passe par la requête
   // de la page, qui partage le cookie du navigateur (login() l'a posé).
   /** Les dates (aaaa-mm-jj) de tous les défis en base, par la route de l'historique (cookie admin de la page). */

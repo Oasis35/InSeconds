@@ -8,7 +8,7 @@ import { PlayerGame, RegisteredPlayer, toGameStatus } from '../domain/registered
  * Adaptateur de l'onglet Joueurs : seule porte vers les clients générés pour les routes admin des comptes
  * (le jeu du jour : liste et historique ; le mode Run : l'accès). Rend des types du domaine ; les erreurs sont celles du client (`toAppError`).
  */
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class AdminPlayersApi {
   private readonly client = inject(DailyClient);
   private readonly runs = inject(RunsClient);

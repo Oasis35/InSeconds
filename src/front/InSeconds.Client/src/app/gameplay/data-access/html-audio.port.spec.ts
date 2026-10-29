@@ -109,7 +109,7 @@ describe('HtmlAudioPort', () => {
     expect(port.position()).toBe(0.9);
   });
 
-  it('prolonger après un palier joué relit depuis le début jusqu\'au nouveau palier (« écouter plus », comme en v1)', async () => {
+  it('prolonger après un palier joué relit depuis le début jusqu\'au nouveau palier (« écouter plus »)', async () => {
     await loaded();
     port.playUntil(0.4);
     await until('finished');

@@ -13,7 +13,7 @@ export const HEALTH_POLL_MS = 5000;
 export const HEALTH_KO_THRESHOLD = 3;
 
 /**
- * Sonde `GET /health` en continu et pilote l'overlay « Service indisponible » (repris de la v1).
+ * Sonde `GET /health` en continu et pilote l'overlay « Service indisponible ».
  * L'overlay ne s'affiche qu'à l'état confirmé `ko`, jamais pendant le `loading` initial, et
  * disparaît seul dès que l'API répond de nouveau.
  */
