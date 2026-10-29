@@ -1,7 +1,7 @@
 import {
   RoundConfig, TrackRound, applyHints, askSkip, availableHintLevels, beginListening, cancelConfirm, confirmPending,
   createRound, isAnswering, listenMore, maxStep, nextStep, onAudio, previewWithdrawn, replacePreviewUrl, retryPlayback, retrySubmission, reveal, showsInput,
-  skipUnplayable, submissionFailed, submitAnswer, unlockedHintLevel,
+  skipUnplayable, stakeOf, submissionFailed, submitAnswer, unlockedHintLevel,
 } from './track-round';
 
 const CONFIG: RoundConfig = {
@@ -270,6 +270,35 @@ describe('indices', () => {
 
   it('ne sont plus proposés une fois la réponse envoyée', () => {
     expect(availableHintLevels(submitAnswer(at(10), answer))).toEqual([]);
+  });
+});
+
+describe('points en jeu', () => {
+  const scores = [{ seconds: 0.5, score: 1000 }, { seconds: 1, score: 850 }, { seconds: 2, score: 550 }, { seconds: 5, score: 250 }, { seconds: 10, score: 100 }];
+  const scored = (overrides: Partial<RoundConfig> = {}) =>
+    started({ listen: { steps: [0.5, 1, 2, 5, 10], extendable: true, scores }, hints: { unlockSeconds: [5, 10], penaltyPercents: [30, 60] }, ...overrides });
+
+  it('vaut le barème du palier en cours', () => {
+    expect(stakeOf(scored())).toBe(1000);
+    expect(stakeOf(listenMore(scored()))).toBe(850);
+  });
+
+  it('vaut le premier palier tant que rien n\'est choisi', () => {
+    expect(stakeOf(createRound({ ...CONFIG, listen: { steps: [0.5, 1], extendable: true, scores } }))).toBe(1000);
+  });
+
+  it('retire la pénalité de l\'indice pris, arrondie comme le serveur (au pair)', () => {
+    const at5 = { ...scored(), chosenSeconds: 5 };
+    expect(stakeOf(applyHints(at5, 1, []))).toBe(175);
+    expect(stakeOf(applyHints(at5, 2, []))).toBe(100);
+    // 850 × 0,7 = 595 ; 250 × 0,4 = 100 ; 25 × 0,5 = 12,5 arrondi à 12.
+    expect(stakeOf(applyHints({ ...scored(), chosenSeconds: 1 }, 1, []))).toBe(595);
+    const half = started({ listen: { steps: [1], extendable: false, scores: [{ seconds: 1, score: 25 }] }, hints: { unlockSeconds: [1], penaltyPercents: [50] } });
+    expect(stakeOf(applyHints(half, 1, []))).toBe(12);
+  });
+
+  it('est `null` sans barème (Runs)', () => {
+    expect(stakeOf(started())).toBeNull();
   });
 });
 

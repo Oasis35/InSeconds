@@ -26,7 +26,7 @@ Cette réponse vient d'un membre de la communauté, pas d'un employé de Deezer 
 
 ### 2. Lecture des extraits dans le navigateur : conforme
 
-- **Pas de stockage** : « Local Storage/Offline Storage of audio data is strictly forbidden. » L'élément audio lit l'extrait en flux, rien n'est gardé. Ne jamais mettre l'audio dans IndexedDB, Cache Storage ou le service worker : `ngsw-config.json` n'a aucun `dataGroups`.
+- **Pas de stockage** : « Local Storage/Offline Storage of audio data is strictly forbidden. » L'élément audio lit l'extrait en flux, rien n'est gardé. Ne jamais mettre l'audio dans IndexedDB, Cache Storage ou le service worker : `ngsw-config.json` n'a aucun `dataGroups`. La waveform du lecteur (barres et basses qui font bouger le bouton, 29/10/2026) est calculée dans le navigateur à chaque morceau : l'extrait est relu en `cache: 'no-store'`, décodé en mémoire, et seules des valeurs dérivées (32 barres, une enveloppe) vivent le temps du morceau ; rien n'est gardé ni calculé côté serveur. Le stockage de ces valeurs a été écarté (zone grise des conditions, gain nul).
 - **Pas de téléchargement** : « Except for 30s. extracts mp3s, full-length tracks URLs must never be accessible to the end-user ». Les extraits de 30 s sont exclus de cette règle : une URL d'extrait visible dans l'onglet réseau ne pose pas de problème.
 - **Pas de contournement des protections** (art. V, DRM) : les extraits sont des MP3 publics servis avec `Access-Control-Allow-Origin: *`.
 

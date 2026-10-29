@@ -3,12 +3,16 @@ import { patchState, signalStore, signalStoreFeature, withComputed, withHooks, w
 import {
   HintFact, RoundAnswer, RoundConfig, RoundSubmission, TrackRound, applyHints, askSkip, availableHintLevels, beginListening,
   cancelConfirm, confirmPending, createRound, listenMore, maxStep, nextStep, onAudio, previewWithdrawn, replacePreviewUrl, retryPlayback, retrySubmission, reveal,
-  showsInput, skipUnplayable, submissionFailed, submitAnswer,
+  showsInput, skipUnplayable, stakeOf, submissionFailed, submitAnswer,
 } from '../domain/track-round';
+import { Waveform, bassAt } from '../domain/waveform';
 import { AudioPort } from './audio.port';
+import { WaveformPort } from './waveform.port';
 
 interface TrackRoundState {
   round: TrackRound | null;
+  /** La forme de l'extrait en cours, une fois calculée ; `null` avant, et si le calcul échoue. */
+  waveform: Waveform | null;
 }
 
 /**
@@ -22,8 +26,8 @@ interface TrackRoundState {
  */
 export function withTrackRound() {
   return signalStoreFeature(
-    withState<TrackRoundState>({ round: null }),
-    withComputed(({ round }, audio = inject(AudioPort)) => ({
+    withState<TrackRoundState>({ round: null, waveform: null }),
+    withComputed(({ round, waveform }, audio = inject(AudioPort)) => ({
       trackId: computed(() => round()?.trackId ?? null),
       phase: computed(() => round()?.phase ?? null),
       chosenSeconds: computed(() => round()?.chosenSeconds ?? 0),
@@ -36,17 +40,24 @@ export function withTrackRound() {
       hints: computed<readonly HintFact[]>(() => round()?.hints ?? []),
       /** Ce que révèle chaque niveau, quand le back le dit (libellé des boutons). */
       hintKinds: computed<readonly (string | null)[]>(() => round()?.hintKinds ?? []),
-      /** Ce que coûte chaque niveau, en pourcentage (écrit sur le bouton). */
-      hintPenaltyPercents: computed<readonly (number | null)[]>(() => round()?.hintPenaltyPercents ?? []),
+      /** Les points en jeu (barème du palier moins l'indice pris) ; `null` si le mode n'a pas de barème. */
+      stake: computed(() => { const r = round(); return r ? stakeOf(r) : null; }),
       availableHintLevels: computed(() => { const r = round(); return r ? availableHintLevels(r) : []; }),
       pendingConfirm: computed(() => round()?.confirm ?? null),
       submission: computed(() => round()?.submission ?? null),
-      /** La position de lecture, en secondes (pour la barre de progression). */
+      /** La position de lecture, en secondes (pour la waveform). */
       position: computed(() => audio.position()),
+      /** L'énergie des basses à la position de lecture, de 0 à 1 : elle fait bouger le bouton, puis la pochette. 0 à l'arrêt. */
+      bass: computed(() => {
+        const envelope = waveform()?.envelope;
+        return envelope && audio.state() === 'playing' ? bassAt(envelope, audio.position()) : 0;
+      }),
     })),
-    withMethods((store, audio = inject(AudioPort)) => {
+    withMethods((store, audio = inject(AudioPort), waveforms = inject(WaveformPort, { optional: true })) => {
       /** L'extrait suivant, chargé en arrière-plan : le seul autre son gardé en mémoire. */
       let nextPreviewUrl: string | null = null;
+      /** Le morceau dont la forme est demandée (une seule demande par morceau). */
+      let waveformTrackId: number | null = null;
       /** Le mode qui sait redemander une adresse d'extrait (signature expirée), pour « Réessayer ». */
       let refreshPreviewUrl: RoundConfig['refreshPreviewUrl'];
       /** La relance automatique après un échec de lecture a déjà eu lieu pour ce morceau. */
@@ -104,6 +115,8 @@ export function withTrackRound() {
           autoRetried = false;
           const created = createRound(config);
           const started = beginListening(created);
+          waveformTrackId = null;
+          patchState(store, { waveform: null });
           set(started);
           if (started !== created) launch(started);
         },
@@ -195,7 +208,24 @@ export function withTrackRound() {
         reset(): void {
           audio.stop();
           nextPreviewUrl = null;
+          waveformTrackId = null;
+          patchState(store, { waveform: null });
           set(null);
+        },
+
+        /**
+         * Calcule la forme de l'extrait en cours, une fois par morceau, quand le son est parti : la lecture ne l'attend jamais et ne lui
+         * dispute pas le réseau au démarrage. Appelé par le lecteur (`withHooks`), pas par la page.
+         */
+        loadWaveform(): void {
+          const round = store.round();
+          if (!waveforms || !round?.previewUrl || waveformTrackId === round.trackId) return;
+          const trackId = round.trackId;
+          waveformTrackId = trackId;
+          void waveforms.load(round.previewUrl, maxStep(round)).then(waveform => {
+            // le joueur est passé au morceau suivant entre-temps
+            if (waveform && store.round()?.trackId === trackId) patchState(store, { waveform });
+          });
         },
       };
     }),
@@ -214,6 +244,7 @@ export function withTrackRound() {
             const next = onAudio(round, state);
             patchState(store, { round: next });
             if (next.phase === 'audio-error' && round.phase !== 'audio-error') store.recoverFromAudioError();
+            if (state === 'playing') store.loadWaveform();
           });
         });
       },

@@ -29,22 +29,41 @@ describe('RoundPlayerComponent', () => {
     expect(timer(render({ phase: 'listened' }).element)).toBe('1 s / 1 s');
   });
 
-  it('place un repère par palier et remplit la barre jusqu\'au palier joué', () => {
+  const bars = (element: HTMLElement) => Array.from(element.querySelectorAll<HTMLElement>('[data-testid="waveform"] > span'));
+  const colors = (element: HTMLElement) => bars(element).map(bar => bar.style.background);
+
+  it('dessine la waveform : barres plates tant que la forme n\'est pas là, puis la vraie forme', () => {
+    const { fixture, element } = render({ phase: 'listened' });
+    expect(bars(element)).toHaveLength(32);
+    expect(new Set(bars(element).map(bar => bar.style.height))).toEqual(new Set(['18%']));
+
+    fixture.componentRef.setInput('peaks', [0.25, 1, 0.5, 0.75]);
+    fixture.detectChanges();
+    expect(bars(element).map(bar => bar.style.height)).toEqual(['25%', '100%', '50%', '75%']);
+  });
+
+  it('colore les barres : jouées en cyan, débloquées en cyan pâle, le reste en gris, sur l\'échelle du dernier palier', () => {
+    // 10 barres sur 10 s : 2,4 s jouées (2 barres), 5 s débloquées (3 de plus).
+    const { element } = render({ chosenSeconds: 5, position: 2.4, peaks: Array.from({ length: 10 }, () => 0.5) });
+    const [played, unlocked, locked] = [colors(element)[0], colors(element)[3], colors(element)[9]];
+    expect(colors(element).filter(c => c === played)).toHaveLength(2);
+    expect(colors(element).filter(c => c === unlocked)).toHaveLength(3);
+    expect(colors(element).filter(c => c === locked)).toHaveLength(5);
+    expect(new Set([played, unlocked, locked]).size).toBe(3);
+  });
+
+  it('place un repère par palier et n\'écrit que le palier en cours et le dernier', () => {
     const { element } = render({ phase: 'listened' });
-    const marks = element.querySelectorAll('[role="progressbar"] > div:not(:first-child)');
-    expect(marks).toHaveLength(5);
-    expect(element.querySelector<HTMLElement>('[role="progressbar"] > div')!.style.width).toBe('10%');
+    const marks = Array.from(element.querySelectorAll('[data-testid="step-mark"]')).map(m => m.textContent!.trim());
+    expect(marks).toEqual(['', '1\u00a0s', '', '', '10\u00a0s']);
   });
 
-  it('suit la position pendant la lecture, sur l\'échelle du dernier palier', () => {
-    const { element } = render({ position: 2.5 });
-    expect(element.querySelector<HTMLElement>('[role="progressbar"] > div')!.style.width).toBe('25%');
-  });
-
-  it('annonce jusqu\'où on peut écouter tant qu\'il reste des paliers', () => {
-    expect(render().element.textContent).toContain('gameplay.round.stepsUpTo');
+  it('montre les points en jeu quand le mode en donne, rien sinon', () => {
+    expect(render().element.querySelector('[data-testid="round-stake"]')).toBeNull();
     TestBed.resetTestingModule();
-    expect(render({ chosenSeconds: 10, nextStep: null }).element.textContent).not.toContain('gameplay.round.stepsUpTo');
+    const { element } = render({ stake: 850 });
+    expect(element.querySelector('[data-testid="round-stake"]')?.textContent).toBe('850');
+    expect(element.textContent).toContain('gameplay.round.stake');
   });
 
   it('« ↺ » rejoue et « ▶ Xs » prolonge', () => {

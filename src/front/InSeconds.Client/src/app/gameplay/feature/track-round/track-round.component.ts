@@ -30,13 +30,14 @@ import { ButtonComponent } from '../../../ui/button/button.component';
       <div class="flex flex-col gap-4">
         @if (phase !== 'revealed') {
           <app-round-player [phase]="phase" [chosenSeconds]="round.chosenSeconds()" [steps]="round.steps()"
-            [nextStep]="round.nextStep()" [position]="round.position()"
+            [nextStep]="round.nextStep()" [position]="round.position()" [peaks]="round.waveform()?.peaks ?? null" [bass]="round.bass()"
+            [stake]="round.stake()"
             (replay)="round.replay()" (listenMore)="round.listenMore()" (retry)="round.retryPlayback()" (skip)="skipUnplayable()" />
         }
 
         @if (round.showsInput()) {
           <form (submit)="onSubmit($event)" class="space-y-3">
-            <app-hint-panel [levels]="round.availableHintLevels()" [kinds]="round.hintKinds()" [penalties]="round.hintPenaltyPercents()" [hints]="round.hints()" [pending]="hintPending()"
+            <app-hint-panel [levels]="round.availableHintLevels()" [kinds]="round.hintKinds()" [hints]="round.hints()" [pending]="hintPending()"
               (request)="hintRequested.emit($event)" />
 
             <app-answer-input [query]="search.query()" [suggestions]="search.visibleSuggestions()" [highlighted]="search.highlighted()"
@@ -79,7 +80,7 @@ import { ButtonComponent } from '../../../ui/button/button.component';
         }
 
         @if (phase === 'revealed' && result(); as revealed) {
-          <app-reveal-card [result]="revealed">
+          <app-reveal-card [result]="revealed" [bass]="round.bass()">
             <ng-content select="[roundBadge]" ngProjectAs="[roundBadge]" />
             <ng-content select="[roundScore]" ngProjectAs="[roundScore]" />
             <ng-content select="[roundNext]" ngProjectAs="[roundNext]" />

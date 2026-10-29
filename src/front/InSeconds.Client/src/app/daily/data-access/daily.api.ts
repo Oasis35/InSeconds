@@ -164,6 +164,7 @@ function toSettings(settings: DailySettingsResponse): DailySettings {
     guessTimerSeconds: settings.guessTimerSeconds,
     tracksPerChallenge: settings.tracksPerChallenge,
     allowedDurationsSeconds: settings.allowedDurationsSeconds,
+    durationScores: settings.durationScores.map(d => ({ seconds: d.seconds, score: d.score })),
     hints: settings.hints.map(h => ({ level: h.level, unlockSeconds: h.unlockSeconds, kind: h.kind, penaltyPercent: h.penaltyPercent })),
   };
 }

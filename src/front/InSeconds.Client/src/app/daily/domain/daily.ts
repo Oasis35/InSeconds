@@ -31,7 +31,15 @@ export interface DailySettings {
   readonly guessTimerSeconds: number;
   readonly tracksPerChallenge: number;
   readonly allowedDurationsSeconds: readonly number[];
+  /** Ce que rapporte chaque palier, artiste et titre trouvés sans indice : les points en jeu du lecteur. */
+  readonly durationScores: readonly DurationScoreSetting[];
   readonly hints: readonly HintLevelSetting[];
+}
+
+/** Un palier d'écoute et ses points. */
+export interface DurationScoreSetting {
+  readonly seconds: number;
+  readonly score: number;
 }
 
 /** Un morceau à jouer : sa position, et son extrait (vide si Deezer n'en a pas). Ni nom ni pochette avant la réponse (piège 31). */

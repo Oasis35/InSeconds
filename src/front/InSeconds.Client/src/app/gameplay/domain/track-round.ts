@@ -29,6 +29,17 @@ export interface ListenPolicy {
   readonly steps: readonly number[];
   /** Le joueur peut-il prolonger l'écoute au palier suivant ? */
   readonly extendable: boolean;
+  /**
+   * Ce que rapporte chaque palier quand le morceau est trouvé, si le mode le dit (Daily : son barème). Le lecteur en tire les
+   * « points en jeu » ; sans lui, il n'en montre pas (Runs).
+   */
+  readonly scores?: readonly StepScore[];
+}
+
+/** Ce que rapporte un palier d'écoute, artiste et titre trouvés, sans indice. */
+export interface StepScore {
+  readonly seconds: number;
+  readonly score: number;
 }
 
 /** Quand chaque niveau d'indice se débloque : `unlockSeconds[0]` pour le niveau 1, etc. Vient des réglages du back. */
@@ -39,7 +50,7 @@ export interface HintPolicy {
    * `artistMasked`) : le bouton s'appelle alors « Indice année », « Indice artiste ». Sans lui, « Indice 1 ».
    */
   readonly kinds?: readonly (string | null)[];
-  /** Ce que coûte chaque niveau, en pourcentage du score du morceau (`penaltyPercents[0]` pour le niveau 1), écrit sur le bouton. */
+  /** Ce que coûte chaque niveau, en pourcentage du score du morceau (`penaltyPercents[0]` pour le niveau 1) : les points en jeu en tiennent compte. */
   readonly penaltyPercents?: readonly (number | null)[];
 }
 
@@ -99,6 +110,8 @@ export interface TrackRound {
   /** Les paliers proposés, déjà privés de ceux sous le plancher d'écoute. */
   readonly steps: readonly number[];
   readonly extendable: boolean;
+  /** Le barème des paliers (vide : le mode n'en donne pas). */
+  readonly stepScores: readonly StepScore[];
   readonly hintUnlockSeconds: readonly number[];
   /** Ce que révèle chaque niveau (`null` : inconnu). */
   readonly hintKinds: readonly (string | null)[];
@@ -130,6 +143,7 @@ export function createRound(config: RoundConfig): TrackRound {
     previewUrl: hasPreview ? config.previewUrl : null,
     steps,
     extendable: config.listen.extendable,
+    stepScores: config.listen.scores ?? [],
     hintUnlockSeconds: config.hints.unlockSeconds,
     hintKinds: config.hints.kinds ?? [],
     hintPenaltyPercents: config.hints.penaltyPercents ?? [],
@@ -215,6 +229,26 @@ export function onAudio(round: TrackRound, audio: AudioStatus): TrackRound {
   if (!isAnswering(round)) return round;
   const phase = PHASE_OF_AUDIO[audio];
   return phase === null || phase === round.phase ? round : { ...round, phase };
+}
+
+/**
+ * Les points en jeu : ce que rapporterait le morceau trouvé en entier au palier en cours (le premier tant que rien n'est choisi), moins la
+ * pénalité de l'indice déjà pris, arrondis comme le serveur (au pair le plus proche). `null` si le mode n'a pas de barème.
+ */
+export function stakeOf(round: TrackRound): number | null {
+  const seconds = round.chosenSeconds || round.steps[0];
+  const base = round.stepScores.filter(s => s.seconds === seconds).at(-1)?.score;
+  if (base === undefined) return null;
+  const penalty = round.hintLevel > 0 ? (round.hintPenaltyPercents[round.hintLevel - 1] ?? 0) : 0;
+  return penalty > 0 ? roundHalfEven(base * (1 - penalty / 100)) : base;
+}
+
+/** L'arrondi de `Math.Round` côté serveur : une moitié va au pair le plus proche. */
+function roundHalfEven(value: number): number {
+  const floor = Math.floor(value);
+  const diff = value - floor;
+  if (Math.abs(diff - 0.5) > 1e-9) return Math.round(value);
+  return floor % 2 === 0 ? floor : floor + 1;
 }
 
 // --- indices ---

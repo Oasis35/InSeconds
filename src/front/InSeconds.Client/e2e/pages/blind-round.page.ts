@@ -13,11 +13,18 @@ export class BlindRoundPage {
   readonly clearSearchButton: Locator;
   readonly nextButton: Locator;
   readonly roundScore: Locator;
+  /** Le total de la partie, sous les points du morceau à la révélation (il n'est plus dans l'en-tête). */
+  readonly roundTotal: Locator;
+  /** Les points en jeu, à gauche du bouton du lecteur. */
+  readonly stake: Locator;
   readonly listenMoreButton: Locator;
   readonly guessTimeChart: Locator;
   readonly guessTimeBars: Locator;
   readonly guessTimeHighlighted: Locator;
-  /** Le chrono du lecteur : « … » pendant le chargement, « 0,0 s / 0,5 s » en lecture, « 0,5 s / 0,5 s » une fois le palier joué. */
+  /**
+   * Le temps écouté, lu par les lecteurs d'écran (le lecteur ne l'affiche plus, la waveform le montre) : « … » pendant le chargement,
+   * « 0,0 s / 0,5 s » en lecture, « 0,5 s / 0,5 s » une fois le palier joué.
+   */
   readonly timer: Locator;
 
   constructor(readonly page: Page) {
@@ -27,8 +34,10 @@ export class BlindRoundPage {
     this.clearSearchButton   = page.getByRole('button', { name: '✕' });
     this.nextButton          = page.getByRole('button', { name: /Piste suivante|Voir le résultat/ });
     // Score affiché dans le résultat du round : "+850 pts"
-    this.roundScore          = page.locator('p').filter({ hasText: ' pts' }).last();
-    // Bouton "écouter plus" : texte visible "+X" (ex: "+1", "+1.5"), tooltip "jusqu'à Xs" en title uniquement.
+    this.roundScore          = page.getByTestId('round-score');
+    this.roundTotal          = page.getByTestId('round-total');
+    this.stake               = page.getByTestId('round-stake');
+    // Bouton rond « écouter plus » : texte visible « ▶ 1,5 s », tooltip « Écouter jusqu'à 1,5 s » en title.
     this.listenMoreButton    = page.getByRole('button', { name: /^▶ \d/ });
     // Histogramme "en combien de temps les autres ont trouvé" affiché à la révélation.
     this.guessTimeChart       = page.getByTestId('guess-time-chart');

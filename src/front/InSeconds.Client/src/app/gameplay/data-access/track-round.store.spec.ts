@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { RoundConfig } from '../domain/track-round';
 import { TrackRoundStore } from './track-round.store';
 import { FakeAudioPort, provideFakeAudio } from './testing/fake-audio.port';
+import { FakeWaveformPort, provideFakeWaveform } from './testing/fake-waveform.port';
 
 const URL = 'https://cdn.example/extrait.mp3';
 const NEXT = 'https://cdn.example/suivant.mp3';
@@ -411,5 +412,82 @@ describe('TrackRoundStore', () => {
       TestBed.resetTestingModule();
       expect(audio.calls).toEqual(['stop']);
     });
+  });
+
+  describe('forme de l\'extrait', () => {
+    it('sans calcul de forme (aucun port fourni) : ni forme ni basses, la partie continue', () => {
+      store.start(CONFIG);
+      emit('playing', 0.3);
+      expect(store.waveform()).toBeNull();
+      expect(store.bass()).toBe(0);
+    });
+
+    it('n\'a pas de points en jeu sans barème', () => {
+      store.start(CONFIG);
+      expect(store.stake()).toBeNull();
+    });
+
+    it('donne les points en jeu du barème', () => {
+      store.start({ ...CONFIG, listen: { ...CONFIG.listen, scores: [{ seconds: 0.5, score: 1000 }, { seconds: 1, score: 850 }] } });
+      expect(store.stake()).toBe(1000);
+      store.listenMore();
+      expect(store.stake()).toBe(850);
+    });
+  });
+});
+
+describe('TrackRoundStore et la forme de l\'extrait', () => {
+  const WAVEFORM = { peaks: [0.2, 1], envelope: [0, 0.4, 0.9] };
+  let audio: FakeAudioPort;
+  let waveforms: FakeWaveformPort;
+  let store: InstanceType<typeof TrackRoundStore>;
+
+  beforeEach(() => {
+    audio = new FakeAudioPort();
+    waveforms = new FakeWaveformPort();
+    TestBed.configureTestingModule({ providers: [provideFakeAudio(audio), provideFakeWaveform(waveforms), TrackRoundStore] });
+    store = TestBed.inject(TrackRoundStore);
+  });
+
+  const emit = (state: Parameters<FakeAudioPort['emit']>[0], position?: number) => {
+    audio.emit(state, position);
+    TestBed.tick();
+  };
+
+  it('ne la demande qu\'une fois le son parti, une seule fois par morceau, sur l\'échelle du dernier palier', () => {
+    store.start(CONFIG);
+    emit('ready');
+    expect(waveforms.calls).toEqual([]);
+    emit('playing');
+    emit('finished', 0.5);
+    store.listenMore();
+    emit('playing');
+    expect(waveforms.calls).toEqual([`load ${URL} 10`]);
+  });
+
+  it('suit les basses de la position pendant la lecture, 0 à l\'arrêt', async () => {
+    store.start(CONFIG);
+    emit('playing', 1 / 60);
+    await waveforms.resolve(WAVEFORM);
+    expect(store.waveform()).toEqual(WAVEFORM);
+    expect(store.bass()).toBe(0.4);
+    emit('finished', 0.5);
+    expect(store.bass()).toBe(0);
+  });
+
+  it('oublie une forme arrivée après le passage au morceau suivant', async () => {
+    store.start(CONFIG);
+    emit('playing');
+    store.start({ ...CONFIG, trackId: 8 });
+    await waveforms.resolve(WAVEFORM);
+    expect(store.waveform()).toBeNull();
+  });
+
+  it('reset oublie la forme', async () => {
+    store.start(CONFIG);
+    emit('playing');
+    await waveforms.resolve(WAVEFORM);
+    store.reset();
+    expect(store.waveform()).toBeNull();
   });
 });

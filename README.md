@@ -16,6 +16,7 @@
 - Preview availability is re-checked nightly against Deezer (rate-limit aware, batched calls), along with the genres of each track's album (one call per album); admins can also re-run it on demand from the scheduled-jobs dashboard (`/jobs`)
 - Playback starts automatically at the shortest step (0.5s); extend step by step (1, 1.5, 2, 3, 5, 10s) with "listen more" before attempting artist + title
 - Free, unlimited "listen more" extensions per track (up to the last duration tier) - scoring is always based on the final tier listened, no penalty for extending
+- The player shows the clip's real waveform (computed in the browser, never stored) and the points at stake, which drop as you extend or take a hint; the play button pulses with the bass
 - A "Skip (0 pts)" button (with confirmation) moves on to the next track without answering
 - Optional hints (release year, then a masked artist name) unlockable at 5s/10s of listening - costs points, server-authoritative
 - Scoring is entirely server-side - no client-side manipulation possible
