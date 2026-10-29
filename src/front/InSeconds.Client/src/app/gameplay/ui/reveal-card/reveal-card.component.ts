@@ -15,7 +15,10 @@ import { MembraneComponent } from '../membrane/membrane.component';
   imports: [TranslatePipe, GuessTimeChartComponent, MembraneComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex flex-col items-center gap-3 text-center pt-1" data-testid="reveal">
+    <div class="relative flex flex-col items-center gap-3 text-center pt-1" data-testid="reveal">
+      <!-- Le badge du mode se place par rapport à la carte (à gauche de la pochette), jamais par rapport à la page. -->
+      <ng-content select="[roundBadge]" />
+
       @if (result().coverUrl; as cover) {
         <app-membrane [level]="bass()">
           <img [src]="cover" [alt]="'gameplay.reveal.coverAlt' | translate" class="block w-24 h-24 object-cover"

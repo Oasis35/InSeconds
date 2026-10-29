@@ -5,12 +5,10 @@
 
     <header class="pb-6">
       <app-brand>
-        <!-- En pleine manche, pas d'accès du compte : un toucher par erreur ouvrirait la confirmation de sortie. Le coin reste vide pendant
-             l'écoute (le total se lit à la révélation) et reçoit le lien Deezer du morceau révélé. -->
+        <!-- En pleine manche, rien à la place des accès du compte : un toucher par erreur ouvrirait la confirmation de sortie. Le total
+             de la partie se lit à la révélation de chaque morceau. -->
         @if (store.screen() !== 'playing') {
           <app-account-link brandRight />
-        } @else if (store.roundDeezerTrackId(); as deezerTrackId) {
-          <app-deezer-badge brandRight data-testid="round-deezer-badge" [deezerTrackId]="deezerTrackId" width="98" height="14" [lang]="language.current()" />
         }
       </app-brand>
       @if (store.screen() === 'playing') {
@@ -89,6 +87,11 @@
         <div class="screen-enter flex-1 flex flex-col justify-start pt-4">
           <app-track-round [result]="store.roundResult()" [hintPending]="store.hintPending()"
             (answered)="onAnswered($event)" (hintRequested)="store.requestHint($event)">
+            <div roundBadge class="absolute z-40 flex items-center justify-center rounded-2xl px-3"
+                 style="top:0.25rem;left:0;height:42px;background:rgb(var(--rgb-surface) / 0.55);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--border-medium)">
+              <app-deezer-badge [deezerTrackId]="store.roundDeezerTrackId() ?? undefined" width="98" height="14" [lang]="language.current()" />
+            </div>
+
             <div roundScore class="flex flex-col items-center gap-1">
               <p data-testid="round-score" class="tabular-nums"
                  style="font-family:var(--font-score);font-size:1.9rem;font-weight:900;line-height:0.95;letter-spacing:-0.02em"
