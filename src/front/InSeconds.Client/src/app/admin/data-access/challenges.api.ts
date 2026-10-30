@@ -4,7 +4,7 @@ import {
   AdminChallenge, AdminChallengePlayer, AdminChallengeStats, AdminChallengeTrackStats, DailyClient, DurationBucket,
 } from '../../api/daily/api.generated';
 import {
-  ChallengeHistoryEntry, ChallengePlayer, ChallengeStats, ChallengeTrackStats, GuessTimeBucket,
+  ChallengeHistoryEntry, ChallengePlayer, ChallengeStats, ChallengeTrackStats, GuessTimeBucket, TodayMask,
 } from '../domain/challenge';
 
 /**
@@ -24,6 +24,17 @@ export class ChallengesApi {
   /** L'historique : tous les défis, avec leurs morceaux. */
   async listHistory(): Promise<ChallengeHistoryEntry[]> {
     return (await firstValueFrom(this.client.listChallenges())).map(toHistoryEntry);
+  }
+
+  /** Le défi du jour est-il masqué à l'admin connecté (pas fini, pas affiché). */
+  async loadTodayMask(): Promise<TodayMask> {
+    const mask = await firstValueFrom(this.client.getTodayChallengeMask());
+    return { hidden: mask.hidden, date: mask.date === undefined || mask.date === null ? null : toDay(mask.date) };
+  }
+
+  /** « Afficher quand même » : le défi du jour se montre, et la partie de l'admin sur ce défi sort des statistiques. */
+  async revealToday(): Promise<void> {
+    await firstValueFrom(this.client.revealTodayChallenge());
   }
 
   /** Recalcule les stats d'un jour fini et rend le défi recalculé. */

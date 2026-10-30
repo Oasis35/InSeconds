@@ -1,6 +1,6 @@
 import {
   ChallengePlayer, ChallengeStats, availableMonths, chipColors, formatMonth, inMonth, monthOf, playerLabel,
-  rateColor, resolveMonth, shiftMonth, shortId, statusDotColor, statusLabelKey, unfinishedCount,
+  rateColor, resolveMonth, shiftMonth, shortId, statusDotColor, statusLabelKey, unfinishedCount, VISIBLE, maskTracks,
 } from './challenge';
 
 const player = (overrides: Partial<ChallengePlayer> = {}): ChallengePlayer =>
@@ -90,5 +90,18 @@ describe('challenge (domaine)', () => {
     expect(rateColor(80)).toBe('var(--color-success)');
     expect(rateColor(40)).toBe('var(--color-warn)');
     expect(rateColor(10)).toBe('var(--color-fail)');
+  });
+
+  describe('maskTracks', () => {
+    const days = [{ date: '2026-10-05', tracks: [1, 2] }, { date: '2026-10-04', tracks: [3] }];
+    const mask = { hidden: true, date: '2026-10-05' };
+
+    it('vide les morceaux du seul jour masqué', () => {
+      expect(maskTracks(days, mask)).toEqual([{ date: '2026-10-05', tracks: [] }, { date: '2026-10-04', tracks: [3] }]);
+    });
+
+    it('ne change rien quand rien n\'est masqué', () => {
+      expect(maskTracks(days, VISIBLE)).toEqual(days);
+    });
   });
 });

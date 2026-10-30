@@ -1,6 +1,6 @@
 import { Provider } from '@angular/core';
 import {
-  ChallengeHistoryEntry, ChallengePlayer, ChallengeStats, ChallengeTrackStats,
+  ChallengeHistoryEntry, ChallengePlayer, ChallengeStats, ChallengeTrackStats, TodayMask, VISIBLE,
 } from '../../domain/challenge';
 import { ChallengesApi } from '../challenges.api';
 
@@ -36,6 +36,8 @@ function defaults() {
     loadStats: vi.fn<() => Promise<ChallengeStats[]>>(() => Promise.resolve([])),
     listHistory: vi.fn<() => Promise<ChallengeHistoryEntry[]>>(() => Promise.resolve([])),
     recompute: vi.fn<(day: string) => Promise<ChallengeStats>>(() => Promise.resolve(challengeStats())),
+    loadTodayMask: vi.fn<() => Promise<TodayMask>>(() => Promise.resolve(VISIBLE)),
+    revealToday: vi.fn<() => Promise<void>>(() => Promise.resolve()),
   } satisfies Record<keyof ChallengesApi, unknown>;
 }
 

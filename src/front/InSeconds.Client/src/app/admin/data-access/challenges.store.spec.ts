@@ -217,4 +217,46 @@ describe('ChallengesStore', () => {
       expect(store.recomputeErrors()['2026-10-04']).toBeUndefined();
     });
   });
+
+  describe('défi du jour masqué', () => {
+    const masked = { loadTodayMask: vi.fn(async () => ({ hidden: true, date: '2026-10-05' })) };
+
+    it('retire les morceaux du jour masqué des deux listes, pas ceux des autres jours', async () => {
+      await setup(masked);
+
+      expect(store.todayMask().hidden).toBe(true);
+      expect(store.statsForMonth().find(c => c.date === '2026-10-05')?.tracks).toEqual([]);
+      expect(store.statsForMonth().find(c => c.date === '2026-10-04')?.tracks).toHaveLength(1);
+      expect(store.historyForMonth().find(c => c.date === '2026-10-05')?.tracks).toEqual([]);
+    });
+
+    it('« Afficher quand même » rend les morceaux sans relire les listes', async () => {
+      await setup(masked);
+
+      await store.revealToday();
+
+      expect(api.revealToday).toHaveBeenCalledTimes(1);
+      expect(api.loadStats).toHaveBeenCalledTimes(1);
+      expect(store.todayMask().hidden).toBe(false);
+      expect(store.statsForMonth().find(c => c.date === '2026-10-05')?.tracks).toHaveLength(1);
+    });
+
+    it('garde le masque et l\'erreur si l\'affichage échoue', async () => {
+      await setup({ ...masked, revealToday: vi.fn(async () => Promise.reject(problem(500, 'common.unexpected'))) });
+
+      await store.revealToday();
+
+      expect(store.todayMask().hidden).toBe(true);
+      expect(store.revealError()?.code).toBe('common.unexpected');
+      expect(store.revealing()).toBe(false);
+    });
+
+    it('n\'appelle rien quand le défi est déjà visible', async () => {
+      await setup();
+
+      await store.revealToday();
+
+      expect(api.revealToday).not.toHaveBeenCalled();
+    });
+  });
 });

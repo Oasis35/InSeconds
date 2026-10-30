@@ -71,4 +71,25 @@ describe('ChallengesApi', () => {
     expect(challenge.computedAt).toBe('2026-10-06T10:00:00Z');
     expect(challenge.canRecompute).toBe(false);
   });
+
+  it('lit le masque du défi du jour, jour en texte', async () => {
+    const api = setup({ getTodayChallengeMask: vi.fn(() => of({ hidden: true, date: '2026-10-05' })) });
+
+    expect(await api.loadTodayMask()).toEqual({ hidden: true, date: '2026-10-05' });
+  });
+
+  it('rend un masque sans jour quand le défi est visible', async () => {
+    const api = setup({ getTodayChallengeMask: vi.fn(() => of({ hidden: false, date: undefined })) });
+
+    expect(await api.loadTodayMask()).toEqual({ hidden: false, date: null });
+  });
+
+  it('affiche le défi du jour', async () => {
+    const revealTodayChallenge = vi.fn(() => of(undefined));
+    const api = setup({ revealTodayChallenge });
+
+    await api.revealToday();
+
+    expect(revealTodayChallenge).toHaveBeenCalledTimes(1);
+  });
 });

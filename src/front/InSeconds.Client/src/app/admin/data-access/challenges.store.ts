@@ -4,7 +4,7 @@ import { ClipboardService } from '../../core/clipboard/clipboard.service';
 import { AppError, toAppError } from '../../core/errors/app-error';
 import { setError, setFulfilled, setPending, withRequestStatus } from '../../core/store/with-request-status';
 import {
-  ChallengeHistoryEntry, ChallengeStats, availableMonths, inMonth, resolveMonth, shiftMonth,
+  ChallengeHistoryEntry, ChallengeStats, TodayMask, VISIBLE, availableMonths, inMonth, maskTracks, resolveMonth, shiftMonth,
 } from '../domain/challenge';
 import { AdminCounts } from './admin-counts';
 import { ChallengesApi } from './challenges.api';
@@ -24,6 +24,10 @@ interface ChallengesState {
   recomputingDays: readonly string[];
   /** L'erreur du dernier recalcul de chaque jour (retirée au recalcul suivant). */
   recomputeErrors: Readonly<Record<string, AppError>>;
+  /** Le défi du jour masqué à l'admin tant qu'il ne l'a pas fini (ses morceaux sont retirés des deux listes). */
+  todayMask: TodayMask;
+  revealing: boolean;
+  revealError: AppError | null;
 }
 
 function currentMonth(): string {
@@ -39,16 +43,16 @@ export const ChallengesStore = signalStore(
   withRequestStatus(),
   withState<ChallengesState>({
     stats: [], history: [], requestedMonth: null, expandedIds: [], highlightedPlayerId: null, copiedPlayerId: null,
-    recomputingDays: [], recomputeErrors: {},
+    recomputingDays: [], recomputeErrors: {}, todayMask: VISIBLE, revealing: false, revealError: null,
   }),
-  withComputed(({ stats, history, requestedMonth }) => {
+  withComputed(({ stats, history, requestedMonth, todayMask }) => {
     const months = computed(() => availableMonths(stats(), history()));
     const month = computed(() => resolveMonth(requestedMonth(), months(), currentMonth()));
     return {
       months,
       month,
-      statsForMonth: computed(() => inMonth(stats(), month())),
-      historyForMonth: computed(() => inMonth(history(), month())),
+      statsForMonth: computed(() => maskTracks(inMonth(stats(), month()), todayMask())),
+      historyForMonth: computed(() => maskTracks(inMonth(history(), month()), todayMask())),
       canGoPrevious: computed(() => shiftMonth(months(), month(), -1) !== month()),
       canGoNext: computed(() => shiftMonth(months(), month(), 1) !== month()),
     };
@@ -66,13 +70,27 @@ export const ChallengesStore = signalStore(
         const mine = ++latestLoad;
         patchState(store, setPending());
         try {
-          const [stats, history] = await Promise.all([api.loadStats(), api.listHistory()]);
+          const [stats, history, todayMask] = await Promise.all([api.loadStats(), api.listHistory(), api.loadTodayMask()]);
           if (mine !== latestLoad) return;
           counts.setChallenges(stats.length);
-          patchState(store, { stats, history }, setFulfilled());
+          patchState(store, { stats, history, todayMask }, setFulfilled());
         } catch (error) {
           const appError = await toAppError(error);
           if (mine === latestLoad) patchState(store, setError(appError));
+        }
+      },
+
+      /** « Afficher quand même » : le défi du jour se montre ; la partie de l'admin sur ce défi sort alors des statistiques. */
+      async revealToday(): Promise<void> {
+        if (store.revealing() || !store.todayMask().hidden) return;
+        patchState(store, { revealing: true, revealError: null });
+        try {
+          await api.revealToday();
+          patchState(store, { todayMask: VISIBLE });
+        } catch (error) {
+          patchState(store, { revealError: await toAppError(error) });
+        } finally {
+          patchState(store, { revealing: false });
         }
       },
 

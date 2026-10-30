@@ -21,7 +21,7 @@ Cloudflare Web Analytics, en injection automatique sur le site `inseconds.cc` (r
 
 ## Droits du joueur
 
-- **Copie** : `GET /api/players/me/export` (JSON : source d'arrivée, compte, appareils, puis une section par mode de jeu sous `modules` : `modules.daily` pour la série et les parties, `modules.runs` pour les parties, les playlists créées, le record et l'accès), bouton « Tes données » du profil.
+- **Copie** : `GET /api/players/me/export` (JSON : source d'arrivée, compte, appareils, puis une section par mode de jeu sous `modules` : `modules.daily` pour la série, les parties et, pour un admin, les jours dont il a affiché le défi avant de le jouer, `modules.runs` pour les parties, les playlists créées, le record et l'accès), bouton « Tes données » du profil.
 - **Effacement** : `POST /api/players/me/delete` (pseudo retapé pour confirmer), effacement réel (`AccountErasure`, qui appelle l'`IPlayerDataContributor` de chaque mode de jeu dans la même transaction).
 - **Sans connexion possible** : commandes de secours sur le VPS `--export-player` / `--delete-player` (cf. `src/back/CLAUDE.md` § Démarrage), réponse sous un mois, uniquement à l'adresse du compte.
 

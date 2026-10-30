@@ -25,7 +25,7 @@ describe('ChallengesPage', () => {
   const september = challengeStats({ id: 3, date: '2026-09-30' });
 
   let api: FakeChallengesApi;
-  let modal: { open: ReturnType<typeof vi.fn> };
+  let modal: { open: ReturnType<typeof vi.fn>; confirm: ReturnType<typeof vi.fn> };
   let copy: ReturnType<typeof vi.fn>;
 
   async function render(overrides: Partial<FakeChallengesApi> = {}, stats: ChallengeStats[] = [today, older, september]) {
@@ -36,7 +36,7 @@ describe('ChallengesPage', () => {
       ]),
       ...overrides,
     });
-    modal = { open: vi.fn() };
+    modal = { open: vi.fn(), confirm: vi.fn(async () => true) };
     copy = vi.fn(async () => true);
     TestBed.configureTestingModule({
       providers: [
@@ -223,6 +223,50 @@ describe('ChallengesPage', () => {
       await ctx.settle();
 
       expect(ctx.row('2026-10-04').querySelector('[role="alert"]')?.textContent).toContain('errors.admin.day_not_over');
+    });
+  });
+
+  describe('défi du jour masqué', () => {
+    const masked = { loadTodayMask: vi.fn(async () => ({ hidden: true, date: '2026-10-05' })) };
+
+    it('n\'affiche rien de plus quand le défi est visible', async () => {
+      const { element } = await render();
+
+      expect(element.querySelector('[data-testid="today-mask"]')).toBeNull();
+    });
+
+    it('cache les morceaux du jour et propose « Afficher quand même »', async () => {
+      const secret = { position: 1, artist: 'Daft Punk', title: 'Secret', deezerTrackId: 12 };
+      const { element } = await render({
+        ...masked,
+        listHistory: vi.fn(async () => [historyEntry({ id: 5, date: '2026-10-05', tracks: [secret] }), historyEntry({ id: 4, date: '2026-10-04' })]),
+      });
+
+      expect(element.querySelector('[data-testid="today-mask"]')).not.toBeNull();
+      expect(element.textContent).not.toContain('Secret');
+      expect(element.textContent).toContain('Lose Yourself');
+    });
+
+    it('affiche le défi après confirmation', async () => {
+      const { element, settle } = await render(masked);
+
+      (element.querySelector('[data-testid="today-mask-reveal"]') as HTMLButtonElement).click();
+      await settle();
+
+      expect(modal.confirm).toHaveBeenCalledTimes(1);
+      expect(api.revealToday).toHaveBeenCalledTimes(1);
+      expect(element.querySelector('[data-testid="today-mask"]')).toBeNull();
+    });
+
+    it('ne fait rien si l\'admin annule', async () => {
+      const { element, settle } = await render(masked);
+      modal.confirm.mockResolvedValue(false);
+
+      (element.querySelector('[data-testid="today-mask-reveal"]') as HTMLButtonElement).click();
+      await settle();
+
+      expect(api.revealToday).not.toHaveBeenCalled();
+      expect(element.querySelector('[data-testid="today-mask"]')).not.toBeNull();
     });
   });
 });

@@ -501,7 +501,13 @@
       "recompute": "Recalculer les stats",
       "recomputing": "Recalcul en cours…",
       "recomputeNotFound": "Aucun défi pour ce jour.",
-      "recomputeError": "Le recalcul a échoué."
+      "recomputeError": "Le recalcul a échoué.",
+      "todayMasked": "Défi du jour masqué : tu ne l'as pas encore joué.",
+      "todayMaskedHint": "Ses morceaux s'affichent dès que ta partie est finie.",
+      "revealToday": "Afficher quand même",
+      "revealConfirmTitle": "Afficher le défi du jour ?",
+      "revealConfirmBody": "Tu verras les morceaux du jour. Ta partie de ce défi, commencée ou non, ne comptera plus dans les statistiques.",
+      "revealCancel": "Annuler"
     },
     "players": {
       "title": "Comptes inscrits ({{ count }})",

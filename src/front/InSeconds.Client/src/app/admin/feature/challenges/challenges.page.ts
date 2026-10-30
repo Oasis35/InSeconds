@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { errorMessageKey } from '../../../core/errors/error-messages';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { SessionStore } from '../../../core/session/session.store';
+import { ButtonComponent } from '../../../ui/button/button.component';
 import { ErrorMessageComponent } from '../../../ui/error-message/error-message.component';
 import { ModalService } from '../../../ui/modal/modal.service';
 import { ChallengesStore } from '../../data-access/challenges.store';
@@ -32,7 +33,7 @@ function recomputeErrorKey(code: string): string {
 @Component({
   selector: 'app-admin-challenges-page',
   imports: [
-    TranslatePipe, ErrorMessageComponent, ChallengeMonthNavComponent, ChallengeCardComponent, ChallengeHistoryComponent,
+    TranslatePipe, ButtonComponent, ErrorMessageComponent, ChallengeMonthNavComponent, ChallengeCardComponent, ChallengeHistoryComponent,
   ],
   providers: [ChallengesStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -44,6 +45,21 @@ function recomputeErrorKey(code: string): string {
         <app-challenge-month-nav
           [label]="monthLabel()" [canPrevious]="store.canGoPrevious()" [canNext]="store.canGoNext()"
           (previous)="store.shiftMonth(-1)" (next)="store.shiftMonth(1)" />
+      }
+
+      <!-- Défi du jour masqué tant que l'admin ne l'a pas fini -->
+      @if (store.isFulfilled() && store.todayMask().hidden) {
+        <div class="rounded-xl p-5 flex flex-col gap-3" style="background:var(--bg-surface)" data-testid="today-mask">
+          <p class="text-sm font-medium" style="color:var(--text-hi)">{{ 'admin.challenges.todayMasked' | translate }}</p>
+          <p class="text-xs" style="color:var(--text-muted)">{{ 'admin.challenges.todayMaskedHint' | translate }}</p>
+          @if (store.revealError(); as error) {
+            <app-error-message [messageKey]="errorKey(error.code)" [traceId]="error.traceId" />
+          }
+          <button appButton variant="neutral" size="sm" type="button" class="self-start" (click)="reveal()" [disabled]="store.revealing()"
+            data-testid="today-mask-reveal">
+            {{ 'admin.challenges.revealToday' | translate }}
+          </button>
+        </div>
       }
 
       <!-- Stats par défi -->
@@ -103,6 +119,7 @@ export class ChallengesPage implements OnInit {
   private readonly session = inject(SessionStore);
   private readonly modal = inject(ModalService);
   private readonly language = inject(LanguageService);
+  private readonly translate = inject(TranslateService);
 
   protected readonly monthLabel = computed(() => formatMonth(this.store.month(), this.language.current()));
   protected readonly youId = computed(() => this.session.player()?.id ?? null);
@@ -113,6 +130,17 @@ export class ChallengesPage implements OnInit {
 
   ngOnInit(): void {
     void this.store.load();
+  }
+
+  /** « Afficher quand même », après confirmation : la partie de l'admin sur ce défi ne comptera plus dans les stats. */
+  protected async reveal(): Promise<void> {
+    const confirmed = await this.modal.confirm({
+      title: this.translate.instant('admin.challenges.revealConfirmTitle'),
+      body: this.translate.instant('admin.challenges.revealConfirmBody'),
+      confirmLabel: this.translate.instant('admin.challenges.revealToday'),
+      cancelLabel: this.translate.instant('admin.challenges.revealCancel'),
+    });
+    if (confirmed) await this.store.revealToday();
   }
 
   protected openChart(track: ChallengeTrackStats): void {

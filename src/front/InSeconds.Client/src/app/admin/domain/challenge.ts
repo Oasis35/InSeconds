@@ -101,6 +101,23 @@ export function inMonth<T extends { readonly date: string }>(items: readonly T[]
   return items.filter(item => monthOf(item.date) === month);
 }
 
+/**
+ * Le défi du jour vu de l'admin connecté : masqué (`date` = son jour) tant qu'il n'a pas fini sa partie ni cliqué sur
+ * « Afficher quand même ».
+ */
+export interface TodayMask {
+  readonly hidden: boolean;
+  readonly date: string | null;
+}
+
+export const VISIBLE: TodayMask = { hidden: false, date: null };
+
+/** Le défi masqué garde sa ligne (date, joueurs, scores) mais perd ses morceaux. */
+export function maskTracks<T extends { readonly date: string; readonly tracks: readonly unknown[] }>(items: readonly T[], mask: TodayMask): T[] {
+  if (!mask.hidden) return [...items];
+  return items.map(item => (item.date === mask.date ? { ...item, tracks: [] } : item));
+}
+
 /** Les 8 premiers caractères d'un identifiant de joueur : ce qu'on affiche à la place d'un pseudo. */
 export function shortId(playerId: string): string {
   return playerId.slice(0, SHORT_ID_LENGTH);

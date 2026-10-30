@@ -501,7 +501,13 @@
       "recompute": "Recompute stats",
       "recomputing": "Recomputing…",
       "recomputeNotFound": "No challenge for this day.",
-      "recomputeError": "The recompute failed."
+      "recomputeError": "The recompute failed.",
+      "todayMasked": "Today's challenge is hidden: you haven't played it yet.",
+      "todayMaskedHint": "Its tracks show up as soon as your game is over.",
+      "revealToday": "Show anyway",
+      "revealConfirmTitle": "Show today's challenge?",
+      "revealConfirmBody": "You'll see today's tracks. Your game on this challenge, started or not, will no longer count in the statistics.",
+      "revealCancel": "Cancel"
     },
     "players": {
       "title": "Registered accounts ({{ count }})",
