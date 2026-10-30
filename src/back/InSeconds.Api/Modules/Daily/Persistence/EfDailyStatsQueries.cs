@@ -42,7 +42,11 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
             .Where(s => s.ChallengeId == challengeId && s.PlayerId == playerId)
             .Select(s => new
             {
-                s.Id, s.Status, s.TotalScore, s.FreezesUsed, s.FreezeEarned,
+                s.Id,
+                s.Status,
+                s.TotalScore,
+                s.FreezesUsed,
+                s.FreezeEarned,
                 Revealed = db.Set<ChallengeReveal>().Any(r => r.ChallengeId == s.ChallengeId && r.PlayerId == s.PlayerId),
             })
             .FirstOrDefaultAsync(ct);
