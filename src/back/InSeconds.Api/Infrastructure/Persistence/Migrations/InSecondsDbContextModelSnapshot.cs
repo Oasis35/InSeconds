@@ -165,6 +165,29 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("InSeconds.Api.Modules.Daily.Domain.ChallengeReveal", b =>
+                {
+                    b.Property<int>("ChallengeId")
+                        .HasColumnType("integer")
+                        .HasColumnName("challenge_id");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<DateTimeOffset>("RevealedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revealed_at");
+
+                    b.HasKey("ChallengeId", "PlayerId")
+                        .HasName("pk_challenge_reveals");
+
+                    b.HasIndex("PlayerId")
+                        .HasDatabaseName("ix_challenge_reveals_player_id");
+
+                    b.ToTable("challenge_reveals", "daily");
+                });
+
             modelBuilder.Entity("InSeconds.Api.Modules.Daily.Domain.ChallengeTrack", b =>
                 {
                     b.Property<int>("ChallengeId")
@@ -945,6 +968,23 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_track_genres_genre_id");
 
                     b.ToTable("track_genres", "catalogue");
+                });
+
+            modelBuilder.Entity("InSeconds.Api.Modules.Daily.Domain.ChallengeReveal", b =>
+                {
+                    b.HasOne("InSeconds.Api.Modules.Daily.Domain.DailyChallenge", null)
+                        .WithMany()
+                        .HasForeignKey("ChallengeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_challenge_reveals_daily_challenge_challenge_id");
+
+                    b.HasOne("InSeconds.Api.Modules.Players.Domain.Player", null)
+                        .WithMany()
+                        .HasForeignKey("PlayerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_challenge_reveals_players_player_id");
                 });
 
             modelBuilder.Entity("InSeconds.Api.Modules.Daily.Domain.ChallengeTrack", b =>

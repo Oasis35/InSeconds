@@ -4,7 +4,8 @@ namespace InSeconds.Api.Modules.Daily.Application;
 /// La section « daily » de la copie des données d'un joueur (RGPD) : sa série et toutes ses parties, la plus ancienne d'abord.
 /// </summary>
 /// <param name="Streak">Rien s'il n'a jamais terminé de partie ni reçu de gel.</param>
-public sealed record DailyDataExport(StreakExport? Streak, IReadOnlyList<GameExport> Games);
+/// <param name="RevealedChallenges">Un admin seulement : les jours dont il a affiché le défi avant d'en finir la partie (hors statistiques).</param>
+public sealed record DailyDataExport(StreakExport? Streak, IReadOnlyList<GameExport> Games, IReadOnlyList<DateOnly> RevealedChallenges);
 
 /// <param name="LastPlayedDate">Date du dernier défi terminé (jour UTC).</param>
 public sealed record StreakExport(int CurrentStreak, DateOnly? LastPlayedDate, int Freezes);

@@ -44,6 +44,16 @@ internal sealed class GameApi : IAsyncDisposable
         return new Gamer(this, id, Api.CreateClient(new TestUser(id, IsAdmin: false)));
     }
 
+    /// <summary>Un admin : un compte au rôle admin (relu par la validation du cookie, simulé ici par l'en-tête du faux schéma).</summary>
+    public async Task<Gamer> NewAdminAsync(string pseudo = "Admin")
+    {
+        var id = Guid.NewGuid();
+        await Api.ExecuteAsync($"INSERT INTO players.players (id, created_at) VALUES ('{id}', now())");
+        await Api.ExecuteAsync(
+            $"INSERT INTO players.accounts (player_id, email, pseudo, is_admin) VALUES ('{id}', '{pseudo.ToLowerInvariant()}@example.com', '{pseudo}', true)");
+        return new Gamer(this, id, Api.CreateClient(new TestUser(id, IsAdmin: true)));
+    }
+
     /// <summary>Le défi de ce jour, déjà généré (origine nocturne).</summary>
     public Task GenerateAsync(DateOnly? day = null) => App.GenerateAsync(day);
 

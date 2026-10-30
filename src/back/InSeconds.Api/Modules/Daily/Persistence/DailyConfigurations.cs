@@ -103,3 +103,16 @@ internal sealed class DailyStreakConfiguration : IEntityTypeConfiguration<DailyS
             .HasForeignKey(nameof(DailyStreak.PlayerId)).OnDelete(DeleteBehavior.Restrict);
     }
 }
+
+internal sealed class ChallengeRevealConfiguration : IEntityTypeConfiguration<ChallengeReveal>
+{
+    public void Configure(EntityTypeBuilder<ChallengeReveal> builder)
+    {
+        builder.ToTable("challenge_reveals", DbSchemas.Daily);
+        // Un seul affichage par admin et par défi : la clé primaire est aussi ce que lisent les statistiques pour écarter sa partie.
+        builder.HasKey(r => new { r.ChallengeId, r.PlayerId });
+        builder.HasOne<DailyChallenge>().WithMany().HasForeignKey(r => r.ChallengeId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne("InSeconds.Api.Modules.Players.Domain.Player", navigationName: null).WithMany()
+            .HasForeignKey(nameof(ChallengeReveal.PlayerId)).OnDelete(DeleteBehavior.Restrict);
+    }
+}

@@ -111,7 +111,7 @@ public static class GetTodayStatsEndpoint
             scores.Count == 0 ? null : scores.Max(),
             maxPossible,
             ScoreDistribution.Build(scores, maxPossible).Select(b => new ScoreBucketResponse(b.MinScore, b.MaxScore, b.Count)).ToList(),
-            ScoreDistribution.BetterThanPercent(scores, yourScore));
+            ScoreDistribution.BetterThanPercent(scores, yourScore, own?.CountsInStats ?? true));
     }
 
     // Compte : le gel que la partie du jour a réellement gagné. Invité : il n'a jamais de stock, on lui dit seulement qu'il aurait atteint le palier.

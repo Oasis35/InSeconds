@@ -6,14 +6,22 @@ using Microsoft.EntityFrameworkCore;
 namespace InSeconds.Api.Modules.Daily.Persistence;
 
 /// <summary>
-/// Les réponses d'un défi, que lit toute statistique d'un morceau. Celles d'un joueur effacé n'y sont plus : l'effacement supprime ses
-/// parties (<c>AccountErasure</c>).
+/// Les parties que comptent les statistiques : toutes, sauf celle d'un admin qui a affiché le défi dans l'admin avant d'en finir la partie
+/// (<see cref="ChallengeReveal"/>). Celles d'un joueur effacé n'y sont plus : l'effacement supprime ses parties (<c>AccountErasure</c>).
 /// </summary>
+internal static class CountedSessions
+{
+    public static IQueryable<DailySession> Of(InSecondsDbContext db) =>
+        db.Set<DailySession>().AsNoTracking()
+            .Where(s => !db.Set<ChallengeReveal>().Any(r => r.ChallengeId == s.ChallengeId && r.PlayerId == s.PlayerId));
+}
+
+/// <summary>Les réponses d'un défi, que lit toute statistique d'un morceau : celles des parties comptées (<see cref="CountedSessions"/>).</summary>
 internal static class ChallengeAnswers
 {
     public static IQueryable<SessionAnswer> Of(InSecondsDbContext db, int challengeId, bool completedOnly)
     {
-        var sessions = db.Set<DailySession>().AsNoTracking()
+        var sessions = CountedSessions.Of(db)
             .Where(s => s.ChallengeId == challengeId && (!completedOnly || s.Status == SessionStatus.Completed));
         return db.Set<SessionAnswer>().AsNoTracking().Where(a => sessions.Any(s => s.Id == a.SessionId));
     }
@@ -32,7 +40,11 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
     {
         var session = await db.Set<DailySession>().AsNoTracking()
             .Where(s => s.ChallengeId == challengeId && s.PlayerId == playerId)
-            .Select(s => new { s.Id, s.Status, s.TotalScore, s.FreezesUsed, s.FreezeEarned })
+            .Select(s => new
+            {
+                s.Id, s.Status, s.TotalScore, s.FreezesUsed, s.FreezeEarned,
+                Revealed = db.Set<ChallengeReveal>().Any(r => r.ChallengeId == s.ChallengeId && r.PlayerId == s.PlayerId),
+            })
             .FirstOrDefaultAsync(ct);
         if (session is null)
             return null;
@@ -44,21 +56,21 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
                 .Select(a => new PlayerAnswerRow(a.Position, a.ArtistCorrect, a.TitleCorrect, a.ListenedSeconds, a.Score))
                 .ToListAsync(ct)
             : [];
-        return new PlayerSessionRow(session.Status, session.TotalScore, session.FreezesUsed, session.FreezeEarned, answers);
+        return new PlayerSessionRow(session.Status, session.TotalScore, session.FreezesUsed, session.FreezeEarned, answers, CountsInStats: !session.Revealed);
     }
 
     public Task<int> CountCompletedSessionsAsync(CancellationToken ct) =>
-        db.Set<DailySession>().AsNoTracking().CountAsync(s => s.Status == SessionStatus.Completed, ct);
+        CountedSessions.Of(db).CountAsync(s => s.Status == SessionStatus.Completed, ct);
 
     public async Task<IReadOnlyList<DaySessionRow>> GetSessionsAsync(int challengeId, CancellationToken ct) =>
-        await db.Set<DailySession>().AsNoTracking()
+        await CountedSessions.Of(db)
             .Where(s => s.ChallengeId == challengeId)
             .OrderBy(s => s.Id)
             .Select(s => new DaySessionRow(s.PlayerId, s.Status, s.TotalScore))
             .ToListAsync(ct);
 
     public async Task<IReadOnlyList<int>> GetCompletedScoresAsync(int challengeId, CancellationToken ct) =>
-        await db.Set<DailySession>().AsNoTracking()
+        await CountedSessions.Of(db)
             .Where(s => s.ChallengeId == challengeId && s.Status == SessionStatus.Completed)
             .Select(s => s.TotalScore)
             .ToListAsync(ct);
@@ -138,7 +150,7 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
         await db.Set<DailyChallenge>().AsNoTracking().Where(c => c.Date == day).Select(c => (int?)c.Id).FirstOrDefaultAsync(ct);
 
     public async Task<IReadOnlyDictionary<DateOnly, int>> GetCompletedCountsByDayAsync(DateOnly since, CancellationToken ct) =>
-        await (from s in db.Set<DailySession>().AsNoTracking()
+        await (from s in CountedSessions.Of(db)
                join c in db.Set<DailyChallenge>().AsNoTracking() on s.ChallengeId equals c.Id
                where c.Date >= since && s.Status == SessionStatus.Completed
                group s by c.Date into g
@@ -199,5 +211,19 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
             .GroupBy(r => r.TrackId)
             .Select(g => new TrackTally(g.Key, g.Count(), g.Count(r => r.ArtistCorrect && r.TitleCorrect)))
             .ToListAsync(ct);
+    }
+
+    public async Task<ChallengeMaskRow?> GetChallengeMaskAsync(DateOnly day, Guid playerId, CancellationToken ct)
+    {
+        var row = await db.Set<DailyChallenge>().AsNoTracking()
+            .Where(c => c.Date == day)
+            .Select(c => new
+            {
+                c.Id,
+                Status = db.Set<DailySession>().Where(s => s.ChallengeId == c.Id && s.PlayerId == playerId).Select(s => (SessionStatus?)s.Status).FirstOrDefault(),
+                Revealed = db.Set<ChallengeReveal>().Any(r => r.ChallengeId == c.Id && r.PlayerId == playerId),
+            })
+            .FirstOrDefaultAsync(ct);
+        return row is null ? null : new ChallengeMaskRow(row.Id, row.Status, row.Revealed);
     }
 }

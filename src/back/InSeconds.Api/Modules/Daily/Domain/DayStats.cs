@@ -59,16 +59,18 @@ public static class ScoreDistribution
     /// <summary>
     /// Part (en %, arrondie) des **autres** joueurs dont le score est strictement inférieur à celui-ci. Vide si le joueur n'a pas de score, ou
     /// sous <see cref="MinPlayersForPercent"/> parties terminées : son score fait partie de <paramref name="scores"/>, on le retire une fois du
-    /// dénominateur.
+    /// dénominateur. Sauf si <paramref name="yourScoreCounted"/> est faux (la partie d'un admin qui a affiché le défi, hors des statistiques) :
+    /// <paramref name="scores"/> ne contient alors que les autres, et le seuil compte sa partie en plus.
     /// </summary>
-    public static int? BetterThanPercent(IReadOnlyCollection<int> scores, int? yourScore)
+    public static int? BetterThanPercent(IReadOnlyCollection<int> scores, int? yourScore, bool yourScoreCounted = true)
     {
         ArgumentNullException.ThrowIfNull(scores);
-        if (yourScore is null || scores.Count < MinPlayersForPercent)
+        var others = yourScoreCounted ? scores.Count - 1 : scores.Count;
+        if (yourScore is null || others + 1 < MinPlayersForPercent)
             return null;
 
         var below = scores.Count(s => s < yourScore.Value);
-        return (int)Math.Round(below * 100.0 / (scores.Count - 1), MidpointRounding.AwayFromZero);
+        return (int)Math.Round(below * 100.0 / others, MidpointRounding.AwayFromZero);
     }
 
     // Un score au-delà du maximum (barème changé en cours de journée) tombe dans la dernière tranche plutôt que de sortir du tableau.

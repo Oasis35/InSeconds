@@ -9,7 +9,7 @@ namespace InSeconds.Api.Modules.Daily.Persistence;
 
 /// <summary>
 /// Le Daily comme contributeur aux droits d'un joueur (RGPD) : sa section « daily » de la copie de ses données, et l'effacement de sa série et de
-/// ses parties. Appelé par Players dans sa propre transaction.
+/// ses parties (et des défis affichés par un admin). Appelé par Players dans sa propre transaction.
 /// </summary>
 public sealed class DailyPlayerData(InSecondsDbContext db, ITrackDirectory tracks) : IPlayerDataContributor
 {
@@ -49,7 +49,15 @@ public sealed class DailyPlayerData(InSecondsDbContext db, ITrackDirectory track
                 row.Challenge.Date, row.Session.Status.ToString(), row.Session.StartedAt, row.Session.EndedAt, row.Session.TotalScore, answers);
         }).ToList();
 
-        return new DailyDataExport(streak, games);
+        var revealed = await (
+                from reveal in db.Set<ChallengeReveal>().AsNoTracking()
+                join challenge in db.Set<DailyChallenge>().AsNoTracking() on reveal.ChallengeId equals challenge.Id
+                where reveal.PlayerId == playerId
+                orderby challenge.Date
+                select challenge.Date)
+            .ToListAsync(ct);
+
+        return new DailyDataExport(streak, games, revealed);
     }
 
     // Exécuté tout de suite, dans la transaction de l'appelant. Les réponses partent avec leur partie (clé étrangère en cascade).
@@ -57,6 +65,7 @@ public sealed class DailyPlayerData(InSecondsDbContext db, ITrackDirectory track
     {
         var games = await db.Set<DailySession>().Where(s => s.PlayerId == playerId).ExecuteDeleteAsync(ct);
         await db.Set<DailyStreak>().Where(s => s.PlayerId == playerId).ExecuteDeleteAsync(ct);
+        await db.Set<ChallengeReveal>().Where(r => r.PlayerId == playerId).ExecuteDeleteAsync(ct);
         return games;
     }
 }

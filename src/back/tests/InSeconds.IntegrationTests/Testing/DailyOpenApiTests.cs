@@ -14,8 +14,8 @@ public class DailyOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(
         Assert.Equal(
             [
                 "abandonSession", "getAdminDailySettings", "getArchiveDay", "getArchiveIndex", "getArchivePreview", "getChallengeStats", "getDailySettings", "getDashboard",
-                "getGamesPlayed", "getMyArchiveDay", "getPlayerHistory", "getToday", "getTodayStats", "getWeeklyRecap", "listChallenges", "listRegisteredPlayers", "recomputeDayStats", "requestHint",
-                "startSession", "submitAnswer", "updateListening", "updateTrackCooldownPoolPercent",
+                "getGamesPlayed", "getMyArchiveDay", "getPlayerHistory", "getToday", "getTodayChallengeMask", "getTodayStats", "getWeeklyRecap", "listChallenges", "listRegisteredPlayers",
+                "recomputeDayStats", "requestHint", "revealTodayChallenge", "startSession", "submitAnswer", "updateListening", "updateTrackCooldownPoolPercent",
             ],
             OperationIds(document).Order(StringComparer.Ordinal));
         // Rien d'autre que le module : ni Players, ni Catalogue, ni /api/e2e. La liste des joueurs inscrits (api/admin/players) est servie par Daily.
@@ -37,6 +37,8 @@ public class DailyOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(
         Assert.Equal(("get", "/api/admin/daily/players/{playerId}/history"), (MethodOf(document, "getPlayerHistory"), PathOf(document, "getPlayerHistory")));
         Assert.Equal(("get", "/api/admin/daily/settings"), (MethodOf(document, "getAdminDailySettings"), PathOf(document, "getAdminDailySettings")));
         Assert.Equal(("put", "/api/admin/daily/settings/track-cooldown-pool-percent"), (MethodOf(document, "updateTrackCooldownPoolPercent"), PathOf(document, "updateTrackCooldownPoolPercent")));
+        Assert.Equal(("get", "/api/admin/daily/today-mask"), (MethodOf(document, "getTodayChallengeMask"), PathOf(document, "getTodayChallengeMask")));
+        Assert.Equal(("post", "/api/admin/daily/today-mask/reveal"), (MethodOf(document, "revealTodayChallenge"), PathOf(document, "revealTodayChallenge")));
         // L'historique d'un joueur inconnu : 404 documenté, avec son ProblemDetails.
         Assert.Equal("#/components/schemas/ProblemDetails", ResponseSchemaRef(document, "getPlayerHistory", "404"));
         Assert.Contains("400", Codes(document, "getDashboard"));

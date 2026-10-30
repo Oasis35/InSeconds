@@ -73,4 +73,9 @@ public interface IDailyStore
     Task<DayStatsSnapshot?> FindDayStatsAsync(int challengeId, CancellationToken ct);
 
     void Add(DayStatsSnapshot snapshot);
+
+    /// <summary>Cet admin a déjà affiché ce défi avant d'en finir la partie.</summary>
+    Task<bool> HasRevealedAsync(int challengeId, Guid playerId, CancellationToken ct);
+
+    void Add(ChallengeReveal reveal);
 }

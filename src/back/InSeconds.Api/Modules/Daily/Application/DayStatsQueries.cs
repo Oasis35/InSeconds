@@ -3,7 +3,10 @@ using InSeconds.Api.Modules.Daily.Domain;
 namespace InSeconds.Api.Modules.Daily.Application;
 
 /// <summary>La partie d'un joueur sur un défi, avec ses réponses (celles qu'il voit en fin de partie).</summary>
-public sealed record PlayerSessionRow(SessionStatus Status, int TotalScore, int FreezesUsed, bool FreezeEarned, IReadOnlyList<PlayerAnswerRow> Answers);
+/// <param name="CountsInStats">Faux pour la partie d'un admin qui a affiché ce défi avant de la finir (<see cref="ChallengeReveal"/>) : elle est hors
+/// des statistiques.</param>
+public sealed record PlayerSessionRow(
+    SessionStatus Status, int TotalScore, int FreezesUsed, bool FreezeEarned, IReadOnlyList<PlayerAnswerRow> Answers, bool CountsInStats = true);
 
 public sealed record PlayerAnswerRow(int Position, bool ArtistCorrect, bool TitleCorrect, decimal ListenedSeconds, int Score);
 
@@ -20,12 +23,16 @@ public sealed record RecentChallenge(int Id, DateOnly Date, string? SnapshotJson
 /// <summary>Un défi et ses morceaux, pour l'historique de l'admin.</summary>
 public sealed record ChallengeListRow(int Id, DateOnly Date, IReadOnlyList<ChallengeTrackRef> Tracks);
 
+/// <summary>Le défi d'un jour vu d'un joueur : l'état de sa partie (vide s'il n'a pas commencé) et s'il l'a affiché dans l'admin.</summary>
+public sealed record ChallengeMaskRow(int ChallengeId, SessionStatus? OwnSession, bool Revealed);
+
 /// <summary>Une partie d'un joueur, pour son historique dans l'admin.</summary>
 public sealed record PlayerHistoryRow(DateOnly Date, SessionStatus Status, int TotalScore, int FreezesUsed, bool FreezeEarned);
 
 /// <summary>
 /// Lectures des statistiques, en agrégats. **Les joueurs effacés n'y figurent pas** : l'effacement (<c>AccountErasure</c>) supprime leurs
-/// parties.
+/// parties. **La partie d'un admin qui a affiché le défi avant de la finir non plus** (<see cref="ChallengeReveal"/>), sauf dans ce que l'on
+/// rend d'un joueur précis (sa partie, son record, son historique, son nombre de parties) et dans la story de la semaine.
 /// </summary>
 public interface IDailyStatsQueries
 {
@@ -81,4 +88,7 @@ public interface IDailyStatsQueries
 
     /// <summary>Les parties de ce joueur sur les défis de ce jour et des suivants, de la plus récente à la plus ancienne.</summary>
     Task<IReadOnlyList<PlayerHistoryRow>> GetPlayerHistoryAsync(Guid playerId, DateOnly since, CancellationToken ct);
+
+    /// <summary>Le défi de ce jour vu de ce joueur (<see cref="TodayChallengeMask"/>) ; vide sans défi ce jour-là.</summary>
+    Task<ChallengeMaskRow?> GetChallengeMaskAsync(DateOnly day, Guid playerId, CancellationToken ct);
 }

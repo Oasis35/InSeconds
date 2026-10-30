@@ -103,6 +103,11 @@ public sealed class EfDailyStore(InSecondsDbContext db) : IDailyStore
 
     public void Add(DayStatsSnapshot snapshot) => db.Add(snapshot);
 
+    public Task<bool> HasRevealedAsync(int challengeId, Guid playerId, CancellationToken ct) =>
+        db.Set<ChallengeReveal>().AnyAsync(r => r.ChallengeId == challengeId && r.PlayerId == playerId, ct);
+
+    public void Add(ChallengeReveal reveal) => db.Add(reveal);
+
     // Un verrou « de transaction » est relâché dès la fin d'une requête hors transaction : il ne protégerait rien.
     private void RequireTransaction(string what)
     {

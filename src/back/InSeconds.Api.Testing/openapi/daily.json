@@ -942,6 +942,39 @@
           }
         }
       }
+    },
+    "/api/admin/daily/today-mask": {
+      "get": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "getTodayChallengeMask",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodayChallengeMaskResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/daily/today-mask/reveal": {
+      "post": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "revealTodayChallenge",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2657,6 +2690,25 @@
             "format": "int32"
           }
         }
+      },
+      "TodayChallengeMaskResponse": {
+        "required": [
+          "hidden",
+          "date"
+        ],
+        "type": "object",
+        "properties": {
+          "hidden": {
+            "type": "boolean"
+          },
+          "date": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        }
       }
     }
   },
@@ -2681,6 +2733,12 @@
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.UpdateTrackCooldownPoolPercentEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.GetTodayChallengeMaskEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.RevealTodayChallengeEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.GetWeeklyRecapEndpoint"

@@ -54,6 +54,16 @@ public class DayStatsTests
     }
 
     [Fact]
+    public void MeilleurQue_ScoreHorsStats_ComparéAuxAutresSeulement()
+    {
+        // Un admin qui a affiché le défi : son 700 n'est pas dans la liste, il bat trois des quatre autres.
+        Assert.Equal(75, ScoreDistribution.BetterThanPercent([100, 300, 400, 900], 700, yourScoreCounted: false));
+        Assert.Equal(100, ScoreDistribution.BetterThanPercent([100, 300, 400, 900], 950, yourScoreCounted: false));
+        // Trois autres et lui : quatre joueurs, sous le seuil.
+        Assert.Null(ScoreDistribution.BetterThanPercent([100, 300, 400], 700, yourScoreCounted: false));
+    }
+
+    [Fact]
     public void MeilleurQue_SansScoreOuSousLeSeuil_Vide()
     {
         Assert.Null(ScoreDistribution.BetterThanPercent([100, 200, 300, 400, 500], null));
