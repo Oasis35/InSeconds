@@ -233,7 +233,7 @@ public static class GetMyArchiveDayEndpoint
         return new ArchiveMeResponse(
             true,
             own.TotalScore,
-            ScoreDistribution.BetterThanPercent(ChallengeArchive.CompletedScores(day.Stats), own.TotalScore),
+            ScoreDistribution.BetterThanPercent(ChallengeArchive.CompletedScores(day.Stats), own.TotalScore, own.CountsInStats),
             own.Answers.Select(a => new ArchiveMyAnswerResponse(a.Position, a.ArtistCorrect, a.TitleCorrect, a.ListenedSeconds, a.Score)).ToList());
     }
 }

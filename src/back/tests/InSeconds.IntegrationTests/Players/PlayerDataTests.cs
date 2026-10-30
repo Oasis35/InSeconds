@@ -32,6 +32,7 @@ public class PlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
     {
         var device = await _app.SignInDeviceAsync("alice@example.com", "Alice", SafariIphone);
         await PlayerDataSeed.AddGameAsync(_app.Api, device.PlayerId);
+        await PlayerDataSeed.AddRevealAsync(_app.Api, device.PlayerId);
 
         var response = await device.Client.GetAsync("/api/players/me/export", Ct);
 
@@ -49,6 +50,7 @@ public class PlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(["daily", "runs"], export.Modules.Keys.Order(StringComparer.Ordinal));
         var daily = ExportReading.Daily(export);
         Assert.Equal(1, daily.Streak!.Freezes);
+        Assert.Equal([PlayerDataSeed.Day], daily.RevealedChallenges);
 
         var game = Assert.Single(daily.Games);
         Assert.Equal(PlayerDataSeed.Day, game.Date);
@@ -109,6 +111,7 @@ public class PlayerDataTests(PostgresFixture postgres) : IAsyncLifetime
         var laptop = await _app.SignInDeviceAsync("efface@example.com");
         var bob = await _app.SignInDeviceAsync("reste@example.com", "Reste");
         await PlayerDataSeed.AddGameAsync(_app.Api, phone.PlayerId);
+        await PlayerDataSeed.AddRevealAsync(_app.Api, phone.PlayerId);
         await PlayerDataSeed.AddGameAsync(_app.Api, bob.PlayerId);
         await _app.Api.ExecuteAsync(
             $"INSERT INTO players.legacy_tokens (player_id, token_hash) VALUES ('{phone.PlayerId}', '\\x0102')");
@@ -208,6 +211,10 @@ internal static class PlayerDataSeed
             INSERT INTO daily.challenges (id, date, seed, origin) VALUES ({ChallengeId}, '{Day:yyyy-MM-dd}', 1, 1);
             INSERT INTO daily.challenge_tracks (challenge_id, position, track_id) VALUES ({ChallengeId}, 1, 1), ({ChallengeId}, 2, 2);
             """);
+
+    /// <summary>Un admin a affiché le défi du jour de la partie avant de la finir (« Afficher quand même »).</summary>
+    public static Task AddRevealAsync(ApiFactory api, Guid playerId) =>
+        api.ExecuteAsync($"INSERT INTO daily.challenge_reveals (challenge_id, player_id, revealed_at) VALUES ({ChallengeId}, '{playerId}', now())");
 
     /// <summary>Partie terminée : 0,5 s tout juste (1000), puis 1 s, artiste seulement, un indice (850).</summary>
     public static async Task AddGameAsync(ApiFactory api, Guid playerId)

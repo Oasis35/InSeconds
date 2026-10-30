@@ -87,6 +87,9 @@ export const ChallengesStore = signalStore(
         try {
           await api.revealToday();
           patchState(store, { todayMask: VISIBLE });
+          // Sa partie du jour, si elle était commencée, ne compte plus : les chiffres de la carte du jour sont relus (rien ne change si la relecture échoue).
+          const stats = await api.loadStats().catch(() => null);
+          if (stats !== null) patchState(store, { stats });
         } catch (error) {
           patchState(store, { revealError: await toAppError(error) });
         } finally {

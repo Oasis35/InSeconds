@@ -230,13 +230,14 @@ describe('ChallengesStore', () => {
       expect(store.historyForMonth().find(c => c.date === '2026-10-05')?.tracks).toEqual([]);
     });
 
-    it('« Afficher quand même » rend les morceaux sans relire les listes', async () => {
+    it('« Afficher quand même » rend les morceaux et relit les stats (la partie de l\'admin n\'y compte plus)', async () => {
       await setup(masked);
 
       await store.revealToday();
 
       expect(api.revealToday).toHaveBeenCalledTimes(1);
-      expect(api.loadStats).toHaveBeenCalledTimes(1);
+      expect(api.loadStats).toHaveBeenCalledTimes(2);
+      expect(api.listHistory).toHaveBeenCalledTimes(1);
       expect(store.todayMask().hidden).toBe(false);
       expect(store.statsForMonth().find(c => c.date === '2026-10-05')?.tracks).toHaveLength(1);
     });

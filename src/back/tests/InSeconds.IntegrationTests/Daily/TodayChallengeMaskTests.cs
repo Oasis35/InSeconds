@@ -132,6 +132,36 @@ public class TodayChallengeMaskTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task PartieDejaFinie_AfficherNeLaSortPasDesStats()
+    {
+        await _game.GenerateAsync();
+        await FourPlayersFinishAsync();
+        var admin = await _game.NewAdminAsync();
+        await admin.FinishAsync((await admin.StartAsync()).SessionId);
+
+        // Un onglet resté ouvert sur le bandeau : le clic arrive après la fin de la partie.
+        await RevealAsync(admin);
+
+        Assert.Equal(0L, await _game.Api.ScalarAsync<long>("SELECT count(*) FROM daily.challenge_reveals"));
+        Assert.Equal(5, (await StatsAsync(admin.Client)).TotalPlayers);
+    }
+
+    [Fact]
+    public async Task RéponsesDHier_LAdminQuiAAffiche_VoitSaPlaceParmiLesAutres()
+    {
+        await _game.GenerateAsync();
+        await FourPlayersFinishAsync();
+        var admin = await _game.NewAdminAsync();
+        await RevealAsync(admin);
+        await admin.FinishAsync((await admin.StartAsync()).SessionId, seconds: 0.5m);
+        _game.Time.Advance(TimeSpan.FromDays(1));
+
+        var me = await admin.Client.GetFromJsonAsync<ArchiveMeResponse>($"/api/daily/archive/{Today:yyyy-MM-dd}/me", Ct);
+
+        Assert.Equal((5000, 100), (me!.Score, me.BetterThanPercent));
+    }
+
+    [Fact]
     public async Task ReserveAUnAdmin_401Et403()
     {
         var player = await _game.NewPlayerAsync();

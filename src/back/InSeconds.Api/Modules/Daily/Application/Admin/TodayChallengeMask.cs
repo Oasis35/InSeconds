@@ -40,29 +40,29 @@ public static class GetTodayChallengeMaskEndpoint
             : TodayChallengeMaskResponse.Visible;
 }
 
-/// <summary>Le défi du jour, et si cet admin l'a déjà affiché.</summary>
-public sealed record RevealLoad(DailyChallenge? Challenge, bool AlreadyRevealed);
+/// <param name="Masked">Le défi du jour, s'il est encore masqué à cet admin ; vide sinon (pas de défi, partie finie, déjà affiché).</param>
+public sealed record RevealLoad(ChallengeMaskRow? Masked);
 
 public static class RevealTodayChallengeEndpoint
 {
-    public static async Task<RevealLoad> LoadAsync(ICurrentPlayer current, IDailyStore store, IGameCalendar calendar, CancellationToken ct)
-    {
-        var challenge = await store.FindChallengeAsync(calendar.Today, ct);
-        var revealed = challenge is not null && current.PlayerId is { } playerId && await store.HasRevealedAsync(challenge.Id, playerId, ct);
-        return new RevealLoad(challenge, revealed);
-    }
+    public static async Task<RevealLoad> LoadAsync(ICurrentPlayer current, IDailyStatsQueries stats, IGameCalendar calendar, CancellationToken ct) =>
+        new(current.PlayerId is { } playerId && await stats.GetChallengeMaskAsync(calendar.Today, playerId, ct) is { } row
+            && TodayChallengeMask.IsHidden(row.OwnSession, row.Revealed)
+                ? row
+                : null);
 
     /// <summary>
     /// <c>POST /api/admin/daily/today-mask/reveal</c> : « Afficher quand même ». Le défi du jour n'est plus masqué à cet admin, et **sa partie de
     /// ce défi sort de toutes les statistiques** (publiques et admin), qu'elle soit commencée ou non : il la joue en connaissant les réponses.
-    /// Sans défi aujourd'hui, ou déjà affiché : rien ne change (204).
+    /// Sans effet (204) quand rien n'est masqué : pas de défi aujourd'hui, déjà affiché, ou partie déjà finie (jouée sans connaître les
+    /// réponses, elle reste comptée, même si le clic part d'un onglet resté ouvert).
     /// </summary>
     [WolverinePost("/api/admin/daily/today-mask/reveal", OperationId = "revealTodayChallenge")]
     [EmptyResponse]
     public static void Post([NotBody] RevealLoad loaded, ICurrentPlayer current, IDailyStore store, IGameCalendar calendar)
     {
-        if (loaded.Challenge is null || loaded.AlreadyRevealed || current.PlayerId is not { } playerId)
+        if (loaded.Masked is not { } masked || current.PlayerId is not { } playerId)
             return;
-        store.Add(ChallengeReveal.Create(loaded.Challenge.Id, playerId, calendar.Now));
+        store.Add(ChallengeReveal.Create(masked.ChallengeId, playerId, calendar.Now));
     }
 }
