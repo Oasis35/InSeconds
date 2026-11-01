@@ -76,8 +76,8 @@ internal static partial class DailyLog
     public static partial void SessionCompleted(ILogger logger, int sessionId, Guid playerId, int totalScore);
 
     [LoggerMessage(EventId = 1004, Level = LogLevel.Information,
-        Message = "Indice niveau {Level} demandé par {PlayerId} (partie {SessionId}, morceau {TrackId}, n°{TrackPosition})")]
-    public static partial void HintRequested(ILogger logger, int level, Guid playerId, int sessionId, int trackId, int trackPosition);
+        Message = "Indice niveau {HintLevel} demandé par {PlayerId} (partie {SessionId}, morceau {TrackId}, n°{TrackPosition})")]
+    public static partial void HintRequested(ILogger logger, int hintLevel, Guid playerId, int sessionId, int trackId, int trackPosition);
 
     [LoggerMessage(EventId = 1005, Level = LogLevel.Information,
         Message = "Partie {SessionId} abandonnée par {PlayerId}")]

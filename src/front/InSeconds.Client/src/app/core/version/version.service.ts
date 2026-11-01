@@ -37,6 +37,15 @@ const MOMENT_ORDER: readonly ReloadMoment[] = ['now', 'background', 'navigation'
 /** Deux rechargements automatiques à moins d'une minute d'écart : on soupçonne une boucle et on passe par le bandeau. */
 const RELOAD_LOOP_WINDOW_MS = 60_000;
 const LAST_AUTO_RELOAD_KEY = 'inseconds.version.autoReloadAt';
+const LAST_CHUNK_RELOAD_KEY = 'inseconds.version.chunkReloadAt';
+
+/** Un module chargé à la demande qui n'existe plus (déploiement survenu pendant la visite), selon le navigateur. */
+const STALE_CHUNK_PATTERN = /Failed to fetch dynamically imported module|error loading dynamically imported module|Importing a module script failed/i;
+
+/** L'erreur est un fichier JS introuvable parce que la page date d'avant le dernier déploiement. */
+export function isStaleChunkError(error: unknown): boolean {
+  return error instanceof Error && STALE_CHUNK_PATTERN.test(error.message);
+}
 
 /** Préfixe des lignes remontées quand le bandeau s'affiche, suivi de la raison (`unrecoverable` ou `reload-loop`). */
 export const UPDATE_PROMPT_MESSAGE = 'UpdatePrompt';
@@ -61,6 +70,10 @@ function pathOf(url: string): string {
  *   restait sur l'ancien worker. La mise à jour du worker est demandée au démarrage et au retour au premier plan
  *   (`registration.update()`), pour qu'il soit remplacé le plus tôt possible. Le premier worker d'une page (première visite)
  *   n'est pas un remplacement : rien à recharger ;
+ * - le rechargement active d'abord la version prête (`activateUpdate()`) : sans cela le service worker garde la page sur
+ *   l'ancienne version après `reload()`, la nouvelle est annoncée de nouveau et le garde-fou ci-dessous affichait le bandeau ;
+ * - un module chargé à la demande introuvable (`isStaleChunkError`, onglet resté ouvert pendant un déploiement) recharge la page
+ *   une fois (`reloadAfterStaleChunk()`), sauf si cela vient déjà d'être fait ;
  * - état irrécupérable du service worker : `markUpdateAvailable()`, même mise en attente, plus le bandeau « Recharger / Plus tard » en secours ;
  * - garde-fou : un second rechargement automatique moins d'une minute après le précédent (déploiement cassé) n'a pas lieu,
  *   le bandeau s'affiche à la place ;
@@ -172,7 +185,28 @@ export class VersionService {
   }
 
   reload(): void {
-    this.reloadPage();
+    this.activateAndReload();
+  }
+
+  /**
+   * Recharge la page après un module introuvable (déploiement pendant la visite). Faux, sans rien faire, si un rechargement pour
+   * cette raison a eu lieu depuis moins d'une minute : le fichier manque alors vraiment, l'erreur est remontée comme les autres.
+   */
+  reloadAfterStaleChunk(): boolean {
+    if (this.recentlyStored(LAST_CHUNK_RELOAD_KEY)) return false;
+    this.store(LAST_CHUNK_RELOAD_KEY);
+    this.activateAndReload();
+    return true;
+  }
+
+  /** Active la version prête avant de recharger, sinon le service worker resservirait l'ancienne ; un échec n'empêche pas le rechargement. */
+  private activateAndReload(): void {
+    const reload = () => this.reloadPage();
+    if (!this.swUpdate.isEnabled) {
+      reload();
+      return;
+    }
+    this.swUpdate.activateUpdate().catch(() => false).then(reload);
   }
 
   private applyIfSafe(): void {
@@ -182,9 +216,9 @@ export class VersionService {
       this._updateAvailable.set(true);
       return;
     }
-    this.rememberAutoReload();
+    this.store(LAST_AUTO_RELOAD_KEY);
     this.pending.set(false);
-    this.reloadPage();
+    this.activateAndReload();
   }
 
   /** Le bandeau va s'afficher : on le remonte avec sa raison (la version du front est ajoutée par le service). */
@@ -193,17 +227,21 @@ export class VersionService {
   }
 
   private reloadedRecently(): boolean {
+    return this.recentlyStored(LAST_AUTO_RELOAD_KEY);
+  }
+
+  private recentlyStored(key: string): boolean {
     try {
-      const last = Number(sessionStorage.getItem(LAST_AUTO_RELOAD_KEY));
+      const last = Number(sessionStorage.getItem(key));
       return Number.isFinite(last) && last > 0 && Date.now() - last < RELOAD_LOOP_WINDOW_MS;
     } catch {
       return false;
     }
   }
 
-  private rememberAutoReload(): void {
+  private store(key: string): void {
     try {
-      sessionStorage.setItem(LAST_AUTO_RELOAD_KEY, String(Date.now()));
+      sessionStorage.setItem(key, String(Date.now()));
     } catch {
       // Stockage indisponible (navigation privée) : on recharge quand même, sans garde-fou.
     }

@@ -52,4 +52,17 @@ public sealed class DailyLogTests
         Assert.Equal(1004, entry.EventId.Id);
         Assert.Equal($"Indice niveau 2 demandé par {PlayerId} (partie 42, morceau 731, n°3)", entry.Message);
     }
+
+    [Fact]
+    public void Indice_NeNommePasSonNiveauLevel()
+    {
+        var logger = new CapturingLogger<DailyLogTests>();
+
+        DailyLog.HintRequested(logger, 2, PlayerId, 42, 731, 3);
+
+        // Une propriété « Level » serait prise par Grafana pour le niveau du journal (indices classés « 1 » et « 2 »).
+        var names = Assert.Single(logger.Entries).Properties.Select(p => p.Key);
+        Assert.Contains("HintLevel", names);
+        Assert.DoesNotContain("Level", names);
+    }
 }
