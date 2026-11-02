@@ -51,6 +51,11 @@ test.describe('Réponses des jours passés', () => {
     await expect(page.getByTestId('archive-next')).toHaveAttribute('href', `/daily/archive/${latest}`);
 
     await page.getByTestId('archive-date').click();
+    // Le calendrier s'ouvre sur le mois du jour affiché : le 1er du mois, la veille est dans le mois d'avant.
+    const shown = page.url().slice(-10);
+    if (shown.slice(0, 7) !== latest.slice(0, 7)) {
+      await page.getByTestId('archive-calendar').getByRole('button', { name: 'Mois suivant' }).click();
+    }
     await page.getByTestId('archive-calendar').locator(`[data-date="${latest}"]`).click();
     await expect(page).toHaveURL(new RegExp(`/daily/archive/${latest}$`));
 
