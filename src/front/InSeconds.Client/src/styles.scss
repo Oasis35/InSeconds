@@ -88,6 +88,14 @@
   --font-clock:   'IBM Plex Mono', ui-monospace, monospace;
 }
 
+/* iPhone : Safari zoome sur un double tap (deux touchers rapides sur « Écouter plus » ou un bouton) et garde
+   ce zoom ensuite (diagnostics `Viewport:` du 26 et du 29/10/2026, zoom sans champ actif). `manipulation`
+   retire seulement le double tap : le joueur peut toujours zoomer en pinçant. Vaut pour toute la page, un
+   élément ne pouvant que restreindre davantage ses gestes. */
+html {
+  touch-action: manipulation;
+}
+
 body {
   font-family: var(--font-body);
   background: var(--bg-page);
