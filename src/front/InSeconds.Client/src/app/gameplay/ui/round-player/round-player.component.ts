@@ -93,8 +93,8 @@ interface StepMark {
                   <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-unlocked)', heights: flatHeights }" />
                 </div>
               </div>
-              <div #seenLayer data-testid="waveform-seen" class="absolute inset-0 overflow-hidden">
-                <div #seenInner class="absolute inset-0">
+              <div #seenLayer data-testid="waveform-seen" class="absolute inset-0 overflow-hidden" style="will-change:transform">
+                <div #seenInner class="absolute inset-0" style="will-change:transform">
                   <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-unlocked)', heights: heights() }" />
                 </div>
               </div>
@@ -106,8 +106,8 @@ interface StepMark {
               <!-- La traîne : une fenêtre de 15 % calée à droite sur la tête de lecture, fondue de transparent à opaque. -->
               <div #trailLayer data-testid="waveform-trail" class="absolute inset-0 pointer-events-none" style="will-change:transform">
                 <div class="wave-trail absolute right-0 top-0 bottom-0 overflow-hidden" style="width:15%">
-                  <div #trailInner class="absolute right-0 top-0 bottom-0" style="will-change:transform"
-                    [style.width]="waveWidth() > 0 ? waveWidth() + 'px' : 'calc(100% / 0.15)'">
+                  <!-- 100 % / 0,15 : exactement la largeur de la waveform, sans arrondi (les barres restent sur celles des autres couches). -->
+                  <div #trailInner class="absolute right-0 top-0 bottom-0" style="width:calc(100% / 0.15);will-change:transform">
                     <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-trail)', heights: heights() }" />
                   </div>
                 </div>
@@ -298,6 +298,8 @@ export class RoundPlayerComponent {
         shift(seen, seenInner, this.maxHeard);
       };
       if (!this.playing()) {
+        // Un extrait qui (re)charge repart d'une forme plate : rien n'est encore écouté de ce morceau.
+        if (this.phase() === 'loading') this.maxHeard = 0;
         const heard = this.heard();
         untracked(() => this.playhead.reset(heard, performance.now()));
         paint(heard);

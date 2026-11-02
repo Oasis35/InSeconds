@@ -72,9 +72,24 @@ describe('RoundPlayerComponent', () => {
     expect(shown(element, 'unlocked')).toBeCloseTo(0.3, 2);
   });
 
-  it('la traîne suit la tête de lecture', () => {
-    const { element } = render({ phase: 'listened', chosenSeconds: 5 });
+  it('la traîne suit la tête de lecture, ses barres posées exactement sur celles de la couche jouée', async () => {
+    const { fixture, element } = render({ phase: 'listened', chosenSeconds: 5 });
+    element.style.display = 'block';
+    element.style.width = '300.4px';
+    await twoFrames();
+    fixture.detectChanges();
     expect(shown(element, 'trail')).toBeCloseTo(0.5, 2);
+    const lefts = (name: string) => Array.from(layer(element, name).querySelectorAll('span')).slice(25, 30).map(bar => bar.getBoundingClientRect().left);
+    lefts('trail').forEach((left, i) => expect(left).toBeCloseTo(lefts('played')[i], 1));
+  });
+
+  it('un extrait qui recharge repart d\'une forme plate', () => {
+    const { fixture, element } = render({ phase: 'listened', chosenSeconds: 2 });
+    expect(shown(element, 'seen')).toBeCloseTo(0.2, 2);
+    fixture.componentRef.setInput('chosenSeconds', 0.5);
+    fixture.componentRef.setInput('phase', 'loading');
+    fixture.detectChanges();
+    expect(shown(element, 'seen')).toBe(0);
   });
 
   it('découvre le cyan pâle jusqu\'au palier débloqué et le cyan vif jusqu\'au palier joué, sur l\'échelle du dernier palier', () => {
