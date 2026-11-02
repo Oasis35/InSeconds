@@ -147,7 +147,7 @@ public static class RefreshPreviewsHandler
 
         CatalogueLog.RefreshCompleted(logger, candidates.Count, updated, failed);
         if (waveformsComputed + waveformsFailed > 0)
-            CatalogueLog.WaveformsComputed(logger, waveformsComputed, waveformsFailed, 0, 0);
+            CatalogueLog.WaveformsComputed(logger, waveformsComputed, waveformsFailed, 0, (long)Stopwatch.GetElapsedTime(waveformsStarted).TotalMilliseconds);
         if (waveformLockHeld is not null)
             telemetry.RunFinished(Stopwatch.GetElapsedTime(waveformsStarted), waveformsFailed);
         await RefreshGenresAsync(candidates, store, albums, time, settings, logger, ct);
