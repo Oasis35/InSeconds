@@ -10,13 +10,8 @@ import { ButtonComponent } from '../../../ui/button/button.component';
 import { MembraneComponent } from '../membrane/membrane.component';
 import { RoundStakeComponent } from '../round-stake/round-stake.component';
 
-/** Hauteur d'une barre tant que la forme de l'extrait n'est pas calculée (ou si son calcul a échoué). */
-const FLAT_PEAK = 0.18;
-
-/** Les couleurs des trois couches de barres : jouée (cyan), débloquée mais pas encore jouée (cyan pâle), encore verrouillée (gris). */
-const PLAYED = 'var(--color-accent-2)';
-const UNLOCKED = 'rgb(var(--rgb-accent-2) / 0.32)';
-const LOCKED = 'rgb(var(--rgb-text) / 0.14)';
+/** Hauteur des barres plates : ce qui n'est pas encore joué, et tout tant que la forme de l'extrait n'est pas calculée. */
+const FLAT_PEAK = 0.14;
 
 interface StepMark {
   readonly seconds: number;
@@ -30,8 +25,9 @@ interface StepMark {
 
 /**
  * Le lecteur de la manche : la waveform de l'extrait sur toute la largeur (échelle proportionnelle au temps, de 0 au dernier palier,
- * 60 barres ; jouée en cyan, débloquée en cyan pâle, remplie par un balayage continu sur la position lissée,
- * `SmoothPlayhead`), un repère par palier où seuls le palier en cours et le dernier sont écrits, puis sur une
+ * 60 barres ; la forme reste plate tant qu'elle n'est pas jouée et apparaît au balayage, en cyan vif jusqu'à la position avec une
+ * traîne presque blanche derrière la tête, en cyan sombre jusqu'au plus loin déjà écouté ; le palier débloqué en cyan sombre plat ;
+ * balayage continu sur la position lissée, `SmoothPlayhead`), un repère par palier où seuls le palier en cours et le dernier sont écrits, puis sur une
  * ligne les points en jeu (si le mode en a), le bouton ↺ qui danse avec les basses (`app-membrane`) et le rond « ▶ X s » pour écouter
  * plus. Remplace aussi la zone quand l'extrait manque ou que la lecture échoue : jamais de boucle silencieuse (piège 33), le joueur
  * choisit « Réessayer » ou « Passer ».
@@ -82,28 +78,44 @@ interface StepMark {
               }
             </p>
 
-            <!-- Trois couches de barres identiques : grises dessous, cyan pâle jusqu'au palier débloqué, cyan vif jusqu'à la position. Les
-              deux du dessus sont découvertes de gauche à droite par deux translations opposées (la couche glisse, ses barres restent en
+            <!-- Des couches de barres superposées, en couleurs pleines (sinon l'empilement au pied donne deux bleus) : dessous, la forme plate
+              grise, puis plate cyan sombre jusqu'au palier débloqué ; la vraie forme en cyan sombre jusqu'au plus loin déjà écouté, en cyan
+              vif jusqu'à la position, et sa traîne presque blanche juste derrière la tête de lecture. La forme n'apparaît qu'au balayage.
+              Chaque couche est découverte de gauche à droite par deux translations opposées (la couche glisse, ses barres restent en
               place) : une barre peut être à moitié jouée, et seul transform change pendant la lecture, quel que soit le nombre de barres. -->
             <div #wave data-testid="waveform" class="relative w-full overflow-hidden" style="height:46px"
               role="progressbar" [attr.aria-valuenow]="heardTenths()" aria-valuemin="0" [attr.aria-valuemax]="maxStep()"
               [attr.aria-label]="'gameplay.round.waveform' | translate">
-              <ng-container *ngTemplateOutlet="barRow; context: { color: colors.locked }" />
+              <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-locked)', heights: flatHeights }" />
               <div data-testid="waveform-unlocked" class="absolute inset-0 overflow-hidden" [class.wave-sweep]="!reduced"
                 [style.transform]="layerShift(unlockedRatio(), waveWidth())">
                 <div class="absolute inset-0" [class.wave-sweep]="!reduced" [style.transform]="innerShift(unlockedRatio(), waveWidth())">
-                  <ng-container *ngTemplateOutlet="barRow; context: { color: colors.unlocked }" />
+                  <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-unlocked)', heights: flatHeights }" />
+                </div>
+              </div>
+              <div #seenLayer data-testid="waveform-seen" class="absolute inset-0 overflow-hidden" style="will-change:transform">
+                <div #seenInner class="absolute inset-0" style="will-change:transform">
+                  <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-unlocked)', heights: heights() }" />
                 </div>
               </div>
               <div #playedLayer data-testid="waveform-played" class="absolute inset-0 overflow-hidden" style="will-change:transform">
                 <div #playedInner class="absolute inset-0" style="will-change:transform">
-                  <ng-container *ngTemplateOutlet="barRow; context: { color: colors.played }" />
+                  <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--color-accent-2)', heights: heights() }" />
+                </div>
+              </div>
+              <!-- La traîne : une fenêtre de 15 % calée à droite sur la tête de lecture, fondue de transparent à opaque. -->
+              <div #trailLayer data-testid="waveform-trail" class="absolute inset-0 pointer-events-none" style="will-change:transform">
+                <div class="wave-trail absolute right-0 top-0 bottom-0 overflow-hidden" style="width:15%">
+                  <!-- 100 % / 0,15 : exactement la largeur de la waveform, sans arrondi (les barres restent sur celles des autres couches). -->
+                  <div #trailInner class="absolute right-0 top-0 bottom-0" style="width:calc(100% / 0.15);will-change:transform">
+                    <ng-container *ngTemplateOutlet="barRow; context: { color: 'var(--wave-trail)', heights: heights() }" />
+                  </div>
                 </div>
               </div>
             </div>
-            <ng-template #barRow let-color="color">
+            <ng-template #barRow let-color="color" let-heights="heights">
               <div class="absolute inset-0 flex items-end" style="gap:2px" aria-hidden="true">
-                @for (height of heights(); track $index) {
+                @for (height of heights; track $index) {
                   <span class="flex-1" style="min-width:1px;border-radius:2px 2px 1px 1px" [style.height.%]="height * 100" [style.background]="color"></span>
                 }
               </div>
@@ -173,8 +185,13 @@ interface StepMark {
     </div>
   `,
   styles: `
-    /* Le cyan pâle s'étend en douceur quand un palier se débloque (rien en mouvement réduit). */
+    /* Le palier débloqué s'étend en douceur (rien en mouvement réduit). */
     .wave-sweep { transition: transform 300ms ease-out; }
+    /* La traîne se fond dans le cyan vif vers l'arrière. */
+    .wave-trail {
+      -webkit-mask-image: linear-gradient(to right, transparent, black);
+      mask-image: linear-gradient(to right, transparent, black);
+    }
   `,
 })
 export class RoundPlayerComponent {
@@ -213,13 +230,15 @@ export class RoundPlayerComponent {
   /** Le temps écouté au dixième (ce que montre le chrono lu par les lecteurs d'écran) : le gabarit ne change que dix fois par seconde. */
   protected readonly heardTenths = computed(() => Math.round(this.heard() * 10) / 10);
 
-  /** La hauteur de chaque barre : la forme de l'extrait, plate tant qu'elle n'est pas calculée. */
-  protected readonly heights = computed<readonly number[]>(() => this.peaks() ?? Array.from({ length: WAVEFORM_BARS }, () => FLAT_PEAK));
+  /** Les barres plates de ce qui n'est pas encore joué. */
+  protected readonly flatHeights: readonly number[] = Array.from({ length: WAVEFORM_BARS }, () => FLAT_PEAK);
+
+  /** La vraie forme, révélée au balayage : plate tant qu'elle n'est pas calculée. */
+  protected readonly heights = computed<readonly number[]>(() => this.peaks() ?? this.flatHeights);
 
   /** La part débloquée de la waveform, de 0 à 1, sur l'échelle du dernier palier. */
   protected readonly unlockedRatio = computed(() => ratio(this.chosenSeconds(), this.maxStep()));
 
-  protected readonly colors = { played: PLAYED, unlocked: UNLOCKED, locked: LOCKED } as const;
   protected readonly reduced = motionReduced();
 
   /**
@@ -241,7 +260,13 @@ export class RoundPlayerComponent {
 
   private readonly playedLayer = viewChild<ElementRef<HTMLElement>>('playedLayer');
   private readonly playedInner = viewChild<ElementRef<HTMLElement>>('playedInner');
+  private readonly seenLayer = viewChild<ElementRef<HTMLElement>>('seenLayer');
+  private readonly seenInner = viewChild<ElementRef<HTMLElement>>('seenInner');
+  private readonly trailLayer = viewChild<ElementRef<HTMLElement>>('trailLayer');
+  private readonly trailInner = viewChild<ElementRef<HTMLElement>>('trailInner');
   private readonly playhead = new SmoothPlayhead();
+  /** Le plus loin déjà écouté de ce morceau : la forme révélée ne disparaît pas quand une écoute repart de 0. */
+  private maxHeard = 0;
 
   constructor() {
     effect(onCleanup => {
@@ -251,20 +276,30 @@ export class RoundPlayerComponent {
       observer.observe(wave);
       onCleanup(() => observer.disconnect());
     });
-    // La couche cyan vif est menée hors du gabarit : pendant la lecture, une boucle d'image écrit sa translation (la position lissée,
-    // sauf en mouvement réduit), sans relancer la détection de changement ; à l'arrêt, elle montre ce qui a été entendu.
+    // Les couches de la vraie forme sont menées hors du gabarit : pendant la lecture, une boucle d'image écrit leur translation (la
+    // position lissée, sauf en mouvement réduit), sans relancer la détection de changement ; à l'arrêt, elles montrent ce qui a été
+    // entendu.
     effect(onCleanup => {
-      const layer = this.playedLayer()?.nativeElement;
-      const inner = this.playedInner()?.nativeElement;
-      if (!layer || !inner) return;
+      const els = [this.playedLayer(), this.playedInner(), this.seenLayer(), this.seenInner(), this.trailLayer(), this.trailInner()]
+        .map(ref => ref?.nativeElement);
+      if (els.some(el => !el)) return;
+      const [played, playedInner, seen, seenInner, trail, trailInner] = els as HTMLElement[];
       const max = this.maxStep();
       const width = this.waveWidth();
-      const paint = (seconds: number) => {
+      const shift = (outer: HTMLElement, inner: HTMLElement, seconds: number) => {
         const part = ratio(seconds, max);
-        layer.style.transform = this.layerShift(part, width);
+        outer.style.transform = this.layerShift(part, width);
         inner.style.transform = this.innerShift(part, width);
       };
+      const paint = (seconds: number) => {
+        this.maxHeard = Math.max(this.maxHeard, seconds);
+        shift(played, playedInner, seconds);
+        shift(trail, trailInner, seconds);
+        shift(seen, seenInner, this.maxHeard);
+      };
       if (!this.playing()) {
+        // Un extrait qui (re)charge repart d'une forme plate : rien n'est encore écouté de ce morceau.
+        if (this.phase() === 'loading') this.maxHeard = 0;
         const heard = this.heard();
         untracked(() => this.playhead.reset(heard, performance.now()));
         paint(heard);
@@ -275,7 +310,7 @@ export class RoundPlayerComponent {
       const tick = () => {
         const position = this.position();
         const limit = Math.max(this.chosenSeconds(), position);
-        // En mouvement réduit, ni lissage ni avance image par image : la couche avance au dixième, comme le chrono.
+        // En mouvement réduit, ni lissage ni avance image par image : les couches avancent au dixième, comme le chrono.
         paint(this.reduced ? Math.round(Math.min(position, limit) * 10) / 10 : this.playhead.next(position, limit, performance.now()));
         frame = requestAnimationFrame(tick);
       };
