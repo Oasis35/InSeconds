@@ -5,7 +5,7 @@ import { provideRouter } from '@angular/router';
 import { ViewportReporter, ViewportSnapshot, describeViewport, measureViewport } from './viewport-reporter';
 import { environment } from '../../../environments/environment';
 
-const fine: ViewportSnapshot = { scale: 1, layoutWidth: 390, pageWidth: 390, focus: null, widest: null };
+const fine: ViewportSnapshot = { scale: 1, layoutWidth: 390, pageWidth: 390, focus: null, widest: null, lastTouch: null };
 
 describe('describeViewport', () => {
   it('rien à dire sur une page à l\'échelle, à la largeur de l\'écran', () => {
@@ -15,12 +15,17 @@ describe('describeViewport', () => {
 
   it('décrit une page zoomée, avec l\'élément qui a le focus', () => {
     expect(describeViewport('/daily', { ...fine, scale: 1.3141, focus: 'INPUT[text]' }))
-      .toBe('Viewport: /daily zoom ×1.31, écran 390 px, page 390 px, focus INPUT[text]');
+      .toBe('Viewport: /daily zoom ×1.31, écran 390 px, page 390 px, focus INPUT[text], aucun toucher');
   });
 
   it('décrit une page plus large que l\'écran, avec l\'élément qui dépasse', () => {
     expect(describeViewport('/daily', { ...fine, pageWidth: 412, widest: 'div.toast (16 → 412 px)' }))
-      .toBe('Viewport: /daily zoom ×1.00, écran 390 px, page 412 px, focus aucun, plus large : div.toast (16 → 412 px)');
+      .toBe('Viewport: /daily zoom ×1.00, écran 390 px, page 412 px, focus aucun, aucun toucher, plus large : div.toast (16 → 412 px)');
+  });
+
+  it('donne le dernier élément touché et le temps écoulé, arrondi à 100 ms', () => {
+    expect(describeViewport('/daily', { ...fine, scale: 1.14, lastTouch: { element: 'BUTTON', agoMs: 1234 } }))
+      .toBe('Viewport: /daily zoom ×1.14, écran 390 px, page 390 px, focus aucun, dernier toucher BUTTON il y a 1200 ms');
   });
 });
 
@@ -69,6 +74,49 @@ describe('ViewportReporter', () => {
           expect(message).toBeNull();
         }
       }
+      httpMock.verify();
+    } finally {
+      wide.remove();
+    }
+  });
+
+  it('retient le bouton qui contient l\'élément touché, jamais son texte', () => {
+    TestBed.configureTestingModule({ providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()] });
+    const reporter = TestBed.inject(ViewportReporter);
+    const httpMock = TestBed.inject(HttpTestingController);
+    const button = document.createElement('button');
+    const label = document.createElement('span');
+    label.textContent = 'Écouter plus';
+    button.appendChild(label);
+    const wide = document.createElement('div');
+    wide.style.cssText = `position:absolute;left:0;top:0;width:${document.documentElement.clientWidth + 100}px;height:1px`;
+    document.body.append(button, wide);
+
+    try {
+      reporter.recordTouch(label);
+      const message = reporter.check();
+      expect(message).toMatch(/dernier toucher BUTTON il y a \d+ ms/);
+      expect(message).not.toContain('Écouter plus');
+      httpMock.expectOne(`${environment.apiUrl}/api/client-errors`).flush(null, { status: 204, statusText: 'No Content' });
+      httpMock.verify();
+    } finally {
+      button.remove();
+      wide.remove();
+    }
+  });
+
+  it('retient aussi un toucher sur le fond de la page', () => {
+    TestBed.configureTestingModule({ providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()] });
+    const reporter = TestBed.inject(ViewportReporter);
+    const httpMock = TestBed.inject(HttpTestingController);
+    const wide = document.createElement('div');
+    wide.style.cssText = `position:absolute;left:0;top:0;width:${document.documentElement.clientWidth + 100}px;height:1px`;
+    document.body.appendChild(wide);
+
+    try {
+      reporter.recordTouch(document.body);
+      expect(reporter.check()).toMatch(/dernier toucher BODY il y a \d+ ms/);
+      httpMock.expectOne(`${environment.apiUrl}/api/client-errors`).flush(null, { status: 204, statusText: 'No Content' });
       httpMock.verify();
     } finally {
       wide.remove();
