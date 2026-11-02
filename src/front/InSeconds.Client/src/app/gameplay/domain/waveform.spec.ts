@@ -21,6 +21,19 @@ describe('wavePeaks', () => {
   });
 });
 
+describe('wavePeaks : relief', () => {
+  it('rapporte au 95e centile (un seul pic n\'écrase pas le reste), avec la courbe de contraste et un plancher à 8 %', () => {
+    // 40 tranches : 37 calmes à 0,5, deux à 1 (le 95e centile), un pic isolé à 4.
+    const amplitudes = [...Array.from({ length: 37 }, () => 0.5), 1, 1, 4];
+    const samples = new Float32Array(amplitudes.flatMap(a => Array.from(tone(0.05, 100, a))));
+    const peaks = wavePeaks(samples, 8000, 2, 40);
+    expect(peaks[39]).toBeCloseTo(1);
+    expect(peaks[38]).toBeCloseTo(1);
+    expect(peaks[0]).toBeCloseTo(0.08 + 0.92 * Math.pow(0.5, 1.2), 2);
+    expect(wavePeaks(new Float32Array(800), 8000, 1, 4)).toEqual([0.08, 0.08, 0.08, 0.08]);
+  });
+});
+
 describe('bassEnvelope', () => {
   it('suit les basses et laisse passer peu des aigus', () => {
     const samples = new Float32Array([...tone(0.5, 60), ...tone(0.5, 3000)]);

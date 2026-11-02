@@ -22,11 +22,17 @@ export const ENVELOPE_FPS = 60;
 const BASS_CUTOFF_HZ = 150;
 
 /** Une barre ne descend jamais sous cette hauteur : un silence reste visible. */
-const MIN_PEAK = 0.12;
+const MIN_PEAK = 0.08;
+
+/** La barre de référence (hauteur pleine) : le 95e centile, pas la plus forte, pour qu'un seul pic n'écrase pas tout le reste. */
+const REFERENCE_PERCENTILE = 0.95;
+
+/** Courbe de contraste : un peu plus de relief entre les passages calmes et les passages forts. */
+const CONTRAST_EXPONENT = 1.2;
 
 /**
- * Les barres de la waveform : l'énergie (RMS) de chaque tranche de `seconds / bars` secondes, rapportée à la plus forte. Les tranches
- * au-delà de la fin du son valent le minimum.
+ * Les barres de la waveform : l'énergie (RMS) de chaque tranche de `seconds / bars` secondes, rapportée au 95e centile (écrêtée à 1),
+ * passée par une courbe de contraste, avec un plancher. Les tranches au-delà de la fin du son valent le plancher.
  */
 export function wavePeaks(samples: Float32Array, sampleRate: number, seconds: number, bars = WAVEFORM_BARS): number[] {
   const slice = Math.max(1, Math.floor((seconds * sampleRate) / bars));
@@ -38,8 +44,12 @@ export function wavePeaks(samples: Float32Array, sampleRate: number, seconds: nu
     for (let i = start; i < end; i++) sum += samples[i] * samples[i];
     raw.push(end > start ? Math.sqrt(sum / (end - start)) : 0);
   }
-  const max = Math.max(...raw);
-  return raw.map(v => (max > 0 ? MIN_PEAK + (1 - MIN_PEAK) * (v / max) : MIN_PEAK));
+  const sorted = [...raw].sort((a, b) => a - b);
+  const reference = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * REFERENCE_PERCENTILE))] ?? 0;
+  return raw.map(v => {
+    const x = reference > 0 ? Math.min(1, v / reference) : 0;
+    return MIN_PEAK + (1 - MIN_PEAK) * Math.pow(x, CONTRAST_EXPONENT);
+  });
 }
 
 /**
