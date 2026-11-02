@@ -122,7 +122,9 @@ export class ViewportReporter {
     if (!window) return;
     const sub = this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(() => this.scheduleCheck());
     const onResize = () => this.scheduleCheck();
-    const onPointerDown = (event: PointerEvent) => this.recordTouch(event.target);
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.pointerType === 'touch') this.recordTouch(event.target);
+    };
     window.visualViewport?.addEventListener('resize', onResize);
     this.document.addEventListener('pointerdown', onPointerDown, { capture: true, passive: true });
     this.destroyRef.onDestroy(() => {
@@ -145,11 +147,14 @@ export class ViewportReporter {
     return message;
   }
 
-  /** Retient l'élément touché : le bouton, lien ou champ qui contient la cible, sinon la cible elle-même. */
+  /**
+   * Retient l'élément touché du doigt (ni souris ni stylet) : le bouton, lien ou champ qui contient la cible, sinon la
+   * cible elle-même, `BODY` compris (un double tap sur le fond est justement ce qu'on cherche).
+   */
   recordTouch(target: EventTarget | null): void {
     if (!(target instanceof Element)) return;
-    const element = describeElement(target.closest('button, a, input, select, textarea, [role="button"]') ?? target);
-    this.lastTouch = element ? { element, at: Date.now() } : null;
+    const touched = target.closest('button, a, input, select, textarea, [role="button"]') ?? target;
+    this.lastTouch = { element: describeElement(touched) ?? touched.tagName, at: Date.now() };
   }
 
   private scheduleCheck(): void {

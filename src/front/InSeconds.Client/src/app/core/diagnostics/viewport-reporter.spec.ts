@@ -105,6 +105,24 @@ describe('ViewportReporter', () => {
     }
   });
 
+  it('retient aussi un toucher sur le fond de la page', () => {
+    TestBed.configureTestingModule({ providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()] });
+    const reporter = TestBed.inject(ViewportReporter);
+    const httpMock = TestBed.inject(HttpTestingController);
+    const wide = document.createElement('div');
+    wide.style.cssText = `position:absolute;left:0;top:0;width:${document.documentElement.clientWidth + 100}px;height:1px`;
+    document.body.appendChild(wide);
+
+    try {
+      reporter.recordTouch(document.body);
+      expect(reporter.check()).toMatch(/dernier toucher BODY il y a \d+ ms/);
+      httpMock.expectOne(`${environment.apiUrl}/api/client-errors`).flush(null, { status: 204, statusText: 'No Content' });
+      httpMock.verify();
+    } finally {
+      wide.remove();
+    }
+  });
+
   it('ne remonte rien quand tout va bien', () => {
     TestBed.configureTestingModule({ providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()] });
     expect(TestBed.inject(ViewportReporter).check()).toBeNull();

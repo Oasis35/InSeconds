@@ -88,10 +88,11 @@
   --font-clock:   'IBM Plex Mono', ui-monospace, monospace;
 }
 
-/* iPhone : Safari zoome sur un double tap (deux touchers rapides sur « Écouter plus » ou un bouton) et garde
-   ce zoom ensuite (diagnostics `Viewport:` du 26 et du 29/10/2026, zoom sans champ actif). `manipulation`
-   retire seulement le double tap : le joueur peut toujours zoomer en pinçant. Vaut pour toute la page, un
-   élément ne pouvant que restreindre davantage ses gestes. */
+/* iPhone : Safari zoome sur un double tap hors des boutons (texte, fond, pochette ; les boutons ont déjà
+   `touch-manipulation`) et garde ce zoom ensuite (diagnostics `Viewport:` du 26 et du 29/10/2026, zoom sans
+   champ actif). `manipulation` retire seulement le double tap : le joueur peut toujours zoomer en pinçant.
+   Vaut pour toute la page, sauf dans un conteneur défilant (`overflow: auto` ou `scroll`), où Safari repart
+   de zéro : un tel panneau côté jeu reprend `touch-manipulation`. */
 html {
   touch-action: manipulation;
 }

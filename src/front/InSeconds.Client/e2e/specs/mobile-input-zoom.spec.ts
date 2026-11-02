@@ -5,8 +5,8 @@ import { BlindRoundPage } from '../pages/blind-round.page';
 
 // Safari sur iPhone zoome sur un champ dont le texte fait moins de 16 px quand on le touche, et garde ce zoom (page coupée à droite
 // jusqu'à la fin de la partie, signalé sur le staging le 13/10/2026). Sur un écran tactile, les champs sont donc à 16 px au moins.
-// Safari zoome aussi sur un double tap (deux touchers rapides sur un bouton) : la page entière est en `touch-action: manipulation`.
-// Chromium ne zoome pas : on vérifie la taille du texte du champ, le `touch-action` du bouton touché, et que la page ne déborde pas.
+// Safari zoome aussi sur un double tap hors des boutons (texte, fond) : la page entière est en `touch-action: manipulation`.
+// Chromium ne zoome pas : on vérifie la taille du texte du champ, le `touch-action` de la page, et que la page ne déborde pas.
 const { viewport, deviceScaleFactor, isMobile, hasTouch, userAgent } = devices['iPhone 13'];
 test.use({ viewport, deviceScaleFactor, isMobile, hasTouch, userAgent });
 
