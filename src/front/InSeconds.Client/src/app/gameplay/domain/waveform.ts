@@ -108,7 +108,7 @@ export function waveformFromBlob(base64: string | null | undefined, seconds: num
   if (!base64 || seconds <= 0) return null;
   let bytes: Uint8Array;
   try {
-    bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+    bytes = Uint8Array.from(atob(base64), c => c.codePointAt(0) ?? 0);
   } catch {
     return null;
   }

@@ -39,7 +39,7 @@ namespace Internal.Generated.WolverineHandlers
             var previewAudioSource = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Deezer.IPreviewAudioSource>(serviceScope.ServiceProvider);
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var inSecondsDbContext = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>(serviceScope.ServiceProvider);
-            var postgresWaveformLock = new InSeconds.Api.Modules.Catalogue.Application.PostgresWaveformLock(inSecondsDbContext);
+            var postgresWaveformLock = new InSeconds.Api.Modules.Catalogue.Persistence.PostgresWaveformLock(inSecondsDbContext);
             var efCatalogueStore = new InSeconds.Api.Modules.Catalogue.Persistence.EfCatalogueStore(inSecondsDbContext);
             var waveformCalculator = new InSeconds.Api.Modules.Catalogue.Application.WaveformCalculator(previewAudioSource, efCatalogueStore, _timeProvider, _catalogueTelemetry, _loggerOfWaveformCalculator);
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else

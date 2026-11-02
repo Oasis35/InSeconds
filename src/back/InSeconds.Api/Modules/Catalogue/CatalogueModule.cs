@@ -23,7 +23,8 @@ public static class CatalogueModule
         services.AddScoped<ICatalogueQueries, EfCatalogueQueries>();
         services.AddScoped<ITrackDirectory, EfTrackDirectory>();
         services.AddScoped<ITrackPreviews, DeezerTrackPreviews>();
-        services.AddScoped<ITrackWaveforms, EfTrackWaveforms>();
+        services.AddScoped<EfTrackWaveforms>();
+        services.AddScoped<ITrackWaveforms, LoggedTrackWaveforms>();
         services.AddSingleton<CatalogueTelemetry>();
         services.AddScoped<WaveformCalculator>();
         services.AddScoped<IWaveformLock, PostgresWaveformLock>();

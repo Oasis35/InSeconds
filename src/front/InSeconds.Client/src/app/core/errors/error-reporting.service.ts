@@ -40,9 +40,12 @@ interface ClientErrorPayload extends ClientErrorReport {
 @Injectable({ providedIn: 'root' })
 export class ErrorReportingService {
   static readonly MAX_REPORTS_PER_PAGE = 10;
+  /** Les diagnostics (warning) ont leur propre plafond : ils ne mangent pas le budget des vraies erreurs. */
+  static readonly MAX_WARNINGS_PER_PAGE = 10;
 
   private readonly http = new HttpClient(inject(HttpBackend));
   private readonly alreadySent = new Set<string>();
+  private readonly warningsSent = new Set<string>();
   private leavingPage = false;
 
   constructor() {
@@ -66,8 +69,10 @@ export class ErrorReportingService {
 
   report(report: ClientErrorReport): void {
     const key = `${report.source}|${report.message}`;
-    if (this.alreadySent.has(key) || this.alreadySent.size >= ErrorReportingService.MAX_REPORTS_PER_PAGE) return;
-    this.alreadySent.add(key);
+    const sent = report.level === 'warning' ? this.warningsSent : this.alreadySent;
+    const max = report.level === 'warning' ? ErrorReportingService.MAX_WARNINGS_PER_PAGE : ErrorReportingService.MAX_REPORTS_PER_PAGE;
+    if (sent.has(key) || sent.size >= max) return;
+    sent.add(key);
 
     const body: ClientErrorPayload = {
       source: report.source,

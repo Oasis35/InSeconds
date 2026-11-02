@@ -27,7 +27,7 @@ namespace Internal.Generated.WolverineHandlers
         private readonly InSeconds.Api.Modules.Daily.Domain.ITrackSelector _trackSelector;
         private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor;
         private readonly Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _serviceScopeFactory;
-        private readonly Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Catalogue.Persistence.EfTrackWaveforms> _loggerOfEfTrackWaveforms;
+        private readonly Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Catalogue.Application.LoggedTrackWaveforms> _loggerOfLoggedTrackWaveforms;
         private readonly Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Daily.Application.GenerateDailyChallenge> _loggerOfGenerateDailyChallenge;
         private readonly Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Daily.Application.StartSessionResponse> _loggerOfStartSessionResponse;
         private readonly Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> _optionsMonitorOfCatalogueOptions;
@@ -35,7 +35,7 @@ namespace Internal.Generated.WolverineHandlers
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
         private readonly Wolverine.Runtime.IWolverineRuntime _wolverineRuntime;
 
-        public POST_api_daily_sessions(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, InSeconds.Api.Infrastructure.Time.IGameCalendar gameCalendar, InSeconds.Api.Modules.Daily.Application.DailyMetrics dailyMetrics, InSeconds.Api.Modules.Daily.Application.DailyRules dailyRules, InSeconds.Api.Modules.Daily.Domain.ITrackSelector trackSelector, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Catalogue.Persistence.EfTrackWaveforms> loggerOfEfTrackWaveforms, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Daily.Application.GenerateDailyChallenge> loggerOfGenerateDailyChallenge, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Daily.Application.StartSessionResponse> loggerOfStartSessionResponse, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> optionsMonitorOfCatalogueOptions, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Daily.Application.DailyOptions> optionsMonitorOfDailyOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
+        public POST_api_daily_sessions(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, InSeconds.Api.Infrastructure.Time.IGameCalendar gameCalendar, InSeconds.Api.Modules.Daily.Application.DailyMetrics dailyMetrics, InSeconds.Api.Modules.Daily.Application.DailyRules dailyRules, InSeconds.Api.Modules.Daily.Domain.ITrackSelector trackSelector, Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Catalogue.Application.LoggedTrackWaveforms> loggerOfLoggedTrackWaveforms, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Daily.Application.GenerateDailyChallenge> loggerOfGenerateDailyChallenge, Microsoft.Extensions.Logging.ILogger<InSeconds.Api.Modules.Daily.Application.StartSessionResponse> loggerOfStartSessionResponse, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> optionsMonitorOfCatalogueOptions, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Daily.Application.DailyOptions> optionsMonitorOfDailyOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
         {
             _wolverineHttpOptions = wolverineHttpOptions;
             _gameCalendar = gameCalendar;
@@ -44,7 +44,7 @@ namespace Internal.Generated.WolverineHandlers
             _trackSelector = trackSelector;
             _httpContextAccessor = httpContextAccessor;
             _serviceScopeFactory = serviceScopeFactory;
-            _loggerOfEfTrackWaveforms = loggerOfEfTrackWaveforms;
+            _loggerOfLoggedTrackWaveforms = loggerOfLoggedTrackWaveforms;
             _loggerOfGenerateDailyChallenge = loggerOfGenerateDailyChallenge;
             _loggerOfStartSessionResponse = loggerOfStartSessionResponse;
             _optionsMonitorOfCatalogueOptions = optionsMonitorOfCatalogueOptions;
@@ -59,11 +59,12 @@ namespace Internal.Generated.WolverineHandlers
             await using var serviceScope = _serviceScopeFactory.CreateAsyncScope();
             Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Wolverine.Runtime.ScopedMessageContextHolder>(serviceScope.ServiceProvider).Context = messageContext;
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
-            var previewProvider = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Deezer.IPreviewProvider>(serviceScope.ServiceProvider);
-            // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var inSecondsDbContext = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>(serviceScope.ServiceProvider);
+            var efTrackWaveforms = new InSeconds.Api.Modules.Catalogue.Persistence.EfTrackWaveforms(inSecondsDbContext);
+            // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
+            var previewProvider = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<InSeconds.Deezer.IPreviewProvider>(serviceScope.ServiceProvider);
             var efPlayerDirectory = new InSeconds.Api.Modules.Players.Persistence.EfPlayerDirectory(inSecondsDbContext);
-            var efTrackWaveforms = new InSeconds.Api.Modules.Catalogue.Persistence.EfTrackWaveforms(inSecondsDbContext, _loggerOfEfTrackWaveforms);
+            var loggedTrackWaveforms = new InSeconds.Api.Modules.Catalogue.Application.LoggedTrackWaveforms(efTrackWaveforms, _loggerOfLoggedTrackWaveforms);
             var deezerTrackPreviews = new InSeconds.Api.Modules.Catalogue.Persistence.DeezerTrackPreviews(previewProvider);
             var efTrackDirectory = new InSeconds.Api.Modules.Catalogue.Persistence.EfTrackDirectory(inSecondsDbContext, _optionsMonitorOfCatalogueOptions);
             var efDailyStore = new InSeconds.Api.Modules.Daily.Persistence.EfDailyStore(inSecondsDbContext);
@@ -94,7 +95,7 @@ namespace Internal.Generated.WolverineHandlers
 
                 
                 // The actual HTTP request handler execution
-                var startSessionResponse_response = await InSeconds.Api.Modules.Daily.Application.StartSessionEndpoint.Post(startContext, efDailyStore, efTrackDirectory, deezerTrackPreviews, efTrackWaveforms, efPlayerDirectory, _dailyRules, _gameCalendar, _dailyMetrics, _loggerOfStartSessionResponse, httpContext.RequestAborted).ConfigureAwait(false);
+                var startSessionResponse_response = await InSeconds.Api.Modules.Daily.Application.StartSessionEndpoint.Post(startContext, efDailyStore, efTrackDirectory, deezerTrackPreviews, loggedTrackWaveforms, efPlayerDirectory, _dailyRules, _gameCalendar, _dailyMetrics, _loggerOfStartSessionResponse, httpContext.RequestAborted).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

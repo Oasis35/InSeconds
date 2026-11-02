@@ -57,6 +57,14 @@ public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger, 
         try
         {
             using var response = await http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct);
+            // Une redirection ne contourne pas la liste d'hôtes : l'adresse finale doit rester sur le CDN.
+            var finalHost = response.RequestMessage?.RequestUri?.Host ?? uri.Host;
+            if (!finalHost.EndsWith(_options.PreviewHostSuffix, StringComparison.OrdinalIgnoreCase))
+            {
+                DeezerLog.PreviewHostRefused(logger, finalHost);
+                return new PreviewDownload.Unavailable();
+            }
+
             if (!response.IsSuccessStatusCode)
             {
                 DeezerLog.PreviewDownloadStatus(logger, (int)response.StatusCode, uri.Host);

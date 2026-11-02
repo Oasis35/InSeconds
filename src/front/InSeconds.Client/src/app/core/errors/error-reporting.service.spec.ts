@@ -54,6 +54,15 @@ describe('ErrorReportingService', () => {
     expect(warning.request.body.level).toBe('warning');
   });
 
+  it('les warnings ont leur propre plafond et ne mangent pas celui des erreurs', () => {
+    for (let i = 0; i < ErrorReportingService.MAX_WARNINGS_PER_PAGE + 3; i++) service.report({ source: 'js', message: `diag ${i}`, level: 'warning' });
+    service.report({ source: 'js', message: 'vraie erreur' });
+
+    const bodies = httpMock.match(endpoint).map(r => r.request.body);
+    expect(bodies.filter(b => b.level === 'warning')).toHaveLength(ErrorReportingService.MAX_WARNINGS_PER_PAGE);
+    expect(bodies.some(b => b.message === 'vraie erreur')).toBe(true);
+  });
+
   it('accepte une erreur qui n\'est pas une Error', () => {
     service.reportError('chaîne levée');
 

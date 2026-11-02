@@ -8,7 +8,7 @@ namespace InSeconds.Api.Modules.Catalogue.Application;
 /// Métriques et traces du calcul des formes d'onde (#474), pour le tableau Grafana « Exploitation » (prod seulement). Aucun identifiant de morceau
 /// en étiquette (cardinalité bornée : le résultat). Noms côté Prometheus : <c>inseconds_catalogue_waveforms_total</c> (par <c>outcome</c>),
 /// <c>inseconds_catalogue_waveform_runs_total</c> (par <c>result</c>), <c>inseconds_catalogue_waveform_run_duration_seconds</c> et
-/// <c>inseconds_catalogue_waveforms_missing</c> (les morceaux restés sans forme au dernier passage). Un passage et chacun de ses morceaux
+/// <c>inseconds_catalogue_waveforms_missing</c> (les échecs du dernier passage). Un passage et chacun de ses morceaux
 /// sont des spans de la source <see cref="TelemetrySources.Catalogue"/>.
 /// </summary>
 public sealed class CatalogueTelemetry
@@ -38,7 +38,7 @@ public sealed class CatalogueTelemetry
         _waveforms = meter.CreateCounter<long>(WaveformsName, description: "Formes d'onde traitées, par résultat (outcome : computed, unavailable, failed).");
         _runs = meter.CreateCounter<long>(RunsName, description: "Passages de calcul des formes, par résultat (result : completed, deferred, skipped_busy).");
         _runDuration = meter.CreateHistogram<double>(RunDurationName, unit: "s", description: "Durée d'un passage de calcul des formes.");
-        meter.CreateObservableGauge(MissingName, () => Interlocked.Read(ref _missing), description: "Morceaux restés sans forme d'onde à la fin du dernier passage.");
+        meter.CreateObservableGauge(MissingName, () => Interlocked.Read(ref _missing), description: "Formes en échec au dernier passage (extrait non téléchargé ou illisible), à 0 quand tout va bien.");
     }
 
     public void Waveform(WaveformOutcome outcome) =>

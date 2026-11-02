@@ -1,7 +1,7 @@
 namespace InSeconds.Waveform;
 
 /// <summary>
-/// Le blob d'une forme d'extrait, tel qu'il est stocké en base et envoyé au navigateur (en base64). Cinq nombres d'en-tête puis deux tableaux
+/// Le blob d'une forme d'extrait, tel qu'il est stocké en base et envoyé au navigateur (en base64). Quatre nombres d'en-tête puis deux tableaux
 /// d'octets :
 /// <code>
 /// [0] version du format   [1] secondes couvertes   [2] barres par seconde   [3] valeurs de basses par seconde
