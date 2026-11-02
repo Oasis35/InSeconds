@@ -1,8 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input, output, untracked, viewChild } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { SecondsPipe } from '../../../ui/format/seconds.pipe';
 import { RoundPhase } from '../../domain/track-round';
+import { SmoothPlayhead } from '../../domain/playhead';
 import { WAVEFORM_BARS } from '../../domain/waveform';
+import { motionReduced } from '../../../ui/motion/reduced-motion';
 import { ButtonComponent } from '../../../ui/button/button.component';
 import { MembraneComponent } from '../membrane/membrane.component';
 import { RoundStakeComponent } from '../round-stake/round-stake.component';
@@ -10,15 +13,10 @@ import { RoundStakeComponent } from '../round-stake/round-stake.component';
 /** Hauteur d'une barre tant que la forme de l'extrait n'est pas calculée (ou si son calcul a échoué). */
 const FLAT_PEAK = 0.18;
 
-/** Les couleurs des barres : jouée (cyan), débloquée mais pas encore jouée (cyan pâle), encore verrouillée (gris). */
+/** Les couleurs des trois couches de barres : jouée (cyan), débloquée mais pas encore jouée (cyan pâle), encore verrouillée (gris). */
 const PLAYED = 'var(--color-accent-2)';
 const UNLOCKED = 'rgb(var(--rgb-accent-2) / 0.32)';
 const LOCKED = 'rgb(var(--rgb-text) / 0.14)';
-
-interface Bar {
-  readonly height: number;
-  readonly color: string;
-}
 
 interface StepMark {
   readonly seconds: number;
@@ -32,7 +30,7 @@ interface StepMark {
 
 /**
  * Le lecteur de la manche : la waveform de l'extrait sur toute la largeur (échelle proportionnelle au temps, de 0 au dernier palier,
- * jouée en cyan, débloquée en cyan pâle), un repère par palier où seuls le palier en cours et le dernier sont écrits, puis sur une
+ * 60 barres ; jouée en cyan, débloquée en cyan pâle, remplie par un balayage continu sur la position lissée, `SmoothPlayhead`), un repère par palier où seuls le palier en cours et le dernier sont écrits, puis sur une
  * ligne les points en jeu (si le mode en a), le bouton ↺ qui danse avec les basses (`app-membrane`) et le rond « ▶ X s » pour écouter
  * plus. Remplace aussi la zone quand l'extrait manque ou que la lecture échoue : jamais de boucle silencieuse (piège 33), le joueur
  * choisit « Réessayer » ou « Passer ».
@@ -42,7 +40,7 @@ interface StepMark {
  */
 @Component({
   selector: 'app-round-player',
-  imports: [SecondsPipe, TranslatePipe, ButtonComponent, MembraneComponent, RoundStakeComponent],
+  imports: [NgTemplateOutlet, SecondsPipe, TranslatePipe, ButtonComponent, MembraneComponent, RoundStakeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="px-4 py-5" style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:var(--radius-card)">
@@ -77,19 +75,38 @@ interface StepMark {
               @if (phase() === 'loading') {
                 …
               } @else if (playing()) {
-                {{ position() | appSeconds: 1 }} / {{ chosenSeconds() | appSeconds }}
+                {{ heardTenths() | appSeconds: 1 }} / {{ chosenSeconds() | appSeconds }}
               } @else {
                 {{ chosenSeconds() | appSeconds }} / {{ chosenSeconds() | appSeconds }}
               }
             </p>
 
-            <div data-testid="waveform" class="flex items-end w-full" style="height:46px;gap:3px"
-              role="progressbar" [attr.aria-valuenow]="position()" aria-valuemin="0" [attr.aria-valuemax]="maxStep()"
+            <!-- Trois couches de barres identiques : grises dessous, cyan pâle jusqu'au palier débloqué, cyan vif jusqu'à la position. Les
+              deux du dessus sont découvertes de gauche à droite par deux translations opposées (la couche glisse, ses barres restent en
+              place) : une barre peut être à moitié jouée, et seul transform change pendant la lecture, quel que soit le nombre de barres. -->
+            <div data-testid="waveform" class="relative w-full overflow-hidden" style="height:46px"
+              role="progressbar" [attr.aria-valuenow]="heardTenths()" aria-valuemin="0" [attr.aria-valuemax]="maxStep()"
               [attr.aria-label]="'gameplay.round.waveform' | translate">
-              @for (bar of bars(); track $index) {
-                <span class="flex-1" style="min-width:1px;border-radius:3px 3px 1px 1px" [style.height.%]="bar.height * 100" [style.background]="bar.color"></span>
-              }
+              <ng-container *ngTemplateOutlet="barRow; context: { color: colors.locked }" />
+              <div #unlockedLayer data-testid="waveform-unlocked" class="absolute inset-0 overflow-hidden" [class.wave-sweep]="!reduced"
+                [style.transform]="layerShift(unlockedRatio())">
+                <div class="absolute inset-0" [class.wave-sweep]="!reduced" [style.transform]="innerShift(unlockedRatio())">
+                  <ng-container *ngTemplateOutlet="barRow; context: { color: colors.unlocked }" />
+                </div>
+              </div>
+              <div #playedLayer data-testid="waveform-played" class="absolute inset-0 overflow-hidden" style="will-change:transform">
+                <div #playedInner class="absolute inset-0" style="will-change:transform">
+                  <ng-container *ngTemplateOutlet="barRow; context: { color: colors.played }" />
+                </div>
+              </div>
             </div>
+            <ng-template #barRow let-color="color">
+              <div class="absolute inset-0 flex items-end" style="gap:2px" aria-hidden="true">
+                @for (height of heights(); track $index) {
+                  <span class="flex-1" style="min-width:1px;border-radius:2px 2px 1px 1px" [style.height.%]="height * 100" [style.background]="color"></span>
+                }
+              </div>
+            </ng-template>
 
             <div class="relative w-full tabular-nums" style="height:24px;font-family:var(--font-clock);font-size:11px;font-weight:600" aria-hidden="true">
               @for (mark of marks(); track mark.seconds) {
@@ -154,6 +171,10 @@ interface StepMark {
       }
     </div>
   `,
+  styles: `
+    /* Le cyan pâle s'étend en douceur quand un palier se débloque (rien en mouvement réduit). */
+    .wave-sweep { transition: transform 300ms ease-out; }
+  `,
 })
 export class RoundPlayerComponent {
   readonly phase = input.required<RoundPhase>();
@@ -188,19 +209,63 @@ export class RoundPlayerComponent {
     return this.chosenSeconds();
   });
 
-  protected readonly bars = computed<readonly Bar[]>(() => {
-    const max = this.maxStep();
-    const peaks = this.peaks() ?? Array.from({ length: WAVEFORM_BARS }, () => FLAT_PEAK);
-    const played = max > 0 ? this.heard() / max : 0;
-    const unlocked = max > 0 ? this.chosenSeconds() / max : 0;
-    return peaks.map((height, i) => {
-      const middle = (i + 0.5) / peaks.length;
-      let color = LOCKED;
-      if (middle <= played) color = PLAYED;
-      else if (middle <= unlocked) color = UNLOCKED;
-      return { height, color };
+  /** Le temps écouté au dixième (ce que montre le chrono lu par les lecteurs d'écran) : le gabarit ne change que dix fois par seconde. */
+  protected readonly heardTenths = computed(() => Math.round(this.heard() * 10) / 10);
+
+  /** La hauteur de chaque barre : la forme de l'extrait, plate tant qu'elle n'est pas calculée. */
+  protected readonly heights = computed<readonly number[]>(() => this.peaks() ?? Array.from({ length: WAVEFORM_BARS }, () => FLAT_PEAK));
+
+  /** La part débloquée de la waveform, de 0 à 1, sur l'échelle du dernier palier. */
+  protected readonly unlockedRatio = computed(() => ratio(this.chosenSeconds(), this.maxStep()));
+
+  protected readonly colors = { played: PLAYED, unlocked: UNLOCKED, locked: LOCKED } as const;
+  protected readonly reduced = motionReduced();
+
+  /** Une couche découverte jusqu'à `part` : elle glisse vers la droite... */
+  protected layerShift(part: number): string {
+    return `translateX(${(part - 1) * 100}%)`;
+  }
+
+  /** ...et ses barres glissent d'autant dans l'autre sens, pour rester en place. */
+  protected innerShift(part: number): string {
+    return `translateX(${(1 - part) * 100}%)`;
+  }
+
+  private readonly playedLayer = viewChild<ElementRef<HTMLElement>>('playedLayer');
+  private readonly playedInner = viewChild<ElementRef<HTMLElement>>('playedInner');
+  private readonly playhead = new SmoothPlayhead();
+
+  constructor() {
+    // La couche cyan vif est menée hors du gabarit : pendant la lecture, une boucle d'image écrit sa translation (la position lissée,
+    // sauf en mouvement réduit), sans relancer la détection de changement ; à l'arrêt, elle montre ce qui a été entendu.
+    effect(onCleanup => {
+      const layer = this.playedLayer()?.nativeElement;
+      const inner = this.playedInner()?.nativeElement;
+      if (!layer || !inner) return;
+      const max = this.maxStep();
+      const paint = (seconds: number) => {
+        const part = ratio(seconds, max);
+        layer.style.transform = this.layerShift(part);
+        inner.style.transform = this.innerShift(part);
+      };
+      if (!this.playing()) {
+        const heard = this.heard();
+        untracked(() => this.playhead.reset(heard, performance.now()));
+        paint(heard);
+        return;
+      }
+      untracked(() => this.playhead.reset(this.position(), performance.now()));
+      let frame = 0;
+      const tick = () => {
+        const position = this.position();
+        const limit = Math.max(this.chosenSeconds(), position);
+        paint(this.reduced ? Math.min(position, limit) : this.playhead.next(position, limit, performance.now()));
+        frame = requestAnimationFrame(tick);
+      };
+      untracked(tick);
+      onCleanup(() => cancelAnimationFrame(frame));
     });
-  });
+  }
 
   /** Le repère d'un palier est centré sur lui, sauf au bord : le dernier se cale à droite, un tout premier à gauche. */
   protected shiftOf(mark: StepMark): string | null {
@@ -220,4 +285,9 @@ export class RoundPlayerComponent {
       return { seconds, left, unlocked: seconds <= chosen, current: seconds === chosen, labelled: seconds === chosen || seconds === max, align };
     });
   });
+}
+
+/** `seconds` rapporté au dernier palier, borné à [0, 1]. */
+function ratio(seconds: number, max: number): number {
+  return max > 0 ? Math.min(1, Math.max(0, seconds / max)) : 0;
 }

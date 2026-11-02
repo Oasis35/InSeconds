@@ -9,8 +9,11 @@ export interface Waveform {
   readonly envelope: readonly number[];
 }
 
-/** Le nombre de barres de la waveform. */
-export const WAVEFORM_BARS = 32;
+/**
+ * Le nombre de barres de la waveform : une barre = 1/6 s sur 10 s, donc chaque palier tombe entre deux barres (0,5 s = 3 barres,
+ * 1 s = 6, 5 s = 30).
+ */
+export const WAVEFORM_BARS = 60;
 
 /** Valeurs de l'enveloppe des basses par seconde : une par image. */
 export const ENVELOPE_FPS = 60;

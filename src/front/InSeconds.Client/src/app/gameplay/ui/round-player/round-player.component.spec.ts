@@ -29,12 +29,15 @@ describe('RoundPlayerComponent', () => {
     expect(timer(render({ phase: 'listened' }).element)).toBe('1 s / 1 s');
   });
 
-  const bars = (element: HTMLElement) => Array.from(element.querySelectorAll<HTMLElement>('[data-testid="waveform"] > span'));
-  const colors = (element: HTMLElement) => bars(element).map(bar => bar.style.background);
+  const layer = (element: HTMLElement, name: string) => element.querySelector<HTMLElement>(`[data-testid="waveform-${name}"]`)!;
+  const bars = (element: HTMLElement) => Array.from(layer(element, 'played').querySelectorAll<HTMLElement>('span'));
+  /** La part découverte d'une couche, lue sur sa translation : `translateX(-40%)` découvre 60 %. */
+  const shown = (element: HTMLElement, name: string) => 1 + Number(/translateX\((-?[\d.]+)%\)/.exec(layer(element, name).style.transform)![1]) / 100;
 
-  it('dessine la waveform : barres plates tant que la forme n\'est pas là, puis la vraie forme', () => {
+  it('dessine la waveform : 60 barres plates tant que la forme n\'est pas là, puis la vraie forme, dans chaque couche', () => {
     const { fixture, element } = render({ phase: 'listened' });
-    expect(bars(element)).toHaveLength(32);
+    expect(bars(element)).toHaveLength(60);
+    expect(element.querySelectorAll('[data-testid="waveform"] span')).toHaveLength(180);
     expect(new Set(bars(element).map(bar => bar.style.height))).toEqual(new Set(['18%']));
 
     fixture.componentRef.setInput('peaks', [0.25, 1, 0.5, 0.75]);
@@ -42,14 +45,32 @@ describe('RoundPlayerComponent', () => {
     expect(bars(element).map(bar => bar.style.height)).toEqual(['25%', '100%', '50%', '75%']);
   });
 
-  it('colore les barres : jouées en cyan, débloquées en cyan pâle, le reste en gris, sur l\'échelle du dernier palier', () => {
-    // 10 barres sur 10 s : 2,4 s jouées (2 barres), 5 s débloquées (3 de plus).
-    const { element } = render({ chosenSeconds: 5, position: 2.4, peaks: Array.from({ length: 10 }, () => 0.5) });
-    const [played, unlocked, locked] = [colors(element)[0], colors(element)[3], colors(element)[9]];
-    expect(colors(element).filter(c => c === played)).toHaveLength(2);
-    expect(colors(element).filter(c => c === unlocked)).toHaveLength(3);
-    expect(colors(element).filter(c => c === locked)).toHaveLength(5);
-    expect(new Set([played, unlocked, locked]).size).toBe(3);
+  it('découvre le cyan pâle jusqu\'au palier débloqué et le cyan vif jusqu\'au palier joué, sur l\'échelle du dernier palier', () => {
+    const { element } = render({ phase: 'listened', chosenSeconds: 5 });
+    expect(shown(element, 'unlocked')).toBeCloseTo(0.5);
+    expect(shown(element, 'played')).toBeCloseTo(0.5);
+    // Les barres de la couche restent en place : sa translation est compensée par celle de son contenu.
+    const inner = layer(element, 'played').firstElementChild as HTMLElement;
+    expect(inner.style.transform).toBe('translateX(50%)');
+  });
+
+  it('rien de joué pendant le chargement, le palier débloqué déjà en cyan pâle', () => {
+    const { element } = render({ phase: 'loading', chosenSeconds: 1 });
+    expect(shown(element, 'played')).toBe(0);
+    expect(shown(element, 'unlocked')).toBeCloseTo(0.1);
+  });
+
+  it('pendant la lecture, la couche vive suit la position, à chaque image', async () => {
+    const { fixture, element } = render({ chosenSeconds: 5, position: 2 });
+    expect(shown(element, 'played')).toBeCloseTo(0.2);
+    fixture.componentRef.setInput('position', 4);
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    expect(shown(element, 'played')).toBeGreaterThanOrEqual(0.4);
+    expect(shown(element, 'played')).toBeLessThanOrEqual(0.5);
+    // La position passe au chrono lu par les lecteurs d'écran, au dixième.
+    fixture.componentRef.setInput('position', 4.04);
+    fixture.detectChanges();
+    expect(timer(element)).toBe('4,0 s / 5 s');
   });
 
   it('place un repère par palier et n\'écrit que le palier en cours et le dernier', () => {
