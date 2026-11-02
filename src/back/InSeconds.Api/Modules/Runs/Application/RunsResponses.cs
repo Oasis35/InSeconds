@@ -27,7 +27,8 @@ public sealed record RunRoundResponse(int Round, int Score, int Objective, int M
 /// L'extrait signé et périssable (piège 14) ; vide si Deezer n'a pas répondu (panne, quota) : le joueur réessaie par <c>POST …/preview</c>, le
 /// morceau reste en cours.
 /// </param>
-public sealed record RunCurrentTrackResponse(int Position, int Round, int PositionInRound, string? PreviewUrl);
+/// <param name="Waveform">La forme de l'extrait en base64 (cf. <c>TrackSlot</c> du Daily), vide si elle n'est pas calculée : le navigateur calcule la sienne.</param>
+public sealed record RunCurrentTrackResponse(int Position, int Round, int PositionInRound, string? PreviewUrl, string? Waveform = null);
 
 /// <summary>Un morceau que le serveur vient de neutraliser (Deezer n'en a plus d'extrait), pour l'écran « morceau retiré de la manche ».</summary>
 /// <param name="ObjectiveBefore">L'objectif de la manche avant la neutralisation (l'écran le barre).</param>

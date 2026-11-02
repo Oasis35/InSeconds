@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { SessionLoader } from '../../account/data-access/session-loader';
 import { SessionStore } from '../../core/session/session.store';
 import { FakeAudioPort, provideFakeAudio } from '../../gameplay/data-access/testing/fake-audio.port';
+import { FakeWaveformPort, provideFakeWaveform } from '../../gameplay/data-access/testing/fake-waveform.port';
 import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { RoundSubmission } from '../../gameplay/domain/track-round';
 import { EMPTY_STREAK, Streak } from '../domain/streak';
@@ -26,6 +27,7 @@ describe('DailyGameStore', () => {
       providers: [
         provideFakeDailyApi(api),
         provideFakeAudio(audio),
+        provideFakeWaveform(new FakeWaveformPort()),
         { provide: SessionLoader, useValue: { ensureGuest: async () => { guestCreated++; } } },
         TrackRoundStore,
         DailyGameStore,

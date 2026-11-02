@@ -60,7 +60,7 @@ describe('RunsApi', () => {
     expect(outcome.play.session.round).toEqual({ round: 1, score: 50, objective: 200, maxScore: 500 });
     expect(outcome.play.session.finish).toBeNull();
     expect(outcome.play.revealed).toMatchObject({ artist: 'Daft Punk', title: null, coverUrl: null, deezerTrackId: 3135553 });
-    expect(outcome.play.current).toEqual({ position: 2, round: 1, positionInRound: 2, previewUrl: null });
+    expect(outcome.play.current).toEqual({ position: 2, round: 1, positionInRound: 2, previewUrl: null, waveform: null });
     expect(outcome.play.neutralized).toEqual([{ position: 2, round: 1, objectiveBefore: 200, objectiveAfter: 160 }]);
   });
 

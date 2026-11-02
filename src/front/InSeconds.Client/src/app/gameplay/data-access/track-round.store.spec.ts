@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { RoundConfig } from '../domain/track-round';
 import { TrackRoundStore } from './track-round.store';
 import { FakeAudioPort, provideFakeAudio } from './testing/fake-audio.port';
+import { ClientErrorReport, ErrorReportingService } from '../../core/errors/error-reporting.service';
+import { FakeWaveformPort, provideFakeWaveform } from './testing/fake-waveform.port';
 
 const URL = 'https://cdn.example/extrait.mp3';
 const NEXT = 'https://cdn.example/suivant.mp3';
@@ -19,7 +21,7 @@ describe('TrackRoundStore', () => {
 
   beforeEach(() => {
     audio = new FakeAudioPort();
-    TestBed.configureTestingModule({ providers: [provideFakeAudio(audio), TrackRoundStore] });
+    TestBed.configureTestingModule({ providers: [provideFakeAudio(audio), provideFakeWaveform(new FakeWaveformPort()), TrackRoundStore] });
     store = TestBed.inject(TrackRoundStore);
   });
 
@@ -411,5 +413,135 @@ describe('TrackRoundStore', () => {
       TestBed.resetTestingModule();
       expect(audio.calls).toEqual(['stop']);
     });
+  });
+
+  describe('forme de l\'extrait', () => {
+    it('tant que la forme n\'est pas là : ni forme ni basses, la partie continue', () => {
+      store.start(CONFIG);
+      emit('playing', 0.3);
+      expect(store.waveform()).toBeNull();
+      expect(store.bass()).toBe(0);
+    });
+
+    it('n\'a pas de points en jeu sans barème', () => {
+      store.start(CONFIG);
+      expect(store.stake()).toBeNull();
+    });
+
+    it('donne les points en jeu du mode', () => {
+      store.start({ ...CONFIG, listen: { ...CONFIG.listen, stake: seconds => seconds * 100 } });
+      expect(store.stake()).toBe(50);
+      store.listenMore();
+      expect(store.stake()).toBe(100);
+    });
+  });
+});
+
+describe('TrackRoundStore et la forme de l\'extrait', () => {
+  const WAVEFORM = { peaks: [0.2, 1], envelope: [0, 0.4, 0.9] };
+  let audio: FakeAudioPort;
+  let waveforms: FakeWaveformPort;
+  let reports: ClientErrorReport[];
+  let store: InstanceType<typeof TrackRoundStore>;
+
+  beforeEach(() => {
+    audio = new FakeAudioPort();
+    waveforms = new FakeWaveformPort();
+    reports = [];
+    TestBed.configureTestingModule({
+      providers: [
+        provideFakeAudio(audio), provideFakeWaveform(waveforms), TrackRoundStore,
+        { provide: ErrorReportingService, useValue: { report: (r: ClientErrorReport) => reports.push(r) } },
+      ],
+    });
+    store = TestBed.inject(TrackRoundStore);
+  });
+
+  const emit = (state: Parameters<FakeAudioPort['emit']>[0], position?: number) => {
+    audio.emit(state, position);
+    TestBed.tick();
+  };
+
+  /** Un blob de l'API : 30 s, 6 barres et 60 valeurs de basses par seconde, la dernière barre de la fenêtre à fond. */
+  const blob = () => {
+    const bars = Array.from({ length: 180 }, (_, i) => (i >= 50 && i < 60 ? 255 : 40));
+    const envelope = Array.from({ length: 1800 }, (_, i) => (i === 1 ? 255 : 0));
+    return btoa(String.fromCharCode(1, 30, 6, 60, ...bars, ...envelope));
+  };
+
+  it('sans forme de l\'API, la calcule dès que le son démarre, une seule fois par morceau, sur l\'échelle du dernier palier', () => {
+    store.start(CONFIG);
+    emit('ready');
+    expect(waveforms.calls).toEqual([]);
+    emit('playing');
+    emit('finished', 0.5);
+    store.listenMore();
+    emit('playing');
+    emit('finished', 1);
+    expect(waveforms.calls).toEqual([`load ${URL} 10`]);
+  });
+
+  it('remonte chaque repli en Warning, avec le morceau', () => {
+    store.start(CONFIG);
+    emit('playing');
+    expect(reports).toHaveLength(1);
+    expect(reports[0]).toMatchObject({ source: 'js', level: 'warning' });
+    expect(reports[0].message).toContain(`WaveformFallback: morceau ${CONFIG.trackId}`);
+  });
+
+  it('avec la forme de l\'API : dessinée dès le départ, rien n\'est calculé ni remonté', () => {
+    store.start({ ...CONFIG, waveform: blob() });
+    expect(store.waveform()?.peaks).toHaveLength(60);
+    expect(store.waveform()?.peaks[59]).toBeCloseTo(1);
+    emit('playing');
+    emit('finished', 0.5);
+    store.listenMore();
+    emit('playing');
+    expect(waveforms.calls).toEqual([]);
+    expect(reports).toEqual([]);
+  });
+
+  it('un blob illisible (autre version) retombe sur le calcul du navigateur', () => {
+    store.start({ ...CONFIG, waveform: btoa(String.fromCharCode(9, 30, 6, 60)) });
+    expect(store.waveform()).toBeNull();
+    emit('playing');
+    expect(waveforms.calls).toEqual([`load ${URL} 10`]);
+  });
+
+  it('se redemande à la lecture suivante après un échec', async () => {
+    store.start(CONFIG);
+    emit('playing');
+    await waveforms.resolve(null);
+    emit('finished', 0.5);
+    store.listenMore();
+    emit('playing');
+    expect(waveforms.calls).toHaveLength(2);
+  });
+
+  it('suit les basses de la position pendant la lecture, 0 à l\'arrêt', async () => {
+    store.start(CONFIG);
+    emit('playing');
+    await waveforms.resolve(WAVEFORM);
+    emit('playing', 1 / 60);
+    expect(store.waveform()).toEqual(WAVEFORM);
+    expect(store.bass()).toBe(0.4);
+    emit('finished', 1);
+    expect(store.bass()).toBe(0);
+  });
+
+  it('oublie une forme arrivée après le passage au morceau suivant', async () => {
+    store.start(CONFIG);
+    emit('playing');
+    store.start({ ...CONFIG, trackId: 8 });
+    await waveforms.resolve(WAVEFORM);
+    expect(store.waveform()).toBeNull();
+  });
+
+  it('reset oublie la forme', async () => {
+    store.start(CONFIG);
+    emit('playing');
+    await waveforms.resolve(WAVEFORM);
+    store.reset();
+    expect(store.waveform()).toBeNull();
   });
 });

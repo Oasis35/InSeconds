@@ -227,7 +227,7 @@ function toSession(session: RunSessionResponse): RunSession {
 
 function toCurrent(current: RunCurrentTrackResponse | undefined): RunCurrentTrack | null {
   return current
-    ? { position: current.position, round: current.round, positionInRound: current.positionInRound, previewUrl: current.previewUrl || null }
+    ? { position: current.position, round: current.round, positionInRound: current.positionInRound, previewUrl: current.previewUrl || null, waveform: current.waveform ?? null }
     : null;
 }
 

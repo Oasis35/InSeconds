@@ -39,4 +39,21 @@ internal static partial class DeezerLog
     [LoggerMessage(EventId = 1217, Level = LogLevel.Warning,
         Message = "Réponse Deezer sans genres pour l'album {AlbumId} : considérée comme indisponible.")]
     public static partial void AlbumWithoutGenres(ILogger logger, long albumId);
+
+    // Jamais l'adresse de l'extrait dans le journal : elle est signée (piège 14), seulement son hôte et le code HTTP.
+    [LoggerMessage(EventId = 1218, Level = LogLevel.Warning,
+        Message = "Téléchargement de l'extrait refusé : hôte {Host} non autorisé.")]
+    public static partial void PreviewHostRefused(ILogger logger, string host);
+
+    [LoggerMessage(EventId = 1219, Level = LogLevel.Warning,
+        Message = "Téléchargement de l'extrait impossible : HTTP {HttpStatus} depuis {Host}.")]
+    public static partial void PreviewDownloadStatus(ILogger logger, int httpStatus, string host);
+
+    [LoggerMessage(EventId = 1220, Level = LogLevel.Warning,
+        Message = "Téléchargement de l'extrait impossible : fichier de plus de {MaxBytes} octets.")]
+    public static partial void PreviewTooLarge(ILogger logger, int maxBytes);
+
+    [LoggerMessage(EventId = 1221, Level = LogLevel.Warning,
+        Message = "Échec du téléchargement de l'extrait depuis {Host}.")]
+    public static partial void PreviewDownloadFailed(ILogger logger, Exception exception, string host);
 }

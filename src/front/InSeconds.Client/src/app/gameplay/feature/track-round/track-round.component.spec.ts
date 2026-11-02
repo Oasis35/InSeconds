@@ -4,6 +4,7 @@ import { provideTranslateService } from '@ngx-translate/core';
 import { AnswerSearchPort } from '../../data-access/answer-search.port';
 import { SEARCH_DEBOUNCE_MS } from '../../data-access/answer-search.store';
 import { FakeAudioPort, provideFakeAudio } from '../../data-access/testing/fake-audio.port';
+import { FakeWaveformPort, provideFakeWaveform } from '../../data-access/testing/fake-waveform.port';
 import { TrackRoundStore } from '../../data-access/track-round.store';
 import { AnswerSuggestion } from '../../domain/answer';
 import { RoundResult } from '../../domain/round-result';
@@ -53,7 +54,7 @@ describe('TrackRoundComponent', () => {
     audio = new FakeAudioPort();
     search = vi.fn(() => Promise.resolve([DAFT, MUSE]));
     TestBed.configureTestingModule({
-      providers: [provideTranslateService(), provideFakeAudio(audio), TrackRoundStore, { provide: AnswerSearchPort, useValue: { search } }],
+      providers: [provideTranslateService(), provideFakeAudio(audio), provideFakeWaveform(new FakeWaveformPort()), TrackRoundStore, { provide: AnswerSearchPort, useValue: { search } }],
     });
     store = TestBed.inject(TrackRoundStore);
     fixture = TestBed.createComponent(Host);

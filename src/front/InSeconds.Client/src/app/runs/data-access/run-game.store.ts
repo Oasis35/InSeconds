@@ -123,6 +123,7 @@ export const RunGameStore = signalStore(
     const configOf = (current: RunCurrentTrack, listenSeconds: number): RoundConfig => ({
       trackId: current.position,
       previewUrl: current.previewUrl,
+      waveform: current.waveform ?? null,
       // Écoute fixe : un seul palier, pas de « écouter plus » ; la relecture (↺) reste possible. Pas d'indice.
       listen: { steps: [listenSeconds], extendable: false },
       hints: { unlockSeconds: [] },

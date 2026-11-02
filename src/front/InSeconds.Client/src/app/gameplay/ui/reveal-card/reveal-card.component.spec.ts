@@ -50,7 +50,7 @@ describe('RevealCardComponent', () => {
   });
 
   it('marque ✓ ce qui est juste et ✗ ce qui est faux', () => {
-    const spans = Array.from(render().element.querySelectorAll('span.font-bold')).map(span => span.textContent!.replace(/\s+/g, ' ').trim());
+    const spans = Array.from(render().element.querySelectorAll('span.font-semibold')).map(span => span.textContent!.replace(/\s+/g, ' ').trim());
     expect(spans[0]).toContain('✓');
     expect(spans[1]).toContain('✗');
   });

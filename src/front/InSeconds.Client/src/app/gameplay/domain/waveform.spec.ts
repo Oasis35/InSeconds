@@ -1,0 +1,106 @@
+import { ENVELOPE_FPS, WAVEFORM_BARS, bassAt, bassEnvelope, waveformFromBlob, wavePeaks } from './waveform';
+
+/** `seconds` secondes d'une sinusoïde de `hz` Hz, d'amplitude `amplitude`. */
+function tone(seconds: number, hz: number, amplitude = 1, sampleRate = 8000): Float32Array {
+  return Float32Array.from({ length: Math.round(seconds * sampleRate) }, (_, i) => amplitude * Math.sin((2 * Math.PI * hz * i) / sampleRate));
+}
+
+describe('wavePeaks', () => {
+  it('rend une barre par tranche, la plus forte à 1', () => {
+    const samples = new Float32Array([...tone(1, 100, 0.2), ...tone(1, 100, 1)]);
+    const peaks = wavePeaks(samples, 8000, 2, 4);
+    expect(peaks).toHaveLength(4);
+    expect(peaks[3]).toBeCloseTo(1);
+    expect(peaks[0]).toBeLessThan(peaks[3]);
+  });
+
+  it('garde une hauteur minimale au silence et après la fin du son', () => {
+    const peaks = wavePeaks(tone(1, 100), 8000, 2, 4);
+    expect(peaks[3]).toBeGreaterThan(0);
+    expect(peaks[3]).toBeLessThan(0.2);
+  });
+});
+
+describe('wavePeaks : relief', () => {
+  it('rapporte au 95e centile (un seul pic n\'écrase pas le reste), avec la courbe de contraste et un plancher à 8 %', () => {
+    // 40 tranches : 37 calmes à 0,5, deux à 1 (le 95e centile), un pic isolé à 4.
+    const amplitudes = [...Array.from({ length: 37 }, () => 0.5), 1, 1, 4];
+    const samples = new Float32Array(amplitudes.flatMap(a => Array.from(tone(0.05, 100, a))));
+    const peaks = wavePeaks(samples, 8000, 2, 40);
+    expect(peaks[39]).toBeCloseTo(1);
+    expect(peaks[38]).toBeCloseTo(1);
+    expect(peaks[0]).toBeCloseTo(0.08 + 0.92 * Math.pow(0.5, 1.2), 2);
+    expect(wavePeaks(new Float32Array(800), 8000, 1, 4)).toEqual([0.08, 0.08, 0.08, 0.08]);
+  });
+});
+
+describe('bassEnvelope', () => {
+  it('suit les basses et laisse passer peu des aigus', () => {
+    const samples = new Float32Array([...tone(0.5, 60), ...tone(0.5, 3000)]);
+    const envelope = bassEnvelope(samples, 8000);
+    expect(envelope).toHaveLength(Math.ceil(samples.length / Math.round(8000 / ENVELOPE_FPS)));
+    expect(Math.max(...envelope.slice(0, 25))).toBeCloseTo(1, 1);
+    // Les aigus arrivent quand la basse s'éteint : l'enveloppe redescend.
+    expect(envelope.at(-1)!).toBeLessThan(0.3);
+  });
+
+  it('reste à 0 sur un silence', () => {
+    expect(bassEnvelope(new Float32Array(800), 8000).every(v => v === 0)).toBe(true);
+  });
+});
+
+describe('bassAt', () => {
+  it('lit l\'image de la position, 0 hors de l\'enveloppe', () => {
+    const envelope = [0, 0.5, 1];
+    expect(bassAt(envelope, 1 / ENVELOPE_FPS)).toBe(0.5);
+    expect(bassAt(envelope, 10)).toBe(1);
+    expect(bassAt([], 1)).toBe(0);
+    expect(bassAt(envelope, -1)).toBe(0);
+  });
+});
+
+/** Un blob de l'API : en-tête (version, secondes, barres/s, enveloppe/s), barres puis enveloppe, en base64. */
+function blob(bars: number[], envelope: number[], header: [number, number, number, number] = [1, 30, 6, 60]): string {
+  return btoa(String.fromCharCode(...header, ...bars, ...envelope));
+}
+
+describe('waveformFromBlob', () => {
+  const quiet = Array.from({ length: 180 }, () => 40);
+  const flat = Array.from({ length: 1800 }, () => 0);
+
+  it('prend les 10 premières secondes (60 barres, une par barre du serveur) et garde tout l\'extrait pour les basses', () => {
+    const bars = quiet.map((v, i) => (i >= 50 && i < 60 ? 255 : v));
+    const waveform = waveformFromBlob(blob(bars, flat), 10);
+    expect(waveform?.peaks).toHaveLength(WAVEFORM_BARS);
+    expect(waveform!.peaks[59]).toBeCloseTo(1);
+    expect(waveform!.peaks[0]).toBeLessThan(waveform!.peaks[59]);
+    expect(waveform?.envelope).toHaveLength(1800);
+  });
+
+  it('ignore ce qui dépasse la fenêtre demandée', () => {
+    const loudLater = quiet.map((v, i) => (i >= 60 ? 255 : v));
+    const waveform = waveformFromBlob(blob(loudLater, flat), 10)!;
+    expect(Math.max(...waveform.peaks)).toBeCloseTo(waveform.peaks[0]);
+  });
+
+  it('moyenne les barres du serveur sous une barre du lecteur quand la fenêtre est plus longue', () => {
+    expect(waveformFromBlob(blob(quiet, flat), 30)?.peaks).toHaveLength(WAVEFORM_BARS);
+  });
+
+  it('applique le lissage des basses : monte d\'un coup, redescend doucement', () => {
+    const envelope = flat.map((_, i) => (i === 10 ? 255 : 0));
+    const smooth = waveformFromBlob(blob(quiet, envelope), 10)!.envelope;
+    expect(smooth[10]).toBeCloseTo(1);
+    expect(smooth[11]).toBeCloseTo(0.82);
+    expect(smooth[12]).toBeLessThan(smooth[11]);
+  });
+
+  it('rend null sans blob, avec une autre version, un blob tronqué ou du base64 invalide', () => {
+    expect(waveformFromBlob(undefined, 10)).toBeNull();
+    expect(waveformFromBlob('', 10)).toBeNull();
+    expect(waveformFromBlob(blob(quiet, flat, [2, 30, 6, 60]), 10)).toBeNull();
+    expect(waveformFromBlob(blob(quiet.slice(1), flat), 10)).toBeNull();
+    expect(waveformFromBlob('pas du base64 !', 10)).toBeNull();
+    expect(waveformFromBlob(blob(quiet, flat), 0)).toBeNull();
+  });
+});

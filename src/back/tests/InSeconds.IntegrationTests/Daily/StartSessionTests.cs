@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
 using InSeconds.Api.Modules.Daily.Application;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using static InSeconds.IntegrationTests.Daily.DailyApi;
 
 namespace InSeconds.IntegrationTests.Daily;
@@ -46,6 +48,66 @@ public class StartSessionTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal((short)InSeconds.Api.Modules.Daily.Domain.ChallengeOrigin.OnTheFly, await _game.App.OriginOfAsync(Today));
     }
 
+    /// <summary>Un blob de forme de la version courante (30 s, 6 barres et 60 valeurs de basses par seconde), en base64 comme dans la réponse.</summary>
+    private static (string Hex, string Base64) Blob(byte version = 1)
+    {
+        var bytes = new byte[4 + 180 + 1800];
+        bytes[0] = version;
+        bytes[1] = 30;
+        bytes[2] = 6;
+        bytes[3] = 60;
+        return (Convert.ToHexString(bytes), Convert.ToBase64String(bytes));
+    }
+
+    [Fact]
+    public async Task Demarrer_AvecForme_EnvoieLeBlobDeChaqueMorceau_SansRienJournaliser()
+    {
+        var logs = new CapturedLogs();
+        await using var game = await GameApi.CreateAsync(
+            await postgres.CreateDatabaseAsync(), configureServices: services => services.AddSingleton<ILoggerProvider>(logs));
+        var alice = await game.NewPlayerAsync();
+        await game.GenerateAsync();
+        var (hex, base64) = Blob();
+        await game.Api.ExecuteAsync($"UPDATE catalogue.tracks SET waveform = decode('{hex}', 'hex')");
+
+        var started = await alice.StartAsync();
+
+        Assert.All(started.Tracks, t => Assert.Equal(base64, t.Waveform));
+        Assert.DoesNotContain(logs.Entries, e => e.EventId == 1203);
+    }
+
+    [Fact]
+    public async Task Demarrer_SansForme_EnvoieNull_EtJournaliseUnWarningParMorceau()
+    {
+        var logs = new CapturedLogs();
+        await using var game = await GameApi.CreateAsync(
+            await postgres.CreateDatabaseAsync(), configureServices: services => services.AddSingleton<ILoggerProvider>(logs));
+        var alice = await game.NewPlayerAsync();
+        await game.GenerateAsync();
+
+        var started = await alice.StartAsync();
+
+        Assert.All(started.Tracks, t => Assert.Null(t.Waveform));
+        var warnings = logs.Entries.Where(e => e.EventId == 1203).ToList();
+        Assert.Equal(5, warnings.Count);
+        Assert.All(warnings, w => Assert.Equal(LogLevel.Warning, w.Level));
+        // L'identifiant en base suffit à retrouver le morceau : jamais d'artiste ni de titre dans le journal.
+        Assert.DoesNotContain(warnings, w => w.Message.Contains("Artiste", StringComparison.Ordinal) || w.Message.Contains("Titre", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Demarrer_FormeDUneAutreVersion_NEstPasEnvoyee()
+    {
+        await _game.GenerateAsync();
+        var alice = await _game.NewPlayerAsync();
+        var (hex, _) = Blob(version: 9);
+        await _game.Api.ExecuteAsync($"UPDATE catalogue.tracks SET waveform = decode('{hex}', 'hex')");
+
+        var started = await alice.StartAsync();
+
+        Assert.All(started.Tracks, t => Assert.Null(t.Waveform));
+    }
+
     [Fact]
     public async Task Demarrer_ReponseSansRienQuiDonneLaReponse_Piege31()
     {
@@ -67,9 +129,9 @@ public class StartSessionTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.DoesNotContain("releaseYear", body, StringComparison.OrdinalIgnoreCase);
         foreach (var position in Enumerable.Range(1, 5))
             Assert.DoesNotContain((1000 + await _game.TrackAtAsync(Today, position)).ToString(System.Globalization.CultureInfo.InvariantCulture), body, StringComparison.Ordinal);
-        // Les seules propriétés d'un morceau : sa position et son extrait.
+        // Les seules propriétés d'un morceau : sa position, son extrait et sa forme d'onde (une silhouette n'identifie pas le morceau).
         var tracks = System.Text.Json.JsonDocument.Parse(body).RootElement.GetProperty("tracks");
-        Assert.All(tracks.EnumerateArray(), t => Assert.Equal(["position", "previewUrl"], t.EnumerateObject().Select(p => p.Name)));
+        Assert.All(tracks.EnumerateArray(), t => Assert.Equal(["position", "previewUrl", "waveform"], t.EnumerateObject().Select(p => p.Name)));
     }
 
     [Fact]

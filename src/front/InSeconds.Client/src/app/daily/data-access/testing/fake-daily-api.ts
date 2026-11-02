@@ -10,6 +10,7 @@ export const SETTINGS: DailySettings = {
   guessTimerSeconds: 20,
   tracksPerChallenge: 3,
   allowedDurationsSeconds: [0.5, 1, 2, 5],
+  durationScores: [{ seconds: 0.5, score: 1000 }, { seconds: 1, score: 850 }, { seconds: 2, score: 550 }, { seconds: 5, score: 250 }],
   hints: [
     { level: 1, unlockSeconds: 5, kind: 'year', penaltyPercent: 30 },
     { level: 2, unlockSeconds: 10, kind: 'artistMasked', penaltyPercent: 60 },

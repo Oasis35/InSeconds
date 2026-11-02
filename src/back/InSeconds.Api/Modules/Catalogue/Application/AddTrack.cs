@@ -3,6 +3,7 @@ using InSeconds.Api.Modules.Catalogue.Domain;
 using InSeconds.Deezer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Wolverine;
 using Wolverine.Http;
 
 namespace InSeconds.Api.Modules.Catalogue.Application;
@@ -50,8 +51,9 @@ public static class AddTrackEndpoint
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable)]
-    public static async Task<TrackSummary> Post(
-        AddTrack request, TrackToAdd plan, ICatalogueStore store, IOptionsMonitor<CatalogueOptions> options, TimeProvider time, CancellationToken ct)
+    public static async Task<(TrackSummary, OutgoingMessages)> Post(
+        AddTrack request, TrackToAdd plan, ICatalogueStore store, IOptionsMonitor<CatalogueOptions> options,
+        IOptionsMonitor<WaveformOptions> waveformOptions, TimeProvider time, CancellationToken ct)
     {
         var found = (TrackMetadataLookup.Found)plan.Lookup!;
         var now = time.GetUtcNow();
@@ -59,6 +61,12 @@ public static class AddTrackEndpoint
         await TrackMapping.RecordAlbumGenresAsync(track, plan.Album, store, now, ct);
 
         await store.AddAsync(track, ct);
-        return TrackMapping.ToSummary(track, options.CurrentValue);
+
+        // La forme d'onde se calcule plus tard, hors de la requête (téléchargement de l'extrait) : un message durable, différé, qui prend tous les
+        // morceaux ajoutés entre-temps. Jamais pour un morceau sans extrait.
+        var messages = new OutgoingMessages();
+        if (waveformOptions.CurrentValue.ComputeOnAdd && track.HasPreview)
+            messages.Delay(new ComputeWaveforms(), TimeSpan.FromMinutes(Math.Max(1, waveformOptions.CurrentValue.DelayMinutes)));
+        return (TrackMapping.ToSummary(track, options.CurrentValue), messages);
     }
 }

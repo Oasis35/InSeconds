@@ -15,7 +15,12 @@ namespace InSeconds.Api.Modules.Daily.Application;
 /// (<c>deezer.com/track/{id}</c>, recherche d'image inversée sur la pochette, piège 31). Ils n'arrivent qu'avec la réponse du joueur.
 /// </summary>
 /// <param name="PreviewUrl">L'extrait de 30 s, signée et périssable (piège 14) ; vide si Deezer n'en a pas : le joueur passe le morceau.</param>
-public sealed record TrackSlot(int Position, string PreviewUrl);
+/// <param name="Waveform">
+/// La forme de l'extrait (barres et basses, blob versionné en base64, environ 2,7 Ko) calculée par l'API : le lecteur la dessine dès la première
+/// image, sans retélécharger l'extrait. Vide si elle n'est pas calculée : le navigateur calcule alors la sienne. Une silhouette n'identifie pas le
+/// morceau (piège 31).
+/// </param>
+public sealed record TrackSlot(int Position, string PreviewUrl, string? Waveform = null);
 
 /// <summary>Une réponse déjà donnée, rendue à la reprise : le morceau est révélé, le joueur l'a répondu.</summary>
 public sealed record ResumedAnswer(
@@ -104,6 +109,7 @@ public static class StartSessionEndpoint
         IDailyStore store,
         ITrackDirectory directory,
         ITrackPreviews previews,
+        ITrackWaveforms waveforms,
         IPlayerDirectory players,
         [NotBody] DailyRules rules,
         IGameCalendar calendar,
@@ -122,8 +128,12 @@ public static class StartSessionEndpoint
         var positions = challenge.Tracks.OrderBy(t => t.Position).ToList();
         var infos = await directory.GetAsync(positions.Select(t => t.TrackId).ToList(), ct);
         var previewUrls = await previews.GetUrlsAsync(positions.Select(t => infos[t.TrackId]).ToList(), ct);
+        // La forme seulement des morceaux qui ont un extrait : sans extrait, le joueur passe le morceau, il n'y a rien à dessiner.
+        var shapes = await waveforms.GetAsync(positions.Where(t => previewUrls.ContainsKey(t.TrackId)).Select(t => t.TrackId).ToList(), ct);
         var slots = positions
-            .Select(t => new TrackSlot(t.Position, previewUrls.GetValueOrDefault(t.TrackId, string.Empty)))
+            .Select(t => new TrackSlot(
+                t.Position, previewUrls.GetValueOrDefault(t.TrackId, string.Empty),
+                shapes.TryGetValue(t.TrackId, out var shape) ? Convert.ToBase64String(shape) : null))
             .ToList();
 
         var streak = await store.FindStreakAsync(playerId, ct);

@@ -1005,6 +1005,7 @@ export interface RunCurrentTrackResponse {
     round: number;
     positionInRound: number;
     previewUrl: string | undefined;
+    waveform?: string | undefined;
 
     [key: string]: any;
 }

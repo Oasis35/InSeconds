@@ -5,7 +5,9 @@
 # Origines autorisées, et pourquoi :
 #   - API : fetch/XHR (connect-src) ;
 #   - *.dzcdn.net : extraits audio, lus par un élément audio (media-src), pochettes (img-src), et un octet
-#     d'un extrait illisible demandé par fetch pour connaître la réponse du CDN (connect-src, diagnostic AudioError) ;
+#     d'un extrait illisible demandé par fetch pour connaître la réponse du CDN (connect-src, diagnostic AudioError),
+#     et l'extrait entier relu par fetch pour la waveform du lecteur (connect-src, DecodedWaveform : cache no-store,
+#     rien de gardé, piège 47) ;
 #   - Google Fonts : feuille de style (style-src) et polices (font-src) ;
 #   - Cloudflare Web Analytics : script injecté par Cloudflare dans index.html (script-src static.cloudflareinsights.com),
 #     qui envoie ses mesures au même domaine (/cdn-cgi/rum, couvert par 'self') ;

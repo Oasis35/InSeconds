@@ -43,7 +43,7 @@ const WEIGHTS = {
   'arrival-source.spec.ts': 6,
   'skip-track.spec.ts': 2,
   'no-challenge.spec.ts': 2,
-  'mobile-input-zoom.spec.ts': 2,
+  'mobile-input-zoom.spec.ts': 3,
   'service-down.spec.ts': 1,
   'error-reporting.spec.ts': 1,
 };

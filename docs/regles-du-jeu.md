@@ -104,7 +104,7 @@ Seuls les morceaux dont l'extrait est **disponible** (`preview_status` = 1, jama
 
 ## Anti-triche
 
-- **Scoring 100 % serveur** - le client n'envoie que le palier choisi et le texte saisi ; le serveur recalcule tout, le front ne fait qu'afficher le résultat renvoyé.
+- **Scoring 100 % serveur** - le client n'envoie que le palier choisi et le texte saisi ; le serveur recalcule tout, le front ne fait qu'afficher le résultat renvoyé. Les **points en jeu** affichés pendant l'écoute (barème du palier moins la pénalité d'indice, `daily/domain/stake.ts`) ne sont qu'un affichage, calqué sur `DurationScoringPolicy` ; le coût d'un indice n'est plus écrit sur son bouton, il se voit à la baisse des points en jeu. **[Front]**
 - **Rien qui identifie le morceau avant la réponse** - ni artiste, ni titre, ni année, ni identifiant Deezer au démarrage de la partie ; pochette et lien Deezer n'arrivent qu'avec la réponse. **[Back]**
 - **Anti-rejeu** : contrainte unique `(player_id, challenge_id)` - impossible de rejouer un défi déjà terminé, abandonné ou expiré en re-soumettant une requête ; une seule réponse par morceau (clé `(session_id, position)`). **[Back]**
 - **Verrou du morceau en cours** : le morceau en cours est le premier sans réponse, un autre morceau ne peut pas prendre le verrou (409 `daily.track_lock_not_released`). **[Back]**

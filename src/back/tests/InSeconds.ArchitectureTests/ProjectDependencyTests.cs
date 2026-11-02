@@ -1,5 +1,6 @@
 using InSeconds.Deezer;
 using InSeconds.Infrastructure.Email;
+using InSeconds.Waveform;
 using NetArchTest.Rules;
 
 namespace InSeconds.ArchitectureTests;
@@ -23,6 +24,16 @@ public class ProjectDependencyTests
         // Le client Deezer est un adaptateur isolé, sans dépendance entrante vers le reste.
         Assert.DoesNotContain(typeof(IPreviewProvider).Assembly.GetReferencedAssemblies(),
             a => a.Name!.StartsWith("InSeconds.", StringComparison.Ordinal));
+
+    [Fact]
+    public void Waveform_NeConnaitRienDuReste() =>
+        // Le calcul de la forme d'un extrait est une bibliothèque pure (un MP3 entre, des octets sortent) : ni Deezer, ni l'API, ni l'infrastructure.
+        Assert.DoesNotContain(typeof(WaveformFormat).Assembly.GetReferencedAssemblies(),
+            a => a.Name!.StartsWith("InSeconds.", StringComparison.Ordinal));
+
+    [Fact]
+    public void LApi_UtiliseBienWaveform() =>
+        Assert.Contains(typeof(Program).Assembly.GetReferencedAssemblies(), a => a.Name == "InSeconds.Waveform");
 
     [Fact]
     public void LApi_UtiliseBienDeezer() =>

@@ -14,7 +14,8 @@ namespace InSeconds.Api.Infrastructure.Errors;
 /// pour relier les deux côtés. <c>AppVersion</c> = date de build du front
 /// (<c>DEPLOYED_AT</c>, absente hors image Docker), pour repérer un onglet resté sur une ancienne version ;
 /// <c>Online</c> = <c>navigator.onLine</c> au moment de l'erreur, pour séparer une coupure chez le joueur
-/// d'une panne chez nous. Facultatifs : un front plus ancien encore en cache peut appeler sans eux.
+/// d'une panne chez nous. <c>Level</c> = <c>warning</c> pour un diagnostic qui n'est pas une panne (le lecteur a dû calculer sa
+/// waveform dans le navigateur) ; absent ou autre : une erreur. Facultatifs : un front plus ancien encore en cache peut appeler sans eux.
 /// </summary>
 public sealed record ClientErrorReport(
     string Source,
@@ -24,12 +25,14 @@ public sealed record ClientErrorReport(
     int? HttpStatus,
     string? RelatedTraceId,
     string? AppVersion = null,
-    bool? Online = null);
+    bool? Online = null,
+    string? Level = null);
 
 /// <summary>Endpoint public : bornes strictes, pour qu'un client ne puisse pas écrire des journaux géants.</summary>
 public sealed class ClientErrorReportValidator : AbstractValidator<ClientErrorReport>
 {
     public static readonly string[] AllowedSources = ["js", "http", "csp"];
+    public static readonly string[] AllowedLevels = ["error", "warning"];
 
     public ClientErrorReportValidator()
     {
@@ -40,6 +43,7 @@ public sealed class ClientErrorReportValidator : AbstractValidator<ClientErrorRe
         RuleFor(x => x.HttpStatus).InclusiveBetween(0, 599).When(x => x.HttpStatus is not null);
         RuleFor(x => x.RelatedTraceId).MaximumLength(64);
         RuleFor(x => x.AppVersion).MaximumLength(40);
+        RuleFor(x => x.Level).Must(l => AllowedLevels.Contains(l!)).When(x => x.Level is not null);
     }
 }
 
@@ -63,16 +67,17 @@ public static class ReportClientErrorEndpoint
         // Tous les champs viennent du navigateur : retours à la ligne neutralisés, pour qu'un client ne
         // puisse pas écrire de fausses lignes dans les journaux texte. Jamais de query string ni de
         // fragment (jeton de lien magique, recherche tapée), même si un client en envoie une.
-        ClientErrorLog.ClientError(logger,
-            ToSingleLine(report.Source, ' ')!,
-            ToSingleLine(WithoutQuery(report.Url), ' '),
-            ToSingleLine(report.Message, ' ')!,
-            report.HttpStatus,
-            ToSingleLine(report.RelatedTraceId, ' '),
-            ToSingleLine(report.AppVersion, ' '),
-            report.Online,
-            DeviceLabel.From(request.Headers.UserAgent),
-            ToSingleLine(report.Stack, StackLineSeparator));
+        var source = ToSingleLine(report.Source, ' ')!;
+        var url = ToSingleLine(WithoutQuery(report.Url), ' ');
+        var message = ToSingleLine(report.Message, ' ')!;
+        var traceId = ToSingleLine(report.RelatedTraceId, ' ');
+        var appVersion = ToSingleLine(report.AppVersion, ' ');
+        var device = DeviceLabel.From(request.Headers.UserAgent);
+        var stack = ToSingleLine(report.Stack, StackLineSeparator);
+        if (report.Level == "warning")
+            ClientErrorLog.ClientWarning(logger, source, url, message, report.HttpStatus, traceId, appVersion, report.Online, device, stack);
+        else
+            ClientErrorLog.ClientError(logger, source, url, message, report.HttpStatus, traceId, appVersion, report.Online, device, stack);
     }
 
     internal static string? ToSingleLine(string? value, char separator) =>
@@ -93,6 +98,11 @@ public static class ReportClientErrorEndpoint
 /// </summary>
 internal static partial class ClientErrorLog
 {
+    [LoggerMessage(EventId = 1101, Level = LogLevel.Warning,
+        Message = "Avertissement front ({Source}) sur {Url} : {ClientMessage} (HTTP {HttpStatus}, trace liée {RelatedTraceId}, version {AppVersion}, en ligne {Online}, appareil {Device}) - stack : {ClientStack}")]
+    public static partial void ClientWarning(ILogger logger, string source, string? url, string clientMessage,
+        int? httpStatus, string? relatedTraceId, string? appVersion, bool? online, string? device, string? clientStack);
+
     [LoggerMessage(EventId = 1100, Level = LogLevel.Error,
         Message = "Erreur front ({Source}) sur {Url} : {ClientMessage} (HTTP {HttpStatus}, trace liée {RelatedTraceId}, version {AppVersion}, en ligne {Online}, appareil {Device}) - stack : {ClientStack}")]
     public static partial void ClientError(ILogger logger, string source, string? url, string clientMessage,

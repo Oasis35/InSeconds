@@ -111,7 +111,8 @@
       "skip": "Passer (0 pts)",
       "replay": "↺ {{ seconds }}",
       "listenUpTo": "Écouter jusqu'à {{ seconds }}",
-      "stepsUpTo": "Tu peux écouter jusqu'à {{ seconds }} si besoin",
+      "stake": "pts en jeu",
+      "waveform": "Extrait écouté",
       "playbackError": "Impossible de lire l'aperçu. Réessaie, ou passe ce morceau.",
       "retry": "Réessayer"
     },
@@ -128,7 +129,6 @@
       "retry": "Réessayer"
     },
     "hint": {
-      "cost": "(−{{ percent }} %)",
       "tooltip": "Indice : coûte des points",
       "button": "Indice {{ level }}",
       "ask": {
@@ -733,12 +733,12 @@
     "round": {
       "points": "pts",
       "nextTrack": "Piste suivante →",
-      "seeResult": "Voir le résultat"
+      "seeResult": "Voir le résultat",
+      "total": "Total"
     },
     "common": {
       "abandon": "Abandonner",
-      "loading": "Chargement du défi…",
-      "points": "pts"
+      "loading": "Chargement du défi…"
     },
     "thanks": {
       "titleBefore": "Merci de faire vivre ",

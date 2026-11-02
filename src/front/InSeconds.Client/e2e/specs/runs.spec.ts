@@ -21,15 +21,18 @@ test.describe('Mode Platines', () => {
 
     // Un compte sans accès : l'accès est demandé, la réponse est non.
     const playerId = await run.loginAsPlayer('joueur-runs@e2e.test', 'JoueurRuns');
-    // La page d'avant est d'abord quittée : une réponse qu'elle recevrait encore serait prise par l'attente, et son corps n'est plus lisible
-    // après la navigation (« No data found for resource »). Le corps est lu dès l'arrivée de la réponse.
-    await page.goto('about:blank');
-    const refused = page
-      .waitForResponse(r => r.url().endsWith('/api/runs/me'))
-      .then(async r => (await r.json()) as { hasAccess: boolean });
+    // Corps lu au passage par page.route : avec waitForResponse, Chromium peut l'avoir déjà libéré quand on le lit
+    // (« No data found for resource », test instable même après un passage par about:blank).
+    let access: { hasAccess: boolean } | undefined;
+    await page.route('**/api/runs/me', async route => {
+      const response = await route.fetch();
+      access = (await response.json()) as { hasAccess: boolean };
+      await route.fulfill({ response });
+    });
     await game.goto();
     await game.waitForWelcome();
-    expect((await refused).hasAccess).toBe(false);
+    await expect.poll(() => access?.hasAccess).toBe(false);
+    await page.unroute('**/api/runs/me');
     await expect(run.homeCard).toHaveCount(0);
 
     // L'adresse du mode ne montre rien : retour au jeu du jour, sans laisser /runs dans l'historique.
