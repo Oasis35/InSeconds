@@ -978,6 +978,12 @@
               "null",
               "string"
             ]
+          },
+          "waveform": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

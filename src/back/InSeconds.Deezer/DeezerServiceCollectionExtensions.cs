@@ -10,6 +10,12 @@ public sealed class DeezerOptions
     public string BaseUrl { get; set; } = "https://api.deezer.com";
 
     /// <summary>
+    /// Fin du nom d'hôte du CDN des extraits : un extrait n'est téléchargé que depuis cet hôte (l'adresse vient d'une réponse de Deezer).
+    /// L'hôte de test la met à <c>localhost</c> (son faux Deezer sert le MP3 synthétique).
+    /// </summary>
+    public string PreviewHostSuffix { get; set; } = ".dzcdn.net";
+
+    /// <summary>
     /// Résilience HTTP (timeout, nouvelles tentatives, coupe-circuit). <c>false</c> dans les tests, par la
     /// configuration de leur environnement : jamais de condition sur l'environnement dans le code.
     /// </summary>
@@ -19,7 +25,7 @@ public sealed class DeezerOptions
 public static class DeezerServiceCollectionExtensions
 {
     /// <summary>
-    /// Enregistre le client Deezer et ses quatre ports, tous le client brut, l'état réel chez Deezer.
+    /// Enregistre le client Deezer et ses cinq ports, tous le client brut, l'état réel chez Deezer.
     /// <see cref="IPreviewProvider"/> n'a pas de cache : Deezer signe ses adresses d'extrait pour 15 min
     /// seulement (piège 14). La recherche publique demande <see cref="CachedTrackSearch"/>. Ce sont des
     /// fabriques : l'API déclare ces types à Wolverine (<see cref="ServiceLocationTypes"/>).
@@ -28,6 +34,7 @@ public static class DeezerServiceCollectionExtensions
     {
         var options = configuration.GetSection(DeezerOptions.Section).Get<DeezerOptions>() ?? new();
 
+        services.Configure<DeezerOptions>(configuration.GetSection(DeezerOptions.Section));
         services.AddSingleton<DeezerCache>();
         var http = services.AddHttpClient<DeezerClient>(client => client.BaseAddress = new Uri(options.BaseUrl));
         if (options.ResilienceEnabled)
@@ -46,6 +53,7 @@ public static class DeezerServiceCollectionExtensions
         services.AddTransient<IAlbumSource>(sp => sp.GetRequiredService<DeezerClient>());
         services.AddTransient<ITrackSearch>(sp => sp.GetRequiredService<DeezerClient>());
         services.AddTransient<IPreviewProvider>(sp => sp.GetRequiredService<DeezerClient>());
+        services.AddTransient<IPreviewAudioSource>(sp => sp.GetRequiredService<DeezerClient>());
         services.AddTransient(sp => new CachedTrackSearch(
             sp.GetRequiredService<DeezerClient>(), sp.GetRequiredService<DeezerCache>().Memory));
         return services;
@@ -56,7 +64,7 @@ public static class DeezerServiceCollectionExtensions
     /// HTTP typé, décorateur), il ne peut pas les construire lui-même.
     /// </summary>
     public static IReadOnlyList<Type> ServiceLocationTypes { get; } =
-        [typeof(IPreviewProvider), typeof(ITrackSearch), typeof(ITrackMetadataSource), typeof(IAlbumSource), typeof(CachedTrackSearch)];
+        [typeof(IPreviewProvider), typeof(IPreviewAudioSource), typeof(ITrackSearch), typeof(ITrackMetadataSource), typeof(IAlbumSource), typeof(CachedTrackSearch)];
 
     /// <summary>
     /// Remplace le transport HTTP du client Deezer (l'hôte de test y met son faux). Les tests ne parlent

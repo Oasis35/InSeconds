@@ -52,6 +52,30 @@ public interface IPreviewProvider
     Task<PreviewLookup> GetPreviewAsync(long deezerTrackId, CancellationToken ct = default);
 }
 
+/// <summary>Résultat du téléchargement d'un extrait : le son, ou rien d'exploitable.</summary>
+public abstract record PreviewDownload
+{
+    private PreviewDownload()
+    {
+    }
+
+    /// <summary>Le fichier de l'extrait, tel que le CDN l'a servi (un MP3 d'environ 480 Ko), en mémoire : jamais écrit sur disque.</summary>
+    public sealed record Downloaded(byte[] Content) : PreviewDownload;
+
+    /// <summary>Pas de son exploitable : adresse refusée ou expirée (403), CDN en panne, fichier trop gros, hôte non autorisé.</summary>
+    public sealed record Unavailable : PreviewDownload;
+}
+
+/// <summary>
+/// Le fichier audio d'un extrait, pour en tirer la forme (<c>InSeconds.Waveform</c>). L'adresse vient de <see cref="IPreviewProvider"/> ou
+/// d'une lecture de morceau (<see cref="DeezerTrack.PreviewUrl"/>) et expire au bout de 15 min (piège 14). Le contenu n'est ni gardé ni
+/// écrit : l'appelant en tire des nombres et l'oublie (piège 47).
+/// </summary>
+public interface IPreviewAudioSource
+{
+    Task<PreviewDownload> DownloadAsync(string previewUrl, CancellationToken ct = default);
+}
+
 /// <summary>
 /// Résultat d'une recherche, avec la même distinction que <see cref="PreviewLookup"/> : « Deezer n'a rien trouvé »
 /// (<see cref="Found"/> avec une liste vide) n'est pas « Deezer n'a pas répondu » (<see cref="Unavailable"/>).

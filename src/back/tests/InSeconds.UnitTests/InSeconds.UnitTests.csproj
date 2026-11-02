@@ -21,6 +21,12 @@
     <ProjectReference Include="../../InSeconds.Api/InSeconds.Api.csproj" />
     <ProjectReference Include="../../InSeconds.Deezer/InSeconds.Deezer.csproj" />
     <ProjectReference Include="../../InSeconds.Infrastructure/InSeconds.Infrastructure.csproj" />
+    <ProjectReference Include="../../InSeconds.Waveform/InSeconds.Waveform.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Les MP3 synthétiques de l'hôte de test (synthetic : 2 s de basse forte, 2 s d'aigu faible, 2 s de silence ; silence : 2 s muettes) : aucun audio de Deezer dans le dépôt. -->
+    <None Include="../../InSeconds.Api.Testing/Deezer/Fixtures/*.mp3" LinkBase="Fixtures" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

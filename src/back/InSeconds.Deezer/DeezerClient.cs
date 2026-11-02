@@ -2,11 +2,12 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace InSeconds.Deezer;
 
 /// <summary>
-/// Client HTTP de l'API Deezer, qui implémente les quatre ports. C'est l'état réel chez Deezer : le cache
+/// Client HTTP de l'API Deezer, qui implémente les cinq ports. C'est l'état réel chez Deezer : le cache
 /// des recherches publiques (<see cref="CachedTrackSearch"/>) est un décorateur, utilisé là où l'état exact
 /// n'est pas nécessaire. Les extraits n'ont pas de cache : leurs adresses sont signées pour 15 min (piège 14). Le <see cref="HttpClient"/> arrive configuré (adresse de base,
 /// résilience), cf. <see cref="DeezerServiceCollectionExtensions"/>.
@@ -17,9 +18,15 @@ namespace InSeconds.Deezer;
 /// (piège 16). Le code 800 (« no data ») est une réponse déterminée, tout autre code (4 quota, 700 occupé,
 /// ou un code futur) est « indisponible ».
 /// </remarks>
-public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger) : IPreviewProvider, ITrackSearch, ITrackMetadataSource, IAlbumSource
+public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger, IOptions<DeezerOptions>? options = null)
+    : IPreviewProvider, ITrackSearch, ITrackMetadataSource, IAlbumSource, IPreviewAudioSource
 {
     private const int NoDataErrorCode = 800;
+
+    /// <summary>Un extrait fait environ 480 Ko (30 s à 128 kbit/s) : au-delà de 3 Mo, ce n'est pas un extrait.</summary>
+    private const int MaxPreviewBytes = 3 * 1024 * 1024;
+
+    private readonly DeezerOptions _options = options?.Value ?? new DeezerOptions();
 
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
@@ -35,6 +42,61 @@ public sealed class DeezerClient(HttpClient http, ILogger<DeezerClient> logger) 
         if (fetched.Outcome == FetchOutcome.Ok)
             DeezerLog.NoPreview(logger, deezerTrackId);
         return new PreviewLookup.Missing();
+    }
+
+    public async Task<PreviewDownload> DownloadAsync(string previewUrl, CancellationToken ct = default)
+    {
+        // L'adresse vient d'une réponse de Deezer : seul son CDN est joint (pas d'hôte interne, pas de schéma exotique).
+        if (!Uri.TryCreate(previewUrl, UriKind.Absolute, out var uri) || uri.Scheme is not ("https" or "http")
+            || !uri.Host.EndsWith(_options.PreviewHostSuffix, StringComparison.OrdinalIgnoreCase))
+        {
+            DeezerLog.PreviewHostRefused(logger, Uri.TryCreate(previewUrl, UriKind.Absolute, out var parsed) ? parsed.Host : "?");
+            return new PreviewDownload.Unavailable();
+        }
+
+        try
+        {
+            using var response = await http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct);
+            if (!response.IsSuccessStatusCode)
+            {
+                DeezerLog.PreviewDownloadStatus(logger, (int)response.StatusCode, uri.Host);
+                return new PreviewDownload.Unavailable();
+            }
+
+            if (response.Content.Headers.ContentLength > MaxPreviewBytes)
+            {
+                DeezerLog.PreviewTooLarge(logger, MaxPreviewBytes);
+                return new PreviewDownload.Unavailable();
+            }
+
+            // Lu en mémoire, jamais sur disque ; la lecture s'arrête dès que la limite est dépassée (pas de Content-Length fiable).
+            await using var stream = await response.Content.ReadAsStreamAsync(ct);
+            using var buffer = new MemoryStream();
+            var chunk = new byte[16 * 1024];
+            int read;
+            while ((read = await stream.ReadAsync(chunk, ct)) > 0)
+            {
+                if (buffer.Length + read > MaxPreviewBytes)
+                {
+                    DeezerLog.PreviewTooLarge(logger, MaxPreviewBytes);
+                    return new PreviewDownload.Unavailable();
+                }
+
+                buffer.Write(chunk, 0, read);
+            }
+
+            return buffer.Length == 0 ? new PreviewDownload.Unavailable() : new PreviewDownload.Downloaded(buffer.ToArray());
+        }
+        // Seule l'annulation demandée par l'appelant est relancée (cf. GetAlbumAsync).
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            DeezerLog.PreviewDownloadFailed(logger, ex, uri.Host);
+            return new PreviewDownload.Unavailable();
+        }
     }
 
     public async Task<TrackMetadataLookup> GetTrackAsync(long deezerTrackId, CancellationToken ct = default)

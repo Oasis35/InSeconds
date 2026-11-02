@@ -51,6 +51,33 @@ public class ReportClientErrorTests
     }
 
     [Fact]
+    public void Remontee_NiveauWarning_JournaliseEnWarningSousUnAutreIdentifiant()
+    {
+        ReportClientErrorEndpoint.Post(Report() with { Level = "warning", Message = "WaveformFallback: morceau 2" }, Request(), _logger);
+
+        var entry = Assert.Single(_logger.Entries);
+        Assert.Equal(LogLevel.Warning, entry.Level);
+        Assert.Equal(1101, entry.EventId.Id);
+        Assert.StartsWith("Avertissement front", entry.Message);
+        Assert.DoesNotContain("Erreur front", entry.Message);
+    }
+
+    [Fact]
+    public void Remontee_NiveauAbsentOuErreur_ResteUneErreur()
+    {
+        ReportClientErrorEndpoint.Post(Report() with { Level = "error" }, Request(), _logger);
+
+        Assert.Equal(LogLevel.Error, Assert.Single(_logger.Entries).Level);
+    }
+
+    [Fact]
+    public void Validation_NiveauInconnu_Refuse()
+    {
+        Assert.False(_validator.Validate(Report() with { Level = "fatal" }).IsValid);
+        Assert.True(_validator.Validate(Report() with { Level = "warning" }).IsValid);
+    }
+
+    [Fact]
     public void Remontee_RetoursALaLigneNeutralises_PasDeFaussesLignesDansLesJournaux()
     {
         ReportClientErrorEndpoint.Post(Report() with

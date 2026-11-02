@@ -18,10 +18,15 @@ public static class CatalogueModule
     {
         services.AddOptions<CatalogueOptions>().BindConfiguration(CatalogueOptions.Section);
         services.AddOptions<RefreshOptions>().BindConfiguration(RefreshOptions.Section);
+        services.AddOptions<WaveformOptions>().BindConfiguration(WaveformOptions.Section);
         services.AddScoped<ICatalogueStore, EfCatalogueStore>();
         services.AddScoped<ICatalogueQueries, EfCatalogueQueries>();
         services.AddScoped<ITrackDirectory, EfTrackDirectory>();
         services.AddScoped<ITrackPreviews, DeezerTrackPreviews>();
+        services.AddScoped<ITrackWaveforms, EfTrackWaveforms>();
+        services.AddSingleton<CatalogueTelemetry>();
+        services.AddScoped<WaveformCalculator>();
+        services.AddScoped<IWaveformLock, PostgresWaveformLock>();
         // L'usage des morceaux est fourni par chaque mode (ITrackUsage, ajouté, jamais remplacé) ; Catalogue les réunit.
         services.AddScoped<ITrackPoolUsage, TrackPoolUsage>();
         services.AddScheduledJob<RefreshPreviewsJob>(RefreshPreviewsJob.Id, RefreshPreviewsJob.DefaultCron);

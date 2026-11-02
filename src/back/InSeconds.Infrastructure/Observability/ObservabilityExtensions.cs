@@ -24,7 +24,7 @@ public static class ObservabilityExtensions
     public const string OtlpEndpointKey = "OTEL_EXPORTER_OTLP_ENDPOINT";
 
     /// <summary>Sources d'activité suivies en plus de l'instrumentation standard.</summary>
-    public static readonly string[] TracedSources = ["Wolverine", TelemetrySources.Jobs];
+    public static readonly string[] TracedSources = ["Wolverine", TelemetrySources.Jobs, TelemetrySources.Catalogue];
 
     public static WebApplicationBuilder AddInSecondsObservability(this WebApplicationBuilder builder, string serviceVersion)
     {

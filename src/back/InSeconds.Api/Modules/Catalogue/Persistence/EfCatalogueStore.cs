@@ -125,4 +125,30 @@ public sealed class EfCatalogueStore(InSecondsDbContext db) : ICatalogueStore
 
         return saved;
     }
+
+    // Une requête (ExecuteUpdate) : n'écrit que la forme, jamais l'état de l'extrait que le contrôle nocturne tient. Un morceau supprimé
+    // entre-temps touche 0 ligne.
+    public async Task<bool> SaveWaveformAsync(Track track, CancellationToken ct)
+    {
+        var waveform = track.Waveform;
+        var source = track.WaveformSource;
+        var computedAt = track.WaveformComputedAt;
+        var rows = await db.Set<Track>().Where(t => t.Id == track.Id).ExecuteUpdateAsync(s => s
+            .SetProperty(t => t.Waveform, waveform)
+            .SetProperty(t => t.WaveformSource, source)
+            .SetProperty(t => t.WaveformComputedAt, computedAt), ct);
+        return rows > 0;
+    }
+
+    public async Task<IReadOnlyList<Track>> ListWithoutWaveformAsync(CancellationToken ct) =>
+        await db.Set<Track>()
+            .Where(t => t.DisabledAt == null && t.PreviewStatus == PreviewStatus.Available && t.Waveform == null)
+            .OrderBy(t => t.Id)
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+    public async Task<DateTimeOffset?> LatestAddedWithoutWaveformAsync(CancellationToken ct) =>
+        await db.Set<Track>()
+            .Where(t => t.DisabledAt == null && t.PreviewStatus == PreviewStatus.Available && t.Waveform == null)
+            .MaxAsync(t => (DateTimeOffset?)t.CreatedAt, ct);
 }

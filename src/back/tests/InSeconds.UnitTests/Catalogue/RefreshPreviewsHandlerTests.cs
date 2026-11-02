@@ -1,6 +1,9 @@
 using InSeconds.Api.Modules.Catalogue.Application;
 using InSeconds.Api.Modules.Catalogue.Domain;
 using InSeconds.Deezer;
+using InSeconds.Waveform;
+using System.Diagnostics.Metrics;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
@@ -23,18 +26,29 @@ public class RefreshPreviewsHandlerTests
     {
         _deezer = new FakeDeezer(_time);
         _albums = new FakeAlbums(_time);
+        _calculator = new WaveformCalculator(_audio, _store, _time, _telemetry, NullLogger<WaveformCalculator>.Instance);
     }
 
     private readonly FakeStore _store = new();
     private readonly FakeAlbums _albums;
     private readonly FakeDeezer _deezer;
+    private readonly FakeAudio _audio = new();
+    private readonly FakeLock _lock = new();
+    private readonly CatalogueTelemetry _telemetry = new(new ServiceCollection().AddMetrics().BuildServiceProvider().GetRequiredService<IMeterFactory>());
+    private readonly WaveformCalculator _calculator;
 
-    private Task<PreviewRefreshResult> RunAsync(int batchSize = 10, double delaySeconds = 0) =>
-        RunAsync(new MutableMonitor(new RefreshOptions { BatchSize = batchSize, BatchDelay = TimeSpan.FromSeconds(delaySeconds) }));
+    // Les formes d'onde ont leurs propres tests (région plus bas) : ici, le compte rendu du contrôle des extraits seul.
+    private async Task<PreviewRefreshResult> RunAsync(int batchSize = 10, double delaySeconds = 0) =>
+        WithoutWaveforms(await RunWithWaveformsAsync(new MutableMonitor(new RefreshOptions { BatchSize = batchSize, BatchDelay = TimeSpan.FromSeconds(delaySeconds) })));
 
-    private Task<PreviewRefreshResult> RunAsync(IOptionsMonitor<RefreshOptions> options) =>
+    private async Task<PreviewRefreshResult> RunAsync(IOptionsMonitor<RefreshOptions> options) => WithoutWaveforms(await RunWithWaveformsAsync(options));
+
+    private static PreviewRefreshResult WithoutWaveforms(PreviewRefreshResult result) => result with { WaveformsComputed = 0, WaveformsFailed = 0 };
+
+    private Task<PreviewRefreshResult> RunWithWaveformsAsync(IOptionsMonitor<RefreshOptions>? options = null) =>
         RefreshPreviewsHandler.Handle(
-            new RefreshPreviews(), _store, _deezer, _albums, _time, options, NullLogger<RefreshPreviews>.Instance, Ct);
+            new RefreshPreviews(), _store, _deezer, _albums, _calculator, _lock, _telemetry, _time,
+            options ?? new MutableMonitor(new RefreshOptions { BatchDelay = TimeSpan.Zero }), NullLogger<RefreshPreviews>.Instance, Ct);
 
     [Fact]
     public async Task AucunMorceau_RienAVerifier()
@@ -308,7 +322,194 @@ public class RefreshPreviewsHandlerTests
         _deezer.ThrowOnCancel = true;
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => RefreshPreviewsHandler.Handle(
-            new RefreshPreviews(), _store, _deezer, _albums, _time, new MutableMonitor(new RefreshOptions()), NullLogger<RefreshPreviews>.Instance, cts.Token));
+            new RefreshPreviews(), _store, _deezer, _albums, _calculator, _lock, _telemetry, _time, new MutableMonitor(new RefreshOptions()),
+            NullLogger<RefreshPreviews>.Instance, cts.Token));
+    }
+
+    // ---------- Formes d'onde : calculées pendant le contrôle, avec l'adresse que Deezer vient de donner ----------
+
+    private static DeezerTrack WithPreview(long id, string url) => new(id, "A", "T", url, null, null, null, null);
+
+    private static byte[] Synthetic() => File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "synthetic.mp3"));
+
+    private static byte[] CurrentBlob() => WaveformAnalyzer.Analyze(new MemoryStream(Synthetic()));
+
+    [Fact]
+    public async Task SansForme_EstCalculee_AvecLAdresseDuControle_EtLeNomDuFichierGarde()
+    {
+        var track = _store.Add(1, PreviewStatus.Available);
+        _deezer.Reply(1, new TrackMetadataLookup.Found(WithPreview(1, "https://cdnt-preview.dzcdn.net/api/1/1/a/b/abc123.mp3?hdnea=exp=1~hmac=x")));
+
+        var result = await RunWithWaveformsAsync();
+
+        Assert.Equal(1, result.WaveformsComputed);
+        Assert.Equal(0, result.WaveformsFailed);
+        Assert.True(WaveformFormat.IsCurrent(track.Waveform));
+        Assert.Equal("abc123.mp3", track.WaveformSource);
+        Assert.Equal(Now, track.WaveformComputedAt);
+        // L'adresse du contrôle sert telle quelle : aucun second appel à Deezer pour la forme.
+        Assert.Equal([1L], _deezer.Requested);
+        Assert.Single(_audio.Downloaded);
+    }
+
+    [Fact]
+    public async Task FormeAJour_NeTelechargeRien()
+    {
+        var track = _store.Add(1, PreviewStatus.Available);
+        track.RecordWaveform(CurrentBlob(), "p.mp3", Now.AddDays(-1));
+
+        var result = await RunWithWaveformsAsync();
+
+        Assert.Equal(0, result.WaveformsComputed);
+        Assert.Empty(_audio.Downloaded);
+        Assert.Equal(Now.AddDays(-1), track.WaveformComputedAt);
+    }
+
+    [Fact]
+    public async Task ExtraitRemplace_LeNomDuFichierChange_LaFormeEstRecalculee()
+    {
+        var track = _store.Add(1, PreviewStatus.Available);
+        track.RecordWaveform(CurrentBlob(), "ancien.mp3", Now.AddDays(-1));
+        _deezer.Reply(1, new TrackMetadataLookup.Found(WithPreview(1, "https://cdnt-preview.dzcdn.net/nouveau.mp3?hdnea=exp=1")));
+
+        var result = await RunWithWaveformsAsync();
+
+        Assert.Equal(1, result.WaveformsComputed);
+        Assert.Equal("nouveau.mp3", track.WaveformSource);
+        Assert.Equal(Now, track.WaveformComputedAt);
+    }
+
+    [Fact]
+    public async Task SeulLaSignatureChange_LaFormeEstGardee()
+    {
+        var track = _store.Add(1, PreviewStatus.Available);
+        track.RecordWaveform(CurrentBlob(), "p.mp3", Now.AddDays(-1));
+        _deezer.Reply(1, new TrackMetadataLookup.Found(WithPreview(1, "https://cdnt-preview.dzcdn.net/p.mp3?hdnea=exp=2~hmac=autre")));
+
+        var result = await RunWithWaveformsAsync();
+
+        Assert.Equal(0, result.WaveformsComputed);
+        Assert.Empty(_audio.Downloaded);
+    }
+
+    [Fact]
+    public async Task AncienneVersionDuFormat_EstRecalculee()
+    {
+        var track = _store.Add(1, PreviewStatus.Available);
+        var old = CurrentBlob();
+        old[0] = (byte)(WaveformFormat.CurrentVersion - 1);
+        track.RecordWaveform(old, "p.mp3", Now.AddDays(-1));
+
+        var result = await RunWithWaveformsAsync();
+
+        Assert.Equal(1, result.WaveformsComputed);
+        Assert.True(WaveformFormat.IsCurrent(track.Waveform));
+    }
+
+    [Fact]
+    public async Task ExtraitNonTelecharge_LeControleReussit_LaFormeEstCompteeEnEchec()
+    {
+        var track = _store.Add(1, PreviewStatus.Missing);
+        _audio.Unavailable = true;
+
+        var result = await RunWithWaveformsAsync();
+
+        // L'état de l'extrait est bien mis à jour : un échec de forme ne fait jamais échouer le contrôle.
+        Assert.Equal(new PreviewRefreshResult(1, 1, 0, 0, 1), result);
+        Assert.Equal(PreviewStatus.Available, track.PreviewStatus);
+        Assert.Null(track.Waveform);
+    }
+
+    [Fact]
+    public async Task ExtraitIllisible_EstUnEchec_PasUneException()
+    {
+        var track = _store.Add(1, PreviewStatus.Available);
+        _audio.Content = new byte[2048];
+
+        var result = await RunWithWaveformsAsync();
+
+        Assert.Equal(1, result.WaveformsFailed);
+        Assert.Null(track.Waveform);
+    }
+
+    [Fact]
+    public async Task MorceauSansExtrait_NaPasDeForme()
+    {
+        _store.Add(1, PreviewStatus.Available);
+        _deezer.Reply(1, new TrackMetadataLookup.NotFound());
+
+        var result = await RunWithWaveformsAsync();
+
+        Assert.Equal(0, result.WaveformsComputed + result.WaveformsFailed);
+        Assert.Empty(_audio.Downloaded);
+    }
+
+    [Fact]
+    public async Task UnPassageDeFormesEnCours_LeControleAttendLeVerrou_PuisFait()
+    {
+        var track = _store.Add(1, PreviewStatus.Available);
+        _lock.BusyAttempts = 3;
+
+        var run = RunWithWaveformsAsync();
+        while (!run.IsCompleted)
+        {
+            _time.Advance(TimeSpan.FromSeconds(10));
+            await Task.Yield();
+        }
+
+        Assert.Equal(1, (await run).WaveformsComputed);
+        Assert.NotNull(track.Waveform);
+        Assert.Equal(4, _lock.Attempts);
+    }
+
+    [Fact]
+    public async Task VerrouJamaisLibere_LeControleDesExtraitsAQuandMemeLieu_SansLesFormes()
+    {
+        var track = _store.Add(1, PreviewStatus.Missing);
+        _lock.BusyAttempts = int.MaxValue;
+
+        var run = RunWithWaveformsAsync();
+        while (!run.IsCompleted)
+        {
+            _time.Advance(TimeSpan.FromSeconds(10));
+            await Task.Yield();
+        }
+
+        var result = await run;
+        Assert.Equal(new PreviewRefreshResult(1, 1, 0, 0, 0), result);
+        Assert.Equal(PreviewStatus.Available, track.PreviewStatus);
+        Assert.Null(track.Waveform);
+        Assert.Empty(_audio.Downloaded);
+    }
+
+    private sealed class FakeAudio : IPreviewAudioSource
+    {
+        public List<string> Downloaded { get; } = [];
+
+        public bool Unavailable { get; set; }
+
+        public byte[] Content { get; set; } = Synthetic();
+
+        public Task<PreviewDownload> DownloadAsync(string previewUrl, CancellationToken ct = default)
+        {
+            Downloaded.Add(previewUrl);
+            return Task.FromResult<PreviewDownload>(Unavailable ? new PreviewDownload.Unavailable() : new PreviewDownload.Downloaded(Content));
+        }
+    }
+
+    private sealed class FakeLock : IWaveformLock
+    {
+        public int BusyAttempts { get; set; }
+
+        public int Attempts { get; private set; }
+
+        public Task<IAsyncDisposable?> TryAcquireAsync(CancellationToken ct) =>
+            Task.FromResult<IAsyncDisposable?>(++Attempts <= BusyAttempts ? null : new Held());
+
+        private sealed class Held : IAsyncDisposable
+        {
+            public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+        }
     }
 
     private sealed class FakeStore : ICatalogueStore
@@ -364,6 +565,15 @@ public class RefreshPreviewsHandlerTests
         public Task<Track?> FindWithGenresAsync(int id, CancellationToken ct) => throw new NotSupportedException();
 
         public Task<bool> DeezerIdTakenAsync(long deezerTrackId, int? exceptTrackId, CancellationToken ct) => throw new NotSupportedException();
+
+        // La forme : le faux garde le morceau, qui porte déjà ce que RecordWaveform y a écrit.
+        public Task<bool> SaveWaveformAsync(Track track, CancellationToken ct) => Task.FromResult(!Vanished.Contains(track.Id));
+
+        public Task<IReadOnlyList<Track>> ListWithoutWaveformAsync(CancellationToken ct) =>
+            Task.FromResult<IReadOnlyList<Track>>([.. _tracks.Where(t => !t.IsDisabled && t.HasPreview && t.Waveform is null)]);
+
+        public Task<DateTimeOffset?> LatestAddedWithoutWaveformAsync(CancellationToken ct) =>
+            Task.FromResult(_tracks.Where(t => !t.IsDisabled && t.HasPreview && t.Waveform is null).Select(t => (DateTimeOffset?)t.CreatedAt).Max());
     }
 
     private sealed class FakeDeezer(FakeTimeProvider time) : ITrackMetadataSource
@@ -406,7 +616,7 @@ public class RefreshPreviewsHandlerTests
                 _stamps.Add((deezerTrackId, time.GetUtcNow()));
             }
             return Task.FromResult(_replies.GetValueOrDefault(deezerTrackId)
-                ?? new TrackMetadataLookup.Found(new DeezerTrack(deezerTrackId, "A", "T", "https://p.mp3", null, null, null, null)));
+                ?? new TrackMetadataLookup.Found(new DeezerTrack(deezerTrackId, "A", "T", "https://cdnt-preview.dzcdn.net/p.mp3?hdnea=exp=1", null, null, null, null)));
         }
     }
 

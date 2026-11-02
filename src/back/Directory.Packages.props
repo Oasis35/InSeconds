@@ -11,6 +11,8 @@
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.11.0" />
     <!-- Dépendance transitive de Hangfire, épinglée : la 11.0.1 qu'il tire a une faille connue. -->
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
+    <!-- Décodeur MP3 en C# pur (licence MIT) : la forme des extraits (InSeconds.Waveform). -->
+    <PackageVersion Include="NLayer" Version="1.16.0" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
     <PackageVersion Include="Npgsql.OpenTelemetry" Version="10.0.3" />
     <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.20.1" />

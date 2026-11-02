@@ -46,6 +46,7 @@ public static class WolverineSetup
         opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Infrastructure.Email.IEmailSender>();
         // Idem pour les ports Deezer : client HTTP typé et décorateurs de cache, enregistrés par fabrique.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Deezer.IPreviewProvider>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Deezer.IPreviewAudioSource>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Deezer.ITrackSearch>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Deezer.ITrackMetadataSource>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<InSeconds.Deezer.IAlbumSource>();

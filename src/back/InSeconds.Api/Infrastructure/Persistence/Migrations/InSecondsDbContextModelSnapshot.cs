@@ -152,6 +152,19 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
+                    b.Property<byte[]>("Waveform")
+                        .HasColumnType("bytea")
+                        .HasColumnName("waveform");
+
+                    b.Property<DateTimeOffset?>("WaveformComputedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("waveform_computed_at");
+
+                    b.Property<string>("WaveformSource")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("waveform_source");
+
                     b.HasKey("Id")
                         .HasName("pk_tracks");
 

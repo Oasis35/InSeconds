@@ -17,6 +17,7 @@ public sealed record LoadedRun(RunSession Session, RunChallenge Challenge, IRead
 public sealed class RunPlayer(
     ITrackDirectory directory,
     ITrackPreviews previews,
+    ITrackWaveforms waveforms,
     IRunsStore store,
     IRunScoringPolicy scoring,
     RunsRules rules,
@@ -58,7 +59,11 @@ public sealed class RunPlayer(
             {
                 if (preview.Availability == PreviewAvailability.Unavailable)
                     RunsLog.PreviewUnavailable(logger, track.TrackId, session.Id);
-                current = RunViews.Current(challenge, track, preview.Url);
+                // La forme du morceau qui va se jouer (jamais d'un morceau dont l'extrait n'a pas répondu : il n'y a rien à dessiner).
+                string? waveform = null;
+                if (preview.Url is not null && (await waveforms.GetAsync([track.TrackId], ct)).TryGetValue(track.TrackId, out var shape))
+                    waveform = Convert.ToBase64String(shape);
+                current = RunViews.Current(challenge, track, preview.Url, waveform);
                 break;
             }
 
@@ -131,8 +136,8 @@ internal static class RunViews
         return Track(run.TrackAt(position)!, answer, run.Tracks);
     }
 
-    public static RunCurrentTrackResponse Current(RunChallenge challenge, RunChallengeTrack track, string? previewUrl) =>
-        new(track.Position, track.Round, PositionInRound(challenge, track), previewUrl);
+    public static RunCurrentTrackResponse Current(RunChallenge challenge, RunChallengeTrack track, string? previewUrl, string? waveform) =>
+        new(track.Position, track.Round, PositionInRound(challenge, track), previewUrl, waveform);
 
     public static RunRoundSummaryResponse Summary(LoadedRun run, RunStep step, IRunScoringPolicy scoring)
     {

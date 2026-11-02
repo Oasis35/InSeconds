@@ -137,7 +137,26 @@ public sealed record TrackRow(
     int Id, long DeezerTrackId, string Artist, string Title, string? CoverHash, short? ReleaseYear, int? DeezerRank,
     PreviewStatus PreviewStatus, DateTimeOffset? PreviewCheckedAt, bool IsDisabled, IReadOnlyList<string> Genres);
 
-/// <summary>Journal du module. EventId 12xx (Deezer : 1210 à 1217).</summary>
+/// <summary>
+/// Le calcul de la forme des extraits (<c>InSeconds.Waveform</c>), réglé comme le reste à chaud (<c>infra.settings</c>).
+/// </summary>
+public sealed class WaveformOptions
+{
+    public const string Section = "Catalogue:Waveform";
+
+    /// <summary>
+    /// Calculer les formes après l'ajout d'un morceau (message différé de <see cref="DelayMinutes"/>). <c>false</c> au staging : même IP que la prod,
+    /// même quota Deezer (piège 16), et la copie de la prod apporte déjà les formes.
+    /// </summary>
+    public bool ComputeOnAdd { get; set; } = true;
+
+    /// <summary>
+    /// Attente après le dernier ajout avant de calculer : plusieurs ajouts d'affilée donnent un seul passage, qui prend tous les morceaux sans forme.
+    /// </summary>
+    public int DelayMinutes { get; set; } = 15;
+}
+
+/// <summary>Journal du module. EventId 12xx (Deezer : 1210 à 1221).</summary>
 internal static partial class CatalogueLog
 {
     [LoggerMessage(EventId = 1200, Level = LogLevel.Information,
@@ -151,4 +170,25 @@ internal static partial class CatalogueLog
     [LoggerMessage(EventId = 1201, Level = LogLevel.Information,
         Message = "Contrôle des previews terminé : {CheckedCount} morceaux vérifiés, {Updated} état(s) de preview changé(s), {Failed} échec(s) Deezer (états conservés).")]
     public static partial void RefreshCompleted(ILogger logger, int checkedCount, int updated, int failed);
+
+    // Jamais le titre ni l'adresse de l'extrait (signée, piège 14) : l'identifiant du morceau suffit.
+    [LoggerMessage(EventId = 1203, Level = LogLevel.Warning,
+        Message = "Morceau {TrackId} envoyé sans forme d'onde : le navigateur la calcule lui-même (ajout récent, calcul en échec ou remplissage pas encore fait).")]
+    public static partial void TrackWithoutWaveform(ILogger logger, int trackId);
+
+    [LoggerMessage(EventId = 1204, Level = LogLevel.Information,
+        Message = "Formes d'onde : {Computed} calculée(s), {Failed} en échec, {Unavailable} sans extrait lisible, en {ElapsedMs} ms.")]
+    public static partial void WaveformsComputed(ILogger logger, int computed, int failed, int unavailable, long elapsedMs);
+
+    [LoggerMessage(EventId = 1205, Level = LogLevel.Warning,
+        Message = "Forme d'onde du morceau {TrackId} non calculée : {Reason}.")]
+    public static partial void WaveformFailed(ILogger logger, int trackId, string reason);
+
+    [LoggerMessage(EventId = 1206, Level = LogLevel.Information,
+        Message = "Formes d'onde reportées de {DelayMinutes} min : {Reason}.")]
+    public static partial void WaveformsDeferred(ILogger logger, int delayMinutes, string reason);
+
+    [LoggerMessage(EventId = 1207, Level = LogLevel.Warning,
+        Message = "Formes d'onde du contrôle nocturne sautées : le calcul d'un ajout n'a pas fini en {WaitMinutes} min.")]
+    public static partial void WaveformsSkippedBusy(ILogger logger, int waitMinutes);
 }
