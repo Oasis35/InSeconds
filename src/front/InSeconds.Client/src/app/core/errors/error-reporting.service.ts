@@ -12,6 +12,8 @@ export interface ClientErrorReport {
   url?: string | null;
   httpStatus?: number | null;
   relatedTraceId?: string | null;
+  /** `warning` : un diagnostic qui n'est pas une panne (journalisé en Warning par l'API) ; absent : une erreur. */
+  level?: 'error' | 'warning';
 }
 
 /** Ce qui part réellement vers l'API : le rapport, plus le contexte ajouté par le service. */
@@ -76,6 +78,7 @@ export class ErrorReportingService {
       relatedTraceId: truncate(report.relatedTraceId, 64),
       appVersion: truncate(DEPLOYED_AT, 40),
       online: isOnline(),
+      level: report.level ?? 'error',
     };
 
     this.http

@@ -45,6 +45,15 @@ describe('ErrorReportingService', () => {
     expect(body.appVersion).toBeNull();
   });
 
+  it('envoie le niveau : erreur par défaut, warning pour un diagnostic', () => {
+    service.report({ source: 'js', message: 'une erreur' });
+    service.report({ source: 'js', message: 'un diagnostic', level: 'warning' });
+
+    const [error, warning] = httpMock.match(endpoint);
+    expect(error.request.body.level).toBe('error');
+    expect(warning.request.body.level).toBe('warning');
+  });
+
   it('accepte une erreur qui n\'est pas une Error', () => {
     service.reportError('chaîne levée');
 

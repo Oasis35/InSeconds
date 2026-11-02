@@ -212,7 +212,7 @@ function toResumed(a: ResumedAnswer): AnsweredTrack {
 function toSession(r: StartSessionResponse): StartedSession {
   return {
     sessionId: r.sessionId,
-    tracks: r.tracks.map(t => ({ position: t.position, previewUrl: t.previewUrl })),
+    tracks: r.tracks.map(t => ({ position: t.position, previewUrl: t.previewUrl, waveform: t.waveform ?? null })),
     streak: toStreak(r.streak),
     isResuming: r.isResuming,
     nextPosition: r.nextPosition,

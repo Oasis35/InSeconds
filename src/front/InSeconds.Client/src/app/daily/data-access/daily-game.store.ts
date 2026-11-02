@@ -198,6 +198,7 @@ export const DailyGameStore = signalStore(
     const configOf = (position: number, settings: DailySettings, resumed: ResumedTrack | null): RoundConfig => ({
       trackId: position,
       previewUrl: store.tracks().find(t => t.position === position)?.previewUrl || null,
+      waveform: store.tracks().find(t => t.position === position)?.waveform ?? null,
       listen: { steps: settings.allowedDurationsSeconds, extendable: true, stake: (seconds, hintLevel) => dailyStake(settings, seconds, hintLevel) },
       hints: { unlockSeconds: settings.hints.map(h => h.unlockSeconds), kinds: settings.hints.map(h => h.kind) },
       // Reprise : le plancher d'écoute et les indices déjà payés du morceau en cours.

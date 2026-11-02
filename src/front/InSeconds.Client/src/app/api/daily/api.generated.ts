@@ -1820,6 +1820,7 @@ export interface TodayStatsResponse {
 export interface TrackSlot {
     position: number;
     previewUrl: string;
+    waveform?: string | undefined;
 
     [key: string]: any;
 }
