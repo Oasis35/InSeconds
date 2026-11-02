@@ -13,7 +13,8 @@ const SKIN_AMPLITUDE = 0.07;
 /**
  * Une membrane de haut-parleur : ce qu'elle entoure (le bouton du lecteur, puis la pochette à la révélation) se gonfle avec les basses
  * de l'extrait (`level`, de 0 à 1, précalculé : jamais d'analyse en direct, pièges 44 et 46), et une onde cyan part sur chaque coup de
- * basse. Rien ne bouge en mouvement réduit.
+ * basse. Rien ne bouge en mouvement réduit. Ce qui bouge est sur son propre calque (`will-change`) : le gonflement à chaque image ne
+ * redessine pas le reste du lecteur.
  */
 @Component({
   selector: 'app-membrane',
@@ -23,7 +24,7 @@ const SKIN_AMPLITUDE = 0.07;
     @for (wave of waves(); track wave) {
       <span class="membrane-wave" aria-hidden="true"></span>
     }
-    <div class="relative" [style.transform]="skin()"><ng-content /></div>
+    <div class="relative" style="will-change:transform" [style.transform]="skin()"><ng-content /></div>
   `,
   styles: `
     .membrane-wave {
