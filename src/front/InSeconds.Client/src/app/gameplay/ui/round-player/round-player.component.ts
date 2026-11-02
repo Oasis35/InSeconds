@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input, output, untracked, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input, output, signal, untracked, viewChild } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { SecondsPipe } from '../../../ui/format/seconds.pipe';
 import { RoundPhase } from '../../domain/track-round';
@@ -30,7 +30,8 @@ interface StepMark {
 
 /**
  * Le lecteur de la manche : la waveform de l'extrait sur toute la largeur (échelle proportionnelle au temps, de 0 au dernier palier,
- * 60 barres ; jouée en cyan, débloquée en cyan pâle, remplie par un balayage continu sur la position lissée, `SmoothPlayhead`), un repère par palier où seuls le palier en cours et le dernier sont écrits, puis sur une
+ * 60 barres ; jouée en cyan, débloquée en cyan pâle, remplie par un balayage continu sur la position lissée,
+ * `SmoothPlayhead`), un repère par palier où seuls le palier en cours et le dernier sont écrits, puis sur une
  * ligne les points en jeu (si le mode en a), le bouton ↺ qui danse avec les basses (`app-membrane`) et le rond « ▶ X s » pour écouter
  * plus. Remplace aussi la zone quand l'extrait manque ou que la lecture échoue : jamais de boucle silencieuse (piège 33), le joueur
  * choisit « Réessayer » ou « Passer ».
@@ -84,13 +85,13 @@ interface StepMark {
             <!-- Trois couches de barres identiques : grises dessous, cyan pâle jusqu'au palier débloqué, cyan vif jusqu'à la position. Les
               deux du dessus sont découvertes de gauche à droite par deux translations opposées (la couche glisse, ses barres restent en
               place) : une barre peut être à moitié jouée, et seul transform change pendant la lecture, quel que soit le nombre de barres. -->
-            <div data-testid="waveform" class="relative w-full overflow-hidden" style="height:46px"
+            <div #wave data-testid="waveform" class="relative w-full overflow-hidden" style="height:46px"
               role="progressbar" [attr.aria-valuenow]="heardTenths()" aria-valuemin="0" [attr.aria-valuemax]="maxStep()"
               [attr.aria-label]="'gameplay.round.waveform' | translate">
               <ng-container *ngTemplateOutlet="barRow; context: { color: colors.locked }" />
-              <div #unlockedLayer data-testid="waveform-unlocked" class="absolute inset-0 overflow-hidden" [class.wave-sweep]="!reduced"
-                [style.transform]="layerShift(unlockedRatio())">
-                <div class="absolute inset-0" [class.wave-sweep]="!reduced" [style.transform]="innerShift(unlockedRatio())">
+              <div data-testid="waveform-unlocked" class="absolute inset-0 overflow-hidden" [class.wave-sweep]="!reduced"
+                [style.transform]="layerShift(unlockedRatio(), waveWidth())">
+                <div class="absolute inset-0" [class.wave-sweep]="!reduced" [style.transform]="innerShift(unlockedRatio(), waveWidth())">
                   <ng-container *ngTemplateOutlet="barRow; context: { color: colors.unlocked }" />
                 </div>
               </div>
@@ -221,21 +222,35 @@ export class RoundPlayerComponent {
   protected readonly colors = { played: PLAYED, unlocked: UNLOCKED, locked: LOCKED } as const;
   protected readonly reduced = motionReduced();
 
-  /** Une couche découverte jusqu'à `part` : elle glisse vers la droite... */
-  protected layerShift(part: number): string {
-    return `translateX(${(part - 1) * 100}%)`;
+  /**
+   * Une couche découverte jusqu'à `part` : elle glisse vers la droite... Au pixel près dès que la largeur est connue : une translation
+   * d'une fraction de pixel poserait les barres cyan à côté des grises (liseré sur des barres de 2 à 3 px).
+   */
+  protected layerShift(part: number, width: number): string {
+    return width > 0 ? `translateX(${Math.round(part * width) - width}px)` : `translateX(${(part - 1) * 100}%)`;
   }
 
   /** ...et ses barres glissent d'autant dans l'autre sens, pour rester en place. */
-  protected innerShift(part: number): string {
-    return `translateX(${(1 - part) * 100}%)`;
+  protected innerShift(part: number, width: number): string {
+    return width > 0 ? `translateX(${width - Math.round(part * width)}px)` : `translateX(${(1 - part) * 100}%)`;
   }
+
+  /** La largeur de la waveform en pixels entiers (0 tant qu'elle n'est pas mesurée). */
+  protected readonly waveWidth = signal(0);
+  private readonly wave = viewChild<ElementRef<HTMLElement>>('wave');
 
   private readonly playedLayer = viewChild<ElementRef<HTMLElement>>('playedLayer');
   private readonly playedInner = viewChild<ElementRef<HTMLElement>>('playedInner');
   private readonly playhead = new SmoothPlayhead();
 
   constructor() {
+    effect(onCleanup => {
+      const wave = this.wave()?.nativeElement;
+      if (!wave || typeof ResizeObserver !== 'function') return;
+      const observer = new ResizeObserver(() => this.waveWidth.set(Math.round(wave.clientWidth)));
+      observer.observe(wave);
+      onCleanup(() => observer.disconnect());
+    });
     // La couche cyan vif est menée hors du gabarit : pendant la lecture, une boucle d'image écrit sa translation (la position lissée,
     // sauf en mouvement réduit), sans relancer la détection de changement ; à l'arrêt, elle montre ce qui a été entendu.
     effect(onCleanup => {
@@ -243,10 +258,11 @@ export class RoundPlayerComponent {
       const inner = this.playedInner()?.nativeElement;
       if (!layer || !inner) return;
       const max = this.maxStep();
+      const width = this.waveWidth();
       const paint = (seconds: number) => {
         const part = ratio(seconds, max);
-        layer.style.transform = this.layerShift(part);
-        inner.style.transform = this.innerShift(part);
+        layer.style.transform = this.layerShift(part, width);
+        inner.style.transform = this.innerShift(part, width);
       };
       if (!this.playing()) {
         const heard = this.heard();
@@ -259,7 +275,8 @@ export class RoundPlayerComponent {
       const tick = () => {
         const position = this.position();
         const limit = Math.max(this.chosenSeconds(), position);
-        paint(this.reduced ? Math.min(position, limit) : this.playhead.next(position, limit, performance.now()));
+        // En mouvement réduit, ni lissage ni avance image par image : la couche avance au dixième, comme le chrono.
+        paint(this.reduced ? Math.round(Math.min(position, limit) * 10) / 10 : this.playhead.next(position, limit, performance.now()));
         frame = requestAnimationFrame(tick);
       };
       untracked(tick);
