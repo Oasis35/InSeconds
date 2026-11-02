@@ -42,6 +42,8 @@ public sealed class ApiFactory(
         builder.UseSetting("Auth:TrustedOrigins:0", FrontOrigin);
         // Jamais le vrai Deezer : le faux, sans la résilience HTTP (ses nouvelles tentatives ralentiraient les tests d'erreur).
         builder.UseSetting("Deezer:ResilienceEnabled", "false");
+        // Le faux Deezer sert l'extrait synthétique depuis localhost : seul hôte joint par le téléchargement des extraits.
+        builder.UseSetting("Deezer:PreviewHostSuffix", "localhost");
         foreach (var (key, value) in settings ?? new Dictionary<string, string>())
             builder.UseSetting(key, value);
 

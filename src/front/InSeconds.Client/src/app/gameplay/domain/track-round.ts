@@ -59,6 +59,8 @@ export interface RoundConfig {
   readonly trackId: number;
   /** L'extrait de 30 s ; `null` ou vide si Deezer n'en a pas. */
   readonly previewUrl: string | null;
+  /** La forme de l'extrait calculée par l'API (blob en base64) ; absente : le navigateur la calcule, une fois le son lancé. */
+  readonly waveform?: string | null;
   readonly listen: ListenPolicy;
   readonly hints: HintPolicy;
   /**

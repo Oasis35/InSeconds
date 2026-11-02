@@ -55,6 +55,20 @@ public sealed class Track
 
     public DateTimeOffset? PreviewCheckedAt { get; private set; }
 
+    /// <summary>
+    /// La forme de l'extrait (barres et basses, environ 2 Ko, blob versionné de <c>InSeconds.Waveform</c>), calculée par l'API et envoyée avec le
+    /// morceau. Vide tant qu'elle n'est pas calculée : le navigateur calcule alors la sienne. Seulement des nombres, jamais d'audio (piège 47).
+    /// </summary>
+    public byte[]? Waveform { get; private set; }
+
+    /// <summary>
+    /// Le nom du fichier de l'extrait dont la forme a été tirée (la partie de l'adresse Deezer avant le <c>?</c>, un md5 du contenu) : un autre nom
+    /// veut dire que Deezer a remplacé l'extrait et que la forme est périmée.
+    /// </summary>
+    public string? WaveformSource { get; private set; }
+
+    public DateTimeOffset? WaveformComputedAt { get; private set; }
+
     /// <summary>Retiré du tirage par l'admin (reste dans le pool, réactivable).</summary>
     public DateTimeOffset? DisabledAt { get; private set; }
 
@@ -125,6 +139,25 @@ public sealed class Track
         if (changed)
             UpdatedAt = now;
         return changed;
+    }
+
+    /// <summary>
+    /// La forme est à (re)calculer : elle manque, elle est d'une version plus ancienne que <paramref name="currentVersion"/> (le premier octet du blob), ou
+    /// l'extrait actuel n'est plus celui dont elle a été tirée (<paramref name="previewFile"/> : son nom de fichier chez Deezer).
+    /// </summary>
+    public bool NeedsWaveform(byte currentVersion, string previewFile) =>
+        Waveform is not { Length: > 0 } || Waveform[0] != currentVersion || !string.Equals(WaveformSource, previewFile, StringComparison.Ordinal);
+
+    /// <summary>Note la forme calculée de l'extrait dont le fichier s'appelle <paramref name="previewFile"/>.</summary>
+    public void RecordWaveform(byte[] waveform, string previewFile, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(waveform);
+        if (waveform.Length == 0)
+            throw new ArgumentException("La forme ne peut pas être vide.", nameof(waveform));
+
+        Waveform = waveform;
+        WaveformSource = RequireText(previewFile, nameof(previewFile));
+        WaveformComputedAt = now;
     }
 
     public void RecordRank(int rank, DateTimeOffset now)

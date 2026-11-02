@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Forme d'un extrait audio : décode un MP3 (NLayer, C# pur) et rend les barres de la waveform et l'énergie des basses, dans un
+       petit blob versionné. Ne connaît ni l'API, ni Deezer, ni aucun module. Aucun audio n'est écrit ni gardé : seulement des nombres. -->
+  <PropertyGroup>
+    <RootNamespace>InSeconds.Waveform</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="InSeconds.UnitTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NLayer" />
+  </ItemGroup>
+
+</Project>

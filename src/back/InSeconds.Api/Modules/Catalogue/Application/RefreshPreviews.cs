@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using Hangfire;
 using InSeconds.Api.Infrastructure.Jobs;
 using InSeconds.Api.Modules.Catalogue.Domain;
 using InSeconds.Deezer;
+using InSeconds.Waveform;
 using Microsoft.Extensions.Options;
 using Wolverine;
 using Wolverine.Attributes;
@@ -10,8 +12,9 @@ namespace InSeconds.Api.Modules.Catalogue.Application;
 
 /// <summary>
 /// Recontrôle l'extrait (et met à jour le rang) de **tout le pool jouable**, cooldown compris : un mode peut tirer n'importe quel morceau
-/// (un run), pas seulement ceux que le défi de demain tirerait. Lancé par la tâche <c>catalogue-refresh</c> chaque nuit, ou à la main depuis
-/// <c>/jobs</c>.
+/// (un run), pas seulement ceux que le défi de demain tirerait. Il (re)calcule aussi la forme des extraits dont elle manque, d'une ancienne
+/// version ou périmée (Deezer a remplacé l'extrait : le nom du fichier a changé), avec l'adresse fraîche que le contrôle vient de lire. Lancé
+/// par la tâche <c>catalogue-refresh</c> chaque nuit, ou à la main depuis <c>/jobs</c> (c'est ainsi qu'on remplit les formes du pool existant).
 /// </summary>
 public sealed record RefreshPreviews;
 
@@ -19,14 +22,23 @@ public sealed record RefreshPreviews;
 /// <param name="Checked">Morceaux contrôlés.</param>
 /// <param name="Updated">Morceaux dont l'état de l'extrait a changé.</param>
 /// <param name="Failed">Morceaux dont Deezer n'a pas répondu (quota, panne) : leur état est inchangé.</param>
-public sealed record PreviewRefreshResult(int Checked, int Updated, int Failed)
+/// <param name="WaveformsComputed">Formes d'onde calculées pendant ce passage.</param>
+/// <param name="WaveformsFailed">Formes qui n'ont pas pu l'être (extrait non téléchargé ou illisible) : reprises à la prochaine exécution.</param>
+public sealed record PreviewRefreshResult(int Checked, int Updated, int Failed, int WaveformsComputed = 0, int WaveformsFailed = 0)
 {
     /// <summary>
     /// Le compte rendu tel que la tâche le renvoie à Hangfire : un dictionnaire plutôt que le record lui-même, car
     /// Hangfire n'écrit pas les propriétés à zéro ("failed" serait absent d'une exécution sans échec). Les clés sont
     /// stables : l'onglet Actions de l'admin les lit.
     /// </summary>
-    public Dictionary<string, int> ToReport() => new() { ["checked"] = Checked, ["updated"] = Updated, ["failed"] = Failed };
+    public Dictionary<string, int> ToReport() => new()
+    {
+        ["checked"] = Checked,
+        ["updated"] = Updated,
+        ["failed"] = Failed,
+        ["waveforms"] = WaveformsComputed,
+        ["waveformsFailed"] = WaveformsFailed,
+    };
 }
 
 public static class RefreshPreviewsHandler
@@ -40,6 +52,9 @@ public static class RefreshPreviewsHandler
         ICatalogueStore store,
         ITrackMetadataSource deezer,
         IAlbumSource albums,
+        WaveformCalculator waveforms,
+        IWaveformLock waveformLock,
+        CatalogueTelemetry telemetry,
         TimeProvider time,
         IOptionsMonitor<RefreshOptions> options,
         ILogger<RefreshPreviews> logger,
@@ -59,6 +74,15 @@ public static class RefreshPreviewsHandler
         var batchSize = Math.Max(1, settings.BatchSize);
         var updated = 0;
         var failed = 0;
+        var waveformsComputed = 0;
+        var waveformsFailed = 0;
+
+        // Le calcul des formes ne croise jamais celui d'un ajout (même quota Deezer) : on attend, au plus dix minutes, qu'un passage en cours finisse.
+        // Passé ce délai, le contrôle des extraits a lieu sans les formes (reprises à la prochaine exécution).
+        await using var waveformLockHeld = await AcquireWaveformLockAsync(waveformLock, time, logger, ct);
+        if (waveformLockHeld is null)
+            telemetry.Run(CatalogueTelemetry.SkippedBusy);
+        var waveformsStarted = Stopwatch.GetTimestamp();
 
         for (var offset = 0; offset < candidates.Count; offset += batchSize)
         {
@@ -101,11 +125,55 @@ public static class RefreshPreviewsHandler
             // Un morceau supprimé pendant le contrôle n'est pas enregistré, et n'est pas compté comme mis à jour.
             var saved = await store.SaveRefreshedAsync(touched, ct);
             updated += changed.Count(saved.Contains);
+
+            // Les formes : avec l'adresse d'extrait que Deezer vient de donner (valable 15 min, piège 14), sans second appel. Une à une : un
+            // téléchargement et un décodage à la fois, jamais en rafale.
+            if (waveformLockHeld is null)
+                continue;
+            for (var i = 0; i < batch.Count; i++)
+            {
+                if (lookups[i] is not TrackMetadataLookup.Found { Track.PreviewUrl: { Length: > 0 } url }
+                    || !saved.Contains(batch[i].Id)
+                    || PreviewFile.NameOf(url) is not { } file
+                    || !batch[i].NeedsWaveform(WaveformFormat.CurrentVersion, file))
+                    continue;
+
+                if (await waveforms.ComputeAsync(batch[i], url, ct) == WaveformOutcome.Computed)
+                    waveformsComputed++;
+                else
+                    waveformsFailed++;
+            }
         }
 
         CatalogueLog.RefreshCompleted(logger, candidates.Count, updated, failed);
+        if (waveformsComputed + waveformsFailed > 0)
+            CatalogueLog.WaveformsComputed(logger, waveformsComputed, waveformsFailed, 0, 0);
+        if (waveformLockHeld is not null)
+            telemetry.RunFinished(Stopwatch.GetElapsedTime(waveformsStarted), waveformsFailed);
         await RefreshGenresAsync(candidates, store, albums, time, settings, logger, ct);
-        return new PreviewRefreshResult(candidates.Count, updated, failed);
+        return new PreviewRefreshResult(candidates.Count, updated, failed, waveformsComputed, waveformsFailed);
+    }
+
+    private static readonly TimeSpan WaveformLockWait = TimeSpan.FromMinutes(10);
+
+    private static readonly TimeSpan WaveformLockPoll = TimeSpan.FromSeconds(10);
+
+    private static async Task<IAsyncDisposable?> AcquireWaveformLockAsync(IWaveformLock waveformLock, TimeProvider time, ILogger logger, CancellationToken ct)
+    {
+        var deadline = time.GetUtcNow() + WaveformLockWait;
+        while (true)
+        {
+            var held = await waveformLock.TryAcquireAsync(ct);
+            if (held is not null)
+                return held;
+            if (time.GetUtcNow() >= deadline)
+            {
+                CatalogueLog.WaveformsSkippedBusy(logger, (int)WaveformLockWait.TotalMinutes);
+                return null;
+            }
+
+            await Task.Delay(WaveformLockPoll, time, ct);
+        }
     }
 
     /// <summary>

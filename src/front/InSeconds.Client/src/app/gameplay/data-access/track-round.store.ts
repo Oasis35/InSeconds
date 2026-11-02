@@ -1,13 +1,17 @@
-import { DestroyRef, computed, effect, inject, untracked } from '@angular/core';
+import { DestroyRef, Injector, computed, effect, inject, untracked } from '@angular/core';
 import { patchState, signalStore, signalStoreFeature, withComputed, withHooks, withMethods, withState } from '@ngrx/signals';
 import {
   HintFact, RoundAnswer, RoundConfig, RoundSubmission, TrackRound, applyHints, askSkip, availableHintLevels, beginListening,
   cancelConfirm, confirmPending, createRound, listenMore, maxStep, nextStep, onAudio, previewWithdrawn, replacePreviewUrl, retryPlayback, retrySubmission, reveal,
   showsInput, skipUnplayable, stakeOf, submissionFailed, submitAnswer,
 } from '../domain/track-round';
-import { Waveform, bassAt } from '../domain/waveform';
+import { ErrorReportingService } from '../../core/errors/error-reporting.service';
+import { Waveform, bassAt, waveformFromBlob } from '../domain/waveform';
 import { AudioPort } from './audio.port';
 import { WaveformPort } from './waveform.port';
+
+/** Début du message remonté (en Warning) quand la forme n'est pas venue de l'API et que le navigateur la calcule : c'est lui qu'on cherche dans Grafana. */
+export const WAVEFORM_FALLBACK_MESSAGE = 'WaveformFallback';
 
 /** Le navigateur demande d'économiser les données (Chrome sur Android) : la waveform, de confort, n'est pas calculée. */
 function saveData(): boolean {
@@ -58,7 +62,7 @@ export function withTrackRound() {
         return envelope && audio.state() === 'playing' ? bassAt(envelope, audio.position()) : 0;
       }),
     })),
-    withMethods((store, audio = inject(AudioPort), waveforms = inject(WaveformPort)) => {
+    withMethods((store, audio = inject(AudioPort), waveforms = inject(WaveformPort), injector = inject(Injector)) => {
       /** L'extrait suivant, chargé en arrière-plan : le seul autre son gardé en mémoire. */
       let nextPreviewUrl: string | null = null;
       /** Le morceau dont la forme est demandée (une seule demande par morceau). */
@@ -120,8 +124,10 @@ export function withTrackRound() {
           autoRetried = false;
           const created = createRound(config);
           const started = beginListening(created);
-          waveformTrackId = null;
-          patchState(store, { waveform: null });
+          // La forme vient de l'API quand elle est prête : dessinée dès la première image, rien à télécharger ni à calculer.
+          const fromApi = waveformFromBlob(config.waveform, maxStep(created));
+          waveformTrackId = fromApi ? config.trackId : null;
+          patchState(store, { waveform: fromApi });
           set(started);
           if (started !== created) launch(started);
         },
@@ -219,15 +225,21 @@ export function withTrackRound() {
         },
 
         /**
-         * Calcule la forme de l'extrait en cours, une fois par morceau, quand le premier palier est joué : la lecture ne l'attend jamais
-         * et ne lui dispute pas le réseau au démarrage. Rien en mode économie de données (l'extrait serait téléchargé deux fois). Un
-         * échec se retente au palier suivant. Appelé par le lecteur (`withHooks`), pas par la page.
+         * Repli : calcule la forme de l'extrait en cours dans le navigateur, une fois par morceau, quand le son démarre (la lecture ne
+         * l'attend jamais), seulement si l'API ne l'a pas donnée. Rien en mode économie de données (l'extrait serait téléchargé deux
+         * fois). Chaque repli est remonté en Warning, une fois par morceau et par page. Un échec se retente à la lecture suivante.
+         * Appelé par le lecteur (`withHooks`), pas par la page.
          */
         loadWaveform(): void {
           const round = store.round();
           if (!round?.previewUrl || waveformTrackId === round.trackId || saveData()) return;
           const trackId = round.trackId;
           waveformTrackId = trackId;
+          injector.get(ErrorReportingService).report({
+            source: 'js',
+            level: 'warning',
+            message: `${WAVEFORM_FALLBACK_MESSAGE}: morceau ${trackId}, forme absente de la réponse de l'API, calculée dans le navigateur`,
+          });
           void waveforms.load(round.previewUrl, maxStep(round)).then(waveform => {
             // le joueur est passé au morceau suivant entre-temps
             if (store.round()?.trackId !== trackId) return;
@@ -252,7 +264,7 @@ export function withTrackRound() {
             const next = onAudio(round, state);
             patchState(store, { round: next });
             if (next.phase === 'audio-error' && round.phase !== 'audio-error') store.recoverFromAudioError();
-            if (state === 'finished') store.loadWaveform();
+            if (state === 'playing') store.loadWaveform();
           });
         });
       },

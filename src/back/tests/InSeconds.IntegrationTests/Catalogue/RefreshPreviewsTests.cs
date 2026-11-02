@@ -217,7 +217,7 @@ public class RefreshPreviewsTests(PostgresFixture postgres) : IAsyncLifetime
 
         Assert.Equal(["Dance", "Rap/Hip Hop"], await GenresOfAsync(track.Id));
         Assert.Equal(1L, await _app.Api.ScalarAsync<long>($"SELECT count(*) FROM catalogue.tracks WHERE id = {track.Id} AND album_id = 2 AND genres_checked_at IS NOT NULL"));
-        Assert.Equal(["/album/2", "/track/1001"], _app.Deezer.Requests.Order());
+        Assert.Equal(["/album/2", "/track/1001"], _app.Deezer.Requests.Where(r => !r.EndsWith(".mp3", StringComparison.Ordinal)).Order());
     }
 
     [Fact]
@@ -295,7 +295,7 @@ public class RefreshPreviewsTests(PostgresFixture postgres) : IAsyncLifetime
         await RunAsync();
 
         // L'album chez Deezer (2) n'est plus celui noté (99) : ses genres sont relus.
-        Assert.Equal(["/album/2", "/track/1001"], _app.Deezer.Requests.Order());
+        Assert.Equal(["/album/2", "/track/1001"], _app.Deezer.Requests.Where(r => !r.EndsWith(".mp3", StringComparison.Ordinal)).Order());
         Assert.Equal(["Dance", "Rap/Hip Hop"], await GenresOfAsync(track.Id));
     }
 

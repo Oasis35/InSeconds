@@ -30,6 +30,11 @@ internal sealed class TrackConfiguration : IEntityTypeConfiguration<Track>
         // album_id : l'album chez Deezer (les genres se lisent sur lui) ; genres_checked_at : vide tant que ses genres n'ont pas été lus.
         builder.Property(t => t.AlbumId);
         builder.Property(t => t.GenresCheckedAt);
+        // La forme de l'extrait : un blob de quelques Ko (bytea), le nom du fichier dont elle vient et sa date. Les requêtes du pool et des modes
+        // ne lisent jamais l'entité entière (projections) : ce blob ne voyage qu'avec le contrôle nocturne et la réponse de démarrage.
+        builder.Property(t => t.Waveform);
+        builder.Property(t => t.WaveformSource).HasMaxLength(120);
+        builder.Property(t => t.WaveformComputedAt);
         // Les genres du morceau (ceux de son album) : table de jonction track_genres, supprimée avec le morceau ou le genre.
         builder.HasMany(t => t.Genres).WithMany().UsingEntity<Dictionary<string, object>>(
             TrackGenresTable,

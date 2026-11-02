@@ -85,6 +85,8 @@ export interface RunCurrentTrack {
   /** Sa place dans la manche, à partir de 1 (« Morceau 3 sur 5 »). */
   readonly positionInRound: number;
   readonly previewUrl: string | null;
+  /** La forme de l'extrait calculée par l'API (blob en base64) ; `null` si elle n'est pas prête : le navigateur calcule la sienne. */
+  readonly waveform?: string | null;
 }
 
 export interface RunNeutralized {

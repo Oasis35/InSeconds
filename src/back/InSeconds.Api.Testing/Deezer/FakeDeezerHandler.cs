@@ -49,6 +49,8 @@ public sealed class FakeDeezerState
 /// <list type="bullet">
 /// <item><description>un morceau d'identifiant ≥ <see cref="NoPreviewFrom"/> n'a pas d'extrait, ni ceux que le test en a privés
 /// (<see cref="FakeDeezerState.WithoutPreview"/>) ;</description></item>
+/// <item><description>l'extrait (<c>/test-audio.mp3</c>, le fichier que le front de test sert aussi au navigateur) est un MP3 synthétique de 6 s : 2 s de basse
+/// forte, 2 s d'aigu faible, 2 s de silence ;</description></item>
 /// <item><description>un identifiant ≥ <see cref="NotFoundFrom"/> (et en dessous) : Deezer ne le connaît pas (erreur 800 en HTTP 200) ;</description></item>
 /// <item><description>un identifiant ≥ <see cref="QuotaFrom"/> (et en dessous) : quota dépassé (erreur 4 en HTTP 200, piège 16) ;</description></item>
 /// <item><description>l'album d'un morceau est <see cref="AlbumIdOf"/> et ses genres (<c>/album/{id}</c>) se déduisent de son identifiant
@@ -67,6 +69,20 @@ public sealed class FakeDeezerHandler(FakeDeezerState state) : HttpMessageHandle
     private static readonly string PreviewUrl =
         $"http://localhost:{Environment.GetEnvironmentVariable("E2E_FRONT_PORT") ?? "5176"}/test-audio.mp3";
 
+    private static class SyntheticPreview
+    {
+        public static readonly byte[] Value = Load();
+
+        private static byte[] Load()
+        {
+            using var stream = typeof(FakeDeezerHandler).Assembly.GetManifestResourceStream("synthetic.mp3")
+                ?? throw new InvalidOperationException("Le MP3 synthétique du faux Deezer est absent de l'assembly.");
+            using var buffer = new MemoryStream();
+            stream.CopyTo(buffer);
+            return buffer.ToArray();
+        }
+    }
+
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         state.Record(request);
@@ -75,6 +91,10 @@ public sealed class FakeDeezerHandler(FakeDeezerState state) : HttpMessageHandle
             return custom;
 
         var path = request.RequestUri?.AbsolutePath ?? "";
+
+        // Le fichier d'extrait que PreviewUrl désigne : un MP3 synthétique (jamais d'audio de Deezer), lu par le calcul de la forme.
+        if (path.Equals("/test-audio.mp3", StringComparison.OrdinalIgnoreCase))
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(SyntheticPreview.Value) { Headers = { { "Content-Type", "audio/mpeg" } } } };
 
         if (path.StartsWith("/track/", StringComparison.OrdinalIgnoreCase) && long.TryParse(path["/track/".Length..], out var id))
             return state.HasNoPreview(id) ? Json(TrackJson(id, preview: "")) : TrackResponse(id);

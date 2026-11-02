@@ -21,17 +21,19 @@ namespace Internal.Generated.WolverineHandlers
         private readonly FluentValidation.IValidator<InSeconds.Api.Modules.Catalogue.Application.AddTrack> _validatorOfAddTrack;
         private readonly Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _serviceScopeFactory;
         private readonly Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> _optionsMonitorOfCatalogueOptions;
+        private readonly Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.WaveformOptions> _optionsMonitorOfWaveformOptions;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
         private readonly System.TimeProvider _timeProvider;
         private readonly Wolverine.Http.FluentValidation.IProblemDetailSource<InSeconds.Api.Modules.Catalogue.Application.AddTrack> _problemDetailSourceOfAddTrack;
         private readonly Wolverine.Runtime.IWolverineRuntime _wolverineRuntime;
 
-        public POST_api_admin_catalogue_tracks(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, FluentValidation.IValidator<InSeconds.Api.Modules.Catalogue.Application.AddTrack> validatorOfAddTrack, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> optionsMonitorOfCatalogueOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.Http.FluentValidation.IProblemDetailSource<InSeconds.Api.Modules.Catalogue.Application.AddTrack> problemDetailSourceOfAddTrack, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
+        public POST_api_admin_catalogue_tracks(Wolverine.Http.WolverineHttpOptions wolverineHttpOptions, FluentValidation.IValidator<InSeconds.Api.Modules.Catalogue.Application.AddTrack> validatorOfAddTrack, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.CatalogueOptions> optionsMonitorOfCatalogueOptions, Microsoft.Extensions.Options.IOptionsMonitor<InSeconds.Api.Modules.Catalogue.Application.WaveformOptions> optionsMonitorOfWaveformOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.Http.FluentValidation.IProblemDetailSource<InSeconds.Api.Modules.Catalogue.Application.AddTrack> problemDetailSourceOfAddTrack, Wolverine.Runtime.IWolverineRuntime wolverineRuntime) : base(wolverineHttpOptions)
         {
             _wolverineHttpOptions = wolverineHttpOptions;
             _validatorOfAddTrack = validatorOfAddTrack;
             _serviceScopeFactory = serviceScopeFactory;
             _optionsMonitorOfCatalogueOptions = optionsMonitorOfCatalogueOptions;
+            _optionsMonitorOfWaveformOptions = optionsMonitorOfWaveformOptions;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
             _timeProvider = timeProvider;
             _problemDetailSourceOfAddTrack = problemDetailSourceOfAddTrack;
@@ -88,7 +90,11 @@ namespace Internal.Generated.WolverineHandlers
 
                 
                 // The actual HTTP request handler execution
-                var trackSummary_response = await InSeconds.Api.Modules.Catalogue.Application.AddTrackEndpoint.Post(request, trackToAdd, efCatalogueStore, _optionsMonitorOfCatalogueOptions, _timeProvider, httpContext.RequestAborted).ConfigureAwait(false);
+                (var trackSummary_response, var outgoingMessages) = await InSeconds.Api.Modules.Catalogue.Application.AddTrackEndpoint.Post(request, trackToAdd, efCatalogueStore, _optionsMonitorOfCatalogueOptions, _optionsMonitorOfWaveformOptions, _timeProvider, httpContext.RequestAborted).ConfigureAwait(false);
+
+                
+                // Outgoing, cascaded message
+                await messageContext.EnqueueCascadingAsync(outgoingMessages).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

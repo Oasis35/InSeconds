@@ -66,6 +66,38 @@ public class ClientErrorTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task NiveauWarning_EstJournaliseEnWarning_SansPasserParLesErreursFront()
+    {
+        var logs = new CapturedLogs();
+        await using var api = new ApiFactory(_connectionString, services => services.AddSingleton<ILoggerProvider>(logs));
+
+        var response = await PostAsync(api.CreateClient(), new
+        {
+            source = "js",
+            level = "warning",
+            message = "WaveformFallback: morceau 2, forme absente de la réponse de l'API, calculée dans le navigateur",
+        });
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        var entry = Assert.Single(logs.Entries, e => e.EventId == 1101);
+        Assert.Equal(LogLevel.Warning, entry.Level);
+        Assert.Contains("WaveformFallback: morceau 2", entry.Message);
+        // Les panneaux « Erreur front » de Grafana ne le comptent pas.
+        Assert.DoesNotContain("Erreur front", entry.Message);
+        Assert.DoesNotContain(logs.Entries, e => e.EventId == 1100);
+    }
+
+    [Fact]
+    public async Task NiveauInconnu_Refuse400()
+    {
+        await using var api = new ApiFactory(_connectionString);
+
+        var response = await PostAsync(api.CreateClient(), new { source = "js", level = "fatal", message = "x" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task VersionEnLigneEtAppareil_Journalises_SansLeUserAgentBrut()
     {
         const string userAgent = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36";

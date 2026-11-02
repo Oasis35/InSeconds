@@ -9,4 +9,5 @@
   <Project Path="InSeconds.Api/InSeconds.Api.csproj" />
   <Project Path="InSeconds.Deezer/InSeconds.Deezer.csproj" />
   <Project Path="InSeconds.Infrastructure/InSeconds.Infrastructure.csproj" />
+  <Project Path="InSeconds.Waveform/InSeconds.Waveform.csproj" />
 </Solution>

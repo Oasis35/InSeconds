@@ -64,7 +64,7 @@ public class ModuleDependencyTests
             .ShouldNot().HaveDependencyOnAny(
             [
                 "Microsoft.EntityFrameworkCore", "Microsoft.AspNetCore", "Npgsql", "Wolverine", "Hangfire",
-                "InSeconds.Api.Infrastructure", "InSeconds.Infrastructure", "InSeconds.Deezer",
+                "InSeconds.Api.Infrastructure", "InSeconds.Infrastructure", "InSeconds.Deezer", "InSeconds.Waveform",
                 $"{ModulesNamespace}.Players", .. ModuleRules.Modes.Select(ModuleRules.Namespace),
                 $"{ModulesNamespace}.Catalogue.Domain", $"{ModulesNamespace}.Catalogue.Application", $"{ModulesNamespace}.Catalogue.Persistence",
             ])
@@ -157,7 +157,7 @@ public class ModuleDependencyTests
 
         var result = runs
             .ShouldNot().HaveDependencyOnAny(
-                "InSeconds.Deezer", $"{ModulesNamespace}.Daily",
+                "InSeconds.Deezer", "InSeconds.Waveform", $"{ModulesNamespace}.Daily",
                 $"{ModulesNamespace}.Players.Domain", $"{ModulesNamespace}.Players.Application", $"{ModulesNamespace}.Players.Persistence",
                 $"{ModulesNamespace}.Catalogue.Domain", $"{ModulesNamespace}.Catalogue.Application", $"{ModulesNamespace}.Catalogue.Persistence",
                 $"{ModulesNamespace}.Gameplay.Domain")
@@ -175,7 +175,7 @@ public class ModuleDependencyTests
 
         var result = daily
             .ShouldNot().HaveDependencyOnAny(
-                "InSeconds.Deezer", $"{ModulesNamespace}.Players.Domain", $"{ModulesNamespace}.Players.Application", $"{ModulesNamespace}.Players.Persistence",
+                "InSeconds.Deezer", "InSeconds.Waveform", $"{ModulesNamespace}.Players.Domain", $"{ModulesNamespace}.Players.Application", $"{ModulesNamespace}.Players.Persistence",
                 $"{ModulesNamespace}.Catalogue.Domain", $"{ModulesNamespace}.Catalogue.Application", $"{ModulesNamespace}.Catalogue.Persistence",
                 $"{ModulesNamespace}.Gameplay.Domain")
             .GetResult();

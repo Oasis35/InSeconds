@@ -11,6 +11,7 @@ public partial class ClockUsageTests
     [Theory]
     [InlineData("InSeconds.Api")]
     [InlineData("InSeconds.Deezer")]
+    [InlineData("InSeconds.Waveform")]
     public void LeCodeDe_NeLitJamaisLHorlogeSysteme(string project)
     {
         var apiDirectory = Path.Combine(SolutionDirectory(), project);

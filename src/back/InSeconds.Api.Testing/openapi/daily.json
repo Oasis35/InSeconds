@@ -2471,6 +2471,12 @@
           },
           "previewUrl": {
             "type": "string"
+          },
+          "waveform": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

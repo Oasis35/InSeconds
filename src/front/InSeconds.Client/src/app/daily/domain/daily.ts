@@ -46,6 +46,8 @@ export interface DurationScoreSetting {
 export interface TrackSlot {
   readonly position: number;
   readonly previewUrl: string;
+  /** La forme de l'extrait calculée par l'API (blob en base64) ; `null` si elle n'est pas prête : le navigateur calcule la sienne. */
+  readonly waveform?: string | null;
 }
 
 /** Combien de joueurs ont trouvé le morceau en écoutant ce palier. */

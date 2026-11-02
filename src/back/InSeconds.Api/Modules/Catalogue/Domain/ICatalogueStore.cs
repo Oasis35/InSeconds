@@ -48,4 +48,21 @@ public interface ICatalogueStore
     /// ceux de l'ancien. Renvoie les identifiants réellement enregistrés.
     /// </summary>
     Task<IReadOnlySet<int>> SaveRefreshedAsync(IReadOnlyCollection<Track> tracks, CancellationToken ct);
+
+    /// <summary>
+    /// Enregistre tout de suite (sa propre requête, pas la transaction d'un handler) la forme de l'extrait d'un morceau déjà passée par
+    /// <see cref="Track.RecordWaveform"/>. Un morceau supprimé entre-temps est ignoré (faux). N'écrit que la forme : elle ne croise jamais le
+    /// contrôle de l'extrait (<see cref="SaveRefreshedAsync"/>).
+    /// </summary>
+    Task<bool> SaveWaveformAsync(Track track, CancellationToken ct);
+
+    /// <summary>
+    /// Les morceaux dont la forme est à calculer (jamais calculée), non désactivés et à extrait disponible, renvoyés **détachés** : le calcul dure
+    /// plusieurs minutes (téléchargements espacés). Les formes d'une ancienne version ou d'un extrait remplacé ne se voient qu'avec l'adresse
+    /// actuelle de l'extrait, que seul le contrôle nocturne lit.
+    /// </summary>
+    Task<IReadOnlyList<Track>> ListWithoutWaveformAsync(CancellationToken ct);
+
+    /// <summary>La date d'ajout du morceau le plus récent parmi ceux sans forme (vide : aucun n'en manque).</summary>
+    Task<DateTimeOffset?> LatestAddedWithoutWaveformAsync(CancellationToken ct);
 }
