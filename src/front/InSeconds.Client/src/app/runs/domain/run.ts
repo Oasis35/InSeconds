@@ -18,6 +18,8 @@ export interface RunTrack {
   readonly title: string | null;
   readonly coverUrl: string | null;
   readonly deezerTrackId: number | null;
+  /** La forme de l'extrait (blob en base64) : seulement dans la pile rendue au lancement et à la reprise, `null` sinon. */
+  readonly waveform: string | null;
 }
 
 /** La manche en cours : le score déjà marqué, l'objectif à atteindre pour la débloquer suivante, et le maximum possible. */
@@ -73,9 +75,25 @@ export interface RunSession {
   readonly roundsPassed: number;
   /** La manche en cours ; vide une fois la partie finie. */
   readonly round: RunRound | null;
-  /** Les morceaux déjà joués de la manche en cours (les pastilles), neutralisés compris. */
+  /** Les morceaux déjà joués de la manche en cours, neutralisés compris. */
   readonly roundTracks: readonly RunTrack[];
   readonly finish: RunFinish | null;
+  /** Le chrono d'un morceau, en secondes, du premier son à la réponse ; 0 : pas de chrono (playlist d'avant le chrono). */
+  readonly answerSeconds: number;
+  /** Ce qu'il reste au chrono du morceau en cours, s'il a démarré ; `null` sinon (il part au premier son). */
+  readonly clockRemainingSeconds: number | null;
+  /** Tous les morceaux déjà joués de la partie, dans l'ordre (la pile), neutralisés compris. */
+  readonly playedTracks: readonly RunTrack[];
+  /** Les manches passées, dans l'ordre, avec le disque gagné à chacune (les lignes de palier de la pile). */
+  readonly passedRounds: readonly RunPassedRound[];
+}
+
+/** Une manche passée : son score, son objectif et le disque qu'elle donne. */
+export interface RunPassedRound {
+  readonly round: number;
+  readonly score: number;
+  readonly objective: number;
+  readonly disc: RunDisc;
 }
 
 /** Le morceau à jouer : l'extrait de ce seul morceau (jamais celui des suivants). */
@@ -102,7 +120,6 @@ export interface RunRoundSummary {
   readonly passed: boolean;
   readonly score: number;
   readonly objective: number;
-  readonly tracks: readonly RunTrack[];
   readonly totalScore: number;
 }
 
@@ -126,6 +143,8 @@ export interface RunLink {
   readonly rounds: number;
   readonly tracksPerRound: number;
   readonly listenSeconds: number;
+  /** Le chrono de chaque morceau ; 0 : pas de chrono. */
+  readonly answerSeconds: number;
   /** La partie de ce joueur sur la playlist : pas jouée, en cours, ou finie. */
   readonly myStatus: 'none' | RunStatus;
   readonly mySessionId: number | null;
@@ -172,30 +191,6 @@ export function objectiveBar(round: Pick<RunRound, 'score' | 'objective' | 'maxS
   return { scoreRatio: clampRatio(round.score / round.maxScore), objectiveRatio: clampRatio(round.objective / round.maxScore) };
 }
 
-/** L'objectif est atteint : la manche suivante est débloquée. */
-export const objectiveReached = (round: Pick<RunRound, 'score' | 'objective'>): boolean => round.score >= round.objective;
-
-/** L'état d'une pastille de morceau. */
-export type PillState = 'found' | 'half' | 'missed' | 'neutralized' | 'current' | 'todo';
-
-/** Ce qu'un morceau déjà joué donne à sa pastille : tout trouvé, la moitié, rien, ou retiré de la manche. */
-export function pillOf(track: Pick<RunTrack, 'neutralized' | 'artistCorrect' | 'titleCorrect'>): PillState {
-  if (track.neutralized) return 'neutralized';
-  if (track.artistCorrect && track.titleCorrect) return 'found';
-  return track.artistCorrect || track.titleCorrect ? 'half' : 'missed';
-}
-
-/**
- * Les pastilles d'une manche, une par morceau : les morceaux joués (dans l'ordre), puis le morceau en cours (corail) s'il y en a un, puis ceux
- * qui restent. `answered` est dans l'ordre de la manche.
- */
-export function trackPills(tracksPerRound: number, answered: readonly Pick<RunTrack, 'neutralized' | 'artistCorrect' | 'titleCorrect'>[], hasCurrent: boolean): PillState[] {
-  return Array.from({ length: tracksPerRound }, (_, index): PillState => {
-    if (index < answered.length) return pillOf(answered[index]);
-    return index === answered.length && hasCurrent ? 'current' : 'todo';
-  });
-}
-
 /** « +67 » : les points gagnés sur un morceau. */
 export const gainLabel = (points: number): string => `+${points}`;
 
@@ -204,36 +199,29 @@ export const isFinished = (session: Pick<RunSession, 'status'>): boolean => sess
 
 
 /**
- * Une étape à montrer avant de reprendre la partie, dans l'ordre où le serveur l'a jouée : la réponse au morceau (carte de réponse), un morceau
- * retiré de la manche (carte « Morceau retiré »), le bilan d'une manche terminée. Chacune porte la manche telle que l'écran la montre à ce
- * moment-là (bloc objectif, pastilles) : les étapes suivantes ne se voient pas avant leur tour.
+ * Une étape à montrer avant de reprendre la partie, dans l'ordre où le serveur l'a jouée : la réponse au morceau (révélée dans la carte), un
+ * morceau retiré de la manche (carte « Morceau retiré »). Chacune porte la manche telle que l'en-tête la montre à ce moment-là : les étapes
+ * suivantes ne se voient pas avant leur tour. La fin d'une manche n'est pas une étape : sa ligne de palier se pose dans la pile.
  */
 export type RunStep =
-  | { readonly kind: 'revealed'; readonly track: RunTrack; readonly round: RunRound; readonly tracks: readonly RunTrack[] }
+  | { readonly kind: 'revealed'; readonly track: RunTrack; readonly round: RunRound }
   | {
     readonly kind: 'neutralized';
     readonly position: number;
-    /** L'objectif de la manche avant le retrait du morceau : barré à côté du nouveau. */
+    /** L'objectif de la manche avant le retrait du morceau. */
     readonly objectiveBefore: number;
     readonly round: RunRound;
-    readonly tracks: readonly RunTrack[];
-  }
-  | { readonly kind: 'summary'; readonly summary: RunRoundSummary; readonly round: RunRound };
+  };
 
-/** Un morceau retiré, tel que les pastilles le voient (rien ne le révèle). */
-const withdrawnTrack = (item: RunNeutralized): RunTrack => ({
-  position: item.position, round: item.round, neutralized: true, artistCorrect: false, titleCorrect: false, points: 0,
-  artist: null, title: null, coverUrl: null, deezerTrackId: null,
-});
+/** La position du morceau d'une étape. */
+export const stepPosition = (step: RunStep): number => (step.kind === 'revealed' ? step.track.position : step.position);
 
 /**
- * Les étapes qu'une réponse du serveur (lancement, reprise, extrait redemandé, réponse) fait passer au joueur, chacune derrière un clic : le son
- * ne repart jamais seul. `before` est la manche affichée avant la requête (elle donne le maximum de points de la manche, que le bilan et les
- * retraits ne portent pas).
+ * Les étapes qu'une réponse du serveur (lancement, reprise, extrait redemandé, réponse) fait passer au joueur. `before` est la manche affichée
+ * avant la requête (elle donne le maximum de points de la manche, que le bilan et les retraits ne portent pas).
  *
- * Le serveur enchaîne en une fois ce qu'il peut : la réponse, puis les morceaux suivants qu'il retire faute d'extrait, et le bilan de chaque
- * manche que cela termine. Le bilan d'une manche suit son dernier morceau ; le maximum d'une manche dont on a retiré un morceau se déduit de
- * son objectif (l'objectif est une part fixe du maximum).
+ * Le serveur enchaîne en une fois ce qu'il peut : la réponse, puis les morceaux suivants qu'il retire faute d'extrait. Le maximum d'une manche
+ * dont on a retiré un morceau se déduit de son objectif (l'objectif est une part fixe du maximum).
  */
 export function playSteps(
   play: Pick<RunPlay, 'session' | 'revealed' | 'neutralized' | 'roundSummaries'>,
@@ -250,49 +238,87 @@ export function playSteps(
     return base.objective > 0 ? Math.round((objective * base.maxScore) / base.objective) : base.maxScore;
   };
   const scoreOf = (round: number) => summaryOf(round)?.score ?? sessionRound(round)?.score ?? (before?.round === round ? before.score : 0);
-  const playedUpTo = (track: RunTrack): RunTrack[] => {
-    const source = summaryOf(track.round)?.tracks ?? (sessionRound(track.round) ? session.roundTracks : []);
-    const played = source.filter(t => t.round === track.round && t.position <= track.position);
-    return played.some(t => t.position === track.position) ? played : [...played, track];
-  };
 
   const events = [
-    ...(play.revealed ? [{ track: play.revealed, item: null }] : []),
-    ...play.neutralized.map(item => ({ track: withdrawnTrack(item), item })),
-  ].sort((a, b) => a.track.position - b.track.position);
+    ...(play.revealed ? [{ position: play.revealed.position, round: play.revealed.round, item: null }] : []),
+    ...play.neutralized.map(item => ({ position: item.position, round: item.round, item })),
+  ].sort((a, b) => a.position - b.position);
 
-  const steps: RunStep[] = [];
-  const shown = new Set<number>();
-  events.forEach((event, index) => {
-    const roundNumber = event.track.round;
-    const tracks = playedUpTo(event.track);
-    let round: RunRound;
+  return events.map((event): RunStep => {
+    const roundNumber = event.round;
     if (event.item) {
       const objective = event.item.objectiveAfter;
-      round = { round: roundNumber, score: scoreOf(roundNumber), objective, maxScore: maxFor(roundNumber, objective) };
-      steps.push({ kind: 'neutralized', position: event.track.position, objectiveBefore: event.item.objectiveBefore, round, tracks });
-    } else {
-      // La réponse se montre avec l'objectif d'avant les retraits qui la suivent dans la même manche.
-      const objective = play.neutralized.find(n => n.round === roundNumber)?.objectiveBefore
-        ?? summaryOf(roundNumber)?.objective ?? sessionRound(roundNumber)?.objective ?? before?.objective ?? 0;
-      const maxScore = before?.round === roundNumber ? before.maxScore : maxFor(roundNumber, objective);
-      round = { round: roundNumber, score: scoreOf(roundNumber), objective, maxScore };
-      steps.push({ kind: 'revealed', track: event.track, round, tracks });
+      const round = { round: roundNumber, score: scoreOf(roundNumber), objective, maxScore: maxFor(roundNumber, objective) };
+      return { kind: 'neutralized', position: event.position, objectiveBefore: event.item.objectiveBefore, round };
     }
-    const summary = summaryOf(roundNumber);
-    if (summary && events[index + 1]?.track.round !== roundNumber) {
-      shown.add(roundNumber);
-      steps.push({ kind: 'summary', summary, round: { round: roundNumber, score: summary.score, objective: summary.objective, maxScore: round.maxScore } });
-    }
+    // La réponse se montre avec l'objectif d'avant les retraits qui la suivent dans la même manche.
+    const objective = play.neutralized.find(n => n.round === roundNumber)?.objectiveBefore
+      ?? summaryOf(roundNumber)?.objective ?? sessionRound(roundNumber)?.objective ?? before?.objective ?? 0;
+    const maxScore = before?.round === roundNumber ? before.maxScore : maxFor(roundNumber, objective);
+    return { kind: 'revealed', track: play.revealed!, round: { round: roundNumber, score: scoreOf(roundNumber), objective, maxScore } };
   });
-  // Un bilan sans morceau devant lui (ne devrait pas arriver) : montré quand même, à la fin.
-  for (const summary of play.roundSummaries) {
-    if (!shown.has(summary.round)) {
-      steps.push({ kind: 'summary', summary, round: { round: summary.round, score: summary.score, objective: summary.objective, maxScore: maxFor(summary.round, summary.objective) } });
-    }
-  }
-  return steps;
 }
+
+/** Un segment de la barre du run (une manche) : passée, en cours (remplie de son score, avec le trait de l'objectif), ou pas encore ouverte. */
+export interface RunSegment {
+  readonly state: 'done' | 'current' | 'locked';
+  /** La part remplie, de 0 à 1. */
+  readonly fill: number;
+  /** L'emplacement du trait de l'objectif, de 0 à 1 ; seulement sur la manche en cours. */
+  readonly mark: number | null;
+}
+
+/** La barre du run : un segment par manche. */
+export function runSegments(rounds: number, shown: Pick<RunRound, 'round' | 'score' | 'objective' | 'maxScore'> | null): RunSegment[] {
+  return Array.from({ length: rounds }, (_, index): RunSegment => {
+    const number = index + 1;
+    if (!shown || number > shown.round) return { state: 'locked', fill: 0, mark: null };
+    if (number < shown.round) return { state: 'done', fill: 1, mark: null };
+    const bar = objectiveBar(shown);
+    return { state: 'current', fill: bar.scoreRatio, mark: bar.objectiveRatio };
+  });
+}
+
+/** Les points qui manquent pour passer la manche (0 : objectif atteint). */
+export const pointsToGo = (round: Pick<RunRound, 'score' | 'objective'>): number => Math.max(0, round.objective - round.score);
+
+/** Une ligne de la pile : un morceau joué (sous une ligne de palier, il ne garde que pochette, forme et points), ou la ligne d'une manche passée. */
+export type PileEntry =
+  | { readonly kind: 'track'; readonly track: RunTrack; readonly past: boolean }
+  | { readonly kind: 'palier'; readonly passed: RunPassedRound };
+
+/**
+ * La pile du run, le plus récent en haut : les morceaux de la manche en cours, puis pour chaque manche passée sa ligne de palier et ses morceaux.
+ * `hideFrom` : l'étape à l'écran ; son morceau et les suivants ne sont pas encore dans la pile (celui qu'on révèle, les retraits qui le
+ * suivent), ni la ligne de sa manche et des suivantes.
+ */
+export function runPile(
+  tracks: readonly RunTrack[], passed: readonly RunPassedRound[], hideFrom: { readonly position: number; readonly round: number } | null = null,
+): PileEntry[] {
+  const shown = tracks.filter(t => hideFrom === null || t.position < hideFrom.position);
+  const hiddenRound = hideFrom?.round ?? null;
+  const rounds = new Set<number>([...shown.map(t => t.round), ...passed.map(p => p.round)]);
+  const entries: PileEntry[] = [];
+  for (const round of [...rounds].sort((a, b) => b - a)) {
+    const line = passed.find(p => p.round === round && (hiddenRound === null || p.round < hiddenRound));
+    if (line) entries.push({ kind: 'palier', passed: line });
+    shown.filter(t => t.round === round).sort((a, b) => b.position - a.position)
+      .forEach(track => entries.push({ kind: 'track', track, past: line !== undefined }));
+  }
+  return entries;
+}
+
+/** « 0:45 » : le temps qui reste au chrono, en minutes et secondes. */
+export function clockLabel(seconds: number): string {
+  const whole = Math.max(0, Math.ceil(seconds));
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
+}
+
+/** L'enchaînement automatique après une réponse ou un morceau retiré, en ms : le temps de voir la réponse (« Morceau suivant » l'avance). */
+export const AUTO_NEXT_MS = 2000;
+
+/** Les dernières secondes du chrono : gros chiffre blanc, bord de la carte éclairci, tic. */
+export const CLOCK_ALERT_SECONDS = 5;
 
 /** Combien de morceaux de la partie sont déjà joués (l'écran de reprise) : les manches passées, puis ceux de la manche en cours. */
 export const playedCount = (session: Pick<RunSession, 'round' | 'tracksPerRound' | 'roundTracks'>): number =>

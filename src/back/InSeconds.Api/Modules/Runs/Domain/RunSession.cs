@@ -89,6 +89,21 @@ public sealed class RunSession
     /// <summary>Le plus long passage écouté sur le morceau en cours, vu par le serveur.</summary>
     public decimal? CurrentListenedSeconds { get; private set; }
 
+    /// <summary>Quand l'extrait du morceau en cours a été envoyé pour la première fois (la borne du départ du chrono).</summary>
+    public DateTimeOffset? CurrentServedAt { get; private set; }
+
+    /// <summary>Le départ du chrono du morceau en cours : son premier son, annoncé par le navigateur, au plus <see cref="MaxClockWait"/> après l'envoi.</summary>
+    public DateTimeOffset? CurrentClockAt { get; private set; }
+
+    /// <summary>
+    /// Le plus long délai accepté entre l'envoi de l'extrait et le premier son (lire la réponse d'avant, la ligne de palier, toucher « Morceau
+    /// suivant ») : un navigateur qui tarde à annoncer son premier son ne gagne pas plus de temps.
+    /// </summary>
+    public static readonly TimeSpan MaxClockWait = TimeSpan.FromSeconds(30);
+
+    /// <summary>La marge accordée au réseau après la fin du chrono : la réponse envoyée à zéro arrive un peu après.</summary>
+    public static readonly TimeSpan ClockGrace = TimeSpan.FromSeconds(5);
+
     public short RoundsPassed { get; private set; }
 
     public int TotalScore { get; private set; }
@@ -121,6 +136,53 @@ public sealed class RunSession
     public TrackRound RoundOfCurrentTrack() =>
         CurrentPosition == NextPosition ? TrackRound.Resume(CurrentListenedSeconds ?? 0, 0) : TrackRound.Start;
 
+    /// <summary>L'extrait du morceau en cours part vers le navigateur : seul le premier envoi compte (une reprise ou une adresse fraîche ne remet rien à zéro).</summary>
+    public void ServeCurrent(DateTimeOffset now)
+    {
+        RequirePending();
+        CurrentServedAt ??= now;
+    }
+
+    /// <summary>
+    /// Le premier son du morceau en cours : le chrono part, une seule fois, au plus <see cref="MaxClockWait"/> après l'envoi de l'extrait.
+    /// </summary>
+    public void StartClock(DateTimeOffset now)
+    {
+        RequirePending();
+        if (CurrentClockAt is not null)
+            return;
+        CurrentClockAt = CurrentServedAt is { } served && now > served + MaxClockWait ? served + MaxClockWait : now;
+    }
+
+    /// <summary>
+    /// Le départ du chrono du morceau en cours : le premier son, sinon (navigateur qui ne l'a pas annoncé) la limite après l'envoi ; vide sans
+    /// chrono ou si l'extrait n'a jamais été envoyé.
+    /// </summary>
+    public DateTimeOffset? ClockStart(RunRules rules)
+    {
+        ArgumentNullException.ThrowIfNull(rules);
+        if (!rules.HasClock)
+            return null;
+        return CurrentClockAt ?? CurrentServedAt + MaxClockWait;
+    }
+
+    /// <summary>
+    /// Les secondes qui restent au chrono du morceau en cours, s'il est parti (0 une fois écoulé) : au premier son annoncé, ou à la limite après
+    /// l'envoi une fois qu'elle est passée sans annonce (le joueur qui revient le voit tourner).
+    /// </summary>
+    public decimal? ClockRemaining(RunRules rules, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(rules);
+        if (ClockStart(rules) is not { } start || (CurrentClockAt is null && now < start))
+            return null;
+        var left = (decimal)(start.AddSeconds(rules.AnswerSeconds) - now).TotalSeconds;
+        return Math.Max(0m, decimal.Round(left, 1));
+    }
+
+    /// <summary>La réponse arrive après le chrono (marge réseau comprise) : elle ne rapporte rien.</summary>
+    public bool IsLate(RunRules rules, DateTimeOffset now) =>
+        ClockStart(rules) is { } start && now > start.AddSeconds(rules.AnswerSeconds) + ClockGrace;
+
     /// <summary>Enregistre la manche du morceau en cours (ce que <see cref="TrackRound.Listen"/> a rendu).</summary>
     public void KeepRound(TrackRound round)
     {
@@ -132,13 +194,16 @@ public sealed class RunSession
 
     /// <summary>
     /// Note la réponse au morceau en cours (points au multiplicateur de sa manche), libère le verrou, et tranche la manche si c'était son dernier
-    /// morceau. Le verdict seul est gardé, jamais le texte saisi.
+    /// morceau. Le verdict seul est gardé, jamais le texte saisi. Une réponse arrivée après le chrono (<see cref="IsLate"/>) compte comme un
+    /// morceau passé : rien de juste, aucun point.
     /// </summary>
     public RunStep Answer(RunChallenge challenge, RoundOutcome outcome, IRunScoringPolicy scoring, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(outcome);
         ArgumentNullException.ThrowIfNull(scoring);
         var track = CurrentTrackOf(challenge);
+        if (IsLate(challenge.Rules, now))
+            outcome = outcome with { ArtistCorrect = false, TitleCorrect = false };
         var points = scoring.Points(outcome, track.Multiplier);
         return Record(challenge, RunAnswer.Create(track.Position, outcome.ArtistCorrect, outcome.TitleCorrect, points, neutralized: false, now), scoring, now);
     }
@@ -171,6 +236,8 @@ public sealed class RunSession
         TotalScore += answer.Points;
         CurrentPosition = (short)NextPosition;
         CurrentListenedSeconds = null;
+        CurrentServedAt = null;
+        CurrentClockAt = null;
 
         var progress = RoundProgressOf(challenge, track.Round, scoring);
         if (!progress.Complete)
@@ -213,6 +280,8 @@ public sealed class RunSession
         EndedAt = now;
         CurrentPosition = null;
         CurrentListenedSeconds = null;
+        CurrentServedAt = null;
+        CurrentClockAt = null;
     }
 }
 

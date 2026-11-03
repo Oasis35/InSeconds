@@ -17,6 +17,10 @@ public sealed class RunsOptions
     public const decimal DefaultListenSeconds = 10m;
     public const decimal DefaultMinMultiplier = 1m;
     public const decimal DefaultMaxMultiplier = 2m;
+    public const int DefaultAnswerSeconds = 45;
+
+    /// <summary>Le chrono le plus long accepté (10 minutes) ; 0 coupe le chrono des nouvelles playlists.</summary>
+    public const int MaxAnswerSeconds = 600;
 
     /// <summary>Bornes : une position de morceau tient dans un <c>smallint</c>, un multiplicateur dans <c>numeric(3,2)</c>, une durée dans <c>numeric(4,2)</c>.</summary>
     public const int MaxRounds = 20;
@@ -40,6 +44,9 @@ public sealed class RunsOptions
 
     public decimal MaxMultiplier { get; set; } = DefaultMaxMultiplier;
 
+    /// <summary>Le chrono d'un morceau en secondes, du premier son à la réponse ; 0 : pas de chrono.</summary>
+    public int AnswerSeconds { get; set; } = DefaultAnswerSeconds;
+
     /// <summary>Les disques, du moins bon au meilleur : des clés de traduction, jamais un texte.</summary>
     public string[]? Discs { get; set; }
 
@@ -48,10 +55,11 @@ public sealed class RunsOptions
     public IReadOnlyList<string> EffectiveDiscs => Discs ?? DefaultDiscs;
 
     /// <summary>Les règles que ces réglages décrivent (à ne figer qu'une fois <see cref="RunsOptionsChecks.Problems"/> vide).</summary>
-    public RunRules ToRules() => new(Rounds, TracksPerRound, ListenSeconds, EffectiveThresholdPercents.ToArray(), MinMultiplier, MaxMultiplier);
+    public RunRules ToRules() => new(Rounds, TracksPerRound, ListenSeconds, EffectiveThresholdPercents.ToArray(), MinMultiplier, MaxMultiplier, AnswerSeconds);
 
     public static RunRules DefaultRules() => new(
-        DefaultRounds, DefaultTracksPerRound, DefaultListenSeconds, DefaultThresholdPercents, DefaultMinMultiplier, DefaultMaxMultiplier);
+        DefaultRounds, DefaultTracksPerRound, DefaultListenSeconds, DefaultThresholdPercents, DefaultMinMultiplier, DefaultMaxMultiplier,
+        DefaultAnswerSeconds);
 }
 
 /// <summary>La cohérence des réglages, partagée par le contrôle du démarrage, <see cref="RunsRules"/> et les tests.</summary>
@@ -76,6 +84,10 @@ public static class RunsOptionsChecks
         // Le multiplicateur est stocké en numeric(3,2) : moins de 10, deux décimales au plus.
         if (!IsStorableMultiplier(options.MinMultiplier) || !IsStorableMultiplier(options.MaxMultiplier) || options.MinMultiplier > options.MaxMultiplier)
             problems.Add("Runs:MinMultiplier et Runs:MaxMultiplier : positifs, moins de 10, au plus deux décimales, le minimum sans dépasser le maximum.");
+
+        // Le chrono doit laisser au moins l'écoute entière.
+        if (options.AnswerSeconds != 0 && (options.AnswerSeconds > RunsOptions.MaxAnswerSeconds || options.AnswerSeconds <= options.ListenSeconds))
+            problems.Add($"Runs:AnswerSeconds : 0 (pas de chrono), ou plus long que l'écoute et au plus {RunsOptions.MaxAnswerSeconds} s.");
 
         var discs = options.EffectiveDiscs;
         if (discs.Count == 0 || discs.Any(string.IsNullOrWhiteSpace))

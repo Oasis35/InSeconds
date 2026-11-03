@@ -1,7 +1,7 @@
 import {
   RoundConfig, TrackRound, applyHints, askSkip, availableHintLevels, beginListening, cancelConfirm, confirmPending,
   createRound, isAnswering, listenMore, maxStep, nextStep, onAudio, previewWithdrawn, replacePreviewUrl, retryPlayback, retrySubmission, reveal, showsInput,
-  skipUnplayable, stakeOf, submissionFailed, submitAnswer, unlockedHintLevel,
+  skipUnplayable, stakeOf, submissionFailed, submitAnswer, timeUp, unlockedHintLevel,
 } from './track-round';
 
 const CONFIG: RoundConfig = {
@@ -319,6 +319,26 @@ describe('réponse', () => {
     const asked = askSkip(playing(started()));
     expect(cancelConfirm(asked).confirm).toBeNull();
     expect(cancelConfirm(asked).phase).toBe('playing');
+  });
+
+  it('le temps écoulé envoie la saisie telle quelle, sans confirmation, même vide ou avec une confirmation ouverte', () => {
+    expect(timeUp(playing(started()), answer).submission).toMatchObject(answer);
+    const empty = timeUp(listened(started()), { artist: null, title: null });
+    expect(empty.phase).toBe('submitting');
+    expect(empty.confirm).toBeNull();
+    expect(timeUp(askSkip(playing(started())), answer).submission).toMatchObject(answer);
+  });
+
+  it("le temps écoulé n'envoie rien pendant une erreur de lecture : le joueur a « Réessayer / Passer »", () => {
+    const failed = onAudio(started(), 'error');
+    expect(failed.phase).toBe('audio-error');
+    expect(timeUp(failed, answer)).toBe(failed);
+  });
+
+  it('le temps écoulé ne renvoie rien une fois la réponse partie', () => {
+    const sent = submitAnswer(playing(started()), answer);
+    expect(timeUp(sent, { artist: null, title: null })).toBe(sent);
+    expect(timeUp(reveal(sent), answer).phase).toBe('revealed');
   });
 
   it('confirmer sans rien à confirmer ne fait rien', () => {

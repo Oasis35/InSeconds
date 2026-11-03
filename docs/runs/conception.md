@@ -78,6 +78,7 @@ Runs possède ses autorisations (`runs.access`), **Players n'est pas modifié**.
 | `POST /api/runs/challenges/{code}/sessions` | relève le défi, ou reprend sa partie en cours dessus (comme `POST /api/daily/sessions`) |
 | `GET /api/runs/sessions/{id}` | l'état d'une partie (reprise, fin de manche, écran de fin), en lecture seule : sans extrait, qui arrive avec le démarrage, la reprise, une réponse ou `POST …/preview` |
 | `PATCH /api/runs/sessions/{id}/listening` | note l'écoute du morceau en cours |
+| `POST /api/runs/sessions/{id}/clock` | le premier son du morceau en cours : le chrono part ; rend ce qui lui reste (le navigateur s'y recale) |
 | `POST /api/runs/sessions/{id}/preview` | l'adresse de l'extrait **du morceau en cours seulement** (jamais d'un morceau futur) |
 | `POST /api/runs/sessions/{id}/answers` | répond au morceau en cours (ou le passe) ; révèle le morceau et les points ; une transaction (réponse, manche, fin, record) |
 | `POST /api/runs/sessions/{id}/abandon` | abandon |
@@ -91,8 +92,8 @@ Runs possède ses autorisations (`runs.access`), **Players n'est pas modifié**.
 - Document OpenAPI `runs` : préfixes `api/runs` et `api/admin/runs`, client NSwag `runs/api.generated.ts`.
 
 ### 3.5 Ce que les réponses doivent porter (dicté par les écrans)
-- **État d'une partie** (démarrage, reprise, `GET /api/runs/sessions/{id}`) : manche en cours et nombre de manches, position dans la manche, score total, score et objectif de la manche, résultat de chaque morceau déjà joué de la manche (trouvé, à moitié, raté, neutralisé) pour les pastilles ; l'adresse de l'extrait du morceau en cours arrive avec le démarrage, la reprise, une réponse ou `POST …/preview`, jamais avec le `GET`. Rien sur les morceaux à venir.
-- **Réponse à `answers`** (écran de réponse) : artiste, titre, hash de pochette et lien Deezer du morceau, artiste juste, titre juste, points du morceau, nouveau score de la manche et score total ; si le morceau a été neutralisé, rien sur le morceau mais l'objectif de la manche avant et après (l'écran barre l'ancien) ; si la manche se termine, son bilan (débloquée ou non, les 5 morceaux révélés avec leurs points) ; si le run se termine, le résultat de fin ; sinon l'adresse de l'extrait du morceau suivant.
+- **État d'une partie** (démarrage, reprise, `GET /api/runs/sessions/{id}`) : manche en cours et nombre de manches, position dans la manche, score total, score et objectif de la manche, tous les morceaux déjà joués (la pile, avec leurs noms et leurs points ; leur forme d'onde au démarrage et à la reprise seulement), les manches passées (lignes de palier : score, objectif, disque), le chrono restant (`clockRemainingSeconds`) ; l'adresse de l'extrait du morceau en cours arrive avec le démarrage, la reprise, une réponse ou `POST …/preview`, jamais avec le `GET`. Rien sur les morceaux à venir.
+- **Réponse à `answers`** (écran de réponse) : artiste, titre, hash de pochette et lien Deezer du morceau, artiste juste, titre juste, points du morceau, nouveau score de la manche et score total ; si le morceau a été neutralisé, rien sur le morceau mais l'objectif de la manche avant et après (l'écran barre l'ancien) ; si la manche se termine, son résultat (débloquée ou non) ; si le run se termine, le résultat de fin ; sinon l'adresse de l'extrait du morceau suivant.
 - **Résultat de fin** (écran de fin) : disque (clé), score final, nombre de morceaux trouvés sur le total, résultat de chaque morceau (les 20 carrés), score et objectif de chaque manche (`null` pour une manche non jouée), record (« nouveau record » ou valeur du record), code du défi pour le partage.
 - **Lien reçu** (`GET /api/runs/challenges/{code}`) : pseudo de l'auteur (« Invité » à défaut) et état de sa propre partie, de quoi choisir entre l'écran du lien, la reprise et la comparaison ; ni nombre de joueurs ni morceau.
 - **Comparaison** : pseudo de l'auteur, nombre de joueurs, une ligne par partie terminée (pseudo ou « Invité », disque, score de chaque manche ou `null`, total, `isMe`), triée par total.
@@ -144,10 +145,10 @@ Même forme et même vocabulaire que le Daily : **un défi** = une suite de morc
 ### 5.1 Organisation
 ```
 runs/
-├── domain/       run.ts (jauge, objectif, manche, pastilles, étapes, disque, lien, comparaison : TypeScript pur, testé seul)
+├── domain/       run.ts (jauge, objectif, manche, pile et paliers, étapes, chrono, disque, lien, comparaison : TypeScript pur, testé seul)
 ├── data-access/  runs.api.ts (client NSwag runs/api.generated.ts), runs.providers.ts, run-game.store.ts (pilote le TrackRoundStore de gameplay), run-share.ts
 ├── feature/      runs.page (la partie, le lien d'un ami et la comparaison : /runs et /runs/:code), runs.routes.ts, leave-run.guard.ts, reload-moment.ts, provide-runs.ts, home-entry (carte de l'accueil)
-└── ui/           run-header, run-objective, run-pills, run-answer-card, run-withdrawn-card, run-round-summary, run-finish, run-disc, run-home-card, run-welcome-screen, run-link-screen, run-comparison-screen, run-status-screen
+└── ui/           run-header, run-clock, run-reveal, run-wave, run-next-button, run-withdrawn-card, run-pile, run-finish, run-disc, run-home-card, run-welcome-screen, run-link-screen, run-comparison-screen, run-status-screen
 ```
 - Routes **`/runs`** et **`/runs/:code`** : des adresses neutres, qui ne cassent pas les liens partagés si le nom change. `/runs/*` exclu de `robots.txt` et du `sitemap.xml`.
 - Sheriff : `runs` voit `gameplay` et `account` (pour créer l'invité d'un ami), jamais `daily`.
@@ -155,11 +156,11 @@ runs/
 - Traductions `runs.*` FR/EN (disques compris), mobile first, saisie à 16 px, modales par `ModalService`, boutons par `appButton`.
 
 ### 5.2 Les étapes d'une partie
-`link` (lien reçu, [`ecrans.md`](ecrans.md#7-le-lien-reçu) § 7), `welcome` (premier morceau : le clic lance le son) ou `resume` (partie en cours) → par morceau : `playing` / `answering` (lecteur et saisie de `gameplay`) → `revealed` (carte de réponse à la place du lecteur et de la saisie, « Morceau suivant »), ou `neutralized` (carte « Morceau retiré de la manche », [`ecrans.md`](ecrans.md#2b-le-morceau-sans-extrait) § 2b, même bouton) → après le 5e morceau : `round_end` (bilan, après chaque manche, ratée ou dernière comprise) → manche suivante, ou `finished` (écran de fin). Reprise : la partie revient au morceau en cours de son état serveur. La phase `revealed` de `withTrackRound` existe déjà ; c'est l'écran qui change par rapport au Daily.
+`link` (lien reçu, [`ecrans.md`](ecrans.md#7-le-lien-reçu) § 7), `welcome` (premier morceau : le clic lance le son) ou `resume` (partie en cours) → par morceau : `playing` / `answering` (carte compacte de `gameplay`, disposition `inline`, avec le chrono) → `revealed` (réponse dans la carte, le morceau entre dans la pile, enchaînement après 2 s ou clic « Morceau suivant »), ou `neutralized` (carte « Morceau retiré de la manche », [`ecrans.md`](ecrans.md#2b-le-morceau-sans-extrait) § 2b, même bouton) → manche suivante (une ligne de palier se pose dans la pile, sans écran de bilan), ou `finished` (écran de fin) après une manche ratée ou la dernière. Reprise : la partie revient au morceau en cours de son état serveur, chrono compris.
 
-Sur `/runs/<code>`, le serveur choisit l'écran d'après la partie du joueur sur cette playlist (`GET /api/runs/challenges/{code}`) : pas jouée → `link`, en cours → `resume`, finie ou abandonnée → `comparison` (une playlist se joue une seule fois). `RunScreen` (`run-game.store.ts`) : `loading`, `welcome`, `link`, `resume`, `playing`, `round_end`, `finished`, `comparison`, `access_denied`, `no_challenge`, `not_found`, `error`.
+Sur `/runs/<code>`, le serveur choisit l'écran d'après la partie du joueur sur cette playlist (`GET /api/runs/challenges/{code}`) : pas jouée → `link`, en cours → `resume`, finie ou abandonnée → `comparison` (une playlist se joue une seule fois). `RunScreen` (`run-game.store.ts`) : `loading`, `welcome`, `link`, `resume`, `playing`, `finished`, `comparison`, `access_denied`, `no_challenge`, `not_found`, `error`.
 
-Le serveur enchaîne en une réponse ce qu'il peut (la réponse, les morceaux suivants qu'il retire faute d'extrait, le bilan de chaque manche que cela termine) : le front en tire une **file d'étapes** (`playSteps`, `domain/run.ts`), montrées une à une, chacune derrière un clic. Le son ne part que dans ce clic, jamais à l'arrivée d'une réponse (un morceau retiré pendant la redemande de son extrait attend le clic « Morceau suivant »).
+Le serveur enchaîne en une réponse ce qu'il peut (la réponse, les morceaux suivants qu'il retire faute d'extrait) : le front en tire une **file d'étapes** (`playSteps`, `domain/run.ts`), montrées une à une, chacune derrière un clic ou l'enchaînement automatique de 2 s (dans le prolongement du geste du joueur ; coupé en mouvement réduit et en E2E). Le son ne part jamais à l'arrivée d'une réponse (un morceau retiré pendant la redemande de son extrait attend le clic « Morceau suivant »).
 
 ### 5.3 Composants du Daily à rendre communs
 Un mode n'importe jamais l'autre : ce que les maquettes reprennent du Daily **vit dans `gameplay/ui`** (le Daily l'importe de là) :
@@ -221,7 +222,7 @@ L'interrupteur « Platines » de l'onglet Joueurs lit `GET /api/admin/runs/acces
 5. Genre de l'album stocké dès maintenant (#361) : validé et fait (Clément, 20/10) ; `TrackInfo.Genres`, aucun mode ne s'en sert encore.
 6. Usage des morceaux déclaré par chaque mode : proposé après la revue, repris.
 7. Morceau sans extrait au moment de jouer : neutralisé (Clément, 17/10).
-8. Temps de réponse : aucun chrono, partie à l'honneur, réécoute libre (Clément, 17/10). Un chrono `Runs:AnswerSeconds` ne sera ajouté que si les parties de test montrent des abus ; limiter les réécoutes reste un bonus ou un malus possible du proto 2.
+8. Temps de réponse : chrono de 45 s par morceau (`Runs:AnswerSeconds`, Clément, 03/11), réécoute libre dans ce temps ; détail dans [regles.md](regles.md) (règle 5) et `src/back/CLAUDE.md` (`POST …/clock`).
 9. Entrée sur l'accueil : la carte seulement (option A), rien d'autre ne change sur l'accueil ni sur « déjà joué » (Clément, 17/10).
 10. Les maquettes de [`ecrans.md`](ecrans.md) font référence, dont la réponse après chaque morceau dans l'écran de manche (Clément, 17/10).
 11. À l'écran, le défi s'appelle une **playlist** partout (titres, boutons, comparaison) ; le code et cette conception gardent `challenge` / « défi » (Clément, 18/10).

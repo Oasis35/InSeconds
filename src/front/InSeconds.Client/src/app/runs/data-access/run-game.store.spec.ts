@@ -5,6 +5,7 @@ import { FakeWaveformPort, provideFakeWaveform } from '../../gameplay/data-acces
 import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { RunRoundSummary } from '../domain/run';
 import { RunGameStore, RunScreen } from './run-game.store';
+import { RunTick } from './run-tick';
 import { StartOutcome } from './runs.api';
 import { COMPARISON, CURRENT, FakeRunsApi, LINK, ME, PLAY, ROUND, SESSION, TRACK, provideFakeRunsApi } from './testing/fake-runs-api';
 
@@ -19,7 +20,7 @@ describe('RunGameStore', () => {
     api = new FakeRunsApi();
     audio = new FakeAudioPort();
     TestBed.configureTestingModule({
-      providers: [provideFakeRunsApi(api), provideFakeAudio(audio), provideFakeWaveform(new FakeWaveformPort()), { provide: SessionLoader, useValue: { ensureGuest } }, TrackRoundStore, RunGameStore],
+      providers: [provideFakeRunsApi(api), provideFakeAudio(audio), provideFakeWaveform(new FakeWaveformPort()), { provide: SessionLoader, useValue: { ensureGuest } }, TrackRoundStore, RunTick, RunGameStore],
     });
     ensureGuest.mockReset();
     ensureGuest.mockResolvedValue(undefined);
@@ -34,7 +35,7 @@ describe('RunGameStore', () => {
   }
 
   const summary = (overrides: Partial<RunRoundSummary> = {}): RunRoundSummary => ({
-    round: 1, passed: true, score: 320, objective: 200, tracks: [TRACK(), TRACK({ position: 2 })], totalScore: 320, ...overrides,
+    round: 1, passed: true, score: 320, objective: 200, totalScore: 320, ...overrides,
   });
 
   /** Lance la partie et laisse le lecteur annoncer son extrait prêt. */
@@ -167,18 +168,19 @@ describe('RunGameStore', () => {
       await startRun();
     });
 
-    it("montre la manche, le score total, l'objectif et les pastilles du morceau en cours", () => {
+    it("montre la manche, le total du run, une pile vide et le chrono plein tant que le son n'est pas sorti", () => {
       expect(store.shownRound()).toEqual(ROUND());
       expect(store.rounds()).toBe(4);
       expect(store.totalScore()).toBe(0);
-      expect(store.pills()).toEqual(['current', 'todo', 'todo', 'todo', 'todo']);
-      expect(store.positionInRound()).toBe(1);
+      expect(store.pile()).toEqual([]);
       expect(store.revealed()).toBeNull();
+      expect(store.clockShown()).toBe(45);
+      expect(store.clockLeft()).toBeNull();
     });
 
-    it('envoie la réponse par la position du morceau, puis révèle : la carte de réponse remplace le lecteur', async () => {
+    it('envoie la réponse par la position du morceau, puis la révèle dans la carte ; la pile ne la prend qu\'au morceau suivant', async () => {
       api.answerResult = PLAY({
-        session: SESSION({ totalScore: 100, round: ROUND({ score: 100 }), roundTracks: [TRACK()] }),
+        session: SESSION({ totalScore: 100, round: ROUND({ score: 100 }), roundTracks: [TRACK()], playedTracks: [TRACK()] }),
         revealed: TRACK({ points: 100 }),
         current: CURRENT({ position: 2, positionInRound: 2 }),
       });
@@ -186,19 +188,16 @@ describe('RunGameStore', () => {
       await send();
 
       expect(api.answers).toEqual([{ position: 1, artist: 'Daft Punk', title: 'One More Time' }]);
-      expect(store.revealed()).not.toBeNull();
       expect(store.revealed()?.points).toBe(100);
-      expect(store.gain()).toBe(100);
       expect(store.totalScore()).toBe(100);
-      expect(store.pills()).toEqual(['found', 'todo', 'todo', 'todo', 'todo']);
-      expect(store.positionInRound()).toBe(1);
+      expect(store.pile()).toEqual([]);
       expect(round.phase()).toBe('revealed');
       expect(audio.calls).toContain('playFull');
     });
 
-    it('« Morceau suivant » lance le morceau suivant dans le clic', async () => {
+    it('« Morceau suivant » lance le morceau suivant dans le clic, et la réponse rejoint la pile avec sa forme', async () => {
       api.answerResult = PLAY({
-        session: SESSION({ totalScore: 100, round: ROUND({ score: 100 }), roundTracks: [TRACK()] }),
+        session: SESSION({ totalScore: 100, round: ROUND({ score: 100 }), roundTracks: [TRACK()], playedTracks: [TRACK()] }),
         revealed: TRACK(),
         current: CURRENT({ position: 2, positionInRound: 2, previewUrl: 'https://cdn/preview-2.mp3' }),
       });
@@ -210,8 +209,7 @@ describe('RunGameStore', () => {
       expect(audio.calls[0]).toBe('unlock');
       expect(audio.calls).toContain('load https://cdn/preview-2.mp3');
       expect(store.revealed()).toBeNull();
-      expect(store.pills()).toEqual(['found', 'current', 'todo', 'todo', 'todo']);
-      expect(store.positionInRound()).toBe(2);
+      expect(store.pile()).toEqual([{ kind: 'track', track: TRACK(), past: false }]);
       expect(round.trackId()).toBe(2);
     });
 
@@ -227,9 +225,13 @@ describe('RunGameStore', () => {
   });
 
   describe('fin de manche', () => {
+    const passedRound = { round: 1, score: 320, objective: 200, disc: { key: 'runs.discs.wax', stars: 0 } };
     const lastOfRound = () => PLAY({
-      session: SESSION({ totalScore: 320, round: ROUND({ round: 2, score: 0, objective: 250, maxScore: 500 }), roundsPassed: 1, roundTracks: [] }),
-      // Le bilan d'une manche de deux morceaux : le second vient d'être répondu.
+      session: SESSION({
+        totalScore: 320, round: ROUND({ round: 2, score: 0, objective: 250, maxScore: 500 }), roundsPassed: 1, roundTracks: [],
+        playedTracks: [TRACK(), TRACK({ position: 2, points: 100 })], passedRounds: [passedRound],
+      }),
+      // Une manche de deux morceaux : le second vient d'être répondu.
       revealed: TRACK({ position: 2, points: 100 }),
       roundSummaries: [summary()],
       current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3' }),
@@ -239,33 +241,18 @@ describe('RunGameStore', () => {
       await startRun();
     });
 
-    it('après la dernière réponse de la manche, la barre garde cette manche (score et objectif du bilan), pas la suivante', async () => {
+    it('après la dernière réponse de la manche, l\'en-tête garde cette manche (score et objectif du bilan), la pile attend', async () => {
       api.answerResult = lastOfRound();
 
       await send();
 
       expect(store.shownRound()).toEqual({ round: 1, score: 320, objective: 200, maxScore: 500 });
-      expect(store.shownTracks()).toHaveLength(2);
-      expect(store.pills()).toEqual(['found', 'found', 'todo', 'todo', 'todo']);
+      expect(store.pile()).toEqual([{ kind: 'track', track: TRACK(), past: false }]);
     });
 
-    it('« Morceau suivant » mène au bilan de la manche, sans lancer de son', async () => {
+    it('« Morceau suivant » lance la manche suivante dans le clic ; la ligne de la manche passée se pose sur ses morceaux', async () => {
       api.answerResult = lastOfRound();
       await send();
-      audio.calls.length = 0;
-
-      store.next();
-
-      expect(store.screen()).toBe('round_end');
-      expect(store.summary()?.round).toBe(1);
-      expect(store.summaryEndsRun()).toBe(false);
-      expect(audio.calls.some(c => c.startsWith('load'))).toBe(false);
-    });
-
-    it('« Manche suivante » lance le premier morceau de la manche débloquée, dans le clic', async () => {
-      api.answerResult = lastOfRound();
-      await send();
-      store.next();
       audio.calls.length = 0;
 
       store.next();
@@ -274,8 +261,8 @@ describe('RunGameStore', () => {
       expect(audio.calls).toContain('load https://cdn/preview-6.mp3');
       expect(store.screen()).toBe('playing');
       expect(store.shownRound()?.round).toBe(2);
-      expect(store.summary()).toBeNull();
-      expect(store.pills()).toEqual(['current', 'todo', 'todo', 'todo', 'todo']);
+      expect(store.pile().map(e => e.kind === 'track' ? `${e.track.position}${e.past ? '·' : ''}` : `[${e.passed.round}]`))
+        .toEqual(['[1]', '2·', '1·']);
     });
   });
 
@@ -289,7 +276,7 @@ describe('RunGameStore', () => {
       await startRun();
     });
 
-    it('la dernière manche gagnée : sa carte, puis son bilan (dont le bouton mène à la fin), puis la fin', async () => {
+    it('la dernière réponse : sa révélation, dont le bouton annonce le résultat, puis la fin', async () => {
       api.answerResult = PLAY({
         session: SESSION({ status: 'won', totalScore: 2500, round: null, finish: finish('won') }),
         revealed: TRACK({ position: 20, round: 4 }),
@@ -300,13 +287,7 @@ describe('RunGameStore', () => {
 
       expect(store.screen()).toBe('playing');
       expect(store.revealed()).not.toBeNull();
-      expect(store.nextIsSummary()).toBe(true);
-
-      store.next();
-
-      expect(store.screen()).toBe('round_end');
-      expect(store.summary()?.round).toBe(4);
-      expect(store.summaryEndsRun()).toBe(true);
+      expect(store.nextEndsRun()).toBe(true);
 
       store.next();
 
@@ -315,20 +296,19 @@ describe('RunGameStore', () => {
       expect(store.revealed()).toBeNull();
     });
 
-    it('une manche ratée montre aussi son bilan, dont le bouton mène à la fin', async () => {
+    it('une manche ratée mène directement à la fin, sans écran de bilan ni autre son', async () => {
       api.answerResult = PLAY({
-        session: SESSION({ status: 'lost', round: null, finish: finish('lost') }),
+        session: SESSION({
+          status: 'lost', round: null, finish: finish('lost'), playedTracks: [1, 2, 3, 4, 5].map(position => TRACK({ position })),
+        }),
         revealed: TRACK({ position: 5 }),
         roundSummaries: [summary({ passed: false, score: 150 })],
         current: null,
       });
       await send();
-
-      store.next();
-
-      expect(store.screen()).toBe('round_end');
-      expect(store.summary()?.passed).toBe(false);
-      expect(store.summaryEndsRun()).toBe(true);
+      expect(store.nextEndsRun()).toBe(true);
+      // La pile reste sous la dernière réponse (le serveur la rend aussi pour une partie finie), sans le morceau révélé.
+      expect(store.pile()).toHaveLength(4);
 
       store.next();
 
@@ -423,8 +403,6 @@ describe('RunGameStore', () => {
       expect(store.screen()).toBe('playing');
       expect(store.withdrawn()?.objectiveBefore).toBe(200);
       expect(store.shownRound()?.objective).toBe(160);
-      expect(store.pills()).toEqual(['neutralized', 'todo', 'todo', 'todo', 'todo']);
-      expect(store.positionInRound()).toBe(1);
       expect(round.trackId()).toBeNull();
       expect(audio.calls.some(c => c.startsWith('load'))).toBe(false);
     });
@@ -445,30 +423,6 @@ describe('RunGameStore', () => {
       expect(store.withdrawn()).toBeNull();
       expect(round.trackId()).toBe(2);
     });
-
-    it('le dernier morceau de la manche retiré : la carte du retrait, puis le bilan, jamais le son suivant tout seul', async () => {
-      api.refreshResult = PLAY({
-        session: SESSION({ roundsPassed: 1, round: ROUND({ round: 2, objective: 333, maxScore: 665 }) }),
-        current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3' }),
-        neutralized: [{ position: 1, round: 1, objectiveBefore: 200, objectiveAfter: 160 }],
-        roundSummaries: [summary({ objective: 160 })],
-      });
-      audio.calls.length = 0;
-      await refreshFails();
-
-      expect(store.withdrawn()).not.toBeNull();
-      expect(store.nextIsSummary()).toBe(true);
-
-      store.next();
-
-      expect(store.screen()).toBe('round_end');
-      expect(audio.calls.some(c => c.startsWith('load'))).toBe(false);
-
-      store.next();
-
-      expect(store.screen()).toBe('playing');
-      expect(audio.calls).toContain('load https://cdn/preview-6.mp3');
-    });
   });
 
   describe('morceau retiré après une réponse', () => {
@@ -476,9 +430,13 @@ describe('RunGameStore', () => {
       await startRun();
     });
 
-    it('la carte de réponse, puis celle du retrait, puis le morceau suivant', async () => {
+    it('la réponse, puis la carte du retrait, puis le morceau suivant', async () => {
+      const withdrawnTrack = TRACK({ position: 2, neutralized: true, points: 0, artist: null, title: null });
       api.answerResult = PLAY({
-        session: SESSION({ totalScore: 100, round: ROUND({ score: 100, objective: 160, maxScore: 400 }), roundTracks: [TRACK(), TRACK({ position: 2, neutralized: true, points: 0 })] }),
+        session: SESSION({
+          totalScore: 100, round: ROUND({ score: 100, objective: 160, maxScore: 400 }), roundTracks: [TRACK(), withdrawnTrack],
+          playedTracks: [TRACK(), withdrawnTrack],
+        }),
         revealed: TRACK(),
         neutralized: [{ position: 2, round: 1, objectiveBefore: 200, objectiveAfter: 160 }],
         current: CURRENT({ position: 3, positionInRound: 3, previewUrl: 'https://cdn/preview-3.mp3' }),
@@ -492,12 +450,165 @@ describe('RunGameStore', () => {
 
       expect(store.withdrawn()?.position).toBe(2);
       expect(store.shownRound()?.objective).toBe(160);
-      expect(store.pills()).toEqual(['found', 'neutralized', 'todo', 'todo', 'todo']);
+      expect(store.pile().map(e => e.kind === 'track' && e.track.position)).toEqual([1]);
 
       store.next();
 
       expect(round.trackId()).toBe(3);
-      expect(store.pills()).toEqual(['found', 'neutralized', 'current', 'todo', 'todo']);
+      expect(store.pile().map(e => e.kind === 'track' && e.track.position)).toEqual([2, 1]);
+    });
+  });
+
+  describe('enchaînement automatique', () => {
+    beforeEach(async () => {
+      vi.useFakeTimers();
+      await startRun();
+      api.answerResult = PLAY({
+        session: SESSION({ totalScore: 100, round: ROUND({ score: 100 }), roundTracks: [TRACK()], playedTracks: [TRACK()] }),
+        revealed: TRACK(),
+        current: CURRENT({ position: 2, positionInRound: 2, previewUrl: 'https://cdn/preview-2.mp3' }),
+      });
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('2 s après la réponse, le morceau suivant part seul', async () => {
+      await send();
+      expect(store.autoNext()).toBe(true);
+
+      vi.advanceTimersByTime(1999);
+      expect(round.trackId()).toBe(1);
+      vi.advanceTimersByTime(1);
+
+      expect(store.autoNext()).toBe(false);
+      expect(round.trackId()).toBe(2);
+      expect(audio.calls).toContain('load https://cdn/preview-2.mp3');
+    });
+
+    it('un clic sur « Morceau suivant » n\'attend pas, et rien ne part deux fois', async () => {
+      await send();
+      store.next();
+      audio.calls.length = 0;
+
+      vi.advanceTimersByTime(2500);
+
+      expect(round.trackId()).toBe(2);
+      expect(audio.calls.some(c => c.startsWith('load'))).toBe(false);
+    });
+
+    it('enchaînement coupé (mouvement réduit, tests de bout en bout) : rien ne part seul', async () => {
+      store.setAutoAdvance(false);
+      await send();
+      vi.advanceTimersByTime(5000);
+
+      expect(store.autoNext()).toBe(false);
+      expect(round.trackId()).toBe(1);
+    });
+  });
+
+  describe('chrono', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('part au premier son : annoncé au serveur une seule fois, il descend chaque seconde', async () => {
+      await startRun();
+      audio.emit('playing');
+      TestBed.tick();
+
+      expect(api.calls).toContain('startClock:7:1');
+      expect(store.clockLeft()).toBe(45);
+
+      vi.advanceTimersByTime(10_000);
+      expect(store.clockShown()).toBeCloseTo(35, 0);
+
+      audio.emit('finished');
+      audio.emit('playing');
+      TestBed.tick();
+      expect(api.calls.filter(c => c.startsWith('startClock'))).toHaveLength(1);
+    });
+
+    it('les 5 dernières secondes sont en alerte ; à zéro, le temps est écoulé', async () => {
+      await startRun();
+      audio.emit('playing');
+      TestBed.tick();
+
+      vi.advanceTimersByTime(40_200);
+      expect(store.clockAlert()).toBe(true);
+      expect(store.timeUp()).toBe(false);
+
+      vi.advanceTimersByTime(5_000);
+      expect(store.timeUp()).toBe(true);
+      expect(store.clockAlert()).toBe(false);
+    });
+
+    it('se recale sur le chrono retenu par le serveur quand il reste moins de temps, jamais pour en ajouter', async () => {
+      api.clockResult = 20;
+      await startRun();
+      audio.emit('playing');
+      TestBed.tick();
+      await vi.advanceTimersByTimeAsync(200);
+
+      expect(store.clockShown()).toBeCloseTo(20, 0);
+    });
+
+    it('un serveur qui laisse plus de temps ne rallonge pas le chrono', async () => {
+      api.clockResult = 60;
+      await startRun();
+      audio.emit('playing');
+      TestBed.tick();
+      await vi.advanceTimersByTimeAsync(200);
+
+      expect(store.clockShown()).toBeCloseTo(45, 0);
+    });
+
+    it('à la reprise, il repart de ce que le serveur dit qu\'il reste, sans attendre le son', async () => {
+      api.launchResult = { kind: 'ok', play: PLAY({ session: SESSION({ clockRemainingSeconds: 12 }) }) };
+      await startRun();
+
+      expect(store.clockLeft()).toBe(12);
+      audio.emit('playing');
+      TestBed.tick();
+      expect(api.calls.some(c => c.startsWith('startClock'))).toBe(false);
+    });
+
+    it('une playlist sans chrono n\'en montre pas', async () => {
+      api.launchResult = { kind: 'ok', play: PLAY({ session: SESSION({ answerSeconds: 0 }) }) };
+      await startRun();
+      audio.emit('playing');
+      TestBed.tick();
+
+      expect(store.clockShown()).toBeNull();
+      expect(api.calls.some(c => c.startsWith('startClock'))).toBe(false);
+    });
+
+    it('la réponse arrête le chrono ; le morceau suivant repart d\'un chrono plein', async () => {
+      api.answerResult = PLAY({
+        session: SESSION({ totalScore: 100, round: ROUND({ score: 100 }), roundTracks: [TRACK()], playedTracks: [TRACK()] }),
+        revealed: TRACK(),
+        current: CURRENT({ position: 2, positionInRound: 2, previewUrl: 'https://cdn/preview-2.mp3' }),
+      });
+      await startRun();
+      audio.emit('playing');
+      TestBed.tick();
+      vi.advanceTimersByTime(20_000);
+
+      await send();
+      expect(store.clockLeft()).toBeNull();
+
+      store.next();
+      expect(store.clockShown()).toBe(45);
+      audio.emit('ready');
+      TestBed.tick();
+      audio.emit('playing');
+      TestBed.tick();
+      expect(api.calls).toContain('startClock:7:2');
     });
   });
 

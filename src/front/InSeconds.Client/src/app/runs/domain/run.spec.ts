@@ -1,9 +1,7 @@
 import {
-  RunPlay, RunRound, RunRoundSummary, RunSession, RunTrack, finishSquares, gainLabel, isFinished, objectiveBar, objectiveReached, pillOf, playSteps,
-  playedCount, trackPills,
+  RunPassedRound, RunPlay, RunRound, RunRoundSummary, RunSession, RunTrack, clockLabel, finishSquares, gainLabel, isFinished, objectiveBar,
+  playSteps, playedCount, pointsToGo, runPile, runSegments, stepPosition,
 } from './run';
-
-const played = (artistCorrect: boolean, titleCorrect: boolean, neutralized = false) => ({ neutralized, artistCorrect, titleCorrect });
 
 describe('objectiveBar', () => {
   it('place le score et le trait de l\'objectif sur le maximum de la manche', () => {
@@ -19,32 +17,32 @@ describe('objectiveBar', () => {
   });
 });
 
-describe('objectiveReached', () => {
-  it('atteint dès que le score égale l\'objectif', () => {
-    expect(objectiveReached({ score: 333, objective: 333 })).toBe(true);
-    expect(objectiveReached({ score: 332, objective: 333 })).toBe(false);
+describe('barre du run', () => {
+  it('les manches passées pleines, la manche en cours remplie de son score avec le trait de l\'objectif, les suivantes fermées', () => {
+    expect(runSegments(4, { round: 2, score: 100, objective: 250, maxScore: 500 })).toEqual([
+      { state: 'done', fill: 1, mark: null },
+      { state: 'current', fill: 0.2, mark: 0.5 },
+      { state: 'locked', fill: 0, mark: null },
+      { state: 'locked', fill: 0, mark: null },
+    ]);
+  });
+
+  it('sans manche affichée, tout est fermé', () => {
+    expect(runSegments(2, null).map(s => s.state)).toEqual(['locked', 'locked']);
+  });
+
+  it('ce qui manque pour passer, jamais négatif', () => {
+    expect(pointsToGo({ score: 120, objective: 200 })).toBe(80);
+    expect(pointsToGo({ score: 260, objective: 200 })).toBe(0);
   });
 });
 
-describe('pastilles', () => {
-  it('un morceau trouvé, à moitié, raté ou retiré a sa pastille', () => {
-    expect(pillOf(played(true, true))).toBe('found');
-    expect(pillOf(played(true, false))).toBe('half');
-    expect(pillOf(played(false, true))).toBe('half');
-    expect(pillOf(played(false, false))).toBe('missed');
-    expect(pillOf(played(true, true, true))).toBe('neutralized');
-  });
-
-  it('les morceaux joués, puis le morceau en cours, puis ceux qui restent', () => {
-    expect(trackPills(5, [played(true, true), played(true, false)], true)).toEqual(['found', 'half', 'current', 'todo', 'todo']);
-  });
-
-  it('sans morceau en cours (réponse affichée), la suite reste à jouer', () => {
-    expect(trackPills(5, [played(true, true), played(false, false), played(true, true)], false)).toEqual(['found', 'missed', 'found', 'todo', 'todo']);
-  });
-
-  it('une manche entièrement jouée n\'a plus de morceau en cours', () => {
-    expect(trackPills(2, [played(true, true), played(true, true)], true)).toEqual(['found', 'found']);
+describe('chrono', () => {
+  it('« 0:45 », « 0:04 », « 1:05 » ; arrondi à la seconde supérieure, jamais négatif', () => {
+    expect(clockLabel(45)).toBe('0:45');
+    expect(clockLabel(3.2)).toBe('0:04');
+    expect(clockLabel(65)).toBe('1:05');
+    expect(clockLabel(-1)).toBe('0:00');
   });
 });
 
@@ -61,7 +59,7 @@ describe('libellés et états', () => {
 
 const track = (position: number, overrides: Partial<RunTrack> = {}): RunTrack => ({
   position, round: Math.ceil(position / 5), neutralized: false, artistCorrect: true, titleCorrect: true, points: 100,
-  artist: 'Daft Punk', title: 'One More Time', coverUrl: null, deezerTrackId: 1, ...overrides,
+  artist: 'Daft Punk', title: 'One More Time', coverUrl: null, deezerTrackId: 1, waveform: null, ...overrides,
 });
 const withdrawn = (position: number): RunTrack => track(position, {
   neutralized: true, artistCorrect: false, titleCorrect: false, points: 0, artist: null, title: null, deezerTrackId: null,
@@ -69,48 +67,49 @@ const withdrawn = (position: number): RunTrack => track(position, {
 const round = (overrides: Partial<RunRound> = {}): RunRound => ({ round: 1, score: 0, objective: 200, maxScore: 500, ...overrides });
 const session = (overrides: Partial<RunSession> = {}): RunSession => ({
   sessionId: 1, challengeCode: 'ABC234', status: 'pending', rounds: 4, tracksPerRound: 5, listenSeconds: 10, totalScore: 0, roundsPassed: 0,
-  round: round(), roundTracks: [], finish: null, ...overrides,
+  round: round(), roundTracks: [], finish: null, answerSeconds: 45, clockRemainingSeconds: null, playedTracks: [], passedRounds: [], ...overrides,
 });
 const summary = (overrides: Partial<RunRoundSummary> = {}): RunRoundSummary => ({
-  round: 1, passed: true, score: 400, objective: 200, tracks: [1, 2, 3, 4, 5].map(p => track(p)), totalScore: 400, ...overrides,
+  round: 1, passed: true, score: 400, objective: 200, totalScore: 400, ...overrides,
 });
 const play = (overrides: Partial<RunPlay> = {}): Pick<RunPlay, 'session' | 'revealed' | 'neutralized' | 'roundSummaries'> => ({
   session: session(), revealed: null, neutralized: [], roundSummaries: [], ...overrides,
 });
 
 describe('playSteps', () => {
-  it('une réponse au milieu de la manche : sa carte seule, avec la manche à jour', () => {
+  it('une réponse au milieu de la manche : sa réponse seule, avec la manche à jour', () => {
     const steps = playSteps(play({
       session: session({ round: round({ score: 200 }), roundTracks: [track(1), track(2)] }),
       revealed: track(2),
     }), round({ score: 100 }));
 
-    expect(steps).toEqual([{ kind: 'revealed', track: track(2), round: round({ score: 200 }), tracks: [track(1), track(2)] }]);
+    expect(steps).toEqual([{ kind: 'revealed', track: track(2), round: round({ score: 200 }) }]);
+    expect(stepPosition(steps[0])).toBe(2);
   });
 
-  it('la dernière réponse de la manche : sa carte (manche du bilan), puis le bilan', () => {
+  it('la dernière réponse de la manche : sa réponse avec la manche du bilan, sans étape de bilan (la ligne de palier le remplace)', () => {
     const steps = playSteps(play({
       session: session({ round: round({ round: 2, objective: 333, maxScore: 665 }), roundTracks: [] }),
       revealed: track(5),
       roundSummaries: [summary()],
     }), round({ score: 300 }));
 
-    expect(steps.map(s => s.kind)).toEqual(['revealed', 'summary']);
+    expect(steps.map(s => s.kind)).toEqual(['revealed']);
     expect(steps[0].round).toEqual({ round: 1, score: 400, objective: 200, maxScore: 500 });
-    expect(steps[1].round).toEqual({ round: 1, score: 400, objective: 200, maxScore: 500 });
   });
 
-  it('une manche ratée a son bilan aussi, avant la fin', () => {
+  it('une manche ratée : la réponse seule, la fin suit', () => {
     const steps = playSteps(play({
       session: session({ status: 'lost', round: null }),
       revealed: track(5, { points: 0 }),
       roundSummaries: [summary({ passed: false, score: 100 })],
     }), round({ score: 100 }));
 
-    expect(steps.map(s => s.kind)).toEqual(['revealed', 'summary']);
+    expect(steps.map(s => s.kind)).toEqual(['revealed']);
+    expect(steps[0].round.score).toBe(100);
   });
 
-  it('un morceau retiré après la réponse : la carte de réponse avec l\'ancien objectif, puis le retrait avec le nouveau', () => {
+  it('un morceau retiré après la réponse : la réponse avec l\'ancien objectif, puis le retrait avec le nouveau', () => {
     const steps = playSteps(play({
       session: session({ round: round({ score: 200, objective: 160, maxScore: 400 }), roundTracks: [track(1), track(2), withdrawn(3)] }),
       revealed: track(2),
@@ -119,25 +118,21 @@ describe('playSteps', () => {
 
     expect(steps.map(s => s.kind)).toEqual(['revealed', 'neutralized']);
     expect(steps[0].round).toEqual({ round: 1, score: 200, objective: 200, maxScore: 500 });
-    expect(steps[1]).toEqual({
-      kind: 'neutralized', position: 3, objectiveBefore: 200, round: { round: 1, score: 200, objective: 160, maxScore: 400 },
-      tracks: [track(1), track(2), withdrawn(3)],
-    });
+    expect(steps[1]).toEqual({ kind: 'neutralized', position: 3, objectiveBefore: 200, round: { round: 1, score: 200, objective: 160, maxScore: 400 } });
   });
 
-  it('le dernier morceau de la manche retiré pendant la redemande d\'extrait : le retrait, puis le bilan', () => {
+  it('le dernier morceau de la manche retiré pendant la redemande d\'extrait : le retrait, avec le maximum déduit de l\'objectif', () => {
     const steps = playSteps(play({
       session: session({ round: round({ round: 2, objective: 333, maxScore: 665 }), roundTracks: [] }),
       neutralized: [{ position: 5, round: 1, objectiveBefore: 200, objectiveAfter: 160 }],
-      roundSummaries: [summary({ score: 400, objective: 160, tracks: [1, 2, 3, 4].map(p => track(p)).concat(withdrawn(5)) })],
+      roundSummaries: [summary({ score: 400, objective: 160 })],
     }), round({ score: 400 }));
 
-    expect(steps.map(s => s.kind)).toEqual(['neutralized', 'summary']);
+    expect(steps.map(s => s.kind)).toEqual(['neutralized']);
     expect(steps[0].round).toEqual({ round: 1, score: 400, objective: 160, maxScore: 400 });
-    expect(steps[1].round.maxScore).toBe(400);
   });
 
-  it('le premier morceau de la manche suivante retiré après la dernière réponse : la carte, le bilan, puis le retrait', () => {
+  it('le premier morceau de la manche suivante retiré après la dernière réponse : la réponse, puis le retrait dans la nouvelle manche', () => {
     const steps = playSteps(play({
       session: session({ round: round({ round: 2, objective: 266, maxScore: 532 }), roundTracks: [withdrawn(6)] }),
       revealed: track(5),
@@ -145,12 +140,41 @@ describe('playSteps', () => {
       roundSummaries: [summary()],
     }), round({ score: 300 }));
 
-    expect(steps.map(s => s.kind)).toEqual(['revealed', 'summary', 'neutralized']);
-    expect(steps[2]).toMatchObject({ kind: 'neutralized', round: { round: 2, score: 0, objective: 266, maxScore: 532 }, tracks: [withdrawn(6)] });
+    expect(steps.map(s => s.kind)).toEqual(['revealed', 'neutralized']);
+    expect(steps[1]).toMatchObject({ kind: 'neutralized', round: { round: 2, score: 0, objective: 266, maxScore: 532 } });
   });
 
   it('rien à montrer au lancement : aucune étape', () => {
     expect(playSteps(play(), null)).toEqual([]);
+  });
+});
+
+const passed = (round: number, score = 400): RunPassedRound => ({ round, score, objective: 200, disc: { key: 'runs.discs.wax', stars: 0 } });
+const keys = (entries: ReturnType<typeof runPile>) =>
+  entries.map(e => (e.kind === 'track' ? `${e.track.position}${e.past ? '·' : ''}` : `[${e.passed.round}]`));
+
+describe('runPile', () => {
+  const tracks = [1, 2, 3, 4, 5, 6, 7].map(p => track(p));
+
+  it('le plus récent en haut ; chaque manche passée pose sa ligne au-dessus de ses morceaux, grisés', () => {
+    expect(keys(runPile(tracks, [passed(1)]))).toEqual(['7', '6', '[1]', '5·', '4·', '3·', '2·', '1·']);
+  });
+
+  it('une manche passée sans morceau joué de la suivante : sa ligne en haut', () => {
+    expect(keys(runPile(tracks.slice(0, 5), [passed(1)]))).toEqual(['[1]', '5·', '4·', '3·', '2·', '1·']);
+  });
+
+  it('l\'étape à l\'écran : son morceau, ceux qui suivent et la ligne de sa manche attendent', () => {
+    expect(keys(runPile(tracks.slice(0, 5), [passed(1)], { position: 5, round: 1 }))).toEqual(['4', '3', '2', '1']);
+    expect(keys(runPile(tracks, [passed(1)], { position: 6, round: 2 }))).toEqual(['[1]', '5·', '4·', '3·', '2·', '1·']);
+  });
+
+  it('les morceaux retirés gardent leur place', () => {
+    expect(keys(runPile([track(1), withdrawn(2)], []))).toEqual(['2', '1']);
+  });
+
+  it('rien de joué : pile vide', () => {
+    expect(runPile([], [])).toEqual([]);
   });
 });
 

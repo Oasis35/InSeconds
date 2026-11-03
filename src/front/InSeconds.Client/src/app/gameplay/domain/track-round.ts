@@ -287,6 +287,18 @@ export function skipUnplayable(round: TrackRound): TrackRound {
   return beginSubmission(round, { artist: null, title: null });
 }
 
+/**
+ * Le temps du mode est écoulé (le chrono d'un morceau de Run) : la saisie part telle quelle, sans confirmation, une confirmation en attente
+ * comprise. Rien ne part une fois la réponse envoyée.
+ */
+export function timeUp(round: TrackRound, answer: RoundAnswer): TrackRound {
+  // Pas d'envoi seul pendant une erreur de lecture ou sans extrait : le joueur a « Réessayer / Passer » sous les yeux (le serveur compte de
+  // toute façon une réponse tardive à 0 point).
+  const settled = round.phase === 'submitting' || round.phase === 'submit-error' || round.phase === 'revealed';
+  if (settled || round.phase === 'audio-error' || round.phase === 'no-preview') return round;
+  return beginSubmission(round, answer);
+}
+
 /** L'envoi a échoué : la saisie est gardée, le joueur peut réessayer. */
 export function submissionFailed(round: TrackRound): TrackRound {
   return round.phase === 'submitting' ? { ...round, phase: 'submit-error' } : round;

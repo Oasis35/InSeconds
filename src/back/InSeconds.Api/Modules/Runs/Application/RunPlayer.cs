@@ -64,6 +64,9 @@ public sealed class RunPlayer(
                 if (preview.Url is not null && (await waveforms.GetAsync([track.TrackId], ct)).TryGetValue(track.TrackId, out var shape))
                     waveform = Convert.ToBase64String(shape);
                 current = RunViews.Current(challenge, track, preview.Url, waveform);
+                // Le chrono du morceau ne peut pas partir plus tard qu'un peu après ce premier envoi (une reprise ne le remet pas à zéro).
+                if (preview.Url is not null)
+                    session.ServeCurrent(time.GetUtcNow());
                 break;
             }
 
@@ -81,15 +84,28 @@ public sealed class RunPlayer(
         if (ended)
             await EndAsync(session, ct);
 
-        return new RunPlayResponse(await StateAsync(run, ct), revealed, neutralized, summaries, current, isResuming);
+        // Les formes des morceaux déjà joués ne partent qu'au démarrage ou à la reprise : après une réponse, le navigateur les a déjà.
+        return new RunPlayResponse(await StateAsync(run, ct, withWaveforms: answered is null), revealed, neutralized, summaries, current, isResuming);
     }
 
-    /// <summary>L'état de la partie (en-tête, jauge, pastilles, ou résultat de fin).</summary>
-    public async Task<RunSessionResponse> StateAsync(LoadedRun run, CancellationToken ct)
+    /// <summary>
+    /// L'état de la partie (en-tête, jauge, pile des morceaux joués, ou résultat de fin). <paramref name="withWaveforms"/> : la forme de chaque
+    /// morceau déjà joué, pour redessiner la pile (démarrage, reprise).
+    /// </summary>
+    public async Task<RunSessionResponse> StateAsync(LoadedRun run, CancellationToken ct, bool withWaveforms = false)
     {
         ArgumentNullException.ThrowIfNull(run);
         var record = run.Session.IsPending ? null : await store.FindRecordAsync(run.Session.PlayerId, ct);
-        return RunViews.Session(run, scoring, rules.Discs, record);
+        IReadOnlyDictionary<int, byte[]> shapes = new Dictionary<int, byte[]>();
+        if (withWaveforms && run.Session.IsPending)
+        {
+            // Seulement des morceaux déjà répondus (jamais un morceau à venir, piège 31) ; leur absence a déjà été signalée quand ils se jouaient.
+            var played = run.Session.Answers.Where(a => !a.Neutralized).Select(a => run.TrackAt(a.Position)!.TrackId).ToList();
+            if (played.Count > 0)
+                shapes = await waveforms.GetAsync(played, ct, reportMissing: false);
+        }
+
+        return RunViews.Session(run, scoring, rules.Discs, record, shapes, time.GetUtcNow());
     }
 
     // Le record (partie gagnée ou perdue), dans la transaction de fin : une partie abandonnée ne compte pas.
@@ -119,14 +135,16 @@ internal static class RunViews
     };
 
     /// <summary>Un morceau joué : révélé (noms, pochette, lien Deezer), sauf s'il a été neutralisé.</summary>
-    public static RunTrackResponse Track(RunChallengeTrack track, RunAnswer answer, IReadOnlyDictionary<int, TrackInfo> infos)
+    public static RunTrackResponse Track(
+        RunChallengeTrack track, RunAnswer answer, IReadOnlyDictionary<int, TrackInfo> infos, IReadOnlyDictionary<int, byte[]>? shapes = null)
     {
         if (answer.Neutralized)
             return new RunTrackResponse(track.Position, track.Round, true, false, false, 0, null, null, null, null);
         var info = infos[track.TrackId];
+        var waveform = shapes is not null && shapes.TryGetValue(track.TrackId, out var shape) ? Convert.ToBase64String(shape) : null;
         return new RunTrackResponse(
             track.Position, track.Round, false, answer.ArtistCorrect, answer.TitleCorrect, answer.Points,
-            info.Artist, info.DisplayTitle, info.CoverUrl, info.DeezerTrackId);
+            info.Artist, info.DisplayTitle, info.CoverUrl, info.DeezerTrackId, waveform);
     }
 
     /// <summary>Le morceau qui vient de recevoir la réponse du joueur.</summary>
@@ -146,13 +164,27 @@ internal static class RunViews
             step.Round, step.Outcome != RunStepOutcome.Lost, progress.Score, progress.Objective, PlayedTracks(run, step.Round), run.Session.TotalScore);
     }
 
-    public static RunSessionResponse Session(LoadedRun run, IRunScoringPolicy scoring, IReadOnlyList<string> discs, RunRecord? record)
+    public static RunSessionResponse Session(
+        LoadedRun run, IRunScoringPolicy scoring, IReadOnlyList<string> discs, RunRecord? record, IReadOnlyDictionary<int, byte[]> shapes,
+        DateTimeOffset now)
     {
         var (session, challenge, _) = run;
         var rules = challenge.Rules;
         RunRoundResponse? round = null;
         IReadOnlyList<RunTrackResponse> roundTracks = [];
         RunFinishResponse? finish = null;
+        // La pile, partie finie comprise : la dernière réponse s'affiche au-dessus des morceaux déjà joués avant l'écran de fin.
+        var playedTracks = session.Answers
+            .OrderBy(a => a.Position)
+            .Select(a => Track(run.TrackAt(a.Position)!, a, run.Tracks, shapes))
+            .ToList();
+        // Les manches passées sont les premières : la partie s'arrête à la première manche ratée.
+        var passedRounds = Enumerable.Range(1, session.RoundsPassed).Select(r =>
+        {
+            var passed = session.RoundProgressOf(challenge, r, scoring);
+            var disc = DiscLadder.Of(r, discs);
+            return new RunPassedRoundResponse(r, passed.Score, passed.Objective, new RunDiscResponse(disc.Key, disc.Stars));
+        }).ToList();
         if (session.IsPending)
         {
             var current = run.TrackAt(session.NextPosition)!.Round;
@@ -167,7 +199,8 @@ internal static class RunViews
 
         return new RunSessionResponse(
             session.Id, challenge.Code, StatusOf(session.Status), RoundsOf(challenge).Count, rules.TracksPerRound, rules.ListenSeconds,
-            session.TotalScore, session.RoundsPassed, round, roundTracks, finish);
+            session.TotalScore, session.RoundsPassed, round, roundTracks, finish,
+            rules.AnswerSeconds, session.IsPending ? session.ClockRemaining(rules, now) : null, playedTracks, passedRounds);
     }
 
     private static RunFinishResponse Finish(LoadedRun run, IRunScoringPolicy scoring, IReadOnlyList<string> discs, RunRecord? record)

@@ -1,12 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom, retry, throwError, timer } from 'rxjs';
 import {
-  RunChallengeResponse, RunComparisonResponse, RunCurrentTrackResponse, RunFinishResponse, RunNeutralizedResponse, RunPlayResponse, RunRecordResponse, RunRoundResponse, RunRoundScoreResponse,
+  RunChallengeResponse, RunComparisonResponse, RunCurrentTrackResponse, RunFinishResponse, RunNeutralizedResponse, RunPassedRoundResponse, RunPlayResponse, RunRecordResponse, RunRoundResponse, RunRoundScoreResponse,
   RunRoundSummaryResponse, RunSessionResponse, RunTrackResponse, RunsClient, RunsMeResponse,
 } from '../../api/runs/api.generated';
 import { toAppError } from '../../core/errors/app-error';
 import {
-  RunComparison, RunCurrentTrack, RunFinish, RunLink, RunNeutralized, RunPlay, RunRecord, RunRound, RunRoundScore, RunRoundSummary, RunSession, RunStatus, RunTrack, RunsMe,
+  RunComparison, RunCurrentTrack, RunFinish, RunLink, RunNeutralized, RunPassedRound, RunPlay, RunRecord, RunRound, RunRoundScore, RunRoundSummary, RunSession, RunStatus, RunTrack, RunsMe,
 } from '../domain/run';
 
 /** Les refus que le jeu connaît : ils deviennent des issues, pas des erreurs. */
@@ -102,6 +102,16 @@ export class RunsApi {
     return toPlay(await firstValueFrom(request));
   }
 
+  /**
+   * Le premier son du morceau en cours est sorti : le chrono part (une seule fois, le serveur garde la première annonce et la borne). Un
+   * échec n'empêche pas de jouer : sans annonce, le serveur fait partir le chrono à sa limite après l'envoi de l'extrait.
+   */
+  /** Annonce le premier son du morceau ; rend ce qui reste au chrono retenu par le serveur (`null` sans chrono). */
+  async startClock(sessionId: number, position: number): Promise<number | null> {
+    const clock = await firstValueFrom(this.client.startRunClock(sessionId, { position }));
+    return clock?.clockRemainingSeconds ?? null;
+  }
+
   async abandon(sessionId: number): Promise<void> {
     await firstValueFrom(this.client.abandonRun(sessionId));
   }
@@ -137,6 +147,7 @@ function toLink(link: RunChallengeResponse): RunLink {
     rounds: link.rounds,
     tracksPerRound: link.tracksPerRound,
     listenSeconds: link.listenSeconds,
+    answerSeconds: link.answerSeconds,
     myStatus: link.myStatus === 'none' ? 'none' : toStatus(link.myStatus),
     mySessionId: link.mySessionId ?? null,
   };
@@ -182,7 +193,12 @@ export function toTrack(track: RunTrackResponse): RunTrack {
     title: track.title ?? null,
     coverUrl: track.coverUrl ?? null,
     deezerTrackId: track.deezerTrackId ?? null,
+    waveform: track.waveform ?? null,
   };
+}
+
+function toPassedRound(round: RunPassedRoundResponse): RunPassedRound {
+  return { round: round.round, score: round.score, objective: round.objective, disc: { key: round.disc.key, stars: round.disc.stars } };
 }
 
 function toRound(round: RunRoundResponse | undefined): RunRound | null {
@@ -222,6 +238,10 @@ function toSession(session: RunSessionResponse): RunSession {
     round: toRound(session.round),
     roundTracks: session.roundTracks.map(toTrack),
     finish: toFinish(session.finish),
+    answerSeconds: session.answerSeconds ?? 0,
+    clockRemainingSeconds: session.clockRemainingSeconds ?? null,
+    playedTracks: (session.playedTracks ?? []).map(toTrack),
+    passedRounds: (session.passedRounds ?? []).map(toPassedRound),
   };
 }
 
@@ -241,7 +261,6 @@ function toSummary(summary: RunRoundSummaryResponse): RunRoundSummary {
     passed: summary.passed,
     score: summary.score,
     objective: summary.objective,
-    tracks: summary.tracks.map(toTrack),
     totalScore: summary.totalScore,
   };
 }

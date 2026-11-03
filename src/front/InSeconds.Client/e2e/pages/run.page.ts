@@ -5,9 +5,9 @@ import type { RunTrack } from '../fixtures/api-client';
 const BASE = process.env['CI'] ? 'http://localhost:5175' : 'http://localhost:5177';
 
 /**
- * Le mode Run (« Platines », `/runs`) : l'accueil du mode, la manche (lecteur et saisie du jeu du jour, carte de réponse ou du morceau
- * retiré), le bilan de la manche et la fin. L'écoute est fixe (10 s) et la saisie est là dès que le son se charge : on répond sans attendre
- * la fin de l'extrait.
+ * Le mode Run (« Platines », `/runs`) : l'accueil du mode, la partie (la carte du morceau avec son chrono, sa réponse ou le morceau retiré,
+ * puis la pile des morceaux joués et des manches passées) et la fin. L'écoute est fixe (10 s) et la saisie est là dès que le son se charge :
+ * on répond sans attendre la fin de l'extrait. Les animations coupées, la partie ne s'enchaîne pas seule : « Morceau suivant » à chaque fois.
  */
 export class RunPage {
   readonly homeCard: Locator;
@@ -18,16 +18,13 @@ export class RunPage {
   readonly confirmSubmitButton: Locator;
   readonly roundTitle: Locator;
   readonly totalScore: Locator;
-  readonly position: Locator;
+  readonly toGo: Locator;
+  readonly clock: Locator;
+  readonly pileTracks: Locator;
+  readonly paliers: Locator;
   readonly answerCard: Locator;
   readonly withdrawnCard: Locator;
   readonly nextTrackButton: Locator;
-  readonly objectivePoints: Locator;
-  readonly objectiveBefore: Locator;
-  readonly roundEnd: Locator;
-  readonly roundEndTitle: Locator;
-  readonly objectiveLabel: Locator;
-  readonly nextRoundButton: Locator;
   readonly finished: Locator;
   readonly disc: Locator;
   readonly record: Locator;
@@ -56,16 +53,13 @@ export class RunPage {
     this.confirmSubmitButton = page.getByRole('button', { name: 'Valider quand même' });
     this.roundTitle          = page.getByTestId('run-round-title');
     this.totalScore          = page.getByTestId('run-total-score');
-    this.position            = page.getByTestId('run-position');
+    this.toGo                = page.getByTestId('run-to-go');
+    this.clock               = page.getByTestId('run-clock');
+    this.pileTracks          = page.getByTestId('run-pile-track');
+    this.paliers             = page.getByTestId('run-palier');
     this.answerCard          = page.getByTestId('run-answer');
     this.withdrawnCard       = page.getByTestId('run-withdrawn');
     this.nextTrackButton     = page.getByTestId('run-next-track');
-    this.objectivePoints     = page.getByTestId('run-objective-points');
-    this.objectiveBefore     = page.getByTestId('run-objective-before');
-    this.roundEnd            = page.getByTestId('run-round-end');
-    this.roundEndTitle       = page.getByTestId('run-round-end-title');
-    this.objectiveLabel      = page.getByTestId('run-objective-label');
-    this.nextRoundButton     = page.getByTestId('run-next-round');
     this.finished            = page.getByTestId('run-finished');
     this.disc                = page.getByTestId('run-disc');
     this.record              = this.finished.getByTestId('run-record');
@@ -136,7 +130,7 @@ export class RunPage {
     await this.answerCard.waitFor({ state: 'visible' });
   }
 
-  /** Répond juste à ce morceau, vérifie la carte de réponse, puis « Morceau suivant » (ou « Fin de la manche »). */
+  /** Répond juste à ce morceau, vérifie sa réponse dans la carte, puis « Morceau suivant ». */
   async answerRight(track: RunTrack): Promise<void> {
     await this.answer(`${track.artist} - ${track.title}`);
     await expect(this.answerCard.getByTestId('run-answer-artist-verdict')).toContainText('✓');
@@ -144,27 +138,26 @@ export class RunPage {
     await this.nextTrackButton.click();
   }
 
-  /** Passe ce morceau (réponse vide, 0 point), puis « Morceau suivant » (ou « Fin de la manche »). */
+  /** Passe ce morceau (réponse vide, 0 point), puis « Morceau suivant ». */
   async answerEmpty(): Promise<void> {
     await this.answer(null);
     await expect(this.answerCard.getByTestId('run-answer-artist-verdict')).toContainText('✗');
     await this.nextTrackButton.click();
   }
 
-  /** Rate la première manche (5 réponses vides, 0 point, objectif manqué) : son bilan, puis l'écran de fin d'une partie perdue. */
+  /** Rate la première manche (5 réponses vides, 0 point, objectif manqué) : la dernière réponse mène à l'écran de fin d'une partie perdue. */
   async loseFirstRound(): Promise<void> {
     await inSequence([1, 2, 3, 4], () => this.answerEmpty());
     await this.answer(null);
+    await expect(this.nextTrackButton).toHaveText(/Voir le résultat/i);
     await this.nextTrackButton.click();
-    await expect(this.roundEndTitle).toHaveText('Manche 1 terminée');
-    await this.nextRoundButton.click();
     await expect(this.finished).toHaveAttribute('data-status', 'lost');
   }
 
-  /** Répond juste à tous les morceaux d'une manche, jusqu'à son bilan. */
+  /** Répond juste à tous les morceaux d'une manche ; la ligne de la manche se pose dans la pile (sauf à la dernière, qui mène à la fin). */
   async winRound(tracks: RunTrack[], round: number): Promise<void> {
-    await expect(this.roundTitle).toHaveText(new RegExp(`Manche ${round} / 4`, 'i'));
+    await expect(this.roundTitle).toHaveText(`Manche ${round}`);
     await inSequence(tracks.filter(t => t.round === round), track => this.answerRight(track));
-    await expect(this.roundEndTitle).toHaveText(`Manche ${round} terminée`);
+    if (round < 4) await expect(this.paliers).toHaveCount(round);
   }
 }
