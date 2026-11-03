@@ -29,7 +29,6 @@
     "admin": {
       "day_not_over": "This day isn't over yet: the stats will be frozen tomorrow.",
       "invalid_date": "Invalid date: the expected format is yyyy-mm-dd.",
-      "invalid_period": "Invalid period: the start date must come before the end date, one year at most.",
       "pool_insufficient": "Pool too small: add tracks with a preview."
     },
     "players": {
@@ -440,31 +439,6 @@
       "saveCooldown": "Save",
       "cooldownSaved": "Cooldown updated.",
       "cooldownError": "Error while updating.",
-      "weeklyStory": {
-        "title": "Weekly Instagram stories",
-        "hint": "2 visuals (1080×1920) covering the chosen period (last 7 days by default): most found (add the Music sticker in Instagram) and most missed (add a \"Did you know it?\" poll). Add the Link sticker to the site on both.",
-        "generate": "Generate weekly stories",
-        "generating": "Generating...",
-        "showGuides": "Sticker guides",
-        "showPercent": "Show percentage",
-        "from": "From",
-        "to": "To",
-        "titleLabel": "Title",
-        "titleModes": {
-          "thisWeek": "This week",
-          "lastWeek": "Last week",
-          "custom": "Custom text"
-        },
-        "customTitlePlaceholder": "Title shown at the top of the stories",
-        "invalidPeriod": "The start date must be before the end date.",
-        "insufficient": "Not enough answers this week (at least {{ min }} per track).",
-        "error": "Error while generating the stories.",
-        "onlyOne": "Only one track has enough answers: no \"most missed\" story this week.",
-        "found": "Most found",
-        "missed": "Most missed",
-        "download": "Download",
-        "downloadAll": "Download all"
-      },
       "cooldownInvalid": "Enter a whole percentage, from {{ min }} to {{ max }}.",
       "cooldownPercent": "Share of the pool in cooldown",
       "cooldownAppliedDay": "Applied today: {{ days }} day · {{ count }} playable tracks",
@@ -739,23 +713,6 @@
     "common": {
       "abandon": "Give up",
       "loading": "Loading the challenge…"
-    },
-    "thanks": {
-      "titleBefore": "Thanks for keeping ",
-      "titleAfter": " alive!",
-      "feedbackBefore": "Thank you for all your feedback, your shares and the ",
-      "games": "more than {{ count }} games",
-      "feedbackAfter": " played.",
-      "feedbackNoCount": "Thank you for all your feedback, your shares and every game played.",
-      "regulars": "It really warms my heart to see players coming back again and again.",
-      "nextBefore": "The adventure isn't over: a ",
-      "newMode": "new game mode",
-      "nextAfter": " is in the works 🫢",
-      "challenge": "Challenge a friend",
-      "continue": "Continue",
-      "challengeText": "I play InSeconds, one blind test a day. Can you beat me?\n{{ url }}",
-      "copied": "Link copied, just paste it",
-      "copyFailed": "Couldn't copy to the clipboard."
     },
     "archive": {
       "titlePrefix": "Blind test of",

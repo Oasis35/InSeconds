@@ -17,7 +17,6 @@ export const ERROR_MESSAGE_KEYS: Readonly<Record<string, string>> = {
   // Admin (le module Daily range ses codes de l'admin sous `admin.*`, cf. DailyErrorCodes.cs)
   'admin.day_not_over': 'errors.admin.day_not_over',
   'admin.invalid_date': 'errors.admin.invalid_date',
-  'admin.invalid_period': 'errors.admin.invalid_period',
   'admin.pool_insufficient': 'errors.admin.pool_insufficient',
 
   // Catalogue

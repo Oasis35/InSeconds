@@ -114,11 +114,6 @@ export class DailyApi {
   async archivePreviewUrl(date: string, position: number): Promise<string | null> {
     return (await firstValueFrom(this.client.getArchivePreview(date, position))).previewUrl ?? null;
   }
-
-  /** Toutes les parties terminées, tous jours confondus : le chiffre du message de remerciement. */
-  async gamesPlayed(): Promise<number> {
-    return (await firstValueFrom(this.client.getGamesPlayed())).completedGames;
-  }
 }
 
 /** Une coupure réseau (statut 0) ou une erreur du serveur (5xx) : la réponse est renvoyée ; un refus applicatif (4xx) ne l'est jamais. */
