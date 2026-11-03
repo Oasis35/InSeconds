@@ -10,7 +10,6 @@ import { ChallengesApi } from './challenges.api';
 import { DashboardApi } from './dashboard.api';
 import { JobsApi } from './jobs.api';
 import { AdminPlayersApi } from './players.api';
-import { WeeklyStoryApi } from './weekly-story.api';
 
 /** Adresse du tableau de bord des tâches planifiées (Hangfire), servi par l'API et réservé aux admins (`/jobs`, S3). */
 export const JOBS_DASHBOARD_URL = new InjectionToken<string>('JOBS_DASHBOARD_URL');
@@ -29,6 +28,6 @@ export function provideAdminApi(): Provider[] {
     { provide: RUNS_API_BASE_URL, useValue: environment.apiUrl },
     { provide: JOBS_DASHBOARD_URL, useValue: `${environment.apiUrl}/jobs` },
     AdminClient, CatalogueClient, DailyClient, RunsClient,
-    ActionsApi, CatalogueApi, ChallengesApi, DashboardApi, JobsApi, AdminPlayersApi, WeeklyStoryApi,
+    ActionsApi, CatalogueApi, ChallengesApi, DashboardApi, JobsApi, AdminPlayersApi,
   ];
 }

@@ -2,7 +2,7 @@ namespace InSeconds.IntegrationTests.Testing;
 
 /// <summary>
 /// Document OpenAPI du module Daily : servi par l'hôte de test seulement, pour générer le client NSwag du
-/// front du jeu. Deux préfixes : les routes du joueur et celles de l'admin (défi du jour, statistiques, récap).
+/// front du jeu. Deux préfixes : les routes du joueur et celles de l'admin (défi du jour, statistiques, joueurs).
 /// </summary>
 public class DailyOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(postgres, "daily")
 {
@@ -14,7 +14,7 @@ public class DailyOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(
         Assert.Equal(
             [
                 "abandonSession", "getAdminDailySettings", "getArchiveDay", "getArchiveIndex", "getArchivePreview", "getChallengeStats", "getDailySettings", "getDashboard",
-                "getGamesPlayed", "getMyArchiveDay", "getPlayerHistory", "getToday", "getTodayStats", "getWeeklyRecap", "listChallenges", "listRegisteredPlayers", "recomputeDayStats", "requestHint",
+                "getMyArchiveDay", "getPlayerHistory", "getToday", "getTodayStats", "listChallenges", "listRegisteredPlayers", "recomputeDayStats", "requestHint",
                 "startSession", "submitAnswer", "updateListening", "updateTrackCooldownPoolPercent",
             ],
             OperationIds(document).Order(StringComparer.Ordinal));

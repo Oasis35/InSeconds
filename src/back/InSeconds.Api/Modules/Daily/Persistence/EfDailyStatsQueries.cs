@@ -47,9 +47,6 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
         return new PlayerSessionRow(session.Status, session.TotalScore, session.FreezesUsed, session.FreezeEarned, answers);
     }
 
-    public Task<int> CountCompletedSessionsAsync(CancellationToken ct) =>
-        db.Set<DailySession>().AsNoTracking().CountAsync(s => s.Status == SessionStatus.Completed, ct);
-
     public async Task<IReadOnlyList<DaySessionRow>> GetSessionsAsync(int challengeId, CancellationToken ct) =>
         await db.Set<DailySession>().AsNoTracking()
             .Where(s => s.ChallengeId == challengeId)
@@ -184,20 +181,4 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
                orderby c.Date descending
                select new PlayerHistoryRow(c.Date, s.Status, s.TotalScore, s.FreezesUsed, s.FreezeEarned))
             .ToListAsync(ct);
-
-    public async Task<IReadOnlyList<TrackTally>> GetTrackTalliesAsync(DateOnly fromDay, DateOnly toDay, CancellationToken ct)
-    {
-        var rows =
-            from a in db.Set<SessionAnswer>().AsNoTracking()
-            join s in db.Set<DailySession>().AsNoTracking() on a.SessionId equals s.Id
-            join c in db.Set<DailyChallenge>().AsNoTracking() on s.ChallengeId equals c.Id
-            join t in db.Set<ChallengeTrack>().AsNoTracking() on new { ChallengeId = c.Id, a.Position } equals new { t.ChallengeId, t.Position }
-            where c.Date >= fromDay && c.Date <= toDay
-            select new { t.TrackId, a.ArtistCorrect, a.TitleCorrect };
-
-        return await rows
-            .GroupBy(r => r.TrackId)
-            .Select(g => new TrackTally(g.Key, g.Count(), g.Count(r => r.ArtistCorrect && r.TitleCorrect)))
-            .ToListAsync(ct);
-    }
 }

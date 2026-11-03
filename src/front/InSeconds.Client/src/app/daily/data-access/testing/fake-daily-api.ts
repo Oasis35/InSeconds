@@ -76,7 +76,6 @@ export class FakeDailyApi {
   settings: DailySettings | Error = SETTINGS;
   start: StartOutcome | Error = { kind: 'ok', session: SESSION() };
   stats: DayStats | Error = STATS();
-  gamesPlayed: number | Error = 2559;
   archiveDates: string[] | Error = ['2026-10-21', '2026-10-20'];
   /** Les jours publiés, par date ; une date absente n'est pas publiée (`null`). */
   archiveDays: Record<string, ArchiveDay | Error> = { '2026-10-21': ARCHIVE_DAY() };
@@ -126,11 +125,6 @@ export class FakeDailyApi {
     return Promise.resolve();
   }
 
-  gamesPlayedCall(): Promise<number> {
-    this.calls.push('gamesPlayed');
-    return this.result(this.gamesPlayed);
-  }
-
   archiveDatesCall(): Promise<string[]> {
     this.calls.push('archiveDates');
     return this.result(this.archiveDates);
@@ -157,7 +151,7 @@ export class FakeDailyApi {
   }
 }
 
-/** Branche le faux sous le vrai nom des méthodes de `DailyApi` (`today`, `settings`, `start`, `stats`, `gamesPlayed` sont des champs de données du faux). */
+/** Branche le faux sous le vrai nom des méthodes de `DailyApi` (`today`, `settings`, `start`, `stats` sont des champs de données du faux). */
 export function provideFakeDailyApi(fake: FakeDailyApi): Provider {
   return {
     provide: DailyApi,
@@ -170,7 +164,6 @@ export function provideFakeDailyApi(fake: FakeDailyApi): Provider {
       submitAnswer: (s: number, a: AnswerToSend) => fake.submitAnswer(s, a),
       abandon: (s: number) => fake.abandon(s),
       stats: () => fake.statsCall(),
-      gamesPlayed: () => fake.gamesPlayedCall(),
       archiveDates: () => fake.archiveDatesCall(),
       archiveDay: (date: string) => fake.archiveDayCall(date),
       myArchiveDay: (date: string) => fake.myArchiveDayCall(date),

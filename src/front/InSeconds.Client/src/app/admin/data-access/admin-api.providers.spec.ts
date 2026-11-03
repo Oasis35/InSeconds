@@ -14,7 +14,6 @@ import { ChallengesApi } from './challenges.api';
 import { DashboardApi } from './dashboard.api';
 import { JobsApi } from './jobs.api';
 import { AdminPlayersApi } from './players.api';
-import { WeeklyStoryApi } from './weekly-story.api';
 
 describe('provideAdminApi', () => {
   function routeInjector(): EnvironmentInjector {
@@ -43,7 +42,7 @@ describe('provideAdminApi', () => {
   it("fournit les adaptateurs de l'admin, qui ne sont pas des services de la racine", () => {
     const injector = routeInjector();
 
-    const apis: Type<unknown>[] = [ActionsApi, CatalogueApi, ChallengesApi, DashboardApi, JobsApi, AdminPlayersApi, WeeklyStoryApi];
+    const apis: Type<unknown>[] = [ActionsApi, CatalogueApi, ChallengesApi, DashboardApi, JobsApi, AdminPlayersApi];
     for (const api of apis) {
       expect(injector.get(api)).toBeInstanceOf(api);
       expect(() => TestBed.inject(api)).toThrow();

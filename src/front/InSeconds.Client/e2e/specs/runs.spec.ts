@@ -212,7 +212,6 @@ test.describe('Mode Platines', () => {
       (window as { __disableAnimations?: boolean }).__disableAnimations = true;
       (window as { __disableHealthPolling?: boolean }).__disableHealthPolling = true;
       localStorage.setItem('lang', 'fr');
-      localStorage.setItem('inseconds.thanksNoticeSeen', 'v2-launch');
     });
     const friend = new RunPage(friendPage);
     await friend.openLink(code);
