@@ -775,6 +775,10 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("challenge_id");
 
+                    b.Property<DateTimeOffset?>("CurrentClockAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("current_clock_at");
+
                     b.Property<decimal?>("CurrentListenedSeconds")
                         .HasPrecision(4, 2)
                         .HasColumnType("numeric(4,2)")
@@ -783,6 +787,10 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                     b.Property<short?>("CurrentPosition")
                         .HasColumnType("smallint")
                         .HasColumnName("current_position");
+
+                    b.Property<DateTimeOffset?>("CurrentServedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("current_served_at");
 
                     b.Property<DateTimeOffset?>("EndedAt")
                         .HasColumnType("timestamp with time zone")

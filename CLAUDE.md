@@ -90,6 +90,7 @@ Une ligne par réglage : `key` = chemin de configuration complet, `value` en `js
 | `Daily:HintPenaltyPercent` | `{"1":30,"2":60}` | |
 | `Daily:StreakFreezeEveryDays` / `StreakFreezeMax` / `StreakLostNudgeMinDays` | `7` / `2` / `2` | gel de série |
 | `Runs:Rounds` / `TracksPerRound` / `ListenSeconds` | `4` / `5` / `10` | manches, morceaux par manche, écoute fixe ; figés dans chaque défi à sa création, contrôlés au démarrage **et** à l'usage |
+| `Runs:AnswerSeconds` | `45` | chrono d'un morceau, du premier son à la réponse (réécoutes comprises), figé dans chaque défi ; 0 : pas de chrono ; une réponse en retard vaut 0 point |
 | `Runs:ThresholdPercents` / `MinMultiplier` / `MaxMultiplier` / `Discs` | `[40,50,60,70]` / `1` / `2` / clés `runs.discs.*` | jauge par manche, multiplicateur de points de la première à la dernière manche, disques (clés de traduction) |
 | `Catalogue:CoverUrlTemplate` | `https://cdn-images.dzcdn.net/images/cover/{hash}/250x250-000000-80-0-0.jpg` | |
 | `Catalogue:Refresh:BatchSize` / `BatchDelay` | `10` / 1,5 s | cadence du contrôle nocturne des extraits |

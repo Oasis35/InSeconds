@@ -9,10 +9,10 @@ namespace InSeconds.Api.Modules.Catalogue.Application;
 /// </summary>
 public sealed class LoggedTrackWaveforms(Persistence.EfTrackWaveforms inner, ILogger<LoggedTrackWaveforms> logger) : ITrackWaveforms
 {
-    public async Task<IReadOnlyDictionary<int, byte[]>> GetAsync(IReadOnlyCollection<int> trackIds, CancellationToken ct)
+    public async Task<IReadOnlyDictionary<int, byte[]>> GetAsync(IReadOnlyCollection<int> trackIds, CancellationToken ct, bool reportMissing = true)
     {
         var found = await inner.GetAsync(trackIds, ct);
-        foreach (var id in trackIds.Where(id => !found.ContainsKey(id)))
+        foreach (var id in trackIds.Where(id => reportMissing && !found.ContainsKey(id)))
             CatalogueLog.TrackWithoutWaveform(logger, id);
         return found;
     }

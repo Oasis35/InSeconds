@@ -11,9 +11,13 @@ namespace InSeconds.Api.Modules.Runs.Application;
 /// <param name="Round">Sa manche, à partir de 1.</param>
 /// <param name="Neutralized">Deezer n'avait plus d'extrait : le morceau ne compte pas.</param>
 /// <param name="Points">Ses points, au multiplicateur de sa manche.</param>
+/// <param name="Waveform">
+/// La forme de son extrait en base64, pour la ligne grisée de la pile ; seulement dans <see cref="RunSessionResponse.PlayedTracks"/> d'un démarrage
+/// ou d'une reprise (après une réponse, le navigateur a déjà la forme du morceau qu'il vient de jouer), et vide si elle n'est pas calculée.
+/// </param>
 public sealed record RunTrackResponse(
     int Position, int Round, bool Neutralized, bool ArtistCorrect, bool TitleCorrect, int Points,
-    string? Artist, string? Title, string? CoverUrl, long? DeezerTrackId);
+    string? Artist, string? Title, string? CoverUrl, long? DeezerTrackId, string? Waveform = null);
 
 /// <summary>La manche en cours : la jauge.</summary>
 /// <param name="Score">Les points de la manche.</param>
@@ -40,6 +44,10 @@ public sealed record RunNeutralizedResponse(int Position, int Round, int Objecti
 /// <param name="Tracks">Ses morceaux, révélés, avec leurs points.</param>
 /// <param name="TotalScore">Le score total de la partie à la fin de cette manche.</param>
 public sealed record RunRoundSummaryResponse(int Round, bool Passed, int Score, int Objective, IReadOnlyList<RunTrackResponse> Tracks, int TotalScore);
+
+/// <summary>Une manche passée de la partie en cours : la ligne de palier de la pile (« Disque de bronze · manche 2 · 412 / 333 »).</summary>
+/// <param name="Disc">Le disque que cette manche a fait gagner (la clé de traduction).</param>
+public sealed record RunPassedRoundResponse(int Round, int Score, int Objective, RunDiscResponse Disc);
 
 /// <summary>Le score d'une manche à l'écran de fin ; score et objectif vides pour une manche non jouée.</summary>
 public sealed record RunRoundScoreResponse(int Round, int? Score, int? Objective, bool Passed);
@@ -71,9 +79,14 @@ public sealed record RunFinishResponse(
 /// <param name="Round">La manche en cours ; vide une fois la partie finie.</param>
 /// <param name="RoundTracks">Les morceaux déjà joués de la manche en cours (les pastilles), neutralisés compris.</param>
 /// <param name="Finish">Le résultat de fin ; vide tant que la partie est en cours.</param>
+/// <param name="AnswerSeconds">Le chrono d'un morceau (règles figées) ; 0 : pas de chrono.</param>
+/// <param name="ClockRemainingSeconds">Ce qui reste au chrono du morceau en cours s'il est parti (une reprise en plein morceau), vide sinon.</param>
+/// <param name="PlayedTracks">Tous les morceaux déjà joués de la partie, toutes manches, par position (la pile de l'écran de jeu).</param>
+/// <param name="PassedRounds">Les manches déjà passées (les lignes de palier de la pile).</param>
 public sealed record RunSessionResponse(
     int SessionId, string ChallengeCode, string Status, int Rounds, int TracksPerRound, decimal ListenSeconds, int TotalScore, int RoundsPassed,
-    RunRoundResponse? Round, IReadOnlyList<RunTrackResponse> RoundTracks, RunFinishResponse? Finish);
+    RunRoundResponse? Round, IReadOnlyList<RunTrackResponse> RoundTracks, RunFinishResponse? Finish,
+    int AnswerSeconds, decimal? ClockRemainingSeconds, IReadOnlyList<RunTrackResponse> PlayedTracks, IReadOnlyList<RunPassedRoundResponse> PassedRounds);
 
 /// <summary>
 /// Ce que rendent le lancement, le démarrage ou la reprise, la redemande d'extrait et la réponse : l'état à jour, puis, dans l'ordre des manches, ce

@@ -17,7 +17,7 @@ Règles validées par Clément le 17/10/2026. Les écrans qui les montrent : [`e
 2. **Écoute fixe de 10 s**, d'un seul tenant (pas de paliers comme au Daily, pas d'« écouter plus »). La relecture du lecteur du Daily reste possible : pas de limite de réécoute au proto 1.
 3. Le joueur tape **« Artiste - Titre »** dans un seul champ, avec l'autocomplétion Deezer du Daily, puis **Valider**. Valider un champ vide demande une confirmation.
 4. **Passer** donne 0 point, après confirmation.
-5. **Pas d'indice, pas de chrono** : la partie se joue à l'honneur, comme sur Bandle ou Heardle (décidé le 17/10). Un chrono ne viendra que si les parties de test montrent des abus.
+5. **Pas d'indice, un chrono de 45 s par morceau** (`Runs:AnswerSeconds`, décidé le 03/11) : il part au premier son et compte l'écoute, les réécoutes et la saisie. Réécouter reste libre, mais chaque écoute prend 10 s du chrono. Une réponse arrivée après le chrono (5 s de marge réseau) vaut 0 point ; à zéro, le navigateur envoie ce qui est tapé. Le chrono continue pendant une absence : à la reprise, il reste ce qui restait, ou le morceau vaut 0. Le serveur fait foi (heure du premier son, au plus 30 s après l'envoi de l'extrait).
 6. **La réponse s'affiche aussitôt** dans l'écran de la manche : pochette, artiste et titre, ce qui était juste (artiste, titre), les points gagnés, la jauge qui avance. Le joueur passe au morceau suivant quand il veut.
 
 ## Les points

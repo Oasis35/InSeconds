@@ -78,6 +78,7 @@ Runs possède ses autorisations (`runs.access`), **Players n'est pas modifié**.
 | `POST /api/runs/challenges/{code}/sessions` | relève le défi, ou reprend sa partie en cours dessus (comme `POST /api/daily/sessions`) |
 | `GET /api/runs/sessions/{id}` | l'état d'une partie (reprise, fin de manche, écran de fin), en lecture seule : sans extrait, qui arrive avec le démarrage, la reprise, une réponse ou `POST …/preview` |
 | `PATCH /api/runs/sessions/{id}/listening` | note l'écoute du morceau en cours |
+| `POST /api/runs/sessions/{id}/clock` | le premier son du morceau en cours : le chrono part |
 | `POST /api/runs/sessions/{id}/preview` | l'adresse de l'extrait **du morceau en cours seulement** (jamais d'un morceau futur) |
 | `POST /api/runs/sessions/{id}/answers` | répond au morceau en cours (ou le passe) ; révèle le morceau et les points ; une transaction (réponse, manche, fin, record) |
 | `POST /api/runs/sessions/{id}/abandon` | abandon |
@@ -221,7 +222,7 @@ L'interrupteur « Platines » de l'onglet Joueurs lit `GET /api/admin/runs/acces
 5. Genre de l'album stocké dès maintenant (#361) : validé et fait (Clément, 20/10) ; `TrackInfo.Genres`, aucun mode ne s'en sert encore.
 6. Usage des morceaux déclaré par chaque mode : proposé après la revue, repris.
 7. Morceau sans extrait au moment de jouer : neutralisé (Clément, 17/10).
-8. Temps de réponse : aucun chrono, partie à l'honneur, réécoute libre (Clément, 17/10). Un chrono `Runs:AnswerSeconds` ne sera ajouté que si les parties de test montrent des abus ; limiter les réécoutes reste un bonus ou un malus possible du proto 2.
+8. Temps de réponse : chrono de 45 s par morceau (`Runs:AnswerSeconds`, Clément, 03/11), réécoute libre dans ce temps ; détail dans [regles.md](regles.md) (règle 5) et `src/back/CLAUDE.md` (`POST …/clock`).
 9. Entrée sur l'accueil : la carte seulement (option A), rien d'autre ne change sur l'accueil ni sur « déjà joué » (Clément, 17/10).
 10. Les maquettes de [`ecrans.md`](ecrans.md) font référence, dont la réponse après chaque morceau dans l'écran de manche (Clément, 17/10).
 11. À l'écran, le défi s'appelle une **playlist** partout (titres, boutons, comparaison) ; le code et cette conception gardent `challenge` / « défi » (Clément, 18/10).

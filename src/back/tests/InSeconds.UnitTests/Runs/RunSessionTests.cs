@@ -195,6 +195,80 @@ public class RunSessionTests
 
         Assert.Throws<ArgumentException>(() => session.Answer(Challenge(), Found, Scoring, Now));
     }
+
+    private static RunChallenge ClockedChallenge() => Challenge(RunsOptions.DefaultRules());
+
+    [Fact]
+    public void LeChrono_PartAuPremierSon_UneSeuleFois()
+    {
+        var challenge = ClockedChallenge();
+        var session = Start();
+        session.ServeCurrent(Now);
+
+        session.StartClock(Now.AddSeconds(3));
+        session.StartClock(Now.AddSeconds(20));
+
+        Assert.Equal(Now.AddSeconds(3), session.CurrentClockAt);
+        Assert.Equal(45m - 7m, session.ClockRemaining(challenge.Rules, Now.AddSeconds(10)));
+        Assert.Equal(0m, session.ClockRemaining(challenge.Rules, Now.AddMinutes(5)));
+    }
+
+    [Fact]
+    public void LeChrono_NePartJamaisPlusTardQueLaLimiteApresLEnvoi()
+    {
+        var session = Start();
+        session.ServeCurrent(Now);
+        session.ServeCurrent(Now.AddMinutes(1));
+
+        session.StartClock(Now.AddMinutes(2));
+
+        Assert.Equal(Now + RunSession.MaxClockWait, session.CurrentClockAt);
+    }
+
+    [Fact]
+    public void UneReponseTardive_CommeUnMorceauPasse_LaMargeReseauComprise()
+    {
+        var challenge = ClockedChallenge();
+        var session = Start();
+        session.ServeCurrent(Now);
+        session.StartClock(Now);
+
+        Assert.False(session.IsLate(challenge.Rules, Now.AddSeconds(50)));
+        Assert.True(session.IsLate(challenge.Rules, Now.AddSeconds(51)));
+        session.Answer(challenge, Found, Scoring, Now.AddSeconds(51));
+
+        var answer = Assert.Single(session.Answers);
+        Assert.Equal((false, false, 0), (answer.ArtistCorrect, answer.TitleCorrect, answer.Points));
+        // Le morceau suivant repart sans envoi ni chrono.
+        Assert.Null(session.CurrentServedAt);
+        Assert.Null(session.CurrentClockAt);
+    }
+
+    [Fact]
+    public void SansPremierSonAnnonce_LeChronoPartALaLimiteApresLEnvoi()
+    {
+        var challenge = ClockedChallenge();
+        var session = Start();
+        session.ServeCurrent(Now);
+
+        Assert.Null(session.ClockRemaining(challenge.Rules, Now.AddSeconds(10)));
+        Assert.False(session.IsLate(challenge.Rules, Now.AddSeconds(80)));
+        Assert.True(session.IsLate(challenge.Rules, Now.AddSeconds(81)));
+    }
+
+    [Fact]
+    public void SansChronoDansLesRegles_RienNEstJamaisEnRetard()
+    {
+        var challenge = Challenge(RunsOptions.DefaultRules() with { AnswerSeconds = 0 });
+        var session = Start();
+        session.ServeCurrent(Now);
+        session.StartClock(Now);
+
+        Assert.False(session.IsLate(challenge.Rules, Now.AddHours(1)));
+        Assert.Null(session.ClockRemaining(challenge.Rules, Now));
+        session.Answer(challenge, Found, Scoring, Now.AddHours(1));
+        Assert.Equal(100, session.Answers[0].Points);
+    }
 }
 
 public class RunGaugeTests
