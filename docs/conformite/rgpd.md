@@ -5,7 +5,7 @@
 ## Accès aux données
 
 - **Admin réservé** : toute route `/api/admin*` reçoit la policy Admin d'office, `/jobs` aussi ; le rôle est relu en base (cache d'une minute) et posé uniquement en SQL (piège 5). `SecurityTests` vérifie le 401/403 de toutes les routes admin.
-- **Minimisation dans l'admin** : aucune réponse saisie, aucun appareil, aucune IP, aucun invité nominatif ; tableau de bord en agrégats ; stories hebdomadaires sans joueur. L'onglet Joueurs masque l'email (affiché au clic). Le pseudo est joint à la lecture et disparaît avec le joueur. `/privacy` dit ce que l'éditeur voit d'un compte (pseudo, email, série, 30 derniers jours).
+- **Minimisation dans l'admin** : aucune réponse saisie, aucun appareil, aucune IP, aucun invité nominatif ; tableau de bord en agrégats. L'onglet Joueurs masque l'email (affiché au clic). Le pseudo est joint à la lecture et disparaît avec le joueur. `/privacy` dit ce que l'éditeur voit d'un compte (pseudo, email, série, 30 derniers jours).
 - **Aucun export de l'admin** : seul le joueur peut obtenir une copie de ses données.
 - **API en `Cache-Control: no-store`**.
 

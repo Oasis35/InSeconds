@@ -29,7 +29,6 @@
     "admin": {
       "day_not_over": "Ce jour n'est pas encore fini : les stats seront figées demain.",
       "invalid_date": "Date invalide : le format attendu est aaaa-mm-jj.",
-      "invalid_period": "Période invalide : la date de début doit précéder celle de fin, sur un an au plus.",
       "pool_insufficient": "Pool insuffisant : ajoutez des morceaux avec preview."
     },
     "players": {
@@ -440,31 +439,6 @@
       "saveCooldown": "Enregistrer",
       "cooldownSaved": "Cooldown mis à jour.",
       "cooldownError": "Erreur lors de la mise à jour.",
-      "weeklyStory": {
-        "title": "Stories Instagram hebdo",
-        "hint": "2 visuels 1080×1920 sur la période choisie (par défaut les 7 derniers jours) : le plus trouvé (ajoute le sticker Musique dans Instagram) et le plus raté (ajoute un sondage « Tu le connaissais ? »). Sur les deux, ajoute le sticker Lien vers le site.",
-        "generate": "Générer les stories hebdo",
-        "generating": "Génération...",
-        "showGuides": "Repères pour les stickers",
-        "showPercent": "Afficher le pourcentage",
-        "from": "Du",
-        "to": "Au",
-        "titleLabel": "Titre",
-        "titleModes": {
-          "thisWeek": "Cette semaine",
-          "lastWeek": "La semaine dernière",
-          "custom": "Texte libre"
-        },
-        "customTitlePlaceholder": "Titre affiché en haut des stories",
-        "invalidPeriod": "La date de début doit précéder la date de fin.",
-        "insufficient": "Pas assez de réponses cette semaine (au moins {{ min }} par morceau).",
-        "error": "Erreur lors de la génération des stories.",
-        "onlyOne": "Un seul morceau a assez de réponses : pas de story « plus raté » cette semaine.",
-        "found": "Le plus trouvé",
-        "missed": "Le plus raté",
-        "download": "Télécharger",
-        "downloadAll": "Tout télécharger"
-      },
       "cooldownInvalid": "Entre un pourcentage entier, de {{ min }} à {{ max }}.",
       "cooldownPercent": "Part du pool en cooldown",
       "cooldownAppliedDay": "Appliqué aujourd'hui : {{ days }} jour · {{ count }} morceaux jouables",
@@ -739,23 +713,6 @@
     "common": {
       "abandon": "Abandonner",
       "loading": "Chargement du défi…"
-    },
-    "thanks": {
-      "titleBefore": "Merci de faire vivre ",
-      "titleAfter": " !",
-      "feedbackBefore": "Merci pour tous vos retours, vos partages et les ",
-      "games": "plus de {{ count }} parties",
-      "feedbackAfter": " jouées.",
-      "feedbackNoCount": "Merci pour tous vos retours, vos partages et toutes les parties jouées.",
-      "regulars": "Ça fait vraiment chaud au cœur de voir des joueurs revenir régulièrement.",
-      "nextBefore": "L'aventure n'est pas finie : un ",
-      "newMode": "nouveau mode de jeu",
-      "nextAfter": " est en cours de préparation 🫢",
-      "challenge": "Défie un ami",
-      "continue": "Continuer",
-      "challengeText": "Je joue à InSeconds, un blind test par jour. Tu fais mieux que moi ?\n{{ url }}",
-      "copied": "Lien copié, tu n'as plus qu'à le coller",
-      "copyFailed": "Impossible de copier dans le presse-papier."
     },
     "archive": {
       "titlePrefix": "Blind test du",

@@ -218,52 +218,6 @@
         }
       }
     },
-    "/api/admin/daily/weekly-recap": {
-      "get": {
-        "tags": [
-          "Daily"
-        ],
-        "operationId": "getWeeklyRecap",
-        "parameters": [
-          {
-            "name": "from",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "to",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WeeklyRecapResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/daily/archive": {
       "get": {
         "tags": [
@@ -896,26 +850,6 @@
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/daily/stats/games-played": {
-      "get": {
-        "tags": [
-          "Daily"
-        ],
-        "operationId": "getGamesPlayed",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GamesPlayedResponse"
                 }
               }
             }
@@ -1825,18 +1759,6 @@
           }
         }
       },
-      "GamesPlayedResponse": {
-        "required": [
-          "completedGames"
-        ],
-        "type": "object",
-        "properties": {
-          "completedGames": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
       "GuessBucketResponse": {
         "required": [
           "durationSeconds",
@@ -2590,79 +2512,6 @@
             "format": "int32"
           }
         }
-      },
-      "WeeklyRecapResponse": {
-        "required": [
-          "status",
-          "from",
-          "to",
-          "minAnswers",
-          "mostFound",
-          "mostMissed"
-        ],
-        "type": "object",
-        "properties": {
-          "status": {
-            "type": "string"
-          },
-          "from": {
-            "type": "string",
-            "format": "date"
-          },
-          "to": {
-            "type": "string",
-            "format": "date"
-          },
-          "minAnswers": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "mostFound": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/WeeklyTrackResponse"
-              }
-            ]
-          },
-          "mostMissed": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/WeeklyTrackResponse"
-              }
-            ]
-          }
-        }
-      },
-      "WeeklyTrackResponse": {
-        "required": [
-          "artist",
-          "title",
-          "successRatePercent",
-          "answers"
-        ],
-        "type": "object",
-        "properties": {
-          "artist": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "successRatePercent": {
-            "type": "number",
-            "format": "double"
-          },
-          "answers": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
       }
     }
   },
@@ -2687,9 +2536,6 @@
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.UpdateTrackCooldownPoolPercentEndpoint"
-    },
-    {
-      "name": "InSeconds.Api.Modules.Daily.Application.GetWeeklyRecapEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.GetArchiveIndexEndpoint"
@@ -2726,9 +2572,6 @@
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.SubmitAnswerEndpoint"
-    },
-    {
-      "name": "InSeconds.Api.Modules.Daily.Application.GetGamesPlayedEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.GetTodayStatsEndpoint"

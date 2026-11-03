@@ -7,17 +7,16 @@ import { challengeWitness, previewsWitness } from '../../domain/actions';
 import { GENERATE_CHALLENGE_JOB, REFRESH_PREVIEWS_JOB } from '../../domain/job';
 import { ActionJobsLinkComponent } from '../../ui/actions/action-jobs-link/action-jobs-link.component';
 import { JobWitnessComponent } from '../../ui/actions/job-witness/job-witness.component';
-import { WeeklyStoryComponent } from './weekly-story/weekly-story.component';
 
 /**
  * `/admin/actions` : le dernier passage de la génération du défi du jour et du contrôle des extraits (témoins en
  * lecture seule, lus à l'ouverture), le lien vers le tableau de bord des tâches planifiées (où les lancer à la main),
- * le délai de réutilisation des morceaux, et les stories hebdo.
+ * et le délai de réutilisation des morceaux.
  */
 @Component({
   selector: 'app-admin-actions-page',
   imports: [
-    ErrorMessageComponent, JobWitnessComponent, ActionCooldownComponent, ActionJobsLinkComponent, WeeklyStoryComponent,
+    ErrorMessageComponent, JobWitnessComponent, ActionCooldownComponent, ActionJobsLinkComponent,
   ],
   providers: [ActionsStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -34,8 +33,6 @@ import { WeeklyStoryComponent } from './weekly-story/weekly-story.component';
         <app-error-message [messageKey]="error.key" [traceId]="error.traceId" />
       }
       <app-action-cooldown [cooldown]="store.cooldown()" [status]="store.cooldownSave()" (savePercent)="store.saveCooldown($event)" />
-      <div style="border-top:1px solid var(--border-medium)"></div>
-      <app-weekly-story />
     </section>
   `,
 })

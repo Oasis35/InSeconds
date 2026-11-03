@@ -55,7 +55,7 @@ Les URL d'extrait ne sont plus mises en cache (retiré le 17/10/2026 : signées 
 | Écart | Texte | Correctif |
 |---|---|---|
 | Mention « usage privé, cadre familial » absente | art. IV : « inform […] that the streaming of the recordings is limited to a strictly private use within a family scope » | phrase ajoutée dans « Mentions légales : contenus musicaux » de `/privacy` (FR et EN) |
-| Pochettes dans les stories Instagram de l'admin | FAQ : « images are not allowed to be stored for legal reasons » ; art. VII (droits sur les visuels) | pochette retirée des stories, remplacée par une vignette (`weekly-story-visual.component.ts`) ; dans le jeu, la pochette est chargée depuis le CDN Deezer et seul son hash est gardé |
+| Pochettes dans les stories Instagram de l'admin | FAQ : « images are not allowed to be stored for legal reasons » ; art. VII (droits sur les visuels) | pochette retirée des stories, remplacée par une vignette (les stories ont depuis été retirées, 03/11/2026) ; dans le jeu, la pochette est chargée depuis le CDN Deezer et seul son hash est gardé |
 | `/privacy` disait que Deezer ne reçoit rien du joueur | (RGPD) | reformulé : le navigateur charge extraits et pochettes depuis les CDN de Deezer (`cdnt-preview.dzcdn.net`, `cdn-images.dzcdn.net`), qui reçoivent l'IP du joueur |
 
 ## Rappels

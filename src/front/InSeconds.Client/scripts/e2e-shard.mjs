@@ -19,7 +19,6 @@ const WEIGHTS = {
   'login-nudges.spec.ts': 49,
   'runs.spec.ts': 65,
   'share-button.spec.ts': 44,
-  'thanks-notice.spec.ts': 30,
   'score-distribution.spec.ts': 30,
   'resume-game.spec.ts': 21,
   'account-data.spec.ts': 19,

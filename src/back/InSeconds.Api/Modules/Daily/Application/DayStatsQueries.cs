@@ -7,10 +7,6 @@ public sealed record PlayerSessionRow(SessionStatus Status, int TotalScore, int 
 
 public sealed record PlayerAnswerRow(int Position, bool ArtistCorrect, bool TitleCorrect, decimal ListenedSeconds, int Score);
 
-/// <summary>Ce que les réponses d'un morceau donnent sur une période : le matériau des stories hebdo.</summary>
-/// <param name="FullyCorrect">Réponses où l'artiste **et** le titre sont justes.</param>
-public sealed record TrackTally(int TrackId, int Answers, int FullyCorrect);
-
 /// <summary>Un défi dont la photo n'est pas encore figée.</summary>
 public sealed record UnfrozenChallenge(int ChallengeId, DateOnly Date);
 
@@ -46,9 +42,6 @@ public interface IDailyStatsQueries
     /// <summary>Les défis du jour <paramref name="upTo"/> et avant dont la photo n'est pas figée, du plus ancien au plus récent.</summary>
     Task<IReadOnlyList<UnfrozenChallenge>> ListUnfrozenChallengesAsync(DateOnly upTo, CancellationToken ct);
 
-    /// <summary>Les réponses des défis de cette période (bornes comprises), par morceau (le morceau, pas sa position dans le défi : il peut revenir).</summary>
-    Task<IReadOnlyList<TrackTally>> GetTrackTalliesAsync(DateOnly from, DateOnly to, CancellationToken ct);
-
     /// <summary>Les <paramref name="take"/> défis les plus récents, du plus récent au plus ancien, avec leur photo figée s'ils en ont une.</summary>
     Task<IReadOnlyList<RecentChallenge>> ListRecentChallengesAsync(int take, CancellationToken ct);
 
@@ -66,9 +59,6 @@ public interface IDailyStatsQueries
 
     /// <summary>Parties **terminées** par jour de défi, depuis <paramref name="since"/> (les jours sans partie sont absents).</summary>
     Task<IReadOnlyDictionary<DateOnly, int>> GetCompletedCountsByDayAsync(DateOnly since, CancellationToken ct);
-
-    /// <summary>Toutes les parties **terminées**, tous jours confondus (les joueurs non supprimés) : le chiffre du message de remerciement.</summary>
-    Task<int> CountCompletedSessionsAsync(CancellationToken ct);
 
     /// <summary>Le meilleur score de ce joueur sur ses parties terminées, tous jours confondus ; vide sans partie terminée.</summary>
     Task<int?> GetBestScoreAsync(Guid playerId, CancellationToken ct);
