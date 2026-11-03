@@ -35,7 +35,7 @@ Règles validées par Clément le 17/10/2026. Les écrans qui les montrent : [`e
 
 ## La fin
 
-- À la fin de chaque manche, un écran fait le bilan : manche suivante débloquée ou non, les 5 morceaux, le score total.
+- Une manche passée se ferme par une ligne de palier dans la pile des morceaux (disque gagné, score / objectif) : pas d'écran de bilan (Clément, 03/11).
 - **Jauge non remplie à la fin d'une manche = fin du run** (défaite). Les manches suivantes ne se jouent pas.
 - **4 manches passées = victoire**.
 - Score final = total des points de toutes les manches jouées.

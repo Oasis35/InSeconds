@@ -29,7 +29,10 @@ const MUSE: AnswerSuggestion = { artist: 'Muse', title: 'Uprising' };
 @Component({
   imports: [TrackRoundComponent],
   template: `
-    <app-track-round [result]="result()" [hintPending]="hintPending()" (answered)="answered.push($event)" (hintRequested)="hints.push($event)">
+    <app-track-round [result]="result()" [hintPending]="hintPending()" [layout]="layout()" [alert]="alert()" [timeUp]="timeUp()"
+      (answered)="answered.push($event)" (hintRequested)="hints.push($event)">
+      <span roundCorner>0:45</span>
+      <p roundReveal>Révélation du mode</p>
       <button roundActions type="button">Bonus</button>
       <span roundScore>+850 pts</span>
       <button roundNext type="button">Piste suivante</button>
@@ -38,6 +41,9 @@ const MUSE: AnswerSuggestion = { artist: 'Muse', title: 'Uprising' };
 class Host {
   readonly result = signal<RoundResult | null>(null);
   readonly hintPending = signal(false);
+  readonly layout = signal<'stacked' | 'inline'>('stacked');
+  readonly alert = signal(false);
+  readonly timeUp = signal(false);
   readonly answered: RoundSubmission[] = [];
   readonly hints: number[] = [];
 }
@@ -332,5 +338,56 @@ describe('TrackRoundComponent', () => {
     emit('finished', 0.5);
 
     expect(input().value).toBe('');
+  });
+
+  describe('en ligne (le mode Run)', () => {
+    beforeEach(() => {
+      fixture.componentInstance.layout.set('inline');
+      start({ listen: { steps: [10], extendable: false }, hints: { unlockSeconds: [] } });
+    });
+
+    it('toute la manche dans une carte, le coin du mode en haut à droite, sans repères ni « écouter plus »', () => {
+      const card = element.querySelector<HTMLElement>('[data-testid="track-round"]')!;
+      expect(card.classList).toContain('inline-frame');
+      expect(card.querySelector('[roundCorner]')?.textContent).toBe('0:45');
+      expect(card.querySelector('app-round-player')).not.toBeNull();
+      expect(card.querySelector('form')).not.toBeNull();
+      expect(element.querySelectorAll('[data-testid="step-mark"]')).toHaveLength(0);
+      expect(button('▶')).toBeUndefined();
+    });
+
+    it('le bord s\'éclaircit quand le mode le demande', () => {
+      fixture.componentInstance.alert.set(true);
+      refresh();
+
+      expect(element.querySelector('[data-testid="track-round"]')?.classList).toContain('alert');
+    });
+
+    it('la révélation du mode prend la place du lecteur, dans la carte', () => {
+      emit('playing', 1);
+      type('Daft Punk - Get Lucky');
+      submitForm();
+      store.reveal();
+      refresh();
+
+      expect(element.querySelector('app-round-player')).toBeNull();
+      expect(element.querySelector('[roundReveal]')?.textContent).toBe('Révélation du mode');
+      expect(element.querySelector('[roundCorner]')).toBeNull();
+    });
+
+    it('le temps écoulé envoie la saisie telle quelle, une seule fois', () => {
+      emit('playing', 1);
+      type('Daft');
+      fixture.componentInstance.timeUp.set(true);
+      refresh();
+      fixture.componentInstance.timeUp.set(false);
+      refresh();
+      fixture.componentInstance.timeUp.set(true);
+      refresh();
+
+      expect(fixture.componentInstance.answered).toHaveLength(1);
+      expect(fixture.componentInstance.answered[0]).toMatchObject({ artist: 'Daft', title: null });
+      expect(element.textContent).not.toContain('gameplay.answer.emptyConfirm');
+    });
   });
 });

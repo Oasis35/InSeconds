@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input, output, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, untracked } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { AnswerSearchStore } from '../../data-access/answer-search.store';
 import { TrackRoundStore } from '../../data-access/track-round.store';
@@ -17,7 +17,9 @@ import { ButtonComponent } from '../../../ui/button/button.component';
  * réponse quand `answered` part, puis donne le `result` du serveur et appelle `reveal()` du store.
  *
  * Emplacements de projection du mode : `[roundActions]` (ses boutons, au-dessus de « Valider »),
- * `[roundBadge]` (à gauche de la pochette), `[roundScore]` (ses points) et `[roundNext]` (sa suite).
+ * `[roundBadge]` (à gauche de la pochette), `[roundScore]` (ses points) et `[roundNext]` (sa suite). En ligne
+ * (`layout="inline"`, un mode à écoute fixe) : `[roundCorner]` (en haut à droite de la carte, son chrono) et `[roundReveal]`
+ * (sa révélation, dans la carte, à la place de la carte de révélation).
  */
 @Component({
   selector: 'app-track-round',
@@ -27,9 +29,16 @@ import { ButtonComponent } from '../../../ui/button/button.component';
   template: `
     @let phase = round.phase();
     @if (phase !== null) {
-      <div class="flex flex-col gap-4">
+      <!-- En ligne, toute la manche tient dans une carte (le lecteur, la saisie, puis la révélation du mode) ; son bord s'éclaircit quand
+        le mode le demande (les dernières secondes de son chrono). -->
+      <div class="relative flex flex-col" data-testid="track-round" [class.gap-4]="!inline()" [class.gap-3.5]="inline()"
+        [class.p-3.5]="inline()" [class.inline-frame]="inline()" [class.alert]="inline() && alert()">
+        @if (inline() && phase !== 'revealed' && phase !== 'audio-error' && phase !== 'no-preview') {
+          <!-- Le coin du mode (son chrono), en haut à droite, au-dessus de la waveform ; pas sur le message d'un extrait illisible. -->
+          <div class="absolute top-3.5 right-3.5 pointer-events-none"><ng-content select="[roundCorner]" /></div>
+        }
         @if (phase !== 'revealed') {
-          <app-round-player [phase]="phase" [chosenSeconds]="round.chosenSeconds()" [steps]="round.steps()"
+          <app-round-player [layout]="layout()" [phase]="phase" [chosenSeconds]="round.chosenSeconds()" [steps]="round.steps()"
             [nextStep]="round.nextStep()" [position]="round.position()" [peaks]="round.waveform()?.peaks ?? null" [bass]="round.bass()"
             [stake]="round.stake()"
             (replay)="round.replay()" (listenMore)="round.listenMore()" (retry)="round.retryPlayback()" (skip)="skipUnplayable()" />
@@ -79,15 +88,28 @@ import { ButtonComponent } from '../../../ui/button/button.component';
           </form>
         }
 
-        @if (phase === 'revealed' && result(); as revealed) {
-          <app-reveal-card [result]="revealed" [bass]="round.bass()">
-            <ng-content select="[roundBadge]" ngProjectAs="[roundBadge]" />
-            <ng-content select="[roundScore]" ngProjectAs="[roundScore]" />
-            <ng-content select="[roundNext]" ngProjectAs="[roundNext]" />
-          </app-reveal-card>
+        @if (phase === 'revealed') {
+          @if (result(); as revealed) {
+            <app-reveal-card [result]="revealed" [bass]="round.bass()">
+              <ng-content select="[roundBadge]" ngProjectAs="[roundBadge]" />
+              <ng-content select="[roundScore]" ngProjectAs="[roundScore]" />
+              <ng-content select="[roundNext]" ngProjectAs="[roundNext]" />
+            </app-reveal-card>
+          }
+          <!-- La révélation propre au mode, dans la carte (en ligne). -->
+          <ng-content select="[roundReveal]" />
         }
       </div>
     }
+  `,
+  styles: `
+    .inline-frame {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-card);
+      transition: border-color 300ms;
+    }
+    .inline-frame.alert { border-color: rgb(var(--rgb-text) / 0.45); }
   `,
 })
 export class TrackRoundComponent {
@@ -98,17 +120,33 @@ export class TrackRoundComponent {
   readonly result = input<RoundResult | null>(null);
   /** Le mode attend la réponse du back à une demande d'indice. */
   readonly hintPending = input(false);
+  /** `inline` : toute la manche dans une carte, le bouton à gauche de la waveform (un mode à écoute fixe) ; `stacked` (défaut) : le Daily. */
+  readonly layout = input<'stacked' | 'inline'>('stacked');
+  /** Le bord de la carte s'éclaircit (en ligne seulement) : les dernières secondes du chrono du mode. */
+  readonly alert = input(false);
+  /** Le temps du mode est écoulé : la saisie part telle quelle, sans confirmation (une seule fois par morceau). */
+  readonly timeUp = input(false);
 
   /** La réponse à envoyer ; le mode l'envoie, puis appelle `reveal()` ou `submissionFailed()` du store. */
   readonly answered = output<RoundSubmission>();
   /** Le joueur demande ce niveau d'indice ; le mode interroge le back, puis appelle `applyHints()` du store. */
   readonly hintRequested = output<number>();
 
+  protected readonly inline = computed(() => this.layout() === 'inline');
+
   constructor() {
     // Un nouveau morceau repart d'une saisie vide.
     effect(() => {
       this.round.trackId();
       untracked(() => this.search.clear());
+    });
+    // Le temps écoulé envoie ce qui est tapé ; le domaine ne fait rien une fois la réponse partie.
+    effect(() => {
+      if (!this.timeUp()) return;
+      untracked(() => {
+        this.search.close();
+        this.send(this.round.timeUp(this.search.answer()));
+      });
     });
   }
 

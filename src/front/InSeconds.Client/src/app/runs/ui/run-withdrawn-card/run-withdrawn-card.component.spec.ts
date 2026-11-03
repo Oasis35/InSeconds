@@ -4,13 +4,13 @@ import fr from '../../../../../public/i18n/fr.json';
 import { RunWithdrawnCardComponent } from './run-withdrawn-card.component';
 
 describe('RunWithdrawnCardComponent', () => {
-  function render(endsRound = false) {
+  function render(endsRun = false) {
     TestBed.configureTestingModule({ providers: [provideTranslateService()] });
     TestBed.inject(TranslateService).setTranslation('fr', fr);
     TestBed.inject(TranslateService).use('fr');
     const fixture = TestBed.createComponent(RunWithdrawnCardComponent);
     fixture.componentRef.setInput('objective', 266);
-    fixture.componentRef.setInput('endsRound', endsRound);
+    fixture.componentRef.setInput('endsRun', endsRun);
     fixture.detectChanges();
     return { fixture, element: fixture.nativeElement as HTMLElement };
   }
@@ -23,10 +23,10 @@ describe('RunWithdrawnCardComponent', () => {
     expect(element.querySelector('img')).toBeNull();
   });
 
-  it('« Morceau suivant », ou « Fin de la manche » si c\'était le dernier', () => {
+  it('« Morceau suivant », ou « Voir le résultat » si la partie est finie', () => {
     expect(render().element.querySelector('[data-testid="run-next-track"]')?.textContent).toContain('Morceau suivant');
     TestBed.resetTestingModule();
-    expect(render(true).element.querySelector('[data-testid="run-next-track"]')?.textContent).toContain('Fin de la manche');
+    expect(render(true).element.querySelector('[data-testid="run-next-track"]')?.textContent).toContain('Voir le résultat');
   });
 
   it('le bouton demande le morceau suivant', () => {

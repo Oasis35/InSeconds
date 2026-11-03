@@ -55,6 +55,7 @@
   --wave-locked:   color-mix(in srgb, rgb(var(--rgb-text)) 14%, rgb(var(--rgb-bg)));     /* pas encore débloqué */
   --wave-unlocked: color-mix(in srgb, rgb(var(--rgb-accent-2)) 32%, rgb(var(--rgb-bg))); /* débloqué, ou déjà écouté */
   --wave-trail:    color-mix(in srgb, rgb(var(--rgb-accent-2)) 30%, white);              /* traîne derrière la tête de lecture */
+  --wave-old:      color-mix(in srgb, rgb(var(--rgb-text)) 30%, rgb(var(--rgb-bg)));     /* un morceau déjà joué (la pile de Platines) */
 
   /* Bordures / overlays */
   --border-subtle:  rgb(var(--rgb-border) / 0.15);

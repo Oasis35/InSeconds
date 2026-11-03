@@ -944,9 +944,9 @@ export class RunsClient {
     }
 
     /**
-     * @return No Content
+     * @return OK
      */
-    startRunClock(id: number, body: StartRunClock): Observable<void> {
+    startRunClock(id: number, body: StartRunClock): Observable<RunClockResponse> {
         let url_ = this.baseUrl + "/api/runs/sessions/{id}/clock";
         if (id === undefined || id === null)
             throw new globalThis.Error("The parameter 'id' must be defined.");
@@ -961,6 +961,7 @@ export class RunsClient {
             responseType: "blob",
             headers: new HttpHeaders({
                 "Content-Type": "application/json",
+                "Accept": "application/json"
             })
         };
 
@@ -971,23 +972,25 @@ export class RunsClient {
                 try {
                     return this.processStartRunClock(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<void>;
+                    return _observableThrow(e) as any as Observable<RunClockResponse>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<void>;
+                return _observableThrow(response_) as any as Observable<RunClockResponse>;
         }));
     }
 
-    protected processStartRunClock(response: HttpResponseBase): Observable<void> {
+    protected processStartRunClock(response: HttpResponseBase): Observable<RunClockResponse> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
             (response as any).error instanceof Blob ? (response as any).error : undefined;
 
         let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 204) {
+        if (status === 200) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return _observableOf(null as any);
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RunClockResponse;
+            return _observableOf(result200);
             }));
         } else if (status === 400) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -1054,6 +1057,13 @@ export interface RunChallengeResponse {
     listenSeconds: number;
     myStatus: string;
     mySessionId: number | undefined;
+    answerSeconds: number;
+
+    [key: string]: any;
+}
+
+export interface RunClockResponse {
+    clockRemainingSeconds: number | undefined;
 
     [key: string]: any;
 }

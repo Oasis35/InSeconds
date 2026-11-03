@@ -3,7 +3,7 @@ import { patchState, signalStore, signalStoreFeature, withComputed, withHooks, w
 import {
   HintFact, RoundAnswer, RoundConfig, RoundSubmission, TrackRound, applyHints, askSkip, availableHintLevels, beginListening,
   cancelConfirm, confirmPending, createRound, listenMore, maxStep, nextStep, onAudio, previewWithdrawn, replacePreviewUrl, retryPlayback, retrySubmission, reveal,
-  showsInput, skipUnplayable, stakeOf, submissionFailed, submitAnswer,
+  showsInput, skipUnplayable, stakeOf, submissionFailed, submitAnswer, timeUp,
 } from '../domain/track-round';
 import { ErrorReportingService } from '../../core/errors/error-reporting.service';
 import { Waveform, bassAt, waveformFromBlob } from '../domain/waveform';
@@ -196,6 +196,9 @@ export function withTrackRound() {
 
         /** Passe un morceau sans extrait ou dont la lecture a échoué, sans confirmation. */
         skipUnplayable: (): RoundSubmission | null => submissionOf(apply(skipUnplayable)),
+
+        /** Le temps du mode est écoulé : la saisie part telle quelle, sans confirmation (rien une fois la réponse envoyée). */
+        timeUp: (answer: RoundAnswer): RoundSubmission | null => submissionOf(apply(round => timeUp(round, answer))),
 
         submissionFailed: (): void => {
           apply(submissionFailed);

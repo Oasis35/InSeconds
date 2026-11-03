@@ -1,42 +1,42 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { ButtonComponent } from '../../../ui/button/button.component';
+import { RunNextButtonComponent } from '../run-next-button/run-next-button.component';
 
 /**
- * Un morceau retiré de la manche (le serveur n'a plus trouvé son extrait), à la place du lecteur et de la saisie : une carte qui ne révèle rien
- * du morceau et dit le nouvel objectif, puis « Morceau suivant » (le clic qui lance le son suivant, géré par la page). À ne pas confondre avec
+ * Un morceau retiré de la manche (le serveur n'a plus trouvé son extrait), à la place de la carte du morceau : rien ne révèle le morceau, la
+ * carte dit le nouvel objectif, puis « Morceau suivant » (le clic, ou l'enchaînement automatique, est géré par la page). À ne pas confondre avec
  * un extrait illisible (réseau, lien expiré), qui garde « Réessayer / Passer » du lecteur.
  */
 @Component({
   selector: 'app-run-withdrawn-card',
-  imports: [TranslatePipe, ButtonComponent],
+  imports: [TranslatePipe, RunNextButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="space-y-4" data-testid="run-withdrawn">
-      <section class="rounded-(--radius-card) px-5 py-6 flex flex-col items-center gap-3 text-center"
-        style="background:rgb(var(--rgb-surface) / 0.55);border:1px solid var(--border-subtle)">
-        <span class="w-16 h-16 rounded-full flex items-center justify-center" style="background:var(--bg-inactive);border:1px solid var(--border-strong);color:var(--text-light)">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <section class="p-3.5" data-testid="run-withdrawn"
+      style="background:var(--bg-surface);border:1px solid var(--border-medium);border-radius:var(--radius-card)">
+      <div class="flex items-center gap-3">
+        <span class="grid place-items-center rounded-full shrink-0" style="width:52px;height:52px;margin:6px;background:var(--bg-inactive);color:var(--text-light)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M11 5 6 9H2v6h4l5 4V5z" /><line x1="23" y1="9" x2="17" y2="15" /><line x1="17" y1="9" x2="23" y2="15" />
           </svg>
         </span>
-        <h2 class="text-lg font-bold" style="font-family:var(--font-display);color:var(--text-hi)">{{ 'runs.withdrawn.title' | translate }}</h2>
-        <p class="text-sm leading-relaxed" style="color:var(--text-light)" data-testid="run-withdrawn-body">
-          {{ 'runs.withdrawn.body' | translate: { objective: objective() } }}
-        </p>
-      </section>
-
-      <button appButton type="button" [block]="true" [glow]="true" (click)="next.emit()" data-testid="run-next-track">
-        {{ (endsRound() ? 'runs.answer.endRound' : 'runs.answer.next') | translate }}
-      </button>
-    </div>
+        <div class="min-w-0">
+          <h2 class="text-base font-semibold" style="color:var(--text-hi)">{{ 'runs.withdrawn.title' | translate }}</h2>
+          <p class="text-sm leading-snug mt-0.5" style="color:var(--text-light)" data-testid="run-withdrawn-body">
+            {{ 'runs.withdrawn.body' | translate: { objective: objective() } }}
+          </p>
+        </div>
+      </div>
+      <app-run-next-button class="block mt-3.5" [endsRun]="endsRun()" [auto]="auto()" (next)="next.emit()" />
+    </section>
   `,
 })
 export class RunWithdrawnCardComponent {
   /** Le nouvel objectif de la manche, abaissé par le retrait. */
   readonly objective = input.required<number>();
-  /** C'était le dernier morceau de la manche : le bouton annonce la fin de la manche. */
-  readonly endsRound = input(false);
-  /** « Morceau suivant » : la page lance le son suivant dans ce clic. */
+  /** Le prochain clic mène à la fin de la partie. */
+  readonly endsRun = input(false);
+  /** L'enchaînement automatique est armé. */
+  readonly auto = input(false);
   readonly next = output();
 }

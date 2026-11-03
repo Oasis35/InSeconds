@@ -135,7 +135,7 @@ describe('RunsApi', () => {
 
   describe("le lien d'une playlist", () => {
     const link = {
-      code: 'ABC234', authorPseudo: undefined, trackCount: 20, rounds: 4, tracksPerRound: 5, listenSeconds: 10, myStatus: 'none', mySessionId: undefined,
+      code: 'ABC234', authorPseudo: undefined, trackCount: 20, rounds: 4, tracksPerRound: 5, listenSeconds: 10, answerSeconds: 45, myStatus: 'none', mySessionId: undefined,
     } as RunChallengeResponse;
 
     it('rend les règles de la playlist et la partie du joueur dessus, en types du domaine', async () => {
@@ -143,7 +143,7 @@ describe('RunsApi', () => {
 
       expect(await api.challenge('abc234')).toEqual({
         kind: 'ok',
-        link: { code: 'ABC234', authorPseudo: null, trackCount: 20, rounds: 4, tracksPerRound: 5, listenSeconds: 10, myStatus: 'none', mySessionId: null },
+        link: { code: 'ABC234', authorPseudo: null, trackCount: 20, rounds: 4, tracksPerRound: 5, listenSeconds: 10, answerSeconds: 45, myStatus: 'none', mySessionId: null },
       });
       expect(client['getRunChallenge']).toHaveBeenCalledWith('abc234');
     });

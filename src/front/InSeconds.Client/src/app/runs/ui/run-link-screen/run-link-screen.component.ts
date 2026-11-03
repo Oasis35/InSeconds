@@ -28,7 +28,11 @@ import { ButtonComponent } from '../../../ui/button/button.component';
         data-testid="run-link-rules">
         <li>{{ 'runs.link.tracks' | translate: { tracks: link().trackCount } }}</li>
         <li>{{ 'runs.link.rounds' | translate: { rounds: link().rounds } }}</li>
-        <li>{{ 'runs.link.listen' | translate: { seconds: link().listenSeconds | appSeconds } }}</li>
+        @if (link().answerSeconds > 0) {
+          <li>{{ 'runs.link.listenAndAnswer' | translate: { seconds: link().listenSeconds | appSeconds, answer: link().answerSeconds | appSeconds } }}</li>
+        } @else {
+          <li>{{ 'runs.link.listen' | translate: { seconds: link().listenSeconds | appSeconds } }}</li>
+        }
         <li class="flex items-start gap-2">
           <app-run-disc class="shrink-0 mt-0.5" disc="runs.discs.gold" [size]="18" />
           <span>{{ 'runs.link.goal' | translate: { rounds: link().rounds } }}</span>
