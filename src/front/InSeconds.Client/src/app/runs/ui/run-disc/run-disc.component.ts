@@ -9,13 +9,16 @@ const DISC_COLORS: Readonly<Record<string, string>> = {
   'runs.discs.gold': 'var(--disc-gold)',
 };
 
+/** La couleur d'un disque (ses filets dans la pile). */
+export const discColor = (key: string): string => DISC_COLORS[key] ?? DISC_COLORS['runs.discs.gold'];
+
 /** Le disque dessiné (or, argent, bronze, cire, rayé) : sillons, étiquette, trou central ; le disque d'or brille. Purement décoratif. */
 @Component({
   selector: 'app-run-disc',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <svg [attr.width]="size()" [attr.height]="size()" viewBox="0 0 100 100" aria-hidden="true" [attr.data-disc]="disc()"
-      [style.filter]="gold() ? 'drop-shadow(0 0 10px rgb(var(--rgb-warning) / 0.55))' : null">
+      [style.filter]="gold() && shine() ? 'drop-shadow(0 0 10px rgb(var(--rgb-warning) / 0.55))' : null">
       <circle cx="50" cy="50" r="47" [attr.fill]="color()" stroke="rgb(255 255 255 / 0.35)" stroke-width="3" />
       <circle cx="50" cy="50" r="38" fill="none" stroke="rgb(0 0 0 / 0.14)" stroke-width="1.5" />
       <circle cx="50" cy="50" r="30" fill="none" stroke="rgb(0 0 0 / 0.14)" stroke-width="1.5" />
@@ -32,8 +35,10 @@ export class RunDiscComponent {
   /** La clé du disque (`runs.discs.gold`…). */
   readonly disc = input.required<string>();
   readonly size = input(96);
+  /** La lueur du disque d'or : pas sur l'écran de jeu (lignes de palier). */
+  readonly shine = input(true);
 
-  protected readonly color = computed(() => DISC_COLORS[this.disc()] ?? DISC_COLORS['runs.discs.gold']);
+  protected readonly color = computed(() => discColor(this.disc()));
   protected readonly gold = computed(() => this.disc() === 'runs.discs.gold');
   protected readonly scratched = computed(() => this.disc() === 'runs.discs.scratched');
 }

@@ -90,7 +90,7 @@ Pour le prototype des bonus : une douzaine de bonus communs, sans rareté ni dé
   - points = (50 + 50) × difficulté, runs illimités ;
   - nom affiché « Platines », paliers en disques inventés ;
   - accès sur invitation, playlist partagée par lien avec comparaison et sans classement ;
-  - morceau sans extrait neutralisé, partie à l'honneur sans chrono ;
+  - morceau sans extrait neutralisé, partie à l'honneur sans chrono (chrono de 45 s ajouté le 03/11, cf. regles.md) ;
   - entrée par une carte sur l'accueil (option A).
 - **17/10/2026, revue indépendante du plan** (hors dépôt). Elle a apporté :
   - les codes d'erreur et les routes alignés sur le Daily, avec son vocabulaire (« défi », « partie ») ;

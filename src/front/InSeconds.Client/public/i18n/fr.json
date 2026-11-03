@@ -848,22 +848,23 @@
     "header": {
       "abandon": "Abandonner",
       "round": "Manche {{ round }} / {{ rounds }}",
-      "score": "Score"
-    },
-    "objective": {
-      "gold": "Viser le disque d’or",
-      "unlock": "Débloquer la manche {{ round }}",
-      "points": "pts",
-      "unlocked": "Manche {{ round }} débloquée",
-      "goldReached": "Disque d’or débloqué",
-      "missed": "Objectif manqué"
-    },
-    "pills": {
-      "position": "Morceau {{ position }} sur {{ total }}"
+      "roundShort": "Manche {{ round }}",
+      "toGoBefore": "encore",
+      "points": "{{ points }} pts",
+      "toGoAfter": "pour passer",
+      "reached": "objectif atteint"
     },
     "answer": {
       "next": "Morceau suivant",
-      "endRound": "Fin de la manche"
+      "seeResult": "Voir le résultat"
+    },
+    "clock": {
+      "label": "Temps pour répondre : {{ time }}"
+    },
+    "pile": {
+      "total": "Total du run",
+      "round": "manche {{ round }}",
+      "withdrawn": "Morceau retiré"
     },
     "welcome": {
       "badge": "Accès anticipé",
@@ -899,14 +900,6 @@
       "confirm": "Abandonner",
       "cancel": "Continuer"
     },
-    "roundEnd": {
-      "title": "Manche {{ round }} terminée",
-      "next": "Manche suivante",
-      "total": "Score total",
-      "seeResult": "Voir le résultat",
-      "withdrawnOne": "1 morceau retiré de la manche",
-      "withdrawnMany": "{{ count }} morceaux retirés de la manche"
-    },
     "finished": {
       "found": "{{ found }} / {{ total }} morceaux trouvés",
       "newGame": "Nouvelle partie",
@@ -930,6 +923,7 @@
       "tracks": "{{ tracks }} morceaux, les mêmes pour tous ses joueurs : comparez vos scores à la fin",
       "rounds": "{{ rounds }} manches, de plus en plus dures",
       "listen": "{{ seconds }} pour trouver l’artiste et le titre",
+      "listenAndAnswer": "{{ seconds }} d’écoute, {{ answer }} pour trouver l’artiste et le titre",
       "goal": "Passe les {{ rounds }} manches et deviens disque d’or",
       "play": "Jouer"
     },

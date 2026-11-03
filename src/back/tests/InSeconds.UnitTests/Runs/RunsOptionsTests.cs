@@ -38,6 +38,9 @@ public class RunsOptionsTests
         { new RunsOptions { MaxMultiplier = 2.005m }, "Runs:MinMultiplier" },
         { new RunsOptions { Discs = [] }, "Runs:Discs" },
         { new RunsOptions { Discs = ["runs.discs.gold", " "] }, "Runs:Discs" },
+        { new RunsOptions { AnswerSeconds = 10 }, "Runs:AnswerSeconds" },
+        { new RunsOptions { AnswerSeconds = 601 }, "Runs:AnswerSeconds" },
+        { new RunsOptions { AnswerSeconds = -1 }, "Runs:AnswerSeconds" },
     };
 
     [Theory]

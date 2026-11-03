@@ -11,9 +11,17 @@ namespace InSeconds.Api.Modules.Runs.Domain;
 /// <param name="ThresholdPercents">Pour chaque manche, la part du maximum de la manche à atteindre pour la passer (une valeur par manche).</param>
 /// <param name="MinMultiplier">Multiplicateur de points de la première manche.</param>
 /// <param name="MaxMultiplier">Multiplicateur de points de la dernière manche.</param>
+/// <param name="AnswerSeconds">
+/// Le chrono d'un morceau, du premier son à la réponse (écoute et réécoutes comprises) ; 0 : pas de chrono (les playlists créées avant lui, dont la
+/// photo n'a pas ce champ).
+/// </param>
 public sealed record RunRules(
-    int Rounds, int TracksPerRound, decimal ListenSeconds, IReadOnlyList<int> ThresholdPercents, decimal MinMultiplier, decimal MaxMultiplier)
+    int Rounds, int TracksPerRound, decimal ListenSeconds, IReadOnlyList<int> ThresholdPercents, decimal MinMultiplier, decimal MaxMultiplier,
+    int AnswerSeconds = 0)
 {
+    /// <summary>Le morceau a un chrono.</summary>
+    public bool HasClock => AnswerSeconds > 0;
+
     /// <summary>Les morceaux d'un défi.</summary>
     public int TrackCount => Rounds * TracksPerRound;
 

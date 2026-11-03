@@ -102,8 +102,10 @@ public static class LaunchRunEndpoint
 /// <param name="TrackCount">Ses morceaux (règles figées).</param>
 /// <param name="MyStatus">La partie du joueur sur cette playlist : <c>none</c> (pas jouée), <c>pending</c>, <c>won</c>, <c>lost</c> ou <c>abandoned</c>.</param>
 /// <param name="MySessionId">Sa partie sur cette playlist, s'il en a une.</param>
+/// <param name="AnswerSeconds">Le chrono de chaque morceau (règles figées) ; 0 : pas de chrono.</param>
 public sealed record RunChallengeResponse(
-    string Code, string? AuthorPseudo, int TrackCount, int Rounds, int TracksPerRound, decimal ListenSeconds, string MyStatus, int? MySessionId);
+    string Code, string? AuthorPseudo, int TrackCount, int Rounds, int TracksPerRound, decimal ListenSeconds, string MyStatus, int? MySessionId,
+    int AnswerSeconds);
 
 public static class GetRunChallengeEndpoint
 {
@@ -131,7 +133,7 @@ public static class GetRunChallengeEndpoint
         var rules = challenge.Rules;
         return new RunChallengeResponse(
             challenge.Code, author, challenge.Tracks.Count, challenge.Tracks.Select(t => t.Round).Distinct().Count(), rules.TracksPerRound,
-            rules.ListenSeconds, mine is null ? "none" : RunViews.StatusOf(mine.Status), mine?.SessionId);
+            rules.ListenSeconds, mine is null ? "none" : RunViews.StatusOf(mine.Status), mine?.SessionId, rules.AnswerSeconds);
     }
 }
 
@@ -302,6 +304,44 @@ public static class UpdateRunListeningEndpoint
     }
 }
 
+/// <summary>Le premier son du morceau en cours vient de sortir : le chrono part.</summary>
+public sealed record StartRunClock(int Position);
+
+public sealed class StartRunClockValidator : AbstractValidator<StartRunClock>
+{
+    public StartRunClockValidator()
+    {
+        RuleFor(x => x.Position).GreaterThan(0);
+    }
+}
+
+public static class StartRunClockEndpoint
+{
+    public static Task<PlayableRun?> LoadAsync(int id, ICurrentPlayer current, IRunsStore store, CancellationToken ct) =>
+        RunSessionAccess.LoadAsync(id, current, store, ct);
+
+    public static ProblemDetails Validate(StartRunClock request, PlayableRun? loaded) => RunSessionAccess.Check(loaded, request.Position);
+
+    /// <summary>
+    /// <c>POST /api/runs/sessions/{id}/clock</c> : le navigateur annonce le premier son du morceau en cours (événement <c>playing</c>), le chrono
+    /// part. Seule la première annonce compte, et elle ne peut pas repousser le départ au-delà d'un court délai après l'envoi de l'extrait (un
+    /// navigateur qui n'annonce rien voit le chrono partir à cette limite). Rend ce qui reste au chrono retenu : le navigateur s'y recale (un
+    /// joueur resté longtemps sur la réponse d'avant a moins de temps que le chrono plein). Un autre morceau que le morceau en cours : 409.
+    /// </summary>
+    [Authorize]
+    [WolverinePost("/api/runs/sessions/{id}/clock", OperationId = "startRunClock")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public static RunClockResponse Post(StartRunClock request, [NotBody] PlayableRun loaded, TimeProvider time)
+    {
+        var now = time.GetUtcNow();
+        loaded.Session.StartClock(now);
+        return new RunClockResponse(loaded.Session.ClockRemaining(loaded.Challenge.Rules, now));
+    }
+}
+
 public static class RefreshRunPreviewEndpoint
 {
     public static Task<PlayableRun?> LoadAsync(int id, ICurrentPlayer current, IRunsStore store, CancellationToken ct) =>
@@ -345,7 +385,8 @@ public static class SubmitRunAnswerEndpoint
     /// <summary>
     /// <c>POST /api/runs/sessions/{id}/answers</c> : répond au morceau en cours (ou le passe). **Une transaction** : la réponse, la jauge, la fin de
     /// manche, la fin de la partie et le record. Rend le morceau révélé et ses points, les scores à jour, le bilan de la manche si elle se termine, le
-    /// résultat de fin si la partie se termine, sinon l'extrait du morceau suivant. Pas de chrono : la partie se joue à l'honneur.
+    /// résultat de fin si la partie se termine, sinon l'extrait du morceau suivant. Une réponse arrivée après le chrono du morceau (règles de la playlist,
+    /// marge réseau comprise) est notée comme un morceau passé : 0 point.
     /// </summary>
     [Authorize]
     [WolverinePost("/api/runs/sessions/{id}/answers", OperationId = "submitRunAnswer")]

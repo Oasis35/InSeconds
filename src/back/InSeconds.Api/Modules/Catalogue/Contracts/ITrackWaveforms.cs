@@ -11,5 +11,6 @@ public interface ITrackWaveforms
     /// La forme de chaque morceau (blob versionné, à passer tel quel au navigateur en base64). Un morceau sans forme calculée est absent du
     /// résultat : le navigateur calcule alors la sienne, et un avertissement le signale dans les journaux.
     /// </summary>
-    Task<IReadOnlyDictionary<int, byte[]>> GetAsync(IReadOnlyCollection<int> trackIds, CancellationToken ct);
+    /// <param name="reportMissing">Signaler les morceaux sans forme dans les journaux (le morceau qu'on va jouer) ; faux pour des morceaux déjà joués, relus à chaque reprise.</param>
+    Task<IReadOnlyDictionary<int, byte[]>> GetAsync(IReadOnlyCollection<int> trackIds, CancellationToken ct, bool reportMissing = true);
 }

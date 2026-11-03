@@ -1,21 +1,26 @@
-import { computed, inject } from '@angular/core';
-import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
+import { DestroyRef, computed, effect, inject, untracked } from '@angular/core';
+import { patchState, signalStore, withComputed, withHooks, withMethods, withState } from '@ngrx/signals';
 import { SessionLoader } from '../../account/data-access/session-loader';
 import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { RoundConfig, RoundSubmission } from '../../gameplay/domain/track-round';
+import { waveformFromBlob } from '../../gameplay/domain/waveform';
 import {
-  PillState, RunComparison, RunCurrentTrack, RunLink, RunPlay, RunRound, RunSession, RunStep, RunTrack, RunsMe, isFinished, playSteps, playedCount,
-  trackPills,
+  AUTO_NEXT_MS, CLOCK_ALERT_SECONDS, PileEntry, RunComparison, RunCurrentTrack, RunLink, RunPlay, RunRound, RunSession, RunStep, RunsMe, isFinished, playSteps,
+  playedCount, runPile, stepPosition,
 } from '../domain/run';
+import { RunTick } from './run-tick';
 import { RunsApi, StartOutcome } from './runs.api';
 
+/** Le pas du chrono affiché. */
+const CLOCK_TICK_MS = 200;
+
 /**
- * L'écran affiché : le chargement, l'accueil du mode (lancer), le lien reçu d'un ami, la reprise d'une partie en cours, la partie (avec la carte de
- * réponse ou du morceau retiré), le bilan d'une manche, la fin, la comparaison des joueurs d'une playlist, et les refus (pas d'accès sur
+ * L'écran affiché : le chargement, l'accueil du mode (lancer), le lien reçu d'un ami, la reprise d'une partie en cours, la partie (la carte du
+ * morceau, sa réponse ou le morceau retiré, et la pile du run), la fin, la comparaison des joueurs d'une playlist, et les refus (pas d'accès sur
  * invitation, que la page traduit en retour au jeu du jour ; pas de playlist ; playlist inconnue ; erreur).
  */
 export type RunScreen =
-  | 'loading' | 'welcome' | 'link' | 'resume' | 'playing' | 'round_end' | 'finished' | 'comparison' | 'access_denied' | 'no_challenge' | 'not_found' | 'error';
+  | 'loading' | 'welcome' | 'link' | 'resume' | 'playing' | 'finished' | 'comparison' | 'access_denied' | 'no_challenge' | 'not_found' | 'error';
 
 interface RunState {
   screen: RunScreen;
@@ -28,10 +33,20 @@ interface RunState {
   /** Le morceau à jouer (ou, tant que des étapes restent à montrer, celui que le dernier clic lancera). */
   current: RunCurrentTrack | null;
   /**
-   * Ce qu'il reste à montrer avant de jouer `current` : la réponse au morceau, un morceau retiré, le bilan d'une manche. La première est à
-   * l'écran ; chaque clic passe à la suivante (cf. `playSteps`).
+   * Ce qu'il reste à montrer avant de jouer `current` : la réponse au morceau, un morceau retiré. La première est à l'écran ; chaque clic (ou
+   * l'enchaînement automatique) passe à la suivante (cf. `playSteps`).
    */
   steps: readonly RunStep[];
+  /** La forme de chaque morceau joué (une valeur de 0 à 1 par barre), par position : la pile la dessine. */
+  shapes: Readonly<Record<number, readonly number[]>>;
+  /** Ce qu'il reste au chrono du morceau en cours, en secondes ; `null` tant qu'il n'est pas parti. */
+  clockLeft: number | null;
+  /** Le chrono du morceau en cours est à zéro : la manche envoie ce qui est tapé. */
+  timeUp: boolean;
+  /** L'étape à l'écran passera seule à la suivante (la barre de « Morceau suivant » se remplit). */
+  autoNext: boolean;
+  /** La partie s'enchaîne seule après une réponse ; la page le coupe en mouvement réduit (et dans les tests de bout en bout). */
+  autoAdvance: boolean;
   /** La partie en cours que l'écran de reprise propose : combien de morceaux sont déjà joués, sur combien. */
   resumeCount: number;
   resumeTotal: number;
@@ -47,6 +62,11 @@ const initialState: RunState = {
   session: null,
   current: null,
   steps: [],
+  shapes: {},
+  clockLeft: null,
+  timeUp: false,
+  autoNext: false,
+  autoAdvance: true,
   resumeCount: 0,
   resumeTotal: 0,
   abandonLoading: false,
@@ -57,57 +77,122 @@ const initialState: RunState = {
  * pilote) ; la route fournit l'adaptateur de l'API et le lecteur (`provideGameplay()`). Le serveur décide de tout (points, jauge, neutralisation,
  * fin) : le store affiche ce qu'il rend.
  *
- * **Le son ne démarre que sur un clic du joueur** : `begin()`, `next()` et `playAgain()` lancent la manche ; jamais l'arrivée sur la route, un
- * `effect` ni une réponse du serveur (un morceau retiré pendant la redemande de son extrait attend le clic « Morceau suivant »). Ils commencent
- * par `round.unlockAudio()`, **avant tout `await`** (iPhone : un son lancé hors du geste reste muet).
+ * **Le premier son part d'un clic du joueur** : `begin()`, `playLink()` et `playAgain()` lancent la manche, jamais l'arrivée sur la route ni une
+ * réponse du serveur. Ils commencent par `round.unlockAudio()`, **avant tout `await`** (iPhone : un son lancé hors du geste reste muet) ; ensuite,
+ * le morceau suivant s'enchaîne seul 2 s après la réponse (le lecteur est déjà déverrouillé), ou au clic sur « Morceau suivant ». En mouvement
+ * réduit (et dans les tests de bout en bout), la page coupe l'enchaînement (`setAutoAdvance`) : rien ne part seul.
+ *
+ * **Le chrono d'un morceau** (`answerSeconds`, 45 s) part au premier son : le store l'annonce au serveur (`startClock`), qui fait foi ; à la
+ * reprise, il repart de ce que le serveur dit qu'il reste. À zéro, la manche envoie ce qui est tapé (`timeUp`). Les dernières secondes font un
+ * tic quand aucun extrait ne joue.
  */
 export const RunGameStore = signalStore(
   withState<RunState>(initialState),
   withComputed(store => {
-    const rounds = computed(() => store.session()?.rounds ?? 0);
-    const tracksPerRound = computed(() => store.session()?.tracksPerRound ?? 0);
     const step = computed<RunStep | null>(() => store.steps()[0] ?? null);
-    /** Les morceaux déjà joués de la manche affichée : ceux de l'étape à l'écran, sinon ceux de la manche en cours. */
-    const shownTracks = computed<readonly RunTrack[]>(() => {
-      const shown = step();
-      if (!shown) return store.session()?.roundTracks ?? [];
-      return shown.kind === 'summary' ? shown.summary.tracks : shown.tracks;
-    });
+    const clockLeft = store.clockLeft;
     return {
-      rounds,
-      tracksPerRound,
+      rounds: computed(() => store.session()?.rounds ?? 0),
       step,
       totalScore: computed(() => store.session()?.totalScore ?? 0),
       /** La manche telle que l'écran la montre : celle de l'étape à l'écran, sinon celle du morceau en cours. */
       shownRound: computed<RunRound | null>(() => step()?.round ?? store.session()?.round ?? null),
-      shownTracks,
-      /** Le morceau auquel le joueur vient de répondre : la carte de réponse s'affiche tant que « Morceau suivant » n'est pas cliqué. */
+      /** Le morceau auquel le joueur vient de répondre : sa réponse est dans la carte tant que l'étape est à l'écran. */
       revealed: computed(() => { const shown = step(); return shown?.kind === 'revealed' ? shown.track : null; }),
-      /** Le morceau retiré de la manche à l'écran (carte « Morceau retiré ») : l'objectif d'avant est barré. */
+      /** Le morceau retiré de la manche à l'écran (carte « Morceau retiré »). */
       withdrawn: computed(() => { const shown = step(); return shown?.kind === 'neutralized' ? shown : null; }),
-      /** Le bilan de la manche à l'écran. */
-      summary: computed(() => { const shown = step(); return shown?.kind === 'summary' ? shown.summary : null; }),
-      /** Les points gagnés sur le morceau qui vient d'être répondu (« +67 »), vides tant que le joueur n'a pas répondu. */
-      gain: computed(() => { const shown = step(); return shown?.kind === 'revealed' ? shown.track.points : null; }),
-      /** Les pastilles de la manche affichée : le morceau en cours est en corail tant que le joueur n'a pas répondu. */
-      pills: computed<PillState[]>(() => trackPills(tracksPerRound(), shownTracks(), step() === null && store.current() !== null)),
-      /** « Morceau n sur N » : le morceau en cours, ou celui dont la carte est affichée. */
-      positionInRound: computed(() => {
+      /** Le prochain clic mène à la fin de la partie (manche ratée, ou dernière manche) : le bouton l'annonce. */
+      nextEndsRun: computed(() => store.steps().length === 1 && store.session() !== null && isFinished(store.session()!)),
+      /** La pile du run : ce qui est à l'écran dans la carte (et ce qui suit) n'y est pas encore. */
+      pile: computed<PileEntry[]>(() => {
+        const session = store.session();
+        if (!session) return [];
         const shown = step();
-        if (shown && shown.kind !== 'summary') return shown.tracks.length;
-        return store.current()?.positionInRound ?? 0;
+        const hide = shown ? { position: stepPosition(shown), round: shown.round.round } : null;
+        return runPile(session.playedTracks, session.passedRounds, hide);
       }),
-      /** Le prochain clic mène au bilan de la manche (le bouton de la carte l'annonce). */
-      nextIsSummary: computed(() => store.steps()[1]?.kind === 'summary'),
-      /** Le prochain clic du bilan mène à la fin de la partie (manche ratée, ou dernière manche) : le bouton l'annonce. */
-      summaryEndsRun: computed(() => store.steps().length === 1 && store.session() !== null && isFinished(store.session()!)),
+      /** Le temps affiché par le chrono : ce qui reste, sinon le chrono plein tant qu'il n'est pas parti ; `null` sans chrono. */
+      clockShown: computed<number | null>(() => {
+        const seconds = store.session()?.answerSeconds ?? 0;
+        if (seconds <= 0) return null;
+        return clockLeft() ?? seconds;
+      }),
+      /** Les dernières secondes du chrono : gros chiffre, bord de la carte éclairci. */
+      clockAlert: computed(() => { const left = clockLeft(); return left !== null && left > 0 && left <= CLOCK_ALERT_SECONDS; }),
       record: computed(() => store.me()?.record ?? null),
       /** « Nouvelle partie » : seulement avec l'accès (retiré en cours de partie, la partie se finit, mais pas d'autre). */
       canPlayAgain: computed(() => store.me()?.hasAccess === true),
       finish: computed(() => store.session()?.finish ?? null),
     };
   }),
-  withMethods((store, api = inject(RunsApi), round = inject(TrackRoundStore), sessionLoader = inject(SessionLoader)) => {
+  withMethods((store, api = inject(RunsApi), round = inject(TrackRoundStore), sessionLoader = inject(SessionLoader), tick = inject(RunTick)) => {
+    /** L'enchaînement automatique en attente. */
+    let autoNextTimer: ReturnType<typeof setTimeout> | null = null;
+    /** Le chrono en cours : son échéance (horloge du navigateur, en ms), son pas, et le morceau qu'il chronomètre. */
+    let clockDeadline = 0;
+    let clockTimer: ReturnType<typeof setInterval> | null = null;
+    let clockPosition: number | null = null;
+    /** Le dernier morceau dont le premier son a été annoncé au serveur. */
+    let announced: number | null = null;
+
+    const cancelAutoNext = (): void => {
+      if (autoNextTimer !== null) clearTimeout(autoNextTimer);
+      autoNextTimer = null;
+      if (store.autoNext()) patchState(store, { autoNext: false });
+    };
+
+    /** L'étape à l'écran passera seule à la suivante dans 2 s (sauf enchaînement coupé : le joueur clique). */
+    const armAutoNext = (): void => {
+      cancelAutoNext();
+      if (!store.autoAdvance()) return;
+      patchState(store, { autoNext: true });
+      autoNextTimer = setTimeout(() => {
+        autoNextTimer = null;
+        advance();
+      }, AUTO_NEXT_MS);
+    };
+
+    const stopClock = (): void => {
+      if (clockTimer !== null) clearInterval(clockTimer);
+      clockTimer = null;
+      clockPosition = null;
+      patchState(store, { clockLeft: null, timeUp: false });
+    };
+
+    /** Fait tourner le chrono du morceau `position` à partir de `seconds` ; une seule fois par morceau. */
+    const runClock = (position: number, seconds: number): void => {
+      if (clockPosition === position) return;
+      stopClock();
+      clockPosition = position;
+      clockDeadline = Date.now() + seconds * 1000;
+      let lastWhole = Math.ceil(seconds);
+      const update = (): void => {
+        const left = Math.max(0, (clockDeadline - Date.now()) / 1000);
+        const whole = Math.ceil(left);
+        // Un tic à chaque seconde des dernières, quand aucun extrait ne joue (il couvrirait le morceau).
+        if (whole !== lastWhole && whole > 0 && whole <= CLOCK_ALERT_SECONDS && round.phase() !== 'playing') tick.play();
+        lastWhole = whole;
+        patchState(store, { clockLeft: left });
+        if (left <= 0) {
+          if (clockTimer !== null) clearInterval(clockTimer);
+          clockTimer = null;
+          patchState(store, { timeUp: true });
+        }
+      };
+      patchState(store, { clockLeft: seconds, timeUp: seconds <= 0 });
+      if (seconds > 0) clockTimer = setInterval(update, CLOCK_TICK_MS);
+    };
+
+    /**
+     * Recale le chrono qui tourne sur ce que le serveur a retenu, quand il lui reste moins de temps (le serveur ne laisse pas un joueur resté
+     * longtemps sur la réponse d'avant repartir avec un chrono plein) ; jamais pour en ajouter.
+     */
+    const alignClock = (position: number, seconds: number): void => {
+      if (clockPosition !== position || clockTimer === null) return;
+      const deadline = Date.now() + seconds * 1000;
+      if (deadline < clockDeadline) clockDeadline = deadline;
+    };
+
     /** Redemande l'extrait d'un morceau à une adresse fraîche (la signature Deezer expire, piège 14). */
     const refreshPreview = async (position: number): Promise<string | null> => {
       const sessionId = store.session()?.sessionId;
@@ -148,25 +233,52 @@ export const RunGameStore = signalStore(
       const [step] = store.steps();
       if (step) {
         round.reset();
-        patchState(store, { screen: step.kind === 'summary' ? 'round_end' : 'playing' });
+        stopClock();
+        patchState(store, { screen: 'playing' });
+        armAutoNext();
         return;
       }
       const current = store.current();
       if (isFinished(session) || !current) {
         round.reset();
+        stopClock();
         patchState(store, { screen: 'finished' });
         void refreshMe();
         return;
       }
       patchState(store, { screen: 'playing' });
+      // Reprise d'un morceau dont le chrono tourne déjà : il repart de ce que le serveur dit qu'il reste.
+      if (session.clockRemainingSeconds !== null && session.answerSeconds > 0) {
+        announced = current.position;
+        runClock(current.position, session.clockRemainingSeconds);
+      }
       if (play) round.start(configOf(current, session.listenSeconds), null);
+    };
+
+    /** L'étape suivante, puis le morceau suivant (le son part ; le lecteur a été déverrouillé par un clic plus tôt) ou la fin de la partie. */
+    const advance = (): void => {
+      cancelAutoNext();
+      if (!store.session()) return;
+      patchState(store, { steps: store.steps().slice(1) });
+      show(true);
+    };
+
+    /** Les formes des morceaux joués que la réponse du serveur porte (lancement, reprise) : la pile les dessine. */
+    const shapesOf = (session: RunSession): Record<number, readonly number[]> => {
+      const shapes: Record<number, readonly number[]> = { ...store.shapes() };
+      for (const track of session.playedTracks) {
+        const peaks = waveformFromBlob(track.waveform, session.listenSeconds)?.peaks;
+        if (peaks) shapes[track.position] = peaks;
+      }
+      return shapes;
     };
 
     /** La partie telle que le serveur la rend (lancement, reprise, extrait redemandé) : les étapes à montrer, puis le morceau à jouer. */
     function applyPlay(play: RunPlay, startTrack: boolean): void {
       const steps = playSteps(play, store.shownRound());
       round.reset();
-      patchState(store, { session: play.session, current: play.current, steps });
+      stopClock();
+      patchState(store, { session: play.session, current: play.current, steps, shapes: shapesOf(play.session) });
       show(startTrack);
     }
 
@@ -215,10 +327,13 @@ export const RunGameStore = signalStore(
      */
     async function init(code?: string | null): Promise<void> {
       round.reset();
+      cancelAutoNext();
+      stopClock();
+      announced = null;
       const target = code === undefined ? store.code() : code;
       patchState(store, {
-        screen: 'loading', code: target, link: null, comparison: null, session: null, current: null, steps: [], resumeCount: 0, resumeTotal: 0,
-        abandonLoading: false,
+        screen: 'loading', code: target, link: null, comparison: null, session: null, current: null, steps: [], shapes: {}, resumeCount: 0,
+        resumeTotal: 0, abandonLoading: false,
       });
       try {
         const me = await api.me();
@@ -252,6 +367,7 @@ export const RunGameStore = signalStore(
       /** « Lancer une partie » ou « Reprendre » (un clic) : une partie neuve sur une playlist neuve, ou celle qui était en cours. */
       async begin(): Promise<void> {
         round.unlockAudio();
+        tick.unlock();
         const code = store.link()?.code ?? store.me()?.pending?.challengeCode ?? null;
         await launch(() => (code ? api.join(code) : api.launch()));
       },
@@ -261,6 +377,7 @@ export const RunGameStore = signalStore(
        */
       async playLink(): Promise<void> {
         round.unlockAudio();
+        tick.unlock();
         const code = store.link()?.code;
         if (!code) return;
         patchState(store, { screen: 'loading' });
@@ -289,29 +406,59 @@ export const RunGameStore = signalStore(
       async submit(submission: RoundSubmission): Promise<void> {
         const sessionId = store.session()?.sessionId;
         if (sessionId === undefined) return;
+        // La forme du morceau, déjà calculée pour le lecteur : la pile la garde (la réponse du serveur n'en porte pas).
+        const peaks = round.waveform()?.peaks ?? null;
         try {
           const play = await api.submitAnswer(sessionId, { position: submission.trackId, artist: submission.artist, title: submission.title });
-          patchState(store, { session: play.session, current: play.current, steps: playSteps(play, store.shownRound()) });
+          const shapes = peaks ? { ...store.shapes(), [submission.trackId]: peaks } : store.shapes();
+          patchState(store, { session: play.session, current: play.current, steps: playSteps(play, store.shownRound()), shapes });
+          stopClock();
           round.reveal();
+          if (store.steps().length > 0) armAutoNext();
+          else show(true);
         } catch {
           round.submissionFailed();
         }
       },
       /**
-       * Le bouton de l'étape à l'écran (un clic) : « Morceau suivant » après une réponse ou un morceau retiré, « Manche suivante » depuis le bilan.
-       * Il mène à l'étape suivante, puis au morceau suivant (le son part dans ce clic) ou à la fin de la partie.
+       * « Morceau suivant » (un clic) après une réponse ou un morceau retiré, sans attendre l'enchaînement automatique : l'étape suivante, puis
+       * le morceau suivant (le son part dans ce clic) ou la fin de la partie.
        */
       next(): void {
         round.unlockAudio();
-        if (!store.session()) return;
-        patchState(store, { steps: store.steps().slice(1) });
-        show(true);
+        tick.unlock();
+        advance();
+      },
+      /**
+       * Le premier son du morceau en cours est sorti : le chrono part, et le serveur l'apprend (une fois par morceau ; un échec n'empêche pas de
+       * jouer, le serveur fait alors partir le chrono à sa limite). Appelé par le lecteur (`withHooks`), pas par la page.
+       */
+      firstSound(): void {
+        const session = store.session();
+        const current = store.current();
+        if (!session || !current || session.answerSeconds <= 0 || store.steps().length > 0 || announced === current.position) return;
+        announced = current.position;
+        runClock(current.position, session.answerSeconds);
+        void api.startClock(session.sessionId, current.position)
+          .then(left => { if (left !== null) alignClock(current.position, left); })
+          .catch(() => undefined);
+      },
+      /** Coupe (ou rétablit) l'enchaînement automatique : la page le coupe en mouvement réduit. */
+      setAutoAdvance(autoAdvance: boolean): void {
+        patchState(store, { autoAdvance });
+        if (!autoAdvance) cancelAutoNext();
+      },
+      /** La page s'en va : plus de chrono ni d'enchaînement. */
+      stopTimers(): void {
+        cancelAutoNext();
+        stopClock();
       },
       /** Abandonne la partie en cours : le serveur la ferme (elle ne compte pas pour le record), l'écran revient à l'accueil du mode. */
       async abandon(): Promise<void> {
         const sessionId = store.session()?.sessionId ?? store.link()?.mySessionId ?? store.me()?.pending?.sessionId;
         if (sessionId === undefined) return;
         patchState(store, { abandonLoading: true });
+        cancelAutoNext();
         try {
           await api.abandon(sessionId);
           await init();
@@ -323,9 +470,20 @@ export const RunGameStore = signalStore(
       /** « Nouvelle partie » depuis la fin (un clic) : une playlist neuve, le premier morceau lancé dans ce clic. */
       async playAgain(): Promise<void> {
         round.unlockAudio();
+        tick.unlock();
         patchState(store, { me: store.me() ? { ...store.me()!, pending: null } : null });
         await launch(() => api.launch());
       },
     };
+  }),
+  withHooks({
+    onInit(store) {
+      const round = inject(TrackRoundStore);
+      inject(DestroyRef).onDestroy(() => store.stopTimers());
+      // Le premier son de chaque morceau fait partir son chrono.
+      effect(() => {
+        if (round.phase() === 'playing') untracked(() => store.firstSound());
+      });
+    },
   }),
 );

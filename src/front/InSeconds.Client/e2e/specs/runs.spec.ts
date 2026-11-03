@@ -1,9 +1,11 @@
 import { test, expect } from '../fixtures/test';
 import { GamePage } from '../pages/game.page';
 import { RunPage } from '../pages/run.page';
+import { inSequence } from '../fixtures/sequence';
 
-// Le mode Run (« Platines ») : 4 manches de 5 morceaux, écoute fixe de 10 s, (50 + 50) points par morceau × le multiplicateur de la manche, et une
-// jauge par manche (40, 50, 60 puis 70 % du maximum). Le tirage est aléatoire : l'hôte de test donne les morceaux de la playlist tirée.
+// Le mode Run (« Platines ») : 4 manches de 5 morceaux, écoute fixe de 10 s, 45 s pour répondre, (50 + 50) points par morceau × le multiplicateur
+// de la manche, et une jauge par manche (40, 50, 60 puis 70 % du maximum). Le tirage est aléatoire : l'hôte de test donne les morceaux de la
+// playlist tirée. L'écran : la carte du morceau (chrono dans son coin), puis le total du run et la pile des morceaux joués.
 
 test.describe('Mode Platines', () => {
   test.beforeEach(async ({ api }) => {
@@ -53,7 +55,7 @@ test.describe('Mode Platines', () => {
   });
 
   test("partie gagnée : 20 bonnes réponses, les 4 manches débloquées, le disque d'or et un nouveau record", async ({ page, api }) => {
-    // 20 morceaux répondus un à un, chacun avec sa carte de réponse : plus long qu'une partie du jour.
+    // 20 morceaux répondus un à un, chacun avec sa réponse : plus long qu'une partie du jour.
     test.slow();
     const run = new RunPage(page);
     await run.loginAsAdmin();
@@ -61,32 +63,37 @@ test.describe('Mode Platines', () => {
     const tracks = await api.latestRunTracks();
     expect(tracks).toHaveLength(20);
 
-    await expect(run.position).toHaveText('Morceau 1 sur 5');
-    await expect(run.objectivePoints).toHaveText('200');
+    await expect(run.roundTitle).toHaveText('Manche 1');
+    await expect(run.toGo).toHaveText(/encore 200 pts pour passer/);
+    await expect(run.clock).toBeVisible();
+    await expect(run.pileTracks).toHaveCount(0);
 
-    // Manche 1 : la carte de réponse montre le morceau, ses points et le bouton qui mène au suivant.
+    // Manche 1 : la réponse dans la carte montre le morceau et ses points ; la pile le prend au morceau suivant.
     const [first] = tracks;
     await run.answer(`${first.artist} - ${first.title}`);
     await expect(run.answerCard.getByTestId('run-answer-artist')).toHaveText(first.artist);
     await expect(run.answerCard.getByTestId('run-answer-title')).toHaveText(first.title);
     await expect(run.answerCard.getByTestId('run-answer-points')).toHaveText('+100');
     await expect(run.totalScore).toHaveText('100');
+    await expect(run.toGo).toHaveText(/encore 100 pts pour passer/);
     await run.nextTrackButton.click();
-    await expect(run.position).toHaveText('Morceau 2 sur 5');
+    await expect(run.pileTracks).toHaveCount(1);
+    await expect(run.pileTracks.first()).toContainText(first.artist);
     await run.winRound(tracks.slice(1), 1);
-    await expect(run.objectiveLabel).toHaveText('Manche 2 débloquée');
-    await run.nextRoundButton.click();
+
+    // La manche passée : sa ligne se pose dans la pile, ses morceaux ne gardent que pochette, forme et points.
+    await expect(run.paliers.first()).toContainText('Disque de cire');
+    await expect(page.locator('[data-testid="run-pile-track"][data-past]')).toHaveCount(5);
 
     await run.winRound(tracks, 2);
-    await run.nextRoundButton.click();
     await run.winRound(tracks, 3);
-    await run.nextRoundButton.click();
 
-    // Dernière manche : elle vise le disque d'or ; son bilan s'affiche avant la fin, et son bouton y mène.
-    await run.winRound(tracks, 4);
-    await expect(run.objectiveLabel).toHaveText('Disque d’or débloqué');
-    await expect(run.nextRoundButton).toHaveText(/Voir le résultat/i);
-    await run.nextRoundButton.click();
+    // Dernière manche : la dernière réponse annonce le résultat.
+    const last = tracks.filter(t => t.round === 4);
+    await inSequence(last.slice(0, 4), track => run.answerRight(track));
+    await run.answer(`${last[4].artist} - ${last[4].title}`);
+    await expect(run.nextTrackButton).toHaveText(/Voir le résultat/i);
+    await run.nextTrackButton.click();
 
     await expect(run.finished).toHaveAttribute('data-status', 'won');
     await expect(run.disc).toHaveText('Disque d’or !');
@@ -100,7 +107,7 @@ test.describe('Mode Platines', () => {
     await expect(run.welcome.getByTestId('run-record')).toBeVisible();
   });
 
-  test('partie perdue : la première manche ratée montre son bilan, puis la fin et les manches non jouées', async ({ page }) => {
+  test('partie perdue : la première manche ratée mène directement à la fin, avec les manches non jouées', async ({ page }) => {
     const run = new RunPage(page);
     await run.loginAsAdmin();
     await run.launch();
@@ -110,15 +117,10 @@ test.describe('Mode Platines', () => {
     await run.answerEmpty();
     await run.answerEmpty();
     await run.answerEmpty();
-    await expect(run.position).toHaveText('Morceau 5 sur 5');
+    await expect(run.pileTracks).toHaveCount(4);
     await run.answer(null);
-    await expect(run.nextTrackButton).toHaveText(/Fin de la manche/i);
+    await expect(run.nextTrackButton).toHaveText(/Voir le résultat/i);
     await run.nextTrackButton.click();
-
-    await expect(run.roundEndTitle).toHaveText('Manche 1 terminée');
-    await expect(run.objectiveLabel).toHaveText('Objectif manqué');
-    await expect(run.nextRoundButton).toHaveText(/Voir le résultat/i);
-    await run.nextRoundButton.click();
 
     await expect(run.finished).toHaveAttribute('data-status', 'lost');
     await expect(run.disc).toHaveText('Disque rayé');
@@ -127,8 +129,24 @@ test.describe('Mode Platines', () => {
 
     // « Nouvelle partie » tire une autre playlist, le premier morceau part dans le clic.
     await run.playAgainButton.click();
-    await expect(run.roundTitle).toHaveText(/Manche 1 \/ 4/i);
-    await expect(run.position).toHaveText('Morceau 1 sur 5');
+    await expect(run.roundTitle).toHaveText('Manche 1');
+    await expect(run.pileTracks).toHaveCount(0);
+  });
+
+  test('le chrono à zéro envoie ce qui est tapé, sans confirmation', async ({ page }) => {
+    const run = new RunPage(page);
+    await run.loginAsAdmin();
+    await run.launch();
+    await expect(run.clock).toHaveText('0:45');
+
+    // Le premier son est sorti (le lecteur n'est plus en chargement) : le chrono tourne ; on laisse passer les 45 s sans rien valider.
+    await expect(page.getByTestId('round-timer')).not.toHaveText('…');
+    await page.clock.fastForward(46_000);
+
+    await run.answerCard.waitFor({ state: 'visible' });
+    await expect(run.answerCard.getByTestId('run-answer-artist-verdict')).toContainText('✗');
+    await expect(run.answerCard.getByTestId('run-answer-points')).toHaveText('0');
+    await expect(run.confirmSubmitButton).toHaveCount(0);
   });
 
   test("morceau sans extrait : retiré de la manche, objectif abaissé, la partie continue au clic", async ({ page, api }) => {
@@ -144,16 +162,16 @@ test.describe('Mode Platines', () => {
 
     await expect(run.withdrawnCard).toBeVisible();
     await expect(run.withdrawnCard).toContainText('Morceau retiré de la manche');
-    // 40 % des 4 morceaux qui restent : 160 pts au lieu de 200.
-    await expect(run.objectiveBefore).toHaveText('200');
-    await expect(run.objectivePoints).toHaveText('160');
+    // 40 % des 4 morceaux qui restent : 160 pts au lieu de 200, dont 100 déjà marqués.
     await expect(run.withdrawnCard).toContainText('l’objectif abaissé à 160 pts');
+    await expect(run.toGo).toHaveText(/encore 60 pts pour passer/);
     await expect(run.answerInput).toHaveCount(0);
 
-    // Le son ne repart jamais seul : « Morceau suivant » mène au 3e morceau.
+    // Les animations coupées, rien ne part seul : « Morceau suivant » mène au 3e morceau ; le retrait rejoint la pile.
     await run.nextTrackButton.click();
     await expect(run.withdrawnCard).toHaveCount(0);
-    await expect(run.position).toHaveText('Morceau 3 sur 5');
+    await expect(run.pileTracks).toHaveCount(2);
+    await expect(run.pileTracks.first()).toContainText('Morceau retiré');
     await run.answerRight(tracks[2]);
   });
 
@@ -163,16 +181,19 @@ test.describe('Mode Platines', () => {
     await run.launch();
     const tracks = await api.latestRunTracks();
     await run.answerRight(tracks[0]);
-    await expect(run.position).toHaveText('Morceau 2 sur 5');
+    await expect(run.pileTracks).toHaveCount(1);
 
     await page.goto('/runs');
     await expect(page.getByRole('heading', { name: 'Partie en pause' })).toBeVisible();
     await run.resumeButton.click();
 
-    await expect(run.position).toHaveText('Morceau 2 sur 5');
+    // La pile et le total reviennent tels quels.
+    await expect(run.pileTracks).toHaveCount(1);
+    await expect(run.pileTracks.first()).toContainText(tracks[0].artist);
     await expect(run.totalScore).toHaveText('100');
     await run.answerRight(tracks[1]);
     await expect(run.totalScore).toHaveText('200');
+    await expect(run.pileTracks).toHaveCount(2);
   });
 
   test("lien d'un ami : lien reçu, partie sans accès jouée une seule fois, comparaison dans deux navigateurs", async ({ page, api, browser }) => {
@@ -198,13 +219,13 @@ test.describe('Mode Platines', () => {
     await expect(friend.linkTitle).toHaveText('AdminE2E te lance une playlist');
     await expect(friend.linkRules).toContainText('20 morceaux, les mêmes pour tous ses joueurs');
     await expect(friend.linkRules).toContainText('4 manches, de plus en plus dures');
-    await expect(friend.linkRules).toContainText('10 s pour trouver l’artiste et le titre');
+    await expect(friend.linkRules).toContainText('10 s d’écoute, 45 s pour trouver l’artiste et le titre');
     await expect(friend.answerInput).toHaveCount(0);
 
     // « Jouer » crée l'invité, relève la playlist du créateur et lance le premier morceau.
     await friend.linkPlayButton.click();
     await friend.answerInput.waitFor({ state: 'visible' });
-    await expect(friend.position).toHaveText('Morceau 1 sur 5');
+    await expect(friend.roundTitle).toHaveText('Manche 1');
     await friend.loseFirstRound();
 
     // Sans accès, pas de « Nouvelle partie » : le jeu du jour à la place.

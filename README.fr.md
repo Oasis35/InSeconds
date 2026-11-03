@@ -31,7 +31,7 @@
 - Installable sur l'écran d'accueil (PWA), mise à jour automatiquement à un moment sûr (jamais en pleine manche)
 - Liste des appareils connectés à ton compte, déconnexion d'un appareil ou de tous les autres
 - Tes données (RGPD) : copie de toutes tes données en JSON et suppression définitive de ton compte (section « Tes données » du profil) ; appareils sans visite depuis 91 jours et comptes inactifs depuis 3 ans supprimés automatiquement chaque nuit ; ce que tu tapes en réponse n'est jamais stocké
-- Mode Run (« Platines » à l'écran, sur invitation pour l'instant) : un second jeu de 4 manches de 5 morceaux, de plus en plus difficiles, à écoute fixe de 10 s, avec une jauge de points pour débloquer la manche suivante et un disque record (du rayé à l'or) ; envoie la même playlist à tes amis par un lien et comparez vos scores une fois la partie jouée (`/runs` ; règles et écrans dans [`docs/runs/`](docs/runs/README.md))
+- Mode Run (« Platines » à l'écran, sur invitation pour l'instant) : un second jeu de 4 manches de 5 morceaux, de plus en plus difficiles, à écoute fixe de 10 s et 45 s par morceau pour répondre, sur un seul écran où s'empilent les morceaux joués, avec une jauge de points pour débloquer la manche suivante et un disque record (du rayé à l'or) ; envoie la même playlist à tes amis par un lien et comparez vos scores une fois la partie jouée (`/runs` ; règles et écrans dans [`docs/runs/`](docs/runs/README.md))
 
 ## Démarrage rapide
 

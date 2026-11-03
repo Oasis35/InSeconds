@@ -848,22 +848,23 @@
     "header": {
       "abandon": "Give up",
       "round": "Round {{ round }} / {{ rounds }}",
-      "score": "Score"
-    },
-    "objective": {
-      "gold": "Aim for the gold record",
-      "unlock": "Unlock round {{ round }}",
-      "points": "pts",
-      "unlocked": "Round {{ round }} unlocked",
-      "goldReached": "Gold record unlocked",
-      "missed": "Target missed"
-    },
-    "pills": {
-      "position": "Track {{ position }} of {{ total }}"
+      "roundShort": "Round {{ round }}",
+      "toGoBefore": "still",
+      "points": "{{ points }} pts",
+      "toGoAfter": "to pass",
+      "reached": "target reached"
     },
     "answer": {
       "next": "Next track",
-      "endRound": "End of round"
+      "seeResult": "See the result"
+    },
+    "clock": {
+      "label": "Time to answer: {{ time }}"
+    },
+    "pile": {
+      "total": "Run total",
+      "round": "round {{ round }}",
+      "withdrawn": "Track removed"
     },
     "welcome": {
       "badge": "Early access",
@@ -899,14 +900,6 @@
       "confirm": "Give up",
       "cancel": "Keep playing"
     },
-    "roundEnd": {
-      "title": "Round {{ round }} finished",
-      "next": "Next round",
-      "total": "Total score",
-      "seeResult": "See the result",
-      "withdrawnOne": "1 track removed from the round",
-      "withdrawnMany": "{{ count }} tracks removed from the round"
-    },
     "finished": {
       "found": "{{ found }} / {{ total }} tracks found",
       "newGame": "New run",
@@ -930,6 +923,7 @@
       "tracks": "{{ tracks }} tracks, the same for all its players: compare your scores at the end",
       "rounds": "{{ rounds }} rounds, getting harder",
       "listen": "{{ seconds }} to find the artist and the title",
+      "listenAndAnswer": "{{ seconds }} of listening, {{ answer }} to find the artist and the title",
       "goal": "Clear all {{ rounds }} rounds and earn the gold disc",
       "play": "Play"
     },

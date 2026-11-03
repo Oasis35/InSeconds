@@ -12,7 +12,7 @@ namespace InSeconds.Api.Modules.Catalogue.Persistence;
 /// </summary>
 public sealed class EfTrackWaveforms(InSecondsDbContext db) : ITrackWaveforms
 {
-    public async Task<IReadOnlyDictionary<int, byte[]>> GetAsync(IReadOnlyCollection<int> trackIds, CancellationToken ct)
+    public async Task<IReadOnlyDictionary<int, byte[]>> GetAsync(IReadOnlyCollection<int> trackIds, CancellationToken ct, bool reportMissing = true)
     {
         var ids = trackIds.ToArray();
         var rows = await db.Set<Track>().AsNoTracking()

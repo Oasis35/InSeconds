@@ -8,12 +8,12 @@ export const ROUND = (overrides: Partial<RunRound> = {}): RunRound => ({ round: 
 
 export const TRACK = (overrides: Partial<RunTrack> = {}): RunTrack => ({
   position: 1, round: 1, neutralized: false, artistCorrect: true, titleCorrect: true, points: 100,
-  artist: 'Daft Punk', title: 'One More Time', coverUrl: 'https://cdn/cover.jpg', deezerTrackId: 3135553, ...overrides,
+  artist: 'Daft Punk', title: 'One More Time', coverUrl: 'https://cdn/cover.jpg', deezerTrackId: 3135553, waveform: null, ...overrides,
 });
 
 export const SESSION = (overrides: Partial<RunSession> = {}): RunSession => ({
   sessionId: 7, challengeCode: 'ABC234', status: 'pending', rounds: 4, tracksPerRound: 5, listenSeconds: 10, totalScore: 0, roundsPassed: 0,
-  round: ROUND(), roundTracks: [], finish: null, ...overrides,
+  round: ROUND(), roundTracks: [], finish: null, answerSeconds: 45, clockRemainingSeconds: null, playedTracks: [], passedRounds: [], ...overrides,
 });
 
 export const CURRENT = (overrides: Partial<RunCurrentTrack> = {}): RunCurrentTrack => ({
@@ -25,7 +25,7 @@ export const PLAY = (overrides: Partial<RunPlay> = {}): RunPlay => ({
 });
 
 export const LINK = (overrides: Partial<RunLink> = {}): RunLink => ({
-  code: 'ABC234', authorPseudo: 'Clément', trackCount: 20, rounds: 4, tracksPerRound: 5, listenSeconds: 10, myStatus: 'none', mySessionId: null, ...overrides,
+  code: 'ABC234', authorPseudo: 'Clément', trackCount: 20, rounds: 4, tracksPerRound: 5, listenSeconds: 10, answerSeconds: 45, myStatus: 'none', mySessionId: null, ...overrides,
 });
 
 export const COMPARISON = (overrides: Partial<RunComparison> = {}): RunComparison => ({
@@ -41,7 +41,7 @@ export const COMPARISON = (overrides: Partial<RunComparison> = {}): RunCompariso
 });
 
 /** Un faux adaptateur : chaque réponse se règle par une propriété, chaque appel est noté. */
-export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge' | 'comparison' | 'launch' | 'join' | 'refreshPreview' | 'submitAnswer' | 'abandon'> {
+export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge' | 'comparison' | 'launch' | 'join' | 'refreshPreview' | 'submitAnswer' | 'startClock' | 'abandon'> {
   readonly calls: string[] = [];
   readonly answers: RunAnswerToSend[] = [];
 
@@ -94,6 +94,14 @@ export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge'
     this.calls.push(`submitAnswer:${sessionId}`);
     this.answers.push(answer);
     return this.answerResult instanceof Error ? Promise.reject(this.answerResult) : Promise.resolve(this.answerResult);
+  }
+
+  /** Ce que le serveur dit rester au chrono à l'annonce du premier son ; `null` : rien à recaler. */
+  clockResult: number | null = null;
+
+  startClock(sessionId: number, position: number): Promise<number | null> {
+    this.calls.push(`startClock:${sessionId}:${position}`);
+    return Promise.resolve(this.clockResult);
   }
 
   abandon(sessionId: number): Promise<void> {

@@ -25,8 +25,16 @@ describe('RunLinkScreenComponent', () => {
     expect(rules).toHaveLength(4);
     expect(rules[0]).toContain('runs.link.tracks');
     expect(rules[1]).toContain('runs.link.rounds');
-    expect(rules[2]).toContain('runs.link.listen');
+    expect(rules[2]).toContain('runs.link.listenAndAnswer');
     expect(rules[3]).toContain('runs.link.goal');
+  });
+
+  it("une playlist sans chrono ne parle que de l'écoute", () => {
+    const { element } = render(LINK({ answerSeconds: 0 }));
+
+    const rules = Array.from(element.querySelectorAll('[data-testid="run-link-rules"] li')).map(item => item.textContent ?? '');
+    expect(rules[2]).toContain('runs.link.listen');
+    expect(rules[2]).not.toContain('listenAndAnswer');
   });
 
   it('ne montre ni nombre de joueurs ni morceau (piège 31), et un seul bouton : Jouer', () => {

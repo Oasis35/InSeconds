@@ -6,9 +6,8 @@ describe('reloadMomentFor', () => {
     expect(reloadMomentFor('playing')).toBe('navigation');
   });
 
-  it('au passage en arrière-plan pendant un chargement, un bilan de manche ou à la fin de la partie', () => {
+  it('au passage en arrière-plan pendant un chargement ou à la fin de la partie', () => {
     expect(reloadMomentFor('loading')).toBe('background');
-    expect(reloadMomentFor('round_end')).toBe('background');
     expect(reloadMomentFor('finished')).toBe('background');
   });
 
