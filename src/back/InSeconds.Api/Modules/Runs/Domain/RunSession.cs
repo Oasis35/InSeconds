@@ -166,11 +166,14 @@ public sealed class RunSession
         return CurrentClockAt ?? CurrentServedAt + MaxClockWait;
     }
 
-    /// <summary>Les secondes qui restent au chrono du morceau en cours, s'il est parti (0 une fois écoulé).</summary>
+    /// <summary>
+    /// Les secondes qui restent au chrono du morceau en cours, s'il est parti (0 une fois écoulé) : au premier son annoncé, ou à la limite après
+    /// l'envoi une fois qu'elle est passée sans annonce (le joueur qui revient le voit tourner).
+    /// </summary>
     public decimal? ClockRemaining(RunRules rules, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(rules);
-        if (!rules.HasClock || CurrentClockAt is not { } start)
+        if (ClockStart(rules) is not { } start || (CurrentClockAt is null && now < start))
             return null;
         var left = (decimal)(start.AddSeconds(rules.AnswerSeconds) - now).TotalSeconds;
         return Math.Max(0m, decimal.Round(left, 1));

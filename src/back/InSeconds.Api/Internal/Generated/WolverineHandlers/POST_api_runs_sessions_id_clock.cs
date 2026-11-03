@@ -97,7 +97,7 @@ namespace Internal.Generated.WolverineHandlers
 
                 
                 // The actual HTTP request handler execution
-                InSeconds.Api.Modules.Runs.Application.StartRunClockEndpoint.Post(request, playableRun, _timeProvider);
+                var runClockResponse_response = InSeconds.Api.Modules.Runs.Application.StartRunClockEndpoint.Post(request, playableRun, _timeProvider);
 
                 
                 // Added by EF Core Transaction Middleware
@@ -107,8 +107,8 @@ namespace Internal.Generated.WolverineHandlers
                 await efCoreEnvelopeTransaction.CommitAsync(httpContext.RequestAborted, flushOutgoingMessages: false).ConfigureAwait(false);
                 // GH-2917/GH-4742: flush the outbox after the commit and before the response is written
                 await Wolverine.EntityFrameworkCore.EfCoreOutboxFlushing.FlushOutgoingMessagesAsync(messageContext).ConfigureAwait(false);
-                // Wolverine automatically sets the status code to 204 for empty responses
-                if (httpContext.Response is { HasStarted: false, StatusCode: 200 }) httpContext.Response.StatusCode = 204;
+                // Writing the response body to JSON because this was the first 'return variable' in the method signature
+                await WriteJsonAsync(httpContext, runClockResponse_response, 404);
             }
             catch (System.Exception)
             {

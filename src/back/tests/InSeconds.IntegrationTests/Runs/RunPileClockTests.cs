@@ -78,9 +78,11 @@ public class RunPileClockTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Null(start.Session.ClockRemainingSeconds);
         Assert.True(await _run.Api.ScalarAsync<bool>($"SELECT current_served_at IS NOT NULL FROM runs.sessions WHERE id = {id}"));
 
-        Assert.Equal(HttpStatusCode.NoContent, (await ClockRawAsync(alice, id, 1)).StatusCode);
+        var announced = await ClockRawAsync(alice, id, 1);
+        Assert.Equal(HttpStatusCode.OK, announced.StatusCode);
+        Assert.Equal(45m, (await announced.Content.ReadFromJsonAsync<RunClockResponse>(Ct))!.ClockRemainingSeconds);
         var first = await _run.Api.ScalarAsync<double>($"SELECT extract(epoch FROM current_clock_at)::float8 FROM runs.sessions WHERE id = {id}");
-        Assert.Equal(HttpStatusCode.NoContent, (await ClockRawAsync(alice, id, 1)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await ClockRawAsync(alice, id, 1)).StatusCode);
         Assert.Equal(first, await _run.Api.ScalarAsync<double>($"SELECT extract(epoch FROM current_clock_at)::float8 FROM runs.sessions WHERE id = {id}"));
 
         _run.Game.Time.Advance(TimeSpan.FromSeconds(12));
@@ -104,7 +106,13 @@ public class RunPileClockTests(PostgresFixture postgres) : IAsyncLifetime
         var id = start.Session.SessionId;
         _run.Game.Time.Advance(TimeSpan.FromMinutes(10));
 
-        await ClockRawAsync(alice, id, 1);
+        // Le joueur qui revient voit le chrono parti à la limite : 30 s après l'envoi, il est écoulé depuis longtemps.
+        var resumed = await alice.JoinAsync(start.Session.ChallengeCode);
+        Assert.Equal(0m, resumed.Session.ClockRemainingSeconds);
+
+        // L'annonce tardive rend le chrono retenu : le navigateur s'y recale au lieu de repartir de 45 s.
+        var late = await ClockRawAsync(alice, id, 1);
+        Assert.Equal(0m, (await late.Content.ReadFromJsonAsync<RunClockResponse>(Ct))!.ClockRemainingSeconds);
 
         var gap = await _run.Api.ScalarAsync<double>(
             $"SELECT extract(epoch FROM current_clock_at - current_served_at)::float8 FROM runs.sessions WHERE id = {id}");
@@ -137,8 +145,14 @@ public class RunPileClockTests(PostgresFixture postgres) : IAsyncLifetime
         var alice = await _run.NewInvitedAsync("Alice");
         var start = await alice.LaunchAsync();
         var (id, code) = (start.Session.SessionId, start.Session.ChallengeCode);
+        _run.Game.Time.Advance(TimeSpan.FromSeconds(20));
+        Assert.Null((await alice.JoinAsync(code)).Session.ClockRemainingSeconds);
+        _run.Game.Time.Advance(TimeSpan.FromSeconds(20));
+        // Jamais annoncé, envoyé il y a 40 s : parti à 30 s, il reste 35 s.
+        Assert.Equal(35m, (await alice.JoinAsync(code)).Session.ClockRemainingSeconds);
+
         // Envoyé il y a 81 s, jamais annoncé : départ à 30 s, fin du chrono à 75 s, marge à 80 s.
-        _run.Game.Time.Advance(TimeSpan.FromSeconds(81));
+        _run.Game.Time.Advance(TimeSpan.FromSeconds(41));
 
         var late = await alice.AnswerAsync(id, code, 1);
 
@@ -159,5 +173,37 @@ public class RunPileClockTests(PostgresFixture postgres) : IAsyncLifetime
 
         Assert.Equal(0, answer.Session.AnswerSeconds);
         Assert.Equal(100, answer.Revealed!.Points);
+    }
+
+    [Fact]
+    public async Task UneAnnonceApresUneLongueReponse_RendLeChronoRetenu()
+    {
+        var alice = await _run.NewInvitedAsync("Alice");
+        var start = await alice.LaunchAsync();
+        var (id, code) = (start.Session.SessionId, start.Session.ChallengeCode);
+        await alice.AnswerAsync(id, code, 1);
+
+        // Le joueur reste 50 s sur la réponse avant de lancer le morceau suivant : le chrono est parti à 30 s, il reste 25 s.
+        _run.Game.Time.Advance(TimeSpan.FromSeconds(50));
+        var announced = await ClockRawAsync(alice, id, 2);
+
+        Assert.Equal(25m, (await announced.Content.ReadFromJsonAsync<RunClockResponse>(Ct))!.ClockRemainingSeconds);
+    }
+
+    [Fact]
+    public async Task LaDerniereReponse_GardeLaPile()
+    {
+        var alice = await _run.NewInvitedAsync("Alice");
+        var start = await alice.LaunchAsync();
+        var (id, code) = (start.Session.SessionId, start.Session.ChallengeCode);
+        await alice.PlayAsync(id, code, 1, true, true, true, true, true);
+
+        // Manche 2 ratée : la partie finit, la pile garde les 10 morceaux et la ligne de la manche 1.
+        var lost = await alice.PlayAsync(id, code, 6, false, false, false, false, false);
+
+        Assert.NotNull(lost.Session.Finish);
+        Assert.Equal(Enumerable.Range(1, 10), lost.Session.PlayedTracks.Select(t => t.Position));
+        Assert.Equal([1], lost.Session.PassedRounds.Select(r => r.Round));
+        Assert.Null(lost.Session.ClockRemainingSeconds);
     }
 }

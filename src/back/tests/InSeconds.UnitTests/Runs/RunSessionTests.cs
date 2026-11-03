@@ -252,6 +252,8 @@ public class RunSessionTests
         session.ServeCurrent(Now);
 
         Assert.Null(session.ClockRemaining(challenge.Rules, Now.AddSeconds(10)));
+        // La limite passée, le chrono tourne pour le joueur qui revient.
+        Assert.Equal(35m, session.ClockRemaining(challenge.Rules, Now.AddSeconds(40)));
         Assert.False(session.IsLate(challenge.Rules, Now.AddSeconds(80)));
         Assert.True(session.IsLate(challenge.Rules, Now.AddSeconds(81)));
     }

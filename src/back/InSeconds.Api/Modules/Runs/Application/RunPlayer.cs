@@ -172,26 +172,25 @@ internal static class RunViews
         var rules = challenge.Rules;
         RunRoundResponse? round = null;
         IReadOnlyList<RunTrackResponse> roundTracks = [];
-        IReadOnlyList<RunTrackResponse> playedTracks = [];
-        IReadOnlyList<RunPassedRoundResponse> passedRounds = [];
         RunFinishResponse? finish = null;
+        // La pile, partie finie comprise : la dernière réponse s'affiche au-dessus des morceaux déjà joués avant l'écran de fin.
+        var playedTracks = session.Answers
+            .OrderBy(a => a.Position)
+            .Select(a => Track(run.TrackAt(a.Position)!, a, run.Tracks, shapes))
+            .ToList();
+        // Les manches passées sont les premières : la partie s'arrête à la première manche ratée.
+        var passedRounds = Enumerable.Range(1, session.RoundsPassed).Select(r =>
+        {
+            var passed = session.RoundProgressOf(challenge, r, scoring);
+            var disc = DiscLadder.Of(r, discs);
+            return new RunPassedRoundResponse(r, passed.Score, passed.Objective, new RunDiscResponse(disc.Key, disc.Stars));
+        }).ToList();
         if (session.IsPending)
         {
             var current = run.TrackAt(session.NextPosition)!.Round;
             var progress = session.RoundProgressOf(challenge, current, scoring);
             round = new RunRoundResponse(current, progress.Score, progress.Objective, progress.MaxScore);
             roundTracks = PlayedTracks(run, current);
-            playedTracks = session.Answers
-                .OrderBy(a => a.Position)
-                .Select(a => Track(run.TrackAt(a.Position)!, a, run.Tracks, shapes))
-                .ToList();
-            // Les manches passées sont les premières : la partie s'arrête à la première manche ratée.
-            passedRounds = Enumerable.Range(1, session.RoundsPassed).Select(r =>
-            {
-                var passed = session.RoundProgressOf(challenge, r, scoring);
-                var disc = DiscLadder.Of(r, discs);
-                return new RunPassedRoundResponse(r, passed.Score, passed.Objective, new RunDiscResponse(disc.Key, disc.Stars));
-            }).ToList();
         }
         else
         {

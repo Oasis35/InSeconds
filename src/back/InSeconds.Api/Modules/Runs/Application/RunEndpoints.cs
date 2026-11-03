@@ -102,8 +102,10 @@ public static class LaunchRunEndpoint
 /// <param name="TrackCount">Ses morceaux (règles figées).</param>
 /// <param name="MyStatus">La partie du joueur sur cette playlist : <c>none</c> (pas jouée), <c>pending</c>, <c>won</c>, <c>lost</c> ou <c>abandoned</c>.</param>
 /// <param name="MySessionId">Sa partie sur cette playlist, s'il en a une.</param>
+/// <param name="AnswerSeconds">Le chrono de chaque morceau (règles figées) ; 0 : pas de chrono.</param>
 public sealed record RunChallengeResponse(
-    string Code, string? AuthorPseudo, int TrackCount, int Rounds, int TracksPerRound, decimal ListenSeconds, string MyStatus, int? MySessionId);
+    string Code, string? AuthorPseudo, int TrackCount, int Rounds, int TracksPerRound, decimal ListenSeconds, string MyStatus, int? MySessionId,
+    int AnswerSeconds);
 
 public static class GetRunChallengeEndpoint
 {
@@ -131,7 +133,7 @@ public static class GetRunChallengeEndpoint
         var rules = challenge.Rules;
         return new RunChallengeResponse(
             challenge.Code, author, challenge.Tracks.Count, challenge.Tracks.Select(t => t.Round).Distinct().Count(), rules.TracksPerRound,
-            rules.ListenSeconds, mine is null ? "none" : RunViews.StatusOf(mine.Status), mine?.SessionId);
+            rules.ListenSeconds, mine is null ? "none" : RunViews.StatusOf(mine.Status), mine?.SessionId, rules.AnswerSeconds);
     }
 }
 
@@ -323,7 +325,8 @@ public static class StartRunClockEndpoint
     /// <summary>
     /// <c>POST /api/runs/sessions/{id}/clock</c> : le navigateur annonce le premier son du morceau en cours (événement <c>playing</c>), le chrono
     /// part. Seule la première annonce compte, et elle ne peut pas repousser le départ au-delà d'un court délai après l'envoi de l'extrait (un
-    /// navigateur qui n'annonce rien voit le chrono partir à cette limite). Un autre morceau que le morceau en cours : 409.
+    /// navigateur qui n'annonce rien voit le chrono partir à cette limite). Rend ce qui reste au chrono retenu : le navigateur s'y recale (un
+    /// joueur resté longtemps sur la réponse d'avant a moins de temps que le chrono plein). Un autre morceau que le morceau en cours : 409.
     /// </summary>
     [Authorize]
     [WolverinePost("/api/runs/sessions/{id}/clock", OperationId = "startRunClock")]
@@ -331,8 +334,12 @@ public static class StartRunClockEndpoint
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    [EmptyResponse]
-    public static void Post(StartRunClock request, [NotBody] PlayableRun loaded, TimeProvider time) => loaded.Session.StartClock(time.GetUtcNow());
+    public static RunClockResponse Post(StartRunClock request, [NotBody] PlayableRun loaded, TimeProvider time)
+    {
+        var now = time.GetUtcNow();
+        loaded.Session.StartClock(now);
+        return new RunClockResponse(loaded.Session.ClockRemaining(loaded.Challenge.Rules, now));
+    }
 }
 
 public static class RefreshRunPreviewEndpoint

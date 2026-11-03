@@ -101,3 +101,7 @@ public sealed record RunSessionResponse(
 public sealed record RunPlayResponse(
     RunSessionResponse Session, RunTrackResponse? Revealed, IReadOnlyList<RunNeutralizedResponse> Neutralized,
     IReadOnlyList<RunRoundSummaryResponse> RoundSummaries, RunCurrentTrackResponse? Current, bool IsResuming);
+
+/// <summary>Le chrono du morceau en cours, tel que le serveur l'a retenu à l'annonce du premier son.</summary>
+/// <param name="ClockRemainingSeconds">Ce qui lui reste ; vide pour une playlist sans chrono.</param>
+public sealed record RunClockResponse(decimal? ClockRemainingSeconds);

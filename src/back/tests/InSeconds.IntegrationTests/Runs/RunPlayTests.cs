@@ -229,7 +229,7 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
         var friend = await _run.NewPlayerAsync();
 
         var link = await friend.ChallengeAsync(code.ToLowerInvariant());
-        Assert.Equal(new RunChallengeResponse(code, "Alice", 20, 4, 5, 10m, "none", null), link);
+        Assert.Equal(new RunChallengeResponse(code, "Alice", 20, 4, 5, 10m, "none", null, 45), link);
 
         var joined = await friend.JoinAsync(code.ToLowerInvariant());
         Assert.False(joined.IsResuming);

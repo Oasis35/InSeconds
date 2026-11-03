@@ -830,8 +830,15 @@
               }
             }
           },
-          "204": {
-            "description": "No Content"
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunClockResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -912,7 +919,8 @@
           "tracksPerRound",
           "listenSeconds",
           "myStatus",
-          "mySessionId"
+          "mySessionId",
+          "answerSeconds"
         ],
         "type": "object",
         "properties": {
@@ -950,6 +958,25 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "answerSeconds": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "RunClockResponse": {
+        "required": [
+          "clockRemainingSeconds"
+        ],
+        "type": "object",
+        "properties": {
+          "clockRemainingSeconds": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
           }
         }
       },
