@@ -15,7 +15,8 @@ ARG BUILD_TIME=
 # Commit déployé, comparé dans l'admin à celui de l'API et au dernier commit de la branche (posé par deploy.sh).
 ARG GIT_COMMIT=
 RUN if [ -n "$BUILD_TIME" ]; then \
-      npm run build -- --configuration "$BUILD_CONFIGURATION" --define "BUILD_TIME='$BUILD_TIME'" --define "GIT_COMMIT='$GIT_COMMIT'"; \
+      npm run build -- --configuration "$BUILD_CONFIGURATION" \
+        --define "BUILD_TIME='$BUILD_TIME'" --define "GIT_COMMIT='$GIT_COMMIT'"; \
     else \
       npm run build -- --configuration "$BUILD_CONFIGURATION"; \
     fi

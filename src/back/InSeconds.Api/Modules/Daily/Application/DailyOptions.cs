@@ -25,7 +25,7 @@ public sealed class DailyOptions
 
     /// <summary>
     /// La part du pool jouable en cooldown, en pourcentage (#275) : le cooldown en jours s'en déduit à chaque tirage
-    /// (<see cref="Domain.TrackCooldown.Days"/>), il suit donc la taille du pool. Modifiable dans l'onglet Actions de l'admin.
+    /// (<see cref="Domain.TrackCooldown.Days"/>), il suit donc la taille du pool. Modifiable en haut de l'onglet Morceaux de l'admin.
     /// </summary>
     public int TrackCooldownPoolPercent { get; set; } = DefaultTrackCooldownPoolPercent;
 

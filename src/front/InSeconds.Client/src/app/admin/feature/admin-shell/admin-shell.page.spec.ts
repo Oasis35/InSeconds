@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
+import { WIDE_SCREEN } from '../../../core/layout/wide-screen';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -32,7 +33,7 @@ describe('AdminShellPage', () => {
 
   beforeEach(() => { reloadMoment = null; });
 
-  async function open(player: SessionPlayer | null, url = '/admin', options: { deployedAt?: string | null } = {}) {
+  async function open(player: SessionPlayer | null, url = '/admin', options: { deployedAt?: string | null; wide?: boolean } = {}) {
     api = fakePlayersApi({ getMe: vi.fn(async () => player) });
     system = fakeSystemApi();
     // Les fournisseurs de la route passent avant ceux du module de test : les faux de l'état technique sont ajoutés à la route.
@@ -47,6 +48,7 @@ describe('AdminShellPage', () => {
         providePlayersApiFake(api),
         provideRouter([{ path: 'admin', children: routes }]),
         versionFake,
+        { provide: WIDE_SCREEN, useValue: signal(options.wide ?? true) },
       ],
     });
     const harness = await RouterTestingHarness.create();
@@ -110,17 +112,24 @@ describe('AdminShellPage', () => {
     expect(element.querySelector('h1')).toBeNull();
   });
 
-  it('le panneau technique (déploiement, santé, tâches, CI) est dans la barre de gauche, déplié au toucher sur téléphone', async () => {
-    const { harness, element } = await open(admin, '/admin/catalogue');
+  it('le panneau technique (déploiement, santé, tâches, CI) est dans la barre de gauche sur PC', async () => {
+    const { element } = await open(admin, '/admin/catalogue');
 
     expect(element.querySelector('aside [data-testid="admin-tech-panel"]')).not.toBeNull();
-    expect(element.querySelector('header [data-testid="admin-tech-panel"]')).toBeNull();
+    expect(element.querySelectorAll('[data-testid="admin-tech-panel"]')).toHaveLength(1);
     expect(system.getInfo).toHaveBeenCalledTimes(1);
+  });
+
+  it('sur téléphone, le panneau technique n\'est rendu qu\'une fois déplié sous la ligne du haut', async () => {
+    const { harness, element } = await open(admin, '/admin/catalogue', { wide: false });
+
+    expect(element.querySelector('[data-testid="admin-tech-panel"]')).toBeNull();
 
     (element.querySelector('[data-testid="tech-toggle"]') as HTMLButtonElement).click();
     harness.detectChanges();
 
     expect(element.querySelector('header [data-testid="admin-tech-panel"]')).not.toBeNull();
+    expect(element.querySelectorAll('[data-testid="admin-tech-panel"]')).toHaveLength(1);
   });
 
   it('ne lit l\'état technique que pour un admin', async () => {
@@ -225,6 +234,18 @@ describe('AdminShellPage', () => {
     const { element } = await open(linkedPlayer);
 
     expect(element.querySelector('[data-testid="admin-gate"] [data-testid="browser-id"]')?.textContent).toBe(linkedPlayer.id.slice(0, 8));
+  });
+
+  it('relit l\'état technique quand l\'onglet redevient visible', async () => {
+    const { harness } = await open(admin, '/admin/catalogue');
+    await harness.fixture.whenStable();
+    expect(system.getInfo).toHaveBeenCalledTimes(1);
+
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    document.dispatchEvent(new Event('visibilitychange'));
+    await harness.fixture.whenStable();
+
+    expect(system.getInfo).toHaveBeenCalledTimes(2);
   });
 
   it('se déconnecte : la session est vidée et l\'écran d\'accès revient', async () => {

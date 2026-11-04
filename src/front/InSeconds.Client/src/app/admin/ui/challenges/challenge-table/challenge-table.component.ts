@@ -32,7 +32,7 @@ import { ChallengeStats, accountPlayerCount, unfinishedCount } from '../../../do
                 (click)="$event.stopPropagation(); selectChallenge.emit(c.id)">{{ c.date }}</button>
             </td>
             <td class="py-2 px-2 text-right tabular-nums" style="color:var(--text-hi)">{{ c.playerCount }}</td>
-            <td class="py-2 px-2 text-right tabular-nums" [style.color]="unfinished(c) > 0 ? 'var(--bg-warn)' : 'var(--text-faint)'">{{ unfinished(c) }}</td>
+            <td class="py-2 px-2 text-right tabular-nums" [style.color]="unfinished(c) > 0 ? 'var(--color-warn)' : 'var(--text-faint)'">{{ unfinished(c) }}</td>
             <td class="py-2 px-2 text-right tabular-nums" style="color:var(--color-violet)">{{ c.scoreMedian ?? '-' }}</td>
             <td class="py-2 pl-2 text-right tabular-nums" style="color:var(--text-body)">{{ accounts(c) }}</td>
           </tr>

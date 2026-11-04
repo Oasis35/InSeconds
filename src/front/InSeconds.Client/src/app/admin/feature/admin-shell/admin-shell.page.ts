@@ -1,3 +1,4 @@
+import { WIDE_SCREEN } from '../../../core/layout/wide-screen';
 import { DatePipe, DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
@@ -43,6 +44,7 @@ const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'radio', 'range', 'reset'
   host: {
     '(focusin)': 'editing.set(isTextField($event.target))',
     '(focusout)': 'onFocusOut($event)',
+    '(document:visibilitychange)': 'onVisibilityChange()',
   },
   template: `
     <ng-template #techPanel>
@@ -53,7 +55,7 @@ const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'radio', 'range', 'reset'
         [backup]="system.backup()" [backupAt]="system.info()?.lastBackupAt ?? null" [backupOffSite]="system.info()?.lastBackupOffSite ?? null"
         [jobs]="system.jobs()" [jobsFailed]="system.lastRunsFailed()" [ci]="ciLines()" [jobsUrl]="jobsUrl" [grafanaUrl]="grafanaUrl">
         <section>
-          <h2 class="text-[11px] font-semibold uppercase tracking-wide mb-1.5" style="color:var(--text-faint)">{{ 'admin.system.browser' | translate }}</h2>
+          <h2 class="text-xs font-semibold mb-1.5" style="color:var(--text-faint)">{{ 'admin.system.browser' | translate }}</h2>
           <app-browser-id />
         </section>
         <button type="button" (click)="profile.logout()" [disabled]="profile.logoutStatus() === 'pending'"
@@ -100,7 +102,7 @@ const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'radio', 'range', 'reset'
                 <span aria-hidden="true">{{ techOpen() ? '▴' : '▾' }}</span>
               </button>
             </div>
-            @if (techOpen()) {
+            @if (techOpen() && !wide()) {
               <div id="admin-tech-mobile" class="mt-2 rounded-xl p-4" style="background:var(--bg-surface)">
                 <ng-container *ngTemplateOutlet="techPanel" />
               </div>
@@ -122,9 +124,11 @@ const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'radio', 'range', 'reset'
                   </a>
                 }
               </nav>
-              <div class="rounded-xl p-4" style="background:var(--bg-surface)">
-                <ng-container *ngTemplateOutlet="techPanel" />
-              </div>
+              @if (wide()) {
+                <div class="rounded-xl p-4" style="background:var(--bg-surface)">
+                  <ng-container *ngTemplateOutlet="techPanel" />
+                </div>
+              }
             </aside>
             <!-- Le contenu de l'onglet dans un bloc : sinon <router-outlet> compte comme un élément de la grille. -->
             <div class="min-w-0 pb-4 lg:pb-10"><router-outlet /></div>
@@ -162,6 +166,8 @@ export class AdminShellPage {
   protected readonly system = inject(SystemStore);
   protected readonly jobsUrl = inject(JOBS_DASHBOARD_URL);
   protected readonly grafanaUrl = GRAFANA_DASHBOARD_URL;
+  /** PC : le panneau technique est dans la barre de gauche ; téléphone : sous la ligne du haut. Il n'est rendu qu'à un endroit. */
+  protected readonly wide = inject(WIDE_SCREEN);
   /** Le panneau technique est déplié sous la ligne du haut (téléphone). */
   protected readonly techOpen = signal(false);
   /** Un champ de texte de l'admin a le focus : une nouvelle version attend le prochain changement de page. */
@@ -183,6 +189,11 @@ export class AdminShellPage {
       loaded = true;
       untracked(() => void this.system.load());
     });
+  }
+
+  /** De retour sur l'onglet : l'état technique est relu (un admin laisse souvent l'onglet ouvert d'un jour à l'autre). */
+  protected onVisibilityChange(): void {
+    if (this.document.visibilityState === 'visible' && this.session.isAdmin()) void this.system.load();
   }
 
   /** La fenêtre qui perd le focus (barre d'adresse, autre onglet) n'est pas la fin de la saisie : le champ le garde au retour. */

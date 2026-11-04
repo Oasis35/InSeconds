@@ -25,7 +25,7 @@ import { ChallengeTrackStatsComponent } from '../challenge-track-stats/challenge
             {{ c.playerCount }} {{ (c.playerCount > 1 ? 'admin.dashboard.players' : 'admin.dashboard.player') | translate }}
           </span>
           @if (unfinished() > 0) {
-            <span class="text-xs px-2 py-0.5 rounded-full" style="color:var(--bg-warn);background:rgba(251,191,36,0.1)">
+            <span class="text-xs px-2 py-0.5 rounded-full" style="color:var(--color-warn);background:var(--bg-warn)">
               {{ unfinished() }} {{ (unfinished() > 1 ? 'admin.dashboard.abandons' : 'admin.dashboard.abandon') | translate }}
             </span>
           }

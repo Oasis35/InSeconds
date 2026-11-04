@@ -32,6 +32,8 @@ interface SystemState {
   lastRunsFailed: boolean;
   /** Le dernier passage de la CI de chaque branche déployée (`null` : pas lu chez GitHub) ; vide tant que rien n'est lu. */
   ci: Partial<Record<DeployedBranch, CiRun | null>>;
+  /** L'heure de la dernière lecture : l'âge de la sauvegarde se juge à cet instant (un `new Date()` dans un `computed` serait figé). */
+  readAt: Date;
 }
 
 /**
@@ -41,13 +43,13 @@ interface SystemState {
  * en échec n'empêche pas les autres.
  */
 export const SystemStore = signalStore(
-  withState<SystemState>({ info: null, infoFailed: false, lastRuns: null, lastRunsFailed: false, ci: {} }),
+  withState<SystemState>({ info: null, infoFailed: false, lastRuns: null, lastRunsFailed: false, ci: {}, readAt: new Date() }),
   withProps(() => ({ build: inject(FRONT_BUILD), health: inject(HealthService) })),
-  withComputed(({ info, lastRuns, ci, build, health }) => {
+  withComputed(({ info, lastRuns, ci, readAt, build, health }) => {
     const branchRun = computed(() => (build.branch ? ci()[build.branch] ?? null : null));
-    const verdict = computed(() => deploymentVerdict(build.commit, info()?.commit ?? null, branchRun()?.headSha ?? null));
+    const verdict = computed(() => deploymentVerdict(build.commit, info()?.commit ?? null, branchRun()?.headSha ?? null, branchRun()?.state === 'running'));
     const jobs = computed(() => (lastRuns() ? nightlyJobs(lastRuns() ?? []) : null));
-    const backup = computed(() => backupTone(info()?.lastBackupAt ?? null, new Date()));
+    const backup = computed(() => backupTone(info()?.lastBackupAt ?? null, readAt()));
     const ciRuns = computed(() => CI_BRANCHES.map(branch => ({ branch, run: ci()[branch] ?? null })));
     return {
       /** Le dernier commit de la branche déployée par cet environnement (lu chez GitHub) ; `null` s'il n'est pas connu. */
@@ -64,6 +66,7 @@ export const SystemStore = signalStore(
   withMethods((store, system = inject(SystemApi), jobs = inject(JobsApi), github = inject(GithubCiApi)) => ({
     /** Lit l'état de l'API, les tâches et la CI des deux branches, en parallèle. */
     async load(): Promise<void> {
+      patchState(store, { readAt: new Date() });
       const info = system.getInfo()
         .then(value => patchState(store, { info: value, infoFailed: false }))
         .catch(() => patchState(store, { infoFailed: true }));

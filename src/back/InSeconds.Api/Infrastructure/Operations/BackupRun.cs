@@ -2,7 +2,7 @@ namespace InSeconds.Api.Infrastructure.Operations;
 
 /// <summary>
 /// Une sauvegarde nocturne réussie de la base de prod, notée par <c>deploy/infra/backup.sh</c> lui-même (l'API n'en écrit jamais) et lue
-/// par l'état technique de l'admin. Le staging n'en a pas : sa base est une copie des seuls schémas des modules.
+/// par l'état technique de l'admin. Le staging n'en a pas : sa base est copiée de la prod, puis cette table est vidée par <c>staging-anonymize.sql</c>.
 /// </summary>
 public sealed class BackupRun
 {

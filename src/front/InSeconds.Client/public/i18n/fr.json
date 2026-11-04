@@ -509,6 +509,7 @@
       "verdict": {
         "aligned": "Front et API à jour",
         "same": "Front et API sur le même commit",
+        "deploying": "Déploiement en cours (CI de la branche en cours)",
         "pending": "Déploiement en retard sur la branche",
         "mismatch": "Front et API sur des commits différents",
         "unknown": "Commits inconnus (build local)"

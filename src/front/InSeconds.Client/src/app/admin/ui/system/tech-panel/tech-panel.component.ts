@@ -14,6 +14,7 @@ const JOB_ICON: Record<JobTone, { icon: string; color: string }> = {
 const VERDICT_COLOR: Record<DeploymentVerdict, string> = {
   aligned: 'var(--color-success)',
   same: 'var(--color-success)',
+  deploying: 'var(--text-light)',
   pending: 'var(--color-warn)',
   mismatch: 'var(--text-error)',
   unknown: 'var(--text-muted)',
@@ -121,7 +122,7 @@ export interface CiLine {
     </div>
   `,
   styles: `
-    .tech-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.375rem; color: var(--text-faint); }
+    .tech-title { font-size: 12px; font-weight: 600; margin-bottom: 0.375rem; color: var(--text-faint); }
     .tech-line { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.125rem 0; }
   `,
 })

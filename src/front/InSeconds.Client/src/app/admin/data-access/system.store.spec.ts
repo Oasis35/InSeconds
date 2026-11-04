@@ -43,13 +43,22 @@ describe('SystemStore', () => {
     expect(store.alerts()).toBe(0);
   });
 
-  it('la branche a un commit plus récent que celui déployé : en retard, une alerte', async () => {
+  it('la branche a un commit plus récent, CI finie : en retard, une alerte', async () => {
     const store = await create({
-      github: { latestRun: vi.fn(branch => Promise.resolve({ branch, headSha: 'ffffffff', state: 'running' as const, url: '' })) },
+      github: { latestRun: vi.fn(branch => Promise.resolve({ branch, headSha: 'ffffffff', state: 'success' as const, url: '' })) },
     });
 
     expect(store.verdict()).toBe('pending');
     expect(store.alerts()).toBe(1);
+  });
+
+  it('la branche a un commit plus récent dont la CI tourne : déploiement en cours, pas une alerte', async () => {
+    const store = await create({
+      github: { latestRun: vi.fn(branch => Promise.resolve({ branch, headSha: 'ffffffff', state: 'running' as const, url: '' })) },
+    });
+
+    expect(store.verdict()).toBe('deploying');
+    expect(store.alerts()).toBe(0);
   });
 
   it('front et API de deux commits différents : désalignés', async () => {

@@ -8,7 +8,7 @@ import {
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
-const DAYS_COLOR = { low: 'var(--color-fail)', medium: 'var(--bg-warn)', high: 'var(--text-hi)' } as const;
+const DAYS_COLOR = { low: 'var(--color-fail)', medium: 'var(--color-warn)', high: 'var(--text-hi)' } as const;
 
 /**
  * Le cooldown de réutilisation des morceaux (#275), replié en une ligne en tête de l'onglet Morceaux (« Cooldown : 120 j (75 % du

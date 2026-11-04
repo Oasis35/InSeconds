@@ -113,7 +113,7 @@ export function statusLabelKey(status: string): string | null {
 
 /** Couleur du point de statut devant un chip dont la partie n'est pas terminée. */
 export function statusDotColor(status: string): string {
-  if (status === 'Abandoned') return 'var(--bg-warn)';
+  if (status === 'Abandoned') return 'var(--color-warn)';
   if (status === 'Pending') return 'var(--text-faint)';
   return 'var(--text-muted)';
 }

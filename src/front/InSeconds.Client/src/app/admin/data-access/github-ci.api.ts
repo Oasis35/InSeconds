@@ -12,7 +12,8 @@ export const GITHUB_FETCH = new InjectionToken<typeof fetch>('GITHUB_FETCH', { f
 
 /** La page des passages de la CI d'une branche, chez GitHub. */
 export function ciRunsPage(branch: string): string {
-  return `https://github.com/${GITHUB_REPOSITORY}/actions/workflows/ci.yml?query=${encodeURIComponent(`branch:${branch}`)}`;
+  const query = encodeURIComponent('branch:' + branch);
+  return `https://github.com/${GITHUB_REPOSITORY}/actions/workflows/ci.yml?query=${query}`;
 }
 
 interface WorkflowRunsResponse {

@@ -27,6 +27,8 @@ describe('système (domaine)', () => {
     expect(deploymentVerdict(SHA, SHA, SHA)).toBe('aligned');
     expect(deploymentVerdict(SHA, SHA, null)).toBe('same');
     expect(deploymentVerdict(SHA, SHA, OTHER)).toBe('pending');
+    expect(deploymentVerdict(SHA, SHA, OTHER, true)).toBe('deploying');
+    expect(alertCount({ verdict: 'deploying', apiDown: false, backup: 'ok', jobs: [], ci: [] })).toBe(0);
     expect(deploymentVerdict(SHA, OTHER, SHA)).toBe('mismatch');
     expect(deploymentVerdict(null, SHA, SHA)).toBe('unknown');
     expect(deploymentVerdict(SHA, null, SHA)).toBe('unknown');

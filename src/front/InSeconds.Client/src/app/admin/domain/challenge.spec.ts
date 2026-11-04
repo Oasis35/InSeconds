@@ -85,7 +85,7 @@ describe('challenge (domaine)', () => {
   it('traduit les statuts connus seulement', () => {
     expect(statusLabelKey('Expired')).toBe('admin.players.status.Expired');
     expect(statusLabelKey('Inconnu')).toBeNull();
-    expect(statusDotColor('Abandoned')).toBe('var(--bg-warn)');
+    expect(statusDotColor('Abandoned')).toBe('var(--color-warn)');
     expect(statusDotColor('Pending')).toBe('var(--text-faint)');
     expect(statusDotColor('Expired')).toBe('var(--text-muted)');
   });

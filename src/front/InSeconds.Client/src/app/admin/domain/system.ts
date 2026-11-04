@@ -61,17 +61,21 @@ export function sameCommit(a: string, b: string): boolean {
  * Le verdict du déploiement :
  * - `aligned` : front, API et dernier commit de la branche sont le même commit ;
  * - `same` : front et API identiques, la branche n'a pas pu être lue chez GitHub ;
- * - `pending` : front et API identiques mais en retard sur la branche (déploiement en cours ou en échec) ;
+ * - `deploying` : en retard sur la branche, dont la CI tourne encore (le déploiement suivra) : pas une alerte ;
+ * - `pending` : front et API identiques mais en retard sur la branche, CI finie (déploiement en échec ou bloqué) ;
  * - `mismatch` : front et API ne viennent pas du même commit ;
  * - `unknown` : un des deux commits manque (build local, `ng serve`, E2E).
  */
-export type DeploymentVerdict = 'aligned' | 'same' | 'pending' | 'mismatch' | 'unknown';
+export type DeploymentVerdict = 'aligned' | 'same' | 'deploying' | 'pending' | 'mismatch' | 'unknown';
 
-export function deploymentVerdict(front: string | null, api: string | null, branchHead: string | null): DeploymentVerdict {
+export function deploymentVerdict(
+  front: string | null, api: string | null, branchHead: string | null, branchCiRunning = false,
+): DeploymentVerdict {
   if (!front || !api) return 'unknown';
   if (!sameCommit(front, api)) return 'mismatch';
   if (!branchHead) return 'same';
-  return sameCommit(front, branchHead) ? 'aligned' : 'pending';
+  if (sameCommit(front, branchHead)) return 'aligned';
+  return branchCiRunning ? 'deploying' : 'pending';
 }
 
 /** Les quatre tâches de la nuit, dans l'ordre de la nuit (UTC) : contrôle des extraits, défi du jour, clôture, purge. */
@@ -84,7 +88,7 @@ export const POOL_INSUFFICIENT_CODE = 'admin.pool_insufficient';
 export type JobTone = 'ok' | 'warn' | 'error' | 'running' | 'none';
 
 export function jobTone(run: JobLastRun | undefined): JobTone {
-  if (!run || run.state === null || run.state === 'deleted' || run.at === null) return 'none';
+  if (run?.state == null || run.state === 'deleted' || run.at === null) return 'none';
   if (run.state === 'queued' || run.state === 'processing') return 'running';
   if (run.state === 'failed' || run.state === 'retry_scheduled') return run.errorCode === POOL_INSUFFICIENT_CODE ? 'warn' : 'error';
   const failed = run.result?.['failed'];
