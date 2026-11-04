@@ -34,6 +34,10 @@ Panneau technique de l'admin : lecture anonyme de l'API publique de GitHub (`api
 - **Effacement** : `RunsPlayerData` supprime les parties, les réponses, le record et l'accès du joueur ; les playlists qu'il a lancées restent jouables, `created_by` passe à `null`.
 - **Énumération des liens** : la lecture d'un lien est limitée à 60 requêtes par IP en 5 minutes (`run-link`), pour 31⁶ codes possibles.
 
+## Sauvegardes
+
+Base de prod sauvegardée chaque nuit, chiffrée vers Cloudflare R2 (30 jours, une par mois sur un an, archives sans limite ; `deploy/infra/README.md`). Le contrôle de restauration (`backup-verify.sh`) déchiffre la dernière sauvegarde dans un dossier du VPS réservé à son utilisateur, la restaure dans un Postgres jetable sans réseau, la compare à la prod, puis supprime la copie et le conteneur (ceux d'un passage tué sont supprimés au passage suivant). Ce qui sort de ces passages (`infra.backup_runs`, signal healthchecks.io, journal Grafana) ne contient aucune donnée de joueur : noms de fichiers, nombres de lignes, étape et message d'erreur, les erreurs de `pg_restore` étant filtrées avant envoi (aucune ligne `DETAIL`, `CONTEXT` ni valeur citée, testé par `BackupScriptsTests`). `infra.backup_runs` garde 90 jours et est vidée au staging.
+
 ## Durées de conservation
 
 Appliquées chaque nuit par `players-purge-expired-tokens` :

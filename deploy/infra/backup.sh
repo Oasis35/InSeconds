@@ -45,12 +45,8 @@ upload_to_r2() { # upload_to_r2 <nom du dump>
   rclone_run delete r2crypt:monthly/ --min-age "${REMOTE_MONTHLY_KEEP_DAYS}d"
 }
 
-prepare_backup_dir() { # dossier local et verrou partagés par backup et archive
+prepare_backup_dir() { # dossier local de backup et archive (le verrou est pris par start_backup_run)
   [[ -n "$PGPASSWORD" ]] || fail "INSECONDS_DB_PASSWORD manquant dans $ENV_FILE."
-  mkdir -p "$BACKUP_DIR"
-  chmod 700 "$BACKUP_DIR"
-  exec 9> "$BACKUP_DIR/.lock"
-  flock -n 9 || fail "une sauvegarde est déjà en cours."
 }
 
 dump_database() { # dump_database <nom> : dump vérifié dans BACKUP_DIR, écrit d'abord dans $tmp_dump
@@ -69,6 +65,12 @@ dump_database() { # dump_database <nom> : dump vérifié dans BACKUP_DIR, écrit
 # healthchecks.io pour la nuit seulement, Grafana). Globales : le trap s'exécute hors de la fonction.
 start_backup_run() { # start_backup_run <kind> <contrôle healthchecks.io ou vide>
   require_prod
+  # Verrou d'abord, avant tout compte rendu : un passage lancé pendant un autre n'est pas un échec de la sauvegarde
+  # (ni ligne en base, ni signal d'échec), il s'arrête seulement.
+  mkdir -p "$BACKUP_DIR"
+  chmod 700 "$BACKUP_DIR"
+  exec 9> "$BACKUP_DIR/.lock"
+  flock -n 9 || { echo "ERREUR : une sauvegarde est déjà en cours, rien n'est fait." >&2; exit 1; }
   start_journal
   name="inseconds-$(date -u +%Y-%m-%dT%H%M%SZ).dump"
   tmp_dump="$BACKUP_DIR/.$name.part"

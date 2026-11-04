@@ -96,6 +96,62 @@ public sealed class BackupScriptsTests(BackupScriptsFixture env) : IClassFixture
     }
 
     [Fact]
+    public async Task SauvegardeDejaEnCours_SArreteSansCompteRendu()
+    {
+        var bucket = await env.NewTestAsync();
+        var directory = Directory.CreateDirectory(env.BackupDirectory(bucket));
+        // Le verrou tenu par un autre passage, comme la sauvegarde de la nuit pendant un lancement à la main.
+        using var holder = Process.Start(new ProcessStartInfo("flock", [Path.Combine(directory.FullName, ".lock"), "sleep", "30"]))!;
+        try
+        {
+            await Task.Delay(500, TestContext.Current.CancellationToken);
+            var result = await env.RunAsync("backup.sh", bucket);
+
+            Assert.Equal(1, result.ExitCode);
+            Assert.Contains("une sauvegarde est déjà en cours", result.Output, StringComparison.Ordinal);
+            Assert.Empty(env.RequestsOf(bucket));
+            Assert.Equal(0L, await env.CountAsync("infra.backup_runs"));
+        }
+        finally
+        {
+            holder.Kill();
+        }
+    }
+
+    [Fact]
+    public async Task ErreursDePgRestore_SansLeContenuDesTables()
+    {
+        // Un COPY qui échoue cite la ligne fautive (email, pseudo) : rien de tel ne doit partir dans le journal envoyé.
+        const string stderr = """
+            pg_restore: error: COPY failed for table "accounts": ERROR:  invalid input syntax for type uuid: "joueur@exemple.fr"
+            DETAIL:  Key (email)=(joueur@exemple.fr) already exists.
+            CONTEXT:  COPY accounts, line 3: "1	joueur@exemple.fr	Pseudo"
+            pg_restore: error: could not execute query: ERROR:  duplicate key value violates unique constraint "accounts_pkey"
+            Command was: COPY players.accounts (id, email, pseudo) FROM stdin;
+            """;
+        var start = new ProcessStartInfo("bash", ["-c", $"source '{BackupScriptsFixture.ScriptDirectory}/backup-common.sh'; pg_errors_only"])
+        {
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+        };
+        start.Environment["BACKUP_ENV_FILE"] = "/nonexistent/.env";
+        using var process = Process.Start(start)!;
+        await process.StandardInput.WriteAsync(stderr.AsMemory(), TestContext.Current.CancellationToken);
+        process.StandardInput.Close();
+        var output = await process.StandardOutput.ReadToEndAsync(TestContext.Current.CancellationToken);
+        await process.WaitForExitAsync(TestContext.Current.CancellationToken);
+
+        Assert.DoesNotContain("joueur@exemple.fr", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("Pseudo", output, StringComparison.Ordinal);
+        Assert.Equal(
+            [
+                "pg_restore: error: COPY failed for table \"accounts\": ERROR:  invalid input syntax for type uuid: …",
+                "pg_restore: error: could not execute query: ERROR:  duplicate key value violates unique constraint \"accounts_pkey\"",
+            ],
+            output.Split('\n', StringSplitOptions.RemoveEmptyEntries));
+    }
+
+    [Fact]
     public async Task CheckoutDuStaging_RefuseAvantDeRienFaire()
     {
         var staging = Directory.CreateTempSubdirectory();
@@ -194,7 +250,7 @@ public sealed class BackupScriptsFixture : IAsyncLifetime
             ["INSECONDS_DB_PASSWORD"] = Password,
             ["BACKUP_DB_HOST"] = _postgres.IpAddress,
             ["BACKUP_DOCKER_NETWORK"] = "bridge",
-            ["BACKUP_DIR"] = Path.Combine(_workDirectory, bucket),
+            ["BACKUP_DIR"] = BackupDirectory(bucket),
             ["R2_ACCESS_KEY_ID"] = S3Key,
             ["R2_SECRET_ACCESS_KEY"] = S3Secret,
             ["R2_ENDPOINT"] = $"http://{_s3.IpAddress}:8080",
@@ -223,6 +279,9 @@ public sealed class BackupScriptsFixture : IAsyncLifetime
         await process.WaitForExitAsync(timeout.Token);
         return new ScriptResult(process.ExitCode, await output + await error);
     }
+
+    /// <summary>Le dossier local des sauvegardes d'un test (<c>BACKUP_DIR</c>).</summary>
+    public string BackupDirectory(string bucket) => Path.Combine(_workDirectory, bucket);
 
     /// <summary>Les Postgres jetables restés en place (un contrôle doit toujours supprimer le sien).</summary>
     public async Task<string[]> ScratchContainersAsync()

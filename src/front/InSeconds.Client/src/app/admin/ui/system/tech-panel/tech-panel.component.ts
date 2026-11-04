@@ -79,9 +79,9 @@ export interface CiLine {
         </p>
         <p class="tech-line">
           <span>{{ 'admin.system.backup' | translate }}</span>
-          <span [style.color]="alert(backup()) ? 'var(--text-error)' : 'var(--text-hi)'" data-testid="backup">
+          <span [style.color]="stale(backup()) ? 'var(--text-error)' : 'var(--text-hi)'" data-testid="backup">
             @if (backupAt(); as at) {
-              <span aria-hidden="true" [style.color]="alert(backup()) ? 'var(--text-error)' : 'var(--color-success)'">{{ alert(backup()) ? '✗' : '✓' }}</span>
+              <span aria-hidden="true" [style.color]="stale(backup()) ? 'var(--text-error)' : 'var(--color-success)'">{{ stale(backup()) ? '✗' : '✓' }}</span>
               {{ at | date: 'dd/MM HH:mm' }} · {{ (backupOffSite() ? 'admin.system.backupOffSite' : 'admin.system.backupLocal') | translate }}
             } @else if (!backupFailure()) {
               {{ 'admin.system.noBackup' | translate }}
@@ -89,15 +89,15 @@ export interface CiLine {
           </span>
         </p>
         @if (backupFailure(); as failure) {
-          <p class="text-xs mt-0.5" style="color:var(--text-error)" data-testid="backup-failure">
+          <p class="text-xs mt-0.5 break-words" style="color:var(--text-error)" data-testid="backup-failure">
             {{ 'admin.system.backupFailed' | translate: { at: (failure.at | date: 'dd/MM HH:mm') } }}{{ failure.message ? ' : ' + failure.message : '' }}
           </p>
         }
         <p class="tech-line">
           <span>{{ 'admin.system.restoreTest' | translate }}</span>
-          <span [style.color]="alert(restoreTest()) ? 'var(--text-error)' : 'var(--text-hi)'" data-testid="restore-test">
+          <span [style.color]="stale(restoreTest()) ? 'var(--text-error)' : 'var(--text-hi)'" data-testid="restore-test">
             @if (restoreTestAt(); as at) {
-              <span aria-hidden="true" [style.color]="alert(restoreTest()) ? 'var(--text-error)' : 'var(--color-success)'">{{ alert(restoreTest()) ? '✗' : '✓' }}</span>
+              <span aria-hidden="true" [style.color]="stale(restoreTest()) ? 'var(--text-error)' : 'var(--color-success)'">{{ stale(restoreTest()) ? '✗' : '✓' }}</span>
               {{ at | date: 'dd/MM HH:mm' }}
             } @else if (!restoreTestFailure()) {
               {{ 'admin.system.noRestoreTest' | translate }}
@@ -105,7 +105,7 @@ export interface CiLine {
           </span>
         </p>
         @if (restoreTestFailure(); as failure) {
-          <p class="text-xs mt-0.5" style="color:var(--text-error)" data-testid="restore-test-failure">
+          <p class="text-xs mt-0.5 break-words" style="color:var(--text-error)" data-testid="restore-test-failure">
             {{ 'admin.system.restoreTestFailed' | translate: { at: (failure.at | date: 'dd/MM HH:mm') } }}{{ failure.message ? ' : ' + failure.message : '' }}
           </p>
         }
@@ -230,6 +230,8 @@ export class TechPanelComponent {
   protected readonly verdictColor = computed(() => VERDICT_COLOR[this.verdict()]);
 
   protected readonly alert = backupAlert;
+  /** La date affichée est celle du dernier succès : elle ne passe en rouge que trop vieille ; un échec a sa propre ligne. */
+  protected readonly stale = (tone: BackupTone): boolean => tone === 'stale';
 
   protected short(sha: string | null): string {
     return shortCommit(sha) ?? '-';

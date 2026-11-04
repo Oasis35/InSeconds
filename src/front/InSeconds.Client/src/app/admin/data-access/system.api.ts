@@ -1,9 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { AdminClient } from '../../api/admin/api.generated';
+import { AdminClient, BackupFailureResponse } from '../../api/admin/api.generated';
 import { CatalogueClient } from '../../api/catalogue/api.generated';
 import { DailyClient } from '../../api/daily/api.generated';
-import { BackupFailureResponse } from '../../api/admin/api.generated';
 import { BackupFailure, CatalogueHealth, NextChallenge, SystemInfo } from '../domain/system';
 
 /**

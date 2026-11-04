@@ -83,6 +83,11 @@ depuis son checkout (`~/apps/InSeconds-staging`, ou un dossier qui a un `.env.st
   par ligne ; en réussite, une seule ligne de résumé (« Sauvegarde OK : … », « Restauration OK : … »). Panneaux « Sauvegardes et contrôle de
   restauration » du tableau Exploitation. Pas d'alerte Grafana : l'alerte, c'est healthchecks.io.
 
+Les erreurs de `pg_restore` sont filtrées avant d'entrer dans le journal : seules restent ses lignes `pg_restore: …`, coupées après la raison
+d'un `ERROR:` (jamais les lignes `DETAIL`, `CONTEXT` ni `Command was`, qui citent le contenu des tables). Un passage arrêté par un signal
+(`systemctl stop`, délai de l'unité dépassé) envoie quand même son compte rendu ; tué net, son Postgres jetable et sa copie déchiffrée sont
+supprimés par le passage suivant. Une sauvegarde lancée pendant une autre s'arrête sur le verrou, sans compte rendu ni signal d'échec.
+
 Une sauvegarde :
 
 1. `pg_dump -Fc` dans un conteneur `postgres:17-alpine` jetable (même version majeure que

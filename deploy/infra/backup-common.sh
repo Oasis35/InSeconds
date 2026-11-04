@@ -76,6 +76,9 @@ start_journal() {
   exec 3>&1 4>&2
   exec > >(tee -a "$RUN_LOG") 2>&1
   JOURNAL_PID=$!
+  # Arrêt demandé (systemctl stop, délai de l'unité dépassé, Ctrl+C) : bash ne lance pas le trap EXIT sur un signal sans
+  # trap à lui. On sort donc proprement, pour que le compte rendu parte et que le Postgres jetable soit supprimé.
+  trap 'echo "ERREUR : passage interrompu (signal reçu)." >&2; exit 143' TERM INT
 }
 
 stop_journal() { # rend la sortie d'origine et attend que tee ait tout écrit
@@ -87,9 +90,13 @@ failure_message() { # message court d'un échec : la ligne ERREUR, sinon la dern
   local status="$1" line
   line=$(grep -E '^ERREUR : ' "$RUN_LOG" | tail -n1 | sed 's/^ERREUR : //') || true
   if [[ -z "$line" ]]; then
-    line="échec inattendu (code $status) : $(grep -v '^\[' "$RUN_LOG" | grep -v '^[[:space:]]*$' | tail -n1)"
+    line="échec inattendu (code $status) : $(grep -v '^\[' "$RUN_LOG" | grep -v '^[[:space:]]*$' | tail -n1 || true)"
   fi
-  printf '%s : %s' "${STEP_LABEL:-avant la première étape}" "$line" | cut -c1-500
+  printf '%s : %s' "${STEP_LABEL:-avant la première étape}" "$line" | utf8_cut 500
+}
+
+utf8_cut() { # utf8_cut <octets> : coupe l'entrée sans laisser de caractère UTF-8 coupé en deux (refusé par Postgres)
+  head -c "$1" | iconv -f UTF-8 -t UTF-8 -c 2> /dev/null || true
 }
 
 # ---------- garde-fou : la prod seulement ----------
@@ -129,6 +136,7 @@ verify_dump() { # verify_dump <fichier> : lisible par pg_restore et contient des
 # fin. Il ne touche jamais shared-postgres, et n'a besoin d'aucun mot de passe (accès local par `docker exec`).
 SCRATCH=""
 scratch_start() {
+  scratch_cleanup_stale
   SCRATCH="inseconds-backup-scratch-$$"
   log "Postgres jetable $SCRATCH ($PG_IMAGE, sans réseau)..."
   docker run -d --rm --name "$SCRATCH" --network none --memory 1g -e POSTGRES_HOST_AUTH_METHOD=trust "$PG_IMAGE" > /dev/null
@@ -142,7 +150,32 @@ scratch_start() {
   docker exec "$SCRATCH" createdb -U postgres "$DB_NAME" < /dev/null
 }
 scratch_restore() { # scratch_restore <fichier> : restauration complète, arrêt à la première erreur
-  docker exec -i "$SCRATCH" pg_restore -U postgres -d "$DB_NAME" --no-owner --no-privileges --exit-on-error < "$1"
+  docker exec -i "$SCRATCH" pg_restore -U postgres -d "$DB_NAME" --no-owner --no-privileges --exit-on-error < "$1" \
+    2> >(pg_errors_only >&2)
+}
+# Erreurs de pg_restore sans le contenu des tables : le journal part vers healthchecks.io, Grafana et l'admin, alors qu'un
+# COPY qui échoue cite la ligne fautive (lignes DETAIL, CONTEXT, Command was : email, pseudo…). Restent les lignes
+# « pg_restore: … », coupées après « ERROR: <raison>: » (la suite peut citer une valeur) et à 300 caractères.
+pg_errors_only() {
+  local line
+  while IFS= read -r line; do
+    [[ "$line" == "pg_restore: "* ]] || continue
+    printf '%s' "$line" | sed -E 's/(ERROR: +[^:]*:).*/\1 …/' | utf8_cut 300
+    echo
+  done
+}
+scratch_cleanup_stale() { # conteneurs jetables et copies déchiffrées laissés par un passage tué (SIGKILL : pas de trap)
+  local name pid
+  for name in $(docker ps -a --filter name=inseconds-backup-scratch- --format '{{.Names}}'); do
+    pid=${name##*-}
+    if [[ "$pid" =~ ^[0-9]+$ ]] && ! kill -0 "$pid" 2> /dev/null; then
+      log "Postgres jetable d'un passage interrompu supprimé : $name."
+      docker rm -f "$name" > /dev/null 2>&1 || true
+    fi
+  done
+  if [[ -d "$BACKUP_DIR" ]]; then
+    find "$BACKUP_DIR" -maxdepth 1 -name '.verify-*' -type d -mmin +90 -print -exec rm -rf {} + || true
+  fi
 }
 scratch_query() { # scratch_query <sql> : une valeur lue dans la base restaurée
   docker exec "$SCRATCH" psql -U postgres -d "$DB_NAME" -v ON_ERROR_STOP=1 -Atqc "$1" < /dev/null
@@ -177,6 +210,8 @@ r2_configured() {
   done
   if (( set == 0 )); then return 1; fi
   (( set == ${#keys[@]} )) || fail "R2 à moitié configuré : renseigner ${keys[*]} dans $ENV_FILE (ou aucun)."
+  # Ici, dans le shell du script : les appels suivants, souvent dans un $(…), retrouvent la configuration toute prête.
+  prepare_rclone_env
 }
 
 rclone_env_ready=false

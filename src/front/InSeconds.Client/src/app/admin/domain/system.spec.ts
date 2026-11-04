@@ -28,7 +28,7 @@ describe('système (domaine)', () => {
     expect(deploymentVerdict(SHA, SHA, null)).toBe('same');
     expect(deploymentVerdict(SHA, SHA, OTHER)).toBe('pending');
     expect(deploymentVerdict(SHA, SHA, OTHER, true)).toBe('deploying');
-    expect(alertCount({ verdict: 'deploying', apiDown: false, backup: 'ok', jobs: [], ci: [] })).toBe(0);
+    expect(alertCount({ verdict: 'deploying', apiDown: false, backup: 'ok', restoreTest: 'ok', jobs: [], ci: [] })).toBe(0);
     expect(deploymentVerdict(SHA, OTHER, SHA)).toBe('mismatch');
     expect(deploymentVerdict(null, SHA, SHA)).toBe('unknown');
     expect(deploymentVerdict(SHA, null, SHA)).toBe('unknown');
@@ -92,9 +92,9 @@ describe('système (domaine)', () => {
     const jobs: NightlyJob[] = [{ id: 'a', tone: 'ok', at: AT }, { id: 'b', tone: 'warn', at: AT }, { id: 'c', tone: 'error', at: AT }];
     const red = { branch: 'main', headSha: SHA, state: 'failure' as const, url: '' };
 
-    expect(alertCount({ verdict: 'aligned', apiDown: false, backup: 'ok', jobs: [], ci: [null] })).toBe(0);
-    expect(alertCount({ verdict: 'pending', apiDown: true, backup: 'stale', jobs, ci: [red, null] })).toBe(1 + 1 + 1 + 2 + 1);
-    expect(alertCount({ verdict: 'mismatch', apiDown: false, backup: 'none', jobs: [], ci: [] })).toBe(1);
+    expect(alertCount({ verdict: 'aligned', apiDown: false, backup: 'ok', restoreTest: 'ok', jobs: [], ci: [null] })).toBe(0);
+    expect(alertCount({ verdict: 'pending', apiDown: true, backup: 'stale', restoreTest: 'ok', jobs, ci: [red, null] })).toBe(1 + 1 + 1 + 2 + 1);
+    expect(alertCount({ verdict: 'mismatch', apiDown: false, backup: 'none', restoreTest: 'ok', jobs: [], ci: [] })).toBe(1);
   });
 });
 
@@ -110,13 +110,13 @@ describe('défi de demain', () => {
   it('pas assez de morceaux : une alerte', () => {
     const state = nextChallengeState(next({ eligibleCount: 3 }), []);
     expect(state).toEqual({ kind: 'insufficient', eligibleCount: 3, requiredCount: 5 });
-    expect(alertCount({ verdict: 'aligned', apiDown: false, backup: 'ok', jobs: [], ci: [], nextChallenge: state })).toBe(1);
+    expect(alertCount({ verdict: 'aligned', apiDown: false, backup: 'ok', restoreTest: 'ok', jobs: [], ci: [], nextChallenge: state })).toBe(1);
   });
 
   it('la génération du jour a échoué : l\'heure du prochain essai, sans alerte de plus (la tâche compte déjà)', () => {
     const failed = { ...run('daily-generate-challenge', 'retry_scheduled', null, 'admin.pool_insufficient'), retryAt: '2026-11-04T00:10:00Z' };
     const state = nextChallengeState(next(), [failed]);
     expect(state).toEqual({ kind: 'retrying', retryAt: '2026-11-04T00:10:00Z' });
-    expect(alertCount({ verdict: 'aligned', apiDown: false, backup: 'ok', jobs: [], ci: [], nextChallenge: state })).toBe(0);
+    expect(alertCount({ verdict: 'aligned', apiDown: false, backup: 'ok', restoreTest: 'ok', jobs: [], ci: [], nextChallenge: state })).toBe(0);
   });
 });

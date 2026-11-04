@@ -27,7 +27,8 @@ CHECKED_TABLES=(players.players players.accounts catalogue.tracks daily.challeng
 
 check_freshness() { # pose $latest (daily/<nom>) : la sauvegarde la plus récente de R2
   local names month now taken age_hours
-  names=$(rclone_run lsf r2crypt:daily/ --include 'inseconds-*.dump' 2> /dev/null || true)
+  # Une liste illisible (clés R2, réseau) n'est pas une liste vide : l'erreur de rclone reste dans le journal.
+  names=$(rclone_run lsf r2crypt:daily/ --include 'inseconds-*.dump') || fail "liste de daily/ illisible sur R2."
   latest=$(printf '%s\n' "$names" | grep -E '^inseconds-' | sort | tail -n1) || true
   [[ -n "$latest" ]] || fail "aucune sauvegarde dans daily/ sur R2."
   taken=$(dump_time "$latest") || fail "nom de sauvegarde inattendu : daily/$latest."
@@ -39,8 +40,8 @@ check_freshness() { # pose $latest (daily/<nom>) : la sauvegarde la plus récent
     || fail "dernière sauvegarde daily/$latest vieille de $age_hours h (au plus $MAX_AGE_HOURS h)."
   log "Dernière sauvegarde : daily/$latest ($age_hours h)."
   month=$(date -u +%Y-%m)
-  [[ -n "$(rclone_run lsf r2crypt:monthly/ --include "inseconds-$month-*" 2> /dev/null || true)" ]] \
-    || fail "aucune copie du mois $month dans monthly/."
+  names=$(rclone_run lsf r2crypt:monthly/ --include "inseconds-$month-*") || fail "liste de monthly/ illisible sur R2."
+  [[ -n "$names" ]] || fail "aucune copie du mois $month dans monthly/."
   log "Copie mensuelle de $month présente."
   latest="daily/$latest"
 }
@@ -53,7 +54,7 @@ download() { # download <daily/…> : copie déchiffrée dans $work, pose $file
 }
 
 check_content() { # compare la base restaurée à la prod (lectures seules dans la prod)
-  local taken_day last_day last_migration known table restored prod percent
+  local taken_day last_day last_migration known table restored prod percent rows
   taken_day=${REPORT_TAKEN:0:10}
   last_day=$(scratch_query "SELECT coalesce(max(date)::text, '') FROM daily.challenges")
   [[ -n "$last_day" ]] || fail "daily.challenges est vide dans la sauvegarde."
@@ -64,15 +65,19 @@ check_content() { # compare la base restaurée à la prod (lectures seules dans 
 
   last_migration=$(scratch_query "SELECT coalesce(max(migration_id), '') FROM infra.__ef_migrations_history")
   [[ -n "$last_migration" ]] || fail "aucune migration dans la sauvegarde."
-  known=$(prod_query "SELECT count(*) FROM infra.__ef_migrations_history WHERE migration_id = '${last_migration//\'/}'")
+  # La valeur vient du dump : variable psql (:'nom'), jamais collée dans le SQL.
+  known=$(pg_in psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -Atq -v migration="$last_migration" \
+    <<< "SELECT count(*) FROM infra.__ef_migrations_history WHERE migration_id = :'migration'")
   [[ "$known" == 1 ]] || fail "dernière migration de la sauvegarde ($last_migration) inconnue de la prod."
   log "Dernière migration de la sauvegarde : $last_migration (connue de la prod)."
 
   # Deux requêtes de chaque côté (tables présentes, puis leurs lignes), pas une par table : chacune lance un conteneur.
+  # Chaque résultat passe par une variable : l'échec d'une requête lue par `< <(…)` échapperait à set -e (boucle vide, faux succès).
   local list existing=() missing union
   list=$(printf "'%s'," "${CHECKED_TABLES[@]}")
-  mapfile -t existing < <(prod_query "SELECT t FROM unnest(ARRAY[${list%,}]) t WHERE to_regclass(t) IS NOT NULL ORDER BY t")
-  (( ${#existing[@]} > 0 )) || fail "aucune des tables contrôlées n'existe en prod."
+  rows=$(prod_query "SELECT t FROM unnest(ARRAY[${list%,}]) t WHERE to_regclass(t) IS NOT NULL ORDER BY t")
+  [[ -n "$rows" ]] || fail "aucune des tables contrôlées n'existe en prod."
+  mapfile -t existing <<< "$rows"
   list=$(printf "'%s'," "${existing[@]}")
   missing=$(scratch_query "SELECT string_agg(t, ', ') FROM unnest(ARRAY[${list%,}]) t WHERE to_regclass(t) IS NULL")
   [[ -z "$missing" ]] || fail "tables absentes de la sauvegarde : $missing."
@@ -80,14 +85,20 @@ check_content() { # compare la base restaurée à la prod (lectures seules dans 
   for table in "${existing[@]}"; do union+="SELECT '$table', count(*) FROM $table UNION ALL "; done
   union=${union% UNION ALL }
   declare -A prod_counts=()
-  while IFS='|' read -r table prod; do prod_counts[$table]=$prod; done < <(prod_query "$union")
+  rows=$(prod_query "$union")
+  while IFS='|' read -r table prod; do prod_counts[$table]=$prod; done <<< "$rows"
+  rows=$(scratch_query "$union")
+  local checked=0
   while IFS='|' read -r table restored; do
-    prod=${prod_counts[$table]}
+    prod=${prod_counts[$table]:-}
+    [[ -n "$prod" && -n "$restored" ]] || fail "comptage inattendu pour « $table »."
+    checked=$((checked + 1))
     if (( prod == 0 )); then percent=100; else percent=$(( restored * 100 / prod )); fi
     log "$table : $restored lignes dans la sauvegarde, $prod en prod ($percent %)."
     (( percent >= MIN_ROW_PERCENT )) \
       || fail "$table : $restored lignes dans la sauvegarde contre $prod en prod ($percent %, au moins $MIN_ROW_PERCENT %)."
-  done < <(scratch_query "$union")
+  done <<< "$rows"
+  (( checked == ${#existing[@]} )) || fail "$checked tables comptées sur ${#existing[@]}."
 }
 
 verify() {

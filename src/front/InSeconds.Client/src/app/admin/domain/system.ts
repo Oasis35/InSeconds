@@ -188,8 +188,8 @@ export interface AlertInputs {
   readonly verdict: DeploymentVerdict;
   readonly apiDown: boolean;
   readonly backup: BackupTone;
-  /** Le contrôle de restauration de la sauvegarde ; absent, il ne compte pas. */
-  readonly restoreTest?: BackupTone;
+  /** Le contrôle de restauration de la sauvegarde. */
+  readonly restoreTest: BackupTone;
   readonly jobs: readonly NightlyJob[];
   readonly ci: readonly (CiRun | null)[];
   /** Le défi de demain, s'il est lu ; un échec de la génération compte déjà par sa tâche. */
