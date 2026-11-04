@@ -5,7 +5,9 @@ import { NavigationEnd, Router } from '@angular/router';
 import { SwUpdate, VersionEvent } from '@angular/service-worker';
 import { Subject } from 'rxjs';
 import { ErrorReportingService } from '../errors/error-reporting.service';
-import { isStaleChunkError, PAGE_RELOAD, ReloadMoment, SERVICE_WORKER_CONTAINER, VersionService } from './version.service';
+import {
+  isStaleChunkError, PAGE_RELOAD, ReloadMoment, SERVICE_WORKER_CONTAINER, UPDATE_CHECK_INTERVAL_MS, VersionService, WORKER_SWAP_WAIT_MS,
+} from './version.service';
 
 describe('VersionService', () => {
   const READY: VersionEvent = { type: 'VERSION_READY', currentVersion: { hash: 'a' }, latestVersion: { hash: 'b' } };
@@ -20,6 +22,7 @@ describe('VersionService', () => {
   let visibility: DocumentVisibilityState;
   let workers: EventTarget & { controller: object | null; getRegistration: ReturnType<typeof vi.fn> };
   let updateWorker: ReturnType<typeof vi.fn>;
+  let registration: { update: ReturnType<typeof vi.fn>; installing: object | null; waiting: object | null };
   let reportError: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
@@ -43,9 +46,10 @@ describe('VersionService', () => {
     reload = vi.fn();
     updateWorker = vi.fn().mockResolvedValue(undefined);
     reportError = vi.fn();
+    registration = { update: updateWorker, installing: null, waiting: null };
     workers = Object.assign(new EventTarget(), {
       controller: controlled ? {} : null,
-      getRegistration: vi.fn().mockResolvedValue({ update: updateWorker }),
+      getRegistration: vi.fn().mockResolvedValue(registration),
     });
     TestBed.configureTestingModule({
       providers: [
@@ -286,6 +290,90 @@ describe('VersionService', () => {
     await settle();
     expect(reload).toHaveBeenCalledTimes(1);
     expect(service.updateAvailable()).toBe(false);
+  });
+
+  it('attend que le nouveau service worker prenne la main avant de recharger : un seul rechargement', async () => {
+    const service = create();
+    page(service, () => 'now');
+    registration.installing = {};
+
+    versionUpdates.next(READY);
+    TestBed.tick();
+    await settle();
+    expect(reload).not.toHaveBeenCalled();
+
+    workers.dispatchEvent(new Event('controllerchange'));
+    TestBed.tick();
+    await settle();
+
+    expect(activateUpdate).toHaveBeenCalledTimes(1);
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(service.updateAvailable()).toBe(false);
+    expect(reportError).not.toHaveBeenCalled();
+  });
+
+  it('recharge quand même si le nouveau service worker ne prend pas la main à temps', async () => {
+    vi.useFakeTimers();
+    try {
+      const service = create();
+      page(service, () => 'now');
+      registration.waiting = {};
+
+      versionUpdates.next(READY);
+      TestBed.tick();
+      await vi.advanceTimersByTimeAsync(WORKER_SWAP_WAIT_MS - 1);
+      expect(reload).not.toHaveBeenCalled();
+
+      await vi.advanceTimersByTimeAsync(1);
+      expect(reload).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('accepte un second rechargement quand le service worker est remplacé juste après le premier, sans bandeau', async () => {
+    sessionStorage.setItem('inseconds.version.autoReloadAt', String(Date.now() - 5_000));
+    const service = create();
+    page(service, () => 'now');
+
+    workers.dispatchEvent(new Event('controllerchange'));
+    TestBed.tick();
+    await settle();
+
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(service.updateAvailable()).toBe(false);
+    expect(reportError).not.toHaveBeenCalled();
+  });
+
+  it('affiche le bandeau si le service worker est encore remplacé dans la minute (déploiement cassé)', () => {
+    sessionStorage.setItem('inseconds.version.autoReloadAt', String(Date.now() - 5_000));
+    sessionStorage.setItem('inseconds.version.swapReloadAt', String(Date.now() - 5_000));
+    const service = create();
+    page(service, () => 'now');
+
+    workers.dispatchEvent(new Event('controllerchange'));
+    TestBed.tick();
+
+    expect(reload).not.toHaveBeenCalled();
+    expect(service.updateAvailable()).toBe(true);
+    expect(reportError).toHaveBeenCalledExactlyOnceWith({ source: 'js', message: 'UpdatePrompt: reload-loop' });
+  });
+
+  it('vérifie toutes les 5 minutes tant que l\'onglet reste au premier plan', () => {
+    vi.useFakeTimers();
+    try {
+      create();
+      checkForUpdate.mockClear();
+
+      vi.advanceTimersByTime(UPDATE_CHECK_INTERVAL_MS);
+      expect(checkForUpdate).toHaveBeenCalledTimes(1);
+
+      visibility = 'hidden';
+      vi.advanceTimersByTime(UPDATE_CHECK_INTERVAL_MS);
+      expect(checkForUpdate).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('ne recharge pas quand le premier service worker prend la main (première visite)', () => {

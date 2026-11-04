@@ -3,7 +3,7 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Dialog } from '@angular/cdk/dialog';
 import { NavigationEnd, Router } from '@angular/router';
 import { SwUpdate } from '@angular/service-worker';
-import { filter, fromEvent, map, merge } from 'rxjs';
+import { filter, fromEvent, interval, map, merge } from 'rxjs';
 import { ErrorReportingService } from '../errors/error-reporting.service';
 
 /** Recharge la page. Jeton séparé pour que les tests n'aient pas à recharger le navigateur. */
@@ -38,6 +38,12 @@ const MOMENT_ORDER: readonly ReloadMoment[] = ['now', 'background', 'navigation'
 const RELOAD_LOOP_WINDOW_MS = 60_000;
 const LAST_AUTO_RELOAD_KEY = 'inseconds.version.autoReloadAt';
 const LAST_CHUNK_RELOAD_KEY = 'inseconds.version.chunkReloadAt';
+const LAST_SWAP_RELOAD_KEY = 'inseconds.version.swapReloadAt';
+
+/** Vérification d'une nouvelle version tant que l'onglet reste au premier plan : une MEP arrive en quelques minutes, sans changer de page. */
+export const UPDATE_CHECK_INTERVAL_MS = 5 * 60_000;
+/** Attente, avant de recharger, d'un nouveau service worker en cours d'installation : au-delà, on recharge quand même. */
+export const WORKER_SWAP_WAIT_MS = 10_000;
 
 /** Un module chargé à la demande qui n'existe plus (déploiement survenu pendant la visite), selon le navigateur. */
 const STALE_CHUNK_PATTERN = /Failed to fetch dynamically imported module|error loading dynamically imported module|Importing a module script failed/i;
@@ -62,8 +68,9 @@ function pathOf(url: string): string {
  *   premier moment sûr (bonne pratique web.dev / Angular : jamais sous les doigts du joueur) : tout de suite si la page l'accepte
  *   (`allowReload`), sinon quand l'onglet passe en arrière-plan ou au prochain changement de page (de chemin : une navigation
  *   qui ne change que la query string ne compte pas). Jamais avec une fenêtre ouverte ;
- * - au démarrage et au retour de l'onglet au premier plan : on vérifie s'il en existe une. Au démarrage, sans cet appel, le
- *   service worker attendait qu'il n'y ait plus de requête en cours pour vérifier (environ 25 s mesurées) ;
+ * - au démarrage, au retour de l'onglet au premier plan, puis toutes les 5 minutes tant qu'il y reste : on vérifie s'il en
+ *   existe une. Au démarrage, sans cet appel, le service worker attendait qu'il n'y ait plus de requête en cours pour vérifier
+ *   (environ 25 s mesurées) ; sans la vérification régulière, un onglet laissé ouvert ne voyait une MEP qu'en changeant de page ;
  * - remplacement du service worker lui-même (son script a changé, par exemple avec la CSP, piège 49) : le navigateur installe
  *   le nouveau en arrière-plan pendant la visite et la page reste servie par l'ancien jusqu'à `controllerchange`. Ce changement
  *   est traité comme une nouvelle version (même mise en attente, même moment sûr) : sans rechargement, une partie lancée avant
@@ -72,6 +79,10 @@ function pathOf(url: string): string {
  *   n'est pas un remplacement : rien à recharger ;
  * - le rechargement active d'abord la version prête (`activateUpdate()`) : sans cela le service worker garde la page sur
  *   l'ancienne version après `reload()`, la nouvelle est annoncée de nouveau et le garde-fou ci-dessous affichait le bandeau ;
+ * - un seul rechargement quand une MEP remplace aussi le service worker (CSP modifiée, montée d'Angular) : si un nouveau worker
+ *   s'installe au moment de recharger, on attend qu'il prenne la main (10 s au plus), sinon la page se rechargeait deux fois de
+ *   suite et le garde-fou affichait le bandeau. Un remplacement découvert juste après un rechargement a droit à un second
+ *   rechargement, une fois par minute ;
  * - un module chargé à la demande introuvable (`isStaleChunkError`, onglet resté ouvert pendant un déploiement) recharge la page
  *   une fois (`reloadAfterStaleChunk()`), sauf si cela vient déjà d'être fait ;
  * - état irrécupérable du service worker : `markUpdateAvailable()`, même mise en attente, plus le bandeau « Recharger / Plus tard » en secours ;
@@ -94,6 +105,10 @@ export class VersionService {
   readonly updateAvailable = this._updateAvailable.asReadonly();
 
   private readonly pending = signal(false);
+  /** La mise à jour en attente vient d'un remplacement du service worker (`controllerchange`). */
+  private workerSwapped = false;
+  /** Un rechargement est lancé (activation, attente du nouveau worker) : rien d'autre ne doit en lancer un second. */
+  private reloading = false;
   private readonly moments = signal<readonly (() => ReloadMoment)[]>([]);
   /** Le moment le plus prudent demandé par les pages affichées ; `navigation` si aucune ne s'est déclarée. */
   readonly moment = computed<ReloadMoment>(() => {
@@ -123,7 +138,10 @@ export class VersionService {
       fromEvent(this.workers, 'controllerchange')
         .pipe(takeUntilDestroyed(destroyRef))
         .subscribe(() => {
-          if (controlled) this.pending.set(true);
+          if (controlled && !this.reloading) {
+            this.workerSwapped = true;
+            this.pending.set(true);
+          }
           controlled = true;
         });
     }
@@ -162,6 +180,10 @@ export class VersionService {
       if (this.pending() && this.moment() === 'now' && !this.dialogOpen()) this.applyIfSafe();
     });
 
+    interval(UPDATE_CHECK_INTERVAL_MS)
+      .pipe(filter(() => this.document.visibilityState === 'visible'), takeUntilDestroyed(destroyRef))
+      .subscribe(() => this.checkForUpdate());
+
     this.checkForUpdate();
   }
 
@@ -199,25 +221,54 @@ export class VersionService {
     return true;
   }
 
-  /** Active la version prête avant de recharger, sinon le service worker resservirait l'ancienne ; un échec n'empêche pas le rechargement. */
+  /**
+   * Attend la fin du remplacement du service worker s'il est en cours, puis active la version prête avant de recharger (sinon le
+   * service worker resservirait l'ancienne) ; un échec n'empêche pas le rechargement.
+   */
   private activateAndReload(): void {
     const reload = () => this.reloadPage();
     if (!this.swUpdate.isEnabled) {
       reload();
       return;
     }
-    this.swUpdate.activateUpdate().catch(() => false).then(reload);
+    this.reloading = true;
+    this.waitForWorkerSwap()
+      .then(() => this.swUpdate.activateUpdate())
+      .catch(() => false)
+      .then(reload);
+  }
+
+  /** Un nouveau service worker s'installe : on attend qu'il prenne la main (`controllerchange`), `WORKER_SWAP_WAIT_MS` au plus. */
+  private async waitForWorkerSwap(): Promise<void> {
+    const workers = this.workers;
+    if (!workers) return;
+    const registration = await workers.getRegistration().catch(() => undefined);
+    if (!registration?.installing && !registration?.waiting) return;
+    await new Promise<void>(resolve => {
+      const done = () => {
+        clearTimeout(timer);
+        workers.removeEventListener('controllerchange', done);
+        resolve();
+      };
+      const timer = setTimeout(done, WORKER_SWAP_WAIT_MS);
+      workers.addEventListener('controllerchange', done);
+    });
   }
 
   private applyIfSafe(): void {
-    if (!this.pending() || this.dialogOpen()) return;
+    if (!this.pending() || this.dialogOpen() || this.reloading) return;
     if (this.reloadedRecently()) {
-      if (!this._updateAvailable()) this.reportPrompt('reload-loop');
-      this._updateAvailable.set(true);
-      return;
+      // Le service worker remplacé juste après un rechargement : un second rechargement est attendu, pas une boucle.
+      if (!this.workerSwapped || this.recentlyStored(LAST_SWAP_RELOAD_KEY)) {
+        if (!this._updateAvailable()) this.reportPrompt('reload-loop');
+        this._updateAvailable.set(true);
+        return;
+      }
+      this.store(LAST_SWAP_RELOAD_KEY);
     }
     this.store(LAST_AUTO_RELOAD_KEY);
     this.pending.set(false);
+    this.workerSwapped = false;
     this.activateAndReload();
   }
 
