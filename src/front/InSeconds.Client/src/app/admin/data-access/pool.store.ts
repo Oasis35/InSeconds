@@ -4,7 +4,7 @@ import { AppError, toAppError } from '../../core/errors/app-error';
 import { setError, setFulfilled, setPending, withRequestStatus } from '../../core/store/with-request-status';
 import { CooldownSettings, cooldownTone } from '../domain/cooldown';
 import {
-  NO_FILTERS, PoolFilters, PoolSort, PreviewFilter, SortColumn,
+  HARDEST_FIRST, NO_FILTERS, PoolFilters, PoolSort, PreviewFilter, SortColumn,
   StatusFilter, clampPage, filterTracks, nextSort, pageOf, sortTracks, statusOf, totalPages,
 } from '../domain/pool-filters';
 import { PoolTrack, isUsed, trackLabel } from '../domain/pool-track';
@@ -187,6 +187,8 @@ export const PoolStore = signalStore(
         });
       },
       sortBy: (column: SortColumn) => patchState(store, { sort: nextSort(store.sort(), column) }),
+      /** « Les moins trouvés » : trie par taux de réussite croissant, depuis la première page. */
+      sortByHardest: () => patchState(store, { sort: HARDEST_FIRST, requestedPage: 0 }),
       previousPage: () => patchState(store, { requestedPage: Math.max(0, store.page() - 1) }),
       nextPage: () => patchState(store, { requestedPage: Math.min(store.pages() - 1, store.page() + 1) }),
       /** Va à une page (à partir de 0), par exemple celle reprise de l'adresse au rechargement. */

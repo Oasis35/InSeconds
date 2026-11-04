@@ -80,6 +80,30 @@ describe('DashboardPage', () => {
     expect(details).toContain('admin.dashboard.accountCreated');
   });
 
+  it('la carte du jour : les arrivés du jour par source, les habitués et les nouveaux parmi ceux qui ont fini', async () => {
+    const { element } = await render();
+
+    const arrivals = byTestId(element, 'kpi-arrivals')?.textContent?.replace(/\s+/g, ' ') ?? '';
+    expect(arrivals).toContain('admin.dashboard.arrivedThatDay');
+    expect(arrivals).toContain('2 admin.sources.instagram · 1 admin.sources.direct');
+    // 4 ont fini, dont 1 pour la première fois.
+    const loyalty = byTestId(element, 'kpi-loyalty')?.textContent?.replace(/\s+/g, ' ') ?? '';
+    expect(loyalty).toContain('3 admin.dashboard.regulars · 1 admin.dashboard.newcomers');
+  });
+
+  it('les sources d\'arrivée des 30 jours sous l\'activité', async () => {
+    const { element } = await render();
+
+    expect(byTestId(element, 'dashboard-arrivals')?.textContent).toContain('12');
+    expect(element.querySelectorAll('[data-testid="arrival-share"]')).toHaveLength(4);
+  });
+
+  it('l\'égaliseur des scores du jour sur PC seulement', async () => {
+    expect(byTestId((await render()).element, 'challenge-score-chart')).toBeNull();
+    TestBed.resetTestingModule();
+    expect(byTestId((await render({ wide: true })).element, 'challenge-score-chart')).not.toBeNull();
+  });
+
   it('les joueurs du jour sous les chiffres, puis l\'activité et les totaux', async () => {
     const { element } = await render();
 

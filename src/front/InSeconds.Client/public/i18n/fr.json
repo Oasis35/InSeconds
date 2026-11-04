@@ -368,7 +368,10 @@
         "cooldownAppliedDay": "Appliqué aujourd'hui : {{ days }} jour · {{ count }} morceaux jouables",
         "cooldownAppliedDays": "Appliqué aujourd'hui : {{ days }} jours · {{ count }} morceaux jouables",
         "cooldownBelowAlert": "Sous le seuil de {{ days }} jours : ajoute des morceaux."
-      }
+      },
+      "colFound": "Trouvé",
+      "foundHint": "Sur {{ count }} réponses",
+      "hardestFirst": "Les moins trouvés"
     },
     "deleteModal": {
       "title": "Confirmer la suppression",
@@ -445,7 +448,14 @@
       "accountCreated": "{{ count }} compte créé",
       "accountsCreated": "{{ count }} comptes créés",
       "dayTracks": "Morceaux du jour",
-      "totalPlayers": "joueurs en 30 jours"
+      "totalPlayers": "joueurs en 30 jours",
+      "arrivedToday": "Arrivés aujourd'hui :",
+      "arrivedThatDay": "Arrivés ce jour-là :",
+      "amongFinishers": "Parmi ceux qui ont fini :",
+      "regulars": "habitués",
+      "newcomers": "nouveaux",
+      "arrivalsTitle": "D'où viennent les nouveaux · 30 jours",
+      "arrivalsCount": "nouveaux joueurs"
     },
     "challenges": {
       "noChallengeThisMonth": "Aucun défi ce mois.",
@@ -500,7 +510,16 @@
       },
       "lastSeenAt": "{{date}} à {{time}}",
       "gamesCount": "{{ count }} partie(s)",
-      "seenOn": "vu le {{ date }}"
+      "seenOn": "vu le {{ date }}",
+      "streaksTitle": "Séries en cours",
+      "withStreak": "comptes avec une série",
+      "streak": {
+        "oneDay": "1 jour",
+        "short": "2 à 6 jours",
+        "long": "7 jours et plus"
+      },
+      "nextDayReturn": "Reviennent le lendemain :",
+      "nextDayReturnHint": "des joueurs d'un jour (moyenne sur 30 jours)"
     },
     "system": {
       "deployment": "Déploiement",
@@ -553,7 +572,26 @@
       "browser": "Ce navigateur",
       "statusOk": "Tout va bien, voir le détail",
       "statusAlerts": "{{ count }} alerte(s), voir le détail",
-      "alerts": "{{ count }} alerte(s)"
+      "alerts": "{{ count }} alerte(s)",
+      "catalogue": "Catalogue",
+      "missingPreviews": "Sans extrait",
+      "trackCount": "{{ count }} morceau",
+      "tracksCount": "{{ count }} morceaux",
+      "missingWaveforms": "Formes d'onde manquantes",
+      "nextChallenge": "Défi de demain",
+      "nextChallengeReady": "prêt · {{ count }} hors cooldown",
+      "nextChallengeGenerated": "déjà tiré",
+      "nextChallengeInsufficient": "{{ count }} hors cooldown sur {{ required }}",
+      "nextChallengeRetryAt": "échec · nouvel essai à {{ time }}",
+      "nextChallengeFailed": "échec"
+    },
+    "sources": {
+      "instagram": "Instagram",
+      "tiktok": "TikTok",
+      "share": "Partage",
+      "direct": "Direct",
+      "other": "Autres sites",
+      "rest": "Autres"
     }
   },
   "daily": {

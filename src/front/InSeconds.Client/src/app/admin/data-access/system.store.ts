@@ -5,7 +5,8 @@ import { HealthService } from '../../core/health/health.service';
 import { DEPLOYED_AT, FRONT_COMMIT } from '../../core/shell/deployed-at';
 import { JobLastRun } from '../domain/job';
 import {
-  CI_BRANCHES, CiRun, DeployedBranch, SystemInfo, alertCount, backupTone, deployedBranch, deploymentVerdict, nightlyJobs,
+  CI_BRANCHES, CatalogueHealth, CiRun, DeployedBranch, NextChallenge, SystemInfo, alertCount, backupTone, deployedBranch, deploymentVerdict,
+  nextChallengeState, nightlyJobs,
 } from '../domain/system';
 import { GithubCiApi } from './github-ci.api';
 import { JobsApi } from './jobs.api';
@@ -32,25 +33,35 @@ interface SystemState {
   lastRunsFailed: boolean;
   /** Le dernier passage de la CI de chaque branche déployée (`null` : pas lu chez GitHub) ; vide tant que rien n'est lu. */
   ci: Partial<Record<DeployedBranch, CiRun | null>>;
+  /** Le pool : sans extrait, sans forme d'onde ; `null` tant que ce n'est pas lu (ou en échec : le bloc ne s'affiche pas). */
+  catalogue: CatalogueHealth | null;
+  /** Le défi de demain ; `null` tant que ce n'est pas lu (ou en échec : la ligne ne s'affiche pas). */
+  nextChallenge: NextChallenge | null;
   /** L'heure de la dernière lecture : l'âge de la sauvegarde se juge à cet instant (un `new Date()` dans un `computed` serait figé). */
   readAt: Date;
 }
 
 /**
  * Le panneau technique de l'admin, commun à tous les onglets (fourni par la coquille) : le déploiement (commit du front, de l'API, et
- * dernier commit de la branche chez GitHub), la santé de l'API (la sonde `/health` de `HealthService`) et la dernière sauvegarde, les
- * tâches de la nuit et l'intégration continue de la prod et du staging. Tout est lu en parallèle à l'ouverture de l'admin ; une lecture
+ * dernier commit de la branche chez GitHub), la santé de l'API (la sonde `/health` de `HealthService`) et la dernière sauvegarde, le pool
+ * (sans extrait, sans forme d'onde), les tâches de la nuit et le défi de demain, et l'intégration continue de la prod et du staging. Tout est lu en parallèle à l'ouverture de l'admin ; une lecture
  * en échec n'empêche pas les autres.
  */
 export const SystemStore = signalStore(
-  withState<SystemState>({ info: null, infoFailed: false, lastRuns: null, lastRunsFailed: false, ci: {}, readAt: new Date() }),
+  withState<SystemState>({
+    info: null, infoFailed: false, lastRuns: null, lastRunsFailed: false, ci: {}, catalogue: null, nextChallenge: null, readAt: new Date(),
+  }),
   withProps(() => ({ build: inject(FRONT_BUILD), health: inject(HealthService) })),
-  withComputed(({ info, lastRuns, ci, readAt, build, health }) => {
+  withComputed(({ info, lastRuns, ci, readAt, build, health, nextChallenge }) => {
     const branchRun = computed(() => (build.branch ? ci()[build.branch] ?? null : null));
     const verdict = computed(() => deploymentVerdict(build.commit, info()?.commit ?? null, branchRun()?.headSha ?? null, branchRun()?.state === 'running'));
     const jobs = computed(() => (lastRuns() ? nightlyJobs(lastRuns() ?? []) : null));
     const backup = computed(() => backupTone(info()?.lastBackupAt ?? null, readAt()));
     const ciRuns = computed(() => CI_BRANCHES.map(branch => ({ branch, run: ci()[branch] ?? null })));
+    const next = computed(() => {
+      const value = nextChallenge();
+      return value ? nextChallengeState(value, lastRuns()) : null;
+    });
     return {
       /** Le dernier commit de la branche déployée par cet environnement (lu chez GitHub) ; `null` s'il n'est pas connu. */
       branchHead: computed(() => branchRun()?.headSha ?? null),
@@ -58,13 +69,16 @@ export const SystemStore = signalStore(
       jobs,
       backup,
       ciRuns,
+      /** La ligne « Défi de demain » ; `null` tant que ce n'est pas lu. */
+      nextChallengeState: next,
       alerts: computed(() => alertCount({
         verdict: verdict(), apiDown: health.state() === 'ko', backup: backup(), jobs: jobs() ?? [], ci: ciRuns().map(c => c.run),
+        nextChallenge: next(),
       })),
     };
   }),
   withMethods((store, system = inject(SystemApi), jobs = inject(JobsApi), github = inject(GithubCiApi)) => ({
-    /** Lit l'état de l'API, les tâches et la CI des deux branches, en parallèle. */
+    /** Lit l'état de l'API, celui du pool, le défi de demain, les tâches et la CI des deux branches, en parallèle. */
     async load(): Promise<void> {
       patchState(store, { readAt: new Date() });
       const info = system.getInfo()
@@ -73,9 +87,15 @@ export const SystemStore = signalStore(
       const runs = jobs.getLastRuns()
         .then(value => patchState(store, { lastRuns: value, lastRunsFailed: false }))
         .catch(() => patchState(store, { lastRunsFailed: true }));
+      const catalogue = system.getCatalogueHealth()
+        .then(value => patchState(store, { catalogue: value }))
+        .catch(() => patchState(store, { catalogue: null }));
+      const next = system.getNextChallenge()
+        .then(value => patchState(store, { nextChallenge: value }))
+        .catch(() => patchState(store, { nextChallenge: null }));
       const ci = CI_BRANCHES.map(branch => github.latestRun(branch)
         .then(run => patchState(store, { ci: { ...store.ci(), [branch]: run } })));
-      await Promise.all([info, runs, ...ci]);
+      await Promise.all([info, runs, catalogue, next, ...ci]);
     },
   })),
 );

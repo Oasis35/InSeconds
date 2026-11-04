@@ -369,7 +369,7 @@ describe('PoolStore', () => {
     // Joué seulement par un autre mode : aucune apparition au Daily, mais utilisé quand même.
     const otherModeOnly = poolTrack({
       id: 5, deezerTrackId: 15, artist: 'Autre', title: 'Seulement ailleurs', usedByMode: true,
-      usages: [{ mode: 'autre', usageCount: 0, lastUsedDate: null, unlockDate: null, inTodayChallenge: false }],
+      usages: [{ mode: 'autre', usageCount: 0, lastUsedDate: null, unlockDate: null, inTodayChallenge: false, answerCount: 0, foundCount: 0 }],
     });
 
     it('démarre sur le pool général, dont le compte ne dépend d\x27aucun mode', async () => {

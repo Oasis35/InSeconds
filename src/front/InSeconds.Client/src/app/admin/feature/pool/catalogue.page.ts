@@ -60,6 +60,8 @@ const DIALOG_MAX_WIDTH = '26rem';
         [cooldownDays]="pool.cooldownDays()"
         [cooldownTone]="pool.cooldownTone()"
         [addPanelOpen]="search.open()"
+        [hardestFirst]="pool.sort()?.column === 'found' && pool.sort()?.direction === 'asc'"
+        (sortHardest)="pool.sortByHardest()"
         (deselectAll)="pool.clearSelection()"
         (deleteSelection)="deleteSelection()"
         (toggleAdd)="togglePanel()" />
@@ -156,6 +158,8 @@ export class CataloguePage {
     if (MODE_VIEWS.some(mode => mode.id === view)) this.pool.setView(view as string);
     const page = Number(this.route.snapshot.queryParamMap.get('page'));
     if (Number.isInteger(page) && page >= 1) this.pool.goToPage(page - 1);
+    // Le lien « Sans extrait » du panneau technique (`?extrait=absent`) ouvre le pool filtré ; le paramètre est retiré ensuite.
+    if (this.route.snapshot.queryParamMap.get('extrait') === 'absent') this.pool.setPreview('missing');
 
     // Vue et page → adresse, seulement une fois le pool chargé (avant, la grille n'a qu'une page et celle de
     // l'adresse serait effacée). `replaceUrl` : « précédent » ne revient pas page par page, ni vue par vue.
@@ -165,7 +169,7 @@ export class CataloguePage {
       const view = this.pool.view();
       untracked(() => void this.router.navigate([], {
         relativeTo: this.route,
-        queryParams: { page: current > 1 ? current : null, view: view === POOL_VIEW ? null : view },
+        queryParams: { page: current > 1 ? current : null, view: view === POOL_VIEW ? null : view, extrait: null },
         queryParamsHandling: 'merge',
         replaceUrl: true,
       }));

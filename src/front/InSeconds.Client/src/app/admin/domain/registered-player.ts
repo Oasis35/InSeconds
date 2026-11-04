@@ -58,3 +58,25 @@ export function filterPlayers(players: readonly RegisteredPlayer[], text: string
 export function canPlayRuns(player: Pick<RegisteredPlayer, 'id' | 'isAdmin'>, authorizedIds: readonly string[]): boolean {
   return player.isAdmin || authorizedIds.includes(player.id);
 }
+
+/** Une lecture de l'onglet Joueurs : les comptes, et la part des joueurs d'un jour revenus le lendemain (`null` sans joueur sur la période). */
+export interface RegisteredPlayersPage {
+  readonly players: readonly RegisteredPlayer[];
+  /** En pourcentage, cumulé sur 30 jours, invités compris. */
+  readonly nextDayReturnRate: number | null;
+}
+
+/** Les comptes qui ont une série en cours, par longueur : 1 jour, 2 à 6 jours, 7 jours et plus. */
+export interface StreakBuckets {
+  readonly oneDay: number;
+  readonly short: number;
+  readonly long: number;
+  readonly total: number;
+}
+
+export function streakBuckets(players: readonly Pick<RegisteredPlayer, 'currentStreak'>[]): StreakBuckets {
+  const oneDay = players.filter(p => p.currentStreak === 1).length;
+  const short = players.filter(p => p.currentStreak >= 2 && p.currentStreak <= 6).length;
+  const long = players.filter(p => p.currentStreak >= 7).length;
+  return { oneDay, short, long, total: oneDay + short + long };
+}

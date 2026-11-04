@@ -53,7 +53,8 @@ const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'radio', 'range', 'reset'
         [branch]="system.build.branch" [branchHead]="system.branchHead()" [verdict]="system.verdict()"
         [apiDown]="system.health.state() === 'ko'" [latencyMs]="system.health.latencyMs()"
         [backup]="system.backup()" [backupAt]="system.info()?.lastBackupAt ?? null" [backupOffSite]="system.info()?.lastBackupOffSite ?? null"
-        [jobs]="system.jobs()" [jobsFailed]="system.lastRunsFailed()" [ci]="ciLines()" [jobsUrl]="jobsUrl" [grafanaUrl]="grafanaUrl">
+        [jobs]="system.jobs()" [jobsFailed]="system.lastRunsFailed()" [ci]="ciLines()" [jobsUrl]="jobsUrl" [grafanaUrl]="grafanaUrl"
+        [catalogue]="system.catalogue()" [nextChallenge]="system.nextChallengeState()">
         <section>
           <h2 class="text-xs font-semibold mb-1.5" style="color:var(--text-faint)">{{ 'admin.system.browser' | translate }}</h2>
           <app-browser-id />

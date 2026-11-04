@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { AdminPlayer, AdminPlayerGame, DailyClient } from '../../api/daily/api.generated';
 import { RunsClient } from '../../api/runs/api.generated';
-import { PlayerGame, RegisteredPlayer, toGameStatus } from '../domain/registered-player';
+import { PlayerGame, RegisteredPlayer, RegisteredPlayersPage, toGameStatus } from '../domain/registered-player';
 
 /**
  * Adaptateur de l'onglet Joueurs : seule porte vers les clients générés pour les routes admin des comptes
@@ -13,9 +13,10 @@ export class AdminPlayersApi {
   private readonly client = inject(DailyClient);
   private readonly runs = inject(RunsClient);
 
-  /** Les comptes inscrits, les plus récemment vus d'abord (l'ordre vient de l'API). */
-  async list(): Promise<RegisteredPlayer[]> {
-    return (await firstValueFrom(this.client.listRegisteredPlayers())).players.map(toPlayer);
+  /** Les comptes inscrits, les plus récemment vus d'abord (l'ordre vient de l'API), et la part des joueurs revenus le lendemain. */
+  async list(): Promise<RegisteredPlayersPage> {
+    const response = await firstValueFrom(this.client.listRegisteredPlayers());
+    return { players: response.players.map(toPlayer), nextDayReturnRate: response.nextDayReturnRate ?? null };
   }
 
   /** Les parties des 30 derniers jours ; 404 `common.not_found` si le joueur n'existe plus. */

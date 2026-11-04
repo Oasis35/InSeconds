@@ -121,6 +121,43 @@ export function backupTone(lastBackupAt: string | null, now: Date): BackupTone {
   return ageHours > BACKUP_MAX_AGE_HOURS ? 'stale' : 'ok';
 }
 
+/** Le pool vu du panneau technique : morceaux actifs sans extrait, et avec un extrait mais sans forme d'onde. */
+export interface CatalogueHealth {
+  readonly missingPreviewCount: number;
+  readonly missingWaveformCount: number;
+}
+
+/** Ce que le tirage du défi de demain trouverait maintenant (`GET /api/admin/daily/next-challenge`). */
+export interface NextChallenge {
+  /** Demain, `aaaa-mm-jj`. */
+  readonly date: string;
+  /** Morceaux jouables hors cooldown pour demain. */
+  readonly eligibleCount: number;
+  /** Morceaux qu'un défi demande. */
+  readonly requiredCount: number;
+  readonly generated: boolean;
+}
+
+/**
+ * La ligne « Défi de demain » : `ready` (assez de morceaux hors cooldown, ou déjà tiré), `insufficient` (pas assez : la génération de
+ * minuit échouera), `retrying` (la génération du jour a échoué et réessaie : `retryAt` donne l'heure du prochain essai).
+ */
+export type NextChallengeState =
+  | { readonly kind: 'ready'; readonly eligibleCount: number; readonly generated: boolean }
+  | { readonly kind: 'insufficient'; readonly eligibleCount: number; readonly requiredCount: number }
+  | { readonly kind: 'retrying'; readonly retryAt: string | null };
+
+export const GENERATE_CHALLENGE_JOB = 'daily-generate-challenge';
+
+export function nextChallengeState(next: NextChallenge, runs: readonly JobLastRun[] | null): NextChallengeState {
+  const generation = runs?.find(run => run.id === GENERATE_CHALLENGE_JOB);
+  if (generation?.state === 'failed' || generation?.state === 'retry_scheduled') return { kind: 'retrying', retryAt: generation.retryAt };
+  if (!next.generated && next.eligibleCount < next.requiredCount) {
+    return { kind: 'insufficient', eligibleCount: next.eligibleCount, requiredCount: next.requiredCount };
+  }
+  return { kind: 'ready', eligibleCount: next.eligibleCount, generated: next.generated };
+}
+
 /** Ce qui compte comme une alerte dans le bouton d'état du téléphone. */
 export interface AlertInputs {
   readonly verdict: DeploymentVerdict;
@@ -128,13 +165,19 @@ export interface AlertInputs {
   readonly backup: BackupTone;
   readonly jobs: readonly NightlyJob[];
   readonly ci: readonly (CiRun | null)[];
+  /** Le défi de demain, s'il est lu ; un échec de la génération compte déjà par sa tâche. */
+  readonly nextChallenge?: NextChallengeState | null;
 }
 
-/** Le nombre d'alertes : déploiement désaligné ou en retard, API injoignable, sauvegarde manquée, tâche en échec ou à surveiller, CI rouge. */
-export function alertCount({ verdict, apiDown, backup, jobs, ci }: AlertInputs): number {
+/**
+ * Le nombre d'alertes : déploiement désaligné ou en retard, API injoignable, sauvegarde manquée, tâche en échec ou à surveiller, CI rouge,
+ * pas assez de morceaux pour le défi de demain.
+ */
+export function alertCount({ verdict, apiDown, backup, jobs, ci, nextChallenge }: AlertInputs): number {
   return (verdict === 'mismatch' || verdict === 'pending' ? 1 : 0)
     + (apiDown ? 1 : 0)
     + (backup === 'stale' ? 1 : 0)
     + jobs.filter(job => job.tone === 'error' || job.tone === 'warn').length
-    + ci.filter(run => run?.state === 'failure').length;
+    + ci.filter(run => run?.state === 'failure').length
+    + (nextChallenge?.kind === 'insufficient' ? 1 : 0);
 }

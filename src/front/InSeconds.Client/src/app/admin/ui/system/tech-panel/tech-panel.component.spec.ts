@@ -1,10 +1,11 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
 import { TechPanelComponent } from './tech-panel.component';
 
 describe('TechPanelComponent', () => {
   function render(inputs: Record<string, unknown> = {}) {
-    TestBed.configureTestingModule({ imports: [TechPanelComponent], providers: [provideTranslateService()] });
+    TestBed.configureTestingModule({ imports: [TechPanelComponent], providers: [provideTranslateService(), provideRouter([])] });
     const fixture = TestBed.createComponent(TechPanelComponent);
     fixture.componentRef.setInput('jobsUrl', '/jobs');
     fixture.componentRef.setInput('grafanaUrl', 'https://grafana.test');
@@ -75,5 +76,37 @@ describe('TechPanelComponent', () => {
     expect(lines.map(l => l.getAttribute('href'))).toEqual(['https://github.test/run/1', 'https://github.test/staging']);
     expect(lines[0].textContent).toContain('admin.system.ciState.failure');
     expect(lines[1].textContent).toContain('admin.system.ciState.none');
+  });
+
+  it('le catalogue : un lien vers les morceaux sans extrait, les formes d\'onde manquantes', () => {
+    const { byTestId } = render({ catalogue: { missingPreviewCount: 3, missingWaveformCount: 0 } });
+
+    const link = byTestId('missing-previews') as HTMLAnchorElement;
+    expect(link.tagName).toBe('A');
+    expect(link.getAttribute('href')).toBe('/admin/catalogue?extrait=absent');
+    expect(link.textContent).toContain('admin.system.tracksCount');
+    expect(byTestId('missing-waveforms')?.textContent).toContain('0');
+    expect(byTestId('missing-waveforms')?.textContent).toContain('✓');
+  });
+
+  it('rien du catalogue tant qu\'il n\'est pas lu ; aucun morceau sans extrait : pas de lien', () => {
+    expect(render().byTestId('tech-catalogue')).toBeNull();
+    TestBed.resetTestingModule();
+    expect(render({ catalogue: { missingPreviewCount: 0, missingWaveformCount: 2 } }).byTestId('missing-previews')?.tagName).toBe('SPAN');
+  });
+
+  it('le défi de demain : prêt en vert, pas assez de morceaux ou génération en échec en rouge', () => {
+    const ready = render({ nextChallenge: { kind: 'ready', eligibleCount: 212, generated: false } }).byTestId('next-challenge')!;
+    expect(ready.textContent).toContain('admin.system.nextChallengeReady');
+    expect(ready.querySelector('span')?.style.color).toBe('var(--color-success)');
+
+    TestBed.resetTestingModule();
+    const retrying = render({ nextChallenge: { kind: 'retrying', retryAt: '2026-11-04T00:10:00Z' } }).byTestId('next-challenge')!;
+    expect(retrying.textContent).toContain('admin.system.nextChallengeRetryAt');
+    expect(retrying.querySelector('span')?.style.color).toBe('var(--text-error)');
+
+    TestBed.resetTestingModule();
+    const short = render({ nextChallenge: { kind: 'insufficient', eligibleCount: 2, requiredCount: 5 } }).byTestId('next-challenge')!;
+    expect(short.textContent).toContain('admin.system.nextChallengeInsufficient');
   });
 });

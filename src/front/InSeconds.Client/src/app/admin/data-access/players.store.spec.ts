@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { AdminCounts } from './admin-counts';
 import { AdminPlayersStore } from './players.store';
 import {
-  FakeAdminPlayersApi, fakeAdminPlayersApi, playerGame, provideAdminPlayersApiFake, registeredPlayer,
+  FakeAdminPlayersApi, fakeAdminPlayersApi, playerGame, provideAdminPlayersApiFake, registeredPlayer, playersPage,
 } from './testing/fake-admin-players-api';
 import { problem } from './testing/fake-catalogue-api';
 
@@ -13,7 +13,7 @@ describe('AdminPlayersStore', () => {
   let api: FakeAdminPlayersApi;
 
   function create(overrides: Partial<FakeAdminPlayersApi> = {}) {
-    api = fakeAdminPlayersApi({ list: vi.fn(async () => [alice, bob]), ...overrides });
+    api = fakeAdminPlayersApi({ list: vi.fn(async () => playersPage([alice, bob])), ...overrides });
     TestBed.configureTestingModule({ providers: [provideAdminPlayersApiFake(api), AdminPlayersStore] });
     return TestBed.inject(AdminPlayersStore);
   }
