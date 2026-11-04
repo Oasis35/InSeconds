@@ -1,6 +1,6 @@
 import { JobLastRun, JobState } from './job';
 import {
-  NextChallenge, NightlyJob, alertCount, backupTone, deployedBranch, deploymentVerdict, jobTone, nextChallengeState, nightlyJobs, sameCommit, shortCommit, toCiState,
+  NextChallenge, NightlyJob, alertCount, backupAlert, backupTone, deployedBranch, deploymentVerdict, jobTone, nextChallengeState, nightlyJobs, sameCommit, shortCommit, toCiState,
 } from './system';
 
 const AT = '2026-11-04T00:00:03Z';
@@ -28,7 +28,7 @@ describe('système (domaine)', () => {
     expect(deploymentVerdict(SHA, SHA, null)).toBe('same');
     expect(deploymentVerdict(SHA, SHA, OTHER)).toBe('pending');
     expect(deploymentVerdict(SHA, SHA, OTHER, true)).toBe('deploying');
-    expect(alertCount({ verdict: 'deploying', apiDown: false, backup: 'ok', jobs: [], ci: [] })).toBe(0);
+    expect(alertCount({ verdict: 'deploying', apiDown: false, backup: 'ok', restoreTest: 'ok', jobs: [], ci: [] })).toBe(0);
     expect(deploymentVerdict(SHA, OTHER, SHA)).toBe('mismatch');
     expect(deploymentVerdict(null, SHA, SHA)).toBe('unknown');
     expect(deploymentVerdict(SHA, null, SHA)).toBe('unknown');
@@ -70,13 +70,31 @@ describe('système (domaine)', () => {
     expect(backupTone(null, now)).toBe('none');
   });
 
+  it('sauvegarde ou contrôle de restauration : un dernier passage en échec l\'emporte sur la dernière réussite', () => {
+    const now = new Date('2026-11-04T09:00:00Z');
+    const failure = { at: '2026-11-04T04:01:00Z', step: 'content', message: 'players.players : 20 lignes contre 120' };
+    expect(backupTone('2026-11-04T03:00:41Z', now, failure)).toBe('failed');
+    expect(backupTone(null, now, failure)).toBe('failed');
+    expect(backupAlert('failed')).toBe(true);
+    expect(backupAlert('stale')).toBe(true);
+    expect(backupAlert('none')).toBe(false);
+  });
+
+  it('le contrôle de restauration compte une alerte en échec ou en retard, aucune s\'il n\'a jamais tourné', () => {
+    const base = { verdict: 'aligned' as const, apiDown: false, backup: 'ok' as const, jobs: [], ci: [] };
+    expect(alertCount({ ...base, restoreTest: 'failed' })).toBe(1);
+    expect(alertCount({ ...base, restoreTest: 'stale' })).toBe(1);
+    expect(alertCount({ ...base, restoreTest: 'none' })).toBe(0);
+    expect(alertCount({ ...base, backup: 'failed', restoreTest: 'ok' })).toBe(1);
+  });
+
   it('compte les alertes : déploiement, API, sauvegarde, tâches à surveiller ou en échec, CI rouge', () => {
     const jobs: NightlyJob[] = [{ id: 'a', tone: 'ok', at: AT }, { id: 'b', tone: 'warn', at: AT }, { id: 'c', tone: 'error', at: AT }];
     const red = { branch: 'main', headSha: SHA, state: 'failure' as const, url: '' };
 
-    expect(alertCount({ verdict: 'aligned', apiDown: false, backup: 'ok', jobs: [], ci: [null] })).toBe(0);
-    expect(alertCount({ verdict: 'pending', apiDown: true, backup: 'stale', jobs, ci: [red, null] })).toBe(1 + 1 + 1 + 2 + 1);
-    expect(alertCount({ verdict: 'mismatch', apiDown: false, backup: 'none', jobs: [], ci: [] })).toBe(1);
+    expect(alertCount({ verdict: 'aligned', apiDown: false, backup: 'ok', restoreTest: 'ok', jobs: [], ci: [null] })).toBe(0);
+    expect(alertCount({ verdict: 'pending', apiDown: true, backup: 'stale', restoreTest: 'ok', jobs, ci: [red, null] })).toBe(1 + 1 + 1 + 2 + 1);
+    expect(alertCount({ verdict: 'mismatch', apiDown: false, backup: 'none', restoreTest: 'ok', jobs: [], ci: [] })).toBe(1);
   });
 });
 
@@ -92,13 +110,13 @@ describe('défi de demain', () => {
   it('pas assez de morceaux : une alerte', () => {
     const state = nextChallengeState(next({ eligibleCount: 3 }), []);
     expect(state).toEqual({ kind: 'insufficient', eligibleCount: 3, requiredCount: 5 });
-    expect(alertCount({ verdict: 'aligned', apiDown: false, backup: 'ok', jobs: [], ci: [], nextChallenge: state })).toBe(1);
+    expect(alertCount({ verdict: 'aligned', apiDown: false, backup: 'ok', restoreTest: 'ok', jobs: [], ci: [], nextChallenge: state })).toBe(1);
   });
 
   it('la génération du jour a échoué : l\'heure du prochain essai, sans alerte de plus (la tâche compte déjà)', () => {
     const failed = { ...run('daily-generate-challenge', 'retry_scheduled', null, 'admin.pool_insufficient'), retryAt: '2026-11-04T00:10:00Z' };
     const state = nextChallengeState(next(), [failed]);
     expect(state).toEqual({ kind: 'retrying', retryAt: '2026-11-04T00:10:00Z' });
-    expect(alertCount({ verdict: 'aligned', apiDown: false, backup: 'ok', jobs: [], ci: [], nextChallenge: state })).toBe(0);
+    expect(alertCount({ verdict: 'aligned', apiDown: false, backup: 'ok', restoreTest: 'ok', jobs: [], ci: [], nextChallenge: state })).toBe(0);
   });
 });

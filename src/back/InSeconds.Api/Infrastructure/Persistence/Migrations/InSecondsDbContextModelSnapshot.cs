@@ -44,18 +44,76 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("InSeconds.Api.Infrastructure.Operations.BackupRun", b =>
                 {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("DumpName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("dump_name");
+
+                    b.Property<long?>("DumpSizeBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("dump_size_bytes");
+
+                    b.Property<DateTimeOffset?>("DumpTakenAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("dump_taken_at");
+
+                    b.Property<string>("FailedStep")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("failed_step");
+
                     b.Property<DateTimeOffset>("FinishedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("finished_at");
 
-                    b.Property<bool>("OffSite")
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasDefaultValue("backup")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Message")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("message");
+
+                    b.Property<bool?>("OffSite")
                         .HasColumnType("boolean")
                         .HasColumnName("off_site");
 
-                    b.HasKey("FinishedAt")
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasDefaultValue("ok")
+                        .HasColumnName("outcome");
+
+                    b.Property<DateTimeOffset?>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.HasKey("Id")
                         .HasName("pk_backup_runs");
 
-                    b.ToTable("backup_runs", "infra");
+                    b.HasIndex("Kind", "FinishedAt")
+                        .HasDatabaseName("ix_backup_runs_kind_finished_at");
+
+                    b.ToTable("backup_runs", "infra", t =>
+                        {
+                            t.HasCheckConstraint("ck_backup_runs_kind", "kind IN ('backup', 'verify', 'archive')");
+
+                            t.HasCheckConstraint("ck_backup_runs_outcome", "outcome IN ('ok', 'failed')");
+                        });
                 });
 
             modelBuilder.Entity("InSeconds.Api.Infrastructure.Settings.Setting", b =>
