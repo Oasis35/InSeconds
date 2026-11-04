@@ -174,15 +174,22 @@ export class AdminPage {
   }
 
   // Ligne d'un défi dans le tableau du mois (onglet Défis, PC : les E2E tournent sur un écran large).
+  /** Le tableau et le détail des défis affichent les jours au format jj/mm/aaaa. */
+  private static shownDay(dateIso: string): string {
+    const [year, month, day] = dateIso.split('-');
+    return `${day}/${month}/${year}`;
+  }
+
   challengeTableRow(dateIso: string): Locator {
-    return this.page.getByTestId('challenge-table-row').filter({ has: this.page.getByRole('button', { name: dateIso, exact: true }) });
+    return this.page.getByTestId('challenge-table-row')
+      .filter({ has: this.page.getByRole('button', { name: AdminPage.shownDay(dateIso), exact: true }) });
   }
 
   /** Sélectionne un défi dans le tableau et rend son détail (à droite du tableau, déplié). */
   async challengeRow(dateIso: string): Promise<Locator> {
-    await this.challengeTableRow(dateIso).getByRole('button', { name: dateIso, exact: true }).click();
+    await this.challengeTableRow(dateIso).getByRole('button', { name: AdminPage.shownDay(dateIso), exact: true }).click();
     const detail = this.page.getByTestId('challenge-detail');
-    await detail.getByText(dateIso, { exact: true }).waitFor({ state: 'visible' });
+    await detail.getByText(AdminPage.shownDay(dateIso), { exact: true }).waitFor({ state: 'visible' });
     return detail;
   }
 

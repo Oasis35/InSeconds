@@ -394,6 +394,23 @@ test.describe('Admin - panneau technique et cooldown', () => {
     await expect(admin.tab('Actions')).toHaveCount(0);
   });
 
+  test('le panneau technique montre l\'état du catalogue et le défi de demain ; Morceaux trie les moins trouvés', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+
+    const panel = admin.techPanel();
+    await expect(panel.getByTestId('tech-catalogue')).toContainText('Sans extrait');
+    await expect(panel.getByTestId('tech-catalogue')).toContainText("Formes d'onde manquantes");
+    // Le pool des E2E a 50 morceaux jouables et 7 jours de cooldown : le défi de demain a de quoi être tiré.
+    await expect(panel.getByTestId('next-challenge')).toContainText(/Défi de demain\s*prêt · \d+ hors cooldown/);
+
+    await page.getByRole('link', { name: /^Morceaux/ }).click();
+    await page.getByTestId('sort-hardest').click();
+    await expect(page.getByTestId('sort-hardest')).toHaveAttribute('aria-pressed', 'true');
+    await expect(admin.poolColumnHeader('Trouvé')).toHaveAttribute('aria-sort', 'ascending');
+  });
+
   test('édite le cooldown de réutilisation depuis l\'onglet Morceaux et persiste en base', async ({ page }) => {
     const adminPage = new AdminPage(page);
     await adminPage.goto();
