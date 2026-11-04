@@ -164,6 +164,12 @@ describe('CataloguePage', () => {
     });
   });
 
+  it('?extrait=absent (lien du panneau technique) ouvre le pool filtré sur les morceaux sans extrait', async () => {
+    const { pool } = await render({ query: { extrait: 'absent' } });
+
+    expect(pool.filters().preview).toBe('missing');
+  });
+
   describe('page de la grille dans l\'adresse', () => {
     const many = Array.from({ length: 40 }, (_, i) => poolTrack({ id: i + 1, deezerTrackId: i + 100, artist: `Artiste ${i}` }));
 

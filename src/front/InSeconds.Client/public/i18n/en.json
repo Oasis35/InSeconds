@@ -29,6 +29,7 @@
     "admin": {
       "day_not_over": "This day isn't over yet: the stats will be frozen tomorrow.",
       "invalid_date": "Invalid date: the expected format is yyyy-mm-dd.",
+      "invalid_month": "Invalid month: the expected format is yyyy-mm.",
       "pool_insufficient": "Pool too small: add tracks with a preview."
     },
     "players": {
@@ -519,7 +520,7 @@
         "long": "7 days or more"
       },
       "nextDayReturn": "Come back the next day:",
-      "nextDayReturnHint": "of a day's players (30-day average)"
+      "nextDayReturnHint": "of a day's players (over the last 30 days)"
     },
     "system": {
       "deployment": "Deployment",
@@ -583,7 +584,8 @@
       "nextChallengeGenerated": "already drawn",
       "nextChallengeInsufficient": "{{ count }} out of cooldown, {{ required }} needed",
       "nextChallengeRetryAt": "failed · next try at {{ time }}",
-      "nextChallengeFailed": "failed"
+      "nextChallengeFailed": "failed",
+      "todayChallenge": "Today's challenge"
     },
     "sources": {
       "instagram": "Instagram",

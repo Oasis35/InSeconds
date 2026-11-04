@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { NO_FILTERS } from '../domain/pool-filters';
+import { HARDEST_FIRST, NO_FILTERS } from '../domain/pool-filters';
 import { PoolTrack, usageOf } from '../domain/pool-track';
 import { COOLDOWN_RESULT_VISIBLE_MS, PoolStore } from './pool.store';
 import { FakeCooldownApi, fakeCooldownApi, provideCooldownApiFake } from './testing/fake-cooldown-api';
@@ -153,6 +153,16 @@ describe('PoolStore', () => {
 
       expect(usageOf(store.pageTracks()[0], 'daily')?.usageCount).toBe(1);
       expect(store.sort()).toEqual({ column: 'usageCount', direction: 'desc' });
+    });
+
+    it('« Les moins trouvés » trie par taux trouvé croissant et revient à la première page', async () => {
+      await setup(Array.from({ length: 31 }, (_, i) => poolTrack({ id: i + 1, deezerTrackId: i + 100 })));
+      store.goToPage(2);
+
+      store.sortByHardest();
+
+      expect(store.sort()).toEqual(HARDEST_FIRST);
+      expect(store.page()).toBe(0);
     });
 
     it('réinitialise tous les filtres', async () => {

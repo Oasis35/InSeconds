@@ -132,7 +132,7 @@ export interface CiLine {
           @let ok = next.kind === 'ready';
           <p class="flex items-center gap-1.5 py-0.5 mt-1 pt-1.5" style="border-top:1px solid var(--border-subtle)" data-testid="next-challenge">
             <span class="font-bold w-3 text-center" aria-hidden="true" [style.color]="ok ? 'var(--color-success)' : 'var(--text-error)'">{{ ok ? '✓' : '✗' }}</span>
-            <span [style.color]="ok ? 'var(--text-light)' : 'var(--text-error)'">{{ 'admin.system.nextChallenge' | translate }}</span>
+            <span [style.color]="ok ? 'var(--text-light)' : 'var(--text-error)'">{{ (next.kind === 'retrying' ? 'admin.system.todayChallenge' : 'admin.system.nextChallenge') | translate }}</span>
             <span class="ml-auto text-right" [style.color]="ok ? null : 'var(--text-error)'">
               @switch (next.kind) {
                 @case ('ready') {

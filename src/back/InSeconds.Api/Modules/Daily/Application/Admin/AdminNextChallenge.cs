@@ -1,5 +1,6 @@
 using InSeconds.Api.Infrastructure.Time;
 using InSeconds.Api.Modules.Catalogue.Contracts;
+using InSeconds.Api.Modules.Daily.Domain;
 using Microsoft.Extensions.Options;
 using Wolverine.Http;
 
@@ -20,14 +21,16 @@ public static class GetNextChallengeEndpoint
     /// </summary>
     [WolverineGet("/api/admin/daily/next-challenge", OperationId = "getNextChallenge")]
     public static async Task<NextChallengeResponse> Get(
-        ITrackDirectory tracks, IDailyTrackUsage usage, IDailyStatsQueries stats, IOptionsMonitor<DailyOptions> options, IGameCalendar calendar,
+        ITrackDirectory tracks, IDailyTrackUsage usage, ITrackSelector selector, IDailyStatsQueries stats, IOptionsMonitor<DailyOptions> options, IGameCalendar calendar,
         CancellationToken ct)
     {
         var day = calendar.Today.AddDays(1);
         var playable = await tracks.ListPlayableIdsAsync(ct);
         var inCooldown = await usage.GetTracksInCooldownAsync(day, ct);
-        var eligible = playable.Count(id => !inCooldown.Contains(id));
+        var required = options.CurrentValue.EffectiveTracksPerChallenge;
+        // Le sélecteur de la génération compte lui-même les morceaux tirables : les deux ne peuvent pas diverger.
+        var eligible = selector.Select(playable, inCooldown, required, DailyChallenge.SeedOf(day)).EligibleCount;
         var generated = await stats.FindChallengeIdAsync(day, ct) is not null;
-        return new NextChallengeResponse(day, eligible, options.CurrentValue.EffectiveTracksPerChallenge, generated);
+        return new NextChallengeResponse(day, eligible, required, generated);
     }
 }

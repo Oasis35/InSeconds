@@ -17,8 +17,8 @@ public sealed record AdminPlayer(
     int CurrentStreak, int StreakFreezes, bool StreakProtected);
 
 /// <param name="NextDayReturnRate">
-/// Part des joueurs d'un jour (invités compris) qui ont aussi joué le lendemain, en %, cumulée sur les 30 jours dont le lendemain est passé
-/// (d'avant-hier à J-31) ; vide si personne n'a joué sur la période.
+/// Part des joueurs d'un jour (invités compris) qui ont aussi joué le lendemain, en %, cumulée sur les 30 jours dont le défi du lendemain
+/// n'est plus jouable (de J-32 à J-3 : le défi d'hier se joue encore aujourd'hui, piège 18) ; vide si personne n'a joué sur la période.
 /// </param>
 public sealed record AdminPlayersResponse(IReadOnlyList<AdminPlayer> Players, double? NextDayReturnRate);
 
@@ -53,7 +53,7 @@ public static class ListRegisteredPlayersEndpoint
                 view.Streak, view.Freezes, view.Status == StreakStatus.Protected);
         }).ToList();
 
-        var returns = await stats.GetNextDayReturnAsync(today.AddDays(-ReturnDays - 1), today.AddDays(-2), ct);
+        var returns = await stats.GetNextDayReturnAsync(today.AddDays(-ReturnDays - 2), today.AddDays(-3), ct);
         double? returnRate = returns.Players == 0 ? null : Math.Round(100.0 * returns.Returned / returns.Players, 1);
 
         return new AdminPlayersResponse(result, returnRate);

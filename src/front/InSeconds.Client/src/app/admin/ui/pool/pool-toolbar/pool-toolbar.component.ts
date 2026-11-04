@@ -50,7 +50,7 @@ const COOLDOWN_COLOR: Record<CooldownTone, string> = {
           }
         </span>
         <button type="button" (click)="sortHardest.emit()" [attr.aria-pressed]="hardestFirst()" data-testid="sort-hardest"
-          class="text-xs px-2.5 py-1 rounded-(--radius-button) transition-colors hover:text-(--text-hi)"
+          class="text-xs px-2.5 py-1 min-h-8 rounded-(--radius-button) transition-colors hover:text-(--text-hi)"
           style="color:var(--text-light);border:1px solid var(--border-neutral)">
           {{ 'admin.pool.hardestFirst' | translate }}@if (hardestFirst()) { <span class="text-[10px]" aria-hidden="true">▲</span> }
         </button>

@@ -68,26 +68,28 @@ public class AdminPlayersTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task RevenirLeLendemain_PartCumuleeSurLesJoursDontLeLendemainEstPasse_InvitesCompris()
+    public async Task RevenirLeLendemain_PartCumuleeSurLesJoursDontLeLendemainNEstPlusJouable_InvitesCompris()
     {
-        foreach (var offset in new[] { 0, 1, 2, 3, 4, 32 })
+        foreach (var offset in new[] { 0, 1, 2, 3, 4, 5, 33 })
             await _game.App.AddChallengeAsync(Today.AddDays(-offset), 1, 2, 3, 4, 5);
         var alice = await _game.NewPlayerAsync("Alice");
         var guest = await _game.NewPlayerAsync();
-        // J-4 : Alice et l'invité ; J-3 : Alice seule (revenue), J-2 : Alice (revenue). Lendemain de J-2 = hier : compté.
+        // J-5 : Alice et l'invité ; J-4 : Alice seule ; J-3 : Alice. Lendemain de J-3 = J-2, plus jouable : compté.
+        await _game.AddSessionAsync(alice.Id, Today.AddDays(-5), 1, (1m, true, true, false, 850));
+        await _game.AddSessionAsync(guest.Id, Today.AddDays(-5), 2, (1m, true, true, false, 850));
         await _game.AddSessionAsync(alice.Id, Today.AddDays(-4), 1, (1m, true, true, false, 850));
-        await _game.AddSessionAsync(guest.Id, Today.AddDays(-4), 2, (1m, true, true, false, 850));
         await _game.AddSessionAsync(alice.Id, Today.AddDays(-3), 1, (1m, true, true, false, 850));
-        await _game.AddSessionAsync(alice.Id, Today.AddDays(-2), 1, (1m, true, true, false, 850));
-        // Hier et aujourd'hui : leur lendemain n'est pas fini, ils ne comptent pas comme jours de départ.
+        // J-2, hier et aujourd'hui : le défi de leur lendemain se joue encore (piège 18), ils ne comptent pas comme jours de départ.
+        await _game.AddSessionAsync(guest.Id, Today.AddDays(-2), 1, (1m, true, true, false, 850));
         await _game.AddSessionAsync(guest.Id, Today.AddDays(-1), 1, (1m, true, true, false, 850));
         await _game.AddSessionAsync(guest.Id, Today, 0, (1m, true, true, false, 850));
         // Hors de la fenêtre.
-        await _game.AddSessionAsync(guest.Id, Today.AddDays(-32), 1, (1m, true, true, false, 850));
+        await _game.AddSessionAsync(guest.Id, Today.AddDays(-33), 1, (1m, true, true, false, 850));
 
         var response = await _game.App.Admin().GetFromJsonAsync<AdminPlayersResponse>(ListRoute, Ct);
 
-        // Départs : J-4 (Alice, invité), J-3 (Alice), J-2 (Alice) = 4 ; revenus le lendemain : Alice J-4, Alice J-3, invité (J-2 → J-1) non, Alice J-2 non.
+        // Départs : J-5 (Alice, invité), J-4 (Alice), J-3 (Alice) = 4 ; revenus le lendemain : Alice J-5 et J-4 oui, l'invité (rien à J-4) non,
+        // Alice J-3 non (rien à J-2).
         Assert.Equal(50.0, response!.NextDayReturnRate);
     }
 

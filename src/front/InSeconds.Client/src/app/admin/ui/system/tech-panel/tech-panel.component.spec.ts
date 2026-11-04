@@ -103,6 +103,7 @@ describe('TechPanelComponent', () => {
     TestBed.resetTestingModule();
     const retrying = render({ nextChallenge: { kind: 'retrying', retryAt: '2026-11-04T00:10:00Z' } }).byTestId('next-challenge')!;
     expect(retrying.textContent).toContain('admin.system.nextChallengeRetryAt');
+    expect(retrying.textContent).toContain('admin.system.todayChallenge');
     expect(retrying.querySelector('span')?.style.color).toBe('var(--text-error)');
 
     TestBed.resetTestingModule();

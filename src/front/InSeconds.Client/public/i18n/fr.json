@@ -29,6 +29,7 @@
     "admin": {
       "day_not_over": "Ce jour n'est pas encore fini : les stats seront figées demain.",
       "invalid_date": "Date invalide : le format attendu est aaaa-mm-jj.",
+      "invalid_month": "Mois invalide : le format attendu est aaaa-mm.",
       "pool_insufficient": "Pool insuffisant : ajoutez des morceaux avec preview."
     },
     "players": {
@@ -519,7 +520,7 @@
         "long": "7 jours et plus"
       },
       "nextDayReturn": "Reviennent le lendemain :",
-      "nextDayReturnHint": "des joueurs d'un jour (moyenne sur 30 jours)"
+      "nextDayReturnHint": "des joueurs d'un jour (sur les 30 derniers jours)"
     },
     "system": {
       "deployment": "Déploiement",
@@ -583,7 +584,8 @@
       "nextChallengeGenerated": "déjà tiré",
       "nextChallengeInsufficient": "{{ count }} hors cooldown sur {{ required }}",
       "nextChallengeRetryAt": "échec · nouvel essai à {{ time }}",
-      "nextChallengeFailed": "échec"
+      "nextChallengeFailed": "échec",
+      "todayChallenge": "Défi du jour"
     },
     "sources": {
       "instagram": "Instagram",
