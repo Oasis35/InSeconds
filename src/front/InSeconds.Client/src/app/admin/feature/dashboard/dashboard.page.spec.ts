@@ -67,28 +67,33 @@ describe('DashboardPage', () => {
     expect(challenges.loadStats).toHaveBeenCalledTimes(1);
   });
 
-  it('la carte du jour : le jour, les trois tuiles et la ligne secondaire', async () => {
-    const { element } = await render();
+  it('la carte du jour : le jour, les trois tuiles, et leur détail replié qui se déplie au clic', async () => {
+    const { element, detect } = await render();
 
     expect(byTestId(element, 'dashboard-selected-day')?.textContent).toContain('lundi 5 octobre');
     expect(byTestId(element, 'kpi-completed')?.textContent).toContain('4');
     expect(byTestId(element, 'kpi-new')?.textContent).toContain('2');
     expect(byTestId(element, 'kpi-median')?.textContent).toContain('4,200');
+    expect(byTestId(element, 'kpi-details')).toBeNull();
+    byTestId(element, 'kpi-toggle')!.click();
+    await detect();
     const details = byTestId(element, 'kpi-details')?.textContent ?? '';
     expect(details).toContain('admin.dashboard.expired');
     expect(details).toContain('admin.dashboard.completionRate');
     expect(details).toContain('admin.dashboard.accountCreated');
   });
 
-  it('la carte du jour : les arrivés du jour par source, les habitués et les nouveaux parmi ceux qui ont fini', async () => {
-    const { element } = await render();
+  it('le détail du jour : les arrivés par source, les habitués et les nouveaux parmi ceux qui ont fini', async () => {
+    const { element, detect } = await render();
+    byTestId(element, 'kpi-toggle')!.click();
+    await detect();
 
     const arrivals = byTestId(element, 'kpi-arrivals')?.textContent?.replace(/\s+/g, ' ') ?? '';
-    expect(arrivals).toContain('admin.dashboard.arrivedThatDay');
+    expect(arrivals).toContain('admin.dashboard.arrived');
     expect(arrivals).toContain('2 admin.sources.instagram · 1 admin.sources.direct');
     // 4 ont fini, dont 1 pour la première fois.
     const loyalty = byTestId(element, 'kpi-loyalty')?.textContent?.replace(/\s+/g, ' ') ?? '';
-    expect(loyalty).toContain('3 admin.dashboard.regulars · 1 admin.dashboard.newcomers');
+    expect(loyalty).toContain('3 admin.dashboard.regulars · 1 admin.dashboard.newcomer');
   });
 
   it('les sources d\'arrivée des 30 jours sous l\'activité', async () => {
@@ -98,10 +103,14 @@ describe('DashboardPage', () => {
     expect(element.querySelectorAll('[data-testid="arrival-share"]')).toHaveLength(4);
   });
 
-  it('l\'égaliseur des scores du jour sur PC seulement', async () => {
+  it('l\'égaliseur des scores du jour sur PC seulement, en tête de la colonne de droite comme dans l\'onglet Défis', async () => {
     expect(byTestId((await render()).element, 'challenge-score-chart')).toBeNull();
     TestBed.resetTestingModule();
-    expect(byTestId((await render({ wide: true })).element, 'challenge-score-chart')).not.toBeNull();
+    const { element } = await render({ wide: true });
+    const detail = byTestId(element, 'day-detail')!;
+    expect(detail.firstElementChild?.tagName).toBe('APP-CHALLENGE-SCORE-CHART');
+    expect(detail.querySelector('[data-testid="day-players"]')?.textContent).toContain('Alice');
+    expect(byTestId(element, 'day-card')?.querySelector('[data-testid="challenge-score-chart"]')).toBeNull();
   });
 
   it('les joueurs du jour sous les chiffres, puis l\'activité et les totaux', async () => {
@@ -116,17 +125,21 @@ describe('DashboardPage', () => {
     const { element, detect } = await render();
     expect(byTestId(element, 'day-tracks')).toBeNull();
 
-    buttons(element).find(b => b.textContent?.includes('admin.dashboard.dayTracks'))!.click();
+    byTestId(element, 'day-tracks-toggle')!.click();
     await detect();
 
     expect(byTestId(element, 'day-card')?.querySelector('[data-testid="day-tracks"]')?.textContent).toContain('Eminem');
   });
 
-  it('PC : les morceaux du jour dépliés dans la colonne de droite', async () => {
-    const { element } = await render({ wide: true });
+  it('PC : les morceaux du jour repliés dans la colonne de droite, et se déplient', async () => {
+    const { element, detect } = await render({ wide: true });
+    expect(byTestId(element, 'day-tracks')).toBeNull();
+
+    byTestId(element, 'day-tracks-toggle')!.click();
+    await detect();
 
     expect(byTestId(element, 'day-card')?.querySelector('[data-testid="day-tracks"]')).toBeNull();
-    expect(byTestId(element, 'day-tracks')?.textContent).toContain('Eminem');
+    expect(byTestId(element, 'day-detail')?.querySelector('[data-testid="day-tracks"]')?.textContent).toContain('Eminem');
   });
 
   it('un jour sans défi affiche le message à la place des chiffres', async () => {

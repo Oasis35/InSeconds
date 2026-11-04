@@ -145,6 +145,30 @@ describe('AdminShellPage', () => {
     expect(element.querySelector('aside [data-testid="deployed-at"]')).not.toBeNull();
   });
 
+  it('PC : la colonne de gauche reste en place tant qu\'elle tient dans la fenêtre, sinon elle défile avec la page', async () => {
+    const { harness, element } = await open(admin, '/admin/catalogue');
+    const aside = element.querySelector('[data-testid="admin-aside"]')!;
+    expect(element.querySelector('[data-testid="admin-top-bar"]')?.classList).toContain('sticky');
+    expect(aside.classList).toContain('lg:sticky');
+
+    const height = Object.getOwnPropertyDescriptor(window, 'innerHeight')!;
+    Object.defineProperty(window, 'innerHeight', { value: 40, configurable: true });
+    try {
+      window.dispatchEvent(new Event('resize'));
+      harness.detectChanges();
+      expect(aside.classList).not.toContain('lg:sticky');
+    } finally {
+      Object.defineProperty(window, 'innerHeight', height);
+    }
+  });
+
+  it('montre l\'identifiant du navigateur sur une ligne, avec un libellé court', async () => {
+    const { element } = await open(admin, '/admin/catalogue');
+
+    const panel = element.querySelector('aside [data-testid="admin-tech-panel"]')!;
+    expect(panel.querySelector('app-browser-id')?.textContent).toContain('admin.system.browser');
+  });
+
   it('met la déconnexion à la fin du panneau technique', async () => {
     const { element } = await open(admin, '/admin/catalogue');
 

@@ -12,18 +12,35 @@ describe('TechPanelComponent', () => {
     for (const [name, value] of Object.entries(inputs)) fixture.componentRef.setInput(name, value);
     fixture.detectChanges();
     const element = fixture.nativeElement as HTMLElement;
-    return { element, byTestId: (id: string) => element.querySelector(`[data-testid="${id}"]`) as HTMLElement | null };
+    return { element, fixture, byTestId: (id: string) => element.querySelector(`[data-testid="${id}"]`) as HTMLElement | null };
   }
 
-  it('montre la date du déploiement et les commits abrégés du front, de l\'API et de la branche', () => {
-    const { element, byTestId } = render({
+  it('montre la date du déploiement et le verdict ; les commits abrégés du front, de l\'API et de la branche se déplient au clic', async () => {
+    const { element, byTestId, fixture } = render({
       deployedAt: '2026-11-04T09:12:00Z', frontCommit: '4f2a9c1d8e', apiCommit: '4f2a9c1d8e', branch: 'main', branchHead: '4f2a9c1d8e', verdict: 'aligned',
     });
 
     expect(byTestId('deployed-at')?.textContent).toContain('admin.deployedAt');
+    const verdict = byTestId('deployment-verdict')!;
+    expect(verdict.textContent).toContain('admin.system.verdict.aligned');
+    expect(verdict.style.color).toBe('var(--color-success)');
+    expect(verdict.getAttribute('aria-expanded')).toBe('false');
+    expect(byTestId('deployment-commits')).toBeNull();
+
+    verdict.click();
+    await fixture.whenStable();
+
+    expect(verdict.getAttribute('aria-expanded')).toBe('true');
     expect(element.textContent?.match(/4f2a9c1/g)).toHaveLength(3);
-    expect(byTestId('deployment-verdict')?.textContent).toContain('admin.system.verdict.aligned');
-    expect(byTestId('deployment-verdict')?.style.color).toBe('var(--color-success)');
+  });
+
+  it('déploiement en retard ou désaligné : les commits sont dépliés d\'office, et se replient au clic', async () => {
+    const { byTestId, fixture } = render({ frontCommit: 'aaaaaaa', apiCommit: 'aaaaaaa', branch: 'main', branchHead: 'bbbbbbb', verdict: 'pending' });
+
+    expect(byTestId('deployment-commits')?.textContent).toContain('bbbbbbb');
+    byTestId('deployment-verdict')!.click();
+    await fixture.whenStable();
+    expect(byTestId('deployment-commits')).toBeNull();
   });
 
   it('un build local : ni date, ni commits, ni branche', () => {
@@ -45,9 +62,14 @@ describe('TechPanelComponent', () => {
     TestBed.resetTestingModule();
     expect(render({ apiDown: true }).byTestId('api-health')?.textContent).toContain('admin.system.apiDown');
     TestBed.resetTestingModule();
-    const stale = render({ backup: 'stale', backupAt: '2026-11-02T03:00:00Z', backupOffSite: true }).byTestId('backup');
-    expect(stale?.style.color).toBe('var(--text-error)');
-    expect(stale?.textContent).toContain('admin.system.backupOffSite');
+    const stale = render({ backup: 'stale', backupAt: '2026-11-02T03:00:00Z', backupOffSite: true });
+    expect(stale.byTestId('backup')?.style.color).toBe('var(--text-error)');
+    expect(stale.byTestId('backup')?.textContent).toContain('02/11');
+    // Copiée sur R2 (« hors site ») : la normale, rien de plus à dire.
+    expect(stale.byTestId('backup-local')).toBeNull();
+    TestBed.resetTestingModule();
+    expect(render({ backup: 'ok', backupAt: '2026-11-04T03:00:00Z', backupOffSite: false }).byTestId('backup-local')?.textContent)
+      .toContain('admin.system.backupLocal');
     TestBed.resetTestingModule();
     expect(render().byTestId('backup')?.textContent).toContain('admin.system.noBackup');
   });
@@ -58,23 +80,24 @@ describe('TechPanelComponent', () => {
       backupFailure: { at: '2026-11-04T03:00:30Z', step: 'dump', message: 'étape 1/3 dump : dump vide' },
     });
 
-    expect(byTestId('backup')?.style.color).toBe('var(--text-hi)');
-    expect(byTestId('backup')?.textContent).toContain('✓');
+    expect(byTestId('backup')?.style.color).toBe('');
+    expect(byTestId('backup')?.parentElement?.textContent).toContain('✓');
     expect(byTestId('backup-failure')?.textContent).toContain('admin.system.backupFailed');
     expect(byTestId('backup-failure')?.textContent).toContain('étape 1/3 dump : dump vide');
   });
 
   it('restauration testée : la date en vert, l\'échec en rouge avec son message, « jamais » sans contrôle', () => {
     const ok = render({ restoreTest: 'ok', restoreTestAt: '2026-11-04T04:01:37Z' });
-    expect(ok.byTestId('restore-test')?.style.color).toBe('var(--text-hi)');
+    expect(ok.byTestId('restore-test')?.style.color).toBe('');
+    expect(ok.byTestId('restore-test')?.parentElement?.textContent).toContain('✓');
     expect(ok.byTestId('restore-test-failure')).toBeNull();
     TestBed.resetTestingModule();
     const failed = render({
       restoreTest: 'failed', restoreTestAt: '2026-11-03T04:01:00Z',
       restoreTestFailure: { at: '2026-11-04T04:01:00Z', step: 'freshness', message: 'aucune sauvegarde dans daily/ sur R2.' },
     });
-    expect(failed.byTestId('restore-test')?.style.color).toBe('var(--text-hi)');
-    expect(failed.byTestId('restore-test')?.textContent).toContain('✓');
+    expect(failed.byTestId('restore-test')?.style.color).toBe('');
+    expect(failed.byTestId('restore-test')?.parentElement?.textContent).toContain('✓');
     expect(failed.byTestId('restore-test-failure')?.textContent).toContain('aucune sauvegarde dans daily/ sur R2.');
     TestBed.resetTestingModule();
     expect(render().byTestId('restore-test')?.textContent).toContain('admin.system.noRestoreTest');
@@ -103,7 +126,10 @@ describe('TechPanelComponent', () => {
     const lines = Array.from(element.querySelectorAll<HTMLAnchorElement>('[data-testid="ci-line"]'));
     expect(lines.map(l => l.getAttribute('href'))).toEqual(['https://github.test/run/1', 'https://github.test/staging']);
     expect(lines[0].textContent).toContain('admin.system.ciState.failure');
+    expect(lines[0].querySelector('.tech-icon')?.textContent).toBe('✗');
     expect(lines[1].textContent).toContain('admin.system.ciState.none');
+    // La prod et le staging côte à côte, sur une même ligne.
+    expect(lines[0].parentElement).toBe(lines[1].parentElement);
   });
 
   it('le catalogue : un lien vers les morceaux sans extrait, les formes d\'onde manquantes', () => {
@@ -114,7 +140,9 @@ describe('TechPanelComponent', () => {
     expect(link.getAttribute('href')).toBe('/admin/catalogue?extrait=absent');
     expect(link.textContent).toContain('admin.system.tracksCount');
     expect(byTestId('missing-waveforms')?.textContent).toContain('0');
-    expect(byTestId('missing-waveforms')?.textContent).toContain('✓');
+    // L'indicateur à gauche de la ligne : ✓ à zéro, ! sinon.
+    expect(byTestId('missing-waveforms')?.parentElement?.querySelector('.tech-icon')?.textContent).toBe('✓');
+    expect(byTestId('missing-previews')?.parentElement?.querySelector('.tech-icon')?.textContent).toBe('!');
   });
 
   it('rien du catalogue tant qu\'il n\'est pas lu ; aucun morceau sans extrait : pas de lien', () => {
