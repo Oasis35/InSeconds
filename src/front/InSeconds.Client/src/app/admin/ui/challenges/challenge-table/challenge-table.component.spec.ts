@@ -17,11 +17,12 @@ describe('ChallengeTableComponent', () => {
     return { fixture, rows: Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('tbody tr')) as HTMLElement[] };
   }
 
-  it('une ligne par défi : date, joueurs, abandons et inachevées, médiane, comptes', () => {
+  it('une ligne par défi : date, joueurs, comptes, invités, finies, abandons et inachevées, médiane', () => {
     const { rows } = render();
 
     expect(rows).toHaveLength(2);
-    expect(Array.from(rows[0].querySelectorAll('td')).map(td => td.textContent?.trim())).toEqual(['2026-10-05', '3', '2', '2400', '1']);
+    expect(Array.from(rows[0].querySelectorAll('td')).map(td => td.textContent?.trim()))
+      .toEqual(['05/10/2026', '2', '1', '1', '3', '2', '2400']);
   });
 
   it('marque la ligne sélectionnée, et annonce le défi cliqué', () => {

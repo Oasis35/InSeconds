@@ -21,8 +21,11 @@ public sealed record AdminChallengeTrackStats(
 /// <param name="AbandonedCount">Clic explicite sur « Abandonner ».</param>
 /// <param name="ComputedAt">Date du calcul de la photo figée ; vide quand les chiffres sont calculés en direct (la veille et le jour même).</param>
 /// <param name="CanRecompute">La photo peut être refaite (J-2 et avant) : le bouton « recalculer » de l'admin.</param>
+/// <param name="MaxPossibleScore">Nombre de morceaux × meilleur palier ce jour-là : la borne haute de l'égaliseur.</param>
+/// <param name="ScoreDistribution">L'égaliseur des scores des parties terminées (le même que celui du joueur), en nombres de joueurs.</param>
 public sealed record AdminChallengeStats(
     int Id, DateOnly Date, int PlayerCount, int PendingCount, int AbandonedCount, int ExpiredCount, int? ScoreMin, int? ScoreMax, double? ScoreAvg, double? ScoreMedian,
+    int MaxPossibleScore, IReadOnlyList<ScoreBucketResponse> ScoreDistribution,
     IReadOnlyList<AdminChallengeTrackStats> Tracks, IReadOnlyList<AdminChallengePlayer> Players, DateTimeOffset? ComputedAt, bool CanRecompute);
 
 /// <param name="Challenges">Les défis du mois demandé, sinon les 30 derniers ; du plus récent au plus ancien.</param>
@@ -99,6 +102,7 @@ public static class GetChallengeStatsEndpoint
         new(
             payload.ChallengeId, payload.Date, payload.PlayerCount, payload.PendingCount, payload.AbandonedCount, payload.ExpiredCount,
             payload.ScoreMin, payload.ScoreMax, payload.ScoreAvg, payload.ScoreMedian,
+            payload.MaxPossibleScore, payload.ScoreDistribution.Select(b => new ScoreBucketResponse(b.MinScore, b.MaxScore, b.Count)).ToList(),
             payload.Tracks.Select(t => new AdminChallengeTrackStats(
                 t.Position,
                 trackInfos.TryGetValue(t.TrackId, out var info) ? info.Artist : "",

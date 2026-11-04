@@ -1314,6 +1314,8 @@ export interface AdminChallengeStats {
     players: AdminChallengePlayer[];
     computedAt: Date | undefined;
     canRecompute: boolean;
+    maxPossibleScore: number;
+    scoreDistribution: ScoreBucketResponse[];
 
     [key: string]: any;
 }

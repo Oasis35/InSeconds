@@ -461,7 +461,10 @@
       "colPlayers": "Joueurs",
       "colAbandons": "Abandons",
       "colMedian": "Médiane",
-      "colAccounts": "Comptes"
+      "colAccounts": "Comptes",
+      "colGuests": "Invités",
+      "colCompleted": "Finies",
+      "scoreChart": "Répartition des scores"
     },
     "players": {
       "title": "Comptes inscrits ({{ count }})",
@@ -474,7 +477,6 @@
       "emailReveal": "Afficher l'email",
       "emailHide": "Masquer l'email",
       "colLastSeen": "Dernière visite",
-      "colCreated": "Inscrit le",
       "colRun": "Run",
       "runAccessToggle": "Autoriser ce compte à jouer au mode Run",
       "runAccessAdmin": "Les admins ont l'accès d'office au mode Run",

@@ -461,7 +461,10 @@
       "colPlayers": "Players",
       "colAbandons": "Give-ups",
       "colMedian": "Median",
-      "colAccounts": "Accounts"
+      "colAccounts": "Accounts",
+      "colGuests": "Guests",
+      "colCompleted": "Finished",
+      "scoreChart": "Score distribution"
     },
     "players": {
       "title": "Registered accounts ({{ count }})",
@@ -474,7 +477,6 @@
       "emailReveal": "Show email",
       "emailHide": "Hide email",
       "colLastSeen": "Last visit",
-      "colCreated": "Signed up",
       "colRun": "Run",
       "runAccessToggle": "Allow this account to play Run mode",
       "runAccessAdmin": "Admins always have access to Run mode",

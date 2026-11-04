@@ -81,7 +81,6 @@ import { PlayerRowComponent } from '../../ui/players/player-row/player-row.compo
                   <th class="px-3 py-2.5 text-right">{{ 'admin.players.colFreezes' | translate }}</th>
                   <th class="px-3 py-2.5 text-center">{{ 'admin.players.colRun' | translate }}</th>
                   <th class="px-3 py-2.5 whitespace-nowrap">{{ 'admin.players.colLastSeen' | translate }}</th>
-                  <th class="px-4 py-2.5 whitespace-nowrap">{{ 'admin.players.colCreated' | translate }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -93,7 +92,7 @@ import { PlayerRowComponent } from '../../ui/players/player-row/player-row.compo
                   @if (expanded && store.expandedHistory(); as history) {
                     <tr data-testid="player-history" [id]="'player-history-' + player.id"
                       style="border-bottom:1px solid var(--border-subtle);background:var(--bg-inactive)">
-                      <td colspan="8" class="px-4 pb-3 pt-1">
+                      <td colspan="7" class="px-4 pb-3 pt-1">
                         <app-player-history [games]="history.games" [status]="history.status" />
                       </td>
                     </tr>

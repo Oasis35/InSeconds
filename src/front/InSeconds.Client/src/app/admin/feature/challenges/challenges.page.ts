@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -40,7 +41,7 @@ function monthParam(value: string | null): string | null {
 @Component({
   selector: 'app-admin-challenges-page',
   imports: [
-    TranslatePipe, ErrorMessageComponent, ChallengeMonthNavComponent, ChallengeCardComponent, ChallengeTableComponent,
+    NgTemplateOutlet, TranslatePipe, ErrorMessageComponent, ChallengeMonthNavComponent, ChallengeCardComponent, ChallengeTableComponent,
   ],
   providers: [ChallengesStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -48,10 +49,17 @@ function monthParam(value: string | null): string | null {
   template: `
     <section class="flex flex-col gap-4 w-full max-w-2xl lg:max-w-none" data-testid="admin-challenges-page">
 
-      @if (store.months().length > 0) {
-        <app-challenge-month-nav
-          [label]="monthLabel()" [canPrevious]="store.canGoPrevious()" [canNext]="store.canGoNext()"
-          (previous)="shiftMonth(-1)" (next)="shiftMonth(1)" />
+      <ng-template #monthNav>
+        @if (store.months().length > 0) {
+          <app-challenge-month-nav
+            [label]="monthLabel()" [canPrevious]="store.canGoPrevious()" [canNext]="store.canGoNext()"
+            (previous)="shiftMonth(-1)" (next)="shiftMonth(1)" />
+        }
+      </ng-template>
+
+      <!-- Téléphone : le mois au-dessus de la carte ; PC : au-dessus du tableau, dans sa colonne. -->
+      @if (!wide()) {
+        <ng-container *ngTemplateOutlet="monthNav" />
       }
 
       <!-- Stats par défi -->
@@ -60,8 +68,10 @@ function monthParam(value: string | null): string | null {
           <p class="text-sm" style="color:var(--text-muted)">{{ 'admin.dashboard.loading' | translate }}</p>
         </div>
       } @else {
-        <div class="rounded-xl p-5 flex flex-col gap-3" style="background:var(--bg-surface)">
-          <h2 class="text-sm font-semibold uppercase tracking-wide" style="color:var(--text-muted)">{{ 'admin.dashboard.statsPerChallenge' | translate }}</h2>
+        <div class="rounded-xl flex flex-col gap-3" [class]="wide() ? 'p-5 pt-3' : 'p-5'" style="background:var(--bg-surface)">
+          @if (!wide()) {
+            <h2 class="text-sm font-semibold uppercase tracking-wide" style="color:var(--text-muted)">{{ 'admin.dashboard.statsPerChallenge' | translate }}</h2>
+          }
           @if (store.error(); as error) {
             <app-error-message [messageKey]="errorKey(error.code)" [traceId]="error.traceId" />
           } @else if (store.stats().length === 0) {
@@ -72,8 +82,11 @@ function monthParam(value: string | null): string | null {
             <p class="text-sm" style="color:var(--text-muted)">{{ 'admin.dashboard.noChallengeThisMonth' | translate }}</p>
           } @else if (wide()) {
             <div class="grid grid-cols-[minmax(0,5fr)_minmax(0,6fr)] gap-5 items-start">
-              <app-challenge-table class="self-start" [challenges]="store.statsForMonth()" [selectedId]="selectedId()"
-                (selectChallenge)="picked.set($event)" />
+              <div class="flex flex-col gap-1 min-w-0 self-start">
+                <div class="self-start"><ng-container *ngTemplateOutlet="monthNav" /></div>
+                <app-challenge-table class="block w-full" [challenges]="store.statsForMonth()" [selectedId]="selectedId()"
+                  (selectChallenge)="picked.set($event)" />
+              </div>
               @if (selected(); as c) {
                 <div class="rounded-lg px-4 pb-3 sticky top-4" style="background:var(--bg-inactive)" data-testid="challenge-detail">
                   <app-challenge-card

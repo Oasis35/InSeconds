@@ -19,7 +19,8 @@ export function challengePlayer(overrides: Partial<ChallengePlayer> = {}): Chall
 export function challengeStats(overrides: Partial<ChallengeStats> = {}): ChallengeStats {
   return {
     id: 1, date: '2026-10-05', playerCount: 1, pendingCount: 0, abandonedCount: 0, expiredCount: 0,
-    scoreMin: 1200, scoreMax: 1200, scoreAvg: 1200, scoreMedian: 1200,
+    scoreMin: 1200, scoreMax: 1200, scoreAvg: 1200, scoreMedian: 1200, maxPossibleScore: 5000,
+    scoreDistribution: Array.from({ length: 10 }, (_, i) => ({ minScore: i * 500, maxScore: i === 9 ? 5000 : i * 500 + 499, count: i === 2 ? 1 : 0 })),
     tracks: [challengeTrack()], players: [challengePlayer()], computedAt: null, canRecompute: false, ...overrides,
   };
 }

@@ -26,6 +26,13 @@ export interface ChallengePlayer {
   readonly pseudo: string | null;
 }
 
+/** Une tranche de l'égaliseur des scores d'un défi. */
+export interface ChallengeScoreBucket {
+  readonly minScore: number;
+  readonly maxScore: number;
+  readonly count: number;
+}
+
 /** Les stats d'un défi. Les jours sont en texte `aaaa-mm-jj`. */
 export interface ChallengeStats {
   readonly id: number;
@@ -38,6 +45,10 @@ export interface ChallengeStats {
   readonly scoreMax: number | null;
   readonly scoreAvg: number | null;
   readonly scoreMedian: number | null;
+  /** Nombre de morceaux × meilleur palier : la borne haute de l'égaliseur. */
+  readonly maxPossibleScore: number;
+  /** L'égaliseur des scores des parties terminées, en nombres de joueurs. */
+  readonly scoreDistribution: readonly ChallengeScoreBucket[];
   readonly tracks: readonly ChallengeTrackStats[];
   readonly players: readonly ChallengePlayer[];
   /** Instant où la photo des chiffres a été figée ; `null` si les chiffres sont calculés en direct. */
@@ -69,6 +80,20 @@ export function mergeChallenges(current: readonly ChallengeStats[], incoming: re
 
 const SHORT_ID_LENGTH = 8;
 const KNOWN_STATUSES: ReadonlySet<string> = new Set(['Completed', 'Pending', 'Abandoned', 'Expired']);
+
+/** `2026-10-05` → `05/10/2026`, le format des dates de l'onglet Défis. */
+export function formatDay(day: string): string {
+  const [year, month, date] = day.split('-');
+  return `${date}/${month}/${year}`;
+}
+
+/** Ce que l'égaliseur dessine pour un défi vu de l'admin : personne en orange (l'admin connecté n'est pas mis en valeur), pas de « mieux que ». */
+export function challengeScoreChart(challenge: ChallengeStats) {
+  return {
+    yourScore: null, medianScore: challenge.scoreMedian, minScore: challenge.scoreMin, maxScore: challenge.scoreMax,
+    maxPossibleScore: challenge.maxPossibleScore, scoreDistribution: challenge.scoreDistribution, betterThanPercent: null,
+  };
+}
 
 /** Le mois (`aaaa-mm`) d'un jour `aaaa-mm-jj`. */
 export function monthOf(day: string): string {

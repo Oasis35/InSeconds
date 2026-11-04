@@ -130,7 +130,7 @@ export interface ScoreBucket {
 }
 
 /**
- * Ce que l'égaliseur des scores dessine : celui du jour (`DayStats`) ou celui d'un jour passé. Les comptes des tranches ne servent qu'à leurs
+ * Ce que l'égaliseur des scores (`ui/score-distribution-chart`) dessine : celui du jour (`DayStats`) ou celui d'un jour passé. Les comptes des tranches ne servent qu'à leurs
  * hauteurs relatives : un pourcentage convient aussi. `minScore` vide : personne n'a de score.
  */
 export interface ScoreChartData {

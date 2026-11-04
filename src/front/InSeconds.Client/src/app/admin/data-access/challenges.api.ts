@@ -40,6 +40,8 @@ function toChallengeStats(challenge: AdminChallengeStats): ChallengeStats {
     scoreMax: challenge.scoreMax ?? null,
     scoreAvg: challenge.scoreAvg ?? null,
     scoreMedian: challenge.scoreMedian ?? null,
+    maxPossibleScore: challenge.maxPossibleScore,
+    scoreDistribution: (challenge.scoreDistribution ?? []).map(b => ({ minScore: b.minScore, maxScore: b.maxScore, count: b.count })),
     tracks: challenge.tracks.map(toTrackStats),
     players: challenge.players.map(toPlayer),
     computedAt: toInstant(challenge.computedAt),

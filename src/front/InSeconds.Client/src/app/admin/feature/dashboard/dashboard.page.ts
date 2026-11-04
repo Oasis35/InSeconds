@@ -13,6 +13,7 @@ import { DashboardStore } from '../../data-access/dashboard.store';
 import { ChallengeTrackStats } from '../../domain/challenge';
 import { parseDay, todayUtc } from '../../domain/dashboard';
 import { ChallengePlayerChipsComponent } from '../../ui/challenges/challenge-player-chips/challenge-player-chips.component';
+import { ChallengeScoreChartComponent } from '../../ui/challenges/challenge-score-chart/challenge-score-chart.component';
 import { ChallengeTrackStatsComponent } from '../../ui/challenges/challenge-track-stats/challenge-track-stats.component';
 import { DashboardActivityComponent } from '../../ui/dashboard/dashboard-activity/dashboard-activity.component';
 import { DashboardDayNavComponent } from '../../ui/dashboard/dashboard-day-nav/dashboard-day-nav.component';
@@ -34,7 +35,7 @@ const CHART_DIALOG_MAX_WIDTH = '22.5rem';
   selector: 'app-admin-dashboard-page',
   imports: [
     NgTemplateOutlet, TranslatePipe, ErrorMessageComponent, DashboardDayNavComponent, DashboardKpisComponent, DashboardActivityComponent,
-    DashboardPlayersComponent, ChallengePlayerChipsComponent, ChallengeTrackStatsComponent,
+    DashboardPlayersComponent, ChallengePlayerChipsComponent, ChallengeScoreChartComponent, ChallengeTrackStatsComponent,
   ],
   providers: [DashboardStore, ChallengesStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -63,6 +64,9 @@ const CHART_DIALOG_MAX_WIDTH = '22.5rem';
             <app-dashboard-kpis class="flex flex-col gap-3" [kpis]="dashboard.kpis" />
 
             @if (dayChallenge(); as c) {
+              @if (wide()) {
+                <app-challenge-score-chart [challenge]="c" />
+              }
               @if (c.players.length > 0) {
                 <div class="pt-1" style="border-top:1px solid var(--border-medium)" data-testid="day-players">
                   <app-challenge-player-chips [players]="c.players" [youId]="youId()"

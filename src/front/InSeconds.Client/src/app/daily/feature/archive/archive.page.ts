@@ -20,7 +20,7 @@ import { ArchiveDayHeaderComponent } from '../../ui/archive-day-header/archive-d
 import { ArchiveTrackRowComponent } from '../../ui/archive-track-row/archive-track-row.component';
 import { BrandComponent } from '../../../gameplay/ui/brand/brand.component';
 import { DailyFooterComponent } from '../../ui/daily-footer/daily-footer.component';
-import { ScoreDistributionChartComponent } from '../../ui/score-distribution-chart/score-distribution-chart.component';
+import { ScoreDistributionChartComponent } from '../../../ui/score-distribution-chart/score-distribution-chart.component';
 import { StatusScreenComponent } from '../../ui/status-screen/status-screen.component';
 
 /**

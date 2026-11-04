@@ -1,6 +1,27 @@
 import { Component, computed, input, ChangeDetectionStrategy } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { ScoreChartData } from '../../domain/daily';
+
+/** Une tranche de l'égaliseur : les scores de `minScore` à `maxScore`, et combien de joueurs y tombent (ou leur part). */
+export interface ScoreChartBucket {
+  readonly minScore: number;
+  readonly maxScore: number;
+  readonly count: number;
+}
+
+/**
+ * Ce que l'égaliseur dessine : le défi du jour, un jour passé, ou un défi vu de l'admin. Les comptes des tranches ne servent qu'à leurs
+ * hauteurs relatives : un pourcentage convient aussi. `minScore` vide : personne n'a de score. `yourScore` vide : aucune tranche en orange.
+ */
+export interface ScoreChartData {
+  readonly yourScore: number | null;
+  readonly medianScore: number | null;
+  readonly minScore: number | null;
+  readonly maxScore: number | null;
+  readonly maxPossibleScore: number;
+  readonly scoreDistribution: readonly ScoreChartBucket[];
+  /** Le serveur le laisse vide sous 5 joueurs : l'écran l'affiche tel quel. */
+  readonly betterThanPercent: number | null;
+}
 
 /** Une case de l'égaliseur (une colonne = une tranche de score, empilée en `SEGMENTS` cases). */
 interface EqualizerCell {
@@ -50,7 +71,7 @@ const OTHERS = 'var(--color-violet)';
 const UNLIT = 'var(--text-sep)';
 
 /**
- * Égaliseur « répartition des scores » (écran du résultat du jour et page d'un jour passé) :
+ * Égaliseur « répartition des scores » (écran du résultat du jour, page d'un jour passé, et l'admin sur PC, sans joueur en orange) :
  * une colonne par tranche de score (`scoreDistribution`), la tranche du
  * joueur en orange, un repère médiane et les scores le plus bas / le plus haut sous l'axe,
  * plus la phrase « Tu fais mieux que X % des joueurs » quand le serveur la donne (5 joueurs au moins, seuil du serveur) et que

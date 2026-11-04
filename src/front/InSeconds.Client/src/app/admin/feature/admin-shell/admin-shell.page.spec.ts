@@ -85,17 +85,17 @@ describe('AdminShellPage', () => {
   it('montre les onglets et le contenu à un admin', async () => {
     const { element } = await open(admin, '/admin/catalogue');
 
-    expect(element.querySelector('aside nav a[href="/admin/catalogue"]')).not.toBeNull();
+    expect(element.querySelector('[data-testid="admin-top-nav"] a[href="/admin/catalogue"]')).not.toBeNull();
     expect(element.querySelector('#child')).not.toBeNull();
     expect(text(element)).toContain('admin.logout');
     expect(text(element)).not.toContain('admin.accessDenied');
   });
 
-  /** Les onglets de la barre de gauche (PC) ; la barre du bas (téléphone) a les mêmes, sans effectif. */
-  const sideTabs = (element: HTMLElement) => Array.from(element.querySelectorAll<HTMLAnchorElement>('aside nav a'));
+  /** Les onglets du haut (PC) ; la barre du bas (téléphone) a les mêmes, sans effectif. */
+  const sideTabs = (element: HTMLElement) => Array.from(element.querySelectorAll<HTMLAnchorElement>('[data-testid="admin-top-nav"] a'));
   const bottomTabs = (element: HTMLElement) => Array.from(element.querySelectorAll<HTMLAnchorElement>('[data-testid="admin-bottom-nav"] a'));
 
-  it('montre les quatre onglets dans leur ordre, à gauche sur PC et en bas sur téléphone, les Morceaux actifs', async () => {
+  it('montre les quatre onglets dans leur ordre, en haut sur PC et en bas sur téléphone, les Morceaux actifs', async () => {
     const { element } = await open(admin, '/admin/catalogue');
 
     for (const links of [sideTabs(element), bottomTabs(element)]) {

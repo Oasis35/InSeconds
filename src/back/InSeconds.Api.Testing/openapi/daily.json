@@ -963,6 +963,8 @@
           "scoreMax",
           "scoreAvg",
           "scoreMedian",
+          "maxPossibleScore",
+          "scoreDistribution",
           "tracks",
           "players",
           "computedAt",
@@ -1043,6 +1045,16 @@
           },
           "canRecompute": {
             "type": "boolean"
+          },
+          "maxPossibleScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "scoreDistribution": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScoreBucketResponse"
+            }
           }
         }
       },
