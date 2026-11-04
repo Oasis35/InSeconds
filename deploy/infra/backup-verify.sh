@@ -47,8 +47,9 @@ check_freshness() { # pose $latest (daily/<nom>) : la sauvegarde la plus récent
 }
 
 download() { # download <daily/…> : copie déchiffrée dans $work, pose $file
-  file="$work/$(basename "$1")"
-  ( umask 077; rclone_run cat "r2crypt:$1" > "$file" ) || fail "téléchargement ou déchiffrement impossible : $1."
+  local path="$1"
+  file="$work/$(basename "$path")"
+  ( umask 077; rclone_run cat "r2crypt:$path" > "$file" ) || fail "téléchargement ou déchiffrement impossible : $path."
   REPORT_SIZE=$(stat -c %s "$file")
   verify_dump "$file"
 }

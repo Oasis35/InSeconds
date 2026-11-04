@@ -63,8 +63,9 @@ log() { echo "[$(date -u +%H:%M:%S)] $*"; }
 fail() { echo "ERREUR : $*" >&2; exit 1; }
 
 step() { # step <n/total> <nom> <libellé> : début d'une étape, rappelée dans le message d'un échec
-  STEP="$2"
-  STEP_LABEL="étape $1 $3"
+  local position="$1" name="$2" label="$3"
+  STEP="$name"
+  STEP_LABEL="étape $position $label"
   log "--- $STEP_LABEL"
 }
 
@@ -96,7 +97,8 @@ failure_message() { # message court d'un échec : la ligne ERREUR, sinon la dern
 }
 
 utf8_cut() { # utf8_cut <octets> : coupe l'entrée sans laisser de caractère UTF-8 coupé en deux (refusé par Postgres)
-  head -c "$1" | iconv -f UTF-8 -t UTF-8 -c 2> /dev/null || true
+  local bytes="$1"
+  head -c "$bytes" | iconv -f UTF-8 -t UTF-8 -c 2> /dev/null || true
 }
 
 # ---------- garde-fou : la prod seulement ----------
@@ -121,7 +123,8 @@ pg() { docker run --rm --network "$NETWORK" -e PGPASSWORD "$PG_IMAGE" "$@" < /de
 pg_in() { docker run --rm -i --network "$NETWORK" -e PGPASSWORD "$PG_IMAGE" "$@"; }
 
 prod_query() { # prod_query <sql> : une valeur lue dans la base de prod (lecture seule)
-  pg psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -Atqc "$1"
+  local sql="$1"
+  pg psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -Atqc "$sql"
 }
 
 verify_dump() { # verify_dump <fichier> : lisible par pg_restore et contient des données
@@ -150,7 +153,8 @@ scratch_start() {
   docker exec "$SCRATCH" createdb -U postgres "$DB_NAME" < /dev/null
 }
 scratch_restore() { # scratch_restore <fichier> : restauration complète, arrêt à la première erreur
-  docker exec -i "$SCRATCH" pg_restore -U postgres -d "$DB_NAME" --no-owner --no-privileges --exit-on-error < "$1" \
+  local file="$1"
+  docker exec -i "$SCRATCH" pg_restore -U postgres -d "$DB_NAME" --no-owner --no-privileges --exit-on-error < "$file" \
     2> >(pg_errors_only >&2)
 }
 # Erreurs de pg_restore sans le contenu des tables : le journal part vers healthchecks.io, Grafana et l'admin, alors qu'un
@@ -178,7 +182,8 @@ scratch_cleanup_stale() { # conteneurs jetables et copies déchiffrées laissés
   fi
 }
 scratch_query() { # scratch_query <sql> : une valeur lue dans la base restaurée
-  docker exec "$SCRATCH" psql -U postgres -d "$DB_NAME" -v ON_ERROR_STOP=1 -Atqc "$1" < /dev/null
+  local sql="$1"
+  docker exec "$SCRATCH" psql -U postgres -d "$DB_NAME" -v ON_ERROR_STOP=1 -Atqc "$sql" < /dev/null
 }
 scratch_stop() {
   if [[ -n "$SCRATCH" ]]; then docker rm -f "$SCRATCH" > /dev/null 2>&1 || true; fi
@@ -251,8 +256,8 @@ rclone_in() { # rclone_in <args...> : lit l'entrée standard (rcat)
 }
 
 dump_time() { # dump_time <nom> : heure d'un dump, lue dans son nom (inseconds-2026-11-04T030001Z.dump → 2026-11-04T03:00:01Z)
-  local stamp
-  stamp=$(basename "$1" .dump)
+  local name="$1" stamp
+  stamp=$(basename "$name" .dump)
   stamp=${stamp#inseconds-}
   [[ "$stamp" =~ ^([0-9]{4}-[0-9]{2}-[0-9]{2})T([0-9]{2})([0-9]{2})([0-9]{2})Z$ ]] || return 1
   printf '%sT%s:%s:%sZ' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}" "${BASH_REMATCH[4]}"
@@ -285,13 +290,13 @@ json_string() { # json_string <texte> : chaîne JSON, guillemets compris (caract
 }
 
 otlp_record() { # otlp_record <INFO|ERROR> <texte> <kind> <outcome> <étape> : un logRecord OTLP en JSON
-  local severity="$1" number=9
+  local severity="$1" text="$2" kind="$3" outcome="$4" step="$5" number=9
   if [[ "$severity" == ERROR ]]; then number=17; fi
   printf '{"timeUnixNano":"%s","severityNumber":%s,"severityText":"%s","body":{"stringValue":%s},"attributes":[%s,%s,%s]}' \
-    "$(date -u +%s%N)" "$number" "$severity" "$(json_string "$2")" \
-    "{\"key\":\"backup.kind\",\"value\":{\"stringValue\":$(json_string "$3")}}" \
-    "{\"key\":\"backup.outcome\",\"value\":{\"stringValue\":$(json_string "$4")}}" \
-    "{\"key\":\"backup.step\",\"value\":{\"stringValue\":$(json_string "$5")}}"
+    "$(date -u +%s%N)" "$number" "$severity" "$(json_string "$text")" \
+    "{\"key\":\"backup.kind\",\"value\":{\"stringValue\":$(json_string "$kind")}}" \
+    "{\"key\":\"backup.outcome\",\"value\":{\"stringValue\":$(json_string "$outcome")}}" \
+    "{\"key\":\"backup.step\",\"value\":{\"stringValue\":$(json_string "$step")}}"
 }
 
 # Logs du service « inseconds-backup » dans Grafana (Loki), avec la configuration OTLP de l'API : en échec, tout le journal du
