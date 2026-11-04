@@ -84,7 +84,8 @@ function pathOf(url: string): string {
  * - un seul rechargement quand une MEP remplace aussi le service worker (CSP modifiée, montée d'Angular) : si un nouveau worker
  *   s'installe au moment de recharger, on attend qu'il prenne la main (10 s au plus), sinon la page se rechargeait deux fois de
  *   suite et le garde-fou affichait le bandeau. Un remplacement découvert juste après un rechargement a droit à un second
- *   rechargement, une fois par minute ;
+ *   rechargement, une fois par minute. Un rechargement annulé (confirmation de quitter la page refusée) libère le verrou au bout
+ *   de 5 s (`RELOAD_RELEASE_MS`), pour que la suite de la visite puisse recharger de nouveau ;
  * - un module chargé à la demande introuvable (`isStaleChunkError`, onglet resté ouvert pendant un déploiement) recharge la page
  *   une fois (`reloadAfterStaleChunk()`), sauf si cela vient déjà d'être fait ;
  * - état irrécupérable du service worker : `markUpdateAvailable()`, même mise en attente, plus le bandeau « Recharger / Plus tard » en secours ;
