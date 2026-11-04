@@ -234,7 +234,7 @@ export class VersionService {
       return;
     }
     this.reloading = true;
-    this.waitForWorkerSwap()
+    void this.waitForWorkerSwap()
       .then(() => this.swUpdate.activateUpdate())
       .catch(() => false)
       .then(reload)
