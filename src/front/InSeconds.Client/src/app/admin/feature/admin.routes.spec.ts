@@ -3,6 +3,7 @@ import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { provideTranslateService } from '@ngx-translate/core';
 import { PlayersApi } from '../../account/data-access/players.api';
+import { VersionService } from '../../core/version/version.service';
 import { ADMIN_ROUTES } from './admin.routes';
 
 describe('ADMIN_ROUTES', () => {
@@ -15,6 +16,7 @@ describe('ADMIN_ROUTES', () => {
         provideTranslateService(),
         provideRouter([{ path: 'admin', children: ADMIN_ROUTES }]),
         { provide: PlayersApi, useValue: { getMe: async () => null, createGuest: async () => 'g1' } },
+        { provide: VersionService, useValue: { allowReload: () => undefined } },
       ],
     });
     harness = await RouterTestingHarness.create();

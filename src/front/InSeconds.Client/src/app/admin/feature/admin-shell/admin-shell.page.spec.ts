@@ -9,6 +9,7 @@ import {
 } from '../../../account/data-access/testing/fake-players-api';
 import { SessionStore, SessionPlayer } from '../../../core/session/session.store';
 import { AdminCounts } from '../../data-access/admin-counts';
+import { ReloadMoment, VersionService } from '../../../core/version/version.service';
 import { AdminShellPage } from './admin-shell.page';
 import { ADMIN_ROUTES } from '../admin.routes';
 
@@ -19,6 +20,10 @@ describe('AdminShellPage', () => {
   const admin: SessionPlayer = { ...linkedPlayer, isAdmin: true };
   const guest: SessionPlayer = { id: 'g1', pseudo: null, email: null, isGuest: true, isAdmin: false };
   let api: FakePlayersApi;
+  let reloadMoment: (() => ReloadMoment) | null;
+  const versionFake = { provide: VersionService, useValue: { allowReload: (moment: () => ReloadMoment) => { reloadMoment = moment; } } };
+
+  beforeEach(() => { reloadMoment = null; });
 
   async function open(player: SessionPlayer | null, url = '/admin', realTabs = false) {
     api = fakePlayersApi({ getMe: vi.fn(async () => player) });
@@ -28,6 +33,7 @@ describe('AdminShellPage', () => {
         provideTranslateService(),
         providePlayersApiFake(api),
         provideRouter([{ path: 'admin', children: routes }]),
+        versionFake,
       ],
     });
     const harness = await RouterTestingHarness.create();
@@ -119,7 +125,7 @@ describe('AdminShellPage', () => {
   it('ne montre rien d\'une décision tant que l\'identité n\'est pas lue', async () => {
     api = fakePlayersApi({ getMe: vi.fn(() => new Promise<SessionPlayer | null>(() => undefined)) });
     TestBed.configureTestingModule({
-      providers: [provideTranslateService(), providePlayersApiFake(api), provideRouter([])],
+      providers: [provideTranslateService(), providePlayersApiFake(api), provideRouter([]), versionFake],
     });
     const fixture = TestBed.createComponent(AdminShellPage);
     fixture.detectChanges();
@@ -127,6 +133,38 @@ describe('AdminShellPage', () => {
     const element = fixture.nativeElement as HTMLElement;
     expect(text(element)).not.toContain('admin.notLoggedIn');
     expect(text(element)).not.toContain('admin.accessDenied');
+  });
+
+  it('accepte une nouvelle version en arrière-plan, sauf pendant une saisie', async () => {
+    const { element } = await open(admin, '/admin/catalogue');
+    const field = document.createElement('input');
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    element.querySelector('#child')!.append(field, checkbox);
+
+    expect(reloadMoment!()).toBe('background');
+
+    field.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    expect(reloadMoment!()).toBe('navigation');
+
+    field.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+    checkbox.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    expect(reloadMoment!()).toBe('background');
+  });
+
+  it('garde la saisie en cours quand la fenêtre perd le focus (barre d\'adresse, autre onglet)', async () => {
+    const { element } = await open(admin, '/admin/catalogue');
+    const field = document.createElement('input');
+    element.querySelector('#child')!.append(field);
+    field.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+
+    vi.spyOn(document, 'hasFocus').mockReturnValue(false);
+    field.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }));
+    expect(reloadMoment!()).toBe('navigation');
+
+    vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+    field.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }));
+    expect(reloadMoment!()).toBe('background');
   });
 
   it('affiche l\'identifiant du navigateur dans tous les cas', async () => {

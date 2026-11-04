@@ -1,5 +1,5 @@
-import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { DatePipe, DOCUMENT } from '@angular/common';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { BrowserIdComponent } from '../../../account/feature/browser-id/browser-id.component';
@@ -7,6 +7,7 @@ import { ProfileStore } from '../../../account/data-access/profile.store';
 import { SessionStore } from '../../../core/session/session.store';
 import { AdminCounts } from '../../data-access/admin-counts';
 import { DEPLOYED_AT } from '../../../core/shell/deployed-at';
+import { VersionService } from '../../../core/version/version.service';
 import { ADMIN_TABS, AdminTab } from '../admin-tabs';
 import { ButtonComponent } from '../../../ui/button/button.component';
 import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-background.component';
@@ -19,12 +20,21 @@ import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-bac
  * - compte sans le rôle : accès refusé ;
  * - admin : la barre des onglets, l'onglet ouvert, puis la déconnexion.
  * L'identifiant du navigateur est affiché dans tous les cas (repérer ses propres parties).
+ * Une nouvelle version s'applique quand l'onglet passe en arrière-plan, sauf pendant une saisie (un champ de texte a le
+ * focus) : elle attend alors le prochain changement de page.
  */
+/** Les `<input>` qu'on ne remplit pas au clavier : leur focus n'est pas une saisie en cours. */
+const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'radio', 'range', 'reset', 'submit', 'color', 'file', 'image']);
+
 @Component({
   selector: 'app-admin-shell-page',
   imports: [RouterOutlet, RouterLink, RouterLinkActive, TranslatePipe, DatePipe, BrowserIdComponent, DecorBackgroundComponent, ButtonComponent],
   providers: [ProfileStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '(focusin)': 'editing.set(isTextField($event.target))',
+    '(focusout)': 'onFocusOut($event)',
+  },
   template: `
     <!-- Titre et identifiant centrés, barre des onglets pleine largeur,
          déconnexion en bas. Haut de page à 32 px. -->
@@ -92,8 +102,27 @@ export class AdminShellPage {
   protected readonly session = inject(SessionStore);
   protected readonly profile = inject(ProfileStore);
   private readonly counts = inject(AdminCounts);
+  private readonly document = inject(DOCUMENT);
   /** Heure du déploiement (piège 25), vide quand le build ne la connaît pas. */
   protected readonly deployedAt = DEPLOYED_AT;
+  /** Un champ de texte de l'admin a le focus : une nouvelle version attend le prochain changement de page. */
+  protected readonly editing = signal(false);
+
+  constructor() {
+    inject(VersionService).allowReload(() => (this.editing() ? 'navigation' : 'background'), inject(DestroyRef));
+  }
+
+  /** La fenêtre qui perd le focus (barre d'adresse, autre onglet) n'est pas la fin de la saisie : le champ le garde au retour. */
+  protected onFocusOut(event: FocusEvent): void {
+    if (event.relatedTarget === null && !this.document.hasFocus()) return;
+    this.editing.set(this.isTextField(event.relatedTarget));
+  }
+
+  protected isTextField(target: EventTarget | null): boolean {
+    if (target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return true;
+    if (target instanceof HTMLInputElement) return !NON_TEXT_INPUTS.has(target.type);
+    return target instanceof HTMLElement && target.isContentEditable;
+  }
 
   /** Le libellé d'un onglet : avec son effectif une fois chargé (Pool, Défis, Joueurs), nu avant. */
   protected labelOf(tab: AdminTab): { key: string; params: { count: number } | undefined } {
