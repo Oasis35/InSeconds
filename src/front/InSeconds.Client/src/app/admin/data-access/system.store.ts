@@ -43,7 +43,7 @@ interface SystemState {
 
 /**
  * Le panneau technique de l'admin, commun à tous les onglets (fourni par la coquille) : le déploiement (commit du front, de l'API, et
- * dernier commit de la branche chez GitHub), la santé de l'API (la sonde `/health` de `HealthService`) et la dernière sauvegarde, le pool
+ * dernier commit de la branche chez GitHub), la santé de l'API (la sonde `/health` de `HealthService`), la dernière sauvegarde et son contrôle de restauration, le pool
  * (sans extrait, sans forme d'onde), les tâches de la nuit et le défi de demain, et l'intégration continue de la prod et du staging. Tout est lu en parallèle à l'ouverture de l'admin ; une lecture
  * en échec n'empêche pas les autres.
  */
@@ -56,7 +56,8 @@ export const SystemStore = signalStore(
     const branchRun = computed(() => (build.branch ? ci()[build.branch] ?? null : null));
     const verdict = computed(() => deploymentVerdict(build.commit, info()?.commit ?? null, branchRun()?.headSha ?? null, branchRun()?.state === 'running'));
     const jobs = computed(() => (lastRuns() ? nightlyJobs(lastRuns() ?? []) : null));
-    const backup = computed(() => backupTone(info()?.lastBackupAt ?? null, readAt()));
+    const backup = computed(() => backupTone(info()?.lastBackupAt ?? null, readAt(), info()?.backupFailure ?? null));
+    const restoreTest = computed(() => backupTone(info()?.lastRestoreTestAt ?? null, readAt(), info()?.restoreTestFailure ?? null));
     const ciRuns = computed(() => CI_BRANCHES.map(branch => ({ branch, run: ci()[branch] ?? null })));
     const next = computed(() => {
       const value = nextChallenge();
@@ -68,11 +69,13 @@ export const SystemStore = signalStore(
       verdict,
       jobs,
       backup,
+      /** Le contrôle de restauration de la sauvegarde (`backup-verify.sh`). */
+      restoreTest,
       ciRuns,
       /** La ligne « Défi de demain » ; `null` tant que ce n'est pas lu. */
       nextChallengeState: next,
       alerts: computed(() => alertCount({
-        verdict: verdict(), apiDown: health.state() === 'ko', backup: backup(), jobs: jobs() ?? [], ci: ciRuns().map(c => c.run),
+        verdict: verdict(), apiDown: health.state() === 'ko', backup: backup(), restoreTest: restoreTest(), jobs: jobs() ?? [], ci: ciRuns().map(c => c.run),
         nextChallenge: next(),
       })),
     };

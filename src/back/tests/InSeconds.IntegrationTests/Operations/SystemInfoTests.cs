@@ -31,6 +31,7 @@ public class SystemInfoTests(PostgresFixture postgres) : IAsyncLifetime
         var info = await ReadAsync();
 
         Assert.Equal((null, null, null), (info.Commit, info.LastBackupAt, info.LastBackupOffSite));
+        Assert.Equal((null, null, null), (info.BackupFailure, info.LastRestoreTestAt, info.RestoreTestFailure));
     }
 
     [Fact]
@@ -47,6 +48,41 @@ public class SystemInfoTests(PostgresFixture postgres) : IAsyncLifetime
 
         Assert.Equal(new DateTimeOffset(2026, 11, 4, 3, 0, 41, TimeSpan.Zero), info.LastBackupAt);
         Assert.False(info.LastBackupOffSite);
+    }
+
+    [Fact]
+    public async Task SauvegardeEnEchec_DerniereReussieGardee_EtEchecDonne()
+    {
+        await _api.ExecuteAsync("""
+            INSERT INTO infra.backup_runs (kind, outcome, finished_at, off_site) VALUES ('backup', 'ok', '2026-11-03 03:00:09+00', true);
+            INSERT INTO infra.backup_runs (kind, outcome, finished_at, failed_step, message)
+              VALUES ('backup', 'failed', '2026-11-04 03:00:30+00', 'dump', 'étape 1/3 dump : dump vide');
+            """);
+
+        var info = await ReadAsync();
+
+        Assert.Equal(new DateTimeOffset(2026, 11, 3, 3, 0, 9, TimeSpan.Zero), info.LastBackupAt);
+        Assert.True(info.LastBackupOffSite);
+        Assert.Equal(new BackupFailureResponse(new DateTimeOffset(2026, 11, 4, 3, 0, 30, TimeSpan.Zero), "dump", "étape 1/3 dump : dump vide"), info.BackupFailure);
+    }
+
+    [Fact]
+    public async Task ControleDeRestauration_DernierReussi_EtEchecEffaceParUneReussite()
+    {
+        await _api.ExecuteAsync("""
+            INSERT INTO infra.backup_runs (kind, outcome, finished_at, failed_step, message)
+              VALUES ('verify', 'failed', '2026-11-03 04:01:00+00', 'freshness', 'trop vieille');
+            INSERT INTO infra.backup_runs (kind, outcome, finished_at, dump_name)
+              VALUES ('verify', 'ok', '2026-11-04 04:01:37+00', 'daily/inseconds-2026-11-04T030001Z.dump');
+            INSERT INTO infra.backup_runs (kind, outcome, finished_at, off_site) VALUES ('archive', 'ok', '2026-11-04 10:00:00+00', true);
+            """);
+
+        var info = await ReadAsync();
+
+        Assert.Equal(new DateTimeOffset(2026, 11, 4, 4, 1, 37, TimeSpan.Zero), info.LastRestoreTestAt);
+        Assert.Null(info.RestoreTestFailure);
+        // Une archive faite à la main n'est pas la sauvegarde de la nuit.
+        Assert.Null(info.LastBackupAt);
     }
 
     [Fact]

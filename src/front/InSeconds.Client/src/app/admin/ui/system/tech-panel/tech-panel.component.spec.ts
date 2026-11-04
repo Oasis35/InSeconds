@@ -52,6 +52,32 @@ describe('TechPanelComponent', () => {
     expect(render().byTestId('backup')?.textContent).toContain('admin.system.noBackup');
   });
 
+  it('sauvegarde en échec : la dernière réussie en rouge, et le message de l\'échec dessous', () => {
+    const { byTestId } = render({
+      backup: 'failed', backupAt: '2026-11-03T03:00:00Z', backupOffSite: true,
+      backupFailure: { at: '2026-11-04T03:00:30Z', step: 'dump', message: 'étape 1/3 dump : dump vide' },
+    });
+
+    expect(byTestId('backup')?.style.color).toBe('var(--text-error)');
+    expect(byTestId('backup-failure')?.textContent).toContain('admin.system.backupFailed');
+    expect(byTestId('backup-failure')?.textContent).toContain('étape 1/3 dump : dump vide');
+  });
+
+  it('restauration testée : la date en vert, l\'échec en rouge avec son message, « jamais » sans contrôle', () => {
+    const ok = render({ restoreTest: 'ok', restoreTestAt: '2026-11-04T04:01:37Z' });
+    expect(ok.byTestId('restore-test')?.style.color).toBe('var(--text-hi)');
+    expect(ok.byTestId('restore-test-failure')).toBeNull();
+    TestBed.resetTestingModule();
+    const failed = render({
+      restoreTest: 'failed', restoreTestAt: '2026-11-03T04:01:00Z',
+      restoreTestFailure: { at: '2026-11-04T04:01:00Z', step: 'freshness', message: 'aucune sauvegarde dans daily/ sur R2.' },
+    });
+    expect(failed.byTestId('restore-test')?.style.color).toBe('var(--text-error)');
+    expect(failed.byTestId('restore-test-failure')?.textContent).toContain('aucune sauvegarde dans daily/ sur R2.');
+    TestBed.resetTestingModule();
+    expect(render().byTestId('restore-test')?.textContent).toContain('admin.system.noRestoreTest');
+  });
+
   it('les tâches de la nuit, chacune avec son état, et le lien vers Hangfire', () => {
     const { element } = render({
       jobs: [{ id: 'catalogue-refresh', tone: 'ok', at: '2026-11-03T23:00:00Z' }, { id: 'daily-close-day', tone: 'error', at: null }],

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Sauvegarde de la base de prod InSeconds (`inseconds`, tous schémas), à lancer sur le VPS.
-# Mode d'emploi complet : deploy/infra/README.md § Sauvegardes.
+# Mode d'emploi complet : deploy/infra/README.md § Sauvegardes. Le contrôle de restauration est backup-verify.sh.
 #
 #   ./backup.sh                       sauvegarde : dump, vérification, rotation locale,
 #                                     envoi chiffré vers R2 et signal à healthchecks.io si configurés
@@ -10,117 +10,23 @@
 #   ./backup.sh list-remote           liste les sauvegardes présentes sur R2
 #   ./backup.sh fetch <nom>           télécharge et déchiffre une sauvegarde de R2 dans BACKUP_DIR
 #                                     (ex. : ./backup.sh fetch monthly/inseconds-2026-10-01T030000Z.dump)
-#   ./backup.sh restore-test [dump]   restaure un dump (le plus récent par défaut) dans une base
-#                                     jetable, affiche ce qu'elle contient, puis la supprime
+#   ./backup.sh restore-test [dump]   restaure un dump (le plus récent par défaut) dans un Postgres
+#                                     jetable, affiche ce qu'il contient, puis le supprime
 #
 # Réglages : deploy/infra/.env (non commité, cf. .env.example). Seul INSECONDS_DB_PASSWORD est
-# obligatoire ; sans les clés R2, la sauvegarde reste sur le VPS. Le signal vers healthchecks.io reprend
-# la clé de ping de l'API (HEALTHCHECKS_PING_KEY de ../../.env.prod) ; sans elle, aucun signal.
+# obligatoire ; sans les clés R2, la sauvegarde reste sur le VPS. Le signal vers healthchecks.io et les logs
+# vers Grafana reprennent la configuration de l'API (../../.env.prod) ; sans elle, rien n'est envoyé.
+# Chaque sauvegarde (réussie ou non) est notée dans infra.backup_runs, que l'admin affiche.
 # Lancé chaque nuit par le timer systemd deploy/infra/systemd/inseconds-backup.timer, ou à la main.
 set -euo pipefail
 
-SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]:-.}")" && pwd) # « . » si lancé par `bash -s`
-ENV_FILE="${BACKUP_ENV_FILE:-$SCRIPT_DIR/.env}"
-PG_IMAGE=postgres:17-alpine # même version majeure que shared-postgres
-RCLONE_IMAGE=rclone/rclone:1.75.2
-DB_NAME=inseconds
-DB_USER=inseconds
-DB_HOST=shared-postgres
-NETWORK=shared-postgres
-RESTORE_TEST_DB=inseconds_restore_test
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# shellcheck source=backup-common.sh
+source "$SCRIPT_DIR/backup-common.sh"
 
-read_env_file() { # read_env_file <fichier> <clé> : valeur, sans `source` (pas d'exécution)
-  local file="$1" key="$2" value=""
-  if [[ -f "$file" ]]; then
-    value=$(grep -E "^$key=" "$file" | tail -n1 | cut -d= -f2-) || true
-  fi
-  value=${value%\"}; value=${value#\"} # guillemets facultatifs d'un fichier .env docker compose
-  printf '%s' "$value"
-}
-
-read_env() { # read_env <clé> [défaut] : valeur de deploy/infra/.env
-  local value
-  value=$(read_env_file "$ENV_FILE" "$1")
-  printf '%s' "${value:-${2:-}}"
-}
-
-log() { echo "[$(date -u +%H:%M:%S)] $*"; }
-fail() { echo "ERREUR : $*" >&2; exit 1; }
-
-BACKUP_DIR=$(read_env BACKUP_DIR "$HOME/backups/postgres")
 LOCAL_KEEP_DAYS=$(read_env BACKUP_LOCAL_KEEP_DAYS 7)
 REMOTE_DAILY_KEEP_DAYS=$(read_env BACKUP_REMOTE_DAILY_KEEP_DAYS 30)
 REMOTE_MONTHLY_KEEP_DAYS=$(read_env BACKUP_REMOTE_MONTHLY_KEEP_DAYS 365)
-# Signal vers healthchecks.io : clé de deploy/infra/.env, sinon celle de l'API (.env.prod).
-API_ENV_FILE="${BACKUP_API_ENV_FILE:-$SCRIPT_DIR/../../.env.prod}"
-read_api_env() {
-  local key="$1" value
-  value=$(read_env "$key")
-  printf '%s' "${value:-$(read_env_file "$API_ENV_FILE" "$key")}"
-}
-HEALTHCHECKS_PING_KEY=$(read_api_env HEALTHCHECKS_PING_KEY)
-HEALTHCHECKS_URL=$(read_api_env HEALTHCHECKS_URL)
-HEALTHCHECKS_URL=${HEALTHCHECKS_URL:-https://hc-ping.com}
-R2_BUCKET=$(read_env R2_BUCKET inseconds-backups)
-
-# Les secrets passent aux conteneurs par variable d'environnement (`-e NOM`, sans valeur sur la
-# ligne de commande) : ils n'apparaissent ni dans `ps` ni dans l'historique du shell.
-export PGPASSWORD
-PGPASSWORD=$(read_env INSECONDS_DB_PASSWORD)
-
-# Outil Postgres dans un conteneur jetable sur le réseau de la base. `pg_in` lit l'entrée standard
-# (pg_restore < dump) ; `pg` ne la lit pas, pour qu'un `docker run -i` ne consomme jamais l'entrée
-# standard du script (fatal si le script lui-même arrive par là, ex. `ssh … bash -s`).
-pg() { docker run --rm --network "$NETWORK" -e PGPASSWORD "$PG_IMAGE" "$@" < /dev/null; }
-pg_in() { docker run --rm -i --network "$NETWORK" -e PGPASSWORD "$PG_IMAGE" "$@"; }
-
-# ---------- R2 (stockage S3 de Cloudflare) via rclone, contenu chiffré par rclone crypt ----------
-
-r2_configured() {
-  local keys=(R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_ENDPOINT BACKUP_ENCRYPTION_PASSWORD)
-  local set=0 key
-  for key in "${keys[@]}"; do
-    if [[ -n "$(read_env "$key")" ]]; then set=$((set + 1)); fi
-  done
-  if (( set == 0 )); then return 1; fi
-  (( set == ${#keys[@]} )) || fail "R2 à moitié configuré : renseigner ${keys[*]} dans $ENV_FILE (ou aucun)."
-}
-
-rclone_env_ready=false
-prepare_rclone_env() {
-  if "$rclone_env_ready"; then return; fi
-  # Remote `r2` : le bucket. Remote `r2crypt` : chiffrement du contenu par-dessus (noms de fichiers
-  # en clair pour pouvoir lister par date). Le jeton R2 n'a que les droits objet : pas de création
-  # de bucket (no_check_bucket).
-  export RCLONE_CONFIG_R2_TYPE=s3 RCLONE_CONFIG_R2_PROVIDER=Cloudflare \
-    RCLONE_CONFIG_R2_NO_CHECK_BUCKET=true \
-    RCLONE_CONFIG_R2CRYPT_TYPE=crypt RCLONE_CONFIG_R2CRYPT_REMOTE="r2:$R2_BUCKET" \
-    RCLONE_CONFIG_R2CRYPT_FILENAME_ENCRYPTION=off RCLONE_CONFIG_R2CRYPT_DIRECTORY_NAME_ENCRYPTION=false
-  export RCLONE_CONFIG_R2_ACCESS_KEY_ID RCLONE_CONFIG_R2_SECRET_ACCESS_KEY RCLONE_CONFIG_R2_ENDPOINT
-  RCLONE_CONFIG_R2_ACCESS_KEY_ID=$(read_env R2_ACCESS_KEY_ID)
-  RCLONE_CONFIG_R2_SECRET_ACCESS_KEY=$(read_env R2_SECRET_ACCESS_KEY)
-  RCLONE_CONFIG_R2_ENDPOINT=$(read_env R2_ENDPOINT)
-  # rclone attend la phrase de passe sous forme « obscurcie » (`rclone obscure`, lue sur stdin).
-  export RCLONE_CONFIG_R2CRYPT_PASSWORD
-  RCLONE_CONFIG_R2CRYPT_PASSWORD=$(read_env BACKUP_ENCRYPTION_PASSWORD | docker run --rm -i "$RCLONE_IMAGE" --config "" obscure -)
-  rclone_env_ready=true
-}
-
-# Les dumps passent par l'entrée / la sortie standard (rcat, cat), jamais par un dossier monté :
-# un montage dépend des droits et du mappage d'utilisateurs de Docker sur l'hôte (sur le VPS,
-# rclone ne voyait pas le fichier monté).
-rclone_run() { # rclone_run <args...> : sans entrée standard
-  rclone_in "$@" < /dev/null
-}
-rclone_in() { # rclone_in <args...> : lit l'entrée standard (rcat)
-  prepare_rclone_env
-  docker run --rm -i \
-    -e RCLONE_CONFIG_R2_TYPE -e RCLONE_CONFIG_R2_PROVIDER -e RCLONE_CONFIG_R2_NO_CHECK_BUCKET \
-    -e RCLONE_CONFIG_R2_ACCESS_KEY_ID -e RCLONE_CONFIG_R2_SECRET_ACCESS_KEY -e RCLONE_CONFIG_R2_ENDPOINT \
-    -e RCLONE_CONFIG_R2CRYPT_TYPE -e RCLONE_CONFIG_R2CRYPT_REMOTE -e RCLONE_CONFIG_R2CRYPT_PASSWORD \
-    -e RCLONE_CONFIG_R2CRYPT_FILENAME_ENCRYPTION -e RCLONE_CONFIG_R2CRYPT_DIRECTORY_NAME_ENCRYPTION \
-    "$RCLONE_IMAGE" --config "" "$@" # --config "" : tout vient de l'environnement, aucun fichier
-}
 
 upload_to_r2() { # upload_to_r2 <nom du dump>
   local name="$1" month
@@ -139,41 +45,6 @@ upload_to_r2() { # upload_to_r2 <nom du dump>
   rclone_run delete r2crypt:monthly/ --min-age "${REMOTE_MONTHLY_KEEP_DAYS}d"
 }
 
-# ---------- signal vers healthchecks.io ----------
-
-# Comme les tâches de l'API (#315) : contrôle « inseconds-backup », créé au premier signal. healthchecks.io
-# prévient (email) dès un échec, ou si aucun succès n'arrive à l'heure prévue (échec, VPS éteint, timer
-# arrêté). Jamais bloquant.
-hc_signal() { # hc_signal <ok|fail>
-  local outcome="$1" suffix=""
-  [[ -n "$HEALTHCHECKS_PING_KEY" ]] || return 0
-  if [[ "$outcome" == fail ]]; then suffix="/fail"; fi
-  # L'adresse contient la clé : passée à curl par un fichier de config sur l'entrée standard, absente de `ps`.
-  printf 'url = "%s/%s/inseconds-backup%s?create=1"\n' "${HEALTHCHECKS_URL%/}" "$HEALTHCHECKS_PING_KEY" "$suffix" \
-    | curl -fsS -m 10 --retry 3 -o /dev/null -X POST -K - \
-    || log "Signal healthchecks.io impossible."
-}
-
-# ---------- vérification d'un dump ----------
-
-verify_dump() { # verify_dump <fichier> : lisible par pg_restore et contient des données
-  local file="$1" entries
-  [[ -s "$file" ]] || fail "dump vide : $file"
-  entries=$(pg_in pg_restore --list < "$file" | grep -c ' TABLE DATA ' || true)
-  (( entries > 0 )) || fail "dump illisible ou sans données : $file"
-  log "Dump vérifié : $entries tables avec données, $(du -h "$file" | cut -f1)."
-}
-
-# ---------- commandes ----------
-
-record_backup() { # record_backup <true|false> : heure de la sauvegarde réussie, lue par l'état technique de l'admin
-  local off_site="$1"
-  # Table infra.backup_runs (migration de l'API). Jamais bloquant : la sauvegarde est faite, seul l'affichage en pâtirait.
-  pg psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -q \
-    -c "INSERT INTO infra.backup_runs (finished_at, off_site) VALUES (now(), $off_site);" \
-    || log "Heure de la sauvegarde non notée en base (infra.backup_runs)."
-}
-
 prepare_backup_dir() { # dossier local et verrou partagés par backup et archive
   [[ -n "$PGPASSWORD" ]] || fail "INSECONDS_DB_PASSWORD manquant dans $ENV_FILE."
   mkdir -p "$BACKUP_DIR"
@@ -188,76 +59,83 @@ dump_database() { # dump_database <nom> : dump vérifié dans BACKUP_DIR, écrit
   ( umask 077; pg pg_dump -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -Fc > "$tmp_dump" )
   verify_dump "$tmp_dump"
   mv "$tmp_dump" "$BACKUP_DIR/$name"
+  REPORT_DUMP="$name"
+  REPORT_SIZE=$(stat -c %s "$BACKUP_DIR/$name")
+  REPORT_TAKEN=$(dump_time "$name")
   log "Sauvegarde locale : $BACKUP_DIR/$name"
 }
 
-backup() {
-  local use_r2=false
-  if r2_configured; then use_r2=true; fi
-  prepare_backup_dir
-
-  local name
+# Les deux commandes qui sauvegardent : nom du dump, fichier provisoire et compte rendu final (trap EXIT : ligne en base,
+# healthchecks.io pour la nuit seulement, Grafana). Globales : le trap s'exécute hors de la fonction.
+start_backup_run() { # start_backup_run <kind> <contrôle healthchecks.io ou vide>
+  require_prod
+  start_journal
   name="inseconds-$(date -u +%Y-%m-%dT%H%M%SZ).dump"
-  # Globale : le trap EXIT s'exécute hors de la fonction, quand ses variables locales n'existent plus.
   tmp_dump="$BACKUP_DIR/.$name.part"
-  # Signal d'échec à toute sortie en erreur (le signal de succès est envoyé explicitement à la fin).
-  trap 'status=$?; rm -f "$tmp_dump"; if (( status != 0 )); then hc_signal fail; fi' EXIT
+  run_kind="$1"
+  run_check="$2"
+  trap 'status=$?; rm -f "$tmp_dump"; report_run "$status" "$run_kind" "$run_check"' EXIT
+}
 
+backup() {
+  start_backup_run backup inseconds-backup
+  local use_r2=false
+  step 1/3 dump "dump"
+  if r2_configured; then use_r2=true; fi
+  REPORT_OFF_SITE="$use_r2"
+  prepare_backup_dir
   dump_database "$name"
 
+  step 2/3 rotation "rotation locale"
   log "Rotation locale : dumps de plus de $LOCAL_KEEP_DAYS j supprimés."
   find "$BACKUP_DIR" -maxdepth 1 -name 'inseconds-*.dump' ! -name "$name" \
     -mmin +$((LOCAL_KEEP_DAYS * 1440)) -print -delete
 
+  step 3/3 upload "envoi vers R2"
   if "$use_r2"; then
     upload_to_r2 "$name"
   else
     log "R2 non configuré : la sauvegarde reste sur le VPS (cf. README § Sauvegardes)."
   fi
 
-  record_backup "$use_r2"
-  hc_signal ok
+  REPORT_SUMMARY="Sauvegarde OK : $name, $(du -h "$BACKUP_DIR/$name" | cut -f1), copie sur R2 : $use_r2."
   log "Sauvegarde terminée."
 }
 
 archive() { # sauvegarde gardée sans limite de durée sur R2 (archive/), hors de toute rotation
+  start_backup_run archive ""
+  step 1/2 dump "dump"
   r2_configured || fail "R2 non configuré dans $ENV_FILE : une archive doit quitter le VPS."
+  REPORT_OFF_SITE=true
   prepare_backup_dir
-
-  local name
-  name="inseconds-$(date -u +%Y-%m-%dT%H%M%SZ).dump"
-  tmp_dump="$BACKUP_DIR/.$name.part"
-  trap 'rm -f "$tmp_dump"' EXIT
-
   dump_database "$name"
+
+  step 2/2 upload "envoi vers R2"
   log "Envoi chiffré vers R2 (archive/$name)..."
   rclone_in rcat -q "r2crypt:archive/$name" < "$BACKUP_DIR/$name"
   [[ -n "$(rclone_run lsf r2crypt:archive/ --include "$name")" ]] || fail "archive/$name absente de R2 après l'envoi."
+  REPORT_DUMP="archive/$name"
+  REPORT_SUMMARY="Archive OK : archive/$name."
   log "Archive terminée : archive/$name (jamais supprimée par la rotation)."
 }
 
-restore_test() { # restore_test [fichier] : restauration complète dans une base jetable
+restore_test() { # restore_test [fichier] : restauration complète dans un Postgres jetable, à la main
   local file="${1:-}"
   if [[ -z "$file" ]]; then
     file=$(find "$BACKUP_DIR" -maxdepth 1 -name 'inseconds-*.dump' | sort | tail -n1)
     [[ -n "$file" ]] || fail "aucun dump dans $BACKUP_DIR."
   fi
   [[ -f "$file" ]] || fail "fichier introuvable : $file"
-  # La base jetable se crée avec le compte postgres : l'utilisateur inseconds n'a pas CREATEDB.
-  PGPASSWORD=$(read_env POSTGRES_SUPERUSER_PASSWORD)
-  [[ -n "$PGPASSWORD" ]] || fail "POSTGRES_SUPERUSER_PASSWORD manquant dans $ENV_FILE."
 
-  trap 'pg dropdb -h "$DB_HOST" -U postgres --if-exists "$RESTORE_TEST_DB" || true' EXIT
-  log "Restauration de $(basename "$file") dans la base jetable $RESTORE_TEST_DB..."
-  pg dropdb -h "$DB_HOST" -U postgres --if-exists "$RESTORE_TEST_DB"
-  pg createdb -h "$DB_HOST" -U postgres "$RESTORE_TEST_DB"
-  pg_in pg_restore -h "$DB_HOST" -U postgres -d "$RESTORE_TEST_DB" --no-owner --no-privileges \
-    --exit-on-error < "$file"
+  trap scratch_stop EXIT
+  scratch_start
+  log "Restauration de $(basename "$file")..."
+  scratch_restore "$file"
   log "Restauration réussie. Lignes par table (estimation après ANALYZE) :"
-  pg psql -h "$DB_HOST" -U postgres -d "$RESTORE_TEST_DB" -v ON_ERROR_STOP=1 -q -c 'ANALYZE;' -c "
+  docker exec "$SCRATCH" psql -U postgres -d "$DB_NAME" -v ON_ERROR_STOP=1 -q -c 'ANALYZE;' -c "
     SELECT schemaname AS schema, relname AS \"table\", n_live_tup AS lignes
-    FROM pg_stat_user_tables ORDER BY schemaname, relname;"
-  log "Base jetable supprimée. La base de prod n'a pas été touchée."
+    FROM pg_stat_user_tables ORDER BY schemaname, relname;" < /dev/null
+  log "Postgres jetable supprimé. La base de prod n'a pas été touchée."
 }
 
 list_remote() {

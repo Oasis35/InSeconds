@@ -51,6 +51,32 @@
   },
   "components": {
     "schemas": {
+      "BackupFailureResponse": {
+        "required": [
+          "at",
+          "step",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "step": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "message": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "JobLastRun": {
         "required": [
           "id",
@@ -116,7 +142,10 @@
         "required": [
           "commit",
           "lastBackupAt",
-          "lastBackupOffSite"
+          "lastBackupOffSite",
+          "backupFailure",
+          "lastRestoreTestAt",
+          "restoreTestFailure"
         ],
         "type": "object",
         "properties": {
@@ -137,6 +166,33 @@
             "type": [
               "null",
               "boolean"
+            ]
+          },
+          "backupFailure": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BackupFailureResponse"
+              }
+            ]
+          },
+          "lastRestoreTestAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "restoreTestFailure": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BackupFailureResponse"
+              }
             ]
           }
         }

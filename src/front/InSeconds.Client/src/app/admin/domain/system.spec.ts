@@ -1,6 +1,6 @@
 import { JobLastRun, JobState } from './job';
 import {
-  NextChallenge, NightlyJob, alertCount, backupTone, deployedBranch, deploymentVerdict, jobTone, nextChallengeState, nightlyJobs, sameCommit, shortCommit, toCiState,
+  NextChallenge, NightlyJob, alertCount, backupAlert, backupTone, deployedBranch, deploymentVerdict, jobTone, nextChallengeState, nightlyJobs, sameCommit, shortCommit, toCiState,
 } from './system';
 
 const AT = '2026-11-04T00:00:03Z';
@@ -68,6 +68,24 @@ describe('système (domaine)', () => {
     expect(backupTone('2026-11-04T03:00:41Z', now)).toBe('ok');
     expect(backupTone('2026-11-03T06:59:00Z', now)).toBe('stale');
     expect(backupTone(null, now)).toBe('none');
+  });
+
+  it('sauvegarde ou contrôle de restauration : un dernier passage en échec l\'emporte sur la dernière réussite', () => {
+    const now = new Date('2026-11-04T09:00:00Z');
+    const failure = { at: '2026-11-04T04:01:00Z', step: 'content', message: 'players.players : 20 lignes contre 120' };
+    expect(backupTone('2026-11-04T03:00:41Z', now, failure)).toBe('failed');
+    expect(backupTone(null, now, failure)).toBe('failed');
+    expect(backupAlert('failed')).toBe(true);
+    expect(backupAlert('stale')).toBe(true);
+    expect(backupAlert('none')).toBe(false);
+  });
+
+  it('le contrôle de restauration compte une alerte en échec ou en retard, aucune s\'il n\'a jamais tourné', () => {
+    const base = { verdict: 'aligned' as const, apiDown: false, backup: 'ok' as const, jobs: [], ci: [] };
+    expect(alertCount({ ...base, restoreTest: 'failed' })).toBe(1);
+    expect(alertCount({ ...base, restoreTest: 'stale' })).toBe(1);
+    expect(alertCount({ ...base, restoreTest: 'none' })).toBe(0);
+    expect(alertCount({ ...base, backup: 'failed', restoreTest: 'ok' })).toBe(1);
   });
 
   it('compte les alertes : déploiement, API, sauvegarde, tâches à surveiller ou en échec, CI rouge', () => {

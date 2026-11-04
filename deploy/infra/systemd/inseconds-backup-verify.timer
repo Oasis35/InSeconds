@@ -1,0 +1,11 @@
+# Chaque nuit à 4 h UTC, une heure après la sauvegarde (3 h) et à l'écart des tâches de l'API.
+# Persistent=true : un contrôle raté (VPS éteint) est lancé au redémarrage.
+[Unit]
+Description=Contrôle nocturne de la sauvegarde InSeconds
+
+[Timer]
+OnCalendar=*-*-* 04:00:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

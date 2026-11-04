@@ -88,6 +88,15 @@ describe('SystemStore', () => {
     expect(store.verdict()).toBe('mismatch');
   });
 
+  it('un contrôle de restauration en échec : son état et une alerte', async () => {
+    const restoreTestFailure = { at: '2026-11-04T04:01:00Z', step: 'freshness', message: 'aucune sauvegarde dans daily/ sur R2.' };
+    const store = await create({ system: { getInfo: vi.fn(() => Promise.resolve({ ...FAKE_SYSTEM_INFO, restoreTestFailure })) } });
+
+    expect(store.restoreTest()).toBe('failed');
+    expect(store.backup()).not.toBe('failed');
+    expect(store.alerts()).toBeGreaterThanOrEqual(1);
+  });
+
   it('une tâche en échec et une CI rouge comptent chacune une alerte', async () => {
     const failed: JobLastRun = { id: 'daily-close-day', state: 'failed', at: '2026-11-04T00:05:00Z', result: null, errorCode: null, retryAt: null, nextRunAt: null };
     const store = await create({

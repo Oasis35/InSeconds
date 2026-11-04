@@ -13,6 +13,19 @@ export interface SystemInfo {
   /** Fin de la dernière sauvegarde réussie (texte ISO) ; `null` au staging ou sans sauvegarde. */
   readonly lastBackupAt: string | null;
   readonly lastBackupOffSite: boolean | null;
+  /** Le dernier passage de la sauvegarde, s'il a échoué ; `null` s'il a réussi. */
+  readonly backupFailure: BackupFailure | null;
+  /** Fin du dernier contrôle de restauration réussi (`backup-verify.sh`, texte ISO) ; `null` au staging ou s'il n'y en a jamais eu. */
+  readonly lastRestoreTestAt: string | null;
+  /** Le dernier contrôle de restauration, s'il a échoué ; `null` s'il a réussi. */
+  readonly restoreTestFailure: BackupFailure | null;
+}
+
+/** Un passage en échec des scripts de sauvegarde : quand (texte ISO), à quelle étape, et le message court (détail dans Grafana). */
+export interface BackupFailure {
+  readonly at: string;
+  readonly step: string | null;
+  readonly message: string | null;
 }
 
 /** Le dernier passage de l'intégration continue sur une branche (lu chez GitHub). */
@@ -109,16 +122,28 @@ export function nightlyJobs(runs: readonly JobLastRun[]): NightlyJob[] {
   });
 }
 
-/** La sauvegarde de la nuit part à 3 h UTC : plus de 26 heures sans sauvegarde, une nuit a été manquée. */
+/**
+ * La sauvegarde part chaque nuit à 3 h UTC, son contrôle de restauration à 4 h : plus de 26 heures sans réussite, une nuit a été
+ * manquée (ou a échoué).
+ */
 export const BACKUP_MAX_AGE_HOURS = 26;
 
-/** `none` : aucune sauvegarde connue (le staging n'en fait pas) ; `stale` : la dernière date d'avant la nuit dernière. */
-export type BackupTone = 'ok' | 'stale' | 'none';
+/**
+ * `none` : aucun passage réussi connu (le staging n'en fait pas) ; `failed` : le dernier passage a échoué ; `stale` : la dernière réussite
+ * date d'avant la nuit dernière. Vaut pour la sauvegarde comme pour son contrôle de restauration.
+ */
+export type BackupTone = 'ok' | 'stale' | 'failed' | 'none';
 
-export function backupTone(lastBackupAt: string | null, now: Date): BackupTone {
-  if (!lastBackupAt) return 'none';
-  const ageHours = (now.getTime() - new Date(lastBackupAt).getTime()) / 3_600_000;
+export function backupTone(lastSuccessAt: string | null, now: Date, failure: BackupFailure | null = null): BackupTone {
+  if (failure) return 'failed';
+  if (!lastSuccessAt) return 'none';
+  const ageHours = (now.getTime() - new Date(lastSuccessAt).getTime()) / 3_600_000;
   return ageHours > BACKUP_MAX_AGE_HOURS ? 'stale' : 'ok';
+}
+
+/** Une sauvegarde ou un contrôle à signaler : en échec, ou en retard. */
+export function backupAlert(tone: BackupTone): boolean {
+  return tone === 'stale' || tone === 'failed';
 }
 
 /** Le pool vu du panneau technique : morceaux actifs sans extrait, et avec un extrait mais sans forme d'onde. */
@@ -163,6 +188,8 @@ export interface AlertInputs {
   readonly verdict: DeploymentVerdict;
   readonly apiDown: boolean;
   readonly backup: BackupTone;
+  /** Le contrôle de restauration de la sauvegarde ; absent, il ne compte pas. */
+  readonly restoreTest?: BackupTone;
   readonly jobs: readonly NightlyJob[];
   readonly ci: readonly (CiRun | null)[];
   /** Le défi de demain, s'il est lu ; un échec de la génération compte déjà par sa tâche. */
@@ -170,13 +197,14 @@ export interface AlertInputs {
 }
 
 /**
- * Le nombre d'alertes : déploiement désaligné ou en retard, API injoignable, sauvegarde manquée, tâche en échec ou à surveiller, CI rouge,
+ * Le nombre d'alertes : déploiement désaligné ou en retard, API injoignable, sauvegarde ou contrôle de restauration en échec ou manqué, tâche en échec ou à surveiller, CI rouge,
  * pas assez de morceaux pour le défi de demain.
  */
-export function alertCount({ verdict, apiDown, backup, jobs, ci, nextChallenge }: AlertInputs): number {
+export function alertCount({ verdict, apiDown, backup, restoreTest, jobs, ci, nextChallenge }: AlertInputs): number {
   return (verdict === 'mismatch' || verdict === 'pending' ? 1 : 0)
     + (apiDown ? 1 : 0)
-    + (backup === 'stale' ? 1 : 0)
+    + (backupAlert(backup) ? 1 : 0)
+    + (restoreTest && backupAlert(restoreTest) ? 1 : 0)
     + jobs.filter(job => job.tone === 'error' || job.tone === 'warn').length
     + ci.filter(run => run?.state === 'failure').length
     + (nextChallenge?.kind === 'insufficient' ? 1 : 0);

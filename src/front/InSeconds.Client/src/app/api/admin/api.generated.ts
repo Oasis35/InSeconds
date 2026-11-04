@@ -128,6 +128,14 @@ export class AdminClient {
     }
 }
 
+export interface BackupFailureResponse {
+    at: Date;
+    step: string | undefined;
+    message: string | undefined;
+
+    [key: string]: any;
+}
+
 export interface JobLastRun {
     id: string;
     state: string | undefined;
@@ -149,6 +157,9 @@ export interface SystemInfoResponse {
     commit: string | undefined;
     lastBackupAt: Date | undefined;
     lastBackupOffSite: boolean | undefined;
+    backupFailure: BackupFailureResponse | undefined;
+    lastRestoreTestAt: Date | undefined;
+    restoreTestFailure: BackupFailureResponse | undefined;
 
     [key: string]: any;
 }

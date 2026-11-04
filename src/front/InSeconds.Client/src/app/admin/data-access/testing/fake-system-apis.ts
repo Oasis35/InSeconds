@@ -3,8 +3,11 @@ import { CatalogueHealth, CiRun, NextChallenge, SystemInfo } from '../../domain/
 import { GithubCiApi } from '../github-ci.api';
 import { SystemApi } from '../system.api';
 
-/** Ce que l'API du faux dit d'elle-même : un commit, une sauvegarde partie sur R2. */
-export const FAKE_SYSTEM_INFO: SystemInfo = { commit: '4f2a9c1d8e7b6a5f', lastBackupAt: '2026-11-04T03:00:41Z', lastBackupOffSite: true };
+/** Ce que l'API du faux dit d'elle-même : un commit, une sauvegarde partie sur R2 et son contrôle de restauration réussi. */
+export const FAKE_SYSTEM_INFO: SystemInfo = {
+  commit: '4f2a9c1d8e7b6a5f', lastBackupAt: '2026-11-04T03:00:41Z', lastBackupOffSite: true, backupFailure: null,
+  lastRestoreTestAt: '2026-11-04T04:01:37Z', restoreTestFailure: null,
+};
 
 /** Un pool sans souci, et un défi de demain prêt. */
 export const FAKE_CATALOGUE_HEALTH: CatalogueHealth = { missingPreviewCount: 0, missingWaveformCount: 0 };

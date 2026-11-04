@@ -53,6 +53,8 @@ const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'radio', 'range', 'reset'
         [branch]="system.build.branch" [branchHead]="system.branchHead()" [verdict]="system.verdict()"
         [apiDown]="system.health.state() === 'ko'" [latencyMs]="system.health.latencyMs()"
         [backup]="system.backup()" [backupAt]="system.info()?.lastBackupAt ?? null" [backupOffSite]="system.info()?.lastBackupOffSite ?? null"
+        [backupFailure]="system.info()?.backupFailure ?? null" [restoreTest]="system.restoreTest()"
+        [restoreTestAt]="system.info()?.lastRestoreTestAt ?? null" [restoreTestFailure]="system.info()?.restoreTestFailure ?? null"
         [jobs]="system.jobs()" [jobsFailed]="system.lastRunsFailed()" [ci]="ciLines()" [jobsUrl]="jobsUrl" [grafanaUrl]="grafanaUrl"
         [catalogue]="system.catalogue()" [nextChallenge]="system.nextChallengeState()">
         <section>

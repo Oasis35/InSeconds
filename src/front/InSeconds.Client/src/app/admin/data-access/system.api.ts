@@ -3,7 +3,8 @@ import { firstValueFrom } from 'rxjs';
 import { AdminClient } from '../../api/admin/api.generated';
 import { CatalogueClient } from '../../api/catalogue/api.generated';
 import { DailyClient } from '../../api/daily/api.generated';
-import { CatalogueHealth, NextChallenge, SystemInfo } from '../domain/system';
+import { BackupFailureResponse } from '../../api/admin/api.generated';
+import { BackupFailure, CatalogueHealth, NextChallenge, SystemInfo } from '../domain/system';
 
 /**
  * Adaptateur du panneau technique : l'état de l'API (`GET /api/admin/system`), celui du pool (`GET /api/admin/catalogue/health`) et le
@@ -15,13 +16,16 @@ export class SystemApi {
   private readonly catalogue = inject(CatalogueClient);
   private readonly daily = inject(DailyClient);
 
-  /** Le commit de l'API et la dernière sauvegarde de la base. */
+  /** Le commit de l'API, la dernière sauvegarde de la base et son dernier contrôle de restauration. */
   async getInfo(): Promise<SystemInfo> {
     const response = await firstValueFrom(this.client.getSystemInfo());
     return {
       commit: response.commit ?? null,
       lastBackupAt: toInstant(response.lastBackupAt),
       lastBackupOffSite: response.lastBackupOffSite ?? null,
+      backupFailure: toFailure(response.backupFailure),
+      lastRestoreTestAt: toInstant(response.lastRestoreTestAt),
+      restoreTestFailure: toFailure(response.restoreTestFailure),
     };
   }
 
@@ -48,4 +52,9 @@ export class SystemApi {
 function toInstant(value: Date | string | undefined | null): string | null {
   if (value === undefined || value === null) return null;
   return typeof value === 'string' ? value : value.toISOString();
+}
+
+function toFailure(value: BackupFailureResponse | undefined | null): BackupFailure | null {
+  if (!value) return null;
+  return { at: toInstant(value.at) ?? '', step: value.step ?? null, message: value.message ?? null };
 }

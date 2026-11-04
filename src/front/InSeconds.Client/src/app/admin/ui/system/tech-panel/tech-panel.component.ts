@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import {
-  BackupTone, CatalogueHealth, CiRun, DeploymentVerdict, JobTone, NextChallengeState, NightlyJob, shortCommit,
+  BackupFailure, BackupTone, CatalogueHealth, CiRun, DeploymentVerdict, JobTone, NextChallengeState, NightlyJob, backupAlert, shortCommit,
 } from '../../../domain/system';
 
 const JOB_ICON: Record<JobTone, { icon: string; color: string }> = {
@@ -79,15 +79,36 @@ export interface CiLine {
         </p>
         <p class="tech-line">
           <span>{{ 'admin.system.backup' | translate }}</span>
-          <span [style.color]="backup() === 'stale' ? 'var(--text-error)' : 'var(--text-hi)'" data-testid="backup">
+          <span [style.color]="alert(backup()) ? 'var(--text-error)' : 'var(--text-hi)'" data-testid="backup">
             @if (backupAt(); as at) {
-              <span aria-hidden="true" [style.color]="backup() === 'stale' ? 'var(--text-error)' : 'var(--color-success)'">{{ backup() === 'stale' ? '✗' : '✓' }}</span>
+              <span aria-hidden="true" [style.color]="alert(backup()) ? 'var(--text-error)' : 'var(--color-success)'">{{ alert(backup()) ? '✗' : '✓' }}</span>
               {{ at | date: 'dd/MM HH:mm' }} · {{ (backupOffSite() ? 'admin.system.backupOffSite' : 'admin.system.backupLocal') | translate }}
-            } @else {
+            } @else if (!backupFailure()) {
               {{ 'admin.system.noBackup' | translate }}
             }
           </span>
         </p>
+        @if (backupFailure(); as failure) {
+          <p class="text-xs mt-0.5" style="color:var(--text-error)" data-testid="backup-failure">
+            {{ 'admin.system.backupFailed' | translate: { at: (failure.at | date: 'dd/MM HH:mm') } }}{{ failure.message ? ' : ' + failure.message : '' }}
+          </p>
+        }
+        <p class="tech-line">
+          <span>{{ 'admin.system.restoreTest' | translate }}</span>
+          <span [style.color]="alert(restoreTest()) ? 'var(--text-error)' : 'var(--text-hi)'" data-testid="restore-test">
+            @if (restoreTestAt(); as at) {
+              <span aria-hidden="true" [style.color]="alert(restoreTest()) ? 'var(--text-error)' : 'var(--color-success)'">{{ alert(restoreTest()) ? '✗' : '✓' }}</span>
+              {{ at | date: 'dd/MM HH:mm' }}
+            } @else if (!restoreTestFailure()) {
+              {{ 'admin.system.noRestoreTest' | translate }}
+            }
+          </span>
+        </p>
+        @if (restoreTestFailure(); as failure) {
+          <p class="text-xs mt-0.5" style="color:var(--text-error)" data-testid="restore-test-failure">
+            {{ 'admin.system.restoreTestFailed' | translate: { at: (failure.at | date: 'dd/MM HH:mm') } }}{{ failure.message ? ' : ' + failure.message : '' }}
+          </p>
+        }
       </section>
 
       @if (catalogue(); as pool) {
@@ -189,6 +210,12 @@ export class TechPanelComponent {
   readonly backup = input<BackupTone>('none');
   readonly backupAt = input<string | null>(null);
   readonly backupOffSite = input<boolean | null>(null);
+  /** Le dernier passage de la sauvegarde, s'il a échoué : son message s'affiche sous la ligne. */
+  readonly backupFailure = input<BackupFailure | null>(null);
+  /** Le contrôle de restauration de la sauvegarde (`backup-verify.sh`). */
+  readonly restoreTest = input<BackupTone>('none');
+  readonly restoreTestAt = input<string | null>(null);
+  readonly restoreTestFailure = input<BackupFailure | null>(null);
   /** `null` tant que les tâches ne sont pas lues. */
   readonly jobs = input<readonly NightlyJob[] | null>(null);
   readonly jobsFailed = input(false);
@@ -201,6 +228,8 @@ export class TechPanelComponent {
   readonly grafanaUrl = input.required<string>();
 
   protected readonly verdictColor = computed(() => VERDICT_COLOR[this.verdict()]);
+
+  protected readonly alert = backupAlert;
 
   protected short(sha: string | null): string {
     return shortCommit(sha) ?? '-';
