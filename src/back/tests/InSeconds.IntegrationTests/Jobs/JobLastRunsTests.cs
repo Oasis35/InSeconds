@@ -11,7 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace InSeconds.IntegrationTests.Jobs;
 
 /// <summary>
-/// <c>GET /api/admin/jobs/last-runs</c> : le dernier passage de chaque tâche, affiché en témoin dans l'onglet Actions.
+/// <c>GET /api/admin/jobs/last-runs</c> : le dernier passage de chaque tâche, affiché dans le panneau technique de l'admin.
 /// Le serveur Hangfire tourne ici, pour de vraies exécutions (d'où <see cref="HangfireServerCollection"/>). Les tâches sont
 /// lancées comme depuis <c>/jobs</c> (« Déclencher maintenant »).
 /// </summary>

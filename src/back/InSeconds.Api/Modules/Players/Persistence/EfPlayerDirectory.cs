@@ -53,4 +53,11 @@ public sealed class EfPlayerDirectory(InSecondsDbContext db) : IPlayerDirectory
 
         return counts is null ? new PlayerBreakdown(0, 0, 0, 0) : new PlayerBreakdown(counts.Guests, counts.Registered, counts.Active7, counts.Active30);
     }
+
+    public Task<int> CountAccountsCreatedOnAsync(DateOnly day, CancellationToken ct)
+    {
+        var from = new DateTimeOffset(day.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        var to = from.AddDays(1);
+        return db.Set<Account>().AsNoTracking().CountAsync(a => a.LinkedAt >= from && a.LinkedAt < to, ct);
+    }
 }

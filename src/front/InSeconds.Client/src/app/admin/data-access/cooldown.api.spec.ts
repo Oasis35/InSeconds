@@ -1,19 +1,19 @@
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { DailyClient } from '../../api/daily/api.generated';
-import { ActionsApi } from './actions.api';
+import { CooldownApi } from './cooldown.api';
 
-describe('ActionsApi', () => {
+describe('CooldownApi', () => {
   const client = {
     getAdminDailySettings: vi.fn(() => of({ trackCooldownPoolPercent: 75, trackCooldownDays: 120, playableTrackCount: 800 })),
     updateTrackCooldownPoolPercent: vi.fn((body: { trackCooldownPoolPercent: number }) =>
       of({ trackCooldownPoolPercent: body.trackCooldownPoolPercent, trackCooldownDays: 80, playableTrackCount: 800 })),
   };
-  let api: ActionsApi;
+  let api: CooldownApi;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [ActionsApi, { provide: DailyClient, useValue: client }] });
-    api = TestBed.inject(ActionsApi);
+    TestBed.configureTestingModule({ providers: [CooldownApi, { provide: DailyClient, useValue: client }] });
+    api = TestBed.inject(CooldownApi);
   });
 
   it('lit le cooldown en vigueur', async () => {

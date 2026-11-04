@@ -26,6 +26,9 @@ WORKDIR /app
 COPY --from=build /app/publish .
 
 ENV ASPNETCORE_URLS=http://+:8080
+# Commit déployé (posé par deploy.sh), rendu par GET /api/admin/system : en dernier, pour qu'il n'invalide aucune couche coûteuse.
+ARG GIT_COMMIT=
+ENV BUILD_COMMIT=$GIT_COMMIT
 EXPOSE 8080
 
 USER app

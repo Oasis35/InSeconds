@@ -25,6 +25,9 @@ export class HealthService {
   private readonly _state = signal<HealthState>('loading');
   readonly state = this._state.asReadonly();
   readonly isDown = computed(() => this._state() === 'ko');
+  private readonly _latencyMs = signal<number | null>(null);
+  /** Durée de la dernière sonde réussie, en millisecondes (affichée dans le panneau technique de l'admin) ; `null` avant la première. */
+  readonly latencyMs = this._latencyMs.asReadonly();
 
   private consecutiveFailures = 0;
   private started = false;
@@ -35,12 +38,16 @@ export class HealthService {
 
     timer(0, HEALTH_POLL_MS)
       .pipe(
-        switchMap(() =>
-          this.http.get(`${environment.apiUrl}/health`).pipe(
-            map(() => true),
+        switchMap(() => {
+          const startedAt = performance.now();
+          return this.http.get(`${environment.apiUrl}/health`).pipe(
+            map(() => {
+              this._latencyMs.set(Math.round(performance.now() - startedAt));
+              return true;
+            }),
             catchError(() => of(false)),
-          ),
-        ),
+          );
+        }),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(ok => this.record(ok));

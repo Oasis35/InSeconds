@@ -13,7 +13,7 @@ import { CataloguePage } from './catalogue.page';
 import { EditTrackDialog } from './edit-track/edit-track.dialog';
 import { DeleteTrackDialog } from './delete-track/delete-track.dialog';
 import { PreviewTrackDialog } from '../../../core/audio-preview/preview-track.dialog';
-import { fakeActionsApi, provideActionsApiFake } from '../../data-access/testing/fake-actions-api';
+import { fakeCooldownApi, provideCooldownApiFake } from '../../data-access/testing/fake-cooldown-api';
 
 class FakeAudio implements PreviewAudio {
   paused = true; currentTime = 0; duration = 30; onended = null;
@@ -38,7 +38,7 @@ describe('CataloguePage', () => {
       providers: [
         provideTranslateService(),
         provideCatalogueApiFake(api),
-        provideActionsApiFake(fakeActionsApi()),
+        provideCooldownApiFake(fakeCooldownApi()),
         { provide: ModalService, useValue: modal },
         { provide: Router, useValue: router },
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(options.query ?? {}) } } },
@@ -79,6 +79,25 @@ describe('CataloguePage', () => {
     const cooldown = element.querySelector('[data-testid="pool-cooldown"]') as HTMLElement;
     expect(cooldown.textContent).toContain('admin.pool.cooldown');
     expect(cooldown.style.color).toBe('var(--color-success)');
+  });
+
+  it('le cooldown est replié en une ligne en tête de l\'onglet, et se règle une fois déplié', async () => {
+    const { element, pool, detect } = await render();
+    const setting = element.querySelector('[data-testid="cooldown-setting"]') as HTMLDetailsElement;
+
+    expect(setting.open).toBe(false);
+    expect(element.querySelector('[data-testid="cooldown-days"]')?.textContent).toContain('admin.pool.cooldownSetting.days');
+
+    setting.open = true;
+    const input = element.querySelector('#track-cooldown-percent-input') as HTMLInputElement;
+    input.value = '50';
+    input.dispatchEvent(new Event('input'));
+    await detect();
+    (Array.from(setting.querySelectorAll('button')).find(b => b.textContent?.includes('saveCooldown')) as HTMLButtonElement).click();
+    await detect();
+
+    expect(pool.cooldown()?.poolPercent).toBe(50);
+    expect(pool.cooldownSave()).toBe('saved');
   });
 
   it('le sélecteur de vue donne le pool général puis la vue Daily, en lecture seule', async () => {

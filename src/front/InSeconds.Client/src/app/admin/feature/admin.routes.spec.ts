@@ -1,3 +1,5 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -14,6 +16,8 @@ describe('ADMIN_ROUTES', () => {
     TestBed.configureTestingModule({
       providers: [
         provideTranslateService(),
+        provideHttpClient(),
+        provideHttpClientTesting(),
         provideRouter([{ path: 'admin', children: ADMIN_ROUTES }]),
         { provide: PlayersApi, useValue: { getMe: async () => null, createGuest: async () => 'g1' } },
         { provide: VersionService, useValue: { allowReload: () => undefined } },
@@ -44,8 +48,13 @@ describe('ADMIN_ROUTES', () => {
     expect(await landOn('/admin?tab=pool&page=2')).toBe('/admin/catalogue?page=2');
   });
 
-  it.each(['dashboard', 'defis', 'joueurs', 'actions'])('envoie ?tab=%s vers l\'onglet de ce nom', async tab => {
+  it.each(['dashboard', 'defis', 'joueurs'])('envoie ?tab=%s vers l\'onglet de ce nom', async tab => {
     expect(await landOn(`/admin?tab=${tab}`)).toBe(`/admin/${tab}`);
+  });
+
+  it('l\'ancien onglet Actions mène aux Morceaux, où le cooldown se règle', async () => {
+    expect(await landOn('/admin?tab=actions')).toBe('/admin/catalogue');
+    expect(await landOn('/admin/actions')).toBe('/admin/catalogue');
   });
 
   it('un onglet inconnu mène au tableau de bord', async () => {

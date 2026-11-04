@@ -37,4 +37,10 @@ public interface IPlayerDirectory
 
     /// <summary>Invités, comptes et joueurs actifs, vus de <paramref name="now"/> ; les joueurs supprimés ne comptent pas.</summary>
     Task<PlayerBreakdown> GetBreakdownAsync(DateTimeOffset now, CancellationToken ct);
+
+    /// <summary>
+    /// Les comptes créés ce jour-là (jour UTC du lien du compte) et toujours présents ; les plus anciens comptes, sans date de création, ne
+    /// comptent jamais.
+    /// </summary>
+    Task<int> CountAccountsCreatedOnAsync(DateOnly day, CancellationToken ct);
 }

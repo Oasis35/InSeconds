@@ -18,7 +18,10 @@ export const test = base.extend<E2EFixtures>({
   //    "Service indisponible"). Le spec service-down.spec.ts le réactive explicitement.
   //  - localStorage.lang = 'fr' : force la langue FR (les specs matchent du texte FR en dur),
   //    quelle que soit la locale du navigateur du runner CI.
+  //  - api.github.com (l'état de la CI dans le panneau technique de l'admin) : répondu sans passage, pour ne dépendre ni du
+  //    réseau ni de la limite de lectures anonymes de GitHub.
   page: async ({ page }, use) => {
+    await page.route('https://api.github.com/**', route => route.fulfill({ json: { workflow_runs: [] } }));
     await page.addInitScript(() => {
       (window as { __disableAnimations?: boolean }).__disableAnimations = true;
       (window as { __disableHealthPolling?: boolean }).__disableHealthPolling = true;

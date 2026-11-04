@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { CooldownTone } from '../../../domain/actions';
+import { CooldownTone } from '../../../domain/cooldown';
 import { POOL_VIEW } from '../../../domain/pool-views';
 
 const COOLDOWN_COLOR: Record<CooldownTone, string> = {
   low: 'var(--color-fail)',
-  medium: 'var(--bg-warn)',
+  medium: 'var(--color-warn)',
   high: 'var(--color-success)',
 };
 

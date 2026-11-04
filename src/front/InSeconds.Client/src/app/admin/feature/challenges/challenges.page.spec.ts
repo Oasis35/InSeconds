@@ -1,12 +1,15 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
 import { ClipboardService } from '../../../core/clipboard/clipboard.service';
+import { WIDE_SCREEN } from '../../../core/layout/wide-screen';
 import { SessionStore } from '../../../core/session/session.store';
 import { ModalService } from '../../../ui/modal/modal.service';
 import { AdminCounts } from '../../data-access/admin-counts';
 import { problem } from '../../data-access/testing/fake-catalogue-api';
 import {
-  FakeChallengesApi, challengePlayer, challengeStats, challengeTrack, fakeChallengesApi, historyEntry, provideChallengesApiFake,
+  FakeChallengesApi, challengePlayer, challengeStats, challengeTrack, fakeChallengesApi, provideChallengesApiFake,
 } from '../../data-access/testing/fake-challenges-api';
 import { ChallengeStats } from '../../domain/challenge';
 import { ChallengesPage } from './challenges.page';
@@ -27,21 +30,24 @@ describe('ChallengesPage', () => {
   let api: FakeChallengesApi;
   let modal: { open: ReturnType<typeof vi.fn> };
   let copy: ReturnType<typeof vi.fn>;
+  let router: { navigate: ReturnType<typeof vi.fn> };
 
-  async function render(overrides: Partial<FakeChallengesApi> = {}, stats: ChallengeStats[] = [today, older, september]) {
-    api = fakeChallengesApi({
-      loadStats: vi.fn(async () => stats),
-      listHistory: vi.fn(async () => [
-        historyEntry({ id: 5, date: '2026-10-05' }), historyEntry({ id: 4, date: '2026-10-04' }), historyEntry({ id: 3, date: '2026-09-30' }),
-      ]),
-      ...overrides,
-    });
+  async function render(
+    overrides: Partial<FakeChallengesApi> = {},
+    stats: ChallengeStats[] = [today, older, september],
+    options: { wide?: boolean; query?: Record<string, string> } = {},
+  ) {
+    api = fakeChallengesApi({ loadStats: vi.fn(async () => stats), ...overrides });
     modal = { open: vi.fn() };
     copy = vi.fn(async () => true);
+    router = { navigate: vi.fn(async () => true) };
     TestBed.configureTestingModule({
       providers: [
         provideTranslateService(),
         provideChallengesApiFake(api),
+        { provide: WIDE_SCREEN, useValue: signal(options.wide ?? false) },
+        { provide: Router, useValue: router },
+        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(options.query ?? {}) } } },
         { provide: ModalService, useValue: modal },
         { provide: ClipboardService, useValue: { copy } },
       ],
@@ -63,11 +69,10 @@ describe('ChallengesPage', () => {
     return { fixture, element, row, settle };
   }
 
-  it('lit les deux listes à l\'ouverture de la page', async () => {
+  it('lit les stats à l\'ouverture de la page', async () => {
     await render();
 
     expect(api.loadStats).toHaveBeenCalledTimes(1);
-    expect(api.listHistory).toHaveBeenCalledTimes(1);
   });
 
   it('annonce le nombre de défis des stats pour la barre des onglets', async () => {
@@ -76,14 +81,41 @@ describe('ChallengesPage', () => {
     expect(TestBed.inject(AdminCounts).challenges()).toBe(3);
   });
 
-  it('affiche le mois, les défis du mois et une ligne d\'historique par défi du mois', async () => {
+  it('affiche le mois et les défis du mois, sans bloc d\'historique', async () => {
     const { element } = await render();
 
     expect(element.querySelector('[data-testid="challenge-month"]')?.textContent).toContain('Octobre 2026');
     expect(element.textContent).toContain('2026-10-05');
     expect(element.textContent).toContain('2026-10-04');
     expect(element.textContent).not.toContain('2026-09-30');
-    expect(element.querySelectorAll('ul > li > p.font-mono')).toHaveLength(2);
+    expect(element.textContent).not.toContain('admin.challenges.history');
+  });
+
+  it('le mois vit dans l\'adresse : ?mois= est repris, et le mois affiché y est écrit sans empiler l\'historique', async () => {
+    const { element } = await render({}, undefined, { query: { mois: '2026-09' } });
+
+    expect(element.querySelector('[data-testid="challenge-month"]')?.textContent).toContain('Septembre 2026');
+    expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({ queryParams: { mois: '2026-09' }, replaceUrl: true }));
+  });
+
+  describe('sur PC', () => {
+    it('le mois en tableau, et le détail du défi le plus récent à côté, déplié', async () => {
+      const { element } = await render({}, undefined, { wide: true });
+
+      expect(element.querySelectorAll('[data-testid="challenge-table-row"]')).toHaveLength(2);
+      const detail = element.querySelector('[data-testid="challenge-detail"]') as HTMLElement;
+      expect(detail.textContent).toContain('2026-10-05');
+      expect(detail.textContent).toContain('1. Eminem - Lose Yourself');
+    });
+
+    it('un clic sur une ligne en montre le détail', async () => {
+      const { element, settle } = await render({}, undefined, { wide: true });
+
+      (element.querySelectorAll('[data-testid="challenge-table-row"]')[1] as HTMLElement).click();
+      await settle();
+
+      expect(element.querySelector('[data-testid="challenge-detail"]')?.textContent).toContain('2026-10-04');
+    });
   });
 
   it('change de mois avec ‹ ›', async () => {
@@ -98,10 +130,9 @@ describe('ChallengesPage', () => {
   });
 
   it('dit qu\'il n\'y a aucun défi', async () => {
-    const { element } = await render({ listHistory: vi.fn(async () => []) }, []);
+    const { element } = await render({}, []);
 
     expect(element.textContent).toContain('admin.dashboard.noChallenge');
-    expect(element.textContent).toContain('admin.challenges.noChallenge');
     expect(element.querySelector('[data-testid="challenge-month"]')).toBeNull();
   });
 

@@ -1684,7 +1684,9 @@
           "pendingCount",
           "totalSessions",
           "completionRate",
-          "medianScore"
+          "medianScore",
+          "newPlayersCount",
+          "accountsCreatedCount"
         ],
         "type": "object",
         "properties": {
@@ -1722,6 +1724,14 @@
               "number"
             ],
             "format": "double"
+          },
+          "newPlayersCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "accountsCreatedCount": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },

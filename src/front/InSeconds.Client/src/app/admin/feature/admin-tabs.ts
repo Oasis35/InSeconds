@@ -15,11 +15,10 @@ export const ADMIN_TABS: readonly AdminTab[] = [
   { path: 'defis', label: 'admin.tabs.challengesPlain', counted: { label: 'admin.tabs.challenges', source: 'challenges' } },
   { path: 'catalogue', label: 'admin.tabs.poolPlain', counted: { label: 'admin.tabs.pool', source: 'pool' } },
   { path: 'joueurs', label: 'admin.tabs.playersPlain', counted: { label: 'admin.tabs.players', source: 'players' } },
-  { path: 'actions', label: 'admin.tabs.actions' },
 ];
 
 /** L'onglet d'arrivée sur `/admin`. */
 export const DEFAULT_TAB = 'dashboard';
 
 /** Les valeurs des anciennes adresses `?tab=` qui ont gardé leur nom (le pool s'appelle `catalogue`). */
-export const LEGACY_TAB_NAMES: ReadonlySet<string> = new Set(['dashboard', 'defis', 'joueurs', 'actions']);
+export const LEGACY_TAB_NAMES: ReadonlySet<string> = new Set(['dashboard', 'defis', 'joueurs']);

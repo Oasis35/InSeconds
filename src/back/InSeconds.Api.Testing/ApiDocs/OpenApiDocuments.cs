@@ -28,8 +28,8 @@ public static class OpenApiDocuments
         AddModuleDocument(services, Daily, tag: "Daily", "api/daily", "api/admin/daily", "api/admin/players");
         // Le mode Run : ses routes joueur, et les routes admin de l'accès (l'interrupteur de l'onglet Joueurs).
         AddModuleDocument(services, Runs, tag: "Runs", "api/runs", "api/admin/runs");
-        // Le suivi d'une tâche lancée par un bouton de l'admin : l'infrastructure, pas un module.
-        AddModuleDocument(services, Admin, tag: "Admin", "api/admin/jobs");
+        // L'infrastructure, pas un module : le suivi des tâches planifiées, et l'état du système (commit de l'API, dernière sauvegarde).
+        AddModuleDocument(services, Admin, tag: "Admin", "api/admin/jobs", "api/admin/system");
         return services;
     }
 

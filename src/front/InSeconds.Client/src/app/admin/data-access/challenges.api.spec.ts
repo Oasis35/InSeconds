@@ -51,16 +51,6 @@ describe('ChallengesApi', () => {
     expect((await api.loadStats())[0].date).toBe('2026-10-05');
   });
 
-  it('rend l\'historique', async () => {
-    const api = setup({
-      listChallenges: vi.fn(() => of([{ id: 1, date: '2026-10-04', tracks: [{ position: 1, artist: 'A', title: 'T', deezerTrackId: 9 }] }])),
-    });
-
-    expect(await api.listHistory()).toEqual([
-      { id: 1, date: '2026-10-04', tracks: [{ position: 1, artist: 'A', title: 'T', deezerTrackId: 9 }] },
-    ]);
-  });
-
   it('recalcule un jour et rend le défi recalculé', async () => {
     const recomputeDayStats = vi.fn(() => of(raw({ computedAt: '2026-10-06T10:00:00Z', canRecompute: false })));
     const api = setup({ recomputeDayStats });

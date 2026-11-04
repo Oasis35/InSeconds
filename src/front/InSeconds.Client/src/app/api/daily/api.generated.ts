@@ -1504,6 +1504,8 @@ export interface DayKpisResponse {
     totalSessions: number;
     completionRate: number;
     medianScore: number | undefined;
+    newPlayersCount: number;
+    accountsCreatedCount: number;
 
     [key: string]: any;
 }

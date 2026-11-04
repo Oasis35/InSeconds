@@ -5,7 +5,7 @@ namespace InSeconds.Api.Infrastructure.Persistence;
 /// </summary>
 public static class DbSchemas
 {
-    /// <summary>Tables techniques : settings, historique des migrations EF, clés Data Protection.</summary>
+    /// <summary>Tables techniques : settings, historique des migrations EF, clés Data Protection, sauvegardes de la base.</summary>
     public const string Infra = "infra";
 
     /// <summary>

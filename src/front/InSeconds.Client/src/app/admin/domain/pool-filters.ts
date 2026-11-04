@@ -28,6 +28,12 @@ export function hasActiveFilters(filters: PoolFilters): boolean {
     || filters.genre !== '' || filters.lastUsedFrom !== '' || filters.lastUsedTo !== '';
 }
 
+/** Le nombre de filtres actifs hors texte : ceux que le bouton « Filtres » replie sur téléphone, compté sur le bouton. */
+export function activeFieldFilterCount(filters: PoolFilters): number {
+  return [filters.status !== 'all', filters.preview !== 'all', filters.playedBy !== '', filters.genre !== '', filters.lastUsedFrom !== '',
+    filters.lastUsedTo !== ''].filter(Boolean).length;
+}
+
 export type SortColumn = 'artist' | 'title' | 'genre' | 'preview' | 'status' | 'usage' | 'lastUsedDate' | 'unlockDate' | 'usageCount';
 export type SortDirection = 'asc' | 'desc';
 

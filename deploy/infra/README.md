@@ -68,7 +68,9 @@ EF Core (appliquées au démarrage de l'API) recréent les schémas automatiquem
 ## Sauvegardes
 
 `backup.sh` sauvegarde la base de prod `inseconds` en entier (tous les schémas). Le staging n'est pas sauvegardé : il se reconstruit depuis la
-prod (`deploy/vps/copy-prod-db-to-staging.sh`).
+prod (`deploy/vps/copy-prod-db-to-staging.sh`). Après une sauvegarde réussie, le script ajoute une ligne à `infra.backup_runs` (heure, envoi
+vers R2 ou non : une ligne par nuit, sans purge), que le panneau technique de l'admin affiche ; si cette écriture échoue, la sauvegarde
+reste faite (message dans le journal, rien de bloquant).
 
 Une sauvegarde :
 

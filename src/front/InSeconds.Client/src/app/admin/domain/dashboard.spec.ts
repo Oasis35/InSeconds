@@ -1,6 +1,6 @@
 import {
   activityBarHeightPx, canGoToNextDay, canGoToPreviousDay, completionRateColor, formatDayLong, formatDayShort,
-  maxDailyPlayers, shiftDay, todayUtc, totalPlayers,
+  maxDailyPlayers, parseDay, shiftDay, todayUtc, totalPlayers,
 } from './dashboard';
 
 describe('dashboard (domaine)', () => {
@@ -8,6 +8,11 @@ describe('dashboard (domaine)', () => {
   const activity = [
     { day: '2026-10-03', playerCount: 0 }, { day: '2026-10-04', playerCount: 4 }, { day: '2026-10-05', playerCount: 10 },
   ];
+
+  it('parseDay accepte un vrai jour aaaa-mm-jj, rien d\'autre', () => {
+    expect(parseDay('2026-11-03')).toBe('2026-11-03');
+    expect([null, undefined, '', 'hier', '2026-2-03', '2026-02-30', '2026-13-01'].map(parseDay)).toEqual([null, null, null, null, null, null, null]);
+  });
 
   it('todayUtc rend le jour UTC, pas celui du navigateur', () => {
     expect(todayUtc(new Date('2026-10-05T23:59:00Z'))).toBe('2026-10-05');

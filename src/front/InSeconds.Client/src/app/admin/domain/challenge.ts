@@ -45,20 +45,6 @@ export interface ChallengeStats {
   readonly canRecompute: boolean;
 }
 
-export interface ChallengeHistoryTrack {
-  readonly position: number;
-  readonly artist: string;
-  readonly title: string;
-  readonly deezerTrackId: number;
-}
-
-/** Un défi de l'historique : sa date et ses morceaux. */
-export interface ChallengeHistoryEntry {
-  readonly id: number;
-  readonly date: string;
-  readonly tracks: readonly ChallengeHistoryTrack[];
-}
-
 const SHORT_ID_LENGTH = 8;
 const KNOWN_STATUSES: ReadonlySet<string> = new Set(['Completed', 'Pending', 'Abandoned', 'Expired']);
 
@@ -116,13 +102,18 @@ export function unfinishedCount(challenge: ChallengeStats): number {
   return challenge.abandonedCount + challenge.expiredCount;
 }
 
+/** Les joueurs du défi qui ont un compte (un pseudo), parmi ceux qui l'ont joué. */
+export function accountPlayerCount(challenge: ChallengeStats): number {
+  return challenge.players.filter(player => player.pseudo !== null).length;
+}
+
 export function statusLabelKey(status: string): string | null {
   return KNOWN_STATUSES.has(status) ? `admin.players.status.${status}` : null;
 }
 
 /** Couleur du point de statut devant un chip dont la partie n'est pas terminée. */
 export function statusDotColor(status: string): string {
-  if (status === 'Abandoned') return 'var(--bg-warn)';
+  if (status === 'Abandoned') return 'var(--color-warn)';
   if (status === 'Pending') return 'var(--text-faint)';
   return 'var(--text-muted)';
 }

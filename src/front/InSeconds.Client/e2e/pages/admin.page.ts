@@ -95,9 +95,17 @@ export class AdminPage {
     return this.page.getByRole('row').filter({ has: this.page.getByRole('cell', { name: artist, exact: true }) });
   }
 
-  // Actions - cooldown
+  // Morceaux : le cooldown, replié en une ligne en haut de l'onglet
+  cooldownSetting(): Locator {
+    return this.page.getByTestId('cooldown-setting');
+  }
+
+  async openCooldownSetting(): Promise<void> {
+    await this.cooldownSetting().locator('summary').click();
+  }
+
   trackCooldownInput(): Locator {
-    return this.page.getByLabel('Part du pool en cooldown');
+    return this.page.getByLabel('Part du catalogue en cooldown');
   }
 
   saveCooldownButton(): Locator {
@@ -139,13 +147,9 @@ export class AdminPage {
     return this.page.getByRole('button', { name: 'Enregistrer' });
   }
 
-  // Actions : témoins du dernier passage des tâches planifiées
-  challengeWitness(): Locator {
-    return this.page.getByTestId('challenge-witness');
-  }
-
-  previewsWitness(): Locator {
-    return this.page.getByTestId('previews-witness');
+  // Panneau technique (barre de gauche sur PC)
+  techPanel(): Locator {
+    return this.page.getByTestId('admin-tech-panel');
   }
 
   // Défis - bouton créer
@@ -169,15 +173,23 @@ export class AdminPage {
     return this.page.getByRole('button', { name: new RegExp(shortId) });
   }
 
-  // Ligne d'un défi précis dans "Stats par défi" (div.py-3 contenant la date en texte exact).
-  challengeRow(dateIso: string): Locator {
-    return this.page.locator('div.py-3').filter({ has: this.page.getByText(dateIso, { exact: true }) });
+  // Ligne d'un défi dans le tableau du mois (onglet Défis, PC : les E2E tournent sur un écran large).
+  challengeTableRow(dateIso: string): Locator {
+    return this.page.getByTestId('challenge-table-row').filter({ has: this.page.getByRole('button', { name: dateIso, exact: true }) });
+  }
+
+  /** Sélectionne un défi dans le tableau et rend son détail (à droite du tableau, déplié). */
+  async challengeRow(dateIso: string): Promise<Locator> {
+    await this.challengeTableRow(dateIso).getByRole('button', { name: dateIso, exact: true }).click();
+    const detail = this.page.getByTestId('challenge-detail');
+    await detail.getByText(dateIso, { exact: true }).waitFor({ state: 'visible' });
+    return detail;
   }
 
   /** Ouvre l'onglet Défis sur le mois du jour `dateIso` (aaaa-mm-jj, UTC), qui peut être le mois précédent (J-2 un 1er du mois). */
   async openChallengesAt(dateIso: string): Promise<void> {
     await this.page.getByRole('link', { name: /^Défis/ }).click();
-    await this.challengeRow(new Date().toISOString().slice(0, 10)).waitFor({ state: 'visible' });
+    await this.challengeTableRow(new Date().toISOString().slice(0, 10)).waitFor({ state: 'visible' });
     if (dateIso.slice(0, 7) !== new Date().toISOString().slice(0, 7)) {
       await this.page.getByRole('button', { name: 'Mois précédent' }).click();
     }

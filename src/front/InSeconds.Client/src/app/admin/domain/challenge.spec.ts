@@ -1,5 +1,5 @@
 import {
-  ChallengePlayer, ChallengeStats, availableMonths, chipColors, formatMonth, inMonth, monthOf, playerLabel,
+  ChallengePlayer, ChallengeStats, accountPlayerCount, availableMonths, chipColors, formatMonth, inMonth, monthOf, playerLabel,
   rateColor, resolveMonth, shiftMonth, shortId, statusDotColor, statusLabelKey, unfinishedCount,
 } from './challenge';
 
@@ -76,10 +76,16 @@ describe('challenge (domaine)', () => {
     expect(unfinishedCount(challenge)).toBe(5);
   });
 
+  it('compte les joueurs du défi qui ont un compte', () => {
+    const challenge = { players: [player({ pseudo: 'Alice' }), player(), player({ pseudo: 'Bob' })] } as unknown as ChallengeStats;
+
+    expect(accountPlayerCount(challenge)).toBe(2);
+  });
+
   it('traduit les statuts connus seulement', () => {
     expect(statusLabelKey('Expired')).toBe('admin.players.status.Expired');
     expect(statusLabelKey('Inconnu')).toBeNull();
-    expect(statusDotColor('Abandoned')).toBe('var(--bg-warn)');
+    expect(statusDotColor('Abandoned')).toBe('var(--color-warn)');
     expect(statusDotColor('Pending')).toBe('var(--text-faint)');
     expect(statusDotColor('Expired')).toBe('var(--text-muted)');
   });
