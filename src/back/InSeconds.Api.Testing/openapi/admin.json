@@ -27,10 +27,56 @@
           }
         }
       }
+    },
+    "/api/admin/system": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "getSystemInfo",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemInfoResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "BackupFailureResponse": {
+        "required": [
+          "at",
+          "step",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "step": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "message": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "JobLastRun": {
         "required": [
           "id",
@@ -91,10 +137,72 @@
           }
         }
       },
-      "JsonElement": {}
+      "JsonElement": {},
+      "SystemInfoResponse": {
+        "required": [
+          "commit",
+          "lastBackupAt",
+          "lastBackupOffSite",
+          "backupFailure",
+          "lastRestoreTestAt",
+          "restoreTestFailure"
+        ],
+        "type": "object",
+        "properties": {
+          "commit": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lastBackupAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "lastBackupOffSite": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "backupFailure": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BackupFailureResponse"
+              }
+            ]
+          },
+          "lastRestoreTestAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "restoreTestFailure": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BackupFailureResponse"
+              }
+            ]
+          }
+        }
+      }
     }
   },
   "tags": [
+    {
+      "name": "InSeconds.Api.Infrastructure.Operations.GetSystemInfoEndpoint"
+    },
     {
       "name": "InSeconds.Api.Infrastructure.Jobs.GetJobLastRunsEndpoint"
     }

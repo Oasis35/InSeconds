@@ -21,7 +21,7 @@ describe('ChallengeCardComponent', () => {
     render();
 
     const root = element().querySelector('div.py-3')!;
-    expect(root.textContent).toContain('2026-10-05');
+    expect(root.textContent).toContain('05/10/2026');
     expect(root.querySelector('button')!.getAttribute('aria-expanded')).toBe('false');
   });
 

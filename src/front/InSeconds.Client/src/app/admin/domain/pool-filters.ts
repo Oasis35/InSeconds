@@ -1,4 +1,4 @@
-import { PoolTrack, isUsed, isUsedByMode, usageOf } from './pool-track';
+import { PoolTrack, foundRate, isUsed, isUsedByMode, usageOf } from './pool-track';
 import { POOL_VIEW } from './pool-views';
 
 export type StatusFilter = 'all' | 'available' | 'used' | 'disabled';
@@ -28,7 +28,13 @@ export function hasActiveFilters(filters: PoolFilters): boolean {
     || filters.genre !== '' || filters.lastUsedFrom !== '' || filters.lastUsedTo !== '';
 }
 
-export type SortColumn = 'artist' | 'title' | 'genre' | 'preview' | 'status' | 'usage' | 'lastUsedDate' | 'unlockDate' | 'usageCount';
+/** Le nombre de filtres actifs hors texte : ceux que le bouton « Filtres » replie sur téléphone, compté sur le bouton. */
+export function activeFieldFilterCount(filters: PoolFilters): number {
+  return [filters.status !== 'all', filters.preview !== 'all', filters.playedBy !== '', filters.genre !== '', filters.lastUsedFrom !== '',
+    filters.lastUsedTo !== ''].filter(Boolean).length;
+}
+
+export type SortColumn = 'artist' | 'title' | 'genre' | 'preview' | 'status' | 'usage' | 'lastUsedDate' | 'unlockDate' | 'usageCount' | 'found';
 export type SortDirection = 'asc' | 'desc';
 
 export interface PoolSort {
@@ -121,6 +127,7 @@ function sortValue(track: PoolTrack, column: SortColumn, view: string): string |
     case 'lastUsedDate': return usage?.lastUsedDate ?? null;
     case 'unlockDate': return usage?.unlockDate ?? null;
     case 'usageCount': return usage?.usageCount ?? null;
+    case 'found': return foundRate(track, view === POOL_VIEW ? null : view);
   }
 }
 
@@ -149,6 +156,9 @@ export function sortTracks(tracks: readonly PoolTrack[], sort: PoolSort | null, 
     return (va - vb) * direction;
   });
 }
+
+/** « Les moins trouvés » : le taux de réussite croissant (les morceaux sans réponse en dernier). */
+export const HARDEST_FIRST: PoolSort = { column: 'found', direction: 'asc' };
 
 /** Un clic sur une colonne : la même colonne change de sens, une autre démarre en croissant. */
 export function nextSort(current: PoolSort | null, column: SortColumn): PoolSort {

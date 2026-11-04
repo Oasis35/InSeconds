@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { CooldownTone } from '../../../domain/actions';
+import { CooldownTone } from '../../../domain/cooldown';
 import { POOL_VIEW } from '../../../domain/pool-views';
 
 const COOLDOWN_COLOR: Record<CooldownTone, string> = {
   low: 'var(--color-fail)',
-  medium: 'var(--bg-warn)',
+  medium: 'var(--color-warn)',
   high: 'var(--color-success)',
 };
 
@@ -36,6 +36,7 @@ const COOLDOWN_COLOR: Record<CooldownTone, string> = {
           </span>
         </div>
       } @else {
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
         <span class="text-xs" style="color:var(--text-muted)" data-testid="pool-counts">
           @if (isPool()) {
             {{ 'admin.pool.totalCount' | translate: { count: totalCount() } }}
@@ -48,6 +49,12 @@ const COOLDOWN_COLOR: Record<CooldownTone, string> = {
             · <span data-testid="pool-cooldown" [style.color]="cooldownColor()" [title]="'admin.pool.cooldownHint' | translate">{{ 'admin.pool.cooldown' | translate: { days: cooldownDays() } }}</span>
           }
         </span>
+        <button type="button" (click)="sortHardest.emit()" [attr.aria-pressed]="hardestFirst()" data-testid="sort-hardest"
+          class="text-xs px-2.5 py-1 min-h-8 rounded-(--radius-button) transition-colors hover:text-(--text-hi)"
+          style="color:var(--text-light);border:1px solid var(--border-neutral)">
+          {{ 'admin.pool.hardestFirst' | translate }}@if (hardestFirst()) { <span class="text-[10px]" aria-hidden="true">▲</span> }
+        </button>
+        </div>
       }
       @if (isPool()) {
         <button type="button" (click)="toggleAdd.emit()"
@@ -73,10 +80,13 @@ export class PoolToolbarComponent {
   readonly cooldownDays = input.required<number | null>();
   readonly cooldownTone = input.required<CooldownTone | null>();
   readonly addPanelOpen = input.required<boolean>();
+  /** Le tri « Les moins trouvés » est celui en cours. */
+  readonly hardestFirst = input(false);
 
   readonly deselectAll = output();
   readonly deleteSelection = output();
   readonly toggleAdd = output();
+  readonly sortHardest = output();
 
   protected readonly isPool = computed(() => this.view() === POOL_VIEW);
   protected readonly cooldownColor = computed(() => {

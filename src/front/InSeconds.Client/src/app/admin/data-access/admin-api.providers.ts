@@ -4,15 +4,20 @@ import { CATALOGUE_API_BASE_URL, CatalogueClient } from '../../api/catalogue/api
 import { DAILY_API_BASE_URL, DailyClient } from '../../api/daily/api.generated';
 import { RUNS_API_BASE_URL, RunsClient } from '../../api/runs/api.generated';
 import { environment } from '../../../environments/environment';
-import { ActionsApi } from './actions.api';
+import { CooldownApi } from './cooldown.api';
 import { CatalogueApi } from './catalogue.api';
 import { ChallengesApi } from './challenges.api';
 import { DashboardApi } from './dashboard.api';
+import { GithubCiApi } from './github-ci.api';
 import { JobsApi } from './jobs.api';
 import { AdminPlayersApi } from './players.api';
+import { SystemApi } from './system.api';
 
 /** Adresse du tableau de bord des tâches planifiées (Hangfire), servi par l'API et réservé aux admins (`/jobs`, S3). */
 export const JOBS_DASHBOARD_URL = new InjectionToken<string>('JOBS_DASHBOARD_URL');
+
+/** Le tableau « Exploitation » de Grafana Cloud (prod seulement : le staging n'envoie aucune télémétrie). Un lien, rien n'est lu chez Grafana. */
+export const GRAFANA_DASHBOARD_URL = 'https://smartfennec1267.grafana.net/d/inseconds-exploitation';
 
 /**
  * Les clients générés dont l'admin se sert (le suivi des tâches `api/admin`, le pool `api/catalogue`, les routes admin du jeu du jour `api/daily`
@@ -28,6 +33,6 @@ export function provideAdminApi(): Provider[] {
     { provide: RUNS_API_BASE_URL, useValue: environment.apiUrl },
     { provide: JOBS_DASHBOARD_URL, useValue: `${environment.apiUrl}/jobs` },
     AdminClient, CatalogueClient, DailyClient, RunsClient,
-    ActionsApi, CatalogueApi, ChallengesApi, DashboardApi, JobsApi, AdminPlayersApi,
+    CooldownApi, CatalogueApi, ChallengesApi, DashboardApi, JobsApi, AdminPlayersApi, SystemApi, GithubCiApi,
   ];
 }

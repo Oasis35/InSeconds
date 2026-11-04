@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Xml.Linq;
 using InSeconds.Api.Infrastructure.Hosting;
 using InSeconds.Api.Modules.Daily.Application;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using static InSeconds.IntegrationTests.Daily.DailyApi;
@@ -254,9 +255,17 @@ public class ChallengeArchiveTests(PostgresFixture postgres) : IAsyncLifetime
     [Fact]
     public async Task PlanDuSite_PagesFixesPuisJoursPublies()
     {
+        var older = Today.AddDays(-5);
+        var recomputed = Today.AddDays(-6);
+        await _game.App.AddChallengeAsync(recomputed, 16, 17, 18, 19, 20);
+        await _game.App.AddChallengeAsync(older, 11, 12, 13, 14, 15);
         await _game.App.AddChallengeAsync(Frozen, 1, 2, 3, 4, 5);
         await _game.App.AddChallengeAsync(Yesterday, 6, 7, 8, 9, 10);
         await _game.GenerateAsync();
+        await FreezeAsync(older);
+        await FreezeAsync(recomputed);
+        // La photo de « older » date de son J+2 ; celle de « recomputed » vient d'être recalculée (aujourd'hui).
+        await SetComputedAtAsync(older, older.AddDays(2));
 
         var response = await _game.Api.CreateClient().GetAsync("/sitemap.xml", Ct);
         var xml = XDocument.Parse(await response.Content.ReadAsStringAsync(Ct));
@@ -265,8 +274,43 @@ public class ChallengeArchiveTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("application/xml", response.Content.Headers.ContentType?.MediaType);
         var front = _game.Api.Services.GetRequiredService<IOptions<AppOptions>>().Value;
+        // lastmod : aujourd'hui pour le jeu, rien pour les pages légales, la date de calcul de la photo pour un jour figé, aujourd'hui sinon.
         Assert.Equal(
-            [front.Link("/daily"), front.Link("/legal"), front.Link("/privacy"), front.Link($"/daily/archive/{Yesterday:yyyy-MM-dd}"), front.Link($"/daily/archive/{Frozen:yyyy-MM-dd}")],
-            xml.Root!.Elements(ns + "url").Select(u => u.Element(ns + "loc")!.Value));
+            [
+                (front.Link("/daily"), $"{Today:yyyy-MM-dd}"),
+                (front.Link("/legal"), null),
+                (front.Link("/privacy"), null),
+                (front.Link($"/daily/archive/{Yesterday:yyyy-MM-dd}"), $"{Today:yyyy-MM-dd}"),
+                (front.Link($"/daily/archive/{Frozen:yyyy-MM-dd}"), $"{Today:yyyy-MM-dd}"),
+                (front.Link($"/daily/archive/{older:yyyy-MM-dd}"), $"{older.AddDays(2):yyyy-MM-dd}"),
+                (front.Link($"/daily/archive/{recomputed:yyyy-MM-dd}"), $"{Today:yyyy-MM-dd}"),
+            ],
+            xml.Root!.Elements(ns + "url").Select(u => (u.Element(ns + "loc")!.Value, u.Element(ns + "lastmod")?.Value)));
+    }
+
+    private async Task SetComputedAtAsync(DateOnly day, DateOnly computedOn)
+    {
+        using var scope = _game.Api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<InSeconds.Api.Infrastructure.Persistence.InSecondsDbContext>();
+        var at = new DateTimeOffset(computedOn.ToDateTime(new TimeOnly(0, 5)), TimeSpan.Zero);
+        await db.Database.ExecuteSqlAsync(
+            $"UPDATE daily.challenge_day_stats SET computed_at = {at} WHERE challenge_id = (SELECT id FROM daily.challenges WHERE date = {day})", Ct);
+    }
+
+    [Fact]
+    public async Task PlanDuSite_Head_MemesEnTetesQueGet()
+    {
+        await _game.App.AddChallengeAsync(Yesterday, 6, 7, 8, 9, 10);
+        await _game.GenerateAsync();
+        var client = _game.Api.CreateClient();
+        var body = await (await client.GetAsync("/sitemap.xml", Ct)).Content.ReadAsByteArrayAsync(Ct);
+
+        using var request = new HttpRequestMessage(HttpMethod.Head, "/sitemap.xml");
+        var response = await client.SendAsync(request, Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("application/xml", response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(body.Length, response.Content.Headers.ContentLength);
+        Assert.Equal("public, max-age=3600", response.Headers.CacheControl?.ToString());
     }
 }

@@ -7,13 +7,15 @@ import { CATALOGUE_API_BASE_URL, CatalogueClient } from '../../api/catalogue/api
 import { DAILY_API_BASE_URL, DailyClient } from '../../api/daily/api.generated';
 import { RUNS_API_BASE_URL, RunsClient } from '../../api/runs/api.generated';
 import { environment } from '../../../environments/environment';
-import { ActionsApi } from './actions.api';
+import { CooldownApi } from './cooldown.api';
 import { JOBS_DASHBOARD_URL, provideAdminApi } from './admin-api.providers';
 import { CatalogueApi } from './catalogue.api';
 import { ChallengesApi } from './challenges.api';
 import { DashboardApi } from './dashboard.api';
 import { JobsApi } from './jobs.api';
+import { GithubCiApi } from './github-ci.api';
 import { AdminPlayersApi } from './players.api';
+import { SystemApi } from './system.api';
 
 describe('provideAdminApi', () => {
   function routeInjector(): EnvironmentInjector {
@@ -42,7 +44,7 @@ describe('provideAdminApi', () => {
   it("fournit les adaptateurs de l'admin, qui ne sont pas des services de la racine", () => {
     const injector = routeInjector();
 
-    const apis: Type<unknown>[] = [ActionsApi, CatalogueApi, ChallengesApi, DashboardApi, JobsApi, AdminPlayersApi];
+    const apis: Type<unknown>[] = [CooldownApi, CatalogueApi, ChallengesApi, DashboardApi, JobsApi, AdminPlayersApi, SystemApi, GithubCiApi];
     for (const api of apis) {
       expect(injector.get(api)).toBeInstanceOf(api);
       expect(() => TestBed.inject(api)).toThrow();

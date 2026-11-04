@@ -1,7 +1,9 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideTranslateService } from '@ngx-translate/core';
+import { WIDE_SCREEN } from '../../../core/layout/wide-screen';
 import {
-  FakeAdminPlayersApi, fakeAdminPlayersApi, playerGame, provideAdminPlayersApiFake, registeredPlayer,
+  FakeAdminPlayersApi, fakeAdminPlayersApi, playerGame, provideAdminPlayersApiFake, registeredPlayer, playersPage,
 } from '../../data-access/testing/fake-admin-players-api';
 import { problem } from '../../data-access/testing/fake-catalogue-api';
 import { RegisteredPlayer } from '../../domain/registered-player';
@@ -13,9 +15,11 @@ describe('PlayersPage', () => {
 
   let api: FakeAdminPlayersApi;
 
-  async function render(options: { players?: RegisteredPlayer[]; api?: Partial<FakeAdminPlayersApi> } = {}) {
-    api = fakeAdminPlayersApi({ list: vi.fn(async () => options.players ?? [alice, bob]), ...options.api });
-    TestBed.configureTestingModule({ providers: [provideTranslateService(), provideAdminPlayersApiFake(api)] });
+  async function render(options: { players?: RegisteredPlayer[]; returnRate?: number | null; api?: Partial<FakeAdminPlayersApi>; wide?: boolean } = {}) {
+    api = fakeAdminPlayersApi({ list: vi.fn(async () => playersPage(options.players ?? [alice, bob], options.returnRate ?? null)), ...options.api });
+    TestBed.configureTestingModule({ providers: [
+      provideTranslateService(), provideAdminPlayersApiFake(api), { provide: WIDE_SCREEN, useValue: signal(options.wide ?? true) },
+    ] });
     const fixture = TestBed.createComponent(PlayersPage);
     const element = fixture.nativeElement as HTMLElement;
     const settle = async () => {
@@ -36,6 +40,14 @@ describe('PlayersPage', () => {
     expect(rows()[0].textContent).not.toContain('alice@example.com');
     expect(rows()[0].textContent).toContain('admin.players.adminBadge');
     expect(rows()[1].textContent).toContain('admin.players.neverSeen');
+  });
+
+  it('en haut, les séries en cours des comptes et la part revenue le lendemain', async () => {
+    const { element } = await render({ players: [registeredPlayer({ id: 'a', currentStreak: 1 }), registeredPlayer({ id: 'b', currentStreak: 9 })], returnRate: 48 });
+
+    expect(element.querySelector('[data-testid="players-loyalty"]')?.textContent).toContain('2');
+    expect(element.querySelector('[data-testid="streak-long"]')?.textContent).toContain('1');
+    expect(element.querySelector('[data-testid="next-day-return"]')?.textContent).toContain('48 %');
   });
 
   it('affiche l\'état vide', async () => {
@@ -148,6 +160,32 @@ describe('PlayersPage', () => {
       await settle();
       expect(element.querySelector('[data-testid="run-access-error"] [role="alert"]')).not.toBeNull();
       expect(toggleOf(rows()[1]).getAttribute('aria-checked')).toBe('false');
+    });
+  });
+  describe('sur téléphone', () => {
+    it('affiche une carte par compte, sans l\'email', async () => {
+      const { element, rows } = await render({ wide: false });
+      expect(element.querySelector('table')).toBeNull();
+      expect(rows()).toHaveLength(2);
+      expect(rows()[0].tagName).toBe('LI');
+      expect(rows()[0].textContent).toContain('Alice');
+      expect(rows()[0].textContent).not.toContain('example.com');
+      expect(rows()[1].textContent).toContain('admin.players.neverSeen');
+    });
+
+    it('déplie l\'historique dans la carte', async () => {
+      const { settle, rows } = await render({ wide: false, api: { history: vi.fn(async () => [playerGame()]) } });
+      (rows()[0].querySelector('button') as HTMLButtonElement).click();
+      await settle();
+      expect(api.history).toHaveBeenCalledWith('a');
+      expect(rows()[0].querySelector('[data-testid="player-history"]')?.textContent).toContain('3200');
+    });
+
+    it('bascule l\'accès à Platines depuis la carte', async () => {
+      const { settle, rows } = await render({ wide: false });
+      (rows()[1].querySelector('[data-testid="run-access"]') as HTMLButtonElement).click();
+      await settle();
+      expect(api.setRunAccess).toHaveBeenCalledWith('b', true);
     });
   });
 });

@@ -53,7 +53,7 @@ public class RunsTrackUsageTests(PostgresFixture postgres) : IAsyncLifetime
 
         var used = list.Single(t => t.Id == 1);
         Assert.True(used.IsUsed);
-        Assert.Equal(new TrackModeUsage("runs", 0, null, null, false), Assert.Single(used.Usages));
+        Assert.Equal(new TrackModeUsage("runs", 0, null, null, false, 0, 0), Assert.Single(used.Usages));
         Assert.False(list.Single(t => t.Id == 3).IsUsed);
     }
 

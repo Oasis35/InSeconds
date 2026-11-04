@@ -8,5 +8,5 @@ internal static class TrackListItemReading
     public static TrackModeUsage Daily(this TrackListItem track) => track.UsageOf("daily");
 
     public static TrackModeUsage UsageOf(this TrackListItem track, string mode) =>
-        track.Usages.SingleOrDefault(u => u.Mode == mode) ?? new TrackModeUsage(mode, 0, null, null, false);
+        track.Usages.SingleOrDefault(u => u.Mode == mode) ?? new TrackModeUsage(mode, 0, null, null, false, 0, 0);
 }

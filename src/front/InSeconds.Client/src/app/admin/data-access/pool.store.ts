@@ -1,17 +1,22 @@
 import { computed, inject } from '@angular/core';
-import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
+import { patchState, signalStore, withComputed, withHooks, withMethods, withState } from '@ngrx/signals';
 import { AppError, toAppError } from '../../core/errors/app-error';
 import { setError, setFulfilled, setPending, withRequestStatus } from '../../core/store/with-request-status';
-import { cooldownTone } from '../domain/actions';
+import { CooldownSettings, cooldownTone } from '../domain/cooldown';
 import {
-  NO_FILTERS, PoolFilters, PoolSort, PreviewFilter, SortColumn,
+  HARDEST_FIRST, NO_FILTERS, PoolFilters, PoolSort, PreviewFilter, SortColumn,
   StatusFilter, clampPage, filterTracks, nextSort, pageOf, sortTracks, statusOf, totalPages,
 } from '../domain/pool-filters';
 import { PoolTrack, isUsed, trackLabel } from '../domain/pool-track';
 import { POOL_VIEW } from '../domain/pool-views';
-import { ActionsApi } from './actions.api';
+import { CooldownApi } from './cooldown.api';
 import { AdminCounts } from './admin-counts';
 import { CatalogueApi } from './catalogue.api';
+
+/** Le message « enregistré » ou « erreur » du cooldown disparaît au bout de ce délai. */
+export const COOLDOWN_RESULT_VISIBLE_MS = 3000;
+
+export type CooldownSaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 /** Ce qu'une désactivation refusée a dit : le morceau est dans le défi du jour, ou autre chose a échoué. */
 export type ToggleError = 'inToday' | 'error';
@@ -38,23 +43,25 @@ interface PoolState {
   togglingIds: readonly number[];
   toggleError: ToggleError | null;
   /**
-   * Le cooldown appliqué aujourd'hui, en jours (#275) : il suit la taille du pool, il est donc relu avec la liste ;
-   * `null` tant qu'il n'est pas lu, ou si sa lecture a échoué (la barre ne l'affiche pas).
+   * Le cooldown appliqué aujourd'hui (#275) : la part du pool réglée et les jours qu'elle donne. Il suit la taille du pool, il est donc
+   * relu avec la liste ; `null` tant qu'il n'est pas lu, ou si sa lecture a échoué (l'onglet ne l'affiche pas).
    */
-  cooldownDays: number | null;
+  cooldown: CooldownSettings | null;
+  cooldownSave: CooldownSaveStatus;
 }
 
 /**
  * Le pool de l'admin : liste des morceaux, filtres, tri, pagination, sélection, et les actions qui
  * le modifient (ajout, renommage, désactivation, suppression). Aucune mutation locale : après
  * chaque action réussie, la liste est relue (l'usage et les dates de déblocage viennent de l'API).
- * Les actions qui ouvrent une fenêtre rendent l'erreur à afficher dans celle-ci, ou `null`.
+ * Les actions qui ouvrent une fenêtre rendent l'erreur à afficher dans celle-ci, ou `null`. Le réglage du cooldown (la part du pool
+ * bloquée après un tirage) vit ici aussi : il est replié en tête de l'onglet Morceaux.
  */
 export const PoolStore = signalStore(
   withRequestStatus(),
   withState<PoolState>({
     tracks: [], view: POOL_VIEW, filters: NO_FILTERS, sort: null, requestedPage: 0, selectedIds: [], togglingIds: [], toggleError: null,
-    cooldownDays: null,
+    cooldown: null, cooldownSave: 'idle',
   }),
   withComputed(({ tracks, view, filters, sort, requestedPage, selectedIds }) => {
     const filtered = computed(() => filterTracks(tracks(), filters(), view()));
@@ -82,14 +89,16 @@ export const PoolStore = signalStore(
       }),
     };
   }),
-  withComputed(({ pages, cooldownDays }) => ({
+  withComputed(({ pages, cooldown }) => ({
+    /** Les jours de cooldown appliqués aujourd'hui ; `null` s'ils ne sont pas lus. */
+    cooldownDays: computed(() => cooldown()?.days ?? null),
     cooldownTone: computed(() => {
-      const days = cooldownDays();
-      return days === null ? null : cooldownTone(days);
+      const current = cooldown();
+      return current === null ? null : cooldownTone(current.days);
     }),
     hasMultiplePages: computed(() => pages() > 1),
   })),
-  withMethods((store, api = inject(CatalogueApi), counts = inject(AdminCounts), settings = inject(ActionsApi)) => {
+  withMethods((store, api = inject(CatalogueApi), counts = inject(AdminCounts), settings = inject(CooldownApi)) => {
     const resetPage = () => patchState(store, { requestedPage: 0 });
     const setFilter = (change: Partial<PoolFilters>) => {
       patchState(store, { filters: { ...store.filters(), ...change }, requestedPage: 0 });
@@ -97,14 +106,15 @@ export const PoolStore = signalStore(
 
     /** Numéro de la lecture la plus récente : une réponse plus ancienne, arrivée après elle, n'écrit rien. */
     let latestLoad = 0;
+    let cooldownTimer: ReturnType<typeof setTimeout> | undefined;
 
     /** Le cooldown suit le pool (ajout, désactivation) : relu à chaque lecture de la liste ; un échec ne bloque pas le pool. */
     async function loadCooldown(mine: number): Promise<void> {
       try {
-        const { days } = await settings.getCooldown();
-        if (mine === latestLoad) patchState(store, { cooldownDays: days });
+        const cooldown = await settings.getCooldown();
+        if (mine === latestLoad) patchState(store, { cooldown });
       } catch {
-        if (mine === latestLoad) patchState(store, { cooldownDays: null });
+        if (mine === latestLoad) patchState(store, { cooldown: null });
       }
     }
 
@@ -177,6 +187,8 @@ export const PoolStore = signalStore(
         });
       },
       sortBy: (column: SortColumn) => patchState(store, { sort: nextSort(store.sort(), column) }),
+      /** « Les moins trouvés » : trie par taux de réussite croissant, depuis la première page. */
+      sortByHardest: () => patchState(store, { sort: HARDEST_FIRST, requestedPage: 0 }),
       previousPage: () => patchState(store, { requestedPage: Math.max(0, store.page() - 1) }),
       nextPage: () => patchState(store, { requestedPage: Math.min(store.pages() - 1, store.page() + 1) }),
       /** Va à une page (à partir de 0), par exemple celle reprise de l'adresse au rechargement. */
@@ -230,6 +242,26 @@ export const PoolStore = signalStore(
         });
       },
       dismissToggleError: () => patchState(store, { toggleError: null }),
+
+      // --- cooldown ---
+      /** Enregistre la part du pool en cooldown ; le cooldown affiché devient celui que l'API en a déduit. */
+      async saveCooldown(poolPercent: number): Promise<void> {
+        if (store.cooldownSave() === 'saving') return;
+        clearTimeout(cooldownTimer);
+        patchState(store, { cooldownSave: 'saving' });
+        try {
+          patchState(store, { cooldown: await settings.updateCooldownPercent(poolPercent), cooldownSave: 'saved' });
+        } catch {
+          patchState(store, { cooldownSave: 'error' });
+        }
+        cooldownTimer = setTimeout(() => patchState(store, { cooldownSave: 'idle' }), COOLDOWN_RESULT_VISIBLE_MS);
+      },
+
+      /** Arrête le minuteur du message du cooldown (destruction du store). */
+      clearTimers(): void {
+        clearTimeout(cooldownTimer);
+      },
     };
   }),
+  withHooks({ onDestroy: store => store.clearTimers() }),
 );

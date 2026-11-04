@@ -581,6 +581,56 @@ export class CatalogueClient {
         }
         return _observableOf(null as any);
     }
+
+    /**
+     * @return OK
+     */
+    getCatalogueHealth(): Observable<CatalogueHealthResponse> {
+        let url_ = this.baseUrl + "/api/admin/catalogue/health";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetCatalogueHealth(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetCatalogueHealth(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<CatalogueHealthResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<CatalogueHealthResponse>;
+        }));
+    }
+
+    protected processGetCatalogueHealth(response: HttpResponseBase): Observable<CatalogueHealthResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as CatalogueHealthResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
 }
 
 export interface AddTrack {
@@ -666,6 +716,8 @@ export interface TrackModeUsage {
     lastUsedDate: Date | undefined;
     unlockDate: Date | undefined;
     inTodayChallenge: boolean;
+    answerCount: number;
+    foundCount: number;
 
     [key: string]: any;
 }
@@ -693,6 +745,13 @@ export interface TrackSummary {
 
 export interface UpdateTrack {
     deezerTrackId: number;
+
+    [key: string]: any;
+}
+
+export interface CatalogueHealthResponse {
+    missingPreviewCount: number;
+    missingWaveformCount: number;
 
     [key: string]: any;
 }

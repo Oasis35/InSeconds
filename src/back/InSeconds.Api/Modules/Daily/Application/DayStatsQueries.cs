@@ -45,17 +45,38 @@ public interface IDailyStatsQueries
     /// <summary>Les <paramref name="take"/> défis les plus récents, du plus récent au plus ancien, avec leur photo figée s'ils en ont une.</summary>
     Task<IReadOnlyList<RecentChallenge>> ListRecentChallengesAsync(int take, CancellationToken ct);
 
+    /// <summary>Les défis du <paramref name="from"/> au <paramref name="to"/> compris, du plus récent au plus ancien, avec leur photo figée s'ils en ont une.</summary>
+    Task<IReadOnlyList<RecentChallenge>> ListChallengesBetweenAsync(DateOnly from, DateOnly to, CancellationToken ct);
+
     /// <summary>Tous les défis avec leurs morceaux, du plus récent au plus ancien (l'historique de l'admin).</summary>
     Task<IReadOnlyList<ChallengeListRow>> ListChallengesAsync(CancellationToken ct);
 
     /// <summary>Les dates de tous les défis, de la plus récente à la plus ancienne.</summary>
     Task<IReadOnlyList<DateOnly>> ListChallengeDatesAsync(CancellationToken ct);
 
+    /// <summary>La date de calcul de la photo figée de chaque jour qui en a une (le plan du site en fait la date de modification du jour).</summary>
+    Task<IReadOnlyDictionary<DateOnly, DateTimeOffset>> GetSnapshotDatesAsync(CancellationToken ct);
+
     /// <summary>Le défi de ce jour et, s'il est figé, sa photo ; vide s'il n'y a pas de défi ce jour-là.</summary>
     Task<RecentChallenge?> FindChallengeWithSnapshotAsync(DateOnly day, CancellationToken ct);
 
     /// <summary>L'identifiant du défi de ce jour, vide s'il n'y en a pas.</summary>
     Task<int?> FindChallengeIdAsync(DateOnly day, CancellationToken ct);
+
+    /// <summary>
+    /// Les joueurs dont la partie de ce défi est la toute première (aucune partie sur un défi d'une date antérieure), quel que soit son statut :
+    /// les nouveaux venus du jour.
+    /// </summary>
+    Task<int> CountFirstTimePlayersAsync(int challengeId, CancellationToken ct);
+
+    /// <summary>Parmi les parties **terminées** de ce défi, celles qui sont la toute première partie du joueur (les autres sont des habitués).</summary>
+    Task<int> CountFirstTimeFinishersAsync(int challengeId, CancellationToken ct);
+
+    /// <summary>
+    /// Les joueurs d'un jour (une partie, quel que soit son statut) sur les défis de <paramref name="first"/> à <paramref name="last"/>, et
+    /// parmi eux ceux qui ont aussi une partie sur le défi du lendemain, cumulés sur toute la période.
+    /// </summary>
+    Task<NextDayReturn> GetNextDayReturnAsync(DateOnly first, DateOnly last, CancellationToken ct);
 
     /// <summary>Parties **terminées** par jour de défi, depuis <paramref name="since"/> (les jours sans partie sont absents).</summary>
     Task<IReadOnlyDictionary<DateOnly, int>> GetCompletedCountsByDayAsync(DateOnly since, CancellationToken ct);
@@ -72,3 +93,6 @@ public interface IDailyStatsQueries
     /// <summary>Les parties de ce joueur sur les défis de ce jour et des suivants, de la plus récente à la plus ancienne.</summary>
     Task<IReadOnlyList<PlayerHistoryRow>> GetPlayerHistoryAsync(Guid playerId, DateOnly since, CancellationToken ct);
 }
+
+/// <summary>Joueurs d'un jour, et ceux qui sont revenus le lendemain, cumulés sur une période.</summary>
+public sealed record NextDayReturn(int Players, int Returned);

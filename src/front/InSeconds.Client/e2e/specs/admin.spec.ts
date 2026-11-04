@@ -23,11 +23,13 @@ test.describe('Admin - login', () => {
     await expect(admin.accessDeniedMessage).toBeVisible();
   });
 
-  test('se connecte et affiche le dashboard directement', async ({ page }) => {
+  test('se connecte et affiche l\'accueil directement', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await expect(admin.tab('Dashboard')).toBeVisible();
+    await expect(page).toHaveURL(/\/admin\/dashboard$/);
+    await expect(admin.tab('Accueil')).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByTestId('day-card')).toBeVisible();
     await expect(admin.logoutButton).toBeVisible();
   });
 
@@ -49,7 +51,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Pool/ }).click();
+    await page.getByRole('link', { name: /^Morceaux/ }).click();
     // En-têtes du tableau
     await expect(page.getByRole('columnheader', { name: 'Artiste' })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Titre' })).toBeVisible();
@@ -64,7 +66,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Pool/ }).click();
+    await page.getByRole('link', { name: /^Morceaux/ }).click();
     await admin.poolSearchInput().fill('Eminem');
     await expect(page.getByRole('cell', { name: 'Eminem', exact: true })).toBeVisible();
     // Les autres artistes ne doivent pas apparaître
@@ -75,7 +77,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Pool/ }).click();
+    await page.getByRole('link', { name: /^Morceaux/ }).click();
     await admin.poolFilterPreview().selectOption('missing');
     // 5 morceaux sans preview dans le seed
     await expect(page.getByRole('cell', { name: 'Manquante' })).toHaveCount(5);
@@ -85,7 +87,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Pool/ }).click();
+    await page.getByRole('link', { name: /^Morceaux/ }).click();
     await expect(page.getByRole('columnheader', { name: 'Genre' })).toBeVisible();
 
     // Le seed range les morceaux sous les albums du faux Deezer : Pop, Rap/Hip Hop et Dance, Rock, ou aucun genre.
@@ -101,7 +103,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Pool/ }).click();
+    await page.getByRole('link', { name: /^Morceaux/ }).click();
 
     // Pool général : « Disponible » écarte les morceaux utilisés (Coldplay est dans un défi du seed), garde les autres.
     await admin.poolFilterStatus().selectOption('available');
@@ -124,7 +126,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Pool/ }).click();
+    await page.getByRole('link', { name: /^Morceaux/ }).click();
     await expect(page).not.toHaveURL(/view=/);
 
     await admin.poolView('Daily').click();
@@ -141,7 +143,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Pool/ }).click();
+    await page.getByRole('link', { name: /^Morceaux/ }).click();
 
     // Coldplay est dans un défi du seed, Michael Jackson n'a jamais été joué. Le texte cherché restreint la grille
     // (paginée par 15) au morceau regardé : le filtre « Joué par » s'y combine.
@@ -162,7 +164,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Pool/ }).click();
+    await page.getByRole('link', { name: /^Morceaux/ }).click();
     await admin.addButton().click();
 
     // Cherche dans le panneau (placeholder distinct du filtre pool)
@@ -181,7 +183,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Pool/ }).click();
+    await page.getByRole('link', { name: /^Morceaux/ }).click();
 
     // Filtre sur un morceau disponible connu
     await admin.poolSearchInput().fill('Sabrina Carpenter');
@@ -203,7 +205,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Pool/ }).click();
+    await page.getByRole('link', { name: /^Morceaux/ }).click();
 
     await admin.poolSearchInput().fill('Sabrina Carpenter');
     await page.getByRole('button', { name: '🗑' }).first().click();
@@ -219,7 +221,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Pool/ }).click();
+    await page.getByRole('link', { name: /^Morceaux/ }).click();
 
     // Coldplay - Yellow fait partie du défi J-2 du seed : pas de corbeille, un bouton « Désactiver » à la place.
     await admin.poolSearchInput().fill('Coldplay');
@@ -236,7 +238,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Pool/ }).click();
+    await page.getByRole('link', { name: /^Morceaux/ }).click();
 
     // Eminem est dans le défi du jour : « Désactiver » grisé.
     await admin.poolSearchInput().fill('Eminem');
@@ -264,7 +266,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Pool/ }).click();
+    await page.getByRole('link', { name: /^Morceaux/ }).click();
 
     // Eminem est dans le défi du jour : renommable lui aussi, avec un avertissement.
     await admin.poolSearchInput().fill('Eminem');
@@ -297,7 +299,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Pool/ }).click();
+    await page.getByRole('link', { name: /^Morceaux/ }).click();
     await admin.poolView('Daily').click();
 
     await expect(admin.poolColumnHeader('Dernière utilisation')).toBeVisible();
@@ -324,7 +326,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Pool/ }).click();
+    await page.getByRole('link', { name: /^Morceaux/ }).click();
     await admin.poolView('Daily').click();
 
     // Ed Sheeran (index 20, -15j) tombe dans la plage ; Queen (-5j) et Adele (-90j) en dehors.
@@ -343,7 +345,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Pool/ }).click();
+    await page.getByRole('link', { name: /^Morceaux/ }).click();
     await admin.poolView('Daily').click();
 
     // Adele (index 19) a le UsageCount le plus élevé du seed (7) - tri desc doit la faire remonter.
@@ -357,7 +359,7 @@ test.describe('Admin - pool', () => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await page.getByRole('link', { name: /^Pool/ }).click();
+    await page.getByRole('link', { name: /^Morceaux/ }).click();
 
     await page.getByRole('button', { name: '▶', exact: true }).first().click();
 
@@ -371,47 +373,78 @@ test.describe('Admin - pool', () => {
   });
 });
 
-test.describe('Admin - actions', () => {
+test.describe('Admin - panneau technique et cooldown', () => {
   test.beforeEach(async ({ api }) => {
     await api.reseed();
   });
 
-  test('affiche le dernier passage des tâches planifiées, sans bouton pour les lancer', async ({ page }) => {
+  test('le panneau technique montre le déploiement, les tâches de la nuit et la CI, sans onglet Actions', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
-    await admin.clickTab('Actions');
 
+    const panel = admin.techPanel();
+    // Build local : aucun commit connu, le verdict le dit.
+    await expect(panel.getByTestId('deployment-verdict')).toHaveText('Commits inconnus (build local)');
     // Les tâches sont en pause dans l'hôte de test : aucune n'a tourné.
-    await expect(admin.challengeWitness()).toContainText('Défi du jour');
-    await expect(admin.challengeWitness()).toContainText('Aucun passage ces 7 derniers jours.');
-    await expect(admin.previewsWitness()).toContainText('Aucun passage ces 7 derniers jours.');
-    await expect(page.getByRole('button', { name: /Générer le défi du jour|Re-vérifier les previews/ })).toHaveCount(0);
-    await expect(page.getByTestId('jobs-dashboard-link')).toBeVisible();
+    await expect(panel.getByTestId('nightly-job')).toHaveCount(4);
+    await expect(panel.getByTestId('nightly-job').first()).toContainText('Contrôle des extraits');
+    await expect(panel.getByRole('link', { name: 'Hangfire' })).toHaveAttribute('href', /\/jobs$/);
+    await expect(panel.getByTestId('ci-line')).toHaveCount(2);
+    await expect(admin.tab('Actions')).toHaveCount(0);
   });
 
-  test('édite le cooldown de réutilisation et persiste en base', async ({ page }) => {
+  test('le panneau technique montre l\'état du catalogue et le défi de demain ; Morceaux trie les moins trouvés', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+
+    const panel = admin.techPanel();
+    await expect(panel.getByTestId('tech-catalogue')).toContainText('Sans extrait');
+    await expect(panel.getByTestId('tech-catalogue')).toContainText("Formes d'onde manquantes");
+    // Le pool des E2E a 50 morceaux jouables et 7 jours de cooldown : le défi de demain a de quoi être tiré.
+    await expect(panel.getByTestId('next-challenge')).toContainText(/Défi de demain\s*prêt · \d+ hors cooldown/);
+
+    await page.getByRole('link', { name: /^Morceaux/ }).click();
+    await page.getByTestId('sort-hardest').click();
+    await expect(page.getByTestId('sort-hardest')).toHaveAttribute('aria-pressed', 'true');
+    await expect(admin.poolColumnHeader('Trouvé')).toHaveAttribute('aria-sort', 'ascending');
+  });
+
+  test('édite le cooldown de réutilisation depuis l\'onglet Morceaux et persiste en base', async ({ page }) => {
     const adminPage = new AdminPage(page);
     await adminPage.goto();
     await adminPage.login();
-    await adminPage.clickTab('Actions');
+    await adminPage.clickTab('Morceaux');
 
-    // La part du pool en cooldown (#275). Queen (LastUsedDate = today-5j) a une date de déblocage lue en base au chargement du pool
+    // La part du catalogue en cooldown (#275). Queen (LastUsedDate = today-5j) a une date de déblocage lue en base au chargement du pool
     // (pas via /api/settings, figé au boot) - sert de preuve que le nouveau cooldown est bien pris
     // en compte, cohérent avec "effectif au prochain calcul", pas de redémarrage requis.
     const before = await adminPage.apiGetPoolUnlockDate(5055001); // Queen - Bohemian Rhapsody
 
-    // 75 % de 50 morceaux jouables, 5 par défi : 7 jours, sous le seuil de 14 jours.
+    // 75 % de 50 morceaux jouables, 5 par défi : 7 jours, sous le seuil de 14 jours (la ligne repliée le montre déjà).
+    await expect(adminPage.cooldownSetting().getByTestId('cooldown-days')).toHaveText('7 j');
+    await adminPage.openCooldownSetting();
     await expect(adminPage.trackCooldownInput()).toHaveValue('75');
     await expect(page.getByText('Appliqué aujourd\'hui : 7 jours · 50 morceaux jouables')).toBeVisible();
     await expect(page.getByRole('alert').filter({ hasText: 'Sous le seuil de 14 jours' })).toBeVisible();
 
     await adminPage.trackCooldownInput().fill('45');
-    await adminPage.saveCooldownButton().click();
+    await adminPage.cooldownSetting().getByRole('button', { name: 'Enregistrer' }).click();
     await expect(page.getByText('Cooldown mis à jour.')).toBeVisible({ timeout: 5000 });
     await expect(page.getByText('Appliqué aujourd\'hui : 4 jours · 50 morceaux jouables')).toBeVisible();
+    await expect(adminPage.cooldownSetting().getByTestId('cooldown-days')).toHaveText('4 j');
 
     await expect.poll(() => adminPage.apiGetPoolUnlockDate(5055001)).not.toBe(before);
+  });
+
+  test('les anciennes adresses de l\'onglet Actions mènent aux Morceaux', async ({ page }) => {
+    const admin = new AdminPage(page);
+    await admin.goto();
+    await admin.login();
+
+    await page.goto('/admin/actions');
+    await expect(page).toHaveURL(/\/admin\/catalogue$/);
   });
 });
 
@@ -433,8 +466,10 @@ test.describe('Admin - défis', () => {
     await expect(page.getByText(currentMonth)).toBeVisible();
     const monthPrefix = now.toISOString().slice(0, 7);
     const expectedCount = (await admin.apiGetChallengeDates()).filter(d => d.startsWith(monthPrefix)).length;
-    const rows = page.locator('ul > li > p.font-mono');
-    await expect(rows).toHaveCount(expectedCount);
+    await expect(page.getByTestId('challenge-table-row')).toHaveCount(expectedCount);
+    // Le détail du défi le plus récent du mois est ouvert à droite du tableau, et le mois est dans l'adresse.
+    await expect(page.getByTestId('challenge-detail')).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`[?&]mois=${monthPrefix}`));
   });
 });
 
@@ -453,8 +488,7 @@ test.describe('Admin - recalcul des stats', () => {
     const day = daysAgo(2);
     await admin.openChallengesAt(day);
 
-    const row = admin.challengeRow(day);
-    await row.locator('button').first().click(); // déplie la carte
+    const row = await admin.challengeRow(day);
     const recompute = page.waitForResponse(r => r.url().endsWith(`/challenges/${day}/stats/recompute`));
     await admin.recomputeButton(row).click();
     expect((await recompute).status()).toBe(200);
@@ -493,8 +527,7 @@ test.describe('Admin - recalcul des stats', () => {
       await route.fulfill({ response, body });
     });
 
-    const row = admin.challengeRow(yesterday);
-    await row.locator('button').first().click();
+    const row = await admin.challengeRow(yesterday);
     await admin.recomputeButton(row).click();
     await expect.poll(() => recompute).toBeDefined();
     expect(recompute?.status).toBe(409);
@@ -521,46 +554,39 @@ test.describe('Admin - chargement paresseux par onglet', () => {
     await admin.goto();
     await admin.login();
 
-    // Dashboard = onglet d'atterrissage → ses stats se chargent...
+    // Accueil = onglet d'atterrissage → ses stats et celles des défis (joueurs et morceaux du jour) se chargent...
     await expect.poll(() => adminCalls.some(u => u.includes('/api/admin/daily/dashboard'))).toBe(true);
-    // ...mais pas le pool, ni les stats par défi (route à part), ni l'historique
-    expect(adminCalls.some(u => u.endsWith('/api/admin/catalogue/tracks'))).toBe(false);
-    expect(adminCalls.some(u => u.includes('/api/admin/daily/challenges/stats'))).toBe(false);
-    expect(adminCalls.some(u => /\/api\/admin\/daily\/challenges(\?|$)/.test(u))).toBe(false);
-
-    // Ouvrir Pool → GET /api/admin/catalogue/tracks, toujours rien pour Défis
-    await admin.clickTab('Pool');
-    await expect.poll(() => adminCalls.some(u => u.endsWith('/api/admin/catalogue/tracks'))).toBe(true);
-    expect(adminCalls.some(u => u.includes('/api/admin/daily/challenges/stats'))).toBe(false);
-
-    // Ouvrir Défis → challenge-stats + challenges
-    await admin.clickTab('Défis');
     await expect.poll(() => adminCalls.some(u => u.includes('/api/admin/daily/challenges/stats'))).toBe(true);
-    await expect.poll(() => adminCalls.some(u => /\/api\/admin\/daily\/challenges(\?|$)/.test(u))).toBe(true);
+    // ...mais pas les morceaux, ni la liste des joueurs
+    expect(adminCalls.some(u => u.endsWith('/api/admin/catalogue/tracks'))).toBe(false);
+    expect(adminCalls.some(u => u.endsWith('/api/admin/players'))).toBe(false);
+
+    // Ouvrir Morceaux → GET /api/admin/catalogue/tracks
+    await admin.clickTab('Morceaux');
+    await expect.poll(() => adminCalls.some(u => u.endsWith('/api/admin/catalogue/tracks'))).toBe(true);
+    expect(adminCalls.some(u => u.endsWith('/api/admin/players'))).toBe(false);
   });
 
-  test('le compteur des onglets Pool / Défis n\'apparaît qu\'après leur première ouverture', async ({ page }) => {
+  test('le compteur d\'un onglet n\'apparaît qu\'une fois ses données lues', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
 
-    // Avant visite : libellé nu (pas de "(N)")
-    await expect(admin.tab('Pool')).toBeVisible();
-    await expect(admin.tab('Défis')).toBeVisible();
-
-    await admin.clickTab('Pool');
-    await expect(page.getByRole('link', { name: /^Pool \(\d+\)$/ })).toBeVisible();
-
-    await admin.clickTab('Défis');
+    // L'Accueil lit les stats des défis (joueurs et morceaux du jour) : le compteur des Défis apparaît dès l'arrivée.
     await expect(page.getByRole('link', { name: /^Défis \(\d+\)$/ })).toBeVisible();
+    // Avant visite : libellé nu (pas de "(N)")
+    await expect(admin.tab('Morceaux')).toBeVisible();
+
+    await admin.clickTab('Morceaux');
+    await expect(page.getByRole('link', { name: /^Morceaux \(\d+\)$/ })).toBeVisible();
   });
 
-  test('l\'onglet et la page de la grille du pool survivent au rechargement', async ({ page }) => {
+  test('l\'onglet et la page de la grille des morceaux survivent au rechargement', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
 
-    await admin.clickTab('Pool');
+    await admin.clickTab('Morceaux');
     await expect(page).toHaveURL(/\/admin\/catalogue$/);
     await expect(page.getByText(/page 1\/\d+/)).toBeVisible();
 
@@ -572,14 +598,14 @@ test.describe('Admin - chargement paresseux par onglet', () => {
     await expect(page).toHaveURL(/\/admin\/catalogue\?page=2$/);
   });
 
-  test('une ancienne adresse /admin?tab=pool ouvre l\'onglet Pool', async ({ page }) => {
+  test('une ancienne adresse /admin?tab=pool ouvre l\'onglet Morceaux', async ({ page }) => {
     const admin = new AdminPage(page);
     await admin.goto();
     await admin.login();
 
     await page.goto('/admin?tab=pool');
     await expect(page).toHaveURL(/\/admin\/catalogue$/);
-    await expect(page.getByRole('link', { name: /^Pool/ })).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByRole('link', { name: /^Morceaux/ })).toHaveAttribute('aria-current', 'page');
   });
 });
 
@@ -618,7 +644,7 @@ test.describe('Admin - indicateur joueurs / ID navigateur', () => {
     await page.getByRole('link', { name: /^Défis/ }).click();
 
     const today = new Date().toISOString().slice(0, 10);
-    const todayRow = admin.challengeRow(today);
+    const todayRow = await admin.challengeRow(today);
     const youChip = todayRow.getByRole('button', { name: /toi/ });
     await expect(youChip).toBeVisible();
     // login-as-admin fait de l'invité qui vient de jouer le compte AdminE2E (comme un premier lien
@@ -652,8 +678,7 @@ test.describe('Admin - indicateur joueurs / ID navigateur', () => {
     await page.getByRole('link', { name: /^Défis/ }).click();
 
     const today = new Date().toISOString().slice(0, 10);
-    const todayRow = admin.challengeRow(today);
-    await todayRow.locator('button').first().click(); // bouton d'accordéon → déplie « Stats par défi »
+    const todayRow = await admin.challengeRow(today);
 
     const chartIcon = todayRow.getByRole('button', { name: /répartition des temps/i }).first();
     await chartIcon.click();

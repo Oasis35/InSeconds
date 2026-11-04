@@ -16,10 +16,17 @@ public sealed record AdminPlayer(
     Guid Id, string Pseudo, string Email, DateTimeOffset CreatedAt, DateTimeOffset? LastSeenAt, int GamesPlayed, bool IsAdmin,
     int CurrentStreak, int StreakFreezes, bool StreakProtected);
 
-public sealed record AdminPlayersResponse(IReadOnlyList<AdminPlayer> Players);
+/// <param name="NextDayReturnRate">
+/// Part des joueurs d'un jour (invités compris) qui ont aussi joué le lendemain, en %, cumulée sur les 30 jours dont le défi du lendemain
+/// n'est plus jouable (de J-32 à J-3 : le défi d'hier se joue encore aujourd'hui, piège 18) ; vide si personne n'a joué sur la période.
+/// </param>
+public sealed record AdminPlayersResponse(IReadOnlyList<AdminPlayer> Players, double? NextDayReturnRate);
 
 public static class ListRegisteredPlayersEndpoint
 {
+    /// <summary>Les jours dont on regarde le lendemain pour <see cref="AdminPlayersResponse.NextDayReturnRate"/>.</summary>
+    public const int ReturnDays = 30;
+
     /// <summary>
     /// <c>GET /api/admin/players</c> : les comptes inscrits (les invités et les joueurs supprimés n'y figurent pas), les plus
     /// récemment vus d'abord, jamais vus en dernier. Les comptes viennent de Players, la série et les parties de Daily : la route est dans Daily,
@@ -46,7 +53,10 @@ public static class ListRegisteredPlayersEndpoint
                 view.Streak, view.Freezes, view.Status == StreakStatus.Protected);
         }).ToList();
 
-        return new AdminPlayersResponse(result);
+        var returns = await stats.GetNextDayReturnAsync(today.AddDays(-ReturnDays - 2), today.AddDays(-3), ct);
+        double? returnRate = returns.Players == 0 ? null : Math.Round(100.0 * returns.Returned / returns.Players, 1);
+
+        return new AdminPlayersResponse(result, returnRate);
     }
 }
 

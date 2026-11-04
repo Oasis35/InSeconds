@@ -21,8 +21,27 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       }
     },
     "/api/admin/daily/challenges": {
@@ -876,6 +895,26 @@
           }
         }
       }
+    },
+    "/api/admin/daily/next-challenge": {
+      "get": {
+        "tags": [
+          "Daily"
+        ],
+        "operationId": "getNextChallenge",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NextChallengeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -944,6 +983,8 @@
           "scoreMax",
           "scoreAvg",
           "scoreMedian",
+          "maxPossibleScore",
+          "scoreDistribution",
           "tracks",
           "players",
           "computedAt",
@@ -1024,12 +1065,24 @@
           },
           "canRecompute": {
             "type": "boolean"
+          },
+          "maxPossibleScore": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "scoreDistribution": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScoreBucketResponse"
+            }
           }
         }
       },
       "AdminChallengeStatsResponse": {
         "required": [
-          "challenges"
+          "challenges",
+          "months",
+          "totalCount"
         ],
         "type": "object",
         "properties": {
@@ -1038,6 +1091,16 @@
             "items": {
               "$ref": "#/components/schemas/AdminChallengeStats"
             }
+          },
+          "months": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -1253,7 +1316,8 @@
       },
       "AdminPlayersResponse": {
         "required": [
-          "players"
+          "players",
+          "nextDayReturnRate"
         ],
         "type": "object",
         "properties": {
@@ -1262,6 +1326,13 @@
             "items": {
               "$ref": "#/components/schemas/AdminPlayer"
             }
+          },
+          "nextDayReturnRate": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
           }
         }
       },
@@ -1643,7 +1714,8 @@
           "dailyActivity",
           "playerBreakdown",
           "availableDates",
-          "selectedDayKpis"
+          "selectedDayKpis",
+          "arrivals"
         ],
         "type": "object",
         "properties": {
@@ -1672,6 +1744,12 @@
                 "$ref": "#/components/schemas/DayKpisResponse"
               }
             ]
+          },
+          "arrivals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArrivalResponse"
+            }
           }
         }
       },
@@ -1684,7 +1762,11 @@
           "pendingCount",
           "totalSessions",
           "completionRate",
-          "medianScore"
+          "medianScore",
+          "newPlayersCount",
+          "accountsCreatedCount",
+          "firstTimeFinishersCount",
+          "arrivals"
         ],
         "type": "object",
         "properties": {
@@ -1722,6 +1804,24 @@
               "number"
             ],
             "format": "double"
+          },
+          "newPlayersCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "accountsCreatedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "firstTimeFinishersCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "arrivals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArrivalResponse"
+            }
           }
         }
       },
@@ -2512,6 +2612,48 @@
             "format": "int32"
           }
         }
+      },
+      "ArrivalResponse": {
+        "required": [
+          "source",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "NextChallengeResponse": {
+        "required": [
+          "date",
+          "eligibleCount",
+          "requiredCount",
+          "generated"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "eligibleCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "requiredCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "generated": {
+            "type": "boolean"
+          }
+        }
       }
     }
   },
@@ -2524,6 +2666,9 @@
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.GetDashboardEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Daily.Application.GetNextChallengeEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.ListRegisteredPlayersEndpoint"

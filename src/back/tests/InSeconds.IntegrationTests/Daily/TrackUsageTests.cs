@@ -115,6 +115,45 @@ public class TrackUsageTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(0, list.Single(t => t.Id == 3).Daily().UsageCount);
     }
 
+    [Fact]
+    public async Task PoolAdmin_ReponsesEtTrouves_SurTousLesDefisDuMorceau()
+    {
+        // Le morceau 1 est en position 1 il y a 2 jours et en position 2 aujourd'hui ; le 2 n'a jamais de réponse.
+        await _app.AddChallengeAsync(Today.AddDays(-2), 1, 2);
+        await _app.AddChallengeAsync(Today, 3, 1);
+        await AnswerAsync(Today.AddDays(-2), (artist: true, title: false), (artist: false, title: false));
+        await AnswerAsync(Today.AddDays(-2), (artist: false, title: false));
+        await AnswerAsync(Today, (artist: true, title: true), (artist: false, title: true));
+
+        var list = (await _app.Admin().GetFromJsonAsync<List<TrackListItem>>("/api/admin/catalogue/tracks", Ct))!;
+
+        // Le morceau 1 : 2 réponses il y a 2 jours (une trouvée), 1 aujourd'hui (trouvée par le titre).
+        Assert.Equal((3, 2), (list.Single(t => t.Id == 1).Daily().AnswerCount, list.Single(t => t.Id == 1).Daily().FoundCount));
+        Assert.Equal((1, 0), (list.Single(t => t.Id == 2).Daily().AnswerCount, list.Single(t => t.Id == 2).Daily().FoundCount));
+        Assert.Equal((1, 1), (list.Single(t => t.Id == 3).Daily().AnswerCount, list.Single(t => t.Id == 3).Daily().FoundCount));
+    }
+
+    /// <summary>Une partie d'un nouveau joueur sur le défi de ce jour, avec ses réponses aux positions 1, 2…</summary>
+    private async Task AnswerAsync(DateOnly day, params (bool artist, bool title)[] answers)
+    {
+        var player = Guid.NewGuid();
+        await _app.Api.ExecuteAsync($"INSERT INTO players.players (id, created_at) VALUES ('{player}', now())");
+        var session = await _app.Api.ScalarAsync<int>("SELECT nextval('daily.sessions_hilo')::int");
+        await _app.Api.ExecuteAsync(
+            $"""
+            INSERT INTO daily.sessions (id, player_id, challenge_id, status, started_at, total_score, total_listened_seconds)
+            SELECT {session}, '{player}', id, 1, now(), 0, 0 FROM daily.challenges WHERE date = '{day:yyyy-MM-dd}'
+            """);
+        for (var i = 0; i < answers.Length; i++)
+        {
+            await _app.Api.ExecuteAsync(
+                $"""
+                INSERT INTO daily.answers (session_id, position, listened_seconds, was_extended, hint_level, artist_correct, title_correct, score)
+                VALUES ({session}, {i + 1}, 1, false, 0, {answers[i].artist}, {answers[i].title}, 0)
+                """);
+        }
+    }
+
     private async Task<IReadOnlyDictionary<int, TrackUsage>> GetAsync(params int[] ids)
     {
         using var scope = _app.Api.Services.CreateScope();

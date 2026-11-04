@@ -1,4 +1,4 @@
-import { RegisteredPlayer, canPlayRuns, filterPlayers, maskEmail, toGameStatus } from './registered-player';
+import { RegisteredPlayer, canPlayRuns, filterPlayers, maskEmail, streakBuckets, toGameStatus } from './registered-player';
 
 function player(overrides: Partial<RegisteredPlayer>): RegisteredPlayer {
   return {
@@ -42,5 +42,12 @@ describe('registered-player', () => {
     expect(canPlayRuns({ id: 'a', isAdmin: true }, [])).toBe(true);
     expect(canPlayRuns({ id: 'b', isAdmin: false }, [])).toBe(false);
     expect(canPlayRuns({ id: 'b', isAdmin: false }, ['a', 'b'])).toBe(true);
+  });
+});
+
+describe('streakBuckets', () => {
+  it('range les séries en cours par longueur, sans compter les comptes sans série', () => {
+    const streaks = [0, 1, 1, 2, 6, 7, 30].map(currentStreak => ({ currentStreak }));
+    expect(streakBuckets(streaks)).toEqual({ oneDay: 2, short: 2, long: 2, total: 6 });
   });
 });

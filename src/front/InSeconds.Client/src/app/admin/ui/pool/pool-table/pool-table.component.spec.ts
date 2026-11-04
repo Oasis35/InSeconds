@@ -51,7 +51,7 @@ describe('PoolTableComponent', () => {
     it('un morceau joué seulement par un autre mode est utilisé : désactivation, pastille de ce mode, pas de suppression', () => {
       const { row, button } = render([track({
         usedByMode: true,
-        usages: [{ mode: 'autre', usageCount: 0, lastUsedDate: null, unlockDate: null, inTodayChallenge: false }],
+        usages: [{ mode: 'autre', usageCount: 0, lastUsedDate: null, unlockDate: null, inTodayChallenge: false, answerCount: 0, foundCount: 0 }],
       })]);
 
       expect(button(row(), '🗑')).toBeUndefined();
@@ -106,15 +106,29 @@ describe('PoolTableComponent', () => {
   });
 
   describe('colonnes', () => {
-    it('pool général : sélection, actions, artiste, titre, genre, extrait, statut, usage (aucune date)', () => {
+    it('pool général : sélection, actions, artiste, titre, genre, extrait, statut, usage, trouvé (aucune date)', () => {
       const { row, element } = render([track({ lastUsedDate: '2026-10-05', unlockDate: '2026-11-04', usageCount: 3 })]);
 
       const cells = Array.from(row().querySelectorAll('td')).map(td => td.textContent?.trim());
       expect(cells[2]).toBe('Artiste');
       expect(cells[3]).toBe('Titre');
-      expect(cells).toHaveLength(8);
+      expect(cells).toHaveLength(9);
       expect(cells[6]).toContain('admin.pool.used');
       expect(element.textContent).not.toContain('2026-10-05');
+    });
+
+    it('trouvé : la part des réponses qui ont trouvé, colorée comme les taux d\'un défi, vide sans réponse', () => {
+      const { row } = render([
+        track({ usageCount: 2, answers: [10, 2] }), track({ id: 2, usageCount: 1, answers: [4, 3] }), track({ id: 3 }),
+      ]);
+
+      const found = (i: number) => row(i).querySelector<HTMLElement>('[data-testid="found-rate"]')!;
+      expect(found(0).textContent?.trim()).toBe('20 %');
+      expect(found(0).style.color).toBe('var(--color-fail)');
+      expect(found(0).title).toBe('admin.pool.foundHint');
+      expect(found(1).textContent?.trim()).toBe('75 %');
+      expect(found(1).style.color).toBe('var(--color-success)');
+      expect(found(2).textContent?.trim()).toBe('');
     });
 
     it('pool général : les genres de l\'album, séparés par une virgule, vides tant qu\'ils ne sont pas lus', () => {
@@ -128,7 +142,7 @@ describe('PoolTableComponent', () => {
       const { row, button } = render([track({ lastUsedDate: '2026-10-05', unlockDate: '2026-11-04', usageCount: 3 })], { view: 'daily' });
 
       const cells = Array.from(row().querySelectorAll('td')).map(td => td.textContent?.trim());
-      expect(cells).toHaveLength(6);
+      expect(cells).toHaveLength(7);
       expect(cells[1]).toBe('Artiste');
       expect(cells[3]).toBe('2026-10-05');
       expect(cells[4]).toBe('2026-11-04');

@@ -26,6 +26,13 @@ export interface ChallengePlayer {
   readonly pseudo: string | null;
 }
 
+/** Une tranche de l'égaliseur des scores d'un défi. */
+export interface ChallengeScoreBucket {
+  readonly minScore: number;
+  readonly maxScore: number;
+  readonly count: number;
+}
+
 /** Les stats d'un défi. Les jours sont en texte `aaaa-mm-jj`. */
 export interface ChallengeStats {
   readonly id: number;
@@ -38,6 +45,10 @@ export interface ChallengeStats {
   readonly scoreMax: number | null;
   readonly scoreAvg: number | null;
   readonly scoreMedian: number | null;
+  /** Nombre de morceaux × meilleur palier : la borne haute de l'égaliseur. */
+  readonly maxPossibleScore: number;
+  /** L'égaliseur des scores des parties terminées, en nombres de joueurs. */
+  readonly scoreDistribution: readonly ChallengeScoreBucket[];
   readonly tracks: readonly ChallengeTrackStats[];
   readonly players: readonly ChallengePlayer[];
   /** Instant où la photo des chiffres a été figée ; `null` si les chiffres sont calculés en direct. */
@@ -45,22 +56,44 @@ export interface ChallengeStats {
   readonly canRecompute: boolean;
 }
 
-export interface ChallengeHistoryTrack {
-  readonly position: number;
-  readonly artist: string;
-  readonly title: string;
-  readonly deezerTrackId: number;
+/** Une lecture des stats : des défis (un mois, ou les plus récents), tous les mois qui ont un défi et le nombre de défis. */
+export interface ChallengeStatsPage {
+  readonly challenges: readonly ChallengeStats[];
+  readonly months: readonly string[];
+  readonly totalCount: number;
 }
 
-/** Un défi de l'historique : sa date et ses morceaux. */
-export interface ChallengeHistoryEntry {
-  readonly id: number;
-  readonly date: string;
-  readonly tracks: readonly ChallengeHistoryTrack[];
+/**
+ * Les mois lus en entier par une page des défis les plus récents : tous ceux de la page, sauf le plus ancien quand des défis
+ * manquent (il peut en avoir d'autres, plus anciens que la page).
+ */
+export function completeMonths(page: ChallengeStatsPage): string[] {
+  const months = availableMonths(page.challenges);
+  return page.challenges.length >= page.totalCount ? months : months.slice(0, -1);
+}
+
+/** Le défi `incoming` remplace celui de même identifiant, les autres s'ajoutent ; du plus récent au plus ancien. */
+export function mergeChallenges(current: readonly ChallengeStats[], incoming: readonly ChallengeStats[]): ChallengeStats[] {
+  const ids = new Set(incoming.map(c => c.id));
+  return [...current.filter(c => !ids.has(c.id)), ...incoming].sort((a, b) => b.date.localeCompare(a.date));
 }
 
 const SHORT_ID_LENGTH = 8;
 const KNOWN_STATUSES: ReadonlySet<string> = new Set(['Completed', 'Pending', 'Abandoned', 'Expired']);
+
+/** `2026-10-05` → `05/10/2026`, le format des dates de l'onglet Défis. */
+export function formatDay(day: string): string {
+  const [year, month, date] = day.split('-');
+  return `${date}/${month}/${year}`;
+}
+
+/** Ce que l'égaliseur dessine pour un défi vu de l'admin : personne en orange (l'admin connecté n'est pas mis en valeur), pas de « mieux que ». */
+export function challengeScoreChart(challenge: ChallengeStats) {
+  return {
+    yourScore: null, medianScore: challenge.scoreMedian, minScore: challenge.scoreMin, maxScore: challenge.scoreMax,
+    maxPossibleScore: challenge.maxPossibleScore, scoreDistribution: challenge.scoreDistribution, betterThanPercent: null,
+  };
+}
 
 /** Le mois (`aaaa-mm`) d'un jour `aaaa-mm-jj`. */
 export function monthOf(day: string): string {
@@ -116,13 +149,23 @@ export function unfinishedCount(challenge: ChallengeStats): number {
   return challenge.abandonedCount + challenge.expiredCount;
 }
 
+/** Les joueurs du défi qui ont un compte (un pseudo), parmi ceux qui l'ont joué. */
+export function accountPlayerCount(challenge: ChallengeStats): number {
+  return challenge.players.filter(player => player.pseudo !== null).length;
+}
+
+/** Les joueurs du défi sans compte (un joueur supprimé depuis, qui n'a plus de pseudo, compte aussi ici). */
+export function guestPlayerCount(challenge: ChallengeStats): number {
+  return challenge.players.length - accountPlayerCount(challenge);
+}
+
 export function statusLabelKey(status: string): string | null {
   return KNOWN_STATUSES.has(status) ? `admin.players.status.${status}` : null;
 }
 
 /** Couleur du point de statut devant un chip dont la partie n'est pas terminée. */
 export function statusDotColor(status: string): string {
-  if (status === 'Abandoned') return 'var(--bg-warn)';
+  if (status === 'Abandoned') return 'var(--color-warn)';
   if (status === 'Pending') return 'var(--text-faint)';
   return 'var(--text-muted)';
 }

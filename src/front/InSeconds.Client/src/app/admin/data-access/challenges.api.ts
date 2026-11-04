@@ -1,10 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import {
-  AdminChallenge, AdminChallengePlayer, AdminChallengeStats, AdminChallengeTrackStats, DailyClient, DurationBucket,
+  AdminChallengePlayer, AdminChallengeStats, AdminChallengeTrackStats, DailyClient, DurationBucket,
 } from '../../api/daily/api.generated';
 import {
-  ChallengeHistoryEntry, ChallengePlayer, ChallengeStats, ChallengeTrackStats, GuessTimeBucket,
+  ChallengePlayer, ChallengeStats, ChallengeStatsPage, ChallengeTrackStats, GuessTimeBucket,
 } from '../domain/challenge';
 
 /**
@@ -16,14 +16,10 @@ import {
 export class ChallengesApi {
   private readonly client = inject(DailyClient);
 
-  /** Les stats des 30 derniers défis. */
-  async loadStats(): Promise<ChallengeStats[]> {
-    return (await firstValueFrom(this.client.getChallengeStats())).challenges.map(toChallengeStats);
-  }
-
-  /** L'historique : tous les défis, avec leurs morceaux. */
-  async listHistory(): Promise<ChallengeHistoryEntry[]> {
-    return (await firstValueFrom(this.client.listChallenges())).map(toHistoryEntry);
+  /** Les stats des défis d'un mois (`aaaa-mm`), sinon des 30 derniers, avec tous les mois qui ont un défi et le nombre de défis. */
+  async loadStats(month?: string): Promise<ChallengeStatsPage> {
+    const response = await firstValueFrom(this.client.getChallengeStats(month));
+    return { challenges: response.challenges.map(toChallengeStats), months: response.months, totalCount: response.totalCount };
   }
 
   /** Recalcule les stats d'un jour fini et rend le défi recalculé. */
@@ -44,6 +40,8 @@ function toChallengeStats(challenge: AdminChallengeStats): ChallengeStats {
     scoreMax: challenge.scoreMax ?? null,
     scoreAvg: challenge.scoreAvg ?? null,
     scoreMedian: challenge.scoreMedian ?? null,
+    maxPossibleScore: challenge.maxPossibleScore,
+    scoreDistribution: (challenge.scoreDistribution ?? []).map(b => ({ minScore: b.minScore, maxScore: b.maxScore, count: b.count })),
     tracks: challenge.tracks.map(toTrackStats),
     players: challenge.players.map(toPlayer),
     computedAt: toInstant(challenge.computedAt),
@@ -72,19 +70,6 @@ function toBucket(bucket: DurationBucket): GuessTimeBucket {
 
 function toPlayer(player: AdminChallengePlayer): ChallengePlayer {
   return { playerId: player.playerId, status: player.status, score: player.score, pseudo: player.pseudo ?? null };
-}
-
-function toHistoryEntry(challenge: AdminChallenge): ChallengeHistoryEntry {
-  return {
-    id: challenge.id,
-    date: toDay(challenge.date),
-    tracks: challenge.tracks.map(track => ({
-      position: track.position,
-      artist: track.artist,
-      title: track.title,
-      deezerTrackId: track.deezerTrackId,
-    })),
-  };
 }
 
 /** Le client annonce un `Date`, le JSON livre un jour en texte (`2026-10-05`) : on garde le jour, sans fuseau. */

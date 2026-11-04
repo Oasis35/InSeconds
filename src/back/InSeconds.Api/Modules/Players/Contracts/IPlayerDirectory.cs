@@ -11,6 +11,9 @@ public sealed record AccountSummary(Guid PlayerId, string Pseudo, string Email, 
 /// <param name="ActiveLast30Days">Joueurs, invités compris, vus depuis 30 jours.</param>
 public sealed record PlayerBreakdown(int Guests, int Registered, int ActiveLast7Days, int ActiveLast30Days);
 
+/// <summary>Les joueurs arrivés par une source (<c>instagram</c>, <c>share</c>, <c>direct</c>, un domaine, <c>other</c>).</summary>
+public sealed record ArrivalCount(string Source, int Count);
+
 /// <summary>Ce que les autres modules ont besoin de savoir d'un joueur.</summary>
 public interface IPlayerDirectory
 {
@@ -37,4 +40,16 @@ public interface IPlayerDirectory
 
     /// <summary>Invités, comptes et joueurs actifs, vus de <paramref name="now"/> ; les joueurs supprimés ne comptent pas.</summary>
     Task<PlayerBreakdown> GetBreakdownAsync(DateTimeOffset now, CancellationToken ct);
+
+    /// <summary>
+    /// Les comptes créés ce jour-là (jour UTC du lien du compte) et toujours présents ; les plus anciens comptes, sans date de création, ne
+    /// comptent jamais.
+    /// </summary>
+    Task<int> CountAccountsCreatedOnAsync(DateOnly day, CancellationToken ct);
+
+    /// <summary>
+    /// Les joueurs créés (au premier « Commencer ») du jour <paramref name="from"/> au jour <paramref name="to"/> compris (jours UTC) et toujours
+    /// présents, par source d'arrivée, la plus fréquente d'abord ; les joueurs créés avant qu'on note la source n'y figurent pas.
+    /// </summary>
+    Task<IReadOnlyList<ArrivalCount>> CountArrivalsBySourceAsync(DateOnly from, DateOnly to, CancellationToken ct);
 }

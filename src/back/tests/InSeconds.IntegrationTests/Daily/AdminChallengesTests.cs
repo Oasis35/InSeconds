@@ -23,11 +23,13 @@ public class AdminChallengesTests(PostgresFixture postgres) : IAsyncLifetime
 
     public ValueTask DisposeAsync() => _game.DisposeAsync();
 
-    private async Task<IReadOnlyList<AdminChallengeStats>> StatsAsync()
+    private async Task<IReadOnlyList<AdminChallengeStats>> StatsAsync() => (await StatsResponseAsync("")).Challenges;
+
+    private async Task<AdminChallengeStatsResponse> StatsResponseAsync(string query)
     {
-        var response = await _game.App.Admin().GetAsync(StatsRoute, Ct);
+        var response = await _game.App.Admin().GetAsync(StatsRoute + query, Ct);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        return (await response.Content.ReadFromJsonAsync<AdminChallengeStatsResponse>(Ct))!.Challenges;
+        return (await response.Content.ReadFromJsonAsync<AdminChallengeStatsResponse>(Ct))!;
     }
 
     private async Task<(Guid Alice, Guid Bob, Guid Carol)> SeedDayAsync(DateOnly day)
@@ -173,9 +175,55 @@ public class AdminChallengesTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task UnMoisDemande_SesDefisSeulement_EtTousLesMoisPourNaviguer()
+    {
+        // Du 5 octobre au 1er août : août, septembre et octobre ont des défis.
+        for (var i = 0; i < 66; i++)
+            await _game.App.AddChallengeAsync(Today.AddDays(-i), 1, 2, 3, 4, 5);
+
+        var response = await StatsResponseAsync("?month=2026-08");
+
+        Assert.Equal(31, response.Challenges.Count);
+        Assert.Equal(new DateOnly(2026, 8, 31), response.Challenges[0].Date);
+        Assert.Equal(new DateOnly(2026, 8, 1), response.Challenges[^1].Date);
+        Assert.Equal(["2026-10", "2026-09", "2026-08"], response.Months);
+        Assert.Equal(66, response.TotalCount);
+        // Sans mois : les 30 derniers, avec la même liste de mois.
+        var recent = await StatsResponseAsync("");
+        Assert.Equal(30, recent.Challenges.Count);
+        Assert.Equal(response.Months, recent.Months);
+    }
+
+    [Fact]
+    public async Task UnMoisSansDefi_ListeVide()
+    {
+        await _game.App.AddChallengeAsync(Today, 1, 2, 3, 4, 5);
+
+        var response = await StatsResponseAsync("?month=2025-01");
+
+        Assert.Empty(response.Challenges);
+        Assert.Equal(["2026-10"], response.Months);
+    }
+
+    [Theory]
+    [InlineData("2026-13")]
+    [InlineData("2026-10-05")]
+    [InlineData("octobre")]
+    public async Task UnMoisMalForme_400(string month)
+    {
+        var response = await _game.App.Admin().GetAsync($"{StatsRoute}?month={month}", Ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("admin.invalid_month", await response.Content.ReadAsStringAsync(Ct));
+    }
+
+    [Fact]
     public async Task SansDefi_ListeVide_200()
     {
-        Assert.Empty(await StatsAsync());
+        var response = await StatsResponseAsync("");
+        Assert.Empty(response.Challenges);
+        Assert.Empty(response.Months);
+        Assert.Equal(0, response.TotalCount);
     }
 
     [Fact]

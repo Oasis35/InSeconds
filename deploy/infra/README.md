@@ -67,8 +67,26 @@ EF Core (appliquées au démarrage de l'API) recréent les schémas automatiquem
 
 ## Sauvegardes
 
-`backup.sh` sauvegarde la base de prod `inseconds` en entier (tous les schémas). Le staging n'est pas sauvegardé : il se reconstruit depuis la
-prod (`deploy/vps/copy-prod-db-to-staging.sh`).
+`backup.sh` sauvegarde la base de prod `inseconds` en entier (tous les schémas), `backup-verify.sh` contrôle chaque nuit qu'elle se
+restaure (cf. [Contrôle de restauration](#contrôle-de-restauration)) ; leur code commun est dans `backup-common.sh`. Le staging n'est ni
+sauvegardé ni contrôlé : il se reconstruit depuis la prod (`deploy/vps/copy-prod-db-to-staging.sh`), et les deux scripts refusent de tourner
+depuis son checkout (`~/apps/InSeconds-staging`, ou un dossier qui a un `.env.staging`), sans rien envoyer.
+
+**Compte rendu de chaque passage** (sauvegarde, archive ou contrôle, réussi ou non) :
+
+- une ligne dans `infra.backup_runs` (type, début, fin, résultat, étape et message court d'un échec, dump, taille, envoi vers R2), que le
+  panneau technique de l'admin affiche ; les lignes de plus de 90 jours sont supprimées par les scripts (`BACKUP_RUNS_KEEP_DAYS`) ; si
+  l'écriture échoue, le passage n'en est pas affecté (message dans le journal) ;
+- un signal à healthchecks.io pour la nuit (cf. [Surveillance](#surveillance-healthchecksio)) : en échec, l'étape, le message et la fin du
+  journal sont joints au signal, et se lisent dans l'email d'alerte ;
+- des logs vers Grafana (service `inseconds-backup`, avec la configuration OTLP de l'API) : en échec, tout le journal du passage, une ligne
+  par ligne ; en réussite, une seule ligne de résumé (« Sauvegarde OK : … », « Restauration OK : … »). Panneaux « Sauvegardes et contrôle de
+  restauration » du tableau Exploitation. Pas d'alerte Grafana : l'alerte, c'est healthchecks.io.
+
+Les erreurs de `pg_restore` sont filtrées avant d'entrer dans le journal : seules restent ses lignes `pg_restore: …`, coupées après la raison
+d'un `ERROR:` (jamais les lignes `DETAIL`, `CONTEXT` ni `Command was`, qui citent le contenu des tables). Un passage arrêté par un signal
+(`systemctl stop`, délai de l'unité dépassé) envoie quand même son compte rendu ; tué net, son Postgres jetable et sa copie déchiffrée sont
+supprimés par le passage suivant. Une sauvegarde lancée pendant une autre s'arrête sur le verrou, sans compte rendu ni signal d'échec.
 
 Une sauvegarde :
 
@@ -128,7 +146,8 @@ Pour générer la phrase de passe : `openssl rand -base64 32`. **Sans elle, les 
 sont illisibles** : elle doit être dans KeePass, pas seulement sur le VPS (un VPS perdu
 l'emporterait avec lui).
 
-Puis lancer une première sauvegarde et un test de restauration :
+Puis lancer une première sauvegarde et un test de restauration (le contrôle automatique de la nuit est à installer ensuite, cf. [Contrôle de
+restauration](#contrôle-de-restauration)) :
 
 ```bash
 cd ~/apps/InSeconds/deploy/infra
@@ -172,6 +191,7 @@ d'échec (alerte immédiate). Le contrôle est créé au premier signal (`?creat
 | `catalogue-refresh` | API, tâche Hangfire | 23 h 00 |
 | `players-purge-expired-tokens` | API, tâche Hangfire (jetons, appareils, comptes inactifs) | 3 h 30 |
 | `inseconds-backup` | `backup.sh` (timer systemd) | 3 h 00 |
+| `inseconds-backup-restore` | `backup-verify.sh` (timer systemd), contrôle de restauration | 4 h 00 |
 
 Un lancement depuis `/jobs` (« Déclencher maintenant ») envoie aussi son signal.
 
@@ -179,8 +199,8 @@ Un lancement depuis `/jobs` (« Déclencher maintenant ») envoie aussi son sign
 `~/apps/InSeconds-staging/.env.staging` (`HEALTHCHECKS_PING_KEY`, cf. `.env.staging.example`). Les contrôles y portent
 les mêmes noms, mais une clé ne touche que les contrôles de son projet : le staging ne peut pas fausser ceux de la prod,
 à condition de ne **jamais** y mettre la clé de prod. Il sert à vérifier les signaux avant une mise en prod ; pas d'alerte
-Signal sur ce projet (redéploiements fréquents, `catalogue-refresh` en pause). Pas de sauvegarde en staging, donc pas de
-contrôle `inseconds-backup`.
+Signal sur ce projet (redéploiements fréquents, `catalogue-refresh` en pause). Pas de sauvegarde en staging, donc ni
+`inseconds-backup` ni `inseconds-backup-restore`.
 
 **Mise en place (une fois) :**
 
@@ -197,15 +217,51 @@ contrôle `inseconds-backup`.
 
 La clé de ping est secrète (elle permet d'envoyer des signaux) : l'API ne la journalise jamais, et
 `backup.sh` la passe à `curl` par l'entrée standard (absente de `ps`). Un healthchecks.io injoignable
-ne fait jamais échouer une tâche : l'API écrit « Signal healthchecks.io de la tâche … impossible » en
+ne fait jamais échouer une tâche ni un script : l'API écrit « Signal healthchecks.io de la tâche … impossible » en
 avertissement, `backup.sh` « Signal healthchecks.io impossible. ».
+
+### Contrôle de restauration
+
+Une sauvegarde jamais restaurée ne prouve rien : `backup-verify.sh` restaure chaque nuit la dernière sauvegarde **telle qu'elle est sur R2**,
+en cinq étapes (chaque ligne du journal et chaque message d'échec les nomment, ex. `étape 4/5 contenu : …`) :
+
+1. **fraîcheur** : la dernière sauvegarde de `daily/` a moins de 26 h (`BACKUP_VERIFY_MAX_AGE_HOURS`), et le mois en cours a sa copie dans
+   `monthly/` ;
+2. **téléchargement** : elle est récupérée de R2 et déchiffrée (la copie distante est lisible, la phrase de passe est la bonne), puis
+   vérifiée par `pg_restore --list` ;
+3. **restauration** : complète (`--exit-on-error`) dans un Postgres 17 jetable, conteneur à part de `shared-postgres` (sans réseau, 1 Go de
+   mémoire au plus, aucun mot de passe), supprimé à la fin comme le fichier déchiffré ;
+4. **contenu** : défi du jour de la sauvegarde présent (ou celui de la veille), dernière migration de la sauvegarde connue de la prod, et
+   nombre de lignes des tables qui ne font que grossir (joueurs, comptes, morceaux, défis, parties, réponses, séries, playlists et parties de
+   Platines) au moins égal à 95 % de la prod (`BACKUP_VERIFY_MIN_ROW_PERCENT`) ; la prod n'est que lue ;
+5. **compte rendu** : ligne `verify` dans `infra.backup_runs`, signal au contrôle healthchecks.io `inseconds-backup-restore`, logs vers Grafana.
+
+Il tourne **chaque nuit à 4 h UTC**, une heure après la sauvegarde, par le timer `inseconds-backup-verify.timer` (`systemd/`,
+`Persistent=true`), qui lance le script du checkout de prod. À la main : `sudo systemctl start inseconds-backup-verify` (journal :
+`journalctl -u inseconds-backup-verify -n 80`) ou `./backup-verify.sh`. Une à deux minutes pour la base actuelle.
+
+**Installation (une fois, sur le VPS, après le déploiement qui l'apporte)** :
+
+```bash
+sudo cp ~/apps/InSeconds/deploy/infra/systemd/inseconds-backup-verify.{service,timer} /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now inseconds-backup-verify.timer
+sudo systemctl start inseconds-backup-verify   # premier contrôle tout de suite : le contrôle healthchecks.io se crée
+systemctl list-timers inseconds-backup-verify  # prochain passage : 4 h UTC
+```
+
+Puis, dans healthchecks.io, régler `inseconds-backup-restore` comme `inseconds-backup` (période 1 jour, délai de grâce 1 heure, ou *Cron*
+`0 4 * * *` en UTC).
+
+**En cas d'échec** : l'email de healthchecks.io donne l'étape et la raison ; le journal complet est dans Grafana (panneau « Journal des
+sauvegardes ») et sur le VPS (`journalctl`). Les cas les plus probables : sauvegarde de la nuit absente ou en échec (étape 1, voir d'abord
+`inseconds-backup`), phrase de passe changée dans `.env` sans être celle des copies déjà faites (étape 2), dump coupé ou format incompatible
+(étape 3), lignes perdues ou défi du jour absent (étape 4 : vérifier aussi que le défi du jour a bien été généré).
 
 ### Restaurer
 
-`./backup.sh restore-test [fichier]` restaure un dump (le plus récent par défaut) dans une base
-jetable `inseconds_restore_test`, affiche le nombre de lignes par table, puis la supprime. La base
-de prod n'est jamais touchée. À refaire de temps en temps : une sauvegarde jamais restaurée ne
-prouve rien.
+`./backup.sh restore-test [fichier]` restaure à la main un dump (le plus récent du VPS par défaut) dans le même Postgres jetable que le
+contrôle, affiche le nombre de lignes par table, puis le supprime. La base de prod n'est jamais touchée.
 
 Pour reprendre une sauvegarde de R2 (VPS perdu, ou besoin d'une date plus ancienne) :
 

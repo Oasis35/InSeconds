@@ -1,14 +1,8 @@
 /** État du dernier passage d'une tâche, tel que `GET /api/admin/jobs/last-runs` le rend. */
 export type JobState = 'queued' | 'processing' | 'succeeded' | 'failed' | 'retry_scheduled' | 'deleted';
 
-/** La tâche de minuit qui génère le défi du jour. */
-export const GENERATE_CHALLENGE_JOB = 'daily-generate-challenge';
-
-/** La tâche de 23 h qui recontrôle les extraits Deezer. */
-export const REFRESH_PREVIEWS_JOB = 'catalogue-refresh';
-
 /**
- * Le dernier passage d'une tâche planifiée, affiché en témoin dans l'onglet Actions. Les instants sont des textes ISO.
+ * Le dernier passage d'une tâche planifiée, affiché dans le panneau technique de l'admin (« Tâches de la nuit »). Les instants sont des textes ISO.
  * `state` vide : jamais lancée, ou dernier passage de plus de 7 jours (Hangfire n'en garde pas plus).
  * `result` : le compte rendu si elle a réussi (`{ created, … }`, `{ checked, updated, failed }`) ;
  * `errorCode` : le code d'erreur si elle a échoué (`admin.pool_insufficient`), jamais un message.

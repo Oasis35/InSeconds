@@ -1,6 +1,14 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
+import { ClipboardService } from '../../../core/clipboard/clipboard.service';
+import { WIDE_SCREEN } from '../../../core/layout/wide-screen';
+import { ModalService } from '../../../ui/modal/modal.service';
 import { DashboardStore } from '../../data-access/dashboard.store';
+import {
+  FakeChallengesApi, challengePlayer, challengeStats, challengeTrack, fakeChallengesApi, provideChallengesApiFake, statsPage,
+} from '../../data-access/testing/fake-challenges-api';
 import {
   FakeDashboardApi, dashboard, fakeDashboardApi, provideDashboardApiFake,
 } from '../../data-access/testing/fake-dashboard-api';
@@ -9,10 +17,31 @@ import { DashboardPage } from './dashboard.page';
 
 describe('DashboardPage', () => {
   let api: FakeDashboardApi;
+  let challenges: FakeChallengesApi;
+  let router: { navigate: ReturnType<typeof vi.fn> };
 
-  async function render(options: { api?: Partial<FakeDashboardApi> } = {}) {
+  const october5 = challengeStats({
+    id: 5, date: '2026-10-05',
+    players: [challengePlayer({ playerId: 'p1', pseudo: 'Alice' }), challengePlayer({ playerId: 'p2', pseudo: null })],
+    tracks: [challengeTrack({ position: 1, artist: 'Eminem', title: 'Lose Yourself' })],
+  });
+
+  async function render(options: { api?: Partial<FakeDashboardApi>; wide?: boolean; query?: Record<string, string> } = {}) {
     api = fakeDashboardApi(options.api);
-    TestBed.configureTestingModule({ providers: [provideTranslateService(), provideDashboardApiFake(api)] });
+    challenges = fakeChallengesApi({ loadStats: vi.fn(async () => statsPage([october5])) });
+    router = { navigate: vi.fn(async () => true) };
+    TestBed.configureTestingModule({
+      providers: [
+        provideTranslateService(),
+        provideDashboardApiFake(api),
+        provideChallengesApiFake(challenges),
+        { provide: ClipboardService, useValue: { copy: vi.fn(async () => true) } },
+        { provide: ModalService, useValue: { open: vi.fn() } },
+        { provide: WIDE_SCREEN, useValue: signal(options.wide ?? false) },
+        { provide: Router, useValue: router },
+        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(options.query ?? {}) } } },
+      ],
+    });
     const fixture = TestBed.createComponent(DashboardPage);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -28,31 +57,96 @@ describe('DashboardPage', () => {
   }
 
   const buttons = (element: HTMLElement) => Array.from(element.querySelectorAll('button'));
+  const byTestId = (element: HTMLElement, id: string) => element.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
 
-  it('charge le tableau de bord à l\'ouverture, une seule fois, sans jour', async () => {
+  it('charge le tableau de bord et les défis à l\'ouverture, une seule fois, sans jour', async () => {
     await render();
 
     expect(api.getDashboard).toHaveBeenCalledTimes(1);
     expect(api.getDashboard).toHaveBeenCalledWith(undefined);
+    expect(challenges.loadStats).toHaveBeenCalledTimes(1);
   });
 
-  it('affiche le jour, les KPI, l\'activité et les joueurs', async () => {
+  it('la carte du jour : le jour, les trois tuiles et la ligne secondaire', async () => {
     const { element } = await render();
 
-    expect(element.querySelector('[data-testid="dashboard-selected-day"]')?.textContent).toContain('lundi 5 octobre');
-    const text = element.textContent ?? '';
-    expect(text).toContain('admin.dashboard.kpiCompleted');
-    expect(text).toContain('66.7%');
-    expect(text).toContain('4,200');
-    expect(element.querySelectorAll('[data-testid="dashboard-activity-bar"]')).toHaveLength(2);
-    expect(text).toContain('admin.dashboard.playersTitle');
+    expect(byTestId(element, 'dashboard-selected-day')?.textContent).toContain('lundi 5 octobre');
+    expect(byTestId(element, 'kpi-completed')?.textContent).toContain('4');
+    expect(byTestId(element, 'kpi-new')?.textContent).toContain('2');
+    expect(byTestId(element, 'kpi-median')?.textContent).toContain('4,200');
+    const details = byTestId(element, 'kpi-details')?.textContent ?? '';
+    expect(details).toContain('admin.dashboard.expired');
+    expect(details).toContain('admin.dashboard.completionRate');
+    expect(details).toContain('admin.dashboard.accountCreated');
   });
 
-  it('un jour sans défi affiche le message à la place des KPI', async () => {
+  it('la carte du jour : les arrivés du jour par source, les habitués et les nouveaux parmi ceux qui ont fini', async () => {
+    const { element } = await render();
+
+    const arrivals = byTestId(element, 'kpi-arrivals')?.textContent?.replace(/\s+/g, ' ') ?? '';
+    expect(arrivals).toContain('admin.dashboard.arrivedThatDay');
+    expect(arrivals).toContain('2 admin.sources.instagram · 1 admin.sources.direct');
+    // 4 ont fini, dont 1 pour la première fois.
+    const loyalty = byTestId(element, 'kpi-loyalty')?.textContent?.replace(/\s+/g, ' ') ?? '';
+    expect(loyalty).toContain('3 admin.dashboard.regulars · 1 admin.dashboard.newcomers');
+  });
+
+  it('les sources d\'arrivée des 30 jours sous l\'activité', async () => {
+    const { element } = await render();
+
+    expect(byTestId(element, 'dashboard-arrivals')?.textContent).toContain('12');
+    expect(element.querySelectorAll('[data-testid="arrival-share"]')).toHaveLength(4);
+  });
+
+  it('l\'égaliseur des scores du jour sur PC seulement', async () => {
+    expect(byTestId((await render()).element, 'challenge-score-chart')).toBeNull();
+    TestBed.resetTestingModule();
+    expect(byTestId((await render({ wide: true })).element, 'challenge-score-chart')).not.toBeNull();
+  });
+
+  it('les joueurs du jour sous les chiffres, puis l\'activité et les totaux', async () => {
+    const { element } = await render();
+
+    expect(byTestId(element, 'day-players')?.textContent).toContain('Alice');
+    expect(element.querySelectorAll('[data-testid="dashboard-activity-bar"]')).toHaveLength(2);
+    expect(byTestId(element, 'dashboard-totals')?.textContent).toContain('13');
+  });
+
+  it('téléphone : les morceaux du jour sont repliés sous la carte, et se déplient', async () => {
+    const { element, detect } = await render();
+    expect(byTestId(element, 'day-tracks')).toBeNull();
+
+    buttons(element).find(b => b.textContent?.includes('admin.dashboard.dayTracks'))!.click();
+    await detect();
+
+    expect(byTestId(element, 'day-card')?.querySelector('[data-testid="day-tracks"]')?.textContent).toContain('Eminem');
+  });
+
+  it('PC : les morceaux du jour dépliés dans la colonne de droite', async () => {
+    const { element } = await render({ wide: true });
+
+    expect(byTestId(element, 'day-card')?.querySelector('[data-testid="day-tracks"]')).toBeNull();
+    expect(byTestId(element, 'day-tracks')?.textContent).toContain('Eminem');
+  });
+
+  it('un jour sans défi affiche le message à la place des chiffres', async () => {
     const { element } = await render({ api: { getDashboard: vi.fn(async () => dashboard({ kpis: null })) } });
 
     expect(element.textContent).toContain('admin.dashboard.noChallengeForDay');
-    expect(element.textContent).not.toContain('admin.dashboard.kpiCompleted');
+    expect(byTestId(element, 'kpi-completed')).toBeNull();
+  });
+
+  it('le jour vit dans l\'adresse : ?jour= est lu au chargement, et le jour affiché y est écrit', async () => {
+    await render({ query: { jour: '2026-10-04' } });
+
+    expect(api.getDashboard).toHaveBeenCalledWith('2026-10-04');
+    expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({ queryParams: { jour: '2026-10-04' }, replaceUrl: true }));
+  });
+
+  it('un ?jour= mal formé est ignoré', async () => {
+    await render({ query: { jour: 'hier' } });
+
+    expect(api.getDashboard).toHaveBeenCalledWith(undefined);
   });
 
   it('la flèche « précédent » relit le jour précédent', async () => {

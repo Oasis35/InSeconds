@@ -1,31 +1,33 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
-import { ChallengeStats, ChallengeTrackStats, unfinishedCount } from '../../../domain/challenge';
+import { ChallengeStats, ChallengeTrackStats, formatDay, unfinishedCount } from '../../../domain/challenge';
 import { ChallengePlayerChipsComponent } from '../challenge-player-chips/challenge-player-chips.component';
+import { ChallengeScoreChartComponent } from '../challenge-score-chart/challenge-score-chart.component';
 import { ChallengeTrackStatsComponent } from '../challenge-track-stats/challenge-track-stats.component';
 
 /**
  * Un défi dans « Stats par défi » : en-tête cliquable (date, joueurs, abandons, médiane), un chip par
- * joueur, puis, déplié, les scores, le recalcul des chiffres figés et les taux de chaque morceau.
+ * joueur, puis, déplié, les scores, le recalcul des chiffres figés et les taux de chaque morceau. Détail du défi sélectionné sur PC
+ * (`collapsible` faux) : l'égaliseur des scores remplace la ligne min, moyenne, max, avant les joueurs.
  * Purement présentationnel.
  */
 @Component({
   selector: 'app-challenge-card',
-  imports: [DatePipe, TranslatePipe, ChallengePlayerChipsComponent, ChallengeTrackStatsComponent],
+  imports: [DatePipe, TranslatePipe, ChallengePlayerChipsComponent, ChallengeScoreChartComponent, ChallengeTrackStatsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let c = challenge();
     <div class="py-3" style="border-top:1px solid var(--border-medium)">
-      <button type="button" (click)="toggled.emit()" [attr.aria-expanded]="expanded()"
-        class="w-full flex items-center justify-between gap-2 text-left">
+      <button type="button" (click)="collapsible() && toggled.emit()" [attr.aria-expanded]="collapsible() ? expanded() : null"
+        [disabled]="!collapsible()" class="w-full flex items-center justify-between gap-2 text-left disabled:cursor-default">
         <div class="flex items-center gap-3">
-          <span class="font-mono text-sm" style="color:var(--text-hi)">{{ c.date }}</span>
+          <span class="font-mono text-sm" style="color:var(--text-hi)">{{ day(c.date) }}</span>
           <span class="text-xs px-2 py-0.5 rounded-full" style="color:var(--text-muted);background:var(--bg-inactive)">
             {{ c.playerCount }} {{ (c.playerCount > 1 ? 'admin.dashboard.players' : 'admin.dashboard.player') | translate }}
           </span>
           @if (unfinished() > 0) {
-            <span class="text-xs px-2 py-0.5 rounded-full" style="color:var(--bg-warn);background:rgba(251,191,36,0.1)">
+            <span class="text-xs px-2 py-0.5 rounded-full" style="color:var(--color-warn);background:var(--bg-warn)">
               {{ unfinished() }} {{ (unfinished() > 1 ? 'admin.dashboard.abandons' : 'admin.dashboard.abandon') | translate }}
             </span>
           }
@@ -34,9 +36,16 @@ import { ChallengeTrackStatsComponent } from '../challenge-track-stats/challenge
           @if (c.scoreMedian !== null) {
             <span>{{ 'admin.dashboard.median' | translate }} <span class="font-medium" style="color:var(--text-hi)">{{ c.scoreMedian }}</span></span>
           }
-          <span style="color:var(--text-sep)" aria-hidden="true">{{ expanded() ? '▲' : '▼' }}</span>
+          @if (collapsible()) {
+            <span style="color:var(--text-sep)" aria-hidden="true">{{ expanded() ? '▲' : '▼' }}</span>
+          }
         </div>
       </button>
+
+      <!-- PC (le détail du défi sélectionné) : l'égaliseur avant les joueurs, comme sur l'Accueil. -->
+      @if (!collapsible()) {
+        <app-challenge-score-chart class="block mt-3" [challenge]="c" />
+      }
 
       @if (c.players.length > 0) {
         <app-challenge-player-chips
@@ -46,7 +55,8 @@ import { ChallengeTrackStatsComponent } from '../challenge-track-stats/challenge
 
       @if (expanded()) {
         <div class="mt-3 flex flex-col gap-2">
-          @if (c.scoreMin !== null && c.scoreMax !== null) {
+          <!-- Téléphone : min, moyenne et max en une ligne (sur PC, l'égaliseur les montre). -->
+          @if (collapsible() && c.scoreMin !== null && c.scoreMax !== null) {
             <div class="flex gap-4 text-xs" style="color:var(--text-muted)">
               <span>{{ 'admin.dashboard.min' | translate }} <span class="font-medium" style="color:var(--text-light)">{{ c.scoreMin }}</span></span>
               <span>{{ 'admin.dashboard.avg' | translate }} <span class="font-medium" style="color:var(--text-light)">{{ c.scoreAvg }}</span></span>
@@ -85,6 +95,8 @@ import { ChallengeTrackStatsComponent } from '../challenge-track-stats/challenge
 export class ChallengeCardComponent {
   readonly challenge = input.required<ChallengeStats>();
   readonly expanded = input(false);
+  /** L'en-tête replie et déplie le défi ; faux pour le détail du défi sélectionné (PC), toujours déplié. */
+  readonly collapsible = input(true);
   /** L'identifiant du joueur de ce navigateur, s'il y en a un. */
   readonly youId = input<string | null>(null);
   readonly highlightedId = input<string | null>(null);
@@ -102,4 +114,5 @@ export class ChallengeCardComponent {
   readonly recompute = output<string>();
 
   protected readonly unfinished = computed(() => unfinishedCount(this.challenge()));
+  protected readonly day = formatDay;
 }

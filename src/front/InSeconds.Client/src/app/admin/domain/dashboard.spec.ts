@@ -1,6 +1,6 @@
 import {
-  activityBarHeightPx, canGoToNextDay, canGoToPreviousDay, completionRateColor, formatDayLong, formatDayShort,
-  maxDailyPlayers, shiftDay, todayUtc, totalPlayers,
+  activityBarHeightPx, arrivalShares, canGoToNextDay, canGoToPreviousDay, completionRateColor, formatDayLong, formatDayShort,
+  maxDailyPlayers, parseDay, shiftDay, sourceLabelKey, todayUtc, totalPlayers,
 } from './dashboard';
 
 describe('dashboard (domaine)', () => {
@@ -8,6 +8,11 @@ describe('dashboard (domaine)', () => {
   const activity = [
     { day: '2026-10-03', playerCount: 0 }, { day: '2026-10-04', playerCount: 4 }, { day: '2026-10-05', playerCount: 10 },
   ];
+
+  it('parseDay accepte un vrai jour aaaa-mm-jj, rien d\'autre', () => {
+    expect(parseDay('2026-11-03')).toBe('2026-11-03');
+    expect([null, undefined, '', 'hier', '2026-2-03', '2026-02-30', '2026-13-01'].map(parseDay)).toEqual([null, null, null, null, null, null, null]);
+  });
 
   it('todayUtc rend le jour UTC, pas celui du navigateur', () => {
     expect(todayUtc(new Date('2026-10-05T23:59:00Z'))).toBe('2026-10-05');
@@ -66,5 +71,30 @@ describe('dashboard (domaine)', () => {
     expect(formatDayShort('2026-10-05', 'fr')).toContain('5');
     expect(formatDayLong('2026-10-05', 'en')).toContain('October');
     expect(formatDayLong('2026-01-01', 'fr')).toBe('jeudi 1 janvier');
+  });
+});
+
+describe('sources d\'arrivée', () => {
+  it('une source connue a sa traduction, un domaine s\'affiche tel quel', () => {
+    expect(sourceLabelKey('instagram')).toBe('admin.sources.instagram');
+    expect(sourceLabelKey('share')).toBe('admin.sources.share');
+    expect(sourceLabelKey('google.com')).toBeNull();
+  });
+
+  it('les trois sources les plus fréquentes, puis le reste réuni avec `other`, en pourcentages', () => {
+    expect(arrivalShares([
+      { source: 'instagram', count: 6 }, { source: 'other', count: 2 }, { source: 'share', count: 1 },
+      { source: 'direct', count: 1 }, { source: 'google.com', count: 1 },
+    ])).toEqual([
+      { source: 'instagram', count: 6, percent: 55 },
+      { source: 'share', count: 1, percent: 9 },
+      { source: 'direct', count: 1, percent: 9 },
+      { source: null, count: 3, percent: 27 },
+    ]);
+  });
+
+  it('pas de reste quand tout tient dans les trois premières ; rien sans arrivée', () => {
+    expect(arrivalShares([{ source: 'direct', count: 2 }])).toEqual([{ source: 'direct', count: 2, percent: 100 }]);
+    expect(arrivalShares([])).toEqual([]);
   });
 });

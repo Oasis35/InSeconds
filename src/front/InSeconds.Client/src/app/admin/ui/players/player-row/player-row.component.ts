@@ -85,7 +85,6 @@ import { PlayerIconComponent } from '../player-icon/player-icon.component';
         <span style="color:var(--text-faint)">{{ 'admin.players.neverSeen' | translate }}</span>
       }
     </td>
-    <td class="px-4 py-2.5 whitespace-nowrap" style="color:var(--text-muted)">{{ player().createdAt | date:'dd/MM/yyyy' }}</td>
   `,
 })
 export class PlayerRowComponent {

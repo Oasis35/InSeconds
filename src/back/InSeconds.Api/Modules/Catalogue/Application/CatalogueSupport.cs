@@ -84,7 +84,10 @@ public sealed record TrackListItem(
 /// <summary>L'usage d'un morceau par un mode.</summary>
 /// <param name="Mode">Nom stable du mode (<c>daily</c>).</param>
 /// <param name="InTodayChallenge">Morceau du défi du jour : non désactivable avant demain, le renommer est permis (avertissement côté front).</param>
-public sealed record TrackModeUsage(string Mode, int UsageCount, DateOnly? LastUsedDate, DateOnly? UnlockDate, bool InTodayChallenge);
+/// <param name="AnswerCount">Réponses données sur ce morceau dans ce mode.</param>
+/// <param name="FoundCount">Parmi elles, celles qui ont trouvé l'artiste ou le titre.</param>
+public sealed record TrackModeUsage(
+    string Mode, int UsageCount, DateOnly? LastUsedDate, DateOnly? UnlockDate, bool InTodayChallenge, int AnswerCount, int FoundCount);
 
 internal static class TrackMapping
 {
@@ -130,6 +133,9 @@ public interface ICatalogueQueries
 {
     /// <summary>Tous les morceaux du pool, par artiste puis titre.</summary>
     Task<IReadOnlyList<TrackRow>> ListTracksAsync(CancellationToken ct);
+
+    /// <summary>Les morceaux actifs sans extrait chez Deezer, et ceux qui ont un extrait mais pas encore de forme d'onde.</summary>
+    Task<CatalogueHealthResponse> GetHealthAsync(CancellationToken ct);
 }
 
 /// <summary>Un morceau tel que la base le lit, avant d'y joindre son usage.</summary>

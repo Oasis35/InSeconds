@@ -10,7 +10,7 @@ namespace InSeconds.Api.Modules.Daily.Persistence;
 /// <summary>
 /// L'usage des morceaux par le jeu, **calculé** sur <c>challenge_tracks</c> et <c>challenges.date</c> :
 /// rien n'est stocké sur le morceau, donc rien à garder cohérent. C'est l'usage du Daily, que Catalogue réunit à celui des autres modes. Le cooldown se déduit de la
-/// taille du pool à chaque appel (<see cref="TrackCooldownPolicy"/>, #275).
+/// taille du pool à chaque appel (<see cref="TrackCooldownPolicy"/>, #275). Les réponses (trouvées ou non) se comptent sur <c>answers</c>.
 /// </summary>
 public sealed class EfTrackUsage(InSecondsDbContext db, TrackCooldownPolicy cooldown, IGameCalendar calendar) : IDailyTrackUsage
 {
@@ -28,7 +28,21 @@ public sealed class EfTrackUsage(InSecondsDbContext db, TrackCooldownPolicy cool
             .Select(g => new { TrackId = g.Key, Last = g.Max(a => a.Date), Count = g.Count(), InToday = g.Any(a => a.Date == today) })
             .ToListAsync(ct);
 
-        return rows.ToDictionary(r => r.TrackId, r => new TrackUsage(r.Last, r.Count, TrackCooldown.UnlockDate(r.Last, cooldownDays), r.InToday));
+        var answers = await (from a in db.Set<SessionAnswer>().AsNoTracking()
+                             join s in db.Set<DailySession>().AsNoTracking() on a.SessionId equals s.Id
+                             join t in db.Set<ChallengeTrack>().AsNoTracking() on new { s.ChallengeId, a.Position } equals new { t.ChallengeId, t.Position }
+                             where ids.Contains(t.TrackId)
+                             group a by t.TrackId into g
+                             select new { TrackId = g.Key, Count = g.Count(), Found = g.Count(a => a.ArtistCorrect || a.TitleCorrect) })
+            .ToDictionaryAsync(x => x.TrackId, ct);
+
+        return rows.ToDictionary(r => r.TrackId, r =>
+        {
+            var answered = answers.GetValueOrDefault(r.TrackId);
+            return new TrackUsage(
+                r.Last, r.Count, TrackCooldown.UnlockDate(r.Last, cooldownDays), r.InToday,
+                AnswerCount: answered?.Count ?? 0, FoundCount: answered?.Found ?? 0);
+        });
     }
 
     public async Task<IReadOnlySet<int>> GetTracksInCooldownAsync(DateOnly day, CancellationToken ct)

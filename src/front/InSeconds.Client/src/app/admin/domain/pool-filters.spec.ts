@@ -1,8 +1,8 @@
 import {
-  NO_FILTERS, PoolFilters, clampPage, filterTracks, hasActiveFilters, nextSort, pageOf,
+  HARDEST_FIRST, NO_FILTERS, PoolFilters, activeFieldFilterCount, clampPage, filterTracks, hasActiveFilters, nextSort, pageOf,
   sortTracks, totalPages,
 } from './pool-filters';
-import { isValidTrackName, trackLabel } from './pool-track';
+import { answerCount, foundRate, isValidTrackName, trackLabel } from './pool-track';
 import { poolTrack as track } from './testing/pool-track.fixture';
 
 const filters = (overrides: Partial<PoolFilters>): PoolFilters => ({ ...NO_FILTERS, ...overrides });
@@ -54,6 +54,11 @@ describe('filterTracks', () => {
   it('sait si un filtre est actif', () => {
     expect(hasActiveFilters(NO_FILTERS)).toBe(false);
     expect(hasActiveFilters(filters({ lastUsedTo: '2026-10-01' }))).toBe(true);
+  });
+
+  it('compte les filtres actifs hors texte (ceux du bouton « Filtres »)', () => {
+    expect(activeFieldFilterCount(filters({ text: 'queen' }))).toBe(0);
+    expect(activeFieldFilterCount(filters({ status: 'used', genre: 'Rock', lastUsedFrom: '2026-10-01' }))).toBe(3);
   });
 });
 
@@ -159,7 +164,7 @@ describe('vues par mode', () => {
   const daily = track({ id: 1, artist: 'Eminem', usageCount: 2, lastUsedDate: '2026-10-07' });
   const otherModeOnly = track({
     id: 2, artist: 'Autre', usedByMode: true,
-    usages: [{ mode: 'autre', usageCount: 0, lastUsedDate: null, unlockDate: null, inTodayChallenge: false }],
+    usages: [{ mode: 'autre', usageCount: 0, lastUsedDate: null, unlockDate: null, inTodayChallenge: false, answerCount: 0, foundCount: 0 }],
   });
   const never = track({ id: 3, artist: 'Jamais' });
 
@@ -214,5 +219,27 @@ describe('genres', () => {
   it('trie par genre, les morceaux sans genre en dernier', () => {
     expect(sortTracks([none, hiphop, pop], { column: 'genre', direction: 'asc' }).map(t => t.id)).toEqual([2, 1, 3]);
     expect(sortTracks([none, hiphop, pop], { column: 'genre', direction: 'desc' }).map(t => t.id)).toEqual([1, 2, 3]);
+  });
+});
+
+describe('taux « Trouvé »', () => {
+  const daily = (answerCount: number, foundCount: number) =>
+    ({ mode: 'daily', usageCount: 1, lastUsedDate: null, unlockDate: null, inTodayChallenge: false, answerCount, foundCount });
+  const runs = (answerCount: number, foundCount: number) => ({ ...daily(answerCount, foundCount), mode: 'runs' });
+
+  it('tous modes réunis dans le pool, un seul mode dans sa vue ; vide sans réponse', () => {
+    const t = track({ usages: [daily(8, 2), runs(2, 2)] });
+    expect(foundRate(t)).toBe(40);
+    expect(answerCount(t)).toBe(10);
+    expect(foundRate(t, 'daily')).toBe(25);
+    expect(foundRate(t, 'runs')).toBe(100);
+    expect(foundRate(track())).toBeNull();
+  });
+
+  it('« Les moins trouvés » : du plus bas au plus haut, les morceaux sans réponse en dernier', () => {
+    const easy = track({ id: 1, usages: [daily(4, 4)] });
+    const hard = track({ id: 2, usages: [daily(4, 1)] });
+    const never = track({ id: 3 });
+    expect(sortTracks([easy, never, hard], HARDEST_FIRST).map(t => t.id)).toEqual([2, 1, 3]);
   });
 });

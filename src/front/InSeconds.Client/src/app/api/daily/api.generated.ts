@@ -28,10 +28,15 @@ export class DailyClient {
     }
 
     /**
+     * @param month (optional) 
      * @return OK
      */
-    getChallengeStats(): Observable<AdminChallengeStatsResponse> {
-        let url_ = this.baseUrl + "/api/admin/daily/challenges/stats";
+    getChallengeStats(month: string | undefined): Observable<AdminChallengeStatsResponse> {
+        let url_ = this.baseUrl + "/api/admin/daily/challenges/stats?";
+        if (month === null)
+            throw new globalThis.Error("The parameter 'month' cannot be null.");
+        else if (month !== undefined)
+            url_ += "month=" + encodeURIComponent("" + month) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -68,6 +73,12 @@ export class DailyClient {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AdminChallengeStatsResponse;
             return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -1269,6 +1280,56 @@ export class DailyClient {
         }
         return _observableOf(null as any);
     }
+
+    /**
+     * @return OK
+     */
+    getNextChallenge(): Observable<NextChallengeResponse> {
+        let url_ = this.baseUrl + "/api/admin/daily/next-challenge";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetNextChallenge(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetNextChallenge(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NextChallengeResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NextChallengeResponse>;
+        }));
+    }
+
+    protected processGetNextChallenge(response: HttpResponseBase): Observable<NextChallengeResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NextChallengeResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
 }
 
 export interface AdminChallenge {
@@ -1303,12 +1364,16 @@ export interface AdminChallengeStats {
     players: AdminChallengePlayer[];
     computedAt: Date | undefined;
     canRecompute: boolean;
+    maxPossibleScore: number;
+    scoreDistribution: ScoreBucketResponse[];
 
     [key: string]: any;
 }
 
 export interface AdminChallengeStatsResponse {
     challenges: AdminChallengeStats[];
+    months: string[];
+    totalCount: number;
 
     [key: string]: any;
 }
@@ -1378,6 +1443,7 @@ export interface AdminPlayerHistoryResponse {
 
 export interface AdminPlayersResponse {
     players: AdminPlayer[];
+    nextDayReturnRate: number | undefined;
 
     [key: string]: any;
 }
@@ -1491,6 +1557,7 @@ export interface DashboardResponse {
     playerBreakdown: PlayerBreakdownResponse;
     availableDates: Date[];
     selectedDayKpis: DayKpisResponse | undefined;
+    arrivals: ArrivalResponse[];
 
     [key: string]: any;
 }
@@ -1504,6 +1571,10 @@ export interface DayKpisResponse {
     totalSessions: number;
     completionRate: number;
     medianScore: number | undefined;
+    newPlayersCount: number;
+    accountsCreatedCount: number;
+    firstTimeFinishersCount: number;
+    arrivals: ArrivalResponse[];
 
     [key: string]: any;
 }
@@ -1729,6 +1800,22 @@ export interface UpdateListening {
 
 export interface UpdateTrackCooldownPoolPercent {
     trackCooldownPoolPercent: number;
+
+    [key: string]: any;
+}
+
+export interface ArrivalResponse {
+    source: string;
+    count: number;
+
+    [key: string]: any;
+}
+
+export interface NextChallengeResponse {
+    date: Date;
+    eligibleCount: number;
+    requiredCount: number;
+    generated: boolean;
 
     [key: string]: any;
 }

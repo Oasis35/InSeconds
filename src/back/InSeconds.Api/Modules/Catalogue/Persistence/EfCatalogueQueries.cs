@@ -17,6 +17,14 @@ public sealed class EfCatalogueQueries(InSecondsDbContext db) : ICatalogueQuerie
                 t.PreviewStatus, t.PreviewCheckedAt, t.DisabledAt != null,
                 t.Genres.OrderBy(g => g.Name).Select(g => g.Name).ToList()))
             .ToListAsync(ct);
+
+    public async Task<CatalogueHealthResponse> GetHealthAsync(CancellationToken ct)
+    {
+        var active = db.Set<Track>().AsNoTracking().Where(t => t.DisabledAt == null);
+        var missingPreview = await active.CountAsync(t => t.PreviewStatus == PreviewStatus.Missing, ct);
+        var missingWaveform = await active.CountAsync(t => t.PreviewStatus == PreviewStatus.Available && t.Waveform == null, ct);
+        return new CatalogueHealthResponse(missingPreview, missingWaveform);
+    }
 }
 
 public sealed class EfTrackDirectory(InSecondsDbContext db, IOptionsMonitor<CatalogueOptions> options) : ITrackDirectory

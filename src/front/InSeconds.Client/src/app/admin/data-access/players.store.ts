@@ -2,7 +2,7 @@ import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
 import { AppError, toAppError } from '../../core/errors/app-error';
 import { setError, setFulfilled, setPending, withRequestStatus } from '../../core/store/with-request-status';
-import { PlayerGame, RegisteredPlayer, filterPlayers } from '../domain/registered-player';
+import { PlayerGame, RegisteredPlayer, filterPlayers, streakBuckets } from '../domain/registered-player';
 import { AdminCounts } from './admin-counts';
 import { AdminPlayersApi } from './players.api';
 
@@ -10,6 +10,8 @@ export type HistoryStatus = 'idle' | 'loading' | 'error';
 
 interface PlayersState {
   players: readonly RegisteredPlayer[];
+  /** Part des joueurs d'un jour revenus le lendemain (30 jours), `null` sans joueur sur la période. */
+  nextDayReturnRate: number | null;
   filter: string;
   /** Ligne dépliée (une seule à la fois). */
   expandedId: string | null;
@@ -32,10 +34,12 @@ interface PlayersState {
 export const AdminPlayersStore = signalStore(
   withRequestStatus(),
   withState<PlayersState>({
-    players: [], filter: '', expandedId: null, histories: {}, historyStatus: 'idle', runAccess: [], runAccessPending: [], runAccessError: null,
+    players: [], nextDayReturnRate: null, filter: '', expandedId: null, histories: {}, historyStatus: 'idle', runAccess: [], runAccessPending: [], runAccessError: null,
   }),
   withComputed(({ players, filter, expandedId, histories, historyStatus }) => ({
     filteredPlayers: computed(() => filterPlayers(players(), filter())),
+    /** Les séries en cours des comptes, par longueur. */
+    streaks: computed(() => streakBuckets(players())),
     /** Historique à montrer pour la ligne dépliée : les parties connues (ou `null`) et l'état de la lecture. */
     expandedHistory: computed(() => {
       const id = expandedId();
@@ -51,10 +55,10 @@ export const AdminPlayersStore = signalStore(
         const mine = ++latestLoad;
         patchState(store, setPending());
         try {
-          const [players, runAccess] = await Promise.all([api.list(), api.listRunAccess()]);
+          const [page, runAccess] = await Promise.all([api.list(), api.listRunAccess()]);
           if (mine !== latestLoad) return;
-          counts.setPlayers(players.length);
-          patchState(store, { players, runAccess, runAccessError: null }, setFulfilled());
+          counts.setPlayers(page.players.length);
+          patchState(store, { players: page.players, nextDayReturnRate: page.nextDayReturnRate, runAccess, runAccessError: null }, setFulfilled());
         } catch (error) {
           const appError = await toAppError(error);
           if (mine === latestLoad) patchState(store, setError(appError));

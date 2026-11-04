@@ -9,14 +9,17 @@ export type PoolTrackFixture = Partial<PoolTrack> & {
   readonly lastUsedDate?: string | null;
   readonly unlockDate?: string | null;
   readonly usedByMode?: boolean;
+  /** Réponses du Daily et réponses trouvées (taux « Trouvé »). */
+  readonly answers?: readonly [answered: number, found: number];
 };
 
 export function poolTrack(overrides: PoolTrackFixture = {}): PoolTrack {
-  const { usageCount, lastUsedDate, unlockDate, usedByMode, ...own } = overrides;
+  const { usageCount, lastUsedDate, unlockDate, usedByMode, answers, ...own } = overrides;
   const inToday = own.inTodayChallenge ?? false;
   const dailyPlayed = (usageCount ?? 0) > 0 || (lastUsedDate ?? null) !== null || inToday;
   const daily: ModeUsage[] = dailyPlayed
-    ? [{ mode: 'daily', usageCount: usageCount ?? 1, lastUsedDate: lastUsedDate ?? null, unlockDate: unlockDate ?? null, inTodayChallenge: inToday }]
+    ? [{ mode: 'daily', usageCount: usageCount ?? 1, lastUsedDate: lastUsedDate ?? null, unlockDate: unlockDate ?? null, inTodayChallenge: inToday,
+      answerCount: answers?.[0] ?? 0, foundCount: answers?.[1] ?? 0 }]
     : [];
   const usages = own.usages ?? daily;
   return {

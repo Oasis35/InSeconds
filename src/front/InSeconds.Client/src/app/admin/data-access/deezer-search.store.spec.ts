@@ -4,7 +4,7 @@ import { PoolStore } from './pool.store';
 import {
   FakeCatalogueApi, deezerResult, fakeCatalogueApi, problem, provideCatalogueApiFake,
 } from './testing/fake-catalogue-api';
-import { fakeActionsApi, provideActionsApiFake } from './testing/fake-actions-api';
+import { fakeCooldownApi, provideCooldownApiFake } from './testing/fake-cooldown-api';
 
 describe('DeezerSearchStore', () => {
   let api: FakeCatalogueApi;
@@ -13,7 +13,7 @@ describe('DeezerSearchStore', () => {
 
   function setup(overrides: Partial<FakeCatalogueApi> = {}) {
     api = fakeCatalogueApi(overrides);
-    TestBed.configureTestingModule({ providers: [PoolStore, DeezerSearchStore, provideCatalogueApiFake(api), provideActionsApiFake(fakeActionsApi())] });
+    TestBed.configureTestingModule({ providers: [PoolStore, DeezerSearchStore, provideCatalogueApiFake(api), provideCooldownApiFake(fakeCooldownApi())] });
     store = TestBed.inject(DeezerSearchStore);
     pool = TestBed.inject(PoolStore);
   }

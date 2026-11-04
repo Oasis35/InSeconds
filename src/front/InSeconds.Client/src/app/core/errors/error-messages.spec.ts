@@ -6,7 +6,7 @@ describe('errorMessageKey', () => {
   });
 
   it("traduit les codes de l'admin renvoyés par le back (jour pas fini, date invalide, pool insuffisant)", () => {
-    for (const code of ['admin.day_not_over', 'admin.invalid_date', 'admin.pool_insufficient']) {
+    for (const code of ['admin.day_not_over', 'admin.invalid_date', 'admin.invalid_month', 'admin.pool_insufficient']) {
       expect(errorMessageKey(code)).toBe(`errors.${code}`);
     }
   });
