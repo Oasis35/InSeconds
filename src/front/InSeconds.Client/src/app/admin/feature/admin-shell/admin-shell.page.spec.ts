@@ -152,6 +152,21 @@ describe('AdminShellPage', () => {
     expect(reloadMoment!()).toBe('background');
   });
 
+  it('garde la saisie en cours quand la fenêtre perd le focus (barre d\'adresse, autre onglet)', async () => {
+    const { element } = await open(admin, '/admin/catalogue');
+    const field = document.createElement('input');
+    element.querySelector('#child')!.append(field);
+    field.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+
+    vi.spyOn(document, 'hasFocus').mockReturnValue(false);
+    field.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }));
+    expect(reloadMoment!()).toBe('navigation');
+
+    vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+    field.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }));
+    expect(reloadMoment!()).toBe('background');
+  });
+
   it('affiche l\'identifiant du navigateur dans tous les cas', async () => {
     const { element } = await open(linkedPlayer);
 

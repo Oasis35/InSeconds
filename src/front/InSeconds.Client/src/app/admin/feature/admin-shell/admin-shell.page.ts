@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { DatePipe, DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -33,7 +33,7 @@ const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'radio', 'range', 'reset'
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(focusin)': 'editing.set(isTextField($event.target))',
-    '(focusout)': 'editing.set(false)',
+    '(focusout)': 'onFocusOut($event)',
   },
   template: `
     <!-- Titre et identifiant centrés, barre des onglets pleine largeur,
@@ -102,6 +102,7 @@ export class AdminShellPage {
   protected readonly session = inject(SessionStore);
   protected readonly profile = inject(ProfileStore);
   private readonly counts = inject(AdminCounts);
+  private readonly document = inject(DOCUMENT);
   /** Heure du déploiement (piège 25), vide quand le build ne la connaît pas. */
   protected readonly deployedAt = DEPLOYED_AT;
   /** Un champ de texte de l'admin a le focus : une nouvelle version attend le prochain changement de page. */
@@ -109,6 +110,12 @@ export class AdminShellPage {
 
   constructor() {
     inject(VersionService).allowReload(() => (this.editing() ? 'navigation' : 'background'), inject(DestroyRef));
+  }
+
+  /** La fenêtre qui perd le focus (barre d'adresse, autre onglet) n'est pas la fin de la saisie : le champ le garde au retour. */
+  protected onFocusOut(event: FocusEvent): void {
+    if (event.relatedTarget === null && !this.document.hasFocus()) return;
+    this.editing.set(this.isTextField(event.relatedTarget));
   }
 
   protected isTextField(target: EventTarget | null): boolean {

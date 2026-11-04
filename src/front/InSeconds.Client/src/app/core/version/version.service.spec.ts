@@ -331,6 +331,29 @@ describe('VersionService', () => {
     }
   });
 
+  it('peut recharger de nouveau si la page est restée affichée (rechargement annulé)', async () => {
+    vi.useFakeTimers();
+    try {
+      const service = create();
+      service.reload();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(reload).toHaveBeenCalledTimes(1);
+
+      workers.dispatchEvent(new Event('controllerchange'));
+      TestBed.tick();
+      expect(reload).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(5_000);
+      page(service, () => 'now');
+      workers.dispatchEvent(new Event('controllerchange'));
+      TestBed.tick();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(reload).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('accepte un second rechargement quand le service worker est remplacé juste après le premier, sans bandeau', async () => {
     sessionStorage.setItem('inseconds.version.autoReloadAt', String(Date.now() - 5_000));
     const service = create();

@@ -44,6 +44,8 @@ const LAST_SWAP_RELOAD_KEY = 'inseconds.version.swapReloadAt';
 export const UPDATE_CHECK_INTERVAL_MS = 5 * 60_000;
 /** Attente, avant de recharger, d'un nouveau service worker en cours d'installation : au-delà, on recharge quand même. */
 export const WORKER_SWAP_WAIT_MS = 10_000;
+/** Délai après lequel la page, restée affichée malgré un rechargement demandé, peut en demander un autre. */
+export const RELOAD_RELEASE_MS = 5_000;
 
 /** Un module chargé à la demande qui n'existe plus (déploiement survenu pendant la visite), selon le navigateur. */
 const STALE_CHUNK_PATTERN = /Failed to fetch dynamically imported module|error loading dynamically imported module|Importing a module script failed/i;
@@ -235,7 +237,10 @@ export class VersionService {
     this.waitForWorkerSwap()
       .then(() => this.swUpdate.activateUpdate())
       .catch(() => false)
-      .then(reload);
+      .then(reload)
+      // Rechargement annulé (confirmation de quitter la page refusée) : la page est toujours là, la suite de la visite doit
+      // pouvoir recharger de nouveau. Si la page est partie, ce délai ne sert à rien.
+      .then(() => setTimeout(() => (this.reloading = false), RELOAD_RELEASE_MS));
   }
 
   /** Un nouveau service worker s'installe : on attend qu'il prenne la main (`controllerchange`), `WORKER_SWAP_WAIT_MS` au plus. */
