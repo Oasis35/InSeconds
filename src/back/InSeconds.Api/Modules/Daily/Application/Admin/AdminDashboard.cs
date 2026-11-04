@@ -15,8 +15,11 @@ public sealed record DailyActivityResponse(DateOnly Date, int PlayerCount);
 public sealed record PlayerBreakdownResponse(int TotalGuests, int TotalRegistered, int ActiveLast7Days, int ActiveLast30Days);
 
 /// <summary>Les chiffres d'un jour (<see cref="DayKpis"/>).</summary>
+/// <param name="NewPlayersCount">Joueurs dont c'est la toute première partie (aucune partie sur un défi plus ancien).</param>
+/// <param name="AccountsCreatedCount">Comptes créés ce jour-là (jour UTC) et toujours présents.</param>
 public sealed record DayKpisResponse(
-    DateOnly Date, int CompletedCount, int AbandonedCount, int ExpiredCount, int PendingCount, int TotalSessions, double CompletionRate, double? MedianScore);
+    DateOnly Date, int CompletedCount, int AbandonedCount, int ExpiredCount, int PendingCount, int TotalSessions, double CompletionRate, double? MedianScore,
+    int NewPlayersCount, int AccountsCreatedCount);
 
 /// <param name="DailyActivity">Parties terminées par jour, les 30 derniers jours (aujourd'hui compris), les jours sans partie à 0.</param>
 /// <param name="AvailableDates">Les jours qui ont un défi, du plus récent au plus ancien.</param>
@@ -62,7 +65,10 @@ public static class GetDashboardEndpoint
         if (await stats.FindChallengeIdAsync(selected, ct) is { } challengeId)
         {
             var k = DayKpisCalculator.Build(selected, await stats.GetSessionsAsync(challengeId, ct), isPast: selected < today);
-            kpis = new DayKpisResponse(k.Date, k.CompletedCount, k.AbandonedCount, k.ExpiredCount, k.PendingCount, k.TotalSessions, k.CompletionRate, k.MedianScore);
+            var newPlayers = await stats.CountFirstTimePlayersAsync(challengeId, ct);
+            var accounts = await players.CountAccountsCreatedOnAsync(selected, ct);
+            kpis = new DayKpisResponse(
+                k.Date, k.CompletedCount, k.AbandonedCount, k.ExpiredCount, k.PendingCount, k.TotalSessions, k.CompletionRate, k.MedianScore, newPlayers, accounts);
         }
 
         return new DashboardResponse(

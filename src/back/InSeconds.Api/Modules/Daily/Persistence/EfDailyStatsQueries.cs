@@ -140,6 +140,21 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
     public async Task<int?> FindChallengeIdAsync(DateOnly day, CancellationToken ct) =>
         await db.Set<DailyChallenge>().AsNoTracking().Where(c => c.Date == day).Select(c => (int?)c.Id).FirstOrDefaultAsync(ct);
 
+    public async Task<int> CountFirstTimePlayersAsync(int challengeId, CancellationToken ct)
+    {
+        var challenges = db.Set<DailyChallenge>().AsNoTracking();
+        var sessions = db.Set<DailySession>().AsNoTracking();
+        return await (from s in sessions
+                      join c in challenges on s.ChallengeId equals c.Id
+                      where s.ChallengeId == challengeId
+                      where !(from earlier in sessions
+                              join ec in challenges on earlier.ChallengeId equals ec.Id
+                              where earlier.PlayerId == s.PlayerId && ec.Date < c.Date
+                              select earlier.Id).Any()
+                      select s.PlayerId)
+            .CountAsync(ct);
+    }
+
     public async Task<IReadOnlyDictionary<DateOnly, int>> GetCompletedCountsByDayAsync(DateOnly since, CancellationToken ct) =>
         await (from s in db.Set<DailySession>().AsNoTracking()
                join c in db.Set<DailyChallenge>().AsNoTracking() on s.ChallengeId equals c.Id

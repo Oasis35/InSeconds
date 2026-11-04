@@ -27,6 +27,26 @@
           }
         }
       }
+    },
+    "/api/admin/system": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "getSystemInfo",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemInfoResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -91,10 +111,42 @@
           }
         }
       },
-      "JsonElement": {}
+      "JsonElement": {},
+      "SystemInfoResponse": {
+        "required": [
+          "commit",
+          "lastBackupAt",
+          "lastBackupOffSite"
+        ],
+        "type": "object",
+        "properties": {
+          "commit": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lastBackupAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "lastBackupOffSite": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        }
+      }
     }
   },
   "tags": [
+    {
+      "name": "InSeconds.Api.Infrastructure.Operations.GetSystemInfoEndpoint"
+    },
     {
       "name": "InSeconds.Api.Infrastructure.Jobs.GetJobLastRunsEndpoint"
     }

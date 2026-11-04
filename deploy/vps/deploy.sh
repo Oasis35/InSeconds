@@ -40,8 +40,10 @@ esac
 
 compose() { docker compose -f "$compose_file" --env-file "$env_file" "$@"; }
 
-export BUILD_TIME
+export BUILD_TIME GIT_COMMIT
 BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+# Commit déployé, gravé dans le front et l'API : l'admin le compare au dernier commit de la branche sur GitHub.
+GIT_COMMIT=$(git rev-parse HEAD 2> /dev/null || true)
 
 # Tout est vérifié avant de remplacer les conteneurs : en cas d'échec, la version en place continue de tourner.
 #

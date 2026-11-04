@@ -42,6 +42,22 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
             modelBuilder.HasSequence("tracks_hilo", "catalogue")
                 .IncrementsBy(10);
 
+            modelBuilder.Entity("InSeconds.Api.Infrastructure.Operations.BackupRun", b =>
+                {
+                    b.Property<DateTimeOffset>("FinishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("finished_at");
+
+                    b.Property<bool>("OffSite")
+                        .HasColumnType("boolean")
+                        .HasColumnName("off_site");
+
+                    b.HasKey("FinishedAt")
+                        .HasName("pk_backup_runs");
+
+                    b.ToTable("backup_runs", "infra");
+                });
+
             modelBuilder.Entity("InSeconds.Api.Infrastructure.Settings.Setting", b =>
                 {
                     b.Property<string>("Key")

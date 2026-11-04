@@ -60,6 +60,12 @@ public interface IDailyStatsQueries
     /// <summary>L'identifiant du défi de ce jour, vide s'il n'y en a pas.</summary>
     Task<int?> FindChallengeIdAsync(DateOnly day, CancellationToken ct);
 
+    /// <summary>
+    /// Les joueurs dont la partie de ce défi est la toute première (aucune partie sur un défi d'une date antérieure), quel que soit son statut :
+    /// les nouveaux venus du jour.
+    /// </summary>
+    Task<int> CountFirstTimePlayersAsync(int challengeId, CancellationToken ct);
+
     /// <summary>Parties **terminées** par jour de défi, depuis <paramref name="since"/> (les jours sans partie sont absents).</summary>
     Task<IReadOnlyDictionary<DateOnly, int>> GetCompletedCountsByDayAsync(DateOnly since, CancellationToken ct);
 

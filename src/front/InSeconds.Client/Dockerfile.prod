@@ -12,8 +12,10 @@ ARG BUILD_CONFIGURATION=production
 # déploiement). Un argument de build qui change invalide le cache de cette étape : sans lui, un déploiement qui ne touche pas au
 # front réutiliserait le build en cache et l'heure resterait figée sur le dernier déploiement qui a modifié le front.
 ARG BUILD_TIME=
+# Commit déployé, comparé dans l'admin à celui de l'API et au dernier commit de la branche (posé par deploy.sh).
+ARG GIT_COMMIT=
 RUN if [ -n "$BUILD_TIME" ]; then \
-      npm run build -- --configuration "$BUILD_CONFIGURATION" --define "BUILD_TIME='$BUILD_TIME'"; \
+      npm run build -- --configuration "$BUILD_CONFIGURATION" --define "BUILD_TIME='$BUILD_TIME'" --define "GIT_COMMIT='$GIT_COMMIT'"; \
     else \
       npm run build -- --configuration "$BUILD_CONFIGURATION"; \
     fi

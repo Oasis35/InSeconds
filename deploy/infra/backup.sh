@@ -166,6 +166,13 @@ verify_dump() { # verify_dump <fichier> : lisible par pg_restore et contient des
 
 # ---------- commandes ----------
 
+record_backup() { # record_backup <true|false> : heure de la sauvegarde réussie, lue par l'état technique de l'admin
+  # Table infra.backup_runs (migration de l'API). Jamais bloquant : la sauvegarde est faite, seul l'affichage en pâtirait.
+  pg psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -q \
+    -c "INSERT INTO infra.backup_runs (finished_at, off_site) VALUES (now(), $1);" \
+    || log "Heure de la sauvegarde non notée en base (infra.backup_runs)."
+}
+
 prepare_backup_dir() { # dossier local et verrou partagés par backup et archive
   [[ -n "$PGPASSWORD" ]] || fail "INSECONDS_DB_PASSWORD manquant dans $ENV_FILE."
   mkdir -p "$BACKUP_DIR"
@@ -207,6 +214,7 @@ backup() {
     log "R2 non configuré : la sauvegarde reste sur le VPS (cf. README § Sauvegardes)."
   fi
 
+  record_backup "$use_r2"
   hc_signal ok
   log "Sauvegarde terminée."
 }

@@ -1,18 +1,20 @@
 namespace InSeconds.IntegrationTests.Testing;
 
 /// <summary>
-/// Document OpenAPI des routes admin transverses : le dernier passage des tâches planifiées, témoins de
-/// l'onglet Actions (<c>GET /api/admin/jobs/last-runs</c>). Servi par l'hôte de test seulement, pour générer le client NSwag du front de l'admin.
+/// Document OpenAPI des routes admin transverses : le dernier passage des tâches planifiées
+/// (<c>GET /api/admin/jobs/last-runs</c>) et l'état du système (<c>GET /api/admin/system</c> : commit de l'API, dernière sauvegarde). Servi par l'hôte de test seulement, pour générer le client NSwag du front de l'admin.
 /// </summary>
 public class AdminOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(postgres, "admin")
 {
     [Fact]
-    public async Task L_hote_de_test_sert_le_document_du_suivi_des_taches()
+    public async Task L_hote_de_test_sert_le_document_du_suivi_des_taches_et_du_systeme()
     {
         var document = await ReadDocumentAsync();
 
-        var operation = Assert.Single(document["paths"]!.AsObject().SelectMany(path => path.Value!.AsObject().Select(op => (Path: path.Key, Method: op.Key, Id: op.Value!["operationId"]!.GetValue<string>()))));
-        Assert.Equal(("/api/admin/jobs/last-runs", "get", "getJobLastRuns"), operation);
+        var operations = document["paths"]!.AsObject().SelectMany(path => path.Value!.AsObject().Select(op => (Path: path.Key, Method: op.Key, Id: op.Value!["operationId"]!.GetValue<string>())));
+        Assert.Equal(
+            [("/api/admin/jobs/last-runs", "get", "getJobLastRuns"), ("/api/admin/system", "get", "getSystemInfo")],
+            operations.OrderBy(op => op.Path));
     }
 
     [Fact]
