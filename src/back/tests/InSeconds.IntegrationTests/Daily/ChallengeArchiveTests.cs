@@ -254,6 +254,8 @@ public class ChallengeArchiveTests(PostgresFixture postgres) : IAsyncLifetime
     [Fact]
     public async Task PlanDuSite_PagesFixesPuisJoursPublies()
     {
+        var older = Today.AddDays(-5);
+        await _game.App.AddChallengeAsync(older, 11, 12, 13, 14, 15);
         await _game.App.AddChallengeAsync(Frozen, 1, 2, 3, 4, 5);
         await _game.App.AddChallengeAsync(Yesterday, 6, 7, 8, 9, 10);
         await _game.GenerateAsync();
@@ -265,8 +267,33 @@ public class ChallengeArchiveTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("application/xml", response.Content.Headers.ContentType?.MediaType);
         var front = _game.Api.Services.GetRequiredService<IOptions<AppOptions>>().Value;
+        // lastmod : aujourd'hui pour le jeu, rien pour les pages légales, J+2 (photo figée) pour un jour passé, aujourd'hui tant qu'il est en direct.
         Assert.Equal(
-            [front.Link("/daily"), front.Link("/legal"), front.Link("/privacy"), front.Link($"/daily/archive/{Yesterday:yyyy-MM-dd}"), front.Link($"/daily/archive/{Frozen:yyyy-MM-dd}")],
-            xml.Root!.Elements(ns + "url").Select(u => u.Element(ns + "loc")!.Value));
+            [
+                (front.Link("/daily"), $"{Today:yyyy-MM-dd}"),
+                (front.Link("/legal"), null),
+                (front.Link("/privacy"), null),
+                (front.Link($"/daily/archive/{Yesterday:yyyy-MM-dd}"), $"{Today:yyyy-MM-dd}"),
+                (front.Link($"/daily/archive/{Frozen:yyyy-MM-dd}"), $"{Today:yyyy-MM-dd}"),
+                (front.Link($"/daily/archive/{older:yyyy-MM-dd}"), $"{older.AddDays(2):yyyy-MM-dd}"),
+            ],
+            xml.Root!.Elements(ns + "url").Select(u => (u.Element(ns + "loc")!.Value, u.Element(ns + "lastmod")?.Value)));
+    }
+
+    [Fact]
+    public async Task PlanDuSite_Head_MemesEnTetesQueGet()
+    {
+        await _game.App.AddChallengeAsync(Yesterday, 6, 7, 8, 9, 10);
+        await _game.GenerateAsync();
+        var client = _game.Api.CreateClient();
+        var body = await (await client.GetAsync("/sitemap.xml", Ct)).Content.ReadAsByteArrayAsync(Ct);
+
+        using var request = new HttpRequestMessage(HttpMethod.Head, "/sitemap.xml");
+        var response = await client.SendAsync(request, Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("application/xml", response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(body.Length, response.Content.Headers.ContentLength);
+        Assert.Equal("public, max-age=3600", response.Headers.CacheControl?.ToString());
     }
 }
