@@ -154,14 +154,20 @@ describe('CataloguePage', () => {
       const { pool, detect } = await render({ query: { view: 'daily' } });
       await detect();
       expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({
-        queryParams: { page: null, view: 'daily' }, replaceUrl: true,
+        queryParams: { page: null, view: 'daily', extrait: null }, replaceUrl: true,
       }));
 
       pool.setView('pool');
       await detect();
 
-      expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({ queryParams: { page: null, view: null } }));
+      expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({ queryParams: { page: null, view: null, extrait: null } }));
     });
+  });
+
+  it('?extrait=absent (lien du panneau technique) ouvre le pool filtré sur les morceaux sans extrait', async () => {
+    const { pool } = await render({ query: { extrait: 'absent' } });
+
+    expect(pool.filters().preview).toBe('missing');
   });
 
   describe('page de la grille dans l\'adresse', () => {
@@ -178,11 +184,11 @@ describe('CataloguePage', () => {
       await detect();
 
       expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({
-        queryParams: { page: 2, view: null }, queryParamsHandling: 'merge', replaceUrl: true,
+        queryParams: { page: 2, view: null, extrait: null }, queryParamsHandling: 'merge', replaceUrl: true,
       }));
       pool.previousPage();
       await detect();
-      expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({ queryParams: { page: null, view: null } }));
+      expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({ queryParams: { page: null, view: null, extrait: null } }));
     });
 
     it('ignore une page invalide de l\'adresse', async () => {

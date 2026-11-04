@@ -8,7 +8,10 @@ namespace InSeconds.Api.Modules.Catalogue.Contracts;
 /// pool), vide s'il n'a jamais servi.</param>
 /// <param name="UsedByMode">Le mode le déclare utilisé **sans** que cet usage compte pour le cooldown ni pour les dates : un mode dont les
 /// parties référencent le morceau (une clé étrangère) mais qui n'a pas de cooldown (Runs) répond ainsi, tout le reste à « aucun ».</param>
-public sealed record TrackUsage(DateOnly? LastUsedDate, int UsageCount, DateOnly? UnlockDate, bool InTodayChallenge, bool UsedByMode = false)
+/// <param name="AnswerCount">Réponses données sur ce morceau dans ce mode (un « Passer » compte).</param>
+/// <param name="FoundCount">Parmi elles, celles qui ont trouvé l'artiste ou le titre : l'admin en tire un taux, « les moins trouvés ».</param>
+public sealed record TrackUsage(
+    DateOnly? LastUsedDate, int UsageCount, DateOnly? UnlockDate, bool InTodayChallenge, bool UsedByMode = false, int AnswerCount = 0, int FoundCount = 0)
 {
     /// <summary>Jamais utilisé.</summary>
     public static readonly TrackUsage None = new(null, 0, null, false);
@@ -17,7 +20,7 @@ public sealed record TrackUsage(DateOnly? LastUsedDate, int UsageCount, DateOnly
     public bool IsUsed => UsageCount > 0 || UsedByMode;
 
     /// <summary>
-    /// L'usage de deux modes réunis : la date la plus récente, la somme des apparitions, présent dans le défi du jour si l'un des deux l'est,
+    /// L'usage de deux modes réunis : la date la plus récente, la somme des apparitions et des réponses, présent dans le défi du jour si l'un des deux l'est,
     /// utilisé si l'un des deux le dit. Un mode qui n'a pas de cooldown répond « aucun » pour les dates, elles restent donc celles du Daily.
     /// </summary>
     public TrackUsage CombinedWith(TrackUsage other)
@@ -25,7 +28,7 @@ public sealed record TrackUsage(DateOnly? LastUsedDate, int UsageCount, DateOnly
         ArgumentNullException.ThrowIfNull(other);
         return new TrackUsage(
             Latest(LastUsedDate, other.LastUsedDate), UsageCount + other.UsageCount, Latest(UnlockDate, other.UnlockDate),
-            InTodayChallenge || other.InTodayChallenge, UsedByMode || other.UsedByMode);
+            InTodayChallenge || other.InTodayChallenge, UsedByMode || other.UsedByMode, AnswerCount + other.AnswerCount, FoundCount + other.FoundCount);
     }
 
     private static DateOnly? Latest(DateOnly? a, DateOnly? b) => a is null ? b : b is null ? a : a > b ? a : b;

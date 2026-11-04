@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { DailyActivityResponse, DailyClient, DashboardResponse, DayKpisResponse } from '../../api/daily/api.generated';
-import { Dashboard, DayActivity, DayKpis } from '../domain/dashboard';
+import { ArrivalResponse, DailyActivityResponse, DailyClient, DashboardResponse, DayKpisResponse } from '../../api/daily/api.generated';
+import { ArrivalCount, Dashboard, DayActivity, DayKpis } from '../domain/dashboard';
 
 /**
  * Adaptateur du tableau de bord de l'admin (module Daily) : seule porte d'entrée vers le client
@@ -28,6 +28,7 @@ function toDashboard(response: DashboardResponse): Dashboard {
     },
     availableDays: response.availableDates.map(toDay),
     kpis: response.selectedDayKpis ? toKpis(response.selectedDayKpis) : null,
+    arrivals: response.arrivals.map(toArrival),
   };
 }
 
@@ -47,7 +48,13 @@ function toKpis(kpis: DayKpisResponse): DayKpis {
     medianScore: kpis.medianScore ?? null,
     newPlayersCount: kpis.newPlayersCount,
     accountsCreatedCount: kpis.accountsCreatedCount,
+    firstTimeFinishersCount: kpis.firstTimeFinishersCount,
+    arrivals: kpis.arrivals.map(toArrival),
   };
+}
+
+function toArrival(arrival: ArrivalResponse): ArrivalCount {
+  return { source: arrival.source, count: arrival.count };
 }
 
 /** Le client annonce un `Date`, le JSON livre un jour en texte (`2026-10-05`) : on garde le jour, sans fuseau. */

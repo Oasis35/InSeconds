@@ -40,7 +40,28 @@ describe('SystemStore', () => {
     expect(store.branchHead()).toBe(COMMIT);
     expect(store.verdict()).toBe('aligned');
     expect(store.jobs()?.map(j => j.id)).toHaveLength(4);
+    expect(store.catalogue()).toEqual({ missingPreviewCount: 0, missingWaveformCount: 0 });
+    expect(store.nextChallengeState()).toEqual({ kind: 'ready', eligibleCount: 212, generated: false });
     expect(store.alerts()).toBe(0);
+  });
+
+  it('pas assez de morceaux pour le défi de demain : une alerte', async () => {
+    const store = await create({
+      system: { getNextChallenge: vi.fn(() => Promise.resolve({ date: '2026-11-05', eligibleCount: 2, requiredCount: 5, generated: false })) },
+    });
+
+    expect(store.nextChallengeState()?.kind).toBe('insufficient');
+    expect(store.alerts()).toBe(1);
+  });
+
+  it('le pool et le défi de demain illisibles : ni bloc ni ligne, le reste se lit', async () => {
+    const store = await create({
+      system: { getCatalogueHealth: vi.fn(() => Promise.reject(new Error('500'))), getNextChallenge: vi.fn(() => Promise.reject(new Error('500'))) },
+    });
+
+    expect(store.catalogue()).toBeNull();
+    expect(store.nextChallengeState()).toBeNull();
+    expect(store.info()).toEqual(FAKE_SYSTEM_INFO);
   });
 
   it('la branche a un commit plus récent, CI finie : en retard, une alerte', async () => {

@@ -1,12 +1,19 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { AdminClient } from '../../api/admin/api.generated';
-import { SystemInfo } from '../domain/system';
+import { CatalogueClient } from '../../api/catalogue/api.generated';
+import { DailyClient } from '../../api/daily/api.generated';
+import { CatalogueHealth, NextChallenge, SystemInfo } from '../domain/system';
 
-/** Adaptateur de l'état de l'API (`GET /api/admin/system`) : seule porte d'entrée vers le client généré. */
+/**
+ * Adaptateur du panneau technique : l'état de l'API (`GET /api/admin/system`), celui du pool (`GET /api/admin/catalogue/health`) et le
+ * défi de demain (`GET /api/admin/daily/next-challenge`). Seule porte d'entrée vers les clients générés pour ces routes.
+ */
 @Injectable()
 export class SystemApi {
   private readonly client = inject(AdminClient);
+  private readonly catalogue = inject(CatalogueClient);
+  private readonly daily = inject(DailyClient);
 
   /** Le commit de l'API et la dernière sauvegarde de la base. */
   async getInfo(): Promise<SystemInfo> {
@@ -15,6 +22,24 @@ export class SystemApi {
       commit: response.commit ?? null,
       lastBackupAt: toInstant(response.lastBackupAt),
       lastBackupOffSite: response.lastBackupOffSite ?? null,
+    };
+  }
+
+  /** Les morceaux actifs sans extrait, et sans forme d'onde. */
+  async getCatalogueHealth(): Promise<CatalogueHealth> {
+    const response = await firstValueFrom(this.catalogue.getCatalogueHealth());
+    return { missingPreviewCount: response.missingPreviewCount, missingWaveformCount: response.missingWaveformCount };
+  }
+
+  /** Ce que le tirage du défi de demain trouverait maintenant. */
+  async getNextChallenge(): Promise<NextChallenge> {
+    const response = await firstValueFrom(this.daily.getNextChallenge());
+    const date = response.date as Date | string;
+    return {
+      date: (typeof date === 'string' ? date : date.toISOString()).slice(0, 10),
+      eligibleCount: response.eligibleCount,
+      requiredCount: response.requiredCount,
+      generated: response.generated,
     };
   }
 }

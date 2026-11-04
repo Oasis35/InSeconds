@@ -1,14 +1,20 @@
 import { Provider } from '@angular/core';
-import { CiRun, SystemInfo } from '../../domain/system';
+import { CatalogueHealth, CiRun, NextChallenge, SystemInfo } from '../../domain/system';
 import { GithubCiApi } from '../github-ci.api';
 import { SystemApi } from '../system.api';
 
 /** Ce que l'API du faux dit d'elle-même : un commit, une sauvegarde partie sur R2. */
 export const FAKE_SYSTEM_INFO: SystemInfo = { commit: '4f2a9c1d8e7b6a5f', lastBackupAt: '2026-11-04T03:00:41Z', lastBackupOffSite: true };
 
+/** Un pool sans souci, et un défi de demain prêt. */
+export const FAKE_CATALOGUE_HEALTH: CatalogueHealth = { missingPreviewCount: 0, missingWaveformCount: 0 };
+export const FAKE_NEXT_CHALLENGE: NextChallenge = { date: '2026-11-05', eligibleCount: 212, requiredCount: 5, generated: false };
+
 function systemDefaults() {
   return {
     getInfo: vi.fn<() => Promise<SystemInfo>>(() => Promise.resolve(FAKE_SYSTEM_INFO)),
+    getCatalogueHealth: vi.fn<() => Promise<CatalogueHealth>>(() => Promise.resolve(FAKE_CATALOGUE_HEALTH)),
+    getNextChallenge: vi.fn<() => Promise<NextChallenge>>(() => Promise.resolve(FAKE_NEXT_CHALLENGE)),
   } satisfies Record<keyof SystemApi, unknown>;
 }
 

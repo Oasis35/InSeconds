@@ -9,7 +9,7 @@ import { ModalService } from '../../../ui/modal/modal.service';
 import { AdminCounts } from '../../data-access/admin-counts';
 import { problem } from '../../data-access/testing/fake-catalogue-api';
 import {
-  FakeChallengesApi, challengePlayer, challengeStats, challengeTrack, fakeChallengesApi, provideChallengesApiFake,
+  FakeChallengesApi, challengePlayer, challengeStats, challengeTrack, fakeChallengesApi, provideChallengesApiFake, statsPage,
 } from '../../data-access/testing/fake-challenges-api';
 import { ChallengeStats } from '../../domain/challenge';
 import { ChallengesPage } from './challenges.page';
@@ -37,7 +37,7 @@ describe('ChallengesPage', () => {
     stats: ChallengeStats[] = [today, older, september],
     options: { wide?: boolean; query?: Record<string, string> } = {},
   ) {
-    api = fakeChallengesApi({ loadStats: vi.fn(async () => stats), ...overrides });
+    api = fakeChallengesApi({ loadStats: vi.fn(async () => statsPage(stats)), ...overrides });
     modal = { open: vi.fn() };
     copy = vi.fn(async () => true);
     router = { navigate: vi.fn(async () => true) };
@@ -85,9 +85,9 @@ describe('ChallengesPage', () => {
     const { element } = await render();
 
     expect(element.querySelector('[data-testid="challenge-month"]')?.textContent).toContain('Octobre 2026');
-    expect(element.textContent).toContain('2026-10-05');
-    expect(element.textContent).toContain('2026-10-04');
-    expect(element.textContent).not.toContain('2026-09-30');
+    expect(element.textContent).toContain('05/10/2026');
+    expect(element.textContent).toContain('04/10/2026');
+    expect(element.textContent).not.toContain('30/09/2026');
     expect(element.textContent).not.toContain('admin.challenges.history');
   });
 
@@ -104,7 +104,7 @@ describe('ChallengesPage', () => {
 
       expect(element.querySelectorAll('[data-testid="challenge-table-row"]')).toHaveLength(2);
       const detail = element.querySelector('[data-testid="challenge-detail"]') as HTMLElement;
-      expect(detail.textContent).toContain('2026-10-05');
+      expect(detail.textContent).toContain('05/10/2026');
       expect(detail.textContent).toContain('1. Eminem - Lose Yourself');
     });
 
@@ -114,7 +114,7 @@ describe('ChallengesPage', () => {
       (element.querySelectorAll('[data-testid="challenge-table-row"]')[1] as HTMLElement).click();
       await settle();
 
-      expect(element.querySelector('[data-testid="challenge-detail"]')?.textContent).toContain('2026-10-04');
+      expect(element.querySelector('[data-testid="challenge-detail"]')?.textContent).toContain('04/10/2026');
     });
   });
 
@@ -125,8 +125,8 @@ describe('ChallengesPage', () => {
     await settle();
 
     expect(element.querySelector('[data-testid="challenge-month"]')?.textContent).toContain('Septembre 2026');
-    expect(element.textContent).toContain('2026-09-30');
-    expect(element.textContent).not.toContain('2026-10-05');
+    expect(element.textContent).toContain('30/09/2026');
+    expect(element.textContent).not.toContain('05/10/2026');
   });
 
   it('dit qu\'il n\'y a aucun défi', async () => {
@@ -147,7 +147,7 @@ describe('ChallengesPage', () => {
     it('met « toi » et l\'identifiant court sur le joueur du navigateur, le pseudo sur un compte', async () => {
       const { row } = await render();
 
-      const chips = Array.from(row('2026-10-05').querySelectorAll('button')).slice(1);
+      const chips = Array.from(row('05/10/2026').querySelectorAll('button')).slice(1);
       expect(chips[0].textContent).toContain('abcdef12');
       expect(chips[0].textContent).toContain('admin.dashboard.you');
       expect(chips[1].textContent).toContain('Alice');
@@ -157,19 +157,19 @@ describe('ChallengesPage', () => {
       const { row, settle } = await render();
       const mineIn = (date: string) => Array.from(row(date).querySelectorAll('button')).find(b => b.textContent?.includes('abcdef12'))!;
 
-      mineIn('2026-10-05').click();
+      mineIn('05/10/2026').click();
       await settle();
-      expect(mineIn('2026-10-05').style.boxShadow).not.toBe('');
-      expect(mineIn('2026-10-04').style.boxShadow).not.toBe('');
+      expect(mineIn('05/10/2026').style.boxShadow).not.toBe('');
+      expect(mineIn('04/10/2026').style.boxShadow).not.toBe('');
 
-      mineIn('2026-10-05').click();
+      mineIn('05/10/2026').click();
       await settle();
-      expect(mineIn('2026-10-04').style.boxShadow).toBe('');
+      expect(mineIn('04/10/2026').style.boxShadow).toBe('');
     });
 
     it('clic droit : copie l\'identifiant complet sans menu, et affiche « Copié ! » dans la ligne du défi', async () => {
       const { row, settle } = await render();
-      const chip = Array.from(row('2026-10-05').querySelectorAll('button')).find(b => b.textContent?.includes('abcdef12'))!;
+      const chip = Array.from(row('05/10/2026').querySelectorAll('button')).find(b => b.textContent?.includes('abcdef12'))!;
       const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
 
       chip.dispatchEvent(event);
@@ -177,28 +177,28 @@ describe('ChallengesPage', () => {
 
       expect(event.defaultPrevented).toBe(true);
       expect(copy).toHaveBeenCalledWith(MINE);
-      expect(row('2026-10-05').textContent).toContain('admin.dashboard.copied');
+      expect(row('05/10/2026').textContent).toContain('admin.dashboard.copied');
     });
   });
 
   describe('accordéon', () => {
     it('le premier bouton de la ligne déplie les stats du défi et les taux de ses morceaux', async () => {
       const { row, settle } = await render();
-      expect(row('2026-10-05').textContent).not.toContain('Lose Yourself');
+      expect(row('05/10/2026').textContent).not.toContain('Lose Yourself');
 
-      row('2026-10-05').querySelector('button')!.click();
+      row('05/10/2026').querySelector('button')!.click();
       await settle();
 
-      expect(row('2026-10-05').textContent).toContain('1. Eminem - Lose Yourself');
-      expect(row('2026-10-05').textContent).toContain('75%');
+      expect(row('05/10/2026').textContent).toContain('1. Eminem - Lose Yourself');
+      expect(row('05/10/2026').textContent).toContain('75%');
     });
 
     it('l\'icône d\'un morceau ouvre la pop-up de la répartition des temps', async () => {
       const { row, settle } = await render();
-      row('2026-10-05').querySelector('button')!.click();
+      row('05/10/2026').querySelector('button')!.click();
       await settle();
 
-      row('2026-10-05').querySelector<HTMLButtonElement>('button[aria-label="admin.challenges.showChart"]')!.click();
+      row('05/10/2026').querySelector<HTMLButtonElement>('button[aria-label="admin.challenges.showChart"]')!.click();
 
       expect(modal.open).toHaveBeenCalledWith(TrackChartDialog, expect.objectContaining({ data: { track: today.tracks[0] } }));
     });
@@ -214,46 +214,46 @@ describe('ChallengesPage', () => {
 
     it('montre la date de calcul et le bouton sur un défi figé qui peut être recalculé, pas sur les autres', async () => {
       const ctx = await render();
-      await expand(ctx, '2026-10-04');
-      await expand(ctx, '2026-10-05');
+      await expand(ctx, '04/10/2026');
+      await expand(ctx, '05/10/2026');
 
-      expect(ctx.row('2026-10-04').querySelector('[data-testid="challenge-computed-at"]')).not.toBeNull();
-      expect(recomputeButton(ctx.row('2026-10-04'))).toBeDefined();
-      expect(recomputeButton(ctx.row('2026-10-05'))).toBeUndefined();
+      expect(ctx.row('04/10/2026').querySelector('[data-testid="challenge-computed-at"]')).not.toBeNull();
+      expect(recomputeButton(ctx.row('04/10/2026'))).toBeDefined();
+      expect(recomputeButton(ctx.row('05/10/2026'))).toBeUndefined();
     });
 
     it('recalcule le jour et remplace le défi par la réponse', async () => {
       const recomputed = { ...older, canRecompute: false, computedAt: '2026-10-09T10:00:00Z', playerCount: 9 };
       const ctx = await render({ recompute: vi.fn(async () => recomputed) });
-      await expand(ctx, '2026-10-04');
+      await expand(ctx, '04/10/2026');
 
-      recomputeButton(ctx.row('2026-10-04'))!.click();
+      recomputeButton(ctx.row('04/10/2026'))!.click();
       await ctx.settle();
 
       expect(api.recompute).toHaveBeenCalledWith('2026-10-04');
-      expect(ctx.row('2026-10-04').textContent).toContain('9');
-      expect(recomputeButton(ctx.row('2026-10-04'))).toBeUndefined();
+      expect(ctx.row('04/10/2026').textContent).toContain('9');
+      expect(recomputeButton(ctx.row('04/10/2026'))).toBeUndefined();
     });
 
     it('affiche « en cours » pendant le recalcul', async () => {
       const ctx = await render({ recompute: vi.fn(() => new Promise<ChallengeStats>(() => undefined)) });
-      await expand(ctx, '2026-10-04');
+      await expand(ctx, '04/10/2026');
 
-      recomputeButton(ctx.row('2026-10-04'))!.click();
+      recomputeButton(ctx.row('04/10/2026'))!.click();
       await ctx.settle();
 
-      expect(ctx.row('2026-10-04').textContent).toContain('admin.challenges.recomputing');
-      expect(ctx.row('2026-10-04').querySelector<HTMLButtonElement>('button:disabled')).not.toBeNull();
+      expect(ctx.row('04/10/2026').textContent).toContain('admin.challenges.recomputing');
+      expect(ctx.row('04/10/2026').querySelector<HTMLButtonElement>('button:disabled')).not.toBeNull();
     });
 
     it('explique que le jour n\'est pas fini', async () => {
       const ctx = await render({ recompute: vi.fn(async () => Promise.reject(problem(409, 'admin.day_not_over'))) });
-      await expand(ctx, '2026-10-04');
+      await expand(ctx, '04/10/2026');
 
-      recomputeButton(ctx.row('2026-10-04'))!.click();
+      recomputeButton(ctx.row('04/10/2026'))!.click();
       await ctx.settle();
 
-      expect(ctx.row('2026-10-04').querySelector('[role="alert"]')?.textContent).toContain('errors.admin.day_not_over');
+      expect(ctx.row('04/10/2026').querySelector('[role="alert"]')?.textContent).toContain('errors.admin.day_not_over');
     });
   });
 });

@@ -462,6 +462,26 @@
           }
         }
       }
+    },
+    "/api/admin/catalogue/health": {
+      "get": {
+        "tags": [
+          "Catalogue"
+        ],
+        "operationId": "getCatalogueHealth",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogueHealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -733,7 +753,9 @@
           "usageCount",
           "lastUsedDate",
           "unlockDate",
-          "inTodayChallenge"
+          "inTodayChallenge",
+          "answerCount",
+          "foundCount"
         ],
         "type": "object",
         "properties": {
@@ -760,6 +782,14 @@
           },
           "inTodayChallenge": {
             "type": "boolean"
+          },
+          "answerCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "foundCount": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -845,6 +875,23 @@
             "format": "int64"
           }
         }
+      },
+      "CatalogueHealthResponse": {
+        "required": [
+          "missingPreviewCount",
+          "missingWaveformCount"
+        ],
+        "type": "object",
+        "properties": {
+          "missingPreviewCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "missingWaveformCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
       }
     }
   },
@@ -866,6 +913,9 @@
     },
     {
       "name": "InSeconds.Api.Modules.Catalogue.Application.UpdateTrackEndpoint"
+    },
+    {
+      "name": "InSeconds.Api.Modules.Catalogue.Application.GetCatalogueHealthEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Catalogue.Application.SearchTracksEndpoint"

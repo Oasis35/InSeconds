@@ -29,6 +29,7 @@
     "admin": {
       "day_not_over": "This day isn't over yet: the stats will be frozen tomorrow.",
       "invalid_date": "Invalid date: the expected format is yyyy-mm-dd.",
+      "invalid_month": "Invalid month: the expected format is yyyy-mm.",
       "pool_insufficient": "Pool too small: add tracks with a preview."
     },
     "players": {
@@ -368,7 +369,10 @@
         "cooldownAppliedDay": "Applied today: {{ days }} day · {{ count }} playable tracks",
         "cooldownAppliedDays": "Applied today: {{ days }} days · {{ count }} playable tracks",
         "cooldownBelowAlert": "Below the {{ days }}-day threshold: add tracks."
-      }
+      },
+      "colFound": "Found",
+      "foundHint": "Over {{ count }} answers",
+      "hardestFirst": "Least found"
     },
     "deleteModal": {
       "title": "Confirm deletion",
@@ -445,7 +449,14 @@
       "accountCreated": "{{ count }} account created",
       "accountsCreated": "{{ count }} accounts created",
       "dayTracks": "Today's tracks",
-      "totalPlayers": "players in 30 days"
+      "totalPlayers": "players in 30 days",
+      "arrivedToday": "Arrived today:",
+      "arrivedThatDay": "Arrived that day:",
+      "amongFinishers": "Among those who finished:",
+      "regulars": "regulars",
+      "newcomers": "newcomers",
+      "arrivalsTitle": "Where newcomers come from · 30 days",
+      "arrivalsCount": "new players"
     },
     "challenges": {
       "noChallengeThisMonth": "No challenge this month.",
@@ -461,7 +472,10 @@
       "colPlayers": "Players",
       "colAbandons": "Give-ups",
       "colMedian": "Median",
-      "colAccounts": "Accounts"
+      "colAccounts": "Accounts",
+      "colGuests": "Guests",
+      "colCompleted": "Finished",
+      "scoreChart": "Score distribution"
     },
     "players": {
       "title": "Registered accounts ({{ count }})",
@@ -474,7 +488,6 @@
       "emailReveal": "Show email",
       "emailHide": "Hide email",
       "colLastSeen": "Last visit",
-      "colCreated": "Signed up",
       "colRun": "Run",
       "runAccessToggle": "Allow this account to play Run mode",
       "runAccessAdmin": "Admins always have access to Run mode",
@@ -498,7 +511,16 @@
       },
       "lastSeenAt": "{{date}} at {{time}}",
       "gamesCount": "{{ count }} game(s)",
-      "seenOn": "seen {{ date }}"
+      "seenOn": "seen {{ date }}",
+      "streaksTitle": "Current streaks",
+      "withStreak": "accounts with a streak",
+      "streak": {
+        "oneDay": "1 day",
+        "short": "2 to 6 days",
+        "long": "7 days or more"
+      },
+      "nextDayReturn": "Come back the next day:",
+      "nextDayReturnHint": "of a day's players (over the last 30 days)"
     },
     "system": {
       "deployment": "Deployment",
@@ -551,7 +573,27 @@
       "browser": "This browser",
       "statusOk": "All good, see details",
       "statusAlerts": "{{ count }} alert(s), see details",
-      "alerts": "{{ count }} alert(s)"
+      "alerts": "{{ count }} alert(s)",
+      "catalogue": "Catalogue",
+      "missingPreviews": "No preview",
+      "trackCount": "{{ count }} track",
+      "tracksCount": "{{ count }} tracks",
+      "missingWaveforms": "Missing waveforms",
+      "nextChallenge": "Tomorrow's challenge",
+      "nextChallengeReady": "ready · {{ count }} out of cooldown",
+      "nextChallengeGenerated": "already drawn",
+      "nextChallengeInsufficient": "{{ count }} out of cooldown, {{ required }} needed",
+      "nextChallengeRetryAt": "failed · next try at {{ time }}",
+      "nextChallengeFailed": "failed",
+      "todayChallenge": "Today's challenge"
+    },
+    "sources": {
+      "instagram": "Instagram",
+      "tiktok": "TikTok",
+      "share": "Shared link",
+      "direct": "Direct",
+      "other": "Other sites",
+      "rest": "Others"
     }
   },
   "daily": {

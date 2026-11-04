@@ -1,6 +1,6 @@
 import { Provider } from '@angular/core';
 import {
-  ChallengePlayer, ChallengeStats, ChallengeTrackStats,
+  ChallengePlayer, ChallengeStats, ChallengeStatsPage, ChallengeTrackStats, availableMonths,
 } from '../../domain/challenge';
 import { ChallengesApi } from '../challenges.api';
 
@@ -19,14 +19,20 @@ export function challengePlayer(overrides: Partial<ChallengePlayer> = {}): Chall
 export function challengeStats(overrides: Partial<ChallengeStats> = {}): ChallengeStats {
   return {
     id: 1, date: '2026-10-05', playerCount: 1, pendingCount: 0, abandonedCount: 0, expiredCount: 0,
-    scoreMin: 1200, scoreMax: 1200, scoreAvg: 1200, scoreMedian: 1200,
+    scoreMin: 1200, scoreMax: 1200, scoreAvg: 1200, scoreMedian: 1200, maxPossibleScore: 5000,
+    scoreDistribution: Array.from({ length: 10 }, (_, i) => ({ minScore: i * 500, maxScore: i === 9 ? 5000 : i * 500 + 499, count: i === 2 ? 1 : 0 })),
     tracks: [challengeTrack()], players: [challengePlayer()], computedAt: null, canRecompute: false, ...overrides,
   };
 }
 
+/** Une réponse des stats : par défaut, les mois et le nombre de défis sont ceux des défis donnés (tout est lu). */
+export function statsPage(challenges: readonly ChallengeStats[], overrides: Partial<ChallengeStatsPage> = {}): ChallengeStatsPage {
+  return { challenges, months: availableMonths(challenges), totalCount: challenges.length, ...overrides };
+}
+
 function defaults() {
   return {
-    loadStats: vi.fn<() => Promise<ChallengeStats[]>>(() => Promise.resolve([])),
+    loadStats: vi.fn<(month?: string) => Promise<ChallengeStatsPage>>(() => Promise.resolve(statsPage([]))),
     recompute: vi.fn<(day: string) => Promise<ChallengeStats>>(() => Promise.resolve(challengeStats())),
   } satisfies Record<keyof ChallengesApi, unknown>;
 }

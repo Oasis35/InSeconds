@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 
-/** Le navigateur de mois ‹ Mois Année › de l'onglet Défis (partagé entre « Stats par défi » et « Historique »). */
+/** Le navigateur de mois ‹ Mois Année › de l'onglet Défis : au-dessus de la carte sur téléphone, au-dessus du tableau sur PC. */
 @Component({
   selector: 'app-challenge-month-nav',
   imports: [TranslatePipe],

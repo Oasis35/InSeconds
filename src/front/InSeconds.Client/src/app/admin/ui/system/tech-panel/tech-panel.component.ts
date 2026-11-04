@@ -1,7 +1,10 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
-import { BackupTone, CiRun, DeploymentVerdict, JobTone, NightlyJob, shortCommit } from '../../../domain/system';
+import {
+  BackupTone, CatalogueHealth, CiRun, DeploymentVerdict, JobTone, NextChallengeState, NightlyJob, shortCommit,
+} from '../../../domain/system';
 
 const JOB_ICON: Record<JobTone, { icon: string; color: string }> = {
   ok: { icon: '✓', color: 'var(--color-success)' },
@@ -37,13 +40,14 @@ export interface CiLine {
 
 /**
  * Le panneau technique de l'admin, en blocs titrés : Déploiement (la date en grand, les commits du front, de l'API et le dernier de
- * la branche, et le verdict), Santé (API et dernière sauvegarde), Tâches de la nuit (avec le lien vers Hangfire), Intégration continue
+ * la branche, et le verdict), Santé (API et dernière sauvegarde), Catalogue (morceaux sans extrait, avec le lien vers le pool filtré, et
+ * formes d'onde manquantes), Tâches de la nuit (avec le lien vers Hangfire, puis le défi de demain), Intégration continue
  * (prod et staging, avec le lien vers Grafana). Ce que la page projette (l'identifiant du navigateur, la déconnexion) vient à la fin.
  * Barre de gauche sur PC, menu déplié sous l'en-tête sur téléphone : le même contenu.
  */
 @Component({
   selector: 'app-tech-panel',
-  imports: [DatePipe, TranslatePipe],
+  imports: [DatePipe, RouterLink, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col gap-4 text-xs" style="color:var(--text-muted)" data-testid="admin-tech-panel">
@@ -86,6 +90,28 @@ export interface CiLine {
         </p>
       </section>
 
+      @if (catalogue(); as pool) {
+        <section data-testid="tech-catalogue">
+          <h2 class="tech-title">{{ 'admin.system.catalogue' | translate }}</h2>
+          <p class="tech-line">
+            <span>{{ 'admin.system.missingPreviews' | translate }}</span>
+            @if (pool.missingPreviewCount > 0) {
+              <a routerLink="/admin/catalogue" [queryParams]="{ extrait: 'absent' }" class="underline hover:text-(--text-hi)" style="color:var(--color-warn)"
+                data-testid="missing-previews">{{ (pool.missingPreviewCount > 1 ? 'admin.system.tracksCount' : 'admin.system.trackCount') | translate: { count: pool.missingPreviewCount } }}</a>
+            } @else {
+              <span style="color:var(--text-hi)" data-testid="missing-previews"><span aria-hidden="true" style="color:var(--color-success)">✓</span> 0</span>
+            }
+          </p>
+          <p class="tech-line">
+            <span>{{ 'admin.system.missingWaveforms' | translate }}</span>
+            <span data-testid="missing-waveforms" [style.color]="pool.missingWaveformCount > 0 ? 'var(--color-warn)' : 'var(--text-hi)'">
+              @if (pool.missingWaveformCount === 0) { <span aria-hidden="true" style="color:var(--color-success)">✓</span> }
+              {{ pool.missingWaveformCount }}
+            </span>
+          </p>
+        </section>
+      }
+
       <section>
         <h2 class="tech-title flex items-center justify-between">{{ 'admin.system.nightlyJobs' | translate }}
           <a [href]="jobsUrl()" class="normal-case font-normal underline hover:text-(--text-hi)" style="color:var(--text-muted)">{{ 'admin.system.hangfire' | translate }}</a>
@@ -101,6 +127,30 @@ export interface CiLine {
               <span class="ml-auto tabular-nums">{{ job.at ? (job.at | date: 'dd/MM HH:mm') : '-' }}</span>
             </p>
           }
+        }
+        @if (nextChallenge(); as next) {
+          @let ok = next.kind === 'ready';
+          <p class="flex items-center gap-1.5 py-0.5 mt-1 pt-1.5" style="border-top:1px solid var(--border-subtle)" data-testid="next-challenge">
+            <span class="font-bold w-3 text-center" aria-hidden="true" [style.color]="ok ? 'var(--color-success)' : 'var(--text-error)'">{{ ok ? '✓' : '✗' }}</span>
+            <span [style.color]="ok ? 'var(--text-light)' : 'var(--text-error)'">{{ (next.kind === 'retrying' ? 'admin.system.todayChallenge' : 'admin.system.nextChallenge') | translate }}</span>
+            <span class="ml-auto text-right" [style.color]="ok ? null : 'var(--text-error)'">
+              @switch (next.kind) {
+                @case ('ready') {
+                  {{ (next.generated ? 'admin.system.nextChallengeGenerated' : 'admin.system.nextChallengeReady') | translate: { count: next.eligibleCount } }}
+                }
+                @case ('insufficient') {
+                  {{ 'admin.system.nextChallengeInsufficient' | translate: { count: next.eligibleCount, required: next.requiredCount } }}
+                }
+                @case ('retrying') {
+                  @if (next.retryAt; as at) {
+                    {{ 'admin.system.nextChallengeRetryAt' | translate: { time: (at | date: 'HH:mm') } }}
+                  } @else {
+                    {{ 'admin.system.nextChallengeFailed' | translate }}
+                  }
+                }
+              }
+            </span>
+          </p>
         }
       </section>
 
@@ -142,6 +192,10 @@ export class TechPanelComponent {
   /** `null` tant que les tâches ne sont pas lues. */
   readonly jobs = input<readonly NightlyJob[] | null>(null);
   readonly jobsFailed = input(false);
+  /** Le pool (sans extrait, sans forme d'onde) ; rien d'affiché tant que ce n'est pas lu. */
+  readonly catalogue = input<CatalogueHealth | null>(null);
+  /** La ligne « Défi de demain », sous les tâches ; rien d'affiché tant que ce n'est pas lu. */
+  readonly nextChallenge = input<NextChallengeState | null>(null);
   readonly ci = input<readonly CiLine[]>([]);
   readonly jobsUrl = input.required<string>();
   readonly grafanaUrl = input.required<string>();

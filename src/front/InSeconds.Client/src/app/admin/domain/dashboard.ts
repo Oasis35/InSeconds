@@ -12,6 +12,12 @@ export interface PlayerBreakdown {
   activeLast30Days: number;
 }
 
+/** Les joueurs arrivés par une source : `instagram`, `share`, `direct`, `other`, ou le domaine d'un site (`google.com`). */
+export interface ArrivalCount {
+  source: string;
+  count: number;
+}
+
 /** Les chiffres d'un jour qui a un défi. */
 export interface DayKpis {
   day: string;
@@ -27,6 +33,10 @@ export interface DayKpis {
   newPlayersCount: number;
   /** Les comptes ouverts ce jour-là (jour UTC). */
   accountsCreatedCount: number;
+  /** Parmi ceux qui ont fini, ceux dont c'est la toute première partie ; les autres sont des habitués. */
+  firstTimeFinishersCount: number;
+  /** Les joueurs arrivés ce jour-là, par source, la plus fréquente d'abord. */
+  arrivals: readonly ArrivalCount[];
 }
 
 export interface Dashboard {
@@ -37,6 +47,37 @@ export interface Dashboard {
   availableDays: readonly string[];
   /** `null` si le jour demandé n'a pas de défi. */
   kpis: DayKpis | null;
+  /** Les joueurs arrivés les 30 derniers jours, par source, la plus fréquente d'abord. */
+  arrivals: readonly ArrivalCount[];
+}
+
+const KNOWN_SOURCES: ReadonlySet<string> = new Set(['instagram', 'tiktok', 'share', 'direct', 'other']);
+
+/** La clé i18n d'une source connue (`admin.sources.instagram`) ; `null` pour un domaine, qui s'affiche tel quel. */
+export function sourceLabelKey(source: string): string | null {
+  return KNOWN_SOURCES.has(source) ? `admin.sources.${source}` : null;
+}
+
+/** Une part de la barre des sources : une source, ou `null` pour le reste réuni (« Autres »). */
+export interface ArrivalShare {
+  source: string | null;
+  count: number;
+  /** En pourcentage, arrondi à l'unité. */
+  percent: number;
+}
+
+/**
+ * Les parts de la barre « D'où viennent les nouveaux » : les `top` sources les plus fréquentes, puis le reste réuni (dont `other`) ;
+ * vide sans arrivée.
+ */
+export function arrivalShares(arrivals: readonly ArrivalCount[], top = 3): ArrivalShare[] {
+  const total = arrivals.reduce((sum, a) => sum + a.count, 0);
+  if (total === 0) return [];
+  const named = arrivals.filter(a => a.source !== 'other').slice(0, top);
+  const rest = total - named.reduce((sum, a) => sum + a.count, 0);
+  const shares: ArrivalShare[] = named.map(a => ({ source: a.source, count: a.count, percent: Math.round((a.count / total) * 100) }));
+  if (rest > 0) shares.push({ source: null, count: rest, percent: Math.round((rest / total) * 100) });
+  return shares;
 }
 
 const ACTIVITY_BAR_MAX_PX = 64;

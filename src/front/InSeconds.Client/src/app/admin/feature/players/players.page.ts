@@ -7,10 +7,12 @@ import { AdminPlayersStore } from '../../data-access/players.store';
 import { canPlayRuns } from '../../domain/registered-player';
 import { PlayerCardComponent } from '../../ui/players/player-card/player-card.component';
 import { PlayerHistoryComponent } from '../../ui/players/player-history/player-history.component';
+import { PlayersLoyaltyComponent } from '../../ui/players/players-loyalty/players-loyalty.component';
 import { PlayerRowComponent } from '../../ui/players/player-row/player-row.component';
 
 /**
- * `/admin/joueurs` : les comptes inscrits, les plus récemment vus d'abord, avec un filtre texte et,
+ * `/admin/joueurs` : en haut, les séries en cours et la part des joueurs revenus le lendemain ; puis les comptes inscrits, les plus
+ * récemment vus d'abord, avec un filtre texte et,
  * sous chaque ligne dépliée (une seule à la fois), l'historique des 30 derniers jours. Une colonne « Run » donne
  * l'interrupteur d'accès au mode Run (admins d'office).
  * Sur PC, un tableau élargi ; sur téléphone, une carte par compte (pseudo, série, gels, parties, dernière visite, accès à Platines).
@@ -18,12 +20,15 @@ import { PlayerRowComponent } from '../../ui/players/player-row/player-row.compo
  */
 @Component({
   selector: 'app-admin-players-page',
-  imports: [TranslatePipe, ErrorMessageComponent, PlayerRowComponent, PlayerCardComponent, PlayerHistoryComponent],
+  imports: [TranslatePipe, ErrorMessageComponent, PlayerRowComponent, PlayerCardComponent, PlayerHistoryComponent, PlayersLoyaltyComponent],
   providers: [AdminPlayersStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex w-full min-w-0 justify-center' },
   template: `
     <section class="flex flex-col gap-4 w-full max-w-2xl lg:max-w-none" data-testid="admin-players-page">
+      @if (store.isFulfilled() && store.players().length > 0) {
+        <app-players-loyalty [streaks]="store.streaks()" [nextDayReturnRate]="store.nextDayReturnRate()" />
+      }
       <div class="rounded-xl flex flex-col overflow-hidden" style="background:var(--bg-surface)">
         <div class="flex flex-wrap items-center justify-between gap-3 p-4">
           <h2 class="text-sm font-semibold uppercase tracking-wide" style="color:var(--text-muted)">
@@ -81,7 +86,6 @@ import { PlayerRowComponent } from '../../ui/players/player-row/player-row.compo
                   <th class="px-3 py-2.5 text-right">{{ 'admin.players.colFreezes' | translate }}</th>
                   <th class="px-3 py-2.5 text-center">{{ 'admin.players.colRun' | translate }}</th>
                   <th class="px-3 py-2.5 whitespace-nowrap">{{ 'admin.players.colLastSeen' | translate }}</th>
-                  <th class="px-4 py-2.5 whitespace-nowrap">{{ 'admin.players.colCreated' | translate }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -93,7 +97,7 @@ import { PlayerRowComponent } from '../../ui/players/player-row/player-row.compo
                   @if (expanded && store.expandedHistory(); as history) {
                     <tr data-testid="player-history" [id]="'player-history-' + player.id"
                       style="border-bottom:1px solid var(--border-subtle);background:var(--bg-inactive)">
-                      <td colspan="8" class="px-4 pb-3 pt-1">
+                      <td colspan="7" class="px-4 pb-3 pt-1">
                         <app-player-history [games]="history.games" [status]="history.status" />
                       </td>
                     </tr>

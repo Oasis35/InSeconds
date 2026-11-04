@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideTranslateService } from '@ngx-translate/core';
 import { WIDE_SCREEN } from '../../../core/layout/wide-screen';
 import {
-  FakeAdminPlayersApi, fakeAdminPlayersApi, playerGame, provideAdminPlayersApiFake, registeredPlayer,
+  FakeAdminPlayersApi, fakeAdminPlayersApi, playerGame, provideAdminPlayersApiFake, registeredPlayer, playersPage,
 } from '../../data-access/testing/fake-admin-players-api';
 import { problem } from '../../data-access/testing/fake-catalogue-api';
 import { RegisteredPlayer } from '../../domain/registered-player';
@@ -15,8 +15,8 @@ describe('PlayersPage', () => {
 
   let api: FakeAdminPlayersApi;
 
-  async function render(options: { players?: RegisteredPlayer[]; api?: Partial<FakeAdminPlayersApi>; wide?: boolean } = {}) {
-    api = fakeAdminPlayersApi({ list: vi.fn(async () => options.players ?? [alice, bob]), ...options.api });
+  async function render(options: { players?: RegisteredPlayer[]; returnRate?: number | null; api?: Partial<FakeAdminPlayersApi>; wide?: boolean } = {}) {
+    api = fakeAdminPlayersApi({ list: vi.fn(async () => playersPage(options.players ?? [alice, bob], options.returnRate ?? null)), ...options.api });
     TestBed.configureTestingModule({ providers: [
       provideTranslateService(), provideAdminPlayersApiFake(api), { provide: WIDE_SCREEN, useValue: signal(options.wide ?? true) },
     ] });
@@ -40,6 +40,14 @@ describe('PlayersPage', () => {
     expect(rows()[0].textContent).not.toContain('alice@example.com');
     expect(rows()[0].textContent).toContain('admin.players.adminBadge');
     expect(rows()[1].textContent).toContain('admin.players.neverSeen');
+  });
+
+  it('en haut, les séries en cours des comptes et la part revenue le lendemain', async () => {
+    const { element } = await render({ players: [registeredPlayer({ id: 'a', currentStreak: 1 }), registeredPlayer({ id: 'b', currentStreak: 9 })], returnRate: 48 });
+
+    expect(element.querySelector('[data-testid="players-loyalty"]')?.textContent).toContain('2');
+    expect(element.querySelector('[data-testid="streak-long"]')?.textContent).toContain('1');
+    expect(element.querySelector('[data-testid="next-day-return"]')?.textContent).toContain('48 %');
   });
 
   it('affiche l\'état vide', async () => {

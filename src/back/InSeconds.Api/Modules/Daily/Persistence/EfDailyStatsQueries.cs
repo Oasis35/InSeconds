@@ -103,13 +103,18 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
             .ToListAsync(ct);
 
     public async Task<IReadOnlyList<RecentChallenge>> ListRecentChallengesAsync(int take, CancellationToken ct) =>
-        await (from c in db.Set<DailyChallenge>().AsNoTracking()
-               join s in db.Set<DayStatsSnapshot>().AsNoTracking() on c.Id equals s.ChallengeId into snapshots
-               from snapshot in snapshots.DefaultIfEmpty()
-               orderby c.Date descending
-               select new RecentChallenge(c.Id, c.Date, snapshot == null ? null : snapshot.Payload, snapshot == null ? null : snapshot.ComputedAt))
-            .Take(take)
-            .ToListAsync(ct);
+        await ChallengesWithSnapshot(db.Set<DailyChallenge>().AsNoTracking()).Take(take).ToListAsync(ct);
+
+    public async Task<IReadOnlyList<RecentChallenge>> ListChallengesBetweenAsync(DateOnly from, DateOnly to, CancellationToken ct) =>
+        await ChallengesWithSnapshot(db.Set<DailyChallenge>().AsNoTracking().Where(c => c.Date >= from && c.Date <= to)).ToListAsync(ct);
+
+    /// <summary>Les défis donnés, du plus récent au plus ancien, chacun avec sa photo figée s'il en a une.</summary>
+    private IQueryable<RecentChallenge> ChallengesWithSnapshot(IQueryable<DailyChallenge> challenges) =>
+        from c in challenges
+        join s in db.Set<DayStatsSnapshot>().AsNoTracking() on c.Id equals s.ChallengeId into snapshots
+        from snapshot in snapshots.DefaultIfEmpty()
+        orderby c.Date descending
+        select new RecentChallenge(c.Id, c.Date, snapshot == null ? null : snapshot.Payload, snapshot == null ? null : snapshot.ComputedAt);
 
     public async Task<RecentChallenge?> FindChallengeWithSnapshotAsync(DateOnly day, CancellationToken ct) =>
         await (from c in db.Set<DailyChallenge>().AsNoTracking()
@@ -140,19 +145,46 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
     public async Task<int?> FindChallengeIdAsync(DateOnly day, CancellationToken ct) =>
         await db.Set<DailyChallenge>().AsNoTracking().Where(c => c.Date == day).Select(c => (int?)c.Id).FirstOrDefaultAsync(ct);
 
-    public async Task<int> CountFirstTimePlayersAsync(int challengeId, CancellationToken ct)
+    public Task<int> CountFirstTimePlayersAsync(int challengeId, CancellationToken ct) =>
+        FirstTimeSessions(challengeId).CountAsync(ct);
+
+    public Task<int> CountFirstTimeFinishersAsync(int challengeId, CancellationToken ct) =>
+        FirstTimeSessions(challengeId).CountAsync(s => s.Status == SessionStatus.Completed, ct);
+
+    /// <summary>Les parties de ce défi qui sont la toute première de leur joueur (aucune partie sur un défi d'une date antérieure).</summary>
+    private IQueryable<DailySession> FirstTimeSessions(int challengeId)
     {
         var challenges = db.Set<DailyChallenge>().AsNoTracking();
         var sessions = db.Set<DailySession>().AsNoTracking();
-        return await (from s in sessions
-                      join c in challenges on s.ChallengeId equals c.Id
-                      where s.ChallengeId == challengeId
-                      where !(from earlier in sessions
-                              join ec in challenges on earlier.ChallengeId equals ec.Id
-                              where earlier.PlayerId == s.PlayerId && ec.Date < c.Date
-                              select earlier.Id).Any()
-                      select s.PlayerId)
-            .CountAsync(ct);
+        return from s in sessions
+               join c in challenges on s.ChallengeId equals c.Id
+               where s.ChallengeId == challengeId
+               where !(from earlier in sessions
+                       join ec in challenges on earlier.ChallengeId equals ec.Id
+                       where earlier.PlayerId == s.PlayerId && ec.Date < c.Date
+                       select earlier.Id).Any()
+               select s;
+    }
+
+    public async Task<NextDayReturn> GetNextDayReturnAsync(DateOnly first, DateOnly last, CancellationToken ct)
+    {
+        var challenges = db.Set<DailyChallenge>().AsNoTracking();
+        var sessions = db.Set<DailySession>().AsNoTracking();
+        var played = from s in sessions
+                     join c in challenges on s.ChallengeId equals c.Id
+                     where c.Date >= first && c.Date <= last
+                     select new
+                     {
+                         Returned = (from next in sessions
+                                     join nc in challenges on next.ChallengeId equals nc.Id
+                                     where next.PlayerId == s.PlayerId && nc.Date == c.Date.AddDays(1)
+                                     select next.Id).Any(),
+                     };
+        var counts = await played
+            .GroupBy(_ => 1)
+            .Select(g => new { Players = g.Count(), Returned = g.Count(x => x.Returned) })
+            .FirstOrDefaultAsync(ct);
+        return new NextDayReturn(counts?.Players ?? 0, counts?.Returned ?? 0);
     }
 
     public async Task<IReadOnlyDictionary<DateOnly, int>> GetCompletedCountsByDayAsync(DateOnly since, CancellationToken ct) =>

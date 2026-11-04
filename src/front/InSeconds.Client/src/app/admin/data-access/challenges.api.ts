@@ -4,7 +4,7 @@ import {
   AdminChallengePlayer, AdminChallengeStats, AdminChallengeTrackStats, DailyClient, DurationBucket,
 } from '../../api/daily/api.generated';
 import {
-  ChallengePlayer, ChallengeStats, ChallengeTrackStats, GuessTimeBucket,
+  ChallengePlayer, ChallengeStats, ChallengeStatsPage, ChallengeTrackStats, GuessTimeBucket,
 } from '../domain/challenge';
 
 /**
@@ -16,9 +16,10 @@ import {
 export class ChallengesApi {
   private readonly client = inject(DailyClient);
 
-  /** Les stats des 30 derniers défis. */
-  async loadStats(): Promise<ChallengeStats[]> {
-    return (await firstValueFrom(this.client.getChallengeStats())).challenges.map(toChallengeStats);
+  /** Les stats des défis d'un mois (`aaaa-mm`), sinon des 30 derniers, avec tous les mois qui ont un défi et le nombre de défis. */
+  async loadStats(month?: string): Promise<ChallengeStatsPage> {
+    const response = await firstValueFrom(this.client.getChallengeStats(month));
+    return { challenges: response.challenges.map(toChallengeStats), months: response.months, totalCount: response.totalCount };
   }
 
   /** Recalcule les stats d'un jour fini et rend le défi recalculé. */
@@ -39,6 +40,8 @@ function toChallengeStats(challenge: AdminChallengeStats): ChallengeStats {
     scoreMax: challenge.scoreMax ?? null,
     scoreAvg: challenge.scoreAvg ?? null,
     scoreMedian: challenge.scoreMedian ?? null,
+    maxPossibleScore: challenge.maxPossibleScore,
+    scoreDistribution: (challenge.scoreDistribution ?? []).map(b => ({ minScore: b.minScore, maxScore: b.maxScore, count: b.count })),
     tracks: challenge.tracks.map(toTrackStats),
     players: challenge.players.map(toPlayer),
     computedAt: toInstant(challenge.computedAt),

@@ -13,7 +13,7 @@ public class CatalogueOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTe
 
         Assert.Equal(
             [
-                "addTrack", "deleteTrack", "listTracks", "renameTrack", "searchDeezer", "searchTracks",
+                "addTrack", "deleteTrack", "getCatalogueHealth", "listTracks", "renameTrack", "searchDeezer", "searchTracks",
                 "setTrackDisabled", "updateTrack",
             ],
             OperationIds(document).Order(StringComparer.Ordinal));
@@ -30,6 +30,7 @@ public class CatalogueOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTe
         Assert.Equal("get", MethodOf(document, "searchTracks"));
         Assert.Equal("/api/catalogue/search", PathOf(document, "searchTracks"));
         Assert.Equal("/api/admin/catalogue/tracks", PathOf(document, "listTracks"));
+        Assert.Equal("/api/admin/catalogue/health", PathOf(document, "getCatalogueHealth"));
         Assert.Equal("post", MethodOf(document, "addTrack"));
         Assert.Equal("patch", MethodOf(document, "renameTrack"));
         Assert.Equal("put", MethodOf(document, "updateTrack"));

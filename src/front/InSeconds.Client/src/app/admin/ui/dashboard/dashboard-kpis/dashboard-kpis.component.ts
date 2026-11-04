@@ -1,12 +1,12 @@
 import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { DayKpis } from '../../../domain/dashboard';
+import { DayKpis, sourceLabelKey } from '../../../domain/dashboard';
 
 /**
  * Les chiffres du jour, dans la carte du jour de l'accueil : trois tuiles (ont fini, nouveaux joueurs, score médian, en violet : les
- * autres joueurs), puis une ligne secondaire (en cours ou inachevées, abandons, part qui finit, comptes créés). Sans défi ce jour-là :
- * le message à la place.
+ * autres joueurs), puis une ligne secondaire (en cours ou inachevées, abandons, part qui finit, comptes créés), les joueurs arrivés ce
+ * jour-là par source, et, parmi ceux qui ont fini, les habitués et les nouveaux. Sans défi ce jour-là : le message à la place.
  */
 @Component({
   selector: 'app-dashboard-kpis',
@@ -37,6 +37,24 @@ import { DayKpis } from '../../../domain/dashboard';
         {{ 'admin.dashboard.completionRate' | translate: { rate: (kpis.completionRate | number: '1.0-0') } }} ·
         {{ (kpis.accountsCreatedCount > 1 ? 'admin.dashboard.accountsCreated' : 'admin.dashboard.accountCreated') | translate: { count: kpis.accountsCreatedCount } }}
       </p>
+      @if (kpis.arrivals.length > 0) {
+        <p class="text-xs text-center" style="color:var(--text-muted)" data-testid="kpi-arrivals">
+          {{ (isToday() ? 'admin.dashboard.arrivedToday' : 'admin.dashboard.arrivedThatDay') | translate }}
+          @for (a of kpis.arrivals; track a.source; let last = $last) {
+            <span class="font-semibold tabular-nums" style="color:var(--text-hi)">{{ a.count }}</span>
+            {{ sourceKey(a.source) ? (sourceKey(a.source)! | translate) : a.source }}@if (!last) { · }
+          }
+        </p>
+      }
+      @if (kpis.completedCount > 0) {
+        <p class="text-xs text-center" style="color:var(--text-muted)" data-testid="kpi-loyalty">
+          {{ 'admin.dashboard.amongFinishers' | translate }}
+          <span class="font-semibold tabular-nums" style="color:var(--text-hi)">{{ kpis.completedCount - kpis.firstTimeFinishersCount }}</span>
+          {{ 'admin.dashboard.regulars' | translate }} ·
+          <span class="font-semibold tabular-nums" style="color:var(--text-hi)">{{ kpis.firstTimeFinishersCount }}</span>
+          {{ 'admin.dashboard.newcomers' | translate }}
+        </p>
+      }
     } @else {
       <p class="text-sm text-center" style="color:var(--text-muted)">{{ 'admin.dashboard.noChallengeForDay' | translate }}</p>
     }
@@ -44,4 +62,8 @@ import { DayKpis } from '../../../domain/dashboard';
 })
 export class DashboardKpisComponent {
   readonly kpis = input.required<DayKpis | null>();
+  /** Le jour affiché est aujourd'hui (« Arrivés aujourd'hui » plutôt que « ce jour-là »). */
+  readonly isToday = input(false);
+
+  protected readonly sourceKey = sourceLabelKey;
 }

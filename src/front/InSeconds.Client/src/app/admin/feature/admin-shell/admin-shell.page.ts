@@ -53,7 +53,8 @@ const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'radio', 'range', 'reset'
         [branch]="system.build.branch" [branchHead]="system.branchHead()" [verdict]="system.verdict()"
         [apiDown]="system.health.state() === 'ko'" [latencyMs]="system.health.latencyMs()"
         [backup]="system.backup()" [backupAt]="system.info()?.lastBackupAt ?? null" [backupOffSite]="system.info()?.lastBackupOffSite ?? null"
-        [jobs]="system.jobs()" [jobsFailed]="system.lastRunsFailed()" [ci]="ciLines()" [jobsUrl]="jobsUrl" [grafanaUrl]="grafanaUrl">
+        [jobs]="system.jobs()" [jobsFailed]="system.lastRunsFailed()" [ci]="ciLines()" [jobsUrl]="jobsUrl" [grafanaUrl]="grafanaUrl"
+        [catalogue]="system.catalogue()" [nextChallenge]="system.nextChallengeState()">
         <section>
           <h2 class="text-xs font-semibold mb-1.5" style="color:var(--text-faint)">{{ 'admin.system.browser' | translate }}</h2>
           <app-browser-id />
@@ -109,21 +110,22 @@ const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'radio', 'range', 'reset'
             }
           </header>
 
-          <div class="relative w-full max-w-2xl lg:max-w-7xl mx-auto px-4 lg:pt-6 lg:grid lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-6">
-            <!-- PC : le logo centré au-dessus des onglets en colonne, puis le panneau technique. -->
-            <aside class="hidden lg:flex lg:flex-col lg:gap-4 lg:sticky lg:top-6 lg:self-start">
-              <a routerLink="/daily" [title]="'admin.backToGame' | translate"
-                class="self-center font-extrabold uppercase text-base tracking-[0.14em]" style="font-family:var(--font-display);color:var(--text-hi)">
-                IN<span style="color:var(--text-accent)">//</span>SECONDS
-              </a>
-              <nav class="flex flex-col gap-0.5 rounded-xl p-1.5" style="background:var(--bg-surface)" [attr.aria-label]="'admin.tabsLabel' | translate">
-                @for (tab of tabs; track tab.path) {
-                  <a [routerLink]="['/admin', tab.path]" routerLinkActive="is-active" ariaCurrentWhenActive="page" [replaceUrl]="true"
-                    class="admin-tab px-3 py-2 rounded-lg text-sm font-medium transition-colors">
-                    {{ labelOf(tab).key | translate: labelOf(tab).params }}
-                  </a>
-                }
-              </nav>
+          <div class="relative w-full max-w-2xl lg:max-w-none mx-auto px-4 lg:px-6 lg:pt-3 lg:grid lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-x-6 lg:gap-y-3">
+            <!-- PC : le logo (aligné sur le texte du panneau technique) et les onglets (alignés sur le contenu) sur une ligne en haut. -->
+            <a routerLink="/daily" [title]="'admin.backToGame' | translate"
+              class="hidden lg:block self-center px-4 font-extrabold uppercase text-base tracking-[0.14em]" style="font-family:var(--font-display);color:var(--text-hi)">
+              IN<span style="color:var(--text-accent)">//</span>SECONDS
+            </a>
+            <nav data-testid="admin-top-nav" class="hidden lg:flex justify-self-start gap-1 rounded-xl p-1.5" style="background:var(--bg-surface)" [attr.aria-label]="'admin.tabsLabel' | translate">
+              @for (tab of tabs; track tab.path) {
+                <a [routerLink]="['/admin', tab.path]" routerLinkActive="is-active" ariaCurrentWhenActive="page" [replaceUrl]="true"
+                  class="admin-tab px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+                  {{ labelOf(tab).key | translate: labelOf(tab).params }}
+                </a>
+              }
+            </nav>
+            <!-- PC : le panneau technique dans la colonne de gauche. -->
+            <aside class="hidden lg:block lg:sticky lg:top-4 lg:self-start">
               @if (wide()) {
                 <div class="rounded-xl p-4" style="background:var(--bg-surface)">
                   <ng-container *ngTemplateOutlet="techPanel" />

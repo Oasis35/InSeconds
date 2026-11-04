@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { PoolSort, SortColumn } from '../../../domain/pool-filters';
-import { ModeUsage, PoolTrack, trackLabel, usageOf } from '../../../domain/pool-track';
+import { rateColor } from '../../../domain/challenge';
+import { ModeUsage, PoolTrack, answerCount, foundRate, trackLabel, usageOf } from '../../../domain/pool-track';
 import { POOL_VIEW, modeView } from '../../../domain/pool-views';
 
 interface Column {
@@ -18,6 +19,7 @@ const POOL_COLUMNS: readonly Column[] = [
   { column: 'preview', labelKey: 'admin.pool.colPreview', widthClass: 'w-28' },
   { column: 'status', labelKey: 'admin.pool.colStatus', widthClass: 'w-24' },
   { column: 'usage', labelKey: 'admin.pool.colUsage' },
+  { column: 'found', labelKey: 'admin.pool.colFound', widthClass: 'w-24' },
 ];
 
 /** La vue d'un mode : le morceau et ce que ce mode en a fait (dernier jour, déblocage, apparitions), sans extrait ni statut. */
@@ -27,10 +29,12 @@ const MODE_COLUMNS: readonly Column[] = [
   { column: 'lastUsedDate', labelKey: 'admin.pool.colLastUsed', widthClass: 'w-28' },
   { column: 'unlockDate', labelKey: 'admin.pool.colUnlockDate', widthClass: 'w-28' },
   { column: 'usageCount', labelKey: 'admin.pool.colUsageCount', widthClass: 'w-20' },
+  { column: 'found', labelKey: 'admin.pool.colFound', widthClass: 'w-24' },
 ];
 
 /**
- * Le tableau du pool et sa pagination. Toutes les colonnes sont triables. Dans la vue générale, sur une ligne : écouter
+ * Le tableau du pool et sa pagination. Toutes les colonnes sont triables ; la dernière, « Trouvé », donne la part des réponses qui ont
+ * trouvé l'artiste ou le titre (rouge, orange, vert comme les taux d'un défi). Dans la vue générale, sur une ligne : écouter
  * (▶), corriger les noms (✎, toujours possible, défi du jour compris), puis supprimer (🗑) pour un morceau qu'aucun mode n'a
  * joué, ou désactiver / réactiver pour un morceau déjà joué ou désactivé. Dans la vue d'un mode (lecture seule) : écouter,
  * et « ↗ » pour retrouver le morceau dans le pool, où l'on agit dessus.
@@ -153,6 +157,12 @@ const MODE_COLUMNS: readonly Column[] = [
                     <td class="px-3 py-2.5" style="color:var(--text-muted)">{{ usage?.unlockDate ?? '' }}</td>
                     <td class="px-3 py-2.5" style="color:var(--text-muted)">{{ usage?.usageCount ?? 0 }}</td>
                   }
+                  @let rate = found(t);
+                  <td class="px-3 py-2.5 tabular-nums whitespace-nowrap" data-testid="found-rate"
+                    [style.color]="rate === null ? 'var(--text-muted)' : rateColorOf(rate)"
+                    [title]="rate === null ? '' : ('admin.pool.foundHint' | translate: { count: answers(t) })">
+                    {{ rate === null ? '' : rate + ' %' }}
+                  </td>
                 </tr>
               }
             </tbody>
@@ -210,6 +220,16 @@ export class PoolTableComponent {
   protected readonly isPool = computed(() => this.view() === POOL_VIEW);
   protected readonly columns = computed(() => (this.isPool() ? POOL_COLUMNS : MODE_COLUMNS));
   protected readonly label = trackLabel;
+  protected readonly rateColorOf = rateColor;
+
+  /** Taux de réussite du morceau : tous modes dans le pool, ce mode dans sa vue. */
+  protected found(track: PoolTrack): number | null {
+    return foundRate(track, this.isPool() ? null : this.view());
+  }
+
+  protected answers(track: PoolTrack): number {
+    return answerCount(track, this.isPool() ? null : this.view());
+  }
 
   /** Ce que le mode de la vue dit du morceau. */
   protected usageIn(track: PoolTrack): ModeUsage | null {

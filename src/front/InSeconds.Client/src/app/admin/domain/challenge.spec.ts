@@ -1,5 +1,5 @@
 import {
-  ChallengePlayer, ChallengeStats, accountPlayerCount, availableMonths, chipColors, formatMonth, inMonth, monthOf, playerLabel,
+  ChallengePlayer, ChallengeStats, accountPlayerCount, completeMonths, guestPlayerCount, mergeChallenges, availableMonths, chipColors, formatMonth, inMonth, monthOf, playerLabel,
   rateColor, resolveMonth, shiftMonth, shortId, statusDotColor, statusLabelKey, unfinishedCount,
 } from './challenge';
 
@@ -80,6 +80,24 @@ describe('challenge (domaine)', () => {
     const challenge = { players: [player({ pseudo: 'Alice' }), player(), player({ pseudo: 'Bob' })] } as unknown as ChallengeStats;
 
     expect(accountPlayerCount(challenge)).toBe(2);
+    expect(guestPlayerCount(challenge)).toBe(1);
+  });
+
+  it('les mois lus en entier : tous quand tous les défis sont là, sinon tous sauf le plus ancien', () => {
+    const challenges = [{ date: '2026-10-05' }, { date: '2026-09-30' }] as ChallengeStats[];
+
+    expect(completeMonths({ challenges, months: ['2026-10', '2026-09'], totalCount: 2 })).toEqual(['2026-10', '2026-09']);
+    expect(completeMonths({ challenges, months: ['2026-10', '2026-09'], totalCount: 40 })).toEqual(['2026-10']);
+  });
+
+  it('fusionne des défis : le nouveau remplace celui de même identifiant, du plus récent au plus ancien', () => {
+    const october = { id: 2, date: '2026-10-05', playerCount: 1 } as ChallengeStats;
+    const merged = mergeChallenges(
+      [october, { id: 1, date: '2026-09-30' } as ChallengeStats],
+      [{ id: 0, date: '2026-08-01' } as ChallengeStats, { ...october, playerCount: 9 }],
+    );
+
+    expect(merged.map(c => [c.id, c.playerCount])).toEqual([[2, 9], [1, undefined], [0, undefined]]);
   });
 
   it('traduit les statuts connus seulement', () => {

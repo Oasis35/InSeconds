@@ -21,10 +21,17 @@ describe('AdminPlayersApi', () => {
         { id: 'a', pseudo: 'Alice', email: 'a@x.fr', createdAt: '2026-09-01T10:00:00+00:00', lastSeenAt: '2026-09-24T09:00:00+00:00', gamesPlayed: 3, isAdmin: true, currentStreak: 2, streakFreezes: 1, streakProtected: false },
         { id: 'b', pseudo: 'Bob', email: 'b@x.fr', createdAt: new Date('2026-09-02T10:00:00Z'), lastSeenAt: undefined, gamesPlayed: 0, isAdmin: false, currentStreak: 0, streakFreezes: 0, streakProtected: true },
       ],
+      nextDayReturnRate: 62.5,
     }));
-    const players = await create().list();
+    const { players, nextDayReturnRate } = await create().list();
+    expect(nextDayReturnRate).toBe(62.5);
     expect(players[0]).toMatchObject({ id: 'a', createdAt: '2026-09-01T10:00:00+00:00', lastSeenAt: '2026-09-24T09:00:00+00:00', isAdmin: true });
     expect(players[1]).toMatchObject({ createdAt: '2026-09-02T10:00:00.000Z', lastSeenAt: null, streakProtected: true });
+  });
+
+  it('rend null quand personne n\'a joué sur la période du retour le lendemain', async () => {
+    client.listRegisteredPlayers.mockReturnValue(of({ players: [], nextDayReturnRate: undefined }));
+    expect((await create().list()).nextDayReturnRate).toBeNull();
   });
 
   it('convertit les parties : jour en texte, score absent en null, statut inconnu en Expired', async () => {

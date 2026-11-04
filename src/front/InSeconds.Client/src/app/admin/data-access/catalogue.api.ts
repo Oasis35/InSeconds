@@ -72,6 +72,8 @@ function toModeUsage(usage: TrackModeUsage): ModeUsage {
     lastUsedDate: toDay(usage.lastUsedDate),
     unlockDate: toDay(usage.unlockDate),
     inTodayChallenge: usage.inTodayChallenge,
+    answerCount: usage.answerCount,
+    foundCount: usage.foundCount,
   };
 }
 

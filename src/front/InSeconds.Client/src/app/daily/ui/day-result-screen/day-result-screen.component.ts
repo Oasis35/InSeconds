@@ -5,7 +5,7 @@ import { ArchiveDay } from '../../domain/archive';
 import { DayStats } from '../../domain/daily';
 import { Highlight, highlightOf } from '../../domain/highlight';
 import { TrackResultRow, TrackResultsListComponent } from '../../../gameplay/ui/track-results-list/track-results-list.component';
-import { ScoreDistributionChartComponent } from '../score-distribution-chart/score-distribution-chart.component';
+import { ScoreDistributionChartComponent } from '../../../ui/score-distribution-chart/score-distribution-chart.component';
 import { ShareButtonComponent } from '../../../gameplay/ui/share-button/share-button.component';
 import { YesterdayAnswersCardComponent } from '../yesterday-answers-card/yesterday-answers-card.component';
 import { StreakPillComponent } from '../streak-pill/streak-pill.component';

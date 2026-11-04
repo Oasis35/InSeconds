@@ -124,6 +124,55 @@ public class AdminDashboardTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ParmiCeuxQuiOntFini_LesNouveauxSontCeuxDontCEstLaPremierePartie()
+    {
+        var day = Today.AddDays(-1);
+        await _game.App.AddChallengeAsync(day.AddDays(-5), 1, 2, 3, 4, 5);
+        await _game.App.AddChallengeAsync(day, 1, 2, 3, 4, 5);
+        var habitue = await _game.NewPlayerAsync("Habitue");
+        var nouveau = await _game.NewPlayerAsync();
+        var abandon = await _game.NewPlayerAsync();
+        await _game.AddSessionAsync(habitue.Id, day.AddDays(-5), 2, (1m, true, true, false, 850));
+        await _game.AddSessionAsync(habitue.Id, day, 1, (1m, true, true, false, 850));
+        await _game.AddSessionAsync(nouveau.Id, day, 1, (1m, true, true, false, 850));
+        // Un nouveau qui abandonne n'a pas fini : il n'est ni l'un ni l'autre.
+        await _game.AddSessionAsync(abandon.Id, day, 2, (1m, true, true, false, 850));
+
+        var kpis = (await ReadAsync(Day(day))).SelectedDayKpis!;
+
+        // 2 parties terminées : 1 nouveau, donc 1 habitué (sa première partie, abandonnée, compte quand même).
+        Assert.Equal((2, 1), (kpis.CompletedCount, kpis.FirstTimeFinishersCount));
+    }
+
+    [Fact]
+    public async Task SourcesDArrivee_DuJourEtDesTrenteJours_LaPlusFrequenteDAbord()
+    {
+        await _game.App.AddChallengeAsync(Today.AddDays(-2), 1, 2, 3, 4, 5);
+        var day = Today.AddDays(-2);
+        (string Source, DateOnly Day)[] arrivals =
+        [
+            ("instagram", day), ("instagram", day), ("share", day), ("direct", Today), ("instagram", Today.AddDays(-29)),
+            // Hors de la fenêtre de 30 jours.
+            ("share", Today.AddDays(-30)),
+        ];
+        foreach (var (source, created) in arrivals)
+        {
+            var player = await _game.NewPlayerAsync();
+            await _game.Api.ExecuteAsync(
+                $"UPDATE players.players SET acquisition_source = '{source}', created_at = '{created:yyyy-MM-dd} 12:00:00+00' WHERE id = '{player.Id}'");
+        }
+
+        // Un joueur d'avant la source notée n'y figure pas.
+        var old = await _game.NewPlayerAsync();
+        await _game.Api.ExecuteAsync($"UPDATE players.players SET acquisition_source = NULL, created_at = '{day:yyyy-MM-dd} 12:00:00+00' WHERE id = '{old.Id}'");
+
+        var dashboard = await ReadAsync(Day(day));
+
+        Assert.Equal([new("instagram", 2), new("share", 1)], dashboard.SelectedDayKpis!.Arrivals);
+        Assert.Equal([new("instagram", 3), new("direct", 1), new("share", 1)], dashboard.Arrivals);
+    }
+
+    [Fact]
     public async Task ComptesCrees_LesComptesOuvertsCeJourLa_EnUtc()
     {
         var day = Today.AddDays(-1);

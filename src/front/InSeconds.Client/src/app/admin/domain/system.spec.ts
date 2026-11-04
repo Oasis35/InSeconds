@@ -1,6 +1,6 @@
 import { JobLastRun, JobState } from './job';
 import {
-  NightlyJob, alertCount, backupTone, deployedBranch, deploymentVerdict, jobTone, nightlyJobs, sameCommit, shortCommit, toCiState,
+  NextChallenge, NightlyJob, alertCount, backupTone, deployedBranch, deploymentVerdict, jobTone, nextChallengeState, nightlyJobs, sameCommit, shortCommit, toCiState,
 } from './system';
 
 const AT = '2026-11-04T00:00:03Z';
@@ -77,5 +77,28 @@ describe('système (domaine)', () => {
     expect(alertCount({ verdict: 'aligned', apiDown: false, backup: 'ok', jobs: [], ci: [null] })).toBe(0);
     expect(alertCount({ verdict: 'pending', apiDown: true, backup: 'stale', jobs, ci: [red, null] })).toBe(1 + 1 + 1 + 2 + 1);
     expect(alertCount({ verdict: 'mismatch', apiDown: false, backup: 'none', jobs: [], ci: [] })).toBe(1);
+  });
+});
+
+describe('défi de demain', () => {
+  const next = (overrides: Partial<NextChallenge> = {}): NextChallenge =>
+    ({ date: '2026-11-05', eligibleCount: 212, requiredCount: 5, generated: false, ...overrides });
+
+  it('prêt quand assez de morceaux sont hors cooldown, ou quand il est déjà tiré', () => {
+    expect(nextChallengeState(next(), [])).toEqual({ kind: 'ready', eligibleCount: 212, generated: false });
+    expect(nextChallengeState(next({ eligibleCount: 0, generated: true }), null).kind).toBe('ready');
+  });
+
+  it('pas assez de morceaux : une alerte', () => {
+    const state = nextChallengeState(next({ eligibleCount: 3 }), []);
+    expect(state).toEqual({ kind: 'insufficient', eligibleCount: 3, requiredCount: 5 });
+    expect(alertCount({ verdict: 'aligned', apiDown: false, backup: 'ok', jobs: [], ci: [], nextChallenge: state })).toBe(1);
+  });
+
+  it('la génération du jour a échoué : l\'heure du prochain essai, sans alerte de plus (la tâche compte déjà)', () => {
+    const failed = { ...run('daily-generate-challenge', 'retry_scheduled', null, 'admin.pool_insufficient'), retryAt: '2026-11-04T00:10:00Z' };
+    const state = nextChallengeState(next(), [failed]);
+    expect(state).toEqual({ kind: 'retrying', retryAt: '2026-11-04T00:10:00Z' });
+    expect(alertCount({ verdict: 'aligned', apiDown: false, backup: 'ok', jobs: [], ci: [], nextChallenge: state })).toBe(0);
   });
 });

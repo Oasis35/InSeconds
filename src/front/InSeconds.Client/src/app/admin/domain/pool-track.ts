@@ -8,6 +8,10 @@ export interface ModeUsage {
   readonly lastUsedDate: string | null;
   readonly unlockDate: string | null;
   readonly inTodayChallenge: boolean;
+  /** Réponses données sur ce morceau dans ce mode. */
+  readonly answerCount: number;
+  /** Parmi elles, celles qui ont trouvé l'artiste ou le titre. */
+  readonly foundCount: number;
 }
 
 /**
@@ -38,6 +42,22 @@ export function isUsed(track: Pick<PoolTrack, 'isUsed'>): boolean {
 /** Ce que ce mode dit du morceau, `null` s'il ne l'a pas joué. */
 export function usageOf(track: Pick<PoolTrack, 'usages'>, mode: string): ModeUsage | null {
   return track.usages.find(usage => usage.mode === mode) ?? null;
+}
+
+/**
+ * La part des réponses qui ont trouvé le morceau (artiste ou titre), en pourcentage arrondi : sur tous les modes dans le pool, sur ce mode
+ * dans sa vue. `null` sans réponse.
+ */
+export function foundRate(track: Pick<PoolTrack, 'usages'>, mode: string | null = null): number | null {
+  const usages = mode === null ? track.usages : track.usages.filter(usage => usage.mode === mode);
+  const answers = usages.reduce((sum, usage) => sum + usage.answerCount, 0);
+  if (answers === 0) return null;
+  return Math.round((usages.reduce((sum, usage) => sum + usage.foundCount, 0) / answers) * 100);
+}
+
+/** Les réponses sur lesquelles se calcule `foundRate`. */
+export function answerCount(track: Pick<PoolTrack, 'usages'>, mode: string | null = null): number {
+  return track.usages.filter(usage => mode === null || usage.mode === mode).reduce((sum, usage) => sum + usage.answerCount, 0);
 }
 
 /** Ce mode a joué le morceau. */

@@ -13,8 +13,10 @@ import { DashboardStore } from '../../data-access/dashboard.store';
 import { ChallengeTrackStats } from '../../domain/challenge';
 import { parseDay, todayUtc } from '../../domain/dashboard';
 import { ChallengePlayerChipsComponent } from '../../ui/challenges/challenge-player-chips/challenge-player-chips.component';
+import { ChallengeScoreChartComponent } from '../../ui/challenges/challenge-score-chart/challenge-score-chart.component';
 import { ChallengeTrackStatsComponent } from '../../ui/challenges/challenge-track-stats/challenge-track-stats.component';
 import { DashboardActivityComponent } from '../../ui/dashboard/dashboard-activity/dashboard-activity.component';
+import { DashboardArrivalsComponent } from '../../ui/dashboard/dashboard-arrivals/dashboard-arrivals.component';
 import { DashboardDayNavComponent } from '../../ui/dashboard/dashboard-day-nav/dashboard-day-nav.component';
 import { DashboardKpisComponent } from '../../ui/dashboard/dashboard-kpis/dashboard-kpis.component';
 import { DashboardPlayersComponent } from '../../ui/dashboard/dashboard-players/dashboard-players.component';
@@ -33,8 +35,8 @@ const CHART_DIALOG_MAX_WIDTH = '22.5rem';
 @Component({
   selector: 'app-admin-dashboard-page',
   imports: [
-    NgTemplateOutlet, TranslatePipe, ErrorMessageComponent, DashboardDayNavComponent, DashboardKpisComponent, DashboardActivityComponent,
-    DashboardPlayersComponent, ChallengePlayerChipsComponent, ChallengeTrackStatsComponent,
+    NgTemplateOutlet, TranslatePipe, ErrorMessageComponent, DashboardDayNavComponent, DashboardKpisComponent, DashboardActivityComponent, DashboardArrivalsComponent,
+    DashboardPlayersComponent, ChallengePlayerChipsComponent, ChallengeScoreChartComponent, ChallengeTrackStatsComponent,
   ],
   providers: [DashboardStore, ChallengesStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -60,9 +62,12 @@ const CHART_DIALOG_MAX_WIDTH = '22.5rem';
               [day]="store.selectedDay()" [locale]="locale()" [isToday]="store.isSelectedDayToday()"
               [canGoToPrevious]="store.canGoToPreviousDay()" [canGoToNext]="store.canGoToNextDay()"
               (previous)="store.shiftDay(-1)" (next)="store.shiftDay(1)" />
-            <app-dashboard-kpis class="flex flex-col gap-3" [kpis]="dashboard.kpis" />
+            <app-dashboard-kpis class="flex flex-col gap-3" [kpis]="dashboard.kpis" [isToday]="store.isSelectedDayToday()" />
 
             @if (dayChallenge(); as c) {
+              @if (wide()) {
+                <app-challenge-score-chart [challenge]="c" />
+              }
               @if (c.players.length > 0) {
                 <div class="pt-1" style="border-top:1px solid var(--border-medium)" data-testid="day-players">
                   <app-challenge-player-chips [players]="c.players" [youId]="youId()"
@@ -86,6 +91,7 @@ const CHART_DIALOG_MAX_WIDTH = '22.5rem';
             [activity]="dashboard.activity" [selectedDay]="store.selectedDay()" [total]="store.totalPlayers()"
             [peak]="store.maxDailyPlayers()" [locale]="locale()" (daySelected)="store.selectDay($event)" />
           <app-dashboard-players [players]="dashboard.players" />
+          <app-dashboard-arrivals [arrivals]="dashboard.arrivals" />
         </div>
 
         @if (wide()) {

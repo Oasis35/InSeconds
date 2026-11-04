@@ -13,7 +13,9 @@ export function dashboard(overrides: Partial<Dashboard> = {}): Dashboard {
     kpis: {
       day: '2026-10-05', completedCount: 4, abandonedCount: 1, expiredCount: 1, pendingCount: 0,
       totalSessions: 6, completionRate: 66.7, medianScore: 4200, newPlayersCount: 2, accountsCreatedCount: 1,
+      firstTimeFinishersCount: 1, arrivals: [{ source: 'instagram', count: 2 }, { source: 'direct', count: 1 }],
     },
+    arrivals: [{ source: 'instagram', count: 6 }, { source: 'share', count: 3 }, { source: 'direct', count: 2 }, { source: 'google.com', count: 1 }],
     ...overrides,
   };
 }

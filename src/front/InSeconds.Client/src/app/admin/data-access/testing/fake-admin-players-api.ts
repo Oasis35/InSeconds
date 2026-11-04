@@ -1,5 +1,5 @@
 import { Provider } from '@angular/core';
-import { PlayerGame, RegisteredPlayer } from '../../domain/registered-player';
+import { PlayerGame, RegisteredPlayer, RegisteredPlayersPage } from '../../domain/registered-player';
 import { AdminPlayersApi } from '../players.api';
 
 export function registeredPlayer(overrides: Partial<RegisteredPlayer> = {}): RegisteredPlayer {
@@ -10,13 +10,17 @@ export function registeredPlayer(overrides: Partial<RegisteredPlayer> = {}): Reg
   };
 }
 
+export function playersPage(players: readonly RegisteredPlayer[], nextDayReturnRate: number | null = null): RegisteredPlayersPage {
+  return { players, nextDayReturnRate };
+}
+
 export function playerGame(overrides: Partial<PlayerGame> = {}): PlayerGame {
   return { date: '2026-09-24', status: 'Completed', score: 3200, freezesUsed: 0, freezeEarned: false, ...overrides };
 }
 
 function defaults() {
   return {
-    list: vi.fn<() => Promise<RegisteredPlayer[]>>(() => Promise.resolve([])),
+    list: vi.fn<() => Promise<RegisteredPlayersPage>>(() => Promise.resolve(playersPage([]))),
     history: vi.fn<(playerId: string) => Promise<PlayerGame[]>>(() => Promise.resolve([])),
     listRunAccess: vi.fn<() => Promise<string[]>>(() => Promise.resolve([])),
     setRunAccess: vi.fn<(playerId: string, enabled: boolean) => Promise<void>>(() => Promise.resolve()),

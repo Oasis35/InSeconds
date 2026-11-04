@@ -1,7 +1,6 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { TranslateService, provideTranslateService } from '@ngx-translate/core';
-import { ScoreDistributionChartComponent } from './score-distribution-chart.component';
-import { DayStats } from '../../domain/daily';
+import { ScoreChartData, ScoreDistributionChartComponent } from './score-distribution-chart.component';
 
 // Pas de fixture.detectChanges() (comme guess-time-chart) : le template utilise TranslatePipe.
 // On exerce les computed `chart` et `betterThanPercent` directement en bracket-notation.
@@ -12,9 +11,8 @@ describe('ScoreDistributionChartComponent', () => {
   /** 10 tranches de 500 pts sur 0–5000, comptes donnés. */
   const buckets = (counts: number[]) => counts.map((count, i) => ({ minScore: i * 500, maxScore: i === 9 ? 5000 : i * 500 + 499, count }));
 
-  const stats = (overrides: Partial<DayStats> = {}): DayStats => ({
-    yourScore: 3150, medianScore: 2450, totalPlayers: 47, currentStreak: 1, tracks: [],
-    freezesUsed: 0, freezeMilestone: false,
+  const stats = (overrides: Partial<ScoreChartData> = {}): ScoreChartData => ({
+    yourScore: 3150, medianScore: 2450,
     minScore: 350, maxScore: 4650, maxPossibleScore: 5000,
     scoreDistribution: buckets([2, 1, 4, 5, 12, 9, 7, 3, 2, 2]),
     betterThanPercent: 74,
@@ -114,7 +112,7 @@ describe('ScoreDistributionChartComponent', () => {
 
   it('hides the markers when nobody has completed the challenge', () => {
     fixture.componentRef.setInput('stats', stats({
-      totalPlayers: 0, minScore: null, maxScore: null, medianScore: 0,
+      minScore: null, maxScore: null, medianScore: 0,
       scoreDistribution: buckets(new Array(10).fill(0)),
     }));
     const chart = component['chart']()!;
@@ -129,7 +127,7 @@ describe('ScoreDistributionChartComponent', () => {
   });
 
   it('hides the percentage when the API has none (under 5 players, or without score) but keeps the chart', () => {
-    fixture.componentRef.setInput('stats', stats({ totalPlayers: 4, betterThanPercent: null }));
+    fixture.componentRef.setInput('stats', stats({ betterThanPercent: null }));
     expect(component['betterThanPercent']()).toBeNull();
     expect(component['chart']()).not.toBeNull();
   });
