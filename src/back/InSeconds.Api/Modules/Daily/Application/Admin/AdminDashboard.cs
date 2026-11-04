@@ -17,15 +17,22 @@ public sealed record PlayerBreakdownResponse(int TotalGuests, int TotalRegistere
 /// <summary>Les chiffres d'un jour (<see cref="DayKpis"/>).</summary>
 /// <param name="NewPlayersCount">Joueurs dont c'est la toute première partie (aucune partie sur un défi plus ancien).</param>
 /// <param name="AccountsCreatedCount">Comptes créés ce jour-là (jour UTC) et toujours présents.</param>
+/// <param name="FirstTimeFinishersCount">Parmi les parties terminées, celles des joueurs dont c'est la toute première partie (le reste : des habitués).</param>
+/// <param name="Arrivals">Joueurs créés ce jour-là (jour UTC), par source d'arrivée, la plus fréquente d'abord.</param>
 public sealed record DayKpisResponse(
     DateOnly Date, int CompletedCount, int AbandonedCount, int ExpiredCount, int PendingCount, int TotalSessions, double CompletionRate, double? MedianScore,
-    int NewPlayersCount, int AccountsCreatedCount);
+    int NewPlayersCount, int AccountsCreatedCount, int FirstTimeFinishersCount, IReadOnlyList<ArrivalResponse> Arrivals);
+
+/// <summary>Les joueurs arrivés par une source (<c>instagram</c>, <c>share</c>, <c>direct</c>, un domaine, <c>other</c>).</summary>
+public sealed record ArrivalResponse(string Source, int Count);
 
 /// <param name="DailyActivity">Parties terminées par jour, les 30 derniers jours (aujourd'hui compris), les jours sans partie à 0.</param>
 /// <param name="AvailableDates">Les jours qui ont un défi, du plus récent au plus ancien.</param>
 /// <param name="SelectedDayKpis">Vide si le jour demandé n'a pas de défi.</param>
+/// <param name="Arrivals">Joueurs créés les 30 derniers jours (aujourd'hui compris), par source d'arrivée, la plus fréquente d'abord.</param>
 public sealed record DashboardResponse(
-    IReadOnlyList<DailyActivityResponse> DailyActivity, PlayerBreakdownResponse PlayerBreakdown, IReadOnlyList<DateOnly> AvailableDates, DayKpisResponse? SelectedDayKpis);
+    IReadOnlyList<DailyActivityResponse> DailyActivity, PlayerBreakdownResponse PlayerBreakdown, IReadOnlyList<DateOnly> AvailableDates, DayKpisResponse? SelectedDayKpis,
+    IReadOnlyList<ArrivalResponse> Arrivals);
 
 public static class GetDashboardEndpoint
 {
@@ -39,7 +46,8 @@ public static class GetDashboardEndpoint
     /// <summary>
     /// <c>GET /api/admin/daily/dashboard?date=aaaa-mm-jj</c> : l'activité des 30 derniers jours, les joueurs, les
     /// jours qui ont un défi et les chiffres du jour demandé (aujourd'hui par défaut). Tout est lu en direct, jamais dans la photo figée : ce sont
-    /// des comptes, pas le détail d'un défi. Les joueurs effacés n'y figurent pas.
+    /// des comptes, pas le détail d'un défi. Les joueurs effacés n'y figurent pas. Les sources d'arrivée (du jour demandé et des 30 derniers jours)
+    /// sont des comptes par source, jamais un joueur.
     /// </summary>
     [WolverineGet("/api/admin/daily/dashboard", OperationId = "getDashboard")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
@@ -67,13 +75,20 @@ public static class GetDashboardEndpoint
             var k = DayKpisCalculator.Build(selected, await stats.GetSessionsAsync(challengeId, ct), isPast: selected < today);
             var newPlayers = await stats.CountFirstTimePlayersAsync(challengeId, ct);
             var accounts = await players.CountAccountsCreatedOnAsync(selected, ct);
+            var firstTimeFinishers = await stats.CountFirstTimeFinishersAsync(challengeId, ct);
+            var dayArrivals = await players.CountArrivalsBySourceAsync(selected, selected, ct);
             kpis = new DayKpisResponse(
-                k.Date, k.CompletedCount, k.AbandonedCount, k.ExpiredCount, k.PendingCount, k.TotalSessions, k.CompletionRate, k.MedianScore, newPlayers, accounts);
+                k.Date, k.CompletedCount, k.AbandonedCount, k.ExpiredCount, k.PendingCount, k.TotalSessions, k.CompletionRate, k.MedianScore, newPlayers, accounts,
+                firstTimeFinishers, ToResponse(dayArrivals));
         }
 
+        var arrivals = await players.CountArrivalsBySourceAsync(since, today, ct);
         return new DashboardResponse(
             activity,
             new PlayerBreakdownResponse(breakdown.Guests, breakdown.Registered, breakdown.ActiveLast7Days, breakdown.ActiveLast30Days),
-            dates, kpis);
+            dates, kpis, ToResponse(arrivals));
     }
+
+    private static List<ArrivalResponse> ToResponse(IReadOnlyList<ArrivalCount> arrivals) =>
+        arrivals.Select(a => new ArrivalResponse(a.Source, a.Count)).ToList();
 }

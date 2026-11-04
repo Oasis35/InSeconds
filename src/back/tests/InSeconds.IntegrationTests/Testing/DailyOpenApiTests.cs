@@ -14,7 +14,7 @@ public class DailyOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(
         Assert.Equal(
             [
                 "abandonSession", "getAdminDailySettings", "getArchiveDay", "getArchiveIndex", "getArchivePreview", "getChallengeStats", "getDailySettings", "getDashboard",
-                "getMyArchiveDay", "getPlayerHistory", "getToday", "getTodayStats", "listChallenges", "listRegisteredPlayers", "recomputeDayStats", "requestHint",
+                "getMyArchiveDay", "getNextChallenge", "getPlayerHistory", "getToday", "getTodayStats", "listChallenges", "listRegisteredPlayers", "recomputeDayStats", "requestHint",
                 "startSession", "submitAnswer", "updateListening", "updateTrackCooldownPoolPercent",
             ],
             OperationIds(document).Order(StringComparer.Ordinal));
@@ -35,6 +35,7 @@ public class DailyOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(
         Assert.Equal(("get", "/api/admin/daily/challenges"), (MethodOf(document, "listChallenges"), PathOf(document, "listChallenges")));
         Assert.Equal(("get", "/api/admin/players"), (MethodOf(document, "listRegisteredPlayers"), PathOf(document, "listRegisteredPlayers")));
         Assert.Equal(("get", "/api/admin/daily/players/{playerId}/history"), (MethodOf(document, "getPlayerHistory"), PathOf(document, "getPlayerHistory")));
+        Assert.Equal(("get", "/api/admin/daily/next-challenge"), (MethodOf(document, "getNextChallenge"), PathOf(document, "getNextChallenge")));
         Assert.Equal(("get", "/api/admin/daily/settings"), (MethodOf(document, "getAdminDailySettings"), PathOf(document, "getAdminDailySettings")));
         Assert.Equal(("put", "/api/admin/daily/settings/track-cooldown-pool-percent"), (MethodOf(document, "updateTrackCooldownPoolPercent"), PathOf(document, "updateTrackCooldownPoolPercent")));
         // L'historique d'un joueur inconnu : 404 documenté, avec son ProblemDetails.

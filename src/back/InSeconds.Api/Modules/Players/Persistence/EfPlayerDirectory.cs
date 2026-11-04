@@ -60,4 +60,19 @@ public sealed class EfPlayerDirectory(InSecondsDbContext db) : IPlayerDirectory
         var to = from.AddDays(1);
         return db.Set<Account>().AsNoTracking().CountAsync(a => a.LinkedAt >= from && a.LinkedAt < to, ct);
     }
+
+    public async Task<IReadOnlyList<ArrivalCount>> CountArrivalsBySourceAsync(DateOnly from, DateOnly to, CancellationToken ct)
+    {
+        var start = new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        var end = new DateTimeOffset(to.AddDays(1).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        var rows = await db.Set<Player>().AsNoTracking()
+            .Where(p => p.CreatedAt >= start && p.CreatedAt < end && p.AcquisitionSource != null)
+            .GroupBy(p => p.AcquisitionSource!)
+            .Select(g => new { Source = g.Key, Count = g.Count() })
+            .ToListAsync(ct);
+        return rows
+            .OrderByDescending(r => r.Count).ThenBy(r => r.Source, StringComparer.Ordinal)
+            .Select(r => new ArrivalCount(r.Source, r.Count))
+            .ToList();
+    }
 }

@@ -40,6 +40,27 @@ public class AdminCooldownTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task DefiDeDemain_MorceauxHorsCooldownPourDemain_EtNombreDemande()
+    {
+        // 100 jouables, 15 jours de cooldown : les 5 d'aujourd'hui et les 5 d'il y a 14 jours sont encore exclus demain, pas ceux d'il y a 15 jours.
+        await _game.App.AddChallengeAsync(Today, 1, 2, 3, 4, 5);
+        await _game.App.AddChallengeAsync(Today.AddDays(-14), 6, 7, 8, 9, 10);
+        await _game.App.AddChallengeAsync(Today.AddDays(-15), 11, 12, 13, 14, 15);
+
+        var next = (await _game.App.Admin().GetFromJsonAsync<NextChallengeResponse>("/api/admin/daily/next-challenge", Ct))!;
+
+        Assert.Equal(new NextChallengeResponse(Today.AddDays(1), 90, 5, Generated: false), next);
+    }
+
+    [Fact]
+    public async Task DefiDeDemain_DejaGenere()
+    {
+        await _game.App.AddChallengeAsync(Today.AddDays(1), 1, 2, 3, 4, 5);
+
+        Assert.True((await _game.App.Admin().GetFromJsonAsync<NextChallengeResponse>("/api/admin/daily/next-challenge", Ct))!.Generated);
+    }
+
+    [Fact]
     public async Task LeCooldown_SuitLaTailleDuPool()
     {
         await _game.App.AddPlayableTracksAsync(100, firstId: 101);

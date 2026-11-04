@@ -23,6 +23,31 @@ public class PoolAdminTests(PostgresFixture postgres) : IAsyncLifetime
 
     public ValueTask DisposeAsync() => _app.DisposeAsync();
 
+    // ---------- État du pool (panneau technique) ----------
+
+    [Fact]
+    public async Task Etat_SansExtraitEtSansFormeDOnde_LesMorceauxDesactivesNeComptentPas()
+    {
+        // 1 et 2 : extrait sans forme ; 3 : extrait et forme ; 4 : sans extrait ; 5 : sans extrait mais désactivé ; 6 : état inconnu.
+        await _app.Api.ExecuteAsync("""
+            INSERT INTO catalogue.tracks (id, deezer_track_id, artist, title, preview_status, disabled_at, waveform, created_at) VALUES
+              (1, 1001, 'A', 'T1', 1, NULL, NULL, now()), (2, 1002, 'A', 'T2', 1, NULL, NULL, now()),
+              (3, 1003, 'A', 'T3', 1, NULL, '\x01'::bytea, now()), (4, 1004, 'A', 'T4', 2, NULL, NULL, now()),
+              (5, 1005, 'A', 'T5', 2, now(), NULL, now()), (6, 1006, 'A', 'T6', 0, NULL, NULL, now())
+            """);
+
+        var health = await _app.Admin().GetFromJsonAsync<CatalogueHealthResponse>("/api/admin/catalogue/health", Ct);
+
+        Assert.Equal(new CatalogueHealthResponse(MissingPreviewCount: 1, MissingWaveformCount: 2), health);
+    }
+
+    [Fact]
+    public async Task Etat_ReserveAUnAdmin()
+    {
+        Assert.Equal(HttpStatusCode.Unauthorized, (await _app.Api.CreateClient().GetAsync("/api/admin/catalogue/health", Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await _app.Api.CreateClient(TestUser.Player).GetAsync("/api/admin/catalogue/health", Ct)).StatusCode);
+    }
+
     // ---------- Ajout ----------
 
     [Fact]
