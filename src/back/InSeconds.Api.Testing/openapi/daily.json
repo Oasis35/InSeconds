@@ -21,8 +21,27 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       }
     },
     "/api/admin/daily/challenges": {
@@ -1029,7 +1048,9 @@
       },
       "AdminChallengeStatsResponse": {
         "required": [
-          "challenges"
+          "challenges",
+          "months",
+          "totalCount"
         ],
         "type": "object",
         "properties": {
@@ -1038,6 +1059,16 @@
             "items": {
               "$ref": "#/components/schemas/AdminChallengeStats"
             }
+          },
+          "months": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },

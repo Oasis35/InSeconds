@@ -3,14 +3,21 @@ import { patchState, signalStore, withComputed, withMethods, withState } from '@
 import { ClipboardService } from '../../core/clipboard/clipboard.service';
 import { AppError, toAppError } from '../../core/errors/app-error';
 import { setError, setFulfilled, setPending, withRequestStatus } from '../../core/store/with-request-status';
-import { ChallengeStats, availableMonths, inMonth, resolveMonth, shiftMonth } from '../domain/challenge';
+import { ChallengeStats, completeMonths, inMonth, mergeChallenges, resolveMonth, shiftMonth } from '../domain/challenge';
 import { AdminCounts } from './admin-counts';
 import { ChallengesApi } from './challenges.api';
 
 const COPIED_VISIBLE_MS = 1500;
 
 interface ChallengesState {
+  /** Les défis lus jusqu'ici : les plus récents, puis chaque mois ouvert, du plus récent au plus ancien. */
   stats: readonly ChallengeStats[];
+  /** Tous les mois qui ont un défi (`aaaa-mm`), du plus récent au plus ancien : les bornes de ‹ ›. */
+  months: readonly string[];
+  /** Les mois dont tous les défis sont lus. */
+  loadedMonths: readonly string[];
+  /** Le mois en cours de lecture, ou `null`. */
+  loadingMonth: string | null;
   /** Le mois choisi avec ‹ › (ou repris de l'adresse), ou `null` : le mois affiché est alors celui que `resolveMonth` retient. */
   requestedMonth: string | null;
   expandedIds: readonly number[];
@@ -28,20 +35,18 @@ function currentMonth(): string {
 }
 
 /**
- * Les stats des 30 derniers défis, rangées par mois, les défis dépliés, le joueur mis en surbrillance, et le recalcul des stats d'un
+ * Les stats des défis : les 30 derniers à l'ouverture, puis chaque mois plus ancien quand on y navigue, rangées par mois ; les défis dépliés, le joueur mis en surbrillance, et le recalcul des stats d'un
  * jour fini. Servent l'onglet Défis et, sur l'accueil, les joueurs et les morceaux du jour affiché. Lues à l'ouverture de la page.
  */
 export const ChallengesStore = signalStore(
   withRequestStatus(),
   withState<ChallengesState>({
-    stats: [], requestedMonth: null, expandedIds: [], highlightedPlayerId: null, copiedPlayerId: null,
+    stats: [], months: [], loadedMonths: [], loadingMonth: null, requestedMonth: null, expandedIds: [], highlightedPlayerId: null, copiedPlayerId: null,
     recomputingDays: [], recomputeErrors: {},
   }),
-  withComputed(({ stats, requestedMonth }) => {
-    const months = computed(() => availableMonths(stats()));
+  withComputed(({ stats, months, requestedMonth }) => {
     const month = computed(() => resolveMonth(requestedMonth(), months(), currentMonth()));
     return {
-      months,
       month,
       statsForMonth: computed(() => inMonth(stats(), month())),
       canGoPrevious: computed(() => shiftMonth(months(), month(), -1) !== month()),
@@ -52,33 +57,61 @@ export const ChallengesStore = signalStore(
     let latestLoad = 0;
     let copiedTimer: ReturnType<typeof setTimeout> | null = null;
 
+    /** Lit les défis du mois affiché s'ils ne sont pas tous là (une seule lecture à la fois par mois). Rien avant la première lecture. */
+    const loadMonth = async (): Promise<void> => {
+      const month = store.month();
+      if (!store.isFulfilled() || store.loadedMonths().includes(month) || !store.months().includes(month)) return;
+      if (store.loadingMonth() === month) return;
+      const mine = latestLoad;
+      patchState(store, { loadingMonth: month });
+      try {
+        const page = await api.loadStats(month);
+        if (mine !== latestLoad) return;
+        counts.setChallenges(page.totalCount);
+        patchState(store, {
+          stats: mergeChallenges(store.stats(), page.challenges), months: page.months, loadedMonths: [...store.loadedMonths(), month],
+        });
+      } catch (error) {
+        const appError = await toAppError(error);
+        if (mine === latestLoad) patchState(store, setError(appError));
+      } finally {
+        if (store.loadingMonth() === month) patchState(store, { loadingMonth: null });
+      }
+    };
+
     const withoutError = (day: string) =>
       Object.fromEntries(Object.entries(store.recomputeErrors()).filter(([key]) => key !== day));
 
     return {
-      /** Lit les stats ; une réponse plus ancienne, arrivée après une plus récente, n'écrit rien. */
+      /** Lit les stats des derniers défis, puis le mois demandé s'il n'y est pas en entier ; une réponse plus ancienne, arrivée après une plus récente, n'écrit rien. */
       async load(): Promise<void> {
         const mine = ++latestLoad;
         patchState(store, setPending());
         try {
-          const stats = await api.loadStats();
+          const page = await api.loadStats();
           if (mine !== latestLoad) return;
-          counts.setChallenges(stats.length);
-          patchState(store, { stats }, setFulfilled());
+          counts.setChallenges(page.totalCount);
+          patchState(store, {
+            stats: page.challenges, months: page.months, loadedMonths: completeMonths(page), loadingMonth: null,
+          }, setFulfilled());
         } catch (error) {
           const appError = await toAppError(error);
           if (mine === latestLoad) patchState(store, setError(appError));
+          return;
         }
+        await loadMonth();
       },
 
       /** `+1` : mois plus récent, `-1` : plus ancien. Le joueur surligné est lâché (il n'a peut-être pas joué ce mois-là). */
-      shiftMonth(delta: 1 | -1): void {
+      async shiftMonth(delta: 1 | -1): Promise<void> {
         patchState(store, { requestedMonth: shiftMonth(store.months(), store.month(), delta), highlightedPlayerId: null });
+        await loadMonth();
       },
 
       /** Demande un mois (`aaaa-mm`, celui de l'adresse `?mois=`) ; un mois sans défi laisse `resolveMonth` en choisir un autre. */
-      requestMonth(month: string | null): void {
+      async requestMonth(month: string | null): Promise<void> {
         patchState(store, { requestedMonth: month });
+        await loadMonth();
       },
 
       toggleExpanded(id: number): void {

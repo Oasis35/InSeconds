@@ -45,6 +45,28 @@ export interface ChallengeStats {
   readonly canRecompute: boolean;
 }
 
+/** Une lecture des stats : des défis (un mois, ou les plus récents), tous les mois qui ont un défi et le nombre de défis. */
+export interface ChallengeStatsPage {
+  readonly challenges: readonly ChallengeStats[];
+  readonly months: readonly string[];
+  readonly totalCount: number;
+}
+
+/**
+ * Les mois lus en entier par une page des défis les plus récents : tous ceux de la page, sauf le plus ancien quand des défis
+ * manquent (il peut en avoir d'autres, plus anciens que la page).
+ */
+export function completeMonths(page: ChallengeStatsPage): string[] {
+  const months = availableMonths(page.challenges);
+  return page.challenges.length >= page.totalCount ? months : months.slice(0, -1);
+}
+
+/** Le défi `incoming` remplace celui de même identifiant, les autres s'ajoutent ; du plus récent au plus ancien. */
+export function mergeChallenges(current: readonly ChallengeStats[], incoming: readonly ChallengeStats[]): ChallengeStats[] {
+  const ids = new Set(incoming.map(c => c.id));
+  return [...current.filter(c => !ids.has(c.id)), ...incoming].sort((a, b) => b.date.localeCompare(a.date));
+}
+
 const SHORT_ID_LENGTH = 8;
 const KNOWN_STATUSES: ReadonlySet<string> = new Set(['Completed', 'Pending', 'Abandoned', 'Expired']);
 
@@ -105,6 +127,11 @@ export function unfinishedCount(challenge: ChallengeStats): number {
 /** Les joueurs du défi qui ont un compte (un pseudo), parmi ceux qui l'ont joué. */
 export function accountPlayerCount(challenge: ChallengeStats): number {
   return challenge.players.filter(player => player.pseudo !== null).length;
+}
+
+/** Les joueurs du défi sans compte (un joueur supprimé depuis, qui n'a plus de pseudo, compte aussi ici). */
+export function guestPlayerCount(challenge: ChallengeStats): number {
+  return challenge.players.length - accountPlayerCount(challenge);
 }
 
 export function statusLabelKey(status: string): string | null {

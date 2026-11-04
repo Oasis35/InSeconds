@@ -22,9 +22,9 @@ describe('ChallengesApi', () => {
   }
 
   it('rend les stats avec des jours en texte et des valeurs absentes en null', async () => {
-    const api = setup({ getChallengeStats: vi.fn(() => of({ challenges: [raw()] })) });
+    const api = setup({ getChallengeStats: vi.fn(() => of({ challenges: [raw()], months: ['2026-10'], totalCount: 1 })) });
 
-    const [challenge] = await api.loadStats();
+    const { challenges: [challenge] } = await api.loadStats();
 
     expect(challenge.date).toBe('2026-10-05');
     expect(challenge.scoreMin).toBeNull();
@@ -37,18 +37,29 @@ describe('ChallengesApi', () => {
 
   it('garde l\'instant de la photo figée', async () => {
     const api = setup({
-      getChallengeStats: vi.fn(() => of({ challenges: [raw({ computedAt: '2026-10-06T00:05:00Z' })] })),
+      getChallengeStats: vi.fn(() => of({ challenges: [raw({ computedAt: '2026-10-06T00:05:00Z' })], months: [], totalCount: 1 })),
     });
 
-    expect((await api.loadStats())[0].computedAt).toBe('2026-10-06T00:05:00Z');
+    expect((await api.loadStats()).challenges[0].computedAt).toBe('2026-10-06T00:05:00Z');
   });
 
   it('convertit un Date en jour sans fuseau', async () => {
     const api = setup({
-      getChallengeStats: vi.fn(() => of({ challenges: [raw({ date: new Date('2026-10-05T00:00:00Z') })] })),
+      getChallengeStats: vi.fn(() => of({ challenges: [raw({ date: new Date('2026-10-05T00:00:00Z') })], months: [], totalCount: 1 })),
     });
 
-    expect((await api.loadStats())[0].date).toBe('2026-10-05');
+    expect((await api.loadStats()).challenges[0].date).toBe('2026-10-05');
+  });
+
+  it('demande un mois et rend les mois et le nombre de défis', async () => {
+    const getChallengeStats = vi.fn(() => of({ challenges: [raw()], months: ['2026-10', '2026-09'], totalCount: 40 }));
+    const api = setup({ getChallengeStats });
+
+    const page = await api.loadStats('2026-09');
+
+    expect(getChallengeStats).toHaveBeenCalledWith('2026-09');
+    expect(page.months).toEqual(['2026-10', '2026-09']);
+    expect(page.totalCount).toBe(40);
   });
 
   it('recalcule un jour et rend le défi recalculé', async () => {

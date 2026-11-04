@@ -7,7 +7,7 @@ import { WIDE_SCREEN } from '../../../core/layout/wide-screen';
 import { ModalService } from '../../../ui/modal/modal.service';
 import { DashboardStore } from '../../data-access/dashboard.store';
 import {
-  FakeChallengesApi, challengePlayer, challengeStats, challengeTrack, fakeChallengesApi, provideChallengesApiFake,
+  FakeChallengesApi, challengePlayer, challengeStats, challengeTrack, fakeChallengesApi, provideChallengesApiFake, statsPage,
 } from '../../data-access/testing/fake-challenges-api';
 import {
   FakeDashboardApi, dashboard, fakeDashboardApi, provideDashboardApiFake,
@@ -28,7 +28,7 @@ describe('DashboardPage', () => {
 
   async function render(options: { api?: Partial<FakeDashboardApi>; wide?: boolean; query?: Record<string, string> } = {}) {
     api = fakeDashboardApi(options.api);
-    challenges = fakeChallengesApi({ loadStats: vi.fn(async () => [october5]) });
+    challenges = fakeChallengesApi({ loadStats: vi.fn(async () => statsPage([october5])) });
     router = { navigate: vi.fn(async () => true) };
     TestBed.configureTestingModule({
       providers: [

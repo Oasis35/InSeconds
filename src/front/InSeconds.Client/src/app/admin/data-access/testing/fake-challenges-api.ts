@@ -1,6 +1,6 @@
 import { Provider } from '@angular/core';
 import {
-  ChallengePlayer, ChallengeStats, ChallengeTrackStats,
+  ChallengePlayer, ChallengeStats, ChallengeStatsPage, ChallengeTrackStats, availableMonths,
 } from '../../domain/challenge';
 import { ChallengesApi } from '../challenges.api';
 
@@ -24,9 +24,14 @@ export function challengeStats(overrides: Partial<ChallengeStats> = {}): Challen
   };
 }
 
+/** Une réponse des stats : par défaut, les mois et le nombre de défis sont ceux des défis donnés (tout est lu). */
+export function statsPage(challenges: readonly ChallengeStats[], overrides: Partial<ChallengeStatsPage> = {}): ChallengeStatsPage {
+  return { challenges, months: availableMonths(challenges), totalCount: challenges.length, ...overrides };
+}
+
 function defaults() {
   return {
-    loadStats: vi.fn<() => Promise<ChallengeStats[]>>(() => Promise.resolve([])),
+    loadStats: vi.fn<(month?: string) => Promise<ChallengeStatsPage>>(() => Promise.resolve(statsPage([]))),
     recompute: vi.fn<(day: string) => Promise<ChallengeStats>>(() => Promise.resolve(challengeStats())),
   } satisfies Record<keyof ChallengesApi, unknown>;
 }

@@ -28,10 +28,15 @@ export class DailyClient {
     }
 
     /**
+     * @param month (optional) 
      * @return OK
      */
-    getChallengeStats(): Observable<AdminChallengeStatsResponse> {
-        let url_ = this.baseUrl + "/api/admin/daily/challenges/stats";
+    getChallengeStats(month: string | undefined): Observable<AdminChallengeStatsResponse> {
+        let url_ = this.baseUrl + "/api/admin/daily/challenges/stats?";
+        if (month === null)
+            throw new globalThis.Error("The parameter 'month' cannot be null.");
+        else if (month !== undefined)
+            url_ += "month=" + encodeURIComponent("" + month) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -68,6 +73,12 @@ export class DailyClient {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AdminChallengeStatsResponse;
             return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Bad Request", status, _responseText, _headers, result400);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -1309,6 +1320,8 @@ export interface AdminChallengeStats {
 
 export interface AdminChallengeStatsResponse {
     challenges: AdminChallengeStats[];
+    months: string[];
+    totalCount: number;
 
     [key: string]: any;
 }

@@ -103,13 +103,18 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
             .ToListAsync(ct);
 
     public async Task<IReadOnlyList<RecentChallenge>> ListRecentChallengesAsync(int take, CancellationToken ct) =>
-        await (from c in db.Set<DailyChallenge>().AsNoTracking()
-               join s in db.Set<DayStatsSnapshot>().AsNoTracking() on c.Id equals s.ChallengeId into snapshots
-               from snapshot in snapshots.DefaultIfEmpty()
-               orderby c.Date descending
-               select new RecentChallenge(c.Id, c.Date, snapshot == null ? null : snapshot.Payload, snapshot == null ? null : snapshot.ComputedAt))
-            .Take(take)
-            .ToListAsync(ct);
+        await ChallengesWithSnapshot(db.Set<DailyChallenge>().AsNoTracking()).Take(take).ToListAsync(ct);
+
+    public async Task<IReadOnlyList<RecentChallenge>> ListChallengesBetweenAsync(DateOnly from, DateOnly to, CancellationToken ct) =>
+        await ChallengesWithSnapshot(db.Set<DailyChallenge>().AsNoTracking().Where(c => c.Date >= from && c.Date <= to)).ToListAsync(ct);
+
+    /// <summary>Les défis donnés, du plus récent au plus ancien, chacun avec sa photo figée s'il en a une.</summary>
+    private IQueryable<RecentChallenge> ChallengesWithSnapshot(IQueryable<DailyChallenge> challenges) =>
+        from c in challenges
+        join s in db.Set<DayStatsSnapshot>().AsNoTracking() on c.Id equals s.ChallengeId into snapshots
+        from snapshot in snapshots.DefaultIfEmpty()
+        orderby c.Date descending
+        select new RecentChallenge(c.Id, c.Date, snapshot == null ? null : snapshot.Payload, snapshot == null ? null : snapshot.ComputedAt);
 
     public async Task<RecentChallenge?> FindChallengeWithSnapshotAsync(DateOnly day, CancellationToken ct) =>
         await (from c in db.Set<DailyChallenge>().AsNoTracking()

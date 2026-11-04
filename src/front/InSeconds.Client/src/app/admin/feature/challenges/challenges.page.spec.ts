@@ -9,7 +9,7 @@ import { ModalService } from '../../../ui/modal/modal.service';
 import { AdminCounts } from '../../data-access/admin-counts';
 import { problem } from '../../data-access/testing/fake-catalogue-api';
 import {
-  FakeChallengesApi, challengePlayer, challengeStats, challengeTrack, fakeChallengesApi, provideChallengesApiFake,
+  FakeChallengesApi, challengePlayer, challengeStats, challengeTrack, fakeChallengesApi, provideChallengesApiFake, statsPage,
 } from '../../data-access/testing/fake-challenges-api';
 import { ChallengeStats } from '../../domain/challenge';
 import { ChallengesPage } from './challenges.page';
@@ -37,7 +37,7 @@ describe('ChallengesPage', () => {
     stats: ChallengeStats[] = [today, older, september],
     options: { wide?: boolean; query?: Record<string, string> } = {},
   ) {
-    api = fakeChallengesApi({ loadStats: vi.fn(async () => stats), ...overrides });
+    api = fakeChallengesApi({ loadStats: vi.fn(async () => statsPage(stats)), ...overrides });
     modal = { open: vi.fn() };
     copy = vi.fn(async () => true);
     router = { navigate: vi.fn(async () => true) };

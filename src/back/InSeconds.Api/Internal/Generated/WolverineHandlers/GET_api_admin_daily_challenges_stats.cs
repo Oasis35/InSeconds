@@ -59,9 +59,18 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
+                var month = httpContext.Request.Query["month"];
+                var problemDetails1 = InSeconds.Api.Modules.Daily.Application.GetChallengeStatsEndpoint.Validate(month);
+                // Evaluate whether the processing should stop if there are any problems
+                if (!(ReferenceEquals(problemDetails1, Wolverine.Http.WolverineContinue.NoProblems)))
+                {
+                    await WriteProblems(problemDetails1, httpContext).ConfigureAwait(false);
+                    return;
+                }
+
                 
                 // The actual HTTP request handler execution
-                var adminChallengeStatsResponse_response = await InSeconds.Api.Modules.Daily.Application.GetChallengeStatsEndpoint.Get(efDailyStatsQueries, efTrackDirectory, efPlayerDirectory, _dailyRules, _gameCalendar, httpContext.RequestAborted).ConfigureAwait(false);
+                var adminChallengeStatsResponse_response = await InSeconds.Api.Modules.Daily.Application.GetChallengeStatsEndpoint.Get(month, efDailyStatsQueries, efTrackDirectory, efPlayerDirectory, _dailyRules, _gameCalendar, httpContext.RequestAborted).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

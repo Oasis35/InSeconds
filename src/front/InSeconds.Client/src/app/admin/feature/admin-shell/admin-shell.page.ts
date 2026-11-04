@@ -109,7 +109,7 @@ const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'radio', 'range', 'reset'
             }
           </header>
 
-          <div class="relative w-full max-w-2xl lg:max-w-7xl mx-auto px-4 lg:pt-6 lg:grid lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-6">
+          <div class="relative w-full max-w-2xl lg:max-w-none mx-auto px-4 lg:px-6 lg:pt-6 lg:grid lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-6">
             <!-- PC : le logo centré au-dessus des onglets en colonne, puis le panneau technique. -->
             <aside class="hidden lg:flex lg:flex-col lg:gap-4 lg:sticky lg:top-6 lg:self-start">
               <a routerLink="/daily" [title]="'admin.backToGame' | translate"

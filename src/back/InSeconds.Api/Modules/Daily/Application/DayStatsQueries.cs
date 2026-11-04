@@ -45,6 +45,9 @@ public interface IDailyStatsQueries
     /// <summary>Les <paramref name="take"/> défis les plus récents, du plus récent au plus ancien, avec leur photo figée s'ils en ont une.</summary>
     Task<IReadOnlyList<RecentChallenge>> ListRecentChallengesAsync(int take, CancellationToken ct);
 
+    /// <summary>Les défis du <paramref name="from"/> au <paramref name="to"/> compris, du plus récent au plus ancien, avec leur photo figée s'ils en ont une.</summary>
+    Task<IReadOnlyList<RecentChallenge>> ListChallengesBetweenAsync(DateOnly from, DateOnly to, CancellationToken ct);
+
     /// <summary>Tous les défis avec leurs morceaux, du plus récent au plus ancien (l'historique de l'admin).</summary>
     Task<IReadOnlyList<ChallengeListRow>> ListChallengesAsync(CancellationToken ct);
 

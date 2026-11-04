@@ -32,7 +32,8 @@ function monthParam(value: string | null): string | null {
 }
 
 /**
- * `/admin/defis` : les 30 derniers défis (joueurs, scores, taux par morceau, recalcul des chiffres figés), sous un navigateur de mois.
+ * `/admin/defis` : les défis d'un mois (joueurs, scores, taux par morceau, recalcul des chiffres figés), sous un navigateur de mois qui
+ * parcourt tous les mois qui ont un défi (un mois plus ancien que les 30 derniers défis est lu quand on y arrive).
  * Sur téléphone, un défi par carte, qu'on déplie. Sur PC, le mois en tableau, et le détail du défi sélectionné à droite (le plus récent
  * par défaut). Le mois affiché vit dans l'adresse (`?mois=2026-10`) : un rechargement ou un lien le rouvre.
  */
@@ -65,6 +66,8 @@ function monthParam(value: string | null): string | null {
             <app-error-message [messageKey]="errorKey(error.code)" [traceId]="error.traceId" />
           } @else if (store.stats().length === 0) {
             <p class="text-sm" style="color:var(--text-muted)">{{ 'admin.dashboard.noChallenge' | translate }}</p>
+          } @else if (store.statsForMonth().length === 0 && store.loadingMonth() === store.month()) {
+            <p class="text-sm" style="color:var(--text-muted)" data-testid="challenges-month-loading">{{ 'admin.dashboard.loading' | translate }}</p>
           } @else if (store.statsForMonth().length === 0) {
             <p class="text-sm" style="color:var(--text-muted)">{{ 'admin.dashboard.noChallengeThisMonth' | translate }}</p>
           } @else if (wide()) {
@@ -133,7 +136,7 @@ export class ChallengesPage {
   protected readonly errorKey = errorMessageKey;
 
   constructor() {
-    this.store.requestMonth(monthParam(this.route.snapshot.queryParamMap.get('mois')));
+    void this.store.requestMonth(monthParam(this.route.snapshot.queryParamMap.get('mois')));
     // Le mois affiché → adresse, une fois les défis lus (avant, le mois n'est pas connu). `replaceUrl` : « précédent » ne revient pas mois par mois.
     effect(() => {
       if (!this.store.isFulfilled()) return;
@@ -146,7 +149,7 @@ export class ChallengesPage {
   }
 
   protected shiftMonth(delta: 1 | -1): void {
-    this.store.shiftMonth(delta);
+    void this.store.shiftMonth(delta);
     this.picked.set(null);
   }
 
