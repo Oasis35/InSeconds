@@ -45,6 +45,8 @@ function toKpis(kpis: DayKpisResponse): DayKpis {
     totalSessions: kpis.totalSessions,
     completionRate: kpis.completionRate,
     medianScore: kpis.medianScore ?? null,
+    newPlayersCount: kpis.newPlayersCount,
+    accountsCreatedCount: kpis.accountsCreatedCount,
   };
 }
 

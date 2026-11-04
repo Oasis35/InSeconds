@@ -1,6 +1,6 @@
 import { Provider } from '@angular/core';
 import {
-  ChallengeHistoryEntry, ChallengePlayer, ChallengeStats, ChallengeTrackStats,
+  ChallengePlayer, ChallengeStats, ChallengeTrackStats,
 } from '../../domain/challenge';
 import { ChallengesApi } from '../challenges.api';
 
@@ -24,17 +24,9 @@ export function challengeStats(overrides: Partial<ChallengeStats> = {}): Challen
   };
 }
 
-export function historyEntry(overrides: Partial<ChallengeHistoryEntry> = {}): ChallengeHistoryEntry {
-  return {
-    id: 1, date: '2026-10-05',
-    tracks: [{ position: 1, artist: 'Eminem', title: 'Lose Yourself', deezerTrackId: 11 }], ...overrides,
-  };
-}
-
 function defaults() {
   return {
     loadStats: vi.fn<() => Promise<ChallengeStats[]>>(() => Promise.resolve([])),
-    listHistory: vi.fn<() => Promise<ChallengeHistoryEntry[]>>(() => Promise.resolve([])),
     recompute: vi.fn<(day: string) => Promise<ChallengeStats>>(() => Promise.resolve(challengeStats())),
   } satisfies Record<keyof ChallengesApi, unknown>;
 }

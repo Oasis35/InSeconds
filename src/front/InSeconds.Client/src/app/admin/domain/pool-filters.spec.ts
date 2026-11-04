@@ -1,5 +1,5 @@
 import {
-  NO_FILTERS, PoolFilters, clampPage, filterTracks, hasActiveFilters, nextSort, pageOf,
+  NO_FILTERS, PoolFilters, activeFieldFilterCount, clampPage, filterTracks, hasActiveFilters, nextSort, pageOf,
   sortTracks, totalPages,
 } from './pool-filters';
 import { isValidTrackName, trackLabel } from './pool-track';
@@ -54,6 +54,11 @@ describe('filterTracks', () => {
   it('sait si un filtre est actif', () => {
     expect(hasActiveFilters(NO_FILTERS)).toBe(false);
     expect(hasActiveFilters(filters({ lastUsedTo: '2026-10-01' }))).toBe(true);
+  });
+
+  it('compte les filtres actifs hors texte (ceux du bouton « Filtres »)', () => {
+    expect(activeFieldFilterCount(filters({ text: 'queen' }))).toBe(0);
+    expect(activeFieldFilterCount(filters({ status: 'used', genre: 'Rock', lastUsedFrom: '2026-10-01' }))).toBe(3);
   });
 });
 

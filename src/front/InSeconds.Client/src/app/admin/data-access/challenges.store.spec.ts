@@ -4,7 +4,7 @@ import { ChallengeStats } from '../domain/challenge';
 import { AdminCounts } from './admin-counts';
 import { ChallengesStore } from './challenges.store';
 import {
-  FakeChallengesApi, challengeStats, fakeChallengesApi, historyEntry, provideChallengesApiFake,
+  FakeChallengesApi, challengeStats, fakeChallengesApi, provideChallengesApiFake,
 } from './testing/fake-challenges-api';
 import { problem } from './testing/fake-catalogue-api';
 
@@ -20,9 +20,6 @@ describe('ChallengesStore', () => {
   async function setup(overrides: Partial<FakeChallengesApi> = {}, options: { load?: boolean } = {}) {
     api = fakeChallengesApi({
       loadStats: vi.fn(async () => [october5, october4, september30]),
-      listHistory: vi.fn(async () => [
-        historyEntry({ id: 5, date: '2026-10-05' }), historyEntry({ id: 3, date: '2026-09-30' }), historyEntry({ id: 1, date: '2026-08-12' }),
-      ]),
       ...overrides,
     });
     copy = vi.fn(async () => true);
@@ -36,11 +33,10 @@ describe('ChallengesStore', () => {
   afterEach(() => vi.useRealTimers());
 
   describe('chargement', () => {
-    it('lit les stats et l\'historique ensemble et annonce le nombre de défis', async () => {
+    it('lit les stats et annonce le nombre de défis', async () => {
       await setup();
 
       expect(api.loadStats).toHaveBeenCalledTimes(1);
-      expect(api.listHistory).toHaveBeenCalledTimes(1);
       expect(store.isFulfilled()).toBe(true);
       expect(store.stats()).toHaveLength(3);
       expect(TestBed.inject(AdminCounts).challenges()).toBe(3);
@@ -50,7 +46,6 @@ describe('ChallengesStore', () => {
       await setup({}, { load: false });
 
       expect(api.loadStats).not.toHaveBeenCalled();
-      expect(api.listHistory).not.toHaveBeenCalled();
       expect(TestBed.inject(AdminCounts).challenges()).toBeNull();
     });
 
@@ -81,10 +76,9 @@ describe('ChallengesStore', () => {
     it('affiche le mois le plus récent qui a des défis (aucun dans le mois courant)', async () => {
       await setup();
 
-      expect(store.months()).toEqual(['2026-10', '2026-09', '2026-08']);
+      expect(store.months()).toEqual(['2026-10', '2026-09']);
       expect(store.month()).toBe('2026-10');
       expect(store.statsForMonth().map(c => c.id)).toEqual([5, 4]);
-      expect(store.historyForMonth().map(c => c.id)).toEqual([5]);
     });
 
     it('change de mois avec les flèches, dans les bornes', async () => {
@@ -96,15 +90,21 @@ describe('ChallengesStore', () => {
       expect(store.month()).toBe('2026-09');
       expect(store.statsForMonth().map(c => c.id)).toEqual([3]);
 
-      store.shiftMonth(-1);
-      expect(store.month()).toBe('2026-08');
-      expect(store.statsForMonth()).toEqual([]);
       expect(store.canGoPrevious()).toBe(false);
 
       store.shiftMonth(-1);
-      expect(store.month()).toBe('2026-08');
-      store.shiftMonth(1);
       expect(store.month()).toBe('2026-09');
+      store.shiftMonth(1);
+      expect(store.month()).toBe('2026-10');
+    });
+
+    it('reprend le mois demandé (celui de l\'adresse) s\'il a des défis, sinon le plus récent', async () => {
+      await setup();
+
+      store.requestMonth('2026-09');
+      expect(store.month()).toBe('2026-09');
+      store.requestMonth('2025-01');
+      expect(store.month()).toBe('2026-10');
     });
 
     it('lâche le joueur surligné en changeant de mois', async () => {

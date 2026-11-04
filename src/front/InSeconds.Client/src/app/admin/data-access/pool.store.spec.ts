@@ -1,8 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { NO_FILTERS } from '../domain/pool-filters';
 import { PoolTrack, usageOf } from '../domain/pool-track';
-import { PoolStore } from './pool.store';
-import { FakeActionsApi, fakeActionsApi, provideActionsApiFake } from './testing/fake-actions-api';
+import { COOLDOWN_RESULT_VISIBLE_MS, PoolStore } from './pool.store';
+import { FakeCooldownApi, fakeCooldownApi, provideCooldownApiFake } from './testing/fake-cooldown-api';
 import { FakeCatalogueApi, fakeCatalogueApi, poolTrack, problem, provideCatalogueApiFake } from './testing/fake-catalogue-api';
 
 describe('PoolStore', () => {
@@ -12,17 +12,17 @@ describe('PoolStore', () => {
   const beatles = poolTrack({ id: 4, deezerTrackId: 14, artist: 'The Beatles', title: 'Come Together', preview: 'missing' });
 
   let api: FakeCatalogueApi;
-  let settings: FakeActionsApi;
+  let settings: FakeCooldownApi;
   let store: InstanceType<typeof PoolStore>;
 
   async function setup(
     tracks: PoolTrack[] = [eminem, coldplay, sabrina, beatles],
     overrides: Partial<FakeCatalogueApi> = {},
-    settingsOverrides: Partial<FakeActionsApi> = {},
+    settingsOverrides: Partial<FakeCooldownApi> = {},
   ) {
     api = fakeCatalogueApi({ listTracks: vi.fn(async () => tracks), ...overrides });
-    settings = fakeActionsApi(settingsOverrides);
-    TestBed.configureTestingModule({ providers: [PoolStore, provideCatalogueApiFake(api), provideActionsApiFake(settings)] });
+    settings = fakeCooldownApi(settingsOverrides);
+    TestBed.configureTestingModule({ providers: [PoolStore, provideCatalogueApiFake(api), provideCooldownApiFake(settings)] });
     store = TestBed.inject(PoolStore);
     await store.load();
   }
@@ -87,6 +87,33 @@ describe('PoolStore', () => {
       expect(store.isFulfilled()).toBe(true);
       expect(store.cooldownDays()).toBeNull();
       expect(store.cooldownTone()).toBeNull();
+    });
+  });
+
+  describe('réglage du cooldown', () => {
+    afterEach(() => vi.useRealTimers());
+
+    it('enregistre la part, garde le cooldown renvoyé, message effacé au bout de 3 s', async () => {
+      await setup([eminem]);
+      vi.useFakeTimers();
+
+      await store.saveCooldown(50);
+
+      expect(settings.updateCooldownPercent).toHaveBeenCalledWith(50);
+      expect(store.cooldown()).toEqual({ poolPercent: 50, days: 20, playableCount: 200 });
+      expect(store.cooldownDays()).toBe(20);
+      expect(store.cooldownSave()).toBe('saved');
+      vi.advanceTimersByTime(COOLDOWN_RESULT_VISIBLE_MS);
+      expect(store.cooldownSave()).toBe('idle');
+    });
+
+    it('échec : erreur, cooldown inchangé', async () => {
+      await setup([eminem], {}, { updateCooldownPercent: vi.fn(() => Promise.reject(problem(400, 'common.bad_request'))) });
+
+      await store.saveCooldown(5);
+
+      expect(store.cooldownSave()).toBe('error');
+      expect(store.cooldown()?.poolPercent).toBe(75);
     });
   });
 

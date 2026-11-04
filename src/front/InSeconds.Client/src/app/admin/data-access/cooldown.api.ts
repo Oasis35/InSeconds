@@ -1,18 +1,18 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { AdminDailySettingsResponse, DailyClient } from '../../api/daily/api.generated';
-import { CooldownSettings } from '../domain/actions';
+import { CooldownSettings } from '../domain/cooldown';
 
 function toCooldown(response: AdminDailySettingsResponse): CooldownSettings {
   return { poolPercent: response.trackCooldownPoolPercent, days: response.trackCooldownDays, playableCount: response.playableTrackCount };
 }
 
 /**
- * Adaptateur des actions de l'admin sur le jeu du jour (`api/daily`) : seule porte d'entrée vers le
+ * Adaptateur du réglage du cooldown des morceaux (routes admin du jeu du jour, `api/daily`) : seule porte d'entrée vers le
  * client généré. Les erreurs sont celles du client (`toAppError` sait les lire).
  */
 @Injectable()
-export class ActionsApi {
+export class CooldownApi {
   private readonly client = inject(DailyClient);
 
   /** Le cooldown des morceaux en vigueur : la part du pool réglée, et les jours qu'elle donne sur le pool d'aujourd'hui. */

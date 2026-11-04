@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { PLAYED_BY_NONE, PoolFilters, PreviewFilter, StatusFilter, hasActiveFilters } from '../../../domain/pool-filters';
+import { PLAYED_BY_NONE, PoolFilters, PreviewFilter, StatusFilter, activeFieldFilterCount, hasActiveFilters } from '../../../domain/pool-filters';
 import { MODE_VIEWS, POOL_VIEW } from '../../../domain/pool-views';
 
 const FIELD_STYLE = 'background:var(--bg-surface);color:var(--text-light)';
@@ -9,7 +9,8 @@ const FIELD_STYLE = 'background:var(--bg-surface);color:var(--text-light)';
  * Filtres du tableau, un par colonne affichée : le texte (artiste, titre, ou les deux collés) dans les deux vues. Dans la vue
  * générale : le genre, l'état de l'extrait, le statut (disponible, utilisé, désactivé, comme la colonne Statut) et « Joué par »
  * (tous, aucun mode, ou un mode). Dans la vue d'un mode, qui n'a ni Preview ni Statut : la plage de dernière utilisation.
- * Chaque champ a son libellé (masqué à l'écran, lu par les lecteurs d'écran).
+ * Chaque champ a son libellé (masqué à l'écran, lu par les lecteurs d'écran). Sur téléphone, seul le texte reste affiché : les autres
+ * filtres se déplient au clic sur « Filtres », qui compte ceux qui sont actifs ; sur PC (`lg`), tout est affiché.
  */
 @Component({
   selector: 'app-pool-filter-bar',
@@ -24,6 +25,14 @@ const FIELD_STYLE = 'background:var(--bg-surface);color:var(--text-light)';
         class="flex-1 min-w-36 text-sm rounded-lg px-3 py-1.5 outline-none"
         style="background:var(--bg-surface);color:var(--text-hi)" />
 
+      <button type="button" (click)="open.set(!open())" [attr.aria-expanded]="open()" aria-controls="pool-filter-fields"
+        class="lg:hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-(--radius-button) text-sm hover:bg-(--bg-inactive)"
+        style="border:1px solid var(--border-neutral);color:var(--text-hi)" data-testid="pool-filters-toggle">
+        {{ (fieldCount() > 0 ? 'admin.pool.filtersActive' : 'admin.pool.filters') | translate: { count: fieldCount() } }}
+        <span aria-hidden="true">{{ open() ? '▴' : '▾' }}</span>
+      </button>
+
+      <div id="pool-filter-fields" [class]="open() ? 'w-full flex flex-wrap items-center gap-2 lg:contents' : 'hidden lg:contents'">
       @if (isPool()) {
         <label for="pool-filter-genre" class="sr-only">{{ 'admin.pool.allGenres' | translate }}</label>
         <select id="pool-filter-genre" [value]="filters().genre" (change)="genreChange.emit($any($event.target).value)"
@@ -75,6 +84,7 @@ const FIELD_STYLE = 'background:var(--bg-surface);color:var(--text-light)';
           [title]="'admin.pool.lastUsedTo' | translate"
           class="text-sm rounded-lg px-3 py-1.5 outline-none" [style]="fieldStyle" />
       }
+      </div>
 
       @if (active()) {
         <button type="button" (click)="resetFilters.emit()" class="text-xs transition-colors px-1" style="color:var(--text-muted)">
@@ -105,4 +115,7 @@ export class PoolFilterBarComponent {
   protected readonly noMode = PLAYED_BY_NONE;
   protected readonly isPool = computed(() => this.view() === POOL_VIEW);
   protected readonly active = computed(() => hasActiveFilters(this.filters()));
+  protected readonly fieldCount = computed(() => activeFieldFilterCount(this.filters()));
+  /** Les filtres hors texte sont dépliés (téléphone seulement : sur PC ils le sont toujours). */
+  protected readonly open = signal(false);
 }

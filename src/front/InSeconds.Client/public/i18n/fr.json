@@ -276,7 +276,6 @@
     }
   },
   "admin": {
-    "title": "Admin",
     "notLoggedIn": "Connecte-toi d'abord",
     "notLoggedInBody": "L'accès admin nécessite un compte connecté.",
     "goToLogin": "Se connecter",
@@ -285,18 +284,17 @@
     "backToGame": "Retour au jeu",
     "logout": "Se déconnecter",
     "tabs": {
-      "dashboard": "Dashboard",
+      "dashboard": "Accueil",
       "challengesPlain": "Défis",
-      "poolPlain": "Pool",
+      "poolPlain": "Morceaux",
       "playersPlain": "Joueurs",
-      "actions": "Actions",
-      "pool": "Pool ({{ count }})",
+      "pool": "Morceaux ({{ count }})",
       "challenges": "Défis ({{ count }})",
       "players": "Joueurs ({{ count }})"
     },
     "pool": {
       "cooldown": "cooldown {{ days }} j",
-      "cooldownHint": "Un morceau tiré redevient tirable après ce délai, calculé sur la taille du pool (réglage dans Actions).",
+      "cooldownHint": "Un morceau tiré redevient tirable après ce délai, calculé sur la taille du catalogue (réglage en haut de l'onglet).",
       "selected": "{{ count }} sélectionné(s)",
       "deselectAll": "Tout déselectionner",
       "delete": "Supprimer ({{ count }})",
@@ -355,6 +353,21 @@
         "pool": "Pool",
         "daily": "Daily",
         "runs": "Run"
+      },
+      "filters": "Filtres",
+      "filtersActive": "Filtres ({{ count }})",
+      "cooldownSetting": {
+        "label": "Cooldown",
+        "days": "{{ days }} j",
+        "share": "({{ percent }} % du catalogue)",
+        "cooldownPercent": "Part du catalogue en cooldown",
+        "saveCooldown": "Enregistrer",
+        "cooldownSaved": "Cooldown mis à jour.",
+        "cooldownError": "Erreur lors de la mise à jour.",
+        "cooldownInvalid": "Entre un pourcentage entier, de {{ min }} à {{ max }}.",
+        "cooldownAppliedDay": "Appliqué aujourd'hui : {{ days }} jour · {{ count }} morceaux jouables",
+        "cooldownAppliedDays": "Appliqué aujourd'hui : {{ days }} jours · {{ count }} morceaux jouables",
+        "cooldownBelowAlert": "Sous le seuil de {{ days }} jours : ajoute des morceaux."
       }
     },
     "deleteModal": {
@@ -374,9 +387,7 @@
       "todayWarning": "Ce morceau est dans le défi du jour : les joueurs qui n'ont pas encore répondu seront corrigés avec le nouveau nom.",
       "cancel": "Annuler",
       "save": "Enregistrer",
-      "saving": "Enregistrement...",
-      "error": "Erreur lors de l'enregistrement.",
-      "close": "Fermer"
+      "saving": "Enregistrement..."
     },
     "addPanel": {
       "title": "Ajouter un morceau",
@@ -391,31 +402,23 @@
       "addTrack": "Ajouter"
     },
     "deployedAt": "Déployé le {{ date }} à {{ time }}",
+    "deployedShort": "déployé le {{ date }} à {{ time }}",
+    "tabsLabel": "Onglets de l'admin",
     "dashboard": {
       "loading": "Chargement des stats...",
-      "today": "Aujourd'hui",
       "noChallengeForDay": "Aucun défi pour ce jour.",
-      "kpiCompleted": "Complétés",
+      "kpiCompleted": "Ont fini",
       "players": "joueurs",
       "player": "joueur",
-      "kpiUnfinished": "Non terminés",
-      "unfinishedBreakdown": "{{abandoned}} abandon · {{expired}} inachevé",
-      "kpiCompletion": "Complétion",
-      "sessions": "sessions",
-      "session": "session",
-      "noneComplete": "aucune complète",
       "kpiMedian": "Score médian",
-      "points": "pts",
       "activity30d": "Activité sur 30 jours",
       "total": "Total",
       "peak": "Pic",
       "perDay": "/j",
       "noCompletedInPeriod": "Aucune partie complétée sur cette période.",
-      "playersTitle": "Joueurs",
-      "guests": "Guests",
-      "registered": "Inscrits",
-      "active7d": "Actifs 7j",
-      "active30d": "Actifs 30j",
+      "registered": "inscrits",
+      "active7d": "actifs sur 7 j",
+      "active30d": "actifs sur 30 j",
       "statsPerChallenge": "Stats par défi",
       "noChallenge": "Aucun défi.",
       "noChallengeThisMonth": "Aucun défi ce mois.",
@@ -430,42 +433,21 @@
       "avgListen": "Écoute moy.",
       "extended": "Prolongé",
       "you": "toi",
-      "copied": "Copié !"
-    },
-    "actions": {
-      "challengeOfDay": "Défi du jour",
-      "previews": "Previews Deezer",
-      "trackCooldown": "Cooldown de réutilisation des morceaux",
-      "saveCooldown": "Enregistrer",
-      "cooldownSaved": "Cooldown mis à jour.",
-      "cooldownError": "Erreur lors de la mise à jour.",
-      "cooldownInvalid": "Entre un pourcentage entier, de {{ min }} à {{ max }}.",
-      "cooldownPercent": "Part du pool en cooldown",
-      "cooldownAppliedDay": "Appliqué aujourd'hui : {{ days }} jour · {{ count }} morceaux jouables",
-      "cooldownAppliedDays": "Appliqué aujourd'hui : {{ days }} jours · {{ count }} morceaux jouables",
-      "cooldownBelowAlert": "Sous le seuil de {{ days }} jours : ajoute des morceaux.",
-      "jobs": {
-        "title": "Tâches planifiées",
-        "hint": "Pour lancer une tâche à la main (générer le défi du jour, re-vérifier les previews…) : « Déclencher maintenant » dans le tableau de bord. Il montre aussi ce qui tourne et ce qui a échoué, et garde le détail des exécutions 7 jours.",
-        "link": "Ouvrir le tableau de bord des tâches"
-      },
-      "witness": {
-        "never": "Aucun passage ces 7 derniers jours.",
-        "running": "En cours depuis le {{ date }} à {{ time }}.",
-        "failed": "Échec le {{ date }} à {{ time }}.",
-        "challengeCreated": "Généré le {{ date }} à {{ time }}.",
-        "challengeAlready": "Déjà en place, vérifié le {{ date }} à {{ time }}.",
-        "poolInsufficient": "Pool insuffisant : dernier essai le {{ date }} à {{ time }}. Ajoutez des morceaux avec preview.",
-        "previewsReport": "Contrôlé le {{ date }} à {{ time }} : {{ checked }} vérifié(s), {{ updated }} corrigé(s), {{ failed }} échec(s) Deezer.",
-        "previewsChecked": "Contrôlé le {{ date }} à {{ time }}.",
-        "retry": "Nouvel essai le {{ date }} à {{ time }}.",
-        "next": "Prochain passage le {{ date }} à {{ time }}.",
-        "loadError": "Impossible de lire le dernier passage des tâches."
-      }
+      "copied": "Copié !",
+      "todayLive": "Aujourd'hui · en direct",
+      "previousDay": "Jour précédent",
+      "nextDay": "Jour suivant",
+      "kpiNew": "Nouveaux",
+      "kpiNewHint": "Joueurs dont c'est la toute première partie du jour",
+      "pending": "{{ count }} en cours",
+      "expired": "{{ count }} inachevée(s)",
+      "completionRate": "{{ rate }} % finissent",
+      "accountCreated": "{{ count }} compte créé",
+      "accountsCreated": "{{ count }} comptes créés",
+      "dayTracks": "Morceaux du jour",
+      "totalPlayers": "joueurs en 30 jours"
     },
     "challenges": {
-      "history": "Historique",
-      "noChallenge": "Aucun défi enregistré.",
       "noChallengeThisMonth": "Aucun défi ce mois.",
       "previousMonth": "Mois précédent",
       "nextMonth": "Mois suivant",
@@ -475,7 +457,11 @@
       "recompute": "Recalculer les stats",
       "recomputing": "Recalcul en cours…",
       "recomputeNotFound": "Aucun défi pour ce jour.",
-      "recomputeError": "Le recalcul a échoué."
+      "colDate": "Date",
+      "colPlayers": "Joueurs",
+      "colAbandons": "Abandons",
+      "colMedian": "Médiane",
+      "colAccounts": "Comptes"
     },
     "players": {
       "title": "Comptes inscrits ({{ count }})",
@@ -510,7 +496,61 @@
         "Abandoned": "Abandonnée",
         "Expired": "Inachevée"
       },
-      "lastSeenAt": "{{date}} à {{time}}"
+      "lastSeenAt": "{{date}} à {{time}}",
+      "gamesCount": "{{ count }} partie(s)",
+      "seenOn": "vu le {{ date }}"
+    },
+    "system": {
+      "deployment": "Déploiement",
+      "localBuild": "Build local",
+      "front": "Front",
+      "api": "API",
+      "branchHead": "Dernier commit de {{ branch }}",
+      "verdict": {
+        "aligned": "Front et API à jour",
+        "same": "Front et API sur le même commit",
+        "pending": "Déploiement en retard sur la branche",
+        "mismatch": "Front et API sur des commits différents",
+        "unknown": "Commits inconnus (build local)"
+      },
+      "health": "Santé",
+      "apiDown": "injoignable",
+      "latency": "{{ ms }} ms",
+      "backup": "Dernière sauvegarde",
+      "backupOffSite": "hors site",
+      "backupLocal": "locale seulement",
+      "noBackup": "aucune",
+      "nightlyJobs": "Tâches de la nuit",
+      "hangfire": "Hangfire",
+      "jobsLoadError": "Tâches illisibles.",
+      "jobs": {
+        "catalogue-refresh": "Contrôle des extraits",
+        "daily-generate-challenge": "Défi du jour",
+        "daily-close-day": "Clôture du jour",
+        "players-purge-expired-tokens": "Purge RGPD"
+      },
+      "jobTone": {
+        "ok": "réussie",
+        "warn": "à surveiller",
+        "error": "en échec",
+        "running": "en cours",
+        "none": "jamais lancée"
+      },
+      "ci": "Intégration continue",
+      "grafana": "Grafana",
+      "ciProd": "Prod",
+      "ciStaging": "Staging",
+      "ciState": {
+        "success": "vert",
+        "failure": "rouge",
+        "running": "en cours",
+        "unknown": "inconnu",
+        "none": "non lu"
+      },
+      "browser": "Ce navigateur",
+      "statusOk": "Tout va bien, voir le détail",
+      "statusAlerts": "{{ count }} alerte(s), voir le détail",
+      "alerts": "{{ count }} alerte(s)"
     }
   },
   "daily": {

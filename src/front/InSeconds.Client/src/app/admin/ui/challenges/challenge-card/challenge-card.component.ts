@@ -17,8 +17,8 @@ import { ChallengeTrackStatsComponent } from '../challenge-track-stats/challenge
   template: `
     @let c = challenge();
     <div class="py-3" style="border-top:1px solid var(--border-medium)">
-      <button type="button" (click)="toggled.emit()" [attr.aria-expanded]="expanded()"
-        class="w-full flex items-center justify-between gap-2 text-left">
+      <button type="button" (click)="collapsible() && toggled.emit()" [attr.aria-expanded]="collapsible() ? expanded() : null"
+        [disabled]="!collapsible()" class="w-full flex items-center justify-between gap-2 text-left disabled:cursor-default">
         <div class="flex items-center gap-3">
           <span class="font-mono text-sm" style="color:var(--text-hi)">{{ c.date }}</span>
           <span class="text-xs px-2 py-0.5 rounded-full" style="color:var(--text-muted);background:var(--bg-inactive)">
@@ -34,7 +34,9 @@ import { ChallengeTrackStatsComponent } from '../challenge-track-stats/challenge
           @if (c.scoreMedian !== null) {
             <span>{{ 'admin.dashboard.median' | translate }} <span class="font-medium" style="color:var(--text-hi)">{{ c.scoreMedian }}</span></span>
           }
-          <span style="color:var(--text-sep)" aria-hidden="true">{{ expanded() ? '▲' : '▼' }}</span>
+          @if (collapsible()) {
+            <span style="color:var(--text-sep)" aria-hidden="true">{{ expanded() ? '▲' : '▼' }}</span>
+          }
         </div>
       </button>
 
@@ -85,6 +87,8 @@ import { ChallengeTrackStatsComponent } from '../challenge-track-stats/challenge
 export class ChallengeCardComponent {
   readonly challenge = input.required<ChallengeStats>();
   readonly expanded = input(false);
+  /** L'en-tête replie et déplie le défi ; faux pour le détail du défi sélectionné (PC), toujours déplié. */
+  readonly collapsible = input(true);
   /** L'identifiant du joueur de ce navigateur, s'il y en a un. */
   readonly youId = input<string | null>(null);
   readonly highlightedId = input<string | null>(null);

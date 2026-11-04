@@ -1,5 +1,5 @@
 import {
-  ChallengePlayer, ChallengeStats, availableMonths, chipColors, formatMonth, inMonth, monthOf, playerLabel,
+  ChallengePlayer, ChallengeStats, accountPlayerCount, availableMonths, chipColors, formatMonth, inMonth, monthOf, playerLabel,
   rateColor, resolveMonth, shiftMonth, shortId, statusDotColor, statusLabelKey, unfinishedCount,
 } from './challenge';
 
@@ -74,6 +74,12 @@ describe('challenge (domaine)', () => {
     const challenge = { abandonedCount: 2, expiredCount: 3 } as ChallengeStats;
 
     expect(unfinishedCount(challenge)).toBe(5);
+  });
+
+  it('compte les joueurs du défi qui ont un compte', () => {
+    const challenge = { players: [player({ pseudo: 'Alice' }), player(), player({ pseudo: 'Bob' })] } as unknown as ChallengeStats;
+
+    expect(accountPlayerCount(challenge)).toBe(2);
   });
 
   it('traduit les statuts connus seulement', () => {

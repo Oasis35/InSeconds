@@ -12,7 +12,7 @@ export function dashboard(overrides: Partial<Dashboard> = {}): Dashboard {
     availableDays: ['2026-10-05', '2026-10-04', '2026-10-02'],
     kpis: {
       day: '2026-10-05', completedCount: 4, abandonedCount: 1, expiredCount: 1, pendingCount: 0,
-      totalSessions: 6, completionRate: 66.7, medianScore: 4200,
+      totalSessions: 6, completionRate: 66.7, medianScore: 4200, newPlayersCount: 2, accountsCreatedCount: 1,
     },
     ...overrides,
   };

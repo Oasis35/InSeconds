@@ -11,6 +11,7 @@ import { DeezerSearchStore } from '../../data-access/deezer-search.store';
 import { PoolStore } from '../../data-access/pool.store';
 import { DeezerResult, PoolTrack } from '../../domain/pool-track';
 import { MODE_VIEWS, POOL_VIEW } from '../../domain/pool-views';
+import { PoolCooldownComponent } from '../../ui/pool/pool-cooldown/pool-cooldown.component';
 import { PoolFilterBarComponent } from '../../ui/pool/pool-filter-bar/pool-filter-bar.component';
 import { PoolTableComponent } from '../../ui/pool/pool-table/pool-table.component';
 import { PoolToolbarComponent } from '../../ui/pool/pool-toolbar/pool-toolbar.component';
@@ -23,7 +24,8 @@ const TOGGLE_ERROR_VISIBLE_MS = 4000;
 const DIALOG_MAX_WIDTH = '26rem';
 
 /**
- * `/admin/catalogue` : le pool de morceaux, commun à tous les modes. Un sélecteur donne le pool général (tableau
+ * `/admin/catalogue` (onglet « Morceaux ») : le pool de morceaux, commun à tous les modes. En tête, le cooldown de réutilisation, replié
+ * en une ligne (on le déplie pour le régler). Puis un sélecteur donne le pool général (tableau
  * filtrable, triable et paginé, panneau de recherche Deezer pour ajouter, fenêtres d'écoute, de renommage et de
  * suppression) ou la vue d'un mode, en lecture seule (écouter, retrouver le morceau dans le pool). La vue (`?view=daily`,
  * absente pour le pool général) et la page de la grille (`?page=3`, à partir de 1) vivent dans l'adresse : un
@@ -33,7 +35,7 @@ const DIALOG_MAX_WIDTH = '26rem';
   selector: 'app-catalogue-page',
   imports: [
     TranslatePipe, ErrorMessageComponent, PoolToolbarComponent, PoolFilterBarComponent, PoolTableComponent,
-    SearchPanelComponent, PoolViewSelectorComponent,
+    SearchPanelComponent, PoolViewSelectorComponent, PoolCooldownComponent,
   ],
   providers: [PoolStore, DeezerSearchStore, AudioPreviewPlayer],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -41,7 +43,9 @@ const DIALOG_MAX_WIDTH = '26rem';
   // tableau et déborderait de l'écran du téléphone au lieu de faire défiler le tableau seul.
   host: { class: 'flex w-full min-w-0 justify-center' },
   template: `
-    <div class="flex flex-col gap-4 w-full max-w-2xl">
+    <div class="flex flex-col gap-4 w-full max-w-2xl lg:max-w-none">
+      <app-pool-cooldown [cooldown]="pool.cooldown()" [status]="pool.cooldownSave()" (savePercent)="pool.saveCooldown($event)" />
+
       <app-pool-view-selector [view]="pool.view()" (viewChange)="setView($event)" />
 
       <app-pool-toolbar

@@ -276,7 +276,6 @@
     }
   },
   "admin": {
-    "title": "Admin",
     "notLoggedIn": "Log in first",
     "notLoggedInBody": "Admin access requires a logged-in account.",
     "goToLogin": "Log in",
@@ -285,18 +284,17 @@
     "backToGame": "Back to the game",
     "logout": "Sign out",
     "tabs": {
-      "dashboard": "Dashboard",
+      "dashboard": "Home",
       "challengesPlain": "Challenges",
-      "poolPlain": "Pool",
+      "poolPlain": "Tracks",
       "playersPlain": "Players",
-      "actions": "Actions",
-      "pool": "Pool ({{ count }})",
+      "pool": "Tracks ({{ count }})",
       "challenges": "Challenges ({{ count }})",
       "players": "Players ({{ count }})"
     },
     "pool": {
       "cooldown": "cooldown {{ days }} d",
-      "cooldownHint": "A drawn track can be drawn again after this delay, computed from the pool size (setting in Actions).",
+      "cooldownHint": "A drawn track becomes drawable again after this delay, computed from the catalogue size (setting at the top of the tab).",
       "selected": "{{ count }} selected",
       "deselectAll": "Deselect all",
       "delete": "Delete ({{ count }})",
@@ -355,6 +353,21 @@
         "pool": "Pool",
         "daily": "Daily",
         "runs": "Run"
+      },
+      "filters": "Filters",
+      "filtersActive": "Filters ({{ count }})",
+      "cooldownSetting": {
+        "label": "Cooldown",
+        "days": "{{ days }} d",
+        "share": "({{ percent }}% of the catalogue)",
+        "cooldownPercent": "Share of the catalogue in cooldown",
+        "saveCooldown": "Save",
+        "cooldownSaved": "Cooldown updated.",
+        "cooldownError": "Error while updating.",
+        "cooldownInvalid": "Enter a whole percentage, from {{ min }} to {{ max }}.",
+        "cooldownAppliedDay": "Applied today: {{ days }} day · {{ count }} playable tracks",
+        "cooldownAppliedDays": "Applied today: {{ days }} days · {{ count }} playable tracks",
+        "cooldownBelowAlert": "Below the {{ days }}-day threshold: add tracks."
       }
     },
     "deleteModal": {
@@ -374,9 +387,7 @@
       "todayWarning": "This track is in today's challenge: players who haven't answered yet will be graded against the new name.",
       "cancel": "Cancel",
       "save": "Save",
-      "saving": "Saving...",
-      "error": "Error while saving.",
-      "close": "Close"
+      "saving": "Saving..."
     },
     "addPanel": {
       "title": "Add a track",
@@ -391,31 +402,23 @@
       "addTrack": "Add"
     },
     "deployedAt": "Deployed {{ date }} at {{ time }}",
+    "deployedShort": "deployed {{ date }} at {{ time }}",
+    "tabsLabel": "Admin tabs",
     "dashboard": {
       "loading": "Loading stats...",
-      "today": "Today",
       "noChallengeForDay": "No challenge for this day.",
-      "kpiCompleted": "Completed",
+      "kpiCompleted": "Finished",
       "players": "players",
       "player": "player",
-      "kpiUnfinished": "Unfinished",
-      "unfinishedBreakdown": "{{abandoned}} quit · {{expired}} dropped",
-      "kpiCompletion": "Completion",
-      "sessions": "sessions",
-      "session": "session",
-      "noneComplete": "none complete",
       "kpiMedian": "Median score",
-      "points": "pts",
       "activity30d": "Activity, last 30 days",
       "total": "Total",
       "peak": "Peak",
       "perDay": "/day",
       "noCompletedInPeriod": "No completed game in this period.",
-      "playersTitle": "Players",
-      "guests": "Guests",
-      "registered": "Registered",
-      "active7d": "Active 7d",
-      "active30d": "Active 30d",
+      "registered": "registered",
+      "active7d": "active in 7 d",
+      "active30d": "active in 30 d",
       "statsPerChallenge": "Stats per challenge",
       "noChallenge": "No challenge.",
       "noChallengeThisMonth": "No challenge this month.",
@@ -430,42 +433,21 @@
       "avgListen": "Avg. listen",
       "extended": "Extended",
       "you": "you",
-      "copied": "Copied!"
-    },
-    "actions": {
-      "challengeOfDay": "Today's challenge",
-      "previews": "Deezer previews",
-      "trackCooldown": "Track reuse cooldown",
-      "saveCooldown": "Save",
-      "cooldownSaved": "Cooldown updated.",
-      "cooldownError": "Error while updating.",
-      "cooldownInvalid": "Enter a whole percentage, from {{ min }} to {{ max }}.",
-      "cooldownPercent": "Share of the pool in cooldown",
-      "cooldownAppliedDay": "Applied today: {{ days }} day · {{ count }} playable tracks",
-      "cooldownAppliedDays": "Applied today: {{ days }} days · {{ count }} playable tracks",
-      "cooldownBelowAlert": "Below the {{ days }}-day threshold: add tracks.",
-      "jobs": {
-        "title": "Scheduled tasks",
-        "hint": "To run a task by hand (generate today's challenge, recheck the previews…): \"Trigger now\" in the dashboard. It also shows what is running and what failed, and keeps run details for 7 days.",
-        "link": "Open the tasks dashboard"
-      },
-      "witness": {
-        "never": "No run in the last 7 days.",
-        "running": "Running since {{ date }} at {{ time }}.",
-        "failed": "Failed on {{ date }} at {{ time }}.",
-        "challengeCreated": "Generated on {{ date }} at {{ time }}.",
-        "challengeAlready": "Already there, checked on {{ date }} at {{ time }}.",
-        "poolInsufficient": "Pool too small: last attempt on {{ date }} at {{ time }}. Add tracks with a preview.",
-        "previewsReport": "Checked on {{ date }} at {{ time }}: {{ checked }} checked, {{ updated }} fixed, {{ failed }} Deezer failure(s).",
-        "previewsChecked": "Checked on {{ date }} at {{ time }}.",
-        "retry": "Next attempt on {{ date }} at {{ time }}.",
-        "next": "Next run on {{ date }} at {{ time }}.",
-        "loadError": "Could not read the tasks' last runs."
-      }
+      "copied": "Copied!",
+      "todayLive": "Today · live",
+      "previousDay": "Previous day",
+      "nextDay": "Next day",
+      "kpiNew": "New",
+      "kpiNewHint": "Players whose very first game was today's",
+      "pending": "{{ count }} in progress",
+      "expired": "{{ count }} unfinished",
+      "completionRate": "{{ rate }}% finish",
+      "accountCreated": "{{ count }} account created",
+      "accountsCreated": "{{ count }} accounts created",
+      "dayTracks": "Today's tracks",
+      "totalPlayers": "players in 30 days"
     },
     "challenges": {
-      "history": "History",
-      "noChallenge": "No challenge recorded.",
       "noChallengeThisMonth": "No challenge this month.",
       "previousMonth": "Previous month",
       "nextMonth": "Next month",
@@ -475,7 +457,11 @@
       "recompute": "Recompute stats",
       "recomputing": "Recomputing…",
       "recomputeNotFound": "No challenge for this day.",
-      "recomputeError": "The recompute failed."
+      "colDate": "Date",
+      "colPlayers": "Players",
+      "colAbandons": "Give-ups",
+      "colMedian": "Median",
+      "colAccounts": "Accounts"
     },
     "players": {
       "title": "Registered accounts ({{ count }})",
@@ -510,7 +496,61 @@
         "Abandoned": "Abandoned",
         "Expired": "Unfinished"
       },
-      "lastSeenAt": "{{date}} at {{time}}"
+      "lastSeenAt": "{{date}} at {{time}}",
+      "gamesCount": "{{ count }} game(s)",
+      "seenOn": "seen {{ date }}"
+    },
+    "system": {
+      "deployment": "Deployment",
+      "localBuild": "Local build",
+      "front": "Front",
+      "api": "API",
+      "branchHead": "Latest commit of {{ branch }}",
+      "verdict": {
+        "aligned": "Front and API up to date",
+        "same": "Front and API on the same commit",
+        "pending": "Deployment behind the branch",
+        "mismatch": "Front and API on different commits",
+        "unknown": "Unknown commits (local build)"
+      },
+      "health": "Health",
+      "apiDown": "unreachable",
+      "latency": "{{ ms }} ms",
+      "backup": "Last backup",
+      "backupOffSite": "off-site",
+      "backupLocal": "local only",
+      "noBackup": "none",
+      "nightlyJobs": "Nightly jobs",
+      "hangfire": "Hangfire",
+      "jobsLoadError": "Could not read the jobs.",
+      "jobs": {
+        "catalogue-refresh": "Preview check",
+        "daily-generate-challenge": "Daily challenge",
+        "daily-close-day": "Day closing",
+        "players-purge-expired-tokens": "GDPR purge"
+      },
+      "jobTone": {
+        "ok": "succeeded",
+        "warn": "to watch",
+        "error": "failed",
+        "running": "running",
+        "none": "never run"
+      },
+      "ci": "Continuous integration",
+      "grafana": "Grafana",
+      "ciProd": "Prod",
+      "ciStaging": "Staging",
+      "ciState": {
+        "success": "green",
+        "failure": "red",
+        "running": "running",
+        "unknown": "unknown",
+        "none": "not read"
+      },
+      "browser": "This browser",
+      "statusOk": "All good, see details",
+      "statusAlerts": "{{ count }} alert(s), see details",
+      "alerts": "{{ count }} alert(s)"
     }
   },
   "daily": {

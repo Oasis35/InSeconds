@@ -23,6 +23,10 @@ export interface DayKpis {
   /** En pourcentage, de 0 à 100. */
   completionRate: number;
   medianScore: number | null;
+  /** Les joueurs dont c'est la toute première partie du jeu du jour. */
+  newPlayersCount: number;
+  /** Les comptes ouverts ce jour-là (jour UTC). */
+  accountsCreatedCount: number;
 }
 
 export interface Dashboard {
@@ -38,6 +42,13 @@ export interface Dashboard {
 const ACTIVITY_BAR_MAX_PX = 64;
 const ACTIVITY_BAR_MIN_PX = 4;
 const ACTIVITY_BAR_EMPTY_PX = 2;
+
+/** Un jour `aaaa-mm-jj` valide (celui de l'adresse `?jour=`), sinon `null`. */
+export function parseDay(value: string | null | undefined): string | null {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value ? value : null;
+}
 
 /** Aujourd'hui, en jour UTC de jeu. */
 export function todayUtc(now: Date): string {

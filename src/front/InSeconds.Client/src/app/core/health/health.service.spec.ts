@@ -44,6 +44,22 @@ describe('HealthService', () => {
     expect(service.isDown()).toBe(false);
   });
 
+  it('mesure la durée de la dernière sonde réussie, sans la changer sur un échec', async () => {
+    service.start();
+    expect(service.latencyMs()).toBeNull();
+    await vi.advanceTimersByTimeAsync(0);
+    const req = httpMock.expectOne(url);
+    await vi.advanceTimersByTimeAsync(40);
+    req.flush({ status: 'Healthy' });
+    const measured = service.latencyMs();
+
+    await probe(false);
+
+    expect(measured).not.toBeNull();
+    expect(measured).toBeGreaterThanOrEqual(0);
+    expect(service.latencyMs()).toBe(measured);
+  });
+
   it(`ne déclare l'API KO qu'après ${HEALTH_KO_THRESHOLD} échecs consécutifs`, async () => {
     service.start();
     await probe(true, true);

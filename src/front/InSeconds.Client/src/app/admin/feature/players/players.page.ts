@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { errorMessageKey } from '../../../core/errors/error-messages';
+import { WIDE_SCREEN } from '../../../core/layout/wide-screen';
 import { ErrorMessageComponent } from '../../../ui/error-message/error-message.component';
 import { AdminPlayersStore } from '../../data-access/players.store';
 import { canPlayRuns } from '../../domain/registered-player';
+import { PlayerCardComponent } from '../../ui/players/player-card/player-card.component';
 import { PlayerHistoryComponent } from '../../ui/players/player-history/player-history.component';
 import { PlayerRowComponent } from '../../ui/players/player-row/player-row.component';
 
@@ -11,16 +13,17 @@ import { PlayerRowComponent } from '../../ui/players/player-row/player-row.compo
  * `/admin/joueurs` : les comptes inscrits, les plus récemment vus d'abord, avec un filtre texte et,
  * sous chaque ligne dépliée (une seule à la fois), l'historique des 30 derniers jours. Une colonne « Run » donne
  * l'interrupteur d'accès au mode Run (admins d'office).
+ * Sur PC, un tableau élargi ; sur téléphone, une carte par compte (pseudo, série, gels, parties, dernière visite, accès à Platines).
  * La liste n'est lue qu'à l'ouverture de l'onglet (la page n'existe qu'alors).
  */
 @Component({
   selector: 'app-admin-players-page',
-  imports: [TranslatePipe, ErrorMessageComponent, PlayerRowComponent, PlayerHistoryComponent],
+  imports: [TranslatePipe, ErrorMessageComponent, PlayerRowComponent, PlayerCardComponent, PlayerHistoryComponent],
   providers: [AdminPlayersStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex w-full min-w-0 justify-center' },
   template: `
-    <section class="flex flex-col gap-4 w-full max-w-4xl" data-testid="admin-players-page">
+    <section class="flex flex-col gap-4 w-full max-w-2xl lg:max-w-none" data-testid="admin-players-page">
       <div class="rounded-xl flex flex-col overflow-hidden" style="background:var(--bg-surface)">
         <div class="flex flex-wrap items-center justify-between gap-3 p-4">
           <h2 class="text-sm font-semibold uppercase tracking-wide" style="color:var(--text-muted)">
@@ -51,6 +54,21 @@ import { PlayerRowComponent } from '../../ui/players/player-row/player-row.compo
           <p class="text-sm px-4 pb-4" style="color:var(--text-muted)">{{ 'admin.players.empty' | translate }}</p>
         } @else if (store.filteredPlayers().length === 0) {
           <p class="text-sm px-4 pb-4" style="color:var(--text-muted)">{{ 'admin.players.noMatch' | translate }}</p>
+        } @else if (!wide()) {
+          <ul class="flex flex-col">
+            @for (player of store.filteredPlayers(); track player.id) {
+              @let expanded = store.expandedId() === player.id;
+              <li appPlayerCard [player]="player" [expanded]="expanded" (toggled)="store.toggle(player.id)"
+                [runAccess]="canPlayRuns(player, store.runAccess())" [runAccessPending]="store.runAccessPending().includes(player.id)"
+                (runAccessToggled)="store.setRunAccess(player.id, $event)">
+                @if (expanded && store.expandedHistory(); as history) {
+                  <div class="mt-2" data-testid="player-history" [id]="'player-history-' + player.id">
+                    <app-player-history [games]="history.games" [status]="history.status" />
+                  </div>
+                }
+              </li>
+            }
+          </ul>
         } @else {
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
@@ -93,6 +111,8 @@ export class PlayersPage {
   protected readonly store = inject(AdminPlayersStore);
   protected readonly messageKey = errorMessageKey;
   protected readonly canPlayRuns = canPlayRuns;
+  /** PC : le tableau ; téléphone : les cartes. */
+  protected readonly wide = inject(WIDE_SCREEN);
 
   constructor() {
     void this.store.load();
