@@ -22,15 +22,15 @@ public static class SitemapEndpoint
 
     /// <summary>
     /// Le plan du site pour les moteurs de recherche : les pages fixes, puis un jour passé publié par ligne, du plus récent au plus ancien.
-    /// <c>lastmod</c> d'un jour passé : le jour où ses statistiques sont figées (J+2, par <c>daily-close-day</c>), aujourd'hui tant
-    /// qu'elles sont calculées en direct.
+    /// <c>lastmod</c> d'un jour passé : la date de calcul de sa photo figée (<c>daily-close-day</c> à J+2, ou un recalcul de l'admin),
+    /// aujourd'hui tant qu'il est calculé en direct.
     /// </summary>
-    public static string Build(AppOptions app, IReadOnlyList<DateOnly> published, DateOnly today)
+    public static string Build(AppOptions app, IReadOnlyList<DateOnly> published, IReadOnlyDictionary<DateOnly, DateTimeOffset> frozenAt, DateOnly today)
     {
         var urls = FixedPages.Select(p => Url(app.Link(p), p == DailyPage ? today : null))
             .Concat(published.Select(d => Url(
                 app.Link("/daily/archive/" + d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)),
-                d.AddDays(2) < today ? d.AddDays(2) : today)));
+                frozenAt.TryGetValue(d, out var computedAt) ? DateOnly.FromDateTime(computedAt.UtcDateTime) : today)));
         var document = new XDocument(new XDeclaration("1.0", "UTF-8", null), new XElement(Ns + "urlset", urls));
         return document.Declaration + "\n" + document.Root!.ToString(SaveOptions.DisableFormatting);
     }
@@ -48,7 +48,8 @@ public static class SitemapEndpoint
     [EnableRateLimiting(RateLimitPolicies.DailyArchive)]
     public static async Task Get(IDailyStatsQueries stats, IGameCalendar calendar, IOptions<AppOptions> app, HttpResponse response, CancellationToken ct)
     {
-        var xml = Encoding.UTF8.GetBytes(Build(app.Value, await ChallengeArchive.PublishedDatesAsync(stats, calendar, ct), calendar.Today));
+        var xml = Encoding.UTF8.GetBytes(Build(
+            app.Value, await ChallengeArchive.PublishedDatesAsync(stats, calendar, ct), await stats.GetSnapshotDatesAsync(ct), calendar.Today));
         response.ContentType = "application/xml; charset=utf-8";
         response.ContentLength = xml.Length;
         response.Headers.CacheControl = "public, max-age=3600";

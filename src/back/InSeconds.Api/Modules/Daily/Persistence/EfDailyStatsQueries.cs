@@ -131,6 +131,12 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
     public async Task<IReadOnlyList<DateOnly>> ListChallengeDatesAsync(CancellationToken ct) =>
         await db.Set<DailyChallenge>().AsNoTracking().OrderByDescending(c => c.Date).Select(c => c.Date).ToListAsync(ct);
 
+    public async Task<IReadOnlyDictionary<DateOnly, DateTimeOffset>> GetSnapshotDatesAsync(CancellationToken ct) =>
+        await (from c in db.Set<DailyChallenge>().AsNoTracking()
+               join s in db.Set<DayStatsSnapshot>().AsNoTracking() on c.Id equals s.ChallengeId
+               select new { c.Date, s.ComputedAt })
+            .ToDictionaryAsync(r => r.Date, r => r.ComputedAt, ct);
+
     public async Task<int?> FindChallengeIdAsync(DateOnly day, CancellationToken ct) =>
         await db.Set<DailyChallenge>().AsNoTracking().Where(c => c.Date == day).Select(c => (int?)c.Id).FirstOrDefaultAsync(ct);
 

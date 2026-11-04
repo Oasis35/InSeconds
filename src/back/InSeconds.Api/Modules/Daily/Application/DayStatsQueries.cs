@@ -51,6 +51,9 @@ public interface IDailyStatsQueries
     /// <summary>Les dates de tous les défis, de la plus récente à la plus ancienne.</summary>
     Task<IReadOnlyList<DateOnly>> ListChallengeDatesAsync(CancellationToken ct);
 
+    /// <summary>La date de calcul de la photo figée de chaque jour qui en a une (le plan du site en fait la date de modification du jour).</summary>
+    Task<IReadOnlyDictionary<DateOnly, DateTimeOffset>> GetSnapshotDatesAsync(CancellationToken ct);
+
     /// <summary>Le défi de ce jour et, s'il est figé, sa photo ; vide s'il n'y a pas de défi ce jour-là.</summary>
     Task<RecentChallenge?> FindChallengeWithSnapshotAsync(DateOnly day, CancellationToken ct);
 
