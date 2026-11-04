@@ -26,6 +26,15 @@ BEGIN
     END LOOP;
 END $$;
 
+-- Les sauvegardes sont celles de la prod : le staging n'en fait pas, son admin ne doit pas en montrer.
+-- La table vient d'une migration de l'API : absente d'une copie d'une prod qui ne l'a pas encore.
+DO $$
+BEGIN
+    IF to_regclass('infra.backup_runs') IS NOT NULL THEN
+        TRUNCATE infra.backup_runs;
+    END IF;
+END $$;
+
 COMMIT;
 
 SELECT count(*) AS comptes,

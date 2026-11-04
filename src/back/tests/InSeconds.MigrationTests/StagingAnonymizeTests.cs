@@ -10,7 +10,7 @@ public class StagingAnonymizeTests(ScriptDatabase database)
     private static readonly string[] Queues = ["wolverine_incoming_envelopes", "wolverine_outgoing_envelopes", "wolverine_dead_letters"];
 
     [Fact]
-    public async Task ComptesEtJetonsAnonymises_AdresseGardee_FileDeWolverineVidee()
+    public async Task ComptesEtJetonsAnonymises_AdresseGardee_FileDeWolverineEtSauvegardesVidees()
     {
         var cs = await database.CreateDatabaseAsync();
         var kept = await ScriptDatabase.InsertPlayerAsync(cs, "Garde@example.com", "Garde", isAdmin: true);
@@ -21,6 +21,7 @@ public class StagingAnonymizeTests(ScriptDatabase database)
             INSERT INTO players.device_sessions (id, created_at, last_seen_at, player_id) VALUES (1, now(), now(), '{other}');
             INSERT INTO players.legacy_tokens (player_id, token_hash) VALUES ('{other}', '\x01');
             INSERT INTO infra.data_protection_keys (friendly_name, xml) VALUES ('key', '<key/>');
+            INSERT INTO infra.backup_runs (finished_at, off_site) VALUES (now(), true);
             """);
         // Les tables de messaging : créées par Wolverine au premier démarrage de l'API (pas par les migrations), noms compris.
         await using (var api = new TestApi(cs))
@@ -39,7 +40,7 @@ public class StagingAnonymizeTests(ScriptDatabase database)
         var pseudo = "joueur-" + other.ToString("N")[..12];
         Assert.Equal(1L, await Count(cs, $"players.accounts WHERE player_id = '{other}' AND email = 'player-{other}@example.invalid' AND pseudo = '{pseudo}' AND NOT is_admin"));
         Assert.Equal(0L, await Count(cs, "players.accounts WHERE pseudo = 'Joueur'"));
-        foreach (var table in new[] { "players.auth_tokens", "players.device_sessions", "players.legacy_tokens", "infra.data_protection_keys" })
+        foreach (var table in new[] { "players.auth_tokens", "players.device_sessions", "players.legacy_tokens", "infra.data_protection_keys", "infra.backup_runs" })
             Assert.Equal(0L, await Count(cs, table));
         foreach (var queue in Queues)
             Assert.Equal(0L, await Count(cs, $"messaging.{queue}"));
