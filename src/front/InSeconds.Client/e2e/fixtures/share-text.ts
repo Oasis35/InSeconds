@@ -10,7 +10,7 @@
 export const SHARE_HEADER_LINE = /^[\d\s]+ pts · InSeconds \d{2}\/\d{2}$/;
 
 /** Une ligne de morceau : `✅`/`❌` de l'artiste, puis du titre, puis le palier écouté (espace insécable avant « s »). */
-export const SHARE_TRACK_LINE = /^[✅❌]{2} \d+(,\d)? s$/u;
+export const SHARE_TRACK_LINE = /^[✅❌]{2} \d+(,\d)?\ss$/u;
 
 /** Dernière ligne : le lien, marqué `utm_source=share`. */
 const SHARE_LINK_LINE = /^https?:\/\/[^/]+\/\?utm_source=share$/;
