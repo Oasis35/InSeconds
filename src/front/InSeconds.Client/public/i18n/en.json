@@ -671,8 +671,7 @@
       "button": "Share my score",
       "copied": "Copied!",
       "failed": "Couldn't copy to the clipboard.",
-      "title": "InSeconds · {{ date }}",
-      "score": "{{ score }} pts"
+      "header": "{{ score }} pts · InSeconds {{ date }}"
     },
     "done": {
       "artist": "Artist",

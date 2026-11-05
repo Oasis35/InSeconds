@@ -1,18 +1,24 @@
-/** Ce que le texte de partage montre d'un morceau. */
+/** Ce que le texte de partage montre d'un morceau : l'artiste et le titre trouvés ou non, et le palier écouté. */
 export interface ShareTrack {
   readonly artistCorrect: boolean;
   readonly titleCorrect: boolean;
+  readonly listenedSeconds: number;
 }
 
-/** Par nombre de réponses trouvées sur le morceau (0, 1 ou 2). */
-const SHARE_EMOJIS = ['🅾️', '🔶', '✅'] as const;
+/** Met une durée au format de la langue (`formatSeconds` de `ui/format`, que la couche `domain` ne voit pas). */
+export type FormatDuration = (seconds: number) => string;
+
+/** `✅` trouvé, `❌` raté : deux formes différentes, pas seulement deux couleurs, la ligne reste lisible pour un daltonien. */
+function mark(correct: boolean): string {
+  return correct ? '✅' : '❌';
+}
 
 /**
- * Une ligne d'un emoji par morceau : `✅` artiste et titre trouvés, `🔶` l'un des deux seulement, `🅾️` rien. Les trois ont des formes
- * différentes, pas seulement des couleurs : la ligne reste lisible pour un daltonien.
+ * Une ligne par morceau, dans l'ordre reçu : l'emoji de l'artiste, celui du titre, puis le palier écouté (« ✅❌ 0,5 s »).
+ * Les emojis viennent avant le temps pour que la colonne reste alignée.
  */
-export function shareLine(tracks: readonly ShareTrack[]): string {
-  return tracks.map(t => SHARE_EMOJIS[Number(t.artistCorrect) + Number(t.titleCorrect)]).join('');
+export function shareLines(tracks: readonly ShareTrack[], formatDuration: FormatDuration): string[] {
+  return tracks.map(t => `${mark(t.artistCorrect)}${mark(t.titleCorrect)} ${formatDuration(t.listenedSeconds)}`);
 }
 
 /** `jj/mm`, dans le fuseau du joueur. */

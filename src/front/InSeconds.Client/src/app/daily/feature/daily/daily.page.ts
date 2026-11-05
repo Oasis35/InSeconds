@@ -15,6 +15,7 @@ import { LeaveGuard } from '../../../gameplay/feature/leave-guard';
 import { ModalService } from '../../../ui/modal/modal.service';
 import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-background.component';
 import { ButtonComponent } from '../../../ui/button/button.component';
+import { formatSeconds } from '../../../ui/format/format-seconds';
 import { DailyGameStore } from '../../data-access/daily-game.store';
 import { DailyShare } from '../../data-access/daily-share';
 import { GuestStreakNotice } from '../../data-access/guest-streak-notice';
@@ -177,15 +178,18 @@ export class DailyPage implements OnInit {
     this.language.use(this.language.current() === 'fr' ? 'en' : 'fr');
   }
 
-  /** Partage le résumé de la partie (menu du téléphone, sinon presse-papier) : un `✅`, `🔶` ou `🅾️` par morceau, le score et le lien. */
+  /** Partage le résumé de la partie (menu du téléphone, sinon presse-papier) : le score, puis par morceau `✅`/`❌` et le palier écouté, et le lien. */
   protected share(): void {
     const stats = this.store.stats();
     const done = this.store.screen() === 'done';
     const tracks = done
-      ? this.store.results().map(r => ({ artistCorrect: r.artistCorrect, titleCorrect: r.titleCorrect }))
-      : (stats?.tracks ?? [])
-          .filter(t => t.listenedSeconds !== null)
-          .map(t => ({ artistCorrect: t.artistCorrect === true, titleCorrect: t.titleCorrect === true }));
-    void this.dailyShare.share(tracks, done ? this.store.totalScore() : (stats?.yourScore ?? 0));
+      ? [...this.store.results()]
+          .sort((a, b) => a.position - b.position)
+          .map(r => ({ artistCorrect: r.artistCorrect, titleCorrect: r.titleCorrect, listenedSeconds: r.listenedSeconds }))
+      : (stats?.tracks ?? []).flatMap(t => t.listenedSeconds === null
+          ? []
+          : [{ artistCorrect: t.artistCorrect === true, titleCorrect: t.titleCorrect === true, listenedSeconds: t.listenedSeconds }]);
+    const lang = this.language.current();
+    void this.dailyShare.share(tracks, done ? this.store.totalScore() : (stats?.yourScore ?? 0), s => formatSeconds(s, lang));
   }
 }

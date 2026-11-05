@@ -671,8 +671,7 @@
       "button": "Partager mon score",
       "copied": "Copié !",
       "failed": "Impossible de copier dans le presse-papier.",
-      "title": "InSeconds · {{ date }}",
-      "score": "{{ score }} pts"
+      "header": "{{ score }} pts · InSeconds {{ date }}"
     },
     "done": {
       "artist": "Artiste",
