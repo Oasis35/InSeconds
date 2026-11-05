@@ -8,8 +8,8 @@ import { environment } from '../../../environments/environment';
 export type ShareOutcome = 'shared' | 'copied' | 'cancelled' | 'failed';
 
 /**
- * Les sources d'arrivée (`utm_source`) des liens partagés : `share` pour le partage court du score (et le lien d'une playlist Platines),
- * `share-long` pour le partage détaillé. L'onglet Accueil de l'admin les relit sous ces noms (`admin/domain/dashboard.ts`, dont la couche
+ * Les sources d'arrivée (`utm_source`) des liens partagés : `share` pour le partage court du score (par la flèche ▾) (et le lien d'une playlist Platines),
+ * `share-long` pour le partage détaillé (le bouton principal). L'onglet Accueil de l'admin les relit sous ces noms (`admin/domain/dashboard.ts`, dont la couche
  * `domain` ne voit pas `core` : à changer ensemble).
  */
 export const SHARE_SOURCE = 'share';

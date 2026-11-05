@@ -683,7 +683,7 @@
       "copied": "Copied!",
       "failed": "Couldn't copy to the clipboard.",
       "header": "{{ score }} pts · InSeconds {{ date }}",
-      "choose": "Choose the share format",
+      "choose": "Other share format",
       "short": "Short",
       "long": "Detailed"
     },

@@ -683,7 +683,7 @@
       "copied": "Copié !",
       "failed": "Impossible de copier dans le presse-papier.",
       "header": "{{ score }} pts · InSeconds {{ date }}",
-      "choose": "Choisir le format du partage",
+      "choose": "Autre format de partage",
       "short": "Court",
       "long": "Détaillé"
     },

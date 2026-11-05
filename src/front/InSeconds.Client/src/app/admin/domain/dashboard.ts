@@ -64,7 +64,7 @@ export interface Dashboard {
   shares: DashboardShares;
 }
 
-/** Les sources d'arrivée des deux liens du partage du score : `share` (le court, et aussi le lien d'une playlist Platines) et `share-long`. */
+/** Les sources d'arrivée des deux liens du partage du score : `share` (le court, par ▾, et aussi le lien d'une playlist Platines) et `share-long` (le détaillé, par défaut). */
 export const SHORT_SHARE_SOURCE = 'share';
 export const LONG_SHARE_SOURCE = 'share-long';
 
