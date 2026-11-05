@@ -1,8 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { TranslateService, provideTranslateService } from '@ngx-translate/core';
-import { SHARE_LINK, ShareOutcome, ShareService } from '../../core/share/share.service';
+import { LONG_SHARE_LINK, SHARE_LINK, ShareOutcome, ShareService } from '../../core/share/share.service';
 import { DailyApi } from './daily.api';
-import { DailyShare, LONG_SHARE_LINK } from './daily-share';
+import { DailyShare } from './daily-share';
 
 describe('DailyShare', () => {
   let share: ReturnType<typeof vi.fn>;

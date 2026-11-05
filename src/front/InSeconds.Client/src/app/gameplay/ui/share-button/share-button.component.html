@@ -5,8 +5,8 @@
     </button>
   } @else {
     <div class="relative w-full">
-      <div class="flex w-full">
-        <button appButton type="button" class="split-main flex-1 min-w-0" [glow]="true" [disabled]="disabled()" (click)="share.emit()">
+      <div class="split-row flex w-full">
+        <button appButton type="button" class="split-main flex-1 min-w-0" [glow]="true" [disabled]="disabled()" (click)="shareMain()">
           {{ (copied() ? copiedKey() : labelKey()) | translate }}
         </button>
         <button appButton type="button" class="split-arrow" [glow]="true" [disabled]="disabled()"
@@ -16,7 +16,7 @@
         </button>
       </div>
       @if (menuOpen()) {
-        <div role="menu" class="share-menu" data-testid="share-format-menu">
+        <div role="menu" class="share-menu" data-testid="share-format-menu" (keydown.arrowdown)="moveFocus($event, 1)" (keydown.arrowup)="moveFocus($event, -1)">
           @for (option of options(); track option.id) {
             <button type="button" role="menuitem" class="share-option" [attr.data-format]="option.id" (click)="choose(option)">
               <span class="share-option-label">{{ option.labelKey | translate }}</span>

@@ -86,7 +86,7 @@ export class DailyApi {
     await firstValueFrom(this.client.abandonSession(sessionId));
   }
 
-  /** Compte un partage du score dans ce format (encart « Partages » de l'admin) : rien n'est noté du joueur. */
+  /** Compte un partage du score dans ce format (encart « Partages » de l'admin) : rien n'est gardé du joueur en base. */
   async recordShare(format: ShareFormat): Promise<void> {
     await firstValueFrom(this.client.recordShare({ format }));
   }

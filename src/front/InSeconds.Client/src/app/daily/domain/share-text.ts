@@ -11,6 +11,13 @@ export interface ShareTrack {
  */
 export type ShareFormat = 'short' | 'long';
 
+/** Les formats, dans l'ordre du menu ▾. */
+export const SHARE_FORMATS: readonly ShareFormat[] = ['short', 'long'];
+
+export function isShareFormat(value: string): value is ShareFormat {
+  return (SHARE_FORMATS as readonly string[]).includes(value);
+}
+
 /** Met une durée au format d'une langue (`formatSeconds` de `ui/format`, que la couche `domain` ne voit pas). */
 export type FormatDuration = (seconds: number, lang: string) => string;
 
@@ -40,6 +47,20 @@ export function shareLine(track: ShareTrack, formatDuration: FormatDuration, lan
  */
 export function shareLines(tracks: readonly ShareTrack[], formatDuration: FormatDuration, lang: string): string[] {
   return tracks.map(t => shareLine(t, formatDuration, lang));
+}
+
+/**
+ * Le corps du texte partagé, entre la première ligne (score, nom, date) et le lien : la ligne d'emojis pour le court, une ligne par morceau
+ * pour le détaillé. Seule source de ce que contient chaque format : le partage et l'aperçu du menu ▾ la lisent tous les deux.
+ */
+export function shareBody(tracks: readonly ShareTrack[], format: ShareFormat, formatDuration: FormatDuration, lang: string): string[] {
+  return format === 'long' ? shareLines(tracks, formatDuration, lang) : [shareGrid(tracks)];
+}
+
+/** L'aperçu d'un format dans le menu ▾ : la ligne d'emojis entière, ou la première ligne du détail suivie de « … » s'il y en a d'autres. */
+export function sharePreview(tracks: readonly ShareTrack[], format: ShareFormat, formatDuration: FormatDuration, lang: string): string {
+  const body = shareBody(tracks, format, formatDuration, lang);
+  return body.length > 1 ? `${body[0]} …` : (body[0] ?? '');
 }
 
 /** `jj/mm` d'un jour de jeu (`aaaa-mm-jj`, jour UTC) : la date du défi, pas celle de l'horloge du joueur. */

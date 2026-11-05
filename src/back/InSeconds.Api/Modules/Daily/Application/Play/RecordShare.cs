@@ -30,7 +30,7 @@ public static class RecordShareEndpoint
 {
     /// <summary>
     /// <c>POST /api/daily/shares</c> : compte un partage du score, envoyé par le front quand le menu de partage du téléphone a été validé ou que le
-    /// texte a été copié. Seul le total du jour de jeu et du format augmente : rien n'est noté du joueur (l'encart « Partages » de l'admin).
+    /// texte a été copié. Seul le total du jour de jeu et du format augmente : rien n'est gardé du joueur en base (l'encart « Partages » de l'admin).
     /// Réservé à un joueur identifié (on partage après avoir joué) et limité par joueur, pour qu'un script ne gonfle pas les chiffres.
     /// </summary>
     [Authorize]

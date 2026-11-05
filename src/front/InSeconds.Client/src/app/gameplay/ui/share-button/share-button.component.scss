@@ -5,7 +5,23 @@
   border-bottom-right-radius: 0;
 }
 
+// Un seul bloc : à l'appui, c'est la rangée qui s'enfonce, jamais une moitié seule (un vide s'ouvrirait au filet).
+.split-row {
+  transition: transform 120ms ease;
+
+  &:has(button:active:not(:disabled)) {
+    transform: scale(0.95);
+  }
+}
+
+.split-main:active:not(:disabled),
+.split-arrow:active:not(:disabled) {
+  transform: none;
+}
+
 .split-arrow {
+  // L'aplat de la couleur où finit le dégradé de la partie principale : le bouton garde un seul dégradé.
+  background: var(--bg-primary);
   width: 3rem; // 48 px : une cible confortable pour le doigt
   flex-shrink: 0;
   padding-left: 0;
@@ -45,9 +61,10 @@
   touch-action: manipulation;
   cursor: pointer;
 
+  // Plus clair que le panneau (--bg-surface, plus sombre, se lisait comme un creux).
   &:hover,
   &:focus-visible {
-    background: var(--bg-surface);
+    background: var(--border-medium);
   }
 
   &:focus-visible {

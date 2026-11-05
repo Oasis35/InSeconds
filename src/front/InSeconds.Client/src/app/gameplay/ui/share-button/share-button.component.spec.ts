@@ -87,9 +87,39 @@ describe('ShareButtonComponent', () => {
 
       toggle(el).click();
       fixture.detectChanges();
-      document.body.click();
+      document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
       fixture.detectChanges();
       expect(menu(el)).toBeNull();
+    });
+
+    it('le partage principal referme le menu ouvert', () => {
+      const fixture = render({ options });
+      const el = fixture.nativeElement as HTMLElement;
+      toggle(el).click();
+      fixture.detectChanges();
+      el.querySelector<HTMLButtonElement>('button')!.click();
+      fixture.detectChanges();
+      expect(menu(el)).toBeNull();
+    });
+
+    it('clavier : le premier choix a le focus à l ouverture, ↓ et ↑ passent de l un à l autre en boucle', async () => {
+      const fixture = render({ options });
+      const el = fixture.nativeElement as HTMLElement;
+      document.body.appendChild(el);
+      toggle(el).click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      const items = [...el.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')];
+      expect(document.activeElement).toBe(items[0]);
+
+      const press = (key: string) => menu(el)!.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+      press('ArrowDown');
+      expect(document.activeElement).toBe(items[1]);
+      press('ArrowDown');
+      expect(document.activeElement).toBe(items[0]);
+      press('ArrowUp');
+      expect(document.activeElement).toBe(items[1]);
+      el.remove();
     });
 
     it('désactivé : les deux parties le sont', () => {

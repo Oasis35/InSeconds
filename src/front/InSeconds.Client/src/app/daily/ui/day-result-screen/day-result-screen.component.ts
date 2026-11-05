@@ -8,7 +8,7 @@ import { TrackResultRow, TrackResultsListComponent } from '../../../gameplay/ui/
 import { ScoreDistributionChartComponent } from '../../../ui/score-distribution-chart/score-distribution-chart.component';
 import { ShareButtonComponent, ShareOption } from '../../../gameplay/ui/share-button/share-button.component';
 import { formatSeconds } from '../../../ui/format/format-seconds';
-import { ShareFormat, shareGrid, shareLine } from '../../domain/share-text';
+import { SHARE_FORMATS, ShareFormat, isShareFormat, sharePreview } from '../../domain/share-text';
 import { shareTracksOf } from './result-rows';
 import { YesterdayAnswersCardComponent } from '../yesterday-answers-card/yesterday-answers-card.component';
 import { StreakPillComponent } from '../streak-pill/streak-pill.component';
@@ -54,14 +54,14 @@ export class DayResultScreenComponent {
   /** Les deux formats du menu ▾, chacun avec l'aperçu de ce que la partie donnera : la ligne d'emojis, puis la première ligne du détail. */
   protected readonly shareOptions = computed<ShareOption[]>(() => {
     const tracks = shareTracksOf(this.rows());
-    return [
-      { id: 'short', labelKey: 'daily.share.short', preview: shareGrid(tracks) },
-      { id: 'long', labelKey: 'daily.share.long', preview: tracks.length > 0 ? `${shareLine(tracks[0], formatSeconds, this.lang())} …` : '' },
-    ];
+    return SHARE_FORMATS.map(format => ({
+      id: format, labelKey: `daily.share.${format}`, preview: sharePreview(tracks, format, formatSeconds, this.lang()),
+    }));
   });
 
+  /** Un identifiant inconnu ne partage rien : jamais un repli silencieux sur un autre format. */
   protected chooseFormat(id: string): void {
-    this.share.emit(id === 'long' ? 'long' : 'short');
+    if (isShareFormat(id)) this.share.emit(id);
   }
 
   protected readonly betterThanPercent = computed(() => this.stats()?.betterThanPercent ?? null);

@@ -11,7 +11,7 @@ public enum ShareFormat : short
 }
 
 /// <summary>
-/// Le nombre de partages d'un format un jour de jeu. Un simple compteur : **aucune trace du joueur** qui a partagé (rien à exporter ni à
+/// Le nombre de partages d'un format un jour de jeu. Un simple compteur : **rien n'est gardé en base du joueur** qui a partagé (rien à exporter ni à
 /// effacer pour lui), incrémenté en une requête par <see cref="IDailyStore.RecordShareAsync"/>.
 /// </summary>
 public sealed class DailyShareCount

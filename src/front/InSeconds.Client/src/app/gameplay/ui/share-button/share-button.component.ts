@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, inject, input, output, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ButtonComponent } from '../../../ui/button/button.component';
 
@@ -15,7 +15,8 @@ export interface ShareOption {
  *
  * Avec des `options`, le bouton est scindé : la partie principale partage comme avant (`share`), la flèche ▾ ouvre un menu sous le bouton, un
  * choix par option avec l'aperçu de son texte (`optionChosen`). Le choix part dans le toucher lui-même (le menu de partage du téléphone l'exige).
- * Le menu se ferme au choix, à Échap, ou en touchant ailleurs.
+ * Le menu se ferme au choix, au partage principal, à Échap, ou en touchant ailleurs (`pointerdown` : Safari sur iPhone n'envoie pas de `click`
+ * jusqu'au document pour un toucher sur une zone non cliquable). Au clavier, ↑ et ↓ passent d'un choix à l'autre ; le premier a le focus à l'ouverture.
  */
 @Component({
   selector: 'app-share-button',
@@ -24,12 +25,13 @@ export interface ShareOption {
   templateUrl: './share-button.component.html',
   styleUrl: './share-button.component.scss',
   host: {
-    '(document:click)': 'closeOnOutsideClick($event)',
+    '(document:pointerdown)': 'closeOnOutsideClick($event)',
     '(document:keydown.escape)': 'menuOpen.set(false)',
   },
 })
 export class ShareButtonComponent {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
 
   readonly copied = input.required<boolean>();
   readonly failed = input(false);
@@ -44,8 +46,31 @@ export class ShareButtonComponent {
 
   protected readonly menuOpen = signal(false);
 
+  protected shareMain(): void {
+    this.menuOpen.set(false);
+    this.share.emit();
+  }
+
   protected toggleMenu(): void {
     this.menuOpen.update(open => !open);
+    if (!this.menuOpen()) return;
+    afterNextRender(() => {
+      // Le bouton peut être en bas de l'écran : le menu, ouvert dessous, est ramené en vue (sans animation, mouvement réduit compris).
+      this.host.nativeElement.querySelector('[role="menu"]')?.scrollIntoView?.({ block: 'nearest' });
+      this.menuItems()[0]?.focus();
+    }, { injector: this.injector });
+  }
+
+  /** ↑ / ↓ dans le menu : le choix précédent ou suivant, en boucle. */
+  protected moveFocus(event: Event, step: number): void {
+    event.preventDefault();
+    const items = this.menuItems();
+    const current = items.indexOf(this.host.nativeElement.ownerDocument.activeElement as HTMLButtonElement);
+    items[(current + step + items.length) % items.length]?.focus();
+  }
+
+  private menuItems(): HTMLButtonElement[] {
+    return [...this.host.nativeElement.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')];
   }
 
   protected choose(option: ShareOption): void {
@@ -53,7 +78,7 @@ export class ShareButtonComponent {
     this.optionChosen.emit(option.id);
   }
 
-  protected closeOnOutsideClick(event: MouseEvent): void {
+  protected closeOnOutsideClick(event: Event): void {
     if (this.menuOpen() && !this.host.nativeElement.contains(event.target as Node)) this.menuOpen.set(false);
   }
 }
