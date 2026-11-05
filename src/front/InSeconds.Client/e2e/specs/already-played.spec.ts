@@ -1,7 +1,7 @@
 import { test, expect } from '../fixtures/test';
 import { GamePage } from '../pages/game.page';
 import { BlindRoundPage } from '../pages/blind-round.page';
-import { shareTextLines } from '../fixtures/share-text';
+import { shareTextProblems } from '../fixtures/share-text';
 
 test.describe('Déjà joué - état already_played', () => {
   test('affiche le countdown et le score après avoir rejoué', async ({ page, api }) => {
@@ -29,9 +29,9 @@ test.describe('Déjà joué - état already_played', () => {
     await game.shareButton.click();
     await expect(game.shareCopiedButton).toBeVisible();
 
-    // Relu dans les stats du jour : le même texte qu'à la fin de la partie, une ligne par morceau joué.
+    // Relu dans les stats du jour : le même texte court qu'à la fin de la partie, un emoji par morceau joué.
     const clipText = await page.evaluate(() => navigator.clipboard.readText());
-    expect(shareTextLines(clipText, 5).problems).toEqual([]);
+    expect(shareTextProblems(clipText, 5)).toEqual([]);
   });
 
   test('la liste des morceaux ouvre la pop-up histogramme au clic sur un score', async ({ page, api }) => {

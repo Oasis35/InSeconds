@@ -459,7 +459,17 @@
       "newcomer": "newcomer",
       "newcomers": "newcomers",
       "arrivalsTitle": "Where newcomers come from · 30 days",
-      "arrivalsCount": "new players"
+      "arrivalsCount": "new players",
+      "shares": {
+        "title": "Score shares",
+        "day": "This day",
+        "last30Days": "30 days",
+        "short": "Short shares",
+        "long": "Detailed shares",
+        "friendsShort": "Friends who came · short link",
+        "friendsLong": "Friends who came · detailed link",
+        "note": "A share counts when the phone's share menu is confirmed or the text is copied. A friend who came through a Platines playlist link counts under “short link”."
+      }
     },
     "challenges": {
       "noChallengeThisMonth": "No challenge this month.",
@@ -597,6 +607,7 @@
       "instagram": "Instagram",
       "tiktok": "TikTok",
       "share": "Shared link",
+      "share-long": "Detailed share",
       "direct": "Direct",
       "other": "Other sites",
       "rest": "Others"
@@ -671,7 +682,10 @@
       "button": "Share my score",
       "copied": "Copied!",
       "failed": "Couldn't copy to the clipboard.",
-      "header": "{{ score }} pts · InSeconds {{ date }}"
+      "header": "{{ score }} pts · InSeconds {{ date }}",
+      "choose": "Choose the share format",
+      "short": "Short",
+      "long": "Detailed"
     },
     "done": {
       "artist": "Artist",

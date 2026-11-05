@@ -78,7 +78,7 @@
             [lang]="language.current()"
             [streak]="store.pillStreak()"
             [linked]="store.linked()"
-            (share)="share()"
+            (share)="share($event)"
             (openStreak)="openStreakSheet()" />
         }
         <app-home-mode-entries />
@@ -129,7 +129,7 @@
           [lang]="language.current()"
           [streak]="store.pillStreak()"
           [linked]="store.linked()"
-          (share)="share()"
+          (share)="share($event)"
           (openStreak)="openStreakSheet()" />
       }
     }

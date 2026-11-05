@@ -22,7 +22,8 @@ import { GuestStreakNotice } from '../../data-access/guest-streak-notice';
 import { LostStreakNotice } from '../../data-access/lost-streak-notice';
 import { AbandonedScreenComponent } from '../../ui/abandoned-screen/abandoned-screen.component';
 import { DayResultScreenComponent } from '../../ui/day-result-screen/day-result-screen.component';
-import { rowsFromResults, rowsFromStats } from '../../ui/day-result-screen/result-rows';
+import { rowsFromResults, rowsFromStats, shareTracksOf } from '../../ui/day-result-screen/result-rows';
+import { ShareFormat } from '../../domain/share-text';
 import { BrandComponent } from '../../../gameplay/ui/brand/brand.component';
 import { DailyFooterComponent } from '../../ui/daily-footer/daily-footer.component';
 import { DailyProgressComponent } from '../../ui/daily-progress/daily-progress.component';
@@ -178,13 +179,12 @@ export class DailyPage implements OnInit {
     this.language.use(this.language.current() === 'fr' ? 'en' : 'fr');
   }
 
-  /** Partage le résumé de la partie (menu du téléphone, sinon presse-papier) : le score, puis par morceau `✅`/`❌` et le palier écouté, et le lien. */
-  protected share(): void {
-    // Les mêmes morceaux, dans le même ordre, que la liste du résultat du jour ; un morceau sans réponse n'a pas de ligne.
-    const tracks = this.resultRows().flatMap(r => r.listenedSeconds === null
-      ? []
-      : [{ artistCorrect: r.artistCorrect === true, titleCorrect: r.titleCorrect === true, listenedSeconds: r.listenedSeconds }]);
+  /**
+   * Partage le résumé de la partie (menu du téléphone, sinon presse-papier), au format court (`✅`/`🔶`/`🅾️`) ou détaillé (une ligne par
+   * morceau, avec le palier écouté) : les mêmes morceaux, dans le même ordre, que la liste du résultat du jour.
+   */
+  protected share(format: ShareFormat): void {
     const score = this.store.screen() === 'done' ? this.store.totalScore() : (this.store.stats()?.yourScore ?? 0);
-    void this.dailyShare.share(tracks, score, formatSeconds);
+    void this.dailyShare.share(shareTracksOf(this.resultRows()), score, format, formatSeconds);
   }
 }

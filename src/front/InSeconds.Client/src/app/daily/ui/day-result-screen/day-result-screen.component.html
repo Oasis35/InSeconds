@@ -69,7 +69,8 @@
   @if (score() !== null) {
     <!-- Le partage, puis la série juste dessous, centrée comme sous « Commencer » ; un toucher ouvre le panneau de série. -->
     <div class="flex flex-col items-center gap-1">
-      <app-share-button class="w-full" [copied]="shareCopied()" [failed]="shareFailed()" [disabled]="!canShare()" (share)="share.emit()" />
+      <app-share-button class="w-full" [copied]="shareCopied()" [failed]="shareFailed()" [disabled]="!canShare()"
+        [options]="shareOptions()" (share)="share.emit('short')" (optionChosen)="chooseFormat($event)" />
       <app-streak-pill [streak]="streak()" [linked]="linked()" (open)="openStreak.emit()" />
     </div>
   }

@@ -1,4 +1,26 @@
-import { dayLabel, shareLines } from './share-text';
+import { dayLabel, shareGrid, shareLine, shareLines } from './share-text';
+
+describe('shareGrid', () => {
+  it('✅ artiste et titre, 🔶 l un des deux, 🅾️ rien, sur une ligne', () => {
+    expect(shareGrid([
+      { artistCorrect: true, titleCorrect: true, listenedSeconds: 1 },
+      { artistCorrect: true, titleCorrect: false, listenedSeconds: 1 },
+      { artistCorrect: false, titleCorrect: true, listenedSeconds: 1 },
+      { artistCorrect: false, titleCorrect: false, listenedSeconds: 1 },
+      { artistCorrect: true, titleCorrect: true, listenedSeconds: 1 },
+    ])).toBe('✅🔶🔶🅾️✅');
+  });
+
+  it('rien pour une partie sans morceau', () => {
+    expect(shareGrid([])).toBe('');
+  });
+});
+
+describe('shareLine', () => {
+  it("l'emoji de l'artiste, celui du titre, puis le palier", () => {
+    expect(shareLine({ artistCorrect: false, titleCorrect: true, listenedSeconds: 3 }, (s, lang) => `${s}s (${lang})`, 'en')).toBe('❌✅ 3s (en)');
+  });
+});
 
 describe('shareLines', () => {
   const tracks = [

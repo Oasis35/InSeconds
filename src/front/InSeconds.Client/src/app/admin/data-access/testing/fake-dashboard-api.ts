@@ -16,6 +16,7 @@ export function dashboard(overrides: Partial<Dashboard> = {}): Dashboard {
       firstTimeFinishersCount: 1, arrivals: [{ source: 'instagram', count: 2 }, { source: 'direct', count: 1 }],
     },
     arrivals: [{ source: 'instagram', count: 6 }, { source: 'share', count: 3 }, { source: 'direct', count: 2 }, { source: 'google.com', count: 1 }],
+    shares: { selectedDay: { short: 3, long: 1 }, last30Days: { short: 21, long: 8 } },
     ...overrides,
   };
 }

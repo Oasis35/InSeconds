@@ -14,7 +14,7 @@ public class DailyOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(
         Assert.Equal(
             [
                 "abandonSession", "getAdminDailySettings", "getArchiveDay", "getArchiveIndex", "getArchivePreview", "getChallengeStats", "getDailySettings", "getDashboard",
-                "getMyArchiveDay", "getNextChallenge", "getPlayerHistory", "getToday", "getTodayStats", "listChallenges", "listRegisteredPlayers", "recomputeDayStats", "requestHint",
+                "getMyArchiveDay", "getNextChallenge", "getPlayerHistory", "getToday", "getTodayStats", "listChallenges", "listRegisteredPlayers", "recomputeDayStats", "recordShare", "requestHint",
                 "startSession", "submitAnswer", "updateListening", "updateTrackCooldownPoolPercent",
             ],
             OperationIds(document).Order(StringComparer.Ordinal));
@@ -56,6 +56,7 @@ public class DailyOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(
         Assert.Equal(("post", "/api/daily/sessions/{id}/answers"), (MethodOf(document, "submitAnswer"), PathOf(document, "submitAnswer")));
         Assert.Equal(("post", "/api/daily/sessions/{id}/abandon"), (MethodOf(document, "abandonSession"), PathOf(document, "abandonSession")));
         Assert.Equal(("get", "/api/daily/stats/today"), (MethodOf(document, "getTodayStats"), PathOf(document, "getTodayStats")));
+        Assert.Equal(("post", "/api/daily/shares"), (MethodOf(document, "recordShare"), PathOf(document, "recordShare")));
     }
 
     [Fact]

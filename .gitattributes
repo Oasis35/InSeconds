@@ -1,0 +1,5 @@
+# Code généré par Wolverine (codegen write) et migrations EF : écrits par les outils, avec des espaces en fin de ligne que la CI
+# exige tels quels (job back-checks : le code commité doit être exactement celui que codegen write produit). Ils échappent donc
+# aux contrôles d'espaces de git diff --check (hook lint-before-commit), comme ils échappent déjà à dotnet format.
+src/back/InSeconds.Api/Internal/Generated/** -whitespace
+src/back/InSeconds.Api/Infrastructure/Persistence/Migrations/** -whitespace

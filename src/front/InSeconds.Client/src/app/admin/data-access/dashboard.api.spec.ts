@@ -15,6 +15,7 @@ describe('DashboardApi', () => {
       firstTimeFinishersCount: 1, arrivals: [{ source: 'instagram', count: 2 }],
     },
     arrivals: [{ source: 'instagram', count: 5 }, { source: 'direct', count: 1 }],
+    shares: { selectedDay: { short: 3, long: 1 }, last30Days: { short: 20, long: 7 } },
   } as unknown as DashboardResponse;
 
   function setup(result: DashboardResponse) {
@@ -37,6 +38,7 @@ describe('DashboardApi', () => {
     });
     expect(dashboard.arrivals).toEqual([{ source: 'instagram', count: 5 }, { source: 'direct', count: 1 }]);
     expect(dashboard.players.totalGuests).toBe(5);
+    expect(dashboard.shares).toEqual({ selectedDay: { short: 3, long: 1 }, last30Days: { short: 20, long: 7 } });
   });
 
   it('passe le jour demandé, ou rien pour aujourd\'hui', async () => {

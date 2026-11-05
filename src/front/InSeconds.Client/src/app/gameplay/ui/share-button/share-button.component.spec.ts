@@ -34,6 +34,70 @@ describe('ShareButtonComponent', () => {
     expect((render({ failed: true }).nativeElement as HTMLElement).querySelector('p')).not.toBeNull();
   });
 
+  describe('avec des options (bouton scindé)', () => {
+    const options = [
+      { id: 'short', labelKey: 'daily.share.short', preview: '✅🔶🅾️' },
+      { id: 'long', labelKey: 'daily.share.long', preview: '✅❌ 3 s …' },
+    ];
+    const toggle = (el: HTMLElement) => el.querySelector<HTMLButtonElement>('[data-testid="share-format-toggle"]')!;
+    const menu = (el: HTMLElement) => el.querySelector('[role="menu"]');
+
+    it('la partie principale partage comme avant ; la flèche ouvre le menu avec un aperçu par option', () => {
+      const fixture = render({ options });
+      const el = fixture.nativeElement as HTMLElement;
+      const shared = vi.fn();
+      fixture.componentInstance.share.subscribe(shared);
+
+      el.querySelector<HTMLButtonElement>('button')!.click();
+      expect(shared).toHaveBeenCalledOnce();
+      expect(menu(el)).toBeNull();
+      expect(toggle(el).getAttribute('aria-expanded')).toBe('false');
+
+      toggle(el).click();
+      fixture.detectChanges();
+      expect(toggle(el).getAttribute('aria-expanded')).toBe('true');
+      const items = [...el.querySelectorAll('[role="menuitem"]')].map(i => i.textContent);
+      expect(items[0]).toContain('daily.share.short');
+      expect(items[0]).toContain('✅🔶🅾️');
+      expect(items[1]).toContain('✅❌ 3 s …');
+    });
+
+    it('un choix émet son identifiant et referme le menu', () => {
+      const fixture = render({ options });
+      const el = fixture.nativeElement as HTMLElement;
+      const chosen = vi.fn();
+      fixture.componentInstance.optionChosen.subscribe(chosen);
+      toggle(el).click();
+      fixture.detectChanges();
+
+      el.querySelector<HTMLButtonElement>('[data-format="long"]')!.click();
+      fixture.detectChanges();
+      expect(chosen).toHaveBeenCalledExactlyOnceWith('long');
+      expect(menu(el)).toBeNull();
+    });
+
+    it('le menu se ferme à Échap et en touchant ailleurs', () => {
+      const fixture = render({ options });
+      const el = fixture.nativeElement as HTMLElement;
+      toggle(el).click();
+      fixture.detectChanges();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      fixture.detectChanges();
+      expect(menu(el)).toBeNull();
+
+      toggle(el).click();
+      fixture.detectChanges();
+      document.body.click();
+      fixture.detectChanges();
+      expect(menu(el)).toBeNull();
+    });
+
+    it('désactivé : les deux parties le sont', () => {
+      const el = render({ options, disabled: true }).nativeElement as HTMLElement;
+      expect([...el.querySelectorAll('button')].map(b => b.disabled)).toEqual([true, true]);
+    });
+  });
+
   it('un mode donne ses propres libellés ; ceux du Daily sont les défauts', () => {
     const daily = render({}).nativeElement as HTMLElement;
     expect(daily.querySelector('button')!.textContent).toContain('daily.share.button');

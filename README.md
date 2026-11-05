@@ -25,7 +25,7 @@
 - Optional linked accounts (open signup, passwordless magic-link login) - keeps history/streak across devices; guest play stays fully open regardless
 - Daily streak shown under the Start button (details panel on tap), with streak freezes for linked accounts (1 free on signup, +1 every 7 days, 2 max, used automatically on a missed day)
 - After playing, a single "today's result" screen: your score with your game as five small bars, the countdown, one line under the score (your standout moment when there is one, otherwise the share of players you beat, from 5 players), an equalizer of today's scores (lowest, median, highest), your tracks folded away
-- Share your score: score, name and date on the first line, then one line per track (✅ / ❌ for the artist, then the title, and the listening time), through the phone's share menu (clipboard on a computer)
+- Share your score, short (one emoji per track: ✅ artist and title, 🔶 one of them, 🅾️ none) or detailed from the ▾ arrow (one line per track: ✅ / ❌ for the artist, then the title, and the listening time), both starting with the score, name and date, through the phone's share menu (clipboard on a computer)
 - Available in French and English - auto-detected from the browser, switchable anytime from the footer (choice saved in localStorage)
 - Legal notice at `/legal` (also `/mentions-legales`) and privacy policy at `/privacy` (also `/confidentialite`)
 - Installable on the home screen (PWA), updated automatically at a safe moment (never in the middle of a round)

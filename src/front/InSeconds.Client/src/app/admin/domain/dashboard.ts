@@ -39,6 +39,18 @@ export interface DayKpis {
   arrivals: readonly ArrivalCount[];
 }
 
+/** Des partages du score, par format du texte : `short` (✅ / 🔶 / 🅾️) et `long` (une ligne par morceau). */
+export interface ShareCounts {
+  short: number;
+  long: number;
+}
+
+/** Les partages du score faits : le jour affiché (même sans défi) et les 30 derniers jours. */
+export interface DashboardShares {
+  selectedDay: ShareCounts;
+  last30Days: ShareCounts;
+}
+
 export interface Dashboard {
   /** Activité des 30 derniers jours, du plus ancien au plus récent. */
   activity: readonly DayActivity[];
@@ -49,9 +61,20 @@ export interface Dashboard {
   kpis: DayKpis | null;
   /** Les joueurs arrivés les 30 derniers jours, par source, la plus fréquente d'abord. */
   arrivals: readonly ArrivalCount[];
+  shares: DashboardShares;
 }
 
-const KNOWN_SOURCES: ReadonlySet<string> = new Set(['instagram', 'tiktok', 'share', 'direct', 'other']);
+/** Les sources d'arrivée des deux liens du partage du score : `share` (le court, et aussi le lien d'une playlist Platines) et `share-long`. */
+export const SHORT_SHARE_SOURCE = 'share';
+export const LONG_SHARE_SOURCE = 'share-long';
+
+const KNOWN_SOURCES: ReadonlySet<string> = new Set(['instagram', 'tiktok', SHORT_SHARE_SOURCE, LONG_SHARE_SOURCE, 'direct', 'other']);
+
+/** Les joueurs venus par chaque lien du partage, parmi ces arrivées. */
+export function sharedArrivals(arrivals: readonly ArrivalCount[]): ShareCounts {
+  const count = (source: string) => arrivals.find(a => a.source === source)?.count ?? 0;
+  return { short: count(SHORT_SHARE_SOURCE), long: count(LONG_SHARE_SOURCE) };
+}
 
 /** La clé i18n d'une source connue (`admin.sources.instagram`) ; `null` pour un domaine, qui s'affiche tel quel. */
 export function sourceLabelKey(source: string): string | null {

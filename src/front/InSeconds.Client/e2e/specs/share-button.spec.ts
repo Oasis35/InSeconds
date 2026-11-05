@@ -1,7 +1,7 @@
 import { test, expect } from '../fixtures/test';
 import { GamePage } from '../pages/game.page';
 import { BlindRoundPage } from '../pages/blind-round.page';
-import { shareTextLines } from '../fixtures/share-text';
+import { shareTextProblems } from '../fixtures/share-text';
 
 test.describe('Bouton partager', () => {
   test.beforeEach(async ({ api }) => {
@@ -18,8 +18,34 @@ test.describe('Bouton partager', () => {
     await expect(game.shareCopiedButton).toBeVisible();
 
     const clipText = await page.evaluate(() => navigator.clipboard.readText());
-    // « 2 410 pts · InSeconds 05/11 », une ligne par morceau (✅/❌ de l'artiste puis du titre, palier écouté), le lien : ni 🎵 ni 🏆.
-    expect(shareTextLines(clipText, 5).problems).toEqual([]);
+    // Le format court : « 2 410 pts · InSeconds 05/11 », un emoji par morceau (✅ / 🔶 / 🅾️), le lien marqué utm_source=share.
+    expect(shareTextProblems(clipText, 5)).toEqual([]);
+  });
+
+  test('la flèche ▾ propose le format détaillé : une ligne par morceau et le lien marqué utm_source=share-long', async ({ page }) => {
+    const game = new GamePage(page);
+    await game.startWithFakeClock();
+    await game.finishGame(new BlindRoundPage(page), 5);
+
+    const toggle = page.getByTestId('share-format-toggle');
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    const menu = page.getByTestId('share-format-menu');
+    await expect(menu.getByRole('menuitem')).toHaveCount(2);
+    // L'aperçu du court est la ligne d'emojis de la partie ; celui du détaillé, sa première ligne.
+    await expect(menu.locator('[data-format="short"]')).toContainText(/(✅|🔶|🅾️){5}/u);
+    await expect(menu.locator('[data-format="long"]')).toContainText(/[✅❌]{2} \d/u);
+
+    // Le compteur de l'admin reçoit le format choisi.
+    const counted = page.waitForRequest(r => r.url().endsWith('/api/daily/shares') && r.method() === 'POST');
+    await menu.locator('[data-format="long"]').click();
+    await expect(menu).toBeHidden();
+    await expect(game.shareCopiedButton).toBeVisible();
+    expect((await counted).postDataJSON()).toEqual({ format: 'long' });
+
+    const clipText = await page.evaluate(() => navigator.clipboard.readText());
+    expect(shareTextProblems(clipText, 5, 'long')).toEqual([]);
   });
 
   test('copie quand même si clipboard.writeText échoue (repli execCommand, #200)', async ({ page }) => {
@@ -40,7 +66,7 @@ test.describe('Bouton partager', () => {
 
     await expect(game.shareCopiedButton).toBeVisible();
     const copied = await page.evaluate(() => (window as unknown as { __realClipboard: Clipboard }).__realClipboard.readText());
-    expect(shareTextLines(copied, 5).problems).toEqual([]);
+    expect(shareTextProblems(copied, 5)).toEqual([]);
   });
 
   test("affiche un message d'erreur si la copie presse-papier échoue", async ({ page }) => {
@@ -82,7 +108,7 @@ test.describe('Bouton partager', () => {
 
     const shared = await page.evaluate(() => (window as unknown as { __shared: ShareData[] }).__shared);
     expect(shared).toHaveLength(1);
-    expect(shareTextLines(shared[0].text ?? '', 5).problems).toEqual([]);
+    expect(shareTextProblems(shared[0].text ?? '', 5)).toEqual([]);
     // Le menu du téléphone suffit : pas de « Copié ! ».
     await expect(game.shareCopiedButton).not.toBeVisible();
   });

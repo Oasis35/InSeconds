@@ -6,7 +6,10 @@ import { DayStats } from '../../domain/daily';
 import { Highlight, highlightOf } from '../../domain/highlight';
 import { TrackResultRow, TrackResultsListComponent } from '../../../gameplay/ui/track-results-list/track-results-list.component';
 import { ScoreDistributionChartComponent } from '../../../ui/score-distribution-chart/score-distribution-chart.component';
-import { ShareButtonComponent } from '../../../gameplay/ui/share-button/share-button.component';
+import { ShareButtonComponent, ShareOption } from '../../../gameplay/ui/share-button/share-button.component';
+import { formatSeconds } from '../../../ui/format/format-seconds';
+import { ShareFormat, shareGrid, shareLine } from '../../domain/share-text';
+import { shareTracksOf } from './result-rows';
 import { YesterdayAnswersCardComponent } from '../yesterday-answers-card/yesterday-answers-card.component';
 import { StreakPillComponent } from '../streak-pill/streak-pill.component';
 import { Streak } from '../../domain/streak';
@@ -42,10 +45,24 @@ export class DayResultScreenComponent {
   /** La série sous le partage (rien sans série en cours) ; les gels pour un compte. */
   readonly streak = input<Streak | null>(null);
   readonly linked = input(false);
-  readonly share = output<void>();
+  /** Le partage demandé : `short` par le bouton principal, ou le format choisi dans le menu ▾. */
+  readonly share = output<ShareFormat>();
   readonly openStreak = output<void>();
 
   protected readonly showTracks = signal(false);
+
+  /** Les deux formats du menu ▾, chacun avec l'aperçu de ce que la partie donnera : la ligne d'emojis, puis la première ligne du détail. */
+  protected readonly shareOptions = computed<ShareOption[]>(() => {
+    const tracks = shareTracksOf(this.rows());
+    return [
+      { id: 'short', labelKey: 'daily.share.short', preview: shareGrid(tracks) },
+      { id: 'long', labelKey: 'daily.share.long', preview: tracks.length > 0 ? `${shareLine(tracks[0], formatSeconds, this.lang())} …` : '' },
+    ];
+  });
+
+  protected chooseFormat(id: string): void {
+    this.share.emit(id === 'long' ? 'long' : 'short');
+  }
 
   protected readonly betterThanPercent = computed(() => this.stats()?.betterThanPercent ?? null);
 
