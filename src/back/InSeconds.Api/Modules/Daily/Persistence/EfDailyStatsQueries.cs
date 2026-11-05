@@ -195,16 +195,6 @@ public sealed class EfDailyStatsQueries(InSecondsDbContext db) : IDailyStatsQuer
                select new { Date = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.Date, x => x.Count, ct);
 
-    public async Task<ShareCounts> GetShareCountsAsync(DateOnly first, DateOnly last, CancellationToken ct)
-    {
-        var byFormat = await db.Set<DailyShareCount>().AsNoTracking()
-            .Where(s => s.Date >= first && s.Date <= last)
-            .GroupBy(s => s.Format)
-            .Select(g => new { Format = g.Key, Count = g.Sum(s => s.Count) })
-            .ToDictionaryAsync(x => x.Format, x => x.Count, ct);
-        return new ShareCounts(byFormat.GetValueOrDefault(ShareFormat.Short), byFormat.GetValueOrDefault(ShareFormat.Long));
-    }
-
     public async Task<IReadOnlyDictionary<Guid, int>> GetCompletedCountsByPlayerAsync(IReadOnlyCollection<Guid> playerIds, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(playerIds);

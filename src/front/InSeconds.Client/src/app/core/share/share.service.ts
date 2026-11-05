@@ -7,14 +7,8 @@ import { environment } from '../../../environments/environment';
 /** Issue d'un partage : par le menu du téléphone, copié, menu fermé par le joueur, ou rien n'a marché. */
 export type ShareOutcome = 'shared' | 'copied' | 'cancelled' | 'failed';
 
-/**
- * La source d'arrivée (`utm_source`) des liens partagés, celle du score comme celle d'une playlist Platines. L'onglet Accueil de l'admin la relit
- * sous ce nom (`admin/domain/dashboard.ts`, dont la couche `domain` ne voit pas `core` : à changer ensemble).
- */
-export const SHARE_SOURCE = 'share';
-
 /** Le lien mis dans un texte partagé : l'adresse du site (celle du staging au staging), marquée `utm_source=share`. */
-export const SHARE_LINK = `${environment.appUrl}/?utm_source=${SHARE_SOURCE}`;
+export const SHARE_LINK = `${environment.appUrl}/?utm_source=share`;
 
 @Injectable({ providedIn: 'root' })
 export class ShareService {

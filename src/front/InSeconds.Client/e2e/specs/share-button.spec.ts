@@ -38,13 +38,10 @@ test.describe('Bouton partager', () => {
     const game = new GamePage(page);
     await game.startWithFakeClock();
     await game.finishGame(new BlindRoundPage(page), 5);
-    // Le compteur de l'admin reçoit le partage.
-    const counted = page.waitForRequest(r => r.url().endsWith('/api/daily/shares') && r.method() === 'POST');
     await game.shareButton.click();
 
     // Le bouton passe en "Copié !"
     await expect(game.shareCopiedButton).toBeVisible();
-    await counted;
 
     const clipText = await page.evaluate(() => navigator.clipboard.readText());
     // « 2 410 pts · InSeconds 05/11 », une ligne par morceau (« ✅❌ 3 s »), le lien marqué utm_source=share.

@@ -92,17 +92,6 @@ internal sealed class DayStatsSnapshotConfiguration : IEntityTypeConfiguration<D
     }
 }
 
-internal sealed class DailyShareCountConfiguration : IEntityTypeConfiguration<DailyShareCount>
-{
-    public void Configure(EntityTypeBuilder<DailyShareCount> builder)
-    {
-        // Un compteur par jour de jeu et par format, sans aucune colonne qui désigne un joueur.
-        builder.ToTable("share_counts", DbSchemas.Daily, table => table.HasCheckConstraint("ck_share_counts_format", "format IN (1, 2)"));
-        builder.HasKey(s => new { s.Date, s.Format });
-        builder.Property(s => s.Format).HasConversion<short>();
-    }
-}
-
 internal sealed class DailyStreakConfiguration : IEntityTypeConfiguration<DailyStreak>
 {
     public void Configure(EntityTypeBuilder<DailyStreak> builder)

@@ -3,19 +3,16 @@ import { TranslateService } from '@ngx-translate/core';
 import { SHARE_LINK, ShareService } from '../../core/share/share.service';
 import { todayUtc } from '../domain/countdown';
 import { FormatDuration, ShareTrack, dayLabel, shareLines } from '../domain/share-text';
-import { DailyApi } from './daily.api';
 
 /**
  * Le partage du score : la première ligne (le score, le nom et la date, ce qui se lit dans l'aperçu d'une conversation), une ligne par morceau
  * (`✅`/`❌` de l'artiste puis du titre, palier écouté) et le lien. Par le menu de partage du téléphone, sinon dans le presse-papier, avec l'état
- * du bouton (copié, échec) pour quelques secondes. Un partage fait (menu validé ou texte copié) est compté par l'API, sans rien garder du joueur
- * en base (seul le total du jour augmente) ; un menu fermé ou un échec ne compte pas.
+ * du bouton (copié, échec) pour quelques secondes.
  */
 @Injectable()
 export class DailyShare {
   private readonly sharing = inject(ShareService);
   private readonly translate = inject(TranslateService);
-  private readonly api = inject(DailyApi);
 
   private readonly _copied = signal(false);
   private readonly _failed = signal(false);
@@ -32,10 +29,6 @@ export class DailyShare {
       SHARE_LINK,
     ].join('\n');
     const outcome = await this.sharing.share(text);
-    if (outcome === 'shared' || outcome === 'copied') {
-      // Un compteur pour l'admin : son échec ne dit rien au joueur.
-      this.api.recordShare().catch(() => undefined);
-    }
     if (outcome !== 'copied' && outcome !== 'failed') return;
     const flag = outcome === 'copied' ? this._copied : this._failed;
     flag.set(true);

@@ -21,8 +21,6 @@ Panneau technique de l'admin : lecture anonyme de l'API publique de GitHub (`api
 
 **Source d'arrivée d'un invité** (#445) : à l'ouverture, le front lit le `utm_source` du lien, sinon le **domaine seul** du référent (jamais l'adresse complète), le garde le temps de la visite dans `sessionStorage` et l'envoie à la création de l'invité. Le serveur ne garde qu'une valeur au format strict (minuscules, lettres, chiffres, `.` `-` `_`, 40 caractères au plus, `other` sinon, `direct` sans source) dans `players.players.acquisition_source` : rattachée à l'identifiant pseudonyme, dans la copie des données, effacée avec le joueur. Le compteur Grafana (`inseconds_players_guests_created_total`) n'a que la source en étiquette, jamais le joueur. L'admin n'en voit que des comptes par source (invités arrivés un jour donné et sur 30 jours, Accueil de l'admin), jamais la source d'un joueur ; un jour à un seul nouvel invité, croisé avec les joueurs du jour, peut relier un identifiant pseudonyme à un domaine d'origine : assumé, l'admin voyant déjà ces identifiants et la source n'étant qu'un domaine. Base légale : intérêt légitime (mesure d'audience), décrite dans `/privacy` (« Données collectées »).
 
-**Partages du score** (#492) : chaque partage fait (menu du téléphone validé ou texte copié) ajoute 1 au total du jour de jeu (et d'un format, toujours « détaillé » depuis que le court a été retiré) dans `daily.share_counts` (`POST /api/daily/shares`, réservé à un joueur identifié, 20 par joueur et par 10 minutes). Aucune colonne ne désigne un joueur : rien à copier ni à effacer. Comme toute requête identifiée, l'appel porte dans les traces Grafana l'identifiant pseudonyme du joueur (`inseconds.player_id`), sans le format. L'admin ne voit que des totaux, le jour affiché et sur 30 jours. Un jour à un seul joueur, croisé avec les joueurs du jour, peut révéler qu'il a partagé : assumé, comme pour la source d'arrivée. Le lien du partage porte `utm_source=share`, une valeur de la source d'arrivée ci-dessus.
-
 ## Droits du joueur
 
 - **Copie** : `GET /api/players/me/export` (JSON : source d'arrivée, compte, appareils, puis une section par mode de jeu sous `modules` : `modules.daily` pour la série et les parties, `modules.runs` pour les parties, les playlists créées, le record et l'accès), bouton « Tes données » du profil.
@@ -52,7 +50,6 @@ Appliquées chaque nuit par `players-purge-expired-tokens` :
 | Invité | jamais effacé, mais anonyme une fois ses appareils supprimés |
 | Playlist d'un run | sans limite, comme les défis du jour ; sans auteur une fois son compte effacé |
 | Texte tapé par le joueur | jamais stocké (seule la correction est gardée) |
-| Compteurs de partages du score | sans limite : un total par jour et par format, aucune donnée de joueur |
 
 ## Staging
 
