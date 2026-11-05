@@ -47,7 +47,7 @@ const CHART_DIALOG_MAX_WIDTH = '22.5rem';
     <ng-template #tracks let-list>
       <!-- Les morceaux du jour, repliés par défaut (sur téléphone comme sur PC). -->
       <button type="button" (click)="tracksOpen.set(!tracksOpen())" [attr.aria-expanded]="tracksOpen()"
-        class="self-start text-xs hover:text-(--text-hi)" style="color:var(--text-muted)" data-testid="day-tracks-toggle">
+        class="self-start py-2 -my-2 text-xs hover:text-(--text-hi)" style="color:var(--text-muted)" data-testid="day-tracks-toggle">
         {{ 'admin.dashboard.dayTracks' | translate }} <span aria-hidden="true">{{ tracksOpen() ? '▴' : '▾' }}</span>
       </button>
       @if (tracksOpen()) {

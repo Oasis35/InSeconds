@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { Event, NavigationEnd, NavigationStart, Router, Scroll } from '@angular/router';
+import { Event as RouterEvent, NavigationEnd, NavigationStart, Router, Scroll } from '@angular/router';
 import { Subject } from 'rxjs';
 import { adminTabOf, rememberTabScroll } from './tab-scroll-memory';
 
@@ -18,13 +18,13 @@ describe('adminTabOf', () => {
 
 describe('rememberTabScroll', () => {
   // Le routeur de test ne lance pas son propre défilement (il ne démarre qu'avec l'application) : ses événements sont joués à la main,
-  // dans l'ordre de l'application (NavigationStart, puis NavigationEnd suivi de Scroll), et le retour en haut est fait comme lui.
-  let events: Subject<Event>;
+  // dans l'ordre de l'application (NavigationStart, puis Scroll), et le retour en haut est fait comme lui, juste après Scroll.
+  let events: Subject<RouterEvent>;
   let navigationId = 0;
   let spacer: HTMLElement;
 
   beforeEach(() => {
-    events = new Subject<Event>();
+    events = new Subject<RouterEvent>();
     spacer = document.body.appendChild(Object.assign(document.createElement('div'), { style: 'height: 5000px' }));
     TestBed.configureTestingModule({ providers: [{ provide: Router, useValue: { url: '/admin/joueurs', events } }] });
     TestBed.runInInjectionContext(() => rememberTabScroll());
@@ -35,13 +35,14 @@ describe('rememberTabScroll', () => {
     spacer.remove();
   });
 
-  /** Une navigation : la position est notée au départ, le routeur remonte en haut, puis l'événement `Scroll`. */
+  /** Une navigation : la position est notée au départ, puis l'événement `Scroll`, suivi du retour en haut du routeur. */
   async function navigate(url: string): Promise<void> {
     navigationId += 1;
     events.next(new NavigationStart(navigationId, url));
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    // Comme dans l'application : le routeur reçoit \`Scroll\` après nous et remonte en haut dans le même tour.
     events.next(new Scroll(new NavigationEnd(navigationId, url, url), null, null));
-    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
   }
 
   it('retrouve un onglet déjà vu là où on l\'avait laissé, et arrive en haut d\'un onglet pas encore vu', async () => {
@@ -52,6 +53,20 @@ describe('rememberTabScroll', () => {
 
     await navigate('/admin/joueurs');
     expect(window.scrollY).toBe(1200);
+  });
+
+  it('l\'admin qui fait défiler lui-même pendant la reprise reprend la main', async () => {
+    window.scrollTo({ top: 1200, behavior: 'instant' });
+    await navigate('/admin/defis');
+
+    navigationId += 1;
+    events.next(new NavigationStart(navigationId, '/admin/joueurs'));
+    events.next(new Scroll(new NavigationEnd(navigationId, '/admin/joueurs', '/admin/joueurs'), null, null));
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    window.dispatchEvent(new Event('wheel'));
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+
+    expect(window.scrollY).toBe(0);
   });
 
   it('un changement d\'adresse dans le même onglet garde la règle du site : retour en haut', async () => {

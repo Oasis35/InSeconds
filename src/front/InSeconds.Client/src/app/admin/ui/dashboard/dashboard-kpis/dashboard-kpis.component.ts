@@ -33,7 +33,7 @@ import { DayKpis, sourceLabelKey } from '../../../domain/dashboard';
       </div>
       <!-- Le détail, replié par défaut : en cours, abandons, part qui finit, comptes ; les arrivés ; habitués et nouveaux. -->
       <button type="button" (click)="detailsOpen.set(!detailsOpen())" [attr.aria-expanded]="detailsOpen()" aria-controls="kpi-more"
-        class="self-center text-xs hover:text-(--text-hi)" style="color:var(--text-muted)" data-testid="kpi-toggle">
+        class="self-center py-2 -my-2 text-xs hover:text-(--text-hi)" style="color:var(--text-muted)" data-testid="kpi-toggle">
         {{ 'admin.dashboard.details' | translate }} <span aria-hidden="true">{{ detailsOpen() ? '▴' : '▾' }}</span>
       </button>
       @if (detailsOpen()) {
@@ -41,7 +41,7 @@ import { DayKpis, sourceLabelKey } from '../../../domain/dashboard';
           style="color:var(--text-muted)">
           <p class="lg:col-span-2" data-testid="kpi-details">
             @if (kpis.pendingCount > 0) { <span class="kpi-number">{{ kpis.pendingCount }}</span> {{ 'admin.dashboard.pending' | translate }} · }
-            @if (kpis.expiredCount > 0) { <span class="kpi-number">{{ kpis.expiredCount }}</span> {{ 'admin.dashboard.expired' | translate }} · }
+            @if (kpis.expiredCount > 0) { <span class="kpi-number">{{ kpis.expiredCount }}</span> {{ (kpis.expiredCount > 1 ? 'admin.dashboard.expired' : 'admin.dashboard.expiredOne') | translate }} · }
             <span class="kpi-number">{{ kpis.abandonedCount }}</span> {{ (kpis.abandonedCount > 1 ? 'admin.dashboard.abandons' : 'admin.dashboard.abandon') | translate }} ·
             <span class="kpi-number">{{ 'admin.dashboard.rate' | translate: { rate: (kpis.completionRate | number: '1.0-0') } }}</span> {{ 'admin.dashboard.completionRate' | translate }} ·
             <span class="kpi-number">{{ kpis.accountsCreatedCount }}</span> {{ (kpis.accountsCreatedCount > 1 ? 'admin.dashboard.accountsCreated' : 'admin.dashboard.accountCreated') | translate }}

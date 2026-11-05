@@ -75,7 +75,7 @@ export interface CiLine {
         }
         <!-- Le verdict seul ; les commits se déplient au clic (dépliés d'office quand le déploiement est en retard ou désaligné). -->
         <button type="button" (click)="commitsToggled.set(!commitsOpen())" [attr.aria-expanded]="commitsOpen()" aria-controls="tech-commits"
-          class="mt-0.5 text-left hover:opacity-80" [style.color]="verdictColor()" data-testid="deployment-verdict">
+          class="mt-0.5 py-1.5 -my-1.5 text-left hover:opacity-80" [style.color]="verdictColor()" data-testid="deployment-verdict">
           <span role="status">{{ 'admin.system.verdict.' + verdict() | translate }}</span>
           <span aria-hidden="true" style="color:var(--text-muted)"> {{ commitsOpen() ? '▴' : '▾' }}</span>
         </button>
@@ -200,7 +200,8 @@ export interface CiLine {
         <!-- La prod et le staging côte à côte, chacun avec son indicateur. -->
         <div class="flex items-center gap-4 py-0.5">
           @for (line of ci(); track line.labelKey) {
-            <a [href]="line.run?.url ?? line.url" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 hover:text-(--text-hi)" data-testid="ci-line">
+            <a [href]="line.run?.url ?? line.url" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 hover:text-(--text-hi)" data-testid="ci-line"
+              [title]="'admin.system.ciState.' + (line.run?.state ?? 'none') | translate">
               <span class="tech-icon" aria-hidden="true" [style.color]="ciColor(line)">{{ ciIcon(line) }}</span>
               <span style="color:var(--text-light)">{{ line.labelKey | translate }}</span>
               <span class="sr-only">{{ 'admin.system.ciState.' + (line.run?.state ?? 'none') | translate }}</span>
