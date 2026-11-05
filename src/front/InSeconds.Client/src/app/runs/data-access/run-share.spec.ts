@@ -22,6 +22,12 @@ describe('runShareText', () => {
   };
   const t = (key: string, params?: Record<string, unknown>) => (params ? `${key}${JSON.stringify(params)}` : key);
 
+  it('au-delà de l\'échelle, le disque garde ses étoiles', () => {
+    const header = runShareText({ ...finish, disc: { key: 'runs.discs.gold', stars: 2 } }, 'fr', t).split('\n')[0];
+
+    expect(header).toContain('"disc":"runs.discs.gold ★2"');
+  });
+
   it('le score et le disque d\'abord, une ligne par manche jouée (un carré par morceau, dans l\'ordre), puis « Bats-moi » et le lien', () => {
     const lines = runShareText(finish, 'fr', t).split('\n');
 
@@ -64,6 +70,24 @@ describe('RunShare', () => {
 
     expect(shared).toEqual([`Une playlist !\n${playlistUrl('K7Q2M9')}`]);
     expect(playlistUrl('K7Q2M9')).toMatch(/\/runs\/K7Q2M9\?utm_source=share$/);
+  });
+
+  it('le score d\'une partie finie : la grille, envoyée telle que runShareText l\'écrit, et le bouton qui dit « copié »', async () => {
+    outcome = 'copied';
+    const share = create();
+    const finish: RunFinish = {
+      status: 'won', disc: { key: 'runs.discs.gold', stars: 0 }, totalScore: 3000, roundsPassed: 4, foundCount: 1, trackCount: 20,
+      tracks: [TRACK()], rounds: [{ round: 1, score: 100, objective: 50, passed: true, difficulty: 'safe' }], record: null,
+      challengeCode: 'K7Q2M9', shortfall: null,
+    };
+
+    await share.shareScore(finish, 'fr');
+
+    const translate = TestBed.inject(TranslateService);
+    expect(shared).toEqual([runShareText(finish, 'fr', (key, params) => translate.instant(key, params))]);
+    expect(shared[0]).toContain('🟩');
+    expect(shared[0]).toContain(playlistUrl('K7Q2M9'));
+    expect(share.copied()).toBe(true);
   });
 
   it('copié ou échec : le bouton le dit quelques secondes', async () => {

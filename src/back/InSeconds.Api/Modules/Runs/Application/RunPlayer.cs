@@ -276,14 +276,9 @@ internal static class RunViews
                 r, played ? progress.Score : null, played ? progress.Objective : null, r <= session.RoundsPassed, played ? DifficultyOf(progress) : null);
         }).ToList();
         var disc = DiscLadder.Of(session.RoundsPassed, discs);
-        // Perdue : la partie s'est arrêtée à la première manche ratée, celle qui suit les manches passées.
-        RunShortfallResponse? shortfall = null;
-        var failed = session.RoundsPassed + 1;
-        if (session.Status == RunSessionStatus.Lost && rounds.Exists(r => r.Round == failed && r.Score is not null))
-        {
-            var progress = session.RoundProgressOf(challenge, failed, scoring);
-            shortfall = new RunShortfallResponse(Math.Max(1, progress.Objective - progress.Score), DiscOf(DiscLadder.Of(failed, discs)));
-        }
+        var shortfall = session.ShortfallOf(challenge, scoring) is { } missed
+            ? new RunShortfallResponse(missed.Points, DiscOf(DiscLadder.Of(missed.Round, discs)))
+            : null;
 
         return new RunFinishResponse(
             StatusOf(session.Status), DiscOf(disc), session.TotalScore, session.RoundsPassed,

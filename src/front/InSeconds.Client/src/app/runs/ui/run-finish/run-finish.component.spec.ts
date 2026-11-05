@@ -71,6 +71,14 @@ describe('RunFinishComponent', () => {
     expect(again.compareDocumentPosition(element.querySelector('[data-testid="run-share"]')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it('« Rejouer » est le seul bouton principal : le partage passe en contour neutre, sans lueur ; sans accès, le partage reste principal', () => {
+    const shareButton = (element: HTMLElement) => element.querySelector<HTMLElement>('[data-testid="run-share"] button')!;
+
+    expect(shareButton(render(finish()).element).classList).toContain('app-button--neutral');
+    TestBed.resetTestingModule();
+    expect(shareButton(render(finish(), false).element).classList).toContain('app-button--primary');
+  });
+
   it('une victoire : rien n\'a manqué', () => {
     const { element } = render(finish({ status: 'won', shortfall: null }));
 

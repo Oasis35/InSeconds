@@ -962,8 +962,8 @@
       "record": "Record : {{ score }}",
       "round": "Manche {{ round }}",
       "notPlayed": "Manche non jouée",
-      "shareTitle": "Bats-moi sur cette playlist",
-      "shareBody": "Tes potes jouent les mêmes 20 morceaux, dans le même ordre. Ton score part avec le lien : à eux de faire mieux, puis vous comparez manche par manche.",
+      "shareTitle": "Défie tes potes sur cette playlist",
+      "shareBody": "Ils jouent les mêmes {{ tracks }} morceaux, dans le même ordre. Ton score part avec le message : à eux de faire mieux, puis vous comparez manche par manche.",
       "share": "Partager mon score",
       "shareCopied": "Lien copié !",
       "shareFailed": "Copie impossible",
@@ -991,7 +991,8 @@
       "player": "Joueur",
       "roundShort": "M{{ round }}",
       "total": "Total",
-      "you": "Toi"
+      "you": "Toi",
+      "share": "Partager la playlist"
     },
     "discs": {
       "scratched": "Disque rayé",

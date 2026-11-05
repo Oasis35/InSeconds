@@ -145,7 +145,9 @@ export const RunGameStore = signalStore(
       /** Les dernières secondes du chrono : gros chiffre, bord de la carte éclairci. */
       clockAlert: computed(() => { const left = clockLeft(); return left !== null && left > 0 && left <= CLOCK_ALERT_SECONDS; }),
       record: computed(() => store.me()?.record ?? null),
-      /** « Nouvelle partie » : seulement avec l'accès (retiré en cours de partie, la partie se finit, mais pas d'autre). */
+      /** L'étagère des disques gagnés (l'accueil du mode). */
+      shelf: computed(() => store.me()?.shelf ?? []),
+      /** « Rejouer » : seulement avec l'accès (retiré en cours de partie, la partie se finit, mais pas d'autre). */
       canPlayAgain: computed(() => store.me()?.hasAccess === true),
       finish: computed(() => store.session()?.finish ?? null),
       /** Les cartes jouables sur le morceau en cours (la main) et ce que celles déjà jouées révèlent ; rien sans coups de pouce. */
@@ -718,7 +720,7 @@ export const RunGameStore = signalStore(
           patchState(store, { abandonLoading: false });
         }
       },
-      /** « Nouvelle partie » depuis la fin (un clic) : une playlist neuve, le premier morceau lancé dans ce clic. */
+      /** « Rejouer » depuis la fin (un clic) : une playlist neuve, le premier morceau lancé dans ce clic. */
       async playAgain(): Promise<void> {
         round.unlockAudio();
         tick.unlock();

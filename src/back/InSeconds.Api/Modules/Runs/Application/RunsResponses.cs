@@ -111,12 +111,13 @@ public sealed record RunRecordResponse(int BestScore, int BestRoundsPassed, bool
 /// <param name="Record">Le record du joueur ; vide s'il n'en a pas encore (une partie abandonnée ne compte pas).</param>
 /// <param name="ChallengeCode">Le code de la playlist, pour la partager.</param>
 /// <param name="Shortfall">
-/// Ce qui a manqué à une partie perdue pour le disque suivant (« 12 pts avant le Disque de bronze ») ; vide pour une partie gagnée ou abandonnée.
+/// Ce qui a manqué à une partie perdue pour le disque suivant (« Il t'a manqué 12 pts pour le Disque de bronze ») ; vide pour une partie gagnée ou
+/// abandonnée.
 /// </param>
 public sealed record RunFinishResponse(
     string Status, RunDiscResponse Disc, int TotalScore, int RoundsPassed, int FoundCount, int TrackCount,
     IReadOnlyList<RunTrackResponse> Tracks, IReadOnlyList<RunRoundScoreResponse> Rounds, RunRecordResponse? Record, string ChallengeCode,
-    RunShortfallResponse? Shortfall = null);
+    RunShortfallResponse? Shortfall);
 
 /// <summary>Les points qui manquaient à l'objectif de la manche ratée, et le disque qu'elle aurait donné.</summary>
 public sealed record RunShortfallResponse(int Points, RunDiscResponse Disc);

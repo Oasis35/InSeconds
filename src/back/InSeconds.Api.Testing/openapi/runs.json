@@ -1543,7 +1543,8 @@
           "tracks",
           "rounds",
           "record",
-          "challengeCode"
+          "challengeCode",
+          "shortfall"
         ],
         "type": "object",
         "properties": {

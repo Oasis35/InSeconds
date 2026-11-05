@@ -2,7 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { ShareService } from '../../core/share/share.service';
 import { environment } from '../../../environments/environment';
-import { RUN_SHARE_EMOJI, RunFinish, shareRounds } from '../domain/run';
+import { RUN_SHARE_EMOJI, RunFinish, discStars, shareRounds } from '../domain/run';
 
 /** L'adresse d'une playlist (`/runs/<code>`), celle que les amis ouvrent, marquée `utm_source=share` comme le partage du score. */
 export const playlistUrl = (code: string): string => `${environment.appUrl}/runs/${code}?utm_source=share`;
@@ -48,7 +48,7 @@ export class RunShare {
  */
 export function runShareText(finish: RunFinish, lang: string, t: (key: string, params?: Record<string, unknown>) => string): string {
   const score = new Intl.NumberFormat(lang).format(finish.totalScore);
-  const lines = [t('runs.share.header', { score, disc: t(finish.disc.key) })];
+  const lines = [t('runs.share.header', { score, disc: t(finish.disc.key) + discStars(finish.disc) })];
   for (const round of shareRounds(finish)) {
     const marks = round.marks.map(mark => RUN_SHARE_EMOJI[mark]).join('');
     const name = t('runs.share.round', { round: round.round });

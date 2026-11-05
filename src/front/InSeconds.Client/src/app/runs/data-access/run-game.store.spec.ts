@@ -713,7 +713,7 @@ describe('RunGameStore', () => {
       expect(audio.calls.filter(c => c.startsWith('load'))).toHaveLength(1);
     });
 
-    it('« Nouvelle partie » lance une playlist neuve, le premier son dans le clic', async () => {
+    it('« Rejouer » lance une playlist neuve, le premier son dans le clic', async () => {
       api.answerResult = PLAY({ session: SESSION({ status: 'won', round: null, finish: finish('won') }), revealed: TRACK(), current: null });
       await send();
       store.next();
@@ -730,7 +730,7 @@ describe('RunGameStore', () => {
       expect(audio.calls).toContain('load https://cdn/preview-neuf.mp3');
     });
 
-    it('« Nouvelle partie » seulement avec l\'accès', async () => {
+    it('« Rejouer » seulement avec l\'accès', async () => {
       expect(store.canPlayAgain()).toBe(true);
       api.meResult = ME({ hasAccess: false });
       api.answerResult = PLAY({ session: SESSION({ status: 'won', round: null, finish: finish('won') }), revealed: TRACK(), current: null });

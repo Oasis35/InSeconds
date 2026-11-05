@@ -1525,7 +1525,7 @@ export interface RunFinishResponse {
     rounds: RunRoundScoreResponse[];
     record: RunRecordResponse | undefined;
     challengeCode: string;
-    shortfall?: RunShortfallResponse | undefined;
+    shortfall: RunShortfallResponse | undefined;
 
     [key: string]: any;
 }

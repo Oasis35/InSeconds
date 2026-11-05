@@ -10,7 +10,7 @@
       }
 
       @case ('welcome') {
-        <app-run-welcome-screen [record]="store.record()" [shelf]="store.me()?.shelf ?? []" (start)="store.begin()" />
+        <app-run-welcome-screen [record]="store.record()" [shelf]="store.shelf()" (start)="store.begin()" />
       }
 
       <!-- Le lien d'un ami : le logo seul, les règles de la playlist et « Jouer » (crée l'invité, lance le premier son dans ce clic). -->

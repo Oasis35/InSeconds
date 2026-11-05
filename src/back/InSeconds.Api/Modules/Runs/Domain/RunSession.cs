@@ -488,6 +488,19 @@ public sealed class RunSession
         RoundProgressAt(challenge, round, OptionOf(challenge, round), scoring);
 
     /// <summary>
+    /// Ce qui a manqué à une partie perdue : la manche ratée (celle qui suit les manches passées : la partie s'y arrête, une fois la manche finie) et les
+    /// points qui manquaient à son objectif. Vide pour une partie gagnée, abandonnée ou en cours.
+    /// </summary>
+    public (int Round, int Points)? ShortfallOf(RunChallenge challenge, IRunScoringPolicy scoring)
+    {
+        if (Status != RunSessionStatus.Lost)
+            return null;
+        var round = RoundsPassed + 1;
+        var progress = RoundProgressOf(challenge, round, scoring);
+        return (round, progress.Objective - progress.Score);
+    }
+
+    /// <summary>
     /// La manche <paramref name="round"/> de cette partie si elle se jouait à cette difficulté : chaque colonne de l'écran « Difficulté ? ». Toute jauge
     /// passe par la partie, qui sait ce qui la modifie.
     /// </summary>

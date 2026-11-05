@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { RunRecord, RunShelfDisc } from '../../domain/run';
+import { RunRecord, RunShelfDisc, discStars } from '../../domain/run';
 import { ButtonComponent } from '../../../ui/button/button.component';
 import { RunDiscComponent } from '../run-disc/run-disc.component';
 
@@ -31,16 +31,18 @@ import { RunDiscComponent } from '../run-disc/run-disc.component';
           <h2 class="text-sm mb-2" style="color:var(--text-muted)">{{ 'runs.welcome.shelf' | translate }}</h2>
           <ul class="flex flex-wrap justify-center gap-x-4 gap-y-2">
             @for (entry of shelf(); track entry.disc.key + entry.disc.stars) {
-              <li class="flex items-center gap-1.5" [attr.data-shelf-disc]="entry.disc.key"
-                [attr.aria-label]="'runs.welcome.shelfEntry' | translate: { disc: (entry.disc.key | translate), count: entry.count }">
+              <li class="flex items-center gap-1.5" [attr.data-shelf-disc]="entry.disc.key" [attr.data-stars]="entry.disc.stars">
+                <span class="sr-only">{{ 'runs.welcome.shelfEntry' | translate: { disc: (entry.disc.key | translate) + stars(entry.disc), count: entry.count } }}</span>
                 <app-run-disc [disc]="entry.disc.key" [size]="36" [shine]="false" aria-hidden="true" />
-                <span class="text-sm font-bold tabular-nums" style="font-family:var(--font-clock);color:var(--text-hi)" aria-hidden="true">×{{ entry.count }}</span>
+                <span class="text-sm font-bold tabular-nums" style="font-family:var(--font-clock);color:var(--text-hi)" aria-hidden="true">
+                  @if (entry.disc.stars > 0) {★{{ entry.disc.stars }} }×{{ entry.count }}
+                </span>
               </li>
             }
           </ul>
         </section>
       }
-      <button appButton type="button" size="lg" [block]="true" [glow]="true" class="max-w-xs" (click)="start.emit()" data-testid="run-start">
+      <button appButton type="button" size="lg" [block]="true" class="max-w-xs" (click)="start.emit()" data-testid="run-start">
         {{ 'runs.welcome.launch' | translate }}
       </button>
     </div>
@@ -50,5 +52,6 @@ export class RunWelcomeScreenComponent {
   readonly record = input<RunRecord | null>(null);
   /** Les disques gagnés, du moins bon au meilleur ; vide : pas d'étagère. */
   readonly shelf = input<readonly RunShelfDisc[]>([]);
+  protected readonly stars = discStars;
   readonly start = output();
 }

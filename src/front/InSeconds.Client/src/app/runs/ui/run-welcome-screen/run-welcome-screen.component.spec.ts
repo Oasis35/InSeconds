@@ -27,7 +27,10 @@ describe('RunWelcomeScreenComponent', () => {
     const { element } = render({ shelf: [{ disc: { key: 'runs.discs.wax', stars: 0 }, count: 3 }, { disc: { key: 'runs.discs.gold', stars: 0 }, count: 1 }] });
     const entries = [...element.querySelectorAll('[data-testid="run-shelf"] [data-shelf-disc]')];
 
-    expect(entries.map(e => [e.getAttribute('data-shelf-disc'), e.textContent?.trim()])).toEqual([['runs.discs.wax', '×3'], ['runs.discs.gold', '×1']]);
+    expect(entries.map(e => [e.getAttribute('data-shelf-disc'), e.querySelector('span[aria-hidden]')?.textContent?.trim()]))
+      .toEqual([['runs.discs.wax', '×3'], ['runs.discs.gold', '×1']]);
+    // Le lecteur d'écran lit le nom du disque et son nombre (texte masqué à l'écran).
+    expect(entries[0].querySelector('.sr-only')?.textContent).toContain('runs.welcome.shelfEntry');
   });
 
   it('montre le record du joueur', () => {

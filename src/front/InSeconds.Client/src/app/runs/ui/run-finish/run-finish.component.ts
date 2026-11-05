@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ShareButtonComponent } from '../../../gameplay/ui/share-button/share-button.component';
-import { RunFinish, finishSquares } from '../../domain/run';
+import { RunFinish, discStars, finishSquares } from '../../domain/run';
 import { RunDiscComponent } from '../run-disc/run-disc.component';
 import { ButtonComponent } from '../../../ui/button/button.component';
 
@@ -82,8 +82,8 @@ import { ButtonComponent } from '../../../ui/button/button.component';
             <!-- Ce qui a manqué : le chiffre à la couleur du joueur, c'est à lui de le rattraper. -->
             <p class="text-sm text-center" style="color:var(--text-light)" data-testid="run-shortfall">
               {{ 'runs.finished.shortfallBefore' | translate }}
-              <span class="font-bold tabular-nums" style="color:var(--color-accent)">{{ 'runs.finished.shortfallPoints' | translate: { points: format(shortfall.points) } }}</span>
-              {{ 'runs.finished.shortfallAfter' | translate: { disc: (shortfall.disc.key | translate) } }}
+              <span class="font-bold tabular-nums" style="color:var(--color-accent-3)">{{ 'runs.finished.shortfallPoints' | translate: { points: format(shortfall.points) } }}</span>
+              {{ 'runs.finished.shortfallAfter' | translate: { disc: (shortfall.disc.key | translate) + stars(shortfall.disc) } }}
             </p>
           }
           <button appButton type="button" size="lg" [block]="true" (click)="playAgain.emit()" data-testid="run-play-again">
@@ -94,9 +94,10 @@ import { ButtonComponent } from '../../../ui/button/button.component';
 
       <section class="flex flex-col gap-2.5">
         <h3 class="text-sm font-semibold" style="font-family:var(--font-body);color:var(--text-hi)">{{ 'runs.finished.shareTitle' | translate }}</h3>
-        <p class="text-sm leading-relaxed" style="color:var(--text-light)">{{ 'runs.finished.shareBody' | translate }}</p>
+        <p class="text-sm leading-relaxed" style="color:var(--text-light)">{{ 'runs.finished.shareBody' | translate: { tracks: finish().trackCount } }}</p>
         <app-share-button data-testid="run-share" [copied]="shareCopied()" [failed]="shareFailed()" labelKey="runs.finished.share"
-          copiedKey="runs.finished.shareCopied" failedKey="runs.finished.shareFailed" (share)="share.emit()" />
+          copiedKey="runs.finished.shareCopied" failedKey="runs.finished.shareFailed"
+          [variant]="canPlayAgain() ? 'neutral' : 'primary'" [glow]="!canPlayAgain()" (share)="share.emit()" />
         <button type="button" (click)="compare.emit()" data-testid="run-compare" class="w-full text-sm underline touch-manipulation" style="color:var(--text-muted)">
           {{ 'runs.finished.compare' | translate }}
         </button>
@@ -124,6 +125,7 @@ export class RunFinishComponent {
   readonly playAgain = output();
 
   protected readonly squares = computed(() => finishSquares(this.finish()));
+  protected readonly stars = discStars;
   private readonly numbers = computed(() => new Intl.NumberFormat(this.lang()));
 
   /** « 2 617 » : les grands nombres au format de la langue. */

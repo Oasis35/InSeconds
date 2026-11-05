@@ -405,27 +405,42 @@ export function finishSquares(finish: Pick<RunFinish, 'tracks' | 'rounds' | 'tra
   const roundCount = Math.max(1, finish.rounds.length);
   const perRound = Math.ceil(finish.trackCount / roundCount);
   return Array.from({ length: roundCount }, (_, index) => {
-    const played = finish.tracks.filter(t => t.round === index + 1).sort((a, b) => a.position - b.position);
+    const played = tracksOfRound(finish.tracks, index + 1);
     return Array.from({ length: perRound }, (_, slot): FinishSquare => {
       const track = played[slot];
       if (!track) return 'unplayed';
-      if (track.neutralized) return 'neutralized';
-      return track.artistCorrect && track.titleCorrect ? 'found' : 'played';
+      const mark = trackMark(track);
+      if (mark === 'withdrawn') return 'neutralized';
+      return mark === 'found' ? 'found' : 'played';
     });
   });
 }
 
-/** Une case du partage d'un run : morceau trouvé (artiste et titre), à moitié (l'un des deux), raté, ou retiré de la manche. */
-export type RunShareMark = 'found' | 'half' | 'missed' | 'withdrawn';
+/** Un morceau joué, vu de la fin et du partage : trouvé (artiste et titre), à moitié (l'un des deux), raté, ou retiré de la manche. */
+export type RunTrackMark = 'found' | 'half' | 'missed' | 'withdrawn';
+
+/** Le seul endroit qui dit ce qu'est un morceau trouvé : l'écran de fin et le partage en grille le lisent tous deux. */
+export function trackMark(track: Pick<RunTrack, 'neutralized' | 'artistCorrect' | 'titleCorrect'>): RunTrackMark {
+  if (track.neutralized) return 'withdrawn';
+  if (track.artistCorrect && track.titleCorrect) return 'found';
+  return track.artistCorrect || track.titleCorrect ? 'half' : 'missed';
+}
+
+/** Les morceaux joués d'une manche, dans l'ordre. */
+export const tracksOfRound = <T extends Pick<RunTrack, 'round' | 'position'>>(tracks: readonly T[], round: number): T[] =>
+  tracks.filter(track => track.round === round).sort((a, b) => a.position - b.position);
+
+/** Les étoiles d'un disque au-delà de l'échelle, à la suite de son nom (« ★2 ») ; rien en deçà. */
+export const discStars = (disc: RunDisc): string => (disc.stars > 0 ? ` ★${disc.stars}` : '');
 
 /** Les cases du partage, comme le partage du Daily : un carré par morceau. */
-export const RUN_SHARE_EMOJI: Readonly<Record<RunShareMark, string>> = { found: '🟩', half: '🟨', missed: '🟥', withdrawn: '⬜' };
+export const RUN_SHARE_EMOJI: Readonly<Record<RunTrackMark, string>> = { found: '🟩', half: '🟨', missed: '🟥', withdrawn: '⬜' };
 
 /** Une ligne du partage : une manche jouée, sa difficulté et un carré par morceau joué. */
 export interface RunShareRound {
   readonly round: number;
   readonly difficulty: RunDifficulty | null;
-  readonly marks: readonly RunShareMark[];
+  readonly marks: readonly RunTrackMark[];
 }
 
 /** Les lignes du partage en grille : les manches jouées seulement, dans l'ordre, chaque morceau joué à sa place. */
@@ -435,13 +450,6 @@ export function shareRounds(finish: Pick<RunFinish, 'tracks' | 'rounds'>): RunSh
     .map(round => ({
       round: round.round,
       difficulty: round.difficulty,
-      marks: finish.tracks
-        .filter(track => track.round === round.round)
-        .sort((a, b) => a.position - b.position)
-        .map((track): RunShareMark => {
-          if (track.neutralized) return 'withdrawn';
-          if (track.artistCorrect && track.titleCorrect) return 'found';
-          return track.artistCorrect || track.titleCorrect ? 'half' : 'missed';
-        }),
+      marks: tracksOfRound(finish.tracks, round.round).map(trackMark),
     }));
 }

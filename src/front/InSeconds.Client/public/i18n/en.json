@@ -962,8 +962,8 @@
       "record": "Record: {{ score }}",
       "round": "Round {{ round }}",
       "notPlayed": "Round not played",
-      "shareTitle": "Beat me on this playlist",
-      "shareBody": "Your friends play the same 20 tracks, in the same order. Your score goes with the link: their turn to do better, then you compare round by round.",
+      "shareTitle": "Challenge your friends on this playlist",
+      "shareBody": "They play the same {{ tracks }} tracks, in the same order. Your score goes with the message: their turn to do better, then you compare round by round.",
       "share": "Share my score",
       "shareCopied": "Link copied!",
       "shareFailed": "Couldn’t copy",
@@ -991,7 +991,8 @@
       "player": "Player",
       "roundShort": "R{{ round }}",
       "total": "Total",
-      "you": "You"
+      "you": "You",
+      "share": "Share the playlist"
     },
     "discs": {
       "scratched": "Scratched record",

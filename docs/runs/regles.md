@@ -57,7 +57,7 @@ La suite de l'échelle est prévue pour quand un run aura plus de 4 manches : pl
 
 ## La playlist partagée
 
-- Chaque run a un lien : **`inseconds.cc/runs/K7Q2M9`** (code de 6 caractères sans caractère ambigu, saisie insensible à la casse). Il se partage depuis l'écran de fin (« Partager la playlist »).
+- Chaque run a un lien : **`inseconds.cc/runs/K7Q2M9`** (code de 6 caractères sans caractère ambigu, saisie insensible à la casse). Il se partage depuis l'écran de fin (« Partager mon score » : le score en grille et « Bats-moi » avec le lien) et depuis la comparaison (« Partager la playlist »).
 - Tous ceux qui ouvrent le lien jouent **les mêmes 20 morceaux, dans le même ordre**, **une seule fois** chacun, sans compte obligatoire (un invité est créé comme au Daily).
 - Les 20 morceaux sont tirés dès le départ : un ami peut aller plus loin que l'auteur de la playlist si celui-ci a perdu avant la fin.
 - **Comparaison** : après avoir fini sa partie (une partie abandonnée est finie), chacun voit toutes les parties **gagnées ou perdues** sur cette playlist, manche par manche (une manche non jouée est vide), avec le pseudo de chacun (« Invité » pour un invité), son disque et son total, triées par total. Rouvrir le lien d'une playlist déjà jouée mène directement à la comparaison : une playlist se joue une seule fois. **Ce n'est pas un classement général** : seuls ceux qui ont le lien la voient, et la page de confidentialité le dit.
@@ -66,7 +66,7 @@ La suite de l'échelle est prévue pour quand un run aura plus de 4 manches : pl
 
 - **Sur invitation** : Platines n'est ouvert qu'aux comptes que Clément autorise, par un interrupteur dans l'onglet Joueurs de l'admin. Les admins ont l'accès d'office. Un invité sans compte n'y a pas accès. L'interrupteur est distinct du rôle admin (qui reste posé en SQL seulement).
 - Sans accès, rien ne change pour le joueur : pas de carte Platines sur l'accueil, et l'adresse `/runs` renvoie vers le Daily.
-- **Lien reçu** : un ami sans accès qui ouvre le lien d'une playlist peut jouer **cette playlist-là seulement**, invité compris. À la fin, il ne voit pas « Nouvelle partie » mais une invitation à jouer au Daily.
+- **Lien reçu** : un ami sans accès qui ouvre le lien d'une playlist peut jouer **cette playlist-là seulement**, invité compris. À la fin, il ne voit pas « Rejouer » mais une invitation à jouer au Daily.
 - Retirer l'accès n'interrompt pas une partie en cours ; cela empêche seulement d'en lancer une nouvelle.
 
 ## Réglages
