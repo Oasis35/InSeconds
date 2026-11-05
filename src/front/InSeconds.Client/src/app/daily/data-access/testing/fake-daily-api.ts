@@ -125,11 +125,6 @@ export class FakeDailyApi {
     return Promise.resolve();
   }
 
-  recordShare(): Promise<void> {
-    this.calls.push('share');
-    return Promise.resolve();
-  }
-
   archiveDatesCall(): Promise<string[]> {
     this.calls.push('archiveDates');
     return this.result(this.archiveDates);
@@ -168,7 +163,6 @@ export function provideFakeDailyApi(fake: FakeDailyApi): Provider {
       requestHint: (s: number, p: number, l: number) => fake.requestHint(s, p, l),
       submitAnswer: (s: number, a: AnswerToSend) => fake.submitAnswer(s, a),
       abandon: (s: number) => fake.abandon(s),
-      recordShare: () => fake.recordShare(),
       stats: () => fake.statsCall(),
       archiveDates: () => fake.archiveDatesCall(),
       archiveDay: (date: string) => fake.archiveDayCall(date),

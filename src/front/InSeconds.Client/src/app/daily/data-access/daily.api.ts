@@ -85,11 +85,6 @@ export class DailyApi {
     await firstValueFrom(this.client.abandonSession(sessionId));
   }
 
-  /** Compte un partage du score (encart « Partages » de l'admin) : rien n'est gardé du joueur en base. L'API garde un champ `format`, toujours `long`. */
-  async recordShare(): Promise<void> {
-    await firstValueFrom(this.client.recordShare({ format: 'long' }));
-  }
-
   async stats(): Promise<DayStats> {
     return toStats(await firstValueFrom(this.client.getTodayStats()));
   }

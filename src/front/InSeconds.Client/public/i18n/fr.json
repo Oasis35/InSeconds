@@ -459,15 +459,7 @@
       "newcomer": "nouveau",
       "newcomers": "nouveaux",
       "arrivalsTitle": "D'où viennent les nouveaux · 30 jours",
-      "arrivalsCount": "nouveaux joueurs",
-      "shares": {
-        "title": "Partages du score",
-        "day": "Ce jour",
-        "last30Days": "30 jours",
-        "count": "Partages faits",
-        "friends": "Amis venus par le lien",
-        "note": "Un partage compte quand le menu du téléphone est validé ou le texte copié. Un ami venu par le lien d'une playlist Platines compte aussi dans « Amis venus »."
-      }
+      "arrivalsCount": "nouveaux joueurs"
     },
     "challenges": {
       "noChallengeThisMonth": "Aucun défi ce mois.",

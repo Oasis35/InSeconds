@@ -34,9 +34,6 @@ public static class RateLimitPolicies
     /// <summary>Extrait d'un morceau d'un jour passé (public ; chaque appel interroge Deezer, quota partagé avec les parties).</summary>
     public const string DailyArchivePreview = "daily-archive-preview";
 
-    /// <summary>Partage du score du jour, compté pour l'admin : par joueur.</summary>
-    public const string DailyShare = "daily-share";
-
     /// <summary>Lancement d'un run (une nouvelle playlist tirée à chaque fois) : par joueur.</summary>
     public const string RunLaunch = "run-launch";
 

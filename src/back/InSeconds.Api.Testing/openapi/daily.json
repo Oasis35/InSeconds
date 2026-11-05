@@ -915,59 +915,6 @@
           }
         }
       }
-    },
-    "/api/daily/shares": {
-      "post": {
-        "tags": [
-          "Daily"
-        ],
-        "operationId": "recordShare",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RecordShare"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "204": {
-            "description": "No Content"
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
     }
   },
   "components": {
@@ -1768,8 +1715,7 @@
           "playerBreakdown",
           "availableDates",
           "selectedDayKpis",
-          "arrivals",
-          "shares"
+          "arrivals"
         ],
         "type": "object",
         "properties": {
@@ -1804,9 +1750,6 @@
             "items": {
               "$ref": "#/components/schemas/ArrivalResponse"
             }
-          },
-          "shares": {
-            "$ref": "#/components/schemas/DashboardSharesResponse"
           }
         }
       },
@@ -2711,49 +2654,6 @@
             "type": "boolean"
           }
         }
-      },
-      "DashboardSharesResponse": {
-        "required": [
-          "selectedDay",
-          "last30Days"
-        ],
-        "type": "object",
-        "properties": {
-          "selectedDay": {
-            "$ref": "#/components/schemas/ShareCountsResponse"
-          },
-          "last30Days": {
-            "$ref": "#/components/schemas/ShareCountsResponse"
-          }
-        }
-      },
-      "RecordShare": {
-        "required": [
-          "format"
-        ],
-        "type": "object",
-        "properties": {
-          "format": {
-            "type": "string"
-          }
-        }
-      },
-      "ShareCountsResponse": {
-        "required": [
-          "short",
-          "long"
-        ],
-        "type": "object",
-        "properties": {
-          "short": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "long": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
       }
     }
   },
@@ -2811,9 +2711,6 @@
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.AbandonSessionEndpoint"
-    },
-    {
-      "name": "InSeconds.Api.Modules.Daily.Application.RecordShareEndpoint"
     },
     {
       "name": "InSeconds.Api.Modules.Daily.Application.StartSessionEndpoint"

@@ -1,22 +1,17 @@
 import { TestBed } from '@angular/core/testing';
 import { TranslateService, provideTranslateService } from '@ngx-translate/core';
 import { SHARE_LINK, ShareOutcome, ShareService } from '../../core/share/share.service';
-import { DailyApi } from './daily.api';
 import { DailyShare } from './daily-share';
 
 describe('DailyShare', () => {
   let share: ReturnType<typeof vi.fn>;
-  let recordShare: ReturnType<typeof vi.fn>;
   let dailyShare: DailyShare;
 
   beforeEach(() => {
     vi.useFakeTimers();
     share = vi.fn().mockResolvedValue('shared');
-    recordShare = vi.fn().mockResolvedValue(undefined);
     TestBed.configureTestingModule({
-      providers: [
-        DailyShare, provideTranslateService(), { provide: ShareService, useValue: { share } }, { provide: DailyApi, useValue: { recordShare } },
-      ],
+      providers: [DailyShare, provideTranslateService(), { provide: ShareService, useValue: { share } }],
     });
     const translate = TestBed.inject(TranslateService);
     translate.setTranslation('fr', { daily: { share: { header: '{{ score }} pts · InSeconds {{ date }}' } } });
@@ -42,27 +37,6 @@ describe('DailyShare', () => {
       expect.stringMatching(/^1\s850 pts · InSeconds 05\/11$/), '✅❌ 0.5 s (fr)', '❌❌ 10 s (fr)', '✅✅ 1 s (fr)', SHARE_LINK,
     ]);
     expect(SHARE_LINK).toMatch(/\/\?utm_source=share$/);
-  });
-
-  it.each<ShareOutcome>(['shared', 'copied'])('partage fait (%s) : compté pour l admin', async outcome => {
-    share.mockResolvedValue(outcome);
-    await dailyShare.share(tracks, 0, format);
-    expect(recordShare).toHaveBeenCalledOnce();
-  });
-
-  it.each<ShareOutcome>(['cancelled', 'failed'])('menu fermé ou échec (%s) : rien n est compté', async outcome => {
-    share.mockResolvedValue(outcome);
-    await dailyShare.share(tracks, 0, format);
-    expect(recordShare).not.toHaveBeenCalled();
-  });
-
-  it('un échec du compteur ne change rien pour le joueur', async () => {
-    share.mockResolvedValue('copied');
-    recordShare.mockRejectedValue(new Error('réseau'));
-    await dailyShare.share(tracks, 0, format);
-    await vi.runAllTicks();
-    expect(dailyShare.copied()).toBe(true);
-    expect(dailyShare.failed()).toBe(false);
   });
 
   it.each<ShareOutcome>(['shared', 'cancelled'])('partage natif ou menu fermé (%s) : le bouton ne change pas', async outcome => {
