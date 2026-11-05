@@ -13,6 +13,11 @@ describe('SystemStore', () => {
   let github: FakeGithubCiApi;
   const health = { state: signal<'loading' | 'ok' | 'ko'>('ok'), latencyMs: signal<number | null>(38) };
 
+  // L'âge de la sauvegarde et du contrôle de restauration se juge à l'heure de lecture : on la fige au lendemain matin des
+  // dates de FAKE_SYSTEM_INFO, sinon les tests changent de résultat avec le jour où ils tournent.
+  beforeEach(() => vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-04T09:30:00Z') }));
+  afterEach(() => vi.useRealTimers());
+
   async function create(options: {
     build?: Partial<FrontBuild>; system?: Partial<FakeSystemApi>; github?: Partial<FakeGithubCiApi>; runs?: JobLastRun[];
   } = {}) {
