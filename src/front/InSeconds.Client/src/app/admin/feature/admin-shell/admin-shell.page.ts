@@ -1,6 +1,6 @@
 import { WIDE_SCREEN } from '../../../core/layout/wide-screen';
 import { DatePipe, DOCUMENT, NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { BrowserIdComponent } from '../../../account/feature/browser-id/browser-id.component';
@@ -13,6 +13,7 @@ import { SystemStore } from '../../data-access/system.store';
 import { CiLine, TechPanelComponent } from '../../ui/system/tech-panel/tech-panel.component';
 import { VersionService } from '../../../core/version/version.service';
 import { ADMIN_TABS, AdminTab } from '../admin-tabs';
+import { rememberTabScroll } from './tab-scroll-memory';
 import { ButtonComponent } from '../../../ui/button/button.component';
 import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-background.component';
 
@@ -24,12 +25,19 @@ import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-bac
  * - compte sans le rôle : accès refusé ;
  * - admin : deux mises en page. Sur téléphone, une ligne en haut (le logo « IN// », lien vers le jeu ; la date du déploiement au
  *   milieu ; à droite le bouton d'état, qui déplie le panneau technique) et les onglets dans une barre fixe en bas, sous le pouce.
- *   Sur PC (`lg`), une barre à gauche : le logo IN//SECONDS (lien vers le jeu), les onglets en colonne, puis le panneau technique.
- *   Le panneau finit par l'identifiant du navigateur et la déconnexion.
+ *   Sur PC (`lg`), une bande fixe en haut (le logo IN//SECONDS, lien vers le jeu, et les onglets), le panneau technique dans une
+ *   colonne de gauche fixe tant qu'elle tient dans la fenêtre, et le contenu de l'onglet, seul à défiler. Chaque onglet garde sa
+ *   position de défilement pendant la visite (`rememberTabScroll`). Le panneau finit par l'identifiant du navigateur et la
+ *   déconnexion.
  * L'identifiant du navigateur est affiché dans tous les cas (repérer ses propres parties).
  * Une nouvelle version s'applique quand l'onglet passe en arrière-plan, sauf pendant une saisie (un champ de texte a le
  * focus) : elle attend alors le prochain changement de page.
  */
+/** La hauteur de la bande fixe du haut sur PC (`top-16`), sous laquelle la colonne de gauche se colle. */
+const ASIDE_TOP_PX = 64;
+/** La marge gardée sous la colonne fixe. */
+const ASIDE_BOTTOM_GAP_PX = 16;
+
 /** Les `<input>` qu'on ne remplit pas au clavier : leur focus n'est pas une saisie en cours. */
 const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'radio', 'range', 'reset', 'submit', 'color', 'file', 'image']);
 
@@ -57,12 +65,9 @@ const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'radio', 'range', 'reset'
         [restoreTestAt]="system.info()?.lastRestoreTestAt ?? null" [restoreTestFailure]="system.info()?.restoreTestFailure ?? null"
         [jobs]="system.jobs()" [jobsFailed]="system.lastRunsFailed()" [ci]="ciLines()" [jobsUrl]="jobsUrl" [grafanaUrl]="grafanaUrl"
         [catalogue]="system.catalogue()" [nextChallenge]="system.nextChallengeState()">
-        <section>
-          <h2 class="text-xs font-semibold mb-1.5" style="color:var(--text-faint)">{{ 'admin.system.browser' | translate }}</h2>
-          <app-browser-id />
-        </section>
+        <app-browser-id class="pt-2" style="border-top:1px solid var(--border-subtle)" labelKey="admin.system.browser" [spread]="true" />
         <button type="button" (click)="profile.logout()" [disabled]="profile.logoutStatus() === 'pending'"
-          class="self-start text-xs transition-colors hover:text-(--text-hi)" style="color:var(--text-faint)">
+          class="self-start -mt-1 text-xs transition-colors hover:text-(--text-hi)" style="color:var(--text-faint)">
           {{ 'admin.logout' | translate }}
         </button>
       </app-tech-panel>
@@ -112,22 +117,27 @@ const NON_TEXT_INPUTS = new Set(['button', 'checkbox', 'radio', 'range', 'reset'
             }
           </header>
 
-          <div class="relative w-full max-w-2xl lg:max-w-none mx-auto px-4 lg:px-6 lg:pt-3 lg:grid lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-x-6 lg:gap-y-3">
-            <!-- PC : le logo (aligné sur le texte du panneau technique) et les onglets (alignés sur le contenu) sur une ligne en haut. -->
-            <a routerLink="/daily" [title]="'admin.backToGame' | translate"
-              class="hidden lg:block self-center px-4 font-extrabold uppercase text-base tracking-[0.14em]" style="font-family:var(--font-display);color:var(--text-hi)">
-              IN<span style="color:var(--text-accent)">//</span>SECONDS
-            </a>
-            <nav data-testid="admin-top-nav" class="hidden lg:flex justify-self-start gap-1 rounded-xl p-1.5" style="background:var(--bg-surface)" [attr.aria-label]="'admin.tabsLabel' | translate">
-              @for (tab of tabs; track tab.path) {
-                <a [routerLink]="['/admin', tab.path]" routerLinkActive="is-active" ariaCurrentWhenActive="page" [replaceUrl]="true"
-                  class="admin-tab px-3 py-2 rounded-lg text-sm font-medium transition-colors">
-                  {{ labelOf(tab).key | translate: labelOf(tab).params }}
-                </a>
-              }
-            </nav>
-            <!-- PC : le panneau technique dans la colonne de gauche. -->
-            <aside class="hidden lg:block lg:sticky lg:top-4 lg:self-start">
+          <div class="relative w-full max-w-2xl lg:max-w-none mx-auto px-4 lg:px-6 lg:grid lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-x-6 lg:gap-y-1">
+            <!-- PC : une bande fixe en haut (fond opaque, le contenu défile dessous), le logo aligné sur le texte du panneau technique et
+                 les onglets alignés sur le contenu. -->
+            <div class="hidden lg:grid lg:col-span-2 grid-cols-subgrid items-center sticky top-0 z-10 -mx-6 px-6 py-2" style="background:var(--bg-page)"
+              data-testid="admin-top-bar">
+              <a routerLink="/daily" [title]="'admin.backToGame' | translate"
+                class="px-4 font-extrabold uppercase text-base tracking-[0.14em]" style="font-family:var(--font-display);color:var(--text-hi)">
+                IN<span style="color:var(--text-accent)">//</span>SECONDS
+              </a>
+              <nav data-testid="admin-top-nav" class="flex justify-self-start gap-1 rounded-xl p-1.5" style="background:var(--bg-surface)" [attr.aria-label]="'admin.tabsLabel' | translate">
+                @for (tab of tabs; track tab.path) {
+                  <a [routerLink]="['/admin', tab.path]" routerLinkActive="is-active" ariaCurrentWhenActive="page" [replaceUrl]="true"
+                    class="admin-tab px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+                    {{ labelOf(tab).key | translate: labelOf(tab).params }}
+                  </a>
+                }
+              </nav>
+            </div>
+            <!-- PC : le panneau technique dans la colonne de gauche, fixe sous la bande du haut tant qu'il tient dans la fenêtre
+                 (sinon il défile avec la page : jamais d'ascenseur à lui). -->
+            <aside #techAside class="hidden lg:block lg:self-start" [class.lg:sticky]="asideFits()" [class.lg:top-16]="asideFits()" data-testid="admin-aside">
               @if (wide()) {
                 <div class="rounded-xl p-4" style="background:var(--bg-surface)">
                   <ng-container *ngTemplateOutlet="techPanel" />
@@ -176,6 +186,9 @@ export class AdminShellPage {
   protected readonly techOpen = signal(false);
   /** Un champ de texte de l'admin a le focus : une nouvelle version attend le prochain changement de page. */
   protected readonly editing = signal(false);
+  /** PC : la colonne de gauche, fixe tant qu'elle tient dans la fenêtre sous la bande du haut. */
+  private readonly techAside = viewChild<ElementRef<HTMLElement>>('techAside');
+  protected readonly asideFits = signal(true);
 
   /** La CI de la prod puis du staging, chacune liée à son dernier passage (ou à la liste des passages de sa branche). */
   protected readonly ciLines = computed<CiLine[]>(() => this.system.ciRuns().map(({ branch, run }) => ({
@@ -192,6 +205,30 @@ export class AdminShellPage {
       if (!this.session.isAdmin() || loaded) return;
       loaded = true;
       untracked(() => void this.system.load());
+    });
+    rememberTabScroll();
+    this.watchAsideHeight();
+  }
+
+  /** Une alerte dépliée ou une fenêtre basse : plus haute que la fenêtre, la colonne défilerait avec un bas inatteignable. */
+  private watchAsideHeight(): void {
+    const view = this.document.defaultView;
+    if (!view || typeof ResizeObserver === 'undefined') return;
+    const check = () => {
+      const aside = this.techAside()?.nativeElement;
+      if (!aside) return;
+      this.asideFits.set(aside.offsetHeight + ASIDE_TOP_PX + ASIDE_BOTTOM_GAP_PX <= view.innerHeight);
+    };
+    const observer = new ResizeObserver(check);
+    effect(() => {
+      const aside = this.techAside()?.nativeElement;
+      observer.disconnect();
+      if (aside) observer.observe(aside);
+    });
+    view.addEventListener('resize', check);
+    inject(DestroyRef).onDestroy(() => {
+      observer.disconnect();
+      view.removeEventListener('resize', check);
     });
   }
 

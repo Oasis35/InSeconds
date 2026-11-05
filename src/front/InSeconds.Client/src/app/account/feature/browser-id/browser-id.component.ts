@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, input, signal } from '@angular/core';
 import { ClipboardService } from '../../../core/clipboard/clipboard.service';
 import { SessionStore } from '../../../core/session/session.store';
 import { SessionLoader } from '../../data-access/session-loader';
@@ -17,11 +17,14 @@ const COPIED_MESSAGE_MS = 2000;
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (session.player(); as player) {
-      <app-browser-id-view [playerId]="player.id" [copied]="copied()" (copyId)="copy(player.id)" />
+      <app-browser-id-view [playerId]="player.id" [copied]="copied()" [labelKey]="labelKey()" [spread]="spread()" (copyId)="copy(player.id)" />
     }
   `,
 })
 export class BrowserIdComponent {
+  /** Le libellé devant l'identifiant, et sa mise en ligne (cf. `BrowserIdViewComponent`). */
+  readonly labelKey = input('account.browserId.label');
+  readonly spread = input(false);
   protected readonly session = inject(SessionStore);
   protected readonly copied = signal(false);
   private readonly clipboard = inject(ClipboardService);

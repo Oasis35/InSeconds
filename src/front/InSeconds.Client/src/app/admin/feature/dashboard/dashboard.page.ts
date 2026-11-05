@@ -26,9 +26,11 @@ const CHART_DIALOG_MAX_WIDTH = '22.5rem';
 
 /**
  * `/admin/dashboard` (onglet « Accueil ») : tout ce qu'on regarde dans la journée, sans changer d'onglet.
- * - La carte du jour : ‹ jour › (« Aujourd'hui · en direct »), trois tuiles (ont fini, nouveaux joueurs, score médian), une ligne
- *   secondaire (en cours, abandons, part qui finit, comptes créés), puis les joueurs du jour (les chips de l'onglet Défis).
- * - Les morceaux du jour : repliés sous la carte sur téléphone, dépliés dans une colonne à droite sur PC.
+ * - La carte du jour : ‹ jour › (« Aujourd'hui · en direct »), trois tuiles (ont fini, nouveaux joueurs, score médian) et leur
+ *   détail replié (en cours, abandons, part qui finit, comptes créés, arrivés, habitués et nouveaux).
+ * - Le détail du défi du jour, rangé comme dans l'onglet Défis : sur PC, une colonne à droite (la répartition des scores, les joueurs
+ *   du jour, puis les morceaux du jour, repliés) ; sur téléphone, dans la carte (les joueurs, puis les morceaux, repliés ; pas de
+ *   répartition).
  * - L'activité des 30 derniers jours (un clic sur une barre change de jour), puis les totaux des joueurs, en une ligne.
  * Le jour affiché vit dans l'adresse (`?jour=2026-11-03`, absent pour aujourd'hui) : un F5 rouvre le même jour.
  */
@@ -43,11 +45,28 @@ const CHART_DIALOG_MAX_WIDTH = '22.5rem';
   host: { class: 'flex w-full min-w-0 justify-center' },
   template: `
     <ng-template #tracks let-list>
-      <div class="flex flex-col gap-2" data-testid="day-tracks">
-        @for (t of list; track t.position) {
-          <app-challenge-track-stats [track]="t" (showChart)="openChart($event)" />
-        }
-      </div>
+      <!-- Les morceaux du jour, repliés par défaut (sur téléphone comme sur PC). -->
+      <button type="button" (click)="tracksOpen.set(!tracksOpen())" [attr.aria-expanded]="tracksOpen()"
+        class="self-start py-2 -my-2 text-xs hover:text-(--text-hi)" style="color:var(--text-muted)" data-testid="day-tracks-toggle">
+        {{ 'admin.dashboard.dayTracks' | translate }} <span aria-hidden="true">{{ tracksOpen() ? '▴' : '▾' }}</span>
+      </button>
+      @if (tracksOpen()) {
+        <div class="flex flex-col gap-2" data-testid="day-tracks">
+          @for (t of list; track t.position) {
+            <app-challenge-track-stats [track]="t" (showChart)="openChart($event)" />
+          }
+        </div>
+      }
+    </ng-template>
+
+    <ng-template #players let-c>
+      @if (c.players.length > 0) {
+        <div data-testid="day-players">
+          <app-challenge-player-chips [players]="c.players" [youId]="youId()"
+            [highlightedId]="challenges.highlightedPlayerId()" [copiedId]="challenges.copiedPlayerId()"
+            (playerSelected)="challenges.toggleHighlight($event)" (playerCopied)="challenges.copyPlayerId($event)" />
+        </div>
+      }
     </ng-template>
 
     <section class="w-full max-w-2xl lg:max-w-none grid gap-4 lg:grid-cols-2 lg:items-start" data-testid="admin-dashboard-page">
@@ -62,27 +81,15 @@ const CHART_DIALOG_MAX_WIDTH = '22.5rem';
               [day]="store.selectedDay()" [locale]="locale()" [isToday]="store.isSelectedDayToday()"
               [canGoToPrevious]="store.canGoToPreviousDay()" [canGoToNext]="store.canGoToNextDay()"
               (previous)="store.shiftDay(-1)" (next)="store.shiftDay(1)" />
-            <app-dashboard-kpis class="flex flex-col gap-3" [kpis]="dashboard.kpis" [isToday]="store.isSelectedDayToday()" />
+            <app-dashboard-kpis class="flex flex-col gap-3" [kpis]="dashboard.kpis" />
 
-            @if (dayChallenge(); as c) {
-              @if (wide()) {
-                <app-challenge-score-chart [challenge]="c" />
-              }
-              @if (c.players.length > 0) {
-                <div class="pt-1" style="border-top:1px solid var(--border-medium)" data-testid="day-players">
-                  <app-challenge-player-chips [players]="c.players" [youId]="youId()"
-                    [highlightedId]="challenges.highlightedPlayerId()" [copiedId]="challenges.copiedPlayerId()"
-                    (playerSelected)="challenges.toggleHighlight($event)" (playerCopied)="challenges.copyPlayerId($event)" />
-                </div>
-              }
-              @if (!wide()) {
-                <button type="button" (click)="tracksOpen.set(!tracksOpen())" [attr.aria-expanded]="tracksOpen()"
-                  class="self-start text-xs hover:text-(--text-hi)" style="color:var(--text-muted)">
-                  {{ 'admin.dashboard.dayTracks' | translate }} <span aria-hidden="true">{{ tracksOpen() ? '▴' : '▾' }}</span>
-                </button>
-                @if (tracksOpen()) {
+            <!-- Téléphone : les joueurs puis les morceaux du jour dans la carte (sur PC, dans la colonne de droite). -->
+            @if (!wide()) {
+              @if (dayChallenge(); as c) {
+                <div class="pt-3 flex flex-col gap-3" style="border-top:1px solid var(--border-medium)">
+                  <ng-container *ngTemplateOutlet="players; context: { $implicit: c }" />
                   <ng-container *ngTemplateOutlet="tracks; context: { $implicit: c.tracks }" />
-                }
+                </div>
               }
             }
           </div>
@@ -96,9 +103,13 @@ const CHART_DIALOG_MAX_WIDTH = '22.5rem';
 
         @if (wide()) {
           @if (dayChallenge(); as c) {
-            <div class="rounded-xl p-4 flex flex-col gap-3 min-w-0" style="background:var(--bg-surface)">
-              <h2 class="text-sm font-semibold" style="color:var(--text-muted)">{{ 'admin.dashboard.dayTracks' | translate }}</h2>
-              <ng-container *ngTemplateOutlet="tracks; context: { $implicit: c.tracks }" />
+            <!-- PC : comme le détail d'un défi dans l'onglet Défis, la répartition des scores, les joueurs, puis les morceaux. -->
+            <div class="rounded-xl p-4 flex flex-col gap-3 min-w-0" style="background:var(--bg-surface)" data-testid="day-detail">
+              <app-challenge-score-chart [challenge]="c" [ruled]="false" />
+              <ng-container *ngTemplateOutlet="players; context: { $implicit: c }" />
+              <div class="pt-3 flex flex-col gap-3" style="border-top:1px solid var(--border-medium)">
+                <ng-container *ngTemplateOutlet="tracks; context: { $implicit: c.tracks }" />
+              </div>
             </div>
           }
         }
@@ -124,7 +135,7 @@ export class DashboardPage {
 
   protected readonly locale = computed(() => this.language.current());
   protected readonly youId = computed(() => this.session.player()?.id ?? null);
-  /** Les morceaux du jour sont dépliés sous la carte (téléphone). */
+  /** Les morceaux du jour sont dépliés (repliés par défaut). */
   protected readonly tracksOpen = signal(false);
   /** Le défi du jour affiché, s'il est parmi les 30 derniers (ses joueurs et ses morceaux) ; sinon rien. */
   protected readonly dayChallenge = computed(() => this.challenges.stats().find(c => c.date === this.store.selectedDay()) ?? null);
