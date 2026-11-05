@@ -51,6 +51,20 @@ export interface RunRoundScore {
   readonly score: number | null;
   readonly objective: number | null;
   readonly passed: boolean;
+  /** La difficulté jouée ; `null` pour une manche non jouée. */
+  readonly difficulty: RunDifficulty | null;
+}
+
+/** Ce qui a manqué à une partie perdue pour le disque suivant : les points qui manquaient à l'objectif de la manche ratée. */
+export interface RunShortfall {
+  readonly points: number;
+  readonly disc: RunDisc;
+}
+
+/** Un disque de l'étagère de l'accueil du mode, et les parties qui l'ont donné. */
+export interface RunShelfDisc {
+  readonly disc: RunDisc;
+  readonly count: number;
 }
 
 export interface RunFinish {
@@ -64,6 +78,8 @@ export interface RunFinish {
   readonly rounds: readonly RunRoundScore[];
   readonly record: RunRecord | null;
   readonly challengeCode: string;
+  /** Ce qui a manqué pour le disque suivant ; `null` pour une partie gagnée ou abandonnée. */
+  readonly shortfall: RunShortfall | null;
 }
 
 export interface RunSession {
@@ -214,6 +230,8 @@ export interface RunsMe {
   readonly record: RunRecord | null;
   /** Une partie en cours : le joueur la reprend. */
   readonly pending: { readonly sessionId: number; readonly challengeCode: string } | null;
+  /** Les disques gagnés par ses parties finies, du moins bon au meilleur. */
+  readonly shelf: readonly RunShelfDisc[];
 }
 
 /** Ce que la barre d'objectif dessine : la part du maximum déjà marquée et l'emplacement du trait de l'objectif. */
@@ -395,4 +413,35 @@ export function finishSquares(finish: Pick<RunFinish, 'tracks' | 'rounds' | 'tra
       return track.artistCorrect && track.titleCorrect ? 'found' : 'played';
     });
   });
+}
+
+/** Une case du partage d'un run : morceau trouvé (artiste et titre), à moitié (l'un des deux), raté, ou retiré de la manche. */
+export type RunShareMark = 'found' | 'half' | 'missed' | 'withdrawn';
+
+/** Les cases du partage, comme le partage du Daily : un carré par morceau. */
+export const RUN_SHARE_EMOJI: Readonly<Record<RunShareMark, string>> = { found: '🟩', half: '🟨', missed: '🟥', withdrawn: '⬜' };
+
+/** Une ligne du partage : une manche jouée, sa difficulté et un carré par morceau joué. */
+export interface RunShareRound {
+  readonly round: number;
+  readonly difficulty: RunDifficulty | null;
+  readonly marks: readonly RunShareMark[];
+}
+
+/** Les lignes du partage en grille : les manches jouées seulement, dans l'ordre, chaque morceau joué à sa place. */
+export function shareRounds(finish: Pick<RunFinish, 'tracks' | 'rounds'>): RunShareRound[] {
+  return finish.rounds
+    .filter(round => round.score !== null)
+    .map(round => ({
+      round: round.round,
+      difficulty: round.difficulty,
+      marks: finish.tracks
+        .filter(track => track.round === round.round)
+        .sort((a, b) => a.position - b.position)
+        .map((track): RunShareMark => {
+          if (track.neutralized) return 'withdrawn';
+          if (track.artistCorrect && track.titleCorrect) return 'found';
+          return track.artistCorrect || track.titleCorrect ? 'half' : 'missed';
+        }),
+    }));
 }

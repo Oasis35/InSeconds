@@ -200,6 +200,7 @@ function toMe(me: RunsMeResponse): RunsMe {
     hasAccess: me.hasAccess,
     record: toRecord(me.record),
     pending: me.pending ? { sessionId: me.pending.sessionId, challengeCode: me.pending.challengeCode } : null,
+    shelf: (me.shelf ?? []).map(entry => ({ disc: { key: entry.disc.key, stars: entry.disc.stars }, count: entry.count })),
   };
 }
 
@@ -228,7 +229,10 @@ function toRound(round: RunRoundResponse | undefined): RunRound | null {
 }
 
 function toRoundScore(round: RunRoundScoreResponse): RunRoundScore {
-  return { round: round.round, score: round.score ?? null, objective: round.objective ?? null, passed: round.passed };
+  return {
+    round: round.round, score: round.score ?? null, objective: round.objective ?? null, passed: round.passed,
+    difficulty: round.difficulty ? toDifficulty(round.difficulty) : null,
+  };
 }
 
 function toFinish(finish: RunFinishResponse | undefined): RunFinish | null {
@@ -244,6 +248,9 @@ function toFinish(finish: RunFinishResponse | undefined): RunFinish | null {
     rounds: finish.rounds.map(toRoundScore),
     record: toRecord(finish.record),
     challengeCode: finish.challengeCode,
+    shortfall: finish.shortfall
+      ? { points: finish.shortfall.points, disc: { key: finish.shortfall.disc.key, stars: finish.shortfall.disc.stars } }
+      : null,
   };
 }
 

@@ -1525,6 +1525,7 @@ export interface RunFinishResponse {
     rounds: RunRoundScoreResponse[];
     record: RunRecordResponse | undefined;
     challengeCode: string;
+    shortfall?: RunShortfallResponse | undefined;
 
     [key: string]: any;
 }
@@ -1625,6 +1626,7 @@ export interface RunsMeResponse {
     hasAccess: boolean;
     record: RunRecordResponse | undefined;
     pending: RunPendingResponse | undefined;
+    shelf: RunShelfDiscResponse[];
 
     [key: string]: any;
 }
@@ -1755,6 +1757,20 @@ export interface RunCardValuesResponse {
     extendListenSeconds: number;
     hourglassSeconds: number;
     lowerTargetPercent: number;
+
+    [key: string]: any;
+}
+
+export interface RunShelfDiscResponse {
+    disc: RunDiscResponse;
+    count: number;
+
+    [key: string]: any;
+}
+
+export interface RunShortfallResponse {
+    points: number;
+    disc: RunDiscResponse;
 
     [key: string]: any;
 }

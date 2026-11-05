@@ -10,12 +10,13 @@ describe('RunFinishComponent', () => {
     status: 'lost', disc: { key: 'runs.discs.bronze', stars: 0 }, totalScore: 1284, roundsPassed: 2, foundCount: 2, trackCount: 20,
     tracks: [TRACK({ position: 1 }), TRACK({ position: 2 }), TRACK({ position: 6, round: 2, titleCorrect: false })],
     rounds: [
-      { round: 1, score: 400, objective: 200, passed: true },
-      { round: 2, score: 466, objective: 333, passed: true },
-      { round: 3, score: 418, objective: 501, passed: false },
-      { round: 4, score: null, objective: null, passed: false },
+      { round: 1, score: 400, objective: 200, passed: true, difficulty: 'safe' },
+      { round: 2, score: 466, objective: 333, passed: true, difficulty: 'risky' },
+      { round: 3, score: 418, objective: 501, passed: false, difficulty: 'easy' },
+      { round: 4, score: null, objective: null, passed: false, difficulty: null },
     ],
-    record: { bestScore: 2617, bestRoundsPassed: 4, isNew: false }, challengeCode: 'ABC234', ...overrides,
+    record: { bestScore: 2617, bestRoundsPassed: 4, isNew: false }, challengeCode: 'ABC234',
+    shortfall: { points: 83, disc: { key: 'runs.discs.silver', stars: 0 } }, ...overrides,
   });
 
   function render(value: RunFinish, canPlayAgain = true) {
@@ -60,7 +61,23 @@ describe('RunFinishComponent', () => {
     expect(cases[3].textContent).toContain('✕');
   });
 
-  it('« Partager la playlist » et « Nouvelle partie »', () => {
+  it('« Rejouer » en action principale, avec ce qui a manqué pour le disque suivant, avant le partage', () => {
+    const { element } = render(finish());
+    const again = element.querySelector<HTMLElement>('[data-testid="run-play-again"]')!;
+
+    expect(text(element, 'run-play-again')).toBe('runs.finished.playAgain');
+    expect(again.classList).toContain('app-button--primary');
+    expect(text(element, 'run-shortfall')).toBe('runs.finished.shortfallBefore runs.finished.shortfallPoints runs.finished.shortfallAfter');
+    expect(again.compareDocumentPosition(element.querySelector('[data-testid="run-share"]')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('une victoire : rien n\'a manqué', () => {
+    const { element } = render(finish({ status: 'won', shortfall: null }));
+
+    expect(element.querySelector('[data-testid="run-shortfall"]')).toBeNull();
+  });
+
+  it('« Partager mon score » et « Rejouer »', () => {
     const { fixture, element } = render(finish());
     const share = vi.fn();
     const again = vi.fn();
@@ -84,10 +101,11 @@ describe('RunFinishComponent', () => {
     expect(compare).toHaveBeenCalledTimes(1);
   });
 
-  it('sans accès, le jeu du jour à la place de « Nouvelle partie »', () => {
+  it('sans accès, le jeu du jour à la place de « Rejouer », sans ce qui a manqué', () => {
     const { element } = render(finish(), false);
 
     expect(element.querySelector('[data-testid="run-play-again"]')).toBeNull();
+    expect(element.querySelector('[data-testid="run-shortfall"]')).toBeNull();
     expect(element.querySelector('[data-testid="run-to-daily"]')?.getAttribute('href')).toBe('/daily');
   });
 });

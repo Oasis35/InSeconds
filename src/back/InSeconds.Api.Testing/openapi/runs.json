@@ -1593,6 +1593,16 @@
           },
           "challengeCode": {
             "type": "string"
+          },
+          "shortfall": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunShortfallResponse"
+              }
+            ]
           }
         }
       },
@@ -1978,7 +1988,8 @@
         "required": [
           "hasAccess",
           "record",
-          "pending"
+          "pending",
+          "shelf"
         ],
         "type": "object",
         "properties": {
@@ -2004,6 +2015,12 @@
                 "$ref": "#/components/schemas/RunPendingResponse"
               }
             ]
+          },
+          "shelf": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunShelfDiscResponse"
+            }
           }
         }
       },
@@ -2393,6 +2410,38 @@
           "lowerTargetPercent": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "RunShelfDiscResponse": {
+        "required": [
+          "disc",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "disc": {
+            "$ref": "#/components/schemas/RunDiscResponse"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "RunShortfallResponse": {
+        "required": [
+          "points",
+          "disc"
+        ],
+        "type": "object",
+        "properties": {
+          "points": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "disc": {
+            "$ref": "#/components/schemas/RunDiscResponse"
           }
         }
       }

@@ -332,6 +332,25 @@ public class DiscLadderTests
         Assert.Equal(new RunDisc("runs.discs.gold", stars), DiscLadder.Of(rounds, Discs));
 }
 
+public class DiscShelfTests
+{
+    private static readonly IReadOnlyList<string> Discs = RunsOptions.DefaultDiscs;
+
+    [Fact]
+    public void DuMoinsBonAuMeilleur_SansLePremierDisque_NiUneLigneVide()
+    {
+        var shelf = DiscShelf.Of(new Dictionary<int, int> { [4] = 1, [0] = 7, [1] = 3, [2] = 0 }, Discs);
+
+        Assert.Equal([new RunShelfDisc(new RunDisc("runs.discs.wax", 0), 3), new RunShelfDisc(new RunDisc("runs.discs.gold", 0), 1)], shelf);
+    }
+
+    [Fact]
+    public void AuDelaDeLEchelle_LesEtoilesFontUnAutreDisque() =>
+        Assert.Equal(
+            [new RunShelfDisc(new RunDisc("runs.discs.gold", 0), 1), new RunShelfDisc(new RunDisc("runs.discs.gold", 2), 2)],
+            DiscShelf.Of(new Dictionary<int, int> { [4] = 1, [5] = 2 }, Discs));
+}
+
 public class RunRecordTests
 {
     private static readonly DateTimeOffset Now = new(2026, 10, 23, 8, 0, 0, TimeSpan.Zero);

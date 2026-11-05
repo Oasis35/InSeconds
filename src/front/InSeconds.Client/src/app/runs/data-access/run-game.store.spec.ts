@@ -666,7 +666,7 @@ describe('RunGameStore', () => {
   describe('fin de partie', () => {
     const finish = (status: 'won' | 'lost') => ({
       status, disc: { key: 'runs.discs.gold', stars: 0 }, totalScore: 2500, roundsPassed: 4, foundCount: 18, trackCount: 20,
-      tracks: [], rounds: [], record: { bestScore: 2500, bestRoundsPassed: 4, isNew: true }, challengeCode: 'ABC234',
+      tracks: [], rounds: [], record: { bestScore: 2500, bestRoundsPassed: 4, isNew: true }, challengeCode: 'ABC234', shortfall: null,
     });
 
     beforeEach(async () => {
@@ -1114,7 +1114,7 @@ describe('RunGameStore', () => {
     it("sur /runs, la comparaison d'une partie finie se lit avec le code de la playlist de la fin", async () => {
       const finish = {
         status: 'won' as const, disc: { key: 'runs.discs.gold', stars: 0 }, totalScore: 2600, roundsPassed: 4, foundCount: 20, trackCount: 20, tracks: [],
-        rounds: [], record: null, challengeCode: 'XYZ789',
+        rounds: [], record: null, challengeCode: 'XYZ789', shortfall: null,
       };
       api.launchResult = { kind: 'ok', play: PLAY({ session: SESSION({ status: 'won', round: null, finish }), current: null }) };
       await store.init();
