@@ -385,10 +385,14 @@ test.describe('Admin - panneau technique et cooldown', () => {
 
     const panel = admin.techPanel();
     // Build local : aucun commit connu, le verdict le dit.
-    await expect(panel.getByTestId('deployment-verdict')).toHaveText('Commits inconnus (build local)');
+    await expect(panel.getByTestId('deployment-verdict')).toContainText('Commits inconnus (build local)');
+    // Les commits sont repliés sous le verdict, et se déplient au clic.
+    await expect(panel.getByTestId('deployment-commits')).toHaveCount(0);
+    await panel.getByTestId('deployment-verdict').click();
+    await expect(panel.getByTestId('deployment-commits')).toContainText('Front');
     // Les tâches sont en pause dans l'hôte de test : aucune n'a tourné.
     await expect(panel.getByTestId('nightly-job')).toHaveCount(4);
-    await expect(panel.getByTestId('nightly-job').first()).toContainText('Contrôle des extraits');
+    await expect(panel.getByTestId('nightly-job').first()).toContainText('Extraits');
     await expect(panel.getByRole('link', { name: 'Hangfire' })).toHaveAttribute('href', /\/jobs$/);
     await expect(panel.getByTestId('ci-line')).toHaveCount(2);
     await expect(admin.tab('Actions')).toHaveCount(0);
@@ -401,9 +405,9 @@ test.describe('Admin - panneau technique et cooldown', () => {
 
     const panel = admin.techPanel();
     await expect(panel.getByTestId('tech-catalogue')).toContainText('Sans extrait');
-    await expect(panel.getByTestId('tech-catalogue')).toContainText("Formes d'onde manquantes");
+    await expect(panel.getByTestId('tech-catalogue')).toContainText("Sans forme d'onde");
     // Le pool des E2E a 50 morceaux jouables et 7 jours de cooldown : le défi de demain a de quoi être tiré.
-    await expect(panel.getByTestId('next-challenge')).toContainText(/Défi de demain\s*prêt · \d+ hors cooldown/);
+    await expect(panel.getByTestId('next-challenge')).toContainText(/Demain\s*prêt · \d+ tirables/);
 
     await page.getByRole('link', { name: /^Morceaux/ }).click();
     await page.getByTestId('sort-hardest').click();
