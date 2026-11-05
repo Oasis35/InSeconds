@@ -1,6 +1,6 @@
 # Run (Platines) : proto 2, palier, difficulté et coups de pouce
 
-Règles et écrans du proto 2, décidés avec Clément le 05/11/2026. **Rien de ce document n'est livré** : le proto 1 ([`regles.md`](regles.md)) reste la référence de ce qui tourne. Les chiffres marqués « provisoire » se règlent après les parties de test. Maquette interactive : artifact « Platines, palier et pari » sur claude.ai (privé). Plan et tickets : [`plan.md`](plan.md).
+Règles et écrans du proto 2, décidés avec Clément le 05/11/2026. **Rien de ce document n'est livré** : le proto 1 ([`regles.md`](regles.md)) reste la référence de ce qui tourne. Les chiffres marqués « provisoire » se règlent après les parties de test. Maquette interactive : artifact « Platines, palier et pari » sur claude.ai (privé) ; les captures de [`maquettes/`](maquettes/) (`proto2-*.png`) en sont tirées le 05/11/2026. Plan et tickets : [`plan.md`](plan.md).
 
 ## Ce que le proto 2 change
 
@@ -38,9 +38,13 @@ Du haut vers le bas, sans phrase d'explication :
 
 Le disque se pose, le score monte jusqu'au repère, les cartes arrivent une à une : animations GSAP par la façade `ui/motion`, rien entre le toucher et `play()` (pièges 44 et 46), `prefers-reduced-motion` respecté.
 
+![Écran de palier](maquettes/proto2-palier.png)
+
 ## La difficulté de la manche
 
 Trois colonnes à plat sur une base commune, hauteur proportionnelle au **plafond de points** de la manche, avec en pointillé l'**objectif** : un cadenas et son chiffre posés sur la frontière, la zone dessous assombrie. Titre « Difficulté ? », « Ton score » en haut, le total atteignable (« → 1250 ») sous chaque plafond, les bonus en main en bas. Aucune colonne n'est présélectionnée.
+
+![Écran « Difficulté ? »](maquettes/proto2-difficulte.png)
 
 | Difficulté | Objectif (provisoire) | Plafond de la manche (provisoire) |
 |---|---|---|
@@ -79,6 +83,8 @@ Des cartes à **usage unique**, jouées sur le morceau en cours. **2 emplacement
 - **Rien d'une carte n'identifie un morceau avant la réponse** (piège 31) : « Année » et « Initiales » sont servies par le serveur à l'activation, jamais envoyées d'avance. « Trois choix » : les deux fausses réponses viennent du serveur, qui ne dit pas laquelle est juste.
 - Sur l'écran de manche, les cartes sont **au-dessus du champ de saisie** ; « Passer (0 pts) » reste un simple lien souligné sous « Valider ».
 - Une carte jouée monte dans la carte du morceau (animation), le serveur en tient le compte (une carte ne se joue qu'une fois).
+
+![Manche 2 avec les cartes en main](maquettes/proto2-manche-cartes.png)
 
 ## Fin du run, partage et viralité
 
