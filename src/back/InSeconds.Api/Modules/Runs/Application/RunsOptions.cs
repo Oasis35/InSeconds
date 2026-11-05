@@ -37,7 +37,8 @@ public sealed class RunsOptions
     /// Les trois difficultés du proto 2 (provisoires, docs/runs/proto2.md) : « Sûre » reprend le seuil et les points du proto 1 ; « Facile » vise
     /// 60 % de ce seuil pour deux tiers des points, « Risquée » 150 % pour un tiers de points en plus.
     /// </summary>
-    public static readonly RunDifficultySetting[] DefaultDifficulties =
+    /// <remarks>Une liste neuve à chaque lecture : ses éléments ont des accesseurs, une modification ne touche jamais les défauts.</remarks>
+    public static RunDifficultySetting[] DefaultDifficulties =>
     [
         new() { Difficulty = "easy", PointsFactor = 0.67m, ObjectiveFactor = 0.6m },
         new() { Difficulty = "safe", PointsFactor = 1m, ObjectiveFactor = 1m },
@@ -88,27 +89,14 @@ public sealed class RunsOptions
     public RunRules ToRules()
     {
         var thresholds = EffectiveThresholdPercents.ToArray();
-        var difficulties = EffectiveDifficulties
-            .Select(d => (Difficulty: RunDifficulties.Parse(d.Difficulty)!.Value, d.PointsFactor, d.ObjectiveFactor))
-            .OrderBy(d => d.Difficulty)
-            .ToList();
-        var roundRules = Enumerable.Range(1, Rounds).Select(round =>
-        {
-            // La première manche n'a pas de choix : le run démarre comme au proto 1.
-            var offered = round == 1 ? difficulties.Where(d => d.Difficulty == RunDifficulty.Safe) : difficulties;
-            return new RunRoundRules(round, offered.Select(d => new RunDifficultyOption(
-                d.Difficulty,
-                d.PointsFactor,
-                (int)decimal.Round(thresholds[round - 1] * d.ObjectiveFactor, 0, MidpointRounding.AwayFromZero),
-                IsBoss(round, d.Difficulty) ? BossListenSeconds : ListenSeconds)).ToList());
-        }).ToList();
+        var roundRules = RunRoundPlan.Plan(Rounds, thresholds, EffectiveProfiles(), ListenSeconds, BossListenSeconds);
         return new RunRules(
             Rounds, TracksPerRound, ListenSeconds, thresholds, MinMultiplier, MaxMultiplier, AnswerSeconds, roundRules, ReservePerRound);
     }
 
-    // La manche boss : la dernière, en « Risquée », quand il y a plusieurs manches et une écoute de boss.
-    private bool IsBoss(int round, RunDifficulty difficulty) =>
-        BossListenSeconds > 0 && Rounds > 1 && round == Rounds && difficulty == RunDifficulty.Risky;
+    /// <summary>Les difficultés des réglages, lues (à n'appeler qu'une fois les noms vérifiés).</summary>
+    internal List<RunDifficultyProfile> EffectiveProfiles() =>
+        EffectiveDifficulties.Select(d => new RunDifficultyProfile(RunDifficulties.Parse(d.Difficulty)!.Value, d.PointsFactor, d.ObjectiveFactor)).ToList();
 
     public static RunRules DefaultRules() => new RunsOptions().ToRules();
 }
@@ -158,9 +146,15 @@ public static class RunsOptionsChecks
             problems.Add("Runs:Difficulties : de une à trois difficultés distinctes parmi easy, safe et risky, safe comprise.");
         if (difficulties.Any(d => d.PointsFactor is <= 0 or > 5 || d.ObjectiveFactor is <= 0 or > 3))
             problems.Add("Runs:Difficulties : un facteur de points de plus de 0 à 5, un facteur d'objectif de plus de 0 à 3.");
-        else if (thresholds.Count == options.Rounds
-                 && thresholds.Any(t => difficulties.Any(d => decimal.Round(t * d.ObjectiveFactor, 0, MidpointRounding.AwayFromZero) < 1)))
-            problems.Add("Runs:Difficulties : chaque objectif doit valoir au moins 1 % du maximum de la manche.");
+        else if (thresholds.Count == options.Rounds && !keys.Contains(null))
+        {
+            var profiles = options.EffectiveProfiles();
+            if (thresholds.Any(t => profiles.Exists(p => RunRoundPlan.ObjectivePercentOf(t, p.ObjectiveFactor) < 1)))
+                problems.Add("Runs:Difficulties : chaque objectif doit valoir au moins 1 % du maximum de la manche.");
+            // Un objectif au-dessus du plafond rendrait la manche impossible à passer, même sans faute.
+            if (thresholds.Any(t => profiles.Exists(p => !RunRoundPlan.IsReachable(t, p))))
+                problems.Add("Runs:Difficulties : chaque objectif doit rester sous le plafond de sa difficulté (seuil × facteur d'objectif ≤ 100 × facteur de points).");
+        }
 
         if (options.BossListenSeconds != 0
             && (options.BossListenSeconds < 0 || options.BossListenSeconds > options.ListenSeconds

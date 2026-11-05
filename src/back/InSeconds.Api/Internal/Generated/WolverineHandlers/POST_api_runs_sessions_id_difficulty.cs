@@ -122,7 +122,7 @@ namespace Internal.Generated.WolverineHandlers
 
                 
                 // The actual HTTP request handler execution
-                var runSessionResponse_response = await InSeconds.Api.Modules.Runs.Application.ChooseRunDifficultyEndpoint.Post(request, playableRun, runPlayer, _timeProvider, _loggerForMessage, httpContext.RequestAborted).ConfigureAwait(false);
+                var runPlayResponse_response = await InSeconds.Api.Modules.Runs.Application.ChooseRunDifficultyEndpoint.Post(request, playableRun, runPlayer, _timeProvider, _loggerForMessage, httpContext.RequestAborted).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware
@@ -133,7 +133,7 @@ namespace Internal.Generated.WolverineHandlers
                 // GH-2917/GH-4742: flush the outbox after the commit and before the response is written
                 await Wolverine.EntityFrameworkCore.EfCoreOutboxFlushing.FlushOutgoingMessagesAsync(messageContext).ConfigureAwait(false);
                 // Writing the response body to JSON because this was the first 'return variable' in the method signature
-                await WriteJsonAsync(httpContext, runSessionResponse_response, 404);
+                await WriteJsonAsync(httpContext, runPlayResponse_response, 404);
             }
             catch (System.Exception)
             {

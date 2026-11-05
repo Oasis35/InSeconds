@@ -52,7 +52,48 @@ public sealed record RunDifficultyOption(RunDifficulty Difficulty, decimal Point
 }
 
 /// <summary>Les difficultés proposées pour une manche (une seule : pas de choix, comme la première manche).</summary>
-public sealed record RunRoundRules(int Round, IReadOnlyList<RunDifficultyOption> Options)
+public sealed record RunRoundRules(int Round, IReadOnlyList<RunDifficultyOption> Options);
+
+/// <summary>Une difficulté telle que les réglages la décrivent, avant d'être figée pour chaque manche.</summary>
+/// <param name="ObjectiveFactor">L'objectif de la manche, en multiple du seuil de la manche (celui de « Sûre »).</param>
+public sealed record RunDifficultyProfile(RunDifficulty Difficulty, decimal PointsFactor, decimal ObjectiveFactor);
+
+/// <summary>
+/// Les difficultés de chaque manche d'une playlist, à partir des seuils et des difficultés des réglages : la première manche se joue en « Sûre »
+/// seule (le run démarre comme au proto 1), les suivantes proposent toutes les difficultés, et la dernière en « Risquée » est la manche boss
+/// (écoute raccourcie). L'objectif d'une difficulté est le seuil de la manche multiplié par son facteur, arrondi au pourcentage le plus proche.
+/// </summary>
+public static class RunRoundPlan
 {
-    public bool HasChoice => Options.Count > 1;
+    public static int ObjectivePercentOf(int thresholdPercent, decimal objectiveFactor) =>
+        (int)decimal.Round(thresholdPercent * objectiveFactor, 0, MidpointRounding.AwayFromZero);
+
+    /// <summary>
+    /// L'objectif reste atteignable : en pourcentage du maximum sans facteur, il ne dépasse pas le plafond de la difficulté (100 × facteur de points).
+    /// </summary>
+    public static bool IsReachable(int thresholdPercent, RunDifficultyProfile profile)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        return ObjectivePercentOf(thresholdPercent, profile.ObjectiveFactor) <= 100m * profile.PointsFactor;
+    }
+
+    /// <param name="bossListenSeconds">L'écoute de la manche boss ; 0 : pas de manche boss.</param>
+    public static IReadOnlyList<RunRoundRules> Plan(
+        int rounds, IReadOnlyList<int> thresholdPercents, IReadOnlyCollection<RunDifficultyProfile> profiles, decimal listenSeconds,
+        decimal bossListenSeconds)
+    {
+        ArgumentNullException.ThrowIfNull(thresholdPercents);
+        ArgumentNullException.ThrowIfNull(profiles);
+        var ordered = profiles.OrderBy(p => p.Difficulty).ToList();
+        return Enumerable.Range(1, rounds).Select(round =>
+        {
+            var offered = round == 1 ? ordered.Where(p => p.Difficulty == RunDifficulty.Safe) : ordered;
+            var boss = bossListenSeconds > 0 && rounds > 1 && round == rounds;
+            return new RunRoundRules(round, offered.Select(p => new RunDifficultyOption(
+                p.Difficulty,
+                p.PointsFactor,
+                ObjectivePercentOf(thresholdPercents[round - 1], p.ObjectiveFactor),
+                boss && p.Difficulty == RunDifficulty.Risky ? bossListenSeconds : listenSeconds)).ToList());
+        }).ToList();
+    }
 }

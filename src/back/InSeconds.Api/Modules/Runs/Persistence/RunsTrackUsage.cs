@@ -25,7 +25,6 @@ public sealed class RunsTrackUsage(InSecondsDbContext db) : ITrackUsage
             .Where(t => trackIds.Contains(t.TrackId))
             .Select(t => t.TrackId)
             .Union(db.Set<RunChallengeReserveTrack>().AsNoTracking().Where(t => trackIds.Contains(t.TrackId)).Select(t => t.TrackId))
-            .Distinct()
             .ToListAsync(ct);
         return used.ToDictionary(id => id, _ => TrackUsage.None with { UsedByMode = true });
     }

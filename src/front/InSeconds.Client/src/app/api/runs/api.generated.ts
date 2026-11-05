@@ -1027,7 +1027,7 @@ export class RunsClient {
     /**
      * @return OK
      */
-    chooseRunDifficulty(id: number, body: ChooseRunDifficulty): Observable<RunSessionResponse> {
+    chooseRunDifficulty(id: number, body: ChooseRunDifficulty): Observable<RunPlayResponse> {
         let url_ = this.baseUrl + "/api/runs/sessions/{id}/difficulty";
         if (id === undefined || id === null)
             throw new globalThis.Error("The parameter 'id' must be defined.");
@@ -1053,14 +1053,14 @@ export class RunsClient {
                 try {
                     return this.processChooseRunDifficulty(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<RunSessionResponse>;
+                    return _observableThrow(e) as any as Observable<RunPlayResponse>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<RunSessionResponse>;
+                return _observableThrow(response_) as any as Observable<RunPlayResponse>;
         }));
     }
 
-    protected processChooseRunDifficulty(response: HttpResponseBase): Observable<RunSessionResponse> {
+    protected processChooseRunDifficulty(response: HttpResponseBase): Observable<RunPlayResponse> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -1070,7 +1070,7 @@ export class RunsClient {
         if (status === 200) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RunSessionResponse;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RunPlayResponse;
             return _observableOf(result200);
             }));
         } else if (status === 400) {

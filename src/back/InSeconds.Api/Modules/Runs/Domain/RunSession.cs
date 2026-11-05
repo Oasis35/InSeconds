@@ -156,7 +156,8 @@ public sealed class RunSession
 
     /// <summary>
     /// Le joueur peut encore choisir la difficulté de cette manche : c'est la manche en cours, elle propose un choix qu'il n'a pas fait, et rien n'y
-    /// a commencé (aucune réponse, ni écoute ni chrono du morceau en cours). Choisir après avoir entendu le premier morceau serait tricher.
+    /// a commencé (aucune réponse, ni écoute ni chrono du morceau en cours). Choisir après avoir entendu le premier morceau serait tricher : son
+    /// extrait n'est envoyé qu'après le choix (<c>RunPlayer.AdvanceAsync</c>).
     /// </summary>
     public bool CanChooseDifficulty(RunChallenge challenge, int round) =>
         CurrentRound(challenge) == round
@@ -167,8 +168,8 @@ public sealed class RunSession
         && RoundOfCurrentTrack().ListenedSeconds == 0;
 
     /// <summary>
-    /// Le joueur choisit la difficulté de la manche en cours, avant son premier son. Le chrono du morceau ne peut partir qu'après le choix (son extrait
-    /// est déjà parti avec la réponse d'avant, pour que le toucher lance le son sans attendre : écran de palier et de difficulté ne mangent pas son temps).
+    /// Le joueur choisit la difficulté de la manche en cours, avant son premier son. L'extrait du premier morceau de la manche part avec la réponse
+    /// au choix : le chrono ne court qu'à partir de là, les écrans de palier et de difficulté ne mangent pas son temps.
     /// </summary>
     public void ChooseDifficulty(RunChallenge challenge, int round, RunDifficulty difficulty, DateTimeOffset now)
     {
@@ -178,8 +179,6 @@ public sealed class RunSession
         if (challenge.Rules.OptionOf(round, difficulty) is null)
             throw new ArgumentException("Cette difficulté n'est pas proposée pour cette manche.", nameof(difficulty));
         _rounds.Add(RunSessionRound.Create((short)round, difficulty, now));
-        if (CurrentServedAt is not null)
-            CurrentServedAt = now;
     }
 
     /// <summary>La durée d'écoute fixe du morceau en cours, à la difficulté de sa manche (la manche boss est plus courte).</summary>
@@ -258,10 +257,8 @@ public sealed class RunSession
         var track = CurrentTrackOf(challenge);
         if (IsLate(challenge.Rules, now))
             outcome = outcome with { ArtistCorrect = false, TitleCorrect = false };
+        // Une manche à choix jouée sans choix (navigateur d'avant le proto 2) se joue en « Sûre », sans ligne : seul un vrai choix est noté.
         var option = OptionOf(challenge, track.Round);
-        // Une manche à choix jouée sans choix (navigateur d'avant le proto 2) se joue en « Sûre », et le dit.
-        if (challenge.Rules.HasChoice(track.Round) && _rounds.TrueForAll(r => r.Round != track.Round))
-            _rounds.Add(RunSessionRound.Create(track.Round, option.Difficulty, now));
         var points = scoring.Points(outcome, option.Scale(track.Multiplier));
         return Record(challenge, RunAnswer.Create(track.Position, outcome.ArtistCorrect, outcome.TitleCorrect, points, neutralized: false, now), scoring, now);
     }
@@ -285,7 +282,14 @@ public sealed class RunSession
 
     /// <summary>La manche <paramref name="round"/> de cette partie (score, objectif, maximum), à sa difficulté.</summary>
     public RoundProgress RoundProgressOf(RunChallenge challenge, int round, IRunScoringPolicy scoring) =>
-        RunGauge.Of(challenge, _answers, round, scoring, OptionOf(challenge, round));
+        RoundProgressAt(challenge, round, OptionOf(challenge, round), scoring);
+
+    /// <summary>
+    /// La manche <paramref name="round"/> de cette partie si elle se jouait à cette difficulté : chaque colonne de l'écran « Difficulté ? ». Toute jauge
+    /// passe par la partie, qui sait ce qui la modifie.
+    /// </summary>
+    public RoundProgress RoundProgressAt(RunChallenge challenge, int round, RunDifficultyOption option, IRunScoringPolicy scoring) =>
+        RunGauge.Of(challenge, _answers, round, scoring, option);
 
     private RunStep Record(RunChallenge challenge, RunAnswer answer, IRunScoringPolicy scoring, DateTimeOffset now)
     {

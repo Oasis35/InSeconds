@@ -100,6 +100,7 @@ public static class LaunchRunEndpoint
 /// <summary>Ce que montre le lien d'une playlist (écran « lien reçu ») : jamais un morceau (piège 31), ni le nombre de joueurs.</summary>
 /// <param name="AuthorPseudo">Le pseudo de son auteur ; vide pour un invité ou un compte effacé (« Invité » à l'écran).</param>
 /// <param name="TrackCount">Ses morceaux (règles figées).</param>
+/// <param name="ListenSeconds">L'écoute normale d'un morceau ; la manche boss en Risquée est plus courte.</param>
 /// <param name="MyStatus">La partie du joueur sur cette playlist : <c>none</c> (pas jouée), <c>pending</c>, <c>won</c>, <c>lost</c> ou <c>abandoned</c>.</param>
 /// <param name="MySessionId">Sa partie sur cette playlist, s'il en a une.</param>
 /// <param name="AnswerSeconds">Le chrono de chaque morceau (règles figées) ; 0 : pas de chrono.</param>
@@ -449,10 +450,11 @@ public static class ChooseRunDifficultyEndpoint
     }
 
     /// <summary>
-    /// <c>POST /api/runs/sessions/{id}/difficulty</c> : le joueur choisit la difficulté de la manche en cours, avant son premier son (le toucher d'une
-    /// colonne lance aussi l'extrait, déjà reçu avec la réponse d'avant : le navigateur envoie ce choix sans l'attendre, puis annonce le premier son).
-    /// Rend l'état de la partie, objectif et plafond de la manche à jour. 409 <c>runs.difficulty_locked</c> si la manche n'est pas celle en cours, ne
-    /// propose pas de choix, est déjà choisie ou a commencé ; 400 pour une difficulté qu'elle ne propose pas.
+    /// <c>POST /api/runs/sessions/{id}/difficulty</c> : le joueur choisit la difficulté de la manche en cours, avant son premier son. Le premier
+    /// morceau de la manche n'a pas encore d'extrait (rien ne part avant le choix, pour qu'on ne mise pas en connaissant le morceau) : la réponse le
+    /// donne, avec la partie à jour (objectif et plafond de la manche). Le navigateur déverrouille le son dans le toucher de la colonne, avant
+    /// l'appel, puis le lance à la réponse (iPhone, comme « Commencer »). 409 <c>runs.difficulty_locked</c> si la manche n'est pas celle en cours,
+    /// ne propose pas de choix, est déjà choisie ou a commencé ; 400 pour une difficulté qu'elle ne propose pas.
     /// </summary>
     [Authorize]
     [WolverinePost("/api/runs/sessions/{id}/difficulty", OperationId = "chooseRunDifficulty")]
@@ -460,15 +462,15 @@ public static class ChooseRunDifficultyEndpoint
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public static async Task<RunSessionResponse> Post(
+    public static async Task<RunPlayResponse> Post(
         ChooseRunDifficulty request, [NotBody] PlayableRun loaded, [NotBody] RunPlayer player, TimeProvider time, ILogger<ChooseRunDifficulty> logger,
         CancellationToken ct)
     {
         var (session, challenge) = loaded;
         var difficulty = RunDifficulties.Parse(request.Difficulty)!.Value;
         session.ChooseDifficulty(challenge, request.Round, difficulty, time.GetUtcNow());
-        RunsLog.DifficultyChosen(logger, session.Id, session.PlayerId, request.Round, request.Difficulty);
-        return await player.StateAsync(await player.LoadAsync(session, challenge, ct), ct);
+        RunsLog.DifficultyChosen(logger, session.Id, session.PlayerId, request.Round, RunDifficulties.KeyOf(difficulty));
+        return await player.AdvanceAsync(await player.LoadAsync(session, challenge, ct), answered: null, revealed: null, isResuming: false, ct);
     }
 }
 

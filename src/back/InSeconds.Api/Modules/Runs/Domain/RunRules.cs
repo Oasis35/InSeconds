@@ -63,8 +63,4 @@ public sealed record RunRules(
 
     /// <summary>La difficulté d'une manche que le joueur n'a pas choisie : « Sûre » si elle est proposée, sinon la première.</summary>
     public RunDifficultyOption DefaultOptionOf(int round) => OptionOf(round, RunDifficulty.Safe) ?? OptionsOf(round)[0];
-
-    /// <summary>La plus longue écoute d'un morceau de la playlist, toutes difficultés confondues.</summary>
-    public decimal LongestListenSeconds =>
-        Enumerable.Range(1, Rounds).SelectMany(OptionsOf).Select(o => o.ListenSeconds).DefaultIfEmpty(ListenSeconds).Max();
 }

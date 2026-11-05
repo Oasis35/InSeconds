@@ -50,6 +50,7 @@ public class RunsOptionsTests
         { new RunsOptions { Difficulties = [new() { Difficulty = "safe", PointsFactor = 0 }] }, "Runs:Difficulties" },
         { new RunsOptions { Difficulties = [new() { Difficulty = "safe", ObjectiveFactor = 3.5m }] }, "Runs:Difficulties" },
         { new RunsOptions { Difficulties = [new() { Difficulty = "safe", ObjectiveFactor = 0.001m }] }, "Runs:Difficulties" },
+        { new RunsOptions { Difficulties = [new() { Difficulty = "safe" }, new() { Difficulty = "risky", PointsFactor = 1m, ObjectiveFactor = 1.5m }] }, "plafond" },
         { new RunsOptions { BossListenSeconds = 11 }, "Runs:BossListenSeconds" },
         { new RunsOptions { BossListenSeconds = -1 }, "Runs:BossListenSeconds" },
         { new RunsOptions { BossListenSeconds = 2.005m }, "Runs:BossListenSeconds" },

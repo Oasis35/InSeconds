@@ -5,7 +5,7 @@ namespace InSeconds.Api.Modules.Runs.Domain;
 /// <param name="Complete">Tous les morceaux de la manche ont une réponse (neutralisés compris) : elle est jouée.</param>
 /// <param name="MaxScore">Ce que rapportent au plus ses morceaux non neutralisés, à la difficulté de la manche (son plafond).</param>
 /// <param name="Difficulty">La difficulté de la manche (choisie, ou « Sûre » sans choix).</param>
-public sealed record RoundProgress(int Round, int Score, int Objective, int MaxScore, bool Complete, RunDifficulty Difficulty = RunDifficulty.Safe)
+public sealed record RoundProgress(int Round, int Score, int Objective, int MaxScore, bool Complete, RunDifficulty Difficulty)
 {
     /// <summary>L'objectif est atteint (<c>&gt;=</c>). Une manche entièrement neutralisée (objectif 0) est passée.</summary>
     public bool Reached => Score >= Objective;

@@ -53,6 +53,10 @@ public sealed class RunPlayer(
         while (session.IsPending)
         {
             var track = run.TrackAt(session.NextPosition)!;
+            // Une manche dont la difficulté reste à choisir : rien de son premier morceau ne part (ni extrait, ni neutralisation) avant le choix,
+            // sinon le joueur miserait en connaissant le morceau. Le choix (POST …/difficulty) reprend ici.
+            if (session.CanChooseDifficulty(challenge, track.Round))
+                break;
             var info = run.Tracks[track.TrackId];
             var preview = await previews.GetAsync(info, ct);
             if (preview.Availability != PreviewAvailability.Missing)
@@ -156,7 +160,7 @@ internal static class RunViews
 
     public static RunCurrentTrackResponse Current(
         RunSession session, RunChallenge challenge, RunChallengeTrack track, string? previewUrl, string? waveform) =>
-        new(track.Position, track.Round, PositionInRound(challenge, track), previewUrl, session.OptionOf(challenge, track.Round).ListenSeconds, waveform);
+        new(track.Position, track.Round, PositionInRound(challenge, track), previewUrl, session.ListenSecondsOf(challenge), waveform);
 
     public static string DifficultyOf(RoundProgress progress) => RunDifficulties.KeyOf(progress.Difficulty);
 
@@ -213,7 +217,7 @@ internal static class RunViews
     private static RunDifficultyChoiceResponse DifficultyChoice(LoadedRun run, int round, IRunScoringPolicy scoring) =>
         new(round, run.Challenge.Rules.OptionsOf(round).OrderBy(o => o.Difficulty).Select(option =>
         {
-            var progress = RunGauge.Of(run.Challenge, run.Session.Answers, round, scoring, option);
+            var progress = run.Session.RoundProgressAt(run.Challenge, round, option, scoring);
             return new RunDifficultyOptionResponse(RunDifficulties.KeyOf(option.Difficulty), progress.Objective, progress.MaxScore, option.ListenSeconds);
         }).ToList());
 

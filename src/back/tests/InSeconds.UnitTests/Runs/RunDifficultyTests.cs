@@ -60,7 +60,6 @@ public class RunDifficultyTests
         Assert.Equal(5m, Rules.OptionOf(4, RunDifficulty.Risky)!.ListenSeconds);
         Assert.Equal(10m, Rules.OptionOf(4, RunDifficulty.Safe)!.ListenSeconds);
         Assert.Equal(10m, Rules.OptionOf(3, RunDifficulty.Risky)!.ListenSeconds);
-        Assert.Equal(10m, Rules.LongestListenSeconds);
 
         var noBoss = new RunsOptions { BossListenSeconds = 0 }.ToRules();
         Assert.Equal(10m, noBoss.OptionOf(4, RunDifficulty.Risky)!.ListenSeconds);
@@ -149,7 +148,7 @@ public class RunDifficultyTests
     }
 
     [Fact]
-    public void SansChoix_LaMancheSeJoueEnSure_EtLeDit()
+    public void SansChoix_LaMancheSeJoueEnSure_SansRienNoter()
     {
         var challenge = Challenge();
         var session = InRoundTwo(challenge);
@@ -157,8 +156,9 @@ public class RunDifficultyTests
         session.Answer(challenge, Found, Scoring, Now);
 
         Assert.Equal(133, session.Answers[^1].Points);
-        var round = Assert.Single(session.Rounds);
-        Assert.Equal((2, RunDifficulty.Safe), (round.Round, round.Difficulty));
+        // Seul un vrai choix est noté : la copie des données ne prête pas au joueur un choix qu'il n'a pas fait.
+        Assert.Empty(session.Rounds);
+        Assert.Equal(RunDifficulty.Safe, session.RoundProgressOf(challenge, 2, Scoring).Difficulty);
         Assert.False(session.CanChooseDifficulty(challenge, 2));
     }
 
@@ -193,16 +193,29 @@ public class RunDifficultyTests
     }
 
     [Fact]
-    public void LeChoix_RepartLaBorneDuChrono_EcransDePalierEtDeDifficulteNeMangentPasLeTemps()
+    public void LeChoix_NeLancePasLeChrono_IlPartDeLEnvoiDeLExtraitQuiSuit()
     {
         var challenge = Challenge();
         var session = InRoundTwo(challenge);
-        session.ServeCurrent(Now);
 
         session.ChooseDifficulty(challenge, 2, RunDifficulty.Safe, Now.AddMinutes(3));
 
-        Assert.Equal(Now.AddMinutes(3), session.CurrentServedAt);
-        Assert.Null(session.ClockRemaining(challenge.Rules, Now.AddMinutes(3).AddSeconds(10)));
+        // L'extrait du premier morceau de la manche n'est pas encore parti : rien ne court.
+        Assert.Null(session.CurrentServedAt);
+        Assert.Null(session.ClockRemaining(challenge.Rules, Now.AddMinutes(10)));
+    }
+
+    [Fact]
+    public void UnPremierMorceauNeutralise_LaisseLeChoixOuvert()
+    {
+        var challenge = Challenge();
+        var session = InRoundTwo(challenge);
+        session.ChooseDifficulty(challenge, 2, RunDifficulty.Safe, Now);
+        var other = InRoundTwo(challenge);
+
+        other.Neutralize(challenge, Scoring, Now);
+
+        Assert.True(other.CanChooseDifficulty(challenge, 2));
     }
 
     [Fact]

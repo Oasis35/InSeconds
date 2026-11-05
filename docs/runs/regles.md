@@ -29,7 +29,7 @@ Règles validées par Clément le 17/10/2026. Les écrans qui les montrent : [`e
 
 ## La jauge
 
-- Chaque manche a un **objectif** : un pourcentage du maximum de la manche, **40, 50, 60 puis 70 %**, soit 200, 333, 501 et 700 points. Le score de la manche doit l'atteindre (`>=`) pour **débloquer la manche suivante**.
+- Chaque manche a un **objectif** : un pourcentage du maximum de la manche, **45, 55, 65 puis 75 %**, soit 225, 366, 543 et 750 points (40, 50, 60 et 70 % pour les playlists créées avant le 05/11/2026, qui gardent leurs règles figées). Le proto 2 en fait l'objectif de « Sûre » ([`proto2.md`](proto2.md)). Le score de la manche doit l'atteindre (`>=`) pour **débloquer la manche suivante**.
 - La jauge se remplit à chaque réponse. Pleine avant la fin de la manche, on joue quand même les morceaux restants : **la jauge ne sert qu'à passer, ce qui compte ce sont les points** (Clément, 17/10).
 - **Morceau sans extrait** (Deezer l'a retiré depuis le tirage) : **neutralisé** par le serveur. Il ne rapporte rien et sort du maximum de la manche ; l'objectif se recalcule sur les morceaux restants. Une manche entièrement neutralisée est passée. Une panne passagère de Deezer ne neutralise pas : le joueur réessaie.
 
@@ -71,7 +71,7 @@ La suite de l'échelle est prévue pour quand un run aura plus de 4 manches : pl
 
 ## Réglages
 
-Tous relus à chaud (`Runs:…` dans `infra.settings`), contrôlés au démarrage de l'API et à l'usage : nombre de manches (4), morceaux par manche (5), durée d'écoute (10 s), objectifs en pourcentage (40, 50, 60, 70), multiplicateurs minimum et maximum (×1 et ×2), échelle des disques.
+Tous relus à chaud (`Runs:…` dans `infra.settings`), contrôlés au démarrage de l'API et à l'usage : nombre de manches (4), morceaux par manche (5), durée d'écoute (10 s), objectifs en pourcentage (45, 55, 65, 75), multiplicateurs minimum et maximum (×1 et ×2), échelle des disques.
 
 ## Ce qui n'est pas dans le proto 1
 

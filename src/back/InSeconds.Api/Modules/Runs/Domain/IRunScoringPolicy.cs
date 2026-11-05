@@ -3,12 +3,13 @@ using InSeconds.Api.Modules.Gameplay.Contracts;
 namespace InSeconds.Api.Modules.Runs.Domain;
 
 /// <summary>
-/// Les points d'un morceau de run. Les bonus du proto 2 viendront décorer cette politique ; la jauge en lit le maximum d'un morceau pour fixer
-/// l'objectif d'une manche.
+/// Les points d'un morceau de run, à un multiplicateur **effectif** : celui de la manche du morceau, mis à l'échelle par la partie (facteur de la
+/// difficulté choisie, puis les coups de pouce). Ce ne sont pas des décorateurs enregistrés dans le conteneur (la politique est unique pour toutes
+/// les parties) : la partie passe à chaque appel ce qui s'applique à ce morceau. La jauge en lit le maximum d'un morceau.
 /// </summary>
 public interface IRunScoringPolicy
 {
-    /// <summary>Les points de cette réponse, au multiplicateur de la manche du morceau.</summary>
+    /// <summary>Les points de cette réponse, au multiplicateur effectif du morceau.</summary>
     int Points(RoundOutcome outcome, decimal multiplier);
 
     /// <summary>Ce qu'un morceau rapporte au plus, à ce multiplicateur.</summary>

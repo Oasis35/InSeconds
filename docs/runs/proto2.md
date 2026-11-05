@@ -8,9 +8,9 @@ Le proto 1 enchaîne 4 manches sans choix. Le proto 2 ajoute, entre deux manches
 
 Trois idées, rien d'autre :
 
-1. [#498](https://github.com/Oasis35/InSeconds/issues/498) : un **écran de palier** après chaque manche passée ;
-2. [#499](https://github.com/Oasis35/InSeconds/issues/499) : un **choix de difficulté** (Facile, Sûre, Risquée) qui fixe l'objectif et le plafond de points de la manche ;
-3. [#500](https://github.com/Oasis35/InSeconds/issues/500) : des **coups de pouce** (cartes), 2 en main, à jouer sur un morceau.
+1. un **écran de palier** après chaque manche passée ([#500](https://github.com/Oasis35/InSeconds/issues/500)) ;
+2. un **choix de difficulté** (Facile, Sûre, Risquée) qui fixe l'objectif et le plafond de points de la manche ([#498](https://github.com/Oasis35/InSeconds/issues/498) côté back, [#501](https://github.com/Oasis35/InSeconds/issues/501) pour l'écran) ;
+3. des **coups de pouce** (cartes), 2 en main, à jouer sur un morceau ([#499](https://github.com/Oasis35/InSeconds/issues/499) côté back, [#502](https://github.com/Oasis35/InSeconds/issues/502) sur l'écran de manche).
 
 Ce que le proto 2 ne fait pas : atouts passifs, contraintes, pactes, rareté, déblocages, run éclair, thèmes (cf. [`plan.md`](plan.md) § Bonus).
 
@@ -18,9 +18,9 @@ Ce que le proto 2 ne fait pas : atouts passifs, contraintes, pactes, rareté, d�
 
 1. Dernier morceau de la manche : la carte rejoint la pile, la ligne de palier se pose (comme aujourd'hui).
 2. **Écran de palier** (si la manche est passée) : le disque gagné, le score, l'objectif de la manche suivante, trois cartes à prendre, la main du joueur, « Suite ».
-3. **Écran « Difficulté ? »** : trois colonnes, les bonus de la main en bas. Toucher une colonne lance le premier morceau de la manche, au même toucher (le son ne démarre que sur un geste, iPhone).
-4. [#501](https://github.com/Oasis35/InSeconds/issues/501) : La manche se joue avec les cartes de la main au-dessus du champ de saisie.
-5. [#502](https://github.com/Oasis35/InSeconds/issues/502) : Jauge non remplie à la fin de la manche : **fin du run**, comme au proto 1. Pas d'écran de palier, on va à la fin.
+3. **Écran « Difficulté ? »** : trois colonnes, les bonus de la main en bas. Toucher une colonne lance le premier morceau de la manche, au même toucher : le son est déverrouillé dans le toucher, l'extrait arrive avec la réponse au choix (rien du morceau ne part avant, pour qu'on ne mise pas en le connaissant) et se lance aussitôt, comme « Commencer » (iPhone).
+4. La manche se joue avec les cartes de la main au-dessus du champ de saisie.
+5. Jauge non remplie à la fin de la manche : **fin du run**, comme au proto 1. Pas d'écran de palier, on va à la fin.
 
 La première manche n'a ni palier ni choix de difficulté : le run démarre comme aujourd'hui, avec une carte offerte en main.
 
@@ -60,7 +60,7 @@ Règles :
 - Les plafonds ne se chevauchent presque pas : pour dépasser le plafond de Facile il faut s'engager sur une difficulté plus haute.
 - L'objectif de « Sûre » est celui du proto 1 pour la manche (seuils de départ ci-dessous). Facile et Risquée sont des fractions et des multiples de ce seuil, à régler.
 - **Dernière manche** : « Risquée » est la **manche boss** (écoute de 5 s). Elle n'est jamais imposée. À confirmer après les parties de test, pour ne pas braquer les débutants.
-- **Sans choix** (navigateur d'avant le proto 2), la manche se joue en « Sûre ». Le choix reste ouvert jusqu'au premier son de la manche, jamais après.
+- **Sans choix**, la manche se joue en « Sûre » (rien n'est noté dans la partie). Le choix reste ouvert jusqu'au premier son de la manche, jamais après, et l'extrait de son premier morceau ne part qu'avec lui. Les réglages refusent un objectif au-dessus du plafond de sa difficulté.
 - **Seuils de départ** (`Runs:ThresholdPercents`) : 45, 55, 65, 75 % du maximum de la manche (au lieu de 40, 50, 60, 70), à ajuster après les parties de test. Les anciennes playlists gardent leurs règles figées.
 
 Questions à trancher avec les parties de test : barème exact des trois colonnes, facteurs de points, objectif de Facile (reste-t-il proche de Sûre ?), boss à 5 s.

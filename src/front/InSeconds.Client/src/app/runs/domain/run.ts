@@ -86,6 +86,28 @@ export interface RunSession {
   readonly playedTracks: readonly RunTrack[];
   /** Les manches passées, dans l'ordre, avec le disque gagné à chacune (les lignes de palier de la pile). */
   readonly passedRounds: readonly RunPassedRound[];
+  /**
+   * La difficulté de la manche en cours, tant qu'elle reste à choisir (avant son premier son) ; `null` sinon. Son premier morceau n'arrive
+   * qu'avec le choix.
+   */
+  readonly difficultyChoice: RunDifficultyChoice | null;
+}
+
+/** Une difficulté de manche : objectif et plafond plus ou moins hauts. */
+export type RunDifficulty = 'easy' | 'safe' | 'risky';
+
+/** Les difficultés proposées pour la manche en cours (l'écran « Difficulté ? »). */
+export interface RunDifficultyChoice {
+  readonly round: number;
+  readonly options: readonly RunDifficultyOption[];
+}
+
+/** Une colonne de l'écran « Difficulté ? » : l'objectif (le cadenas), le plafond (la hauteur), l'écoute d'un morceau. */
+export interface RunDifficultyOption {
+  readonly difficulty: RunDifficulty;
+  readonly objective: number;
+  readonly maxScore: number;
+  readonly listenSeconds: number;
 }
 
 /** Une manche passée : son score, son objectif et le disque qu'elle donne. */
@@ -103,6 +125,8 @@ export interface RunCurrentTrack {
   /** Sa place dans la manche, à partir de 1 (« Morceau 3 sur 5 »). */
   readonly positionInRound: number;
   readonly previewUrl: string | null;
+  /** Son écoute fixe (la difficulté de la manche la change : la manche boss est plus courte) ; absente, celle de la partie. */
+  readonly listenSeconds?: number;
   /** La forme de l'extrait calculée par l'API (blob en base64) ; `null` si elle n'est pas prête : le navigateur calcule la sienne. */
   readonly waveform?: string | null;
 }

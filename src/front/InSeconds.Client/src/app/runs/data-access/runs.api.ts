@@ -6,7 +6,8 @@ import {
 } from '../../api/runs/api.generated';
 import { toAppError } from '../../core/errors/app-error';
 import {
-  RunComparison, RunCurrentTrack, RunFinish, RunLink, RunNeutralized, RunPassedRound, RunPlay, RunRecord, RunRound, RunRoundScore, RunRoundSummary, RunSession, RunStatus, RunTrack, RunsMe,
+  RunComparison, RunCurrentTrack, RunDifficulty, RunFinish, RunLink, RunNeutralized, RunPassedRound, RunPlay, RunRecord, RunRound, RunRoundScore,
+  RunRoundSummary, RunSession, RunStatus, RunTrack, RunsMe,
 } from '../domain/run';
 
 /** Les refus que le jeu connaît : ils deviennent des issues, pas des erreurs. */
@@ -89,6 +90,11 @@ export class RunsApi {
    */
   async refreshPreview(sessionId: number): Promise<RunPlay> {
     return toPlay(await firstValueFrom(this.client.refreshRunPreview(sessionId)));
+  }
+
+  /** Choisit la difficulté de la manche en cours ; la réponse porte son premier morceau (son extrait ne part qu'avec le choix). */
+  async chooseDifficulty(sessionId: number, round: number, difficulty: RunDifficulty): Promise<RunPlay> {
+    return toPlay(await firstValueFrom(this.client.chooseRunDifficulty(sessionId, { round, difficulty })));
   }
 
   /**
@@ -242,12 +248,30 @@ function toSession(session: RunSessionResponse): RunSession {
     clockRemainingSeconds: session.clockRemainingSeconds ?? null,
     playedTracks: (session.playedTracks ?? []).map(toTrack),
     passedRounds: (session.passedRounds ?? []).map(toPassedRound),
+    difficultyChoice: session.difficultyChoice
+      ? {
+          round: session.difficultyChoice.round,
+          options: session.difficultyChoice.options.map(option => ({
+            difficulty: toDifficulty(option.difficulty),
+            objective: option.objective,
+            maxScore: option.maxScore,
+            listenSeconds: option.listenSeconds,
+          })),
+        }
+      : null,
   };
+}
+
+function toDifficulty(difficulty: string): RunDifficulty {
+  return difficulty === 'easy' || difficulty === 'risky' ? difficulty : 'safe';
 }
 
 function toCurrent(current: RunCurrentTrackResponse | undefined): RunCurrentTrack | null {
   return current
-    ? { position: current.position, round: current.round, positionInRound: current.positionInRound, previewUrl: current.previewUrl || null, waveform: current.waveform ?? null }
+    ? {
+        position: current.position, round: current.round, positionInRound: current.positionInRound, previewUrl: current.previewUrl || null,
+        listenSeconds: current.listenSeconds, waveform: current.waveform ?? null,
+      }
     : null;
 }
 

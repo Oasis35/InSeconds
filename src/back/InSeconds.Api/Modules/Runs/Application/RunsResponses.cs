@@ -44,8 +44,7 @@ public sealed record RunDifficultyChoiceResponse(int Round, IReadOnlyList<RunDif
 /// morceau reste en cours.
 /// </param>
 /// <param name="ListenSeconds">
-/// Son écoute fixe, à la difficulté de sa manche ; pour le premier morceau d'une manche encore à choisir, celle de « Sûre » (chaque difficulté a la
-/// sienne dans <see cref="RunSessionResponse.DifficultyChoice"/>).
+/// Son écoute fixe, à la difficulté de sa manche (la manche boss est plus courte) : c'est elle qui fait foi.
 /// </param>
 /// <param name="Waveform">La forme de l'extrait en base64 (cf. <c>TrackSlot</c> du Daily), vide si elle n'est pas calculée : le navigateur calcule la sienne.</param>
 public sealed record RunCurrentTrackResponse(
@@ -93,7 +92,10 @@ public sealed record RunFinishResponse(
 /// <summary>L'état d'une partie : en-tête, jauge et pastilles de la manche en cours, ou le résultat de fin.</summary>
 /// <param name="Status"><c>pending</c>, <c>won</c>, <c>lost</c> ou <c>abandoned</c>.</param>
 /// <param name="Rounds">Les manches de la playlist (règles figées).</param>
-/// <param name="ListenSeconds">La durée d'écoute fixe d'un morceau (règles figées).</param>
+/// <param name="ListenSeconds">
+/// L'écoute normale d'un morceau (règles figées) ; celle du morceau en cours, qui suit la difficulté et les cartes, est
+/// <see cref="RunCurrentTrackResponse.ListenSeconds"/> et fait foi.
+/// </param>
 /// <param name="Round">La manche en cours ; vide une fois la partie finie.</param>
 /// <param name="RoundTracks">Les morceaux déjà joués de la manche en cours (les pastilles), neutralisés compris.</param>
 /// <param name="Finish">Le résultat de fin ; vide tant que la partie est en cours.</param>
@@ -119,7 +121,10 @@ public sealed record RunSessionResponse(
 /// <param name="Revealed">Le morceau auquel le joueur vient de répondre (réponse à <c>answers</c> seulement).</param>
 /// <param name="Neutralized">Les morceaux neutralisés en cherchant le morceau suivant (le plus souvent aucun).</param>
 /// <param name="RoundSummaries">Les manches qui viennent de se terminer (le plus souvent aucune, ou une).</param>
-/// <param name="Current">Le morceau à jouer ; vide une fois la partie finie.</param>
+/// <param name="Current">
+/// Le morceau à jouer ; vide une fois la partie finie, ou tant que la difficulté de la manche est à choisir (<see cref="RunSessionResponse.DifficultyChoice"/> :
+/// le choix le donne).
+/// </param>
 /// <param name="IsResuming">La partie existait déjà (reprise).</param>
 public sealed record RunPlayResponse(
     RunSessionResponse Session, RunTrackResponse? Revealed, IReadOnlyList<RunNeutralizedResponse> Neutralized,

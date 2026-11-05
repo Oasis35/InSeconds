@@ -67,7 +67,8 @@ const withdrawn = (position: number): RunTrack => track(position, {
 const round = (overrides: Partial<RunRound> = {}): RunRound => ({ round: 1, score: 0, objective: 200, maxScore: 500, ...overrides });
 const session = (overrides: Partial<RunSession> = {}): RunSession => ({
   sessionId: 1, challengeCode: 'ABC234', status: 'pending', rounds: 4, tracksPerRound: 5, listenSeconds: 10, totalScore: 0, roundsPassed: 0,
-  round: round(), roundTracks: [], finish: null, answerSeconds: 45, clockRemainingSeconds: null, playedTracks: [], passedRounds: [], ...overrides,
+  round: round(), roundTracks: [], finish: null, answerSeconds: 45, clockRemainingSeconds: null, playedTracks: [], passedRounds: [],
+  difficultyChoice: null, ...overrides,
 });
 const summary = (overrides: Partial<RunRoundSummary> = {}): RunRoundSummary => ({
   round: 1, passed: true, score: 400, objective: 200, totalScore: 400, ...overrides,

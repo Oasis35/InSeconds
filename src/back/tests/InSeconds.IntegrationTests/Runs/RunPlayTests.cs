@@ -134,7 +134,9 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.All(summary.Tracks, t => Assert.NotNull(t.Artist));
         Assert.Equal(new RunRoundResponse(2, 0, 366, 665, "safe"), endOfRound.Session.Round);
         Assert.Empty(endOfRound.Session.RoundTracks);
-        Assert.Equal((6, 2, 1), (endOfRound.Current!.Position, endOfRound.Current.Round, endOfRound.Current.PositionInRound));
+        // La manche 2 attend sa difficulté : son premier morceau ne part qu'avec le choix (sans choix, elle se joue en Sûre).
+        Assert.Null(endOfRound.Current);
+        Assert.Equal(2, endOfRound.Session.DifficultyChoice!.Round);
 
         await alice.PlayAsync(id, code, 6, AllFound);
         await alice.PlayAsync(id, code, 11, AllFound);
@@ -350,14 +352,18 @@ public class RunPlayTests(PostgresFixture postgres) : IAsyncLifetime
         for (var position = 6; position <= 10; position++)
             await _run.RemovePreviewAsync(await _run.TrackAtAsync(code, position));
 
-        // Le 5e morceau termine la manche 1 : son bilan, puis les 5 morceaux de la manche 2 neutralisés, son bilan, et le premier de la manche 3.
-        var last = await alice.AnswerAsync(id, code, 5);
+        // Le 5e morceau termine la manche 1 ; la manche 2 attend sa difficulté, rien n'est neutralisé avant le choix.
+        Assert.Empty((await alice.AnswerAsync(id, code, 5)).Neutralized);
 
-        Assert.Equal([1, 2], last.RoundSummaries.Select(s => s.Round));
-        Assert.Equal((true, 0, 0), (last.RoundSummaries[1].Passed, last.RoundSummaries[1].Score, last.RoundSummaries[1].Objective));
+        // Le choix : les 5 morceaux de la manche 2 neutralisés, son bilan, et la manche 3 qui attend à son tour sa difficulté.
+        var last = await alice.ChooseAsync(id, 2, "safe");
+
+        Assert.Equal([2], last.RoundSummaries.Select(s => s.Round));
+        Assert.Equal((true, 0, 0), (last.RoundSummaries[0].Passed, last.RoundSummaries[0].Score, last.RoundSummaries[0].Objective));
         Assert.Equal([6, 7, 8, 9, 10], last.Neutralized.Select(n => n.Position));
         Assert.Equal((366, 0), (last.Neutralized[0].ObjectiveBefore, last.Neutralized[^1].ObjectiveAfter));
-        Assert.Equal((11, 3), (last.Current!.Position, last.Current.Round));
+        Assert.Null(last.Current);
+        Assert.Equal(3, last.Session.DifficultyChoice!.Round);
         Assert.Equal(2, last.Session.RoundsPassed);
     }
 

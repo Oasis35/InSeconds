@@ -17,10 +17,13 @@ public class RunDifficultyApiTests(PostgresFixture postgres) : IAsyncLifetime
 {
     private static readonly bool[] AllFound = [true, true, true, true, true];
 
+    private readonly CapturingLoggerProvider _logs = new();
     private RunGame _run = null!;
 
     // 28 morceaux : des tranches de 7, donc 5 morceaux et 2 de réserve par manche.
-    public async ValueTask InitializeAsync() => _run = await RunGame.CreateAsync(await postgres.CreateDatabaseAsync(), tracks: 28);
+    public async ValueTask InitializeAsync() =>
+        _run = await RunGame.CreateAsync(
+            await postgres.CreateDatabaseAsync(), tracks: 28, configureServices: s => s.AddSingleton<Microsoft.Extensions.Logging.ILoggerProvider>(_logs));
 
     public ValueTask DisposeAsync() => _run.DisposeAsync();
 
@@ -46,10 +49,13 @@ public class RunDifficultyApiTests(PostgresFixture postgres) : IAsyncLifetime
             [new("easy", 219, 445, 10m), new("safe", 366, 665, 10m), new RunDifficultyOptionResponse("risky", 552, 885, 10m)],
             end.Session.DifficultyChoice.Options);
         Assert.Equal(new RunRoundResponse(2, 0, 366, 665, "safe"), end.Session.Round);
-        // Le toucher d'une colonne lance l'extrait sans aller-retour : il arrive avec la dernière réponse de la manche.
-        Assert.NotNull(end.Current!.PreviewUrl);
-        Assert.Equal((6, 10m), (end.Current.Position, end.Current.ListenSeconds));
+        // Rien du premier morceau de la manche 2 ne part avant le choix : on ne mise pas en connaissant le morceau.
+        Assert.Null(end.Current);
         Assert.Equivalent(end.Session, await alice.SessionAsync(start.SessionId));
+
+        var chosen = await alice.ChooseAsync(start.SessionId, 2, "safe");
+        Assert.NotNull(chosen.Current!.PreviewUrl);
+        Assert.Equal((6, 10m), (chosen.Current.Position, chosen.Current.ListenSeconds));
     }
 
     [Fact]
@@ -59,8 +65,9 @@ public class RunDifficultyApiTests(PostgresFixture postgres) : IAsyncLifetime
 
         var chosen = await alice.ChooseAsync(id, 2, "risky");
 
-        Assert.Equal(new RunRoundResponse(2, 0, 552, 885, "risky"), chosen.Round);
-        Assert.Null(chosen.DifficultyChoice);
+        Assert.Equal(new RunRoundResponse(2, 0, 552, 885, "risky"), chosen.Session.Round);
+        Assert.Null(chosen.Session.DifficultyChoice);
+        Assert.Equal(6, chosen.Current!.Position);
         Assert.Equal(3, await _run.Api.ScalarAsync<short>($"SELECT difficulty FROM runs.session_rounds WHERE session_id = {id} AND round = 2"));
 
         var answer = await alice.AnswerAsync(id, code, 6);
@@ -108,7 +115,7 @@ public class RunDifficultyApiTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task SansChoix_LaMancheSeJoueEnSure_CommeAuProto1()
+    public async Task SansChoix_LaMancheSeJoueEnSure_CommeAuProto1_SansRienNoter()
     {
         var (alice, id, code) = await InRoundTwoAsync();
 
@@ -116,7 +123,57 @@ public class RunDifficultyApiTests(PostgresFixture postgres) : IAsyncLifetime
 
         Assert.Equal(133, answer.Revealed!.Points);
         Assert.Equal("safe", answer.Session.Round!.Difficulty);
-        Assert.Equal(2, await _run.Api.ScalarAsync<short>($"SELECT difficulty FROM runs.session_rounds WHERE session_id = {id} AND round = 2"));
+        Assert.Equal(0L, await _run.Api.ScalarAsync<long>($"SELECT count(*) FROM runs.session_rounds WHERE session_id = {id}"));
+    }
+
+    [Fact]
+    public async Task PendantLeChoix_LeChronoNeTournePas_IlRepartDuChoix()
+    {
+        var (alice, id, _) = await InRoundTwoAsync();
+
+        // Une minute et demie sur l'écran de palier et de difficulté, sans annonce de son : le chrono n'est ni montré ni écoulé.
+        _run.Game.Time.Advance(TimeSpan.FromSeconds(90));
+        Assert.Null((await alice.SessionAsync(id)).ClockRemainingSeconds);
+
+        await alice.ChooseAsync(id, 2, "safe");
+        _run.Game.Time.Advance(TimeSpan.FromSeconds(40));
+        Assert.Equal(35m, (await alice.SessionAsync(id)).ClockRemainingSeconds);
+    }
+
+    [Fact]
+    public async Task LePremierMorceauSansExtrait_NeutraliseApresLeChoix_ALObjectifChoisi()
+    {
+        var (alice, id, code) = await InRoundTwoAsync();
+        await _run.RemovePreviewAsync(await _run.TrackAtAsync(code, 6));
+
+        var chosen = await alice.ChooseAsync(id, 2, "risky");
+
+        // 552 pour 5 morceaux, 83 % des 4 restants (532) : 442.
+        Assert.Equal([new RunNeutralizedResponse(6, 2, 552, 442)], chosen.Neutralized);
+        Assert.Equal(7, chosen.Current!.Position);
+    }
+
+    [Fact]
+    public async Task UneDifficulteNonProposee_400()
+    {
+        await _run.Game.SetSettingAsync(
+            "Runs:Difficulties", """[{"difficulty":"safe","pointsFactor":1,"objectiveFactor":1},{"difficulty":"risky","pointsFactor":1.5,"objectiveFactor":1.2}]""");
+        var (alice, id, _) = await InRoundTwoAsync();
+
+        await GameAsserts.ProblemAsync(await alice.ChooseRawAsync(id, 2, "easy"), HttpStatusCode.BadRequest, "common.bad_request");
+        Assert.Equal("risky", (await alice.ChooseAsync(id, 2, "risky")).Session.Round!.Difficulty);
+    }
+
+    [Fact]
+    public async Task LeChoix_EstJournalise_SansPseudo()
+    {
+        var (alice, id, _) = await InRoundTwoAsync();
+
+        await alice.ChooseAsync(id, 2, "risky");
+
+        var entry = Assert.Single(_logs.Messages, m => m.Contains("manche 2 en risky", StringComparison.Ordinal));
+        Assert.Contains($"Partie {id} de {alice.Id}", entry, StringComparison.Ordinal);
+        Assert.DoesNotContain("Alice", entry, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -127,7 +184,8 @@ public class RunDifficultyApiTests(PostgresFixture postgres) : IAsyncLifetime
         var end = await alice.PlayAsync(id, code, 11, AllFound);
         Assert.Equal(5m, end.Session.DifficultyChoice!.Options.Single(o => o.Difficulty == "risky").ListenSeconds);
 
-        await alice.ChooseAsync(id, 4, "risky");
+        var chosen = await alice.ChooseAsync(id, 4, "risky");
+        Assert.Equal((16, 5m), (chosen.Current!.Position, chosen.Current.ListenSeconds));
 
         await GameAsserts.ProblemAsync(await alice.ListenRawAsync(id, 16, 6m), HttpStatusCode.BadRequest, "common.bad_request");
         Assert.Equal(HttpStatusCode.NoContent, (await alice.ListenRawAsync(id, 16, 5m)).StatusCode);

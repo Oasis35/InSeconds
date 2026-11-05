@@ -916,7 +916,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RunSessionResponse"
+                  "$ref": "#/components/schemas/RunPlayResponse"
                 }
               }
             }

@@ -41,7 +41,10 @@ public sealed class RunChallenge
     public IEnumerable<RunChallengeReserveTrack> ReserveOf(int round) => _reserve.Where(r => r.Round == round).OrderBy(r => r.Rank);
 
     /// <param name="tracks">Les morceaux dans l'ordre du jeu, avec leur manche et leur multiplicateur.</param>
-    /// <param name="reserve">Les morceaux de réserve, manche par manche (aucun pour une playlist du proto 1).</param>
+    /// <param name="reserve">
+    /// Les morceaux de réserve, manche par manche (aucun pour une playlist du proto 1). Leur multiplicateur n'est pas gardé : un morceau sorti par
+    /// un Joker prend la place, et donc le multiplicateur, du morceau qu'il remplace (le même : celui de la manche).
+    /// </param>
     public static RunChallenge Create(
         string code, int seed, RunRules rules, IReadOnlyList<PlannedTrack> tracks, Guid? createdBy, DateTimeOffset now,
         IReadOnlyList<PlannedTrack>? reserve = null)
@@ -98,7 +101,10 @@ public sealed class RunChallengeTrack
     public decimal Multiplier { get; private set; }
 }
 
-/// <summary>Un morceau de réserve d'un défi : sa manche et son rang dans la réserve de la manche (de 1 à N).</summary>
+/// <summary>
+/// Un morceau de réserve d'un défi : sa manche et son rang dans la réserve de la manche (de 1 à N). Sans multiplicateur : celui de la position
+/// qu'un Joker lui fait prendre.
+/// </summary>
 public sealed class RunChallengeReserveTrack
 {
     private RunChallengeReserveTrack()
