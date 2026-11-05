@@ -1248,7 +1248,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RunPlayResponse"
+                  "$ref": "#/components/schemas/RunSessionResponse"
                 }
               }
             }

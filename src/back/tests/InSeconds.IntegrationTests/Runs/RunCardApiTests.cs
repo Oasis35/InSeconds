@@ -336,7 +336,7 @@ public class RunCardApiTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task SansChoixDeDifficulte_RienNePartTantQueLOffreEstOuverte_PasserDonneLeMorceau()
+    public async Task SansChoixDeDifficulte_RienNePartTantQueLOffreEstOuverte_NiQuandOnLaPasse()
     {
         await _run.Game.SetSettingAsync("Runs:Difficulties", """[{"difficulty":"safe","pointsFactor":1,"objectiveFactor":1}]""");
         var (alice, start) = await LaunchWithAsync("year");
@@ -347,11 +347,14 @@ public class RunCardApiTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Null(end.Session.DifficultyChoice);
         Assert.Equal(1, end.Session.Offer!.AfterRound);
 
+        // Passer garde le joueur au palier : rien n'est servi (le chrono partirait), le morceau se demande à « Suite ».
         var passed = await alice.PassOfferAsync(id, 1);
+        Assert.Null(passed.Offer);
+        Assert.Equal(0L, await _run.Api.ScalarAsync<long>($"SELECT count(*) FROM runs.sessions WHERE id = {id} AND current_served_at IS NOT NULL"));
 
-        Assert.Equal(6, passed.Current!.Position);
-        Assert.NotNull(passed.Current.PreviewUrl);
-        Assert.Null(passed.Session.Offer);
+        var served = await alice.PreviewAsync(id);
+        Assert.Equal(6, served.Current!.Position);
+        Assert.NotNull(served.Current.PreviewUrl);
         await GameAsserts.ProblemAsync(await alice.PassOfferRawAsync(id, 1), HttpStatusCode.Conflict, RunsErrorCodes.OfferClosed);
     }
 

@@ -129,8 +129,9 @@ public static class PassRunOfferEndpoint
     }
 
     /// <summary>
-    /// <c>POST /api/runs/sessions/{id}/cards/pass</c> : le joueur passe l'offre du palier (aucune carte). Rend la partie et, si la manche n'a pas de
-    /// difficulté à choisir, son premier morceau (rien ne part tant qu'une offre est ouverte). 409 <c>runs.offer_closed</c> hors d'une offre ouverte.
+    /// <c>POST /api/runs/sessions/{id}/cards/pass</c> : le joueur passe l'offre du palier (aucune carte). Rend l'état de la partie, sans rien
+    /// servir : le joueur reste sur l'écran de palier, et le premier morceau de la manche (avec son chrono) n'est demandé qu'à « Suite », par le choix
+    /// de la difficulté ou par <c>POST …/preview</c>. 409 <c>runs.offer_closed</c> hors d'une offre ouverte.
     /// </summary>
     [Authorize]
     [WolverinePost("/api/runs/sessions/{id}/cards/pass", OperationId = "passRunOffer")]
@@ -138,11 +139,11 @@ public static class PassRunOfferEndpoint
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public static async Task<RunPlayResponse> Post(PassRunOffer request, [NotBody] PlayableRun loaded, [NotBody] RunPlayer player, CancellationToken ct)
+    public static async Task<RunSessionResponse> Post(PassRunOffer request, [NotBody] PlayableRun loaded, [NotBody] RunPlayer player, CancellationToken ct)
     {
         var (session, challenge) = loaded;
         session.PassOffer(challenge, request.AfterRound);
-        return await player.AdvanceAsync(await player.LoadAsync(session, challenge, ct), answered: null, revealed: null, isResuming: false, ct);
+        return await player.StateAsync(await player.LoadAsync(session, challenge, ct), ct);
     }
 }
 

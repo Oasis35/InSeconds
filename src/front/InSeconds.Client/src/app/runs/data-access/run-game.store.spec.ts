@@ -337,14 +337,39 @@ describe('RunGameStore', () => {
       expect(api.calls).toContain('takeCard:7:1:hourglass:1');
     });
 
-    it('« Passer » ferme l\'offre et garde l\'écran', async () => {
-      api.passResult = PLAY({ session: palierSession({ offer: null }), current: null });
+    it('« Passer » ferme l\'offre et garde l\'écran, sans aucun morceau servi', async () => {
+      api.passResult = palierSession({ offer: null });
 
       await store.passOffer();
 
       expect(api.calls).toContain('passOffer:7:1');
+      expect(api.calls.filter(c => c.startsWith('refreshPreview'))).toEqual([]);
       expect(store.screen()).toBe('palier');
       expect(store.palier()?.offer).toBeNull();
+    });
+
+    it('une prise refusée (offre fermée ailleurs) relit la partie', async () => {
+      api.takeResult = new Error('409');
+      api.sessionResult = palierSession({ offer: null });
+
+      store.pickCard('joker');
+      await vi.waitFor(() => expect(store.palier()?.offer).toBeNull());
+
+      expect(api.calls).toContain('session:7');
+    });
+
+    it('deux touchers sur « Suite » ne choisissent qu\'une fois', async () => {
+      api.chooseResult = PLAY({
+        session: palierSession({ offer: null, difficultyChoice: null }),
+        current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 10 }),
+      });
+
+      store.continueFromPalier();
+      store.continueFromPalier();
+      await vi.waitFor(() => expect(store.current()?.position).toBe(6));
+
+      expect(api.calls.filter(c => c.startsWith('chooseDifficulty'))).toHaveLength(1);
+      expect(store.screen()).toBe('playing');
     });
 
     it('« Suite » déverrouille le son dans le clic, puis la manche démarre (en Sûre, en attendant l\'écran de difficulté)', async () => {
@@ -360,6 +385,61 @@ describe('RunGameStore', () => {
       expect(api.calls).toContain('chooseDifficulty:7:2:safe');
       expect(audio.calls).toContain('load https://cdn/preview-6.mp3');
       expect(store.screen()).toBe('playing');
+    });
+  });
+
+  describe('palier : reprise et manche sans difficulté à choisir', () => {
+    const passedRound = { round: 1, score: 320, objective: 225, disc: { key: 'runs.discs.wax', stars: 0 } };
+    const atPalier = (overrides = {}) => SESSION({
+      totalScore: 320, round: ROUND({ round: 2, score: 0, objective: 366, maxScore: 665 }), roundsPassed: 1, roundTracks: [],
+      playedTracks: [TRACK(), TRACK({ position: 2 })], passedRounds: [passedRound], handSize: 2, hand: [{ slot: 1, card: 'year' }],
+      offer: { afterRound: 1, cards: ['three_choices', 'joker', 'hourglass'] }, nextDisc: { key: 'runs.discs.bronze', stars: 0 },
+      ...overrides,
+    });
+
+    it('reprendre une partie arrêtée au palier : l\'écran de palier revient, sans son', async () => {
+      api.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
+      api.sessionResult = atPalier();
+      api.joinResult = { kind: 'ok', play: PLAY({ session: atPalier(), current: null, isResuming: true }) };
+      await store.init();
+
+      await store.begin();
+
+      expect(store.screen()).toBe('palier');
+      expect(audio.calls.filter(c => c.startsWith('load'))).toEqual([]);
+    });
+
+    it('sans difficulté à choisir : « Suite » passe l\'offre puis demande le morceau, qui part', async () => {
+      api.joinResult = { kind: 'ok', play: PLAY({ session: atPalier(), current: null, isResuming: true }) };
+      api.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
+      api.refreshResult = PLAY({
+        session: atPalier({ offer: null }),
+        current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 10 }),
+      });
+      await store.init();
+      await store.begin();
+
+      store.continueFromPalier();
+      await vi.waitFor(() => expect(store.current()?.position).toBe(6));
+
+      expect(api.calls).toContain('passOffer:7:1');
+      expect(api.calls).toContain('refreshPreview:7');
+      expect(audio.calls).toContain('load https://cdn/preview-6.mp3');
+      expect(store.screen()).toBe('playing');
+    });
+
+    it('une carte déjà prise (offre fermée) : « Suite » demande seulement le morceau', async () => {
+      api.joinResult = { kind: 'ok', play: PLAY({ session: atPalier({ offer: null, difficultyChoice: null }), current: null, isResuming: true }) };
+      api.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
+      api.refreshResult = PLAY({ session: atPalier({ offer: null }), current: CURRENT({ position: 6, round: 2, positionInRound: 1 }) });
+      await store.init();
+      await store.begin();
+
+      // Sans offre ni difficulté ouvertes, le serveur ne retient plus le joueur au palier : la manche part directement.
+      await vi.waitFor(() => expect(store.current()?.position).toBe(6));
+
+      expect(api.calls.filter(c => c.startsWith('passOffer'))).toEqual([]);
+      expect(api.calls).toContain('refreshPreview:7');
     });
   });
 

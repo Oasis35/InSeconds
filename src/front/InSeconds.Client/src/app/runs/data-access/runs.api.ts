@@ -98,9 +98,9 @@ export class RunsApi {
     return toSession(await firstValueFrom(this.client.takeRunCard(sessionId, { afterRound, card, dropSlot: dropSlot ?? undefined })));
   }
 
-  /** Passe l'offre du palier ; la réponse porte le premier morceau de la manche s'il n'y a pas de difficulté à choisir. */
-  async passOffer(sessionId: number, afterRound: number): Promise<RunPlay> {
-    return toPlay(await firstValueFrom(this.client.passRunOffer(sessionId, { afterRound })));
+  /** Passe l'offre du palier ; rend l'état, sans rien servir (le premier morceau ne se demande qu'à « Suite »). */
+  async passOffer(sessionId: number, afterRound: number): Promise<RunSession> {
+    return toSession(await firstValueFrom(this.client.passRunOffer(sessionId, { afterRound })));
   }
 
   /** Choisit la difficulté de la manche en cours ; la réponse porte son premier morceau (son extrait ne part qu'avec le choix). */

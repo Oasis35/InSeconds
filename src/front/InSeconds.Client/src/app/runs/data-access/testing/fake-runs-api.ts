@@ -56,7 +56,7 @@ export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge'
   answerResult: RunPlay | Error = PLAY();
   chooseResult: RunPlay | Error = PLAY();
   takeResult: RunSession | Error = SESSION();
-  passResult: RunPlay | Error = PLAY();
+  passResult: RunSession | Error = SESSION();
   abandonError: Error | null = null;
 
   me(): Promise<RunsMe> {
@@ -113,7 +113,7 @@ export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge'
     return this.takeResult instanceof Error ? Promise.reject(this.takeResult) : Promise.resolve(this.takeResult);
   }
 
-  passOffer(sessionId: number, afterRound: number): Promise<RunPlay> {
+  passOffer(sessionId: number, afterRound: number): Promise<RunSession> {
     this.calls.push(`passOffer:${sessionId}:${afterRound}`);
     return this.passResult instanceof Error ? Promise.reject(this.passResult) : Promise.resolve(this.passResult);
   }

@@ -23,7 +23,7 @@ export interface RunCardOffer {
 }
 
 /**
- * Le signe d'une carte, dans son coin, en orange : un repère qui se lit d'un coup d'œil, à côté de son nom. Pas d'emoji ni d'icône décorative :
+ * Le signe d'une carte, dans son coin, à la couleur du joueur : un repère qui se lit d'un coup d'œil, à côté de son nom. Pas d'emoji ni d'icône décorative :
  * un chiffre ou un caractère qui dit l'effet.
  */
 export function cardGlyph(card: RunCardKey): string {
@@ -37,11 +37,11 @@ export function cardGlyph(card: RunCardKey): string {
     case 'initials':
       return 'A.B.';
     case 'extend':
-      return '20s';
+      return '20 s';
     case 'net':
       return '½';
     case 'lower_target':
-      return '−20%';
+      return '−20 %';
     case 'hourglass':
       return '+30';
   }
@@ -51,7 +51,7 @@ export function cardGlyph(card: RunCardKey): string {
  * Les emplacements de la main, dans l'ordre : chaque carte tenue, puis des emplacements vides (en pointillé) jusqu'à la taille de la main.
  */
 export function handSlots(hand: readonly RunHandCard[], handSize: number): readonly (RunHandCard | null)[] {
-  const cards = [...hand].sort((a, b) => a.slot - b.slot).slice(0, Math.max(handSize, hand.length));
+  const cards = [...hand].sort((a, b) => a.slot - b.slot);
   return [...cards, ...Array.from({ length: Math.max(0, handSize - cards.length) }, () => null)];
 }
 

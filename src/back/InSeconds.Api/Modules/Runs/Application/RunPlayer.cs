@@ -227,7 +227,7 @@ internal static class RunViews
         {
             var passed = session.RoundProgressOf(challenge, r, scoring);
             var disc = DiscLadder.Of(r, discs);
-            return new RunPassedRoundResponse(r, passed.Score, passed.Objective, new RunDiscResponse(disc.Key, disc.Stars), DifficultyOf(passed));
+            return new RunPassedRoundResponse(r, passed.Score, passed.Objective, DiscOf(disc), DifficultyOf(passed));
         }).ToList();
         RunDifficultyChoiceResponse? choice = null;
         if (session.IsPending)
@@ -277,7 +277,7 @@ internal static class RunViews
         var disc = DiscLadder.Of(session.RoundsPassed, discs);
 
         return new RunFinishResponse(
-            StatusOf(session.Status), new RunDiscResponse(disc.Key, disc.Stars), session.TotalScore, session.RoundsPassed,
+            StatusOf(session.Status), DiscOf(disc), session.TotalScore, session.RoundsPassed,
             answers.Count(a => a.ArtistCorrect && a.TitleCorrect), challenge.Tracks.Count, tracks, rounds,
             record is null ? null : new RunRecordResponse(record.BestScore, record.BestRoundsPassed, record.SessionId == session.Id),
             challenge.Code);

@@ -309,15 +309,32 @@ export const RunGameStore = signalStore(
         applyPlay(await api.chooseDifficulty(sessionId, roundNumber, 'safe'), play);
       } catch {
         patchState(store, { screen: 'error' });
+      } finally {
+        patchState(store, { palierBusy: false });
       }
     };
 
-    /** L'offre encore ouverte se passe ; réglée (carte prise), l'extrait du premier morceau se demande. Puis le morceau part. */
+    /**
+     * Sans difficulté à choisir : l'offre encore ouverte se passe (une offre fermée entre-temps, autre onglet, n'est pas une erreur), puis le
+     * premier morceau de la manche se demande et part.
+     */
     const serveRound = async (session: RunSession, play: boolean): Promise<void> => {
       try {
-        applyPlay(session.offer ? await api.passOffer(session.sessionId, session.offer.afterRound) : await api.refreshPreview(session.sessionId), play);
+        if (session.offer) await api.passOffer(session.sessionId, session.offer.afterRound).catch(() => undefined);
+        applyPlay(await api.refreshPreview(session.sessionId), play);
       } catch {
         patchState(store, { screen: 'error' });
+      } finally {
+        patchState(store, { palierBusy: false });
+      }
+    };
+
+    /** Relit l'état de la partie après un refus du serveur (offre fermée ailleurs, main changée) : l'écran montre ce qui est vrai. */
+    const reread = async (sessionId: number): Promise<void> => {
+      try {
+        patchState(store, { session: await api.session(sessionId), pendingCard: null });
+      } catch {
+        // l'écran reste tel quel ; le joueur peut réessayer
       }
     };
 
@@ -329,7 +346,7 @@ export const RunGameStore = signalStore(
       try {
         patchState(store, { session: await api.takeCard(session.sessionId, session.offer.afterRound, card, dropSlot), pendingCard: null });
       } catch {
-        // l'offre s'est fermée entre-temps (autre onglet) : l'état relu le dira au prochain écran
+        await reread(session.sessionId);
       } finally {
         patchState(store, { palierBusy: false });
       }
@@ -487,10 +504,9 @@ export const RunGameStore = signalStore(
         if (!session?.offer || store.palierBusy()) return;
         patchState(store, { palierBusy: true, pendingCard: null });
         try {
-          const play = await api.passOffer(session.sessionId, session.offer.afterRound);
-          patchState(store, { session: play.session, current: play.current });
+          patchState(store, { session: await api.passOffer(session.sessionId, session.offer.afterRound) });
         } catch {
-          // l'offre était déjà fermée : rien à faire
+          await reread(session.sessionId);
         } finally {
           patchState(store, { palierBusy: false });
         }
@@ -499,8 +515,12 @@ export const RunGameStore = signalStore(
       continueFromPalier(): void {
         round.unlockAudio();
         tick.unlock();
-        patchState(store, { palierDismissedFor: store.session()?.round?.round ?? null, pendingCard: null });
+        // Un second toucher (double tap, réseau lent) ne relance rien.
+        if (store.palierBusy() || store.screen() !== 'palier') return;
+        patchState(store, { palierDismissedFor: store.session()?.round?.round ?? null, pendingCard: null, palierBusy: true });
         show(true);
+        // Une suite synchrone (morceau déjà là) a quitté le palier ; une suite qui attend le serveur relâche le verrou à sa réponse.
+        if (store.screen() !== 'palier') patchState(store, { palierBusy: false });
       },
       /** « Voir les autres joueurs » depuis la fin : la comparaison de cette playlist. */
       async showComparison(): Promise<void> {

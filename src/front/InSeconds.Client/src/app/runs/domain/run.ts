@@ -314,13 +314,15 @@ export function runSegments(rounds: number, shown: Pick<RunRound, 'round' | 'sco
 }
 
 /**
- * L'écran de palier est dû : la playlist a des coups de pouce, la manche précédente vient d'être passée et la manche en cours n'a pas commencé
- * (aucun morceau joué, pas de chrono parti), et le joueur ne l'a pas déjà quitté par « Suite » (`dismissedFor`, la manche qu'il a ouverte).
+ * L'écran de palier est dû : la playlist a des coups de pouce, la manche précédente vient d'être passée, et le serveur dit que la manche en cours
+ * attend encore le joueur (son offre est ouverte ou sa difficulté reste à choisir : rien n'y a commencé), sauf si le joueur l'a déjà quitté par
+ * « Suite » (`dismissedFor`, la manche qu'il a ouverte).
  */
 export function palierDue(session: RunSession, dismissedFor: number | null): boolean {
   const round = session.round;
   if (session.status !== 'pending' || session.handSize <= 0 || !round || round.round < 2 || dismissedFor === round.round) return false;
-  return session.roundTracks.length === 0 && session.clockRemainingSeconds === null && session.passedRounds.some(p => p.round === round.round - 1);
+  return (session.offer !== null || session.difficultyChoice !== null) && session.roundTracks.length === 0
+    && session.passedRounds.some(p => p.round === round.round - 1);
 }
 
 /** L'objectif de la manche à venir montré au palier : celui de « Sûre » (la difficulté se choisit ensuite), sinon celui de la manche. */
