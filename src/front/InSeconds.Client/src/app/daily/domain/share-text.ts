@@ -21,7 +21,8 @@ export function shareLines(tracks: readonly ShareTrack[], formatDuration: Format
   return tracks.map(t => `${mark(t.artistCorrect)}${mark(t.titleCorrect)} ${formatDuration(t.listenedSeconds, lang)}`);
 }
 
-/** `jj/mm`, dans le fuseau du joueur. */
-export function dayLabel(date: Date): string {
-  return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
+/** `jj/mm` d'un jour de jeu (`aaaa-mm-jj`, jour UTC) : la date du défi, pas celle de l'horloge du joueur. */
+export function dayLabel(gameDay: string): string {
+  const [, month, day] = gameDay.split('-');
+  return `${day}/${month}`;
 }

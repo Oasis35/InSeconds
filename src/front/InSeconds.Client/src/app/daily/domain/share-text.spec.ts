@@ -19,8 +19,8 @@ describe('shareLines', () => {
 });
 
 describe('dayLabel', () => {
-  it('jour/mois sur deux chiffres', () => {
-    expect(dayLabel(new Date(2026, 0, 5))).toBe('05/01');
-    expect(dayLabel(new Date(2026, 9, 28))).toBe('28/10');
+  it("jour/mois d'un jour de jeu, sur deux chiffres", () => {
+    expect(dayLabel('2026-01-05')).toBe('05/01');
+    expect(dayLabel('2026-10-28')).toBe('28/10');
   });
 });

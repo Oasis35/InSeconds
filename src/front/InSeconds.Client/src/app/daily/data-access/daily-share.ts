@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { SHARE_LINK, ShareService } from '../../core/share/share.service';
+import { todayUtc } from '../domain/countdown';
 import { FormatDuration, ShareTrack, dayLabel, shareLines } from '../domain/share-text';
 
 /**
@@ -22,7 +23,8 @@ export class DailyShare {
   async share(tracks: readonly ShareTrack[], score: number, formatDuration: FormatDuration): Promise<void> {
     const lang = this.translate.getCurrentLang() ?? 'fr';
     const text = [
-      this.translate.instant('daily.share.header', { score: new Intl.NumberFormat(lang).format(score), date: dayLabel(new Date()) }),
+      // Le jour de jeu (UTC), comme la date de la page : à 0 h 30 à Paris, le défi est encore celui de la veille.
+      this.translate.instant('daily.share.header', { score: new Intl.NumberFormat(lang).format(score), date: dayLabel(todayUtc(new Date())) }),
       ...shareLines(tracks, formatDuration, lang),
       SHARE_LINK,
     ].join('\n');

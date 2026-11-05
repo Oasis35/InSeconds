@@ -26,11 +26,13 @@ describe('DailyShare', () => {
     { artistCorrect: false, titleCorrect: false, listenedSeconds: 10 },
   ];
 
-  it('partage le score avec le nom et la date, une ligne par morceau, puis le lien marqué utm_source=share', async () => {
-    await dailyShare.share(tracks, 1850, s => `${s} s`);
+  it('partage le score avec le nom et le jour de jeu, une ligne par morceau dans la langue, puis le lien marqué utm_source=share', async () => {
+    // 23 h 30 UTC le 5 : déjà le 6 à Paris, mais le défi est celui du 5.
+    vi.setSystemTime(new Date('2026-11-05T23:30:00Z'));
+    await dailyShare.share(tracks, 1850, (s, lang) => `${s} s (${lang})`);
     const lines = (share.mock.calls[0][0] as string).split('\n');
-    expect(lines[0]).toMatch(/^1\s850 pts · InSeconds \d{2}\/\d{2}$/);
-    expect(lines.slice(1, 3)).toEqual(['✅❌ 0.5 s', '❌❌ 10 s']);
+    expect(lines[0]).toMatch(/^1\s850 pts · InSeconds 05\/11$/);
+    expect(lines.slice(1, 3)).toEqual(['✅❌ 0.5 s (fr)', '❌❌ 10 s (fr)']);
     expect(lines[3]).toBe(SHARE_LINK);
     expect(lines).toHaveLength(4);
   });
