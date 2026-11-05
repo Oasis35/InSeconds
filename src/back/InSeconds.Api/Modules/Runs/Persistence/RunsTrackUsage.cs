@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace InSeconds.Api.Modules.Runs.Persistence;
 
 /// <summary>
-/// L'usage des morceaux par Runs : un morceau qui figure dans un défi (<c>runs.challenge_tracks</c>) est « utilisé » (ni suppression ni actualisation :
+/// L'usage des morceaux par Runs : un morceau qui figure dans un défi (<c>runs.challenge_tracks</c>, réserve comprise) est « utilisé » (ni suppression ni actualisation :
 /// la clé étrangère le refuserait, et le défi doit rester rejouable). Runs n'a ni cooldown ni jour : tout le reste est « aucun »
 /// (<see cref="TrackUsage.UsedByMode"/>), les dates et le cooldown restent ceux du Daily. Ajouté au conteneur avec celui des autres modes.
 /// </summary>
@@ -20,9 +20,12 @@ public sealed class RunsTrackUsage(InSecondsDbContext db) : ITrackUsage
     {
         if (trackIds.Count == 0)
             return new Dictionary<int, TrackUsage>();
+        // Un morceau de réserve aussi : un Joker peut le faire jouer, la playlist doit rester rejouable.
         var used = await db.Set<RunChallengeTrack>().AsNoTracking()
             .Where(t => trackIds.Contains(t.TrackId))
-            .Select(t => t.TrackId).Distinct()
+            .Select(t => t.TrackId)
+            .Union(db.Set<RunChallengeReserveTrack>().AsNoTracking().Where(t => trackIds.Contains(t.TrackId)).Select(t => t.TrackId))
+            .Distinct()
             .ToListAsync(ct);
         return used.ToDictionary(id => id, _ => TrackUsage.None with { UsedByMode = true });
     }

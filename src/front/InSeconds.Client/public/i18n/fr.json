@@ -64,6 +64,7 @@
       "no_challenge": "Pas assez de morceaux pour une playlist, réessaie plus tard.",
       "challenge_not_found": "Cette playlist n'existe pas. Vérifie le lien.",
       "comparison_locked": "La comparaison s'ouvre une fois ta partie terminée.",
+      "difficulty_locked": "La difficulté de cette manche est déjà fixée.",
       "session_not_found": "Cette partie n'existe plus.",
       "already_played": "Tu as déjà joué cette playlist.",
       "abandoned": "Tu as abandonné cette playlist.",

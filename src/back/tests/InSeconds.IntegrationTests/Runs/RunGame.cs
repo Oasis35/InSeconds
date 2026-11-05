@@ -108,6 +108,13 @@ internal sealed class RunGamer(RunGame game, Guid id, HttpClient client)
 
     public async Task<RunPlayResponse> PreviewAsync(int sessionId) => await ReadAsync<RunPlayResponse>(await PreviewRawAsync(sessionId));
 
+    public Task<HttpResponseMessage> ChooseRawAsync(int sessionId, int round, string difficulty) =>
+        Client.PostAsJsonAsync($"/api/runs/sessions/{sessionId}/difficulty", new ChooseRunDifficulty(round, difficulty), Ct);
+
+    /// <summary>Choisit la difficulté de la manche en cours (avant son premier son).</summary>
+    public async Task<RunSessionResponse> ChooseAsync(int sessionId, int round, string difficulty) =>
+        await ReadAsync<RunSessionResponse>(await ChooseRawAsync(sessionId, round, difficulty));
+
     public Task<HttpResponseMessage> AbandonRawAsync(int sessionId) => Client.PostAsync($"/api/runs/sessions/{sessionId}/abandon", null, Ct);
 
     public Task<HttpResponseMessage> SessionRawAsync(int sessionId) => Client.GetAsync($"/api/runs/sessions/{sessionId}", Ct);

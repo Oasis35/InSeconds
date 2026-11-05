@@ -63,7 +63,7 @@ public sealed class RunPlayer(
                 string? waveform = null;
                 if (preview.Url is not null && (await waveforms.GetAsync([track.TrackId], ct)).TryGetValue(track.TrackId, out var shape))
                     waveform = Convert.ToBase64String(shape);
-                current = RunViews.Current(challenge, track, preview.Url, waveform);
+                current = RunViews.Current(session, challenge, track, preview.Url, waveform);
                 // Le chrono du morceau ne peut pas partir plus tard qu'un peu après ce premier envoi (une reprise ne le remet pas à zéro).
                 if (preview.Url is not null)
                     session.ServeCurrent(time.GetUtcNow());
@@ -154,8 +154,11 @@ internal static class RunViews
         return Track(run.TrackAt(position)!, answer, run.Tracks);
     }
 
-    public static RunCurrentTrackResponse Current(RunChallenge challenge, RunChallengeTrack track, string? previewUrl, string? waveform) =>
-        new(track.Position, track.Round, PositionInRound(challenge, track), previewUrl, waveform);
+    public static RunCurrentTrackResponse Current(
+        RunSession session, RunChallenge challenge, RunChallengeTrack track, string? previewUrl, string? waveform) =>
+        new(track.Position, track.Round, PositionInRound(challenge, track), previewUrl, session.OptionOf(challenge, track.Round).ListenSeconds, waveform);
+
+    public static string DifficultyOf(RoundProgress progress) => RunDifficulties.KeyOf(progress.Difficulty);
 
     public static RunRoundSummaryResponse Summary(LoadedRun run, RunStep step, IRunScoringPolicy scoring)
     {
@@ -183,14 +186,17 @@ internal static class RunViews
         {
             var passed = session.RoundProgressOf(challenge, r, scoring);
             var disc = DiscLadder.Of(r, discs);
-            return new RunPassedRoundResponse(r, passed.Score, passed.Objective, new RunDiscResponse(disc.Key, disc.Stars));
+            return new RunPassedRoundResponse(r, passed.Score, passed.Objective, new RunDiscResponse(disc.Key, disc.Stars), DifficultyOf(passed));
         }).ToList();
+        RunDifficultyChoiceResponse? choice = null;
         if (session.IsPending)
         {
             var current = run.TrackAt(session.NextPosition)!.Round;
             var progress = session.RoundProgressOf(challenge, current, scoring);
-            round = new RunRoundResponse(current, progress.Score, progress.Objective, progress.MaxScore);
+            round = new RunRoundResponse(current, progress.Score, progress.Objective, progress.MaxScore, DifficultyOf(progress));
             roundTracks = PlayedTracks(run, current);
+            if (session.CanChooseDifficulty(challenge, current))
+                choice = DifficultyChoice(run, current, scoring);
         }
         else
         {
@@ -200,8 +206,16 @@ internal static class RunViews
         return new RunSessionResponse(
             session.Id, challenge.Code, StatusOf(session.Status), RoundsOf(challenge).Count, rules.TracksPerRound, rules.ListenSeconds,
             session.TotalScore, session.RoundsPassed, round, roundTracks, finish,
-            rules.AnswerSeconds, session.IsPending ? session.ClockRemaining(rules, now) : null, playedTracks, passedRounds);
+            rules.AnswerSeconds, session.IsPending ? session.ClockRemaining(rules, now) : null, playedTracks, passedRounds, choice);
     }
+
+    // Chaque difficulté proposée, calculée sur les morceaux de la manche (un morceau déjà neutralisé en est retiré, comme pour la jauge).
+    private static RunDifficultyChoiceResponse DifficultyChoice(LoadedRun run, int round, IRunScoringPolicy scoring) =>
+        new(round, run.Challenge.Rules.OptionsOf(round).OrderBy(o => o.Difficulty).Select(option =>
+        {
+            var progress = RunGauge.Of(run.Challenge, run.Session.Answers, round, scoring, option);
+            return new RunDifficultyOptionResponse(RunDifficulties.KeyOf(option.Difficulty), progress.Objective, progress.MaxScore, option.ListenSeconds);
+        }).ToList());
 
     private static RunFinishResponse Finish(LoadedRun run, IRunScoringPolicy scoring, IReadOnlyList<string> discs, RunRecord? record)
     {
@@ -212,7 +226,8 @@ internal static class RunViews
         {
             var played = challenge.Tracks.Any(t => t.Round == r && answers.Exists(a => a.Position == t.Position));
             var progress = session.RoundProgressOf(challenge, r, scoring);
-            return new RunRoundScoreResponse(r, played ? progress.Score : null, played ? progress.Objective : null, r <= session.RoundsPassed);
+            return new RunRoundScoreResponse(
+                r, played ? progress.Score : null, played ? progress.Objective : null, r <= session.RoundsPassed, played ? DifficultyOf(progress) : null);
         }).ToList();
         var disc = DiscLadder.Of(session.RoundsPassed, discs);
 

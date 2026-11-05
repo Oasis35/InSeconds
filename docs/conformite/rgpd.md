@@ -29,7 +29,7 @@ Panneau technique de l'admin : lecture anonyme de l'API publique de GitHub (`api
 
 ## Mode Run (Platines)
 
-- **Données gardées** (schéma `runs`) : les parties (statut, manches passées, score, dates), le résultat de chaque morceau (artiste et titre trouvés ou non, points, morceau neutralisé), **jamais le texte saisi** ; le record (meilleur score, meilleur disque) ; les playlists lancées et leur auteur ; l'accès accordé par l'admin.
+- **Données gardées** (schéma `runs`) : les parties (statut, manches passées, score, dates), le résultat de chaque morceau (artiste et titre trouvés ou non, points, morceau neutralisé) et la difficulté choisie pour chaque manche, **jamais le texte saisi** ; le record (meilleur score, meilleur disque) ; les playlists lancées et leur auteur ; l'accès accordé par l'admin.
 - **Visibilité** : une playlist se partage par son lien (code de 6 caractères). Qui l'ouvre voit le pseudo de son auteur (rien pour un invité ou un compte effacé : « Invité » à l'écran) ; la comparaison, à venir (#366), montrera après sa propre partie le pseudo, le disque et le score de chaque joueur de la playlist. Pas de classement public, pas de nombre de joueurs sur le lien. La page `/privacy` le dit (§ Données collectées).
 - **Effacement** : `RunsPlayerData` supprime les parties, les réponses, le record et l'accès du joueur ; les playlists qu'il a lancées restent jouables, `created_by` passe à `null`.
 - **Énumération des liens** : la lecture d'un lien est limitée à 60 requêtes par IP en 5 minutes (`run-link`), pour 31⁶ codes possibles.

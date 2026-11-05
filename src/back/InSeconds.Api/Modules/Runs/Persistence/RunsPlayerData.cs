@@ -20,7 +20,7 @@ public sealed class RunsPlayerData(InSecondsDbContext db) : IPlayerDataContribut
     public async Task<object> ExportAsync(Guid playerId, CancellationToken ct)
     {
         var sessions = await (
-                from session in db.Set<RunSession>().AsNoTracking().Include(s => s.Answers)
+                from session in db.Set<RunSession>().AsNoTracking().Include(s => s.Answers).Include(s => s.Rounds)
                 join challenge in db.Set<RunChallenge>().AsNoTracking() on session.ChallengeId equals challenge.Id
                 where session.PlayerId == playerId
                 orderby session.StartedAt
@@ -29,7 +29,9 @@ public sealed class RunsPlayerData(InSecondsDbContext db) : IPlayerDataContribut
         var games = sessions.Select(row => new RunGameExport(
             row.Code, row.Session.Status.ToString(), row.Session.StartedAt, row.Session.EndedAt, row.Session.RoundsPassed, row.Session.TotalScore,
             [.. row.Session.Answers.OrderBy(a => a.Position)
-                .Select(a => new RunAnswerExport(a.Position, a.ArtistCorrect, a.TitleCorrect, a.Points, a.Neutralized, a.AnsweredAt))])).ToList();
+                .Select(a => new RunAnswerExport(a.Position, a.ArtistCorrect, a.TitleCorrect, a.Points, a.Neutralized, a.AnsweredAt))],
+            [.. row.Session.Rounds.OrderBy(r => r.Round)
+                .Select(r => new RunRoundExport(r.Round, RunDifficulties.KeyOf(r.Difficulty), r.ChosenAt))])).ToList();
 
         var created = await db.Set<RunChallenge>().AsNoTracking()
             .Where(c => c.CreatedBy == playerId).OrderBy(c => c.CreatedAt)

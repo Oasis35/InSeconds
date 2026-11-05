@@ -16,7 +16,9 @@ public class RunsOptionsTests
         var options = new RunsOptions();
 
         Assert.Null(options.ThresholdPercents);
-        Assert.Equal([40, 50, 60, 70], options.EffectiveThresholdPercents);
+        Assert.Null(options.Difficulties);
+        Assert.Equal([45, 55, 65, 75], options.EffectiveThresholdPercents);
+        Assert.Equal(["easy", "safe", "risky"], options.EffectiveDifficulties.Select(d => d.Difficulty));
         Assert.Equal(5, options.EffectiveDiscs.Count);
         Assert.All(options.EffectiveDiscs, key => Assert.StartsWith("runs.discs.", key, StringComparison.Ordinal));
     }
@@ -41,6 +43,18 @@ public class RunsOptionsTests
         { new RunsOptions { AnswerSeconds = 10 }, "Runs:AnswerSeconds" },
         { new RunsOptions { AnswerSeconds = 601 }, "Runs:AnswerSeconds" },
         { new RunsOptions { AnswerSeconds = -1 }, "Runs:AnswerSeconds" },
+        { new RunsOptions { Difficulties = [] }, "Runs:Difficulties" },
+        { new RunsOptions { Difficulties = [new() { Difficulty = "easy" }] }, "Runs:Difficulties" },
+        { new RunsOptions { Difficulties = [new() { Difficulty = "safe" }, new() { Difficulty = "safe" }] }, "Runs:Difficulties" },
+        { new RunsOptions { Difficulties = [new() { Difficulty = "safe" }, new() { Difficulty = "hard" }] }, "Runs:Difficulties" },
+        { new RunsOptions { Difficulties = [new() { Difficulty = "safe", PointsFactor = 0 }] }, "Runs:Difficulties" },
+        { new RunsOptions { Difficulties = [new() { Difficulty = "safe", ObjectiveFactor = 3.5m }] }, "Runs:Difficulties" },
+        { new RunsOptions { Difficulties = [new() { Difficulty = "safe", ObjectiveFactor = 0.001m }] }, "Runs:Difficulties" },
+        { new RunsOptions { BossListenSeconds = 11 }, "Runs:BossListenSeconds" },
+        { new RunsOptions { BossListenSeconds = -1 }, "Runs:BossListenSeconds" },
+        { new RunsOptions { BossListenSeconds = 2.005m }, "Runs:BossListenSeconds" },
+        { new RunsOptions { ReservePerRound = -1 }, "Runs:ReservePerRound" },
+        { new RunsOptions { ReservePerRound = 6 }, "Runs:ReservePerRound" },
     };
 
     [Theory]

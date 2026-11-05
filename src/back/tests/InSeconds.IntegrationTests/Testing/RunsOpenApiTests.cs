@@ -13,7 +13,7 @@ public class RunsOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(p
 
         Assert.Equal(
             [
-                "abandonRun", "getRunChallenge", "getRunComparison", "getRunSession", "getRunsMe", "grantRunAccess", "joinRun", "launchRun", "listRunAccess",
+                "abandonRun", "chooseRunDifficulty", "getRunChallenge", "getRunComparison", "getRunSession", "getRunsMe", "grantRunAccess", "joinRun", "launchRun", "listRunAccess",
                 "refreshRunPreview", "revokeRunAccess", "startRunClock", "submitRunAnswer", "updateRunListening",
             ],
             OperationIds(document).Order(StringComparer.Ordinal));
@@ -52,6 +52,7 @@ public class RunsOpenApiTests(PostgresFixture postgres) : OpenApiDocumentTests(p
             Assert.Null(Operation(document, id)["requestBody"]);
         Assert.NotNull(Operation(document, "submitRunAnswer")["requestBody"]);
         Assert.NotNull(Operation(document, "updateRunListening")["requestBody"]);
+        Assert.NotNull(Operation(document, "chooseRunDifficulty")["requestBody"]);
         Assert.NotNull(Operation(document, "launchRun")["responses"]!["429"]);
         Assert.NotNull(Operation(document, "getRunChallenge")["responses"]!["429"]);
     }

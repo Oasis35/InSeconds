@@ -32,6 +32,9 @@ public static class RunsErrorCodes
     public const string AlreadyAnswered = "runs.already_answered";
 
     public const string ComparisonLocked = "runs.comparison_locked";
+
+    /// <summary>La difficulté d'une manche ne se choisit plus (pas la manche en cours, pas de choix, déjà choisie ou déjà commencée).</summary>
+    public const string DifficultyLocked = "runs.difficulty_locked";
 }
 
 /// <summary>Problèmes du mode Run, en <c>ProblemDetails</c> avec leur code (<see cref="RunsErrorCodes"/>).</summary>
@@ -59,6 +62,12 @@ internal static class RunsProblems
     /// <summary>La comparaison demande d'avoir fini sa propre partie : un ami qui n'a pas joué n'y voit rien.</summary>
     public static ProblemDetails ComparisonLocked() =>
         ApiProblem.Of(StatusCodes.Status409Conflict, RunsErrorCodes.ComparisonLocked, "La comparaison s'ouvre une fois ta partie terminée.");
+
+    public static ProblemDetails DifficultyLocked() =>
+        ApiProblem.Of(StatusCodes.Status409Conflict, RunsErrorCodes.DifficultyLocked, "La difficulté de cette manche ne se choisit plus.");
+
+    public static ProblemDetails DifficultyNotOffered() =>
+        ApiProblem.Of(StatusCodes.Status400BadRequest, ErrorCodes.BadRequest, "Cette difficulté n'est pas proposée pour cette manche.");
 
     public static ProblemDetails TrackNotFound() =>
         ApiProblem.Of(StatusCodes.Status404NotFound, RunsErrorCodes.TrackNotFound, "Morceau introuvable dans cette playlist.");
@@ -131,4 +140,8 @@ internal static partial class RunsLog
     [LoggerMessage(EventId = 1411, Level = LogLevel.Error,
         Message = "Pas assez de morceaux jouables pour une playlist : {EligibleCount} sur {Requested}")]
     public static partial void PoolInsufficient(ILogger logger, int eligibleCount, int requested);
+
+    [LoggerMessage(EventId = 1412, Level = LogLevel.Information,
+        Message = "Partie {SessionId} de {PlayerId} : manche {Round} en {Difficulty}")]
+    public static partial void DifficultyChosen(ILogger logger, int sessionId, Guid playerId, int round, string difficulty);
 }

@@ -69,6 +69,7 @@ public sealed record RunStep(int Round, RunStepOutcome Outcome)
 public sealed class RunSession
 {
     private readonly List<RunAnswer> _answers = [];
+    private readonly List<RunSessionRound> _rounds = [];
 
     private RunSession()
     {
@@ -114,6 +115,9 @@ public sealed class RunSession
 
     public IReadOnlyList<RunAnswer> Answers => _answers;
 
+    /// <summary>La difficulté de chaque manche jouée ou en cours qui en propose plusieurs (choisie, ou « Sûre » notée à la première réponse sans choix).</summary>
+    public IReadOnlyList<RunSessionRound> Rounds => _rounds;
+
     /// <summary>La position du morceau en cours : le premier sans réponse (N + 1 une fois tous répondus).</summary>
     public int NextPosition => _answers.Count + 1;
 
@@ -131,6 +135,56 @@ public sealed class RunSession
             return RunTrackTurn.AlreadyAnswered;
         return position == NextPosition ? RunTrackTurn.Current : RunTrackTurn.NotYet;
     }
+
+    /// <summary>La manche du morceau en cours ; vide une fois la partie finie.</summary>
+    public int? CurrentRound(RunChallenge challenge)
+    {
+        ArgumentNullException.ThrowIfNull(challenge);
+        return IsPending ? challenge.Tracks.FirstOrDefault(t => t.Position == NextPosition)?.Round : null;
+    }
+
+    /// <summary>
+    /// La difficulté de la manche <paramref name="round"/> : celle que le joueur a choisie, sinon « Sûre » (la manche d'une playlist du proto 1, la
+    /// première manche, ou une manche jouée sans choix).
+    /// </summary>
+    public RunDifficultyOption OptionOf(RunChallenge challenge, int round)
+    {
+        ArgumentNullException.ThrowIfNull(challenge);
+        var chosen = _rounds.FirstOrDefault(r => r.Round == round);
+        return (chosen is null ? null : challenge.Rules.OptionOf(round, chosen.Difficulty)) ?? challenge.Rules.DefaultOptionOf(round);
+    }
+
+    /// <summary>
+    /// Le joueur peut encore choisir la difficulté de cette manche : c'est la manche en cours, elle propose un choix qu'il n'a pas fait, et rien n'y
+    /// a commencé (aucune réponse, ni écoute ni chrono du morceau en cours). Choisir après avoir entendu le premier morceau serait tricher.
+    /// </summary>
+    public bool CanChooseDifficulty(RunChallenge challenge, int round) =>
+        CurrentRound(challenge) == round
+        && challenge.Rules.HasChoice(round)
+        && _rounds.TrueForAll(r => r.Round != round)
+        && !_answers.Exists(a => !a.Neutralized && challenge.Tracks.Any(t => t.Position == a.Position && t.Round == round))
+        && CurrentClockAt is null
+        && RoundOfCurrentTrack().ListenedSeconds == 0;
+
+    /// <summary>
+    /// Le joueur choisit la difficulté de la manche en cours, avant son premier son. Le chrono du morceau ne peut partir qu'après le choix (son extrait
+    /// est déjà parti avec la réponse d'avant, pour que le toucher lance le son sans attendre : écran de palier et de difficulté ne mangent pas son temps).
+    /// </summary>
+    public void ChooseDifficulty(RunChallenge challenge, int round, RunDifficulty difficulty, DateTimeOffset now)
+    {
+        RequirePending();
+        if (!CanChooseDifficulty(challenge, round))
+            throw new InvalidOperationException("La difficulté de cette manche ne se choisit plus.");
+        if (challenge.Rules.OptionOf(round, difficulty) is null)
+            throw new ArgumentException("Cette difficulté n'est pas proposée pour cette manche.", nameof(difficulty));
+        _rounds.Add(RunSessionRound.Create((short)round, difficulty, now));
+        if (CurrentServedAt is not null)
+            CurrentServedAt = now;
+    }
+
+    /// <summary>La durée d'écoute fixe du morceau en cours, à la difficulté de sa manche (la manche boss est plus courte).</summary>
+    public decimal ListenSecondsOf(RunChallenge challenge) =>
+        CurrentRound(challenge) is { } round ? OptionOf(challenge, round).ListenSeconds : challenge.Rules.ListenSeconds;
 
     /// <summary>La manche Gameplay du morceau en cours, reconstituée de la partie (pas d'indice au proto 1).</summary>
     public TrackRound RoundOfCurrentTrack() =>
@@ -204,7 +258,11 @@ public sealed class RunSession
         var track = CurrentTrackOf(challenge);
         if (IsLate(challenge.Rules, now))
             outcome = outcome with { ArtistCorrect = false, TitleCorrect = false };
-        var points = scoring.Points(outcome, track.Multiplier);
+        var option = OptionOf(challenge, track.Round);
+        // Une manche à choix jouée sans choix (navigateur d'avant le proto 2) se joue en « Sûre », et le dit.
+        if (challenge.Rules.HasChoice(track.Round) && _rounds.TrueForAll(r => r.Round != track.Round))
+            _rounds.Add(RunSessionRound.Create(track.Round, option.Difficulty, now));
+        var points = scoring.Points(outcome, option.Scale(track.Multiplier));
         return Record(challenge, RunAnswer.Create(track.Position, outcome.ArtistCorrect, outcome.TitleCorrect, points, neutralized: false, now), scoring, now);
     }
 
@@ -225,9 +283,9 @@ public sealed class RunSession
         End(now);
     }
 
-    /// <summary>La manche <paramref name="round"/> de cette partie (score, objectif, maximum).</summary>
+    /// <summary>La manche <paramref name="round"/> de cette partie (score, objectif, maximum), à sa difficulté.</summary>
     public RoundProgress RoundProgressOf(RunChallenge challenge, int round, IRunScoringPolicy scoring) =>
-        RunGauge.Of(challenge, _answers, round, scoring);
+        RunGauge.Of(challenge, _answers, round, scoring, OptionOf(challenge, round));
 
     private RunStep Record(RunChallenge challenge, RunAnswer answer, IRunScoringPolicy scoring, DateTimeOffset now)
     {
@@ -309,6 +367,26 @@ public sealed class RunAnswer
 
     public static RunAnswer Create(short position, bool artistCorrect, bool titleCorrect, int points, bool neutralized, DateTimeOffset now) =>
         new() { Position = position, ArtistCorrect = artistCorrect, TitleCorrect = titleCorrect, Points = points, Neutralized = neutralized, AnsweredAt = now };
+}
+
+/// <summary>La difficulté d'une manche dans une partie (une ligne par manche à choix), choisie avant son premier son.</summary>
+public sealed class RunSessionRound
+{
+    private RunSessionRound()
+    {
+    }
+
+    public int SessionId { get; private set; }
+
+    /// <summary>La manche, à partir de 1.</summary>
+    public short Round { get; private set; }
+
+    public RunDifficulty Difficulty { get; private set; }
+
+    public DateTimeOffset ChosenAt { get; private set; }
+
+    public static RunSessionRound Create(short round, RunDifficulty difficulty, DateTimeOffset now) =>
+        new() { Round = round, Difficulty = difficulty, ChosenAt = now };
 }
 
 /// <summary>

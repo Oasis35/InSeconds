@@ -1,6 +1,6 @@
 # Run (Platines) : proto 2, palier, difficulté et coups de pouce
 
-Règles et écrans du proto 2, décidés avec Clément le 05/11/2026. **Rien de ce document n'est livré** : le proto 1 ([`regles.md`](regles.md)) reste la référence de ce qui tourne. Les chiffres marqués « provisoire » se règlent après les parties de test. Maquette interactive : artifact « Platines, palier et pari » sur claude.ai (privé) ; les captures de [`maquettes/`](maquettes/) (`proto2-*.png`) en sont tirées le 05/11/2026. Plan et tickets : [`plan.md`](plan.md).
+Règles et écrans du proto 2, décidés avec Clément le 05/11/2026. **En cours de livraison sur le staging** : le back des difficultés et de la réserve du Joker ([#498](https://github.com/Oasis35/InSeconds/issues/498)) est fait, le reste suit ticket par ticket ; le proto 1 ([`regles.md`](regles.md)) reste la référence de ce qui tourne en prod. Les chiffres marqués « provisoire » se règlent après les parties de test. Maquette interactive : artifact « Platines, palier et pari » sur claude.ai (privé) ; les captures de [`maquettes/`](maquettes/) (`proto2-*.png`) en sont tirées le 05/11/2026. Plan et tickets : [`plan.md`](plan.md).
 
 ## Ce que le proto 2 change
 
@@ -55,11 +55,12 @@ Trois colonnes à plat sur une base commune, hauteur proportionnelle au **plafon
 Règles :
 
 - **Objectif non atteint à la fin de la manche : fin du run**, quelle que soit la difficulté. C'est la mise.
-- Les points de chaque morceau sont **mis à l'échelle de la difficulté choisie** : le plafond de la colonne est le maximum de la manche avec ce facteur. Dépasser l'objectif est utile : seul le plafond limite le score, et une difficulté plus haute rapporte plus pour la même qualité de réponse.
+- Les points de chaque morceau sont **mis à l'échelle de la difficulté choisie** : le plafond de la colonne est le maximum de la manche avec ce facteur. Réglages livrés (provisoires, `Runs:Difficulties`) : Facile ×0,67 des points pour 60 % de l'objectif de Sûre, Risquée ×1,33 pour 150 %. Dépasser l'objectif est utile : seul le plafond limite le score, et une difficulté plus haute rapporte plus pour la même qualité de réponse.
 - **Jamais de points acquis retirés** : rien ne se multiplie sur le total du run.
 - Les plafonds ne se chevauchent presque pas : pour dépasser le plafond de Facile il faut s'engager sur une difficulté plus haute.
 - L'objectif de « Sûre » est celui du proto 1 pour la manche (seuils de départ ci-dessous). Facile et Risquée sont des fractions et des multiples de ce seuil, à régler.
 - **Dernière manche** : « Risquée » est la **manche boss** (écoute de 5 s). Elle n'est jamais imposée. À confirmer après les parties de test, pour ne pas braquer les débutants.
+- **Sans choix** (navigateur d'avant le proto 2), la manche se joue en « Sûre ». Le choix reste ouvert jusqu'au premier son de la manche, jamais après.
 - **Seuils de départ** (`Runs:ThresholdPercents`) : 45, 55, 65, 75 % du maximum de la manche (au lieu de 40, 50, 60, 70), à ajuster après les parties de test. Les anciennes playlists gardent leurs règles figées.
 
 Questions à trancher avec les parties de test : barème exact des trois colonnes, facteurs de points, objectif de Facile (reste-t-il proche de Sûre ?), boss à 5 s.

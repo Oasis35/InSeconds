@@ -64,6 +64,7 @@
       "no_challenge": "Not enough tracks for a playlist, try again later.",
       "challenge_not_found": "This playlist doesn't exist. Check the link.",
       "comparison_locked": "The comparison opens once your game is over.",
+      "difficulty_locked": "This round's difficulty is already set.",
       "session_not_found": "This game no longer exists.",
       "already_played": "You've already played this playlist.",
       "abandoned": "You abandoned this playlist.",
