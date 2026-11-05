@@ -937,6 +937,71 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunSessionCard", b =>
+                {
+                    b.Property<int>("SessionId")
+                        .HasColumnType("integer")
+                        .HasColumnName("session_id");
+
+                    b.Property<short>("Slot")
+                        .HasColumnType("smallint")
+                        .HasColumnName("slot");
+
+                    b.Property<DateTimeOffset>("AcquiredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("acquired_at");
+
+                    b.Property<short>("AcquiredRound")
+                        .HasColumnType("smallint")
+                        .HasColumnName("acquired_round");
+
+                    b.Property<short>("Card")
+                        .HasColumnType("smallint")
+                        .HasColumnName("card");
+
+                    b.Property<DateTimeOffset?>("DroppedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("dropped_at");
+
+                    b.Property<short?>("PlayOrder")
+                        .HasColumnType("smallint")
+                        .HasColumnName("play_order");
+
+                    b.Property<DateTimeOffset?>("PlayedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("played_at");
+
+                    b.Property<short?>("PlayedPosition")
+                        .HasColumnType("smallint")
+                        .HasColumnName("played_position");
+
+                    b.Property<short?>("PlayedRound")
+                        .HasColumnType("smallint")
+                        .HasColumnName("played_round");
+
+                    b.Property<int?>("ReplacementTrackId")
+                        .HasColumnType("integer")
+                        .HasColumnName("replacement_track_id");
+
+                    b.Property<int?>("RunSessionId")
+                        .HasColumnType("integer")
+                        .HasColumnName("run_session_id");
+
+                    b.HasKey("SessionId", "Slot")
+                        .HasName("pk_session_cards");
+
+                    b.HasIndex("ReplacementTrackId")
+                        .HasDatabaseName("ix_session_cards_replacement_track_id");
+
+                    b.HasIndex("RunSessionId")
+                        .HasDatabaseName("ix_session_cards_run_session_id");
+
+                    b.ToTable("session_cards", "runs", t =>
+                        {
+                            t.HasCheckConstraint("ck_session_cards_card", "card BETWEEN 1 AND 8");
+                        });
+                });
+
             modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunSessionRound", b =>
                 {
                     b.Property<int>("SessionId")
@@ -1299,6 +1364,27 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_sessions_players_player_id");
                 });
 
+            modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunSessionCard", b =>
+                {
+                    b.HasOne("InSeconds.Api.Modules.Catalogue.Domain.Track", null)
+                        .WithMany()
+                        .HasForeignKey("ReplacementTrackId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_session_cards_tracks_replacement_track_id");
+
+                    b.HasOne("InSeconds.Api.Modules.Runs.Domain.RunSession", null)
+                        .WithMany("Hand")
+                        .HasForeignKey("RunSessionId")
+                        .HasConstraintName("fk_session_cards_sessions_run_session_id");
+
+                    b.HasOne("InSeconds.Api.Modules.Runs.Domain.RunSession", null)
+                        .WithMany("Cards")
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_session_cards_sessions_session_id");
+                });
+
             modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunSessionRound", b =>
                 {
                     b.HasOne("InSeconds.Api.Modules.Runs.Domain.RunSession", null)
@@ -1346,6 +1432,10 @@ namespace InSeconds.Api.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("InSeconds.Api.Modules.Runs.Domain.RunSession", b =>
                 {
                     b.Navigation("Answers");
+
+                    b.Navigation("Cards");
+
+                    b.Navigation("Hand");
 
                     b.Navigation("Rounds");
                 });

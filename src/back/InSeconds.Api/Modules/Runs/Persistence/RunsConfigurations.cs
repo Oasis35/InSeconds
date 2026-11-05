@@ -95,6 +95,22 @@ internal sealed class RunSessionConfiguration : IEntityTypeConfiguration<RunSess
         builder.Navigation(s => s.Answers).UsePropertyAccessMode(PropertyAccessMode.Field);
         builder.HasMany(s => s.Rounds).WithOne().HasForeignKey(r => r.SessionId).OnDelete(DeleteBehavior.Cascade);
         builder.Navigation(s => s.Rounds).UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.HasMany(s => s.Cards).WithOne().HasForeignKey(c => c.SessionId).OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(s => s.Cards).UsePropertyAccessMode(PropertyAccessMode.Field);
+    }
+}
+
+internal sealed class RunSessionCardConfiguration : IEntityTypeConfiguration<RunSessionCard>
+{
+    public void Configure(EntityTypeBuilder<RunSessionCard> builder)
+    {
+        // card : 1 trois choix, 2 Joker, 3 année, 4 initiales, 5 rallonge, 6 filet, 7 seuil abaissé, 8 sablier.
+        builder.ToTable("session_cards", DbSchemas.Runs, table => table.HasCheckConstraint("ck_session_cards_card", "card BETWEEN 1 AND 8"));
+        builder.HasKey(c => new { c.SessionId, c.Slot });
+        builder.Property(c => c.Card).HasConversion<short>();
+        // Joker : le morceau de la réserve joué à la place, qui ne se supprime pas tant qu'une partie l'a joué.
+        builder.HasOne("InSeconds.Api.Modules.Catalogue.Domain.Track", navigationName: null).WithMany()
+            .HasForeignKey(nameof(RunSessionCard.ReplacementTrackId)).OnDelete(DeleteBehavior.Restrict);
     }
 }
 

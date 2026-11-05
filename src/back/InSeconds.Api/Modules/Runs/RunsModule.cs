@@ -19,6 +19,7 @@ public static class RunsModule
         services.AddSingleton<RunsRules>();
         services.AddHostedService<RunsOptionsStartupCheck>();
         services.AddSingleton<IRunTrackSelector, RankBandSelector>();
+        services.AddSingleton<RunCardDealer>();
         services.AddScoped<IRunsStore, EfRunsStore>();
         services.AddScoped<IRunsQueries, EfRunsQueries>();
         services.AddScoped<IRunAccess, EfRunAccess>();

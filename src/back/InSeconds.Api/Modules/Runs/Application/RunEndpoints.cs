@@ -88,7 +88,7 @@ public static class LaunchRunEndpoint
     {
         var challenge = launch.Plan!.Challenge!;
         store.AddChallenge(challenge);
-        var session = RunSession.Start(challenge.Id, launch.PlayerId, time.GetUtcNow());
+        var session = RunSession.Start(challenge.Id, launch.PlayerId, time.GetUtcNow(), challenge.Rules);
         await store.AddAsync(session, ct);
         RunsLog.RunLaunched(logger, session.Id, launch.PlayerId, challenge.Code);
         metrics.RunLaunched();
@@ -178,7 +178,7 @@ public static class JoinRunEndpoint
     {
         var challenge = join.Challenge!;
         var resuming = join.Session is not null;
-        var session = join.Session ?? RunSession.Start(challenge.Id, join.PlayerId, time.GetUtcNow());
+        var session = join.Session ?? RunSession.Start(challenge.Id, join.PlayerId, time.GetUtcNow(), challenge.Rules);
         if (resuming)
         {
             RunsLog.SessionResumed(logger, session.Id, join.PlayerId, session.Answers.Count);
@@ -402,7 +402,7 @@ public static class SubmitRunAnswerEndpoint
         var run = await player.LoadAsync(loaded.Session, loaded.Challenge, ct);
         var session = run.Session;
         var track = run.TrackAt(request.Position)!;
-        var info = run.Tracks[track.TrackId];
+        var info = run.InfoAt(request.Position);
 
         // L'écoute est fixe : la durée annoncée est toujours celle de la difficulté de la manche, le plancher d'écoute ne peut pas la dépasser
         // (PATCH …/listening).
@@ -412,7 +412,8 @@ public static class SubmitRunAnswerEndpoint
         var step = session.Answer(run.Challenge, outcome, player.Scoring, time.GetUtcNow());
         var revealed = RunViews.Revealed(run, request.Position);
         RunsLog.AnswerSubmitted(
-            logger, session.PlayerId, session.Id, track.TrackId, track.Position, track.Round, outcome.ArtistCorrect, outcome.TitleCorrect, revealed.Points);
+            logger, session.PlayerId, session.Id, run.TrackIdAt(track.Position), track.Position, track.Round, outcome.ArtistCorrect, outcome.TitleCorrect,
+            revealed.Points);
         metrics.AnswerSubmitted(outcome, track.Round);
 
         return await player.AdvanceAsync(run, step, revealed, isResuming: false, ct);

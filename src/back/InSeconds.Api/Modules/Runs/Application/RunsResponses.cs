@@ -47,8 +47,33 @@ public sealed record RunDifficultyChoiceResponse(int Round, IReadOnlyList<RunDif
 /// Son écoute fixe, à la difficulté de sa manche (la manche boss est plus courte) : c'est elle qui fait foi.
 /// </param>
 /// <param name="Waveform">La forme de l'extrait en base64 (cf. <c>TrackSlot</c> du Daily), vide si elle n'est pas calculée : le navigateur calcule la sienne.</param>
+/// <param name="Effects">Les coups de pouce actifs sur ce morceau et ce qu'ils révèlent (servis pour lui seul, piège 31) ; vide sans carte jouée.</param>
 public sealed record RunCurrentTrackResponse(
-    int Position, int Round, int PositionInRound, string? PreviewUrl, decimal ListenSeconds, string? Waveform = null);
+    int Position, int Round, int PositionInRound, string? PreviewUrl, decimal ListenSeconds, string? Waveform = null,
+    RunTrackEffectsResponse? Effects = null);
+
+/// <summary>Ce que les cartes jouées sur le morceau en cours changent ou révèlent.</summary>
+/// <param name="Cards">Les cartes actives, par leur nom d'API.</param>
+/// <param name="Year">« Année » : l'année du morceau (vide si elle est inconnue).</param>
+/// <param name="ArtistInitials">« Initiales » : celles de chaque mot de l'artiste.</param>
+/// <param name="TitleInitials">« Initiales » : celles de chaque mot du titre.</param>
+/// <param name="Choices">« Trois choix » : trois réponses, une seule juste, dans un ordre qui ne la trahit pas.</param>
+/// <param name="ClockBonusSeconds">« Sablier » : les secondes ajoutées au chrono (0 sinon).</param>
+public sealed record RunTrackEffectsResponse(
+    IReadOnlyList<string> Cards, int? Year, IReadOnlyList<string>? ArtistInitials, IReadOnlyList<string>? TitleInitials,
+    IReadOnlyList<RunChoiceResponse>? Choices, int ClockBonusSeconds);
+
+/// <summary>Une réponse proposée par « Trois choix ».</summary>
+public sealed record RunChoiceResponse(string Artist, string Title);
+
+/// <summary>Une carte de la main.</summary>
+/// <param name="Slot">Son numéro dans la partie (pour la jouer ou la lâcher).</param>
+/// <param name="Card">Son nom d'API (<c>three_choices</c>, <c>joker</c>…).</param>
+public sealed record RunHandCardResponse(int Slot, string Card);
+
+/// <summary>L'offre du palier, tant qu'elle est ouverte : trois cartes, à prendre (une) ou à passer.</summary>
+/// <param name="AfterRound">La manche passée dont c'est le palier.</param>
+public sealed record RunCardOfferResponse(int AfterRound, IReadOnlyList<string> Cards);
 
 /// <summary>Un morceau que le serveur vient de neutraliser (Deezer n'en a plus d'extrait), pour l'écran « morceau retiré de la manche ».</summary>
 /// <param name="ObjectiveBefore">L'objectif de la manche avant la neutralisation (l'écran le barre).</param>
@@ -107,11 +132,15 @@ public sealed record RunFinishResponse(
 /// Le choix de difficulté de la manche en cours, tant que le joueur peut le faire (avant le premier son de la manche) ; vide sinon. Sans choix, la
 /// manche se joue en « Sûre ».
 /// </param>
+/// <param name="Hand">Les cartes en main (vide sans coups de pouce).</param>
+/// <param name="Offer">L'offre du palier, tant qu'elle est ouverte.</param>
+/// <param name="HandSize">Les emplacements de la main (0 : une playlist sans coups de pouce).</param>
 public sealed record RunSessionResponse(
     int SessionId, string ChallengeCode, string Status, int Rounds, int TracksPerRound, decimal ListenSeconds, int TotalScore, int RoundsPassed,
     RunRoundResponse? Round, IReadOnlyList<RunTrackResponse> RoundTracks, RunFinishResponse? Finish,
     int AnswerSeconds, decimal? ClockRemainingSeconds, IReadOnlyList<RunTrackResponse> PlayedTracks, IReadOnlyList<RunPassedRoundResponse> PassedRounds,
-    RunDifficultyChoiceResponse? DifficultyChoice = null);
+    RunDifficultyChoiceResponse? DifficultyChoice = null, IReadOnlyList<RunHandCardResponse>? Hand = null, RunCardOfferResponse? Offer = null,
+    int HandSize = 0);
 
 /// <summary>
 /// Ce que rendent le lancement, le démarrage ou la reprise, la redemande d'extrait et la réponse : l'état à jour, puis, dans l'ordre des manches, ce

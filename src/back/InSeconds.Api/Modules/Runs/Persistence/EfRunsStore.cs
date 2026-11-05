@@ -36,7 +36,7 @@ public sealed class EfRunsStore(InSecondsDbContext db) : IRunsStore
             .FirstOrDefaultAsync(c => c.Id == challengeId, ct);
 
     public Task<RunSession?> FindSessionAsync(int challengeId, Guid playerId, CancellationToken ct) =>
-        db.Set<RunSession>().Include(s => s.Answers).Include(s => s.Rounds).AsSplitQuery()
+        db.Set<RunSession>().Include(s => s.Answers).Include(s => s.Rounds).Include(s => s.Cards).AsSplitQuery()
             .FirstOrDefaultAsync(s => s.ChallengeId == challengeId && s.PlayerId == playerId, ct);
 
     public async Task<RunSession?> FindSessionForUpdateAsync(int sessionId, Guid playerId, CancellationToken ct)
@@ -52,13 +52,14 @@ public sealed class EfRunsStore(InSecondsDbContext db) : IRunsStore
         {
             await db.Set<RunAnswer>().Where(a => a.SessionId == sessionId).LoadAsync(ct);
             await db.Set<RunSessionRound>().Where(r => r.SessionId == sessionId).LoadAsync(ct);
+            await db.Set<RunSessionCard>().Where(c => c.SessionId == sessionId).LoadAsync(ct);
         }
 
         return session;
     }
 
     public Task<RunSession?> ReadSessionAsync(int sessionId, Guid playerId, CancellationToken ct) =>
-        db.Set<RunSession>().AsNoTracking().Include(s => s.Answers).Include(s => s.Rounds).AsSplitQuery()
+        db.Set<RunSession>().AsNoTracking().Include(s => s.Answers).Include(s => s.Rounds).Include(s => s.Cards).AsSplitQuery()
             .FirstOrDefaultAsync(s => s.Id == sessionId && s.PlayerId == playerId, ct);
 
     public async ValueTask AddAsync(RunSession session, CancellationToken ct) => await db.AddAsync(session, ct);
@@ -116,7 +117,7 @@ public sealed class EfRunsQueries(InSecondsDbContext db) : IRunsQueries
         db.Set<RunRecord>().AsNoTracking().FirstOrDefaultAsync(r => r.PlayerId == playerId, ct);
 
     public async Task<IReadOnlyList<RunSession>> ListFinishedSessionsAsync(int challengeId, CancellationToken ct) =>
-        await db.Set<RunSession>().AsNoTracking().Include(s => s.Answers).Include(s => s.Rounds).AsSplitQuery()
+        await db.Set<RunSession>().AsNoTracking().Include(s => s.Answers).Include(s => s.Rounds).Include(s => s.Cards).AsSplitQuery()
             .Where(s => s.ChallengeId == challengeId && (s.Status == RunSessionStatus.Won || s.Status == RunSessionStatus.Lost))
             .ToListAsync(ct);
 }

@@ -13,7 +13,8 @@ public sealed record PlanResult(RunChallenge? Challenge, int EligibleCount, int 
 /// Le code est vérifié avant l'insertion (pas de réessai dans la transaction Wolverine) : 31⁶ codes, une collision est très rare, et l'index unique
 /// reste le garde-fou.
 /// </summary>
-public sealed class RunChallengePlanner(ITrackDirectory tracks, IRunTrackSelector selector, IRunsStore store, RunsRules rules, TimeProvider time)
+public sealed class RunChallengePlanner(
+    ITrackDirectory tracks, IRunTrackSelector selector, RunCardDealer dealer, IRunsStore store, RunsRules rules, TimeProvider time)
 {
     /// <summary>Combien de codes essayer avant de renoncer (une collision répétée n'est plus de la malchance).</summary>
     private const int MaxCodeAttempts = 5;
@@ -29,6 +30,9 @@ public sealed class RunChallengePlanner(ITrackDirectory tracks, IRunTrackSelecto
         var selection = selector.Select(candidates, current, seed);
         if (!selection.IsSufficient)
             return new PlanResult(null, selection.EligibleCount, selection.Requested);
+        // Les coups de pouce : la carte de départ et les offres de chaque palier, les mêmes pour tous les joueurs de la playlist.
+        if (current.Cards is { } cards)
+            current = current with { Cards = dealer.Deal(cards, current, seed) };
 
         for (var attempt = 0; attempt < MaxCodeAttempts; attempt++)
         {

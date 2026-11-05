@@ -7,6 +7,11 @@ namespace InSeconds.Api.Modules.Runs.Application;
 public sealed record LoadedRun(RunSession Session, RunChallenge Challenge, IReadOnlyDictionary<int, TrackInfo> Tracks)
 {
     public RunChallengeTrack? TrackAt(int position) => Challenge.Tracks.FirstOrDefault(t => t.Position == position);
+
+    /// <summary>Le morceau joué à cette position (celui de la réserve qu'un Joker y a mis, sinon celui du défi).</summary>
+    public int TrackIdAt(int position) => Session.TrackIdAt(Challenge, position);
+
+    public TrackInfo InfoAt(int position) => Tracks[TrackIdAt(position)];
 }
 
 /// <summary>
@@ -16,6 +21,7 @@ public sealed record LoadedRun(RunSession Session, RunChallenge Challenge, IRead
 /// </summary>
 public sealed class RunPlayer(
     ITrackDirectory directory,
+    Gameplay.Contracts.ISeededShuffle shuffle,
     ITrackPreviews previews,
     ITrackWaveforms waveforms,
     IRunsStore store,
@@ -27,9 +33,10 @@ public sealed class RunPlayer(
 {
     public IRunScoringPolicy Scoring => scoring;
 
-    /// <summary>Les morceaux du défi de cette partie (noms, pochette, identifiant Deezer), en une lecture.</summary>
+    /// <summary>Les morceaux du défi de cette partie, réserve du Joker comprise (noms, pochette, identifiant Deezer), en une lecture.</summary>
     public async Task<LoadedRun> LoadAsync(RunSession session, RunChallenge challenge, CancellationToken ct) =>
-        new(session, challenge, await directory.GetAsync(challenge.Tracks.Select(t => t.TrackId).ToList(), ct));
+        new(session, challenge, await directory.GetAsync(
+            challenge.Tracks.Select(t => t.TrackId).Concat(challenge.Reserve.Select(r => r.TrackId)).Distinct().ToList(), ct));
 
     /// <summary>
     /// Fait avancer la partie jusqu'au morceau à jouer : <paramref name="answered"/> est ce que la réponse du joueur vient de faire (vide pour un
@@ -57,17 +64,18 @@ public sealed class RunPlayer(
             // sinon le joueur miserait en connaissant le morceau. Le choix (POST …/difficulty) reprend ici.
             if (session.CanChooseDifficulty(challenge, track.Round))
                 break;
-            var info = run.Tracks[track.TrackId];
+            var trackId = run.TrackIdAt(track.Position);
+            var info = run.Tracks[trackId];
             var preview = await previews.GetAsync(info, ct);
             if (preview.Availability != PreviewAvailability.Missing)
             {
                 if (preview.Availability == PreviewAvailability.Unavailable)
-                    RunsLog.PreviewUnavailable(logger, track.TrackId, session.Id);
+                    RunsLog.PreviewUnavailable(logger, trackId, session.Id);
                 // La forme du morceau qui va se jouer (jamais d'un morceau dont l'extrait n'a pas répondu : il n'y a rien à dessiner).
                 string? waveform = null;
-                if (preview.Url is not null && (await waveforms.GetAsync([track.TrackId], ct)).TryGetValue(track.TrackId, out var shape))
+                if (preview.Url is not null && (await waveforms.GetAsync([trackId], ct)).TryGetValue(trackId, out var shape))
                     waveform = Convert.ToBase64String(shape);
-                current = RunViews.Current(session, challenge, track, preview.Url, waveform);
+                current = RunViews.Current(session, challenge, track, preview.Url, waveform) with { Effects = await EffectsAsync(run, track.Position, ct) };
                 // Le chrono du morceau ne peut pas partir plus tard qu'un peu après ce premier envoi (une reprise ne le remet pas à zéro).
                 if (preview.Url is not null)
                     session.ServeCurrent(time.GetUtcNow());
@@ -78,7 +86,7 @@ public sealed class RunPlayer(
             var step = session.Neutralize(challenge, scoring, time.GetUtcNow());
             neutralized.Add(new RunNeutralizedResponse(
                 track.Position, track.Round, before, session.RoundProgressOf(challenge, track.Round, scoring).Objective));
-            RunsLog.TrackNeutralized(logger, track.TrackId, session.Id, track.Position, track.Round);
+            RunsLog.TrackNeutralized(logger, trackId, session.Id, track.Position, track.Round);
             metrics.TrackNeutralized();
             if (step.EndsRound)
                 summaries.Add(RunViews.Summary(run, step, scoring));
@@ -104,12 +112,60 @@ public sealed class RunPlayer(
         if (withWaveforms && run.Session.IsPending)
         {
             // Seulement des morceaux déjà répondus (jamais un morceau à venir, piège 31) ; leur absence a déjà été signalée quand ils se jouaient.
-            var played = run.Session.Answers.Where(a => !a.Neutralized).Select(a => run.TrackAt(a.Position)!.TrackId).ToList();
+            var played = run.Session.Answers.Where(a => !a.Neutralized).Select(a => run.TrackIdAt(a.Position)).ToList();
             if (played.Count > 0)
                 shapes = await waveforms.GetAsync(played, ct, reportMissing: false);
         }
 
         return RunViews.Session(run, scoring, rules.Discs, record, shapes, time.GetUtcNow());
+    }
+
+    /// <summary>
+    /// Ce que les cartes actives sur le morceau de cette position révèlent ou changent, calculé à la demande et pour lui seul (piège 31) ; vide sans
+    /// carte. « Trois choix » : deux morceaux du catalogue hors de la playlist (ni joués, ni en réserve), tirés à la graine de la playlist et de la
+    /// position (les mêmes pour tous ses joueurs), d'un autre artiste que le bon, mêlés à la bonne réponse.
+    /// </summary>
+    private async Task<RunTrackEffectsResponse?> EffectsAsync(LoadedRun run, int position, CancellationToken ct)
+    {
+        var active = run.Session.ActiveCardsAt(position);
+        if (active.Count == 0)
+            return null;
+        var info = run.InfoAt(position);
+        IReadOnlyList<RunChoiceResponse>? choices = null;
+        if (active.Contains(RunCard.ThreeChoices))
+            choices = await ChoicesAsync(run, position, info, ct);
+        var initials = active.Contains(RunCard.Initials);
+        var bonus = active.Contains(RunCard.Hourglass) && run.Challenge.Rules.Cards is { } cards ? cards.HourglassSeconds : 0;
+        return new RunTrackEffectsResponse(
+            active.Select(RunCards.KeyOf).ToList(), active.Contains(RunCard.Year) ? info.ReleaseYear : null,
+            initials ? RunInitials.Of(info.Artist) : null, initials ? RunInitials.Of(info.DisplayTitle) : null, choices, bonus);
+    }
+
+    private async Task<IReadOnlyList<RunChoiceResponse>> ChoicesAsync(LoadedRun run, int position, TrackInfo answer, CancellationToken ct)
+    {
+        var challenge = run.Challenge;
+        var inPlaylist = challenge.Tracks.Select(t => t.TrackId).Concat(challenge.Reserve.Select(r => r.TrackId)).ToHashSet();
+        var candidates = (await directory.ListPlayableIdsAsync(ct)).Where(id => !inPlaylist.Contains(id)).Order().ToList();
+        var seed = unchecked((challenge.Seed * 31) + position);
+        var decoys = new List<RunChoiceResponse>();
+        // Par paquets : la plupart des morceaux tirés conviennent, on n'en lit que quelques-uns.
+        foreach (var batch in shuffle.Shuffle(candidates, seed).Chunk(8))
+        {
+            var infos = await directory.GetAsync(batch, ct);
+            foreach (var id in batch)
+            {
+                if (decoys.Count == 2)
+                    break;
+                if (infos.TryGetValue(id, out var decoy) && !string.Equals(decoy.Artist, answer.Artist, StringComparison.OrdinalIgnoreCase)
+                    && decoys.TrueForAll(d => !string.Equals(d.Artist, decoy.Artist, StringComparison.OrdinalIgnoreCase)))
+                    decoys.Add(new RunChoiceResponse(decoy.Artist, decoy.DisplayTitle));
+            }
+
+            if (decoys.Count == 2)
+                break;
+        }
+
+        return shuffle.Shuffle([new RunChoiceResponse(answer.Artist, answer.DisplayTitle), .. decoys], unchecked(seed + 1));
     }
 
     // Le record (partie gagnée ou perdue), dans la transaction de fin : une partie abandonnée ne compte pas.
@@ -138,14 +194,14 @@ internal static class RunViews
         _ => "abandoned",
     };
 
-    /// <summary>Un morceau joué : révélé (noms, pochette, lien Deezer), sauf s'il a été neutralisé.</summary>
-    public static RunTrackResponse Track(
-        RunChallengeTrack track, RunAnswer answer, IReadOnlyDictionary<int, TrackInfo> infos, IReadOnlyDictionary<int, byte[]>? shapes = null)
+    /// <summary>Un morceau joué : révélé (noms, pochette, lien Deezer), sauf s'il a été neutralisé. Après un Joker, le morceau joué à sa place.</summary>
+    public static RunTrackResponse Track(LoadedRun run, RunChallengeTrack track, RunAnswer answer, IReadOnlyDictionary<int, byte[]>? shapes = null)
     {
         if (answer.Neutralized)
             return new RunTrackResponse(track.Position, track.Round, true, false, false, 0, null, null, null, null);
-        var info = infos[track.TrackId];
-        var waveform = shapes is not null && shapes.TryGetValue(track.TrackId, out var shape) ? Convert.ToBase64String(shape) : null;
+        var trackId = run.TrackIdAt(track.Position);
+        var info = run.Tracks[trackId];
+        var waveform = shapes is not null && shapes.TryGetValue(trackId, out var shape) ? Convert.ToBase64String(shape) : null;
         return new RunTrackResponse(
             track.Position, track.Round, false, answer.ArtistCorrect, answer.TitleCorrect, answer.Points,
             info.Artist, info.DisplayTitle, info.CoverUrl, info.DeezerTrackId, waveform);
@@ -155,7 +211,7 @@ internal static class RunViews
     public static RunTrackResponse Revealed(LoadedRun run, int position)
     {
         var answer = run.Session.Answers.First(a => a.Position == position);
-        return Track(run.TrackAt(position)!, answer, run.Tracks);
+        return Track(run, run.TrackAt(position)!, answer);
     }
 
     public static RunCurrentTrackResponse Current(
@@ -183,7 +239,7 @@ internal static class RunViews
         // La pile, partie finie comprise : la dernière réponse s'affiche au-dessus des morceaux déjà joués avant l'écran de fin.
         var playedTracks = session.Answers
             .OrderBy(a => a.Position)
-            .Select(a => Track(run.TrackAt(a.Position)!, a, run.Tracks, shapes))
+            .Select(a => Track(run, run.TrackAt(a.Position)!, a, shapes))
             .ToList();
         // Les manches passées sont les premières : la partie s'arrête à la première manche ratée.
         var passedRounds = Enumerable.Range(1, session.RoundsPassed).Select(r =>
@@ -210,7 +266,10 @@ internal static class RunViews
         return new RunSessionResponse(
             session.Id, challenge.Code, StatusOf(session.Status), RoundsOf(challenge).Count, rules.TracksPerRound, rules.ListenSeconds,
             session.TotalScore, session.RoundsPassed, round, roundTracks, finish,
-            rules.AnswerSeconds, session.IsPending ? session.ClockRemaining(rules, now) : null, playedTracks, passedRounds, choice);
+            rules.AnswerSeconds, session.IsPending ? session.ClockRemaining(rules, now) : null, playedTracks, passedRounds, choice,
+            session.Hand.Select(c => new RunHandCardResponse(c.Slot, RunCards.KeyOf(c.Card))).ToList(),
+            session.OpenOffer(challenge) is { } offer ? new RunCardOfferResponse(offer.AfterRound, offer.Cards.Select(RunCards.KeyOf).ToList()) : null,
+            rules.Cards?.HandSize ?? 0);
     }
 
     // Chaque difficulté proposée, calculée sur les morceaux de la manche (un morceau déjà neutralisé en est retiré, comme pour la jauge).
@@ -225,7 +284,7 @@ internal static class RunViews
     {
         var (session, challenge, _) = run;
         var answers = session.Answers.OrderBy(a => a.Position).ToList();
-        var tracks = answers.Select(a => Track(run.TrackAt(a.Position)!, a, run.Tracks)).ToList();
+        var tracks = answers.Select(a => Track(run, run.TrackAt(a.Position)!, a)).ToList();
         var rounds = RoundsOf(challenge).Select(r =>
         {
             var played = challenge.Tracks.Any(t => t.Round == r && answers.Exists(a => a.Position == t.Position));
@@ -247,7 +306,7 @@ internal static class RunViews
             .Select(a => (Answer: a, Track: run.TrackAt(a.Position)!))
             .Where(x => x.Track.Round == round)
             .OrderBy(x => x.Track.Position)
-            .Select(x => Track(x.Track, x.Answer, run.Tracks))
+            .Select(x => Track(run, x.Track, x.Answer))
             .ToList();
 
     /// <summary>Les manches du défi, d'après ses morceaux (le nombre réel, piège 38).</summary>
