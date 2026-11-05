@@ -30,9 +30,9 @@ const MUSE: AnswerSuggestion = { artist: 'Muse', title: 'Uprising' };
   imports: [TrackRoundComponent],
   template: `
     <app-track-round [result]="result()" [hintPending]="hintPending()" [layout]="layout()" [alert]="alert()" [timeUp]="timeUp()"
-      [choices]="choices()" (answered)="answered.push($event)" (hintRequested)="hints.push($event)">
+      [choices]="choices()" [locked]="locked()" (answered)="answered.push($event)" (hintRequested)="hints.push($event)">
       <span roundCorner>0:45</span>
-      <p roundCards>Cartes du mode</p>
+      <p roundAids>Cartes du mode</p>
       <p roundReveal>Révélation du mode</p>
       <button roundActions type="button">Bonus</button>
       <span roundScore>+850 pts</span>
@@ -46,6 +46,7 @@ class Host {
   readonly alert = signal(false);
   readonly timeUp = signal(false);
   readonly choices = signal<readonly { artist: string; title: string }[] | null>(null);
+  readonly locked = signal(false);
   readonly answered: RoundSubmission[] = [];
   readonly hints: number[] = [];
 }
@@ -116,7 +117,7 @@ describe('TrackRoundComponent', () => {
     it('les cartes du mode au-dessus de la saisie', () => {
       start();
 
-      const cards = element.querySelector('[roundCards]')!;
+      const cards = element.querySelector('[roundAids]')!;
       expect(cards.textContent).toBe('Cartes du mode');
       expect(cards.compareDocumentPosition(input()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
@@ -134,6 +135,37 @@ describe('TrackRoundComponent', () => {
       refresh();
 
       expect(fixture.componentInstance.answered.map(a => [a.artist, a.title])).toEqual([['Daft Punk', 'Get Lucky']]);
+    });
+
+    it('des réponses proposées après une saisie : le texte tapé disparaît, le temps écoulé n\'envoie rien de caché', () => {
+      start();
+      emit('ready');
+      input().value = 'Daft';
+      input().dispatchEvent(new Event('input'));
+      refresh();
+
+      fixture.componentInstance.choices.set([{ artist: 'Muse', title: 'Uprising' }, DAFT]);
+      refresh();
+      fixture.componentInstance.timeUp.set(true);
+      refresh();
+
+      expect(fixture.componentInstance.answered.map(a => [a.artist, a.title])).toEqual([[null, null]]);
+    });
+
+    it('verrouillée par le mode : ni « Valider » ni réponse proposée ne partent, le temps écoulé attend le verrou', () => {
+      fixture.componentInstance.locked.set(true);
+      fixture.componentInstance.choices.set([DAFT]);
+      start();
+      emit('ready');
+
+      element.querySelector<HTMLButtonElement>('[data-testid="round-choice"]')!.click();
+      fixture.componentInstance.timeUp.set(true);
+      refresh();
+      expect(fixture.componentInstance.answered).toEqual([]);
+
+      fixture.componentInstance.locked.set(false);
+      refresh();
+      expect(fixture.componentInstance.answered).toHaveLength(1);
     });
 
     it('en ligne, « Passer » est un simple lien sous « Valider »', () => {

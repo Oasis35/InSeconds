@@ -1055,9 +1055,7 @@
       "columnLabel": "{{name}}: up to {{max}} points, target {{objective}}"
     },
     "roundCards": {
-      "hand": "Your boosts",
       "play": "Play {{card}}",
-      "year": "Released in {{year}}",
       "net": "A miss counts as half",
       "lowerTarget": "Round target lowered",
       "hourglass": "+{{seconds}} on the clock",

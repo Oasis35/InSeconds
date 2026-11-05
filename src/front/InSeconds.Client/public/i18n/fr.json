@@ -1055,9 +1055,7 @@
       "columnLabel": "{{name}} : jusqu'à {{max}} points, objectif {{objective}}"
     },
     "roundCards": {
-      "hand": "Tes bonus",
       "play": "Jouer {{card}}",
-      "year": "Sortie en {{year}}",
       "net": "Un raté compte à moitié",
       "lowerTarget": "Objectif de la manche abaissé",
       "hourglass": "+{{seconds}} au chrono",

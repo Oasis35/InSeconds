@@ -280,6 +280,13 @@ function toSession(session: RunSessionResponse): RunSession {
       ? { afterRound: session.offer.afterRound, cards: session.offer.cards.filter(isRunCard) }
       : null,
     handSize: session.handSize ?? 0,
+    cardValues: session.cardValues
+      ? {
+          extendListenSeconds: session.cardValues.extendListenSeconds,
+          hourglassSeconds: session.cardValues.hourglassSeconds,
+          lowerTargetPercent: session.cardValues.lowerTargetPercent,
+        }
+      : null,
     nextDisc: session.nextDisc ? { key: session.nextDisc.key, stars: session.nextDisc.stars } : null,
   };
 }

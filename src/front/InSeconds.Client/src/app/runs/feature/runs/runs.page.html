@@ -43,13 +43,14 @@
                 (next)="store.next()" />
             } @else {
               <!-- La carte du morceau : le lecteur (bouton à gauche de la waveform), le chrono dans son coin, la saisie, puis la réponse. -->
-              <app-track-round layout="inline" [alert]="store.clockAlert()" [timeUp]="store.timeUp()" [choices]="store.roundCards()?.effects?.choices ?? null"
+              <app-track-round layout="inline" [alert]="store.clockAlert()" [timeUp]="store.timeUp()" [choices]="store.roundCards()?.effects?.choices ?? null" [locked]="store.cardBusy()"
                 (answered)="onAnswered($event)">
                 @if (store.clockShown() !== null) {
                   <app-run-clock roundCorner [seconds]="store.clockShown()!" />
                 }
                 @if (store.roundCards(); as cards) {
-                  <app-run-round-cards roundCards [hand]="cards.hand" [effects]="cards.effects" [busy]="store.cardBusy()" (play)="store.playCard($event)" />
+                  <app-run-round-cards roundAids [hand]="cards.hand" [effects]="cards.effects" [values]="cards.values" [listenSeconds]="cards.listenSeconds"
+                    [busy]="store.cardBusy()" [playable]="cards.playable" (play)="store.playCard($event)" />
                 }
                 @if (store.revealed(); as revealed) {
                   <app-run-reveal roundReveal [track]="revealed" [peaks]="round.waveform()?.peaks ?? store.shapes()[revealed.position] ?? null"
@@ -71,7 +72,7 @@
             <app-run-header [round]="palier.headerRound" [rounds]="store.rounds()" [showStatus]="false" (abandon)="confirmAbandon()" />
             <app-run-palier class="flex-1 flex flex-col" [passed]="palier.passed" [rounds]="store.rounds()" [wonDiscs]="palier.wonDiscs"
               [nextRound]="palier.nextRound" [nextObjective]="palier.nextObjective" [nextDisc]="palier.nextDisc" [offer]="palier.offer"
-              [hand]="palier.hand" [handSize]="palier.handSize" [pending]="store.pendingCard()" [busy]="store.palierBusy()"
+              [hand]="palier.hand" [handSize]="palier.handSize" [values]="store.session()?.cardValues ?? null" [pending]="store.pendingCard()" [busy]="store.palierBusy()"
               (pick)="store.pickCard($event)" (drop)="store.dropForPending($event)" (pass)="store.passOffer()" (next)="store.continueFromPalier()" />
           </div>
         }
@@ -83,7 +84,7 @@
           <div class="screen-enter flex-1 flex flex-col pt-1">
             <app-run-header [round]="difficulty.headerRound" [rounds]="store.rounds()" [showStatus]="false" (abandon)="confirmAbandon()" />
             <app-run-difficulty class="flex-1 flex flex-col" [round]="difficulty.round" [totalScore]="difficulty.totalScore"
-              [options]="difficulty.options" [hand]="difficulty.hand" [listenSeconds]="difficulty.listenSeconds" [busy]="store.difficultyBusy()"
+              [options]="difficulty.options" [hand]="difficulty.hand" [listenSeconds]="difficulty.listenSeconds" [values]="store.session()?.cardValues ?? null" [busy]="store.difficultyBusy()"
               (choose)="store.chooseDifficulty($event)" />
           </div>
         }

@@ -72,6 +72,12 @@ export function enterCard(element: HTMLElement): void {
   gsap.fromTo(element, { y: -14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.38, ease: SETTLE, clearProps: 'transform,opacity' });
 }
 
+/** Une carte qui monte à sa place (un coup de pouce joué entre dans la carte du morceau). */
+export function riseCard(element: HTMLElement): void {
+  if (motionReduced()) return;
+  gsap.fromTo(element, { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.38, ease: SETTLE, clearProps: 'transform,opacity' });
+}
+
 /** Un chiffre qui change avec un petit temps fort (le décompte des dernières secondes). */
 export function pop(element: HTMLElement): void {
   if (motionReduced()) return;

@@ -46,6 +46,7 @@ public class RunCardApiTests(PostgresFixture postgres) : IAsyncLifetime
 
         Assert.Equal([new RunHandCardResponse(1, "year")], start.Session.Hand);
         Assert.Equal(2, start.Session.HandSize);
+        Assert.Equal(new RunCardValuesResponse(20m, 30, 20), start.Session.CardValues);
         Assert.Null(start.Session.Offer);
         Assert.Null(start.Current!.Effects);
     }
@@ -268,6 +269,7 @@ public class RunCardApiTests(PostgresFixture postgres) : IAsyncLifetime
 
         Assert.Empty(start.Session.Hand!);
         Assert.Equal(0, start.Session.HandSize);
+        Assert.Null(start.Session.CardValues);
     }
 
     [Fact]

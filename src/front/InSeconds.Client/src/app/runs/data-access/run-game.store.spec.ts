@@ -566,6 +566,101 @@ describe('RunGameStore', () => {
       expect(api.calls).toContain('session:7');
       expect(store.screen()).toBe('playing');
     });
+
+    it('Joker : le morceau de réserve, à la même place, est un autre morceau pour la manche (saisie et forme neuves)', async () => {
+      const before = round.trackKey();
+      api.playResult = PLAY({ session: withHand({ hand: [{ slot: 1, card: 'year' }] }), current: CURRENT({ previewUrl: 'https://cdn/preview-reserve.mp3' }) });
+
+      await store.playCard(2);
+
+      expect(round.trackId()).toBe(1);
+      expect(round.trackKey()).not.toBe(before);
+    });
+
+    it('deux touchers sur une carte ne la jouent qu\'une fois', async () => {
+      let answer: (play: ReturnType<typeof PLAY>) => void = () => undefined;
+      vi.spyOn(api, 'playCard').mockImplementation(() => new Promise(resolve => { answer = resolve; }));
+
+      const playing = store.playCard(1);
+      void store.playCard(1);
+      answer(PLAY({ session: withHand({ hand: [{ slot: 2, card: 'joker' }] }) }));
+      await playing;
+
+      expect(api.playCard).toHaveBeenCalledTimes(1);
+      expect(store.cardBusy()).toBe(false);
+    });
+
+    it('une réponse arrivée après un abandon ne change rien, refus compris', async () => {
+      let refuse: (error: Error) => void = () => undefined;
+      vi.spyOn(api, 'playCard').mockImplementation(() => new Promise((_, reject) => { refuse = reject; }));
+      const playing = store.playCard(1);
+      await store.abandon();
+      const afterAbandon = store.session();
+
+      refuse(new Error('409'));
+      await playing;
+      await new Promise<void>(resolve => setTimeout(resolve, 0));
+
+      expect(store.session()).toBe(afterAbandon);
+      expect(store.screen()).not.toBe('playing');
+    });
+
+    it('pendant l\'envoi d\'une réponse, les cartes ne se jouent plus', async () => {
+      let answered: (play: ReturnType<typeof PLAY>) => void = () => undefined;
+      vi.spyOn(api, 'submitAnswer').mockImplementation(() => new Promise(resolve => { answered = resolve; }));
+      const sent = round.submit({ artist: 'Daft Punk', title: 'One More Time' });
+      const sending = sent ? store.submit(sent) : Promise.resolve();
+
+      expect(store.roundCards()?.playable).toBe(false);
+      await store.playCard(1);
+      expect(api.calls.filter(c => c.startsWith('playCard'))).toEqual([]);
+
+      answered(PLAY());
+      await sending;
+    });
+  });
+
+  describe('Sablier et chrono', () => {
+    const hourglass = (clockBonusSeconds: number, clockRemainingSeconds: number | null) => PLAY({
+      session: SESSION({ handSize: 2, hand: [], clockRemainingSeconds }),
+      current: CURRENT({ effects: { cards: ['hourglass'], year: null, artistInitials: null, titleInitials: null, choices: null, clockBonusSeconds } }),
+    });
+
+    beforeEach(async () => {
+      vi.useFakeTimers();
+      api.launchResult = { kind: 'ok', play: PLAY({ session: SESSION({ handSize: 2, hand: [{ slot: 1, card: 'hourglass' }] }) }) };
+      await startRun();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('joué avant le premier son : le chrono part plein, Sablier compris', async () => {
+      api.playResult = hourglass(30, null);
+      await store.playCard(1);
+      expect(store.clockShown()).toBe(75);
+
+      audio.emit('playing');
+      TestBed.tick();
+      vi.advanceTimersByTime(50_000);
+
+      expect(store.timeUp()).toBe(false);
+      expect(store.clockShown()).toBeCloseTo(25, 0);
+    });
+
+    it('joué pendant le chrono : il repart sur ce que le serveur retient', async () => {
+      audio.emit('playing');
+      TestBed.tick();
+      vi.advanceTimersByTime(40_000);
+      api.playResult = hourglass(30, 35);
+
+      await store.playCard(1);
+      vi.advanceTimersByTime(10_000);
+
+      expect(store.timeUp()).toBe(false);
+      expect(store.clockShown()).toBeCloseTo(25, 0);
+    });
   });
 
   describe('fin de partie', () => {

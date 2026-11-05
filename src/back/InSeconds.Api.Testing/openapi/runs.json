@@ -1961,6 +1961,16 @@
                 "$ref": "#/components/schemas/RunDiscResponse"
               }
             ]
+          },
+          "cardValues": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunCardValuesResponse"
+              }
+            ]
           }
         }
       },
@@ -2359,6 +2369,28 @@
         "type": "object",
         "properties": {
           "afterRound": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "RunCardValuesResponse": {
+        "required": [
+          "extendListenSeconds",
+          "hourglassSeconds",
+          "lowerTargetPercent"
+        ],
+        "type": "object",
+        "properties": {
+          "extendListenSeconds": {
+            "type": "number",
+            "format": "double"
+          },
+          "hourglassSeconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lowerTargetPercent": {
             "type": "integer",
             "format": "int32"
           }

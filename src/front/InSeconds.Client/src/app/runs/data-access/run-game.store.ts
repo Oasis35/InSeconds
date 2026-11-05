@@ -90,6 +90,13 @@ const initialState: RunState = {
   cardBusy: false,
 };
 
+/** Les phases où une carte se joue : la saisie (ni l'envoi d'une réponse, ni sa révélation). */
+const canPlayCards = (phase: string | null): boolean => phase === 'loading' || phase === 'playing' || phase === 'listened';
+
+/** Le chrono plein d'un morceau : celui de la playlist, plus ce qu'un Sablier joué avant le premier son lui ajoute. */
+const fullClock = (answerSeconds: number, current: RunCurrentTrack | null): number =>
+  answerSeconds + (current?.effects?.clockBonusSeconds ?? 0);
+
 /**
  * La partie de Run : l'écran, la partie en cours, le morceau à jouer, les étapes à montrer. À fournir à la page (avec `TrackRoundStore`, qu'il
  * pilote) ; la route fournit l'adaptateur de l'API et le lecteur (`provideGameplay()`). Le serveur décide de tout (points, jauge, neutralisation,
@@ -106,7 +113,7 @@ const initialState: RunState = {
  */
 export const RunGameStore = signalStore(
   withState<RunState>(initialState),
-  withComputed(store => {
+  withComputed((store, round = inject(TrackRoundStore)) => {
     const step = computed<RunStep | null>(() => store.steps()[0] ?? null);
     const clockLeft = store.clockLeft;
     return {
@@ -131,9 +138,9 @@ export const RunGameStore = signalStore(
       }),
       /** Le temps affiché par le chrono : ce qui reste, sinon le chrono plein tant qu'il n'est pas parti ; `null` sans chrono. */
       clockShown: computed<number | null>(() => {
-        const seconds = store.session()?.answerSeconds ?? 0;
-        if (seconds <= 0) return null;
-        return clockLeft() ?? seconds;
+        const session = store.session();
+        if (!session || session.answerSeconds <= 0) return null;
+        return clockLeft() ?? fullClock(session.answerSeconds, store.current());
       }),
       /** Les dernières secondes du chrono : gros chiffre, bord de la carte éclairci. */
       clockAlert: computed(() => { const left = clockLeft(); return left !== null && left > 0 && left <= CLOCK_ALERT_SECONDS; }),
@@ -146,7 +153,13 @@ export const RunGameStore = signalStore(
         const session = store.session();
         const current = store.current();
         if (!session || session.handSize <= 0 || !current || store.steps().length > 0) return null;
-        return { hand: session.hand, effects: current.effects ?? null };
+        return {
+          hand: session.hand,
+          effects: current.effects ?? null,
+          values: session.cardValues,
+          listenSeconds: current.listenSeconds ?? session.listenSeconds,
+          playable: canPlayCards(round.phase()),
+        };
       }),
       /** Ce que montre l'écran « Difficulté ? » : la manche, le score du run, les difficultés proposées, la main. */
       difficulty: computed(() => {
@@ -191,6 +204,8 @@ export const RunGameStore = signalStore(
     let clockPosition: number | null = null;
     /** Le dernier morceau dont le premier son a été annoncé au serveur. */
     let announced: number | null = null;
+    /** Les morceaux remplacés par un Joker depuis le chargement : le morceau de réserve, à la même place, est un autre morceau pour la manche. */
+    let replaced = 0;
 
     const cancelAutoNext = (): void => {
       if (autoNextTimer !== null) clearTimeout(autoNextTimer);
@@ -250,6 +265,16 @@ export const RunGameStore = signalStore(
       if (deadline < clockDeadline) clockDeadline = deadline;
     };
 
+    /**
+     * Remet le chrono qui tourne sur ce que le serveur retient après un coup de pouce (le Sablier en ajoute) ; il repart s'il venait de s'arrêter.
+     * Rien si le temps écoulé a déjà envoyé la réponse, ni avant le premier son (le chrono partira plein, Sablier compris).
+     */
+    const setClock = (position: number, seconds: number): void => {
+      if (clockPosition !== position || store.timeUp()) return;
+      stopClock();
+      runClock(position, seconds);
+    };
+
     /** Redemande l'extrait d'un morceau à une adresse fraîche (la signature Deezer expire, piège 14). */
     const refreshPreview = async (position: number): Promise<string | null> => {
       const sessionId = store.session()?.sessionId;
@@ -264,6 +289,7 @@ export const RunGameStore = signalStore(
 
     const configOf = (current: RunCurrentTrack, listenSeconds: number): RoundConfig => ({
       trackId: current.position,
+      trackKey: `${current.position}:${replaced}`,
       previewUrl: current.previewUrl,
       waveform: current.waveform ?? null,
       // Écoute fixe : un seul palier, pas de « écouter plus » ; la relecture (↺) reste possible. Pas d'indice.
@@ -359,7 +385,9 @@ export const RunGameStore = signalStore(
     /** Relit l'état de la partie après un refus du serveur (offre fermée ailleurs, main changée) : l'écran montre ce qui est vrai. */
     const reread = async (sessionId: number): Promise<void> => {
       try {
-        patchState(store, { session: await api.session(sessionId), pendingCard: null });
+        const session = await api.session(sessionId);
+        // La partie a pu être abandonnée pendant l'aller-retour : une relecture périmée ne la ramène pas.
+        if (store.session()?.sessionId === sessionId) patchState(store, { session, pendingCard: null });
       } catch {
         // l'écran reste tel quel ; le joueur peut réessayer
       }
@@ -550,7 +578,8 @@ export const RunGameStore = signalStore(
         const session = store.session();
         const current = store.current();
         const card = session?.hand.find(c => c.slot === slot);
-        if (!session || !current || !card || store.cardBusy()) return;
+        if (!session || !current || !card || store.cardBusy() || !canPlayCards(round.phase())) return;
+        // La réponse attend la fin de l'aller-retour (`cardBusy` verrouille la saisie) : un Joker la ferait corriger sur le morceau de réserve.
         patchState(store, { cardBusy: true });
         try {
           const play = await api.playCard(session.sessionId, slot, current.position);
@@ -558,28 +587,22 @@ export const RunGameStore = signalStore(
           if (store.session()?.sessionId !== session.sessionId || store.current()?.position !== current.position) return;
           const next = play.current;
           if (card.card === 'joker' || !next || next.position !== current.position) {
-            // Un autre morceau (ou un retrait) : la manche repart de la réponse, comme après « Morceau suivant ».
+            // Le morceau de réserve (à la même place) ou un retrait : la manche repart de la réponse, comme après « Morceau suivant ».
             announced = null;
+            replaced++;
             applyPlay(play, true);
             return;
           }
           patchState(store, { session: play.session, current: next });
-          if (card.card === 'extend') {
+          if (card.card === 'extend' && canPlayCards(round.phase())) {
             round.reset();
             round.start(configOf(next, play.session.listenSeconds), null);
           }
           const left = play.session.clockRemainingSeconds;
-          if (left !== null && clockPosition === next.position) {
-            clockDeadline = Date.now() + left * 1000;
-            patchState(store, { clockLeft: left, timeUp: left <= 0 });
-          }
+          if (left !== null) setClock(next.position, left);
         } catch {
           // Refusée (déjà jouée ailleurs, chrono écoulé) : la main reste telle quelle, la partie se relit.
-          try {
-            patchState(store, { session: await api.session(session.sessionId) });
-          } catch {
-            // rien à faire : le joueur peut répondre
-          }
+          await reread(session.sessionId);
         } finally {
           patchState(store, { cardBusy: false });
         }
@@ -666,7 +689,7 @@ export const RunGameStore = signalStore(
         const current = store.current();
         if (!session || !current || session.answerSeconds <= 0 || store.steps().length > 0 || announced === current.position) return;
         announced = current.position;
-        runClock(current.position, session.answerSeconds);
+        runClock(current.position, fullClock(session.answerSeconds, current));
         void api.startClock(session.sessionId, current.position)
           .then(left => { if (left !== null) alignClock(current.position, left); })
           .catch(() => undefined);

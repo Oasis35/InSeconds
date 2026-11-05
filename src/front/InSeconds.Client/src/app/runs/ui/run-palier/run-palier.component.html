@@ -58,9 +58,9 @@
         @for (card of offer.cards; track card) {
           <button type="button" data-card class="offer-card text-left p-2.5 flex flex-col justify-between touch-manipulation"
             style="min-height:84px;background:var(--bg-surface);border-radius:var(--radius-card)"
-            [style.border]="pending() === card ? '1.5px solid var(--color-accent)' : '1px solid var(--border-strong)'"
+            [style.border]="pending() === card ? '1.5px solid var(--color-accent)' : '1px solid var(--border-neutral)'"
             [attr.aria-pressed]="pending() === card" [disabled]="busy()" (click)="pick.emit(card)" [attr.data-testid]="'run-offer-' + card">
-            <span class="text-[22px] font-bold leading-none" style="font-family:var(--font-clock);color:var(--color-accent)" aria-hidden="true">{{ glyph(card) }}</span>
+            <span class="text-[22px] font-bold leading-none" style="font-family:var(--font-clock);color:var(--color-accent)" aria-hidden="true">{{ glyph(card, values()) }}</span>
             <span class="text-[14px] font-semibold leading-tight mt-3 break-words" style="color:var(--text-hi)">{{ 'runs.cards.' + card + '.name' | translate }}</span>
           </button>
         }
@@ -78,9 +78,9 @@
             @if (slot) {
               <button type="button" class="w-full flex items-center gap-2 px-3 py-1.5 text-left touch-manipulation"
                 style="min-height:44px;background:var(--bg-surface);border-radius:var(--radius-button)"
-                [style.border]="pending() ? '1.5px dashed var(--color-accent)' : '1px solid var(--border-strong)'"
+                [style.border]="pending() ? '1.5px dashed var(--color-accent)' : '1px solid var(--border-neutral)'"
                 [disabled]="!pending() || busy()" (click)="drop.emit(slot.slot)" [attr.data-testid]="'run-hand-' + slot.card">
-                <span class="text-[13px] font-bold" style="font-family:var(--font-clock);color:var(--color-accent)" aria-hidden="true">{{ glyph(slot.card) }}</span>
+                <span class="text-[13px] font-bold" style="font-family:var(--font-clock);color:var(--color-accent)" aria-hidden="true">{{ glyph(slot.card, values()) }}</span>
                 <span class="text-[14px] font-semibold leading-tight" style="color:var(--text-hi)">{{ 'runs.cards.' + slot.card + '.name' | translate }}</span>
               </button>
             } @else {

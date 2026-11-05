@@ -20,6 +20,7 @@ describe('RunPalierComponent', () => {
     set('offer', overrides.offer === undefined ? { afterRound: 1, cards: ['three_choices', 'joker', 'hourglass'] } : overrides.offer);
     set('hand', overrides.hand ?? [{ slot: 1, card: 'year' }]);
     set('handSize', 2);
+    set('values', { extendListenSeconds: 20, hourglassSeconds: 30, lowerTargetPercent: 20 });
     set('pending', overrides.pending ?? null);
     fixture.detectChanges();
     const element = fixture.nativeElement as HTMLElement;

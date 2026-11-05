@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output, signal } f
 import { TranslatePipe } from '@ngx-translate/core';
 import { SecondsPipe } from '../../../ui/format/seconds.pipe';
 import { RunDifficulty, RunDifficultyOption } from '../../domain/run';
-import { RunHandCard, cardGlyph } from '../../domain/run-cards';
+import { RunCardValues, RunHandCard, cardGlyph } from '../../domain/run-cards';
 
 /** La plus petite colonne, en part de la plus haute : de quoi poser son cadenas. */
 const SHORTEST = 0.3;
@@ -51,6 +51,8 @@ export class RunDifficultyComponent {
   readonly totalScore = input.required<number>();
   readonly options = input.required<readonly RunDifficultyOption[]>();
   readonly hand = input<readonly RunHandCard[]>([]);
+  /** Ce que valent les cartes de la playlist (le signe des cartes chiffrées). */
+  readonly values = input<RunCardValues | null>(null);
   /** L'écoute normale d'un morceau : une colonne plus courte (manche boss) le dit. */
   readonly listenSeconds = input(10);
   /** Le choix part au serveur : les colonnes ne se touchent plus. */

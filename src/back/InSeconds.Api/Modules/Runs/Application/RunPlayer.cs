@@ -251,7 +251,8 @@ internal static class RunViews
             session.Hand.Select(c => new RunHandCardResponse(c.Slot, RunCards.KeyOf(c.Card))).ToList(),
             session.OpenOffer(challenge) is { } offer ? new RunCardOfferResponse(offer.AfterRound, offer.Cards.Select(RunCards.KeyOf).ToList()) : null,
             rules.Cards?.HandSize ?? 0,
-            session.IsPending ? DiscOf(DiscLadder.Of(session.RoundsPassed + 1, discs)) : null);
+            session.IsPending ? DiscOf(DiscLadder.Of(session.RoundsPassed + 1, discs)) : null,
+            rules.Cards is { } cards ? new RunCardValuesResponse(cards.ExtendListenSeconds, cards.HourglassSeconds, cards.LowerTargetPercent) : null);
     }
 
     // Chaque difficulté proposée, calculée sur les morceaux de la manche (un morceau déjà neutralisé en est retiré, comme pour la jauge).

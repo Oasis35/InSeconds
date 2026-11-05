@@ -138,7 +138,9 @@ test.describe('Mode Platines', () => {
     await run.loginAsAdmin();
     await run.launch();
 
-    // La playlist tire une carte de départ au hasard (sa graine) : on joue celle qui est en main.
+    // La playlist tire une carte de départ au hasard (sa graine) : on joue celle qui est en main. Toutes se jouent sur le premier morceau du
+    // catalogue de test : chaque morceau y a son année, il reste assez d'autres artistes pour les leurres de « Trois choix », la réserve existe
+    // pour le Joker, et le chrono n'est pas écoulé.
     await expect(run.handCards).toHaveCount(1);
     const card = (await run.handCards.getAttribute('data-testid'))!.replace('run-play-', '');
     await run.handCards.click();
