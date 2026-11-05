@@ -73,6 +73,18 @@
         }
       }
 
+      <!-- La difficulté de la manche : toucher une colonne choisit et lance le premier morceau, au même toucher. -->
+      @case ('difficulty') {
+        @if (store.difficulty(); as difficulty) {
+          <div class="screen-enter flex-1 flex flex-col pt-1">
+            <app-run-header [round]="difficulty.headerRound" [rounds]="store.rounds()" [showStatus]="false" (abandon)="confirmAbandon()" />
+            <app-run-difficulty class="flex-1 flex flex-col" [round]="difficulty.round" [totalScore]="difficulty.totalScore"
+              [options]="difficulty.options" [hand]="difficulty.hand" [listenSeconds]="difficulty.listenSeconds" [busy]="store.difficultyBusy()"
+              (choose)="store.chooseDifficulty($event)" />
+          </div>
+        }
+      }
+
       @case ('finished') {
         @if (store.finish(); as finish) {
           <app-run-finish [finish]="finish" [canPlayAgain]="store.canPlayAgain()" [shareCopied]="share.copied()" [shareFailed]="share.failed()"

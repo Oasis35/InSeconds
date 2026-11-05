@@ -250,19 +250,24 @@ describe('RunGameStore', () => {
       expect(store.pile()).toEqual([{ kind: 'track', track: TRACK(), past: false }]);
     });
 
-    it('une manche qui attend sa difficulté se joue en « Sûre » : le choix rend son premier morceau, lancé à son arrivée', async () => {
+    it('une manche qui attend sa difficulté : l\'écran « Difficulté ? », sans son ; toucher une colonne déverrouille le son puis lance le morceau rendu', async () => {
       api.answerResult = { ...lastOfRound(), current: null, session: { ...lastOfRound().session, difficultyChoice: {
-        round: 2, options: [{ difficulty: 'safe', objective: 366, maxScore: 665, listenSeconds: 10 }],
+        round: 2, options: [{ difficulty: 'safe', objective: 366, maxScore: 665, listenSeconds: 10 }, { difficulty: 'risky', objective: 552, maxScore: 885, listenSeconds: 10 }],
       } } };
       api.chooseResult = PLAY({ current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 10 }) });
       await send();
+      store.next();
+      expect(store.screen()).toBe('difficulty');
+      expect(store.difficulty()?.options.map(o => o.difficulty)).toEqual(['safe', 'risky']);
+      expect(api.calls.filter(c => c.startsWith('chooseDifficulty'))).toEqual([]);
       audio.calls.length = 0;
 
-      store.next();
+      void store.chooseDifficulty('risky');
+      expect(audio.calls[0]).toBe('unlock');
       await vi.waitFor(() => expect(store.current()?.position).toBe(6));
 
-      expect(api.calls).toContain('chooseDifficulty:7:2:safe');
-      expect(audio.calls[0]).toBe('unlock');
+      expect(api.calls).toContain('chooseDifficulty:7:2:risky');
+      expect(audio.calls).toContain('load https://cdn/preview-6.mp3');
       expect(store.screen()).toBe('playing');
     });
 
@@ -358,32 +363,27 @@ describe('RunGameStore', () => {
       expect(api.calls).toContain('session:7');
     });
 
-    it('deux touchers sur « Suite » ne choisissent qu\'une fois', async () => {
-      api.chooseResult = PLAY({
-        session: palierSession({ offer: null, difficultyChoice: null }),
-        current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 10 }),
-      });
-
+    it('« Suite » déverrouille le son dans le clic et mène à l\'écran « Difficulté ? »', () => {
       store.continueFromPalier();
-      store.continueFromPalier();
-      await vi.waitFor(() => expect(store.current()?.position).toBe(6));
-
-      expect(api.calls.filter(c => c.startsWith('chooseDifficulty'))).toHaveLength(1);
-      expect(store.screen()).toBe('playing');
-    });
-
-    it('« Suite » déverrouille le son dans le clic, puis la manche démarre (en Sûre, en attendant l\'écran de difficulté)', async () => {
-      api.chooseResult = PLAY({
-        session: palierSession({ offer: null, difficultyChoice: null }),
-        current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 10 }),
-      });
-
-      store.continueFromPalier();
-      await vi.waitFor(() => expect(store.current()?.position).toBe(6));
 
       expect(audio.calls[0]).toBe('unlock');
-      expect(api.calls).toContain('chooseDifficulty:7:2:safe');
-      expect(audio.calls).toContain('load https://cdn/preview-6.mp3');
+      expect(store.screen()).toBe('difficulty');
+      expect(store.difficulty()?.round).toBe(2);
+      expect(store.difficulty()?.totalScore).toBe(320);
+    });
+
+    it('deux touchers sur une colonne ne choisissent qu\'une fois', async () => {
+      api.chooseResult = PLAY({
+        session: palierSession({ offer: null, difficultyChoice: null }),
+        current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 10 }),
+      });
+      store.continueFromPalier();
+
+      void store.chooseDifficulty('easy');
+      void store.chooseDifficulty('easy');
+      await vi.waitFor(() => expect(store.current()?.position).toBe(6));
+
+      expect(api.calls.filter(c => c.startsWith('chooseDifficulty'))).toEqual(['chooseDifficulty:7:2:easy']);
       expect(store.screen()).toBe('playing');
     });
   });
