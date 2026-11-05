@@ -62,7 +62,7 @@ export class RunPage {
     this.answerCard          = page.getByTestId('run-answer');
     this.withdrawnCard       = page.getByTestId('run-withdrawn');
     this.nextTrackButton     = page.getByTestId('run-next-track');
-    this.palier              = page.getByTestId('run-palier');
+    this.palier              = page.getByTestId('run-palier-screen');
     this.palierNextButton    = page.getByTestId('run-palier-next-button');
     this.finished            = page.getByTestId('run-finished');
     this.disc                = page.getByTestId('run-disc');
