@@ -64,16 +64,14 @@ export interface Dashboard {
   shares: DashboardShares;
 }
 
-/** Les sources d'arrivée des deux liens du partage du score : `share` (le court, par ▾, et aussi le lien d'une playlist Platines) et `share-long` (le détaillé, par défaut). */
-export const SHORT_SHARE_SOURCE = 'share';
-export const LONG_SHARE_SOURCE = 'share-long';
+/** La source d'arrivée des liens partagés : `share`, pour le score comme pour une playlist Platines. */
+export const SHARE_SOURCE = 'share';
 
-const KNOWN_SOURCES: ReadonlySet<string> = new Set(['instagram', 'tiktok', SHORT_SHARE_SOURCE, LONG_SHARE_SOURCE, 'direct', 'other']);
+const KNOWN_SOURCES: ReadonlySet<string> = new Set(['instagram', 'tiktok', SHARE_SOURCE, 'direct', 'other']);
 
-/** Les joueurs venus par chaque lien du partage, parmi ces arrivées. */
-export function sharedArrivals(arrivals: readonly ArrivalCount[]): ShareCounts {
-  const count = (source: string) => arrivals.find(a => a.source === source)?.count ?? 0;
-  return { short: count(SHORT_SHARE_SOURCE), long: count(LONG_SHARE_SOURCE) };
+/** Les joueurs venus par le lien d'un partage, parmi ces arrivées. */
+export function sharedArrivals(arrivals: readonly ArrivalCount[]): number {
+  return arrivals.find(a => a.source === SHARE_SOURCE)?.count ?? 0;
 }
 
 /** La clé i18n d'une source connue (`admin.sources.instagram`) ; `null` pour un domaine, qui s'affiche tel quel. */

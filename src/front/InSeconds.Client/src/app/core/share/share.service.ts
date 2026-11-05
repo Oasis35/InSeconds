@@ -8,18 +8,13 @@ import { environment } from '../../../environments/environment';
 export type ShareOutcome = 'shared' | 'copied' | 'cancelled' | 'failed';
 
 /**
- * Les sources d'arrivée (`utm_source`) des liens partagés : `share` pour le partage court du score (par la flèche ▾) (et le lien d'une playlist Platines),
- * `share-long` pour le partage détaillé (le bouton principal). L'onglet Accueil de l'admin les relit sous ces noms (`admin/domain/dashboard.ts`, dont la couche
- * `domain` ne voit pas `core` : à changer ensemble).
+ * La source d'arrivée (`utm_source`) des liens partagés, celle du score comme celle d'une playlist Platines. L'onglet Accueil de l'admin la relit
+ * sous ce nom (`admin/domain/dashboard.ts`, dont la couche `domain` ne voit pas `core` : à changer ensemble).
  */
 export const SHARE_SOURCE = 'share';
-export const LONG_SHARE_SOURCE = 'share-long';
 
 /** Le lien mis dans un texte partagé : l'adresse du site (celle du staging au staging), marquée `utm_source=share`. */
 export const SHARE_LINK = `${environment.appUrl}/?utm_source=${SHARE_SOURCE}`;
-
-/** Le lien du partage détaillé du score, marqué `utm_source=share-long` : les amis venus par lui se distinguent dans l'admin. */
-export const LONG_SHARE_LINK = `${environment.appUrl}/?utm_source=${LONG_SHARE_SOURCE}`;
 
 @Injectable({ providedIn: 'root' })
 export class ShareService {

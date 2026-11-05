@@ -10,8 +10,9 @@ interface ShareRow {
 }
 
 /**
- * « Partages du score », sous la carte du jour de l'accueil : les partages faits au format court et au format détaillé, puis les amis venus
- * par chaque lien (sources d'arrivée `share` et `share-long`), le jour affiché et sur 30 jours. Des totaux, jamais un joueur.
+ * « Partages du score », sous la carte du jour de l'accueil : les partages faits, puis les amis venus par leur lien (source d'arrivée `share`),
+ * le jour affiché et sur 30 jours. Des totaux, jamais un joueur. L'API compte encore les partages par format : le format `short` n'existe plus
+ * côté jeu, les deux sont additionnés.
  */
 @Component({
   selector: 'app-dashboard-shares',
@@ -46,10 +47,8 @@ export class DashboardSharesComponent {
     const day = sharedArrivals(this.dayArrivals());
     const month = sharedArrivals(this.arrivals());
     return [
-      { id: 'short', labelKey: 'admin.dashboard.shares.short', day: selectedDay.short, last30Days: last30Days.short },
-      { id: 'long', labelKey: 'admin.dashboard.shares.long', day: selectedDay.long, last30Days: last30Days.long },
-      { id: 'friends-short', labelKey: 'admin.dashboard.shares.friendsShort', day: day.short, last30Days: month.short },
-      { id: 'friends-long', labelKey: 'admin.dashboard.shares.friendsLong', day: day.long, last30Days: month.long },
+      { id: 'count', labelKey: 'admin.dashboard.shares.count', day: selectedDay.short + selectedDay.long, last30Days: last30Days.short + last30Days.long },
+      { id: 'friends', labelKey: 'admin.dashboard.shares.friends', day, last30Days: month },
     ];
   });
 }

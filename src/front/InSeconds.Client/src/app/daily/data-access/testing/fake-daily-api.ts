@@ -5,7 +5,6 @@ import {
 } from '../../domain/daily';
 import { EMPTY_STREAK } from '../../domain/streak';
 import { ArchiveDay, ArchiveMe, ArchiveTrack, NOBODY } from '../../domain/archive';
-import { ShareFormat } from '../../domain/share-text';
 
 export const SETTINGS: DailySettings = {
   guessTimerSeconds: 20,
@@ -126,8 +125,8 @@ export class FakeDailyApi {
     return Promise.resolve();
   }
 
-  recordShare(format: ShareFormat): Promise<void> {
-    this.calls.push(`share ${format}`);
+  recordShare(): Promise<void> {
+    this.calls.push('share');
     return Promise.resolve();
   }
 
@@ -169,7 +168,7 @@ export function provideFakeDailyApi(fake: FakeDailyApi): Provider {
       requestHint: (s: number, p: number, l: number) => fake.requestHint(s, p, l),
       submitAnswer: (s: number, a: AnswerToSend) => fake.submitAnswer(s, a),
       abandon: (s: number) => fake.abandon(s),
-      recordShare: (f: ShareFormat) => fake.recordShare(f),
+      recordShare: () => fake.recordShare(),
       stats: () => fake.statsCall(),
       archiveDates: () => fake.archiveDatesCall(),
       archiveDay: (date: string) => fake.archiveDayCall(date),

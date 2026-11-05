@@ -10,7 +10,6 @@ import {
 } from '../domain/daily';
 import { Streak } from '../domain/streak';
 import { ArchiveDay, ArchiveMe } from '../domain/archive';
-import { ShareFormat } from '../domain/share-text';
 
 /** Des réponses d'erreur que le jeu connaît : refus du démarrage (la partie est finie, pas de défi). */
 const ALREADY_PLAYED = 'daily.already_played';
@@ -86,9 +85,9 @@ export class DailyApi {
     await firstValueFrom(this.client.abandonSession(sessionId));
   }
 
-  /** Compte un partage du score dans ce format (encart « Partages » de l'admin) : rien n'est gardé du joueur en base. */
-  async recordShare(format: ShareFormat): Promise<void> {
-    await firstValueFrom(this.client.recordShare({ format }));
+  /** Compte un partage du score (encart « Partages » de l'admin) : rien n'est gardé du joueur en base. L'API garde un champ `format`, toujours `long`. */
+  async recordShare(): Promise<void> {
+    await firstValueFrom(this.client.recordShare({ format: 'long' }));
   }
 
   async stats(): Promise<DayStats> {

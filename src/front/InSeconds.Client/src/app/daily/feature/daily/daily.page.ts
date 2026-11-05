@@ -23,7 +23,6 @@ import { LostStreakNotice } from '../../data-access/lost-streak-notice';
 import { AbandonedScreenComponent } from '../../ui/abandoned-screen/abandoned-screen.component';
 import { DayResultScreenComponent } from '../../ui/day-result-screen/day-result-screen.component';
 import { rowsFromResults, rowsFromStats, shareTracksOf } from '../../ui/day-result-screen/result-rows';
-import { ShareFormat } from '../../domain/share-text';
 import { BrandComponent } from '../../../gameplay/ui/brand/brand.component';
 import { DailyFooterComponent } from '../../ui/daily-footer/daily-footer.component';
 import { DailyProgressComponent } from '../../ui/daily-progress/daily-progress.component';
@@ -180,11 +179,11 @@ export class DailyPage implements OnInit {
   }
 
   /**
-   * Partage le résumé de la partie (menu du téléphone, sinon presse-papier), au format court (`✅`/`🔶`/`🅾️`) ou détaillé (une ligne par
-   * morceau, avec le palier écouté) : les mêmes morceaux, dans le même ordre, que la liste du résultat du jour.
+   * Partage le résumé de la partie (menu du téléphone, sinon presse-papier) : une ligne par morceau, avec le palier écouté, les mêmes morceaux,
+   * dans le même ordre, que la liste du résultat du jour.
    */
-  protected share(format: ShareFormat): void {
+  protected share(): void {
     const score = this.store.screen() === 'done' ? this.store.totalScore() : (this.store.stats()?.yourScore ?? 0);
-    void this.dailyShare.share(shareTracksOf(this.resultRows()), score, format, formatSeconds);
+    void this.dailyShare.share(shareTracksOf(this.resultRows()), score, formatSeconds);
   }
 }
