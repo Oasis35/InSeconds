@@ -372,6 +372,35 @@ describe('RunGameStore', () => {
       expect(store.difficulty()?.totalScore).toBe(320);
     });
 
+    it('un choix refusé (fait dans un autre onglet) relit la partie au lieu de l\'écran d\'erreur', async () => {
+      store.continueFromPalier();
+      api.chooseResult = new Error('409');
+      api.refreshResult = PLAY({
+        session: palierSession({ offer: null, difficultyChoice: null }),
+        current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3', listenSeconds: 10 }),
+      });
+
+      await store.chooseDifficulty('risky');
+
+      expect(api.calls).toContain('refreshPreview:7');
+      expect(store.screen()).toBe('playing');
+      expect(store.current()?.position).toBe(6);
+    });
+
+    it('une réponse au choix arrivée après un abandon ne relance rien', async () => {
+      store.continueFromPalier();
+      let answer: (play: ReturnType<typeof PLAY>) => void = () => undefined;
+      vi.spyOn(api, 'chooseDifficulty').mockImplementation(() => new Promise(resolve => { answer = resolve; }));
+      const choosing = store.chooseDifficulty('risky');
+      await store.abandon();
+
+      answer(PLAY({ current: CURRENT({ position: 6, round: 2, positionInRound: 1, previewUrl: 'https://cdn/preview-6.mp3' }) }));
+      await choosing;
+
+      expect(store.screen()).not.toBe('playing');
+      expect(audio.calls).not.toContain('load https://cdn/preview-6.mp3');
+    });
+
     it('deux touchers sur une colonne ne choisissent qu\'une fois', async () => {
       api.chooseResult = PLAY({
         session: palierSession({ offer: null, difficultyChoice: null }),
@@ -440,6 +469,44 @@ describe('RunGameStore', () => {
 
       expect(api.calls.filter(c => c.startsWith('passOffer'))).toEqual([]);
       expect(api.calls).toContain('refreshPreview:7');
+    });
+  });
+
+  describe('reprise d\'une partie qui attend sa difficulté', () => {
+    const waiting = (overrides = {}) => SESSION({
+      round: ROUND({ round: 4, score: 0, objective: 750, maxScore: 1000 }), roundsPassed: 3, roundTracks: [],
+      passedRounds: [1, 2, 3].map(round => ({ round, score: 600, objective: 300, disc: { key: 'runs.discs.wax', stars: 0 } })),
+      difficultyChoice: { round: 4, options: [
+        { difficulty: 'safe', objective: 750, maxScore: 1000, listenSeconds: 10 },
+        { difficulty: 'risky', objective: 1125, maxScore: 1330, listenSeconds: 5 },
+      ] },
+      ...overrides,
+    });
+
+    beforeEach(async () => {
+      api.meResult = ME({ pending: { sessionId: 7, challengeCode: 'ABC234' } });
+      api.sessionResult = waiting();
+      api.joinResult = { kind: 'ok', play: PLAY({ session: waiting(), current: null, isResuming: true }) };
+      await store.init();
+      await store.begin();
+    });
+
+    it('sans coups de pouce : directement l\'écran « Difficulté ? », sans son ni choix', () => {
+      expect(store.screen()).toBe('difficulty');
+      expect(audio.calls.filter(c => c.startsWith('load'))).toEqual([]);
+      expect(api.calls.filter(c => c.startsWith('chooseDifficulty'))).toEqual([]);
+    });
+
+    it('la manche boss en Risquée : le morceau se joue sur l\'écoute courte que le serveur donne', async () => {
+      api.chooseResult = PLAY({
+        session: waiting({ difficultyChoice: null }),
+        current: CURRENT({ position: 16, round: 4, positionInRound: 1, previewUrl: 'https://cdn/preview-16.mp3', listenSeconds: 5 }),
+      });
+
+      await store.chooseDifficulty('risky');
+
+      expect(round.maxStep()).toBe(5);
+      expect(store.screen()).toBe('playing');
     });
   });
 

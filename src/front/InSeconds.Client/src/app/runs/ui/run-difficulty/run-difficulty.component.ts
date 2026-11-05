@@ -1,18 +1,19 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { SecondsPipe } from '../../../ui/format/seconds.pipe';
 import { RunDifficulty, RunDifficultyOption } from '../../domain/run';
 import { RunHandCard, cardGlyph } from '../../domain/run-cards';
 
-/** La hauteur de la plus haute colonne (le plus grand plafond), en pixels. */
-const TALLEST = 300;
-/** La plus petite colonne garde de quoi écrire son plafond et son cadenas. */
-const SHORTEST = 150;
+/** La plus petite colonne, en part de la plus haute : de quoi poser son cadenas. */
+const SHORTEST = 0.3;
 
-/** Une colonne : sa difficulté, sa hauteur, et où passe l'objectif (part de la colonne depuis le bas). */
+/**
+ * Une colonne : sa difficulté, la hauteur de son corps (part de la plus haute colonne, qui suit la hauteur de l'écran), et où passe l'objectif
+ * (part du corps depuis le bas).
+ */
 export interface DifficultyColumn {
   readonly option: RunDifficultyOption;
-  readonly height: number;
+  readonly heightRatio: number;
   readonly objectiveRatio: number;
   /** Le niveau de la difficulté (1, 2, 3 barres pleines). */
   readonly level: number;
@@ -27,7 +28,7 @@ export function difficultyColumns(options: readonly RunDifficultyOption[]): Diff
     .sort((a, b) => LEVEL[a.difficulty] - LEVEL[b.difficulty])
     .map(option => ({
       option,
-      height: Math.max(SHORTEST, Math.round((option.maxScore / tallest) * TALLEST)),
+      heightRatio: Math.max(SHORTEST, Math.round((option.maxScore / tallest) * 100) / 100),
       objectiveRatio: option.maxScore > 0 ? Math.min(1, option.objective / option.maxScore) : 0,
       level: LEVEL[option.difficulty],
     }));
@@ -56,7 +57,15 @@ export class RunDifficultyComponent {
   readonly busy = input(false);
   readonly choose = output<RunDifficulty>();
 
+  /** La colonne touchée, contour à la couleur du joueur pendant l'aller-retour seulement (posé tout de suite, sans animation). */
+  private readonly touched = signal<RunDifficulty | null>(null);
+  protected readonly chosen = computed(() => (this.busy() ? this.touched() : null));
   protected readonly glyph = cardGlyph;
   protected readonly columns = computed(() => difficultyColumns(this.options()));
   protected readonly levels = [1, 2, 3];
+
+  protected pick(difficulty: RunDifficulty): void {
+    this.touched.set(difficulty);
+    this.choose.emit(difficulty);
+  }
 }

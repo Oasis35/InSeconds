@@ -336,6 +336,16 @@ export const RunGameStore = signalStore(
       }
     };
 
+    /** Relit la partie entière (avec son morceau) après un refus du serveur hors du palier ; un échec mène à l'écran d'erreur. */
+    const rereadPlay = async (sessionId: number): Promise<void> => {
+      try {
+        // Encore dans le geste du toucher (le son est déverrouillé) : le morceau rendu part ; un choix encore ouvert ramène à l'écran.
+        if (store.session()?.sessionId === sessionId) applyPlay(await api.refreshPreview(sessionId), true);
+      } catch {
+        patchState(store, { screen: 'error' });
+      }
+    };
+
     /** Relit l'état de la partie après un refus du serveur (offre fermée ailleurs, main changée) : l'écran montre ce qui est vrai. */
     const reread = async (sessionId: number): Promise<void> => {
       try {
@@ -530,9 +540,12 @@ export const RunGameStore = signalStore(
         if (!session || !choice || store.difficultyBusy()) return;
         patchState(store, { difficultyBusy: true });
         try {
-          applyPlay(await api.chooseDifficulty(session.sessionId, choice.round, difficulty), true);
+          const play = await api.chooseDifficulty(session.sessionId, choice.round, difficulty);
+          // La partie a pu être abandonnée ou rouverte pendant l'aller-retour : une réponse périmée ne relance rien.
+          if (store.session()?.sessionId === session.sessionId && store.screen() === 'difficulty') applyPlay(play, true);
         } catch {
-          patchState(store, { screen: 'error' });
+          // Refusé (choisi dans un autre onglet) ou réseau : la partie se relit et l'écran montre ce qui est vrai.
+          await rereadPlay(session.sessionId);
         } finally {
           patchState(store, { difficultyBusy: false });
         }

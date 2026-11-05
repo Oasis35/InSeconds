@@ -15,14 +15,14 @@ describe('difficultyColumns', () => {
     const columns = difficultyColumns(OPTIONS);
 
     expect(columns.map(c => c.option.difficulty)).toEqual(['easy', 'safe', 'risky']);
-    expect(columns.map(c => c.height)).toEqual([151, 225, 300]);
+    expect(columns.map(c => c.heightRatio)).toEqual([0.5, 0.75, 1]);
     expect(columns[2].objectiveRatio).toBeCloseTo(552 / 885);
     expect(columns.map(c => c.level)).toEqual([1, 2, 3]);
   });
 
-  it('une colonne garde toujours de quoi écrire son plafond', () => {
+  it('une colonne garde toujours de quoi poser son cadenas', () => {
     expect(difficultyColumns([{ difficulty: 'easy', objective: 10, maxScore: 50, listenSeconds: 10 },
-      { difficulty: 'risky', objective: 900, maxScore: 2000, listenSeconds: 10 }])[0].height).toBe(150);
+      { difficulty: 'risky', objective: 900, maxScore: 2000, listenSeconds: 10 }])[0].heightRatio).toBe(0.3);
   });
 });
 
