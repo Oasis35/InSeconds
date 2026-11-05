@@ -30,8 +30,9 @@ const MUSE: AnswerSuggestion = { artist: 'Muse', title: 'Uprising' };
   imports: [TrackRoundComponent],
   template: `
     <app-track-round [result]="result()" [hintPending]="hintPending()" [layout]="layout()" [alert]="alert()" [timeUp]="timeUp()"
-      (answered)="answered.push($event)" (hintRequested)="hints.push($event)">
+      [choices]="choices()" (answered)="answered.push($event)" (hintRequested)="hints.push($event)">
       <span roundCorner>0:45</span>
+      <p roundCards>Cartes du mode</p>
       <p roundReveal>Révélation du mode</p>
       <button roundActions type="button">Bonus</button>
       <span roundScore>+850 pts</span>
@@ -44,6 +45,7 @@ class Host {
   readonly layout = signal<'stacked' | 'inline'>('stacked');
   readonly alert = signal(false);
   readonly timeUp = signal(false);
+  readonly choices = signal<readonly { artist: string; title: string }[] | null>(null);
   readonly answered: RoundSubmission[] = [];
   readonly hints: number[] = [];
 }
@@ -108,6 +110,38 @@ describe('TrackRoundComponent', () => {
   it('n\'affiche rien tant qu\'aucune manche n\'a démarré', () => {
     expect(element.querySelector('app-round-player')).toBeNull();
     expect(element.querySelector('form')).toBeNull();
+  });
+
+  describe('emplacements et réponses proposées du mode', () => {
+    it('les cartes du mode au-dessus de la saisie', () => {
+      start();
+
+      const cards = element.querySelector('[roundCards]')!;
+      expect(cards.textContent).toBe('Cartes du mode');
+      expect(cards.compareDocumentPosition(input()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('avec des réponses proposées : plus de champ ni de « Valider », toucher une réponse l\'envoie', () => {
+      fixture.componentInstance.choices.set([{ artist: 'Muse', title: 'Uprising' }, DAFT]);
+      start();
+      emit('ready');
+
+      expect(element.querySelector('input')).toBeNull();
+      expect(button('gameplay.answer.validate')).toBeUndefined();
+      const options = element.querySelectorAll<HTMLButtonElement>('[data-testid="round-choice"]');
+      expect(options).toHaveLength(2);
+      options[1].click();
+      refresh();
+
+      expect(fixture.componentInstance.answered.map(a => [a.artist, a.title])).toEqual([['Daft Punk', 'Get Lucky']]);
+    });
+
+    it('en ligne, « Passer » est un simple lien sous « Valider »', () => {
+      fixture.componentInstance.layout.set('inline');
+      start();
+
+      expect(element.querySelector('[data-testid="round-skip"]')?.className).toContain('underline');
+    });
   });
 
   describe('écoute et saisie', () => {

@@ -45,6 +45,9 @@ export class RunPage {
   readonly comparisonTitle: Locator;
   readonly comparisonRows: Locator;
   readonly statusScreen: Locator;
+  readonly roundCards: Locator;
+  readonly handCards: Locator;
+  readonly cardEffects: Locator;
 
   constructor(readonly page: Page) {
     this.homeCard            = page.getByTestId('run-home-card');
@@ -78,6 +81,9 @@ export class RunPage {
     this.compareButton       = page.getByTestId('run-compare');
     this.toDailyLink         = page.getByTestId('run-to-daily');
     this.comparison          = page.getByTestId('run-comparison');
+    this.roundCards          = page.getByTestId('run-round-cards');
+    this.handCards           = this.roundCards.locator('button[data-testid^="run-play-"]');
+    this.cardEffects         = page.getByTestId('run-card-effect');
     this.comparisonEyebrow   = page.getByTestId('run-comparison-eyebrow');
     this.comparisonTitle     = page.getByTestId('run-comparison-title');
     this.comparisonRows      = page.locator('[data-testid="run-comparison-table"] tbody tr');

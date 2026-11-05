@@ -42,7 +42,7 @@ export const COMPARISON = (overrides: Partial<RunComparison> = {}): RunCompariso
 });
 
 /** Un faux adaptateur : chaque réponse se règle par une propriété, chaque appel est noté. */
-export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge' | 'comparison' | 'launch' | 'join' | 'refreshPreview' | 'submitAnswer' | 'startClock' | 'abandon' | 'chooseDifficulty' | 'takeCard' | 'passOffer'> {
+export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge' | 'comparison' | 'launch' | 'join' | 'refreshPreview' | 'submitAnswer' | 'startClock' | 'abandon' | 'chooseDifficulty' | 'takeCard' | 'passOffer' | 'playCard'> {
   readonly calls: string[] = [];
   readonly answers: RunAnswerToSend[] = [];
 
@@ -57,6 +57,7 @@ export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge'
   chooseResult: RunPlay | Error = PLAY();
   takeResult: RunSession | Error = SESSION();
   passResult: RunSession | Error = SESSION();
+  playResult: RunPlay | Error = PLAY();
   abandonError: Error | null = null;
 
   me(): Promise<RunsMe> {
@@ -111,6 +112,11 @@ export class FakeRunsApi implements Pick<RunsApi, 'me' | 'session' | 'challenge'
   takeCard(sessionId: number, afterRound: number, card: string, dropSlot: number | null): Promise<RunSession> {
     this.calls.push(`takeCard:${sessionId}:${afterRound}:${card}:${dropSlot ?? ''}`);
     return this.takeResult instanceof Error ? Promise.reject(this.takeResult) : Promise.resolve(this.takeResult);
+  }
+
+  playCard(sessionId: number, slot: number, position: number): Promise<RunPlay> {
+    this.calls.push(`playCard:${sessionId}:${slot}:${position}`);
+    return this.playResult instanceof Error ? Promise.reject(this.playResult) : Promise.resolve(this.playResult);
   }
 
   passOffer(sessionId: number, afterRound: number): Promise<RunSession> {

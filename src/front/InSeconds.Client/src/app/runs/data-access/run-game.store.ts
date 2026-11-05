@@ -62,6 +62,8 @@ interface RunState {
   palierBusy: boolean;
   /** Le choix de la difficulté part au serveur. */
   difficultyBusy: boolean;
+  /** Une carte jouée part au serveur. */
+  cardBusy: boolean;
 }
 
 const initialState: RunState = {
@@ -85,6 +87,7 @@ const initialState: RunState = {
   pendingCard: null,
   palierBusy: false,
   difficultyBusy: false,
+  cardBusy: false,
 };
 
 /**
@@ -138,6 +141,13 @@ export const RunGameStore = signalStore(
       /** « Nouvelle partie » : seulement avec l'accès (retiré en cours de partie, la partie se finit, mais pas d'autre). */
       canPlayAgain: computed(() => store.me()?.hasAccess === true),
       finish: computed(() => store.session()?.finish ?? null),
+      /** Les cartes jouables sur le morceau en cours (la main) et ce que celles déjà jouées révèlent ; rien sans coups de pouce. */
+      roundCards: computed(() => {
+        const session = store.session();
+        const current = store.current();
+        if (!session || session.handSize <= 0 || !current || store.steps().length > 0) return null;
+        return { hand: session.hand, effects: current.effects ?? null };
+      }),
       /** Ce que montre l'écran « Difficulté ? » : la manche, le score du run, les difficultés proposées, la main. */
       difficulty: computed(() => {
         const session = store.session();
@@ -448,6 +458,7 @@ export const RunGameStore = signalStore(
       patchState(store, {
         screen: 'loading', code: target, link: null, comparison: null, session: null, current: null, steps: [], shapes: {}, resumeCount: 0,
         resumeTotal: 0, abandonLoading: false, palierDismissedFor: null, pendingCard: null, palierBusy: false, difficultyBusy: false,
+        cardBusy: false,
       });
       try {
         const me = await api.me();
@@ -526,6 +537,51 @@ export const RunGameStore = signalStore(
           await reread(session.sessionId);
         } finally {
           patchState(store, { palierBusy: false });
+        }
+      },
+      /**
+       * Jouer une carte de la main sur le morceau en cours (un toucher). Le son se déverrouille dans le toucher : le Joker change de morceau, la
+       * Rallonge relance l'écoute plus longue, et le nouveau son part à la réponse. Les autres cartes ne coupent rien : leurs effets s'affichent
+       * (année, initiales, trois réponses), le chrono se recale sur ce que le serveur retient (Sablier), l'objectif sur la manche (Seuil abaissé).
+       */
+      async playCard(slot: number): Promise<void> {
+        round.unlockAudio();
+        tick.unlock();
+        const session = store.session();
+        const current = store.current();
+        const card = session?.hand.find(c => c.slot === slot);
+        if (!session || !current || !card || store.cardBusy()) return;
+        patchState(store, { cardBusy: true });
+        try {
+          const play = await api.playCard(session.sessionId, slot, current.position);
+          // La partie a pu être abandonnée ou le morceau répondu pendant l'aller-retour : une réponse périmée ne change rien.
+          if (store.session()?.sessionId !== session.sessionId || store.current()?.position !== current.position) return;
+          const next = play.current;
+          if (card.card === 'joker' || !next || next.position !== current.position) {
+            // Un autre morceau (ou un retrait) : la manche repart de la réponse, comme après « Morceau suivant ».
+            announced = null;
+            applyPlay(play, true);
+            return;
+          }
+          patchState(store, { session: play.session, current: next });
+          if (card.card === 'extend') {
+            round.reset();
+            round.start(configOf(next, play.session.listenSeconds), null);
+          }
+          const left = play.session.clockRemainingSeconds;
+          if (left !== null && clockPosition === next.position) {
+            clockDeadline = Date.now() + left * 1000;
+            patchState(store, { clockLeft: left, timeUp: left <= 0 });
+          }
+        } catch {
+          // Refusée (déjà jouée ailleurs, chrono écoulé) : la main reste telle quelle, la partie se relit.
+          try {
+            patchState(store, { session: await api.session(session.sessionId) });
+          } catch {
+            // rien à faire : le joueur peut répondre
+          }
+        } finally {
+          patchState(store, { cardBusy: false });
         }
       },
       /**

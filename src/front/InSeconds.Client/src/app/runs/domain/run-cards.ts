@@ -55,5 +55,18 @@ export function handSlots(hand: readonly RunHandCard[], handSize: number): reado
   return [...cards, ...Array.from({ length: Math.max(0, handSize - cards.length) }, () => null)];
 }
 
+/** Ce que les cartes jouées sur le morceau en cours révèlent ou changent (servi par le serveur pour lui seul). */
+export interface RunTrackEffects {
+  readonly cards: readonly RunCardKey[];
+  readonly year: number | null;
+  readonly artistInitials: readonly string[] | null;
+  readonly titleInitials: readonly string[] | null;
+  readonly choices: readonly { readonly artist: string; readonly title: string }[] | null;
+  readonly clockBonusSeconds: number;
+}
+
+/** Les initiales d'un nom, à lire : « D. P. ». */
+export const initialsLabel = (initials: readonly string[]): string => initials.map(i => `${i}.`).join(' ');
+
 /** La main est pleine : prendre une carte demande d'en lâcher une. */
 export const handFull = (hand: readonly RunHandCard[], handSize: number): boolean => handSize > 0 && hand.length >= handSize;

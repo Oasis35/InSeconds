@@ -132,7 +132,8 @@
       "skipConfirm": "Skip this track? You'll score 0 points",
       "skipAnyway": "Skip",
       "submitFailed": "Your answer couldn't be saved. Check your connection and try again.",
-      "retry": "Retry"
+      "retry": "Retry",
+      "choices": "Suggested answers"
     },
     "hint": {
       "tooltip": "Hint: costs points",
@@ -1052,6 +1053,16 @@
       "safe": "Safe",
       "risky": "Risky",
       "columnLabel": "{{name}}: up to {{max}} points, target {{objective}}"
+    },
+    "roundCards": {
+      "hand": "Your boosts",
+      "play": "Play {{card}}",
+      "year": "Released in {{year}}",
+      "net": "A miss counts as half",
+      "lowerTarget": "Round target lowered",
+      "hourglass": "+{{seconds}} on the clock",
+      "extend": "{{seconds}} listen",
+      "choicesHint": "Only one is right"
     }
   }
 }

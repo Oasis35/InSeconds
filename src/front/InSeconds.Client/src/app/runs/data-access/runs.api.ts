@@ -2,14 +2,14 @@ import { Injectable, inject } from '@angular/core';
 import { firstValueFrom, retry, throwError, timer } from 'rxjs';
 import {
   RunChallengeResponse, RunComparisonResponse, RunCurrentTrackResponse, RunFinishResponse, RunNeutralizedResponse, RunPassedRoundResponse, RunPlayResponse, RunRecordResponse, RunRoundResponse, RunRoundScoreResponse,
-  RunRoundSummaryResponse, RunSessionResponse, RunTrackResponse, RunsClient, RunsMeResponse,
+  RunRoundSummaryResponse, RunSessionResponse, RunTrackEffectsResponse, RunTrackResponse, RunsClient, RunsMeResponse,
 } from '../../api/runs/api.generated';
 import { toAppError } from '../../core/errors/app-error';
 import {
   RunComparison, RunCurrentTrack, RunDifficulty, RunFinish, RunLink, RunNeutralized, RunPassedRound, RunPlay, RunRecord, RunRound, RunRoundScore,
   RunRoundSummary, RunSession, RunStatus, RunTrack, RunsMe,
 } from '../domain/run';
-import { RunCardKey, isRunCard } from '../domain/run-cards';
+import { RunCardKey, RunTrackEffects, isRunCard } from '../domain/run-cards';
 
 /** Les refus que le jeu connaît : ils deviennent des issues, pas des erreurs. */
 const ACCESS_DENIED = 'runs.access_denied';
@@ -96,6 +96,11 @@ export class RunsApi {
   /** Prend une carte de l'offre du palier ; main pleine, `dropSlot` est la carte lâchée en échange. Rend la partie (main à jour). */
   async takeCard(sessionId: number, afterRound: number, card: RunCardKey, dropSlot: number | null): Promise<RunSession> {
     return toSession(await firstValueFrom(this.client.takeRunCard(sessionId, { afterRound, card, dropSlot: dropSlot ?? undefined })));
+  }
+
+  /** Joue une carte de la main sur le morceau en cours ; rend la partie et le morceau avec ses effets (le Joker : un nouveau morceau). */
+  async playCard(sessionId: number, slot: number, position: number): Promise<RunPlay> {
+    return toPlay(await firstValueFrom(this.client.playRunCard(sessionId, slot, { position })));
   }
 
   /** Passe l'offre du palier ; rend l'état, sans rien servir (le premier morceau ne se demande qu'à « Suite »). */
@@ -279,6 +284,18 @@ function toSession(session: RunSessionResponse): RunSession {
   };
 }
 
+function toEffects(effects: RunTrackEffectsResponse | undefined): RunTrackEffects | null {
+  if (!effects) return null;
+  return {
+    cards: effects.cards.filter(isRunCard),
+    year: effects.year ?? null,
+    artistInitials: effects.artistInitials ?? null,
+    titleInitials: effects.titleInitials ?? null,
+    choices: effects.choices?.map(c => ({ artist: c.artist, title: c.title })) ?? null,
+    clockBonusSeconds: effects.clockBonusSeconds ?? 0,
+  };
+}
+
 function toDifficulty(difficulty: string): RunDifficulty {
   return difficulty === 'easy' || difficulty === 'risky' ? difficulty : 'safe';
 }
@@ -287,7 +304,7 @@ function toCurrent(current: RunCurrentTrackResponse | undefined): RunCurrentTrac
   return current
     ? {
         position: current.position, round: current.round, positionInRound: current.positionInRound, previewUrl: current.previewUrl || null,
-        listenSeconds: current.listenSeconds, waveform: current.waveform ?? null,
+        listenSeconds: current.listenSeconds, waveform: current.waveform ?? null, effects: toEffects(current.effects),
       }
     : null;
 }

@@ -510,6 +510,64 @@ describe('RunGameStore', () => {
     });
   });
 
+  describe('cartes jouées sur le morceau', () => {
+    const withHand = (overrides = {}) => SESSION({ handSize: 2, hand: [{ slot: 1, card: 'year' }, { slot: 2, card: 'joker' }], ...overrides });
+
+    beforeEach(async () => {
+      api.launchResult = { kind: 'ok', play: PLAY({ session: withHand() }) };
+      await startRun();
+      audio.calls.length = 0;
+    });
+
+    it('les cartes de la main sont là, au-dessus de la saisie', () => {
+      expect(store.roundCards()?.hand.map(c => c.card)).toEqual(['year', 'joker']);
+    });
+
+    it('Année : la carte part au serveur, son effet s\'affiche, rien ne se relance', async () => {
+      api.playResult = PLAY({
+        session: withHand({ hand: [{ slot: 2, card: 'joker' }] }),
+        current: CURRENT({ effects: { cards: ['year'], year: 1995, artistInitials: null, titleInitials: null, choices: null, clockBonusSeconds: 0 } }),
+      });
+
+      await store.playCard(1);
+
+      expect(api.calls).toContain('playCard:7:1:1');
+      expect(store.roundCards()?.effects?.year).toBe(1995);
+      expect(store.roundCards()?.hand.map(c => c.card)).toEqual(['joker']);
+      expect(audio.calls.filter(c => c.startsWith('load'))).toEqual([]);
+    });
+
+    it('Joker : le son se déverrouille dans le toucher, le nouveau morceau part', async () => {
+      api.playResult = PLAY({ session: withHand({ hand: [{ slot: 1, card: 'year' }] }), current: CURRENT({ previewUrl: 'https://cdn/preview-reserve.mp3' }) });
+
+      await store.playCard(2);
+
+      expect(audio.calls[0]).toBe('unlock');
+      expect(audio.calls).toContain('load https://cdn/preview-reserve.mp3');
+      expect(store.screen()).toBe('playing');
+    });
+
+    it('Rallonge : l\'écoute repart sur la durée allongée', async () => {
+      api.launchResult = { kind: 'ok', play: PLAY({ session: withHand({ hand: [{ slot: 1, card: 'extend' }] }) }) };
+      await startRun();
+      api.playResult = PLAY({ session: withHand({ hand: [] }), current: CURRENT({ listenSeconds: 20, effects: {
+        cards: ['extend'], year: null, artistInitials: null, titleInitials: null, choices: null, clockBonusSeconds: 0 } }) });
+
+      await store.playCard(1);
+
+      expect(round.maxStep()).toBe(20);
+    });
+
+    it('une carte refusée laisse la manche telle quelle et relit la partie', async () => {
+      api.playResult = new Error('409');
+
+      await store.playCard(1);
+
+      expect(api.calls).toContain('session:7');
+      expect(store.screen()).toBe('playing');
+    });
+  });
+
   describe('fin de partie', () => {
     const finish = (status: 'won' | 'lost') => ({
       status, disc: { key: 'runs.discs.gold', stars: 0 }, totalScore: 2500, roundsPassed: 4, foundCount: 18, trackCount: 20,

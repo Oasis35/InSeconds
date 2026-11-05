@@ -4,6 +4,12 @@ import { AnswerSearchStore } from '../../data-access/answer-search.store';
 import { TrackRoundStore } from '../../data-access/track-round.store';
 import { RoundResult } from '../../domain/round-result';
 import { RoundSubmission } from '../../domain/track-round';
+
+/** Une réponse proposée à toucher (artiste et titre). */
+export interface RoundAnswerChoice {
+  readonly artist: string;
+  readonly title: string;
+}
 import { AnswerInputComponent } from '../../ui/answer-input/answer-input.component';
 import { HintPanelComponent } from '../../ui/hint-panel/hint-panel.component';
 import { RevealCardComponent } from '../../ui/reveal-card/reveal-card.component';
@@ -18,8 +24,10 @@ import { ButtonComponent } from '../../../ui/button/button.component';
  *
  * Emplacements de projection du mode : `[roundActions]` (ses boutons, au-dessus de « Valider »),
  * `[roundBadge]` (à gauche de la pochette), `[roundScore]` (ses points) et `[roundNext]` (sa suite). En ligne
- * (`layout="inline"`, un mode à écoute fixe) : `[roundCorner]` (en haut à droite de la carte, son chrono) et `[roundReveal]`
- * (sa révélation, dans la carte, à la place de la carte de révélation).
+ * (`layout="inline"`, un mode à écoute fixe) : `[roundCorner]` (en haut à droite de la carte, son chrono), `[roundCards]` (au-dessus de la
+ * saisie : les coups de pouce du mode) et `[roundReveal]` (sa révélation, dans la carte, à la place de la carte de révélation) ; « Passer »
+ * y est un simple lien souligné sous « Valider ». Avec `choices`, la saisie devient autant de réponses à toucher (une seule est juste,
+ * le serveur corrige comme une saisie).
  */
 @Component({
   selector: 'app-track-round',
@@ -49,10 +57,25 @@ import { ButtonComponent } from '../../../ui/button/button.component';
             <app-hint-panel [levels]="round.availableHintLevels()" [kinds]="round.hintKinds()" [hints]="round.hints()" [pending]="hintPending()"
               (request)="hintRequested.emit($event)" />
 
-            <app-answer-input [query]="search.query()" [suggestions]="search.visibleSuggestions()" [highlighted]="search.highlighted()"
-              (queryChange)="onQueryChange($event)" (pick)="search.select($event)" (enter)="onEnter($event)"
-              (clear)="onClear()" (move)="search.moveHighlight($event)" (highlight)="search.highlight($event)"
-              (dismiss)="search.close()" (focused)="search.openList()" (blurred)="search.close()" />
+            <ng-content select="[roundCards]" />
+
+            @if (choices(); as options) {
+              <!-- Les réponses proposées par le mode, à toucher : une seule est juste. -->
+              <div class="grid gap-2" role="group" [attr.aria-label]="'gameplay.answer.choices' | translate" data-testid="round-choices">
+                @for (option of options; track $index) {
+                  <button type="button" class="text-left px-4 py-3 touch-manipulation"
+                    style="min-height:48px;background:var(--bg-surface-2);border:1px solid var(--border-strong);border-radius:var(--radius-button);color:var(--text-hi)"
+                    [disabled]="phase === 'submitting'" (click)="pickChoice(option)" data-testid="round-choice">
+                    <span class="font-semibold">{{ option.artist }}</span> <span style="color:var(--text-light)">- {{ option.title }}</span>
+                  </button>
+                }
+              </div>
+            } @else {
+              <app-answer-input [query]="search.query()" [suggestions]="search.visibleSuggestions()" [highlighted]="search.highlighted()"
+                (queryChange)="onQueryChange($event)" (pick)="search.select($event)" (enter)="onEnter($event)"
+                (clear)="onClear()" (move)="search.moveHighlight($event)" (highlight)="search.highlight($event)"
+                (dismiss)="search.close()" (focused)="search.openList()" (blurred)="search.close()" />
+            }
 
             <ng-content select="[roundActions]" />
 
@@ -78,12 +101,23 @@ import { ButtonComponent } from '../../../ui/button/button.component';
                 </div>
               </div>
             } @else {
-              <button appButton type="submit" [block]="true" [glow]="true" [disabled]="phase === 'submitting'">
-                {{ phase === 'submitting' ? '…' : ('gameplay.answer.validate' | translate) }}
-              </button>
-              <button appButton type="button" variant="neutral" [block]="true" [disabled]="phase === 'submitting'" (click)="round.askSkip()">
-                {{ 'gameplay.round.skip' | translate }}
-              </button>
+              @if (!choices()) {
+                <button appButton type="submit" [block]="true" [glow]="true" [disabled]="phase === 'submitting'">
+                  {{ phase === 'submitting' ? '…' : ('gameplay.answer.validate' | translate) }}
+                </button>
+              }
+              @if (inline()) {
+                <div class="flex justify-center">
+                  <button type="button" class="inline-flex items-center min-h-11 px-2 text-[15px] underline underline-offset-4 touch-manipulation"
+                    style="color:var(--text-light)" [disabled]="phase === 'submitting'" (click)="round.askSkip()" data-testid="round-skip">
+                    {{ 'gameplay.round.skip' | translate }}
+                  </button>
+                </div>
+              } @else {
+                <button appButton type="button" variant="neutral" [block]="true" [disabled]="phase === 'submitting'" (click)="round.askSkip()">
+                  {{ 'gameplay.round.skip' | translate }}
+                </button>
+              }
             }
           </form>
         }
@@ -126,6 +160,8 @@ export class TrackRoundComponent {
   readonly alert = input(false);
   /** Le temps du mode est écoulé : la saisie part telle quelle, sans confirmation (une seule fois par morceau). */
   readonly timeUp = input(false);
+  /** Les réponses à toucher qui remplacent la saisie (un coup de pouce du mode) ; vide : la saisie libre. */
+  readonly choices = input<readonly RoundAnswerChoice[] | null>(null);
 
   /** La réponse à envoyer ; le mode l'envoie, puis appelle `reveal()` ou `submissionFailed()` du store. */
   readonly answered = output<RoundSubmission>();
@@ -148,6 +184,11 @@ export class TrackRoundComponent {
         this.send(this.round.timeUp(this.search.answer()));
       });
     });
+  }
+
+  /** Toucher une des réponses proposées : elle part comme une saisie (artiste et titre). */
+  protected pickChoice(option: RoundAnswerChoice): void {
+    this.send(this.round.submit({ artist: option.artist, title: option.title }));
   }
 
   protected onSubmit(event: Event): void {

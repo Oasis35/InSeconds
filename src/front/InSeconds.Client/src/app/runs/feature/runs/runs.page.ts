@@ -23,6 +23,7 @@ import { RunHeaderComponent } from '../../ui/run-header/run-header.component';
 import { RunLinkScreenComponent } from '../../ui/run-link-screen/run-link-screen.component';
 import { RunPalierComponent } from '../../ui/run-palier/run-palier.component';
 import { RunDifficultyComponent } from '../../ui/run-difficulty/run-difficulty.component';
+import { RunRoundCardsComponent } from '../../ui/run-round-cards/run-round-cards.component';
 import { RunClockComponent } from '../../ui/run-clock/run-clock.component';
 import { RunPileComponent } from '../../ui/run-pile/run-pile.component';
 import { RunRevealComponent } from '../../ui/run-reveal/run-reveal.component';
@@ -41,7 +42,7 @@ import { reloadMomentFor } from '../reload-moment';
   imports: [
     TranslatePipe, DecorBackgroundComponent, TrackRoundComponent, RunHeaderComponent, RunClockComponent, RunRevealComponent, RunPileComponent,
     RunWithdrawnCardComponent, RunFinishComponent, RunWelcomeScreenComponent, RunStatusScreenComponent, ResumeScreenComponent,
-    RunLinkScreenComponent, RunComparisonScreenComponent, RunPalierComponent, RunDifficultyComponent,
+    RunLinkScreenComponent, RunComparisonScreenComponent, RunPalierComponent, RunDifficultyComponent, RunRoundCardsComponent,
   ],
   providers: [RunGameStore, TrackRoundStore, RunShare, RunTick],
   changeDetection: ChangeDetectionStrategy.OnPush,

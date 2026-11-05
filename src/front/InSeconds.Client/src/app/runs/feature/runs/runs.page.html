@@ -43,9 +43,13 @@
                 (next)="store.next()" />
             } @else {
               <!-- La carte du morceau : le lecteur (bouton à gauche de la waveform), le chrono dans son coin, la saisie, puis la réponse. -->
-              <app-track-round layout="inline" [alert]="store.clockAlert()" [timeUp]="store.timeUp()" (answered)="onAnswered($event)">
+              <app-track-round layout="inline" [alert]="store.clockAlert()" [timeUp]="store.timeUp()" [choices]="store.roundCards()?.effects?.choices ?? null"
+                (answered)="onAnswered($event)">
                 @if (store.clockShown() !== null) {
                   <app-run-clock roundCorner [seconds]="store.clockShown()!" />
+                }
+                @if (store.roundCards(); as cards) {
+                  <app-run-round-cards roundCards [hand]="cards.hand" [effects]="cards.effects" [busy]="store.cardBusy()" (play)="store.playCard($event)" />
                 }
                 @if (store.revealed(); as revealed) {
                   <app-run-reveal roundReveal [track]="revealed" [peaks]="round.waveform()?.peaks ?? store.shapes()[revealed.position] ?? null"
