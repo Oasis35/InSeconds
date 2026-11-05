@@ -7,7 +7,7 @@
  */
 
 /** Première ligne : le score (milliers séparés par une espace fine insécable), le nom et la date. */
-export const SHARE_HEADER_LINE = /^[\d\s ]+ pts · InSeconds \d{2}\/\d{2}$/;
+export const SHARE_HEADER_LINE = /^[\d\s]+ pts · InSeconds \d{2}\/\d{2}$/;
 
 /** Une ligne de morceau : `✅`/`❌` de l'artiste, puis du titre, puis le palier écouté (espace insécable avant « s »). */
 export const SHARE_TRACK_LINE = /^[✅❌]{2} \d+(,\d)? s$/u;
@@ -25,6 +25,6 @@ export function shareTextProblems(text: string, trackCount: number): string[] {
     if (!SHARE_TRACK_LINE.test(line)) problems.push(`morceau ${i + 1} : « ${line} »`);
   });
   if (!SHARE_LINK_LINE.test(lines.at(-1) ?? '')) problems.push(`lien : « ${lines.at(-1)} »`);
-  if (/🎵|🏆/u.test(text)) problems.push('emoji décoratif');
+  if (/[🎵🏆]/u.test(text)) problems.push('emoji décoratif');
   return problems;
 }
