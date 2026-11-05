@@ -15,13 +15,14 @@ import { LeaveGuard } from '../../../gameplay/feature/leave-guard';
 import { ModalService } from '../../../ui/modal/modal.service';
 import { DecorBackgroundComponent } from '../../../ui/decor-background/decor-background.component';
 import { ButtonComponent } from '../../../ui/button/button.component';
+import { formatSeconds } from '../../../ui/format/format-seconds';
 import { DailyGameStore } from '../../data-access/daily-game.store';
 import { DailyShare } from '../../data-access/daily-share';
 import { GuestStreakNotice } from '../../data-access/guest-streak-notice';
 import { LostStreakNotice } from '../../data-access/lost-streak-notice';
 import { AbandonedScreenComponent } from '../../ui/abandoned-screen/abandoned-screen.component';
 import { DayResultScreenComponent } from '../../ui/day-result-screen/day-result-screen.component';
-import { rowsFromResults, rowsFromStats } from '../../ui/day-result-screen/result-rows';
+import { rowsFromResults, rowsFromStats, shareTracksOf } from '../../ui/day-result-screen/result-rows';
 import { BrandComponent } from '../../../gameplay/ui/brand/brand.component';
 import { DailyFooterComponent } from '../../ui/daily-footer/daily-footer.component';
 import { DailyProgressComponent } from '../../ui/daily-progress/daily-progress.component';
@@ -177,15 +178,12 @@ export class DailyPage implements OnInit {
     this.language.use(this.language.current() === 'fr' ? 'en' : 'fr');
   }
 
-  /** Partage le résumé de la partie (menu du téléphone, sinon presse-papier) : un `✅`, `🔶` ou `🅾️` par morceau, le score et le lien. */
+  /**
+   * Partage le résumé de la partie (menu du téléphone, sinon presse-papier) : une ligne par morceau, avec le palier écouté, les mêmes morceaux,
+   * dans le même ordre, que la liste du résultat du jour.
+   */
   protected share(): void {
-    const stats = this.store.stats();
-    const done = this.store.screen() === 'done';
-    const tracks = done
-      ? this.store.results().map(r => ({ artistCorrect: r.artistCorrect, titleCorrect: r.titleCorrect }))
-      : (stats?.tracks ?? [])
-          .filter(t => t.listenedSeconds !== null)
-          .map(t => ({ artistCorrect: t.artistCorrect === true, titleCorrect: t.titleCorrect === true }));
-    void this.dailyShare.share(tracks, done ? this.store.totalScore() : (stats?.yourScore ?? 0));
+    const score = this.store.screen() === 'done' ? this.store.totalScore() : (this.store.stats()?.yourScore ?? 0);
+    void this.dailyShare.share(shareTracksOf(this.resultRows()), score, formatSeconds);
   }
 }

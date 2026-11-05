@@ -1,4 +1,5 @@
 import { AnsweredTrack, DayStats } from '../../domain/daily';
+import { ShareTrack } from '../../domain/share-text';
 import { TrackResultRow } from '../../../gameplay/ui/track-results-list/track-results-list.component';
 
 /**
@@ -43,4 +44,11 @@ export function rowsFromStats(stats: DayStats | null): TrackResultRow[] {
     distribution: t.distribution,
     notFoundCount: t.notFoundCount,
   }));
+}
+
+/** Ce que le texte partagé montre des lignes : les morceaux répondus seulement, dans l'ordre de la liste (un morceau sans réponse n'a pas de ligne). */
+export function shareTracksOf(rows: readonly TrackResultRow[]): ShareTrack[] {
+  return rows.flatMap(r => r.listenedSeconds === null
+    ? []
+    : [{ artistCorrect: r.artistCorrect === true, titleCorrect: r.titleCorrect === true, listenedSeconds: r.listenedSeconds }]);
 }
