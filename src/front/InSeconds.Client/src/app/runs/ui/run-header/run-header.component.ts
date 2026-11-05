@@ -39,6 +39,7 @@ import { RunRound, pointsToGo, runSegments } from '../../domain/run';
         }
       </div>
     </div>
+    @if (showStatus()) {
     <div class="flex justify-between items-baseline mt-2.5" style="min-height:22px">
       <h1 class="text-[15px] font-bold" style="font-family:var(--font-display);color:var(--text-hi)" data-testid="run-round-title">
         {{ 'runs.header.roundShort' | translate: { round: round().round } }}
@@ -51,6 +52,7 @@ import { RunRound, pointsToGo, runSegments } from '../../domain/run';
         }
       </p>
     </div>
+    }
   `,
   styles: `
     .bar-fill { transition: width 700ms cubic-bezier(0.2, 0.8, 0.2, 1), background-color 500ms; }
@@ -62,6 +64,8 @@ export class RunHeaderComponent {
   readonly round = input.required<RunRound>();
   /** Le nombre de manches de la playlist. */
   readonly rounds = input.required<number>();
+  /** « Manche N » et ce qui manque pour passer, sous la barre ; l'écran de palier n'en montre que la barre. */
+  readonly showStatus = input(true);
   readonly abandon = output();
 
   protected readonly segments = computed(() => runSegments(this.rounds(), this.round()));

@@ -1951,6 +1951,16 @@
             "type": "integer",
             "format": "int32",
             "default": 0
+          },
+          "nextDisc": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RunDiscResponse"
+              }
+            ]
           }
         }
       },

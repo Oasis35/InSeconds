@@ -9,6 +9,7 @@ import {
   RunComparison, RunCurrentTrack, RunDifficulty, RunFinish, RunLink, RunNeutralized, RunPassedRound, RunPlay, RunRecord, RunRound, RunRoundScore,
   RunRoundSummary, RunSession, RunStatus, RunTrack, RunsMe,
 } from '../domain/run';
+import { RunCardKey, isRunCard } from '../domain/run-cards';
 
 /** Les refus que le jeu connaît : ils deviennent des issues, pas des erreurs. */
 const ACCESS_DENIED = 'runs.access_denied';
@@ -90,6 +91,16 @@ export class RunsApi {
    */
   async refreshPreview(sessionId: number): Promise<RunPlay> {
     return toPlay(await firstValueFrom(this.client.refreshRunPreview(sessionId)));
+  }
+
+  /** Prend une carte de l'offre du palier ; main pleine, `dropSlot` est la carte lâchée en échange. Rend la partie (main à jour). */
+  async takeCard(sessionId: number, afterRound: number, card: RunCardKey, dropSlot: number | null): Promise<RunSession> {
+    return toSession(await firstValueFrom(this.client.takeRunCard(sessionId, { afterRound, card, dropSlot: dropSlot ?? undefined })));
+  }
+
+  /** Passe l'offre du palier ; la réponse porte le premier morceau de la manche s'il n'y a pas de difficulté à choisir. */
+  async passOffer(sessionId: number, afterRound: number): Promise<RunPlay> {
+    return toPlay(await firstValueFrom(this.client.passRunOffer(sessionId, { afterRound })));
   }
 
   /** Choisit la difficulté de la manche en cours ; la réponse porte son premier morceau (son extrait ne part qu'avec le choix). */
@@ -259,6 +270,12 @@ function toSession(session: RunSessionResponse): RunSession {
           })),
         }
       : null,
+    hand: (session.hand ?? []).filter(c => isRunCard(c.card)).map(c => ({ slot: c.slot, card: c.card as RunCardKey })),
+    offer: session.offer
+      ? { afterRound: session.offer.afterRound, cards: session.offer.cards.filter(isRunCard) }
+      : null,
+    handSize: session.handSize ?? 0,
+    nextDisc: session.nextDisc ? { key: session.nextDisc.key, stars: session.nextDisc.stars } : null,
   };
 }
 

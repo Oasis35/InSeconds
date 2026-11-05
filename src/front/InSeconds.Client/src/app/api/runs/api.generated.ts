@@ -1615,6 +1615,7 @@ export interface RunSessionResponse {
     hand?: RunHandCardResponse[] | undefined;
     offer?: RunCardOfferResponse | undefined;
     handSize?: number;
+    nextDisc?: RunDiscResponse | undefined;
 
     [key: string]: any;
 }

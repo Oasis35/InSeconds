@@ -313,6 +313,17 @@ public class RunCardApiTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task LeDisqueVise_ParLaMancheEnCours()
+    {
+        var (alice, start) = await LaunchWithAsync("year");
+        Assert.Equal(new RunDiscResponse("runs.discs.wax", 0), start.Session.NextDisc);
+
+        var end = await alice.PlayAsync(start.Session.SessionId, start.Session.ChallengeCode, 1, AllFound);
+
+        Assert.Equal(new RunDiscResponse("runs.discs.bronze", 0), end.Session.NextDisc);
+    }
+
+    [Fact]
     public async Task ChoisirLaDifficulte_FermeLOffre()
     {
         var (alice, start) = await LaunchWithAsync("year");

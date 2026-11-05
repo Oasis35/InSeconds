@@ -199,6 +199,8 @@ internal static class RunViews
 
     public static string DifficultyOf(RoundProgress progress) => RunDifficulties.KeyOf(progress.Difficulty);
 
+    private static RunDiscResponse DiscOf(RunDisc disc) => new(disc.Key, disc.Stars);
+
     public static RunRoundSummaryResponse Summary(LoadedRun run, RunStep step, IRunScoringPolicy scoring)
     {
         var progress = run.Session.RoundProgressOf(run.Challenge, step.Round, scoring);
@@ -248,7 +250,8 @@ internal static class RunViews
             rules.AnswerSeconds, session.IsPending ? session.ClockRemaining(rules, now) : null, playedTracks, passedRounds, choice,
             session.Hand.Select(c => new RunHandCardResponse(c.Slot, RunCards.KeyOf(c.Card))).ToList(),
             session.OpenOffer(challenge) is { } offer ? new RunCardOfferResponse(offer.AfterRound, offer.Cards.Select(RunCards.KeyOf).ToList()) : null,
-            rules.Cards?.HandSize ?? 0);
+            rules.Cards?.HandSize ?? 0,
+            session.IsPending ? DiscOf(DiscLadder.Of(session.RoundsPassed + 1, discs)) : null);
     }
 
     // Chaque difficulté proposée, calculée sur les morceaux de la manche (un morceau déjà neutralisé en est retiré, comme pour la jauge).

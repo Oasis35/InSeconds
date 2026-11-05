@@ -25,6 +25,8 @@ export class RunPage {
   readonly answerCard: Locator;
   readonly withdrawnCard: Locator;
   readonly nextTrackButton: Locator;
+  readonly palier: Locator;
+  readonly palierNextButton: Locator;
   readonly finished: Locator;
   readonly disc: Locator;
   readonly record: Locator;
@@ -60,6 +62,8 @@ export class RunPage {
     this.answerCard          = page.getByTestId('run-answer');
     this.withdrawnCard       = page.getByTestId('run-withdrawn');
     this.nextTrackButton     = page.getByTestId('run-next-track');
+    this.palier              = page.getByTestId('run-palier');
+    this.palierNextButton    = page.getByTestId('run-palier-next-button');
     this.finished            = page.getByTestId('run-finished');
     this.disc                = page.getByTestId('run-disc');
     this.record              = this.finished.getByTestId('run-record');
@@ -154,10 +158,17 @@ export class RunPage {
     await expect(this.finished).toHaveAttribute('data-status', 'lost');
   }
 
-  /** Répond juste à tous les morceaux d'une manche ; la ligne de la manche se pose dans la pile (sauf à la dernière, qui mène à la fin). */
+  /**
+   * Répond juste à tous les morceaux d'une manche. Sauf à la dernière (qui mène à la fin) : l'écran de palier, ses trois cartes offertes,
+   * « Suite », puis la ligne de la manche posée dans la pile.
+   */
   async winRound(tracks: RunTrack[], round: number): Promise<void> {
     await expect(this.roundTitle).toHaveText(`Manche ${round}`);
     await inSequence(tracks.filter(t => t.round === round), track => this.answerRight(track));
-    if (round < 4) await expect(this.paliers).toHaveCount(round);
+    if (round === 4) return;
+    await expect(this.palier).toBeVisible();
+    await expect(this.palier.locator('[data-card]')).toHaveCount(3);
+    await this.palierNextButton.click();
+    await expect(this.paliers).toHaveCount(round);
   }
 }

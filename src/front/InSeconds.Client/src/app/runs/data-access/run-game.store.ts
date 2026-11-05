@@ -5,9 +5,10 @@ import { TrackRoundStore } from '../../gameplay/data-access/track-round.store';
 import { RoundConfig, RoundSubmission } from '../../gameplay/domain/track-round';
 import { waveformFromBlob } from '../../gameplay/domain/waveform';
 import {
-  AUTO_NEXT_MS, CLOCK_ALERT_SECONDS, PileEntry, RunComparison, RunCurrentTrack, RunLink, RunPlay, RunRound, RunSession, RunStep, RunsMe, isFinished, playSteps,
-  playedCount, runPile, stepPosition,
+  AUTO_NEXT_MS, CLOCK_ALERT_SECONDS, PileEntry, RunComparison, RunCurrentTrack, RunLink, RunPlay, RunRound, RunSession, RunStep, RunsMe, isFinished,
+  nextObjective, palierDue, playSteps, playedCount, runPile, stepPosition,
 } from '../domain/run';
+import { RunCardKey, handFull } from '../domain/run-cards';
 import { RunTick } from './run-tick';
 import { RunsApi, StartOutcome } from './runs.api';
 
@@ -20,7 +21,8 @@ const CLOCK_TICK_MS = 200;
  * invitation, que la page traduit en retour au jeu du jour ; pas de playlist ; playlist inconnue ; erreur).
  */
 export type RunScreen =
-  | 'loading' | 'welcome' | 'link' | 'resume' | 'playing' | 'finished' | 'comparison' | 'access_denied' | 'no_challenge' | 'not_found' | 'error';
+  | 'loading' | 'welcome' | 'link' | 'resume' | 'playing' | 'palier' | 'finished' | 'comparison' | 'access_denied' | 'no_challenge' | 'not_found'
+  | 'error';
 
 interface RunState {
   screen: RunScreen;
@@ -51,6 +53,12 @@ interface RunState {
   resumeCount: number;
   resumeTotal: number;
   abandonLoading: boolean;
+  /** La manche dont le joueur a quitté l'écran de palier par « Suite » (il ne revient pas). */
+  palierDismissedFor: number | null;
+  /** La carte de l'offre en attente d'échange (main pleine : le joueur touche ensuite la carte à lâcher). */
+  pendingCard: RunCardKey | null;
+  /** Une prise ou un passage de l'offre part au serveur. */
+  palierBusy: boolean;
 }
 
 const initialState: RunState = {
@@ -70,6 +78,9 @@ const initialState: RunState = {
   resumeCount: 0,
   resumeTotal: 0,
   abandonLoading: false,
+  palierDismissedFor: null,
+  pendingCard: null,
+  palierBusy: false,
 };
 
 /**
@@ -123,6 +134,24 @@ export const RunGameStore = signalStore(
       /** « Nouvelle partie » : seulement avec l'accès (retiré en cours de partie, la partie se finit, mais pas d'autre). */
       canPlayAgain: computed(() => store.me()?.hasAccess === true),
       finish: computed(() => store.session()?.finish ?? null),
+      /** Ce que montre l'écran de palier : la manche passée, la suivante et son objectif, l'offre, la main. */
+      palier: computed(() => {
+        const session = store.session();
+        const passed = session?.passedRounds.at(-1);
+        if (store.screen() !== 'palier' || !session?.round || !passed) return null;
+        return {
+          passed,
+          nextRound: session.round.round,
+          nextObjective: nextObjective(session),
+          nextDisc: session.nextDisc?.key ?? null,
+          wonDiscs: session.passedRounds.map(p => p.disc.key),
+          offer: session.offer,
+          hand: session.hand,
+          handSize: session.handSize,
+          /** L'en-tête : la barre du run sur la manche à venir, pas encore commencée. */
+          headerRound: { round: session.round.round, score: 0, objective: session.round.objective, maxScore: session.round.maxScore },
+        };
+      }),
     };
   }),
   withMethods((store, api = inject(RunsApi), round = inject(TrackRoundStore), sessionLoader = inject(SessionLoader), tick = inject(RunTick)) => {
@@ -238,9 +267,21 @@ export const RunGameStore = signalStore(
         armAutoNext();
         return;
       }
+      // Une manche passée (playlist à coups de pouce) : l'écran de palier, jusqu'à « Suite ».
+      if (palierDue(session, store.palierDismissedFor())) {
+        round.reset();
+        stopClock();
+        patchState(store, { screen: 'palier', pendingCard: null });
+        return;
+      }
       const current = store.current();
       if (!current && !isFinished(session) && session.difficultyChoice) {
         void chooseUntilScreen(session.sessionId, session.difficultyChoice.round, play);
+        return;
+      }
+      // Sans difficulté à choisir, le premier morceau de la manche n'arrive qu'une fois l'offre réglée : passée, ou une carte déjà prise.
+      if (!current && !isFinished(session) && session.handSize > 0) {
+        void serveRound(session, play);
         return;
       }
       if (isFinished(session) || !current) {
@@ -268,6 +309,29 @@ export const RunGameStore = signalStore(
         applyPlay(await api.chooseDifficulty(sessionId, roundNumber, 'safe'), play);
       } catch {
         patchState(store, { screen: 'error' });
+      }
+    };
+
+    /** L'offre encore ouverte se passe ; réglée (carte prise), l'extrait du premier morceau se demande. Puis le morceau part. */
+    const serveRound = async (session: RunSession, play: boolean): Promise<void> => {
+      try {
+        applyPlay(session.offer ? await api.passOffer(session.sessionId, session.offer.afterRound) : await api.refreshPreview(session.sessionId), play);
+      } catch {
+        patchState(store, { screen: 'error' });
+      }
+    };
+
+    /** Prend une carte de l'offre (main pleine : `dropSlot` est lâchée en échange) ; la main revient du serveur. Un refus garde l'écran tel quel. */
+    const take = async (card: RunCardKey, dropSlot: number | null): Promise<void> => {
+      const session = store.session();
+      if (!session?.offer || store.palierBusy()) return;
+      patchState(store, { palierBusy: true });
+      try {
+        patchState(store, { session: await api.takeCard(session.sessionId, session.offer.afterRound, card, dropSlot), pendingCard: null });
+      } catch {
+        // l'offre s'est fermée entre-temps (autre onglet) : l'état relu le dira au prochain écran
+      } finally {
+        patchState(store, { palierBusy: false });
       }
     };
 
@@ -349,7 +413,7 @@ export const RunGameStore = signalStore(
       const target = code === undefined ? store.code() : code;
       patchState(store, {
         screen: 'loading', code: target, link: null, comparison: null, session: null, current: null, steps: [], shapes: {}, resumeCount: 0,
-        resumeTotal: 0, abandonLoading: false,
+        resumeTotal: 0, abandonLoading: false, palierDismissedFor: null, pendingCard: null, palierBusy: false,
       });
       try {
         const me = await api.me();
@@ -404,6 +468,39 @@ export const RunGameStore = signalStore(
           return;
         }
         applyOutcome(await api.join(code));
+      },
+      /** Toucher une carte de l'offre : prise tout de suite, ou, main pleine, mise en attente de la carte à lâcher (un second toucher l'annule). */
+      pickCard(card: RunCardKey): void {
+        const session = store.session();
+        if (!session || store.palierBusy()) return;
+        if (handFull(session.hand, session.handSize)) patchState(store, { pendingCard: store.pendingCard() === card ? null : card });
+        else void take(card, null);
+      },
+      /** Toucher une carte de la main, une carte de l'offre étant en attente : l'échange. */
+      dropForPending(slot: number): void {
+        const pending = store.pendingCard();
+        if (pending) void take(pending, slot);
+      },
+      /** « Passer » : l'offre se ferme sans carte ; l'écran de palier reste jusqu'à « Suite ». */
+      async passOffer(): Promise<void> {
+        const session = store.session();
+        if (!session?.offer || store.palierBusy()) return;
+        patchState(store, { palierBusy: true, pendingCard: null });
+        try {
+          const play = await api.passOffer(session.sessionId, session.offer.afterRound);
+          patchState(store, { session: play.session, current: play.current });
+        } catch {
+          // l'offre était déjà fermée : rien à faire
+        } finally {
+          patchState(store, { palierBusy: false });
+        }
+      },
+      /** « Suite » (un clic) : l'écran de palier se ferme, la manche suivante démarre (le son se déverrouille dans ce clic). */
+      continueFromPalier(): void {
+        round.unlockAudio();
+        tick.unlock();
+        patchState(store, { palierDismissedFor: store.session()?.round?.round ?? null, pendingCard: null });
+        show(true);
       },
       /** « Voir les autres joueurs » depuis la fin : la comparaison de cette playlist. */
       async showComparison(): Promise<void> {

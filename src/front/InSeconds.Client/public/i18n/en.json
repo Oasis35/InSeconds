@@ -1000,6 +1000,46 @@
     },
     "share": {
       "text": "I’m sending you a playlist on InSeconds: 20 tracks in 4 rounds. Can you beat me?"
+    },
+    "palier": {
+      "round": "Round {{round}}",
+      "shelf": "The playlist's discs",
+      "points": "pts",
+      "scoreLabel": "{{score}} points for a target of {{objective}}",
+      "nextRound": "Round {{round}}",
+      "pointsFor": "pts for",
+      "offer": "A boost",
+      "pass": "Skip",
+      "hand": "In hand",
+      "emptySlot": "Empty slot",
+      "dropHint": "Tap the card to drop",
+      "next": "Next"
+    },
+    "cards": {
+      "three_choices": {
+        "name": "Three choices"
+      },
+      "joker": {
+        "name": "Joker"
+      },
+      "year": {
+        "name": "Year"
+      },
+      "initials": {
+        "name": "Initials"
+      },
+      "extend": {
+        "name": "Extension"
+      },
+      "net": {
+        "name": "Safety net"
+      },
+      "lower_target": {
+        "name": "Lower target"
+      },
+      "hourglass": {
+        "name": "Hourglass"
+      }
     }
   }
 }
